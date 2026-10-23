@@ -45,7 +45,7 @@ async function toReady(page, name, email = "") {
   await page.goto(base + "/onboarding.html");
   await page.waitForFunction(() => window.Sona && document.getElementById("nextBtn"));
   await tap(page, "#nextBtn");                                           // the hello
-  for (const key of ["problem", "reel", "rachel"]) {
+  for (const key of ["problem", "reel", "rachel", "daily"]) {
     await step(page, key); sold.push(await text(page, '[data-step="' + key + '"] h1'));
     if (key === "rachel") rachelLine = await page.evaluate(() => document.getElementById("rachelLine").textContent);
     await tap(page, "#nextBtn");
@@ -68,8 +68,8 @@ await scenario("a family that can buy", async () => {
   try {
     await toReady(page, "Mia", "mia.mom@example.com");
     ok("nothing is sent from the email step itself", leads(requests).length === 0, leads(requests));
-    ok("before the price, setup sells Sona: the problem, the games playing, Rachel, what the child loves, the games they will love",
-      JSON.stringify(sold) === JSON.stringify(["Speech homework is hard at home.", "They practice by playing.", "Built with Rachel, MS, CF-SLP,", "What does Mia love?", "Games Mia will love"]), sold);
+    ok("before the price, setup sells Sona: the problem, the games playing, Rachel, a few minutes every day, what the child loves, the games they will love",
+      JSON.stringify(sold) === JSON.stringify(["Speech homework is hard at home.", "They practice by playing.", "Built with Rachel, MS, CF-SLP,", "A few minutes every day.", "What does Mia love?", "Games Mia will love"]), sold);
     ok("Rachel's own screen carries her line word for word, and setup ends on the ready screen with the child's name",
       rachelLine === "Built with Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical fellowship." &&
       (await text(page, "#readyTitle")) === "Mia's practice is ready!",

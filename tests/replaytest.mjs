@@ -227,7 +227,8 @@ try {
     await recording(page);
     await mark(page, 101);                          // the hello: recorded
     // THE SCREENS THAT SELL (22 Oct 2026) come first: the problem, the games
-    // playing and Rachel, all recorded, none showing the name
+    // playing, Rachel and (23 Oct 2026) a few minutes every day, all
+    // recorded, none showing the name
     await next(page);
     await page.locator('[data-step="problem"].on').waitFor(); await rest();
     await mark(page, 111);                          // "Speech homework is hard at home.": recorded
@@ -237,6 +238,9 @@ try {
     await next(page);
     await page.locator('[data-step="rachel"].on').waitFor(); await rest();
     await mark(page, 131);                          // Rachel, on her own: recorded
+    await next(page);
+    await page.locator('[data-step="daily"].on').waitFor(); await rest();
+    await mark(page, 136);                          // "A few minutes every day." (23 Oct 2026): recorded
     await next(page);
     await page.locator('[data-step="name"].on').waitFor();
     await page.locator("#obName").fill("Zephyrine");
@@ -301,7 +305,7 @@ try {
     const rr = w.rr(), text = w.text();
     ok("setup: a recording was sent (full snapshots of the page)", rr.filter((e) => e.type === FULL).length >= 2, rr.length);
     ok("setup: the hello's pointer was recorded (the control)", marked(rr, 101));
-    ok("setup: the problem, the games playing and Rachel's screen were recorded (the controls)", marked(rr, 111) && marked(rr, 121) && marked(rr, 131), [marked(rr, 111), marked(rr, 121), marked(rr, 131)]);
+    ok("setup: the problem, the games playing, Rachel's screen and \"A few minutes every day.\" were recorded (the controls)", marked(rr, 111) && marked(rr, 121) && marked(rr, 131) && marked(rr, 136), [marked(rr, 111), marked(rr, 121), marked(rr, 131), marked(rr, 136)]);
     ok("setup: the minutes screen's pointer was recorded (the control)", marked(rr, 351));
     ok("setup: nothing on the screen a therapy answer lands on (the sounds)", !marked(rr, 301));
     ok("setup: \"What does <Name> love?\" and \"Games <Name> will love\" were recorded (the controls)", marked(rr, 141) && marked(rr, 151), [marked(rr, 141), marked(rr, 151)]);

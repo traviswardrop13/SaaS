@@ -90,9 +90,10 @@ async function toName(page){await setupWalk(page,'name');await page.locator('[da
 // One tap on a one-tap question: one of its answer ids, or 'skip'.
 async function answer(page,key,val='skip'){await page.locator('[data-step="'+key+'"].on').waitFor();await calm(page);await page.locator(val==='skip'?'#'+key+'Skip':'[data-step="'+key+'"] .ask-pick[data-val="'+val+'"]').click();}
 const answerTherapy=(page,val)=>answer(page,'therapy',val),answerMinutes=(page,val)=>answer(page,'minutes',val);
-// THE SCREENS THAT SELL (19 Oct 2026; rebuilt 22 Oct): the problem, the reel
-// and Rachel before the name, what the child loves and their games after it.
-const SELL=['problem','reel','rachel','interests','games'];
+// THE SCREENS THAT SELL (19 Oct 2026; rebuilt 22 Oct): the problem, the reel,
+// Rachel and (23 Oct 2026) "A few minutes every day." before the name, what
+// the child loves and their games after it.
+const SELL=['problem','reel','rachel','daily','interests','games'];
 // hello → … → name and age → what they love → their games → the therapy
 // question (a tap, or Skip) → the sound picker. A second child and a
 // clinician in the app are not asked, and go straight there.
@@ -126,7 +127,7 @@ const THERAPY=[['t_yes','Yes','Sona is practice for the days between speech visi
 // [value, the button's words, the chip the ready screen shows for it]: a real setting, the daily goal
 const MINUTES=[['5','5 min','5 min a day'],['10','10 min','10 min a day'],['15','15 min','15 min a day']];
 // the first family's whole walk, on a phone with no reminder to offer
-const FIRST_WALK='welcome,problem,reel,rachel,name,interests,games,therapy,sounds,minutes,updates,ready,mic';
+const FIRST_WALK='welcome,problem,reel,rachel,daily,name,interests,games,therapy,sounds,minutes,updates,ready,mic';
 // what the ready screen shows, as a parent reads it
 const readyShown=page=>page.evaluate(()=>{const st=document.querySelector('[data-step="ready"]'),painted=el=>!!el&&getComputedStyle(el).display!=='none'&&el.getBoundingClientRect().height>0;return {on:st.classList.contains('on'),title:document.getElementById('readyTitle').textContent,chips:[...document.querySelectorAll('#readyChips li')].map(l=>l.textContent),lines:painted(document.getElementById('readyLines'))?[...document.querySelectorAll('#readyLines li')].map(l=>l.textContent):[],text:st.innerText.replace(/\s+/g,' ').trim(),asks:st.querySelectorAll('input,select,textarea,button,a,[role="button"]').length,cta:document.getElementById('nextBtn').textContent.trim(),enabled:!document.getElementById('nextBtn').disabled,seg:document.getElementById('seg').hidden,mascot:painted(document.querySelector('.ob .mascot')),build:!!document.getElementById('obBuild'),rachel:/Rachel/.test(st.textContent)||!!st.querySelector('img[src*="rachel"]')};});
 const progress=page=>page.evaluate(()=>{const s=document.getElementById('seg');return {groups:s.children.length,lit:s.querySelectorAll('i.on').length,hidden:s.hidden,now:s.getAttribute('aria-valuenow'),max:s.getAttribute('aria-valuemax'),role:s.getAttribute('role')};});
@@ -138,8 +139,8 @@ await scenario('sound selection and private paced handoff',async()=>{
   ok('five progress groups match the five setup questions (name, what they love, therapy, sounds, minutes)',await page.locator('#seg i').count()===5);
   ok('the younger age band includes two-year-olds',/2–4/.test(await page.locator('#obAge [data-age="4"]').innerText()));
   // the screens that sell come before the name, each with no progress segment
-  {const sold=[];for(let i=0;i<5;i++){const s=await screen(page);sold.push(s);if(s==='name')break;const pr=await progress(page);sold.push(pr.hidden?'no bar':'bar');await next(page);await page.waitForFunction(k=>document.body.dataset.setupScreen!==k,s);}
-  ok('the hello, then the problem, the games playing and Rachel, each with no progress segment, then the child\'s name',JSON.stringify(sold)==='["welcome","no bar","problem","no bar","reel","no bar","rachel","no bar","name"]',sold);}
+  {const sold=[];for(let i=0;i<6;i++){const s=await screen(page);sold.push(s);if(s==='name')break;const pr=await progress(page);sold.push(pr.hidden?'no bar':'bar');await next(page);await page.waitForFunction(k=>document.body.dataset.setupScreen!==k,s);}
+  ok('the hello, then the problem, the games playing, Rachel and "A few minutes every day.", each with no progress segment, then the child\'s name',JSON.stringify(sold)==='["welcome","no bar","problem","no bar","reel","no bar","rachel","no bar","daily","no bar","name"]',sold);}
   ok('…the name is the first of the five',(await progress(page)).lit===1&&!(await progress(page)).hidden);
   await page.locator('#obName').fill('Milo');await page.locator('#obAge [data-age="4"]').click();await next(page);
   ok('name and age lead to "What does <Name> love?", the second of the five',await page.locator('[data-step="interests"].on').count()===1&&(await progress(page)).lit===2&&await page.locator('#intName').innerText()==='Milo');
@@ -227,7 +228,7 @@ await scenario('a hello first; setup is for parents',async()=>{
   {const at=await page.evaluate(()=>({on:(document.querySelector('.step.on')||{}).dataset.step,title:document.querySelector('[data-step="name"] .qh').innerText,segs:document.querySelectorAll('#seg i').length,lit:document.querySelectorAll('#seg i.on').length,role:draft.role,parent:ORDER===ORDER_PARENT}));
   ok('a parent reaches the child\'s name, the first of five progress segments',at.on==='name'&&at.title==='Who\'s practicing?'&&at.segs===5&&at.lit===1&&at.role==='parent'&&at.parent,at);}
   await calm(page);await page.locator('#backBtn').click();
-  ok('Back from the name returns to Rachel\'s screen',await page.locator('[data-step="rachel"].on').count()===1);
+  ok('Back from the name returns to "A few minutes every day.", the screen after Rachel\'s',await page.locator('[data-step="daily"].on').count()===1);
   await who(page,'slp');
   ok('a clinician\'s setup still opens from its own address in a browser (/onboarding.html?slp=1), in a clinician\'s words',await page.evaluate(()=>draft.role==='slp'&&ORDER===ORDER_SLP&&document.body.dataset.setupScreen==='name'&&/Which child/.test(document.querySelector('[data-step="name"] .qh').textContent)&&document.getElementById('slpAppNote').hidden));
   ok('…and no clinician request is made just by answering',!requests.some(r=>new URL(r.url).pathname.startsWith('/api/slp/')),requests.map(r=>r.url));
@@ -399,7 +400,7 @@ await scenario('the ready screen, right before the reminder, the price or the mi
   await page.evaluate(()=>{window.__screens=[document.body.dataset.setupScreen];new MutationObserver(()=>__screens.push(document.body.dataset.setupScreen)).observe(document.body,{attributes:true,attributeFilter:['data-setup-screen']});});
   await page.locator('#obName').fill('Milo');await page.locator('#obAge [data-age="4"]').click();await next(page);await choose(page,'S');await next(page);
   const screens=await page.evaluate(()=>__screens);
-  ok('the clinician setup never shows ready, Rachel\'s screen, a screen that sells, or a family question, forward or back',screens.includes('name')&&!screens.some(k=>['ready','therapy','minutes','rachel','problem','reel','interests','games','remind'].includes(k))&&await page.locator('[data-step="slp"].on').count()===1&&await page.locator('[data-step="ready"]').isHidden(),screens);
+  ok('the clinician setup never shows ready, Rachel\'s screen, a screen that sells, or a family question, forward or back',screens.includes('name')&&!screens.some(k=>['ready','therapy','minutes','rachel','daily','problem','reel','interests','games','remind'].includes(k))&&await page.locator('[data-step="slp"].on').count()===1&&await page.locator('[data-step="ready"]').isHidden(),screens);
   ok('…and keeps its four progress groups',await page.locator('#seg i').count()===4);
   clean('clinician skips ready',errors);
  }finally{await context.close();}}
@@ -691,7 +692,7 @@ await scenario('a double tap never answers a one-tap question',async()=>{
   // waits on the page first, and that wait would eat into the 150 ms.)
   await page.waitForTimeout(600);
   const cont=await centre(page,'#nextBtn');
-  for(const [from,to] of [['welcome','problem'],['problem','reel'],['reel','rachel']]){
+  for(const [from,to] of [['welcome','problem'],['problem','reel'],['reel','rachel'],['rachel','daily']]){
    await page.mouse.click(cont.x,cont.y);await page.waitForTimeout(120);await page.mouse.click(cont.x,cont.y);
    ok('a double tap on the footer\'s button on "'+from+'" moves one screen, to "'+to+'"',await page.evaluate(()=>document.body.dataset.setupScreen)===to,await screen(page));
    await page.waitForTimeout(700);
@@ -941,7 +942,8 @@ await scenario('a solid colour behind the keyboard',async()=>{
 // Back (what the child loves is a question: any number of tiles, or none):
 // nothing stored but the draft's picks, no progress segment on a statement.
 // The games are the catalog's (no Coming soon game, no typed list).
-const PROBLEM={title:'Speech homework is hard at home.',line:'Flashcards turn into fights. Play turns into practice.'};
+// the problem since 23 Oct 2026: a before and an after, each its own few words
+const PROBLEM={title:'Speech homework is hard at home.',rows:[['Flashcards','turn into fights.'],["Sona's games",'turn into practice.']]};
 const GAMES=n=>({title:'Games '+n+' will love'});
 const INTERESTS=[['sports','Sports'],['music','Music'],['dinosaurs','Dinosaurs'],['animals','Animals'],['space','Space'],['building','Building'],['food','Food']];
 // what a sell screen shows, as a parent reads it
@@ -960,7 +962,7 @@ const playable=(page,group)=>page.evaluate(g=>Object.keys(Sona.GAME_ACTS).filter
 // the peek setup should show: the games the picks fit first, then the rest,
 // each part in Home's order, the first `cap` of them (the page's own pairs)
 const peekOf=(page,home,picks,cap)=>page.evaluate(([home,picks,cap])=>{const fit=k=>picks.some(i=>(INTEREST_GAMES[i]||[]).indexOf(k)>-1),f=home.filter(fit);return {fits:f.slice(0,cap),grid:f.concat(home.filter(k=>!fit(k))).slice(0,cap)};},[home,picks,cap]);
-const sellFit=key=>{const st=document.querySelector('[data-step="'+key+'"]').getBoundingClientRect(),b=document.getElementById('nextBtn').getBoundingClientRect(),f=document.querySelector('.obfoot').getBoundingClientRect(),h=document.querySelector('[data-step="'+key+'"] h1').getBoundingClientRect(),imgs=[...document.querySelectorAll('[data-step="'+key+'"] .sell-art img,[data-step="'+key+'"] .toss-game img,[data-step="'+key+'"] .rachel-photo img,[data-step="'+key+'"] .reel,[data-step="'+key+'"] .int-pick')].map(i=>i.getBoundingClientRect()),under=[...document.querySelectorAll('[data-step="'+key+'"] .reel-hear,[data-step="'+key+'"] #interestsSkip')].map(i=>i.getBoundingClientRect());return {cardTop:Math.round(st.top),cardBottom:Math.round(st.bottom),footTop:Math.round(f.top),btnTop:Math.round(b.top),btnBottom:Math.round(b.bottom),headTop:Math.round(h.top),imgs:imgs.length,imgBottom:Math.round(Math.max(0,...imgs.map(r=>r.bottom),...under.map(r=>r.bottom))),imgSmall:imgs.filter(r=>r.width<40||r.height<20).length,height:innerHeight,sideways:document.documentElement.scrollWidth-innerWidth,obSideways:(()=>{const o=document.querySelector('.ob');return o.scrollWidth-o.clientWidth;})()};};
+const sellFit=key=>{const st=document.querySelector('[data-step="'+key+'"]').getBoundingClientRect(),b=document.getElementById('nextBtn').getBoundingClientRect(),f=document.querySelector('.obfoot').getBoundingClientRect(),h=document.querySelector('[data-step="'+key+'"] h1').getBoundingClientRect(),imgs=[...document.querySelectorAll('[data-step="'+key+'"] .sell-art img,[data-step="'+key+'"] .ba-pic,[data-step="'+key+'"] .rachel-photo img,[data-step="'+key+'"] .reel-say,[data-step="'+key+'"] .week,[data-step="'+key+'"] .daily-quote,[data-step="'+key+'"] .int-pick')].map(i=>i.getBoundingClientRect()),under=[...document.querySelectorAll('[data-step="'+key+'"] .reel-hear,[data-step="'+key+'"] #interestsSkip')].map(i=>i.getBoundingClientRect());return {cardTop:Math.round(st.top),cardBottom:Math.round(st.bottom),footTop:Math.round(f.top),btnTop:Math.round(b.top),btnBottom:Math.round(b.bottom),headTop:Math.round(h.top),imgs:imgs.length,imgBottom:Math.round(Math.max(0,...imgs.map(r=>r.bottom),...under.map(r=>r.bottom))),imgSmall:imgs.filter(r=>r.width<40||r.height<20).length,height:innerHeight,sideways:document.documentElement.scrollWidth-innerWidth,obSideways:(()=>{const o=document.querySelector('.ob');return o.scrollWidth-o.clientWidth;})()};};
 // what this phone opens, read from the catalog's own gate (Sona.gameAccess)
 const opensHere=(page,group)=>page.evaluate(g=>Object.keys(Sona.GAME_ACTS).filter(k=>{const a=Sona.GAME_ACTS[k];return (!g||a.group===g)&&!a.comingSoon&&a.available!==false&&Sona.gameAccess(k).allowed;}),group);
 const kept=page=>page.evaluate(()=>{const o={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(/^sona\./.test(k))o[k]=localStorage.getItem(k);}o.__draft=JSON.stringify(draft);return JSON.stringify(o);});
@@ -969,22 +971,26 @@ await scenario('the screens that sell: their words, the games, and nothing kept'
  // the grid is every playable game of the age group
  const {context,page,errors,requests}=await fresh({viewport:{width:375,height:667},webSales:true});try{
   ok('(this phone can sell: the price follows setup)',await page.evaluate(()=>Sona.trialFirst()===true));
-  ok('the order: hello, the problem, the games playing, Rachel, name, what they love, their games, therapy, sounds, minutes, email, ready, microphone',await page.evaluate(()=>ORDER.join())===FIRST_WALK);
+  ok('the order: hello, the problem, the games playing, Rachel, a few minutes a day, name, what they love, their games, therapy, sounds, minutes, email, ready, microphone',await page.evaluate(()=>ORDER.join())===FIRST_WALK);
   await next(page);await page.locator('[data-step="problem"].on').waitFor();await settled(page);
   const before=await kept(page);
   let s=await sellShown(page,'problem');
   ok('problem: the heading is exactly "'+PROBLEM.title+'"',s.screen==='problem'&&s.title===PROBLEM.title,s);
-  ok('problem: the line is exactly "'+PROBLEM.line+'"',s.line===PROBLEM.line,s.line);
+  ok('problem: two rows, the flashcards then Sona\'s games, word for word',JSON.stringify(await page.evaluate(()=>[...document.querySelectorAll('[data-step="problem"] .ba-row')].map(r=>[r.querySelector('.ba-tag').textContent,r.querySelector('.ba-say').textContent])))===JSON.stringify(PROBLEM.rows));
   ok('problem: a statement, not a question: nothing to tap in it, Continue and Back in the footer, no progress segment, no Echo, the heading takes focus',s.asks.length===0&&s.cta==='Continue'&&s.enabled&&s.back&&s.seg&&!s.mascot&&s.focus&&!/\?/.test(s.words),s);
-  ok('problem: three word cards and one painted game (Fruit Slice\'s Home card), decoration only',await page.evaluate(()=>{const t=document.querySelector('.toss');return t.getAttribute('aria-hidden')==='true'&&[...t.querySelectorAll('.toss-card')].map(c=>c.textContent).join()==='rug,red,run'&&t.querySelector('.toss-game img').getAttribute('src')==='/assets/crafted/home-fruit.webp';}));
+  ok('problem: three word cards and one painted game (Fruit Slice\'s Home card), the pictures decoration only',await page.evaluate(()=>{const c=document.querySelector('.ba-cards'),g=document.querySelector('.ba-game');return c.getAttribute('aria-hidden')==='true'&&g.getAttribute('aria-hidden')==='true'&&[...c.querySelectorAll('.ba-card')].map(x=>x.textContent).join()==='rug,red,run'&&g.querySelector('img').getAttribute('src')==='/assets/crafted/home-fruit.webp';}));
   await next(page);await page.locator('[data-step="reel"].on').waitFor();await settled(page);
   s=await sellShown(page,'reel');
   ok('reel: the heading is exactly "They practice by playing."',s.title==='They practice by playing.',s.title);
   ok('reel: a statement too: the one thing to tap in it is "Hear Echo"; no progress segment, no Echo beside it, the heading takes focus',JSON.stringify(s.asks)==='["reelHear"]'&&s.cta==='Continue'&&s.back&&s.seg&&!s.mascot&&s.focus,s);
-  ok('reel: Echo asks "Say your rrrr sound!" over the games, only the sound\'s letters orange, and says the R is an example',await page.evaluate(()=>{const p=document.getElementById('reelSay');return p.textContent==='Say your rrrr sound!'&&p.querySelectorAll('b.snd').length===1&&p.querySelector('b.snd').textContent==='rrrr';})&&/Example: the R sound/.test(s.words),s.words);
+  ok('reel: Echo asks "Say your rrrr sound!" under the games, only the sound\'s letters orange, and the line under the heading says the game slows down and that the R is an example',await page.evaluate(()=>{const p=document.getElementById('reelSay');return p.textContent==='Say your rrrr sound!'&&p.querySelectorAll('b.snd').length===1&&p.querySelector('b.snd').textContent==='rrrr'&&document.querySelector('.reel-sub').textContent==='Say the sound, and the game slows down. (Example: the R sound)';}),s.words);
   await next(page);await page.locator('[data-step="rachel"].on').waitFor();await settled(page);
   s=await sellShown(page,'rachel');
   ok('rachel: a statement: nothing to tap, no progress segment, no Echo, the heading takes focus',s.asks.length===0&&s.cta==='Continue'&&s.back&&s.seg&&!s.mascot&&s.focus,s);
+  await next(page);await page.locator('[data-step="daily"].on').waitFor();await settled(page);
+  s=await sellShown(page,'daily');
+  ok('daily: "A few minutes every day.", a statement: nothing to tap, no progress segment, no Echo, the heading takes focus',s.title==='A few minutes every day.'&&s.asks.length===0&&s.cta==='Continue'&&s.back&&s.seg&&!s.mascot&&s.focus,s);
+  ok('daily: the line given as Rachel\'s, word for word, signed "Rachel, MS, CF-SLP", the week decoration only',await page.evaluate(()=>{const q=document.getElementById('dailyQuote');return q.querySelector('p').textContent==='\u201cShort practice every day helps more than one long session a week.\u201d'&&q.querySelector('footer').textContent.trim()==='Rachel, MS, CF-SLP'&&document.querySelector('.week').getAttribute('aria-hidden')==='true'&&document.querySelectorAll('.week li').length===7;}));
   ok('nothing is stored by the screens before the name (no answer, no profile, no household key, the draft unchanged)',await kept(page)===before);
   await setupWalk(page,'interests',{name:'Milo',age:'6'});await settled(page);
   s=await sellShown(page,'interests');
@@ -1068,7 +1074,7 @@ await scenario('the screens that sell fit every screen',async()=>{
  // other age groups are then painted on the same screen, as Back would
  for(const device of [{viewport:{width:320,height:568}},{viewport:{width:375,height:667}},{viewport:{width:390,height:844},safeArea:{top:47,bottom:34}},{viewport:{width:768,height:1024}},{viewport:{width:1024,height:768}}]){
   const {context,page,errors}=await fresh(Object.assign({webSales:true},device)),size=device.viewport.width+'×'+device.viewport.height;try{
-   for(const key of ['problem','reel','rachel','interests','games']){
+   for(const key of ['problem','reel','rachel','daily','interests','games']){
     await setupWalk(page,key,{name:'Maximiliana',age:''});await page.locator('[data-step="'+key+'"].on').waitFor();await settled(page);
     if(key==='games')ok('(fit at '+size+': a phone that sells, so the grid is the longest it gets: nine games of '+(await playable(page,'')).length+', and two "more" lines)',await page.evaluate(()=>Sona.trialFirst()===true&&document.querySelectorAll('#gamesGrid li').length)===9&&(await mores(page)).length===2);
     for(const age of key==='games'?['','6','4']:['']){
@@ -1084,7 +1090,7 @@ await scenario('the screens that sell fit every screen',async()=>{
  }
 });
 await scenario('the screens that sell: only for a family\'s first setup',async()=>{
- const NONE=['problem','reel','rachel','interests','games','remind'];
+ const NONE=['problem','reel','rachel','daily','interests','games','remind'];
  {const {context,page,errors}=await fresh();try{
   await who(page,'slp');
   ok('the browser clinician\'s own setup (?slp=1) has none of them',await page.evaluate(k=>ORDER===ORDER_SLP&&k.every(x=>ORDER.indexOf(x)<0),NONE));

@@ -1,14 +1,16 @@
 // SETUPREEL1: setup's game reel, the clips a parent sees on "They practice by
 // playing." (Travis, 22 Oct 2026: "Do like a little clip of a few games so
-// that parents can see it"). tools/setupreel/record.mjs films the real games
-// and writes public/assets/setup/reel/<key>.mp4 and <key>.webp; this holds
-// what reaches the phone, without a browser (the test Chromium cannot play
-// H.264 anyway):
-//   - every clip and its poster is there, the six setup cannot do without
-//     among them (Fruit Slice, Piano Tiles, Hoops, Soccer Goal, Bubble Pop,
-//     Feed Echo), and every one is a game a child can open: never a Coming
-//     soon game;
-//   - a clip is H.264 (avc1, High profile) at 540 x 720, 3 to 4 seconds,
+// that parents can see it"; 23 Oct 2026: the whole screen, and only "fruit
+// slice, piano tiles, and Flappy Glide ... a 3-second of those three games",
+// each showing the sound said and the game slowing down).
+// tools/setupreel/record.mjs films the real games and writes
+// public/assets/setup/reel/<key>.mp4 and <key>.webp; this holds what reaches
+// the phone, without a browser (the test Chromium cannot play H.264 anyway):
+//   - the three clips and their posters are there, and nothing else, and
+//     every one is a game a child can open: never a Coming soon game; setup
+//     plays exactly these three, in this order (REEL_ORDER);
+//   - a clip is H.264 (avc1, High profile) at 540 x 1080 (1:2, laid full
+//     screen by setup), 3 to 4 seconds,
 //     with one track and it is video: no audio track, so a clip can never
 //     make a sound or touch the phone's audio session;
 //   - its colours are tagged BT.709 (a colr box: primaries, transfer and
@@ -17,8 +19,8 @@
 //     and its greens shift against the poster it follows;
 //   - its moov comes before its mdat (faststart), so it starts playing
 //     before it has finished downloading;
-//   - each is at most 300 KB, and its poster a 540 x 720 WebP of at most
-//     60 KB (eleven clips are a couple of megabytes on a phone's data);
+//   - each is at most 400 KB, and its poster a 540 x 1080 WebP of at most
+//     80 KB (the three are about a megabyte on a phone's data);
 //   - the folder holds nothing else (a dotfile such as Finder's .DS_Store
 //     aside: git ignores it), and the recorder films exactly this list.
 // Node only: it reads the files' own boxes and chunks.
@@ -31,10 +33,8 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const DIR = process.env.SETUPREEL_DIR || path.join(ROOT, "public/assets/setup/reel");
 // the recorder's list (KEYS in tools/setupreel/record.mjs), in its order. The
 // order the reel plays them in is setup's own (onboarding.html), not this.
-const REEL = ["slice", "tiles", "hoops", "soccer", "dino", "stack", "run", "glide", "rise", "feed", "bubbles"];
-// the six the spec says setup cannot do without (22 Oct 2026)
-const REQUIRED = ["slice", "tiles", "hoops", "soccer", "bubbles", "feed"];
-const BUDGET = { mp4: 300000, webp: 60000 };
+const REEL = ["slice", "tiles", "glide"];
+const BUDGET = { mp4: 400000, webp: 80000 };
 
 let fails = 0;
 const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL ") + n + (p ? "" : "  → " + (extra || ""))); };
@@ -117,11 +117,13 @@ for (const k of REEL) {
   const line = (acts.match(new RegExp("^\\s*" + k + ":\\s*\\{[^\\n]*", "m")) || [""])[0];
   ok(k + ": a game in the catalog, open on Home (never Coming soon)", !!line && !/comingSoon:\s*true/.test(line), line || "not in GAME_ACTS");
 }
-ok("the six setup needs are on the list", REQUIRED.every((k) => REEL.includes(k)));
+const ob = readFileSync(path.join(ROOT, "public/onboarding.html"), "utf8");
+const order = ((ob.match(/REEL_ORDER\s*=\s*\[([^\]]*)\]/) || [, ""])[1].match(/"([a-z]+)"/g) || []).map((s) => s.slice(1, -1));
+ok("setup plays exactly these three, in this order (REEL_ORDER in onboarding.html)", JSON.stringify(order) === JSON.stringify(REEL), order.join(","));
 const rec = readFileSync(path.join(ROOT, "tools/setupreel/record.mjs"), "utf8");
 const keys = (rec.match(/export const KEYS = \[([^\]]*)\]/) || [, ""])[1].match(/"([a-z]+)"/g) || [];
 ok("the recorder films exactly this list, in this order", JSON.stringify(keys.map((s) => s.slice(1, -1))) === JSON.stringify(REEL), keys.join(","));
-ok("the recorder encodes to the same budget", /BUDGET = \{ mp4: 300000, webp: 60000 \}/.test(rec));
+ok("the recorder encodes to the same budget", /BUDGET = \{ mp4: 400000, webp: 80000 \}/.test(rec));
 ok("the recorder is a manual tool, not part of the battery", !/setupreel\/record/.test(readFileSync(path.join(ROOT, "tests/run-all.mjs"), "utf8")));
 
 // ── the files ──
@@ -135,16 +137,16 @@ for (const k of REEL) {
   if (!existsSync(m) || !existsSync(w)) { ok(k + ": clip and poster exist", false); continue; }
   const size = statSync(m).size, ps = statSync(w).size, v = mp4(m), p = webp(w);
   total += size + ps;
-  ok(k + ": the clip is at most 300 KB", size <= BUDGET.mp4, size + " bytes");
+  ok(k + ": the clip is at most 400 KB", size <= BUDGET.mp4, size + " bytes");
   ok(k + ": its boxes read cleanly, ftyp first", !v.bad && v.types[0] === "ftyp", v.types.join(" "));
   ok(k + ": moov before mdat (it plays before it has all arrived)", v.types.includes("moov") && v.types.includes("mdat") && v.types.indexOf("moov") < v.types.indexOf("mdat"), v.types.join(" "));
   ok(k + ": one track, and it is video", v.traks === 1 && JSON.stringify(v.handlers) === '["vide"]', JSON.stringify({ traks: v.traks, handlers: v.handlers }));
   ok(k + ": H.264 (avc1), High profile", JSON.stringify(v.entries) === '["avc1"]' && v.profile === 100, JSON.stringify({ entries: v.entries, profile: v.profile }));
   ok(k + ": no audio track (no mp4a), so it can never make a sound", !v.audio);
-  ok(k + ": 540 x 720", v.w === 540 && v.h === 720, v.w + "x" + v.h);
+  ok(k + ": 540 x 1080", v.w === 540 && v.h === 1080, v.w + "x" + v.h);
   ok(k + ": 3 to 4 seconds", v.seconds >= 3 && v.seconds <= 4.05, v.seconds);
   ok(k + ": tagged BT.709 (colr nclx 1/1/1), limited range", !!v.colr && v.colr.kind === "nclx" && v.colr.primaries === 1 && v.colr.transfer === 1 && v.colr.matrix === 1 && v.colr.full === false, JSON.stringify(v.colr || null));
-  ok(k + ": the poster is a 540 x 720 WebP of at most 60 KB", p.ok && p.w === 540 && p.h === 720 && ps <= BUDGET.webp, JSON.stringify({ chunk: p.chunk, w: p.w, h: p.h, bytes: ps }));
+  ok(k + ": the poster is a 540 x 1080 WebP of at most 80 KB", p.ok && p.w === 540 && p.h === 1080 && ps <= BUDGET.webp, JSON.stringify({ chunk: p.chunk, w: p.w, h: p.h, bytes: ps }));
 }
 console.log("reel: " + REEL.length + " clips, " + (total / 1e6).toFixed(2) + " MB with posters");
 

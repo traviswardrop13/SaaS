@@ -164,6 +164,7 @@ changing one. What follows from the rule:
   families only: a family already set up keeps everything. A parent's first
   setup is the hello → **"Speech homework is hard at home."** → **"They
   practice by playing."** (the games playing) → **Rachel on her own** →
+  **"A few minutes every day."** (since 23 Oct 2026) →
   name and age (**"Who's practicing?"**) → **"What does <Name> love?"** →
   **"Games <Name> will love"** → **"Is <Name> in speech therapy?"** →
   sounds (**"Which sounds?"**) → **"How long each day?"** → **"Get the weekly
@@ -211,44 +212,43 @@ changing one. What follows from the rule:
     takes a tap at once. `setupsteadytest` watches the problem and ready
     screens for 2.3 s and holds Reduce Motion's first frame to where the
     motion-on run ended.
-  - **The problem**: "Flashcards turn into fights. Play turns into
-    practice."; three flashcards (rug, red, run), one tossed away once, and
-    Fruit Slice's painted card slides in. A statement, nothing stored.
-  - **The reel** (Travis: "Do like a little clip of a few games so that
-    parents can see it, and even have like the voice say your R sound"):
-    real play, filmed frame by frame by `tools/setupreel/record.mjs` into
-    `public/assets/setup/reel/<key>.mp4` and a poster `<key>.webp` (no audio
-    track; `setupreeltest` holds the files), one after another in a 3:4
-    frame, two muted inline videos taking turns, in a fixed order (Fruit
-    Slice, Hoops, Piano Tiles, Bubble Pop, Soccer Goal, Dino Dig, Feed Echo,
-    then the rest), only the games this phone may show (the games screen's
-    rule, both age groups: no age is asked yet). A phone that cannot play
-    them or refuses to start one (Low Power Mode, the tests' Chromium) gets
-    the posters as a slow slideshow, and a game with no clip or poster its
-    painted Home card: never a dead frame (a clip that will not load turns
-    the rest of that visit's reel into the posters). Off the screen nothing
-    plays; under Reduce Motion it is the first game's poster, still, with no
-    clip asked for. Over it Echo asks "Say your rrrr sound!" (only the
-    sound's letters orange; a screen reader reads it, the pictures are
-    decoration), and "Example: the R sound" says the R is an example.
-    **How the clips are made:** `tools/setupreel/record.mjs`, run by hand and
-    never in the battery (its header says how; it needs ffmpeg and is CPU
-    heavy, so run it alone), opens each real game page on
-    `tools/appstore/capture.mjs`'s fake phone (an onboarded child on R, no
-    name on any game page, and every frame checked for one), plays it with
-    the page's own controls and the fake microphone (a power or a ball is
-    earned only the way a child earns it), and films it one 1/30 s frame at
-    a time on Playwright's virtual clock, cropped to the game at 3:4 (3 to 4
-    s, 540×720, at most 300 KB, a poster at most 60 KB). Look at every
-    contact sheet it writes before committing a clip. **A new game on the
-    reel** is a scene in `record.mjs`, its key in that tool's `KEYS` and in
-    `setupreeltest`'s list, and its place in `REEL_ORDER` in
-    `onboarding.html` (a playable game missing from `REEL_ORDER` still shows,
-    after the listed ones; one with no clip yet shows its poster, else its
-    Home card). **The R example:** every clip is filmed on R and the pill and
-    "Hear Echo" say R, before any sound is picked, so a parent of a 2–4 year
-    old sees and hears R, a sound not asked of that age (`SOUND_NORM`):
-    Rachel's to rule on, with which moment each clip shows (Travis's).
+  - **The problem** (redone 23 Oct 2026, Travis: "the flashcard solved
+    with games ... slide isn't very good. It's either too fast or just
+    confusing. Like the picture of a game shows up too quickly"): a before
+    and an after, one under the other, each a picture and its own words:
+    three flashcards (rug, red, run) beside "Flashcards / turn into
+    fights.", then, a clear beat later (1.5 s), Fruit Slice's painted card
+    beside "Sona's games / turn into practice.", ringed teal. Each fades up
+    in place, once; nothing is tossed or flies. A statement, nothing stored.
+  - **The reel** (Travis, 22 Oct 2026: "Do like a little clip of a few
+    games so that parents can see it, and even have like the voice say your
+    R sound"; redone 23 Oct 2026: "I want it to take up the whole screen.
+    And I want it to rotate through fruit slice, piano tiles, and Flappy
+    Glide, and make it clear that in the demo they're saying ... the letter
+    R ... And then the game slows down ... It's too busy"): three clips of
+    real play (`REEL_ORDER`: Fruit Slice, Piano Tiles, Flappy Glide, round
+    and round), 4 s each, filling the screen behind the heading
+    and Continue (a layer outside `.ob`, `#reelBox`, as the hello's is: a
+    step slides in with a transform, which boxes a fixed layer into it).
+    In each clip Echo asks for the R sound, the child says it, and the game
+    slows down (Super Slice, slow keys, the slow help). Under the heading,
+    "Say the sound, and the game slows down. (Example: the R sound)"; at the
+    foot one caption that follows the clip (`REEL_TIMES`, each clip's own
+    seconds: "Say your rrrr sound!" with Echo talking, then the child's
+    "“rrrr!”", then "The game slows down!", ringed teal; only the sound's
+    letters orange), and "Hear Echo". Filmed frame by frame by
+    `tools/setupreel/record.mjs` into `public/assets/setup/reel/<key>.mp4`
+    and a poster `<key>.webp` (see SETUPREEL1 below; `setupreeltest` holds
+    the files), two muted inline videos taking turns. A phone that cannot
+    play them or refuses to start one (Low Power Mode, the tests' Chromium)
+    gets the posters, changing every 4 s, with the caption on a clock;
+    a game with no poster its painted Home card. Off the screen nothing
+    plays; under Reduce Motion it is the first game's poster, still, with
+    Echo's ask. **The R example:** every clip is filmed on R and the caption
+    and "Hear Echo" say R, before any sound is picked, so a parent of a
+    2–4 year old sees and hears R, a sound not asked of that age
+    (`SOUND_NORM`): Rachel's to rule on, with which moment each clip shows
+    (Travis's).
   - **"Hear Echo" is the one sound setup makes** (setup was silent by
     Travis's 24 Sep rule; he reversed it for this one tap). Echo's line "Say
     your sound with me!" (`SayIt.line`, the phone's voice cache), 200 ms of
@@ -256,12 +256,28 @@ changing one. What follows from the rule:
     into ONE recording and started by ONE `Sona.mediaPCM` call inside the
     grown-up's tap (the app and the website alike). The line missing: her take
     alone. Sona's sound off (volume 0): nothing. Never the robot voice, never
-    "Go!", no microphone; leaving the screen stops it. **For Rachel:** a
+    "Go!", no microphone; leaving the screen stops it. **Setup's buttons
+    make no sound** (Travis, 23 Oct 2026: "turn the sound off when they
+    press the buttons in the onboarding"): no tap chime on any button, chip,
+    tile or answer, the build overlay's ticks included. **For Rachel:** a
     parent of a 2–4 year old hears R too (an example, before any sound is
     picked, though R is a later sound); how a sound is cued is hers.
   - **Rachel on her own screen** (Travis: "a bigger slide of Rachel that's
     just like all by itself of like her credentials"; she sat on the ready
     screen from 5 Oct): see her credential section above.
+  - **"A few minutes every day."** (Travis, 23 Oct 2026: "add another
+    slide ... a speech therapist basically saying it's more important to
+    practice three or five, 10 minutes a day ... than a 1-hour"), right
+    after Rachel's screen: a week of seven teal dots that fill once, left
+    to right, and a quote card, "“Short practice every day helps more than
+    one long session a week.”", signed with her small photo and "Rachel,
+    MS, CF-SLP". **It is Rachel's to approve before it ships, word for
+    word:** a search on 23 Oct 2026 found the advice everywhere in speech
+    therapists' pages for families, but no study that makes the claim
+    outright (a larger 2023 trial of older children with apraxia found
+    intensive practice generalised better), so no study or figure is
+    quoted, and the line is given as hers. If she will not sign it, it
+    comes off or is reworded (the screen is one line in `SELL_FIRST`).
   - **"What does <Name> love?"**: seven tiles, any number (Sports, Music,
     Dinosaurs, Animals, Space, Building, Food), each a piece of the games'
     own painted art; Continue or Skip, nothing picked for them. Kept on the
@@ -2587,39 +2603,43 @@ Real controls and game objects stay HTML and canvas; a picture is never the
 interface. New art in this style comes from an image model (Travis generates
 it in ChatGPT); the twelve-page books are still the simpler drawings.
 
-**Setup's game reel is real play, filmed (SETUPREEL1, 22 Oct 2026)** (Travis:
-"Do like a little clip of a few games so that parents can see it"). The clips
-on setup's "They practice by playing." screen are
+**Setup's game reel is real play, filmed (SETUPREEL1, 22 Oct 2026; three
+clips of the sound power since 23 Oct 2026)** (Travis: "Do like a little clip
+of a few games so that parents can see it"; then "rotate through fruit slice,
+piano tiles, and Flappy Glide ... they're saying ... the letter R ... And then
+the game slows down ... a 3-second of those three games"). The clips on
+setup's "They practice by playing." screen are
 `public/assets/setup/reel/<key>.mp4`, each with a poster `<key>.webp` (its
-first frame), one per playable game: slice, tiles, hoops, soccer, dino,
-stack, run, glide, rise, feed, bubbles. Nothing in them is drawn or edited:
+first frame): slice, tiles, glide. Nothing in them is drawn or edited:
 `tools/setupreel/record.mjs` (run by hand, never in the battery; its header
-says how) opens each game page as it is on `tools/appstore/capture.mjs`'s fake
-phone, plays it with the page's own controls and the fake microphone (a word
-or sound counts only the way a child's does, by the page's own check), and
-films one 1/30 s frame at a time on Playwright's virtual clock, cropped to the
-game at 3:4. A clip is 3 to 4 seconds, 540×720 H.264 High, no audio track (it
-can never make a sound), moov first, tagged BT.709, at most 300 KB, its
-poster at most 60 KB. The tool stops on a clip or poster over budget, a crop
-that leaves the screen, or the child's name in the page's text in any frame
-(a word drawn on a canvas it cannot see: check the sheets). `setupreeltest`
-holds the files, and that every game on the list is a playable game, never a
-Coming soon one. **The reel is its own fixed demo list** (`REEL_ORDER`, the
-eleven with a clip), never every open game: the 18 games opened on 22 Oct
-2026 have no clip, so setup's reel leaves them out (it used to append any
-playable game without a clip, as its Home card). **A new game on the reel** is a scene in `record.mjs`, its
-key in `KEYS` and in the test's `REEL`, and setup's own list
-(`onboarding.html`); run the tool alone (it is CPU heavy, port 9303) and look
-at every contact sheet in `tools/setupreel/out/sheets/` before committing a
-clip. **Travis's calls:** which moment each clip shows (Fruit Slice in Super
-Slice, a Hoops basket, Soccer Goal ending on GOAL!, Dino Dig ending as a bone
-lands, Feed Echo feeding two pictures, Piano Tiles a song's opening, a tile
-or two at a time), the crops, the 3–4 s, Rise Up's calm clip (one key drops
-it), and the strict budgets. **Rachel's:** every clip is on R (setup says
-"Example: the R sound"), the little kids' games (Feed Echo, Bubble Pop) too,
-so a parent of a 2–4 year old sees R played, a sound not asked of that age;
-and the clips show the rewards a child earns by saying the sound (Super
-Slice, the ball, the brush, the bubbles).
+says how) opens each game page as it is on `tools/appstore/capture.mjs`'s
+fake phone, plays it with the page's own controls and the fake microphone,
+and films one 1/30 s frame at a time on Playwright's virtual clock. **Each
+clip shows the sound power, earned the way a child earns it:** about a
+second of play, Echo's own mid-round ask (started by the page's own ask
+clock, no tap), the fake mic saying "rrrr", the page's own check saying yes,
+and then the game slowed (Super Slice, slow keys, the slow help) with the
+finger still playing; every heart kept. The game slows about 1.3 s after the
+sound is heard (the page's listening check and the mic's settle), and setup's
+caption follows both moments (`REEL_TIMES` in `onboarding.html`, each
+clip's own seconds: `say` 1.0, `slow` about 2.3); **a clip filmed again
+means `REEL_TIMES` read again from the tool's report.** A clip is 4.0 s,
+540×1080 (1:2, the whole game under the status bar, so setup can fill the
+screen with it), H.264 High, no audio track (it can never make a sound), moov
+first, tagged BT.709, at most 400 KB, its poster at most 80 KB. The tool stops
+on a clip or poster over budget, a crop that leaves the screen, or the
+child's name in the page's text in any frame (a word drawn on a canvas it
+cannot see: check the sheets). `setupreeltest` holds the files, that `KEYS`
+is its list and `REEL_ORDER` the same three, and that every game on it is
+playable, never a Coming soon one. **A new game on the reel** is a scene in
+`record.mjs`, its key in `KEYS` and in the test's `REEL`, setup's
+`REEL_ORDER` and its `REEL_TIMES`; run the tool alone (it is CPU heavy, port
+9303) and look at every contact sheet in `tools/setupreel/out/sheets/` before
+committing a clip. **Travis's calls:** the three games, the moments, the 4 s,
+the crops. **Rachel's:** every clip is on R (setup says "Example: the R
+sound"), so a parent of a 2–4 year old sees R asked and earned, a sound not
+asked of that age, and the clips show the reward a child earns by saying the
+sound.
 
 **A book page fills the screen, and the child says one word to turn it** (the
 family's redesign brief, 28 Sep 2026). The picture fills the screen and the

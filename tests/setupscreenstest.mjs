@@ -100,6 +100,11 @@ function clean(name,errors){ok(name+': no runtime errors',errors.length===0,erro
 const isTeal=s=>[...String(s).matchAll(/rgba?\((\d+),\s*(\d+),\s*(\d+)/g)].map(m=>m.slice(1,4).map(Number)).some(([r,g,b])=>{const mx=Math.max(r,g,b),mn=Math.min(r,g,b),c=mx-mn;if(c<=80)return false;const h=mx===r?((g-b)/c)%6:mx===g?(b-r)/c+2:(r-g)/c+4;const d=(h*60+360)%360;return d>=172&&d<=195;});
 
 // ── THE HELLO ──
+// SETUP'S BUTTONS MAKE NO SOUND (Travis, 23 Oct 2026: "turn the sound off
+// when they press the buttons in the onboarding"): no tap chime anywhere in
+// setup's script; "Hear Echo" (Sona.mediaPCM on a grown-up's tap) is the one sound
+{const src=readFileSync(root+'/onboarding.html','utf8').replace(/<!--[\s\S]*?-->/g,'').replace(/\/\/[^\n]*/g,'');
+ ok('setup\'s buttons make no sound: no Sona.sfx call anywhere in setup\'s script',!/sfx\s*\.|sfx\s*\(/.test(src),(src.match(/[^\n]*sfx[^\n]*/)||[''])[0].slice(0,160));}
 await scenario('the hello: the orchard without Echo painted in, and one live Echo',async()=>{
  {const {context,page,errors}=await fresh({motion:true});try{
   const h=await page.evaluate(()=>{const hello=document.querySelector('.hello'),bg=getComputedStyle(document.querySelector('.hello-bg')).backgroundImage,styles=[...document.querySelectorAll('*')].map(e=>getComputedStyle(e).backgroundImage).join(' ');return {shown:getComputedStyle(hello).display!=='none',bg,welcomeOrchard:/welcome-orchard/.test(styles+document.documentElement.outerHTML),echoes:document.querySelectorAll('.hello-echo').length,poses:[...document.querySelectorAll('.hello-echo img')].map(i=>i.getAttribute('src')),hidden:hello.getAttribute('aria-hidden'),taps:getComputedStyle(hello).pointerEvents,mascot:getComputedStyle(document.querySelector('.ob .mascot')).display,label:document.querySelector('.welcome-brand').getAttribute('aria-label'),cta:document.getElementById('nextBtn').textContent.trim(),body:getComputedStyle(document.body).backgroundColor};});
@@ -129,7 +134,7 @@ await scenario('the hello: the orchard without Echo painted in, and one live Ech
   await page.evaluate(()=>document.documentElement.classList.remove('ob-leaving'));
   // nothing of the hello on any other screen
   const seen=[];
-  for(const to of ['problem','reel','rachel','name','interests','games','therapy','sounds','minutes','updates','ready','mic']){await setupWalk(page,to);seen.push([to,await page.evaluate(()=>getComputedStyle(document.querySelector('.hello')).display)]);}
+  for(const to of ['problem','reel','rachel','daily','name','interests','games','therapy','sounds','minutes','updates','ready','mic']){await setupWalk(page,to);seen.push([to,await page.evaluate(()=>getComputedStyle(document.querySelector('.hello')).display)]);}
   ok('the hello layer is drawn on no other screen',seen.every(x=>x[1]==='none'),seen);
   clean('hello, motion on',errors);
  }finally{await context.close();}}
@@ -165,18 +170,18 @@ await scenario('the reel: real clips where the phone plays them, posters where i
   let s=await reelState(page);
   ok('a browser that cannot play the clips gets the posters: no video drawn, the first game\'s poster on screen',s.stills&&!s.clipShown&&JSON.stringify(s.on)==='["IMG:/assets/setup/reel/slice.webp"]'&&!s.broken,s);
   ok('…and asks for no clip at all',!requests.some(r=>/\.mp4/.test(r.url)),requests.filter(r=>/reel/.test(r.url)).map(r=>r.url));
-  await page.waitForFunction(()=>{const i=document.querySelector('#reelFrame .reel-still.on');return i&&/home-hoops/.test(i.getAttribute('src')||'');},null,{timeout:5000}).catch(()=>{});
+  await page.waitForFunction(()=>{const i=document.querySelector('#reelFrame .reel-still.on');return i&&/home-piano/.test(i.getAttribute('src')||'');},null,{timeout:5500}).catch(()=>{});
   const outgoing=()=>page.evaluate(()=>{const i=document.querySelector('#reelFrame .reel-still:not(.on)');return i?i.getAttribute('src'):null;});
   const mid=await outgoing();
   s=await reelState(page);
-  ok('…changing every few seconds to the next game in the demo order (Hoops), whose missing poster is its painted Home card: never a broken picture',JSON.stringify(s.on)==='["IMG:/assets/crafted/home-hoops.webp:card"]'&&!s.broken,s);
+  ok('…changing every few seconds to the next game in the demo order (Piano Tiles), whose missing poster is its painted Home card: never a broken picture',JSON.stringify(s.on)==='["IMG:/assets/crafted/home-piano.webp:card"]'&&!s.broken,s);
   // the 22 Oct 2026 review: the outgoing still was loaded with the game
   // after next while it was still fading out (a third game flashed)
   ok('…the one fading out keeps its own game (Fruit Slice) while it fades',mid==='/assets/setup/reel/slice.webp',mid);
   await page.waitForTimeout(900);
-  ok('…and only once the fade is over takes the game after next (Piano Tiles: its poster, missing here, then its Home card)',/^\/assets\/(setup\/reel\/tiles|crafted\/home-piano)\.webp$/.test((await outgoing())||''),await outgoing());
+  ok('…and only once the fade is over takes the game after next (Flappy Glide: its poster, missing here, then its Home card)',/^\/assets\/(setup\/reel\/glide|crafted\/home-glide)\.webp$/.test((await outgoing())||''),await outgoing());
   await next(page);await page.locator('[data-step="rachel"].on').waitFor();const at=Date.now();await page.waitForTimeout(3600);
-  ok('off the reel nothing changes: the slideshow stops with the screen',JSON.stringify((await reelState(page)).on)==='["IMG:/assets/crafted/home-hoops.webp:card"]',Date.now()-at);
+  ok('off the reel nothing changes: the slideshow stops with the screen',JSON.stringify((await reelState(page)).on)==='["IMG:/assets/crafted/home-piano.webp:card"]',Date.now()-at);
   clean('reel stills',errors);
  }finally{await context.close();}}
  // the real posters (tools/setupreel's files): a browser that plays no H.264 sees each game's own still, not its Home card
@@ -184,7 +189,7 @@ await scenario('the reel: real clips where the phone plays them, posters where i
   await toReel(page);
   await page.waitForFunction(()=>{const i=document.querySelector('#reelFrame .reel-still.on');return i&&i.complete;},null,{timeout:4000}).catch(()=>{});
   const s=await reelState(page),w=await page.evaluate(()=>{const i=document.querySelector('#reelFrame .reel-still.on');return i?[i.naturalWidth,i.naturalHeight]:null;});
-  ok('the reel\'s own posters: Fruit Slice\'s still from the reel (540 x 720), not a Home card, and no clip asked for',s.stills&&JSON.stringify(s.on)==='["IMG:/assets/setup/reel/slice.webp"]'&&!s.broken&&w&&w[0]===540&&w[1]===720&&!requests.some(r=>/\.mp4/.test(r.url)),{s,w});
+  ok('the reel\'s own posters: Fruit Slice\'s still from the reel (540 x 1080, the phone\'s whole height since 23 Oct 2026), not a Home card, and no clip asked for',s.stills&&JSON.stringify(s.on)==='["IMG:/assets/setup/reel/slice.webp"]'&&!s.broken&&w&&w[0]===540&&w[1]===1080&&!requests.some(r=>/\.mp4/.test(r.url)),{s,w});
   clean('reel, the real posters',errors);
  }finally{await context.close();}}
  // a phone that plays H.264: two videos take turns, one playing while the next loads
@@ -192,17 +197,17 @@ await scenario('the reel: real clips where the phone plays them, posters where i
  {const {context,page,errors}=await fresh({webSales:true,motion:true,init:PLAYS,routes:[['**/assets/setup/reel/*.mp4',()=>{}]]});try{   // (the clips' bytes never arrive: a phone mid-download)
   await toReel(page);await page.waitForTimeout(300);
   let s=await reelState(page);
-  ok('a phone that plays H.264: the first clip (Fruit Slice) playing, the next (Hoops) loading behind it, muted, inline, no AirPlay',!s.stills&&s.on.length===1&&/^VIDEO:\/assets\/setup\/reel\/slice\.mp4$/.test(s.on[0])&&/hoops\.mp4$/.test(s.clips[1])&&await page.evaluate(()=>[...document.querySelectorAll('.reel-clip')].every(v=>v.muted&&v.hasAttribute('playsinline')&&v.hasAttribute('disableremoteplayback')&&v.getAttribute('x-webkit-airplay')==='deny'&&!v.hasAttribute('controls')&&!v.loop)&&__played.slice(-1)[0]==='/assets/setup/reel/slice.mp4'),s);
+  ok('a phone that plays H.264: the first clip (Fruit Slice) playing, the next (Piano Tiles) loading behind it, muted, inline, no AirPlay',!s.stills&&s.on.length===1&&/^VIDEO:\/assets\/setup\/reel\/slice\.mp4$/.test(s.on[0])&&/tiles\.mp4$/.test(s.clips[1])&&await page.evaluate(()=>[...document.querySelectorAll('.reel-clip')].every(v=>v.muted&&v.hasAttribute('playsinline')&&v.hasAttribute('disableremoteplayback')&&v.getAttribute('x-webkit-airplay')==='deny'&&!v.hasAttribute('controls')&&!v.loop)&&__played.slice(-1)[0]==='/assets/setup/reel/slice.mp4'),s);
   ok('…its poster shown until its frames come',await page.evaluate(()=>document.querySelector('.reel-clip.on').getAttribute('poster')==='/assets/setup/reel/slice.webp'));
   await page.evaluate(()=>document.querySelector('.reel-clip.on').dispatchEvent(new Event('ended')));
   s=await reelState(page);
-  ok('as a clip ends the next one fades in and plays, and the first keeps its own clip while it fades out (no third game mid-fade)',JSON.stringify(s.on)==='["VIDEO:/assets/setup/reel/hoops.mp4"]'&&/slice\.mp4$/.test(s.clips[0])&&await page.evaluate(()=>__played.slice(-1)[0]==='/assets/setup/reel/hoops.mp4'),s);
+  ok('as a clip ends the next one fades in and plays, and the first keeps its own clip while it fades out (no third game mid-fade)',JSON.stringify(s.on)==='["VIDEO:/assets/setup/reel/tiles.mp4"]'&&/slice\.mp4$/.test(s.clips[0])&&await page.evaluate(()=>__played.slice(-1)[0]==='/assets/setup/reel/tiles.mp4'),s);
   await page.waitForTimeout(900);s=await reelState(page);
-  ok('…then, the fade over, the first loads the one after (Piano Tiles)',JSON.stringify(s.on)==='["VIDEO:/assets/setup/reel/hoops.mp4"]'&&/tiles\.mp4$/.test(s.clips[0]),s);
+  ok('…then, the fade over, the first loads the one after (Flappy Glide)',JSON.stringify(s.on)==='["VIDEO:/assets/setup/reel/tiles.mp4"]'&&/glide\.mp4$/.test(s.clips[0]),s);
   await next(page);await page.locator('[data-step="rachel"].on').waitFor();
   ok('leaving the reel pauses it',await page.evaluate(()=>(window.__paused||[]).length>=2));
   await page.evaluate(()=>{document.querySelector('.reel-clip.on').dispatchEvent(new Event('ended'));});
-  ok('…and a clip that ends off the screen starts nothing',JSON.stringify((await reelState(page)).on)==='["VIDEO:/assets/setup/reel/hoops.mp4"]');
+  ok('…and a clip that ends off the screen starts nothing',JSON.stringify((await reelState(page)).on)==='["VIDEO:/assets/setup/reel/tiles.mp4"]');
   clean('reel clips',errors);
  }finally{await context.close();}}
  // a phone that refuses to start a clip (Low Power Mode), and a clip that is not there
@@ -216,11 +221,13 @@ await scenario('the reel: real clips where the phone plays them, posters where i
    clean('reel: '+label,errors);
   }finally{await context.close();}
  }
- // which games: the games with a clip (the reel's own fixed list, not every
- // open game: 18 more opened on 22 Oct 2026 with none), by the games
- // screen's own rule, both age groups (no age asked yet)
- const REEL_ALL=['slice','hoops','tiles','bubbles','soccer','dino','feed','stack','run','glide','rise'];
- for(const [label,cfg,want] of [['a phone where the price follows',{webSales:true},['slice','hoops','tiles','bubbles','soccer','dino','feed','stack','run','glide','rise']],['a phone that cannot sell (only the games it opens)',{},['slice','tiles','bubbles','feed']]]){
+ // which games: three since 23 Oct 2026 (Travis: "rotate through fruit
+ // slice, piano tiles, and Flappy Glide"), by the games screen's own rule,
+ // both age groups (no age asked yet): a phone that cannot sell shows only
+ // the ones it opens (Flappy Glide is Premium)
+ const REEL_ALL=['slice','tiles','glide'];
+ ok('the reel\'s list is exactly Fruit Slice, Piano Tiles, Flappy Glide, in that order',/var REEL_ORDER=\["slice","tiles","glide"\]/.test(readFileSync(root+'/onboarding.html','utf8')));
+ for(const [label,cfg,want] of [['a phone where the price follows',{webSales:true},['slice','tiles','glide']],['a phone that cannot sell (only the games it opens)',{},['slice','tiles']]]){
   const {context,page,errors}=await fresh(Object.assign({motion:true,init:PLAYS,routes:[['**/assets/setup/reel/*.mp4',()=>{}]]},cfg));try{
    await toReel(page);
    const list=[];for(let i=0;i<want.length+1;i++){list.push((await reelState(page)).on[0].replace(/^VIDEO:\/assets\/setup\/reel\/|\.mp4$/g,''));await page.evaluate(()=>document.querySelector('.reel-clip.on').dispatchEvent(new Event('ended')));}
@@ -241,9 +248,120 @@ await scenario('the reel: real clips where the phone plays them, posters where i
  // a screen reader hears Echo's ask over the games; the pictures are decoration
  {const {context,page,errors}=await fresh({webSales:true});try{
   await toReel(page);
-  const a=await page.evaluate(()=>{const say=document.querySelector('.reel-say'),hiddenUp=el=>{for(let n=el;n;n=n.parentElement)if(n.getAttribute&&n.getAttribute('aria-hidden')==='true')return true;return false;};return {say:hiddenUp(document.getElementById('reelSay')),text:say.textContent.trim(),pics:[...document.querySelectorAll('#reelFrame .reel-still,#reelFrame .reel-clip,.reel-say img')].every(e=>e.getAttribute('aria-hidden')==='true')};});
+  const a=await page.evaluate(()=>{const say=document.querySelector('.reel-say'),hiddenUp=el=>{for(let n=el;n;n=n.parentElement)if(n.getAttribute&&n.getAttribute('aria-hidden')==='true')return true;return false;};return {say:hiddenUp(document.getElementById('reelSay')),text:say.textContent.trim(),pics:[...document.querySelectorAll('#reelFrame .reel-still,#reelFrame .reel-clip,.reel-say img')].every(hiddenUp)};});
   ok('the reel\'s "Say your rrrr sound!" is read by a screen reader (no aria-hidden over it); its videos, stills and Echo are hidden as decoration',!a.say&&a.text==='Say your rrrr sound!'&&a.pics,a);
   clean('reel, screen reader',errors);
+ }finally{await context.close();}}
+});
+
+// ── THE REEL FILLS THE SCREEN, AND ITS CAPTION FOLLOWS THE CLIP (Travis, 23
+// Oct 2026: "I want it to take up the whole screen ... make it clear that in
+// the demo they're saying ... the letter R ... And then the game slows down
+// ... It's too busy") ──
+const capOf=page=>page.evaluate(()=>{const c=document.getElementById('reelCap');return {beat:c.dataset.beat,text:document.getElementById('reelSay').textContent,img:c.querySelector('img').getAttribute('src'),snd:[...c.querySelectorAll('b.snd')].map(b=>b.textContent)};});
+await scenario('the reel fills the screen behind its words, and the caption follows the clip',async()=>{
+ for(const vp of [{width:390,height:844},{width:375,height:667},{width:320,height:568}]){
+  const {context,page,errors}=await fresh({viewport:vp,webSales:true,motion:true,init:()=>{HTMLMediaElement.prototype.canPlayType=function(){return '';};}});try{
+   await toReel(page);await page.waitForTimeout(700);
+   const f=await page.evaluate(()=>{const r=e=>{const b=(typeof e==='string'?document.querySelector(e):e).getBoundingClientRect();return {l:b.left,t:b.top,r:b.right,b:b.bottom};},box=document.getElementById('reelBox'),st=getComputedStyle(box);
+    return {w:innerWidth,h:innerHeight,box:r(box),frame:r('#reelFrame'),still:r('#reelFrame .reel-still.on'),pos:st.position,z:+st.zIndex,inOb:!!box.closest('.ob'),parts:{head:r('#reelTitle'),sub:r('.reel-sub'),cap:r('#reelCap'),hear:r('#reelHear'),btn:r('#nextBtn')},sideways:document.documentElement.scrollWidth-innerWidth};});
+   const covers=b=>b.l<=0&&b.t<=0&&b.r>=f.w&&b.b>=f.h,on=b=>b.t>=0&&b.l>=0&&b.r<=f.w&&b.b<=f.h,apart=(a,b)=>a.b<=b.t||b.b<=a.t||a.r<=b.l||b.r<=a.l;
+   const P=f.parts,ks=Object.keys(P),clash=[];for(let i=0;i<ks.length;i++)for(let j=i+1;j<ks.length;j++)if(!apart(P[ks[i]],P[ks[j]]))clash.push(ks[i]+'/'+ks[j]);
+   ok('at '+vp.width+'×'+vp.height+' the clips fill the whole screen, a fixed layer outside the step (a step slides in with a transform that would box it in)',f.pos==='fixed'&&!f.inOb&&covers(f.box)&&covers(f.frame)&&covers(f.still),f);
+   ok('…and the heading, its line, the caption, "Hear Echo" and Continue are all on the screen over it, none on another, nothing sideways',ks.every(k=>on(P[k]))&&!clash.length&&f.sideways<=0,{clash,P});
+   clean('reel full screen '+vp.width,errors);
+  }finally{await context.close();}
+ }
+ // off its screen, and while the page is held blank, the layer is not drawn
+ {const {context,page,errors}=await fresh({webSales:true});try{
+  const shown=()=>page.evaluate(()=>getComputedStyle(document.getElementById('reelBox')).display!=='none');
+  const off=[];for(const to of ['welcome','problem']){if(to!=='welcome')await setupWalk(page,to);off.push(await shown());}
+  await toReel(page);const at=await shown();
+  await page.evaluate(()=>document.documentElement.classList.add('ob-resume'));const resume=await shown();
+  await page.evaluate(()=>{document.documentElement.classList.remove('ob-resume');document.documentElement.classList.add('ob-leaving');});const leaving=await shown();
+  await page.evaluate(()=>document.documentElement.classList.remove('ob-leaving'));
+  await next(page);await page.locator('[data-step="rachel"].on').waitFor();
+  ok('the clips\' layer is drawn on the reel alone: not on the hello or the problem, not while the page is held blank, not once the reel is left',!off.some(Boolean)&&at&&!resume&&!leaving&&!(await shown()),{off,at,resume,leaving});
+  clean('reel layer, off its screen',errors);
+ }finally{await context.close();}}
+ // the caption's three beats, by the clock on a still (a browser that plays no H.264)
+ {const {context,page,errors}=await fresh({webSales:true,motion:true,init:()=>{HTMLMediaElement.prototype.canPlayType=function(){return '';};}});try{
+  await toReel(page);
+  const T=await page.evaluate(()=>REEL_TIMES.slice);
+  const c0=await capOf(page);
+  ok('the caption opens on Echo\'s ask: "Say your rrrr sound!", Echo talking, only the sound\'s letters orange',c0.beat==='ask'&&c0.text==='Say your rrrr sound!'&&/echo-talk\.webp$/.test(c0.img)&&JSON.stringify(c0.snd)==='["rrrr"]',c0);
+  await page.waitForFunction(()=>document.getElementById('reelCap').dataset.beat!=='ask',null,{timeout:(T.say+1.5)*1000});
+  const c1=await capOf(page);
+  ok('…then, when the child says it ('+T.say+' s into the clip), the child\'s "\u201crrrr!\u201d", Echo listening',c1.beat==='said'&&c1.text==='\u201crrrr!\u201d'&&/echo-listen\.webp$/.test(c1.img)&&JSON.stringify(c1.snd)==='["rrrr"]',c1);
+  await page.waitForFunction(()=>document.getElementById('reelCap').dataset.beat==='slow',null,{timeout:(T.slow-T.say+1.5)*1000});
+  const c2=await capOf(page);
+  ok('…then, as the game slows ('+T.slow+' s), "The game slows down!", Echo cheering',c2.text==='The game slows down!'&&/echo-cheer\.webp$/.test(c2.img),c2);
+  await page.waitForFunction(()=>/home-piano|tiles\.webp/.test((document.querySelector('#reelFrame .reel-still.on')||{}).getAttribute?.('src')||''),null,{timeout:5000});
+  ok('…and the next game\'s still starts again on Echo\'s ask',(await capOf(page)).beat==='ask');
+  await next(page);await page.locator('[data-step="rachel"].on').waitFor();
+  ok('leaving the reel puts the caption back on the ask',(await capOf(page)).beat==='ask');
+  clean('reel caption, stills',errors);
+ }finally{await context.close();}}
+ // …and by the clip's own time where one plays
+ {const {context,page,errors}=await fresh({webSales:true,motion:true,init:()=>{HTMLMediaElement.prototype.canPlayType=function(t){return /mp4/.test(t)?'probably':'';};HTMLMediaElement.prototype.play=function(){return Promise.resolve();};},routes:[['**/assets/setup/reel/*.mp4',()=>{}]]});try{
+  await toReel(page);await page.waitForTimeout(300);
+  const at=t=>page.evaluate(t=>{Object.defineProperty(document.querySelector('.reel-clip.on'),'currentTime',{configurable:true,get:()=>t});},t);
+  const T=await page.evaluate(()=>REEL_TIMES.slice);
+  await at(T.say-0.2);await page.waitForTimeout(300);const b0=(await capOf(page)).beat;
+  await at(T.say+0.05);await page.waitForTimeout(300);const b1=(await capOf(page)).beat;
+  await at(T.slow+0.05);await page.waitForTimeout(300);const b2=(await capOf(page)).beat;
+  ok('a playing clip moves the caption by its own time: ask before the child is heard, the child\'s word, then the slow-down',b0==='ask'&&b1==='said'&&b2==='slow',[b0,b1,b2]);
+  ok('every clip on the reel has its two moments, the child heard before the game slows',await page.evaluate(()=>REEL_ORDER.every(k=>{const t=REEL_TIMES[k];return t&&t.say>0&&t.slow>t.say;})));
+  clean('reel caption, clips',errors);
+ }finally{await context.close();}}
+ // under Reduce Motion the picture is still, and so is the caption
+ {const {context,page,errors}=await fresh({webSales:true});try{
+  await toReel(page);const T=await page.evaluate(()=>REEL_TIMES.slice);
+  await page.waitForTimeout((T.slow+1)*1000);
+  ok('under Reduce Motion the caption stays on Echo\'s ask',(await capOf(page)).beat==='ask');
+  clean('reel caption, Reduce Motion',errors);
+ }finally{await context.close();}}
+});
+
+// ── THE PROBLEM: A BEFORE AND AN AFTER (redone 23 Oct 2026, Travis: "too
+// fast or just confusing ... the picture of a game shows up too quickly") ──
+await scenario('the problem: the flashcards first, then the game a clear beat later, each with its words',async()=>{
+ {const {context,page,errors}=await fresh({motion:true});try{
+  await setupWalk(page,'problem');await page.locator('[data-step="problem"].on').waitFor();
+  const a=await page.evaluate(()=>[...document.querySelectorAll('[data-step="problem"] .ba-row')].map(r=>{const an=r.getAnimations()[0];return {cls:r.className,delay:an?an.effect.getComputedTiming().delay:null,end:an?an.effect.getComputedTiming().endTime:null};}));
+  ok('two rows, the flashcards above the game, and the game\'s row starts a full second after the flashcards\' (no game "too quickly")',a.length===2&&/ba-before/.test(a[0].cls)&&/ba-after/.test(a[1].cls)&&a[1].delay-a[0].delay>=1000,a);
+  ok('…both in place by about 2.3 s, and no loop',a.every(x=>x.end!==null&&x.end<=2300),a);
+  await page.waitForTimeout(2400);
+  const end=await page.evaluate(()=>[...document.querySelectorAll('[data-step="problem"] .ba-row')].map(r=>[getComputedStyle(r).opacity,getComputedStyle(r).transform]));
+  ok('…and once they have, both rows are drawn whole, where they belong',end.every(e=>e[0]==='1'&&(e[1]==='none'||e[1]==='matrix(1, 0, 0, 1, 0, 0)')),end);
+  ok('nothing on it flies off the screen (no toss)',await page.evaluate(()=>!document.querySelector('.toss')&&document.documentElement.scrollWidth<=innerWidth));
+  clean('problem, motion',errors);
+ }finally{await context.close();}}
+ {const {context,page,errors}=await fresh();try{
+  await setupWalk(page,'problem');await page.locator('[data-step="problem"].on').waitFor();
+  const r=await page.evaluate(()=>[...document.querySelectorAll('[data-step="problem"] .ba-row')].map(x=>[x.getAnimations().length,getComputedStyle(x).opacity]));
+  ok('under Reduce Motion both rows are there from the first frame, still',r.length===2&&r.every(x=>x[0]===0&&x[1]==='1'),r);
+  clean('problem, Reduce Motion',errors);
+ }finally{await context.close();}}
+});
+
+// ── A FEW MINUTES EVERY DAY (23 Oct 2026, the line given as Rachel's) ──
+await scenario('a few minutes every day: a week of short practice, and the line signed by Rachel',async()=>{
+ for(const vp of [{width:390,height:844},{width:320,height:568}]){
+  const {context,page,errors}=await fresh({viewport:vp,motion:true});try{
+   await setupWalk(page,'daily');await page.locator('[data-step="daily"].on').waitFor();await page.waitForTimeout(1900);
+   const d=await page.evaluate(async()=>{const st=document.querySelector('[data-step="daily"]'),img=st.querySelector('#dailyQuote img'),r=e=>e.getBoundingClientRect();const f=r(document.querySelector('.obfoot .inner'));
+    return {title:document.getElementById('dailyTitle').textContent,quote:st.querySelector('#dailyQuote p').textContent,by:st.querySelector('#dailyQuote footer').textContent.trim(),photo:await img.decode().then(()=>img.naturalWidth,()=>0),dots:[...st.querySelectorAll('.week i')].map(i=>getComputedStyle(i).opacity),days:[...st.querySelectorAll('.week b')].map(b=>b.textContent).join(''),asks:st.querySelectorAll('input,select,textarea,button,a').length,bottom:Math.max(r(st.querySelector('.week')).bottom,r(st.querySelector('#dailyQuote')).bottom),foot:f.top,sideways:document.documentElement.scrollWidth-innerWidth};});
+   ok('at '+vp.width+'×'+vp.height+': "A few minutes every day.", seven days (M to S) all filled, and the line word for word',d.title==='A few minutes every day.'&&d.days==='MTWTFSS'&&d.dots.length===7&&d.dots.every(o=>o==='1')&&d.quote==='\u201cShort practice every day helps more than one long session a week.\u201d',d);
+   ok('…signed "Rachel, MS, CF-SLP" with her photo, nothing to tap, all of it above Continue',d.by==='Rachel, MS, CF-SLP'&&d.photo>0&&d.asks===0&&d.bottom<=d.foot&&d.sideways<=0,d);
+   clean('daily '+vp.width,errors);
+  }finally{await context.close();}
+ }
+ {const {context,page,errors}=await fresh();try{
+  await setupWalk(page,'daily');await page.locator('[data-step="daily"].on').waitFor();
+  const r=await page.evaluate(()=>[...document.querySelectorAll('.week i')].map(i=>[i.getAnimations().length,getComputedStyle(i).opacity]));
+  ok('under Reduce Motion the week is drawn full from the first frame',r.length===7&&r.every(x=>x[0]===0&&x[1]==='1'),r);
+  clean('daily, Reduce Motion',errors);
  }finally{await context.close();}}
 });
 
@@ -343,7 +461,7 @@ const at=page=>page.evaluate(()=>({path:location.pathname,saved:!!(JSON.parse(lo
 const COUNT=()=>{addEventListener('pagehide',()=>{try{if(window.__s&&location.pathname==='/onboarding.html'){localStorage.setItem('__asks',String(window.__s.notifyAsks));localStorage.setItem('__remindSeen',window.seenSteps&&window.seenSteps.remind?'1':'0');localStorage.setItem('__plans',String(window.__s.plans));}}catch(e){}});};
 await scenario('the reminder ask: only where a reminder can be set and the price follows',async()=>{
  {const {context,page,errors}=await fresh({webSales:true,notify:NOTIFY,init:COUNT});try{
-  ok('an iPhone that can set a reminder, never asked, the price to follow: the reminder screen sits between ready and the microphone',await page.evaluate(()=>ORDER.join())==='welcome,problem,reel,rachel,name,interests,games,therapy,sounds,minutes,updates,ready,remind,mic');
+  ok('an iPhone that can set a reminder, never asked, the price to follow: the reminder screen sits between ready and the microphone',await page.evaluate(()=>ORDER.join())==='welcome,problem,reel,rachel,daily,name,interests,games,therapy,sounds,minutes,updates,ready,remind,mic');
   await setupWalk(page,'ready',{name:'Mia'});await next(page);await page.locator('[data-step="remind"].on').waitFor();
   const r=await page.evaluate(()=>{const st=document.querySelector('[data-step="remind"]'),painted=el=>getComputedStyle(el).display!=='none'&&el.getBoundingClientRect().height>0;return {title:document.getElementById('remindTitle').textContent,line:st.querySelector('.remind-line').textContent,yes:document.getElementById('remindYes').textContent,no:document.getElementById('remindNo').textContent,next:painted(document.getElementById('nextBtn')),back:painted(document.getElementById('backBtn')),bubble:document.getElementById('bubble').textContent,seg:document.getElementById('seg').hidden,focus:document.activeElement&&document.activeElement.id,saved:!!Sona.getProfile().onboarded,asks:__s.notifyAsks,name:/Mia/.test(st.textContent)};});
   ok('it asks, in a few words: "Want a reminder before your free trial ends?", "One notification, the day before.", "Turn on reminders" or "Not now"',r.title==='Want a reminder before your free trial ends?'&&r.line==='One notification, the day before.'&&r.yes==='Turn on reminders'&&r.no==='Not now'&&r.bubble==='I\'ll give you a heads-up!'&&!r.name,r);
