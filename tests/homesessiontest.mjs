@@ -1,6 +1,7 @@
 // Home's Arcade is a silent game picker (since 22 Oct 2026, STORY1, Home leads
 // with today's story and the picker is one tap away, at ?view=arcade; its own
-// suite is homestorytest). Browsing preserves existing practice and access.
+// suite is homestorytest), and games only since 23 Oct 2026: the books are
+// behind Home's Books door. Browsing preserves existing practice and access.
 // Navigation destinations are observed without starting microphone practice.
 import { createServer } from 'http';
 import { readFileSync, existsSync, statSync } from 'fs';
@@ -19,7 +20,7 @@ function ok(name,pass,detail=''){assertions++;if(!pass)failures++;console.log((p
 async function scenario(name,fn){try{await fn();}catch(e){ok(name+' has no harness/page exception',false,e.stack);}}
 async function fixture(config={}){
  const context=await browser.newContext({viewport:config.viewport||{width:390,height:844},reducedMotion:'reduce'});
- await context.route('**/*',route=>{const u=new URL(route.request().url());if(u.origin!==BASE)return route.abort();if(/^\/(?:charge|arcade-[a-z]+)\.html$/.test(u.pathname))return route.fulfill({contentType:'text/html',body:'<p>Session destination</p>'});return route.continue();});
+ await context.route('**/*',route=>{const u=new URL(route.request().url());if(u.origin!==BASE)return route.abort();if(/^\/(?:charge|arcade-[a-z]+|library)\.html$/.test(u.pathname))return route.fulfill({contentType:'text/html',body:'<p>Session destination</p>'});return route.continue();});
  await context.addInitScript(config=>{
   const record=text=>{if(String(text||'').trim()){const calls=JSON.parse(sessionStorage.getItem('test.menuSpeech')||'[]');calls.push(String(text));sessionStorage.setItem('test.menuSpeech',JSON.stringify(calls));}return Promise.resolve();};
   let sona;Object.defineProperty(window,'Sona',{configurable:true,get:()=>sona,set:value=>{sona=value;value.speak=record;value.speakNow=record;}});
@@ -60,8 +61,25 @@ for(const age of ['2','3','4','5','8',null,'4 years','4.5'])await scenario('age 
   ok('age '+age+': Home creates no run, practice credit or demonstration',st.ring.n===0&&st.reps===0&&!st.run&&!st.demo.started,st);
   ok('age '+age+': menus are silent even with voice enabled',st.speech.length===0,st.speech);
   ok('age '+age+': buddy and parent controls remain available',await page.locator('#buddyBtn').count()===1&&await page.locator('#buddyBtn').getAttribute('href')==='/customize.html'&&await page.locator('#parentBtn').count()===1);
-  // The books are on (Travis, 26 Sep 2026): one card that opens the bookshelf.
-  ok('age '+age+': books are one card, no longer coming soon',await page.locator('#booksCard').count()===1&&!/coming soon/i.test(await page.locator('#booksCard').innerText()));
+  // The books are on (Travis, 26 Sep 2026), but not in the Arcade (23 Oct
+  // 2026: "organize the arcade so that there are no books in there"): no
+  // Books card and no book in any row. The one row above the shelves is
+  // Today's picks, two games of the child's own age group ("I only want
+  // either today's picks or limited time ... have 2 games listed there"),
+  // and the books are one door on Home, whose tag never says Coming soon.
+  const arcade=await page.evaluate(()=>({
+   bookParts:document.querySelectorAll('#booksCard,#libraryBooksArt,#booksTag,#booksLine,#booksHeading,#libraryApp .book-card').length,
+   bookKeys:Array.from(document.querySelectorAll('#libraryApp [data-game]')).map(el=>el.dataset.game).filter(key=>/^book:/.test(key)),
+   rows:Array.from(document.querySelectorAll('#featuredGroups > section')).map(el=>({id:el.dataset.collection,heading:(el.querySelector('h2')||{}).textContent,games:Array.from(el.querySelectorAll('button[data-game]')).map(b=>b.dataset.game)})),
+   // (the first shelf's group: the child's own, Simple play with no age)
+   style:Sona.activityLibrary().groups[0].id,group:Object.fromEntries(Object.keys(Sona.GAME_ACTS).map(key=>[key,Sona.GAME_ACTS[key].group])),
+   featured:'featured' in Sona.activityLibrary(),
+   door:document.querySelectorAll('#homeBooksBtn').length,doorTag:(document.getElementById('homeBooksTag')||{}).textContent
+  }));
+  ok('age '+age+': the Arcade draws no Books card and no book in any row',arcade.bookParts===0&&arcade.bookKeys.length===0,arcade);
+  const picks=arcade.rows[0]||{games:[]};
+  ok('age '+age+': one row above the shelves, Today\'s picks, holding two different games of the child\'s own age group',arcade.rows.length===1&&picks.id==='picks'&&picks.heading==="Today's picks"&&picks.games.length===2&&picks.games[0]!==picks.games[1]&&picks.games.every(key=>HOME.includes(key)&&arcade.group[key]===arcade.style)&&!arcade.featured,arcade);
+  ok('age '+age+': the books are one door on Home, no longer coming soon',arcade.door===1&&['Free','Included','1 free book','Premium'].includes(arcade.doorTag)&&!/coming soon/i.test(arcade.doorTag),arcade);
   clean('age '+age,errors);
  }finally{await context.close();}
 });
@@ -110,6 +128,18 @@ await scenario('homework and child switching preserve the picker',async()=>{
   await page.evaluate(slot=>Sona.switchKid(slot),first.slot);await page.reload();
   ok('switching back restores the younger suggestion and assigned sound',(await state(page)).groups[0]==='simple'&&await page.evaluate(first=>Sona.rotSound()===first.sound&&JSON.stringify(Sona.homework())===first.hw,first));
   clean('sibling goals',errors);
+ }finally{await context.close();}
+});
+// Home's Books door is the one way to the bookshelf since the Arcade lost its
+// Books card (23 Oct 2026): a tap goes to the shelf, whose own rules decide
+// free or Premium, and says nothing on the way.
+await scenario('the Books door opens the bookshelf',async()=>{
+ const {context,page,errors}=await fixture({age:'4',path:'/today.html'});try{
+  ok('Home shows the Books door',await page.locator('#homeBooksBtn').isVisible());
+  await page.locator('#homeBooksBtn').click();await page.waitForURL('**/library.html');
+  const url=new URL(page.url());ok('the Books door opens the bookshelf itself, not a book',url.pathname==='/library.html'&&!url.search,url.href);
+  ok('opening the books has no menu narration',await page.evaluate(()=>JSON.parse(sessionStorage.getItem('test.menuSpeech')||'[]').length)===0);
+  clean('books door',errors);
  }finally{await context.close();}
 });
 // No white past either end (Travis, 27 Sep 2026): the page stops at its top

@@ -48,8 +48,12 @@ async function home(age, premium, park, path = "/today.html?view=arcade") {
 const shownH1 = () => [...document.querySelectorAll("h1")].filter((h) => h.offsetParent).map((h) => h.textContent).join("|");
 for (const age of ["3", "4", "5", "8"]) {
   const { ctx, pg } = await home(age, true, true, "/today.html");
-  const front = await pg.evaluate((f) => ({ first: document.querySelector("h1")?.textContent || "", shown: new Function("return (" + f + ")()")(), story: !!document.getElementById("questCard")?.offsetParent }), shownH1.toString());
+  const front = await pg.evaluate((f) => ({ first: document.querySelector("h1")?.textContent || "", shown: new Function("return (" + f + ")()")(), story: !!document.getElementById("questCard")?.offsetParent,
+    booksDoor: !!document.getElementById("homeBooksBtn")?.offsetParent, booksTag: document.getElementById("homeBooksTag")?.textContent || "" }), shownH1.toString());
   ok("age " + age + ": Home opens on today's adventure, with the story card", front.first === "Today's adventure" && front.shown === "Today's adventure" && front.story, JSON.stringify(front));
+  // Home's Books door is the one way to the bookshelf since 23 Oct 2026
+  // (the Arcade's Books card is gone), so it is on screen with its tag.
+  ok("age " + age + ": Home's Books door is on screen, with its tag", front.booksDoor && ["Free", "Included", "1 free book", "Premium"].includes(front.booksTag), JSON.stringify(front));
   await pg.goto("http://localhost:8178/today.html?view=arcade"); await pg.waitForTimeout(400);
   const st = await pg.evaluate((f) => ({
     heading: new Function("return (" + f + ")()")(),
@@ -61,7 +65,9 @@ for (const age of ["3", "4", "5", "8"]) {
     coming: /coming soon/i.test(document.getElementById("libraryApp").innerText),
     forbidden: !!document.querySelector("#goBtn, #heroCard, #jarRow"),
     run: sessionStorage.getItem("sona.run.v1"),
-    books: document.getElementById("booksCard")?.textContent || "",
+    booksCard: ["booksCard", "libraryBooksArt", "booksTag", "booksLine", "booksHeading"].filter((id) => document.getElementById(id)),
+    bookCards: document.querySelectorAll('#libraryApp .book-card, #featuredGroups [data-collection="seasonal"], #featuredGroups [data-collection="new"]').length,
+    booksDoorShown: !!document.getElementById("homeBooksBtn")?.offsetParent,
     bookDoors: document.querySelectorAll('a[href*="chapter.html"],a[href*="story.html"]').length,
   }), shownH1.toString());
   ok("age " + age + ": Home's Arcade opens directly to Pick a game", st.heading === "Pick a game!" && new URL(pg.url()).pathname === "/today.html", JSON.stringify(st));
@@ -75,9 +81,13 @@ for (const age of ["3", "4", "5", "8"]) {
   ok("age " + age + ": Peekaboo and the other parked games have no card on Home, and none opens", st.parked.length === 0 && !st.coming && st.playable.length === st.keys.length && ["peekaboo"].every(k => st.catalogParked.some(e => e.key === k)) && !st.catalogParked.some(e => e.key === "bubbles") &&
     st.catalogParked.every(e => e.access.allowed === false && e.access.reason === "coming-soon"), JSON.stringify([st.parked, st.catalogParked]));
   ok("age " + age + ": opening Home does not start a journey or display the retired adventure", !st.run && !st.forbidden, JSON.stringify(st));
-  // The books are on (Travis, 26 Sep 2026: "yes turn them on"); the
-  // adventure and chapter readers stay parked.
-  ok("age " + age + ": books are one open card, and no parked reader has a door", /books/i.test(st.books) && !/coming soon/i.test(st.books) && st.bookDoors === 0, JSON.stringify(st));
+  // The books are on (Travis, 26 Sep 2026: "yes turn them on"), but since
+  // 23 Oct 2026 the Arcade is games only (Travis: "organize the arcade so
+  // that there are no books in there"): no Books card, no book in any row
+  // (Today's picks is two games; What's new and Limited time, which carried
+  // books, are gone), and Home's Books door belongs to Home's view, not this
+  // one. The adventure and chapter readers stay parked.
+  ok("age " + age + ": the Arcade has no books, and no parked reader has a door", st.booksCard.length === 0 && st.bookCards === 0 && !st.booksDoorShown && st.bookDoors === 0, JSON.stringify({ booksCard: st.booksCard, bookCards: st.bookCards, booksDoorShown: st.booksDoorShown, bookDoors: st.bookDoors }));
   await ctx.close();
 }
 
@@ -107,14 +117,25 @@ for (const age of ["3", "4", "5", "8"]) {
 {
   const {ctx, pg} = await home("7");
   const errs = []; pg.on("pageerror", e => errs.push(String(e)));
-  await pg.goto("http://localhost:8178/activities.html?libraryPreview=1&locked=tiles#booksCard");
+  // (the fragment was #booksCard until the Arcade lost its Books card on 23
+  // Oct 2026; the redirect keeps any # part exactly, so it now names the
+  // shelves, which are still there)
+  await pg.goto("http://localhost:8178/activities.html?libraryPreview=1&locked=tiles#activityGroups");
   await pg.waitForURL(/today\.html/);
   const u = new URL(pg.url());
-  ok("the old library URL preserves query and fragment on the new Home", u.pathname === "/today.html" && u.searchParams.get("libraryPreview") === "1" && u.searchParams.get("locked") === "tiles" && u.hash === "#booksCard", pg.url());
+  ok("the old library URL preserves query and fragment on the new Home", u.pathname === "/today.html" && u.searchParams.get("libraryPreview") === "1" && u.searchParams.get("locked") === "tiles" && u.hash === "#activityGroups", pg.url());
+  await pg.waitForTimeout(400);
+  // ?locked= lands on the Arcade's shelves (where a grey game's note lives),
+  // never on Home's view
+  const lk = await pg.evaluate(() => ({ view: document.getElementById("libraryApp")?.getAttribute("data-view"), shelves: document.querySelectorAll("#activityGroups .game-card").length }));
+  ok("…and its ?locked= opens the Arcade, with the shelves on it", lk.view === "arcade" && lk.shelves > 0, JSON.stringify(lk));
   ok("the Home library loads without page errors", errs.length === 0, errs.join(" | "));
   const homeSource = readFileSync(ROOT + "/today.html", "utf8").replace(/<!--[\s\S]*?-->/g, "").replace(/\/\/[^\n]*/g, "");
   ok("Home has no door to a parked reader", !/chapter\.html|story\.html/.test(homeSource));
   ok("…and its one book door is the bookshelf", /location\.href="\/library\.html"/.test(homeSource));
+  // One door since 23 Oct 2026: Home's Books button, its one handler, and no
+  // Books card left in the markup for a second one to hang off.
+  ok("…opened only by Home's Books door", (homeSource.match(/location\.href="\/library\.html"/g) || []).length === 1 && /homeBooksBtn\.onclick=openBooks;/.test(homeSource) && !/booksCard/.test(homeSource), "");
   await ctx.close();
 }
 

@@ -1211,8 +1211,8 @@
     // and on nobody's outside it. Halloween has one for several sounds (2 Oct
     // 2026: "make a version for other letter"), so a child gets the one in
     // their own sound, and a child whose sounds have none gets the one marked
-    // anySound (Boo the Bat): Sona.seasonPick, which Home's Limited time row
-    // asks too.
+    // anySound (Boo the Bat): Sona.seasonPick (Home's Limited time row asked
+    // it too, until the Arcade lost its books on 23 Oct 2026).
     function inSeason(st){ var d = todayLocal(); return !st.season || (st.season.startsOn <= d && d <= st.season.endsOn); }
     STORIES = STORIES.filter(inSeason);
     var ALL_STORIES = STORIES.slice();
@@ -1978,9 +1978,10 @@
       if (!BOOK || barMode === "next" || (M && M.leaving)) return;
       hush(); setBar("nudge"); echoPose("think");
     });
-    // Home's What's new / Limited time rows open a book straight from its
-    // card (?book=<folder>). The shelf's own rules still decide: a book not
-    // out yet does nothing, a Premium one shows the grown-up message.
+    // A book straight from an address (?book=<folder>): Home's What's new /
+    // Limited time rows used it until the Arcade lost its books (23 Oct
+    // 2026), and an old link still may. The shelf's own rules still decide: a
+    // book not out yet does nothing, a Premium one shows the grown-up message.
     (function () {
       var want = ""; try { want = new URLSearchParams(location.search).get("book") || ""; } catch (e) {}
       if (!/^[a-z0-9-]+$/.test(want)) return;

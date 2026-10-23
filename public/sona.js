@@ -3623,52 +3623,11 @@
     { id: "simple", name: "Simple play", ageLabel: "Suggested ages 3–4", description: "Little taps. Big discoveries." },
     { id: "arcade", name: "Arcade", ageLabel: "Suggested ages 5–8", description: "A little more action and adventure." },
   ];
-  // The books Home's top rows can show. releasedOn: the day it came out (it
-  // sits under What's new for 30 days). season: { startsOn, endsOn } puts it
-  // under Limited time for that window instead. Folder = public/assets/books/<slug>.
-  const HOME_BOOKS = [
-    // Existing covers can be daily picks too; no release date is invented.
-    { slug: "rory-rainbow", title: "Rory and the Rainbow", sound: "R" },
-    { slug: "penny-pebble-party", title: "Penny's Pebble Party", sound: "P" },
-    { slug: "bo-beach-day", title: "Bo's Beach Day", sound: "B" },
-    { slug: "mia-makes-muffins", title: "Mia Makes Muffins", sound: "M" },
-    { slug: "ned-needs-a-net", title: "Ned Needs a Net", sound: "N" },
-    { slug: "toby-tiny-tuba", title: "Toby's Tiny Tuba", sound: "T" },
-    { slug: "dot-digs-a-pool", title: "Dot Digs a Pool", sound: "D" },
-    { slug: "kip-kite", title: "Kip's Kite", sound: "K" },
-    { slug: "goldie-guitar", title: "Goldie's Guitar", sound: "G" },
-    { slug: "finn-finds-a-feather", title: "Finn Finds a Feather", sound: "F" },
-    { slug: "val-the-van", title: "Val the Van", sound: "V" },
-    { slug: "sid-the-seagull", title: "Sid the Seagull", sound: "S" },
-    { slug: "zoe-and-the-zipper", title: "Zoe and the Zipper", sound: "Z" },
-    { slug: "shay-the-shy-shark", title: "Shay the Shy Shark", sound: "SH" },
-    { slug: "chip-the-chipmunk", title: "Chip the Chipmunk", sound: "CH" },
-    { slug: "jax-and-the-jam-jar", title: "Jax and the Jam Jar", sound: "J" },
-    { slug: "leo-lucky-leaf", title: "Leo's Lucky Leaf", sound: "L" },
-    { slug: "theo-thunder-day", title: "Theo's Thunder Day", sound: "TH" },
-    { slug: "this-bear-that-bee", title: "This Bear, That Bee", sound: "THV" },
-    { slug: "rosie-red-wagon", title: "Rosie and the Red Wagon", sound: "R", releasedOn: "2026-10-01" },
-    { slug: "ray-lost-ring", title: "Ray and the Lost Ring", sound: "R", releasedOn: "2026-10-01" },
-    { slug: "sam-sailboat", title: "Sam's Sailboat", sound: "S", releasedOn: "2026-10-01" },
-    { slug: "sophie-silly-soup", title: "Sophie's Silly Soup", sound: "S", releasedOn: "2026-10-01" },
-    { slug: "libby-lemon", title: "Libby and the Lemon", sound: "L", releasedOn: "2026-10-01" },
-    { slug: "leon-lantern", title: "Leon's Lantern", sound: "L", releasedOn: "2026-10-01" },
-    { slug: "shane-shiny-shell", title: "Shane and the Shiny Shell", sound: "SH", releasedOn: "2026-10-01" },
-    { slug: "shawn-shadow", title: "Shawn and His Shadow", sound: "SH", releasedOn: "2026-10-01" },
-    { slug: "thor-thank-you", title: "Thor Says Thank You", sound: "TH", releasedOn: "2026-10-01" },
-    { slug: "thelma-thirsty-plant", title: "Thelma's Thirsty Plant", sound: "TH", releasedOn: "2026-10-01" },
-    { slug: "boo-bat-halloween", title: "Boo the Bat on Halloween", sound: "B", anySound: true, season: { startsOn: "2026-10-01", endsOn: "2026-10-31" } },
-    { slug: "rory-halloween", title: "Rory the Rabbit on Halloween", sound: "R", season: { startsOn: "2026-10-01", endsOn: "2026-10-31" } },
-    { slug: "sid-halloween", title: "Sid the Seagull on Halloween", sound: "S", season: { startsOn: "2026-10-01", endsOn: "2026-10-31" } },
-    { slug: "leon-halloween", title: "Leon's Trick-or-Treat Night", sound: "L", season: { startsOn: "2026-10-01", endsOn: "2026-10-31" } },
-    { slug: "zoe-halloween", title: "Zoe the Zebra on Halloween", sound: "Z", season: { startsOn: "2026-10-01", endsOn: "2026-10-31" } },
-    { slug: "finn-halloween", title: "Finn the Fish on Halloween", sound: "F", season: { startsOn: "2026-10-01", endsOn: "2026-10-31" } },
-  ];
   // Halloween has a limited-time book for several sounds (Travis, 2 Oct 2026:
   // "take a popular book like the halloween and make a version for other
   // letter"). A child gets the one in their own sound; a child whose sounds
   // have none gets the one written for everyone (anySound: Boo the Bat).
-  // Home's Limited time row and the bookshelf both ask here, so they agree.
+  // The bookshelf asks here (Home's Limited time row did until 23 Oct 2026).
   function seasonPick(list, sounds) {
     var want = (sounds || []).map(function (x) { return String(x).toUpperCase(); });
     var mine = list.filter(function (b) { return want.indexOf(String(b.sound).toUpperCase()) !== -1; });
@@ -3679,16 +3638,14 @@
     var validAge = age >= 2 && age <= 14 && Math.floor(age) === age;
     var recommended = validAge ? playStyle() : null;
     var now = options && typeof options.now === "number" && isFinite(options.now) ? options.now : Date.now();
-    var date = new Date(now), day = Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
     function catalogDay(value) {
       if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return NaN;
       var parsed = Date.parse(value + "T00:00:00Z");
       return isFinite(parsed) && new Date(parsed).toISOString().slice(0, 10) === value ? parsed : NaN;
     }
-    // A day string is the read-only seam for daily picks. Existing release
-    // rows retain their UTC-day rule when only a timestamp is supplied.
+    // A day string is the read-only seam for daily picks; a timestamp alone
+    // is read on the family's own calendar.
     var requestedDay = options && isFinite(catalogDay(options.day)) ? options.day : "";
-    if (requestedDay) day = catalogDay(requestedDay);
     // A parked game's day (comingOn, see GAME_ACTS; none carries one since 15
     // Oct 2026) on the family's own calendar, the way the bookshelf dates its
     // books: "Coming Oct 9" until the day, then "Coming soon" again if the
@@ -3727,84 +3684,46 @@
           .concat(keys.filter(function (key) { return GAME_ACTS[key].comingSoon; }).sort(parkedOrder)).map(entry),
       };
     });
+    // The child's own age group's shelf comes first (Travis, 23 Oct 2026:
+    // "if they're young, 3 to 4, have simple play show up higher, and vice
+    // versa"); with no age yet, Simple play leads, as the catalog lists it.
     if (recommended === "arcade") groups.reverse();
-    // Release dates expire honestly after thirty calendar dates. Seasonal rows
-    // exist only when a finished item has a real active start/end date; no placeholders.
-    var fresh = ACTIVITY_KEYS.filter(function (key) {
-      var act = GAME_ACTS[key], released = catalogDay(act.releasedOn);
-      return act.available !== false && !act.comingSoon && released <= day && day - released < 30 * 86400000;
-    }).sort(function (a, b) { return catalogDay(GAME_ACTS[b].releasedOn) - catalogDay(GAME_ACTS[a].releasedOn); }).map(entry);
-    var seasonal = ACTIVITY_KEYS.filter(function (key) {
-      var act = GAME_ACTS[key], season = act.season;
-      return act.available !== false && !act.comingSoon && season && catalogDay(season.startsOn) <= day && day <= catalogDay(season.endsOn);
-    }).map(entry);
-    // Books join the two top rows (Travis, 1 Oct 2026: "at the top ... what's
-    // new ... the next section like limited time where we have books and
-    // games"). HOME_BOOKS names each book's day out and, for a limited-time
-    // one, its window; a book is still opened (or not) by the shelf's rules.
-    function bookEntry(b) { return { key: "book:" + b.slug, kind: "book", name: b.title, slug: b.slug, sound: b.sound, cover: "/assets/books/" + b.slug + "/cover.webp", go: "/library.html?book=" + b.slug, playDescription: "A picture book with Echo.", tier: bookFree(b.title) ? "free" : "premium", releasedOn: b.releasedOn || null, available: true, comingSoon: false }; }
-    // only the child's own sounds, the one practised now first (Travis, 1 Oct
-    // 2026: "the kids just seeing books based on their letter/s")
-    var mySounds = (getProfile().focusSounds || []).map(function (x) { return String(x).toUpperCase(); });
-    var nowSound = ""; try { nowSound = String(rotSound() || "").toUpperCase(); } catch (e) {}
-    var freshBooks = HOME_BOOKS.filter(function (b) { var r = catalogDay(b.releasedOn); return !b.season && r <= day && day - r < 30 * 86400000 && (!mySounds.length || playMode() || mySounds.indexOf(b.sound) !== -1); })
-      .sort(function (a, b) { return (b.sound === nowSound) - (a.sound === nowSound); })
-      .map(bookEntry);
-    var limitedBooks = HOME_BOOKS.filter(function (b) { return b.season && catalogDay(b.season.startsOn) <= day && day <= catalogDay(b.season.endsOn); });
-    // the limited-time book in this child's sound (seasonPick); play mode,
-    // which rotates every sound, and a child with no sounds yet see them all
-    var sounds = getProfile().focusSounds || [];
-    if (sounds.length && !playMode()) limitedBooks = seasonPick(limitedBooks, sounds);
-    limitedBooks = limitedBooks.map(bookEntry);
-    // At most five across, so a row never becomes a long side-scroll.
-    var ROW = 5, newRow = fresh.concat(freshBooks).slice(0, ROW), limitedRow = seasonal.concat(limitedBooks).slice(0, ROW);
-    var featured = [];
-    if (newRow.length) featured.push({ id: "new", name: "What's new", games: newRow });
-    if (limitedRow.length) featured.push({ id: "seasonal", name: "Limited time", games: limitedRow });
+    // ONE ROW ABOVE THE SHELVES, GAMES ONLY (Travis, 23 Oct 2026: "organize
+    // the arcade so that there are no books in there ... I only want either
+    // today's picks or limited time ... have 2 games listed there, and then go
+    // directly to either simple play or arcade"). Today's picks is that row:
+    // it is real every day, where Limited time only ever held the Halloween
+    // books, and an everyday game called "limited" would be a fib. What's new
+    // and Limited time are gone, and so are the books in the picks: the
+    // bookshelf, behind Home's Books door, keeps every book and its own
+    // limited-time ones (seasonPick, above).
     // Today's picks change with the local calendar, without saving a shuffle
-    // or calling fid() (which creates an id). Lanes are disjoint where the
-    // catalog permits it: a book + game, then two games the following day.
-    // The two littles games cannot avoid every repeat; never borrow an older
-    // child's game or an unrelated sound's book just to fill that gap.
+    // or calling fid() (which creates an id): two games of the first shelf
+    // under them (the child's own age group, or Simple play while no age is
+    // set), one from each half of it, so the two never match.
     var pickDay = catalogDay(localToday), ordinal = Math.floor(pickDay / 86400000);
     var seed = _slot(); try { seed += ":" + (localStorage.getItem("sona.fid.v1") || ""); } catch (e) {}
     function pickHash(text) { var h = 2166136261; for (var i = 0; i < text.length; i++) { h ^= text.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
     function ranked(list) { return list.slice().sort(function (a, b) { var x = pickHash(seed + "|" + a.key), y = pickHash(seed + "|" + b.key); return x - y || (a.key < b.key ? -1 : a.key > b.key ? 1 : 0); }); }
     function walk(list, step, lane) { return list.length ? list[((step + pickHash(seed + "|" + lane)) % list.length + list.length) % list.length] : null; }
-    function opens(item) { return item && (item.kind === "book" ? !bookLocked(item.name) : gameAccess(item.key).allowed); }
+    function opens(item) { return item && gameAccess(item.key).allowed; }
     function freshPick(item) { var r = catalogDay(item.releasedOn); item.isNew = r <= pickDay && pickDay - r < 30 * 86400000; return item; }
-    var pickGames = ranked(ACTIVITY_KEYS.filter(function (key) { var a = GAME_ACTS[key]; return a.group === playStyle() && a.available !== false && !a.comingSoon && !a.season; }).map(entry));
-    // An active assignment leads the sound pool, exactly as practice does.
-    // Read its window against the requested calendar, so a date preview stays
-    // deterministic even across an assignment's start or due day.
-    var pickSounds = mySounds, hw = (load(HWKEY, {}) || {}).hw;
-    if (hw && (!hw.start || localToday >= hw.start) && (!hw.due || localToday <= hw.due) && Array.isArray(hw.sounds)) {
-      var assigned = hw.sounds.map(function (x) { return String(x).toUpperCase(); }).filter(function (x) { return !!WORDS[x]; });
-      if (assigned.length) pickSounds = assigned;
-    }
-    var pickBooks = HOME_BOOKS.filter(function (b) { var r = catalogDay(b.releasedOn); return !b.season && (!isFinite(r) || r <= pickDay) && (!pickSounds.length || playMode() || pickSounds.indexOf(b.sound) !== -1); });
-    var firstSound = pickSounds.indexOf(nowSound) !== -1 ? nowSound : pickSounds[0];
-    var currentBooks = pickBooks.filter(function (b) { return b.sound === firstSound; });
-    if (currentBooks.length) pickBooks = currentBooks;
-    pickBooks = ranked(pickBooks.map(bookEntry));
+    var pickGroup = recommended || ACTIVITY_GROUPS[0].id;
+    var pickGames = ranked(ACTIVITY_KEYS.filter(function (key) { var a = GAME_ACTS[key]; return a.group === pickGroup && a.available !== false && !a.comingSoon; }).map(entry));
     var split = Math.max(1, Math.floor(pickGames.length / 2));
     var leftGames = pickGames.slice(0, split), rightGames = pickGames.slice(split);
-    var bookDay = ordinal % 2 === 0 && pickBooks.length;
-    var left = bookDay ? walk(pickBooks, Math.floor(ordinal / 2), "books") : walk(leftGames, ordinal, "left");
+    var left = walk(leftGames, ordinal, "left");
     var right = walk(rightGames, ordinal, "right");
     if (!right) right = walk(pickGames.filter(function (g) { return !left || g.key !== left.key; }), ordinal, "right");
-    // Picks stay useful for a free family: if neither chosen tile opens,
-    // replace one game with an open choice. The book stays in their sound.
+    // Picks stay useful for a free family: if neither chosen game opens,
+    // replace one with an open choice.
     if (left && right && !opens(left) && !opens(right)) {
       var openGames = pickGames.filter(opens);
-      if (openGames.length) {
-        if (bookDay) right = walk(openGames, ordinal, "open");
-        else left = walk(openGames.filter(function (g) { return g.key !== right.key; }), ordinal, "open") || left;
-      }
+      if (openGames.length) left = walk(openGames.filter(function (g) { return g.key !== right.key; }), ordinal, "open") || left;
     }
     var choices = [left, right].filter(function (item, i, all) { return item && (!i || item.key !== all[0].key); }).map(freshPick);
     var picks = { id: "picks", name: "Today's picks", tag: "Changes daily", day: localToday, games: choices };
-    return { recommended: recommended, groups: groups, featured: featured, picks: picks };
+    return { recommended: recommended, groups: groups, picks: picks };
   }
   function homePicks(dayStr) { return activityLibrary({ day: dayStr }).picks.games; }
   // Home previews the same adventure that practice launches. Feed Echo has

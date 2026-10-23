@@ -1,9 +1,9 @@
 // HOME (STORY1, 22 Oct 2026; Travis chose both age groups, today's painted
 // clay look, and the story is Premium). Home is one big card, today's story,
-// with two doors under it (Arcade: every game, as Home was; Books: the
-// bookshelf) and, since 23 Oct 2026 (FOUND1), "Your games": the games the
-// child's finished stories left behind. This suite pins what a child and a
-// parent can see and do there:
+// with two doors under it (Arcade: every game, as Home was, and since 23 Oct
+// 2026 only games; Books: the bookshelf, its one way in) and, since 23 Oct
+// 2026 (FOUND1), "Your games": the games the child's finished stories left
+// behind. This suite pins what a child and a parent can see and do there:
 //   - the story card in each state: open, locked with a "Premium" tag (a tap
 //     opens the price at once, with no note), done with tomorrow's picture
 //     dark, a game day after Day 14, the game of the day on a phone that
@@ -12,8 +12,9 @@
 //     rule, newest first, New! on today's, a tap plays the game again;
 //   - moving between Home and the Arcade: the doors switch views with no
 //     reload, "‹ Home", Back and Forward, ?locked= opening the Arcade with its
-//     note, activities.html's address rules, the page titles;
-//   - Books: the door opens the bookshelf with the Books card's own tag;
+//     note, activities.html's address rules, the page titles; the Arcade
+//     holds no book (23 Oct 2026);
+//   - Books: Home's door is the one way to the bookshelf, with its own tag;
 //   - Home stays quiet: nothing written, sent or spoken, on load, on coming
 //     back to the front, or moving between the views;
 //   - the fit: the story's play button and both doors on the first screen at
@@ -317,7 +318,13 @@ await section("after the stories: the game of the day", async () => {
   ok("no door to a parked reader", !/story\.html|chapter\.html/.test(code));
   ok("the old Home's retired pieces stay gone", !/id="(?:goBtn|heroCard|jarRow|sheetOvl|goProgress|goSettings|goTalk|weekCard|wkWins|planCard|storyBits|shareWeek|thumbs)"/.test(SRC));
   ok("the pieces other suites read are where they were", ["function paintGift(){", '<a id="giftBtn"', "function paintFound(){", '<section id="foundRow"', '<div class="ovl" id="levelOvl"', "function openLevels(game){"].every((s) => SRC.includes(s)));
-  ok("one book door in the source, shared by the Books card and Home's Books door", (code.match(/location\.href="\/library\.html"/g) || []).length === 1 && /booksCard\.onclick=openBooks;homeBooksBtn\.onclick=openBooks;/.test(SRC));
+  // THE ARCADE IS GAMES ONLY (Travis, 23 Oct 2026: "organize the arcade so
+  // that there are no books in there"): the Arcade's Books card is gone, so
+  // Home's Books door is the one way to the bookshelf, with one handler, and
+  // nothing in the markup or the code still builds the card or a book tile.
+  ok("one book door in the source: Home's Books door, its one handler", (code.match(/location\.href="\/library\.html"/g) || []).length === 1 && (SRC.match(/homeBooksBtn\.onclick=openBooks;/g) || []).length === 1 && /function openBooks\(\)\{clearMessage\(\);location\.href="\/library\.html";\}/.test(SRC));
+  ok("…and the Arcade's Books card is gone, from the markup and the code (no card, picture, tag, line or heading)", !/id="(?:booksCard|libraryBooksArt|booksTag|booksLine|booksHeading)"/.test(SRC) && !/\b(?:booksCard|libraryBooksArt|booksTag|booksLine|booksHeading)\b/.test(code), (code.match(/\b(?:booksCard|libraryBooksArt|booksTag|booksLine|booksHeading)\b/g) || []));
+  ok("…and no row draws a book tile (no book card, no book access, no book launch)", !/book-card|bookAccess|kind==="book"\)\{|kind==="book"\?/.test(code));
   ok("the offer-from-Home guard is untouched: ?view=arcade does not skip it", /!\/\[\?&\]\(gate\|locked\|libraryPreview\)=\/\.test\(q\)/.test(SRC) && /S\.homeOfferDue\(\)\)\{[\s\S]{0,300}return;\s*\}\s*app\.hidden=false;\s*setView\(viewOf\(\)\);/.test(SRC));
   {
     // Home's card and the story player show the same colour while a story's
@@ -336,8 +343,8 @@ await section("after the stories: the game of the day", async () => {
 // ── 3. moving between Home and the Arcade ──
 await section("the views", async () => {
   const { ctx, pg, errors } = await open({ sub: true, viewport: { width: 320, height: 568 } });
-  const hidden = await pg.evaluate(() => ({ pick: !!document.getElementById("arcadeTitle").offsetParent, cards: !!document.querySelector("#activityGroups .game-card").offsetParent, books: !!document.getElementById("booksCard").offsetParent }));
-  ok("Home shows no shelf, no \"Pick a game!\" and no Books card: they are one tap away", !hidden.pick && !hidden.cards && !hidden.books && (await pg.getByRole("heading", { name: "Pick a game!", exact: true }).count()) === 0, hidden);
+  const hidden = await pg.evaluate(() => ({ pick: !!document.getElementById("arcadeTitle").offsetParent, cards: !!document.querySelector("#activityGroups .game-card").offsetParent, picks: !!(document.querySelector("#featuredGroups .game-card") || {}).offsetParent, door: !!document.getElementById("homeBooksBtn").offsetParent }));
+  ok("Home shows no shelf, no Today's picks and no \"Pick a game!\": they are one tap away, and the Books door is Home's", !hidden.pick && !hidden.cards && !hidden.picks && hidden.door && (await pg.getByRole("heading", { name: "Pick a game!", exact: true }).count()) === 0, hidden);
   await pg.evaluate(() => { window.__same = 1; window.scrollTo(0, 80); });
   const len0 = await pg.evaluate(() => history.length);
   await pg.locator("#arcadeBtn").click(); await pg.waitForTimeout(150);
@@ -345,6 +352,19 @@ await section("the views", async () => {
   ok("the Arcade door switches to the Arcade at once, with no reload", s.same === 1 && (await view(pg)) === "arcade" && s.pick && !s.story, s);
   ok("…at its own address, /today.html?view=arcade (one more step in history)", pathOf(pg) === "/today.html?view=arcade" && s.len === len0 + 1, { url: pg.url(), s });
   ok("…scrolled to the top, focus on \"Pick a game!\", titled \"Sona — Play library\"", s.y === 0 && s.focus === "arcadeTitle" && s.title === "Sona — Play library", s);
+  // the Arcade is games only (Travis, 23 Oct 2026): no Books card, no book in
+  // any row, no book cover anywhere in it, and the Books door stays Home's;
+  // above the shelves, Today's picks alone, two games, then the shelves
+  const arc = await pg.evaluate(() => {
+    const vis = (e) => !!(e && e.offsetParent);
+    return { card: !!document.getElementById("booksCard"), books: document.querySelectorAll("#libraryApp .book-card, #libraryApp [data-game^='book:']").length,
+      covers: [...document.querySelectorAll(".arcade-only img")].filter((i) => /\/assets\/books\//.test(i.getAttribute("src") || "")).length,
+      door: vis(document.getElementById("homeBooksBtn")), rows: [...document.querySelectorAll("#featuredGroups > section")].map((x) => x.getAttribute("data-collection")),
+      picks: [...document.querySelectorAll('#featuredGroups > section[data-collection="picks"] .game-card')].filter(vis).map((b) => b.getAttribute("data-game")),
+      heads: [...document.querySelectorAll(".arcade-only h2")].filter(vis).map((h) => h.textContent) };
+  });
+  ok("…and it holds no book: no Books card, no book tile, no cover, no Books door", !arc.card && arc.books === 0 && arc.covers === 0 && !arc.door, arc);
+  ok("…one row above the shelves, Today's picks, with two different games (no What's new, no Limited time)", arc.rows.join() === "picks" && arc.picks.length === 2 && arc.picks[0] !== arc.picks[1] && arc.picks.every((k) => k && !/^book:/.test(k)) && !arc.heads.some((h) => /what's new|limited time|^books$/i.test(h)), arc);
   const back = await pg.locator("#homeBack").boundingBox();
   ok("\"‹ Home\" is a full-size button in the Arcade", back && back.height >= 44 && back.width >= 44, back);
   await pg.waitForTimeout(550); // past the half second Home ignores taps after a switch
@@ -422,7 +442,9 @@ await section("addresses", async () => {
     for (const [from, to] of [
       ["/activities.html", "/today.html?view=arcade"],
       ["/activities.html?libraryPreview=1#games", "/today.html?libraryPreview=1&view=arcade#games"],
-      ["/activities.html?locked=stack#booksCard", "/today.html?locked=stack#booksCard"],
+      // (its # part kept exactly; #booksCard was this fragment until 23 Oct
+      // 2026, when the Arcade's Books card went)
+      ["/activities.html?locked=stack#activityGroups", "/today.html?locked=stack#activityGroups"],
       ["/activities.html?view=home", "/today.html?view=home"],
     ]) {
       await pg.goto(origin + from); await pg.waitForURL(/\/today\.html/);
@@ -439,8 +461,10 @@ await section("addresses", async () => {
 await section("Books", async () => {
   for (const [label, opts, tag] of [["with Premium", { sub: true }, "Included"], ["keeping the free version", { sell: false, stamp: "kept" }, "1 free book"], ["owing the price", { sell: true, stamp: "post" }, "Premium"]]) {
     const { ctx, pg, errors } = await open(opts);
-    const t = await pg.evaluate(() => ({ home: document.getElementById("homeBooksTag").textContent, card: document.getElementById("booksTag").textContent, word: document.querySelector("#homeBooksBtn .door-word").textContent }));
-    ok(label + ": the Books door says \"" + tag + "\", the Books card's own tag", t.home === tag && t.card === tag && t.word === "Books", t);
+    // (the Arcade's Books card, which shared this tag, went on 23 Oct 2026:
+    // the door is the one place a parent reads it)
+    const t = await pg.evaluate(() => ({ home: document.getElementById("homeBooksTag").textContent, card: !!document.getElementById("booksCard") || !!document.getElementById("booksTag"), word: document.querySelector("#homeBooksBtn .door-word").textContent }));
+    ok(label + ": the Books door says \"" + tag + "\", and no Books card in the Arcade says anything", t.home === tag && !t.card && t.word === "Books", t);
     ok(label + ": …and opens the bookshelf", await tapTo(pg, "#homeBooksBtn", /\/library\.html$/), pg.url());
     ok(label + ": no page errors", errors.length === 0, errors);
     await ctx.close();
