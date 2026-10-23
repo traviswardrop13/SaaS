@@ -3,7 +3,7 @@
    rolled in, and seven little boats are lost on the dark sea: the child
    becomes the light.
 
-   The word (said two times) lights the lamp; the finger moves the pool of
+   The word (said three times) lights the lamp; the finger moves the pool of
    light over the night sea and holds it on the lost boat. SayPlay owns the
    word, the microphone, Echo's voice, "Go!", the reps and every card; this
    file owns only the play: one canvas, the finger, and api.done() once a

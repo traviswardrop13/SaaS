@@ -3,7 +3,7 @@
    Blossom Island, its stones fell into Rumble River, and Grandma Tortoise's
    100th birthday party is on the other side: the child builds it back.
 
-   The word (said two times) calls one stone up out of the river; the finger
+   The word (said three times) calls one stone up out of the river; the finger
    turns it (a tap, or the round turn button) and slides it into its hole.
    SayPlay owns the word, the microphone, Echo's voice, "Go!", the reps and
    every card; this file owns only the play: one canvas, the finger, and

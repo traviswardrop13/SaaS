@@ -12,7 +12,7 @@
 </head>
 <body data-phase="boot">
   <main id="app">
-    <canvas id="windupCanvas" role="img" aria-label="Grandpa Bear's toy shop. Say each word two times to find a toy's key, then wind it by drawing circles on the dial."></canvas>
+    <canvas id="windupCanvas" role="img" aria-label="Grandpa Bear's toy shop. Say each word three times to find a toy's key, then wind it by drawing circles on the dial."></canvas>
     <!-- BUDDY2: the child's own buddy sits on the shelf above the bench. Decoration only. -->
     <img id="windupBuddy" alt="" aria-hidden="true">
     <header id="top"><button id="close" type="button" aria-label="Back home"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg></button><span class="hudpill" id="ttl">Wind-Up Toys</span><span id="spacer"></span><span class="hudpill" id="dots" role="img" aria-label="0 of 8"></span></header>
@@ -24,8 +24,8 @@
     </div>
     <section id="turnPanel" aria-live="polite"><div id="picBox"><span id="pic"></span></div><div id="word"></div><button id="hear" class="cream-pill" type="button" aria-label="Hear the word again"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4Zm12 0a5 5 0 0 1 0 6m3-9a9 9 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span>Hear it</span></button><div id="listenRow"><span id="echoWrap"><img id="echoFace" src="/assets/crafted/echo-welcome.webp" alt="Echo" onerror="if(this.src.indexOf('echo-welcome')<0)this.src='/assets/crafted/echo-welcome.webp'"></span><span id="micState"></span><span id="cheer"></span><button id="micBtn" type="button" hidden aria-label="Listen again"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="12" rx="3" fill="currentColor"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4M9 21h6" fill="none" stroke="currentColor" stroke-width="2"/></svg></button></div></section>
   </main>
-  <div class="ovl" id="startOvl"><div class="ovlCard"><img class="windup-intro" src="/assets/crafted/home-windup.webp" alt="" onerror="if(this.src.indexOf('echo-welcome')<0){this.src='/assets/crafted/echo-welcome.webp';this.className='windup-intro echo';}"><h1 id="startTitle">Wind-Up Toys</h1><p id="startLine1">Say each word two times to find a toy's key.</p><p id="startLine2">Wind it with circles, and let go at the star.</p><p class="small" id="startSound"></p><button id="startBtn" class="act-pill" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 5 11 7-11 7Z" fill="currentColor"/></svg><span>Let's wind</span></button></div></div>
-  <div class="ovl" id="primer"><div class="ovlCard"><img class="ovlEcho" src="/assets/crafted/echo-listen.webp" alt="" onerror="if(this.src.indexOf('echo-welcome')<0)this.src='/assets/crafted/echo-welcome.webp'"><h2>Let Echo hear you!</h2><p>Say each word two times to find the keys!</p><p class="small" id="micPromise"></p><button class="btn" id="primerYes" type="button">Turn on Echo's ears</button><button class="ghost" id="primerNo" type="button">Not now</button></div></div>
+  <div class="ovl" id="startOvl"><div class="ovlCard"><img class="windup-intro" src="/assets/crafted/home-windup.webp" alt="" onerror="if(this.src.indexOf('echo-welcome')<0){this.src='/assets/crafted/echo-welcome.webp';this.className='windup-intro echo';}"><h1 id="startTitle">Wind-Up Toys</h1><p id="startLine1">Say each word three times to find a toy's key.</p><p id="startLine2">Wind it with circles, and let go at the star.</p><p class="small" id="startSound"></p><button id="startBtn" class="act-pill" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 5 11 7-11 7Z" fill="currentColor"/></svg><span>Let's wind</span></button></div></div>
+  <div class="ovl" id="primer"><div class="ovlCard"><img class="ovlEcho" src="/assets/crafted/echo-listen.webp" alt="" onerror="if(this.src.indexOf('echo-welcome')<0)this.src='/assets/crafted/echo-welcome.webp'"><h2>Let Echo hear you!</h2><p>Say each word three times to find the keys!</p><p class="small" id="micPromise"></p><button class="btn" id="primerYes" type="button">Turn on Echo's ears</button><button class="ghost" id="primerNo" type="button">Not now</button></div></div>
   <div class="ovl" id="pauseOvl"><div class="ovlCard"><img class="ovlEcho" src="/assets/crafted/echo-think.webp" alt="" onerror="if(this.src.indexOf('echo-welcome')<0)this.src='/assets/crafted/echo-welcome.webp'"><h2>A little toy-shop break</h2><p>The toys are waiting right here.</p><button class="btn" id="resume" type="button">Keep playing</button></div></div>
   <div class="ovl" id="endOvl"><div class="ovlCard"><img class="ovlEcho endStar" src="/assets/crafted/echo-cheer.webp" alt="" onerror="if(this.src.indexOf('echo-welcome')<0)this.src='/assets/crafted/echo-welcome.webp'"><h2 id="endTitle"></h2><p id="endSub"></p><button class="btn" id="again" type="button">Play again</button><button class="ghost" id="goHome" type="button">Back home</button></div></div>
   <script src="/sona.js"></script><script src="/crafted-words.js"></script><script src="/crafted-buddies.js"></script><script src="/sayplay.js"></script><script src="/windup.js"></script>
@@ -38,8 +38,8 @@
     try { little = !!(S && S.playStyle && S.playStyle() === "simple"); } catch (e) {}
     try { if (W && W.setLittle) W.setLittle(little); } catch (e) {}
     var INTRO = little
-      ? "Say each word two times to find a toy's key. Then draw circles on the key until it rings."
-      : "Say each word two times to find a toy's key. Wind it with circles, and let go at the star. Tap Oil can for extra help.";
+      ? "Say each word three times to find a toy's key. Then draw circles on the key until it rings."
+      : "Say each word three times to find a toy's key. Wind it with circles, and let go at the star. Tap Oil can for extra help.";
     if (little) { try { document.getElementById("startLine2").textContent = "Then draw circles on the key until it rings."; } catch (e) {} }
     var STEPS8 = [[], [], [], [], [], [], [], []], STEPS6 = [[], [], [], [], [], []];
 
@@ -163,6 +163,8 @@
     if (replay && !(window.Sona && Sona.storyReplay && Sona.storyReplay("windup"))) { document.body.hidden = true; location.replace("/today.html"); return; }
     SayPlay.start({
       key: "windup", title: "Wind-Up Toys", intro: INTRO, steps: little ? STEPS6 : STEPS8, finale: [],
+      // three sayings a word in every story game (Sona.STORY_SAY_TIMES)
+      sayTimes: (S && S.STORY_SAY_TIMES) || 3,
       done: { title: "The parade is on!", sub: "You woke up every toy." },
       // the story's ending follows the game (sayplay.js takes only this address's shape)
       exit: replay ? undefined : { href: "/adventure.html?part=end&story=windup", label: "See what happens!" },

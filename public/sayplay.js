@@ -18,7 +18,16 @@
    explain the two sayings in a separate sentence, before any target word.
    Nothing is spoken between the two sayings or glued onto the target.
 
-   ONE GAME ASKS ONCE: game.sayTimes (1 or 2; two unless the page says 1).
+   THREE TIMES IN THE STORY GAMES (Travis, 23 Oct 2026: "when a kid
+   practices the daily adventure i want it to ask them to say the sound 3
+   times not twice for every daily game"). The daily story's fourteen games
+   (Days 1-3's pages and story-game.html) pass game.sayTimes 3, read from
+   Sona.STORY_SAY_TIMES: three dots, "Say it 3 times", "2 more times!" after
+   the first saying, "1 more time!" after the second, and only the third earns
+   the move. Every other game keeps its own number. How many a child is asked
+   for is Rachel's call, and that one constant is where she changes it.
+
+   ONE GAME ASKS ONCE: game.sayTimes (1, 2 or 3; two unless the page says).
    Travis asked for two in the word games, the ones for ages 5-8 he was
    playing (Hoops, Soccer Goal, Dino Dig). Bubble Pop, the littles' game on
    this engine, was built to be said once, and whether a three-year-old should
@@ -81,8 +90,9 @@
   // care, and its second half would then be the second saying. A word said
   // again always starts later than that: the first one has to finish, and the
   // gap has to pass. So this takes nothing from a child who says it twice fast.
-  // SAY_TIMES is two unless the game's page asks for one (game.sayTimes, read
-  // in start(); the note at the top of this file says which game and why).
+  // SAY_TIMES is two unless the game's page asks for one or three
+  // (game.sayTimes, read in start(); the note at the top of this file says
+  // which game and why).
   var SAY_TIMES = 2, GAP_MS = 200, APART_MS = 450;
   var quietUntil = 0, micClosedAt = -1e9, chimesDue = 0, chimeEnd = 0;
   var SFX_MS = { tap: 120, correct: 400, complete: 700 };
@@ -359,7 +369,7 @@
     listening = !!on; publish();
     try {
       document.body.setAttribute("data-listen", on ? "on" : "off");
-      $("micState").textContent = on ? (oneMore() ? MORE + "!" : "Your turn!") : (turnLive ? "Listen" : "");
+      $("micState").textContent = on ? (oneMore() ? moreLeft() + "!" : "Your turn!") : (turnLive ? "Listen" : "");
     } catch (e) {}
     face(on ? "listen" : (turnLive ? "talk" : "welcome"));
   }
@@ -372,7 +382,7 @@
     // child loses only the optional power, never what their word already
     // won. This also covers a mic that failed to open for the help word.
     if (helpTurn) { endHelp(); return; }
-    try { $("micState").textContent = oneMore() ? MORE + "! Tap the mic" : "Tap the mic, then say it"; $("micBtn").hidden = false; } catch (e) {}
+    try { $("micState").textContent = oneMore() ? moreLeft() + "! Tap the mic" : "Tap the mic, then say it"; $("micBtn").hidden = false; } catch (e) {}
     face("think");
     setPhase("nudge");
   }
@@ -487,13 +497,15 @@
     var h = ""; for (var i = 0; i < G.steps.length; i++) h += '<i class="' + (i < step ? "on" : "") + '"></i>';
     try { $("dots").innerHTML = h; $("dots").setAttribute("aria-label", step + " of " + G.steps.length); } catch (e) {}
   }
-  // "Say it 2 times" and its two dots, under the word. The engine puts them on
+  // "Say it 2 times" and its dots (one a saying), under the word. The engine puts them on
   // the page itself: twenty pages can't drift, and a page the phone saved
   // before today still gets them with this file. The word and the line share
   // one box, so the word keeps its place in the panel's grid.
   // A game that asks once gets none of it: no line, no dots, and never "1 more
   // time" (oneMore() is false for it), so its panel is the one its page drew.
-  var MORE = "1 more time";
+  // what is left to say once a saying is heard: "1 more time" (the last), or
+  // "2 more times" when the game asks for three
+  function moreLeft() { var n = SAY_TIMES - said; return n + " more " + (n === 1 ? "time" : "times"); }
   function oneMore() { return said > 0 && said < SAY_TIMES; }
   function addTwice() {
     if (SAY_TIMES < 2) return;
@@ -520,7 +532,7 @@
   // ── a turn: show the word, Echo says it, the child says it, the game moves ──
   function nextTurn(same) {
     micStop(); stopAudio(); audioPaused=!!document.hidden; heardThisTurn = false; clearTimeout(nextTurn._t);
-    // a new word starts at none of two; the same word again ("Hear it", or
+    // a new word starts at none of its sayings; the same word again ("Hear it", or
     // back from a pause) keeps a saying Echo has already heard
     if (!same || !word) { word = pickWord(); said = 0; }
     paintSaid();
@@ -556,8 +568,8 @@
       micOpen();
     });
   }
-  // The voice check heard one saying of the word. The first only ticks its
-  // dot and asks for one more: all of it on screen, in this same frame, and
+  // The voice check heard one saying of the word. Each but the last only ticks
+  // its dot and asks for the rest: all of it on screen, in this same frame, and
   // none of it a sound, because the mic is still open and stays open (Travis,
   // 1 Oct 2026: "there is a little delay when i say it once" — the child sees
   // they were heard at once). The last one earns the move. True: the turn is
@@ -565,7 +577,8 @@
   function heardOne() {
     if (!turnLive) return true;
     // each saying the game asked for and heard is one rep on the week's count
-    // (Travis, 29 Sep 2026), so a word is two (one where the game asks once).
+    // (Travis, 29 Sep 2026), so a word is two (one where the game asks once,
+    // three in the story games).
     // Still play, never practice data (Sona.gameRep keeps its own ledger).
     try { if (S && S.gameRep) S.gameRep(SOUND); } catch (e) {}
     said++; paintSaid();
@@ -747,8 +760,9 @@
   }
   function start(game) {
     G = game;
-    // how many times this game asks for a word: one only if its page says so
-    SAY_TIMES = G.sayTimes === 1 ? 1 : 2;
+    // how many times this game asks for a word: two unless its page says one
+    // or three (the story games, Sona.STORY_SAY_TIMES)
+    SAY_TIMES = G.sayTimes === 1 ? 1 : G.sayTimes === 3 ? 3 : 2;
     if (!S) return;
     // Catalog access is checked before any mic or audio work starts.
     if (!S.gameAccess(G.key).allowed) { document.body.hidden = true; S.gameBounce(G.key); return; }
