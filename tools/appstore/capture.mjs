@@ -59,7 +59,7 @@ const DAYS = ["2026-10-05"];
 
 // A believable week for one child on R: practice-page tries (what Progress
 // and a clinician see) and sounds said inside games (Home's corner adds them).
-function seedOutcomes() {
+export function seedOutcomes() {
   const days = {};
   [[DAYS[0], 4, 3, 20]]
     .forEach(([d, a, p, tries]) => { days[d] = { a, p, tries }; });
@@ -67,25 +67,27 @@ function seedOutcomes() {
   return { R: { attempts, passes, tries: attempts * 5, firstAt: DAYS[0], lastAt: DAYS[0], days,
     byPos: { i: { a: attempts, p: passes } } } };
 }
-function seedProgress() {
+export function seedProgress() {
   const practiceDays = {};
   DAYS.forEach((d) => { practiceDays[d] = 1; });
   return { practiceDays, streak: { count: DAYS.length, lastDate: DAYS[DAYS.length - 1] }, totals: { sessions: 1, words: 20, stars: 0, coins: 0 }, stage: { R: 2 } };
 }
-function seedGameReps() {
+export function seedGameReps() {
   const g = {};
   [[DAYS[0], 10]].forEach(([d, n]) => { g[d] = { R: n }; });
   return g;
 }
 
 // ── the fake phone, installed before any page script ──
-function device(cfg) {
+// (tools/setupreel/record.mjs plays it on Playwright's virtual clock, which
+// owns Date there: cfg.ownClock leaves Date alone.)
+export function device(cfg) {
   const RealDate = Date, SHIFT = cfg.shift;
   class FrozenDate extends RealDate {
     constructor(...a) { if (a.length === 0) super(RealDate.now() + SHIFT); else super(...a); }
     static now() { return RealDate.now() + SHIFT; }
   }
-  window.Date = FrozenDate;
+  if (!cfg.ownClock) window.Date = FrozenDate;
 
   const dev = window.__dev = { voice: false, mics: 0, frozen: false, held: [] };
   // A canvas game keeps its last drawn frame while frozen: a slice trail
@@ -196,8 +198,8 @@ function device(cfg) {
 }
 
 // ── the server: public/ as it is ──
-const MIME = { html: "text/html", js: "text/javascript", css: "text/css", svg: "image/svg+xml", png: "image/png", jpg: "image/jpeg", webp: "image/webp", woff2: "font/woff2", wav: "audio/wav", mp3: "audio/mpeg", json: "application/json", webmanifest: "application/manifest+json" };
-function fileFor(urlPath) {
+export const MIME = { html: "text/html", js: "text/javascript", css: "text/css", svg: "image/svg+xml", png: "image/png", jpg: "image/jpeg", webp: "image/webp", woff2: "font/woff2", wav: "audio/wav", mp3: "audio/mpeg", json: "application/json", webmanifest: "application/manifest+json" };
+export function fileFor(urlPath) {
   let f = path.join(PUBLIC, decodeURIComponent(urlPath));
   if (!f.startsWith(PUBLIC)) return null;
   if (existsSync(f) && statSync(f).isDirectory()) f = path.join(f, "index.html");
@@ -496,12 +498,12 @@ SCENES.progress = async (devName) => {
 SCENES.rachel = async (devName) => {
   const s = await open(devName, "/onboarding.html", { fresh: true });
   const { page } = s;
-  // Since 5 Oct 2026 (setup option B) Rachel sits on "<Name>'s practice is
-  // ready", under About Sona; walk setup to it whatever questions come first
+  // Since 22 Oct 2026 Rachel has her own screen again, before the child's
+  // name; walk setup to it whatever comes first
   await until(page, () => document.body.dataset.setupScreen === "welcome", 15000);
   for (let i = 0; i < 12; i++) {
     const scr = await page.evaluate(() => document.body.dataset.setupScreen);
-    if (scr === "ready") break;
+    if (scr === "rachel") break;
     if (scr === "name") { await page.locator("#obName").fill("Mia"); const a = page.locator('#obAge [data-age="8"]'); if (await a.count()) await a.click(); }
     if (scr === "sounds") { const r = page.locator('#obSounds [data-sound="R"]'); if ((await r.getAttribute("aria-pressed")) !== "true") await r.click(); }
     await page.waitForTimeout(650);
@@ -510,9 +512,10 @@ SCENES.rachel = async (devName) => {
     else await page.locator(".step.on button:visible").first().click();
     await page.waitForTimeout(650);
   }
-  await page.locator('[data-step="ready"].on').waitFor();
-  await page.evaluate(() => Promise.all([document.fonts.ready, document.querySelector(".ready-rachel-photo") && document.querySelector(".ready-rachel-photo").decode().catch(() => {})]));
-  await page.locator(".step.on").evaluate((el) => el.getAnimations({ subtree: true }).forEach((a) => a.finish()));
+  await page.locator('[data-step="rachel"].on').waitFor();
+  await page.evaluate(() => Promise.all([document.fonts.ready, document.querySelector(".rachel-photo img") && document.querySelector(".rachel-photo img").decode().catch(() => {})]));
+  // (a step's own motion always ends; a loop, if one ever came in, is left be)
+  await page.locator(".step.on").evaluate((el) => el.getAnimations({ subtree: true }).forEach((a) => { if (a.effect && a.effect.getComputedTiming().endTime !== Infinity) a.finish(); }));
   await page.waitForTimeout(500);
   await shot(page, devName, "rachel");
   return s;

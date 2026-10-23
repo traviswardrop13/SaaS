@@ -220,66 +220,71 @@ try {
   await scenario("a parent's setup on speaksona.com", async () => {
     const w = await world(browser, { stubs: { "/today.html": "<p>Home</p>", "/charge.html": "<p>Practice</p>", "/arcade-feed.html": "<p>Feed</p>" } });
     const { page } = w;
+    const calmed = () => page.evaluate(() => document.body.classList.remove("ob-settling"));
+    const rest = () => page.evaluate(() => new Promise((r) => setTimeout(r, 300)));
     await page.goto("https://speaksona.com/onboarding.html?utm_source=ad&fbclid=XYZ123");
     await page.waitForFunction(() => window.Sona && document.getElementById("nextBtn"));
     await recording(page);
     await mark(page, 101);                          // the hello: recorded
+    // THE SCREENS THAT SELL (22 Oct 2026) come first: the problem, the games
+    // playing and Rachel, all recorded, none showing the name
+    await next(page);
+    await page.locator('[data-step="problem"].on').waitFor(); await rest();
+    await mark(page, 111);                          // "Speech homework is hard at home.": recorded
+    await next(page);
+    await page.locator('[data-step="reel"].on').waitFor(); await rest();
+    await mark(page, 121);                          // "They practice by playing.": recorded
+    await next(page);
+    await page.locator('[data-step="rachel"].on').waitFor(); await rest();
+    await mark(page, 131);                          // Rachel, on her own: recorded
     await next(page);
     await page.locator('[data-step="name"].on').waitFor();
     await page.locator("#obName").fill("Zephyrine");
     await page.locator('#obAge [data-age="6"]').click();
     await next(page);
-    await page.locator('[data-step="therapy"].on').waitFor();
-    await mark(page, 201);                          // the therapy question: never recorded
-    await page.evaluate(() => document.body.classList.remove("ob-settling"));
-    await page.locator('[data-step="therapy"] .ask-pick[data-val="t_yes"]').click();
-    await page.locator('[data-step="problem"].on').waitFor();   // the first of the three screens that sell (19 Oct 2026)
-    // Back to the name, and a new one: both names stay out
-    await page.waitForTimeout(500);
-    await page.evaluate(() => document.body.classList.remove("ob-settling"));
-    await page.locator("#backBtn").click();
-    await page.locator('[data-step="therapy"].on').waitFor();
-    await mark(page, 211);                          // the therapy question again, an answer held: never recorded
-    await page.evaluate(() => document.body.classList.remove("ob-settling"));
-    await page.locator("#backBtn").click();
-    await page.locator('[data-step="name"].on').waitFor();
-    await page.locator("#obName").fill("Quillon");
+    // "What does <Name> love?" and "Games <Name> will love" show the name, as ph-name; both are recorded
+    await page.locator('[data-step="interests"].on').waitFor(); await rest();
+    await mark(page, 141);                          // what the child loves: recorded, the name as [child]
+    await calmed(); await page.locator('#obInterests [data-val="sports"]').click();
+    await next(page);
+    await page.locator('[data-step="games"].on').waitFor();
+    await page.evaluate(() => Promise.all([...document.querySelectorAll(".step.on img")].map((i) => i.decode().catch(() => {}))));
+    await rest();
+    await mark(page, 151);                          // "Games <Name> will love": recorded, the name as [child]
     await next(page);
     await page.locator('[data-step="therapy"].on').waitFor();
-    await page.evaluate(() => document.body.classList.remove("ob-settling"));
+    await mark(page, 201);                          // the therapy question: never recorded
+    await calmed();
+    await page.locator('[data-step="therapy"] .ask-pick[data-val="t_yes"]').click();
+    await page.locator('[data-step="sounds"].on').waitFor();   // the screen the answer lands on (since 22 Oct 2026)
+    // Back to the name, and a new one: both names stay out
+    await page.waitForTimeout(500);
+    await calmed(); await page.locator("#backBtn").click();
+    await page.locator('[data-step="therapy"].on').waitFor();
+    await mark(page, 211);                          // the therapy question again, an answer held: never recorded
+    for (const k of ["games", "interests", "name"]) { await calmed(); await page.locator("#backBtn").click(); await page.locator('[data-step="' + k + '"].on').waitFor(); }
+    await page.locator("#obName").fill("Quillon");
+    await next(page); await page.locator('[data-step="interests"].on').waitFor();
+    await next(page); await page.locator('[data-step="games"].on').waitFor();
+    await next(page); await page.locator('[data-step="therapy"].on').waitFor();
+    await calmed();
     // This time a double tap, the way a hurried thumb answers: the second tap
     // lands on the next screen, and then the pointer moves on from the answer
     const yes = await page.locator('[data-step="therapy"] .ask-pick[data-val="t_yes"]').boundingBox();
     const t1 = await page.evaluate(() => Date.now());
     await page.locator('[data-step="therapy"] .ask-pick[data-val="t_yes"]').dblclick();
-    await page.locator('[data-step="problem"].on').waitFor();
-    for (let i = 0; i <= 10; i++) { await page.mouse.move(yes.x + yes.width / 2 + i * 5, yes.y + yes.height / 2 + i * 30); await page.waitForTimeout(60); }
-    await mark(page, 301);                          // the screen after the answer ("Speech homework is hard at home."): not recorded either
-    const t2 = await page.evaluate(() => Date.now());
-    await next(page);
-    // THE SCREENS THAT SELL (19 Oct 2026): "<Name> plays on their own" and
-    // "Games <Name> will play" show the name, as ph-name; both are recorded
-    await page.locator('[data-step="alone"].on').waitFor();
-    await page.evaluate(() => Promise.all([...document.querySelectorAll(".step.on img")].map((i) => i.decode().catch(() => {}))));
-    await page.evaluate(() => new Promise((r) => setTimeout(r, 300)));
-    await mark(page, 321);                          // "<Name> plays on their own": recorded, the name as [child]
-    await next(page);
-    await page.locator('[data-step="games"].on').waitFor();
-    await page.evaluate(() => new Promise((r) => setTimeout(r, 300)));
-    await mark(page, 331);                          // "Games <Name> will play": recorded, the name as [child]
-    await next(page);
     await page.locator('[data-step="sounds"].on').waitFor();
-    await page.evaluate(() => new Promise((r) => setTimeout(r, 300)));
-    await mark(page, 341);                          // the sounds, now two screens past the answer: recorded
-    await page.evaluate(() => document.body.classList.remove("ob-settling"));
+    for (let i = 0; i <= 10; i++) { await page.mouse.move(yes.x + yes.width / 2 + i * 5, yes.y + yes.height / 2 + i * 30); await page.waitForTimeout(60); }
+    await mark(page, 301);                          // the screen after the answer (the sounds): not recorded either
+    const t2 = await page.evaluate(() => Date.now());
+    await calmed();
     const chip = page.locator('#obSounds [data-sound="R"]');
     if (await chip.getAttribute("aria-pressed") !== "true") await chip.click();
     await next(page);
-    await page.locator('[data-step="goal"].on').waitFor();
-    await page.evaluate(() => new Promise((r) => setTimeout(r, 300)));
-    await mark(page, 351);                          // the days a week: recorded (the control)
-    await page.evaluate(() => document.body.classList.remove("ob-settling"));
-    await page.locator("#goalSkip").click();
+    await page.locator('[data-step="minutes"].on').waitFor(); await rest();
+    await mark(page, 351);                          // how long each day, two screens past the answer: recorded (the control)
+    await calmed();
+    await page.locator("#minutesSkip").click();
     await page.locator('[data-step="updates"].on').waitFor();
     await page.locator("#updEmail").fill("zeph.parent@example.com");
     await next(page);
@@ -288,7 +293,7 @@ try {
     await next(page);
     await page.locator('[data-step="mic"].on').waitFor();
     await mark(page, 501);                          // the microphone: recorded
-    await page.evaluate(() => document.body.classList.remove("ob-settling"));
+    await calmed();
     await page.locator("#micNotNow").click();
     await page.locator('[data-step="achieve"].on').waitFor();
     await mark(page, 601);                          // the hand-off: never recorded
@@ -296,15 +301,16 @@ try {
     const rr = w.rr(), text = w.text();
     ok("setup: a recording was sent (full snapshots of the page)", rr.filter((e) => e.type === FULL).length >= 2, rr.length);
     ok("setup: the hello's pointer was recorded (the control)", marked(rr, 101));
-    ok("setup: the days-a-week screen's pointer was recorded (the control)", marked(rr, 351));
-    ok("setup: nothing on the screen a therapy answer lands on (\"Speech homework is hard at home.\")", !marked(rr, 301));
-    ok("setup: \"<Name> plays on their own\", \"Games <Name> will play\" and the sounds were recorded (the controls)", marked(rr, 321) && marked(rr, 331) && marked(rr, 341), [marked(rr, 321), marked(rr, 331), marked(rr, 341)]);
+    ok("setup: the problem, the games playing and Rachel's screen were recorded (the controls)", marked(rr, 111) && marked(rr, 121) && marked(rr, 131), [marked(rr, 111), marked(rr, 121), marked(rr, 131)]);
+    ok("setup: the minutes screen's pointer was recorded (the control)", marked(rr, 351));
+    ok("setup: nothing on the screen a therapy answer lands on (the sounds)", !marked(rr, 301));
+    ok("setup: \"What does <Name> love?\" and \"Games <Name> will love\" were recorded (the controls)", marked(rr, 141) && marked(rr, 151), [marked(rr, 141), marked(rr, 151)]);
     // every spot those two screens show the name is recorded as [child], and
     // the screens' own words are there, so the check below is not vacuous
     const allNodes = nodes(rr), byId = (id) => allNodes.filter((n) => n.attributes && n.attributes.id === id);
     const said = (n) => (n.childNodes || []).map((c) => c.textContent || "").join("");
-    ok("setup: the name on the screens that sell is recorded as [child], every time (aloneName, aloneName2, gamesName)", ["aloneName", "aloneName2", "gamesName"].every((id) => byId(id).length > 0 && byId(id).every((n) => said(n) === "[child]")), ["aloneName", "aloneName2", "gamesName"].map((id) => byId(id).map(said)));
-    ok("setup: the screens that sell were recorded with their words (\"plays on their own\", \"will play\", the games)", /plays on their own/.test(text) && /will play/.test(text) && /Fruit Slice/.test(text) && /Speech homework is hard at home/.test(text));
+    ok("setup: the name on the screens that sell is recorded as [child], every time (intName, gamesName)", ["intName", "gamesName"].every((id) => byId(id).length > 0 && byId(id).every((n) => said(n) === "[child]")), ["intName", "gamesName"].map((id) => byId(id).map(said)));
+    ok("setup: the screens that sell were recorded with their words (the problem, the reel, Rachel, what they love, the games)", /Speech homework is hard at home/.test(text) && /They practice by playing/.test(text) && /pediatric speech-language pathologist in her clinical fellowship/.test(text) && /What does/.test(text) && /will love/.test(text) && /Fruit Slice/.test(text));
     // every incremental event, each pointer position at its own time
     const when = (e) => (e.type === INCR && Array.isArray(e.data.positions)) ? e.data.positions.map((q) => e.timestamp + (q.timeOffset || 0)) : [e.timestamp];
     const between = rr.filter((e) => e.type === INCR && when(e).some((t) => t >= t1 && t <= t2));
@@ -342,11 +348,12 @@ try {
     ok("setup: no event was compressed past the scrubber", !rr.some((e) => e.cv));
     ok("setup: PostHog's code came from speaksona.com, the tested build, and nothing else of it loaded (no surveys, toolbar, logs, dead clicks, exceptions, web vitals)", JSON.stringify(w.vendor.slice().sort()) === JSON.stringify(["/vendor/posthog/static/" + PH_VERSION + "/array.js", "/vendor/posthog/static/" + PH_VERSION + "/lazy-recorder.js"]) && w.assets.every((p) => p.indexOf("/array/" + TOKEN + "/config") === 0), { vendor: w.vendor, cdn: w.assets });
     ok("setup: no event but setup's own and the recording", w.events().every((e) => ["$snapshot", "setup step", "$pageview", "$identify", "$set", "onboarding completed", "Lead", "CompleteRegistration", "weekly summary opted in", "$opt_in"].includes(e.event)), [...new Set(w.events().map((e) => e.event))]);
+    ok("setup: what the child loves rides in no event (a recording may show the picks: Rachel's to know)", !w.events().some((e) => e.event !== "$snapshot" && /sports/i.test(JSON.stringify(e.properties || {}))));
     ok("setup: no page error", w.errors.length === 0, w.errors);
     // The child now holds the phone. "Let's play!", then Back (no page
     // cache: setup loads afresh, set up): never recorded again in this tab
     const before = w.snaps().length;
-    await page.evaluate(() => document.body.classList.remove("ob-settling"));
+    await calmed();
     await page.locator("#nextBtn").click();
     await page.waitForURL(/charge\.html|arcade-feed|today\.html/);
     await page.goBack();

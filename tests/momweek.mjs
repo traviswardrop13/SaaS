@@ -112,11 +112,13 @@ console.log(errs.length ? "FAIL progress pageerrors: " + errs[0] : "PASS progres
 if (errs.length) fails++;
 await page.screenshot({ path: OUT + "/mom-progress.png" });
 
-// onboarding goal step renders 3 choices
+// setup's daily goal step renders 3 choices (how long each day, since 22 Oct
+// 2026: 5, 10 or 15 minutes, the daily goal in reps; the days a week are
+// Settings' and Progress's, no longer asked in setup)
 errs = [];
 await page.goto("http://localhost:8128/onboarding.html"); await page.waitForTimeout(900);
-const ob = await page.evaluate(() => document.querySelectorAll("#obGoal .ask-pick").length);
-ok("onboarding 3 cadence choices", ob, 3);
+const ob = await page.evaluate(() => document.querySelectorAll("#obMinutes .ask-pick").length);
+ok("onboarding 3 daily-goal choices", ob, 3);
 console.log(errs.length ? "FAIL onboarding pageerrors: " + errs[0] : "PASS onboarding no pageerrors");
 if (errs.length) fails++;
 

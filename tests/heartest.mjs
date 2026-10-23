@@ -309,6 +309,52 @@ ok('"cat" does not fuzzy-match "car"... it does not need to — it has no R; but
     /setActive\(true\)[\s\S]{0,140}"busy"/.test(code) && /busyError\(error\) \? "busy" : "engine"/.test(code));
 }
 
+// ── 4c. THE TRIAL REMINDER: the Swift side (NOTIFY1, 22 Oct 2026) ──
+// One LOCAL notification the day before the free days end. notifytest holds
+// sona.js against a fake of these four methods; these hold the file to that
+// fake and to what makes it local: iOS's own permission box for alerts and a
+// sound, a one-time calendar trigger, a request that carries only a title and
+// words, and no Apple push service (no device token, no registration). Read
+// with comments stripped, as above.
+{
+  const sona = readFileSync(ROOT + "/sona.js", "utf8");
+  const swift = readFileSync(ROOT + "/../plugins/sona-speech/ios/Sources/SonaSpeechPlugin/SonaSpeechPlugin.swift", "utf8");
+  const code = swift.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/[^\n]*/g, "");
+  // the reminder's own section: the mic's timers repeat, and iOS's audio notices carry a userInfo
+  const nb = code.slice(code.indexOf("private static let notifyVersion"), code.indexOf("@objc private func audioInterrupted"));
+  ok("the reminder's methods sit in one section of the plugin", nb.length > 1500 && /func notifyStatus[\s\S]*func notifyAsk[\s\S]*func notifySchedule[\s\S]*func notifyCancel/.test(nb), nb.length);
+  for (const m of ["notifyStatus", "notifyAsk", "notifySchedule", "notifyCancel"]) {
+    ok("the plugin declares " + m + " and has its @objc method, and sona.js calls it",
+      code.includes('CAPPluginMethod(name: "' + m + '"') && new RegExp("@objc func " + m + "\\(_ call: CAPPluginCall\\)").test(code) && sona.includes("P." + m + "("));
+  }
+  ok("the plugin imports UserNotifications (it compiles inside AppDelegate.swift, which may not)", /^import UserNotifications$/m.test(swift));
+  ok("iOS's box asks for alerts and a sound, nothing else: no badge, no quiet (provisional), no critical alerts",
+    /requestAuthorization\(options: \[\.alert, \.sound\]/.test(code) && !/\.badge|\.provisional\]|\.criticalAlert|\.providesAppNotificationSettings/.test(code)
+    && (code.match(/requestAuthorization\(/g) || []).length === 1);
+  ok("ONE TIME, AT ONE MOMENT: a calendar trigger that never repeats, in this phone's time zone",
+    /UNCalendarNotificationTrigger\(dateMatching: parts, repeats: false\)/.test(nb) && !/repeats: true/.test(nb) && /parts\.timeZone = TimeZone\.current/.test(nb)
+    && !/UNTimeIntervalNotificationTrigger|UNLocationNotificationTrigger/.test(code));
+  ok("a moment already past, or more than 400 days away, is refused, never sent at once",
+    /guard ahead > 60, ahead < 400 \* 86400 else \{[\s\S]{0,120}"past"/.test(nb));
+  ok("nothing is scheduled for a family who has not allowed it (an answer, not a queued request)",
+    /guard settings\.authorizationStatus == \.authorized \|\| settings\.authorizationStatus == \.provisional else \{[\s\S]{0,160}"scheduled": false, "reason": "denied"/.test(nb));
+  ok("the request carries a title, words and a sound, and nothing else (no userInfo, no attachment, no badge)",
+    /content\.title = title\s*content\.body = body\s*content\.sound = \.default/.test(nb) && !/userInfo|attachments|\.badge|categoryIdentifier/.test(nb)
+    && (code.match(/UNMutableNotificationContent\(\)/g) || []).length === 1);
+  ok("cancel removes the waiting request by its id", /removePendingNotificationRequests\(withIdentifiers: \[id\]\)/.test(nb));
+  ok("shown while Sona is open too (the reminder is set for the time of day the family plays), and only Sona's own",
+    /bridge\?\.notificationRouter\.localNotificationHandler = self/.test(code) && /extension SonaSpeechPlugin: NotificationHandlerProtocol \{[\s\S]{0,200}guard notification\.request\.identifier\.hasPrefix\("sona-"\) else \{ return \[\] \}\s*return \[\.banner, \.list\]\s*\}/.test(code)
+    && !/pushNotificationHandler/.test(code));
+  // review, 22 Oct 2026: shown over the app WITH its sound, iOS's chime would
+  // play through the speaker into a game's open mic (Sona's own mic has no
+  // voice processing), against "nothing plays while the mic listens"
+  const present = (code.match(/func willPresent\(notification: UNNotification\)[^{]*\{[\s\S]*?\n    \}/) || [""])[0];
+  ok("…SILENTLY while Sona is open: a banner and the list, never .sound (a game's mic may be listening)",
+    present.length > 40 && !/\.sound|\.badge|\.alert/.test(present) && /\[\.banner, \.list\]/.test(present), present);
+  ok("LOCAL ONLY: no Apple push service (no registerForRemoteNotifications, no device token), and the plugin never takes over iOS's notification delegate",
+    !/registerForRemoteNotifications|deviceToken|APNs|\.delegate\s*=/.test(code));
+}
+
 // ── 5. switching it on: scripts/install-ios-speech.py ──
 // The plugin sat in the repo from August and never reached the app: nothing
 // compiled it, nothing registered it, and Info.plist had no speech text (iOS

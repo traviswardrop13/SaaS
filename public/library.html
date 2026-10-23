@@ -295,6 +295,13 @@
   <script src="/saycheck.js"></script>
   <script>
     var profile = Sona.getProfile();
+    // BEFORE THE ADVENTURE TILE COMES BACK (it is hidden today): since 22 Oct
+    // 2026 setup's "What does <Name> love?" saves profile.interests as its
+    // own ids ("sports", "music", "dinosaurs", "animals", "space",
+    // "building", "food"; onboarding.html INTERESTS), no longer this tile's
+    // story themes ("dragons", "space"...). Read as-is, a family would be
+    // promised "A brand-new sports story". Map the ids to a theme first, or
+    // ignore them; older profiles still hold the old themes.
     try{ var nm=(profile.childName||"").trim(), it=(profile.interests&&profile.interests[0])||"";
       if(nm) document.getElementById("advTitle").textContent=nm+"'s Adventure";
       if(it) document.getElementById("advSub").textContent="A brand-new "+it+" story, made just for "+(nm||"you")+" — never the same twice";

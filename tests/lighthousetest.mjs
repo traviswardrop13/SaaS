@@ -310,6 +310,9 @@ try{
    const P={x:(x0+x1)/2,y:(y0+y1)/2},under=()=>page.evaluate(([x,y])=>{const e=document.elementFromPoint(x,y);return e&&(e.closest('#helpBack')?'back':e.closest('#lhHelp')?'pill':e.id||e.tagName);},[P.x,P.y]);
    await page.mouse.click(P.x,P.y);const u1=await under();await page.mouse.click(P.x,P.y);await until(page,()=>__sayplay.listening);s=await both(page);
    ok('a double tap on Bright beam asks for the help and keeps asking (its second tap, on "Back to the game", does nothing)',u1==='back'&&s.sp.phase==='turn'&&s.lh.paused&&await page.locator('#helpBack').isVisible(),{u1,s});
+   // past the half-second settle after that ask: the fake clock moves only
+   // as far as until() stepped it, which a fast or slow machine changes
+   await advance(page,600);
    await page.mouse.click(P.x,P.y);const u2=await under();await page.mouse.click(P.x,P.y);await advance(page,300);s=await both(page);
    ok('a double tap on "Back to the game" goes back to the game and does not ask again',u2==='pill'&&s.sp.phase==='play'&&!s.lh.paused&&!(await page.locator('#helpBack').isVisible()),{u2,s});
    await advance(page,600);await page.mouse.click(P.x,P.y);await until(page,()=>__sayplay.listening);s=await both(page);
