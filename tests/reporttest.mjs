@@ -361,7 +361,7 @@ const kid = (o = {}) => Object.assign({ d: 3, g: 2, gw: 5, r: 40, p: 25, s: ["R"
 // 5. the wiring
 {
   const cron = readFileSync(path.join(REPO, "app/api/cron/nurture/route.ts"), "utf8"), vercel = JSON.parse(readFileSync(path.join(REPO, "vercel.json"), "utf8")).crons;
-  ok("the daily cron sends the report (it decides the day) with a time budget under maxDuration, and a cron runs it daily", /await runReports\([\s\S]{0,200}deadline: started \+ 250000/.test(cron) && /maxDuration = 300/.test(cron) && /import \{ runReports \} from "@\/lib\/report"/.test(cron) && vercel.some((c) => c.path === "/api/cron/nurture" && /^\d+ \d+ \* \* \*$/.test(c.schedule)));
+  ok("the daily cron sends the report (it decides the day) with a time budget under maxDuration, and a cron runs it daily", /await runReports\([\s\S]{0,200}deadline: started \+ 200000/.test(cron) && /maxDuration = 300/.test(cron) && /import \{ runReports \} from "@\/lib\/report"/.test(cron) && vercel.some((c) => c.path === "/api/cron/nurture" && /^\d+ \d+ \* \* \*$/.test(c.schedule)));
   const sona = readFileSync(path.join(ROOT, "sona.js"), "utf8"), ob = readFileSync(path.join(ROOT, "onboarding.html"), "utf8");
   const noExport = (sona.match(/const NO_EXPORT = \[[^\]]*\]/) || [""])[0], noImport = (sona.match(/const NO_IMPORT = \[[^\]]*\]/) || [""])[0];
   ok("the phone's device id and last send are this phone's own: on NO_EXPORT and NO_IMPORT", /"sona\.report\.v1"/.test(noExport) && /"sona\.report\.v1"/.test(noImport));

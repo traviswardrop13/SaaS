@@ -72,7 +72,7 @@ export const SEND_CAP = 250;
 export const ASK_CAP = 300;
 export const ASKS_PER_MAILBOX = 5; // confirm links a mailbox in ASK_WINDOW_SEC, whichever phones asked
 export const ASK_WINDOW_SEC = 180 * 24 * 60 * 60;
-export const PACE_MS = 550; // Resend's default limit is 2 a second (cron/weekly waits the same)
+export const PACE_MS = 550; // Resend's default limit is 2 a second (cron/weekly and lib/weekly.ts wait the same)
 export const SEND_DAYS = [1, 2, 3]; // Monday, then Tuesday and Wednesday to catch up
 export const SOUNDS = ["P", "B", "M", "N", "T", "D", "K", "G", "F", "V", "S", "Z", "SH", "CH", "J", "L", "R", "TH", "THV"] as const;
 const SOUND_LABEL: Record<string, string> = { THV: "TH (v)" };
@@ -185,8 +185,8 @@ export async function suppressed(email: string, kv: Kv): Promise<boolean | null>
   return false;
 }
 
-/** Send one Resend email; true when Resend took it. Never throws; gives up after 10 seconds. */
-async function resend(f: Fetch, cfg: NonNullable<ReturnType<typeof config>>, msg: { to: string; subject: string; html: string; text: string; unsubUrl: string; key: string }): Promise<{ ok: boolean; status: number }> {
+/** Send one Resend email; true when Resend took it. Never throws; gives up after 10 seconds. lib/weekly.ts sends with it too. */
+export async function resend(f: Fetch, cfg: NonNullable<ReturnType<typeof config>>, msg: { to: string; subject: string; html: string; text: string; unsubUrl: string; key: string }): Promise<{ ok: boolean; status: number }> {
   const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), 10000);
   try {
     const r = await f("https://api.resend.com/emails", {
@@ -207,7 +207,7 @@ async function resend(f: Fetch, cfg: NonNullable<ReturnType<typeof config>>, msg
   }
 }
 
-const unsubUrlFor = (email: string, secret: string) => `https://speaksona.com/api/email/unsub?e=${encodeURIComponent(email)}&k=${unsubToken(email, secret)}`;
+export const unsubUrlFor = (email: string, secret: string) => `https://speaksona.com/api/email/unsub?e=${encodeURIComponent(email)}&k=${unsubToken(email, secret)}`;
 /** A Resend Idempotency-Key with no address in it (a header carries ASCII only). */
 const keyFor = (kind: string, email: string) => `report-${kind}-${createHash("sha256").update(email).digest("hex").slice(0, 32)}`;
 
@@ -322,7 +322,7 @@ export async function store(snap: Snapshot, kv: Kv = kvCmd, f: Fetch = fetch, no
 }
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-function range(wk: string): string {
+export function range(wk: string): string {
   const a = new Date(wk + "T00:00:00Z"), b = new Date(a.getTime() + 6 * DAY_MS);
   return `${MONTHS[a.getUTCMonth()]} ${a.getUTCDate()} to ${MONTHS[b.getUTCMonth()]} ${b.getUTCDate()}`;
 }
@@ -338,9 +338,10 @@ function soundList(s: string[]): string {
 /**
  * One child's lines, plain text; the html escapes them. "Said their sound
  * out loud", not "practiced": the days count a heard game or book word too,
- * while Progress's "practiced" counts the practice page alone.
+ * while Progress's "practiced" counts the practice page alone. lib/weekly.ts
+ * shows the same lines in its example, so the example is the real thing.
  */
-function kidLines(k: Kid): string[] {
+export function kidLines(k: Kid): string[] {
   if (!k.r) return ["No practice last week."];
   // the plan is named only when a grown-up picked it: a family who never
   // chose a number of days is never told "your plan: 4 days a week"

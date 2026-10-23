@@ -353,8 +353,8 @@ changing one. What follows from the rule:
     else), to `/api/lead` (`source "app-setup"`, role `parent`, nothing
     about the child), when the parent leaves the ready screen (or the
     reminder after it), before the price, never waiting on the network. The hand-off has no email box and
-    no ×. After a Skip there is no other place to give an email (Settings
-    has no field): Travis's call.
+    no ×. After a Skip, the one other place to give an email is Settings'
+    weekly report switch (23 Oct 2026, WEEKLY1).
   - **The therapy answer stays on the phone**: a household key
     (`sona.setupasks.v1`, `Sona.setupAsks()`), not in the profile, not in a
     backup (`NO_EXPORT`), in no request, event, title or log. In a browser
@@ -1485,8 +1485,9 @@ list was in, another spelling of the same Gmail inbox) is unsubscribed in
 Resend. A check that runs out of time keeps its place
 (`resend:reconcile:after`) and the next carries on. Then the welcome emails
 (`runDue`, until 150 seconds in; a day-0 email Resend turned away at sign-up
-waits for this run instead of being lost) and the weekly report (until 250),
-and last, with what is left (until 265), `backfill`: first every post that
+waits for this run instead of being lost), the weekly report (until 200),
+the Monday email (WEEKLY1, until 255), and last, with what is left (until
+265), `backfill`: first every post that
 did not fully land (`resend:retry`, address to what it carried: a purchase
 the phone tells Sona once is never lost to a busy Resend, and a later post
 for the same address carries it too; purchases first, 50 a day, each tried
@@ -1520,9 +1521,10 @@ from Rachel.
   of the child set up first). `weeklyEmail` alone (the hand-off box before 13
   Oct, which asked for a "weekly summary", and the 13-15 Oct step, which asked
   for tips) sends nothing: "Progress leaves only with a grown-up's explicit
-  consent", and those grown-ups agreed to something else. Settings has no
-  switch for them, and no status line or off switch for anyone: Travis's
-  call. Skip sets neither. A brother or sister set up later on the same phone
+  consent", and those grown-ups agreed to something else. **Since 23 Oct 2026
+  Settings has a switch** (Travis: "Yes, add the switch", WEEKLY1 below): a
+  household that skipped setup's step, or gave it for tips, turns the report
+  on there, and anyone turns it off. Skip sets neither. A brother or sister set up later on the same phone
   is in the report too (the address is the household's). Removing the child
   whose profile holds the address stops the report.
 - **Nothing is kept or sent until the address says yes** (the review, 15 Oct
@@ -1613,6 +1615,64 @@ from Rachel.
   untouched.
 `reporttest` plays the phone and the server.
 
+**THE MONDAY EMAIL (WEEKLY1, 23 Oct 2026)** (Travis: "afterwards, I want to
+do 1 email a week that's kind of like the weekly progress report. And just
+send it to everybody so that they get one every week ... every Monday and if
+they're not signed up, it'll just say like what they could be monitoring";
+then "Parents only" and "Yes, add the switch"). `lib/weekly.ts`, run by the
+daily `/api/cron/nurture` after the reports (Monday, with Tuesday and
+Wednesday catching up, as REPORT1; a founder's run with `?weekly=1` sends on
+any day, still once a week).
+- **Who:** every address `everyone()` holds whose role is parent or none
+  (the Speech Check, the reminder pledge), never a speech therapist, a
+  clinician account or "Other". Not while their welcome series is on
+  (`nurture:due`) or in their first three days, so the three come first.
+  Never anyone in `email:unsub` (exact or plain mailbox). An address that
+  joined before Resend took the list from Kit (17 Oct 2026, `KIT_CUTOFF`) or
+  has no sign-up time (`nurture:0` lasts a year) waits for Kit's leavers
+  (`KIT_DONE`), as the backfill does: without `KIT_API_KEY` it waits for good.
+- **What:** a household that has the real report (this week's sent, or any
+  phone confirmed for it, `report:dev:<hash>`, even in a quiet week that
+  sends nothing) gets that and nothing from here. Everyone else gets "Your
+  child’s week on Sona, every Monday": the real report's own lines
+  (`kidLines`) for a made-up child (`EXAMPLE`: 4 days, 3 at the goal, 86 reps,
+  52 in practice, R), marked "Example · <last week>" and "These numbers are
+  made up.", then how to get theirs ("open Sona, tap Grown-ups, and turn on
+  Weekly progress report in Settings"), "Open Sona" (the App Store link), a
+  line for one who turned it on and has not tapped the link, what a rep is,
+  the hedge, Rachel's sign-off. Every week the same, dated. Nothing about a
+  child.
+- **Once an address a week** (`weekly:sent:<monday>:<email>`, SET NX, given
+  back when Resend does not take it or the store did not answer; kept for an
+  address that is not for this week, so the catch-up passes it with one
+  call). Paced like the report, at most 250 a run (`WEEKLY_CAP`), stopping on
+  a second 429 or at 255 seconds. The order is shuffled by the week, so a run
+  that stops early leaves different parents for the catch-up each week.
+  Three runs a week send about 750: past that, it needs Resend's batch send.
+- **Settings' switch** (`#reportCard`, `Sona.reportStatus`, `reportSet`,
+  `reportOff` in sona.js REPORT1): off, "Every Monday, an email with last
+  week's practice: how many days, how many reps and which sounds. Never your
+  child's name or voice.", a "Grown-up's email" box (the household's address
+  when it has one), Turn on and Travis's line ("We'll also send occasional
+  tips from Rachel. Unsubscribe anytime."); a wrong-looking address gets
+  setup's "That email doesn't look right." Turn on keeps the address on the
+  first family child's profile (one household address: the others' are
+  cleared), posts `/api/lead` (`source "app-settings"`, an in-app lead), and
+  posts the report at once so the confirm email goes now; on, "On. It goes to
+  <email> every Monday.", "Check your email: tap the link we sent to start
+  it." until the address says yes (asked again when Settings comes back to
+  the front), or "This email unsubscribed …", and Turn off. Off clears
+  `weeklyReport` on every profile and posts this phone's two weeks empty,
+  quietly (no link), so Monday's report does not go out from numbers already
+  sent; another phone of the household keeps its own switch. Not for a
+  clinician's own setup.
+- **For Travis:** the consent line beside every email box says "occasional
+  tips from Rachel", and the list now hears from Sona weekly: his words to
+  change if they should say so. Every parent who gave an email since 24 Sep
+  2026 is on it, the waiting list's included (once Kit's leavers are in).
+  **For Rachel:** every word of the example, and its made-up numbers.
+`weeklytest` plays the run, the email and the switch.
+
 **SESSION RECORDING (REPLAY1, 15 Oct 2026)** (Travis, of PostHog's replay
 page: "how do i start recording", then yes to recording only the grown-up
 screens with names and typing blanked out). PostHog session replay runs on
@@ -1681,15 +1741,23 @@ sessions" on in PostHog too.
   what they love, the sounds and the minutes a day picked in setup) is
   Rachel's to know.
 
-Leads from inside the app (`app-setup`, `app-trial`, `app-paid`:
-`IN_APP_SOURCES` in `lib/nurture.ts`) skip the welcome series' first email
-("Here's Sona", the App Store link) and start at "The 5-minute trick"; days 1,
-3 and 5 are unchanged (`nurturetest`). **The series is day 0 (two emails),
-day 1, day 3 and day 5** (Travis, 17 Oct 2026: "just move day two to day
-one"); someone already waiting for the old day-2 email keeps that day. **A parent whose phone reports a
+**The welcome series is three emails: day 0, day 1 and day 2** (Travis, 23
+Oct 2026: "we send them one an email immediately, the next day, and then one
+more day ... I want to send less emails in the sequence. So just 3"; it was
+two on day 0, then days 1, 3 and 5). From the website: "Here's Sona" (the App
+Store link), the recast tip ("Try this the next time they say “wabbit”"),
+then "Quick answers before you decide". Leads from inside the app
+(`app-setup`, `app-settings`, `app-trial`, `app-paid`: `IN_APP_SOURCES` in
+`lib/nurture.ts`) get "The 5-minute trick" in place of the first (`nurturetest`).
+"The balloon problem" is gone; its "Already started? You can ignore the
+button." moved to the last email. Each email has a name (`hello`, `trick`,
+`recast`, `answers`) and a `next`; an address part-way through the old five
+on 23 Oct 2026 kept a number, which `LEGACY` reads (the balloon or the old
+day-5 answers: the answers on that day, then nothing), so nobody gets one
+twice. **Then, once a week, the Monday email** (WEEKLY1, below). **A parent whose phone reports a
 purchase leaves the series** (`stopSeries`, 16 Oct 2026): the plan post takes
-the rest off the schedule, so days 3 and 5 no longer sell free days they
-started; a purchase the phone never reports (no email on it) still gets them.
+the rest off the schedule, so the last email no longer sells free days they
+started; a purchase the phone never reports (no email on it) still gets it.
 A known gap, for Travis: `parents.html` uses an ad's `utm_source` as the
 source, so an ad tagged `utm_source=app-setup` would skip the download email
 too.
@@ -4179,8 +4247,9 @@ are enforced in code and pinned by tests — change them only on Rachel's say-so
   Top to bottom: **Your family** (switch, add, remove a child); **one card
   for the child picked** (name, age, sounds to practice, the one
   start-of-word line, and "Reset progress" last); the "Sound is off in Sona."
-  line only while muted; the Practice Board card only while it is live or
-  owed; **Account** (the plan line with See Premium and Restore, then
+  line only while muted; **Weekly progress report** (WEEKLY1, 23 Oct 2026:
+  off, an email box and Turn on; on, where it goes and Turn off); the
+  Practice Board card only while it is live or owed; **Account** (the plan line with See Premium and Restore, then
   Privacy · Terms); the clinician's "Open dashboard →" only for a
   clinician in a browser; and **"Moving to a new phone?"** at the foot.
   Gone from it: the week-by-week reps card (the daily goal and the rep line
