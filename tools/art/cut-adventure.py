@@ -11,8 +11,9 @@ tools/art/out/game/. This cuts them:
     python3 tools/art/cut-adventure.py --stars page.png '[[0.5, 0.3, 0.06]]' out.png
                                                      # a proof of STARS on one page
 
-The recipes are cut-rise.py's three, done with ImageMagick (`convert`),
-because this container's Python has no PIL:
+The recipes are cut-rise.py's three, done with ImageMagick (`convert`);
+only TOUCH and STARS (Days 4-14's hand fixes and helper-map stars, below)
+need Python's PIL and numpy:
 
   * card: a 1536x1024 picture's centre 16:9 band (rows 80..944), 768x432,
     public/assets/crafted/home-<name>.webp. Home crops it again from the
@@ -306,7 +307,8 @@ COMPOSE = {"lighthouse/e01": [
 # The helper map's earlier gold stars (Days 4-14's e04), laid on the map's
 # little places: (centre x, centre y, width), fractions of the page. Asked to
 # draw a close-up with only the new star, or the whole map with N stars, the
-# model drew the whole map with one star every time; so it draws the map with
+# model drew the whole map with one star on Days 5-14 (Day 4's, drawn with its
+# four, needs none); so it draws the map with
 # the one star Echo presses, and the stars of the days before are the game's
 # own star (public/assets/crafted/game/star.webp, the same glossy star as
 # Days 1-3's maps), each with a soft shadow, as Days 1-3's were put on.
@@ -326,9 +328,6 @@ COMPOSE = {"lighthouse/e01": [
 #   ("recolor", (box, ellipse, rgb)): one of Echo's feathers drawn the wrong
 #     colour, turned to the right one (see "kite/e04").
 TOUCH = {
-    # Day 8: the mushroom lamps glowed on every "before" page in three drawings
-    # each, though the lines say they will not light until the game. Echo's own
-    # porch lamp (s01, s02) is his cottage's and stays lit.
     # Day 5: drawn five times, Beaver came out once with a tail on Echo and
     # once with no teeth, the day's joke (he nibbled his own door)
     "postboat/e01": [("teeth", (0.397, 0.290, 0.017, 0.010))],
@@ -336,10 +335,13 @@ TOUCH = {
     # child counting the fourteen gold stars could count too
     "observatory/e04": [("fill", (0.785, 0.125, 0.009, 0.007)), ("fill", (0.875, 0.123, 0.009, 0.007)),
                         ("fill", (0.844, 0.426, 0.009, 0.007)), ("fill", (0.890, 0.440, 0.009, 0.007))],
-    "lantern/s02": [("unlight", [(0.928, 0.345, 0.045), (0.975, 0.360, 0.040)])],
     # Day 10: drawn five times, Echo came out with three feathers, then with
     # both coral; the back one is his yellow
     "kite/e04": [("recolor", ((0.369, 0.470, 0.451, 0.525), (0.377, 0.521, 0.045, 0.027, 15), (252, 192, 42)))],
+    # Day 8: the mushroom lamps glowed on every "before" page in three drawings
+    # each, though the lines say they will not light until the game. Echo's own
+    # porch lamp (s01, s02) is his cottage's and stays lit.
+    "lantern/s02": [("unlight", [(0.928, 0.345, 0.045), (0.975, 0.360, 0.040)])],
     "lantern/home": [("unlight", [(0.827, 0.352, 0.018)])],   # the big lantern's candle, before the game
     "lantern/s04": [("unlight", [(0.192, 0.519, 0.045), (0.335, 0.452, 0.028), (0.413, 0.410, 0.022), (0.460, 0.385, 0.020),
                                  (0.515, 0.374, 0.016), (0.553, 0.346, 0.016), (0.592, 0.347, 0.016), (0.646, 0.356, 0.016),

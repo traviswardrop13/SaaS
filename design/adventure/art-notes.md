@@ -4,7 +4,8 @@ Everything here was drawn by the image model (`chatgpt-image-latest`, high
 quality) through `tools/art/gen-adventure.mjs` (story pages, lineups, Home
 cards) and `tools/art/gen-sprites.mjs` (the games' pieces, the `lighthouse-*`,
 `windup-*` and `bridge-*` entries of `tools/art/game-sprites.json`), and cut by
-`tools/art/cut-adventure.py` (ImageMagick; this container has no PIL). Every
+`tools/art/cut-adventure.py` (ImageMagick; Days 4-14's `TOUCH` and `STARS`
+also need Python's PIL and numpy). Every
 picture was checked by eye; what was redrawn, and why, is in
 `tools/art/out/adventure/checks.json` (git-ignored, beside the raw drawings)
 and summed up at the end. `review.html` beside this file shows every page with
@@ -23,6 +24,8 @@ striped pajamas with one slipper) and the seven toys (Day 2); Grandma
 Tortoise (Day 3). Each character was drawn alone and the lineup composed
 (a whole lineup in one picture merged Pelly into the walrus). Pelly's cap is
 a light-blue postal cap with an envelope badge; Wally's has a gold anchor.
+Days 4-14 have one lineup each, `cast-<id>.webp` (this folder), drawn the
+same way: each day's new characters beside Echo.
 
 ## 2. Story pages: buddy boxes (for `adventures.js`)
 
@@ -78,7 +81,7 @@ s04: null, s06: null, s07: null, e01: null,
 // Day 5: postboat
 s01: { x: 0.45, y: 0.72, h: 0.19, pose: "rest" },    // on the doorstep between Pelly and Echo, LEFT of Echo (Echo took the right of the step; the strip right of him is too narrow and cuts the octopus at the edge), as Day 1's s01
 s02: { x: 0.79, y: 0.765, h: 0.21, pose: "rest" },   // on the garden path just right of Echo, below the letter
-s03: { x: 0.42, y: 0.83, h: 0.19, pose: "rest" },    // on the jetty's plank deck LEFT of Echo, in front of the parcel pile (the redraw put Echo on the right of the deck, and the strip right of him is too narrow)
+s03: { x: 0.42, y: 0.83, h: 0.19, pose: "rest" },    // on the jetty's plank deck LEFT of Echo, in front of the parcel pile (Echo stands on the right of the deck, and the strip right of him is too narrow)
 s04: { x: 0.48, y: 0.795, h: 0.2, pose: "rest" },    // on the flat mossy rock just right of Echo, in front of the red boat's bow
 s05: { x: 0.7, y: 0.84, h: 0.2, pose: "cheer" },     // on the jetty's plank deck, lower right, in front of the postboat's hull
 s07: { x: 0.44, y: 0.745, h: 0.185, pose: "rest" },  // on the floating jetty's planks just right of Echo, in front of the raft's edge, clear of Beaver
@@ -103,7 +106,7 @@ s02: { x: 0.405, y: 0.625, h: 0.14, pose: "peek" },  // peeking over the porch r
 s03: { x: 0.43, y: 0.6, h: 0.16, pose: "rest" },     // on the plain sandy path just RIGHT of Echo, in the gap between Echo and Tortoise (Echo stands at the left edge, so there is no path left of him)
 s04: { x: 0.565, y: 0.785, h: 0.165, pose: "rest" }, // on the plain grass just right of Echo and the dandelion leaf, a little in front of him, below Tortoise's front feet and in front of the cart
 s06: { x: 0.415, y: 0.8, h: 0.18, pose: "rest" },    // on the plain grass just right of Echo, well below and left of the spinning plank
-s08: { x: 0.672, y: 0.69, h: 0.15, pose: "rest" },   // PASS: same jib crane, plank in a four-rope sling. Buddy stands on the landing's planks just right of Echo, left of the right-hand post, feet on the plank top.
+s08: { x: 0.672, y: 0.69, h: 0.15, pose: "rest" },   // on the landing's planks just right of Echo, left of the right-hand post, feet on the plank top
 e01: { x: 0.2, y: 0.79, h: 0.19, pose: "cheer" },    // on the near end of the bridge's planks, in front of and left of Echo, toward the near bank
 e02: { x: 0.853, y: 0.76, h: 0.19, pose: "rest" },   // on the round rug just right of Echo, in front of the chair's legs (Echo took the right of the rug)
 e03: { x: 0.665, y: 0.815, h: 0.16, pose: "rest" },  // on the stone path in front, between Tortoise and Echo and a little nearer the viewer (Echo stands near the right edge, so there is no path right of him)
@@ -111,12 +114,12 @@ e04: { x: 0.64, y: 0.626, h: 0.2, pose: "cheer" },   // on the empty right half 
 s05: null, s07: null,
 // Day 8: lantern
 s01: { x: 0.465, y: 0.665, h: 0.19, pose: "rest" },  // on the stone landing LEFT of Echo, between the fence and Echo (Echo's right wing reaches almost to the edge, so there is no room right of him)
-s02: { x: 0.42, y: 0.62, h: 0.1, pose: "peek" },     // peeking over the porch railing LEFT of Echo, under the letter (no room right of him: the post). Placed on the drawing as it is; still right after the lantern is painted out, wrong if redrawn
+s02: { x: 0.42, y: 0.62, h: 0.1, pose: "peek" },     // peeking over the porch railing LEFT of Echo, under the letter (no room right of him: the post)
 s03: { x: 0.69, y: 0.72, h: 0.18, pose: "rest" },    // on the plain near path right of Echo, feet level with his, clear of the dark lamp at the right edge
 s04: { x: 0.195, y: 0.84, h: 0.17, pose: "rest" },   // on the near path's left edge just left of Hedgehog, feet level with hers (no room right of Echo: his wing reaches the right edge); lamp light switched off by the s04 unlight list
-s05: { x: 0.695, y: 0.68, h: 0.165, pose: "rest" },  // on the near path right of Echo, feet level with his, clear of Hedgehog. Right after the hand paint-out, wrong if redrawn
-s06: { x: 0.52, y: 0.79, h: 0.19, pose: "rest" },    // on the plain path right of Echo, in front of the cord heap, clear of the plugs. Right after the hand paint-out, wrong if redrawn
-s08: { x: 0.385, y: 0.8, h: 0.17, pose: "rest" },    // on the plain path in front of Echo, left of him, under the cords (no room right of him). Right after the hand paint-out, wrong if redrawn
+s05: { x: 0.695, y: 0.68, h: 0.165, pose: "rest" },  // on the near path right of Echo, feet level with his, clear of Hedgehog
+s06: { x: 0.52, y: 0.79, h: 0.19, pose: "rest" },    // on the plain path right of Echo, in front of the cord heap, clear of the plugs
+s08: { x: 0.385, y: 0.8, h: 0.17, pose: "rest" },    // on the plain path in front of Echo, left of him, under the cords (no room right of him)
 e02: { x: 0.862, y: 0.612, h: 0.17, pose: "sit" },   // sitting on the cushion of the empty stump right of Echo (the fox, with no sit pose, stands on it)
 e04: { x: 0.75, y: 0.648, h: 0.22, pose: "cheer" },  // on the empty right half of the bench, right of Echo, feet on the bench top
 s07: null, e01: null, e03: null,
@@ -227,11 +230,11 @@ five times; from the third round only those hard faults sent a page back.
 What a later round still noticed but let pass is in the PR. Fixed after
 drawing by `cut-adventure.py` (`TOUCH`, the same way every time it runs; the
 raws in `tools/art/out/adventure/` stay as the model drew them):
-- **the helper maps (every e04)**: drawn with the one star Echo presses; the
+- **the helper maps (Days 5-14's e04)**: drawn with the one star Echo presses; the
   stars of the days before are the game's own glossy star, laid on the map's
   places with a soft shadow (`STARS`, placed with `--stars` and counted on
   the proof). Day 4's map was drawn with its four. The map pages draw from
-  `tools/art/out/adventure/ref-map.png`, Day 3's map cut out of its page with
+  `refs/ref-map.webp` (this folder), Day 3's map cut out of its page with
   its stars filled in: the whole page brought back its stars, and its Echo's
   two-lobed pink feather, as extra stars and a third feather.
 - **lantern/s02, s04-s08, home**: the mushroom lamps glowed on every page
@@ -245,7 +248,9 @@ raws in `tools/art/out/adventure/` stay as the model drew them):
   child counting fourteen stars could count too, filled in.
 Pages drawn against an earlier page of their own story: postboat e01 and e03
 (Beaver as on s07), kite s04 and e02 (Lamb's and Beetle's own model sheets),
-trainline e03 (Pelly and the mitten as on s01).
+trainline e03 (Pelly and the mitten as on s01). Those references are in
+`refs/` too, so a `--redo` from a fresh checkout has them (the raw drawings
+in `tools/art/out/` are git-ignored).
 
 ## 3. Home's pictures
 

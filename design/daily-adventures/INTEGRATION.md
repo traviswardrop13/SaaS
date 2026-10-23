@@ -87,6 +87,8 @@ Help uses the current same-word speech turn. The game freezes while the player o
 
 ## Story data
 
+**Superseded (22 Oct 2026):** see "Connected" above. The app does not narrate these records: the shared player tells its own stories around the games (`public/adventures.js`), and no story card interrupts a game. What follows is the plan as Codex wrote it.
+
 `public/daily-adventures/stories.js` contains day numbers, plot, age-specific objectives, act boundaries, narration sentences, and endings. It contains no access or completion logic. `ready` stays false until its physical game and connection through the shared story player are verified. Planned artwork paths must exist before that day is released.
 
 The shared player should narrate these sentences through its existing single audio owner, outside microphone capture. It should enter each act at the listed move boundary and show/narrate the earned ending after physical completion. Leave existing speech targets, scoring, number of sayings, per-child rotation, access checks and rewards with their current owners.

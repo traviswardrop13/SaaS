@@ -3549,7 +3549,7 @@
     } catch (e) { return null; }
   }
   function gameAccess(key, options) {
-    // STORY1: today's story and its three games are Premium by the books'
+    // STORY1: today's story and its fourteen games are Premium by the books'
     // rule (storyOpen: never the demonstration window, never an earned turn
     // or a saved run), and are known by name: they are in no catalog, so
     // gameKey() below would refuse them. The reasons are the catalog's own,

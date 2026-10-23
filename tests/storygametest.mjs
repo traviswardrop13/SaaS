@@ -7,11 +7,13 @@
 //     pages.js), ES5, nothing written, the hand-back and no Play again;
 //   - the day list: every Days 4-14 day is a story day with a controller, a
 //     page, words, a Home picture and scenes, and no key is anyone else's;
+//   - every one of those pictures decodes, at the size it is laid out at;
 //   - entitlement first: a family without the story, an address that names no
 //     Days 4-14 story, or one with anything after it goes Home before the
 //     game's own files are asked for, with no mic and no sound;
 //   - every game boots at both ages (five moves for ages 3-4, eight for 5-8),
-//     its stylesheet before the shell's, and the first word earns its first job;
+//     as its day's own key (Day 7's end card must finish Day 7), its
+//     stylesheet before the shell's, and the first word earns its first job;
 //   - Day 4 played through, the way a child does: the story's intro, "Let's
 //     go!", the game with real words and a real finger, the end card's "See
 //     what happens!", the ending and its one sticker, Back home.
@@ -67,6 +69,7 @@ await section("source", async () => {
   ok("the address only picks the game: exactly ?story=<letters>, and only a day with a controller", /\/\^\\\?story=\(\[a-z\]\+\)\$\/\.exec\(location\.search\)/.test(code) && /d\.controller\) day = d/.test(code));
   ok("entitlement is asked before the game's files are put on the page", code.indexOf("gameAccess(day.game)") > 0 && code.indexOf("gameAccess(day.game)") < code.indexOf('document.createElement("script")'));
   ok("the end card hands back to the story's ending, and there is no Play again", /exit: \{ href: "\/adventure\.html\?part=end&story=" \+ day\.id, label: "See what happens!" \}/.test(code) && /again: false/.test(code));
+  ok("the engine is given the day's own game key, so its end card finishes that day (Day 7's is frontdoor, never Codex's bridge, which is Day 3's)", /SayPlay\.start\(\{\s*key: day\.game,/.test(code) && !/key: day\.controller/.test(code));
   ok("five moves for ages 3-4, eight for 5-8 (the games' contract)", /S\.playStyle\(\) === "simple" \? 5 : 8/.test(code));
   ok("the body starts hidden, and the kid viewport meta (no zoom on a double tap)", /<body hidden data-phase="boot">/.test(PAGE) && /maximum-scale=1, user-scalable=no, viewport-fit=cover/.test(PAGE));
 });
@@ -75,6 +78,11 @@ await section("source", async () => {
 await section("days", async () => {
   ok("STORY_DAYS is fourteen days: Days 1-3, then Days 4-14 on this page", DAYS.length === 14 && DAYS.slice(0, 3).every((d) => !d.controller) && LATER.length === 11, DAYS.map((d) => d.id));
   ok("…Days 4-14 are Codex's eleven games, in their day order", LATER.map((d) => d.controller).join() === RECORDS.slice().sort((a, b) => a.day - b.day).map((r) => r.key).join(), LATER.map((d) => d.controller));
+  ok("…the catalog read off sona.js is the real one (so \"none is a catalog game's\" below checks something)", CATALOG.length > 20 && CATALOG.includes("slice") && CATALOG.includes("bubbles"), CATALOG.length);
+  const words = [];
+  (function walk(v, at) { if (typeof v === "string") words.push([at, v]); else if (v && typeof v === "object") for (const k of Object.keys(v)) walk(v[k], at + "." + k); })(PAGES, "pages");
+  const BAD = /\b(score|points?|correct|wrong|fail(?:ed|s)?|charge)\b/i;
+  ok("every word pages.js gives a child (" + words.length + ") says none of score, points, correct, wrong, fail or charge", words.length > 100 && !words.some(([, t]) => BAD.test(t)), words.filter(([, t]) => BAD.test(t)));
   const ids = DAYS.map((d) => d.id), games = DAYS.map((d) => d.game);
   ok("every id and game key is its own: none repeats, none is a catalog game's (Day 7 is frontdoor: Day 3 owns bridge)", new Set(ids).size === 14 && new Set(games).size === 14 && !games.some((g) => CATALOG.includes(g)) && DAYS.find((d) => d.controller === "bridge").id === "frontdoor", { ids, games });
   for (const d of LATER) {
@@ -107,6 +115,16 @@ async function phone(cfg = {}, viewport = { width: 393, height: 852 }) {
 }
 async function landed(page, path) { await page.waitForURL((u) => new URL(u).pathname === path, { timeout: 8000 }).catch(() => {}); return new URL(page.url()).pathname === path; }
 
+// ── 1b. every Days 4-14 picture decodes, at the size the player and Home lay out ──
+await section("pictures", async () => {
+  const { context, page } = await phone();
+  await page.goto(srv.base + "/fonts.css");
+  const list = LATER.flatMap((d) => A[d.id].intro.concat(A[d.id].ending).map((sc) => ["/assets/adventure/" + d.id + "/" + sc.art + ".webp", 800, 1200]).concat([["/assets/crafted/home-" + d.hero + ".webp", 768, 432]]));
+  const got = await page.evaluate((list) => Promise.all(list.map(([src, w, h]) => new Promise((done) => { const im = new Image(); im.onload = () => done(im.naturalWidth === w && im.naturalHeight === h ? null : src + " is " + im.naturalWidth + "x" + im.naturalHeight); im.onerror = () => done(src + " does not load"); im.src = src; }))), list);
+  ok("all " + list.length + " pictures of Days 4-14 (12 pages a day and Home's card) load at their size", list.length === 143 && got.every((g) => g === null), got.filter(Boolean));
+  await context.close();
+});
+
 // ── 2. who may be here ──
 await section("locked", async () => {
   const cases = [
@@ -133,9 +151,12 @@ await section("locked", async () => {
 await section("boot", async () => {
   for (const d of LATER) for (const age of ["4", "7"]) {
     const { context, page, errors } = await phone({ age });
+    // the key the page hands the engine (its end card finishes the day by it)
+    await context.addInitScript(() => { let sp; Object.defineProperty(window, "SayPlay", { configurable: true, get: () => sp, set: (v) => { sp = v; const start = v && v.start; if (start) v.start = function (o) { window.__startKey = o && o.key; return start.apply(this, arguments); }; } }); });
     await page.goto(srv.base + d.page);
     await page.clock.pauseAt(await page.evaluate(() => Date.now() + 1000));
     const ready = await until(page, () => window.__sayplay && __sayplay.phase === "ready", 6000);
+    ok(`${d.id}, age ${age}: the engine plays it as "${d.game}", the day's own key`, await page.evaluate(() => window.__startKey) === d.game, await page.evaluate(() => window.__startKey));
     const s = await page.evaluate(() => ({
       steps: window.__sayplay && __sayplay.steps, title: document.getElementById("startTitle").textContent, ttl: document.getElementById("ttl").textContent,
       start: document.getElementById("startCopy").textContent, label: document.getElementById("dailyCanvas").getAttribute("aria-label"),
@@ -188,6 +209,7 @@ await section("play", async () => {
     ok("…\"Let's go!\" opens the game on this page", await landed(page, "/story-game.html") && new URL(page.url()).search === "?story=waterwheel", page.url());
     ok("…and today's intro is marked seen (the one thing the story page writes)", await page.evaluate(() => /\|waterwheel$/.test(JSON.parse(localStorage.getItem("sona.quest.v1")).seen || "")));
     await until(page, () => window.__sayplay && __sayplay.phase === "ready", 6000);
+    const coins0 = await page.evaluate(() => Sona.getCoins());
     await page.locator("#startBtn").click();
     for (let step = 0; step < n; step++) {
       if (!await sayWord(page)) { ok(`…word ${step + 1} is heard`, false, await page.evaluate(() => __sayplay)); break; }
@@ -197,8 +219,8 @@ await section("play", async () => {
       if (!await until(page, (s) => __sayplay.step > s || __sayplay.phase === "end", 15000, step)) { ok(`…job ${step + 1}: the water reaches its bed`, false, await page.evaluate(() => ({ play: __sayplay, w: __dailyWaterwheel }))); break; }
     }
     ok(`…all ${n} jobs done by real words and a real finger: the end card`, await until(page, () => __sayplay.phase === "end", 6000), await page.evaluate(() => __sayplay.phase));
-    const end = await page.evaluate(() => ({ q: JSON.parse(localStorage.getItem("sona.quest.v1")), e: Sona.storyEnding("waterwheel"), reps: Sona.weekReps(0), out: Object.keys(Sona.outcomes()).length, exit: document.getElementById("goHome").textContent, again: document.getElementById("again").hidden }));
-    ok("…the round finished Day 4: one more story, one sticker, no coins", end.q.s === day4 + 1 && end.q.ls === day4 && end.q.lk === "story" && end.e.ok && end.e.got.length === 1, end);
+    const end = await page.evaluate(() => ({ q: JSON.parse(localStorage.getItem("sona.quest.v1")), e: Sona.storyEnding("waterwheel"), coins: Sona.getCoins(), reps: Sona.weekReps(0), out: Object.keys(Sona.outcomes()).length, exit: document.getElementById("goHome").textContent, again: document.getElementById("again").hidden }));
+    ok("…the round finished Day 4: one more story, one sticker, no coins", end.q.s === day4 + 1 && end.q.ls === day4 && end.q.lk === "story" && end.e.ok && end.e.got.length === 1 && end.coins === coins0, { ...end, coins0 });
     ok("…every saying is a game rep, none is practice data", end.reps === n * 2 && end.out === 0, end);
     ok("…and its one button is \"See what happens!\"", end.exit === "See what happens!" && end.again === true, end);
     await page.locator("#goHome").click();

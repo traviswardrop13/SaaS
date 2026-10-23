@@ -7,7 +7,7 @@
    line here is Rachel's to read (they tell a child what to do). ES5 data. */
 window.DailyAdventurePages = {
   waterwheel:{
-    title:'The Waterwheel',sub:'Fix the waterwheel',progressLabel:'0 parts placed',
+    title:'The Thirsty Waterwheel Garden',sub:'Fix the waterwheel',progressLabel:'0 parts placed',
     canvasLabel:'A waterwheel and garden waiting for water. Say each word two times, connect the wooden troughs, and open the water gate.',
     banner:"Let's fix the waterwheel!",helpText:'Wider leaves',helpLabel:'Optional extra help: say your word two times again for wider leaf joins',
     startCopy:'Say each word two times. Connect the wooden troughs and open the gate to bring water to the garden.',helpCopy:'Stuck? Say your word again for wider leaf joins.',

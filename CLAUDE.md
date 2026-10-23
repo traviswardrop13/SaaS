@@ -1507,12 +1507,13 @@ star on Echo's helper map. Fourteen days are built, one a day, in order:
   (`observatory`). See "Days 4-14: Codex's games in the story" below.
 
 Each has a version for ages 3-4 (`Sona.playStyle() === "simple"`: the scenes
-marked for both ages, the short lines, a six-word game) and one for 5-8 (eight
-scenes, four ending scenes, an eight-word game with a twist at word 5). The
-buddy a child picked is in every game and in 24 of the 36 pictures (the
-others, a view out of a window, a letter, a crowd's back, have no spot for
-it), laid over the painting in a pose that already exists, never painted in
-and never under a finger.
+marked for both ages, the short lines, a six-word game on Days 1-3, five words
+on Days 4-14) and one for 5-8 (eight scenes, four ending scenes, an eight-word
+game; Days 1-3's has a twist at word 5, Days 4-14's no fixed one). The buddy a
+child picked is in Days 1-3's games (Codex's eleven place none) and in 121 of
+the 168 pictures (the others, a view out of a window, a letter, a chart, a
+crowd's back, have no spot for it), laid over the painting in a pose that
+already exists, never painted in and never under a finger.
 - **Files.** (Days 4-14's own are under "Days 4-14: Codex's games in the
   story" below.) The day list is ONE copy in `sona.js`, `STORY_DAYS` (inside the
   QUEST1 block): id, game, page, hero, Home's title and line. (The same tag,
@@ -1530,9 +1531,12 @@ and never under a finger.
   `cut-adventure.py` from `adventure-prompts.json`. Every number a game or
   the player reads off a picture is in `design/adventure/art-notes.md`, and
   `design/adventure/review.html` shows every page with its line for Travis
-  and Rachel. **Adding a story is two edits:** its line in `STORY_DAYS`, its
-  scenes in `adventures.js` (and its game and pictures); every child who
-  finished the others meets it the next day.
+  and Rachel. **Adding a story:** its line in `STORY_DAYS`, its scenes in
+  `adventures.js` with the same buddy boxes in art-notes section 2
+  (`adventuretest` holds them equal), its card colour in `crafted-home.css`
+  (`homestorytest`), its game and pictures, and for a game on
+  `story-game.html` its words in `daily-adventures/pages.js`; every child
+  who finished the others meets it the next day.
 - **THE STORY IS PREMIUM, BY THE BOOKS' RULE** (`Sona.storyOpen()`: Sona
   free, Premium from any source, or a trial; never the three-day
   demonstration window `gated()` honours; in the founders' preview, its
@@ -1546,8 +1550,9 @@ and never under a finger.
   Premium, never sees a locked story:** its card is the old game of the day
   (QUEST1), which borrows a game it can open. A wall nobody can pass is a
   broken app. Entitlement is read again on every page, never from an
-  address: `gameAccess("adventure" | "lighthouse" | "windup" | "bridge")`
-  answers `storyOpen()` (tier `premium`), the engine's own check sends a
+  address: `gameAccess("adventure")` and `gameAccess` of any
+  `STORY_DAYS` game (`lighthouse`, `windup`, `bridge`, `waterwheel`…) answer
+  `storyOpen()` (tier `premium`), the engine's own check sends a
   locked story game to `/today.html` (`gameBounce`) before any mic or sound,
   and the player checks before any picture, sound or fetch.
 - **One scheduler, QUEST1's.** `sona.quest.v1` (per child, in backups) keeps
@@ -1602,7 +1607,7 @@ and never under a finger.
   nothing fetched, Next live at once. Going to the background stops the line;
   coming back plays nothing until a tap.
 - **Every story line keeps the rules** (`adventuretest`, and voicedoc's B9
-  lists all 49): 120 characters at most, plain punctuation, no child's name,
+  lists all 260): 120 characters at most, plain punctuation, no child's name,
   no speech sound named, nothing about how to talk (never louder, slowly,
   strong, stretch, "say it"), none of score, points, correct, wrong, miss,
   fail, charge, and the same line on every phone. **No story scene asks the
@@ -1614,11 +1619,11 @@ and never under a finger.
   clear of the caption card, Echo's face and every button, and leaves it out
   where that would lift it more than half its height (on a 320×568 phone,
   Day 3's s04). The fox, every new family's buddy, has a peek drawn for the
-  stories' three peek spots (`buddy-fox-peek.webp`); Fruit Slice never asks
+  stories' thirteen peek spots (`buddy-fox-peek.webp`); Fruit Slice never asks
   for it, so a fox child's market is unchanged.
 - **What a story day earns:** the scenes nothing; the game one game rep for
-  each saying Echo hears (16 for ages 5-8, 12 for 3-4, two more for each help
-  pill), toward the daily goal and trophies like every game, never practice
+  each saying Echo hears (16 for ages 5-8, 12 for 3-4 on Days 1-3 and 10 on
+  Days 4-14, two more for each help pill), toward the daily goal and trophies like every game, never practice
   data; the day one sticker.
 - **Not in the catalog, on purpose.** The story games are not in `GAME_ACTS`
   or `ACTIVITY_KEYS` (`Sona.gameKey("lighthouse") === ""`): on no shelf, in
@@ -1720,7 +1725,8 @@ line a child hears):
 - Two sayings a word for both ages (16 a day for 5-8, 12 for 3-4; Bubble Pop
   asks the littles once). One line per game page (`sayTimes: 1`) would change
   it.
-- The day is light on speaking: 16 or 12 sayings against a daily goal of 30;
+- The day is light on speaking: 16 sayings (12 for ages 3-4, 10 on Days
+  4-14) against a daily goal of 30;
   the story pictures ask for nothing.
 - The games do not check the age a sound is usually learned: a four-year-old
   whose family picked R gets R words, as in Bubble Pop.
@@ -1794,7 +1800,8 @@ Claude joined them to the story:
   pinecone, a toothbrush, a carrot, a mitten, an umbrella, a wooden spoon, a
   sandwich, a pancake, a fluffy slipper), the problem, "Let's go!", the game,
   the ending, and a gold star ("Four gold stars on our helper map!" up to
-  fourteen; the model draws the whole map with the one star Echo presses,
+  fourteen; on Days 5-14 the model draws the whole map with the one star Echo
+  presses (Day 4's was drawn with its four),
   and `cut-adventure.py`'s `STARS` lays the days before's stars on its
   places, the game's own glossy star, so a child can count them, as Days
   1-3's maps got theirs). Eight scenes and four endings for 5-8, six
@@ -1812,7 +1819,8 @@ Claude joined them to the story:
   word): no app page loads either; their suites still run. No story card
   interrupts a game.
 - **For Rachel:** every line a child hears, in the PR body; the eleven games'
-  directions (`voicedoc` B7-B8, 113 lines), among them a few to look at:
+  directions (`voicedoc` B7-B8, 124 lines: 11 in B7,
+  113 in B8), among them a few to look at:
   Rooftops' "The gutter brings every missed seed back", Postboat's "Steer
   beside the right dock", Concert's "Your sounds are safe" (in a speech app),
   Nest Lift's "Hold Up to lift"; ages 3-4 say five words, not six; the games

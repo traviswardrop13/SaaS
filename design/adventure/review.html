@@ -97,7 +97,7 @@
   };
   // The days, their order and titles: sona.js's STORY_DAYS, the one list.
   var DAYS = ((window.Sona && Sona.STORY_DAYS) || []).map(function (d) { return d.id; });
-  if (!DAYS.length) DAYS = ["lighthouse", "windup", "bridge"];
+  if (!DAYS.length) DAYS = Object.keys(window.SonaAdventures || {});
   var TITLES = {};
   ((window.Sona && Sona.STORY_DAYS) || []).forEach(function (d, i) { TITLES[d.id] = "Day " + (i + 1) + ": " + d.title; });
   var CAST = { lighthouse: "Pelly, Captain Wally and the three mice", windup: "Grandpa Bear and the seven wind-up toys", bridge: "Grandma Tortoise" };
@@ -147,7 +147,7 @@
   var SPRITES = {
     "Light the Way": ["sea", "town-lit", "rocks-front", "ledge", "lamp-off", "lamp-on", "moon", "cloud", "boat-tug", "boat-row", "boat-sail", "boat-banana", "boat-teacup", "boat-bathtub", "boat-ferry", "whale", "whale-wink", "barrel", "buoy", "duckie", "wally"].map(function (n) { return "lighthouse-" + n; }),
     "Wind-Up Toys": ["shop", "shelf", "bunny", "frog", "top", "croc", "elephant", "hippo", "jack-closed", "jack-open", "musicbox", "crank", "dial", "key", "gauge", "nightcap", "grandpa", "cuckoo", "oilcan"].map(function (n) { return "windup-" + n; }),
-    "Puzzle Bridge": ["canyon", "canyon-wide", "stone", "spiral", "moss", "blossom", "grandma", "crowd", "ducks"].map(function (n) { return "bridge-" + n; })
+    "Puzzle Bridge": ["canyon-wide", "stone", "spiral", "moss", "blossom", "grandma", "crowd", "ducks"].map(function (n) { return "bridge-" + n; })
   };
   var host = document.getElementById("sprites");
   Object.keys(SPRITES).forEach(function (game) {

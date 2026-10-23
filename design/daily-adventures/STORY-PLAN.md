@@ -2,7 +2,7 @@
 
 This file describes eleven Premium adventures with completed physical controllers, verified one at a time on both age paths. Claude owns Days 1-3, Home, the shared story player and its state. These records do not own access, rotation, rewards, speech targets, scoring or completion. See `INTEGRATION.md` for verification evidence and the remaining production connection.
 
-All eleven records in `public/daily-adventures/stories.js` retain `ready: false` because connection through Claude's production player has not been verified. A computer-only review tool can run their real games, speech turns and optional narration. No production page is wired to this data by this change.
+All eleven records in `public/daily-adventures/stories.js` are `ready: true` since the games joined the story (22 Oct 2026; see INTEGRATION.md, "Connected"). The app tells its own stories around the games (`public/adventures.js`), so no app page reads these records. A computer-only review tool can run their real games, speech turns and optional narration. No production page is wired to this data by this change.
 
 ## Content contract
 

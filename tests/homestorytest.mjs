@@ -173,7 +173,7 @@ await section("a story finished today", async () => {
     const { ctx, pg, errors } = await open({ sub: true, quest: { i: 4, last: 3, s: 3, ls: 2, lk: "story", done: "TODAY", got: [] } });
     const c = await card(pg);
     ok("Day 3 done: \"Day 3 done!\" and \"Come back tomorrow for Day 4!\"", c.title === "Day 3 done!" && c.line === "Come back tomorrow for Day 4!" && c.done && c.go === null, c);
-    ok("…with Day 4's picture, dark", c.story === STORY[3].id && (c.img === "/assets/crafted/home-" + STORY[3].id + ".webp" || c.fallback) && /brightness\(0\.15\)/.test(c.dark), c);
+    ok("…with Day 4's picture, dark", c.story === STORY[3].id && c.img === "/assets/crafted/home-" + STORY[3].id + ".webp" && !c.fallback && /brightness\(0\.15\)/.test(c.dark), c);
     ok("no page errors", errors.length === 0, errors);
     await ctx.close();
   }
