@@ -5,7 +5,7 @@
 // the clock paused: only advance() moves time, so a busy machine changes
 // nothing.
 //
-// BRIDGE_PART=locked|main|tapdrag|struggle|little|help|motion|buddy|fit|standins|keyboard|shapes
+// BRIDGE_PART=locked|main|replay|tapdrag|struggle|little|help|motion|buddy|fit|standins|keyboard|shapes
 // runs one part, or several with commas (every part, without it): the whole
 // suite is several minutes, so run-all gives it in pieces. BRIDGE_PORT moves
 // the test server. The harness plays under Reduce Motion; "motion" turns it
@@ -189,7 +189,52 @@ try{
   const html=readFileSync(path.join(ROOT,'arcade-bridge.html'),'utf8');
   ok('the page hands back to the story and has no Play again',/exit: replay \? undefined : \{ href: "\/adventure\.html\?part=end&story=bridge", label: "See what happens!" \}/.test(html)&&/again: replay \? undefined : false/.test(html)&&/Bridge\.setLittle\(little\)/.test(html),null);
   ok('FOUND1: only ?again=1, and only once this story is finished (Sona.storyReplay), makes it a replay from Home\'s row (Play again and Back home, its own event); any other replay address goes Home',/var replay = location\.search === "\?again=1";/.test(html)&&/if \(replay && !\(window\.Sona && Sona\.storyReplay && Sona\.storyReplay\("bridge"\)\)\) \{ document\.body\.hidden = true; location\.replace\("\/today\.html"\); return; \}/.test(html)&&/track\(replay \? "story game replayed" : "game opened", \{ game: "bridge" \}\)/.test(html));
+  ok('FOUND1: a page brought back from the browser\'s cache reloads, so the replay and access checks run again for whichever child is on the phone now (its Play again could otherwise end another child\'s story day)',/window\.addEventListener\("pageshow", function \(e\) \{ if \(e\.persisted\) location\.reload\(\); \}\);/.test(html));
   ok('the page asks the two start lines, word for word',html.includes(JSON.stringify(INTRO_BIG))&&html.includes(JSON.stringify(INTRO_LITTLE)),null);
+ }
+
+ // ── replay (FOUND1): a found game played again from Home's row (?again=1),
+ // for a child whose stories are all finished. Its end card has Play again
+ // and Back home, and Play again is sayplay's again() calling Bridge.reset(),
+ // which no story round ever reaches (they all pass again:false): stones left
+ // seated, the river left risen or the camera left pulled back to the whole
+ // bridge would start the second round broken, so it is played through ──
+ if(run('replay')){
+  const FOUND=JSON.stringify({s:14,ls:13,lk:'story',done:'2026-01-01'});
+  const{page,context,errors}=await h.fresh({device:{seed:{'sona.quest.v1':FOUND}}});
+  await page.goto('http://127.0.0.1:'+PORT+'/arcade-bridge.html?again=1');await page.clock.pauseAt(await page.evaluate(()=>Date.now()+500));await advance(page,200);
+  ok('replay: a child whose stories are all finished may play Puzzle Bridge again from Home',await page.evaluate(()=>location.search==='?again=1'&&!document.body.hidden&&Sona.storyReplay('bridge')));
+  const quest=()=>page.evaluate(()=>localStorage.getItem('sona.quest.v1'));
+  const endCard=()=>page.evaluate(()=>{const a=document.getElementById('again'),g=document.getElementById('goHome');return{again:a.textContent.trim(),againShown:!a.hidden&&a.offsetParent!==null,go:g.textContent.trim(),goShown:g.offsetParent!==null};});
+  // what a round leaves behind, read before the first round and after Play
+  // again (the camera to a hundredth of a pixel and of its zoom)
+  const r2=x=>Math.round(x*100)/100;
+  const left=s=>({stage:s.stage,active:s.active,finale:s.finale,pos:s.pos,seated:s.seated,dones:s.dones,beat:s.beat,power:s.power,ladder:s.ladder,misses:s.misses,twist:s.twist,water:s.water,banner:s.banner,
+   camera:s.camera&&{x:r2(s.camera.x),y:r2(s.camera.y),s:r2(s.camera.s*100),moving:s.camera.moving,pulledBack:s.camera.pulledBack}});
+  const before=left(await br(page));
+  // one round by the finger, its first word already said: eight stones
+  const round=async()=>{
+   for(let i=0;i<8;i++){if(i&&!await sayWord(page))return 'word '+(i+1);await advance(page,300);if(!await fit(page))return 'stone '+(i+1);if(!await stepTo(page,i+1))return 'step '+(i+1);}
+   return await until(page,()=>__sayplay.phase==='end',6000)?'':'the end card';
+  };
+  if(!await begin(page))throw Error('replay word 1');
+  let r=await round();ok('replay: a whole round of eight stones ends on the end card',r==='',r);let s=await both(page);
+  ok('replay: …with every stone seated, the river risen and the camera pulled back to the whole bridge (what Play again must clear)',s.sp.step===8&&s.br.finale&&s.br.seated.join()===BIG_ORDER.join()&&s.br.twist&&Math.abs(s.br.water.line-s.br.anchors.water.risen)<0.5&&s.br.camera.pulledBack,{seated:s.br.seated,water:s.br.water,camera:s.br.camera});
+  let end=await endCard();
+  ok('replay: the end card has Play again and Back home, and no hand-back to the story',end.again==='Play again'&&end.againShown&&end.go==='Back home'&&end.goShown,end);
+  ok('replay: the round finished nothing: the story record is as it was',await quest()===FOUND,await quest());
+  await page.locator('#again').click();await advance(page,100);s=await both(page);
+  ok('replay: Play again starts a clean round: no stone seated, the river down, the camera on the first gap, word 1 of 8',s.sp.phase==='turn'&&s.sp.step===0&&s.sp.steps===8&&JSON.stringify(left(s.br))===JSON.stringify(before),{now:left(s.br),before,sp:s.sp});
+  ok('replay: …and the end card is gone',await page.evaluate(()=>!document.getElementById('endOvl').classList.contains('show')));
+  ok('replay: the first word of the new round calls a stone up',await sayWord(page));await advance(page,400);s=await br(page);
+  ok('replay: …the L, one tap off, beside its own gap in the low river, as in a first round',s.stage===0&&s.shape==='L'&&s.need===1&&s.hole.shape==='L'&&s.seated.length===0&&!s.twist&&Math.abs(s.water.line-s.anchors.water.line)<0.5&&!s.camera.pulledBack&&Math.abs(s.camera.x-s.camera.target.x)<1&&inside({x:s.hole.sx,y:s.hole.sy,w:s.hole.w},s.board),{shape:s.shape,need:s.need,seated:s.seated,water:s.water,camera:s.camera});
+  r=await round();ok('replay: the second round plays through to its own end card',r==='',r);s=await both(page);
+  ok('replay: …eight new steps, and the eight stones seated once each (not sixteen)',s.sp.step===8&&s.br.dones===8&&s.br.seated.join()===BIG_ORDER.join(),s.br.seated);
+  ok('replay: the second round finished nothing either',await quest()===FOUND,await quest());
+  end=await endCard();ok('replay: …and its end card has Play again and Back home again',end.againShown&&end.go==='Back home'&&end.goShown,end);
+  const nav=page.waitForRequest(q=>q.isNavigationRequest(),{timeout:4000}).catch(()=>null);await page.locator('#goHome').click();const req=await nav;
+  ok('replay: Back home goes Home (/today.html)',!!req&&new URL(req.url()).pathname==='/today.html',req&&req.url());
+  ok('replay: no runtime errors',errors.length===0,errors);await context.close();
  }
 
  // ── tapdrag: a tap turns (under 12 px, under 300 ms), anything else slides ──

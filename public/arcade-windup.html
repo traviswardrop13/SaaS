@@ -157,6 +157,9 @@
     // address of a story not finished yet goes Home: that game is still the
     // story's surprise.
     var replay = location.search === "?again=1";
+    // a page brought back from the browser's cache asks again who may be
+    // here (another child may be on the phone now, and Play again ends a day)
+    window.addEventListener("pageshow", function (e) { if (e.persisted) location.reload(); });
     if (replay && !(window.Sona && Sona.storyReplay && Sona.storyReplay("windup"))) { document.body.hidden = true; location.replace("/today.html"); return; }
     SayPlay.start({
       key: "windup", title: "Wind-Up Toys", intro: INTRO, steps: little ? STEPS6 : STEPS8, finale: [],

@@ -601,6 +601,9 @@
         foundPic.onerror = function () { foundPic.onerror = null; foundPic.hidden = true; };
         foundPic.src = found.pic; foundText.textContent = "New game on Home: " + found.name + "!";
       }
+      // read with "Back home" when focus lands there (the sticker's line is
+      // the status region's; this one is not, so it rides on the button)
+      if (found) homeBtn.setAttribute("aria-describedby", "foundText"); else homeBtn.removeAttribute("aria-describedby");
       endEcho.src = "/assets/crafted/echo-cheer.webp";
       if (!celebrated) {
         celebrated = true;

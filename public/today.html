@@ -102,8 +102,11 @@
     #giftBtn:active{transform:translateY(2px) scale(.96);}
     .gift-ring{position:absolute;inset:0;border-radius:50%;background:conic-gradient(var(--act) calc(var(--fill,0)*1%),#eadcc6 0);box-shadow:0 3px 0 #e9d8bb,0 5px 13px #6947200b;}
     .gift-ring::after{content:"";position:absolute;inset:5px;border-radius:50%;background:linear-gradient(#fffefb,#fff7e9);}
-    .gift-ic{position:relative;display:flex;width:26px;height:26px;}
-    .gift-ic svg{display:block;width:26px;height:26px;}
+    /* the road's own painted chest, gold and wood: never the drawn kit's
+       orange gift, because orange on a child's screen means only the
+       practice sound's letters */
+    .gift-ic{position:relative;display:flex;width:30px;height:30px;}
+    .gift-ic img{display:block;width:30px;height:30px;object-fit:contain;}
     .gift-dot{position:absolute;top:-2px;right:-2px;width:14px;height:14px;border-radius:50%;background:var(--act);box-shadow:0 0 0 2.5px #fffdf7;animation:giftDot 2s ease-in-out infinite;}
     .gift-dot[hidden]{display:none;}
     @keyframes giftDot{0%,100%{transform:scale(1)}50%{transform:scale(1.25)}}
@@ -185,7 +188,9 @@
 <body>
   <!-- HOME AND THE ARCADE (STORY1, 22 Oct 2026): one page, two views. Home
        is today's story, big, with two doors under it (Arcade: every game, as
-       this page was before; Books: the bookshelf) and the Trophy Road card.
+       this page was before; Books: the bookshelf), then "Your games" once a
+       story is finished (FOUND1); the Trophy Road is the gift button in the
+       top bar.
        Every block is built once on load, as before, and the view only
        decides what shows (data-view, on the wrapper: a block's own hidden is
        set by its painter, never by the view). The Arcade has an address of
@@ -194,7 +199,7 @@
     <header class="library-header">
       <a id="buddyBtn" href="/customize.html" aria-label="Choose your buddy"></a>
       <span class="library-label">Sona</span>
-      <a id="giftBtn" href="/road.html" aria-label="Trophy Road"><span class="gift-ring" id="giftRing" aria-hidden="true"></span><span class="gift-ic" id="giftIc" aria-hidden="true"></span><span class="gift-dot" id="giftDot" hidden></span></a>
+      <a id="giftBtn" href="/road.html" aria-label="Trophy Road"><span class="gift-ring" id="giftRing" aria-hidden="true"></span><span class="gift-ic" id="giftIc" aria-hidden="true"><img src="/assets/crafted/road-chest.webp" alt="" width="30" height="30" /></span><span class="gift-dot" id="giftDot" hidden></span></a>
       <button id="parentBtn" type="button" aria-label="Grown-ups"><span class="pic-gear" aria-hidden="true"></span><span>Grown-ups</span></button>
     </header>
     <a id="trialBanner"><img class="tb-echo" src="/assets/crafted/echo-wave.webp" alt="" onerror="this.src='/assets/crafted/echo-welcome.webp'"><span id="trialMsg"></span><span class="tb-pill" aria-hidden="true">Share an idea</span></a>
@@ -553,7 +558,10 @@
         document.getElementById("questLock").hidden=done||open;
         var title=done?(story?"Day "+q.day+" done!":"All done for today!"):(story?q.story.title:game.name);
         // FOUND1: tomorrow's story brings a new game, still a dark shape here
-        var line=done?(next&&next.kind==="story"?"Come back tomorrow for Day "+next.day+" and a new game!":"Come back tomorrow for a new adventure!"):q.line;
+        // (only to a child who can open it: a story shown locked tomorrow
+        // brings no game, so the line promises only the day)
+        var tmr=false;try{tmr=!!(S.storyOpen&&S.storyOpen());}catch(e){tmr=false;}
+        var line=done?(next&&next.kind==="story"?"Come back tomorrow for Day "+next.day+(tmr?" and a new game!":"!"):"Come back tomorrow for a new adventure!"):q.line;
         document.getElementById("questTitle").textContent=title;
         document.getElementById("questLine").textContent=line;
         document.getElementById("questGo").hidden=done;
@@ -656,8 +664,8 @@
       // and checks each element), because sona.css gives every property a
       // near-instant transition under Reduce Motion and a box mid-transition
       // reports the size it WAS: a re-fit then stopped early and left the doors
-      // below the fold. The Trophy Road card may fall below on the smallest
-      // phones.
+      // below the fold. "Your games" may fall below on the smallest phones,
+      // all but the day's New! tile, which is measured too (FOUND1).
       var FIT_STEPS=5;
       function fitHome(){
         if(app.getAttribute("data-view")!=="home")return;
@@ -666,6 +674,13 @@
         function fits(){
           var y=window.pageYOffset||0,bar=inset?inset.offsetHeight:0,low=doors.getBoundingClientRect().bottom;
           if(go&&go.offsetParent)low=Math.max(low,go.getBoundingClientRect().bottom);
+          // FOUND1: on the day a story is finished its game, marked New!, is
+          // on the first screen too (the sticker card has just said "New game
+          // on Home"), so the dark tomorrow picture gives way for it, as far
+          // as the steps go (under the founding banner on the smallest
+          // phones the tile still falls below: CLAUDE.md, Home's fit)
+          var nw=document.querySelector("#foundRow:not([hidden]) .found-tile.fresh");
+          if(nw)low=Math.max(low,nw.getBoundingClientRect().bottom);
           return low+y<=window.innerHeight-bar-8;
         }
         for(i=1;i<=FIT_STEPS&&!fits();i++)app.classList.add("fit"+i);
@@ -774,7 +789,6 @@
       if(g)label+=" "+repNum(g.n)+" of "+repNum(g.goal)+" reps today."+(g.done?" Goal met.":"");
       if(chest)label+=" Your chest is ready.";else if(wait>0)label+=wait===1?" A gift is waiting.":" "+wait+" gifts are waiting.";
       btn.setAttribute("aria-label",label);
-      var ic=$("giftIc");if(ic&&!ic.firstChild){try{ic.innerHTML=(S&&S.icon)?S.icon("gift",26):"";}catch(e){}}
     }
     // a button that can't paint keeps its link, and never stops the rest of Home
     function paintGiftSafe(){ try{ paintGift(); }catch(e){} }

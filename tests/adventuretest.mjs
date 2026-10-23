@@ -39,8 +39,16 @@ import { chromium, ROOT, launchOpts } from "./_env.mjs";
 
 let fails = 0, count = 0;
 function ok(label, pass, detail = "") { count++; if (!pass) fails++; console.log((pass ? "PASS " : "FAIL ") + label + (pass ? "" : "  → " + (typeof detail === "string" ? detail : JSON.stringify(detail)))); }
-const ONLY = process.env.ADVENTURE_PART || "";
-async function section(label, run) { if (ONLY && !label.startsWith(ONLY)) return; try { await run(); } catch (e) { ok(label + " completes", false, e.stack); } }
+// ADVENTURE_PART: a comma list of section names, as they are written below;
+// "!name" leaves one out and runs the rest (run-all runs this file in two
+// parts, tests/adventureplaytest.mjs, "!buddy spots ipad", and
+// tests/adventurespotstest.mjs, "buddy spots ipad": the buddy on every
+// painted page, at a phone and at an iPad, took 220 of its 290 s, near the
+// 300 s a suite gets). Every name given must be a section here.
+const PARTS = process.env.ADVENTURE_PART ? process.env.ADVENTURE_PART.split(",") : null;
+const NOT = (PARTS || []).filter((p) => p[0] === "!").map((p) => p.slice(1)), YES = (PARTS || []).filter((p) => p[0] !== "!");
+const declared = new Set();
+async function section(label, run) { declared.add(label); if (PARTS && (NOT.includes(label) || (YES.length && !YES.includes(label)))) return; try { await run(); } catch (e) { ok(label + " completes", false, e.stack); } }
 
 // ── the scenes, read the way the page reads them ──
 const ADV_SRC = readFileSync(ROOT + "/adventures.js", "utf8");
@@ -484,8 +492,9 @@ await section("ending", async () => {
   ok("the sticker card shows the sticker today's round gave, read from the record", r && r.stickers.length === 1 && got.length === 1 && JSON.stringify(card.lines) === JSON.stringify(["You got " + got[0].e + " " + got[0].name + "!"]), { card, got });
   ok("…with one reward chime, no caption and no Skip", stickerSfx && JSON.stringify(card.chimes) === '["reward"]' && !card.cap && !card.skip && card.view === "stickers", card);
   // FOUND1 (23 Oct 2026): the story leaves its game behind, on Home's row
-  const fl = await pg.evaluate(() => { const l = document.getElementById("foundLine"), im = document.getElementById("foundPic"); return { shown: !l.hidden && l.getBoundingClientRect().height > 0, text: document.getElementById("foundText").textContent, img: new URL(im.getAttribute("src") || "", location.href).pathname, inBox: !!l.closest(".advbox") }; });
+  const fl = await pg.evaluate(() => { const l = document.getElementById("foundLine"), im = document.getElementById("foundPic"); return { shown: !l.hidden && l.getBoundingClientRect().height > 0, text: document.getElementById("foundText").textContent, img: new URL(im.getAttribute("src") || "", location.href).pathname, inBox: !!l.closest(".advbox"), desc: document.getElementById("homeBtn").getAttribute("aria-describedby"), focus: document.activeElement && document.activeElement.id }; });
   ok("…and the card says the game is on Home now, with its Home picture", fl.shown && fl.inBox && fl.text === "New game on Home: Light the Way!" && fl.img === "/assets/crafted/home-lighthouse.webp", fl);
+  ok("…and a screen reader hears it with \"Back home\", where focus lands (the line describes the button)", fl.desc === "foundText" && fl.focus === "homeBtn", fl);
   await nap(pg, 650);
   await pg.click("#homeBtn");
   ok("\"Back home\" goes Home", await landed(pg, "/today.html"), pg.url());
@@ -683,10 +692,11 @@ await section("buddy", async () => {
 // but for a few px held off the screen's edge), in its own pose, and meets
 // nothing: not the card, not Echo's face on its edge, not a button. Motion
 // on: the slow drift is part of what must stay clear. ──
-await section("buddy spots", async () => {
+// (one section a screen, so the two can run as separate suites)
+const spots = ([w, hgt]) => async () => {
   art = "real";
   const bad = []; let placed = 0;
-  for (const [w, hgt] of [[390, 844], [768, 1024]]) for (const [n, id] of IDS.entries()) for (const part of ["intro", "ending"]) {
+  for (const [n, id] of IDS.entries()) for (const part of ["intro", "ending"]) {
     const scenes = A[id][part];
     const q = part === "intro" ? { s: n, done: "2026-01-01" } : { s: LAST, ls: LAST - 1, lk: "story", done: "2026-01-01" };
     const { ctx, pg, errors } = await open({ voice: false, character: "dragon", quest: q }, { size: { width: w, height: hgt }, url: "/adventure.html" + (part === "ending" ? "?part=end&story=" + id : "") });
@@ -714,9 +724,11 @@ await section("buddy spots", async () => {
     await ctx.close();
   }
   const boxes = IDS.reduce((n, id) => n + A[id].intro.concat(A[id].ending).filter((sc) => sc.buddy).length, 0);
-  ok("on the real pictures at 390x844 and 768x1024, every boxed scene (" + boxes * 2 + ") shows the buddy on its spot, in its pose, clear of the card, Echo and every button", boxes >= 24 && placed === boxes * 2 && bad.length === 0, bad.length ? bad : placed);
+  ok("on the real pictures at " + w + "x" + hgt + ", every boxed scene (" + boxes + ") shows the buddy on its spot, in its pose, clear of the card, Echo and every button", boxes >= 24 && placed === boxes && bad.length === 0, bad.length ? bad : placed);
   art = false;
-});
+};
+await section("buddy spots phone", spots([390, 844]));
+await section("buddy spots ipad", spots([768, 1024]));
 
 // ── 11. Reduce Motion ──
 await section("reduce motion", async () => {
@@ -808,6 +820,7 @@ await section("writes", async () => {
   await ctx.close();
 });
 
+if (PARTS) { const unknown = YES.concat(NOT).filter((n) => !declared.has(n)); ok("every part ADVENTURE_PART names is a section of this file", unknown.length === 0, unknown); }
 await browser.close();
 server.close();
 console.log(fails ? `\n${fails} FAILED of ${count}` : `\nALL GREEN — ${count} assertions`);

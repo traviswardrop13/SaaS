@@ -5,7 +5,7 @@
 // with the clock paused: only advance() moves time, so a busy machine
 // changes nothing.
 //
-// LIGHTHOUSE_PART=locked|main|struggle|help|buddy|fit|standins|keyboard|art
+// LIGHTHOUSE_PART=locked|main|replay|struggle|help|buddy|fit|standins|keyboard|art
 // runs one part, or several with commas (every part, without it): the whole
 // suite is about four minutes, so run-all gives it in two or three pieces.
 // LIGHTHOUSE_PORT moves the test server.
@@ -178,6 +178,49 @@ try{
    ok('motion on: no runtime errors',errors.length===0,errors);await context.close();}
   ok('the page hands back to the story and has no Play again',/exit: replay \? undefined : \{ href: "\/adventure\.html\?part=end&story=lighthouse", label: "See what happens!" \}/.test(html)&&/again: replay \? undefined : false/.test(html)&&/Lighthouse\.setLittle\(little\)/.test(html),null);
   ok('FOUND1: only ?again=1, and only once this story is finished (Sona.storyReplay), makes it a replay from Home\'s row (Play again and Back home, its own event); any other replay address goes Home',/var replay = location\.search === "\?again=1";/.test(html)&&/if \(replay && !\(window\.Sona && Sona\.storyReplay && Sona\.storyReplay\("lighthouse"\)\)\) \{ document\.body\.hidden = true; location\.replace\("\/today\.html"\); return; \}/.test(html)&&/track\(replay \? "story game replayed" : "game opened", \{ game: "lighthouse" \}\)/.test(html));
+  ok('FOUND1: a page brought back from the browser\'s cache reloads, so the replay and access checks run again for whichever child is on the phone now (its Play again could otherwise end another child\'s story day)',/window\.addEventListener\("pageshow", function \(e\) \{ if \(e\.persisted\) location\.reload\(\); \}\);/.test(html));
+ }
+
+ // ── replay (FOUND1): a found game played again from Home's row (?again=1),
+ // for a child whose stories are all finished. Its end card has Play again
+ // and Back home, and Play again is sayplay's again() calling
+ // Lighthouse.reset(), which no story round ever reaches (they all pass
+ // again:false): a boat left at the dock, the town left lit or the cloud left
+ // over the moon would start the second round broken, so it is played through ──
+ if(run('replay')){
+  const FOUND=JSON.stringify({s:14,ls:13,lk:'story',done:'2026-01-01'});
+  const{page,context,errors}=await h.fresh({device:{seed:{'sona.quest.v1':FOUND}}});
+  await page.goto('http://127.0.0.1:'+PORT+'/arcade-lighthouse.html?again=1');await page.clock.pauseAt(await page.evaluate(()=>Date.now()+500));await advance(page,200);
+  ok('replay: a child whose stories are all finished may play Light the Way again from Home',await page.evaluate(()=>location.search==='?again=1'&&!document.body.hidden&&Sona.storyReplay('lighthouse')));
+  const quest=()=>page.evaluate(()=>localStorage.getItem('sona.quest.v1'));
+  const endCard=()=>page.evaluate(()=>{const a=document.getElementById('again'),g=document.getElementById('goHome');return{again:a.textContent.trim(),againShown:!a.hidden&&a.offsetParent!==null,go:g.textContent.trim(),goShown:g.offsetParent!==null};});
+  // what a round leaves behind, read before the first round and after Play again
+  const left=s=>({stage:s.stage,active:s.active,lampOn:s.lampOn,finale:s.finale,pool:s.pool,docked:s.docked,windowsLit:s.windowsLit,dockOn:s.dockOn,twist:s.twist,decoy:s.decoy,decoysLit:s.decoysLit,ladder:s.ladder,dones:s.dones,beat:s.beat,power:s.power,chug:s.chug,banner:s.banner});
+  const before=left(await lh(page));
+  // one round by the finger, its first word already said: seven boats, then the town
+  const round=async()=>{
+   for(let i=0;i<7;i++){if(i&&!await sayWord(page))return 'word '+(i+1);await advance(page,300);if(!await findBoat(page))return 'boat '+(i+1);if(!await stepTo(page,i+1))return 'step '+(i+1);}
+   if(!await sayWord(page))return 'word 8';await advance(page,300);if(!await lightTown(page))return 'the town';
+   return await until(page,()=>__sayplay.phase==='end',6000)?'':'the end card';
+  };
+  if(!await begin(page))throw Error('replay word 1');
+  let r=await round();ok('replay: a whole round, seven boats and the town, ends on the end card',r==='',r);let s=await both(page);
+  ok('replay: …with seven boats at the dock, every window lit and the cloud over the moon (what Play again must clear)',s.sp.step===8&&s.lh.finale&&s.lh.docked.length===7&&s.lh.windowsLit===12&&s.lh.dockOn&&s.lh.twist,s.lh);
+  let end=await endCard();
+  ok('replay: the end card has Play again and Back home, and no hand-back to the story',end.again==='Play again'&&end.againShown&&end.go==='Back home'&&end.goShown,end);
+  ok('replay: the round finished nothing: the story record is as it was',await quest()===FOUND,await quest());
+  await page.locator('#again').click();await advance(page,100);s=await both(page);
+  ok('replay: Play again starts a clean round: no boat docked, no window lit, the lamp dark, no cloud, word 1 of 8',s.sp.phase==='turn'&&s.sp.step===0&&s.sp.steps===8&&JSON.stringify(left(s.lh))===JSON.stringify(before),{now:left(s.lh),before,sp:s.sp});
+  ok('replay: …and the end card is gone',await page.evaluate(()=>!document.getElementById('endOvl').classList.contains('show')));
+  ok('replay: the first word of the new round lights the lamp',await sayWord(page));await advance(page,400);s=await lh(page);
+  ok('replay: …on the tugboat, with nothing docked or lit and the moon out, as in a first round',s.stage===0&&s.lampOn&&!!s.pool&&s.target&&s.target.key==='tug'&&s.docked.length===0&&s.windowsLit===0&&!s.dockOn&&!s.twist&&!s.finale,s);
+  r=await round();ok('replay: the second round plays through to its own end card',r==='',r);s=await both(page);
+  ok('replay: …eight new steps, and seven boats at the dock again (not fourteen)',s.sp.step===8&&s.lh.dones===8&&s.lh.docked.length===7&&s.lh.windowsLit===12,s.lh);
+  ok('replay: the second round finished nothing either',await quest()===FOUND,await quest());
+  end=await endCard();ok('replay: …and its end card has Play again and Back home again',end.againShown&&end.go==='Back home'&&end.goShown,end);
+  const nav=page.waitForRequest(q=>q.isNavigationRequest(),{timeout:4000}).catch(()=>null);await page.locator('#goHome').click();const req=await nav;
+  ok('replay: Back home goes Home (/today.html)',!!req&&new URL(req.url()).pathname==='/today.html',req&&req.url());
+  ok('replay: no runtime errors',errors.length===0,errors);await context.close();
  }
 
  // ── struggle: the ladder climbs with seconds of searching and with decoys,
@@ -311,11 +354,17 @@ try{
    const P={x:(x0+x1)/2,y:(y0+y1)/2},under=()=>page.evaluate(([x,y])=>{const e=document.elementFromPoint(x,y);return e&&(e.closest('#helpBack')?'back':e.closest('#lhHelp')?'pill':e.id||e.tagName);},[P.x,P.y]);
    await page.mouse.click(P.x,P.y);const u1=await under();await page.mouse.click(P.x,P.y);await until(page,()=>__sayplay.listening);s=await both(page);
    ok('a double tap on Bright beam asks for the help and keeps asking (its second tap, on "Back to the game", does nothing)',u1==='back'&&s.sp.phase==='turn'&&s.lh.paused&&await page.locator('#helpBack').isVisible(),{u1,s});
+   // past the half-second settle after that ask: the fake clock moves only
+   // as far as until() stepped it, which a fast or slow machine changes
+   await advance(page,600);
    await page.mouse.click(P.x,P.y);const u2=await under();await page.mouse.click(P.x,P.y);await advance(page,300);s=await both(page);
    ok('a double tap on "Back to the game" goes back to the game and does not ask again',u2==='pill'&&s.sp.phase==='play'&&!s.lh.paused&&!(await page.locator('#helpBack').isVisible()),{u2,s});
    await advance(page,600);await page.mouse.click(P.x,P.y);await until(page,()=>__sayplay.listening);s=await both(page);
    ok('…and a tap there half a second later asks again, as ever',s.sp.phase==='turn',s);
-   await page.locator('#helpBack').click();await advance(page,300);}
+   // past that ask's half-second settle again before closing it: a tap on
+   // "Back to the game" near the spot that asked is held back until then,
+   // and a held-back tap left the microphone open for the audit below
+   await advance(page,600);await page.locator('#helpBack').click();await advance(page,300);}
   const q=await quietAudit(page);ok('help asks never sound into an open microphone',q.leaks===0&&q.live===0&&q.overlap===0,q);
   ok('help: no runtime errors',errors.length===0,errors);await context.close();
  }

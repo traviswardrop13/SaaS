@@ -221,6 +221,7 @@ await scenario("a tap on the gift button, and the week on Progress", async () =>
   const { context, page, errors } = await fresh({ at: THU });
   await seed(page, HISTORY); await home(page);
   // FOUND1: the button is the child's way to the Trophy Road, with no check
+  const said = await page.evaluate(() => document.getElementById("giftBtn").getAttribute("aria-label"));
   await page.click("#giftBtn");
   await page.waitForURL(/\/road\.html$/);
   ok("a tap on the gift button opens the Trophy Road, with no grown-ups check", /\/road\.html$/.test(page.url()), page.url());
@@ -228,8 +229,12 @@ await scenario("a tap on the gift button, and the week on Progress", async () =>
   await page.evaluate(() => sessionStorage.setItem("sona.gate.v1", String(Date.now())));
   await page.goto(origin + "/progress.html");
   await page.waitForFunction(() => window.Sona && document.getElementById("volReps").textContent === "28" && document.getElementById("dailyGoalPick").options.length);
-  const s = await page.evaluate(() => ({ tries: document.getElementById("volReps").textContent, goal: document.getElementById("dailyGoalPick").value, days: !!document.querySelector("#wkGoalPick .gbtn.on"), note: !!document.querySelector("#weekCard .rw-note") }));
+  const s = await page.evaluate(() => ({ tries: document.getElementById("volReps").textContent, goal: document.getElementById("dailyGoalPick").value, days: !!document.querySelector("#wkGoalPick .gbtn.on"), note: !!document.querySelector("#weekCard .rw-note"), today: document.getElementById("goalToday").textContent, d: Sona.dayGoal() }));
   ok("Progress has the week's 28 tries, beside the days a week, the daily goal and what a rep is", s.tries === "28" && s.goal === "30" && s.days && s.note, s);
+  // the corner has no number now: Progress is where a grown-up reads today's
+  // count, and it is the gift button's own (one count everywhere)
+  const m = /^Trophy Road\. (\d+) of (\d+) reps today\./.exec(said || "");
+  ok("Progress shows today's count under the daily goal, the same number the gift button's label says", !!m && +m[1] === s.d.n && +m[2] === s.d.goal && s.today === (s.d.done ? "Today: " + s.d.n + " reps. Goal met." : "Today: " + s.d.n + " of " + s.d.goal + " reps."), { said, today: s.today, d: s.d });
   ok("no page errors", errors.length === 0, errors);
   await context.close();
 });
@@ -249,7 +254,7 @@ await scenario("the week on Progress, and no card on Settings", async () => {
   await progress(page);
   const s = await page.evaluate(() => {
     const card = document.getElementById("weekCard"), note = card.querySelector(".rw-note"), goal = card.querySelector(".goal-daily"), kids = [...card.children];
-    const moved = [note, goal, document.getElementById("goalHelp"), document.getElementById("wkGoalMsg")];
+    const moved = [note, goal, document.getElementById("goalHelp"), document.getElementById("goalToday"), document.getElementById("wkGoalMsg")];
     return {
       who: document.getElementById("rwWho").textContent, note: note.innerText.trim(),
       order: kids.indexOf(document.getElementById("wkGoalPick")) < kids.indexOf(goal) && kids.indexOf(goal) < kids.indexOf(note),

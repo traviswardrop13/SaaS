@@ -150,7 +150,8 @@ await section("a locked story", async () => {
     // did before leaving can still be read
     const navs = [];
     await ctx.route(/\/(?:subscribe|premium)\.html|[?&]gate=1/, (r) => { navs.push(new URL(r.request().url())); return r.fulfill({ status: 204, body: "" }); });
-    await pg.locator("#questCard").click(); await pg.waitForTimeout(300);
+    // (noWaitAfter: Playwright 1.64 waits for the held navigation to finish)
+    await pg.locator("#questCard").click({ noWaitAfter: true }); await pg.waitForTimeout(300);
     const left = await pg.evaluate(() => ({ notice: !document.getElementById("libraryNotice").hidden, gate: document.getElementById("gateOvl").classList.contains("show") }));
     ok(w + "a tap opens the price at once, on the story", navs.length === 1 && navs[0].pathname + navs[0].search === "/subscribe.html?from=adventure", navs.map((u) => u.pathname + u.search));
     ok(w + "…with no note and no grown-ups check in between", !left.notice && !left.gate, left);
@@ -188,6 +189,16 @@ await section("a story finished today", async () => {
     ok("no page errors", errors.length === 0, errors);
     await ctx.close();
   }
+  {
+    // a family whose story is locked by tomorrow (free days cancelled, where
+    // Sona sells): tomorrow's story is shown locked and brings no game, so
+    // the card promises the day alone
+    const { ctx, pg, errors } = await open({ sell: true, stamp: "post", quest: { i: 0, last: 13, s: 1, ls: 0, lk: "story", done: "TODAY", got: [] } });
+    const c = await card(pg);
+    ok("a story finished today on a phone whose stories are now locked: \"Come back tomorrow for Day 2!\", no new game promised", c.title === "Day 1 done!" && c.line === "Come back tomorrow for Day 2!" && c.done && c.go === null, c);
+    ok("no page errors", errors.length === 0, errors);
+    await ctx.close();
+  }
 });
 
 // ── FOUND1 (23 Oct 2026): every story leaves its game behind ──
@@ -221,6 +232,16 @@ await section("Your games: the games the stories left", async () => {
     const { ctx, pg, errors } = await open({ sub: true, quest: { i: 0, last: 13, s: 5, ls: 4, lk: "story", done: "2026-01-01", got: [] } });
     const f = await found(pg);
     ok("five stories finished, Day 6 open: five tiles, newest first, none New! (nothing found today)", f.shown && f.tiles.map((t) => t.id).join() === [4, 3, 2, 1, 0].map((n) => STORY[n].id).join() && f.tiles.every((t) => !t.fresh), f.tiles.map((t) => t.id));
+    // the list scrolls sideways, so it clips at its padding: the keyboard's
+    // focus ring (3 px, 4 px outside a tile) must fit inside it whole
+    await pg.focus(".found-tile[data-story=" + STORY[4].id + "]"); await pg.keyboard.press("Shift+Tab"); await pg.keyboard.press("Tab");
+    const ring = await pg.evaluate(() => {
+      const t = document.activeElement, l = document.getElementById("foundList"), cs = getComputedStyle(t), lc = getComputedStyle(l);
+      const out = parseFloat(cs.outlineWidth) + parseFloat(cs.outlineOffset), a = t.getBoundingClientRect(), b = l.getBoundingClientRect();
+      const bw = (k) => parseFloat(lc["border" + k + "Width"]) || 0;
+      return { id: t.getAttribute("data-story"), style: cs.outlineStyle, out, inside: a.left - out >= b.left + bw("Left") - 0.5 && a.top - out >= b.top + bw("Top") - 0.5 && a.bottom + out <= b.bottom - bw("Bottom") + 0.5 && a.right + out <= b.right + 0.5 };
+    });
+    ok("a keyboard's focus ring on the first tile is whole: the sideways list never clips it", ring.style !== "none" && ring.out >= 6 && ring.inside, ring);
     ok("a Days 4-14 game plays again on the shared page", await tapTo(pg, ".found-tile[data-story=waterwheel]", /\/story-game\.html\?story=waterwheel&again=1$/), pg.url());
     ok("no page errors", errors.length === 0, errors);
     await ctx.close();
@@ -462,6 +483,7 @@ const STATES = [
   ["Day " + (LONGEST + 1) + ", the longest title", { sub: true, quest: { i: 0, last: 13, s: LONGEST, ls: Math.max(0, LONGEST - 1), lk: "story", done: "2026-01-01", got: [] } }],
   ["locked", { sell: true, stamp: "post" }],
   ["done", { sub: true, quest: { i: 0, last: 13, s: 1, ls: 0, lk: "story", done: "TODAY", got: [] } }],
+  ["done, the founding banner", { ea: true, quest: { i: 0, last: 13, s: 1, ls: 0, lk: "story", done: "TODAY", got: [] } }],
   ["a game day", { sub: true, quest: { i: 3, last: 2, s: 14, ls: 13, lk: "story", done: "2026-01-01" } }],
   ["ages 3-4", { sub: true, age: 4 }],
   ["the founding banner", { ea: true }],
@@ -472,6 +494,8 @@ const measure = (pg) => pg.evaluate(() => {
   const buttons = [...document.querySelectorAll(".home-only button, .home-only a[href], #libraryApp header button, #libraryApp header a")].filter((e) => e.offsetParent).map((e) => ({ id: e.id, w: e.getBoundingClientRect().width, h: e.getBoundingClientRect().height }));
   return { y: window.pageYOffset, ih: window.innerHeight, ox: document.documentElement.scrollWidth - document.documentElement.clientWidth,
     go: box($("questGo")), card: box($("questCard")), arcade: box($("arcadeBtn")), books: box($("homeBooksBtn")), art: box(art), buttons,
+    fresh: box(document.querySelector("#foundRow:not([hidden]) .found-tile.fresh")), freshPic: box(document.querySelector("#foundRow:not([hidden]) .found-tile.fresh .found-pic")),
+    freshNew: box(document.querySelector("#foundRow:not([hidden]) .found-tile.fresh .found-new")),
     pics: [box($("arcadePic")), box($("homeBooksPic"))], words: [...document.querySelectorAll("#homeDoors .door-word")].map(box),
     hit: (() => { const out = {}; ["arcadeBtn", "homeBooksBtn", "questGo"].forEach((id) => { const e = $(id); if (!e || !e.offsetParent) return; const r = e.getBoundingClientRect(); const h = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); out[id] = !!h && (h === e || e.contains(h) || (id === "questGo" && $("questCard").contains(h))); }); return out; })() };
 });
@@ -481,11 +505,23 @@ for (const [w, h] of SIZES) {
       const { ctx, pg, errors } = await open({ ...opts, viewport: { width: w, height: h } });
       await pg.evaluate(() => document.fonts && document.fonts.ready); await pg.waitForTimeout(100);
       const m = await measure(pg), at = w + "x" + h + " " + label + ": ";
-      const goOk = label === "done" ? m.go === null : !!m.go && m.go.w >= 64 && m.go.h >= 64 && m.go.b <= m.ih && m.go.t >= 0;
-      ok(at + "the play button is on the first screen" + (label === "done" ? " (none when done)" : ", at least 64 px"), m.y === 0 && goOk, m.go);
+      const done = label.startsWith("done");
+      const goOk = done ? m.go === null : !!m.go && m.go.w >= 64 && m.go.h >= 64 && m.go.b <= m.ih && m.go.t >= 0;
+      ok(at + "the play button is on the first screen" + (done ? " (none when done)" : ", at least 64 px"), m.y === 0 && goOk, m.go);
       ok(at + "both doors are on the first screen, side by side, at least 88 px tall, and tappable", !!m.arcade && !!m.books && m.arcade.b <= m.ih && m.books.b <= m.ih && Math.abs(m.arcade.t - m.books.t) < 1 && m.arcade.r <= m.books.l && m.arcade.h >= 88 && m.books.h >= 88 && m.hit.arcadeBtn && m.hit.homeBooksBtn, { arcade: m.arcade, books: m.books, ih: m.ih, hit: m.hit });
       ok(at + "every button is at least 44 px, and nothing scrolls sideways", m.ox <= 1 && m.buttons.every((b) => b.w >= 44 && b.h >= 44), { ox: m.ox, small: m.buttons.filter((b) => b.w < 44 || b.h < 44) });
       ok(at + "the picture gives way but never goes (no flatter than 3:1)", !!m.art && m.art.h >= m.art.w / 3 - 1, m.art);
+      // FOUND1: the day a story is finished, the sticker card has just said
+      // "New game on Home", and the dark tomorrow picture gives way for its
+      // tile: the tile's picture and its New! are on the first screen (its
+      // name may fall below). Not under the founding banner (a browser only)
+      // on the smallest phone: there only the tile's top, its New!, peeks
+      // above the fold, which is pinned so a change either way is seen.
+      if (done) {
+        const small = label === "done, the founding banner" && w === 320;
+        if (small) ok(at + "the game found today (New!) starts on the first screen: its top peeks above the fold, the rest falls below", !!m.fresh && m.fresh.t < m.ih && m.freshPic.b > m.ih, { fresh: m.fresh, pic: m.freshPic, ih: m.ih });
+        else ok(at + "the game found today is on the first screen: its picture and its New!", !!m.freshPic && !!m.freshNew && m.freshPic.t >= 0 && m.freshPic.b <= m.ih && m.freshNew.b <= m.ih, { pic: m.freshPic, badge: m.freshNew, ih: m.ih });
+      }
       // the Arcade's painting is Echo among the games' things, out at its
       // edges: a square crop kept Echo and dropped every game, so a child who
       // can't read saw two doors of Echo. Each door's picture is a wide band
@@ -496,6 +532,20 @@ for (const [w, h] of SIZES) {
     }
   });
 }
+
+// an iPhone SE on the website (375x553 under Safari's bars), the day a story
+// is finished: the dark tomorrow picture gives way as far as it goes, and the
+// new game's New! and its picture are on the first screen; its name falls
+// below (CLAUDE.md, Home's fit)
+await section("fit at 375x553, a story finished today", async () => {
+  const { ctx, pg, errors } = await open({ sub: true, viewport: { width: 375, height: 553 }, quest: { i: 0, last: 13, s: 1, ls: 0, lk: "story", done: "TODAY", got: [] } });
+  await pg.evaluate(() => document.fonts && document.fonts.ready); await pg.waitForTimeout(100);
+  const m = await measure(pg);
+  ok("375x553 done: both doors on the first screen, no play button", m.y === 0 && m.go === null && !!m.arcade && m.arcade.b <= m.ih && m.books.b <= m.ih, { arcade: m.arcade, ih: m.ih });
+  ok("375x553 done: the game found today shows its New! and its picture on the first screen (its name may fall below)", !!m.freshNew && m.freshNew.b <= m.ih && !!m.freshPic && m.freshPic.t < m.ih && m.freshPic.b - m.ih < 12, { badge: m.freshNew, pic: m.freshPic, ih: m.ih });
+  ok("no page errors", errors.length === 0, errors);
+  await ctx.close();
+});
 
 // ── 7. Reduce Motion ──
 await section("Reduce Motion", async () => {

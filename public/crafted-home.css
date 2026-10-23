@@ -116,7 +116,10 @@ body::before{content:"";position:fixed;left:0;right:0;top:0;height:env(safe-area
 #foundRow{margin:0 0 18px;}
 #foundRow[hidden]{display:none;}
 #foundTitle{margin:0 0 8px;font:800 18px/1.1 "Baloo 2",sans-serif;color:var(--ink);}
-#foundList{display:flex;gap:10px;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x proximity;padding:2px 2px 8px;margin:0 -2px;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+/* the list scrolls sideways, which clips at its padding: 8 px all round
+   (taken back by the margin, so nothing moves) holds the whole focus ring,
+   3 px drawn 4 px outside a tile */
+#foundList{display:flex;gap:10px;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x proximity;scroll-padding-inline:8px;padding:8px;margin:-6px -8px 0;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
 #foundList::-webkit-scrollbar{display:none;}
 .found-tile{flex:none;display:flex;flex-direction:column;width:clamp(128px,38vw,176px);min-height:44px;padding:0;border-radius:18px;overflow:hidden;scroll-snap-align:start;background:linear-gradient(#fffefb,#fff7e9);border:1px solid #efe2ce;box-shadow:0 3px 0 #e9d8bb,0 6px 14px #6947200d;color:var(--ink);font:inherit;text-align:left;cursor:pointer;transition:transform .12s;}
 .found-tile:active{transform:translateY(2px) scale(.98);}

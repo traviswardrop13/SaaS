@@ -385,10 +385,12 @@ const spLine = (w) => spAsk.m[1] + w + spAsk.m[2];
 const STORY_PAGE = "public/story-game.html", PAGES_JS = "public/daily-adventures/pages.js", DA = "public/daily-adventures/";
 const PAGES = (() => { const w = {}; try { new Function("window", src(PAGES_JS))(w); } catch (e) { fail(`daily-adventures/pages.js does not run on its own (${e.message}) — it is data, read as it stands.`); } return w.DailyAdventurePages; })();
 if (!PAGES) fail("daily-adventures/pages.js no longer sets window.DailyAdventurePages — re-read the daily story's games.");
-const sgDay = find(STORY_PAGE, /var m = \/\^\\\?story=\(\[a-z\]\+\)\$\/\.exec\(location\.search\), day = null;\n\s*try \{ \(S\.STORY_DAYS \|\| \[\]\)\.forEach\(function \(d\) \{ if \(m && d\.id === m\[1\] && d\.controller\) day = d; \}\); \} catch \(e\) \{\}\n\s*var copy = day && PAGES\[day\.controller\];/, "story-game.html: the day from ?story=, its words from pages.js by its controller");
+const sgDay = find(STORY_PAGE, /var m = \/\^\\\?story=\(\[a-z\]\+\)\(&again=1\)\?\$\/\.exec\(location\.search\), day = null;\n\s*try \{ \(S\.STORY_DAYS \|\| \[\]\)\.forEach\(function \(d\) \{ if \(m && d\.id === m\[1\] && d\.controller\) day = d; \}\); \} catch \(e\) \{\}\n\s*var copy = day && PAGES\[day\.controller\];/, "story-game.html: the day from ?story=, its words from pages.js by its controller");
 const sgScript = find(STORY_PAGE, /var js = document\.createElement\("script"\); js\.src = "\/daily-adventures\/" \+ day\.controller \+ "\.js";/, "story-game.html inserts the day's controller by name");
 find(STORY_PAGE, /var game = window\.DailyAdventureGames && window\.DailyAdventureGames\[day\.controller\];/, "story-game.html plays the game that controller registers");
-const sgStart = find(STORY_PAGE, /SayPlay\.start\(\{\n\s*key: day\.game, title: copy\.title, intro: copy\.intro, steps: steps, finale: \[\], done: copy\.done,\n[\s\S]*?\n\s*play: game, sounds: game\.sounds, soundMs: game\.soundMs\n\s*\}\);/, "story-game.html hands the engine the game's key, title, intro and controller");
+// (FOUND1: the page builds the engine's settings, takes the story's
+// hand-back off for a replay from Home's row, then starts it)
+const sgStart = find(STORY_PAGE, /var cfg = \{\n\s*key: day\.game, title: copy\.title, intro: copy\.intro, steps: steps, finale: \[\], done: copy\.done,\n[\s\S]*?\n\s*play: game, sounds: game\.sounds, soundMs: game\.soundMs\n\s*\};\n[\s\S]*?\n\s*SayPlay\.start\(cfg\);/, "story-game.html hands the engine the game's key, title, intro and controller");
 const sgCount = find(STORY_PAGE, /var count = S\.playStyle\(\) === "simple" \? (\d+) : (\d+), steps = \[\];/, "story-game.html: words a round, ages 3-4 and 5-8");
 const STORY_GAMES = {};
 (S.STORY_DAYS || []).forEach((d, i) => {

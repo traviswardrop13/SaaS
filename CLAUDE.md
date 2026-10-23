@@ -1965,19 +1965,24 @@ simplicity, fairness to kids, reuse) each came back with this one idea:
   only today's open story). Its page sends "story game replayed" `{ game }`
   in place of "game opened". A replay address for a story not finished yet
   goes Home before anything is put on the page: that game is still the
-  story's surprise. Still not in the catalog: no shelf, picks row, setup
+  story's surprise. A replay page brought back from the browser's cache
+  reloads, so the checks run again for whichever child is on the phone now
+  (its Play again would otherwise finish another child's story day). Still
+  not in the catalog: no shelf, picks row, setup
   grid, website count, level or Best.
 - **Tomorrow's game is the mystery:** a finished day's card still shows
   tomorrow's story picture dark, and now says "Come back tomorrow for Day N
-  and a new game!". The same order for every child, never random, never
-  bought.
+  and a new game!" (only while `storyOpen()`: a story shown locked tomorrow
+  brings no game, so that card says "Come back tomorrow for Day N!"). The
+  same order for every child, never random, never bought.
 - **The ending says where the game went:** the sticker card adds the game's
   Home picture and "New game on Home: <name>!" (read only).
 - **The gift button** took the place of the reps count in the top corner and
   the Trophy Road card (see "Trophies, coins and the Trophy Road").
 - **Executive calls, Travis's to change:** story games stay on Home; the
   reps count left Home for the ring (grown-ups lost a one-tap path to
-  Progress: it is Grown-ups, then the Progress tab); the doors stay (the
+  Progress: it is Grown-ups, then the Progress tab, where today's count now
+  sits under the daily goal); the doors stay (the
   plan's one row with "All games" and "Books" as tiles was not built).
   **Not built yet:** new stories after Day 14 (about one a week, and holiday
   stories that show only in their month, whose games stay once found: a
@@ -1988,15 +1993,20 @@ simplicity, fairness to kids, reuse) each came back with this one idea:
   child the phone cannot hear can never finish a story, so never finds its
   game; whether a grown-up may finish it for them is hers too.
 `homestorytest` (the row), `storycoretest` (the list and the replay rule),
-`storygametest` (every replay page), `adventuretest` (the ending's line),
-`roadtest` and `repweektest` (the gift button) play it.
+`storygametest` (every replay page), `lighthousefittest`, `bridgefittest`
+and `windupreplaytest` (a Days 1-3 replay played to its end card twice:
+Play again starts a clean round and finishes nothing), `adventuretest` (the
+ending's line), `roadtest` and `repweektest` (the gift button, and today's
+count on Progress) play it.
 
 `storycoretest` (the rules in `sona.js`, the offer, the hand-back),
-`homestorytest` (Home), `adventuretest` (the player), `storygametest` (Days
+`homestorytest` (Home), `adventuretest` (the player; run as
+`adventureplaytest` and `adventurespotstest`, the buddy's spots at an iPad),
+`storygametest` (Days
 4-14's page and Day 4 played through), `lighthousetest` (run as
 `lighthouseplaytest`, `lighthousehelptest`, `lighthousefittest`),
-`winduptest` and `bridgetest` (run as `bridgeplaytest`, `bridgelittletest`,
-`bridgefittest`) play it; `shiptest` checks every picture and the voice
+`winduptest` (and `windupreplaytest`) and `bridgetest` (run as
+`bridgeplaytest`, `bridgelittletest`, `bridgefittest`) play it; `shiptest` checks every picture and the voice
 manifest, `loadtest` the colours, and `node tools/voicedoc.mjs --check` every
 line (B7-B9).
 
@@ -2006,14 +2016,15 @@ line (B7-B9).
 `today.html` is one page with two views, `#libraryApp[data-view="home" |
 "arcade"]`: every block is built once on load, as before, and the view only
 decides what shows (hidden on the view's wrapper, never by a block's own
-`hidden`, which `paintQuest`, `paintRoad` and the preview notice set
+`hidden`, which `paintQuest`, `paintFound` and the preview notice set
 themselves), so there is still one copy of the game card, `launch()`, the
 offer, the level sheet, the grown-ups check and "Home opens the offer once".
 - **Home** (`/today.html`): "Today's adventure" (its first h1), the story card
   (`#questCard`, see "Daily story (STORY1)": a 16:9 picture, "Day N", the
   title, the hook line, a 64 px teal play button, a "Premium" tag without
   it; done: tomorrow's picture dark, "Day 1 done!" and "Come back tomorrow for
-  Day 2 and a new game!", or "Come back tomorrow for a new adventure!"), two
+  Day 2 and a new game!" ("…for Day 2!" when tomorrow's story is shown
+  locked), or "Come back tomorrow for a new adventure!"), two
   doors (`#homeDoors`: **Arcade**, `home-arcade.webp` and "All the games";
   **Books**, `home-books.webp` and the Books card's own tag, one handler for
   both), then "Your games" (FOUND1, below; only once a story is finished).
@@ -2043,9 +2054,18 @@ offer, the level sheet, the grown-ups check and "Home opens the offer once".
   picture to 2:1, tighter type, a phone's door pictures to 5:2, the story
   picture to 5:2, then 3:1): the play button and both doors are on the first
   screen at 320×568, 375×667, 390×844, 430×932 and 768×1024, every button at
-  least 44 px; "Your games" may fall below on the smallest. With the
-  real pictures only the founding banner on a 320×568 phone needs all five
-  (3:1 trims Echo's feathers and feet in Day 1's picture).
+  least 44 px. "Your games" may fall below on the smallest, but on the day
+  a story is finished its New! tile is measured too, so the dark tomorrow
+  picture gives way for it: the tile's picture and its New! are on the
+  first screen at all five sizes (on 320×568 that takes all five steps, on
+  375×667 two), and on an iPhone SE on the website (375×553) too, its name
+  just below. Not under the founding banner (a browser only): on 320×568
+  only the tile's top, its New!, peeks above the fold, and on 375×553 none
+  of it (a sixth step would flatten tomorrow's picture to a strip and still
+  not fit it; Travis's to change). With the real pictures an open day takes
+  at most four steps (the founding banner on 320×568: the story picture at
+  5:2); only a finished day, or the banner on 375×553, reaches the fifth
+  (3:1).
 
 Setup finishes in the first game (Feed Echo for 3-4, Fruit Slice from 5; see
 "The ask happens after the product proves itself"), and every visit after
@@ -2965,7 +2985,8 @@ dropped.
 **The week's reps** (Travis, 28-29 Sep 2026). Home's top corner showed today toward the daily goal, and a
 tap on it opened the grown-ups check, then Progress, until 23 Oct 2026: it is the gift button's ring now
 (FOUND1), with the number in its spoken label, and grown-ups read it on Progress (Grown-ups, then the
-Progress tab); Progress keeps sound practice apart from play. (Settings
+Progress tab: "Today: 12 of 30 reps." under the daily goal, "Today: 45 reps. Goal met." past it, every rep
+counted, practice, games and books, as the goal counts them); Progress keeps sound practice apart from play. (Settings
 kept an eight-week chart and the best week until 22 Oct 2026, when the
 Settings simplification took the card out; the rep line and the daily goal
 moved to Progress.) One count, `Sona.repWeeks`/`weekReps`:
@@ -3256,11 +3277,14 @@ Clash Royale").** A child's practice now fills a road of gifts they can see.
   in the corner): a ring filling toward today's goal (the goal is what opens
   today's chest) and a teal dot when the chest is ready or a gift waits; the
   words are in its label ("Trophy Road. 12 of 30 reps today. A gift is
-  waiting."). It only reads `Sona.dayGoal()` and `Sona.roadState()`; a tap
-  goes to the road, with no grown-ups check.
+  waiting."). Its picture is the road's own painted chest
+  (`road-chest.webp`), never the drawn kit's orange gift: orange on a
+  child's screen means only the practice sound's letters. It only reads
+  `Sona.dayGoal()` and `Sona.roadState()`; a tap goes to the road, with no
+  grown-ups check.
 - **Test seeds may set `sona.trophy.v1` directly** (`{v:1, t, d, dn, m, mn}`)
   rather than replay weeks of reps. `trophytest` pins the economy (no browser);
-  `roadtest` plays Home's card, the road page and the sticker book.
+  `roadtest` plays Home's gift button, the road page and the sticker book.
 - **For Rachel:** a try counts toward the goal, and so earns trophies, even
   when Apple's listener heard a clearly different word ("taco"); whether it
   should is hers. **For Travis and Rachel:** a little one who only plays Feed
@@ -3293,7 +3317,8 @@ access, the price, "Pick a level").
 - **A missed day loses nothing**: the adventure waits on its day, moves on
   once a quest is done and never twice in a calendar day. A done game day
   shows "All done for today!" and "Come back tomorrow for a new adventure!"
-  ("…for Day N!" when tomorrow is a story) with tomorrow's picture dark,
+  ("…for Day N and a new game!" when tomorrow is a story the child can
+  open, "…for Day N!" when it is shown locked) with tomorrow's picture dark,
   never playable early. No timer, no countdown, nothing random.
 - **A family without Premium is never sent to a locked game**: a day whose
   game this phone cannot open borrows the next open game in the list, with
@@ -3787,8 +3812,9 @@ are enforced in code and pinned by tests — change them only on Rachel's say-so
   Privacy · Terms); the clinician's "Open dashboard →" only for a
   clinician in a browser; and **"Moving to a new phone?"** at the foot.
   Gone from it: the week-by-week reps card (the daily goal and the rep line
-  moved to Progress, beside the days-a-week buttons; Home's rep count opens
-  Progress), the game-card picker and the "Level 1 only" picker (saved
+  moved to Progress, beside the days-a-week buttons, with today's count
+  under the daily goal; Home's corner is the gift button, to the Trophy
+  Road), the game-card picker and the "Level 1 only" picker (saved
   values are ignored, so nobody is stuck: see each one's section), the Buddy
   & world card (the shop is Home's), the play-mode note, the age line, the
   page's subtitle, the divider, "Help" (the Talk to us tab is the same

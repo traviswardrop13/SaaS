@@ -287,6 +287,10 @@
            speech therapist's homework sets its own number and locks it. -->
       <label class="goal-daily" for="dailyGoalPick">Daily goal <select id="dailyGoalPick" aria-describedby="goalHelp"></select></label>
       <p id="goalHelp" class="goal-note muted"></p>
+      <!-- FOUND1: today's count, for grown-ups. Home's corner became the
+           gift button (a ring, no number) on 23 Oct 2026, so this is where a
+           grown-up reads how many reps today, past the goal too. -->
+      <p id="goalToday" class="goal-note"></p>
       <!-- One short line (Travis, 30 Sep 2026), here since 22 Oct 2026 with
            the reps it explains. It stays true: practice counts every voiced
            try, right or not yet; a game counts only when it asked and heard;
@@ -510,6 +514,7 @@
         document.getElementById("goalHelp").textContent = pick.disabled
           ? "Daily goal set by the speech therapist: " + d.goal + " reps. Their homework report counts sound practice only."
           : "A day counts when the daily goal is met. Practice, games and books all count.";
+        document.getElementById("goalToday").textContent = d.done ? "Today: " + d.n + " reps. Goal met." : "Today: " + d.n + " of " + d.goal + " reps.";
       }
       pick.onchange = function () {
         if (activeSlot() !== loadSlot) { location.reload(); return; }

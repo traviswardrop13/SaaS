@@ -353,7 +353,7 @@ const giftOf = (page) => page.evaluate(() => {
   const c = document.getElementById("giftBtn"); if (!c) return null;
   const r = c.getBoundingClientRect(), ring = document.getElementById("giftRing");
   return { shown: !c.hidden && r.height > 0, label: c.getAttribute("aria-label"), href: c.getAttribute("href"), dot: !document.getElementById("giftDot").hidden,
-    fill: ring.style.getPropertyValue("--fill"), full: c.classList.contains("full"), icon: !!document.querySelector("#giftIc svg"),
+    fill: ring.style.getPropertyValue("--fill"), full: c.classList.contains("full"), icon: document.querySelector("#giftIc img") ? document.querySelector("#giftIc img").getAttribute("src") : null, svg: !!document.querySelector("#giftIc svg"),
     inHeader: !!c.closest(".library-header"), card: !!document.getElementById("roadCard"), pill: !!document.getElementById("repPill"),
     gameish: c.hasAttribute("data-game") || c.hasAttribute("data-locked") || c.classList.contains("game-card"), h: r.height, w: r.width, l: r.left, rt: r.right };
 });
@@ -365,7 +365,8 @@ await section("Home's gift button", async () => {
     asked.length = 0;
     await homeView(f.page);
     const c = await giftOf(f.page);
-    ok("Home has no Trophy Road card and no reps count: one gift button in the top bar opens the road", c && c.shown && c.inHeader && !c.card && !c.pill && c.href === "/road.html" && c.icon, c);
+    ok("Home has no Trophy Road card and no reps count: one gift button in the top bar opens the road", c && c.shown && c.inHeader && !c.card && !c.pill && c.href === "/road.html", c);
+    ok("…its picture is the road's own painted chest, never the drawn kit's orange gift (orange on a child's screen is only the practice sound's letters)", c.icon === "/assets/crafted/road-chest.webp" && !c.svg, c);
     ok("a new child: an empty ring, no dot, and its label says today's reps toward the goal", c.fill === "0" && !c.full && !c.dot && c.label === "Trophy Road. 0 of 30 reps today.", c);
     ok("it is a link, not a game card: no data-game, data-locked or .game-card", !c.gameish);
     ok("loading Home with the button writes nothing", (await store(f.page)) === before);
