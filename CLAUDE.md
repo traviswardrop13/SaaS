@@ -2143,8 +2143,8 @@ line a child hears):
   asks the littles once). One line per game page (`sayTimes: 1`) would change
   it.
 - The day is light on speaking: 16 sayings (12 for ages 3-4, 10 on Days
-  4-14) against a daily goal of 30;
-  the story pictures ask for nothing.
+  4-14) against a daily goal of 30 (setup's 5 minutes, the default; 60 or
+  90 for 10 or 15 minutes); the story pictures ask for nothing.
 - The games do not check the age a sound is usually learned: a four-year-old
   whose family picked R gets R words, as in Bubble Pop.
 - A child the phone cannot hear cannot finish the day: only a heard voice
