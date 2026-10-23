@@ -1448,8 +1448,13 @@ if (spStory.length) {
   for (const g of spStory) { const w = words(g), last = groups[groups.length - 1]; if (last && last.big === w.big && last.little === w.little) last.days.push(g.day); else groups.push({ ...w, days: [g.day] }); }
   for (const x of groups) if (!NUM[x.big] || !NUM[x.little]) fail(`a story game's round has ${x.big} or ${x.little} words (${x.cite}) — the sheet has no word for that.`);
   const range = (d) => (d.length === 1 ? `Day ${d[0]}` : d[d.length - 1] - d[0] === d.length - 1 ? `Days ${d[0]}-${d[d.length - 1]}` : `Days ${d.join(", ")}`);
-  const say = groups.length === 1 ? `Ages 5-8 say ${NUM[groups[0].big]} words a round, ages 3-4 ${NUM[groups[0].little]}, each two times.`
-    : `${groups.map((x) => `${range(x.days)}: ages 5-8 say ${NUM[x.big]} words a round, ages 3-4 ${NUM[x.little]}`).join("; ")}. Each word two times.`;
+  // how many times each story game asks a word (STORY_SAY_TIMES, three since
+  // 23 Oct 2026), read from sona.js so the sheet never says a stale count
+  const storySay = find("public/sona.js", /const STORY_SAY_TIMES = (\d+);/, "STORY_SAY_TIMES"), sayN = Number(storySay.m[1]);
+  if (!NUM[sayN]) fail(`STORY_SAY_TIMES is ${sayN} (${storySay.cite}) — the sheet has no word for that.`);
+  const times = `${NUM[sayN]} times`;
+  const say = groups.length === 1 ? `Ages 5-8 say ${NUM[groups[0].big]} words a round, ages 3-4 ${NUM[groups[0].little]}, each ${times}.`
+    : `${groups.map((x) => `${range(x.days)}: ages 5-8 say ${NUM[x.big]} words a round, ages 3-4 ${NUM[x.little]}`).join("; ")}. Each word ${times}.`;
   P(); P(`In the daily story (${spStory.length}), reached only from that day's story and never from a shelf: ${spStory.map((g) => `${g.name} (Day ${g.day}, "${g.story.title}")`).join(", ")}. ${say}`);
 }
 P();

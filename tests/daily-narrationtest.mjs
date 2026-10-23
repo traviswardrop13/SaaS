@@ -2,7 +2,9 @@
 // and only physically delivered water earns the final story painting.
 import {dailyHarness,advance,until,sayWord} from './_daily-adventure.mjs';
 let harness, checks=0, fails=0;
-function ok(name,pass,detail){checks++;if(!pass){fails++;console.log('FAIL '+name+' '+JSON.stringify(detail).slice(0,1800));}}
+// String(): a check with no detail used to throw on .slice and hide its own
+// FAIL line (23 Oct 2026: the rep pin below failed with no name printed).
+function ok(name,pass,detail){checks++;if(!pass){fails++;console.log('FAIL '+name+' '+String(JSON.stringify(detail)).slice(0,1800));}}
 function must(name,pass,detail){ok(name,pass,detail);if(!pass)throw new Error(name);}
 const snapshot=p=>p.evaluate(()=>({story:window.__dailyNarration,play:window.__sayplay,water:window.__dailyWaterwheel}));
 async function nextCard(page,mode){
@@ -47,14 +49,19 @@ try{
   for(const age of process.env.NARRATION_FIT_ONLY==='1'?[]:['4','7']){
     const {page,context,errors}=await harness.fresh({narration:true,device:{age,speechMs:650}});
     must('the narration wrapper boots at age'+age,await until(page,()=>!!window.__dailyNarration&&!!window.__sayplay,2500),errors);
+    // Every story game asks Sona.STORY_SAY_TIMES sayings a word (three since
+    // 23 Oct 2026, Travis), and each heard saying is one game rep, so the rep
+    // pins below follow the page's own count rather than a typed two.
+    const times=await page.evaluate(()=>__sayplay.times);
+    ok('the story host asks Sona.STORY_SAY_TIMES (3) sayings a word at age'+age,await page.evaluate(()=>__sayplay.times===Sona.STORY_SAY_TIMES&&Sona.STORY_SAY_TIMES===3),{times});
     ok('story presence never earns a move or a rep',await page.evaluate(()=>__sayplay.step===0&&!__dailyNarration.open&&__dailyWaterwheel.stage===-1&&Sona.weekReps(0)===0));
     await page.locator('#startBtn').click();must('only real voiced sayings open the first story beat',await sayWord(page),await snapshot(page));
     must('the first story card waits before physical play',await until(page,()=>__dailyNarration.open,3000),await snapshot(page));
-    ok('the story does not auto-place troughs or advance a speech step',await page.evaluate(()=>!__dailyWaterwheel.active&&__dailyWaterwheel.pieces.length===0&&__sayplay.step===0&&Sona.weekReps(0)===2));
+    ok('the story does not auto-place troughs or advance a speech step',await page.evaluate(n=>!__dailyWaterwheel.active&&__dailyWaterwheel.pieces.length===0&&__sayplay.step===0&&Sona.weekReps(0)===n,times),{times,reps:await page.evaluate(()=>Sona.weekReps(0))});
     await page.evaluate(()=>__quiet.background());await advance(page,1800);
     ok('backgrounding a story stops its voice and preserves its boundary',await page.evaluate(()=>__dailyNarration.paused&&__quiet.live()===0&&__quiet.speaking===0&&__sayplay.step===0));
     await page.evaluate(()=>__quiet.foreground());await page.locator('#resume').click();await nextCard(page,'act');
-    ok('continuing starts the same earned physical objective',await page.evaluate(()=>__dailyWaterwheel.active&&__dailyWaterwheel.stage===0&&!__dailyNarration.open&&Sona.weekReps(0)===2));
+    ok('continuing starts the same earned physical objective',await page.evaluate(n=>__dailyWaterwheel.active&&__dailyWaterwheel.stage===0&&!__dailyNarration.open&&Sona.weekReps(0)===n,times),{times,reps:await page.evaluate(()=>Sona.weekReps(0))});
     // A same-word help turn must not leave the wrapper paused and swallow
     // the physical completion callback after the real game resumes.
     await page.locator('#dailyHelp').click();must('speech help returns through the existing listener',await sayWord(page),await snapshot(page));
@@ -80,7 +87,8 @@ try{
     must('the completed story reaches the normal game ending',await until(page,()=>__sayplay.phase==='end',5000),await snapshot(page));
     const audit=await page.evaluate(()=>({lines:__quiet.speech,leaks:__quiet.leakFrames,live:__quiet.live(),overlap:__quiet.sounds.filter(s=>__quiet.mics.some(m=>s.start<(m.end==null?__quiet.now():m.end)&&m.asked<s.end)).length,reps:Sona.weekReps(0),outcomes:Sona.outcomes()}));
     ok('all three plot acts and the earned resolution are narrated',audit.lines.some(s=>s.includes('Gardener Mouse'))&&audit.lines.some(s=>s.includes('high garden channel'))&&audit.lines.some(s=>s.includes('butterfly'))&&audit.lines.some(s=>s.includes('Ducks paddle')),audit.lines);
-    ok('narration adds no speech reps or clinical data',audit.reps===total*2+2&&Object.keys(audit.outcomes).length===0,audit);
+    // One rep a heard saying: every word, plus the help turn's same-word ask.
+    ok('narration adds no speech reps or clinical data',audit.reps===total*times+times&&Object.keys(audit.outcomes).length===0,audit);
     ok('story voice and game sounds never enter a microphone',audit.leaks===0&&audit.live===0&&audit.overlap===0,audit);
     await page.locator('#again').click();ok('replay clears story boundaries without giving a free route',await page.evaluate(()=>!__dailyNarration.open&&__dailyNarration.seen.length===0&&__dailyWaterwheel.stage===-1&&__sayplay.step===0));
     ok('the story playthrough has no page errors',errors.length===0,errors);await context.close();

@@ -1,5 +1,6 @@
-// WINDUP1: Wind-Up Toys, Day 2 of the daily story (STORY1). Each word said two
-// times pops the next toy's key out; the finger winds it by drawing circles
+// WINDUP1: Wind-Up Toys, Day 2 of the daily story (STORY1). Each word said
+// three times (Sona.STORY_SAY_TIMES, every story game since 23 Oct 2026; it
+// was two) pops the next toy's key out; the finger winds it by drawing circles
 // on the brass dial and lets go at the star (ages 5-8), or winds until it
 // rings (ages 3-4). Plays the real page on a paused fake clock, so every wait
 // is on published state (window.__windup, window.__sayplay), never on real
@@ -85,13 +86,14 @@ try{
  if(!part||part==='main'){
   const {page,context,errors}=await fresh();
   const words=await page.evaluate(()=>({start:document.querySelector('#startOvl .ovlCard').innerText,canvas:document.getElementById('windupCanvas').getAttribute('aria-label'),help:document.getElementById('windupHelp').getAttribute('aria-label'),buddy:{alt:document.getElementById('windupBuddy').getAttribute('alt'),hidden:document.getElementById('windupBuddy').getAttribute('aria-hidden')}}));
-  ok('the start card says the word finds the key, then wind with circles and let go at the star',/two times to find a toy's key/i.test(words.start)&&/let go at the star/i.test(words.start),words.start);
+  ok('the start card says the word, said three times, finds the key, then wind with circles and let go at the star',/three times to find a toy's key/i.test(words.start)&&/let go at the star/i.test(words.start),words.start);
+  ok('…and the board\'s spoken label says three times too',/Say each word three times to find a toy's key/.test(words.canvas)&&!/two times/.test(words.canvas),words.canvas);
   ok('the help pill says it is extra help',/extra help/i.test(words.help),words.help);
   ok('the buddy is decoration only (empty alt, aria-hidden)',words.buddy.alt===''&&words.buddy.hidden==='true',words.buddy);
   ok('the start card makes no sound and opens no mic',await page.evaluate(()=>__quiet.requests===0&&__quiet.sounds.length===0));
   await begin(page);
   let s=await st(page);
-  ok('Echo first says how the game goes, in the start card\'s words',s.speech.listening&&/two times to find a toy's key\. Wind it with circles/.test((await audit(page)).lines.join('|')),(await audit(page)).lines);
+  ok('Echo first says how the game goes, in the start card\'s words',s.speech.listening&&/three times to find a toy's key\. Wind it with circles/.test((await audit(page)).lines.join('|')),(await audit(page)).lines);
   await advance(page,1500);s=await st(page);
   ok('silence never finds the key',!s.w.active&&!s.w.keyOut&&s.w.turns===0&&s.speech.step===0,s);
   await advance(page,13000);s=await st(page);
@@ -99,7 +101,20 @@ try{
   await circle(page,1.5);s=await st(page);
   ok('before the word the key is tucked in: circling winds nothing',s.w.turns===0&&s.w.clicks===0&&!s.w.held,s.w);
   await page.locator('#micBtn').click();
-  ok('two sayings pop the key out',await sayWord(page));await advance(page,400);s=await st(page);
+  // 23 Oct 2026: every story game asks each word Sona.STORY_SAY_TIMES (3)
+  // times, not two, and only the last saying finds the key. Said one at a time
+  // here, at sayWord()'s own pace (280 ms each, 650 ms apart), so the frame
+  // after each saying can be read.
+  ok('a story game asks each word Sona.STORY_SAY_TIMES (3) times: three dots and "Say it 3 times"',await until(page,()=>window.__sayplay&&__sayplay.listening)&&await page.evaluate(()=>Sona.STORY_SAY_TIMES===3&&__sayplay.times===Sona.STORY_SAY_TIMES&&document.querySelectorAll('#twiceDots i').length===Sona.STORY_SAY_TIMES&&document.getElementById('twiceSay').textContent==='Say it 3 times'),await page.evaluate(()=>({times:__sayplay.times,dots:document.querySelectorAll('#twiceDots i').length,say:(document.getElementById('twiceSay')||{}).textContent})));
+  {const saying=async()=>{await page.evaluate(()=>__quiet.voice=true);await advance(page,280);await page.evaluate(()=>__quiet.voice=false);await advance(page,100);};
+   const now=()=>page.evaluate(()=>({said:__sayplay.said,phase:__sayplay.phase,listening:__sayplay.listening,mic:document.getElementById('micState').textContent,dots:document.querySelectorAll('#twiceDots i.on').length,key:__windup.keyOut,active:__windup.active,step:__sayplay.step}));
+   await advance(page,150);await saying();let n=await now();
+   ok('one saying: one dot, "2 more times!", the mic still open, and no key',n.said===1&&n.dots===1&&n.mic==='2 more times!'&&n.listening&&!n.key&&!n.active&&n.step===0,n);
+   await advance(page,550);await saying();n=await now();
+   ok('two sayings alone find no key: two dots, "1 more time!", the mic still open',n.said===2&&n.dots===2&&n.mic==='1 more time!'&&n.listening&&n.phase!=='play'&&!n.key&&!n.active&&n.step===0,n);
+   await advance(page,550);await saying();
+   ok('the third saying pops the key out',await until(page,()=>__sayplay.phase==='play'),await now());}
+  await advance(page,400);s=await st(page);
   ok('…and light the dial: the bunny\'s key is out and nothing is wound yet',s.w.keyOut&&s.w.active&&s.w.toy==='bunny'&&s.w.turns===0&&s.speech.step===0,s.w);
   ok('Echo says what to do with the first toy',await heard(page,'Draw circles around the key to wind it. Let go at the star!'),(await audit(page)).lines);
   await advance(page,20000);s=await st(page);
@@ -189,6 +204,8 @@ try{
   const quest=()=>page.evaluate(()=>localStorage.getItem('sona.quest.v1'));
   const endCard=()=>page.evaluate(()=>{const a=document.getElementById('again'),g=document.getElementById('goHome');return{again:a.textContent,againShown:!a.hidden&&a.offsetParent!==null,go:g.textContent,goShown:g.offsetParent!==null};});
   await begin(page);
+  // 23 Oct 2026: a replay is the story's own page, so it asks three sayings a word too
+  ok('replay: it asks each word Sona.STORY_SAY_TIMES (3) times, as the story round does',await page.evaluate(()=>Sona.STORY_SAY_TIMES===3&&__sayplay.times===Sona.STORY_SAY_TIMES));
   ok('replay: a whole round of eight toys ends on the end card',await finishRound(page,0));let s=await st(page);
   ok('replay: …with seven toys in the parade, the cuckoo open and the music box\'s doors open (what Play again must clear)',s.speech.step===8&&s.w.dones===8&&s.w.won&&s.w.line.length===7&&s.w.cuckoo&&s.w.doors>0,s.w);
   let end=await endCard();
@@ -255,9 +272,9 @@ try{
  if(!part||part==='little'){
   const {page,context,errors}=await fresh({device:{age:'4'}});
   const start=await page.evaluate(()=>document.querySelector('#startOvl .ovlCard').innerText);
-  ok('the little ones\' start card: draw circles on the key until it rings',/two times to find a toy's key/i.test(start)&&/until it rings/.test(start)&&!/star/.test(start),start);
-  await begin(page);ok('Echo says it the little ones\' way',(await audit(page)).lines.some(l=>l==="Say each word two times to find a toy's key. Then draw circles on the key until it rings."),(await audit(page)).lines);
-  ok('two sayings',await sayWord(page));let s=await st(page);
+  ok('the little ones\' start card: draw circles on the key until it rings',/three times to find a toy's key/i.test(start)&&/until it rings/.test(start)&&!/star/.test(start),start);
+  await begin(page);ok('Echo says it the little ones\' way',(await audit(page)).lines.some(l=>l==="Say each word three times to find a toy's key. Then draw circles on the key until it rings."),(await audit(page)).lines);
+  ok('three sayings (the little ones too: every story game asks Sona.STORY_SAY_TIMES)',await page.evaluate(()=>__sayplay.times===Sona.STORY_SAY_TIMES)&&await sayWord(page));let s=await st(page);
   ok('six words, a big bunny, no star, and the meter only fills',s.w.little&&s.w.steps===6&&s.w.toy==='bunny'&&s.w.mode==='fill'&&s.w.star===null&&s.w.need===2,s.w);
   ok('Echo says the little ones\' first line',await heard(page,'Draw circles on the key until it rings!'),(await audit(page)).lines);
   await circle(page,1);s=await st(page);ok('one circle fills half the meter, and a let-go is never a try',Math.abs(s.w.needle-0.5)<0.02&&s.w.tries===0&&s.w.react===null&&s.w.active,s.w);

@@ -13,6 +13,13 @@
 //     Echo still says the word alone; each saying heard is one rep on the
 //     week's count and nothing else. Two is the engine's number, and one game
 //     asks once (Bubble Pop, below);
+//   - SAY IT THREE TIMES IN THE STORY GAMES (Travis, 23 Oct 2026: "when a kid
+//     practices the daily adventure i want it to ask them to say the sound 3
+//     times not twice for every daily game"): every page a story day opens
+//     passes sona.js's one number, Sona.STORY_SAY_TIMES (3), and on Day 1's
+//     real page that is three dots, "Say it 3 times", "2 more times!" after
+//     the first saying, "1 more time!" after the second, nothing earned by
+//     two, the move earned by the third, and three reps a word;
 //   - the mic keeps the rules every other game keeps: it opens only for the
 //     child's turn, after Echo's word, closes before any chime, and a sound
 //     after it leaves the phone a moment to switch back (no iPhone call audio);
@@ -172,18 +179,19 @@ async function sayOnce(page) {
   await voice(page, 260);
   return true;
 }
-// one turn: the word, two times, a breath apart (a saying Echo has already
-// heard this turn is kept, so then one more is the whole turn). In a game that
-// asks once (Bubble Pop: the page publishes times: 1) one saying is the turn,
-// exactly as it was before two times.
+// one turn: the word, as many times as the game asks (the page publishes
+// times: two, three in the story games since 23 Oct 2026, one in Bubble Pop,
+// exactly as it was before two times), a breath apart. A saying Echo has
+// already heard this turn is kept, so then the ones still owed are the turn.
 async function sayIt(page) {
   if (!(await until(page, () => window.__sayplay && window.__sayplay.listening === true, 8000))) return false;
-  const g = await game(page), first = g.said === 0;
+  const g = await game(page), times = g.times || 2;
   if (!(await sayOnce(page))) return false;
-  if (!first || g.times === 1) return true;
-  if (!(await until(page, () => window.__sayplay.said === 1 && window.__sayplay.listening === true, 3000))) return false;
-  await page.waitForTimeout(320);   // a breath: longer than the engine's gap between two sayings
-  await voice(page, 260);
+  for (let n = g.said + 1; n < times; n++) {
+    if (!(await until(page, (k) => window.__sayplay.said === k && window.__sayplay.listening === true, 3000, n))) return false;
+    await page.waitForTimeout(320);   // a breath: longer than the engine's gap between two sayings
+    await voice(page, 260);
+  }
   return true;
 }
 // what the child sees of the two sayings, and what the week's count holds
@@ -261,18 +269,34 @@ ok("all twenty picture games remain accounted for as scenes become real games", 
 ok("ages 3-4 play five words a game and ages 5-8 play eight", GAMES.every((g) => g.steps.length === (g.group === "simple" ? 5 : 8)));
 {
   // HOW MANY TIMES A WORD IS SAID is one setting a game (game.sayTimes), and
-  // two unless the page says 1. Travis asked for two in the word games (1 Oct
-  // 2026); Bubble Pop, for ages 3-4, was built to be said once, and whether
+  // two unless the page says 1 or 3. Travis asked for two in the word games (1
+  // Oct 2026); Bubble Pop, for ages 3-4, was built to be said once, and whether
   // the littles say it twice is Rachel's call. So: Bubble Pop's page says 1,
-  // and nothing else says anything.
+  // the story games' pages say 3 (below), and nothing else says anything.
   const strip = (t) => t.replace(/<!--[\s\S]*?-->/g, "").replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:"'\\])\/\/[^\n]*/g, "$1");
   const asks = (file) => (strip(readFileSync(ROOT + "/" + file, "utf8")).match(/\bsayTimes\b[^,}\n]*/g) || []).join("|");
   const eng = strip(readFileSync(ROOT + "/sayplay.js", "utf8")).replace(/\s+/g, " ");
-  ok("the engine asks for a word two times unless the game's page asks for one, and takes no other number",
-    /var SAY_TIMES = 2,/.test(eng) && /G = game; SAY_TIMES = G\.sayTimes === 1 \? 1 : 2;/.test(eng) && (eng.match(/SAY_TIMES = /g) || []).length === 2 && (eng.match(/sayTimes/g) || []).length === 1);
+  ok("the engine asks for a word two times unless the game's page asks for one or three, and takes no other number",
+    /var SAY_TIMES = 2,/.test(eng) && /G = game; SAY_TIMES = G\.sayTimes === 1 \? 1 : G\.sayTimes === 3 \? 3 : 2;/.test(eng) && (eng.match(/SAY_TIMES = /g) || []).length === 2 && (eng.match(/sayTimes/g) || []).length === 2);
   ok("Bubble Pop (ages 3-4) asks for the word once", asks("arcade-bubbles.html") === "sayTimes: 1", asks("arcade-bubbles.html"));
   ok("Hoops, Soccer Goal and Dino Dig ask for it two times: their pages leave the engine's number alone", ["arcade-hoops.html", "arcade-soccer.html", "arcade-dino.html"].every((f) => asks(f) === ""), ["arcade-hoops.html", "arcade-soccer.html", "arcade-dino.html"].map(asks));
   ok("…and so does every page the generator writes (the parked games)", GAMES.every((g) => asks("arcade-" + g.key + ".html") === "") && !/sayTimes/.test(strip(readFileSync(new URL("../tools/gameart/page.mjs", import.meta.url), "utf8"))));
+  // THREE TIMES IN THE STORY GAMES (Travis, 23 Oct 2026: "when a kid
+  // practices the daily adventure i want it to ask them to say the sound 3
+  // times not twice for every daily game"). The number is one constant in
+  // sona.js, Sona.STORY_SAY_TIMES, so Rachel changes it in one place; every
+  // page a story day opens (STORY_DAYS' pages: Days 1-3's own, story-game.html
+  // for Days 4-14, replays included, being the same pages) hands it to the
+  // engine, and its fallback for an older cached sona.js is that same number.
+  const storyTimes = +((SONA_SRC.match(/^\s*const STORY_SAY_TIMES = (\d+);/m) || [])[1] || 0);
+  const storyDays = (SONA_SRC.match(/const STORY_DAYS = \[([\s\S]*?)\n\s*\];/) || ["", ""])[1];
+  const storyPages = [...new Set([...storyDays.matchAll(/\bpage: "\/([\w-]+\.html)(?:\?[^"]*)?"/g)].map((m) => m[1]))];
+  ok("sona.js keeps how many times a story game asks in one number, STORY_SAY_TIMES, which is 3, and hands it to every page as Sona.STORY_SAY_TIMES",
+    storyTimes === 3 && /global\.Sona = \{[^\n]*\bSTORY_SAY_TIMES\b/.test(SONA_SRC), storyTimes);
+  ok("the fourteen story days open four game pages: Days 1-3's own and story-game.html for Days 4-14",
+    (storyDays.match(/\bpage: "/g) || []).length === 14 && storyPages.join() === "arcade-lighthouse.html,arcade-windup.html,arcade-bridge.html,story-game.html", storyPages);
+  ok("every story page asks for each word Sona.STORY_SAY_TIMES times (3), falling back to the same number",
+    storyPages.length === 4 && storyPages.every((f) => new RegExp("^sayTimes: (?:\\((?:window\\.Sona|S) && )?(?:Sona|S)\\.STORY_SAY_TIMES\\)? \\|\\| " + storyTimes + "$").test(asks(f))), storyPages.map((f) => f + ": " + asks(f)));
   // A STORY'S GAME HANDS BACK TO ITS STORY (STORY1, 22 Oct 2026): the end
   // card's one button opens the story's ending, only for an address of that
   // one shape; no Play again; the ✕ during play still goes Home.
@@ -284,7 +308,13 @@ ok("ages 3-4 play five words a game and ages 5-8 play eight", GAMES.every((g) =>
     && eng.includes('$("close").onclick = home; $("goHome").onclick = home;'));
   ok("a game that asks once gets no dots, no \"Say it 2 times\" and never \"1 more time\"",
     /function oneMore\(\) \{ return said > 0 && said < SAY_TIMES; \}/.test(eng) && /function addTwice\(\) \{ if \(SAY_TIMES < 2\) return;/.test(eng) && /function paintSaid\(\) \{ if \(SAY_TIMES < 2\) return;/.test(eng)
-    && (eng.match(/MORE \+/g) || []).length === 2 && (eng.match(/oneMore\(\) \? MORE \+/g) || []).length === 2);
+    && (eng.match(/moreLeft\(\) \+/g) || []).length === 2 && (eng.match(/oneMore\(\) \? moreLeft\(\) \+/g) || []).length === 2);
+  // what is left is counted, not typed (23 Oct 2026): "1 more time" on the
+  // last saying of any game, "2 more times" after the first of three; one dot
+  // a saying, and "Say it N times" with the game's own N
+  ok("the words for what is left are counted from the game's number: \"2 more times\", then \"1 more time\", one dot a saying, \"Say it N times\"",
+    eng.includes('function moreLeft() { var n = SAY_TIMES - said; return n + " more " + (n === 1 ? "time" : "times"); }')
+    && eng.includes('for (var i = 0; i < SAY_TIMES; i++) dots += "<i></i>";') && eng.includes(`<span id="twiceSay">Say it ' + SAY_TIMES + " times</span>"`));
 }
 // The played games (Hoops, Soccer Goal, Dino Dig) run as their own suite,
 // tests/playgamestest.mjs, which sets SAYPLAY_PART=play and imports this file:
@@ -394,12 +424,12 @@ ok("a play game's step counts only when the game says the move is done, and only
 ok("no tap moves a game: the only caller of a step is the voice check, after the sound-family check, on the last of the sayings",
   (flat.match(/(?<!function )gotIt\(\)/g) || []).length === 1 && /said\+\+; paintSaid\(\); if \(said >= SAY_TIMES\) \{ gotIt\(\); return true; \}/.test(flat)
   && (flat.match(/(?<!function )heardOne\(\)/g) || []).length === 1 && /if \(!famOK\(shp\)\) \{ voiced = 0; shp = null; \} else if \(heardOne\(\)\) return;/.test(flat));
-ok("a word is said two times, and the second counts only after the voice has dropped under the bar for a timed gap, and never straight after the first",
+ok("a word is said two times unless its page says otherwise, and each saying after the first counts only after the voice has dropped under the bar for a timed gap, and never straight after the one before",
   /var SAY_TIMES = 2, GAP_MS = 200, APART_MS = 450;/.test(flat) && /if \(f\.t <= lastSaid\) continue;/.test(flat) && /if \(f\.r > thr\) \{ gapAt = 0; if \(!armed \|\| \(lastSaid && f\.t - lastSaid < APART_MS\)\) continue; voiced\+\+;/.test(flat)
   && /if \(!armed\) \{ if \(!gapAt\) gapAt = f\.t; else if \(f\.t - gapAt >= GAP_MS\) armed = true; \}/.test(flat));
 ok("each saying heard is one rep on the week's count, counted in one place: where the voice check passed",
   (flat.match(/gameRep/g) || []).length === 2 && /function heardOne\(\) \{ if \(!turnLive\) return true; try \{ if \(S && S\.gameRep\) S\.gameRep\(SOUND\); \} catch \(e\) \{\} said\+\+;/.test(flat));
-ok("the first saying plays nothing: it only paints, and the same mic goes on listening",
+ok("every saying but the last plays nothing: it only paints, and the same mic goes on listening",
   /if \(said >= SAY_TIMES\) \{ gotIt\(\); return true; \} showTurn\(true\); return false; \}/.test(flat));
 
 await scenario("catalog in the app", async () => {
@@ -1568,6 +1598,68 @@ await scenario("two times", async () => {
     ok("twice: Echo models each target in an isolated word line", l.speech.length >= 4 && l.speech.every((x) => /^Say\.\.\. [a-z]+\.$/i.test(x)), l.speech);
     ok("twice: nothing was written as practice", JSON.stringify(await practiceState(page)) === JSON.stringify(before));
     clean("twice", errors);
+  } finally { await context.close(); }
+});
+
+// ── SAY IT THREE TIMES IN THE STORY GAMES (Travis, 23 Oct 2026: "when a kid
+// practices the daily adventure i want it to ask them to say the sound 3
+// times not twice for every daily game") ──
+// Day 1's real page, Light the Way, with the engine as it ships: the count is
+// read from the page (Sona.STORY_SAY_TIMES, __sayplay.times), and the words a
+// child sees and hears are pinned as they are. The first two sayings only
+// paint ("2 more times!", then "1 more time!"), with the mic still open and
+// nothing played; a saying already heard is kept through silence and "Hear
+// it"; only the third earns the move, and the finger still makes it.
+await scenario("three times", async () => {
+  const { context, page, errors } = await fresh("arcade-lighthouse.html", { age: "7", micok: true, permission: "granted", speechMs: 160 });
+  try {
+    await page.locator("#startOvl.show").waitFor();
+    ok("three times: the story game's start card says to say each word three times", /^Say each word three times /.test(await page.locator("#startLine").innerText()), await page.locator("#startLine").innerText());
+    const before = await practiceState(page);
+    await page.locator("#startBtn").click();
+    await page.waitForFunction(() => window.__sayplay && window.__sayplay.listening === true);
+    const n = await page.evaluate(() => window.Sona && Sona.STORY_SAY_TIMES), word = (await game(page)).word;
+    let g = await game(page), t = await twice(page);
+    ok("three times: the story game asks for each word Sona.STORY_SAY_TIMES times, which is 3", n === 3 && g.times === n, { STORY_SAY_TIMES: n, times: g.times });
+    ok("three times: under the word it says \"Say it 3 times\", with three empty dots", t.line === "Say it " + n + " times" && t.shown && t.dots.length === n && t.dots.every((d) => !d), t);
+    const played = (await log(page)).sounds.length;
+    // THE FIRST SAYING: one dot, and two more asked for
+    ok("three times: the first saying ticks one dot and asks for \"2 more times!\", with the mic still open",
+      await sayOnce(page) && await until(page, () => window.__sayplay.said === 1, 2000) && (await twice(page)).mic === "2 more times!" && (await live(page)) === 1, await twice(page));
+    t = await twice(page); g = await game(page);
+    ok("three times: …the first dot only, nothing earned, and one rep", t.dots.join() === "true,false,false" && g.phase === "turn" && g.step === 0 && (await gameReps(page)) === 1, { t, g, reps: await gameReps(page) });
+    // SILENCE after one: the mic closes and waits for a tap, and the saying is kept
+    ok("three times: after one saying and a long silence, the mic closes and says \"2 more times! Tap the mic\"",
+      await until(page, () => window.__sayplay.phase === "nudge", 14000) && (await live(page)) === 0 && (await twice(page)).mic === "2 more times! Tap the mic" && (await game(page)).said === 1 && (await game(page)).step === 0, await twice(page));
+    await page.locator("#micBtn").click();
+    ok("three times: the tap only listens again, and the first saying is kept", await until(page, () => window.__sayplay.listening === true, 4000) && (await game(page)).said === 1 && (await twice(page)).mic === "2 more times!");
+    // THE SECOND SAYING: two dots, one more asked for, still nothing earned
+    await page.waitForTimeout(80);
+    await voice(page, 260);
+    ok("three times: the second saying ticks the next dot and asks for \"1 more time!\", with the mic still open",
+      await until(page, () => window.__sayplay.said === 2, 2000) && (await twice(page)).mic === "1 more time!" && (await live(page)) === 1, await twice(page));
+    t = await twice(page); g = await game(page);
+    ok("three times: …two sayings alone do not earn the move: two dots of three, no step, and two reps",
+      t.dots.join() === "true,true,false" && g.phase === "turn" && g.step === 0 && (await gameReps(page)) === 2, { t, g, reps: await gameReps(page) });
+    ok("three times: nothing plays for the first two sayings: no chime, no voice", (await log(page)).sounds.length === played, { before: played, after: (await log(page)).sounds.length });
+    // "HEAR IT" keeps both sayings already heard
+    await page.locator("#hear").click();
+    await page.waitForFunction(() => __quiet.speaking > 0);
+    await page.waitForFunction(() => window.__sayplay.listening === true);
+    ok("three times: \"Hear it\" says the same word again and keeps both sayings: one more time", (await game(page)).word === word && (await game(page)).said === 2 && (await twice(page)).mic === "1 more time!" && (await gameReps(page)) === 2, await twice(page));
+    // THE THIRD SAYING earns the move; the finger still makes it
+    await page.waitForTimeout(80);
+    await voice(page, 260);
+    ok("three times: the third saying earns the move, and the mic closes", await until(page, () => window.__sayplay.phase === "play", 3000) && (await live(page)) === 0, await game(page));
+    t = await twice(page);
+    ok("three times: …all three dots are ticked, it was three reps, and the step still waits for the finger", t.dots.length === n && t.dots.every(Boolean) && (await gameReps(page)) === n && (await game(page)).step === 0, { t, reps: await gameReps(page) });
+    await page.waitForTimeout(300);
+    const l = await log(page);
+    noOverlap("three times", l);
+    ok("three times: every chime waited for a closed mic", l.sfx.every((c) => c.live === 0), l.sfx.filter((c) => c.live));
+    ok("three times: Echo says what to do once, then only the word alone, and never a robot \"Go!\"", /^Say each word three times /.test(l.speech[0] || "") && l.speech.slice(1).length >= 2 && l.speech.slice(1).every((x) => ASK.test(x)), l.speech);
+    ok("three times: nothing was written as practice", JSON.stringify(await practiceState(page)) === JSON.stringify(before));
+    clean("three times", errors);
   } finally { await context.close(); }
 });
 

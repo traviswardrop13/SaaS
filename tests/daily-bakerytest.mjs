@@ -235,7 +235,15 @@ async function playthrough(age,total){
   ok('the bakery uses normal Premium catalog access',await page.evaluate(()=>{const a=Sona.gameAct('bakery');return Sona.gameAccess('bakery').allowed&&a.tier==='premium'&&a.say&&a.go==='/daily-adventure.html';}));
   await ask(page);await page.keyboard.press('ArrowRight');await advance(page,14000);s=await state(page);
   ok('silence, waiting and tool keys cannot create ingredients or a finished goal',s.speech.phase==='nudge'&&s.speech.step===0&&!s.bakery.active&&equal(held(s.bakery),initial)&&await page.evaluate(n=>Sona.weekReps(0)===n,reps),s.speech);
-  await page.locator('#micBtn').click();requireCheck('two accepted sayings earn the actual bakery tools',await sayWord(page),await state(page));
+  // 23 Oct 2026 (Travis): a story day's game asks each word three times
+  // (Sona.STORY_SAY_TIMES), so two sayings are kept but earn nothing yet.
+  await page.locator('#micBtn').click();requireCheck('the shared speech turn listens again after the mic tap',await until(page,()=>__sayplay.listening),await state(page));await advance(page,150);
+  const times=await page.evaluate(()=>__sayplay.times);
+  ok('the Bakery asks each word Sona.STORY_SAY_TIMES (three) times',times===3&&await page.evaluate(n=>Sona.STORY_SAY_TIMES===n,times),{times});
+  const burst=async()=>{await page.evaluate(()=>__quiet.voice=true);await advance(page,280);await page.evaluate(()=>__quiet.voice=false);await advance(page,650);};
+  for(let i=1;i<times;i++)await burst();s=await state(page);
+  ok('one saying short of the count keeps the sayings but opens no bakery tool',s.speech.said===times-1&&s.speech.phase!=='play'&&s.speech.step===0&&!s.bakery.active&&equal(held(s.bakery),initial),s.speech);
+  await burst();requireCheck('the last of the three accepted sayings earns the actual bakery tools',await until(page,()=>__sayplay.phase==='play'),await state(page));
   await pourAndHelpChecks(page);const seen=new Set();
   for(let step=0;step<total;step++){
     if(step)requireCheck('the actual word earns bakery goal '+(step+1)+' at age '+age,await sayWord(page),await state(page));
@@ -246,7 +254,9 @@ async function playthrough(age,total){
   ok('all three shaping mechanics required actual input',seen.has('shapeRound')&&seen.has('shapeCurl')&&seen.has('shapeBerry'));
   const audio=await audioAudit(page);ok('bakery instructions and chimes stay outside the microphone',audio.leaks===0&&audio.overlap===0&&audio.live===0,audio);
   ok('directions name physical actions without grading the child',audio.lines.some(t=>/bowl|dough|tray|bun|oven/i.test(t))&&!audio.lines.some(t=>/wrong|fail|score|points|correct/i.test(t)),audio.lines);
-  ok('only accepted sayings count as play reps and no clinical outcome is recorded',await page.evaluate(({reps,total})=>Sona.weekReps(0)===reps+total*2+4&&Sona.weekReps(0,null,true)===0&&Object.keys(Sona.outcomes()).length===0,{reps,total}),await page.evaluate(()=>({reps:Sona.weekReps(0),outcomes:Sona.outcomes()})));
+  // every word and each of the two help words is __sayplay.times sayings, one
+  // rep each (three a word since 23 Oct 2026, Sona.STORY_SAY_TIMES)
+  ok('only accepted sayings count as play reps and no clinical outcome is recorded',await page.evaluate(({reps,total,times})=>Sona.weekReps(0)===reps+(total+2)*times&&Sona.weekReps(0,null,true)===0&&Object.keys(Sona.outcomes()).length===0,{reps,total,times}),await page.evaluate(()=>({reps:Sona.weekReps(0),outcomes:Sona.outcomes()})));
   await page.screenshot({path:path.join(OUT,'sona-daily-bakery-finished-age'+age+'.png')});await page.locator('#again').click();g=(await state(page)).bakery;
   ok('Play again clears food, heat and jobs and requires speech',g.stage===-1&&!g.active&&!g.won&&g.completedGoals.length===0&&g.oven.batch===-1&&!g.heat.touched&&g.sortDrops===0&&g.batches.every(b=>b.flour===0&&b.liquid===0&&b.mix===0&&!b.baked&&!b.cooled&&b.buns.every(v=>!v.formed&&!v.onTray&&!v.sorted)));
   ok('the whole Bakery path has no runtime errors at age '+age,errors.length===0,errors);await context.close();
