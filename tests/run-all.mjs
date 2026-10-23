@@ -63,7 +63,7 @@ const SUITES = [
   "zoomtest.mjs",  // ZOOM1: a double tap never zooms the app; grown-up pages keep pinch, game boards keep none
   "day1.mjs", // the day: one story, then three games
   "homesessiontest.mjs", // one age-appropriate Home session, current goals and resume precedence
-  "homepickstest.mjs", // deterministic daily picks stay in the child's sound and age
+  "homepickstest.mjs", // Today's picks: two games of the first shelf's group, stable for the day, read only, never a book
   "shoptest.mjs", // SHOP1/OWN1: the Buddy Shop; a kept household owns everything, a new family gets the rest with coins (hold "Get it", give it back), road items show their trophies
   "roadtest.mjs", // ROAD1/LEVELS1 on Home and the road: one tap still plays, "Pick a level" once per game when a level opens, the level badge, an old "Level 1 only" ignored; Home only reads
   "questtest.mjs", // QUEST1: the 14-day daily adventure; Home only reads, a round of today's game finishes the day once, a sticker never coins, a missed day waits, ages 3-4 get their own

@@ -3430,7 +3430,7 @@
     feed:  { name: "Feed Echo",     sub: "Say it & tap — Echo's hungry!", go: "/arcade-feed.html", group: "simple", tier: "free", playDescription: "Find the picture and feed Echo. No timer." },
     // Back from Coming soon on 30 Sep 2026 (Travis: "the two free games for
     // older kids, the two free games for younger kids"): with Feed Echo, the
-    // free version's games for ages 3-4. No release date, so no New shelf.
+    // free version's games for ages 3-4. No release date, so never tagged New.
     // Rebuilt on 1 Oct 2026 ("Say it, and Echo blows bubbles") on the Say &
     // Play engine, but NOT a `say` game: that flag would list it twice on
     // Home, point its sticker at one that does not exist, and take it out of

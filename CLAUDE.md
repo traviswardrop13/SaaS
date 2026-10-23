@@ -2477,10 +2477,11 @@ Bat (B, `anySound`), Rory the Rabbit (R), Sid the Seagull (S), Leon's
 Trick-or-Treat Night (L), Zoe the Zebra (Z) and Finn the Fish (F), each
 starring that sound's own hero under the same sound rule. A child sees the
 one in their own sound; a child whose sounds have none sees Boo
-(`Sona.seasonPick`, which the shelf and Home both ask); play mode and a child
-with no sounds yet see them all. Home's card,
-the website and the Premium page say "new ones on the way", never "every
-week", "a book for every sound" or a weekday. `readtest` pins that nothing
+(`Sona.seasonPick`, which the bookshelf asks; Home's Limited time row did too
+until 23 Oct 2026); play mode and a child with no sounds yet see them all.
+The Premium page and the plan screen say "new ones on the way" (the Arcade's
+Books card did too until 23 Oct 2026; Home's Books door carries no line),
+never "every week", "a book for every sound" or a weekday. `readtest` pins that nothing
 waits; `landingtest` the website's count.
 
 **The other sounds' books wait behind "More books"** (Travis, 1 Oct 2026: "it
@@ -2834,10 +2835,9 @@ sticker is still a frame of the pitch (`public/assets/games/soccer.webp`,
 through `PLAYED`), and painted art drops in at that name. Inside the game the stadium, Bo and the ball are
 painted (4 Oct 2026, `tools/art/game-sprites.json`, cut to
 `public/assets/crafted/game/soccer-*.webp`); the pitch, goal and net stay
-drawn, because they move and carry the perspective. On Home eight of the nine
-big-kid games fill four even rows of two and Rise Up, the ninth, is a
-full-width row on a phone, so neither Flappy Glide nor Hoops is full-width any
-more. `sayplaytest` plays a
+drawn, because they move and carry the perspective. On Home the sixteen
+big-kid games fill eight even rows of two on a phone (since the eighteen
+rebuilt games opened on 22 Oct 2026), so no big-kid card is full-width there. `sayplaytest` plays a
 whole game.
 
 **Dino Dig is the third one back** (Travis, 1 Oct 2026: "go to the next game"),
@@ -3427,8 +3427,9 @@ balloon, the shield, the blocks, their pushes and pictures; it never touches
 storage, the mic or a sound) and `public/arcade-rise.html` is the round, its
 hearts, the say-it card and the sound power, the way Flappy Glide's page is.
 It is entered through its practice page (`/charge.html?game=arcade-rise.html`,
-which fills Flappy Glide's balloon), is Premium, and is the ninth card on the
-big kids' shelf (a full-width row on a phone). It is **not** in the old
+which fills Flappy Glide's balloon), is Premium, and is on the big kids'
+shelf (a full-width row on a phone while it was the ninth and last, until the
+eighteen rebuilt games opened on 22 Oct 2026). It is **not** in the old
 five-game run (`adventure: false`, which `adventureGames()` skips) and not a
 Say & Play game; it is day 11 of the daily adventure (QUEST1). What it keeps:
 - **The finger only moves the shield, by as much as it moves**, from wherever
@@ -3983,9 +3984,9 @@ seventeen rebuilt games (it had no card from 19 Oct); since 16 Oct 2026 it is
 a played game on `sayplay.js` (see "The eighteen rebuilt by Codex"), and
 `simple-play.js` remains in the repo for its tests. **Bubble Pop is back** (Travis, 30 Sep
 2026), free, the second game for ages 3-4 beside Feed Echo (rebuilt on 1 Oct
-2026; see "Bubble Pop is rebuilt to be played"): a full-width Home card like
-Feed Echo's
-(`crafted-home.css`), no release date so no New shelf, and a website tile
+2026; see "Bubble Pop is rebuilt to be played"): a Home card beside Feed
+Echo's at the head of the little kids' shelf (two to a row since 23 Oct 2026,
+`crafted-home.css`), no release date so never tagged New, and a website tile
 cut from that painted card (`/assets/site/games/bubbles.webp`). The adventure
 (`story.html`) and chapter readers are still parked: their engines and tests
 stay, but no public menu opens them, and the bookshelf hides its adventure tile.
