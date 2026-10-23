@@ -879,7 +879,7 @@
     //            while the store's answer has that row (plan.year, plan.life:
     //            the one payment, 22 Oct 2026, never picked on arrival), so
     //            with one row the card is the monthly plan whatever this says
-    var APPLE = { plan: null, busy: false, msg: "", done: "", counted: false, told: {}, shape: "", gen: 0, asks: 0, poll: 0, pendingKind: "", stop: null, pick: "annual" };
+    var APPLE = { plan: null, busy: false, msg: "", done: "", counted: false, told: {}, shape: "", gen: 0, asks: 0, poll: 0, pendingKind: "", pendingPlan: null, unentPlan: null, stop: null, pick: "annual" };
     // THE ONE SHOWING FROM HOME (Sona.homeOfferDue, 13 Oct 2026) is spent
     // only once the offer frame is up AND the store gave a definite answer:
     // a priced card, "nothing to sell", or Premium already there (and always
@@ -1489,9 +1489,16 @@
         // to the buy tap. NOT a sale: nothing is counted and nothing is
         // celebrated. The one exception is an Ask to Buy sent from this very
         // screen and now approved, which is this screen's sale.
+        // A sale that buyPlan's own answer did not carry (an Ask to Buy
+        // approved later, a Restore after "not-entitled"): sona.js runs its
+        // purchase step for the trial reminder, before the page leaves.
+        // Feature-checked: an older cached sona.js has no such function.
+        function soldElsewhere(plan) {
+          try { if (typeof Sona.trialReminderSold === "function") Sona.trialReminderSold(plan || null); } catch (e) {}
+        }
         function owned() {
           if (APPLE.done) return;
-          if (APPLE.pendingKind) { bought(APPLE.pendingKind); return; }
+          if (APPLE.pendingKind) { soldElsewhere(APPLE.pendingPlan); bought(APPLE.pendingKind); return; }
           tell("owned");
           if (OFFER_FIRST || OFFER_FROM || OFFER_SETUP) { appleDone("owned", 1000); return; }
           // Settings › Your plan: stay, as the page a subscriber opens
@@ -1563,7 +1570,8 @@
             // "nothing was charged" is never said: after a failure the phone
             // does not know that. A cancelled sheet says nothing at all.
             if (code !== "busy") APPLE.msg = say(code);
-            if (code === "pending") APPLE.pendingKind = plan.kind;
+            if (code === "pending") { APPLE.pendingKind = plan.kind; APPLE.pendingPlan = plan; }
+            if (code === "not-entitled") APPLE.unentPlan = plan;
             // an approval may still be on its way, whatever this tap ended in:
             // keep watching, and keep saying so if the tap left nothing to say
             if (APPLE.pendingKind) { watch(); if (!APPLE.msg) APPLE.msg = say("pending"); }
@@ -1597,7 +1605,7 @@
             try { elMsg.scrollIntoView({ block: "nearest" }); } catch (e) {}
             if (APPLE.pendingKind) watch();
           };
-          try { Sona.iapRestore().then(function (active) { if (active) appleDone("restored", 1000); else stays("no-purchases"); }, function () { stays("restore-failed"); }); }
+          try { Sona.iapRestore().then(function (active) { if (active) { if (APPLE.unentPlan) soldElsewhere(APPLE.unentPlan); appleDone("restored", 1000); } else stays("no-purchases"); }, function () { stays("restore-failed"); }); }
           catch (e) { stays("restore-failed"); }
         };
 
@@ -1621,9 +1629,24 @@
             try { Sona.iapRefresh(true).then(function (active) { if (active && gen === APPLE.gen && !APPLE.busy && !APPLE.done) owned(); }, function () {}); } catch (e) {}
           }, 10000);
         }
-        document.addEventListener("visibilitychange", function () { if (!document.hidden) reask(); });
+        // THE REMINDER LINE FOLLOWS iOS'S OWN ANSWER. trialReminderOn reads
+        // what iOS last told this phone, and the card can paint before iOS
+        // has answered this page (or after the parent changed the setting in
+        // iOS Settings and came back): once iOS answers, the card is painted
+        // again if that line would now say something else. The plan is the
+        // same, so only the line under the button changes.
+        function aheadCheck() {
+          try {
+            if (OLD || typeof Sona.notifyRefresh !== "function") return;
+            Sona.notifyRefresh().then(function () {
+              if (APPLE.busy || APPLE.done || !pricedNow()) return;
+              if ((wordsOf(picked()).headsUp || "") !== (elAhead.textContent || "")) paintApple();
+            }, function () {});
+          } catch (e) {}
+        }
+        document.addEventListener("visibilitychange", function () { if (!document.hidden) { reask(); aheadCheck(); } });
 
-        if (OLD) paintApple(); else ask(false);
+        if (OLD) paintApple(); else { ask(false); aheadCheck(); }
       } catch (e) {}
     })();
 

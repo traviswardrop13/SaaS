@@ -24,6 +24,12 @@ install-ios-lifecycle.py installs the scene fix:
 3. Adds NSSpeechRecognitionUsageDescription to Info.plist. Without it iOS
    closes the app the moment the speech permission is asked.
 
+Since 22 Oct 2026 (iOS 1.0.9) the same plugin also sets the one trial
+reminder, a local notification the day before the free days end. That needs
+nothing more from this script or from Xcode: no Push Notifications
+capability, no APNs key, no Info.plist text (iOS writes its own permission
+box). Running the script again copies the new plugin in, as for any change.
+
 It changes nothing when it meets a project it does not understand; it says
 what it found instead. Originals are backed up to a temporary directory, and
 running it again is safe. `--check` reports what it would do, and writes

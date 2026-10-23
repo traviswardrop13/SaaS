@@ -31,6 +31,7 @@ const SUITES = [
   "readtest.mjs",  // books never go silent: browser-voice fallback when TTS dies
   "booktest.mjs",  // BOOKS2: full-screen pages; say the key word to turn the page — Say & Play's check, a quiet mic, silence never turns it, no practice data
   "arttooltest.mjs", // ART2: the book and game art tools never draw over hand-made art
+  "setupreeltest.mjs", // SETUPREEL1: setup's game reel: a clip and a poster for every game on the list (never Coming soon), H.264 with no audio track, moov first, 540 x 720, under 300 KB and 60 KB
   "soundmarktest.mjs", // SNDMARK1: only the practice sound's letters are orange, for every bank word
   "gameasktest.mjs", // GAMEASK1: what a game's say-it card asks for: the sound, then one syllable, then a short word; what was earned (an old Settings pick is dropped), the practice page's floor, homework; it only reads
   "trophytest.mjs", // TROPHY1/COIN3: trophies follow the honest rep, a day at the goal is 30 whatever the goal, never spent or lost; coins no longer minted, a hardened wallet, never sold
@@ -41,6 +42,7 @@ const SUITES = [
   "besttest.mjs", // BESTS1: each child's own best in a game — per child, only ever up, never practice data or shared; Home's "Best 17" tag
   "nativefamilytest.mjs", // native family entry; clinician routes stay browser-only
   "onboardingtest.mjs", // reviewed setup, permission and explicit handoff
+  "setupscreenstest.mjs", // SETUPNEW1: setup's new screens: a live hello, the reel (posters where clips cannot play), "Hear Echo" only on a tap, Rachel on her own, minutes as the daily goal, the reminder ask only where it can be kept
   "setupsteadytest.mjs", // STEADY1: setup's name step holds still while the iPhone keyboard comes and goes, a name is typed and an age picked
   "iphonepolishtest.mjs", // spoken revive, cancellation and native audio format
   "progressreviewtest.mjs", // honest parent counts, local clips and explicit sharing
@@ -102,6 +104,7 @@ const SUITES = [
   "pricescreentest.mjs", // PRICE1: the one-plan iPhone price card in every store state: no typed figure, no reminder words, never a dead end
   "setupbuytest.mjs", // SETUPBUY1: a new family end to end: setup, the price, a purchase, then the microphone, the hand-off and the first game
   "heartest.mjs",  // HEAR1: on-device recognition verdicts — poopoo fails, unknown never does
+  "notifytest.mjs", // NOTIFY1: one local reminder the day before the free trial ends: only on a build that can, only once allowed, armed by a trial purchase or the daily check, taken back when no trial is on, never a name, nothing leaves the phone
   "loadtest.mjs",  // LOAD1: per-game loading scenes, ticket pill, ghost reveals
   "mictest.mjs",   // MIC1: a declined mic is never a dead end; the consent copy is true
   "hwtest.mjs",    // HW1: SLP homework replaces what the app would have picked
