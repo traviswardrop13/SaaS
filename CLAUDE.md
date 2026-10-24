@@ -2037,9 +2037,18 @@ already exists, never painted in and never under a finger.
   Day 3's s04). The fox, every new family's buddy, has a peek drawn for the
   stories' thirteen peek spots (`buddy-fox-peek.webp`); Fruit Slice never asks
   for it, so a fox child's market is unchanged.
+- **Three sayings a word in every story game** (Travis, 23 Oct 2026: "when
+  a kid practices the daily adventure i want it to ask them to say the sound
+  3 times not twice for every daily game"). One number, `STORY_SAY_TIMES`
+  (3) in `sona.js`, which Days 1-3's pages and `story-game.html` (and the
+  test host) pass to `SayPlay.start` as `sayTimes`: three dots, "Say it 3
+  times", "2 more times!" after the first saying, "1 more time!" after the
+  second, and only the third earns the move; a help pill asks three more.
+  Every story page's words say "three times". A replay asks three too (the
+  same page). The other Say & Play games keep two, Bubble Pop one.
 - **What a story day earns:** the scenes nothing; the game one game rep for
-  each saying Echo hears (16 for ages 5-8, 12 for 3-4 on Days 1-3 and 10 on
-  Days 4-14, two more for each help pill), toward the daily goal and trophies like every game, never practice
+  each saying Echo hears (24 for ages 5-8, 18 for 3-4 on Days 1-3 and 15 on
+  Days 4-14, three more for each help pill), toward the daily goal and trophies like every game, never practice
   data; the day one sticker.
 - **Not in the catalog, on purpose.** The story games are not in `GAME_ACTS`
   or `ACTIVITY_KEYS` (`Sona.gameKey("lighthouse") === ""`): on no shelf, in
@@ -2060,7 +2069,7 @@ already exists, never painted in and never under a finger.
   Day 3's first two pages (the storm broke it the night before).
 
 **Light the Way** (Day 1, `lighthouse.js`, `LIGHTHOUSE1`). A night sea under
-a soft veil; the word, said two times, lights the lamp; the finger moves a
+a soft veil; the word, said three times, lights the lamp; the finger moves a
 pool of light (drawn 56 px above a fingertip, or 0.8 of its radius if that is
 less, so the finger never covers it; on a mouse pointer) and HOLDS it on the
 lost boat: the boat's lantern blazes, it toots and chugs home. Ages 5-8:
@@ -2120,7 +2129,8 @@ glassy, the stone still, the ghost shows, 10 s). End card: "The bridge is
 whole again!" / "Every stone is back where it belongs."
 
 **What the three games keep** (each its own suite, and every Say & Play
-rule): the word, said two times, earns each step and the finger makes it;
+rule): the word, said three times (two until 23 Oct 2026), earns each step
+and the finger makes it;
 silence earns nothing; the step counts 1.15 s after the cheer, on a live page
 only; the help ladder resets with each word and never finishes a move by
 itself; Echo's directions go through `api.instruct` from `STEP_LINES` (ages
@@ -2139,10 +2149,12 @@ line a child hears):
   on its own, homework first; the story words on words 1, 4 and 7 (the
   `GAME_WORDS` table for `lighthouse`, `windup`, `bridge`; "river" left out on
   purpose).
-- Two sayings a word for both ages (16 a day for 5-8, 12 for 3-4; Bubble Pop
-  asks the littles once). One line per game page (`sayTimes: 1`) would change
-  it.
-- The day is light on speaking: 16 sayings (12 for ages 3-4, 10 on Days
+- Three sayings a word for both ages since 23 Oct 2026, Travis's call (24 a
+  day for 5-8, 18 for 3-4 on Days 1-3 and 15 on Days 4-14; it was two, and
+  the other Say & Play games still ask two, Bubble Pop once). One number,
+  `STORY_SAY_TIMES` in `sona.js`, changes every story game (and its words
+  must follow: `storygametest` pins them).
+- The day is light on speaking: 24 sayings (18 for ages 3-4, 15 on Days
   4-14) against a daily goal of 30 (setup's 5 minutes, the default; 60 or
   90 for 10 or 15 minutes); the story pictures ask for nothing.
 - The games do not check the age a sound is usually learned: a four-year-old
@@ -2881,7 +2893,9 @@ A collection, never practice data. `tests/dinotest.mjs` digs all four.
 **The word is said two times** (Travis, 1 Oct 2026: "ask them to say it two
 times. and if they say it once to have it say '1 more time'"). In the Say &
 Play word games (`sayplay.js`: Hoops, Soccer Goal, Dino Dig and the parked
-ones) a turn needs two sayings. It is one setting a game, `game.sayTimes`, and
+ones) a turn needs two sayings (the daily story's games three since 23 Oct
+2026: `Sona.STORY_SAY_TIMES`, see "Daily story (STORY1)"; with three the
+first saying shows "2 more times!"). It is one setting a game, `game.sayTimes`, and
 two unless the game's page says otherwise. **Bubble Pop asks once**
 (`sayTimes: 1` in `arcade-bubbles.html`): it is the littles' game, built on
 main to be said once, and whether a three-year-old should say a word twice is
@@ -3365,7 +3379,8 @@ the practice page's voiced tries (`outcomes().days[].tries`, only days since
 tries were counted, 22 Sep 2026) **plus every sound a game asked for and
 heard** (`Sona.gameRep`, Travis: "yeah count as reps"): the say-it card
 between rounds, Echo's sound powers, each saying of a Hoops, Soccer Goal or
-Dino Dig word (two a word), a Bubble Pop word (said once), Feed Echo's heard
+Dino Dig word (two a word), a story game's word (three a word), a Bubble Pop
+word (said once), Feed Echo's heard
 word and each accepted book key word (one a page).
 Game reps live in their own per-child ledger (`sona.gamereps.v1`) and never
 enter `outcomes()`, so no pass rate, clinician's note or shared progress

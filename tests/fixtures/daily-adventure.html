@@ -36,7 +36,7 @@
       }
       var count = Sona.playStyle() === "simple" ? 5 : 8, steps = [];
       for (var i = 0; i < count; i++) steps.push([]);
-      SayPlay.start({key:game.key,title:game.title,intro:game.intro,steps:steps,finale:[],done:game.done,play:play,sounds:controller.sounds,soundMs:controller.soundMs});
+      SayPlay.start({key:game.key,title:game.title,intro:game.intro,steps:steps,finale:[],done:game.done,sayTimes:Sona.STORY_SAY_TIMES||3,play:play,sounds:controller.sounds,soundMs:controller.soundMs});
     })();
   </script>
 </body>

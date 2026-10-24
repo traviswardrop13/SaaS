@@ -8,6 +8,8 @@ function ok(name,pass,detail){checks++;if(!pass){failures++;console.log('FAIL '+
 function requireCheck(name,pass,detail){ok(name,pass,detail);if(!pass)throw new Error(name);}
 const state=page=>page.evaluate(()=>({speech:window.__sayplay,lantern:window.__dailyLantern}));
 const equal=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
+// one saying: a 280 ms burst of voice, as the shared sayWord makes each one
+const burst=async page=>{await page.evaluate(()=>__quiet.voice=true);await advance(page,280);await page.evaluate(()=>__quiet.voice=false);};
 const point=async(page,p)=>{const b=await page.locator('#dailyCanvas').boundingBox();return{x:b.x+p.x*b.width,y:b.y+p.y*b.height};};
 async function boot(options={}){
   const r=await harness.fresh(options);lastPage=r.page;
@@ -163,7 +165,21 @@ async function playthrough(age,total){
   ok('age '+age+' has the five/eight real circuit goals and matching world',g.stages===total&&s.speech.steps===total&&g.groups.length===(total===5?6:9),{stages:g.stages,steps:s.speech.steps,groups:g.groups.length});
   ok('Lantern uses normal Premium catalog access',await page.evaluate(()=>{const a=Sona.gameAct('lantern');return Sona.gameAccess('lantern').allowed&&a.tier==='premium'&&a.say&&a.go==='/daily-adventure.html';}));
   await ask(page);await page.keyboard.press('ArrowRight');await advance(page,14000);s=await state(page);ok('silence and socket keys cannot join cords, close switches or light a lamp',s.speech.phase==='nudge'&&s.speech.step===0&&!s.lantern.active&&equal(held(s.lantern),initial)&&await page.evaluate(n=>Sona.weekReps(0)===n,reps),s.speech);
-  await page.locator('#micBtn').click();requireCheck('two accepted sayings earn the real cord controls',await sayWord(page),await state(page));const seen=new Set();
+  // Every story game asks Sona.STORY_SAY_TIMES sayings a word (Travis, 23 Oct
+  // 2026: "say the sound 3 times not twice for every daily game"), so the first
+  // word is said one burst at a time here: the sayings before the last are
+  // kept and counted down, and only the last earns the cords.
+  await page.locator('#micBtn').click();requireCheck('the mic listens again for the first word at age '+age,await until(page,()=>__sayplay.listening),await state(page));
+  const times=await page.evaluate(()=>({page:__sayplay.times,story:Sona.STORY_SAY_TIMES}));
+  ok('Lantern asks the story count, three sayings a word, at age '+age,times.page===times.story&&times.story===3,times);
+  await advance(page,150);
+  for(let n=1;n<times.page;n++){
+    if(n>1)await advance(page,650);await burst(page);await advance(page,650);s=await state(page);
+    const left=times.page-n,status=await page.locator('#micState').textContent();
+    ok('saying '+n+' of '+times.page+' is kept and earns no cord at age '+age,s.speech.said===n&&s.speech.step===0&&s.speech.phase!=='play'&&!s.lantern.active&&equal(held(s.lantern),initial)&&status===left+' more '+(left===1?'time':'times')+'!',{speech:s.speech,status});
+  }
+  await burst(page);
+  requireCheck('only the last of the '+times.page+' sayings earns the real cord controls at age '+age,await until(page,()=>__sayplay.phase==='play'),await state(page));const seen=new Set();
   for(let step=0;step<total;step++){
     if(step)requireCheck('the shared word earns Lantern goal '+(step+1)+' at age '+age,await sayWord(page),await state(page));g=(await state(page)).lantern;
     if(g.target==='great'){
@@ -178,7 +194,9 @@ async function playthrough(age,total){
   await until(page,()=>__sayplay.phase==='end',5000);s=await state(page);g=s.lantern;const lamps=g.groups.filter(v=>v.id!=='source');
   ok('all real powered loops earn the great-lantern ending at age '+age,s.speech.phase==='end'&&s.speech.step===total&&g.won&&g.completedGoals.length===total&&g.served.length===lamps.length&&lamps.every(v=>v.closed&&v.lit&&v.current>.04&&v.voltage>.04&&v.bulbs.every(a=>a>.04))&&g.masterClosed&&!g.tripped&&g.connections>=lamps.length*4&&g.manualDistance>500,{speech:s.speech,served:g.served,lamps});
   const audio=await audioAudit(page);ok('all circuit speech and chimes stay outside the microphone',audio.leaks===0&&audio.overlap===0&&audio.live===0,audio);ok('directions explain actions without grading the child',audio.lines.some(t=>/cord|socket|lamp|switch/i.test(t))&&!audio.lines.some(t=>/wrong|fail|score|points|correct/i.test(t)),audio.lines);
-  ok('accepted sayings count only as play reps with no clinical outcomes',await page.evaluate(({reps,total})=>Sona.weekReps(0)===reps+total*2+2&&Sona.weekReps(0,null,true)===0&&Object.keys(Sona.outcomes()).length===0,{reps,total}),await page.evaluate(()=>({reps:Sona.weekReps(0),outcomes:Sona.outcomes()})));
+  // each heard saying is one play rep: every goal's word and the one optional
+  // help word, each said __sayplay.times times (three since 23 Oct 2026)
+  ok('accepted sayings count only as play reps with no clinical outcomes',await page.evaluate(({reps,total})=>Sona.weekReps(0)===reps+(total+1)*__sayplay.times&&Sona.weekReps(0,null,true)===0&&Object.keys(Sona.outcomes()).length===0,{reps,total}),await page.evaluate(()=>({reps:Sona.weekReps(0),outcomes:Sona.outcomes()})));
   await page.screenshot({path:path.join(OUT,'sona-daily-lantern-finished-age'+age+'.png')});await page.locator('#again').click();g=(await state(page)).lantern;
   ok('Play again clears plugs, lamp switches and progress and requires speech',g.stage===-1&&!g.active&&!g.won&&g.served.length===0&&g.completedGoals.length===0&&g.wires.every(w=>w.ends.every(e=>e===null))&&g.groups.filter(v=>v.id!=='source').every(v=>!v.closed&&!v.lit));
   ok('the full circuit path has no runtime errors at age '+age,errors.length===0,errors);await context.close();

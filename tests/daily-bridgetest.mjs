@@ -16,6 +16,27 @@ async function boot(options={}){
   return r;
 }
 async function ask(page){await page.locator('#startBtn').click();requireCheck('the shared speech turn starts',await until(page,()=>__sayplay.listening),await state(page));}
+// Since 23 Oct 2026 a story game asks each word Sona.STORY_SAY_TIMES (three)
+// times, not two. The count is read off the page, so a later change of that
+// one number moves only the pins that should move; the words a child sees are
+// pinned as they are. Every saying but the last only ticks its dot and asks
+// for the rest; the last earns the crane. Same bursts as sayWord's.
+async function storySayings(page,age){
+  requireCheck('the first word listens again from the mic button',await until(page,()=>__sayplay.listening),await state(page));
+  const ask=await page.evaluate(()=>({times:__sayplay.times,story:Sona.STORY_SAY_TIMES,line:(document.getElementById('twiceSay')||{}).textContent,dots:document.querySelectorAll('#twiceDots i').length}));
+  ok('age '+age+' Bridge asks each word Sona.STORY_SAY_TIMES (3) times, with a dot a saying',ask.times===ask.story&&ask.story===3&&ask.line==='Say it 3 times'&&ask.dots===ask.times,ask);
+  await advance(page,150);const steps=[];
+  for(let i=0;i<ask.times;i++){
+    if(i)await advance(page,350);await page.evaluate(()=>__quiet.voice=true);await advance(page,280);await page.evaluate(()=>__quiet.voice=false);
+    if(i===ask.times-1)break;await advance(page,300);
+    steps.push(await page.evaluate(()=>({said:__sayplay.said,phase:__sayplay.phase,listening:__sayplay.listening,status:document.getElementById('micState').textContent,active:__dailyBridge.active,stage:__dailyBridge.stage})));
+  }
+  const left=n=>n+' more '+(n===1?'time':'times')+'!';
+  ok('age '+age+' sayings before the last only tick dots and ask for the rest ("2 more times!", then "1 more time!")',steps.length===ask.times-1&&steps.every((s,i)=>s.said===i+1&&s.phase==='turn'&&s.listening&&s.status===left(ask.times-1-i))&&steps[0].status==='2 more times!'&&steps[steps.length-1].status==='1 more time!',steps);
+  ok('age '+age+' '+(ask.times-1)+' sayings alone never open the crane or start a bridge goal',steps.every(s=>!s.active&&s.stage===-1),steps);
+  requireCheck('age '+age+' the third real saying earns the crane controls',await until(page,()=>__sayplay.phase==='play'),await state(page));
+  return ask.times;
+}
 async function audioAudit(page){return page.evaluate(()=>({leaks:__quiet.leakFrames,live:__quiet.live(),overlap:__quiet.sounds.filter(s=>__quiet.mics.some(m=>s.start<(m.end==null?__quiet.now():m.end)&&m.asked<s.end)).length,lines:__quiet.speech}));}
 async function accessChecks(){
   for(const options of [{closed:true},{device:{premium:false,paid:true}}]){
@@ -182,7 +203,7 @@ async function playthrough(age,total){
   ok('Bridge uses normal Premium catalog access',await page.evaluate(()=>{const a=Sona.gameAct('bridge');return Sona.gameAccess('bridge').allowed&&a.tier==='premium'&&a.say&&a.go==='/daily-adventure.html';}));
   await ask(page);await page.keyboard.press('ArrowRight');await advance(page,14000);s=await state(page);
   ok('silence, waiting and hook keys cannot build or cross the bridge',s.speech.phase==='nudge'&&s.speech.step===0&&!s.bridge.active&&equal(held(s.bridge),initial)&&await page.evaluate(n=>Sona.weekReps(0)===n,reps),s.speech);
-  await page.locator('#micBtn').click();requireCheck('two real sayings earn the crane controls',await sayWord(page),await state(page));g=(await state(page)).bridge;
+  await page.locator('#micBtn').click();const times=await storySayings(page,age);g=(await state(page)).bridge;
   const start=g.crane.x;await arrow(page,'Right',350);g=(await state(page)).bridge;ok('Space held on the right arrow really moves the gantry',g.crane.x>start+.01&&g.keys.length===0,{before:start,crane:g.crane});
   const before=held(g);await dragCancel(page,'#bridgeHook',g.current.source);g=(await state(page)).bridge;ok('pointer cancellation clears crane input without attaching or placing wood',!g.pointer&&equal(held(g),before));
   const seen=new Set();
@@ -190,7 +211,10 @@ async function playthrough(age,total){
   await until(page,()=>__sayplay.phase==='end',5000);s=await state(page);g=s.bridge;
   ok('the truly built bridge and both manual cart crossings earn the ending at age '+age,s.speech.phase==='end'&&s.speech.step===total&&g.won&&g.completedGoals.length===total&&g.placed.length===(total===5?6:8)&&g.testFinished&&g.movingFinished&&g.cart.arrived&&g.cart.distance>=.60&&g.rotations>0&&seen.has('test')&&seen.has('moving'),{speech:s.speech,placed:g.placed,cart:g.cart});
   const audio=await audioAudit(page);ok('all crane directions and chimes stay outside the microphone',audio.leaks===0&&audio.overlap===0&&audio.live===0,audio);ok('directions name physical actions without grading the child',audio.lines.some(t=>/hook|wood|cart|bridge/i.test(t))&&!audio.lines.some(t=>/wrong|fail|score|points|correct/i.test(t)),audio.lines);
-  ok('only accepted sayings count as play reps and no clinical outcome is recorded',await page.evaluate(({reps,total})=>Sona.weekReps(0)===reps+total*2+4&&Sona.weekReps(0,null,true)===0&&Object.keys(Sona.outcomes()).length===0,{reps,total}),await page.evaluate(()=>({reps:Sona.weekReps(0),outcomes:Sona.outcomes()})));
+  // each heard saying is one play rep: every goal word and the two help words
+  // (the crane's steady and the moving cart's), each said `times` times (three
+  // since 23 Oct 2026, so 7 words are 21 reps at age 3 and 10 are 30 at age 7)
+  ok('only accepted sayings count as play reps and no clinical outcome is recorded',await page.evaluate(({reps,total,times})=>Sona.weekReps(0)===reps+(total+2)*times&&Sona.weekReps(0,null,true)===0&&Object.keys(Sona.outcomes()).length===0,{reps,total,times}),await page.evaluate(()=>({reps:Sona.weekReps(0),outcomes:Sona.outcomes()})));
   await page.screenshot({path:path.join(OUT,'sona-daily-bridge-finished-age'+age+'.png')});await page.locator('#again').click();g=(await state(page)).bridge;
   ok('Play again clears all placed wood and crossings and requires speech',g.stage===-1&&!g.active&&!g.won&&g.placed.length===0&&g.completedGoals.length===0&&!g.crane.load&&!g.testFinished&&!g.movingFinished&&g.cart.distance===0);
   ok('the full bridge path has no runtime errors at age '+age,errors.length===0,errors);await context.close();

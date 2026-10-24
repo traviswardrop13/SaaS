@@ -149,7 +149,20 @@ async function playthrough(age,total){
   ok('the local catalog uses normal Premium access for Postboat',await page.evaluate(()=>{const a=Sona.gameAct('postboat');return Sona.gameAccess('postboat').allowed&&a.tier==='premium'&&a.say&&a.go==='/daily-adventure.html';}));
   const initial=held(g),reps=await page.evaluate(()=>Sona.weekReps(0));await ask(page);await page.keyboard.press('ArrowRight');await advance(page,14000);s=await state(page);
   ok('a whole silent turn and steering input earn no movement, cargo or goal at age '+age,s.speech.phase==='nudge'&&s.speech.step===0&&!s.boat.active&&equal(held(s.boat),initial)&&await page.evaluate(n=>Sona.weekReps(0)===n,reps),s.speech);
-  await page.locator('#micBtn').click();requireCheck('two accepted sayings earn the real postboat at age '+age,await sayWord(page),await state(page));await advance(page,100);s=await state(page);
+  // Since 23 Oct 2026 a story game's word is said three times (Travis: "say
+  // the sound 3 times not twice for every daily game", Sona.STORY_SAY_TIMES).
+  // The first word is said here by hand, one saying at a time, so the sayings
+  // before the last are seen to count as reps and earn no boat, no current
+  // and no goal; only the last one earns the move.
+  await page.locator('#micBtn').click();requireCheck('the tapped mic listens again after the silent turn at age '+age,await until(page,()=>__sayplay.listening),await state(page));
+  const times=(await state(page)).speech.times,asked=await page.evaluate(()=>({story:Sona.STORY_SAY_TIMES,line:(document.getElementById('twiceSay')||{}).textContent,dots:document.querySelectorAll('#twiceDots i').length}));
+  ok('this story game asks Sona.STORY_SAY_TIMES (3) sayings a word, with its line and dots, at age '+age,times===3&&asked.story===times&&asked.line==='Say it 3 times'&&asked.dots===times,{times,asked});
+  const burst=async()=>{await page.evaluate(()=>__quiet.voice=true);await advance(page,280);await page.evaluate(()=>__quiet.voice=false);};
+  const heard=[];await advance(page,150);
+  for(let i=0;i<times-1;i++){if(i)await advance(page,350);await burst();await advance(page,300);s=await state(page);heard.push({said:s.speech.said,phase:s.speech.phase,listening:s.speech.listening,step:s.speech.step,active:s.boat.active,power:s.boat.power,held:equal(held(s.boat),initial),reps:await page.evaluate(()=>Sona.weekReps(0)),status:await page.locator('#micState').textContent()});}
+  ok('every saying before the last counts one rep but earns no boat, current or goal at age '+age,heard.length===times-1&&heard.every((h,i)=>h.said===i+1&&h.phase!=='play'&&h.listening&&h.step===0&&!h.active&&h.power===0&&h.held&&h.reps===reps+i+1),heard);
+  ok('the mic says what is left to say: "2 more times!", then "1 more time!" at age '+age,equal(heard.map(h=>h.status),['2 more times!','1 more time!']),heard.map(h=>h.status));
+  await advance(page,350);await burst();requireCheck('the third accepted saying earns the real postboat at age '+age,await until(page,()=>__sayplay.phase==='play'),await state(page));await advance(page,100);s=await state(page);
   ok('the word calms actual current without loading any parcel',s.boat.active&&s.boat.power>0&&s.boat.currentScale===.18&&magnitude(s.boat.current)<=magnitude(s.boat.baseCurrent)*.181&&s.boat.cargo.length===0&&s.speech.step===0,{current:s.boat.current,base:s.boat.baseCurrent});
   const x=s.boat.boat.x;await page.locator('#postboatRight').focus();await page.keyboard.down('Space');await advance(page,600);await page.keyboard.up('Space');await page.locator('#postboatStop').click();s=await state(page);
   ok('Space held on the focused right-arrow button actually paddles right',s.boat.boat.x>x+.015&&s.boat.boat.speed===0,{before:x,after:s.boat.boat.x,speed:s.boat.boat.speed});
@@ -211,7 +224,9 @@ async function playthrough(age,total){
   ok('all post and the real door raft finish the five/eight-goal story at age '+age,s.speech.phase==='end'&&s.speech.step===total&&s.boat.won&&s.boat.completedGoals.length===total&&Object.values(s.boat.delivered).every(Boolean)&&s.boat.raft.unloaded&&s.boat.manualTravel>100&&s.boat.loads===3&&s.boat.unloads===4&&s.boat.attaches===1,{speech:s.speech,delivered:s.boat.delivered,loads:s.boat.loads,unloads:s.boat.unloads});
   const audio=await audioAudit(page);ok('all boat directions and chimes stay outside the microphone at age '+age,audio.leaks===0&&audio.overlap===0&&audio.live===0,audio);
   ok('boat directions explain actions without grading the child',audio.lines.some(t=>/dock|parcel|raft|boat/i.test(t))&&!audio.lines.some(t=>/wrong|fail|score|points|correct/i.test(t)),audio.lines);
-  ok('only accepted sayings count as play reps, with no practice outcome',await page.evaluate(({reps,total})=>Sona.weekReps(0)===reps+total*2+4&&Sona.weekReps(0,null,true)===0&&Object.keys(Sona.outcomes()).length===0,{reps,total}),await page.evaluate(()=>({reps:Sona.weekReps(0),outcomes:Sona.outcomes()})));
+  // every word (the goals', plus the two optional help words) is said `times`
+  // times, each saying one rep: three a word since 23 Oct 2026
+  ok('only accepted sayings count as play reps, with no practice outcome',await page.evaluate(({reps,total,times})=>Sona.weekReps(0)===reps+(total+2)*times&&Sona.weekReps(0,null,true)===0&&Object.keys(Sona.outcomes()).length===0,{reps,total,times}),await page.evaluate(()=>({reps:Sona.weekReps(0),outcomes:Sona.outcomes()})));
   await page.screenshot({path:path.join(OUT,'sona-daily-postboat-finished-age'+age+'.png')});await page.locator('#again').click();s=await state(page);
   ok('Play again clears cargo, arrivals and the towline and requires speech',s.speech.step===0&&!s.boat.active&&s.boat.stage===-1&&s.boat.cargo.length===0&&s.boat.completedGoals.length===0&&!s.boat.raft.attached&&!s.boat.raft.unloaded&&Object.values(s.boat.delivered).every(v=>!v));
   ok('the full Postboat path has no runtime errors at age '+age,errors.length===0,errors);await context.close();

@@ -16,7 +16,11 @@ async function boot(key){
   const r=await harness.fresh({device:{age:'3',speechMs:100}});
   must(key+' boots through the real host',await until(r.page,()=>window.__sayplay&&__sayplay.phase==='ready',3000),r.errors);
   await r.page.locator('#startBtn').click();
-  must('two accepted sayings earn the first '+key+' objective',await sayWord(r.page),await snapshot(r.page));
+  // 23 Oct 2026: every story game asks each word Sona.STORY_SAY_TIMES (3)
+  // times, so the rep totals below are words times that count, read off the
+  // page rather than typed.
+  must(key+' asks each word the story count, three times',await r.page.evaluate(()=>__sayplay.times===Sona.STORY_SAY_TIMES&&Sona.STORY_SAY_TIMES===3),await snapshot(r.page));
+  must('three accepted sayings earn the first '+key+' objective',await sayWord(r.page),await snapshot(r.page));
   await idle(r.page);return r;
 }
 async function audit(page,label){
@@ -57,7 +61,7 @@ async function bakeryDirections(){
   try{
     await openMixBehindJug(page);
     ok('the jug-to-spoon transition eventually narrates its essential new action',await heard(page,MIX,8000),await snapshot(page));
-    ok('a direction alone does not stir or award the bakery objective',await page.evaluate(()=>__dailyBakery.batches[0].mix===0&&__sayplay.step===0&&Sona.weekReps(0)===2));
+    ok('a direction alone does not stir or award the bakery objective',await page.evaluate(()=>__dailyBakery.batches[0].mix===0&&__sayplay.step===0&&Sona.weekReps(0)===__sayplay.times));
     await idle(page);await audit(page,'Bakery task change');ok('Bakery direction path has no runtime errors',errors.length===0,errors);
   }finally{await context.close();}
 }
@@ -87,7 +91,7 @@ async function bakeryCancellation(){
     await advance(page,6500);
     const lines=await page.evaluate(mark=>__quiet.speech.slice(mark),later);
     ok('cancelled pending pour/mix cues never leak into the later word or shaping turn',!lines.includes(JUG)&&!lines.includes(MIX),lines);
-    ok('background and cancellation add no extra practice or physical credit',await page.evaluate(()=>__sayplay.step===1&&Sona.weekReps(0)===4&&__dailyBakery.batches[0].buns.every(b=>!b.formed&&!b.onTray)));
+    ok('background and cancellation add no extra practice or physical credit',await page.evaluate(()=>__sayplay.step===1&&Sona.weekReps(0)===2*__sayplay.times&&__dailyBakery.batches[0].buns.every(b=>!b.formed&&!b.onTray)));
     await audit(page,'Bakery background and next turn');ok('Bakery cancellation path has no runtime errors',errors.length===0,errors);
   }finally{await context.close();}
 }
@@ -132,7 +136,7 @@ async function trainDirections(){
     await duration(page,100);await placeTrack(page);
     must('the corrected cottage track immediately reaches the Badger task during its old cue',(await snapshot(page)).rail.phase==='deliver'&&(await snapshot(page)).rail.targetPassenger==='badger'&&await utteranceActive(page),await snapshot(page));
     ok('the new Badger driving and platform directions eventually speak',await heard(page,BADGER,8000),await snapshot(page));
-    ok('spoken directions do not deliver Badger or advance speech progress',await page.evaluate(()=>__sayplay.step===2&&__dailyTrainline.passengers.find(p=>p.id==='badger').state==='aboard'&&Sona.weekReps(0)===6));
+    ok('spoken directions do not deliver Badger or advance speech progress',await page.evaluate(()=>__sayplay.step===2&&__dailyTrainline.passengers.find(p=>p.id==='badger').state==='aboard'&&Sona.weekReps(0)===3*__sayplay.times));
     await idle(page);await audit(page,'Trainline task change');ok('Trainline direction path has no runtime errors',errors.length===0,errors);
   }finally{await context.close();}
 }
@@ -180,7 +184,7 @@ async function bridgeDirections(){
     await page.locator('#bridgeLift').click();
     must('the installed gap starts the actual test cart while the prior cue is still speaking',(await snapshot(page)).bridge.phase==='cart'&&await utteranceActive(page),await snapshot(page));
     ok('the first cart path, stop and bell instructions eventually speak',await heard(page,CART,8000),await snapshot(page));
-    ok('directions cannot move the cart or complete its objective',await page.evaluate(()=>__sayplay.step===3&&!__dailyBridge.testFinished&&__dailyBridge.cart.distance===0&&Sona.weekReps(0)===8));
+    ok('directions cannot move the cart or complete its objective',await page.evaluate(()=>__sayplay.step===3&&!__dailyBridge.testFinished&&__dailyBridge.cart.distance===0&&Sona.weekReps(0)===4*__sayplay.times));
     await idle(page);await audit(page,'Bridge task change');ok('Bridge direction path has no runtime errors',errors.length===0,errors);
   }finally{await context.close();}
 }

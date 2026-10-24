@@ -11,7 +11,9 @@ import {parkedSona} from './_parked.mjs';
 // served a sona.js with this game parked again (tests/_parked.mjs).
 export const advance=(page,ms)=>page.clock.runFor(ms);
 export async function until(page,predicate,max=14000,arg){for(let t=0;t<max;t+=100){if(await page.evaluate(predicate,arg))return true;await advance(page,100);}return !!(await page.evaluate(predicate,arg));}
-export async function sayWord(page){if(!await until(page,()=>window.__sayplay&&__sayplay.listening))return false;await advance(page,150);await page.evaluate(()=>__quiet.voice=true);await advance(page,280);await page.evaluate(()=>__quiet.voice=false);await advance(page,650);await page.evaluate(()=>__quiet.voice=true);await advance(page,280);await page.evaluate(()=>__quiet.voice=false);return until(page,()=>__sayplay.phase==='play');}
+// says the word as many times as the game asks (two, or three in the story
+// games since 23 Oct 2026: __sayplay.times), each a 280 ms burst 650 ms apart
+export async function sayWord(page){if(!await until(page,()=>window.__sayplay&&__sayplay.listening))return false;await advance(page,150);const times=await page.evaluate(()=>__sayplay.times||2);for(let i=0;i<times;i++){if(i)await advance(page,650);await page.evaluate(()=>__quiet.voice=true);await advance(page,280);await page.evaluate(()=>__quiet.voice=false);}return until(page,()=>__sayplay.phase==='play');}
 export async function gameHarness(key,port){
  const root=process.env.SONATEST_PUBLIC_ROOT||SOURCE_ROOT,base='http://127.0.0.1:'+port,mime={html:'text/html',js:'text/javascript',css:'text/css',webp:'image/webp',svg:'image/svg+xml',woff2:'font/woff2'};
  const server=createServer((req,res)=>{const u=new URL(req.url,base),f=path.join(root,u.pathname);if(u.pathname.startsWith('/api/')||!existsSync(f)||!statSync(f).isFile()){res.writeHead(503);res.end('{}');return;}res.setHeader('Content-Type',mime[f.split('.').pop()]||'application/octet-stream');res.end(readFileSync(f));});

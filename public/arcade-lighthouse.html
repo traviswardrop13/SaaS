@@ -10,7 +10,7 @@
   <meta name="theme-color" content="#1b1f4a" />
   <!--
     Light the Way: the game inside Day 1 of the daily story, "The Lighthouse
-    Sneeze" (STORY1, 22 Oct 2026). Say the word two times and the lamp
+    Sneeze" (STORY1, 22 Oct 2026). Say the word three times and the lamp
     lights; move the pool of light over the foggy sea and hold it on the lost
     boat; seven boats home, then light up every window in the town (ages
     3-4: five boats and six windows). Written by hand: the sea is drawn and
@@ -57,7 +57,7 @@
     <div class="ovlCard">
       <img class="lh-intro" src="/assets/crafted/home-lighthouse.webp" alt="" onerror="if(this.src.indexOf('echo-welcome')<0){this.src='/assets/crafted/echo-welcome.webp';this.className='lh-intro fallback';}" />
       <h2 id="startTitle">Light the Way</h2>
-      <p id="startLine">Say each word two times to light the lamp. Then move the light to find a lost boat.</p>
+      <p id="startLine">Say each word three times to light the lamp. Then move the light to find a lost boat.</p>
       <p class="small" id="startSound"></p>
       <button id="startBtn" class="act-pill"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15a1 1 0 0 0 1.5.9l12-7.5a1 1 0 0 0 0-1.8l-12-7.5A1 1 0 0 0 7 4.5Z" fill="#fff"/></svg><span>Let's play</span></button>
     </div>
@@ -66,7 +66,7 @@
     <div class="ovlCard">
       <img class="ovlEcho" src="/assets/crafted/echo-listen.webp" alt="" onerror="if(this.src.indexOf('echo-welcome')<0)this.src='/assets/crafted/echo-welcome.webp'" />
       <h2>Let Echo hear you!</h2>
-      <p>Say each word two times to light the lamp.</p>
+      <p>Say each word three times to light the lamp.</p>
       <p class="small" id="micPromise"></p>
       <button class="btn" id="primerYes">Turn on Echo's ears</button>
       <button class="ghost" id="primerNo">Not now</button>
@@ -176,8 +176,8 @@
     })();
 
     // the start card says what to do, for this child's age
-    var line = little ? "Say each word two times to light the lamp. Then touch the glowing boat with the light."
-      : "Say each word two times to light the lamp. Then move the light to find a lost boat. Tap Bright beam for extra help.";
+    var line = little ? "Say each word three times to light the lamp. Then touch the glowing boat with the light."
+      : "Say each word three times to light the lamp. Then move the light to find a lost boat. Tap Bright beam for extra help.";
     try { document.getElementById("startLine").textContent = line; } catch (e) {}
     try { document.getElementById("dots").setAttribute("aria-label", "0 of " + (little ? 6 : 8)); } catch (e) {}
     // FOUND1: Home's row plays a found game once more (?again=1): Play again
@@ -192,7 +192,9 @@
     if (replay && !(window.Sona && Sona.storyReplay && Sona.storyReplay("lighthouse"))) { document.body.hidden = true; location.replace("/today.html"); return; }
     SayPlay.start({
       key: "lighthouse", title: "Light the Way",
-      intro: little ? "Say each word two times to light the lamp. Then touch the glowing boat with the light." : "Say each word two times to light the lamp. Then move the light to find a lost boat. Tap Bright beam for extra help.",
+      // three sayings a word in every story game (Sona.STORY_SAY_TIMES)
+      sayTimes: (window.Sona && Sona.STORY_SAY_TIMES) || 3,
+      intro: little ? "Say each word three times to light the lamp. Then touch the glowing boat with the light." : "Say each word three times to light the lamp. Then move the light to find a lost boat. Tap Bright beam for extra help.",
       steps: little ? [[], [], [], [], [], []] : [[], [], [], [], [], [], [], []], finale: [],
       done: { title: "Every boat is home!", sub: "You lit the way through the fog." },
       // STORY1: the end card's one button opens the story's ending; there is

@@ -1,6 +1,6 @@
 /* Wind-Up Toys: Day 2 of the daily story (STORY1, 22 Oct 2026, "Grandpa
    Bear's Sleepy Toys"). The toys had a secret party all night and ran out of
-   wind. Each word said two times finds the next toy's key (it pops out with a
+   wind. Each word said three times finds the next toy's key (it pops out with a
    ding and the dial lights up); the finger winds it by drawing circles on the
    big brass dial, and lets go at the gold star on the spring meter. Too
    little and the toy yawns and sits back down; too much and it spins dizzy.
