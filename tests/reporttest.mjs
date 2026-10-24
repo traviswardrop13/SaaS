@@ -52,6 +52,10 @@ function store(unsub = []) {
       if (op === "TTL") return !kv.has(a[0]) ? -2 : ttl.has(a[0]) ? ttl.get(a[0]) : -1;
       if (op === "SISMEMBER") return (sets.get(a[0]) || new Set()).has(a[1]) ? 1 : 0;
       if (op === "SADD") { const m = sets.get(a[0]) || new Set(); let n = 0; a.slice(1).forEach((x) => { if (!m.has(x)) { n++; m.add(x); } }); sets.set(a[0], m); return n; }
+      if (op === "SREM") { const m = sets.get(a[0]); return m && m.delete(a[1]) ? 1 : 0; }
+      if (op === "SMEMBERS") return [...(sets.get(a[0]) || [])];
+      if (op === "HDEL") { const m = h.get(a[0]); return m && m.delete(a[1]) ? 1 : 0; }
+      if (op === "HKEYS") return [...(h.get(a[0]) || new Map()).keys()];
       if (op === "HSET") { const m = h.get(a[0]) || new Map(); const isNew = !m.has(a[1]); m.set(a[1], a[2]); h.set(a[0], m); return isNew ? 1 : 0; }
       if (op === "HGETALL") { const m = h.get(a[0]); return m ? [...m].flat() : []; }
       if (op === "EXPIRE") { ttl.set(a[0], a[1]); if (db.clock) exp.set(a[0], db.clock + a[1] * 1000); return 1; }
@@ -361,7 +365,7 @@ const kid = (o = {}) => Object.assign({ d: 3, g: 2, gw: 5, r: 40, p: 25, s: ["R"
 // 5. the wiring
 {
   const cron = readFileSync(path.join(REPO, "app/api/cron/nurture/route.ts"), "utf8"), vercel = JSON.parse(readFileSync(path.join(REPO, "vercel.json"), "utf8")).crons;
-  ok("the daily cron sends the report (it decides the day) with a time budget under maxDuration, and a cron runs it daily", /await runReports\([\s\S]{0,200}deadline: started \+ 250000/.test(cron) && /maxDuration = 300/.test(cron) && /import \{ runReports \} from "@\/lib\/report"/.test(cron) && vercel.some((c) => c.path === "/api/cron/nurture" && /^\d+ \d+ \* \* \*$/.test(c.schedule)));
+  ok("the daily cron sends the report (it decides the day) with a time budget under maxDuration, and a cron runs it daily", /await runReports\([\s\S]{0,200}deadline: started \+ 200000/.test(cron) && /maxDuration = 300/.test(cron) && /import \{ runReports \} from "@\/lib\/report"/.test(cron) && vercel.some((c) => c.path === "/api/cron/nurture" && /^\d+ \d+ \* \* \*$/.test(c.schedule)));
   const sona = readFileSync(path.join(ROOT, "sona.js"), "utf8"), ob = readFileSync(path.join(ROOT, "onboarding.html"), "utf8");
   const noExport = (sona.match(/const NO_EXPORT = \[[^\]]*\]/) || [""])[0], noImport = (sona.match(/const NO_IMPORT = \[[^\]]*\]/) || [""])[0];
   ok("the phone's device id and last send are this phone's own: on NO_EXPORT and NO_IMPORT", /"sona\.report\.v1"/.test(noExport) && /"sona\.report\.v1"/.test(noImport));

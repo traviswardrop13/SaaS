@@ -106,7 +106,9 @@
     .family-settings #reset{width:auto;min-height:44px;padding:9px 16px;font-size:14px;color:#a3301f;border-color:#e9b9ab;background:#fff8f5;}
     /* the Practice Board (BOARD2): hidden unless the board is on, or a child
        still has an entry here to remove */
-    .family-settings #boardCard[hidden],.family-settings #boardMoveNote[hidden]{display:none;}
+    .family-settings #boardCard[hidden],.family-settings #boardMoveNote[hidden],.family-settings #reportCard[hidden]{display:none;}
+    .family-settings #reportMsg{display:block;margin-top:10px;}
+    .family-settings #reportMsg:empty{display:none;}
     .family-settings #boardMoveNote{margin:6px 0 4px;padding:9px 12px;border-radius:12px;background:#fff3df;font-size:13px;font-weight:800;line-height:1.45;color:var(--ink);}
     .family-settings .bd-line{margin-top:10px;font-size:14px;font-weight:700;line-height:1.5;color:var(--ink);overflow-wrap:anywhere;}
     .family-settings .bd-line b{font-weight:800;}
@@ -214,6 +216,20 @@
       <span>Sound is off in Sona.</span>
       <button type="button" class="btn" id="soundOnBtn">Turn sound on</button>
     </div>
+
+    <!-- THE WEEKLY PROGRESS REPORT'S SWITCH (Travis, 23 Oct 2026: "Yes, add
+         the switch"). REPORT1's report went only to a household whose setup
+         email step was given an address; one that skipped it, or gave it
+         before the report existed, turns it on here, and the Monday email to
+         every parent on the list (lib/weekly.ts) says where. One address for
+         the household (Sona.reportSet); nothing but the confirm email is
+         sent until the address says yes. Shown only with a family child set
+         up here (never for a clinician's own setup alone). -->
+    <section class="card" id="reportCard" aria-labelledby="reportTitle" hidden>
+      <div class="set-head"><h2 id="reportTitle">Weekly progress report</h2></div>
+      <div id="reportBody"></div>
+      <p class="muted set-msg" id="reportMsg" role="status" aria-live="polite"></p>
+    </section>
 
     <!-- THE PRACTICE BOARD (BOARD2, 11 Oct 2026; Travis, 9 Oct 2026: "a
          board of every kid in Sona … days practiced"). BUILT DARK: hidden
@@ -500,6 +516,92 @@
       if (activeSlot() !== loadSlot) { location.reload(); return; }
       Sona.resetProgress(); alert("Progress reset.");
     };
+
+    // ── THE WEEKLY PROGRESS REPORT'S SWITCH (23 Oct 2026) ─────────────────
+    // Off: what the report holds, an email box (the household's address when
+    // it has one) and Turn on, with Travis's line before anything is sent.
+    // On: where it goes, a word while the address has not said yes (or has
+    // unsubscribed), and Turn off. The address is the household's, never a
+    // child's name; sona.js REPORT1 sends and keeps the rest.
+    (function () {
+      var card = document.getElementById("reportCard"), body = document.getElementById("reportBody"), msg = document.getElementById("reportMsg");
+      if (!card || !body || !Sona.reportStatus || !Sona.reportSet || !Sona.reportOff) return;
+      var busy = false;
+      // the card changes shape under the finger when it turns on or off: a
+      // double tap's second tap must not land on the new button (Turn off
+      // sits where Turn on was), so taps wait a moment after each switch
+      function settle() { busy = true; setTimeout(function () { busy = false; }, 600); }
+      function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+      function btn(text, cls, fn) { var b = el("button", "btn" + (cls ? " " + cls : ""), text); b.type = "button"; b.onclick = fn; return b; }
+      function say(t) { msg.textContent = t || ""; }
+      function paint() {
+        var st = Sona.reportStatus();
+        card.hidden = !st.can && !st.on;
+        while (body.firstChild) body.removeChild(body.firstChild);
+        if (st.on) {
+          var on = el("p", "bd-line"); on.appendChild(document.createTextNode("On. It goes to ")); on.appendChild(el("b", "", st.email)); on.appendChild(document.createTextNode(" every Monday."));
+          body.appendChild(on);
+          if (st.off) body.appendChild(el("p", "muted set-lead", "This email unsubscribed from Sona's emails, so no report is sent."));
+          else if (st.pending) body.appendChild(el("p", "muted set-lead", "Check your email for Sona's link, and tap it to start. No email? Look in spam. Unsubscribed from Sona's emails? Reply to one to get them back."));
+          var off = el("div", "set-actions"); off.appendChild(btn("Turn off", "ghost", function () {
+            if (busy) return; busy = true;
+            // per phone: another phone or tablet with it on keeps its own switch
+            var done = function (sent) { paint(); settle(); say(sent ? "Turned off on this phone." : "Turned off on this phone. Sona will finish this the next time it's online."); };
+            Sona.reportOff().then(done, function () { done(false); });
+          }));
+          body.appendChild(off);
+          return;
+        }
+        body.appendChild(el("p", "muted set-lead", "Every Monday, an email with last week's practice: how many days, how many reps and which sounds. Never your child's name or voice."));
+        var lab = el("label", "field bd-email", "Grown-up's email"); lab.setAttribute("for", "reportEmail");
+        var inp = el("input"); inp.id = "reportEmail"; inp.type = "email"; inp.setAttribute("inputmode", "email"); inp.setAttribute("autocomplete", "email");
+        inp.value = (Sona.parentEmail ? Sona.parentEmail() : "") || "";
+        body.appendChild(lab); body.appendChild(inp);
+        var go = el("div", "set-actions"); go.appendChild(btn("Turn on", "", function () {
+          if (busy) return;
+          var em = (inp.value || "").trim();
+          if (!em) { say("Type the grown-up's email first."); inp.focus(); return; }
+          busy = true; say("");
+          Sona.reportSet(em).then(function (sent) {
+            var now = Sona.reportStatus();
+            if (!now.on) { busy = false; say("That email doesn't look right."); inp.focus(); return; }
+            paint(); settle();
+            // what the server said, not what was hoped: a link only while it waits for one
+            say(!sent ? "Saved. Sona will send the link the next time it's online." : now.pending ? "Check your email for the link to start it." : now.off ? "" : "Turned on.");
+          }, function () { busy = false; paint(); });
+        }));
+        body.appendChild(go);
+        body.appendChild(el("p", "muted", "We'll also send occasional tips from Rachel. Unsubscribe anytime."));
+      }
+      paint();
+      // a Turn off made offline goes as soon as Settings is open again, and a
+      // Turn on the server has not heard yet tries again
+      // (in that order: a Turn off the server takes can ask for the "on" again)
+      function catchUp() {
+        var st0 = Sona.reportStatus();
+        (st0.owed && Sona.reportFlush ? Sona.reportFlush() : Promise.resolve()).then(function () {
+          var s1 = Sona.reportStatus();
+          if (!s1.on || (s1.sent && !s1.pending) || !Sona.reportSync) return;
+          // repaint on any change the answer made (waiting began, or ended)
+          return Sona.reportSync(true, true).then(function () {
+            var s2 = Sona.reportStatus();
+            if (busy || !s2.on || (s2.pending === s1.pending && s2.off === s1.off)) return;
+            paint(); if (!s2.pending) say("");
+          });
+        }).then(function () {}, function () {});
+      }
+      catchUp();
+      // back from Mail with the link tapped: "Check your email" goes. Only
+      // while on, so a box being typed in is never wiped
+      document.addEventListener("visibilitychange", function () {
+        if (document.visibilityState !== "visible" || busy) return;
+        var st = Sona.reportStatus();
+        if (st.on) paint();
+        // waiting on the link: ask the server again, so a tapped link shows at
+        // once (catchUp also sends an owed Turn off, and a Turn on not heard)
+        catchUp();
+      });
+    })();
 
     // ── THE PRACTICE BOARD (BOARD2, 11 Oct 2026; built dark) ──────────────
     // One card for the household. Hidden while the board is off, unless a

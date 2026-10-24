@@ -17,6 +17,7 @@ const SUITES = [
   "contactstest.mjs", // CONTACTS1: every grown-up's email joins Resend's contacts in its segment; nobody is re-subscribed; unsubscribes go both ways; Kit's leavers first
   "replaytest.mjs", // REPLAY1: PostHog session recording only on four grown-up screens on speaksona.com, played with the real recorder: no name, no address, nothing typed, never the speech therapy question or its answer, nothing past the hand-off
   "reporttest.mjs", // REPORT1: the weekly progress report: only a household that asked sends a few numbers a child (never a name or a voice), never from Home; Monday's email from Rachel, once a week
+  "weeklytest.mjs", // WEEKLY1: the Monday email: every parent on the list once a week after their three welcome emails, never one who left or a speech therapist or a household already getting the real report; the example is the real report's lines; Settings' switch turns the real one on and off
   "rcwebhooktest.mjs", // RCHOOK1: RevenueCat tells Sona when a parent's Premium starts, renews, is cancelled or ends: only RevenueCat's own header gets in, the sales emails stop for a buyer, "Your free days end soon" and "We miss you at Sona" go once to an address on Sona's list, and Kit is gone
   "launchtest.mjs", // LAUNCH1: the family app is locked until launch day (Friday 2 Oct), one email box, a team door, open by itself
   "soundmap.mjs",  // every sound is scorable + the daily ring can actually fill

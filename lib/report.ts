@@ -9,7 +9,9 @@ import { config, esc, unsubToken } from "@/lib/nurture";
  *
  * A child's practice lives on the phone, so the phone tells the server, and
  * only for a household whose grown-up asked for the report on setup's email
- * step (`profile.weeklyReport`, sona.js REPORT1). What it sends is a few
+ * step or with Settings' switch (`profile.weeklyReport`, sona.js REPORT1;
+ * the switch since 23 Oct 2026, WEEKLY1, which can also turn it off: `off`,
+ * a mark on that phone, and `on`, which lifts it). What it sends is a few
  * numbers a child a week, and nothing else:
  *   i  a random id for the child (so the same child on two phones is one)
  *   d  days with at least one rep (0-7)
@@ -72,18 +74,22 @@ export const SEND_CAP = 250;
 export const ASK_CAP = 300;
 export const ASKS_PER_MAILBOX = 5; // confirm links a mailbox in ASK_WINDOW_SEC, whichever phones asked
 export const ASK_WINDOW_SEC = 180 * 24 * 60 * 60;
-export const PACE_MS = 550; // Resend's default limit is 2 a second (cron/weekly waits the same)
+export const PACE_MS = 550; // Resend's default limit is 2 a second (cron/weekly and lib/weekly.ts wait the same)
 export const SEND_DAYS = [1, 2, 3]; // Monday, then Tuesday and Wednesday to catch up
 export const SOUNDS = ["P", "B", "M", "N", "T", "D", "K", "G", "F", "V", "S", "Z", "SH", "CH", "J", "L", "R", "TH", "THV"] as const;
 const SOUND_LABEL: Record<string, string> = { THV: "TH (v)" };
 
 export type Kid = { i?: string; d: number; g: number; gw?: number; r: number; p: number; s: string[] };
 export type Week = { wk: string; kids: Kid[] };
-export type Snapshot = { email: string; dev: string; weeks: Week[]; quiet?: boolean };
+export type Snapshot = { email: string; dev: string; weeks: Week[]; quiet?: boolean; off?: boolean; on?: boolean };
+/** How long a Turn off is remembered: longer than any confirmation, and kept fresh with it. */
+export const OFF_KEEP_SEC = 400 * 24 * 60 * 60;
 
 export const weekKey = (wk: string) => "report:wk:" + wk;
 export const sentKey = (wk: string, email: string) => "report:sent:" + wk + ":" + email;
 export const confirmKey = (h: string) => "report:dev:" + h;
+/** The phones whose grown-up turned the report off in Settings (WEEKLY1): device ids, no address. */
+export const offKey = (h: string) => "report:offdev:" + h;
 
 const int = (v: unknown, lo: number, hi: number): number => {
   const n = Math.floor(Number(v));
@@ -160,7 +166,16 @@ export function validate(body: unknown, now: number = Date.now()): Snapshot | nu
   const email = addressOk(b.email);
   if (!email) return null;
   const dev = typeof b.dev === "string" && /^[a-f0-9]{32}$/.test(b.dev) ? b.dev : "";
-  if (!dev || !Array.isArray(b.weeks) || !b.weeks.length || b.weeks.length > 2) return null;
+  if (!dev) return null;
+  // off: the grown-up turned the report off on this phone (Settings,
+  // WEEKLY1). Its weeks are only a hint (the server deletes every week it
+  // could hold by its own clock), so a phone whose clock is wrong is still
+  // heard, and no numbers are taken. It never asks for a link
+  if (b.off === true) {
+    const ws = Array.isArray(b.weeks) ? (b.weeks as unknown[]).slice(0, 2).map((w) => (w && typeof w === "object" ? (w as Record<string, unknown>).wk : null)).filter((wk): wk is string => weekOk(wk, now)) : [];
+    return { email, dev, weeks: [...new Set(ws)].map((wk) => ({ wk, kids: [] })), quiet: true, off: true };
+  }
+  if (!Array.isArray(b.weeks) || !b.weeks.length || b.weeks.length > 2) return null;
   const weeks: Week[] = [];
   for (const w of b.weeks as unknown[]) {
     if (!w || typeof w !== "object") return null;
@@ -170,8 +185,11 @@ export function validate(body: unknown, now: number = Date.now()): Snapshot | nu
     weeks.push({ wk: o.wk, kids: (o.kids as unknown[]).map(kidOk).filter((k): k is Kid => k !== null) });
   }
   // quiet: a phone that gave up waiting checks, with no numbers, whether the
-  // address confirmed; it never asks for a link
-  return b.quiet === true ? { email, dev, weeks, quiet: true } : { email, dev, weeks };
+  // address confirmed; it never asks for a link. on: the phone was just
+  // turned on for this address (only that lifts a Turn off)
+  const out: Snapshot = b.quiet === true ? { email, dev, weeks, quiet: true } : { email, dev, weeks };
+  if (b.on === true) out.on = true;
+  return out;
 }
 
 /** In `email:unsub` under this exact address or its plain mailbox; null when the store did not answer. */
@@ -185,8 +203,8 @@ export async function suppressed(email: string, kv: Kv): Promise<boolean | null>
   return false;
 }
 
-/** Send one Resend email; true when Resend took it. Never throws; gives up after 10 seconds. */
-async function resend(f: Fetch, cfg: NonNullable<ReturnType<typeof config>>, msg: { to: string; subject: string; html: string; text: string; unsubUrl: string; key: string }): Promise<{ ok: boolean; status: number }> {
+/** Send one Resend email; true when Resend took it. Never throws; gives up after 10 seconds. lib/weekly.ts sends with it too. */
+export async function resend(f: Fetch, cfg: NonNullable<ReturnType<typeof config>>, msg: { to: string; subject: string; html: string; text: string; unsubUrl: string; key: string }): Promise<{ ok: boolean; status: number }> {
   const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), 10000);
   try {
     const r = await f("https://api.resend.com/emails", {
@@ -207,7 +225,7 @@ async function resend(f: Fetch, cfg: NonNullable<ReturnType<typeof config>>, msg
   }
 }
 
-const unsubUrlFor = (email: string, secret: string) => `https://speaksona.com/api/email/unsub?e=${encodeURIComponent(email)}&k=${unsubToken(email, secret)}`;
+export const unsubUrlFor = (email: string, secret: string) => `https://speaksona.com/api/email/unsub?e=${encodeURIComponent(email)}&k=${unsubToken(email, secret)}`;
 /** A Resend Idempotency-Key with no address in it (a header carries ASCII only). */
 const keyFor = (kind: string, email: string) => `report-${kind}-${createHash("sha256").update(email).digest("hex").slice(0, 32)}`;
 
@@ -277,13 +295,21 @@ export function confirmOk(email: unknown, dev: unknown, k: unknown): { email: st
   return k.length === want.length && k === want ? { email: e, dev: d } : null;
 }
 
-/** The address said yes for this phone. */
-export async function confirm(email: string, dev: string, kv: Kv = kvCmd): Promise<boolean> {
+/**
+ * The address said yes for this phone. "off": that phone has the report
+ * turned off in Settings, so an old link changes nothing (turning it on again
+ * there starts it).
+ */
+export async function confirm(email: string, dev: string, kv: Kv = kvCmd): Promise<boolean | "off"> {
   const cfg = config();
   if (!cfg) return false;
   const h = mailHash(email, cfg.secret);
+  const off = await kv(["SISMEMBER", offKey(h), dev]);
+  if (off === undefined || off === null) return false;
+  if (Number(off) === 1) return "off";
   const a = await kv(["SADD", confirmKey(h), dev]);
   const b = await kv(["EXPIRE", confirmKey(h), CONFIRM_KEEP_SEC]);
+  await kv(["EXPIRE", offKey(h), OFF_KEEP_SEC]);
   return a !== undefined && a !== null && b !== undefined && b !== null;
 }
 
@@ -299,6 +325,47 @@ export async function store(snap: Snapshot, kv: Kv = kvCmd, f: Fetch = fetch, no
   const cfg = config();
   if (!cfg) return "error";
   const h = mailHash(snap.email, cfg.secret);
+  if (snap.off) {
+    // Turned off in Settings: the phone is marked off for the address (its
+    // confirmation stays, so an unsubscribed address still hears "off" when
+    // it is turned on again; the mark lives 400 days and is kept fresh with
+    // the confirmation), and every week of its numbers the server could
+    // still hold is deleted. Monday's report skips an off phone, a post that
+    // left before this one and lands after it keeps nothing (below), the
+    // Monday email (lib/weekly.ts) sees a household without the report, and
+    // a confirm link tapped afterwards changes nothing. Only a post saying
+    // the phone was turned on again (`on`) lifts the mark. The device id is the phone's own
+    // random number; the confirm link it was emailed carries it too, so
+    // whoever holds that link could already post this phone's numbers, and
+    // can now also turn it off or on. Nothing here reads anything back.
+    const a = await kv(["SADD", offKey(h), snap.dev]);
+    const b = await kv(["EXPIRE", offKey(h), OFF_KEEP_SEC]);
+    if (a === undefined || a === null || b === undefined || b === null) return "error";
+    // this phone's numbers under any spelling of the inbox (a Gmail dot or
+    // +tag is the same household), in every week the server could still hold
+    const wks = new Set(snap.weeks.map((w) => w.wk)), box = mailbox(snap.email);
+    for (let i = 0; i * 7 <= KEEP_DAYS; i++) wks.add(mondayOf(now - i * 7 * DAY_MS));
+    for (const wk of wks) {
+      const fields = await kv(["HKEYS", weekKey(wk)]);
+      if (!Array.isArray(fields)) return "error";
+      for (const f of fields.map(String)) {
+        const sp = f.lastIndexOf(" ");
+        if (sp < 1 || f.slice(sp + 1) !== snap.dev || mailbox(f.slice(0, sp)) !== box) continue;
+        const c = await kv(["HDEL", weekKey(wk), f]);
+        if (c === undefined || c === null) return "error";
+      }
+    }
+    return "ok";
+  }
+  // a phone marked off sends nothing more, so a post from it that does not
+  // say it was turned on again is one that left before the Turn off and
+  // landed after it: nothing is kept and the mark stays. Only "on" lifts it
+  const marked = await kv(["SISMEMBER", offKey(h), snap.dev]);
+  if (marked === undefined || marked === null) return "error";
+  if (Number(marked) === 1) {
+    if (!snap.on) return "ok";
+    if ((await kv(["SREM", offKey(h), snap.dev])) == null) return "error";
+  }
   const yes = await kv(["SISMEMBER", confirmKey(h), snap.dev]);
   if (yes === undefined || yes === null) return "error";
   const unsub = await suppressed(snap.email, kv);
@@ -309,7 +376,7 @@ export async function store(snap: Snapshot, kv: Kv = kvCmd, f: Fetch = fetch, no
   }
   // a confirmed phone of an unsubscribed address keeps its confirmation, so a
   // later check still hears "off" (never "pending", which would start it again)
-  if (unsub) { await kv(["EXPIRE", confirmKey(h), CONFIRM_KEEP_SEC]); return "off"; }
+  if (unsub) { await kv(["EXPIRE", confirmKey(h), CONFIRM_KEEP_SEC]); await kv(["EXPIRE", offKey(h), OFF_KEEP_SEC]); return "off"; }
   for (const w of snap.weeks) {
     // a fixed end, three weeks after that Monday, however late a phone posts
     const end = Math.floor(Date.parse(w.wk + "T00:00:00Z") / 1000) + KEEP_DAYS * 86400;
@@ -318,11 +385,14 @@ export async function store(snap: Snapshot, kv: Kv = kvCmd, f: Fetch = fetch, no
     if (a === undefined || a === null || b === undefined || b === null) return "error";
   }
   await kv(["EXPIRE", confirmKey(h), CONFIRM_KEEP_SEC]);
+  // a brother or sister phone's Turn off lives at least as long as this
+  // confirmation keeps the other phones of the inbox on the list
+  await kv(["EXPIRE", offKey(h), OFF_KEEP_SEC]);
   return "ok";
 }
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-function range(wk: string): string {
+export function range(wk: string): string {
   const a = new Date(wk + "T00:00:00Z"), b = new Date(a.getTime() + 6 * DAY_MS);
   return `${MONTHS[a.getUTCMonth()]} ${a.getUTCDate()} to ${MONTHS[b.getUTCMonth()]} ${b.getUTCDate()}`;
 }
@@ -338,9 +408,10 @@ function soundList(s: string[]): string {
 /**
  * One child's lines, plain text; the html escapes them. "Said their sound
  * out loud", not "practiced": the days count a heard game or book word too,
- * while Progress's "practiced" counts the practice page alone.
+ * while Progress's "practiced" counts the practice page alone. lib/weekly.ts
+ * shows the same lines in its example, so the example is the real thing.
  */
-function kidLines(k: Kid): string[] {
+export function kidLines(k: Kid): string[] {
   if (!k.r) return ["No practice last week."];
   // the plan is named only when a grown-up picked it: a family who never
   // chose a number of days is never told "your plan: 4 days a week"
@@ -459,15 +530,25 @@ export async function runReports(kv: Kv = kvCmd, f: Fetch = fetch, now: number =
   const sleep = opts.sleep || ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
   const wk = mondayOf(now - 7 * DAY_MS);
   res.week = wk;
-  const fams = families(await kv(["HGETALL", weekKey(wk)]));
+  const raw = await kv(["HGETALL", weekKey(wk)]);
+  const fams = families(raw);
   res.families = fams.size;
   let tries = 0;
   for (const email of [...fams.keys()].sort()) {
-    const kids = fams.get(email) || [];
+    let kids = fams.get(email) || [];
     if (!kids.some((k) => k.r > 0)) { res.skipped++; continue; } // a week with no reps sends nothing
     if (tries >= SEND_CAP) { res.stopped = "cap"; break; } // the next run picks up the rest
     if (opts.deadline && Date.now() > opts.deadline) { res.stopped = "time"; break; }
     if ((await suppressed(email, kv)) !== false) { res.skipped++; continue; } // unsubscribed, or the store did not answer
+    // a phone turned off in Settings sends nothing, whatever numbers a post
+    // that crossed its Turn off left behind
+    const off = await kv(["SMEMBERS", offKey(mailHash(email, cfg.secret))]);
+    if (!Array.isArray(off)) { res.skipped++; continue; }
+    if (off.length) {
+      const gone = new Set(off.map(String));
+      kids = families(pairs(raw).filter(([f]) => f.startsWith(email + " ") && !gone.has(f.slice(email.length + 1))).flat()).get(email) || [];
+      if (!kids.some((k) => k.r > 0)) { res.skipped++; continue; }
+    }
     let claimed = false;
     try {
       const unsubUrl = unsubUrlFor(email, cfg.secret);

@@ -434,10 +434,17 @@
     // game, road or Settings page, and slot "" is cleared here because the
     // PER_KID sweep below leaves the first child's keys (BOARD2)
     try { _boardDrop(slot); _boardPendForget([slot]); } catch (e) {}
+    // the weekly report's address, when it is on this child's profile, goes
+    // with them: unless a brother or sister holds the same one, the server is
+    // told this phone has it off (REPORT1, WEEKLY1), from the next Settings
+    // or practice page
+    let held = "";
+    try { const rp = _loadFor(slot, PKEY, {}); if (rp.weeklyReport === true) held = String(rp.email || "").trim().toLowerCase(); } catch (e) {}
     v.list = v.list.filter((k) => k.slot !== slot);
     if (v.active === slot) { _switchRun(slot, v.list[0].slot); v.active = v.list[0].slot; }
     try { sessionStorage.removeItem("sona.run.v1@" + (slot || "first")); } catch (e) {}
     _saveKids(v);
+    try { if (held && reportEmail() !== held) _reportOffOwe(held); } catch (e) {}
     // drop that child's practice data; slot "" (the first kid) shares the
     // un-suffixed keys, so only a suffixed slot is safe to clear
     if (slot) { try { PER_KID.forEach((k) => localStorage.removeItem(k + "@" + slot)); } catch (e) {} }
@@ -8172,7 +8179,8 @@
   // ── REPORT1: the weekly progress report (Travis, 15 Oct 2026: "i want the
   // setup page to say get the weekly progress report", then, told that nothing
   // sent one, "Build the real report"). Only a household whose grown-up asked
-  // for it on setup's email step (profile.weeklyReport, on the profile that
+  // for it on setup's email step, or with Settings' switch since 23 Oct 2026
+  // (WEEKLY1, below) (profile.weeklyReport, on the profile that
   // holds the address) sends anything: the address, this phone's random device
   // id, and for each child set up here a few numbers for this week and last
   // (a random id for the child, days with a rep, days at the daily goal, the
@@ -8250,7 +8258,13 @@
     return out;
   }
   let _reportBusy = false, _reportDirty = false, _reportAgain = false, _reportHooked = false;
-  function reportSync(force) {
+  // the post on its way, and the Turn offs on theirs (THE SWITCH IN SETTINGS, below)
+  let _reportSyncP = null, _reportOffP = null;
+  const REPORT_OFF_RETRY_MS = 5 * 60 * 1000;
+  // recheck: Settings asking again for a phone still waiting on its link (a
+  // grown-up is looking at it), past the day and month windows; with no
+  // numbers once the phone gave up, as always
+  function reportSync(force, recheck) {
     const email = reportEmail();
     if (!email) return Promise.resolve(false);
     if (_reportBusy) { if (force) _reportAgain = true; return Promise.resolve(false); }
@@ -8258,7 +8272,8 @@
     // pend, off and gaveUp belong to one address: a corrected address starts fresh
     const off = st.off === email, quiet = st.gaveUp === email, pend = st.pendFor === email && st.pend > 0 && st.pend <= now ? now - st.pend : 0;
     const every = off || quiet ? REPORT_OFF_MS : pend > REPORT_PEND_MS ? REPORT_DAY_MS : REPORT_EVERY_MS;
-    if ((!force || every > REPORT_EVERY_MS) && st.at > 0 && st.at <= now && now - st.at < every) return Promise.resolve(false);
+    const waiting = recheck === true && force && !off && st.pendFor === email;
+    if (!waiting && (!force || every > REPORT_EVERY_MS) && st.at > 0 && st.at <= now && now - st.at < every) return Promise.resolve(false);
     if (!/^[a-f0-9]{32}$/.test(st.dev || "")) st.dev = _randomHex(16);
     st.at = now; _reportSave(st);
     let list = [];
@@ -8268,11 +8283,18 @@
     _reportBusy = true; _reportDirty = false; _reportAgain = false;
     let sent;
     try {
+      // `on`: until the server has heard this phone turned on for this
+      // address (setup, Settings, or again after a Turn off), every post says
+      // so; only such a post lifts a Turn off the server holds, so a post
+      // from before a Turn off that lands after it changes nothing (WEEKLY1)
+      const body = quiet ? { email: email, dev: st.dev, weeks: weeks, quiet: true } : { email: email, dev: st.dev, weeks: weeks };
+      if (st.onFor !== email) body.on = true;
       sent = fetch("/api/report", { method: "POST", headers: { "Content-Type": "application/json" }, keepalive: true,
-        body: JSON.stringify(quiet ? { email: email, dev: st.dev, weeks: weeks, quiet: true } : { email: email, dev: st.dev, weeks: weeks }) })
+        body: JSON.stringify(body) })
         .then((r) => r.json())
         .then((j) => {
           const s2 = _reportState();
+          if (j && j.ok && body.on) s2.onFor = email;
           // only a plain "ok" ends "off"; "pending" never does (the server
           // gives an unconfirmed phone of an unsubscribed address "pending" too)
           if (j && j.off) { s2.off = email; s2.offAt = Date.now(); delete s2.pend; delete s2.pendFor; delete s2.gaveUp; } // "off" proves the phone was confirmed
@@ -8287,8 +8309,9 @@
           return !!(j && j.ok);
         });
     } catch (e) { sent = Promise.resolve(false); }
-    return sent.catch(() => false).then((ok) => {
-      _reportBusy = false;
+    // kept while on its way, so a Turn off waits for it (reportOff)
+    return (_reportSyncP = sent.catch(() => false).then((ok) => {
+      _reportBusy = false; _reportSyncP = null;
       if (!ok) {
         // offline, a 503 or a 429: these numbers still have to go; try again in five minutes
         _reportDirty = true;
@@ -8296,9 +8319,10 @@
       } else if (_reportAgain && _reportDirty) reportSync(true);
       _reportAgain = false;
       return ok;
-    });
+    }));
   }
   function _reportTouch() {
+    _reportOffFlush(false);
     if (!reportEmail()) return;
     _reportDirty = true;
     if (!_reportHooked) {
@@ -8308,6 +8332,139 @@
       document.addEventListener("visibilitychange", () => { if (document.hidden) flush(); });
     }
     reportSync(false);
+  }
+  // THE SWITCH IN SETTINGS (Travis, 23 Oct 2026: "Yes, add the switch"). A
+  // household that skipped setup's email step, or gave it before the report
+  // existed (weeklyEmail alone), turns the report on there; the Monday email
+  // to every parent on the list (lib/weekly.ts) says where. One address for
+  // the household, on the profile of the first family child set up here (a
+  // child already holding the report keeps it; the others' are cleared, so
+  // reportEmail finds that one). An explicit yes starts the phone afresh for
+  // it (no "pending" clock, no giving up), so the confirm email goes now,
+  // within the server's own limits.
+  const REPORT_ADDR = (e) => e.length <= 120 && /^[\x21-\x7e]+$/.test(e) && /^[^@]+@[^@]+\.[^@]+$/.test(e);
+  function _reportSlot() {
+    let slot = null;
+    try {
+      const list = _kids().list.filter((k) => { const p = _loadFor(k.slot, PKEY, {}); return p.onboarded === true && p.role !== "slp"; });
+      const held = list.find((k) => _loadFor(k.slot, PKEY, {}).weeklyReport === true) || list[0];
+      if (held) slot = held.slot || "";
+    } catch (e) {}
+    return slot;
+  }
+  function reportStatus() {
+    const email = reportEmail(), st = _reportState();
+    return { can: _reportSlot() !== null, email: email, on: !!email,
+      pending: !!email && st.pendFor === email && st.pend > 0 && st.off !== email,
+      off: !!email && st.off === email, owed: _reportOffs(st).length > 0,
+      // the server has heard this phone turned on for the address
+      sent: !!email && st.onFor === email };
+  }
+  function reportSet(raw) {
+    const e = typeof raw === "string" ? raw.trim().toLowerCase() : "", slot = _reportSlot();
+    if (!REPORT_ADDR(e) || slot === null) return Promise.resolve(false);
+    try { _kids().list.forEach((k) => { if ((k.slot || "") === slot) return; const q = _loadFor(k.slot, PKEY, {}); if (q.weeklyReport === true) { q.weeklyReport = false; saveFor(k.slot, PKEY, q); } }); } catch (e2) {}
+    const p = _loadFor(slot, PKEY, {});
+    p.email = e; p.weeklyEmail = true; p.weeklyReport = true;
+    saveFor(slot, PKEY, p);
+    const st = _reportState(); ["at", "off", "offAt", "pend", "pendFor", "gaveUp", "onFor"].forEach((k) => { delete st[k]; });
+    // a Turn off for this very address that never reached the server is
+    // dropped: it is on again, and the next post writes the same numbers.
+    // One for another spelling of the inbox, or another inbox, still goes
+    // (it deletes that spelling's numbers; the server then asks this phone's
+    // next post to say "on" again: see _reportOffFlush)
+    st.offs = _reportOffs(st).filter((o) => o.e !== e); delete st.offOwed;
+    _reportSave(st);
+    // the email list hears it too, as from setup's email step: the grown-up
+    // read "We'll also send occasional tips from Rachel" beside the box. A
+    // phone that already has every game open says so (`premium`), so the
+    // series' "Start your free trial" is not sent to a family whose purchase
+    // the server never heard of (an address given after it); no plan word,
+    // since the phone cannot tell a trial from a payment here
+    let has = false; try { has = premium(); } catch (e4) {}
+    try {
+      fetch("/api/lead", { method: "POST", headers: { "Content-Type": "application/json" }, keepalive: true,
+        body: JSON.stringify(Object.assign({ email: e, role: "parent", source: "app-settings", summary: "Turned on the weekly progress report in Settings" }, has ? { premium: true } : {})) }).catch(() => {});
+    } catch (e3) {}
+    _reportDirty = true; // a post already on its way sends again after it, with this address
+    // after any Turn off on its way, so this post (which lifts the server's
+    // off mark) lands last
+    return (_reportOffP || Promise.resolve()).then(() => reportSync(true), () => reportSync(true));
+  }
+  // Off: no child's numbers leave this phone again, and the server is told
+  // (`off`, lib/report.ts store) that this phone has it off for the address:
+  // Monday's report skips the phone, its numbers are deleted, the Monday
+  // email (lib/weekly.ts) sees a household without the report, and an old
+  // confirm link changes nothing. The phone's next ordinary post (turned on
+  // again) lifts it. Each Turn off is owed until the server says so
+  // (`offs`, one entry an address and device, kept before anything else
+  // changes), so one made offline goes from Settings or the next practice
+  // page, and a second never pushes out a first. It waits for a post already
+  // on its way (whose numbers would otherwise land after it). Another phone
+  // of the household keeps its own switch; the email's Unsubscribe stops
+  // every one. Resolves true once the server has every one.
+  // the server's mailbox rule (lib/report.ts mailbox): Gmail dots and +tags
+  // are one inbox, and one confirmation
+  function _mailbox(raw) {
+    const e = String(raw || "").trim().toLowerCase(), at = e.lastIndexOf("@");
+    if (at < 1) return e;
+    let l = e.slice(0, at), d = e.slice(at + 1);
+    const plus = l.indexOf("+");
+    if (plus > 0) l = l.slice(0, plus);
+    if (d === "googlemail.com") d = "gmail.com";
+    if (d === "gmail.com") l = l.replace(/\./g, "");
+    return l + "@" + d;
+  }
+  function _reportOffs(st) {
+    const list = Array.isArray(st.offs) ? st.offs.filter((o) => o && typeof o.e === "string" && o.e && /^[a-f0-9]{32}$/.test(o.d || "")) : [];
+    // the one slot an earlier build of this change kept
+    if (st.offOwed && st.offOwed.e && /^[a-f0-9]{32}$/.test(st.offOwed.d || "") && !list.some((o) => o.e === st.offOwed.e && o.d === st.offOwed.d)) list.push(st.offOwed);
+    return list.slice(-5);
+  }
+  function _reportOffOwe(email) {
+    const st = _reportState();
+    if (st.onFor) { delete st.onFor; _reportSave(st); } // turned on again later, its first post says so
+    if (!email || !/^[a-f0-9]{32}$/.test(st.dev || "")) return; // a phone that never posted has nothing on the server
+    const list = _reportOffs(st).filter((o) => !(o.e === email && o.d === st.dev));
+    list.push({ e: email, d: st.dev });
+    st.offs = list; delete st.offOwed;
+    ["pend", "pendFor", "gaveUp"].forEach((k) => { delete st[k]; });
+    _reportSave(st);
+  }
+  function _reportOffFlush(force) {
+    // one at a time: a Turn off made while another is on its way follows it
+    if (_reportOffP) return _reportOffP.then(() => _reportOffFlush(force));
+    const now = Date.now(), due = _reportOffs(_reportState()).filter((o) => force || !(o.at > 0 && o.at <= now && now - o.at < REPORT_OFF_RETRY_MS));
+    if (!due.length) return Promise.resolve(!_reportOffs(_reportState()).length);
+    const one = (o) => {
+      const st = _reportState(); st.offs = _reportOffs(st).map((x) => (x.e === o.e && x.d === o.d ? Object.assign({}, x, { at: now }) : x)); delete st.offOwed; _reportSave(st);
+      let sent;
+      try {
+        sent = fetch("/api/report", { method: "POST", headers: { "Content-Type": "application/json" }, keepalive: true,
+          body: JSON.stringify({ email: o.e, dev: o.d, weeks: [-1, 0].map((w) => ({ wk: _mondayKey(w), kids: [] })), quiet: true, off: true }) })
+          .then((r) => r.json()).then((j) => !!(j && j.ok));
+      } catch (e) { sent = Promise.resolve(false); }
+      return sent.catch(() => false).then((ok) => {
+        if (ok) {
+          const s2 = _reportState(); s2.offs = _reportOffs(s2).filter((x) => !(x.e === o.e && x.d === o.d)); delete s2.offOwed;
+          // the server now has this phone off for that inbox: if the report is
+          // on here for the same inbox, its next post says "on" again
+          let cur = ""; try { cur = reportEmail(); } catch (e) {}
+          if (cur && o.d === s2.dev && _mailbox(cur) === _mailbox(o.e)) delete s2.onFor;
+          _reportSave(s2);
+        }
+        return ok;
+      });
+    };
+    _reportOffP = due.reduce((p, o) => p.then((all) => one(o).then((ok) => all && ok)), Promise.resolve(true))
+      .then((ok) => { _reportOffP = null; return ok && !_reportOffs(_reportState()).length; }, () => { _reportOffP = null; return false; });
+    return _reportOffP;
+  }
+  function reportFlush() { return _reportOffFlush(true); }
+  function reportOff() {
+    _reportOffOwe(reportEmail());
+    try { _kids().list.forEach((k) => { const q = _loadFor(k.slot, PKEY, {}); if (q.weeklyReport === true) { q.weeklyReport = false; saveFor(k.slot, PKEY, q); } }); } catch (e) {}
+    return (_reportSyncP || Promise.resolve()).then(() => _reportOffFlush(true), () => _reportOffFlush(true));
   }
   function buyPlan(plan) {
     let p = null; try { p = plan && (plan.state === "free" || plan.state === "paid") && plan._p; } catch (e) {}
@@ -9052,5 +9209,5 @@
   try { _keepBuddies(); } catch (e) {}
   try { installDebug(); } catch (e) {}
 
-  global.Sona = { questToday, questEnd, QUEST_DAYS, QUEST_LEN, STORY_DAYS, storyOpen, storyShown, storyEnding, storySeen, storyFound, storyReplay, STORY_SAY_TIMES, pcmWave, mediaPCM, voiceAsMedia, libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, goalDays, dayReps, dayGoal, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, goClip, GO_WAIT_MS, WORDS, wordsFor, GAME_WORDS, gameWords, POSITIONS, FAMILY_POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, rungWin, ladderContent, GAME_LEVELS, gameTop, gameAsk, gameHold, FREE_MODE, isFree, WEB_SALES, webSales, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, homePicks, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, freeVersion, trialFirst, offerOnLock, FREE_BOOKS, bookFree, booksOpen, bookLocked, seasonPick, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, firstGameKey, firstGameStart, firstGameEnd, CRAFTED_CARDS, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, micNative, micOpen, micProbe, micSource, micDeaf, micRecorder, micQuiet, micStats, micFifo: nmFifo, NATIVE_MIC_GAIN, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repWeeks, gameRep, repsBeacon, gameBest, gameBestOffer, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES, trophyState, trophies, coinsNow, PLAY_LEVEL_AT, PLAY_LEVEL_LINES, playLevelsOpen, playLevel, playLevelAsk, setPlayLevel, playLevelInfo, playBest, playBestOffer, buddyId, buddySprite, chestState, chestOpen, ROAD_LANDS, ROAD_STOPS, MONTH_STEPS, roadStop, roadState, roadOpen, monthOpen, roadSettle, roadRolledSeen, buddiesKept, shopItem, buyItem, undoBuy, equip, BOARD_LIVE, boardLive, boardAllowed, boardState, boardStart, boardClaim, boardFlush, boardView, boardNick, boardLeave, boardAsk, boardCancel, parentEmail, reportEmail, reportSync, homeOfferDue, offerSeen, notifyAvailable, notifyState, notifyRefresh, notifyAsk, trialReminderOn, trialReminderArm, trialReminderSync, trialReminderSold, soundMark, clipsSettled, storePlan, buyPlan, planWords, planSay, planBillDate, setupWall, setupAfterMark, setupAfter, setupAfterClear, setupAsks, setupAsksSave, SETUP_THERAPY };
+  global.Sona = { questToday, questEnd, QUEST_DAYS, QUEST_LEN, STORY_DAYS, storyOpen, storyShown, storyEnding, storySeen, storyFound, storyReplay, STORY_SAY_TIMES, pcmWave, mediaPCM, voiceAsMedia, libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, goalDays, dayReps, dayGoal, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, goClip, GO_WAIT_MS, WORDS, wordsFor, GAME_WORDS, gameWords, POSITIONS, FAMILY_POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, rungWin, ladderContent, GAME_LEVELS, gameTop, gameAsk, gameHold, FREE_MODE, isFree, WEB_SALES, webSales, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, homePicks, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, freeVersion, trialFirst, offerOnLock, FREE_BOOKS, bookFree, booksOpen, bookLocked, seasonPick, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, firstGameKey, firstGameStart, firstGameEnd, CRAFTED_CARDS, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, micNative, micOpen, micProbe, micSource, micDeaf, micRecorder, micQuiet, micStats, micFifo: nmFifo, NATIVE_MIC_GAIN, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repWeeks, gameRep, repsBeacon, gameBest, gameBestOffer, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES, trophyState, trophies, coinsNow, PLAY_LEVEL_AT, PLAY_LEVEL_LINES, playLevelsOpen, playLevel, playLevelAsk, setPlayLevel, playLevelInfo, playBest, playBestOffer, buddyId, buddySprite, chestState, chestOpen, ROAD_LANDS, ROAD_STOPS, MONTH_STEPS, roadStop, roadState, roadOpen, monthOpen, roadSettle, roadRolledSeen, buddiesKept, shopItem, buyItem, undoBuy, equip, BOARD_LIVE, boardLive, boardAllowed, boardState, boardStart, boardClaim, boardFlush, boardView, boardNick, boardLeave, boardAsk, boardCancel, parentEmail, reportEmail, reportSync, reportStatus, reportSet, reportOff, reportFlush, homeOfferDue, offerSeen, notifyAvailable, notifyState, notifyRefresh, notifyAsk, trialReminderOn, trialReminderArm, trialReminderSync, trialReminderSold, soundMark, clipsSettled, storePlan, buyPlan, planWords, planSay, planBillDate, setupWall, setupAfterMark, setupAfter, setupAfterClear, setupAsks, setupAsksSave, SETUP_THERAPY };
 })(window);
