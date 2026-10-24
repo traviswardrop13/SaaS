@@ -333,7 +333,7 @@ await scenario("Settings turns the report on", async () => {
   const second = await page.evaluate(() => { document.querySelector("#reportCard button").click(); return !!Sona.reportEmail(); });
   await page.waitForTimeout(700);
   c = await cardText(page);
-  ok("a real address: on, saying where it goes, waiting for the link", /On\. It goes to dad@example\.com every Monday\./.test(c.text) && /Check your email for Sona's link, and tap it to start\./.test(c.text) && /Check your email for the link to start it\./.test(c.text) && JSON.stringify(c.buttons) === '["Turn off"]', c);
+  ok("a real address: on, saying where it goes, waiting for the link (and what to do when no email comes)", /On\. It goes to dad@example\.com every Monday\./.test(c.text) && /Check your email for Sona's link, and tap it to start\. No email\? Look in spam\. Unsubscribed from Sona's emails\? Reply to one to get them back\./.test(c.text) && /Check your email for the link to start it\./.test(c.text) && JSON.stringify(c.buttons) === '["Turn off"]', c);
   ok("…and a double tap's second tap, on the new Turn off, does nothing (the card changed shape under it)", second && await page.evaluate(() => !!Sona.reportEmail()) && c.buttons.join() === "Turn off");
   const prof = await page.evaluate(() => JSON.parse(localStorage.getItem("sona.profile.v1")));
   ok("…kept on the first child's profile, as setup keeps it (so reportEmail finds it)", prof.email === "dad@example.com" && prof.weeklyReport === true && prof.weeklyEmail === true && await page.evaluate(() => Sona.reportEmail()) === "dad@example.com", prof);
@@ -348,7 +348,7 @@ await scenario("Settings turns the report on", async () => {
   ok("…and once the server has heard it was turned on, posts stop saying so", !("on" in reports[1]), reports[1]);
   await tap(page, "Turn off");
   c = await cardText(page);
-  ok("Turn off: off on every profile, the switch back, \"Turned off.\"", /Turned off\./.test(c.text) && JSON.stringify(c.buttons) === '["Turn on"]' && await page.evaluate(() => !Sona.reportEmail() && JSON.parse(localStorage.getItem("sona.profile.v1")).weeklyReport === false), c);
+  ok("Turn off: off on every profile, the switch back, \"Turned off on this phone.\" (another phone keeps its own switch)", /Turned off on this phone\./.test(c.text) && JSON.stringify(c.buttons) === '["Turn on"]' && await page.evaluate(() => !Sona.reportEmail() && JSON.parse(localStorage.getItem("sona.profile.v1")).weeklyReport === false), c);
   const last = reports.at(-1) || {};
   ok("…and the server is told this phone has it off (off, quiet: no link)", reports.length === 3 && last.off === true && last.quiet === true && last.dev === reports[0].dev && last.weeks.length === 2 && last.weeks.every((w) => w.kids.length === 0), last);
   ok("…which it took, so nothing is owed", await page.evaluate(() => !Sona.reportStatus().owed));
@@ -368,7 +368,7 @@ await scenario("a Turn off made offline", async () => {
   answer = { status: 503 };
   await tap(page, "Turn off");
   let c = await cardText(page);
-  ok("the server not answering: off on the phone, owed, and Settings says it will finish", /Turned off\. Sona will finish this the next time it's online\./.test(c.text) && await page.evaluate(() => !Sona.reportEmail() && Sona.reportStatus().owed) && JSON.stringify(offPosts()) === '["mom@example.com"]', [c.text, reports.length]);
+  ok("the server not answering: off on the phone, owed, and Settings says it will finish", /Turned off on this phone\. Sona will finish this the next time it's online\./.test(c.text) && await page.evaluate(() => !Sona.reportEmail() && Sona.reportStatus().owed) && JSON.stringify(offPosts()) === '["mom@example.com"]', [c.text, reports.length]);
   answer = { ok: true };
   await page.reload(); await page.waitForSelector("#reportCard", { state: "attached" }); await page.waitForTimeout(500);
   ok("…Settings opened again sends it, and nothing is owed", JSON.stringify(offPosts()) === '["mom@example.com","mom@example.com"]' && (await owed(page)).length === 0, offPosts());
@@ -486,6 +486,24 @@ await scenario("removing the child who holds the address", async () => {
   ok("…sent from Settings", JSON.stringify(offPosts()) === '["mom@example.com"]' && (await owed(page)).length === 0, offPosts());
   ok("no page errors", errors.length === 0, errors);
   await context.close();
+});
+
+await scenario("a phone restored from a backup, and a link tapped late", async () => {
+  leads.length = 0; reports.length = 0; answer = { ok: true, pending: true };
+  // the backup brings the profile (the address, the report on), never sona.report.v1
+  const { context, page, errors } = await fresh({ "sona.profile.v1": Object.assign({}, MILO, { email: "mom@example.com", weeklyReport: true }) });
+  await page.waitForTimeout(300);
+  let c = await cardText(page);
+  ok("Settings on a restored phone tells the server at once (on), and shows the wait for the link it asked for", reports.length === 1 && reports[0].on === true && /Check your email for Sona's link/.test(c.text), [reports.length, c.text]);
+  await context.close();
+  // still waiting three weeks on: the phone checks once a day, but Settings asks now
+  reports.length = 0; answer = { ok: true };
+  const late = await fresh({ "sona.profile.v1": Object.assign({}, MILO, { email: "mom@example.com", weeklyReport: true }), "sona.report.v1": { dev: DEVP, at: Date.now() - 3600000, pend: Date.now() - 21 * 86400000, pendFor: "mom@example.com", onFor: "mom@example.com" } });
+  await late.page.waitForTimeout(300);
+  c = await cardText(late.page);
+  ok("a link tapped weeks later: Settings asks the server past the daily wait, and the wait line goes", reports.length === 1 && !/Check your email/.test(c.text) && await late.page.evaluate(() => !Sona.reportStatus().pending), [reports.length, c.text]);
+  ok("no page errors", errors.length === 0 && late.errors.length === 0, errors.concat(late.errors));
+  await late.context.close();
 });
 
 await scenario("a family with Premium turns it on", async () => {

@@ -8248,7 +8248,10 @@
   // the post on its way, and the Turn offs on theirs (THE SWITCH IN SETTINGS, below)
   let _reportSyncP = null, _reportOffP = null;
   const REPORT_OFF_RETRY_MS = 5 * 60 * 1000;
-  function reportSync(force) {
+  // recheck: Settings asking again for a phone still waiting on its link (a
+  // grown-up is looking at it), past the day and month windows; with no
+  // numbers once the phone gave up, as always
+  function reportSync(force, recheck) {
     const email = reportEmail();
     if (!email) return Promise.resolve(false);
     if (_reportBusy) { if (force) _reportAgain = true; return Promise.resolve(false); }
@@ -8256,7 +8259,8 @@
     // pend, off and gaveUp belong to one address: a corrected address starts fresh
     const off = st.off === email, quiet = st.gaveUp === email, pend = st.pendFor === email && st.pend > 0 && st.pend <= now ? now - st.pend : 0;
     const every = off || quiet ? REPORT_OFF_MS : pend > REPORT_PEND_MS ? REPORT_DAY_MS : REPORT_EVERY_MS;
-    if ((!force || every > REPORT_EVERY_MS) && st.at > 0 && st.at <= now && now - st.at < every) return Promise.resolve(false);
+    const waiting = recheck === true && force && !off && st.pendFor === email;
+    if (!waiting && (!force || every > REPORT_EVERY_MS) && st.at > 0 && st.at <= now && now - st.at < every) return Promise.resolve(false);
     if (!/^[a-f0-9]{32}$/.test(st.dev || "")) st.dev = _randomHex(16);
     st.at = now; _reportSave(st);
     let list = [];

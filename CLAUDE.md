@@ -1661,8 +1661,11 @@ any day, still once a week).
   cleared), posts `/api/lead` (`source "app-settings"`, an in-app lead), and
   posts the report at once so the confirm email goes now; on, "On. It goes to
   <email> every Monday.", "Check your email: tap the link we sent to start
-  it." until the address says yes (asked again when Settings comes back to
-  the front), or "This email unsubscribed …", and Turn off. After Turn on the
+  it. No email? Look in spam. Unsubscribed from Sona's emails? Reply to one
+  to get them back." until the address says yes (Settings asks the server
+  again as it opens or comes back, past the phone's daily and monthly waits,
+  `reportSync(true, true)`), or "This email unsubscribed …", and Turn off
+  ("Turned off on this phone.": each phone keeps its own switch). After Turn on the
   line says what the server answered: a link only while it waits for one
   ("Turned on." for a phone already confirmed). A phone with every game open
   says `premium: true` on that lead, so the series stops for a family whose

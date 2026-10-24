@@ -542,10 +542,11 @@
           var on = el("p", "bd-line"); on.appendChild(document.createTextNode("On. It goes to ")); on.appendChild(el("b", "", st.email)); on.appendChild(document.createTextNode(" every Monday."));
           body.appendChild(on);
           if (st.off) body.appendChild(el("p", "muted set-lead", "This email unsubscribed from Sona's emails, so no report is sent."));
-          else if (st.pending) body.appendChild(el("p", "muted set-lead", "Check your email for Sona's link, and tap it to start."));
+          else if (st.pending) body.appendChild(el("p", "muted set-lead", "Check your email for Sona's link, and tap it to start. No email? Look in spam. Unsubscribed from Sona's emails? Reply to one to get them back."));
           var off = el("div", "set-actions"); off.appendChild(btn("Turn off", "ghost", function () {
             if (busy) return; busy = true;
-            var done = function (sent) { paint(); settle(); say(sent ? "Turned off." : "Turned off. Sona will finish this the next time it's online."); };
+            // per phone: another phone or tablet with it on keeps its own switch
+            var done = function (sent) { paint(); settle(); say(sent ? "Turned off on this phone." : "Turned off on this phone. Sona will finish this the next time it's online."); };
             Sona.reportOff().then(done, function () { done(false); });
           }));
           body.appendChild(off);
@@ -576,14 +577,20 @@
       // a Turn off made offline goes as soon as Settings is open again, and a
       // Turn on the server has not heard yet tries again
       // (in that order: a Turn off the server takes can ask for the "on" again)
-      function catchUp(also) {
+      function catchUp() {
         var st0 = Sona.reportStatus();
         (st0.owed && Sona.reportFlush ? Sona.reportFlush() : Promise.resolve()).then(function () {
           var s1 = Sona.reportStatus();
-          if (s1.on && (also || !s1.sent) && Sona.reportSync) return Sona.reportSync(true).then(function () { if (!busy && !Sona.reportStatus().pending) { paint(); say(""); } });
+          if (!s1.on || (s1.sent && !s1.pending) || !Sona.reportSync) return;
+          // repaint on any change the answer made (waiting began, or ended)
+          return Sona.reportSync(true, true).then(function () {
+            var s2 = Sona.reportStatus();
+            if (busy || !s2.on || (s2.pending === s1.pending && s2.off === s1.off)) return;
+            paint(); if (!s2.pending) say("");
+          });
         }).then(function () {}, function () {});
       }
-      catchUp(false);
+      catchUp();
       // back from Mail with the link tapped: "Check your email" goes. Only
       // while on, so a box being typed in is never wiped
       document.addEventListener("visibilitychange", function () {
@@ -592,7 +599,7 @@
         if (st.on) paint();
         // waiting on the link: ask the server again, so a tapped link shows at
         // once (catchUp also sends an owed Turn off, and a Turn on not heard)
-        catchUp(st.pending);
+        catchUp();
       });
     })();
 
