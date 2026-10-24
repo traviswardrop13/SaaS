@@ -7558,6 +7558,11 @@
   // it. Offered only while RevenueCat's current offering lists it (THE
   // ONE-PAYMENT ROW, below), and kept here for restore like the other two.
   const IAP_PRODUCTS = { annual: "com.speaksona.app.annual", monthly: "com.speaksona.app.monthly", lifetime: "com.speaksona.app.lifetime" };
+  // The yearly plan is not sold on the card (Travis, 23 Oct 2026: "get rid of
+  // the yearly option. I just want two payment options"): the one payment and
+  // monthly. Its product stays above, so anyone who bought it still restores;
+  // true brings the yearly row back by RevenueCat's offering, as before.
+  const IAP_SELL_YEARLY = false;
   const IAP_PRODUCT = IAP_PRODUCTS.annual;
   const IAP_TYPE = "subs"; // auto-renewable subscription
   // The one payment is not a subscription: RevenueCat's getProducts takes
@@ -8061,7 +8066,7 @@
       // one read of the offering for both rows (and none at all when the store cannot be set up)
       const offer = _soon(() => iapConfigure()).then((P) => _offered(P).then((o) => ({ P: P, o: o })));
       offer.then(({ P, o }) => {
-        if (!o.annual || a.yr !== undefined) return noYear();
+        if (!IAP_SELL_YEARLY || !o.annual || a.yr !== undefined) return noYear();
         return _soon(() => iapProduct("annual")).then((yp) => {
           if (a.yr !== undefined) return;
           // its own id, by name (iapProduct also takes an unnamed lone

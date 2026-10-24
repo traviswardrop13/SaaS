@@ -42,7 +42,7 @@ const SUITES = [
   "besttest.mjs", // BESTS1: each child's own best in a game — per child, only ever up, never practice data or shared; Home's "Best 17" tag
   "nativefamilytest.mjs", // native family entry; clinician routes stay browser-only
   "onboardingtest.mjs", // reviewed setup, permission and explicit handoff
-  "setupscreenstest.mjs", // SETUPNEW1: setup's new screens: a live hello, the reel (posters where clips cannot play), "Hear Echo" only on a tap, Rachel on her own, minutes as the daily goal, the reminder ask only where it can be kept
+  "setupscreenstest.mjs", // SETUPNEW1: setup's new screens: a live hello, the reel full screen with its heading faded away (posters where clips cannot play), the problem before and after, no sound at all, Rachel on her own, minutes as the daily goal, the reminder ask only where it can be kept
   "setupsteadytest.mjs", // STEADY1: setup's name step holds still while the iPhone keyboard comes and goes, a name is typed and an age picked
   "iphonepolishtest.mjs", // spoken revive, cancellation and native audio format
   "progressreviewtest.mjs", // honest parent counts, local clips and explicit sharing

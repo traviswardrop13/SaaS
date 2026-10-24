@@ -162,8 +162,8 @@ changing one. What follows from the rule:
   some of the slides have too many words"; he approved the storyboard, then
   "ok go build it all"). It replaced option B (4-5 Oct 2026). For new
   families only: a family already set up keeps everything. A parent's first
-  setup is the hello → **"Speech homework is hard at home."** → **"They
-  practice by playing."** (the games playing) → **Rachel on her own** →
+  setup is the hello → **"Speech homework is hard at home."** → **"Practice
+  through play."** (the games playing) → **Rachel on her own** →
   name and age (**"Who's practicing?"**) → **"What does <Name> love?"** →
   **"Games <Name> will love"** → **"Is <Name> in speech therapy?"** →
   sounds (**"Which sounds?"**) → **"How long each day?"** → **"Get the weekly
@@ -205,60 +205,60 @@ changing one. What follows from the rule:
     frame is its last** (the review of 22 Oct 2026: `sona.css` cuts an
     animation to 0.001 ms but keeps its delay, so a delayed one showed its
     first keyframe: the problem screen's game card was invisible for 1.15 s,
-    then jumped): Echo stands on the path and says hi, the tossed flashcard
-    and the ready screen's sparkles are not drawn, the game card and Echo
-    cheering are in place, the reel is one still poster, and "Get started"
+    then jumped): Echo stands on the path and says hi, the problem screen's
+    before and after are both in place, the ready screen's sparkles are not
+    drawn and Echo cheers there, the reel is one still poster under its
+    heading (which stays), and "Get started"
     takes a tap at once. `setupsteadytest` watches the problem and ready
     screens for 2.3 s and holds Reduce Motion's first frame to where the
     motion-on run ended.
-  - **The problem**: "Flashcards turn into fights. Play turns into
-    practice."; three flashcards (rug, red, run), one tossed away once, and
-    Fruit Slice's painted card slides in. A statement, nothing stored.
-  - **The reel** (Travis: "Do like a little clip of a few games so that
-    parents can see it, and even have like the voice say your R sound"):
-    real play, filmed frame by frame by `tools/setupreel/record.mjs` into
-    `public/assets/setup/reel/<key>.mp4` and a poster `<key>.webp` (no audio
-    track; `setupreeltest` holds the files), one after another in a 3:4
-    frame, two muted inline videos taking turns, in a fixed order (Fruit
-    Slice, Hoops, Piano Tiles, Bubble Pop, Soccer Goal, Dino Dig, Feed Echo,
-    then the rest), only the games this phone may show (the games screen's
-    rule, both age groups: no age is asked yet). A phone that cannot play
-    them or refuses to start one (Low Power Mode, the tests' Chromium) gets
-    the posters as a slow slideshow, and a game with no clip or poster its
-    painted Home card: never a dead frame (a clip that will not load turns
-    the rest of that visit's reel into the posters). Off the screen nothing
-    plays; under Reduce Motion it is the first game's poster, still, with no
-    clip asked for. Over it Echo asks "Say your rrrr sound!" (only the
-    sound's letters orange; a screen reader reads it, the pictures are
-    decoration), and "Example: the R sound" says the R is an example.
-    **How the clips are made:** `tools/setupreel/record.mjs`, run by hand and
-    never in the battery (its header says how; it needs ffmpeg and is CPU
-    heavy, so run it alone), opens each real game page on
-    `tools/appstore/capture.mjs`'s fake phone (an onboarded child on R, no
-    name on any game page, and every frame checked for one), plays it with
-    the page's own controls and the fake microphone (a power or a ball is
-    earned only the way a child earns it), and films it one 1/30 s frame at
-    a time on Playwright's virtual clock, cropped to the game at 3:4 (3 to 4
-    s, 540×720, at most 300 KB, a poster at most 60 KB). Look at every
-    contact sheet it writes before committing a clip. **A new game on the
-    reel** is a scene in `record.mjs`, its key in that tool's `KEYS` and in
-    `setupreeltest`'s list, and its place in `REEL_ORDER` in
-    `onboarding.html` (a playable game missing from `REEL_ORDER` still shows,
-    after the listed ones; one with no clip yet shows its poster, else its
-    Home card). **The R example:** every clip is filmed on R and the pill and
-    "Hear Echo" say R, before any sound is picked, so a parent of a 2–4 year
-    old sees and hears R, a sound not asked of that age (`SOUND_NORM`):
-    Rachel's to rule on, with which moment each clip shows (Travis's).
-  - **"Hear Echo" is the one sound setup makes** (setup was silent by
-    Travis's 24 Sep rule; he reversed it for this one tap). Echo's line "Say
-    your sound with me!" (`SayIt.line`, the phone's voice cache), 200 ms of
-    quiet, and Rachel's one take of R (`/coach/say-echo/R-sound.wav`), joined
-    into ONE recording and started by ONE `Sona.mediaPCM` call inside the
-    grown-up's tap (the app and the website alike). The line missing: her take
-    alone. Sona's sound off (volume 0): nothing. Never the robot voice, never
-    "Go!", no microphone; leaving the screen stops it. **For Rachel:** a
-    parent of a 2–4 year old hears R too (an example, before any sound is
-    picked, though R is a later sound); how a sound is cued is hers.
+  - **The problem** (redone 23 Oct 2026, Travis: "the flashcard solved
+    with games ... slide isn't very good. It's either too fast or just
+    confusing. Like the picture of a game shows up too quickly"): a before
+    and an after, one under the other, each a picture and its own words:
+    three flashcards (rug, red, run) beside "Flashcards / turn into
+    fights.", then, a clear beat later (1.5 s), Fruit Slice's painted card
+    beside "Sona's games / turn into practice.", ringed teal. Each fades up
+    in place, once; nothing is tossed or flies. A statement, nothing stored.
+  - **The reel** (Travis, 22 Oct 2026: "Do like a little clip of a few
+    games so that parents can see it"; redone 23 Oct 2026: "I want it to
+    take up the whole screen. And I want it to rotate through fruit slice,
+    piano tiles, and Flappy Glide ... they're saying ... the letter R ...
+    And then the game slows down"; then "i dont want a darkened screen up
+    there just have it say practice by playing ... for 2 seconds and then
+    fade it away. other than that they just watch the game being played",
+    and the words: just "practice through play"): three clips of real play
+    (`REEL_ORDER`: Fruit Slice, Piano Tiles, Flappy Glide, round and round),
+    4 s each, filling the screen (a layer outside `.ob`, `#reelBox`, as the
+    hello's is: a step slides in with a transform, which boxes a fixed
+    layer into it). In each clip the game's own top bar shows Echo asking
+    for the R sound ("Say rrrr when Echo asks"), the child heard ("Got
+    it!") and the game slowing down (Super Slice, slow keys, the slow help).
+    The heading, "Practice through play.", is a cream card in the middle of
+    the screen that shows for two seconds and fades away (opacity only, so
+    it keeps its focus and a screen reader still reads it); then only the
+    game, Back (on a cream pill) and Continue. No caption, no darkening, no
+    sound. In the iPhone app the layer starts under the status bar (the
+    clip's own top bar never sits under the clock or the Dynamic Island,
+    where its ✕ would look like a way to close); on a screen wider than a
+    phone (an iPad, a laptop window, aspect 3:5 or wider) the whole 1:2 clip
+    shows, centred on the dark backdrop, since filling the screen there cut
+    off its top bar and Echo's ask (the review of 23 Oct 2026). Filmed frame by frame by `tools/setupreel/record.mjs`
+    into `public/assets/setup/reel/<key>.mp4` and a poster `<key>.webp` (see
+    SETUPREEL1 below; `setupreeltest` holds the files), two muted inline
+    videos taking turns. A phone that cannot play them or refuses to start
+    one (Low Power Mode, the tests' Chromium) gets the posters, changing
+    every 4 s; a game with no poster its painted Home card. Off the screen
+    nothing plays; under Reduce Motion it is the first game's poster, still,
+    and the heading stays. **The R example:** every clip is filmed on R,
+    before any sound is picked, so a parent of a 2–4 year old sees R, a
+    sound not asked of that age (`SOUND_NORM`): Rachel's to rule on, with
+    which moment each clip shows (Travis's).
+  - **Setup makes no sound** (Travis, 23 Oct 2026: "turn the sound off when
+    they press the buttons in the onboarding"; "Hear Echo", setup's one
+    sound since 22 Oct, went with the reel's redo the same day): no tap
+    chime on any button, chip, tile or answer, the build overlay's ticks
+    included, and no voice.
   - **Rachel on her own screen** (Travis: "a bigger slide of Rachel that's
     just like all by itself of like her credentials"; she sat on the ready
     screen from 5 Oct): see her credential section above.
@@ -323,9 +323,8 @@ changing one. What follows from the rule:
     much practice a family is asked for are Rachel's.
   - **Built on defaults, for Rachel and Travis to rule on** (22 Oct 2026).
     Rachel's: every word a child's parent reads in setup; 5/10/15 minutes as
-    30/60/90 reps a day (and 90 for a three-year-old); the R example played
-    and shown to every parent, a 2–4 year old's too; Echo's voice on setup at
-    all ("Say your sound with me!" then her take, no "Go!"); that a recording
+    30/60/90 reps a day (and 90 for a three-year-old); the R example shown
+    to every parent, a 2–4 year old's too; that a recording
     may show what the child loves; that the therapy screen now says "stays on
     this phone". Travis's: every word; the interests and the games each
     fits; the reel's order; the reminder's words (the notification's are
@@ -390,8 +389,7 @@ changing one. What follows from the rule:
     (`Sona.notifyRefresh`, NOTIFY1: `notifyState` alone is a guess on a page
     that has not heard from iOS), both feature-checked and bounded together
     at 2.5 s (`remindAsk`). Leaving ready shows the reminder screen only when
-    the row the price screen picks on arrival (the yearly one when offered,
-    else the monthly) is `"free"`: a product with free days and a buyer
+    the monthly row, the one the price screen picks on arrival, is `"free"`: a product with free days and a buyer
     Apple has not called ineligible (a definite "not eligible" is `"paid"`),
     **and the store is sure of it** (`plan.sure`, the price line's own test
     in `trialReminderOn`: a "new subscribers" row may charge today, and the
@@ -545,9 +543,9 @@ changing one. What follows from the rule:
   for new subscribers", no "No payment today", and the "Only new subscribers
   …" note between the row and the button. **"No ads, ever" is a promise:**
   Sona shows a child no ads; do not add one without taking the line off.
-  **Since 19 Oct 2026 the yearly plan is a second row above this one**
-  (below, "TWO PLANS ON THE IPHONE AGAIN"), **and since 22 Oct 2026 the one
-  payment a third row under it** (below, "ONE PAYMENT, A THIRD ROW").
+  **Since 23 Oct 2026 the card is two rows: this monthly row on top,
+  picked, and the one payment under it** (below, "TWO ROWS: MONTHLY ON
+  TOP"); the yearly row of 19 Oct is no longer sold.
 - **"Not now" goes to Home with everything locked:** every game and book is
   "Premium" and Home's Books door says "Premium"; no microphone ask and no
   hand-off. Settings then says "Plan: none yet", never "free version".
@@ -749,7 +747,33 @@ both cards; `firstgametest` keeps both boxes and the button on the first
 screen at seven phone sizes with the charter line showing, and re-prices
 every yearly figure when the price check answers late.
 
-**TWO PLANS ON THE IPHONE AGAIN, AND A 7-DAY TRIAL** (Travis, 19 Oct 2026,
+**TWO ROWS: MONTHLY ON TOP AND PICKED, THE ONE PAYMENT UNDER IT (23 Oct
+2026)** (Travis, with a screenshot of three rows: "We need to get rid of the
+yearly option. I just want two payment options"; first with the one payment
+on top and picked, then the same day: "can we just have the ... a month as
+the top default option and then below it is the pay one time?"). This
+replaces the yearly row below and the pick under "ONE PAYMENT, A THIRD ROW".
+- **No yearly row:** `IAP_SELL_YEARLY = false` in `sona.js` (beside
+  `IAP_PRODUCTS`) stops `storePlan` asking for the yearly product even when
+  RevenueCat's offering lists it, so `plan.year` is always null and no page
+  (the price screen, the Premium page, setup's reminder ask) shows a year.
+  `IAP_PRODUCTS.annual` stays for restore; `true` brings the row back by the
+  offering, as built on 19 Oct. Taking the yearly package out of the
+  offering in RevenueCat is tidy but not needed.
+- **Monthly on top, picked when the screen opens** (its free trial: "No
+  payment today"), the one payment under it (`kindsOf` and the markup's
+  order in `subscribe.html`; `APPLE.pick` starts at `"monthly"`). Why the
+  free trial is the default: most parents take the row already picked, and
+  "No payment today" is the easiest yes for one who came from an ad; the
+  one payment beside it still makes the month look small. With no
+  one-payment row the card is monthly alone, as before; one that arrives
+  late comes in unpicked, and one that goes away while picked takes the
+  pick to monthly. The prices are App Store Connect's: changing monthly to
+  $7.99 there changes the card by itself.
+- **Setup's reminder ask** follows the monthly row (the one picked on
+  arrival again): it shows when the store is sure that row is a free trial.
+
+**TWO PLANS ON THE IPHONE AGAIN, AND A 7-DAY TRIAL** (Travis, 19 Oct 2026, until 23 Oct 2026,
 "yes" to a funnel expert's review: one plan leaves a parent only "buy or
 don't buy"; two let them compare; 3 days is too tight to see a child use it).
 This replaces "one plan, no pick" below.
@@ -808,9 +832,9 @@ lifetime"). Apple's card can show a third row, under monthly.
   check line "One payment · No subscription", the button "Get Sona Premium —
   $59.99" and the small print "One payment of $59.99. No subscription."
   Never "lifetime", "free", "Best value", a trial or a renewal (planwordstest).
-- **The pick:** yearly, monthly, then the one payment, top to bottom; yearly
-  picked on arrival (monthly without a yearly row), **never the one
-  payment**; a row that arrives on a card a parent is reading comes in
+- **The pick (until 23 Oct 2026; now see "TWO ROWS: MONTHLY ON TOP"):** yearly, monthly, then the one payment, top to bottom; yearly
+  picked on arrival (monthly without a yearly row), never the one
+  payment; a row that arrives on a card a parent is reading comes in
   unpicked, and one that goes away while picked takes the pick to monthly
   (`take()` keeps the row the parent was reading while it is there). The fit
   holds for every row picked (`APPLE.others`, `APPLE.alt(kind)`), so a tap on
@@ -2421,8 +2445,8 @@ that opens on Home. **Home is silent and only reads:** on load, on coming back
 to the front and between the views it writes nothing, sends nothing and
 speaks nothing, and its source never says `questEnd`, comments included.
 There is no old adventure-map Home or menu narration. Voice remains inside
-deliberate game/practice sessions (and setup's "Hear Echo", a grown-up's
-one tap on the reel, since 22 Oct 2026). Parent settings, progress, profiles,
+deliberate game/practice sessions (setup's "Hear Echo", from 22 to 23 Oct
+2026, is gone: setup makes no sound). Parent settings, progress, profiles,
 earned coins (now visible on the Trophy Road, and spent in the Buddy Shop),
 homework and entitlement sync remain available. Home's way to the Trophy
 Road is the gift button in the top bar (read-only, FOUND1); the Arcade's cards carry a level badge on
@@ -2603,39 +2627,43 @@ Real controls and game objects stay HTML and canvas; a picture is never the
 interface. New art in this style comes from an image model (Travis generates
 it in ChatGPT); the twelve-page books are still the simpler drawings.
 
-**Setup's game reel is real play, filmed (SETUPREEL1, 22 Oct 2026)** (Travis:
-"Do like a little clip of a few games so that parents can see it"). The clips
-on setup's "They practice by playing." screen are
+**Setup's game reel is real play, filmed (SETUPREEL1, 22 Oct 2026; three
+clips of the sound power since 23 Oct 2026)** (Travis: "Do like a little clip
+of a few games so that parents can see it"; then "rotate through fruit slice,
+piano tiles, and Flappy Glide ... they're saying ... the letter R ... And then
+the game slows down ... a 3-second of those three games"). The clips on
+setup's "Practice through play." screen are
 `public/assets/setup/reel/<key>.mp4`, each with a poster `<key>.webp` (its
-first frame), one per playable game: slice, tiles, hoops, soccer, dino,
-stack, run, glide, rise, feed, bubbles. Nothing in them is drawn or edited:
+first frame): slice, tiles, glide. Nothing in them is drawn or edited:
 `tools/setupreel/record.mjs` (run by hand, never in the battery; its header
-says how) opens each game page as it is on `tools/appstore/capture.mjs`'s fake
-phone, plays it with the page's own controls and the fake microphone (a word
-or sound counts only the way a child's does, by the page's own check), and
-films one 1/30 s frame at a time on Playwright's virtual clock, cropped to the
-game at 3:4. A clip is 3 to 4 seconds, 540×720 H.264 High, no audio track (it
-can never make a sound), moov first, tagged BT.709, at most 300 KB, its
-poster at most 60 KB. The tool stops on a clip or poster over budget, a crop
-that leaves the screen, or the child's name in the page's text in any frame
-(a word drawn on a canvas it cannot see: check the sheets). `setupreeltest`
-holds the files, and that every game on the list is a playable game, never a
-Coming soon one. **The reel is its own fixed demo list** (`REEL_ORDER`, the
-eleven with a clip), never every open game: the 18 games opened on 22 Oct
-2026 have no clip, so setup's reel leaves them out (it used to append any
-playable game without a clip, as its Home card). **A new game on the reel** is a scene in `record.mjs`, its
-key in `KEYS` and in the test's `REEL`, and setup's own list
-(`onboarding.html`); run the tool alone (it is CPU heavy, port 9303) and look
-at every contact sheet in `tools/setupreel/out/sheets/` before committing a
-clip. **Travis's calls:** which moment each clip shows (Fruit Slice in Super
-Slice, a Hoops basket, Soccer Goal ending on GOAL!, Dino Dig ending as a bone
-lands, Feed Echo feeding two pictures, Piano Tiles a song's opening, a tile
-or two at a time), the crops, the 3–4 s, Rise Up's calm clip (one key drops
-it), and the strict budgets. **Rachel's:** every clip is on R (setup says
-"Example: the R sound"), the little kids' games (Feed Echo, Bubble Pop) too,
-so a parent of a 2–4 year old sees R played, a sound not asked of that age;
-and the clips show the rewards a child earns by saying the sound (Super
-Slice, the ball, the brush, the bubbles).
+says how) opens each game page as it is on `tools/appstore/capture.mjs`'s
+fake phone, plays it with the page's own controls and the fake microphone,
+and films one 1/30 s frame at a time on Playwright's virtual clock. **Each
+clip shows the sound power, earned the way a child earns it:** about a
+second of play, Echo's own mid-round ask (started by the page's own ask
+clock, no tap), the fake mic saying "rrrr", the page's own check saying yes,
+and then the game slowed (Super Slice, slow keys, the slow help) with the
+finger still playing; every heart kept. The game slows about 1.3 s after the
+sound is heard (the page's listening check and the mic's settle); the
+tool reports both moments (`say` 1.0 s, `slow` about 2.3 s), which setup's
+caption followed for a few hours on 23 Oct 2026 and no longer reads (the
+game's own top bar says it). A clip is 4.0 s,
+540×1080 (1:2, the whole game under the status bar, so setup can fill the
+screen with it), H.264 High, no audio track (it can never make a sound), moov
+first, tagged BT.709, at most 400 KB, its poster at most 80 KB. The tool stops
+on a clip or poster over budget, a crop that leaves the screen, or the
+child's name in the page's text in any frame (a word drawn on a canvas it
+cannot see: check the sheets). `setupreeltest` holds the files, that `KEYS`
+is its list and `REEL_ORDER` the same three, and that every game on it is
+playable, never a Coming soon one. **A new game on the reel** is a scene in
+`record.mjs`, its key in `KEYS` and in the test's `REEL`, and setup's
+`REEL_ORDER`; run the tool alone (it is CPU heavy, port
+9303) and look at every contact sheet in `tools/setupreel/out/sheets/` before
+committing a clip. **Travis's calls:** the three games, the moments, the 4 s,
+the crops. **Rachel's:** every clip is on R (since 23 Oct 2026 nothing on
+setup says R is only an example), so a parent of a 2–4 year old sees R asked and earned, a sound not
+asked of that age, and the clips show the reward a child earns by saying the
+sound.
 
 **A book page fills the screen, and the child says one word to turn it** (the
 family's redesign brief, 28 Sep 2026). The picture fills the screen and the

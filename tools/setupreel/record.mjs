@@ -1,11 +1,15 @@
-// Setup's game reel: short clips of the REAL games, for the "See it play"
-// screen (Travis, 22 Oct 2026: "Do like a little clip of a few games so that
-// parents can see it"). Nothing here is drawn or edited: each clip is the
-// page in public/, served as is on tools/appstore/capture.mjs's fake phone,
-// played with the page's own controls and filmed one frame at a time.
+// Setup's game reel: short clips of the REAL games, for the "Practice through
+// play." screen (Travis, 22 Oct 2026: "Do like a little clip of a few
+// games so that parents can see it"; 23 Oct 2026: "I want it to take up the
+// whole screen ... rotate through fruit slice, piano tiles, and Flappy Glide,
+// and make it clear that in the demo they're saying ... the letter R ... And
+// then the game slows down. And just do a 3-second of those three games").
+// Nothing here is drawn or edited: each clip is the page in public/, served
+// as is on tools/appstore/capture.mjs's fake phone, played with the page's
+// own controls and filmed one frame at a time.
 //
 //   node tools/setupreel/record.mjs                 every game in KEYS
-//   node tools/setupreel/record.mjs --only=slice,hoops
+//   node tools/setupreel/record.mjs --only=slice,tiles
 //   node tools/setupreel/record.mjs --frames-only   film, no encode (look first)
 //   node tools/setupreel/record.mjs --full          the whole screen every half
 //                                                   second, to choose a crop
@@ -13,74 +17,79 @@
 //   node tools/setupreel/record.mjs --debug         each scene's probe, as it films
 //                                                   (--debug=1: every frame)
 //
-// Writes public/assets/setup/reel/<key>.mp4 (540x720, 30 fps, 3 to 4 s,
+// Writes public/assets/setup/reel/<key>.mp4 (540x1080, 1:2, 30 fps, 4 s,
 // H.264 High, no audio track, moov first) and <key>.webp (its first frame),
 // and a contact sheet per clip in tools/setupreel/out/sheets/ (git ignores
-// out/): LOOK at every sheet before committing a clip (an empty sky, a game
-// cut off by the crop, a card or a HUD half in the frame, a dead stretch, a
-// miss the finger should not have made). tests/setupreeltest.mjs checks the
-// files (size, codec, length, colour tags, no audio, faststart, poster) and
-// that KEYS is its list; it never runs this. A new game on the reel is a
-// scene here, a key in KEYS and in that test's list, and setup's own list
-// (onboarding.html). Needs ffmpeg with libx264 and
-// libwebp, and ImageMagick's montage for the sheets. It is CPU heavy (about a
-// minute a clip; SETUPREEL_PORT, default 9303): run it alone, not beside a
-// test. The games' dice are seeded (cfg.dice, a number; never cfg.seed,
-// which is capture.mjs's map of localStorage keys), so a scene films nearly
-// the same round each time until a game's code changes; a scene that stalls
-// says where ("stalled: …"), and --debug shows why.
+// out/): LOOK at every sheet before committing a clip (a lost heart, an empty
+// sky, a dead stretch, a miss the finger should not have made, the ask or
+// the slowdown off the frame). Each run prints each clip's moments ("times":
+// say, the child's sound heard; slow, the slowdown on; len, the clip), in
+// seconds from its first frame (setup shows no caption since 23 Oct 2026:
+// the game's own top bar says each moment, so nothing needs copying).
+// tests/setupreeltest.mjs checks the files (size, codec, length, colour
+// tags, no audio, faststart, poster) and that KEYS and setup's REEL_ORDER
+// are its list; it never runs this. A new game on the reel is a scene here,
+// a key in KEYS and in that test's list, and setup's own list and times
+// (onboarding.html). Needs ffmpeg with libx264 and libwebp, and ImageMagick's
+// montage for the sheets. It is CPU heavy (about a minute and a half a clip;
+// SETUPREEL_PORT, default 9303): run it alone, not beside a test. The games'
+// dice are seeded (cfg.dice, a number; never cfg.seed, which is
+// capture.mjs's map of localStorage keys), so a scene films nearly the same
+// round each time until a game's code changes; a scene that stalls says
+// where ("stalled: …"), and --debug shows why.
 //
 // How it films: Playwright's virtual clock (page.clock), paused, moved on
-// 1/30 s per frame, a screenshot each frame at 390x844 @2x, cropped to the
-// game's action at 3:4. The games' requestAnimationFrame, timers and
+// 1/30 s per frame, a screenshot each frame at 390x844 @2x, cropped to 1:2
+// just under the status bar (the whole game: its top, Echo's pill and his
+// line, the play, the bottom). The games' requestAnimationFrame, timers and
 // performance.now are the clock's, so a frame is exactly 1/30 s of the game
 // however long the screenshot takes; their CSS animations (banners, Echo's
 // hop) are held and stepped the same 1/30 s through the Web Animations API.
 // A crop that leaves the screen stops the run (Playwright would trim the
-// shot and ffmpeg would stretch it): every frame is 780 x 1040.
+// shot and ffmpeg would stretch it): every frame is 780 x 1560.
 //
 // It stops, and writes nothing more for that clip, when:
 //   - the child's name is on the page in any frame (any case, a whole word).
 //     It reads the page's text: a word drawn on a canvas is pixels, and this
 //     cannot see it (no game draws a name today; one that starts to is the
 //     next thing to check by eye on the sheet);
-//   - a clip is still over 300 KB at CRF 36, or a poster over 60 KB at q40
+//   - a clip is still over 400 KB at CRF 36, or a poster over 80 KB at q40
 //     (both are made in out/enc/ first: a failed clip never replaces the
 //     one in public/);
-//   - a frame is not 780 x 1040.
+//   - a frame is not 780 x 1560;
+//   - Fruit Slice's clip would open with a heart already lost.
 // The clips are tagged BT.709 (matrix, primaries, transfer; limited range)
 // and converted with that matrix, so a player reads the colours the way they
 // were made and the poster (a WebP, always BT.601 inside) hands over to the
 // first frame without a colour jump.
 //
-// Whose calls these are (built on defaults, 22 Oct 2026):
-//   - Travis's: which moment each clip shows, the crops, 3 to 4 s a clip,
-//     Rise Up's calm clip (dropping a game from the reel is one key in KEYS
-//     and the test's list), and the budgets counted strictly (300,000 and
-//     60,000 bytes);
-//   - Rachel's: the clips show R words inside the little kids' games too
-//     (Feed Echo, Bubble Pop), so a parent of a 2-4 year old sees R played,
-//     a sound not asked of that age; and they show the rewards a child earns
-//     by saying the sound (Super Slice, the ball, the brush, the bubbles).
+// Whose calls these are (built on defaults, 23 Oct 2026):
+//   - Travis's: the three games and their order, the moment each shows
+//     (about a second of play, then Echo's ask, the sound heard and about
+//     two seconds of the slowed game), 4 s a clip, the crop, and the budgets
+//     counted strictly (400,000 and 80,000 bytes);
+//   - Rachel's: every clip shows R asked by Echo and earned by saying it (the
+//     bare sound, as the games ask it), shown to every parent before any
+//     sound is picked, a parent of a 2-4 year old too; and that saying the
+//     sound is shown making the game easier (Super Slice, slow keys, the
+//     slow help).
 //
 // What is staged, and why it is honest:
 //   - capture.mjs's household (an onboarded child on R, Premium through the
 //     free-era promise, every era stamp set), as the iPhone app. R is the
-//     sound because setup's reel says "Example: the R sound"; the child's
-//     name is on no game page, and each clip is checked for it anyway;
-//   - the "child" is capture.mjs's fake microphone: a voiced sound only while
-//     a scene sets __dev.voice, as the test suites do. Super Slice, a ball, a
-//     brush, the bubbles or Echo's meal is earned the way a child earns it:
-//     Echo asks (for Super Slice, after a tap on him), the mic hears the
-//     sound or the word (two times where the game asks two), the page's own
-//     check says yes;
+//     sound every clip is filmed on (the one example: no sound is picked yet
+//     when setup shows them, and nothing on setup names it); the child's name is
+//     on no game page, and each clip is checked for it anyway;
+//   - Echo's ask is his own: capture.mjs holds his clock (holdAsk) so he
+//     never asks at a random moment, and a scene sets that clock to "now" a
+//     second into the clip, so the page begins his turn exactly as play time
+//     running out would (no tap on him). Then the "child" is capture.mjs's
+//     fake microphone: a voiced sound only once his turn's mic is open
+//     (__dev.voice, as the test suites do), and the page's own check says
+//     yes before the game slows;
 //   - the finger is the page's own pointer events (page.mouse), one move a
 //     frame, so a swipe takes the time a child's does;
-//   - Echo's mid-round ask is held (holdAsk), so a clip shows the game being
-//     played, not a mic opening at a random moment;
 //   - never a Coming soon game: every key below is open on Home.
-// A game that cannot be staged honestly gets no clip; setup then shows its
-// painted Home card in its place.
 import { readFileSync, mkdirSync, rmSync, renameSync, statSync, readdirSync, copyFileSync } from "fs";
 import { createServer } from "http";
 import { execFileSync } from "child_process";
@@ -96,13 +105,14 @@ const OUT = process.env.SETUPREEL_OUT || path.join(HERE, "out");
 const PORT = Number(process.env.SETUPREEL_PORT || 9303);
 const BASE = "http://127.0.0.1:" + PORT;
 
-// An iPhone 13/14 (390 x 844 pt) at @2x: 780 px across, cut to a 780 x 1040
-// window (3:4) and scaled to 540 x 720. The safe areas are that phone's.
+// An iPhone 13/14 (390 x 844 pt) at @2x: 780 px across, cut to a 780 x 1560
+// window (1:2, everything under the status bar) and scaled to 540 x 1080.
+// The safe areas are that phone's.
 const VIEW = { width: 390, height: 844 }, DPR = 2, INSET = { top: 47, bottom: 34 };
-const CROP_H = VIEW.width * 4 / 3;              // 520 pt
-const SIZE = { w: 540, h: 720 };
-// in bytes, decimal: 300 KB a clip, 60 KB a poster (tests/setupreeltest.mjs)
-export const BUDGET = { mp4: 300000, webp: 60000 };
+const CROP_H = VIEW.width * 2;                  // 780 pt
+const SIZE = { w: 540, h: 1080 };
+// in bytes, decimal: 400 KB a clip, 80 KB a poster (tests/setupreeltest.mjs)
+export const BUDGET = { mp4: 400000, webp: 80000 };
 const FPS = 30;
 // Thursday 22 Oct 2026, 4:10 pm in Idaho.
 const AT = Date.parse("2026-10-22T16:10:00-06:00");
@@ -322,67 +332,90 @@ function sheet(key, dir, full) {
 }
 
 // ── the scenes ──
-// The round games' top (the close button, the counts, Echo's pill and the
-// line under it) ends about 210 pt down: a crop starts below it.
-const HUD = 212;
-// Each opens a fresh phone, stages the moment (game time, unfilmed), then
-// films `seconds` with drive(f) playing the finger each frame.
+// Three clips, one story told three times (Travis, 23 Oct 2026: "make it
+// clear that in the demo they're saying ... the letter R ... And then the
+// game slows down. And just do a 3-second of those three games"): play,
+// Echo's own mid-round ask, the child's "rrrr" heard, and the game slowing
+// down while the finger keeps playing. Each is the whole game cropped to
+// 1:2 just under the status bar, so setup can lay it full screen.
+const CROP_Y = 47;
+// the clip's first frame comes this long before the child's sound is heard
+const SAY_AT = 1.0;
+// how long the child says it (frames), how long after the mic opens ("Go!"
+// and its tail are over by then) they start, and how far into the film Echo
+// asks (so the clip opens on play, not on his ask)
+const VOICE_FRAMES = 12, REACT_FRAMES = 6, ASK_FRAME = 12;
 const SCENES = {};
 const ROUND = (game) => ({ "sona.play.token": "arcade-" + game + ".html", "sona.boost.sound": "R", "sona.boost.level": "isolation", "sona.boost.ask": "rrrr" });
 
-// Echo's sound power (Super Slice): a tap on Echo, his ask, and the child's
-// sound heard through the mic. The page decides; nothing is set.
-async function earnPower(page) {
-  for (let tries = 0; tries < 3 && !(await page.evaluate(() => slowMs > 0)); tries++) {
-    const mics = await page.evaluate(() => __dev.mics);
-    await page.evaluate(() => document.getElementById("slowKeys").click());
-    if (!(await until(page, (m) => __dev.mics > m, 15000, mics))) continue;
-    await run(page, 350);
-    await page.evaluate(() => { __dev.voice = true; });
-    await until(page, () => slowMs > 0, 3000);
-    await page.evaluate(() => { __dev.voice = false; });
-  }
-  await must(page, "the sound power", page.evaluate(() => slowMs > 0));
+// Echo's OWN ask, at a moment the scene picks: capture.mjs's holdAsk keeps
+// his clock from asking at a random one, and this sets that clock's next ask
+// to now, so the page's next tick begins the turn exactly as play time
+// running out would (no tap on him). Then, once his turn's mic is open, the
+// fake microphone says the sound for VOICE_FRAMES; the page's own check
+// decides, and the page's own reward slows the game. Nothing is set.
+function speaker(page) {
+  let f = 0, wait = -1, on = 0;
+  return async () => {
+    if (f++ < ASK_FRAME) return;
+    if (f === ASK_FRAME + 1) { await page.evaluate(() => { slowAskAt = 0; }); return; }
+    if (on > 0) { if (--on === 0) await page.evaluate(() => { __dev.voice = false; }); return; }
+    if (wait > 0) { if (--wait === 0) { on = VOICE_FRAMES; await page.evaluate(() => { __dev.voice = true; }); } return; }
+    if (wait === -1 && await page.evaluate(() => !!slowTurn && slowTurn.listening)) wait = REACT_FRAMES;
+  };
 }
+// read every frame: the child's voice on, the slowdown on, Echo's turn on
+const POWER_PROBE = () => ({ v: !!(window.__dev && __dev.voice), slow: slowMs > 0, ask: !!slowTurn });
+// The clip keeps SAY_AT s before the sound is heard and the rest after it,
+// so its middle is the slowed game; the moments are reported, counted from
+// the clip's first frame.
+function powerEnd(h, n) {
+  const say = h.findIndex((x) => x.v), slow = h.findIndex((x) => x.slow);
+  if (say < 0 || slow < 0) return false;
+  const start = Math.max(0, say - Math.round(SAY_AT * FPS));
+  if (h.length - n < start) return false;
+  this._t = { say: +((say - start) / FPS).toFixed(2), slow: +((slow - start) / FPS).toFixed(2), len: +(n / FPS).toFixed(2) };
+  return true;
+}
+const both = (...fns) => async () => { for (const f of fns) await f(); };
 
-// 1. Fruit Slice: Super Slice on, the stand throwing fruit, the rainbow blade
-// cutting through them.
+// 1. Fruit Slice: fruit flying, Echo asks ("Super Slice! Say rrrr"), the
+// child says it, Super Slice: five fruit at once, slower, the rainbow blade.
 SCENES.slice = {
-  // from the "Super Slice!" line under Echo's pill, through the banner and
-  // the sky, down to the fence (the fox and Echo peek over the counter just
-  // below it)
-  url: "/arcade-slice.html?from=charge", cfg: { session: ROUND("slice") }, cropY: 184, seconds: 4,
+  url: "/arcade-slice.html?from=charge", cfg: { session: ROUND("slice"), dice: 13 }, cropY: CROP_Y, seconds: 4, most: 25,
+  what: "the child heard and Super Slice on", probe: POWER_PROBE, end: powerEnd,
   async stage(s) {
     const { page } = s;
     await must(page, "the game", until(page, () => window.gameEntryAllowed === true && typeof startWave === "function", 20000));
     await images(page);
     s.finger = finger(page);
-    s.cut = sliceCutter(page, s.finger, this.cropY);
-    // a short row first, so the counter shows a real one
+    s.cut = sliceCutter(page, s.finger);
+    // a short row first, so the counter shows a real one, and fruit in the air
     for (let t = 0; t < 900 && (await page.evaluate(() => rowN)) < 3; t++) await step(page, s.cut);
-    await earnPower(page);
-    // the banner says it, the stand throws five at once: the clip opens
-    // with them in the air
-    await until(page, (y) => fruits.filter((q) => !q.sliced && q.y < standTop() - 60 && q.y > y + 40).length >= 3, 4000, this.cropY);
+    // (only three: the wave is six, and its end would bring the break's card)
+    await until(page, () => fruits.filter((q) => !q.sliced && q.y < standTop() - 60).length >= 2, 4000);
+    // every heart still on: a clip never opens on a fumble
+    await must(page, "three hearts", page.evaluate(() => hearts === 3));
+    s.say = speaker(page);
   },
-  drive() { return this._s.cut(); },
+  drive() { return both(this._s.say, this._s.cut)(); },
 };
-// the next fruit to cut: whole, in the crop's sky, near the top of its arc;
-// the swipe crosses where it will be two frames on
-function sliceCutter(page, fing, cropY) {
+// the next fruit to cut: whole, in the sky, near the top of its arc; the
+// swipe crosses where it will be four frames on
+function sliceCutter(page, fing) {
   let rest = 0;
   return async () => {
     if (fing.busy()) return fing.frame();
     if (rest-- > 0) return;
-    const pts = await page.evaluate((cropY) => {
+    const pts = await page.evaluate((top) => {
       const r = document.getElementById("cv").getBoundingClientRect(), fac = slowFactor() * slicePace();
-      const up = fruits.filter((q) => !q.sliced && q.y < Math.min(standTop() - 50, cropY + 480) && q.y > cropY + 70 && q.vy > -2.5);
+      const up = fruits.filter((q) => !q.sliced && q.y < standTop() - 50 && r.top + q.y > top + 120 && q.vy > -2.5);
       if (!up.length) return null;
       const f = up.sort((a, b) => Math.abs(a.vy) - Math.abs(b.vy))[0], k = 4;
       const x = f.x + f.vx * fac * k, y = f.y + f.vy * fac * k + 0.5 * (f.g || G) * fac * fac * k * k;
       const dir = Math.random() < 0.5 ? -1 : 1;
       return { x0: r.left + x - dir * 85, y0: r.top + y + 40, x1: r.left + x + dir * 85, y1: r.top + y - 40 };
-    }, cropY);
+    }, CROP_Y);
     if (!pts) return;
     fing.start(line(pts.x0, pts.y0, pts.x1, pts.y1, 5));
     rest = 5;
@@ -390,30 +423,28 @@ function sliceCutter(page, fing, cropY) {
   };
 }
 
-// 2. Piano Tiles: a song coming down the lanes, each tile played as it
-// reaches the keys.
+// 2. Piano Tiles: a song coming down the lanes, Echo asks ("To slow the
+// keys, say rrrr"), the child says it, slow keys: the tiles at 55%.
 SCENES.tiles = {
-  url: "/arcade-tiles.html?from=charge", cfg: { session: ROUND("tiles") }, seconds: 4,
-  // the lanes down to the keys at the board's foot, and never past the
-  // screen's foot (the board ends there)
-  crop: (page) => page.evaluate(({ vh, ch }) => Math.min(vh - ch, Math.round(H + document.getElementById("cv").getBoundingClientRect().top - ch)), { vh: VIEW.height, ch: CROP_H }),
+  url: "/arcade-tiles.html?from=charge", cfg: { session: ROUND("tiles") }, cropY: CROP_Y, seconds: 4, most: 25,
+  what: "the child heard and slow keys on", probe: POWER_PROBE, end: powerEnd,
   async stage(s) {
     const { page } = s;
     await must(page, "the game", until(page, () => window.gameEntryAllowed === true && typeof startSong === "function", 20000));
     await images(page);
     s.play = tilePlayer(page);
-    // into the song, past the three tiles that wait on the keys, with the
-    // lanes in the crop full (never as far as the song's end)
-    const top = await this.crop(page);
+    // into the song, past the three tiles that wait on the keys (never as
+    // far as the song's end)
     await must(page, "a full song", (async () => {
       for (let t = 0; t < 600; t++) {
         await step(page, s.play);
-        if (await page.evaluate((top) => phase === "song" && songIx >= 4 && songIx <= 10 && tiles.filter((q) => !q.hit && !q.gone && q.y + q.h > top - document.getElementById("cv").getBoundingClientRect().top + 30).length >= 2, top)) return true;
+        if (await page.evaluate(() => phase === "song" && songIx >= 4 && songIx <= 8 && tiles.filter((q) => !q.hit && !q.gone).length >= 3)) return true;
       }
       return false;
     })());
+    s.say = speaker(page);
   },
-  drive() { return this._s.play(); },
+  drive() { return both(this._s.say, this._s.play)(); },
 };
 // a tile is played when its foot is on the keys, as a child's finger does
 function tilePlayer(page) {
@@ -428,86 +459,12 @@ function tilePlayer(page) {
   };
 }
 
-// 3. Block Stacker: the tower going up, a block dropped as it swings over it.
-SCENES.stack = {
-  url: "/arcade-stack.html?from=charge", cfg: { session: ROUND("stack") }, seconds: 4,
-  // the swinging block at the top, the tower, the fox and Echo, the board
-  crop: (page) => page.evaluate(() => { const r = document.getElementById("cv").getBoundingClientRect(); return Math.max(0, Math.round(r.top + H - 554)); }),
-  async stage(s) {
-    const { page } = s;
-    await must(page, "the game", until(page, () => window.gameEntryAllowed === true && typeof drop === "function", 20000));
-    await images(page);
-    s.play = stacker(page);
-    // floor 1 stands on the practice page's five: one block on, the floor's
-    // banner gone, and the rest of the floor (three drops) on film
-    for (let t = 0; t < 900 && (await page.evaluate(() => stack.length)) < 6; t++) await step(page, s.play);
-    await must(page, "floor 1 under way", page.evaluate(() => phase === "floor" && stack.length === 6));
-    await until(page, () => Number(getComputedStyle(document.getElementById("banner")).opacity) < 0.05, 4000);
-  },
-  drive() { return this._s.play(); },
-};
-function stacker(page) {
-  let rest = 0;
-  return async () => {
-    if (rest-- > 0) return;
-    const go = await page.evaluate(() => {
-      if (!playing || dropping || phase !== "floor" || !cur) return null;
-      const top = stack[stack.length - 1];
-      if (Math.abs(cur.x - top.x) > Math.max(6, top.w * 0.1)) return null;
-      const r = document.getElementById("cv").getBoundingClientRect();
-      return { x: r.left + W / 2, y: r.top + H * 0.75 };
-    });
-    if (go) { await page.mouse.move(go.x, go.y); await page.mouse.down(); await page.mouse.up(); rest = 12; }
-  };
-}
-
-// 4. Sound Sprint: the runner switching lanes past the rocks, into the coins.
-SCENES.run = {
-  url: "/arcade-run.html?from=charge", cfg: { session: ROUND("run") }, seconds: 4,
-  crop: (page) => page.evaluate(() => { const r = document.getElementById("cv").getBoundingClientRect(); return Math.max(0, Math.round(r.top + PLAYY() + 120 - 520)); }),
-  async stage(s) {
-    const { page } = s;
-    await must(page, "the game", until(page, () => window.gameEntryAllowed === true && typeof spawnRow === "function", 20000));
-    await images(page);
-    s.play = runner(page);
-    // a few seconds in, the clip opens on a rock coming down the runner's
-    // lane, with coins on the road
-    await must(page, "a rock to dodge", (async () => {
-      for (let t = 0; t < 1200; t++) {
-        await step(page, s.play);
-        if (t > 180 && await page.evaluate(() => phase === "run" && !falling.on && things.some((q) => q.t === "o" && q.y > 60 && q.y < PLAYY() - 260) && things.some((q) => q.t === "c" && !q.got && q.y > 40 && q.y < PLAYY()))) return true;
-      }
-      return false;
-    })());
-  },
-  drive() { return this._s.play(); },
-};
-// dodge a rock in the runner's lane, else go where the coins are
-function runner(page) {
-  let rest = 0;
-  return async () => {
-    if (rest-- > 0) return;
-    const go = await page.evaluate(() => {
-      if (!playing || falling.on || phase !== "run") return null;
-      const near = (q) => q.y > PLAYY() - 300 && q.y < PLAYY() + 10;
-      const rock = (l) => things.some((q) => q.t === "o" && q.lane === l && q.y > PLAYY() - 360 && q.y < PLAYY() + 40);
-      let want = lane;
-      if (rock(lane)) { const free = [0, 1, 2].filter((l) => l !== lane && !rock(l)); want = free.sort((a, b) => Math.abs(a - lane) - Math.abs(b - lane))[0]; }
-      else { const c = things.filter((q) => q.t === "c" && !q.got && near(q) && !rock(q.lane)).sort((a, b) => b.y - a.y)[0]; if (c) want = c.lane; }
-      if (want == null || want === lane) return null;
-      const r = document.getElementById("cv").getBoundingClientRect();
-      return { x: r.left + laneCX(want), y: r.top + PLAYY() };
-    });
-    if (go) { await page.mouse.move(go.x, go.y); await page.mouse.down(); await page.mouse.up(); rest = 8; }
-  };
-}
-
-// 5. Flappy Glide: the balloon kept in the gaps with a tap now and then.
+// 3. Flappy Glide: the balloon kept in the gaps with a tap now and then,
+// Echo asks ("To slow the beams, say rrrr"), the child says it, the hedges
+// slow down.
 SCENES.glide = {
-  url: "/arcade-glide.html?from=charge", cfg: { session: ROUND("glide") }, seconds: 4,
-  // straight under the top: every gap's middle (a third to two thirds of
-  // the way down) is in it, so the balloon never leaves the frame
-  cropY: HUD,
+  url: "/arcade-glide.html?from=charge", cfg: { session: ROUND("glide") }, cropY: CROP_Y, seconds: 4, most: 25,
+  what: "the child heard and the slow help on", probe: POWER_PROBE, end: powerEnd,
   async stage(s) {
     const { page } = s;
     await must(page, "the game", until(page, () => window.gameEntryAllowed === true && typeof flap === "function", 20000));
@@ -517,8 +474,9 @@ SCENES.glide = {
       await step(page, s.play);
       if (t > 150 && await page.evaluate(() => phase === "fly" && gates.some((g) => g.x > px + 70 && g.x < px + 150 && Math.abs(py - g.cy) < gapH * 0.2))) break;
     }
+    s.say = speaker(page);
   },
-  drive() { return this._s.play(); },
+  drive() { return both(this._s.say, this._s.play)(); },
 };
 function glider(page) {
   let rest = 0;
@@ -526,7 +484,7 @@ function glider(page) {
     if (rest-- > 0) return;
     const go = await page.evaluate(() => {
       if (!playing || phase !== "fly") return null;
-      const g = gates.filter((g) => g.x + 40 > px).sort((a, b) => a.x - b.x)[0], aim = g ? g.cy + gapH * 0.24 : H * 0.5;   // the lower half of the gap: the balloon stays in the frame under a high gap
+      const g = gates.filter((g) => g.x + 40 > px).sort((a, b) => a.x - b.x)[0], aim = g ? g.cy + gapH * 0.24 : H * 0.5;   // the lower half of the gap
       if (!(py > aim && vy >= 0)) return null;
       const r = document.getElementById("cv").getBoundingClientRect();
       return { x: r.left + W * 0.6, y: r.top + H * 0.6 };
@@ -535,296 +493,9 @@ function glider(page) {
   };
 }
 
-// 6. Rise Up: the shield dragged into the falling blocks, pushing them off
-// the balloon's way.
-SCENES.rise = {
-  url: "/arcade-rise.html?from=charge", cfg: { session: ROUND("rise") }, seconds: 4,
-  crop: (page) => page.evaluate((hud) => { const r = document.getElementById("cv").getBoundingClientRect(); return Math.max(hud, Math.min(844 - 520, Math.round(r.top + Rise.balloon.y + Rise.balloon.r * 2.4 - 520))); }, HUD),
-  debug: () => ({ sh: [Math.round(Rise.shield.x), Math.round(Rise.shield.y)], bl: [Math.round(Rise.balloon.x), Math.round(Rise.balloon.y)], p: Rise.pieces.filter((p) => !p.gone).map((p) => [p.kind, Math.round(p.x), Math.round(p.y)]), pushed: window.pushed }),
-  async stage(s) {
-    const { page } = s;
-    await must(page, "the game", until(page, () => window.gameEntryAllowed === true && window.Rise && Rise.balloon, 20000));
-    await images(page);
-    s.play = shielder(page, HUD);
-    for (let t = 0; t < 600; t++) {
-      await step(page, s.play);
-      // the clip opens as a group of blocks comes down over the balloon
-      if (t > 200 && await page.evaluate(() => Rise.pieces.filter((p) => !p.gone && p.y > -80 && p.y < 60 && Math.abs(p.x - Rise.balloon.x) < W * 0.3).length >= 3)) break;
-    }
-  },
-  drive() { return this._s.play(); },
-};
-// one finger down on the board the whole time, sliding at a child's speed:
-// the shield goes under the block nearest the balloon, waits for it in the
-// open sky below Echo's pill, and moves INTO it as it comes (a push is the
-// shield moving into a block; one that only lands on a still shield is not)
-function shielder(page, top) {
-  let at = null;
-  return async () => {
-    const t = await page.evaluate((top) => {
-      const r = document.getElementById("cv").getBoundingClientRect(), sh = Rise.shield, bl = Rise.balloon, box = Rise.shieldBox();
-      // it waits well below the top of the frame and lunges up to meet a block
-      const reach = Math.max(box.y0, top - r.top + sh.r + 60), wait = box.y1, near = (p) => Math.hypot(p.x - sh.x, p.y - sh.y);
-      // the block nearest the balloon (not one just pushed: it is already
-      // on its way out)
-      const T = Rise.pieces.filter((p) => !p.gone && p.alpha > 0.6 && performance.now() - p.pushAt > 900 && Math.abs(p.vx) < 1.5 && p.y > 60 && p.y < bl.y && Math.abs(p.x - bl.x) < W * 0.36).sort((a, b) => b.y - a.y)[0];
-      if (!T) return { dx: 0, dy: 0, left: r.left, top: r.top, W, H };
-      const lunge = near(T) < sh.r + Rise.s + 30, want = lunge ? { x: T.x + (T.x < bl.x ? 8 : -8), y: T.y - 12 } : { x: T.x, y: T.y + sh.r + Rise.s };
-      want.x = Math.max(box.x0, Math.min(box.x1, want.x)); want.y = Math.max(lunge ? reach : wait, Math.min(box.y1, want.y));
-      return { dx: want.x - sh.tx, dy: want.y - sh.ty, left: r.left, top: r.top, W, H };
-    }, top);
-    // a finger near the screen's edge is lifted and put down again lower in
-    // the middle (a finger going down moves nothing)
-    if (at && (at.x < 24 || at.x > t.W - 24 || at.y < 150 || at.y > t.top + t.H - 20)) { await page.mouse.up(); at = null; }
-    if (!at) { at = { x: t.left + t.W / 2, y: t.top + t.H * 0.86 }; await page.mouse.move(at.x, at.y); await page.mouse.down(); return; }
-    const k = (v) => Math.max(-24, Math.min(24, v));
-    if (!t.dx && !t.dy) return;
-    at = { x: at.x + k(t.dx), y: at.y + k(t.dy) };
-    await page.mouse.move(at.x, at.y);
-  };
-}
-
-// The Say & Play games: the child's two sayings, a beat apart, whenever Echo
-// is listening (sayplaytest's sayIt, frame by frame). One saying in a game
-// that asks once (Bubble Pop).
-function talker(page) {
-  let on = 0, wait = 0;
-  return async () => {
-    if (on > 0) { if (--on === 0) await page.evaluate(() => { __dev.voice = false; }); return; }
-    const g = await page.evaluate(() => window.__sayplay || {});
-    if (!g.listening || g.phase === "play") { wait = 0; return; }
-    if (wait++ < (g.said ? 10 : 4)) return;
-    wait = 0; on = 9;
-    await page.evaluate(() => { __dev.voice = true; });
-  };
-}
-// the game's picture, and under it the word with its two dots (the top of
-// the picture's frame and the mic's line below the dots do not fit 3:4)
-const sayplayCrop = (page) => page.evaluate(() => {
-  const b = [document.getElementById("word"), document.getElementById("twiceDots")].filter(Boolean).map((e) => e.getBoundingClientRect().bottom);
-  return Math.max(0, Math.round(Math.max(...b) + 12 - 520));
-});
-// play until `steps` are done, then on until the next move is earned (the
-// page's own test, `ready`), with the finger held back for that last one
-async function earnNext(page, s, drive, ready, steps) {
-  const done = () => page.evaluate((n) => (window.__sayplay.step || 0) >= n, steps);
-  for (let t = 0; t < 1800 && !(await done()); t++) await step(page, drive);
-  await must(page, steps + " steps", done());
-  for (let t = 0; t < 600 && !(await page.evaluate(ready)); t++) await step(page, s.talk);
-  await must(page, "the next move earned", page.evaluate(ready));
-}
-async function sayplayStart(page) {
-  await must(page, "the start card", until(page, () => document.querySelector("#startOvl.show") && window.__sayplay, 20000));
-  await images(page);
-  await page.evaluate(() => document.getElementById("startBtn").click());
-  await run(page, 300);
-  if (await page.evaluate(() => !!document.querySelector("#primer.show"))) { await page.evaluate(() => document.getElementById("primerYes").click()); await run(page, 300); }
-}
-const both = (...fns) => async () => { for (const f of fns) await f(); };
-// a Say & Play word's turn just beginning (Echo asks it; nothing said yet),
-// with the game's own state at rest. An expression, not a function: it runs
-// in the page, where a closure over `name` would not reach
-const turnBegins = (name) => "!!(window.__sayplay && window.__sayplay.phase === 'turn' && !window.__sayplay.said && window." + name + " && window." + name + ".state === 'idle')";
-// a ring scene's end (see film): the game's state `st` began exactly `k`
-// frames before the clip's last frame (it may be over by then: a banner
-// outlasts it), and no earlier `st` is in the clip
-const endsOn = (st, k) => (h, n) => {
-  const w = h.slice(-n), i = w.length - k - 1;
-  return i > 0 && w[i] === st && w[i - 1] !== st && !w.slice(0, i).includes(st);
-};
-
-// 7. Hoops: the word said two times, the ball, a swipe at the hoop, SWISH!
-SCENES.hoops = {
-  url: "/arcade-hoops.html", seconds: 3.6, most: 20,
-  what: "the second basket",
-  crop: sayplayCrop,
-  async stage(s) {
-    const { page } = s;
-    await sayplayStart(page);
-    s.talk = talker(page); s.finger = finger(page);
-    s.shoot = shooter(page, s.finger, "court", "__hoops", (h) => (h.hoopX / 2.4) * 240);
-    // one basket first (the clip is the second); filming starts as the
-    // second word's turn begins (Echo asking it)
-    await earnNext(page, s, both(s.talk, s.shoot), turnBegins("__hoops"), 1);
-  },
-  drive() { return both(this._s.talk, this._s.shoot)(); },
-  probe: () => window.__hoops && window.__hoops.state,
-  // it ends 20 frames after the basket (SWISH! still up), before the court
-  // sits empty waiting for the next word; it opens about as Echo listens,
-  // the word's two dots empty
-  end: endsOn("scored", 20),
-  debug: () => ({ hoops: window.__hoops && window.__hoops.state, sp: window.__sayplay && [window.__sayplay.step, window.__sayplay.listening, window.__sayplay.said, window.__sayplay.phase] }),
-};
-// once the ball is in hand, wait a beat, then flick it up at the target
-function shooter(page, fing, canvasId, name, side) {
-  let held = 0;
-  return async () => {
-    if (fing.busy()) return fing.frame();
-    const st = await page.evaluate(({ id, name }) => { const g = window[name], b = document.getElementById(id).getBoundingClientRect(); return g ? { g, box: { x: b.x, y: b.y, width: b.width, height: b.height } } : null; }, { id: canvasId, name });
-    if (!st || st.g.state !== "ready") { held = 0; return; }
-    if (held++ < 8) return;
-    const { box } = st, dx = side(st.g, box), x0 = box.x + box.width / 2, y0 = box.y + box.height * 0.86;
-    fing.start(Array.from({ length: 7 }, (_, i) => ({ x: x0 + dx * i / 6, y: y0 - 240 * i / 6 })));
-    held = 0;
-    return fing.frame();
-  };
-}
-
-// 8. Soccer Goal: the ball rolling in, kicked past Bo into the net, GOAL!
-SCENES.soccer = {
-  url: "/arcade-soccer.html", seconds: 3.2,
-  // the whole pitch: GOAL! is written over the crossbar, at its very top
-  crop: (page) => page.evaluate(() => Math.max(0, Math.round(document.getElementById("pitch").getBoundingClientRect().top - 44))),
-  async stage(s) {
-    const { page } = s;
-    await sayplayStart(page);
-    s.talk = talker(page); s.finger = finger(page);
-    // to the side Bo is not on (the first two balls he stands aside)
-    s.shoot = shooter(page, s.finger, "pitch", "__soccer", (g) => ((g.keeperX >= 0 ? -1.4 : 1.4) / g.aimScale) * 240);
-    // two goals first (Bo stands aside for those). The clip opens as the
-    // third word is heard and its ball rolls in to the spot, and ends on
-    // GOAL!, still up (the pitch only waits for the next word after it)
-    await earnNext(page, s, both(s.talk, s.shoot), () => window.__soccer && window.__soccer.state === "drop", 2);
-  },
-  drive() { return both(this._s.talk, this._s.shoot)(); },
-  debug: () => ({ soccer: window.__soccer && window.__soccer.state, sp: window.__sayplay && [window.__sayplay.step, window.__sayplay.listening, window.__sayplay.said, window.__sayplay.phase] }),
-};
-
-// 9. Dino Dig: the word said two times, the brush, the sand rubbed off a
-// bone, the bone flying onto the skeleton.
-SCENES.dino = {
-  url: "/arcade-dino.html", seconds: 3.2, most: 20,
-  what: "the third bone landing on the skeleton",
-  crop: sayplayCrop,
-  async stage(s) {
-    const { page } = s;
-    await sayplayStart(page);
-    s.talk = talker(page); s.finger = finger(page); s.dig = digger(page, s.finger);
-    // two bones on the skeleton first; filming starts as the third word's
-    // turn begins (Echo asking it)
-    await earnNext(page, s, both(s.talk, s.dig), turnBegins("__dino"), 2);
-  },
-  drive() { return both(this._s.talk, this._s.dig)(); },
-  probe: () => window.__dino && window.__dino.state,
-  // the clip ends 8 frames after the bone lands (its sparkle on the
-  // skeleton), before the dug pit sits still and is made new for the next
-  // word; it opens about as Echo starts listening, its two dots empty, and
-  // holds no earlier bone
-  end: endsOn("placed", 8),
-  debug: () => ({ dino: window.__dino && window.__dino.state, sp: window.__sayplay && [window.__sayplay.step, window.__sayplay.listening, window.__sayplay.said, window.__sayplay.phase] }),
-};
-// back and forth across the bone, a stroke every few frames, until it is out
-function digger(page, fing) {
-  let held = 0, pass = 0;
-  return async () => {
-    if (fing.busy()) return fing.frame();
-    const st = await page.evaluate(() => { const d = window.__dino, b = document.getElementById("dig").getBoundingClientRect(); return d ? { state: d.state, bone: d.bone, x: b.x, y: b.y } : null; });
-    if (!st || st.state !== "ready" || !st.bone) { held = 0; pass = 0; return; }
-    if (held++ < 6) return;
-    const b = st.bone, y = st.y + b.y + ((pass % 3) - 1) * b.h * 0.3, xa = st.x + b.x - b.w * 0.6, xb = st.x + b.x + b.w * 0.6;
-    fing.start(pass++ % 2 ? line(xb, y, xa, y, 6) : line(xa, y, xb, y, 6));
-    return fing.frame();
-  };
-}
-
-// 10. Bubble Pop: the word said, Echo blows the bubbles, a finger pops them.
-SCENES.bubbles = {
-  url: "/arcade-bubbles.html", seconds: 4,
-  crop: sayplayCrop,
-  async stage(s) {
-    const { page } = s;
-    await sayplayStart(page);
-    s.talk = talker(page); s.pop = popper(page);
-    // one picture in the basket first; the clip opens as Echo blows the
-    // next word's bubbles
-    await earnNext(page, s, both(s.talk, s.pop), () => window.__bubbles && window.__bubbles.state === "ready" && window.__bubbles.bubbles.filter((b) => b.out).length >= 4, 1);
-  },
-  drive() { return both(this._s.talk, this._s.pop)(); },
-};
-// a tap on a bubble every few frames, the plain ones first (as sayplaytest)
-function popper(page) {
-  let rest = 0;
-  return async () => {
-    if (rest-- > 0) return;
-    const t = await page.evaluate(() => {
-      if (!window.Bubbles || !Bubbles.snapshot) return null;
-      const s = Bubbles.snapshot(), sky = document.getElementById("sky").getBoundingClientRect();
-      const b = s.bubbles.find((x) => x.out && !x.gold) || s.bubbles.find((x) => x.out);
-      return b ? { x: sky.x + b.x, y: sky.y + b.y } : null;
-    });
-    if (t) { await page.mouse.move(t.x, t.y); await page.mouse.down(); await page.mouse.up(); rest = 10; }
-  };
-}
-
-// 11. Feed Echo: a word heard, its picture glowing, a tap, Echo munching; the
-// next word asked and heard, its picture glowing, a tap, "Yum!".
-SCENES.feed = {
-  url: "/arcade-feed.html", seconds: 4, most: 60,
-  what: "two pictures in a row glowing in the row the frame shows",
-  // Echo's bubble, Echo, the plate and the first row of pictures (the second
-  // row does not fit under them at 3:4)
-  crop: (page) => page.evaluate(() => Math.max(0, Math.round(document.getElementById("bubble").getBoundingClientRect().top - 12))),
-  async stage(s) {
-    const { page } = s;
-    await must(page, "the start card", until(page, () => !!document.querySelector("#startOvl.show"), 20000));
-    await images(page);
-    await page.evaluate(() => document.getElementById("startBtn").click());
-    await run(page, 300);
-    if (await page.evaluate(() => !!document.querySelector("#primer.show"))) { await page.evaluate(() => document.getElementById("primerYes").click()); await run(page, 300); }
-    s.play = feeder(page);
-  },
-  // filmed until the last 4 s are the clip (end): which row a picture sits
-  // in is the game's dice, so turns go by on film until two in a row are in
-  // the top row. A round that ends meanwhile: Play again, as a child would
-  // (never in the clip)
-  async drive() {
-    const { page } = this._s;
-    if (await page.evaluate(() => !!document.querySelector("#endOvl.show"))) { await page.evaluate(() => document.getElementById("again").click()); return; }
-    return this._s.play();
-  },
-  probe: () => {
-    const g = document.getElementById("grid"), hint = g.querySelector(".speechHint:not(.right)");
-    let at = "";
-    if (hint && !g.classList.contains("locked")) { const gr = g.getBoundingClientRect(), hr = hint.getBoundingClientRect(); at = hr.top < gr.top + gr.height / 2 ? "top" : "low"; }
-    return { at, fed: document.getElementById("plate").dataset.fed, card: !!document.querySelector("#endOvl.show, #startOvl.show, #primer.show") };
-  },
-  // the clip: two pictures fed on film, every glow in it (and in the second
-  // before it) in the top row, never one in the row the crop cuts off; the
-  // first picture's glow on film before its tap; the second glowing in the
-  // last second and fed 6 frames before the end, so the clip ends on it, still
-  // in the frame, going to Echo as he cheers ("Yum!")
-  end(h, n) {
-    const w = h.slice(-n), before = h.slice(Math.max(0, h.length - n - FPS), h.length - n);
-    if (w.some((x) => x.card) || before.concat(w).some((x) => x.at === "low")) return false;
-    const fed = [];
-    for (let i = 1; i < w.length; i++) if (w[i].fed !== w[i - 1].fed) fed.push(i);
-    if (fed.length !== 2 || fed[1] !== w.length - 7) return false;
-    return w.slice(0, fed[0]).filter((x) => x.at === "top").length >= 6;
-  },
-  debug: () => ({ fed: document.getElementById("plate").dataset.fed, locked: document.getElementById("grid").classList.contains("locked"), hint: [...document.querySelectorAll("#grid .speechHint")].map((h) => h.className + " " + Math.round(h.getBoundingClientRect().top)), grid: Math.round(document.getElementById("grid").getBoundingClientRect().top), mics: __dev.mics, bubble: document.getElementById("bMain").textContent }),
-};
-// say the word when the mic is open; tap the picture that glows
-function feeder(page) {
-  let on = 0, wait = 0, rest = 0;
-  return async () => {
-    if (on > 0) { if (--on === 0) await page.evaluate(() => { __dev.voice = false; }); return; }
-    const st = await page.evaluate(() => {
-      const g = document.getElementById("grid"), hint = g.querySelector(".speechHint:not(.right)");
-      const live = __dev.mics > (window.__reelMics || 0);
-      if (hint && !g.classList.contains("locked")) { const r = hint.getBoundingClientRect(); return { tap: { x: r.x + r.width / 2, y: r.y + r.height / 2 } }; }
-      return { listen: g.classList.contains("locked") && live };
-    });
-    if (st.tap) { if (rest++ < 10) return; rest = 0; await page.evaluate(() => { window.__reelMics = __dev.mics; }); await page.mouse.move(st.tap.x, st.tap.y); await page.mouse.down(); await page.mouse.up(); return; }
-    if (!st.listen) { wait = 0; return; }
-    if (wait++ < 14) return;
-    wait = 0; on = 9;
-    await page.evaluate(() => { __dev.voice = true; });
-  };
-}
-
-// setup's demo order (Travis's spec, 22 Oct 2026: slice, hoops, tiles,
-// bubbles, soccer, dino, …) is setup's to keep; this is the list of clips
-export const KEYS = ["slice", "tiles", "hoops", "soccer", "dino", "stack", "run", "glide", "rise", "feed", "bubbles"];
+// setup's demo order (Travis, 23 Oct 2026: "rotate through fruit slice,
+// piano tiles, and Flappy Glide"); setup keeps its own copy (REEL_ORDER)
+export const KEYS = ["slice", "tiles", "glide"];
 
 async function main() {
   const args = Object.fromEntries(process.argv.slice(2).map((a) => a.replace(/^--/, "").split("=")));
@@ -858,7 +529,7 @@ async function main() {
         if (s.errors.length) throw new Error("page errors: " + s.errors.slice(0, 3).join(" | "));
         const sh = sheet(key, dir, FULL);
         const e = "frames-only" in args || FULL ? null : encode(key, dir);
-        console.log("PASS " + key + " (" + ((Date.now() - t) / 1000).toFixed(0) + " s, crop y " + s.cropY + ")" + (e ? "  mp4 " + (e.mp4 / 1000).toFixed(0) + " KB crf " + e.crf + ", poster " + (e.webp / 1000).toFixed(0) + " KB q" + e.q : "") + (sh ? "  sheet " + sh : ""));
+        console.log("PASS " + key + " (" + ((Date.now() - t) / 1000).toFixed(0) + " s, crop y " + s.cropY + ")" + (scene._t ? "  times " + JSON.stringify(scene._t) : "") + (e ? "  mp4 " + (e.mp4 / 1000).toFixed(0) + " KB crf " + e.crf + ", poster " + (e.webp / 1000).toFixed(0) + " KB q" + e.q : "") + (sh ? "  sheet " + sh : ""));
       } catch (e) {
         bad++; console.log("FAIL " + key + ": " + e.message.split("\n")[0] + (s && s.errors.length ? "  page errors: " + s.errors.slice(0, 3).join(" | ") : ""));
         if (DEBUG && s && scene.debug) console.log("  " + JSON.stringify(await s.page.evaluate(scene.debug).catch((x) => x.message)));
