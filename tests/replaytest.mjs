@@ -233,7 +233,7 @@ try {
     await mark(page, 111);                          // "Speech homework is hard at home.": recorded
     await next(page);
     await page.locator('[data-step="reel"].on').waitFor(); await rest();
-    await mark(page, 121);                          // "They practice by playing.": recorded
+    await mark(page, 121);                          // "Practice through play.": recorded
     await next(page);
     await page.locator('[data-step="rachel"].on').waitFor(); await rest();
     await mark(page, 131);                          // Rachel, on her own: recorded
@@ -310,7 +310,7 @@ try {
     const allNodes = nodes(rr), byId = (id) => allNodes.filter((n) => n.attributes && n.attributes.id === id);
     const said = (n) => (n.childNodes || []).map((c) => c.textContent || "").join("");
     ok("setup: the name on the screens that sell is recorded as [child], every time (intName, gamesName)", ["intName", "gamesName"].every((id) => byId(id).length > 0 && byId(id).every((n) => said(n) === "[child]")), ["intName", "gamesName"].map((id) => byId(id).map(said)));
-    ok("setup: the screens that sell were recorded with their words (the problem, the reel, Rachel, what they love, the games)", /Speech homework is hard at home/.test(text) && /They practice by playing/.test(text) && /pediatric speech-language pathologist in her clinical fellowship/.test(text) && /What does/.test(text) && /will love/.test(text) && /Fruit Slice/.test(text));
+    ok("setup: the screens that sell were recorded with their words (the problem, the reel, Rachel, what they love, the games)", /Speech homework is hard at home/.test(text) && /Practice through play/.test(text) && /pediatric speech-language pathologist in her clinical fellowship/.test(text) && /What does/.test(text) && /will love/.test(text) && /Fruit Slice/.test(text));
     // every incremental event, each pointer position at its own time
     const when = (e) => (e.type === INCR && Array.isArray(e.data.positions)) ? e.data.positions.map((q) => e.timestamp + (q.timeOffset || 0)) : [e.timestamp];
     const between = rr.filter((e) => e.type === INCR && when(e).some((t) => t >= t1 && t <= t2));

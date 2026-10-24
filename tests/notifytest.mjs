@@ -554,7 +554,7 @@ const now = (page) => page.evaluate(() => Date.now());
     finally { await o.context.close(); }
   };
   await walk("a new buyer the store gives free days, iOS never asked", {}, { perm: "prompt" }, "remind");
-  await walk("both plans offered with free days, the yearly picked", { offering: "both" }, { perm: "prompt" }, "remind");
+  await walk("both plans offered with free days, the monthly picked", { offering: "both" }, { perm: "prompt" }, "remind");
   await walk("an Apple ID Apple calls ineligible for the free days", { elig: { monthly: 1, annual: 1 } }, { perm: "prompt" }, "/subscribe.html");
   await walk("a phone that cannot tell whether this Apple ID gets the free days (plan.sure false: the price promises no reminder)", { elig: "missing" }, { perm: "prompt" }, "/subscribe.html");
   await walk("a monthly plan with no free days (charged today)", { store: STORES.noFree }, { perm: "prompt" }, "/subscribe.html");

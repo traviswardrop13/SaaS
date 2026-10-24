@@ -531,8 +531,9 @@
            who bought it is still recognised and can restore.
            TWO ROWS, WHEN THE STORE CAN SELL BOTH (Travis, 19 Oct 2026: "go,
            yes to 1 2 3", to showing monthly and yearly so parents compare).
-           The yearly row (#iapYear) sits above the monthly one and is picked
-           when the screen opens, but it is shown ONLY when Sona.storePlan
+           The yearly row (#iapYear) sits above the monthly one (picked when
+           the screen opened until 23 Oct 2026; off the card since, while
+           IAP_SELL_YEARLY is false), but it is shown ONLY when Sona.storePlan
            hands back a yearly plan (plan.year): the store returned the yearly
            product AND RevenueCat's current offering lists it. Otherwise the
            card is the monthly row alone, exactly as before, and neither row
@@ -543,8 +544,15 @@
            A THIRD ROW, THE ONE PAYMENT (Travis, 22 Oct 2026, for iOS 1.0.9;
            "i dont wanna say lifetime"): #iapLife, under the monthly row, by
            the yearly row's rule (plan.life: the store returned the one-payment
-           product AND RevenueCat's current offering lists it). It is never
-           picked on arrival, and one that arrives late comes in unpicked.
+           product AND RevenueCat's current offering lists it).
+           TWO ROWS, MONTHLY ON TOP AND PICKED (Travis, 23 Oct 2026: "get rid
+           of the yearly option. I just want two payment options"; first with
+           the one payment on top and picked, then, the same day, "can we just
+           have the ... a month as the top default option and then below it is
+           the pay one time?"): the monthly row, with its free trial, on top
+           and picked when the screen opens; #iapLife under it; no yearly row
+           (IAP_SELL_YEARLY in sona.js). A one-payment row that arrives late
+           comes in unpicked.
            #iapAhead is the one line under the button about the phone's own
            heads-up the day before the free days end, painted (from
            planWords) only when this phone will really show it.
@@ -875,11 +883,12 @@
     //            them replaces it, never a tap (see ask())
     //   poll, pendingKind, stop   the watch for an Ask to Buy approval
     //   pick     "annual" | "monthly" | "lifetime": the row the parent picked.
-    //            Yearly when the screen opens (19 Oct 2026); it only counts
+    //            Monthly when the screen opens (23 Oct 2026; yearly from 19 to
+    //            23 Oct); it only counts
     //            while the store's answer has that row (plan.year, plan.life:
     //            the one payment, 22 Oct 2026, never picked on arrival), so
     //            with one row the card is the monthly plan whatever this says
-    var APPLE = { plan: null, busy: false, msg: "", done: "", counted: false, told: {}, shape: "", gen: 0, asks: 0, poll: 0, pendingKind: "", pendingPlan: null, unentPlan: null, stop: null, pick: "annual" };
+    var APPLE = { plan: null, busy: false, msg: "", done: "", counted: false, told: {}, shape: "", gen: 0, asks: 0, poll: 0, pendingKind: "", pendingPlan: null, unentPlan: null, stop: null, pick: "monthly" };
     // THE ONE SHOWING FROM HOME (Sona.homeOfferDue, 13 Oct 2026) is spent
     // only once the offer frame is up AND the store gave a definite answer:
     // a priced card, "nothing to sell", or Premium already there (and always
@@ -1116,7 +1125,8 @@
     // ONE PAINT FUNCTION (5 Oct 2026). Travis: "get rid of the annual option
     // and update the copy so that it says three days free, then $9.99 a
     // month". The app sold the monthly product alone; since 19 Oct 2026 the
-    // yearly one can be a second row, picked on arrival, when the store's
+    // yearly one can be a second row (never picked on arrival since 23 Oct
+    // 2026, and off the card while IAP_SELL_YEARLY is false), when the store's
     // answer carries it (plan.year: the store has it AND RevenueCat's
     // offering lists it). What the card may say about either is not decided
     // here: Sona.storePlan() asks the store (the products, whether THIS buyer
@@ -1204,7 +1214,7 @@
           if (!priced(p)) return [];
           var out = [];
           if (p.year) out.push("annual");
-          out.push("monthly");
+          out.push("monthly");                // monthly on top, picked (23 Oct 2026)
           if (p.life) out.push("lifetime");
           return out;
         }
@@ -1351,8 +1361,9 @@
           // UNPICKED, and a row that goes away takes the pick to monthly: the
           // row the parent was reading stays picked while it is still there,
           // so the same button never starts buying another plan without a
-          // tap. Yearly is picked when the screen opens on several rows (the
-          // one payment never is); after that only a tap changes the pick.
+          // tap. Monthly is picked when the screen opens (23 Oct 2026, the free
+          // trial: the yearly row, when sold, and the one payment never are);
+          // after that only a tap changes the pick.
           if (wasKind && kindsOf(APPLE.plan).indexOf(wasKind) > -1) APPLE.pick = wasKind;
           if (APPLE.plan.state === "owned") owned(); else paintApple();
         }

@@ -128,7 +128,7 @@ body[data-setup-screen="achieve"] .ob .mascot { display: none; }
 .ob .schips .sound:active { transform: translateY(1px); }
 .ob #obAge { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 10px; margin-top: 0; }
 .ob #obAge .sound { min-width: 0; min-height: 63px; padding: 12px 5px; font-size: 22px; }
-.ob .sound:focus-visible, .ob .skip:focus-visible, .obfoot .skip:focus-visible, .ask-pick:focus-visible, .int-pick:focus-visible, .reel-hear:focus-visible, .remind-no:focus-visible { outline: 3px solid #076f6c; outline-offset: 3px; }
+.ob .sound:focus-visible, .ob .skip:focus-visible, .obfoot .skip:focus-visible, .ask-pick:focus-visible, .int-pick:focus-visible, .remind-no:focus-visible { outline: 3px solid #076f6c; outline-offset: 3px; }
 .ob .skip, .obfoot .skip { color: #806348; }
 .ob .step:not([data-step="welcome"]) { padding: 0; }
 
@@ -175,45 +175,64 @@ body[data-setup-screen="achieve"] .ob .mascot { display: none; }
 .ob .step.sell.on { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; }
 .ob .sell-line { margin: 0; font-size: 17px; line-height: 1.45; color: #806348; font-weight: 700; text-wrap: balance; }
 
-/* the problem: three flashcards, one tossed away, a game slides in (once) */
+/* the problem (redone 23 Oct 2026, Travis: "too fast or just confusing ...
+   the picture of a game shows up too quickly"): a before and an after, one
+   under the other, each a picture and its own words. The flashcards fade up
+   first; the game a clear beat later (1.5 s), in place: nothing flies. */
 .ob .step[data-step="problem"].on { justify-content: center; }
-/* the scene spans the phone's width, and clips what flies off it (a tossed
-   card, faded out, is never a sideways scroll) */
-.toss { position: relative; flex: 0 1 auto; height: clamp(170px, 34vh, 320px); min-height: 150px; margin: 10px -18px 0; overflow: hidden; }
-.toss-card { position: absolute; left: 50%; top: 50%; width: 128px; height: 88px; display: flex; align-items: center; justify-content: center; background: #fff; border: 2px solid #e9dcc7; border-radius: 16px; box-shadow: 0 5px 0 #eadfcd, 0 10px 18px #6f492c14; font: 800 30px/1 'Baloo 2', sans-serif; color: #48280f; }
-.toss-a { margin: -104px 0 0 -136px; transform: rotate(-13deg); }
-.toss-b { margin: -88px 0 0 6px; transform: rotate(11deg); }
-.toss-c { margin: -76px 0 0 -64px; transform: rotate(-3deg); animation: toss-away .75s cubic-bezier(.45,0,.6,1) .55s both; }
-.toss-game { position: absolute; left: 50%; top: 50%; width: 240px; margin: -36px 0 0 -120px; border-radius: 18px; overflow: hidden; aspect-ratio: 16 / 9; background: #f4eddf; box-shadow: 0 6px 0 #e3d3b9, 0 16px 28px #6f492c26; animation: game-in .7s cubic-bezier(.2,1.35,.4,1) 1.15s both; }
-.toss-game img { display: block; width: 100%; height: 100%; object-fit: cover; }
-@keyframes toss-away { from { transform: rotate(-3deg); opacity: 1; } to { transform: translate(160px, -96px) rotate(44deg); opacity: 0; } }
-@keyframes game-in { from { transform: translateY(70px) scale(.85); opacity: 0; } to { transform: none; opacity: 1; } }
+.ba { list-style: none; margin: 22px 0 0; padding: 0; display: flex; flex-direction: column; gap: 14px; text-align: left; }
+.ba-row { display: flex; align-items: center; gap: 14px; padding: 12px; border-radius: 22px; background: #fffdf8; border: 1.5px solid #ecdcc5; box-shadow: 0 4px 0 #eadfcd80; }
+.ba-after { border-color: #9edcd8; box-shadow: 0 0 0 2px #11b3b0, 0 5px 0 #9edcd8; }
+.ba-pic { position: relative; flex: none; width: 46%; aspect-ratio: 16 / 9; border-radius: 14px; overflow: hidden; background: #f4eddf; }
+.ba-game img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.ba-cards { background: #f1e7d6; }
+.ba-card { position: absolute; top: 50%; left: 50%; width: 40%; height: 44%; display: flex; align-items: center; justify-content: center; background: #fff; border: 1.5px solid #e2d3bc; border-radius: 9px; box-shadow: 0 3px 0 #e2d3bc; font: 800 clamp(15px, 4.4vw, 21px)/1 'Baloo 2', sans-serif; color: #6b5641; }
+.ba-card:nth-child(1) { transform: translate(-112%, -88%) rotate(-10deg); }
+.ba-card:nth-child(2) { transform: translate(12%, -82%) rotate(9deg); }
+.ba-card:nth-child(3) { transform: translate(-50%, -12%) rotate(-3deg); }
+.ba-words { display: flex; flex-direction: column; min-width: 0; }
+.ba-tag { font: 800 19px/1.15 'Baloo 2', sans-serif; color: #48280f; }
+.ba-after .ba-tag { color: #0a7f7c; }
+.ba-say { font-size: 16px; line-height: 1.3; font-weight: 700; color: #806348; }
+.ba-before { animation: ba-up .6s ease-out .3s both; }
+.ba-after { animation: ba-up .7s ease-out 1.5s both; }
+@keyframes ba-up { from { transform: translateY(14px); opacity: 0; } to { transform: none; opacity: 1; } }
 
-/* the reel: a 3:4 frame of real play, as big as the phone allows */
-.ob .step[data-step="reel"].on { justify-content: center; }
-/* as tall as the room allows, and no taller than the 3:4 frame the width gives: the screen stays one group, centred */
-.reel-box { flex: 1 1 0; min-height: 150px; max-height: calc((min(100vw, 480px) - 44px) * 1.3334); display: flex; align-items: center; justify-content: center; margin-top: 12px; container-type: size; }
-.reel { position: relative; width: min(100%, 60vw); aspect-ratio: 3 / 4; border-radius: 26px; overflow: hidden; background: linear-gradient(#f4eddf, #ead9bd); box-shadow: 0 6px 0 #e3d3b9, 0 16px 30px #6f492c1f; }
-@supports (width: 1cqw) { .reel { width: min(100cqw, 75cqh); height: min(100cqh, 133.333cqw); aspect-ratio: auto; } }
+/* the reel (redone 23 Oct 2026, Travis: "I want it to take up the whole
+   screen"; then "i dont want a darkened screen up there just have it say
+   practice by playing ... for 2 seconds and then fade it away"): the clips
+   fill the screen, a layer outside .ob as the hello's is (a step slides in
+   with a transform, which would box a fixed layer into the step), drawn on
+   this screen alone and hidden while the page is held blank. The heading is
+   a cream card in the middle of the screen (clear of the game's own top
+   bar), shown for two seconds and faded away (opacity only);
+   then only the game, Back and Continue. Under Reduce Motion nothing
+   changes: the card stays, over the first game's still poster. */
+.ob .step[data-step="reel"].on { justify-content: center; padding-bottom: 8vh; }
+/* below the status bar and the Dynamic Island in the iPhone app (the page
+   runs under them, viewport-fit=cover): the clip's own top bar is drawn
+   where the game draws it, never under the clock, and the cream page shows
+   behind the status bar as on every other setup screen */
+.reel-box { display: none; position: fixed; inset: env(safe-area-inset-top) 0 0 0; z-index: 0; background: #2c1d10; pointer-events: none; }
+body[data-setup-screen="reel"] .reel-box { display: block; }
+html.ob-resume .reel-box, html.ob-leaving .reel-box { display: none !important; }
+.reel { position: absolute; inset: 0; overflow: hidden; background: #2c1d10; }
 .reel-still, .reel-clip { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity .6s ease; background: transparent; }
 .reel-still.on, .reel-clip.on { opacity: 1; }
 .reel-still.card { object-fit: contain; }
 .reel-still.gone { display: none; }
 .reel.stills .reel-clip { display: none; }
-.reel-say { position: absolute; left: 10px; right: 10px; bottom: 10px; z-index: 2; display: flex; align-items: center; justify-content: center; gap: 8px; margin: 0; padding: 6px 14px 6px 8px; border-radius: 18px; background: #fffdf8ee; box-shadow: 0 4px 12px #6f492c26; font: 800 17px/1.15 'Baloo 2', sans-serif; color: #48280f; text-align: left; }
-.reel-say img { width: 38px; height: 38px; flex: none; }
-.reel-say .snd { color: #ef6f23; }
-.reel-under { display: flex; flex-direction: column; align-items: center; gap: 4px; margin-top: 14px; flex-shrink: 0; }
-.reel-hear { display: inline-flex; align-items: center; gap: 9px; min-height: 46px; padding: 8px 20px; border-radius: 999px; border: 2px solid #ecdcc5; background: #fffaf1; color: #5b2d05; box-shadow: 0 4px 0 #ecdcc5; font: 800 17px/1 'Baloo 2', sans-serif; cursor: pointer; -webkit-tap-highlight-color: transparent; }
-.reel-hear:active { transform: translateY(3px); box-shadow: 0 1px 0 #ecdcc5; }
-.reel-wave { display: inline-flex; align-items: center; gap: 3px; height: 16px; }
-.reel-wave i { display: block; width: 4px; height: 7px; border-radius: 2px; background: #11b3b0; }
-.reel-wave i:nth-child(2) { height: 12px; }
-.reel-hear.playing .reel-wave i { animation: reel-wave .7s ease-in-out 5; }
-.reel-hear.playing .reel-wave i:nth-child(2) { animation-delay: .12s; }
-.reel-hear.playing .reel-wave i:nth-child(3) { animation-delay: .24s; }
-@keyframes reel-wave { 0%, 100% { transform: scaleY(.6); } 50% { transform: scaleY(1.9); } }
-.reel-note { margin: 0; font-size: 12.5px; font-weight: 700; color: #967f67; }
+/* a clip fills a phone (cover); on a screen wider than a phone's (an iPad,
+   a laptop window) cover would cut off the clip's top bar, Echo's ask, so
+   the whole 1:2 frame shows there, centred on the dark backdrop */
+@media (min-aspect-ratio: 3/5) { .reel-still, .reel-clip { object-fit: contain; } }
+body[data-setup-screen="reel"] .obfoot { background: none; }
+/* Back stays readable over the game: a cream pill under it */
+body[data-setup-screen="reel"] .obfoot #backBtn { padding: 0 14px; border-radius: 999px; background: #fffdf8e6; box-shadow: 0 3px 10px #24170c33; }
+.ob .reel-title { align-self: center; margin: 0; padding: 12px 22px; border-radius: 22px; background: #fffdf8f2; box-shadow: 0 6px 22px #24170c40; animation: reel-title 2.6s ease both; }
+/* opacity only: the heading keeps the focus render() gave it and stays in
+   the accessibility tree, so a screen reader can still read the screen */
+@keyframes reel-title { 0% { opacity: 0; } 12%, 77% { opacity: 1; } 100% { opacity: 0; } }
 
 /* Rachel, on her own: her photo big, her line, nothing else */
 .ob .step[data-step="rachel"].on { justify-content: center; }
@@ -245,10 +264,9 @@ body[data-setup-screen="achieve"] .ob .mascot { display: none; }
 .sell-grid.both .sell-games.two li { width: calc((100% - 16px) / 3); }
 @media (max-height: 700px) {
   .ob .sell-line { font-size: 15.5px; }
-  .toss { min-height: 140px; }
-  .toss-card { width: 100px; height: 68px; font-size: 26px; }
-  .toss-a { margin: -80px 0 0 -108px; } .toss-b { margin: -74px 0 0 6px; } .toss-c { margin: -58px 0 0 -50px; }
-  .toss-game { width: 190px; margin: -28px 0 0 -95px; }
+  .ba { margin-top: 16px; gap: 10px; }
+  .ba-row { padding: 10px; gap: 12px; }
+  .ba-tag { font-size: 17px; } .ba-say { font-size: 15px; }
   .rachel-line { font-size: 15.5px; }
   .sell-grid { margin-top: 10px; }
   .sell-games { gap: 8px 6px; }
@@ -257,9 +275,7 @@ body[data-setup-screen="achieve"] .ob .mascot { display: none; }
 @media (max-height: 600px) {
   .ob .step.sell .qh { font-size: 23px; margin-bottom: 4px; }
   .ob .sell-line { font-size: 14px; line-height: 1.4; }
-  .reel-say { font-size: 15px; padding: 4px 10px 4px 6px; } .reel-say img { width: 30px; height: 30px; }
-  .reel-under { margin-top: 10px; }
-  .reel-hear { min-height: 44px; font-size: 16px; }
+  .ba-pic { width: 40%; } .ba-tag { font-size: 16px; } .ba-say { font-size: 14px; }
   .rachel-photo { margin-bottom: 12px; }
   .rachel-pill { margin-top: 10px; }
   .sell-kicker { margin: 6px 0 4px; font-size: 11px; }
@@ -376,16 +392,16 @@ body[data-setup-screen="remind"] #nextBtn { display: none; }
    22 Oct 2026). sona.css cuts every animation to 0.001 ms but keeps its
    delay, and a delayed animation that fills "both" shows its FIRST keyframe
    until the delay is over: the game card on the problem screen stayed
-   invisible for 1.15 s and then jumped 80 px into place, the tossed card
-   vanished half a second in, Echo popped onto the ready screen. So nothing
-   in setup animates here, and what each animation would end on is drawn
-   from the first frame: the tossed card is gone, the game card is in place,
-   Echo stands cheering, and the sparkles (which end invisible) are not
-   drawn. (The hello's own layers are above; the steps, the footer and the
+   invisible for 1.15 s and then jumped 80 px into place, Echo popped onto
+   the ready screen. So nothing in setup animates here, and what each
+   animation would end on is drawn from the first frame: the problem
+   screen's before and after are both in place, Echo stands cheering, the
+   sparkles (which end invisible) are not drawn, and the reel's heading
+   stays (its fade is its only change). (The hello's own layers are above; the steps, the footer and the
    bubble in onboarding.html's own rules.) */
 @media (prefers-reduced-motion: reduce) {
   .ob *, .ob *::before, .ob *::after, .obfoot * { animation: none !important; }
-  .toss-c, .spark { display: none; }
+  .spark { display: none; }
 }
 
 /* the reminder ask: Echo beside it, the question, one teal button, a cream "Not now" */

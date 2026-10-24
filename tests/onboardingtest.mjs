@@ -3,8 +3,8 @@
 //
 // SETUP, FROM SCRATCH (Travis, 22 Oct 2026: "a completely new onboarding ...
 // We want to sell the product in the onboarding"): the hello → "Speech
-// homework is hard at home." → the games playing ("They practice by
-// playing.") → Rachel on her own → name and age → "What does <Name> love?" →
+// homework is hard at home." → the games playing ("Practice through
+// play.") → Rachel on her own → name and age → "What does <Name> love?" →
 // "Games <Name> will love" → "Is <Name> in speech therapy?" → the sounds →
 // "How long each day?" → the optional email (before the price since 13 Oct
 // 2026) → "<Name>'s practice is ready!" → (a reminder ask, where the iPhone
@@ -41,8 +41,8 @@ function edges(config){
   h.background=()=>{h.hidden=true;document.dispatchEvent(new Event('visibilitychange'));};h.foreground=()=>{h.hidden=false;document.dispatchEvent(new Event('visibilitychange'));};
   navigator.mediaDevices.getUserMedia=()=>new Promise((resolve,reject)=>{h.order.push('microphone');const req={grant(){const tracks=[0,1].map(()=>{const t={readyState:'live',stop(){t.readyState='ended';h.order.push('stop');}};h.tracks.push(t);return t;});resolve({getTracks:()=>tracks,getAudioTracks:()=>tracks});},deny(){reject(new DOMException('Denied','NotAllowedError'));}};h.requests.push(req);if(config.permission==='grant')req.grant();else if(config.permission==='deny')req.deny();});
   let sona;
-  // (every recording Sona would play is written down instead: setup plays one
-  // only on a grown-up's tap of "Hear Echo", setupscreenstest's)
+  // (every recording Sona would play is written down instead: setup plays
+  // none since 23 Oct 2026, when "Hear Echo" went)
   Object.defineProperty(window,'Sona',{configurable:true,get:()=>sona,set(value){sona=value;value.isNativeApp=()=>!!config.native;value.speechPerm=()=>{h.order.push('speech permission');return Promise.resolve(true);};value.speak=value.speakNow=text=>{if(String(text||'').trim())h.speech.push(text);return Promise.resolve();};value.mediaPCM=(bytes,o)=>{h.media.push({len:bytes&&bytes.byteLength,volume:o&&o.volume});return {done:Promise.resolve('ended'),stop(){}};};value.confetti=()=>h.confetti++;Object.keys(value.sfx||{}).forEach(k=>{if(typeof value.sfx[k]==='function')value.sfx[k]=()=>{if(k==='complete')h.complete++;};});}});
   // a browser where the website sells (WEB_SALES's own QA seam, session-only):
   // a phone where the price follows setup, as the iPhone app with the plugin
@@ -191,7 +191,7 @@ await scenario('sound selection and private paced handoff',async()=>{
   ok('Not now saves choices without asking or pretending microphone permission',result.requests===0&&result.mic!=='1'&&result.profile.onboarded&&JSON.stringify(result.profile.focusSounds)==='["S"]',result);
   ok('the first game is not marked until the hand-off\'s own tap',result.firstgame===null,result.firstgame);
   ok('the handoff does not send the child name into generated speech',result.speech.every(t=>!t.includes('Milo')));
-  ok('setup and the handoff stay silent even with voice enabled: no spoken line, and no recording played without a tap of "Hear Echo"',result.speech.length===0&&result.media.length===0,[result.speech,result.media]);
+  ok('setup and the handoff stay silent even with voice enabled: no spoken line, and no recording played',result.speech.length===0&&result.media.length===0,[result.speech,result.media]);
   await page.waitForTimeout(3200);
   ok('the family controls when the handoff ends',new URL(page.url()).pathname==='/onboarding.html');
   ok('finishing web setup never uploads an automatic backup',pairPosts(requests).length===0,pairPosts(requests));
@@ -691,7 +691,7 @@ await scenario('a double tap never answers a one-tap question',async()=>{
   // waits on the page first, and that wait would eat into the 150 ms.)
   await page.waitForTimeout(600);
   const cont=await centre(page,'#nextBtn');
-  for(const [from,to] of [['welcome','problem'],['problem','reel'],['reel','rachel']]){
+  for(const [from,to] of [['welcome','problem'],['problem','reel'],['reel','rachel'],['rachel','name']]){
    await page.mouse.click(cont.x,cont.y);await page.waitForTimeout(120);await page.mouse.click(cont.x,cont.y);
    ok('a double tap on the footer\'s button on "'+from+'" moves one screen, to "'+to+'"',await page.evaluate(()=>document.body.dataset.setupScreen)===to,await screen(page));
    await page.waitForTimeout(700);
@@ -941,7 +941,8 @@ await scenario('a solid colour behind the keyboard',async()=>{
 // Back (what the child loves is a question: any number of tiles, or none):
 // nothing stored but the draft's picks, no progress segment on a statement.
 // The games are the catalog's (no Coming soon game, no typed list).
-const PROBLEM={title:'Speech homework is hard at home.',line:'Flashcards turn into fights. Play turns into practice.'};
+// the problem since 23 Oct 2026: a before and an after, each its own few words
+const PROBLEM={title:'Speech homework is hard at home.',rows:[['Flashcards','turn into fights.'],["Sona's games",'turn into practice.']]};
 const GAMES=n=>({title:'Games '+n+' will love'});
 const INTERESTS=[['sports','Sports'],['music','Music'],['dinosaurs','Dinosaurs'],['animals','Animals'],['space','Space'],['building','Building'],['food','Food']];
 // what a sell screen shows, as a parent reads it
@@ -960,7 +961,7 @@ const playable=(page,group)=>page.evaluate(g=>Object.keys(Sona.GAME_ACTS).filter
 // the peek setup should show: the games the picks fit first, then the rest,
 // each part in Home's order, the first `cap` of them (the page's own pairs)
 const peekOf=(page,home,picks,cap)=>page.evaluate(([home,picks,cap])=>{const fit=k=>picks.some(i=>(INTEREST_GAMES[i]||[]).indexOf(k)>-1),f=home.filter(fit);return {fits:f.slice(0,cap),grid:f.concat(home.filter(k=>!fit(k))).slice(0,cap)};},[home,picks,cap]);
-const sellFit=key=>{const st=document.querySelector('[data-step="'+key+'"]').getBoundingClientRect(),b=document.getElementById('nextBtn').getBoundingClientRect(),f=document.querySelector('.obfoot').getBoundingClientRect(),h=document.querySelector('[data-step="'+key+'"] h1').getBoundingClientRect(),imgs=[...document.querySelectorAll('[data-step="'+key+'"] .sell-art img,[data-step="'+key+'"] .toss-game img,[data-step="'+key+'"] .rachel-photo img,[data-step="'+key+'"] .reel,[data-step="'+key+'"] .int-pick')].map(i=>i.getBoundingClientRect()),under=[...document.querySelectorAll('[data-step="'+key+'"] .reel-hear,[data-step="'+key+'"] #interestsSkip')].map(i=>i.getBoundingClientRect());return {cardTop:Math.round(st.top),cardBottom:Math.round(st.bottom),footTop:Math.round(f.top),btnTop:Math.round(b.top),btnBottom:Math.round(b.bottom),headTop:Math.round(h.top),imgs:imgs.length,imgBottom:Math.round(Math.max(0,...imgs.map(r=>r.bottom),...under.map(r=>r.bottom))),imgSmall:imgs.filter(r=>r.width<40||r.height<20).length,height:innerHeight,sideways:document.documentElement.scrollWidth-innerWidth,obSideways:(()=>{const o=document.querySelector('.ob');return o.scrollWidth-o.clientWidth;})()};};
+const sellFit=key=>{const st=document.querySelector('[data-step="'+key+'"]').getBoundingClientRect(),b=document.getElementById('nextBtn').getBoundingClientRect(),f=document.querySelector('.obfoot').getBoundingClientRect(),h=document.querySelector('[data-step="'+key+'"] h1').getBoundingClientRect(),imgs=[...document.querySelectorAll('[data-step="'+key+'"] .sell-art img,[data-step="'+key+'"] .ba-pic,[data-step="'+key+'"] .rachel-photo img,[data-step="'+key+'"] .reel-title,[data-step="'+key+'"] .int-pick')].map(i=>i.getBoundingClientRect()),under=[...document.querySelectorAll('[data-step="'+key+'"] #interestsSkip')].map(i=>i.getBoundingClientRect());return {cardTop:Math.round(st.top),cardBottom:Math.round(st.bottom),footTop:Math.round(f.top),btnTop:Math.round(b.top),btnBottom:Math.round(b.bottom),headTop:Math.round(h.top),imgs:imgs.length,imgBottom:Math.round(Math.max(0,...imgs.map(r=>r.bottom),...under.map(r=>r.bottom))),imgSmall:imgs.filter(r=>r.width<40||r.height<20).length,height:innerHeight,sideways:document.documentElement.scrollWidth-innerWidth,obSideways:(()=>{const o=document.querySelector('.ob');return o.scrollWidth-o.clientWidth;})()};};
 // what this phone opens, read from the catalog's own gate (Sona.gameAccess)
 const opensHere=(page,group)=>page.evaluate(g=>Object.keys(Sona.GAME_ACTS).filter(k=>{const a=Sona.GAME_ACTS[k];return (!g||a.group===g)&&!a.comingSoon&&a.available!==false&&Sona.gameAccess(k).allowed;}),group);
 const kept=page=>page.evaluate(()=>{const o={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(/^sona\./.test(k))o[k]=localStorage.getItem(k);}o.__draft=JSON.stringify(draft);return JSON.stringify(o);});
@@ -974,14 +975,14 @@ await scenario('the screens that sell: their words, the games, and nothing kept'
   const before=await kept(page);
   let s=await sellShown(page,'problem');
   ok('problem: the heading is exactly "'+PROBLEM.title+'"',s.screen==='problem'&&s.title===PROBLEM.title,s);
-  ok('problem: the line is exactly "'+PROBLEM.line+'"',s.line===PROBLEM.line,s.line);
+  ok('problem: two rows, the flashcards then Sona\'s games, word for word',JSON.stringify(await page.evaluate(()=>[...document.querySelectorAll('[data-step="problem"] .ba-row')].map(r=>[r.querySelector('.ba-tag').textContent,r.querySelector('.ba-say').textContent])))===JSON.stringify(PROBLEM.rows));
   ok('problem: a statement, not a question: nothing to tap in it, Continue and Back in the footer, no progress segment, no Echo, the heading takes focus',s.asks.length===0&&s.cta==='Continue'&&s.enabled&&s.back&&s.seg&&!s.mascot&&s.focus&&!/\?/.test(s.words),s);
-  ok('problem: three word cards and one painted game (Fruit Slice\'s Home card), decoration only',await page.evaluate(()=>{const t=document.querySelector('.toss');return t.getAttribute('aria-hidden')==='true'&&[...t.querySelectorAll('.toss-card')].map(c=>c.textContent).join()==='rug,red,run'&&t.querySelector('.toss-game img').getAttribute('src')==='/assets/crafted/home-fruit.webp';}));
+  ok('problem: three word cards and one painted game (Fruit Slice\'s Home card), the pictures decoration only',await page.evaluate(()=>{const c=document.querySelector('.ba-cards'),g=document.querySelector('.ba-game');return c.getAttribute('aria-hidden')==='true'&&g.getAttribute('aria-hidden')==='true'&&[...c.querySelectorAll('.ba-card')].map(x=>x.textContent).join()==='rug,red,run'&&g.querySelector('img').getAttribute('src')==='/assets/crafted/home-fruit.webp';}));
   await next(page);await page.locator('[data-step="reel"].on').waitFor();await settled(page);
   s=await sellShown(page,'reel');
-  ok('reel: the heading is exactly "They practice by playing."',s.title==='They practice by playing.',s.title);
-  ok('reel: a statement too: the one thing to tap in it is "Hear Echo"; no progress segment, no Echo beside it, the heading takes focus',JSON.stringify(s.asks)==='["reelHear"]'&&s.cta==='Continue'&&s.back&&s.seg&&!s.mascot&&s.focus,s);
-  ok('reel: Echo asks "Say your rrrr sound!" over the games, only the sound\'s letters orange, and says the R is an example',await page.evaluate(()=>{const p=document.getElementById('reelSay');return p.textContent==='Say your rrrr sound!'&&p.querySelectorAll('b.snd').length===1&&p.querySelector('b.snd').textContent==='rrrr';})&&/Example: the R sound/.test(s.words),s.words);
+  ok('reel: the heading is exactly "Practice through play."',s.title==='Practice through play.',s.title);
+  ok('reel: a statement too: nothing to tap in it but Back and Continue; no progress segment, no Echo beside it, the heading takes focus',s.asks.length===0&&s.cta==='Continue'&&s.back&&s.seg&&!s.mascot&&s.focus,s);
+  ok('reel: the heading is the step\'s only words (23 Oct 2026: no line under it, no caption, no "Hear Echo")',await page.evaluate(()=>{const st=document.querySelector('[data-step="reel"]');return st.children.length===1&&st.children[0].id==='reelTitle'&&!document.getElementById('reelHear')&&!document.getElementById('reelCap')&&!document.querySelector('.reel-sub');}));
   await next(page);await page.locator('[data-step="rachel"].on').waitFor();await settled(page);
   s=await sellShown(page,'rachel');
   ok('rachel: a statement: nothing to tap, no progress segment, no Echo, the heading takes focus',s.asks.length===0&&s.cta==='Continue'&&s.back&&s.seg&&!s.mascot&&s.focus,s);
@@ -1305,10 +1306,12 @@ await scenario('the price never loads: Continue comes back',async()=>{
  const leave=code.slice(code.indexOf('function leaveReady('),code.indexOf('function showHandoff('));
  ok('leaving ready (or the reminder after it) saves the profile and writes the marker before it names the price page',leave.indexOf('saveSetup()')>0&&leave.indexOf('saveSetup()')<leave.indexOf('Sona.setupAfterMark')&&leave.indexOf('Sona.setupAfterMark')<leave.indexOf('"/subscribe.html?setup=1"'),leave.slice(0,200));
  ok('every "setup step" is sent through SonaAnalytics, with the screen\'s key and nothing else',(code.match(/SonaAnalytics\.track\("setup step",\{step:key\}\)/g)||[]).length===1&&!/(?:^|[^.\w])track\("setup step"/.test(code)&&!/Sona\.track\(/.test(code));
- // setup is silent but for one tap (Travis, 22 Oct 2026: "even have like the
- // voice say your R sound"): no spoken line, ever, and one recording
- ok('no spoken line came in (never Sona.speak), and the one sound setup can play is one Sona.mediaPCM call',!/Sona\.speak(Now)?\(/.test(src)&&(code.match(/Sona\.mediaPCM\(/g)||[]).length===1&&!/speechSynthesis|SpeechSynthesisUtterance/.test(code));
- ok('…and Rachel\'s take is her one recording of the sound, never her raw July lines',/"\/coach\/say-echo\/R-sound\.wav"/.test(code)&&!/\/coach\/say\//.test(code));
+ // setup makes no sound (Travis, 23 Oct 2026: "turn the sound off when they
+ // press the buttons in the onboarding"; "Hear Echo", its one sound since 22
+ // Oct, went with the reel's redo the same day): no spoken line, no recording,
+ // no take of a sound, no tap chime
+ ok('no spoken line, no recording and no tap chime anywhere in setup (never Sona.speak, Sona.mediaPCM, SayIt, speechSynthesis or Sona.sfx)',!/Sona\.speak(Now)?\(/.test(src)&&!/mediaPCM|SayIt|Sona\.sfx|speechSynthesis|SpeechSynthesisUtterance/.test(code));
+ ok('…and no take of a sound is fetched (no /coach/ recording at all)',!/\/coach\//.test(code));
  const css=readFileSync(root+'/onboarding-crafted.css','utf8');
  ok('its stylesheet pauses taps on the steps and the footer while a screen settles',/body\.ob-settling \.ob \.step,\s*body\.ob-settling \.obfoot\s*\{\s*pointer-events:\s*none;\s*\}/.test(css));
  ok('the hello is the orchard without Echo painted in (orchard-game), never the one with him (welcome-orchard)',/orchard-game\.webp/.test(css)&&!/welcome-orchard/.test(css+src));

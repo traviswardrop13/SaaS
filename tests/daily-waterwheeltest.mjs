@@ -69,7 +69,20 @@ try{
     ok('the local catalog grants normal Premium access with a daily route',await page.evaluate(()=>{const a=Sona.gameAct('waterwheel');return Sona.gameAccess('waterwheel').allowed&&a.tier==='premium'&&a.say&&a.go==='/daily-adventure.html';}));
     const beforeReps=await page.evaluate(()=>Sona.weekReps(0));await ask(page);await advance(page,14000);s=await state(page);
     ok('a full silent word window earns no troughs, water, step or rep at age '+age,s.speech.step===0&&s.speech.phase==='nudge'&&!s.wheel.active&&s.wheel.pieces.length===0&&s.wheel.delivered===0&&await page.evaluate(n=>Sona.weekReps(0)===n,beforeReps),compact(s.wheel));
-    await page.locator('#micBtn').click();requireCheck('two real voiced bursts earn the first water route at age '+age,await sayWord(page),await state(page));s=await state(page);
+    // 23 Oct 2026 (Travis: "say the sound 3 times not twice for every daily
+    // game"): a story game asks each word Sona.STORY_SAY_TIMES (3) times. Each
+    // saying is one play rep the moment it is heard, but the ones before the
+    // last only tick their dots and say how many are left; only the last
+    // opens a water route.
+    await page.locator('#micBtn').click();requireCheck('the mic listens again for the first word at age '+age,await until(page,()=>__sayplay.listening),await state(page));await advance(page,150);
+    const times=await page.evaluate(()=>__sayplay.times);
+    ok('Waterwheel asks each word Sona.STORY_SAY_TIMES (three) times at age '+age,times===3&&await page.evaluate(t=>Sona.STORY_SAY_TIMES===t&&document.getElementById('twiceSay').textContent==='Say it '+t+' times'&&document.getElementById('twiceDots').children.length===t,times),{times});
+    const burst=async()=>{await page.evaluate(()=>__quiet.voice=true);await advance(page,280);await page.evaluate(()=>__quiet.voice=false);};
+    const early=[];
+    for(let i=1;i<times;i++){await burst();await advance(page,650);early.push(await page.evaluate(()=>({said:__sayplay.said,phase:__sayplay.phase,listening:__sayplay.listening,status:document.getElementById('micState').textContent,reps:Sona.weekReps(0)})));}
+    s=await state(page);
+    ok('two sayings alone open no trough or water, and say how many are left at age '+age,equal(early.map(e=>e.status),['2 more times!','1 more time!'])&&early.every((e,i)=>e.said===i+1&&e.reps===beforeReps+i+1&&e.phase!=='play'&&e.listening)&&s.speech.step===0&&!s.wheel.active&&s.wheel.pieces.length===0&&s.wheel.delivered===0,{early,wheel:compact(s.wheel)});
+    await burst();requireCheck('the third real voiced saying earns the first water route at age '+age,await until(page,()=>__sayplay.phase==='play'),await state(page));s=await state(page);
     ok('the word gives wider joins while the child still has to connect the route',s.wheel.active&&s.wheel.power>0&&s.wheel.pieces.length===(age==='4'?2:3)&&s.wheel.pieces.every(p=>!p.placed&&!p.moved)&&!s.wheel.gateOpen&&s.wheel.targets.wheel.fill===0,compact(s.wheel));
     const first=s.wheel.pieces[0],original={x:first.x,y:first.y,angle:first.angle};
     const cancelled=await cancelDrag(page,first.id);
@@ -132,7 +145,9 @@ try{
     const audio=await quietAudit(page);
     ok('every direction and chime stays outside the microphone at age '+age,audio.leaks===0&&audio.overlap===0&&audio.live===0,audio);
     ok('directions explain real water routing without grading the child',audio.lines.some(t=>/trough|spring|water/i.test(t))&&!audio.lines.some(t=>/wrong|fail|score|points|correct/i.test(t)),audio.lines);
-    ok('only accepted sayings add play reps; the adventure adds no practice record',await page.evaluate(({before,total})=>Sona.weekReps(0)===before+total*2+4&&Sona.weekReps(0,null,true)===0&&Object.keys(Sona.outcomes()).length===0,{before:beforeReps,total}),await page.evaluate(()=>({reps:Sona.weekReps(0),outcomes:Sona.outcomes()})));
+    // every word and each of the two help words is __sayplay.times sayings,
+    // one rep each (three a word since 23 Oct 2026, Sona.STORY_SAY_TIMES)
+    ok('only accepted sayings add play reps; the adventure adds no practice record',await page.evaluate(({before,total})=>Sona.weekReps(0)===before+(total+2)*__sayplay.times&&Sona.weekReps(0,null,true)===0&&Object.keys(Sona.outcomes()).length===0,{before:beforeReps,total}),await page.evaluate(()=>({reps:Sona.weekReps(0),outcomes:Sona.outcomes()})));
     await page.screenshot({path:path.join(OUT,'sona-daily-waterwheel-finished-age'+age+'.png')});
     await page.locator('#again').click();s=await state(page);
     ok('Play again starts with no route, water or free physical step',s.speech.step===0&&!s.wheel.active&&s.wheel.stage===-1&&s.wheel.pieces.length===0&&s.wheel.completedGoals.length===0&&Object.values(s.wheel.targets).every(t=>t.fill===0),compact(s.wheel));

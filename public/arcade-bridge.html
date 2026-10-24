@@ -10,7 +10,7 @@
   <meta name="theme-color" content="#9fd8ef" />
   <!--
     Puzzle Bridge: the game inside Day 3 of the daily story, "The Puzzle
-    Bridge" (STORY1, 22 Oct 2026). Say the word two times and a stone floats
+    Bridge" (STORY1, 22 Oct 2026). Say the word three times and a stone floats
     up out of Rumble River; tap it to turn it the right way up and slide it
     into its hole; eight stones and the bridge to Blossom Island is whole
     (ages 3-4: six stones, no turning, the hole with the same shape). Written
@@ -58,7 +58,7 @@
     <div class="ovlCard">
       <img class="br-intro" src="/assets/crafted/home-bridge.webp" alt="" onerror="if(this.src.indexOf('echo-welcome')<0){this.src='/assets/crafted/echo-welcome.webp';this.className='br-intro fallback';}" />
       <h2 id="startTitle">Puzzle Bridge</h2>
-      <p id="startLine">Say each word two times to call a stone up. Then turn it and slide it into its hole.</p>
+      <p id="startLine">Say each word three times to call a stone up. Then turn it and slide it into its hole.</p>
       <p class="small" id="startSound"></p>
       <button id="startBtn" class="act-pill"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15a1 1 0 0 0 1.5.9l12-7.5a1 1 0 0 0 0-1.8l-12-7.5A1 1 0 0 0 7 4.5Z" fill="#fff"/></svg><span>Let's play</span></button>
     </div>
@@ -67,7 +67,7 @@
     <div class="ovlCard">
       <img class="ovlEcho" src="/assets/crafted/echo-listen.webp" alt="" onerror="if(this.src.indexOf('echo-welcome')<0)this.src='/assets/crafted/echo-welcome.webp'" />
       <h2>Let Echo hear you!</h2>
-      <p>Say each word two times to call a stone up.</p>
+      <p>Say each word three times to call a stone up.</p>
       <p class="small" id="micPromise"></p>
       <button class="btn" id="primerYes">Turn on Echo's ears</button>
       <button class="ghost" id="primerNo">Not now</button>
@@ -182,8 +182,8 @@
     })();
 
     // the start card says what to do, for this child's age
-    var line = little ? "Say each word two times to call a stone up. Then slide it into the hole with the same shape."
-      : "Say each word two times to call a stone up. Then turn it and slide it into its hole. Tap Calm river for extra help.";
+    var line = little ? "Say each word three times to call a stone up. Then slide it into the hole with the same shape."
+      : "Say each word three times to call a stone up. Then turn it and slide it into its hole. Tap Calm river for extra help.";
     try { document.getElementById("startLine").textContent = line; } catch (e) {}
     try { document.getElementById("dots").setAttribute("aria-label", "0 of " + (little ? 6 : 8)); } catch (e) {}
     try { if (little) document.getElementById("brStone").setAttribute("aria-label", "The stone. Arrow keys slide it. Enter lets go."); } catch (e) {}
@@ -199,7 +199,9 @@
     if (replay && !(window.Sona && Sona.storyReplay && Sona.storyReplay("bridge"))) { document.body.hidden = true; location.replace("/today.html"); return; }
     SayPlay.start({
       key: "bridge", title: "Puzzle Bridge",
-      intro: little ? "Say each word two times to call a stone up. Then slide it into the hole with the same shape." : "Say each word two times to call a stone up. Then turn it and slide it into its hole. Tap Calm river for extra help.",
+      // three sayings a word in every story game (Sona.STORY_SAY_TIMES)
+      sayTimes: (window.Sona && Sona.STORY_SAY_TIMES) || 3,
+      intro: little ? "Say each word three times to call a stone up. Then slide it into the hole with the same shape." : "Say each word three times to call a stone up. Then turn it and slide it into its hole. Tap Calm river for extra help.",
       steps: little ? [[], [], [], [], [], []] : [[], [], [], [], [], [], [], []], finale: [],
       done: { title: "The bridge is whole again!", sub: "Every stone is back where it belongs." },
       // STORY1: the end card's one button opens the story's ending; there is

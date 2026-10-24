@@ -24,8 +24,10 @@ const stepTo=(p,n)=>until(p,n=>__sayplay.step===n,3000,n);
 const BAN=/\b(miss(ed|es)?|wrong|fail(ed)?|score|points?|correct|charge)\b/i;
 const STEP_LINES=["Tap the stone to turn it. Then slide it into its hole!","Turn the stone the right way, then slide it in. Click!","This one looks like a boot! Turn it and fit it.","Look at the hole. Turn the stone to match, then slide it in.","The river is rising! Grab the stone from the water. Then turn it and fit it.","Catch the floating stone. Turn it, and slide it in!","Up high now! Turn the stone and fit it in the arch.","The last stone is the heart. Put it at the very top!"];
 const LITTLE_LINES=["Slide the stone into the hole with the same shape!","Which hole is the same shape? Slide it in!","Find the hole that matches. Click!","Look, ducks! Slide the stone into its hole.","Find the same shape and slide it in!","The heart goes on top. Slide it in!"];
-const INTRO_BIG='Say each word two times to call a stone up. Then turn it and slide it into its hole. Tap Calm river for extra help.';
-const INTRO_LITTLE='Say each word two times to call a stone up. Then slide it into the hole with the same shape.';
+// a story game asks each word three times (Sona.STORY_SAY_TIMES, 23 Oct 2026:
+// it was two), and the start card says so
+const INTRO_BIG='Say each word three times to call a stone up. Then turn it and slide it into its hole. Tap Calm river for extra help.';
+const INTRO_LITTLE='Say each word three times to call a stone up. Then slide it into the hole with the same shape.';
 const BIG_ORDER=['L','T','boot','arrow','step','hook','halfmoon','heart'],BIG_TAPS=[1,1,2,1,2,3,2,1],LITTLE_ORDER=['circle','square','triangle','star','moon','heart'];
 // a child who has finished the first two stories: today is Day 3, this game's
 const DAY3={'sona.quest.v1':JSON.stringify({i:0,last:13,done:'2020-01-01',s:2,ls:1,lk:'story'})};
@@ -119,8 +121,22 @@ try{
   await advance(page,13000);let s=await both(page);
   ok('a whole quiet listening window earns nothing',s.sp.phase==='nudge'&&s.sp.step===0&&!s.br.pos&&s.br.dones===0,s.sp);
   const lines=await page.evaluate(()=>__quiet.speech.slice());
-  ok('Echo explains the two sayings before the first word',lines.some(l=>l===card.start),lines);
-  await page.locator('#micBtn').click();ok('two sayings call a stone up',await sayWord(page));await advance(page,400);
+  ok('Echo explains the three sayings before the first word',lines.some(l=>l===card.start),lines);
+  // Travis, 23 Oct 2026: every story game asks each word Sona.STORY_SAY_TIMES
+  // (3) times, not two. The sayings are said one at a time here (sayWord's
+  // 280 ms bursts, 650 ms apart), so the in-between frames are seen: the first
+  // two only tick their dots with the mic still open, and only the third
+  // calls the stone up
+  {const t=await page.evaluate(()=>({times:__sayplay.times,story:Sona.STORY_SAY_TIMES,dots:document.querySelectorAll('#twiceDots i').length,say:(document.getElementById('twiceSay')||{}).textContent}));
+   ok('a story game asks each word Sona.STORY_SAY_TIMES (3) times: three dots, "Say it 3 times"',t.story===3&&t.times===t.story&&t.dots===t.times&&t.say==='Say it '+t.times+' times',t);}
+  await page.locator('#micBtn').click();await until(page,()=>__sayplay.listening);await advance(page,150);
+  const saying=async()=>{await page.evaluate(()=>__quiet.voice=true);await advance(page,280);await page.evaluate(()=>__quiet.voice=false);await advance(page,650);
+   return page.evaluate(()=>({said:__sayplay.said,phase:__sayplay.phase,listening:__sayplay.listening,mic:document.getElementById('micState').textContent,on:document.querySelectorAll('#twiceDots i.on').length,pos:!!window.__bridge.pos,dones:window.__bridge.dones}));};
+  {let t=await saying();ok('the first saying ticks one dot and asks "2 more times!", the mic still open: no stone',t.said===1&&t.on===1&&t.phase==='turn'&&t.listening&&t.mic==='2 more times!'&&!t.pos&&t.dones===0,t);
+   t=await saying();ok('…two sayings alone earn nothing: two dots, "1 more time!", the mic still open, no stone',t.said===2&&t.on===2&&t.phase==='turn'&&t.listening&&t.mic==='1 more time!'&&!t.pos&&t.dones===0,t);
+   await page.evaluate(()=>__quiet.voice=true);await advance(page,280);await page.evaluate(()=>__quiet.voice=false);
+   ok('…the third saying calls a stone up',await until(page,()=>__sayplay.phase==='play'));}
+  await advance(page,400);
   s=await both(page);
   ok('the L stone floats beside its gap, turned the wrong way (one tap off)',s.br.pos&&s.br.shape==='L'&&s.br.need===1&&s.br.rot===3&&s.br.hole.shape==='L'&&s.sp.phase==='play'&&s.br.banner==='Up it comes!',s.br);
   ok('it rises with a hum and a splash',await played(page,'rise')>=1);
@@ -190,7 +206,7 @@ try{
   ok('the page hands back to the story and has no Play again',/exit: replay \? undefined : \{ href: "\/adventure\.html\?part=end&story=bridge", label: "See what happens!" \}/.test(html)&&/again: replay \? undefined : false/.test(html)&&/Bridge\.setLittle\(little\)/.test(html),null);
   ok('FOUND1: only ?again=1, and only once this story is finished (Sona.storyReplay), makes it a replay from Home\'s row (Play again and Back home, its own event); any other replay address goes Home',/var replay = location\.search === "\?again=1";/.test(html)&&/if \(replay && !\(window\.Sona && Sona\.storyReplay && Sona\.storyReplay\("bridge"\)\)\) \{ document\.body\.hidden = true; location\.replace\("\/today\.html"\); return; \}/.test(html)&&/track\(replay \? "story game replayed" : "game opened", \{ game: "bridge" \}\)/.test(html));
   ok('FOUND1: a page brought back from the browser\'s cache reloads, so the replay and access checks run again for whichever child is on the phone now (its Play again could otherwise end another child\'s story day)',/window\.addEventListener\("pageshow", function \(e\) \{ if \(e\.persisted\) location\.reload\(\); \}\);/.test(html));
-  ok('the page asks the two start lines, word for word',html.includes(JSON.stringify(INTRO_BIG))&&html.includes(JSON.stringify(INTRO_LITTLE)),null);
+  ok('the page asks the two start lines (each word three times), word for word',html.includes(JSON.stringify(INTRO_BIG))&&html.includes(JSON.stringify(INTRO_LITTLE)),null);
  }
 
  // ── replay (FOUND1): a found game played again from Home's row (?again=1),

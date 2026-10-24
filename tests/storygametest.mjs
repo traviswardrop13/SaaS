@@ -15,7 +15,8 @@
 //     game's own files are asked for, with no mic and no sound;
 //   - every game boots at both ages (five moves for ages 3-4, eight for 5-8),
 //     as its day's own key (Day 7's end card must finish Day 7), its
-//     stylesheet before the shell's, and the first word earns its first job;
+//     stylesheet before the shell's, and the first word, said three times
+//     (Sona.STORY_SAY_TIMES, 23 Oct 2026), earns its first job, two alone not;
 //   - Day 4 played through, the way a child does: the story's intro, "Let's
 //     go!", the game with real words and a real finger, the end card's "See
 //     what happens!", the ending and its one sticker, Back home.
@@ -42,6 +43,9 @@ const A = run("adventures.js").SonaAdventures;
 const DAYS = [...((SONA.match(/const STORY_DAYS = \[([\s\S]*?)\n  \];/) || ["", ""])[1]).matchAll(/\{ id: "([a-z]+)", game: "([a-z]+)",(?: controller: "([a-z]+)",)? page: "([^"]+)", hero: "([a-z]+)",(?: name: ("[^"\n]*"),)?\s*title: ("[^"\n]*"),\s*line: ("[^"\n]*") \}/g)]
   .map((m) => ({ id: m[1], game: m[2], controller: m[3] || null, page: m[4], hero: m[5], name: m[6] ? JSON.parse(m[6]) : null, title: JSON.parse(m[7]), line: JSON.parse(m[8]) }));
 const LATER = DAYS.filter((d) => d.controller);
+// how many times a story game asks for a word (Travis, 23 Oct 2026: "say the
+// sound 3 times not twice for every daily game"), read off sona.js
+const SAY_N = +((SONA.match(/const STORY_SAY_TIMES = (\d+);/) || ["", "0"])[1]);
 const CATALOG = [...((SONA.match(/const GAME_ACTS = \{([\s\S]*?)\n  \};/) || ["", ""])[1]).matchAll(/^\s{4}([a-z]+):/gm)].map((m) => m[1]);
 const noComments = (s) => s.replace(/<!--[\s\S]*?-->/g, " ").replace(/\/\*[\s\S]*?\*\//g, " ").replace(/(^|[^:"'\\])\/\/[^\n]*/g, "$1");
 
@@ -75,6 +79,10 @@ await section("source", async () => {
   ok("the end card hands back to the story's ending, and there is no Play again", /exit: \{ href: "\/adventure\.html\?part=end&story=" \+ day\.id, label: "See what happens!" \}/.test(code) && /again: false/.test(code));
   ok("the engine is given the day's own game key, so its end card finishes that day (Day 7's is frontdoor, never Codex's bridge, which is Day 3's)", /var cfg = \{\s*key: day\.game,/.test(code) && /SayPlay\.start\(cfg\)/.test(code) && !/key: day\.controller/.test(code));
   ok("five moves for ages 3-4, eight for 5-8 (the games' contract)", /S\.playStyle\(\) === "simple" \? 5 : 8/.test(code));
+  // 23 Oct 2026: every story game asks a word three times, one number in sona.js
+  ok("sona.js asks every story game for 3 sayings a word, one number (STORY_SAY_TIMES), handed to every page", SAY_N === 3 && /global\.Sona = \{[^\n]*\bSTORY_SAY_TIMES,/.test(SONA), SAY_N);
+  ok("…the page hands it to the engine as sayTimes, and a replay keeps it (only exit and again are taken off)", /var cfg = \{[^}]*?sayTimes: S\.STORY_SAY_TIMES \|\| 3,/.test(code) && !/delete cfg\.sayTimes/.test(code));
+  ok("…and so does the games' test host, so their suites test the count families get", /sayTimes:Sona\.STORY_SAY_TIMES\|\|3,/.test(FIXTURE));
   ok("the body starts hidden, and the kid viewport meta (no zoom on a double tap)", /<body hidden data-phase="boot">/.test(PAGE) && /maximum-scale=1, user-scalable=no, viewport-fit=cover/.test(PAGE));
 });
 
@@ -96,12 +104,15 @@ await section("days", async () => {
     if (d.page !== "/story-game.html?story=" + d.id) bad.push("page " + d.page);
     if (!existsSync(ROOT + "/daily-adventures/" + d.controller + ".js") || !existsSync(ROOT + "/daily-adventures/" + d.controller + ".css")) bad.push("its game's files");
     if (!PAGES[d.controller] || !["title", "intro", "startCopy", "helpText", "helpLabel", "canvasLabel", "banner", "progressLabel", "primerCopy", "pauseCopy", "helpCopy"].every((k) => typeof PAGES[d.controller][k] === "string" && PAGES[d.controller][k].length > 3) || !PAGES[d.controller].done || !PAGES[d.controller].done.title) bad.push("its words in pages.js");
+    // 23 Oct 2026: its words say what the engine asks, three sayings a word
+    const told = PAGES[d.controller] ? JSON.stringify(PAGES[d.controller]) : "";
+    if (!["intro", "startCopy", "primerCopy", "canvasLabel", "helpLabel"].every((k) => PAGES[d.controller] && /\bthree times\b/.test(PAGES[d.controller][k])) || /\btwo times\b|\btwice\b|\b[0-9]+ times\b/i.test(told)) bad.push("its words say \"three times\" (intro, start card, primer, canvas and help labels), never \"two times\"");
     if (!rec || rec.ready !== true) bad.push("Codex's record marked ready (the game is connected and verified through this page)");
     if (!A[d.id] || A[d.id].intro.length !== 8 || A[d.id].ending.length !== 4) bad.push("its scenes in adventures.js");
     if (!existsSync(ROOT + "/assets/crafted/home-" + d.hero + ".webp")) bad.push("Home's picture home-" + d.hero + ".webp");
     for (const sc of A[d.id] ? A[d.id].intro.concat(A[d.id].ending) : []) if (!existsSync(ROOT + "/assets/adventure/" + d.id + "/" + sc.art + ".webp")) bad.push("the picture " + d.id + "/" + sc.art);
     if (!new RegExp('\\.quest-art\\[data-story="' + d.id + '"\\]\\{background:#[0-9a-f]{6};\\}', "i").test(readFileSync(ROOT + "/crafted-home.css", "utf8"))) bad.push("Home's wash for a picture still loading");
-    ok("Day " + (DAYS.indexOf(d) + 1) + " (" + d.id + "): its page, game, words, scenes, pictures and record", !bad.length, bad);
+    ok("Day " + (DAYS.indexOf(d) + 1) + " (" + d.id + "): its page, game, words (\"three times\"), scenes, pictures and record", !bad.length, bad);
   }
 });
 
@@ -159,7 +170,7 @@ await section("boot", async () => {
   for (const d of LATER) for (const age of ["4", "7"]) {
     const { context, page, errors } = await phone({ age });
     // the key the page hands the engine (its end card finishes the day by it)
-    await context.addInitScript(() => { let sp; Object.defineProperty(window, "SayPlay", { configurable: true, get: () => sp, set: (v) => { sp = v; const start = v && v.start; if (start) v.start = function (o) { window.__startKey = o && o.key; return start.apply(this, arguments); }; } }); });
+    await context.addInitScript(() => { let sp; Object.defineProperty(window, "SayPlay", { configurable: true, get: () => sp, set: (v) => { sp = v; const start = v && v.start; if (start) v.start = function (o) { window.__startKey = o && o.key; window.__startTimes = o && o.sayTimes; return start.apply(this, arguments); }; } }); });
     await page.goto(srv.base + d.page);
     await page.clock.pauseAt(await page.evaluate(() => Date.now() + 1000));
     const ready = await until(page, () => window.__sayplay && __sayplay.phase === "ready", 6000);
@@ -174,8 +185,21 @@ await section("boot", async () => {
     ok(`…the game's stylesheet before the shell's (the order its suite measured)`, JSON.stringify(s.sheets) === JSON.stringify(["/fonts.css", "/sayplay.css", "/daily-adventures/" + d.controller + ".css", "/daily-adventures/host.css"]), s.sheets);
     ok(`…its end card: "See what happens!" and no Play again`, s.exit === "See what happens!" && s.again === true, s);
     await page.locator("#startBtn").click();
-    const first = await sayWord(page);
-    ok(`…the first word, said two times, earns the first job`, first && await page.evaluate(() => __sayplay.phase === "play" && Sona.weekReps(0) === 2), await page.evaluate(() => ({ phase: __sayplay.phase, reps: Sona.weekReps(0) })));
+    // Three sayings a word (Travis, 23 Oct 2026: "say the sound 3 times not
+    // twice for every daily game"), said one at a time as sayWord says them:
+    // each but the last only ticks its dot and says what is left, the last
+    // earns the move, and each is one game rep.
+    const live = await until(page, () => window.__sayplay && __sayplay.listening);
+    const T = await page.evaluate(() => ({ times: __sayplay.times, story: Sona.STORY_SAY_TIMES, start: window.__startTimes, dots: document.querySelectorAll("#twiceDots i").length, line: (document.getElementById("twiceSay") || {}).textContent }));
+    ok(`…it asks each word Sona.STORY_SAY_TIMES (3) times: three dots and "Say it 3 times"`, live && T.times === SAY_N && T.story === SAY_N && T.start === SAY_N && T.dots === SAY_N && T.line === "Say it 3 times", T);
+    const said = [];
+    await advance(page, 150);
+    for (let i = 0; i < T.times; i++) {
+      await page.evaluate(() => __quiet.voice = true); await advance(page, 280); await page.evaluate(() => __quiet.voice = false); await advance(page, 650);
+      said.push(await page.evaluate(() => ({ said: __sayplay.said, phase: __sayplay.phase, step: __sayplay.step, mic: document.getElementById("micState").textContent, reps: Sona.weekReps(0) })));
+    }
+    ok(`…the first saying keeps the mic open for "2 more times!", the second for "1 more time!", and neither earns the move`, said.length === 3 && said[0].said === 1 && said[0].mic === "2 more times!" && said[1].said === 2 && said[1].mic === "1 more time!" && said.slice(0, 2).every((x) => x.phase !== "play" && x.step === 0), said);
+    ok(`…the first word, said three times, earns the first job, one game rep a saying`, said.length === 3 && said[2].phase === "play" && said.map((x) => x.reps).join() === "1,2,3", said);
     ok(`…and no page error`, errors.length === 0, errors);
     await context.close();
   }
@@ -189,14 +213,15 @@ await section("replay", async () => {
     const { context, page, errors } = await phone({ seed: FOUND });
     const beacons = [];
     page.on("request", (r) => { if (/\/api\/track/.test(r.url())) { try { beacons.push(JSON.parse(r.postData() || "{}")); } catch (e) {} } });
-    await context.addInitScript(() => { let sp; Object.defineProperty(window, "SayPlay", { configurable: true, get: () => sp, set: (v) => { sp = v; const start = v && v.start; if (start) v.start = function (o) { window.__start = { key: o && o.key, exit: !!(o && o.exit), again: o ? o.again : null }; return start.apply(this, arguments); }; } }); });
+    await context.addInitScript(() => { let sp; Object.defineProperty(window, "SayPlay", { configurable: true, get: () => sp, set: (v) => { sp = v; const start = v && v.start; if (start) v.start = function (o) { window.__start = { key: o && o.key, exit: !!(o && o.exit), again: o ? o.again : null, times: o && o.sayTimes }; return start.apply(this, arguments); }; } }); });
     await page.goto(srv.base + url);
     await page.clock.pauseAt(await page.evaluate(() => Date.now() + 1000));
     const ready = await until(page, () => window.__sayplay && __sayplay.phase === "ready", 6000);
     await page.clock.runFor(500);
-    const s = await page.evaluate(() => ({ start: window.__start, again: document.getElementById("again").hidden, home: document.getElementById("goHome").textContent, q: localStorage.getItem("sona.quest.v1") }));
+    const s = await page.evaluate(() => ({ start: window.__start, times: window.__sayplay && __sayplay.times, again: document.getElementById("again").hidden, home: document.getElementById("goHome").textContent, q: localStorage.getItem("sona.quest.v1") }));
     ok(id + ": a found game plays again as its own key, with no hand-back", ready && s.start && s.start.key === id && !s.start.exit && s.start.again !== false, s);
     ok("…its end card is Play again and Back home, never \"See what happens!\"", !s.again && s.home === "Back home", s);
+    ok("…and it asks each word three times, as the story day did (Sona.STORY_SAY_TIMES)", s.start && s.start.times === SAY_N && s.times === SAY_N, s);
     ok("…its page sends \"story game replayed\" with the game key only", beacons.some((b) => b.e === "story game replayed" && b.p && b.p.game === id && Object.keys(b.p).length === 1) && !beacons.some((b) => b.e === "game opened"), beacons.map((b) => b.e));
     ok("…and opening it changed no story record", s.q === FOUND["sona.quest.v1"], s.q);
     ok("…and no page error", errors.length === 0, errors);
@@ -245,7 +270,7 @@ await section("play", async () => {
     ok("…\"Let's go!\" opens the game on this page", await landed(page, "/story-game.html") && new URL(page.url()).search === "?story=waterwheel", page.url());
     ok("…and today's intro is marked seen (the one thing the story page writes)", await page.evaluate(() => /\|waterwheel$/.test(JSON.parse(localStorage.getItem("sona.quest.v1")).seen || "")));
     await until(page, () => window.__sayplay && __sayplay.phase === "ready", 6000);
-    const coins0 = await page.evaluate(() => Sona.getCoins());
+    const coins0 = await page.evaluate(() => Sona.getCoins()), times = await page.evaluate(() => __sayplay.times);
     await page.locator("#startBtn").click();
     for (let step = 0; step < n; step++) {
       if (!await sayWord(page)) { ok(`…word ${step + 1} is heard`, false, await page.evaluate(() => __sayplay)); break; }
@@ -257,7 +282,7 @@ await section("play", async () => {
     ok(`…all ${n} jobs done by real words and a real finger: the end card`, await until(page, () => __sayplay.phase === "end", 6000), await page.evaluate(() => __sayplay.phase));
     const end = await page.evaluate(() => ({ q: JSON.parse(localStorage.getItem("sona.quest.v1")), e: Sona.storyEnding("waterwheel"), coins: Sona.getCoins(), reps: Sona.weekReps(0), out: Object.keys(Sona.outcomes()).length, exit: document.getElementById("goHome").textContent, again: document.getElementById("again").hidden }));
     ok("…the round finished Day 4: one more story, one sticker, no coins", end.q.s === day4 + 1 && end.q.ls === day4 && end.q.lk === "story" && end.e.ok && end.e.got.length === 1 && end.coins === coins0, { ...end, coins0 });
-    ok("…every saying is a game rep, none is practice data", end.reps === n * 2 && end.out === 0, end);
+    ok("…every saying is a game rep (" + SAY_N + " a word since 23 Oct 2026), none is practice data", times === SAY_N && end.reps === n * SAY_N && end.out === 0, { ...end, times });
     ok("…and its one button is \"See what happens!\"", end.exit === "See what happens!" && end.again === true, end);
     await page.locator("#goHome").click();
     ok("…which opens Day 4's ending", await landed(page, "/adventure.html") && new URL(page.url()).search === "?part=end&story=waterwheel", page.url());

@@ -27,6 +27,11 @@ const BIG_BOATS=['tug','row','sail','banana','teacup','bathtub','ferry'],LITTLE_
 const fresh=async(o={})=>{const r=await h.fresh(o);await r.page.clock.pauseAt(await r.page.evaluate(()=>Date.now()+500));await advance(r.page,200);return r;};
 const littleOpts=(o={})=>({...o,device:{age:'4',...(o.device||{})}});
 async function begin(page){await page.locator('#startBtn').click();return sayWord(page);}
+// one saying, sayWord's way (a 280 ms burst), then the 650 ms gap before the
+// next: what a child sees between sayings is read in that gap
+async function burst(page){await page.evaluate(()=>__quiet.voice=true);await advance(page,280);await page.evaluate(()=>__quiet.voice=false);await advance(page,650);}
+// between sayings: how many are heard, the mic's words, and whether the move is earned
+const between=p=>p.evaluate(()=>({said:__sayplay.said,times:__sayplay.times,phase:__sayplay.phase,listening:__sayplay.listening,mic:document.getElementById('micState').textContent,dots:document.getElementById('twiceDots').getAttribute('aria-label'),lampOn:__lighthouse.lampOn,power:__lighthouse.power,story:Sona.STORY_SAY_TIMES}));
 // one boat, finger only: press on the boat and follow it while it drifts or
 // peeks out from the rocks, until the light has held on it
 async function findBoat(page,max=9000){
@@ -88,7 +93,7 @@ try{
   const{page,context,errors}=await fresh();
   await context.route(/\/adventure\.html/,r=>r.fulfill({contentType:'text/html',body:'<!doctype html><title>ending</title>'}));
   const card=await page.evaluate(()=>({start:document.getElementById('startLine').textContent,title:document.getElementById('startTitle').textContent,dots:document.querySelectorAll('#dots i').length}));
-  ok('the start card says how to play, ages 5-8',card.start==='Say each word two times to light the lamp. Then move the light to find a lost boat. Tap Bright beam for extra help.'&&card.title==='Light the Way'&&card.dots===8,card);
+  ok('the start card says how to play, ages 5-8',card.start==='Say each word three times to light the lamp. Then move the light to find a lost boat. Tap Bright beam for extra help.'&&card.title==='Light the Way'&&card.dots===8,card);
   await page.locator('#startBtn').click();await until(page,()=>__sayplay.listening);
   // before the word: the lamp is dark, and a drag lights nothing
   {const b=await page.locator('#seaCanvas').boundingBox();await page.mouse.move(b.width/2,b.height*0.4);await page.mouse.down();await page.mouse.move(b.width/2+40,b.height*0.45,{steps:4});await advance(page,300);await page.mouse.up();
@@ -97,8 +102,24 @@ try{
   await advance(page,13000);let s=await both(page);
   ok('a whole quiet listening window earns nothing',s.sp.phase==='nudge'&&s.sp.step===0&&!s.lh.lampOn&&s.lh.dones===0,s.sp);
   const lines=await page.evaluate(()=>__quiet.speech.slice());
-  ok('Echo explains the two sayings before the first word',lines.some(l=>l===card.start),lines);
-  await page.locator('#micBtn').click();ok('two sayings light the lamp',await sayWord(page));await advance(page,400);
+  ok('Echo explains the three sayings before the first word',lines.some(l=>l===card.start),lines);
+  // three sayings a word in every story game (Travis, 23 Oct 2026: "say the
+  // sound 3 times not twice for every daily game"): the count is the page's
+  // own (Sona.STORY_SAY_TIMES), and only the last saying lights the lamp
+  await page.locator('#micBtn').click();
+  {const T=await page.evaluate(()=>({times:__sayplay.times,story:Sona.STORY_SAY_TIMES,dots:document.querySelectorAll('#twiceDots i').length,say:document.getElementById('twiceSay').textContent}));
+   ok('a story game asks each word Sona.STORY_SAY_TIMES (3) times: a dot a saying and "Say it 3 times"',T.story===3&&T.times===T.story&&T.dots===T.story&&T.say==='Say it 3 times',T);
+   if(!await until(page,()=>__sayplay.listening))throw Error('word 1 listening');await advance(page,150);
+   const r0=await page.evaluate(()=>Sona.weekReps(0));
+   await burst(page);const a=await between(page);
+   ok('one saying: "2 more times!", the mic still open, the lamp dark',a.said===1&&a.mic==='2 more times!'&&a.dots===1+' of '+T.times&&a.listening&&a.phase!=='play'&&!a.lampOn,a);
+   await burst(page);const b=await between(page);
+   ok('two sayings alone do not light the lamp: "1 more time!", the mic still open',b.said===2&&b.mic==='1 more time!'&&b.dots===2+' of '+T.times&&b.listening&&b.phase!=='play'&&!b.lampOn,b);
+   await page.evaluate(()=>__quiet.voice=true);await advance(page,280);await page.evaluate(()=>__quiet.voice=false);
+   ok('the third saying lights the lamp',await until(page,()=>__sayplay.phase==='play'));
+   const r1=await page.evaluate(()=>Sona.weekReps(0));
+   ok('each saying heard is one game rep: the word is three',r1-r0===T.times,{r0,r1,times:T.times});}
+  await advance(page,400);
   s=await both(page);ok('the lamp is on, with a pool of light on the sea, and the first boat to find',s.lh.lampOn&&!!s.lh.pool&&s.lh.target.key==='tug'&&s.lh.stage===0&&s.sp.phase==='play',s.lh);
   ok('the lamp whooshes on',await played(page,'whoosh')>=1);
   ok('Echo says what to do once the lamp\'s whoosh is over (one line a step)',await until(page,l=>__quiet.speech.includes(l),3000,STEP_LINES[0]));
@@ -267,7 +288,7 @@ try{
    ok('5-8 struggle: no runtime errors',errors.length===0,errors);await context.close();}
   {const{page,context,errors}=await fresh(littleOpts());
    const card=await page.evaluate(()=>({start:document.getElementById('startLine').textContent,dots:document.querySelectorAll('#dots i').length}));
-   ok('3-4: the start card and six words',card.start==='Say each word two times to light the lamp. Then touch the glowing boat with the light.'&&card.dots===6,card);
+   ok('3-4: the start card and six words',card.start==='Say each word three times to light the lamp. Then touch the glowing boat with the light.'&&card.dots===6,card);
    await page.locator('#startBtn').click();
    for(let i=0;i<6;i++){
     const tag='3-4, step '+(i+1);
@@ -336,7 +357,17 @@ try{
   ok('"Back to the game" gives the same boat back at once, no power',same(s),s);
   await page.locator('#lhHelp').click();await until(page,()=>__sayplay.listening);await page.evaluate(()=>__quiet.background());await advance(page,300);await page.evaluate(()=>__quiet.foreground());await page.locator('#resume').click();await advance(page,100);s=await both(page);
   ok('a help ask cut off by the lock screen gives the same boat back',same(s),s);
-  await page.locator('#lhHelp').click();ok('the help word can be said',await sayWord(page));await advance(page,200);s=await both(page);
+  // the help word asks the story game's three sayings again (23 Oct 2026),
+  // and only the last one brings the bright beam
+  await page.locator('#lhHelp').click();
+  {if(!await until(page,()=>__sayplay.listening))throw Error('help word listening');await advance(page,150);
+   const n0=await page.evaluate(()=>Sona.weekReps(0));
+   await burst(page);await burst(page);const b=await between(page);
+   ok('the help word asks the three sayings too: after two, "1 more time!", no beam yet, the same boat held',b.said===2&&b.times===b.story&&b.mic==='1 more time!'&&b.listening&&b.phase!=='play'&&b.power===0,b);
+   await page.evaluate(()=>__quiet.voice=true);await advance(page,280);await page.evaluate(()=>__quiet.voice=false);
+   ok('the help word can be said: the third saying is heard',await until(page,()=>__sayplay.phase==='play'));
+   const n1=await page.evaluate(()=>Sona.weekReps(0));ok('…and its three sayings are three game reps',n1-n0===b.times,{n0,n1});}
+  await advance(page,200);s=await both(page);
   ok('heard: a bright beam on the same boat, the pool doubled and the fog cleared',s.lh.power>0&&s.lh.fogClear&&s.lh.pool.r>=r0*1.9&&s.lh.stage===0&&s.lh.target.key==='tug'&&s.sp.step===0,s.lh);
   ok('the pill is greyed while the beam is on, with its bar showing',await page.locator('#lhHelp').isDisabled()&&await page.locator('#lhPower').isVisible());
   await advance(page,10300);s=await lh(page);ok('the beam lasts ten seconds, then the pill is ready again',s.power===0&&!s.fogClear&&s.pool.r<r0*1.2&&await page.locator('#lhHelp').isEnabled(),s);
