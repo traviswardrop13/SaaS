@@ -573,18 +573,26 @@
         body.appendChild(el("p", "muted", "We'll also send occasional tips from Rachel. Unsubscribe anytime."));
       }
       paint();
-      // a Turn off made offline goes as soon as Settings is open again
-      if (Sona.reportStatus().owed && Sona.reportFlush) Sona.reportFlush().then(function () {}, function () {});
+      // a Turn off made offline goes as soon as Settings is open again, and a
+      // Turn on the server has not heard yet tries again
+      // (in that order: a Turn off the server takes can ask for the "on" again)
+      function catchUp(also) {
+        var st0 = Sona.reportStatus();
+        (st0.owed && Sona.reportFlush ? Sona.reportFlush() : Promise.resolve()).then(function () {
+          var s1 = Sona.reportStatus();
+          if (s1.on && (also || !s1.sent) && Sona.reportSync) return Sona.reportSync(true).then(function () { if (!busy && !Sona.reportStatus().pending) { paint(); say(""); } });
+        }).then(function () {}, function () {});
+      }
+      catchUp(false);
       // back from Mail with the link tapped: "Check your email" goes. Only
       // while on, so a box being typed in is never wiped
       document.addEventListener("visibilitychange", function () {
         if (document.visibilityState !== "visible" || busy) return;
         var st = Sona.reportStatus();
-        if (st.owed && Sona.reportFlush) Sona.reportFlush().then(function () {}, function () {});
-        if (!st.on) return;
-        paint();
-        // waiting on the link: ask the server again, so a tapped link shows at once
-        if (st.pending && Sona.reportSync) Sona.reportSync(true).then(function () { if (!busy && !Sona.reportStatus().pending) { paint(); say(""); } }, function () {});
+        if (st.on) paint();
+        // waiting on the link: ask the server again, so a tapped link shows at
+        // once (catchUp also sends an owed Turn off, and a Turn on not heard)
+        catchUp(st.pending);
       });
     })();
 

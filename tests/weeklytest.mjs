@@ -56,6 +56,7 @@ function store(unsub = []) {
       if (op === "SREM") { const m = sets.get(a[0]) || new Set(); const had = m.delete(a[1]); return had ? 1 : 0; }
       if (op === "HSET") { const m = db.h.get(a[0]) || new Map(); m.set(a[1], a[2]); db.h.set(a[0], m); return 1; }
       if (op === "HDEL") { const m = db.h.get(a[0]); return m && m.delete(a[1]) ? 1 : 0; }
+      if (op === "HKEYS") return [...(db.h.get(a[0]) || new Map()).keys()];
       if (op === "HGETALL") { const m = db.h.get(a[0]); return m ? [...m].flat() : []; }
       if (op === "EXPIRE" || op === "EXPIREAT") return 1;
       if (op === "LLEN") return db.llen || 0;
@@ -180,14 +181,19 @@ await scenario("a household that turns the report off", async () => {
   db.sets.set(h, new Set([DEV]));
   const kids = [{ i: "0123456789abcdef", d: 2, g: 1, r: 20, p: 10, s: ["R"] }];
   ok("(the phone, confirmed, sent its numbers)", (await R.store({ email: "mom@example.com", dev: DEV, weeks: [{ wk: WK, kids }] }, db.cmd, fakeFetch, MON - 2 * DAY)) === "ok" && db.h.get(R.weekKey(WK)).size === 1);
-  // a week two back, posted last week (the phone sends this week and last)
-  db.h.set(R.weekKey("2026-10-12"), new Map([["mom@example.com " + DEV, JSON.stringify(kids)]]));
+  // a week two back, posted last week (the phone sends this week and last),
+  // and another phone's numbers, and this phone's under another spelling
+  db.h.set(R.weekKey("2026-10-12"), new Map([["mom@example.com " + DEV, JSON.stringify(kids)], ["mom@example.com " + DEV2, JSON.stringify(kids)], ["mom+kids@example.com " + DEV, JSON.stringify(kids)]]));
   const snap = R.validate({ email: "mom@example.com", dev: DEV, weeks: [{ wk: WK, kids: [] }, { wk: "2026-10-26", kids: [] }], quiet: true, off: true }, MON);
   ok("Settings' Turn off is a report post the server takes (off, quiet)", !!snap && snap.off === true && snap.quiet === true, snap);
   const m = outbox.length;
   ok("…answered ok, with no email (never a confirm link)", (await R.store(snap, db.cmd, fakeFetch, MON)) === "ok" && outbox.length === m);
-  ok("…the phone is marked off for the address, and every week of its numbers the server could hold is gone (not only the two the phone named)",
-    db.sets.get(oh).has(DEV) && db.h.get(R.weekKey(WK)).size === 0 && db.h.get(R.weekKey("2026-10-12")).size === 0);
+  ok("…the phone is marked off for the address, and every week of its numbers the server could hold is gone (not only the two the phone named), under any spelling of the inbox",
+    db.sets.get(oh).has(DEV) && db.h.get(R.weekKey(WK)).size === 0 && JSON.stringify([...db.h.get(R.weekKey("2026-10-12")).keys()]) === JSON.stringify(["mom@example.com " + DEV2]), [...db.h.get(R.weekKey("2026-10-12")).keys()]);
+  db.h.get(R.weekKey("2026-10-12")).delete("mom@example.com " + DEV2);
+  const before = db.h.get(R.weekKey(WK)).size;
+  const late = await R.store(R.validate({ email: "mom@example.com", dev: DEV, weeks: [{ wk: WK, kids }] }, MON), db.cmd, fakeFetch, MON);
+  ok("a post that left the phone before the Turn off and lands after it keeps nothing, and the mark stays", late === "ok" && db.h.get(R.weekKey(WK)).size === before && db.sets.get(oh).has(DEV), [late, db.h.get(R.weekKey(WK)).size]);
   ok("…its confirmation stays (so an unsubscribed address still hears \"off\" when it is turned on again)", db.sets.get(h).has(DEV));
   // a numbers post that crossed the Turn off put them back
   db.h.get(R.weekKey(WK)).set("mom@example.com " + DEV, JSON.stringify(kids));
@@ -200,15 +206,19 @@ await scenario("a household that turns the report off", async () => {
   ok("…nor for a phone that was never confirmed and turned it off before tapping", (await R.confirm("mom@example.com", DEV2, db.cmd)) === "off" && !db.sets.get(h).has(DEV2));
   const cr = read("app/api/report/confirm/route.ts");
   ok("…and the link's page says the report is off on that phone, and where to turn it on", /done === "off"/.test(cr) && /The report is off on that phone/.test(cr) && /turn on Weekly progress report in Settings/.test(cr));
-  const back = await R.store(R.validate({ email: "mom@example.com", dev: DEV, weeks: [{ wk: "2026-10-26", kids }] }, MON), db.cmd, fakeFetch, MON);
-  ok("turned on again: the phone's next post lifts the mark, and its numbers are kept", back === "ok" && !db.sets.get(oh).has(DEV) && db.sets.get(oh).has(DEV2) && db.h.get(R.weekKey("2026-10-26")).size === 1, back);
+  const back = await R.store(R.validate({ email: "mom@example.com", dev: DEV, weeks: [{ wk: "2026-10-26", kids }], on: true }, MON), db.cmd, fakeFetch, MON);
+  ok("turned on again: the phone's post saying so (on) lifts the mark, and its numbers are kept", back === "ok" && !db.sets.get(oh).has(DEV) && db.sets.get(oh).has(DEV2) && db.h.get(R.weekKey("2026-10-26")).size === 1, back);
+  ok("…and the mark is kept at least as long as the confirmation (400 days, kept fresh with it)", R.OFF_KEEP_SEC === 400 * 86400 && db.calls.some((c) => c[0] === "EXPIRE" && c[1] === oh && c[2] === R.OFF_KEEP_SEC));
+  const skew = R.validate({ email: "mom@example.com", dev: DEV, weeks: [{ wk: "2026-09-07", kids: [] }], off: true }, MON);
+  ok("a Turn off from a phone whose clock is weeks wrong is still heard (the server picks the weeks)", !!skew && skew.off === true && skew.weeks.length === 0, skew);
+  ok("…and needs no weeks at all, while an ordinary post still does", !!R.validate({ email: "mom@example.com", dev: DEV, off: true }, MON) && !R.validate({ email: "mom@example.com", dev: DEV }, MON));
   const m2 = outbox.length; await run(NEXT, [person("mom@example.com")]);
   ok("…and the Monday example stops again (the real report is theirs)", outbox.length === m2);
   // an unsubscribed address, its phone confirmed: off, then on, still hears "off"
   db = store(["gone@example.com"]); const gh = R.confirmKey(R.mailHash("gone@example.com", "s3cret"));
   db.sets.set(gh, new Set([DEV]));
   await R.store(R.validate({ email: "gone@example.com", dev: DEV, weeks: [{ wk: WK, kids: [] }], off: true }, MON), db.cmd, fakeFetch, MON);
-  ok("an unsubscribed address turned off and on again is told \"off\" (never a link that will not come)", (await R.store(R.validate({ email: "gone@example.com", dev: DEV, weeks: [{ wk: WK, kids }] }, MON), db.cmd, fakeFetch, MON)) === "off");
+  ok("an unsubscribed address turned off and on again is told \"off\" (never a link that will not come)", (await R.store(R.validate({ email: "gone@example.com", dev: DEV, weeks: [{ wk: WK, kids }], on: true }, MON), db.cmd, fakeFetch, MON)) === "off");
   db = store(); db.sets.set(h, new Set([DEV]));
   await R.store(R.validate({ email: "mom@example.com", dev: DEV2, weeks: [{ wk: WK, kids: [] }], off: true }, MON), db.cmd, fakeFetch, MON);
   ok("a Turn off names one phone: another phone of the household is not marked", !(db.sets.get(oh) || new Set()).has(DEV));
@@ -329,12 +339,13 @@ await scenario("Settings turns the report on", async () => {
   ok("…kept on the first child's profile, as setup keeps it (so reportEmail finds it)", prof.email === "dad@example.com" && prof.weeklyReport === true && prof.weeklyEmail === true && await page.evaluate(() => Sona.reportEmail()) === "dad@example.com", prof);
   ok("…the list hears it once, as an in-app lead from Settings, with no child in it", leads.length === 1 && leads[0].email === "dad@example.com" && leads[0].source === "app-settings" && leads[0].role === "parent" && !/Milo|Ava/.test(JSON.stringify(leads)), leads);
   ok("…claiming no purchase on a phone without Premium", !("premium" in leads[0]) && !leads[0].plan, leads[0]);
-  ok("…and the phone posts at once, so the confirm email goes now, with no name in it", reports.length === 1 && reports[0].email === "dad@example.com" && !reports[0].quiet && !/Milo|Ava|childName/.test(JSON.stringify(reports[0])), reports);
+  ok("…and the phone posts at once, saying it was turned on, so the confirm email goes now, with no name in it", reports.length === 1 && reports[0].email === "dad@example.com" && reports[0].on === true && !reports[0].quiet && !/Milo|Ava|childName/.test(JSON.stringify(reports[0])), reports);
   // the link tapped in Mail, back to Settings: the server now says ok
   answer = { ok: true };
   await page.evaluate(() => { Object.defineProperty(document, "visibilityState", { configurable: true, get: () => "visible" }); document.dispatchEvent(new Event("visibilitychange")); });
   await page.waitForTimeout(500);
   ok("back from Mail with the link tapped: the server is asked again and the wait line goes", reports.length === 2 && !/Check your email/.test((await cardText(page)).text), reports.length);
+  ok("…and once the server has heard it was turned on, posts stop saying so", !("on" in reports[1]), reports[1]);
   await tap(page, "Turn off");
   c = await cardText(page);
   ok("Turn off: off on every profile, the switch back, \"Turned off.\"", /Turned off\./.test(c.text) && JSON.stringify(c.buttons) === '["Turn on"]' && await page.evaluate(() => !Sona.reportEmail() && JSON.parse(localStorage.getItem("sona.profile.v1")).weeklyReport === false), c);
@@ -371,14 +382,43 @@ await scenario("a Turn off made offline", async () => {
 
 await scenario("an owed Turn off, then Turn on again before it went", async () => {
   leads.length = 0; reports.length = 0; answer = { status: 503 };
-  const { context, page, errors } = await fresh({ "sona.profile.v1": Object.assign({}, MILO, { email: "d.ad+sona@gmail.com", weeklyReport: true }), "sona.report.v1": { dev: DEVP, at: 1 } });
+  const { context, page, errors } = await fresh({ "sona.profile.v1": Object.assign({}, MILO, { email: "mom@example.com", weeklyReport: true }), "sona.report.v1": { dev: DEVP, at: 1, onFor: "mom@example.com" } });
   await tap(page, "Turn off");
-  ok("(owed)", JSON.stringify(await owed(page)) === '["d.ad+sona@gmail.com"]');
+  ok("(owed)", JSON.stringify(await owed(page)) === '["mom@example.com"]');
+  answer = { ok: true, pending: true };
+  await page.fill("#reportEmail", "mom@example.com"); await tap(page, "Turn on");
+  ok("turned on again for the very same address: the owed Turn off is dropped, never sent after, and the post says it was turned on", (await owed(page)).length === 0 && offPosts().length === 1 && reports.at(-1).on === true, [await owed(page), offPosts()]);
+  await page.reload(); await page.waitForSelector("#reportCard", { state: "attached" }); await page.waitForTimeout(500);
+  ok("…nor on the next visit, so the report the parent just turned on stays on", offPosts().length === 1 && await page.evaluate(() => Sona.reportEmail() === "mom@example.com"));
+  ok("no page errors", errors.length === 0, errors);
+  await context.close();
+});
+
+await scenario("an owed Turn off for another spelling of the inbox, then Turn on", async () => {
+  leads.length = 0; reports.length = 0; answer = { status: 503 };
+  const { context, page, errors } = await fresh({ "sona.profile.v1": Object.assign({}, MILO, { email: "d.ad+sona@gmail.com", weeklyReport: true }), "sona.report.v1": { dev: DEVP, at: 1, onFor: "d.ad+sona@gmail.com" } });
+  await tap(page, "Turn off");
   answer = { ok: true, pending: true };
   await page.fill("#reportEmail", "dad@gmail.com"); await tap(page, "Turn on");
-  ok("turned on for the same inbox (another spelling: Gmail dots and a +tag): the owed Turn off is dropped, never sent after", (await owed(page)).length === 0 && offPosts().length === 1, [await owed(page), offPosts()]);
+  ok("turned on for another spelling of the same Gmail inbox: the old spelling's Turn off stays owed (its numbers must go)", JSON.stringify(await owed(page)) === '["d.ad+sona@gmail.com"]', await owed(page));
+  await page.evaluate(() => { const st = JSON.parse(localStorage.getItem("sona.report.v1")); st.onFor = "dad@gmail.com"; localStorage.setItem("sona.report.v1", JSON.stringify(st)); });
+  const n = reports.length;
+  await page.reload(); await page.waitForSelector("#reportCard", { state: "attached" }); await page.waitForTimeout(700);
+  const after = reports.slice(n);
+  ok("…once it is taken, the phone's next post says \"on\" again (the server now has it off for that inbox), so the report stays on",
+    after.length === 2 && after[0].off === true && after[0].email === "d.ad+sona@gmail.com" && after[1].on === true && after[1].email === "dad@gmail.com" && await page.evaluate(() => Sona.reportStatus().sent), after.map((r) => [r.email, !!r.off, !!r.on]));
+  ok("no page errors", errors.length === 0, errors);
+  await context.close();
+});
+
+await scenario("a Turn on the server never heard", async () => {
+  leads.length = 0; reports.length = 0; answer = { status: 503 };
+  const { context, page, errors } = await fresh({ "sona.profile.v1": MILO });
+  await page.fill("#reportEmail", "mom@example.com"); await tap(page, "Turn on");
+  ok("offline: on here, and Settings says the link comes once Sona is online", /Saved\. Sona will send the link the next time it's online\./.test((await cardText(page)).text) && await page.evaluate(() => Sona.reportStatus().on && !Sona.reportStatus().sent));
+  answer = { ok: true, pending: true }; const n = reports.length;
   await page.reload(); await page.waitForSelector("#reportCard", { state: "attached" }); await page.waitForTimeout(500);
-  ok("…nor on the next visit, so the report the parent just turned on stays on", offPosts().length === 1 && await page.evaluate(() => Sona.reportEmail() === "dad@gmail.com"));
+  ok("…Settings opened again online tries again, saying it was turned on", reports.length === n + 1 && reports.at(-1).on === true && await page.evaluate(() => Sona.reportStatus().sent), reports.length - n);
   ok("no page errors", errors.length === 0, errors);
   await context.close();
 });

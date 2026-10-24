@@ -55,6 +55,7 @@ function store(unsub = []) {
       if (op === "SREM") { const m = sets.get(a[0]); return m && m.delete(a[1]) ? 1 : 0; }
       if (op === "SMEMBERS") return [...(sets.get(a[0]) || [])];
       if (op === "HDEL") { const m = h.get(a[0]); return m && m.delete(a[1]) ? 1 : 0; }
+      if (op === "HKEYS") return [...(h.get(a[0]) || new Map()).keys()];
       if (op === "HSET") { const m = h.get(a[0]) || new Map(); const isNew = !m.has(a[1]); m.set(a[1], a[2]); h.set(a[0], m); return isNew ? 1 : 0; }
       if (op === "HGETALL") { const m = h.get(a[0]); return m ? [...m].flat() : []; }
       if (op === "EXPIRE") { ttl.set(a[0], a[1]); if (db.clock) exp.set(a[0], db.clock + a[1] * 1000); return 1; }

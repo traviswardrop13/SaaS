@@ -8266,11 +8266,18 @@
     _reportBusy = true; _reportDirty = false; _reportAgain = false;
     let sent;
     try {
+      // `on`: until the server has heard this phone turned on for this
+      // address (setup, Settings, or again after a Turn off), every post says
+      // so; only such a post lifts a Turn off the server holds, so a post
+      // from before a Turn off that lands after it changes nothing (WEEKLY1)
+      const body = quiet ? { email: email, dev: st.dev, weeks: weeks, quiet: true } : { email: email, dev: st.dev, weeks: weeks };
+      if (st.onFor !== email) body.on = true;
       sent = fetch("/api/report", { method: "POST", headers: { "Content-Type": "application/json" }, keepalive: true,
-        body: JSON.stringify(quiet ? { email: email, dev: st.dev, weeks: weeks, quiet: true } : { email: email, dev: st.dev, weeks: weeks }) })
+        body: JSON.stringify(body) })
         .then((r) => r.json())
         .then((j) => {
           const s2 = _reportState();
+          if (j && j.ok && body.on) s2.onFor = email;
           // only a plain "ok" ends "off"; "pending" never does (the server
           // gives an unconfirmed phone of an unsubscribed address "pending" too)
           if (j && j.off) { s2.off = email; s2.offAt = Date.now(); delete s2.pend; delete s2.pendFor; delete s2.gaveUp; } // "off" proves the phone was confirmed
@@ -8332,7 +8339,9 @@
     const email = reportEmail(), st = _reportState();
     return { can: _reportSlot() !== null, email: email, on: !!email,
       pending: !!email && st.pendFor === email && st.pend > 0 && st.off !== email,
-      off: !!email && st.off === email, owed: _reportOffs(st).length > 0 };
+      off: !!email && st.off === email, owed: _reportOffs(st).length > 0,
+      // the server has heard this phone turned on for the address
+      sent: !!email && st.onFor === email };
   }
   function reportSet(raw) {
     const e = typeof raw === "string" ? raw.trim().toLowerCase() : "", slot = _reportSlot();
@@ -8341,10 +8350,13 @@
     const p = _loadFor(slot, PKEY, {});
     p.email = e; p.weeklyEmail = true; p.weeklyReport = true;
     saveFor(slot, PKEY, p);
-    const st = _reportState(); ["at", "off", "offAt", "pend", "pendFor", "gaveUp"].forEach((k) => { delete st[k]; });
-    // a Turn off for this same inbox (any spelling) that never reached the
-    // server is dropped: it is on again. One for another inbox still goes
-    st.offs = _reportOffs(st).filter((o) => _mailbox(o.e) !== _mailbox(e)); delete st.offOwed;
+    const st = _reportState(); ["at", "off", "offAt", "pend", "pendFor", "gaveUp", "onFor"].forEach((k) => { delete st[k]; });
+    // a Turn off for this very address that never reached the server is
+    // dropped: it is on again, and the next post writes the same numbers.
+    // One for another spelling of the inbox, or another inbox, still goes
+    // (it deletes that spelling's numbers; the server then asks this phone's
+    // next post to say "on" again: see _reportOffFlush)
+    st.offs = _reportOffs(st).filter((o) => o.e !== e); delete st.offOwed;
     _reportSave(st);
     // the email list hears it too, as from setup's email step: the grown-up
     // read "We'll also send occasional tips from Rachel" beside the box. A
@@ -8394,6 +8406,7 @@
   }
   function _reportOffOwe(email) {
     const st = _reportState();
+    if (st.onFor) { delete st.onFor; _reportSave(st); } // turned on again later, its first post says so
     if (!email || !/^[a-f0-9]{32}$/.test(st.dev || "")) return; // a phone that never posted has nothing on the server
     const list = _reportOffs(st).filter((o) => !(o.e === email && o.d === st.dev));
     list.push({ e: email, d: st.dev });
@@ -8415,7 +8428,14 @@
           .then((r) => r.json()).then((j) => !!(j && j.ok));
       } catch (e) { sent = Promise.resolve(false); }
       return sent.catch(() => false).then((ok) => {
-        if (ok) { const s2 = _reportState(); s2.offs = _reportOffs(s2).filter((x) => !(x.e === o.e && x.d === o.d)); delete s2.offOwed; _reportSave(s2); }
+        if (ok) {
+          const s2 = _reportState(); s2.offs = _reportOffs(s2).filter((x) => !(x.e === o.e && x.d === o.d)); delete s2.offOwed;
+          // the server now has this phone off for that inbox: if the report is
+          // on here for the same inbox, its next post says "on" again
+          let cur = ""; try { cur = reportEmail(); } catch (e) {}
+          if (cur && o.d === s2.dev && _mailbox(cur) === _mailbox(o.e)) delete s2.onFor;
+          _reportSave(s2);
+        }
         return ok;
       });
     };
@@ -8423,6 +8443,7 @@
       .then((ok) => { _reportOffP = null; return ok && !_reportOffs(_reportState()).length; }, () => { _reportOffP = null; return false; });
     return _reportOffP;
   }
+  function reportFlush() { return _reportOffFlush(true); }
   function reportOff() {
     _reportOffOwe(reportEmail());
     try { _kids().list.forEach((k) => { const q = _loadFor(k.slot, PKEY, {}); if (q.weeklyReport === true) { q.weeklyReport = false; saveFor(k.slot, PKEY, q); } }); } catch (e) {}
@@ -9171,5 +9192,5 @@
   try { _keepBuddies(); } catch (e) {}
   try { installDebug(); } catch (e) {}
 
-  global.Sona = { questToday, questEnd, QUEST_DAYS, QUEST_LEN, STORY_DAYS, storyOpen, storyShown, storyEnding, storySeen, storyFound, storyReplay, pcmWave, mediaPCM, voiceAsMedia, libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, goalDays, dayReps, dayGoal, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, goClip, GO_WAIT_MS, WORDS, wordsFor, GAME_WORDS, gameWords, POSITIONS, FAMILY_POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, rungWin, ladderContent, GAME_LEVELS, gameTop, gameAsk, gameHold, FREE_MODE, isFree, WEB_SALES, webSales, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, homePicks, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, freeVersion, trialFirst, offerOnLock, FREE_BOOKS, bookFree, booksOpen, bookLocked, seasonPick, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, firstGameKey, firstGameStart, firstGameEnd, CRAFTED_CARDS, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, micNative, micOpen, micProbe, micSource, micDeaf, micRecorder, micQuiet, micStats, micFifo: nmFifo, NATIVE_MIC_GAIN, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repWeeks, gameRep, repsBeacon, gameBest, gameBestOffer, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES, trophyState, trophies, coinsNow, PLAY_LEVEL_AT, PLAY_LEVEL_LINES, playLevelsOpen, playLevel, playLevelAsk, setPlayLevel, playLevelInfo, playBest, playBestOffer, buddyId, buddySprite, chestState, chestOpen, ROAD_LANDS, ROAD_STOPS, MONTH_STEPS, roadStop, roadState, roadOpen, monthOpen, roadSettle, roadRolledSeen, buddiesKept, shopItem, buyItem, undoBuy, equip, BOARD_LIVE, boardLive, boardAllowed, boardState, boardStart, boardClaim, boardFlush, boardView, boardNick, boardLeave, boardAsk, boardCancel, parentEmail, reportEmail, reportSync, reportStatus, reportSet, reportOff, reportFlush: () => _reportOffFlush(true), homeOfferDue, offerSeen, notifyAvailable, notifyState, notifyRefresh, notifyAsk, trialReminderOn, trialReminderArm, trialReminderSync, trialReminderSold, soundMark, clipsSettled, storePlan, buyPlan, planWords, planSay, planBillDate, setupWall, setupAfterMark, setupAfter, setupAfterClear, setupAsks, setupAsksSave, SETUP_THERAPY };
+  global.Sona = { questToday, questEnd, QUEST_DAYS, QUEST_LEN, STORY_DAYS, storyOpen, storyShown, storyEnding, storySeen, storyFound, storyReplay, pcmWave, mediaPCM, voiceAsMedia, libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, goalDays, dayReps, dayGoal, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, goClip, GO_WAIT_MS, WORDS, wordsFor, GAME_WORDS, gameWords, POSITIONS, FAMILY_POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, rungWin, ladderContent, GAME_LEVELS, gameTop, gameAsk, gameHold, FREE_MODE, isFree, WEB_SALES, webSales, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, homePicks, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, freeVersion, trialFirst, offerOnLock, FREE_BOOKS, bookFree, booksOpen, bookLocked, seasonPick, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, firstGameKey, firstGameStart, firstGameEnd, CRAFTED_CARDS, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, micNative, micOpen, micProbe, micSource, micDeaf, micRecorder, micQuiet, micStats, micFifo: nmFifo, NATIVE_MIC_GAIN, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repWeeks, gameRep, repsBeacon, gameBest, gameBestOffer, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES, trophyState, trophies, coinsNow, PLAY_LEVEL_AT, PLAY_LEVEL_LINES, playLevelsOpen, playLevel, playLevelAsk, setPlayLevel, playLevelInfo, playBest, playBestOffer, buddyId, buddySprite, chestState, chestOpen, ROAD_LANDS, ROAD_STOPS, MONTH_STEPS, roadStop, roadState, roadOpen, monthOpen, roadSettle, roadRolledSeen, buddiesKept, shopItem, buyItem, undoBuy, equip, BOARD_LIVE, boardLive, boardAllowed, boardState, boardStart, boardClaim, boardFlush, boardView, boardNick, boardLeave, boardAsk, boardCancel, parentEmail, reportEmail, reportSync, reportStatus, reportSet, reportOff, reportFlush, homeOfferDue, offerSeen, notifyAvailable, notifyState, notifyRefresh, notifyAsk, trialReminderOn, trialReminderArm, trialReminderSync, trialReminderSold, soundMark, clipsSettled, storePlan, buyPlan, planWords, planSay, planBillDate, setupWall, setupAfterMark, setupAfter, setupAfterClear, setupAsks, setupAsksSave, SETUP_THERAPY };
 })(window);

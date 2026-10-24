@@ -1669,20 +1669,29 @@ any day, still once a week).
   purchase the server never heard of (an address given after it), with no
   plan word claimed. Off clears `weeklyReport` on every profile and tells the
   server `off` (lib/report.ts store): the phone is marked off for the address
-  (`report:offdev:<hash>`, device ids, 120 days; its confirmation stays, so an
-  unsubscribed address still hears "off"), every week of its numbers the
-  server could hold is deleted, Monday's report skips an off phone even if a
-  crossing post put numbers back, the Monday email sees a household without
-  the report, and a confirm link tapped later changes nothing ("The report is
-  off on that phone"). The phone's next ordinary post (turned on again) lifts
-  the mark. Each Turn off is owed until the server says so (`offs` in
-  sona.report.v1, one entry an address and phone, five at most: sent from
-  Settings as it opens or comes back, and from the next practice page, every
-  five minutes at most: "Turned off. Sona will finish this the next time it's
-  online."); one owed for the same inbox (any Gmail spelling) is dropped by
-  Turn on; a Turn off waits for a post on its way, and Turn on for a Turn off
-  on its way. Removing the child whose profile holds the address owes the
-  same. Another phone of the household keeps its own switch. Taps wait 600 ms
+  (`report:offdev:<hash>`, device ids, 400 days and kept fresh with the
+  confirmation, `OFF_KEEP_SEC`; the confirmation stays, so an unsubscribed
+  address still hears "off"), its numbers under any spelling of the inbox in
+  every week the server could hold are deleted (its weeks are a hint: a Turn
+  off from a phone with a wrong clock is still heard), Monday's report skips
+  an off phone, the Monday email sees a household without the report, and a
+  confirm link tapped later changes nothing ("The report is off on that
+  phone"). **Only a post saying `on` lifts the mark:** the phone says `on`
+  on every post until the server has answered one for that address
+  (`onFor` in sona.report.v1: setup, Settings, or again after a Turn off),
+  so a post that left before a Turn off and lands after it keeps nothing.
+  Each Turn off is owed until the server says so (`offs` in sona.report.v1,
+  one entry an address and phone, five at most: sent from Settings as it
+  opens or comes back, and from the next practice page, every five minutes
+  at most: "Turned off. Sona will finish this the next time it's online.");
+  Turn on drops one owed for the very same address, never another spelling
+  (its numbers must go: once it is taken, the phone's next post says `on`
+  again); a Turn off waits for a post on its way, and Turn on for a Turn off
+  on its way; Settings, as it opens or comes back, sends owed Turn offs, then
+  a Turn on the server has not heard. Removing the child whose profile holds
+  the address owes the same. Known and left: a post from another tab, sent
+  in the instant after Turn on and landing after a later Turn off, could
+  still lift it. Another phone of the household keeps its own switch. Taps wait 600 ms
   after the card changes shape. Not for a clinician's own setup.
 - **Known limits, said in the run's answer:** the audience is `everyone()`,
   whose leads ledger is capped at 10,000 rows (`full: true`: the oldest
