@@ -79,18 +79,12 @@ function phoneInit(cfg){
   if(!cfg.web)window.Capacitor={isNativePlatform:()=>true,getPlatform:()=>'ios',Plugins:{Keyboard:{setAccessoryBarVisible(){return Promise.resolve();},addListener(n,cb){S.kb[n]=cb;return Promise.resolve({remove(){}});}}}};
   const SEL={card:'[data-step="name"]',heading:'[data-step="name"] .qh',label:'label[for="obName"]',field:'#obName',ageLabel:'#ageLabel',age4:'#obAge [data-age="4"]',age6:'#obAge [data-age="6"]',age8:'#obAge [data-age="8"]',echo:'.ob .mascot',seg:'#seg',
     tCard:'[data-step="interests"]',tHead:'#interestsTitle',tYes:'#obInterests [data-val="sports"]',btn:'#nextBtn',
-    sCard:'.step.sell.on',sHead:'.step.sell.on h1',sPic:'.step.sell.on .ba-game, .step.sell.on .rachel-photo',sGrid:'.step.sell.on #gamesGrid',sLast:'.step.sell.on #gamesGrid li:last-child',
+    sCard:'.step.sell.on',sHead:'.step.sell.on h1',sPic:'.step.sell.on .studio-problem-art, .step.sell.on .rachel-photo',sGrid:'.step.sell.on #gamesGrid',sLast:'.step.sell.on #gamesGrid li:last-child',
     rCard:'[data-step="ready"].on',rHead:'[data-step="ready"].on #readyTitle',rChips:'[data-step="ready"].on #readyChips'};
-  // AS PAINTED (22 Oct 2026): where a screen's own motion draws a picture
-  // and how see-through it is, transforms and opacity included, for the
-  // problem screen's flashcards and game and the ready screen's Echo and
-  // sparkles. Under Reduce Motion each must be drawn as it ends from the
-  // first frame (a delayed animation used to hold its first keyframe). A
-  // selector matching several (the sparkles) reads as the one most drawn.
-  // (since 23 Oct 2026 the problem screen is a before and an after, each row
-  // fading up in place, and the reel's heading shows for two seconds and
-  // fades away)
-  const VIS={pGame:'.step.on .ba-after',pCards:'.step.on .ba-before',rTitle:'.step.on .reel-title',rEcho:'.step.on .ready-echo img',rSpark:'.step.on .spark'};
+  // Keep the short problem picture and both demo headings steady as assets
+  // arrive. Only the canvas changes during demos; the ready screen's existing
+  // Echo motion still ends, and Reduce Motion must begin at that final frame.
+  const VIS={pGame:'.step.on .studio-problem-art',rTitle:'.step.on #reelTitle,.step.on #pianoTitle',rEcho:'.step.on .ready-echo img',rSpark:'.step.on .spark'};
   function seen(sel){let best=null;for(const el of document.querySelectorAll(sel)){const cs=getComputedStyle(el),r=el.getBoundingClientRect(),o=+cs.opacity;const v=cs.display==='none'||r.width<2||r.height<2||cs.visibility==='hidden'?null:{x:Math.round(r.left),y:Math.round(r.top),w:Math.round(r.width),h:Math.round(r.height),o:Math.round(o*100)/100};if(v&&(!best||v.o>best.o))best=v;}return best&&best.o>0?best:null;}
   // Where the LAYOUT puts an element: offsets, not the painted box, so a
   // screen's slide-in (a transform) is not a jump, and a box laid out again
@@ -492,25 +486,10 @@ for(const kbh of [0,60]){const D={name:'1024x1366',w:1024,h:1366,kb:kbh,top:24,b
  }finally{await context.close();}}
 
 // THE SCREENS THAT SELL HOLD STILL (19 Oct 2026; rebuilt 22 Oct). "Speech
-// homework is hard at home." with its flashcards and a game, "They practice by
-// playing." with the games playing, Rachel on her own, and (after the name and
-// what the child loves) "Games <Name> will love". Each is drawn once, at its
-// own size, and nothing in it moves when its pictures arrive, here held back
-// half a second on purpose (each keeps its box from the first frame: the
-// game's 16:9, Rachel's round photo, the reel's 3:4 frame). With motion on and
-// under Reduce Motion, on a big phone and a 4-inch one. The app here can sell
-// (a purchase plugin is there, with nothing to call: setup asks the store only
-// on the ready screen), so the games are the full grid, every playable
-// big-kid game.
-// …and "<Name>'s practice is ready!" after them, Echo cheering. Each screen's
-// own motion (the flashcards, then a beat later the game, fading up in place,
-// from 0.3 s to 2.2 s; Echo's pop and the sparkles, to 1.5 s) is watched for
-// 2.3 s: under Reduce Motion the first frame is already the last (both rows in
-// place, Echo there, no sparkle), and it is the very place the motion-on run
-// ended on, on the same phone. The reel's heading is the one exception, on
-// purpose: with motion on it shows and is gone by 2.6 s (Travis, 23 Oct 2026:
-// "show it for 2 seconds and then fade it away"); under Reduce Motion it
-// stays, since nothing there changes (watched for 3 s).
+// The approved Play Studio sales screens keep their own layout as pictures
+// arrive, here held half a second late. Demo canvases may animate, but their
+// headings and Continue stay put. Phones and Reduce Motion are both exercised;
+// the ready screen's existing finite Echo/sparkle animation remains covered.
 const ENDS={};
 const ownMotion=(fr,ks)=>{const out={};for(const k of ks){const vs=fr.map(f=>f.v[k]),a=vs[0];out[k]={first:a,last:vs[vs.length-1],changed:vs.filter(v=>JSON.stringify(v)!==JSON.stringify(a)).length,ever:vs.some(v=>!!v)};}return out;};
 for(const reduced of [false,true])for(const D of [DEVICES[0],DEVICES[2]]){
@@ -520,7 +499,7 @@ for(const reduced of [false,true])for(const D of [DEVICES[0],DEVICES[2]]){
   await page.reload();await page.waitForFunction(()=>window.Sona&&document.getElementById('nextBtn'));await page.evaluate(()=>document.fonts.ready);await page.waitForTimeout(500);
   ok('(the app can sell'+at+': the price follows setup)',await page.evaluate(()=>Sona.iapAvailable()&&Sona.trialFirst()===true));
   await context.route(/\/assets\/(crafted\/home-[a-z]+\.webp|rachel-wardrop-profile\.jpg)$/,async route=>{await new Promise(r=>setTimeout(r,500));route.continue();});
-  for(const [key,keys,card,own,wait] of [['problem',['sCard','sHead','sPic','btn'],'sCard',['pGame','pCards'],2300],['reel',['sCard','sHead','btn'],'sCard',['rTitle'],3000],['rachel',['sCard','sHead','sPic','btn'],'sCard',[],1100],['games',['sCard','sHead','sGrid','sLast','btn'],'sCard',[],1100],['ready',['rCard','rHead','rChips','btn'],'rCard',['rEcho','rSpark'],2300]]){
+  for(const [key,keys,card,own,wait] of [['problem',['sCard','sHead','sPic','btn'],'sCard',['pGame'],2300],['reel',['sCard','sHead','btn'],'sCard',['rTitle'],1100],['piano',['sCard','sHead','btn'],'sCard',['rTitle'],1100],['rachel',['sCard','sHead','sPic','btn'],'sCard',[],1100],['games',['sCard','sHead','sGrid','sLast','btn'],'sCard',[],1100],['ready',['rCard','rHead','rChips','btn'],'rCard',['rEcho','rSpark'],2300]]){
    if(key==='games'){
     // the name and what the child loves come between Rachel and the games
     await calm(page);await page.tap('#nextBtn');await page.locator('[data-step="name"].on').waitFor();
@@ -540,28 +519,21 @@ for(const reduced of [false,true])for(const D of [DEVICES[0],DEVICES[2]]){
    await calm(page);await page.tap('#nextBtn');
    await page.locator('[data-step="'+key+'"].on').waitFor();await page.waitForTimeout(wait);
    const fr=(await page.evaluate(()=>__steady.take())).filter(f=>f.screen===key&&f.r[card]);
-   // (the reel's heading leaves on purpose, so its layout is read while it shows)
-   const d=drift(key==='reel'?fr.filter(f=>f.r.sHead):fr,keys),loaded=await page.evaluate(()=>[...document.querySelectorAll('.step.on img[src]')].every(i=>i.complete&&(i.naturalWidth>0||i.classList.contains('gone'))));
-   if(key==='games')ok('…the games peek is the full nine here ('+(await page.evaluate(()=>document.querySelectorAll('#gamesGrid li').length))+' games)'+at,await page.evaluate(()=>document.querySelectorAll('#gamesGrid li').length===Math.min(9,Sona.activityLibrary().groups.filter(g=>g.id==='arcade')[0].games.filter(x=>!x.comingSoon).length)));
+   const d=drift(fr,keys),loaded=await page.evaluate(()=>[...document.querySelectorAll('.step.on img[src]')].every(i=>i.complete&&(i.naturalWidth>0||i.classList.contains('gone'))));
+   if(key==='games')ok('…the games peek is three large previews here ('+(await page.evaluate(()=>document.querySelectorAll('#gamesGrid li').length))+' games)'+at,await page.evaluate(()=>document.querySelectorAll('#gamesGrid li').length===Math.min(3,Sona.activityLibrary().groups.filter(g=>g.id==='arcade')[0].games.filter(x=>!x.comingSoon).length)));
    ok('"'+key+'" is drawn once, at its own size, and nothing in it moves as its pictures arrive'+at+' (worst: '+worst(d)+')',fr.length>5&&still(d)&&loaded,{frames:fr.length,d,loaded});
    if(own.length){
     const m=ownMotion(fr,own),span=fr.length?fr[fr.length-1].t-fr[0].t:0;
     if(key==='problem'){
-     // motion on: the two rows fade up in place and end whole; Reduce Motion starts there
-     if(!reduced)ok('with motion on, the problem screen\'s two rows fade up and end within 2.3 s: the flashcards, then the game, both fully drawn'+at,span>=2000&&m.pCards.changed>0&&m.pGame.changed>0&&m.pCards.last&&m.pCards.last.o===1&&m.pGame.last&&m.pGame.last.o===1,{span,m});
-     else ok('under Reduce Motion the problem screen\'s first frame is its last, for '+span+' ms: both rows in place from the first frame, unchanged'+at,span>=2000&&m.pGame.first&&m.pGame.first.o===1&&m.pGame.changed===0&&m.pCards.first&&m.pCards.first.o===1&&m.pCards.changed===0,{span,m});
-    }else if(key==='reel'){
-     // the heading shows, then is gone (opacity 0 and hidden: no longer drawn) by 3 s; Reduce Motion keeps it, still
-     const shown=fr.filter(f=>f.v.rTitle&&f.v.rTitle.o===1);
-     if(!reduced)ok('with motion on, the reel\'s heading shows ("Practice through play.") and is gone within 3 s, nothing left over the game'+at,span>=2700&&shown.length>0&&shown[0].t-fr[0].t<1200&&!m.rTitle.last,{span,m,shownAt:shown.length?shown[0].t-fr[0].t:null});
-     else ok('under Reduce Motion the reel\'s heading is there from the first frame and stays, unchanged, for '+span+' ms'+at,span>=2700&&m.rTitle.first&&m.rTitle.first.o===1&&m.rTitle.changed===0,{span,m});
+     ok('the problem screen is a short, static message and painted game; its first frame stays put'+at,m.pGame.first&&m.pGame.first.o===1&&m.pGame.changed===0,{span,m});
+    }else if(key==='reel'||key==='piano'){
+     ok('the '+key+' headline is present from its first frame and stays while only its canvas animates'+at,m.rTitle.first&&m.rTitle.first.o===1&&m.rTitle.changed===0,{span,m});
     }else{
      if(!reduced)ok('with motion on, Echo pops onto the ready screen and the sparkles play and end within 2.3 s'+at,span>=2000&&m.rEcho.changed>0&&m.rEcho.last&&m.rEcho.last.o===1&&m.rSpark.ever&&!m.rSpark.last,{span,m});
      else ok('under Reduce Motion the ready screen\'s first frame is its last, for '+span+' ms: Echo there from the first frame, unchanged, no sparkle ever drawn'+at,span>=2000&&m.rEcho.first&&m.rEcho.first.o===1&&m.rEcho.changed===0&&!m.rSpark.ever,{span,m});
     }
     // the same phone, the same screen: Reduce Motion's first frame is where the motion ended
-    // (not the reel's heading: it leaves on purpose, and stays under Reduce Motion)
-    const tag=D.name+'|'+key;if(key==='reel')continue;
+    const tag=D.name+'|'+key;
     if(!reduced)ENDS[tag]=Object.fromEntries(own.map(k=>[k,m[k].last]));
     else if(ENDS[tag])ok('…and it is exactly where the motion-on run ended ('+key+')'+at,own.every(k=>JSON.stringify(m[k].first)===JSON.stringify(ENDS[tag][k])),{reduce:Object.fromEntries(own.map(k=>[k,m[k].first])),motion:ENDS[tag]});
    }

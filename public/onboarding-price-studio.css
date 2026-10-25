@@ -1,0 +1,44 @@
+/* Play Studio carries from setup into its offer. Settings > Your plan and
+   the pricing/state rules keep their existing presentation and behavior. */
+body.crafted-family.offer{
+  --ink:#3d342e;--muted:#88735f;--line:#ead7bf;--card:#fffdfa;
+  --act-hi:#d47a5d;--act:#be533e;--act-d:#93422f;
+  background:#fff5e9 radial-gradient(circle at 110% -5%,#ffd47c 0 27%,transparent 27.2%) fixed;
+}
+body.crafted-family.offer .planbuy .btn.go{
+  background:#be533e;border:1px solid #be533e;border-radius:28px;
+  box-shadow:none;color:#fff;text-shadow:none;
+}
+body.crafted-family.offer .planbuy .btn.go:active{background:#93422f;box-shadow:none;}
+body.crafted-family.offer .planbuy .btn.go:disabled{
+  background:#eae1d3;border-color:#eae1d3;color:#948472;box-shadow:none;
+}
+body.offer .offer-unl{color:#be533e;}
+body.offer .offer-checks{margin-top:18px;margin-bottom:8px;gap:10px;}
+body.offer .offer-checks li{font-weight:900;}
+body.offer .offer-checks .oci{background:#ffe4cc;color:#93422f;}
+/* Keep the measured compact layouts: added breathing room belongs only on
+   screens that have it, never at the expense of the price or legal links. */
+body.offer.fit2 .offer-checks{margin-top:9px;margin-bottom:0;gap:4px;}
+body.offer.fit3 .offer-checks{margin-top:7px;gap:2px;}
+body.offer .oneplan{background:#ffe6d4;border-color:#be533e;box-shadow:none;border-radius:17px;}
+body.offer .oneplan[aria-checked="false"]{background:#fffdfa;border-color:#ead7bf;}
+body.offer .oneplan-dot{border-color:#be533e;background:radial-gradient(circle,#be533e 0 5px,#fff 6px);}
+body.offer .oneplan[aria-checked="false"] .oneplan-dot{border-color:#cdbba9;background:#fff;}
+body.offer .oneplan-check:before{background:#be533e;}
+body.offer .oneplan-ahead{color:#93422f;}
+body.offer .oneplan[role="radio"]:focus-visible{outline-color:#93422f;}
+body.offer .planpick .plan[aria-checked="true"]{background:#ffe6d4;border-color:#be533e;box-shadow:none;}
+body.offer .planpick .plan[aria-checked="true"]:after{
+  background-color:#be533e;
+}
+/* Keep the amount itself separate: a localized store price is never
+   rewritten to add the caption, nor read back from DOM to buy a plan. */
+.oneplan-billing{display:block;flex:none;text-align:right;}
+.oneplan-billing .oneplan-amt{display:block;}
+.oneplan-billed{display:block;margin-top:2px;font:700 10px/1.3 Nunito,sans-serif;color:#88735f;white-space:nowrap;}
+#iapLife .tag{left:auto;right:12px;transform:none;top:-10px;background:#ffd47c;color:#623f22;text-transform:none;letter-spacing:0;font:800 10px/1.3 Nunito,sans-serif;padding:3px 9px;box-shadow:none;}
+@media(max-width:340px){
+  .oneplan-billed{font-size:9px;}
+  #iapLife .tag{right:10px;font-size:9px;padding:3px 8px;}
+}

@@ -370,7 +370,7 @@ const kid = (o = {}) => Object.assign({ d: 3, g: 2, gw: 5, r: 40, p: 25, s: ["R"
   const noExport = (sona.match(/const NO_EXPORT = \[[^\]]*\]/) || [""])[0], noImport = (sona.match(/const NO_IMPORT = \[[^\]]*\]/) || [""])[0];
   ok("the phone's device id and last send are this phone's own: on NO_EXPORT and NO_IMPORT", /"sona\.report\.v1"/.test(noExport) && /"sona\.report\.v1"/.test(noImport));
   ok("setup asks for the report only with an address given on the email step, and posts once as it ends", /if\(draft\.role!=="slp"&&draft\.email&&ORDER\.indexOf\("updates"\)>-1\)\{prof\.weeklyEmail=true;prof\.weeklyReport=true;\}/.test(ob) && /postParentLead\(draft\.email\);\s*\/\/[^\n]*\n[^\n]*\n\s*try\{if\(Sona\.reportSync\)Sona\.reportSync\(true\);\}catch\(e\)\{\}/.test(ob));
-  ok("the email step's heading is the ask", /<h1 class="qh" id="updTitle" tabindex="-1">Get the weekly progress report<\/h1>/.test(ob));
+  ok("the email step's heading is the ask", /<h1 class="qh" id="updTitle" tabindex="-1">Weekly progress\?<\/h1>/.test(ob));
   const priv = readFileSync(path.join(ROOT, "privacy.html"), "utf8");
   ok("the privacy policy says what the report sends, that nothing is kept until confirmed, and for how long", priv.includes("<h2>The weekly progress report (only if a grown-up asks for it)</h2>") && /Never a name, an age, a word, a voice/.test(priv) && /Nothing is kept until you tap the confirm link/.test(priv) && /three weeks/.test(priv) && /120 days/.test(priv));
   ok("the plan screen no longer says a practice recap \"stays on this device\"", !/stays on this device/.test(readFileSync(path.join(ROOT, "subscribe.html"), "utf8")));

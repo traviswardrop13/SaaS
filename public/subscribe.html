@@ -434,6 +434,7 @@
     body.fit9 #offerTitle{font-size:19px;}
   </style>
   <link rel="stylesheet" href="/crafted-family.css" />
+  <link rel="stylesheet" href="/onboarding-price-studio.css" />
 </head>
 <body class="crafted-family family-subscribe">
   <div class="wrap">
@@ -579,7 +580,7 @@
           <span class="tag" id="iapLifeTag" hidden></span>
           <span class="oneplan-dot" aria-hidden="true"></span>
           <span class="oneplan-l"><span class="oneplan-name" id="iapLifeName"></span><span class="oneplan-sub" id="iapLifeLine"></span></span>
-          <span class="oneplan-amt" id="iapLifeAmt"></span>
+          <span class="oneplan-billing"><span class="oneplan-amt" id="iapLifeAmt"></span><span class="oneplan-billed" id="iapLifeBilled" hidden>Billed today</span></span>
           <span class="oneplan-price" id="iapLifePrice"></span>
           <span class="oneplan-what" id="iapLifeWhat"></span>
         </div>
@@ -1233,12 +1234,18 @@
         // else whether this row is the picked one
         function paintRow(ids, w, hide, on) {
           var row = g(ids.row);
+          // Travis's shorter lifetime labels (24 Oct 2026) are presentation
+          // only. The store still owns the amount and the picked plan still
+          // owns the button, billing disclosure and purchase underneath it.
+          var life = ids.row === "iapLife" && w.state === "paid";
           row.hidden = hide;
-          g(ids.tag).textContent = w.tag || ""; g(ids.tag).hidden = !w.tag;
+          g(ids.tag).textContent = life ? "Best Value" : w.tag || ""; g(ids.tag).hidden = !life && !w.tag;
           g(ids.price).textContent = w.price || "";
           g(ids.what).textContent = w.what || "";
-          g(ids.name).textContent = w.name || ""; g(ids.line).textContent = w.sub || ""; g(ids.line).hidden = !w.sub;
+          g(ids.name).textContent = life ? "Lifetime" : w.name || "";
+          g(ids.line).textContent = life ? "Yours Forever" : w.sub || ""; g(ids.line).hidden = !life && !w.sub;
           g(ids.amt).textContent = w.amount || "";
+          if (ids.row === "iapLife") g("iapLifeBilled").hidden = hide || !life;
           if (on === null) { row.removeAttribute("role"); row.removeAttribute("aria-checked"); row.removeAttribute("tabindex"); }
           else { row.setAttribute("role", "radio"); row.setAttribute("aria-checked", on ? "true" : "false"); row.tabIndex = on ? 0 : -1; }
         }

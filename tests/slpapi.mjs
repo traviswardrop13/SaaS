@@ -751,7 +751,7 @@ if (A) {
   // and it is a real one: the phone sends its numbers (sona.js REPORT1) and
   // lib/report.ts mails them. reporttest plays both.
   ok("family email step asks for the weekly progress report, says it is optional and how to unsubscribe, and the report it names is real",
-    /Get the weekly progress report/.test(updStep) && /\(optional\)/.test(updStep) && /Unsubscribe anytime/.test(updStep) &&
+    /Weekly progress\?/.test(updStep) && /\(optional\)/.test(updStep) && /Unsubscribe anytime/.test(updStep) &&
     /function runReports\(/.test(read("lib/report.ts")) && /function reportSync\(/.test(read("public/sona.js")) && /runReports\(/.test(read("app/api/cron/nurture/route.ts")));
   ok("the Speech Check no longer promises to email a report it never sends", !/email your child's report/.test(read("public/check.html")));
   ok("the privacy policy names Resend as the email list and says it holds nothing about a child",

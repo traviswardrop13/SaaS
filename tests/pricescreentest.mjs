@@ -26,8 +26,10 @@
 //     have the ... a month as the top default option and then below it is
 //     the pay one time?"; scenario 1b and the fit in 15b): monthly on top,
 //     picked on arrival (its free trial); when RevenueCat's offering lists
-//     the one payment, it sits under monthly, each in its own words ("One
-//     payment", never "lifetime", "free" or "Best value"); the pick moves the
+//     the one payment, it sits under monthly. Its short display labels are
+//     Lifetime / Yours Forever / Best Value (Travis, 24 Oct 2026), with Billed
+//     today under the store's price; its purchase words stay planWords's.
+//     Neither row invents free days; the pick moves the
 //     button and every line under the rows, and the button buys the picked
 //     product; a one-payment row arriving late comes in unpicked; an
 //     offering that also lists the yearly product shows no yearly row and
@@ -57,6 +59,7 @@ let failures = 0, assertions = 0;
 function ok(name, pass, detail = "") { assertions++; if (!pass) failures++; console.log((pass ? "PASS " : "FAIL ") + name + (pass ? "" : " → " + JSON.stringify(detail))); }
 const flat = (s) => String(s == null ? "" : s).replace(/\u00a0/g, " ").replace(/\s+/g, " ").trim();
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+const isStudio = (css) => /rgb\((190, 83, 62|147, 66, 47)\)/.test(css);
 
 // ONE fake phone for most of the suite, loaded fresh for each case: its
 // storage is emptied and the case's config is left where the init script
@@ -137,6 +140,7 @@ const ROWS = () => {
     const b = el.getBoundingClientRect();
     return { name: tidy(g(pre + "Name").innerText), sub: seen(g(pre + "Line")) ? tidy(g(pre + "Line").innerText) : "", amt: tidy(g(pre + "Amt").innerText),
       tag: seen(g(pre + "Tag")) ? tidy(g(pre + "Tag").textContent) : "", price: tidy(g(pre + "Price").textContent),
+      billed: seen(g(pre + "Billed")) ? tidy(g(pre + "Billed").textContent) : "",
       role: el.getAttribute("role"), checked: el.getAttribute("aria-checked"), tab: el.tabIndex, top: b.top, bottom: b.bottom };
   };
   return { year: row("iapYear", "iapYear"), month: row("iapPlan", "iap"), life: row("iapLife", "iapLife"), group: g("iapRows").getAttribute("role"), label: g("iapRows").getAttribute("aria-label") };
@@ -265,21 +269,22 @@ try {
     for (const door of DOORS) {
       await load(...at(door, two())); await until("free");
       const s = await snap(), r = await rows(), w = await words2(), kept = door[2].stamp === "kept", tag = "two rows, from " + door[0] + ": ";
-      ok(tag + "monthly above the one payment, each painted in its own plan's words, and no yearly row although the offering lists the yearly product",
+      ok(tag + "monthly above Lifetime, its price from its own plan, and no yearly row although the offering lists the yearly product",
         !r.year && !!r.life && !!r.month && r.month.bottom <= r.life.top && w.y === null &&
-        same([r.life.name, r.life.sub, r.life.amt, r.life.tag, r.life.price], [w.l.name, w.l.sub, w.l.amount, w.l.tag, w.l.price]) &&
+        same([r.life.name, r.life.sub, r.life.amt, r.life.tag, r.life.price], ["Lifetime", "Yours Forever", w.l.amount, "Best Value", w.l.price]) &&
         same([r.month.name, r.month.sub, r.month.amt, r.month.tag, r.month.price], [w.m.name, w.m.sub, w.m.amount, w.m.tag, w.m.price]), [r, w.l, w.y]);
-      ok(tag + "the one-payment row says \"One payment\", \"Yours to keep. No subscription.\" and the store's price with no period, and never lifetime, free, Best value or a trial",
-        r.life.name === "One payment" && r.life.sub === "Yours to keep. No subscription." && r.life.amt === "$59.99" && r.life.tag === "" && !BAD_LIFE.test(r.life.name + " " + r.life.sub + " " + r.life.amt + " " + r.life.tag), r.life);
+      ok(tag + "Lifetime says Yours Forever, Best Value and Billed today, with the store's price and no trial or renewal",
+        r.life.name === "Lifetime" && r.life.sub === "Yours Forever" && r.life.amt === "$59.99" && r.life.tag === "Best Value" && r.life.billed === "Billed today" &&
+        !/free|trial|auto-renew|\/mo|\/yr/i.test(r.life.name + " " + r.life.sub + " " + r.life.amt + " " + r.life.tag + " " + r.life.billed), r.life);
       ok(tag + "a radio group with Monthly picked when the screen opens, the one payment not",
         r.group === "radiogroup" && r.label === "Choose a plan" && r.life.role === "radio" && r.month.role === "radio" && r.month.checked === "true" && r.life.checked === "false" && r.month.tab === 0 && r.life.tab === -1, r);
       ok(tag + "the card state, the title, the check line, the small print, the button and the header line are the monthly plan's free trial (\"No payment today\")",
         s.state === "free" && s.title === flat(w.m.title) && /^No payment today/.test(s.check) && s.check === flat(w.m.check) && s.note === flat(w.m.note) &&
         s.button === w.m.button && s.act === "buy" && s.buttons === 1 && s.line === (kept ? "Today: the free version. " : "") + w.m.header &&
         !/one payment|no subscription/i.test(s.note + " " + s.button + " " + s.check + " " + s.title + " " + s.line), [s.state, s.title, s.check, s.note, s.button, s.line]);
-      ok(tag + "nothing on the screen is about a year or says lifetime, every figure is the store's, and no saving or ratio is claimed",
-        !/lifetime|yearly|annual|a year|\/yr|best value/i.test(s.body) && (s.body.match(/\$[\d,]+(?:\.\d+)?/g) || []).every((x) => x === "$9.99" || x === "$59.99") && !/sav(e|ing)|%|half|cheaper|119\.88|59\.89|× ?12|12 ?×/i.test(s.body),
-        [s.body.match(/\$[\d.,]+/g), (s.body.match(/[^\n]*(lifetime|yearly|annual|a year|\/yr|best value|sav|%|half|cheaper|×)[^\n]*/i) || [""])[0]]);
+      ok(tag + "nothing on the screen is about a year, every figure is the store's, and no saving or ratio is claimed",
+        !/yearly|annual|a year|\/yr/i.test(s.body) && (s.body.match(/\$[\d,]+(?:\.\d+)?/g) || []).every((x) => x === "$9.99" || x === "$59.99") && !/sav(e|ing)|%|half|cheaper|119\.88|59\.89|× ?12|12 ?×/i.test(s.body),
+        [s.body.match(/\$[\d.,]+/g), (s.body.match(/[^\n]*(yearly|annual|a year|\/yr|sav|%|half|cheaper|×)[^\n]*/i) || [""])[0]]);
       ok(tag + "the store was never asked for the yearly product", !s.asked.some((ids) => ids.indexOf(IDS.annual) > -1), s.asked);
       ok(tag + "the offer is counted once, as monthly picked", viewed(s) === 1 && s.events.filter((e) => e[0] === "paywall viewed")[0][1].plan === "monthly", s.events.filter((e) => e[0] === "paywall viewed"));
     }
@@ -400,16 +405,16 @@ try {
       await tick(1300); await page.waitForURL(/\/onboarding\.html$/);
     }
 
-    // colours: the row not picked is cream with an empty ring, never orange or green; picked, it and its dot are teal
+    // Play Studio's coral follows the picked row; the other stays cream.
     await load(...at(SETUP, two())); await until("free");
     const paint = () => page.evaluate(() => { const p = (el) => { const cs = getComputedStyle(el); return [cs.backgroundImage, cs.backgroundColor, cs.borderTopColor, cs.boxShadow].join(" "); }; return { life: p(document.getElementById("iapLife")), lifeDot: p(document.querySelector("#iapLife .oneplan-dot")), month: p(document.getElementById("iapPlan")), monthDot: p(document.querySelector("#iapPlan .oneplan-dot")) }; });
     const c = await paint();
     const GREEN = ["58cc02", "46a302", "6edd18", "6fd60e", "5fd216", "3c8c02", "7ee23a"].map((h) => "rgb(" + [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16)).join(", ") + ")");
     for (const [what, css] of Object.entries(c)) ok("two rows, " + what + " is painted in no orange and no green", !isOrange(css) && !GREEN.some((g) => css.indexOf(g) > -1), css);
-    ok("…picked Monthly and its dot are teal; the one payment and its empty ring are not", isTeal(c.month) && isTeal(c.monthDot) && !isTeal(c.life) && !isTeal(c.lifeDot), c);
+    ok("…picked Monthly and its dot are coral; Lifetime and its empty ring are not", isStudio(c.month) && isStudio(c.monthDot) && !isStudio(c.life) && !isStudio(c.lifeDot), c);
     await page.locator("#iapLife").click();
     const c2 = await paint();
-    ok("…and a tap on the one payment turns the two round", isTeal(c2.life) && isTeal(c2.lifeDot) && !isTeal(c2.month) && !isTeal(c2.monthDot) && !isOrange(c2.month), c2);
+    ok("…and a tap on Lifetime turns the two round", isStudio(c2.life) && isStudio(c2.lifeDot) && !isStudio(c2.month) && !isStudio(c2.monthDot) && !isOrange(c2.month), c2);
 
     // the source: no "wants to play" line is built anywhere on the page
     const src = readFileSync(ROOT + "/subscribe.html", "utf8");
@@ -1040,7 +1045,7 @@ try {
       a11y.msg === "status" && a11y.live === "polite" && a11y.none === "status" && a11y.by === "iapNote" && a11y.tl === "OL" && a11y.label === "What happens when" && a11y.dots && a11y.type === "button", a11y);
   });
 
-  // ── 14. colours: teal and cream, never orange or green ──
+  // ── 14. Play Studio's offer palette; Settings keeps its grown-up palette ──
   await scenario("colours", async () => {
     await load(...at(SETUP, { store: STORES.monthlyFree })); await until("free");
     const c = await page.evaluate(() => {
@@ -1051,13 +1056,18 @@ try {
     // loadtest's own green list, as the browser reports a colour
     const GREEN = ["58cc02", "46a302", "6edd18", "6fd60e", "5fd216", "3c8c02", "7ee23a"].map((h) => "rgb(" + [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16)).join(", ") + ")");
     const green = (css) => GREEN.some((g) => css.indexOf(g) > -1);
-    for (const [what, css] of Object.entries(c)) ok("the " + what + " is painted in no orange and no green", !isOrange(css) && !green(css), css);
-    ok("…and the row's picked dot, the check mark and the feature icons are teal", isTeal(c.dot) && isTeal(c.check) && isTeal(c.icon), [c.dot, c.check, c.icon]);
-    // THE BUTTON IS SETUP'S BRIGHTER TEAL (Travis, 22 Oct 2026: #11b3b0 with a
-    // #0a8784 edge), so the two buttons a parent taps in a row match
-    const btn = await page.evaluate(() => { const cs = getComputedStyle(document.getElementById("iapBuy")); return { bg: cs.backgroundImage, border: cs.borderTopColor, shadow: cs.boxShadow, color: cs.color, text: cs.textShadow }; });
-    ok("the buy button wears the brighter teal: its face, its #0a8784 edge and shadow, a white label with a dark teal shadow, no orange, no green",
-      isTeal(btn.bg) && btn.border === "rgb(10, 135, 132)" && /rgb\(10, 135, 132\) 0px 5px 0px/.test(btn.shadow) && btn.color === "rgb(255, 255, 255)" && /rgb\(8, 117, 114\)/.test(btn.text) && !isOrange(btn.bg + btn.border + btn.shadow) && !green(btn.bg + btn.border + btn.shadow), btn);
+    for (const [what, css] of Object.entries(c)) {
+      if (what === "icon") ok("the feature icon uses Play Studio's peach wash and dark coral ink", css === "rgb(255, 228, 204) rgb(147, 66, 47)", css);
+      else ok("the " + what + " is painted in no orange and no green", !isOrange(css) && !green(css), css);
+    }
+    ok("…and the row's picked dot, the check mark and the feature icons are coral", isStudio(c.dot) && isStudio(c.check) && isStudio(c.icon), [c.dot, c.check, c.icon]);
+    const buttonPaint = () => page.evaluate(() => { const cs = getComputedStyle(document.getElementById("iapBuy")); return { bg: cs.backgroundImage + " " + cs.backgroundColor, border: cs.borderTopColor, shadow: cs.boxShadow, color: cs.color, text: cs.textShadow }; });
+    const btn = await buttonPaint();
+    ok("the offer's buy button matches Play Studio: a coral face, white label, no shadow, no orange or green",
+      isStudio(btn.bg) && btn.border === "rgb(190, 83, 62)" && btn.shadow === "none" && btn.color === "rgb(255, 255, 255)" && btn.text === "none" && !isOrange(btn.bg + btn.border + btn.shadow) && !green(btn.bg + btn.border + btn.shadow), btn);
+    await load(...at(DOORS[4], { store: STORES.monthlyFree })); await until("free");
+    const grownup = await buttonPaint();
+    ok("Settings > Your plan retains its existing teal buy button", isTeal(grownup.bg) && grownup.border === "rgb(10, 135, 132)" && !isStudio(grownup.bg), grownup);
   });
 
   // ── 15. the fit: six sizes × three priced shapes × two price strings × four doors ──

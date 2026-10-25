@@ -89,40 +89,15 @@
     @media(prefers-reduced-motion:reduce){.ob,.ob *,.ob *::before,.ob *::after,.obfoot,.obfoot *{transition-property:none!important;}}
   </style>
   <link rel="stylesheet" href="/onboarding-crafted.css" />
+  <link rel="stylesheet" href="/onboarding-studio.css" />
+  <script defer src="/onboarding-fruit-demo.js"></script>
+  <script defer src="/onboarding-piano-demo.js"></script>
 </head>
 <body class="ob-world" data-setup-screen="welcome">
-  <!-- THE HELLO IS ALIVE (Travis, 22 Oct 2026: "I want animation ... make it
-       live, animated"). The orchard WITHOUT Echo painted in (orchard-game,
-       the Fruit Slice practice page's own), so the one Echo on screen is the
-       live one: he hops onto the path, says hi, and stays, bobbing, now and
-       then waving; a cloud drifts, an orange drops from a tree, a star
-       twinkles. CSS keyframes only (transform and opacity, no script loop,
-       so a session recording holds no stream of changes). Outside .ob and
-       drawn only on the hello: nothing here loops inside a step, and none of
-       it is on any other screen. Under Reduce Motion it is all still. -->
-  <div class="reel-box" id="reelBox" aria-hidden="true"><div class="reel" id="reelFrame">
-    <img class="reel-still" alt="" decoding="async" />
-    <img class="reel-still" alt="" decoding="async" />
-    <video class="reel-clip" muted playsinline preload="none" disableremoteplayback x-webkit-airplay="deny"></video>
-    <video class="reel-clip" muted playsinline preload="none" disableremoteplayback x-webkit-airplay="deny"></video>
-  </div></div>
-  <div class="hello" id="hello" aria-hidden="true">
-    <div class="hello-bg"></div>
-    <img class="hello-cloud hello-cloud-a" src="/assets/crafted/game/cloud.webp" alt="" />
-    <img class="hello-cloud hello-cloud-b" src="/assets/crafted/game/cloud.webp" alt="" />
-    <img class="hello-star" src="/assets/crafted/game/star.webp" alt="" />
-    <img class="hello-orange" src="/assets/crafted/fruit-orange.webp" alt="" />
-    <div class="hello-echo">
-      <span class="hello-shadow"></span>
-      <div class="hello-hop"><div class="hello-bob">
-        <img class="hello-pose hello-rest" src="/assets/crafted/echo-welcome.webp" alt="" />
-        <img class="hello-pose hello-wave" src="/assets/crafted/echo-wave.webp" alt="" />
-      </div></div>
-      <span class="hello-hi">Hi! I'm Echo!</span>
-    </div>
-  </div>
+  <!-- Play Studio: existing painted art, short copy and silent previews. -->
 
   <div class="ob">
+    <div class="studio-brand" aria-label="Sona">Sona</div>
     <div class="seg" id="seg"></div>
 
     <div class="mascot">
@@ -133,8 +108,8 @@
     <!-- SETUP, FROM SCRATCH (Travis, 22 Oct 2026: "I want to do a completely
          new onboarding ... We want to sell the product in the onboarding ...
          simplified, some of the slides have too many words"). A family's
-         first setup: the hello, the problem, the games playing (with Echo's
-         voice on a tap), Rachel on her own, the child's name and age, what
+         first setup: the hello, the problem, two silent game previews,
+         Rachel on her own, the child's name and age, what
          they love, the games they will love, "Is <Name> in speech therapy?",
          the sounds, how long each day, the weekly report email, "<Name>'s
          practice is ready!", a reminder before the free trial ends (where
@@ -147,52 +122,39 @@
          Settings › Moving to a new phone?, and one who paid on the website
          restores it in Settings › Restore access. -->
     <div class="step on" data-step="welcome">
-      <h1 class="welcome-brand" aria-label="Sona. Speech practice kids love."><span class="welcome-name" aria-hidden="true"><span class="wl">S</span><span class="wl">o</span><span class="wl">n</span><span class="wl">a</span></span><span class="welcome-tag" aria-hidden="true">Speech practice kids love.</span></h1>
+      <div class="welcome-copy"><p class="studio-kicker">Speech practice</p><h1 class="welcome-brand">Little sounds.<br>Big adventures.</h1></div>
+      <div class="studio-welcome-art" aria-hidden="true"><img src="/assets/crafted/echo-welcome.webp" alt="" /><span>Hi, I’m Echo!</span></div>
     </div>
 
-    <!-- THE PROBLEM (19 Oct 2026, three screens that sold Sona; one line;
-         redone 23 Oct 2026, Travis: "the flashcard solved with games ...
-         slide isn't very good. It's either too fast or just confusing. Like
-         the picture of a game shows up too quickly"). A before and after,
-         one under the other, each a picture and its own few words: the
-         flashcards first, then, a beat later, the game. Nothing flies and
-         nothing is tossed: each fades up in place, once. A statement, not a
-         question: nothing to tap in it, nothing stored, no progress
-         segment. -->
+    <!-- One message, one picture; this screen stores no answer. -->
     <div class="step sell" data-step="problem">
-      <h1 class="qh" id="problemTitle" tabindex="-1">Speech homework is hard at home.</h1>
-      <ul class="ba" aria-label="Before and after">
-        <li class="ba-row ba-before">
-          <span class="ba-pic ba-cards" aria-hidden="true"><span class="ba-card">rug</span><span class="ba-card">red</span><span class="ba-card">run</span></span>
-          <span class="ba-words"><span class="ba-tag">Flashcards</span><span class="ba-say">turn into fights.</span></span>
-        </li>
-        <li class="ba-row ba-after">
-          <span class="ba-pic ba-game" aria-hidden="true"><img src="/assets/crafted/home-fruit.webp" alt="" width="768" height="432" decoding="async" /></span>
-          <span class="ba-words"><span class="ba-tag">Sona's games</span><span class="ba-say">turn into practice.</span></span>
-        </li>
-      </ul>
+      <h1 class="qh" id="problemTitle" tabindex="-1">Speech practice.<br>Through play.</h1>
+      <div class="studio-problem-art" aria-hidden="true"><img src="/assets/crafted/home-fruit.webp" alt="" /><img class="small-echo" src="/assets/crafted/echo-welcome.webp" alt="" /></div>
     </div>
 
-    <!-- SEE IT PLAY (Travis, 22 Oct 2026: "Do like a little clip of a few
-         games so that parents can see it"; redone 23 Oct 2026: "I want it to
-         take up the whole screen ... rotate through fruit slice, piano tiles,
-         and Flappy Glide ... they're saying ... the letter R ... And then the
-         game slows down"; then, of the first cut: "i dont want a darkened
-         screen up there just have it say practice by playing like somewhere
-         and show it for 2 seconds and then fade it away. other than that they
-         just watch the game being played"). Three clips of real play, filmed
-         frame by frame from the games themselves (tools/setupreel/record.mjs:
-         public/assets/setup/reel/<key>.mp4, and a poster <key>.webp), 4 s
-         each, muted, with no audio track at all, filling the screen (a layer
-         outside .ob, #reelBox, as the hello's is: a step slides in with a
-         transform, which boxes a fixed layer into it). In each, the game's
-         own top bar shows Echo asking for the R sound, the child heard, and
-         the game slowing down. The heading, "Practice through play." (Travis: just
-         "practice through play"), shows for two seconds and fades away; then there is only the game, Back and Continue. A browser that
-         cannot play the clips (or a phone in Low Power Mode that refuses)
-         sees the posters. Nothing here makes a sound. -->
+    <!-- Separate live, silent previews of the existing speech power. The
+         parent compares speeds; neither preview listens or scores practice. -->
     <div class="step sell" data-step="reel">
-      <h1 class="qh reel-title" id="reelTitle" tabindex="-1">Practice through play.</h1>
+      <p class="studio-kicker">See speech help</p>
+      <h1 class="qh" id="reelTitle" tabindex="-1">Practice your sound.<br>Slow the fruit.</h1>
+      <div class="demo-scene fruit-scene" id="fruitDemoScene">
+        <canvas class="demo-canvas" role="img" aria-label="Fruit launches upward and is sliced."></canvas>
+        <div class="demo-top"><span>Fruit Slice</span><span class="demo-speed">Normal speed</span></div>
+        <div class="demo-help"><img src="/assets/crafted/echo-listen.webp" alt="" /><strong>rrrr</strong><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3Zm-6 8v1a6 6 0 0 0 12 0v-1M12 18v3m-3 0h6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></div>
+        <p class="demo-message" role="status" aria-live="polite">Swipe to slice.</p>
+      </div>
+      <div class="demo-switch" role="group" aria-label="Compare Fruit Slice speed"><button type="button" data-demo-mode="normal" aria-pressed="true" class="on">Normal speed</button><button type="button" data-demo-mode="slow" aria-pressed="false">After practice</button></div>
+    </div>
+    <div class="step sell" data-step="piano">
+      <p class="studio-kicker">See speech help</p>
+      <h1 class="qh" id="pianoTitle" tabindex="-1">Practice your sound.<br>Slow the keys.</h1>
+      <div class="demo-scene piano-scene" id="pianoDemoScene">
+        <canvas class="demo-canvas" role="img" aria-label="Notes fall toward the keyboard and are tapped."></canvas>
+        <div class="demo-top"><span>Piano Tiles</span><span class="demo-speed">Normal speed</span></div>
+        <div class="demo-help"><img src="/assets/crafted/echo-listen.webp" alt="" /><strong>rrrr</strong><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3Zm-6 8v1a6 6 0 0 0 12 0v-1M12 18v3m-3 0h6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></div>
+        <p class="demo-message" role="status" aria-live="polite">Tap the keys.</p>
+      </div>
+      <div class="demo-switch" role="group" aria-label="Compare Piano Tiles speed"><button type="button" data-demo-mode="normal" aria-pressed="true" class="on">Normal speed</button><button type="button" data-demo-mode="slow" aria-pressed="false">After practice</button></div>
     </div>
 
     <!-- RACHEL, ON HER OWN (Travis, 22 Oct 2026: "a bigger slide of Rachel
@@ -219,7 +181,7 @@
       <!-- Not drawn since 15 Oct 2026 (the step has no room for it above the
            keyboard): it is still the box's description to a screen reader. -->
       <p class="muted setup-hint" id="nameHint">So Echo knows who to cheer for.</p>
-      <p class="setup-label" id="ageLabel">How old are they?</p>
+      <p class="setup-label" id="ageLabel">Age</p>
       <div class="schips" id="obAge" role="group" aria-labelledby="ageLabel">
         <button type="button" class="sound" data-age="4" aria-pressed="false">2–4</button>
         <button type="button" class="sound" data-age="6" aria-pressed="false">5–6</button>
@@ -261,7 +223,7 @@
          "Free" or "Premium" here: no surface tells a family something stays
          free. -->
     <div class="step sell" data-step="games">
-      <h1 class="qh" id="gamesTitle" tabindex="-1">Games <span class="ph-name" id="gamesName">your child</span> will love</h1>
+      <h1 class="qh" id="gamesTitle" tabindex="-1">Games for <span class="ph-name" id="gamesName">your child</span>.</h1>
       <div class="sell-grid" id="gamesGrid"></div>
     </div>
 
@@ -306,7 +268,7 @@
     </div>
 
     <!-- HOW LONG EACH DAY? (Travis, 22 Oct 2026: "more so like how many
-         minutes per day"; 5, 10 or 15). It took the place of "How many days a
+         minutes per day"; now 3, 5 or 10, approved 24 Oct). It took the place of "How many days a
          week will you practice?". One tap, or Skip. A real setting: the pick
          is the child's daily goal in reps (MINUTE_REPS below: 5 minutes is
          the 30 reps every family had by default), the one Home's goal and
@@ -317,9 +279,9 @@
     <div class="step" data-step="minutes">
       <h1 class="qh" id="minutesTitle" tabindex="-1">How long each day?</h1>
       <div class="ask ask-big" id="obMinutes" role="group" aria-labelledby="minutesTitle">
-        <button type="button" class="ask-pick" data-val="5" aria-pressed="false">5 min</button>
-        <button type="button" class="ask-pick" data-val="10" aria-pressed="false">10 min</button>
-        <button type="button" class="ask-pick" data-val="15" aria-pressed="false">15 min</button>
+        <button type="button" class="ask-pick" data-val="3" aria-pressed="false"><b>3</b> <span>minutes</span></button>
+        <button type="button" class="ask-pick" data-val="5" aria-pressed="false"><b>5</b> <span>minutes</span></button>
+        <button type="button" class="ask-pick" data-val="10" aria-pressed="false"><b>10</b> <span>minutes</span></button>
       </div>
       <button type="button" class="skip ask-skip" id="minutesSkip">Skip</button>
     </div>
@@ -338,7 +300,7 @@
          profile.weeklyReport, and the phone then sends a few numbers a week
          for the report (sona.js REPORT1, lib/report.ts). -->
     <div class="step" data-step="updates">
-      <h1 class="qh" id="updTitle" tabindex="-1">Get the weekly progress report</h1>
+      <h1 class="qh" id="updTitle" tabindex="-1">Weekly progress?</h1>
       <label class="field setup-label" for="updEmail">Your email (optional)</label>
       <input id="updEmail" type="email" inputmode="email" autocomplete="email" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="done" placeholder="you@email.com" />
       <p class="muted upd-consent">We&rsquo;ll also send occasional tips from Rachel. Unsubscribe anytime.</p>
@@ -588,14 +550,10 @@
     // Stars, Castle Builder, Robot Builder, Build a Snowman, Pizza Chef,
     // Birthday Cake.)
     var INTEREST_GAMES={sports:["hoops","soccer","racecar"],music:["tiles"],dinosaurs:["dino"],animals:["run","feed","puppy","fishtank"],space:["rise","glide","bubbles","space","rocket","stars"],building:["stack","castle","robot","snowman"],food:["slice","feed","pizza","cake"]};
-    // HOW LONG EACH DAY (22 Oct 2026): the minutes a parent picks, as the
-    // daily goal in reps (about 6 a minute: 5 minutes is the 30 reps that
-    // were every family's default). Rachel's table to change, and hers to
-    // rule on where it bites: one table for every age, so a 2-4 year old
-    // can be set to 90 reps a day (about 18 Feed Echo or Bubble Pop rounds
-    // before the chest opens). A second child is not asked and keeps 30
-    // (Travis's call whether to ask).
-    var MINUTE_REPS={"5":30,"10":60,"15":90};
+    // Approved 3/5/10-minute choices use the existing six-reps/minute
+    // conversion. This is a product goal, not a claim about clinical dosage.
+    // A second child is not asked and keeps the existing profile default.
+    var MINUTE_REPS={"3":18,"5":30,"10":60};
     var draft = {
       childName: p.childName || "",
       character: (window.Sona && Sona.characterById && Sona.characterById(p.character)) ? p.character : "fox", // Pip starts selected — legacy/unknown ids fall back too
@@ -631,7 +589,7 @@
     // written on every step and cleared the moment the profile is saved
     // (leaving the ready screen) — it is a scratchpad, never a profile, and
     // nothing reads it but this page.
-    var DRAFTKEY = "sona.obdraft.v1";
+    var DRAFTKEY = "sona.obdraft.v1", restoredMinutes=false;
     (function () {
       try {
         var held = JSON.parse(localStorage.getItem(DRAFTKEY) || "null");
@@ -641,6 +599,7 @@
         var one=true; try{ one=Sona.kids().length<2; }catch(e){}
         // a draft written by this build names its child; an older one (no kid) is the first child's only
         if (typeof held.kid === "string" ? held.kid !== SLOT : !one) return;
+        restoredMinutes=Object.prototype.hasOwnProperty.call(held,"minutes");
         // An explicit list, not Object.keys(held): this reads a value off
         // disk, and a draft is not allowed to introduce fields of its own.
         ["childName","childAge","character","role","mode","focusSounds",
@@ -678,13 +637,16 @@
     // they press the buttons in the onboarding", and "Hear Echo" went with
     // the reel's caption the same day): no tap chime on any button, chip,
     // tile or answer, and no voice.
+    // Five minutes is selected only for a fresh first family. A skipped or
+    // retired draft choice and an existing family keep their own goal.
+    if(!p.onboarded&&!SECOND&&!ASKED&&draft.role!=="slp"&&!restoredMinutes)draft.minutes="5";
     var ORDER_PARENT=[];
     // THE SCREENS THAT SELL (19 Oct 2026; rebuilt 22 Oct): the problem, the
     // games playing, Rachel, then (once the name is in) what the child loves
     // and the games they will love. Only for a family not set up yet: a child
     // already set up walking setup again (Back from the first game) is not
     // sold to again.
-    var SELL_FIRST=["problem","reel","rachel"],SELL_AFTER=["interests","games"];
+    var SELL_FIRST=["problem","reel","piano","rachel"],SELL_AFTER=["interests","games"];
     // THE REMINDER SCREEN (22 Oct 2026) follows the ready screen only where
     // the iPhone can set a reminder, iOS has never been asked, and the price
     // follows (remindMay: what the page knows at once, and what the order is
@@ -1039,7 +1001,7 @@
     // One anonymous count per screen REACHED, once per page load. The key
     // comes from this fixed list and nothing else is passed: there is no
     // parameter an answer, a name or an age could ride in.
-    var STEP_KEYS={welcome:1,problem:1,reel:1,rachel:1,name:1,interests:1,games:1,therapy:1,sounds:1,minutes:1,updates:1,ready:1,remind:1,mic:1,handoff:1,slp:1,email:1};
+    var STEP_KEYS={welcome:1,problem:1,reel:1,piano:1,rachel:1,name:1,interests:1,games:1,therapy:1,sounds:1,minutes:1,updates:1,ready:1,remind:1,mic:1,handoff:1,slp:1,email:1};
     function stepSeen(key){if(!STEP_KEYS[key]||seenSteps[key])return;seenSteps[key]=1;try{if(window.SonaAnalytics)SonaAnalytics.track("setup step",{step:key});}catch(e){}}
     // The two one-tap questions. An answer (or Skip, which holds "") goes on
     // at once and writes the draft, nothing else: never the mode, the path
@@ -1091,8 +1053,8 @@
     // with no purchase plugin) only the games this phone opens are, since
     // nothing there can open the rest. Premium, a trial or a covered caseload
     // open every game either way (Sona.gameAccess).
-    var SELL={problem:1,reel:1,rachel:1,games:1},sellPainted=null;
-    function SELL_CAP(both,id){return both?(id==="simple"?3:6):9;}
+    var SELL={problem:1,reel:1,piano:1,rachel:1,games:1},sellPainted=null;
+    function SELL_CAP(both,id){return both?2:3;}
     function sellStyle(){var age=Number(draft.childAge);return age>=2&&age<5&&Math.floor(age)===age?"simple":age>=5?"arcade":"";}
     function sellsAll(){try{return !!(draft.role!=="slp"&&Sona.trialFirst&&Sona.trialFirst());}catch(e){return false;}}
     function sellOpens(key,all){if(all)return true;try{return !Sona.gameAccess||!!Sona.gameAccess(key).allowed;}catch(e){return true;}}
@@ -1125,8 +1087,8 @@
       var groups=sellGroups(style,all);
       var grid=document.getElementById("gamesGrid");grid.innerHTML="";grid.classList.toggle("both",groups.length>1);
       // A peek, not the catalog (22 Oct 2026, when 18 games opened at once
-      // and the grid ran off a phone): the Arcade's first nine of one age group,
-      // or three little-kid and six big-kid games with no age, each group's
+      // and the grid ran off a phone): three large previews of one age group,
+      // or two of each group when no age was given, each group's
       // rest counted under it ("and 7 more"). The games the child's
       // interests fit come first (ringed), so the cap never hides one before
       // a game they did not pick.
@@ -1148,96 +1110,29 @@
       });
     }
 
-    // THE REEL (22 Oct 2026). The games with a clip (REEL_ORDER) that this
-    // phone may show (the games screen's own rule, both age groups: the age
-    // is not asked yet), in a fixed order for a parent's first look, each a clip of real play
-    // (public/assets/setup/reel/<key>.mp4, made by tools/setupreel/record.mjs)
-    // with its poster. Two videos take turns: one plays while the next
-    // loads, and they cross-fade as a clip ends. Off this screen, or with the
-    // page hidden, nothing plays. A browser that cannot play the clips (the
-    // tests' Chromium has no H.264), or one that refuses to start them (an
-    // iPhone in Low Power Mode), gets the posters instead, changing every few
-    // seconds, and a game whose clip or poster is missing shows its painted
-    // Home card. Never a black frame and never a broken video.
-    // UNDER REDUCE MOTION NOTHING MOVES HERE EITHER (the 22 Oct 2026 review):
-    // the first game's poster, still, with no clip started and no slideshow
-    // (read each time the screen opens, so a setting changed meanwhile counts).
-    // Three games since 23 Oct 2026 (Travis: "rotate through fruit slice,
-    // piano tiles, and Flappy Glide ... just do a 3-second of those three"),
-    // each clip showing the sound power: Echo asks, the child says the
-    // sound, the game slows down, all in the game's own top bar.
-    var REEL_ORDER=["slice","tiles","glide"],REEL_DIR="/assets/setup/reel/",REEL_STILL_MS=4000,REEL_FADE_MS=650;
-    var reel=(function(){
-      var frame=document.getElementById("reelFrame"),vids=frame.querySelectorAll(".reel-clip"),stills=frame.querySelectorAll(".reel-still");
-      var list=null,at=0,mode="",live=false,cur=0,timer=0,fadeT=0;
-      function calmOnly(){try{return window.matchMedia("(prefers-reduced-motion: reduce)").matches;}catch(e){return false;}}
-      function clips(){
-        var keys=[];sellGroups("",sellsAll()).forEach(function(g){g.games.forEach(function(x){keys.push(x.key);});});
-        // only the games with a clip of their own: the reel is a fixed demo
-        // list, not every open game (eighteen more opened on 22 Oct 2026 with
-        // no clip, and a Home card in a reel of real play reads as a broken one)
-        return REEL_ORDER.filter(function(k){return keys.indexOf(k)>-1;});
-      }
-      function canPlay(){try{var v=vids[0];return !!(v.canPlayType&&v.canPlayType('video/mp4; codecs="avc1.640028"'));}catch(e){return false;}}
-      // a still: the clip's poster, else the game's Home card (never a broken picture)
-      function still(img,key){
-        img.classList.remove("card","gone");img.onerror=function(){
-          if(img.dataset.key!==key)return;
-          var c=cardSrc(key);if(c&&img.getAttribute("src")!==c){img.classList.add("card");img.src=c;}else img.classList.add("gone");
-        };
-        img.dataset.key=key;img.src=REEL_DIR+key+".webp";
-      }
-      function show(el){Array.prototype.forEach.call(frame.querySelectorAll(".reel-still,.reel-clip"),function(n){n.classList.toggle("on",n===el);});}
-      // The one that just stepped aside is still fading out (0.6 s,
-      // onboarding-crafted.css): loading the game after next into it then
-      // flashed a third game mid-fade (the 22 Oct 2026 review). So it is
-      // loaded only once the fade is over, and only if the reel is still on
-      // and that element is still the one off screen.
-      function afterFade(el,ok,fn){clearTimeout(fadeT);fadeT=setTimeout(function(){if(live&&ok()&&!el.classList.contains("on"))fn();},REEL_FADE_MS);}
-      function stillsMode(){
-        if(mode==="stills")return;mode="stills";frame.classList.add("stills");
-        Array.prototype.forEach.call(vids,function(v){try{v.pause();v.removeAttribute("src");v.load();}catch(e){}});
-        still(stills[0],list[at]);cur=0;show(stills[0]);
-        if(live)tickStills();
-      }
-      function tickStills(){
-        clearTimeout(timer);
-        if(!live||mode!=="stills"||list.length<2||calmOnly())return;
-        var next=stills[1-cur],key=list[(at+1)%list.length];
-        afterFade(next,function(){return mode==="stills"&&next===stills[1-cur];},function(){still(next,key);});
-        timer=setTimeout(function(){if(!live||mode!=="stills")return;at=(at+1)%list.length;cur=1-cur;show(stills[cur]);tickStills();},REEL_STILL_MS);
-      }
-      function load(v,key){v.dataset.key=key;v.poster=REEL_DIR+key+".webp";v.preload="auto";v.src=REEL_DIR+key+".mp4";try{v.load();}catch(e){}}
-      function play(v){
-        var r;try{v.muted=true;r=v.play();}catch(e){stillsMode();return;}
-        if(r&&r.then)r.then(null,function(){if(live&&mode==="video")stillsMode();});
-      }
-      function ended(){
-        if(!live||mode!=="video"||this!==vids[cur])return;
-        at=(at+1)%list.length;cur=1-cur;var v=vids[cur];
-        if(v.dataset.key!==list[at])load(v,list[at]);
-        show(v);play(v);
-        var out=vids[1-cur],key=list[(at+1)%list.length];
-        afterFade(out,function(){return mode==="video"&&out===vids[1-cur];},function(){load(out,key);});
-      }
-      Array.prototype.forEach.call(vids,function(v){
-        v.addEventListener("ended",ended);
-        v.addEventListener("error",function(){if(live&&mode==="video"&&v===vids[cur])stillsMode();});
-      });
-      return {
-        start:function(){
-          if(live)return;live=true;
-          var still0=calmOnly();
-          if(!list){list=clips();if(!list.length){frame.classList.add("empty");return;}mode=!still0&&canPlay()?"video":"";if(!mode){stillsMode();return;}load(vids[0],list[0]);if(list.length>1)load(vids[1],list[1]);show(vids[0]);}
-          if(mode==="video"){if(still0){stillsMode();return;}play(vids[cur]);}else tickStills();
-        },
-        stop:function(){
-          if(!live)return;live=false;clearTimeout(timer);clearTimeout(fadeT);
-          Array.prototype.forEach.call(vids,function(v){try{v.pause();}catch(e){}});
-        }
-      };
-    })();
-    document.addEventListener("visibilitychange",function(){if(document.hidden)reel.stop();else if(ORDER[idx]==="reel"&&!finished)reel.start();});
+    // Preview only: real painted game pieces, no microphone, audio, speech
+    // verdict or practice credit. Each scene owns one loop, torn down when
+    // its screen is left; backgrounding and pagehide release it too.
+    var demoLive=null,demoKey="",demoSlow={reel:false,piano:false};
+    function stopDemo(){if(demoLive)demoLive.destroy();demoLive=null;demoKey="";}
+    function paintDemo(key){
+      if(key!=="reel"&&key!=="piano"){stopDemo();return;}
+      if(document.hidden){stopDemo();return;}
+      var scene=document.getElementById(key==="reel"?"fruitDemoScene":"pianoDemoScene");
+      var api=key==="reel"?window.SonaFruitDemo:window.SonaPianoDemo;
+      if(demoKey!==key){stopDemo();if(api){demoLive=api.mount(scene);demoKey=key;}}
+      var slow=!!demoSlow[key];scene.classList.toggle("slow",slow);
+      scene.querySelector(".demo-speed").textContent=slow?"After practice":"Normal speed";
+      scene.querySelector(".demo-message").textContent=slow?(key==="reel"?"Slower fruit.":"Slower keys."):(key==="reel"?"Swipe to slice.":"Tap the keys.");
+      steps[key].querySelectorAll("[data-demo-mode]").forEach(function(b){var on=(b.dataset.demoMode==="slow")===slow;b.classList.toggle("on",on);b.setAttribute("aria-pressed",String(on));});
+      if(demoLive)demoLive.setSlow(slow);
+    }
+    ["reel","piano"].forEach(function(key){steps[key].querySelectorAll("[data-demo-mode]").forEach(function(b){b.onclick=function(){if(ORDER[idx]!==key||settling())return;demoSlow[key]=b.dataset.demoMode==="slow";paintDemo(key);};});});
+    document.addEventListener("visibilitychange",function(){if(document.hidden)stopDemo();else if(!finished)paintDemo(ORDER[idx]);});
+    // A fast parent can reach a preview before a deferred art controller has
+    // loaded. Retry once both controllers are ready, without moving the step.
+    document.addEventListener("DOMContentLoaded",function(){if(!finished)paintDemo(ORDER[idx]);});
+    window.addEventListener("pagehide",stopDemo);
 
     // "Does this Apple ID already have Premium?", asked of the store ONCE,
     // from the moment the ready screen shows, so a paying family who
@@ -1282,9 +1177,6 @@
       }catch(e){}
     }
 
-    // the hello's intro plays once a page load; coming Back to it, Echo is already there
-    // HELLO_BTN_MS: when the intro's button has faded in (its 1.3 s delay and 0.45 s fade)
-    var helloSeen=false,helloWaited=false,HELLO_BTN_MS=1750;
     function render(){
       var key=ORDER[idx];
       replayAt(key,false);
@@ -1296,14 +1188,6 @@
       // screen must not open part-way down where the last one was left
       var sc0=document.querySelector(".ob"); if(sc0) sc0.scrollTop=0;
       document.body.dataset.setupScreen=key;document.body.classList.toggle("ob-world",key==="welcome");paintProgress(key);
-      var intro=key==="welcome"&&!helloSeen;
-      document.body.classList.toggle("hello-intro",intro);if(key!=="welcome"&&idx>0)helloSeen=true;
-      // "Get started" fades in last (onboarding-crafted.css): until it is
-      // there it takes no tap, so a finger on an empty-looking spot never
-      // starts setup (never under Reduce Motion, where it is there at once)
-      if(intro&&!helloWaited){helloWaited=true;var rm=false;try{rm=window.matchMedia("(prefers-reduced-motion: reduce)").matches;}catch(e){}
-        if(!rm){document.body.classList.add("hello-wait");setTimeout(function(){document.body.classList.remove("hello-wait");},HELLO_BTN_MS);}}
-      if(!intro)document.body.classList.remove("hello-wait");
       mascotForStep(key);
       bubble.textContent = BUBBLES[key] || "";
       nextBtn.textContent = CTA[key] || "Continue";
@@ -1321,7 +1205,7 @@
       // the games are painted with the screens that sell, so their pictures
       // are on their way before the screen that shows them
       if(SELL[key]||key==="interests")paintSell();
-      if(key==="reel")reel.start();else reel.stop();
+      paintDemo(key);
       if(key==="interests")paintInterests();
       // Nothing to type on these, so a screen reader is taken to the heading.
       // the question names the child once a name is typed (a heading, never a button's words)

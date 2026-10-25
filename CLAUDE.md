@@ -155,6 +155,34 @@ opens them) is open only to
 Premium from any source, a trial, or Sona being free open everything, as
 before. These three were defaults Travis did not pick; ask him before
 changing one. What follows from the rule:
+- **PLAY STUDIO SETUP (Travis, 24 Oct 2026; supersedes the earlier visual
+  descriptions below):** the approved cream/coral prototype is now the family
+  setup. A short hello ("Little sounds. Big adventures."), one-message
+  "Speech practice. Through play.", separate Fruit Slice and Piano Tiles
+  speed comparisons, then Rachel and the existing questions. The demos use
+  painted game pieces and offer Normal speed / After practice; they are
+  silent previews, never microphone requests, speech verdicts or practice
+  credit. They release their loops on departure/background and stay still
+  under Reduce Motion. The old recorded reel assets remain available but
+  are not loaded by setup. Returning families, second children and clinicians
+  keep their shorter paths. Native keyboard, privacy/replay, purchase,
+  reminder eligibility and explicit hand-off rules are unchanged.
+  Name uses the label "Age" with more space before it. Minutes are 3 / 5 /
+  10, with five selected only for a fresh first parent; a restored skip or
+  existing family retains its goal. At the existing six-reps/minute product
+  conversion these save 18 / 30 / 60 reps, not a clinical dosage claim.
+  Suggested games are a few larger previews, still filtered by the actual
+  catalog, age and access. Email consent, Rachel's full credential and the
+  exact microphone promise remain. Home, Settings, stories, books and App
+  Store artwork are outside this change.
+  The setup offer keeps its complete benefits, store billing disclosures,
+  trial eligibility, purchase/restore and legal links. Its Lifetime row now
+  says "Lifetime", "Yours Forever", "Best Value" at the top right, and
+  "Billed today" under the store's amount (expressly superseding the older
+  "never lifetime / Best value" wording below). Prices and free periods
+  still come from the store. The three benefit lines are bolder and have
+  modest extra space above/below on screens that have room; compact layouts
+  retain room for payment choices and legal links.
 - **SETUP, REBUILT FROM SCRATCH: SELL SONA, A FEW QUESTIONS, THE PRICE, THEN
   THE PHONE IS HANDED OVER** (Travis, 22 Oct 2026: "I want to do a
   completely new onboarding ... from scratch. I want animation ... make it

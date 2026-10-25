@@ -1,0 +1,136 @@
+/* Play Studio, approved 24 Oct 2026. Setup only; game and Home art stay put.
+   The original sheet still owns native keyboard sizing and recovery layouts. */
+:root { --act:#be533e; --act-d:#93422f; --studio-paper:#fff5e9; --studio-ink:#3d342e; --studio-line:#ead7bf; }
+html, body { background-color:var(--studio-paper); }
+body, body[data-setup-screen="welcome"] { background:var(--studio-paper) radial-gradient(circle at 110% -5%,#ffd47c 0 27%,transparent 27.2%); color:var(--studio-ink); }
+html.ob-resume body,html.ob-leaving body { background:var(--studio-paper)!important; }
+#obBuild { background:var(--studio-paper); }
+.hello { display:none!important; }
+.ob, body[data-setup-screen="welcome"] .ob { padding-top:calc(22px + env(safe-area-inset-top)); padding-bottom:calc(96px + env(safe-area-inset-bottom)); max-width:480px; }
+.studio-brand { font:800 29px/1.1 'Baloo 2',sans-serif; letter-spacing:-1px; margin:0 0 24px; flex:none; }
+.ob .mascot { display:none; }
+.ob .seg { margin:0 0 24px; gap:5px; }
+.ob .seg > i { height:3px; background:var(--studio-line); }
+.ob .seg > i::after { background:var(--act); }
+.ob .qh { font-size:34px; line-height:1.06; color:var(--studio-ink); text-align:left; text-wrap:initial; letter-spacing:-.6px; }
+.ob .muted { color:#786959; font-size:14px; }
+.ob .step.sell { text-align:left; }
+.ob .step.on { animation:none; }
+.studio-kicker { color:var(--act); font:900 10px/1.4 'Nunito',sans-serif; text-transform:uppercase; letter-spacing:.15em; margin:0 0 12px; }
+.obfoot { padding:12px 22px calc(20px + env(safe-area-inset-bottom)); background:linear-gradient(transparent,var(--studio-paper) 30%); }
+body[data-setup-screen="welcome"] .obfoot { background:var(--studio-paper); }
+.obfoot .btn, .ob .remind-yes { background:var(--act); border-color:var(--act); border-radius:30px; box-shadow:none; text-shadow:none; font:900 16px/1.2 'Nunito',sans-serif; min-height:55px; }
+.obfoot .btn:active,.ob .remind-yes:active { background:var(--act-d); box-shadow:none; transform:translateY(1px); }
+.obfoot .skip,.ob .skip { color:#786959; }
+body[data-setup-screen="reel"] .obfoot { background:linear-gradient(transparent,var(--studio-paper) 30%); }
+body[data-setup-screen="reel"] .obfoot #backBtn { background:none; box-shadow:none; padding:10px; }
+.ob .ask-skip,.ob #obExploreSounds { color:var(--act-d)!important; text-decoration:none; font:800 12px/1.3 'Nunito',sans-serif; }
+.ob input { background:#fffdfa; color:var(--studio-ink); border-color:var(--studio-line); box-shadow:none; caret-color:var(--act); }
+.ob input:focus { outline:2px solid var(--act); outline-offset:2px; }
+.ob .setup-label { color:var(--studio-ink); font:900 12px/1.4 'Nunito',sans-serif; }
+.ob .sound,.int-pick,.ask-pick { background:#fffdf8; border-color:var(--studio-line); color:var(--studio-ink); box-shadow:none; }
+.ob .schips .sound.on,.int-pick[aria-pressed="true"],.ask-pick[aria-pressed="true"] { border-color:var(--act); background:#ffe4cc; color:var(--act-d); box-shadow:inset 0 0 0 1px var(--act); }
+.int-pick[aria-pressed="true"]::after { background:var(--act); }
+.ob .sound:focus-visible,.ob .skip:focus-visible,.obfoot .skip:focus-visible,.ask-pick:focus-visible,.int-pick:focus-visible { outline-color:var(--act-d); }
+/* One message and one warm picture on the hello. */
+.step[data-step="welcome"].on { display:flex; flex-direction:column; flex:1; min-height:0; }
+.welcome-copy { flex:none; padding:4px 4px 0; }
+.welcome-brand { text-align:left; font-size:42px; line-height:.99; letter-spacing:-1px; color:var(--studio-ink); max-width:350px; }
+.studio-welcome-art { position:relative; flex:1; min-height:145px; max-height:360px; margin:26px 5px 8px; border:6px solid #ffe09a; border-radius:50% 50% 15px 15px; background:url('/assets/crafted/orchard-game.webp') center 38%/cover; transform:rotate(3deg); overflow:hidden; }
+.studio-welcome-art img { position:absolute; height:78%; width:74%; object-fit:contain; bottom:2%; left:13%; transform:rotate(-3deg); }
+.studio-welcome-art span { position:absolute; top:15%; left:5%; background:#fff8e9; border:1px solid #efd496; border-radius:15px 15px 2px 15px; padding:9px 14px; font:900 12px/1.2 'Nunito',sans-serif; transform:rotate(-6deg); }
+.studio-problem-art { position:relative; height:270px; margin:28px 0 20px; border-radius:45% 45% 20px 20px; background:#ffe4cc; display:grid; place-items:center; }
+.studio-problem-art > img { width:87%; border-radius:18px; transform:rotate(-5deg); box-shadow:0 10px 24px #60432b22; }
+.studio-problem-art > .small-echo { position:absolute; width:85px; right:4px; bottom:-10px; box-shadow:none; transform:rotate(5deg); }
+/* A live, silent comparison per game, in a bounded stage above Continue. */
+body[data-setup-screen="reel"] .ob,body[data-setup-screen="piano"] .ob { overflow:hidden; }
+.ob .step[data-step="reel"].on,.ob .step[data-step="piano"].on { justify-content:flex-start; padding:0; }
+.ob .step[data-step="reel"] .qh,.ob .step[data-step="piano"] .qh { font-size:32px; margin:0 0 20px; }
+.demo-scene { position:relative; flex:1; min-height:180px; max-height:440px; overflow:hidden; isolation:isolate; touch-action:none; border:5px solid #ffe09a; border-radius:28px; }
+.demo-scene.fruit-scene { background:#fbd68d url('/assets/crafted/fruit-market-v3.webp') center/cover; }
+.demo-scene.piano-scene { background:#302361 url('/assets/crafted/piano-stage-v2.webp') center/cover; }
+.demo-canvas { position:absolute; inset:0; display:block; width:100%; height:100%; touch-action:none; }
+.demo-top { position:absolute; z-index:2; top:10px; left:10px; right:10px; display:flex; justify-content:space-between; gap:5px; pointer-events:none; font:900 10px/1.3 'Nunito',sans-serif; }
+.demo-top span { padding:6px 9px; background:#fffaf1f2; border-radius:30px; color:var(--studio-ink); }
+.demo-help { position:absolute; z-index:2; top:48px; left:50%; transform:translateX(-50%); display:flex; align-items:center; gap:10px; min-width:130px; height:42px; padding:3px 14px 3px 6px; border:1px solid #e7d6b8; border-radius:99px; background:#fffaf1f2; box-shadow:0 3px 0 #a9895326; pointer-events:none; }
+.demo-help img { width:36px; height:36px; object-fit:contain; }
+.demo-help strong { font:800 23px/1 'Baloo 2',sans-serif; color:#6c4c31; }
+.demo-help svg { width:16px; height:16px; color:#9c7b53; }
+.demo-scene.slow .demo-help { background:#ddf7ee; border-color:#56b4a9; box-shadow:0 3px 0 #32968d; }
+.demo-scene.slow .demo-help svg { color:#188c85; }
+.demo-scene.slow::after { content:''; position:absolute; inset:0; border:2px solid #61c3b0; border-radius:22px; z-index:3; pointer-events:none; }
+.demo-message { position:absolute; z-index:2; bottom:9px; left:50%; transform:translateX(-50%); max-width:90%; white-space:nowrap; margin:0; padding:6px 13px; background:#fff9edf5; color:var(--studio-ink); font:900 10px/1.3 'Nunito',sans-serif; border-radius:99px; pointer-events:none; }
+.piano-scene .demo-message { bottom:66px; }
+.demo-switch { display:flex; flex:none; gap:7px; margin:12px 0 3px; }
+.demo-switch button { flex:1; background:#fffdf8; color:#786959; border:1px solid var(--studio-line); border-radius:30px; padding:8px; min-height:46px; font:900 11px/1.3 'Nunito',sans-serif; cursor:pointer; }
+.demo-switch button.on { color:var(--act-d); border-color:var(--act); background:#ffe4cc; }
+.demo-switch button:focus-visible { outline:3px solid var(--act-d); outline-offset:2px; }
+.ob .rachel-photo { width:78%; max-width:265px; aspect-ratio:1 / 1.1; height:auto; border:8px solid #ffd47c; border-radius:24px; transform:rotate(3deg); box-shadow:none; margin:0 auto 25px; }
+.ob .rachel-photo img { object-fit:cover; border-radius:17px; }
+.ob .step[data-step="rachel"] .qh { text-align:center; font-size:28px; }
+.rachel-line { color:#786959; font-size:14px; }
+.rachel-pill { color:var(--act-d); border-color:var(--studio-line); background:#fffdf8; box-shadow:none; font-size:11px; }
+/* Keep the native name step's frozen sizing rules. More space before Age. */
+body[data-setup-screen="name"] .studio-brand { display:none; }
+html body[data-setup-screen="name"] .ob #ageLabel { margin-top:30px; margin-bottom:10px; }
+.ob .step[data-step="interests"],.ob .step[data-step="therapy"],.ob .step[data-step="minutes"] { text-align:left; }
+.int-grid { display:grid; grid-template-columns:1fr 1fr; gap:9px; }
+.int-pick { width:auto; flex-direction:row; justify-content:flex-start; gap:8px; min-height:83px; padding:9px; font:900 12px/1.2 'Nunito',sans-serif; text-align:left; border-radius:17px; }
+.int-art { width:44px; height:50px; flex:none; }
+.int-pick[aria-pressed="true"]::after { width:14px; height:14px; font-size:9px; line-height:14px; top:4px; right:4px; }
+.sell-games { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:14px; }
+.sell-games li { border:1px solid var(--studio-line); border-radius:17px; background:#fffdf8; box-shadow:none; overflow:hidden; }
+.sell-games li:first-child { grid-column:1 / -1; }
+.sell-games li.loved { border-color:var(--act); box-shadow:none; }
+.sell-art { display:block; width:100%; height:auto; aspect-ratio:1.7; border-radius:0; }
+.sell-games li:first-child .sell-art { aspect-ratio:2; }
+.sell-art img { width:100%; height:100%; object-fit:cover; }
+.sell-name { text-align:left; padding:9px 12px; color:var(--studio-ink); font:800 15px/1.2 'Baloo 2',sans-serif; }
+.sell-games li:first-child .sell-name { font-size:21px; }
+.both .sell-games li:first-child { grid-column:auto; }
+.both .sell-games li:first-child .sell-art { aspect-ratio:1.7; }
+.both .sell-games li:first-child .sell-name { font-size:15px; }
+.sell-grid.both .sell-games.two { display:grid; grid-template-columns:1fr 1fr; }
+.sell-grid.both .sell-games.two li { width:auto; }
+.sell-games li.loved .sell-art { box-shadow:none; }
+.sell-more { color:#786959; font-size:12px; }
+.ask { gap:11px; margin-top:25px; }
+.ask-pick { min-height:62px; border-radius:17px; font:900 16px/1.3 'Nunito',sans-serif; text-align:left; padding:16px 17px; }
+.ask-big .ask-pick { display:flex; align-items:center; gap:7px; min-height:80px; border-radius:17px; font:700 14px/1.3 'Nunito',sans-serif; }
+.ask-big .ask-pick b { font:800 30px/1 'Baloo 2',sans-serif; }
+.ob #obSounds .sound { border-radius:18px; box-shadow:0 3px 0 var(--studio-line); }
+.ob #obSounds .sound.on { box-shadow:0 3px 0 var(--act-d); }
+.ready-chips li { background:#fffdf8; border-color:var(--studio-line); color:var(--act-d); box-shadow:none; }
+.ob .ready-hedge,.ob .upd-consent { font-size:11px; line-height:1.6; }
+@media(max-height:700px) {
+ .ob,body[data-setup-screen="welcome"] .ob { padding-top:calc(15px + env(safe-area-inset-top)); }
+ .studio-brand { font-size:26px; margin-bottom:16px; }
+ .ob .seg { margin-bottom:17px; }
+ .ob .qh { font-size:28px; }
+ .welcome-brand { font-size:34px; }
+ .studio-welcome-art { margin-top:18px; }
+ .studio-problem-art { height:210px; margin:20px 0 15px; }
+ .studio-kicker { margin-bottom:8px; font-size:9px; }
+ .ob .step[data-step="reel"] .qh,.ob .step[data-step="piano"] .qh { font-size:27px; margin-bottom:12px; }
+ .demo-top { top:7px; left:7px; right:7px; font-size:9px; }
+ .demo-top span { padding:5px 8px; }
+ .demo-help { top:40px; height:37px; min-width:116px; gap:7px; }
+ .demo-help img { width:31px; height:31px; }
+ .demo-help strong { font-size:21px; }
+ .demo-switch { margin-top:9px; }
+ .demo-switch button { font-size:10px; }
+ .ob .rachel-photo { max-width:220px; width:65%; margin-bottom:17px; }
+ .ob .step[data-step="rachel"] .qh { font-size:26px; }
+ .int-grid { gap:7px; }
+ .int-pick { min-height:65px; padding:6px 8px; font-size:11px; }
+ .int-art { width:34px; height:38px; }
+ .ask { margin-top:18px; }
+ .ask-pick { min-height:53px; }
+ .ask-big .ask-pick { min-height:67px; }
+ .sell-games { gap:8px; margin-top:10px; }
+ .sell-art { aspect-ratio:2.1; }
+ .sell-games li:first-child .sell-art { aspect-ratio:2.8; }
+ .obfoot .btn { font-size:15px; min-height:53px; }
+ html.ob-tiny body[data-setup-screen="name"] .ob #ageLabel { margin-top:20px; }
+}
+@media(prefers-reduced-motion:reduce) { .studio-welcome-art,.studio-problem-art img,.rachel-photo { transform:none; } }

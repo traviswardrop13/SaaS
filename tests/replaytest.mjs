@@ -233,7 +233,10 @@ try {
     await mark(page, 111);                          // "Speech homework is hard at home.": recorded
     await next(page);
     await page.locator('[data-step="reel"].on').waitFor(); await rest();
-    await mark(page, 121);                          // "Practice through play.": recorded
+    await mark(page, 121);                          // Fruit Slice's sound-power demo: recorded
+    await next(page);
+    await page.locator('[data-step="piano"].on').waitFor(); await rest();
+    await mark(page, 126);                          // Piano Tiles' sound-power demo: recorded
     await next(page);
     await page.locator('[data-step="rachel"].on').waitFor(); await rest();
     await mark(page, 131);                          // Rachel, on her own: recorded
@@ -242,7 +245,7 @@ try {
     await page.locator("#obName").fill("Zephyrine");
     await page.locator('#obAge [data-age="6"]').click();
     await next(page);
-    // "What does <Name> love?" and "Games <Name> will love" show the name, as ph-name; both are recorded
+    // "What does <Name> love?" and "Games for <Name>." show the name, as ph-name; both are recorded
     await page.locator('[data-step="interests"].on').waitFor(); await rest();
     await mark(page, 141);                          // what the child loves: recorded, the name as [child]
     await calmed(); await page.locator('#obInterests [data-val="sports"]').click();
@@ -250,7 +253,7 @@ try {
     await page.locator('[data-step="games"].on').waitFor();
     await page.evaluate(() => Promise.all([...document.querySelectorAll(".step.on img")].map((i) => i.decode().catch(() => {}))));
     await rest();
-    await mark(page, 151);                          // "Games <Name> will love": recorded, the name as [child]
+    await mark(page, 151);                          // "Games for <Name>.": recorded, the name as [child]
     await next(page);
     await page.locator('[data-step="therapy"].on').waitFor();
     await mark(page, 201);                          // the therapy question: never recorded
@@ -301,16 +304,16 @@ try {
     const rr = w.rr(), text = w.text();
     ok("setup: a recording was sent (full snapshots of the page)", rr.filter((e) => e.type === FULL).length >= 2, rr.length);
     ok("setup: the hello's pointer was recorded (the control)", marked(rr, 101));
-    ok("setup: the problem, the games playing and Rachel's screen were recorded (the controls)", marked(rr, 111) && marked(rr, 121) && marked(rr, 131), [marked(rr, 111), marked(rr, 121), marked(rr, 131)]);
+    ok("setup: the problem, both game demos and Rachel's screen were recorded (the controls)", marked(rr, 111) && marked(rr, 121) && marked(rr, 126) && marked(rr, 131), [marked(rr, 111), marked(rr, 121), marked(rr, 126), marked(rr, 131)]);
     ok("setup: the minutes screen's pointer was recorded (the control)", marked(rr, 351));
     ok("setup: nothing on the screen a therapy answer lands on (the sounds)", !marked(rr, 301));
-    ok("setup: \"What does <Name> love?\" and \"Games <Name> will love\" were recorded (the controls)", marked(rr, 141) && marked(rr, 151), [marked(rr, 141), marked(rr, 151)]);
+    ok("setup: \"What does <Name> love?\" and \"Games for <Name>.\" were recorded (the controls)", marked(rr, 141) && marked(rr, 151), [marked(rr, 141), marked(rr, 151)]);
     // every spot those two screens show the name is recorded as [child], and
     // the screens' own words are there, so the check below is not vacuous
     const allNodes = nodes(rr), byId = (id) => allNodes.filter((n) => n.attributes && n.attributes.id === id);
     const said = (n) => (n.childNodes || []).map((c) => c.textContent || "").join("");
     ok("setup: the name on the screens that sell is recorded as [child], every time (intName, gamesName)", ["intName", "gamesName"].every((id) => byId(id).length > 0 && byId(id).every((n) => said(n) === "[child]")), ["intName", "gamesName"].map((id) => byId(id).map(said)));
-    ok("setup: the screens that sell were recorded with their words (the problem, the reel, Rachel, what they love, the games)", /Speech homework is hard at home/.test(text) && /Practice through play/.test(text) && /pediatric speech-language pathologist in her clinical fellowship/.test(text) && /What does/.test(text) && /will love/.test(text) && /Fruit Slice/.test(text));
+    ok("setup: the screens that sell were recorded with their words (speech through play, both demos, Rachel, what they love, the games)", /Speech practice/.test(text) && /Through play/.test(text) && /Slow the fruit/.test(text) && /Slow the keys/.test(text) && /pediatric speech-language pathologist in her clinical fellowship/.test(text) && /What does/.test(text) && /Games for/.test(text) && /Fruit Slice/.test(text));
     // every incremental event, each pointer position at its own time
     const when = (e) => (e.type === INCR && Array.isArray(e.data.positions)) ? e.data.positions.map((q) => e.timestamp + (q.timeOffset || 0)) : [e.timestamp];
     const between = rr.filter((e) => e.type === INCR && when(e).some((t) => t >= t1 && t <= t2));

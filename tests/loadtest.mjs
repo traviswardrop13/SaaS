@@ -205,6 +205,7 @@ for (const [game, title, art] of SKIES) {
   const hue = ([r, g, b]) => { const mx = Math.max(r, g, b), mn = Math.min(r, g, b), c = mx - mn; if (!c) return -1;
     const h = mx === r ? ((g - b) / c) % 6 : mx === g ? (b - r) / c + 2 : (r - g) / c + 4; return (h * 60 + 360) % 360; };
   const isTeal = (s) => rgbs(s).some((c) => Math.max(...c) - Math.min(...c) > 80 && hue(c) >= 172 && hue(c) <= 195);
+  const isCoral = (s) => rgbs(s).some((c) => Math.max(...c) - Math.min(...c) > 60 && hue(c) >= 3 && hue(c) <= 18);
   const isCream = (s) => { const c = rgbs(s).filter((x) => x.length); return c.some(([r, g, b]) => r >= 240 && g >= 225 && b >= 200 && r >= g && g >= b) && !isTeal(s); };
 
   const ARCADE = ["slice", "run", "stack", "tiles", "glide", "rise"].map((g) => `arcade-${g}.html`);
@@ -365,6 +366,15 @@ for (const [game, title, art] of SKIES) {
   const notTeal = [];
   for (const [f, sels] of PRIMARY) for (const r of await look(f, sels)) if (r.missing || !isTeal(r.bg) || ORANGE_RGB.test(r.bg) || GREEN_RGB.test(r.bg)) notTeal.push(f + " " + (r.q || r.sel) + (r.missing ? " (missing)" : ": " + r.bg.slice(0, 60)));
   ok("the buttons and mics a child taps are the action teal, in the browser", notTeal.length === 0, notTeal.join(" | "));
+  // Play Studio is approved for setup only (24 Oct 2026). Its next/reminder
+  // buttons are coral at rest and pressed; every game, Home and Settings
+  // above keeps the shared teal. Never relax the app-wide token/banned-colour
+  // checks merely to admit the one page's deliberately scoped theme.
+  const notCoral = [];
+  for (const r of await onScreen("onboarding.html", ["#nextBtn", "#remindYes"])) {
+    if (r.missing || !isCoral(r.rest) || !isCoral(r.pressed) || GREEN_RGB.test(r.rest + r.pressed)) notCoral.push((r.sel || "button") + (r.missing ? " (missing)" : ": " + r.rest + " pressed: " + r.pressed));
+  }
+  ok("Play Studio setup actions are coral, at rest and pressed, without changing other pages' teal", notCoral.length === 0, notCoral.join(" | "));
   const SECOND = [["arcade-hoops.html", ["#goHome", "#primerNo"]], ["arcade-bubbles.html", ["#goHome", "#primerNo"]], ["arcade-soccer.html", ["#goHome", "#primerNo"]], ["arcade-dino.html", ["#goHome", "#primerNo"]], ["arcade-feed.html", ["#goHome", "#primerNo"]], ...ARCADE.map((f) => [f, ["#endHome", "#revDone"]]), ["settings.html", ["button.btn.ghost"]],
     // the bookshelf's "More books" (1 Oct 2026) opens a second shelf: a second choice
     ["library.html", ["#moreBtn"]],

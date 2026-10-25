@@ -1,14 +1,13 @@
-// SETUPREEL1: setup's game reel, the clips a parent sees on "They practice by
-// playing." (Travis, 22 Oct 2026: "Do like a little clip of a few games so
-// that parents can see it"; 23 Oct 2026: the whole screen, and only "fruit
-// slice, piano tiles, and Flappy Glide ... a 3-second of those three games",
-// each showing the sound said and the game slowing down).
+// SETUPREEL1: the retained, manually recorded setup clips (22–23 Oct 2026).
+// Play Studio replaced the video playlist with separate live Fruit Slice and
+// Piano Tiles demos on 24 Oct. Keep the manual clips and their integrity
+// checks: the recorder remains usable and no damaged asset should hide here.
 // tools/setupreel/record.mjs films the real games and writes
 // public/assets/setup/reel/<key>.mp4 and <key>.webp; this holds what reaches
 // the phone, without a browser (the test Chromium cannot play H.264 anyway):
 //   - the three clips and their posters are there, and nothing else, and
-//     every one is a game a child can open: never a Coming soon game; setup
-//     plays exactly these three, in this order (REEL_ORDER);
+//     every one is a game a child can open: never a Coming soon game;
+//   - setup loads the two live demos, with no old video playlist running;
 //   - a clip is H.264 (avc1, High profile) at 540 x 1080 (1:2, laid full
 //     screen by setup), 3 to 4 seconds,
 //     with one track and it is video: no audio track, so a clip can never
@@ -31,8 +30,7 @@ import { fileURLToPath } from "url";
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 // (SETUPREEL_DIR: another folder, to check this test fails on a bad clip)
 const DIR = process.env.SETUPREEL_DIR || path.join(ROOT, "public/assets/setup/reel");
-// the recorder's list (KEYS in tools/setupreel/record.mjs), in its order. The
-// order the reel plays them in is setup's own (onboarding.html), not this.
+// The retained recorder's list (KEYS in tools/setupreel/record.mjs), in order.
 const REEL = ["slice", "tiles", "glide"];
 const BUDGET = { mp4: 400000, webp: 80000 };
 
@@ -118,8 +116,11 @@ for (const k of REEL) {
   ok(k + ": a game in the catalog, open on Home (never Coming soon)", !!line && !/comingSoon:\s*true/.test(line), line || "not in GAME_ACTS");
 }
 const ob = readFileSync(path.join(ROOT, "public/onboarding.html"), "utf8");
-const order = ((ob.match(/REEL_ORDER\s*=\s*\[([^\]]*)\]/) || [, ""])[1].match(/"([a-z]+)"/g) || []).map((s) => s.slice(1, -1));
-ok("setup plays exactly these three, in this order (REEL_ORDER in onboarding.html)", JSON.stringify(order) === JSON.stringify(REEL), order.join(","));
+ok("setup loads separate live Fruit Slice and Piano Tiles demos",
+  /<script defer src="\/onboarding-fruit-demo\.js"><\/script>/.test(ob) && /<script defer src="\/onboarding-piano-demo\.js"><\/script>/.test(ob) &&
+  /data-step="reel"/.test(ob) && /id="fruitDemoScene"/.test(ob) && /data-step="piano"/.test(ob) && /id="pianoDemoScene"/.test(ob) &&
+  /var SELL_FIRST=\["problem","reel","piano","rachel"\]/.test(ob));
+ok("setup no longer runs the old video playlist", !/\bREEL_ORDER\s*=|id="reelBox"|id="reelFrame"|<video\b/.test(ob));
 const rec = readFileSync(path.join(ROOT, "tools/setupreel/record.mjs"), "utf8");
 const keys = (rec.match(/export const KEYS = \[([^\]]*)\]/) || [, ""])[1].match(/"([a-z]+)"/g) || [];
 ok("the recorder films exactly this list, in this order", JSON.stringify(keys.map((s) => s.slice(1, -1))) === JSON.stringify(REEL), keys.join(","));
