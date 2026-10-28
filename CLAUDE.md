@@ -2561,8 +2561,7 @@ offer, the level sheet, the grown-ups check and "Home opens the offer once".
   a done day (tomorrow's poster, dark, with no video loaded), with the
   data saver on, on a hidden page or in the Arcade; it has no sound track
   and takes no tap (`pointer-events:none`: the card's tap is unchanged).
-  The clips are filmed like setup's reel (see "SETUPREEL1"), from the games
-  themselves. The Arcade door sets `history.scrollRestoration="manual"`,
+  The clips are real play, filmed frame by frame (HOMEREEL1, below). The Arcade door sets `history.scrollRestoration="manual"`,
   because with the taller card a child who scrolled to the doors came back
   from "‹ Home" halfway down the page. **Defaults Travis did not pick:** the
   dark gradient (not a cream one), the 480 px cap on an iPad, the data saver
@@ -2828,7 +2827,8 @@ setup's "Practice through play." screen are
 `public/assets/setup/reel/<key>.mp4`, each with a poster `<key>.webp` (its
 first frame): slice, tiles, glide. Nothing in them is drawn or edited:
 `tools/setupreel/record.mjs` (run by hand, never in the battery; its header
-says how) opens each game page as it is on `tools/appstore/capture.mjs`'s
+says how; its machinery, `tools/setupreel/kit.mjs`, is shared with Home's
+recorder, HOMEREEL1) opens each game page as it is on `tools/appstore/capture.mjs`'s
 fake phone, plays it with the page's own controls and the fake microphone,
 and films one 1/30 s frame at a time on Playwright's virtual clock. **Each
 clip shows the sound power, earned the way a child earns it:** about a
@@ -2856,6 +2856,36 @@ the crops. **Rachel's:** every clip is on R (since 23 Oct 2026 nothing on
 setup says R is only an example), so a parent of a 2–4 year old sees R asked and earned, a sound not
 asked of that age, and the clips show the reward a child earns by saying the
 sound.
+
+**Home's day card plays real play too (HOMEREEL1, 28 Oct 2026)** (Travis:
+"the daily practice is like a 3 second reel essentially of the game that the
+child will play"). The card's clips are `public/assets/home/reel/<game>.mp4`,
+each with a poster `<game>.webp` (its first frame), one for every game the
+card can hold: the fourteen story days' games (`STORY_DAYS`' `game`) and the
+eleven games of the day (`QUEST_DAYS`). The story games' clips (about 3 to
+3.5 s) are filmed by `tools/homereel/record.mjs`: one move of the game, a
+word just heard (said three times, as every story game asks) and the finger
+playing it to the moment it pays off (a boat found and tooting home, a toy
+wound, a stone dropping into its hole), cut so the loop starts on the play;
+never a start card, an end card, a wait for a word or the turn panel, and
+Echo's mid-round asks held. The games of the day's clips (4 s) are the 3:4
+ones setup's recorder filmed before setup went to 1:2 (in git at the commit
+before 09d8f1b), copied in. A clip is 540×720 (3:4), H.264 High 4.0 (what
+Home's `canPlayType('video/mp4; codecs="avc1.640028"')` asks), 2.5 to 4 s,
+no audio track, moov first, tagged BT.709, at most 300 KB, its poster at
+most 60 KB. Both recorders film through one machinery,
+`tools/setupreel/kit.mjs` (the virtual clock, the fake phone, the crop, the
+child's-name check, the encode and the budgets), so a Home clip is made
+exactly as setup's are; each recorder gives it its frame, its budgets and
+its scenes. `homereeltest` holds the files: every game either list can name
+has its clip and poster, and the folder holds nothing else, so a new story
+day or a new game of the day fails it until its clip is filmed. **A new
+story day** is a scene in `tools/homereel/record.mjs` and a key in its
+`KEYS`; run it alone (CPU heavy, port 9304) and look at every contact sheet
+in `tools/homereel/out/sheets/` before committing a clip. **Travis's
+calls:** which moment each clip shows, the crops, about 3 s a clip.
+**Rachel's:** nothing here asks a child anything new; every clip is on R
+and shows the reward a child earns by saying the word (the move itself).
 
 **A book page fills the screen, and the child says one word to turn it** (the
 family's redesign brief, 28 Sep 2026). The picture fills the screen and the

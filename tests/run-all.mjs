@@ -33,6 +33,7 @@ const SUITES = [
   "booktest.mjs",  // BOOKS2: full-screen pages; say the key word to turn the page — Say & Play's check, a quiet mic, silence never turns it, no practice data
   "arttooltest.mjs", // ART2: the book and game art tools never draw over hand-made art
   "setupreeltest.mjs", // SETUPREEL1: setup's game reel: a clip and a poster for every game on the list (never Coming soon), H.264 with no audio track, moov first, 540 x 720, under 300 KB and 60 KB
+  "homereeltest.mjs", // HOMEREEL1: Home's card clips: a clip and a poster for every story day's game and every game of the day (read from sona.js), H.264 High 4.0 with no audio track, moov first, 540 x 720, under 300 KB and 60 KB, the poster its first frame
   "soundmarktest.mjs", // SNDMARK1: only the practice sound's letters are orange, for every bank word
   "gameasktest.mjs", // GAMEASK1: what a game's say-it card asks for: the sound, then one syllable, then a short word; what was earned (an old Settings pick is dropped), the practice page's floor, homework; it only reads
   "trophytest.mjs", // TROPHY1/COIN3: trophies follow the honest rep, a day at the goal is 30 whatever the goal, never spent or lost; coins no longer minted, a hardened wallet, never sold
