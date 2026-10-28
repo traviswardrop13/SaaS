@@ -1192,6 +1192,12 @@ a suite about a new family's Buddy Shop seeds "post". A suite that loads a
 page before it seeds must set the stamp itself: that first load stamps
 "post". A suite that holds a page's first load to writing nothing seeds
 "kept", as it seeds `sona.freever.v1`: the sweep writes on that first load.
+The story calendar (CAL1, 28 Oct 2026) is the same kind of first-load
+write: a set-up child whose `sona.quest.v1` has no `a` gets it (today) from
+the first page that loads. A suite that seeds after a first load and then
+holds a later load to writing nothing seeds `a` itself (`roadtest`), and a
+suite that holds the record to its seed puts `a` in the seed (the FOUND
+seeds of `storygametest`, `lighthousetest`, `winduptest`, `bridgetest`).
 
 **Tests do not pin the switch's value.** They pin that the two copies agree,
 and they exercise the purchase rails through the `?paid=1` / `sona.paidui` seam
@@ -2054,7 +2060,8 @@ Pelly's letter (Pelly the pelican always pulls the wrong thing out of her
 beak pouch first: a fish, a rubber duck, a banana; never "Penny", who is
 the penguin of *Penny's Pebble Party*) → the problem → "Let's
 go!" → the game → "See what happens!" → the ending → the sticker → a gold
-star on Echo's helper map. Fourteen days are built, one a day, in order:
+star on Echo's helper map. Fourteen days are built, one a calendar day, in
+order (a skipped one comes back after the others: CAL1, below):
 - **Day 1, "The Lighthouse Sneeze":** Captain Wally the walrus sneezes the
   lamp out; the child is the light and finds seven lost boats in the fog
   (**Light the Way**, key `lighthouse`).
@@ -2127,16 +2134,41 @@ already exists, never painted in and never under a finger.
   locked story game to `/today.html` (`gameBounce`) before any mic or sound,
   and the player checks before any picture, sound or fetch.
 - **One scheduler, QUEST1's.** `sona.quest.v1` (per child, in backups) keeps
-  `i`, `last` and `done` and gains `s` (stories finished), `ls` (the last
-  one), `lk` ("story" or "game"), `got` (the stickers its finish gave) and
-  `seen` ("<date>|<id>": today's intro reached "Let's go!"). Every save
-  MERGES (a game day's write used to replace the record, and would wipe `s`).
+  `i`, `last` and `done` and gains `f` (the stories finished, in the order
+  they were finished; `s`, their count, is still written), `ls` (the last
+  one), `fd` and `gd` (the days the last story and the last game day were
+  finished), `a` (the day this child's calendar started, CAL1), `lk`
+  ("story" or "game"), `got` (the stickers its finish gave) and `seen`
+  ("<date>|<id>": today's intro reached "Let's go!"). A record from before
+  `f` finished its `s` stories in order. Every save MERGES (a game day's
+  write used to replace the record, and would wipe the stories).
   `questToday()` answers `kind: "story"` while a story is left and
-  `storyShown()`, else the game of the day (`kind: "game"`). **Every child
-  starts at Day 1**, new or partway through the 14 days, and goes back to
-  the day they were on after the last story: a story never moves `i`.
-  Still one item a calendar day: a game day finished today keeps the story
-  for tomorrow, and a missed day loses nothing.
+  `storyShown()`, else the game of the day (`kind: "game"`).
+- **A new story every day, played or not (CAL1, 28 Oct 2026)** (Travis:
+  "every day that I look at my app, day one is still the one appearing as
+  the daily adventure. I want it to be different every day. Even if they
+  didn't do the daily practice. The day prior."; he chose "the next story,
+  and a skipped one comes back"). Until then the card waited on a story
+  until it was finished, so a child who never played saw Day 1 for good.
+  Now (`_questOn` in sona.js) every child starts at Day 1 on the first day
+  of their calendar; the day after a story is finished is the next story
+  not finished yet, the day after that the one after, and so on round, so
+  a story skipped comes back once the others have had their day (Day 1
+  played, Days 2 and 3 skipped, Day 4 played: then Days 5 to 14, then 2,
+  then 3). Still one a calendar day: a story finished today stays on the
+  card, done, with tomorrow's dark, and a game day finished today keeps the
+  story for tomorrow. **Where the calendar starts (`a`):** setup writes it
+  as it sets a child up (`saveProfile`'s onboarded save, which the Speech
+  Check and the pilot page make too), so a new family's first day is Day 1.
+  A child set up before this build, or brought in by a backup with no `a`,
+  gets it from the first page that loads (`_questAnchors`, beside the
+  free-era sweeps): a one-shot write, which may be Home's first load, so
+  their first day on this build is their next story in order, never a jump
+  over the days before it (a finish from before that day counts from the
+  day before it, for the same reason). A child partway through the 14 days
+  still meets every story first: a story never moves `i`, and after the
+  last story the game of the day comes back on day `i` (the stories hold
+  its place), then moves on one a day the same way.
 - **The day is finished when the game's round ends** (the engine's end card,
   `questEnd(<key>)`), so the sticker is given before the ending is watched
   and closing the app in between loses nothing: ONE sticker
@@ -2328,11 +2360,17 @@ line a child hears):
 - Day 2's finger move (the spec's alternative was cloud-sheep herding).
 - A phone that cannot buy gets the game of the day; a family who keeps the
   free version on a phone that can buy sees the story locked.
-- After Day 14 the card is the game of the day again, "Today's adventure"
-  with no day number; every child starts at Day 1. The stories are told once:
-  a "two-week rotation" that starts again at Day 1 after Day 14 would be one
-  change in `questToday()`, and is his call (today a finished story is never
-  on Home again, and the game of the day goes on for good).
+- Once all 14 stories are finished the card is the game of the day again,
+  "Today's adventure" with no day number. A skipped story comes back after
+  the others (CAL1), but a finished one is told once: starting the stories
+  again after all 14 would be one change in `_questOn()`, and is his call
+  (today a finished story is never on Home again, and the game of the day
+  goes on for good).
+- **The helper map's count (CAL1):** each ending counts gold stars by its
+  Day number ("Seven gold stars on our helper map!", the picture showing
+  seven), so a child who skipped days hears a bigger number than the
+  stories they finished. Rewording the endings (and redrawing their maps)
+  is his call.
 - A finished story is not on Home again; its game is, in "Your games"
   (FOUND1).
 - Under Reduce Motion both games hold still: Light the Way's boats stay on
@@ -2442,7 +2480,8 @@ simplicity, fairness to kids, reuse) each came back with this one idea:
   not in the catalog: no shelf, picks row, setup
   grid, website count, level or Best.
 - **Tomorrow's game is the mystery:** a finished day's card still shows
-  tomorrow's story picture dark, and now says "Come back tomorrow for Day N
+  tomorrow's poster dark (HOMECLIP1: the first frame of tomorrow's game, or
+  the story's picture before the poster lands), and now says "Come back tomorrow for Day N
   and a new game!" (only while `storyOpen()`: a story shown locked tomorrow
   brings no game, so that card says "Come back tomorrow for Day N!"). The
   same order for every child, never random, never bought.
@@ -2490,17 +2529,45 @@ decides what shows (hidden on the view's wrapper, never by a block's own
 `hidden`, which `paintQuest`, `paintFound` and the preview notice set
 themselves), so there is still one copy of the game card, `launch()`, the
 offer, the level sheet, the grown-ups check and "Home opens the offer once".
-- **Home** (`/today.html`): "Today's adventure" (its first h1), the story card
-  (`#questCard`, see "Daily story (STORY1)": a 16:9 picture, "Day N", the
-  title, the hook line, a 64 px teal play button, a "Premium" tag without
-  it; done: tomorrow's picture dark, "Day 1 done!" and "Come back tomorrow for
-  Day 2 and a new game!" ("…for Day 2!" when tomorrow's story is shown
-  locked), or "Come back tomorrow for a new adventure!"), two
+- **Home** (`/today.html`): "Today's adventure" (its first h1), the day's
+  card (`#questCard`, see "Daily story (STORY1)" and "The day's reel" below:
+  a tall 3:4 clip of the game the child will play, with "Day N", the title,
+  a 64 px teal play button and the hook line over its foot, a "Premium" tag
+  top right without it; done: tomorrow's poster dark, "Day 1 done!" and
+  "Come back tomorrow for Day 2 and a new game!" ("…for Day 2!" when
+  tomorrow's story is shown locked), or "Come back tomorrow for a new
+  adventure!"), two
   doors (`#homeDoors`: **Arcade**, `home-arcade.webp` and "All the games";
   **Books**, `home-books.webp` and its tag ("Free", "Included", "1 free
   book" or "Premium"), the one way to the bookshelf since the Arcade lost
   its Books card), then "Your games" (FOUND1, below; only once a story is
   finished).
+- **The day's reel (HOMECLIP1, 28 Oct 2026)** (Travis: "a home screen
+  refresh where the daily practice is taking up more of the screen so the
+  games and books are lower and the daily practice is like a 3 second reel
+  essentially of the game that the child will play"; he chose the game clip
+  with the story's title over it). The card is the page's one big thing: a
+  3:4 picture across the page (at most 480 px wide and centred on an iPad)
+  holding one muted, looping, inline `<video>` of
+  `/assets/home/reel/<game>.mp4`, where `<game>` is `questToday().game` (the
+  story's own game on a story day, today's game on a game day), over its
+  poster `<game>.webp` (the clip's first frame) in an `<img>`, over the
+  picture the card had before (the story's painted Home picture or the
+  game's Home card), then Echo on the story's colour. A warm dark gradient
+  under the words keeps them readable. The video is shown only once it is
+  really playing, so a missing file, a refused play (Low Power Mode) or a
+  phone with no H.264 shows the poster, never a black frame. It never
+  plays under Reduce Motion (also when that changes while Home is open), on
+  a done day (tomorrow's poster, dark, with no video loaded), with the
+  data saver on, on a hidden page or in the Arcade; it has no sound track
+  and takes no tap (`pointer-events:none`: the card's tap is unchanged).
+  The clips are filmed like setup's reel (see "SETUPREEL1"), from the games
+  themselves. The Arcade door sets `history.scrollRestoration="manual"`,
+  because with the taller card a child who scrolled to the doors came back
+  from "‹ Home" halfway down the page. **Defaults Travis did not pick:** the
+  dark gradient (not a cream one), the 480 px cap on an iPad, the data saver
+  showing the poster only, and the doors and the New! game falling below
+  the first screen on smaller phones.
   The top bar is the buddy, the gift button and Grown-ups. On a phone the doors are tiles with the
   picture as a 2:1 band on top (the Arcade picture's game things sit at its
   edges, so it is never cut to a square); on an iPad, rows with a 3:2
@@ -2551,30 +2618,24 @@ offer, the level sheet, the grown-ups check and "Home opens the offer once".
   X, setup's end and `firstGameEnd` still go to plain `/today.html`, which is
   Home:** after any game a child lands on Home, not back in the Arcade
   (Travis's to change: a tab-only marker could return them).
-- **The fit is measured, never guessed** (`fitHome`, `fit1`…`fit5`: the story
-  picture to 2:1, tighter type, a phone's door pictures to 5:2, the story
-  picture to 5:2, then 3:1): the play button and both doors are on the first
-  screen at 320×568, 375×667, 390×844, 430×932 and 768×1024, every button at
-  least 44 px. "Your games" may fall below on the smallest, but on the day
-  a story is finished its New! tile is measured too, so the dark tomorrow
-  picture gives way for it: the tile's picture and its New! are on the
-  first screen at all five sizes (on 320×568 that takes all five steps, on
-  375×667 two). On an iPhone SE on the website (375×553) its New! and
-  most of its picture are on the first screen, the rest just below (CI's
-  newer Chromium sets it about 16 px lower than this machine's, so its
-  test checks the half a child must see). Not under the founding banner (a browser only): on 320×568
-  only the tile's top, its New!, peeks above the fold, and on 375×553 none
-  of it (a sixth step would flatten tomorrow's picture to a strip and still
-  not fit it; Travis's to change). With the real pictures an open day takes
-  at most four steps (the founding banner on 320×568: the story picture at
-  5:2); only a finished day, or the banner on 375×553, reaches the fifth
-  (3:1).
+- **The fit is measured, never guessed** (`fitHome`, `fit1`…`fit5`: the
+  heading's type and gaps first, then the card's picture from 3:4 to 4:5,
+  1:1, 5:4 and at the flattest 4:3): the whole day's card, its title and
+  play button included, is on the first screen above the home bar at
+  320×568, 375×667, 390×844, 430×932, 768×1024, an iPhone SE on the
+  website (375×553) and an iPad on its side, every button at least 44 px.
+  Since HOMECLIP1 only the card is measured: the doors come right after it
+  and may fall below the first screen on smaller phones, and so may "Your
+  games", the day's New! tile included (until 28 Oct 2026 the doors and
+  that tile were kept on the first screen).
 
 Setup finishes in the first game (Feed Echo for 3-4, Fruit Slice from 5; see
 "The ask happens after the product proves itself"), and every visit after
 that opens on Home. **Home is silent and only reads:** on load, on coming back
 to the front and between the views it writes nothing, sends nothing and
-speaks nothing, and its source never says `questEnd`, comments included.
+speaks nothing, and its source never says `questEnd`, comments included
+(the one exception is sona.js's own: the first load that finds a set-up
+child with no story calendar writes its first day, once, CAL1).
 There is no old adventure-map Home or menu narration. Voice remains inside
 deliberate game/practice sessions (setup's "Hear Echo", from 22 to 23 Oct
 2026, is gone: setup makes no sound). Parent settings, progress, profiles,
@@ -3860,8 +3921,12 @@ access, the price, "Pick a level").
   adventure only picks the game and says why.
 - **The gift is a sticker, the next one** (`awardNextSticker`; two on days 7
   and 14), never coins (COIN3), with a quiet note for five seconds, no voice.
-- **A missed day loses nothing**: the adventure waits on its day, moves on
-  once a quest is done and never twice in a calendar day. A done game day
+- **A new day is a new game day, played or not** (CAL1, 28 Oct 2026; until
+  then it waited on its day until a quest was done): the day after a game
+  day finished is the next of the 14, the day after that the one after,
+  back to day 1 after day 14; with none finished it counts from the day
+  before the child's calendar started (`a`, see STORY1's "A new story every
+  day"). Never finished twice in a calendar day. A done game day
   shows "All done for today!" and "Come back tomorrow for a new adventure!"
   ("…for Day N and a new game!" when tomorrow is a story the child can
   open, "…for Day N!" when it is shown locked) with tomorrow's picture dark,
@@ -3872,13 +3937,16 @@ access, the price, "Pick a level").
   purpose: where Sona can sell, it is shown locked and its tap opens the
   price (STORY1).
 - **Home only reads** (`questToday()`, which always answers a `kind`,
-  "story" or "game"), as roadtest and trophytest require. Per child
+  "story" or "game"), as roadtest and trophytest require; the one write a
+  Home load can make is sona.js's one-shot `a` for a child who has none
+  (CAL1). Per child
   (`sona.quest.v1`, `PER_KID`); every save merges into the record, which also
   holds the stories' fields (STORY1). The event "adventure day done" carries
   the game key only.
-- **Defaults Travis did not pick:** stickers rather than coins, waiting on a
-  missed day, restarting after 14, a lost round counting, and the games'
-  Home pictures rather than new art. **For Rachel:** the 28 lines say
+- **Defaults Travis did not pick:** stickers rather than coins, restarting
+  after 14, a lost round counting, the games' Home pictures rather than new
+  art, and a calendar that starts on each child's first day with the CAL1
+  build (not on the day the stories began). **For Rachel:** the 28 lines say
   nothing about how to talk; whether a story should ever name a sound is hers.
 `tests/questtest.mjs` plays the game days, `storycoretest` the stories in
 front of them.

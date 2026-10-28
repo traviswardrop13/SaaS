@@ -207,7 +207,8 @@ await section("boot", async () => {
 
 // ── 3b. FOUND1: a found game played again from Home's row ──
 await section("replay", async () => {
-  const FOUND = { "sona.quest.v1": JSON.stringify({ s: 14, ls: 13, lk: "story", done: "2026-01-01" }) };
+  // `a`, the day the calendar started (CAL1), so no first-load write either
+  const FOUND = { "sona.quest.v1": JSON.stringify({ a: "2026-01-01", s: 14, ls: 13, lk: "story", done: "2026-01-01" }) };
   const pages = [["waterwheel", "/story-game.html?story=waterwheel&again=1"], ["frontdoor", "/story-game.html?story=frontdoor&again=1"], ["lighthouse", "/arcade-lighthouse.html?again=1"], ["windup", "/arcade-windup.html?again=1"], ["bridge", "/arcade-bridge.html?again=1"]];
   for (const [id, url] of pages) {
     const { context, page, errors } = await phone({ seed: FOUND });

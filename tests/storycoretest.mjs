@@ -5,6 +5,11 @@
 //   - Sona.questToday() puts the stories before the game of the day, for
 //     every child, and a child partway through the 14 days goes back to the
 //     day they were on after the last story;
+//   - a new day is the next story, played or not (CAL1, 28 Oct 2026: Travis
+//     wants it "different every day. Even if they didn't do the daily
+//     practice the day prior"), and a story skipped comes back once the
+//     others have had their day; each child's calendar starts the day they
+//     are set up, or for a child set up before CAL1 the first day it runs;
 //   - questEnd(<the story's game>) finishes the day once, with one sticker,
 //     its event and no banner; storyEnding() and storySeen() read and write
 //     only what they say;
@@ -174,6 +179,8 @@ await section("a new Premium child", async () => {
   const rec = await record(pg), day = await localYmd(pg);
   ok("the record: s=1, the last story 0, finished today, its sticker kept; the 14-day place untouched",
     rec.s === 1 && rec.ls === 0 && rec.lk === "story" && rec.done === day && JSON.stringify(rec.got) === JSON.stringify(r.stk) && rec.i === undefined && rec.last === undefined, rec);
+  ok("…the stories finished, in the order they were (f: [0]), the day of the last (fd) and the day the calendar started (a: today, its first load)",
+    JSON.stringify(rec.f) === "[0]" && rec.fd === day && rec.a === day, rec);
   const ev = events(sent, "adventure day done");
   ok("one \"adventure day done\" event, carrying the game key only", ev.length === 1 && JSON.stringify(ev[0].p) === JSON.stringify({ game: "lighthouse" }), ev);
   ok("no page errors", errors.length === 0, errors);
@@ -282,7 +289,7 @@ await section("one a day", async () => {
     ok("the next day opens Day 2", d2.kind === "story" && d2.state === "open" && d2.day === 2 && d2.game === "windup", d2);
     await nextDay(pg, 4);
     const later = await pg.evaluate(() => Sona.questToday());
-    ok("missing four days loses nothing: still Day 2, open", later.kind === "story" && later.state === "open" && later.day === 2, later);
+    ok("a missed day moves it on (CAL1): four days missed, it is Day 6, open", later.kind === "story" && later.state === "open" && later.day === 6 && later.game === "bakery", later);
     await ctx.close();
   }
   {
@@ -302,6 +309,99 @@ await section("one a day", async () => {
   }
 });
 
+// ── 4b. CAL1: a new story every day, and a skipped one comes back ──
+await section("a new story every day", async () => {
+  {
+    // never played: Day 1 on the calendar's first day, then one on each day
+    const { ctx, pg, errors } = await open({ premium: true });
+    const days = [];
+    for (let n = 0; n < 16; n++) { days.push(await pg.evaluate(() => { const q = Sona.questToday(); return q.state + q.day; })); await nextDay(pg); }
+    ok("a child who plays none sees Day 1, then Day 2, Day 3 and so on, one a day, and Day 1 again after Day 14",
+      days.join() === "open1,open2,open3,open4,open5,open6,open7,open8,open9,open10,open11,open12,open13,open14,open1,open2", days);
+    ok("…and reading the days wrote nothing but the calendar's first day", Object.keys(await record(pg)).join() === "a", await record(pg));
+    ok("no page errors", errors.length === 0, errors);
+    await ctx.close();
+  }
+  {
+    // Day 1 played, two days skipped, Day 4 played: the skipped two come back after Day 14
+    const { ctx, pg, errors } = await open({ premium: true });
+    const seen = [];
+    const play = (p) => p.evaluate(() => { const q = Sona.questToday(); const e = Sona.questEnd(q.game); return "played" + (e && e.day); });
+    const look = (p) => p.evaluate(() => { const q = Sona.questToday(); return q.state + q.day + (q.next ? ">" + q.next.day : ""); });
+    for (let n = 0; n < 17; n++) {
+      if (n === 0 || n === 3) { seen.push(await play(pg)); seen.push(await look(pg)); } else seen.push(await look(pg));
+      await nextDay(pg);
+    }
+    ok("Day 1 played; Days 2 and 3 skipped; Day 4 played; then Days 5 to 14, then the skipped Day 2 and Day 3, then Day 5 again",
+      seen.join() === "played1,done1>2,open2,open3,played4,done4>5,open5,open6,open7,open8,open9,open10,open11,open12,open13,open14,open2,open3,open5", seen);
+    const f = await pg.evaluate(() => Sona.storyFound().map((d) => d.id));
+    ok("the stories found are in the order they were finished (Home's row shows the newest first)", f.join() === "lighthouse,waterwheel", f);
+    const end = await pg.evaluate(() => ({ one: Sona.storyEnding("lighthouse").ok, four: Sona.storyEnding("waterwheel").ok, two: Sona.storyEnding("windup").ok }));
+    ok("…their endings open, and a skipped story's does not", end.one && end.four && !end.two, end);
+    ok("no page errors", errors.length === 0, errors);
+    await ctx.close();
+  }
+  {
+    // a record from before CAL1 (no `a`), its last story five days ago: the
+    // first day on this build is the next story in order, then one a day
+    const { ctx, pg } = await open({ premium: true, shift: 0, quest: { s: 2, ls: 1, lk: "story", done: "2026-01-01", got: [] } });
+    const first = await pg.evaluate(() => Sona.questToday());
+    const rec = await record(pg), day = await localYmd(pg);
+    ok("a child set up before CAL1 starts the calendar on its first load: the next story in order (Day 3), never a jump", first.state === "open" && first.day === 3 && rec.a === day, { first, rec });
+    await nextDay(pg);
+    const second = await pg.evaluate(() => Sona.questToday());
+    ok("…and the day after, unplayed, Day 4", second.state === "open" && second.day === 4, second);
+    await ctx.close();
+  }
+  {
+    // the sweep: every set-up child gets their own first day, once; a child
+    // not set up gets none; a second load changes nothing
+    const ctx = await browser.newContext();
+    await ctx.addInitScript(`(() => {
+      if (localStorage.getItem("__seeded")) return; localStorage.setItem("__seeded", "1");
+      localStorage.setItem("sona.kids.v1", JSON.stringify({ list: [{ slot: "", name: "Mia" }, { slot: "k2", name: "Ana" }, { slot: "k3", name: "" }], active: "", hi: 3 }));
+      localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Mia", childAge: "7", onboarded: true }));
+      localStorage.setItem("sona.profile.v1@k2", JSON.stringify({ childName: "Ana", childAge: "4", onboarded: true }));
+      localStorage.setItem("sona.quest.v1@k2", JSON.stringify({ a: "2026-10-01", s: 1, ls: 0, lk: "story", done: "2026-10-01" }));
+      localStorage.setItem("sona.profile.v1@k3", JSON.stringify({ childName: "", onboarded: false }));
+      ["sona.freeera.v1", "sona.freeera2.v1", "sona.freeera3.v1", "sona.freeera4.v1", "sona.freeera5.v1"].forEach((k, n) => localStorage.setItem(k, n ? "done" : "post"));
+      localStorage.setItem("sona.freever.v1", "kept"); localStorage.setItem("sona.buddyset.v1", "kept");
+    })();`);
+    const pg = await ctx.newPage(); await pg.goto(origin + "/__sona"); await pg.waitForFunction(() => window.Sona && Sona.questToday);
+    const read = () => pg.evaluate(() => ["sona.quest.v1", "sona.quest.v1@k2", "sona.quest.v1@k3"].map((k) => localStorage.getItem(k)));
+    const one = await read(), day = await pg.evaluate(() => Sona.localDay());
+    ok("the first load gives the first child their calendar's first day (today)", one[0] === JSON.stringify({ a: day }), one[0]);
+    ok("…keeps the day a brother or sister already has, with their record untouched", one[1] === JSON.stringify({ a: "2026-10-01", s: 1, ls: 0, lk: "story", done: "2026-10-01" }), one[1]);
+    ok("…and writes none for a child not set up yet", one[2] === null, one[2]);
+    await pg.reload(); await pg.waitForFunction(() => window.Sona && Sona.questToday);
+    ok("a second load writes nothing", JSON.stringify(await read()) === JSON.stringify(one));
+    await ctx.close();
+  }
+  {
+    // setup: the save that sets a child up starts their calendar, once
+    const ctx = await browser.newContext();
+    const pg = await ctx.newPage(); await pg.goto(origin + "/__sona"); await pg.waitForFunction(() => window.Sona && Sona.questToday);
+    const r = await pg.evaluate(() => {
+      const before = localStorage.getItem("sona.quest.v1");
+      Sona.saveProfile({ childName: "Mia", childAge: "6" });
+      const named = localStorage.getItem("sona.quest.v1");
+      Sona.saveProfile({ onboarded: true });
+      const setUp = JSON.parse(localStorage.getItem("sona.quest.v1") || "null");
+      localStorage.setItem("sona.quest.v1", JSON.stringify({ a: "2026-10-02" }));
+      Sona.saveProfile({ onboarded: true, childAge: "7" });
+      const again = JSON.parse(localStorage.getItem("sona.quest.v1"));
+      const slot = Sona.addKid("Ana", "4");
+      Sona.saveProfile({ onboarded: true });
+      return { before, named, setUp, again, kid: JSON.parse(localStorage.getItem("sona.quest.v1@" + slot) || "null"), first: JSON.parse(localStorage.getItem("sona.quest.v1")), day: Sona.localDay() };
+    });
+    ok("a profile saved before setup finishes starts no calendar", r.before === null && r.named === null, r);
+    ok("the save that sets the child up starts it, today", r.setUp && r.setUp.a === r.day && Object.keys(r.setUp).join() === "a", r.setUp);
+    ok("a later save of a child already set up (walking setup again) leaves it", r.again.a === "2026-10-02", r.again);
+    ok("a brother or sister set up later starts their own, today, and the first child's is untouched", r.kid && r.kid.a === r.day && r.first.a === "2026-10-02", r);
+    await ctx.close();
+  }
+});
+
 // ── 5. what the record holds, and what a broken one reads as ──
 await section("the record", async () => {
   {
@@ -315,9 +415,9 @@ await section("the record", async () => {
     await nextDay(pg);
     const tomorrow = await pg.evaluate(() => Sona.questToday());
     ok("…on that day only", tomorrow.seen === false, tomorrow);
-    await pg.evaluate(() => Sona.questEnd("lighthouse"));
+    const d2 = await pg.evaluate(() => { const q = Sona.questToday(); Sona.questEnd(q.game); return q.day; });
     const merged = await record(pg);
-    ok("finishing the story merges into the record (nothing it did not write is lost)", merged.keep === "me" && merged.i === 4 && merged.last === 3 && merged.s === 1, merged);
+    ok("finishing the story merges into the record (nothing it did not write is lost)", d2 === 2 && merged.keep === "me" && merged.i === 4 && merged.last === 3 && merged.s === 1 && JSON.stringify(merged.f) === "[1]", { d2, merged });
     await ctx.close();
   }
   {
@@ -349,7 +449,8 @@ await section("locked where the price can open it", async () => {
     ok(label + ": today is story Day 1", r.q.kind === "story" && r.q.state === "open" && r.q.day === 1, r.q);
     ok(label + ": neither the card nor any story game is allowed, and each says Premium",
       !r.game.allowed && !r.card.allowed && r.all.every((a) => !a) && r.game.tier === "premium" && r.game.reason === "premium" && r.card.reason === "premium", [r.game, r.card, r.all]);
-    ok(label + ": a round reached without the story finishes nothing", r.end === null && r.stk === 0 && (await record(pg)) === null && events(sent, "adventure day done").length === 0, r.end);
+    const rec6 = await record(pg);
+    ok(label + ": a round reached without the story finishes nothing (the record holds only the day the calendar started)", r.end === null && r.stk === 0 && rec6 && Object.keys(rec6).join() === "a" && events(sent, "adventure day done").length === 0, { end: r.end, rec6 });
     ok(label + ": no page errors", errors.length === 0, errors);
     await ctx.close();
   }

@@ -197,7 +197,8 @@ try{
  // second round broken, so it is played through to its own end card.
  // Only when named: see the top of the file ──
  if(part==='replay'){
-  const FOUND=JSON.stringify({s:14,ls:13,lk:'story',done:'2026-01-01'});
+  // a: the day the story calendar started (CAL1), so sona.js writes nothing on load either
+  const FOUND=JSON.stringify({a:'2026-01-01',s:14,ls:13,lk:'story',done:'2026-01-01'});
   const {page,context,errors}=await fresh({raw:true,device:{seed:{'sona.quest.v1':FOUND}}});
   await page.goto('http://127.0.0.1:'+PORT+'/arcade-windup.html?again=1');{const now=await page.evaluate(()=>Date.now());await page.clock.pauseAt(now+1000);}
   ok('replay: a child whose stories are all finished may play Wind-Up Toys again from Home',await page.evaluate(()=>location.search==='?again=1'&&!document.body.hidden&&Sona.storyReplay('windup')));

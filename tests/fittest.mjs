@@ -131,7 +131,10 @@ for (const [dev, w, h] of PORTRAIT) {
   // 320×568, and a tap opens the bookshelf
   await measure(page,"today.html");
   const door = page.locator("#homeBooksBtn");
-  await door.scrollIntoViewIfNeeded();
+  // (below the fold here since HOMECLIP1, 28 Oct 2026, under the day's tall
+  // reel: a swipe brings it to the middle of the screen, where a scroll to
+  // its edge could leave it a sub-pixel short of the bottom)
+  await door.evaluate((e) => e.scrollIntoView({ block: "center" }));
   const dr = await reach(door);
   ok("small portrait Home: the Books door is reachable and tappable", dr.visible&&dr.reachable&&dr.overflowX<=1,JSON.stringify(dr));
   await Promise.all([page.waitForURL(/\/library\.html$/,{timeout:5000}).catch(()=>{}), door.click()]);
