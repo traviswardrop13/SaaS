@@ -337,8 +337,11 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
   // sitemap: the root first, and never a page that is noindex or not a parent's.
   const urls = (readFileSync(APP + "/app/sitemap.ts", "utf8").match(/url: `\$\{BASE\}[^`]*`/g) || []).map((u) => u.slice(13, -1));
   ok("the sitemap starts at the root", urls[0] === "/", urls.join(" "));
+  // The guides (lib/guides.ts, 28 Oct 2026) are the one list it may add, and
+  // only the ones Rachel has read (liveGuides); guidestest holds which.
   ok("…and lists no clinician, private, noindex or app page",
-    urls.length > 1 && urls.every((u) => ["/", "/privacy.html", "/terms"].includes(u)), urls.join(" "));
+    urls.length > 1 && urls.every((u) => ["/", "/privacy.html", "/terms", "${guidePath(g)}"].includes(u)) &&
+    /\.\.\.liveGuides\(\)\.map\(\(g\) => \(\{ url: `\$\{BASE\}\$\{guidePath\(g\)\}`/.test(readFileSync(APP + "/app/sitemap.ts", "utf8")), urls.join(" "));
 
   // llms.txt: what an AI assistant reads about Sona. Everything the route can
   // send is its string literals, so the whole file is scanned, comments out.

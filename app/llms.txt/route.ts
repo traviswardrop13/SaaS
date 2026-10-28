@@ -1,4 +1,5 @@
 import { FREE_MODE, WEB_SALES } from "@/lib/pricing";
+import { SITE, guidePath, liveGuides } from "@/lib/guides";
 
 /**
  * /llms.txt: what Sona is, in plain text, for AI assistants (the llmstxt.org
@@ -12,7 +13,9 @@ import { FREE_MODE, WEB_SALES } from "@/lib/pricing";
  *   iPhone the App Store sets the price, and the app shows it first);
  * - no count of games or books (they change; the parent page's are pinned to
  *   the catalog, this file's would not be).
- * `shiptest` scans it.
+ * - the guides for parents (lib/guides.ts), only those Rachel has read, each
+ *   with its own search description.
+ * `shiptest` scans it; `guidestest` holds the guides' list.
  */
 export const dynamic = "force-static";
 
@@ -22,6 +25,10 @@ export function GET() {
     : !WEB_SALES
       ? "Sona is free to download. Sona Premium opens every game and every book. You buy it in the Sona app on iPhone and iPad, which shows its price before you pay anything."
       : "Sona is free to download. Sona Premium opens every game and every book, and the app shows its price before you pay anything.";
+  const live = liveGuides();
+  const guides = live.length
+    ? "## Guides for parents\n" + live.map((g) => `- [${g.h1}](${SITE}${guidePath(g)}): ${g.description}`).join("\n") + "\n\n"
+    : "";
   const body = `# Sona
 
 > Sona (speaksona.com) is a speech practice app for kids about 3 to 8, for parents and caregivers to use at home. A few playful minutes a day: the child practices their speech sound out loud, in short games and picture books with Echo, a friendly bird. Built with Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical fellowship.
@@ -42,7 +49,7 @@ export function GET() {
 ## Where
 - iPhone and iPad, from the App Store. On an Android phone it works in the web browser.
 
-## Links
+${guides}## Links
 - [Sona for parents](https://www.speaksona.com/): what Sona is and how to start
 - [Sona on the App Store](https://apps.apple.com/us/app/sona-speech/id6785755867)
 - [Privacy](https://www.speaksona.com/privacy.html)
