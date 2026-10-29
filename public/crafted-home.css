@@ -137,16 +137,23 @@ body::before{content:"";position:fixed;left:0;right:0;top:0;height:env(safe-area
 #homeInset{position:absolute;left:0;bottom:0;width:0;height:env(safe-area-inset-bottom);visibility:hidden;pointer-events:none;}
 
 /* THE STORY CARD (QUEST1's daily adventure card, 13 Oct 2026, made big for
-   STORY1). A 16:9 picture with the day's chip, the title large, the hook, and
-   a big round teal play button (64 px). Without Premium a small cream
-   "Premium" tag sits on the picture, like a game card's. Done, it shows
-   tomorrow's picture dark and takes no tap. */
-#questCard{position:relative;display:flex;flex-direction:column;width:100%;margin:0;padding:0;border-radius:24px;background:linear-gradient(#fffefb,#fff4df);border:1px solid #efdcbc;box-shadow:0 4px 0 #e6cfa6,0 8px 18px #6947200f;color:var(--ink);font:inherit;text-align:left;cursor:pointer;overflow:hidden;transition:transform .12s;}
+   STORY1; HOMECLIP1, 28 Oct 2026, made the day's reel: Travis, "the daily
+   practice is taking up more of the screen so the games and books are lower
+   and the daily practice is like a 3 second reel essentially of the game
+   that the child will play"). A tall 3:4 picture across the page: the clip
+   of the game the child will play, over its poster, over today's painted
+   picture while the poster has not landed (today.html, reelPicture). Over
+   its foot, on a soft dark wash: the day's chip, the title, the big round
+   teal play button (64 px) and the hook. Without Premium a small cream
+   "Premium" tag sits at the picture's top right. Done, it shows tomorrow's
+   poster dark, plays nothing and takes no tap. On an iPad it is a centred
+   3:4 card, 480 px wide at most. */
+#questCard{position:relative;display:block;width:100%;margin:0;padding:0;border-radius:26px;background:#efe6d5;border:1px solid #efdcbc;box-shadow:0 4px 0 #e6cfa6,0 10px 22px #69472014;color:#fff;font:inherit;text-align:left;cursor:pointer;overflow:hidden;isolation:isolate;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;transition:transform .12s;}
 #questCard[hidden]{display:none;}
 #questCard:active{transform:translateY(2px) scale(.99);}
 #questCard.done{cursor:default;}
 #questCard.done:active{transform:none;}
-.quest-art{position:relative;display:block;width:100%;aspect-ratio:16/9;background:#efe6d5;overflow:hidden;transition:none;}
+.quest-art{position:relative;display:block;width:100%;aspect-ratio:3/4;background:#efe6d5;overflow:hidden;border-radius:25px;transition:none;}
 /* each story's wash, shown while its picture loads or if it never comes
    (Echo stands on it): the night sea, honey wood, the morning river; the
    same colours as each story's wash in adventures.js */
@@ -167,17 +174,30 @@ body::before{content:"";position:fixed;left:0;right:0;top:0;height:env(safe-area
 .quest-pic{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;}
 .quest-pic img{display:block;width:100%;height:100%;object-fit:cover;}
 .quest-pic svg{width:46%;height:auto;max-height:86%;}
-.quest-art.fallback .quest-pic img{width:auto;height:84%;object-fit:contain;filter:drop-shadow(0 6px 4px #1d120a33);}
+/* Echo on the story's wash: standing in the picture's top half, clear of
+   the words over its foot */
+.quest-art.fallback .quest-pic{align-items:flex-start;padding-top:9%;}
+.quest-art.fallback .quest-pic img{width:auto;height:54%;object-fit:contain;filter:drop-shadow(0 6px 4px #1d120a33);}
+/* the clip: over the picture, and seen only once it is really playing, so
+   a clip that never starts leaves the picture as it is. Taps go to the
+   card, and the phone draws none of its own video buttons on it. */
+.quest-clip{position:absolute;inset:0;display:block;width:100%;height:100%;object-fit:cover;border-radius:inherit;background:transparent;opacity:0;pointer-events:none;transition:opacity .3s;}
+.quest-clip.on{opacity:1;}
+.quest-clip[hidden]{display:none;}
+.quest-clip::-webkit-media-controls,.quest-clip::-webkit-media-controls-start-playback-button,.quest-clip::-webkit-media-controls-overlay-play-button{display:none!important;-webkit-appearance:none;}
 #questCard.done .quest-art{background:#2a2119;}
 #questCard.done .quest-pic img,#questCard.done .quest-pic svg{filter:brightness(.15) saturate(0);opacity:.55;}
-.quest-chip{position:absolute;left:10px;top:10px;padding:3px 11px;border-radius:99px;background:#fffdf2f2;color:var(--ink);font:800 16px/1.25 "Baloo 2",sans-serif;box-shadow:0 1px 4px #583e2930;}
-.quest-lock{position:absolute;right:10px;bottom:10px;padding:4px 9px;border-radius:99px;background:#fff7e8f2;color:#715031;font:800 11px/1.2 Nunito,sans-serif;box-shadow:0 1px 4px #583e2930;}
+.quest-lock{position:absolute;right:12px;top:12px;padding:4px 10px;border-radius:99px;background:#fff7e8f2;color:#715031;font:800 12px/1.2 Nunito,sans-serif;box-shadow:0 1px 4px #583e2930;}
 .quest-chip[hidden],.quest-lock[hidden]{display:none;}
-.quest-body{display:flex;align-items:center;gap:12px;padding:12px 14px 14px 16px;}
-.quest-copy{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;}
-.quest-title{font:800 24px/1.1 "Baloo 2",sans-serif;letter-spacing:-.4px;color:var(--ink);}
-.quest-line{font:700 14px/1.35 Nunito,sans-serif;color:var(--muted);}
-.quest-go{flex:none;display:flex;align-items:center;justify-content:center;width:64px;height:64px;border-radius:50%;background:linear-gradient(#239ca2,#14858d);color:#fff;box-shadow:0 4px 0 #0b5d63;}
+/* the words over the picture's foot: a warm dark wash that fades in from
+   clear, so the game shows above it and the white words read on any clip */
+.quest-body{position:absolute;left:0;right:0;bottom:0;display:flex;flex-direction:column;gap:7px;padding:58px 15px 15px 17px;border-radius:0 0 25px 25px;background:linear-gradient(180deg,#26150800 0%,#2615087a 30%,#261508d6 62%,#261508f0 100%);}
+.quest-head{display:flex;align-items:flex-end;gap:12px;}
+.quest-copy{flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:5px;}
+.quest-chip{padding:2px 11px;border-radius:99px;background:#fffdf2f2;color:var(--ink);font:800 15px/1.3 "Baloo 2",sans-serif;box-shadow:0 1px 4px #1d120a40;}
+.quest-title{font:800 27px/1.06 "Baloo 2",sans-serif;letter-spacing:-.4px;color:#fff;text-shadow:0 2px 8px #1d120a73;}
+.quest-line{font:700 14.5px/1.36 Nunito,sans-serif;color:#fff1de;text-shadow:0 1px 5px #1d120a8c;}
+.quest-go{flex:none;display:flex;align-items:center;justify-content:center;width:64px;height:64px;border-radius:50%;background:linear-gradient(#239ca2,#14858d);color:#fff;box-shadow:0 4px 0 #0b5d63,0 6px 16px #0b1f1f59;}
 .quest-go svg{display:block;margin-left:3px;}
 .quest-go[hidden]{display:none;}
 
@@ -187,10 +207,11 @@ body::before{content:"";position:fixed;left:0;right:0;top:0;height:env(safe-area
    word under it, like the Arcade's own game cards. The Arcade's painting is
    Echo among the games' things (a watermelon, a basketball, a piano key, a
    ball, a bone) out at its edges: a square crop kept Echo and threw the games
-   away, so a child who can't read saw two doors of Echo. A band (2:1, and no
-   flatter than 5:2 when the fit needs room) keeps them in. On an iPad the
-   picture sits beside the word at 3:2, which keeps them too. Nothing here
-   animates in size (the fit measures it). */
+   away, so a child who can't read saw two doors of Echo. A 2:1 band keeps
+   them in. On an iPad the picture sits beside the word at 3:2, which keeps
+   them too. No fit step touches the doors: since HOMECLIP1 (28 Oct 2026)
+   the fit measures only the day's card, and on a smaller phone the doors may
+   sit below the first screen. */
 #homeDoors{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:14px 0 16px;}
 #homeDoors>button{display:flex;flex-direction:column;align-items:stretch;min-width:0;min-height:88px;padding:0;border-radius:20px;overflow:hidden;background:linear-gradient(#fffefb,#fff7e9);border:1px solid #efe2ce;box-shadow:0 3px 0 #e9d8bb,0 6px 14px #6947200d;color:var(--ink);font:inherit;text-align:left;cursor:pointer;transition:transform .12s;}
 #homeDoors>button:active{transform:translateY(2px) scale(.98);}
@@ -215,32 +236,28 @@ body::before{content:"";position:fixed;left:0;right:0;top:0;height:env(safe-area
 #homeBack:active{transform:translateY(2px);box-shadow:0 1px 0 var(--cream-line);}
 .arcade-top+.library-intro{margin-top:12px;}
 
-/* the fit's steps (fitHome in today.html): the story's picture first, then
-   the type and the gaps, then the doors' pictures, then the story's picture
-   again (the story is the day's one big thing, so it gives way last).
+/* the fit's steps (fitHome in today.html): the heading's type and gaps
+   first, then the card's picture (3:4, the day's reel, gives way last:
+   4:5, 1:1 with tighter words over it, 5:4, and 4:3 at the flattest). The
+   doors and "Your games" come after the card and may fall below the first
+   screen, so no step touches them (HOMECLIP1, 28 Oct 2026).
    Everything a step resizes never transitions: sona.css gives every property
    a 0.01 ms transition under Reduce Motion, and a box mid-transition reports
-   the size it WAS, so the fit measured step 2 as doing nothing, and a re-fit
-   (coming back to the front) stopped early and left the doors off screen.
-   .quest-art, .door-pic and .door-copy carry it on their own rules; a new
-   rule below adds its element here (homestorytest checks every one). */
+   the size it WAS, so the fit measured a step as doing nothing, and a re-fit
+   (coming back to the front) stopped early and left the card's foot off
+   screen. .quest-art carries it on its own rule; a new rule below adds its
+   element here (homestorytest checks every one). */
 #homeTitle,.quest-body,.quest-title,.quest-line,#homeDoors,#trialBanner,.door-word{transition:none;}
-#libraryApp.fit1 .quest-art{aspect-ratio:2/1;}
-#libraryApp.fit2 #homeTitle{font-size:26px;margin:10px 0 8px;}
-#libraryApp.fit2 .quest-body{padding:9px 12px 10px 14px;}
-#libraryApp.fit2 .quest-title{font-size:21px;}
-#libraryApp.fit2 .quest-line{font-size:13px;line-height:1.3;}
-#libraryApp.fit2 #homeDoors{margin-top:10px;}
-#libraryApp.fit2 #trialBanner{margin-top:10px;}
-#libraryApp.fit4 .quest-art{aspect-ratio:5/2;}
-#libraryApp.fit5 .quest-art{aspect-ratio:3/1;}
-/* the doors' own steps are a phone's: an iPad's doors are rows */
-@media(max-width:599px){
- #libraryApp.fit2 .door-copy{padding:6px 11px 8px;gap:2px;}
- #libraryApp.fit2 .door-word{font-size:20px;}
- #libraryApp.fit3 .door-pic{aspect-ratio:5/2;}
-}
+#libraryApp.fit1 #homeTitle{font-size:26px;margin:10px 0 8px;}
+#libraryApp.fit1 #trialBanner{margin-top:10px;}
+#libraryApp.fit2 .quest-art{aspect-ratio:4/5;}
+#libraryApp.fit3 .quest-art{aspect-ratio:1/1;}
+#libraryApp.fit3 .quest-body{padding:40px 13px 13px 15px;gap:5px;}
+#libraryApp.fit3 .quest-title{font-size:23px;}
+#libraryApp.fit3 .quest-line{font-size:13px;line-height:1.3;}
+#libraryApp.fit4 .quest-art{aspect-ratio:5/4;}
+#libraryApp.fit5 .quest-art{aspect-ratio:4/3;}
 
-@media(min-width:600px){#homeTitle{font-size:40px;margin:24px 0 16px;}.quest-title{font-size:30px;}.quest-line{font-size:16px;}.quest-body{padding:16px 18px 18px 22px;}#homeDoors{gap:16px;margin:18px 0 20px;}#homeDoors>button{flex-direction:row;align-items:center;gap:14px;padding:8px 14px 8px 8px;}.door-pic{width:138px;height:92px;aspect-ratio:auto;border-radius:15px;}.door-copy{padding:0;gap:5px;}.door-word{font-size:26px;}.door-sub{font-size:13px;}}
-@media(max-width:350px){#homeTitle{font-size:28px;margin:14px 0 10px;}.quest-title{font-size:21px;}.quest-line{font-size:13px;}.quest-body{padding:10px 12px 12px 14px;gap:10px;}#homeDoors{gap:10px;}.door-copy{padding:7px 10px 9px;}.door-word{font-size:19px;}#libraryApp.fit2 .door-copy{padding:5px 10px 7px;}#libraryApp.fit2 .door-word{font-size:18px;}}
+@media(min-width:600px){#homeTitle{font-size:40px;margin:24px 0 16px;text-align:center;}#questCard{max-width:480px;margin:0 auto;}.quest-title{font-size:30px;}.quest-line{font-size:16px;}.quest-body{padding:70px 20px 20px 22px;gap:9px;}#homeDoors{gap:16px;margin:18px 0 20px;}#homeDoors>button{flex-direction:row;align-items:center;gap:14px;padding:8px 14px 8px 8px;}.door-pic{width:138px;height:92px;aspect-ratio:auto;border-radius:15px;}.door-copy{padding:0;gap:5px;}.door-word{font-size:26px;}.door-sub{font-size:13px;}}
+@media(max-width:350px){#homeTitle{font-size:28px;margin:14px 0 10px;}.quest-title{font-size:23px;}.quest-line{font-size:13.5px;}.quest-body{padding:48px 12px 12px 14px;gap:6px;}.quest-head{gap:10px;}#homeDoors{gap:10px;}.door-copy{padding:7px 10px 9px;}.door-word{font-size:19px;}}
 @media(prefers-reduced-motion:reduce){#questCard,#homeDoors>button,#homeBack{transition:none;}#questCard:active,#homeDoors>button:active,#homeBack:active{transform:none;}}

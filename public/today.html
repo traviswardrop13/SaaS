@@ -199,10 +199,13 @@
            which opens adventure.html, or the price where Sona can sell; on a
            game day (after the built stories, or on a phone that cannot buy
            without Premium) it is today's game, as before. Done, it shows
-           tomorrow's picture, dark: never playable early. Silent. -->
+           tomorrow's picture, dark: never playable early. Silent.
+           HOMECLIP1 (28 Oct 2026): its picture is a tall 3:4 clip of the
+           game the child will play, muted and looping, with the day's chip,
+           title, hook and play button over its foot (paintQuest). -->
       <button id="questCard" type="button" hidden>
-        <span class="quest-art" id="questArt" aria-hidden="true"><span class="quest-pic" id="questPic"></span><span class="quest-chip" id="questChip" hidden></span><span class="quest-lock" id="questLock" hidden>Premium</span></span>
-        <span class="quest-body"><span class="quest-copy"><span class="quest-title" id="questTitle"></span><span class="quest-line" id="questLine"></span></span><span class="quest-go" id="questGo" aria-hidden="true"><svg viewBox="0 0 24 24" width="30" height="30"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor"/></svg></span></span>
+        <span class="quest-art" id="questArt" aria-hidden="true"><span class="quest-pic" id="questPic"></span><video class="quest-clip" id="questClip" muted loop playsinline autoplay preload="metadata" disablepictureinpicture disableremoteplayback x-webkit-airplay="deny" aria-hidden="true" hidden></video><span class="quest-lock" id="questLock" hidden>Premium</span></span>
+        <span class="quest-body"><span class="quest-head"><span class="quest-copy"><span class="quest-chip" id="questChip" hidden></span><span class="quest-title" id="questTitle"></span></span><span class="quest-go" id="questGo" aria-hidden="true"><svg viewBox="0 0 24 24" width="30" height="30"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor"/></svg></span></span><span class="quest-line" id="questLine"></span></span>
       </button>
       <!-- the two doors: a picture and one word each, for a child who can't
            read yet. Books is the one way to the bookshelf: the Arcade has no
@@ -221,7 +224,7 @@
         <h2 id="foundTitle">Your games</h2>
         <div id="foundList"></div>
       </section>
-      <!-- the phone's home bar, measured (the fit keeps the doors above it) -->
+      <!-- the phone's home bar, measured (the fit keeps the card above it) -->
       <span id="homeInset" aria-hidden="true"></span>
     </section>
     <section class="arcade-only" aria-labelledby="arcadeTitle">
@@ -499,7 +502,9 @@
       // the price, as a grey game's does. A game day is today's game, and only
       // games Home shows can be on it: a parked one hides the card instead.
       // The "Day N of 14" count is gone, so after Day 3 no child reads "Day 1
-      // of 14"; a story day's chip counts the stories. No line here promises
+      // of 14"; a story day's chip is that story's Day number (since CAL1 a
+      // child may meet the stories out of order, so it counts no stories
+      // played). No line here promises
       // a story that is not built, and none says "coming soon".
       var questGames={};library.groups.forEach(function(group){shown(group.games).forEach(function(game){questGames[game.key]=game;});});
       // a story's picture (/assets/crafted/home-<hero>.webp) that has not
@@ -518,18 +523,78 @@
         if(craftedCards[game.key])return questPicture("/assets/crafted/home-"+craftedCards[game.key]+".webp","");
         questPicture("","");var st=S.gameSticker(game.key);S.paintSticker(document.getElementById("questPic"),st[0],st[1]);return true;
       }
+      // THE DAY'S REEL (HOMECLIP1, 28 Oct 2026; Travis: "the daily practice
+      // is taking up more of the screen so the games and books are lower and
+      // the daily practice is like a 3 second reel essentially of the game
+      // that the child will play"). The card's picture is a short clip of the
+      // game this day plays (/assets/home/reel/<game>.mp4: the story's game on
+      // a story day, today's game on a game day), muted and looping, over its
+      // poster (the clip's first frame, <game>.webp), over the picture the
+      // card had before if the poster has not landed (reelPicture). The clip
+      // is seen only once it is really playing, so one that never starts (no
+      // H.264, Low Power Mode, a missing file) leaves the poster as it is:
+      // never a black or broken frame. It plays nothing under Reduce Motion,
+      // with the data saver on, on a finished day (tomorrow's poster, dark),
+      // on a hidden page or in the Arcade. No sound, and nothing written.
+      var REEL="/assets/home/reel/",clip=document.getElementById("questClip"),clipKey="",shownPic="";
+      function calm(){try{return !!(window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches);}catch(e){return false;}}
+      function canClip(){
+        try{if(navigator.connection&&navigator.connection.saveData)return false;}catch(e){}
+        try{return !!(clip&&clip.canPlayType&&clip.canPlayType('video/mp4; codecs="avc1.640028"'));}catch(e){return false;}
+      }
+      function clipOff(){
+        if(!clip)return;
+        clipKey="";clip.classList.remove("on");clip.hidden=true;
+        try{clip.pause();}catch(e){}
+        if(clip.hasAttribute("src")||clip.hasAttribute("poster")){clip.removeAttribute("src");clip.removeAttribute("poster");try{clip.load();}catch(e){}}
+      }
+      // plays on Home, in front; anywhere else it holds still (a pause also
+      // stops the autoplay attribute from starting it behind the Arcade)
+      function clipSync(){
+        if(!clip||!clipKey)return;
+        if(document.hidden||app.getAttribute("data-view")!=="home"){try{clip.pause();}catch(e){}return;}
+        try{clip.muted=true;var r=clip.play();if(r&&r.then)r.then(null,function(){});}catch(e){}
+      }
+      function clipOn(key){
+        if(!clip||!key||calm()||!canClip()){clipOff();return;}
+        if(clipKey!==key){clipOff();clipKey=key;clip.poster=REEL+key+".webp";clip.src=REEL+key+".mp4";}
+        clip.hidden=false;clipSync();
+      }
+      if(clip){
+        clip.muted=true;clip.defaultMuted=true;
+        clip.addEventListener("playing",function(){if(clipKey)clip.classList.add("on");});
+        clip.addEventListener("error",function(){if(clipKey)clipOff();});
+        try{var calmQ=window.matchMedia("(prefers-reduced-motion: reduce)"),recalm=function(){try{paintQuest();}catch(e){}};if(calmQ.addEventListener)calmQ.addEventListener("change",recalm);else if(calmQ.addListener)calmQ.addListener(recalm);}catch(e){}
+        window.addEventListener("pagehide",function(){try{clip.pause();}catch(e){}});
+      }
+      // the picture under the clip: its poster, else what the card showed
+      // before (a story's painted Home picture or a game's Home card, then
+      // Echo on the story's wash). The same picture is never painted twice
+      // in a row, so coming back to the front never blinks it.
+      function reelPicture(key,story,fallback){
+        var art=document.getElementById("questArt"),pic=document.getElementById("questPic"),id=key+"|"+story;
+        if(id===shownPic&&pic.firstChild)return;
+        shownPic=id;pic.textContent="";art.classList.remove("fallback");art.setAttribute("data-story",story||"");
+        if(!key){fallback();return;}
+        var im=node("img");im.alt="";im.decoding="async";
+        im.onerror=function(){im.onerror=null;if(im.parentNode===pic)fallback();};
+        im.src=REEL+key+".webp";pic.appendChild(im);
+      }
       function paintQuest(){
         var card=document.getElementById("questCard");if(!card)return;
         var q=null;try{q=S.questToday?S.questToday():null;}catch(e){q=null;}
         var story=!!(q&&q.kind==="story"&&q.story);
         var game=story?{kind:"story",key:"adventure",name:q.story.title,go:"/adventure.html",tier:"premium"}:(q&&questGames[q.game]);
-        if(!q||!game){card.hidden=true;return;}
+        if(!q||!game){card.hidden=true;clipOff();return;}
         var done=q.state==="done",next=done?q.next:null,open=access(game).allowed;
-        // tomorrow, shown dark: the next story's picture, or the next game's
-        if(next&&next.kind==="story"&&next.story)questPicture(next.story.pic,next.story.id);
-        else if(next&&questGames[next.game])gamePicture(questGames[next.game]);
-        else if(story)questPicture(q.story.pic,q.story.id);
-        else gamePicture(game);
+        // tomorrow, shown dark: the next story's poster, or the next game's,
+        // and nothing plays (tomorrow is never early); open, today's game,
+        // playing
+        if(next&&next.kind==="story"&&next.story)reelPicture(next.game,next.story.id,function(){questPicture(next.story.pic,next.story.id);});
+        else if(next&&questGames[next.game])reelPicture(next.game,"",function(){gamePicture(questGames[next.game]);});
+        else if(story)reelPicture(q.game,q.story.id,function(){questPicture(q.story.pic,q.story.id);});
+        else reelPicture(game.key,"",function(){gamePicture(game);});
+        if(done)clipOff();else clipOn(q.game);
         card.classList.toggle("done",done);
         var chip=document.getElementById("questChip");chip.textContent=story?"Day "+q.day:"";chip.hidden=!story||done;
         document.getElementById("questLock").hidden=done||open;
@@ -607,6 +672,7 @@
         clearMessage();setView(v);
         try{window.scrollTo(0,0);}catch(e){}
         if(v==="home")fitHome();
+        clipSync();
         if(focus){var h=document.getElementById(v==="arcade"?"arcadeTitle":"homeTitle");try{h.focus({preventScroll:true});}catch(e){}}
       }
       var backFocus=false;
@@ -618,8 +684,17 @@
       // itself passes, because it is seen before its handler stamps viewAt.
       var viewAt=-1e9;
       app.addEventListener("click",function(e){if(Date.now()-viewAt<500){e.preventDefault();e.stopPropagation();}},true);
+      // Each view opens at its top (showView). Since HOMECLIP1 a child often
+      // scrolls down to the doors first, and on Back the browser put that
+      // scroll back AFTER showView's, so Home came back halfway down with its
+      // heading, which takes the focus, out of sight. These two steps are
+      // the page's own, so the page keeps their scroll (a "manual" mode goes
+      // with both history entries) while the page is in front; leaving it (a
+      // game, the price) gives the entry back to the browser, so Back from
+      // that game opens the Arcade where the child was, as before.
       document.getElementById("arcadeBtn").onclick=function(){
         viewAt=Date.now();
+        try{history.scrollRestoration="manual";}catch(e){}
         try{history.pushState({view:"arcade"},"","/today.html?view=arcade");}catch(e){}
         showView("arcade",true);
       };
@@ -631,34 +706,29 @@
         showView("home",true);
       };
       window.addEventListener("popstate",function(){var f=backFocus;backFocus=false;showView(viewOf(),f);});
+      window.addEventListener("pagehide",function(){try{history.scrollRestoration="auto";}catch(e){}});
       // THE FIT (measured, never guessed, as the plan screen's offer is): the
-      // story card's play button and both doors are on the first screen, above
-      // the home bar. One step at a time (fit1…fit5, crafted-home.css): the
-      // story's picture gives way first (16:9 to 2:1), then the type and the
-      // gaps, then a phone's door pictures (2:1 to 5:2), then the story's
-      // picture again (5:2, 3:1). Everything a step resizes has
-      // transition:none (crafted-home.css; homestorytest reads every fit rule
-      // and checks each element), because sona.css gives every property a
-      // near-instant transition under Reduce Motion and a box mid-transition
-      // reports the size it WAS: a re-fit then stopped early and left the doors
-      // below the fold. "Your games" may fall below on the smallest phones,
-      // all but the day's New! tile, which is measured too (FOUND1).
+      // day's card, with its title and its play button over the picture's
+      // foot, is on the first screen, above the home bar. The doors come
+      // right after it and may fall below, and so may "Your games" (HOMECLIP1,
+      // 28 Oct 2026: the day's reel is Home's one big thing, and the games and
+      // books sit lower). One step at a time (fit1…fit5, crafted-home.css):
+      // the heading's type and gaps first, then the card's picture, from 3:4
+      // to 4:5, 1:1, 5:4 and at the flattest 4:3. Everything a step resizes
+      // has transition:none (crafted-home.css; homestorytest reads every fit
+      // rule and checks each element), because sona.css gives every property
+      // a near-instant transition under Reduce Motion and a box
+      // mid-transition reports the size it WAS: a re-fit then stopped early
+      // and left the card's foot below the fold.
       var FIT_STEPS=5;
       function fitHome(){
         if(app.getAttribute("data-view")!=="home")return;
-        var doors=document.getElementById("homeDoors"),go=document.getElementById("questGo"),inset=document.getElementById("homeInset");
+        var card=document.getElementById("questCard"),inset=document.getElementById("homeInset");
         var i;for(i=1;i<=FIT_STEPS;i++)app.classList.remove("fit"+i);
+        if(!card||card.hidden)return;
         function fits(){
-          var y=window.pageYOffset||0,bar=inset?inset.offsetHeight:0,low=doors.getBoundingClientRect().bottom;
-          if(go&&go.offsetParent)low=Math.max(low,go.getBoundingClientRect().bottom);
-          // FOUND1: on the day a story is finished its game, marked New!, is
-          // on the first screen too (the sticker card has just said "New game
-          // on Home"), so the dark tomorrow picture gives way for it, as far
-          // as the steps go (under the founding banner on the smallest
-          // phones the tile still falls below: CLAUDE.md, Home's fit)
-          var nw=document.querySelector("#foundRow:not([hidden]) .found-tile.fresh");
-          if(nw)low=Math.max(low,nw.getBoundingClientRect().bottom);
-          return low+y<=window.innerHeight-bar-8;
+          var y=window.pageYOffset||0,bar=inset?inset.offsetHeight:0;
+          return card.getBoundingClientRect().bottom+y<=window.innerHeight-bar-8;
         }
         for(i=1;i<=FIT_STEPS&&!fits();i++)app.classList.add("fit"+i);
       }
@@ -674,13 +744,29 @@
       window.addEventListener("pageshow",function(event){if(event.persisted)location.reload();});
       // An iPhone keeps Home alive behind a game; when it comes back to the
       // front the tags are read again, like today's reps in the corner.
-      document.addEventListener("visibilitychange",function(){if(!document.hidden){
+      // (and the day's clip holds still while Home is behind something)
+      document.addEventListener("visibilitychange",function(){
+        if(document.hidden){clipSync();return;}
         if(library.picks&&S.localDay&&S.localDay()!==library.picks.day){location.reload();return;}
         paintBests();
         try{paintQuest();}catch(e){}
         try{paintFound();}catch(e){}
         fitHome();
-      }});
+      });
+      // …and at midnight with Home still in front (an iPad left on it all
+      // night, a child still on it at twelve): since CAL1 the day's story
+      // moves on then, played or not, so Home reads the new day as it does
+      // when it comes back to the front, and never shows yesterday's card
+      // (whose tap would open today's story). One timer, to just after the
+      // next local midnight; a page in the background is the handler's above.
+      var homeDay=S.localDay?S.localDay():"";
+      (function nextMidnight(){
+        var now=new Date(),then=new Date(now.getFullYear(),now.getMonth(),now.getDate()+1,0,0,2);
+        setTimeout(function(){
+          if(!document.hidden&&S.localDay&&S.localDay()!==homeDay){location.reload();return;}
+          nextMidnight();
+        },Math.max(1000,then.getTime()-now.getTime()));
+      })();
       var echo=node("img");echo.src="/assets/crafted/echo-welcome.webp";echo.alt="";echo.width=84;echo.height=96;document.getElementById("libraryEcho").appendChild(echo);
       // the crafted pictures (1 Oct 2026); the old sticker only if the books'
       // can't load, and Echo cheering until the Arcade's own picture lands
