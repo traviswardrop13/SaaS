@@ -445,9 +445,9 @@ await section("skip and go", async () => {
   await ctx.unroute("**/arcade-lighthouse.html");
   ok("\"Let's go!\" opens the story's game", there, pg.url());
   const rec = await quest(pg);
-  // (beside `a`, the day this child's story calendar started, which sona.js
-  // writes as the first page loads: CAL1)
-  ok("…having recorded today's intro as seen, and nothing else in the record", rec && rec.seen === day + "|lighthouse" && rec.a === day && Object.keys(rec).filter((k) => k !== "a").join() === "seen", rec);
+  // (beside `a` and `sv`, the days this child's story calendar and its
+  // stories started, which sona.js writes as the first page loads: CAL1)
+  ok("…having recorded today's intro as seen, and nothing else in the record", rec && rec.seen === day + "|lighthouse" && rec.a === day && rec.sv === day && Object.keys(rec).filter((k) => k !== "a" && k !== "sv").join() === "seen", rec);
   ok("no page errors", errors.length === 0, errors);
   // the same day, again: on the website and in the app
   await pg.goto(origin + "/adventure.html");
@@ -817,10 +817,11 @@ await section("writes", async () => {
   await landed(pg, "/arcade-lighthouse.html");
   const after = await snap();
   const diff = Object.keys(Object.assign({}, pre, after)).filter((k) => pre[k] !== after[k] && !/^sona\.(fid|tts)/.test(k) && k !== "__seeded");
-  // the record already held the calendar's first day (`a`, CAL1), written as
-  // the page first loaded; "Let's go!" adds `seen` to it and changes nothing else
+  // the record already held the calendar's and the stories' first day (`a`,
+  // `sv`, CAL1), written as the page first loaded; "Let's go!" adds `seen`
+  // to it and changes nothing else
   const was = JSON.parse(pre["sona.quest.v1"] || "{}"), now = JSON.parse(after["sona.quest.v1"] || "{}");
-  ok("…and \"Let's go!\" writes the quest record's `seen` and nothing else", JSON.stringify(diff) === '["sona.quest.v1"]' && Object.keys(now).filter((k) => k !== "a").join() === "seen" && now.a === was.a && Object.keys(was).join() === "a", { diff, was, rec: after["sona.quest.v1"] });
+  ok("…and \"Let's go!\" writes the quest record's `seen` and nothing else", JSON.stringify(diff) === '["sona.quest.v1"]' && Object.keys(now).filter((k) => k !== "a" && k !== "sv").join() === "seen" && now.a === was.a && now.sv === was.sv && Object.keys(was).sort().join() === "a,sv", { diff, was, rec: after["sona.quest.v1"] });
   ok("no page errors", errors.length === 0, errors);
   await ctx.close();
 });

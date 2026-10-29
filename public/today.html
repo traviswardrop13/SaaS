@@ -502,7 +502,9 @@
       // the price, as a grey game's does. A game day is today's game, and only
       // games Home shows can be on it: a parked one hides the card instead.
       // The "Day N of 14" count is gone, so after Day 3 no child reads "Day 1
-      // of 14"; a story day's chip counts the stories. No line here promises
+      // of 14"; a story day's chip is that story's Day number (since CAL1 a
+      // child may meet the stories out of order, so it counts no stories
+      // played). No line here promises
       // a story that is not built, and none says "coming soon".
       var questGames={};library.groups.forEach(function(group){shown(group.games).forEach(function(game){questGames[game.key]=game;});});
       // a story's picture (/assets/crafted/home-<hero>.webp) that has not
@@ -687,7 +689,9 @@
       // scroll back AFTER showView's, so Home came back halfway down with its
       // heading, which takes the focus, out of sight. These two steps are
       // the page's own, so the page keeps their scroll (a "manual" mode goes
-      // with both history entries from here on).
+      // with both history entries) while the page is in front; leaving it (a
+      // game, the price) gives the entry back to the browser, so Back from
+      // that game opens the Arcade where the child was, as before.
       document.getElementById("arcadeBtn").onclick=function(){
         viewAt=Date.now();
         try{history.scrollRestoration="manual";}catch(e){}
@@ -702,6 +706,7 @@
         showView("home",true);
       };
       window.addEventListener("popstate",function(){var f=backFocus;backFocus=false;showView(viewOf(),f);});
+      window.addEventListener("pagehide",function(){try{history.scrollRestoration="auto";}catch(e){}});
       // THE FIT (measured, never guessed, as the plan screen's offer is): the
       // day's card, with its title and its play button over the picture's
       // foot, is on the first screen, above the home bar. The doors come
@@ -748,6 +753,20 @@
         try{paintFound();}catch(e){}
         fitHome();
       });
+      // …and at midnight with Home still in front (an iPad left on it all
+      // night, a child still on it at twelve): since CAL1 the day's story
+      // moves on then, played or not, so Home reads the new day as it does
+      // when it comes back to the front, and never shows yesterday's card
+      // (whose tap would open today's story). One timer, to just after the
+      // next local midnight; a page in the background is the handler's above.
+      var homeDay=S.localDay?S.localDay():"";
+      (function nextMidnight(){
+        var now=new Date(),then=new Date(now.getFullYear(),now.getMonth(),now.getDate()+1,0,0,2);
+        setTimeout(function(){
+          if(!document.hidden&&S.localDay&&S.localDay()!==homeDay){location.reload();return;}
+          nextMidnight();
+        },Math.max(1000,then.getTime()-now.getTime()));
+      })();
       var echo=node("img");echo.src="/assets/crafted/echo-welcome.webp";echo.alt="";echo.width=84;echo.height=96;document.getElementById("libraryEcho").appendChild(echo);
       // the crafted pictures (1 Oct 2026); the old sticker only if the books'
       // can't load, and Echo cheering until the Arcade's own picture lands

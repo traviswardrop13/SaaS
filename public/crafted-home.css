@@ -207,10 +207,11 @@ body::before{content:"";position:fixed;left:0;right:0;top:0;height:env(safe-area
    word under it, like the Arcade's own game cards. The Arcade's painting is
    Echo among the games' things (a watermelon, a basketball, a piano key, a
    ball, a bone) out at its edges: a square crop kept Echo and threw the games
-   away, so a child who can't read saw two doors of Echo. A band (2:1, and no
-   flatter than 5:2 when the fit needs room) keeps them in. On an iPad the
-   picture sits beside the word at 3:2, which keeps them too. Nothing here
-   animates in size (the fit measures it). */
+   away, so a child who can't read saw two doors of Echo. A 2:1 band keeps
+   them in. On an iPad the picture sits beside the word at 3:2, which keeps
+   them too. No fit step touches the doors: since HOMECLIP1 (28 Oct 2026)
+   the fit measures only the day's card, and on a smaller phone the doors may
+   sit below the first screen. */
 #homeDoors{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:14px 0 16px;}
 #homeDoors>button{display:flex;flex-direction:column;align-items:stretch;min-width:0;min-height:88px;padding:0;border-radius:20px;overflow:hidden;background:linear-gradient(#fffefb,#fff7e9);border:1px solid #efe2ce;box-shadow:0 3px 0 #e9d8bb,0 6px 14px #6947200d;color:var(--ink);font:inherit;text-align:left;cursor:pointer;transition:transform .12s;}
 #homeDoors>button:active{transform:translateY(2px) scale(.98);}

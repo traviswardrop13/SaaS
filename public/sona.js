@@ -696,7 +696,7 @@
     // setup, the Speech Check and the pilot page all set a child up here
     const setUpNow = !!(patch && patch.onboarded === true) && !getProfile().onboarded;
     save(PKEY, Object.assign(getProfile(), patch || {}));
-    if (setUpNow) { try { _questAnchor(null); } catch (e) {} }
+    if (setUpNow) { try { _questAnchor(null, true); } catch (e) {} }
     // …and pay it: today's reps already said earn against the lowered goal
     // now (30 once it is met, like any goal day), not at a next rep that may
     // never come that day (the ledger never goes back to an earlier day).
@@ -2355,6 +2355,21 @@
           else if ((base === OUTKEY || base === GAMEREPKEY || base === GOALKEY) && !(sfx in brought)) brought[sfx] = false;
         });
         Object.keys(brought).forEach((sfx) => { if (!brought[sfx]) localStorage.removeItem(TROPHYKEY + sfx); });
+      } catch (e) {}
+      // A CHILD'S STORY CALENDAR COMES WITH THE CHILD (CAL1, 28 Oct 2026). A
+      // backup that brings a child's profile but no quest record (a child who
+      // had finished nothing, or a backup from before the stories) takes away
+      // the record of whoever sat in that slot here, so the child restored
+      // starts their own calendar on the next page that loads, never another
+      // child's start day or finished stories.
+      try {
+        const qb = {};
+        Object.keys(data).forEach((k) => {
+          const at = k.indexOf("@"), base = at < 0 ? k : k.slice(0, at), sfx = at < 0 ? "" : k.slice(at);
+          if (base === QUESTKEY) qb[sfx] = true;
+          else if (base === PKEY && !(sfx in qb)) qb[sfx] = false;
+        });
+        Object.keys(qb).forEach((sfx) => { if (!qb[sfx]) localStorage.removeItem(QUESTKEY + sfx); });
       } catch (e) {}
       if (!n) return { ok: false, error: "No Sona data found in that backup." };
       // The backup can also replace the child list, so the grandfathered
@@ -5416,24 +5431,42 @@
     const gd = lk === "game" && _isDay(done) ? done : (_isDay(v.gd) ? v.gd : "");
     const got = Array.isArray(v.got) ? v.got.filter((id) => STICKERS.some((x) => x.id === id)).slice(0, 2) : [];
     const seen = typeof v.seen === "string" && /^\d{4}-\d{2}-\d{2}\|[a-z]+$/.test(v.seen) ? v.seen : "";
-    return { i, last, done, f, s: f.length, ls, lk, fd, gd, a: _isDay(v.a) ? v.a : "", got, seen };
+    return { i, last, done, f, s: f.length, ls, lk, fd, gd, a: _isDay(v.a) ? v.a : "", sv: _isDay(v.sv) ? v.sv : "", got, seen };
   }
   // CAL1: a "YYYY-MM-DD" day as a whole number of days (counted in UTC, so a
   // clock change in the night never makes two days one), NaN for anything else
   function _isDay(x) { return typeof x === "string" && /^\d{4}-\d{2}-\d{2}$/.test(x); }
   function _dayNo(x) { if (!_isDay(x)) return NaN; const p = x.split("-"); return Math.round(Date.UTC(+p[0], +p[1] - 1, +p[2]) / 864e5); }
-  // CAL1: the day a child's calendar starts (`a`), written once. Setup writes
-  // it as it sets a child up (saveProfile, so the first day is story 1); a
-  // child set up before this build, or brought in by a backup without one,
-  // gets it from the first page that finds none (_questAnchors, at load): a
-  // one-shot write like the free-era sweeps, so it may be Home's first load,
-  // and that child's first day on this build is their next story in order.
-  // Every page after only reads it. slot null is the child playing now.
-  function _questAnchor(slot) {
+  // CAL1: the day a child's calendar starts (`a`), and the day their stories
+  // first showed (`sv`: a phone that cannot buy, without Premium, shows the
+  // game of the day instead, and the stories' Day 1 waits for the first day
+  // a story is on the card). Setup writes both as it sets a child up
+  // (saveProfile, so the first day is Day 1), afresh for a child who has
+  // finished nothing yet (a brother or sister added in Settings may have
+  // been started by an earlier page). A child set up before this build, or
+  // brought in by a backup without them, gets them from the first page that
+  // finds none (_questAnchors, at load): a one-shot write like the free-era
+  // sweeps, so it may be Home's first load, and that child's first day on
+  // this build is their next story in order. A day after today (a phone
+  // clock that was ahead) is written again as today, or the card would
+  // stand still until the calendar caught up. Every page after only reads
+  // them. slot null is the child playing now; setup true is setup's save.
+  function _questAnchor(slot, setup) {
     let rec = slot == null ? load(QUESTKEY, {}) : _loadFor(slot, QUESTKEY, {});
     if (!rec || typeof rec !== "object" || Array.isArray(rec)) rec = {};
-    if (_isDay(rec.a)) return;
-    rec.a = today();
+    const t = today(), T = _dayNo(t), later = (x) => !_isDay(x) || _dayNo(x) > T;
+    let shown = false; try { shown = storyShown(); } catch (e) {}
+    // no story finished, and (for setup's fresh start) no game day either
+    const noStory = !(Array.isArray(rec.f) ? rec.f.length > 0 : parseInt(rec.s, 10) > 0);
+    let changed = false;
+    if (setup && noStory && !_isDay(rec.done)) {
+      rec.a = t; if (shown) rec.sv = t; else delete rec.sv;
+      changed = true;
+    } else {
+      if (later(rec.a)) { rec.a = t; changed = true; }
+      if (shown && noStory && later(rec.sv)) { rec.sv = t; changed = true; }
+    }
+    if (!changed) return;
     if (slot == null) save(QUESTKEY, rec); else saveFor(slot, QUESTKEY, rec);
   }
   function _questAnchors() {
@@ -5442,7 +5475,7 @@
     slots.forEach((slot) => {
       try {
         const pr = JSON.parse(localStorage.getItem(slot ? PKEY + "@" + slot : PKEY) || "null");
-        if (pr && (pr.onboarded || pr.childName)) _questAnchor(slot);
+        if (pr && (pr.onboarded || pr.childName)) _questAnchor(slot, false);
       } catch (e) {}
     });
   }
@@ -5464,7 +5497,10 @@
   //   story after it not finished yet, the day after that the one after, and
   //   so on round, so a story skipped comes back after the others have had
   //   their day. With none finished it counts the same way from the day
-  //   before the calendar started (`a`), so the first day is story 1.
+  //   before the stories first showed (`sv`, else the calendar's start `a`),
+  //   so the first day a story is on the card is Day 1. A game day finished
+  //   (gd: the card was a game, on a phone that showed no story) holds the
+  //   story, as a story holds the game: the story count starts again from it.
   //   The game of the day: the day after the last game day finished (last,
   //   on gd) is the next of the 14, and so on round. The stories hold it
   //   where it was: it counts from the last story finished when that came
@@ -5472,17 +5508,19 @@
   //   from the day before the calendar started, so the first day is day `i`.
   // A finish from before the calendar started counts from the day before it
   // too, so a child's first day on this build is the next one in order and
-  // never a jump over the days before it; a clock that went back is the day
-  // after.
+  // never a jump over the days before it. A day later than D never counts (a
+  // phone clock that was ahead wrote it), and a clock that went back is the
+  // day after.
   function _questOn(st, list, D, storyNext) {
-    const SL = STORY_DAYS.length, from = (_dayNo(st.a) || D) - 1;
-    // days since the latest of these finishes (or since the day before the
-    // calendar started), at least one
-    const since = (...days) => Math.max(1, D - days.reduce((m, x) => { const n = _dayNo(x); return n > m ? n : m; }, from));
+    const SL = STORY_DAYS.length, A = _dayNo(st.a), from = (A <= D ? A : D) - 1;
+    // days since the latest of these days (a "YYYY-MM-DD" or a day number),
+    // or since the day before the calendar started, at least one
+    const since = (...days) => Math.max(1, D - days.reduce((m, x) => { const n = typeof x === "number" ? x : _dayNo(x); return n > m && n <= D ? n : m; }, from));
     if (storyNext) {
       const b = st.f.length ? st.ls : -1, left = [];
       for (let j = 1; j <= SL; j++) { const n = (b + j + SL) % SL; if (st.f.indexOf(n) < 0) left.push(n); }
-      const n = left[(since(st.f.length ? st.fd : "") - 1) % left.length], d = _storyInfo(n);
+      const k = st.f.length ? since(st.fd, st.gd) : since(_dayNo(st.sv) - 1, st.gd);
+      const n = left[(k - 1) % left.length], d = _storyInfo(n);
       return { kind: "story", day: n + 1, game: d.game, line: d.line, story: d };
     }
     const n = (st.last + since(st.gd, st.f.length ? st.fd : "")) % QUEST_LEN, q = _questAt(list, n);
@@ -5524,8 +5562,16 @@
   // replace the whole object, and would now wipe the stories finished.
   function questEnd(gameKey) {
     try {
-      const q = questToday();
-      if (q.state !== "open" || q.game !== gameKey) return null;
+      let q = questToday();
+      if (q.state !== "open" || q.game !== gameKey) {
+        // a story round that began before midnight and ended after it
+        // finishes the story that was open when it began (CAL1: by then the
+        // card has moved on to the next story, which would leave the child
+        // who just played it with no ending and no sticker)
+        const y = _questYesterday();
+        if (!y || y.game !== gameKey) return null;
+        q = { kind: "story", state: "open", day: y.day, game: y.game, line: y.line, story: y.story };
+      }
       const raw = load(QUESTKEY, {}) || {};
       if (q.kind === "story") {
         // a story shown locked (where the price can open it) is no story
@@ -5553,6 +5599,18 @@
       _questBanner(q.day, got);
       return { day: q.day, stickers: got };
     } catch (e) { return null; }
+  }
+  // CAL1: yesterday's story, still open: the one questToday() showed
+  // yesterday, when nothing has been finished since (yesterday or today) and
+  // the calendar had started by then. Only a story: its game is reached only
+  // through the story, while a game of the day is played from the Arcade
+  // too, so a round of it today is today's and never finishes yesterday's.
+  function _questYesterday() {
+    const st = _questSt(), D = _dayNo(today());
+    if (!(D >= 0) || _dayNo(st.done) >= D - 1 || !(_dayNo(st.a) <= D - 1)) return null;
+    if (!(st.f.length < STORY_DAYS.length && storyShown())) return null;
+    const y = _questOn(st, QUEST_DAYS[playStyle()] || QUEST_DAYS.arcade, D - 1, true);
+    return y.kind === "story" ? y : null;
   }
   // The story's ending (adventure.html?part=end): ok once that story is
   // finished, and got = the stickers its finish gave, only on the day it was

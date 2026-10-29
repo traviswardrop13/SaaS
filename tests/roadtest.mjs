@@ -92,9 +92,9 @@ async function fresh({ width = 375, height = 812, trophies = 0, levels = null, p
     // it and write the legacy set on Home's first load, and the snapshots
     // below hold Home to writing nothing
     localStorage.setItem("sona.buddyset.v1", "kept");
-    // …and the day this child's story calendar started (CAL1): without it,
-    // sona.js writes it on Home's first load, once
-    localStorage.setItem("sona.quest.v1", JSON.stringify({ a: TODAY }));
+    // …and the days this child's story calendar and stories started (CAL1):
+    // without them, sona.js writes them on Home's first load, once
+    localStorage.setItem("sona.quest.v1", JSON.stringify({ a: TODAY, sv: TODAY }));
     localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Mia", childAge: "7", focusSounds: ["R"], onboarded: true, voiceOn: false, soundOn: false, volume: 0 }));
     sessionStorage.setItem("sona.paidui", "1");
     if (premium) localStorage.setItem("sona.sub.v1", JSON.stringify({ active: true, since: Date.now(), source: "stripe" }));

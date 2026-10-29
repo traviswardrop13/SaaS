@@ -1194,10 +1194,12 @@ page before it seeds must set the stamp itself: that first load stamps
 "kept", as it seeds `sona.freever.v1`: the sweep writes on that first load.
 The story calendar (CAL1, 28 Oct 2026) is the same kind of first-load
 write: a set-up child whose `sona.quest.v1` has no `a` gets it (today) from
-the first page that loads. A suite that seeds after a first load and then
-holds a later load to writing nothing seeds `a` itself (`roadtest`), and a
-suite that holds the record to its seed puts `a` in the seed (the FOUND
-seeds of `storygametest`, `lighthousetest`, `winduptest`, `bridgetest`).
+the first page that loads, and one who has finished no story, on a phone
+that shows the stories, gets `sv` too. A suite that seeds after a first
+load and then holds a later load to writing nothing seeds both itself
+(`roadtest`), and a suite that holds the record to its seed puts `a` in a
+seed whose stories are finished (the FOUND seeds of `storygametest`,
+`lighthousetest`, `winduptest`, `bridgetest`).
 
 **Tests do not pin the switch's value.** They pin that the two copies agree,
 and they exercise the purchase rails through the `?paid=1` / `sona.paidui` seam
@@ -2137,7 +2139,8 @@ already exists, never painted in and never under a finger.
   `i`, `last` and `done` and gains `f` (the stories finished, in the order
   they were finished; `s`, their count, is still written), `ls` (the last
   one), `fd` and `gd` (the days the last story and the last game day were
-  finished), `a` (the day this child's calendar started, CAL1), `lk`
+  finished), `a` (the day this child's calendar started, CAL1), `sv` (the
+  day the stories first showed for this child, CAL1), `lk`
   ("story" or "game"), `got` (the stickers its finish gave) and `seen`
   ("<date>|<id>": today's intro reached "Let's go!"). A record from before
   `f` finished its `s` stories in order. Every save MERGES (a game day's
@@ -2157,18 +2160,40 @@ already exists, never painted in and never under a finger.
   played, Days 2 and 3 skipped, Day 4 played: then Days 5 to 14, then 2,
   then 3). Still one a calendar day: a story finished today stays on the
   card, done, with tomorrow's dark, and a game day finished today keeps the
-  story for tomorrow. **Where the calendar starts (`a`):** setup writes it
-  as it sets a child up (`saveProfile`'s onboarded save, which the Speech
-  Check and the pilot page make too), so a new family's first day is Day 1.
-  A child set up before this build, or brought in by a backup with no `a`,
-  gets it from the first page that loads (`_questAnchors`, beside the
+  story for tomorrow. **Where the calendar starts (`a`) and the stories'
+  Day 1 (`sv`):** setup writes both as it sets a child up (`saveProfile`'s
+  onboarded save, which the Speech Check and the pilot page make too), so a
+  new family's first day is Day 1; for a child who has finished nothing it
+  writes them afresh, so a brother or sister added in Settings (whom the
+  next page may already have started) begins on the day setup finishes. A
+  child set up before this build, or brought in by a backup without them,
+  gets them from the first page that loads (`_questAnchors`, beside the
   free-era sweeps): a one-shot write, which may be Home's first load, so
   their first day on this build is their next story in order, never a jump
   over the days before it (a finish from before that day counts from the
-  day before it, for the same reason). A child partway through the 14 days
+  day before it, for the same reason). **The stories' Day 1 waits for a
+  story to show:** on a phone that shows none (it cannot buy, and no
+  Premium: the card is the game of the day) `sv` is not written, and the
+  first page that shows a story writes it, so the first story a child ever
+  sees is Day 1 whenever that comes (the review of 28 Oct 2026: counting
+  from `a` made it Day 10 for a family whose Premium came nine days late).
+  A game day finished holds the story as a story holds the game: the story
+  count starts again from it (`gd`), so a game day finished the day the
+  stories open keeps Day 1 for tomorrow. A day after today (a phone clock
+  that was ahead) never counts, and the next page writes `a` and `sv` again
+  as today, so the card never stands still waiting for the calendar. A
+  backup that brings a child's profile but no quest record takes the slot's
+  old record away (`importData`), so the restored child starts their own
+  calendar and never inherits another child's. A child partway through the 14 days
   still meets every story first: a story never moves `i`, and after the
   last story the game of the day comes back on day `i` (the stories hold
-  its place), then moves on one a day the same way.
+  its place), then moves on one a day the same way. **A story round that
+  began before midnight and ends after it** still finishes the story that
+  was open when it began (`_questYesterday`: yesterday's story, while
+  nothing has been finished since and the calendar had started): the card
+  then shows that story done, its ending and sticker open, and today's
+  story moves to tomorrow. Only a story: a game of the day is played from
+  the Arcade too, so a round of it today is today's, never yesterday's.
 - **The day is finished when the game's round ends** (the engine's end card,
   `questEnd(<key>)`), so the sticker is given before the ending is watched
   and closing the app in between loses nothing: ONE sticker
@@ -2369,8 +2394,14 @@ line a child hears):
 - **The helper map's count (CAL1):** each ending counts gold stars by its
   Day number ("Seven gold stars on our helper map!", the picture showing
   seven), so a child who skipped days hears a bigger number than the
-  stories they finished. Rewording the endings (and redrawing their maps)
-  is his call.
+  stories they finished, and a skipped story that comes back after Day 14
+  names a smaller one (Day 1's "Our helper map gets its first gold star."
+  to a child who has thirteen). Some lines also assume the stories before
+  them (Day 2's "Pelly the pelican is back" and Captain Wally "with his
+  glasses on", Day 3's cake from Captain Wally and Grandpa Bear's toys, Day
+  6's Grandpa Bear, Day 12's "our friend Frog"), which a child who skipped
+  those days has not met. Rewording the endings and those lines (and
+  redrawing the maps) is his and Rachel's call.
 - A finished story is not on Home again; its game is, in "Your games"
   (FOUND1).
 - Under Reduce Motion both games hold still: Light the Way's boats stay on
@@ -2465,8 +2496,9 @@ simplicity, fairness to kids, reuse) each came back with this one idea:
   "Waterwheel", "Bridge Builder"…); the one found today wears a teal "New!".
   A tap plays it again: `again`, the story's page with `?again=1` (Days 1-3's
   own pages) or `&again=1` (`story-game.html`). `Sona.storyFound()` is the
-  list (read only; nothing new stored: finished stories are `s`, per child,
-  in backups); `Sona.storyReplay(id)` says whether one may be played, by the
+  list (read only; nothing new stored: finished stories are `f`, in the
+  order they were finished, so the row's newest first is the last one found;
+  per child, in backups); `Sona.storyReplay(id)` says whether one may be played, by the
   story's rule (`storyOpen()`). Without it there is no row at all, never a
   grey tile (a tap on one would open the price in front of a child).
 - **A replay is a game like any other:** Play again and Back home, no
@@ -2563,7 +2595,13 @@ offer, the level sheet, the grown-ups check and "Home opens the offer once".
   and takes no tap (`pointer-events:none`: the card's tap is unchanged).
   The clips are real play, filmed frame by frame (HOMEREEL1, below). The Arcade door sets `history.scrollRestoration="manual"`,
   because with the taller card a child who scrolled to the doors came back
-  from "‹ Home" halfway down the page. **Defaults Travis did not pick:** the
+  from "‹ Home" halfway down the page; leaving the page (a game, the price)
+  sets it back to "auto", so Back from a game opens the Arcade where the
+  child was. **At midnight with Home in front** (an iPad left on it all
+  night) Home reloads by itself just after twelve, as it does when it comes
+  back to the front on a new day: since CAL1 the day's story moves on then,
+  and a card left from yesterday would open today's story under
+  yesterday's title. **Defaults Travis did not pick:** the
   dark gradient (not a cream one), the 480 px cap on an iPad, the data saver
   showing the poster only, and the doors and the New! game falling below
   the first screen on smaller phones.
@@ -3934,7 +3972,8 @@ Home's big card a story while one is left, for every child, and this game of
 the day after the last one, or on a phone that cannot buy without Premium.
 On a game day the card (`#questCard`, under "Today's adventure") shows the
 game's name, one line from Echo's world ("The wind blew Echo's tower down.
-Help him build it back up!"), the game's own painted Home picture and the
+Help him build it back up!"), the game's clip over its poster (HOMECLIP1;
+the game's own painted Home picture only until the poster lands) and the
 teal play button. **The "Day N of 14" counter is gone**, so that after Day 3
 of the story no child sees "Day 1 of 14"; the child's place in the 14 days
 (`i`) is never moved by a story. A tap is that game card's own tap (`launch`:

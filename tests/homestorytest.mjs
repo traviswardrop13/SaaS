@@ -72,8 +72,14 @@ const browser = await chromium.launch(launchOpts());
 // open; stamp: what the free-version sweep wrote. quest: the adventure record,
 // with "TODAY" read as this phone's own date. The idea sheet starts answered
 // and the offer from Home already shown: neither is this suite's subject.
+// Every page here stands in a phone that plays no H.264 (canPlayType says
+// "" to an MP4), whatever this Chromium can do: a plain Chromium build plays
+// none, but CI's newer one does, and the clip then played there (29 Oct
+// 2026). "a phone that plays the clips" below stands in one that does.
 function seed({ age = 7, sub = false, ea = false, sell = false, stamp = "kept", quest = null } = {}) {
   return `(() => {
+    const cpt = HTMLMediaElement.prototype.canPlayType;
+    HTMLMediaElement.prototype.canPlayType = function (t) { return /mp4|avc1/i.test(String(t)) ? "" : cpt.call(this, t); };
     try { sessionStorage.setItem("sona.paidui", "1"); sessionStorage.setItem("sona.websalesui", "${sell ? 1 : 0}"); } catch (e) {}
     const say = (t) => { if (String(t || "").trim()) { const a = JSON.parse(sessionStorage.getItem("test.speech") || "[]"); a.push(String(t)); sessionStorage.setItem("test.speech", JSON.stringify(a)); } return Promise.resolve(); };
     let sona; Object.defineProperty(window, "Sona", { configurable: true, get: () => sona, set: (v) => { sona = v; v.speak = say; v.speakNow = say; } });
@@ -106,8 +112,9 @@ async function home(pg, page = "/today.html") {
 }
 // HOMECLIP1: the clip and its poster live here; until a key's poster has
 // landed on disk the card shows the picture it had before (pic), and Echo if
-// that has not landed either. This Chromium plays no H.264, so it is always
-// the poster here; "a phone that plays the clips" below stands one in.
+// that has not landed either. The seed stands in a phone that plays no H.264,
+// so it is always the poster here; "a phone that plays the clips" below
+// stands in one that does.
 const REEL = "/assets/home/reel/";
 const onDisk = (p) => existsSync(ROOT + p);
 const shows = (key, pic) => (onDisk(REEL + key + ".webp") ? REEL + key + ".webp" : pic && onDisk(pic) ? pic : "/assets/crafted/echo-welcome.webp");
@@ -148,7 +155,7 @@ await section("an open story", async () => {
     ok(a + "the story card shows Day 1, its title and its hook (both age groups get the story)", c.shown && c.chip === "Day 1" && c.title === STORY[0].title && c.line === STORY[0].line, c);
     ok(a + "…with a big round play button (at least 64 px) and no Premium tag", c.go && c.go.w >= 64 && c.go.h >= 64 && c.lock === null && c.disabled === "false", c);
     ok(a + "…its picture is the poster of the day's clip (until that lands, the story's own picture, or Echo on its wash)", c.story === "lighthouse" && c.img === shows("lighthouse", "/assets/crafted/home-lighthouse.webp"), c);
-    ok(a + "…and on a phone that plays no H.264 (this one) the clip stays hidden and loads nothing", c.clip.hidden && !c.clip.src && !c.clip.on, c.clip);
+    ok(a + "…and on a phone that plays no H.264 (the seed's) the clip stays hidden and loads nothing", c.clip.hidden && !c.clip.src && !c.clip.on, c.clip);
     ok(a + "…and its label says it all for a screen reader", c.aria === "Today's adventure, day 1: " + STORY[0].title + ". " + STORY[0].line + " Play.", c.aria);
     ok(a + "nothing on Home says coming soon, score, points, a price or \"of 14\"", !BAD.test(top.text), top.text);
     ok(a + "a tap opens the story", await tapTo(pg, "#questCard", /\/adventure\.html$/), pg.url());
@@ -402,7 +409,44 @@ await section("the views", async () => {
   ok("Forward opens the Arcade again, still with no reload", (await pg.evaluate(() => window.__same)) === 1 && (await view(pg)) === "arcade" && pathOf(pg) === "/today.html?view=arcade");
   await pg.goBack(); await pg.waitForTimeout(200);
   ok("…and Back comes Home", (await pg.evaluate(() => window.__same)) === 1 && (await view(pg)) === "home" && pathOf(pg) === "/today.html");
+  // the page's own scroll keeping is for its own two steps: Back from
+  // another page (a game, the price) opens the Arcade where the child was
+  await pg.waitForTimeout(550);
+  await pg.locator("#arcadeBtn").click(); await pg.waitForTimeout(200);
+  await pg.evaluate(() => window.scrollTo(0, 400)); await pg.waitForTimeout(100);
+  const was = await pg.evaluate(() => window.pageYOffset);
+  await pg.goto(origin + "/privacy.html"); await pg.waitForTimeout(150);
+  await pg.goBack();
+  await pg.waitForFunction(() => window.Sona && !document.getElementById("libraryApp").hidden && document.querySelector("#activityGroups .game-card"));
+  await pg.waitForTimeout(400);
+  const there = await pg.evaluate(() => ({ y: window.pageYOffset, view: document.getElementById("libraryApp").getAttribute("data-view") }));
+  ok("Back from another page opens the Arcade where the child was, not at its top", was > 300 && there.view === "arcade" && Math.abs(there.y - was) < 40, { was, there });
   ok("the views: no page errors", errors.length === 0, errors);
+  await ctx.close();
+});
+
+// ── midnight with Home in front (CAL1): the day's story moves on then,
+// played or not, so Home reads the new day itself ──
+await section("midnight", async () => {
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  await ctx.route("**/*", (r) => (r.request().url().startsWith(origin) ? r.continue() : r.abort()));
+  await ctx.addInitScript(seed({ sub: true }));
+  await ctx.addInitScript(() => { sessionStorage.setItem("test.loads", String(Number(sessionStorage.getItem("test.loads") || 0) + 1)); });
+  const pg = await ctx.newPage(); pg.setDefaultTimeout(8000);
+  const errors = []; pg.on("pageerror", (e) => errors.push(e.message));
+  const night = new Date(); night.setHours(23, 59, 0, 0);
+  await pg.clock.install({ time: night });
+  await home(pg);
+  const before = await card(pg);
+  await pg.clock.runFor(30 * 1000);
+  const still = await pg.evaluate(() => Number(sessionStorage.getItem("test.loads")));
+  await pg.clock.runFor(60 * 1000);
+  const reloaded = await pg.waitForFunction(() => Number(sessionStorage.getItem("test.loads")) >= 2, null, { timeout: 8000 }).then(() => true, () => false);
+  await pg.waitForFunction(() => window.Sona && !document.getElementById("libraryApp").hidden && document.querySelector("#activityGroups .game-card"));
+  const after = await card(pg);
+  ok("at 23:59 the card is Day 1, and Home does not reload before midnight", before.chip === "Day 1" && still === 1, { before: before.chip, still });
+  ok("just past midnight Home reads the new day by itself: the card is Day 2", reloaded && after.chip === "Day 2" && after.title === STORY[1].title, { reloaded, after: after.chip, title: after.title });
+  ok("midnight: no page errors", errors.length === 0, errors);
   await ctx.close();
 });
 
@@ -751,8 +795,8 @@ await section("pictures", async () => {
 
 // ── 9. the day's reel (HOMECLIP1, 28 Oct 2026) ──
 // Travis: "the daily practice is taking up more of the screen ... like a 3
-// second reel essentially of the game that the child will play". This
-// Chromium plays no H.264, so above the clip never starts. Here a phone that
+// second reel essentially of the game that the child will play". The seed's
+// phone plays no H.264, so above the clip never starts. Here a phone that
 // does is stood in: canPlayType says yes to an MP4, each play() is counted
 // (with the address it plays and whether it is muted) and says "playing",
 // each pause() is counted, and the clip's own request is held, as a phone
