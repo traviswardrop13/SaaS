@@ -82,7 +82,7 @@
                   little: "Look! Wally's glasses were on his head the whole time. Silly Wally!" } },
         // buddy: on the empty cushion by the lamp, a mug beside it (sit)
         { art: "e04", ages: "both", buddy: { x: 0.75, y: 0.81, h: 0.22, pose: "sit" },
-          line: "Cocoa for the heroes! You lit the way home. Our helper map gets its first gold star." }
+          line: "Cocoa for the heroes! You lit the way home. Our helper map gets a gold star, right by the lighthouse." }
       ]
     },
 
@@ -92,7 +92,7 @@
       intro: [
         // buddy: on the doorstep, between Pelly and Echo (rest)
         { art: "s01", ages: "both", buddy: { x: 0.44, y: 0.68, h: 0.21, pose: "rest" },
-          line: "Pelly the pelican is back with a letter! Oops. That's a rubber duck. Squeak!" },
+          line: "Pelly the pelican is here with a letter! Oops. That's a rubber duck. Squeak!" },
         // buddy: on the path, right of Echo (cheer)
         { art: "s02", ages: "both", buddy: { x: 0.70, y: 0.64, h: 0.25, pose: "cheer" },
           line: { big: "It's from Grandpa Bear's toy shop. The Toy Parade is today! Hooray!",
@@ -128,10 +128,10 @@
           line: "Grandpa Bear woke up and ran out in his pajamas. Is it parade time? Yes, it is!" },
         // no buddy: the back of the crowd
         { art: "e03", ages: "big", buddy: null,
-          line: "Look who came to watch! Captain Wally, with his glasses on, and the three little mice." },
+          line: "Look who came to watch! Captain Wally from the lighthouse, with three little mice riding along!" },
         // buddy: hugging Echo, on the rug at his right (cheer)
         { art: "e04", ages: "both", buddy: { x: 0.76, y: 0.69, h: 0.26, pose: "cheer" },
-          line: "Two gold stars on our helper map! What a day." }
+          line: "A gold star for Grandpa Bear's toy shop on our helper map! What a day." }
       ]
     },
 
@@ -148,7 +148,7 @@
                   little: "It's Grandma Tortoise's birthday! The party is on Blossom Island." } },
         // buddy: in the group, right of Echo (rest)
         { art: "s03", ages: "big", buddy: { x: 0.74, y: 0.77, h: 0.22, pose: "rest" },
-          line: "Everyone is going. Captain Wally has the cake, and Grandpa Bear's toys will play the music!" },
+          line: "Everyone is going. Captain Wally from the lighthouse has the cake, and Grandpa Bear's toys will play the music!" },
         // buddy: on the bank, left of Echo; everyone is small here (rest)
         { art: "s04", ages: "both", buddy: { x: 0.15, y: 0.87, h: 0.13, pose: "rest" },
           line: { big: "But look! Last night's storm shook the old bridge. Its stones fell in the river!",
@@ -184,7 +184,7 @@
                   little: "Happy birthday, Grandma Tortoise! Whoosh go the candles!" } },
         // buddy: hugging Echo, on the rug at his right (cheer)
         { art: "e04", ages: "both", buddy: { x: 0.74, y: 0.71, h: 0.27, pose: "cheer" },
-          line: "Three gold stars on our helper map! You're a super helper." }
+          line: "A gold star for the bridge on our helper map! You're a super helper." }
       ]
     },
 
@@ -242,7 +242,7 @@
                   little: "Look! A little frog found Pelly's other sock!" } },
         // buddy: on the right half of the bench, between Echo and the lamp (cheer)
         { art: "e04", ages: "both", buddy: { x: 0.655, y: 0.685, h: 0.19, pose: "cheer" },
-          line: "Four gold stars on our helper map! And not one droopy flower left in the garden." }
+          line: "Another gold star for our helper map! And not one droopy flower left in the garden." }
       ]
     },
 
@@ -295,7 +295,7 @@
                   little: "Tea for everyone from Pelly's teapot!" } },
         // buddy: on the right half of the bench, right of Echo, cheering, its feet on the bench top level with his (cheer)
         { art: "e04", ages: "both", buddy: { x: 0.7, y: 0.665, h: 0.19, pose: "cheer" },
-          line: "Our helper map has five gold stars now! You and the little postboat did it." }
+          line: "Our helper map has a shiny new gold star! You and the little postboat did it." }
       ]
     },
 
@@ -312,7 +312,7 @@
                   little: "Here's the real letter. Baker Badger's new bakery opens today!" } },
         // buddy: on the plain cobbles RIGHT of Echo, between him and Grandpa Bear, feet level with his (Echo stands at about a fifth of the width, so the daisies left of him leave no room on that side) (rest)
         { art: "s03", ages: "both", buddy: { x: 0.5, y: 0.755, h: 0.19, pose: "rest" },
-          line: { big: "The neighbors are already lining up at the Moonberry Bakery. Grandpa Bear brought a very big basket!",
+          line: { big: "The neighbors are already lining up at the Moonberry Bakery. Grandpa Bear from the toy shop brought a very big basket!",
                   little: "Everyone is hungry, but there are no buns yet. Rumble, rumble go their tummies!" } },
         // buddy: on the counter top in front of and right of Echo, by the counter's front edge (right of Echo is too narrow for the octopus) (rest)
         { art: "s04", ages: "big", buddy: { x: 0.865, y: 0.775, h: 0.165, pose: "rest" },
@@ -348,7 +348,7 @@
                   little: "Pelly puts a bun in her pouch. Out pops another pinecone!" } },
         // buddy: on the empty right half of the bench, right of Echo, cheering, feet on the bench top level with his; its head reaches the map's lower edge below the bakery, covering no star or place (cheer)
         { art: "e04", ages: "both", buddy: { x: 0.82, y: 0.666, h: 0.19, pose: "cheer" },
-          line: "Six gold stars on our helper map! Badger even gave us the very last curled bun." }
+          line: "There's a gold star by the bakery on our helper map! Badger even gave us the very last curled bun." }
       ]
     },
 
@@ -401,7 +401,7 @@
                   little: "Pelly brings the toothbrush. It's Tortoise's! Brush, brush!" } },
         // buddy: on the empty right half of the bench, right of Echo, feet on the bench top (cheer)
         { art: "e04", ages: "both", buddy: { x: 0.64, y: 0.626, h: 0.2, pose: "cheer" },
-          line: "Tortoise is home, and that makes seven gold stars on our helper map!" }
+          line: "Tortoise is home, and his green door gets a gold star on our helper map!" }
       ]
     },
 
@@ -454,7 +454,7 @@
                   little: "Pelly's carrot was for Rabbit! Crunch, crunch!" } },
         // buddy: on the empty right half of the bench, right of Echo, feet on the bench top (cheer)
         { art: "e04", ages: "both", buddy: { x: 0.75, y: 0.648, h: 0.22, pose: "cheer" },
-          line: "Goodnight, Glowworm! Now there are eight gold stars on our helper map." }
+          line: "Goodnight, Glowworm! Now the Mushroom Woods have a gold star on our helper map." }
       ]
     },
 
@@ -507,7 +507,7 @@
                   little: "Look! Pelly is wearing the mitten as a hat!" } },
         // buddy: on the empty right half of the bench, right of Echo, feet on the bench top (cheer)
         { art: "e04", ages: "both", buddy: { x: 0.72, y: 0.7, h: 0.21, pose: "cheer" },
-          line: "The whole valley can ride the train now. Nine gold stars on our helper map!" }
+          line: "The whole valley can ride the train now. Up goes a gold star on our helper map!" }
       ]
     },
 
@@ -560,7 +560,7 @@
                   little: "Pop! Pelly's umbrella opens. Up she floats like a kite!" } },
         // buddy: on the empty right half of the bench, right of Echo, cheering, feet on the bench top level with his; its head reaches the map's lower-right corner, covering no star, the kite or Echo's wing (cheer)
         { art: "e04", ages: "both", buddy: { x: 0.765, y: 0.71, h: 0.19, pose: "cheer" },
-          line: "Hooray for Goat's kite, and for ten gold stars on our helper map!" }
+          line: "Hooray for Goat's kite, and for a new gold star on our helper map!" }
       ]
     },
 
@@ -614,7 +614,7 @@
                   little: "Bedtime! Each chick hugs its toy in its own nest. And look, a quilt with feet!" } },
         // buddy: on the plain right half of the bench, right of Echo and left of the lamp table, arms up, feet on Echo's line (cheer)
         { art: "e04", ages: "both", buddy: { x: 0.7, y: 0.725, h: 0.17, pose: "cheer" },
-          line: "Eleven gold stars on our helper map! Every chick is snug in its new nest." }
+          line: "A gold star for Mama Swallow's cliff on our helper map! Every chick is snug in its new nest." }
       ]
     },
 
@@ -627,7 +627,7 @@
           line: "Hello, Pelly! Is that a letter? Oops. That's a sandwich. One bite is already gone!" },
         // buddy: peeking over the railing's top rail LEFT of Echo, under the letter (right of him is the corner post), as Day 1's s02 (peek)
         { art: "s02", ages: "both", buddy: { x: 0.385, y: 0.59, h: 0.12, pose: "peek" },
-          line: { big: "Here's the real letter. It's from our friend Frog. The pond concert is today, but his band can't get started!",
+          line: { big: "Here's the real letter. It's from Frog the drummer. The pond concert is today, but his band can't get started!",
                   little: "Here's the real letter. Frog's band needs our help with their concert!" } },
         // buddy: on the mossy grass of the near bank just right of Echo (rest)
         { art: "s03", ages: "both", buddy: { x: 0.69, y: 0.68, h: 0.17, pose: "rest" },
@@ -667,8 +667,8 @@
                   little: "Pelly shares her sandwich. And Newt's tail goes plink!" } },
         // buddy: on the bench top right of Echo, between him and the lamp, arms up; feet on the bench like Echo's (cheer)
         { art: "e04", ages: "both", buddy: { x: 0.668, y: 0.705, h: 0.19, pose: "cheer" },
-          line: { big: "Take a bow, conductor! That's twelve gold stars on our helper map.",
-                  little: "Take a bow! That's twelve gold stars on our helper map." } }
+          line: { big: "Take a bow, conductor! Here's a gold star for Lily Pond on our helper map.",
+                  little: "Take a bow! A gold star for the pond on our helper map." } }
       ]
     },
 
@@ -721,7 +721,7 @@
                   little: "Pelly brought pancakes for everyone. Yum!" } },
         // buddy: on the empty right half of the bench, right of Echo, cheering, feet on the bench top level with his; its head and arms reach the map's lower edge and cover no star or place (only cobbles) (cheer)
         { art: "e04", ages: "both", buddy: { x: 0.74, y: 0.7, h: 0.2, pose: "cheer" },
-          line: "A garden on every rooftop, and thirteen gold stars on our helper map!" }
+          line: "A garden on every rooftop, and a brand-new gold star on our helper map!" }
       ]
     },
 
@@ -731,7 +731,7 @@
       intro: [
         // buddy: on the doorstep LEFT of Echo, between Pelly and Echo (right of Echo is only a sliver of step at the picture's edge) (rest)
         { art: "s01", ages: "both", buddy: { x: 0.4, y: 0.7, h: 0.17, pose: "rest" },
-          line: "Pelly brought us another letter! Oops. That's a fluffy slipper. Pelly, you don't wear slippers!" },
+          line: "Pelly brought us a letter! Oops. That's a fluffy slipper. Pelly, you don't wear slippers!" },
         // buddy: peeking over the railing's top rail LEFT of Echo, between the left post and Echo (Echo sits on the railing, and right of him are the slipper and the end post); its head just under the letter (peek)
         { art: "s02", ages: "both", buddy: { x: 0.365, y: 0.585, h: 0.12, pose: "peek" },
           line: { big: "Here's the real letter. It's from Owl at the Moving-Star Observatory. Her stars have stopped moving!",
@@ -774,7 +774,7 @@
                   little: "Owl dances in her two fluffy slippers. Shuffle, shuffle!" } },
         // buddy: on the empty right half of the bench, right of Echo, cheering, feet on the bench top level with his; its head reaches the map's bottom frame and covers no star or place (cheer)
         { art: "e04", ages: "both", buddy: { x: 0.63, y: 0.688, h: 0.19, pose: "cheer" },
-          line: "Fourteen gold stars on our helper map, all shining bright. What a helper you've been!" }
+          line: "A new gold star on our helper map, shining bright! What a helper you are!" }
       ]
     }
   };
