@@ -232,6 +232,14 @@ await section("source", async () => {
   const BANNED = /\b(score|points?|correct|wrong|miss(?:ed|es)?|fail(?:ed|s)?|charge|louder|slowly|strong|stretch)\b|say it/i;
   const banned = lines.filter((l) => BANNED.test(l.t));
   ok("no line has a grading word or a word about how to talk", banned.length === 0, banned.map((l) => l.t));
+  // CAL1: a child meets the stories in any order (a skipped one comes back
+  // after Day 14), so no line counts the helper map's stars (the map
+  // pictures show the Day number's worth, which no child's own count
+  // follows) or leans on another story having come first
+  const COUNTS = /\b(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|first|last|all)\b[^.!?]*\bgold stars?\b|\bgold stars?\b[^.!?]*\b(now|all|first|last)\b/i;
+  const ORDER = /\bis back with\b|\bour friend\b|\banother letter\b|\bwith his glasses on\b/i;
+  const ordered = lines.filter((l) => COUNTS.test(l.t) || ORDER.test(l.t));
+  ok("no line counts the helper map's stars or needs another story first (CAL1)", ordered.length === 0, ordered.map((l) => l.id + " " + l.art + ": " + l.t));
   const SOUNDS = ["B", "M", "N", "F", "S", "R", "L", "D", "T", "K", "G", "P", "Z", "J", "V", "W", "Y", "H", "C", "SH", "CH", "TH", "Sh", "Ch", "Th"];
   const lone = lines.filter((l) => l.t.split(/[^A-Za-z']+/).some((w) => SOUNDS.includes(w)) || /\b([a-z])\1{2,}\b/i.test(l.t) || /["'“‘][a-z]{1,4}["'”’]/i.test(l.t) || /\bsound\b/i.test(l.t));
   ok("no line names a speech sound (no letter on its own, no \"rrrr\", no quoted sound)", lone.length === 0, lone.map((l) => l.t));

@@ -2391,17 +2391,30 @@ line a child hears):
   again after all 14 would be one change in `_questOn()`, and is his call
   (today a finished story is never on Home again, and the game of the day
   goes on for good).
-- **The helper map's count (CAL1):** each ending counts gold stars by its
-  Day number ("Seven gold stars on our helper map!", the picture showing
-  seven), so a child who skipped days hears a bigger number than the
-  stories they finished, and a skipped story that comes back after Day 14
-  names a smaller one (Day 1's "Our helper map gets its first gold star."
-  to a child who has thirteen). Some lines also assume the stories before
-  them (Day 2's "Pelly the pelican is back" and Captain Wally "with his
-  glasses on", Day 3's cake from Captain Wally and Grandpa Bear's toys, Day
-  6's Grandpa Bear, Day 12's "our friend Frog"), which a child who skipped
-  those days has not met. Rewording the endings and those lines (and
-  redrawing the maps) is his and Rachel's call.
+- **The helper map's stars (CAL1; reworded 29 Oct 2026, Travis: "keep
+  going" to the offer).** Since stories come in any order, no line counts
+  the stars any more: each ending's last line names the new star and,
+  where it fits, its place ("A gold star for the bridge on our helper
+  map!", "Another gold star for our helper map!"), never a number,
+  "first" or "all" (Day 1's said "its first gold star", Day 14's "Fourteen
+  gold stars … all shining bright"). The lines that leaned on an earlier
+  story stand on their own: Day 2's Pelly "is here", not "is back", and
+  its Captain Wally is "from the lighthouse" (his glasses joke from Day 1
+  is gone); Day 3's Captain Wally is "from the lighthouse"; Day 6's
+  Grandpa Bear is "from the toy shop"; Day 12's letter is from "Frog the
+  drummer", not "our friend Frog"; Day 14's Pelly brings "a letter", not
+  "another". Kept on purpose: Day 14's "Just like our adventures!" (ages
+  5-8; by then a child has seen the other stories' cards) and every
+  "Pelly" opener. `adventuretest` fails if a line counts the stars or says
+  "is back with", "our friend", "another letter" or "with his glasses on"
+  again. **What is left, Travis's and Rachel's:** the map PICTURES still
+  show the Day number's stars (Day 7's shows seven), so a child who
+  skipped days sees more stars than they earned, and a skipped Day 1
+  finished last shows a map with one star. Showing only a child's own
+  stars needs each map painted again without the stars laid on (the raw
+  pictures are not in the repo, `tools/art/out/` is ignored), and the
+  player laying stars on by `cut-adventure.py`'s `STARS` places; a
+  separate job. Every new word is theirs to change.
 - A finished story is not on Home again; its game is, in "Your games"
   (FOUND1).
 - Under Reduce Motion both games hold still: Light the Way's boats stay on
@@ -2452,12 +2465,13 @@ Claude joined them to the story:
   Pelly's letter (a new wrong thing every day: a striped sock, a teapot, a
   pinecone, a toothbrush, a carrot, a mitten, an umbrella, a wooden spoon, a
   sandwich, a pancake, a fluffy slipper), the problem, "Let's go!", the game,
-  the ending, and a gold star ("Four gold stars on our helper map!" up to
-  fourteen; on Days 5-14 the model draws the whole map with the one star Echo
+  the ending, and a gold star (the map shows the Day number's worth: on
+  Days 5-14 the model draws the whole map with the one star Echo
   presses (Day 4's was drawn with its four),
   and `cut-adventure.py`'s `STARS` lays the days before's stars on its
-  places, the game's own glossy star, so a child can count them, as Days
-  1-3's maps got theirs). Eight scenes and four endings for 5-8, six
+  places, the game's own glossy star, as Days 1-3's maps got theirs; since
+  29 Oct 2026 the words name no number, see "The helper map's stars" under
+  "For Travis"). Eight scenes and four endings for 5-8, six
   and three for 3-4, every line under the story-line rules. Pictures in
   `public/assets/adventure/<id>/`, Home's `home-<id>.webp`, drawn by
   `tools/art/gen-adventure.mjs` from `adventure-prompts.json` (a later story
