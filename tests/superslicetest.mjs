@@ -166,7 +166,10 @@ try {
       const gap=await page.evaluate(()=>({next:nextToss-waveMs,every:WAVES[wave].every}));
       ok('the game keeps tossing sooner, not just the first toss',gap.next<=gap.every*0.46&&gap.next>0,gap);
       async function nearSwipe(){
-        await page.evaluate(()=>{fruits=[{e:'🍊',x:W/2,y:H*.5,vx:0,vy:0,g:0,rot:0,vr:0,r:30,sliced:false}];});
+        // g 1e-9, not 0: the page falls back to full gravity on a falsy g
+        // (f.g||G), and the fruit then drops a few px while the mouse moves,
+        // past this check's 1 px margin on a slow machine
+        await page.evaluate(()=>{fruits=[{e:'🍊',x:W/2,y:H*.5,vx:0,vy:0,g:1e-9,rot:0,vr:0,r:30,sliced:false}];});
         const box=await page.locator('#cv').boundingBox(),y=box.y+box.height*.5-30-25-8;
         await page.mouse.move(box.x+box.width*.2,y);await page.mouse.down();await page.mouse.move(box.x+box.width*.8,y,{steps:6});await page.mouse.up();
         return page.evaluate(()=>fruits.length===0||fruits[0].sliced);

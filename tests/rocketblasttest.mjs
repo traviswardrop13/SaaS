@@ -5,6 +5,12 @@ let h,checks=0,failures=0;
 function ok(n,p,d){checks++;if(!p)failures++;console.log((p?'PASS ':'FAIL ')+n+(p?'':' '+JSON.stringify(d)));}
 const state=p=>p.evaluate(()=>({speech:window.__sayplay,rocket:window.__rocket}));
 const near=(a,b,e=.005)=>Math.abs(a-b)<e;
+// The page's clock still runs between the test's own steps (a busy machine
+// adds real milliseconds), so "the same flight" is checked against the
+// flight's own path from where it was parked, by its flightTime, as the
+// help-answered check does: never a fixed distance from the parked point
+const park=s=>({x:s.rocket.rocket.x,y:s.rocket.rocket.y,vx:s.rocket.velocity.x,vy:s.rocket.velocity.y,t:s.rocket.flightTime});
+function onPath(s,p){const r=s.rocket,el=r.flightTime-p.t;if(!(el>=0))return false;if(r.state==='arrived')return true;if(r.state!=='flight')return false;return near(r.rocket.x,p.x+p.vx*el+r.wind*el*el/2)&&near(r.rocket.y,p.y+(p.vy*el+r.gravity*el*el/2)*r.width/r.height);}
 async function pull(p,point,{cancel=false,cancelOther=false,hold=0,background=false,release=true}={}){
  const b=await p.locator('#rocketCanvas').boundingBox(),button=await p.locator('#rocketPull').boundingBox();await p.mouse.move(button.x+button.width/2,button.y+button.height/2);await p.mouse.down();await p.mouse.move(b.x+point.x*b.width,b.y+point.y*b.height,{steps:16});
  if(cancelOther)await p.locator('#rocketPull').evaluate(e=>e.dispatchEvent(new PointerEvent('pointercancel',{pointerId:99})));if(hold)await advance(p,hold);const during=await state(p);
@@ -59,20 +65,20 @@ try{
   await pull(page,wide(s.rocket));ok('the third sloppy pull reaches the planet with no speech',await until(page,()=>__sayplay.step===1,7000)&&await page.evaluate(q=>__quiet.voicedFrames===q,quietFrom),await state(page));
   // (c) help asked mid-flight, then silence: the same flight goes on, no power
   ok('two sayings earn the second rocket',await sayWord(page));await powerOff(page);s=await state(page);await pull(page,aim(s.rocket));await advance(page,150);
-  await page.locator('#rocketHelp').click();await until(page,()=>__sayplay.listening);s=await state(page);const at={...s.rocket.rocket},t0=s.rocket.flightTime;ok('help parks the flight',s.rocket.paused&&s.rocket.state==='flight',s.rocket);
+  await page.locator('#rocketHelp').click();await until(page,()=>__sayplay.listening);s=await state(page);const at=park(s),t0=s.rocket.flightTime;ok('help parks the flight',s.rocket.paused&&s.rocket.state==='flight',s.rocket);
   ok('a help ask nobody answers gives the move back',await until(page,()=>__sayplay.phase==='play'&&!__sayplay.listening,20000));s=await state(page);
-  ok('(c) …the same flight, unpaused, with no power and the same step',!s.rocket.paused&&s.rocket.power===0&&s.speech.step===1&&s.rocket.flightTime-t0<0.2&&(s.rocket.state!=='flight'||Math.abs(s.rocket.rocket.y-at.y)<0.05),{s:s.rocket,at,t0});
+  ok('(c) …the same flight, unpaused, with no power and the same step',!s.rocket.paused&&s.rocket.power===0&&s.speech.step===1&&s.rocket.flightTime-t0<1&&onPath(s,at),{s:s.rocket,at,t0});
   ok('…and it flies on into the ring',await until(page,()=>__sayplay.step===2,7000),await state(page));
   // (c) the same via the Back to the game pill
   ok('two sayings earn the third rocket',await sayWord(page));await powerOff(page);s=await state(page);await pull(page,aim(s.rocket));await advance(page,150);
-  await page.locator('#rocketHelp').click();await until(page,()=>__sayplay.listening);ok('the Back to the game pill shows during help',await page.locator('#helpBack').isVisible());s=await state(page);const at2={...s.rocket.rocket};
-  await page.locator('#helpBack').click();await advance(page,50);s=await state(page);ok('(c) Back to the game returns the same flight with no power',s.speech.phase==='play'&&!s.rocket.paused&&s.rocket.power===0&&s.speech.step===2&&s.rocket.state==='flight'&&Math.abs(s.rocket.rocket.y-at2.y)<0.05,{s,at2});
+  await page.locator('#rocketHelp').click();await until(page,()=>__sayplay.listening);ok('the Back to the game pill shows during help',await page.locator('#helpBack').isVisible());s=await state(page);const at2=park(s);
+  await page.locator('#helpBack').click();await advance(page,50);s=await state(page);ok('(c) Back to the game returns the same flight with no power',s.speech.phase==='play'&&!s.rocket.paused&&s.rocket.power===0&&s.speech.step===2&&onPath(s,at2),{s,at2});
   ok('…and it reaches the planet',await until(page,()=>__sayplay.step===3,7000),await state(page));
   // a page hidden during the help ask also hands the same flight back
   ok('two sayings earn the fourth rocket',await sayWord(page));await powerOff(page);s=await state(page);await pull(page,aim(s.rocket));await advance(page,150);
-  await page.locator('#rocketHelp').click();await until(page,()=>__sayplay.listening);s=await state(page);const at3={...s.rocket.rocket};
+  await page.locator('#rocketHelp').click();await until(page,()=>__sayplay.listening);s=await state(page);const at3=park(s);
   await page.evaluate(()=>__quiet.background());await advance(page,350);await page.evaluate(()=>__quiet.foreground());await page.locator('#resume').click();await advance(page,50);s=await state(page);
-  ok('a pause during help returns the same flight with no power',s.speech.phase==='play'&&!s.rocket.paused&&s.rocket.power===0&&s.speech.step===3&&s.rocket.state==='flight'&&Math.abs(s.rocket.rocket.y-at3.y)<0.05,{s,at3});
+  ok('a pause during help returns the same flight with no power',s.speech.phase==='play'&&!s.rocket.paused&&s.rocket.power===0&&s.speech.step===3&&onPath(s,at3),{s,at3});
   ok('…and it reaches the planet',await until(page,()=>__sayplay.step===4,7000),await state(page));
   ok('struggle has no runtime errors',errors.length===0,errors);await context.close();
  }
