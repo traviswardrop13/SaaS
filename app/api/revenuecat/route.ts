@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { kvConfigured, safeEqualStr } from "@/lib/slpAuth";
 import { MAX_BODY, apply, moveAway, readEvent } from "@/lib/revenuecat";
+import { trialOutcome } from "@/lib/trials";
 
 /**
  * REVENUECAT'S WEBHOOK (RCHOOK1, 16 Oct 2026; lib/revenuecat.ts says what it
@@ -67,6 +68,12 @@ export async function POST(req: NextRequest) {
   }
   if (!ev.state) return done("type");
   if (ev.sandbox && process.env.REVENUECAT_SANDBOX !== "1") return done("sandbox");
+  // TRIAL1: the free-week report hears how a trial went, by the anonymous
+  // family id the phone handed RevenueCat, with or without an email. Every
+  // write is safe to do twice, so a retried message changes nothing more.
+  if (ev.fid && kvConfigured()) {
+    try { await trialOutcome(ev.fid, ev.state, ev.ts || Date.now(), ev.days); } catch { /* the report can miss one; the rest goes on */ }
+  }
   if (!ev.email) return done("no email");
 
   if (!kvConfigured()) return fail("No data store is connected.", 503);

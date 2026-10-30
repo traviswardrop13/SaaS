@@ -714,7 +714,7 @@ await scenario("no practice data", async () => {
     await page.waitForTimeout(400);
     const after = await page.evaluate(() => Object.fromEntries(Object.keys(localStorage).map((k) => [k, localStorage.getItem(k)])));
     const changed = [...new Set([...Object.keys(before), ...Object.keys(after)])].filter((k) => before[k] !== after[k]);
-    ok("a heard card changes only the week's game reps (and the trophies they earn)", changed.includes("sona.gamereps.v1") && changed.every((k) => k === "sona.gamereps.v1" || k === "sona.trophy.v1"), changed);
+    ok("a heard card changes only the week's game reps (and the trophies they earn)", changed.includes("sona.gamereps.v1") && changed.every((k) => k === "sona.gamereps.v1" || k === "sona.trophy.v1" || k === "sona.played.v1" || k === "sona.fid.v1"), changed);  // TRIAL1: "played today", once a day, by the anonymous id
     ok("…and calls no practice write", (await page.evaluate(() => __f.practice.length)) === 0);
     ok("no practice data: no runtime errors", errors.length === 0, errors);
   } finally { await context.close(); }

@@ -106,7 +106,8 @@ const SUITES = [
   "pricescreentest.mjs", // PRICE1: the one-plan iPhone price card in every store state: no typed figure, no reminder words, never a dead end
   "setupbuytest.mjs", // SETUPBUY1: a new family end to end: setup, the price, a purchase, then the microphone, the hand-off and the first game
   "heartest.mjs",  // HEAR1: on-device recognition verdicts — poopoo fails, unknown never does
-  "notifytest.mjs", // NOTIFY1: one local reminder the day before the free trial ends: only on a build that can, only once allowed, armed by a trial purchase or the daily check, taken back when no trial is on, never a name, nothing leaves the phone
+  "trialstest.mjs", // TRIAL1: the free-week report: a trial's start, its days with play and how it ended, under the anonymous id only; /api/track, /api/revenuecat, /api/founders/trials and /leads.html
+  "notifytest.mjs", // NOTIFY1 and NUDGE1: one local reminder the day before the free trial ends: only on a build that can, only once allowed, armed by a trial purchase or the daily check, taken back when no trial is on, never a name, nothing leaves the phone
   "loadtest.mjs",  // LOAD1: per-game loading scenes, ticket pill, ghost reveals
   "mictest.mjs",   // MIC1: a declined mic is never a dead end; the consent copy is true
   "hwtest.mjs",    // HW1: SLP homework replaces what the app would have picked

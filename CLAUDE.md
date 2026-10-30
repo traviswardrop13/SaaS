@@ -401,11 +401,14 @@ changing one. What follows from the rule:
   - **The reminder ask** (Travis, 22 Oct 2026: "can we add push
     notifications and have that be a step in the onboarding where we ask
     them to turn it on to notify them a day before their trial ends"):
-    "Want a reminder before your free trial ends?", "One notification, the
-    day before." (it shows about 30 hours before the end, so a cancel still
-    counts: NOTIFY1), a teal "Turn on reminders" (iOS's own Allow box,
-    `Sona.notifyAsk`) and a cream "Not now"; Echo says "I'll give you a
-    heads-up!". Only on a family's first setup, in an iPhone build that can
+    "Want reminders during your free trial?", "A practice reminder each
+    day, and one the day before it ends." (since 30 Oct 2026, NUDGE1; until
+    then "Want a reminder before your free trial ends?", "One notification,
+    the day before."; the trial reminder shows about 30 hours before the
+    end, so a cancel still counts: NOTIFY1), a teal "Turn on reminders"
+    (`Sona.nudgeConsent()`, the yes to the daily ones, then iOS's own Allow
+    box, `Sona.notifyAsk`) and a cream "Not now"; Echo says "I'll give you
+    a heads-up!". Only on a family's first setup, in an iPhone build that can
     set one (`Sona.notifyAvailable`), while iOS has never been asked
     (`Sona.notifyState()` "prompt"), and where the price follows
     (`trialFirst()`) — **and only for a buyer the store says will be given
@@ -2044,6 +2047,61 @@ the pricing section: "THE TRIAL REMINDER ON THE PRICE SCREEN".)
   email). Nothing here is Rachel's: the reminder says nothing about a child
   or practice. `notifytest` plays it on a fake phone; NATIVE.md and
   SPEECH_PLUGIN.md hold the Mac steps and the phone checklist for 1.0.9.
+
+**THE DAILY PRACTICE REMINDER (NUDGE1, 30 Oct 2026)** (Travis, after "most
+of them cancel", yes to "one short daily nudge during the free week"). One
+local notification a day while a free trial is on: "Sona" / "Ready for 5
+minutes of practice? Echo is waiting to play." (fixed words, never a name;
+Travis's and Rachel's to change). Block NUDGE1 inside NOTIFY1 in sona.js,
+on the same four native methods (1.0.9 and later), so it needs no new App
+Store build.
+- **Only with a yes under words that say so:** setup's reminder screen now
+  says "A practice reminder each day, and one the day before it ends.", and
+  its "Turn on reminders" calls `Sona.nudgeConsent()` (`nudge: 1` in
+  sona.notify.v1) before iOS's box. A parent who allowed notifications under
+  the old words ("One notification, the day before.") was promised one and
+  gets no daily one; nor does a phone whose notifications are off.
+- **When:** set when a free trial starts (`buyPlan`'s purchase hook, beside
+  the trial reminder), one for each day after the start up to the day
+  before the trial's last day, never on the day the trial reminder shows
+  (two in a day is too many), at the clock time the trial began kept
+  between 3:30 and 7:30 pm. A 3-day trial gets one, a 7-day trial about
+  four. Ids `sona-nudge-<yyyymmdd>`; what iOS holds is kept as `nudges`.
+- **Taken back:** a day's, by that day's first counted rep (`_playedToday`,
+  from `_goalCheck`, on a practice or game page: the child already played);
+  all of them, by a purchase charged today or the daily check finding the
+  trial paid, cancelled or ended. A trial whose end moved more than an hour
+  gets them again. Home still writes nothing of it.
+- Tapping it opens Sona (Home, today's story); it carries nothing.
+  **Travis's and Rachel's:** the words, the hour window, one a day, and
+  skipping the reminder's day. `notifytest` (4e) plays it on the fake phone.
+
+**THE FREE-WEEK REPORT (TRIAL1, 30 Oct 2026)** (Travis, of "most of them
+cancel": "a report showing which trial families play each day and who
+pays"). /leads.html's "Free trials" section (`/api/founders/trials`,
+`lib/trials.ts`): of the trials started in the last 90 days, how many
+played on day 1, day 2, … (each day over only the trials that reached it),
+how each ended (paid, cancelled, ended, still on free days), and, for the
+finished ones, how many paid by how many days they played.
+- **Kept per trial, under the anonymous family id only** (`fid()`, random,
+  the id every usage beacon already carries; never a name, email, sound or
+  count): `trial:<fid>` (start, length in days, one mark per day with play,
+  outcome and its time), `trials:idx`, 120 days.
+- **Fed by:** the phone's "free trial started" ({ days }, from `buyPlan`'s
+  success, only for free days) and "played today" (once a local day, the
+  first counted rep; `sona.played.v1` is this phone's, NO_EXPORT and
+  NO_IMPORT), both through `/api/track`'s allow-list, which also relays them
+  to PostHog; and RevenueCat's webhook, which now also reads the
+  `sona_fid` attribute the phone sets (`_rcEmail`, `setAttributes`,
+  feature-checked) and records how the trial went whether or not the family
+  gave an email (a family who never opens Sona again is still counted).
+  Paid stays paid; an end after a cancellation stays a cancellation; an
+  older RevenueCat message never overrides a newer one.
+- Day 1 is the first 24 hours from the start (no time zone is kept).
+- **For Travis:** the privacy page says it; App Store Connect's App Privacy
+  answers should list the device identifier as linked to purchases (it now
+  goes to RevenueCat). Trials started before this build are not in it.
+`trialstest` plays the store, the routes and the page.
 
 `/leads.html` (private, behind `FOUNDER_KEY`) lists every captured email and
 every clinician account, counts everyone since the "I'm a…" landing page
