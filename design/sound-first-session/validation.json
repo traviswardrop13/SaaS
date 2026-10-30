@@ -1,0 +1,24 @@
+{
+  "reviewDate": "2026-10-30",
+  "baseCommit": "0670a185349e3eb7ff709025ed4185fe4299d761",
+  "fullBattery": { "command": "node tests/run-all.mjs", "suites": 163, "exitCode": 0 },
+  "fullRunSourceStable": true,
+  "finalArtworkCorrection": "After the full run, Travis chose the original art. Sunny's original asset ID was restored and Bear's new ID changed to clay-v1; the feature code is identical after normalizing those two image references. New artwork now matches Sona's established look.",
+  "finalFocusedChecks": {
+    "reader": { "assertions": 127, "exitCode": 0 },
+    "artTools": { "assertions": 26, "exitCode": 0 },
+    "storySource": { "assertions": 27, "exitCode": 0 },
+    "allPublicScriptSyntax": { "exitCode": 0 },
+    "voiceScriptCurrent": true,
+    "originalSunnyBytesUnchanged": true,
+    "bearSixSceneReaderSmoke": "Cover, six ordered square scenes, exact text, The End, no runtime errors",
+    "bearAtlasBytes": 380264,
+    "bearCoverBytes": 36536
+  },
+  "typecheck": {
+    "cleanTrackedReleaseSources": "Same tsconfig, exit 0",
+    "workspaceOnlyIssue": "The normal workspace check includes old untracked source archives under output/. These were left untouched and are absent from the release-source check."
+  },
+  "regressionEvidence": "New target selection, stale-sibling protection, whole-Home fit and signature-adventure checks failed against saved pre-change sources. Five Auto-selection checks fail against the pre-fix Home, including real keyboard selection of the already-current sound.",
+  "releaseState": "Draft for product and clinical review; no main merge or production release."
+}

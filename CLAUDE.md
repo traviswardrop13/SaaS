@@ -41,6 +41,38 @@ So:
   just a failure with fewer words.
 
 ## Project
+**Sound-focused review build (29 Oct 2026, Travis's request).** A child may
+pin one of their existing selected sounds as the current target, like a
+language choice. Settings, Home and Books share `targetSound()` and
+`setTargetSound()`; other focus sounds and all progress remain. No saved pin
+keeps the existing practice rotation. Active clinician homework wins and
+disables family target changes. Books leads with the current target only;
+other sounds remain behind More books, with the free-book fallback kept.
+Home fits its card, both doors and any earned-game row on supported portrait
+phones and iPads; it never clips essential controls to suppress scrolling.
+The Arcade still scrolls. A stale child's selector never writes another
+child's preference.
+
+Newly set-up older children get a short Fruit Slice story, Echo's Picnic,
+before the original stories. Its `fruitpicnic` index is appended, never
+prepended: existing saved indices and legacy/simple calendars stay intact.
+Only fresh setup writes `signature-v1`; story display day is the itinerary
+position, not the stored index. The story alias is Premium, while ordinary
+Fruit Slice retains its own access rules. A validated story context and
+earned practice ticket lead to the existing game; only a winning finale
+finishes the picnic. Losses, plain Arcade rounds and replays give no false
+story finish. The speaking turns, powers and scoring are unchanged.
+
+The review adds one six-page B book, Bear's Lost Ball, with six existing
+initial-B targets (bear, ball, bus, boat, bee, bed). **Keep the original
+artwork** (Travis, 30 Oct 2026): existing books including Sunny the Seal are
+unchanged, and the new book/adventure art matches the original soft3D look.
+New art is versioned. Review sources/prompts live in
+`design/sound-first-session/` and `design/adventure/fruitpicnic-*`.
+**Rachel reviews the selected-target behavior and the new book before
+release.** Children's voice replacement remains research only: no licensed,
+clinically approved recording pack was selected or installed.
+
 Sona (speaksona.com) — kids' speech-practice PWA in public/, Next.js API
 routes, Capacitor iOS shell that remote-loads the site. Solo founder, ships
 fast.

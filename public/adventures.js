@@ -776,6 +776,26 @@
         { art: "e04", ages: "both", buddy: { x: 0.63, y: 0.688, h: 0.19, pose: "cheer" },
           line: "A new gold star on our helper map, shining bright! What a helper you are!" }
       ]
+    },
+    // SIGNATURE1: a short first adventure for newly set-up older children.
+    // The game stays Fruit Slice, with its existing speaking turns and help.
+    fruitpicnic: {
+      wash: "#a8c9b5",
+      intro: [
+        { art: "s01", ages: "big", buddy: null,
+          line: "Echo's fruit stand is open. There's fruit for a picnic!" },
+        { art: "s02", ages: "big", buddy: null,
+          line: "The fruit is ready. Let's fill a picnic basket!" },
+        { art: "s03", ages: "big", buddy: null,
+          line: "Slice the flying fruit. Then look out for the giant watermelon!" }
+      ],
+      go: "Let's go!",
+      ending: [
+        { art: "e01", ages: "big", buddy: null,
+          line: "Pop! The giant watermelon burst into juicy pieces!" },
+        { art: "e02", ages: "big", buddy: null,
+          line: "The picnic is ready. A gold star for the fruit stand on our helper map!" }
+      ]
     }
   };
 })(window);

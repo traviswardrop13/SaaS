@@ -31,6 +31,7 @@ const SUITES = [
   "chargepacingtest.mjs", // listen/model/child-turn handoff and replay ordering
   "readtest.mjs",  // books never go silent: browser-voice fallback when TTS dies
   "booktest.mjs",  // BOOKS2: full-screen pages; say the key word to turn the page — Say & Play's check, a quiet mic, silence never turns it, no practice data
+  "targetsoundtest.mjs", // A chosen sound stays per child, drives the bookshelf, and keeps assigned homework first
   "arttooltest.mjs", // ART2: the book and game art tools never draw over hand-made art
   "setupreeltest.mjs", // SETUPREEL1: setup's game reel: a clip and a poster for every game on the list (never Coming soon), H.264 with no audio track, moov first, 540 x 720, under 300 KB and 60 KB
   "homereeltest.mjs", // HOMEREEL1: Home's card clips: a clip and a poster for every story day's game and every game of the day (read from sona.js), H.264 High 4.0 with no audio track, moov first, 540 x 720, under 300 KB and 60 KB, the poster its first frame
@@ -71,6 +72,8 @@ const SUITES = [
   "questtest.mjs", // QUEST1: the 14-day daily adventure; Home only reads, a round of today's game finishes the day once, a sticker never coins, a new day is the next game day played or not (CAL1), ages 3-4 get their own
   "storycoretest.mjs", // STORY1: the daily story's rules in sona.js: the fourteen stories come before the game of the day for every child, a new story every calendar day played or not with a skipped one coming back (CAL1), Premium by the books' rule (never the demonstration window, never a locked card on a phone that cannot buy), one sticker a finished day, the offer a locked card opens, a story's game hands back to its story
   "homestorytest.mjs", // STORY1/HOMECLIP1 on Home: one big card with the day's game clip (open, locked, done, Day 4 after Day 3, a game day after Day 14), its poster and every fallback, never under Reduce Motion or on a done day, the Arcade and Books doors, Back and Forward, Home only reads, the whole card on the first screen at every size
+  "compacthometest.mjs", // Entire Home, including doors and found games, fits supported phones and iPads; Arcade still scrolls
+  "signatureadventuretest.mjs", // New older children start with Fruit Slice; legacy calendars, access, speech and honest completion stay intact
   // adventuretest is run in two parts (its wrappers set ADVENTURE_PART): whole,
   // with fourteen stories, it took about 290 s of the 300 a suite gets.
   "adventureplaytest.mjs", // STORY1: the story's player: entitlement before any sound, the website waits for a tap, the app plays as media, ages 3-4's scenes, sound off, Skip, "Let's go!", the ending and its sticker, the buddy on its painted spot at a phone, nothing written but seen

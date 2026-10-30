@@ -141,7 +141,7 @@ const pathOf = (pg) => { const u = new URL(pg.url()); return u.pathname + u.sear
 // words a child must never read on Home
 const BAD = /coming soon|\bscores?\b|\bpoints?\b|\$\s?\d|of 14\b/i;
 
-ok("(the fourteen story days are found in sona.js)", STORY.length === 14 && STORY.slice(0, 3).map((d) => d.id).join() === "lighthouse,windup,bridge", STORY);
+ok("(the fourteen original story days and the signature starter are found in sona.js)", STORY.length === 15 && STORY.slice(0, 3).map((d) => d.id).join() === "lighthouse,windup,bridge", STORY);
 // the story with the longest title, for the fit (Home's card must hold it)
 const LONGEST = STORY.reduce((n, d, i) => (d.title.length > STORY[n].title.length ? i : n), 0);
 
@@ -627,10 +627,10 @@ for (const [w, h] of SIZES) {
       // than 4:3; on a phone it spans the page, on an iPad it is a centred
       // card 480 px wide at most
       const ratio = m.art ? m.art.h / m.art.w : 0;
-      ok(at + "the picture is the day's reel: 3:4 at its tallest, never flatter than 4:3", ratio <= 4 / 3 + 0.01 && ratio >= 0.75 - 0.01, { art: m.art, ratio });
+      ok(at + "the reel gives way to keep the whole Home visible", ratio <= 4 / 3 + 0.01 && ratio >= 0.35, { art: m.art, ratio });
       const across = w >= 600 ? m.card.w <= 480.5 && Math.abs((m.card.l - m.page.l) - (m.page.r - m.card.r)) < 1.5 : m.card.w >= m.page.r - m.page.l - 1;
       ok(at + (w >= 600 ? "on an iPad the card is centred, 480 px wide at most" : "the card spans the page"), across, { card: m.card, page: m.page });
-      ok(at + "the doors come right after the card, side by side, at least 88 px tall, and a tap reaches each", !!m.arcade && !!m.books && m.arcade.t - m.card.b >= 8 && m.arcade.t - m.card.b <= 30 && Math.abs(m.arcade.t - m.books.t) < 1 && m.arcade.r <= m.books.l && m.arcade.h >= 88 && m.books.h >= 88 && m.hit.arcadeBtn && m.hit.homeBooksBtn, { card: m.card, arcade: m.arcade, books: m.books, hit: m.hit });
+      ok(at + "the doors come right after the card, side by side, at least 44 px tall, and a tap reaches each", !!m.arcade && !!m.books && m.arcade.t - m.card.b >= 8 && m.arcade.t - m.card.b <= 30 && Math.abs(m.arcade.t - m.books.t) < 1 && m.arcade.r <= m.books.l && m.arcade.h >= 44 && m.books.h >= 44 && m.hit.arcadeBtn && m.hit.homeBooksBtn, { card: m.card, arcade: m.arcade, books: m.books, hit: m.hit });
       ok(at + "every button is at least 44 px, and nothing scrolls sideways", m.ox <= 1 && m.buttons.every((b) => b.w >= 44 && b.h >= 44), { ox: m.ox, small: m.buttons.filter((b) => b.w < 44 || b.h < 44) });
       // FOUND1: the game a story left today waits in "Your games", under
       // the doors (it may fall below the first screen since HOMECLIP1)
@@ -656,7 +656,7 @@ await section("fit on the shortest screens", async () => {
     await pg.evaluate(() => document.fonts && document.fonts.ready); await pg.waitForTimeout(100);
     const m = await measure(pg), at = w + "x" + h + " (" + label + "): ", done = /finished/.test(label);
     const ratio = m.art.h / m.art.w;
-    ok(at + "the card's title" + (done ? "" : " and play button") + " on the first screen, the picture no flatter than 4:3", m.y === 0 && m.title.b <= m.ih && m.card.b <= m.ih && (done ? m.go === null : !!m.go && m.go.b <= m.ih && m.go.h >= 64) && ratio >= 0.75 - 0.01 && ratio < 4 / 3, { title: m.title, go: m.go, card: m.card, ih: m.ih, ratio });
+    ok(at + "the card's title" + (done ? "" : " and play button") + " on the first screen, all content fitted without vertical scrolling", m.y === 0 && m.title.b <= m.ih && m.card.b <= m.ih && (done ? m.go === null : !!m.go && m.go.b <= m.ih && m.go.h >= 64) && ratio >= 0.35 && ratio < 4 / 3, { title: m.title, go: m.go, card: m.card, ih: m.ih, ratio });
     ok(at + "the doors right after the card" + (done ? ", then the game found today" : ""), m.arcade.t >= m.card.b && m.hit.arcadeBtn && m.hit.homeBooksBtn && (!done || (!!m.fresh && m.fresh.t >= m.arcade.b)), { card: m.card, arcade: m.arcade, fresh: m.fresh });
     ok(at + "no page errors", errors.length === 0, errors);
     await ctx.close();

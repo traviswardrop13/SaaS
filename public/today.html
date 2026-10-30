@@ -187,6 +187,7 @@
     <header class="library-header">
       <a id="buddyBtn" href="/customize.html" aria-label="Choose your buddy"></a>
       <span class="library-label">Sona</span>
+      <label class="home-sound" id="homeSoundWrap" hidden><span class="sr">Target sound</span><select id="homeSound" aria-label="Target sound"></select></label>
       <a id="giftBtn" href="/road.html" aria-label="Trophy Road"><span class="gift-ring" id="giftRing" aria-hidden="true"></span><span class="gift-ic" id="giftIc" aria-hidden="true"><img src="/assets/crafted/road-chest.webp" alt="" width="30" height="30" /></span><span class="gift-dot" id="giftDot" hidden></span></a>
       <button id="parentBtn" type="button" aria-label="Grown-ups"><span class="pic-gear" aria-hidden="true"></span><span>Grown-ups</span></button>
     </header>
@@ -657,6 +658,32 @@
         document.getElementById("homeBooksTag").textContent=tag;
       }
       paintBooksTags();
+      // Changing this is a deliberate family choice. Merely opening Home
+      // reads the selected target, and an assigned sound stays the therapist's.
+      var soundWrap=document.getElementById("homeSoundWrap"),soundPick=document.getElementById("homeSound");
+      var soundOwner=S.kkey?S.kkey("sona.profile.v1"):"";
+      if(S.targetSound&&S.targetSoundOptions&&S.setTargetSound){
+        var soundChoices=S.targetSoundOptions(),assigned=S.homeworkSounds&&S.homeworkSounds().length;
+        var currentSound=S.targetSound(),soundProfile=S.getProfile(),canAuto=!assigned&&soundChoices.length>1;
+        if(canAuto){
+          var auto=document.createElement("option");auto.value="";auto.textContent="Auto";soundPick.appendChild(auto);
+        }
+        soundChoices.forEach(function(s){var o=document.createElement("option");o.value=s;o.textContent=S.soundLabel?S.soundLabel(s):s;soundPick.appendChild(o);});
+        // The rotation's current sound is not a saved choice. Show Auto as
+        // its own option so choosing that same sound can actually pin it.
+        soundPick.value=canAuto?(soundProfile.targetSound||""):currentSound;
+        var automatic=canAuto&&!soundProfile.targetSound;
+        var currentSoundLabel=S.soundLabel?S.soundLabel(currentSound):currentSound;
+        soundPick.setAttribute("aria-label",automatic?"Target sound, automatic: "+currentSoundLabel:"Target sound");
+        soundPick.disabled=!!assigned||soundChoices.length<2;
+        soundPick.title=assigned?"From your speech therapist":automatic?"Automatic: "+currentSoundLabel:"Choose your target sound";
+        soundWrap.hidden=!soundChoices.length;
+        if(soundChoices.length)soundWrap.parentNode.classList.add("has-target");
+        soundPick.onchange=function(){
+          if(S.kkey&&S.kkey("sona.profile.v1")!==soundOwner){location.reload();return;}
+          S.setTargetSound(soundPick.value);location.reload();
+        };
+      }
       function openBooks(){clearMessage();location.href="/library.html";}
       homeBooksBtn.onclick=openBooks;
       // ── the two views ──
@@ -707,37 +734,38 @@
       };
       window.addEventListener("popstate",function(){var f=backFocus;backFocus=false;showView(viewOf(),f);});
       window.addEventListener("pagehide",function(){try{history.scrollRestoration="auto";}catch(e){}});
-      // THE FIT (measured, never guessed, as the plan screen's offer is): the
-      // day's card, with its title and its play button over the picture's
-      // foot, is on the first screen, above the home bar. The doors come
-      // right after it and may fall below, and so may "Your games" (HOMECLIP1,
-      // 28 Oct 2026: the day's reel is Home's one big thing, and the games and
-      // books sit lower). One step at a time (fit1…fit5, crafted-home.css):
-      // the heading's type and gaps first, then the card's picture, from 3:4
-      // to 4:5, 1:1, 5:4 and at the flattest 4:3. Everything a step resizes
-      // has transition:none (crafted-home.css; homestorytest reads every fit
-      // rule and checks each element), because sona.css gives every property
-      // a near-instant transition under Reduce Motion and a box
-      // mid-transition reports the size it WAS: a re-fit then stopped early
-      // and left the card's foot below the fold.
-      var FIT_STEPS=5;
+      // Everything changed by a fit step has transition:none. Otherwise a
+      // measurement can see the preceding frame and stop with a door clipped.
+      // Fit the LAST visible Home block, including doors and earned games.
+      // Never hide overflow: the Arcade and accessibility enlargement still
+      // need their natural scroll. The final step uses the measured space.
+      var FIT_STEPS=6;
       function fitHome(){
         if(app.getAttribute("data-view")!=="home")return;
-        var card=document.getElementById("questCard"),inset=document.getElementById("homeInset");
+        var card=document.getElementById("questCard");
         var i;for(i=1;i<=FIT_STEPS;i++)app.classList.remove("fit"+i);
+        app.style.removeProperty("--home-art-height");
         if(!card||card.hidden)return;
-        function fits(){
-          var y=window.pageYOffset||0,bar=inset?inset.offsetHeight:0;
-          return card.getBoundingClientRect().bottom+y<=window.innerHeight-bar-8;
+        function overflow(){
+          var found=document.getElementById("foundRow"),doors=document.getElementById("homeDoors");
+          var last=found&&!found.hidden?found:doors;
+          var end=Math.max(card.getBoundingClientRect().bottom,last.getBoundingClientRect().bottom);
+          var pad=parseFloat(getComputedStyle(app).paddingBottom)||0;
+          return Math.max(end+pad,app.getBoundingClientRect().bottom)+(window.pageYOffset||0)+8-window.innerHeight;
         }
-        for(i=1;i<=FIT_STEPS&&!fits();i++)app.classList.add("fit"+i);
+        for(i=1;i<FIT_STEPS&&overflow()>0;i++)app.classList.add("fit"+i);
+        if(overflow()>0){
+          app.classList.add("fit6");
+          var art=document.getElementById("questArt"),words=card.querySelector(".quest-body");
+          var min=words?words.getBoundingClientRect().height+12:150;
+          app.style.setProperty("--home-art-height",Math.max(min,art.getBoundingClientRect().height-overflow()-2)+"px");
+        }
       }
       fitHome();
       // a turn or a new width fits again; a height that moves alone (Safari's
       // bars folding away as a child scrolls) never re-lays the card out under
       // a finger
-      var fitW=window.innerWidth;
-      window.addEventListener("resize",function(){if(window.innerWidth===fitW)return;fitW=window.innerWidth;fitHome();});
+      window.addEventListener("resize",fitHome);
       try{if(document.fonts&&document.fonts.ready)document.fonts.ready.then(fitHome);}catch(e){}
       // A cached library can return after a trial expires or an adult changes
       // preview state. Re-evaluate its labels without reviving stale access.
@@ -747,6 +775,7 @@
       // (and the day's clip holds still while Home is behind something)
       document.addEventListener("visibilitychange",function(){
         if(document.hidden){clipSync();return;}
+        if(S.kkey&&S.kkey("sona.profile.v1")!==soundOwner){location.reload();return;}
         if(library.picks&&S.localDay&&S.localDay()!==library.picks.day){location.reload();return;}
         paintBests();
         try{paintQuest();}catch(e){}

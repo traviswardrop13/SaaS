@@ -158,6 +158,7 @@ body::before{content:"";position:fixed;left:0;right:0;top:0;height:env(safe-area
    (Echo stands on it): the night sea, honey wood, the morning river; the
    same colours as each story's wash in adventures.js */
 .quest-art[data-story="lighthouse"]{background:#2b2f5e;}
+.quest-art[data-story="fruitpicnic"]{background:#a8c9b5;}
 .quest-art[data-story="windup"]{background:#b9783f;}
 .quest-art[data-story="bridge"]{background:#5fb8c2;}
 .quest-art[data-story="waterwheel"]{background:#8fbf68;}
@@ -236,11 +237,9 @@ body::before{content:"";position:fixed;left:0;right:0;top:0;height:env(safe-area
 #homeBack:active{transform:translateY(2px);box-shadow:0 1px 0 var(--cream-line);}
 .arcade-top+.library-intro{margin-top:12px;}
 
-/* the fit's steps (fitHome in today.html): the heading's type and gaps
-   first, then the card's picture (3:4, the day's reel, gives way last:
-   4:5, 1:1 with tighter words over it, 5:4, and 4:3 at the flattest). The
-   doors and "Your games" come after the card and may fall below the first
-   screen, so no step touches them (HOMECLIP1, 28 Oct 2026).
+/* The fit's steps (fitHome in today.html) measure the whole Home, including
+   the doors and earned games. Compress secondary rows before reducing the
+   adventure picture; the last step uses the remaining measured height.
    Everything a step resizes never transitions: sona.css gives every property
    a 0.01 ms transition under Reduce Motion, and a box mid-transition reports
    the size it WAS, so the fit measured a step as doing nothing, and a re-fit
@@ -261,3 +260,42 @@ body::before{content:"";position:fixed;left:0;right:0;top:0;height:env(safe-area
 @media(min-width:600px){#homeTitle{font-size:40px;margin:24px 0 16px;text-align:center;}#questCard{max-width:480px;margin:0 auto;}.quest-title{font-size:30px;}.quest-line{font-size:16px;}.quest-body{padding:70px 20px 20px 22px;gap:9px;}#homeDoors{gap:16px;margin:18px 0 20px;}#homeDoors>button{flex-direction:row;align-items:center;gap:14px;padding:8px 14px 8px 8px;}.door-pic{width:138px;height:92px;aspect-ratio:auto;border-radius:15px;}.door-copy{padding:0;gap:5px;}.door-word{font-size:26px;}.door-sub{font-size:13px;}}
 @media(max-width:350px){#homeTitle{font-size:28px;margin:14px 0 10px;}.quest-title{font-size:23px;}.quest-line{font-size:13.5px;}.quest-body{padding:48px 12px 12px 14px;gap:6px;}.quest-head{gap:10px;}#homeDoors{gap:10px;}.door-copy{padding:7px 10px 9px;}.door-word{font-size:19px;}}
 @media(prefers-reduced-motion:reduce){#questCard,#homeDoors>button,#homeBack{transition:none;}#questCard:active,#homeDoors>button:active,#homeBack:active{transform:none;}}
+
+/* The whole Home fits. Compress the secondary doors and earned-game row
+   before spending the adventure's picture space; every control stays real
+   and reachable. The Arcade keeps its ordinary long, scrolling shelves. */
+.home-sound{display:flex;align-items:center;flex:1;min-width:0;max-width:126px;}
+.home-sound .sr{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
+.home-sound select{width:100%;min-height:44px;padding:7px 22px 7px 10px;border:1.5px solid var(--cream-line);border-radius:14px;background:var(--cream-card);color:var(--cream-ink);font:800 17px/1.1 "Baloo 2",sans-serif;}
+.home-sound select:focus-visible{outline:3px solid var(--craft-teal);outline-offset:3px;}
+.home-sound select:disabled{opacity:1;}
+.library-header.has-target .library-label{display:none;}
+@media(min-width:600px){.library-header.has-target .library-label{display:block;}}
+#libraryApp[data-view="home"]{padding-bottom:calc(10px + env(safe-area-inset-bottom));}
+#libraryApp{transition:none;}
+#libraryApp.fit1 #homeDoors{margin:10px 0 12px;}
+#libraryApp.fit2 #homeDoors>button{flex-direction:row;align-items:center;gap:5px;min-height:64px;padding:6px;}
+#libraryApp.fit2 .door-pic{width:60px;height:40px;aspect-ratio:auto;border-radius:10px;}
+#libraryApp.fit2 .door-copy{padding:0;gap:2px;min-height:40px;justify-content:flex-start;align-self:flex-start;}
+#libraryApp.fit2 .door-word{font-size:17px;}
+#libraryApp.fit2 .door-sub{font-size:10px;min-height:16px;}
+#libraryApp.fit2 .door-tag{font-size:9px;padding:3px 5px;}
+#libraryApp.fit3 #foundRow{margin-bottom:0;}
+#libraryApp.fit3 #foundTitle{font-size:16px;margin-bottom:6px;}
+#libraryApp.fit3 .found-tile{flex-direction:row;align-items:center;width:174px;min-height:52px;padding:5px;gap:6px;}
+#libraryApp.fit3 .found-pic{width:66px;height:40px;aspect-ratio:auto;border-radius:9px;flex:none;}
+#libraryApp.fit3 .found-name{padding:0;font-size:14px;}
+#libraryApp.fit3 .found-new{font-size:9px;padding:2px 4px;top:2px;left:2px;}
+#libraryApp.fit3 #trialBanner{padding:6px 8px;gap:8px;min-height:44px;font-size:11px;}
+#libraryApp.fit3 #trialBanner .tb-echo{width:28px;height:28px;}
+#libraryApp.fit3 #trialBanner .tb-pill{display:none;}
+#libraryApp.fit4 .quest-body{padding-top:16px;}
+#libraryApp.fit5 #homeTitle{margin:8px 0;font-size:24px;}
+#libraryApp.fit5 .quest-chip{font-size:13px;}
+#libraryApp.fit5 .quest-title{font-size:21px;}
+#libraryApp.fit5 .quest-line{font-size:12px;line-height:1.25;}
+#libraryApp.fit6 .quest-art{height:var(--home-art-height,180px);aspect-ratio:auto;}
+/* Reduced Motion gives otherwise-unset properties a tiny transition. Even
+   that one frame can hide two pixels from the measured fit after a resize. */
+.found-tile,.found-tile *,#foundRow,#foundTitle,.door-copy,.door-sub,.door-tag,.quest-chip,#trialBanner,#trialBanner *{transition:none;}
+@media(max-width:359px){.library-header{gap:8px;}#parentBtn{width:44px;padding:8px;}#parentBtn>span:last-child{display:none;}.home-sound{max-width:108px;}#libraryApp.fit2 .door-word{font-size:16px;}}

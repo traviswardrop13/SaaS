@@ -129,6 +129,7 @@ const REEL = [...new Set(STORY.concat(QUEST))];
 const rec = readFileSync(path.join(ROOT, "tools/homereel/record.mjs"), "utf8");
 const keys = (rec.match(/export const KEYS = \[([^\]]*)\]/) || [, ""])[1].match(/"([a-z]+)"/g) || [];
 ok("the recorder films exactly the story days' games, in STORY_DAYS' order", JSON.stringify(keys.map((s) => s.slice(1, -1))) === JSON.stringify(STORY), keys.join(","));
+ok("the signature picnic reuses actual Fruit Slice play", /export const ALIASES = \{ fruitpicnic: "slice" \}/.test(rec) && ["mp4", "webp"].every((ext) => existsSync(path.join(DIR, "fruitpicnic." + ext)) && readFileSync(path.join(DIR, "fruitpicnic." + ext)).equals(readFileSync(path.join(DIR, "slice." + ext)))));
 ok("the recorder encodes to the same budget", /BUDGET = \{ mp4: 300000, webp: 60000 \}/.test(rec));
 ok("the recorder is a manual tool, not part of the battery", !/homereel\/record/.test(readFileSync(path.join(ROOT, "tests/run-all.mjs"), "utf8")));
 

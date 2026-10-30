@@ -22,6 +22,10 @@
     body::before{content:"";position:fixed;left:0;right:0;top:0;height:env(safe-area-inset-top);background:rgba(255,247,236,.86);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);z-index:30;pointer-events:none;}
     .shelfhead{display:flex;align-items:center;gap:10px;margin:18px 2px 8px;}
     .shelfhead h2{margin:0;}
+    .library-sound{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:20px 0 12px;}
+    .library-sound label{font-weight:800;}
+    .library-sound select{flex:1;min-width:160px;min-height:48px;border:2px solid var(--cream-line);border-radius:16px;background:var(--cream-card);color:var(--cream-ink);padding:8px 12px;font:inherit;font-weight:800;}
+    .library-sound p{width:100%;margin:0;font-size:13px;line-height:1.4;color:var(--muted);}
     /* warm tag pair (fix pack 1c) — the green pair was legacy Duolingo chrome */
     .shelfhead .tag{font-size:11px;font-weight:800;color:#7a5200;background:#ffe7c4;border-radius:99px;padding:3px 9px;}
     /* story shelf (D1): covers standing on rails — no gradient buttons */
@@ -241,7 +245,12 @@
       <span id="advSub" style="display:block;font-weight:800;font-size:12px;color:rgba(255,255,255,.85);margin-top:2px;">A brand-new story, written just for you — never the same twice</span></span>
     </button>
 
-    <div class="shelfhead"><h2>Sound stories</h2><span class="tag">ECHO READS</span></div>
+    <div class="library-sound" id="librarySoundBox" hidden>
+      <label for="librarySound">Target sound</label>
+      <select id="librarySound" aria-describedby="librarySoundNote"></select>
+      <p id="librarySoundNote"></p>
+    </div>
+    <div class="shelfhead"><h2 id="bookSoundHeading">Sound stories</h2><span class="tag">ECHO READS</span></div>
     <div class="shelf" id="shelf"></div>
 
     <!-- MORE BOOKS (Travis, 1 Oct 2026): every other sound's book, closed up
@@ -296,6 +305,7 @@
   <script src="/saycheck.js"></script>
   <script>
     var profile = Sona.getProfile();
+    var libraryProfileKey = Sona.kkey ? Sona.kkey("sona.profile.v1") : "sona.profile.v1";
     // BEFORE THE ADVENTURE TILE COMES BACK (it is hidden today): since 22 Oct
     // 2026 setup's "What does <Name> love?" saves profile.interests as its
     // own ids ("sports", "music", "dinosaurs", "animals", "space",
@@ -1050,6 +1060,17 @@
         { e: "🦋", t: "A butterfly flies fast — wow!" },
         { e: "🎉", t: "Fifi has fun with her friends." },
         { e: "👋", t: "Fifi waves: farewell, farewell!" } ] },
+      // Append new books so a saved numeric book link keeps its meaning.
+      // Rachel's review draft: six existing initial B-bank targets under
+      // the unchanged book age, voicing and play-rep rules.
+      { sound: "B", emoji: "🐻", title: "Bear's Lost Ball", painted: "bear-lost-ball-clay-v1", colors: ["#6ec3ff", "#3d9be0"],
+        keys: ["bear", "ball", "bus", "boat", "bee", "bed"], pages: [
+        { e: "🐻", t: "Bear has a big red ball.", alt: "A friendly brown bear holds a large red ball." },
+        { e: "🔴", t: "The ball bounces away!", alt: "The red ball bounces down the path while Bear follows." },
+        { e: "🚌", t: "Bear looks by the bus.", alt: "Bear looks beside a parked blue bus for the red ball." },
+        { e: "⛵", t: "Bear looks by the boat.", alt: "Bear looks beside a small boat on the shore." },
+        { e: "🐝", t: "A bee finds the ball!", alt: "A friendly bee points Bear toward the red ball." },
+        { e: "🛏️", t: "Bear takes his ball to bed.", alt: "Bear rests in a simple bed with the red ball safely beside him." } ] },
     ];
 
     /* ---- speech (no scoring, just listening) ---- */
@@ -1188,25 +1209,10 @@
     function readable(st){ return bookOpen(st) && !LOCKED[st.title]; }
 
     /* ---- shelf ---- */
-    // BOOKS1: the shelf holds the child's OWN sounds. A library full of books
-    // for sounds nobody is working on is a library a child scrolls past — and
-    // for a kid on /r/, a Theo-the-Sloth /th/ book is practice they were never
-    // assigned. That is still why the other sounds' books are CLOSED when the
-    // page opens (Travis, 1 Oct 2026: "less easy to find or less in your face
-    // ... the kids just seeing books based on their letter/s"). They are not
-    // out of reach, though (Travis, the same day: "the other ones ... they're
-    // still there, but like closed up ... there's like a button you can press
-    // to like drop down and then it shows the books for the other letters"):
-    // every in-season book this shelf leaves off waits behind "More books",
-    // under it (MORE, below). WHICH books the shelf holds is chosen exactly
-    // as before; their ORDER now starts with the sound practice is on (see
-    // focusOrder, below). Two escape hatches, because an empty shelf is
-    // worse than an unfocused one:
-    //   - play mode (PLAY1) rotates every sound, so it gets the whole shelf
-    //   - if a filter would leave nothing this child can read, show every
-    //     readable book first (for a family without Premium, the free one),
-    //     then the child's own, Premium or coming (a shelf of grey is worse
-    //     than either)
+    // One current sound leads, like a selected language. The family's other
+    // sounds and every other in-season book stay behind the existing fold.
+    // Unpinned play mode still browses everything. The free-book fallback
+    // remains: a family must never meet only books this phone cannot open.
     // A limited-time book (season: {startsOn, endsOn}, Travis, 1 Oct 2026:
     // "put a halloween book in limited time") is on the shelf for its window
     // and on nobody's outside it. Halloween has one for several sounds (2 Oct
@@ -1219,11 +1225,36 @@
     var ALL_STORIES = STORIES.slice();
     var focusOrder = (profile.focusSounds || []).map(function (x) { return String(x).toUpperCase(); });
     var playMode = false; try { playMode = !!(window.Sona && Sona.playMode && Sona.playMode()); } catch (e) {}
-    // With more than one sound, the one practice is on now leads: its books
-    // are first on the shelf (inside "readable, then Premium", below). Only
-    // the order moves: a sound that is not one of the child's own (an SLP's
-    // homework can name one) is left alone, and brings no books up here.
-    try { var nowSnd = window.Sona && Sona.rotSound && Sona.rotSound(); if (nowSnd && focusOrder.indexOf(String(nowSnd).toUpperCase()) > 0) { focusOrder.splice(focusOrder.indexOf(String(nowSnd).toUpperCase()), 1); focusOrder.unshift(String(nowSnd).toUpperCase()); } } catch (e) {}
+    var assignedSounds = Sona.homeworkSounds ? Sona.homeworkSounds() : [];
+    var currentSound = Sona.targetSound ? Sona.targetSound() : (Sona.rotSound ? Sona.rotSound() : focusOrder[0]);
+    var soundOptions = Sona.targetSoundOptions ? Sona.targetSoundOptions() : focusOrder.slice();
+    if (assignedSounds.length || (!playMode && focusOrder.length) || profile.targetSound) {
+      focusOrder = currentSound ? [String(currentSound).toUpperCase()] : focusOrder;
+      playMode = false;
+    }
+    (function () {
+      var box = document.getElementById("librarySoundBox"), pick = document.getElementById("librarySound"), note = document.getElementById("librarySoundNote");
+      if (!soundOptions.length) return;
+      box.hidden = false;
+      if (!assignedSounds.length) {
+        var auto = document.createElement("option"); auto.value = "";
+        auto.textContent = "Automatic · " + sndLabel(currentSound); pick.appendChild(auto);
+      }
+      soundOptions.forEach(function (sound) {
+        var option = document.createElement("option"); option.value = sound; option.textContent = sndLabel(sound) + " sound"; pick.appendChild(option);
+      });
+      pick.value = assignedSounds.length ? currentSound : (profile.targetSound || "");
+      pick.disabled = !!assignedSounds.length || !Sona.setTargetSound;
+      note.textContent = assignedSounds.length ? "From your speech therapist." : "Your sound's books first. More books are below.";
+      if (!playMode && focusOrder.length) document.getElementById("bookSoundHeading").textContent = sndLabel(currentSound) + " sound stories";
+      pick.onchange = function () {
+        if (Sona.kkey && Sona.kkey("sona.profile.v1") !== libraryProfileKey) { location.reload(); return; }
+        if (!Sona.setTargetSound || !Sona.setTargetSound(pick.value)) { location.reload(); return; }
+        // Rebuild once from the shared choice; never grow a second shelf or
+        // a second More books handler after changing sounds.
+        location.reload();
+      };
+    })();
     if (!playMode && focusOrder.length) {
       var SEASON_MINE = (window.Sona && Sona.seasonPick) ? Sona.seasonPick(STORIES.filter(function (st) { return st.season; }), focusOrder) : null;
       var mine = STORIES.filter(function (st) { return st.season ? (!SEASON_MINE || SEASON_MINE.indexOf(st) !== -1) : focusOrder.indexOf(String(st.sound).toUpperCase()) !== -1; });

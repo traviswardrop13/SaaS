@@ -88,7 +88,7 @@ await section("source", async () => {
 
 // ── 1. the day list ──
 await section("days", async () => {
-  ok("STORY_DAYS is fourteen days: Days 1-3, then Days 4-14 on this page", DAYS.length === 14 && DAYS.slice(0, 3).every((d) => !d.controller) && LATER.length === 11, DAYS.map((d) => d.id));
+  ok("STORY_DAYS preserves fourteen days and appends the signature game's own alias", DAYS.length === 15 && DAYS.slice(0, 3).every((d) => !d.controller) && DAYS[14].id === "fruitpicnic" && LATER.length === 11, DAYS.map((d) => d.id));
   ok("…Days 4-14 are Codex's eleven games, in their day order", LATER.map((d) => d.controller).join() === RECORDS.slice().sort((a, b) => a.day - b.day).map((r) => r.key).join(), LATER.map((d) => d.controller));
   ok("…the catalog read off sona.js is the real one (so \"none is a catalog game's\" below checks something)", CATALOG.length > 20 && CATALOG.includes("slice") && CATALOG.includes("bubbles"), CATALOG.length);
   const words = [];
@@ -96,7 +96,7 @@ await section("days", async () => {
   const BAD = /\b(score|points?|correct|wrong|fail(?:ed|s)?|charge)\b/i;
   ok("every word pages.js gives a child (" + words.length + ") says none of score, points, correct, wrong, fail or charge", words.length > 100 && !words.some(([, t]) => BAD.test(t)), words.filter(([, t]) => BAD.test(t)));
   const ids = DAYS.map((d) => d.id), games = DAYS.map((d) => d.game);
-  ok("every id and game key is its own: none repeats, none is a catalog game's (Day 7 is frontdoor: Day 3 owns bridge)", new Set(ids).size === 14 && new Set(games).size === 14 && !games.some((g) => CATALOG.includes(g)) && DAYS.find((d) => d.controller === "bridge").id === "frontdoor", { ids, games });
+  ok("every id and game key is its own: none repeats, none is a catalog game's (Day 7 is frontdoor: Day 3 owns bridge)", new Set(ids).size === DAYS.length && new Set(games).size === DAYS.length && !games.some((g) => CATALOG.includes(g)) && DAYS.find((d) => d.controller === "bridge").id === "frontdoor", { ids, games });
   for (const d of LATER) {
     const rec = RECORDS.find((r) => r.key === d.controller);
     const bad = [];

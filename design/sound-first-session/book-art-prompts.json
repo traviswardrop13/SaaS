@@ -1,0 +1,17 @@
+{
+  "mode": "built-in image_gen",
+  "preference": "Keep the original artwork (Travis,30 Oct2026). Existing book art remains unchanged; new assets match the established soft3D look.",
+  "books": [
+    {
+      "id": "bear-lost-ball-clay-v1",
+      "prompt": "EDIT TARGET: the first reference is a SIX-SCENE children's storybook atlas. Preserve its exact 3 columns x2 rows layout, six equal square full-bleed cells with no gutters, no borders, no text. Preserve bear, red ball, bee and the exact six pictured actions. STYLE REFERENCE: the second image is Sona's ORIGINAL established book art. Completely replace the flat vector/cut-paper rendering of the first image with the second image's warm tactile soft3D storybook/toy look, dimensional rounded characters, soft velvet/fur texture, cream muzzle, little pink cheeks, shiny friendly dark eyes, painted detailed natural scenery, warm rich colors with soft even daylight. Use this original style, not a flat/geometric/limited-palette experiment. Do not copy the sailor hat or blue scarf from the style reference; this new round brown bear has no clothing. Keep character identity consistent across all6 scenes: cocoa-brown small round bear, cream belly/muzzle, tiny round ears; red ball has one cream curved stripe; bee gold-and-charcoal with friendly face. Scenes reading left-to-right top-to-bottom:1 Bear holds ball in park by river;2 ball bounces away with Bear reaching after it;3 Bear looks beside large parked teal BUS, no ball;4 Bear looks beside red ROWBOAT pulled onto bank, no ball;5 friendly BEE finds ball in grass, Bear cheers;6 Bear asleep in BED with ball safe beside him, cream pillow/sage quilt/moonlit window. Each subject entirely within its cell, one clear pictured word/focal point, no extra cells. No text, lettering, digits, signs, UI or logos. Overall exact3:2 landscape atlas.",
+      "coverPrompt": "EDIT TARGET is the first reference, a square children's storybook cover of brown bear holding red ball and friendly bee. Keep the same characters, composition and scene meaning. STYLE REFERENCE is second image, Sona's original established book art. Render target in that original warm tactile soft3D storybook toy style: dimensional rounded bear, soft velvet/fur texture, cream muzzle/belly, friendly big shiny dark eyes, little pink cheeks; rich natural park foliage, softly painted river/sky, gentle warm daylight and soft shadows. No flat vector shapes or cut-paper style. Bear wears NO sailor hat, scarf or clothing (the second reference is for rendering style only). One red ball with one cream stripe, friendly gold/charcoal bee beside him. Clear main subject, calm composition. One square image only, no collage or frames. No title, text, lettering, digits, logo or UI.",
+      "styleReference": "public/assets/books/bo-beach-day/p01.webp",
+      "assets": [
+        "public/assets/books/painted/bear-lost-ball-clay-v1.webp",
+        "public/assets/books/painted/bear-lost-ball-clay-v1-cover.webp"
+      ],
+      "clinicalReview": "Six targets bear,ball,bus,boat,bee,bed are existing initial-B bank words. Review six new story lines and matching images before release."
+    }
+  ]
+}
