@@ -194,7 +194,7 @@ await scenario("the source", async () => {
     /_trialRemindBought\(r, plan\); _trialTold\(r, plan\);/.test(src) && /track\("free trial started", days \? \{ days: days \} : \{\}\)/.test(told) && /plan\.sure === true/.test(told));
   const played = (src.match(/\n  function _playedToday\(\) \{[\s\S]*?\n  \}\n/) || [""])[0];
   ok("\"played today\" is sent once a local day, from the first counted rep (_goalCheck), with nothing in it",
-    /track\("played today"\);/.test(played) && /if \(was === t\) return;/.test(played) && /function _goalCheck\(\) \{\s*try \{ _playedToday\(\); \} catch \(e\) \{\}/.test(src));
+    /track\("played today"\);/.test(played) && /if \(was === t\) return;/.test(played) && /function _goalCheck\(\) \{\s*try \{ _boardSendLeaves\(true\); \} catch \(e\) \{\}[^\n]*\n\s*try \{ _playedToday\(\); \} catch \(e\) \{\}/.test(src) && /function _playedToday\(\) \{\s*if \(_notifyHome\(\)\) return;/.test(src));
   const noExport = (src.match(/const NO_EXPORT = \[[^\]]*\]/) || [""])[0], noImport = (src.match(/const NO_IMPORT = \[[^\]]*\]/) || [""])[0];
   ok("sona.played.v1 is this phone's: on NO_EXPORT and NO_IMPORT", /"sona\.played\.v1"/.test(noExport) && /"sona\.played\.v1"/.test(noImport));
   const leads = read("public/leads.html");

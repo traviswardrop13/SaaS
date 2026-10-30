@@ -4344,8 +4344,8 @@
   // and queued board deletions go out from practice and game pages. Home
   // never calls this.
   function _goalCheck() {
-    try { _playedToday(); } catch (e) {}           // TRIAL1 / NUDGE1: the first counted rep of the day
     try { _boardSendLeaves(true); } catch (e) {}   // BOARD2: queued board deletions, at most once a minute; a no-op when none
+    try { _playedToday(); } catch (e) {}           // TRIAL1 / NUDGE1: the first counted rep of the day
     try {
       const d = dayGoal(), t = today(), stamps = load(GOALKEY, {});
       if (!d.done) return;
@@ -8359,6 +8359,7 @@
     } catch (e) {}
   }
   function _playedToday() {
+    if (_notifyHome()) return;                   // Home only reads: a rep is never said there
     const t = today();
     let was = ""; try { was = localStorage.getItem(PLAYEDKEY) || ""; } catch (e) {}
     if (was === t) return;
