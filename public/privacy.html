@@ -203,7 +203,9 @@
         billed by Apple, and RevenueCat checks with Apple whether that purchase is active, under a random
         identifier. If you gave the app your email (setup&rsquo;s email step, or the weekly progress report&rsquo;s switch in Settings), the app also gives that
         email to RevenueCat, and RevenueCat tells our server when your Premium starts, renews, is
-        cancelled or ends, with that email. Neither Apple nor RevenueCat is given a child&rsquo;s name or
+        cancelled or ends, with that email. The app also gives RevenueCat the same random device
+        identifier our usage counts carry, so our server can tell, without any email, whether a free
+        trial turned into a paid plan, was cancelled or ended. Neither Apple nor RevenueCat is given a child&rsquo;s name or
         anything about their practice.</li>
       <li><strong>Hosting</strong> — Vercel runs the site and its server routes.</li>
       <li><strong>Data store</strong> — Upstash holds clinician accounts, the caseload information
@@ -258,7 +260,9 @@
     duration) tied to a random device identifier, never to a name, email, voice, or recording.
     Our server passes those counts on to PostHog under the same random identifier: for example, that
     a practice session was completed, that a chest or a Trophy Road gift was opened, or that a game
-    level was played.
+    level was played. While a free trial is on, our server also keeps, under that identifier, which
+    days of the trial had any practice (yes or no for each day, nothing more) and how the trial
+    ended, so we can see whether families get to try Sona before deciding; it keeps that for 120 days.
     Limited, privacy-respecting analytics (PostHog, with autocapture turned off) run on adult-facing
     pages of our website and of the app — such as marketing, parent setup, and settings — to
     understand general usage under the same anonymous identifier.

@@ -340,8 +340,8 @@
          screen is leaving setup's questions: the profile is saved then. The
          words are Travis's and Rachel's to change. -->
     <div class="step" data-step="remind">
-      <h1 class="qh" id="remindTitle" tabindex="-1">Want a reminder before your free trial ends?</h1>
-      <p class="muted remind-line">One notification, the day before.</p>
+      <h1 class="qh" id="remindTitle" tabindex="-1">Want reminders during your free trial?</h1>
+      <p class="muted remind-line">A practice reminder each day, and one the day before it ends.</p>
       <button type="button" class="btn remind-yes" id="remindYes">Turn on reminders</button>
       <button type="button" class="remind-no" id="remindNo">Not now</button>
     </div>
@@ -1462,6 +1462,9 @@
       var other=document.getElementById(b.id==="remindYes"?"remindNo":"remindYes");
       if(!ask){other.disabled=true;leaveReady(b);return;}
       asking=true;b.disabled=other.disabled=true;updateNext();
+      // NUDGE1: this yes, under these words, is the parent's yes to the daily
+      // practice reminders too (sona.js; nothing is set until a trial starts)
+      try{if(Sona.nudgeConsent)Sona.nudgeConsent();}catch(e){}
       var r=null;try{r=Sona.notifyAsk&&Sona.notifyAsk();}catch(e){r=null;}
       var on=false;
       function go(){if(on)return;on=true;clearTimeout(t);asking=false;if(ORDER[idx]==="remind")leaveReady(b,true);else updateNext();}

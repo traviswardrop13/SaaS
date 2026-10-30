@@ -95,7 +95,7 @@ export const SUBSCRIPTIONS_URL = "https://apps.apple.com/account/subscriptions";
 
 export type RcState = "trial" | "paid" | "cancelled" | "billing" | "ended" | "moved";
 /** `uids`: the customer ids this message is about; `from`: on a TRANSFER, the ones it moved away from. */
-export type RcEvent = { id: string; type: string; ts: number; sandbox: boolean; email: string; exp: number; state: RcState | null; uids: string[]; from: string[] };
+export type RcEvent = { id: string; type: string; ts: number; sandbox: boolean; email: string; exp: number; state: RcState | null; uids: string[]; from: string[]; fid: string; days: number };
 export type Plan = { s: RcState; exp: number; ts: number; at: string };
 
 const STATES: readonly string[] = ["trial", "paid", "cancelled", "billing", "ended", "moved"];
@@ -141,6 +141,17 @@ const uid = (v: unknown): string => {
   return s && /^[\x21-\x7e]+$/.test(s) ? s : "";
 };
 
+/**
+ * TRIAL1: the anonymous family id the phone handed RevenueCat (`sona_fid`,
+ * sona.js _rcEmail), or "": random, minted on the phone, never a name.
+ */
+function fidOf(attrs: unknown): string {
+  if (!attrs || typeof attrs !== "object") return "";
+  const a = (attrs as Record<string, unknown>)["sona_fid"];
+  const v = a && typeof a === "object" ? (a as Record<string, unknown>).value : a;
+  return typeof v === "string" && /^[A-Za-z0-9_-]{8,40}$/.test(v) ? v : "";
+}
+
 /** The parent's email RevenueCat holds for this customer (`$email`), as Sona would use it, or "". */
 function emailOf(attrs: unknown): string {
   if (!attrs || typeof attrs !== "object") return "";
@@ -183,6 +194,10 @@ export function readEvent(body: unknown): RcEvent | null {
     exp: ms(ev.expiration_at_ms),
     state: stateFor(type, period, reason),
     uids, from,
+    fid: fidOf(ev.subscriber_attributes),
+    // how long the free days are, for a trial starting (TRIAL1)
+    days: period === "TRIAL" && ms(ev.expiration_at_ms) > ms(ev.purchased_at_ms) && ms(ev.purchased_at_ms) > 0
+      ? Math.max(1, Math.min(31, Math.round((ms(ev.expiration_at_ms) - ms(ev.purchased_at_ms)) / DAY_MS))) : 0,
   };
 }
 
