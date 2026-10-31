@@ -701,7 +701,7 @@
     var MIC_NOTE = { live: "Your turn!", nudge: "Tap the mic, then say it" };
     function talkOn() { return TALK && !!SC && !micOff && !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia); }
     function esc(t) { return String(t).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
-    function marked(w) { try { if (S.soundMark) return S.soundMark(w, day.sound, "i"); } catch (e) {} return '<b class="snd">' + esc(w) + "</b>"; }
+    function marked(w) { try { if (S && S.soundMark) return S.soundMark(w, day.sound, "i"); } catch (e) {} return '<b class="snd">' + esc(w) + "</b>"; }
     // the line, with its key word (the first whole one) in a highlight and
     // only that word's sound letters orange
     function markLine(text, key) {
