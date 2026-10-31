@@ -855,9 +855,11 @@ stands).
   while picked takes the pick to monthly; with none, the card is the monthly
   row alone, as before.
 - **The free days are App Store Connect's**, not this repo's: the card says
-  what the store's introductory offer says (`planFree`). Going from 7 days to
-  3 is Travis's change there (the monthly subscription's introductory offer,
-  free for 3 days), and every line follows by itself.
+  what the store's introductory offer says (`planFree`). Travis set the
+  monthly subscription's introductory offer back to 3 days free there on 31
+  Oct 2026 (it was one week from 19 Oct), and every line follows by itself:
+  "3-day free trial" on the row, "3 days free, then $9.99 a month." under the
+  button. Nothing in this repo types a trial length.
 - **Setup's reminder ask still follows the monthly row** (it asks when the
   store is sure that row is a free trial), although the one payment is now
   picked on arrival: a parent may still pick the trial, and its daily and
