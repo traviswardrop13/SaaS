@@ -173,7 +173,7 @@
   </style>
   <link href="/crafted-home.css" rel="stylesheet" />
 </head>
-<body>
+<body class="clubhouse-home">
   <!-- HOME AND THE ARCADE (STORY1, 22 Oct 2026): one page, two views. Home
        is today's story, big, with two doors under it (Arcade: every game,
        and only games since 23 Oct 2026; Books: the bookshelf), then "Your
@@ -187,13 +187,13 @@
     <header class="library-header">
       <a id="buddyBtn" href="/customize.html" aria-label="Choose your buddy"></a>
       <span class="library-label">Sona</span>
-      <label class="home-sound" id="homeSoundWrap" hidden><span class="sr">Target sound</span><select id="homeSound" aria-label="Target sound"></select></label>
+      <label class="home-sound" id="homeSoundWrap" hidden><span class="sr">Target sound</span><span class="sound-caption" aria-hidden="true">YOUR SOUND</span><span class="sound-value" id="homeSoundValue" aria-hidden="true"></span><span class="sound-note" id="homeSoundNote" aria-hidden="true"></span><svg class="sound-chevron" aria-hidden="true" viewBox="0 0 20 20" width="18" height="18"><path d="m5 8 5 5 5-5" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/></svg><select id="homeSound" aria-label="Target sound" aria-describedby="homeSoundNote"></select></label>
       <a id="giftBtn" href="/road.html" aria-label="Trophy Road"><span class="gift-ring" id="giftRing" aria-hidden="true"></span><span class="gift-ic" id="giftIc" aria-hidden="true"><img src="/assets/crafted/road-chest.webp" alt="" width="30" height="30" /></span><span class="gift-dot" id="giftDot" hidden></span></a>
       <button id="parentBtn" type="button" aria-label="Grown-ups"><span class="pic-gear" aria-hidden="true"></span><span>Grown-ups</span></button>
     </header>
     <a id="trialBanner"><img class="tb-echo" src="/assets/crafted/echo-wave.webp" alt="" onerror="this.src='/assets/crafted/echo-welcome.webp'"><span id="trialMsg"></span><span class="tb-pill" aria-hidden="true">Share an idea</span></a>
     <section class="home-only" aria-labelledby="homeTitle">
-      <h1 id="homeTitle" tabindex="-1">Today's adventure</h1>
+      <div class="club-welcome"><h1 id="homeTitle" tabindex="-1">Let's play.</h1><div class="club-room"><span class="club-floor" aria-hidden="true"></span><span class="club-orbit" aria-hidden="true"></span><img class="club-echo" src="/assets/crafted/echo-wave.webp" alt="" aria-hidden="true" onerror="this.onerror=null;this.src='/assets/crafted/echo-welcome.webp'" /><div id="clubSoundHost"></div></div></div>
       <!-- THE STORY CARD (STORY1; the daily adventure card of QUEST1, 13 Oct
            2026, made big). It only reads Sona.questToday(): on a story day
            its tap is the game card's own tap (launch) on the story itself,
@@ -201,19 +201,18 @@
            game day (after the built stories, or on a phone that cannot buy
            without Premium) it is today's game, as before. Done, it shows
            tomorrow's picture, dark: never playable early. Silent.
-           HOMECLIP1 (28 Oct 2026): its picture is a tall 3:4 clip of the
-           game the child will play, muted and looping, with the day's chip,
-           title, hook and play button over its foot (paintQuest). -->
-      <button id="questCard" type="button" hidden>
-        <span class="quest-art" id="questArt" aria-hidden="true"><span class="quest-pic" id="questPic"></span><video class="quest-clip" id="questClip" muted loop playsinline autoplay preload="metadata" disablepictureinpicture disableremoteplayback x-webkit-airplay="deny" aria-hidden="true" hidden></video><span class="quest-lock" id="questLock" hidden>Premium</span></span>
-        <span class="quest-body"><span class="quest-head"><span class="quest-copy"><span class="quest-chip" id="questChip" hidden></span><span class="quest-title" id="questTitle"></span></span><span class="quest-go" id="questGo" aria-hidden="true"><svg viewBox="0 0 24 24" width="30" height="30"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor"/></svg></span></span><span class="quest-line" id="questLine"></span></span>
-      </button>
+           CLUBHOUSE1 (31 Oct 2026): the original landscape illustration,
+           short hook and one clear Start today action. No game video or HUD. -->
+      <div class="club-stage">
+        <div class="quest-body" id="questSummary" hidden><span class="quest-art" id="questArt" aria-hidden="true"><span class="quest-pic" id="questPic"></span></span><div class="quest-copy"><span class="quest-meta"><span class="quest-label">Today's adventure</span><span class="quest-chip" id="questChip" hidden></span><span class="quest-lock" id="questLock" hidden>Premium</span></span><span class="quest-title" id="questTitle"></span><span class="quest-line" id="questLine"></span></div></div>
+        <button id="questCard" type="button" hidden><span class="quest-go" id="questGo" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor"/></svg><span id="questActionLabel">Start today</span><span class="quest-arrow">→</span></span><span id="questDone" hidden aria-hidden="true">✓ &nbsp; See you tomorrow!</span></button>
       <!-- the two doors: a picture and one word each, for a child who can't
            read yet. Books is the one way to the bookshelf: the Arcade has no
            Books card since 23 Oct 2026. -->
       <div id="homeDoors">
-        <button id="arcadeBtn" type="button"><span class="door-pic" id="arcadePic" aria-hidden="true"></span><span class="door-copy"><span class="door-word">Arcade</span><span class="door-sub">All the games</span></span></button>
-        <button id="homeBooksBtn" type="button"><span class="door-pic" id="homeBooksPic" aria-hidden="true"></span><span class="door-copy"><span class="door-word">Books</span><span class="shelf-tag door-tag" id="homeBooksTag">Free</span></span></button>
+        <button id="arcadeBtn" type="button" aria-label="Games. All the games."><span class="door-pic" id="arcadePic" aria-hidden="true"></span><span class="door-copy"><span class="door-word">Games</span><span class="door-arrow" aria-hidden="true">↗</span></span></button>
+        <button id="homeBooksBtn" type="button"><span class="door-pic" id="homeBooksPic" aria-hidden="true"></span><span class="door-copy"><span class="door-word">Books</span><span class="door-arrow" aria-hidden="true">↗</span></span><span class="shelf-tag door-tag" id="homeBooksTag">Free</span></button>
+      </div>
       </div>
       <!-- YOUR GAMES (FOUND1, 23 Oct 2026): every story leaves its game
            behind. The games this child's finished stories left, newest
@@ -524,79 +523,23 @@
         if(craftedCards[game.key])return questPicture("/assets/crafted/home-"+craftedCards[game.key]+".webp","");
         questPicture("","");var st=S.gameSticker(game.key);S.paintSticker(document.getElementById("questPic"),st[0],st[1]);return true;
       }
-      // THE DAY'S REEL (HOMECLIP1, 28 Oct 2026; Travis: "the daily practice
-      // is taking up more of the screen so the games and books are lower and
-      // the daily practice is like a 3 second reel essentially of the game
-      // that the child will play"). The card's picture is a short clip of the
-      // game this day plays (/assets/home/reel/<game>.mp4: the story's game on
-      // a story day, today's game on a game day), muted and looping, over its
-      // poster (the clip's first frame, <game>.webp), over the picture the
-      // card had before if the poster has not landed (reelPicture). The clip
-      // is seen only once it is really playing, so one that never starts (no
-      // H.264, Low Power Mode, a missing file) leaves the poster as it is:
-      // never a black or broken frame. It plays nothing under Reduce Motion,
-      // with the data saver on, on a finished day (tomorrow's poster, dark),
-      // on a hidden page or in the Arcade. No sound, and nothing written.
-      var REEL="/assets/home/reel/",clip=document.getElementById("questClip"),clipKey="",shownPic="";
-      function calm(){try{return !!(window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches);}catch(e){return false;}}
-      function canClip(){
-        try{if(navigator.connection&&navigator.connection.saveData)return false;}catch(e){}
-        try{return !!(clip&&clip.canPlayType&&clip.canPlayType('video/mp4; codecs="avc1.640028"'));}catch(e){return false;}
-      }
-      function clipOff(){
-        if(!clip)return;
-        clipKey="";clip.classList.remove("on");clip.hidden=true;
-        try{clip.pause();}catch(e){}
-        if(clip.hasAttribute("src")||clip.hasAttribute("poster")){clip.removeAttribute("src");clip.removeAttribute("poster");try{clip.load();}catch(e){}}
-      }
-      // plays on Home, in front; anywhere else it holds still (a pause also
-      // stops the autoplay attribute from starting it behind the Arcade)
-      function clipSync(){
-        if(!clip||!clipKey)return;
-        if(document.hidden||app.getAttribute("data-view")!=="home"){try{clip.pause();}catch(e){}return;}
-        try{clip.muted=true;var r=clip.play();if(r&&r.then)r.then(null,function(){});}catch(e){}
-      }
-      function clipOn(key){
-        if(!clip||!key||calm()||!canClip()){clipOff();return;}
-        if(clipKey!==key){clipOff();clipKey=key;clip.poster=REEL+key+".webp";clip.src=REEL+key+".mp4";}
-        clip.hidden=false;clipSync();
-      }
-      if(clip){
-        clip.muted=true;clip.defaultMuted=true;
-        clip.addEventListener("playing",function(){if(clipKey)clip.classList.add("on");});
-        clip.addEventListener("error",function(){if(clipKey)clipOff();});
-        try{var calmQ=window.matchMedia("(prefers-reduced-motion: reduce)"),recalm=function(){try{paintQuest();}catch(e){}};if(calmQ.addEventListener)calmQ.addEventListener("change",recalm);else if(calmQ.addListener)calmQ.addListener(recalm);}catch(e){}
-        window.addEventListener("pagehide",function(){try{clip.pause();}catch(e){}});
-      }
-      // the picture under the clip: its poster, else what the card showed
-      // before (a story's painted Home picture or a game's Home card, then
-      // Echo on the story's wash). The same picture is never painted twice
-      // in a row, so coming back to the front never blinks it.
-      function reelPicture(key,story,fallback){
-        var art=document.getElementById("questArt"),pic=document.getElementById("questPic"),id=key+"|"+story;
-        if(id===shownPic&&pic.firstChild)return;
-        shownPic=id;pic.textContent="";art.classList.remove("fallback");art.setAttribute("data-story",story||"");
-        if(!key){fallback();return;}
-        var im=node("img");im.alt="";im.decoding="async";
-        im.onerror=function(){im.onerror=null;if(im.parentNode===pic)fallback();};
-        im.src=REEL+key+".webp";pic.appendChild(im);
-      }
+      // CLUBHOUSE1: the day's own illustration, never an in-game screen.
+      // One still picture keeps Home quiet and clear on every connection.
       function paintQuest(){
         var card=document.getElementById("questCard");if(!card)return;
         var q=null;try{q=S.questToday?S.questToday():null;}catch(e){q=null;}
         var story=!!(q&&q.kind==="story"&&q.story);
         var game=story?{kind:"story",key:"adventure",name:q.story.title,go:"/adventure.html",tier:"premium"}:(q&&questGames[q.game]);
-        if(!q||!game){card.hidden=true;clipOff();return;}
+        if(!q||!game){card.hidden=true;document.getElementById("questSummary").hidden=true;return;}
         var done=q.state==="done",next=done?q.next:null,open=access(game).allowed;
-        // tomorrow, shown dark: the next story's poster, or the next game's,
-        // and nothing plays (tomorrow is never early); open, today's game,
-        // playing
-        if(next&&next.kind==="story"&&next.story)reelPicture(next.game,next.story.id,function(){questPicture(next.story.pic,next.story.id);});
-        else if(next&&questGames[next.game])reelPicture(next.game,"",function(){gamePicture(questGames[next.game]);});
-        else if(story)reelPicture(q.game,q.story.id,function(){questPicture(q.story.pic,q.story.id);});
-        else reelPicture(game.key,"",function(){gamePicture(game);});
-        if(done)clipOff();else clipOn(q.game);
+        // Tomorrow's picture stays a preview of the next day, never early.
+        if(next&&next.kind==="story"&&next.story)questPicture(next.story.pic,next.story.id);
+        else if(next&&questGames[next.game])gamePicture(questGames[next.game]);
+        else if(story)questPicture(q.story.pic,q.story.id);
+        else gamePicture(game);
         card.classList.toggle("done",done);
+        document.getElementById("questSummary").classList.toggle("done",done);
+        document.getElementById("questSummary").hidden=false;
         var chip=document.getElementById("questChip");chip.textContent=story?"Day "+q.day:"";chip.hidden=!story||done;
         document.getElementById("questLock").hidden=done||open;
         var title=done?(story?"Day "+q.day+" done!":"All done for today!"):(story?q.story.title:game.name);
@@ -608,6 +551,8 @@
         document.getElementById("questTitle").textContent=title;
         document.getElementById("questLine").textContent=line;
         document.getElementById("questGo").hidden=done;
+        document.getElementById("questDone").hidden=!done;
+        document.getElementById("questActionLabel").textContent=!open?"Unlock adventure":q.seen?"Keep going":"Start today";
         card.setAttribute("aria-label",done?title+" "+line:"Today's adventure"+(story?", day "+q.day+": "+title+".":": "+title+".")+" "+line+(open?" Play.":" Premium."));
         card.setAttribute("aria-disabled",done?"true":"false");
         card.onclick=function(){if(done)return;launch(game);};
@@ -673,12 +618,18 @@
         // its own option so choosing that same sound can actually pin it.
         soundPick.value=canAuto?(soundProfile.targetSound||""):currentSound;
         var automatic=canAuto&&!soundProfile.targetSound;
+        var fixed=!assigned&&soundChoices.length<2;
         var currentSoundLabel=S.soundLabel?S.soundLabel(currentSound):currentSound;
         soundPick.setAttribute("aria-label",automatic?"Target sound, automatic: "+currentSoundLabel:"Target sound");
         soundPick.disabled=!!assigned||soundChoices.length<2;
-        soundPick.title=assigned?"From your speech therapist":automatic?"Automatic: "+currentSoundLabel:"Choose your target sound";
+        document.getElementById("homeSoundValue").textContent=currentSoundLabel;
+        document.getElementById("homeSoundNote").textContent=assigned?"From your therapist":fixed?"In Settings":automatic?"Automatic":"Change sound";
+        soundWrap.classList.toggle("sound-assigned",!!assigned);
+        soundWrap.classList.toggle("sound-fixed",fixed);
+        soundWrap.classList.toggle("sound-long",currentSoundLabel.length>3);
+        soundPick.title=assigned?"From your speech therapist":fixed?"Choose sounds in Settings":automatic?"Automatic: "+currentSoundLabel:"Choose your target sound";
         soundWrap.hidden=!soundChoices.length;
-        if(soundChoices.length)soundWrap.parentNode.classList.add("has-target");
+        if(soundChoices.length)app.querySelector(".library-header").classList.add("has-target");
         soundPick.onchange=function(){
           if(S.kkey&&S.kkey("sona.profile.v1")!==soundOwner){location.reload();return;}
           S.setTargetSound(soundPick.value);location.reload();
@@ -694,12 +645,17 @@
       // Home" goes back if it was pushed, else replaces the address. Back and
       // Forward read the address again. Nothing here writes or sends.
       function viewOf(){return /[?&](?:view=arcade(?:[&#]|$)|locked=)/.test(location.search)?"arcade":"home";}
-      function setView(v){app.setAttribute("data-view",v);document.title=v==="arcade"?"Sona — Play library":"Sona";}
+      function setView(v){
+        app.setAttribute("data-view",v);document.body.classList.toggle("clubhouse-home",v==="home");document.title=v==="arcade"?"Sona — Play library":"Sona";
+        // One real selector, moved with the view. No duplicate control or
+        // second saved choice can drift from the active child's sound.
+        var sound=document.getElementById("homeSoundWrap"),where=v==="home"?document.getElementById("clubSoundHost"):app.querySelector(".library-header");
+        if(sound&&where&&sound.parentNode!==where){if(v==="home")where.appendChild(sound);else where.insertBefore(sound,document.getElementById("giftBtn"));}
+      }
       function showView(v,focus){
         clearMessage();setView(v);
         try{window.scrollTo(0,0);}catch(e){}
         if(v==="home")fitHome();
-        clipSync();
         if(focus){var h=document.getElementById(v==="arcade"?"arcadeTitle":"homeTitle");try{h.focus({preventScroll:true});}catch(e){}}
       }
       var backFocus=false;
@@ -734,32 +690,18 @@
       };
       window.addEventListener("popstate",function(){var f=backFocus;backFocus=false;showView(viewOf(),f);});
       window.addEventListener("pagehide",function(){try{history.scrollRestoration="auto";}catch(e){}});
-      // Everything changed by a fit step has transition:none. Otherwise a
-      // measurement can see the preceding frame and stop with a door clipped.
-      // Fit the LAST visible Home block, including doors and earned games.
-      // Never hide overflow: the Arcade and accessibility enlargement still
-      // need their natural scroll. The final step uses the measured space.
-      var FIT_STEPS=6;
+      // CLUBHOUSE1: compress the decorative room and gaps first. Natural
+      // document flow remains available for accessibility text enlargement.
+      var FIT_STEPS=5;
       function fitHome(){
         if(app.getAttribute("data-view")!=="home")return;
-        var card=document.getElementById("questCard");
         var i;for(i=1;i<=FIT_STEPS;i++)app.classList.remove("fit"+i);
-        app.style.removeProperty("--home-art-height");
-        if(!card||card.hidden)return;
         function overflow(){
-          var found=document.getElementById("foundRow"),doors=document.getElementById("homeDoors");
-          var last=found&&!found.hidden?found:doors;
-          var end=Math.max(card.getBoundingClientRect().bottom,last.getBoundingClientRect().bottom);
+          var found=document.getElementById("foundRow"),doors=document.getElementById("homeDoors"),last=found&&!found.hidden?found:doors;
           var pad=parseFloat(getComputedStyle(app).paddingBottom)||0;
-          return Math.max(end+pad,app.getBoundingClientRect().bottom)+(window.pageYOffset||0)+8-window.innerHeight;
+          return last.getBoundingClientRect().bottom+pad+(window.pageYOffset||0)+2-window.innerHeight;
         }
-        for(i=1;i<FIT_STEPS&&overflow()>0;i++)app.classList.add("fit"+i);
-        if(overflow()>0){
-          app.classList.add("fit6");
-          var art=document.getElementById("questArt"),words=card.querySelector(".quest-body");
-          var min=words?words.getBoundingClientRect().height+12:150;
-          app.style.setProperty("--home-art-height",Math.max(min,art.getBoundingClientRect().height-overflow()-2)+"px");
-        }
+        for(i=1;i<=FIT_STEPS&&overflow()>0;i++)app.classList.add("fit"+i);
       }
       fitHome();
       // a turn or a new width fits again; a height that moves alone (Safari's
@@ -767,14 +709,14 @@
       // a finger
       window.addEventListener("resize",fitHome);
       try{if(document.fonts&&document.fonts.ready)document.fonts.ready.then(fitHome);}catch(e){}
+      try{new MutationObserver(fitHome).observe(document.getElementById("trialBanner"),{attributes:true,attributeFilter:["style","hidden"],childList:true,subtree:true});}catch(e){}
       // A cached library can return after a trial expires or an adult changes
       // preview state. Re-evaluate its labels without reviving stale access.
       window.addEventListener("pageshow",function(event){if(event.persisted)location.reload();});
       // An iPhone keeps Home alive behind a game; when it comes back to the
       // front the tags are read again, like today's reps in the corner.
-      // (and the day's clip holds still while Home is behind something)
       document.addEventListener("visibilitychange",function(){
-        if(document.hidden){clipSync();return;}
+        if(document.hidden)return;
         if(S.kkey&&S.kkey("sona.profile.v1")!==soundOwner){location.reload();return;}
         if(library.picks&&S.localDay&&S.localDay()!==library.picks.day){location.reload();return;}
         paintBests();

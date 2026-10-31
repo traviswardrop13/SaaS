@@ -112,7 +112,7 @@ section("free books on the selected shelf", () => {
 // and assignment wording that cannot suggest a family choice was applied.
 const mime = { html: "text/html", js: "text/javascript", css: "text/css", webp: "image/webp", svg: "image/svg+xml", woff2: "font/woff2" };
 const server = createServer((req, res) => {
-  const u = new URL(req.url, "http://x"), name = u.pathname.slice(1), file = path.join(ROOT, name);
+  const u = new URL(req.url, "http://x"), name = u.pathname.slice(1), file = path.join(process.env.TARGET_SOUND_OLD_ROOT || ROOT, name);
   if (!existsSync(file) || u.pathname.startsWith("/api/")) { res.writeHead(404); res.end(); return; }
   res.writeHead(200, { "content-type": mime[path.extname(file).slice(1)] || "application/octet-stream" });
   res.end(["sona.js", "library.html", "settings.html", "today.html"].includes(name) ? source(name) : readFileSync(file));
@@ -200,15 +200,22 @@ try {
     ok("Home's Automatic option clears the explicit pin and restores rotation", choseAuto && await page.evaluate(() => document.getElementById("homeSound").value === "" && !Sona.getProfile().targetSound && Sona.rotSounds().join(",") === "R,S"));
   } else ok("Home's Automatic option clears the explicit pin and restores rotation", false);
   await Promise.all([page.waitForNavigation({ waitUntil: "load" }), page.locator("#homeSound").selectOption("S")]);
-  ok("Home's R/S selector persists the chosen sound for books and games", await page.evaluate(() => document.getElementById("homeSound").value === "S" && Sona.getProfile().targetSound === "S" && Sona.rotSound() === "S"));
+  ok("Home's R/S selector saves and displays the chosen sound for books and games", await page.evaluate(() => document.getElementById("homeSound").value === "S" && Sona.getProfile().targetSound === "S" && Sona.rotSound() === "S" && document.getElementById("homeSoundValue")?.textContent === "S" && document.getElementById("homeSoundNote")?.textContent === "Change sound"));
   await page.evaluate(() => localStorage.setItem(Sona.kkey("sona.homework.v1"), JSON.stringify({ hw: { sounds: ["L"], start: "2000-01-01", due: "2999-01-01" } })));
   await page.reload();
-  ok("Home shows the assigned sound and disables family changes", await page.evaluate(() => document.getElementById("homeSound").disabled && document.getElementById("homeSound").value === "L" && /speech therapist/.test(document.getElementById("homeSound").title)));
+  ok("Home labels the assigned sound clearly and disables family changes", await page.evaluate(() => document.getElementById("homeSound").disabled && document.getElementById("homeSound").value === "L" && /speech therapist/.test(document.getElementById("homeSound").title) && document.getElementById("homeSoundValue")?.textContent === "L" && document.getElementById("homeSoundNote")?.textContent === "From your therapist"));
   await page.evaluate(() => { localStorage.removeItem(Sona.kkey("sona.homework.v1")); });
   await page.reload();
   await page.evaluate(() => { Sona.addKid("Bea", "7"); Sona.saveProfile({ focusSounds: ["R", "S"], targetSound: "S", onboarded: true }); });
   await Promise.all([page.waitForNavigation({ waitUntil: "load" }), page.locator("#homeSound").selectOption("R")]);
   ok("a stale Home with the same available sounds cannot overwrite a sibling's choice", await page.evaluate(() => Sona.getProfile().childName === "Bea" && Sona.targetSound() === "S" && document.getElementById("homeSound").value === "S"));
+  const singleProfile = await page.evaluate(() => { Sona.saveProfile({ focusSounds: ["S"], targetSound: "S" }); return localStorage.getItem(Sona.kkey("sona.profile.v1")); });
+  await page.reload();
+  const singleSound = await page.evaluate(() => {
+    const pick = document.getElementById("homeSound"), caret = document.querySelector("#homeSoundWrap .sound-chevron"), cs = getComputedStyle(caret), r = caret.getBoundingClientRect();
+    return { value: pick.value, disabled: pick.disabled, label: document.getElementById("homeSoundValue").textContent, note: document.getElementById("homeSoundNote").textContent, title: pick.title, caretVisible: cs.display !== "none" && cs.visibility !== "hidden" && r.width > 0 && r.height > 0, profile: localStorage.getItem(Sona.kkey("sona.profile.v1")) };
+  });
+  ok("a single family sound points to Settings without showing an unusable dropdown", singleSound.value === "S" && singleSound.disabled && singleSound.label === "S" && singleSound.note === "In Settings" && singleSound.title === "Choose sounds in Settings" && !singleSound.caretVisible && singleSound.profile === singleProfile, singleSound);
   let safeTop = 0, safeBottom = 0;
   await context.route(/\.(html|css)$/, async (route) => {
     const response = await route.fetch();
@@ -221,12 +228,12 @@ try {
     await page.setViewportSize({ width: viewport.width, height: viewport.height }); await page.reload();
     await page.evaluate(() => document.fonts.ready); await page.waitForTimeout(100);
     const label = await page.evaluate(() => {
-      const pick = document.getElementById("homeSound"), cs = getComputedStyle(pick), r = pick.getBoundingClientRect();
-      const text = pick.selectedOptions[0].textContent, canvas = document.createElement("canvas"), pen = canvas.getContext("2d");
-      pen.font = cs.fontWeight + " " + cs.fontSize + " " + cs.fontFamily;
-      return { value: pick.value, text, accessible: pick.getAttribute("aria-label"), title: pick.title, fontSize: parseFloat(cs.fontSize), textWidth: pen.measureText(text).width, available: pick.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight), height: r.height, right: r.right, top: r.top, bottom: r.bottom, pageWidth: document.documentElement.scrollWidth, pageHeight: document.documentElement.scrollHeight, width: innerWidth, heightLimit: innerHeight };
+      const pick = document.getElementById("homeSound"), value = document.getElementById("homeSoundValue"), note = document.getElementById("homeSoundNote");
+      if (!value || !note) return {missing: "visible sound value/note"};
+      const cs = getComputedStyle(value), r = pick.getBoundingClientRect(), v = value.getBoundingClientRect(), n = note.getBoundingClientRect();
+      return { value: pick.value, option: pick.selectedOptions[0].textContent, text: value.textContent, note: note.textContent, visible: getComputedStyle(value).visibility !== "hidden" && getComputedStyle(value).opacity !== "0", valueFits: value.scrollWidth <= value.clientWidth + 1, nativeCoversLabel: r.left <= v.left && r.right >= v.right && r.top <= n.top && r.bottom >= n.bottom, accessible: pick.getAttribute("aria-label"), title: pick.title, fontSize: parseFloat(cs.fontSize), captionFontSize: parseFloat(getComputedStyle(document.querySelector("#homeSoundWrap .sound-caption")).fontSize), noteFontSize: parseFloat(getComputedStyle(note).fontSize), nativeFontSize: parseFloat(getComputedStyle(pick).fontSize), height: r.height, right: r.right, top: r.top, bottom: r.bottom, pageWidth: document.documentElement.scrollWidth, pageHeight: document.documentElement.scrollHeight, width: innerWidth, heightLimit: innerHeight };
     });
-    ok("Home's automatic choice stays readable with the current sound accessible at " + viewport.width + "px", label.value === "" && label.text === "Auto" && label.accessible === "Target sound, automatic: TH (v)" && label.title === "Automatic: TH (v)" && label.fontSize >= 16 && label.textWidth <= label.available && label.height >= 44 && label.right <= label.width && label.top >= safeTop && label.bottom <= label.heightLimit - safeBottom && label.pageWidth <= label.width && label.pageHeight <= label.heightLimit + 1, label);
+    ok("Home's automatic choice shows its current sound clearly at " + viewport.width + "px", label.value === "" && label.option === "Auto" && label.text === "TH (v)" && label.note === "Automatic" && label.visible && label.valueFits && label.nativeCoversLabel && label.accessible === "Target sound, automatic: TH (v)" && label.title === "Automatic: TH (v)" && label.fontSize >= 16 && label.captionFontSize >= 11 && label.noteFontSize >= 11 && label.nativeFontSize >= 16 && label.height >= 44 && label.right <= label.width && label.top >= safeTop && label.bottom <= label.heightLimit - safeBottom && label.pageWidth <= label.width && label.pageHeight <= label.heightLimit + 1, label);
   }
   ok("target selection pages have no script errors", errors.length === 0, errors);
   await context.close();

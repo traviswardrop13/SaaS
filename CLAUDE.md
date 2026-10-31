@@ -53,10 +53,29 @@ switches the shelf. Unpinned play mode with no family target or homework can
 still browse every sound. Access rules for every book remain unchanged.
 Home's Books tag counts only free books on that shelf; it never advertises
 a different sound's free title.
-Home fits its card, both doors and any earned-game row on supported portrait
-phones and iPads; it never clips essential controls to suppress scrolling.
-The Arcade still scrolls. A stale child's selector never writes another
-child's preference.
+**Home reimagined as a local draft (Travis, 31 Oct 2026).** This supersedes
+the tall game-video Home and its first compact review layout described below.
+A large original Echo and the current sound anchor a warm playroom. The sound
+chip keeps the native selector: the large letter is the effective sound;
+“Change sound”, “Automatic”, “In Settings” (one family sound), or “From your
+therapist” explains its state. Disabled choices show no dropdown arrow. Small
+Home captions and helper text stay at least 11 px.
+The original story illustration is a small thumbnail beside the accurate day,
+title and hook. A separate full-width button says “Start today”, “Keep going”
+or “Unlock adventure”; done stays inert with tomorrow's preview and no early
+play. There is no Home video or reel download. Games and Books remain two
+illustrated doors, and earned games stay below them. Home fits the entire
+composition on supported portrait phones and iPads without clipping essential
+controls; the Arcade still scrolls. Routes, access, goals, history, quiet Home
+behavior and practice rules are unchanged. A stale child's selector never
+writes another child's preference. Existing Echo/world artwork is reused;
+this Home iteration generates no new art or spoken lines.
+
+**Keep it local (Travis, 31 Oct 2026).** The current instruction authorizes a
+local review draft only, superseding the earlier GitHub-upload request. Do
+not push, update a PR or release it. Run focused checks for this layout; the
+full 164-suite release battery remains unfinished and is still required
+before a future push. The stopped pre-redesign run is not a release pass.
 
 Newly set-up older children get a short Fruit Slice story, Echo's Picnic,
 before the original stories. Its `fruitpicnic` index is appended, never

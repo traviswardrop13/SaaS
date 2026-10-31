@@ -149,7 +149,7 @@ await scenario("Home's gift button", async () => {
     return {
       aria: btn.getAttribute("aria-label"), fill: document.getElementById("giftRing").style.getPropertyValue("--fill"), inHeader: !!btn.closest(".library-header"), tag: btn.tagName, href: btn.getAttribute("href"),
       pill: box("giftBtn"), gear: box("parentBtn"), buddy: box("buddyBtn"), old: !!document.getElementById("repPill"),
-      label: getComputedStyle(document.querySelector(".library-label")).display,
+      label: (() => { const e = document.querySelector(".library-label"), r = e.getBoundingClientRect(); return {display:getComputedStyle(e).display,clipped:e.scrollWidth > e.clientWidth + 1,l:r.left,r:r.right}; })(),
       firstH1: document.querySelector("h1").textContent,
     };
   });
@@ -158,8 +158,8 @@ await scenario("Home's gift button", async () => {
   ok("its name says the number: \"Trophy Road. 14 of 30 reps today.\" (then what waits on the road)", /^Trophy Road\. 14 of 30 reps today\.(?: |$)/.test(s.aria), s.aria);
   ok("it is a link to the Trophy Road with a full-size tap target", s.tag === "A" && s.href === "/road.html" && s.pill.h >= 44 && s.pill.w >= 44, s);
   ok("it sits in the header, between the buddy and the gear, touching neither", s.inHeader && s.pill.l >= s.buddy.r && s.pill.r <= s.gear.l, s);
-  ok("on a phone the 'Sona' wordmark steps aside for the buttons", s.label === "none", s);
-  ok("the page's first heading is Today's adventure", s.firstH1 === "Today's adventure", s.firstH1);
+  ok("the phone wordmark fits between the buddy and gift without covering either", s.label.display === "none" || (!s.label.clipped && s.label.l >= s.buddy.r && s.label.r <= s.pill.l), s);
+  ok("the page's first heading is the new Home welcome", s.firstH1 === "Let's play.", s.firstH1);
   ok("Home stores nothing new about reps or weeks", JSON.stringify(before) === JSON.stringify(keys), { before, keys });
   ok("no sideways scroll at 375px", (await overflow(page)) <= 1);
   await page.screenshot({ path: OUT + "/repweek-home-375.png" });
