@@ -2816,8 +2816,9 @@ decides what shows (hidden on the view's wrapper, never by a block's own
 `hidden`, which `paintQuest`, `paintFound` and the preview notice set
 themselves), so there is still one copy of the game card, `launch()`, the
 offer, the level sheet, the grown-ups check and "Home opens the offer once".
-- **Home** (`/today.html`): "Today's adventure" (its first h1), the day's
-  card (`#questCard`, see "Daily story (STORY1)" and "The day's reel" below:
+- **Home** (`/today.html`): the Play Map (PLAYMAP1, below): "Let's
+  explore." (its first h1) beside Echo at the start of a trail, the day's
+  card on the trail (`#questCard`, see "Daily story (STORY1)" and "The day's reel" below:
   a tall 3:4 clip of the game the child will play, with "Day N", the title,
   a 64 px teal play button and the hook line over its foot, a "Premium" tag
   top right without it; done: tomorrow's poster dark, "Day 1 done!" and
@@ -2859,7 +2860,8 @@ offer, the level sheet, the grown-ups check and "Home opens the offer once".
   yesterday's title. **Defaults Travis did not pick:** the
   dark gradient (not a cream one), the 480 px cap on an iPad, the data saver
   showing the poster only, and the doors and the New! game falling below
-  the first screen on smaller phones.
+  the first screen on smaller phones (since PLAYMAP1 the doors are on it at
+  390×844 and up).
   The top bar is the buddy, the gift button and Grown-ups. On a phone the doors are tiles with the
   picture as a 2:1 band on top (the Arcade picture's game things sit at its
   edges, so it is never cut to a square); on an iPad, rows with a 3:2
@@ -2867,6 +2869,33 @@ offer, the level sheet, the grown-ups check and "Home opens the offer once".
   `card.onclick=function(){if(done)return;launch(game);}`; on a story day
   `game` is `{ kind: "story", key: "adventure", go: "/adventure.html", tier:
   "premium" }`, so `launch()` opens it, or opens the price where Sona sells.
+- **The Play Map (PLAYMAP1, 31 Oct 2026)** (Travis, of a mock: "yes build
+  play map with those changes"). Home is a little world on a soft mint
+  board (`#homeMap`): Echo stands at the start of a dotted trail beside the
+  heading **"Let's explore."**; the trail carries **one gold star for each
+  story this child has finished** (`Sona.storyFound()`, read only, nothing
+  stored: the one finished today a little bigger, with a glow; a long trail
+  zigzags), dives into **today's card** under a "Today" flag, comes out
+  under it and ends at **tomorrow, a dark pill with a lock** ("Tomorrow").
+  The Arcade and Books doors come right under the board, then "Your games".
+  Travis's changes to the mock, all kept: the story stays big (the card
+  above, the trail's centrepiece, not the mock's small circle; its tap
+  unchanged); the stars are real progress, never a count ("3 of 14"), a
+  streak word or a timer; **no sound switch** (the mock had one: a child
+  never changes their sound on Home, and Home does not show it); less
+  empty space (the doors on the first screen at 390×844 and up); the top
+  bar as it was. The trail, its stars, two leaves and a cloud are drawn on
+  the phone (`paintTrail`, last in every `fitHome`) from where Echo, the
+  card, the flag and the pill landed, as inline SVG: aria-hidden, no tap,
+  nothing moves, no new painted art, every colour in `crafted-home.css`.
+  **Travis's to change:** the heading "Let's explore.", the trail's look
+  (the mint board, the sand road and its dots, the leaves and the cloud),
+  where the stars sit (between Echo and the flag, evenly) and the words
+  "Today" and "Tomorrow"; the doors still say "Arcade" and "Books" (the
+  mock said "Games": one word in `today.html`). **Defaults he did not
+  pick:** a family whose stories are locked now (free days over) still
+  sees the stars it earned (they open nothing); on a game day after Day 14
+  the trail shows all fourteen. `homestorytest` ("the Play Map") pins it.
 - **The Arcade** (`/today.html?view=arcade`): "‹ Home", then "Pick a game!",
   Today's picks (two games), the two shelves, the age note, Best tags, level
   badges, the locked note and the price on a grey tap. **Games only, one row
@@ -2911,15 +2940,18 @@ offer, the level sheet, the grown-ups check and "Home opens the offer once".
   Home:** after any game a child lands on Home, not back in the Arcade
   (Travis's to change: a tab-only marker could return them).
 - **The fit is measured, never guessed** (`fitHome`, `fit1`…`fit5`: the
-  heading's type and gaps first, then the card's picture from 3:4 to 4:5,
-  1:1, 5:4 and at the flattest 4:3): the whole day's card, its title and
+  board's head and foot and the heading's type first, then the card's
+  picture from 3:4 to 4:5, 1:1, 5:4 and at the flattest 4:3): the whole day's card, its title and
   play button included, is on the first screen above the home bar at
   320×568, 375×667, 390×844, 430×932, 768×1024, an iPhone SE on the
   website (375×553) and an iPad on its side, every button at least 44 px.
-  Since HOMECLIP1 only the card is measured: the doors come right after it
+  Since HOMECLIP1 only the card must fit: the doors come right after it
   and may fall below the first screen on smaller phones, and so may "Your
   games", the day's New! tile included (until 28 Oct 2026 the doors and
-  that tile were kept on the first screen).
+  that tile were kept on the first screen). Since PLAYMAP1 (31 Oct 2026)
+  the fit also takes up to two steps (`DOOR_STEPS`, never past 4:5) when
+  that puts the doors on the first screen too: at 390×844, 430×932 and
+  768×1024 they are; the card still comes first.
 
 Setup finishes in the first game (Feed Echo for 3-4, Fruit Slice from 5; see
 "The ask happens after the product proves itself"), or since 31 Oct 2026 in
@@ -4226,7 +4258,7 @@ adventure", a 14-day run of one game a day with a little story). **Since 22
 Oct 2026 the stories come first** (STORY1, above): the same scheduler shows
 Home's big card a story while one is left, for every child, and this game of
 the day after the last one, or on a phone that cannot buy without Premium.
-On a game day the card (`#questCard`, under "Today's adventure") shows the
+On a game day the card (`#questCard`, on the Play Map's trail) shows the
 game's name, one line from Echo's world ("The wind blew Echo's tower down.
 Help him build it back up!"), the game's clip over its poster (HOMECLIP1;
 the game's own painted Home picture only until the poster lands) and the

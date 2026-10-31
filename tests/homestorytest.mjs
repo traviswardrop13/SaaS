@@ -24,11 +24,18 @@
 //     poster, dark), held still on a hidden page and in the Arcade, and a
 //     clip that cannot start leaves the poster as it is;
 //   - the fit: the card's title and play button on the first screen at five
-//     sizes, the doors right after the card, every button at least 44 px, no
-//     sideways scroll;
+//     sizes, the doors right after the board (on the first screen at 390x844
+//     and up), every button at least 44 px, no sideways scroll;
 //   - Reduce Motion: nothing animates, and the fit is the same as without it
 //     and holds still through re-fits (coming back to the front, ‹ Home);
-//   - a story picture that has not landed is Echo on the story's wash.
+//   - a story picture that has not landed is Echo on the story's wash;
+//   - the Play Map (31 Oct 2026; Travis: "yes build play map with those
+//     changes"): "Let's explore." with Echo at the start of a drawn trail,
+//     one gold star on it for each story finished (the one found today
+//     bigger), the trail diving into the card under a "Today" flag and
+//     ending at tomorrow, a dark locked pill; never a count, a streak or a
+//     timer, no sound control, nothing on it takes a tap or moves; the
+//     doors on the first screen at 390x844 and up.
 import { createServer } from "node:http";
 import { readFileSync, existsSync, statSync } from "node:fs";
 import path from "node:path";
@@ -152,7 +159,7 @@ await section("an open story", async () => {
     const { ctx, pg, errors } = await open({ sub: true, age });
     const c = await card(pg), a = "age " + age + ": ";
     const top = await pg.evaluate(() => ({ h1: document.querySelector("h1").textContent, title: document.title, view: document.getElementById("libraryApp").getAttribute("data-view"), text: document.querySelector(".home-only").innerText }));
-    ok(a + "Home opens on \"Today's adventure\", its first heading, titled \"Sona\"", top.h1 === "Today's adventure" && top.title === "Sona" && top.view === "home", top);
+    ok(a + "Home opens on \"Let's explore.\" (the Play Map's heading), its first heading, titled \"Sona\"", top.h1 === "Let's explore." && top.title === "Sona" && top.view === "home", top);
     ok(a + "the story card shows Day 1, its title and its hook (both age groups get the story)", c.shown && c.chip === "Day 1" && c.title === STORY[0].title && c.line === STORY[0].line, c);
     ok(a + "…with a big round play button (at least 64 px) and no Premium tag", c.go && c.go.w >= 64 && c.go.h >= 64 && c.lock === null && c.disabled === "false", c);
     ok(a + "…its picture is the poster of the day's clip (until that lands, the story's own picture, or Echo on its wash)", c.story === "lighthouse" && c.img === shows("lighthouse", "/assets/crafted/home-lighthouse.webp"), c);
@@ -294,6 +301,92 @@ await section("Your games: the games the stories left", async () => {
     ok(at + "all fourteen found (ages 3-4 too): the row scrolls on its own, the page never sideways", f.shown && f.tiles.length === 14 && f.tiles[0].fresh && f.tiles[0].id === STORY[13].id && f.scroll <= 1 && f.tiles.every((t) => t.h >= 44), { n: f.tiles.length, scroll: f.scroll });
     ok(at + "no page errors", errors.length === 0, errors);
     await ctx.close();
+  }
+});
+
+// ── the Play Map (31 Oct 2026; Travis: "yes build play map with those
+// changes"): today's card on a drawn trail, a gold star for each story
+// finished behind it, tomorrow locked ahead ──
+const trail = (pg) => pg.evaluate(() => {
+  const $ = (id) => document.getElementById(id), map = $("homeMap"), svg = $("mapTrail"), m = map.getBoundingClientRect();
+  const box = (e) => { if (!e) return null; const r = e.getBoundingClientRect(); if (!r.width && !r.height) return null; return { l: r.left, r: r.right, t: r.top, b: r.bottom, w: r.width, h: r.height }; };
+  // a path's point, in the page's own pixels (the drawing is the board's size, at its corner)
+  const end = (p, at) => { const L = p.getTotalLength(), q = p.getPointAtLength(at === "start" ? 0 : L); return { x: q.x + m.left, y: q.y + m.top }; };
+  const dots = [...svg.querySelectorAll(".trail-dots")], marks = [...svg.querySelectorAll(".trail-mark")];
+  const vb = (svg.getAttribute("viewBox") || "").split(" ").map(Number);
+  return { found: Sona.storyFound().length, q: (() => { const q = Sona.questToday(); return { kind: q.kind, state: q.state }; })(),
+    bands: svg.querySelectorAll(".trail-band").length, dots: dots.length, stars: svg.querySelectorAll(".trail-star").length, data: svg.getAttribute("data-stars"),
+    fresh: marks.map((g, i) => (g.classList.contains("fresh") ? i : -1)).filter((i) => i >= 0), starBoxes: marks.map((g) => box(g.querySelector(".trail-star"))),
+    a: dots[0] ? { s: end(dots[0], "start"), e: end(dots[0]) } : null, b: dots[1] ? { s: end(dots[1], "start"), e: end(dots[1]) } : null,
+    vb: { w: vb[2], h: vb[3], mw: m.width, mh: m.height },
+    hidden: svg.getAttribute("aria-hidden") === "true" && $("mapToday").getAttribute("aria-hidden") === "true" && $("mapTomorrow").getAttribute("aria-hidden") === "true" && $("mapEcho").getAttribute("aria-hidden") === "true",
+    taps: [svg, $("mapToday"), $("mapTomorrow")].map((e) => getComputedStyle(e).pointerEvents),
+    echo: box($("mapEcho").querySelector("img")), echoSrc: new URL($("mapEcho").querySelector("img").getAttribute("src"), location.href).pathname,
+    h1: box($("homeTitle")), h1Text: $("homeTitle").textContent, card: box($("questCard")), map: box(map),
+    flag: box($("mapToday")), flagText: $("mapToday").textContent, pill: box($("mapTomorrow")), pillText: $("mapTomorrow").textContent, pillLock: !!$("mapTomorrow").querySelector("svg.map-lock"),
+    pillBg: getComputedStyle($("mapTomorrow")).backgroundColor, doors: box($("homeDoors")), premium: box($("questLock")),
+    controls: [...document.querySelectorAll(".home-only button, .home-only a, .home-only input, .home-only select, .home-only textarea, .home-only [role=button], .home-only [role=switch], .home-only [role=radio], .home-only [tabindex]:not(#homeTitle)")].filter((e) => e.offsetParent).map((e) => e.id || e.className || e.tagName),
+    text: document.querySelector(".home-only").innerText };
+});
+const inside = (p, b, pad = 0) => !!p && !!b && p.x >= b.l - pad && p.x <= b.r + pad && p.y >= b.t - pad && p.y <= b.b + pad;
+await section("the Play Map", async () => {
+  for (const [label, opts, want] of [
+    ["a fresh child (no story finished yet)", { sub: true }, { n: 0, fresh: false }],
+    ["Day 1 finished today", { sub: true, quest: { i: 0, last: 13, s: 1, ls: 0, lk: "story", done: "TODAY", got: [] } }, { n: 1, fresh: true }],
+    ["five stories finished, Day 6 open", { sub: true, quest: { i: 0, last: 13, s: 5, ls: 4, lk: "story", done: "2026-01-01", got: [] } }, { n: 5, fresh: false }],
+    ["all fourteen finished at 320x568, the last today", { sub: true, viewport: { width: 320, height: 568 }, quest: { i: 0, last: 13, s: 14, ls: 13, lk: "story", done: "TODAY", got: [] } }, { n: 14, fresh: true }],
+    ["a game day after Day 14", { sub: true, quest: { i: 3, last: 2, s: 14, ls: 13, lk: "story", done: "2026-01-01" } }, { n: 14, fresh: false }],
+    ["a locked story at 320x568 (three finished in the free days)", { sell: true, stamp: "post", viewport: { width: 320, height: 568 }, quest: { i: 0, last: 13, s: 3, ls: 2, lk: "story", done: "2026-01-01", got: [] } }, { n: 3, fresh: false }],
+    ["a phone that cannot buy (the game of the day)", { sell: false, stamp: "post", quest: { i: 2, last: 1, done: "2026-01-01" } }, { n: 0, fresh: false }],
+    ["an iPad, three finished", { sub: true, viewport: { width: 768, height: 1024 }, quest: { i: 0, last: 13, s: 3, ls: 2, lk: "story", done: "2026-01-01", got: [] } }, { n: 3, fresh: false }],
+  ]) {
+    const { ctx, pg, errors } = await open(opts);
+    await pg.evaluate(() => document.fonts && document.fonts.ready); await pg.waitForTimeout(100);
+    const t = await trail(pg), at = label + ": ";
+    ok(at + "the board says \"Let's explore.\", with Echo standing at the start of a drawn trail (a road and its dots, in two pieces)", t.h1Text === "Let's explore." && t.bands === 2 && t.dots === 2 && !!t.echo && t.echoSrc === "/assets/crafted/echo-welcome.webp" && t.echo.r <= t.h1.l + 1 && inside(t.a.s, t.echo, 2) && t.a.s.y >= t.echo.t + t.echo.h * 0.7, { a: t.a, echo: t.echo, h1: t.h1 });
+    ok(at + "…drawn to the board's own size", Math.abs(t.vb.w - t.vb.mw) < 0.6 && Math.abs(t.vb.h - t.vb.mh) < 0.6, t.vb);
+    ok(at + "the trail dives into today's card under its \"Today\" flag, which sits on the card's top edge", t.flagText === "Today" && t.flag.t < t.card.t && t.flag.b > t.card.t && t.flag.l >= t.card.l && t.flag.r <= t.card.r && inside(t.a.e, t.card) && t.a.e.x >= t.flag.l && t.a.e.x <= t.flag.r, { e: t.a.e, flag: t.flag, card: t.card });
+    ok(at + "…clear of the Premium tag", !t.premium || t.flag.b <= t.premium.t || t.flag.r <= t.premium.l, { flag: t.flag, premium: t.premium });
+    ok(at + "one gold star on the trail for each story finished (" + want.n + ", read from Sona.storyFound())", t.stars === want.n && t.found === want.n && t.data === String(want.n), { stars: t.stars, found: t.found, data: t.data });
+    ok(at + (want.fresh ? "the star found today is the one nearest today, a little bigger" : "no star marked as found today"), want.fresh ? t.fresh.length === 1 && t.fresh[0] === want.n - 1 && t.starBoxes[want.n - 1].w > t.starBoxes[0].w - 0.5 : t.fresh.length === 0, { fresh: t.fresh, boxes: t.starBoxes.slice(-2) });
+    // behind today: between Echo and the flag, above the card (which would
+    // hide them), under the heading's words, and none on top of another (the
+    // star shapes; the soft glow behind today's may reach its neighbour)
+    const clash = t.starBoxes.filter((s, i) => t.starBoxes.some((o, j) => j !== i && s.l + 2 < o.r && o.l + 2 < s.r && s.t + 2 < o.b && o.t + 2 < s.b)).length;
+    ok(at + "…every star behind today: past Echo, before the flag, above the card, below the heading, none on another", t.starBoxes.every((s) => s.l >= t.echo.r - 6 && s.r <= t.flag.l + 2 && s.b <= t.card.t + 1 && s.t >= t.h1.b - 6 && s.t >= t.map.t && s.w >= 10) && clash === 0, { stars: t.starBoxes, echo: t.echo, flag: t.flag, card: t.card, h1: t.h1, clash });
+    // tomorrow: a dark pill with a lock, under the card at its right edge,
+    // where the trail ends
+    const dark = ((c) => { const [r, g, b] = (c.match(/\d+/g) || []).map(Number); return 0.2126 * r + 0.7152 * g + 0.0722 * b < 80; })(t.pillBg);
+    ok(at + "tomorrow is a dark, locked spot ahead: \"Tomorrow\" and a lock, under the card at its right edge, where the trail ends", t.pillText === "Tomorrow" && t.pillLock && dark && t.pill.t >= t.card.b && t.pill.b <= t.map.b && Math.abs(t.pill.r - t.card.r) <= 1.5 && inside(t.b.s, t.card) && inside(t.b.e, t.pill, 1), { pill: t.pill, card: t.card, b: t.b, bg: t.pillBg });
+    ok(at + "the trail is decoration: hidden from a screen reader, and nothing on it takes a tap", t.hidden && t.taps.every((v) => v === "none"), { hidden: t.hidden, taps: t.taps });
+    ok(at + "no sound control on Home: the card, the two doors and the found games are its only controls", t.controls.every((c) => /^(?:questCard|arcadeBtn|homeBooksBtn|found-tile(?: fresh)?)$/.test(c)), t.controls);
+    ok(at + "never a count, a streak or a timer on Home", !/\b\d+\s*(?:of|\/)\s*\d+\b|\b\d+\s*(?:stars?|days?|stories)\b|streak|in a row|\d+:\d\d|\b(?:hours?|minutes?)\b/i.test(t.text), t.text);
+    ok(at + "the doors come right after the board", t.doors.t - t.map.b >= 8 && t.doors.t - t.map.b <= 30, { map: t.map, doors: t.doors });
+    ok(at + "no page errors", errors.length === 0, errors);
+    await ctx.close();
+  }
+  {
+    // the trail follows a new width (a turn, an iPad's split view): drawn
+    // again, still diving under the flag and ending at tomorrow, the same stars
+    const { ctx, pg, errors } = await open({ sub: true, quest: { i: 0, last: 13, s: 5, ls: 4, lk: "story", done: "2026-01-01", got: [] } });
+    await pg.setViewportSize({ width: 430, height: 932 }); await pg.waitForTimeout(250);
+    let t = await trail(pg);
+    ok("a new width draws the trail again: under the flag, to tomorrow, the same five stars", t.stars === 5 && inside(t.a.e, t.card) && t.a.e.x >= t.flag.l && t.a.e.x <= t.flag.r && inside(t.b.e, t.pill, 1) && Math.abs(t.vb.w - t.vb.mw) < 0.6, { a: t.a, flag: t.flag, vb: t.vb });
+    // …and coming back from the Arcade
+    await pg.locator("#arcadeBtn").click(); await pg.waitForTimeout(600);
+    const away = await pg.evaluate(() => !!document.getElementById("homeMap").offsetParent);
+    await pg.locator("#homeBack").click(); await pg.waitForTimeout(250);
+    t = await trail(pg);
+    ok("…the Arcade shows no board, and back on Home the trail is drawn again, whole", !away && t.stars === 5 && t.dots === 2 && inside(t.a.e, t.card) && inside(t.b.e, t.pill, 1), { away, t: { stars: t.stars, dots: t.dots } });
+    ok("no page errors", errors.length === 0, errors);
+    await ctx.close();
+  }
+  {
+    // the source: Home reads the stories finished, writes no sound and asks nothing of the trail
+    const code = SRC.replace(/<!--[\s\S]*?-->/g, " ").replace(/(^|[^:"'\\])\/\/[^\n]*/g, "$1");
+    ok("the trail's stars are read from Sona.storyFound(); Home never saves a profile or touches the child's sounds", /n=S\.storyFound\?S\.storyFound\(\)\.length:0;/.test(code) && !/saveProfile|focusSounds|rotAdvance|setSound/.test(code));
+    ok("the trail is drawn last in every fit (fitHome ends with paintTrail)", /function fitHome\(\)\{[\s\S]*?paintTrail\(\);\s*\}/.test(code));
+    ok("the trail and the flag are aria-hidden in the markup, the board's heading is the page's h1", /<svg id="mapTrail" aria-hidden="true"/.test(SRC) && /<span class="map-today" id="mapToday" aria-hidden="true">Today<\/span>/.test(SRC) && /<h1 id="homeTitle" tabindex="-1">Let's explore\.<\/h1>/.test(SRC) && (SRC.match(/<h1\b/g) || []).length === 2);
   }
 });
 
@@ -580,7 +673,10 @@ await section("Home stays quiet", async () => {
 // 3:4 reel, and the games and books sit lower. So the card's foot, with its
 // title and its play button, is on the first screen at every size, and the
 // doors come right after the card: on a small phone they (and "Your games")
-// fall below the fold, one swipe away.
+// fall below the fold, one swipe away. Since the Play Map (31 Oct 2026) the
+// card sits on a board between its head (Echo and "Let's explore.") and its
+// foot (tomorrow), the doors right after the board, and on a 390x844 phone
+// and up the doors are on the first screen too.
 const SIZES = [[320, 568], [375, 667], [390, 844], [430, 932], [768, 1024]];
 const STATES = [
   ["Day 1, open", { sub: true }],
@@ -608,7 +704,7 @@ const measure = (pg) => pg.evaluate(() => {
     return !!h && (h === e || e.contains(h) || (id === "questGo" && $("questCard").contains(h)));
   };
   return { y: window.pageYOffset, ih: window.innerHeight, ox: document.documentElement.scrollWidth - document.documentElement.clientWidth, page: { l: page.left, r: page.right },
-    go: box($("questGo")), card: box($("questCard")), title: box($("questTitle")), line: box($("questLine")), words: box(document.querySelector(".quest-body")), arcade: box($("arcadeBtn")), books: box($("homeBooksBtn")), art: box(art), buttons,
+    go: box($("questGo")), card: box($("questCard")), map: box($("homeMap")), pill: box($("mapTomorrow")), title: box($("questTitle")), line: box($("questLine")), words: box(document.querySelector(".quest-body")), arcade: box($("arcadeBtn")), books: box($("homeBooksBtn")), art: box(art), buttons,
     found: box(document.querySelector("#foundRow:not([hidden])")), fresh: box(document.querySelector("#foundRow:not([hidden]) .found-tile.fresh")),
     pics: [box($("arcadePic")), box($("homeBooksPic"))], doorWords: [...document.querySelectorAll("#homeDoors .door-word")].map(box),
     hit: { questCard: reach("questCard"), questGo: reach("questGo"), arcadeBtn: reach("arcadeBtn"), homeBooksBtn: reach("homeBooksBtn") }, after: window.pageYOffset };
@@ -631,7 +727,13 @@ for (const [w, h] of SIZES) {
       ok(at + "the picture is the day's reel: 3:4 at its tallest, never flatter than 4:3", ratio <= 4 / 3 + 0.01 && ratio >= 0.75 - 0.01, { art: m.art, ratio });
       const across = w >= 600 ? m.card.w <= 480.5 && Math.abs((m.card.l - m.page.l) - (m.page.r - m.card.r)) < 1.5 : m.card.w >= m.page.r - m.page.l - 1;
       ok(at + (w >= 600 ? "on an iPad the card is centred, 480 px wide at most" : "the card spans the page"), across, { card: m.card, page: m.page });
-      ok(at + "the doors come right after the card, side by side, at least 88 px tall, and a tap reaches each", !!m.arcade && !!m.books && m.arcade.t - m.card.b >= 8 && m.arcade.t - m.card.b <= 30 && Math.abs(m.arcade.t - m.books.t) < 1 && m.arcade.r <= m.books.l && m.arcade.h >= 88 && m.books.h >= 88 && m.hit.arcadeBtn && m.hit.homeBooksBtn, { card: m.card, arcade: m.arcade, books: m.books, hit: m.hit });
+      // the Play Map (31 Oct 2026): tomorrow on the board right under the
+      // card, then the doors right under the board
+      ok(at + "tomorrow sits on the board right under the card, and the doors come right after the board, side by side, at least 88 px tall, and a tap reaches each", !!m.arcade && !!m.books && !!m.pill && m.pill.t >= m.card.b && m.pill.b <= m.map.b && m.map.b - m.card.b <= 56 && m.arcade.t - m.map.b >= 8 && m.arcade.t - m.map.b <= 30 && Math.abs(m.arcade.t - m.books.t) < 1 && m.arcade.r <= m.books.l && m.arcade.h >= 88 && m.books.h >= 88 && m.hit.arcadeBtn && m.hit.homeBooksBtn, { card: m.card, map: m.map, pill: m.pill, arcade: m.arcade, books: m.books, hit: m.hit });
+      // Travis: "less empty space": on a 390x844 phone and up, the Arcade
+      // and Books doors are on the first screen too (the founding banner,
+      // the website's tallest Home, may push them one swipe away)
+      if (!/banner/.test(label) && ((w === 390 && h === 844) || (w === 430 && h === 932) || (w === 768 && h === 1024))) ok(at + "the Arcade and Books doors are on the first screen, whole, with no scroll", m.arcade.b <= m.ih && m.books.b <= m.ih && m.arcade.t >= 0, { arcade: m.arcade, books: m.books, ih: m.ih });
       ok(at + "every button is at least 44 px, and nothing scrolls sideways", m.ox <= 1 && m.buttons.every((b) => b.w >= 44 && b.h >= 44), { ox: m.ox, small: m.buttons.filter((b) => b.w < 44 || b.h < 44) });
       // FOUND1: the game a story left today waits in "Your games", under
       // the doors (it may fall below the first screen since HOMECLIP1)
