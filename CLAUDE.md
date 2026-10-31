@@ -210,8 +210,9 @@ changing one. What follows from the rule:
     only where this child will be shown a story (`Sona.storyShown()`): a
     phone that cannot buy, without Premium, gets the game of the day, so it
     gets the beat but no card. A picture is never broken: one that has
-    failed (or is not drawn yet: on 31 Oct 2026 no talking story had its
-    Home picture) by the time the screen is drawn is left out, and the card
+    failed (or is not drawn yet: until later on 31 Oct 2026 no talking
+    story had its Home picture) by the time the screen is drawn is left
+    out, and the card
     is its words; one that fails while the screen shows keeps its empty
     box, so nothing moves. On a phone 600 px tall or less the picture steps
     aside so a long name still fits.
@@ -2497,11 +2498,14 @@ the page.
 - **Pictures:** `tools/art/adventure-prompts.json` has each story's prompts
   (`talk: true`, its own lineup, no buddy spot); `gen-adventure.mjs --only
   <id>` draws them and `cut-adventure.py <id>` cuts them, as Days 4-14's.
-  **Not drawn yet** (31 Oct 2026: the cloud workspace's OpenAI key had
-  expired; Travis's task to renew it under the environment's network
-  secrets): until then every page shows its story's wash, Home's card its
-  wash and Echo. No buddy is laid over these pictures, and Home has no clip
-  for them yet (the card falls back to the picture).
+  **Drawn the same day** (31 Oct 2026, once Travis renewed the key): every
+  page and each story's Home picture (`home-<id>.webp`), checked page by
+  page against its line and key word. Fizz's s04 and s05 were drawn again
+  so the fireflies sleep before the feather (the model still paints the
+  paper lanterns softly lit before s06 says they twinkle on: left, as a
+  nit). A picture that fails to load still shows its story's wash. No buddy
+  is laid over these pictures, and Home has no clip for them yet (the card
+  falls back to the picture).
 - **For Rachel** (built on defaults until she answers; the PR lists every
   word): every key word and line; three sayings a page; a child is asked
   their sound's words whatever their age (the story games' rule, not the
