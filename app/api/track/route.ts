@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { kvConfigured } from "@/lib/slpAuth";
+import { trialPlayed, trialStart } from "@/lib/trials";
 
 /**
  * First-party telemetry relay for KID pages (COPPA posture).
@@ -67,13 +69,20 @@ const EVENTS = new Set([
   "board turned on",
   "board turned off",
   "board viewed",
+  // The free-week report (30 Oct 2026, TRIAL1, lib/trials.ts): "free trial
+  // started" from a purchase whose free days really began ({ days }: how
+  // long they are), and "played today" once a local day on a phone's first
+  // counted rep (nothing else). The server also keeps, per trial, which of
+  // its days had play, for /leads.html; no name, sound or count.
+  "free trial started",
+  "played today",
 ]);
 // `plan` and `surface` join the list for the events above, and `level` (2 or
 // 3) for "level played". Still no name, no age, no email, no word a child
 // said — an unlisted key is dropped silently, which is the whole point of an
 // allow-list. `kind`, `item` and `cost` are the Buddy Shop's ("characters",
 // "dragon", 150): a catalog entry and its coin price, never a balance.
-const PROPS = new Set(["sound", "game", "duration_seconds", "attempts_count", "code", "plan", "surface", "source", "level", "kind", "item", "cost"]);
+const PROPS = new Set(["sound", "game", "duration_seconds", "attempts_count", "code", "plan", "surface", "source", "level", "kind", "item", "cost", "days"]);
 
 export async function POST(req: NextRequest) {
   try {
@@ -89,6 +98,15 @@ export async function POST(req: NextRequest) {
       const v = (b.p as Record<string, unknown>)[k];
       if (typeof v === "number" && isFinite(v)) props[k] = Math.max(0, Math.min(100000, Math.round(v)));
       else if (typeof v === "string") props[k] = v.slice(0, 40);
+    }
+    // TRIAL1: the free-week report's own record (never waits long: the store
+    // answers or the beacon goes on without it)
+    if (kvConfigured() && (event === "free trial started" || event === "played today")) {
+      const now = Date.now();
+      try {
+        if (event === "free trial started") await trialStart(fid, Number(props.days) || 0, now);
+        else await trialPlayed(fid, now);
+      } catch { /* the report can miss a day; the beacon still goes */ }
     }
     const ctrl = new AbortController();
     const to = setTimeout(() => ctrl.abort(), 4000);

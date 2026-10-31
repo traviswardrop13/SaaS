@@ -32,8 +32,12 @@
     "bearCoverBytes": 36536
   },
   "typecheck": {
-    "appliesToCommit": "c19f6e4835ba0cb406b5e484a9dea45b80bc5f82",
-    "cleanTrackedReleaseSources": "416 tracked source/configuration files; identical tsconfig.json; TypeScript exited 0 with no diagnostics.",
+    "appliesToMerge": {
+      "featureParent": "b412ceb79b0dc1efaf8e785cd2d0d327aaca0900",
+      "upstreamParent": "0698e9b0a5abbf49f5caffe6bc910fa018a336fe",
+      "resolvedSonaSha256": "7b3d063860c548803a7a0e32da31031e913354eb7b287333ebda3faa23a0a6ca"
+    },
+    "cleanTrackedReleaseSources": "419 tracked source/configuration files after the approved upstream merge; identical tsconfig.json; TypeScript exited 0 with no diagnostics.",
     "command": "node node_modules/typescript/bin/tsc --noEmit -p tsconfig.json",
     "tsconfigSha256": "76aac006c4f9b6f9067f595065c788e8f77370d6ad6284c7020be84ea2f1b178",
     "exitCode": 0,
@@ -57,7 +61,7 @@
       "exitCode": 0,
       "details": "All 55 books and 554 pages, seven complete eight-page reader flows, strict selected-sound shelves, real reload persistence, microphone/TTS safeguards and original painted scenes."
     },
-    "fullBattery": "A full run was interrupted after its stale 29-book landing expectation failed against the new 36-cover strip. That test and the affected integration whitelist are fixed; a fresh full release battery is pending.",
+    "fullBattery": "A fresh full release battery remains pending after the approved upstream merge. Focused reader, landing, integration, target, trial-report and notification checks are green; no push or release is claimed.",
     "regressionEvidence": {
       "savedOldPage": "98c572b3:public/library.html",
       "isolatedReaderExitCode": 1,
@@ -86,6 +90,47 @@
       "assertions": 16,
       "exitCode": 0,
       "details": "The selected R shelf is checked against the actual catalog sound, including Rabbit and the Rocket; an off-sound Halloween fallback cannot pass."
+    },
+    "upstreamIntegration": {
+      "status": "Approved merge resolved for root review; verification worker did not commit or push.",
+      "conflict": "One conflict, only the global.Sona export list in public/sona.js.",
+      "resolution": "Exact union of 375 exports; all common expressions and every byte outside the conflict remained unchanged.",
+      "preservedFeatureApis": [
+        "freeBooksOnShelf",
+        "setTargetSound",
+        "storyDay",
+        "storyGame",
+        "targetSound",
+        "targetSoundOptions"
+      ],
+      "preservedUpstreamApis": [
+        "nudgeConsent",
+        "nudgeState"
+      ],
+      "focusedChecks": {
+        "allPublicScriptSyntax": {
+          "assertions": 109,
+          "exitCode": 0
+        },
+        "targetSelection": {
+          "assertions": 46,
+          "exitCode": 0
+        },
+        "upstreamTrialReport": {
+          "assertions": 29,
+          "exitCode": 0
+        },
+        "upstreamNotifications": {
+          "assertions": 121,
+          "exitCode": 0
+        },
+        "cleanTrackedSourceTypecheck": {
+          "files": 419,
+          "exitCode": 0
+        }
+      },
+      "voiceScriptCurrent": true,
+      "fullBattery": "Fresh full release battery remains required after the reviewed merge is saved."
     }
   }
 }

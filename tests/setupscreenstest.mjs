@@ -245,7 +245,7 @@ await scenario('the reminder ask: only where a reminder can be set and the price
   ok('an iPhone that can set a reminder, never asked, the price to follow: the reminder screen sits between ready and the microphone',await page.evaluate(()=>ORDER.join())==='welcome,problem,reel,piano,rachel,name,interests,games,therapy,sounds,minutes,updates,ready,remind,mic');
   await setupWalk(page,'ready',{name:'Mia'});await next(page);await page.locator('[data-step="remind"].on').waitFor();
   const r=await page.evaluate(()=>{const st=document.querySelector('[data-step="remind"]'),painted=el=>getComputedStyle(el).display!=='none'&&el.getBoundingClientRect().height>0;return {title:document.getElementById('remindTitle').textContent,line:st.querySelector('.remind-line').textContent,yes:document.getElementById('remindYes').textContent,no:document.getElementById('remindNo').textContent,next:painted(document.getElementById('nextBtn')),back:painted(document.getElementById('backBtn')),bubble:document.getElementById('bubble').textContent,seg:document.getElementById('seg').hidden,focus:document.activeElement&&document.activeElement.id,saved:!!Sona.getProfile().onboarded,asks:__s.notifyAsks,name:/Mia/.test(st.textContent)};});
-  ok('it asks, in a few words: "Want a reminder before your free trial ends?", "One notification, the day before.", "Turn on reminders" or "Not now"',r.title==='Want a reminder before your free trial ends?'&&r.line==='One notification, the day before.'&&r.yes==='Turn on reminders'&&r.no==='Not now'&&r.bubble==='I\'ll give you a heads-up!'&&!r.name,r);
+  ok('it asks, in a few words: "Want reminders during your free trial?", "A practice reminder each day, and one the day before it ends.", "Turn on reminders" or "Not now"',r.title==='Want reminders during your free trial?'&&r.line==='A practice reminder each day, and one the day before it ends.'&&r.yes==='Turn on reminders'&&r.no==='Not now'&&r.bubble==='I\'ll give you a heads-up!'&&!r.name,r);
   ok('…its two buttons are the way on (no Continue), Back is there, no progress bar, the heading takes focus',!r.next&&r.back&&r.seg&&r.focus==='remindTitle',r);
   ok('…and nothing is saved or asked of iOS by arriving: the profile is saved as the screen is left',!r.saved&&r.asks===0,r);
   await calm(page);await page.locator('#backBtn').click();await page.locator('[data-step="ready"].on').waitFor();
@@ -263,6 +263,7 @@ await scenario('the reminder ask: only where a reminder can be set and the price
   await calm(page);await page.locator('#remindYes').click();await page.waitForTimeout(300);
   const w=await page.evaluate(()=>({asks:__s.notifyAsks,screen:document.body.dataset.setupScreen,yes:document.getElementById('remindYes').disabled,no:document.getElementById('remindNo').disabled,back:document.getElementById('backBtn').disabled,saved:!!Sona.getProfile().onboarded}));
   ok('while iOS\'s box is up the screen waits for the answer: asked once, both buttons and Back still, nothing saved yet',w.asks===1&&w.screen==='remind'&&w.yes&&w.no&&w.back&&!w.saved,w);
+  ok('NUDGE1: "Turn on reminders", under words that promise a reminder each day, is the parent\'s yes to the daily practice reminders (none is set until a trial starts)',await page.evaluate(()=>{try{return JSON.parse(localStorage.getItem('sona.notify.v1')||'{}').nudge===1&&!JSON.parse(localStorage.getItem('sona.notify.v1')||'{}').nudges;}catch(e){return false;}}));
   await page.evaluate(()=>{__s.notifyAsks+=0;window.__notifyAnswer('denied');});
   await page.waitForURL(u=>u.pathname==='/subscribe.html');
   ok('…and whatever the parent answers there, on to the price',new URL(page.url()).pathname==='/subscribe.html'&&(await at(page)).saved);
@@ -271,6 +272,7 @@ await scenario('the reminder ask: only where a reminder can be set and the price
  {const {context,page,errors}=await fresh({webSales:true,notify:NOTIFY,init:COUNT});try{
   await setupWalk(page,'remind',{name:'Mia'});
   await calm(page);await page.locator('#remindNo').click();
+  ok('NUDGE1: "Not now" says yes to nothing',await page.evaluate(()=>{try{return !JSON.parse(localStorage.getItem('sona.notify.v1')||'{}').nudge;}catch(e){return true;}}));
   await page.waitForURL(u=>u.pathname==='/subscribe.html');
   const a=await at(page);
   ok('"Not now" goes on to the price, with the profile saved and the marker written, and iOS is never asked',a.saved&&!!a.marker&&a.asks==='0',a);

@@ -698,6 +698,109 @@ const now = (page) => page.evaluate(() => Date.now());
   await web.context.close();
 }
 
+// ── 4e. NUDGE1: a practice reminder each day of the free trial ──
+{
+  const buyer = async (consent, icfg) => {
+    const o = await phoneWith({ app: "buy", stamp: "post", setUp: true }, Object.assign({ perm: "granted" }, icfg || {}));
+    await settle(o.page, 1900);
+    await o.page.evaluate((c) => {
+      if (c) Sona.nudgeConsent();
+      window.__beacons = [];
+      navigator.sendBeacon = (u, b) => { try { window.__beacons.push(JSON.parse(b)); } catch (e) {} return true; };
+    }, consent);
+    return o;
+  };
+  const buy = (o, patch) => o.page.evaluate(async (patch) => {
+    const plan = await Sona.storePlan();
+    if (patch) window.__ios.set(patch);
+    let res; try { res = await Sona.buyPlan(plan); } catch (e) { res = { err: e.code || e.message }; }
+    return { res, t: Date.now() };
+  }, patch);
+  const nudgesIn = async (o) => Object.entries((await o.ios()).pending).filter(([id]) => /^sona-nudge-/.test(id)).map(([id, v]) => ({ id, at: v.at, body: v.body, title: v.title }));
+  // the days the nudges belong on, worked out here on their own: each local
+  // day after the start, before the last day, but the reminder's
+  const expect = (o, start, end) => o.page.evaluate(({ start, end, LEAD }) => {
+    const ymd = (ms) => { const d = new Date(ms); return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate(); };
+    const out = [], s = new Date(start);
+    for (let k = 1; k < 30; k++) {
+      const day = new Date(s.getFullYear(), s.getMonth(), s.getDate() + k, 12);
+      if (ymd(day.getTime()) >= ymd(end)) break;
+      if (ymd(day.getTime()) === ymd(end - LEAD)) continue;
+      out.push("sona-nudge-" + ymd(day.getTime()));
+    }
+    return out;
+  }, { start, end, LEAD });
+
+  let o = await buyer(true);
+  const T = (await now(o.page)) + 7 * DAY;
+  let b = await buy(o, { rc: { periodType: "TRIAL", expirationDateMillis: T, willRenew: true } });
+  await settle(o.page, 1500);
+  let got = await nudgesIn(o), want = await expect(o, b.t, T);
+  const clock = await o.page.evaluate((list) => list.map((n) => { const d = new Date(n.at); return d.getHours() * 60 + d.getMinutes(); }), got);
+  ok("NUDGE1: a seven-day free trial, the parent said yes on setup's screen: one practice reminder on each day after the start, never on the reminder's day or the last day",
+    b.res && b.res.ok && got.length === want.length && want.length >= 4 && want.every((id) => got.some((n) => n.id === id)), [got.map((n) => n.id), want]);
+  ok("…all at one clock time, between 3:30 and 7:30 pm, with the fixed words and no name",
+    clock.length > 0 && clock.every((m) => m === clock[0] && m >= 930 && m <= 1170) && got.every((n) => n.title === "Sona" && n.body === "Ready for 5 minutes of practice? Echo is waiting to play."), [clock, got[0]]);
+  ok("…and the trial reminder is still set beside them", !!(await o.ios()).pending[ID], Object.keys((await o.ios()).pending));
+  const started = await o.page.evaluate(() => window.__beacons.filter((x) => x.e === "free trial started"));
+  ok("TRIAL1: the purchase says \"free trial started\" once, with the free days' length and the anonymous family id only",
+    started.length === 1 && started[0].p.days === 7 && Object.keys(started[0].p).join() === "days" && /^[A-Za-z0-9_-]{8,40}$/.test(started[0].fid), started);
+
+  // the first counted rep of a day takes that day's nudge back (seeded: the
+  // real ones start tomorrow)
+  const today = await o.page.evaluate(() => { const d = new Date(); const t = Date.now() + 2 * 3600000;
+    const id = "sona-nudge-" + (d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate());
+    const k = JSON.parse(localStorage.getItem("sona.notify.v1")); k.nudges = (k.nudges || []).concat([{ id, at: t }]); localStorage.setItem("sona.notify.v1", JSON.stringify(k));
+    localStorage.removeItem("sona.played.v1"); return id; });
+  await o.page.evaluate(() => { Sona.gameRep("R"); Sona.gameRep("R"); });
+  await settle(o.page, 600);
+  const after = await o.page.evaluate(() => ({ played: window.__beacons.filter((x) => x.e === "played today"), mark: localStorage.getItem("sona.played.v1"), list: Sona.nudgeState().nudges.map((n) => n.id) }));
+  const cancels = (await o.calls("notifyCancel")).filter((c) => c.a && c.a.id === today);
+  ok("TRIAL1 / NUDGE1: the day's first counted rep says \"played today\" once (two reps, one beacon, nothing but the id) and takes today's reminder back",
+    after.played.length === 1 && Object.keys(after.played[0].p).length === 0 && cancels.length === 1 && !after.list.includes(today) && after.list.length === want.length, [after, cancels]);
+  // the trial became a paid month: every nudge goes
+  await o.page.evaluate(() => window.__ios.set({ rc: { periodType: "NORMAL", expirationDateMillis: Date.now() + 30 * 86400000, willRenew: true } }));
+  const r = await o.page.evaluate(() => Sona.trialReminderSync(true));
+  await settle(o.page, 800);
+  ok("…a trial that turned into a paid month takes every reminder back (the daily check)", r === "cancelled" && (await nudgesIn(o)).length === 0 && (await o.page.evaluate(() => Sona.nudgeState().nudges.length)) === 0, [r, await nudgesIn(o)]);
+  await o.context.close();
+
+  // a parent who allowed notifications under the old words ("One
+  // notification, the day before.") was promised one: no nudge
+  o = await buyer(false);
+  const T2 = (await now(o.page)) + 7 * DAY;
+  b = await buy(o, { rc: { periodType: "TRIAL", expirationDateMillis: T2, willRenew: true } });
+  await settle(o.page, 1500);
+  ok("…no yes on the new screen (allowed under the old one-reminder words): the trial reminder only, no daily one",
+    b.res.ok && (await nudgesIn(o)).length === 0 && !!(await o.ios()).pending[ID], Object.keys((await o.ios()).pending));
+  await o.context.close();
+
+  // notifications refused: nothing, whatever the yes said
+  o = await buyer(true, { perm: "denied" });
+  b = await buy(o, { rc: { periodType: "TRIAL", expirationDateMillis: (await now(o.page)) + 7 * DAY, willRenew: true } });
+  await settle(o.page, 1500);
+  ok("…iOS's notifications turned off: none", (await nudgesIn(o)).length === 0, await nudgesIn(o));
+  await o.context.close();
+
+  // charged today: no free days, no nudge, and no "free trial started"
+  o = await buyer(true);
+  b = await buy(o, { rc: { periodType: "NORMAL", expirationDateMillis: (await now(o.page)) + 30 * DAY, willRenew: true } });
+  await settle(o.page, 1500);
+  const st2 = await o.page.evaluate(() => window.__beacons.filter((x) => x.e === "free trial started").length);
+  ok("…a purchase charged today sets no daily reminder and says no free trial started", b.res.ok && (await nudgesIn(o)).length === 0 && st2 === 0, [await nudgesIn(o), st2]);
+  await o.context.close();
+
+  // a three-day trial: only the one day between that is not the reminder's
+  o = await buyer(true);
+  const T3 = (await now(o.page)) + 3 * DAY;
+  b = await buy(o, { rc: { periodType: "TRIAL", expirationDateMillis: T3, willRenew: true } });
+  await settle(o.page, 1500);
+  got = await nudgesIn(o); want = await expect(o, b.t, T3);
+  ok("…a three-day trial gets the days that rule leaves (" + want.length + "), never two notifications in a day",
+    got.length === want.length && want.every((id) => got.some((n) => n.id === id)), [got.map((n) => n.id), want]);
+  await o.context.close();
+}
+
 // ── 7. the source ──
 {
   const src = readFileSync(ROOT + "/sona.js", "utf8");
@@ -709,7 +812,9 @@ const now = (page) => page.evaluate(() => Date.now());
     !/fetch\(|sendBeacon|\btrack\(|XMLHttpRequest|parentEmail|\/api\//.test(code), (code.match(/[^\n]*(fetch\(|sendBeacon|\btrack\(|XMLHttpRequest|parentEmail|\/api\/)[^\n]*/) || [""])[0]);
   ok("…and it never reads a child: no name, profile, kids list or slot", !/childName|kidName|getProfile|_kids|profile|kkey|PKEY/.test(code), (code.match(/[^\n]*(childName|kidName|getProfile|_kids|profile|kkey|PKEY)[^\n]*/) || [""])[0]);
   ok("…its words are one fixed pair, handed to iOS as they are",
-    /const TRIAL_REMIND = \{ title: "[^"$\d]+", body: "[^"$\d]+" \};/.test(code) && /title: TRIAL_REMIND\.title, body: TRIAL_REMIND\.body/.test(code) && (code.match(/P\.notifySchedule\(/g) || []).length === 1);
+    /const TRIAL_REMIND = \{ title: "[^"$\d]+", body: "[^"$\d]+" \};/.test(code) && /title: TRIAL_REMIND\.title, body: TRIAL_REMIND\.body/.test(code) && (code.match(/P\.notifySchedule\(/g) || []).length === 2);
+  ok("NUDGE1's words are one fixed pair too, the only other thing ever handed to iOS",
+    /const NUDGE = \{ title: "[^"$]+", body: "[^"$]+" \};/.test(code) && /title: NUDGE\.title, body: NUDGE\.body/.test(code));
   const buy = (src.match(/\n  function buyPlan\(plan\) \{[\s\S]*?\n  \}\n/) || [""])[0];
   ok("buyPlan has ONE hook, on its success path, right after the list's plan post, handed the purchase's own answer",
     (buy.match(/_trialRemindBought\(/g) || []).length === 1 && /_tellPlan\(r && r\.period, plan\); _trialRemindBought\(r, plan\);/.test(buy)
@@ -717,7 +822,7 @@ const now = (page) => page.evaluate(() => Date.now());
   ok("…and one more, the same step for a sale buyPlan did not answer (Ask to Buy approved, Restore after \"not-entitled\"), never throwing",
     /function trialReminderSold\(plan\) \{ try \{ _trialRemindBought\(\{\}, plan \|\| null\); \} catch \(e\) \{\} \}/.test(code));
   ok("THE LEAD IS 30 HOURS, one constant: a cancel after the reminder still counts (Apple's line is 24 hours)",
-    /const TRIAL_REMIND_LEAD_MS = 30 \* 60 \* 60 \* 1000;/.test(code) && (code.match(/TRIAL_REMIND_LEAD_MS/g) || []).length === 3);
+    /const TRIAL_REMIND_LEAD_MS = 30 \* 60 \* 60 \* 1000;/.test(code) && (code.match(/TRIAL_REMIND_LEAD_MS/g) || []).length === 4);
   const sub = readFileSync(ROOT + "/subscribe.html", "utf8");
   ok("subscribe.html calls it, feature-checked, from the Ask to Buy approval and the Restore after \"not-entitled\"",
     /typeof Sona\.trialReminderSold === "function"/.test(sub) && /soldElsewhere\(APPLE\.pendingPlan\); bought\(APPLE\.pendingKind\)/.test(sub) && /if \(APPLE\.unentPlan\) soldElsewhere\(APPLE\.unentPlan\); appleDone\("restored"/.test(sub));
