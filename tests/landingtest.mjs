@@ -150,7 +150,7 @@ ok("the parent page carries the launch note", !!P_NOTE);
   });
   ok("…and the hero's wave is the colour of the section under it", seam.next === "library" && seam.wave === seam.under, seam);
   // THE STRIPS ARE NEAR THE TOP NOW. The tiles that start on screen are not
-  // left to lazy loading; the rest still are (the 29 covers are about 5 MB);
+  // left to lazy loading; the remaining book covers still are;
   // every tile keeps its box while its picture loads, so nothing moves; and
   // the heading over them does not wait for a scroll, which on a laptop left
   // the first screenful ending in an empty dark band.
@@ -497,10 +497,9 @@ for (const [label, reply, want] of [
 // The page counts only the books the shelf has opened and tags the rest with
 // their day, worked out on the visitor's own calendar, so a parent is never
 // promised a book their child can't open yet.
-// Every queued book comes out on Friday 9 Oct (Travis, 1 Oct 2026: "everything
-// that is currently in queue to just say for next Friday"), so the day before
-// still shows 15 and the day itself shows them all.
-for (const [when, count, first] of [["2026-10-01T09:00:00", 29, null]]   /* every book live since 1 Oct 2026 */) {
+// Every finished book is open. The seven new/expanded fuller books bring the
+// parent strip to 36 year-round covers; seasonal books remain off that strip.
+for (const [when, count, first] of [["2026-10-01T09:00:00", 36, null]]   /* every book live since 1 Oct 2026 */) {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: "reduce" });
   await context.route("**/*", (route) => (route.request().url().startsWith(origin) ? route.continue() : route.abort()));
   const page = await context.newPage(); const errors = []; page.on("pageerror", (e) => errors.push(e.message));
@@ -510,7 +509,7 @@ for (const [when, count, first] of [["2026-10-01T09:00:00", 29, null]]   /* ever
     tags: [...document.querySelectorAll(".tile.b:not([aria-hidden]) .soon-tag")].map((t) => t.textContent),
     openTiles: document.querySelectorAll(".tile.b:not([aria-hidden]):not(.soon)").length }));
   ok("on " + when.slice(0, 10) + " the site counts " + count + " open books and tags the rest with their day",
-    got.n === String(count) && got.openTiles === count && got.tags.length === 29 - count && (first ? got.tags.every((t) => t === first) : true), got);
+    got.n === String(count) && got.openTiles === count && got.tags.length === 36 - count && (first ? got.tags.every((t) => t === first) : true), got);
   ok("…with no page errors", errors.length === 0, errors);
   await context.close();
 }

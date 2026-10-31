@@ -32,8 +32,12 @@
     "bearCoverBytes": 36536
   },
   "typecheck": {
-    "cleanTrackedReleaseSources": "Same tsconfig, exit 0",
-    "workspaceOnlyIssue": "The normal workspace check includes old untracked source archives under output/. These were left untouched and are absent from the release-source check."
+    "appliesToCommit": "c19f6e4835ba0cb406b5e484a9dea45b80bc5f82",
+    "cleanTrackedReleaseSources": "416 tracked source/configuration files; identical tsconfig.json; TypeScript exited 0 with no diagnostics.",
+    "command": "node node_modules/typescript/bin/tsc --noEmit -p tsconfig.json",
+    "tsconfigSha256": "76aac006c4f9b6f9067f595065c788e8f77370d6ad6284c7020be84ea2f1b178",
+    "exitCode": 0,
+    "workspaceOnlyIssue": "The normal workspace includes old untracked source archives under output/. These were left untouched and are absent from the clean tracked-source check."
   },
   "regressionEvidence": "New target selection, stale-sibling protection, whole-Home fit and signature-adventure checks failed against saved pre-change sources. Five Auto-selection checks fail against the pre-fix Home, including real keyboard selection of the already-current sound.",
   "releaseState": "Local review draft. All expanded-book focused checks passed; full release battery and clinical review remain before release. No main merge or production release.",
@@ -53,7 +57,7 @@
       "exitCode": 0,
       "details": "All 55 books and 554 pages, seven complete eight-page reader flows, strict selected-sound shelves, real reload persistence, microphone/TTS safeguards and original painted scenes."
     },
-    "fullBattery": "Pending final upstream integration and full release battery; no push or release claimed.",
+    "fullBattery": "A full run was interrupted after its stale 29-book landing expectation failed against the new 36-cover strip. That test and the affected integration whitelist are fixed; a fresh full release battery is pending.",
     "regressionEvidence": {
       "savedOldPage": "98c572b3:public/library.html",
       "isolatedReaderExitCode": 1,
@@ -72,6 +76,16 @@
     "sourceSyntax": {
       "exitCode": 0
     },
-    "voiceScriptCurrent": true
+    "voiceScriptCurrent": true,
+    "landingChecks": {
+      "assertions": 115,
+      "exitCode": 0,
+      "details": "The parent strip shows exactly 36 year-round fuller-book covers and no unopened tags; signup, links, loading and accessibility checks remain green."
+    },
+    "integrationPackChecks": {
+      "assertions": 16,
+      "exitCode": 0,
+      "details": "The selected R shelf is checked against the actual catalog sound, including Rabbit and the Rocket; an off-sound Halloween fallback cannot pass."
+    }
   }
 }
