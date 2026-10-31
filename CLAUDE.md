@@ -185,8 +185,9 @@ changing one. What follows from the rule:
   retain room for payment choices and legal links.
 - **THE PLAN MOMENT, THEN STRAIGHT INTO DAY 1 (Travis, 31 Oct 2026: "build
   the plan moment and straight into day 1"; after TALK1 made Day 1 a story
-  in the child's own sound).** Two changes, a parent's first setup only
-  (never a child walking setup again, a second child or a clinician):
+  in the child's own sound).** The beat and the card are a parent's first
+  setup only (never a child walking setup again, a second child or a
+  clinician); the hand-off's change is every family's:
   - **A short build beat before the ready screen.** As the parent moves on
     to "<Name>'s practice is ready!", the page shows Echo, "Building
     <Name>'s practice…" and their own answers coming in one by one (the age
@@ -208,11 +209,12 @@ changing one. What follows from the rule:
     same rule (`_talkFor`), so the card and Home can never disagree. Shown
     only where this child will be shown a story (`Sona.storyShown()`): a
     phone that cannot buy, without Premium, gets the game of the day, so it
-    gets the beat but no card. A picture that fails is never broken: by the
-    time the screen is drawn it is left out (no talking story has a Home
-    picture yet, so those cards are words alone); one that fails while the
-    screen shows keeps its empty box, so nothing moves. On a phone 600 px
-    tall or less the picture steps aside so a long name still fits.
+    gets the beat but no card. A picture is never broken: one that has
+    failed (or is not drawn yet: on 31 Oct 2026 no talking story had its
+    Home picture) by the time the screen is drawn is left out, and the card
+    is its words; one that fails while the screen shows keeps its empty
+    box, so nothing moves. On a phone 600 px tall or less the picture steps
+    aside so a long name still fits.
   - **"Let's play!" opens today's story** whenever it is open to the child
     at that tap (`Sona.questToday()` an open story AND `Sona.storyOpen()`):
     `/adventure.html`, which in the iPhone app starts the story at once. So
@@ -230,8 +232,9 @@ changing one. What follows from the rule:
     whose story is open is sent to it too.
   `setupscreenstest` (the beat, the card, `day1For`, the fit),
   `setupsteadytest` (the card from its first frame, a late picture moves
-  nothing), `replaytest`, `onboardingtest` and `setupbuytest` (where
-  "Let's play!" goes) play it; `_phone.mjs`'s `setupWalk` waits the beat out.
+  nothing), `replaytest`, and `onboardingtest`, `setupbuytest` and
+  `trialfirsttest` (where "Let's play!" goes) play it; `_phone.mjs`'s
+  `setupWalk` waits the beat out.
 - **SETUP, REBUILT FROM SCRATCH: SELL SONA, A FEW QUESTIONS, THE PRICE, THEN
   THE PHONE IS HANDED OVER** (Travis, 22 Oct 2026: "I want to do a
   completely new onboarding ... from scratch. I want animation ... make it
@@ -2915,8 +2918,9 @@ offer, the level sheet, the grown-ups check and "Home opens the offer once".
   that tile were kept on the first screen).
 
 Setup finishes in the first game (Feed Echo for 3-4, Fruit Slice from 5; see
-"The ask happens after the product proves itself"), and every visit after
-that opens on Home. **Home is silent and only reads:** on load, on coming back
+"The ask happens after the product proves itself"), or since 31 Oct 2026 in
+today's story wherever it is open to the child (see "THE PLAN MOMENT, THEN
+STRAIGHT INTO DAY 1"), and every visit after that opens on Home. **Home is silent and only reads:** on load, on coming back
 to the front and between the views it writes nothing, sends nothing and
 speaks nothing, and its source never says `questEnd`, comments included
 (the one exception is sona.js's own: the first load that finds a set-up

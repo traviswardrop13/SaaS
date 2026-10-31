@@ -484,7 +484,10 @@ await scenario('the plan card: Day 1\'s story for this child\'s sounds',async()=
    const p=await planShown(page);
    ok(label+': the card names '+DAY1[id][0]+', with its Home line, a "Day 1" pill and "A new story every day." under it',p.shown&&p.story===id&&p.day==='Day 1'&&p.title===DAY1[id][0]&&p.line===DAY1[id][1]&&p.more==='A new story every day.',p);
    ok('…under the chips, a statement with nothing to tap, and no plan, price or promise in the screen\'s words',p.card&&p.card.t>=p.chips.b&&p.asks===0&&!/\bplan\b|\$|\bfree\b|recommend|score|result/i.test(p.text),p);
-   if(id==='lighthouse')ok('…its Home picture is drawn, loaded',p.pic&&p.loaded&&p.imgSeen&&p.src==='/assets/crafted/home-lighthouse.webp'&&!p.broken.length,p);
+   // (the talking stories' Home pictures are being drawn, 31 Oct 2026: a
+   // story whose picture is on disk shows it, one whose picture is not yet
+   // steps aside, so this holds either way)
+   if(existsSync(root+'/assets/crafted/home-'+id+'.webp'))ok('…its Home picture is drawn, loaded',p.pic&&p.loaded&&p.imgSeen&&p.src==='/assets/crafted/home-'+id+'.webp'&&!p.broken.length,p);
    else ok('…its story has no Home picture yet: the picture steps aside, never a broken image (the card is its words)',!p.pic&&!p.broken.length&&p.src==='/assets/crafted/home-'+id+'.webp',p);
    // the same story once the profile is saved: Home's own rule (questToday) agrees with the card
    await next(page);await page.waitForURL(u=>u.pathname==='/subscribe.html');
@@ -494,6 +497,15 @@ await scenario('the plan card: Day 1\'s story for this child\'s sounds',async()=
    clean('plan card: '+label,errors);
   }finally{await context.close();}
  }
+ // a picture that has already failed when the screen is drawn (here the
+ // lighthouse's, answered 404) is left out: the card is its words, never a
+ // broken image
+ {const {context,page,errors}=await fresh({webSales:true,routes:[['**/assets/crafted/home-lighthouse.webp',r=>r.fulfill({status:404,body:''})]]});try{
+  await setupWalk(page,'ready',{name:'Mia',age:'8',sounds:['K']});await page.waitForTimeout(150);
+  const p=await planShown(page);
+  ok('a Day 1 picture that failed before the screen showed steps aside: the card is its words alone (The Lighthouse Sneeze), with no broken image and no empty box',p.shown&&p.story==='lighthouse'&&p.title===DAY1.lighthouse[0]&&p.line===DAY1.lighthouse[1]&&!p.pic&&!p.broken.length&&p.more==='A new story every day.',p);
+  clean('plan card, a picture that failed first',errors);
+ }finally{await context.close();}}
  // a picture that fails while the screen shows keeps its box, empty: nothing moves under a finger
  {let fail;const late=new Promise(r=>{fail=r;});
   const {context,page,errors}=await fresh({webSales:true,routes:[['**/assets/crafted/home-lighthouse.webp',async r=>{await late;r.fulfill({status:404,body:''});}]]});try{
