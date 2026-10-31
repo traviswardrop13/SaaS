@@ -2375,7 +2375,8 @@ the page.
   **`TALK_ON`** (`sona.js`) is the one off switch: false gives every child
   the lighthouse again (a talking Day 1 already finished stays). The suites
   that play the lighthouse as Day 1 set sessionStorage `sona.talkoff` for
-  their tab (adventuretest, storycoretest, homestorytest).
+  their tab (adventuretest, storycoretest, homestorytest, and every story
+  game suite through `tests/_sayplaydevice.mjs`).
 - **The player** (`adventure.html`, with `saycheck.js` and
   `talk-stories.js`): each page reads as before (Echo's line, the caption,
   "Hear it"); when he finishes, Echo asks "Can you say... <word>." (the

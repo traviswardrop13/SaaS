@@ -134,6 +134,10 @@ export function fakeDevice(cfg) {
     Object.keys(value.sfx || {}).forEach((k) => { const real = value.sfx[k]; if (typeof real !== "function" || k === "stop") return; value.sfx[k] = function () { h.sfx.push({ name: k, at: now(), live: h.micOn() }); return real.apply(this, arguments); }; });
   } });
 
+  // TALK1: these suites play the story games, whose Day 1 is the lighthouse
+  // for a child on a sound with no talking story; a talking Day 1 is
+  // talkstorytest's (sona.js _talkDay reads this tab-only seam)
+  try { sessionStorage.setItem("sona.talkoff", "1"); } catch (e) {}
   if (!localStorage.getItem("sona.test.sayplaySeed")) {
     localStorage.setItem("sona.test.sayplaySeed", "1");
     localStorage.setItem("sona.freeera.v1", "post"); localStorage.setItem("sona.freeera2.v1", "done"); localStorage.setItem("sona.freeera3.v1", "done"); localStorage.setItem("sona.freeera4.v1", "done"); localStorage.setItem("sona.freeera5.v1", "done");
