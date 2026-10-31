@@ -1359,6 +1359,62 @@ Any page written to answer a parent's search ("how to practice the R sound
 at home") explains how to practice a sound, so it is Rachel's to review
 before it ships. `shiptest` pins all of it.
 
+**THE GUIDES FOR PARENTS (GUIDES1, 28 Oct 2026)** (Travis: "go build the
+pages", after the search plan: pages that answer what a parent asks Google
+or ChatGPT). Eleven pages under `/guides`, every word in ONE list,
+`lib/guides.ts`, drawn by `app/guides` (Next, built at deploy time, plain
+HTML with the FAQ open on the page): the hub, "Speech practice at home: a
+simple guide for parents" (`/guides`); eight sound guides (`r-sound`,
+`s-sound` with Z and lisps, `l-sound`, `th-sound` with both TH,
+`k-and-g-sounds`, `f-and-v-sounds`, `sh-sound`, `ch-and-j-sounds`); and two
+lists of apps (`best-speech-practice-apps`, `speech-blubs-alternatives`).
+- **Nothing is on speaksona.com until Rachel has read it.** Each guide has
+  `reviewed: null`. While it is null, on production (`VERCEL_ENV`
+  "production") the page is a 404 and it is in no sitemap, no llms.txt and
+  no list of links; on a preview deploy or a laptop it shows with a "Draft
+  for Rachel's review" strip and `noindex`, so she can read it there.
+  **Setting `reviewed` to the day she approved it (`"2026-10-30"`) is what
+  publishes it**: the page goes live, joins the sitemap (with that day) and
+  llms.txt, the hub links to it, and only then does it say "Reviewed by
+  Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her
+  clinical fellowship, on <day>." (and its schema.org labels name her as
+  the reviewer). Set it only on her word, one guide at a time.
+- **A guide teaches what the app does:** its ages are `SOUND_NORM`'s, its
+  practice words Sona's own start-of-word words (`WORDS`, pos "i"), every
+  quoted mix-up ("“wabbit” for rabbit") one `HEAR_SUBS` listens for, no
+  syllable Sona won't say, and each routine's sentence a real sentence
+  (never "a cheese"). The routine is Sona's ladder: the sound alone, the
+  sound with a vowel, start-of-word words, a short sentence, end on a win;
+  the say-it-back tip and "riding a bike" are Rachel's own email words.
+- **The house rules hold:** Rachel's settled line on every page; no dollar
+  figure, no count of games or books, no testimonial; "speech-language
+  pathologist", never "SLP"; no certification; nothing that says Sona grades
+  a word (it hears "a voice of the right kind"); no link to the clinician
+  side; the App Store a tap away (Android: the web app, as on the home
+  page). The lists of apps say first that we make Sona, put Sona first and
+  marked "Our app", describe every other app only in its maker's own terms
+  (checked October 2026, from search results: the network here could not
+  open their sites), and name no other app's price.
+- **No Meta pixel on the guides:** `pixel.js` returns early on `/guides`
+  (the root layout loads it on every Next page). Which guide a parent reads
+  ("help a lisp") is about their child. Analytics (PostHog) still counts
+  visits. Travis's to change.
+- **Not linked from the home page yet:** `parents.html` may link only to a
+  live guide (`guidestest`). Once the hub is reviewed, a footer link to
+  `/guides` is the next step.
+- **For Rachel, before any goes live:** every word, above all each sound's
+  "how to make it" (tongue and lip placement is cueing, hers: CLAUDE.md's
+  cueing TODO), the "When to ask" list, the school-district line ("From age
+  3, your local public school district can also check a child's speech for
+  free"), the lisp section (a lateral lisp "usually doesn't go away by
+  itself"), the ages shown as "many children have it by about", the
+  syllables, the R advice for a 4-year-old, and the play ideas for each
+  sound. **For Travis:** the two app lists (fair to the others, his to
+  publish), the titles and the pixel call.
+- **Adding a guide** is one entry in `GUIDES` (its sounds from `SOUNDS`),
+  `reviewed: null`, then Rachel. `guidestest` plays the gate on production
+  and preview, every rule above, the sitemap, llms.txt and the pixel.
+
 **The app is live, and the websites send people to the App Store** (Travis,
 1 Oct 2026: "yeah send people to app store now!", with the listing checked:
 a free download, not a pre-order). `APP_READY = true` in `lib/launch.ts` and
