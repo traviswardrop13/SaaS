@@ -126,31 +126,36 @@ await scenario("a family that can buy", async () => {
 });
 
 // THE ONE PAYMENT (22 Oct 2026): RevenueCat's offering lists it, and since
-// 23 Oct 2026 it is the row under monthly (Travis: "I just want two payment
-// options", then "can we just have the ... a month as the top default option
-// and then below it is the pay one time?"); the yearly product the offering
-// also lists is not sold. The price opens on Monthly's free trial; a parent
-// who taps One payment, then the button, is charged once, comes back to
-// setup for the microphone and the hand-off, and the list hears "paid".
+// 31 Oct 2026 it is the row on top, picked when the price opens (Travis: "I
+// want to put the lifetime as the default. So put it at the top, like above
+// monthly"; from 23 Oct 2026 it sat under Monthly, which was picked), with
+// Monthly's free trial under it; the yearly product the offering also lists
+// is not sold. A parent who taps Monthly reads its free trial; one who
+// taps the button on the one payment is charged once, comes back to setup
+// for the microphone and the hand-off, and the list hears "paid".
 await scenario("a family that buys the one payment", async () => {
   const { context, page, errors, requests } = await open(browser, base, { app: "buy", mic: "grant", offering: "all" });
   try {
     await toReady(page, "Ava", "ava.mom@example.com");
     await tap(page, "#nextBtn");
     await page.waitForURL(/\/subscribe\.html\?setup=1$/, { timeout: 12000 });
-    await page.locator('#iapCard[data-state="free"]').waitFor({ timeout: 12000 });
-    const rows = await page.evaluate(() => ["iapYear", "iapPlan", "iapLife"].map((id) => { const e = document.getElementById(id); return e && !e.hidden ? [id, e.getAttribute("aria-checked"), e.innerText.replace(/\s+/g, " ").trim()] : null; }));
-    ok("the price has two rows, Monthly on top and picked, Lifetime under it with its short copy and store price, no yearly row",
-      rows[0] === null && !!rows[1] && !!rows[2] && rows[1][1] === "true" && rows[2][1] === "false" &&
+    await page.locator('#iapLife[aria-checked="true"]').waitFor({ timeout: 12000 });
+    await page.locator('#iapCard[data-state="paid"]').waitFor({ timeout: 4000 });
+    const rows = await page.evaluate(() => ["iapLife", "iapYear", "iapPlan"].map((id) => { const e = document.getElementById(id); return e && !e.hidden ? [id, e.getAttribute("aria-checked"), e.innerText.replace(/\s+/g, " ").trim()] : null; }));
+    ok("the price has two rows, Lifetime on top and picked with its short copy and store price, Monthly under it, no yearly row",
+      !!rows[0] && rows[1] === null && !!rows[2] && rows[0][1] === "true" && rows[2][1] === "false" &&
       (await text(page, "#iapLifeName")) === "Lifetime" && (await text(page, "#iapLifeLine")) === "Yours Forever" &&
-      (await text(page, "#iapLifeTag")) === "Best Value" && /\$59\.99/.test(rows[2][2]) && /Billed today/.test(rows[2][2]) &&
-      await page.evaluate(() => document.getElementById("iapPlan").getBoundingClientRect().bottom <= document.getElementById("iapLife").getBoundingClientRect().top), rows);
-    ok("…as it opens, Monthly's free trial: \"No payment today\" over the button",
-      /No payment today/.test(await text(page, "#iapCard")) && (await text(page, "#iapBuy")) !== "Get Sona Premium — $59.99", await text(page, "#iapCard"));
+      (await text(page, "#iapLifeTag")) === "Best Value" && /\$59\.99/.test(rows[0][2]) && /Billed today/.test(rows[0][2]) && /3-day free trial/.test(rows[2][2]) &&
+      await page.evaluate(() => document.getElementById("iapLife").getBoundingClientRect().bottom <= document.getElementById("iapPlan").getBoundingClientRect().top), rows);
+    ok("…as it opens, the one payment: \"Get Sona Premium — $59.99\", and the small print says one payment, no subscription",
+      (await text(page, "#iapBuy")) === "Get Sona Premium — $59.99" && /One payment of \$59\.99\. No subscription\./.test(await text(page, "#iapCard")) && !/No payment today/.test(await text(page, "#iapCard")), await text(page, "#iapCard"));
+    await tap(page, "#iapPlan");
+    await page.locator('#iapCard[data-state="free"]').waitFor({ timeout: 4000 });
+    ok("…a tap on Monthly: its free trial, \"No payment today\" over the button",
+      /No payment today/.test(await text(page, "#iapCard")) && (await text(page, "#iapBuy")) === "Start practicing!", await text(page, "#iapCard"));
     await tap(page, "#iapLife");
     await page.locator('#iapCard[data-state="paid"]').waitFor({ timeout: 4000 });
-    ok("…a tap on One payment: \"Get Sona Premium — $59.99\", and the small print says one payment, no subscription",
-      (await text(page, "#iapBuy")) === "Get Sona Premium — $59.99" && /One payment of \$59\.99\. No subscription\./.test(await text(page, "#iapCard")), await text(page, "#iapCard"));
+    ok("…and a tap back on Lifetime: \"Get Sona Premium — $59.99\" again", (await text(page, "#iapBuy")) === "Get Sona Premium — $59.99", await text(page, "#iapBuy"));
     await tap(page, "#iapBuy");
     await page.waitForURL(/\/onboarding\.html$/, { timeout: 12000 });
     await step(page, "mic");
