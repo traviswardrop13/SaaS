@@ -110,7 +110,7 @@ body.hello-wait[data-setup-screen="welcome"] .obfoot { pointer-events: none; }
 .ob .bubble2:before { background: #fffdf7; border-left: 1px solid #e9dcc7; border-bottom: 1px solid #e9dcc7; }
 /* Echo stands beside a question only where he says something to it; the
    screens that show a game, Rachel or Echo himself keep the room */
-body[data-setup-screen="problem"] .ob .mascot, body[data-setup-screen="reel"] .ob .mascot, body[data-setup-screen="rachel"] .ob .mascot,
+body[data-setup-screen="reel"] .ob .mascot, body[data-setup-screen="rachel"] .ob .mascot,
 body[data-setup-screen="interests"] .ob .mascot, body[data-setup-screen="games"] .ob .mascot, body[data-setup-screen="sounds"] .ob .mascot,
 body[data-setup-screen="minutes"] .ob .mascot, body[data-setup-screen="ready"] .ob .mascot, body[data-setup-screen="mic"] .ob .mascot,
 body[data-setup-screen="achieve"] .ob .mascot { display: none; }
@@ -184,7 +184,6 @@ body[data-setup-screen="achieve"] .ob .mascot { display: none; }
    the picture of a game shows up too quickly"): a before and an after, one
    under the other, each a picture and its own words. The flashcards fade up
    first; the game a clear beat later (1.5 s), in place: nothing flies. */
-.ob .step[data-step="problem"].on { justify-content: center; }
 .ba { list-style: none; margin: 22px 0 0; padding: 0; display: flex; flex-direction: column; gap: 14px; text-align: left; }
 .ba-row { display: flex; align-items: center; gap: 14px; padding: 12px; border-radius: 22px; background: #fffdf8; border: 1.5px solid #ecdcc5; box-shadow: 0 4px 0 #eadfcd80; }
 .ba-after { border-color: #9edcd8; box-shadow: 0 0 0 2px #11b3b0, 0 5px 0 #9edcd8; }

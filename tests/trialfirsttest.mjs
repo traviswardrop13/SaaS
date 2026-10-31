@@ -20,8 +20,9 @@
 //   - "Not now" goes to Home with every game and book locked;
 //   - a purchase from setup goes back to setup, for the microphone and the
 //     hand-off, when the tab still carries setup's marker; else Home;
-//   - and that hand-off's "Let's play!" opens Day 1's story when today's
-//     story is open to the child (31 Oct 2026), else Home as before.
+//   - and that hand-off's "Let's play!" opens the first game, Fruit Slice,
+//     for every child (31 Oct 2026: it went Home from 17 Oct, and that
+//     morning, briefly, to today's story).
 // Setup's own half (ready, the marker being written, the microphone after the
 // price) is played in setupbuytest and onboardingtest; here /onboarding.html
 // is a stub, so this suite holds whatever that page is doing. Every size and
@@ -193,38 +194,48 @@ try {
       ok("free days started, " + (marker ? "marker" : "no marker") + ": no page errors", errors.length === 0, errors);
     } finally { await context.close(); }
   });
-  // STRAIGHT INTO DAY 1 (Travis, 31 Oct 2026: "build the plan moment and
-  // straight into day 1"). Back from the free days starting, setup's own
-  // microphone and hand-off (the real page here, not the stub), and "Let's
-  // play!" opens today's story, Day 1 in the child's sound, because it is
-  // open to the child now; a child whose story today is already done goes
-  // Home, as on 17 Oct 2026. Never a first-game mark after a purchase.
-  for (const [label, sounds, want] of [
-    ["a child on R: Robo's Rocket", ["R"], "robo"],
-    ["a child on K (no talking story): The Lighthouse Sneeze", ["K"], "lighthouse"],
-    ["a child whose story today is already done: Home, as before", ["R"], null],
+  // STRAIGHT INTO A GAME (Travis, 31 Oct 2026: "when somebody starts, I want
+  // them to go straight into either piano tiles or fruit slice. Because
+  // that's what is advertised", then "Fruit Slice for everyone"). Back from
+  // the free days starting, setup's own microphone and hand-off (the real
+  // page here, not the stub), and "Let's play!" opens the first game, Fruit
+  // Slice (its practice page first), whatever the child's sound or age, and
+  // whether or not today's story is open or done: the story waits on Home.
+  // It replaces the 17 Oct "go to the homepage" and that morning's "straight
+  // into Day 1". The first-game mark is written, so its end card is the first
+  // game's, and the game it opens is open to the child.
+  for (const [label, sounds, age, done] of [
+    ["a child on R (Robo's Rocket waits on Home)", ["R"], "7", false],
+    ["a child on K (no talking story)", ["K"], "7", false],
+    ["a child of 3 (Fruit Slice, not Feed Echo)", ["P"], "3", false],
+    ["a child whose story today is already done", ["R"], "7", true],
   ]) await scenario("the free days start, then the hand-off, " + label, async () => {
-    const { context, page, errors } = await open(browser, BASE, { app: "buy", stamp: "post", setUp: true, marker: true, intro: "free3" });
+    const { context, page, errors } = await open(browser, BASE, { app: "buy", stamp: "post", setUp: true, age, marker: true, intro: "free3" });
     try {
       await context.route("**/today.html", (r) => r.fulfill({ contentType: "text/html", body: "<!doctype html><title>home</title><p>home</p>" }));
-      await context.route("**/charge.html**", (r) => r.fulfill({ contentType: "text/html", body: "<!doctype html><title>game</title><p>game</p>" }));
-      await context.route("**/adventure.html**", (r) => r.fulfill({ contentType: "text/html", body: '<!doctype html><title>story</title><p>story</p><script src="/sona.js"></script>' }));
+      await context.route("**/charge.html**", (r) => r.fulfill({ contentType: "text/html", body: '<!doctype html><title>game</title><p>game</p><script src="/sona.js"></script>' }));
+      await context.route("**/adventure.html**", (r) => r.fulfill({ contentType: "text/html", body: "<!doctype html><title>story</title><p>story</p>" }));
       await page.goto(BASE + "/subscribe.html?setup=1");
       await priced(page); await calm(page);
       await page.evaluate(([s, done]) => {
         const k = "sona.profile.v1", p = JSON.parse(localStorage.getItem(k)); p.focusSounds = s; localStorage.setItem(k, JSON.stringify(p));
         if (done) { const d = Sona.localDay(); localStorage.setItem(Sona.kkey("sona.quest.v1"), JSON.stringify({ f: [0], s: 1, ls: 0, fd: d, lk: "story", done: d, a: d, sv: d, t1: "robo" })); }
-      }, [sounds, !want]);
+      }, [sounds, done]);
       await page.locator("#iapBuy").click();
       await page.waitForURL(/\/onboarding\.html$/, { timeout: 8000 });
       await page.locator('[data-step="mic"].on').waitFor();
+      const before = await page.evaluate(() => sessionStorage.getItem("sona.firstgame.v1"));
       await calm(page); await page.locator("#micNotNow").click();
       await page.locator('[data-step="achieve"].on').waitFor();
       await calm(page); await page.locator("#nextBtn").click();
       await page.waitForURL((u) => u.pathname !== "/onboarding.html", { timeout: 8000 });
-      const end = await page.evaluate(() => { const q = window.Sona ? Sona.questToday() : {}; return { path: location.pathname + location.search, q: q.kind + "|" + q.state + "|" + q.day + "|" + (q.story && q.story.id), mark: sessionStorage.getItem("sona.firstgame.v1"), marker: sessionStorage.getItem("sona.setupafter.v1") }; });
-      if (want) ok("\"Let's play!\" after the free days start opens Day 1's story, " + label, end.path === "/adventure.html" && end.q === "story|open|1|" + want && end.mark === null && end.marker === null, end);
-      else ok("\"Let's play!\" after the free days start, " + label + " (never a story that is not open)", end.path === "/today.html" && end.mark === null && end.marker === null, end);
+      await page.waitForFunction(() => document.readyState !== "loading" && window.Sona && Sona.gameAccess).catch(() => {});
+      const end = await page.evaluate(() => ({ path: location.pathname + location.search, mark: sessionStorage.getItem("sona.firstgame.v1"), marker: sessionStorage.getItem("sona.setupafter.v1"),
+        open: !!(window.Sona && Sona.gameAccess && Sona.gameAccess("slice").allowed), premium: !!(window.Sona && Sona.premium && Sona.premium()) }));
+      ok("\"Let's play!\" after the free days start opens the first game, Fruit Slice's practice page, " + label + ": never Home, never the story",
+        end.path === "/charge.html?game=arcade-slice.html" && end.marker === null, end);
+      ok("…the first-game mark is Fruit Slice's, written by the hand-off's last tap (none while the microphone step showed)", before === null && end.mark === "slice", { before, mark: end.mark });
+      ok("…and the game it opens is open to the child: the free days opened every game", end.open && end.premium, end);
       ok("the hand-off after the free days start (" + label + "): no page errors", errors.length === 0, errors);
     } finally { await context.close(); }
   });
@@ -239,7 +250,7 @@ try {
       await priced(page); await calm(page);
       await page.locator("#iapLife").click(); await calm(page);
       const btn = await page.evaluate(() => document.getElementById("iapBuy").innerText.trim());
-      ok("the one payment picked: its button names the store's price, and nothing says free", btn === "Get Sona Premium — $59.99" && !/free/i.test(btn), btn);
+      ok("the one payment picked: its button is \"Start practicing!\" (the price is on its row), and nothing says free", btn === "Start practicing!" && !/free/i.test(btn), btn);
       await page.locator("#iapBuy").click();
       await page.waitForURL(/\/onboarding\.html$/, { timeout: 8000 });
       const got = await page.evaluate((keys) => ({ bought: localStorage.getItem("__bought"), sub: JSON.parse(localStorage.getItem("sona.sub.v1") || "{}"), first: Sona.trialFirst(), open: keys.filter((k) => Sona.gameAccess(k).allowed) }), FREE4);

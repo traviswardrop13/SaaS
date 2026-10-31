@@ -4,6 +4,11 @@
 // straight to the game", and after it, Home with every game greyed "except
 // they can replay feed echo and ... fruit slice".
 //
+// FIRST3 (Travis, 31 Oct 2026: "go straight into either piano tiles or fruit
+// slice. Because that's what is advertised", then "Fruit Slice for
+// everyone"): the first game is Fruit Slice at every age. Feed Echo was the
+// 3-4s' first game until then; it is still a game, never the first one.
+//
 // FIRST2 (Travis, 30 Sep 2026, after playing it): the paywall no longer comes
 // up when that game ends — "lets maybe have the second option be 'Go to Home'
 // so the top stays as play again but then when they see home they see the
@@ -69,58 +74,68 @@ async function open(url, cfg = {}, viewport = { width: 390, height: 844 }) {
 }
 const kid = (age) => ({ childName: "Mia", childAge: age, focusSounds: ["R"], onboarded: true, voiceOn: false, soundOn: false });
 
-// ── which game is first ──
-for (const [age, key] of [["3", "feed"], ["4", "feed"], ["5", "slice"], ["8", "slice"], ["", "slice"]]) {
+// ── which game is first: Fruit Slice, at every age (31 Oct 2026) ──
+for (const [age, key] of [["3", "slice"], ["4", "slice"], ["5", "slice"], ["8", "slice"], ["", "slice"]]) {
   await scenario("first game at " + (age || "no age"), async () => {
     const { context, page } = await open("/today.html", { profile: kid(age) });
     try {
       const got = await page.evaluate(() => ({ key: Sona.firstGameKey(), go: Sona.firstGameStart(), flag: sessionStorage.getItem("sona.firstgame.v1") }));
       ok("age " + (age || "unknown") + ": the first game is " + key + ", opened the way Home opens it",
-        got.key === key && got.flag === key && got.go === (key === "feed" ? "/arcade-feed.html" : "/charge.html?game=arcade-slice.html"), got);
+        got.key === key && got.flag === key && got.go === "/charge.html?game=arcade-slice.html", got);
     } finally { await context.close(); }
   });
 }
 
 // ── the end of the first game ──
-await scenario("Feed Echo, free", async () => {
-  const { context, page, errors } = await open("/arcade-feed.html", { profile: kid("4"), first: "feed" });
+// A little one's first game is Fruit Slice too now (31 Oct 2026), so the
+// first-game end card is played on Fruit Slice at age 4 here; the
+// big kid's (age 7) is "Fruit Slice, paying" below.
+const sliceEnd = (page) => page.evaluate(() => { score = 20; finaleDone = true; endRound(); });
+const sliceReady = (page) => page.waitForFunction(() => window.gameEntryAllowed === true && typeof endRound === "function");
+await scenario("Fruit Slice as a little one's first game, free", async () => {
+  const { context, page, errors } = await open("/arcade-slice.html?from=charge", { profile: kid("4"), first: "slice", token: "arcade-slice.html" });
   try {
-    await page.waitForFunction(() => typeof finish === "function");
-    await page.evaluate(() => finish());
+    await sliceReady(page);
+    await sliceEnd(page);
     await page.locator("#endOvl.show").waitFor();
     // Either state, no seam: the usual end card — another go, or Home.
-    ok("the first game's end card is the usual one: Play again, then Back home",
-      (await page.locator("#again").innerText()) === "Play again" && (await page.locator("#goHome").innerText()) === "Back home");
+    ok("age 4: the first game's end card is the usual one: Play again, then Back home",
+      (await page.locator("#endCharge").innerText()).toLowerCase() === "play again" && (await page.locator("#endHome").isVisible()) && (await page.locator("#endHome").innerText()) === "Back home");
     ok("…and the first-game mark is spent, so it is only ever the first", await page.evaluate(() => sessionStorage.getItem("sona.firstgame.v1") === null));
-    ok("Feed Echo free: no page errors", errors.length === 0, errors);
+    ok("Fruit Slice at age 4, free: no page errors", errors.length === 0, errors);
   } finally { await context.close(); }
 });
-await scenario("Feed Echo, paying", async () => {
-  const { context, page, errors } = await open("/arcade-feed.html", { profile: kid("4"), first: "feed", paid: true });
+await scenario("Fruit Slice as a little one's first game, paying", async () => {
+  const { context, page, errors } = await open("/arcade-slice.html?from=charge", { profile: kid("4"), first: "slice", paid: true, token: "arcade-slice.html" });
   const asked = [];
   page.on("request", (r) => { if (/\/subscribe\.html/.test(r.url())) asked.push(r.url()); });
   try {
-    await page.waitForFunction(() => typeof finish === "function");
+    await sliceReady(page);
     ok("with pricing on, a new family is due the plan screen", await page.evaluate(() => Sona.planEligible()));
-    await page.evaluate(() => finish());
+    await sliceEnd(page);
     await page.locator("#endOvl.show").waitFor();
     ok("even when the plan screen is due, the first game ends with Play again on top and Back home under it",
-      (await page.locator("#again").innerText()) === "Play again" && (await page.locator("#goHome").innerText()) === "Back home");
+      (await page.locator("#endCharge").innerText()).toLowerCase() === "play again" && (await page.locator("#endHome").innerText()) === "Back home");
+    ok("…the first-game mark is spent", await page.evaluate(() => sessionStorage.getItem("sona.firstgame.v1") === null));
     ok("the one-time ask is still unspent, for the first practice run", await page.evaluate(() => Sona.planEligible()));
     const to = page.waitForRequest((r) => new URL(r.url()).pathname === "/today.html");
-    await page.locator("#goHome").click();
+    await page.locator("#endHome").click();
     ok("…Back home goes Home", !!(await to));
     ok("…and nothing on the way asks for the plan screen", asked.length === 0, asked);
-    ok("Feed Echo paying: no page errors", errors.length === 0, errors);
+    ok("Fruit Slice at age 4, paying: no page errors", errors.length === 0, errors);
   } finally { await context.close(); }
 });
+// Feed Echo is no longer anyone's first game: setup marks Fruit Slice, and
+// Feed Echo's end card leaves that mark alone (only the marked game spends it)
 await scenario("Feed Echo, not the first game", async () => {
-  const { context, page } = await open("/arcade-feed.html", { profile: kid("4"), paid: true });
+  const { context, page } = await open("/arcade-feed.html", { profile: kid("4"), first: "slice", paid: true });
   try {
     await page.waitForFunction(() => typeof finish === "function");
     await page.evaluate(() => finish());
     await page.locator("#endOvl.show").waitFor();
-    ok("any later game ends the usual way, even when the plan screen is due", (await page.locator("#goHome").innerText()) === "Back home");
+    ok("any later game ends the usual way, even when the plan screen is due",
+      (await page.locator("#again").innerText()) === "Play again" && (await page.locator("#goHome").innerText()) === "Back home");
+    ok("…and Feed Echo does not spend Fruit Slice's first-game mark", await page.evaluate(() => sessionStorage.getItem("sona.firstgame.v1") === "slice"));
   } finally { await context.close(); }
 });
 await scenario("Fruit Slice, paying", async () => {
@@ -361,16 +376,16 @@ await scenario("Settings › Your plan", async () => {
 // is bought, the way to the App Store, what stays free. No offer view, no
 // price, no free days, no charter line, nothing to decline, and the server is
 // asked for neither a checkout nor a price.
-await scenario("Feed Echo, the website not selling", async () => {
-  const { context, page, errors } = await open("/arcade-feed.html", { profile: kid("4"), first: "feed", paid: true, web: "0" });
+await scenario("Fruit Slice as the first game, the website not selling", async () => {
+  const { context, page, errors } = await open("/arcade-slice.html?from=charge", { profile: kid("4"), first: "slice", paid: true, web: "0", token: "arcade-slice.html" });
   try {
-    await page.waitForFunction(() => typeof finish === "function");
+    await sliceReady(page);
     ok("web sales off: a new family in a browser is not due the plan screen", (await page.evaluate(() => Sona.planEligible())) === false);
-    await page.evaluate(() => finish());
+    await sliceEnd(page);
     await page.locator("#endOvl.show").waitFor();
     ok("…and the first game ends as it always does: Play again, then Back home",
-      (await page.locator("#again").innerText()) === "Play again" && (await page.locator("#goHome").innerText()) === "Back home");
-    ok("Feed Echo, web sales off: no page errors", errors.length === 0, errors);
+      (await page.locator("#endCharge").innerText()).toLowerCase() === "play again" && (await page.locator("#endHome").innerText()) === "Back home");
+    ok("Fruit Slice, web sales off: no page errors", errors.length === 0, errors);
   } finally { await context.close(); }
 });
 for (const [w, h] of [[390, 844], [375, 667]]) for (const [door, lands] of [["/premium.html?game=stack", "?from=stack"], ["/subscribe.html?first=1", "?first=1"], ["/subscribe.html", ""]]) {
@@ -433,10 +448,16 @@ await scenario("the gate carries the game", async () => {
   // setup's ready screen, so by this tap a family who owed it has paid. The
   // wall line is a safety net: it leaves for the price and returns before the
   // first game is ever marked. setupbuytest plays the whole flow.)
-  // (STRAIGHT INTO DAY 1, 31 Oct 2026: today's story, when it is open to the
-  // child, comes before the first game; the first game is still marked the
-  // same way. onboardingtest and setupbuytest play it.)
-  ok("a parent's hand-off opens today's open story, else the first game; a clinician's still Home; an unpaid family is never handed a locked game", /if\(wall\)\{try\{sessionStorage\.setItem\("sona\.gate\.v1",String\(Date\.now\(\)\)\);\}catch\(e\)\{\} location\.href="\/subscribe\.html\?setup=1";return;\}\s*var first="\/today\.html";try\{if\(draft\.role!=="slp"&&!AFTER&&Sona\.firstGameStart\)first=Sona\.firstGameStart\(\);\}catch\(e\)\{\}\s*if\(draft\.role!=="slp"&&storyNow\(\)\)first="\/adventure\.html";\s*location\.href=first;/.test(ob));
+  // (STRAIGHT INTO A GAME, 31 Oct 2026: "Let's play!" opens the first game,
+  // Fruit Slice, for every parent, a family back from the price after a
+  // purchase or a trial included: no "!AFTER" goes Home any more, and today's
+  // story no longer comes first. onboardingtest, setupbuytest and
+  // trialfirsttest play it.)
+  ok("a parent's hand-off opens the first game, Fruit Slice, a purchase included; a clinician's still Home; an unpaid family is never handed a locked game",
+    /if\(wall\)\{try\{sessionStorage\.setItem\("sona\.gate\.v1",String\(Date\.now\(\)\)\);\}catch\(e\)\{\} location\.href="\/subscribe\.html\?setup=1";return;\}\s*var first="\/today\.html";try\{if\(draft\.role!=="slp"&&Sona\.firstGameStart\)first=Sona\.firstGameStart\(\);\}catch\(e\)\{\}\s*location\.href=first;/.test(ob));
+  const handoff = ob.slice(ob.indexOf("function showHandoff("), ob.indexOf("function finish("));
+  ok("…and nothing in the hand-off sends it to today's story or skips the first game after a purchase", handoff.length > 200 && !/storyNow|\/adventure\.html|!AFTER/.test(handoff),
+    (handoff.match(/[^\n]*(storyNow|\/adventure\.html|!AFTER)[^\n]*/) || [handoff.length])[0]);
 }
 
 await browser.close(); await new Promise((r) => server.close(r));

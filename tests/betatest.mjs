@@ -137,17 +137,20 @@ for (const [who, seed] of [["a fresh family", () => {}],
   ok("…and Echo hosts every step of setup, start to finish",
     hosts.length > 1 && hosts.every((h) => h.endsWith(":echo")), JSON.stringify(hosts));
   // (a child already set up walking setup again is not sold to again: no screens that sell)
-  ok("…a walk that reaches the microphone, by way of both one-tap questions, " + (who === "a fresh family" ? "the screens that sell (the problem, the games playing, Rachel, what the child loves, their games), " : "") + "the optional email step and the ready screen",
-    hosts.map((h) => h.split(":")[0]).join() === (who === "a fresh family" ? "welcome,problem,reel,piano,rachel,name,interests,games,therapy,sounds,minutes,updates,ready,mic" : "welcome,name,therapy,sounds,minutes,updates,ready,mic"), JSON.stringify(hosts));
+  ok("…a walk that reaches the microphone, by way of both one-tap questions, " + (who === "a fresh family" ? "the screens that sell (the two game demos, Rachel, what the child loves, their games), " : "") + "the optional email step and the ready screen",
+    hosts.map((h) => h.split(":")[0]).join() === (who === "a fresh family" ? "welcome,reel,piano,rachel,name,interests,games,therapy,sounds,minutes,updates,ready,mic" : "welcome,name,therapy,sounds,minutes,updates,ready,mic"), JSON.stringify(hosts));
   await ob2.close();
 }
 
 // ── the real walk, to the hand-off ──
 // one press of whatever moves setup on (the stepper above)
 const clickNext = async () => { await settledOb(page); await page.evaluate(STEP); await page.waitForTimeout(250); await beatGone(page); };
-await clickNext(); // the hello → "Speech homework is hard at home."
-ok("after the hello comes the problem, the first screen that sells Sona", (await onStep(page)) === "problem", await onStep(page));
-await clickNext(); await clickNext(); await clickNext(); // → Fruit Slice → Piano Tiles → Rachel, on her own
+await clickNext(); // the hello → the Fruit Slice demo, "Speech practice. Through play."
+// (the "problem" slide that came between them went on 31 Oct 2026: its words
+// now head the Fruit Slice demo)
+ok("after the hello comes the Fruit Slice demo, the first screen that sells Sona, headed \"Speech practice. Through play.\"",
+  (await onStep(page)) === "reel" && await page.evaluate(() => document.getElementById("reelTitle").textContent === "Speech practice.Through play." && !document.querySelector('[data-step="problem"]')), await onStep(page));
+await clickNext(); await clickNext(); // → Piano Tiles → Rachel, on her own
 ok("…then both game demos and Rachel on her own screen, her line word for word",
   (await onStep(page)) === "rachel" && await page.evaluate(() => document.getElementById("rachelLine").textContent) === RACHEL_LINE, await onStep(page));
 await clickNext(); // → name
@@ -171,7 +174,8 @@ await clickNext(); // Skip → ready
 // five groups above still match the five questions. It replaced the 2-second
 // "building the plan" beat on the parent path in October; since 31 Oct 2026 a
 // first setup has its own short beat again (the plan moment, setupscreenstest),
-// gone before this screen shows.
+// gone before this screen shows, and the screen carries Day 1's card: a game,
+// then a book (a statement about Sona's calendar, with nothing to tap).
 const meet = await page.evaluate(() => {
   const st = document.querySelector('[data-step="ready"]');
   return { step: (document.querySelector(".step.on") || {}).dataset?.step,
@@ -180,12 +184,15 @@ const meet = await page.evaluate(() => {
            asks: st ? st.querySelectorAll("input,select,textarea,button,.sound,.choice").length : -1,
            segHidden: document.getElementById("seg").hidden,
            card: st ? getComputedStyle(st).backgroundColor : "", body: getComputedStyle(document.body).backgroundColor,
-           build: !!document.getElementById("obBuild"), saved: JSON.parse(localStorage.getItem("sona.profile.v1") || "{}").onboarded === true };
+           build: !!document.getElementById("obBuild"), saved: JSON.parse(localStorage.getItem("sona.profile.v1") || "{}").onboarded === true,
+           plan: document.getElementById("planCard").hidden ? "" : document.getElementById("planTitle").textContent + " " + document.getElementById("planLine").textContent };
 });
 ok("the screen after the email step is \"Milo's practice is ready!\", it asks nothing, and Rachel is not on it (she had her own screen)",
   meet.step === "ready" && meet.title === "Milo's practice is ready!" && meet.asks === 0 && meet.segHidden && !meet.rachel, JSON.stringify(meet));
-ok("…on the page's cream (no card), the build beat gone before it shows, and nothing saved until its Continue",
+ok("…on the page's cream (no card behind the screen), the build beat gone before it shows, and nothing saved until its Continue",
   meet.card === "rgba(0, 0, 0, 0)" && meet.body === "rgb(255, 245, 233)" && !meet.build && !meet.saved, JSON.stringify(meet));
+ok("…with Day 1's card on this first setup: \"Play a game, then read a book.\", Fruit Slice first",
+  /^Play a game, then read a book\. Fruit Slice first, then .+\.$/.test(meet.plan), JSON.stringify(meet));
 await clickNext(); // ready → mic (the profile is saved here)
 ok("no build beat covers the microphone step either",
   await page.evaluate(() => !document.getElementById("obBuild")));
@@ -198,11 +205,17 @@ const atMic = await page.evaluate(() => ({
 }));
 ok("on a phone that cannot buy, the last setup step is the microphone, not a price or an email",
   atMic.step === "mic" && atMic.at === "/onboarding.html" && atMic.saved, JSON.stringify(atMic));
-// the promise on this screen has to match the one charge.html makes, because
-// two screens promising different things about a child's voice is how the
-// stale upload wording survived for months
-ok("…and it tells the truth about the microphone",
-  atMic.says.includes(await page.evaluate(() => Sona.MIC_PROMISE)) && /never uploaded/.test(atMic.says) && /saved on this phone/.test(atMic.says));
+// Two screens promising different things about a child's voice is how the
+// stale upload wording survived for months. Since 31 Oct 2026 (Travis: "let's
+// get rid of the grown-ups audio is never uploaded ... Just get rid of that")
+// setup's microphone step makes no promise at all, so it cannot make a
+// different one: the one promise is the shared line the practice page
+// (charge.html) and every other mic ask shows, and it is still the true one.
+const sharedPromise = await page.evaluate(() => Sona.MIC_PROMISE);
+ok("…and it says nothing about the microphone it could get wrong: no grown-ups line, nothing about audio uploaded, recorded or saved",
+  !atMic.says.includes(sharedPromise) && !/upload|record|saved|stays on|never leaves/i.test(atMic.says) && !/micPromise/.test(readFileSync(ROOT + "/onboarding.html", "utf8")));
+ok("…while the practice page still shows the shared promise, and it is the accurate one",
+  /\$\("micPromise"\)\.textContent=S\.MIC_PROMISE/.test(readFileSync(ROOT + "/charge.html", "utf8")) && /never uploaded/.test(sharedPromise) && /saved on this phone/.test(sharedPromise) && !/never recorded/i.test(sharedPromise));
 ok("…and offers an in-app decline before the OS prompt", /Not now/.test(atMic.says));
 await page.evaluate(() => document.getElementById("micNotNow").click()); await page.waitForTimeout(250); // mic → the hand-off, at once
 ok("…and the hand-off follows the microphone with no build beat in between",
@@ -249,9 +262,9 @@ ok("onboarding no pageerrors", errs.length === 0);
   await pg2.goto("http://localhost:8129/onboarding.html"); await pg2.waitForTimeout(700);
   await pg2.evaluate(() => document.getElementById("nextBtn").click()); await pg2.waitForTimeout(200);   // the hello's button
   const first = await pg2.evaluate(() => (document.querySelector(".step.on") || {}).dataset?.step);
-  for (let i = 0; i < 4; i++) { await settledOb(pg2); await pg2.evaluate(STEP); await pg2.waitForTimeout(300); }   // the problem, Fruit Slice, Piano Tiles, Rachel → the name
+  for (let i = 0; i < 3; i++) { await settledOb(pg2); await pg2.evaluate(STEP); await pg2.waitForTimeout(300); }   // Fruit Slice, Piano Tiles, Rachel → the name
   const seen = await pg2.evaluate(() => ({ title: (document.querySelector('[data-step="name"] .qh') || {}).textContent || "", on: (document.querySelector(".step.on") || {}).dataset?.step }));
-  ok("the screen after the hello is the problem, and four screens later the child's name: \"Who's practicing?\"", first === "problem" && seen.on === "name" && /^Who's practicing\?$/.test(seen.title.trim()), JSON.stringify([first, seen]));
+  ok("the screen after the hello is the Fruit Slice demo (no \"problem\" slide since 31 Oct 2026), and three screens later the child's name: \"Who's practicing?\"", first === "reel" && seen.on === "name" && /^Who's practicing\?$/.test(seen.title.trim()), JSON.stringify([first, seen]));
   // Parents go from the child's details to what the child loves, their
   // games, one tap ("Is <Name> in speech therapy?"), then a compact sound grid.
   await pg2.evaluate(() => { document.getElementById("obName").value = "Milo"; });
@@ -275,7 +288,7 @@ ok("onboarding no pageerrors", errs.length === 0);
   await pg.evaluate(() => { localStorage.clear(); sessionStorage.clear(); });
   await pg.goto("http://localhost:8129/onboarding.html"); await pg.waitForTimeout(800);
   const hop = async (ms) => { await settledOb(pg); await pg.evaluate(STEP); await pg.waitForTimeout(ms || 250); await beatGone(pg); };
-  await hop(); await hop(); await hop(); await hop(); await hop(); // hello → problem → Fruit Slice → Piano Tiles → Rachel → name
+  await hop(); await hop(); await hop(); await hop(); // hello → Fruit Slice → Piano Tiles → Rachel → name
   await pg.evaluate(() => { document.getElementById("obName").value = "Rosie"; });
   await pg.evaluate(() => document.querySelector('#obAge .sound[data-age="6"]').click());
   await hop(); // name → "What does Rosie love?"
@@ -296,7 +309,7 @@ ok("onboarding no pageerrors", errs.length === 0);
   // walks the whole flow again: the hello → the screens that sell → name →
   // what they love → their games → therapy → sounds → minutes → ready, whose
   // Continue saves the profile and tears it up
-  await hop(); await hop(); await hop(); await hop(); await hop();   // hello, problem, Fruit Slice, Piano Tiles, Rachel → name
+  await hop(); await hop(); await hop(); await hop();   // hello, Fruit Slice, Piano Tiles, Rachel → name
   await hop(); await hop(); await hop(); await hop();   // name, what they love, their games, therapy (an answer) → sounds
   await pg.locator('#obExploreSounds').click();          // → how long each day
   await hop();                                           // an answer → the email step
@@ -347,7 +360,7 @@ ok("onboarding no pageerrors", errs.length === 0);
     door.says.slice(0, 200));
 
   const hop = async (ms) => { await settledOb(pg); await pg.evaluate(STEP); await pg.waitForTimeout(ms || 250); await beatGone(pg); };
-  await hop(); await hop(); await hop(); await hop(); await hop(); // hello → problem → Fruit Slice → Piano Tiles → Rachel → name
+  await hop(); await hop(); await hop(); await hop(); // hello → Fruit Slice → Piano Tiles → Rachel → name
   await pg.evaluate(() => { document.getElementById("obName").value = "Sam"; });
   await hop(); await hop(); await hop(); // name → what they love → their games → therapy
   await hop(); // an answer → the sounds
@@ -388,7 +401,7 @@ await page.goto("http://localhost:8129/onboarding.html"); await page.waitForTime
 const nameStep = await page.evaluate(() => document.querySelector('[data-step="name"]').textContent);
 ok("name question carries justification microcopy", /cheers them on by name|knows who to cheer for/.test(nameStep));
 // This is the parent path, with an optional email after the core setup.
-await clickNext(); await clickNext(); await clickNext(); await clickNext(); await clickNext(); // hello → problem → Fruit Slice → Piano Tiles → Rachel → name
+await clickNext(); await clickNext(); await clickNext(); await clickNext(); // hello → Fruit Slice → Piano Tiles → Rachel → name
 await page.evaluate(() => { document.getElementById("obName").value = "Zoe"; });
 await clickNext(); await clickNext(); await clickNext(); // name → what they love → their games → therapy
 await clickNext(); // an answer → sounds
@@ -442,7 +455,7 @@ ok("nobody becomes an SLP by accident", skipFin.prof.role !== "slp", JSON.string
 // General play remains a one-tap option on the shared sound-selection screen.
 await page.evaluate(() => { localStorage.clear(); sessionStorage.clear(); });
 await page.goto("http://localhost:8129/onboarding.html"); await page.waitForTimeout(900);
-await clickNext(); await clickNext(); await clickNext(); await clickNext(); await clickNext(); // hello → problem → Fruit Slice → Piano Tiles → Rachel → name
+await clickNext(); await clickNext(); await clickNext(); await clickNext(); // hello → Fruit Slice → Piano Tiles → Rachel → name
 await page.evaluate(() => { document.getElementById("obName").value = "Nora"; });
 await clickNext(); await clickNext(); await clickNext(); // name → what they love → their games → therapy
 await clickNext(); // an answer → sounds
