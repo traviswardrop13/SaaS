@@ -136,7 +136,8 @@ const browser = await chromium.launch(launchOpts());
 // sona.js heals a voiceOn:false with a volume back on, so 0 is "sound off").
 function seed({ age = 7, premium = true, sell = false, stamp = "kept", quest = null, voice = true, character = "fox", demo = false } = {}) {
   return `(() => {
-    try { sessionStorage.setItem("sona.paidui", "1"); sessionStorage.setItem("sona.websalesui", "${sell ? 1 : 0}"); } catch (e) { return; }
+    // TALK1: this suite plays the lighthouse as Day 1 (a child on a sound with no talking story still meets it); talkstorytest plays the talking ones
+    try { sessionStorage.setItem("sona.talkoff", "1"); sessionStorage.setItem("sona.paidui", "1"); sessionStorage.setItem("sona.websalesui", "${sell ? 1 : 0}"); } catch (e) { return; }
     if (localStorage.getItem("__seeded")) return; localStorage.setItem("__seeded", "1");
     localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Mia", childAge: "${age}", focusSounds: ["R"], onboarded: true, voiceOn: ${voice}, volume: ${voice ? 0.8 : 0}, character: "${character}"${premium ? ", earlyAdopter: true" : ""} }));
     localStorage.setItem("sona.freeera.v1", "post");
@@ -271,15 +272,21 @@ await section("source", async () => {
   const boxed = Object.keys(A).reduce((n, id) => n + A[id].intro.concat(A[id].ending).filter((sc) => sc.buddy).length, 0);
   const boxed13 = ["lighthouse", "windup", "bridge"].reduce((n, id) => n + A[id].intro.concat(A[id].ending).filter((sc) => sc.buddy).length, 0);
   ok("every scene's buddy box is the art notes' (design/adventure/art-notes.md); Days 1-3 keep their 24 boxed and 12 with no spot", off.length === 0 && boxed13 === 24, off.length ? off : [boxed13, boxed]);
-  const WRITES = ["gameRep", "logAttempt", "bumpReps", "addCoins", "mintCoins", "awardSticker", "awardNextSticker", "awardRandomSticker", "questEnd", "recordSession", "recordRung", "rotAdvance", "localStorage", "sessionStorage", "indexedDB", "saveProfile", "chargeAdd", "claimChest", "Math.random"];
-  ok("the page writes only `seen` (storySeen): no rep, coin, sticker, quest end or storage of its own", WRITES.every((w) => !code.includes(w)) && /S\.storySeen\(day\.id\)/.test(code), WRITES.filter((w) => code.includes(w)));
+  const WRITES = ["logAttempt", "bumpReps", "addCoins", "mintCoins", "awardSticker", "awardNextSticker", "awardRandomSticker", "recordSession", "recordRung", "rotAdvance", "localStorage", "sessionStorage", "indexedDB", "saveProfile", "chargeAdd", "claimChest", "Math.random"];
+  ok("the page writes only `seen` (storySeen): no coin, sticker, practice data or storage of its own", WRITES.every((w) => !code.includes(w)) && /S\.storySeen\(day\.id\)/.test(code), WRITES.filter((w) => code.includes(w)));
+  // TALK1: a talking story (Day 1 in the child's sound) is its own game: its
+  // word moment counts one play rep a saying heard and finishes the day on
+  // the intro's last word, each from one place, inside that block alone
+  const talkAt = code.indexOf("function startMoment()");
+  ok("…but for a talking story: one gameRep a saying heard and one questEnd on the intro's last page, both in its word moment",
+    talkAt > 0 && (code.match(/S\.gameRep\(/g) || []).length === 1 && (code.match(/S\.questEnd\(/g) || []).length === 1 && code.indexOf("S.gameRep(") > talkAt && code.indexOf("S.questEnd(") > talkAt && /if \(mode === "intro"\) \{\s*finished = true;\s*try \{ if \(S\.questEnd\) S\.questEnd\(day\.game\); \}/.test(code));
   ok("…and adventures.js is data alone: no call, no storage, no request", !/fetch\(|localStorage|sessionStorage|Sona\.|XMLHttpRequest|sendBeacon/.test(advCode));
   const vp = (page.match(/<meta\s+name="viewport"\s+content="([^"]*)"/) || [])[1] || "";
   ok("the kid viewport meta: no zoom on a double tap", /maximum-scale=1/.test(vp) && /user-scalable=no/.test(vp) && /viewport-fit=cover/.test(vp), vp);
   const srcs = [...page.matchAll(/<script\b[^>]*\bsrc="([^"]+)"/g)].map((m) => m[1]), hrefs = [...page.matchAll(/<link\b[^>]*\bhref="([^"]+)"/g)].map((m) => m[1]);
   ok("no third-party script or stylesheet: everything is our own", srcs.length >= 5 && srcs.concat(hrefs).every((s) => s.startsWith("/") && !s.startsWith("//")), srcs.concat(hrefs));
-  ok("it loads sona.js first, then the shared voice cache, the buddy helpers, the scenes and the voice manifest",
-    JSON.stringify(srcs) === JSON.stringify(["/sona.js", "/arcade-sayit.js", "/crafted-buddies.js", "/adventures.js", "/assets/adventure/voice/manifest.js"]), srcs);
+  ok("it loads sona.js first, then the shared voice cache, the buddy helpers, the scenes, the talking stories and their word check, and the voice manifest",
+    JSON.stringify(srcs) === JSON.stringify(["/sona.js", "/arcade-sayit.js", "/crafted-buddies.js", "/adventures.js", "/talk-stories.js", "/saycheck.js", "/assets/adventure/voice/manifest.js"]), srcs);
   ok("the body starts hidden (nothing shows before the entitlement check)", /<body hidden>/.test(page));
   const es = [...code.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((m) => m[1]).concat([advCode]);
   ok("the page's script and its scenes are ES5: no arrow, let, const, class or template", es.length === 2 && es.every((s) => s.length > 2000 && !/=>|\blet\s|\bconst\s|\bclass\s|`/.test(s)), es.map((s) => s.length));
