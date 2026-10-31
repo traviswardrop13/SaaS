@@ -46,8 +46,13 @@ pin one of their existing selected sounds as the current target, like a
 language choice. Settings, Home and Books share `targetSound()` and
 `setTargetSound()`; other focus sounds and all progress remain. No saved pin
 keeps the existing practice rotation. Active clinician homework wins and
-disables family target changes. Books leads with the current target only;
-other sounds remain behind More books, with the free-book fallback kept.
+disables family target changes. **Books shows only the current target's
+stories** (Travis, 30 Oct 2026, superseding More books below): no other-sound
+fold, free-book fallback or seasonal fallback. Changing the selected sound
+switches the shelf. Unpinned play mode with no family target or homework can
+still browse every sound. Access rules for every book remain unchanged.
+Home's Books tag counts only free books on that shelf; it never advertises
+a different sound's free title.
 Home fits its card, both doors and any earned-game row on supported portrait
 phones and iPads; it never clips essential controls to suppress scrolling.
 The Arcade still scrolls. A stale child's selector never writes another
@@ -63,14 +68,24 @@ earned practice ticket lead to the existing game; only a winning finale
 finishes the picnic. Losses, plain Arcade rounds and replays give no false
 story finish. The speaking turns, powers and scoring are unchanged.
 
-The review adds one six-page B book, Bear's Lost Ball, with six existing
-initial-B targets (bear, ball, bus, boat, bee, bed). **Keep the original
-artwork** (Travis, 30 Oct 2026): existing books including Sunny the Seal are
-unchanged, and the new book/adventure art matches the original soft3D look.
-New art is versioned. Review sources/prompts live in
+**More books, 8–12 pages** (Travis, 30 Oct 2026): the review adds one
+eight-page story each for R, S, L, SH, CH and TH: Rabbit and the Rocket,
+Seal and the Sock, Lion and the Lock, Sheep and the Ship, Chicken and the
+Picnic, and My Thumb Paints a Gift. Bear's Lost Ball is now eight pages too:
+its original six lines/pictures stay, with two new play scenes before bed.
+Every key is an existing initial-bank word; no target bank, age gate,
+microphone, scorer or play-rep rule changes. All seven meet the fuller-book
+whole-line phonology rule, with one independently stored picture per page.
+The catalog holds 49 year-round books, 55 during October. The original 13
+six-page books and existing twelve-page books remain unchanged.
+**Keep the original artwork** (Travis, 30 Oct 2026): existing books including
+Sunny the Seal are unchanged, and new book/adventure art matches the original
+soft3D look. New art is versioned. Review sources/prompts live in
 `design/sound-first-session/` and `design/adventure/fruitpicnic-*`.
-**Rachel reviews the selected-target behavior and the new book before
-release.** Children's voice replacement remains research only: no licensed,
+**Rachel reviews the selected-target behavior, every new story line/key and
+matching picture before release.** The review page and generated
+`VOICE_SCRIPT.md` list the exact words. Children's voice replacement remains
+research only: no licensed,
 clinically approved recording pack was selected or installed.
 
 Sona (speaksona.com) — kids' speech-practice PWA in public/, Next.js API

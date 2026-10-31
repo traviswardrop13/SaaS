@@ -33,7 +33,7 @@ the word bank. **E** — what NOT to record: parked, unlinked and dead lines.
   line (−20 dB RMS / −3 dB peak, with `/api/tts`'s own levelling), because a file
   plays as-is, and an unlevelled one is the one sound that can still jump.
 
-Switch state right now: `HUMAN_CLIPS = true` (public/sona.js:7666) — Rachel's recorded sounds (Part A) are ON: one take of the sound plays in the letter's place in the practice prompt (C1, C2, the turtle, B3) and after the games' "…say" lines (B5); every word below is spoken through TTS.
+Switch state right now: `HUMAN_CLIPS = true` (public/sona.js:7676) — Rachel's recorded sounds (Part A) are ON: one take of the sound plays in the letter's place in the practice prompt (C1, C2, the turtle, B3) and after the games' "…say" lines (B5); every word below is spoken through TTS.
 
 ---
 
@@ -78,7 +78,7 @@ burst, never held — a held /p/ teaches a schwa the child then has to unlearn).
 | A18 | TH (as in 'thumb') | **thhh** | STRETCH ~1.5 s | `TH.mp3`, `TH-demo.mp3` | Peek your tongue between your teeth and blow soft — th. |
 | A19 | TH (voiced, as in 'the') | **thuh** | STRETCH ~1.5 s | `THV.mp3`, `THV-demo.mp3` | Tongue between your teeth and buzz — th, like in 'the'. |
 
-Sources: models public/sona.js:3972 (`SOUND_SAY`, shown on the practice card and the games' keep-playing card, never sent to TTS); cues public/sona.js:3883 (`CUES`).
+Sources: models public/sona.js:3982 (`SOUND_SAY`, shown on the practice card and the games' keep-playing card, never sent to TTS); cues public/sona.js:3893 (`CUES`).
 
 ---
 
@@ -96,11 +96,11 @@ Pinned as exactly this list with no "!" (`tests/voicetest3.mjs`).
 
 | # | File | Say this | When Echo says it | Delivery | Source |
 |---|---|---|---|---|---|
-| B1 | praise-1.mp3 | Nice one. | After the easier target (the "I have an idea" line, B3/C5) passes — one of the five, picked at random. The only spoken praise in the live app, and the win line (B45) follows it; a normal pass gets only the win line. | Soft and pleased, a small smile in it. Not a cheer. | public/sona.js:4133; spoken at public/charge.html:2287 |
-| B2 | praise-2.mp3 | Good job. | Same moment, random pick of five. | Soft and pleased, a small smile in it. Not a cheer. | public/sona.js:4133; spoken at public/charge.html:2287 |
-| B3 | praise-3.mp3 | I heard that. | Same moment, random pick of five. | Soft and pleased, a small smile in it. Not a cheer. | public/sona.js:4133; spoken at public/charge.html:2287 |
-| B4 | praise-4.mp3 | That was lovely. | Same moment, random pick of five. | Soft and pleased, a small smile in it. Not a cheer. | public/sona.js:4133; spoken at public/charge.html:2287 |
-| B5 | praise-5.mp3 | Well done. | Same moment, random pick of five. | Soft and pleased, a small smile in it. Not a cheer. | public/sona.js:4133; spoken at public/charge.html:2287 |
+| B1 | praise-1.mp3 | Nice one. | After the easier target (the "I have an idea" line, B3/C5) passes — one of the five, picked at random. The only spoken praise in the live app, and the win line (B45) follows it; a normal pass gets only the win line. | Soft and pleased, a small smile in it. Not a cheer. | public/sona.js:4143; spoken at public/charge.html:2287 |
+| B2 | praise-2.mp3 | Good job. | Same moment, random pick of five. | Soft and pleased, a small smile in it. Not a cheer. | public/sona.js:4143; spoken at public/charge.html:2287 |
+| B3 | praise-3.mp3 | I heard that. | Same moment, random pick of five. | Soft and pleased, a small smile in it. Not a cheer. | public/sona.js:4143; spoken at public/charge.html:2287 |
+| B4 | praise-4.mp3 | That was lovely. | Same moment, random pick of five. | Soft and pleased, a small smile in it. Not a cheer. | public/sona.js:4143; spoken at public/charge.html:2287 |
+| B5 | praise-5.mp3 | Well done. | Same moment, random pick of five. | Soft and pleased, a small smile in it. Not a cheer. | public/sona.js:4143; spoken at public/charge.html:2287 |
 
 ### B2 — Coaching after a miss (19)
 
@@ -187,8 +187,8 @@ The say-it card in all six round games (one voice for all six, `arcade-sayit.js`
 
 | # | File | Say this | When Echo says it | Delivery | Source |
 |---|---|---|---|---|---|
-| B60 | book-end.mp3 | The end! Great listening! | The last page of every book ("The End!"), with the star and the chime. | Warm and pleased, winding down. Still has its "!". | public/library.html:1727 |
-| B61 | book-turn.mp3 | Great trying. Let's turn the page. | A book page's key word (C9): after three tries that were a voice but not the book's kind of sound, Echo says this and the page turns. Screen: "Great trying! Let's turn the page." | Kind and light. The page turns on a good note. | public/library.html:1952 |
+| B60 | book-end.mp3 | The end! Great listening! | The last page of every book ("The End!"), with the star and the chime. | Warm and pleased, winding down. Still has its "!". | public/library.html:1712 |
+| B61 | book-turn.mp3 | Great trying. Let's turn the page. | A book page's key word (C9): after three tries that were a voice but not the book's kind of sound, Echo says this and the page turns. Screen: "Great trying! Let's turn the page." | Kind and light. The page turns on a good note. | public/library.html:1937 |
 
 ### B7 — Picture-game instructions (37)
 
@@ -1136,18 +1136,18 @@ In the daily story (14), reached only from that day's story and never from a she
 | Puzzle Bridge | CH | cherry, cheese |
 | Puzzle Bridge | V | vase |
 
-### C9 — Books (`library.html`): 49 books, 504 pages
+### C9 — Books (`library.html`): 55 books, 554 pages
 
 Live: Home's Books door opens the shelf. Echo reads everything in a book aloud.
 **Best left to TTS** — it is a lot of text, and it changes when a book does. Listed so
 nothing is hidden. Four templates, and two fixed lines (B6):
 
-- **The cover:** `{title}! A story full of {sound} sounds.` (public/library.html:1714) — {sound} is read as its letters ("R", "SH", "TH"). Written out under each book below.
-- **A page:** the page's text, read as the page opens (public/library.html:1761) and again on "Hear it" (public/library.html:1990).
-- **A tapped word:** that word alone (public/library.html:1969).
-- **The key word:** 504 of the 504 pages have one, shown in bold below. After reading the page Echo asks `Can you say... {word}.`; after a try that was a voice but not the book's kind of sound, `One more time... {word}.` (public/library.html:1920); after three of those, the B6 line and the page turns. A name keeps its capital. Silence never turns the page. A child younger than the age the book's sound usually arrives is never asked (public/library.html:1798), and the first ask of a visit waits for a grown-up's yes to the mic. Screen: "Can you say {word}?".
+- **The cover:** `{title}! A story full of {sound} sounds.` (public/library.html:1699) — {sound} is read as its letters ("R", "SH", "TH"). Written out under each book below.
+- **A page:** the page's text, read as the page opens (public/library.html:1746) and again on "Hear it" (public/library.html:1975).
+- **A tapped word:** that word alone (public/library.html:1954).
+- **The key word:** 554 of the 554 pages have one, shown in bold below. After reading the page Echo asks `Can you say... {word}.`; after a try that was a voice but not the book's kind of sound, `One more time... {word}.` (public/library.html:1905); after three of those, the B6 line and the page turns. A name keeps its capital. Silence never turns the page. A child younger than the age the book's sound usually arrives is never asked (public/library.html:1783), and the first ask of a visit waits for a grown-up's yes to the mic. Screen: "Can you say {word}?".
 
-**Rory and the Rainbow** — R (public/library.html:383). Cover: "Rory and the Rainbow! A story full of R sounds."
+**Rory and the Rainbow** — R (public/library.html:362). Cover: "Rory and the Rainbow! A story full of R sounds."
 
 1. Rain taps on the roof. Rory the rabbit looks up. — **rabbit**
 2. The rain stops. Look, a rainbow! — **rain**
@@ -1162,7 +1162,7 @@ nothing is hidden. Four templates, and two fixed lines (B6):
 11. They land by the rainbow, in a field of roses. — **rainbow**
 12. Rory, Remy, and the robot run and play! — **robot**
 
-**Rosie and the Red Wagon** — R (public/library.html:412). Cover: "Rosie and the Red Wagon! A story full of R sounds."
+**Rosie and the Red Wagon** — R (public/library.html:391). Cover: "Rosie and the Red Wagon! A story full of R sounds."
 
 1. Rosie has a red wagon. — **red**
 2. She ties a rope on it. — **rope**
@@ -1177,7 +1177,7 @@ nothing is hidden. Four templates, and two fixed lines (B6):
 11. The rain stops. The sun comes out. — **rain**
 12. Rosie, the rabbit and the raccoon wave. What a ride! — **ride**
 
-**Ray and the Lost Ring** — R (public/library.html:428). Cover: "Ray and the Lost Ring! A story full of R sounds."
+**Ray and the Lost Ring** — R (public/library.html:407). Cover: "Ray and the Lost Ring! A story full of R sounds."
 
 1. Ray the robin has a ring. — **ring**
 2. It is a shiny ring. — **ring**
@@ -1192,7 +1192,7 @@ nothing is hidden. Four templates, and two fixed lines (B6):
 11. "Yes! Thank you!" sings Ray. — **Ray**
 12. Ray gives the raccoon a ribbon to say thank you. — **ribbon**
 
-**Boo the Bat on Halloween** — B, on the shelf 2026-10-01 to 2026-10-31 (public/library.html:444). Cover: "Boo the Bat on Halloween! A story full of B sounds."
+**Boo the Bat on Halloween** — B, on the shelf 2026-10-01 to 2026-10-31 (public/library.html:423). Cover: "Boo the Bat on Halloween! A story full of B sounds."
 
 1. Boo the bat wakes up at night. — **bat**
 2. It is Halloween! Boo gets his bucket. — **bucket**
@@ -1207,7 +1207,7 @@ nothing is hidden. Four templates, and two fixed lines (B6):
 11. Boo and the ghost share the candy. — **Boo**
 12. Boo goes to bed. Happy Halloween! — **bed**
 
-**Rory the Rabbit on Halloween** — R, on the shelf 2026-10-01 to 2026-10-31 (public/library.html:460). Cover: "Rory the Rabbit on Halloween! A story full of R sounds."
+**Rory the Rabbit on Halloween** — R, on the shelf 2026-10-01 to 2026-10-31 (public/library.html:439). Cover: "Rory the Rabbit on Halloween! A story full of R sounds."
 
 1. Rory the rabbit wakes up. It is Halloween! — **rabbit**
 2. Rory puts on his robot costume. — **robot**
@@ -1222,7 +1222,7 @@ nothing is hidden. Four templates, and two fixed lines (B6):
 11. They laugh. Rory gives Remy half his raisins. — **raisins**
 12. Rory the rabbit goes to bed. Happy Halloween! — **rabbit**
 
-**Sid the Seagull on Halloween** — S, on the shelf 2026-10-01 to 2026-10-31 (public/library.html:477). Cover: "Sid the Seagull on Halloween! A story full of S sounds."
+**Sid the Seagull on Halloween** — S, on the shelf 2026-10-01 to 2026-10-31 (public/library.html:456). Cover: "Sid the Seagull on Halloween! A story full of S sounds."
 
 1. The sun goes down by the sea. — **sun**
 2. It is Halloween! Sid has a sack for candy. — **sack**
@@ -1237,7 +1237,7 @@ nothing is hidden. Four templates, and two fixed lines (B6):
 11. They sit on the sand and share the candy. — **sand**
 12. Sid goes to bed by the sea. Happy Halloween! — **Sid**
 
-**Leon's Trick-or-Treat Night** — L, on the shelf 2026-10-01 to 2026-10-31 (public/library.html:493). Cover: "Leon's Trick-or-Treat Night! A story full of L sounds."
+**Leon's Trick-or-Treat Night** — L, on the shelf 2026-10-01 to 2026-10-31 (public/library.html:472). Cover: "Leon's Trick-or-Treat Night! A story full of L sounds."
 
 1. Leon the lion wakes up from his nap. — **lion**
 2. It is trick-or-treat night! Leon gets his lantern. — **lantern**
@@ -1252,7 +1252,7 @@ nothing is hidden. Four templates, and two fixed lines (B6):
 11. They sit by the lantern and share the candy. — **lantern**
 12. Leon goes to bed. Good night, Leon! — **Leon**
 
-**Zoe the Zebra on Halloween** — Z, on the shelf 2026-10-01 to 2026-10-31 (public/library.html:509). Cover: "Zoe the Zebra on Halloween! A story full of Z sounds."
+**Zoe the Zebra on Halloween** — Z, on the shelf 2026-10-01 to 2026-10-31 (public/library.html:488). Cover: "Zoe the Zebra on Halloween! A story full of Z sounds."
 
 1. Zoe the zebra woke up from her nap. — **zebra**
 2. It's Halloween at the zoo! Zoe got her bucket. — **zoo**
@@ -1267,7 +1267,7 @@ nothing is hidden. Four templates, and two fixed lines (B6):
 11. Zoe and the little zebra shared the candy. — **Zoe**
 12. Zoe the zebra went to bed. Happy Halloween! — **zebra**
 
-**Finn the Fish on Halloween** — F, on the shelf 2026-10-01 to 2026-10-31 (public/library.html:525). Cover: "Finn the Fish on Halloween! A story full of F sounds."
+**Finn the Fish on Halloween** — F, on the shelf 2026-10-01 to 2026-10-31 (public/library.html:504). Cover: "Finn the Fish on Halloween! A story full of F sounds."
 
 1. Finn the fish wakes up at night. — **fish**
 2. It is Halloween! Finn puts on fairy wings. — **fairy**
@@ -1282,7 +1282,7 @@ nothing is hidden. Four templates, and two fixed lines (B6):
 11. Finn and Fay share the fudge. — **fudge**
 12. Finn falls asleep by his rock. Happy Halloween! — **Finn**
 
-**Penny's Pebble Party** — P (public/library.html:541). Cover: "Penny's Pebble Party! A story full of P sounds."
+**Penny's Pebble Party** — P (public/library.html:520). Cover: "Penny's Pebble Party! A story full of P sounds."
 
 1. Penny the penguin has a pink pail. — **penguin**
 2. Penny waddles down to the pond. — **pond**
@@ -1297,7 +1297,7 @@ nothing is hidden. Four templates, and two fixed lines (B6):
 11. They put the pebbles in a row by the pond. — **pebbles**
 12. Penny, Pat, and Polly have a pebble party! — **Penny**
 
-**Bo's Beach Day** — B (public/library.html:557). Cover: "Bo's Beach Day! A story full of B sounds."
+**Bo's Beach Day** — B (public/library.html:536). Cover: "Bo's Beach Day! A story full of B sounds."
 
 1. Bo the bear has a big boat. — **bear**
 2. Bo puts a basket in the boat. — **boat**
@@ -1312,7 +1312,7 @@ nothing is hidden. Four templates, and two fixed lines (B6):
 11. Ben and Bella and Bo eat berries and buns. — **berries**
 12. What a fun day at the beach, Bo! — **Bo**
 
-**Mia Makes Muffins** — M (public/library.html:573). Cover: "Mia Makes Muffins! A story full of M sounds."
+**Mia Makes Muffins** — M (public/library.html:552). Cover: "Mia Makes Muffins! A story full of M sounds."
 
 1. Mia the mouse wants to make muffins. — **mouse**
 2. Mia gets milk and a mixing bowl. — **milk**
@@ -1327,7 +1327,7 @@ nothing is hidden. Four templates, and two fixed lines (B6):
 11. Molly the moose says, "Many thanks!" — **moose**
 12. Mia, Max, and Molly share a meal under the moon. — **moon**
 
-**Ned Needs a Net** — N (public/library.html:589). Cover: "Ned Needs a Net! A story full of N sounds."
+**Ned Needs a Net** — N (public/library.html:568). Cover: "Ned Needs a Net! A story full of N sounds."
 
 1. Nora the newt has a nice, neat nest. — **nest**
 2. Nora takes a nap. — **nap**
@@ -1342,7 +1342,7 @@ nothing is hidden. Four templates, and two fixed lines (B6):
 11. Night falls. Nora makes noodles. — **noodles**
 12. Ned eats noodles with Nora. What a nice night! — **night**
 
-**Toby's Tiny Tuba** — T (public/library.html:605). Cover: "Toby's Tiny Tuba! A story full of T sounds."
+**Toby's Tiny Tuba** — T (public/library.html:584). Cover: "Toby's Tiny Tuba! A story full of T sounds."
 
 1. Toby the tiger has a tiny tuba. — **tiger**
 2. Toby taps his toes. — **taps**
@@ -1357,7 +1357,7 @@ nothing is hidden. Four templates, and two fixed lines (B6):
 11. Everyone claps. Toby takes a bow. — **Toby**
 12. "Time for tea!" says Toby. — **tea**
 
-**Dot Digs a Pool** — D (public/library.html:621). Cover: "Dot Digs a Pool! A story full of D sounds."
+**Dot Digs a Pool** — D (public/library.html:600). Cover: "Dot Digs a Pool! A story full of D sounds."
 
 1. Dot the duck wants a pool to dive in. — **duck**
 2. Dot digs a hole. Dig, dig, dig! — **digs**
@@ -1372,7 +1372,7 @@ nothing is hidden. Four templates, and two fixed lines (B6):
 11. Dot dives. Dan dives. Splash! — **dives**
 12. Dot is a happy duck. Dan is a happy dog! — **duck**
 
-**Kip's Kite** — K (public/library.html:637). Cover: "Kip's Kite! A story full of K sounds."
+**Kip's Kite** — K (public/library.html:616). Cover: "Kip's Kite! A story full of K sounds."
 
 1. Kip the kangaroo has a kite. — **kangaroo**
 2. The kite has a long tail. — **kite**
@@ -1387,7 +1387,7 @@ nothing is hidden. Four templates, and two fixed lines (B6):
 11. Cody comes down in the corn. — **corn**
 12. Kip gives Cody a carrot. What a day! — **carrot**
 
-**Goldie's Guitar** — G (public/library.html:653). Cover: "Goldie's Guitar! A story full of G sounds."
+**Goldie's Guitar** — G (public/library.html:632). Cover: "Goldie's Guitar! A story full of G sounds."
 
 1. Goldie the goose gets a gift. — **goose**
 2. The gift is a guitar! — **guitar**
@@ -1402,7 +1402,7 @@ nothing is hidden. Four templates, and two fixed lines (B6):
 11. The garden gophers come to hear. — **gophers**
 12. Goldie and Gus give a garden show! — **garden**
 
-**Finn Finds a Feather** — F (public/library.html:669). Cover: "Finn Finds a Feather! A story full of F sounds."
+**Finn Finds a Feather** — F (public/library.html:648). Cover: "Finn Finds a Feather! A story full of F sounds."
 
 1. Finn the fish lives by a big rock. — **fish**
 2. Finn has fast fins. — **fins**
@@ -1417,7 +1417,7 @@ nothing is hidden. Four templates, and two fixed lines (B6):
 11. Finn gives the feather back. "Thank you!" says the gull. — **Finn**
 12. Finn feels fine. What a fun day! — **fine**
 
-**Val the Van** — V (public/library.html:685). Cover: "Val the Van! A story full of V sounds."
+**Val the Van** — V (public/library.html:664). Cover: "Val the Van! A story full of V sounds."
 
 1. Val the van is in a valley. — **van**
 2. Val goes to the village. — **village**
@@ -1432,7 +1432,7 @@ nothing is hidden. Four templates, and two fixed lines (B6):
 11. Vicky washes Val. Val looks very shiny. — **Vicky**
 12. "Thank you, Val!" says the village. — **Val**
 
-**Sid the Seagull** — S (public/library.html:701). Cover: "Sid the Seagull! A story full of S sounds."
+**Sid the Seagull** — S (public/library.html:680). Cover: "Sid the Seagull! A story full of S sounds."
 
 1. Sid the seagull lives by the sea. — **seagull**
 2. The sun is up. The sand is warm. — **sand**
@@ -1447,7 +1447,7 @@ nothing is hidden. Four templates, and two fixed lines (B6):
 11. The sand hill is gone. Sid is sad. — **sad**
 12. "Silly Sid! We can make one more!" says Sadie. — **silly**
 
-**Sam's Sailboat** — S (public/library.html:717). Cover: "Sam's Sailboat! A story full of S sounds."
+**Sam's Sailboat** — S (public/library.html:696). Cover: "Sam's Sailboat! A story full of S sounds."
 
 1. Sam the seal has a sailboat. — **sailboat**
 2. The sun is up. Sam sails out. — **sun**
@@ -1462,7 +1462,7 @@ nothing is hidden. Four templates, and two fixed lines (B6):
 11. The mom fish is there! She is so happy. — **so**
 12. Sam sings a song all the way home. — **song**
 
-**Sophie's Silly Soup** — S (public/library.html:733). Cover: "Sophie's Silly Soup! A story full of S sounds."
+**Sophie's Silly Soup** — S (public/library.html:712). Cover: "Sophie's Silly Soup! A story full of S sounds."
 
 1. Sophie is making soup. — **soup**
 2. Sophie adds a carrot. — **Sophie**
@@ -1477,7 +1477,7 @@ nothing is hidden. Four templates, and two fixed lines (B6):
 11. Sophie calls her pals to the table. — **Sophie**
 12. They sit and sip the soup together. — **sip**
 
-**Zoe and the Zipper** — Z (public/library.html:749). Cover: "Zoe and the Zipper! A story full of Z sounds."
+**Zoe and the Zipper** — Z (public/library.html:728). Cover: "Zoe and the Zipper! A story full of Z sounds."
 
 1. Zoe the zebra woke up at the zoo. — **zebra**
 2. It felt cold. Zoe got her coat. — **Zoe**
@@ -1492,7 +1492,7 @@ nothing is hidden. Four templates, and two fixed lines (B6):
 11. Zack gave Zoe a zucchini for lunch. — **zucchini**
 12. Zoe the zebra felt warm and happy. — **zebra**
 
-**Shay the Shy Shark** — SH (public/library.html:765). Cover: "Shay the Shy Shark! A story full of SH sounds."
+**Shay the Shy Shark** — SH (public/library.html:744). Cover: "Shay the Shy Shark! A story full of SH sounds."
 
 1. Shay the shark is shy. — **shark**
 2. Shay hides in the shadow of a ship. — **ship**
@@ -1507,7 +1507,7 @@ nothing is hidden. Four templates, and two fixed lines (B6):
 11. The crabs cheer. "Shay, you are a star!" — **Shay**
 12. Shay is not shy now. She shines! — **shines**
 
-**Shane and the Shiny Shell** — SH (public/library.html:781). Cover: "Shane and the Shiny Shell! A story full of SH sounds."
+**Shane and the Shiny Shell** — SH (public/library.html:760). Cover: "Shane and the Shiny Shell! A story full of SH sounds."
 
 1. Shane is at the sea. — **Shane**
 2. He sees a shiny shell. — **shell**
@@ -1522,7 +1522,7 @@ nothing is hidden. Four templates, and two fixed lines (B6):
 11. The crab is not shy now. — **shy**
 12. Shane and the crab are pals. Shane shouts, "Yay!" — **shouts**
 
-**Shawn and His Shadow** — SH (public/library.html:797). Cover: "Shawn and His Shadow! A story full of SH sounds."
+**Shawn and His Shadow** — SH (public/library.html:776). Cover: "Shawn and His Shadow! A story full of SH sounds."
 
 1. Shawn has a shadow. — **shadow**
 2. The shadow is on the wall. — **shadow**
@@ -1537,7 +1537,7 @@ nothing is hidden. Four templates, and two fixed lines (B6):
 11. The shadow dog shakes its tail. — **shakes**
 12. Shawn and his shadow go to bed. — **shadow**
 
-**Chip the Chipmunk** — CH (public/library.html:813). Cover: "Chip the Chipmunk! A story full of CH sounds."
+**Chip the Chipmunk** — CH (public/library.html:792). Cover: "Chip the Chipmunk! A story full of CH sounds."
 
 1. Chip the chipmunk has chubby cheeks. — **chipmunk**
 2. Chip chews on chestnuts. — **chestnuts**
@@ -1552,7 +1552,7 @@ nothing is hidden. Four templates, and two fixed lines (B6):
 11. Chip and the chick cuddle up in the chair. — **chair**
 12. "Cheers for a new pal!" chirps the chick. — **chirps**
 
-**Jax and the Jam Jar** — J (public/library.html:829). Cover: "Jax and the Jam Jar! A story full of J sounds."
+**Jax and the Jam Jar** — J (public/library.html:808). Cover: "Jax and the Jam Jar! A story full of J sounds."
 
 1. Jax the jaguar lives in the jungle. — **jaguar**
 2. Jax likes to jump and jog. — **jump**
@@ -1567,7 +1567,7 @@ nothing is hidden. Four templates, and two fixed lines (B6):
 11. Jill tells a joke. Jax giggles. — **joke**
 12. What a jolly day in the jungle! — **jungle**
 
-**Leo's Lucky Leaf** — L (public/library.html:845). Cover: "Leo's Lucky Leaf! A story full of L sounds."
+**Leo's Lucky Leaf** — L (public/library.html:824). Cover: "Leo's Lucky Leaf! A story full of L sounds."
 
 1. Leo the lamb likes to leap. — **lamb**
 2. Leo leaps by the lake. — **leaps**
@@ -1582,7 +1582,7 @@ nothing is hidden. Four templates, and two fixed lines (B6):
 11. A ladybug rides the leaf boat. — **ladybug**
 12. Leo and Lucy wave. What luck! — **luck**
 
-**Libby and the Lemon** — L (public/library.html:861). Cover: "Libby and the Lemon! A story full of L sounds."
+**Libby and the Lemon** — L (public/library.html:840). Cover: "Libby and the Lemon! A story full of L sounds."
 
 1. Libby the lamb is hungry. — **lamb**
 2. Libby wants lunch. — **lunch**
@@ -1597,7 +1597,7 @@ nothing is hidden. Four templates, and two fixed lines (B6):
 11. Libby laughs. Lunch is more fun with a friend. — **laughs**
 12. Libby and the ladybug lie down to rest. — **lie**
 
-**Leon's Lantern** — L (public/library.html:877). Cover: "Leon's Lantern! A story full of L sounds."
+**Leon's Lantern** — L (public/library.html:856). Cover: "Leon's Lantern! A story full of L sounds."
 
 1. Leon the lion has a lantern. — **lion**
 2. It is night. Leon cannot see. — **Leon**
@@ -1612,7 +1612,7 @@ nothing is hidden. Four templates, and two fixed lines (B6):
 11. They go home by the light of the lantern. — **light**
 12. Leon and Lucky rest by the lantern. — **lantern**
 
-**Theo's Thunder Day** — TH (public/library.html:893). Cover: "Theo's Thunder Day! A story full of TH sounds."
+**Theo's Thunder Day** — TH (public/library.html:872). Cover: "Theo's Thunder Day! A story full of TH sounds."
 
 1. Theo thinks it is a fun day. — **Theo**
 2. Theo is thirsty. He sips a big drink. — **thirsty**
@@ -1627,7 +1627,7 @@ nothing is hidden. Four templates, and two fixed lines (B6):
 11. Soon, no more thunder. — **thunder**
 12. "Thanks, Thea!" Theo gives a big thumbs up. — **thumbs**
 
-**Thor Says Thank You** — TH (public/library.html:910). Cover: "Thor Says Thank You! A story full of TH sounds."
+**Thor Says Thank You** — TH (public/library.html:889). Cover: "Thor Says Thank You! A story full of TH sounds."
 
 1. Thor is a big, kind bear. — **Thor**
 2. Thor thinks of his pals. — **thinks**
@@ -1642,7 +1642,7 @@ nothing is hidden. Four templates, and two fixed lines (B6):
 11. Thor gives Owl a big thumbs up. — **thumbs**
 12. "Thanks, Thor!" his pals say. Thor is so happy. — **thanks**
 
-**Thelma's Thirsty Plant** — TH (public/library.html:926). Cover: "Thelma's Thirsty Plant! A story full of TH sounds."
+**Thelma's Thirsty Plant** — TH (public/library.html:905). Cover: "Thelma's Thirsty Plant! A story full of TH sounds."
 
 1. Thelma has a plant. — **Thelma**
 2. Thelma's plant is thirsty. — **thirsty**
@@ -1657,7 +1657,7 @@ nothing is hidden. Four templates, and two fixed lines (B6):
 11. Thelma says thanks to her plant. — **thanks**
 12. It is a big pink flower! Thelma gives it a thumbs up. — **thumbs**
 
-**This Bear, That Bee** — TH (v) (public/library.html:942). Cover: "This Bear, That Bee! A story full of TH sounds."
+**This Bear, That Bee** — TH (v) (public/library.html:921). Cover: "This Bear, That Bee! A story full of TH sounds."
 
 1. This is a big bear. That is a little bee. — **this**
 2. They are pals. They like to play. — **they**
@@ -1672,7 +1672,7 @@ nothing is hidden. Four templates, and two fixed lines (B6):
 11. Then the sun sets. — **then**
 12. "That was the best day!" say the pals. — **that**
 
-**Rory the Rabbit** — R (public/library.html:959). Cover: "Rory the Rabbit! A story full of R sounds."
+**Rory the Rabbit** — R (public/library.html:938). Cover: "Rory the Rabbit! A story full of R sounds."
 
 1. Rory the rabbit rides a red rocket. — **rabbit**
 2. The rocket roars over the rainbow. — **rainbow**
@@ -1681,7 +1681,7 @@ nothing is hidden. Four templates, and two fixed lines (B6):
 5. They race around the river. — **race**
 6. Rory roars: hooray, hooray! — **Rory**
 
-**Reba the Robot** — R (public/library.html:967). Cover: "Reba the Robot! A story full of R sounds."
+**Reba the Robot** — R (public/library.html:946). Cover: "Reba the Robot! A story full of R sounds."
 
 1. Reba the robot runs on a road. — **robot**
 2. Reba rolls past a red rose. — **rose**
@@ -1690,7 +1690,7 @@ nothing is hidden. Four templates, and two fixed lines (B6):
 5. Rain! They run for the roof. — **rain**
 6. Reba the robot: ready, ready! — **ready**
 
-**Ruby the Rooster** — R (public/library.html:975). Cover: "Ruby the Rooster! A story full of R sounds."
+**Ruby the Rooster** — R (public/library.html:954). Cover: "Ruby the Rooster! A story full of R sounds."
 
 1. Ruby the rooster rises at dawn. — **Ruby**
 2. Ruby crows: rise and shine! — **rise**
@@ -1699,7 +1699,7 @@ nothing is hidden. Four templates, and two fixed lines (B6):
 5. The rooster pecks rows of corn. — **rows**
 6. Ruby rests. What a great run! — **run**
 
-**Remy the Raccoon** — R (public/library.html:983). Cover: "Remy the Raccoon! A story full of R sounds."
+**Remy the Raccoon** — R (public/library.html:962). Cover: "Remy the Raccoon! A story full of R sounds."
 
 1. Remy the raccoon roams the river. — **raccoon**
 2. He reaches under a round rock. — **rock**
@@ -1708,7 +1708,7 @@ nothing is hidden. Four templates, and two fixed lines (B6):
 5. Remy rests in the reeds. — **reeds**
 6. Remy the raccoon: hooray! — **Remy**
 
-**Rex the Rhino** — R (public/library.html:991). Cover: "Rex the Rhino! A story full of R sounds."
+**Rex the Rhino** — R (public/library.html:970). Cover: "Rex the Rhino! A story full of R sounds."
 
 1. Rex the rhino runs really fast. — **rhino**
 2. He roars down the rocky road. — **road**
@@ -1717,7 +1717,7 @@ nothing is hidden. Four templates, and two fixed lines (B6):
 5. Rex meets a friendly rabbit. — **rabbit**
 6. Run, Rex, run! Hooray! — **run**
 
-**Sunny the Seal** — S (public/library.html:999). Cover: "Sunny the Seal! A story full of S sounds."
+**Sunny the Seal** — S (public/library.html:978). Cover: "Sunny the Seal! A story full of S sounds."
 
 1. Sunny the seal sits in the sun. — **seal**
 2. Sunny sees a silly snake. — **silly**
@@ -1726,7 +1726,7 @@ nothing is hidden. Four templates, and two fixed lines (B6):
 5. Sunny sings a silly song. — **song**
 6. So sleepy! Sunny says goodnight. — **Sunny**
 
-**Lily the Lion** — L (public/library.html:1007). Cover: "Lily the Lion! A story full of L sounds."
+**Lily the Lion** — L (public/library.html:986). Cover: "Lily the Lion! A story full of L sounds."
 
 1. Lily the lion licks a lemon lollipop. — **lion**
 2. Lily leaps over a little log. — **log**
@@ -1735,7 +1735,7 @@ nothing is hidden. Four templates, and two fixed lines (B6):
 5. They look at a yellow balloon. — **look**
 6. Lily loves to play all day. — **Lily**
 
-**Kiki the Koala** — K (public/library.html:1015). Cover: "Kiki the Koala! A story full of K sounds."
+**Kiki the Koala** — K (public/library.html:994). Cover: "Kiki the Koala! A story full of K sounds."
 
 1. Kiki the koala bakes a cake. — **cake**
 2. A kind king comes with a key. — **king**
@@ -1744,7 +1744,7 @@ nothing is hidden. Four templates, and two fixed lines (B6):
 5. A cat and a cow come to play. — **cow**
 6. What a cool day for Kiki! — **Kiki**
 
-**Shelly the Sheep** — SH (public/library.html:1023). Cover: "Shelly the Sheep! A story full of SH sounds."
+**Shelly the Sheep** — SH (public/library.html:1002). Cover: "Shelly the Sheep! A story full of SH sounds."
 
 1. Shelly the sheep shines her shoes. — **sheep**
 2. She shows a shiny shell to a fish. — **shell**
@@ -1753,7 +1753,7 @@ nothing is hidden. Four templates, and two fixed lines (B6):
 5. She sips a milkshake — so fresh. — **she**
 6. Shhh… Shelly is sleeping now. — **Shelly**
 
-**Charlie the Chick** — CH (public/library.html:1031). Cover: "Charlie the Chick! A story full of CH sounds."
+**Charlie the Chick** — CH (public/library.html:1010). Cover: "Charlie the Chick! A story full of CH sounds."
 
 1. Charlie the chick chews chewy cherries. — **chick**
 2. Charlie rides the choo-choo train. — **Charlie**
@@ -1762,7 +1762,7 @@ nothing is hidden. Four templates, and two fixed lines (B6):
 5. They share chocolate chips. Crunch! — **chips**
 6. Charlie chirps: cheep, cheep, cheep. — **cheep**
 
-**Theo the Sloth** — TH (public/library.html:1039). Cover: "Theo the Sloth! A story full of TH sounds."
+**Theo the Sloth** — TH (public/library.html:1018). Cover: "Theo the Sloth! A story full of TH sounds."
 
 1. Theo the sloth thinks happy thoughts. — **thinks**
 2. Theo counts: one, two, three! — **Theo**
@@ -1771,7 +1771,7 @@ nothing is hidden. Four templates, and two fixed lines (B6):
 5. Then a warm bath — both feet in. — **bath**
 6. Thank you, moon. Theo says goodnight. — **thank**
 
-**Gus the Goat** — G (public/library.html:1047). Cover: "Gus the Goat! A story full of G sounds."
+**Gus the Goat** — G (public/library.html:1026). Cover: "Gus the Goat! A story full of G sounds."
 
 1. Gus the goat grows a green garden. — **goat**
 2. A goose gives Gus a gift. — **goose**
@@ -1780,7 +1780,7 @@ nothing is hidden. Four templates, and two fixed lines (B6):
 5. A bug giggles on the grass. — **giggles**
 6. Good game, Gus. Goodnight! — **Gus**
 
-**Fifi the Fox** — F (public/library.html:1055). Cover: "Fifi the Fox! A story full of F sounds."
+**Fifi the Fox** — F (public/library.html:1034). Cover: "Fifi the Fox! A story full of F sounds."
 
 1. Fifi the fox finds four feathers. — **fox**
 2. Fifi feeds a funny fish. — **fish**
@@ -1789,14 +1789,82 @@ nothing is hidden. Four templates, and two fixed lines (B6):
 5. Fifi has fun with her friends. — **fun**
 6. Fifi waves: farewell, farewell! — **Fifi**
 
-**Bear's Lost Ball** — B (public/library.html:1066). Cover: "Bear's Lost Ball! A story full of B sounds."
+**Bear's Lost Ball** — B (public/library.html:1045). Cover: "Bear's Lost Ball! A story full of B sounds."
 
 1. Bear has a big red ball. — **Bear**
 2. The ball bounces away! — **ball**
 3. Bear looks by the bus. — **bus**
 4. Bear looks by the boat. — **boat**
 5. A bee finds the ball! — **bee**
-6. Bear takes his ball to bed. — **bed**
+6. Bear bounces the ball. — **ball**
+7. Bear and the bee play ball. — **bee**
+8. Bear takes his ball to bed. — **bed**
+
+**Rabbit and the Rocket** — R (public/library.html:1059). Cover: "Rabbit and the Rocket! A story full of R sounds."
+
+1. Rabbit has a toy rocket. — **Rabbit**
+2. The rocket is stuck in mud. — **rocket**
+3. Rabbit gives it a tug. — **Rabbit**
+4. A robot comes to help. — **robot**
+5. The robot puts a rock by the mud. — **rock**
+6. Rabbit hops onto the rock. — **Rabbit**
+7. The robot and Rabbit give a big tug. — **robot**
+8. Up comes the rocket! Rabbit is so happy. — **rocket**
+
+**Seal and the Sock** — S (public/library.html:1071). Cover: "Seal and the Sock! A story full of S sounds."
+
+1. A seal has a sock. — **Seal**
+2. The sock is full of sand. — **sock**
+3. The seal gives it a shake. — **Seal**
+4. Sand goes on the seal! — **sand**
+5. The seal can dunk the sock in a tub. — **Seal**
+6. The sock is wet and heavy. — **sock**
+7. The seal hangs it in the sun. — **sun**
+8. The sock is dry. The seal can put it on. — **sock**
+
+**Lion and the Lock** — L (public/library.html:1083). Cover: "Lion and the Lock! A story full of L sounds."
+
+1. A lion has a box with a lock. — **Lion**
+2. The lock needs a key. — **lock**
+3. The lion peeks into a bag. — **Lion**
+4. A lemon! No key. — **lemon**
+5. The lion peeks under a leaf. — **leaf**
+6. No key. The lion turns on a lamp. — **lamp**
+7. A key is by the lamp! — **lamp**
+8. Pop! The lock is open. A tiny teddy is inside! — **lock**
+
+**Sheep and the Ship** — SH (public/library.html:1095). Cover: "Sheep and the Ship! A story full of SH sounds."
+
+1. A sheep has a toy ship. — **Sheep**
+2. The ship is in a big puddle. — **ship**
+3. The sheep has no boat. — **Sheep**
+4. A shoe can be a boat! — **shoe**
+5. The sheep puts the shoe in the puddle. — **Sheep**
+6. The shoe bumps the ship. — **shoe**
+7. The sheep picks up the ship. — **ship**
+8. The ship is safe and dry. — **ship**
+
+**Chicken and the Picnic** — CH (public/library.html:1107). Cover: "Chicken and the Picnic! A story full of CH sounds."
+
+1. A chicken has a big picnic. — **Chicken**
+2. The chicken puts cheese in a bag. — **cheese**
+3. A cherry goes in, too. — **cherry**
+4. In goes a bit of chocolate. — **chocolate**
+5. The chicken puts the bag on a chair. — **chair**
+6. Oh no! The chair tips. — **chair**
+7. The chicken grabs the bag! — **Chicken**
+8. The chicken and a pal eat the cheese. — **cheese**
+
+**My Thumb Paints a Gift** — TH (public/library.html:1119). Cover: "My Thumb Paints a Gift! A story full of TH sounds."
+
+1. I think I can make a gift. — **think**
+2. I dip my thumb in blue paint. — **thumb**
+3. My thumb makes a dot. — **thumb**
+4. I think it needs a buddy. — **think**
+5. I dip my thumb in pink paint. — **thumb**
+6. My thumb makes a pink dot. — **thumb**
+7. I think of a butterfly. — **think**
+8. My thumb made a butterfly! A gift for Mom. — **thumb**
 
 ---
 
@@ -2166,7 +2234,7 @@ One fixed line: "You did it! Three games are unlocked." — the finish card (pub
 
 ### E2 — Your Adventure (`story.html`, parked)
 
-No page opens it: the Books page keeps its tile hidden (public/library.html:242), and it is gated behind `Sona.gated('story')`. Each page is read aloud when it opens (public/story.html:245) and on "Hear it" (public/story.html:300); then "Now you! Say... {word}!" (public/story.html:247); a heard try gets one of the five praise lines (public/story.html:271); a missed one gets the bare word again (public/story.html:280). The pages are normally an AI-written story from `/api/story` — unbounded text that cannot be pre-recorded. The fallback pages are 5 frames with a bank word (public/gamecontent.js:83): "Once, Echo saw a ___.", "He really liked the ___.", "Then came a big ___.", "Echo and the ___ played all day.", "What a fun ___!".
+No page opens it: the Books page keeps its tile hidden (public/library.html:231), and it is gated behind `Sona.gated('story')`. Each page is read aloud when it opens (public/story.html:245) and on "Hear it" (public/story.html:300); then "Now you! Say... {word}!" (public/story.html:247); a heard try gets one of the five praise lines (public/story.html:271); a missed one gets the bare word again (public/story.html:280). The pages are normally an AI-written story from `/api/story` — unbounded text that cannot be pre-recorded. The fallback pages are 5 frames with a bank word (public/gamecontent.js:83): "Once, Echo saw a ___.", "He really liked the ___.", "Then came a big ___.", "Echo and the ___ played all day.", "What a fun ___!".
 
 ### E3 — Books: no longer parked
 
@@ -2243,10 +2311,10 @@ one of the five praise lines.
 - **The idle nudge** (public/charge.html:1871): would replay the prompt after 8 s of silence, up to twice. `armIdle()` is defined but never called; the not-heard path is the quiet screen (B4).
 - **"You did it."** (public/charge.html:2287): fallback praise only if `praiseLine` were missing — `sona.js` always provides it.
 - **"Let's try our {sound} sound again"** (public/charge.html:2255): fallback coaching only for a sound with no tip — all 19 have one.
-- **"Listen to Echo, then copy the sound!"** (public/sona.js:3904): the default cue for an unknown sound; the practice page forces the sound to one of the 19.
-- **`actionCue`, `repeatCue`, `coachLine`** (public/sona.js:4121, public/sona.js:4126, public/sona.js:4137): exported, no caller anywhere. Pre-calm wording — e.g. "Are you ready? Say rrrr 5 times!", "Repeat after me… rrrr!  Now you try — rrrr!", "Let's try again. Say rrrr! Pull your tongue back and up like a tiger growl — rrr!".
+- **"Listen to Echo, then copy the sound!"** (public/sona.js:3914): the default cue for an unknown sound; the practice page forces the sound to one of the 19.
+- **`actionCue`, `repeatCue`, `coachLine`** (public/sona.js:4131, public/sona.js:4136, public/sona.js:4147): exported, no caller anywhere. Pre-calm wording — e.g. "Are you ready? Say rrrr 5 times!", "Repeat after me… rrrr!  Now you try — rrrr!", "Let's try again. Say rrrr! Pull your tongue back and up like a tiger growl — rrr!".
 - **The conversation rung** (public/gamecontent.js:89): "Which do you like — a ___ or a ___?", "Do you want the ___ or the ___?", "Pick one — ___ or ___!", "Hmm… a ___ or a ___?" — the practice page keeps only items with a target (`it.t`) and these have none, so a conversation round falls back to the bare sound.
-- **The sound models as text** (public/sona.js:3972): puh, buh, mmm, nnn, tuh, duh, kuh, guh, ffff, vvvv, sss, zzz, shhh, chuh, juh, lll, rrrr, thhh, thuh — shown on screen, never sent to TTS, because a synthesized "rrrr" comes out mangled. The performed sound is Rachel's clip (Part A).
+- **The sound models as text** (public/sona.js:3982): puh, buh, mmm, nnn, tuh, duh, kuh, guh, ffff, vvvv, sss, zzz, shhh, chuh, juh, lll, rrrr, thhh, thuh — shown on screen, never sent to TTS, because a synthesized "rrrr" comes out mangled. The performed sound is Rachel's clip (Part A).
 
 ### E8 — Shown on screen, never spoken (so nobody records them by mistake)
 
@@ -2275,6 +2343,6 @@ folders; they were a wish-list. They are gone, and so is the old `tools/voicepag
 
 ---
 
-**Totals.** Part A: 19 sound models (38 files, Rachel's). Part B: **613 fixed clips** to record. Part C: **80 template lines written out** (C1 38 + C2 38 + C7 4) plus 1015 fillers listed (19 cues, 19 sound names, 95 syllables, 5 sentence frames, 134 Feed Echo words, 4 game-card asks, 235 picture-game words, 504 book pages in 49 books). Part D: **356 bank entries, 294 distinct words** (TTS). Part E: 269 parked/unlinked lines not to record (210 chapter pages, 43 Coach Call, 9 Speech Check, the rest single lines).
+**Totals.** Part A: 19 sound models (38 files, Rachel's). Part B: **613 fixed clips** to record. Part C: **80 template lines written out** (C1 38 + C2 38 + C7 4) plus 1065 fillers listed (19 cues, 19 sound names, 95 syllables, 5 sentence frames, 134 Feed Echo words, 4 game-card asks, 235 picture-game words, 554 book pages in 55 books). Part D: **356 bank entries, 294 distinct words** (TTS). Part E: 269 parked/unlinked lines not to record (210 chapter pages, 43 Coach Call, 9 Speech Check, the rest single lines).
 
 Record B first (613 lines — an hour), then C1 and C2 (76 lines, where you perform the sound), and stop there: the rest of Part C and Part D are words, and words are what TTS already does well.

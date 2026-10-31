@@ -1,6 +1,6 @@
 // A family may pin one of its selected sounds without erasing the other
 // sounds, earned work or its speech therapist's assignment. The shelf follows
-// that sound, and the other books remain behind its one closed fold.
+// that sound alone; other sounds never appear in another shelf or fold.
 // TARGET_SOUND_OLD_ROOT serves saved pre-change files for the regression check.
 import vm from "vm";
 import { readFileSync, existsSync } from "fs";
@@ -84,8 +84,31 @@ section("invalid rotation and selected set", () => {
   const malformed = boot({ focusSounds: "R,S", targetSound: "S" });
   ok("a malformed imported sound list has a safe read-only fallback", malformed.S.targetSound() === "R" && malformed.S.targetSoundOptions().length === 0 && !malformed.S.getProfile().targetSound);
 });
+section("free books on the selected shelf", () => {
+  const p = boot({ targetSound: "S" }), { S, local } = p;
+  if (typeof S.freeBooksOnShelf !== "function") return ok("the free-book shelf preview exists", false);
+  const table = vm.runInNewContext(source("library.html").match(/var STORIES = (\[[\s\S]*?\n    \]);/)[1]);
+  const freeIn = (sound) => S.FREE_BOOKS.filter((title) => table.some((b) => b.title === title && (!sound || b.sound === sound))).length;
+  const before = JSON.stringify(local);
+  ok("the free-book preview excludes another sound's free book and only reads", S.freeBooksOnShelf() === freeIn("S") && JSON.stringify(local) === before);
+  S.setTargetSound("R");
+  ok("…and includes free R books when R is selected", S.freeBooksOnShelf() === freeIn("R"));
+  S.saveProfile({ mode: "play", targetSound: "" });
+  ok("unpinned play mode previews the free books from its all-sound shelf", S.freeBooksOnShelf() === freeIn(""));
+  S.setTargetSound("S");
+  ok("a pin in play mode still previews only the pinned sound", S.freeBooksOnShelf() === freeIn("S"));
+  S.saveProfile({ focusSounds: [], targetSound: "", mode: "" });
+  ok("a child with no chosen sounds previews the all-sound shelf", S.freeBooksOnShelf() === freeIn(""));
+  local["sona.homework.v1"] = JSON.stringify({ hw: { sounds: ["L"], start: "2000-01-01", due: "2999-01-01" } });
+  ok("an active assignment previews its sound's shelf, even with no family sounds", S.freeBooksOnShelf() === freeIn("L"));
+  delete local["sona.homework.v1"];
+  local["sona.freever.v1"] = "post";
+  // A website that cannot buy still keeps the free version. The returned
+  // count always obeys the actual bookFree rule rather than a plan guess.
+  ok("the preview grants no access and counts only titles this phone calls free", S.freeBooksOnShelf() === S.FREE_BOOKS.filter((title) => S.bookFree(title)).length);
+});
 
-// Real pages: a shelf selected in Settings, every other book still reachable,
+// Real pages: a shelf selected in Settings, only that sound rendered,
 // and assignment wording that cannot suggest a family choice was applied.
 const mime = { html: "text/html", js: "text/javascript", css: "text/css", webp: "image/webp", svg: "image/svg+xml", woff2: "font/woff2" };
 const server = createServer((req, res) => {
@@ -111,19 +134,32 @@ try {
     sessionStorage.setItem("sona.gate.v1", String(Date.now()));
   });
   await page.goto(base + "/library.html");
-  const readShelf = () => page.evaluate(() => ({ top: [...document.querySelectorAll("#shelf .bookBtn .bt")].map((b) => b.textContent), target: document.getElementById("librarySound")?.value, more: document.getElementById("moreBtn")?.getAttribute("aria-expanded"), rest: document.querySelectorAll("#moreShelf .bookBtn").length, all: ALL_STORIES.map((b) => ({ title: b.title, sound: b.sound })) }));
+  const readShelf = () => page.evaluate(() => ({ top: [...document.querySelectorAll("#shelf .bookBtn .bt")].map((b) => b.textContent), target: document.getElementById("librarySound")?.value, more: !!document.getElementById("moreBtn"), rest: document.querySelectorAll(".bookBtn:not(#shelf .bookBtn)").length, all: ALL_STORIES.map((b) => ({ title: b.title, sound: b.sound })) }));
   let shelf = await readShelf();
-  ok("the bookshelf names the selected sound and shows only its books first", shelf.target === "S" && shelf.top.length > 0 && shelf.top.every((t) => shelf.all.find((b) => b.title === t).sound === "S"), shelf);
+  ok("the bookshelf names the selected sound and shows only its books", shelf.target === "S" && shelf.top.length > 0 && shelf.top.every((t) => shelf.all.find((b) => b.title === t).sound === "S"), shelf);
   if (process.env.TARGET_SOUND_SCREENSHOTS) await page.screenshot({ path: path.join(process.env.TARGET_SOUND_SCREENSHOTS, "library-sound.png"), fullPage: true });
-  ok("other sounds start closed and their covers are not built", shelf.more === "false" && shelf.rest === 0);
-  await page.locator("#moreBtn").click();
-  shelf = await readShelf();
-  ok("one More books control retains the complete in-season catalog", shelf.more === "true" && shelf.rest + shelf.top.length === shelf.all.length);
+  ok("no More books control or other-sound shelf can reveal another sound", !shelf.more && shelf.rest === 0);
   if (await page.locator("#librarySound").count()) {
     await page.waitForTimeout(750);
     await Promise.all([page.waitForNavigation({ waitUntil: "load" }), page.locator("#librarySound").selectOption("R")]); shelf = await readShelf();
-    ok("changing the bookshelf sound saves it and rebuilds one focused shelf", shelf.target === "R" && shelf.top.every((t) => shelf.all.find((b) => b.title === t).sound === "R") && shelf.more === "false", shelf);
+    ok("changing the bookshelf sound saves it and rebuilds one focused shelf", shelf.target === "R" && shelf.top.every((t) => shelf.all.find((b) => b.title === t).sound === "R") && !shelf.more && shelf.rest === 0, shelf);
   } else ok("the bookshelf has a sound switcher", false);
+  // Neither an off-sound free book nor a seasonal fallback belongs on a
+  // selected shelf. This changes discovery only, never entitlement.
+  await page.evaluate(() => { Sona.saveProfile({ focusSounds: ["S"], targetSound: "S", earlyAdopter: false }); });
+  await page.reload(); shelf = await readShelf();
+  ok("a locked S shelf never substitutes the free R book", shelf.top.length > 0 && shelf.top.every((t) => shelf.all.find((b) => b.title === t).sound === "S") && !shelf.more && shelf.rest === 0, shelf);
+  await page.goto(base + "/today.html");
+  ok("Home's Books door describes the locked S shelf, without promising a hidden free R book", await page.evaluate(() => document.getElementById("homeBooksTag").textContent === (Sona.isFree() ? "Free" : Sona.booksOpen() ? "Included" : "Premium")));
+  await page.evaluate(() => Sona.saveProfile({ focusSounds: ["R", "S"], targetSound: "R" }));
+  await page.reload();
+  ok("…and still names the free book when the selected R shelf contains it", await page.evaluate(() => document.getElementById("homeBooksTag").textContent === (Sona.isFree() ? "Free" : Sona.booksOpen() ? "Included" : "1 free book")));
+  await page.goto(base + "/library.html");
+  await page.evaluate(() => { Sona.saveProfile({ focusSounds: ["K"], targetSound: "K", earlyAdopter: true }); });
+  await page.clock.setFixedTime(new Date("2026-10-15T12:00:00-06:00"));
+  await page.reload(); shelf = await readShelf();
+  ok("a K shelf never substitutes B's seasonal book", shelf.top.length > 0 && shelf.top.every((t) => shelf.all.find((b) => b.title === t).sound === "K") && !shelf.top.includes("Boo the Bat on Halloween") && !shelf.more, shelf);
+  await page.evaluate(() => { Sona.saveProfile({ focusSounds: ["R", "S"], targetSound: "R" }); });
   await page.evaluate(() => Sona.gateVerify());
   await page.goto(base + "/settings.html");
   if (await page.locator("#targetSound").count()) {

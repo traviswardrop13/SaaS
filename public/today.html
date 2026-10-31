@@ -644,15 +644,15 @@
       var lockedKey=new URLSearchParams(location.search).get("locked");
       library.groups.forEach(function(group){group.games.forEach(function(game){if(game.key===lockedKey&&!access(game).allowed)showLocked(game);});});
       // BOOKS: the shelf opens for every family (30 Sep 2026). Without
-      // Premium, one book is free and the rest ask for a grown-up there; the
-      // tag says which, so a parent reads "1 free book", not "Premium". Home's
+      // Premium, the tag describes books on the chosen sound's shelf, never
+      // a free book hidden by that choice. Home's
       // Books door is the one way to it (the Arcade's Books card went on 23
       // Oct 2026).
       var homeBooksBtn=document.getElementById("homeBooksBtn");
       function paintBooksTags(){
         // only the free books that are free on this phone (trial first: none
         // for a family without the free version)
-        var freeBooks=(S.FREE_BOOKS||[]).filter(function(t){return !S.bookFree||S.bookFree(t);}).length;
+        var freeBooks=S.freeBooksOnShelf?S.freeBooksOnShelf():0;
         var booksOpen=S.booksOpen?S.booksOpen():!S.gated("books");
         var tag=S.isFree()?"Free":booksOpen?"Included":freeBooks?(freeBooks===1?"1 free book":freeBooks+" free books"):"Premium";
         document.getElementById("homeBooksTag").textContent=tag;

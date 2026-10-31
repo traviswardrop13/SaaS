@@ -1,0 +1,260 @@
+{
+  "tool": "Built-in image_gen",
+  "mode": "illustration-story",
+  "styleReference": "public/assets/books/bo-beach-day/p01.webp",
+  "workflow": "Original cover, then character/prop lineup from cover, then eight independent complete page images using cover and lineup. No atlas or page collage used. Targeted imagegen continuity edits preserved all other page art.",
+  "exportPolicy": "Only RGB format conversion and Lanczos resizing; artwork was never repainted in code. Cover384x384<40KB; pages768x768<200KB.",
+  "visualReview": "All eight pages inspected against exact action/key and character/object continuity. Early pages hide lemon until page4; p6 remains in daylight with lamp glowing and key hidden, matching p5/p7.",
+  "assets": [
+    {
+      "sound": "L",
+      "id": "cover",
+      "prompt": "Use case: illustration-story. Asset type: square book cover art for Sona, no title lettering. Create ONE complete square full-bleed picture. REFERENCE IMAGE is the authoritative ORIGINAL Sona artwork STYLE ONLY: warm tactile soft3D toy-like forms, soft velvet/fur, glossy friendly eyes, pink cheeks, beautifully painted natural surroundings, gentle golden light and delicate shadows. Do not copy the bear, hat, scarf, boat or plot. New book Lion and the Lock. One friendly honey-gold lion cub with a small rounded caramel mane, cream muzzle/belly, small rounded ears, shiny dark eyes, pink cheeks, no clothing. In a cozy shaded garden craft nook beside a tree, Lion happily holds up ONE plain gold key beside a small teal wooden box with ONE closed simple gold padlock on its front latch. Next to the box is a small cream rounded lampshade on a teal base, and one broad green leaf. A yellow lemon rests near a small cream cloth bag. Main lion, gold key, box and clearly visible gold lock occupy central 75%, essential action above lower18% calm ground for actual caption. Original warm rich dimensional Sona art, not flat vector or plastic-rendered generic clipart. No other characters, no teddy visible yet, no text, letters, words, digits, logos, watermark or UI.",
+      "referenced_image_paths": [
+        "public/assets/books/bo-beach-day/p01.webp"
+      ],
+      "source": "design/sound-first-session/book-art-sources/lion-locked-box/cover.png",
+      "generatedSourcePreserved": "design/sound-first-session/book-art-sources/lion-locked-box/cover.png",
+      "asset": "public/assets/books/lion-locked-box/cover.webp",
+      "export": {
+        "width": 384,
+        "height": 384,
+        "format": "WebP",
+        "quality": 80,
+        "bytes": 37730,
+        "sha256": "b26fa4aaac1d6cebbc1bbe404fd9c8c263348bd76c778ccbe9273be3938ebe6f"
+      }
+    },
+    {
+      "sound": "L",
+      "id": "lineup",
+      "prompt": "Use case: illustration-story. Asset type: production character-and-prop lineup, not an app page. The reference is the authoritative Lion-and-the-Lock cover. Create a square model sheet on plain warm cream background, no text or labels. Three complete views of the SAME honey-gold lion cub: front seated, three-quarter seated and side standing. Keep its exact rounded caramel mane, cream muzzle and belly, small round ears, pink cheeks, shiny dark eyes and soft furry toy texture, no clothing. Below, separate prop references: same small teal wood box with ONE simple gold padlock on front latch; its matching single plain gold key; same cream lampshade on round teal base; one yellow lemon; one broad green leaf; one cream cloth bag; one tiny soft brown teddy. Preserve cover identity, palette and Sona style. Show box once closed and once open with teddy inside if space; every part clear, no labels, words, letters, numbers, watermarks or UI.",
+      "referenced_image_paths": [
+        "design/sound-first-session/book-art-sources/lion-locked-box/cover.png"
+      ],
+      "source": "design/sound-first-session/book-art-sources/lion-locked-box/lineup.png",
+      "generatedSourcePreserved": "design/sound-first-session/book-art-sources/lion-locked-box/lineup.png"
+    },
+    {
+      "sound": "L",
+      "id": "p01",
+      "prompt": "Use case: precise-object-edit. Image 1 is the EDIT TARGET, an already finished square Sona book page. Images 2 and 3 are character/style/prop references only. Make ONE SMALL CORRECTION to image1: REMOVE THE YELLOW LEMON from the lower-left foreground beside the cream cloth bag. The lemon must NOT be visible anywhere in this early story page, because the lion discovers it in the bag on the next page. Replace ONLY the removed lemon area with the same natural beige ground, including any existing leaf or bag edge that belongs there. Keep the cream bag, same lion pose and expression, closed teal box with CLOSED gold padlock, cream lamp on teal base, green leaf, tree, flowers, exact style, composition, colors and lighting unchanged. Do NOT add or remove any other object. No key or teddy anywhere. No new fruit. The cream cloth bag remains CLOSED as in image1. One square full-bleed image, no words, labels, letters, numbers, watermark or UI.",
+      "referenced_image_paths": [
+        "design/sound-first-session/book-art-sources/lion-locked-box/p01-rejected-lemon-visible.png",
+        "design/sound-first-session/book-art-sources/lion-locked-box/cover.png",
+        "design/sound-first-session/book-art-sources/lion-locked-box/lineup.png"
+      ],
+      "correction": "Early-page lemon hidden until its reveal on page4.",
+      "source": "design/sound-first-session/book-art-sources/lion-locked-box/p01.png",
+      "generatedSourcePreserved": "design/sound-first-session/book-art-sources/lion-locked-box/p01.png",
+      "asset": "public/assets/books/lion-locked-box/p01.webp",
+      "export": {
+        "width": 768,
+        "height": 768,
+        "format": "WebP",
+        "quality": 82,
+        "bytes": 120150,
+        "sha256": "c7bcb3b3143ac22d2ee93f622fc61acbc515d5b4e910b27c5f815b3e35cb55a9"
+      }
+    },
+    {
+      "sound": "L",
+      "id": "p02",
+      "prompt": "Use case: precise-object-edit. Image 1 is the EDIT TARGET, an already finished square Sona book page. Images 2 and 3 are character/style/prop references only. Make ONE SMALL CORRECTION to image1: REMOVE THE YELLOW LEMON from the lower-left foreground beside the cream cloth bag. The lemon must NOT be visible anywhere in this early story page, because the lion discovers it in the bag on the next page. Replace ONLY the removed lemon area with the same natural beige ground, including any existing leaf or bag edge that belongs there. Keep the cream bag, same lion pose and expression, closed teal box with CLOSED gold padlock, cream lamp on teal base, green leaf, tree, flowers, exact style, composition, colors and lighting unchanged. Do NOT add or remove any other object. No key or teddy anywhere. No new fruit. The cream cloth bag remains CLOSED as in image1. One square full-bleed image, no words, labels, letters, numbers, watermark or UI.",
+      "referenced_image_paths": [
+        "design/sound-first-session/book-art-sources/lion-locked-box/p02-rejected-lemon-visible.png",
+        "design/sound-first-session/book-art-sources/lion-locked-box/cover.png",
+        "design/sound-first-session/book-art-sources/lion-locked-box/lineup.png"
+      ],
+      "correction": "Early-page lemon hidden until its reveal on page4.",
+      "source": "design/sound-first-session/book-art-sources/lion-locked-box/p02.png",
+      "generatedSourcePreserved": "design/sound-first-session/book-art-sources/lion-locked-box/p02.png",
+      "asset": "public/assets/books/lion-locked-box/p02.webp",
+      "export": {
+        "width": 768,
+        "height": 768,
+        "format": "WebP",
+        "quality": 82,
+        "bytes": 126894,
+        "sha256": "f695f26443e8fed6d4d641672405a354421fa405e4ebe5134605757d2c35fdf6"
+      }
+    },
+    {
+      "sound": "L",
+      "id": "p03",
+      "prompt": "Use case: precise-object-edit. Image 1 is the EDIT TARGET, an already finished square Sona book page. Images 2 and 3 are character/style/prop references only. Make ONE SMALL CORRECTION to image1: REMOVE THE YELLOW LEMON from the lower-left foreground beside the cream cloth bag. The lemon must NOT be visible anywhere in this early story page, because the lion discovers it in the bag on the next page. Replace ONLY the removed lemon area with the same natural beige ground, including any existing leaf or bag edge that belongs there. Keep the cream bag, same lion pose and expression, closed teal box with CLOSED gold padlock, cream lamp on teal base, green leaf, tree, flowers, exact style, composition, colors and lighting unchanged. Do NOT add or remove any other object. No key or teddy anywhere. No new fruit. The lion is still peeking into the OPEN cream bag; no lemon outside it or visibly floating above it. One square full-bleed image, no words, labels, letters, numbers, watermark or UI.",
+      "referenced_image_paths": [
+        "design/sound-first-session/book-art-sources/lion-locked-box/p03-rejected-lemon-visible.png",
+        "design/sound-first-session/book-art-sources/lion-locked-box/cover.png",
+        "design/sound-first-session/book-art-sources/lion-locked-box/lineup.png"
+      ],
+      "correction": "Early-page lemon hidden until its reveal on page4.",
+      "source": "design/sound-first-session/book-art-sources/lion-locked-box/p03.png",
+      "generatedSourcePreserved": "design/sound-first-session/book-art-sources/lion-locked-box/p03.png",
+      "asset": "public/assets/books/lion-locked-box/p03.webp",
+      "export": {
+        "width": 768,
+        "height": 768,
+        "format": "WebP",
+        "quality": 82,
+        "bytes": 130294,
+        "sha256": "2237f0aa085af7e48a8a62612743305b0ba6af856d4a24a3b69884a0b2eca1e1"
+      }
+    },
+    {
+      "sound": "L",
+      "id": "p04",
+      "prompt": "Use case: illustration-story. Asset type: ONE independent square full-bleed picture book page, not a collage or character sheet. Image 1 is the authoritative cover identity and garden setting; Image 2 is the exact character/prop lineup, not a layout to copy. Same honey-gold lion cub, small rounded caramel mane, cream muzzle/belly, shiny dark eyes, pink cheeks, no clothes. Same small teal wooden box with gold front latch and ONE simple GOLD PADLOCK; same cream cloth bag, yellow lemon, broad green leaf, cream lampshade on teal base, plain gold key, tiny brown teddy. Warm original Sona tactile soft3D toy storybook look, soft furry surfaces and gently painted leafy garden with warm daylight. Exactly ONE lion. Keep central action within central75% width and upper82% height, calm ground in bottom18% for real caption overlay. No text, words, letters, numbers, logos, watermark or UI. PAGE 4. Caption context only, never print it: \"A lemon! No key.\" EXACT SCENE: Lion lifts a yellow lemon from the cream bag, looking gently puzzled; open empty bag shows there was no key. Teal locked box beside him. CRITICAL: The gold key is MISSING at this point in the story, never show any key in this picture, not in paw or background. Box remains firmly CLOSED with locked gold padlock, no teddy visible.",
+      "referenced_image_paths": [
+        "design/sound-first-session/book-art-sources/lion-locked-box/cover.png",
+        "design/sound-first-session/book-art-sources/lion-locked-box/lineup.png"
+      ],
+      "source": "design/sound-first-session/book-art-sources/lion-locked-box/p04.png",
+      "generatedSourcePreserved": "design/sound-first-session/book-art-sources/lion-locked-box/p04.png",
+      "asset": "public/assets/books/lion-locked-box/p04.webp",
+      "export": {
+        "width": 768,
+        "height": 768,
+        "format": "WebP",
+        "quality": 82,
+        "bytes": 130820,
+        "sha256": "b82d25e4f870ab8c4c0d93ad078f924142b4d6deea0aaceb00df9752a7a26312"
+      }
+    },
+    {
+      "sound": "L",
+      "id": "p05",
+      "prompt": "Use case: illustration-story. Asset type: ONE independent square full-bleed picture book page, not a collage or character sheet. Image 1 is the authoritative cover identity and garden setting; Image 2 is the exact character/prop lineup, not a layout to copy. Same honey-gold lion cub, small rounded caramel mane, cream muzzle/belly, shiny dark eyes, pink cheeks, no clothes. Same small teal wooden box with gold front latch and ONE simple GOLD PADLOCK; same cream cloth bag, yellow lemon, broad green leaf, cream lampshade on teal base, plain gold key, tiny brown teddy. Warm original Sona tactile soft3D toy storybook look, soft furry surfaces and gently painted leafy garden with warm daylight. Exactly ONE lion. Keep central action within central75% width and upper82% height, calm ground in bottom18% for real caption overlay. No text, words, letters, numbers, logos, watermark or UI. PAGE 5. Caption context only, never print it: \"The lion peeks under a leaf.\" EXACT SCENE: Lion lifts a broad green leaf from the ground and looks beneath it; no key there. Same nook and teal box. CRITICAL: The gold key is MISSING at this point in the story, never show any key in this picture, not in paw or background. Box remains firmly CLOSED with locked gold padlock, no teddy visible.",
+      "referenced_image_paths": [
+        "design/sound-first-session/book-art-sources/lion-locked-box/cover.png",
+        "design/sound-first-session/book-art-sources/lion-locked-box/lineup.png"
+      ],
+      "source": "design/sound-first-session/book-art-sources/lion-locked-box/p05.png",
+      "generatedSourcePreserved": "design/sound-first-session/book-art-sources/lion-locked-box/p05.png",
+      "asset": "public/assets/books/lion-locked-box/p05.webp",
+      "export": {
+        "width": 768,
+        "height": 768,
+        "format": "WebP",
+        "quality": 82,
+        "bytes": 124436,
+        "sha256": "22a78f0c0aacfe212bc8e83fdd17fd4e82195fda1d1b86f6fc25df5d112abfbb"
+      }
+    },
+    {
+      "sound": "L",
+      "id": "p06",
+      "prompt": "Use case: lighting-weather. Image1 is the EDIT TARGET: Lion touching the on/off switch on the teal lamp base. Image2 is the previous page and is the authoritative DAYLIGHT lighting reference. Images3 and4 are the book cover and character/prop identity references only. Correct ONLY THE LIGHTING/TIME OF DAY of image1. It is still a SUNLIT DAY in the SAME leafy garden as image2, NOT night, dusk, evening or a dark blue scene. Bring back the softly painted pale blue daytime sky through leaves, warm green foliage, clearly visible garden flowers and cream fence, matching page5 and the cover. The nook may be gently shaded under the tree, but all background remains clearly DAYLIGHT. The cream lamp IS ON and casts a gentle localized warm glow, physically possible in daylight. Keep the EXACT same honey-gold lion cub, same face/pose, one paw touching the visible gold lamp switch, closed teal wood box with closed gold padlock, cream bag, yellow lemon, green leaf, tree, lamp shape and all composition. Keep exact original Sona soft3D/furry toy style. CRITICAL: gold key still MISSING: no key anywhere; no teddy visible. No extra object or character. No text, letters, words, numbers, watermark or UI. Square full-bleed scene.",
+      "referenced_image_paths": [
+        "design/sound-first-session/book-art-sources/lion-locked-box/p06.png",
+        "design/sound-first-session/book-art-sources/lion-locked-box/p05.png",
+        "design/sound-first-session/book-art-sources/lion-locked-box/cover.png",
+        "design/sound-first-session/book-art-sources/lion-locked-box/lineup.png"
+      ],
+      "source": "design/sound-first-session/book-art-sources/lion-locked-box/p06-daylight-v2.png",
+      "generatedSourcePreserved": "design/sound-first-session/book-art-sources/lion-locked-box/p06-daylight-v2.png",
+      "asset": "public/assets/books/lion-locked-box/p06.webp",
+      "export": {
+        "width": 768,
+        "height": 768,
+        "format": "WebP",
+        "quality": 82,
+        "bytes": 131860,
+        "sha256": "3b881930a68f2720e41aa00227e4b72dd3a47573f0719912c1f7e65ce69e6a1f"
+      },
+      "correction": "Time of day corrected to daylight; original lamp switch pose and hidden-key story stage preserved."
+    },
+    {
+      "sound": "L",
+      "id": "p07",
+      "prompt": "Use case: illustration-story. Asset type: ONE independent square full-bleed picture book page, not a collage or character sheet. Image 1 is the authoritative cover identity and garden setting; Image 2 is the exact character/prop lineup, not a layout to copy. Same honey-gold lion cub, small rounded caramel mane, cream muzzle/belly, shiny dark eyes, pink cheeks, no clothes. Same small teal wooden box with gold front latch and ONE simple GOLD PADLOCK; same cream cloth bag, yellow lemon, broad green leaf, cream lampshade on teal base, plain gold key, tiny brown teddy. Warm original Sona tactile soft3D toy storybook look, soft furry surfaces and gently painted leafy garden with warm daylight. Exactly ONE lion. Keep central action within central75% width and upper82% height, calm ground in bottom18% for real caption overlay. No text, words, letters, numbers, logos, watermark or UI. PAGE 7. Caption context only, never print it: \"A key is by the lamp!\" EXACT SCENE: The plain gold key lies clearly beside the teal lamp base in its warm light; Lion points with delighted recognition. Locked box visible nearby.  CRITICAL: The single PLAIN GOLD KEY is LYING on the ground directly BESIDE THE TEAL LAMP BASE, not held in Lion's paw and not elsewhere. Make key shape same as cover, big enough unmistakable. Lion points with one paw and looks delighted at the found key. Keep box CLOSED and padlock locked; no teddy yet. Keep warm pool of lamp light, shaded garden.",
+      "referenced_image_paths": [
+        "design/sound-first-session/book-art-sources/lion-locked-box/cover.png",
+        "design/sound-first-session/book-art-sources/lion-locked-box/lineup.png"
+      ],
+      "source": "design/sound-first-session/book-art-sources/lion-locked-box/p07.png",
+      "generatedSourcePreserved": "design/sound-first-session/book-art-sources/lion-locked-box/p07.png",
+      "asset": "public/assets/books/lion-locked-box/p07.webp",
+      "export": {
+        "width": 768,
+        "height": 768,
+        "format": "WebP",
+        "quality": 82,
+        "bytes": 127026,
+        "sha256": "e5b529e5355b03eb121dc4d50d827f682d32fc0da7461a3604aea18ceba4f657"
+      }
+    },
+    {
+      "sound": "L",
+      "id": "p08",
+      "prompt": "Use case: illustration-story. Asset type: ONE independent square full-bleed picture book page, not a collage or character sheet. Image 1 is the authoritative cover identity and garden setting; Image 2 is the exact character/prop lineup, not a layout to copy. Same honey-gold lion cub, small rounded caramel mane, cream muzzle/belly, shiny dark eyes, pink cheeks, no clothes. Same small teal wooden box with gold front latch and ONE simple GOLD PADLOCK; same cream cloth bag, yellow lemon, broad green leaf, cream lampshade on teal base, plain gold key, tiny brown teddy. Warm original Sona tactile soft3D toy storybook look, soft furry surfaces and gently painted leafy garden with warm daylight. Exactly ONE lion. Keep central action within central75% width and upper82% height, calm ground in bottom18% for real caption overlay. No text, words, letters, numbers, logos, watermark or UI. PAGE 8. Caption context only, never print it: \"Pop! The lock is open. A tiny teddy is inside!\" EXACT SCENE: Lion opens the teal box; gold padlock hangs open, gold key beside it. A tiny brown plush teddy is revealed inside. Lion smiles warmly at the happy surprise.  CRITICAL: The teal wooden box lid is visibly OPEN, and ONE tiny soft brown TEDDY is sitting inside the box, not a second lion. The GOLD PADLOCK is UNLOCKED with its SHACKLE visibly OPEN and lies beside the single gold key on the ground. No closed padlock is attached to the open box. Lion beams with happy surprise and points to teddy. Lamp glows softly. Clear complete story resolution.",
+      "referenced_image_paths": [
+        "design/sound-first-session/book-art-sources/lion-locked-box/cover.png",
+        "design/sound-first-session/book-art-sources/lion-locked-box/lineup.png"
+      ],
+      "source": "design/sound-first-session/book-art-sources/lion-locked-box/p08.png",
+      "generatedSourcePreserved": "design/sound-first-session/book-art-sources/lion-locked-box/p08.png",
+      "asset": "public/assets/books/lion-locked-box/p08.webp",
+      "export": {
+        "width": 768,
+        "height": 768,
+        "format": "WebP",
+        "quality": 82,
+        "bytes": 130054,
+        "sha256": "6336b6a39a1ed19ee98cc2cb8b8f24fed6205a89d921be5d402b80375d12f2df"
+      }
+    },
+    {
+      "sound": "L",
+      "id": "p01-rejected-lemon-visible",
+      "rejected": true,
+      "reason": "Lemon appeared outside bag before its page4 reveal; corrected by imagegen removing only the premature lemon.",
+      "prompt": "Use case: illustration-story. Asset type: ONE independent square full-bleed picture book page, not a collage or character sheet. Image 1 is the authoritative cover identity and garden setting; Image 2 is the exact character/prop lineup, not a layout to copy. Same honey-gold lion cub, small rounded caramel mane, cream muzzle/belly, shiny dark eyes, pink cheeks, no clothes. Same small teal wooden box with gold front latch and ONE simple GOLD PADLOCK; same cream cloth bag, yellow lemon, broad green leaf, cream lampshade on teal base, plain gold key, tiny brown teddy. Warm original Sona tactile soft3D toy storybook look, soft furry surfaces and gently painted leafy garden with warm daylight. Exactly ONE lion. Keep central action within central75% width and upper82% height, calm ground in bottom18% for real caption overlay. No text, words, letters, numbers, logos, watermark or UI. PAGE 1. Caption context only, never print it: \"A lion has a box with a lock.\" EXACT SCENE: Lion sits beside the small teal box, pointing at its closed simple gold padlock. Everything is clearly visible. CRITICAL: The gold key is MISSING at this point in the story, never show any key in this picture, not in paw or background. Box remains firmly CLOSED with locked gold padlock, no teddy visible.",
+      "referenced_image_paths": [
+        "design/sound-first-session/book-art-sources/lion-locked-box/cover.png",
+        "design/sound-first-session/book-art-sources/lion-locked-box/lineup.png"
+      ],
+      "source": "design/sound-first-session/book-art-sources/lion-locked-box/p01-rejected-lemon-visible.png",
+      "generatedSourcePreserved": "design/sound-first-session/book-art-sources/lion-locked-box/p01-rejected-lemon-visible.png"
+    },
+    {
+      "sound": "L",
+      "id": "p02-rejected-lemon-visible",
+      "rejected": true,
+      "reason": "Lemon appeared outside bag before its page4 reveal; corrected by imagegen removing only the premature lemon.",
+      "prompt": "Use case: illustration-story. Asset type: ONE independent square full-bleed picture book page, not a collage or character sheet. Image 1 is the authoritative cover identity and garden setting; Image 2 is the exact character/prop lineup, not a layout to copy. Same honey-gold lion cub, small rounded caramel mane, cream muzzle/belly, shiny dark eyes, pink cheeks, no clothes. Same small teal wooden box with gold front latch and ONE simple GOLD PADLOCK; same cream cloth bag, yellow lemon, broad green leaf, cream lampshade on teal base, plain gold key, tiny brown teddy. Warm original Sona tactile soft3D toy storybook look, soft furry surfaces and gently painted leafy garden with warm daylight. Exactly ONE lion. Keep central action within central75% width and upper82% height, calm ground in bottom18% for real caption overlay. No text, words, letters, numbers, logos, watermark or UI. PAGE 2. Caption context only, never print it: \"The lock needs a key.\" EXACT SCENE: Close view of the closed gold padlock on the teal box, Lion looking curiously at its keyhole. No key is visible yet. CRITICAL: The gold key is MISSING at this point in the story, never show any key in this picture, not in paw or background. Box remains firmly CLOSED with locked gold padlock, no teddy visible.",
+      "referenced_image_paths": [
+        "design/sound-first-session/book-art-sources/lion-locked-box/cover.png",
+        "design/sound-first-session/book-art-sources/lion-locked-box/lineup.png"
+      ],
+      "source": "design/sound-first-session/book-art-sources/lion-locked-box/p02-rejected-lemon-visible.png",
+      "generatedSourcePreserved": "design/sound-first-session/book-art-sources/lion-locked-box/p02-rejected-lemon-visible.png"
+    },
+    {
+      "sound": "L",
+      "id": "p03-rejected-lemon-visible",
+      "rejected": true,
+      "reason": "Lemon appeared outside bag before its page4 reveal; corrected by imagegen removing only the premature lemon.",
+      "prompt": "Use case: illustration-story. Asset type: ONE independent square full-bleed picture book page, not a collage or character sheet. Image 1 is the authoritative cover identity and garden setting; Image 2 is the exact character/prop lineup, not a layout to copy. Same honey-gold lion cub, small rounded caramel mane, cream muzzle/belly, shiny dark eyes, pink cheeks, no clothes. Same small teal wooden box with gold front latch and ONE simple GOLD PADLOCK; same cream cloth bag, yellow lemon, broad green leaf, cream lampshade on teal base, plain gold key, tiny brown teddy. Warm original Sona tactile soft3D toy storybook look, soft furry surfaces and gently painted leafy garden with warm daylight. Exactly ONE lion. Keep central action within central75% width and upper82% height, calm ground in bottom18% for real caption overlay. No text, words, letters, numbers, logos, watermark or UI. PAGE 3. Caption context only, never print it: \"The lion peeks into a bag.\" EXACT SCENE: Lion opens a small cream cloth bag and peers inside beside the locked teal box. Keep bag contents partly hidden for the next reveal. CRITICAL: The gold key is MISSING at this point in the story, never show any key in this picture, not in paw or background. Box remains firmly CLOSED with locked gold padlock, no teddy visible.",
+      "referenced_image_paths": [
+        "design/sound-first-session/book-art-sources/lion-locked-box/cover.png",
+        "design/sound-first-session/book-art-sources/lion-locked-box/lineup.png"
+      ],
+      "source": "design/sound-first-session/book-art-sources/lion-locked-box/p03-rejected-lemon-visible.png",
+      "generatedSourcePreserved": "design/sound-first-session/book-art-sources/lion-locked-box/p03-rejected-lemon-visible.png"
+    },
+    {
+      "sound": "L",
+      "id": "p06-night-rejected",
+      "prompt": "Use case: illustration-story. Asset type: ONE independent square full-bleed picture book page, not a collage or character sheet. Image 1 is the authoritative cover identity and garden setting; Image 2 is the exact character/prop lineup, not a layout to copy. Same honey-gold lion cub, small rounded caramel mane, cream muzzle/belly, shiny dark eyes, pink cheeks, no clothes. Same small teal wooden box with gold front latch and ONE simple GOLD PADLOCK; same cream cloth bag, yellow lemon, broad green leaf, cream lampshade on teal base, plain gold key, tiny brown teddy. Warm original Sona tactile soft3D toy storybook look, soft furry surfaces and gently painted leafy garden with warm daylight. Exactly ONE lion. Keep central action within central75% width and upper82% height, calm ground in bottom18% for real caption overlay. No text, words, letters, numbers, logos, watermark or UI. PAGE 6. Caption context only, never print it: \"No key. The lion turns on a lamp.\" EXACT SCENE: Lion switches on the small cream lamp with teal base, lighting a dim corner behind the box. The key is not yet obvious in this view. CRITICAL: The gold key is MISSING at this point in the story, never show any key in this picture, not in paw or background. Box remains firmly CLOSED with locked gold padlock, no teddy visible. Show Lion's paw physically touching a small visible on/off switch on the teal lamp base. Lamp makes a cozy pool of light in a dim shaded nook under the tree. Box closed, no key and no teddy visible anywhere.",
+      "referenced_image_paths": [
+        "design/sound-first-session/book-art-sources/lion-locked-box/cover.png",
+        "design/sound-first-session/book-art-sources/lion-locked-box/lineup.png"
+      ],
+      "source": "design/sound-first-session/book-art-sources/lion-locked-box/p06.png",
+      "generatedSourcePreserved": "design/sound-first-session/book-art-sources/lion-locked-box/p06.png",
+      "rejected": true,
+      "reason": "Garden appeared at dusk; corrected to daylight matching pages5 and7, preserving same switch-touch pose."
+    }
+  ]
+}
