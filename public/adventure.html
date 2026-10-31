@@ -47,11 +47,14 @@
     <div class="advcap" id="cap" hidden>
       <div class="advecho" aria-hidden="true"><img id="capEcho" alt="" /></div>
       <div class="advcard">
+        <p class="advask" id="capAsk" hidden></p>
         <p class="advtext" id="capBox"><span id="capText" aria-live="polite"></span></p>
         <div class="advrow">
           <button class="cream-pill advhear" id="hearBtn" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path d="M16 8.5a5 5 0 0 1 0 7" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>Hear it</button>
           <button class="act-pill advnext" id="nextBtn" type="button" aria-label="Next"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h12M12 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
           <button class="act-pill advgo" id="goBtn" type="button" hidden></button>
+          <p class="advmicstate" id="micState" aria-live="polite" hidden></p>
+          <button class="act-mic advmic" id="micBtn" type="button" aria-label="Microphone" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3" fill="currentColor"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round"/></svg></button>
         </div>
       </div>
     </div>
@@ -75,6 +78,19 @@
       </div>
     </div>
 
+    <!-- TALK1: a grown-up says yes to the mic first, inside the story (the
+         books' question, word for word but for "page") -->
+    <div class="advovl" id="micOvl" hidden>
+      <div class="advbox" role="dialog" aria-labelledby="micTitle">
+        <img class="advcheer" src="/assets/crafted/echo-listen.webp" alt="" onerror="if(this.src.indexOf('echo-welcome')<0)this.src='/assets/crafted/echo-welcome.webp'" />
+        <h2 class="advtitle" id="micTitle">Echo wants to hear the words</h2>
+        <p class="advmicp">On each page, Echo asks your child to say one word out loud.</p>
+        <p class="advmicp" id="micPromise"></p>
+        <button class="act-pill advbig" id="micYes" type="button">Yes, use the mic</button>
+        <button class="cream-pill advbig2" id="micNo" type="button">Not now</button>
+      </div>
+    </div>
+
     <div class="advtop">
       <button class="cream-pill advround" id="closeBtn" type="button" aria-label="Back home">✕</button>
       <button class="cream-pill advskip" id="skipBtn" type="button" aria-label="Skip (for grown-ups)" hidden>Skip</button>
@@ -85,6 +101,8 @@
   <script src="/arcade-sayit.js"></script>
   <script src="/crafted-buddies.js"></script>
   <script src="/adventures.js"></script>
+  <script src="/talk-stories.js"></script>
+  <script src="/saycheck.js"></script>
   <script src="/assets/adventure/voice/manifest.js"></script>
   <script>
   (function () {
@@ -106,10 +124,17 @@
       try { return m ? decodeURIComponent(m[1].replace(/\+/g, " ")) : ""; } catch (e) { return ""; }
     }
     function dayOf(id) {
+      // TALK1: sona.js says which story Day 1's slot holds for this child
+      if (S && S.storyDay) {
+        var d = S.storyDay(id);
+        return d ? { id: d.id, game: d.game, page: d.page, hero: d.hero, title: d.title, n: d.day, talk: !!d.talk, sound: d.sound || "" } : null;
+      }
       var L = (S && S.STORY_DAYS) || [];
       for (var i = 0; i < L.length; i++) if (L[i].id === id) return { id: L[i].id, game: L[i].game, page: L[i].page, hero: L[i].hero, title: L[i].title, n: i + 1 };
       return null;
     }
+    var T = window.SonaTalkStories || {};
+    function storyData(d) { return d.talk ? T[d.id] : A[d.id]; }
 
     // ── 1. who may be here, and which story: before any picture, sound or fetch ──
     var mode = "", day = null, seen = false, dayNo = 1;
@@ -118,27 +143,38 @@
       var part = param("part");
       if (part === "end") {
         day = dayOf(param("story"));
-        if (!day || !A[day.id] || !S.storyEnding || !S.storyEnding(day.id).ok) { away(); return; }
+        if (!day || !storyData(day) || !S.storyEnding || !S.storyEnding(day.id).ok) { away(); return; }
         mode = "end"; dayNo = day.n;
+      } else if (!part && param("again") === "1") {
+        // TALK1: a talking story found on Home's row, told again whole (its
+        // intro and its ending), every page asking its word; it finishes
+        // nothing. Only a finished talking story open to this child.
+        day = dayOf(param("story"));
+        if (!day || !day.talk || !storyData(day) || !S.storyReplay || !S.storyReplay(day.id)) { away(); return; }
+        mode = "again"; dayNo = day.n;
       } else if (!part) {
         var q = S.questToday();
         if (!q || q.kind !== "story" || q.state !== "open" || !q.story) { away(); return; }
         day = dayOf(q.story.id);
-        if (!day || !A[day.id]) { away(); return; }
+        if (!day || !storyData(day)) { away(); return; }
         mode = "intro"; seen = q.seen === true; dayNo = q.day || day.n;
       } else { away(); return; }
     } catch (e) { away(); return; }
 
     // the scenes this child sees: ages 3-4 skip the big-kid scenes and read
     // the short lines
-    var data = A[day.id], little = false;
+    var data = storyData(day), little = false, TALK = !!day.talk;
     try { little = S.playStyle() === "simple"; } catch (e) {}
-    var run = [];
-    (mode === "end" ? data.ending : data.intro).forEach(function (sc) {
-      if (little && sc.ages === "big") return;
-      var t = typeof sc.line === "string" ? sc.line : ((little && sc.line.little) || sc.line.big);
-      run.push({ art: sc.art, src: "/assets/adventure/" + day.id + "/" + sc.art + ".webp", text: t, buddy: sc.buddy || null });
-    });
+    function runOf(list) {
+      var out = [];
+      list.forEach(function (sc) {
+        if (little && sc.ages === "big") return;
+        var t = typeof sc.line === "string" ? sc.line : ((little && sc.line.little) || sc.line.big);
+        out.push({ art: sc.art, src: "/assets/adventure/" + day.id + "/" + sc.art + ".webp", text: t, buddy: sc.buddy || null, key: TALK ? sc.key || "" : "" });
+      });
+      return out;
+    }
+    var run = runOf(mode === "end" ? data.ending : mode === "again" ? data.intro.concat(data.ending) : data.intro);
     if (!run.length) { away(); return; }
 
     function $(id) { return document.getElementById(id); }
@@ -147,6 +183,7 @@
     var startOvl = $("startOvl"), startPic = $("startPic"), startBtn = $("startBtn"), againBtn = $("againBtn");
     var endOvl = $("endOvl"), endEcho = $("endEcho"), gotList = $("gotList"), homeBtn = $("homeBtn");
     var foundLine = $("foundLine"), foundPic = $("foundPic"), foundText = $("foundText");
+    var capAsk = $("capAsk"), micBtn = $("micBtn"), micState = $("micState"), micOvl = $("micOvl");
     document.documentElement.style.setProperty("--adv-wash", data.wash || "");
     try { var tc = document.querySelector('meta[name="theme-color"]'); if (tc && data.wash) tc.setAttribute("content", data.wash); } catch (e) {}
     goBtn.textContent = data.go || "Let's go!";
@@ -164,7 +201,7 @@
 
     // Echo's faces, held so a swap never waits on the network
     var ECHO = {};
-    ["welcome", "talk", "cheer"].forEach(function (p) { var i = new Image(); i.src = "/assets/crafted/echo-" + p + ".webp"; ECHO[p] = i; });
+    ["welcome", "talk", "cheer", "wave", "listen", "think"].forEach(function (p) { var i = new Image(); i.src = "/assets/crafted/echo-" + p + ".webp"; ECHO[p] = i; });
     function backup() { if (this.src.indexOf("echo-welcome") < 0) this.src = "/assets/crafted/echo-welcome.webp"; }
     capEcho.onerror = backup; endEcho.onerror = backup;
     function echoPose(p) { var src = "/assets/crafted/echo-" + p + ".webp"; if (capEcho.getAttribute("src") !== src) capEcho.src = src; }
@@ -172,11 +209,15 @@
 
     // ── state, and what a test reads ──
     var view = "", idx = -1, shownAt = 0, voice = "off", opened = false, endSent = false, celebrated = false, sized = false;
+    // TALK1's word moment (below): M is this page's word, null between pages
+    var M = null, momTok = 0, micOff = false, bar = "next", turnT = 0, finished = false;
     var played = [];
     function pub() {
       window.__adventure = { mode: mode, id: day.id, game: day.game, view: view, idx: idx, total: run.length, art: idx >= 0 && run[idx] ? run[idx].art : "",
         line: idx >= 0 && run[idx] ? run[idx].text : "", voice: voice, glow: nextBtn.classList.contains("glow") || goBtn.classList.contains("glow"),
-        little: little, media: MEDIA, sound: soundOn(), seen: seen, played: played.slice() };
+        little: little, media: MEDIA, sound: soundOn(), seen: seen, played: played.slice(),
+        talk: TALK, word: M ? M.word : null, said: M ? M.said : 0, tries: M ? M.tries : 0, bar: bar, micOff: micOff,
+        ask: !capAsk.hidden, primer: !micOvl.hidden, finished: finished };
     }
 
     // ── the website's own Web Audio, woken inside a tap ──
@@ -266,6 +307,14 @@
       var p = playing; playing = null;
       if (p) { try { p.stop(); } catch (e) {} }
       if (synthOn) { synthOn = false; try { window.speechSynthesis.cancel(); } catch (e) {} }
+      holdVoice(false);
+    }
+    // TALK1: while Echo reads a page the mic stays shut (SayCheck.hold), and
+    // it waits SayCheck's tail after the line before it may open
+    var SC = window.SayCheck || null, holding = false;
+    function holdVoice(on) {
+      if (!SC || !TALK || on === holding) return;
+      holding = on; try { SC.hold(on); } catch (e) {}
     }
     function stopAll() { stopVoice(); try { if (S.sfx && S.sfx.stop) S.sfx.stop(); } catch (e) {} }
     function pcmMake(bytes) {
@@ -406,11 +455,14 @@
       pub();
     }
     // Echo reads the scene on screen
-    function startLine() {
+    // then(): a talking story's page asks its word once Echo has read it
+    // (or at once with the sound off); a story page does nothing more
+    function startLine(then) {
       stopVoice();
       var sc = run[idx], tok = vtok;
-      if (!sc || !soundOn()) { setVoice("off"); return; }
-      if (document.hidden) { setVoice("done"); return; }
+      function after() { if (tok === vtok && then) then(); }
+      if (!sc || !soundOn()) { setVoice("off"); after(); return; }
+      if (document.hidden) { setVoice("done"); after(); return; }
       setVoice("loading");
       var late = setTimeout(function () { if (tok === vtok && voice === "loading") setVoice("late"); }, LINE_WAIT_MS);
       clipFor(sc.text).then(function (clip) {
@@ -418,9 +470,9 @@
         // a tap (Next, Hear it, Skip, the picture) or the page hiding has
         // moved vtok on: this line is no longer wanted
         if (tok !== vtok || document.hidden) return;
-        setVoice("speaking");
-        return playClip(clip, sc.text, tok).then(function () { if (tok === vtok) setVoice("done"); });
-      }).then(null, function () { if (tok === vtok) setVoice("done"); });
+        setVoice("speaking"); holdVoice(true);
+        return playClip(clip, sc.text, tok).then(function () { if (tok === vtok) { holdVoice(false); setVoice("done"); after(); } });
+      }).then(null, function () { if (tok === vtok) { holdVoice(false); setVoice("done"); after(); } });
     }
 
     // ── the picture ──
@@ -528,9 +580,9 @@
     // this child will read, at this width), so the picture never jumps.
     function sizeCaption() {
       capBox.style.minHeight = "0px";
-      var keep = capText.textContent, most = 0;
+      var keep = capText.innerHTML, most = 0;
       for (var i = 0; i < run.length; i++) { capText.textContent = run[i].text; most = Math.max(most, capBox.offsetHeight); }
-      capText.textContent = keep;
+      capText.innerHTML = keep;
       capBox.style.minHeight = most + "px";
       sized = true;
     }
@@ -538,24 +590,28 @@
     // ── a scene ──
     function show(i) {
       stopVoice();
-      var focused = document.activeElement === nextBtn || document.activeElement === goBtn;
+      var focused = document.activeElement === nextBtn || document.activeElement === goBtn || document.activeElement === micBtn;
       view = "scene"; idx = i; shownAt = now();
       startOvl.hidden = true; endOvl.hidden = true; cap.hidden = false;
-      var sc = run[i], last = i === run.length - 1, goNow = mode === "intro" && last;
+      var sc = run[i], last = i === run.length - 1, goNow = !TALK && mode === "intro" && last;
       nextBtn.hidden = goNow; goBtn.hidden = !goNow; skipBtn.hidden = goNow;
       hearBtn.hidden = !soundOn();
+      if (TALK) { endMoment(); setBar(talkOn() && sc.key ? "wait" : "next", ""); }
       if (!sized) sizeCaption();
-      capText.textContent = sc.text;
+      if (TALK && sc.key) capText.innerHTML = markLine(sc.text, sc.key); else capText.textContent = sc.text;
       paintScene(sc);
       prefetchPic(i + 1); prefetchPic(i + 2);
       preload(i);
-      if (focused) (goNow ? goBtn : nextBtn).focus();
-      if (mode === "end" && last && !endSent) { endSent = true; try { Sona.track("adventure ending watched", { game: day.game }); } catch (e) {} }
-      startLine();
+      if (focused) (goNow ? goBtn : TALK && !nextBtn.hidden ? nextBtn : TALK ? micBtn : nextBtn).focus();
+      if ((mode === "end" || mode === "again") && last && !endSent) { endSent = true; try { Sona.track("adventure ending watched", { game: day.game }); } catch (e) {} }
+      startLine(TALK ? startMoment : null);
     }
     function tapOk() { return now() - shownAt >= TAP_GUARD_MS; }
     function turn() {
       if (view !== "scene" || !tapOk()) return;
+      // TALK1: a talking page turns on its word; Next is there only once
+      // the mic is off for this visit (then it turns as a story page does)
+      if (TALK) { if (bar === "next") { stopVoice(); talkNext(); } return; }
       // only "Let's go!" leaves the last intro scene: a key here must not cut
       // Echo off mid-line (his line's end is what makes the button glow)
       if (mode === "intro" && idx === run.length - 1) return;
@@ -587,7 +643,7 @@
       view = "stickers"; shownAt = now();
       cap.hidden = true; skipBtn.hidden = true; endOvl.hidden = false;
       var got = [];
-      try { got = (S.storyEnding(day.id).got || []).slice(0, 2); } catch (e) {}
+      try { if (mode !== "again") got = (S.storyEnding(day.id).got || []).slice(0, 2); } catch (e) {}
       gotList.innerHTML = "";
       got.forEach(function (g) { var p = document.createElement("p"); p.className = "advgot"; p.textContent = "You got " + g.e + " " + g.name + "!"; gotList.appendChild(p); });
       gotList.hidden = !got.length;
@@ -595,11 +651,12 @@
       // storyFound is the stories finished, and the row shows only where
       // the story's rule opens them)
       var found = null;
-      try { if (S.storyReplay && S.storyReplay(day.id)) S.storyFound().forEach(function (d) { if (d.id === day.id) found = d; }); } catch (e) { found = null; }
+      try { if (mode !== "again" && S.storyReplay && S.storyReplay(day.id)) S.storyFound().forEach(function (d) { if (d.id === day.id) found = d; }); } catch (e) { found = null; }
       foundLine.hidden = !found;
       if (found) {
         foundPic.onerror = function () { foundPic.onerror = null; foundPic.hidden = true; };
-        foundPic.src = found.pic; foundText.textContent = "New game on Home: " + found.name + "!";
+        // a talking story leaves itself on Home's row, to be told again
+        foundPic.src = found.pic; foundText.textContent = (TALK ? "On Home to read again: " : "New game on Home: ") + found.name + "!";
       }
       // read with "Back home" when focus lands there (the sticker's line is
       // the status region's; this one is not, so it rides on the button)
@@ -614,14 +671,205 @@
       pub();
     }
 
+
+    // ── TALK1: a talking story's word moment ──
+    /* The books' word moment (library.html), on every page of a talking
+       story: Echo reads the page, the key word lights up, Echo asks "Can you
+       say... <word>." and the teal mic listens through SayCheck (Say & Play's
+       check: a voice of the story's sound family). It can't tell the word,
+       so "heard" means Echo heard the child, never that it was right.
+       - THREE SAYINGS A PAGE (Sona.STORY_SAY_TIMES, the story games' number):
+         a dot for each; the first two only paint ("2 more times!", no voice
+         and no chime: the mic has just closed and opens again), the last one
+         cheers and turns the page. Each saying heard is one play rep
+         (gameRep), never practice data.
+       - SILENCE NEVER TURNS A PAGE and is never a try: a quiet window closes
+         the mic, and a tap on it listens again. A voice of the other family
+         is a try; after three, Echo says something kind and the page turns.
+       - The grown-ups' Skip turns one page with no word said.
+       - A GROWN-UP SAYS YES FIRST, inside the story, and the phone is asked
+         only from that tap. "Not now", a refused or missing mic: the story
+         reads with Next for the rest of the visit. Never a dead end.
+       - The mic is quiet's: nothing plays while it is live or being asked
+         for; every way off a page closes it first; a hidden page closes it,
+         and coming back needs a tap on it.
+       - The intro's last word finishes the day (Sona.questEnd: the sticker)
+         and the ending plays straight on; a replay finishes nothing. */
+    var TIMES = 3;
+    try { TIMES = Math.max(1, parseInt(S.STORY_SAY_TIMES, 10) || 3); } catch (e) {}
+    var repKey = ""; try { repKey = S.kkey ? S.kkey("sona.gamereps.v1") : ""; } catch (e) {}
+    var MIC_NOTE = { live: "Your turn!", nudge: "Tap the mic, then say it" };
+    function talkOn() { return TALK && !!SC && !micOff && !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia); }
+    function esc(t) { return String(t).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+    function marked(w) { try { if (S.soundMark) return S.soundMark(w, day.sound, "i"); } catch (e) {} return '<b class="snd">' + esc(w) + "</b>"; }
+    // the line, with its key word (the first whole one) in a highlight and
+    // only that word's sound letters orange
+    function markLine(text, key) {
+      var m = new RegExp("\\b(" + key + ")\\b", "i").exec(text);
+      if (!m) return esc(text);
+      return esc(text.slice(0, m.index)) + '<span class="advkw">' + marked(m[1]) + "</span>" + esc(text.slice(m.index + m[1].length));
+    }
+    function paintAsk() {
+      if (!M) { capAsk.hidden = true; return; }
+      var dots = "";
+      for (var i = 0; i < TIMES; i++) dots += '<i class="' + (i < M.said ? "on" : "") + '"></i>';
+      capAsk.innerHTML = 'Can you say <span class="advw">' + marked(M.word) + "</span>?" + (TIMES > 1 ? '<span class="advdots" aria-hidden="true">' + dots + "</span>" : "");
+      capAsk.hidden = false;
+    }
+    function setBar(m, note) {
+      bar = m;
+      var mic = m !== "next";
+      nextBtn.hidden = mic || view !== "scene"; micBtn.hidden = !mic; micState.hidden = !mic;
+      micBtn.className = "act-mic advmic " + m;
+      micBtn.setAttribute("aria-label", m === "live" ? "Echo is listening" : m === "nudge" ? "Tap the mic, then say it" : "Microphone");
+      micState.textContent = note != null && note !== "" ? note : (MIC_NOTE[m] || "");
+      if (m === "next") nextBtn.classList.add("glow");
+      pub();
+    }
+    // every way off the moment starts here: the mic closes, Echo's ask and
+    // any chime still waiting are dropped, the grown-ups' question goes
+    function hush() { momTok++; clearTimeout(turnT); if (SC) { try { SC.stop(); } catch (e) {} } micOvl.hidden = true; return momTok; }
+    function endMoment() { hush(); M = null; capAsk.hidden = true; pub(); }
+    function momentOff(justThisPage) {
+      if (!justThisPage) micOff = true;
+      endMoment();
+      var kw = capText.querySelector(".advkw"); if (kw) kw.classList.remove("yay");
+      setBar("next"); echoPose("welcome");
+    }
+    function startMoment() {
+      var sc = run[idx];
+      if (!TALK || view !== "scene" || !sc || !sc.key) return;
+      if (!talkOn()) { setBar("next"); return; }
+      var tok = momTok;
+      M = { word: sc.key, said: 0, tries: 0, ok: false, leaving: false, page: idx };
+      paintAsk(); echoPose("wave");
+      if (document.hidden) { setBar("nudge"); echoPose("think"); return; }
+      setBar("wait", "Listen…");
+      SC.ready(function (st) {
+        if (tok !== momTok || !M) return;
+        if (st === "nomic") return momentOff();
+        if (st === "go") { M.ok = true; return ask(false); }
+        primer(tok);
+      });
+    }
+    function primer(tok) {
+      $("micPromise").textContent = (S && S.MIC_PROMISE) || "";
+      micOvl.hidden = false; pub();
+      $("micYes").onclick = function () {
+        if (tok !== momTok || !M || document.hidden) return;
+        micOvl.hidden = true; pub();
+        stopVoice();   // the phone's own prompt never opens under a voice
+        SC.permit(function (r) {
+          if (tok !== momTok || !M) return;
+          if (r === "denied") return denied();
+          if (r === "nomic") return momentOff();
+          if (r === "failed") return momentOff(true);
+          M.ok = true; ask(false);
+        });
+      };
+      $("micNo").onclick = function () { if (tok === momTok) momentOff(); };
+    }
+    function denied() {
+      momentOff();
+      if (!S || !S.micDenied) return;
+      try {
+        S.micDenied({ onClose: function () {} });
+        var back = document.getElementById("sonaMicBack");
+        if (back && /back home/i.test(back.textContent)) back.textContent = "Keep reading";
+      } catch (e) {}
+    }
+    // Echo models the word, calm, the word alone at the end; then the mic
+    function ask(again) {
+      if (!M) return;
+      var tok = momTok;
+      setBar("wait", again ? "One more time…" : "Listen…");
+      echoPose(again ? "think" : "wave");
+      SC.say((again ? "One more time... " : "Can you say... ") + M.word + ".", function () { if (tok === momTok) listenNow(); });
+    }
+    function listenNow() {
+      if (!M) return;
+      var tok = momTok;
+      SC.listen(day.sound, function (out) { if (tok === momTok) answer(out); },
+        function () { if (tok === momTok) { setBar("live", M && M.said ? leftNote() : ""); echoPose("listen"); } });
+    }
+    function leftNote() { var n = TIMES - (M ? M.said : 0); return n === 1 ? "1 more time!" : n + " more times!"; }
+    function answer(out) {
+      if (!M) return;
+      var tok = momTok;
+      if (out === "heard") {
+        if (M.leaving) return;
+        // one rep a saying, for the child this page was opened for
+        try { if (S.gameRep && (!S.kkey || S.kkey("sona.gamereps.v1") === repKey)) S.gameRep(day.sound); } catch (e) {}
+        M.said++; paintAsk();
+        if (M.said < TIMES) {
+          // only paints: the mic has just closed and opens again for the next
+          setBar("wait", leftNote()); echoPose("cheer");
+          listenNow();
+          return;
+        }
+        M.leaving = true;
+        setBar("yay", "I heard you!"); echoPose("cheer");
+        var kw = capText.querySelector(".advkw"); if (kw) kw.classList.add("yay");
+        if (layer && !rm()) layer.classList.add("pop");
+        try { SC.chime("correct"); } catch (e) {}
+        SC.quiet(function () { if (tok === momTok && !rm() && S.confetti) { try { S.confetti({ count: 60, duration: 1100 }); } catch (e) {} } });
+        turnT = setTimeout(function () { if (tok === momTok) talkNext(); }, 1300);
+        return;
+      }
+      if (out === "shape") {
+        M.tries++;
+        if (M.tries < 3) return ask(true);
+        M.leaving = true;
+        setBar("bye", "Great trying! Let's turn the page.");
+        echoPose("cheer");   // the page turns on this, and a page ends on a win
+        SC.say("Great trying. Let's turn the page.", function () { if (tok === momTok) talkNext(); });
+        return;
+      }
+      if (out === "denied") return denied();
+      if (out === "nomic") return momentOff();
+      if (out === "failed") return momentOff(true);
+      // "quiet" or "hidden": nothing moves; the mic waits for a tap
+      setBar("nudge"); echoPose("think");
+    }
+    // the next page; past the intro's last, the day is finished and the
+    // ending plays straight on; past the ending's last, the sticker card
+    function talkNext() {
+      endMoment();
+      if (idx < run.length - 1) { show(idx + 1); return; }
+      if (mode === "intro") {
+        finished = true;
+        try { if (S.questEnd) S.questEnd(day.game); } catch (e) {}
+        mode = "end"; run = runOf(data.ending); sized = false; endSent = false;
+        if (!run.length) { showStickers(); return; }
+        prefetchPic(0); preload(0); show(0);
+        return;
+      }
+      showStickers();
+    }
     // ── the controls ──
     nextBtn.onclick = turn;
     stage.addEventListener("click", function () {
       // the last intro scene turns only on "Let's go!": a tap on its picture
-      // must not take a child into the game
-      if (view === "scene" && !(mode === "intro" && idx === run.length - 1)) turn();
+      // must not take a child into the game (nor turn a talking page)
+      if (view === "scene" && !TALK && !(mode === "intro" && idx === run.length - 1)) turn();
     });
-    hearBtn.onclick = function () { if (view !== "scene") return; wake(); startLine(); };
+    hearBtn.onclick = function () {
+      if (view !== "scene") return;
+      wake();
+      if (!TALK) { startLine(); return; }
+      // a talking page: the mic closes, Echo reads the page again, then asks
+      // again (the sayings already heard stay on the page)
+      if (M && M.leaving) return;
+      hush();
+      if (bar !== "next") setBar("wait", "");
+      startLine(function () { if (M && M.ok && !M.leaving) ask(false); else if (!M) startMoment(); });
+    };
+    // after a quiet window (or coming back to the page): the tap listens again
+    micBtn.onclick = function () {
+      if (view !== "scene" || bar !== "nudge" || voice === "speaking") return;
+      hush(); wake();
+      if (M && M.ok) { setBar("wait", ""); listenNow(); } else startMoment();
+    };
     goBtn.onclick = function () {
       if (view !== "scene" || !tapOk()) return;
       stopAll();
@@ -632,9 +880,11 @@
     skipBtn.onclick = function () {
       if (view !== "scene") return;
       stopVoice();
+      // a talking story: one page, with no word said
+      if (TALK) { talkNext(); return; }
       if (mode === "intro") show(run.length - 1); else showStickers();
     };
-    closeBtn.onclick = function () { stopAll(); location.href = HOME; };
+    closeBtn.onclick = function () { if (TALK) hush(); stopAll(); location.href = HOME; };
     startBtn.onclick = function () {
       if (view !== "start") return;
       // "Keep going": today's intro was already watched, straight to the game
@@ -642,7 +892,7 @@
       begin();
     };
     againBtn.onclick = function () { if (view === "start") begin(); };
-    homeBtn.onclick = function () { if (now() - shownAt < TAP_GUARD_MS) return; stopAll(); location.href = HOME; };
+    homeBtn.onclick = function () { if (now() - shownAt < TAP_GUARD_MS) return; if (TALK) hush(); stopAll(); location.href = HOME; };
     document.addEventListener("keydown", function (e) { if (view === "scene" && e.key === "ArrowRight") { e.preventDefault(); turn(); } });
     function refit() { if (view === "scene") { sizeCaption(); layout(); } else sized = false; }
     window.addEventListener("resize", refit);
@@ -655,6 +905,11 @@
       var was = voice;
       stopAll();
       if (view === "scene" && (was === "loading" || was === "late" || was === "speaking")) setVoice("done");
+      // a talking page: the mic closes, and coming back needs a tap on it
+      if (TALK && view === "scene" && bar !== "next" && !(M && M.leaving)) {
+        hush(); setBar("nudge"); echoPose("think");
+        if (!M) { var sc = run[idx]; if (sc && sc.key && talkOn()) { M = { word: sc.key, said: 0, tries: 0, ok: false, leaving: false, page: idx }; paintAsk(); } }
+      }
     });
     // a page brought back from the browser's cache asks again who may be here
     window.addEventListener("pageshow", function (e) { if (e.persisted) location.reload(); });
