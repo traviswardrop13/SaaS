@@ -778,6 +778,32 @@ both cards; `firstgametest` keeps both boxes and the button on the first
 screen at seven phone sizes with the charter line showing, and re-prices
 every yearly figure when the price check answers late.
 
+**THE ONE PAYMENT ON TOP AND PICKED (31 Oct 2026)** (Travis: "I want to put
+the lifetime as the default. So put it at the top, like above monthly. And I
+want to switch the 7-day free trial down to 3-day trial"). This replaces the
+order and the pick in "TWO ROWS: MONTHLY ON TOP" right below (the rest of it
+stands).
+- **The one payment first, picked when the screen opens**, the monthly row
+  (its free trial) under it (`kindsOf` and the markup's order in
+  `subscribe.html`, `#iapLife` before `#iapPlan`; `APPLE.pick` starts at
+  `"lifetime"`). So the card opens on the one payment's words and button
+  ("Billed today"), its "paywall viewed" counts that pick, and the heads-up
+  line ("We'll remind you the day before it ends.") shows only once a parent
+  taps a sure free Monthly row. A one-payment row that arrives late (the card
+  showed monthly alone first) still comes in unpicked; one that goes away
+  while picked takes the pick to monthly; with none, the card is the monthly
+  row alone, as before.
+- **The free days are App Store Connect's**, not this repo's: the card says
+  what the store's introductory offer says (`planFree`). Going from 7 days to
+  3 is Travis's change there (the monthly subscription's introductory offer,
+  free for 3 days), and every line follows by itself.
+- **Setup's reminder ask still follows the monthly row** (it asks when the
+  store is sure that row is a free trial), although the one payment is now
+  picked on arrival: a parent may still pick the trial, and its daily and
+  last-day reminders need the yes asked before the price. Asking only when
+  the trial is the picked row would mean never asking (Travis's call).
+  `pricescreentest`, `setupbuytest` play it.
+
 **TWO ROWS: MONTHLY ON TOP AND PICKED, THE ONE PAYMENT UNDER IT (23 Oct
 2026)** (Travis, with a screenshot of three rows: "We need to get rid of the
 yearly option. I just want two payment options"; first with the one payment
