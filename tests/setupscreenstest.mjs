@@ -350,7 +350,9 @@ await scenario('the reminder ask: only where a reminder can be set and the price
   const {context,page,errors}=await fresh({webSales:true,notify:NOTIFY,plan,refresh,init:COUNT});try{
    await setupWalk(page,'updates',{name:'Mia'});
    const before=await page.evaluate(()=>__s.plans);
-   await calm(page);await page.locator('#updSkip').click();await page.locator('[data-step="ready"].on').waitFor();
+   // (the ready screen comes after the plan moment's build beat, 31 Oct 2026:
+   // watched for every frame, so "at once" is the moment it shows)
+   await calm(page);await page.locator('#updSkip').click();await page.waitForFunction(()=>!!document.querySelector('[data-step="ready"].on'),null,{polling:'raf',timeout:5000});
    if(!tapAtOnce)await page.waitForTimeout(2700);
    const t0=Date.now();await calm(page);await page.locator('#nextBtn').click({noWaitAfter:true});
    if(tapAtOnce){await page.waitForTimeout(250);
@@ -396,6 +398,146 @@ await scenario('the reminder ask: only where a reminder can be set and the price
    const f=await page.evaluate(()=>{const ob=document.querySelector('.ob'),y=document.getElementById('remindYes').getBoundingClientRect(),n=document.getElementById('remindNo').getBoundingClientRect(),foot=document.getElementById('backBtn').getBoundingClientRect();return {yes:y.height,no:n.height,bottom:n.bottom,footTop:foot.top,scroll:ob.scrollHeight-ob.clientHeight,sideways:document.documentElement.scrollWidth-innerWidth};});
    ok('the reminder screen fits at '+vp.width+'×'+vp.height+': both buttons at least 48 tall, above Back, nothing scrolls',f.yes>=48&&f.no>=48&&f.bottom+12<=f.footTop&&f.scroll<=1&&f.sideways<=0,f);
    clean('remind fit '+vp.width,errors);
+  }finally{await context.close();}
+ }
+});
+
+// ── THE PLAN MOMENT (Travis, 31 Oct 2026: "build the plan moment and straight
+// into day 1"). On a parent's first setup the ready screen is reached through
+// a short build beat (Echo, "Building <Name>'s practice…", the parent's
+// answers coming in one by one, about 2.2 s; under Reduce Motion all at once,
+// about 1 s), once a visit, silent, never recorded, and nothing under it takes
+// a tap. The ready screen then carries the plan card: Day 1's story for this
+// child's sounds (Sona.day1For, the rule Home's card uses once the profile is
+// saved), its Home picture (left out, never broken, when it does not load), a
+// "Day 1" pill, the title, its Home line, and "A new story every day." Only
+// where this child will be shown a story (Sona.storyShown). ──
+const DAY1={robo:['Robo\'s Rocket','Robo the robot built a rocket, but it won\'t wake up. Help him fly it!'],lighthouse:['The Lighthouse Sneeze','Captain Wally sneezed out the lighthouse lamp! Help the little boats get home.'],fizz:['Fizz and the Sleepy Fireflies','Fizz the fox\'s party is tonight, but the fireflies are too sleepy to glow. Help wake them up!']};
+const DAY1PAGE=['**/__day1.html',r=>r.fulfill({status:200,contentType:'text/html',body:'<!doctype html><title>day1</title><script src="/sona.js"></script>'})];
+// the plan card as a parent sees it
+const planShown=page=>page.evaluate(()=>{const c=document.getElementById('planCard'),pic=document.getElementById('planPic'),img=document.getElementById('planImg'),st=document.querySelector('[data-step="ready"]'),vis=el=>!!el&&!el.closest('[hidden]')&&getComputedStyle(el).display!=='none'&&el.getBoundingClientRect().height>0,box=el=>{const b=el.getBoundingClientRect();return {t:Math.round(b.top),b:Math.round(b.bottom),h:Math.round(b.height),w:Math.round(b.width)};};
+  return {shown:vis(c),story:c.dataset.story||'',day:(c.querySelector('.plan-day')||{}).textContent,title:document.getElementById('planTitle').textContent,line:document.getElementById('planLine').textContent,more:vis(document.getElementById('planMore'))?document.getElementById('planMore').textContent:'',pic:vis(pic),picGone:img.classList.contains('gone'),src:img.getAttribute('src'),loaded:img.complete&&img.naturalWidth>0,imgSeen:getComputedStyle(img).visibility!=='hidden',
+   broken:[...st.querySelectorAll('img')].filter(i=>vis(i)&&getComputedStyle(i).visibility!=='hidden'&&i.complete&&!i.naturalWidth).map(i=>i.getAttribute('src')),
+   asks:c.querySelectorAll('button,a,input,[role="button"],[tabindex]').length,card:vis(c)?box(c):null,chips:box(document.getElementById('readyChips')),foot:box(document.querySelector('.obfoot')),btn:box(document.getElementById('nextBtn')),hedge:box(st.querySelector('.ready-hedge')),
+   scroll:document.querySelector('.ob').scrollHeight-document.querySelector('.ob').clientHeight,sideways:document.documentElement.scrollWidth-innerWidth,text:st.innerText.replace(/\s+/g,' ').trim()};});
+// the beat as it stands this moment
+const beatNow=page=>page.evaluate(()=>{const b=document.getElementById('obBuild');return b?{cls:b.className,role:b.getAttribute('role'),live:b.getAttribute('aria-live'),title:document.getElementById('obBuildT').textContent,name:(document.querySelector('#obBuildT .ph-name')||{}).textContent,answers:[...document.querySelectorAll('#obBuildAnswers span')].map(s=>s.textContent),on:document.querySelectorAll('#obBuildAnswers span.on').length,echo:!!b.querySelector('img[src*="echo"]'),screen:document.body.dataset.setupScreen,building:document.body.classList.contains('ob-building'),inert:document.querySelector('.ob').inert&&document.querySelector('.obfoot').inert,idx:ORDER[idx],saved:!!Sona.getProfile().onboarded}:null;});
+// counts every beat that is put on the page, from now on
+const watchBeats=page=>page.evaluate(()=>{window.__beats=0;new MutationObserver(ms=>ms.forEach(m=>m.addedNodes.forEach(n=>{if(n.id==='obBuild')window.__beats++;}))).observe(document.body,{childList:true});});
+await scenario('the plan moment: a short build beat before the ready screen, once a visit',async()=>{
+ {const {context,page,errors,requests}=await fresh({motion:true,webSales:true});try{
+  await setupWalk(page,'updates',{name:'Mia',age:'6',sounds:['R','S'],minutes:'10'});
+  await watchBeats(page);const media=await page.evaluate(()=>__s.media.length);
+  await calm(page);const t0=Date.now();await page.locator('#updSkip').click();
+  const a=await beatNow(page);
+  ok('moving on to the ready screen first shows the beat: Echo, "Building Mia\'s practice…", over the page',!!a&&a.echo&&a.title==='Building Mia\'s practice…'&&a.name==='Mia'&&a.screen==='updates'&&a.idx==='ready'&&a.building&&a.inert,a);
+  ok('…the parent\'s answers, as the ready screen\'s chips say them, coming in one by one (none all at once yet)',!!a&&JSON.stringify(a.answers)==='["Ages 5–6","Sounds: R · S","10 min a day"]'&&a.on<3,a);
+  ok('…a status a screen reader reads, and never recorded (ph-no-capture)',!!a&&a.role==='status'&&a.live==='polite'&&/\bph-no-capture\b/.test(a.cls)&&/\bplan\b/.test(a.cls),a);
+  // nothing under it takes a tap: a finger on Continue lands on the beat; Back and Continue pressed from script do nothing
+  const btn=await page.evaluate(()=>{const b=document.getElementById('nextBtn').getBoundingClientRect();return {x:b.left+b.width/2,y:b.top+b.height/2};});
+  await page.mouse.click(btn.x,btn.y);await page.evaluate(()=>{document.getElementById('backBtn').click();document.getElementById('nextBtn').click();});
+  await page.waitForTimeout(250);
+  const b=await beatNow(page);
+  ok('taps during the beat do nothing: no Back, no Continue, nothing saved',!!b&&b.idx==='ready'&&b.screen==='updates'&&!b.saved,b);
+  await page.waitForTimeout(Math.max(0,1700-(Date.now()-t0)));
+  const c=await beatNow(page);
+  ok('…by 1.7 s every answer is in',!!c&&c.on===3,c);
+  await page.locator('[data-step="ready"].on').waitFor({timeout:4000});const took=Date.now()-t0;
+  const r=await page.evaluate(()=>({beat:!!document.getElementById('obBuild'),building:document.body.classList.contains('ob-building'),inert:document.querySelector('.ob').inert||document.querySelector('.obfoot').inert,focus:document.activeElement&&document.activeElement.id,title:document.getElementById('readyTitle').textContent,saved:!!Sona.getProfile().onboarded}));
+  ok('then the ready screen, about 2.2 s on ('+took+' ms): the beat gone, the page live again, the heading focused, nothing saved',took>=1900&&took<=3400&&!r.beat&&!r.building&&!r.inert&&r.focus==='readyTitle'&&r.title==='Mia\'s practice is ready!'&&!r.saved,{took,r});
+  ok('the beat makes no sound and fetches nothing to play',await page.evaluate(m=>__s.media.length===m&&!__s.spoke,media)&&!requests.some(q=>/\/api\/tts|\/coach\/|\.wav$|\.mp3$/.test(q.url)));
+  await calm(page);await page.locator('#backBtn').click();await page.locator('[data-step="updates"].on').waitFor();
+  await calm(page);const t1=Date.now();await page.locator('#updSkip').click();await page.locator('[data-step="ready"].on').waitFor({timeout:1500});
+  ok('Back from ready and on again goes straight to the ready screen: the beat played once this visit',await page.evaluate(()=>window.__beats)===1&&Date.now()-t1<1200,{beats:await page.evaluate(()=>window.__beats),ms:Date.now()-t1});
+  clean('plan beat',errors);
+ }finally{await context.close();}}
+ // under Reduce Motion nothing comes in: everything is there at once, for about 1 s
+ {const {context,page,errors}=await fresh({webSales:true});try{
+  await setupWalk(page,'updates',{name:'Mia',age:'',sounds:['R'],minutes:'skip'});
+  await calm(page);const t0=Date.now();await page.locator('#updSkip').click();
+  const a=await beatNow(page);
+  ok('Reduce Motion: every answer is there from the beat\'s first frame (no age picked, minutes skipped: the sound alone)',!!a&&JSON.stringify(a.answers)==='["Sound: R"]'&&a.on===1,a);
+  await page.locator('[data-step="ready"].on').waitFor({timeout:3000});const took=Date.now()-t0;
+  ok('…and the ready screen about 1 s on ('+took+' ms)',took>=800&&took<=2000,took);
+  clean('plan beat, Reduce Motion',errors);
+ }finally{await context.close();}}
+ // only a parent's first setup: a child walking setup again, a second child and a phone that cannot sell
+ for(const [label,cfg,walk,beat,card] of [
+   ['a child set up before, walking setup again',{webSales:true,profile:{childName:'Milo',childAge:'6',focusSounds:['R'],mode:'speech',role:'parent',onboarded:true,email:'mom@example.com'}},{name:'Milo'},false,false],
+   ['a second child',{webSales:true,init:()=>{if(!localStorage.getItem('__kids')){localStorage.setItem('__kids','1');localStorage.setItem('sona.kids.v1',JSON.stringify({active:'k2',list:[{slot:'',name:'Milo'},{slot:'k2',name:'Rosie'}],hi:2}));}}},{name:'Rosie'},false,false],
+   ['a first setup on a phone that cannot sell (the game of the day, no story)',{},{name:'Mia'},true,false]]){
+  const {context,page,errors}=await fresh(cfg);try{
+   if(cfg.init)await page.reload();
+   await watchBeats(page);
+   await setupWalk(page,'ready',walk);await page.waitForTimeout(150);
+   const p=await planShown(page);
+   ok(label+': '+(beat?'the beat':'no beat')+' and no plan card',await page.evaluate(()=>window.__beats)===(beat?1:0)&&!p.shown&&!p.more,{beats:await page.evaluate(()=>window.__beats),p});
+   clean('plan moment: '+label,errors);
+  }finally{await context.close();}
+ }
+});
+await scenario('the plan card: Day 1\'s story for this child\'s sounds',async()=>{
+ for(const [label,walk,id] of [['an R child',{sounds:['R']},'robo'],['a K child (no talking story)',{sounds:['K']},'lighthouse'],['"Not sure? Pick all sounds" (the list setup saves: every sound, easiest first)',{explore:true},'fizz']]){
+  const {context,page,errors}=await fresh({webSales:true,routes:[DAY1PAGE]});try{
+   await setupWalk(page,'ready',Object.assign({name:'Mia',age:'8'},walk));
+   await page.evaluate(()=>Promise.all([...document.querySelectorAll('[data-step="ready"] img')].map(i=>i.complete?0:new Promise(r=>{i.onload=i.onerror=r;setTimeout(r,2000);}))));
+   const p=await planShown(page);
+   ok(label+': the card names '+DAY1[id][0]+', with its Home line, a "Day 1" pill and "A new story every day." under it',p.shown&&p.story===id&&p.day==='Day 1'&&p.title===DAY1[id][0]&&p.line===DAY1[id][1]&&p.more==='A new story every day.',p);
+   ok('…under the chips, a statement with nothing to tap, and no plan, price or promise in the screen\'s words',p.card&&p.card.t>=p.chips.b&&p.asks===0&&!/\bplan\b|\$|\bfree\b|recommend|score|result/i.test(p.text),p);
+   // (the talking stories' Home pictures are being drawn, 31 Oct 2026: a
+   // story whose picture is on disk shows it, one whose picture is not yet
+   // steps aside, so this holds either way)
+   if(existsSync(root+'/assets/crafted/home-'+id+'.webp'))ok('…its Home picture is drawn, loaded',p.pic&&p.loaded&&p.imgSeen&&p.src==='/assets/crafted/home-'+id+'.webp'&&!p.broken.length,p);
+   else ok('…its story has no Home picture yet: the picture steps aside, never a broken image (the card is its words)',!p.pic&&!p.broken.length&&p.src==='/assets/crafted/home-'+id+'.webp',p);
+   // the same story once the profile is saved: Home's own rule (questToday) agrees with the card
+   await next(page);await page.waitForURL(u=>u.pathname==='/subscribe.html');
+   await page.goto(base+'/__day1.html');
+   const q=await page.evaluate(()=>{const t=Sona.questToday();return {kind:t.kind,state:t.state,day:t.day,id:t.story&&t.story.id};});
+   ok('…and once the profile is saved, Home\'s card is that very story, Day 1, open',q.kind==='story'&&q.state==='open'&&q.day===1&&q.id===id,q);
+   clean('plan card: '+label,errors);
+  }finally{await context.close();}
+ }
+ // a picture that has already failed when the screen is drawn (here the
+ // lighthouse's, answered 404) is left out: the card is its words, never a
+ // broken image
+ {const {context,page,errors}=await fresh({webSales:true,routes:[['**/assets/crafted/home-lighthouse.webp',r=>r.fulfill({status:404,body:''})]]});try{
+  await setupWalk(page,'ready',{name:'Mia',age:'8',sounds:['K']});await page.waitForTimeout(150);
+  const p=await planShown(page);
+  ok('a Day 1 picture that failed before the screen showed steps aside: the card is its words alone (The Lighthouse Sneeze), with no broken image and no empty box',p.shown&&p.story==='lighthouse'&&p.title===DAY1.lighthouse[0]&&p.line===DAY1.lighthouse[1]&&!p.pic&&!p.broken.length&&p.more==='A new story every day.',p);
+  clean('plan card, a picture that failed first',errors);
+ }finally{await context.close();}}
+ // a picture that fails while the screen shows keeps its box, empty: nothing moves under a finger
+ {let fail;const late=new Promise(r=>{fail=r;});
+  const {context,page,errors}=await fresh({webSales:true,routes:[['**/assets/crafted/home-lighthouse.webp',async r=>{await late;r.fulfill({status:404,body:''});}]]});try{
+  await setupWalk(page,'ready',{name:'Mia',age:'8',sounds:['K']});await page.waitForTimeout(150);
+  const a=await planShown(page);
+  fail();await page.waitForFunction(()=>document.getElementById('planImg').classList.contains('gone'),null,{timeout:3000});await page.waitForTimeout(100);
+  const b=await planShown(page);
+  ok('a picture still on its way when the screen shows keeps its box; when it fails it stays empty there, never broken, and the card does not move',a.pic&&!a.loaded&&b.pic&&b.picGone&&!b.imgSeen&&!b.broken.length&&JSON.stringify(a.card)===JSON.stringify(b.card),{a:a.card,b:b.card,gone:b.picGone});
+  clean('plan card, a late failure',errors);
+ }finally{fail();await context.close();}}
+ // Sona.day1For, the one rule: the first of the sounds with a talking story, else the lighthouse
+ {const {context,page,errors}=await fresh();try{
+  const d=await page.evaluate(()=>{const f=l=>Sona.day1For(l).id;const one=Sona.day1For(['R']);one.title='x';return {r:f(['R']),k:f(['K']),lower:f(['s']),ks:f(['K','S']),thz:f(['TH','Z']),none:f([]),junk:f(['XX']),play:f(Sona.PLAY_ORDER),copy:Sona.STORY_TALK[0].title,shape:Object.keys(Sona.day1For(['K'])).sort().join(),talk:[Sona.day1For(['L']).talk,Sona.day1For(['K']).talk],pic:Sona.day1For(['K']).pic};});
+  ok('Sona.day1For: R Robo, K the lighthouse, s (any case) Sandy, K then S Sandy, TH then Z Zippy, none or no known sound R\'s Robo, every sound in play order Fizz',d.r==='robo'&&d.k==='lighthouse'&&d.lower==='sandy'&&d.ks==='sandy'&&d.thz==='zippy'&&d.none==='robo'&&d.junk==='robo'&&d.play==='fizz',d);
+  ok('…a copy each time (the list is never changed through it), with the card\'s fields',d.copy==='Robo\'s Rocket'&&d.shape==='hero,id,line,pic,talk,title'&&d.talk[0]===true&&d.talk[1]===false&&d.pic==='/assets/crafted/home-lighthouse.webp',d);
+  await page.evaluate(()=>sessionStorage.setItem('sona.talkoff','1'));
+  ok('…and it follows the talking stories\' off switch as _talkDay does (the lighthouse for everyone)',await page.evaluate(()=>Sona.day1For(['R']).id==='lighthouse'));
+  clean('day1For',errors);
+ }finally{await context.close();}}
+});
+await scenario('the ready screen with the plan card fits, Continue on screen',async()=>{
+ for(const vp of [{width:390,height:844},{width:375,height:667},{width:320,height:568}])for(const [sound,name] of [['K','Mia'],['R','Mia'],['K','Wolfeschlegelsteinhaus']]){
+  if(name!=='Mia'&&vp.width!==320)continue;
+  const {context,page,errors}=await fresh({viewport:vp,webSales:true});try{
+   await setupWalk(page,'ready',{name,age:'8',sounds:[sound],therapy:'t_yes',minutes:'5'});
+   await page.evaluate(()=>Promise.all([...document.querySelectorAll('[data-step="ready"] img')].map(i=>i.complete?0:new Promise(r=>{i.onload=i.onerror=r;setTimeout(r,2000);}))));await page.evaluate(()=>document.fonts.ready);await page.waitForTimeout(150);
+   const p=await planShown(page),at=vp.width+'×'+vp.height+' ('+sound+(name!=='Mia'?', a 22-letter name':'')+')';
+   if(name==='Mia')ok('ready with the plan card fits at '+at+': no scroll, the card and the hedge above the footer, Continue on screen',p.shown&&p.scroll<=1&&p.sideways<=0&&p.card.b<=p.foot.t&&p.hedge.b<=p.foot.t&&p.btn.b<=vp.height&&p.btn.t>=0,p);
+   else ok('…and with a 22-letter name at '+at+': at most a short scroll, the hedge above Continue, never sideways',p.shown&&p.scroll<=48&&p.hedge.b<=p.btn.t&&p.sideways<=0,p);
+   if(vp.height<=600)ok('…on a phone 600 px tall the picture steps aside and the words take the card ('+at+')',!p.pic&&p.title.length>0,p);
+   else if(sound==='K')ok('…with its picture ('+at+')',p.pic&&p.loaded,p);
+   clean('plan card fit '+at,errors);
   }finally{await context.close();}
  }
 });

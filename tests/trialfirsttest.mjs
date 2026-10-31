@@ -19,7 +19,9 @@
 //     not, and no price at all when the store does not answer);
 //   - "Not now" goes to Home with every game and book locked;
 //   - a purchase from setup goes back to setup, for the microphone and the
-//     hand-off, when the tab still carries setup's marker; else Home.
+//     hand-off, when the tab still carries setup's marker; else Home;
+//   - and that hand-off's "Let's play!" opens Day 1's story when today's
+//     story is open to the child (31 Oct 2026), else Home as before.
 // Setup's own half (ready, the marker being written, the microphone after the
 // price) is played in setupbuytest and onboardingtest; here /onboarding.html
 // is a stub, so this suite holds whatever that page is doing. Every size and
@@ -189,6 +191,41 @@ try {
       ok("…it buys the product the store named, the monthly plan, and unlocks", got.bought === "com.speaksona.app.monthly" && got.ent === "1" && got.sub.active === true && got.sub.source === "apple", got);
       ok("…and " + label, want.test(page.url()), page.url());
       ok("free days started, " + (marker ? "marker" : "no marker") + ": no page errors", errors.length === 0, errors);
+    } finally { await context.close(); }
+  });
+  // STRAIGHT INTO DAY 1 (Travis, 31 Oct 2026: "build the plan moment and
+  // straight into day 1"). Back from the free days starting, setup's own
+  // microphone and hand-off (the real page here, not the stub), and "Let's
+  // play!" opens today's story, Day 1 in the child's sound, because it is
+  // open to the child now; a child whose story today is already done goes
+  // Home, as on 17 Oct 2026. Never a first-game mark after a purchase.
+  for (const [label, sounds, want] of [
+    ["a child on R: Robo's Rocket", ["R"], "robo"],
+    ["a child on K (no talking story): The Lighthouse Sneeze", ["K"], "lighthouse"],
+    ["a child whose story today is already done: Home, as before", ["R"], null],
+  ]) await scenario("the free days start, then the hand-off, " + label, async () => {
+    const { context, page, errors } = await open(browser, BASE, { app: "buy", stamp: "post", setUp: true, marker: true, intro: "free3" });
+    try {
+      await context.route("**/today.html", (r) => r.fulfill({ contentType: "text/html", body: "<!doctype html><title>home</title><p>home</p>" }));
+      await context.route("**/charge.html**", (r) => r.fulfill({ contentType: "text/html", body: "<!doctype html><title>game</title><p>game</p>" }));
+      await context.route("**/adventure.html**", (r) => r.fulfill({ contentType: "text/html", body: '<!doctype html><title>story</title><p>story</p><script src="/sona.js"></script>' }));
+      await page.goto(BASE + "/subscribe.html?setup=1");
+      await priced(page); await calm(page);
+      await page.evaluate(([s, done]) => {
+        const k = "sona.profile.v1", p = JSON.parse(localStorage.getItem(k)); p.focusSounds = s; localStorage.setItem(k, JSON.stringify(p));
+        if (done) { const d = Sona.localDay(); localStorage.setItem(Sona.kkey("sona.quest.v1"), JSON.stringify({ f: [0], s: 1, ls: 0, fd: d, lk: "story", done: d, a: d, sv: d, t1: "robo" })); }
+      }, [sounds, !want]);
+      await page.locator("#iapBuy").click();
+      await page.waitForURL(/\/onboarding\.html$/, { timeout: 8000 });
+      await page.locator('[data-step="mic"].on').waitFor();
+      await calm(page); await page.locator("#micNotNow").click();
+      await page.locator('[data-step="achieve"].on').waitFor();
+      await calm(page); await page.locator("#nextBtn").click();
+      await page.waitForURL((u) => u.pathname !== "/onboarding.html", { timeout: 8000 });
+      const end = await page.evaluate(() => { const q = window.Sona ? Sona.questToday() : {}; return { path: location.pathname + location.search, q: q.kind + "|" + q.state + "|" + q.day + "|" + (q.story && q.story.id), mark: sessionStorage.getItem("sona.firstgame.v1"), marker: sessionStorage.getItem("sona.setupafter.v1") }; });
+      if (want) ok("\"Let's play!\" after the free days start opens Day 1's story, " + label, end.path === "/adventure.html" && end.q === "story|open|1|" + want && end.mark === null && end.marker === null, end);
+      else ok("\"Let's play!\" after the free days start, " + label + " (never a story that is not open)", end.path === "/today.html" && end.mark === null && end.marker === null, end);
+      ok("the hand-off after the free days start (" + label + "): no page errors", errors.length === 0, errors);
     } finally { await context.close(); }
   });
   // THE ONE PAYMENT (22 Oct 2026): a third row when RevenueCat's offering

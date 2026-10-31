@@ -15,8 +15,9 @@
 //   - the price is ONE plan with the store's own words, and no reminder is
 //     promised (Sona sends none yet);
 //   - a purchase comes BACK to setup for the microphone and "Hand the phone
-//     to <Name>!", and then goes Home, where the child picks a game (17 Oct
-//     2026: no jump straight into a game after the free days start);
+//     to <Name>!", and then opens Day 1's story, the one the ready screen's
+//     plan card named (31 Oct 2026: "build the plan moment and straight into
+//     day 1"; from 17 Oct it went Home, where the child picked a game);
 //   - "Not now" goes Home, with no microphone ask and no hand-off;
 //   - a phone that cannot buy never sees a price and goes on in the page;
 //   - the two answers a parent taps reach no request at all.
@@ -75,6 +76,11 @@ await scenario("a family that can buy", async () => {
       (await text(page, "#readyTitle")) === "Mia's practice is ready!",
       { title: await text(page, "#readyTitle"), rachel: rachelLine });
     ok("…and nothing has asked the phone for the microphone yet", (await page.evaluate(() => window.__phone.mic.requests.length)) === 0);
+    // THE PLAN MOMENT (31 Oct 2026): the ready screen names the story Mia
+    // meets as Day 1, the talking story in her sound
+    ok("the ready screen's plan card names Day 1: Robo's Rocket, for a child on R, and \"A new story every day.\"",
+      (await page.evaluate(() => !document.getElementById("planCard").hidden && document.getElementById("planCard").dataset.story)) === "robo" &&
+      (await text(page, "#planTitle")) === "Robo's Rocket" && (await text(page, "#planMore")) === "A new story every day.", await text(page, "#planCard"));
     await tap(page, "#nextBtn");
     await page.waitForURL(/\/subscribe\.html\?setup=1$/, { timeout: 12000 });
     {
@@ -111,11 +117,11 @@ await scenario("a family that can buy", async () => {
         all.length === 2 && plan.length === 1 && plan[0].plan === "trial" && plan[0].source === "app-trial" && plan[0].email === "mia.mom@example.com" && plan[0].role === "parent", all);
     }
     await tap(page, "#nextBtn");                                         // Let's play!
-    await page.waitForURL(/\/today\.html$/, { timeout: 12000 });
+    await page.waitForURL(/\/adventure\.html$/, { timeout: 12000 });
     {
-      const home = await page.evaluate(() => ({ game: sessionStorage.getItem("sona.firstgame.v1"), slice: Sona.gameAccess("slice").allowed }));
-      ok("\"Let's play!\" after the free days start goes Home to pick a game, not straight into one, with the games open",
-        /\/today\.html$/.test(page.url()) && !home.game && home.slice === true, { url: page.url(), home });
+      const story = await page.evaluate(() => { const q = Sona.questToday(); return { game: sessionStorage.getItem("sona.firstgame.v1"), slice: Sona.gameAccess("slice").allowed, open: Sona.storyOpen(), q: q.kind + "|" + q.state + "|" + q.day + "|" + (q.story && q.story.id) }; });
+      ok("\"Let's play!\" after the free days start opens Day 1's story, the one the plan card named (Robo's Rocket), not Home or a game, with every game open",
+        /\/adventure\.html$/.test(page.url()) && story.q === "story|open|1|robo" && story.open && !story.game && story.slice === true, { url: page.url(), story });
     }
     const leaked = requests.filter((r) => /t_yes|t_none|t_no|speech therapy|in therapy/i.test(r.url + " " + (r.body || "")));
     ok("the two answers the parent tapped are in no request, address or body, anywhere in the walk", leaked.length === 0, leaked.slice(0, 3));
@@ -164,9 +170,9 @@ await scenario("a family that buys the one payment", async () => {
     await tap(page, "#nextBtn");
     await step(page, "achieve");
     await tap(page, "#nextBtn");
-    await page.waitForURL(/\/today\.html$/, { timeout: 12000 });
+    await page.waitForURL(/\/adventure\.html$/, { timeout: 12000 });
     const all = leads(requests), plan = all.filter((l) => l.plan);
-    ok("…then Home, and the list hears \"paid\" for the same address, never a trial", plan.length === 1 && plan[0].plan === "paid" && plan[0].source === "app-paid" && plan[0].email === "ava.mom@example.com", all);
+    ok("…then Day 1's story (31 Oct 2026), and the list hears \"paid\" for the same address, never a trial", plan.length === 1 && plan[0].plan === "paid" && plan[0].source === "app-paid" && plan[0].email === "ava.mom@example.com", all);
     ok("…with nothing about the child in any request", !requests.some((r) => /\bAva\b/.test(decodeURIComponent(r.url) + " " + (r.body || ""))));
     ok("a family that buys the one payment: no page errors", errors.length === 0, errors);
   } finally { await context.close(); }
@@ -196,6 +202,8 @@ await scenario("a phone that cannot buy", async () => {
   const { context, page, errors, requests } = await open(browser, base, { mic: "grant" });   // a browser: the website does not sell
   try {
     await toReady(page, "Zoe");
+    ok("with no story shown on this phone (the game of the day, not a locked story), the ready screen has no plan card",
+      await page.evaluate(() => document.getElementById("planCard").hidden && document.getElementById("planMore").hidden));
     await tap(page, "#nextBtn");
     await step(page, "mic");
     ok("with nothing to sell, Continue goes on in the page to the microphone: the price page is never asked for",
@@ -204,7 +212,7 @@ await scenario("a phone that cannot buy", async () => {
     await step(page, "achieve");
     await tap(page, "#nextBtn");
     await page.waitForURL(/\/charge\.html\?game=arcade-slice\.html$/, { timeout: 12000 });
-    ok("…then the hand-off and the first game, which the free version opens", /arcade-slice/.test(page.url()), page.url());
+    ok("…then the hand-off and the first game, which the free version opens (no story is open to this child)", /arcade-slice/.test(page.url()), page.url());
     ok("a phone that cannot buy: no page errors", errors.length === 0, errors);
   } finally { await context.close(); }
 });

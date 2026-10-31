@@ -175,7 +175,9 @@
 </head>
 <body>
   <!-- HOME AND THE ARCADE (STORY1, 22 Oct 2026): one page, two views. Home
-       is today's story, big, with two doors under it (Arcade: every game,
+       is today's story, big, on the Play Map's trail since 31 Oct 2026
+       (between the stars of the stories finished and tomorrow, locked),
+       with two doors under it (Arcade: every game,
        and only games since 23 Oct 2026; Books: the bookshelf), then "Your
        games" once a story is finished (FOUND1); the Trophy Road is the gift
        button in the top bar.
@@ -192,7 +194,24 @@
     </header>
     <a id="trialBanner"><img class="tb-echo" src="/assets/crafted/echo-wave.webp" alt="" onerror="this.src='/assets/crafted/echo-welcome.webp'"><span id="trialMsg"></span><span class="tb-pill" aria-hidden="true">Share an idea</span></a>
     <section class="home-only" aria-labelledby="homeTitle">
-      <h1 id="homeTitle" tabindex="-1">Today's adventure</h1>
+      <!-- THE PLAY MAP (31 Oct 2026; Travis: "yes build play map with those
+           changes"). Home is a little world on a soft mint board: Echo
+           stands at the start of a dotted trail under "Let's explore.", the
+           trail carries a gold star for every story this child has finished
+           (Sona.storyFound(), read only), dives into today's card under a
+           "Today" flag, comes out under it and ends at tomorrow, a dark
+           locked pill. The card is the day's reel as before (HOMECLIP1), the
+           trail's centrepiece; the Arcade and Books doors sit right under the
+           board. The trail is drawn on the phone (paintTrail) from where the
+           card and the pill landed; it is decoration, hidden from a screen
+           reader, takes no tap and never moves. No count, no streak word, no
+           timer, and no sound switch: a child never changes their sound
+           here. -->
+      <div id="homeMap">
+        <svg id="mapTrail" aria-hidden="true" focusable="false"></svg>
+        <div class="map-head"><span class="map-echo" id="mapEcho" aria-hidden="true"><img src="/assets/crafted/echo-welcome.webp" alt="" width="56" height="64" decoding="async" /></span><h1 id="homeTitle" tabindex="-1">Let's explore.</h1></div>
+        <div class="map-spot">
+          <span class="map-today" id="mapToday" aria-hidden="true">Today</span>
       <!-- THE STORY CARD (STORY1; the daily adventure card of QUEST1, 13 Oct
            2026, made big). It only reads Sona.questToday(): on a story day
            its tap is the game card's own tap (launch) on the story itself,
@@ -207,6 +226,9 @@
         <span class="quest-art" id="questArt" aria-hidden="true"><span class="quest-pic" id="questPic"></span><video class="quest-clip" id="questClip" muted loop playsinline autoplay preload="metadata" disablepictureinpicture disableremoteplayback x-webkit-airplay="deny" aria-hidden="true" hidden></video><span class="quest-lock" id="questLock" hidden>Premium</span></span>
         <span class="quest-body"><span class="quest-head"><span class="quest-copy"><span class="quest-chip" id="questChip" hidden></span><span class="quest-title" id="questTitle"></span></span><span class="quest-go" id="questGo" aria-hidden="true"><svg viewBox="0 0 24 24" width="30" height="30"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor"/></svg></span></span><span class="quest-line" id="questLine"></span></span>
       </button>
+        </div>
+        <div class="map-foot"><span class="map-tomorrow" id="mapTomorrow" aria-hidden="true"><svg class="map-lock" viewBox="0 0 24 24" focusable="false"><path d="M8 11V8a4 4 0 0 1 8 0v3"/><rect x="5.5" y="11" width="13" height="9.5" rx="2.5"/></svg><span>Tomorrow</span></span></div>
+      </div>
       <!-- the two doors: a picture and one word each, for a child who can't
            read yet. Books is the one way to the bookshelf: the Arcade has no
            Books card since 23 Oct 2026. -->
@@ -640,6 +662,96 @@
         row.hidden=false;
       }
       try{paintFound();}catch(e){var fr=document.getElementById("foundRow");if(fr)fr.hidden=true;}
+      // THE PLAY MAP'S TRAIL (31 Oct 2026). Drawn from where Echo, the card,
+      // its "Today" flag and tomorrow's pill landed, so it fits every phone
+      // and every fit step (fitHome draws it last, and again on a new width,
+      // fonts ready and coming back to the front): from Echo's feet it waves
+      // under the heading and dives into the card under its flag (the card
+      // covers the rest), comes out under the card and ends at tomorrow. On
+      // it, one gold star for each story this child has finished
+      // (Sona.storyFound(): read only, nothing new stored), spread evenly
+      // between Echo and the flag, the newest nearest today; the one found
+      // today a little bigger, with a soft glow. Never a number: a screen
+      // reader is not told the trail is there (aria-hidden), and nothing on
+      // it moves or takes a tap. Every colour is crafted-home.css's.
+      var SVGNS="http://www.w3.org/2000/svg",STAR="M32 5l8.2 18.6L60 25.8 44.9 39.2 49.8 59 32 48.4 14.2 59l4.9-19.8L4 25.8l19.8-2.2Z";
+      function svgNode(tag,cls,at){
+        var e=document.createElementNS(SVGNS,tag),k;if(cls)e.setAttribute("class",cls);
+        if(at)for(k in at)if(Object.prototype.hasOwnProperty.call(at,k))e.setAttribute(k,String(at[k]));
+        return e;
+      }
+      function r1(n){return Math.round(n*10)/10;}
+      function pt(x,y){return r1(x)+" "+r1(y);}
+      function trailFound(){
+        var n=0,fresh=false;
+        try{n=S.storyFound?S.storyFound().length:0;}catch(e){n=0;}
+        try{var q=S.questToday?S.questToday():null;fresh=!!(q&&q.kind==="story"&&q.state==="done");}catch(e){fresh=false;}
+        n=Math.max(0,Math.min(99,n|0));
+        return {n:n,fresh:fresh&&n>0};
+      }
+      function paintTrail(){
+        var map=document.getElementById("homeMap"),svg=document.getElementById("mapTrail"),card=document.getElementById("questCard");
+        if(!map||!svg)return;
+        var bare=!card||card.hidden;
+        map.classList.toggle("bare",bare);
+        while(svg.firstChild)svg.removeChild(svg.firstChild);
+        var found=trailFound();svg.setAttribute("data-stars",String(bare?0:found.n));
+        if(bare||app.getAttribute("data-view")!=="home")return;
+        var m=map.getBoundingClientRect();if(!(m.width>0&&m.height>0))return;
+        function box(el){var r=el.getBoundingClientRect();return {l:r.left-m.left,t:r.top-m.top,r:r.right-m.left,b:r.bottom-m.top,w:r.width,h:r.height};}
+        var c=box(card),e=box(document.getElementById("mapEcho")),f=box(document.getElementById("mapToday")),p=box(document.getElementById("mapTomorrow"));
+        svg.setAttribute("viewBox","0 0 "+r1(m.width)+" "+r1(m.height));
+        // the little world first, under the trail: a cloud at the head's far
+        // corner, two leaves at the foot's near one, one by tomorrow
+        var cloud=svgNode("g","map-cloud",{transform:"translate("+pt(m.width-56,14)+")"});
+        cloud.appendChild(svgNode("ellipse","",{cx:20,cy:13,rx:20,ry:8}));
+        cloud.appendChild(svgNode("circle","",{cx:14,cy:9,r:8}));
+        cloud.appendChild(svgNode("circle","",{cx:25,cy:7,r:9}));
+        svg.appendChild(cloud);
+        function leaf(x,y,turn,size){
+          var g=svgNode("g","",{transform:"translate("+pt(x,y)+") rotate("+turn+") scale("+r1(size/20)+")"});
+          g.appendChild(svgNode("path","map-leaf",{d:"M0 0C5-8 15-8 20 0C15 8 5 8 0 0Z"}));
+          g.appendChild(svgNode("path","map-vein",{d:"M2 0H16"}));
+          svg.appendChild(g);
+        }
+        var footY=p.t+p.h/2;
+        leaf(c.l+4,footY+6,-28,20);leaf(c.l+20,footY+10,-62,15);
+        leaf(p.l-24,p.b+2,-150,13);
+        // the trail: a soft sand road with dots on it, in two pieces (the
+        // card hides where it runs behind)
+        function road(d){svg.appendChild(svgNode("path","trail-band",{d:d}));var dots=svgNode("path","trail-dots",{d:d});svg.appendChild(dots);return dots;}
+        // (a road carrying many stars waves less, so they stay clear of the
+        // heading above and the card below)
+        var sx=e.l+e.w*0.62,sy=e.b-5,tx=f.l+f.w/2,ty=c.t+16,yr=c.t-13,L=Math.max(40,tx-sx),amp=found.n>8?0.5:1;
+        var a=road("M"+pt(sx,sy)+"C"+pt(sx+L*0.2,sy+9*amp)+" "+pt(sx+L*0.34,yr-11*amp)+" "+pt(sx+L*0.52,yr-2*amp)+"S"+pt(tx-L*0.1,yr-10*amp)+" "+pt(tx,ty));
+        var ex=c.l+c.w*0.24,ey=c.b-16,px=p.l+6,py=p.t+p.h/2;
+        road("M"+pt(ex,ey)+"C"+pt(ex,c.b+14)+" "+pt(ex+16,py)+" "+pt(ex+50,py)+"S"+pt(px-40,py-9)+" "+pt(px,py));
+        if(!found.n)return;
+        // the stars: from just past Echo to just before the flag, along the
+        // road (a phone that cannot measure the road gets them on a line)
+        var len=0,from=0,to=0,s;
+        try{len=a.getTotalLength();}catch(x){len=0;}
+        function at(d){if(len){var q=a.getPointAtLength(d);return {x:q.x,y:q.y};}var k=d/100;return {x:sx+(tx-sx)*k,y:yr};}
+        if(len){
+          for(s=0;s<=len&&at(s).x<e.r-4;s+=2);from=s;
+          for(;s<=len&&at(s).x<f.l-8;s+=2);to=Math.max(from+10,s);
+        }else{from=Math.max(0,(e.r-4-sx)/(tx-sx)*100);to=Math.max(from+10,(f.l-8-sx)/(tx-sx)*100);}
+        // the one found today takes a wider place (it is bigger); a long
+        // trail of stars (two weeks of stories on a small phone) is a
+        // zigzag, every other star a little higher, rather than stars too
+        // small to see; never under the card, which would hide them
+        var wide=found.fresh?1.6:1,gap=(to-from)/(found.n-1+wide),lift=gap<14?11:0,size=Math.max(12,Math.min(20,Math.sqrt(gap*gap+lift*lift)*0.92)),i,g,o,big,z;
+        for(i=0;i<found.n;i++){
+          big=found.fresh&&i===found.n-1;z=big?Math.min(26,size*1.3):size;
+          o=at(from+gap*(big?i+wide/2:i+0.5));
+          if(lift&&i%2!==(found.n-1)%2)o.y-=lift;
+          g=svgNode("g","trail-mark"+(big?" fresh":""),{transform:"translate("+pt(o.x-z/2,o.y-z/2)+") scale("+(Math.round(z/64*1000)/1000)+")"});
+          if(big)g.appendChild(svgNode("circle","trail-glow",{cx:32,cy:33,r:40}));
+          g.appendChild(svgNode("path","trail-star",{d:STAR}));
+          g.appendChild(svgNode("circle","trail-shine",{cx:25,cy:21,r:4}));
+          svg.appendChild(g);
+        }
+      }
       var lockedKey=new URLSearchParams(location.search).get("locked");
       library.groups.forEach(function(group){group.games.forEach(function(game){if(game.key===lockedKey&&!access(game).allowed)showLocked(game);});});
       // BOOKS: the shelf opens for every family (30 Sep 2026). Without
@@ -720,17 +832,31 @@
       // a near-instant transition under Reduce Motion and a box
       // mid-transition reports the size it WAS: a re-fit then stopped early
       // and left the card's foot below the fold.
-      var FIT_STEPS=5;
+      // THE PLAY MAP (31 Oct 2026) adds the board's head (Echo and the
+      // heading) above the card and tomorrow under it, and asks one more
+      // thing of the fit: the Arcade and Books doors on the first screen too
+      // where a gentle step or two puts them there (a 390x844 phone), never
+      // by taking the card past 4:5 (DOOR_STEPS). Where even that is not
+      // enough, the fit is the card's alone, as before, and the doors wait
+      // one swipe away. The card always comes first.
+      var FIT_STEPS=5,DOOR_STEPS=2;
       function fitHome(){
         if(app.getAttribute("data-view")!=="home")return;
-        var card=document.getElementById("questCard"),inset=document.getElementById("homeInset");
+        var card=document.getElementById("questCard"),doors=document.getElementById("homeDoors"),inset=document.getElementById("homeInset");
         var i;for(i=1;i<=FIT_STEPS;i++)app.classList.remove("fit"+i);
-        if(!card||card.hidden)return;
-        function fits(){
+        if(!card||card.hidden){paintTrail();return;}
+        function under(el){
           var y=window.pageYOffset||0,bar=inset?inset.offsetHeight:0;
-          return card.getBoundingClientRect().bottom+y<=window.innerHeight-bar-8;
+          return el.getBoundingClientRect().bottom+y<=window.innerHeight-bar-8;
         }
+        function fits(){return under(card);}
         for(i=1;i<=FIT_STEPS&&!fits();i++)app.classList.add("fit"+i);
+        var j,took=i-1;
+        if(doors&&!under(doors)&&took<DOOR_STEPS){
+          for(j=took+1;j<=DOOR_STEPS&&!under(doors);j++)app.classList.add("fit"+j);
+          if(!under(doors))for(j=took+1;j<=DOOR_STEPS;j++)app.classList.remove("fit"+j);
+        }
+        paintTrail();
       }
       fitHome();
       // a turn or a new width fits again; a height that moves alone (Safari's

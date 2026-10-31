@@ -59,6 +59,11 @@ const onStep = (pg) => pg.evaluate(() => (document.querySelector(".step.on") || 
 // swallow a press that came too soon and the walk would stand still. It waits
 // the pause out, as a parent's finger has to; it never removes it.
 const settledOb = (pg) => pg.waitForFunction(() => !document.body.classList.contains("ob-settling"));
+// THE PLAN MOMENT (31 Oct 2026): on a parent's first setup the press that
+// moves on to the ready screen first shows a short build beat over the page
+// (#obBuild, about 2.2 s); the screen under it changes only when it ends. A
+// press waits it out before anyone reads the screen.
+const beatGone = (pg) => pg.waitForFunction(() => !document.getElementById("obBuild"), null, { timeout: 6000 });
 const RACHEL_LINE = "Built with Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical fellowship.";
 await page.goto("http://localhost:8129/onboarding.html?slp=RACHEL1");
 await page.waitForTimeout(900);
@@ -116,6 +121,7 @@ for (const [who, seed] of [["a fresh family", () => {}],
     const nm = document.querySelector('[data-step="name"] input');
     const seen = [];
     for (let i = 0; i < 16; i++) {
+      while (document.getElementById("obBuild")) await new Promise((r) => setTimeout(r, 50));   // the plan moment's beat: wait it out
       const cur = (document.querySelector(".step.on") || {}).dataset?.step;
       if (!cur) break;
       seen.push(cur + ":" + (/(echo-avatar\.svg|echo-welcome\.webp)/.test(document.getElementById("leo").innerHTML) ? "echo" : "other"));
@@ -138,7 +144,7 @@ for (const [who, seed] of [["a fresh family", () => {}],
 
 // ── the real walk, to the hand-off ──
 // one press of whatever moves setup on (the stepper above)
-const clickNext = async () => { await settledOb(page); await page.evaluate(STEP); await page.waitForTimeout(250); };
+const clickNext = async () => { await settledOb(page); await page.evaluate(STEP); await page.waitForTimeout(250); await beatGone(page); };
 await clickNext(); // the hello → "Speech homework is hard at home."
 ok("after the hello comes the problem, the first screen that sells Sona", (await onStep(page)) === "problem", await onStep(page));
 await clickNext(); await clickNext(); await clickNext(); // → Fruit Slice → Piano Tiles → Rachel, on her own
@@ -162,8 +168,10 @@ await clickNext(); // Skip → ready
 // "<NAME>'S PRACTICE IS READY!" (5 Oct 2026; Rachel on her own screen since
 // 22 Oct). It repeats back what the parent picked. It is a Continue, not a
 // question: no field, no choice and no progress segment, which is why the
-// five groups above still match the five questions. It also replaced the
-// 2-second "building the plan" beat on the parent path.
+// five groups above still match the five questions. It replaced the 2-second
+// "building the plan" beat on the parent path in October; since 31 Oct 2026 a
+// first setup has its own short beat again (the plan moment, setupscreenstest),
+// gone before this screen shows.
 const meet = await page.evaluate(() => {
   const st = document.querySelector('[data-step="ready"]');
   return { step: (document.querySelector(".step.on") || {}).dataset?.step,
@@ -176,7 +184,7 @@ const meet = await page.evaluate(() => {
 });
 ok("the screen after the email step is \"Milo's practice is ready!\", it asks nothing, and Rachel is not on it (she had her own screen)",
   meet.step === "ready" && meet.title === "Milo's practice is ready!" && meet.asks === 0 && meet.segHidden && !meet.rachel, JSON.stringify(meet));
-ok("…on the page's cream (no card), with no build beat on the parent path, and nothing saved until its Continue",
+ok("…on the page's cream (no card), the build beat gone before it shows, and nothing saved until its Continue",
   meet.card === "rgba(0, 0, 0, 0)" && meet.body === "rgb(255, 245, 233)" && !meet.build && !meet.saved, JSON.stringify(meet));
 await clickNext(); // ready → mic (the profile is saved here)
 ok("no build beat covers the microphone step either",
@@ -266,7 +274,7 @@ ok("onboarding no pageerrors", errs.length === 0);
   await pg.goto("http://localhost:8129/onboarding.html"); await pg.waitForTimeout(800);
   await pg.evaluate(() => { localStorage.clear(); sessionStorage.clear(); });
   await pg.goto("http://localhost:8129/onboarding.html"); await pg.waitForTimeout(800);
-  const hop = async (ms) => { await settledOb(pg); await pg.evaluate(STEP); await pg.waitForTimeout(ms || 250); };
+  const hop = async (ms) => { await settledOb(pg); await pg.evaluate(STEP); await pg.waitForTimeout(ms || 250); await beatGone(pg); };
   await hop(); await hop(); await hop(); await hop(); await hop(); // hello → problem → Fruit Slice → Piano Tiles → Rachel → name
   await pg.evaluate(() => { document.getElementById("obName").value = "Rosie"; });
   await pg.evaluate(() => document.querySelector('#obAge .sound[data-age="6"]').click());
@@ -338,7 +346,7 @@ ok("onboarding no pageerrors", errs.length === 0);
     !/recommend|we think|based on|diagnos(is|e)\b|assess(ment)?\b/i.test(door.says.replace(/doesn't test or diagnose/, "")),
     door.says.slice(0, 200));
 
-  const hop = async (ms) => { await settledOb(pg); await pg.evaluate(STEP); await pg.waitForTimeout(ms || 250); };
+  const hop = async (ms) => { await settledOb(pg); await pg.evaluate(STEP); await pg.waitForTimeout(ms || 250); await beatGone(pg); };
   await hop(); await hop(); await hop(); await hop(); await hop(); // hello → problem → Fruit Slice → Piano Tiles → Rachel → name
   await pg.evaluate(() => { document.getElementById("obName").value = "Sam"; });
   await hop(); await hop(); await hop(); // name → what they love → their games → therapy

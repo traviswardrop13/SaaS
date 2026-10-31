@@ -579,13 +579,19 @@ export async function calm(page) {
 //   Pick all sounds"), minutes ("5", or "skip"), email (none: Skip),
 //   remind ("no" | "yes"), mic ("notnow" | "ask").
 // → the screens seen, in order, ending with the one it stopped on.
+// THE PLAN MOMENT'S BEAT (31 Oct 2026): on a parent's first setup the answer
+// that moves on to the ready screen first shows a build beat over the page
+// (#obBuild, body.ob-building: about 2.2 s, 1 s under Reduce Motion), and the
+// screen under it keeps its name until the beat ends. The walk waits it out
+// (beatOver) and never answers through it.
+export const beatOver = (page, timeout = 8000) => page.waitForFunction(() => !document.body || (!document.getElementById("obBuild") && !document.body.classList.contains("ob-building")), null, { timeout }).catch(() => {});
 export async function setupWalk(page, to, a = {}) {
   const seen = [];
   const screen = () => page.evaluate(() => location.pathname === "/onboarding.html" && document.body ? document.body.dataset.setupScreen : "");
   const tap = async (sel) => { await calm(page); await page.locator(sel).click(); };
   for (let i = 0; i < 30; i++) {
     let s = "";
-    try { s = await screen(); } catch (e) { return seen; }
+    try { await beatOver(page); s = await screen(); } catch (e) { return seen; }
     if (!s) return seen;
     if (seen[seen.length - 1] !== s) seen.push(s);
     if (s === to) return seen;
@@ -619,8 +625,9 @@ export async function setupWalk(page, to, a = {}) {
     } else if (s === "remind") await tap(a.remind === "yes" ? "#remindYes" : "#remindNo");
     else if (s === "mic") await tap(a.mic === "ask" ? "#nextBtn" : "#micNotNow");
     else throw new Error("setupWalk cannot walk on from " + s);
-    // on once the screen has changed (or the page has gone to the price or a game)
-    try { await page.waitForFunction((k) => location.pathname !== "/onboarding.html" || !document.body || document.body.dataset.setupScreen !== k, s, { timeout: 6000 }); } catch (e) {
+    // on once the screen has changed (or the page has gone to the price or a
+    // game): the beat before the ready screen is waited out here too
+    try { await page.waitForFunction((k) => location.pathname !== "/onboarding.html" || !document.body || document.body.dataset.setupScreen !== k, s, { timeout: 9000 }); } catch (e) {
       if (!/destroyed|navigation|closed/i.test(String(e && e.message))) throw new Error("setupWalk: still on " + s + " after answering it");
     }
   }

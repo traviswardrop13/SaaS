@@ -131,8 +131,43 @@ body::before{content:"";position:fixed;left:0;right:0;top:0;height:env(safe-area
    hidden on its wrapper only: a block's own [hidden] belongs to its painter
    (the story card, the road card, the preview notice). */
 #libraryApp[data-view="home"] .arcade-only,#libraryApp[data-view="arcade"] .home-only{display:none;}
-#homeTitle{font:800 32px/1.08 "Baloo 2",sans-serif;letter-spacing:-.7px;color:var(--ink);margin:18px 0 13px;}
 #homeTitle:focus,#arcadeTitle:focus{outline:none;}
+
+/* THE PLAY MAP (31 Oct 2026; Travis: "yes build play map with those
+   changes"). Home is a little world on a soft mint board, as wide as the
+   page and a little wider (its padding is the page's own margin, so the
+   card inside keeps the whole width): its head is Echo standing at the
+   start of the trail beside "Let's explore."; then today's card, the day's
+   reel (HOMECLIP1), with a "Today" flag where the trail dives into it; then
+   its foot, where the trail comes out and ends at tomorrow, a dark locked
+   pill. The trail, its gold stars (one a story finished), the leaves and
+   the cloud are drawn by today.html (paintTrail) on #mapTrail, under
+   everything, from where these landed; their colours are all here. Nothing
+   on the board moves, and only the card takes a tap. */
+#homeMap{--map-head:72px;--map-foot:46px;position:relative;margin:6px -12px 0;padding:6px 11px 2px;border-radius:30px;background:linear-gradient(180deg,#e1f2e7 0%,#eaf6ec 55%,#f3f4e5 100%);border:1px solid #d5e9da;box-shadow:inset 0 1px 0 #ffffffb3,0 3px 0 #d9e9d9;}
+#mapTrail{position:absolute;left:0;top:0;width:100%;height:100%;overflow:visible;pointer-events:none;z-index:0;}
+.map-head{position:relative;z-index:1;display:flex;align-items:flex-start;gap:8px;height:var(--map-head);}
+.map-echo{flex:none;display:block;width:56px;height:64px;margin-top:2px;}
+.map-echo img{display:block;width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 4px 3px #2f4a3a2b);}
+#homeTitle{flex:1;min-width:0;margin:7px 0 0;font:800 30px/1.05 "Baloo 2",sans-serif;letter-spacing:-.7px;color:var(--ink);}
+.map-spot{position:relative;z-index:1;}
+/* the flag sits on the card's top edge, left of the Premium tag's corner */
+.map-today{position:absolute;z-index:2;left:70%;top:-15px;transform:translateX(-50%);padding:4px 11px 3px;border-radius:99px;background:#fffdf7;color:var(--ink);font:800 12px/1.2 "Baloo 2",sans-serif;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;box-shadow:0 2px 0 #d8cbb0,0 3px 8px #2f4a3a1f;pointer-events:none;}
+.map-foot{position:relative;z-index:1;display:flex;align-items:center;justify-content:flex-end;height:var(--map-foot);}
+.map-tomorrow{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 13px 0 10px;border-radius:99px;background:#3a2b20;color:#fff1de;font:800 13px/1 "Baloo 2",sans-serif;box-shadow:0 3px 0 #1f150e59;pointer-events:none;}
+.map-lock{display:block;flex:none;width:15px;height:15px;}
+.map-lock path,.map-lock rect{fill:none;stroke:#f4dcb6;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;}
+/* no card today (a catalog that cannot name one): no trail, no flag, no tomorrow */
+#homeMap.bare #mapTrail,#homeMap.bare .map-today,#homeMap.bare .map-foot{display:none;}
+/* the trail: a soft sand road with dots on it, and what lies on it */
+#mapTrail .trail-band{fill:none;stroke:#f3e4c6;stroke-width:14;stroke-linecap:round;stroke-linejoin:round;}
+#mapTrail .trail-dots{fill:none;stroke:#c6a573;stroke-width:4.5;stroke-linecap:round;stroke-dasharray:.1 11;}
+#mapTrail .trail-star{fill:#f7c948;stroke:#d69f2b;stroke-width:4;stroke-linejoin:round;}
+#mapTrail .trail-shine{fill:#fff;opacity:.85;}
+#mapTrail .trail-glow{fill:#fff3c4;opacity:.95;}
+#mapTrail .map-leaf{fill:#a3d6b6;}
+#mapTrail .map-vein{fill:none;stroke:#7cbb96;stroke-width:1.5;stroke-linecap:round;}
+#mapTrail .map-cloud{fill:#fff;opacity:.92;}
 /* the phone's home bar: measured by the fit, never seen */
 #homeInset{position:absolute;left:0;bottom:0;width:0;height:env(safe-area-inset-bottom);visibility:hidden;pointer-events:none;}
 
@@ -171,6 +206,12 @@ body::before{content:"";position:fixed;left:0;right:0;top:0;height:env(safe-area
 .quest-art[data-story="observatory"]{background:#c4945a;}
 .quest-art[data-story="frontdoor"]{background:#94ac7d;}
 .quest-art[data-story="nestlift"]{background:#d99a62;}
+/* TALK1: Day 1's talking stories, each its own wash (talk-stories.js) */
+.quest-art[data-story="robo"]{background:#3a4f8a;}
+.quest-art[data-story="sandy"]{background:#3fa7b5;}
+.quest-art[data-story="lulu"]{background:#34507a;}
+.quest-art[data-story="zippy"]{background:#62a87a;}
+.quest-art[data-story="fizz"]{background:#3b5b4b;}
 .quest-pic{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;}
 .quest-pic img{display:block;width:100%;height:100%;object-fit:cover;}
 .quest-pic svg{width:46%;height:auto;max-height:86%;}
@@ -236,19 +277,23 @@ body::before{content:"";position:fixed;left:0;right:0;top:0;height:env(safe-area
 #homeBack:active{transform:translateY(2px);box-shadow:0 1px 0 var(--cream-line);}
 .arcade-top+.library-intro{margin-top:12px;}
 
-/* the fit's steps (fitHome in today.html): the heading's type and gaps
-   first, then the card's picture (3:4, the day's reel, gives way last:
-   4:5, 1:1 with tighter words over it, 5:4, and 4:3 at the flattest). The
-   doors and "Your games" come after the card and may fall below the first
-   screen, so no step touches them (HOMECLIP1, 28 Oct 2026).
-   Everything a step resizes never transitions: sona.css gives every property
-   a 0.01 ms transition under Reduce Motion, and a box mid-transition reports
-   the size it WAS, so the fit measured a step as doing nothing, and a re-fit
-   (coming back to the front) stopped early and left the card's foot off
-   screen. .quest-art carries it on its own rule; a new rule below adds its
-   element here (homestorytest checks every one). */
-#homeTitle,.quest-body,.quest-title,.quest-line,#homeDoors,#trialBanner,.door-word{transition:none;}
-#libraryApp.fit1 #homeTitle{font-size:26px;margin:10px 0 8px;}
+/* the fit's steps (fitHome in today.html): the board's head and foot,
+   the heading's type and gaps first, then the card's picture (3:4, the
+   day's reel, gives way last: 4:5, 1:1 with tighter words over it, 5:4,
+   and 4:3 at the flattest). The fit holds the card's foot on the first
+   screen (HOMECLIP1, 28 Oct 2026); since the Play Map (31 Oct 2026) it
+   also takes up to two steps, never past 4:5, when that puts the Arcade
+   and Books doors on the first screen too (a 390x844 phone). "Your games"
+   may fall below. Everything a step resizes never transitions: sona.css
+   gives every property a 0.01 ms transition under Reduce Motion, and a box
+   mid-transition reports the size it WAS, so the fit measured a step as
+   doing nothing, and a re-fit (coming back to the front) stopped early and
+   left the card's foot off screen. .quest-art carries it on its own rule; a
+   new rule below adds its element here (homestorytest checks every one). */
+#homeTitle,#homeMap,.map-head,.map-echo,.map-foot,.quest-body,.quest-title,.quest-line,#homeDoors,#trialBanner,.door-word{transition:none;}
+#libraryApp.fit1 #homeMap{--map-head:54px;--map-foot:42px;margin-top:0;padding-top:4px;}
+#libraryApp.fit1 .map-echo{width:46px;height:53px;margin-top:0;}
+#libraryApp.fit1 #homeTitle{font-size:25px;margin-top:6px;}
 #libraryApp.fit1 #trialBanner{margin-top:10px;}
 #libraryApp.fit2 .quest-art{aspect-ratio:4/5;}
 #libraryApp.fit3 .quest-art{aspect-ratio:1/1;}
@@ -258,6 +303,6 @@ body::before{content:"";position:fixed;left:0;right:0;top:0;height:env(safe-area
 #libraryApp.fit4 .quest-art{aspect-ratio:5/4;}
 #libraryApp.fit5 .quest-art{aspect-ratio:4/3;}
 
-@media(min-width:600px){#homeTitle{font-size:40px;margin:24px 0 16px;text-align:center;}#questCard{max-width:480px;margin:0 auto;}.quest-title{font-size:30px;}.quest-line{font-size:16px;}.quest-body{padding:70px 20px 20px 22px;gap:9px;}#homeDoors{gap:16px;margin:18px 0 20px;}#homeDoors>button{flex-direction:row;align-items:center;gap:14px;padding:8px 14px 8px 8px;}.door-pic{width:138px;height:92px;aspect-ratio:auto;border-radius:15px;}.door-copy{padding:0;gap:5px;}.door-word{font-size:26px;}.door-sub{font-size:13px;}}
-@media(max-width:350px){#homeTitle{font-size:28px;margin:14px 0 10px;}.quest-title{font-size:23px;}.quest-line{font-size:13.5px;}.quest-body{padding:48px 12px 12px 14px;gap:6px;}.quest-head{gap:10px;}#homeDoors{gap:10px;}.door-copy{padding:7px 10px 9px;}.door-word{font-size:19px;}}
+@media(min-width:600px){#homeMap{--map-head:84px;--map-foot:50px;max-width:524px;margin:12px auto 0;padding:8px 21px 4px;border-radius:34px;}.map-echo{width:66px;height:76px;}#homeTitle{font-size:40px;margin-top:10px;}#questCard{max-width:480px;margin:0 auto;}.quest-title{font-size:30px;}.quest-line{font-size:16px;}.quest-body{padding:70px 20px 20px 22px;gap:9px;}#homeDoors{gap:16px;margin:18px 0 20px;}#homeDoors>button{flex-direction:row;align-items:center;gap:14px;padding:8px 14px 8px 8px;}.door-pic{width:138px;height:92px;aspect-ratio:auto;border-radius:15px;}.door-copy{padding:0;gap:5px;}.door-word{font-size:26px;}.door-sub{font-size:13px;}}
+@media(max-width:350px){#homeMap{--map-head:64px;margin:4px -10px 0;padding:4px 9px 2px;border-radius:26px;}.map-echo{width:50px;height:57px;}#homeTitle{font-size:26px;}.quest-title{font-size:23px;}.quest-line{font-size:13.5px;}.quest-body{padding:48px 12px 12px 14px;gap:6px;}.quest-head{gap:10px;}#homeDoors{gap:10px;}.door-copy{padding:7px 10px 9px;}.door-word{font-size:19px;}}
 @media(prefers-reduced-motion:reduce){#questCard,#homeDoors>button,#homeBack{transition:none;}#questCard:active,#homeDoors>button:active,#homeBack:active{transform:none;}}

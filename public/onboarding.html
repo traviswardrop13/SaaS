@@ -51,6 +51,7 @@
     .step{display:none;} .step.on{display:block;animation:sona-slide-up .42s cubic-bezier(.2,.8,.3,1) both;}
     #obBuild{position:fixed;inset:0;z-index:60;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:14px;padding:30px;}
     #obBuild.show{display:flex;}
+    #obBuild:focus{outline:none;}
     #obBuildT{font-family:"Baloo 2";font-size:24px;line-height:1.25;}
     #obBuildAnswers{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;max-width:340px;}
     #obBuildAnswers span{padding:9px 13px;border-radius:14px;font-weight:800;opacity:0;transform:translateY(6px);transition:opacity .25s,transform .25s;}
@@ -317,6 +318,10 @@
          does not test or diagnose. Rachel has her own screen since 22 Oct
          2026. Where no reminder screen follows, this screen's Continue is
          where the profile is saved.
+         THE PLAN MOMENT (31 Oct 2026): on a parent's first setup a short
+         build beat comes first (planBeat, below), and the screen carries the
+         plan card: what Day 1 will be, a fact about Sona's calendar, never
+         about the child.
          ph-no-capture (REPLAY1): this screen repeats the speech therapy
          answer (#readyLines), and its size alone would tell it, so no
          recording ever holds it; recording is also off while it shows -->
@@ -324,6 +329,23 @@
       <div class="ready-echo" aria-hidden="true"><i class="spark spark-a"></i><i class="spark spark-b"></i><i class="spark spark-c"></i><img src="/assets/crafted/echo-cheer.webp" alt="" /></div>
       <h1 class="qh" id="readyTitle" tabindex="-1"></h1>
       <ul class="ready-chips" id="readyChips" aria-label="What you told us"></ul>
+      <!-- THE PLAN CARD (Travis, 31 Oct 2026: "build the plan moment and
+           straight into day 1"): the story this child meets as Day 1, read
+           from sona.js (Sona.day1For, the rule Home's card uses once the
+           profile is saved: the talking story in the first of the child's
+           sounds that has one, else the lighthouse), its Home picture, a
+           "Day 1" pill, its title and its Home line, and one line under it.
+           A parent's first setup only, and only where this child will be
+           shown a story (Sona.storyShown: a phone that cannot buy, without
+           Premium, shows the game of the day instead, so it would be a
+           promise nobody keeps). No button, no link: a statement. A picture
+           that fails to load is never a broken image: it steps aside. The
+           words are Travis's and Rachel's to change. -->
+      <div class="plan-card" id="planCard" hidden>
+        <span class="plan-pic" id="planPic" aria-hidden="true"><img id="planImg" alt="" width="768" height="432" decoding="async" /></span>
+        <span class="plan-words"><span class="plan-day">Day 1</span><span class="plan-title" id="planTitle"></span><span class="plan-line" id="planLine"></span></span>
+      </div>
+      <p class="plan-more" id="planMore" hidden>A new story every day.</p>
       <ul class="ready-lines" id="readyLines" hidden></ul>
       <p class="muted ready-hedge">Sona practices — it doesn't test or diagnose.</p>
     </div>
@@ -695,10 +717,18 @@
       });
       return remindP;
     }
+    // THE PLAN MOMENT (Travis, 31 Oct 2026: "build the plan moment and
+    // straight into day 1"): on a parent's FIRST setup only (the walk that
+    // sells and asks the questions; never a child walking setup again, a
+    // second child or a clinician), the ready screen is reached through a
+    // short build beat and carries the plan card (Day 1's story). Set with
+    // the order, which is what decides that walk.
+    var PLAN_MOMENT=false;
     function setParentOrder(){
       var asks=!SECOND&&!ASKED&&draft.role!=="slp";   // once per family, never of a clinician
       var mail=false;try{mail=asks&&!(Sona.parentEmail&&Sona.parentEmail());}catch(e){}
       var sell=asks&&!p.onboarded;
+      PLAN_MOMENT=sell;
       var o=asks?["welcome"].concat(sell?SELL_FIRST:[],["name"],sell?SELL_AFTER:[],["therapy","sounds","minutes"],mail?["updates"]:[],["ready"],sell&&remindMay()?["remind"]:[],["mic"])
                 :["welcome","name","sounds","ready","mic"];
       ORDER_PARENT.length=0; Array.prototype.push.apply(ORDER_PARENT,o);
@@ -1019,19 +1049,72 @@
       draft.email="";updEl.value="";updMsg.textContent="";updEl.classList.remove("needed");
       saveDraft();settle();idx++;whenRoomy(render);
     };
+    // What the parent told us, as the ready screen's chips say it (and the
+    // build beat before it, the same words): the age group if one was
+    // picked, the sounds, the minutes a day if this walk asked and one was
+    // picked. One list, so the beat can never show an answer the screen
+    // after it does not.
+    function readyAnswers(){
+      var out=[],age=Number(draft.childAge);
+      if(age>=2&&age<=4)out.push("Ages 2–4");else if(age>=5&&age<=6)out.push("Ages 5–6");else if(age>=7)out.push("Ages 7+");
+      var labels=Array.from(selSounds).map(function(s){return Sona.soundLabel?Sona.soundLabel(s):s;});
+      out.push(draft.mode==="play"?"Every sound, easiest first":(labels.length===1?"Sound: ":"Sounds: ")+labels.join(" · "));
+      if(ORDER.indexOf("minutes")>-1&&MINUTE_REPS[draft.minutes])out.push(draft.minutes+" min a day");
+      return out;
+    }
+    // The sounds the profile will hold (saveSetup writes exactly these):
+    // the picks in the order they were picked, or every sound, easiest first.
+    function savedSounds(){return (draft.mode==="play"&&Sona.PLAY_ORDER)?Sona.PLAY_ORDER.slice():Array.from(selSounds);}
+    // THE PLAN CARD: Day 1's story for the sounds about to be saved, where
+    // this child will be shown one (see the markup). null: no card.
+    function planStory(){
+      try{
+        if(!PLAN_MOMENT||ORDER!==ORDER_PARENT||draft.role==="slp"||!Sona.day1For||!(Sona.storyShown&&Sona.storyShown()))return null;
+        return Sona.day1For(savedSounds());
+      }catch(e){return null;}
+    }
+    // Its picture is asked for as soon as the sounds are known (the screens
+    // after the sounds, and the build beat), so it has landed, or failed,
+    // before the ready screen is drawn: the card is laid out once. One that
+    // has failed by then is left out (the card is its words alone); one that
+    // fails while the screen shows keeps its box, empty, so nothing moves
+    // under a finger. Never a broken image. (No talking story has a Home
+    // picture yet, 31 Oct 2026: those cards are words alone.)
+    var planCard=document.getElementById("planCard"),planPic=document.getElementById("planPic"),planImg=document.getElementById("planImg"),planSrc="",planState="";
+    // (a picture that failed carries .gone, setup's mark for that, as the
+    // reel's stills did: drawn empty in its box, never as a broken image)
+    function planPicPaint(){
+      var drawn=ORDER[idx]==="ready"&&steps.ready.classList.contains("on")&&!planCard.hidden,gone=planState==="gone";
+      planImg.classList.toggle("gone",gone);
+      if(!drawn)planPic.hidden=gone;
+    }
+    planImg.addEventListener("load",function(){if(planImg.getAttribute("src")!==planSrc)return;planState=planImg.naturalWidth>0?"ok":"gone";planPicPaint();});
+    planImg.addEventListener("error",function(){if(planImg.getAttribute("src")!==planSrc)return;planState="gone";planPicPaint();});
+    function planPrep(){
+      var d=planStory();if(!d||d.pic===planSrc)return;
+      planSrc=d.pic;planState="wait";planPic.hidden=false;planImg.classList.remove("gone");planImg.src=d.pic;
+    }
+    function paintPlan(){
+      var d=planStory(),more=document.getElementById("planMore");
+      planCard.hidden=more.hidden=!d;
+      if(!d)return;
+      planPrep();
+      document.getElementById("planTitle").textContent=d.title;
+      document.getElementById("planLine").textContent=d.line;
+      planCard.dataset.story=d.id;
+      planPic.hidden=planState==="gone";
+    }
     // The ready screen, built ONLY from what the parent gave us: textContent
     // throughout, the age group only if one was picked, and no sentence for a
     // question that was skipped, was not asked, or was a clinician's setup.
+    // (The plan card beside it says what Sona's calendar holds, never
+    // anything about the child.)
     function paintReady(){
       var nm=(nameEl.value||draft.childName||"").trim();
       document.getElementById("readyTitle").textContent=nm?nm+"'s practice is ready!":"Practice is ready!";
       var chips=document.getElementById("readyChips");chips.innerHTML="";
-      function chip(t){var li=document.createElement("li");li.textContent=t;chips.appendChild(li);}
-      var age=Number(draft.childAge);
-      if(age>=2&&age<=4)chip("Ages 2–4");else if(age>=5&&age<=6)chip("Ages 5–6");else if(age>=7)chip("Ages 7+");
-      var labels=Array.from(selSounds).map(function(s){return Sona.soundLabel?Sona.soundLabel(s):s;});
-      chip(draft.mode==="play"?"Every sound, easiest first":(labels.length===1?"Sound: ":"Sounds: ")+labels.join(" · "));
-      if(ORDER.indexOf("minutes")>-1&&MINUTE_REPS[draft.minutes])chip(draft.minutes+" min a day");
+      readyAnswers().forEach(function(t){var li=document.createElement("li");li.textContent=t;chips.appendChild(li);});
+      paintPlan();
       var lines=document.getElementById("readyLines");lines.innerHTML="";
       if(draft.role!=="slp")[["therapy",READY_THERAPY]].forEach(function(pr){
         var t=ORDER.indexOf(pr[0])>-1&&pr[1][draft[pr[0]]];
@@ -1180,6 +1263,12 @@
     function render(){
       var key=ORDER[idx];
       replayAt(key,false);
+      // the plan moment: the ready screen of a first setup is reached through
+      // its build beat, once a visit (planBeat draws this screen when it ends)
+      if(key==="ready"&&PLAN_MOMENT&&ORDER===ORDER_PARENT&&!beatDone&&!saved&&!finished){planBeat();return;}
+      // Day 1's picture is asked for as soon as the sounds are known, so the
+      // plan card is laid out once (planPrep: nothing where no card shows)
+      if(key==="minutes"||key==="updates")planPrep();
       if(document.activeElement&&document.activeElement.tagName==="INPUT")document.activeElement.blur();
       ORDER.forEach(function(k,i){ steps[k].classList.toggle("on", i===idx); });
       document.getElementById("obExploreOption").hidden=ORDER!==ORDER_PARENT;
@@ -1227,7 +1316,7 @@
     }
 
     function next(){
-      if(finished||micBusy||leaving||asking||settling())return;
+      if(finished||micBusy||leaving||asking||beating||settling())return;
       var key=ORDER[idx];
       // the question's two answers are its only way on: Continue is hidden
       // there, and a stray press must not pick "parent" for them
@@ -1267,19 +1356,62 @@
       if(idx < ORDER.length-1){ settle(); idx++; whenRoomy(render); return; }
       finish();
     }
-    function showBuild(done){
-      var nm=(nameEl.value||draft.childName||"").trim()||"your child",d=document.createElement("div");d.id="obBuild";d.className="show ph-no-capture";
-      d.setAttribute("role","status");d.setAttribute("aria-live","polite");
+    // A BUILD BEAT: Echo, one line ("Building <Name>'s …"), and the parent's
+    // answers coming in one by one over the page, then done(). Two of them:
+    // the browser clinician's before the hand-off (showBuild, its words as
+    // they were) and the plan moment's before the ready screen (planBeat).
+    // Silent. ph-no-capture, and recording is already off whenever one shows
+    // (REPLAY1). The name goes in by textContent only, in a ph-name span.
+    // answers: shown from `at` ms, one every `gap` ms (a gap below 0: all
+    // at once); the beat ends after `ms`.
+    function buildBeat(head,nm,answers,at,gap,ms,done){
+      var d=document.createElement("div");d.id="obBuild";d.className="show ph-no-capture";
+      d.setAttribute("role","status");d.setAttribute("aria-live","polite");d.tabIndex=-1;
       d.innerHTML='<img src="/assets/crafted/echo-welcome.webp" alt="" /><div id="obBuildT"></div><div id="obBuildAnswers"></div>';
       document.body.appendChild(d);
-      document.getElementById("obBuildT").textContent="Building "+nm+"'s "+(draft.mode==="play"?"play list":"sound plan")+"…";
+      var t=document.getElementById("obBuildT"),n=document.createElement("span"),host=document.getElementById("obBuildAnswers");
+      n.className="ph-name";n.textContent=nm;
+      t.appendChild(document.createTextNode(head[0]));t.appendChild(n);t.appendChild(document.createTextNode(head[1]));
+      answers.forEach(function(answer,i){var item=document.createElement("span");item.textContent=answer;host.appendChild(item);if(gap<0)item.classList.add("on");else setTimeout(function(){item.classList.add("on");},at+i*gap);});
+      setTimeout(function(){d.remove();done();},ms);
+      return d;
+    }
+    function showBuild(done){
+      var nm=(nameEl.value||draft.childName||"").trim()||"your child";
       var age=Number(draft.childAge),ageLabel=age>=2&&age<=4?"Ages 2–4":age>=5&&age<=6?"Ages 5–6":age>=7?"Ages 7+":"Your pace";
       var sounds=draft.mode==="play"?"Every sound, easiest first":Array.from(selSounds).map(function(s){return Sona.soundLabel?Sona.soundLabel(s):s;}).join(" · ");
-      [nm,ageLabel,sounds].forEach(function(answer,i){var item=document.createElement("span");item.textContent=answer;document.getElementById("obBuildAnswers").appendChild(item);setTimeout(function(){item.classList.add("on");},150+i*450);});
-      setTimeout(function(){d.remove();done();},2000);
+      buildBeat(["Building ","'s "+(draft.mode==="play"?"play list":"sound plan")+"…"],nm,[nm,ageLabel,sounds],150,450,2000,done);
+    }
+    // THE PLAN MOMENT'S BEAT (Travis, 31 Oct 2026: "build the plan moment
+    // and straight into day 1"). Moving forward onto the ready screen on a
+    // parent's first setup (render() calls it), the page shows "Building
+    // <Name>'s practice…" with the ready screen's own answers coming in one
+    // by one (readyAnswers: the age group, the sounds or "Every sound,
+    // easiest first", "N min a day"), about 2.2 s, then the ready screen.
+    // Under Reduce Motion everything is there at once, for about 1 s. Once a
+    // visit (a page load): Back from ready and on again goes straight there.
+    // While it shows, Back and Continue do nothing (beating) and the page
+    // under it takes no tap or key (inert). Recording is off from its first
+    // frame (render's replayAt, before it). The length and every word are
+    // Travis's and Rachel's to change.
+    var PLAN_BEAT_MS=2200,PLAN_BEAT_STILL_MS=1000,beatDone=false,beating=false;
+    function stillMotion(){try{return window.matchMedia("(prefers-reduced-motion: reduce)").matches;}catch(e){return false;}}
+    function planBeat(){
+      beatDone=true;beating=true;
+      var still=stillMotion(),under=[document.querySelector(".ob"),document.querySelector(".obfoot")];
+      try{var a=document.activeElement;if(a&&a.blur)a.blur();}catch(e){}
+      under.forEach(function(el){if(el)el.inert=true;});document.body.classList.add("ob-building");
+      planPrep();   // Day 1's picture, if it was not on its way already
+      var nm=(nameEl.value||draft.childName||"").trim()||"your child";
+      var d=buildBeat(["Building ","'s practice…"],nm,readyAnswers(),still?0:350,still?-1:500,still?PLAN_BEAT_STILL_MS:PLAN_BEAT_MS,function(){
+        under.forEach(function(el){if(el)el.inert=false;});document.body.classList.remove("ob-building");
+        beating=false;settle();render();
+      });
+      d.classList.add("plan");
+      try{d.focus({preventScroll:true});}catch(e){}
     }
     function back(){
-      if(idx<=0||micBusy||finished||saved||leaving||asking) return;
+      if(idx<=0||micBusy||finished||saved||leaving||asking||beating) return;
       // Back from the email step keeps what was typed, so coming forward again
       // shows it; it is only ever checked by Continue and thrown away by Skip
       if(ORDER[idx]==="updates") draft.email=(updEl.value||"").trim();
@@ -1311,7 +1443,7 @@
     // only: a second call does nothing.
     function saveSetup(){
       if(saved)return;saved=true;
-      draft.focusSounds = (draft.mode==="play" && Sona.PLAY_ORDER) ? Sona.PLAY_ORDER.slice() : Array.from(selSounds);
+      draft.focusSounds = savedSounds();   // the list the plan card read Day 1 from
       var _slp=""; try{ _slp=(Sona.slpCode&&Sona.slpCode())||""; }catch(e){}
       // NO GRANT IS WRITTEN HERE ANY MORE (24 Sep 2026). This used to set
       // earlyAdopter from slpVerified(), so a verified clinician's link made a
@@ -1477,9 +1609,22 @@
     // still "leaving": load it again so it decides from what is stored.
     window.addEventListener("pageshow",function(e){if(e.persisted&&saved&&!finished)location.reload();});
 
-    // THE HAND-OFF: "Hand the phone to <Name>!" and the tap that opens the
-    // first game. A parent reaches it from the microphone step; the browser
-    // clinician after the build beat. It asks for nothing: the email came
+    // Today's story, open to this child right now: Home's card would be a
+    // story (Sona.questToday: kind "story", state "open") AND it opens
+    // (Sona.storyOpen: Premium, a trial or Sona free; never one shown
+    // locked). Read at the hand-off's last tap, from stored state only, so a
+    // trial that started on the price screen counts. Read only.
+    function storyNow(){
+      try{
+        if(!Sona.questToday||!Sona.storyOpen||!Sona.storyOpen())return false;
+        var q=Sona.questToday();
+        return !!(q&&q.kind==="story"&&q.state==="open");
+      }catch(e){return false;}
+    }
+    // THE HAND-OFF: "Hand the phone to <Name>!" and the tap that opens Day
+    // 1's story, Home or the first game. A parent reaches it from the
+    // microphone step; the browser clinician after the build beat. It asks
+    // for nothing: the email came
     // before the price (the "updates" step, 13 Oct 2026), so a family back
     // from a purchase, a second child or a family already asked meets no box.
     // It settles like every other step change: nothing stands between the
@@ -1520,9 +1665,19 @@
           // (Travis, 17 Oct 2026: "once I start a trial, I don't want it to
           // go jump straight into a game"). A phone with nothing to sell
           // still opens the first game.
+          // STRAIGHT INTO DAY 1 (Travis, 31 Oct 2026: "build the plan moment
+          // and straight into day 1"): whenever today's story is open to this
+          // child right now (storyNow: the story the ready screen's plan card
+          // named, on a first setup), "Let's play!" opens it, the story
+          // player (/adventure.html; in the iPhone app the story starts at
+          // once), in place of Home or the first game. That replaces the 17
+          // Oct "go to the homepage" for a family whose free days just
+          // started. Otherwise everything is as it was. The first game's mark
+          // is written exactly as before; a clinician still ends on Home.
           var wall=false;try{wall=draft.role!=="slp"&&!!(Sona.trialFirst&&Sona.trialFirst());}catch(e){}
           if(wall){try{sessionStorage.setItem("sona.gate.v1",String(Date.now()));}catch(e){} location.href="/subscribe.html?setup=1";return;}
           var first="/today.html";try{if(draft.role!=="slp"&&!AFTER&&Sona.firstGameStart)first=Sona.firstGameStart();}catch(e){}
+          if(draft.role!=="slp"&&storyNow())first="/adventure.html";
           location.href=first;
         };
         window.scrollTo(0,0);try{document.getElementById("handoffTitle").focus({preventScroll:true});}catch(e){}
