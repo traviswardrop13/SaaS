@@ -291,6 +291,10 @@ try {
     await page.locator('[data-step="updates"].on').waitFor();
     await page.locator("#updEmail").fill("zeph.parent@example.com");
     await next(page);
+    // THE PLAN MOMENT (31 Oct 2026): a first setup reaches the ready screen
+    // through a short build beat over the page, never recorded either
+    await page.locator("#obBuild").waitFor();
+    await mark(page, 391);                          // the build beat: never recorded
     await page.locator('[data-step="ready"].on').waitFor();
     await mark(page, 401);                          // the ready screen: never recorded
     await next(page);
@@ -321,7 +325,9 @@ try {
     ok("setup: the microphone's pointer was recorded (the control)", marked(rr, 501));
     ok("setup: nothing on the therapy question, first visit", !marked(rr, 201));
     ok("setup: nothing on the therapy question after Back", !marked(rr, 211));
+    ok("setup: nothing during the build beat before the ready screen", !marked(rr, 391));
     ok("setup: nothing on the ready screen", !marked(rr, 401));
+    ok("setup: the build beat's words (\"Building <Name>'s practice…\") are in nothing sent, nor its overlay in any picture", !/practice\u2026/.test(text) && !nodes(rr).some((n) => n.attributes && n.attributes.id === "obBuild"));
     ok("setup: nothing on the hand-off", !marked(rr, 601));
     ok("setup: neither name, nor any part of either, is in anything sent", !/zephyr|quillon/i.test(text), (text.match(/.{60}(zephyr|quillon).{60}/i) || [])[0]);
     ok("setup: the address is in nothing sent", !/zeph\.parent|example\.com/i.test(text));
@@ -515,6 +521,8 @@ try {
     ok("onboarding.html: nor the screen a therapy answer lands on, nor a set-up child walking setup again", /replayHold=replayFrom==="therapy"/.test(ob) && /var REWALK=!!\(p\.onboarded&&!AFTER\);/.test(ob) && /var ok=!replayDone&&!REWALK&&!replayHold&&/.test(ob));
     ok("onboarding.html + analytics.js: the hand-off ends recording for the tab", /sessionStorage\.setItem\("sona\.replayoff\.v1","1"\)/.test(ob) && /sessionStorage\.getItem\("sona\.replayoff\.v1"\)\) return; \} catch \(e\) \{ return; \}/.test(SRC));
     ok("onboarding.html: off before a screen is painted, on only after", /var key=ORDER\[idx\];\s*replayAt\(key,false\);/.test(ob) && /stepSeen\(key\);\s*replayAt\(key,true\);\s*\}/.test(ob));
+    {const render = ob.slice(ob.indexOf("function render(){"), ob.indexOf("function next(){"));
+     ok("onboarding.html: the plan moment's build beat starts only after recording is off for the ready screen (31 Oct 2026)", render.indexOf("replayAt(key,false);") > 0 && render.indexOf("planBeat();return;") > render.indexOf("replayAt(key,false);") && /if\(key==="ready"&&PLAN_MOMENT&&ORDER===ORDER_PARENT&&!beatDone/.test(render));}
     ok("onboarding.html: the hand-off ends it for good", /function showHandoff\(\)\{[\s\S]{0,140}replayDone=true;[^\n]*SonaAnalytics\.replay\(false\)/.test(ob));
     ok("subscribe.html: on only once the offer is painted, and only for a grown-up's door", /fitOffer\(\);[\s\S]{0,700}if \(OFFER_SETUP \|\| OFFER_FIRST\) \{ try \{ if \(window\.SonaAnalytics && SonaAnalytics\.replay\) SonaAnalytics\.replay\(true\)/.test(sub) && (sub.match(/SonaAnalytics\.replay\(/g) || []).length === 1);
     ok("subscribe.html: the headline's name is a ph-name, and the practice line is blocked", /nm\.className = "ph-name"/.test(sub) && /class="offer-pill ph-no-capture" id="offerPill"/.test(sub));

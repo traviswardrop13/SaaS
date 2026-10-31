@@ -183,6 +183,55 @@ changing one. What follows from the rule:
   still come from the store. The three benefit lines are bolder and have
   modest extra space above/below on screens that have room; compact layouts
   retain room for payment choices and legal links.
+- **THE PLAN MOMENT, THEN STRAIGHT INTO DAY 1 (Travis, 31 Oct 2026: "build
+  the plan moment and straight into day 1"; after TALK1 made Day 1 a story
+  in the child's own sound).** Two changes, a parent's first setup only
+  (never a child walking setup again, a second child or a clinician):
+  - **A short build beat before the ready screen.** As the parent moves on
+    to "<Name>'s practice is ready!", the page shows Echo, "Building
+    <Name>'s practice…" and their own answers coming in one by one (the age
+    group, the sounds or "Every sound, easiest first", "N min a day": the
+    ready screen's chips, one list, `readyAnswers()`), about 2.2 s, then the
+    ready screen. Under Reduce Motion everything is there at once, about
+    1 s. Silent, never recorded (`ph-no-capture`, and recording is turned
+    off before it, REPLAY1), and nothing under it takes a tap or a key.
+    Once a visit: Back from ready and on again goes straight there
+    (`planBeat()` in `onboarding.html`).
+  - **The plan card on the ready screen**, under the chips: the story the
+    child meets as Day 1, its Home picture, a "Day 1" pill, the title and
+    its Home line, and under the card "A new story every day." The story is
+    `Sona.day1For(sounds)` with the sounds setup is about to save: the
+    talking story in the first sound that has one (R Robo's Rocket, S
+    Sandy's Sandcastle, L Lulu's Lantern Party, Z Zippy's Zoo Parade, F Fizz
+    and the Sleepy Fireflies; "Pick all sounds" gives Fizz, F being the first
+    of them in play order), else The Lighthouse Sneeze. `_talkDay` uses the
+    same rule (`_talkFor`), so the card and Home can never disagree. Shown
+    only where this child will be shown a story (`Sona.storyShown()`): a
+    phone that cannot buy, without Premium, gets the game of the day, so it
+    gets the beat but no card. A picture that fails is never broken: by the
+    time the screen is drawn it is left out (no talking story has a Home
+    picture yet, so those cards are words alone); one that fails while the
+    screen shows keeps its empty box, so nothing moves. On a phone 600 px
+    tall or less the picture steps aside so a long name still fits.
+  - **"Let's play!" opens today's story** whenever it is open to the child
+    at that tap (`Sona.questToday()` an open story AND `Sona.storyOpen()`):
+    `/adventure.html`, which in the iPhone app starts the story at once. So
+    a family whose free days just started meets Day 1, the story the card
+    named, in place of Home. **This replaces the 17 Oct 2026 "go to the
+    homepage"** (below) for a day with an open story; with none (a phone
+    that cannot buy, today's story already done) it is exactly as before:
+    Home after a purchase, the first game otherwise. The first game's mark
+    is written as before; a clinician still ends on Home.
+  - **Travis's and Rachel's to change:** every word ("Building <Name>'s
+    practice…", "Day 1", "A new story every day."), the beat's length
+    (`PLAN_BEAT_MS`, 2200; 1000 under Reduce Motion), and that a trial buyer
+    lands in the story rather than Home. Defaults Travis did not pick: the
+    card only where a story will be shown; a child walking setup again
+    whose story is open is sent to it too.
+  `setupscreenstest` (the beat, the card, `day1For`, the fit),
+  `setupsteadytest` (the card from its first frame, a late picture moves
+  nothing), `replaytest`, `onboardingtest` and `setupbuytest` (where
+  "Let's play!" goes) play it; `_phone.mjs`'s `setupWalk` waits the beat out.
 - **SETUP, REBUILT FROM SCRATCH: SELL SONA, A FEW QUESTIONS, THE PRICE, THEN
   THE PHONE IS HANDED OVER** (Travis, 22 Oct 2026: "I want to do a
   completely new onboarding ... from scratch. I want animation ... make it
@@ -195,10 +244,12 @@ changing one. What follows from the rule:
   name and age (**"Who's practicing?"**) → **"What does <Name> love?"** →
   **"Games <Name> will love"** → **"Is <Name> in speech therapy?"** →
   sounds (**"Which sounds?"**) → **"How long each day?"** → **"Get the weekly
-  progress report"** → **"<Name>'s practice is ready!"** → (**"Want a
+  progress report"** → (a short build beat, since 31 Oct 2026) → **"<Name>'s
+  practice is ready!"** → (**"Want a
   reminder before your free trial ends?"**, where it can be kept) → the price
-  → microphone ("Let Echo hear <Name>") → "Hand the phone to <Name>!" → Home
-  (the first game for a phone with nothing to sell). A headline and at most
+  → microphone ("Let Echo hear <Name>") → "Hand the phone to <Name>!" → Day
+  1's story where it is open (31 Oct 2026, above), else Home (the first game
+  for a phone with nothing to sell). A headline and at most
   one short line a screen; **every word is a default for Travis and Rachel to
   change.** A child set up before walking setup again (`REWALK`: Back from the
   first game, a second visit) gets the questions only if the household was
@@ -396,7 +447,9 @@ changing one. What follows from the rule:
     (the age group if given, the sounds, or "Every sound, easiest first",
     and "N min a day") with the therapy sentence and "Sona practices — it
     doesn't test or diagnose." Never "plan", an age norm, a result or a
-    price. **The profile is saved when the parent leaves it** (or the
+    price. On a first setup it also carries the plan card, Day 1's story
+    (31 Oct 2026, "THE PLAN MOMENT" above): a fact about Sona's calendar,
+    never about the child. **The profile is saved when the parent leaves it** (or the
     reminder screen after it), before the price and before the microphone.
   - **The reminder ask** (Travis, 22 Oct 2026: "can we add push
     notifications and have that be a step in the onboarding where we ask
@@ -455,10 +508,14 @@ changing one. What follows from the rule:
   - **A purchase or a restore comes BACK to setup** for the microphone and the
     hand-off: a tab-only marker (`sona.setupafter.v1`, `Sona.setupAfter()`)
     written when setup leaves for the price. **The hand-off's "Let's play!"
-    then goes Home, where the child picks a game** (Travis, 17 Oct 2026:
-    "once I start a trial, I don't want it to go jump straight into a game.
-    I just want to have it go to the homepage"); no first game is marked.
-    A phone that never left for the price still opens the first game. The marker picks a screen and
+    then opens Day 1's story** (Travis, 31 Oct 2026: "build the plan moment
+    and straight into day 1": `/adventure.html` whenever today's story is
+    open to the child, see "THE PLAN MOMENT" above); with no story open it
+    goes Home, where the child picks a game (Travis, 17 Oct 2026: "once I
+    start a trial, I don't want it to go jump straight into a game. I just
+    want to have it go to the homepage", which the story day now replaces);
+    no first game is marked. A phone that never left for the price opens
+    the first game (or today's story, where one is open). The marker picks a screen and
     grants nothing; without it (app closed on the price) the family lands on
     Home and the games ask for the microphone themselves.
     `Sona.firstGameStart()`'s mark is written by the hand-off's last tap.
@@ -1813,7 +1870,9 @@ sessions" on in PostHog too.
   `replayAt(key, painted)` turns it off BEFORE the therapy question, the
   ready screen (`NO_REPLAY`) or the hand-off is painted and on again only
   once a screen without them is up, so a tap on Yes / Not right now is never
-  recorded (the ready card's size alone would tell the answer). **The
+  recorded (the ready card's size alone would tell the answer). The plan
+  moment's build beat before the ready screen (31 Oct 2026) starts only
+  after it is off, and is `ph-no-capture` too. **The
   screen a therapy answer lands on is not recorded either** (`replayHold`;
   since 22 Oct 2026 that is the sounds): a double tap's second tap, or a
   mouse moving on, would be recorded at the answer's place; recording comes
@@ -2392,7 +2451,9 @@ the page.
 - **Which child gets which** (`_talkDay()`): the first of the child's
   practice sounds (`rotSounds()`: homework first, then the family's picks)
   that has a talking story; none, the lighthouse as before (a child on K, G,
-  TH...). A Day 1 already finished stays what it was: the finish keeps its
+  TH...). Setup's plan card asks the same rule before the profile is saved
+  (`Sona.day1For(sounds)`, one helper `_talkFor` for both: "THE PLAN
+  MOMENT", 31 Oct 2026). A Day 1 already finished stays what it was: the finish keeps its
   id (`t1` in `sona.quest.v1`), and a lighthouse finished before this build
   (index 0 done, no `t1`) is still the lighthouse. Index 0 of the record is
   still Day 1, so nothing else in the calendar (CAL1) moved. The story's id

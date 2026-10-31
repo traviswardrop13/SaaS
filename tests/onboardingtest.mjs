@@ -22,7 +22,7 @@ import {readFileSync,existsSync,statSync} from 'fs';
 import path from 'path';
 import {tmpdir} from 'os';
 import {chromium,ROOT,launchOpts} from './_env.mjs';
-import {calm,open as openPhone,setupWalk} from './_phone.mjs';
+import {calm,open as openPhone,setupWalk,beatOver} from './_phone.mjs';
 const root=process.env.SONATEST_PUBLIC_ROOT||ROOT,base='http://127.0.0.1:8198';
 const mime={html:'text/html',js:'text/javascript',css:'text/css',svg:'image/svg+xml',png:'image/png',jpg:'image/jpeg',webp:'image/webp',woff2:'font/woff2',wav:'audio/wav'};
 const server=createServer((req,res)=>{const u=new URL(req.url,base),file=path.join(root,u.pathname);if(u.pathname.startsWith('/api/')){res.writeHead(503,{'content-type':'application/json'});res.end('{}');return;}if(!existsSync(file)||!statSync(file).isFile()){res.writeHead(404);res.end();return;}res.writeHead(200,{'content-type':mime[file.split('.').pop()]||'application/octet-stream'});res.end(readFileSync(file));});
@@ -57,6 +57,10 @@ async function stubs(context){
   await context.route('**/today.html',route=>route.fulfill({status:200,contentType:'text/html',body:'<p>Home destination</p>'}));
   await context.route('**/arcade-*.html',route=>route.fulfill({status:200,contentType:'text/html',body:'<p>Game destination</p>'}));
   await context.route('**/subscribe.html**',route=>route.fulfill({status:200,contentType:'text/html',body:'<p>Price destination</p>'}));
+  // the story player (STRAIGHT INTO DAY 1, 31 Oct 2026: the hand-off opens
+  // today's story whenever it is open to the child): a page that loads
+  // sona.js and nothing else, so a suite can still read the phone there
+  await context.route('**/adventure.html**',route=>route.fulfill({status:200,contentType:'text/html',body:'<!doctype html><title>Story</title><p>Story destination</p><script src="/sona.js"></script>'}));
 }
 async function fresh(config={}){
   const context=await browser.newContext({viewport:config.viewport||{width:320,height:568},reducedMotion:'reduce'});await context.addInitScript(edges,config);
@@ -88,7 +92,11 @@ async function who(page,role='parent'){if(role==='slp'&&!/[?&]slp=1/.test(page.u
 // from wherever setup is (the hello, the screens that sell) to the child's name
 async function toName(page){await setupWalk(page,'name');await page.locator('[data-step="name"].on').waitFor();}
 // One tap on a one-tap question: one of its answer ids, or 'skip'.
-async function answer(page,key,val='skip'){await page.locator('[data-step="'+key+'"].on').waitFor();await calm(page);await page.locator(val==='skip'?'#'+key+'Skip':'[data-step="'+key+'"] .ask-pick[data-val="'+val+'"]').click();}
+// THE PLAN MOMENT (31 Oct 2026): on a first setup the tap that moves on to
+// the ready screen first shows a short build beat over the page (about 1 s
+// here, under Reduce Motion), and the screen under it keeps its name until the
+// beat ends: every helper that can be that tap waits it out (beatOver).
+async function answer(page,key,val='skip'){await page.locator('[data-step="'+key+'"].on').waitFor();await calm(page);await page.locator(val==='skip'?'#'+key+'Skip':'[data-step="'+key+'"] .ask-pick[data-val="'+val+'"]').click();await beatOver(page);}
 const answerTherapy=(page,val)=>answer(page,'therapy',val),answerMinutes=(page,val)=>answer(page,'minutes',val);
 // THE SCREENS THAT SELL (19 Oct 2026; rebuilt 22 Oct): the problem, the reel
 // and Rachel before the name, what the child loves and their games after it.
@@ -103,10 +111,10 @@ async function choose(page,sound='R'){
 }
 // The optional email step (13 Oct 2026: before the price): Skip, or an
 // address typed and Continue.
-async function updates(page,email=null){await page.locator('[data-step="updates"].on').waitFor();await calm(page);if(email){await page.locator('#updEmail').fill(email);await next(page);}else await page.locator('#updSkip').click();}
+async function updates(page,email=null){await page.locator('[data-step="updates"].on').waitFor();await calm(page);if(email){await page.locator('#updEmail').fill(email);await next(page);}else await page.locator('#updSkip').click();await beatOver(page);}
 // From the sound picker (with a sound chosen) or the minutes question, on to
 // "<Name>'s practice is ready!" (through the email step, when it is asked)…
-async function toReady(page,minutes='skip',email=null){for(let i=0;i<8;i++){const s=await screen(page);if(s==='ready')break;if(s==='minutes')await answerMinutes(page,minutes);else if(s==='updates')await updates(page,email);else if(s==='sounds')await next(page);else throw new Error('toReady cannot walk on from '+s);}await page.locator('[data-step="ready"].on').waitFor();}
+async function toReady(page,minutes='skip',email=null){for(let i=0;i<8;i++){await beatOver(page);const s=await screen(page);if(s==='ready')break;if(s==='minutes')await answerMinutes(page,minutes);else if(s==='updates')await updates(page,email);else if(s==='sounds')await next(page);else throw new Error('toReady cannot walk on from '+s);}await page.locator('[data-step="ready"].on').waitFor();}
 // …and past it: its Continue saves the profile and, on a phone that cannot
 // buy, opens the microphone step in the page.
 async function pastReady(page,minutes='skip',email=null){if(['mic','achieve'].includes(await screen(page)))return;await toReady(page,minutes,email);await next(page);await page.locator('[data-step="mic"].on').waitFor();}
@@ -168,7 +176,10 @@ await scenario('sound selection and private paced handoff',async()=>{
   // (both questions were skipped here, so no sentence about Sona is shown).
   const ready=await readyShown(page);
   ok('ready shows the name, the age band and the chosen sound, and nothing the parent did not give',ready.on&&ready.title==='Milo\'s practice is ready!'&&JSON.stringify(ready.chips)==='["Ages 2–4","Sound: S"]'&&ready.lines.length===0&&ready.text==='Milo\'s practice is ready! Ages 2–4 Sound: S '+HEDGE,ready);
-  ok('…with no build beat on the parent path, no progress bar, no Echo beside it (he cheers above it) and no Rachel (she has her own screen)',!ready.build&&ready.seg&&!ready.mascot&&!ready.rachel,ready);
+  // (THE PLAN MOMENT, 31 Oct 2026: a first setup reaches this screen through
+  // a short build beat, setupscreenstest; it is gone before the screen shows.
+  // This phone cannot buy, so no Day 1 story is shown on it: no plan card.)
+  ok('…the build beat gone before it shows, no plan card on a phone that shows no story, no progress bar, no Echo beside it (he cheers above it) and no Rachel (she has her own screen)',!ready.build&&ready.seg&&!ready.mascot&&!ready.rachel&&await page.evaluate(()=>document.getElementById('planCard').hidden&&document.getElementById('planMore').hidden),ready);
   await page.waitForTimeout(1200);
   const waited=await page.evaluate(()=>({screen:document.body.dataset.setupScreen,saved:!!Sona.getProfile().onboarded,complete:__setup.complete,confetti:__setup.confetti,requests:__setup.requests.length}));
   ok('ready waits for the parent: it does not move on or save by itself',waited.screen==='ready'&&!waited.saved&&waited.requests===0,waited);
@@ -538,7 +549,7 @@ await scenario('Done closes typing without accepting setup choices',async()=>{
 // A reload restores draft.role; the order has to follow it or a clinician
 // finishes on the family path with no email step and no account.
 // (The one-tap questions hide Continue, so the walk taps their first answer.)
-async function walk(page){const seen=[];for(let i=0;i<20;i++){const s=await screen(page);seen.push(s);if(s==='email'||s==='mic')break;if(s==='welcome'){await who(page);continue;}if(s==='therapy'||s==='minutes'){await calm(page);await page.locator('[data-step="'+s+'"] .ask-pick').first().click();continue;}if(s==='updates'){await calm(page);await page.locator('#updSkip').click();continue;}if(s==='name'&&!await page.locator('#obName').inputValue())await page.locator('#obName').fill('Milo');await next(page);}return seen;}
+async function walk(page){const seen=[];for(let i=0;i<20;i++){await beatOver(page);const s=await screen(page);seen.push(s);if(s==='email'||s==='mic')break;if(s==='welcome'){await who(page);continue;}if(s==='therapy'||s==='minutes'){await calm(page);await page.locator('[data-step="'+s+'"] .ask-pick').first().click();continue;}if(s==='updates'){await calm(page);await page.locator('#updSkip').click();continue;}if(s==='name'&&!await page.locator('#obName').inputValue())await page.locator('#obName').fill('Milo');await next(page);}return seen;}
 await scenario('clinician setup survives a reload',async()=>{
  const {context,page,errors,requests}=await fresh();try{
   await who(page,'slp');await page.locator('#obName').fill('Milo');await next(page);
@@ -883,7 +894,7 @@ await scenario('the email step: before the price, optional, and fits',async()=>{
   await page.locator('#updEmail').fill('not-an-email');await next(page);
   const bad=await page.evaluate(()=>({screen:document.body.dataset.setupScreen,msg:document.getElementById('updMsg').textContent,email:draft.email}));
   ok('a wrong-looking address stays on the step with one line, and sends nothing',bad.screen==='updates'&&bad.msg==='That email doesn\'t look right.'&&bad.email===''&&leadPosts(requests).length===0,bad);
-  await page.locator('#updEmail').fill('');await next(page);
+  await page.locator('#updEmail').fill('');await next(page);await beatOver(page);   // (the plan moment's beat comes first, once)
   ok('an empty box and Continue go on, as a Skip',await screen(page)==='ready'&&await page.evaluate(()=>draft.email==='')&&leadPosts(requests).length===0);
   await calm(page);await page.locator('#backBtn').click();await page.locator('[data-step="updates"].on').waitFor();
   ok('Back comes to it with the line cleared',await page.evaluate(()=>document.getElementById('updMsg').textContent===''));
@@ -1156,12 +1167,29 @@ await scenario('where Sona can sell, ready\'s Continue leaves for the price and 
   await page.evaluate(()=>__phone.mic.requests[0].grant());await atHandoff(page);
   const heard=await page.evaluate(()=>({mic:localStorage.getItem('sona.micok'),order:__phone.mic.order,title:document.getElementById('handoffTitle').innerText.trim(),email:document.querySelectorAll('[data-step="achieve"] input,#achEmail,#skipEmail').length}));
   ok('"Turn on Echo\'s ears" asks the phone once, stops both tracks before the speech ask, and opens the hand-off',heard.mic==='1'&&heard.order.filter(x=>x==='microphone').length===1&&heard.order.filter(x=>x==='stop').length===2&&heard.order.indexOf('speech permission')>heard.order.lastIndexOf('stop')&&heard.title==='Hand the phone to Mia!'&&heard.email===0,heard);
-  await next(page);await page.waitForURL(url=>url.pathname==='/today.html');
-  const end=await page.evaluate(()=>({firstgame:sessionStorage.getItem('sona.firstgame.v1'),marker:sessionStorage.getItem('sona.setupafter.v1'),done:JSON.parse(localStorage.getItem('__phoneRec')).events.filter(e=>e.name==='onboarding completed').length}));
-  ok('"Let\'s play!" back from the price goes Home to pick a game (17 Oct 2026), marks no first game, and clears the marker',new URL(page.url()).pathname==='/today.html'&&end.firstgame===null&&end.marker===null&&end.done===1,[page.url(),end]);
+  await next(page);await page.waitForURL(url=>url.pathname==='/adventure.html');
+  const end=await page.evaluate(()=>{const q=Sona.questToday();return {firstgame:sessionStorage.getItem('sona.firstgame.v1'),marker:sessionStorage.getItem('sona.setupafter.v1'),done:JSON.parse(localStorage.getItem('__phoneRec')).events.filter(e=>e.name==='onboarding completed').length,story:q.kind+'|'+q.state+'|'+q.day+'|'+(q.story&&q.story.id)};});
+  // STRAIGHT INTO DAY 1 (Travis, 31 Oct 2026: "build the plan moment and
+  // straight into day 1"): the free days just started, so today's story is
+  // open to Mia, and "Let's play!" opens it in place of Home (17 Oct 2026)
+  ok('"Let\'s play!" back from the price opens Day 1\'s story (exactly /adventure.html: Robo\'s Rocket, for an R child), marks no first game, and clears the marker',page.url()===base+'/adventure.html'&&end.story==='story|open|1|robo'&&end.firstgame===null&&end.marker===null&&end.done===1,[page.url(),end]);
   ok('the only price page setup ever asked for is /subscribe.html?setup=1',priced(requests).every(u=>u===base+'/subscribe.html?setup=1')&&priced(requests).length===2,priced(requests));
   ok('…and back from the price the hand-off asked for no email: still the one lead',leadPosts(requests).length===1,leadPosts(requests));
   clean('buy path',errors);
+ }finally{await context.close();}
+});
+// …and a child with no story open today (here today's story is already
+// finished) is not sent to one: "Let's play!" goes Home, as on 17 Oct 2026
+await scenario('back from the price with no story open today: Home, as before',async()=>{
+ const {context,page,errors}=await phone({setUp:true,stamp:'post',marker:true});try{
+  await page.goto(base+'/onboarding.html').catch(()=>{});await page.waitForURL(url=>url.pathname==='/subscribe.html');
+  await page.evaluate(()=>{Sona.saveSub({active:true,source:'apple',since:Date.now()});const d=Sona.localDay();localStorage.setItem(Sona.kkey('sona.quest.v1'),JSON.stringify({f:[0],s:1,ls:0,fd:d,lk:'story',done:d,a:d,sv:d,t1:'robo'}));});
+  await page.goto(base+'/onboarding.html');await page.locator('[data-step="mic"].on').waitFor();
+  const q=await page.evaluate(()=>{const t=Sona.questToday();return {kind:t.kind,state:t.state,open:Sona.storyOpen()};});
+  ok('(the free days have started, and today\'s story is already done)',q.kind==='story'&&q.state==='done'&&q.open,q);
+  await notNow(page);await atHandoff(page);await next(page);await page.waitForURL(url=>url.pathname!=='/onboarding.html');
+  ok('"Let\'s play!" then goes Home to pick a game, never to a story that is not open, and marks no first game',page.url()===base+'/today.html'&&await page.evaluate(()=>sessionStorage.getItem('sona.firstgame.v1')===null),page.url());
+  clean('no story open today',errors);
  }finally{await context.close();}
 });
 await scenario('markers that do not hold, and a tab that never left ready',async()=>{
@@ -1225,8 +1253,13 @@ await scenario('families who see no price walk straight on, and the store is nev
    await next(page);
    const st=await page.evaluate(()=>({screen:document.body.dataset.setupScreen,cta:document.getElementById('nextBtn').textContent.trim(),asked:__phone.asked.length,infos:__phone.infos,syncs:__phone.syncs,marker:!!sessionStorage.getItem('sona.setupafter.v1')}));
    ok(label+': ready\'s Continue opens the microphone at once, in the page, with no "One moment…"',st.screen==='mic'&&st.cta==='Turn on Echo\'s ears'&&st.marker,st);
-   await notNow(page);await atHandoff(page);await next(page);await page.waitForURL(url=>url.pathname==='/charge.html');
-   ok(label+': then the hand-off and the first game, with no price page and no question put to the store',priced(requests).length===0&&st.asked===0&&st.infos===0&&st.syncs===0&&new URL(page.url()).search==='?game=arcade-slice.html',[priced(requests),st,page.url()]);
+   // a household with Premium (a founder, a subscription) has today's story
+   // open, so "Let's play!" opens it (31 Oct 2026); the others, whose phone
+   // shows the game of the day, still get the first game. Both write the first
+   // game's mark, exactly as before.
+   const story=label==='a founder'||label==='a household that already subscribes';
+   await notNow(page);await atHandoff(page);await next(page);await page.waitForURL(url=>url.pathname===(story?'/adventure.html':'/charge.html'));
+   ok(label+': then the hand-off and '+(story?'Day 1\'s story':'the first game')+', with no price page and no question put to the store',priced(requests).length===0&&st.asked===0&&st.infos===0&&st.syncs===0&&(story?new URL(page.url()).search==='':new URL(page.url()).search==='?game=arcade-slice.html')&&await page.evaluate(()=>sessionStorage.getItem('sona.firstgame.v1')==='slice'),[priced(requests),st,page.url()]);
    clean('no price: '+label,errors);
   }finally{await context.close();}
  }
@@ -1303,7 +1336,9 @@ await scenario('the price never loads: Continue comes back',async()=>{
 // ── the page's source: what other files hold it to ──
 {
  const src=readFileSync(root+'/onboarding.html','utf8'),code=src.replace(/<!--[\s\S]*?-->/g,' ').replace(/\/\*[\s\S]*?\*\//g,' ').replace(/(^|[^:"'\\])\/\/[^\n]*/g,'$1');
- ok('the hand-off\'s last tap: an unpaid family is never handed a locked game; a clinician still ends on Home; the first game is marked only there',/if\(wall\)\{try\{sessionStorage\.setItem\("sona\.gate\.v1",String\(Date\.now\(\)\)\);\}catch\(e\)\{\} location\.href="\/subscribe\.html\?setup=1";return;\}\s*var first="\/today\.html";try\{if\(draft\.role!=="slp"&&!AFTER&&Sona\.firstGameStart\)first=Sona\.firstGameStart\(\);\}catch\(e\)\{\}\s*location\.href=first;/.test(src)&&(code.match(/Sona\.firstGameStart\(\)/g)||[]).length===1);
+ ok('the hand-off\'s last tap: an unpaid family is never handed a locked game; today\'s open story first (31 Oct 2026), else Home or the first game; a clinician still ends on Home; the first game is marked only there',/if\(wall\)\{try\{sessionStorage\.setItem\("sona\.gate\.v1",String\(Date\.now\(\)\)\);\}catch\(e\)\{\} location\.href="\/subscribe\.html\?setup=1";return;\}\s*var first="\/today\.html";try\{if\(draft\.role!=="slp"&&!AFTER&&Sona\.firstGameStart\)first=Sona\.firstGameStart\(\);\}catch\(e\)\{\}\s*if\(draft\.role!=="slp"&&storyNow\(\)\)first="\/adventure\.html";\s*location\.href=first;/.test(src)&&(code.match(/Sona\.firstGameStart\(\)/g)||[]).length===1);
+ {const fn=code.slice(code.indexOf('function storyNow('),code.indexOf('function showHandoff('));
+ ok('…and "today\'s story is open" is Home\'s own answer read at that tap: questToday says an open story AND storyOpen (never one shown locked)',/Sona\.storyOpen\(\)/.test(fn)&&/q\.kind==="story"&&q\.state==="open"/.test(fn)&&!/setItem|saveProfile|questEnd|storySeen/.test(fn),fn.slice(0,300));}
  const leave=code.slice(code.indexOf('function leaveReady('),code.indexOf('function showHandoff('));
  ok('leaving ready (or the reminder after it) saves the profile and writes the marker before it names the price page',leave.indexOf('saveSetup()')>0&&leave.indexOf('saveSetup()')<leave.indexOf('Sona.setupAfterMark')&&leave.indexOf('Sona.setupAfterMark')<leave.indexOf('"/subscribe.html?setup=1"'),leave.slice(0,200));
  ok('every "setup step" is sent through SonaAnalytics, with the screen\'s key and nothing else',(code.match(/SonaAnalytics\.track\("setup step",\{step:key\}\)/g)||[]).length===1&&!/(?:^|[^.\w])track\("setup step"/.test(code)&&!/Sona\.track\(/.test(code));

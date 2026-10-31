@@ -5,6 +5,9 @@ html, body { background-color:var(--studio-paper); }
 body, body[data-setup-screen="welcome"] { background:var(--studio-paper) radial-gradient(circle at 110% -5%,#ffd47c 0 27%,transparent 27.2%); color:var(--studio-ink); }
 html.ob-resume body,html.ob-leaving body { background:var(--studio-paper)!important; }
 #obBuild { background:var(--studio-paper); }
+/* the build beats' answers (the plan moment's, 31 Oct 2026) wear the ready screen's chips */
+#obBuildT { color:var(--studio-ink); }
+#obBuildAnswers span { background:#fffdf8; border-color:var(--studio-line); color:var(--act-d); }
 .hello { display:none!important; }
 .ob, body[data-setup-screen="welcome"] .ob { padding-top:calc(22px + env(safe-area-inset-top)); padding-bottom:calc(96px + env(safe-area-inset-bottom)); max-width:480px; }
 .studio-brand { font:800 29px/1.1 'Baloo 2',sans-serif; letter-spacing:-1px; margin:0 0 24px; flex:none; }

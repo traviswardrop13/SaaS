@@ -80,7 +80,8 @@ function phoneInit(cfg){
   const SEL={card:'[data-step="name"]',heading:'[data-step="name"] .qh',label:'label[for="obName"]',field:'#obName',ageLabel:'#ageLabel',age4:'#obAge [data-age="4"]',age6:'#obAge [data-age="6"]',age8:'#obAge [data-age="8"]',echo:'.ob .mascot',seg:'#seg',
     tCard:'[data-step="interests"]',tHead:'#interestsTitle',tYes:'#obInterests [data-val="sports"]',btn:'#nextBtn',
     sCard:'.step.sell.on',sHead:'.step.sell.on h1',sPic:'.step.sell.on .studio-problem-art, .step.sell.on .rachel-photo',sGrid:'.step.sell.on #gamesGrid',sLast:'.step.sell.on #gamesGrid li:last-child',
-    rCard:'[data-step="ready"].on',rHead:'[data-step="ready"].on #readyTitle',rChips:'[data-step="ready"].on #readyChips'};
+    rCard:'[data-step="ready"].on',rHead:'[data-step="ready"].on #readyTitle',rChips:'[data-step="ready"].on #readyChips',
+    rPlan:'[data-step="ready"].on #planCard',rPlanPic:'[data-step="ready"].on #planPic',rPlanMore:'[data-step="ready"].on #planMore'};
   // Keep the short problem picture and both demo headings steady as assets
   // arrive. Only the canvas changes during demos; the ready screen's existing
   // Echo motion still ends, and Reduce Motion must begin at that final frame.
@@ -499,7 +500,7 @@ for(const reduced of [false,true])for(const D of [DEVICES[0],DEVICES[2]]){
   await page.reload();await page.waitForFunction(()=>window.Sona&&document.getElementById('nextBtn'));await page.evaluate(()=>document.fonts.ready);await page.waitForTimeout(500);
   ok('(the app can sell'+at+': the price follows setup)',await page.evaluate(()=>Sona.iapAvailable()&&Sona.trialFirst()===true));
   await context.route(/\/assets\/(crafted\/home-[a-z]+\.webp|rachel-wardrop-profile\.jpg)$/,async route=>{await new Promise(r=>setTimeout(r,500));route.continue();});
-  for(const [key,keys,card,own,wait] of [['problem',['sCard','sHead','sPic','btn'],'sCard',['pGame'],2300],['reel',['sCard','sHead','btn'],'sCard',['rTitle'],1100],['piano',['sCard','sHead','btn'],'sCard',['rTitle'],1100],['rachel',['sCard','sHead','sPic','btn'],'sCard',[],1100],['games',['sCard','sHead','sGrid','sLast','btn'],'sCard',[],1100],['ready',['rCard','rHead','rChips','btn'],'rCard',['rEcho','rSpark'],2300]]){
+  for(const [key,keys,card,own,wait] of [['problem',['sCard','sHead','sPic','btn'],'sCard',['pGame'],2300],['reel',['sCard','sHead','btn'],'sCard',['rTitle'],1100],['piano',['sCard','sHead','btn'],'sCard',['rTitle'],1100],['rachel',['sCard','sHead','sPic','btn'],'sCard',[],1100],['games',['sCard','sHead','sGrid','sLast','btn'],'sCard',[],1100],['ready',['rCard','rHead','rChips','rPlan','rPlanMore','btn'],'rCard',['rEcho','rSpark'],2300]]){
    if(key==='games'){
     // the name and what the child loves come between Rachel and the games
     await calm(page);await page.tap('#nextBtn');await page.locator('[data-step="name"].on').waitFor();
@@ -520,6 +521,10 @@ for(const reduced of [false,true])for(const D of [DEVICES[0],DEVICES[2]]){
    await page.locator('[data-step="'+key+'"].on').waitFor();await page.waitForTimeout(wait);
    const fr=(await page.evaluate(()=>__steady.take())).filter(f=>f.screen===key&&f.r[card]);
    const d=drift(fr,keys),loaded=await page.evaluate(()=>[...document.querySelectorAll('.step.on img[src]')].every(i=>i.complete&&(i.naturalWidth>0||i.classList.contains('gone'))));
+   // THE PLAN MOMENT (31 Oct 2026): the ready screen is reached through a
+   // short build beat (its frames are the email step's, under the beat, so
+   // none of them is counted here), and carries the plan card from its first frame
+   if(key==='ready')ok('…the ready screen\'s plan card (Day 1: Robo\'s Rocket, for R) is there from its first frame'+at,fr.length>5&&fr.every(f=>!!f.r.rPlan&&!!f.r.rPlanMore)&&await page.evaluate(()=>document.getElementById('planCard').dataset.story==='robo'),{n:fr.length,first:fr[0]&&fr[0].r.rPlan});
    if(key==='games')ok('…the games peek is three large previews here ('+(await page.evaluate(()=>document.querySelectorAll('#gamesGrid li').length))+' games)'+at,await page.evaluate(()=>document.querySelectorAll('#gamesGrid li').length===Math.min(3,Sona.activityLibrary().groups.filter(g=>g.id==='arcade')[0].games.filter(x=>!x.comingSoon).length)));
    ok('"'+key+'" is drawn once, at its own size, and nothing in it moves as its pictures arrive'+at+' (worst: '+worst(d)+')',fr.length>5&&still(d)&&loaded,{frames:fr.length,d,loaded});
    if(own.length){
@@ -541,6 +546,41 @@ for(const reduced of [false,true])for(const D of [DEVICES[0],DEVICES[2]]){
   }
   ok('no runtime errors (the screens that sell'+at+')',errors.length===0,errors);
  }catch(e){ok('the walk completes (the screens that sell'+at+')',false,e.message);}finally{await context.close();}}
+
+// THE PLAN CARD'S PICTURE ARRIVES LATE, AND NOTHING MOVES (31 Oct 2026). A
+// child on K meets the lighthouse as Day 1, whose Home picture is drawn: held
+// here past the build beat, it lands while the ready screen shows, inside the
+// box the card kept for it. Every frame is measured, with motion on and under
+// Reduce Motion; the card, its picture's box, the heading and Continue stay put.
+for(const reduced of [false,true]){
+ const D=DEVICES[0],{context,page,errors}=await openPhone(D,{reduced});const at=' at '+D.name+(reduced?' with Reduce Motion':'');
+ try{
+  await context.addInitScript(()=>{const C=window.Capacitor;if(C&&C.Plugins)C.Plugins.Purchases={};});
+  await context.route(/\/assets\/crafted\/home-lighthouse\.webp$/,async route=>{await new Promise(r=>setTimeout(r,4500));route.continue();});
+  await page.reload();await page.waitForFunction(()=>window.Sona&&document.getElementById('nextBtn'));await page.evaluate(()=>document.fonts.ready);await page.waitForTimeout(400);
+  for(let i=0;i<8;i++){const s=await page.evaluate(()=>document.body.dataset.setupScreen);if(s==='name')break;await calm(page);await page.tap('#nextBtn');await page.waitForFunction(k=>document.body.dataset.setupScreen!==k,s);}
+  await page.locator('[data-step="name"].on').waitFor();
+  await page.fill('#obName','Milo');await page.evaluate(()=>document.activeElement&&document.activeElement.blur());await page.waitForTimeout(400);
+  await calm(page);await tapAt(page,'#obAge [data-age="6"]');await calm(page);await page.tap('#nextBtn');
+  await page.locator('[data-step="interests"].on').waitFor();await calm(page);await page.tap('#nextBtn');
+  await page.locator('[data-step="games"].on').waitFor();await calm(page);await page.tap('#nextBtn');
+  await page.locator('[data-step="therapy"].on').waitFor();await calm(page);await page.tap('#obTherapy [data-val="t_yes"]');
+  await page.locator('[data-step="sounds"].on').waitFor();
+  await calm(page);await page.tap('#obSounds [data-sound="R"]');await calm(page);await page.tap('#obSounds [data-sound="K"]');
+  await calm(page);await page.tap('#nextBtn');await page.locator('[data-step="minutes"].on').waitFor();
+  await calm(page);await page.tap('#obMinutes [data-val="5"]');await page.locator('[data-step="updates"].on').waitFor();await page.waitForTimeout(300);
+  await page.evaluate(()=>__steady.start());
+  await calm(page);await page.tap('#nextBtn');
+  await page.waitForFunction(()=>!!document.querySelector('[data-step="ready"].on'),null,{polling:'raf',timeout:5000});
+  const shown=await page.evaluate(()=>({loaded:document.getElementById('planImg').complete&&document.getElementById('planImg').naturalWidth>0,story:document.getElementById('planCard').dataset.story}));
+  await page.waitForFunction(()=>{const i=document.getElementById('planImg');return i.complete&&i.naturalWidth>0;},null,{timeout:7000});await page.waitForTimeout(500);
+  const fr=(await page.evaluate(()=>__steady.take())).filter(f=>f.screen==='ready'&&f.r.rCard);
+  const d=drift(fr,['rCard','rHead','rChips','rPlan','rPlanPic','rPlanMore','btn']);
+  ok('the lighthouse\'s picture lands after the ready screen shows'+at+' (it was still on its way as the screen was drawn)',shown.story==='lighthouse'&&!shown.loaded,shown);
+  ok('…inside the box the plan card kept for it: nothing on the ready screen moves as it arrives'+at+' (worst: '+worst(d)+')',fr.length>5&&still(d)&&fr.every(f=>!!f.r.rPlanPic),{frames:fr.length,d});
+  ok('no runtime errors (the plan card\'s late picture'+at+')',errors.length===0,errors);
+ }catch(e){ok('the walk completes (the plan card\'s late picture'+at+')',false,e.message);}finally{await context.close();}
+}
 
 await browser.close();server.close();
 console.log('\n'+checks+' checks, '+failures+' failures');
