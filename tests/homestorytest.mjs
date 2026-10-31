@@ -80,7 +80,7 @@ function seed({ age = 7, sub = false, ea = false, sell = false, stamp = "kept", 
   return `(() => {
     const cpt = HTMLMediaElement.prototype.canPlayType;
     HTMLMediaElement.prototype.canPlayType = function (t) { return /mp4|avc1/i.test(String(t)) ? "" : cpt.call(this, t); };
-    // TALK1: this suite plays the lighthouse as Day 1 (a child on a sound with no talking story still meets it); talktest plays the talking ones
+    // TALK1: this suite plays the lighthouse as Day 1 (a child on a sound with no talking story still meets it); talkstorytest plays the talking ones
     try { sessionStorage.setItem("sona.talkoff", "1"); sessionStorage.setItem("sona.paidui", "1"); sessionStorage.setItem("sona.websalesui", "${sell ? 1 : 0}"); } catch (e) {}
     const say = (t) => { if (String(t || "").trim()) { const a = JSON.parse(sessionStorage.getItem("test.speech") || "[]"); a.push(String(t)); sessionStorage.setItem("test.speech", JSON.stringify(a)); } return Promise.resolve(); };
     let sona; Object.defineProperty(window, "Sona", { configurable: true, get: () => sona, set: (v) => { sona = v; v.speak = say; v.speakNow = say; } });

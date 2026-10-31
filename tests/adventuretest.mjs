@@ -136,7 +136,7 @@ const browser = await chromium.launch(launchOpts());
 // sona.js heals a voiceOn:false with a volume back on, so 0 is "sound off").
 function seed({ age = 7, premium = true, sell = false, stamp = "kept", quest = null, voice = true, character = "fox", demo = false } = {}) {
   return `(() => {
-    // TALK1: this suite plays the lighthouse as Day 1 (a child on a sound with no talking story still meets it); talktest plays the talking ones
+    // TALK1: this suite plays the lighthouse as Day 1 (a child on a sound with no talking story still meets it); talkstorytest plays the talking ones
     try { sessionStorage.setItem("sona.talkoff", "1"); sessionStorage.setItem("sona.paidui", "1"); sessionStorage.setItem("sona.websalesui", "${sell ? 1 : 0}"); } catch (e) { return; }
     if (localStorage.getItem("__seeded")) return; localStorage.setItem("__seeded", "1");
     localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Mia", childAge: "${age}", focusSounds: ["R"], onboarded: true, voiceOn: ${voice}, volume: ${voice ? 0.8 : 0}, character: "${character}"${premium ? ", earlyAdopter: true" : ""} }));
@@ -277,7 +277,7 @@ await section("source", async () => {
   // TALK1: a talking story (Day 1 in the child's sound) is its own game: its
   // word moment counts one play rep a saying heard and finishes the day on
   // the intro's last word, each from one place, inside that block alone
-  const talkAt = code.indexOf("── TALK1: a talking story's word moment ──");
+  const talkAt = code.indexOf("function startMoment()");
   ok("…but for a talking story: one gameRep a saying heard and one questEnd on the intro's last page, both in its word moment",
     talkAt > 0 && (code.match(/S\.gameRep\(/g) || []).length === 1 && (code.match(/S\.questEnd\(/g) || []).length === 1 && code.indexOf("S.gameRep(") > talkAt && code.indexOf("S.questEnd(") > talkAt && /if \(mode === "intro"\) \{\s*finished = true;\s*try \{ if \(S\.questEnd\) S\.questEnd\(day\.game\); \}/.test(code));
   ok("…and adventures.js is data alone: no call, no storage, no request", !/fetch\(|localStorage|sessionStorage|Sona\.|XMLHttpRequest|sendBeacon/.test(advCode));

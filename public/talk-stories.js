@@ -20,7 +20,7 @@
            lines, where it has two), that starts with the story's sound
            before a vowel by its pronouncing entry (tests/booklex.json), and
            for R with no second r-coloured sound (the books' key rule;
-           tests/talktest.mjs holds every one to it).
+           tests/talkstorytest.mjs holds every one to it).
    No buddy is laid over these pictures (buddy: none), so no spot was left.
    Every line keeps adventures.js's rules (120 characters at most, no
    child's name, no speech sound named, nothing about how to talk, none of

@@ -2338,6 +2338,94 @@ already exists, never painted in and never under a finger.
   map's stars moved onto the places helped, and the bridge painted out behind
   Day 3's first two pages (the storm broke it the night before).
 
+**TALK1: DAY 1 TALKS IN THE CHILD'S OWN SOUND (31 Oct 2026)** (Travis, of
+"people keep cancelling": "we just need to wow them in their first sessions
+so the daily adventure is prob the one most choose and the day 1 has to be
+aseosme. i htink peoploe were all getting the light house and it wqs
+average. and i want the books in the daily adventrue to be unique depedning
+on the target sound so they are practicing it throughout the story. use the
+chatgpt api to make images"; then "go build the r one and the othe rpopular
+sounds"). Day 1's slot is a TALKING STORY in the child's sound: no separate
+game, every page asks one word in that sound, and the child's voice turns
+the page.
+- **Five stories** (`public/talk-stories.js`, `window.SonaTalkStories`; the
+  day list is `STORY_TALK` in `sona.js`, beside `STORY_DAYS`): R "Robo's
+  Rocket" (`robo`), S "Sandy's Sandcastle" (`sandy`), L "Lulu's Lantern
+  Party" (`lulu`), Z "Zippy's Zoo Parade" (`zippy`), F "Fizz and the Sleepy
+  Fireflies" (`fizz`), the "popular" sounds Travis named on 2 Oct 2026 ("r s
+  l z f"). Each is Days 1-3's shape: Pelly's wrong thing first, the letter,
+  the problem, the child's words fixing it, an ending, a gold star for the
+  helper map; 8 + 4 pages for ages 5-8, 6 + 3 for 3-4.
+- **The key words.** Every page has one `key`: a whole word in its line (both
+  lines), lower case, starting with the story's sound before a vowel by its
+  pronouncing entry (`tests/booklex.json`, the books' key rule; for R no
+  second r-coloured sound), never twice in a story. Its sound's letters are
+  orange in the line (`Sona.soundMark`), the word in a soft teal highlight.
+  Every line keeps adventures.js's rules (120 characters, no name, no sound
+  named, nothing about how to talk, no grade word), and none says "say".
+- **Which child gets which** (`_talkDay()`): the first of the child's
+  practice sounds (`rotSounds()`: homework first, then the family's picks)
+  that has a talking story; none, the lighthouse as before (a child on K, G,
+  TH...). A Day 1 already finished stays what it was: the finish keeps its
+  id (`t1` in `sona.quest.v1`), and a lighthouse finished before this build
+  (index 0 done, no `t1`) is still the lighthouse. Index 0 of the record is
+  still Day 1, so nothing else in the calendar (CAL1) moved. The story's id
+  is its own game key (`STORY_KEYS`), opened by the story's rule
+  (`storyOpen()`); `Sona.storyDay(id)` finds a story by id for this child.
+  **`TALK_ON`** (`sona.js`) is the one off switch: false gives every child
+  the lighthouse again (a talking Day 1 already finished stays). The suites
+  that play the lighthouse as Day 1 set sessionStorage `sona.talkoff` for
+  their tab (adventuretest, storycoretest, homestorytest).
+- **The player** (`adventure.html`, with `saycheck.js` and
+  `talk-stories.js`): each page reads as before (Echo's line, the caption,
+  "Hear it"); when he finishes, Echo asks "Can you say... <word>." (the
+  books' word moment, SayCheck: a voice of the story's sound family, never
+  "the word was right"), a bubble over the card shows the word and **three
+  dots** (`STORY_SAY_TIMES`, the story games' number): the first two sayings
+  only paint ("2 more times!", no voice, no chime, the mic opens again), the
+  third cheers (the chime and confetti once the mic is closed, the word pops,
+  the picture bumps) and the page turns. Each saying heard is one play rep
+  (`gameRep`): 36 on a 5-8 Day 1 (it fills the default goal of 30 and opens
+  the chest, which the lighthouse day's 24 did not), 27 on a 3-4 one. Never
+  practice data. Silence never turns a page and is never a try (12 quiet
+  seconds close the mic; a tap listens again); three tries of the other
+  family turn the page kindly ("Great trying. Let's turn the page."); a
+  grown-up's yes to the mic comes first, inside the story, with the books'
+  words, and "Not now" or a refused mic reads the rest of the visit with
+  Next; the grown-ups' Skip turns one page with no word said; a hidden page
+  closes the mic, and coming back needs a tap. Nothing plays while the mic
+  listens (Echo's line holds it shut, `SayCheck.hold`). A tap on the picture
+  never turns a talking page.
+- **The day:** the intro's last page, heard (or turned by Skip, or by Next
+  with the mic off), finishes the day (`questEnd(<id>)`: one sticker) and
+  the ending plays straight on, no game and no "Tap to see what happens";
+  its last word opens the sticker card ("On Home to read again: <name>!").
+  Home's "Your games" row then holds the story itself: its replay
+  (`/adventure.html?again=1&story=<id>`, only once finished and open) tells
+  the whole story again, every page asking, and finishes nothing.
+- **Pictures:** `tools/art/adventure-prompts.json` has each story's prompts
+  (`talk: true`, its own lineup, no buddy spot); `gen-adventure.mjs --only
+  <id>` draws them and `cut-adventure.py <id>` cuts them, as Days 4-14's.
+  **Not drawn yet** (31 Oct 2026: the cloud workspace's OpenAI key had
+  expired; Travis's task to renew it under the environment's network
+  secrets): until then every page shows its story's wash, Home's card its
+  wash and Echo. No buddy is laid over these pictures, and Home has no clip
+  for them yet (the card falls back to the picture).
+- **For Rachel** (built on defaults until she answers; the PR lists every
+  word): every key word and line; three sayings a page; a child is asked
+  their sound's words whatever their age (the story games' rule, not the
+  books' `soundNorm` rule: a 4-year-old on R is asked R words, and setup
+  picks R for 2-4 year olds, the walkthrough of 31 Oct found); "xylophone"
+  (Z, spelled with an x); "fireworks" for F; S's "seashell" left out on
+  purpose (S then SH); a child the phone can't hear can finish Day 1 by a
+  grown-up's Skip or "Not now" (the lighthouse day could not be finished
+  without being heard).
+- **For Travis:** the five stories and their titles; that the talking story
+  replaces the lighthouse for a child on R, S, L, Z or F (the lighthouse
+  stays for every other sound); the next sounds (K, G, TH, SH, CH...);
+  pictures once the key is renewed, and a Home clip for each.
+`talkstorytest` plays it all.
+
 **Light the Way** (Day 1, `lighthouse.js`, `LIGHTHOUSE1`). A night sea under
 a soft veil; the word, said three times, lights the lamp; the finger moves a
 pool of light (drawn 56 px above a fingertip, or 0.8 of its radius if that is

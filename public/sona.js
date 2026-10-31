@@ -5399,7 +5399,7 @@
   // already finished as a talking story stays that story). The suites that
   // play the lighthouse as Day 1 set sessionStorage "sona.talkoff" for their
   // tab: a child on a sound with no talking story still meets it there, and
-  // talktest plays the talking ones.
+  // talkstorytest plays the talking ones.
   const TALK_ON = true;
   function _talkById(id) { for (let i = 0; i < STORY_TALK.length; i++) if (STORY_TALK[i].id === id) return STORY_TALK[i]; return null; }
   // the talking story in Day 1's slot for the child playing now, or null
