@@ -1585,6 +1585,397 @@
           ]
         }
       }
+    },
+    {
+      "id": "lulu",
+      "light": "night",
+      "lineups": [
+        "lulu"
+      ],
+      "talk": true,
+      "bible": "PELLY: Pelly the pelican, a big white clay pelican (a real pelican, not a duck) with a very long, straight peach-orange bill, longer than her head, and a big, soft, lumpy peach pouch hanging under it, a small round light-blue postal cap with a little white envelope badge (no anchor), no scarf, and a brown leather mail satchel across her body; about twice Echo's height. LULU: Lulu the little lamb, a small, round, fluffy clay lamb (a girl, a real little sheep, not a bunny and not a goat) who stands upright on her two back hooves, with a curly cloud-white woolly coat, a little curly tuft of wool on top of her head, a soft pale peach-pink face with big friendly glossy eyes and small pink cheeks, two soft floppy ears with pink insides that hang down at the sides of her head (nothing sticks up from her head), little pale-grey hooves, and a coral-pink ribbon bow tied at her neck with a tiny round gold bell; no hat, no clothes, no horns, no beard; about one and a quarter times Echo's height. LADYBUG: a tiny, round, friendly clay ladybug with a bright red shell with round black spots, a small black head with two short curly feelers, big friendly glossy eyes, small pink cheeks and six tiny black legs, who carries a tiny round paper lantern on a little stick that glows soft butter yellow; about a quarter of Echo's height. The place in this story is Lulu's lake: a round, calm lake at the bottom of a gentle grassy hill, with tall green reeds and soft round mossy stones at its edges, a grassy shore with a little wooden dock reaching out into the water, and Lulu's home on the shore, a small round red clay barn with a curved roof and a round white door. Along the curving shore path stand round paper lanterns, each a round cream paper lantern with soft ribs and a little honey-wood cap, hanging from the hook of a short curved honey-wood post about as tall as Echo; unlit, every lantern is plain pale cream paper with no glow at all; lit, it glows a soft warm butter yellow. In the middle of the lake is one small, round, grassy island with one little round tree with pink blossoms. The lily pads are big, round, flat and green, each big enough for Echo to stand on, a few with one pink lily flower. The log is one big, round, smooth honey-brown log with soft rounded ends that floats like a little boat, long enough for Echo and Lulu to sit on together.",
+      "who": {
+        "LULU": {
+          "re": "\\bLulu\\b",
+          "label": "Lulu"
+        },
+        "LADYBUG": {
+          "re": "\\b[Ll]adybug\\b",
+          "label": "the ladybug"
+        }
+      },
+      "home": "A wide picture for a game card. At night on Lulu's calm round lake, the big round honey-brown log floats on the still water, and Echo and Lulu the little lamb sit on it side by side, looking up and smiling, as dozens of round paper lanterns glowing soft butter yellow float up into the soft blue-violet sky around them and shine in the water below. The small round island with its little pink-blossom tree is behind them, and a few big round green lily pads float near the log. Echo, Lulu and the log are all in the middle band of the picture: their tops below 25% from the top and their bottoms above 75% from the top, Echo and Lulu just left and right of the middle. Only Echo and Lulu appear: no other characters.",
+      "chars": [
+        {
+          "key": "lulu",
+          "h": 1.25,
+          "prompt": "Lulu the little lamb, full body, standing upright on her two back hooves, facing forward, waving one front hoof and smiling: a small, round, fluffy clay lamb (a girl, a real little sheep, not a bunny and not a goat) with a curly cloud-white woolly coat, a little curly tuft of wool on top of her head, a soft pale peach-pink face with big friendly glossy eyes and small pink cheeks, two soft floppy ears with pink insides that hang down at the sides of her head, little pale-grey hooves, and a coral-pink ribbon bow tied at her neck with a tiny round gold bell; no hat, no clothes, no horns, no beard."
+        },
+        {
+          "key": "ladybug",
+          "h": 0.25,
+          "prompt": "A tiny clay ladybug, full body, standing on her six tiny legs, three-quarter view, smiling: a round, friendly ladybug with a bright red shell with round black spots, a small black head with two short curly feelers, big friendly glossy eyes, small pink cheeks and six tiny black legs, holding up in one front leg a tiny round cream paper lantern on a little stick that glows soft butter yellow."
+        }
+      ],
+      "scenes": {
+        "s01": {
+          "light": "afternoon",
+          "picture": "A warm late afternoon at the round blue front door of Echo's cottage (ECHO'S COTTAGE, exactly as in the attached earlier picture). Pelly the pelican stands on the left of the door and proudly pulls one big, round, bright yellow lemon with a little green leaf out of her beak pouch, holding the lemon in the tip of her bill as if it were a letter, looking very pleased with herself. Echo stands just right of the middle on the wide doorstep, laughing, one wing pointing at the lemon.",
+          "also": [
+            "file:public/assets/adventure/lighthouse/s01.webp"
+          ]
+        },
+        "s02": {
+          "light": "afternoon",
+          "picture": "Close up on the porch of Echo's cottage in the warm late afternoon. Pelly the pelican's big white wing (only her wing and the edge of her body, from the left edge) holds out a cream paper letter in the upper middle of the picture. On the letter is a child's crayon drawing of a little white woolly lamb with a pink bow, waving, beside a round blue lake with a little round island in it, a row of round lanterns on posts along the lake's edge with happy yellow glows drawn around them, and a crayon moon above: only crayon lines, no numbers, no writing at all. Echo stands just left of the middle, leaning in toward the letter, eyes wide with excitement, the big yellow lemon on the porch beside him.",
+          "also": [
+            "file:public/assets/adventure/lighthouse/s02.webp"
+          ]
+        },
+        "s03": {
+          "light": "sunset",
+          "picture": "Sunset on a winding dirt path that runs down a gentle grassy hill between round autumn trees, the path covered in crunchy orange, red and golden leaves. Echo hurries down the path in the lower middle, wings out, happy and excited, a few crunchy leaves flying up around his feet. Far below, at the bottom of the hill in the upper middle of the picture, lies the round calm lake, with the little round red barn on its shore and a row of round paper lanterns on curved posts along the shore, every lantern dark (plain pale cream paper, no glow); a soft lilac mist lies over the middle of the lake and hides it. Nobody else is in the picture."
+        },
+        "s04": {
+          "light": "sunset",
+          "picture": "The very end of the sunset at the edge of the round calm lake: the sun has just gone down behind the hills, the sky fading from peach to lilac-blue, the water dim and still. A row of round paper lanterns on short curved honey-wood posts stands along the grassy shore on both sides, every one of them dark (plain pale cream paper, no glow at all). A soft lilac mist lies over the middle of the lake and hides it completely, so no island can be seen. On the right, the little round red barn stands on the shore with its round white door open and nobody in it. Echo stands near the end of the little wooden dock in the lower middle, one wing shading his eyes, looking out over the misty water, puzzled. Nobody else is in the picture."
+        },
+        "s05": {
+          "light": "night",
+          "picture": "Night at Lulu's lake, the same shore and the same little wooden dock. Every round paper lantern along the shore is lit now, glowing a soft warm butter yellow on its curved post, and their golden light shines across the still water in shimmering paths. The lilac mist has melted away from the middle of the lake, showing the small round grassy island with its little pink-blossom tree in the upper middle of the picture, and on the island Lulu the little lamb stands waving both front hooves, smiling. Between the dock and the island there is only open water: three round green lily pads have drifted far off to the right side, out of reach. Echo stands at the end of the little wooden dock in the lower middle, pointing his wing at Lulu, delighted."
+        },
+        "s06": {
+          "light": "night",
+          "picture": "Night at Lulu's lake, the lanterns glowing warm butter yellow on their posts along the curving shore. A line of big round green lily pads, a few with a pink lily flower, has just floated back into a neat stepping-stone path from the end of the little wooden dock to the small round island, little ripples around each one. Echo is in mid-leap from the dock onto the first lily pad in the lower middle, wings spread wide, happy. On the island in the upper middle, Lulu the little lamb cheers, both front hooves up."
+        },
+        "s07": {
+          "light": "night",
+          "picture": "Night on the small round grassy island under its little pink-blossom tree, warmly lit by the lanterns glowing on the shore across the water. In the middle, Lulu the little lamb hugs Echo tight, both smiling with their eyes closed with joy. Behind them, the line of big round green lily pads leads back across the still water toward the glowing shore. The water around the island is calm and empty."
+        },
+        "s08": {
+          "light": "night",
+          "picture": "Night on Lulu's calm lake. The big round honey-brown log floats across the still water toward the shore in the middle of the picture, with Echo and Lulu the little lamb sitting on it together, Lulu in front waving, Echo behind her cheering, soft ripples trailing behind the log. Ahead on the shore, in the upper part of the picture, the round paper lanterns glow warm butter yellow on their curved posts beside Lulu's little round red barn, still hanging on their posts. The small island with its pink-blossom tree is far behind, small at one side."
+        },
+        "e01": {
+          "light": "night",
+          "picture": "Night at Lulu's lake. On the grassy shore beside Lulu's little round red barn, Echo and Lulu the little lamb stand side by side in the lower middle, looking up, delighted, wings and front hooves raised high, the big round log resting by the little wooden dock beside them. Every round paper lantern has lifted off its post and floats up into the soft blue-violet sky over the lake, dozens of soft glowing butter-yellow lanterns rising like little moons and shining in the still water below. The empty curved posts stand along the shore."
+        },
+        "e02": {
+          "light": "night",
+          "picture": "Night on the lake shore under the floating lanterns, close up. A tiny ladybug carrying her tiny glowing lantern has just landed on the tip of Lulu the little lamb's nose; Lulu, in the middle, looks at it cross-eyed and giggles, front hooves on her cheeks. Echo stands on the right, laughing, one wing over his beak. Soft glowing lanterns drift in the blue-violet sky behind them."
+        },
+        "e03": {
+          "light": "night",
+          "picture": "Night on the lake shore beside Lulu's little round red barn, the lanterns glowing in the sky above the water. Lulu the little lamb stands on the left and holds out, in her two front hooves, a little round cream paper lantern on a short honey-wood stick, glowing soft butter yellow, as a gift. Echo stands in the middle, wings out, gasping with joy. The tiny ladybug sits on top of Lulu's woolly head, smiling."
+        },
+        "e04": {
+          "light": "evening",
+          "picture": "Evening inside Echo's cozy round cottage, lamp-lit: the whole helper map (THE HELPER MAP, the same map as in the attached earlier picture, seen whole as it is there, with its frame and its four brass pins in view) pinned to the wall, filling the upper middle of the picture, with no writing anywhere on it. Most of the map is still covered by soft white puffy clouds. One soft white cloud has just drifted off to one side, uncovering a new place: a tiny round blue lake with a tiny round island and a tiny red barn on its shore. There is NO star of any kind on the map or anywhere else in the picture, except the ONE new gold star Echo is pressing on. A low wooden bench stands under the map; Echo stands on the bench, on tiptoe, pressing ONE new shiny gold star sticker onto the tiny lake with one wing, beaming. A little round paper lantern on a short honey-wood stick rests on the bench beside him, glowing softly. Plain wooden floor below.",
+          "also": [
+            "file:design/adventure/refs/ref-map.webp"
+          ]
+        }
+      }
+    },
+    {
+      "id": "fizz",
+      "light": "sunset",
+      "lineups": [
+        "fizz"
+      ],
+      "talk": true,
+      "bible": "PELLY: Pelly the pelican, a big white clay pelican (a real pelican, not a duck) with a very long, straight peach-orange bill, longer than her head, and a big, soft, lumpy peach pouch hanging under it, a small round light-blue postal cap with a little white envelope badge (no anchor), no scarf, and a brown leather mail satchel across her body; about twice Echo's height. FIZZ: Fizz the little fox, a small, cheerful clay fox about one and a half times Echo's height, standing upright on her back legs: bright orange fur, a cream muzzle, chest and tummy, a big fluffy orange tail with a white tip, two pointy ears with cream insides, a tiny round black nose, big glossy eyes, small pink cheeks, dark brown socks on her paws and a little mint-green bow on one ear; a real fox, never a dog or a cat, no clothes but the bow. FIREFLIES: the fireflies, a happy little swarm of about a dozen tiny clay fireflies, each about a third of Echo's height: a round, chubby little bug with a soft lilac body, a round head with big glossy eyes and small pink cheeks, two thin antennae with little round tips, two small round see-through wings, and a round tail end; not a bee (no stripes, no stinger) and not a ladybug (no spots). Awake, a firefly's tail end glows a soft warm golden yellow like a little night-light; asleep, its eyes are closed and its tail end is plain pale grey with no glow at all. FAWN: a shy little clay fawn (a baby deer, no antlers) nearly twice Echo's height, standing on all four legs: soft caramel-brown fur with a few round white spots on her back, a cream tummy and chin, big soft ears with pink insides, a tiny shiny black nose, big glossy eyes with long lashes, small pink cheeks, a short white tail and four thin legs with tiny dark hooves. The place in this story is Fizz's party clearing in the forest: a round grassy clearing ringed by tall, soft, rounded clay trees with teal-green leaves and big curly ferns, a pale sandy path winding in, a big round tree-stump table in the middle with a few little stump seats around it, and the fairy lights: a long string of little round paper lanterns, each about the size of Echo's head, in soft pastel peach, mint, lilac and butter yellow, hanging on soft brown twine looped from tree to tree all around the clearing. Unlit, every paper lantern is pale and plain with no glow at all; lit, each one glows a soft warm golden yellow from inside.",
+      "who": {
+        "FIZZ": {
+          "re": "\\bFizz\\b",
+          "label": "Fizz"
+        },
+        "FIREFLIES": {
+          "re": "\\b[Ff]ireflies\\b|\\b[Ff]irefly\\b",
+          "label": "the fireflies"
+        },
+        "FAWN": {
+          "re": "\\b[Ff]awn\\b",
+          "label": "the fawn"
+        }
+      },
+      "home": "A wide picture for a game card. In a round grassy forest clearing at a soft lilac sunset, a string of little round paper lanterns (peach, mint, lilac and butter yellow) glows a warm golden yellow, looped from tree to tree, and the little fireflies, their tail ends glowing, swirl up into the sky above in soft curly trails of golden light like gentle fireworks. Echo and Fizz the little fox stand side by side in the middle, waving and laughing, Fizz's fluffy tail curled up behind her. Echo, Fizz and the swirling fireflies are all in the middle band of the picture: their tops below 25% from the top and their bottoms above 75% from the top. Only Echo, Fizz and the fireflies appear: no other characters.",
+      "chars": [
+        {
+          "key": "fizz",
+          "h": 1.5,
+          "prompt": "Fizz the little fox, full body, standing upright on her back legs, facing forward, waving one paw and smiling: a small, cheerful clay fox with bright orange fur, a cream muzzle, chest and tummy, a big fluffy orange tail with a white tip, two pointy ears with cream insides, a tiny round black nose, big glossy eyes, small pink cheeks, dark brown socks on her paws and a little mint-green bow on one ear; a real fox, never a dog or a cat, no clothes but the bow."
+        },
+        {
+          "key": "fawn",
+          "h": 1.8,
+          "prompt": "A shy little clay fawn (a baby deer, no antlers), full body, standing on all four legs, facing forward and smiling: soft caramel-brown fur with a few round white spots on her back, a cream tummy and chin, big soft ears with pink insides, a tiny shiny black nose, big glossy eyes with long lashes, small pink cheeks, a short white tail and four thin legs with tiny dark hooves."
+        },
+        {
+          "key": "firefly",
+          "h": 0.3,
+          "prompt": "One tiny clay firefly, full body, hovering, facing forward and smiling, wide awake: a round, chubby little bug with a soft lilac body, a round head with big glossy eyes and small pink cheeks, two thin antennae with little round tips, two small round see-through wings, and a round tail end that glows a soft warm golden yellow like a little night-light; not a bee (no stripes, no stinger) and not a ladybug (no spots)."
+        }
+      ],
+      "scenes": {
+        "s01": {
+          "light": "afternoon",
+          "picture": "A warm late afternoon at the round blue front door of Echo's cottage (ECHO'S COTTAGE, exactly as in the attached earlier picture). Pelly the pelican stands on the left of the door and proudly pulls one giant, soft silvery-grey clay fork (as long as Echo is tall, with rounded prongs) out of her beak pouch, the fork dangling from the tip of her bill as if it were a letter, looking very pleased with herself. Echo stands just right of the middle on the wide doorstep, laughing, one wing pointing at the fork.",
+          "also": [
+            "file:public/assets/adventure/lighthouse/s01.webp"
+          ]
+        },
+        "s02": {
+          "light": "afternoon",
+          "picture": "Close up on the porch of Echo's cottage in the warm late afternoon. Pelly the pelican's big white wing (only her wing and the edge of her body, from the left edge) holds out a cream paper letter in the upper middle of the picture. On the letter is a child's crayon drawing of a little orange fox with a big bushy tail standing under a tree, a row of tiny round bugs with closed sleepy eyes sitting on one of its branches, and a string of plain round lanterns hanging from the tree: only crayon lines, no writing at all. Echo stands just left of the middle, leaning in toward the letter, eyes wide with excitement, the giant silvery-grey clay fork lying on the porch beside him.",
+          "also": [
+            "file:public/assets/adventure/lighthouse/s02.webp"
+          ]
+        },
+        "s03": {
+          "picture": "A soft sunset at the edge of a cozy forest of tall, soft, rounded clay trees with teal-green leaves and big curly ferns. A pale sandy path twists from the bottom of the picture into the trees. Far ahead along the path, between the trees, a string of little round paper lanterns hangs pale and unlit, with no glow at all. Echo hurries along the path in the lower middle, wings out, happy and excited, little puffs of dust behind him. No one else is in the picture."
+        },
+        "s04": {
+          "picture": "Sunset in Fizz's party clearing in the forest: the round grassy clearing with the big round tree-stump table in the middle and the string of little paper lanterns looped from tree to tree all around it, every lantern pale and unlit with no glow at all. On a low, mossy branch in the upper middle, the little fireflies sit in a row, fast asleep: eyes closed, heads drooping, their tail ends plain pale grey with no glow at all. Fizz the little fox stands on the left, holding up one big, soft, fluffy white feather in her paw, looking hopefully up at the sleepy fireflies. Echo stands on the right, wings on his cheeks, surprised."
+        },
+        "s05": {
+          "picture": "Fizz's party clearing at sunset, the same place. The little fireflies are wide awake now, giggling and wiggling as they buzz up off the low mossy branch, and every firefly's tail end glows a soft warm golden yellow. The paper lanterns on the string around the clearing are still pale and unlit, with no glow yet. Fizz the little fox stands on the left, laughing, still holding the big fluffy white feather. Echo stands on the right, beaming, pointing one wing up at the unlit paper lanterns."
+        },
+        "s06": {
+          "picture": "Fizz's party clearing as the sunset fades to soft lilac. The glowing fireflies zip along the string of paper lanterns, and every lantern now glows a soft warm golden yellow from inside, peach, mint, lilac and butter yellow, twinkling all around the clearing. On the right, at the edge of the clearing, a shy little fawn peeks out from behind a big curly fern, only her head, ears and front legs showing, smiling. Echo stands in the lower middle, waving at the fawn, delighted. Fizz the little fox stands on the left, both paws clasped, happy."
+        },
+        "s07": {
+          "picture": "Fizz's party clearing at a soft lilac sunset, every paper lantern glowing a warm golden yellow all around it and the glowing fireflies twinkling in the air. Around the big round tree-stump table in the middle: Fizz the little fox stands on the left and pours bubbly pink berry juice from a round clay jug into little round acorn cups, tiny bubbles fizzing up out of the cups. Echo stands in the middle behind the table, holding up a little acorn cup in one wing, grinning. The little fawn stands on the right with her nose in her cup, eyes squeezed shut and giggling as the bubbles tickle her nose."
+        },
+        "s08": {
+          "picture": "Fizz's party clearing at a soft lilac sunset, every paper lantern glowing a warm golden yellow all around it. All the glowing fireflies have swirled up together high above the clearing, in the upper middle of the picture, into one big round ball of soft golden light. Below it, Echo stands in the middle with his wings up, Fizz the little fox on the left with both paws raised high, and the little fawn on the right, all looking up at the glowing ball with big excited eyes."
+        },
+        "e01": {
+          "picture": "High above Fizz's party clearing in a soft lilac evening sky, the fireflies burst out of their glowing ball in every direction like gentle fireworks: soft curly trails of warm golden light swirl across the whole upper half of the picture (a soft glow, never fire, no smoke). Below, under the glowing paper lanterns, Echo stands in the middle, Fizz the little fox on the left and the fawn on the right, all looking up and laughing, just starting to dance on happy hopping feet."
+        },
+        "e02": {
+          "picture": "Fizz's party clearing under the glowing paper lanterns on a soft lilac evening. Echo, Fizz the little fox and the little fawn dance together in a happy circle on the grass: Echo in the middle hopping with his wings out, Fizz on the left twirling with her fluffy tail swishing, and the fawn on the right doing a funny little skip. The glowing fireflies twirl in the air around them. Behind them, the big tree-stump table is set with round berry pies and honey buns."
+        },
+        "e03": {
+          "picture": "Beside the big tree-stump table in Fizz's party clearing (round berry pies and honey buns on it), under the glowing paper lanterns on a soft lilac evening. Fizz the little fox stands on the left and holds out, in both paws, a small pretty paper fan, open like a half circle, soft peach and lilac with little gold dots on it. Echo stands in the middle, wings out, gasping with joy. The fawn stands on the right, smiling, a berry crumb on her nose. A few glowing fireflies twinkle above them."
+        },
+        "e04": {
+          "light": "evening",
+          "picture": "Evening inside Echo's cozy round cottage, lamp-lit: the whole helper map (THE HELPER MAP, the same map as in the attached earlier picture, seen whole as it is there, with its frame and its four brass pins in view) pinned to the wall, filling the upper middle of the picture, with no writing anywhere on it. Most of the map is still covered by soft white puffy clouds. One soft white cloud has just drifted off to one side, uncovering a new place: a tiny round forest clearing ringed by little green trees, with a tiny string of glowing golden dots looped between them. There is NO star of any kind on the map or anywhere else in the picture, except the ONE new gold star Echo is pressing on. A low wooden bench stands under the map; Echo stands on the bench, on tiptoe, pressing ONE new shiny gold star sticker onto the tiny forest clearing with one wing, beaming. A small open paper fan, soft peach and lilac with little gold dots, rests on the bench beside him. Plain wooden floor below.",
+          "also": [
+            "file:design/adventure/refs/ref-map.webp"
+          ]
+        }
+      }
+    },
+    {
+      "id": "sandy",
+      "light": "day",
+      "lineups": [
+        "sandy"
+      ],
+      "talk": true,
+      "bible": "PELLY: Pelly the pelican, a big white clay pelican (a real pelican, not a duck) with a very long, straight peach-orange bill, longer than her head, and a big, soft, lumpy peach pouch hanging under it, a small round light-blue postal cap with a little white envelope badge (no anchor), no scarf, and a brown leather mail satchel across her body; about twice Echo's height. SANDY: Sandy the sea turtle, a friendly clay sea turtle about one and a half times Echo's height who stands up on her two back flippers like a person: a soft sea-green body, four flat, rounded paddle flippers (no legs, no feet, no claws, no fingers), a round, gently domed honey-and-caramel shell with a soft pattern of big rounded patches, a pale butter-yellow tummy, a round friendly face with big round eyes, small pink cheeks and a wide happy smile, and a little floppy coral-pink sun hat with a wide soft brim; no glasses, no flowers, no scarf. SEAL: a little clay seal pup, soft silver-grey with a pale cream tummy, a round head with no ears showing, big shiny dark friendly eyes, a round black nose, long white whiskers, small pink cheeks, two front flippers and two little back flippers at the end of her body; when she sits up on her tummy with her head raised she is about Echo's height. SEAHORSE: a little clay seahorse about Echo's height, sunny butter-yellow with soft orange spots, a curly tail, a short round snout, a small frilly fin on its back, big friendly eyes and small pink cheeks; it floats upright in the water. The place in this story is Sandy's beach: a little curved beach of soft golden sand on a calm turquoise bay, with small gentle waves, a few smooth round grey rocks, tufts of green beach grass on low sandy dunes and one leaning palm tree. On the beach stands Sandy's sandcastle: a chubby, round, golden sandcastle about three times Echo's height, with one tall round middle tower and four short round towers around it, little round windows poked into its walls and a round arched door, on a small raised bump of sand above the waves.",
+      "who": {
+        "SANDY": {
+          "re": "\\bSandy\\b",
+          "label": "Sandy the sea turtle"
+        },
+        "SEAL": {
+          "re": "\\bseal\\b",
+          "label": "the little seal"
+        },
+        "SEAHORSE": {
+          "re": "\\bseahorse\\b",
+          "label": "the little seahorse"
+        }
+      },
+      "home": "A wide picture for a game card. On a sunny golden beach beside a calm turquoise bay with small gentle waves, Sandy's chubby round golden sandcastle stands tall, its towers dotted with pretty pink and white shells, a leaning palm tree far behind it. Echo waves happily from the top of the tall middle tower, and Sandy the sea turtle stands just left of the sandcastle, waving one front flipper and smiling. Echo, Sandy and the sandcastle are all in the middle band of the picture: their tops below 25% from the top and their bottoms above 75% from the top, the sandcastle just right of the middle. Only Echo and Sandy appear: no other characters.",
+      "chars": [
+        {
+          "key": "sandy",
+          "h": 1.5,
+          "prompt": "Sandy the sea turtle, full body, standing up on her two back flippers like a person, facing forward, waving one front flipper and smiling: a friendly clay sea turtle with a soft sea-green body, four flat, rounded paddle flippers (no legs, no feet, no claws, no fingers), a round, gently domed honey-and-caramel shell with a soft pattern of big rounded patches, a pale butter-yellow tummy, a round friendly face with big round eyes, small pink cheeks and a wide happy smile, and a little floppy coral-pink sun hat with a wide soft brim; no glasses, no flowers, no scarf."
+        },
+        {
+          "key": "seal",
+          "h": 1.0,
+          "prompt": "A little clay seal pup, full body, sitting up on her tummy with her head raised, facing forward and smiling: soft silver-grey with a pale cream tummy, a round head with no ears showing, big shiny dark friendly eyes, a round black nose, long white whiskers, small pink cheeks, two front flippers and two little back flippers at the end of her body."
+        },
+        {
+          "key": "seahorse",
+          "h": 1.0,
+          "prompt": "A little clay seahorse, full body, floating upright, facing a little to one side and smiling: sunny butter-yellow with soft orange spots, a curly tail, a short round snout, a small frilly fin on its back, big friendly eyes and small pink cheeks."
+        }
+      ],
+      "scenes": {
+        "s01": {
+          "light": "day",
+          "picture": "A bright sunny morning at the round blue front door of Echo's cottage (ECHO'S COTTAGE, exactly as in the attached earlier picture). Pelly the pelican stands on the left of the door and proudly pulls a round sky-blue bowl full of warm orange-red tomato soup out of her beak pouch, the bowl balanced on the tip of her bill as if it were a letter, a little curl of steam rising from it and not one drop spilled, looking very pleased with herself. Echo stands just right of the middle on the wide doorstep, laughing, wings up.",
+          "also": [
+            "file:public/assets/adventure/lighthouse/s01.webp"
+          ]
+        },
+        "s02": {
+          "light": "day",
+          "picture": "Close up on the porch of Echo's cottage on a sunny morning. Pelly the pelican's big white wing (only her wing and the edge of her body, from the left edge) holds out a cream paper letter in the upper middle of the picture. On the letter is a child's crayon drawing of a smiling green sea turtle in a pink sun hat beside a flopped, lumpy heap of sand, with a big round crayon sun above and wavy blue crayon lines for the water: only crayon lines, no writing at all. Echo stands just left of the middle, leaning in toward the letter, eyes wide with excitement, the sky-blue bowl of tomato soup on the porch beside him.",
+          "also": [
+            "file:public/assets/adventure/lighthouse/s02.webp"
+          ]
+        },
+        "s03": {
+          "light": "day",
+          "picture": "A bright sunny morning out on a calm turquoise bay with small gentle waves, a round friendly sun high in the blue sky. A little round wooden sailboat with one plain cream sail, puffed full of wind, glides across the water toward a curved golden beach in the distance with a leaning palm tree on it. Echo sits in the little sailboat in the lower middle of the picture, wings up, beaming, the breeze ruffling his two head feathers. No one else is in the boat or in the picture."
+        },
+        "s04": {
+          "light": "day",
+          "picture": "On Sandy's beach on a sunny morning: soft golden sand, a calm turquoise bay with small gentle waves behind. In the middle of the picture Sandy's sandcastle has just slumped down into a big, lumpy, round heap of dry sand, one little wobbly tower tipping over on top of the heap and a small puff of sand flying off it. Sandy the sea turtle stands on the left beside the heap, a little sand on her sun hat, both front flippers on her cheeks, puzzled and silly, not sad. Echo stands on the right of the heap, wings up, surprised. A small red bucket and a little wooden spade lie on the sand."
+        },
+        "s05": {
+          "light": "day",
+          "picture": "On Sandy's beach on a sunny morning, the same beach. The sandcastle is standing up now, tall and whole in the middle of the picture: the chubby, round, golden sandcastle with its tall round middle tower, four short round towers, little round windows and a round arched door, a soft swirl of golden sand still settling around its base as if it just whooshed up by magic. Its walls and towers are plain golden sand, with no shells on it yet. Sandy the sea turtle stands on the left, both front flippers up, cheering. Echo stands on the right, beaming, pointing one wing at the plain bare tops of the towers."
+        },
+        "s06": {
+          "light": "day",
+          "picture": "On Sandy's beach at the water's edge on a sunny morning. A little seal pops her head and shoulders up out of the small gentle waves on the right, smiling, with a little wobbly pile of seven pretty pink and white shells balanced on the tip of her nose. Echo stands on the wet sand in the lower middle, wings out, delighted. Sandy the sea turtle stands on the left beside the tall golden sandcastle, whose walls are still plain with no shells on them, front flippers clasped, happy."
+        },
+        "s07": {
+          "light": "afternoon",
+          "picture": "On Sandy's beach in the warm late afternoon, the sun still well above the sea (it is not sunset yet). The tall, chubby, round golden sandcastle stands in the middle, now decorated with seven pretty pink and white shells pressed into its towers and walls. Sandy the sea turtle stands on the left, pressing the last shell onto a tower with one front flipper, smiling. The little seal sits on the sand on the right, clapping her front flippers. Echo stands in front of the sandcastle in the lower middle, wings up, proud and happy."
+        },
+        "s08": {
+          "light": "sunset",
+          "picture": "On Sandy's beach at a soft peach-and-lilac sunset, the round sun sinking low over the sea and the sky turning pink and gold. The tall golden sandcastle with its pretty shells stands in the middle, still dry and whole. From the right, one big, soft, bubbly turquoise wave with a fluffy white foamy top is rolling in toward the sandcastle, gentle and silly, never scary, with no face on it; it has not reached the sandcastle yet. Echo stands just left of the sandcastle, wings up, eyes wide. Sandy the sea turtle and the little seal stand on the left beside him, front flippers up, surprised."
+        },
+        "e01": {
+          "light": "sunset",
+          "picture": "On Sandy's beach at a soft peach-and-lilac sunset. The big bubbly wave has turned around: it is curling back the other way and rolling out to sea, leaving only a little lacy line of white foam on the sand that stops just short of the sandcastle. The tall golden sandcastle with its pretty shells stands safe and dry in the middle. Echo stands on the left of the sandcastle, wings up, cheering, and Sandy the sea turtle and the little seal cheer beside him, everyone beaming."
+        },
+        "e02": {
+          "light": "sunset",
+          "picture": "At the water's edge on Sandy's beach at a soft peach-and-lilac sunset, the tall golden sandcastle with its pretty shells behind. A little yellow seahorse bobs up out of the gentle waves on the right, singing happily with its snout raised. Echo stands in the middle on the wet sand, singing too, wings out, beak wide open in a happy song. Sandy the sea turtle and the little seal sway together on the left, singing with their eyes closed in joy. A few small soft round clay music-note shapes float above them (soft clay shapes, not letters)."
+        },
+        "e03": {
+          "light": "sunset",
+          "picture": "On Sandy's beach at sunset, warmly lit, the tall golden sandcastle with its pretty shells behind. Sandy the sea turtle stands on the left and holds out, in her two front flippers, a small shiny silver shell that glows softly in the sunset light. Echo stands in the middle, wings out, gasping with joy. The little seal sits on the right, smiling, and the little seahorse peeks up from the gentle waves behind them, smiling."
+        },
+        "e04": {
+          "light": "evening",
+          "picture": "Evening inside Echo's cozy round cottage, lamp-lit: the whole helper map (THE HELPER MAP, the same map as in the attached earlier picture, seen whole as it is there, with its frame and its four brass pins in view) pinned to the wall, filling the upper middle of the picture, with no writing anywhere on it. Most of the map is still covered by soft white puffy clouds. One soft white cloud has just drifted off to one side, uncovering a new place: a tiny curved golden beach beside blue water with a tiny round sandcastle on it. There is NO star of any kind on the map or anywhere else in the picture, except the ONE new gold star Echo is pressing on. A low wooden bench stands under the map; Echo stands on the bench, on tiptoe, pressing ONE new shiny gold star sticker onto the tiny sandcastle with one wing, beaming. A small shiny silver shell rests on the bench beside him. Plain wooden floor below.",
+          "also": [
+            "file:design/adventure/refs/ref-map.webp"
+          ]
+        }
+      }
+    },
+    {
+      "id": "zippy",
+      "light": "day",
+      "lineups": [
+        "zippy"
+      ],
+      "talk": true,
+      "bible": "PELLY: Pelly the pelican, a big white clay pelican (a real pelican, not a duck) with a very long, straight peach-orange bill, longer than her head, and a big, soft, lumpy peach pouch hanging under it, a small round light-blue postal cap with a little white envelope badge (no anchor), no scarf, and a brown leather mail satchel across her body; about twice Echo's height. ZIPPY: Zippy the zebra, a young, round, friendly clay zebra about twice Echo's height (as tall as Pelly), who stands upright on his two back hooves and uses his front hooves like hands: bold, wavy black-and-white stripes all over, a short fluffy black-and-white mane standing up along his neck like a little brush, a soft round grey nose, small pink cheeks, big friendly eyes, little round ears, a short tufty tail, a small round red bandleader's cap with a fluffy yellow pompom on top, and a shiny red parade jacket with gold trim and one big gold zipper down the front; the jacket hangs open unless the scene says it is zipped up; never scary. ZOOKEEPER: the zookeeper, a big, gentle, round grey clay elephant about three times Echo's height, standing upright on two legs, with big floppy ears with pink insides, a long curly trunk, small pink cheeks, kind eyes, a little green zookeeper's cap with a round leaf badge (no writing) and a green vest with one pocket. MONKEY: a little brown clay monkey about Echo's height, with a cream face and tummy, big round ears, a long curly tail, small pink cheeks and big friendly eyes. HIPPO: a round, chubby lilac-grey clay baby hippo about one and a half times Echo's height, with a wide happy smile, tiny round ears, small pink cheeks and big friendly eyes. The place in this story is Zippy's zoo: a sunny, friendly clay zoo with no cages, no bars and no fences, just soft green lawns, round flower beds, leafy round trees and a little blue pond, a winding cream-colored parade path with strings of little black-and-white striped flags across it, and at the front a big round arched gate painted with black-and-white zebra stripes. On the path waits the parade float: a big, chubby, rounded clay wagon on four big round wheels, painted with black-and-white zebra stripes, with a soft round stage on top, a ring of round light bulbs all around its edge and one big round red button on its front, about four times Echo's height. The zookeeper's xylophone, wherever a scene shows it, is a big, bright clay xylophone on little wheels: a row of chunky rainbow-colored bars from long to short on a wooden frame, played with round-headed mallets. No writing anywhere.",
+      "who": {
+        "ZIPPY": {
+          "re": "\\bZippy\\b",
+          "label": "Zippy the zebra"
+        },
+        "ZOOKEEPER": {
+          "re": "\\b[Zz]ookeeper\\b",
+          "label": "the zookeeper elephant"
+        },
+        "MONKEY": {
+          "re": "\\bmonkey\\b",
+          "label": "the little monkey"
+        },
+        "HIPPO": {
+          "re": "\\bhippo\\b",
+          "label": "the baby hippo"
+        }
+      },
+      "home": "A wide picture for a game card. On a sunny afternoon in a friendly clay zoo, the big chubby parade float (a rounded wagon on four big round wheels, painted with black-and-white zebra stripes, with a ring of glowing round light bulbs around its edge and a few round balloons tied on) rolls along a winding cream-colored path, just through a big round arched gate painted with black-and-white stripes, little striped flags fluttering above. Zippy the zebra, his shiny red parade jacket zipped up and his little red cap on, stands at the front of the float's stage with one front hoof raised high, and Echo bounces beside him, waving excitedly. Echo, Zippy and the float are all in the middle band of the picture: their tops below 25% from the top and their bottoms above 75% from the top, the float just right of the middle. Only Echo and Zippy appear: no other characters.",
+      "chars": [
+        {
+          "key": "zippy",
+          "h": 2.0,
+          "prompt": "Zippy the zebra, full body, standing upright on his two back hooves, facing forward, waving one front hoof and smiling: a young, round, friendly clay zebra with bold, wavy black-and-white stripes all over, a short fluffy black-and-white mane standing up along his neck like a little brush, a soft round grey nose, small pink cheeks, big friendly eyes, little round ears, a short tufty tail, a small round red bandleader's cap with a fluffy yellow pompom on top, and a shiny red parade jacket with gold trim and one big gold zipper down the front, hanging open."
+        },
+        {
+          "key": "zookeeper",
+          "h": 3.0,
+          "prompt": "The zookeeper, full body, standing upright on two legs, facing forward, smiling, her curly trunk raised in a happy wave: a big, gentle, round grey clay elephant with big floppy ears with pink insides, small pink cheeks, kind eyes, a little green zookeeper's cap with a round leaf badge (no writing) and a green vest with one pocket."
+        },
+        {
+          "key": "monkey",
+          "h": 1.0,
+          "prompt": "A little brown clay monkey, full body, standing on its back legs, facing forward, waving one hand and smiling: a cream face and tummy, big round ears, a long curly tail, small pink cheeks and big friendly eyes."
+        },
+        {
+          "key": "hippo",
+          "h": 1.5,
+          "prompt": "A round, chubby lilac-grey clay baby hippo, full body, standing on its back legs, facing forward, waving one front foot and smiling: a wide happy smile, tiny round ears, small pink cheeks and big friendly eyes."
+        }
+      ],
+      "scenes": {
+        "s01": {
+          "light": "day",
+          "picture": "A bright sunny morning at the round blue front door of Echo's cottage (ECHO'S COTTAGE, exactly as in the attached earlier picture). Pelly the pelican stands on the left of the door and proudly pulls one big, shiny, dark green zucchini out of her beak pouch, the zucchini dangling from the tip of her bill as if it were a letter, looking very pleased with herself. Echo stands just right of the middle on the wide doorstep, laughing, wings up.",
+          "also": [
+            "file:public/assets/adventure/lighthouse/s01.webp"
+          ]
+        },
+        "s02": {
+          "light": "day",
+          "picture": "Close up on the porch of Echo's cottage on a sunny morning. Pelly the pelican's big white wing (only her wing and the edge of her body, from the left edge) holds out a cream paper letter in the upper middle of the picture. On the letter is a child's crayon drawing of a little striped zebra in a red cap standing beside a big striped wagon on round wheels, with the wagon's ring of little lights drawn dark and a sad wavy mouth on the zebra: only crayon lines, no writing at all. Echo stands just left of the middle, leaning in toward the letter, eyes wide with excitement, the big green zucchini lying on the porch beside him.",
+          "also": [
+            "file:public/assets/adventure/lighthouse/s02.webp"
+          ]
+        },
+        "s03": {
+          "light": "day",
+          "picture": "A sunny morning on a twisty cream-colored path that winds across soft green lawns between round flower beds and leafy round trees. At the far end of the path stands the zoo's big round arched gate, painted with black-and-white zebra stripes, wide open, little striped flags along its top. Echo hurries along the path in the lower middle, wings out, happy and excited, little puffs of dust behind him. No one else is in the picture."
+        },
+        "s04": {
+          "light": "day",
+          "picture": "Inside the sunny zoo, on the cream-colored parade path just past the striped gate. In the middle stands the parade float, a big chubby rounded wagon on four big round wheels, painted with black-and-white zebra stripes, with a soft round stage on top: every round light bulb around its edge is dark and off, and the float sits still, stuck, its big round red button on the front. Zippy the zebra stands on the left beside the float, his red parade jacket hanging open, his ears drooping and his mouth a little sad. Echo stands on the right, pointing one wing at the big red button, eager. The little striped flags hang limp across the path."
+        },
+        "s05": {
+          "light": "day",
+          "picture": "The same spot on the zoo's parade path, the same parade float. Now every round light bulb around the float's edge is lit, glowing warm butter yellow, and a soft round puff of golden light is fading away around the big red button. Zippy the zebra stands on the left, laughing, his fluffy black-and-white mane sticking straight up in a funny, springy puff, his red parade jacket still hanging open. Echo stands on the right of the float, beaming, wings up. No one else is in the picture."
+        },
+        "s06": {
+          "light": "day",
+          "picture": "On the zoo's parade path beside the glowing parade float. From the right, the zookeeper, the big gentle grey elephant in her little green cap and green vest, rolls in the big, bright rainbow xylophone on its little wheels, one round-headed mallet curled in her trunk, smiling. Echo stands in the lower middle, wings out, delighted. Zippy the zebra stands on the left, front hooves clasped, happy, his red parade jacket still hanging open."
+        },
+        "s07": {
+          "light": "day",
+          "picture": "On top of the glowing parade float's round stage. On the right, the zookeeper elephant plays the rainbow xylophone with a mallet held in her curly trunk, her eyes closed happily. In the middle, Zippy the zebra stands up tall in his shiny red parade jacket, which is still open, holding the little gold zipper pull at the bottom of it with one front hoof, about to zip it up. Echo stands on the left, bouncing happily, wings out."
+        },
+        "s08": {
+          "light": "day",
+          "picture": "The parade float on the zoo's parade path, seen from the front, its ring of round lights glowing warm yellow, the striped flags fluttering across the path ahead of it. Zippy the zebra stands proudly at the front of the float's stage, his shiny red parade jacket zipped all the way up to his chin, one front hoof raised high. Echo stands beside him on the right, bouncing with excitement. The zookeeper elephant stands behind them at the rainbow xylophone, a mallet raised in her trunk. The float's wheels are still, just about to roll."
+        },
+        "e01": {
+          "light": "day",
+          "picture": "The parade float rolls along the winding cream-colored parade path through the sunny zoo, its ring of round lights glowing, a few round balloons tied to its edge bobbing in the breeze, little puffs of dust behind its turning wheels. Zippy the zebra, his red parade jacket zipped up, leads at the front of the float's stage with one front hoof high, Echo cheers beside him with his wings up, and the zookeeper elephant plays the rainbow xylophone behind them. Little striped flags flutter across the path."
+        },
+        "e02": {
+          "light": "afternoon",
+          "picture": "Seen from a little above, the parade float zooms along the winding parade path as it zigzags left and right between round flower beds, its lights glowing and its balloons streaming out behind it. On the left, a little brown monkey hangs by its tail from a leafy tree branch, waving and cheering. On the right, a baby hippo stands in a little blue pond, splashing happily and cheering. Echo and Zippy the zebra wave from the front of the float, and the zookeeper elephant plays the xylophone behind them."
+        },
+        "e03": {
+          "light": "afternoon",
+          "picture": "At the end of the parade, the float has stopped beside the little blue pond under strings of striped flags, its lights glowing softly. Zippy the zebra, his red parade jacket zipped up, stands on the left and holds out a little black-and-white striped flag on a short wooden stick to Echo. Echo stands in the middle, wings out, gasping with joy. The zookeeper elephant stands on the right, smiling, and the baby hippo and the little monkey peek out happily from behind the float."
+        },
+        "e04": {
+          "light": "evening",
+          "picture": "Evening inside Echo's cozy round cottage, lamp-lit: the whole helper map (THE HELPER MAP, the same map as in the attached earlier picture, seen whole as it is there, with its frame and its four brass pins in view) pinned to the wall, filling the upper middle of the picture, with no writing anywhere on it. Most of the map is still covered by soft white puffy clouds. One soft white cloud has just drifted off to one side, uncovering a new place: a tiny zoo with a round striped gate, a winding path and a tiny striped parade float. There is NO star of any kind on the map or anywhere else in the picture, except the ONE new gold star Echo is pressing on. A low wooden bench stands under the map; Echo stands on the bench, on tiptoe, pressing ONE new shiny gold star sticker onto the tiny zoo with one wing, beaming. A little black-and-white striped flag on a short wooden stick rests on the bench beside him. Plain wooden floor below.",
+          "also": [
+            "file:design/adventure/refs/ref-map.webp"
+          ]
+        }
+      }
     }
   ],
   "arcade": "A wide picture for a button. Echo, cheerful and waving, in the very middle of the picture, with fun game things tumbling around him in the air: a juicy watermelon slice, an orange basketball, a black-and-white piano key, a soccer ball, and a cartoon dinosaur bone. A soft, bright sky-blue background with a few puffy clouds. Echo fills the middle third of the picture's width and the middle of its height; the game things stay around him. No text.",

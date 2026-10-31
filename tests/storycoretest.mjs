@@ -98,7 +98,8 @@ function seed({ age = 7, premium = false, sell = false, stamp = "kept", quest = 
     const R = Date, at = () => { const r = new R(R.now()); return new R(r.getFullYear(), r.getMonth(), r.getDate() + window.__shiftDays, r.getHours(), r.getMinutes(), r.getSeconds(), r.getMilliseconds()).getTime(); };
     const N = function (...a) { return a.length ? new R(...a) : new R(at()); };
     N.now = at; N.UTC = R.UTC; N.parse = R.parse; N.prototype = R.prototype; window.Date = N;
-    try { sessionStorage.setItem("sona.paidui", "1"); ${sell ? 'sessionStorage.setItem("sona.websalesui", "1");' : 'sessionStorage.setItem("sona.websalesui", "0");'} } catch (e) {}
+    // TALK1: this suite plays the lighthouse as Day 1 (a child on a sound with no talking story still meets it); talktest plays the talking ones
+    try { sessionStorage.setItem("sona.talkoff", "1"); sessionStorage.setItem("sona.paidui", "1"); ${sell ? 'sessionStorage.setItem("sona.websalesui", "1");' : 'sessionStorage.setItem("sona.websalesui", "0");'} } catch (e) {}
     if (localStorage.getItem("__seeded")) return; localStorage.setItem("__seeded", "1");
     localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Mia", childAge: "${age}", focusSounds: ["R"], onboarded: true, voiceOn: true, volume: 0.8${premium ? ", earlyAdopter: true" : ""} }));
     localStorage.setItem("sona.freeera.v1", "post");
@@ -654,6 +655,8 @@ await section("the story's offer", async () => {
             if (v && typeof v.replay === "function") { const r = v.replay; v.replay = function (on) { window.__replays.push(on); return r.apply(this, arguments); }; }
             if (prev && prev.set) prev.set(v); else real = v; } });
         });
+        // TALK1: today's story is the lighthouse here (talktest plays the talking ones)
+        await page.addInitScript(() => { try { sessionStorage.setItem("sona.talkoff", "1"); } catch (e) {} });
         const sent = hits.length;
         await page.goto(base + "/subscribe.html?from=adventure");
         await page.waitForFunction(() => document.body.classList.contains("offer"), null, { timeout: 8000 });
@@ -693,6 +696,8 @@ async function gamePage(query, cfg = {}) {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: "reduce" });
   await context.route("**/*", (route) => route.request().url().startsWith(origin + "/") ? route.continue() : route.abort());
   await context.addInitScript(fakeDevice, Object.assign({ age: "7", micok: true, permission: "granted", speechMs: 80 }, cfg));
+  // TALK1: Day 1 is the lighthouse here (talktest plays the talking ones)
+  await context.addInitScript(() => { try { sessionStorage.setItem("sona.talkoff", "1"); } catch (e) {} });
   const page = await context.newPage(); page.setDefaultTimeout(8000);
   const errors = []; page.on("pageerror", (e) => errors.push(e.message));
   await page.goto(origin + "/_storygame.html?" + query);

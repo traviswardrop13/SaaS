@@ -72,6 +72,11 @@ const STORY_IDS = [...((SRC.match(/const STORY_DAYS = \[([\s\S]*?)\n  \];/) || [
   ok("every line: 120 characters at most, plain punctuation, no word about talking or grading, no count of stars", bad.length === 0, bad.slice(0, 6));
   ok("every line ending names a gold star for the helper map, and never counts", ids.every((id) => { const e = T[id].ending[3]; return linesOf(e).every((l) => /gold star/i.test(l) && /helper map/i.test(l)); }));
   ok("every Home line and title is short and plain", TALK.every((t) => t.line.length <= 100 && t.title.length <= 32 && !/\b(say|sound|voice)\b/i.test(t.line)), TALK);
+  const TCODE = readFileSync(ROOT + "/talk-stories.js", "utf8");
+  ok("talk-stories.js is data alone and ES5: no call, no storage, no request, no arrow, let, const, class or template",
+    !/fetch\(|localStorage|sessionStorage|Sona\.|XMLHttpRequest|sendBeacon/.test(TCODE) && !/=>|\blet\s|\bconst\s|\bclass\s|`/.test(TCODE));
+  const HOME_CSS = readFileSync(ROOT + "/crafted-home.css", "utf8");
+  ok("Home's day card has each talking story's wash behind its picture", ids.every((id) => new RegExp('\\.quest-art\\[data-story="' + id + '"\\]\\{background:' + T[id].wash + ";\\}", "i").test(HOME_CSS)), ids);
   // the picture prompts, and the pictures that exist
   const P = JSON.parse(readFileSync(path.resolve(ROOT, "../tools/art/adventure-prompts.json"), "utf8"));
   const parts = ["s01", "s02", "s03", "s04", "s05", "s06", "s07", "s08", "e01", "e02", "e03", "e04"];
@@ -111,7 +116,7 @@ const browser = await chromium.launch(launchOpts());
 function seed(c) {
   return `(() => {
     if (localStorage.getItem("__seeded")) return; localStorage.setItem("__seeded", "1");
-    try { sessionStorage.setItem("sona.paidui", "1"); sessionStorage.setItem("sona.websalesui", "${c.sell ? 1 : 0}"); } catch (e) {}
+    try { sessionStorage.setItem("sona.paidui", "1"); sessionStorage.setItem("sona.websalesui", "${c.sell ? 1 : 0}"); ${c.talkoff ? 'sessionStorage.setItem("sona.talkoff", "1");' : ""} } catch (e) {}
     localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Mia", childAge: "${c.age || 7}", focusSounds: ${JSON.stringify(c.focus || ["R"])}, onboarded: true, voiceOn: true, volume: 0.8${c.premium === false ? "" : ", earlyAdopter: true"} }));
     localStorage.setItem("sona.freeera.v1", "post");
     ["sona.freeera2.v1", "sona.freeera3.v1", "sona.freeera4.v1", "sona.freeera5.v1"].forEach((k) => localStorage.setItem(k, "done"));
@@ -205,6 +210,9 @@ await section("Day 1's slot", async () => {
   ok("…a child on K then R: the first of their sounds that has a talking story (R)", hw.q.id === "robo", hw.q);
   const done = await probe({ focus: ["R"], quest: { f: [0], s: 1, ls: 0, lk: "story", done: "2026-10-01", fd: "2026-10-01", a: "2026-09-30", sv: "2026-09-30" } });
   ok("a lighthouse finished before this build stays the lighthouse: Day 1 done, the R story is no day here", done.q.id !== "robo" && done.lh && done.lh.day === 1 && done.day === null, done);
+  const off = await probe({ focus: ["R"], talkoff: true });
+  ok("the lighthouse suites' seam (sessionStorage sona.talkoff): Day 1 is the lighthouse for that tab", off.q.id === "lighthouse" && off.day === null, off.q);
+  ok("sona.js keeps the one off switch, TALK_ON, switched on", /const TALK_ON = true;/.test(SRC));
   const locked = await probe({ focus: ["R"], premium: false, stamp: "post" });
   ok("no Premium: the story's own key is closed like every story", locked.access === false, locked);
 });
