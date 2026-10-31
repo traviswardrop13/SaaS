@@ -360,9 +360,11 @@
        (teal border, filled dot), the other is cream with an empty ring. Both
        keep the same border width, so a pick moves nothing. With one row
        neither carries aria-checked, and the row looks as it always did. */
+    #iapLife:not([hidden]) + #iapYear:not([hidden]),#iapLife:not([hidden]) + #iapYear[hidden] + #iapPlan{margin-top:10px;}
     #iapYear:not([hidden]) + #iapPlan{margin-top:10px;}
-    /* the one payment, a third row under monthly (22 Oct 2026), the same gap */
-    #iapPlan:not([hidden]) + #iapLife:not([hidden]){margin-top:10px;}
+    /* the one payment on top since 31 Oct 2026 (a third row under monthly
+       from 22 Oct), the same gap to the row under it */
+
     /* the one line about NOTIFY1's heads-up, under the button and the small
        print, only when this phone will show it for the picked row */
     .oneplan-ahead{margin:8px 0 0;text-align:center;font-weight:800;font-size:12.5px;line-height:1.35;color:#0a7470;}
@@ -422,7 +424,7 @@
        not put the button on the first screen, which with one or two rows
        never happens, so their cards are exactly as before. */
     body.fit9.offer .oneplan{padding:9px 10px 6px;}
-    body.fit9.offer #iapYear:not([hidden]) + #iapPlan,body.fit9.offer #iapPlan:not([hidden]) + #iapLife:not([hidden]){margin-top:6px;}
+    body.fit9.offer #iapYear:not([hidden]) + #iapPlan,body.fit9.offer #iapLife:not([hidden]) + #iapYear:not([hidden]),body.fit9.offer #iapLife:not([hidden]) + #iapYear[hidden] + #iapPlan{margin-top:6px;}
     body.fit9.offer .oneplan-name{font-size:17px;}
     body.fit9.offer .oneplan-check{margin-top:8px;}
     body.fit9.offer .planbuy{margin-top:6px;}
@@ -552,14 +554,27 @@
            have the ... a month as the top default option and then below it is
            the pay one time?"): the monthly row, with its free trial, on top
            and picked when the screen opens; #iapLife under it; no yearly row
-           (IAP_SELL_YEARLY in sona.js). A one-payment row that arrives late
-           comes in unpicked.
+           (IAP_SELL_YEARLY in sona.js).
+           THE ONE PAYMENT ON TOP AND PICKED AGAIN (Travis, 31 Oct 2026: "I
+           want to put the lifetime as the default. So put it at the top, like
+           above monthly"): #iapLife first, picked when the screen opens, the
+           monthly row under it. A one-payment row that arrives late (after
+           the card showed monthly alone) comes in unpicked, and with no
+           one-payment row the card is the monthly row alone, as before.
            #iapAhead is the one line under the button about the phone's own
            heads-up the day before the free days end, painted (from
            planWords) only when this phone will really show it.
            iaptest and pricescreentest read this markup for any figure or
            "free" a parent could see. -->
       <div class="planrows" id="iapRows">
+        <div class="oneplan" id="iapLife" data-plan="lifetime" hidden>
+          <span class="tag" id="iapLifeTag" hidden></span>
+          <span class="oneplan-dot" aria-hidden="true"></span>
+          <span class="oneplan-l"><span class="oneplan-name" id="iapLifeName"></span><span class="oneplan-sub" id="iapLifeLine"></span></span>
+          <span class="oneplan-billing"><span class="oneplan-amt" id="iapLifeAmt"></span><span class="oneplan-billed" id="iapLifeBilled" hidden>Billed today</span></span>
+          <span class="oneplan-price" id="iapLifePrice"></span>
+          <span class="oneplan-what" id="iapLifeWhat"></span>
+        </div>
         <div class="oneplan" id="iapYear" data-plan="annual" hidden>
           <span class="tag" id="iapYearTag" hidden></span>
           <span class="oneplan-dot" aria-hidden="true"></span>
@@ -575,14 +590,6 @@
           <span class="oneplan-amt" id="iapAmt"></span>
           <span class="oneplan-price" id="iapPrice"></span>
           <span class="oneplan-what" id="iapWhat"></span>
-        </div>
-        <div class="oneplan" id="iapLife" data-plan="lifetime" hidden>
-          <span class="tag" id="iapLifeTag" hidden></span>
-          <span class="oneplan-dot" aria-hidden="true"></span>
-          <span class="oneplan-l"><span class="oneplan-name" id="iapLifeName"></span><span class="oneplan-sub" id="iapLifeLine"></span></span>
-          <span class="oneplan-billing"><span class="oneplan-amt" id="iapLifeAmt"></span><span class="oneplan-billed" id="iapLifeBilled" hidden>Billed today</span></span>
-          <span class="oneplan-price" id="iapLifePrice"></span>
-          <span class="oneplan-what" id="iapLifeWhat"></span>
         </div>
       </div>
       <p class="oneplan-check" id="iapCheck" hidden></p>
@@ -889,7 +896,7 @@
     //            while the store's answer has that row (plan.year, plan.life:
     //            the one payment, 22 Oct 2026, never picked on arrival), so
     //            with one row the card is the monthly plan whatever this says
-    var APPLE = { plan: null, busy: false, msg: "", done: "", counted: false, told: {}, shape: "", gen: 0, asks: 0, poll: 0, pendingKind: "", pendingPlan: null, unentPlan: null, stop: null, pick: "monthly" };
+    var APPLE = { plan: null, busy: false, msg: "", done: "", counted: false, told: {}, shape: "", gen: 0, asks: 0, poll: 0, pendingKind: "", pendingPlan: null, unentPlan: null, stop: null, pick: "lifetime" };
     // THE ONE SHOWING FROM HOME (Sona.homeOfferDue, 13 Oct 2026) is spent
     // only once the offer frame is up AND the store gave a definite answer:
     // a priced card, "nothing to sell", or Premium already there (and always
@@ -1214,9 +1221,12 @@
         function kindsOf(p) {                // the rows answer p puts on the card, top to bottom
           if (!priced(p)) return [];
           var out = [];
-          if (p.year) out.push("annual");
-          out.push("monthly");                // monthly on top, picked (23 Oct 2026)
+          // the one payment on top, picked when the screen opens (Travis, 31
+          // Oct 2026: "I want to put the lifetime as the default. So put it
+          // at the top, like above monthly"); monthly under it
           if (p.life) out.push("lifetime");
+          if (p.year) out.push("annual");
+          out.push("monthly");
           return out;
         }
         function many() { return !APPLE.done && kindsOf(APPLE.plan).length > 1; }
@@ -1368,9 +1378,10 @@
           // UNPICKED, and a row that goes away takes the pick to monthly: the
           // row the parent was reading stays picked while it is still there,
           // so the same button never starts buying another plan without a
-          // tap. Monthly is picked when the screen opens (23 Oct 2026, the free
-          // trial: the yearly row, when sold, and the one payment never are);
-          // after that only a tap changes the pick.
+          // tap. The one payment is picked when the screen opens, when the
+          // store's first answer carries it (31 Oct 2026; monthly, the free
+          // trial, from 23 Oct), else monthly; after that only a tap changes
+          // the pick.
           if (wasKind && kindsOf(APPLE.plan).indexOf(wasKind) > -1) APPLE.pick = wasKind;
           if (APPLE.plan.state === "owned") owned(); else paintApple();
         }
