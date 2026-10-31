@@ -1485,6 +1485,106 @@
           "prompt": "Owl, full body, standing, facing forward, smiling: a round, fluffy clay owl (a real owl, not a chick) with soft honey-brown feathers, a round cream face with a thin brown rim, no ear tufts, big round glossy amber-brown eyes, a small grey-brown hooked beak, small pink cheeks, a speckled cream tummy with little brown arrow-shaped marks, brown wings with cream-edged feathers, a little navy-blue neckerchief dotted with tiny gold stars, and a pair of fluffy lilac slippers, each with a small white pompom, on her cream feathered feet; no hat, no glasses; her wings folded at her sides."
         }
       ]
+    },
+    {
+      "id": "robo",
+      "light": "day",
+      "lineups": [
+        "robo"
+      ],
+      "talk": true,
+      "bible": "PELLY: Pelly the pelican, a big white clay pelican (a real pelican, not a duck) with a very long, straight peach-orange bill, longer than her head, and a big, soft, lumpy peach pouch hanging under it, a small round light-blue postal cap with a little white envelope badge (no anchor), no scarf, and a brown leather mail satchel across her body; about twice Echo's height. ROBO: Robo the robot, a small, round, friendly clay robot about one and a half times Echo's height: a round sky-teal body like a little barrel with two big round glowing butter-yellow eyes on a rounded square head, a short antenna on top with a little red ball on its tip, small pink cheeks, a happy curved mouth, a round orange dial on his tummy, short bendy arms with round mitten hands, and two short legs on little round wheels for feet; smooth matte clay, never shiny metal, never scary. RACCOON: a little clay raccoon about Echo's height, soft grey fur, a black eye mask, a fluffy ringed grey-and-black tail, small pink cheeks and big friendly eyes. MOON RABBIT: a fluffy white clay rabbit about one and a half times Echo's height, long soft ears with pink insides, a twitchy pink nose and small pink cheeks. The place in this story is Robo's workshop: a round, cozy wooden workshop with a big round window and a wide sliding door, on top of a green grassy hill, with tidy shelves of chunky clay tools, cogs and springs, and in the middle a small, round, chubby clay rocket (cream with sky-teal stripes, three round portholes, a red pointy nose and three short orange fins) that stands about three times Echo's height on a low launch pad. Above the workshop the roof can fold open like a flower.",
+      "who": {
+        "ROBO": {
+          "re": "\\bRobo\\b",
+          "label": "Robo"
+        },
+        "RACCOON": {
+          "re": "\\braccoon\\b",
+          "label": "the raccoon"
+        },
+        "MOON RABBIT": {
+          "re": "\\brabbit\\b",
+          "label": "the moon rabbit"
+        }
+      },
+      "home": "A wide picture for a game card. On top of a green grassy hill in warm afternoon light, a small round chubby clay rocket (cream with sky-teal stripes, three round portholes, a red pointy nose, three short orange fins) is just lifting off its launch pad in front of Robo's round wooden workshop, a soft puffy cloud of white smoke under it and a little rainbow arcing in the sky behind. Echo waves excitedly from the rocket's lowest round porthole, and Robo the robot waves from the porthole above him. Echo, Robo and the rocket are all in the middle band of the picture: their tops below 25% from the top and their bottoms above 75% from the top, the rocket just right of the middle. Only Echo and Robo appear: no other characters.",
+      "chars": [
+        {
+          "key": "robo",
+          "h": 1.5,
+          "prompt": "Robo the robot, full body, standing, facing forward, waving one hand and smiling: a small, round, friendly clay robot with a round sky-teal body like a little barrel, a rounded square head with two big round glowing butter-yellow eyes, a short antenna on top with a little red ball on its tip, small pink cheeks, a happy curved mouth, a round orange dial on his tummy, short bendy arms with round mitten hands, and two short legs on little round wheels for feet; smooth matte clay, never shiny metal."
+        },
+        {
+          "key": "raccoon",
+          "h": 1.0,
+          "prompt": "A little clay raccoon, full body, standing on its back legs, facing forward and smiling: soft grey fur, a black eye mask, a fluffy ringed grey-and-black tail, small pink cheeks and big friendly eyes."
+        },
+        {
+          "key": "rabbit",
+          "h": 1.5,
+          "prompt": "A fluffy white clay moon rabbit, full body, standing on its back legs, facing forward, waving one paw and smiling: long soft ears with pink insides, a twitchy pink nose, small pink cheeks and big friendly eyes."
+        }
+      ],
+      "scenes": {
+        "s01": {
+          "light": "day",
+          "picture": "A bright sunny morning at the round blue front door of Echo's cottage (ECHO'S COTTAGE, exactly as in the attached earlier picture). Pelly the pelican stands on the left of the door and proudly pulls one big shiny red rubber boot out of her beak pouch, the boot dangling from the tip of her bill as if it were a letter, looking very pleased with herself. Echo stands just right of the middle on the wide doorstep, laughing, wings up.",
+          "also": [
+            "file:public/assets/adventure/lighthouse/s01.webp"
+          ]
+        },
+        "s02": {
+          "light": "day",
+          "picture": "Close up on the porch of Echo's cottage on a sunny morning. Pelly the pelican's big white wing (only her wing and the edge of her body, from the left edge) holds out a cream paper letter in the upper middle of the picture. On the letter is a child's crayon drawing of a little round robot on wheels beside a small round rocket on a hill, with a sleepy closed-eyes face drawn on the rocket and a crayon moon above: only crayon lines, no writing at all. Echo stands just left of the middle, leaning in toward the letter, eyes wide with excitement, the big red rubber boot on the porch beside him.",
+          "also": [
+            "file:public/assets/adventure/lighthouse/s02.webp"
+          ]
+        },
+        "s03": {
+          "light": "day",
+          "picture": "A sunny morning on a bumpy, winding dirt road that climbs a green grassy hill, wildflowers on both sides. At the very top of the hill stands Robo's round wooden workshop with its big round window. Echo hurries up the road in the lower middle, wings out, happy and excited, little puffs of dust behind him."
+        },
+        "s04": {
+          "light": "indoor",
+          "picture": "Inside Robo's cozy round wooden workshop (warm honey morning light through the big round window). In the middle stands the small, round, chubby clay rocket on its low launch pad, fast asleep: its round portholes are dark and closed like sleepy eyes, and a few soft little clay Z shapes float up from its red nose like snores (soft round clay shapes, not letters). Robo the robot stands on the left beside the rocket, scratching his head, puzzled. Echo stands right of the rocket, wings on his cheeks, surprised."
+        },
+        "s05": {
+          "light": "indoor",
+          "picture": "Inside Robo's workshop, the same room. The rocket is wide awake now: its three round portholes glow warm butter yellow like happy eyes and it wiggles on its launch pad, a happy little glow around it. A round silver fuel tank with a teal stripe rests on the floor beside the rocket, not tied on yet. Robo stands on the left, both mitten hands up, cheering. Echo stands on the right, beaming, pointing his wing at the loose fuel tank."
+        },
+        "s06": {
+          "light": "indoor",
+          "picture": "Inside Robo's workshop. From a big open cardboard box on the floor on the right, a little clay raccoon pops its head and shoulders out, smiling, holding up a coil of thick soft red rope in both paws. Echo stands in the lower middle, wings out, delighted. Robo stands on the left, hands clasped, happy. The awake rocket with glowing portholes stands in the background."
+        },
+        "s07": {
+          "light": "indoor",
+          "picture": "Inside the small round rocket's cozy cabin, seen from the front: three round padded seats in a row. Echo sits buckled into the left seat, Robo the robot in the middle seat and the little raccoon in the right seat, each with a soft cream seat strap across them, all looking at the viewer with big excited eyes. A round porthole behind them shows the workshop's roof folding open like a flower and blue sky above."
+        },
+        "s08": {
+          "light": "sunset",
+          "picture": "Outside on the green hilltop at a soft peach sunset. The round chubby clay rocket, with the silver fuel tank now tied on with a red rope bow, stands on its launch pad with the workshop roof folded open behind it, a soft fluffy cloud of white smoke puffing under it and a warm orange glow under its fins, just about to lift off. Echo's happy face shows in the lowest round porthole and Robo's in the one above. No one else is outside."
+        },
+        "e01": {
+          "light": "sunset",
+          "picture": "High up in a soft peach-and-lilac sunset sky, the round chubby clay rocket zooms upward past a giant, bright, curving rainbow, a puffy white trail of clouds behind it. Echo's beaming face shows in the lowest round porthole, wings pressed to the glass, and Robo's in the one above. Fluffy pink clouds below."
+        },
+        "e02": {
+          "light": "night",
+          "picture": "On the soft, round, cream-colored surface of the moon, with gentle round craters and a big friendly blue-and-green Earth glowing in the deep blue-violet sky. The rocket has landed on the left, its door open. A fluffy white moon rabbit hops over from the right, waving one paw hello. Echo stands in the middle, waving back, delighted, and Robo stands beside the rocket's door, waving too."
+        },
+        "e03": {
+          "light": "night",
+          "picture": "On the moon beside the landed rocket, warmly lit. Robo the robot stands on the left and holds out, in his two mitten hands, a small shiny ring that glows softly like a little star. Echo stands in the middle, wings out, gasping with joy. The moon rabbit stands on the right, smiling, and the little raccoon peeks out of the rocket's door behind them, smiling."
+        },
+        "e04": {
+          "light": "evening",
+          "picture": "Evening inside Echo's cozy round cottage, lamp-lit: the whole helper map (THE HELPER MAP, the same map as in the attached earlier picture, seen whole as it is there, with its frame and its four brass pins in view) pinned to the wall, filling the upper middle of the picture, with no writing anywhere on it. Most of the map is still covered by soft white puffy clouds. One soft white cloud has just drifted off to one side, uncovering a new place: a green hilltop with a tiny round wooden workshop and a tiny chubby rocket beside it. There is NO star of any kind on the map or anywhere else in the picture, except the ONE new gold star Echo is pressing on. A low wooden bench stands under the map; Echo stands on the bench, on tiptoe, pressing ONE new shiny gold star sticker onto the tiny workshop with one wing, beaming. A small shiny glowing ring rests on the bench beside him. Plain wooden floor below.",
+          "also": [
+            "file:design/adventure/refs/ref-map.webp"
+          ]
+        }
+      }
     }
   ],
   "arcade": "A wide picture for a button. Echo, cheerful and waving, in the very middle of the picture, with fun game things tumbling around him in the air: a juicy watermelon slice, an orange basketball, a black-and-white piano key, a soccer ball, and a cartoon dinosaur bone. A soft, bright sky-blue background with a few puffy clouds. Echo fills the middle third of the picture's width and the middle of its height; the game things stay around him. No text.",
