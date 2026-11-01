@@ -356,8 +356,7 @@ body[data-setup-screen="remind"] #nextBtn { display: none; }
    letters shrink and the line under the heading steps aside, so all
    nineteen still fit with no scroll */
 @media (max-height: 620px) {
-  .ob #obSounds .sound { font-size: 22px; padding: 3px 2px; }
-  .ob #obSounds .sound[data-sound="THV"] { font-size: 19px; }
+  .ob #obSounds .sound, .ob #obSounds .sound[data-sound="THV"] { font-size: 22px; padding: 3px 2px; }
   .ob #obSounds .sound-word { font-size: 10px; }
   .ob .sound-ask { display: none; }
 }

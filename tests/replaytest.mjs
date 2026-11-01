@@ -313,7 +313,7 @@ try {
     const allNodes = nodes(rr), byId = (id) => allNodes.filter((n) => n.attributes && n.attributes.id === id);
     const said = (n) => (n.childNodes || []).map((c) => c.textContent || "").join("");
     ok("setup: the name on the screens that sell is recorded as [child], every time (intName, gamesName)", ["intName", "gamesName"].every((id) => byId(id).length > 0 && byId(id).every((n) => said(n) === "[child]")), ["intName", "gamesName"].map((id) => byId(id).map(said)));
-    ok("setup: the screens that sell were recorded with their words (both demos, \"Speech practice. Through play.\" heading Fruit Slice's, Rachel, what they love, the games)", /Speech practice\./.test(text) && /Through play\./.test(text) && /Say the sound/.test(text) && /to slow the keys\./.test(text) && /pediatric speech-language pathologist in her clinical fellowship/.test(text) && /What does/.test(text) && /Games for/.test(text) && /Fruit Slice/.test(text));
+    ok("setup: the screens that sell were recorded with their words (the Fruit Slice demo under \"Speech practice. Through play.\", Rachel, what they love, the games)", /Speech practice\./.test(text) && /Through play\./.test(text) && /Slows down/.test(text) && /pediatric speech-language pathologist in her clinical fellowship/.test(text) && /What does/.test(text) && /Games for/.test(text) && /Fruit Slice/.test(text));
     // every incremental event, each pointer position at its own time
     const when = (e) => (e.type === INCR && Array.isArray(e.data.positions)) ? e.data.positions.map((q) => e.timestamp + (q.timeOffset || 0)) : [e.timestamp];
     const between = rr.filter((e) => e.type === INCR && when(e).some((t) => t >= t1 && t <= t2));

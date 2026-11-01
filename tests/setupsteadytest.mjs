@@ -265,23 +265,22 @@ for(const reduced of [false,true])for(const D of DEVICES){
   const dR=drift((await page.evaluate(()=>__steady.take())).filter(f=>f.screen==='name'),KEYS,home);
   ok('tapping the box again brings the keyboard back with nothing moving'+at+' (worst: '+worst(dR)+')',still(dR),dR);
   // 6. Continue with the keyboard up: the box lets go, the keyboard goes down,
-  // and the next question ("What does <Name> love?") is drawn once, at the
-  // phone's full height
+  // and the next screen (the Fruit Slice demo, since 1 Nov 2026; until then
+  // "What does <Name> love?") is drawn once, at the phone's full height
   await page.evaluate(()=>__steady.start());
   await page.tap('#nextBtn');await followFocus(page,D);
-  await page.locator('[data-step="interests"].on').waitFor();await page.waitForTimeout(600);
-  const leave=(await page.evaluate(()=>__steady.take())).filter(f=>f.screen==='interests'&&f.r.tCard);
-  const dL=drift(leave,['tHead','tYes','tCard','echo']);
-  {const c=firstLast(leave,'tCard');ok('the next question\'s first frame is drawn at its own size, not the name card\'s'+at,!!c.same,c);}
-  // (Echo included: he is beside the question from its first frame, or, on a phone too short for him, never)
-  ok('Continue with the keyboard up: the next question opens once, at its own size, nothing re-laid out after it shows'+at+' (worst: '+worst(dL)+')',leave.length>0&&still(dL),dL);
+  await page.locator('[data-step="reel"].on').waitFor();await page.waitForTimeout(600);
+  const leave=(await page.evaluate(()=>__steady.take())).filter(f=>f.screen==='reel'&&f.r.sCard);
+  const dL=drift(leave,['sHead','sScene','sCard']);
+  {const c=firstLast(leave,'sCard');ok('the next screen\'s first frame is drawn at its own size, not the name card\'s'+at,!!c.same,c);}
+  ok('Continue with the keyboard up: the next screen opens once, at its own size, nothing re-laid out after it shows'+at+' (worst: '+worst(dL)+')',leave.length>0&&still(dL),dL);
   // 7. Back to the name: the step looks exactly as it did the first time
   await page.waitForTimeout(500);await calm(page);
   await page.evaluate(()=>__steady.start());
   await page.tap('#backBtn');await page.locator('[data-step="name"].on').waitFor();await kbShow(page,D);await page.waitForTimeout(500);
   const back=(await page.evaluate(()=>__steady.take())).filter(f=>f.screen==='name');
   const dB=drift(back,KEYS,home);
-  {const c=firstLast(back,'card');ok('Back: the name card\'s first frame is drawn at its own size, not the question\'s'+at,!!c.same,c);}
+  {const c=firstLast(back,'card');ok('Back: the name card\'s first frame is drawn at its own size, not the demo\'s'+at,!!c.same,c);}
   ok('Back to the name: it opens where it stood before, and the keyboard rising moves nothing'+at+' (worst: '+worst(dB)+')',back.length>0&&back[back.length-1].active==='obName'&&still(dB),dB);
   ok('no runtime errors'+at,errors.length===0,errors);
  }catch(e){ok('the walk completes'+at,false,e.stack);}

@@ -262,14 +262,13 @@ ok("onboarding no pageerrors", errs.length === 0);
   const pg2 = await browser.newPage({ viewport: { width: 390, height: 844 } });
   await pg2.goto("http://localhost:8129/onboarding.html"); await pg2.waitForTimeout(700);
   await pg2.evaluate(() => document.getElementById("nextBtn").click()); await pg2.waitForTimeout(200);   // the hello's button
-  const first = await pg2.evaluate(() => (document.querySelector(".step.on") || {}).dataset?.step);
-  for (let i = 0; i < 3; i++) { await settledOb(pg2); await pg2.evaluate(STEP); await pg2.waitForTimeout(300); }   // Fruit Slice, Piano Tiles, Rachel → the name
   const seen = await pg2.evaluate(() => ({ title: (document.querySelector('[data-step="name"] .qh') || {}).textContent || "", on: (document.querySelector(".step.on") || {}).dataset?.step }));
-  ok("the screen after the hello is the Fruit Slice demo (no \"problem\" slide since 31 Oct 2026), and three screens later the child's name: \"Who's practicing?\"", first === "reel" && seen.on === "name" && /^Who's practicing\?$/.test(seen.title.trim()), JSON.stringify([first, seen]));
-  // Parents go from the child's details to what the child loves, their
-  // games, one tap ("Is <Name> in speech therapy?"), then a compact sound grid.
+  ok("the screen after the hello is the child's name (1 Nov 2026: \"right after the hello\"): \"Who's practicing?\"", seen.on === "name" && /^Who's practicing\?$/.test(seen.title.trim()), JSON.stringify(seen));
+  // Parents go from the child's details to the Fruit Slice demo, Rachel, what
+  // the child loves, their games, one tap ("Is <Name> in speech therapy?"),
+  // then a compact sound grid.
   await pg2.evaluate(() => { document.getElementById("obName").value = "Milo"; });
-  for (let i = 0; i < 3; i++) { await settledOb(pg2); await pg2.evaluate(STEP); await pg2.waitForTimeout(300); }   // → what they love → their games → therapy
+  for (let i = 0; i < 5; i++) { await settledOb(pg2); await pg2.evaluate(STEP); await pg2.waitForTimeout(300); }   // → the demo → Rachel → what they love → their games → therapy
   const asked = await pg2.evaluate(() => ({ on: (document.querySelector(".step.on") || {}).dataset?.step, title: (document.getElementById("therapyTitle") || {}).textContent || "", answers: document.querySelectorAll("#obTherapy .ask-pick").length, overflow: document.documentElement.scrollWidth > innerWidth }));
   ok("then one tap, \"Is <Name> in speech therapy?\": one short heading and three answers (Yes, No, Not yet)", asked.on === "therapy" && asked.title === "Is Milo in speech therapy?" && asked.answers === 3 && !asked.overflow, JSON.stringify(asked));
   await settledOb(pg2); await pg2.evaluate(STEP); await pg2.waitForTimeout(300);   // an answer → the sounds
