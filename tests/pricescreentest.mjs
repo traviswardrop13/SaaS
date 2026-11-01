@@ -290,7 +290,7 @@ try {
       ok(tag + "a radio group with Lifetime picked when the screen opens, Monthly not",
         r.group === "radiogroup" && r.label === "Choose a plan" && r.life.role === "radio" && r.month.role === "radio" && r.life.checked === "true" && r.month.checked === "false" && r.life.tab === 0 && r.month.tab === -1, r);
       ok(tag + "the card state, the title, the check line, the small print, the button and the header line are the one payment's, from the store's price (the button \"Start practicing!\")",
-        s.state === "paid" && s.title === flat(w.l.title) && s.check === "One payment · No subscription" && s.check === flat(w.l.check) && s.note === flat(w.l.note) &&
+        s.state === "paid" && s.title === flat(w.l.title) && s.check === "One payment · Every update included" && s.check === flat(w.l.check) && s.note === flat(w.l.note) &&
         s.note === "One payment of $59.99. No subscription." && s.button === "Start practicing!" && s.button === w.l.button && s.act === "buy" && s.buttons === 1 &&
         s.line === fv + w.l.header && s.noteAbove === false, [s.state, s.title, s.check, s.note, s.button, s.line]);
       // the button names no price since 31 Oct 2026 (Travis: "change paywall

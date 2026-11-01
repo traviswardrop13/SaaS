@@ -297,7 +297,7 @@ try {
     let w = await page.evaluate(() => Sona.storePlan().then((plan) => JSON.parse(JSON.stringify(Sona.planWords(plan.life, {})))));
     ok("its words, exactly: One payment, its one line, the store's price with no period, and for the pick a check line, the button and the small print",
       same(w, { state: "paid", title: "Get Sona Premium", tag: "", price: "One payment of $59.99.", what: "Daily practice, every game and every book.", rows: [], note: "One payment of $59.99. No subscription.", noteFirst: false, noteLast: true,
-        name: "One payment", sub: "Yours to keep. No subscription.", amount: "$59.99", check: "One payment \u00b7 No subscription", button: "Start practicing!", act: "buy", header: "Sona Premium: one payment of $59.99.", none: null, headsUp: "" }), w);
+        name: "One payment", sub: "Yours to keep. No subscription.", amount: "$59.99", check: "One payment \u00b7 Every update included", button: "Start practicing!", act: "buy", header: "Sona Premium: one payment of $59.99.", none: null, headsUp: "" }), w);
     const anyWay = await page.evaluate(() => Sona.storePlan().then((plan) => [{}, { headsUp: true }, { freeVersion: true }, { headsUp: true, freeVersion: true }].map((o) => JSON.stringify(Sona.planWords(plan.life, o)))));
     ok("…and never 'lifetime', 'free', 'Best value', a trial, a period or a renewal, in any field, whatever the page passes",
       anyWay.every((j) => !/lifetime|free|best value|trial|\/mo|\/yr|a month|a year|renew|subscribers/i.test(j)) && anyWay.every((j) => JSON.parse(j).headsUp === ""), anyWay);
@@ -695,7 +695,7 @@ try {
     check("the state says which card it is (the one payment is charged today)", any, (c, w) => w.state === (c.kind === "once" ? "paid" : c.kind));
     check("the one payment never says 'free', 'lifetime', 'Best value', a period or a renewal, in any field", is("once"), (c, w, j) => !/free|lifetime|best value|trial|\/mo|\/yr|a month|a year|renew/i.test(j));
     check("the one payment: its name, its line, the store's price with no period, and its pick's words", is("once"), (c, w) => w.name === "One payment" && w.sub === "Yours to keep. No subscription." && w.amount === c.price &&
-      w.button === "Start practicing!" && w.check === "One payment \u00b7 No subscription" && w.note === "One payment of " + c.price + ". No subscription." && w.noteLast === true && w.tag === "" && w.act === "buy" && w.rows.length === 0);
+      w.button === "Start practicing!" && w.check === "One payment \u00b7 Every update included" && w.note === "One payment of " + c.price + ". No subscription." && w.noteLast === true && w.tag === "" && w.act === "buy" && w.rows.length === 0);
     check("a pay-today plan never says 'free', in any field", is("paid"), (c, w, j) => !/free/i.test(j));
     check("'nothing to sell' never says 'free'", is("none"), (c, w, j) => !/free/i.test(j));
     check("'nothing to sell' shows no figure: no digit, no $", is("none"), (c, w, j) => !/[\d$]/.test(j));

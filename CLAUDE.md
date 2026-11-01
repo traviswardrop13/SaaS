@@ -963,11 +963,15 @@ lifetime"). Apple's card can show a third row, under monthly.
   "once", no eligibility asked.
 - **Its words (`planWords`, Travis's to change):** "One payment" over "Yours
   to keep. No subscription.", the store's price with no period; picked, the
-  check line "One payment · No subscription", the button "Start practicing!"
-  (since 31 Oct 2026, Travis: "change paywall button to 'Start practicing!'
-  for the lifetime option too ... not get sona prem"; it was "Get Sona
-  Premium — $59.99") and the small print "One payment of $59.99. No
-  subscription."
+  check line "One payment · Every update included" (since 1 Nov 2026,
+  Travis: "instead of one payment, no subscription, have it say one payment
+  every update"; it was "One payment · No subscription": the one payment is
+  the `full` entitlement for good, so every new game and book is in it),
+  the button "Start practicing!" (since 31 Oct 2026, Travis: "change paywall
+  button to 'Start practicing!' for the lifetime option too ... not get sona
+  prem"; it was "Get Sona Premium — $59.99") and the small print "One
+  payment of $59.99. No subscription." (kept, so a parent reads that it
+  never renews).
   Never "lifetime", "free", "Best value", a trial or a renewal (planwordstest).
 - **The pick (until 23 Oct 2026; now see "TWO ROWS: MONTHLY ON TOP"):** yearly, monthly, then the one payment, top to bottom; yearly
   picked on arrival (monthly without a yearly row), never the one

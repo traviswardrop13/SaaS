@@ -9226,7 +9226,8 @@
   //   - the one-payment row (kind "lifetime") is charged once, today: its
   //     words never say "free", never "Best value", and never the store's
   //     word for it (Travis: "i dont wanna say lifetime"). It says "One
-  //     payment" and "No subscription", and its figure is the store's.
+  //     payment", "Every update included" (its check line) and "No
+  //     subscription" (its small print), and its figure is the store's.
   const PLAN_CANCEL = "Settings\u00a0→\u00a0Subscriptions";   // no-break spaces: the arrow never starts a line
   // The day the first charge falls, for a plan with free time. Apple's free
   // days are exact 24-hour days from the purchase; months and years land on
@@ -9288,7 +9289,12 @@
       w.state = "paid"; w.title = "Get Sona Premium";
       w.name = "One payment"; w.sub = "Yours to keep. No subscription."; w.amount = P;
       w.price = "One payment of " + P + ".";
-      w.check = "One payment \u00b7 No subscription";
+      // The check line sells what one payment brings (Travis, 1 Nov 2026:
+      // "instead of one payment, no subscription, have it say one payment
+      // every update"): it is the `full` entitlement for good, so every new
+      // game and book is in it. The small print under the button still says
+      // "No subscription", so a parent reads that it never renews.
+      w.check = "One payment \u00b7 Every update included";
       w.note = "One payment of " + P + ". No subscription."; w.noteLast = true;   // small print, under the button
       // The button is the trial's own words (Travis, 31 Oct 2026: "change
       // paywall button to 'Start practicing!' for the lifetime option too
