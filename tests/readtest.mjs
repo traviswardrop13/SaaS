@@ -563,9 +563,11 @@ async function waitSpoke(pg, ms) {
   r = await shelfAt("2026-10-01T10:00:00-06:00", ["R", "S"]);
   m = await shelfState(r.pg);
   ok("an unpinned child on R and S currently practicing R sees R alone", exactSound(m, "R") && m.titles[0] === "Rory and the Rainbow", JSON.stringify(m.titles));
-  await Promise.all([r.pg.waitForNavigation({ waitUntil: "load" }), r.pg.locator("#librarySound").selectOption("S")]);
+  // Parent preference is fixture setup here; the actual gate and Settings
+  // control are driven in targetsoundtest. The child shelf has no writer.
+  await r.pg.evaluate(() => Sona.setTargetSound("S")); await r.pg.reload();
   m = await shelfState(r.pg);
-  ok("choosing S replaces the shelf completely and saves the shared choice", exactSound(m, "S") && await r.pg.evaluate(() => Sona.targetSound() === "S" && Sona.getProfile().targetSound === "S"), JSON.stringify(m.titles));
+  ok("the parent's saved S choice replaces the shelf completely", exactSound(m, "S") && await r.pg.evaluate(() => Sona.targetSound() === "S" && Sona.getProfile().targetSound === "S"), JSON.stringify(m.titles));
   await r.pg.reload(); m = await shelfState(r.pg);
   ok("the selected S shelf survives a reload without rebuilding an R cover", exactSound(m, "S"), JSON.stringify(m.titles));
   // Home's picks remain two games, independent of the selected books' sound.
@@ -596,8 +598,8 @@ async function waitSpoke(pg, ms) {
   }
   for (const [width, height] of [[320, 568], [390, 844]]) {
     r = await shelfAt("2026-10-01T10:00:00-06:00", ["R", "S"], true, "", { width, height });
-    const fit = await r.pg.evaluate(() => { const s = document.getElementById("librarySound"), box = s.getBoundingClientRect(); return { width: document.documentElement.scrollWidth, height: box.height, font: parseFloat(getComputedStyle(s).fontSize), right: box.right }; });
-    ok("the selected-sound control fits a " + width + "px phone and remains large enough to use without zoom", fit.width <= width && fit.right <= width && fit.height >= 44 && fit.font >= 16, JSON.stringify(fit));
+    const fit = await r.pg.evaluate(() => { const s = document.getElementById("librarySoundValue"), box = s.getBoundingClientRect(); return { width: document.documentElement.scrollWidth, height: box.height, font: parseFloat(getComputedStyle(s).fontSize), right: box.right }; });
+    ok("the read-only sound label fits a " + width + "px phone and stays readable", fit.width <= width && fit.right <= width && fit.height >= 18 && fit.font >= 11, JSON.stringify(fit));
     await r.ctx.close();
   }
 

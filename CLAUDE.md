@@ -41,10 +41,12 @@ So:
   just a failure with fewer words.
 
 ## Project
-**Sound-focused review build (29 Oct 2026, Travis's request).** A child may
-pin one of their existing selected sounds as the current target, like a
-language choice. Settings, Home and Books share `targetSound()` and
-`setTargetSound()`; other focus sounds and all progress remain. No saved pin
+**Sound-focused review build (29 Oct 2026, Travis's request).** A parent may
+pin one of the child's existing selected sounds as the current target, like
+a language choice. Target changes stay in Settings behind Grown-ups; Home
+and Books only display the shared `targetSound()`, with no child picker or
+preference writer (Travis, 31 Oct 2026). Other focus sounds and all progress
+remain. No saved pin
 keeps the existing practice rotation. Active clinician homework wins and
 disables family target changes. **Books shows only the current target's
 stories** (Travis, 30 Oct 2026, superseding More books below): no other-sound
@@ -53,29 +55,37 @@ switches the shelf. Unpinned play mode with no family target or homework can
 still browse every sound. Access rules for every book remain unchanged.
 Home's Books tag counts only free books on that shelf; it never advertises
 a different sound's free title.
-**Home reimagined as a local draft (Travis, 31 Oct 2026).** This supersedes
-the tall game-video Home and its first compact review layout described below.
-A large original Echo and the current sound anchor a warm playroom. The sound
-chip keeps the native selector: the large letter is the effective sound;
-“Change sound”, “Automatic”, “In Settings” (one family sound), or “From your
-therapist” explains its state. Disabled choices show no dropdown arrow. Small
-Home captions and helper text stay at least 11 px.
-The original story illustration is a small thumbnail beside the accurate day,
-title and hook. A separate full-width button says “Start today”, “Keep going”
-or “Unlock adventure”; done stays inert with tomorrow's preview and no early
-play. There is no Home video or reel download. Games and Books remain two
-illustrated doors, and earned games stay below them. Home fits the entire
-composition on supported portrait phones and iPads without clipping essential
-controls; the Arcade still scrolls. Routes, access, goals, history, quiet Home
-behavior and practice rules are unchanged. A stale child's selector never
-writes another child's preference. Existing Echo/world artwork is reused;
-this Home iteration generates no new art or spoken lines.
+**Improved Play Map is the chosen Home (Travis and Rachel, 31 Oct
+2026).** Rachel preferred the first direction; the improved Map has been
+restored after the Studio comparison. This supersedes the tall game-video
+Home and earlier compact layouts below. A large original portrait story
+picture contains the Start action, accurate day, title and hook. Gold stars
+represent only saved completed adventures, labelled with their real story
+days; skipped days never become stars. Tomorrow is dark and locked, with no
+early play. A completed day's story stays inert. Buddy, Rewards and Grown-ups
+remain at the top, with Games and Books below the trail. The small current
+sound badge is read-only; target changes stay behind Grown-ups. Home remains
+silent and reuses original artwork. A bounded fit check caught 18 px of
+overflow on the busiest 320×568 screen. Only the most compact layout now
+visually hides the “Your games” heading, preserving its accessible label and
+every replay button; that exact case passes. Release checks remain pending. The
+Arcade still scrolls. Access, saved progress, models, cues and rep rules are
+unchanged. Rachel still reviews the parent-only target behavior before release.
 
-**Keep it local (Travis, 31 Oct 2026).** The current instruction authorizes a
-local review draft only, superseding the earlier GitHub-upload request. Do
-not push, update a PR or release it. Run focused checks for this layout; the
-full 164-suite release battery remains unfinished and is still required
-before a future push. The stopped pre-redesign run is not a release pass.
+The alternative Studio Home was saved outside the active Home. Unfinished
+Practice Gym runtime changes and its standalone test are preserved in
+`/private/tmp/sona-unshipped-gym-before-merge/` with exact hashes and a restore
+note. They are excluded from the merge; `charge.html` and `sona.js` were
+restored to their pre-Gym versions. Avatar work is deferred. Do not resume
+either draft without a new request.
+
+**Merge authorized (Travis, 31 Oct 2026).** Travis's explicit “merge”
+supersedes the earlier keep-local instruction for the finished Play Map,
+parent-only target settings, sound-specific books and existing review-branch
+work. The unfinished Gym and avatar work are excluded. The full 164-suite
+release battery remains unfinished and must pass before a push, along with
+the required typecheck. The stopped pre-redesign run is not a release pass;
+do not claim that publishing or the merge has completed before it happens.
 
 Newly set-up older children get a short Fruit Slice story, Echo's Picnic,
 before the original stories. Its `fruitpicnic` index is appended, never

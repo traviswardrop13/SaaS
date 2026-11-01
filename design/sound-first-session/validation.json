@@ -46,7 +46,7 @@
     "workspaceOnlyIssue": "The normal workspace includes old untracked source archives under output/. These were left untouched and are absent from the clean tracked-source check."
   },
   "regressionEvidence": "New target selection, stale-sibling protection, whole-Home fit and signature-adventure checks failed against saved pre-change sources. Five Auto-selection checks fail against the pre-fix Home, including real keyboard selection of the already-current sound. The final reimagined-Home suite fails the saved old layout in 145 of 596 checks; four visible sound-chip checks fail the old Home while 42 sound checks still pass.",
-  "releaseState": "Local review draft only. Travis revoked the earlier upload request on 31 Oct 2026: no push, PR update, merge into main or release is authorized. The full 164-suite release battery is unfinished; clinical review remains before release.",
+  "releaseState": "Travis explicitly authorized merge on 31 Oct 2026, superseding the prior local-only instruction for the finished Play Map, parent-only targets, sound-specific books and existing review-branch work. Unfinished Gym and avatar work are excluded. Full release checks and clinical review remain pending; no completed push, merge into main or release is claimed.",
   "bookExpansion": {
     "requested": "Six new 8-page books for R,S,L,SH,CH,TH; B book expanded from six to eight pages; strict selected-sound shelf.",
     "sourceChecks": "All public script syntax parses; exact captions and bank-only key words validated with existing booklex plus official CMUdict entries.",
@@ -289,6 +289,121 @@
       },
       "reruns": "Home behavior, complete-Home fit, target sound/books and all public script syntax; every process exited 0."
     },
-    "sourceStabilityScope": "The four final presentation reruns below used these unchanged hashes. Other focused behavior results predate the last hint/font correction and were not repeated because their source behavior did not change."
+    "sourceStabilityScope": "The four final presentation reruns below used these unchanged hashes. Other focused behavior results predate the last hint/font correction and were not repeated because their source behavior did not change.",
+    "historical": true,
+    "appliesTo": "Historical clubhouse Home before the Play Map and Studio comparisons; its green results are not a claim about the current restored Map."
+  },
+  "localPlayMapRestoration": {
+    "status": "Improved Play Map restored after Rachel preferred direction one. Travis subsequently authorized merging the finished scope; Studio is not the active Home.",
+    "sourceSha256": {
+      "public/today.html": "1515c6d20f82c5c9a0c8e002c3dc6c8be67d8bbdea2630f22db4a7cb2f8dd9b8",
+      "public/crafted-home.css": "3934a922bfb72e492f2d02db2ecc7666f6ef86d784f9c264339909e09de4fdfd",
+      "public/library.html": "08fbb49173746ceeb99a70804241b0b5cda42bd38a2ad6bbea810ed4277026d0"
+    },
+    "behavior": "Original portrait story art with the Start action; only real saved completed adventures produce gold stars; tomorrow remains locked. Home and Books show the current sound read-only. Target changes remain behind Grown-ups in Settings.",
+    "clinicalScope": "No sound models, cues, target banks, verdicts or rep rules changed. Rachel reviews parent-only target behavior and the new books before release.",
+    "restorationChecks": {
+      "mapBehaviorSmoke": {
+        "checks": 98,
+        "exitCode": 0,
+        "log": "/private/tmp/sona-restored-map-smoke.log",
+        "scope": "Fresh signature Day1, real completion history and labels, skipped days, legacy/game-only history, sibling isolation, read-only current sound, locked tomorrow and access behavior.",
+        "appliesTo": "Restored Map before the fit5-only CSS heading correction; behavior and HTML unchanged."
+      },
+      "publicScriptSyntax": {
+        "exitCode": 0,
+        "log": "/private/tmp/sona-restored-map-syntax.log"
+      },
+      "whitespace": {
+        "command": "git diff --check",
+        "exitCode": 0
+      },
+      "compactHome": {
+        "status": "Approved fit5-only correction verified on the exact failing case and a scoped 18-phone/portrait plus three-landscape split. No single 21-case exit0 run is claimed.",
+        "originalFailure": {
+          "exitCode": 1,
+          "details": "Fresh 320x568 passed, then the 320x568 top20 founder/history/earned-row TH(v) fixture scrolled 18px.",
+          "evidence": "Observed first-run assertion before the correction; the compact log path was reused for the later matrix."
+        },
+        "correction": "Only fit5 visually clips the Your games heading; its accessible label and every replay button remain. No HTML or behavior change.",
+        "exactCaseRerun": {
+          "scenarios": 1,
+          "exitCode": 0,
+          "log": "/private/tmp/sona-restored-map-case.log"
+        },
+        "phoneAndPortraitMatrix": {
+          "passingScenarios": 18,
+          "processExitCode": 1,
+          "log": "/private/tmp/sona-restored-map-compact.log",
+          "details": "All 18 phone/portrait states passed. The process then reported two obsolete Studio landscape geometry expectations; those expectations were adapted to the restored Map, without app source changes."
+        },
+        "affectedLandscapeRerun": {
+          "scenarios": 3,
+          "exitCode": 0,
+          "log": "/private/tmp/sona-restored-map-landscape.log",
+          "details": "Only the three affected landscape states reran after the test expectation correction."
+        }
+      },
+      "actualPreview": {
+        "scenarios": 6,
+        "reportedBy": "Root review",
+        "status": "Fresh, returning and completed samples at 390px and 320px passed before the fit5-only correction; the separate exact-case rerun covers the formerly failing founder/history/TH(v) combination."
+      },
+      "sourceUnchangedDuringChecks": false,
+      "releaseReady": false,
+      "sourceStabilityScope": "The 98 behavior checks and six visual samples precede the fit5-only CSS correction. The exact failing case, 18 phone/portrait states and three affected landscape states were checked afterward on the final CSS hash; the matrix and focused landscape rerun are separate processes. Syntax and whitespace passed. No full release pass is claimed."
+    },
+    "priorMapChecks": {
+      "home": {
+        "checks": 691,
+        "failures": 7,
+        "exitCode": 1,
+        "log": "/private/tmp/sona-playmap-home-current.log",
+        "scope": "Four old image-size assumptions, two vertical-only door assumptions and one real Reduce Motion transition failure. The transition reset was fixed afterward; this full suite was not rerun."
+      },
+      "parentOnlyTarget": {
+        "checks": 60,
+        "exitCode": 0,
+        "log": "/private/tmp/sona-playmap-parent-target-final.log",
+        "scope": "Prior Map source before the final Reduce Motion CSS reset. Saved old child-picker source failed 11 of these 60 checks."
+      },
+      "reader": {
+        "checks": 144,
+        "exitCode": 0,
+        "log": "/private/tmp/sona-playmap-reader.log"
+      },
+      "selectedSoundReaderScenarios": {
+        "scenarios": 3,
+        "exitCodes": [
+          0,
+          0,
+          0
+        ],
+        "evidence": "/private/tmp/sona-playmap-reader-results.json"
+      }
+    },
+    "unfinishedDrafts": {
+      "studio": "Saved outside active Home; not selected.",
+      "gym": "Archived outside the repo at /private/tmp/sona-unshipped-gym-before-merge/ with exact runtime/test copies, hashes, runtime patch and restore note. charge.html and sona.js were restored byte-for-byte to HEAD 63129a4c; the standalone Gym test and its unused target-test route stub were removed from merge scope. Gym remains unfinished and is excluded from shipping. Historical smoke/full/header results above do not validate a release.",
+      "avatar": "Deferred; no avatar was installed."
+    },
+    "fullRelease": "The full 164-suite release battery is unfinished. Explicit user merge authorization supersedes the prior local-only restriction for the finished scope; historical green checks and bounded restoration checks do not yet make it release-ready."
+  },
+  "approvedMergePreparation": {
+    "authorization": "User explicitly said merge; unfinished Gym must remain archived and excluded.",
+    "status": "Prepared only; required release checks pending. No commit, push or main merge performed by this agent.",
+    "gymArchive": "/private/tmp/sona-unshipped-gym-before-merge/",
+    "preservedDraftSha256": {
+      "public/charge.html": "2354ae10ebd2ec6761caf090ef8fc7977161da358adff23491af156e79de5bb2",
+      "public/sona.js": "3684db9ec43d3d54c1a39e9546006c546cc8c0a365198302cce70d27755f5567",
+      "tests/gymtest.mjs": "7dc63ec567fc760c87805fe84ba0c9d532527c8d9a3fd42dd859ef2a664363c8"
+    },
+    "restoredRuntimeSha256": {
+      "public/charge.html": "d2d046587931732e5c8cdb710031290aad9dca340177e4f9e84a30cc3c3a3044",
+      "public/sona.js": "7b3d063860c548803a7a0e32da31031e913354eb7b287333ebda3faa23a0a6ca"
+    },
+    "archiveManifest": "/private/tmp/sona-unshipped-gym-before-merge/manifest.json",
+    "excludedStandaloneTest": "tests/gymtest.mjs",
+    "avatar": "Deferred; no avatar installed."
   }
 }

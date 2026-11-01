@@ -23,8 +23,8 @@
     .shelfhead{display:flex;align-items:center;gap:10px;margin:18px 2px 8px;}
     .shelfhead h2{margin:0;}
     .library-sound{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:20px 0 12px;}
-    .library-sound label{font-weight:800;}
-    .library-sound select{flex:1;min-width:160px;min-height:48px;border:2px solid var(--cream-line);border-radius:16px;background:var(--cream-card);color:var(--cream-ink);padding:8px 12px;font:inherit;font-weight:800;}
+    .library-sound-caption{font-weight:800;color:var(--muted);font-size:13px;}
+    .library-sound strong{display:inline-block;border:1px solid var(--cream-line);border-radius:99px;background:var(--cream-card);color:var(--cream-ink);padding:5px 11px;font-size:14px;line-height:1.35;font-weight:800;}
     .library-sound p{width:100%;margin:0;font-size:13px;line-height:1.4;color:var(--muted);}
     /* warm tag pair (fix pack 1c) — the green pair was legacy Duolingo chrome */
     .shelfhead .tag{font-size:11px;font-weight:800;color:#7a5200;background:#ffe7c4;border-radius:99px;padding:3px 9px;}
@@ -235,8 +235,8 @@
     </button>
 
     <div class="library-sound" id="librarySoundBox" hidden>
-      <label for="librarySound">Target sound</label>
-      <select id="librarySound" aria-describedby="librarySoundNote"></select>
+      <span class="library-sound-caption">Current sound</span>
+      <strong id="librarySoundValue"></strong>
       <p id="librarySoundNote"></p>
     </div>
     <div class="shelfhead"><h2 id="bookSoundHeading">Sound stories</h2><span class="tag">ECHO READS</span></div>
@@ -284,7 +284,6 @@
   <script src="/saycheck.js"></script>
   <script>
     var profile = Sona.getProfile();
-    var libraryProfileKey = Sona.kkey ? Sona.kkey("sona.profile.v1") : "sona.profile.v1";
     // BEFORE THE ADVENTURE TILE COMES BACK (it is hidden today): since 22 Oct
     // 2026 setup's "What does <Name> love?" saves profile.interests as its
     // own ids ("sports", "music", "dinosaurs", "animals", "space",
@@ -1277,33 +1276,20 @@
     var playMode = false; try { playMode = !!(window.Sona && Sona.playMode && Sona.playMode()); } catch (e) {}
     var assignedSounds = Sona.homeworkSounds ? Sona.homeworkSounds() : [];
     var currentSound = Sona.targetSound ? Sona.targetSound() : (Sona.rotSound ? Sona.rotSound() : focusOrder[0]);
-    var soundOptions = Sona.targetSoundOptions ? Sona.targetSoundOptions() : focusOrder.slice();
     if (assignedSounds.length || (!playMode && focusOrder.length) || profile.targetSound) {
       focusOrder = currentSound ? [String(currentSound).toUpperCase()] : focusOrder;
       playMode = false;
     }
+    // The child's shelf only reads the parent's current sound. Changes stay
+    // behind Grown-ups in Settings; an active assignment remains first.
     (function () {
-      var box = document.getElementById("librarySoundBox"), pick = document.getElementById("librarySound"), note = document.getElementById("librarySoundNote");
-      if (!soundOptions.length) return;
+      var box = document.getElementById("librarySoundBox"), value = document.getElementById("librarySoundValue"), note = document.getElementById("librarySoundNote");
+      var allSounds = playMode || !focusOrder.length;
+      if (!allSounds && !currentSound) return;
       box.hidden = false;
-      if (!assignedSounds.length) {
-        var auto = document.createElement("option"); auto.value = "";
-        auto.textContent = "Automatic · " + sndLabel(currentSound); pick.appendChild(auto);
-      }
-      soundOptions.forEach(function (sound) {
-        var option = document.createElement("option"); option.value = sound; option.textContent = sndLabel(sound) + " sound"; pick.appendChild(option);
-      });
-      pick.value = assignedSounds.length ? currentSound : (profile.targetSound || "");
-      pick.disabled = !!assignedSounds.length || !Sona.setTargetSound;
-      note.textContent = assignedSounds.length ? "From your speech therapist." : (!playMode && focusOrder.length ? "Only books for this sound." : "Choose a sound to see its books.");
-      if (!playMode && focusOrder.length) document.getElementById("bookSoundHeading").textContent = sndLabel(currentSound) + " sound stories";
-      pick.onchange = function () {
-        if (Sona.kkey && Sona.kkey("sona.profile.v1") !== libraryProfileKey) { location.reload(); return; }
-        if (!Sona.setTargetSound || !Sona.setTargetSound(pick.value)) { location.reload(); return; }
-        // Rebuild once from the shared choice, without retaining the old
-        // sound's covers or allowing a stale child to change this child.
-        location.reload();
-      };
+      value.textContent = allSounds ? "All sounds" : sndLabel(currentSound) + " sound";
+      note.textContent = assignedSounds.length ? "From your speech therapist." : (allSounds ? "Browse every sound." : "Only books for this sound.");
+      if (!allSounds) document.getElementById("bookSoundHeading").textContent = sndLabel(currentSound) + " sound stories";
     })();
     if (!playMode && focusOrder.length) {
       STORIES = STORIES.filter(function (st) { return focusOrder.indexOf(String(st.sound).toUpperCase()) !== -1; });

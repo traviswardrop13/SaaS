@@ -123,120 +123,119 @@ let browser;
 try {
   browser = await chromium.launch(launchOpts());
   const context = await browser.newContext({ viewport: { width: 375, height: 667 }, reducedMotion: "reduce", timezoneId: "America/Boise" });
+  await context.route("**/*", r => r.request().url().startsWith(base + "/") ? r.continue() : r.abort());
   const page = await context.newPage(), errors = [];
-  page.on("pageerror", (e) => errors.push(e.message));
+  await page.clock.setFixedTime(new Date("2026-10-15T12:00:00-06:00"));
+  page.on("pageerror", e => errors.push(e.message));
   await page.addInitScript(() => {
     if (localStorage.getItem("__targetseed")) return;
     localStorage.setItem("__targetseed", "1");
-    ["", "2", "3", "4", "5"].forEach((n) => localStorage.setItem("sona.freeera" + n + ".v1", n ? "done" : "post"));
+    ["", "2", "3", "4", "5"].forEach(n => localStorage.setItem("sona.freeera" + n + ".v1", n ? "done" : "post"));
     localStorage.setItem("sona.freever.v1", "kept"); localStorage.setItem("sona.buddyset.v1", "post");
     localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Mia", childAge: "7", focusSounds: ["R", "S"], targetSound: "S", onboarded: true, earlyAdopter: true, volume: 0 }));
-    sessionStorage.setItem("sona.gate.v1", String(Date.now()));
   });
-  await page.goto(base + "/library.html");
-  const readShelf = () => page.evaluate(() => ({ top: [...document.querySelectorAll("#shelf .bookBtn .bt")].map((b) => b.textContent), target: document.getElementById("librarySound")?.value, more: !!document.getElementById("moreBtn"), rest: document.querySelectorAll(".bookBtn:not(#shelf .bookBtn)").length, all: ALL_STORIES.map((b) => ({ title: b.title, sound: b.sound })) }));
-  let shelf = await readShelf();
-  ok("the bookshelf names the selected sound and shows only its books", shelf.target === "S" && shelf.top.length > 0 && shelf.top.every((t) => shelf.all.find((b) => b.title === t).sound === "S"), shelf);
-  if (process.env.TARGET_SOUND_SCREENSHOTS) await page.screenshot({ path: path.join(process.env.TARGET_SOUND_SCREENSHOTS, "library-sound.png"), fullPage: true });
-  ok("no More books control or other-sound shelf can reveal another sound", !shelf.more && shelf.rest === 0);
-  if (await page.locator("#librarySound").count()) {
-    await page.waitForTimeout(750);
-    await Promise.all([page.waitForNavigation({ waitUntil: "load" }), page.locator("#librarySound").selectOption("R")]); shelf = await readShelf();
-    ok("changing the bookshelf sound saves it and rebuilds one focused shelf", shelf.target === "R" && shelf.top.every((t) => shelf.all.find((b) => b.title === t).sound === "R") && !shelf.more && shelf.rest === 0, shelf);
-  } else ok("the bookshelf has a sound switcher", false);
-  // Neither an off-sound free book nor a seasonal fallback belongs on a
-  // selected shelf. This changes discovery only, never entitlement.
-  await page.evaluate(() => { Sona.saveProfile({ focusSounds: ["S"], targetSound: "S", earlyAdopter: false }); });
-  await page.reload(); shelf = await readShelf();
-  ok("a locked S shelf never substitutes the free R book", shelf.top.length > 0 && shelf.top.every((t) => shelf.all.find((b) => b.title === t).sound === "S") && !shelf.more && shelf.rest === 0, shelf);
-  await page.goto(base + "/today.html");
-  ok("Home's Books door describes the locked S shelf, without promising a hidden free R book", await page.evaluate(() => document.getElementById("homeBooksTag").textContent === (Sona.isFree() ? "Free" : Sona.booksOpen() ? "Included" : "Premium")));
-  await page.evaluate(() => Sona.saveProfile({ focusSounds: ["R", "S"], targetSound: "R" }));
-  await page.reload();
-  ok("…and still names the free book when the selected R shelf contains it", await page.evaluate(() => document.getElementById("homeBooksTag").textContent === (Sona.isFree() ? "Free" : Sona.booksOpen() ? "Included" : "1 free book")));
-  await page.goto(base + "/library.html");
-  await page.evaluate(() => { Sona.saveProfile({ focusSounds: ["K"], targetSound: "K", earlyAdopter: true }); });
-  await page.clock.setFixedTime(new Date("2026-10-15T12:00:00-06:00"));
-  await page.reload(); shelf = await readShelf();
-  ok("a K shelf never substitutes B's seasonal book", shelf.top.length > 0 && shelf.top.every((t) => shelf.all.find((b) => b.title === t).sound === "K") && !shelf.top.includes("Boo the Bat on Halloween") && !shelf.more, shelf);
-  await page.evaluate(() => { Sona.saveProfile({ focusSounds: ["R", "S"], targetSound: "R" }); });
-  await page.evaluate(() => Sona.gateVerify());
-  await page.goto(base + "/settings.html");
-  if (await page.locator("#targetSound").count()) {
-    if (process.env.TARGET_SOUND_SCREENSHOTS) await page.screenshot({ path: path.join(process.env.TARGET_SOUND_SCREENSHOTS, "settings-sound.png"), fullPage: true });
-    await page.locator("#targetSound").selectOption("S");
-    ok("Settings changes the target without removing other sounds", await page.evaluate(() => Sona.targetSound() === "S" && Sona.getProfile().focusSounds.join(",") === "R,S"));
-    await page.locator('#sounds [data-s="S"]').click();
-    ok("removing the selected sound updates the target control", await page.evaluate(() => document.getElementById("targetSound").value === "" && /R/.test(document.getElementById("targetSound").selectedOptions[0].textContent) && Sona.targetSound() === "R" && !Sona.getProfile().targetSound));
-  } else ok("Settings has a target sound control", false);
-  await page.evaluate(() => localStorage.setItem(Sona.kkey("sona.homework.v1"), JSON.stringify({ hw: { sounds: ["L"], start: "2000-01-01", due: "2999-01-01" } })));
-  await page.goto(base + "/library.html");
-  ok("assigned books take precedence and cannot be switched away", await page.evaluate(() => document.getElementById("librarySound")?.value === "L" && document.getElementById("librarySound")?.disabled && /speech therapist/.test(document.getElementById("librarySoundNote")?.textContent || "")));
-  await page.evaluate(() => { localStorage.removeItem(Sona.kkey("sona.homework.v1")); });
-  await page.reload();
-  await page.evaluate(() => { Sona.addKid("Ana", "7"); Sona.saveProfile({ focusSounds: ["R", "S"], targetSound: "S", onboarded: true }); });
-  if (await page.locator("#librarySound").count()) {
-    await Promise.all([page.waitForNavigation({ waitUntil: "load" }), page.locator("#librarySound").selectOption("R")]);
-    ok("a shelf left open for another child cannot overwrite the child's choice", await page.evaluate(() => Sona.getProfile().childName === "Ana" && Sona.targetSound() === "S" && document.getElementById("librarySound").value === "S"));
+  const profileText = () => page.evaluate(() => localStorage.getItem(Sona.kkey("sona.profile.v1")));
+  const readShelf = () => page.evaluate(() => ({ top: [...document.querySelectorAll("#shelf .bookBtn .bt")].map(b => b.textContent), badge: document.getElementById("librarySoundValue")?.textContent, more: !!document.getElementById("moreBtn"), rest: document.querySelectorAll(".bookBtn:not(#shelf .bookBtn)").length, all: ALL_STORIES.map(b => ({title:b.title,sound:b.sound})) }));
+  const only = (shelf,sound) => shelf.top.length > 0 && shelf.top.every(t => shelf.all.find(b => b.title === t).sound === sound) && !shelf.more && shelf.rest === 0;
+  async function childReadOnly(where, boxId, valueId) {
+    const before = await profileText(), returnTo = page.url();
+    const shape = await page.evaluate(([boxId,valueId]) => {
+      const box=document.getElementById(boxId),value=document.getElementById(valueId);
+      return {exists:!!box&&!!value,editable:box?box.querySelectorAll("select,input,button,a[href],[role=button],[role=combobox],[tabindex]").length:-1,role:box?.getAttribute("role"),tab:box?.getAttribute("tabindex")};
+    },[boxId,valueId]);
+    ok(where+" shows a read-only sound, with no editable control or dropdown",shape.exists&&shape.editable===0&&shape.role!=="button"&&shape.role!=="combobox"&&shape.tab===null,shape);
+    if(shape.exists&&shape.editable===0){await page.locator("#"+valueId).click();await page.keyboard.press("r");await page.keyboard.press("ArrowDown");await page.keyboard.press("Space");await page.evaluate(id=>{const e=document.getElementById(id);if(e)e.focus();},valueId);}
+    ok(where+" cannot change the child's sound by click, type-ahead or keys",await profileText()===before);
+    if(page.url()!==returnTo)await page.goto(returnTo);
   }
-  const unpinnedProfile = await page.evaluate(() => { Sona.saveProfile({ targetSound: "" }); return localStorage.getItem(Sona.kkey("sona.profile.v1")); });
-  await page.goto(base + "/today.html");
-  await page.waitForSelector("#homeSound:not([hidden])");
-  ok("opening Home shows Automatic separately without pinning or saving the current sound", await page.evaluate((before) => localStorage.getItem(Sona.kkey("sona.profile.v1")) === before && !Sona.getProfile().targetSound && document.getElementById("homeSound").value === "" && document.getElementById("homeSound").selectedOptions[0].textContent === "Auto" && document.getElementById("homeSound").getAttribute("aria-label") === "Target sound, automatic: " + Sona.soundLabel(Sona.targetSound()), unpinnedProfile));
-  // Native type-ahead emits a real change only when the option changes.
-  // selectOption emits one even for an already-selected R and hid the bug.
-  // (Mac headless native selects ignore arrow keys, but type-ahead works.)
-  async function chooseHomeByKey(key) {
-    const moved = page.waitForNavigation({ waitUntil: "load", timeout: 2000 }).then(() => true, () => false);
-    await page.locator("#homeSound").focus(); await page.keyboard.press(key);
-    const changed = await moved;
-    if (!changed) await page.reload();
-    return changed;
+  async function solveGate() {
+    await page.waitForSelector("#gateOvl.show");
+    const words=["ZERO","ONE","TWO","THREE","FOUR","FIVE","SIX","SEVEN","EIGHT","NINE"],digits=(await page.locator("#gateQ").innerText()).split(" · ").map(w=>words.indexOf(w.trim()));
+    if(digits.length!==4||digits.some(n=>n<0))throw new Error("parent gate did not show its four number words");
+    for(const n of digits)await page.locator("#pad").getByRole("button",{name:String(n),exact:true}).click();
+    await Promise.all([page.waitForURL(/\/settings\.html$/),page.locator("#pad").getByRole("button",{name:"✓",exact:true}).click()]);
   }
-  const choseR = await chooseHomeByKey("r");
-  ok("choosing the already-effective R from Automatic emits a real change and persists R", choseR && await page.evaluate(() => document.getElementById("homeSound").value === "R" && Sona.getProfile().targetSound === "R" && Sona.rotSound() === "R"));
-  if (await page.locator('#homeSound option[value=""]').count()) {
-    const choseAuto = await chooseHomeByKey("a");
-    ok("Home's Automatic option clears the explicit pin and restores rotation", choseAuto && await page.evaluate(() => document.getElementById("homeSound").value === "" && !Sona.getProfile().targetSound && Sona.rotSounds().join(",") === "R,S"));
-  } else ok("Home's Automatic option clears the explicit pin and restores rotation", false);
-  await Promise.all([page.waitForNavigation({ waitUntil: "load" }), page.locator("#homeSound").selectOption("S")]);
-  ok("Home's R/S selector saves and displays the chosen sound for books and games", await page.evaluate(() => document.getElementById("homeSound").value === "S" && Sona.getProfile().targetSound === "S" && Sona.rotSound() === "S" && document.getElementById("homeSoundValue")?.textContent === "S" && document.getElementById("homeSoundNote")?.textContent === "Change sound"));
-  await page.evaluate(() => localStorage.setItem(Sona.kkey("sona.homework.v1"), JSON.stringify({ hw: { sounds: ["L"], start: "2000-01-01", due: "2999-01-01" } })));
+  await page.goto(base+"/library.html");
+  let shelf=await readShelf();
+  ok("the bookshelf names the parent's selected sound and shows only its books",shelf.badge==="S sound"&&only(shelf,"S"),shelf);
+  await childReadOnly("Books","librarySoundBox","librarySoundValue");
+  if(process.env.TARGET_SOUND_SCREENSHOTS)await page.screenshot({path:path.join(process.env.TARGET_SOUND_SCREENSHOTS,"library-sound.png"),fullPage:true});
+  await page.goto(base+"/today.html");
+  await childReadOnly("Home","homeSoundWrap","homeSoundValue");
+  ok("Home's read-only badge shows the same current S sound",await page.locator("#homeSoundValue").textContent()==="S");
+
+  // The real gate, without a fixture stamp: typing Settings' address cannot
+  // expose its picker. Passing the same check is the parent's way in.
+  await page.goto(base+"/settings.html");
+  await page.waitForURL(/\/today\.html\?gate=1/);
+  ok("a direct Settings visit still requires the grown-ups check",await page.locator("#gateOvl").evaluate(e=>e.classList.contains("show"))&&await page.locator("#targetSound").count()===0);
+  await solveGate();
+  ok("the real grown-ups check opens Settings with its editable target control",await page.locator("#targetSound").count()===1&&await page.evaluate(()=>Sona.gateOk()));
+  await page.locator("#targetSound").selectOption("R");
+  ok("the parent's Settings pick saves R without removing other sounds",await page.evaluate(()=>Sona.targetSound()==="R"&&Sona.getProfile().focusSounds.join(",")==="R,S"));
+  await page.goto(base+"/library.html");shelf=await readShelf();
+  ok("returning from the parent's pick rebuilds only the R shelf",shelf.badge==="R sound"&&only(shelf,"R"),shelf);
+  await page.goto(base+"/today.html");
+  ok("Home reflects the parent's R pick without a child sound control",await page.locator("#homeSoundValue").textContent()==="R"&&await page.locator("#homeSound").count()===0);
+  await page.locator("#parentBtn").click();
+  ok("the Grown-ups button still opens its check",await page.locator("#gateOvl").evaluate(e=>e.classList.contains("show")));
+  await solveGate();
+  await page.locator("#targetSound").selectOption("S");
+  ok("Settings alone can deliberately switch the family back to S",await page.evaluate(()=>Sona.getProfile().targetSound==="S"&&Sona.rotSound()==="S"));
+  if(process.env.TARGET_SOUND_SCREENSHOTS)await page.screenshot({path:path.join(process.env.TARGET_SOUND_SCREENSHOTS,"settings-sound.png"),fullPage:true});
+  await page.locator('#sounds [data-s="S"]').click();
+  ok("removing the parent's selected sound clears its pin safely",await page.evaluate(()=>document.getElementById("targetSound").value===""&&Sona.targetSound()==="R"&&!Sona.getProfile().targetSound));
+  await page.locator('#sounds [data-s="S"]').click();
+  await page.locator("#targetSound").selectOption("S");
+
+  // Discovery still respects access and seasons; a different sound's free
+  // or seasonal title never substitutes for the parent's selected shelf.
+  await page.evaluate(()=>Sona.saveProfile({earlyAdopter:false}));
+  await page.goto(base+"/library.html");shelf=await readShelf();
+  ok("a locked S shelf never substitutes the free R book",only(shelf,"S"),shelf);
+  await page.goto(base+"/today.html");
+  ok("Home's Books door describes the locked S shelf honestly",await page.evaluate(()=>document.getElementById("homeBooksTag").textContent===(Sona.isFree()?"Free":Sona.booksOpen()?"Included":"Premium")));
+  await page.evaluate(()=>Sona.saveProfile({focusSounds:["R","S"],targetSound:"R"}));await page.reload();
+  ok("the R shelf can still be described by its real free title",await page.evaluate(()=>document.getElementById("homeBooksTag").textContent===(Sona.isFree()?"Free":Sona.booksOpen()?"Included":"1 free book")));
+  await page.evaluate(()=>Sona.saveProfile({focusSounds:["K"],targetSound:"K",earlyAdopter:true}));
+  await page.goto(base+"/library.html");shelf=await readShelf();
+  ok("a K shelf never substitutes B's seasonal book",only(shelf,"K")&&!shelf.top.includes("Boo the Bat on Halloween"),shelf);
+
+  await page.evaluate(()=>{Sona.saveProfile({focusSounds:["R","S"],targetSound:"S"});localStorage.setItem(Sona.kkey("sona.homework.v1"),JSON.stringify({hw:{sounds:["L"],start:"2000-01-01",due:"2999-01-01"}}));});
+  await page.reload();shelf=await readShelf();
+  ok("assigned books take precedence and name the speech therapist",shelf.badge==="L sound"&&only(shelf,"L")&&/speech therapist/.test(await page.locator("#librarySoundNote").textContent()),shelf);
+  await childReadOnly("Assigned Books","librarySoundBox","librarySoundValue");
+  await page.goto(base+"/today.html");
+  ok("Home's read-only assignment badge shows L and its source",await page.locator("#homeSoundValue").textContent()==="L"&&/speech therapist/.test(await page.locator("#homeSoundWrap").getAttribute("aria-label")));
+  await page.goto(base+"/settings.html");
+  ok("even the parent cannot switch away from active homework",await page.locator("#targetSound").isDisabled()&&await page.locator("#targetSound").inputValue()==="L");
+  await page.evaluate(()=>localStorage.removeItem(Sona.kkey("sona.homework.v1")));
+
+  // A child switch while a page is still open cannot turn either badge into
+  // a writer for the new child. Reload then paints that child's own shelf.
+  await page.goto(base+"/library.html");
+  await page.evaluate(()=>{Sona.addKid("Ana","7");Sona.saveProfile({focusSounds:["R","S"],targetSound:"R",onboarded:true});});
+  const siblingProfile=await profileText();await childReadOnly("Stale Books","librarySoundBox","librarySoundValue");
+  ok("a stale child's Books page cannot overwrite the sibling's R choice",await profileText()===siblingProfile&&await page.evaluate(()=>Sona.targetSound()==="R"));
+  await page.reload();shelf=await readShelf();ok("Books reloads for the active sibling only",only(shelf,"R")&&shelf.badge==="R sound",shelf);
+  await page.goto(base+"/today.html");
+  await page.evaluate(()=>{Sona.addKid("Bea","7");Sona.saveProfile({focusSounds:["R","S"],targetSound:"S",onboarded:true});});
+  const thirdProfile=await profileText();await childReadOnly("Stale Home","homeSoundWrap","homeSoundValue");
+  ok("a stale Home cannot overwrite the next child's S choice",await profileText()===thirdProfile&&await page.evaluate(()=>Sona.targetSound()==="S"));
   await page.reload();
-  ok("Home labels the assigned sound clearly and disables family changes", await page.evaluate(() => document.getElementById("homeSound").disabled && document.getElementById("homeSound").value === "L" && /speech therapist/.test(document.getElementById("homeSound").title) && document.getElementById("homeSoundValue")?.textContent === "L" && document.getElementById("homeSoundNote")?.textContent === "From your therapist"));
-  await page.evaluate(() => { localStorage.removeItem(Sona.kkey("sona.homework.v1")); });
+  const unpinnedProfile=await page.evaluate(()=>{Sona.saveProfile({targetSound:""});return localStorage.getItem(Sona.kkey("sona.profile.v1"));});
   await page.reload();
-  await page.evaluate(() => { Sona.addKid("Bea", "7"); Sona.saveProfile({ focusSounds: ["R", "S"], targetSound: "S", onboarded: true }); });
-  await Promise.all([page.waitForNavigation({ waitUntil: "load" }), page.locator("#homeSound").selectOption("R")]);
-  ok("a stale Home with the same available sounds cannot overwrite a sibling's choice", await page.evaluate(() => Sona.getProfile().childName === "Bea" && Sona.targetSound() === "S" && document.getElementById("homeSound").value === "S"));
-  const singleProfile = await page.evaluate(() => { Sona.saveProfile({ focusSounds: ["S"], targetSound: "S" }); return localStorage.getItem(Sona.kkey("sona.profile.v1")); });
-  await page.reload();
-  const singleSound = await page.evaluate(() => {
-    const pick = document.getElementById("homeSound"), caret = document.querySelector("#homeSoundWrap .sound-chevron"), cs = getComputedStyle(caret), r = caret.getBoundingClientRect();
-    return { value: pick.value, disabled: pick.disabled, label: document.getElementById("homeSoundValue").textContent, note: document.getElementById("homeSoundNote").textContent, title: pick.title, caretVisible: cs.display !== "none" && cs.visibility !== "hidden" && r.width > 0 && r.height > 0, profile: localStorage.getItem(Sona.kkey("sona.profile.v1")) };
-  });
-  ok("a single family sound points to Settings without showing an unusable dropdown", singleSound.value === "S" && singleSound.disabled && singleSound.label === "S" && singleSound.note === "In Settings" && singleSound.title === "Choose sounds in Settings" && !singleSound.caretVisible && singleSound.profile === singleProfile, singleSound);
-  let safeTop = 0, safeBottom = 0;
-  await context.route(/\.(html|css)$/, async (route) => {
-    const response = await route.fetch();
-    const body = (await response.text()).replace(/env\(safe-area-inset-top\)/g, safeTop + "px").replace(/env\(safe-area-inset-bottom\)/g, safeBottom + "px");
-    await route.fulfill({ response, body });
-  });
-  await page.evaluate(() => { Sona.saveProfile({ focusSounds: ["THV", "R"], targetSound: "" }); localStorage.setItem(Sona.kkey("sona.rotation.v1"), JSON.stringify({ i: 0, r: 0 })); });
-  for (const viewport of [{ width: 320, height: 568 }, { width: 390, height: 844, top: 47, bottom: 34 }]) {
-    safeTop = viewport.top || 0; safeBottom = viewport.bottom || 0;
-    await page.setViewportSize({ width: viewport.width, height: viewport.height }); await page.reload();
-    await page.evaluate(() => document.fonts.ready); await page.waitForTimeout(100);
-    const label = await page.evaluate(() => {
-      const pick = document.getElementById("homeSound"), value = document.getElementById("homeSoundValue"), note = document.getElementById("homeSoundNote");
-      if (!value || !note) return {missing: "visible sound value/note"};
-      const cs = getComputedStyle(value), r = pick.getBoundingClientRect(), v = value.getBoundingClientRect(), n = note.getBoundingClientRect();
-      return { value: pick.value, option: pick.selectedOptions[0].textContent, text: value.textContent, note: note.textContent, visible: getComputedStyle(value).visibility !== "hidden" && getComputedStyle(value).opacity !== "0", valueFits: value.scrollWidth <= value.clientWidth + 1, nativeCoversLabel: r.left <= v.left && r.right >= v.right && r.top <= n.top && r.bottom >= n.bottom, accessible: pick.getAttribute("aria-label"), title: pick.title, fontSize: parseFloat(cs.fontSize), captionFontSize: parseFloat(getComputedStyle(document.querySelector("#homeSoundWrap .sound-caption")).fontSize), noteFontSize: parseFloat(getComputedStyle(note).fontSize), nativeFontSize: parseFloat(getComputedStyle(pick).fontSize), height: r.height, right: r.right, top: r.top, bottom: r.bottom, pageWidth: document.documentElement.scrollWidth, pageHeight: document.documentElement.scrollHeight, width: innerWidth, heightLimit: innerHeight };
-    });
-    ok("Home's automatic choice shows its current sound clearly at " + viewport.width + "px", label.value === "" && label.option === "Auto" && label.text === "TH (v)" && label.note === "Automatic" && label.visible && label.valueFits && label.nativeCoversLabel && label.accessible === "Target sound, automatic: TH (v)" && label.title === "Automatic: TH (v)" && label.fontSize >= 16 && label.captionFontSize >= 11 && label.noteFontSize >= 11 && label.nativeFontSize >= 16 && label.height >= 44 && label.right <= label.width && label.top >= safeTop && label.bottom <= label.heightLimit - safeBottom && label.pageWidth <= label.width && label.pageHeight <= label.heightLimit + 1, label);
+  ok("opening Home reads automatic rotation without pinning or saving it",await profileText()===unpinnedProfile&&await page.evaluate(()=>!Sona.getProfile().targetSound&&document.getElementById("homeSoundValue").textContent===Sona.soundLabel(Sona.targetSound())));
+  let safeTop=0,safeBottom=0;
+  await context.route(/\.(html|css)$/,async route=>{const response=await route.fetch(),body=(await response.text()).replace(/env\(safe-area-inset-top\)/g,safeTop+"px").replace(/env\(safe-area-inset-bottom\)/g,safeBottom+"px");await route.fulfill({response,body});});
+  await page.evaluate(()=>{Sona.saveProfile({focusSounds:["THV","R"],targetSound:""});localStorage.setItem(Sona.kkey("sona.rotation.v1"),JSON.stringify({i:0,r:0}));});
+  for(const viewport of [{width:320,height:568},{width:390,height:844,top:47,bottom:34}]){
+    safeTop=viewport.top||0;safeBottom=viewport.bottom||0;await page.setViewportSize({width:viewport.width,height:viewport.height});await page.reload();await page.evaluate(()=>document.fonts.ready);await page.waitForTimeout(100);
+    const badge=await page.evaluate(()=>{const e=document.getElementById("homeSoundValue"),r=e.getBoundingClientRect(),s=getComputedStyle(e);return{text:e.textContent,fontSize:parseFloat(s.fontSize),fits:e.scrollWidth<=e.clientWidth+1,l:r.left,r:r.right,t:r.top,b:r.bottom,w:innerWidth,h:innerHeight,scroll:document.documentElement.scrollHeight};});
+    ok("Home's read-only TH label stays legible and on screen at "+viewport.width+"px",badge.text==="TH (v)"&&badge.fontSize>=11&&badge.fits&&badge.l>=0&&badge.r<=badge.w&&badge.t>=safeTop&&badge.b<=badge.h-safeBottom&&badge.scroll<=badge.h+1,badge);
   }
-  ok("target selection pages have no script errors", errors.length === 0, errors);
+  ok("parent-only target pages have no script errors",errors.length===0,errors);
   await context.close();
-} catch (e) { ok("target page regression runs", false, e.stack); }
-finally { if (browser) await browser.close(); await new Promise((r) => server.close(r)); }
-process.exit(fails ? 1 : 0);
+} catch(e){ok("parent-only target regression runs",false,e.stack);}
+finally{if(browser)await browser.close();await new Promise(r=>server.close(r));}
+process.exit(fails?1:0);

@@ -824,7 +824,10 @@ await scenario("no key words", async () => {
 // Sound selection changes discovery, never what counts as a heard book word.
 // A six-year-old may say S words (S, by 5); a four-year-old just hears them.
 async function selectBookSound(page, sound) {
-  await Promise.all([page.waitForNavigation({ waitUntil: "load" }), page.locator("#librarySound").selectOption(sound)]);
+  // Saved parent preference is fixture setup; targetsoundtest drives the
+  // real grown-ups gate and Settings picker. Books itself stays read-only.
+  await page.evaluate(s => { if (!Sona.setTargetSound(s)) throw new Error("invalid parent sound fixture"); }, sound);
+  await page.reload();
 }
 await scenario("selected sound", async () => {
   const { context, page, errors } = await fresh({ micok: true, age: "6", shape: "hiss", focus: ["R", "S"], today: "2026-10-05" });
@@ -834,7 +837,7 @@ await scenario("selected sound", async () => {
   const went = await waitLive(page);
   const st = await page.evaluate(() => ({ word: window.__book.word, ask: document.getElementById("bkAsk").textContent, norm: Sona.soundNorm("S") }));
   ok("a newly selected S shelf shows S alone and its reader asks for the same S word", !shelf.more && shelf.sounds.every((s) => s === "S") && went && st.word === "seagull" && st.ask === "Can you say seagull?" && st.norm === 5, { shelf, st });
-  ok("…the sound selector makes no voice or chime before the book is touched", shelf.sfx === 0 && shelf.speech === 0, { shelf });
+  ok("…the parent-selected shelf makes no voice or chime before the book is touched", shelf.sfx === 0 && shelf.speech === 0, { shelf });
   await voice(page, 260);
   ok("…and a voice of that book's kind (an S is a hiss) turns its page", await until(page, () => window.__book && window.__book.page === 1, 3000));
   noOverlap("selected sound", await log(page));
