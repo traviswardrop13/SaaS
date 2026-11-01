@@ -920,14 +920,14 @@ find(LB, /var p = say\(text\), tok = sayToken;/, "readAlong() forwards to say()"
 // The key word as Echo shows and says it: stored lower-case, a name keeps its capital.
 const keyShownFn = find(LB, /^    function keyShown\(word\) \{\n[\s\S]*?^    \}$/m, "function keyShown()");
 const keyShownOf = (book, word) => new Function("BOOK", keyShownFn.m[0] + "\nreturn keyShown;")(book)(word);
-// saycheck.js: the key-word moment's voice and mic. Only the Books page loads it.
+// saycheck.js: Books and TALK1 share the key-word moment's voice and mic.
 const SCK = "public/saycheck.js";
 const checkVoice = find(SCK, /fetch\("\/api\/tts", \{ method: "POST", headers: \{ "Content-Type": "application\/json" \}, body: JSON\.stringify\(\{ text: t, voice: prof\(\)\.voiceId \|\| "", stable: true \}\)/, "saycheck.js's voice request");
 coverAll(SCK, TTS_CALL, [checkVoice], "a voice request"); coverAll(SCK, SPEAK_CALL, [], "a voice call");
 coverAll(SCK, /(?<![\w$.])say\(/, []);
 {
   const users = pagesLoading("/saycheck.js");
-  if (users.join() !== "library.html") fail(`saycheck.js is now loaded by ${users.join(", ") || "no page"} — only the Books page spoke through it. Add the new page's lines to the script.`);
+  if (users.join() !== "adventure.html,library.html") fail(`saycheck.js is now loaded by ${users.join(", ") || "no page"} — only Books and the talking-story player are covered. Add the new page's lines to the script.`);
 }
 const STORIES = (0, eval)(find(LB, /var STORIES = (\[[\s\S]*?\n    \]);/, "STORIES table").m[1]);
 
@@ -1009,15 +1009,16 @@ const ccLines = []; // {text, line, when}
 
 // ───────────────────────── the daily story (adventure.html) ─────────────────────────
 // STORY1 (22 Oct 2026): Echo reads each scene of the day's story aloud. The
-// lines are adventures.js's, every one, read here as the page reads them
-// (ages 3-4 skip the big-kid scenes and read the short lines); the page
-// speaks nothing else. A line plays from a recorded file when the voice
+// lines are adventures.js's and TALK1's talk-stories.js, read exactly as the
+// page reads them (ages 3-4 skip big-kid scenes and read short lines). TALK1
+// also uses the Books word moment; its two voice calls are anchored below.
+// A line plays from a recorded file when the voice
 // manifest lists exactly those words, else in the live voice (arcade-sayit.js's
 // SayIt.line: the phone's shared cache and the voice service), else in the
 // browser's own voice. The game each day opens is a picture game (B7, B8, C8).
-const ADV = "public/adventure.html", ADVS = "public/adventures.js";
+const ADV = "public/adventure.html", ADVS = "public/adventures.js", TALKS = "public/talk-stories.js";
 const advSkip = find(ADV, /if \(little && sc\.ages === "big"\) return;/, "ages 3-4 skip the big-kid scenes");
-const advScenes = find(ADV, /var t = typeof sc\.line === "string" \? sc\.line : \(\(little && sc\.line\.little\) \|\| sc\.line\.big\);\n\s*run\.push\(\{ art: sc\.art, src: "\/assets\/adventure\/" \+ day\.id \+ "\/" \+ sc\.art \+ "\.webp", text: t,/, "a scene's line is adventures.js's (ages 3-4 read the short one)");
+const advScenes = find(ADV, /var t = typeof sc\.line === "string" \? sc\.line : \(\(little && sc\.line\.little\) \|\| sc\.line\.big\);\n\s*out\.push\(\{ art: sc\.art, src: "\/assets\/adventure\/" \+ day\.id \+ "\/" \+ sc\.art \+ "\.webp", text: t,/, "a scene's line is its story data (ages 3-4 read the short one)");
 const advRead = find(ADV, /clipFor\(sc\.text\)\.then\(function \(clip\) \{/, "Echo reads the scene on screen");
 const advPre = find(ADV, /want = run\.slice\(from\)\.map\(function \(sc\) \{ return sc\.text; \}\);/, "the story's lines ahead are fetched before they are needed");
 const advPump = find(ADV, /clipFor\(t\)\.then\(function \(\) \{ inflight--; pump\(\); \}\);/, "…two at a time");
@@ -1025,7 +1026,13 @@ const advLive = find(ADV, /return SI\.line\(text\)\.then\(/, "the story's live v
 const advSynth = find(ADV, /var u = new SpeechSynthesisUtterance\(text\);/, "the story's browser-voice fallback");
 const advHash = find(ADV, /var s = unescape\(encodeURIComponent\(\(\(S && S\.TTS_CACHE_VERSION\) \|\| "v9"\) \+ "\|" \+ text\)\), h = 0x811c9dc5;/, "a recorded line's file: FNV-1a of TTS_CACHE_VERSION|line");
 const advFile = find(ADV, /return M && M\.files && M\.files\[h\] === text \? "\/assets\/adventure\/voice\/" \+ h \+ "\.mp3" : "";/, "a recorded file plays only for its own words");
-const advMuted = find(ADV, /if \(!sc \|\| !soundOn\(\)\) \{ setVoice\("off"\); return; \}/, "the story says nothing while Sona's sound is off");
+const advMuted = find(ADV, /if \(!sc \|\| !soundOn\(\)\) \{ setVoice\("off"\); after\(\); return; \}/, "the story says nothing while Sona's sound is off");
+const advAsk = find(ADV, /SC\.say\(\(again \? "(One more time\.\.\. )" : "(Can you say\.\.\. )"\) \+ M\.word \+ "(\.)", function/, "talking-story key-word ask");
+const advBye = find(ADV, /SC\.say\("(Great trying\. Let's turn the page\.)", function/, "talking-story line after three tries");
+find(ADV, /key: TALK \? sc\.key \|\| "" : ""/, "only TALK1 scenes carry a key word");
+find(ADV, /M = \{ word: sc\.key, said: 0, tries: 0, ok: false, leaving: false, page: idx \};/, "the talking-story word is the current scene's key");
+if (advAsk.m.slice(1).join() !== bookAsk.m.slice(1).join() || advBye.m[1] !== bookBye.m[1]) fail("the talking story and Books no longer share their word-moment lines — list the new lines separately.");
+coverAll(ADV, /SC\.say\(/, [advAsk, advBye], "a SayCheck spoken line");
 coverAll(ADV, /(?<![\w$.])clipFor\(/, [advRead, advPump], "a spoken line", true);
 coverAll(ADV, /\.line\(/, [advLive], "a voice request");
 coverAll(ADV, TTS_CALL, [], "a voice request"); coverAll(ADV, SPEAK_CALL, [], "a voice call");
@@ -1039,6 +1046,12 @@ const ADVENTURES = (() => { const w = {}; new Function("window", src(ADVS))(w); 
 if (!ADVENTURES) fail("adventures.js no longer sets window.SonaAdventures — re-read the daily story's section.");
 for (const d of S.STORY_DAYS || []) if (!ADVENTURES[d.id]) fail(`STORY_DAYS has the story "${d.id}" and adventures.js has no scenes for it.`);
 for (const id of Object.keys(ADVENTURES)) if (!(S.STORY_DAYS || []).some((d) => d.id === id)) fail(`adventures.js has scenes for "${id}", which STORY_DAYS does not list (no child would see them).`);
+if (!loads(ADV, "/talk-stories.js") || pagesLoading("/talk-stories.js").join() !== "adventure.html") fail("talk-stories.js must be read only by adventure.html; add any new reader's lines explicitly.");
+find(ADV, /function storyData\(d\) \{ return d\.talk \? T\[d\.id\] : A\[d\.id\]; \}/, "the player selects TALK1 data only for a talking story");
+const TALK_STORIES = (() => { const w = {}; new Function("window", src(TALKS)).call(w, w); return w.SonaTalkStories; })();
+if (!TALK_STORIES) fail("talk-stories.js no longer sets window.SonaTalkStories.");
+for (const d of S.STORY_TALK || []) if (!TALK_STORIES[d.id]) fail(`STORY_TALK has no scene data for "${d.id}".`);
+for (const id of Object.keys(TALK_STORIES)) if (!(S.STORY_TALK || []).some((d) => d.id === id)) fail(`talk-stories.js has unlisted story "${id}".`);
 // The recorded file's name, as the page works it out (8 hex digits).
 const advHashOf = (t) => { let h = 0x811c9dc5; for (const b of Buffer.from(S.TTS_CACHE_VERSION + "|" + t, "utf8")) { h ^= b; h = Math.imul(h, 0x01000193) >>> 0; } return h.toString(16).padStart(8, "0"); };
 const ADV_MANIFEST = "public/assets/adventure/voice/manifest.js";
@@ -1047,20 +1060,22 @@ const advRecorded = existsSync(join(ROOT, ADV_MANIFEST)) ? (() => { const w = {}
 // and ending, then Day 2's, and so on for every day of STORY_DAYS; each with
 // every scene it is said on.
 const advLines = [];
-(S.STORY_DAYS || []).forEach((d, di) => {
-  const text = src(ADVS), from = text.indexOf("\n    " + d.id + ": {");
-  if (from < 0) fail(`adventures.js's "${d.id}" moved — re-read the daily story's section.`);
-  for (const part of ["intro", "ending"]) (ADVENTURES[d.id][part] || []).forEach((sc) => {
+const NARRATED_STORIES = (S.STORY_DAYS || []).map((d, i) => ({ ...d, file: ADVS, data: ADVENTURES[d.id], label: `Day ${i + 1}` }))
+  .concat((S.STORY_TALK || []).map((d) => ({ ...d, file: TALKS, data: TALK_STORIES[d.id], label: `Day 1, ${d.sound}` })));
+NARRATED_STORIES.forEach((d) => {
+  const text = src(d.file), from = text.indexOf("\n    " + d.id + ": {");
+  if (from < 0) fail(`${d.file}'s "${d.id}" moved — re-read the daily story's section.`);
+  for (const part of ["intro", "ending"]) (d.data[part] || []).forEach((sc) => {
     const at = text.indexOf(`art: "${sc.art}"`, from);
-    if (at < 0) fail(`adventures.js: "${d.id}" scene ${sc.art} is not where the script looks for it.`);
+    if (at < 0) fail(`${d.file}: "${d.id}" scene ${sc.art} is not where the script looks for it.`);
     const said = typeof sc.line === "string" ? [[sc.line, sc.ages === "big" ? "ages 5-8" : "both ages"]]
       : sc.ages === "big" ? [[sc.line.big, "ages 5-8"]] : sc.line.little ? [[sc.line.big, "ages 5-8"], [sc.line.little, "ages 3-4"]] : [[sc.line.big, "both ages"]];
     for (const [line, ages] of said) {
-      if (typeof line !== "string" || !line.trim()) fail(`adventures.js: "${d.id}" scene ${sc.art} has no line.`);
+      if (typeof line !== "string" || !line.trim()) fail(`${d.file}: "${d.id}" scene ${sc.art} has no line.`);
       let row = advLines.find((r) => r.text === line);
       if (!row) advLines.push((row = { text: line, uses: [], cites: [] }));
-      row.uses.push(`Day ${di + 1} ("${d.title}"), ${part === "intro" ? "the story" : "the ending"}, ${sc.art}, ${ages}`);
-      row.cites.push(cite(ADVS, at));
+      row.uses.push(`${d.label} ("${d.title}"), ${part === "intro" ? "the story" : "the ending"}, ${sc.art}, ${ages}`);
+      row.cites.push(cite(d.file, at));
     }
   });
 });
@@ -1251,7 +1266,7 @@ P();
 }
 bTable(`B5 — The round games (${4 + ROUND_KEYS.reduce((n, k) => n + 1 + power[k].extra.length, 0)})`, `The say-it card in all six round games (one voice for all six, \`arcade-sayit.js\`), their shared new-life instruction, Echo's power button in all six (instruction at ${helpLine.cite}, her sound at ${helpSound.cite}), and ${roundName("run")}'s how-to-play line. None of them is spoken while Sona's sound is off (${[sayitMuted, helpMuted, runMuted].map((a) => a.cite.replace("public/", "")).join(", ")}). The lines ending in "say" are followed by the sound itself, which is Rachel's recording (Part A), never TTS.`);
 B("book-end.mp3", bookEnd.m[1], 'The last page of every book ("The End!"), with the star and the chime.', 'Warm and pleased, winding down. Still has its "!".', bookEnd.cite);
-B("book-turn.mp3", bookBye.m[1], `A book page's key word (C9): after ${NUMWORD[bookTries.m[1]] || bookTries.m[1]} tries that were a voice but not the book's kind of sound, Echo says this and the page turns. Screen: "Great trying! Let's turn the page."`, "Kind and light. The page turns on a good note.", bookBye.cite);
+B("book-turn.mp3", bookBye.m[1], `A book page's key word (C9), also TALK1's page word (C11): after ${NUMWORD[bookTries.m[1]] || bookTries.m[1]} tries that were a voice but not the target's kind of sound, Echo says this and the page turns. Screen: "Great trying! Let's turn the page."`, "Kind and light. The page turns on a good note.", `${bookBye.cite}; ${advBye.cite}`);
 bTable("B6 — Books (2)");
 const spIntroLines = [...new Set(spIntros.map((a) => a.line))];
 spIntroLines.forEach((line, i) => { const uses = spIntros.filter((a) => a.line === line); B("picture-two-times-" + (i + 1) + ".mp3", line, uses.map((a) => gameLabel(a.key) + (a.ages ? ", ages " + a.ages : "")).join(", ") + ": once before the first isolated word ask of a visit; never between the first and second saying.", "Clear and friendly, its own sentence. Leave a short natural pause before the target word.", uses.map((a) => a.cite).join("; ") + "; played at " + spIntro.cite); });
@@ -1269,7 +1284,7 @@ advLines.forEach((r) => B(`adventure/voice/${advHashOf(r.text)}.mp3`, r.text, r.
   "A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds (\"Ah-choo!\", \"Honk-shoo\") are story words, never a speech target." + (r.text.includes("!") ? ' Has a "!": a little lift, not a shout.' : ""), r.cites.join(", ")));
 {
   const rec = advRecorded ? advLines.filter((r) => advRecorded[advHashOf(r.text)] === r.text).length : 0;
-  bTable(`B9 — The daily story (${advLines.length})`, `Echo reads every scene of the day's story (\`adventure.html\`; the scenes are \`adventures.js\`, the days sona.js's \`STORY_DAYS\`): Pelly's letter and the problem before the game, the happy ending after it. Ages 3-4 skip the scenes marked ages 5-8 and hear the short lines (${advSkip.cite}, ${advScenes.cite}). No scene asks the child to speak; the game's own word turn does (C8). Unlike B1-B8 these already have a player: a line plays from \`public/assets/${"adventure/voice/<file>"}\` when \`/assets/adventure/voice/manifest.js\` lists exactly those words (the file is named by the voice version and the words, ${advHash.cite}, so a re-worded line has no file and plays in the live voice: ${advFile.cite}); ${advRecorded ? `${rec} of ${advLines.length} are recorded` : "there is no manifest yet, so every line plays in the live voice"} (${advLive.cite}), the browser's own voice the last resort (${advSynth.cite}). Nothing is said while Sona's sound is off (${advMuted.cite}). Read at ${advRead.cite}; the lines ahead are fetched two at a time (${advPre.cite}).`);
+  bTable(`B9 — The daily story (${advLines.length})`, `Echo reads every scene of the day's story (\`adventure.html\`; the scenes are \`adventures.js\` plus TALK1's \`talk-stories.js\`; the fourteen calendar stories and five sound-specific Day1 variants are listed in sona.js): Pelly's letter and the problem before the game, the happy ending after it. Ages 3-4 skip the scenes marked ages 5-8 and hear the short lines (${advSkip.cite}, ${advScenes.cite}). The original stories lead to the game's word turn (C8); TALK1 asks each page's key through the shared word moment (C11). Unlike B1-B8 these already have a player: a line plays from \`public/assets/${"adventure/voice/<file>"}\` when \`/assets/adventure/voice/manifest.js\` lists exactly those words (the file is named by the voice version and the words, ${advHash.cite}, so a re-worded line has no file and plays in the live voice: ${advFile.cite}); ${advRecorded ? `${rec} of ${advLines.length} are recorded` : "there is no manifest yet, so every line plays in the live voice"} (${advLive.cite}), the browser's own voice the last resort (${advSynth.cite}). Nothing is said while Sona's sound is off (${advMuted.cite}). Read at ${advRead.cite}; the lines ahead are fetched two at a time (${advPre.cite}).`);
 }
 P();
 P("Not in this list because they speak nothing: Home, setup, settings, the voice");
@@ -1504,6 +1519,14 @@ if (simpleLive.length) {
   P(`The only spoken line is the word alone, when the picture is revealed (${simpleSay.cite}) and on "Hear it" (${simpleHear.cite}) — the same per-sound pools as Feed Echo (C6). **Best left to TTS.**`);
 }
 
+// C11 TALK1: narrator lines are fixed clips in B9; these are the word asks.
+const talkWordCount = (S.STORY_TALK || []).reduce((n, d) => n + ["intro", "ending"].reduce((a, part) => a + (TALK_STORIES[d.id][part] || []).filter(sc => sc.key).length, 0), 0);
+P(); P(`### C11 — Talking Day1 stories: ${(S.STORY_TALK || []).length} variants, ${talkWordCount} page keys`); P();
+P(`After each narrated page (B9), Echo asks \`${advAsk.m[2]}{word}${advAsk.m[3]}\`, or \`${advAsk.m[1]}{word}${advAsk.m[3]}\` after a voiced shape miss (${advAsk.cite}). The word is that page's key. The player uses the existing ${S.STORY_SAY_TIMES} sayings per page; silence never advances it. These asks are shared with Books; the book-turn line is B6. No sound model or prompt is changed by this index.`);
+P(); P("| Day1 story | Sound | Intro keys | Ending keys |"); P("|---|---|---|---|");
+(S.STORY_TALK || []).forEach(d => { const data = TALK_STORIES[d.id]; P(`| ${esc(d.title)} | ${d.sound} | ${data.intro.map(sc => sc.key).filter(Boolean).join(", ")} | ${data.ending.map(sc => sc.key).filter(Boolean).join(", ")} |`); });
+totals.fillers += talkWordCount;
+
 // ── Part D ──
 P();
 P("---");
@@ -1646,7 +1669,7 @@ P("folders; they were a wish-list. They are gone, and so is the old `tools/voice
 P();
 P("---");
 P();
-P(`**Totals.** Part A: ${SOUNDS.length} sound models (${SOUNDS.length * 2} files, Rachel's). Part B: **${totals.fixed} fixed clips** to record. Part C: **${totals.expansions} template lines written out** (C1 ${SOUNDS.length * NEEDS.length} + C2 ${SOUNDS.length * NEEDS.length} + C7 ${cardLines}) plus ${totals.fillers} fillers listed (${SOUNDS.length} cues, ${SOUNDS.length} sound names, ${sylCount} syllables, ${SENTENCE_FRAMES.length} sentence frames, ${feedCount} Feed Echo words, ${cardLines} game-card asks, ${spCount} picture-game words, ${bookPages} book pages in ${STORIES.length} books). Part D: **${totals.words} bank entries, ${totals.distinct} distinct words** (TTS). Part E: ${totals.parked} parked/unlinked lines not to record (${chapterLines} chapter pages, ${ccLines.length} Coach Call, ${checkWords.length} Speech Check, the rest single lines).`);
+P(`**Totals.** Part A: ${SOUNDS.length} sound models (${SOUNDS.length * 2} files, Rachel's). Part B: **${totals.fixed} fixed clips** to record. Part C: **${totals.expansions} template lines written out** (C1 ${SOUNDS.length * NEEDS.length} + C2 ${SOUNDS.length * NEEDS.length} + C7 ${cardLines}) plus ${totals.fillers} fillers listed (${SOUNDS.length} cues, ${SOUNDS.length} sound names, ${sylCount} syllables, ${SENTENCE_FRAMES.length} sentence frames, ${feedCount} Feed Echo words, ${cardLines} game-card asks, ${spCount} picture-game words, ${bookPages} book pages in ${STORIES.length} books, ${talkWordCount} talking-story page keys). Part D: **${totals.words} bank entries, ${totals.distinct} distinct words** (TTS). Part E: ${totals.parked} parked/unlinked lines not to record (${chapterLines} chapter pages, ${ccLines.length} Coach Call, ${checkWords.length} Speech Check, the rest single lines).`);
 P();
 P(`Record B first (${totals.fixed} lines — an hour), then C1 and C2 (${SOUNDS.length * NEEDS.length * 2} lines, where you perform the sound), and stop there: the rest of Part C and Part D are words, and words are what TTS already does well.`);
 

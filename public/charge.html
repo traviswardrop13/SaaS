@@ -417,17 +417,11 @@
     var catalogDaily=qp.get("daily")==="1"||qp.get("session")==="1";
     var catalogMatch=/^arcade-([a-z]+)\.html$/.exec(qp.get("game")||"");
     var catalogKey=(catalogMatch&&S.gameKey(catalogMatch[1]))||"slice";
-    // A signature story uses the ordinary five-saying warm-up. Its context
-    // is validated separately from the free Arcade game and carried only
-    // through this earned hand-off; a pasted story parameter grants nothing.
-    var storyRequested=qp.has("story"),storyPlay=null,storyOwner="";
-    if(storyRequested&&S.storyGame&&!catalogDaily)storyPlay=S.storyGame(qp.get("story"),catalogKey,qp.get("again")==="1");
-    if(storyPlay){var storyKid=S.activeKid?S.activeKid():null;storyOwner=storyKid?storyKid.slot:"";}
     // The old daily run (a saved run or a typed address; Home never opens it)
     // asks the practice gate: since 3 Oct 2026 (trial first) a family without
     // the free version, Premium or a trial has no practice to start.
-    var catalogBlocked=(catalogDaily?!!(S.gated&&S.gated("daily")):!S.gameAccess(catalogKey).allowed)||(storyRequested&&!storyPlay);
-    if(catalogBlocked){if(storyRequested)location.replace("/today.html");else S.gameBounce(catalogKey);}
+    var catalogBlocked=catalogDaily?!!(S.gated&&S.gated("daily")):!S.gameAccess(catalogKey).allowed;
+    if(catalogBlocked)S.gameBounce(catalogKey);
     $("micPromise").textContent=S.MIC_PROMISE;
     var profile=S?S.getProfile():{volume:0.8};
     // One flow stays alive across interruptions. Nothing resumes until the
@@ -2435,15 +2429,7 @@
       // Calm, and after the chime rather than on top of it (24 Sep 2026).
       if(lastVerdict==="pass")await sayAfterChime("You did it. Let's play.");
       if(await practiceDelay(1200)){
-        await closePractice();
-        if(storyPlay){
-          var storyKid=S.activeKid?S.activeKid():null;
-          if((storyKid?storyKid.slot:"")!==storyOwner||!S.storyGame(storyPlay.id,catalogKey,storyPlay.replay)){
-            try{sessionStorage.removeItem("sona.play.token");}catch(e){}
-            location.replace("/today.html");return;
-          }
-        }
-        location.href="/"+GAME+"?from=charge"+(isDaily?"&daily=1":"")+(storyPlay?"&story="+storyPlay.id+(storyPlay.replay?"&again=1":""):"");
+        await closePractice(); location.href="/"+GAME+"?from=charge"+(isDaily?"&daily=1":"");
       }
     }
 

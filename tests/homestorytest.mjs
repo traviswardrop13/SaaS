@@ -130,6 +130,19 @@ const pathOf = (pg) => { const u = new URL(pg.url()); return u.pathname + u.sear
 // words a child must never read on Home
 const BAD = /coming soon|\bscores?\b|\bpoints?\b|\$\s?\d|of 14\b/i;
 
+// Two bounded cover checks; the full suite below keeps the same assertions.
+if(process.env.SONA_HOME_TALK_COVER_PROOF==="1"){
+  for(const [label,opts,id,src] of [
+    ["Sandy's Home cover",{sub:true,talk:true,focus:["S"],target:"S"},"sandy","/assets/crafted/home-sandy.webp"],
+    ["the original lighthouse portrait",{sub:true},"lighthouse","/assets/adventure/lighthouse/s01.webp"]
+  ]){
+    const {ctx,pg,errors}=await open(opts);const c=await card(pg);
+    const loaded=await pg.evaluate(()=>{var i=document.querySelector('#questPic img');return !!(i&&i.complete&&i.naturalWidth>0);});
+    ok(label+" stays correct and loaded",c.story===id&&c.img===src&&loaded&&errors.length===0,{c,errors});await ctx.close();
+  }
+  await browser.close();server.close();console.log(fails?fails+" FAILURES / "+count+" cover checks":"ALL GREEN — "+count+" cover checks");process.exit(fails?1:0);
+}
+
 ok("(the fourteen calendar slots are found in sona.js)", STORY.length === 14 && STORY.slice(0, 3).map((d) => d.id).join() === "lighthouse,windup,bridge", STORY);
 // the story with the longest title, for the fit (Home's card must hold it)
 const LONGEST = STORY.reduce((n, d, i) => (d.title.length > STORY[n].title.length ? i : n), 0);
@@ -386,7 +399,7 @@ await section("the Map follows upstream sound-specific Day1",async()=>{
   for(const [sound,id] of [["R","robo"],["L","lulu"],["F","fizz"],["S","sandy"],["Z","zippy"]]){
     const {ctx,pg,errors}=await open({sub:true,talk:true,focus:[sound],target:sound});
     const c=await card(pg),q=await pg.evaluate(()=>Sona.questToday());
-    ok(sound+": Home shows the current talking Day1 and its original portrait",q.story.talk&&q.story.id===id&&c.story===id&&c.chip==='Day 1'&&c.title===q.story.title&&c.img==='/assets/adventure/'+id+'/s01.webp',{c,q});
+    ok(sound+": Home shows the current talking Day1 and its original cover",q.story.talk&&q.story.id===id&&c.story===id&&c.chip==='Day 1'&&c.title===q.story.title&&c.img==='/assets/crafted/home-'+id+'.webp',{c,q});
     ok(sound+": a story tap uses the shared adventure player",await tapTo(pg,'#questCard',/\/adventure\.html$/));
     ok(sound+": no page errors",errors.length===0,errors);await ctx.close();
   }

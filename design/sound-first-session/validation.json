@@ -1,6 +1,6 @@
 {
-  "reviewDate": "2026-10-31",
-  "baseCommit": "0670a185349e3eb7ff709025ed4185fe4299d761",
+  "reviewDate": "2026-11-01",
+  "baseCommit": "eac12b4bf7f8d658ba2a7c855b2ad3d0861aebe1",
   "fullBattery": {
     "command": "node tests/run-all.mjs",
     "suites": 163,
@@ -43,10 +43,12 @@
     "command": "node node_modules/typescript/bin/tsc --noEmit -p tsconfig.json",
     "tsconfigSha256": "76aac006c4f9b6f9067f595065c788e8f77370d6ad6284c7020be84ea2f1b178",
     "exitCode": 0,
-    "workspaceOnlyIssue": "The normal workspace includes old untracked source archives under output/. These were left untouched and are absent from the clean tracked-source check."
+    "workspaceOnlyIssue": "The normal workspace includes old untracked source archives under output/. These were left untouched and are absent from the clean tracked-source check.",
+    "historical": true,
+    "currentIntegratedCandidate": "Pending; the recorded exit0 applies only to the earlier merge named above."
   },
   "regressionEvidence": "New target selection, stale-sibling protection, whole-Home fit and signature-adventure checks failed against saved pre-change sources. Five Auto-selection checks fail against the pre-fix Home, including real keyboard selection of the already-current sound. The final reimagined-Home suite fails the saved old layout in 145 of 596 checks; four visible sound-chip checks fail the old Home while 42 sound checks still pass.",
-  "releaseState": "Travis explicitly authorized merge on 31 Oct 2026, superseding the prior local-only instruction for the finished Play Map, parent-only targets, sound-specific books and existing review-branch work. Unfinished Gym and avatar work are excluded. Full release checks and clinical review remain pending; no completed push, merge into main or release is claimed.",
+  "releaseState": "User authorized merge of the finished scope. The approved Map and parent-only target/book changes are integrated with upstream first-session work; the generated voice index is current. The complete release battery and required typecheck remain pending. No completed remote push, main merge or publication is claimed here. Gym and avatar work are excluded.",
   "bookExpansion": {
     "requested": "Six new 8-page books for R,S,L,SH,CH,TH; B book expanded from six to eight pages; strict selected-sound shelf.",
     "sourceChecks": "All public script syntax parses; exact captions and bank-only key words validated with existing booklex plus official CMUdict entries.",
@@ -387,7 +389,9 @@
       "gym": "Archived outside the repo at /private/tmp/sona-unshipped-gym-before-merge/ with exact runtime/test copies, hashes, runtime patch and restore note. charge.html and sona.js were restored byte-for-byte to HEAD 63129a4c; the standalone Gym test and its unused target-test route stub were removed from merge scope. Gym remains unfinished and is excluded from shipping. Historical smoke/full/header results above do not validate a release.",
       "avatar": "Deferred; no avatar was installed."
     },
-    "fullRelease": "The full 164-suite release battery is unfinished. Explicit user merge authorization supersedes the prior local-only restriction for the finished scope; historical green checks and bounded restoration checks do not yet make it release-ready."
+    "fullRelease": "The full 164-suite release battery is unfinished. Explicit user merge authorization supersedes the prior local-only restriction for the finished scope; historical green checks and bounded restoration checks do not yet make it release-ready.",
+    "historical": true,
+    "appliesTo": "Pre-upstream-integration Map restoration, including the retired Picnic-first fixture. Superseded for release validation by integratedReleaseReview below."
   },
   "approvedMergePreparation": {
     "authorization": "User explicitly said merge; unfinished Gym must remain archived and excluded.",
@@ -404,6 +408,206 @@
     },
     "archiveManifest": "/private/tmp/sona-unshipped-gym-before-merge/manifest.json",
     "excludedStandaloneTest": "tests/gymtest.mjs",
-    "avatar": "Deferred; no avatar installed."
+    "avatar": "Deferred; no avatar installed.",
+    "historical": true,
+    "appliesTo": "Historical archive/preparation record before upstream integration; current release status is in integratedReleaseReview."
+  },
+  "originalReviewBaseCommit": "0670a185349e3eb7ff709025ed4185fe4299d761",
+  "integratedReleaseReview": {
+    "status": "Integrated release candidate; full release checks are running/pending, not yet a release pass.",
+    "reviewDate": "2026-11-01",
+    "candidateRuntimeBaseCommit": "7de64e3d9c699d3516823ca5c48c8637729677e8",
+    "upstreamCommit": "eac12b4bf7f8d658ba2a7c855b2ad3d0861aebe1",
+    "sourceSha256": {
+      "public/sona.js": "b6a4d97a6ff3eec76c5dbba8bdda695158547bcb47c296c411825082298898ed",
+      "public/today.html": "26c67076d49a0eab11d194605f6379e7025a7a7e6f0b62e6be2c08cae0283f43",
+      "public/crafted-home.css": "3934a922bfb72e492f2d02db2ecc7666f6ef86d784f9c264339909e09de4fdfd",
+      "public/library.html": "08fbb49173746ceeb99a70804241b0b5cda42bd38a2ad6bbea810ed4277026d0",
+      "public/adventure.html": "fb32a177ed872fe6c5a5ff2b60e6e145495680d834a7d6a373336aadf16eec14",
+      "public/adventures.js": "8dfd291076f4437ab5c225006019370538b5badbec2ec38576eed2e0e52e68c3",
+      "public/talk-stories.js": "06afb58680e89c9aa27694e59e33a52e77112053dfa4720a359b8b6b3cbd12a4",
+      "public/charge.html": "70ca9b89180dfe1742181a1109d573d57345553b2b7cf02865a40478c1ced0cc",
+      "public/arcade-slice.html": "c6a412116b752c05957ab15df93d317c10185c0cd5704322df8d511c884d6af2",
+      "public/settings.html": "afc95ef63aa5626a9f46df529477298e08250645a26291764a258292469eb94d"
+    },
+    "scope": "Approved Play Map, parent-only target changes, read-only Home and Books, strict sound-specific shelf and seven eight-page books. No Gym or child avatar is included.",
+    "firstSession": {
+      "setup": "Ordinary Fruit Slice via the existing practice page for every age.",
+      "homeDay1": "First available upstream R/S/L/Z/F talking story in the shared target/homework-aware practice-sound list; original lighthouse when none has one.",
+      "savedIdentity": "Upstream fourteen-slot schedule and saved t1 identity preserved. No signature-v1 route or Picnic game alias is activated.",
+      "clinical": "Existing upstream prompts, models, three-saying word moments and rep counting preserved; no new cue or accepted-rep simulation used for screenshots."
+    },
+    "homeCover": "Talking stories use their existing canonical Home cover; legacy stories retain their original portrait with Home/Echo fallback. Sandy\u2019s internal soup opening remains unchanged and correctly belongs to the talking story.",
+    "screenshots": [
+      {
+        "file": "home-preview.png",
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "mode": "fresh",
+        "bytes": 268535,
+        "sha256": "446f28e5c8f87c9f3ed1be7ffaeb5bca60bb130b6cecf33ff41cbae0e62625a0",
+        "state": {
+          "day": 1,
+          "state": "open",
+          "id": "sandy"
+        },
+        "books": null
+      },
+      {
+        "file": "home-small-done-preview.png",
+        "viewport": {
+          "width": 320,
+          "height": 568
+        },
+        "mode": "done",
+        "bytes": 119811,
+        "sha256": "b8389c72b556c98481091b6460b7f4ec2893ff37ec71bc072abb4a8afafff815",
+        "state": {
+          "day": 1,
+          "state": "done",
+          "id": "sandy",
+          "next": {
+            "day": 2,
+            "id": "windup"
+          }
+        },
+        "books": null
+      },
+      {
+        "file": "home-ipad-preview.png",
+        "viewport": {
+          "width": 1024,
+          "height": 768
+        },
+        "mode": "history",
+        "bytes": 482821,
+        "sha256": "7b209e4965c2784dcea440061b650877f45d1ec973032d9c75c12182a5cce54d",
+        "state": {
+          "day": 3,
+          "state": "open",
+          "id": "bridge",
+          "talk": false
+        },
+        "books": null
+      },
+      {
+        "file": "books-preview.png",
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "mode": "fresh",
+        "bytes": 170993,
+        "sha256": "ee5ae5ec8ffe94db783c99525367de66f6542124120dc946fb32f87a777d9cda",
+        "state": {
+          "day": 1,
+          "state": "open",
+          "id": "sandy",
+          "talk": true
+        },
+        "books": {
+          "localDate": "2026-11-01",
+          "sound": "S sound",
+          "picker": false,
+          "head": "S sound stories",
+          "titles": [
+            "Sid the Seagull",
+            "Sam's Sailboat",
+            "Sophie's Silly Soup",
+            "Sunny the Seal",
+            "Seal and the Sock"
+          ],
+          "more": false
+        }
+      }
+    ],
+    "screenshotEvidence": {
+      "path": "/private/tmp/sona-integrated-release-review-capture.json",
+      "exitCode": 0,
+      "sourceStableDuringInitialCapture": true,
+      "sourceStableDuringFinalCoverCapture": true,
+      "finalCoverCapture": "Fresh Sandy390 and completed Sandy320 recaptured after the canonical-cover fix; the bridge landscape and read-only Books render paths were unchanged. Books was separately refreshed on local1Nov to omit the closed October title.",
+      "noExternalConnections": true,
+      "noAudioOrMicrophoneInput": true,
+      "noFabricatedAcceptedReps": true
+    },
+    "preservedReviewContent": {
+      "section": "seven book caption/picture tables and licensed-audio findings",
+      "sha256": "dc32ca41aa4befa43a7a0f710a52ec15b26cbb2268bc8af187bcfc82b7968701",
+      "bytes": 21675
+    },
+    "reviewHttp": {
+      "evidence": "/private/tmp/sona-integrated-review-http-check.json",
+      "images": 68,
+      "loaded": 68,
+      "captionRows": 56,
+      "missingImages": 0,
+      "pageErrors": 0,
+      "externalRequests": 0
+    },
+    "focusedIntegrationChecks": {
+      "targetSelection": {
+        "checks": 60,
+        "exitCode": 0,
+        "reportedBy": "Book integration agent before the cover-only correction."
+      },
+      "boundedHomeCompatibility": {
+        "checks": 116,
+        "exitCode": 0,
+        "reportedBy": "Home integration agent before the cover-only correction."
+      },
+      "canonicalAndLegacyCovers": {
+        "checks": 2,
+        "exitCode": 0,
+        "log": "/private/tmp/sona-talk-cover-after.log"
+      }
+    },
+    "retiredRuntime": {
+      "files": [
+        "public/charge.html",
+        "public/arcade-slice.html",
+        "public/adventures.js"
+      ],
+      "state": "Restored byte-for-byte to upstream; retired signature experiment preserved outside the repository. Gym also archived outside the repository."
+    },
+    "releaseChecks": {
+      "fullBattery": {
+        "command": "node tests/run-all.mjs",
+        "expectedSuites": 164,
+        "status": "running/pending; no complete pass claimed"
+      },
+      "typecheck": {
+        "command": "npx tsc --noEmit -p tsconfig.json",
+        "status": "pending for the integrated release candidate"
+      },
+      "generatedVoiceIndex": {
+        "status": "current",
+        "fixedClips": 708,
+        "templateExpansions": 80,
+        "bankWords": 356,
+        "scope": "Existing upstream TALK1 narration and 60 page keys indexed; no runtime or spoken-content edit.",
+        "readerGuard": "Explicit adventure.html and library.html SayCheck allowlist preserved.",
+        "focusedToolCheck": {
+          "test": "tests/voicedoctest.mjs",
+          "checks": 3,
+          "exitCode": 0,
+          "unexpectedSettingsReaderRejected": true,
+          "log": "/private/tmp/sona-voicedoc-talk-after.log"
+        },
+        "regressionEvidence": {
+          "oldToolFailedChecks": 2,
+          "totalChecks": 3,
+          "log": "/private/tmp/sona-voicedoc-talk-before.log"
+        },
+        "reportedBy": "Book integration agent after root-authorized narrow extractor maintenance."
+      }
+    },
+    "interactivePreview": {
+      "url": "http://127.0.0.1:63674/",
+      "scope": "Fictional age-seven active trial with selectedS, browser-local dates, no special route; separate origin preserves prior review profiles. API503 and external actions blocked.",
+      "lifetime": "Temporary loopback review only; not a published site."
+    }
   }
 }

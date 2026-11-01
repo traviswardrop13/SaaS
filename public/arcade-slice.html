@@ -167,15 +167,11 @@
   <script>
     // Check access before any game resources start. The earned speech token
     // remains a separate requirement; a catalog unlock never creates one.
-    var gameEntryAllowed=false,storyPlay=null,storySlot="";
+    var gameEntryAllowed=false;
     (function () {
       var S=window.Sona, q=new URLSearchParams(location.search);
       if(!S)return;
       var earned=q.get("from")==="charge";
-      if(q.has("story")){
-        if(q.get("daily")==="1"||!S.storyGame||(storyPlay=S.storyGame(q.get("story"),"slice",q.get("again")==="1"))===null){location.replace("/today.html");return;}
-        var kid=S.activeKid?S.activeKid():null;storySlot=kid?kid.slot:"";
-      }
       if(!S.gameAccess("slice",{run:q.get("daily")==="1",earned:earned}).allowed){S.gameBounce("slice");return;}
       if(!earned){location.replace("/today.html");return;}
       gameEntryAllowed=true;
@@ -254,7 +250,7 @@
     // ---- charge gate: a round is unlocked by the 5-rep charge (play token) ----
     var SELF="arcade-slice.html";
     var isDaily=qp.get("daily")==="1";
-    function backToCharge(){ try{sessionStorage.removeItem("sona.play.active");}catch(e){} location.href="/charge.html?"+(isDaily?"daily=1":("game="+SELF))+(storyPlay?"&story="+storyPlay.id+(storyPlay.replay?"&again=1":""):""); }
+    function backToCharge(){ try{sessionStorage.removeItem("sona.play.active");}catch(e){} location.href="/charge.html?"+(isDaily?"daily=1":("game="+SELF)); }
     $("goCharge").onclick=backToCharge; $("needHome").onclick=function(){location.href="/today.html";};
     var tok=false; try{ var _t=sessionStorage.getItem("sona.play.token"); if(_t===SELF||_t==="1"){ tok=true; sessionStorage.setItem("sona.play.active",SELF); sessionStorage.removeItem("sona.play.token"); } else if(sessionStorage.getItem("sona.play.active")===SELF){ tok=true; } }catch(e){}
     if(!tok){ try{ $("needTitle").textContent="Fruit Slice needs a ticket!"; }catch(e){} $("needOvl").classList.add("show"); }
@@ -1118,33 +1114,14 @@
     function bankAndContinue(){ S.finishGameTurn("slice",score); location.href="/charge.html?daily=1&banked="+score; }
     function endRound(){
       // QUEST1: the daily adventure counts a finished round of today's game
-      // The signature picnic is an alias, not the free Arcade game. It is
-      // finished only by its own earned finale, after the mic owner closes;
-      // a gameplay loss offers another go without claiming the picnic is ready.
+      try{if(window.Sona&&Sona.questEnd)Sona.questEnd("slice");}catch(e){}
       if(slowTurn){slowTurn.cancelled=true;return finishSlowKeys(false).then(endRound);}
       closeReviveMic();
       if(window.__ended)return; window.__ended=true;
-      if(storyPlay){var owner=S.activeKid?S.activeKid():null;if((owner?owner.slot:"")!==storySlot){playing=false;location.replace("/today.html");return;}}
-      var picnicFinish=null;
-      try{
-        if(storyPlay){
-          var kid=S.activeKid?S.activeKid():null;
-          if(!storyPlay.replay&&finaleDone&&!gameOver&&(kid?kid.slot:"")===storySlot&&S.storyGame(storyPlay.id,"slice",false))picnicFinish=S.questEnd(storyPlay.game);
-        }else if(window.Sona&&Sona.questEnd)Sona.questEnd("slice");
-      }catch(e){}
       S.finishGameTurn("slice",isDaily?score:null);
       playing=false; reviveWait=false;
       keepBest();
       sfx("complete"); try{ if(!gameOver&&S&&S.confetti)S.confetti(); }catch(e){}
-      if(picnicFinish){
-        $("endTitle").textContent="You sliced the giant watermelon!";
-        $("endSub").textContent="The fruit is ready for Echo's picnic!";
-        $("endSub").className="";$("endSub").style.display="";
-        $("endCharge").textContent="See what happens!";
-        $("endCharge").onclick=function(){if(S.storyOpen()&&S.storyEnding(storyPlay.id).ok)location.href=storyPlay.ending;else location.href="/today.html";};
-        $("endAgain").style.display="none";$("endHome").style.display="none";
-        $("endOvl").classList.add("show");return;
-      }
       if(isDaily){
         // The old five-game run (charge.html?daily=1): Home no longer opens
         // it, but a saved run and a typed address still do, so the round is

@@ -516,9 +516,10 @@
         var art=document.getElementById("questArt"),pic=document.getElementById("questPic");
         pic.textContent="";art.classList.remove("fallback");art.setAttribute("data-story",story||"");
         if(!src)return false;
-        var im=node("img"),homeFallback=story?src:"";im.alt="";im.decoding="async";
+        var day=null;try{day=story&&S.storyDay?S.storyDay(story):null;}catch(e){}
+        var talk=!!(day&&day.talk),im=node("img"),homeFallback=story&&!talk?src:"";im.alt="";im.decoding="async";
         im.onerror=function(){if(homeFallback){var fallback=homeFallback;homeFallback="";im.src=fallback;return;}im.onerror=null;art.classList.add("fallback");im.src="/assets/crafted/echo-welcome.webp";};
-        im.src=story?"/assets/adventure/"+story+"/s01.webp":src;pic.appendChild(im);return true;
+        im.src=story&&!talk?"/assets/adventure/"+story+"/s01.webp":src;pic.appendChild(im);return true;
       }
       function gamePicture(game){
         if(craftedCards[game.key])return questPicture("/assets/crafted/home-"+craftedCards[game.key]+".webp","");
