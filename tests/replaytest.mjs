@@ -218,7 +218,7 @@ try {
 
   // ── 2. a parent's setup on speaksona.com, in a browser ──
   await scenario("a parent's setup on speaksona.com", async () => {
-    const w = await world(browser, { stubs: { "/today.html": "<p>Home</p>", "/charge.html": "<p>Practice</p>", "/arcade-feed.html": "<p>Feed</p>" } });
+    const w = await world(browser, { stubs: { "/today.html": "<p>Home</p>", "/charge.html": "<p>Practice</p>" } });
     const { page } = w;
     const calmed = () => page.evaluate(() => document.body.classList.remove("ob-settling"));
     const rest = () => page.evaluate(() => new Promise((r) => setTimeout(r, 300)));
@@ -226,14 +226,12 @@ try {
     await page.waitForFunction(() => window.Sona && document.getElementById("nextBtn"));
     await recording(page);
     await mark(page, 101);                          // the hello: recorded
-    // THE SCREENS THAT SELL (22 Oct 2026) come first: the problem, the games
-    // playing and Rachel, all recorded, none showing the name
-    await next(page);
-    await page.locator('[data-step="problem"].on').waitFor(); await rest();
-    await mark(page, 111);                          // "Speech homework is hard at home.": recorded
+    // THE SCREENS THAT SELL (22 Oct 2026) come first: the two game demos and
+    // Rachel, all recorded, none showing the name (the "problem" slide that
+    // led them went on 31 Oct 2026; its words now head the Fruit Slice demo)
     await next(page);
     await page.locator('[data-step="reel"].on').waitFor(); await rest();
-    await mark(page, 121);                          // Fruit Slice's sound-power demo: recorded
+    await mark(page, 121);                          // Fruit Slice's sound-power demo, "Speech practice. Through play.": recorded
     await next(page);
     await page.locator('[data-step="piano"].on').waitFor(); await rest();
     await mark(page, 126);                          // Piano Tiles' sound-power demo: recorded
@@ -291,6 +289,10 @@ try {
     await page.locator('[data-step="updates"].on').waitFor();
     await page.locator("#updEmail").fill("zeph.parent@example.com");
     await next(page);
+    // THE PLAN MOMENT (31 Oct 2026): a first setup reaches the ready screen
+    // through a short build beat over the page, never recorded either
+    await page.locator("#obBuild").waitFor();
+    await mark(page, 391);                          // the build beat: never recorded
     await page.locator('[data-step="ready"].on').waitFor();
     await mark(page, 401);                          // the ready screen: never recorded
     await next(page);
@@ -304,7 +306,7 @@ try {
     const rr = w.rr(), text = w.text();
     ok("setup: a recording was sent (full snapshots of the page)", rr.filter((e) => e.type === FULL).length >= 2, rr.length);
     ok("setup: the hello's pointer was recorded (the control)", marked(rr, 101));
-    ok("setup: the problem, both game demos and Rachel's screen were recorded (the controls)", marked(rr, 111) && marked(rr, 121) && marked(rr, 126) && marked(rr, 131), [marked(rr, 111), marked(rr, 121), marked(rr, 126), marked(rr, 131)]);
+    ok("setup: both game demos and Rachel's screen were recorded (the controls)", marked(rr, 121) && marked(rr, 126) && marked(rr, 131), [marked(rr, 121), marked(rr, 126), marked(rr, 131)]);
     ok("setup: the minutes screen's pointer was recorded (the control)", marked(rr, 351));
     ok("setup: nothing on the screen a therapy answer lands on (the sounds)", !marked(rr, 301));
     ok("setup: \"What does <Name> love?\" and \"Games for <Name>.\" were recorded (the controls)", marked(rr, 141) && marked(rr, 151), [marked(rr, 141), marked(rr, 151)]);
@@ -313,7 +315,7 @@ try {
     const allNodes = nodes(rr), byId = (id) => allNodes.filter((n) => n.attributes && n.attributes.id === id);
     const said = (n) => (n.childNodes || []).map((c) => c.textContent || "").join("");
     ok("setup: the name on the screens that sell is recorded as [child], every time (intName, gamesName)", ["intName", "gamesName"].every((id) => byId(id).length > 0 && byId(id).every((n) => said(n) === "[child]")), ["intName", "gamesName"].map((id) => byId(id).map(said)));
-    ok("setup: the screens that sell were recorded with their words (speech through play, both demos, Rachel, what they love, the games)", /Speech practice/.test(text) && /Through play/.test(text) && /Slow the fruit/.test(text) && /Slow the keys/.test(text) && /pediatric speech-language pathologist in her clinical fellowship/.test(text) && /What does/.test(text) && /Games for/.test(text) && /Fruit Slice/.test(text));
+    ok("setup: the screens that sell were recorded with their words (both demos, \"Speech practice. Through play.\" heading Fruit Slice's, Rachel, what they love, the games)", /Speech practice\./.test(text) && /Through play\./.test(text) && /Say the sound/.test(text) && /to slow the keys\./.test(text) && /pediatric speech-language pathologist in her clinical fellowship/.test(text) && /What does/.test(text) && /Games for/.test(text) && /Fruit Slice/.test(text));
     // every incremental event, each pointer position at its own time
     const when = (e) => (e.type === INCR && Array.isArray(e.data.positions)) ? e.data.positions.map((q) => e.timestamp + (q.timeOffset || 0)) : [e.timestamp];
     const between = rr.filter((e) => e.type === INCR && when(e).some((t) => t >= t1 && t <= t2));
@@ -321,7 +323,9 @@ try {
     ok("setup: the microphone's pointer was recorded (the control)", marked(rr, 501));
     ok("setup: nothing on the therapy question, first visit", !marked(rr, 201));
     ok("setup: nothing on the therapy question after Back", !marked(rr, 211));
+    ok("setup: nothing during the build beat before the ready screen", !marked(rr, 391));
     ok("setup: nothing on the ready screen", !marked(rr, 401));
+    ok("setup: the build beat's words (\"Building <Name>'s practice…\") are in nothing sent, nor its overlay in any picture", !/practice\u2026/.test(text) && !nodes(rr).some((n) => n.attributes && n.attributes.id === "obBuild"));
     ok("setup: nothing on the hand-off", !marked(rr, 601));
     ok("setup: neither name, nor any part of either, is in anything sent", !/zephyr|quillon/i.test(text), (text.match(/.{60}(zephyr|quillon).{60}/i) || [])[0]);
     ok("setup: the address is in nothing sent", !/zeph\.parent|example\.com/i.test(text));
@@ -358,7 +362,7 @@ try {
     const before = w.snaps().length;
     await calmed();
     await page.locator("#nextBtn").click();
-    await page.waitForURL(/charge\.html|arcade-feed|today\.html/);
+    await page.waitForURL(/charge\.html/);   // the first game, Fruit Slice's practice page (every age, 31 Oct 2026)
     await page.goBack();
     await page.waitForFunction(() => window.Sona && document.getElementById("nextBtn") && window.posthog && window.posthog.__loaded);
     await mark(page, 171);
@@ -515,6 +519,8 @@ try {
     ok("onboarding.html: nor the screen a therapy answer lands on, nor a set-up child walking setup again", /replayHold=replayFrom==="therapy"/.test(ob) && /var REWALK=!!\(p\.onboarded&&!AFTER\);/.test(ob) && /var ok=!replayDone&&!REWALK&&!replayHold&&/.test(ob));
     ok("onboarding.html + analytics.js: the hand-off ends recording for the tab", /sessionStorage\.setItem\("sona\.replayoff\.v1","1"\)/.test(ob) && /sessionStorage\.getItem\("sona\.replayoff\.v1"\)\) return; \} catch \(e\) \{ return; \}/.test(SRC));
     ok("onboarding.html: off before a screen is painted, on only after", /var key=ORDER\[idx\];\s*replayAt\(key,false\);/.test(ob) && /stepSeen\(key\);\s*replayAt\(key,true\);\s*\}/.test(ob));
+    {const render = ob.slice(ob.indexOf("function render(){"), ob.indexOf("function next(){"));
+     ok("onboarding.html: the plan moment's build beat starts only after recording is off for the ready screen (31 Oct 2026)", render.indexOf("replayAt(key,false);") > 0 && render.indexOf("planBeat();return;") > render.indexOf("replayAt(key,false);") && /if\(key==="ready"&&PLAN_MOMENT&&ORDER===ORDER_PARENT&&!beatDone/.test(render));}
     ok("onboarding.html: the hand-off ends it for good", /function showHandoff\(\)\{[\s\S]{0,140}replayDone=true;[^\n]*SonaAnalytics\.replay\(false\)/.test(ob));
     ok("subscribe.html: on only once the offer is painted, and only for a grown-up's door", /fitOffer\(\);[\s\S]{0,700}if \(OFFER_SETUP \|\| OFFER_FIRST\) \{ try \{ if \(window\.SonaAnalytics && SonaAnalytics\.replay\) SonaAnalytics\.replay\(true\)/.test(sub) && (sub.match(/SonaAnalytics\.replay\(/g) || []).length === 1);
     ok("subscribe.html: the headline's name is a ph-name, and the practice line is blocked", /nm\.className = "ph-name"/.test(sub) && /class="offer-pill ph-no-capture" id="offerPill"/.test(sub));

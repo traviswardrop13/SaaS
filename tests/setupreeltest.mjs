@@ -119,7 +119,10 @@ const ob = readFileSync(path.join(ROOT, "public/onboarding.html"), "utf8");
 ok("setup loads separate live Fruit Slice and Piano Tiles demos",
   /<script defer src="\/onboarding-fruit-demo\.js"><\/script>/.test(ob) && /<script defer src="\/onboarding-piano-demo\.js"><\/script>/.test(ob) &&
   /data-step="reel"/.test(ob) && /id="fruitDemoScene"/.test(ob) && /data-step="piano"/.test(ob) && /id="pianoDemoScene"/.test(ob) &&
-  /var SELL_FIRST=\["problem","reel","piano","rachel"\]/.test(ob));
+  /var SELL_FIRST=\["reel","piano","rachel"\]/.test(ob));
+// the problem slide went on 31 Oct 2026: the hello opens the Fruit Slice demo
+ok("setup has no problem slide: the hello goes straight to the Fruit Slice demo",
+  !/data-step="problem"|id="problemTitle"|studio-problem-art/.test(ob) && !/\bproblem:1\b/.test(ob));
 ok("setup no longer runs the old video playlist", !/\bREEL_ORDER\s*=|id="reelBox"|id="reelFrame"|<video\b/.test(ob));
 const rec = readFileSync(path.join(ROOT, "tools/setupreel/record.mjs"), "utf8");
 const keys = (rec.match(/export const KEYS = \[([^\]]*)\]/) || [, ""])[1].match(/"([a-z]+)"/g) || [];

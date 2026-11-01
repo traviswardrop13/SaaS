@@ -50,7 +50,8 @@ for (const age of ["3", "4", "5", "8"]) {
   const { ctx, pg } = await home(age, true, true, "/today.html");
   const front = await pg.evaluate((f) => ({ first: document.querySelector("h1")?.textContent || "", shown: new Function("return (" + f + ")()")(), story: !!document.getElementById("questCard")?.offsetParent,
     booksDoor: !!document.getElementById("homeBooksBtn")?.offsetParent, booksTag: document.getElementById("homeBooksTag")?.textContent || "" }), shownH1.toString());
-  ok("age " + age + ": Home opens on today's adventure, with the story card", front.first === "Today's adventure" && front.shown === "Today's adventure" && front.story, JSON.stringify(front));
+  // (the Play Map's heading since 31 Oct 2026; the card is still today's adventure)
+  ok("age " + age + ": Home opens on the Play Map, \"Let's explore.\", with today's story card", front.first === "Let's explore." && front.shown === "Let's explore." && front.story, JSON.stringify(front));
   // Home's Books door is the one way to the bookshelf since 23 Oct 2026
   // (the Arcade's Books card is gone), so it is on screen with its tag.
   ok("age " + age + ": Home's Books door is on screen, with its tag", front.booksDoor && ["Free", "Included", "1 free book", "Premium"].includes(front.booksTag), JSON.stringify(front));

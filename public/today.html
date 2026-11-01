@@ -570,7 +570,8 @@
         list.textContent="";earned.hidden=!finished.length;count.hidden=finished.length<=2;
         count.textContent=finished.length+" adventures finished";
         finished.slice(-2).forEach(function(story){
-          var day=S.storyDay?S.storyDay(story.id):0;
+          var info=S.storyDay?S.storyDay(story.id):null;
+          var day=info?info.day:story.day||0;
           var star=node("li","map-star");star.setAttribute("data-story",story.id);
           var label=(day?"Day "+day:"Adventure")+" finished: "+story.title;
           star.setAttribute("aria-label",label);star.title=label;

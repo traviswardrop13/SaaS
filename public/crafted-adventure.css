@@ -67,6 +67,33 @@ body{overflow:hidden;font-family:"Nunito",system-ui,sans-serif;color:var(--cream
 .advnext.glow,.advgo.glow{animation:advpulse 1.6s ease-in-out infinite;}
 @keyframes advpulse{0%,100%{box-shadow:0 6px 0 var(--act-d),0 0 0 0 var(--act-glow)}50%{box-shadow:0 6px 0 var(--act-d),0 0 0 12px var(--act-glow)}}
 
+/* ── TALK1: a talking story's word moment ──
+   The page's key word, in the line (only its sound's letters orange, as
+   everywhere: .snd); Echo's ask in a bubble over the card's right shoulder,
+   with one dot for each saying; the teal mic in Next's place. Colours are
+   the tokens' alone. */
+.advkw{display:inline-block;padding:0 .18em;border-radius:.4em;background:var(--act-glow);transition:none!important;}
+.advkw.yay{animation:advkwpop .5s ease-out 1;}
+@keyframes advkwpop{0%{transform:scale(1)}45%{transform:scale(1.22)}100%{transform:scale(1)}}
+.advask{position:absolute;right:10px;bottom:calc(100% + 8px);max-width:calc(100% - 96px);margin:0;padding:8px 14px;border-radius:18px;
+  background:var(--cream-card);border:2px solid var(--cream-line);box-shadow:0 6px 16px rgba(40,24,10,.22);
+  font-family:"Baloo 2",system-ui,sans-serif;font-weight:800;font-size:clamp(17px,5vw,22px);line-height:1.2;color:var(--cream-ink);text-align:center;}
+.advask[hidden]{display:none;}
+.advask .advw{white-space:nowrap;}
+.advdots{display:flex;justify-content:center;gap:6px;margin-top:4px;}
+.advdots i{display:block;width:12px;height:12px;border-radius:50%;border:2px solid var(--act-d);background:transparent;}
+.advdots i.on{background:var(--act);}
+.advmic{width:64px;height:64px;padding:0;margin-left:auto;border:none;display:flex;align-items:center;justify-content:center;flex:none;}
+.advmic svg{width:30px;height:30px;}
+.advmic.wait{opacity:.55;}
+.advmic.live{animation:advpulse 1.2s ease-in-out infinite;}
+.advmic.nudge{animation:advpulse 1.6s ease-in-out infinite;}
+.advmicstate{margin:0;flex:1;text-align:right;font-family:"Baloo 2",system-ui,sans-serif;font-weight:800;font-size:16px;line-height:1.2;color:var(--cream-ink);}
+.advmicstate:empty{display:none;}
+.advlayer.pop .advpic{animation:advpicpop .6s ease-out 1;}
+@keyframes advpicpop{0%{transform:scale(1)}40%{transform:scale(1.035)}100%{transform:scale(1)}}
+.advmicp{margin:0;font-size:15px;line-height:1.35;color:var(--cream-ink);}
+
 /* ── the cards over the scene: the start, and the sticker at the end ── */
 .advovl{position:absolute;inset:0;z-index:6;display:flex;align-items:center;justify-content:center;box-sizing:border-box;
   padding:calc(64px + env(safe-area-inset-top)) 18px calc(16px + env(safe-area-inset-bottom));background:rgba(20,14,30,.3);}
@@ -96,4 +123,6 @@ button:focus-visible{outline:3px solid var(--act-d);outline-offset:3px;}
   .advlayer.in .advpic{animation:none!important;}
   /* still a cue that it is time to turn, just one that holds still */
   .advnext.glow,.advgo.glow{animation:none!important;box-shadow:0 6px 0 var(--act-d),0 0 0 7px var(--act-glow);}
+  .advkw.yay,.advlayer.pop .advpic{animation:none!important;}
+  .advmic.live,.advmic.nudge{animation:none!important;box-shadow:0 6px 0 var(--act-d),0 0 0 7px var(--act-glow);}
 }

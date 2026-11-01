@@ -69,17 +69,18 @@ const browser = await chromium.launch(launchOpts());
 // open; stamp: what the free-version sweep wrote. quest: the adventure record,
 // with "TODAY" read as this phone's own date. The idea sheet starts answered
 // and the offer from Home already shown: neither is this suite's subject.
-function seed({ age = 7, sub = false, ea = false, sell = false, stamp = "kept", quest = null } = {}) {
+function seed({ age = 7, sub = false, ea = false, sell = false, stamp = "kept", quest = null, talk = false, focus = ["R"], target = "" } = {}) {
   return `(() => {
     const cpt = HTMLMediaElement.prototype.canPlayType;
     HTMLMediaElement.prototype.canPlayType = function (t) { return /mp4|avc1/i.test(String(t)) ? "" : cpt.call(this, t); };
-    try { sessionStorage.setItem("sona.paidui", "1"); sessionStorage.setItem("sona.websalesui", "${sell ? 1 : 0}"); } catch (e) {}
+    // Legacy calendar cases opt out of TALK1; the talking-Day1 cases below use the product default.
+    try { sessionStorage.setItem("sona.talkoff", "${talk ? 0 : 1}"); sessionStorage.setItem("sona.paidui", "1"); sessionStorage.setItem("sona.websalesui", "${sell ? 1 : 0}"); } catch (e) {}
     const say = (t) => { if (String(t || "").trim()) { const a = JSON.parse(sessionStorage.getItem("test.speech") || "[]"); a.push(String(t)); sessionStorage.setItem("test.speech", JSON.stringify(a)); } return Promise.resolve(); };
     let sona; Object.defineProperty(window, "Sona", { configurable: true, get: () => sona, set: (v) => { sona = v; v.speak = say; v.speakNow = say; } });
     if (window.speechSynthesis) window.speechSynthesis.speak = (u) => say(u && u.text);
     if (localStorage.getItem("__seeded")) return; localStorage.setItem("__seeded", "1");
     const d = new Date(), p2 = (n) => String(n).padStart(2, "0"), TODAY = d.getFullYear() + "-" + p2(d.getMonth() + 1) + "-" + p2(d.getDate());
-    localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Mia", childAge: "${age}", focusSounds: ["R"], onboarded: true, voiceOn: true, volume: 0.8${ea ? ", earlyAdopter: true" : ""} }));
+    localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Mia", childAge: "${age}", focusSounds: ${JSON.stringify(focus)}, targetSound: ${JSON.stringify(target)}, onboarded: true, voiceOn: true, volume: 0.8${ea ? ", earlyAdopter: true" : ""} }));
     localStorage.setItem("sona.freeera.v1", "post");
     ["sona.freeera2.v1", "sona.freeera3.v1", "sona.freeera4.v1", "sona.freeera5.v1"].forEach((k) => localStorage.setItem(k, "done"));
     localStorage.setItem("sona.freever.v1", "${stamp}"); localStorage.setItem("sona.buddyset.v1", "kept");
@@ -129,7 +130,7 @@ const pathOf = (pg) => { const u = new URL(pg.url()); return u.pathname + u.sear
 // words a child must never read on Home
 const BAD = /coming soon|\bscores?\b|\bpoints?\b|\$\s?\d|of 14\b/i;
 
-ok("(the fourteen original story days and the signature starter are found in sona.js)", STORY.length === 15 && STORY.slice(0, 3).map((d) => d.id).join() === "lighthouse,windup,bridge", STORY);
+ok("(the fourteen calendar slots are found in sona.js)", STORY.length === 14 && STORY.slice(0, 3).map((d) => d.id).join() === "lighthouse,windup,bridge", STORY);
 // the story with the longest title, for the fit (Home's card must hold it)
 const LONGEST = STORY.reduce((n, d, i) => (d.title.length > STORY[n].title.length ? i : n), 0);
 
@@ -327,15 +328,15 @@ await section("after the stories: the game of the day", async () => {
   }
 });
 
-// Studio changes presentation, never the sanitized finished-story ledger.
+// The Map reads the sanitized finished-story ledger, including TALK1 variants.
 // These assertions preserve skipped-day, sibling and legacy calendar truth.
-const finished = pg => pg.evaluate(() => Sona.storyFound().map(d=>({id:d.id,title:d.title,day:Sona.storyDay(d.id)})));
+const finished = pg => pg.evaluate(() => Sona.storyFound().map(d=>({id:d.id,title:d.title,day:d.day})));
 const trail = pg => pg.evaluate(()=>({exists:!!document.getElementById('playMap'),stars:[...document.querySelectorAll('#mapHistory .map-star')].map(e=>({id:e.dataset.story,label:e.getAttribute('aria-label'),controls:e.querySelectorAll('button,a,input,select,[tabindex],[role=button]').length})),count:document.getElementById('mapHistoryCount').hidden?null:document.getElementById('mapHistoryCount').textContent}));
 await section("finished adventures remain truthful", async () => {
   {
-    const {ctx,pg,errors}=await open({sub:true,quest:{route:"signature-v1",a:"TODAY",sv:"TODAY",f:[],s:0,done:""}});
+    const {ctx,pg,errors}=await open({sub:true,talk:true,quest:{a:"TODAY",sv:"TODAY",f:[],s:0,done:""}});
     const f=await finished(pg),c=await card(pg);
-    ok("a fresh signature child has Picnic Day1 and no invented finished adventures",f.length===0&&c.story==="fruitpicnic"&&c.chip==="Day 1",{f,c});
+    ok("a fresh child gets the sound-specific Robo Day1 without invented finished adventures",f.length===0&&c.story==="robo"&&c.chip==="Day 1",{f,c});
     const t=await trail(pg),before=await store(pg);
     ok("fresh Map invents no completed stars",t.exists&&t.stars.length===0&&t.count===null,t);
     await pg.locator('#mapTomorrow').dispatchEvent('click');await pg.locator('#mapTomorrow').dispatchEvent('keydown',{key:'Enter'});
@@ -344,17 +345,17 @@ await section("finished adventures remain truthful", async () => {
     ok("fresh Map has no runtime errors",errors.length===0,errors);await ctx.close();
   }
   {
-    const {ctx,pg}=await open({sub:true,quest:{route:"signature-v1",a:"TODAY",sv:"TODAY",f:[14],s:1,ls:14,lk:"story",fd:"TODAY",done:"TODAY",got:[]}});
+    const {ctx,pg}=await open({sub:true,talk:true,quest:{a:"TODAY",sv:"TODAY",f:[0],s:1,ls:0,t1:"robo",lk:"story",fd:"TODAY",done:"TODAY",got:[]}});
     const f=await finished(pg),c=await card(pg),before=await store(pg);
-    ok("completed Picnic keeps its itinerary Day1, never permanent-index Day15",f.length===1&&f[0].id==="fruitpicnic"&&f[0].day===1,f);
-    const t=await trail(pg);ok("the completed Picnic is a real Day1 star, not Day15",t.stars.length===1&&t.stars[0].id==='fruitpicnic'&&/Day 1\b/.test(t.stars[0].label)&&t.stars[0].controls===0,t);
+    ok("the saved talking story remains completed Day1",f.length===1&&f[0].id==="robo"&&f[0].day===1,f);
+    const t=await trail(pg);ok("the completed talking story earns one true Day1 star",t.stars.length===1&&t.stars[0].id==='robo'&&/Day 1\b/.test(t.stars[0].label)&&t.stars[0].controls===0,t);
     await pg.locator("#questCard").click({force:true});await pg.waitForTimeout(100);
     ok("done-day tomorrow stays dark and inert, with no early quest change",c.done&&c.disabled==="true"&&c.previewMuted&&c.go===null&&pathOf(pg)==="/today.html"&&before===await store(pg),c);
     await ctx.close();
   }
   for(const [label,quest,ids] of [
     ["skipped Days2 and3 never count as finished",{a:"TODAY",sv:"TODAY",f:[0,3],s:2,ls:3,lk:"story",done:"2025-12-31"},"lighthouse,waterwheel"],
-    ["Map preserves every finished adventure, including longer histories",{route:"signature-v1",a:"TODAY",sv:"TODAY",f:[14,0,1],s:3,ls:1,lk:"story",done:"2025-12-31"},"fruitpicnic,lighthouse,windup"],
+    ["Map preserves every finished adventure, including longer histories",{a:"TODAY",sv:"TODAY",f:[0,1,2],s:3,ls:2,lk:"story",done:"2025-12-31"},"lighthouse,windup,bridge"],
     ["legacy s-counts preserve the original two stories",{s:2,ls:1,lk:"story",done:"2025-12-31"},"lighthouse,windup"],
     ["a game-only day invents no finished story ledger",{i:4,last:3,lk:"game",done:"TODAY"},""]
   ]){
@@ -366,16 +367,42 @@ await section("finished adventures remain truthful", async () => {
     ok("reading this history changes no saved progress",before===await store(pg));await ctx.close();
   }
   {
-    const {ctx,pg}=await open({sub:true,quest:{route:"signature-v1",a:"TODAY",sv:"TODAY",f:[14],s:1,ls:14,lk:"story",done:"2025-12-31"}});
+    const {ctx,pg}=await open({sub:true,talk:true,quest:{a:"TODAY",sv:"TODAY",f:[0],s:1,ls:0,t1:"robo",lk:"story",done:"2025-12-31"}});
     const original=await pg.evaluate(()=>Sona.activeKid().slot);
     await pg.evaluate(()=>{Sona.addKid("Ana","4");Sona.saveProfile({onboarded:true,focusSounds:["R"],targetSound:"R"});});
     await home(pg);ok("a sibling inherits no finished adventure or Map stars",(await finished(pg)).length===0&&(await trail(pg)).stars.length===0);
     await pg.evaluate(slot=>Sona.switchKid(slot),original);await home(pg);
-    ok("switching back restores only the first child's Picnic",(await finished(pg)).map(x=>x.id).join()==="fruitpicnic"&&(await trail(pg)).stars.map(x=>x.id).join()==="fruitpicnic");await ctx.close();
+    ok("switching back restores only the first child's saved Robo story",(await finished(pg)).map(x=>x.id).join()==="robo"&&(await trail(pg)).stars.map(x=>x.id).join()==="robo");await ctx.close();
   }
   {
     const {ctx,pg}=await open({sell:true,stamp:"post",quest:{f:[0,3],s:2,ls:3,lk:"story",done:"2025-12-31"}});
     ok("finished history survives access expiry without granting replay",(await finished(pg)).map(x=>x.id).join()==="lighthouse,waterwheel"&&await pg.evaluate(()=>!Sona.storyReplay("lighthouse")));await ctx.close();
+  }
+});
+
+// Default-on talking stories use the current target, while a completed
+// Day1 keeps its recorded identity after a parent changes the practice sound.
+await section("the Map follows upstream sound-specific Day1",async()=>{
+  for(const [sound,id] of [["R","robo"],["L","lulu"],["F","fizz"],["S","sandy"],["Z","zippy"]]){
+    const {ctx,pg,errors}=await open({sub:true,talk:true,focus:[sound],target:sound});
+    const c=await card(pg),q=await pg.evaluate(()=>Sona.questToday());
+    ok(sound+": Home shows the current talking Day1 and its original portrait",q.story.talk&&q.story.id===id&&c.story===id&&c.chip==='Day 1'&&c.title===q.story.title&&c.img==='/assets/adventure/'+id+'/s01.webp',{c,q});
+    ok(sound+": a story tap uses the shared adventure player",await tapTo(pg,'#questCard',/\/adventure\.html$/));
+    ok(sound+": no page errors",errors.length===0,errors);await ctx.close();
+  }
+  {
+    const {ctx,pg}=await open({sub:true,talk:true,focus:['R','S'],target:'S'});
+    ok("a parent-selected target wins over the first family sound for new Day1",await pg.evaluate(()=>Sona.questToday().story.id==='sandy'&&document.getElementById('homeSoundValue').textContent==='S'));
+    await ctx.close();
+  }
+  {
+    const {ctx,pg}=await open({sub:true,talk:true,focus:['R','S'],target:'S',quest:{a:'TODAY',sv:'TODAY',f:[0],s:1,ls:0,t1:'robo',lk:'story',fd:'TODAY',done:'TODAY',got:[]}});
+    const f=await finished(pg),t=await trail(pg);
+    ok("changing the target preserves the previously completed Day1 variant and its true star",f.length===1&&f[0].id==='robo'&&t.stars.length===1&&t.stars[0].id==='robo'&&/Day 1\b/.test(t.stars[0].label),{f,t});await ctx.close();
+  }
+  {
+    const {ctx,pg}=await open({sub:true,talk:true,quest:{a:'TODAY',sv:'TODAY',f:[0],s:1,ls:0,lk:'story',fd:'TODAY',done:'TODAY',got:[]}});
+    ok("a legacy lighthouse completion is never rewritten as a new talking story",(await finished(pg))[0].id==='lighthouse');await ctx.close();
   }
 });
 

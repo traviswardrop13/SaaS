@@ -495,10 +495,14 @@ yearly buyer is still recognised on a restore.
 Travis, 22 Oct 2026: "ok go build it all", the one-time purchase on the price
 screen; "i dont wanna say lifetime". The card can show a third row under
 monthly: **"One payment"**, "Yours to keep. No subscription.", the App
-Store's price with no period; picked, the button says "Get Sona Premium —
-$59.99" (the store's price). It is never picked when the screen opens
-(monthly is), never says "lifetime", "free" or "Best
-value", and has no free days. The web card is unchanged: the website sells
+Store's price with no period; picked, the button said "Get Sona Premium —
+$59.99" (the store's price). It was never picked when the screen opened
+(monthly was). Since then the page's own row reads "Lifetime" / "Yours
+Forever" / "Best Value" (24 Oct 2026), it sits on top and is picked when the
+screen opens (31 Oct 2026), its button says "Start practicing!" (31 Oct) and
+its check line "One payment · Every update included" (1 Nov 2026). Its words
+from `planWords` never say "lifetime", "free" or "Best value", and it has no
+free days. The web card is unchanged: the website sells
 subscriptions only. Nothing here needs code: the row appears by itself once
 these are true, in this order (the same order as the yearly row, for the
 same reason: offered but not attached, Apple would take a parent's money and

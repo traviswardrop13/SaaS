@@ -23,7 +23,7 @@ try {
           localStorage.setItem('sona.profile.v1',JSON.stringify(p));
           const d=new Date(),day=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
           const y=new Date(d);y.setDate(y.getDate()-1);const yesterday=y.getFullYear()+'-'+String(y.getMonth()+1).padStart(2,'0')+'-'+String(y.getDate()).padStart(2,'0');
-          localStorage.setItem('sona.quest.v1',JSON.stringify(completed ? {i:0,last:13,s:14,f:Array.from({length:14},(_,i)=>i),ls:13,lk:'story',done:day,fd:day,got:[]} : mode==='history' ? {route:'signature-v1',a:yesterday,sv:yesterday,s:14,f:Array.from({length:14},(_,i)=>i),ls:13,lk:'story',done:yesterday,fd:yesterday,got:[]} : {route:'signature-v1',a:day,sv:day,i:0,last:13,s:0,f:[],done:'',got:[]}));
+          localStorage.setItem('sona.quest.v1',JSON.stringify(completed ? {i:0,last:13,s:14,f:Array.from({length:14},(_,i)=>i),ls:13,lk:'story',done:day,fd:day,got:[]} : mode==='history' ? {a:yesterday,sv:yesterday,s:14,f:Array.from({length:14},(_,i)=>i),ls:13,lk:'story',done:yesterday,fd:yesterday,got:[]} : {a:day,sv:day,i:0,last:13,s:0,f:[],done:'',got:[]}));
           HTMLMediaElement.prototype.canPlayType=()=>'';
         },{completed,mode,width});
         await page.goto(server.base+'/today.html');
