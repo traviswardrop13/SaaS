@@ -23,9 +23,13 @@
 //     before; never under Reduce Motion, never on a finished day (tomorrow's
 //     poster, dark), held still on a hidden page and in the Arcade, and a
 //     clip that cannot start leaves the poster as it is;
-//   - the fit: the card's title and play button on the first screen at five
-//     sizes, the doors right after the board (on the first screen at 390x844
-//     and up), every button at least 44 px, no sideways scroll;
+//   - the fit: Home is one screen (1 Nov 2026; Travis: "Just make it one
+//     ... flat screen"): the whole page, card, doors and "Your games", on
+//     the screen with nothing to scroll up or down at every phone and iPad
+//     size, the card's picture taking the room left (3:4 at most); only a
+//     screen too short for it (a 4-inch phone with "Your games", a phone on
+//     its side) scrolls, with nothing cut off; every button at least 44 px,
+//     no sideways scroll;
 //   - Reduce Motion: nothing animates, and the fit is the same as without it
 //     and holds still through re-fits (coming back to the front, ‹ Home);
 //   - a story picture that has not landed is Echo on the story's wash;
@@ -34,8 +38,7 @@
 //     one gold star on it for each story finished (the one found today
 //     bigger), the trail diving into the card under a "Today" flag and
 //     ending at tomorrow, a dark locked pill; never a count, a streak or a
-//     timer, no sound control, nothing on it takes a tap or moves; the
-//     doors on the first screen at 390x844 and up.
+//     timer, no sound control, nothing on it takes a tap or moves.
 import { createServer } from "node:http";
 import { readFileSync, existsSync, statSync } from "node:fs";
 import path from "node:path";
@@ -669,14 +672,18 @@ await section("Home stays quiet", async () => {
 });
 
 // ── 6. the fit ──
-// HOMECLIP1 (28 Oct 2026): the day's card is Home's one big thing, a tall
-// 3:4 reel, and the games and books sit lower. So the card's foot, with its
-// title and its play button, is on the first screen at every size, and the
-// doors come right after the card: on a small phone they (and "Your games")
-// fall below the fold, one swipe away. Since the Play Map (31 Oct 2026) the
-// card sits on a board between its head (Echo and "Let's explore.") and its
-// foot (tomorrow), the doors right after the board, and on a 390x844 phone
-// and up the doors are on the first screen too.
+// HOMECLIP1 (28 Oct 2026) made the day's card Home's one big thing, a tall
+// 3:4 reel; the Play Map (31 Oct 2026) set it on a board between its head
+// (Echo and "Let's explore.") and its foot (tomorrow). Since 1 Nov 2026
+// Home is ONE SCREEN (Travis, of a recording of Home sliding up and down:
+// "Just make it one ... flat screen ... There's nothing that makes being
+// able to scroll up and down helpful"): the top bar, the board, the doors
+// and "Your games" are all on the screen and nothing moves up or down; the
+// card's picture takes the room left, 3:4 at most, and the rest makes room
+// for it before it goes flatter than 4:3 (fit1…fit5). Only a screen too
+// short for all of it scrolls, and then nothing is cut off and the card is
+// 4:3. Every phone and iPad size here is one screen in every state, but a
+// 4-inch phone (320x568) with "Your games" or the website's founding banner.
 const SIZES = [[320, 568], [375, 667], [390, 844], [430, 932], [768, 1024]];
 const STATES = [
   ["Day 1, open", { sub: true }],
@@ -688,6 +695,7 @@ const STATES = [
   ["ages 3-4", { sub: true, age: 4 }],
   ["the founding banner", { ea: true }],
 ];
+const FLAT_320 = new Set(["Day 1, open", "locked", "ages 3-4", "done"]);
 const measure = (pg) => pg.evaluate(() => {
   const box = (e) => { if (!e || !e.offsetParent) return null; const r = e.getBoundingClientRect(); return { l: r.left, r: r.right, t: r.top, b: r.bottom, w: r.width, h: r.height }; };
   const $ = (id) => document.getElementById(id), art = document.querySelector(".quest-art"), page = document.querySelector(".home-only").getBoundingClientRect();
@@ -703,7 +711,13 @@ const measure = (pg) => pg.evaluate(() => {
     window.scrollTo(0, y0);
     return !!h && (h === e || e.contains(h) || (id === "questGo" && $("questCard").contains(h)));
   };
-  return { y: window.pageYOffset, ih: window.innerHeight, ox: document.documentElement.scrollWidth - document.documentElement.clientWidth, page: { l: page.left, r: page.right },
+  // one screen: html.home-flat, nothing taller than the window, and a
+  // scroll (the wheel's, a script's) leaves the page where it is
+  const flat = document.documentElement.classList.contains("home-flat"), tall = document.documentElement.scrollHeight;
+  window.scrollTo(0, 400); document.scrollingElement.scrollTop = 400; const moved = window.pageYOffset; window.scrollTo(0, 0);
+  const fits = [...document.querySelectorAll("#libraryApp header, .home-only > *")].filter((e) => e.offsetParent && e.id !== "homeInset").every((e) => e.getBoundingClientRect().bottom <= window.innerHeight + 0.5);
+  const steps = [...document.getElementById("libraryApp").classList].filter((c) => /^fit\d$/.test(c));
+  return { flat, tall, moved, fits, steps, y: window.pageYOffset, ih: window.innerHeight, ox: document.documentElement.scrollWidth - document.documentElement.clientWidth, page: { l: page.left, r: page.right },
     go: box($("questGo")), card: box($("questCard")), map: box($("homeMap")), pill: box($("mapTomorrow")), title: box($("questTitle")), line: box($("questLine")), words: box(document.querySelector(".quest-body")), arcade: box($("arcadeBtn")), books: box($("homeBooksBtn")), art: box(art), buttons,
     found: box(document.querySelector("#foundRow:not([hidden])")), fresh: box(document.querySelector("#foundRow:not([hidden]) .found-tile.fresh")),
     pics: [box($("arcadePic")), box($("homeBooksPic"))], doorWords: [...document.querySelectorAll("#homeDoors .door-word")].map(box),
@@ -724,20 +738,22 @@ for (const [w, h] of SIZES) {
       // than 4:3; on a phone it spans the page, on an iPad it is a centred
       // card 480 px wide at most
       const ratio = m.art ? m.art.h / m.art.w : 0;
-      ok(at + "the picture is the day's reel: 3:4 at its tallest, never flatter than 4:3", ratio <= 4 / 3 + 0.01 && ratio >= 0.75 - 0.01, { art: m.art, ratio });
-      const across = w >= 600 ? m.card.w <= 480.5 && Math.abs((m.card.l - m.page.l) - (m.page.r - m.card.r)) < 1.5 : m.card.w >= m.page.r - m.page.l - 1;
-      ok(at + (w >= 600 ? "on an iPad the card is centred, 480 px wide at most" : "the card spans the page"), across, { card: m.card, page: m.page });
+      // ONE SCREEN (1 Nov 2026): everything on the screen, nothing to scroll
+      const oneScreen = w >= 375 || FLAT_320.has(label);
+      if (oneScreen) ok(at + "Home is one screen: the whole page fits and nothing scrolls up or down", m.flat && m.tall <= m.ih && m.moved === 0 && m.fits, { flat: m.flat, tall: m.tall, ih: m.ih, moved: m.moved, fits: m.fits, steps: m.steps });
+      else ok(at + "a screen too short for it scrolls, with every step taken and nothing cut off (the card 4:3, or as tall as its words need)", !m.flat && m.steps.length === 5 && ratio >= 0.75 - 0.01 && ratio <= 4 / 3, { flat: m.flat, steps: m.steps, ratio });
+      // the picture is the day's reel, 3:4 at its tallest; flatter than 4:3
+      // only once every other step has made room for it
+      ok(at + "the picture is the day's reel: 3:4 at its tallest, never flatter than 4:3 until everything else has made room", ratio <= 4 / 3 + 0.01 && (ratio >= 0.75 - 0.01 || m.steps.length === 5), { art: m.art, ratio, steps: m.steps });
+      const across = w >= 600 ? m.card.w <= 480.5 && Math.abs((m.card.l - m.page.l) - (m.page.r - m.card.r)) < 1.5 && ratio >= 0.75 - 0.01 : m.card.w >= m.page.r - m.page.l - 1;
+      ok(at + (w >= 600 ? "on an iPad the card is centred, 480 px wide at most, and never flatter than 4:3 (it narrows instead)" : "the card spans the page"), across, { card: m.card, page: m.page, ratio });
       // the Play Map (31 Oct 2026): tomorrow on the board right under the
       // card, then the doors right under the board
       ok(at + "tomorrow sits on the board right under the card, and the doors come right after the board, side by side, at least 88 px tall, and a tap reaches each", !!m.arcade && !!m.books && !!m.pill && m.pill.t >= m.card.b && m.pill.b <= m.map.b && m.map.b - m.card.b <= 56 && m.arcade.t - m.map.b >= 8 && m.arcade.t - m.map.b <= 30 && Math.abs(m.arcade.t - m.books.t) < 1 && m.arcade.r <= m.books.l && m.arcade.h >= 88 && m.books.h >= 88 && m.hit.arcadeBtn && m.hit.homeBooksBtn, { card: m.card, map: m.map, pill: m.pill, arcade: m.arcade, books: m.books, hit: m.hit });
-      // Travis: "less empty space": on a 390x844 phone and up, the Arcade
-      // and Books doors are on the first screen too (the founding banner,
-      // the website's tallest Home, may push them one swipe away)
-      if (!/banner/.test(label) && ((w === 390 && h === 844) || (w === 430 && h === 932) || (w === 768 && h === 1024))) ok(at + "the Arcade and Books doors are on the first screen, whole, with no scroll", m.arcade.b <= m.ih && m.books.b <= m.ih && m.arcade.t >= 0, { arcade: m.arcade, books: m.books, ih: m.ih });
       ok(at + "every button is at least 44 px, and nothing scrolls sideways", m.ox <= 1 && m.buttons.every((b) => b.w >= 44 && b.h >= 44), { ox: m.ox, small: m.buttons.filter((b) => b.w < 44 || b.h < 44) });
       // FOUND1: the game a story left today waits in "Your games", under
-      // the doors (it may fall below the first screen since HOMECLIP1)
-      if (done) ok(at + "the game found today (New!) is in \"Your games\", after the doors", !!m.found && !!m.fresh && m.found.t >= m.arcade.b, { found: m.found, fresh: m.fresh, arcade: m.arcade });
+      // the doors (on the screen, with the rest, since 1 Nov 2026)
+      if (done) ok(at + "the game found today (New!) is in \"Your games\", after the doors" + (oneScreen ? ", on the screen" : ""), !!m.found && !!m.fresh && m.found.t >= m.arcade.b && (!oneScreen || m.fresh.b <= m.ih), { found: m.found, fresh: m.fresh, arcade: m.arcade });
       // the Arcade's painting is Echo among the games' things, out at its
       // edges: a square crop kept Echo and dropped every game, so a child who
       // can't read saw two doors of Echo. Each door's picture is a wide band
@@ -750,17 +766,19 @@ for (const [w, h] of SIZES) {
 }
 
 // an iPhone SE on the website (375x553 under Safari's bars) and an iPad on
-// its side, the shortest screens Home meets: the reel gives way (4:5 on the
-// SE) so its title and play button stay on the first screen, and the day a
-// story is finished the doors and the game it left follow below.
+// its side, the shortest screens Home meets: one screen on the SE (the
+// reel a little flatter than 4:3 once the rest has made room) and on the
+// iPads (whose card narrows to stay 4:3), the day a story is finished too
+// (the done card, with no play button, is a short strip there).
 await section("fit on the shortest screens", async () => {
   for (const [w, h, label, opts] of [[375, 553, "an iPhone SE in Safari", { sub: true }], [375, 553, "an iPhone SE in Safari, a story finished today", { sub: true, quest: { i: 0, last: 13, s: 1, ls: 0, lk: "story", done: "TODAY", got: [] } }], [1024, 768, "an iPad on its side", { sub: true }], [1133, 744, "an iPad mini on its side", { sub: true }]]) {
     const { ctx, pg, errors } = await open({ ...opts, viewport: { width: w, height: h } });
     await pg.evaluate(() => document.fonts && document.fonts.ready); await pg.waitForTimeout(100);
     const m = await measure(pg), at = w + "x" + h + " (" + label + "): ", done = /finished/.test(label);
     const ratio = m.art.h / m.art.w;
-    ok(at + "the card's title" + (done ? "" : " and play button") + " on the first screen, the picture no flatter than 4:3", m.y === 0 && m.title.b <= m.ih && m.card.b <= m.ih && (done ? m.go === null : !!m.go && m.go.b <= m.ih && m.go.h >= 64) && ratio >= 0.75 - 0.01 && ratio < 4 / 3, { title: m.title, go: m.go, card: m.card, ih: m.ih, ratio });
-    ok(at + "the doors right after the card" + (done ? ", then the game found today" : ""), m.arcade.t >= m.card.b && m.hit.arcadeBtn && m.hit.homeBooksBtn && (!done || (!!m.fresh && m.fresh.t >= m.arcade.b)), { card: m.card, arcade: m.arcade, fresh: m.fresh });
+    ok(at + "the card's title" + (done ? "" : " and play button") + " on the first screen, 3:4 at most", m.y === 0 && m.title.b <= m.ih && m.card.b <= m.ih && (done ? m.go === null : !!m.go && m.go.b <= m.ih && m.go.h >= 64) && ratio <= 4 / 3 + 0.01, { title: m.title, go: m.go, card: m.card, ih: m.ih, ratio });
+    ok(at + "one screen: the whole page fits and nothing scrolls up or down" + (w >= 600 ? ", the card no flatter than 4:3" : ""), m.flat && m.tall <= m.ih && m.moved === 0 && m.fits && (w < 600 || ratio >= 0.75 - 0.01), { flat: m.flat, tall: m.tall, ih: m.ih, moved: m.moved, fits: m.fits, ratio, steps: m.steps });
+    ok(at + "the doors right after the card" + (done ? ", then the game found today" : ""), m.arcade.t >= m.card.b && m.hit.arcadeBtn && m.hit.homeBooksBtn && (!done || (!!m.fresh && m.fresh.t >= m.arcade.b && m.fresh.b <= m.ih)), { card: m.card, arcade: m.arcade, fresh: m.fresh });
     ok(at + "no page errors", errors.length === 0, errors);
     await ctx.close();
   }

@@ -71,8 +71,10 @@
     .schips{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;}
     .schips .sound.on{border-color:var(--act);color:var(--act-d);}
     #obSounds{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;}
-    #obSounds .sound{min-width:0;min-height:54px;display:flex;align-items:center;justify-content:center;padding:8px 4px;font-size:27px;line-height:1.2;}
-    #obSounds .sound[data-sound="THV"]{font-size:23px;grid-column:span 2;white-space:nowrap;}
+    #obSounds .sound{min-width:0;min-height:58px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:6px 4px;font-size:25px;line-height:1.1;}
+    #obSounds .sound[data-sound="THV"]{font-size:22px;grid-column:span 2;white-space:nowrap;}
+    #obSounds .sound-word{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:800 11px/1.2 Nunito,sans-serif;letter-spacing:0;}
+    .sound-ask{margin:-6px 0 12px;font:700 13px/1.35 Nunito,sans-serif;}
     #obExploreSounds{display:block;min-height:44px;padding:8px 0;}
     #micNotNow{display:block;margin:14px auto 0;min-height:44px;}
     [hidden]{display:none!important;}
@@ -92,7 +94,6 @@
   <link rel="stylesheet" href="/onboarding-crafted.css" />
   <link rel="stylesheet" href="/onboarding-studio.css" />
   <script defer src="/onboarding-fruit-demo.js"></script>
-  <script defer src="/onboarding-piano-demo.js"></script>
 </head>
 <body class="ob-world" data-setup-screen="welcome">
   <!-- Play Studio: existing painted art, short copy and silent previews. -->
@@ -127,32 +128,25 @@
       <div class="studio-welcome-art" aria-hidden="true"><img src="/assets/crafted/echo-welcome.webp" alt="" /><span>Hi, I’m Echo!</span></div>
     </div>
 
-    <!-- Separate live, silent previews of the existing speech power. The
-         parent compares speeds; neither preview listens or scores practice.
-         (Travis, 31 Oct 2026: the "Speech practice. Through play." slide
-         went, and its words now head the Fruit Slice preview; the Piano
-         Tiles one says "Say the sound to slow the keys.") -->
+    <!-- THE DEMO (a live, silent preview of the speech power: it never
+         listens, speaks or scores practice). It PLAYS ITSELF (Travis, 1 Nov
+         2026: "make the demo speed buttons more clear, and play the
+         slowdown by itself"; Piano Tiles' demo went the same day: "just
+         keep fruit slice"): normal speed, then "Your child says “rrrr”",
+         then the game slows down, round and round, with the three steps
+         under it lighting up as it goes (a tap on one jumps there). Under
+         Reduce Motion nothing moves and the steps are the parent's to tap.
+         (31 Oct 2026: its heading is the old one-message slide's words.) -->
     <div class="step sell" data-step="reel">
       <p class="studio-kicker">See speech help</p>
       <h1 class="qh" id="reelTitle" tabindex="-1">Speech practice.<br>Through play.</h1>
       <div class="demo-scene fruit-scene" id="fruitDemoScene">
-        <canvas class="demo-canvas" role="img" aria-label="Fruit launches upward and is sliced."></canvas>
+        <canvas class="demo-canvas" role="img" aria-label="Fruit flies up and is sliced. When your child says their sound, the game slows down."></canvas>
         <div class="demo-top"><span>Fruit Slice</span><span class="demo-speed">Normal speed</span></div>
         <div class="demo-help"><img src="/assets/crafted/echo-listen.webp" alt="" /><strong>rrrr</strong><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3Zm-6 8v1a6 6 0 0 0 12 0v-1M12 18v3m-3 0h6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></div>
-        <p class="demo-message" role="status" aria-live="polite">Swipe to slice.</p>
+        <p class="demo-message">Normal speed</p>
       </div>
-      <div class="demo-switch" role="group" aria-label="Compare Fruit Slice speed"><button type="button" data-demo-mode="normal" aria-pressed="true" class="on">Normal speed</button><button type="button" data-demo-mode="slow" aria-pressed="false">After practice</button></div>
-    </div>
-    <div class="step sell" data-step="piano">
-      <p class="studio-kicker">See speech help</p>
-      <h1 class="qh" id="pianoTitle" tabindex="-1">Say the sound<br>to slow the keys.</h1>
-      <div class="demo-scene piano-scene" id="pianoDemoScene">
-        <canvas class="demo-canvas" role="img" aria-label="Notes fall toward the keyboard and are tapped."></canvas>
-        <div class="demo-top"><span>Piano Tiles</span><span class="demo-speed">Normal speed</span></div>
-        <div class="demo-help"><img src="/assets/crafted/echo-listen.webp" alt="" /><strong>rrrr</strong><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3Zm-6 8v1a6 6 0 0 0 12 0v-1M12 18v3m-3 0h6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></div>
-        <p class="demo-message" role="status" aria-live="polite">Tap the keys.</p>
-      </div>
-      <div class="demo-switch" role="group" aria-label="Compare Piano Tiles speed"><button type="button" data-demo-mode="normal" aria-pressed="true" class="on">Normal speed</button><button type="button" data-demo-mode="slow" aria-pressed="false">After practice</button></div>
+      <div class="demo-steps" role="group" aria-label="How saying the sound slows the game"><button type="button" data-demo-phase="0" aria-pressed="true" class="on"><b>1</b><span>Normal speed</span></button><i aria-hidden="true">›</i><button type="button" data-demo-phase="1" aria-pressed="false"><b>2</b><span>Says “rrrr”</span></button><i aria-hidden="true">›</i><button type="button" data-demo-phase="2" aria-pressed="false"><b>3</b><span>Slows down</span></button></div>
     </div>
 
     <!-- RACHEL, ON HER OWN (Travis, 22 Oct 2026: "a bigger slide of Rachel
@@ -258,6 +252,7 @@
     <!-- sounds -->
     <div class="step" data-step="sounds">
       <div class="qh">Which sounds?</div>
+      <p class="sound-ask">Tap the sounds your child is working on.</p>
       <div class="schips" id="obSounds" aria-label="Practice sounds"></div>
       <div id="obExploreOption">
         <button type="button" class="skip" id="obExploreSounds">Not sure? Pick all sounds</button>
@@ -299,6 +294,23 @@
          for the report (sona.js REPORT1, lib/report.ts). -->
     <div class="step" data-step="updates">
       <h1 class="qh" id="updTitle" tabindex="-1">Weekly progress?</h1>
+      <!-- WHAT THE EMAIL LOOKS LIKE (Travis, 1 Nov 2026: "a small picture
+           of an email or an example"). The real report's own lines
+           (lib/report.ts kidLines) for the made-up child the Monday email
+           shows (lib/weekly.ts EXAMPLE), marked as an example. No child's
+           name, because the real email never says one ("Child 1" when
+           there are two). Its words are Rachel's, as the report's are.
+           Hidden while the keyboard is up on a short window. -->
+      <div class="upd-example" aria-label="Example of the weekly email">
+        <p class="upd-ex-head"><span class="upd-ex-from">Sona</span><span class="upd-ex-tag">Example</span></p>
+        <p class="upd-ex-subject">Last week on Sona: 86 reps</p>
+        <ul class="upd-ex-lines">
+          <li>Said their sound out loud on 4 days</li>
+          <li>Reached the daily goal on 3 days</li>
+          <li>86 reps: 52 in practice, 34 in games and books</li>
+          <li>Sound: R</li>
+        </ul>
+      </div>
       <label class="field setup-label" for="updEmail">Your email (optional)</label>
       <input id="updEmail" type="email" inputmode="email" autocomplete="email" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="done" placeholder="you@email.com" />
       <p class="muted upd-consent">We&rsquo;ll also send occasional tips from Rachel. Unsubscribe anytime.</p>
@@ -665,11 +677,12 @@
     if(!p.onboarded&&!SECOND&&!ASKED&&draft.role!=="slp"&&!restoredMinutes)draft.minutes="5";
     var ORDER_PARENT=[];
     // THE SCREENS THAT SELL (19 Oct 2026; rebuilt 22 Oct; the problem slide
-    // went on 31 Oct): the games playing, Rachel, then (once the name is in) what the child loves
-    // and the games they will love. Only for a family not set up yet: a child
+    // went on 31 Oct; since 1 Nov they follow the name, and the one demo is
+    // Fruit Slice's): the game playing, Rachel, what the child loves and the
+    // games they will love. Only for a family not set up yet: a child
     // already set up walking setup again (Back from the first game) is not
     // sold to again.
-    var SELL_FIRST=["reel","piano","rachel"],SELL_AFTER=["interests","games"];
+    var SELL_FIRST=["reel","rachel"],SELL_AFTER=["interests","games"];
     // THE REMINDER SCREEN (22 Oct 2026) follows the ready screen only where
     // the iPhone can set a reminder, iOS has never been asked, and the price
     // follows (remindMay: what the page knows at once, and what the order is
@@ -730,7 +743,10 @@
       var mail=false;try{mail=asks&&!(Sona.parentEmail&&Sona.parentEmail());}catch(e){}
       var sell=asks&&!p.onboarded;
       PLAN_MOMENT=sell;
-      var o=asks?["welcome"].concat(sell?SELL_FIRST:[],["name"],sell?SELL_AFTER:[],["therapy","sounds","minutes"],mail?["updates"]:[],["ready"],sell&&remindMay()?["remind"]:[],["mic"])
+      // the child's name and age come first, right after the hello (Travis,
+      // 1 Nov 2026: "we'll ask the child's name and age first, right after
+      // the hello"), then the demo and Rachel
+      var o=asks?["welcome","name"].concat(sell?SELL_FIRST:[],sell?SELL_AFTER:[],["therapy","sounds","minutes"],mail?["updates"]:[],["ready"],sell&&remindMay()?["remind"]:[],["mic"])
                 :["welcome","name","sounds","ready","mic"];
       ORDER_PARENT.length=0; Array.prototype.push.apply(ORDER_PARENT,o);
     }
@@ -903,13 +919,27 @@
     };
 
     // R starts selected; a parent can change it or pick all sounds ("Not sure? Pick all sounds").
+    // EACH SOUND WITH A WORD (1 Nov 2026; Travis left this step's change to
+    // us): a parent who has never seen "TH" or "CH" written as a speech
+    // sound sees what it sounds like, under the letters, in a word from
+    // Sona's own word bank (the first start-of-word word; the voiced TH has
+    // none, so its first word), its sound's letters orange (Sona.soundMark,
+    // the one place orange is used). A word here is never asked of the
+    // child: which words show is Rachel's to change.
     var selSounds = new Set(draft.mode === "play" ? [] : draft.focusSounds);
     var sc = document.getElementById("obSounds");
+    function soundWord(s){
+      var list=(Sona.WORDS&&Sona.WORDS[s])||[],w=null,i;
+      for(i=0;i<list.length&&!w;i++)if((list[i].pos||"i")==="i")w=list[i];
+      return w||list[0]||null;
+    }
     ["R","S","L","TH"].concat(Sona.ALL_SOUNDS.filter(function(s){return ["R","S","L","TH"].indexOf(s)<0;})).forEach(function(s){
-      var b=document.createElement("button"),label=Sona.soundLabel?Sona.soundLabel(s):s;
+      var b=document.createElement("button"),label=Sona.soundLabel?Sona.soundLabel(s):s,w=soundWord(s);
       b.type="button";b.className="sound"+(selSounds.has(s)?" on":"");b.dataset.sound=s;
-      b.textContent=label;
-      if(s==="TH"||s==="THV")b.setAttribute("aria-label",s==="THV"?"TH, voiced":"TH, unvoiced");
+      var lb=document.createElement("span");lb.className="sound-letters";lb.textContent=label;b.appendChild(lb);
+      if(w){var ex=document.createElement("span");ex.className="sound-word";ex.setAttribute("aria-hidden","true");try{if(Sona&&Sona.soundMark)ex.innerHTML=Sona.soundMark(w.w,s,w.pos||"i");else ex.textContent=w.w;}catch(e){ex.textContent=w.w;}b.appendChild(ex);}
+      var said=s==="TH"?"TH, unvoiced":s==="THV"?"TH, voiced":label;
+      b.setAttribute("aria-label",said+(w?", as in "+w.w:""));
       b.setAttribute("aria-pressed",String(selSounds.has(s)));
       b.onclick=function(){if(selSounds.has(s))selSounds.delete(s);else selSounds.add(s);b.classList.toggle("on",selSounds.has(s));b.setAttribute("aria-pressed",String(selSounds.has(s)));draft.mode="speech";draft.pathReason="";draft.focusSounds=Array.from(selSounds);saveDraft();updateNext();};
       sc.appendChild(b);
@@ -1031,7 +1061,7 @@
     // One anonymous count per screen REACHED, once per page load. The key
     // comes from this fixed list and nothing else is passed: there is no
     // parameter an answer, a name or an age could ride in.
-    var STEP_KEYS={welcome:1,reel:1,piano:1,rachel:1,name:1,interests:1,games:1,therapy:1,sounds:1,minutes:1,updates:1,ready:1,remind:1,mic:1,handoff:1,slp:1,email:1};
+    var STEP_KEYS={welcome:1,name:1,reel:1,rachel:1,interests:1,games:1,therapy:1,sounds:1,minutes:1,updates:1,ready:1,remind:1,mic:1,handoff:1,slp:1,email:1};
     function stepSeen(key){if(!STEP_KEYS[key]||seenSteps[key])return;seenSteps[key]=1;try{if(window.SonaAnalytics)SonaAnalytics.track("setup step",{step:key});}catch(e){}}
     // The two one-tap questions. An answer (or Skip, which holds "") goes on
     // at once and writes the draft, nothing else: never the mode, the path
@@ -1140,7 +1170,7 @@
     // with no purchase plugin) only the games this phone opens are, since
     // nothing there can open the rest. Premium, a trial or a covered caseload
     // open every game either way (Sona.gameAccess).
-    var SELL={reel:1,piano:1,rachel:1,games:1},sellPainted=null;
+    var SELL={reel:1,rachel:1,games:1},sellPainted=null;
     function SELL_CAP(both,id){return both?2:3;}
     function sellStyle(){var age=Number(draft.childAge);return age>=2&&age<5&&Math.floor(age)===age?"simple":age>=5?"arcade":"";}
     function sellsAll(){try{return !!(draft.role!=="slp"&&Sona.trialFirst&&Sona.trialFirst());}catch(e){return false;}}
@@ -1198,26 +1228,52 @@
     }
 
     // Preview only: real painted game pieces, no microphone, audio, speech
-    // verdict or practice credit. Each scene owns one loop, torn down when
-    // its screen is left; backgrounding and pagehide release it too.
-    var demoLive=null,demoKey="",demoSlow={reel:false,piano:false};
-    function stopDemo(){if(demoLive)demoLive.destroy();demoLive=null;demoKey="";}
-    function paintDemo(key){
-      if(key!=="reel"&&key!=="piano"){stopDemo();return;}
-      if(document.hidden){stopDemo();return;}
-      var scene=document.getElementById(key==="reel"?"fruitDemoScene":"pianoDemoScene");
-      var api=key==="reel"?window.SonaFruitDemo:window.SonaPianoDemo;
-      if(demoKey!==key){stopDemo();if(api){demoLive=api.mount(scene);demoKey=key;}}
-      var slow=!!demoSlow[key];scene.classList.toggle("slow",slow);
-      scene.querySelector(".demo-speed").textContent=slow?"After practice":"Normal speed";
-      scene.querySelector(".demo-message").textContent=slow?(key==="reel"?"Slower fruit.":"Slower keys."):(key==="reel"?"Swipe to slice.":"Tap the keys.");
-      steps[key].querySelectorAll("[data-demo-mode]").forEach(function(b){var on=(b.dataset.demoMode==="slow")===slow;b.classList.toggle("on",on);b.setAttribute("aria-pressed",String(on));});
-      if(demoLive)demoLive.setSlow(slow);
+    // verdict or practice credit. The scene owns one loop, torn down when its
+    // screen is left; backgrounding and pagehide release it too.
+    // IT PLAYS ITSELF (1 Nov 2026): three phases, round and round, each
+    // lighting its step under the scene (its bar fills for the phase's
+    // length): normal speed; Echo listening and "Your child says “rrrr”" (the
+    // game still at normal speed); then the game slowed (the scene's own
+    // speech power, at 0.45). A tap on a step jumps there and the loop goes
+    // on from it. Under Reduce Motion nothing moves: the scene is a still
+    // frame, the steps do not advance, and a tap shows that step. The words
+    // and the lengths are Travis's to change.
+    var DEMO_PHASES=[
+      {ms:3200,slow:false,say:false,speed:"Normal speed",msg:"Normal speed"},
+      {ms:1600,slow:false,say:true,speed:"Normal speed",msg:"Your child says “rrrr”"},
+      {ms:3800,slow:true,say:false,speed:"Slower!",msg:"The game slows down!"}
+    ];
+    var demoLive=null,demoOn=false,demoPhase=0,demoTimer=0,demoScene=document.getElementById("fruitDemoScene");
+    var demoStill=window.matchMedia?window.matchMedia("(prefers-reduced-motion: reduce)"):{matches:false};
+    function stopDemo(){clearTimeout(demoTimer);demoTimer=0;if(demoLive)demoLive.destroy();demoLive=null;demoOn=false;}
+    function demoShow(n){
+      demoPhase=n;var ph=DEMO_PHASES[n];
+      demoScene.classList.toggle("slow",ph.slow);demoScene.classList.toggle("say",ph.say);
+      demoScene.querySelector(".demo-speed").textContent=ph.speed;
+      demoScene.querySelector(".demo-message").textContent=ph.msg;
+      steps.reel.querySelectorAll("[data-demo-phase]").forEach(function(b){
+        var on=Number(b.dataset.demoPhase)===n;
+        // (a step lit again starts its bar again)
+        if(on&&b.classList.contains("on")){b.classList.remove("on");void b.offsetWidth;}
+        b.classList.toggle("on",on);b.setAttribute("aria-pressed",String(on));
+        if(on)b.style.setProperty("--demo-ms",ph.ms+"ms");
+      });
+      if(demoLive)demoLive.setSlow(ph.slow);
+      clearTimeout(demoTimer);demoTimer=0;
+      if(!demoStill.matches&&demoOn)demoTimer=setTimeout(function(){demoTimer=0;if(demoOn)demoShow((n+1)%DEMO_PHASES.length);},ph.ms);
     }
-    ["reel","piano"].forEach(function(key){steps[key].querySelectorAll("[data-demo-mode]").forEach(function(b){b.onclick=function(){if(ORDER[idx]!==key||settling())return;demoSlow[key]=b.dataset.demoMode==="slow";paintDemo(key);};});});
+    function paintDemo(key){
+      if(key!=="reel"||document.hidden||finished){stopDemo();return;}
+      // (a fast parent can reach it before the deferred scene has loaded:
+      // DOMContentLoaded below mounts it then, without moving the step)
+      if(!demoLive&&window.SonaFruitDemo)demoLive=window.SonaFruitDemo.mount(demoScene);
+      if(!demoOn){demoOn=true;demoShow(0);}
+      else if(demoLive)demoLive.setSlow(DEMO_PHASES[demoPhase].slow);
+    }
+    steps.reel.querySelectorAll("[data-demo-phase]").forEach(function(b){b.onclick=function(){if(ORDER[idx]!=="reel"||!demoOn||settling())return;demoShow(Number(b.dataset.demoPhase));};});
+    function demoMotion(){if(demoOn)demoShow(demoPhase);}
+    try{if(demoStill.addEventListener)demoStill.addEventListener("change",demoMotion);else if(demoStill.addListener)demoStill.addListener(demoMotion);}catch(e){}
     document.addEventListener("visibilitychange",function(){if(document.hidden)stopDemo();else if(!finished)paintDemo(ORDER[idx]);});
-    // A fast parent can reach a preview before a deferred art controller has
-    // loaded. Retry once both controllers are ready, without moving the step.
     document.addEventListener("DOMContentLoaded",function(){if(!finished)paintDemo(ORDER[idx]);});
     window.addEventListener("pagehide",stopDemo);
 

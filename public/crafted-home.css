@@ -250,9 +250,9 @@ body::before{content:"";position:fixed;left:0;right:0;top:0;height:env(safe-area
    ball, a bone) out at its edges: a square crop kept Echo and threw the games
    away, so a child who can't read saw two doors of Echo. A 2:1 band keeps
    them in. On an iPad the picture sits beside the word at 3:2, which keeps
-   them too. No fit step touches the doors: since HOMECLIP1 (28 Oct 2026)
-   the fit measures only the day's card, and on a smaller phone the doors may
-   sit below the first screen. */
+   them too. Since Home became one screen (1 Nov 2026) the fit's third step
+   flattens the doors' pictures to 5:2 when the card would otherwise go
+   flatter than 4:3; the doors are always on the screen. */
 #homeDoors{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:14px 0 16px;}
 #homeDoors>button{display:flex;flex-direction:column;align-items:stretch;min-width:0;min-height:88px;padding:0;border-radius:20px;overflow:hidden;background:linear-gradient(#fffefb,#fff7e9);border:1px solid #efe2ce;box-shadow:0 3px 0 #e9d8bb,0 6px 14px #6947200d;color:var(--ink);font:inherit;text-align:left;cursor:pointer;transition:transform .12s;}
 #homeDoors>button:active{transform:translateY(2px) scale(.98);}
@@ -277,31 +277,46 @@ body::before{content:"";position:fixed;left:0;right:0;top:0;height:env(safe-area
 #homeBack:active{transform:translateY(2px);box-shadow:0 1px 0 var(--cream-line);}
 .arcade-top+.library-intro{margin-top:12px;}
 
-/* the fit's steps (fitHome in today.html): the board's head and foot,
-   the heading's type and gaps first, then the card's picture (3:4, the
-   day's reel, gives way last: 4:5, 1:1 with tighter words over it, 5:4,
-   and 4:3 at the flattest). The fit holds the card's foot on the first
-   screen (HOMECLIP1, 28 Oct 2026); since the Play Map (31 Oct 2026) it
-   also takes up to two steps, never past 4:5, when that puts the Arcade
-   and Books doors on the first screen too (a 390x844 phone). "Your games"
-   may fall below. Everything a step resizes never transitions: sona.css
-   gives every property a 0.01 ms transition under Reduce Motion, and a box
-   mid-transition reports the size it WAS, so the fit measured a step as
-   doing nothing, and a re-fit (coming back to the front) stopped early and
-   left the card's foot off screen. .quest-art carries it on its own rule; a
-   new rule below adds its element here (homestorytest checks every one). */
-#homeTitle,#homeMap,.map-head,.map-echo,.map-foot,.quest-body,.quest-title,.quest-line,#homeDoors,#trialBanner,.door-word{transition:none;}
-#libraryApp.fit1 #homeMap{--map-head:54px;--map-foot:42px;margin-top:0;padding-top:4px;}
-#libraryApp.fit1 .map-echo{width:46px;height:53px;margin-top:0;}
-#libraryApp.fit1 #homeTitle{font-size:25px;margin-top:6px;}
-#libraryApp.fit1 #trialBanner{margin-top:10px;}
-#libraryApp.fit2 .quest-art{aspect-ratio:4/5;}
-#libraryApp.fit3 .quest-art{aspect-ratio:1/1;}
-#libraryApp.fit3 .quest-body{padding:40px 13px 13px 15px;gap:5px;}
-#libraryApp.fit3 .quest-title{font-size:23px;}
-#libraryApp.fit3 .quest-line{font-size:13px;line-height:1.3;}
-#libraryApp.fit4 .quest-art{aspect-ratio:5/4;}
-#libraryApp.fit5 .quest-art{aspect-ratio:4/3;}
+/* THE FIT: ONE SCREEN, NOTHING TO SCROLL (fitHome in today.html; Travis,
+   1 Nov 2026: "Just make it one ... flat screen"). Home's whole page is on
+   the one screen and does not move (html.home-flat). The day's card takes
+   the room left: today.html sets its picture's height in pixels, 3:4 at
+   most (.quest-art's own aspect-ratio is then only its first guess). When
+   that would leave it flatter than 4:3, the rest makes room one step at a
+   time: fit1 "Your games" smaller, fit2 the board's head and foot, fit3 the
+   doors' pictures, fit4 the words on the card, fit5 "Your games" with its
+   heading read, not drawn. A screen too
+   short for all of it (a phone on its side) keeps fit5 and scrolls rather
+   than cut anything off. Everything a step resizes never transitions:
+   sona.css gives every property a 0.01 ms transition under Reduce Motion,
+   and a box mid-transition reports the size it WAS, so the fit measured a
+   step as doing nothing (and the page's own foot, which changes between
+   Home and the Arcade, was still the Arcade's when Home measured it on the
+   way back). .quest-art and .door-pic carry it on their own rules; a new
+   rule below adds its element here (homestorytest checks every one). */
+#libraryApp,#homeTitle,#homeMap,.map-head,.map-echo,.map-foot,.quest-body,.quest-title,.quest-line,#homeDoors,#trialBanner,.door-word,.door-copy,#foundRow,#foundTitle,#foundList,.found-tile,.found-pic,.found-name{transition:none;}
+html.home-flat,html.home-flat body{height:100%;min-height:0;overflow:hidden;}
+/* the page's foot is the home bar's room and a breath, nothing under the
+   last block (the doors, or "Your games") */
+#libraryApp[data-view="home"]{padding-bottom:calc(14px + env(safe-area-inset-bottom));}
+#libraryApp[data-view="home"] #homeDoors{margin-bottom:0;}
+#libraryApp[data-view="home"] #foundRow{margin:12px 0 0;}
+#libraryApp.fit1 #foundTitle{margin-bottom:4px;font-size:16px;}
+#libraryApp.fit1 .found-tile{width:clamp(104px,30vw,136px);border-radius:15px;}
+#libraryApp.fit1 .found-name{padding:4px 8px 6px;font-size:13px;}
+#libraryApp.fit1 .found-new{top:4px;left:4px;padding:2px 6px;font-size:11px;}
+#libraryApp.fit2 #homeMap{--map-head:54px;--map-foot:42px;margin-top:0;padding-top:4px;}
+#libraryApp.fit2 .map-echo{width:46px;height:53px;margin-top:0;}
+#libraryApp.fit2 #homeTitle{font-size:25px;margin-top:6px;}
+#libraryApp.fit2 #trialBanner{margin-top:10px;}
+#libraryApp.fit3 #homeDoors{margin-top:10px;}
+#libraryApp.fit3 .door-pic{aspect-ratio:5/2;}
+#libraryApp.fit3 .door-copy{padding:6px 11px 7px;}
+#libraryApp.fit3 .door-word{font-size:20px;}
+#libraryApp.fit4 .quest-body{padding:40px 13px 13px 15px;gap:5px;}
+#libraryApp.fit4 .quest-title{font-size:23px;}
+#libraryApp.fit4 .quest-line{font-size:13px;line-height:1.3;}
+#libraryApp.fit5 #foundTitle{position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;}
 
 @media(min-width:600px){#homeMap{--map-head:84px;--map-foot:50px;max-width:524px;margin:12px auto 0;padding:8px 21px 4px;border-radius:34px;}.map-echo{width:66px;height:76px;}#homeTitle{font-size:40px;margin-top:10px;}#questCard{max-width:480px;margin:0 auto;}.quest-title{font-size:30px;}.quest-line{font-size:16px;}.quest-body{padding:70px 20px 20px 22px;gap:9px;}#homeDoors{gap:16px;margin:18px 0 20px;}#homeDoors>button{flex-direction:row;align-items:center;gap:14px;padding:8px 14px 8px 8px;}.door-pic{width:138px;height:92px;aspect-ratio:auto;border-radius:15px;}.door-copy{padding:0;gap:5px;}.door-word{font-size:26px;}.door-sub{font-size:13px;}}
 @media(max-width:350px){#homeMap{--map-head:64px;margin:4px -10px 0;padding:4px 9px 2px;border-radius:26px;}.map-echo{width:50px;height:57px;}#homeTitle{font-size:26px;}.quest-title{font-size:23px;}.quest-line{font-size:13.5px;}.quest-body{padding:48px 12px 12px 14px;gap:6px;}.quest-head{gap:10px;}#homeDoors{gap:10px;}.door-copy{padding:7px 10px 9px;}.door-word{font-size:19px;}}
