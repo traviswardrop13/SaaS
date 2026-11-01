@@ -66,7 +66,6 @@
 //   - Rachel's: nothing here asks a child anything new; the clips show the
 //     reward a child earns by saying the word (the move itself), on R.
 import path from "path";
-import { copyFileSync } from "node:fs";
 import { fileURLToPath } from "url";
 import { reelKit, both, FPS, NAME, VIEW } from "../setupreel/kit.mjs";
 
@@ -899,16 +898,6 @@ async function* gearWork(page) {
 
 // the story days' games, in STORY_DAYS' order (tests/homereeltest.mjs reads
 // this list and holds it to sona.js's)
-export const KEYS = ["lighthouse", "windup", "bridge", "waterwheel", "postboat", "bakery", "frontdoor", "lantern", "trainline", "kite", "nestlift", "concert", "rooftops", "observatory", "fruitpicnic"];
-// The picnic plays the very same Fruit Slice. Its existing real-play clip
-// is the honest preview; no staged new game and no second filming needed.
-export const ALIASES = { fruitpicnic: "slice" };
+export const KEYS = ["lighthouse", "windup", "bridge", "waterwheel", "postboat", "bakery", "frontdoor", "lantern", "trainline", "kite", "nestlift", "concert", "rooftops", "observatory"];
 
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  const only = (process.argv.find((a) => a.startsWith("--only=")) || "").slice(7).split(",").filter(Boolean);
-  if (!only.length || only.some((k) => !ALIASES[k])) await main(SCENES, KEYS);
-  if (!process.argv.includes("--frames-only") && !process.argv.includes("--full")) for (const k of Object.keys(ALIASES)) {
-    if (only.length && !only.includes(k)) continue;
-    for (const ext of ["mp4", "webp"]) copyFileSync(path.join(DEST, ALIASES[k] + "." + ext), path.join(DEST, k + "." + ext));
-  }
-}
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) await main(SCENES, KEYS);

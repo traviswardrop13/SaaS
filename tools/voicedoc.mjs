@@ -404,9 +404,6 @@ const STORY_GAMES = {};
     if (!existsSync(join(ROOT, play))) fail(`Day ${i + 1} ("${d.title}") plays ${play}, which is not there.`);
     if (!new RegExp(`window\\.DailyAdventureGames\\.${d.controller}\\s*=`).test(src(play))) fail(`${play} does not register window.DailyAdventureGames.${d.controller} — story-game.html would send Day ${i + 1} home.`);
     STORY_GAMES[d.game] = { name: copy.title, go: d.page, story: d, day: i + 1, page: f, controller: d.controller, play };
-  } else if (d.id === "fruitpicnic") {
-    if (d.game !== "fruitpicnic" || d.page !== "/charge.html?game=arcade-slice.html&story=fruitpicnic") fail("The signature picnic must keep Fruit Slice's existing five-saying practice route.");
-    STORY_GAMES[d.game] = { name: S.GAME_ACTS.slice.name, go: d.page, story: d, day: i + 1, page: f };
   } else {
     if (f === STORY_PAGE) fail(`STORY_DAYS puts Day ${i + 1} ("${d.title}") on story-game.html with no controller — the page would send it home.`);
     const t = find(f, new RegExp(`SayPlay\\.start\\(\\{\\s*key: "${d.game}", title: "([^"]+)"`), `${d.game}'s game title`);

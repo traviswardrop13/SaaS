@@ -48,7 +48,7 @@
     "currentIntegratedCandidate": "Pending; the recorded exit0 applies only to the earlier merge named above."
   },
   "regressionEvidence": "New target selection, stale-sibling protection, whole-Home fit and signature-adventure checks failed against saved pre-change sources. Five Auto-selection checks fail against the pre-fix Home, including real keyboard selection of the already-current sound. The final reimagined-Home suite fails the saved old layout in 145 of 596 checks; four visible sound-chip checks fail the old Home while 42 sound checks still pass.",
-  "releaseState": "User authorized merge of the finished scope. The approved Map and parent-only target/book changes are integrated with upstream first-session work; the generated voice index is current. The complete release battery and required typecheck remain pending. No completed remote push, main merge or publication is claimed here. Gym and avatar work are excluded.",
+  "releaseState": "User authorized merge of the finished scope. The approved Map and parent-only target/book changes are integrated with upstream first-session work; the generated voice index is current and the clean tracked-source TypeScript check passed. The full release run stopped after suite failures and must be rerun; no completed remote push, main merge or publication is claimed. Gym and avatar work are excluded.",
   "bookExpansion": {
     "requested": "Six new 8-page books for R,S,L,SH,CH,TH; B book expanded from six to eight pages; strict selected-sound shelf.",
     "sourceChecks": "All public script syntax parses; exact captions and bank-only key words validated with existing booklex plus official CMUdict entries.",
@@ -576,11 +576,12 @@
       "fullBattery": {
         "command": "node tests/run-all.mjs",
         "expectedSuites": 164,
-        "status": "running/pending; no complete pass claimed"
+        "status": "Stopped after suite failures, including retired reel metadata and interrupted reader checks; not a release pass. A fresh standard run remains pending."
       },
       "typecheck": {
-        "command": "npx tsc --noEmit -p tsconfig.json",
-        "status": "pending for the integrated release candidate"
+        "scope": "Clean tracked-release source snapshot with the same tsconfig.json; untracked user archives excluded and left untouched.",
+        "exitCode": 0,
+        "log": "/private/tmp/sona-merge-typecheck.log"
       },
       "generatedVoiceIndex": {
         "status": "current",
@@ -608,6 +609,29 @@
       "url": "http://127.0.0.1:63674/",
       "scope": "Fictional age-seven active trial with selectedS, browser-local dates, no special route; separate origin preserves prior review profiles. API503 and external actions blocked.",
       "lifetime": "Temporary loopback review only; not a published site."
+    },
+    "retiredReelCleanup": {
+      "archive": "/private/tmp/sona-retired-signature-adventure/reel/",
+      "scope": "Retired Picnic recorder alias/key and test removed; its two unused reel assets preserved outside public. Recorder and reel test restored to upstream. Required clips unchanged.",
+      "remainingClips": 25,
+      "remainingFileHashesUnchanged": 50,
+      "before": {
+        "failures": 2,
+        "exitCode": 1,
+        "log": "/private/tmp/sona-retired-reel-before.log"
+      },
+      "after": {
+        "checks": 258,
+        "exitCode": 0,
+        "log": "/private/tmp/sona-retired-reel-after.log",
+        "optionalFrameDecode": "Skipped because ffmpeg is unavailable; all existing current clip/poster bytes remain unchanged."
+      },
+      "voiceTool": {
+        "checks": 3,
+        "exitCode": 0,
+        "log": "/private/tmp/sona-retired-reel-voicedoc.log"
+      },
+      "voiceIndexCurrent": true
     }
   }
 }
