@@ -740,11 +740,24 @@
         // trail of stars (two weeks of stories on a small phone) is a
         // zigzag, every other star a little higher, rather than stars too
         // small to see; never under the card, which would hide them
-        var wide=found.fresh?1.6:1,gap=(to-from)/(found.n-1+wide),lift=gap<14?11:0,size=Math.max(12,Math.min(20,Math.sqrt(gap*gap+lift*lift)*0.92)),i,g,o,big,z;
+        var wide=found.fresh?1.6:1,gap=(to-from)/(found.n-1+wide),lift=gap<14?11:0,size=Math.max(12,Math.min(20,Math.sqrt(gap*gap+lift*lift)*0.92)),i,g,o,big,z,marks=[];
         for(i=0;i<found.n;i++){
           big=found.fresh&&i===found.n-1;z=big?Math.min(26,size*1.3):size;
           o=at(from+gap*(big?i+wide/2:i+0.5));
-          if(lift&&i%2!==(found.n-1)%2)o.y-=lift;
+          marks.push({x:o.x,y:o.y,z:z,big:big,up:!!lift&&i%2!==(found.n-1)%2});
+        }
+        // every star stays between the heading's words and the card's top
+        // edge: when the board's head is short (the fit's second step) the
+        // road runs close to both, and a star on it would reach into the
+        // heading or slip under the card. In a zigzag the raised stars keep
+        // a whole star's height above their neighbours (lift, or what room
+        // there is, never less than the star), so none sits on another.
+        var hb=box(document.getElementById("homeTitle")).b-4,cb=c.t-1,up=lift?Math.max(size,Math.min(lift,cb-hb-size)):0;
+        for(i=0;i<marks.length;i++){
+          o=marks[i];z=o.z;big=o.big;
+          var lo=hb+z/2+up,hi=cb-z/2;
+          o.y=lo>hi?(lo+hi)/2:Math.max(lo,Math.min(hi,o.y));
+          if(o.up)o.y-=up;
           g=svgNode("g","trail-mark"+(big?" fresh":""),{transform:"translate("+pt(o.x-z/2,o.y-z/2)+") scale("+(Math.round(z/64*1000)/1000)+")"});
           if(big)g.appendChild(svgNode("circle","trail-glow",{cx:32,cy:33,r:40}));
           g.appendChild(svgNode("path","trail-star",{d:STAR}));
@@ -783,7 +796,7 @@
       function showView(v,focus){
         clearMessage();setView(v);
         try{window.scrollTo(0,0);}catch(e){}
-        if(v==="home")fitHome();
+        fitHome();
         clipSync();
         if(focus){var h=document.getElementById(v==="arcade"?"arcadeTitle":"homeTitle");try{h.focus({preventScroll:true});}catch(e){}}
       }
@@ -819,51 +832,79 @@
       };
       window.addEventListener("popstate",function(){var f=backFocus;backFocus=false;showView(viewOf(),f);});
       window.addEventListener("pagehide",function(){try{history.scrollRestoration="auto";}catch(e){}});
-      // THE FIT (measured, never guessed, as the plan screen's offer is): the
-      // day's card, with its title and its play button over the picture's
-      // foot, is on the first screen, above the home bar. The doors come
-      // right after it and may fall below, and so may "Your games" (HOMECLIP1,
-      // 28 Oct 2026: the day's reel is Home's one big thing, and the games and
-      // books sit lower). One step at a time (fit1…fit5, crafted-home.css):
-      // the heading's type and gaps first, then the card's picture, from 3:4
-      // to 4:5, 1:1, 5:4 and at the flattest 4:3. Everything a step resizes
-      // has transition:none (crafted-home.css; homestorytest reads every fit
-      // rule and checks each element), because sona.css gives every property
-      // a near-instant transition under Reduce Motion and a box
-      // mid-transition reports the size it WAS: a re-fit then stopped early
-      // and left the card's foot below the fold.
-      // THE PLAY MAP (31 Oct 2026) adds the board's head (Echo and the
-      // heading) above the card and tomorrow under it, and asks one more
-      // thing of the fit: the Arcade and Books doors on the first screen too
-      // where a gentle step or two puts them there (a 390x844 phone), never
-      // by taking the card past 4:5 (DOOR_STEPS). Where even that is not
-      // enough, the fit is the card's alone, as before, and the doors wait
-      // one swipe away. The card always comes first.
-      var FIT_STEPS=5,DOOR_STEPS=2;
+      // THE FIT: ONE SCREEN, NOTHING TO SCROLL (1 Nov 2026; Travis, of a
+      // recording of Home sliding up and down: "I don't like how this
+      // homepage can scroll up and down. Just make it one ... flat screen
+      // ... There's nothing that makes being able to scroll up and down
+      // helpful"). Everything Home has (the top bar, the board with its
+      // heading, the day's card and tomorrow, the Arcade and Books doors,
+      // and "Your games" once a story is finished) is on the one screen,
+      // above the home bar, and the page does not move (html.home-flat).
+      // The day's card takes what room is left: its picture is as tall as
+      // the screen allows, 3:4 at most (the day's reel, HOMECLIP1), set in
+      // pixels from what the rest measured (measured, never guessed, as the
+      // plan screen's offer is). The card comes first: while its picture
+      // would be flatter than 4:3, the rest makes room one step at a time
+      // (fit1…fit5, crafted-home.css): "Your games" smaller first, then the
+      // board's head and foot, then the doors' pictures, then the words on
+      // the card, and last "Your games" without its drawn heading (a screen
+      // reader still reads it). With every step taken it may be flatter than 4:3, as long
+      // as the words over its foot still sit on it (MIN_PIC above them); on
+      // an iPad the card then narrows to keep 4:3 rather than stretch into a
+      // strip. A screen too short even for that (a phone on its side) keeps
+      // every step and scrolls rather than cut anything off: there the
+      // picture is 4:3.
+      var FIT_STEPS=5,MIN_PIC=12;
       function fitHome(){
-        if(app.getAttribute("data-view")!=="home")return;
-        var card=document.getElementById("questCard"),doors=document.getElementById("homeDoors"),inset=document.getElementById("homeInset");
+        if(app.getAttribute("data-view")!=="home"){document.documentElement.classList.remove("home-flat");return;}
+        var card=document.getElementById("questCard"),art=document.getElementById("questArt"),words=card&&card.querySelector(".quest-body");
         var i;for(i=1;i<=FIT_STEPS;i++)app.classList.remove("fit"+i);
-        if(!card||card.hidden){paintTrail();return;}
-        function under(el){
-          var y=window.pageYOffset||0,bar=inset?inset.offsetHeight:0;
-          return el.getBoundingClientRect().bottom+y<=window.innerHeight-bar-8;
+        if(art)art.style.height="";
+        // measured as it will be shown: a page that scrolls while it is
+        // measured can grow a scrollbar (a laptop's) and measure narrower
+        document.documentElement.classList.add("home-flat");
+        // what reaches furthest down (the home bar's room is the page's own
+        // bottom padding), measured from the top of the page
+        function bottom(){var y=window.pageYOffset||0;return app.getBoundingClientRect().bottom+y;}
+        var flat=false;
+        if(!card||card.hidden||!art){flat=bottom()<=window.innerHeight+0.5;}
+        else{
+          card.style.maxWidth="";
+          var w=art.getBoundingClientRect().width,tall=Math.round(w*4/3),low=Math.ceil(w*0.75),h,least;
+          for(i=0;;i++){
+            art.style.height=tall+"px";
+            h=Math.min(tall,Math.floor(tall-(bottom()-window.innerHeight)));
+            least=(words?words.offsetHeight:0)+MIN_PIC;
+            if(h>=Math.max(low,least)){flat=true;break;}
+            if(i===FIT_STEPS){if(h>=least)flat=true;else h=Math.max(low,least);break;}
+            app.classList.add("fit"+(i+1));
+          }
+          art.style.height=h+"px";
+          // an iPad keeps the card 4:3 at its flattest: narrower, centred
+          // (never so narrow that its words outgrow it)
+          if(flat&&h<low&&window.innerWidth>=600){
+            card.style.maxWidth=Math.round(h/0.75)+"px";
+            if(words&&words.offsetHeight+MIN_PIC>h)card.style.maxWidth="";
+          }
         }
-        function fits(){return under(card);}
-        for(i=1;i<=FIT_STEPS&&!fits();i++)app.classList.add("fit"+i);
-        var j,took=i-1;
-        if(doors&&!under(doors)&&took<DOOR_STEPS){
-          for(j=took+1;j<=DOOR_STEPS&&!under(doors);j++)app.classList.add("fit"+j);
-          if(!under(doors))for(j=took+1;j<=DOOR_STEPS;j++)app.classList.remove("fit"+j);
-        }
+        document.documentElement.classList.toggle("home-flat",flat);
+        if(flat)try{window.scrollTo(0,0);}catch(e){}
         paintTrail();
       }
       fitHome();
-      // a turn or a new width fits again; a height that moves alone (Safari's
-      // bars folding away as a child scrolls) never re-lays the card out under
-      // a finger
-      var fitW=window.innerWidth;
-      window.addEventListener("resize",function(){if(window.innerWidth===fitW)return;fitW=window.innerWidth;fitHome();});
+      // (and once more when this script is done: the founding banner, the
+      // website's tallest Home, is shown by the script after this one)
+      setTimeout(fitHome,0);
+      // a turn, a new width or a new height fits again (Home no longer
+      // scrolls, so Safari's bars no longer fold away under a finger); a
+      // page too short to fit, which still scrolls, re-fits only on a new
+      // width, so its bars folding away never re-lay the card out mid-swipe
+      var fitW=window.innerWidth,fitH=window.innerHeight;
+      window.addEventListener("resize",function(){
+        var flat=document.documentElement.classList.contains("home-flat");
+        if(window.innerWidth===fitW&&(!flat||window.innerHeight===fitH))return;
+        fitW=window.innerWidth;fitH=window.innerHeight;fitHome();
+      });
       try{if(document.fonts&&document.fonts.ready)document.fonts.ready.then(fitHome);}catch(e){}
       // A cached library can return after a trial expires or an adult changes
       // preview state. Re-evaluate its labels without reviving stale access.
