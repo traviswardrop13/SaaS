@@ -288,10 +288,10 @@ ok("onboarding no pageerrors", errs.length === 0);
   await pg.evaluate(() => { localStorage.clear(); sessionStorage.clear(); });
   await pg.goto("http://localhost:8129/onboarding.html"); await pg.waitForTimeout(800);
   const hop = async (ms) => { await settledOb(pg); await pg.evaluate(STEP); await pg.waitForTimeout(ms || 250); await beatGone(pg); };
-  await hop(); await hop(); await hop(); await hop(); // hello → Fruit Slice → Piano Tiles → Rachel → name
+  await hop(); // hello → name (1 Nov 2026: "right after the hello")
   await pg.evaluate(() => { document.getElementById("obName").value = "Rosie"; });
   await pg.evaluate(() => document.querySelector('#obAge .sound[data-age="6"]').click());
-  await hop(); // name → "What does Rosie love?"
+  await hop(); // name → the Fruit Slice demo
   const held = await pg.evaluate(() => JSON.parse(localStorage.getItem("sona.obdraft.v1") || "null"));
   ok("what a parent typed is written down as they go",
     !!held && held.childName === "Rosie" && String(held.childAge) === "6", JSON.stringify(held));
@@ -360,9 +360,9 @@ ok("onboarding no pageerrors", errs.length === 0);
     door.says.slice(0, 200));
 
   const hop = async (ms) => { await settledOb(pg); await pg.evaluate(STEP); await pg.waitForTimeout(ms || 250); await beatGone(pg); };
-  await hop(); await hop(); await hop(); await hop(); // hello → Fruit Slice → Piano Tiles → Rachel → name
+  await hop(); // hello → name (1 Nov 2026: "right after the hello")
   await pg.evaluate(() => { document.getElementById("obName").value = "Sam"; });
-  await hop(); await hop(); await hop(); // name → what they love → their games → therapy
+  await hop(); await hop(); await hop(); await hop(); await hop(); // name → Fruit Slice → Rachel → what they love → their games → therapy
   await hop(); // an answer → the sounds
   await pg.locator('#obExploreSounds').click();
   const landed = await pg.evaluate(() => ({
@@ -401,9 +401,9 @@ await page.goto("http://localhost:8129/onboarding.html"); await page.waitForTime
 const nameStep = await page.evaluate(() => document.querySelector('[data-step="name"]').textContent);
 ok("name question carries justification microcopy", /cheers them on by name|knows who to cheer for/.test(nameStep));
 // This is the parent path, with an optional email after the core setup.
-await clickNext(); await clickNext(); await clickNext(); await clickNext(); // hello → Fruit Slice → Piano Tiles → Rachel → name
+await clickNext(); // hello → name (1 Nov 2026: "right after the hello")
 await page.evaluate(() => { document.getElementById("obName").value = "Zoe"; });
-await clickNext(); await clickNext(); await clickNext(); // name → what they love → their games → therapy
+await clickNext(); await clickNext(); await clickNext(); await clickNext(); await clickNext(); // name → Fruit Slice → Rachel → what they love → their games → therapy
 await clickNext(); // an answer → sounds
 // SOUNDS1: the picker is open for everyone (no SLP code) — choose R and S
 const pickState = await page.evaluate(() => {
@@ -455,9 +455,9 @@ ok("nobody becomes an SLP by accident", skipFin.prof.role !== "slp", JSON.string
 // General play remains a one-tap option on the shared sound-selection screen.
 await page.evaluate(() => { localStorage.clear(); sessionStorage.clear(); });
 await page.goto("http://localhost:8129/onboarding.html"); await page.waitForTimeout(900);
-await clickNext(); await clickNext(); await clickNext(); await clickNext(); // hello → Fruit Slice → Piano Tiles → Rachel → name
+await clickNext(); // hello → name (1 Nov 2026: "right after the hello")
 await page.evaluate(() => { document.getElementById("obName").value = "Nora"; });
-await clickNext(); await clickNext(); await clickNext(); // name → what they love → their games → therapy
+await clickNext(); await clickNext(); await clickNext(); await clickNext(); await clickNext(); // name → Fruit Slice → Rachel → what they love → their games → therapy
 await clickNext(); // an answer → sounds
 await page.locator('#obExploreSounds').click();
 const playSkip = await page.evaluate(() => ({
