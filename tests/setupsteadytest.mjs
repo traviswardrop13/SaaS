@@ -331,7 +331,7 @@ for(const web of [true,false]){const D=web?{name:'412x839',w:412,h:839,kb:0,top:
   ok('a tap on an age or on the box\'s label during the tap lock leaves the box focused, and picks nothing'+on,a.settling&&a.active==='obName'&&a.age!=='4'&&l.active==='obName',{age:a,label:l});
   // Back, twice: the name step opens with the box focused, and the second tap leaves it so
   await page.waitForTimeout(500);await page.fill('#obName','Milo');
-  await page.tap('#nextBtn');await page.locator('[data-step="interests"].on').waitFor();await page.waitForTimeout(600);
+  await page.tap('#nextBtn');await page.locator('[data-step="reel"].on').waitFor();await page.waitForTimeout(600);
   const bk=await center(page,'#backBtn');await page.touchscreen.tap(bk.x,bk.y);await page.waitForTimeout(150);await page.touchscreen.tap(bk.x,bk.y);
   const b=await focus();
   ok('a double tap on Back opens the name step with the box focused, and keeps it so'+on,b.screen==='name'&&b.active==='obName',b);
@@ -425,10 +425,10 @@ for(const W of [{name:'iPhone SE in Safari',w:375,h:553,sw:375,sh:667,turn:[667,
   ok('…so Continue comes back as the window shrinks for the keyboard, not 0.9 s later ('+late+' ms after)',late!==null&&late<=250,{late,hiddenFrames:tf.filter(f=>f.footOp<0.05).length});
   await page.evaluate(()=>{__steady.start();document.getElementById('obName').addEventListener('blur',()=>{setTimeout(()=>{__steady.kbState='down';__steady.kb.keyboardWillHide();},30);},{once:true});});
   await page.tap('#nextBtn');await page.waitForTimeout(40);await U.win(820,1180);
-  await page.locator('[data-step="interests"].on').waitFor();await page.waitForTimeout(700);
-  const lf=(await page.evaluate(()=>__steady.take())).filter(f=>f.screen==='interests'&&f.r.tCard);
-  const dL=drift(lf,['tHead','tYes','tCard','echo']),squeezed=lf.filter(f=>f.open||f.h!==1180).length;
-  ok('…and Continue with the keyboard up draws the next question once, at the iPad\'s full height'+' (worst: '+worst(dL)+')',lf.length>0&&squeezed===0&&still(dL),{frames:lf.length,squeezed,dL});
+  await page.locator('[data-step="reel"].on').waitFor();await page.waitForTimeout(700);
+  const lf=(await page.evaluate(()=>__steady.take())).filter(f=>f.screen==='reel'&&f.r.sCard);
+  const dL=drift(lf,['sHead','sScene','sCard']),squeezed=lf.filter(f=>f.open||f.h!==1180).length;
+  ok('…and Continue with the keyboard up draws the next screen (the Fruit Slice demo) once, at the iPad\'s full height'+' (worst: '+worst(dL)+')',lf.length>0&&squeezed===0&&still(dL),{frames:lf.length,squeezed,dL});
   ok('no runtime errors (iPad turned upright)',errors.length===0,errors);
  }catch(e){ok('the walk completes (iPad turned upright)',false,e.message);}finally{await context.close();}}
 
@@ -572,7 +572,7 @@ for(const reduced of [false,true]){
   await page.locator('[data-step="name"].on').waitFor();
   await page.fill('#obName','Milo');await page.evaluate(()=>document.activeElement&&document.activeElement.blur());await page.waitForTimeout(400);
   await calm(page);await tapAt(page,'#obAge [data-age="6"]');await calm(page);await page.tap('#nextBtn');
-  await page.locator('[data-step="interests"].on').waitFor();await calm(page);await page.tap('#nextBtn');
+  for(const k of ['reel','rachel','interests']){await page.locator('[data-step="'+k+'"].on').waitFor();await calm(page);await page.tap('#nextBtn');}
   await page.locator('[data-step="games"].on').waitFor();await calm(page);await page.tap('#nextBtn');
   await page.locator('[data-step="therapy"].on').waitFor();await calm(page);await page.tap('#obTherapy [data-val="t_yes"]');
   await page.locator('[data-step="sounds"].on').waitFor();

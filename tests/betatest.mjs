@@ -306,11 +306,11 @@ ok("onboarding no pageerrors", errs.length === 0);
   // it is a scratchpad, not a profile: saving the profile must clear it, or a
   // stale draft shadows the real thing on the next visit
   // the reload put them back at the top with their answers intact, so this
-  // walks the whole flow again: the hello → the screens that sell → name →
-  // what they love → their games → therapy → sounds → minutes → ready, whose
-  // Continue saves the profile and tears it up
-  await hop(); await hop(); await hop(); await hop();   // hello, Fruit Slice, Piano Tiles, Rachel → name
-  await hop(); await hop(); await hop(); await hop();   // name, what they love, their games, therapy (an answer) → sounds
+  // walks the whole flow again: the hello → name → the screens that sell
+  // (the Fruit Slice demo, Rachel, what they love, their games) → therapy →
+  // sounds → minutes → ready, whose Continue saves the profile and tears it up
+  await hop(); await hop(); await hop();                 // hello, name, Fruit Slice → Rachel
+  await hop(); await hop(); await hop(); await hop();   // Rachel, what they love, their games, therapy (an answer) → sounds
   await pg.locator('#obExploreSounds').click();          // → how long each day
   await hop();                                           // an answer → the email step
   await hop();                                           // Skip → ready
