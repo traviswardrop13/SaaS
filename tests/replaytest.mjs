@@ -226,22 +226,20 @@ try {
     await page.waitForFunction(() => window.Sona && document.getElementById("nextBtn"));
     await recording(page);
     await mark(page, 101);                          // the hello: recorded
-    // THE SCREENS THAT SELL (22 Oct 2026) come first: the two game demos and
-    // Rachel, all recorded, none showing the name (the "problem" slide that
-    // led them went on 31 Oct 2026; its words now head the Fruit Slice demo)
-    await next(page);
-    await page.locator('[data-step="reel"].on').waitFor(); await rest();
-    await mark(page, 121);                          // Fruit Slice's sound-power demo, "Speech practice. Through play.": recorded
-    await next(page);
-    await page.locator('[data-step="piano"].on').waitFor(); await rest();
-    await mark(page, 126);                          // Piano Tiles' sound-power demo: recorded
-    await next(page);
-    await page.locator('[data-step="rachel"].on').waitFor(); await rest();
-    await mark(page, 131);                          // Rachel, on her own: recorded
+    // the child's name and age come straight after the hello (1 Nov 2026)
     await next(page);
     await page.locator('[data-step="name"].on').waitFor();
     await page.locator("#obName").fill("Zephyrine");
     await page.locator('#obAge [data-age="6"]').click();
+    await next(page);
+    // THE SCREENS THAT SELL (22 Oct 2026) follow it: the Fruit Slice demo and
+    // Rachel, both recorded, neither showing the name (the "problem" slide
+    // went on 31 Oct 2026, Piano Tiles' demo on 1 Nov 2026)
+    await page.locator('[data-step="reel"].on').waitFor(); await rest();
+    await mark(page, 121);                          // Fruit Slice's sound-power demo, "Speech practice. Through play.": recorded
+    await next(page);
+    await page.locator('[data-step="rachel"].on').waitFor(); await rest();
+    await mark(page, 131);                          // Rachel, on her own: recorded
     await next(page);
     // "What does <Name> love?" and "Games for <Name>." show the name, as ph-name; both are recorded
     await page.locator('[data-step="interests"].on').waitFor(); await rest();
@@ -306,7 +304,7 @@ try {
     const rr = w.rr(), text = w.text();
     ok("setup: a recording was sent (full snapshots of the page)", rr.filter((e) => e.type === FULL).length >= 2, rr.length);
     ok("setup: the hello's pointer was recorded (the control)", marked(rr, 101));
-    ok("setup: both game demos and Rachel's screen were recorded (the controls)", marked(rr, 121) && marked(rr, 126) && marked(rr, 131), [marked(rr, 121), marked(rr, 126), marked(rr, 131)]);
+    ok("setup: the game demo and Rachel's screen were recorded (the controls)", marked(rr, 121) && marked(rr, 131), [marked(rr, 121), marked(rr, 131)]);
     ok("setup: the minutes screen's pointer was recorded (the control)", marked(rr, 351));
     ok("setup: nothing on the screen a therapy answer lands on (the sounds)", !marked(rr, 301));
     ok("setup: \"What does <Name> love?\" and \"Games for <Name>.\" were recorded (the controls)", marked(rr, 141) && marked(rr, 151), [marked(rr, 141), marked(rr, 151)]);

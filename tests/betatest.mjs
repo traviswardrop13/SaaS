@@ -138,7 +138,7 @@ for (const [who, seed] of [["a fresh family", () => {}],
     hosts.length > 1 && hosts.every((h) => h.endsWith(":echo")), JSON.stringify(hosts));
   // (a child already set up walking setup again is not sold to again: no screens that sell)
   ok("…a walk that reaches the microphone, by way of both one-tap questions, " + (who === "a fresh family" ? "the screens that sell (the two game demos, Rachel, what the child loves, their games), " : "") + "the optional email step and the ready screen",
-    hosts.map((h) => h.split(":")[0]).join() === (who === "a fresh family" ? "welcome,reel,piano,rachel,name,interests,games,therapy,sounds,minutes,updates,ready,mic" : "welcome,name,therapy,sounds,minutes,updates,ready,mic"), JSON.stringify(hosts));
+    hosts.map((h) => h.split(":")[0]).join() === (who === "a fresh family" ? "welcome,name,reel,rachel,interests,games,therapy,sounds,minutes,updates,ready,mic" : "welcome,name,therapy,sounds,minutes,updates,ready,mic"), JSON.stringify(hosts));
   await ob2.close();
 }
 

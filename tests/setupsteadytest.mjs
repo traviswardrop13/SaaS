@@ -82,11 +82,11 @@ function phoneInit(cfg){
     sCard:'.step.sell.on',sHead:'.step.sell.on h1',sPic:'.step.sell.on .rachel-photo',sScene:'.step.sell.on .demo-scene',sGrid:'.step.sell.on #gamesGrid',sLast:'.step.sell.on #gamesGrid li:last-child',
     rCard:'[data-step="ready"].on',rHead:'[data-step="ready"].on #readyTitle',rChips:'[data-step="ready"].on #readyChips',
     rPlan:'[data-step="ready"].on #planCard',rPlanPic:'[data-step="ready"].on #planPic',rPlanMore:'[data-step="ready"].on #planMore'};
-  // Keep both demo headings steady as assets arrive (the problem slide and
-  // its picture went on 31 Oct 2026). Only the canvas changes during demos;
+  // Keep the demo's heading steady as assets arrive (the problem slide and
+  // its picture went on 31 Oct 2026, Piano Tiles' demo on 1 Nov 2026). Only the canvas changes during demos;
   // the ready screen's existing Echo motion still ends, and Reduce Motion
   // must begin at that final frame.
-  const VIS={rTitle:'.step.on #reelTitle,.step.on #pianoTitle',rEcho:'.step.on .ready-echo img',rSpark:'.step.on .spark'};
+  const VIS={rTitle:'.step.on #reelTitle',rEcho:'.step.on .ready-echo img',rSpark:'.step.on .spark'};
   function seen(sel){let best=null;for(const el of document.querySelectorAll(sel)){const cs=getComputedStyle(el),r=el.getBoundingClientRect(),o=+cs.opacity;const v=cs.display==='none'||r.width<2||r.height<2||cs.visibility==='hidden'?null:{x:Math.round(r.left),y:Math.round(r.top),w:Math.round(r.width),h:Math.round(r.height),o:Math.round(o*100)/100};if(v&&(!best||v.o>best.o))best=v;}return best&&best.o>0?best:null;}
   // Where the LAYOUT puts an element: offsets, not the painted box, so a
   // screen's slide-in (a transform) is not a jump, and a box laid out again
@@ -506,12 +506,16 @@ for(const reduced of [false,true])for(const D of [DEVICES[0],DEVICES[2]]){
   await page.reload();await page.waitForFunction(()=>window.Sona&&document.getElementById('nextBtn'));await page.evaluate(()=>document.fonts.ready);await page.waitForTimeout(500);
   ok('(the app can sell'+at+': the price follows setup)',await page.evaluate(()=>Sona.iapAvailable()&&Sona.trialFirst()===true));
   await context.route(/\/assets\/(crafted\/home-[a-z]+\.webp|rachel-wardrop-profile\.jpg)$/,async route=>{await new Promise(r=>setTimeout(r,500));route.continue();});
-  for(const [key,keys,card,own,wait] of [['reel',['sCard','sHead','sScene','btn'],'sCard',['rTitle'],2300],['piano',['sCard','sHead','sScene','btn'],'sCard',['rTitle'],1100],['rachel',['sCard','sHead','sPic','btn'],'sCard',[],1100],['games',['sCard','sHead','sGrid','sLast','btn'],'sCard',[],1100],['ready',['rCard','rHead','rChips','rPlan','rPlanMore','btn'],'rCard',['rEcho','rSpark'],2300]]){
-   if(key==='games'){
-    // the name and what the child loves come between Rachel and the games
+  for(const [key,keys,card,own,wait] of [['reel',['sCard','sHead','sScene','btn'],'sCard',['rTitle'],2300],['rachel',['sCard','sHead','sPic','btn'],'sCard',[],1100],['games',['sCard','sHead','sGrid','sLast','btn'],'sCard',[],1100],['ready',['rCard','rHead','rChips','rPlan','rPlanMore','btn'],'rCard',['rEcho','rSpark'],2300]]){
+   if(key==='reel'){
+    // the name comes between the hello and the demo (1 Nov 2026)
     await calm(page);await page.tap('#nextBtn');await page.locator('[data-step="name"].on').waitFor();
     await page.fill('#obName','Milo');await page.evaluate(()=>document.activeElement&&document.activeElement.blur());await page.waitForTimeout(500);
-    await calm(page);await tapAt(page,'#obAge [data-age="6"]');await calm(page);await page.tap('#nextBtn');
+    await calm(page);await tapAt(page,'#obAge [data-age="6"]');await page.waitForTimeout(600);
+   }
+   if(key==='games'){
+    // what the child loves comes between Rachel and the games
+    await calm(page);await page.tap('#nextBtn');
     await page.locator('[data-step="interests"].on').waitFor();await page.waitForTimeout(600);
    }
    if(key==='ready'){
@@ -537,7 +541,7 @@ for(const reduced of [false,true])for(const D of [DEVICES[0],DEVICES[2]]){
    ok('"'+key+'" is drawn once, at its own size, and nothing in it moves as its pictures arrive'+at+' (worst: '+worst(d)+')',fr.length>5&&still(d)&&loaded&&(!d.sScene||d.sScene.shown),{frames:fr.length,d,loaded});
    if(own.length){
     const m=ownMotion(fr,own),span=fr.length?fr[fr.length-1].t-fr[0].t:0;
-    if(key==='reel'||key==='piano'){
+    if(key==='reel'){
      ok('the '+key+' headline is present from its first frame and stays while only its canvas animates'+(key==='reel'?', watched '+span+' ms':'')+at,m.rTitle.first&&m.rTitle.first.o===1&&m.rTitle.changed===0&&(key!=='reel'||span>=2000),{span,m});
     }else{
      if(!reduced)ok('with motion on, Echo pops onto the ready screen and the sparkles play and end within 2.3 s'+at,span>=2000&&m.rEcho.changed>0&&m.rEcho.last&&m.rEcho.last.o===1&&m.rSpark.ever&&!m.rSpark.last,{span,m});

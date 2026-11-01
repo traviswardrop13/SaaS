@@ -352,6 +352,15 @@ body[data-setup-screen="remind"] #nextBtn { display: none; }
   .ob #obExploreSounds { margin-top: 4px; }
   .ob .sound-help { margin-top: 2px; }
 }
+/* each sound carries its word since 1 Nov 2026: on a 4-inch phone the
+   letters shrink and the line under the heading steps aside, so all
+   nineteen still fit with no scroll */
+@media (max-height: 620px) {
+  .ob #obSounds .sound { font-size: 22px; padding: 3px 2px; }
+  .ob #obSounds .sound[data-sound="THV"] { font-size: 19px; }
+  .ob #obSounds .sound-word { font-size: 10px; }
+  .ob .sound-ask { display: none; }
+}
 
 /* THE EMAIL STEP (13 Oct 2026: "also move the email box before the price").
    One box, Travis's consent line under it, Skip under that, and the footer's

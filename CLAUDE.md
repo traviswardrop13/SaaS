@@ -87,7 +87,8 @@ missing it.
 One of those places is setup (Travis, 29 Sep 2026: a Meet Rachel screen with
 her photo). **Since 22 Oct 2026 she has her own screen again** (Travis: "a
 bigger slide of Rachel that's just like all by itself of like her
-credentials"), the fourth of setup, before the child's name: her photo, big,
+credentials"), the fourth of setup (since 1 Nov 2026 after the child's
+name and the Fruit Slice demo; before that, before the name): her photo, big,
 and the settled line word for word, "Built with Rachel, MS, CF-SLP, a
 pediatric speech-language pathologist in her clinical fellowship.", shown
 once (its first words are the heading, "Built with Rachel, MS, CF-SLP,", the
@@ -170,7 +171,49 @@ changing one. What follows from the rule:
   silent previews, never microphone requests, speech verdicts or practice
   credit. They release their loops on departure/background and stay still
   under Reduce Motion. The old recorded reel assets remain available but
-  are not loaded by setup. Returning families, second children and clinicians
+  are not loaded by setup.
+  **Since 1 Nov 2026** (Travis: "we'll ask the child's name and age first,
+  right after the hello. And let's improve them, make the demo speed
+  buttons more clear, and play the slowdown by itself"; then "we can get
+  rid of piano tiles as the demo. And just keep fruit slice"): a first
+  setup is the hello → **name and age** → the Fruit Slice demo → Rachel →
+  what they love → their games → therapy → sounds → minutes → email →
+  (the build beat) → ready → (reminder) → the price → microphone →
+  hand-off. **There is one demo, Fruit Slice's, and it plays itself**
+  (`DEMO_PHASES` in `onboarding.html`): normal speed (3.2 s), then Echo's
+  bubble glows and "Your child says “rrrr”" (1.6 s, the game still at
+  normal speed), then the game slows down ("Slower!", "The game slows
+  down!", the scene ringed teal, 3.8 s), round and round. Under it, in
+  place of the two "Normal speed / After practice" buttons, three steps
+  that light up as it plays, each with a bar filling for its phase: **"1
+  Normal speed" › "2 Says “rrrr”" › "3 Slows down"**; a tap on one jumps
+  there and it plays on from it. Off the screen or in the background it
+  stops and starts again at normal speed. Under Reduce Motion nothing
+  moves: the scene is a still frame, the steps do not advance and draw no
+  bar, and a tap shows that step. The Piano Tiles demo and its script
+  (`onboarding-piano-demo.js`) are gone. **Each sound on the sound picker
+  carries a word** (Travis left this step to us): the letters, and under
+  them the first start-of-word word in Sona's word bank (`Sona.WORDS`; the
+  voiced TH has none, so its first word, "mother"), its sound's letters
+  orange (`Sona.soundMark`), read as "R, as in rabbit", under one line,
+  "Tap the sounds your child is working on." (it steps aside on a 4-inch
+  phone, where the letters shrink so all nineteen fit). **The email step
+  shows what the weekly email looks like** (Travis: "a small picture of an
+  email or an example, like the Leo said his R sound 140 times this
+  week"): a small card marked "Example", the real report's subject and
+  lines (`lib/report.ts` `kidLines`) for the Monday email's made-up child
+  (`lib/weekly.ts` `EXAMPLE`: "Last week on Sona: 86 reps", "Said their
+  sound out loud on 4 days", "Reached the daily goal on 3 days", "86 reps:
+  52 in practice, 34 in games and books", "Sound: R"), hidden while the
+  keyboard is up on a short window. **It names no child**: the real email
+  never says a name ("Child 1" with two), so the example does not either
+  (Travis's "Leo" would promise what the email does not do; his to change
+  only with the email itself). `setupscreenstest` pins it to `EXAMPLE`.
+  **Travis's to change:** every word, the phases' lengths, the order.
+  **Rachel's:** the example word shown for each sound (and "mother" for
+  the voiced TH, a mid-word sound), the example report's words, and that
+  the demo still shows R ("rrrr") to every parent, before any sound is
+  picked. Returning families, second children and clinicians
   keep their shorter paths. Native keyboard, privacy/replay, purchase,
   reminder eligibility and explicit hand-off rules are unchanged.
   Name uses the label "Age" with more space before it. Minutes are 3 / 5 /

@@ -49,12 +49,12 @@ async function toReady(page, name, email = "") {
   await page.goto(base + "/onboarding.html");
   await page.waitForFunction(() => window.Sona && document.getElementById("nextBtn"));
   await tap(page, "#nextBtn");                                           // the hello
-  for (const key of ["reel", "piano", "rachel"]) {
+  await step(page, "name"); await page.locator("#obName").fill(name); await tap(page, '#obAge [data-age="6"]'); await tap(page, "#nextBtn");
+  for (const key of ["reel", "rachel"]) {                               // the name first since 1 Nov 2026
     await step(page, key); sold.push(await text(page, '[data-step="' + key + '"] h1'));
     if (key === "rachel") rachelLine = await page.evaluate(() => document.getElementById("rachelLine").textContent);
     await tap(page, "#nextBtn");
   }
-  await step(page, "name"); await page.locator("#obName").fill(name); await tap(page, '#obAge [data-age="6"]'); await tap(page, "#nextBtn");
   for (const key of ["interests", "games"]) { await step(page, key); sold.push(await text(page, '[data-step="' + key + '"] h1')); await tap(page, "#nextBtn"); }
   await step(page, "therapy"); await tap(page, '#obTherapy .ask-pick[data-val="t_yes"]');
   await step(page, "sounds");                                            // R is the picker's own first pick: tap it only if it is not on
@@ -72,8 +72,8 @@ await scenario("a family that can buy", async () => {
   try {
     await toReady(page, "Mia", "mia.mom@example.com");
     ok("nothing is sent from the email step itself", leads(requests).length === 0, leads(requests));
-    ok("before the price, setup shows both sound-power demos (the first under \"Speech practice. Through play.\"), Rachel, what the child loves and their games, and no problem slide",
-      JSON.stringify(sold) === JSON.stringify(["Speech practice. Through play.", "Say the sound to slow the keys.", "Built with Rachel, MS, CF-SLP,", "What does Mia love?", "Games for Mia."]) &&
+    ok("before the price, setup shows the Fruit Slice demo (under \"Speech practice. Through play.\"), Rachel, what the child loves and their games, and no problem slide or Piano Tiles demo",
+      JSON.stringify(sold) === JSON.stringify(["Speech practice. Through play.", "Built with Rachel, MS, CF-SLP,", "What does Mia love?", "Games for Mia."]) &&
       (await page.locator('[data-step="problem"]').count()) === 0, sold);
     ok("Rachel's own screen carries her line word for word, and setup ends on the ready screen with the child's name",
       rachelLine === "Built with Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical fellowship." &&
