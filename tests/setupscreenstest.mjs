@@ -1,6 +1,8 @@
 // PLAY STUDIO: approved onboarding, 24 Oct 2026. The real purchase, privacy,
 // native-keyboard and setup state contracts stay; the old intro/slideshow is
-// replaced by a short hello, one-message problem, and two silent comparisons.
+// replaced by a short hello and two silent comparisons (since 31 Oct 2026 the
+// one-message problem slide is gone: its words, "Speech practice. Through
+// play.", head the Fruit Slice demo, which the hello now opens).
 // These demos never listen, speak, grant practice credit or play off screen.
 // Reminder eligibility and store timing remain covered below.
 import {createServer} from 'http';
@@ -86,7 +88,8 @@ await scenario('a slow-loading demo starts when its deferred library arrives',as
  if(process.env.SONA_SETUP_RACE_WITHOUT_HOOK==='1')routes.push(['**/onboarding.html',r=>{const html=readFileSync(root+'/onboarding.html','utf8'),without=html.replace(/    document\.addEventListener\("DOMContentLoaded",function\(\)\{if\(!finished\)paintDemo\(ORDER\[idx\]\);\}\);\n/,'');if(without===html)throw new Error('ready-hook red proof did not remove the hook');return r.fulfill({contentType:'text/html',body:without});}]);
  const {context,page,errors}=await fresh({motion:true,waitUntil:'commit',routes});try{
   await page.waitForFunction(()=>window.draft&&document.body.dataset.setupScreen==='welcome');
-  await next(page);await next(page);await page.locator('[data-step="reel"].on').waitFor();
+  // (the hello opens Fruit straight away: no problem slide since 31 Oct 2026)
+  await next(page);await page.locator('[data-step="reel"].on').waitFor();
   const before=await page.evaluate(()=>({frames:__s.frames.fruitDemoScene||0,lib:!!window.SonaFruitDemo,loading:document.readyState,ready:__s.ready,profile:JSON.stringify(Sona.getProfile()),mics:__s.mics}));
   ok('the parent reached Fruit before the delayed library: no frames or microphone yet',!!release&&before.frames===0&&!before.lib&&!before.ready&&before.mics===0,before);
   await release();release=null;await page.waitForLoadState('domcontentloaded');
@@ -108,7 +111,8 @@ if(process.env.SONA_SETUP_DEFERRED_ONLY==='1'){
 await scenario('approved Play Studio contract',async()=>{
  const {context,page,errors}=await fresh();try{
   const c=await page.evaluate(()=>({order:ORDER.join(),minutes:[...document.querySelectorAll('#obMinutes .ask-pick')].map(b=>b.dataset.val),picked:draft.minutes,age:document.getElementById('ageLabel').textContent,hello:document.querySelector('.welcome-brand').innerText.replace(/\s+/g,' ').trim()}));
-  ok('the first parent sees distinct Fruit and Piano previews before Rachel',c.order==='welcome,problem,reel,piano,rachel,name,interests,games,therapy,sounds,minutes,updates,ready,mic',c.order);
+  ok('the first parent sees distinct Fruit and Piano previews before Rachel, straight after the hello (no problem slide)',c.order==='welcome,reel,piano,rachel,name,interests,games,therapy,sounds,minutes,updates,ready,mic',c.order);
+  ok('…and the problem slide is not on the page at all',await page.evaluate(()=>!document.querySelector('[data-step="problem"]')&&!document.getElementById('problemTitle')&&!document.querySelector('.studio-problem-art')));
   ok('daily practice offers exactly 3, 5 and 10 minutes, with 5 held by default',c.minutes.join()==='3,5,10'&&c.picked==='5',c);
   ok('the approved short welcome and Age label ship in the real app',c.hello==='Little sounds. Big adventures.'&&c.age==='Age',c);
   clean('Play Studio contract',errors);
@@ -125,7 +129,7 @@ await scenario('the hello: one clear promise, Echo, and an immediately usable bu
    const f=await page.evaluate(()=>{const r=s=>{const b=document.querySelector(s).getBoundingClientRect();return {t:b.top,b:b.bottom,l:b.left,r:b.right};},art=document.querySelector('.studio-welcome-art'),ob=document.querySelector('.ob');return {text:document.querySelector('.welcome-brand').innerText.replace(/\s+/g,' ').trim(),brand:document.querySelector('.studio-brand').getAttribute('aria-label'),echoes:art.querySelectorAll('img').length,hidden:art.getAttribute('aria-hidden'),art:r('.studio-welcome-art'),head:r('.welcome-brand'),btn:r('#nextBtn'),cta:document.getElementById('nextBtn').textContent.trim(),scroll:ob.scrollHeight-ob.clientHeight,sideways:document.documentElement.scrollWidth-innerWidth,w:innerWidth,h:innerHeight,old:!!document.querySelector('.hello'),wait:document.body.classList.contains('hello-wait'),body:getComputedStyle(document.body).backgroundColor,loops:document.querySelector('.step.on').getAnimations({subtree:true}).filter(a=>a.effect.getComputedTiming().endTime===Infinity).length};});
    ok('hello '+vp.width+'×'+vp.height+(motion?' motion':' Reduce Motion')+': one promise and Sona, one decorative Echo, no delayed intro',f.text==='Little sounds. Big adventures.'&&f.brand==='Sona'&&f.echoes===1&&f.hidden==='true'&&!f.old&&!f.wait&&f.loops===0,f);
    ok('…its headline, art and Get started fit without overlap or scrolling; the keyboard corners stay cream',f.head.t>=0&&f.head.b<=f.art.t&&f.art.b<=f.btn.t&&f.art.l>=0&&f.art.r<=f.w&&f.btn.b<=f.h&&f.scroll<=1&&f.sideways<=0&&f.body==='rgb(255, 245, 233)',f);
-   await next(page);ok('…Get started works immediately and opens the problem',await screen(page)==='problem');
+   await next(page);ok('…Get started works immediately and opens the Fruit Slice demo',await screen(page)==='reel');
    await calm(page);await page.locator('#backBtn').click();ok('Back opens the same hello without waiting',await screen(page)==='welcome'&&!await page.evaluate(()=>document.body.classList.contains('hello-wait')));
    await page.evaluate(()=>document.documentElement.classList.add('ob-leaving'));
    ok('the page is held blank while a saved setup returns to its price',await page.evaluate(()=>getComputedStyle(document.querySelector('.ob')).visibility==='hidden'));
@@ -135,13 +139,18 @@ await scenario('the hello: one clear promise, Echo, and an immediately usable bu
 });
 
 const demoCount=(page,id)=>page.evaluate(id=>__s.frames[id]||0,id);
+// each demo's heading (31 Oct 2026), as textContent (the <br> reads as
+// nothing): Fruit Slice carries the old problem slide's words, Piano Tiles
+// says what the sound does; both under the kicker "See speech help"
+const HEADS={reel:'Speech practice.Through play.',piano:'Say the soundto slow the keys.'};
 await scenario('Fruit Slice, then Piano Tiles: live silent previews, with useful after-practice help',async()=>{
  const {context,page,errors,requests}=await fresh({motion:true,webSales:true});try{
   const before=await page.evaluate(()=>({profile:JSON.stringify(Sona.getProfile()),run:sessionStorage.getItem('sona.run.v1')}));
   for(const [key,id,word] of [['reel','fruitDemoScene','fruit'],['piano','pianoDemoScene','keys']]){
    await setupWalk(page,key);await calm(page);await page.evaluate(()=>Promise.all([...document.querySelectorAll('.step.on img')].map(i=>i.decode().catch(()=>{}))));
    const a=await demoCount(page,id);await page.waitForTimeout(350);const b=await demoCount(page,id);
-   ok(key+': its canvas paints live frames, with an accessible description and the one-message heading',b-a>=5&&await page.evaluate(([key,id,word])=>{const st=document.querySelector('[data-step="'+key+'"]'),c=document.querySelector('#'+id+' canvas');return c.getAttribute('role')==='img'&&!!c.getAttribute('aria-label')&&st.querySelector('h1').textContent==='Practice your sound.Slow the '+word+'.'&&document.activeElement===st.querySelector('h1');},[key,id,word]),{a,b});
+   const hd=await page.evaluate(([key,id])=>{const st=document.querySelector('[data-step="'+key+'"]'),c=document.querySelector('#'+id+' canvas'),h=st.querySelector('h1');return {role:c.getAttribute('role'),label:!!c.getAttribute('aria-label'),head:h.textContent,id:h.id,kicker:(st.querySelector('.studio-kicker')||{}).textContent,focus:document.activeElement===h};},[key,id]);
+   ok(key+': its canvas paints live frames, with an accessible description and the one-message heading "'+HEADS[key]+'" under "See speech help"',b-a>=5&&hd.role==='img'&&hd.label&&hd.head===HEADS[key]&&hd.id===(key==='reel'?'reelTitle':'pianoTitle')&&hd.kicker==='See speech help'&&hd.focus,{a,b,hd});
    for(const [mode,slow] of [['slow',true],['normal',false]]){
     await calm(page);await page.locator('[data-step="'+key+'"] [data-demo-mode="'+mode+'"]').click();
     const m=await page.evaluate(id=>{const scene=document.getElementById(id),st=scene.closest('.step');return {slow:scene.classList.contains('slow'),label:scene.querySelector('.demo-speed').textContent,message:scene.querySelector('.demo-message').textContent,pressed:[...st.querySelectorAll('[aria-pressed="true"][data-demo-mode]')].map(b=>b.dataset.demoMode)};},id);
@@ -152,7 +161,7 @@ await scenario('Fruit Slice, then Piano Tiles: live silent previews, with useful
    await page.evaluate(()=>__s.foreground());await page.waitForTimeout(250);ok(key+': returning to this screen starts its own scene again',await demoCount(page,id)>stopped);
    await next(page);const left=await demoCount(page,id);await page.waitForTimeout(250);ok(key+': leaving the screen stops its loop',await demoCount(page,id)===left,{left,now:await demoCount(page,id)});
   }
-  ok('Piano follows Fruit, then Rachel, without an extra question',await screen(page)==='rachel'&&await page.evaluate(()=>ORDER.slice(0,5).join()==='welcome,problem,reel,piano,rachel'));
+  ok('Piano follows Fruit, then Rachel, without an extra question',await screen(page)==='rachel'&&await page.evaluate(()=>ORDER.slice(0,4).join()==='welcome,reel,piano,rachel'));
   const after=await page.evaluate(()=>({profile:JSON.stringify(Sona.getProfile()),run:sessionStorage.getItem('sona.run.v1'),mics:__s.mics,media:__s.media.length,spoke:!!__s.spoke}));
   ok('the previews grant no credit and start no practice, recording or speech',after.profile===before.profile&&after.run===before.run&&after.mics===0&&after.media===0&&!after.spoke,{before,after});
   ok('the previews fetch local art, never the old clips, voice lines or speech recordings',!requests.some(r=>/\.mp4|\/api\/tts$|\/coach\/|\.wav$|\.mp3$/.test(r.url)),requests.filter(r=>/mp4|tts|coach|wav|mp3/.test(r.url)));
@@ -163,12 +172,14 @@ await scenario('Fruit Slice, then Piano Tiles: live silent previews, with useful
 await scenario('the new sales screens fit phones and tablets; reduced-motion previews stay still',async()=>{
  for(const vp of [{width:320,height:568},{width:375,height:667},{width:390,height:844},{width:768,height:1024},{width:1280,height:800}]){
   const {context,page,errors}=await fresh({viewport:vp,webSales:true});try{
-   for(const key of ['problem','reel','piano']){
+   for(const key of ['reel','piano']){
     await setupWalk(page,key);await calm(page);await page.evaluate(()=>document.fonts.ready);await page.waitForTimeout(150);
     const f=await page.evaluate(()=>{const st=document.querySelector('.step.on'),foot=document.querySelector('.obfoot').getBoundingClientRect(),head=st.querySelector('h1').getBoundingClientRect(),body=st.getBoundingClientRect(),ob=document.querySelector('.ob'),scene=st.querySelector('.demo-scene'),toggle=st.querySelector('.demo-switch'),r=e=>{const b=e.getBoundingClientRect();return {t:b.top,b:b.bottom,l:b.left,r:b.right,h:b.height};};return {head:r(st.querySelector('h1')),body:r(st),foot:r(document.querySelector('.obfoot')),scene:scene?r(scene):null,toggle:toggle?r(toggle):null,scroll:ob.scrollHeight-ob.clientHeight,sideways:document.documentElement.scrollWidth-innerWidth,h:innerHeight,w:innerWidth};});
     ok(key+' fits '+vp.width+'×'+vp.height+': its message and art above Continue, no sideways overflow',f.head.t>=0&&f.body.b<=f.foot.t+1&&f.sideways<=0&&(!f.scene||(f.scene.h>=180&&f.scene.b<=f.toggle.t&&f.toggle.b<=f.foot.t)),f);
-    if(key==='problem')ok('problem is one short message with one image, not a delayed explanation',await page.evaluate(()=>{const s=document.querySelector('.step.on');return s.querySelector('h1').textContent==='Speech practice.Through play.'&&s.innerText.trim().split(/\s+/).length<=5&&s.querySelectorAll('.ba-row').length===0&&!!s.querySelector('.studio-problem-art');}));
-    else {const id=key==='reel'?'fruitDemoScene':'pianoDemoScene',a=await demoCount(page,id);await page.waitForTimeout(300);ok(key+' under Reduce Motion paints a still frame without an ongoing loop',a>0&&await demoCount(page,id)===a,{a,now:await demoCount(page,id)});}
+    // (the hello opens Fruit since 31 Oct 2026: the problem slide that sat
+    // between them is gone, and its message is Fruit's heading)
+    if(key==='reel')ok('the hello opens the Fruit Slice demo directly, headed by the problem slide\'s old message, with no before-and-after rows',await page.evaluate(()=>{const s=document.querySelector('.step.on');return ORDER[ORDER.indexOf('reel')-1]==='welcome'&&s.querySelector('h1').textContent==='Speech practice.Through play.'&&s.querySelectorAll('.ba-row').length===0&&!document.querySelector('[data-step="problem"]');}));
+    {const id=key==='reel'?'fruitDemoScene':'pianoDemoScene',a=await demoCount(page,id);await page.waitForTimeout(300);ok(key+' under Reduce Motion paints a still frame without an ongoing loop, under its own heading',a>0&&await demoCount(page,id)===a&&await page.evaluate(w=>document.querySelector('.step.on h1').textContent===w,HEADS[key]),{a,now:await demoCount(page,id)});}
    }
    clean('sales screens fit '+vp.width,errors);
   }finally{await context.close();}
@@ -179,7 +190,7 @@ await scenario('the new sales screens fit phones and tablets; reduced-motion pre
 await scenario('setup makes no sound: a whole walk, voice on, plays and fetches nothing to play',async()=>{
  const tts=['**/api/tts',r=>r.fulfill({status:200,contentType:'application/octet-stream',headers:{'X-Sona-Voice-Keep':'0'},body:Buffer.alloc(4800,7)})];
  {const {context,page,errors,requests}=await fresh({webSales:true,motion:true,routes:[tts]});try{
-  for(const to of ['problem','reel','piano','rachel','name','interests','games','therapy','sounds','minutes','updates','ready']){await setupWalk(page,to);if(to==='reel'||to==='problem')await page.waitForTimeout(700);}
+  for(const to of ['reel','piano','rachel','name','interests','games','therapy','sounds','minutes','updates','ready']){await setupWalk(page,to);if(to==='reel')await page.waitForTimeout(700);}
   const h=await page.evaluate(()=>({media:__s.media.length,spoke:!!__s.spoke,synth:!!window.speechSynthesis&&window.speechSynthesis.speaking,mics:__s.mics}));
   ok('from the hello to the ready screen nothing plays: no recording, no spoken line, no browser voice, no microphone',h.media===0&&!h.spoke&&!h.synth&&h.mics===0,h);
   ok('…and nothing is fetched to play: no voice line, no take of a sound',!requests.some(r=>/\/api\/tts$|\/coach\/|\.wav$|\.mp3$/.test(r.url)),requests.filter(r=>/tts|coach|\.wav|\.mp3/.test(r.url)).map(r=>r.url));
@@ -214,6 +225,9 @@ await scenario('the minutes are the daily goal; what the child loves is kept as 
    if(reps)ok(mins+' min a day: the daily goal is '+reps+' reps, the minutes beside it, the days a week not written (the default 4 read)',p.p.dailyGoal===reps&&p.p.dailyMinutes===Number(mins)&&p.goal===reps&&!('weeklyGoal' in p.p)&&p.days===4,p);
    else ok('Skip leaves the daily goal as it was (none saved: the default 30) and the minutes as they were (5)',!('dailyGoal' in p.p)&&p.goal===30&&p.p.dailyMinutes===5&&!('weeklyGoal' in p.p),p);
    ok(mins+': what the child loves is on the profile as the ids picked',JSON.stringify(p.p.interests)===(mins==='10'?'["music","food"]':'[]'),p.p.interests);
+   // the microphone screen carries no grown-ups line since 31 Oct 2026 (the
+   // promise, Sona.MIC_PROMISE, stays on every mic ask in the games and books)
+   if(mins==='5')ok('the microphone screen has no grown-ups line: no #micPromise, and the promise\'s words are not on it',await page.evaluate(()=>{const st=document.querySelector('[data-step="mic"]');return document.body.dataset.setupScreen==='mic'&&!document.getElementById('micPromise')&&!!Sona.MIC_PROMISE&&st.textContent.indexOf(Sona.MIC_PROMISE)<0&&!/never uploaded/i.test(st.textContent);}));
    clean('minutes '+mins,errors);
   }finally{await context.close();}
  }
@@ -242,7 +256,7 @@ const at=page=>page.evaluate(()=>({path:location.pathname,saved:!!(JSON.parse(lo
 const COUNT=()=>{addEventListener('pagehide',()=>{try{if(window.__s&&location.pathname==='/onboarding.html'){localStorage.setItem('__asks',String(window.__s.notifyAsks));localStorage.setItem('__remindSeen',window.seenSteps&&window.seenSteps.remind?'1':'0');localStorage.setItem('__plans',String(window.__s.plans));}}catch(e){}});};
 await scenario('the reminder ask: only where a reminder can be set and the price follows',async()=>{
  {const {context,page,errors}=await fresh({webSales:true,notify:NOTIFY,init:COUNT});try{
-  ok('an iPhone that can set a reminder, never asked, the price to follow: the reminder screen sits between ready and the microphone',await page.evaluate(()=>ORDER.join())==='welcome,problem,reel,piano,rachel,name,interests,games,therapy,sounds,minutes,updates,ready,remind,mic');
+  ok('an iPhone that can set a reminder, never asked, the price to follow: the reminder screen sits between ready and the microphone',await page.evaluate(()=>ORDER.join())==='welcome,reel,piano,rachel,name,interests,games,therapy,sounds,minutes,updates,ready,remind,mic');
   await setupWalk(page,'ready',{name:'Mia'});await next(page);await page.locator('[data-step="remind"].on').waitFor();
   const r=await page.evaluate(()=>{const st=document.querySelector('[data-step="remind"]'),painted=el=>getComputedStyle(el).display!=='none'&&el.getBoundingClientRect().height>0;return {title:document.getElementById('remindTitle').textContent,line:st.querySelector('.remind-line').textContent,yes:document.getElementById('remindYes').textContent,no:document.getElementById('remindNo').textContent,next:painted(document.getElementById('nextBtn')),back:painted(document.getElementById('backBtn')),bubble:document.getElementById('bubble').textContent,seg:document.getElementById('seg').hidden,focus:document.activeElement&&document.activeElement.id,saved:!!Sona.getProfile().onboarded,asks:__s.notifyAsks,name:/Mia/.test(st.textContent)};});
   ok('it asks, in a few words: "Want reminders during your free trial?", "A practice reminder each day, and one the day before it ends.", "Turn on reminders" or "Not now"',r.title==='Want reminders during your free trial?'&&r.line==='A practice reminder each day, and one the day before it ends.'&&r.yes==='Turn on reminders'&&r.no==='Not now'&&r.bubble==='I\'ll give you a heads-up!'&&!r.name,r);
@@ -402,21 +416,26 @@ await scenario('the reminder ask: only where a reminder can be set and the price
  }
 });
 
-// ── THE PLAN MOMENT (Travis, 31 Oct 2026: "build the plan moment and straight
-// into day 1"). On a parent's first setup the ready screen is reached through
-// a short build beat (Echo, "Building <Name>'s practice…", the parent's
-// answers coming in one by one, about 2.2 s; under Reduce Motion all at once,
-// about 1 s), once a visit, silent, never recorded, and nothing under it takes
-// a tap. The ready screen then carries the plan card: Day 1's story for this
-// child's sounds (Sona.day1For, the rule Home's card uses once the profile is
-// saved), its Home picture (left out, never broken, when it does not load), a
-// "Day 1" pill, the title, its Home line, and "A new story every day." Only
-// where this child will be shown a story (Sona.storyShown). ──
-const DAY1={robo:['Robo\'s Rocket','Robo the robot built a rocket, but it won\'t wake up. Help him fly it!'],lighthouse:['The Lighthouse Sneeze','Captain Wally sneezed out the lighthouse lamp! Help the little boats get home.'],fizz:['Fizz and the Sleepy Fireflies','Fizz the fox\'s party is tonight, but the fireflies are too sleepy to glow. Help wake them up!']};
+// ── THE PLAN MOMENT (Travis, 31 Oct 2026: "build the plan moment", then "day
+// one, let's just say is to play a game and to read a book ... I want kids to
+// go straight into a game"). On a parent's first setup the ready screen is
+// reached through a short build beat (Echo, "Building <Name>'s practice…",
+// the parent's answers coming in one by one, about 2.2 s; under Reduce Motion
+// all at once, about 1 s), once a visit, silent, never recorded, and nothing
+// under it takes a tap. The ready screen then carries the plan card, on every
+// parent's first setup: a "Day 1" pill, Fruit Slice's Home picture (left out,
+// never broken, when it does not load), "Play a game, then read a book." and
+// which: "Fruit Slice first, then <the story>." (Sona.day1For, the rule
+// Home's card uses once the profile is saved), with "A new story every day."
+// under it. Where this child is shown no story (Sona.storyShown: a phone that
+// cannot buy, without Premium) it says "Fruit Slice first, then a book." and
+// nothing under it. Never on a re-walk, for a second child or a clinician. ──
+const DAY1={robo:'Robo\'s Rocket',lighthouse:'The Lighthouse Sneeze',fizz:'Fizz and the Sleepy Fireflies'};
+const PLAN_TITLE='Play a game, then read a book.',PLAN_PIC='/assets/crafted/home-fruit.webp';
 const DAY1PAGE=['**/__day1.html',r=>r.fulfill({status:200,contentType:'text/html',body:'<!doctype html><title>day1</title><script src="/sona.js"></script>'})];
 // the plan card as a parent sees it
 const planShown=page=>page.evaluate(()=>{const c=document.getElementById('planCard'),pic=document.getElementById('planPic'),img=document.getElementById('planImg'),st=document.querySelector('[data-step="ready"]'),vis=el=>!!el&&!el.closest('[hidden]')&&getComputedStyle(el).display!=='none'&&el.getBoundingClientRect().height>0,box=el=>{const b=el.getBoundingClientRect();return {t:Math.round(b.top),b:Math.round(b.bottom),h:Math.round(b.height),w:Math.round(b.width)};};
-  return {shown:vis(c),story:c.dataset.story||'',day:(c.querySelector('.plan-day')||{}).textContent,title:document.getElementById('planTitle').textContent,line:document.getElementById('planLine').textContent,more:vis(document.getElementById('planMore'))?document.getElementById('planMore').textContent:'',pic:vis(pic),picGone:img.classList.contains('gone'),src:img.getAttribute('src'),loaded:img.complete&&img.naturalWidth>0,imgSeen:getComputedStyle(img).visibility!=='hidden',
+  return {shown:vis(c),story:c.dataset.story||'',game:c.dataset.game||'',day:(c.querySelector('.plan-day')||{}).textContent,title:document.getElementById('planTitle').textContent,line:document.getElementById('planLine').textContent,more:vis(document.getElementById('planMore'))?document.getElementById('planMore').textContent:'',pic:vis(pic),picGone:img.classList.contains('gone'),src:img.getAttribute('src'),loaded:img.complete&&img.naturalWidth>0,imgSeen:getComputedStyle(img).visibility!=='hidden',
    broken:[...st.querySelectorAll('img')].filter(i=>vis(i)&&getComputedStyle(i).visibility!=='hidden'&&i.complete&&!i.naturalWidth).map(i=>i.getAttribute('src')),
    asks:c.querySelectorAll('button,a,input,[role="button"],[tabindex]').length,card:vis(c)?box(c):null,chips:box(document.getElementById('readyChips')),foot:box(document.querySelector('.obfoot')),btn:box(document.getElementById('nextBtn')),hedge:box(st.querySelector('.ready-hedge')),
    scroll:document.querySelector('.ob').scrollHeight-document.querySelector('.ob').clientHeight,sideways:document.documentElement.scrollWidth-innerWidth,text:st.innerText.replace(/\s+/g,' ').trim()};});
@@ -461,54 +480,55 @@ await scenario('the plan moment: a short build beat before the ready screen, onc
   ok('…and the ready screen about 1 s on ('+took+' ms)',took>=800&&took<=2000,took);
   clean('plan beat, Reduce Motion',errors);
  }finally{await context.close();}}
- // only a parent's first setup: a child walking setup again, a second child and a phone that cannot sell
- for(const [label,cfg,walk,beat,card] of [
-   ['a child set up before, walking setup again',{webSales:true,profile:{childName:'Milo',childAge:'6',focusSounds:['R'],mode:'speech',role:'parent',onboarded:true,email:'mom@example.com'}},{name:'Milo'},false,false],
-   ['a second child',{webSales:true,init:()=>{if(!localStorage.getItem('__kids')){localStorage.setItem('__kids','1');localStorage.setItem('sona.kids.v1',JSON.stringify({active:'k2',list:[{slot:'',name:'Milo'},{slot:'k2',name:'Rosie'}],hi:2}));}}},{name:'Rosie'},false,false],
-   ['a first setup on a phone that cannot sell (the game of the day, no story)',{},{name:'Mia'},true,false]]){
+ // only a parent's first setup: a child walking setup again and a second
+ // child get neither the beat nor the card; a first setup on a phone that
+ // cannot sell gets both, the card with no story to name
+ for(const [label,cfg,walk,beat] of [
+   ['a child set up before, walking setup again',{webSales:true,profile:{childName:'Milo',childAge:'6',focusSounds:['R'],mode:'speech',role:'parent',onboarded:true,email:'mom@example.com'}},{name:'Milo'},false],
+   ['a second child',{webSales:true,init:()=>{if(!localStorage.getItem('__kids')){localStorage.setItem('__kids','1');localStorage.setItem('sona.kids.v1',JSON.stringify({active:'k2',list:[{slot:'',name:'Milo'},{slot:'k2',name:'Rosie'}],hi:2}));}}},{name:'Rosie'},false],
+   ['a first setup on a phone that cannot sell (no story shown: the game of the day on Home)',{},{name:'Mia'},true]]){
   const {context,page,errors}=await fresh(cfg);try{
    if(cfg.init)await page.reload();
    await watchBeats(page);
    await setupWalk(page,'ready',walk);await page.waitForTimeout(150);
-   const p=await planShown(page);
-   ok(label+': '+(beat?'the beat':'no beat')+' and no plan card',await page.evaluate(()=>window.__beats)===(beat?1:0)&&!p.shown&&!p.more,{beats:await page.evaluate(()=>window.__beats),p});
+   await page.evaluate(()=>{const i=document.getElementById('planImg');return i.complete||!i.getAttribute('src')?0:new Promise(r=>{i.onload=i.onerror=r;setTimeout(r,2000);});});
+   const p=await planShown(page),beats=await page.evaluate(()=>window.__beats),told=await page.evaluate(()=>Sona.storyShown());
+   if(!beat)ok(label+': no beat and no plan card',beats===0&&!p.shown&&!p.more,{beats,p});
+   else ok(label+': the beat, then the card with no story to name: "Day 1", "'+PLAN_TITLE+'", "Fruit Slice first, then a book.", Fruit Slice\'s picture, and no "A new story every day."',beats===1&&!told&&p.shown&&p.story===''&&p.game==='slice'&&p.day==='Day 1'&&p.title===PLAN_TITLE&&p.line==='Fruit Slice first, then a book.'&&!p.more&&p.pic&&p.loaded&&p.src===PLAN_PIC&&!p.broken.length&&p.asks===0,{beats,told,p});
    clean('plan moment: '+label,errors);
   }finally{await context.close();}
  }
 });
-await scenario('the plan card: Day 1\'s story for this child\'s sounds',async()=>{
+await scenario('the plan card: Day 1 is Fruit Slice, then the story Home will show for this child\'s sounds',async()=>{
  for(const [label,walk,id] of [['an R child',{sounds:['R']},'robo'],['a K child (no talking story)',{sounds:['K']},'lighthouse'],['"Not sure? Pick all sounds" (the list setup saves: every sound, easiest first)',{explore:true},'fizz']]){
   const {context,page,errors}=await fresh({webSales:true,routes:[DAY1PAGE]});try{
    await setupWalk(page,'ready',Object.assign({name:'Mia',age:'8'},walk));
    await page.evaluate(()=>Promise.all([...document.querySelectorAll('[data-step="ready"] img')].map(i=>i.complete?0:new Promise(r=>{i.onload=i.onerror=r;setTimeout(r,2000);}))));
    const p=await planShown(page);
-   ok(label+': the card names '+DAY1[id][0]+', with its Home line, a "Day 1" pill and "A new story every day." under it',p.shown&&p.story===id&&p.day==='Day 1'&&p.title===DAY1[id][0]&&p.line===DAY1[id][1]&&p.more==='A new story every day.',p);
+   ok(label+': a "Day 1" pill, "'+PLAN_TITLE+'" and "Fruit Slice first, then '+DAY1[id]+'.", with "A new story every day." under it',p.shown&&p.story===id&&p.game==='slice'&&p.day==='Day 1'&&p.title===PLAN_TITLE&&p.line==='Fruit Slice first, then '+DAY1[id]+'.'&&p.more==='A new story every day.',p);
    ok('…under the chips, a statement with nothing to tap, and no plan, price or promise in the screen\'s words',p.card&&p.card.t>=p.chips.b&&p.asks===0&&!/\bplan\b|\$|\bfree\b|recommend|score|result/i.test(p.text),p);
-   // (the talking stories' Home pictures are being drawn, 31 Oct 2026: a
-   // story whose picture is on disk shows it, one whose picture is not yet
-   // steps aside, so this holds either way)
-   if(existsSync(root+'/assets/crafted/home-'+id+'.webp'))ok('…its Home picture is drawn, loaded',p.pic&&p.loaded&&p.imgSeen&&p.src==='/assets/crafted/home-'+id+'.webp'&&!p.broken.length,p);
-   else ok('…its story has no Home picture yet: the picture steps aside, never a broken image (the card is its words)',!p.pic&&!p.broken.length&&p.src==='/assets/crafted/home-'+id+'.webp',p);
+   // the picture is the first game's, Fruit Slice's Home card, whatever the story
+   ok('…its picture is Fruit Slice\'s Home card, drawn and loaded',p.pic&&p.loaded&&p.imgSeen&&p.src===PLAN_PIC&&!p.broken.length,p);
    // the same story once the profile is saved: Home's own rule (questToday) agrees with the card
    await next(page);await page.waitForURL(u=>u.pathname==='/subscribe.html');
    await page.goto(base+'/__day1.html');
-   const q=await page.evaluate(()=>{const t=Sona.questToday();return {kind:t.kind,state:t.state,day:t.day,id:t.story&&t.story.id};});
-   ok('…and once the profile is saved, Home\'s card is that very story, Day 1, open',q.kind==='story'&&q.state==='open'&&q.day===1&&q.id===id,q);
+   const q=await page.evaluate(()=>{const t=Sona.questToday();return {kind:t.kind,state:t.state,day:t.day,id:t.story&&t.story.id,title:t.story&&t.story.title};});
+   ok('…and once the profile is saved, Home\'s card is that very story, Day 1, open, under the title the card named',q.kind==='story'&&q.state==='open'&&q.day===1&&q.id===id&&q.title===DAY1[id],q);
    clean('plan card: '+label,errors);
   }finally{await context.close();}
  }
- // a picture that has already failed when the screen is drawn (here the
- // lighthouse's, answered 404) is left out: the card is its words, never a
- // broken image
- {const {context,page,errors}=await fresh({webSales:true,routes:[['**/assets/crafted/home-lighthouse.webp',r=>r.fulfill({status:404,body:''})]]});try{
+ // a picture that has already failed when the screen is drawn (Fruit
+ // Slice's, answered 404) is left out: the card is its words, never a broken
+ // image
+ {const {context,page,errors}=await fresh({webSales:true,routes:[['**/assets/crafted/home-fruit.webp',r=>r.fulfill({status:404,body:''})]]});try{
   await setupWalk(page,'ready',{name:'Mia',age:'8',sounds:['K']});await page.waitForTimeout(150);
   const p=await planShown(page);
-  ok('a Day 1 picture that failed before the screen showed steps aside: the card is its words alone (The Lighthouse Sneeze), with no broken image and no empty box',p.shown&&p.story==='lighthouse'&&p.title===DAY1.lighthouse[0]&&p.line===DAY1.lighthouse[1]&&!p.pic&&!p.broken.length&&p.more==='A new story every day.',p);
+  ok('a Day 1 picture that failed before the screen showed steps aside: the card is its words alone (Fruit Slice, then The Lighthouse Sneeze), with no broken image and no empty box',p.shown&&p.story==='lighthouse'&&p.title===PLAN_TITLE&&p.line==='Fruit Slice first, then '+DAY1.lighthouse+'.'&&!p.pic&&!p.broken.length&&p.more==='A new story every day.',p);
   clean('plan card, a picture that failed first',errors);
  }finally{await context.close();}}
  // a picture that fails while the screen shows keeps its box, empty: nothing moves under a finger
  {let fail;const late=new Promise(r=>{fail=r;});
-  const {context,page,errors}=await fresh({webSales:true,routes:[['**/assets/crafted/home-lighthouse.webp',async r=>{await late;r.fulfill({status:404,body:''});}]]});try{
+  const {context,page,errors}=await fresh({webSales:true,routes:[['**/assets/crafted/home-fruit.webp',async r=>{await late;r.fulfill({status:404,body:''});}]]});try{
   await setupWalk(page,'ready',{name:'Mia',age:'8',sounds:['K']});await page.waitForTimeout(150);
   const a=await planShown(page);
   fail();await page.waitForFunction(()=>document.getElementById('planImg').classList.contains('gone'),null,{timeout:3000});await page.waitForTimeout(100);
@@ -535,8 +555,8 @@ await scenario('the ready screen with the plan card fits, Continue on screen',as
    const p=await planShown(page),at=vp.width+'×'+vp.height+' ('+sound+(name!=='Mia'?', a 22-letter name':'')+')';
    if(name==='Mia')ok('ready with the plan card fits at '+at+': no scroll, the card and the hedge above the footer, Continue on screen',p.shown&&p.scroll<=1&&p.sideways<=0&&p.card.b<=p.foot.t&&p.hedge.b<=p.foot.t&&p.btn.b<=vp.height&&p.btn.t>=0,p);
    else ok('…and with a 22-letter name at '+at+': at most a short scroll, the hedge above Continue, never sideways',p.shown&&p.scroll<=48&&p.hedge.b<=p.btn.t&&p.sideways<=0,p);
-   if(vp.height<=600)ok('…on a phone 600 px tall the picture steps aside and the words take the card ('+at+')',!p.pic&&p.title.length>0,p);
-   else if(sound==='K')ok('…with its picture ('+at+')',p.pic&&p.loaded,p);
+   if(vp.height<=600)ok('…on a phone 600 px tall the picture steps aside and the words take the card ('+at+')',!p.pic&&p.title===PLAN_TITLE&&p.line.length>0,p);
+   else ok('…with Fruit Slice\'s picture ('+at+')',p.pic&&p.loaded&&p.src===PLAN_PIC,p);
    clean('plan card fit '+at,errors);
   }finally{await context.close();}
  }

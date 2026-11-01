@@ -42,9 +42,6 @@ body[data-setup-screen="reel"] .obfoot #backBtn { background:none; box-shadow:no
 .studio-welcome-art { position:relative; flex:1; min-height:145px; max-height:360px; margin:26px 5px 8px; border:6px solid #ffe09a; border-radius:50% 50% 15px 15px; background:url('/assets/crafted/orchard-game.webp') center 38%/cover; transform:rotate(3deg); overflow:hidden; }
 .studio-welcome-art img { position:absolute; height:78%; width:74%; object-fit:contain; bottom:2%; left:13%; transform:rotate(-3deg); }
 .studio-welcome-art span { position:absolute; top:15%; left:5%; background:#fff8e9; border:1px solid #efd496; border-radius:15px 15px 2px 15px; padding:9px 14px; font:900 12px/1.2 'Nunito',sans-serif; transform:rotate(-6deg); }
-.studio-problem-art { position:relative; height:270px; margin:28px 0 20px; border-radius:45% 45% 20px 20px; background:#ffe4cc; display:grid; place-items:center; }
-.studio-problem-art > img { width:87%; border-radius:18px; transform:rotate(-5deg); box-shadow:0 10px 24px #60432b22; }
-.studio-problem-art > .small-echo { position:absolute; width:85px; right:4px; bottom:-10px; box-shadow:none; transform:rotate(5deg); }
 /* A live, silent comparison per game, in a bounded stage above Continue. */
 body[data-setup-screen="reel"] .ob,body[data-setup-screen="piano"] .ob { overflow:hidden; }
 .ob .step[data-step="reel"].on,.ob .step[data-step="piano"].on { justify-content:flex-start; padding:0; }
@@ -112,7 +109,6 @@ html body[data-setup-screen="name"] .ob #ageLabel { margin-top:30px; margin-bott
  .ob .qh { font-size:28px; }
  .welcome-brand { font-size:34px; }
  .studio-welcome-art { margin-top:18px; }
- .studio-problem-art { height:210px; margin:20px 0 15px; }
  .studio-kicker { margin-bottom:8px; font-size:9px; }
  .ob .step[data-step="reel"] .qh,.ob .step[data-step="piano"] .qh { font-size:27px; margin-bottom:12px; }
  .demo-top { top:7px; left:7px; right:7px; font-size:9px; }
@@ -136,4 +132,4 @@ html body[data-setup-screen="name"] .ob #ageLabel { margin-top:30px; margin-bott
  .obfoot .btn { font-size:15px; min-height:53px; }
  html.ob-tiny body[data-setup-screen="name"] .ob #ageLabel { margin-top:20px; }
 }
-@media(prefers-reduced-motion:reduce) { .studio-welcome-art,.studio-problem-art img,.rachel-photo { transform:none; } }
+@media(prefers-reduced-motion:reduce) { .studio-welcome-art,.rachel-photo { transform:none; } }

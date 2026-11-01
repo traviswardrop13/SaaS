@@ -218,7 +218,7 @@ try {
 
   // ── 2. a parent's setup on speaksona.com, in a browser ──
   await scenario("a parent's setup on speaksona.com", async () => {
-    const w = await world(browser, { stubs: { "/today.html": "<p>Home</p>", "/charge.html": "<p>Practice</p>", "/arcade-feed.html": "<p>Feed</p>" } });
+    const w = await world(browser, { stubs: { "/today.html": "<p>Home</p>", "/charge.html": "<p>Practice</p>" } });
     const { page } = w;
     const calmed = () => page.evaluate(() => document.body.classList.remove("ob-settling"));
     const rest = () => page.evaluate(() => new Promise((r) => setTimeout(r, 300)));
@@ -226,14 +226,12 @@ try {
     await page.waitForFunction(() => window.Sona && document.getElementById("nextBtn"));
     await recording(page);
     await mark(page, 101);                          // the hello: recorded
-    // THE SCREENS THAT SELL (22 Oct 2026) come first: the problem, the games
-    // playing and Rachel, all recorded, none showing the name
-    await next(page);
-    await page.locator('[data-step="problem"].on').waitFor(); await rest();
-    await mark(page, 111);                          // "Speech homework is hard at home.": recorded
+    // THE SCREENS THAT SELL (22 Oct 2026) come first: the two game demos and
+    // Rachel, all recorded, none showing the name (the "problem" slide that
+    // led them went on 31 Oct 2026; its words now head the Fruit Slice demo)
     await next(page);
     await page.locator('[data-step="reel"].on').waitFor(); await rest();
-    await mark(page, 121);                          // Fruit Slice's sound-power demo: recorded
+    await mark(page, 121);                          // Fruit Slice's sound-power demo, "Speech practice. Through play.": recorded
     await next(page);
     await page.locator('[data-step="piano"].on').waitFor(); await rest();
     await mark(page, 126);                          // Piano Tiles' sound-power demo: recorded
@@ -308,7 +306,7 @@ try {
     const rr = w.rr(), text = w.text();
     ok("setup: a recording was sent (full snapshots of the page)", rr.filter((e) => e.type === FULL).length >= 2, rr.length);
     ok("setup: the hello's pointer was recorded (the control)", marked(rr, 101));
-    ok("setup: the problem, both game demos and Rachel's screen were recorded (the controls)", marked(rr, 111) && marked(rr, 121) && marked(rr, 126) && marked(rr, 131), [marked(rr, 111), marked(rr, 121), marked(rr, 126), marked(rr, 131)]);
+    ok("setup: both game demos and Rachel's screen were recorded (the controls)", marked(rr, 121) && marked(rr, 126) && marked(rr, 131), [marked(rr, 121), marked(rr, 126), marked(rr, 131)]);
     ok("setup: the minutes screen's pointer was recorded (the control)", marked(rr, 351));
     ok("setup: nothing on the screen a therapy answer lands on (the sounds)", !marked(rr, 301));
     ok("setup: \"What does <Name> love?\" and \"Games for <Name>.\" were recorded (the controls)", marked(rr, 141) && marked(rr, 151), [marked(rr, 141), marked(rr, 151)]);
@@ -317,7 +315,7 @@ try {
     const allNodes = nodes(rr), byId = (id) => allNodes.filter((n) => n.attributes && n.attributes.id === id);
     const said = (n) => (n.childNodes || []).map((c) => c.textContent || "").join("");
     ok("setup: the name on the screens that sell is recorded as [child], every time (intName, gamesName)", ["intName", "gamesName"].every((id) => byId(id).length > 0 && byId(id).every((n) => said(n) === "[child]")), ["intName", "gamesName"].map((id) => byId(id).map(said)));
-    ok("setup: the screens that sell were recorded with their words (speech through play, both demos, Rachel, what they love, the games)", /Speech practice/.test(text) && /Through play/.test(text) && /Slow the fruit/.test(text) && /Slow the keys/.test(text) && /pediatric speech-language pathologist in her clinical fellowship/.test(text) && /What does/.test(text) && /Games for/.test(text) && /Fruit Slice/.test(text));
+    ok("setup: the screens that sell were recorded with their words (both demos, \"Speech practice. Through play.\" heading Fruit Slice's, Rachel, what they love, the games)", /Speech practice\./.test(text) && /Through play\./.test(text) && /Say the sound/.test(text) && /to slow the keys\./.test(text) && /pediatric speech-language pathologist in her clinical fellowship/.test(text) && /What does/.test(text) && /Games for/.test(text) && /Fruit Slice/.test(text));
     // every incremental event, each pointer position at its own time
     const when = (e) => (e.type === INCR && Array.isArray(e.data.positions)) ? e.data.positions.map((q) => e.timestamp + (q.timeOffset || 0)) : [e.timestamp];
     const between = rr.filter((e) => e.type === INCR && when(e).some((t) => t >= t1 && t <= t2));
@@ -364,7 +362,7 @@ try {
     const before = w.snaps().length;
     await calmed();
     await page.locator("#nextBtn").click();
-    await page.waitForURL(/charge\.html|arcade-feed|today\.html/);
+    await page.waitForURL(/charge\.html/);   // the first game, Fruit Slice's practice page (every age, 31 Oct 2026)
     await page.goBack();
     await page.waitForFunction(() => window.Sona && document.getElementById("nextBtn") && window.posthog && window.posthog.__loaded);
     await mark(page, 171);

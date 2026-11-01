@@ -289,10 +289,19 @@ try {
         !/free|trial|auto-renew|\/mo|\/yr/i.test(r.life.name + " " + r.life.sub + " " + r.life.amt + " " + r.life.tag + " " + r.life.billed), r.life);
       ok(tag + "a radio group with Lifetime picked when the screen opens, Monthly not",
         r.group === "radiogroup" && r.label === "Choose a plan" && r.life.role === "radio" && r.month.role === "radio" && r.life.checked === "true" && r.month.checked === "false" && r.life.tab === 0 && r.month.tab === -1, r);
-      ok(tag + "the card state, the title, the check line, the small print, the button and the header line are the one payment's, from the store's price (\"Get Sona Premium — $59.99\")",
+      ok(tag + "the card state, the title, the check line, the small print, the button and the header line are the one payment's, from the store's price (the button \"Start practicing!\")",
         s.state === "paid" && s.title === flat(w.l.title) && s.check === "One payment · No subscription" && s.check === flat(w.l.check) && s.note === flat(w.l.note) &&
-        s.note === "One payment of $59.99. No subscription." && s.button === "Get Sona Premium — $59.99" && s.button === w.l.button && s.act === "buy" && s.buttons === 1 &&
+        s.note === "One payment of $59.99. No subscription." && s.button === "Start practicing!" && s.button === w.l.button && s.act === "buy" && s.buttons === 1 &&
         s.line === fv + w.l.header && s.noteAbove === false, [s.state, s.title, s.check, s.note, s.button, s.line]);
+      // the button names no price since 31 Oct 2026 (Travis: "change paywall
+      // button to 'Start practicing!' for the lifetime option too"), so the
+      // price a parent pays today must be painted where they read it: on the
+      // picked row, over "Billed today", and in the small print right under
+      // the button
+      const under = await page.evaluate(() => { const b = document.getElementById("iapBuy").getBoundingClientRect(), n = document.getElementById("iapNote"), r = n.getBoundingClientRect(), cs = getComputedStyle(n);
+        return { shown: cs.display !== "none" && cs.visibility !== "hidden" && r.height > 0, below: r.top >= b.bottom - 0.5, text: n.innerText.replace(/\s+/g, " ").trim() }; });
+      ok(tag + "…the button names no figure, so the store's price is on the picked row over \"Billed today\", and again in the small print painted right under the button",
+        !/\$|\d/.test(s.button) && r.life.amt === "$59.99" && r.life.billed === "Billed today" && under.shown && under.below && under.text === "One payment of $59.99. No subscription.", [s.button, r.life.amt, under]);
       ok(tag + "…and nothing under the rows says free, a trial, auto-renews, Best value, lifetime or \"No payment today\"",
         !BAD_LIFE.test([s.title, s.check, s.note, s.button, s.line.slice(fv.length), s.msg].join(" ")) && !/no payment today/i.test(s.check + " " + s.note + " " + s.button), [s.title, s.check, s.note, s.button, s.line]);
       ok(tag + "nothing on the screen is about a year, every figure is the store's, and no saving or ratio is claimed",
@@ -503,7 +512,7 @@ try {
     await page.waitForFunction(() => !document.getElementById("iapYear").hidden);
     r = await rows(); s = await snap();
     ok("a yearly row that arrives late while the one payment is picked: the one payment stays picked, its button unchanged",
-      !!r.year && r.life.checked === "true" && r.year.checked === "false" && s.button === "Get Sona Premium — $59.99", [r, s.button]);
+      !!r.year && r.life.checked === "true" && r.year.checked === "false" && s.button === "Start practicing!", [r, s.button]);
 
     // not sure of the free days: both rows say "for new subscribers", and Yearly picked puts its own note under the rows
     await load(...at(DOORS[1], yr({ elig: "missing" }))); await until("free");

@@ -109,7 +109,7 @@
     <!-- SETUP, FROM SCRATCH (Travis, 22 Oct 2026: "I want to do a completely
          new onboarding ... We want to sell the product in the onboarding ...
          simplified, some of the slides have too many words"). A family's
-         first setup: the hello, the problem, two silent game previews,
+         first setup: the hello, two silent game previews,
          Rachel on her own, the child's name and age, what
          they love, the games they will love, "Is <Name> in speech therapy?",
          the sounds, how long each day, the weekly report email, "<Name>'s
@@ -127,17 +127,14 @@
       <div class="studio-welcome-art" aria-hidden="true"><img src="/assets/crafted/echo-welcome.webp" alt="" /><span>Hi, I’m Echo!</span></div>
     </div>
 
-    <!-- One message, one picture; this screen stores no answer. -->
-    <div class="step sell" data-step="problem">
-      <h1 class="qh" id="problemTitle" tabindex="-1">Speech practice.<br>Through play.</h1>
-      <div class="studio-problem-art" aria-hidden="true"><img src="/assets/crafted/home-fruit.webp" alt="" /><img class="small-echo" src="/assets/crafted/echo-welcome.webp" alt="" /></div>
-    </div>
-
     <!-- Separate live, silent previews of the existing speech power. The
-         parent compares speeds; neither preview listens or scores practice. -->
+         parent compares speeds; neither preview listens or scores practice.
+         (Travis, 31 Oct 2026: the "Speech practice. Through play." slide
+         went, and its words now head the Fruit Slice preview; the Piano
+         Tiles one says "Say the sound to slow the keys.") -->
     <div class="step sell" data-step="reel">
       <p class="studio-kicker">See speech help</p>
-      <h1 class="qh" id="reelTitle" tabindex="-1">Practice your sound.<br>Slow the fruit.</h1>
+      <h1 class="qh" id="reelTitle" tabindex="-1">Speech practice.<br>Through play.</h1>
       <div class="demo-scene fruit-scene" id="fruitDemoScene">
         <canvas class="demo-canvas" role="img" aria-label="Fruit launches upward and is sliced."></canvas>
         <div class="demo-top"><span>Fruit Slice</span><span class="demo-speed">Normal speed</span></div>
@@ -148,7 +145,7 @@
     </div>
     <div class="step sell" data-step="piano">
       <p class="studio-kicker">See speech help</p>
-      <h1 class="qh" id="pianoTitle" tabindex="-1">Practice your sound.<br>Slow the keys.</h1>
+      <h1 class="qh" id="pianoTitle" tabindex="-1">Say the sound<br>to slow the keys.</h1>
       <div class="demo-scene piano-scene" id="pianoDemoScene">
         <canvas class="demo-canvas" role="img" aria-label="Notes fall toward the keyboard and are tapped."></canvas>
         <div class="demo-top"><span>Piano Tiles</span><span class="demo-speed">Normal speed</span></div>
@@ -329,18 +326,20 @@
       <div class="ready-echo" aria-hidden="true"><i class="spark spark-a"></i><i class="spark spark-b"></i><i class="spark spark-c"></i><img src="/assets/crafted/echo-cheer.webp" alt="" /></div>
       <h1 class="qh" id="readyTitle" tabindex="-1"></h1>
       <ul class="ready-chips" id="readyChips" aria-label="What you told us"></ul>
-      <!-- THE PLAN CARD (Travis, 31 Oct 2026: "build the plan moment and
-           straight into day 1"): the story this child meets as Day 1, read
-           from sona.js (Sona.day1For, the rule Home's card uses once the
-           profile is saved: the talking story in the first of the child's
-           sounds that has one, else the lighthouse), its Home picture, a
-           "Day 1" pill, its title and its Home line, and one line under it.
-           A parent's first setup only, and only where this child will be
-           shown a story (Sona.storyShown: a phone that cannot buy, without
-           Premium, shows the game of the day instead, so it would be a
-           promise nobody keeps). No button, no link: a statement. A picture
-           that fails to load is never a broken image: it steps aside. The
-           words are Travis's and Rachel's to change. -->
+      <!-- THE PLAN CARD (31 Oct 2026). Day 1 is a game, then a book
+           (Travis: "day one, let's just say is to play a game and to read a
+           book ... I want kids to go straight into a game"): Fruit Slice's
+           Home picture, a "Day 1" pill, "Play a game, then read a book." and
+           which: "Fruit Slice first, then <today's story>." (Sona.day1For,
+           the rule Home's card uses once the profile is saved: the talking
+           story in the first of the child's sounds that has one, else the
+           lighthouse), or "then a book." where this child is shown no story
+           (Sona.storyShown: a phone that cannot buy, without Premium, opens
+           the free book instead). "A new story every day." under it only
+           where a story is shown. A parent's first setup only. No button, no
+           link: a statement. A picture that fails to load is never a broken
+           image: it steps aside. The words are Travis's and Rachel's to
+           change. -->
       <div class="plan-card" id="planCard" hidden>
         <span class="plan-pic" id="planPic" aria-hidden="true"><img id="planImg" alt="" width="768" height="432" decoding="async" /></span>
         <span class="plan-words"><span class="plan-day">Day 1</span><span class="plan-title" id="planTitle"></span><span class="plan-line" id="planLine"></span></span>
@@ -368,11 +367,13 @@
       <button type="button" class="remind-no" id="remindNo">Not now</button>
     </div>
 
-    <!-- The permission belongs to the grown-up's tap, before the handoff. -->
+    <!-- The permission belongs to the grown-up's tap, before the handoff.
+         No grown-ups line here since 31 Oct 2026 (Travis: "let's get rid of
+         the grown-ups audio is never uploaded ... Just get rid of that"):
+         the promise stays on every other mic ask, in the games and books. -->
     <div class="step" data-step="mic">
       <div class="mic-echo" aria-hidden="true"><img src="/assets/crafted/echo-listen.webp" alt="" /></div>
       <div class="qh" id="micTitle">Let Echo hear <span class="ph-name" id="micName">your child</span></div>
-      <p class="muted" id="micPromise"></p>
       <p id="micStatus" role="status" aria-live="polite"></p>
       <button type="button" class="skip" id="micNotNow">Not now</button>
     </div>
@@ -663,12 +664,12 @@
     // retired draft choice and an existing family keep their own goal.
     if(!p.onboarded&&!SECOND&&!ASKED&&draft.role!=="slp"&&!restoredMinutes)draft.minutes="5";
     var ORDER_PARENT=[];
-    // THE SCREENS THAT SELL (19 Oct 2026; rebuilt 22 Oct): the problem, the
-    // games playing, Rachel, then (once the name is in) what the child loves
+    // THE SCREENS THAT SELL (19 Oct 2026; rebuilt 22 Oct; the problem slide
+    // went on 31 Oct): the games playing, Rachel, then (once the name is in) what the child loves
     // and the games they will love. Only for a family not set up yet: a child
     // already set up walking setup again (Back from the first game) is not
     // sold to again.
-    var SELL_FIRST=["problem","reel","piano","rachel"],SELL_AFTER=["interests","games"];
+    var SELL_FIRST=["reel","piano","rachel"],SELL_AFTER=["interests","games"];
     // THE REMINDER SCREEN (22 Oct 2026) follows the ready screen only where
     // the iPhone can set a reminder, iOS has never been asked, and the price
     // follows (remindMay: what the page knows at once, and what the order is
@@ -799,7 +800,6 @@
     var bubble = document.getElementById("bubble"), leo = document.getElementById("leo");
     var nextBtn = document.getElementById("nextBtn"), backBtn = document.getElementById("backBtn");
     var micBusy=false, micGeneration=0, finished=false, asking=false;
-    document.getElementById("micPromise").textContent=Sona.MIC_PROMISE||"";
     // asking: an answer from outside the page is awaited (iOS's Allow box,
     // or the store's word before the reminder screen)
     function updateNext(){nextBtn.disabled=micBusy||leaving||asking||(ORDER[idx]==="sounds"&&selSounds.size===0);backBtn.disabled=micBusy||leaving||asking;}
@@ -1031,7 +1031,7 @@
     // One anonymous count per screen REACHED, once per page load. The key
     // comes from this fixed list and nothing else is passed: there is no
     // parameter an answer, a name or an age could ride in.
-    var STEP_KEYS={welcome:1,problem:1,reel:1,piano:1,rachel:1,name:1,interests:1,games:1,therapy:1,sounds:1,minutes:1,updates:1,ready:1,remind:1,mic:1,handoff:1,slp:1,email:1};
+    var STEP_KEYS={welcome:1,reel:1,piano:1,rachel:1,name:1,interests:1,games:1,therapy:1,sounds:1,minutes:1,updates:1,ready:1,remind:1,mic:1,handoff:1,slp:1,email:1};
     function stepSeen(key){if(!STEP_KEYS[key]||seenSteps[key])return;seenSteps[key]=1;try{if(window.SonaAnalytics)SonaAnalytics.track("setup step",{step:key});}catch(e){}}
     // The two one-tap questions. An answer (or Skip, which holds "") goes on
     // at once and writes the draft, nothing else: never the mode, the path
@@ -1065,12 +1065,17 @@
     // The sounds the profile will hold (saveSetup writes exactly these):
     // the picks in the order they were picked, or every sound, easiest first.
     function savedSounds(){return (draft.mode==="play"&&Sona.PLAY_ORDER)?Sona.PLAY_ORDER.slice():Array.from(selSounds);}
-    // THE PLAN CARD: Day 1's story for the sounds about to be saved, where
-    // this child will be shown one (see the markup). null: no card.
+    // THE PLAN CARD: Day 1 is Fruit Slice, then a book (the story Home will
+    // show for the sounds about to be saved, where this child is shown one;
+    // see the markup). null: no card.
+    var DAY1_PIC="/assets/crafted/home-fruit.webp";
     function planStory(){
       try{
-        if(!PLAN_MOMENT||ORDER!==ORDER_PARENT||draft.role==="slp"||!Sona.day1For||!(Sona.storyShown&&Sona.storyShown()))return null;
-        return Sona.day1For(savedSounds());
+        if(!PLAN_MOMENT||ORDER!==ORDER_PARENT||draft.role==="slp")return null;
+        var st=null;
+        try{if(Sona.day1For&&Sona.storyShown&&Sona.storyShown())st=Sona.day1For(savedSounds());}catch(e){st=null;}
+        return {id:st?st.id:"",pic:DAY1_PIC,title:"Play a game, then read a book.",
+          line:st&&st.title?"Fruit Slice first, then "+st.title+".":"Fruit Slice first, then a book.",story:!!(st&&st.title)};
       }catch(e){return null;}
     }
     // Its picture is asked for as soon as the sounds are known (the screens
@@ -1078,8 +1083,7 @@
     // before the ready screen is drawn: the card is laid out once. One that
     // has failed by then is left out (the card is its words alone); one that
     // fails while the screen shows keeps its box, empty, so nothing moves
-    // under a finger. Never a broken image. (No talking story has a Home
-    // picture yet, 31 Oct 2026: those cards are words alone.)
+    // under a finger. Never a broken image.
     var planCard=document.getElementById("planCard"),planPic=document.getElementById("planPic"),planImg=document.getElementById("planImg"),planSrc="",planState="";
     // (a picture that failed carries .gone, setup's mark for that, as the
     // reel's stills did: drawn empty in its box, never as a broken image)
@@ -1096,12 +1100,12 @@
     }
     function paintPlan(){
       var d=planStory(),more=document.getElementById("planMore");
-      planCard.hidden=more.hidden=!d;
+      planCard.hidden=!d;more.hidden=!(d&&d.story);
       if(!d)return;
       planPrep();
       document.getElementById("planTitle").textContent=d.title;
       document.getElementById("planLine").textContent=d.line;
-      planCard.dataset.story=d.id;
+      planCard.dataset.story=d.id;planCard.dataset.game="slice";
       planPic.hidden=planState==="gone";
     }
     // The ready screen, built ONLY from what the parent gave us: textContent
@@ -1136,7 +1140,7 @@
     // with no purchase plugin) only the games this phone opens are, since
     // nothing there can open the rest. Premium, a trial or a covered caseload
     // open every game either way (Sona.gameAccess).
-    var SELL={problem:1,reel:1,piano:1,rachel:1,games:1},sellPainted=null;
+    var SELL={reel:1,piano:1,rachel:1,games:1},sellPainted=null;
     function SELL_CAP(both,id){return both?2:3;}
     function sellStyle(){var age=Number(draft.childAge);return age>=2&&age<5&&Math.floor(age)===age?"simple":age>=5?"arcade":"";}
     function sellsAll(){try{return !!(draft.role!=="slp"&&Sona.trialFirst&&Sona.trialFirst());}catch(e){return false;}}
@@ -1609,20 +1613,8 @@
     // still "leaving": load it again so it decides from what is stored.
     window.addEventListener("pageshow",function(e){if(e.persisted&&saved&&!finished)location.reload();});
 
-    // Today's story, open to this child right now: Home's card would be a
-    // story (Sona.questToday: kind "story", state "open") AND it opens
-    // (Sona.storyOpen: Premium, a trial or Sona free; never one shown
-    // locked). Read at the hand-off's last tap, from stored state only, so a
-    // trial that started on the price screen counts. Read only.
-    function storyNow(){
-      try{
-        if(!Sona.questToday||!Sona.storyOpen||!Sona.storyOpen())return false;
-        var q=Sona.questToday();
-        return !!(q&&q.kind==="story"&&q.state==="open");
-      }catch(e){return false;}
-    }
-    // THE HAND-OFF: "Hand the phone to <Name>!" and the tap that opens Day
-    // 1's story, Home or the first game. A parent reaches it from the
+    // THE HAND-OFF: "Hand the phone to <Name>!" and the tap that opens the
+    // first game (Fruit Slice), or Home for a clinician. A parent reaches it from the
     // microphone step; the browser clinician after the build beat. It asks
     // for nothing: the email came
     // before the price (the "updates" step, 13 Oct 2026), so a family back
@@ -1648,8 +1640,8 @@
           // Close any keyboard first: the app resizes its web view for the
           // keyboard, and the first game must open at full height.
           if(document.activeElement&&document.activeElement.blur)document.activeElement.blur();
-          // Straight into the first game (Travis, 27 Sep 2026): Feed Echo for
-          // ages 3-4, Fruit Slice (its practice page first) from 5. A
+          // Straight into the first game (Travis, 27 Sep 2026; Fruit Slice,
+          // its practice page first, for every age since 31 Oct 2026). A
           // clinician setting up their own phone still lands on Home.
           // THE PRICE CAME BEFORE THIS SCREEN (Travis, 3 Oct 2026: "lets add
           // the paywall before they try anything in the app"; since 5 Oct it
@@ -1660,24 +1652,19 @@
           // nothing more: no family is ever handed a locked game. A purchase
           // made from there lands on Home, because the marker is gone.
           try{if(Sona.setupAfterClear)Sona.setupAfterClear();}catch(e){}
-          // A family back from the price (AFTER: free days started, or
-          // Premium found) lands on Home and picks a game themselves
-          // (Travis, 17 Oct 2026: "once I start a trial, I don't want it to
-          // go jump straight into a game"). A phone with nothing to sell
-          // still opens the first game.
-          // STRAIGHT INTO DAY 1 (Travis, 31 Oct 2026: "build the plan moment
-          // and straight into day 1"): whenever today's story is open to this
-          // child right now (storyNow: the story the ready screen's plan card
-          // named, on a first setup), "Let's play!" opens it, the story
-          // player (/adventure.html; in the iPhone app the story starts at
-          // once), in place of Home or the first game. That replaces the 17
-          // Oct "go to the homepage" for a family whose free days just
-          // started. Otherwise everything is as it was. The first game's mark
-          // is written exactly as before; a clinician still ends on Home.
+          // STRAIGHT INTO A GAME (Travis, 31 Oct 2026: "when somebody
+          // starts, I want them to go straight into either piano tiles or
+          // fruit slice. Because that's what is advertised", then "Fruit
+          // Slice for everyone"): "Let's play!" opens the first game, Fruit
+          // Slice (its practice page first, Sona.firstGameStart), for every
+          // age, a family back from the price (AFTER) included. That replaces
+          // the 17 Oct "go to the homepage" after a purchase and the same
+          // morning's "straight into Day 1": today's story waits on Home,
+          // the "read a book" half of the ready screen's Day 1. A clinician
+          // still ends on Home.
           var wall=false;try{wall=draft.role!=="slp"&&!!(Sona.trialFirst&&Sona.trialFirst());}catch(e){}
           if(wall){try{sessionStorage.setItem("sona.gate.v1",String(Date.now()));}catch(e){} location.href="/subscribe.html?setup=1";return;}
-          var first="/today.html";try{if(draft.role!=="slp"&&!AFTER&&Sona.firstGameStart)first=Sona.firstGameStart();}catch(e){}
-          if(draft.role!=="slp"&&storyNow())first="/adventure.html";
+          var first="/today.html";try{if(draft.role!=="slp"&&Sona.firstGameStart)first=Sona.firstGameStart();}catch(e){}
           location.href=first;
         };
         window.scrollTo(0,0);try{document.getElementById("handoffTitle").focus({preventScroll:true});}catch(e){}

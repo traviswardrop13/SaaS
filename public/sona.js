@@ -6069,7 +6069,10 @@
   // end of the first full practice run (charge.html's "Show a grown-up"), and
   // a tap on a locked game.
   const FIRSTKEY = "sona.firstgame.v1";
-  function firstGameKey() { return playStyle() === "simple" ? "feed" : "slice"; }
+  // Fruit Slice for every age since 31 Oct 2026 (Travis: "go straight into
+  // either piano tiles or fruit slice. Because that's what is advertised",
+  // then "Fruit Slice for everyone"); Feed Echo was the 3-4s' first game.
+  function firstGameKey() { return "slice"; }
   function firstGameStart() {
     const key = firstGameKey();
     try { sessionStorage.setItem(FIRSTKEY, key); } catch (e) {}
@@ -9287,7 +9290,11 @@
       w.price = "One payment of " + P + ".";
       w.check = "One payment \u00b7 No subscription";
       w.note = "One payment of " + P + ". No subscription."; w.noteLast = true;   // small print, under the button
-      w.button = "Get Sona Premium — " + P; w.act = "buy";
+      // The button is the trial's own words (Travis, 31 Oct 2026: "change
+      // paywall button to 'Start practicing!' for the lifetime option too
+      // ... not get sona prem"): the price is on the row, "Billed today"
+      // under it, and the small print right under the button names it again.
+      w.button = "Start practicing!"; w.act = "buy";
       w.header = "Sona Premium: one payment of " + P + ".";
       return w;
     }

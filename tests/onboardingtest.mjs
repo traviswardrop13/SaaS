@@ -2,15 +2,18 @@
 // silent fakes; page navigation, profile/draft storage, and controls are real.
 //
 // SETUP, FROM SCRATCH (Travis, 22 Oct 2026: "a completely new onboarding ...
-// We want to sell the product in the onboarding"): the hello → "Speech
-// homework is hard at home." → the games playing ("Practice through
-// play.") → Rachel on her own → name and age → "What does <Name> love?" →
-// "Games <Name> will love" → "Is <Name> in speech therapy?" → the sounds →
-// "How long each day?" → the optional email (before the price since 13 Oct
-// 2026) → "<Name>'s practice is ready!" → (a reminder ask, where the iPhone
-// can set one; the price, only where Sona can sell) → microphone → hand-off →
-// first game. The profile is saved as the parent leaves the ready screen (or
-// the reminder after it). This suite's own harness is a phone that cannot buy,
+// We want to sell the product in the onboarding"): the hello → the Fruit
+// Slice demo ("Speech practice. Through play.") → the Piano Tiles demo ("Say
+// the sound to slow the keys.") → Rachel on her own → name and age → "What
+// does <Name> love?" → "Games <Name> will love" → "Is <Name> in speech
+// therapy?" → the sounds → "How long each day?" → the optional email (before
+// the price since 13 Oct 2026) → "<Name>'s practice is ready!" → (a reminder
+// ask, where the iPhone can set one; the price, only where Sona can sell) →
+// microphone → hand-off → the first game, Fruit Slice, for every age (31 Oct
+// 2026: the "problem" slide that came after the hello is gone, and so is Feed
+// Echo as the 3-4s' first game). The profile is saved as the parent leaves
+// the ready screen (or the reminder after it). This suite's own harness is a
+// phone that cannot buy,
 // so it never sees a price; the last scenarios borrow the shared fake phone
 // (tests/_phone.mjs: an App Store and a microphone in one) to hold the page to
 // what the price screen and the whole-flow suite rely on, with
@@ -57,9 +60,10 @@ async function stubs(context){
   await context.route('**/today.html',route=>route.fulfill({status:200,contentType:'text/html',body:'<p>Home destination</p>'}));
   await context.route('**/arcade-*.html',route=>route.fulfill({status:200,contentType:'text/html',body:'<p>Game destination</p>'}));
   await context.route('**/subscribe.html**',route=>route.fulfill({status:200,contentType:'text/html',body:'<p>Price destination</p>'}));
-  // the story player (STRAIGHT INTO DAY 1, 31 Oct 2026: the hand-off opens
-  // today's story whenever it is open to the child): a page that loads
-  // sona.js and nothing else, so a suite can still read the phone there
+  // the story player: since the afternoon of 31 Oct 2026 the hand-off never
+  // opens it (the first game, Fruit Slice, comes first; the story waits on
+  // Home). The stub stays, a page that loads sona.js and nothing else, so a
+  // walk that wrongly went there fails on its address, not on a missing page
   await context.route('**/adventure.html**',route=>route.fulfill({status:200,contentType:'text/html',body:'<!doctype html><title>Story</title><p>Story destination</p><script src="/sona.js"></script>'}));
 }
 async function fresh(config={}){
@@ -98,9 +102,10 @@ async function toName(page){await setupWalk(page,'name');await page.locator('[da
 // beat ends: every helper that can be that tap waits it out (beatOver).
 async function answer(page,key,val='skip'){await page.locator('[data-step="'+key+'"].on').waitFor();await calm(page);await page.locator(val==='skip'?'#'+key+'Skip':'[data-step="'+key+'"] .ask-pick[data-val="'+val+'"]').click();await beatOver(page);}
 const answerTherapy=(page,val)=>answer(page,'therapy',val),answerMinutes=(page,val)=>answer(page,'minutes',val);
-// THE SCREENS THAT SELL (19 Oct 2026; rebuilt 22 Oct): the problem, the reel
-// and Rachel before the name, what the child loves and their games after it.
-const SELL=['problem','reel','piano','rachel','interests','games'];
+// THE SCREENS THAT SELL (19 Oct 2026; rebuilt 22 Oct; the problem slide went
+// on 31 Oct): the two game demos and Rachel before the name, what the child
+// loves and their games after it.
+const SELL=['reel','piano','rachel','interests','games'];
 // hello → … → name and age → what they love → their games → the therapy
 // question (a tap, or Skip) → the sound picker. A second child and a
 // clinician in the app are not asked, and go straight there.
@@ -128,13 +133,16 @@ function clean(name,errors){ok(name+': no runtime errors',errors.length===0,erro
 function pairPosts(requests){return requests.filter(r=>new URL(r.url).pathname==='/api/pair'&&r.method==='POST');}
 const priced=requests=>requests.filter(r=>new URL(r.url).pathname==='/subscribe.html').map(r=>r.url);
 const HEDGE='Sona practices — it doesn\'t test or diagnose.';
+// THE PLAN CARD on a parent's first setup (31 Oct 2026: Day 1 is a game, then
+// a book), as a parent reads it, where this child is shown no story
+const PLAN_BOOK='Day 1 Play a game, then read a book. Fruit Slice first, then a book.';
 // [id, the button's words, the sentence the ready screen shows for it]
 // Yes, No and Not yet since 16 Oct 2026 (Travis: "add a no so there's yes, no, and then not yet")
 const THERAPY=[['t_yes','Yes','Sona is practice for the days between speech visits.'],['t_none','No','Sona is practice you can do at home.'],['t_no','Not yet','Sona is practice you can do at home.']];
 // [value, the button's words, the chip the ready screen shows for it]: a real setting, the daily goal
 const MINUTES=[['3','3 minutes','3 min a day'],['5','5 minutes','5 min a day'],['10','10 minutes','10 min a day']];
 // the first family's whole walk, on a phone with no reminder to offer
-const FIRST_WALK='welcome,problem,reel,piano,rachel,name,interests,games,therapy,sounds,minutes,updates,ready,mic';
+const FIRST_WALK='welcome,reel,piano,rachel,name,interests,games,therapy,sounds,minutes,updates,ready,mic';
 // what the ready screen shows, as a parent reads it
 const readyShown=page=>page.evaluate(()=>{const st=document.querySelector('[data-step="ready"]'),painted=el=>!!el&&getComputedStyle(el).display!=='none'&&el.getBoundingClientRect().height>0;return {on:st.classList.contains('on'),title:document.getElementById('readyTitle').textContent,chips:[...document.querySelectorAll('#readyChips li')].map(l=>l.textContent),lines:painted(document.getElementById('readyLines'))?[...document.querySelectorAll('#readyLines li')].map(l=>l.textContent):[],text:st.innerText.replace(/\s+/g,' ').trim(),asks:st.querySelectorAll('input,select,textarea,button,a,[role="button"]').length,cta:document.getElementById('nextBtn').textContent.trim(),enabled:!document.getElementById('nextBtn').disabled,seg:document.getElementById('seg').hidden,mascot:painted(document.querySelector('.ob .mascot')),build:!!document.getElementById('obBuild'),rachel:/Rachel/.test(st.textContent)||!!st.querySelector('img[src*="rachel"]')};});
 const progress=page=>page.evaluate(()=>{const s=document.getElementById('seg');return {groups:s.children.length,lit:s.querySelectorAll('i.on').length,hidden:s.hidden,now:s.getAttribute('aria-valuenow'),max:s.getAttribute('aria-valuemax'),role:s.getAttribute('role')};});
@@ -147,7 +155,7 @@ await scenario('sound selection and private paced handoff',async()=>{
   ok('the younger age band includes two-year-olds',/2–4/.test(await page.locator('#obAge [data-age="4"]').innerText()));
   // the screens that sell come before the name, each with no progress segment
   {const sold=[];for(let i=0;i<6;i++){const s=await screen(page);sold.push(s);if(s==='name')break;const pr=await progress(page);sold.push(pr.hidden?'no bar':'bar');await next(page);await page.waitForFunction(k=>document.body.dataset.setupScreen!==k,s);}
-  ok('the hello, then the problem, the games playing and Rachel, each with no progress segment, then the child\'s name',JSON.stringify(sold)==='["welcome","no bar","problem","no bar","reel","no bar","piano","no bar","rachel","no bar","name"]',sold);}
+  ok('the hello, then the two game demos and Rachel, each with no progress segment, then the child\'s name (no "problem" slide since 31 Oct 2026)',JSON.stringify(sold)==='["welcome","no bar","reel","no bar","piano","no bar","rachel","no bar","name"]',sold);}
   ok('…the name is the first of the five',(await progress(page)).lit===1&&!(await progress(page)).hidden);
   await page.locator('#obName').fill('Milo');await page.locator('#obAge [data-age="4"]').click();await next(page);
   ok('name and age lead to "What does <Name> love?", the second of the five',await page.locator('[data-step="interests"].on').count()===1&&(await progress(page)).lit===2&&await page.locator('#intName').innerText()==='Milo');
@@ -173,13 +181,18 @@ await scenario('sound selection and private paced handoff',async()=>{
   ok('after the five questions, the optional email step: no progress segment of its own, and the box is not focused',at.screen==='updates'&&at.seg&&at.groups===5&&at.input!=='updEmail',at);}
   await updates(page);await page.locator('[data-step="ready"].on').waitFor();
   // THE READY SCREEN repeats back what the parent picked and nothing else
-  // (both questions were skipped here, so no sentence about Sona is shown).
+  // (both questions were skipped here, so no sentence about Sona is shown),
+  // plus, on a first setup, the plan card: what Day 1 is, a fact about Sona.
   const ready=await readyShown(page);
-  ok('ready shows the name, the age band and the chosen sound, and nothing the parent did not give',ready.on&&ready.title==='Milo\'s practice is ready!'&&JSON.stringify(ready.chips)==='["Ages 2–4","Sound: S"]'&&ready.lines.length===0&&ready.text==='Milo\'s practice is ready! Ages 2–4 Sound: S '+HEDGE,ready);
+  ok('ready shows the name, the age band and the chosen sound, then Day 1\'s card, and nothing the parent did not give',ready.on&&ready.title==='Milo\'s practice is ready!'&&JSON.stringify(ready.chips)==='["Ages 2–4","Sound: S"]'&&ready.lines.length===0&&ready.text==='Milo\'s practice is ready! Ages 2–4 Sound: S '+PLAN_BOOK+' '+HEDGE,ready);
   // (THE PLAN MOMENT, 31 Oct 2026: a first setup reaches this screen through
   // a short build beat, setupscreenstest; it is gone before the screen shows.
-  // This phone cannot buy, so no Day 1 story is shown on it: no plan card.)
-  ok('…the build beat gone before it shows, no plan card on a phone that shows no story, no progress bar, no Echo beside it (he cheers above it) and no Rachel (she has her own screen)',!ready.build&&ready.seg&&!ready.mascot&&!ready.rachel&&await page.evaluate(()=>document.getElementById('planCard').hidden&&document.getElementById('planMore').hidden),ready);
+  // Since that afternoon Day 1 is a game, then a book, and the card shows on
+  // every parent's first setup. This phone cannot buy, so it shows no story:
+  // "then a book.", and no "A new story every day.")
+  const plan=await page.evaluate(()=>({hidden:document.getElementById('planCard').hidden,more:document.getElementById('planMore').hidden,title:document.getElementById('planTitle').textContent,line:document.getElementById('planLine').textContent,src:document.getElementById('planImg').getAttribute('src'),game:document.getElementById('planCard').dataset.game,story:document.getElementById('planCard').dataset.story}));
+  ok('…the plan card even on a phone that shows no story: Fruit Slice\'s picture, "Play a game, then read a book." and "Fruit Slice first, then a book.", with no "A new story every day."',!plan.hidden&&plan.more&&plan.title==='Play a game, then read a book.'&&plan.line==='Fruit Slice first, then a book.'&&plan.src==='/assets/crafted/home-fruit.webp'&&plan.game==='slice'&&plan.story==='',plan);
+  ok('…the build beat gone before it shows, no progress bar, no Echo beside it (he cheers above it) and no Rachel (she has her own screen)',!ready.build&&ready.seg&&!ready.mascot&&!ready.rachel,ready);
   await page.waitForTimeout(1200);
   const waited=await page.evaluate(()=>({screen:document.body.dataset.setupScreen,saved:!!Sona.getProfile().onboarded,complete:__setup.complete,confetti:__setup.confetti,requests:__setup.requests.length}));
   ok('ready waits for the parent: it does not move on or save by itself',waited.screen==='ready'&&!waited.saved&&waited.requests===0,waited);
@@ -188,11 +201,15 @@ await scenario('sound selection and private paced handoff',async()=>{
   const kept=await page.evaluate(()=>({profile:Sona.getProfile(),requests:__setup.requests.length,draft:localStorage.getItem('sona.obdraft.v1'),back:getComputedStyle(document.getElementById('backBtn')).display,seg:document.getElementById('seg').hidden,handoff:document.querySelectorAll('[data-step="achieve"].on').length}));
   ok('Continue on ready saves the choices before any microphone ask',kept.profile.onboarded&&JSON.stringify(kept.profile.focusSounds)==='["S"]'&&kept.profile.childName==='Milo'&&kept.requests===0&&kept.draft===null,kept);
   ok('…and from there the questions are behind them: no Back, no progress bar, on the microphone step',kept.back==='none'&&kept.seg&&kept.handoff===0,kept);
-  // Travis, 2 Oct 2026: "the grown-ups explanation ... is still too long ... just
-  // say audio is never recorded or uploaded". Short, and still true: one try a
-  // day IS saved on the phone for a parent to play back, so never "never recorded".
-  const promise=await page.evaluate(()=>({visible:document.getElementById('micPromise')?.textContent||'',shared:Sona.MIC_PROMISE||'',title:document.querySelector('[data-step="mic"] .qh').innerText}));
-  ok('setup renders the shared accurate microphone promise, in a couple of short lines',!!promise.shared&&promise.visible===promise.shared&&/never uploaded/.test(promise.visible)&&/saved on this phone/.test(promise.visible)&&!/never recorded/i.test(promise.visible)&&promise.visible.split(/\s+/).length<=20,promise.visible);
+  // NO GROWN-UPS LINE ON SETUP'S MICROPHONE STEP (Travis, 31 Oct 2026: "let's
+  // get rid of the grown-ups audio is never uploaded ... Just get rid of
+  // that"). The shared promise stays on every other mic ask (the games, the
+  // books, the practice page), and it is still the true one: one try a day IS
+  // saved on the phone for a parent to play back, so never "never recorded".
+  // Setup's step says nothing about audio at all, so it can say nothing false.
+  const promise=await page.evaluate(()=>({line:!!document.getElementById('micPromise'),text:document.querySelector('[data-step="mic"]').innerText.replace(/\s+/g,' ').trim(),shared:Sona.MIC_PROMISE||'',title:document.querySelector('[data-step="mic"] .qh').innerText}));
+  ok('setup\'s microphone step shows no grown-ups line: no #micPromise, and nothing about audio being uploaded, recorded or saved',!promise.line&&!(promise.shared&&promise.text.includes(promise.shared))&&!/upload|record|saved|stays on|never leaves|private/i.test(promise.text)&&promise.text.split(/\s+/).length<=8,promise.text);
+  ok('…while the shared promise every other mic ask shows is still the accurate one, in a couple of short lines',!!promise.shared&&/never uploaded/.test(promise.shared)&&/saved on this phone/.test(promise.shared)&&!/never recorded/i.test(promise.shared)&&promise.shared.split(/\s+/).length<=20,promise.shared);
   ok('…under "Let Echo hear <Name>"',promise.title==='Let Echo hear Milo',promise.title);
   ok('microphone action is explicit and offers a quiet skip',/Turn on Echo's ears/.test(await page.locator('#nextBtn').innerText())&&await page.locator('#micNotNow').count()===1);
   await notNow(page);await atHandoff(page);
@@ -210,10 +227,13 @@ await scenario('sound selection and private paced handoff',async()=>{
    const fits=await page.evaluate(()=>{const b=document.getElementById('nextBtn').getBoundingClientRect(),h=document.getElementById('handoffTitle').getBoundingClientRect();return b.bottom<=innerHeight&&h.top>=0&&document.documentElement.scrollWidth<=innerWidth;});ok('handoff heading and button fit a small phone',fits);
    ok('young-child setup prepares the Simple play suggestion on Home',result.recommended==='simple',result.recommended);
    ok('the hand-off asks for nothing: no email box and no ×',await page.evaluate(()=>!document.getElementById('achEmail')&&!document.getElementById('achEmailInput')&&!document.getElementById('skipEmail')&&!document.querySelector('[data-step="achieve"] input')));
-   await next(page);await page.waitForURL(url=>['/today.html','/charge.html','/arcade-feed.html'].includes(url.pathname));const u=new URL(page.url());
-   // Travis, 27 Sep 2026: setup goes straight to the first game, Feed Echo for ages 3-4
-   ok('handoff opens the first game for the child\'s age: Feed Echo at 4',u.pathname==='/arcade-feed.html'&&!u.search&&await page.evaluate(()=>sessionStorage.getItem('sona.firstgame.v1')==='feed'));
-   ok('setup creates no run and starts no practice of its own',!requests.some(r=>new URL(r.url).pathname==='/charge.html')&&await page.evaluate(()=>!sessionStorage.getItem('sona.run.v1')));
+   await next(page);await page.waitForURL(url=>['/today.html','/charge.html','/arcade-feed.html','/adventure.html'].includes(url.pathname));const u=new URL(page.url());
+   // Travis, 27 Sep 2026: setup goes straight to the first game; since 31 Oct
+   // 2026 that is Fruit Slice (its practice page first) for every age, a
+   // four-year-old too ("Fruit Slice for everyone"; Feed Echo was the 3-4s')
+   ok('handoff opens the first game, Fruit Slice, at 4 too: its practice page, never Feed Echo, Home or a story',u.pathname==='/charge.html'&&u.search==='?game=arcade-slice.html'&&await page.evaluate(()=>sessionStorage.getItem('sona.firstgame.v1')==='slice'),page.url());
+   // (the one request for the practice page is the hand-off's own navigation)
+   ok('setup creates no run and starts no practice of its own: the practice page is asked for once, by the hand-off\'s tap',requests.filter(r=>new URL(r.url).pathname==='/charge.html').length===1&&await page.evaluate(()=>!sessionStorage.getItem('sona.run.v1')),requests.filter(r=>new URL(r.url).pathname==='/charge.html').map(r=>r.url));
    ok('a skipped email step saves no address and posts nothing',await page.evaluate(()=>!JSON.parse(localStorage.getItem('sona.profile.v1')).email)&&leadPosts(requests).length===0,leadPosts(requests));
    ok('…and the tab\'s "after the price" marker is gone once the game opens',await page.evaluate(()=>sessionStorage.getItem('sona.setupafter.v1')===null));
   }
@@ -231,7 +251,7 @@ await scenario('a hello first; setup is for parents',async()=>{
   const hello=await page.evaluate(()=>({screen:document.body.dataset.setupScreen,text:document.querySelector('[data-step="welcome"]').innerText.replace(/\s+/g,' ').trim(),label:document.querySelector('.studio-brand').getAttribute('aria-label'),cta:document.getElementById('nextBtn').textContent.trim(),footer:getComputedStyle(document.querySelector('.obfoot')).display,seg:document.getElementById('seg').hidden}));
   ok('the very first screen is a hello: Sona\'s name, its line and one button, no question',hello.screen==='welcome'&&/Little sounds\. Big adventures\./.test(hello.text)&&!/\?/.test(hello.text)&&hello.label==='Sona'&&hello.cta==='Get started'&&hello.footer!=='none'&&hello.seg,hello);
   await next(page);
-  ok('"Get started" opens the problem: nobody is asked who is setting Sona up, and no clinician answer is on the page',await page.evaluate(()=>document.body.dataset.setupScreen==='problem'&&!document.querySelector('[data-step="who"]')&&!document.querySelector('.who-pick')&&!/SLP or SLPA/.test(document.body.innerText)));
+  ok('"Get started" opens the Fruit Slice demo (no "problem" slide since 31 Oct 2026): nobody is asked who is setting Sona up, and no clinician answer is on the page',await page.evaluate(()=>document.body.dataset.setupScreen==='reel'&&!document.querySelector('[data-step="problem"]')&&!document.querySelector('[data-step="who"]')&&!document.querySelector('.who-pick')&&!/SLP or SLPA/.test(document.body.innerText)));
   await calm(page);await page.locator('#backBtn').click();
   ok('Back returns to the hello, where there is no Back',await page.locator('[data-step="welcome"].on').count()===1&&await page.locator('#backBtn').isHidden());
   await toName(page);
@@ -258,7 +278,7 @@ await scenario('a hello first; setup is for parents',async()=>{
   ok('…the name leads straight to the sounds',await screen(page)==='sounds');
   await choose(page,'S');await next(page);
   const ready=await readyShown(page);
-  ok('…then the ready screen, with what they picked and no sentence from an answer',ready.on&&ready.title==='Milo\'s practice is ready!'&&JSON.stringify(ready.chips)==='["Ages 5–6","Sounds: R · S"]'&&ready.lines.length===0,ready);
+  ok('…then the ready screen, with what they picked, no sentence from an answer and no Day 1 card (a parent\'s first setup only)',ready.on&&ready.title==='Milo\'s practice is ready!'&&JSON.stringify(ready.chips)==='["Ages 5–6","Sounds: R · S"]'&&ready.lines.length===0&&!/Day 1/.test(ready.text)&&await page.evaluate(()=>document.getElementById('planCard').hidden),ready);
   await notNow(page);await atHandoff(page);
   ok('…finishing as an SLP with no clinician request',await page.evaluate(()=>Sona.getProfile().role==='slp'&&Sona.getProfile().onboarded)&&!requests.some(r=>new URL(r.url).pathname.startsWith('/api/slp/')),requests.map(r=>r.url));
   ok('…with no email box on the hand-off, and nothing kept as a family\'s answers',await page.evaluate(()=>!document.getElementById('achEmail')&&!document.querySelector('[data-step="achieve"] input')&&localStorage.getItem('sona.setupasks.v1')===null));
@@ -395,7 +415,7 @@ await scenario('the ready screen, right before the reminder, the price or the mi
   ok('it asks nothing: Continue is ready and the progress bar is hidden',shown.asks===0&&(await page.locator('#nextBtn').innerText()).trim()==='Continue'&&await page.locator('#nextBtn').isEnabled()&&await page.locator('#seg').isHidden());
   const honest=(await readyShown(page)).text;
   ok('the screen reads as what the parent picked, never as a result: no plan, recommendation, score, norm, price or promise',!/recommend|we think|based on|assess|evaluat|score|result|usually by|\bplan\b|\$|\bfree\b/i.test(honest)&&(honest.match(/diagnos/gi)||[]).length===1,honest);
-  ok('…and it is exactly the name, the age group, the sound, the minutes, the one sentence and the hedge',honest==='Milo\'s practice is ready! Ages 2–4 Sounds: R · S 3 min a day '+THERAPY[2][2]+' '+HEDGE,honest);
+  ok('…and it is exactly the name, the age group, the sound, the minutes, Day 1\'s card, the one sentence and the hedge',honest==='Milo\'s practice is ready! Ages 2–4 Sounds: R · S 3 min a day '+PLAN_BOOK+' '+THERAPY[2][2]+' '+HEDGE,honest);
   await calm(page);await page.locator('#backBtn').click();ok('Back from ready returns to the email step',await page.locator('[data-step="updates"].on').count()===1);
   await calm(page);await page.locator('#backBtn').click();ok('…and Back again to the minutes question, with its answer held',await page.locator('[data-step="minutes"].on').count()===1&&await page.locator('#seg').isVisible()&&await page.locator('#obMinutes [aria-pressed="true"]').getAttribute('data-val')==='3');
   await next(page);await updates(page);await page.locator('[data-step="ready"].on').waitFor();
@@ -410,7 +430,7 @@ await scenario('the ready screen, right before the reminder, the price or the mi
   await page.evaluate(()=>{window.__screens=[document.body.dataset.setupScreen];new MutationObserver(()=>__screens.push(document.body.dataset.setupScreen)).observe(document.body,{attributes:true,attributeFilter:['data-setup-screen']});});
   await page.locator('#obName').fill('Milo');await page.locator('#obAge [data-age="4"]').click();await next(page);await choose(page,'S');await next(page);
   const screens=await page.evaluate(()=>__screens);
-  ok('the clinician setup never shows ready, Rachel\'s screen, a screen that sells, or a family question, forward or back',screens.includes('name')&&!screens.some(k=>['ready','therapy','minutes','rachel','problem','reel','piano','interests','games','remind'].includes(k))&&await page.locator('[data-step="slp"].on').count()===1&&await page.locator('[data-step="ready"]').isHidden(),screens);
+  ok('the clinician setup never shows ready, Rachel\'s screen, a screen that sells, or a family question, forward or back',screens.includes('name')&&!screens.some(k=>['ready','therapy','minutes','rachel','reel','piano','interests','games','remind'].includes(k))&&await page.locator('[data-step="slp"].on').count()===1&&await page.locator('[data-step="ready"]').isHidden(),screens);
   ok('…and keeps its four progress groups',await page.locator('#seg i').count()===4);
   clean('clinician skips ready',errors);
  }finally{await context.close();}}
@@ -423,7 +443,7 @@ await scenario('the ready screen, right before the reminder, the price or the mi
   ok('…the hello leads to the name, and the name straight to the sounds',await screen(page)==='sounds'&&(await progress(page)).lit===2);
   await choose(page,'S');await next(page);
   const ready=await readyShown(page);
-  ok('…then ready, with this child\'s name and picks and no sentence from an answer',ready.on&&ready.title==='Rosie\'s practice is ready!'&&JSON.stringify(ready.chips)==='["Ages 2–4","Sounds: R · S"]'&&ready.lines.length===0,ready);
+  ok('…then ready, with this child\'s name and picks, no sentence from an answer and no Day 1 card (a parent\'s first setup only)',ready.on&&ready.title==='Rosie\'s practice is ready!'&&JSON.stringify(ready.chips)==='["Ages 2–4","Sounds: R · S"]'&&ready.lines.length===0&&!/Day 1/.test(ready.text)&&await page.evaluate(()=>document.getElementById('planCard').hidden),ready);
   await next(page);await page.locator('[data-step="mic"].on').waitFor();await calm(page);await page.locator('#micNotNow').click();
   ok('a second child goes sounds → ready → microphone → hand-off',await page.locator('[data-step="achieve"].on').waitFor().then(()=>true,()=>false)&&await page.evaluate(()=>localStorage.getItem('sona.setupasks.v1')===null));
   clean('second child',errors);
@@ -702,7 +722,7 @@ await scenario('a double tap never answers a one-tap question',async()=>{
   // waits on the page first, and that wait would eat into the 150 ms.)
   await page.waitForTimeout(600);
   const cont=await centre(page,'#nextBtn');
-  for(const [from,to] of [['welcome','problem'],['problem','reel'],['reel','piano'],['piano','rachel'],['rachel','name']]){
+  for(const [from,to] of [['welcome','reel'],['reel','piano'],['piano','rachel'],['rachel','name']]){
    await page.mouse.click(cont.x,cont.y);await page.waitForTimeout(120);await page.mouse.click(cont.x,cont.y);
    ok('a double tap on the footer\'s button on "'+from+'" moves one screen, to "'+to+'"',await page.evaluate(()=>document.body.dataset.setupScreen)===to,await screen(page));
    await page.waitForTimeout(700);
@@ -853,8 +873,8 @@ await scenario('phone fit, and the hand-off asks for nothing',async()=>{
   ok('the hand-off fits without scrolling',await page.evaluate(()=>{var ob=document.querySelector('.ob');return ob.scrollHeight<=ob.clientHeight+1;}));
   ok('…and has no email box, no × and no Rachel line',!/Rachel|occasional tips|email/i.test(await page.locator('[data-step="achieve"]').innerText())&&await page.locator('#skipEmail,#achEmailInput,[data-step="achieve"] input').count()===0);
   await page.screenshot({path:path.join(tmpdir(),'sona-handoff-polish.png')});
-  await next(page);await page.waitForURL('**/arcade-feed.html');
-  ok('…and its one button still opens the first game, with nothing posted',leadPosts(requests).length===0);
+  await next(page);await page.waitForURL(url=>url.pathname==='/charge.html');
+  ok('…and its one button still opens the first game (Fruit Slice\'s practice page, at 4 too), with nothing posted',new URL(page.url()).search==='?game=arcade-slice.html'&&leadPosts(requests).length===0,page.url());
   clean('phone fit and hand-off',errors);
  }finally{await context.close();}
 });
@@ -947,13 +967,15 @@ await scenario('a solid colour behind the keyboard',async()=>{
 // THE SCREENS THAT SELL (Travis, 19 Oct 2026; rebuilt 22 Oct 2026: "We want
 // to sell the product in the onboarding ... emphasize the problem ... what
 // their kid is interested in, to help customize what games to show them"):
-// before the name, the problem, the games playing and Rachel; after it, what
-// the child loves and the games they will love. Statements with Continue and
+// before the name, the two game demos and Rachel (the "problem" slide that
+// led them went on 31 Oct 2026: its words now head the Fruit Slice demo);
+// after it, what the child loves and the games they will love. Statements with Continue and
 // Back (what the child loves is a question: any number of tiles, or none):
 // nothing stored but the draft's picks, no progress segment on a statement.
 // The games are the catalog's (no Coming soon game, no typed list).
-// the problem since 23 Oct 2026: a before and an after, each its own few words
-const PROBLEM={title:'Speech practice.Through play.'};
+// the two demos' headings, word for word (31 Oct 2026; each is two lines,
+// and the <br> between them is no text)
+const REEL={title:'Speech practice.'+'Through play.'},PIANO={title:'Say the sound'+'to slow the keys.'};
 const GAMES=n=>({title:'Games for '+n+'.'});
 const INTERESTS=[['sports','Sports'],['music','Music'],['dinosaurs','Dinosaurs'],['animals','Animals'],['space','Space'],['building','Building'],['food','Food']];
 // what a sell screen shows, as a parent reads it
@@ -972,7 +994,7 @@ const playable=(page,group)=>page.evaluate(g=>Object.keys(Sona.GAME_ACTS).filter
 // the peek setup should show: the games the picks fit first, then the rest,
 // each part in Home's order, the first `cap` of them (the page's own pairs)
 const peekOf=(page,home,picks,cap)=>page.evaluate(([home,picks,cap])=>{const fit=k=>picks.some(i=>(INTEREST_GAMES[i]||[]).indexOf(k)>-1),f=home.filter(fit);return {fits:f.slice(0,cap),grid:f.concat(home.filter(k=>!fit(k))).slice(0,cap)};},[home,picks,cap]);
-const sellFit=key=>{const st=document.querySelector('[data-step="'+key+'"]').getBoundingClientRect(),b=document.getElementById('nextBtn').getBoundingClientRect(),f=document.querySelector('.obfoot').getBoundingClientRect(),h=document.querySelector('[data-step="'+key+'"] h1').getBoundingClientRect(),imgs=[...document.querySelectorAll('[data-step="'+key+'"] .sell-art img,[data-step="'+key+'"] .studio-problem-art img,[data-step="'+key+'"] .rachel-photo img,[data-step="'+key+'"] .demo-scene,[data-step="'+key+'"] .int-pick')].map(i=>i.getBoundingClientRect()),under=[...document.querySelectorAll('[data-step="'+key+'"] #interestsSkip')].map(i=>i.getBoundingClientRect());return {cardTop:Math.round(st.top),cardBottom:Math.round(st.bottom),footTop:Math.round(f.top),btnTop:Math.round(b.top),btnBottom:Math.round(b.bottom),headTop:Math.round(h.top),imgs:imgs.length,imgBottom:Math.round(Math.max(0,...imgs.map(r=>r.bottom),...under.map(r=>r.bottom))),imgSmall:imgs.filter(r=>r.width<40||r.height<20).length,height:innerHeight,sideways:document.documentElement.scrollWidth-innerWidth,obSideways:(()=>{const o=document.querySelector('.ob');return o.scrollWidth-o.clientWidth;})()};};
+const sellFit=key=>{const st=document.querySelector('[data-step="'+key+'"]').getBoundingClientRect(),b=document.getElementById('nextBtn').getBoundingClientRect(),f=document.querySelector('.obfoot').getBoundingClientRect(),h=document.querySelector('[data-step="'+key+'"] h1').getBoundingClientRect(),imgs=[...document.querySelectorAll('[data-step="'+key+'"] .sell-art img,[data-step="'+key+'"] .rachel-photo img,[data-step="'+key+'"] .demo-scene,[data-step="'+key+'"] .int-pick')].map(i=>i.getBoundingClientRect()),under=[...document.querySelectorAll('[data-step="'+key+'"] #interestsSkip')].map(i=>i.getBoundingClientRect());return {cardTop:Math.round(st.top),cardBottom:Math.round(st.bottom),footTop:Math.round(f.top),btnTop:Math.round(b.top),btnBottom:Math.round(b.bottom),headTop:Math.round(h.top),imgs:imgs.length,imgBottom:Math.round(Math.max(0,...imgs.map(r=>r.bottom),...under.map(r=>r.bottom))),imgSmall:imgs.filter(r=>r.width<40||r.height<20).length,height:innerHeight,sideways:document.documentElement.scrollWidth-innerWidth,obSideways:(()=>{const o=document.querySelector('.ob');return o.scrollWidth-o.clientWidth;})()};};
 // what this phone opens, read from the catalog's own gate (Sona.gameAccess)
 const opensHere=(page,group)=>page.evaluate(g=>Object.keys(Sona.GAME_ACTS).filter(k=>{const a=Sona.GAME_ACTS[k];return (!g||a.group===g)&&!a.comingSoon&&a.available!==false&&Sona.gameAccess(k).allowed;}),group);
 const kept=page=>page.evaluate(()=>{const o={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(/^sona\./.test(k))o[k]=localStorage.getItem(k);}o.__draft=JSON.stringify(draft);return JSON.stringify(o);});
@@ -981,17 +1003,15 @@ await scenario('the screens that sell: their words, the games, and nothing kept'
  // the grid is every playable game of the age group
  const {context,page,errors,requests}=await fresh({viewport:{width:375,height:667},webSales:true});try{
   ok('(this phone can sell: the price follows setup)',await page.evaluate(()=>Sona.trialFirst()===true));
-  ok('the order: hello, the problem, the games playing, Rachel, name, what they love, their games, therapy, sounds, minutes, email, ready, microphone',await page.evaluate(()=>ORDER.join())===FIRST_WALK);
-  await next(page);await page.locator('[data-step="problem"].on').waitFor();await settled(page);
+  ok('the order: hello, the two game demos, Rachel, name, what they love, their games, therapy, sounds, minutes, email, ready, microphone',await page.evaluate(()=>ORDER.join())===FIRST_WALK);
+  await next(page);await page.locator('[data-step="reel"].on').waitFor();await settled(page);
   const before=await kept(page);
-  let s=await sellShown(page,'problem');
-  ok('problem: the heading is exactly "'+PROBLEM.title+'"',s.screen==='problem'&&s.title===PROBLEM.title,s);
-  ok('problem: one concise message and its painted game art, with no delayed before/after rows',await page.evaluate(()=>{const st=document.querySelector('[data-step="problem"]'),pic=st.querySelector('.studio-problem-art');return st.querySelectorAll('.ba-row').length===0&&pic.getAttribute('aria-hidden')==='true'&&pic.querySelector('img').getAttribute('src')==='/assets/crafted/home-fruit.webp'&&st.innerText.trim().split(/\s+/).length<=5;}));
-  ok('problem: a statement with Continue and Back, no progress segment, the heading takes focus',s.asks.length===0&&s.cta==='Continue'&&s.enabled&&s.back&&s.seg&&!s.mascot&&s.focus,s);
-  for(const [key,word,scene] of [['reel','fruit','fruitDemoScene'],['piano','keys','pianoDemoScene']]){
-   await next(page);await page.locator('[data-step="'+key+'"].on').waitFor();await settled(page);
+  ok('the "problem" slide is gone (31 Oct 2026): no step, heading or picture of it is left on the page',await page.evaluate(()=>!document.querySelector('[data-step="problem"]')&&!document.getElementById('problemTitle')&&!document.querySelector('.studio-problem-art')));
+  let s;
+  for(const [key,head,what,scene] of [['reel',REEL.title,'"Speech practice. Through play.", the slide it replaced\'s words','fruitDemoScene'],['piano',PIANO.title,'the useful speech help in that game','pianoDemoScene']]){
+   if(key!=='reel'){await next(page);await page.locator('[data-step="'+key+'"].on').waitFor();await settled(page);}
    s=await sellShown(page,key);
-   ok(key+': one clear message, the useful speech help in that game',s.title==='Practice your sound.Slow the '+word+'.',s.title);
+   ok(key+': one clear message, '+what+', on two lines',s.screen===key&&s.title===head&&await page.evaluate(k=>document.querySelector('[data-step="'+k+'"] h1').querySelectorAll('br').length===1,key),s.title);
    ok(key+': the two speed comparisons, Continue and Back, no progress segment; the heading takes focus',s.asks.length===2&&s.cta==='Continue'&&s.back&&s.seg&&!s.mascot&&s.focus,s);
    ok(key+': a canvas demo with two labelled modes and no real game, microphone or old clip',await page.evaluate(id=>{const st=document.querySelector('.step.on');return !!st.querySelector('#'+id+' canvas[role="img"]')&&[...st.querySelectorAll('[data-demo-mode]')].map(b=>b.textContent.trim()).join()==='Normal speed,After practice'&&!document.getElementById('reelBox');},scene));
   }
@@ -1081,7 +1101,7 @@ await scenario('the screens that sell fit every screen',async()=>{
  // other age groups are then painted on the same screen, as Back would
  for(const device of [{viewport:{width:320,height:568}},{viewport:{width:375,height:667}},{viewport:{width:390,height:844},safeArea:{top:47,bottom:34}},{viewport:{width:768,height:1024}},{viewport:{width:1024,height:768}}]){
   const {context,page,errors}=await fresh(Object.assign({webSales:true},device)),size=device.viewport.width+'×'+device.viewport.height;try{
-   for(const key of ['problem','reel','piano','rachel','interests','games']){
+   for(const key of ['reel','piano','rachel','interests','games']){
     await setupWalk(page,key,{name:'Maximiliana',age:''});await page.locator('[data-step="'+key+'"].on').waitFor();await settled(page);
     if(key==='games')ok('(fit at '+size+': a phone that sells, so the grid is the longest it gets: four games of '+(await playable(page,'')).length+', and two "more" lines)',await page.evaluate(()=>Sona.trialFirst()===true&&document.querySelectorAll('#gamesGrid li').length)===4&&(await mores(page)).length===2);
     for(const age of key==='games'?['','6','4']:['']){
@@ -1097,7 +1117,7 @@ await scenario('the screens that sell fit every screen',async()=>{
  }
 });
 await scenario('the screens that sell: only for a family\'s first setup',async()=>{
- const NONE=['problem','reel','piano','rachel','interests','games','remind'];
+ const NONE=['reel','piano','rachel','interests','games','remind'];
  {const {context,page,errors}=await fresh();try{
   await who(page,'slp');
   ok('the browser clinician\'s own setup (?slp=1) has none of them',await page.evaluate(k=>ORDER===ORDER_SLP&&k.every(x=>ORDER.indexOf(x)<0),NONE));
@@ -1167,20 +1187,27 @@ await scenario('where Sona can sell, ready\'s Continue leaves for the price and 
   await page.evaluate(()=>__phone.mic.requests[0].grant());await atHandoff(page);
   const heard=await page.evaluate(()=>({mic:localStorage.getItem('sona.micok'),order:__phone.mic.order,title:document.getElementById('handoffTitle').innerText.trim(),email:document.querySelectorAll('[data-step="achieve"] input,#achEmail,#skipEmail').length}));
   ok('"Turn on Echo\'s ears" asks the phone once, stops both tracks before the speech ask, and opens the hand-off',heard.mic==='1'&&heard.order.filter(x=>x==='microphone').length===1&&heard.order.filter(x=>x==='stop').length===2&&heard.order.indexOf('speech permission')>heard.order.lastIndexOf('stop')&&heard.title==='Hand the phone to Mia!'&&heard.email===0,heard);
-  await next(page);await page.waitForURL(url=>url.pathname==='/adventure.html');
-  const end=await page.evaluate(()=>{const q=Sona.questToday();return {firstgame:sessionStorage.getItem('sona.firstgame.v1'),marker:sessionStorage.getItem('sona.setupafter.v1'),done:JSON.parse(localStorage.getItem('__phoneRec')).events.filter(e=>e.name==='onboarding completed').length,story:q.kind+'|'+q.state+'|'+q.day+'|'+(q.story&&q.story.id)};});
-  // STRAIGHT INTO DAY 1 (Travis, 31 Oct 2026: "build the plan moment and
-  // straight into day 1"): the free days just started, so today's story is
-  // open to Mia, and "Let's play!" opens it in place of Home (17 Oct 2026)
-  ok('"Let\'s play!" back from the price opens Day 1\'s story (exactly /adventure.html: Robo\'s Rocket, for an R child), marks no first game, and clears the marker',page.url()===base+'/adventure.html'&&end.story==='story|open|1|robo'&&end.firstgame===null&&end.marker===null&&end.done===1,[page.url(),end]);
+  // (today's story, open to Mia now that her free days have started, as the tap reads it)
+  const day=await page.evaluate(()=>{const q=Sona.questToday(),k=Sona.kkey('sona.quest.v1');return {story:q.kind+'|'+q.state+'|'+q.day+'|'+(q.story&&q.story.id),key:k,rec:localStorage.getItem(k)};});
+  await next(page);await page.waitForURL(url=>url.pathname==='/charge.html');
+  const end=await page.evaluate(k=>({firstgame:sessionStorage.getItem('sona.firstgame.v1'),marker:sessionStorage.getItem('sona.setupafter.v1'),done:JSON.parse(localStorage.getItem('__phoneRec')).events.filter(e=>e.name==='onboarding completed').length,rec:localStorage.getItem(k)}),day.key);
+  // STRAIGHT INTO A GAME (Travis, 31 Oct 2026: "go straight into either piano
+  // tiles or fruit slice. Because that's what is advertised", then "Fruit
+  // Slice for everyone"): back from the price too, "Let's play!" opens the
+  // first game, Fruit Slice, in place of the morning's Day 1 story (and of
+  // Home after a purchase, 17 Oct 2026). The story waits on Home, untouched.
+  ok('"Let\'s play!" back from the price opens the first game (exactly Fruit Slice\'s practice page), marks it, and clears the marker',page.url()===base+'/charge.html?game=arcade-slice.html'&&end.firstgame==='slice'&&end.marker===null&&end.done===1,[page.url(),end]);
+  ok('…never Day 1\'s story, which waits on Home: it was open to Mia (Robo\'s Rocket, for an R child) and the tap finished nothing',day.story==='story|open|1|robo'&&end.rec===day.rec,[day,end.rec]);
   ok('the only price page setup ever asked for is /subscribe.html?setup=1',priced(requests).every(u=>u===base+'/subscribe.html?setup=1')&&priced(requests).length===2,priced(requests));
   ok('…and back from the price the hand-off asked for no email: still the one lead',leadPosts(requests).length===1,leadPosts(requests));
   clean('buy path',errors);
  }finally{await context.close();}
 });
 // …and a child with no story open today (here today's story is already
-// finished) is not sent to one: "Let's play!" goes Home, as on 17 Oct 2026
-await scenario('back from the price with no story open today: Home, as before',async()=>{
+// finished) gets the same first game: until 31 Oct 2026 this was "Let's
+// play!" going Home after a purchase (17 Oct 2026); now it is Fruit Slice
+// whatever the day's story says, and never a story that is not open
+await scenario('back from the price with no story open today: the first game too',async()=>{
  const {context,page,errors}=await phone({setUp:true,stamp:'post',marker:true});try{
   await page.goto(base+'/onboarding.html').catch(()=>{});await page.waitForURL(url=>url.pathname==='/subscribe.html');
   await page.evaluate(()=>{Sona.saveSub({active:true,source:'apple',since:Date.now()});const d=Sona.localDay();localStorage.setItem(Sona.kkey('sona.quest.v1'),JSON.stringify({f:[0],s:1,ls:0,fd:d,lk:'story',done:d,a:d,sv:d,t1:'robo'}));});
@@ -1188,7 +1215,7 @@ await scenario('back from the price with no story open today: Home, as before',a
   const q=await page.evaluate(()=>{const t=Sona.questToday();return {kind:t.kind,state:t.state,open:Sona.storyOpen()};});
   ok('(the free days have started, and today\'s story is already done)',q.kind==='story'&&q.state==='done'&&q.open,q);
   await notNow(page);await atHandoff(page);await next(page);await page.waitForURL(url=>url.pathname!=='/onboarding.html');
-  ok('"Let\'s play!" then goes Home to pick a game, never to a story that is not open, and marks no first game',page.url()===base+'/today.html'&&await page.evaluate(()=>sessionStorage.getItem('sona.firstgame.v1')===null),page.url());
+  ok('"Let\'s play!" then opens the first game (Fruit Slice\'s practice page) and marks it: never Home, never a story that is not open',page.url()===base+'/charge.html?game=arcade-slice.html'&&await page.evaluate(()=>sessionStorage.getItem('sona.firstgame.v1')==='slice'),page.url());
   clean('no story open today',errors);
  }finally{await context.close();}
 });
@@ -1253,13 +1280,11 @@ await scenario('families who see no price walk straight on, and the store is nev
    await next(page);
    const st=await page.evaluate(()=>({screen:document.body.dataset.setupScreen,cta:document.getElementById('nextBtn').textContent.trim(),asked:__phone.asked.length,infos:__phone.infos,syncs:__phone.syncs,marker:!!sessionStorage.getItem('sona.setupafter.v1')}));
    ok(label+': ready\'s Continue opens the microphone at once, in the page, with no "One moment…"',st.screen==='mic'&&st.cta==='Turn on Echo\'s ears'&&st.marker,st);
-   // a household with Premium (a founder, a subscription) has today's story
-   // open, so "Let's play!" opens it (31 Oct 2026); the others, whose phone
-   // shows the game of the day, still get the first game. Both write the first
-   // game's mark, exactly as before.
-   const story=label==='a founder'||label==='a household that already subscribes';
-   await notNow(page);await atHandoff(page);await next(page);await page.waitForURL(url=>url.pathname===(story?'/adventure.html':'/charge.html'));
-   ok(label+': then the hand-off and '+(story?'Day 1\'s story':'the first game')+', with no price page and no question put to the store',priced(requests).length===0&&st.asked===0&&st.infos===0&&st.syncs===0&&(story?new URL(page.url()).search==='':new URL(page.url()).search==='?game=arcade-slice.html')&&await page.evaluate(()=>sessionStorage.getItem('sona.firstgame.v1')==='slice'),[priced(requests),st,page.url()]);
+   // every one of them gets the first game, Fruit Slice (31 Oct 2026), a
+   // household with Premium (a founder, a subscription) too, whose day's
+   // story is open: that story waits on Home
+   await notNow(page);await atHandoff(page);await next(page);await page.waitForURL(url=>url.pathname!=='/onboarding.html');
+   ok(label+': then the hand-off and the first game (Fruit Slice\'s practice page, never a story), with no price page and no question put to the store',priced(requests).length===0&&st.asked===0&&st.infos===0&&st.syncs===0&&page.url()===base+'/charge.html?game=arcade-slice.html'&&await page.evaluate(()=>sessionStorage.getItem('sona.firstgame.v1')==='slice'),[priced(requests),st,page.url()]);
    clean('no price: '+label,errors);
   }finally{await context.close();}
  }
@@ -1336,12 +1361,19 @@ await scenario('the price never loads: Continue comes back',async()=>{
 // ── the page's source: what other files hold it to ──
 {
  const src=readFileSync(root+'/onboarding.html','utf8'),code=src.replace(/<!--[\s\S]*?-->/g,' ').replace(/\/\*[\s\S]*?\*\//g,' ').replace(/(^|[^:"'\\])\/\/[^\n]*/g,'$1');
- ok('the hand-off\'s last tap: an unpaid family is never handed a locked game; today\'s open story first (31 Oct 2026), else Home or the first game; a clinician still ends on Home; the first game is marked only there',/if\(wall\)\{try\{sessionStorage\.setItem\("sona\.gate\.v1",String\(Date\.now\(\)\)\);\}catch\(e\)\{\} location\.href="\/subscribe\.html\?setup=1";return;\}\s*var first="\/today\.html";try\{if\(draft\.role!=="slp"&&!AFTER&&Sona\.firstGameStart\)first=Sona\.firstGameStart\(\);\}catch\(e\)\{\}\s*if\(draft\.role!=="slp"&&storyNow\(\)\)first="\/adventure\.html";\s*location\.href=first;/.test(src)&&(code.match(/Sona\.firstGameStart\(\)/g)||[]).length===1);
- {const fn=code.slice(code.indexOf('function storyNow('),code.indexOf('function showHandoff('));
- ok('…and "today\'s story is open" is Home\'s own answer read at that tap: questToday says an open story AND storyOpen (never one shown locked)',/Sona\.storyOpen\(\)/.test(fn)&&/q\.kind==="story"&&q\.state==="open"/.test(fn)&&!/setItem|saveProfile|questEnd|storySeen/.test(fn),fn.slice(0,300));}
+ ok('the hand-off\'s last tap: an unpaid family is never handed a locked game; everyone else gets the first game (since 31 Oct 2026 a family back from the price too: no AFTER test there); a clinician still ends on Home; the first game is marked only there',/if\(wall\)\{try\{sessionStorage\.setItem\("sona\.gate\.v1",String\(Date\.now\(\)\)\);\}catch\(e\)\{\} location\.href="\/subscribe\.html\?setup=1";return;\}\s*var first="\/today\.html";try\{if\(draft\.role!=="slp"&&Sona\.firstGameStart\)first=Sona\.firstGameStart\(\);\}catch\(e\)\{\}\s*location\.href=first;/.test(src)&&(code.match(/Sona\.firstGameStart\(\)/g)||[]).length===1);
+ // (STRAIGHT INTO DAY 1 lasted the morning of 31 Oct 2026: the hand-off
+ // opened today's story when it was open; that afternoon Fruit Slice came
+ // first for everyone, and the story waits on Home)
+ ok('…and the hand-off never sends a child to a story: no storyNow, no story player\'s address anywhere in the page\'s code',!/storyNow|\/adventure\.html/.test(code));
+ // (Fruit Slice for every age: Feed Echo was the 3-4s' first game until 31 Oct 2026)
+ ok('…and that first game is Fruit Slice for every age: sona.js\'s firstGameKey answers "slice" and nothing else',/function firstGameKey\(\) \{ return "slice"; \}/.test(readFileSync(root+'/sona.js','utf8')));
  const leave=code.slice(code.indexOf('function leaveReady('),code.indexOf('function showHandoff('));
  ok('leaving ready (or the reminder after it) saves the profile and writes the marker before it names the price page',leave.indexOf('saveSetup()')>0&&leave.indexOf('saveSetup()')<leave.indexOf('Sona.setupAfterMark')&&leave.indexOf('Sona.setupAfterMark')<leave.indexOf('"/subscribe.html?setup=1"'),leave.slice(0,200));
  ok('every "setup step" is sent through SonaAnalytics, with the screen\'s key and nothing else',(code.match(/SonaAnalytics\.track\("setup step",\{step:key\}\)/g)||[]).length===1&&!/(?:^|[^.\w])track\("setup step"/.test(code)&&!/Sona\.track\(/.test(code));
+ {const keys=(code.match(/var STEP_KEYS=\{([^}]*)\}/)||[])[1]||'';
+ ok('…and the fixed list of screen keys is the screens setup has: no "problem" since 31 Oct 2026',keys.split(',').map(k=>k.split(':')[0]).join()==='welcome,reel,piano,rachel,name,interests,games,therapy,sounds,minutes,updates,ready,remind,mic,handoff,slp,email',keys);}
+ ok('setup paints no grown-ups microphone line of its own (31 Oct 2026): no #micPromise, and Sona.MIC_PROMISE is not read on this page',!/micPromise|MIC_PROMISE/.test(code));
  // setup makes no sound (Travis, 23 Oct 2026: "turn the sound off when they
  // press the buttons in the onboarding"; "Hear Echo", its one sound since 22
  // Oct, went with the reel's redo the same day): no spoken line, no recording,
