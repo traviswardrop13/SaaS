@@ -937,7 +937,7 @@
       var b=document.createElement("button"),label=Sona.soundLabel?Sona.soundLabel(s):s,w=soundWord(s);
       b.type="button";b.className="sound"+(selSounds.has(s)?" on":"");b.dataset.sound=s;
       var lb=document.createElement("span");lb.className="sound-letters";lb.textContent=label;b.appendChild(lb);
-      if(w){var ex=document.createElement("span");ex.className="sound-word";ex.setAttribute("aria-hidden","true");try{ex.innerHTML=Sona.soundMark(w.w,s,w.pos||"i");}catch(e){ex.textContent=w.w;}b.appendChild(ex);}
+      if(w){var ex=document.createElement("span");ex.className="sound-word";ex.setAttribute("aria-hidden","true");try{if(Sona&&Sona.soundMark)ex.innerHTML=Sona.soundMark(w.w,s,w.pos||"i");else ex.textContent=w.w;}catch(e){ex.textContent=w.w;}b.appendChild(ex);}
       var said=s==="TH"?"TH, unvoiced":s==="THV"?"TH, voiced":label;
       b.setAttribute("aria-label",said+(w?", as in "+w.w:""));
       b.setAttribute("aria-pressed",String(selSounds.has(s)));
