@@ -261,9 +261,9 @@ try {
     await calmed(); await page.locator("#backBtn").click();
     await page.locator('[data-step="therapy"].on').waitFor();
     await mark(page, 211);                          // the therapy question again, an answer held: never recorded
-    for (const k of ["games", "interests", "name"]) { await calmed(); await page.locator("#backBtn").click(); await page.locator('[data-step="' + k + '"].on').waitFor(); }
+    for (const k of ["games", "interests", "rachel", "reel", "name"]) { await calmed(); await page.locator("#backBtn").click(); await page.locator('[data-step="' + k + '"].on').waitFor(); }
     await page.locator("#obName").fill("Quillon");
-    await next(page); await page.locator('[data-step="interests"].on').waitFor();
+    for (const k of ["reel", "rachel", "interests"]) { await next(page); await page.locator('[data-step="' + k + '"].on').waitFor(); }
     await next(page); await page.locator('[data-step="games"].on').waitFor();
     await next(page); await page.locator('[data-step="therapy"].on').waitFor();
     await calmed();

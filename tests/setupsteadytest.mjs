@@ -160,12 +160,12 @@ async function ipadWindow(page,sw=820,sh=1180){
 // an iPhone closes the keyboard whenever the box loses focus
 async function followFocus(page,D){if(await page.evaluate(()=>document.activeElement&&document.activeElement.id)!=='obName'&&await page.evaluate(()=>__steady.kbState)!=='down')await kbHide(page,D);}
 const calm=page=>page.evaluate(()=>document.body.classList.remove('ob-settling'));
-// THE NAME COMES AFTER THE SCREENS THAT SELL (22 Oct 2026): the hello, the
-// two games playing (Fruit Slice, then Piano Tiles: the problem slide between
-// the hello and them went on 31 Oct 2026) and Rachel come first. To Rachel's
-// screen, the one right before the name, by the footer's button (touch, as a
-// phone), settling between taps.
-async function toBeforeName(page){for(let i=0;i<4;i++){const s=await page.evaluate(()=>document.body.dataset.setupScreen);if(s==='rachel')return;await calm(page);await page.tap('#nextBtn');await page.waitForFunction(k=>document.body.dataset.setupScreen!==k,s);}}
+// THE NAME COMES RIGHT AFTER THE HELLO (Travis, 1 Nov 2026: "we'll ask the
+// child's name and age first, right after the hello"; from 22 Oct to 1 Nov
+// the game demos and Rachel came between them). So the screen right before
+// the name is the hello: wait there until its "Get started" takes a tap
+// (on a visit's first hello it waits for its own entrance, hello-wait).
+async function toBeforeName(page){await page.waitForFunction(()=>document.body.dataset.setupScreen==='welcome'&&!document.body.classList.contains('hello-wait'),null,{timeout:6000});await calm(page);}
 const center=(page,sel)=>page.evaluate(s=>{const r=document.querySelector(s).getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2};},sel);
 async function tapAt(page,sel){const c=await center(page,sel);await page.touchscreen.tap(c.x,c.y);}
 // a dark band where the keyboard is, for the screenshots taken before the web view shrinks
@@ -200,7 +200,7 @@ for(const reduced of [false,true])for(const D of DEVICES){
  try{
   // the phone's own height picks the step's size (a touch screen: the classes are for phones and tablets)
   {const cls=await sizeClasses(page);ok('the phone\'s height picks the name step\'s size ('+(cls.join(' ')||'full')+')'+at,JSON.stringify(cls)===JSON.stringify(SIZES[D.w+'x'+D.h]),cls);}
-  // 1. Rachel's Continue: the name step opens, focuses the box (the keyboard rises with it)
+  // 1. The hello's Get started: the name step opens, focuses the box (the keyboard rises with it)
   await toBeforeName(page);await page.waitForTimeout(500);
   await page.evaluate(()=>__steady.start());
   await page.tap('#nextBtn');

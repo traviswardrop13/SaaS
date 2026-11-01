@@ -137,7 +137,7 @@ for (const [who, seed] of [["a fresh family", () => {}],
   ok("…and Echo hosts every step of setup, start to finish",
     hosts.length > 1 && hosts.every((h) => h.endsWith(":echo")), JSON.stringify(hosts));
   // (a child already set up walking setup again is not sold to again: no screens that sell)
-  ok("…a walk that reaches the microphone, by way of both one-tap questions, " + (who === "a fresh family" ? "the screens that sell (the two game demos, Rachel, what the child loves, their games), " : "") + "the optional email step and the ready screen",
+  ok("…a walk that reaches the microphone, by way of both one-tap questions, " + (who === "a fresh family" ? "the screens that sell (the Fruit Slice demo, Rachel, what the child loves, their games), " : "") + "the optional email step and the ready screen",
     hosts.map((h) => h.split(":")[0]).join() === (who === "a fresh family" ? "welcome,name,reel,rachel,interests,games,therapy,sounds,minutes,updates,ready,mic" : "welcome,name,therapy,sounds,minutes,updates,ready,mic"), JSON.stringify(hosts));
   await ob2.close();
 }
@@ -145,18 +145,19 @@ for (const [who, seed] of [["a fresh family", () => {}],
 // ── the real walk, to the hand-off ──
 // one press of whatever moves setup on (the stepper above)
 const clickNext = async () => { await settledOb(page); await page.evaluate(STEP); await page.waitForTimeout(250); await beatGone(page); };
-await clickNext(); // the hello → the Fruit Slice demo, "Speech practice. Through play."
-// (the "problem" slide that came between them went on 31 Oct 2026: its words
-// now head the Fruit Slice demo)
-ok("after the hello comes the Fruit Slice demo, the first screen that sells Sona, headed \"Speech practice. Through play.\"",
-  (await onStep(page)) === "reel" && await page.evaluate(() => document.getElementById("reelTitle").textContent === "Speech practice.Through play." && !document.querySelector('[data-step="problem"]')), await onStep(page));
-await clickNext(); await clickNext(); // → Piano Tiles → Rachel, on her own
-ok("…then both game demos and Rachel on her own screen, her line word for word",
-  (await onStep(page)) === "rachel" && await page.evaluate(() => document.getElementById("rachelLine").textContent) === RACHEL_LINE, await onStep(page));
-await clickNext(); // → name
+await clickNext(); // the hello → the child's name (1 Nov 2026: "right after the hello")
+ok("after the hello comes the child's name and age", (await onStep(page)) === "name", await onStep(page));
 await page.evaluate(() => { document.getElementById("obName").value = "Milo"; });
-await clickNext(); // name → "What does Milo love?"
-ok("after the name comes \"What does Milo love?\", then \"Games Milo will love\"", (await onStep(page)) === "interests" && await page.evaluate(() => document.getElementById("intName").textContent) === "Milo", await onStep(page));
+await clickNext(); // name → the Fruit Slice demo, "Speech practice. Through play."
+// (the "problem" slide went on 31 Oct 2026: its words now head the Fruit Slice
+// demo; Piano Tiles' demo went on 1 Nov 2026)
+ok("after the name comes the Fruit Slice demo, the first screen that sells Sona, headed \"Speech practice. Through play.\"",
+  (await onStep(page)) === "reel" && await page.evaluate(() => document.getElementById("reelTitle").textContent === "Speech practice.Through play." && !document.querySelector('[data-step="problem"]') && !document.querySelector('[data-step="piano"]')), await onStep(page));
+await clickNext(); // → Rachel, on her own
+ok("…then Rachel on her own screen, her line word for word",
+  (await onStep(page)) === "rachel" && await page.evaluate(() => document.getElementById("rachelLine").textContent) === RACHEL_LINE, await onStep(page));
+await clickNext(); // → "What does Milo love?"
+ok("after Rachel comes \"What does Milo love?\", then \"Games Milo will love\"", (await onStep(page)) === "interests" && await page.evaluate(() => document.getElementById("intName").textContent) === "Milo", await onStep(page));
 await clickNext(); // → the games
 await clickNext(); // → "Is Milo in speech therapy?"
 ok("…then one tap: \"Is Milo in speech therapy?\"", (await onStep(page)) === "therapy", await onStep(page));

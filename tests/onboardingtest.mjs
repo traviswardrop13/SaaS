@@ -174,7 +174,7 @@ await scenario('sound selection and private paced handoff',async()=>{
   const choices=await page.evaluate(()=>({labels:[...document.querySelectorAll('#obSounds .sound')].map(b=>({text:(b.querySelector('.sound-letters')||b).textContent.trim(),word:(b.querySelector('.sound-word')||{}).textContent||'',label:Sona.soundLabel(b.dataset.sound),font:parseFloat(getComputedStyle(b.querySelector('.sound-letters')||b).fontSize),width:b.getBoundingClientRect().width,height:b.getBoundingClientRect().height})),copy:document.querySelector('[data-step="sounds"]').textContent,overflow:document.documentElement.scrollWidth>innerWidth}));
   // (1 Nov 2026: each sound carries a small word under its large letters,
   // "R" over "rabbit"; setupscreenstest pins which word)
-  ok('sound choices show large letters, each with a small example word under them',choices.labels.length===19&&choices.labels.every(b=>b.text===b.label&&b.font>=23&&b.word.length>1),choices.labels);
+  ok('sound choices show large letters (22 px at the least, on a 4-inch phone), each with a small example word under them',choices.labels.length===19&&choices.labels.every(b=>b.text===b.label&&b.font>=22&&b.word.length>1),choices.labels);
   ok('sound selection stays concise and uses no clinician terminology',choices.copy.trim().split(/\s+/).length<65&&!/\bSLPs?\b|speech-language|pathologist/i.test(choices.copy),choices.copy);
   ok('sound buttons remain easy to tap without overflowing a small phone',!choices.overflow&&choices.labels.every(b=>b.width>=44&&b.height>=44),choices);
   await choose(page);ok('selecting a target enables Continue',await page.locator('#nextBtn').isEnabled());
@@ -256,14 +256,14 @@ await scenario('a hello first; setup is for parents',async()=>{
   const hello=await page.evaluate(()=>({screen:document.body.dataset.setupScreen,text:document.querySelector('[data-step="welcome"]').innerText.replace(/\s+/g,' ').trim(),label:document.querySelector('.studio-brand').getAttribute('aria-label'),cta:document.getElementById('nextBtn').textContent.trim(),footer:getComputedStyle(document.querySelector('.obfoot')).display,seg:document.getElementById('seg').hidden}));
   ok('the very first screen is a hello: Sona\'s name, its line and one button, no question',hello.screen==='welcome'&&/Little sounds\. Big adventures\./.test(hello.text)&&!/\?/.test(hello.text)&&hello.label==='Sona'&&hello.cta==='Get started'&&hello.footer!=='none'&&hello.seg,hello);
   await next(page);
-  ok('"Get started" opens the Fruit Slice demo (no "problem" slide since 31 Oct 2026): nobody is asked who is setting Sona up, and no clinician answer is on the page',await page.evaluate(()=>document.body.dataset.setupScreen==='reel'&&!document.querySelector('[data-step="problem"]')&&!document.querySelector('[data-step="who"]')&&!document.querySelector('.who-pick')&&!/SLP or SLPA/.test(document.body.innerText)));
+  ok('"Get started" opens the child\'s name and age (1 Nov 2026: "right after the hello"; no "problem" slide since 31 Oct 2026): nobody is asked who is setting Sona up, and no clinician answer is on the page',await page.evaluate(()=>document.body.dataset.setupScreen==='name'&&!document.querySelector('[data-step="problem"]')&&!document.querySelector('[data-step="who"]')&&!document.querySelector('.who-pick')&&!/SLP or SLPA/.test(document.body.innerText)));
   await calm(page);await page.locator('#backBtn').click();
   ok('Back returns to the hello, where there is no Back',await page.locator('[data-step="welcome"].on').count()===1&&await page.locator('#backBtn').isHidden());
   await toName(page);
   {const at=await page.evaluate(()=>({on:(document.querySelector('.step.on')||{}).dataset.step,title:document.querySelector('[data-step="name"] .qh').innerText,segs:document.querySelectorAll('#seg i').length,lit:document.querySelectorAll('#seg i.on').length,role:draft.role,parent:ORDER===ORDER_PARENT}));
   ok('a parent reaches the child\'s name, the first of five progress segments',at.on==='name'&&at.title==='Who\'s practicing?'&&at.segs===5&&at.lit===1&&at.role==='parent'&&at.parent,at);}
   await calm(page);await page.locator('#backBtn').click();
-  ok('Back from the name returns to Rachel\'s screen',await page.locator('[data-step="rachel"].on').count()===1);
+  ok('Back from the name returns to the hello',await page.locator('[data-step="welcome"].on').count()===1);
   await who(page,'slp');
   ok('a clinician\'s setup still opens from its own address in a browser (/onboarding.html?slp=1), in a clinician\'s words',await page.evaluate(()=>draft.role==='slp'&&ORDER===ORDER_SLP&&document.body.dataset.setupScreen==='name'&&/Which child/.test(document.querySelector('[data-step="name"] .qh').textContent)&&document.getElementById('slpAppNote').hidden));
   ok('…and no clinician request is made just by answering',!requests.some(r=>new URL(r.url).pathname.startsWith('/api/slp/')),requests.map(r=>r.url));
@@ -536,9 +536,9 @@ await scenario('exploring sounds stays optional and can be changed before finish
   ok('choosing a sound replaces the general-play choice',await page.evaluate(()=>draft.mode==='speech'&&draft.pathReason===''&&JSON.stringify(draft.focusSounds)==='["S"]'));
   await calm(page);await page.locator('#backBtn').click();await calm(page);await page.locator('#backBtn').click();
   ok('Back from the sound picker returns to "Is <Name> in speech therapy?" with the answer held and Continue showing',await page.locator('[data-step="therapy"].on').count()===1&&await page.locator('#obTherapy [aria-pressed="true"]').getAttribute('data-val')==='t_yes'&&await page.locator('#nextBtn').isVisible());
-  for(const k of ['games','interests','name']){await calm(page);await page.locator('#backBtn').click();await page.locator('[data-step="'+k+'"].on').waitFor();}
-  ok('…and on back through the games and what they love to name and age',await page.locator('[data-step="name"].on').count()===1);
-  for(const k of ['interests','games','therapy','sounds']){await next(page);await page.locator('[data-step="'+k+'"].on').waitFor();}
+  for(const k of ['games','interests','rachel','reel','name']){await calm(page);await page.locator('#backBtn').click();await page.locator('[data-step="'+k+'"].on').waitFor();}
+  ok('…and on back through the games, what they love, Rachel and the demo to name and age',await page.locator('[data-step="name"].on').count()===1);
+  for(const k of ['reel','rachel','interests','games','therapy','sounds']){await next(page);await page.locator('[data-step="'+k+'"].on').waitFor();}
   await notNow(page);await atHandoff(page);
   ok('the final profile keeps only the explicitly chosen sound',await page.evaluate(()=>Sona.getProfile().mode==='speech'&&JSON.stringify(Sona.getProfile().focusSounds)==='["S"]'));
   clean('explore and change',errors);
@@ -1053,8 +1053,8 @@ await scenario('the screens that sell: their words, the games, and nothing kept'
   await calm(page);await page.locator('#backBtn').click();await page.locator('[data-step="games"].on').waitFor();
   ok('Back from the therapy question comes back to the games',await screen(page)==='games');
   // the age and the picks, changed after Back, change the games
-  for(const k of ['interests','name']){await calm(page);await page.locator('#backBtn').click();await page.locator('[data-step="'+k+'"].on').waitFor();}
-  await page.locator('#obAge [data-age="4"]').click();await next(page);await page.locator('[data-step="interests"].on').waitFor();
+  for(const k of ['interests','rachel','reel','name']){await calm(page);await page.locator('#backBtn').click();await page.locator('[data-step="'+k+'"].on').waitFor();}
+  await page.locator('#obAge [data-age="4"]').click();for(const k of ['reel','rachel','interests']){await next(page);await page.locator('[data-step="'+k+'"].on').waitFor();}
   await calm(page);await page.locator('#obInterests [data-val="dinosaurs"]').click();await page.locator('#obInterests [data-val="sports"]').click();await page.locator('#obInterests [data-val="space"]').click();
   await next(page);await page.locator('[data-step="games"].on').waitFor();
   s=await sellShown(page,'games');
