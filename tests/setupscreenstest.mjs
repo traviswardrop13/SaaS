@@ -573,7 +573,7 @@ await scenario('the plan card: Day 1 is Fruit Slice, then the story Home will sh
  // Slice's, answered 404) is left out: the card is its words, never a broken
  // image
  {const {context,page,errors}=await fresh({webSales:true,routes:[['**/assets/crafted/home-fruit.webp',r=>r.fulfill({status:404,body:''})]]});try{
-  await setupWalk(page,'ready',{name:'Mia',age:'8',sounds:['K']});await page.waitForTimeout(150);
+  await setupWalk(page,'ready',{name:'Mia',age:'8',sounds:['P']});await page.waitForTimeout(150);
   const p=await planShown(page);
   ok('a Day 1 picture that failed before the screen showed steps aside: the card is its words alone (Fruit Slice, then The Lighthouse Sneeze), with no broken image and no empty box',p.shown&&p.story==='lighthouse'&&p.title===PLAN_TITLE&&p.line==='Fruit Slice first, then '+DAY1.lighthouse+'.'&&!p.pic&&!p.broken.length&&p.more==='A new story every day.',p);
   clean('plan card, a picture that failed first',errors);
@@ -581,7 +581,7 @@ await scenario('the plan card: Day 1 is Fruit Slice, then the story Home will sh
  // a picture that fails while the screen shows keeps its box, empty: nothing moves under a finger
  {let fail;const late=new Promise(r=>{fail=r;});
   const {context,page,errors}=await fresh({webSales:true,routes:[['**/assets/crafted/home-fruit.webp',async r=>{await late;r.fulfill({status:404,body:''});}]]});try{
-  await setupWalk(page,'ready',{name:'Mia',age:'8',sounds:['K']});await page.waitForTimeout(150);
+  await setupWalk(page,'ready',{name:'Mia',age:'8',sounds:['P']});await page.waitForTimeout(150);
   const a=await planShown(page);
   fail();await page.waitForFunction(()=>document.getElementById('planImg').classList.contains('gone'),null,{timeout:3000});await page.waitForTimeout(100);
   const b=await planShown(page);
