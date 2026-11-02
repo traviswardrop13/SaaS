@@ -263,9 +263,11 @@ changing one. What follows from the rule:
     <today's story>." The story is `Sona.day1For(sounds)` with the sounds
     setup is about to save: the talking story in the first sound that has
     one (R Robo's Rocket, S Sandy's Sandcastle, L Lulu's Lantern Party, Z
-    Zippy's Zoo Parade, F Fizz and the Sleepy Fireflies; "Pick all sounds"
-    gives Fizz, F being the first of them in play order), else The
-    Lighthouse Sneeze; `_talkDay` uses the same rule (`_talkFor`), so the
+    Zippy's Zoo Parade, F Fizz and the Sleepy Fireflies, and since 2 Nov
+    2026, TALK2, K Kiki's Camping Night, G Gus's Goose Chase, SH Shelly's
+    Shell Show, CH Chip's Cherry Pie, TH Theo's Big Show; "Pick all sounds"
+    gives Kiki, K being the first of them in play order), else The
+    Lighthouse Sneeze (now only P, B, M, N, T, D, V, J and the voiced TH); `_talkDay` uses the same rule (`_talkFor`), so the
     card and Home can never disagree. Where this child is shown no story
     (`Sona.storyShown()` false: a phone that cannot buy, without Premium)
     the line is "Fruit Slice first, then a book." "A new story every day."
@@ -2586,7 +2588,15 @@ the page.
   Rocket" (`robo`), S "Sandy's Sandcastle" (`sandy`), L "Lulu's Lantern
   Party" (`lulu`), Z "Zippy's Zoo Parade" (`zippy`), F "Fizz and the Sleepy
   Fireflies" (`fizz`), the "popular" sounds Travis named on 2 Oct 2026 ("r s
-  l z f"). Each is Days 1-3's shape: Pelly's wrong thing first, the letter,
+  l z f"). **And five more since 2 Nov 2026 (TALK2**, Travis: yes to
+  "talking Day 1 stories for five more sounds: K, G, SH, CH and TH"): K
+  "Kiki's Camping Night" (`kiki`, Kiki the kitten's tent blew down), G
+  "Gus's Goose Chase" (`gus`, Gus the goat's geese waddled away), SH
+  "Shelly's Shell Show" (`shelly`, the waves took Shelly the shark's
+  shells), CH "Chip's Cherry Pie" (`chip`, a bird took Chip the chipmunk's
+  cherries), TH "Theo's Big Show" (`theo`, Theo the bear's thunder drum is
+  lost). Each place is new to the daily stories on purpose (K was first a
+  kite and G a garden, too close to Day 10's kite and Day 4's garden). Each is Days 1-3's shape: Pelly's wrong thing first, the letter,
   the problem, the child's words fixing it, an ending, a gold star for the
   helper map; 8 + 4 pages for ages 5-8, 6 + 3 for 3-4.
 - **The key words.** Every page has one `key`: a whole word in its line (both
@@ -2598,8 +2608,8 @@ the page.
   named, nothing about how to talk, no grade word), and none says "say".
 - **Which child gets which** (`_talkDay()`): the first of the child's
   practice sounds (`rotSounds()`: homework first, then the family's picks)
-  that has a talking story; none, the lighthouse as before (a child on K, G,
-  TH...). Setup's plan card names it as Day 1's book, after Fruit Slice, by the
+  that has a talking story; none, the lighthouse as before (a child on P, B,
+  M, N, T, D, V, J or the voiced TH). Setup's plan card names it as Day 1's book, after Fruit Slice, by the
   same rule before the profile is saved (`Sona.day1For(sounds)`, one helper
   `_talkFor` for both: "THE PLAN MOMENT", 31 Oct 2026); since that evening
   a new child plays Fruit Slice first and meets the story on Home. A Day 1 already finished stays what it was: the finish keeps its
@@ -2660,10 +2670,15 @@ the page.
   purpose (S then SH); a child the phone can't hear can finish Day 1 by a
   grown-up's Skip or "Not now" (the lighthouse day could not be finished
   without being heard).
-- **For Travis:** the five stories and their titles; that the talking story
-  replaces the lighthouse for a child on R, S, L, Z or F (the lighthouse
-  stays for every other sound); the next sounds (K, G, TH, SH, CH...);
-  pictures once the key is renewed, and a Home clip for each.
+- **For Travis:** the ten stories and their titles; that the talking story
+  replaces the lighthouse for a child on R, S, L, Z, F, K, G, SH, CH or TH
+  (the lighthouse stays for the rest); the next sounds (J, V, the voiced
+  TH...); a Home clip for each.
+- **For Rachel, TALK2's too:** every key word of the five new stories (the
+  PR lists them), among them "color" (K before a vowel, with an R-coloured
+  end), "cocoa", "gopher" and "theater"; that a 3-4 year old on K or G now
+  meets a talking story where the lighthouse asked no K or G word on its
+  pages; and that the voiced TH ("this", "that") still has no story.
 `talkstorytest` plays it all.
 
 **Light the Way** (Day 1, `lighthouse.js`, `LIGHTHOUSE1`). A night sea under
