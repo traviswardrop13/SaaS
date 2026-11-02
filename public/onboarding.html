@@ -1612,6 +1612,12 @@
     // Whether a price is due is read from Sona.trialFirst() at the instant of
     // going, so the store's answer counts even if it came late. (quiet:
     // once the tap's chime; setup's buttons make no sound since 23 Oct 2026.)
+    // FREEPLAY1 (2 Nov 2026, built switched off: Sona.FREE_PLAY_ON): where the
+    // household's one free round is due, the price waits until after it. The
+    // ready screen goes on to the microphone, and the microphone straight
+    // into one round of Fruit Slice (playFree), with no hand-off screen and
+    // no practice page; the round's end card goes to the price.
+    function freeRound(){try{return draft.role!=="slp"&&!!(Sona.freePlayDue&&Sona.freePlayDue());}catch(e){return false;}}
     function leaveReady(btn,quiet){
       if(leaving||finished)return;
       var b=btn||nextBtn;
@@ -1626,7 +1632,7 @@
       function go(){
         if(went)return;went=true;
         var wall=false;try{wall=draft.role!=="slp"&&!!(Sona.trialFirst&&Sona.trialFirst());}catch(e){}
-        if(wall){
+        if(wall&&!freeRound()){
           try{sessionStorage.setItem("sona.gate.v1",String(Date.now()));}catch(e){}
           location.href="/subscribe.html?setup=1";
           setTimeout(function(){if(leaving){leaving=false;render();}},8000);   // the price never loaded: Continue comes back
@@ -1736,7 +1742,23 @@
       saveSetup();
       ORDER.forEach(function(k){steps[k].classList.remove("on");});
       nextBtn.disabled=true;backBtn.style.display="none";segEl.hidden=true;
-      if(ORDER===ORDER_SLP){nextBtn.textContent="Getting ready…";showBuild(showHandoff);}else showHandoff();
+      if(ORDER===ORDER_SLP){nextBtn.textContent="Getting ready…";showBuild(showHandoff);}else if(freeRound())playFree();else showHandoff();
+    }
+    // THE FREE ROUND (FREEPLAY1): no "Hand the phone to <Name>!" (Travis:
+    // most likely the parent plays it first, and two hand-offs stand between
+    // them and the price). As the hand-off does, it ends the recording for
+    // the tab (REPLAY1), counts setup as done and spends the tab's "after the
+    // price" marker: a purchase made after the round lands on Home. A phone
+    // that cannot store the round goes to the price, as before.
+    function playFree(){
+      replayDone=true;try{sessionStorage.setItem("sona.replayoff.v1","1");}catch(e){}try{if(window.SonaAnalytics&&SonaAnalytics.replay)SonaAnalytics.replay(false);}catch(e){}
+      try{if(window.SonaAnalytics)SonaAnalytics.track("onboarding completed");}catch(e){}
+      try{if(Sona.setupAfterClear)Sona.setupAfterClear();}catch(e){}
+      if(document.activeElement&&document.activeElement.blur)document.activeElement.blur();
+      nextBtn.disabled=true;nextBtn.textContent="Let's play!";
+      var go=null;try{go=Sona.freePlayStart&&Sona.freePlayStart();}catch(e){go=null;}
+      if(!go){try{sessionStorage.setItem("sona.gate.v1",String(Date.now()));}catch(e){}go="/subscribe.html?setup=1";}
+      location.href=go;
     }
 
     nextBtn.onclick=next; backBtn.onclick=back;
@@ -1757,7 +1779,7 @@
       if(AFTER){
         saved=true;
         var owes=false;try{owes=draft.role!=="slp"&&!!(Sona.trialFirst&&Sona.trialFirst());}catch(e){}
-        if(owes){
+        if(owes&&!freeRound()){
           // the page under the guard is raw markup with a live "Get started": keep it hidden until we are gone
           leaving=true;document.documentElement.classList.add("ob-leaving");
           location.replace("/subscribe.html?setup=1");

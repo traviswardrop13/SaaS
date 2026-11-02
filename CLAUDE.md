@@ -297,6 +297,43 @@ changing one. What follows from the rule:
   nothing), `replaytest`, and `onboardingtest`, `firstgametest`,
   `setupbuytest` and `trialfirsttest` (where "Let's play!" goes) play it; `_phone.mjs`'s
   `setupWalk` waits the beat out.
+- **FREEPLAY1: ONE FREE ROUND BEFORE THE PRICE, BUILT SWITCHED OFF (2 Nov
+  2026)** (Travis: "its cuz they wanto to try it first so lets come up with
+  something where they get a free session", then "lets make day 1 just be a
+  game like fruit slice ... no charge up just str8 to the game", and, as the
+  parent most likely plays it, no hand-off screens; he agreed to wait about
+  two weeks, to ~16 Nov, to see whether the 7-day trial alone is enough,
+  then turn this on). **`FREE_PLAY_ON = false` in `sona.js`** is the one
+  switch. On, for a family who owes the price (`trialFirst()`, not a
+  clinician) and has never had the free round on this phone
+  (`Sona.freePlayDue()`):
+  - leaving setup's ready screen (or the reminder screen) goes on to the
+    microphone, not the price (the store is still asked whether this Apple
+    ID already has Premium); the microphone, either answer, goes straight
+    into **one round of Fruit Slice** (`playFree()` in `onboarding.html`,
+    `Sona.freePlayStart()`): no "Hand the phone to <Name>!" card and no
+    "Say it 5 times" page. The round opens on the play token the practice
+    page would have written (`gameAccess`'s "earned"), written by setup's own
+    tap; nothing comes from the address. It ends the tab's recording
+    (REPLAY1) as the hand-off does;
+  - the household's one round is spent the moment it opens
+    (`sona.freeplay.v1`, this phone's: `NO_EXPORT` and `NO_IMPORT`), so a
+    reload, a quit or a second setup never makes another;
+  - the round is the round (waves, hearts, Super Slice, the say-it cards and
+    a new life all ask the child's sound as ever); its end card keeps its
+    title and best line and has ONE button, **"Keep playing!"**, to the price
+    (`/subscribe.html?setup=1`, with setup's grown-ups stamp:
+    `Sona.freePlayEnd()`), with no "Back home" or "Play again"; the ✕ goes to
+    the price too. There, "Not now" goes to a locked Home, and a purchase to
+    Home with everything open (the microphone was asked already);
+  - a phone that cannot buy, a family with Premium, and the switch off: the
+    flow as before. The tests turn it on for a tab with sessionStorage
+    `sona.freeplayon` = "1", honoured on a test server only.
+  **Travis's to change:** the words ("Keep playing!"), Fruit Slice as the
+  game, and when to turn it on. **For Rachel:** the free round has no "Say
+  it 5 times" page before it, so a child's first ask of their sound is Echo's
+  mid-round Super Slice ask or the card between waves. `freeplaytest` plays
+  it.
 - **SETUP, REBUILT FROM SCRATCH: SELL SONA, A FEW QUESTIONS, THE PRICE, THEN
   THE PHONE IS HANDED OVER** (Travis, 22 Oct 2026: "I want to do a
   completely new onboarding ... from scratch. I want animation ... make it
