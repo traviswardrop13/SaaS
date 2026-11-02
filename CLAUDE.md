@@ -87,6 +87,18 @@ release battery remains unfinished and must pass before a push, along with
 the required typecheck. The stopped pre-redesign run is not a release pass;
 do not claim that publishing or the merge has completed before it happens.
 
+**Release resumed (Travis, 2 Nov 2026):** “okay finish and release the home
+screen and books first.” This resumes the stopped release of the approved
+Map and sound-specific books. The latest main changes (#255/#256), including
+name-first setup and the store-owned seven-day monthly trial on top, are
+preserved. The Map keeps its measured layout; page movement is locked only
+while its complete content fits, and the Arcade always releases that lock.
+The new lock check fails the pre-fix page and passes all 21 compact Home
+scenarios. A fresh full battery is still required before any push; GitHub
+publishing access has not yet been restored or verified. Rachel's new-book
+and selected-target review remains a separate recorded review item; do not
+claim it happened. No Gym, avatar or new clinical behavior is included.
+
 **Latest first-day flow (upstream #251/#253, 31 Oct 2026) supersedes the
 earlier Picnic-first review experiment.** Setup opens ordinary Fruit Slice,
 through its existing practice page, for every age. Home then offers Day 1's
@@ -102,8 +114,9 @@ rules are preserved; their Rachel-review questions remain recorded below.
 **More books, 8–12 pages** (Travis, 30 Oct 2026): the review adds one
 eight-page story each for R, S, L, SH, CH and TH: Rabbit and the Rocket,
 Seal and the Sock, Lion and the Lock, Sheep and the Ship, Chicken and the
-Picnic, and My Thumb Paints a Gift. Bear's Lost Ball is now eight pages too:
-its original six lines/pictures stay, with two new play scenes before bed.
+Picnic, and My Thumb Paints a Gift. Bear's Lost Ball is a seventh new book
+relative to published main, expanded from its six-page local draft: those
+six lines/pictures stay, with two new play scenes before bed.
 Every key is an existing initial-bank word; no target bank, age gate,
 microphone, scorer or play-rep rule changes. All seven meet the fuller-book
 whole-line phonology rule, with one independently stored picture per page.
@@ -165,7 +178,8 @@ missing it.
 One of those places is setup (Travis, 29 Sep 2026: a Meet Rachel screen with
 her photo). **Since 22 Oct 2026 she has her own screen again** (Travis: "a
 bigger slide of Rachel that's just like all by itself of like her
-credentials"), the fourth of setup, before the child's name: her photo, big,
+credentials"), the fourth of setup (since 1 Nov 2026 after the child's
+name and the Fruit Slice demo; before that, before the name): her photo, big,
 and the settled line word for word, "Built with Rachel, MS, CF-SLP, a
 pediatric speech-language pathologist in her clinical fellowship.", shown
 once (its first words are the heading, "Built with Rachel, MS, CF-SLP,", the
@@ -248,7 +262,49 @@ changing one. What follows from the rule:
   silent previews, never microphone requests, speech verdicts or practice
   credit. They release their loops on departure/background and stay still
   under Reduce Motion. The old recorded reel assets remain available but
-  are not loaded by setup. Returning families, second children and clinicians
+  are not loaded by setup.
+  **Since 1 Nov 2026** (Travis: "we'll ask the child's name and age first,
+  right after the hello. And let's improve them, make the demo speed
+  buttons more clear, and play the slowdown by itself"; then "we can get
+  rid of piano tiles as the demo. And just keep fruit slice"): a first
+  setup is the hello → **name and age** → the Fruit Slice demo → Rachel →
+  what they love → their games → therapy → sounds → minutes → email →
+  (the build beat) → ready → (reminder) → the price → microphone →
+  hand-off. **There is one demo, Fruit Slice's, and it plays itself**
+  (`DEMO_PHASES` in `onboarding.html`): normal speed (3.2 s), then Echo's
+  bubble glows and "Your child says “rrrr”" (1.6 s, the game still at
+  normal speed), then the game slows down ("Slower!", "The game slows
+  down!", the scene ringed teal, 3.8 s), round and round. Under it, in
+  place of the two "Normal speed / After practice" buttons, three steps
+  that light up as it plays, each with a bar filling for its phase: **"1
+  Normal speed" › "2 Says “rrrr”" › "3 Slows down"**; a tap on one jumps
+  there and it plays on from it. Off the screen or in the background it
+  stops and starts again at normal speed. Under Reduce Motion nothing
+  moves: the scene is a still frame, the steps do not advance and draw no
+  bar, and a tap shows that step. The Piano Tiles demo and its script
+  (`onboarding-piano-demo.js`) are gone. **Each sound on the sound picker
+  carries a word** (Travis left this step to us): the letters, and under
+  them the first start-of-word word in Sona's word bank (`Sona.WORDS`; the
+  voiced TH has none, so its first word, "mother"), its sound's letters
+  orange (`Sona.soundMark`), read as "R, as in rabbit", under one line,
+  "Tap the sounds your child is working on." (it steps aside on a 4-inch
+  phone, where the letters shrink so all nineteen fit). **The email step
+  shows what the weekly email looks like** (Travis: "a small picture of an
+  email or an example, like the Leo said his R sound 140 times this
+  week"): a small card marked "Example", the real report's subject and
+  lines (`lib/report.ts` `kidLines`) for the Monday email's made-up child
+  (`lib/weekly.ts` `EXAMPLE`: "Last week on Sona: 86 reps", "Said their
+  sound out loud on 4 days", "Reached the daily goal on 3 days", "86 reps:
+  52 in practice, 34 in games and books", "Sound: R"), hidden while the
+  keyboard is up on a short window. **It names no child**: the real email
+  never says a name ("Child 1" with two), so the example does not either
+  (Travis's "Leo" would promise what the email does not do; his to change
+  only with the email itself). `setupscreenstest` pins it to `EXAMPLE`.
+  **Travis's to change:** every word, the phases' lengths, the order.
+  **Rachel's:** the example word shown for each sound (and "mother" for
+  the voiced TH, a mid-word sound), the example report's words, and that
+  the demo still shows R ("rrrr") to every parent, before any sound is
+  picked. Returning families, second children and clinicians
   keep their shorter paths. Native keyboard, privacy/replay, purchase,
   reminder eligibility and explicit hand-off rules are unchanged.
   Name uses the label "Age" with more space before it. Minutes are 3 / 5 /
@@ -265,9 +321,11 @@ changing one. What follows from the rule:
   Store artwork are outside this change.
   The setup offer keeps its complete benefits, store billing disclosures,
   trial eligibility, purchase/restore and legal links. Its Lifetime row now
-  says "Lifetime", "Yours Forever", "Best Value" at the top right, and
-  "Billed today" under the store's amount (expressly superseding the older
-  "never lifetime / Best value" wording below). Prices and free periods
+  says "Lifetime", "Yours Forever" and "Billed today" under the store's
+  amount (expressly superseding the older "never lifetime" wording below);
+  its "Best Value" tag at the top right went on 2 Nov 2026, when the free
+  trial row took "Recommended" there ("THE FREE TRIAL ON TOP AND PICKED
+  AGAIN"). Prices and free periods
   still come from the store. The three benefit lines are bolder and have
   modest extra space above/below on screens that have room; compact layouts
   retain room for payment choices and legal links.
@@ -930,6 +988,44 @@ is charged, charter open and closed); `progtest` and `iaptest` play the pick on
 both cards; `firstgametest` keeps both boxes and the button on the first
 screen at seven phone sizes with the charter line showing, and re-prices
 every yearly figure when the price check answers late.
+
+**THE FREE TRIAL ON TOP AND PICKED AGAIN, 7 DAYS, "RECOMMENDED" (2 Nov
+2026)** (Travis, after asking whether the trial or the one payment should be
+the default: "I just changed it to a 7-day trial at App Store Connect ...
+put it at the default option ... just have the second option be a way of
+pointing people to the monthly 7-day trial and make it more of an easy
+choice"). This replaces the order, the pick and the "Best Value" tag of
+"THE ONE PAYMENT ON TOP AND PICKED" right below (the rest of it stands), and
+brings back "TWO ROWS: MONTHLY ON TOP" further down.
+- **Monthly on top, picked when the screen opens** (its free trial: "No
+  payment today", "Start practicing!"), the one payment under it
+  (`kindsOf`, the markup's order, `APPLE.pick` "monthly" in
+  `subscribe.html`). Why: a parent from an ad has not seen their child
+  play yet, and "No payment today" is the easiest yes; the one payment
+  beside it still makes the month look small, and anyone who wants to pay
+  once can.
+- **The free trial row wears "Recommended"** (top right, where "Best Value"
+  sat), only on a card of more than one row, only while that row is a free
+  trial, and not beside the yearly row if it is ever switched back on (its
+  own "Best value" is `planWords`'). **The one payment wears no tag**: it
+  still says "Lifetime", "Yours Forever", the store's price and "Billed
+  today". `paintRow` in `subscribe.html`; the tag's place is
+  `onboarding-price-studio.css`.
+- **The 7 days are App Store Connect's** (Travis set the monthly
+  introductory offer to 7 days there on 2 Nov 2026): every word on the
+  Apple card follows the store by itself ("7-day free trial", "7 days
+  free, then $9.99 a month. Cancel anytime."), and the free week gets its
+  daily practice reminders (NUDGE1: about four) and the reminder 30 hours
+  before it ends (NOTIFY1). Nothing in this repo types the app's trial
+  length. **The website's own card, `/api/checkout`'s Stripe trial,
+  `trial.html` and the Next `/subscribe` page still say 3 days**, true of
+  the web checkout, which sells nothing while `WEB_SALES` is off; matching
+  them to 7 is a change to the Stripe trial too, Travis's call.
+- **Travis's to check outside this repo:** the App Store listing's own
+  description and screenshots, if they name 3 days, and any ad that does.
+  **Measure it:** leave this for 2 to 3 weeks and read /leads.html's "Free
+  trials" report (TRIAL1) and RevenueCat's money per price-screen view.
+  `pricescreentest` (1b) and `setupbuytest` play it.
 
 **THE ONE PAYMENT ON TOP AND PICKED (31 Oct 2026)** (Travis: "I want to put
 the lifetime as the default. So put it at the top, like above monthly. And I
@@ -2961,10 +3057,10 @@ offer, the level sheet, the grown-ups check and "Home opens the offer once".
   back to the front on a new day: since CAL1 the day's story moves on then,
   and a card left from yesterday would open today's story under
   yesterday's title. **Defaults Travis did not pick:** the
-  dark gradient (not a cream one), the 480 px cap on an iPad, the data saver
-  showing the poster only, and the doors and the New! game falling below
-  the first screen on smaller phones (since PLAYMAP1 the doors are on it at
-  390×844 and up).
+  dark gradient (not a cream one), the 480 px cap on an iPad, and the data
+  saver showing the poster only. (Until 1 Nov 2026 the doors and the New!
+  game fell below the first screen on smaller phones; Home is one screen
+  now, "Home is one screen" below.)
   The top bar is the buddy, the gift button and Grown-ups. On a phone the doors are tiles with the
   picture as a 2:1 band on top (the Arcade picture's game things sit at its
   edges, so it is never cut to a square); on an iPad, rows with a 3:2
@@ -2986,7 +3082,7 @@ offer, the level sheet, the grown-ups check and "Home opens the offer once".
   unchanged); the stars are real progress, never a count ("3 of 14"), a
   streak word or a timer; **no sound switch** (the mock had one: a child
   never changes their sound on Home, and Home does not show it); less
-  empty space (the doors on the first screen at 390×844 and up); the top
+  empty space (since 1 Nov 2026 all of Home is one screen); the top
   bar as it was. The trail, its stars, two leaves and a cloud are drawn on
   the phone (`paintTrail`, last in every `fitHome`) from where Echo, the
   card, the flag and the pill landed, as inline SVG: aria-hidden, no tap,
@@ -3042,19 +3138,37 @@ offer, the level sheet, the grown-ups check and "Home opens the offer once".
   X, setup's end and `firstGameEnd` still go to plain `/today.html`, which is
   Home:** after any game a child lands on Home, not back in the Arcade
   (Travis's to change: a tab-only marker could return them).
-- **The fit is measured, never guessed** (`fitHome`, `fit1`…`fit5`: the
-  board's head and foot and the heading's type first, then the card's
-  picture from 3:4 to 4:5, 1:1, 5:4 and at the flattest 4:3): the whole day's card, its title and
-  play button included, is on the first screen above the home bar at
-  320×568, 375×667, 390×844, 430×932, 768×1024, an iPhone SE on the
-  website (375×553) and an iPad on its side, every button at least 44 px.
-  Since HOMECLIP1 only the card must fit: the doors come right after it
-  and may fall below the first screen on smaller phones, and so may "Your
-  games", the day's New! tile included (until 28 Oct 2026 the doors and
-  that tile were kept on the first screen). Since PLAYMAP1 (31 Oct 2026)
-  the fit also takes up to two steps (`DOOR_STEPS`, never past 4:5) when
-  that puts the doors on the first screen too: at 390×844, 430×932 and
-  768×1024 they are; the card still comes first.
+- **Home is one screen: nothing scrolls up or down** (Travis, 1 Nov 2026,
+  of a recording of Home sliding up and down on his phone: "I don't like
+  how this homepage can scroll up and down. Just make it one ... flat
+  screen ... There's nothing that makes being able to scroll up and down
+  helpful"). The top bar, the board (heading, the day's card, tomorrow),
+  the Arcade and Books doors and "Your games" are all on the screen, above
+  the home bar, and the page does not move (`html.home-flat`: overflow
+  hidden, set only while Home fits; the Arcade still scrolls). **The fit
+  is measured, never guessed** (`fitHome`): the card's picture takes the
+  room left, set in pixels, 3:4 at most. The card comes first: while it
+  would be flatter than 4:3 the rest makes room one step at a time
+  (`fit1`…`fit5`: "Your games" smaller, the board's head and foot, the
+  doors' pictures to 5:2, the words on the card, then "Your games"' heading
+  read but not drawn). With every step taken the card may go flatter than
+  4:3 as long as its words still sit on it (on a finished day, with no
+  play button, a short strip on the smallest screens); on an iPad it
+  narrows instead, staying 4:3. The trail's stars stay between the heading
+  and the card on a short board head. One screen at 375×667 (an iPhone SE
+  in the app), 390×844, 430×932, Travis's iPhone 16 Pro in the app, an
+  iPhone SE on the website (375×553) on any day but one with "Your games",
+  768×1024 and an iPad on its side, in every state. **Only a screen too
+  short for all of it scrolls**, with every step taken and nothing cut off,
+  the card 4:3 (or as tall as its words need): a 4-inch phone (320×568)
+  with "Your games", a long title or the website's founding banner, the SE
+  on the website with "Your games", a phone on its side. Every button at
+  least 44 px. A turn or any change of window size re-fits while Home is
+  one screen (nothing scrolls, so Safari's bars never fold away under a
+  finger); a page that scrolls re-fits only on a new width, as before.
+  **Travis's to know:** on a phone where "Your games" shows, the day's card
+  is shorter than on a fresh day (about square on his phone), since
+  everything shares one screen.
 
 Setup finishes in the first game, Fruit Slice for every age since 31 Oct 2026
 (see "The ask happens after the product proves itself" and "THE PLAN MOMENT,

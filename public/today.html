@@ -654,7 +654,7 @@
       function showView(v,focus){
         clearMessage();setView(v);
         try{window.scrollTo(0,0);}catch(e){}
-        if(v==="home")fitHome();
+        fitHome();
         if(focus){var h=document.getElementById(v==="arcade"?"arcadeTitle":"homeTitle");try{h.focus({preventScroll:true});}catch(e){}}
       }
       var backFocus=false;
@@ -689,11 +689,12 @@
       };
       window.addEventListener("popstate",function(){var f=backFocus;backFocus=false;showView(viewOf(),f);});
       window.addEventListener("pagehide",function(){try{history.scrollRestoration="auto";}catch(e){}});
-      // PLAYMAP1: compress the picture and gaps first. Natural
-      // document flow remains available for accessibility text enlargement.
+      // PLAYMAP1: compress the picture and gaps first. Lock page movement
+      // only while the complete Home fits; a shorter or enlarged screen
+      // keeps natural scrolling, and the Arcade always releases the lock.
       var FIT_STEPS=5;
       function fitHome(){
-        if(app.getAttribute("data-view")!=="home")return;
+        if(app.getAttribute("data-view")!=="home"){document.documentElement.classList.remove("home-flat");return;}
         var i;for(i=1;i<=FIT_STEPS;i++)app.classList.remove("fit"+i);
         function overflow(){
           var found=document.getElementById("foundRow"),doors=document.getElementById("homeDoors"),last=found&&!found.hidden?found:doors;
@@ -701,11 +702,14 @@
           return last.getBoundingClientRect().bottom+pad+(window.pageYOffset||0)-window.innerHeight-1;
         }
         for(i=1;i<=FIT_STEPS&&overflow()>0;i++)app.classList.add("fit"+i);
+        var flat=overflow()<=0;
+        document.documentElement.classList.toggle("home-flat",flat);
+        if(flat)try{window.scrollTo(0,0);}catch(e){}
       }
       fitHome();
-      // a turn or a new width fits again; a height that moves alone (Safari's
-      // bars folding away as a child scrolls) never re-lays the card out under
-      // a finger
+      // The founding banner is drawn by the next script after this one.
+      setTimeout(fitHome,0);
+      // A height-only resize fits the complete Home again too.
       window.addEventListener("resize",fitHome);
       try{if(document.fonts&&document.fonts.ready)document.fonts.ready.then(fitHome);}catch(e){}
       try{new MutationObserver(fitHome).observe(document.getElementById("trialBanner"),{attributes:true,attributeFilter:["style","hidden"],childList:true,subtree:true});}catch(e){}

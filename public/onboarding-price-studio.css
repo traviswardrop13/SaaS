@@ -37,8 +37,8 @@ body.offer .planpick .plan[aria-checked="true"]:after{
 .oneplan-billing{display:block;flex:none;text-align:right;}
 .oneplan-billing .oneplan-amt{display:block;}
 .oneplan-billed{display:block;margin-top:2px;font:700 10px/1.3 Nunito,sans-serif;color:#88735f;white-space:nowrap;}
-#iapLife .tag{left:auto;right:12px;transform:none;top:-10px;background:#ffd47c;color:#623f22;text-transform:none;letter-spacing:0;font:800 10px/1.3 Nunito,sans-serif;padding:3px 9px;box-shadow:none;}
+#iapLife .tag,#iapPlan .tag{left:auto;right:12px;transform:none;top:-10px;background:#ffd47c;color:#623f22;text-transform:none;letter-spacing:0;font:800 10px/1.3 Nunito,sans-serif;padding:3px 9px;box-shadow:none;}
 @media(max-width:340px){
   .oneplan-billed{font-size:9px;}
-  #iapLife .tag{right:10px;font-size:9px;padding:3px 8px;}
+  #iapLife .tag,#iapPlan .tag{right:10px;font-size:9px;padding:3px 8px;}
 }

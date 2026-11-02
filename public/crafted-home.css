@@ -104,6 +104,7 @@ body::before{content:"";position:fixed;left:0;right:0;top:0;height:env(safe-area
 
 /* PLAYMAP1: Home is a quiet map of real finished adventures and today's
    story. The existing Arcade keeps its scrolling shelves and presentation. */
+html.home-flat,html.home-flat body{height:100%;min-height:0;overflow:hidden;}
 #libraryApp[data-view="home"] .arcade-only,#libraryApp[data-view="arcade"] .home-only{display:none;}
 #homeTitle:focus,#arcadeTitle:focus{outline:none;}
 .arcade-top{display:flex;margin-top:16px;}

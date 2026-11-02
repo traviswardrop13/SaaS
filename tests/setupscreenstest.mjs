@@ -88,7 +88,9 @@ await scenario('a slow-loading demo starts when its deferred library arrives',as
  if(process.env.SONA_SETUP_RACE_WITHOUT_HOOK==='1')routes.push(['**/onboarding.html',r=>{const html=readFileSync(root+'/onboarding.html','utf8'),without=html.replace(/    document\.addEventListener\("DOMContentLoaded",function\(\)\{if\(!finished\)paintDemo\(ORDER\[idx\]\);\}\);\n/,'');if(without===html)throw new Error('ready-hook red proof did not remove the hook');return r.fulfill({contentType:'text/html',body:without});}]);
  const {context,page,errors}=await fresh({motion:true,waitUntil:'commit',routes});try{
   await page.waitForFunction(()=>window.draft&&document.body.dataset.setupScreen==='welcome');
-  // (the hello opens Fruit straight away: no problem slide since 31 Oct 2026)
+  // (the name comes straight after the hello since 1 Nov 2026, then Fruit)
+  await next(page);await page.locator('[data-step="name"].on').waitFor();
+  await page.locator('#obName').fill('Mia');await calm(page);await page.locator('#obAge [data-age="8"]').click();
   await next(page);await page.locator('[data-step="reel"].on').waitFor();
   const before=await page.evaluate(()=>({frames:__s.frames.fruitDemoScene||0,lib:!!window.SonaFruitDemo,loading:document.readyState,ready:__s.ready,profile:JSON.stringify(Sona.getProfile()),mics:__s.mics}));
   ok('the parent reached Fruit before the delayed library: no frames or microphone yet',!!release&&before.frames===0&&!before.lib&&!before.ready&&before.mics===0,before);
@@ -111,7 +113,7 @@ if(process.env.SONA_SETUP_DEFERRED_ONLY==='1'){
 await scenario('approved Play Studio contract',async()=>{
  const {context,page,errors}=await fresh();try{
   const c=await page.evaluate(()=>({order:ORDER.join(),minutes:[...document.querySelectorAll('#obMinutes .ask-pick')].map(b=>b.dataset.val),picked:draft.minutes,age:document.getElementById('ageLabel').textContent,hello:document.querySelector('.welcome-brand').innerText.replace(/\s+/g,' ').trim()}));
-  ok('the first parent sees distinct Fruit and Piano previews before Rachel, straight after the hello (no problem slide)',c.order==='welcome,reel,piano,rachel,name,interests,games,therapy,sounds,minutes,updates,ready,mic',c.order);
+  ok('the first parent is asked the child\'s name and age straight after the hello, then sees the Fruit Slice preview and Rachel (no problem slide, no Piano Tiles preview)',c.order==='welcome,name,reel,rachel,interests,games,therapy,sounds,minutes,updates,ready,mic',c.order);
   ok('…and the problem slide is not on the page at all',await page.evaluate(()=>!document.querySelector('[data-step="problem"]')&&!document.getElementById('problemTitle')&&!document.querySelector('.studio-problem-art')));
   ok('daily practice offers exactly 3, 5 and 10 minutes, with 5 held by default',c.minutes.join()==='3,5,10'&&c.picked==='5',c);
   ok('the approved short welcome and Age label ship in the real app',c.hello==='Little sounds. Big adventures.'&&c.age==='Age',c);
@@ -129,7 +131,7 @@ await scenario('the hello: one clear promise, Echo, and an immediately usable bu
    const f=await page.evaluate(()=>{const r=s=>{const b=document.querySelector(s).getBoundingClientRect();return {t:b.top,b:b.bottom,l:b.left,r:b.right};},art=document.querySelector('.studio-welcome-art'),ob=document.querySelector('.ob');return {text:document.querySelector('.welcome-brand').innerText.replace(/\s+/g,' ').trim(),brand:document.querySelector('.studio-brand').getAttribute('aria-label'),echoes:art.querySelectorAll('img').length,hidden:art.getAttribute('aria-hidden'),art:r('.studio-welcome-art'),head:r('.welcome-brand'),btn:r('#nextBtn'),cta:document.getElementById('nextBtn').textContent.trim(),scroll:ob.scrollHeight-ob.clientHeight,sideways:document.documentElement.scrollWidth-innerWidth,w:innerWidth,h:innerHeight,old:!!document.querySelector('.hello'),wait:document.body.classList.contains('hello-wait'),body:getComputedStyle(document.body).backgroundColor,loops:document.querySelector('.step.on').getAnimations({subtree:true}).filter(a=>a.effect.getComputedTiming().endTime===Infinity).length};});
    ok('hello '+vp.width+'×'+vp.height+(motion?' motion':' Reduce Motion')+': one promise and Sona, one decorative Echo, no delayed intro',f.text==='Little sounds. Big adventures.'&&f.brand==='Sona'&&f.echoes===1&&f.hidden==='true'&&!f.old&&!f.wait&&f.loops===0,f);
    ok('…its headline, art and Get started fit without overlap or scrolling; the keyboard corners stay cream',f.head.t>=0&&f.head.b<=f.art.t&&f.art.b<=f.btn.t&&f.art.l>=0&&f.art.r<=f.w&&f.btn.b<=f.h&&f.scroll<=1&&f.sideways<=0&&f.body==='rgb(255, 245, 233)',f);
-   await next(page);ok('…Get started works immediately and opens the Fruit Slice demo',await screen(page)==='reel');
+   await next(page);ok('…Get started works immediately and opens the child\'s name and age (1 Nov 2026: "right after the hello")',await screen(page)==='name');
    await calm(page);await page.locator('#backBtn').click();ok('Back opens the same hello without waiting',await screen(page)==='welcome'&&!await page.evaluate(()=>document.body.classList.contains('hello-wait')));
    await page.evaluate(()=>document.documentElement.classList.add('ob-leaving'));
    ok('the page is held blank while a saved setup returns to its price',await page.evaluate(()=>getComputedStyle(document.querySelector('.ob')).visibility==='hidden'));
@@ -139,58 +141,108 @@ await scenario('the hello: one clear promise, Echo, and an immediately usable bu
 });
 
 const demoCount=(page,id)=>page.evaluate(id=>__s.frames[id]||0,id);
-// each demo's heading (31 Oct 2026), as textContent (the <br> reads as
-// nothing): Fruit Slice carries the old problem slide's words, Piano Tiles
-// says what the sound does; both under the kicker "See speech help"
-const HEADS={reel:'Speech practice.Through play.',piano:'Say the soundto slow the keys.'};
-await scenario('Fruit Slice, then Piano Tiles: live silent previews, with useful after-practice help',async()=>{
+// the demo's heading (31 Oct 2026), as textContent (the <br> reads as
+// nothing): the old problem slide's words, under the kicker "See speech help"
+const HEADS={reel:'Speech practice.Through play.'};
+// THE DEMO PLAYS ITSELF (Travis, 1 Nov 2026: "make the demo speed buttons
+// more clear, and play the slowdown by itself"; Piano Tiles' demo went the
+// same day: "just keep fruit slice"): normal speed (3.2 s), the child says
+// the sound (1.6 s), the game slowed (3.8 s), round and round; its three
+// steps light up as it goes, and a tap on one jumps there
+const PHASES=[['Normal speed','Normal speed',false,false],['Normal speed','Your child says “rrrr”',false,true],['Slower!','The game slows down!',true,false]];
+const demoState=page=>page.evaluate(()=>{const sc=document.getElementById('fruitDemoScene'),st=sc.closest('.step');return {slow:sc.classList.contains('slow'),say:sc.classList.contains('say'),speed:sc.querySelector('.demo-speed').textContent,message:sc.querySelector('.demo-message').textContent,canvas:sc.querySelector('canvas').dataset.demoSpeed,pressed:[...st.querySelectorAll('[aria-pressed="true"][data-demo-phase]')].map(b=>b.dataset.demoPhase),lit:[...st.querySelectorAll('[data-demo-phase].on')].map(b=>b.dataset.demoPhase)};});
+const isPhase=(m,n)=>m.speed===PHASES[n][0]&&m.message===PHASES[n][1]&&m.slow===PHASES[n][2]&&m.say===PHASES[n][3]&&m.canvas===(PHASES[n][2]?'after-practice':'normal')&&JSON.stringify(m.pressed)===JSON.stringify([String(n)])&&JSON.stringify(m.lit)===JSON.stringify([String(n)]);
+await scenario('the Fruit Slice demo plays the slowdown by itself: a live, silent preview',async()=>{
  const {context,page,errors,requests}=await fresh({motion:true,webSales:true});try{
   const before=await page.evaluate(()=>({profile:JSON.stringify(Sona.getProfile()),run:sessionStorage.getItem('sona.run.v1')}));
-  for(const [key,id,word] of [['reel','fruitDemoScene','fruit'],['piano','pianoDemoScene','keys']]){
-   await setupWalk(page,key);await calm(page);await page.evaluate(()=>Promise.all([...document.querySelectorAll('.step.on img')].map(i=>i.decode().catch(()=>{}))));
-   const a=await demoCount(page,id);await page.waitForTimeout(350);const b=await demoCount(page,id);
-   const hd=await page.evaluate(([key,id])=>{const st=document.querySelector('[data-step="'+key+'"]'),c=document.querySelector('#'+id+' canvas'),h=st.querySelector('h1');return {role:c.getAttribute('role'),label:!!c.getAttribute('aria-label'),head:h.textContent,id:h.id,kicker:(st.querySelector('.studio-kicker')||{}).textContent,focus:document.activeElement===h};},[key,id]);
-   ok(key+': its canvas paints live frames, with an accessible description and the one-message heading "'+HEADS[key]+'" under "See speech help"',b-a>=5&&hd.role==='img'&&hd.label&&hd.head===HEADS[key]&&hd.id===(key==='reel'?'reelTitle':'pianoTitle')&&hd.kicker==='See speech help'&&hd.focus,{a,b,hd});
-   for(const [mode,slow] of [['slow',true],['normal',false]]){
-    await calm(page);await page.locator('[data-step="'+key+'"] [data-demo-mode="'+mode+'"]').click();
-    const m=await page.evaluate(id=>{const scene=document.getElementById(id),st=scene.closest('.step');return {slow:scene.classList.contains('slow'),label:scene.querySelector('.demo-speed').textContent,message:scene.querySelector('.demo-message').textContent,pressed:[...st.querySelectorAll('[aria-pressed="true"][data-demo-mode]')].map(b=>b.dataset.demoMode)};},id);
-    ok(key+': '+mode+' changes the comparison and its help message, with exactly one pressed button',m.slow===slow&&m.label===(slow?'After practice':'Normal speed')&&m.message===(slow?'Slower '+word+'.':key==='reel'?'Swipe to slice.':'Tap the keys.')&&JSON.stringify(m.pressed)===JSON.stringify([mode]),m);
-   }
-   await page.evaluate(()=>__s.background());const stopped=await demoCount(page,id);await page.waitForTimeout(250);
-   ok(key+': backgrounding releases its paint loop',await demoCount(page,id)===stopped,{stopped,now:await demoCount(page,id)});
-   await page.evaluate(()=>__s.foreground());await page.waitForTimeout(250);ok(key+': returning to this screen starts its own scene again',await demoCount(page,id)>stopped);
-   await next(page);const left=await demoCount(page,id);await page.waitForTimeout(250);ok(key+': leaving the screen stops its loop',await demoCount(page,id)===left,{left,now:await demoCount(page,id)});
-  }
-  ok('Piano follows Fruit, then Rachel, without an extra question',await screen(page)==='rachel'&&await page.evaluate(()=>ORDER.slice(0,4).join()==='welcome,reel,piano,rachel'));
+  const id='fruitDemoScene';
+  await setupWalk(page,'reel');const t0=Date.now();
+  ok('the demo has three steps, in words a parent reads at a glance: normal speed, the child says the sound, the game slows down',await page.evaluate(()=>[...document.querySelectorAll('[data-step="reel"] [data-demo-phase]')].map(b=>b.textContent.trim()).join('|'))==='1Normal speed|2Says “rrrr”|3Slows down');
+  ok('it opens on normal speed, the first step lit',isPhase(await demoState(page),0),await demoState(page));
+  await calm(page);await page.evaluate(()=>Promise.all([...document.querySelectorAll('.step.on img')].map(i=>i.decode().catch(()=>{}))));
+  const a=await demoCount(page,id);await page.waitForTimeout(350);const b=await demoCount(page,id);
+  const hd=await page.evaluate(()=>{const st=document.querySelector('[data-step="reel"]'),c=document.querySelector('#fruitDemoScene canvas'),h=st.querySelector('h1');return {role:c.getAttribute('role'),label:c.getAttribute('aria-label'),head:h.textContent,id:h.id,kicker:(st.querySelector('.studio-kicker')||{}).textContent,focus:document.activeElement===h};});
+  ok('its canvas paints live frames, with an accessible description of what it shows and the one-message heading under "See speech help"',b-a>=5&&hd.role==='img'&&/slows down/.test(hd.label||'')&&hd.head===HEADS.reel&&hd.id==='reelTitle'&&hd.kicker==='See speech help'&&hd.focus,{a,b,hd});
+  // by itself: the child's turn about 3.2 s in, then the game slowed, then round again
+  await page.waitForTimeout(Math.max(0,3500-(Date.now()-t0)));
+  ok('…by itself, about 3 seconds in: "Your child says “rrrr”", Echo\'s bubble glowing, the game still at normal speed, the second step lit',isPhase(await demoState(page),1),await demoState(page));
+  await page.waitForTimeout(Math.max(0,5100-(Date.now()-t0)));
+  ok('…then the game slows down: "Slower!", "The game slows down!", the scene ringed and the canvas at its after-practice speed, the third step lit',isPhase(await demoState(page),2),await demoState(page));
+  await page.waitForTimeout(Math.max(0,8900-(Date.now()-t0)));
+  ok('…then round again to normal speed',isPhase(await demoState(page),0),await demoState(page));
+  // a tap on a step jumps there, and it plays on from it
+  await calm(page);await page.locator('[data-step="reel"] [data-demo-phase="2"]').click();
+  ok('a tap on "Slows down" shows the slowed game at once, with exactly one step pressed',isPhase(await demoState(page),2),await demoState(page));
+  await calm(page);await page.locator('[data-step="reel"] [data-demo-phase="0"]').click();
+  ok('…and a tap on "Normal speed" goes back to it',isPhase(await demoState(page),0),await demoState(page));
+  await page.evaluate(()=>__s.background());const stopped=await demoCount(page,id);await page.waitForTimeout(250);
+  ok('backgrounding releases its paint loop',await demoCount(page,id)===stopped,{stopped,now:await demoCount(page,id)});
+  await page.waitForTimeout(3600);
+  ok('…and its steps do not play on behind the phone\'s back',isPhase(await demoState(page),0),await demoState(page));
+  await page.evaluate(()=>__s.foreground());await page.waitForTimeout(250);ok('returning to this screen starts its scene again, at normal speed',await demoCount(page,id)>stopped&&isPhase(await demoState(page),0));
+  await next(page);const left=await demoCount(page,id);await page.waitForTimeout(250);ok('leaving the screen stops its loop',await demoCount(page,id)===left,{left,now:await demoCount(page,id)});
+  ok('Rachel follows the demo, after the name, with no Piano Tiles demo between',await screen(page)==='rachel'&&await page.evaluate(()=>ORDER.slice(0,4).join()==='welcome,name,reel,rachel'&&!document.querySelector('[data-step="piano"]')));
   const after=await page.evaluate(()=>({profile:JSON.stringify(Sona.getProfile()),run:sessionStorage.getItem('sona.run.v1'),mics:__s.mics,media:__s.media.length,spoke:!!__s.spoke}));
-  ok('the previews grant no credit and start no practice, recording or speech',after.profile===before.profile&&after.run===before.run&&after.mics===0&&after.media===0&&!after.spoke,{before,after});
-  ok('the previews fetch local art, never the old clips, voice lines or speech recordings',!requests.some(r=>/\.mp4|\/api\/tts$|\/coach\/|\.wav$|\.mp3$/.test(r.url)),requests.filter(r=>/mp4|tts|coach|wav|mp3/.test(r.url)));
-  clean('live previews',errors);
+  ok('the preview grants no credit and starts no practice, recording or speech',after.profile===before.profile&&after.run===before.run&&after.mics===0&&after.media===0&&!after.spoke,{before,after});
+  ok('the preview fetches local art, never the old clips, voice lines or speech recordings, and no Piano Tiles demo',!requests.some(r=>/\.mp4|\/api\/tts$|\/coach\/|\.wav$|\.mp3$|piano-demo/.test(r.url)),requests.filter(r=>/mp4|tts|coach|wav|mp3|piano/.test(r.url)));
+  clean('live preview',errors);
  }finally{await context.close();}
 });
 
 await scenario('the new sales screens fit phones and tablets; reduced-motion previews stay still',async()=>{
  for(const vp of [{width:320,height:568},{width:375,height:667},{width:390,height:844},{width:768,height:1024},{width:1280,height:800}]){
   const {context,page,errors}=await fresh({viewport:vp,webSales:true});try{
-   for(const key of ['reel','piano']){
+   for(const key of ['reel']){
     await setupWalk(page,key);await calm(page);await page.evaluate(()=>document.fonts.ready);await page.waitForTimeout(150);
-    const f=await page.evaluate(()=>{const st=document.querySelector('.step.on'),foot=document.querySelector('.obfoot').getBoundingClientRect(),head=st.querySelector('h1').getBoundingClientRect(),body=st.getBoundingClientRect(),ob=document.querySelector('.ob'),scene=st.querySelector('.demo-scene'),toggle=st.querySelector('.demo-switch'),r=e=>{const b=e.getBoundingClientRect();return {t:b.top,b:b.bottom,l:b.left,r:b.right,h:b.height};};return {head:r(st.querySelector('h1')),body:r(st),foot:r(document.querySelector('.obfoot')),scene:scene?r(scene):null,toggle:toggle?r(toggle):null,scroll:ob.scrollHeight-ob.clientHeight,sideways:document.documentElement.scrollWidth-innerWidth,h:innerHeight,w:innerWidth};});
+    const f=await page.evaluate(()=>{const st=document.querySelector('.step.on'),foot=document.querySelector('.obfoot').getBoundingClientRect(),head=st.querySelector('h1').getBoundingClientRect(),body=st.getBoundingClientRect(),ob=document.querySelector('.ob'),scene=st.querySelector('.demo-scene'),toggle=st.querySelector('.demo-steps'),r=e=>{const b=e.getBoundingClientRect();return {t:b.top,b:b.bottom,l:b.left,r:b.right,h:b.height};};return {head:r(st.querySelector('h1')),body:r(st),foot:r(document.querySelector('.obfoot')),scene:scene?r(scene):null,toggle:toggle?r(toggle):null,scroll:ob.scrollHeight-ob.clientHeight,sideways:document.documentElement.scrollWidth-innerWidth,h:innerHeight,w:innerWidth};});
     ok(key+' fits '+vp.width+'×'+vp.height+': its message and art above Continue, no sideways overflow',f.head.t>=0&&f.body.b<=f.foot.t+1&&f.sideways<=0&&(!f.scene||(f.scene.h>=180&&f.scene.b<=f.toggle.t&&f.toggle.b<=f.foot.t)),f);
     // (the hello opens Fruit since 31 Oct 2026: the problem slide that sat
     // between them is gone, and its message is Fruit's heading)
-    if(key==='reel')ok('the hello opens the Fruit Slice demo directly, headed by the problem slide\'s old message, with no before-and-after rows',await page.evaluate(()=>{const s=document.querySelector('.step.on');return ORDER[ORDER.indexOf('reel')-1]==='welcome'&&s.querySelector('h1').textContent==='Speech practice.Through play.'&&s.querySelectorAll('.ba-row').length===0&&!document.querySelector('[data-step="problem"]');}));
-    {const id=key==='reel'?'fruitDemoScene':'pianoDemoScene',a=await demoCount(page,id);await page.waitForTimeout(300);ok(key+' under Reduce Motion paints a still frame without an ongoing loop, under its own heading',a>0&&await demoCount(page,id)===a&&await page.evaluate(w=>document.querySelector('.step.on h1').textContent===w,HEADS[key]),{a,now:await demoCount(page,id)});}
+    ok('the name opens the Fruit Slice demo, headed by the problem slide\'s old message, with no before-and-after rows',await page.evaluate(()=>{const s=document.querySelector('.step.on');return ORDER[ORDER.indexOf('reel')-1]==='name'&&s.querySelector('h1').textContent==='Speech practice.Through play.'&&s.querySelectorAll('.ba-row').length===0&&!document.querySelector('[data-step="problem"]');}));
+    ok('…its three steps are each at least 44 px tall and side by side',await page.evaluate(()=>{const bs=[...document.querySelectorAll('.step.on [data-demo-phase]')].map(b=>b.getBoundingClientRect());return bs.length===3&&bs.every(r=>r.height>=44&&r.width>=60)&&bs[0].right<=bs[1].left&&bs[1].right<=bs[2].left&&Math.abs(bs[0].top-bs[2].top)<1;}));
+    {const id='fruitDemoScene',a=await demoCount(page,id);await page.waitForTimeout(300);ok(key+' under Reduce Motion paints a still frame without an ongoing loop, under its own heading',a>0&&await demoCount(page,id)===a&&await page.evaluate(w=>document.querySelector('.step.on h1').textContent===w,HEADS[key]),{a,now:await demoCount(page,id)});}
+    if(vp.width===390){
+     // under Reduce Motion nothing moves: the steps do not play by themselves, and a tap shows that step
+     await page.waitForTimeout(3500);
+     ok('under Reduce Motion the demo does not play itself: still on normal speed after 3.5 s, no step bar drawn',isPhase(await demoState(page),0)&&await page.evaluate(()=>getComputedStyle(document.querySelector('.step.on [data-demo-phase].on'),'::after').display==='none'),await demoState(page));
+     await calm(page);await page.locator('[data-step="reel"] [data-demo-phase="2"]').click();await page.waitForTimeout(4200);
+     ok('…a tap on "Slows down" shows the slowed game, still, and it stays there',isPhase(await demoState(page),2),await demoState(page));
+    }
    }
    clean('sales screens fit '+vp.width,errors);
   }finally{await context.close();}
  }
 });
 
+// ── EACH SOUND WITH A WORD, AND WHAT THE WEEKLY EMAIL LOOKS LIKE (1 Nov 2026) ──
+// The sound picker shows each sound with a word from Sona's own word bank
+// (its sound's letters orange); the email step shows the real report's
+// lines for the Monday email's made-up child (lib/weekly.ts EXAMPLE, through
+// lib/report.ts kidLines), marked "Example", with no child's name.
+await scenario('the sound picker shows a word with each sound; the email step shows an example report',async()=>{
+ const {context,page,errors}=await fresh({webSales:true});try{
+  await setupWalk(page,'sounds',{name:'Zephyrine'});await calm(page);
+  const chips=await page.evaluate(()=>[...document.querySelectorAll('#obSounds .sound')].map(b=>{const w=b.querySelector('.sound-word'),first=(Sona.WORDS[b.dataset.sound]||[]).find(x=>(x.pos||'i')==='i')||(Sona.WORDS[b.dataset.sound]||[])[0];return {s:b.dataset.sound,letters:(b.querySelector('.sound-letters')||{}).textContent,word:w?w.textContent:'',want:first?first.w:'',orange:w?[...w.querySelectorAll('b.snd')].map(x=>x.textContent).join(''):'',hidden:w?w.getAttribute('aria-hidden'):null,label:b.getAttribute('aria-label'),h:b.getBoundingClientRect().height};}));
+  ok('all nineteen sounds carry a word from Sona\'s word bank (its first start-of-word word), its sound\'s letters orange',chips.length===19&&chips.every(c=>c.word&&c.word===c.want&&c.orange.length>0&&c.word.indexOf(c.orange)>-1),chips.filter(c=>!(c.word&&c.word===c.want&&c.orange)));
+  ok('…R reads "R" over "rabbit", its r orange; the voiced TH has no start-of-word word, so it shows its first one, "mother", the th orange',(()=>{const r=chips.find(c=>c.s==='R'),v=chips.find(c=>c.s==='THV');return r.letters==='R'&&r.word==='rabbit'&&r.orange==='r'&&v.word==='mother'&&v.orange==='th';})(),chips.filter(c=>c.s==='R'||c.s==='THV'));
+  ok('…a screen reader hears each once: "R, as in rabbit" (the drawn word is hidden from it), the two THs told apart',chips.every(c=>c.hidden==='true'&&/, as in /.test(c.label))&&chips.find(c=>c.s==='TH').label==='TH, unvoiced, as in thumb'&&chips.find(c=>c.s==='THV').label==='TH, voiced, as in mother',chips.map(c=>c.label));
+  ok('…every chip still at least 44 px tall, under one line that says what to do',chips.every(c=>c.h>=44)&&await page.evaluate(()=>document.querySelector('[data-step="sounds"] .sound-ask').textContent==='Tap the sounds your child is working on.'));
+  await setupWalk(page,'updates');await calm(page);
+  const weekly=readFileSync(path.resolve(root,'../lib/weekly.ts'),'utf8'),ex=(weekly.match(/export const EXAMPLE: Kid = \{ d: (\d+), g: (\d+), r: (\d+), p: (\d+), s: \["([A-Z]+)"\] \};/)||[]).slice(1);
+  const [d,g,r,pr,snd]=ex,want=ex.length?['Last week on Sona: '+r+' reps','Said their sound out loud on '+d+' days','Reached the daily goal on '+g+' days',r+' reps: '+pr+' in practice, '+(r-pr)+' in games and books','Sound: '+snd]:[];
+  const card=await page.evaluate(()=>{const c=document.querySelector('[data-step="updates"] .upd-example');if(!c)return null;const b=c.getBoundingClientRect(),f=document.getElementById('updEmail').getBoundingClientRect();return {subject:c.querySelector('.upd-ex-subject').textContent,lines:[...c.querySelectorAll('.upd-ex-lines li')].map(l=>l.textContent),tag:c.querySelector('.upd-ex-tag').textContent,text:c.textContent,label:c.getAttribute('aria-label'),above:b.bottom<=f.top,shown:b.height>0};});
+  ok('the email step shows an example of the weekly email, marked "Example", above the email box',!!card&&card.shown&&card.above&&card.tag==='Example'&&/example/i.test(card.label||''),card);
+  ok('…its lines are the real report\'s, word for word, for the Monday email\'s made-up child (lib/weekly.ts EXAMPLE)',!!card&&want.length===5&&JSON.stringify([card.subject,...card.lines])===JSON.stringify(want),{card,want});
+  ok('…and no child\'s name, as the real email has none (not even the name just typed)',!!card&&!/Zephyrine|Child 1/.test(card.text),card&&card.text);
+  clean('sound words and the email example',errors);
+ }finally{await context.close();}
+});
+
 // ── SETUP MAKES NO SOUND (23 Oct 2026: no tap chime, and "Hear Echo" gone) ──
 await scenario('setup makes no sound: a whole walk, voice on, plays and fetches nothing to play',async()=>{
  const tts=['**/api/tts',r=>r.fulfill({status:200,contentType:'application/octet-stream',headers:{'X-Sona-Voice-Keep':'0'},body:Buffer.alloc(4800,7)})];
  {const {context,page,errors,requests}=await fresh({webSales:true,motion:true,routes:[tts]});try{
-  for(const to of ['reel','piano','rachel','name','interests','games','therapy','sounds','minutes','updates','ready']){await setupWalk(page,to);if(to==='reel')await page.waitForTimeout(700);}
+  for(const to of ['name','reel','rachel','interests','games','therapy','sounds','minutes','updates','ready']){await setupWalk(page,to);if(to==='reel')await page.waitForTimeout(700);}
   const h=await page.evaluate(()=>({media:__s.media.length,spoke:!!__s.spoke,synth:!!window.speechSynthesis&&window.speechSynthesis.speaking,mics:__s.mics}));
   ok('from the hello to the ready screen nothing plays: no recording, no spoken line, no browser voice, no microphone',h.media===0&&!h.spoke&&!h.synth&&h.mics===0,h);
   ok('…and nothing is fetched to play: no voice line, no take of a sound',!requests.some(r=>/\/api\/tts$|\/coach\/|\.wav$|\.mp3$/.test(r.url)),requests.filter(r=>/tts|coach|\.wav|\.mp3/.test(r.url)).map(r=>r.url));
@@ -256,7 +308,7 @@ const at=page=>page.evaluate(()=>({path:location.pathname,saved:!!(JSON.parse(lo
 const COUNT=()=>{addEventListener('pagehide',()=>{try{if(window.__s&&location.pathname==='/onboarding.html'){localStorage.setItem('__asks',String(window.__s.notifyAsks));localStorage.setItem('__remindSeen',window.seenSteps&&window.seenSteps.remind?'1':'0');localStorage.setItem('__plans',String(window.__s.plans));}}catch(e){}});};
 await scenario('the reminder ask: only where a reminder can be set and the price follows',async()=>{
  {const {context,page,errors}=await fresh({webSales:true,notify:NOTIFY,init:COUNT});try{
-  ok('an iPhone that can set a reminder, never asked, the price to follow: the reminder screen sits between ready and the microphone',await page.evaluate(()=>ORDER.join())==='welcome,reel,piano,rachel,name,interests,games,therapy,sounds,minutes,updates,ready,remind,mic');
+  ok('an iPhone that can set a reminder, never asked, the price to follow: the reminder screen sits between ready and the microphone',await page.evaluate(()=>ORDER.join())==='welcome,name,reel,rachel,interests,games,therapy,sounds,minutes,updates,ready,remind,mic');
   await setupWalk(page,'ready',{name:'Mia'});await next(page);await page.locator('[data-step="remind"].on').waitFor();
   const r=await page.evaluate(()=>{const st=document.querySelector('[data-step="remind"]'),painted=el=>getComputedStyle(el).display!=='none'&&el.getBoundingClientRect().height>0;return {title:document.getElementById('remindTitle').textContent,line:st.querySelector('.remind-line').textContent,yes:document.getElementById('remindYes').textContent,no:document.getElementById('remindNo').textContent,next:painted(document.getElementById('nextBtn')),back:painted(document.getElementById('backBtn')),bubble:document.getElementById('bubble').textContent,seg:document.getElementById('seg').hidden,focus:document.activeElement&&document.activeElement.id,saved:!!Sona.getProfile().onboarded,asks:__s.notifyAsks,name:/Mia/.test(st.textContent)};});
   ok('it asks, in a few words: "Want reminders during your free trial?", "A practice reminder each day, and one the day before it ends.", "Turn on reminders" or "Not now"',r.title==='Want reminders during your free trial?'&&r.line==='A practice reminder each day, and one the day before it ends.'&&r.yes==='Turn on reminders'&&r.no==='Not now'&&r.bubble==='I\'ll give you a heads-up!'&&!r.name,r);

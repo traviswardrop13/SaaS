@@ -137,26 +137,27 @@ for (const [who, seed] of [["a fresh family", () => {}],
   ok("…and Echo hosts every step of setup, start to finish",
     hosts.length > 1 && hosts.every((h) => h.endsWith(":echo")), JSON.stringify(hosts));
   // (a child already set up walking setup again is not sold to again: no screens that sell)
-  ok("…a walk that reaches the microphone, by way of both one-tap questions, " + (who === "a fresh family" ? "the screens that sell (the two game demos, Rachel, what the child loves, their games), " : "") + "the optional email step and the ready screen",
-    hosts.map((h) => h.split(":")[0]).join() === (who === "a fresh family" ? "welcome,reel,piano,rachel,name,interests,games,therapy,sounds,minutes,updates,ready,mic" : "welcome,name,therapy,sounds,minutes,updates,ready,mic"), JSON.stringify(hosts));
+  ok("…a walk that reaches the microphone, by way of both one-tap questions, " + (who === "a fresh family" ? "the screens that sell (the Fruit Slice demo, Rachel, what the child loves, their games), " : "") + "the optional email step and the ready screen",
+    hosts.map((h) => h.split(":")[0]).join() === (who === "a fresh family" ? "welcome,name,reel,rachel,interests,games,therapy,sounds,minutes,updates,ready,mic" : "welcome,name,therapy,sounds,minutes,updates,ready,mic"), JSON.stringify(hosts));
   await ob2.close();
 }
 
 // ── the real walk, to the hand-off ──
 // one press of whatever moves setup on (the stepper above)
 const clickNext = async () => { await settledOb(page); await page.evaluate(STEP); await page.waitForTimeout(250); await beatGone(page); };
-await clickNext(); // the hello → the Fruit Slice demo, "Speech practice. Through play."
-// (the "problem" slide that came between them went on 31 Oct 2026: its words
-// now head the Fruit Slice demo)
-ok("after the hello comes the Fruit Slice demo, the first screen that sells Sona, headed \"Speech practice. Through play.\"",
-  (await onStep(page)) === "reel" && await page.evaluate(() => document.getElementById("reelTitle").textContent === "Speech practice.Through play." && !document.querySelector('[data-step="problem"]')), await onStep(page));
-await clickNext(); await clickNext(); // → Piano Tiles → Rachel, on her own
-ok("…then both game demos and Rachel on her own screen, her line word for word",
-  (await onStep(page)) === "rachel" && await page.evaluate(() => document.getElementById("rachelLine").textContent) === RACHEL_LINE, await onStep(page));
-await clickNext(); // → name
+await clickNext(); // the hello → the child's name (1 Nov 2026: "right after the hello")
+ok("after the hello comes the child's name and age", (await onStep(page)) === "name", await onStep(page));
 await page.evaluate(() => { document.getElementById("obName").value = "Milo"; });
-await clickNext(); // name → "What does Milo love?"
-ok("after the name comes \"What does Milo love?\", then \"Games Milo will love\"", (await onStep(page)) === "interests" && await page.evaluate(() => document.getElementById("intName").textContent) === "Milo", await onStep(page));
+await clickNext(); // name → the Fruit Slice demo, "Speech practice. Through play."
+// (the "problem" slide went on 31 Oct 2026: its words now head the Fruit Slice
+// demo; Piano Tiles' demo went on 1 Nov 2026)
+ok("after the name comes the Fruit Slice demo, the first screen that sells Sona, headed \"Speech practice. Through play.\"",
+  (await onStep(page)) === "reel" && await page.evaluate(() => document.getElementById("reelTitle").textContent === "Speech practice.Through play." && !document.querySelector('[data-step="problem"]') && !document.querySelector('[data-step="piano"]')), await onStep(page));
+await clickNext(); // → Rachel, on her own
+ok("…then Rachel on her own screen, her line word for word",
+  (await onStep(page)) === "rachel" && await page.evaluate(() => document.getElementById("rachelLine").textContent) === RACHEL_LINE, await onStep(page));
+await clickNext(); // → "What does Milo love?"
+ok("after Rachel comes \"What does Milo love?\", then \"Games Milo will love\"", (await onStep(page)) === "interests" && await page.evaluate(() => document.getElementById("intName").textContent) === "Milo", await onStep(page));
 await clickNext(); // → the games
 await clickNext(); // → "Is Milo in speech therapy?"
 ok("…then one tap: \"Is Milo in speech therapy?\"", (await onStep(page)) === "therapy", await onStep(page));
@@ -261,14 +262,13 @@ ok("onboarding no pageerrors", errs.length === 0);
   const pg2 = await browser.newPage({ viewport: { width: 390, height: 844 } });
   await pg2.goto("http://localhost:8129/onboarding.html"); await pg2.waitForTimeout(700);
   await pg2.evaluate(() => document.getElementById("nextBtn").click()); await pg2.waitForTimeout(200);   // the hello's button
-  const first = await pg2.evaluate(() => (document.querySelector(".step.on") || {}).dataset?.step);
-  for (let i = 0; i < 3; i++) { await settledOb(pg2); await pg2.evaluate(STEP); await pg2.waitForTimeout(300); }   // Fruit Slice, Piano Tiles, Rachel → the name
   const seen = await pg2.evaluate(() => ({ title: (document.querySelector('[data-step="name"] .qh') || {}).textContent || "", on: (document.querySelector(".step.on") || {}).dataset?.step }));
-  ok("the screen after the hello is the Fruit Slice demo (no \"problem\" slide since 31 Oct 2026), and three screens later the child's name: \"Who's practicing?\"", first === "reel" && seen.on === "name" && /^Who's practicing\?$/.test(seen.title.trim()), JSON.stringify([first, seen]));
-  // Parents go from the child's details to what the child loves, their
-  // games, one tap ("Is <Name> in speech therapy?"), then a compact sound grid.
+  ok("the screen after the hello is the child's name (1 Nov 2026: \"right after the hello\"): \"Who's practicing?\"", seen.on === "name" && /^Who's practicing\?$/.test(seen.title.trim()), JSON.stringify(seen));
+  // Parents go from the child's details to the Fruit Slice demo, Rachel, what
+  // the child loves, their games, one tap ("Is <Name> in speech therapy?"),
+  // then a compact sound grid.
   await pg2.evaluate(() => { document.getElementById("obName").value = "Milo"; });
-  for (let i = 0; i < 3; i++) { await settledOb(pg2); await pg2.evaluate(STEP); await pg2.waitForTimeout(300); }   // → what they love → their games → therapy
+  for (let i = 0; i < 5; i++) { await settledOb(pg2); await pg2.evaluate(STEP); await pg2.waitForTimeout(300); }   // → the demo → Rachel → what they love → their games → therapy
   const asked = await pg2.evaluate(() => ({ on: (document.querySelector(".step.on") || {}).dataset?.step, title: (document.getElementById("therapyTitle") || {}).textContent || "", answers: document.querySelectorAll("#obTherapy .ask-pick").length, overflow: document.documentElement.scrollWidth > innerWidth }));
   ok("then one tap, \"Is <Name> in speech therapy?\": one short heading and three answers (Yes, No, Not yet)", asked.on === "therapy" && asked.title === "Is Milo in speech therapy?" && asked.answers === 3 && !asked.overflow, JSON.stringify(asked));
   await settledOb(pg2); await pg2.evaluate(STEP); await pg2.waitForTimeout(300);   // an answer → the sounds
@@ -288,10 +288,10 @@ ok("onboarding no pageerrors", errs.length === 0);
   await pg.evaluate(() => { localStorage.clear(); sessionStorage.clear(); });
   await pg.goto("http://localhost:8129/onboarding.html"); await pg.waitForTimeout(800);
   const hop = async (ms) => { await settledOb(pg); await pg.evaluate(STEP); await pg.waitForTimeout(ms || 250); await beatGone(pg); };
-  await hop(); await hop(); await hop(); await hop(); // hello → Fruit Slice → Piano Tiles → Rachel → name
+  await hop(); // hello → name (1 Nov 2026: "right after the hello")
   await pg.evaluate(() => { document.getElementById("obName").value = "Rosie"; });
   await pg.evaluate(() => document.querySelector('#obAge .sound[data-age="6"]').click());
-  await hop(); // name → "What does Rosie love?"
+  await hop(); // name → the Fruit Slice demo
   const held = await pg.evaluate(() => JSON.parse(localStorage.getItem("sona.obdraft.v1") || "null"));
   ok("what a parent typed is written down as they go",
     !!held && held.childName === "Rosie" && String(held.childAge) === "6", JSON.stringify(held));
@@ -306,11 +306,11 @@ ok("onboarding no pageerrors", errs.length === 0);
   // it is a scratchpad, not a profile: saving the profile must clear it, or a
   // stale draft shadows the real thing on the next visit
   // the reload put them back at the top with their answers intact, so this
-  // walks the whole flow again: the hello → the screens that sell → name →
-  // what they love → their games → therapy → sounds → minutes → ready, whose
-  // Continue saves the profile and tears it up
-  await hop(); await hop(); await hop(); await hop();   // hello, Fruit Slice, Piano Tiles, Rachel → name
-  await hop(); await hop(); await hop(); await hop();   // name, what they love, their games, therapy (an answer) → sounds
+  // walks the whole flow again: the hello → name → the screens that sell
+  // (the Fruit Slice demo, Rachel, what they love, their games) → therapy →
+  // sounds → minutes → ready, whose Continue saves the profile and tears it up
+  await hop(); await hop(); await hop();                 // hello, name, Fruit Slice → Rachel
+  await hop(); await hop(); await hop(); await hop();   // Rachel, what they love, their games, therapy (an answer) → sounds
   await pg.locator('#obExploreSounds').click();          // → how long each day
   await hop();                                           // an answer → the email step
   await hop();                                           // Skip → ready
@@ -360,9 +360,9 @@ ok("onboarding no pageerrors", errs.length === 0);
     door.says.slice(0, 200));
 
   const hop = async (ms) => { await settledOb(pg); await pg.evaluate(STEP); await pg.waitForTimeout(ms || 250); await beatGone(pg); };
-  await hop(); await hop(); await hop(); await hop(); // hello → Fruit Slice → Piano Tiles → Rachel → name
+  await hop(); // hello → name (1 Nov 2026: "right after the hello")
   await pg.evaluate(() => { document.getElementById("obName").value = "Sam"; });
-  await hop(); await hop(); await hop(); // name → what they love → their games → therapy
+  await hop(); await hop(); await hop(); await hop(); await hop(); // name → Fruit Slice → Rachel → what they love → their games → therapy
   await hop(); // an answer → the sounds
   await pg.locator('#obExploreSounds').click();
   const landed = await pg.evaluate(() => ({
@@ -401,9 +401,9 @@ await page.goto("http://localhost:8129/onboarding.html"); await page.waitForTime
 const nameStep = await page.evaluate(() => document.querySelector('[data-step="name"]').textContent);
 ok("name question carries justification microcopy", /cheers them on by name|knows who to cheer for/.test(nameStep));
 // This is the parent path, with an optional email after the core setup.
-await clickNext(); await clickNext(); await clickNext(); await clickNext(); // hello → Fruit Slice → Piano Tiles → Rachel → name
+await clickNext(); // hello → name (1 Nov 2026: "right after the hello")
 await page.evaluate(() => { document.getElementById("obName").value = "Zoe"; });
-await clickNext(); await clickNext(); await clickNext(); // name → what they love → their games → therapy
+await clickNext(); await clickNext(); await clickNext(); await clickNext(); await clickNext(); // name → Fruit Slice → Rachel → what they love → their games → therapy
 await clickNext(); // an answer → sounds
 // SOUNDS1: the picker is open for everyone (no SLP code) — choose R and S
 const pickState = await page.evaluate(() => {
@@ -455,9 +455,9 @@ ok("nobody becomes an SLP by accident", skipFin.prof.role !== "slp", JSON.string
 // General play remains a one-tap option on the shared sound-selection screen.
 await page.evaluate(() => { localStorage.clear(); sessionStorage.clear(); });
 await page.goto("http://localhost:8129/onboarding.html"); await page.waitForTimeout(900);
-await clickNext(); await clickNext(); await clickNext(); await clickNext(); // hello → Fruit Slice → Piano Tiles → Rachel → name
+await clickNext(); // hello → name (1 Nov 2026: "right after the hello")
 await page.evaluate(() => { document.getElementById("obName").value = "Nora"; });
-await clickNext(); await clickNext(); await clickNext(); // name → what they love → their games → therapy
+await clickNext(); await clickNext(); await clickNext(); await clickNext(); await clickNext(); // name → Fruit Slice → Rachel → what they love → their games → therapy
 await clickNext(); // an answer → sounds
 await page.locator('#obExploreSounds').click();
 const playSkip = await page.evaluate(() => ({

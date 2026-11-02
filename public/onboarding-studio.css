@@ -42,13 +42,13 @@ body[data-setup-screen="reel"] .obfoot #backBtn { background:none; box-shadow:no
 .studio-welcome-art { position:relative; flex:1; min-height:145px; max-height:360px; margin:26px 5px 8px; border:6px solid #ffe09a; border-radius:50% 50% 15px 15px; background:url('/assets/crafted/orchard-game.webp') center 38%/cover; transform:rotate(3deg); overflow:hidden; }
 .studio-welcome-art img { position:absolute; height:78%; width:74%; object-fit:contain; bottom:2%; left:13%; transform:rotate(-3deg); }
 .studio-welcome-art span { position:absolute; top:15%; left:5%; background:#fff8e9; border:1px solid #efd496; border-radius:15px 15px 2px 15px; padding:9px 14px; font:900 12px/1.2 'Nunito',sans-serif; transform:rotate(-6deg); }
-/* A live, silent comparison per game, in a bounded stage above Continue. */
-body[data-setup-screen="reel"] .ob,body[data-setup-screen="piano"] .ob { overflow:hidden; }
-.ob .step[data-step="reel"].on,.ob .step[data-step="piano"].on { justify-content:flex-start; padding:0; }
-.ob .step[data-step="reel"] .qh,.ob .step[data-step="piano"] .qh { font-size:32px; margin:0 0 20px; }
+/* The live, silent Fruit Slice demo, in a bounded stage above Continue. It
+   plays itself (onboarding.html, DEMO_PHASES): normal, "says rrrr", slower. */
+body[data-setup-screen="reel"] .ob { overflow:hidden; }
+.ob .step[data-step="reel"].on { justify-content:flex-start; padding:0; }
+.ob .step[data-step="reel"] .qh { font-size:32px; margin:0 0 20px; }
 .demo-scene { position:relative; flex:1; min-height:180px; max-height:440px; overflow:hidden; isolation:isolate; touch-action:none; border:5px solid #ffe09a; border-radius:28px; }
 .demo-scene.fruit-scene { background:#fbd68d url('/assets/crafted/fruit-market-v3.webp') center/cover; }
-.demo-scene.piano-scene { background:#302361 url('/assets/crafted/piano-stage-v2.webp') center/cover; }
 .demo-canvas { position:absolute; inset:0; display:block; width:100%; height:100%; touch-action:none; }
 .demo-top { position:absolute; z-index:2; top:10px; left:10px; right:10px; display:flex; justify-content:space-between; gap:5px; pointer-events:none; font:900 10px/1.3 'Nunito',sans-serif; }
 .demo-top span { padding:6px 9px; background:#fffaf1f2; border-radius:30px; color:var(--studio-ink); }
@@ -56,15 +56,28 @@ body[data-setup-screen="reel"] .ob,body[data-setup-screen="piano"] .ob { overflo
 .demo-help img { width:36px; height:36px; object-fit:contain; }
 .demo-help strong { font:800 23px/1 'Baloo 2',sans-serif; color:#6c4c31; }
 .demo-help svg { width:16px; height:16px; color:#9c7b53; }
+/* the child's turn: Echo listening, the sound big, the bubble glowing */
+.demo-scene.say .demo-help { background:#fff3d6; border-color:#f0b54a; box-shadow:0 3px 0 #d79a2c, 0 0 0 6px #ffd98a66; animation:demo-say .8s ease-in-out infinite alternate; }
+.demo-scene.say .demo-help strong { color:#c2410c; }
+@keyframes demo-say { from { transform:translateX(-50%) scale(1); } to { transform:translateX(-50%) scale(1.08); } }
 .demo-scene.slow .demo-help { background:#ddf7ee; border-color:#56b4a9; box-shadow:0 3px 0 #32968d; }
 .demo-scene.slow .demo-help svg { color:#188c85; }
 .demo-scene.slow::after { content:''; position:absolute; inset:0; border:2px solid #61c3b0; border-radius:22px; z-index:3; pointer-events:none; }
 .demo-message { position:absolute; z-index:2; bottom:9px; left:50%; transform:translateX(-50%); max-width:90%; white-space:nowrap; margin:0; padding:6px 13px; background:#fff9edf5; color:var(--studio-ink); font:900 10px/1.3 'Nunito',sans-serif; border-radius:99px; pointer-events:none; }
-.piano-scene .demo-message { bottom:66px; }
-.demo-switch { display:flex; flex:none; gap:7px; margin:12px 0 3px; }
-.demo-switch button { flex:1; background:#fffdf8; color:#786959; border:1px solid var(--studio-line); border-radius:30px; padding:8px; min-height:46px; font:900 11px/1.3 'Nunito',sans-serif; cursor:pointer; }
-.demo-switch button.on { color:var(--act-d); border-color:var(--act); background:#ffe4cc; }
-.demo-switch button:focus-visible { outline:3px solid var(--act-d); outline-offset:2px; }
+/* the three steps under the scene: they light up as the demo plays, the
+   lit one's bar filling for its phase's length (a tap jumps there) */
+.demo-steps { display:flex; flex:none; align-items:center; gap:4px; margin:12px 0 3px; }
+.demo-steps i { flex:none; color:#c4ad8e; font:900 18px/1 'Nunito',sans-serif; font-style:normal; }
+.demo-steps button { position:relative; flex:1; min-width:0; display:flex; align-items:center; justify-content:center; gap:6px; background:#fffdf8; color:#786959; border:1px solid var(--studio-line); border-radius:16px; padding:7px 6px 9px; min-height:50px; overflow:hidden; font:900 12px/1.2 'Nunito',sans-serif; text-align:left; cursor:pointer; }
+.demo-steps button b { flex:none; display:flex; align-items:center; justify-content:center; width:20px; height:20px; border-radius:50%; background:#f3e7d5; color:#8a7458; font:900 11px/1 'Nunito',sans-serif; }
+.demo-steps button.on { color:var(--act-d); border-color:var(--act); background:#ffe4cc; }
+.demo-steps button.on b { background:var(--act); color:#fff; }
+.demo-steps button[data-demo-phase="2"].on { color:#0b6f6a; border-color:#3aa99f; background:#ddf7ee; }
+.demo-steps button[data-demo-phase="2"].on b { background:#1f9c93; }
+.demo-steps button.on::after { content:''; position:absolute; left:10px; right:10px; bottom:4px; height:3px; border-radius:2px; background:currentColor; opacity:.55; transform-origin:left center; animation:demo-fill var(--demo-ms,3s) linear forwards; }
+@keyframes demo-fill { from { transform:scaleX(0); } to { transform:scaleX(1); } }
+.demo-steps button:focus-visible { outline:3px solid var(--act-d); outline-offset:2px; }
+@media (prefers-reduced-motion:reduce) { .demo-scene.say .demo-help { animation:none; } .demo-steps button.on::after { display:none; } }
 .ob .rachel-photo { width:78%; max-width:265px; aspect-ratio:1 / 1.1; height:auto; border:8px solid #ffd47c; border-radius:24px; transform:rotate(3deg); box-shadow:none; margin:0 auto 25px; }
 .ob .rachel-photo img { object-fit:cover; border-radius:17px; }
 .ob .step[data-step="rachel"] .qh { text-align:center; font-size:28px; }
@@ -100,6 +113,15 @@ html body[data-setup-screen="name"] .ob #ageLabel { margin-top:30px; margin-bott
 .ask-big .ask-pick b { font:800 30px/1 'Baloo 2',sans-serif; }
 .ob #obSounds .sound { border-radius:18px; box-shadow:0 3px 0 var(--studio-line); }
 .ob #obSounds .sound.on { box-shadow:0 3px 0 var(--act-d); }
+/* the example weekly email on the email step: a small card like a mail
+   preview, marked "Example" */
+.upd-example { margin:4px 0 2px; padding:11px 14px 10px; background:#fffdf8; border:1px solid var(--studio-line); border-radius:16px; box-shadow:0 3px 0 #ead9bd; text-align:left; }
+.upd-ex-head { display:flex; align-items:center; justify-content:space-between; margin:0 0 3px; }
+.upd-ex-from { font:900 12px/1.2 'Nunito',sans-serif; color:var(--act-d); }
+.upd-ex-tag { padding:2px 8px; border-radius:99px; background:#f3e7d5; color:#8a7458; font:900 10px/1.3 'Nunito',sans-serif; letter-spacing:.04em; text-transform:uppercase; }
+.upd-ex-subject { margin:0 0 6px; font:800 15px/1.25 'Baloo 2',sans-serif; color:var(--studio-ink); }
+.upd-ex-lines { margin:0; padding:0 0 0 16px; color:#786959; font:700 12px/1.45 'Nunito',sans-serif; }
+body.keyboard-open[data-setup-screen="updates"] .upd-example { display:none; }
 .ready-chips li { background:#fffdf8; border-color:var(--studio-line); color:var(--act-d); box-shadow:none; }
 .ob .ready-hedge,.ob .upd-consent { font-size:11px; line-height:1.6; }
 @media(max-height:700px) {
@@ -110,14 +132,14 @@ html body[data-setup-screen="name"] .ob #ageLabel { margin-top:30px; margin-bott
  .welcome-brand { font-size:34px; }
  .studio-welcome-art { margin-top:18px; }
  .studio-kicker { margin-bottom:8px; font-size:9px; }
- .ob .step[data-step="reel"] .qh,.ob .step[data-step="piano"] .qh { font-size:27px; margin-bottom:12px; }
+ .ob .step[data-step="reel"] .qh { font-size:27px; margin-bottom:12px; }
  .demo-top { top:7px; left:7px; right:7px; font-size:9px; }
  .demo-top span { padding:5px 8px; }
  .demo-help { top:40px; height:37px; min-width:116px; gap:7px; }
  .demo-help img { width:31px; height:31px; }
  .demo-help strong { font-size:21px; }
- .demo-switch { margin-top:9px; }
- .demo-switch button { font-size:10px; }
+ .demo-steps { margin-top:9px; }
+ .demo-steps button { font-size:11px; min-height:46px; gap:4px; }
  .ob .rachel-photo { max-width:220px; width:65%; margin-bottom:17px; }
  .ob .step[data-step="rachel"] .qh { font-size:26px; }
  .int-grid { gap:7px; }

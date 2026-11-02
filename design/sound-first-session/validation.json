@@ -1,6 +1,6 @@
 {
-  "reviewDate": "2026-11-01",
-  "baseCommit": "eac12b4bf7f8d658ba2a7c855b2ad3d0861aebe1",
+  "reviewDate": "2026-11-02",
+  "baseCommit": "cf977cd9ddfb5e97bab7277662b6c5e7a9601eee",
   "fullBattery": {
     "command": "node tests/run-all.mjs",
     "suites": 163,
@@ -48,9 +48,9 @@
     "currentIntegratedCandidate": "Pending; the recorded exit0 applies only to the earlier merge named above."
   },
   "regressionEvidence": "New target selection, stale-sibling protection, whole-Home fit and signature-adventure checks failed against saved pre-change sources. Five Auto-selection checks fail against the pre-fix Home, including real keyboard selection of the already-current sound. The final reimagined-Home suite fails the saved old layout in 145 of 596 checks; four visible sound-chip checks fail the old Home while 42 sound checks still pass.",
-  "releaseState": "User authorized merge of the finished scope. The approved Map and parent-only target/book changes are integrated with upstream first-session work; the generated voice index is current and the clean tracked-source TypeScript check passed. The full release run stopped after suite failures and must be rerun; no completed remote push, main merge or publication is claimed. Gym and avatar work are excluded.",
+  "releaseState": "Travis explicitly resumed finishing and releasing the chosen Home and books on 2 November. Latest main setup and seven-day monthly-first paywall changes are preserved. Focused Home scroll-lock checks pass; full release battery is pending. GitHub publishing access is unresolved. No remote push, main merge or production release is claimed; Rachel clinical review remains recorded as pending. Gym and avatar are excluded.",
   "bookExpansion": {
-    "requested": "Six new 8-page books for R,S,L,SH,CH,TH; B book expanded from six to eight pages; strict selected-sound shelf.",
+    "requested": "Six new eight-page books for R,S,L,SH,CH,TH plus Bear's Lost Ball, expanded from its local six-page draft; all seven are additions relative to published main. Strict selected-sound shelf.",
     "sourceChecks": "All public script syntax parses; exact captions and bank-only key words validated with existing booklex plus official CMUdict entries.",
     "artwork": {
       "status": "Complete; original style retained, each accepted picture visually checked",
@@ -65,7 +65,7 @@
       "exitCode": 0,
       "details": "All 55 books and 554 pages, seven complete eight-page reader flows, strict selected-sound shelves, real reload persistence, microphone/TTS safeguards and original painted scenes."
     },
-    "fullBattery": "A full release battery remains unfinished. Expanded-book focused checks passed before the new Home iteration. Current instruction is local review only; no full release run or publishing is claimed.",
+    "fullBattery": "Historical focused checks precede the current candidate. User resumed release on 2 November; a complete passing integrated battery remains required before publication.",
     "regressionEvidence": {
       "savedOldPage": "98c572b3:public/library.html",
       "isolatedReaderExitCode": 1,
@@ -437,7 +437,7 @@
       "savedIdentity": "Upstream fourteen-slot schedule and saved t1 identity preserved. No signature-v1 route or Picnic game alias is activated.",
       "clinical": "Existing upstream prompts, models, three-saying word moments and rep counting preserved; no new cue or accepted-rep simulation used for screenshots."
     },
-    "homeCover": "Talking stories use their existing canonical Home cover; legacy stories retain their original portrait with Home/Echo fallback. Sandy\u2019s internal soup opening remains unchanged and correctly belongs to the talking story.",
+    "homeCover": "Talking stories use their existing canonical Home cover; legacy stories retain their original portrait with Home/Echo fallback. Sandy’s internal soup opening remains unchanged and correctly belongs to the talking story.",
     "screenshots": [
       {
         "file": "home-preview.png",
@@ -633,5 +633,33 @@
       },
       "voiceIndexCurrent": true
     }
+  },
+  "currentReleaseCandidate": {
+    "date": "2026-11-02",
+    "upstream": "cf977cd9ddfb5e97bab7277662b6c5e7a9601eee",
+    "scope": "Chosen Play Map, read-only target badges, parent-only target setting, strict sound shelf, seven eight-page books. Preserve upstream setup and monthly-first store-owned trial. No Gym or avatar.",
+    "originalCatalogAudit": {
+      "oldBooks": 48,
+      "newBooks": 55,
+      "originalBookObjectsChanged": 0,
+      "duplicateTitles": 0,
+      "missingReferencedBookPictures": 0
+    },
+    "homeScrollLock": {
+      "before": {
+        "exitCode": 1,
+        "log": "/private/tmp/sona-flat-lock-before.log",
+        "failure": "a fitted Home locks vertical page movement"
+      },
+      "after": {
+        "exitCode": 0,
+        "log": "/private/tmp/sona-flat-lock-after.log",
+        "scenarios": 21
+      },
+      "scope": "Real complete Home fit and tap targets, height-only resizing, fit-dependent scroll lock, Arcade scroll release."
+    },
+    "fullBattery": "Pending fresh complete run",
+    "clinicalReview": "Rachel review of selected-target behavior and seven books remains pending; no clinical approval is inferred from the release request.",
+    "publication": "Pending; GitHub write access unresolved; nothing pushed or merged remotely."
   }
 }

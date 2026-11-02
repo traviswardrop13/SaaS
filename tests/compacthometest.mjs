@@ -33,7 +33,7 @@ try {
         const m=await page.evaluate(()=>{
           const ids=['buddyBtn','giftBtn','parentBtn','questCard','questGo','questDone','mapTomorrow','arcadeBtn','homeBooksBtn','foundRow'];
           const textBox=sel=>{const e=document.querySelector(sel);if(!e)return null;const r=document.createRange();r.selectNodeContents(e);return r.getBoundingClientRect().toJSON();};
-          return {height:innerHeight,scroll:document.documentElement.scrollHeight,client:document.documentElement.clientHeight,scrollWidth:document.documentElement.scrollWidth,width:innerWidth,homeTitle:textBox('#homeTitle'),soundText:textBox('#homeSoundValue'),soundBox:document.getElementById('homeSoundWrap')?.getBoundingClientRect().toJSON(),goal:Sona.dayGoal(),readonly:!document.querySelector('#homeSound,#homeSoundWrap select,#homeSoundWrap input,#homeSoundWrap [role=combobox]'),words:[...document.querySelectorAll('#homeDoors .door-word')].map(e=>e.getBoundingClientRect().top),
+          return {flat:document.documentElement.classList.contains('home-flat'),overflow:getComputedStyle(document.documentElement).overflowY,height:innerHeight,scroll:document.documentElement.scrollHeight,client:document.documentElement.clientHeight,scrollWidth:document.documentElement.scrollWidth,width:innerWidth,homeTitle:textBox('#homeTitle'),soundText:textBox('#homeSoundValue'),soundBox:document.getElementById('homeSoundWrap')?.getBoundingClientRect().toJSON(),goal:Sona.dayGoal(),readonly:!document.querySelector('#homeSound,#homeSoundWrap select,#homeSoundWrap input,#homeSoundWrap [role=combobox]'),words:[...document.querySelectorAll('#homeDoors .door-word')].map(e=>e.getBoundingClientRect().top),
             boxes:ids.map(id=>{const e=document.getElementById(id);if(!e)return {id,visible:false};const r=e.getBoundingClientRect();return {id,visible:!!e.offsetParent,top:r.top,bottom:r.bottom,left:r.left,right:r.right,height:r.height,width:r.width};})};
         });
         assert.ok(m.readonly,'Home sound has no child picker');
@@ -41,10 +41,14 @@ try {
         assert.ok(m.soundText.left>=m.soundBox.left+3&&m.soundText.right<=m.soundBox.right-3,'the effective sound fits its badge');
         assert.ok(m.scrollWidth<=m.width+1,'Home has no horizontal page scroll');
         assert.ok(m.scroll<=m.client+1,`${width}x${height}, mode=${mode}: Home scrolls ${m.scroll-m.client}px`);
+        assert.ok(m.flat&&m.overflow==='hidden','a fitted Home locks vertical page movement');
         const gamesDoor=m.boxes.find(b=>b.id==='arcadeBtn'),booksDoor=m.boxes.find(b=>b.id==='homeBooksBtn');
         if(Math.abs(gamesDoor.top-booksDoor.top)<1)assert.ok(Math.abs(m.words[0]-m.words[1])<1,`side-by-side door labels align at ${width}: ${m.words}`);
         else assert.ok(width>=760&&height<=850&&gamesDoor.bottom<=booksDoor.top&&Math.abs(gamesDoor.left-booksDoor.left)<1&&Math.abs(gamesDoor.width-booksDoor.width)<1,'landscape Map doors form one aligned stack beside the story');
-        if(width===390&&!completed) await page.screenshot({path:process.env.TEST_OUT ? process.env.TEST_OUT+'/sona-home.png' : '/private/tmp/sona-home.png'});
+        if((width===390&&mode==='fresh')||(width===320&&height===568&&mode!=='history')||(width===1024&&mode==='fresh')) {
+          const name=`sona-home-${width}x${height}-${mode}.png`;
+          await page.screenshot({path:(process.env.TEST_OUT||'/private/tmp')+'/'+name});
+        }
         for(const b of m.boxes.filter(b=>b.visible)) assert.ok(b.top>=0&&b.bottom<=m.height-4,`${b.id} outside screen: ${JSON.stringify(m)}`);
         if(mode!=='fresh') assert.ok(m.boxes.find(b=>b.id==='foundRow').visible,'all earned games remain reachable');
         const tomorrow=m.boxes.find(b=>b.id==='mapTomorrow'),card=m.boxes.find(b=>b.id==='questCard'),door=m.boxes.find(b=>b.id==='arcadeBtn'),action=m.boxes.find(b=>b.id===(completed?'questDone':'questGo'));
@@ -60,6 +64,7 @@ try {
         assert.ok(resized.scroll<=resized.client+1,`height-only resize ${width}x${height}, mode=${mode}: ${JSON.stringify(resized)}`);
         await page.click('#arcadeBtn');
         assert.equal(await page.getAttribute('#libraryApp','data-view'),'arcade');
+        assert.ok(await page.evaluate(()=>!document.documentElement.classList.contains('home-flat')),'Arcade releases the Home scroll lock');
         assert.ok(await page.evaluate(()=>document.documentElement.scrollHeight>innerHeight),'Arcade can still scroll through all games');
         await page.waitForTimeout(550);
         await page.click('#homeBack');
