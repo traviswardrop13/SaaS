@@ -48,7 +48,7 @@
     "currentIntegratedCandidate": "Pending; the recorded exit0 applies only to the earlier merge named above."
   },
   "regressionEvidence": "New target selection, stale-sibling protection, whole-Home fit and signature-adventure checks failed against saved pre-change sources. Five Auto-selection checks fail against the pre-fix Home, including real keyboard selection of the already-current sound. The final reimagined-Home suite fails the saved old layout in 145 of 596 checks; four visible sound-chip checks fail the old Home while 42 sound checks still pass.",
-  "releaseState": "Travis explicitly resumed finishing and releasing the chosen Home and books on 2 November. Latest main setup and seven-day monthly-first paywall changes are preserved. Focused Home scroll-lock checks pass; full release battery is pending. GitHub publishing access is unresolved. No remote push, main merge or production release is claimed; Rachel clinical review remains recorded as pending. Gym and avatar are excluded.",
+  "releaseState": "Travis explicitly resumed finishing and releasing the chosen Home and books on 2 November. Latest main setup and seven-day monthly-first paywall changes are preserved. Focused Home scroll-lock checks pass; full release battery is pending. GitHub publishing access is unresolved. No remote push, main merge or production release is claimed; Travis confirmed Rachel approved the new books' words and pictures and the parent-only target sound setting on 2 November; separate upstream review questions remain recorded. Gym and avatar are excluded.",
   "bookExpansion": {
     "requested": "Six new eight-page books for R,S,L,SH,CH,TH plus Bear's Lost Ball, expanded from its local six-page draft; all seven are additions relative to published main. Strict selected-sound shelf.",
     "sourceChecks": "All public script syntax parses; exact captions and bank-only key words validated with existing booklex plus official CMUdict entries.",
@@ -303,7 +303,7 @@
       "public/library.html": "08fbb49173746ceeb99a70804241b0b5cda42bd38a2ad6bbea810ed4277026d0"
     },
     "behavior": "Original portrait story art with the Start action; only real saved completed adventures produce gold stars; tomorrow remains locked. Home and Books show the current sound read-only. Target changes remain behind Grown-ups in Settings.",
-    "clinicalScope": "No sound models, cues, target banks, verdicts or rep rules changed. Rachel reviews parent-only target behavior and the new books before release.",
+    "clinicalScope": "No sound models, cues, target banks, verdicts or rep rules changed. Travis confirmed Rachel approved the new books' words and pictures and the parent-only target sound setting on 2 November; separate upstream Day 1 questions remain recorded.",
     "restorationChecks": {
       "mapBehaviorSmoke": {
         "checks": 98,
@@ -659,7 +659,13 @@
       "scope": "Real complete Home fit and tap targets, height-only resizing, fit-dependent scroll lock, Arcade scroll release."
     },
     "fullBattery": "Pending fresh complete run",
-    "clinicalReview": "Rachel review of selected-target behavior and seven books remains pending; no clinical approval is inferred from the release request.",
+    "clinicalReview": {
+      "date": "2026-11-02",
+      "confirmedBy": "Travis",
+      "answer": "Yes, Rachel has approved them",
+      "scope": "New books' words and pictures and the parent-only target sound setting",
+      "upstreamBoundary": "This confirmation is not extended to the separate upstream Day 1 clinical questions recorded in CLAUDE.md."
+    },
     "publication": "Pending; GitHub write access unresolved; nothing pushed or merged remotely."
   }
 }

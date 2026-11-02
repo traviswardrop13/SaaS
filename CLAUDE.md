@@ -70,7 +70,8 @@ overflow on the busiest 320×568 screen. Only the most compact layout now
 visually hides the “Your games” heading, preserving its accessible label and
 every replay button; that exact case passes. Release checks remain pending. The
 Arcade still scrolls. Access, saved progress, models, cues and rep rules are
-unchanged. Rachel still reviews the parent-only target behavior before release.
+unchanged. Travis confirmed Rachel's approval of the parent-only target
+behavior and the new books on 2 Nov 2026 (below).
 
 The alternative Studio Home was saved outside the active Home. Unfinished
 Practice Gym runtime changes and its standalone test are preserved in
@@ -95,9 +96,12 @@ preserved. The Map keeps its measured layout; page movement is locked only
 while its complete content fits, and the Arcade always releases that lock.
 The new lock check fails the pre-fix page and passes all 21 compact Home
 scenarios. A fresh full battery is still required before any push; GitHub
-publishing access has not yet been restored or verified. Rachel's new-book
-and selected-target review remains a separate recorded review item; do not
-claim it happened. No Gym, avatar or new clinical behavior is included.
+publishing access has not yet been restored or verified. **Rachel's review
+confirmed (Travis, 2 Nov 2026): “Yes, Rachel has approved them”**, answering
+the explicit question about the new books' words and pictures and the
+parent-only target sound setting. This confirms that scope, not the separate
+upstream Day 1 review questions recorded below. No Gym, avatar or new
+clinical behavior is included.
 
 **Latest first-day flow (upstream #251/#253, 31 Oct 2026) supersedes the
 earlier Picnic-first review experiment.** Setup opens ordinary Fruit Slice,
@@ -128,7 +132,9 @@ soft3D look. New art is versioned. Review sources/prompts live in
 `design/sound-first-session/` and `design/adventure/fruitpicnic-*`.
 **Rachel reviews the selected-target behavior, every new story line/key and
 matching picture before release.** The review page and generated
-`VOICE_SCRIPT.md` list the exact words. Children's voice replacement remains
+`VOICE_SCRIPT.md` list the exact words. Travis confirmed on 2 Nov 2026 that
+Rachel has approved the new books' words and pictures and the parent-only
+target sound setting. Children's voice replacement remains
 research only: no licensed,
 clinically approved recording pack was selected or installed.
 
