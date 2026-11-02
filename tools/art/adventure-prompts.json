@@ -2266,7 +2266,7 @@
         "chip"
       ],
       "talk": true,
-      "bible": "PELLY: Pelly the pelican, a big white clay pelican (a real pelican, not a duck) with a very long, straight peach-orange bill, longer than her head, and a big, soft, lumpy peach pouch hanging under it, a small round light-blue postal cap with a little white envelope badge (no anchor), no scarf, and a brown leather mail satchel across her body; about twice Echo's height. CHIP: Chip the chipmunk, a small, round, friendly clay chipmunk about one and a half times Echo's height who stands up on his back legs like a person: warm reddish-brown fur with three dark and cream stripes down his back, a cream tummy, round cheeks with small pink spots, small round ears, big friendly black eyes, a bushy tail, and a little white baker's apron; no hat. CHICK: a tiny fluffy yellow clay chick about half Echo's height, a little orange beak, big round eyes and small pink cheeks. BIRD: a cheeky little round blue clay bird about Echo's height with a short tuft on its head, a small yellow beak and a mischievous friendly smile. The place in this story is Chip's woods: a cozy little round wooden cottage built into the roots of a big oak tree, with a round green door, a small stone chimney puffing soft white smoke, a little picnic table with a red-and-white checked cloth on the grass outside, and a tall cherry tree with a round nest in its branches nearby.",
+      "bible": "PELLY: Pelly the pelican, a big white clay pelican (a real pelican, not a duck) with a very long, straight peach-orange bill, longer than her head, and a big, soft, lumpy peach pouch hanging under it, a small round light-blue postal cap with a little white envelope badge (no anchor), no scarf, and a brown leather mail satchel across her body; about twice Echo's height. CHIP: Chip the chipmunk, a small, round, friendly clay chipmunk about one and a half times Echo's height who stands up on his back legs like a person: warm reddish-brown fur with three dark and cream stripes down his back, a cream tummy, round cheeks with small pink spots, small round ears, big friendly black eyes, a bushy tail, and a little white baker's apron; no hat. CHICK: a tiny fluffy yellow clay chick about half Echo's height, a little orange beak, big round eyes and small pink cheeks. BIRD: a cheeky little clay sparrow about two thirds of Echo's height, warm brown feathers with darker brown streaks, a cream tummy, a short pointy grey beak, a little brown cap of feathers and a mischievous friendly smile; never blue, never round like Echo. The place in this story is Chip's woods: a cozy little round wooden cottage built into the roots of a big oak tree, with a round green door, a small stone chimney puffing soft white smoke, a little picnic table with a red-and-white checked cloth on the grass outside, and a tall cherry tree with a round nest in its branches nearby.",
       "who": {
         "CHIP": {
           "re": "\\bChip\\b",
@@ -2277,8 +2277,8 @@
           "label": "the little chick"
         },
         "BIRD": {
-          "re": "\\bbird\\b",
-          "label": "the cheeky blue bird"
+          "re": "\\bbird\\b|\\bsparrow\\b",
+          "label": "the cheeky brown sparrow"
         }
       },
       "home": "A wide picture for a game card. On the grass outside a cozy round wooden cottage in the roots of a big oak tree on a sunny afternoon, a round cherry pie with a golden lattice crust and a drizzle of chocolate sits on a little picnic table with a red-and-white checked cloth, steam curling up from it. Chip the chipmunk stands just left of the table in his white apron, holding up a slice, and Echo stands just right of it, waving both wings. Echo, Chip and the pie are all in the middle band of the picture: their tops below 25% from the top and their bottoms above 75% from the top, the pie in the middle. Only Echo and Chip appear: no other characters.",
@@ -2295,8 +2295,8 @@
         },
         {
           "key": "bird",
-          "h": 1.0,
-          "prompt": "A cheeky little round blue clay bird, full body, standing, facing a little to one side with a mischievous friendly smile: a short tuft on its head, a small yellow beak, small pink cheeks."
+          "h": 0.7,
+          "prompt": "A cheeky little clay sparrow, full body, standing, facing a little to one side with a mischievous friendly smile: warm brown feathers with darker brown streaks, a cream tummy, a short pointy grey beak, a little brown cap of feathers and small pink cheeks; never blue."
         }
       ],
       "scenes": {
@@ -2309,7 +2309,7 @@
         },
         "s02": {
           "light": "day",
-          "picture": "Close up on the porch of Echo's cottage on a sunny morning. Pelly the pelican's big white wing (only her wing and the edge of her body, from the left edge) holds out a cream paper letter in the upper middle of the picture. On the letter is a child's crayon drawing of a smiling striped chipmunk in a white apron beside an empty pie dish, with a little blue bird flying off with a bunch of red cherries: only crayon lines, no writing at all. Echo stands just left of the middle, leaning in toward the letter, eyes wide with excitement, the tiny wooden chair on the porch beside him.",
+          "picture": "Close up on the porch of Echo's cottage on a sunny morning. Pelly the pelican's big white wing (only her wing and the edge of her body, from the left edge) holds out a cream paper letter in the upper middle of the picture. On the letter is a child's crayon drawing of a smiling striped chipmunk in a white apron beside an empty pie dish, with a little brown sparrow flying off with a bunch of red cherries: only crayon lines, no writing at all. Echo stands just left of the middle, leaning in toward the letter, eyes wide with excitement, the tiny wooden chair on the porch beside him.",
           "also": [
             "file:public/assets/adventure/lighthouse/s02.webp"
           ]
@@ -2324,11 +2324,11 @@
         },
         "s05": {
           "light": "day",
-          "picture": "In Chip's woods on a sunny morning. A cheeky little round blue bird flies off across the upper middle of the picture, a little woven basket of shiny red cherries hanging from its yellow beak, toward a tall cherry tree on the right. Echo runs after it in the lower middle, wings out, and Chip the chipmunk runs beside him on the left, both laughing."
+          "picture": "In Chip's woods on a sunny morning. A cheeky little brown sparrow flies off across the upper middle of the picture, a little woven basket of shiny red cherries hanging from its yellow beak, toward a tall cherry tree on the right. Echo runs after it in the lower middle, wings out, and Chip the chipmunk runs beside him on the left, both laughing."
         },
         "s06": {
           "light": "day",
-          "picture": "Under the tall cherry tree in Chip's woods on a sunny day. High in the branches a round nest holds a tiny fluffy yellow chick, who leans over and lowers the little woven basket of shiny red cherries down on a string. The cheeky blue bird sits beside the nest, smiling sheepishly. Echo stands below in the middle, wings up to catch the basket, delighted. Chip the chipmunk stands on the left, paws clasped."
+          "picture": "Under the tall cherry tree in Chip's woods on a sunny day. High in the branches a round nest holds a tiny fluffy yellow chick, who leans over and lowers the little woven basket of shiny red cherries down on a string. The cheeky brown sparrow sits beside the nest, smiling sheepishly. Echo stands below in the middle, wings up to catch the basket, delighted. Chip the chipmunk stands on the left, paws clasped."
         },
         "s07": {
           "light": "indoor",
@@ -2340,11 +2340,11 @@
         },
         "e01": {
           "light": "afternoon",
-          "picture": "Outside Chip's cottage at the picnic table in the warm late afternoon. The round cherry pie with its golden crust and chocolate drizzle sits in the middle of the red-and-white checked cloth. Echo, Chip the chipmunk, the tiny yellow chick and the cheeky blue bird all cheer around the table, wings and paws up, beaming."
+          "picture": "Outside Chip's cottage at the picnic table in the warm late afternoon. The round cherry pie with its golden crust and chocolate drizzle sits in the middle of the red-and-white checked cloth. Echo, Chip the chipmunk, the tiny yellow chick and the cheeky brown sparrow all cheer around the table, wings and paws up, beaming."
         },
         "e02": {
           "light": "afternoon",
-          "picture": "At the picnic table outside Chip's cottage in the warm late afternoon. Echo, Chip the chipmunk and the tiny yellow chick each happily munch a slice of cherry pie on little plates, cheeks round and full, eyes squeezed with joy. The cheeky blue bird pecks a crumb. The rest of the pie sits in the middle of the table."
+          "picture": "At the picnic table outside Chip's cottage in the warm late afternoon. Echo, Chip the chipmunk and the tiny yellow chick each happily munch a slice of cherry pie on little plates, cheeks round and full, eyes squeezed with joy. The cheeky brown sparrow pecks a crumb. The rest of the pie sits in the middle of the table."
         },
         "e03": {
           "light": "sunset",
