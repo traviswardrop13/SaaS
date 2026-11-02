@@ -230,9 +230,11 @@ changing one. What follows from the rule:
   Store artwork are outside this change.
   The setup offer keeps its complete benefits, store billing disclosures,
   trial eligibility, purchase/restore and legal links. Its Lifetime row now
-  says "Lifetime", "Yours Forever", "Best Value" at the top right, and
-  "Billed today" under the store's amount (expressly superseding the older
-  "never lifetime / Best value" wording below). Prices and free periods
+  says "Lifetime", "Yours Forever" and "Billed today" under the store's
+  amount (expressly superseding the older "never lifetime" wording below);
+  its "Best Value" tag at the top right went on 2 Nov 2026, when the free
+  trial row took "Recommended" there ("THE FREE TRIAL ON TOP AND PICKED
+  AGAIN"). Prices and free periods
   still come from the store. The three benefit lines are bolder and have
   modest extra space above/below on screens that have room; compact layouts
   retain room for payment choices and legal links.
@@ -895,6 +897,44 @@ is charged, charter open and closed); `progtest` and `iaptest` play the pick on
 both cards; `firstgametest` keeps both boxes and the button on the first
 screen at seven phone sizes with the charter line showing, and re-prices
 every yearly figure when the price check answers late.
+
+**THE FREE TRIAL ON TOP AND PICKED AGAIN, 7 DAYS, "RECOMMENDED" (2 Nov
+2026)** (Travis, after asking whether the trial or the one payment should be
+the default: "I just changed it to a 7-day trial at App Store Connect ...
+put it at the default option ... just have the second option be a way of
+pointing people to the monthly 7-day trial and make it more of an easy
+choice"). This replaces the order, the pick and the "Best Value" tag of
+"THE ONE PAYMENT ON TOP AND PICKED" right below (the rest of it stands), and
+brings back "TWO ROWS: MONTHLY ON TOP" further down.
+- **Monthly on top, picked when the screen opens** (its free trial: "No
+  payment today", "Start practicing!"), the one payment under it
+  (`kindsOf`, the markup's order, `APPLE.pick` "monthly" in
+  `subscribe.html`). Why: a parent from an ad has not seen their child
+  play yet, and "No payment today" is the easiest yes; the one payment
+  beside it still makes the month look small, and anyone who wants to pay
+  once can.
+- **The free trial row wears "Recommended"** (top right, where "Best Value"
+  sat), only on a card of more than one row, only while that row is a free
+  trial, and not beside the yearly row if it is ever switched back on (its
+  own "Best value" is `planWords`'). **The one payment wears no tag**: it
+  still says "Lifetime", "Yours Forever", the store's price and "Billed
+  today". `paintRow` in `subscribe.html`; the tag's place is
+  `onboarding-price-studio.css`.
+- **The 7 days are App Store Connect's** (Travis set the monthly
+  introductory offer to 7 days there on 2 Nov 2026): every word on the
+  Apple card follows the store by itself ("7-day free trial", "7 days
+  free, then $9.99 a month. Cancel anytime."), and the free week gets its
+  daily practice reminders (NUDGE1: about four) and the reminder 30 hours
+  before it ends (NOTIFY1). Nothing in this repo types the app's trial
+  length. **The website's own card, `/api/checkout`'s Stripe trial,
+  `trial.html` and the Next `/subscribe` page still say 3 days**, true of
+  the web checkout, which sells nothing while `WEB_SALES` is off; matching
+  them to 7 is a change to the Stripe trial too, Travis's call.
+- **Travis's to check outside this repo:** the App Store listing's own
+  description and screenshots, if they name 3 days, and any ad that does.
+  **Measure it:** leave this for 2 to 3 weeks and read /leads.html's "Free
+  trials" report (TRIAL1) and RevenueCat's money per price-screen view.
+  `pricescreentest` (1b) and `setupbuytest` play it.
 
 **THE ONE PAYMENT ON TOP AND PICKED (31 Oct 2026)** (Travis: "I want to put
 the lifetime as the default. So put it at the top, like above monthly. And I
