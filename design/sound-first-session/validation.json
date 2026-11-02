@@ -658,7 +658,39 @@
       },
       "scope": "Real complete Home fit and tap targets, height-only resizing, fit-dependent scroll lock, Arcade scroll release."
     },
-    "fullBattery": "Pending fresh complete run",
+    "fullBattery": {
+      "command": "node tests/run-all.mjs",
+      "suites": 164,
+      "status": "Fresh complete R2 run required/in progress; no release pass claimed",
+      "firstRun": {
+        "status": "Stopped",
+        "completedSuites": 69,
+        "passedSuites": 65,
+        "failedSuites": 4,
+        "exitCode": 143,
+        "log": "/private/tmp/sona-home-books-release-20261102-final.log",
+        "failures": {
+          "day1.mjs": "Title allow-list omitted Rabbit and the Rocket",
+          "talkstorytest.mjs": "Retired per-story Home wash selectors",
+          "storycoretest.mjs": "Retired Picnic alias/calendar/export expectations",
+          "adventureplaytest.mjs": "Retired Picnic story-data/scene expectations"
+        }
+      },
+      "corrections": {
+        "productionFilesChanged": 0,
+        "restoredExactlyFromMain": [
+          "tests/storycoretest.mjs",
+          "tests/adventuretest.mjs",
+          "tests/storygametest.mjs",
+          "tests/sayplaytest.mjs",
+          "tests/shiptest.mjs"
+        ],
+        "otherTestOnly": [
+          "tests/day1.mjs: exact new R title; tighter off-sound guard",
+          "tests/talkstorytest.mjs: approved Map opaque image fallback"
+        ]
+      }
+    },
     "clinicalReview": {
       "date": "2026-11-02",
       "confirmedBy": "Travis",
@@ -666,6 +698,8 @@
       "scope": "New books' words and pictures and the parent-only target sound setting",
       "upstreamBoundary": "This confirmation is not extended to the separate upstream Day 1 clinical questions recorded in CLAUDE.md."
     },
-    "publication": "Pending; GitHub write access unresolved; nothing pushed or merged remotely."
+    "publication": "Pending; GitHub write access unresolved; nothing pushed or merged remotely.",
+    "runtimeCommit": "82d3c70ea65f8f6f5eb1421e6776318b02f4987d",
+    "testCorrectionCommit": "250f4b4e498950854bf959c18b86e6b2321afd8e"
   }
 }

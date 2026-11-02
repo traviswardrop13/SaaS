@@ -103,6 +103,15 @@ parent-only target sound setting. This confirms that scope, not the separate
 upstream Day 1 review questions recorded below. No Gym, avatar or new
 clinical behavior is included.
 
+The 2 Nov release run stopped after 69 completed suites: 65 passed and four
+failed on leftover test expectations (the new R book's title, the old Home
+wash selectors and the retired Picnic alias). It was not a release pass.
+The Picnic-specific tests were restored exactly from current main, the R
+title guard now includes the exact new title and rejects off-sound books,
+and the Home fallback check follows the approved Map. These are test-only
+corrections; all production files remain identical to `82d3c70e`. A fresh
+complete 164-suite run is required against `250f4b4e` before any push.
+
 **Latest first-day flow (upstream #251/#253, 31 Oct 2026) supersedes the
 earlier Picnic-first review experiment.** Setup opens ordinary Fruit Slice,
 through its existing practice page, for every age. Home then offers Day 1's
