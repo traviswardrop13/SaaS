@@ -182,6 +182,11 @@
     var $=function(id){return document.getElementById(id);};
     var S=window.Sona, qp=new URLSearchParams(location.search);
     var fromCharge=qp.get("from")==="charge";
+    // FREEPLAY1 (2 Nov 2026): setup's one free round (Sona.freePlayStart).
+    // The round is the round; only its ways out differ: the end card has one
+    // button, "Keep playing!", to the price, and so has the ✕.
+    var FREEPLAY=!!(S&&S.freePlayActive&&S.freePlayActive("slice"));
+    function freeOut(){ var to=null; try{ to=S.freePlayEnd&&S.freePlayEnd(); }catch(e){} location.href=to||"/today.html"; }
     // LEVELS INSIDE GAMES (LEVELS1, 11 Oct 2026): the level this child plays,
     // 1 unless they picked Level 2 or 3 and it is open (Sona.playLevel). Level
     // 1 is the round as it always was: its tables stay on their own lines
@@ -251,7 +256,7 @@
     var SELF="arcade-slice.html";
     var isDaily=qp.get("daily")==="1";
     function backToCharge(){ try{sessionStorage.removeItem("sona.play.active");}catch(e){} location.href="/charge.html?"+(isDaily?"daily=1":("game="+SELF)); }
-    $("goCharge").onclick=backToCharge; $("needHome").onclick=function(){location.href="/today.html";};
+    $("goCharge").onclick=FREEPLAY?freeOut:backToCharge; $("needHome").onclick=FREEPLAY?freeOut:function(){location.href="/today.html";};
     var tok=false; try{ var _t=sessionStorage.getItem("sona.play.token"); if(_t===SELF||_t==="1"){ tok=true; sessionStorage.setItem("sona.play.active",SELF); sessionStorage.removeItem("sona.play.token"); } else if(sessionStorage.getItem("sona.play.active")===SELF){ tok=true; } }catch(e){}
     if(!tok){ try{ $("needTitle").textContent="Fruit Slice needs a ticket!"; }catch(e){} $("needOvl").classList.add("show"); }
     // once per load, and only at Level 2 or 3: the game and the level, nothing else
@@ -1136,6 +1141,22 @@
         setTimeout(bankAndContinue,1400);
         return;
       }
+      if(FREEPLAY){
+        // THE FREE ROUND'S END (FREEPLAY1): the round's own title and best
+        // line, and one button, to the price. No "Back home": Home is locked.
+        if(S&&S.firstGameEnd) S.firstGameEnd("slice");
+        if(score===0&&!gameOver) $("endEmoji").style.opacity=".25";
+        $("endTitle").textContent=score===0&&!gameOver?"Good try!":gameOver?"Great slicing!":finaleDone?"You sliced the giant watermelon!":"I saw the fruit fly! So fun!";
+        var _fs=$("endSub"), fl=score===0&&!gameOver?[]:bestLine(), fi, fsp;
+        _fs.textContent="";
+        for(fi=0;fi<fl.length;fi++){ if(!fl[fi]) continue; if(_fs.firstChild) _fs.appendChild(document.createTextNode(" ")); fsp=document.createElement("span"); fsp.textContent=fl[fi]; _fs.appendChild(fsp); }
+        if(_fs.firstChild){ _fs.className="later best"; setTimeout(function(){ _fs.classList.add("in"); },1000); }
+        else { _fs.className=""; _fs.style.display="none"; }
+        $("endCharge").textContent="Keep playing!"; $("endCharge").onclick=freeOut;
+        $("endAgain").style.display="none"; $("endHome").style.display="none";
+        $("endOvl").classList.add("show");
+        return;
+      }
       if(score===0&&!gameOver){
         // gentle zero tier: encouraging copy, dimmed star, happy Echo, one warm "again" button
         $("endEmoji").style.opacity=".25";
@@ -1179,7 +1200,7 @@
     $("endHome").onclick=function(){ S.finishGameTurn("slice"); location.href="/today.html#play"; };
     $("close").onclick=function(){
       if(window.__speechLeaving)return;window.__speechLeaving=true;
-      function leave(){closeReviveMic();playing=false;keepBest();S.finishGameTurn("slice");if(isDaily){bankAndContinue();return;}location.href="/today.html#play";}
+      function leave(){closeReviveMic();playing=false;keepBest();S.finishGameTurn("slice");if(isDaily){bankAndContinue();return;}if(FREEPLAY){freeOut();return;}location.href="/today.html#play";}
       if(slowTurn){slowTurn.cancelled=true;finishSlowKeys(false).then(leave);}else leave();
     };
     }

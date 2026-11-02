@@ -33,7 +33,7 @@ the word bank. **E** — what NOT to record: parked, unlinked and dead lines.
   line (−20 dB RMS / −3 dB peak, with `/api/tts`'s own levelling), because a file
   plays as-is, and an unlevelled one is the one sound that can still jump.
 
-Switch state right now: `HUMAN_CLIPS = true` (public/sona.js:7738) — Rachel's recorded sounds (Part A) are ON: one take of the sound plays in the letter's place in the practice prompt (C1, C2, the turtle, B3) and after the games' "…say" lines (B5); every word below is spoken through TTS.
+Switch state right now: `HUMAN_CLIPS = true` (public/sona.js:7797) — Rachel's recorded sounds (Part A) are ON: one take of the sound plays in the letter's place in the practice prompt (C1, C2, the turtle, B3) and after the games' "…say" lines (B5); every word below is spoken through TTS.
 
 ---
 
@@ -78,7 +78,7 @@ burst, never held — a held /p/ teaches a schwa the child then has to unlearn).
 | A18 | TH (as in 'thumb') | **thhh** | STRETCH ~1.5 s | `TH.mp3`, `TH-demo.mp3` | Peek your tongue between your teeth and blow soft — th. |
 | A19 | TH (voiced, as in 'the') | **thuh** | STRETCH ~1.5 s | `THV.mp3`, `THV-demo.mp3` | Tongue between your teeth and buzz — th, like in 'the'. |
 
-Sources: models public/sona.js:3984 (`SOUND_SAY`, shown on the practice card and the games' keep-playing card, never sent to TTS); cues public/sona.js:3895 (`CUES`).
+Sources: models public/sona.js:3986 (`SOUND_SAY`, shown on the practice card and the games' keep-playing card, never sent to TTS); cues public/sona.js:3897 (`CUES`).
 
 ---
 
@@ -96,11 +96,11 @@ Pinned as exactly this list with no "!" (`tests/voicetest3.mjs`).
 
 | # | File | Say this | When Echo says it | Delivery | Source |
 |---|---|---|---|---|---|
-| B1 | praise-1.mp3 | Nice one. | After the easier target (the "I have an idea" line, B3/C5) passes — one of the five, picked at random. The only spoken praise in the live app, and the win line (B45) follows it; a normal pass gets only the win line. | Soft and pleased, a small smile in it. Not a cheer. | public/sona.js:4145; spoken at public/charge.html:2281 |
-| B2 | praise-2.mp3 | Good job. | Same moment, random pick of five. | Soft and pleased, a small smile in it. Not a cheer. | public/sona.js:4145; spoken at public/charge.html:2281 |
-| B3 | praise-3.mp3 | I heard that. | Same moment, random pick of five. | Soft and pleased, a small smile in it. Not a cheer. | public/sona.js:4145; spoken at public/charge.html:2281 |
-| B4 | praise-4.mp3 | That was lovely. | Same moment, random pick of five. | Soft and pleased, a small smile in it. Not a cheer. | public/sona.js:4145; spoken at public/charge.html:2281 |
-| B5 | praise-5.mp3 | Well done. | Same moment, random pick of five. | Soft and pleased, a small smile in it. Not a cheer. | public/sona.js:4145; spoken at public/charge.html:2281 |
+| B1 | praise-1.mp3 | Nice one. | After the easier target (the "I have an idea" line, B3/C5) passes — one of the five, picked at random. The only spoken praise in the live app, and the win line (B45) follows it; a normal pass gets only the win line. | Soft and pleased, a small smile in it. Not a cheer. | public/sona.js:4147; spoken at public/charge.html:2281 |
+| B2 | praise-2.mp3 | Good job. | Same moment, random pick of five. | Soft and pleased, a small smile in it. Not a cheer. | public/sona.js:4147; spoken at public/charge.html:2281 |
+| B3 | praise-3.mp3 | I heard that. | Same moment, random pick of five. | Soft and pleased, a small smile in it. Not a cheer. | public/sona.js:4147; spoken at public/charge.html:2281 |
+| B4 | praise-4.mp3 | That was lovely. | Same moment, random pick of five. | Soft and pleased, a small smile in it. Not a cheer. | public/sona.js:4147; spoken at public/charge.html:2281 |
+| B5 | praise-5.mp3 | Well done. | Same moment, random pick of five. | Soft and pleased, a small smile in it. Not a cheer. | public/sona.js:4147; spoken at public/charge.html:2281 |
 
 ### B2 — Coaching after a miss (19)
 
@@ -173,8 +173,8 @@ The say-it card in all six round games (one voice for all six, `arcade-sayit.js`
 | # | File | Say this | When Echo says it | Delivery | Source |
 |---|---|---|---|---|---|
 | B50 | card-say.mp3 | To keep playing, say | The say-it card between rounds in all six round games (Fruit Slice, Piano Tiles, Block Stacker, Sound Sprint, Flappy Glide, Rise Up): Echo says this, then Rachel's recording of the sound plays (`say-echo/<SOUND>-sound.wav`, Part A), then "Go!" (B49), then the mic opens. Screen: "Say “rrrr” for wave 2!" (each game its own words). On Fruit Slice, a card that asks a syllable or a word says one line instead of this and her recording (C7). | Friendly and plain. It runs straight into the sound, so leave it open at the end. | public/arcade-sayit.js:50; in this order at public/arcade-sayit.js:329 |
-| B51 | card-idea.mp3 | I have an idea. Let's try this one. | Fruit Slice's card, when a syllable or a word got no answer for 8 s: the mic closes, the card goes back to the sound alone, Echo says this, then Rachel's recording, then "Go!". The practice page's own words for the same move (B3). | As B3: a good idea just arrived. Not a consolation. | public/arcade-slice.html:664; said at public/arcade-slice.html:694; the step back at public/arcade-slice.html:733 |
-| B52 | card-new-life.mp3 | For a new life, say | All six round games: after the last gameplay heart is lost, the round stops on the new-life card. Echo says this, then Rachel's sound, then "Go!", then the mic. An accepted sound restores all three hearts and resumes that same round; silence restores nothing. This is separate from mid-game sound powers, which restore no hearts. | Friendly and encouraging. It runs straight into the sound, so leave it open at the end. | public/arcade-speech-help.js:55; Fruit Slice at public/arcade-slice.html:694; other cards at public/arcade-tiles.html:728, public/arcade-stack.html:527, public/arcade-run.html:775, public/arcade-glide.html:537, public/arcade-rise.html:582 |
+| B51 | card-idea.mp3 | I have an idea. Let's try this one. | Fruit Slice's card, when a syllable or a word got no answer for 8 s: the mic closes, the card goes back to the sound alone, Echo says this, then Rachel's recording, then "Go!". The practice page's own words for the same move (B3). | As B3: a good idea just arrived. Not a consolation. | public/arcade-slice.html:669; said at public/arcade-slice.html:699; the step back at public/arcade-slice.html:738 |
+| B52 | card-new-life.mp3 | For a new life, say | All six round games: after the last gameplay heart is lost, the round stops on the new-life card. Echo says this, then Rachel's sound, then "Go!", then the mic. An accepted sound restores all three hearts and resumes that same round; silence restores nothing. This is separate from mid-game sound powers, which restore no hearts. | Friendly and encouraging. It runs straight into the sound, so leave it open at the end. | public/arcade-speech-help.js:55; Fruit Slice at public/arcade-slice.html:699; other cards at public/arcade-tiles.html:728, public/arcade-stack.html:527, public/arcade-run.html:775, public/arcade-glide.html:537, public/arcade-rise.html:582 |
 | B53 | power-slice.mp3 | Super Slice! Say | Fruit Slice: Echo asks automatically during play; a tap on him asks at once too. The board keeps moving, but its sounds wait. He says each distinct reason once per visit, only marking it said after it finishes, then Rachel's sound and "Go!", then the mic. Later asks for the same reason play just the sound and "Go!". A heard try earns the power only, never a heart. A lost heart does not bring the next ask forward. | Short and bright. It runs straight into the sound, so leave it open at the end. Has a "!": a little lift, not a shout. | public/arcade-slice.html:164 |
 | B54 | power-tiles.mp3 | To slow the keys, say | Piano Tiles: Echo asks automatically during play; a tap on him asks at once too. The board keeps moving, but its sounds wait. He says each distinct reason once per visit, only marking it said after it finishes, then Rachel's sound and "Go!", then the mic. Later asks for the same reason play just the sound and "Go!". A heard try earns the power only, never a heart. A lost heart does not bring the next ask forward. | Short and bright. It runs straight into the sound, so leave it open at the end. | public/arcade-tiles.html:137 |
 | B55 | power-stack.mp3 | To slow the block, say | Block Stacker: Echo asks automatically during play; a tap on him asks at once too. The board keeps moving, but its sounds wait. He says each distinct reason once per visit, only marking it said after it finishes, then Rachel's sound and "Go!", then the mic. Later asks for the same reason play just the sound and "Go!". A heard try earns the power only, never a heart. A lost heart does not bring the next ask forward. | Short and bright. It runs straight into the sound, so leave it open at the end. | public/arcade-stack.html:135 |
@@ -904,7 +904,7 @@ With the sound models on, Echo says the words and one take of Rachel's recorded 
 | TH (as in 'thumb') | Peek your tongue between your teeth and blow soft | T H |
 | TH (voiced, as in 'the') | Tongue between your teeth and buzz | T H |
 
-{n}: the number words the page knows are 2 → "two", 3 → "three", 4 → "four", 5 → "five", 6 → "six" (public/charge.html:615). The ones actually used: **five** on every normal prompt (`CHARGE_NEED = 5`, public/sona.js:2440) and **three** during a retry window after a miss (`burstAndVerify(3)`, public/charge.html:2257). The cued form can fire with "three" only when a syllable round stepped down to the sound and the child then tapped Echo.
+{n}: the number words the page knows are 2 → "two", 3 → "three", 4 → "four", 5 → "five", 6 → "six" (public/charge.html:615). The ones actually used: **five** on every normal prompt (`CHARGE_NEED = 5`, public/sona.js:2442) and **three** during a retry window after a miss (`burstAndVerify(3)`, public/charge.html:2257). The cued form can fire with "three" only when a syllable round stepped down to the sound and the child then tapped Echo.
 
 Worth Rachel's eye: the comma/"like" cut leaves "Lips together" (B), "Like T" (D), "Like K" (G), "Like F" (V), "Teeth together" (S), "Pop it" (CH), "Like CH" (J) — a G round opens "Ready? Like K, and make your G sound, five times.". TH and THV are both spelled "T H", so only the cue tells them apart.
 
@@ -1091,7 +1091,7 @@ eight Beginning-position words with a picture (public/arcade-feed.html:294). The
 
 ### C7 — Fruit Slice's say-it card, with a syllable or a word
 
-`To keep playing, say... {ask}.` (public/arcade-slice.html:575)
+`To keep playing, say... {ask}.` (public/arcade-slice.html:580)
 
 The card between rounds of Fruit Slice. When it asks for more than the sound alone, Echo
 says the whole ask as ONE line in his own voice, the syllable or word last and after
@@ -1118,10 +1118,10 @@ Rachel's calls, built on defaults until she answers: which syllables and in what
 
 | # | File | Say this | When | Source |
 |---|---|---|---|---|
-| C77 | card-R-ree.mp3 | To keep playing, say... ree. | Fruit Slice's card asks R in a syllable. | public/arcade-slice.html:575 |
-| C78 | card-R-rah.mp3 | To keep playing, say... rah. | Fruit Slice's card asks R in a syllable. | public/arcade-slice.html:575 |
-| C79 | card-R-roh.mp3 | To keep playing, say... roh. | Fruit Slice's card asks R in a syllable. | public/arcade-slice.html:575 |
-| C80 | card-R-rot.mp3 | To keep playing, say... rot. | Fruit Slice's card asks R in a short word. | public/arcade-slice.html:575 |
+| C77 | card-R-ree.mp3 | To keep playing, say... ree. | Fruit Slice's card asks R in a syllable. | public/arcade-slice.html:580 |
+| C78 | card-R-rah.mp3 | To keep playing, say... rah. | Fruit Slice's card asks R in a syllable. | public/arcade-slice.html:580 |
+| C79 | card-R-roh.mp3 | To keep playing, say... roh. | Fruit Slice's card asks R in a syllable. | public/arcade-slice.html:580 |
+| C80 | card-R-rot.mp3 | To keep playing, say... rot. | Fruit Slice's card asks R in a short word. | public/arcade-slice.html:580 |
 
 ### C8 — The picture games (Say & Play)
 
@@ -2418,10 +2418,10 @@ one of the five praise lines.
 - **The idle nudge** (public/charge.html:1865): would replay the prompt after 8 s of silence, up to twice. `armIdle()` is defined but never called; the not-heard path is the quiet screen (B4).
 - **"You did it."** (public/charge.html:2281): fallback praise only if `praiseLine` were missing — `sona.js` always provides it.
 - **"Let's try our {sound} sound again"** (public/charge.html:2249): fallback coaching only for a sound with no tip — all 19 have one.
-- **"Listen to Echo, then copy the sound!"** (public/sona.js:3916): the default cue for an unknown sound; the practice page forces the sound to one of the 19.
-- **`actionCue`, `repeatCue`, `coachLine`** (public/sona.js:4133, public/sona.js:4138, public/sona.js:4149): exported, no caller anywhere. Pre-calm wording — e.g. "Are you ready? Say rrrr 5 times!", "Repeat after me… rrrr!  Now you try — rrrr!", "Let's try again. Say rrrr! Pull your tongue back and up like a tiger growl — rrr!".
+- **"Listen to Echo, then copy the sound!"** (public/sona.js:3918): the default cue for an unknown sound; the practice page forces the sound to one of the 19.
+- **`actionCue`, `repeatCue`, `coachLine`** (public/sona.js:4135, public/sona.js:4140, public/sona.js:4151): exported, no caller anywhere. Pre-calm wording — e.g. "Are you ready? Say rrrr 5 times!", "Repeat after me… rrrr!  Now you try — rrrr!", "Let's try again. Say rrrr! Pull your tongue back and up like a tiger growl — rrr!".
 - **The conversation rung** (public/gamecontent.js:89): "Which do you like — a ___ or a ___?", "Do you want the ___ or the ___?", "Pick one — ___ or ___!", "Hmm… a ___ or a ___?" — the practice page keeps only items with a target (`it.t`) and these have none, so a conversation round falls back to the bare sound.
-- **The sound models as text** (public/sona.js:3984): puh, buh, mmm, nnn, tuh, duh, kuh, guh, ffff, vvvv, sss, zzz, shhh, chuh, juh, lll, rrrr, thhh, thuh — shown on screen, never sent to TTS, because a synthesized "rrrr" comes out mangled. The performed sound is Rachel's clip (Part A).
+- **The sound models as text** (public/sona.js:3986): puh, buh, mmm, nnn, tuh, duh, kuh, guh, ffff, vvvv, sss, zzz, shhh, chuh, juh, lll, rrrr, thhh, thuh — shown on screen, never sent to TTS, because a synthesized "rrrr" comes out mangled. The performed sound is Rachel's clip (Part A).
 
 ### E8 — Shown on screen, never spoken (so nobody records them by mistake)
 
