@@ -290,11 +290,11 @@ ok("ages 3-4 play five words a game and ages 5-8 play eight", GAMES.every((g) =>
   // engine, and its fallback for an older cached sona.js is that same number.
   const storyTimes = +((SONA_SRC.match(/^\s*const STORY_SAY_TIMES = (\d+);/m) || [])[1] || 0);
   const storyDays = (SONA_SRC.match(/const STORY_DAYS = \[([\s\S]*?)\n\s*\];/) || ["", ""])[1];
-  const storyPages = [...new Set([...storyDays.matchAll(/\bpage: "\/([\w-]+\.html)(?:\?[^"]*)?"/g)].map((m) => m[1]))].filter((f) => f !== "charge.html");
+  const storyPages = [...new Set([...storyDays.matchAll(/\bpage: "\/([\w-]+\.html)(?:\?[^"]*)?"/g)].map((m) => m[1]))];
   ok("sona.js keeps how many times a story game asks in one number, STORY_SAY_TIMES, which is 3, and hands it to every page as Sona.STORY_SAY_TIMES",
     storyTimes === 3 && /global\.Sona = \{[^\n]*\bSTORY_SAY_TIMES\b/.test(SONA_SRC), storyTimes);
-  ok("the original fourteen stories keep their four Say & Play pages, beside Fruit Slice's existing warm-up",
-    (storyDays.match(/\bpage: "/g) || []).length === 15 && storyDays.includes('page: "/charge.html?game=arcade-slice.html&story=fruitpicnic"') && storyPages.join() === "arcade-lighthouse.html,arcade-windup.html,arcade-bridge.html,story-game.html", storyPages);
+  ok("the fourteen story days open four game pages: Days 1-3's own and story-game.html for Days 4-14",
+    (storyDays.match(/\bpage: "/g) || []).length === 14 && storyPages.join() === "arcade-lighthouse.html,arcade-windup.html,arcade-bridge.html,story-game.html", storyPages);
   ok("every story page asks for each word Sona.STORY_SAY_TIMES times (3), falling back to the same number",
     storyPages.length === 4 && storyPages.every((f) => new RegExp("^sayTimes: (?:\\((?:window\\.Sona|S) && )?(?:Sona|S)\\.STORY_SAY_TIMES\\)? \\|\\| " + storyTimes + "$").test(asks(f))), storyPages.map((f) => f + ": " + asks(f)));
   // A STORY'S GAME HANDS BACK TO ITS STORY (STORY1, 22 Oct 2026): the end

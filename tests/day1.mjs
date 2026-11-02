@@ -400,8 +400,8 @@ for (const age of ["3", "4", "5", "8"]) {
   await pg.evaluate(() => localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Mia", childAge: "7", focusSounds: ["R"], onboarded: true })));
   await pg.goto("http://localhost:8178/library.html");
   await pg.waitForTimeout(700);
-  const r = await pg.evaluate(() => [...document.querySelectorAll(".bookBtn")].map((b) => b.textContent));
-  ok("an /r/ child sees only /r/ books", r.length > 0 && r.every((t) => /R(ory|eba|uby|emy|ex|osie|ay)|Boo the Bat on Halloween/.test(t)), JSON.stringify(r));
+  const r = await pg.evaluate(() => [...document.querySelectorAll(".bookBtn .bt")].map((b) => b.textContent));
+  ok("an /r/ child sees only /r/ books", r.length > 0 && r.every((t) => /^R(ory|eba|uby|emy|ex|osie|ay)\b/.test(t) || t === "Rabbit and the Rocket"), JSON.stringify(r));
   ok("…and there are still real books to read", r.length >= 3, String(r.length));
 
   // play mode rotates every sound, so it keeps the whole shelf

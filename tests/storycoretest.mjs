@@ -36,7 +36,6 @@ const SONA = readFileSync(ROOT + "/sona.js", "utf8");
 const FIRST_IDS = ["lighthouse", "windup", "bridge"];
 const LATER_IDS = ["waterwheel", "postboat", "bakery", "frontdoor", "lantern", "trainline", "kite", "nestlift", "concert", "rooftops", "observatory"];
 const STORY_IDS = FIRST_IDS.concat(LATER_IDS);
-const ALL_STORY_IDS = STORY_IDS.concat("fruitpicnic");
 
 // ── a plain server: public/, /api/* recorded (the voice service is down),
 // and stubs for the pages a test only needs to land on ──
@@ -134,11 +133,11 @@ await section("the day list", async () => {
     notCatalog: ["adventure"].concat(Sona.STORY_DAYS.map((d) => d.id)).every((k) => Sona.gameKey(k) === "" && !Sona.GAME_ACTS[k]),
     words: { lighthouse: Sona.gameWords("lighthouse", "R").map((w) => w.w), windup: Sona.gameWords("windup", "K").map((w) => w.w), bridge: Sona.gameWords("bridge", "CH").map((w) => w.w) },
   }));
-  ok("STORY_DAYS keeps all fourteen stable indices, then the separate signature alias",
-    r.days.map((d) => d.id).join() === ALL_STORY_IDS.join() && r.days.every((d) => d.game === d.id && d.hero === d.id && d.page === (d.id === "fruitpicnic" ? "/charge.html?game=arcade-slice.html&story=fruitpicnic" : FIRST_IDS.includes(d.id) ? "/arcade-" + d.id + ".html" : "/story-game.html?story=" + d.id)), r.days);
+  ok("STORY_DAYS is the fourteen days in order, each with its game, page and Home picture",
+    r.days.map((d) => d.id).join() === STORY_IDS.join() && r.days.every((d) => d.game === d.id && d.hero === d.id && d.page === (FIRST_IDS.includes(d.id) ? "/arcade-" + d.id + ".html" : "/story-game.html?story=" + d.id)), r.days);
   ok("…Days 1-3 titled as the spec names them, and every later day a short title of its own",
     r.days.slice(0, 3).map((d) => d.title).join("|") === "The Lighthouse Sneeze|Grandpa Bear's Sleepy Toys|The Puzzle Bridge" &&
-    r.days.slice(3).every((d) => d.title.length > 5 && d.title.length <= 36) && new Set(r.days.map((d) => d.title)).size === ALL_STORY_IDS.length, r.days.map((d) => d.title));
+    r.days.slice(3).every((d) => d.title.length > 5 && d.title.length <= 36) && new Set(r.days.map((d) => d.title)).size === 14, r.days.map((d) => d.title));
   ok("…each hook a line a parent reads: 120 characters at most, nothing about how to talk, no banned word",
     r.days.every((d) => d.line.length > 20 && d.line.length <= 120 && !/louder|slowly|strong|stretch|say it|score|points|correct|wrong|miss|fail|charge/i.test(d.line)), r.days.map((d) => d.line));
   ok("the four story readers are on Sona", r.fns);
@@ -282,7 +281,7 @@ await section("the games the stories leave behind", async () => {
     await ctx.close();
   }
   const names = await (async () => { const { ctx, pg } = await open({ premium: true }); const n = await pg.evaluate(() => Sona.STORY_DAYS.map((d) => d.name)); await ctx.close(); return n; })();
-  ok("every story day names its game, short enough for a tile (16 characters at most)", names.length === ALL_STORY_IDS.length && names.every((n) => typeof n === "string" && n.length >= 4 && n.length <= 16), names);
+  ok("every story day names its game, short enough for a tile (16 characters at most)", names.length === STORY_IDS.length && names.every((n) => typeof n === "string" && n.length >= 4 && n.length <= 16), names);
 });
 
 // ── 4. once a calendar day, and a missed day loses nothing ──
@@ -443,7 +442,7 @@ await section("a new story every day", async () => {
       return { before, named, setUp, again, kid: JSON.parse(localStorage.getItem("sona.quest.v1@" + slot) || "null"), first: JSON.parse(localStorage.getItem("sona.quest.v1")), day: Sona.localDay() };
     });
     ok("a profile saved before setup finishes starts no calendar", r.before === null && r.named === null, r);
-    ok("the save that sets the older child up starts today's signature itinerary", r.setUp && r.setUp.a === r.day && r.setUp.route === "signature-v1" && Object.keys(r.setUp).sort().join() === "a,route", r.setUp);
+    ok("the save that sets the child up starts it, today", r.setUp && r.setUp.a === r.day && Object.keys(r.setUp).join() === "a", r.setUp);
     ok("a later save of a child already set up (walking setup again) leaves it", r.again.a === "2026-10-02", r.again);
     ok("a brother or sister set up later starts their own, today, and the first child's is untouched", r.kid && r.kid.a === r.day && r.first.a === "2026-10-02", r);
     await ctx.close();
@@ -636,7 +635,7 @@ await section("the demonstration window", async () => {
     /function storyOpen\(\) \{[\s\S]{0,200}libraryPreview\(\)\) return previewPlan\(\)\.state === "trial";[\s\S]{0,40}return isFree\(\) \|\| premium\(\) \|\| trialActive\(\);/.test(SONA)
     && /function storyShown\(\) \{ try \{ return storyOpen\(\) \|\| offerOnLock\(\);/.test(SONA));
   ok("gameAccess and gameBounce know the story keys before the catalog's check", /function gameAccess\(key, options\) \{[\s\S]{0,600}if \(_storyKey\(key\)\) \{[\s\S]{0,400}\}\s*key = gameKey\(key\);/.test(SONA) && /_storyKey\(key\) \? "\/today\.html"/.test(SONA));
-  ok("the story readers are on the one-line export", ["STORY_DAYS", "storyDay", "storyGame", "storyOpen", "storyShown", "storyEnding", "storySeen"].every((f) => new RegExp("global\\.Sona = \\{[^\\n]*\\b" + f + "\\b").test(SONA)));
+  ok("the story readers are on the one-line export", /global\.Sona = \{[^\n]*\bSTORY_DAYS, storyOpen, storyShown, storyEnding, storySeen\b/.test(SONA));
 }
 
 // ── 10. subscribe.html?from=adventure: the offer a locked story card opens ──

@@ -70,7 +70,6 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
   // Days 1-3: a page of their own; Days 4-14: the one shared page and their game's two files
   const noPage = days.filter((d) => d.controller
     ? d.page !== "/story-game.html?story=" + d.id || !existsSync(APP + "/public/story-game.html") || !existsSync(APP + "/public/daily-adventures/" + d.controller + ".js") || !existsSync(APP + "/public/daily-adventures/" + d.controller + ".css")
-    : d.id === "fruitpicnic" ? d.game !== "fruitpicnic" || d.page !== "/charge.html?game=arcade-slice.html&story=fruitpicnic" || !existsSync(APP + "/public/charge.html") || !existsSync(APP + "/public/arcade-slice.html")
     : d.page !== "/arcade-" + d.game + ".html" || !existsSync(APP + "/public" + d.page)).map((d) => d.page);
   ok("…and each story's game page", days.length > 0 && noPage.length === 0, noPage.join(", "));
 

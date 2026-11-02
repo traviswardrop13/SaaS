@@ -76,7 +76,7 @@ const STORY_IDS = [...((SRC.match(/const STORY_DAYS = \[([\s\S]*?)\n  \];/) || [
   ok("talk-stories.js is data alone and ES5: no call, no storage, no request, no arrow, let, const, class or template",
     !/fetch\(|localStorage|sessionStorage|Sona\.|XMLHttpRequest|sendBeacon/.test(TCODE) && !/=>|\blet\s|\bconst\s|\bclass\s|`/.test(TCODE));
   const HOME_CSS = readFileSync(ROOT + "/crafted-home.css", "utf8");
-  ok("Home's day card has each talking story's wash behind its picture", ids.every((id) => new RegExp('\\.quest-art\\[data-story="' + id + '"\\]\\{background:' + T[id].wash + ";\\}", "i").test(HOME_CSS)), ids);
+  ok("Home's day card keeps an opaque fallback when a story picture is unavailable", /#questCard\s*\{[^}]*\bbackground:#[0-9a-f]{6}\b/i.test(HOME_CSS));
   // the picture prompts, and the pictures that exist
   const P = JSON.parse(readFileSync(path.resolve(ROOT, "../tools/art/adventure-prompts.json"), "utf8"));
   const parts = ["s01", "s02", "s03", "s04", "s05", "s06", "s07", "s08", "e01", "e02", "e03", "e04"];

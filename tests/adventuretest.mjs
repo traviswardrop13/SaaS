@@ -58,7 +58,7 @@ const A = sandbox.window.SonaAdventures;
 // every story id in its day order (sona.js STORY_DAYS): Days 1-3, then Days
 // 4-14 around Codex's games (22 Oct 2026)
 const IDS = [...((readFileSync(ROOT + "/sona.js", "utf8").match(/const STORY_DAYS = \[([\s\S]*?)\n  \];/) || ["", ""])[1]).matchAll(/\{ id: "([a-z]+)"/g)].map((m) => m[1]);
-const LEGACY_IDS = IDS.filter((id) => id !== "fruitpicnic"), LAST = LEGACY_IDS.length;
+const LAST = IDS.length;
 function runOf(id, part, little) {
   return A[id][part].filter((sc) => !(little && sc.ages === "big"))
     .map((sc) => ({ art: sc.art, text: typeof sc.line === "string" ? sc.line : ((little && sc.line.little) || sc.line.big) }));
@@ -222,10 +222,9 @@ await section("source", async () => {
   const noComments = (s) => s.replace(/<!--[\s\S]*?-->/g, " ").replace(/\/\*[\s\S]*?\*\//g, " ").replace(/(^|[^:"'\\])\/\/[^\n]*/g, "$1");
   const code = noComments(page), advCode = noComments(ADV_SRC);
   const lines = allLines();
-  ok("every story is in adventures.js, with its wash and its \"Let's go!\"", IDS.length === 15 && Object.keys(A).join() === IDS.join() && IDS.every((id) => A[id] && /^#[0-9a-f]{6}$/i.test(A[id].wash) && A[id].go === "Let's go!"), Object.keys(A));
+  ok("every story is in adventures.js, with its wash and its \"Let's go!\"", IDS.length === 14 && Object.keys(A).join() === IDS.join() && IDS.every((id) => A[id] && /^#[0-9a-f]{6}$/i.test(A[id].wash) && A[id].go === "Let's go!"), Object.keys(A));
   ok("each story: 8 intro scenes and 4 ending scenes for ages 5-8, 6 and 3 for ages 3-4",
-    LEGACY_IDS.every((id) => runOf(id, "intro", false).length === 8 && runOf(id, "ending", false).length === 4 && runOf(id, "intro", true).length === 6 && runOf(id, "ending", true).length === 3));
-  ok("the older-child signature intro is short: three scenes, then two for its earned ending", A.fruitpicnic && runOf("fruitpicnic", "intro", false).length === 3 && runOf("fruitpicnic", "ending", false).length === 2 && runOf("fruitpicnic", "intro", true).length === 0);
+    Object.keys(A).every((id) => runOf(id, "intro", false).length === 8 && runOf(id, "ending", false).length === 4 && runOf(id, "intro", true).length === 6 && runOf(id, "ending", true).length === 3));
   const LITTLE = { lighthouse: ["s01 s02 s03 s05 s06 s08", "e01 e03 e04"], windup: ["s01 s02 s03 s04 s06 s08", "e01 e02 e04"], bridge: ["s01 s02 s04 s06 s07 s08", "e01 e03 e04"] };
   ok("…the scenes a little one sees are the spec's", Object.keys(LITTLE).every((id) => runOf(id, "intro", true).map((s) => s.art).join(" ") === LITTLE[id][0] && runOf(id, "ending", true).map((s) => s.art).join(" ") === LITTLE[id][1]),
     Object.keys(A).map((id) => id + ": " + runOf(id, "intro", true).map((s) => s.art).join(" ") + " / " + runOf(id, "ending", true).map((s) => s.art).join(" ")));
@@ -714,7 +713,7 @@ await section("buddy", async () => {
 const spots = ([w, hgt]) => async () => {
   art = "real";
   const bad = []; let placed = 0;
-  for (const [n, id] of LEGACY_IDS.entries()) for (const part of ["intro", "ending"]) {
+  for (const [n, id] of IDS.entries()) for (const part of ["intro", "ending"]) {
     const scenes = A[id][part];
     const q = part === "intro" ? { s: n, done: "2026-01-01" } : { s: LAST, ls: LAST - 1, lk: "story", done: "2026-01-01" };
     const { ctx, pg, errors } = await open({ voice: false, character: "dragon", quest: q }, { size: { width: w, height: hgt }, url: "/adventure.html" + (part === "ending" ? "?part=end&story=" + id : "") });
