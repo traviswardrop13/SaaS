@@ -212,6 +212,7 @@ for (const s of SUITES) {
     const lines = ((r.stdout || "") + "\n" + (r.stderr || "")).split("\n").filter((l) => /^\s*(FAIL|✗|Error|TypeError|ReferenceError|AssertionError)/.test(l) || /FAILURES? \//.test(l) || /\d+ failures?\b/i.test(l));
     fails[s] = lines.slice(0, 60).map((l) => l.length > 700 ? l.slice(0, 700) + " …" : l);
     say(1, "SUITE FAILED: " + bad[bad.length - 1] + "\n");
+    say(1, "  process: " + JSON.stringify({ status: r.status, signal: r.signal, error: r.error ? { code: r.error.code || null, message: r.error.message } : null }) + "\n");
   }
 }
 let tail = "";

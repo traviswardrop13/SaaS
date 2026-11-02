@@ -53,7 +53,11 @@ export const OUT = process.env.TEST_OUT || tmpdir(); // screenshots land here, n
 
 const exe = process.env.CHROMIUM_PATH || (existsSync("/opt/pw-browsers/chromium") ? "/opt/pw-browsers/chromium" : undefined);
 export function launchOpts(args) {
-  const o = { args: ["--mute-audio", ...(args || [])] };
+  // Fake output keeps Web Audio's clock running without a hardware device.
+  // A headless macOS output stall froze currentTime at 5 ms: the unchanged
+  // R/M evidence checks passed 8/8 with this flag, versus 2/8 without it.
+  // Chromium: media/base/media_switches.cc, kDisableAudioOutput.
+  const o = { args: ["--mute-audio", "--disable-audio-output", ...(args || [])] };
   if (exe) o.executablePath = exe;
   return o;
 }
