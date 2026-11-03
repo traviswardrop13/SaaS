@@ -48,7 +48,7 @@
     "currentIntegratedCandidate": "Pending; the recorded exit0 applies only to the earlier merge named above."
   },
   "regressionEvidence": "New target selection, stale-sibling protection, whole-Home fit and signature-adventure checks failed against saved pre-change sources. Five Auto-selection checks fail against the pre-fix Home, including real keyboard selection of the already-current sound. The final reimagined-Home suite fails the saved old layout in 145 of 596 checks; four visible sound-chip checks fail the old Home while 42 sound checks still pass.",
-  "releaseState": "Travis authorized finishing/releasing the chosen Home and books; Rachel approval of the new books and parent-only setting is confirmed. Latest main #257 is integrated with its new free-round feature switched off. Affected checks pass; full R3 of 165 suites is required/in progress with the Mac kept awake from its start. GitHub normal write access is restored; no push, main merge or publication is claimed. Gym and avatar remain excluded.",
+  "releaseState": "Release authorized and Rachel review confirmed; latest main #257 remains integrated with FREE_PLAY_ON=false. R3 stopped after confirmed machine sleep despite an idle-sleep prevention assertion. No complete passing battery or release is claimed. Runtime/tests/tools/voice index remain frozen at bbe56df1. A fresh full run waits for Travis to confirm the Mac is plugged in, open and awake. GitHub normal write access is restored; nothing pushed or merged remotely. Gym and avatar excluded.",
   "bookExpansion": {
     "requested": "Six new eight-page books for R,S,L,SH,CH,TH plus Bear's Lost Ball, expanded from its local six-page draft; all seven are additions relative to published main. Strict selected-sound shelf.",
     "sourceChecks": "All public script syntax parses; exact captions and bank-only key words validated with existing booklex plus official CMUdict entries.",
@@ -661,7 +661,7 @@
     "fullBattery": {
       "command": "node tests/run-all.mjs",
       "suites": 165,
-      "status": "Fresh complete R3 required/in progress against frozen bbe56df1, caffeinate from start; no release pass claimed",
+      "status": "R3 invalidated by confirmed machine deep sleep and explicitly stopped; full165-suite pass still required; no automatic fourth run",
       "firstRun": {
         "status": "Stopped",
         "completedSuites": 69,
@@ -742,7 +742,36 @@
             "contentDiff": "Only source line references changed; spoken content identical after normalizing citations"
           }
         }
-      }
+      },
+      "thirdRun": {
+        "complete": false,
+        "exitCode": 143,
+        "completedSuites": 38,
+        "passedSuites": 27,
+        "timingFailureSuites": [
+          "landingtest.mjs",
+          "replaytest.mjs",
+          "weeklytest.mjs",
+          "storytest.mjs",
+          "slpcode.mjs",
+          "chargepacingtest.mjs",
+          "readtest.mjs",
+          "booktest.mjs",
+          "momweek.mjs",
+          "repweektest.mjs",
+          "onboardingtest.mjs"
+        ],
+        "currentAtStop": "setupscreenstest.mjs",
+        "log": "/private/tmp/sona-home-books-release-20261102-r3.log",
+        "result": "/private/tmp/sona-home-books-release-20261102-r3-stopped.json",
+        "sleepEvidence": "/private/tmp/sona-r3-machine-sleep-evidence.log",
+        "interruptionDetails": "/private/tmp/sona-r3-sleep-interruption.json",
+        "cause": "Confirmed repeated machine deep sleep despite verified idle-sleep assertion; stopped on explicit rootinstruction. No autoreruns.",
+        "sourceFrozenCommit": "bbe56df1bfd919ea5beeb66342f9ebebdccbd86b",
+        "ownedProcessesAfterStop": 0
+      },
+      "resumeRequirement": "Travis confirms Mac physically plugged in, open and awake before another full165-suite run; do not auto-restart.",
+      "firstGameLatePriceSourceReview": "No stale-contract change found: this fixture explicitly forces browser web-sales/paidUI, preserves annual WEB_PLAN and tests3300ms charter-standard response after2500ms button release; native monthly7day selection and disabledFREEPLAY do not replace that webrail. No source or test edits justified without awake runtime evidence."
     },
     "clinicalReview": {
       "date": "2026-11-02",

@@ -123,6 +123,14 @@ Home, its CSS, Books and Settings are unchanged from `82d3c70e`.
 The generated voice index changed only source line references and is
 current. A fresh complete 165-suite run with the Mac kept awake from its
 start is required against this frozen candidate before any push.
+That third run also stopped (exit 143) after confirmed repeated machine deep
+sleep despite a verified idle-sleep prevention assertion: 38 suites had
+completed, 27 passed and 11 had timing failures. Its results are not a
+release pass and justify no app or test expectation change. Runtime, tests,
+tools and the voice index remain frozen at `bbe56df1`. No fourth run starts
+until Travis confirms the Mac is plugged in, open and awake. The existing
+late-web-charter-price assertion remains valid on source review: it tests
+the separate annual web checkout, not the native monthly seven-day offer.
 
 **Latest first-day flow (upstream #251/#253, 31 Oct 2026) supersedes the
 earlier Picnic-first review experiment.** Setup opens ordinary Fruit Slice,
