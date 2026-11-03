@@ -3110,20 +3110,26 @@ offer, the level sheet, the grown-ups check and "Home opens the offer once".
   is measured, never guessed** (`fitHome`): the card's picture takes the
   room left, set in pixels, 3:4 at most. The card comes first: while it
   would be flatter than 4:3 the rest makes room one step at a time
-  (`fit1`…`fit5`: "Your games" smaller, the board's head and foot, the
-  doors' pictures to 5:2, the words on the card, then "Your games"' heading
-  read but not drawn). With every step taken the card may go flatter than
+  (`fit1`…`fit6`: "Your games" smaller, the board's head and foot, the
+  doors' pictures to 5:2, the words on the card, "Your games"' heading
+  read but not drawn, then the card's words higher on their shade). With every step taken the card may go flatter than
   4:3 as long as its words still sit on it (on a finished day, with no
   play button, a short strip on the smallest screens); on an iPad it
   narrows instead, staying 4:3. The trail's stars stay between the heading
   and the card on a short board head. One screen at 375×667 (an iPhone SE
   in the app), 390×844, 430×932, Travis's iPhone 16 Pro in the app, an
-  iPhone SE on the website (375×553) on any day but one with "Your games",
-  768×1024 and an iPad on its side, in every state. **Only a screen too
+  iPhone SE on the website (375×553) on any day but one still to play with
+  "Your games", 768×1024 and an iPad on its side, in every state. **A
+  finished day's line can be two lines on the SE** ("Come back tomorrow for
+  Day 12 and a new game!" always; Day 2's had half a pixel to spare, and
+  GitHub's test browser wrapped it): the sixth step (`fit6`, 3 Nov 2026)
+  lifts the card's words on their shade so the page still fits; without it
+  Home scrolled there with the card back at 4:3. **Only a screen too
   short for all of it scrolls**, with every step taken and nothing cut off,
   the card 4:3 (or as tall as its words need): a 4-inch phone (320×568)
-  with "Your games", a long title or the website's founding banner, the SE
-  on the website with "Your games", a phone on its side. Every button at
+  with "Your games", a long title, or the website's founding banner on a
+  finished day (the banner alone fits since `fit6`), the SE on the website
+  with "Your games" on a day still to play, a phone on its side. Every button at
   least 44 px. A turn or any change of window size re-fits while Home is
   one screen (nothing scrolls, so Safari's bars never fold away under a
   finger); a page that scrolls re-fits only on a new width, as before.

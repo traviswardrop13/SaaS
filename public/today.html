@@ -845,16 +845,20 @@
       // pixels from what the rest measured (measured, never guessed, as the
       // plan screen's offer is). The card comes first: while its picture
       // would be flatter than 4:3, the rest makes room one step at a time
-      // (fit1…fit5, crafted-home.css): "Your games" smaller first, then the
+      // (fit1…fit6, crafted-home.css): "Your games" smaller first, then the
       // board's head and foot, then the doors' pictures, then the words on
-      // the card, and last "Your games" without its drawn heading (a screen
-      // reader still reads it). With every step taken it may be flatter than 4:3, as long
+      // the card, then "Your games" without its drawn heading (a screen
+      // reader still reads it), and last the card's words higher on their
+      // shade: a finished day's line is two lines on an iPhone SE ("Come
+      // back tomorrow for Day 12 and a new game!" always, Day 2's in a font
+      // a hair wider), and without that step the page scrolled there. With
+      // every step taken it may be flatter than 4:3, as long
       // as the words over its foot still sit on it (MIN_PIC above them); on
       // an iPad the card then narrows to keep 4:3 rather than stretch into a
       // strip. A screen too short even for that (a phone on its side) keeps
       // every step and scrolls rather than cut anything off: there the
       // picture is 4:3.
-      var FIT_STEPS=5,MIN_PIC=12;
+      var FIT_STEPS=6,MIN_PIC=12;
       function fitHome(){
         if(app.getAttribute("data-view")!=="home"){document.documentElement.classList.remove("home-flat");return;}
         var card=document.getElementById("questCard"),art=document.getElementById("questArt"),words=card&&card.querySelector(".quest-body");

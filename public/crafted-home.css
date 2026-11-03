@@ -290,8 +290,11 @@ body::before{content:"";position:fixed;left:0;right:0;top:0;height:env(safe-area
    that would leave it flatter than 4:3, the rest makes room one step at a
    time: fit1 "Your games" smaller, fit2 the board's head and foot, fit3 the
    doors' pictures, fit4 the words on the card, fit5 "Your games" with its
-   heading read, not drawn. A screen too
-   short for all of it (a phone on its side) keeps fit5 and scrolls rather
+   heading read, not drawn, fit6 the card's words a little higher on their
+   shade (a finished day's line, "Come back tomorrow for Day 12 and a new
+   game!", is two lines at 375 px, and a font a hair wider makes "Day 2"'s
+   two lines as well: without it an iPhone SE in Safari scrolled). A screen too
+   short for all of it (a phone on its side) keeps fit6 and scrolls rather
    than cut anything off. Everything a step resizes never transitions:
    sona.css gives every property a 0.01 ms transition under Reduce Motion,
    and a box mid-transition reports the size it WAS, so the fit measured a
@@ -322,6 +325,7 @@ html.home-flat,html.home-flat body{height:100%;min-height:0;overflow:hidden;}
 #libraryApp.fit4 .quest-title{font-size:23px;}
 #libraryApp.fit4 .quest-line{font-size:13px;line-height:1.3;}
 #libraryApp.fit5 #foundTitle{position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;}
+#libraryApp.fit6 .quest-body{padding-top:20px;}
 
 @media(min-width:600px){#homeMap{--map-head:84px;--map-foot:50px;max-width:524px;margin:12px auto 0;padding:8px 21px 4px;border-radius:34px;}.map-echo{width:66px;height:76px;}#homeTitle{font-size:40px;margin-top:10px;}#questCard{max-width:480px;margin:0 auto;}.quest-title{font-size:30px;}.quest-line{font-size:16px;}.quest-body{padding:70px 20px 20px 22px;gap:9px;}#homeDoors{gap:16px;margin:18px 0 20px;}#homeDoors>button{flex-direction:row;align-items:center;gap:14px;padding:8px 14px 8px 8px;}.door-pic{width:138px;height:92px;aspect-ratio:auto;border-radius:15px;}.door-copy{padding:0;gap:5px;}.door-word{font-size:26px;}.door-sub{font-size:13px;}}
 @media(max-width:350px){#homeMap{--map-head:64px;margin:4px -10px 0;padding:4px 9px 2px;border-radius:26px;}.map-echo{width:50px;height:57px;}#homeTitle{font-size:26px;}.quest-title{font-size:23px;}.quest-line{font-size:13.5px;}.quest-body{padding:48px 12px 12px 14px;gap:6px;}.quest-head{gap:10px;}#homeDoors{gap:10px;}.door-copy{padding:7px 10px 9px;}.door-word{font-size:19px;}}
