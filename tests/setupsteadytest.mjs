@@ -558,7 +558,7 @@ for(const reduced of [false,true])for(const D of [DEVICES[0],DEVICES[2]]){
 
 // THE PLAN CARD'S PICTURE ARRIVES LATE, AND NOTHING MOVES (31 Oct 2026). The
 // card's picture is Fruit Slice's Home card, the first game's, whatever the
-// story (here a child on K: Fruit Slice, then the lighthouse): held here past
+// story (here a child on P: Fruit Slice, then the lighthouse): held here past
 // the build beat, it lands while the ready screen shows, inside the box the
 // card kept for it. Every frame is measured, with motion on and under Reduce
 // Motion; the card, its picture's box, the heading and Continue stay put.
@@ -576,7 +576,7 @@ for(const reduced of [false,true]){
   await page.locator('[data-step="games"].on').waitFor();await calm(page);await page.tap('#nextBtn');
   await page.locator('[data-step="therapy"].on').waitFor();await calm(page);await page.tap('#obTherapy [data-val="t_yes"]');
   await page.locator('[data-step="sounds"].on').waitFor();
-  await calm(page);await page.tap('#obSounds [data-sound="R"]');await calm(page);await page.tap('#obSounds [data-sound="K"]');
+  await calm(page);await page.tap('#obSounds [data-sound="R"]');await calm(page);await page.tap('#obSounds [data-sound="P"]');
   await calm(page);await page.tap('#nextBtn');await page.locator('[data-step="minutes"].on').waitFor();
   await calm(page);await page.tap('#obMinutes [data-val="5"]');await page.locator('[data-step="updates"].on').waitFor();await page.waitForTimeout(300);
   await page.evaluate(()=>__steady.start());

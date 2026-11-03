@@ -680,10 +680,11 @@ await section("Home stays quiet", async () => {
 // able to scroll up and down helpful"): the top bar, the board, the doors
 // and "Your games" are all on the screen and nothing moves up or down; the
 // card's picture takes the room left, 3:4 at most, and the rest makes room
-// for it before it goes flatter than 4:3 (fit1…fit5). Only a screen too
+// for it before it goes flatter than 4:3 (fit1…fit6). Only a screen too
 // short for all of it scrolls, and then nothing is cut off and the card is
 // 4:3. Every phone and iPad size here is one screen in every state, but a
-// 4-inch phone (320x568) with "Your games" or the website's founding banner.
+// 4-inch phone (320x568) with "Your games", or with the website's founding
+// banner on a finished day (the banner alone fits since fit6, 3 Nov 2026).
 const SIZES = [[320, 568], [375, 667], [390, 844], [430, 932], [768, 1024]];
 const STATES = [
   ["Day 1, open", { sub: true }],
@@ -695,7 +696,7 @@ const STATES = [
   ["ages 3-4", { sub: true, age: 4 }],
   ["the founding banner", { ea: true }],
 ];
-const FLAT_320 = new Set(["Day 1, open", "locked", "ages 3-4", "done"]);
+const FLAT_320 = new Set(["Day 1, open", "locked", "ages 3-4", "done", "the founding banner"]);
 const measure = (pg) => pg.evaluate(() => {
   const box = (e) => { if (!e || !e.offsetParent) return null; const r = e.getBoundingClientRect(); return { l: r.left, r: r.right, t: r.top, b: r.bottom, w: r.width, h: r.height }; };
   const $ = (id) => document.getElementById(id), art = document.querySelector(".quest-art"), page = document.querySelector(".home-only").getBoundingClientRect();
@@ -741,10 +742,10 @@ for (const [w, h] of SIZES) {
       // ONE SCREEN (1 Nov 2026): everything on the screen, nothing to scroll
       const oneScreen = w >= 375 || FLAT_320.has(label);
       if (oneScreen) ok(at + "Home is one screen: the whole page fits and nothing scrolls up or down", m.flat && m.tall <= m.ih && m.moved === 0 && m.fits, { flat: m.flat, tall: m.tall, ih: m.ih, moved: m.moved, fits: m.fits, steps: m.steps });
-      else ok(at + "a screen too short for it scrolls, with every step taken and nothing cut off (the card 4:3, or as tall as its words need)", !m.flat && m.steps.length === 5 && ratio >= 0.75 - 0.01 && ratio <= 4 / 3, { flat: m.flat, steps: m.steps, ratio });
+      else ok(at + "a screen too short for it scrolls, with every step taken and nothing cut off (the card 4:3, or as tall as its words need)", !m.flat && m.steps.length === 6 && ratio >= 0.75 - 0.01 && ratio <= 4 / 3, { flat: m.flat, steps: m.steps, ratio });
       // the picture is the day's reel, 3:4 at its tallest; flatter than 4:3
       // only once every other step has made room for it
-      ok(at + "the picture is the day's reel: 3:4 at its tallest, never flatter than 4:3 until everything else has made room", ratio <= 4 / 3 + 0.01 && (ratio >= 0.75 - 0.01 || m.steps.length === 5), { art: m.art, ratio, steps: m.steps });
+      ok(at + "the picture is the day's reel: 3:4 at its tallest, never flatter than 4:3 until everything else has made room", ratio <= 4 / 3 + 0.01 && (ratio >= 0.75 - 0.01 || m.steps.length === 6), { art: m.art, ratio, steps: m.steps });
       const across = w >= 600 ? m.card.w <= 480.5 && Math.abs((m.card.l - m.page.l) - (m.page.r - m.card.r)) < 1.5 && ratio >= 0.75 - 0.01 : m.card.w >= m.page.r - m.page.l - 1;
       ok(at + (w >= 600 ? "on an iPad the card is centred, 480 px wide at most, and never flatter than 4:3 (it narrows instead)" : "the card spans the page"), across, { card: m.card, page: m.page, ratio });
       // the Play Map (31 Oct 2026): tomorrow on the board right under the
@@ -769,15 +770,21 @@ for (const [w, h] of SIZES) {
 // its side, the shortest screens Home meets: one screen on the SE (the
 // reel a little flatter than 4:3 once the rest has made room) and on the
 // iPads (whose card narrows to stay 4:3), the day a story is finished too
-// (the done card, with no play button, is a short strip there).
+// (the done card, with no play button, is a short strip there). Its line,
+// "Come back tomorrow for Day 2 and a new game!", had half a pixel to spare
+// at 375 px: CI's Chromium wrapped it, and with two lines the card's words
+// no longer sat on the strip, so the page scrolled. Day 13's line ("…for
+// Day 14 …") is two lines in every font, so it holds the fit to a two-line
+// line wherever this runs (fit6 lifts the words on their shade for it).
 await section("fit on the shortest screens", async () => {
-  for (const [w, h, label, opts] of [[375, 553, "an iPhone SE in Safari", { sub: true }], [375, 553, "an iPhone SE in Safari, a story finished today", { sub: true, quest: { i: 0, last: 13, s: 1, ls: 0, lk: "story", done: "TODAY", got: [] } }], [1024, 768, "an iPad on its side", { sub: true }], [1133, 744, "an iPad mini on its side", { sub: true }]]) {
+  for (const [w, h, label, opts] of [[375, 553, "an iPhone SE in Safari", { sub: true }], [375, 553, "an iPhone SE in Safari, a story finished today", { sub: true, quest: { i: 0, last: 13, s: 1, ls: 0, lk: "story", done: "TODAY", got: [] } }], [375, 553, "an iPhone SE in Safari, Day 13 finished today, its line two lines", { sub: true, quest: { i: 0, last: 13, s: 13, ls: 12, lk: "story", done: "TODAY", got: [] } }], [1024, 768, "an iPad on its side", { sub: true }], [1133, 744, "an iPad mini on its side", { sub: true }]]) {
     const { ctx, pg, errors } = await open({ ...opts, viewport: { width: w, height: h } });
     await pg.evaluate(() => document.fonts && document.fonts.ready); await pg.waitForTimeout(100);
     const m = await measure(pg), at = w + "x" + h + " (" + label + "): ", done = /finished/.test(label);
     const ratio = m.art.h / m.art.w;
     ok(at + "the card's title" + (done ? "" : " and play button") + " on the first screen, 3:4 at most", m.y === 0 && m.title.b <= m.ih && m.card.b <= m.ih && (done ? m.go === null : !!m.go && m.go.b <= m.ih && m.go.h >= 64) && ratio <= 4 / 3 + 0.01, { title: m.title, go: m.go, card: m.card, ih: m.ih, ratio });
     ok(at + "one screen: the whole page fits and nothing scrolls up or down" + (w >= 600 ? ", the card no flatter than 4:3" : ""), m.flat && m.tall <= m.ih && m.moved === 0 && m.fits && (w < 600 || ratio >= 0.75 - 0.01), { flat: m.flat, tall: m.tall, ih: m.ih, moved: m.moved, fits: m.fits, ratio, steps: m.steps });
+    if (/two lines/.test(label)) ok(at + "(the card's line really is two lines here)", !!m.line && m.line.h > 25 && /Day 14/.test(await pg.evaluate(() => document.getElementById("questLine").textContent)), { line: m.line });
     ok(at + "the doors right after the card" + (done ? ", then the game found today" : ""), m.arcade.t >= m.card.b && m.hit.arcadeBtn && m.hit.homeBooksBtn && (!done || (!!m.fresh && m.fresh.t >= m.arcade.b && m.fresh.b <= m.ih)), { card: m.card, arcade: m.arcade, fresh: m.fresh });
     ok(at + "no page errors", errors.length === 0, errors);
     await ctx.close();
