@@ -95,22 +95,34 @@ name-first setup and the store-owned seven-day monthly trial on top, are
 preserved. The Map keeps its measured layout; page movement is locked only
 while its complete content fits, and the Arcade always releases that lock.
 The new lock check fails the pre-fix page and passes all 21 compact Home
-scenarios. A fresh full battery is still required before any push; GitHub
-publishing access has not yet been restored or verified. **Rachel's review
+scenarios. A fresh full battery is still required before any push. GitHub
+access was subsequently restored through the normal Git sign-in and a
+successful push dry run; nothing has been published yet. **Rachel's review
 confirmed (Travis, 2 Nov 2026): “Yes, Rachel has approved them”**, answering
 the explicit question about the new books' words and pictures and the
 parent-only target sound setting. This confirms that scope, not the separate
 upstream Day 1 review questions recorded below. No Gym, avatar or new
 clinical behavior is included.
 
-The 2 Nov release run stopped after 69 completed suites: 65 passed and four
+The first 2 Nov release run stopped after 69 completed suites: 65 passed and four
 failed on leftover test expectations (the new R book's title, the old Home
 wash selectors and the retired Picnic alias). It was not a release pass.
 The Picnic-specific tests were restored exactly from current main, the R
 title guard now includes the exact new title and rejects off-sound books,
 and the Home fallback check follows the approved Map. These are test-only
-corrections; all production files remain identical to `82d3c70e`. A fresh
-complete 164-suite run is required against `250f4b4e` before any push.
+corrections; that candidate's production files remained identical to
+`82d3c70e`. The next complete run (`250f4b4e`, 164 suites) exited 1: 154
+passed, two retained outdated Home-wash/free-book shelf expectations and
+eight timed out during system sleep. Neither run is a release pass.
+The two stale checks now follow the Map's opaque picture fallback and the
+selected-sound shelf; the free Rory check remains on an explicitly selected
+R shelf. The affected activity suite passes 568 checks. Latest main #257
+is integrated at `bbe56df1`, preserving `FREE_PLAY_ON = false`, its new
+helpers and the sound-target readers. Its free-round suite passes 19/19.
+Home, its CSS, Books and Settings are unchanged from `82d3c70e`.
+The generated voice index changed only source line references and is
+current. A fresh complete 165-suite run with the Mac kept awake from its
+start is required against this frozen candidate before any push.
 
 **Latest first-day flow (upstream #251/#253, 31 Oct 2026) supersedes the
 earlier Picnic-first review experiment.** Setup opens ordinary Fruit Slice,

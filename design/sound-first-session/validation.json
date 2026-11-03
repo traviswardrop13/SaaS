@@ -1,6 +1,6 @@
 {
   "reviewDate": "2026-11-02",
-  "baseCommit": "cf977cd9ddfb5e97bab7277662b6c5e7a9601eee",
+  "baseCommit": "9777a94a44f9bb39929789211ff102ac2b1385c5",
   "fullBattery": {
     "command": "node tests/run-all.mjs",
     "suites": 163,
@@ -48,7 +48,7 @@
     "currentIntegratedCandidate": "Pending; the recorded exit0 applies only to the earlier merge named above."
   },
   "regressionEvidence": "New target selection, stale-sibling protection, whole-Home fit and signature-adventure checks failed against saved pre-change sources. Five Auto-selection checks fail against the pre-fix Home, including real keyboard selection of the already-current sound. The final reimagined-Home suite fails the saved old layout in 145 of 596 checks; four visible sound-chip checks fail the old Home while 42 sound checks still pass.",
-  "releaseState": "Travis explicitly resumed finishing and releasing the chosen Home and books on 2 November. Latest main setup and seven-day monthly-first paywall changes are preserved. Focused Home scroll-lock checks pass; full release battery is pending. GitHub publishing access is unresolved. No remote push, main merge or production release is claimed; Travis confirmed Rachel approved the new books' words and pictures and the parent-only target sound setting on 2 November; separate upstream review questions remain recorded. Gym and avatar are excluded.",
+  "releaseState": "Travis authorized finishing/releasing the chosen Home and books; Rachel approval of the new books and parent-only setting is confirmed. Latest main #257 is integrated with its new free-round feature switched off. Affected checks pass; full R3 of 165 suites is required/in progress with the Mac kept awake from its start. GitHub normal write access is restored; no push, main merge or publication is claimed. Gym and avatar remain excluded.",
   "bookExpansion": {
     "requested": "Six new eight-page books for R,S,L,SH,CH,TH plus Bear's Lost Ball, expanded from its local six-page draft; all seven are additions relative to published main. Strict selected-sound shelf.",
     "sourceChecks": "All public script syntax parses; exact captions and bank-only key words validated with existing booklex plus official CMUdict entries.",
@@ -636,7 +636,7 @@
   },
   "currentReleaseCandidate": {
     "date": "2026-11-02",
-    "upstream": "cf977cd9ddfb5e97bab7277662b6c5e7a9601eee",
+    "upstream": "9777a94a44f9bb39929789211ff102ac2b1385c5",
     "scope": "Chosen Play Map, read-only target badges, parent-only target setting, strict sound shelf, seven eight-page books. Preserve upstream setup and monthly-first store-owned trial. No Gym or avatar.",
     "originalCatalogAudit": {
       "oldBooks": 48,
@@ -660,8 +660,8 @@
     },
     "fullBattery": {
       "command": "node tests/run-all.mjs",
-      "suites": 164,
-      "status": "Fresh complete R2 run required/in progress; no release pass claimed",
+      "suites": 165,
+      "status": "Fresh complete R3 required/in progress against frozen bbe56df1, caffeinate from start; no release pass claimed",
       "firstRun": {
         "status": "Stopped",
         "completedSuites": 69,
@@ -689,6 +689,59 @@
           "tests/day1.mjs: exact new R title; tighter off-sound guard",
           "tests/talkstorytest.mjs: approved Map opaque image fallback"
         ]
+      },
+      "secondRun": {
+        "complete": true,
+        "exitCode": 1,
+        "suiteCount": 164,
+        "passedSuites": 154,
+        "deterministicStale": [
+          "storygametest.mjs: per-story Home wash selectors",
+          "activitytest.mjs: free R title on S shelf"
+        ],
+        "timedOutDuringSystemSleep": [
+          "sayitcardtest.mjs",
+          "firstgametest.mjs",
+          "sayplaytest.mjs",
+          "playgamestest.mjs",
+          "racecartest.mjs",
+          "flowertest.mjs",
+          "castletest.mjs",
+          "pizzatest.mjs"
+        ],
+        "sourceFrozenCommit": "250f4b4e498950854bf959c18b86e6b2321afd8e",
+        "result": "/private/tmp/sona-home-books-release-20261102-r2-result.json",
+        "log": "/private/tmp/sona-home-books-release-20261102-r2.log"
+      },
+      "finalCorrections": {
+        "productionChanges": "Upstream #257 only, with FREE_PLAY_ON=false; no additional Home/book/clinical behavior change",
+        "testOnly": [
+          "tests/storygametest.mjs: shared opaque Map image fallback",
+          "tests/activitytest.mjs: S shelf count from shared API, no off-sound free fallback, free Rory still tested on explicit R fixture"
+        ],
+        "affectedChecks": {
+          "activity": {
+            "assertions": 568,
+            "exitCode": 0,
+            "log": "/private/tmp/sona-release-activity-r3-affected.log"
+          },
+          "freeplay": {
+            "assertions": 19,
+            "exitCode": 0,
+            "log": "/private/tmp/sona-release-freeplay-r3-affected.log"
+          },
+          "homeFallbackPredicate": {
+            "exitCode": 0,
+            "negativeControl": "Removing the opaque background makes the predicate fail"
+          },
+          "voiceIndex": {
+            "exitCode": 0,
+            "fixed": 708,
+            "expansions": 80,
+            "bankWords": 356,
+            "contentDiff": "Only source line references changed; spoken content identical after normalizing citations"
+          }
+        }
       }
     },
     "clinicalReview": {
@@ -698,8 +751,9 @@
       "scope": "New books' words and pictures and the parent-only target sound setting",
       "upstreamBoundary": "This confirmation is not extended to the separate upstream Day 1 clinical questions recorded in CLAUDE.md."
     },
-    "publication": "Pending; GitHub write access unresolved; nothing pushed or merged remotely.",
-    "runtimeCommit": "82d3c70ea65f8f6f5eb1421e6776318b02f4987d",
-    "testCorrectionCommit": "250f4b4e498950854bf959c18b86e6b2321afd8e"
+    "publication": "Pending complete passing release checks; normal Git authentication and push dry run succeeded, no push or main merge claimed.",
+    "runtimeCommit": "bbe56df1bfd919ea5beeb66342f9ebebdccbd86b",
+    "testCorrectionCommit": "250f4b4e498950854bf959c18b86e6b2321afd8e",
+    "homeBooksSettingsMatch": "82d3c70ea65f8f6f5eb1421e6776318b02f4987d"
   }
 }
