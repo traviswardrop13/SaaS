@@ -132,7 +132,7 @@ run waited for Travis to confirm the Mac was plugged in, open and awake. The exi
 late-web-charter-price assertion remains valid on source review: it tests
 the separate annual web checkout, not the native monthly seven-day offer.
 
-**Current release candidate (4 Nov 2026): `1c2260c8`.** Travis confirmed
+**Current release candidate (4 Nov 2026): `146fa107`.** Travis confirmed
 physical readiness on 3 Nov. The fourth run then stopped deliberately after
 eight green suites to integrate published main `4a30d86d` (#258/#259).
 The integrated candidate preserves the approved Map, parent-only target pin,
@@ -158,6 +158,17 @@ full-battery-before-any-push rule, solely to upload the review branch and
 run the complete checks on GitHub, awaits Travis's answer. Nothing has been
 uploaded or released, and a complete passing battery remains required before
 production publication.
+
+Published main `ef791055` (#260, TALKCLIP) is also integrated. Its twenty
+new clip/poster assets, recorder/capture tools, asset test and rulebook notes
+are retained exactly. The approved Map keeps its original portrait picture:
+its HTML, CSS and JavaScript are byte-identical to `1c2260c8`, with no video
+element, reel loader or request, so these assets are not activated there.
+The updated Node-only asset test exits 0 (35 clips); optional decoded-frame
+checks are skipped because ffmpeg is unavailable locally. Voice-index
+freshness still exits 0; no TypeScript changed. The new source manifest has
+2,125 files. The complete battery and the requested pre-push exception are
+still pending; this integration is not a release pass.
 
 **Latest first-day flow (upstream #251/#253, 31 Oct 2026) supersedes the
 earlier Picnic-first review experiment.** Setup opens ordinary Fruit Slice,

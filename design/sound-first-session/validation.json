@@ -636,7 +636,7 @@
   },
   "currentReleaseCandidate": {
     "date": "2026-11-04",
-    "upstream": "4a30d86ddc9c8bde8ec321f6b27b32e5e366fd57",
+    "upstream": "ef791055ce257d537a924bfac3d83200518ce8f5",
     "scope": "Chosen Play Map, read-only target badges, parent-only target setting, strict sound shelf, seven eight-page books. Preserve upstream setup, monthly-first store-owned trial, disabled free-round flag and TALK2 stories. No Gym or avatar.",
     "originalCatalogAudit": {
       "oldBooks": 48,
@@ -828,7 +828,7 @@
       "upstreamBoundary": "This confirmation is not extended to the separate upstream Day 1 clinical questions recorded in CLAUDE.md."
     },
     "publication": "Pending complete passing release checks. Normal Git authentication works. Exception to upload the review branch for GitHub full checks requested, not yet granted; no upload, PR, main merge or release claimed.",
-    "runtimeCommit": "1c2260c8912130b0ac652c7bc7c7921f2128eeb8",
+    "runtimeCommit": "146fa107df753d0cfd8449487cda55a9032ab0f6",
     "testCorrectionCommit": "250f4b4e498950854bf959c18b86e6b2321afd8e",
     "homeBooksSettingsMatch": {
       "BooksAndSettings": "82d3c70ea65f8f6f5eb1421e6776318b02f4987d",
@@ -895,6 +895,32 @@
         "contentDiff": "Generated from integrated source including the five already-published TALK2 variants"
       },
       "manifest": "/private/tmp/sona-release-1c2260c8-frozen-manifest.json"
+    },
+    "appBehaviorMatches": "1c2260c8912130b0ac652c7bc7c7921f2128eeb8",
+    "latestUpstreamAssetIntegration": {
+      "commit": "146fa107df753d0cfd8449487cda55a9032ab0f6",
+      "upstream": "ef791055ce257d537a924bfac3d83200518ce8f5",
+      "changedFiles": 24,
+      "newClipPosterFiles": 20,
+      "appHtmlJsCssChanged": 0,
+      "typeScriptChanged": 0,
+      "behavior": "Approved Map retains original story picture and no reel loader/video/media requests; new upstream assets remain available but inactive there",
+      "assetIntegrity": {
+        "exitCode": 0,
+        "checks": 359,
+        "clips": 35,
+        "log": "/private/tmp/sona-release-ef791055-homereel.log",
+        "skip": "ffmpeg unavailable; optional poster-first-frame/black-frame decoding checks skipped"
+      },
+      "voiceIndex": {
+        "exitCode": 0,
+        "fixed": 808,
+        "expansions": 80,
+        "bankWords": 356
+      },
+      "manifest": "/private/tmp/sona-release-146fa107-frozen-manifest.json",
+      "sourceFiles": 2125,
+      "fullBattery": "Pending; no local full restart or full-pass claim"
     }
   }
 }
