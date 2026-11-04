@@ -692,7 +692,7 @@
       // PLAYMAP1: compress the picture and gaps first. Lock page movement
       // only while the complete Home fits; a shorter or enlarged screen
       // keeps natural scrolling, and the Arcade always releases the lock.
-      var FIT_STEPS=5;
+      var FIT_STEPS=6;
       function fitHome(){
         if(app.getAttribute("data-view")!=="home"){document.documentElement.classList.remove("home-flat");return;}
         var i;for(i=1;i<=FIT_STEPS;i++)app.classList.remove("fit"+i);

@@ -243,6 +243,221 @@
           line: { big: "A zillion cheers for Zippy! A gold star for Zippy's zoo on our helper map!",
                   little: "A zillion cheers! A gold star for our helper map!" } }
       ]
+    },
+
+    kiki: {
+      // K: Kiki's Camping Night. The wind blew Kiki the kitten's tent down:
+      // the child's words fix her camp, warm the cocoa and bring a comet.
+      sound: "K",
+      wash: "#7a6fb0",
+      intro: [
+        { art: "s01", ages: "both", key: "cake",
+          line: "Pelly the pelican brought us a letter. Oops! That's a big birthday cake!" },
+        { art: "s02", ages: "both", key: "kitten",
+          line: { big: "Here's the real letter. It's from Kiki the kitten. Come camping with her tonight!",
+                  little: "The real letter is from Kiki the kitten. Come camping!" } },
+        { art: "s03", ages: "big", key: "canoe",
+          line: "We paddle a little canoe across the lake to Kiki's camp in the woods." },
+        { art: "s04", ages: "both", key: "camp",
+          line: { big: "Kiki's camp is a mess! The wind blew her tent down. Let's fix up the camp!",
+                  little: "The wind blew Kiki's tent down! Let's fix up the camp!" } },
+        { art: "s05", ages: "both", key: "cord",
+          line: { big: "We pull the cord nice and tight, and up pops the tent!",
+                  little: "We pull the cord, and up pops the tent!" } },
+        { art: "s06", ages: "big", key: "koala",
+          line: "A sleepy koala peeks out of a tree and drops us a cozy blanket. Thank you, koala!" },
+        { art: "s07", ages: "both", key: "cocoa",
+          line: { big: "The sun goes down. Kiki pours warm cocoa for everyone. Yum!",
+                  little: "Kiki pours warm cocoa. Yum!" } },
+        { art: "s08", ages: "both", key: "count",
+          line: { big: "The sky gets dark, and the stars come out. Let's count the stars!",
+                  little: "The stars come out! Let's count the stars!" } }
+      ],
+      ending: [
+        { art: "e01", ages: "both", key: "comet",
+          line: { big: "Whoosh! A bright comet zooms across the sky with a long, glowing tail.",
+                  little: "Whoosh! A bright comet zooms by!" } },
+        { art: "e02", ages: "big", key: "cookie",
+          line: "We each eat a big cookie by the campfire and giggle at the owl's silly hoots." },
+        { art: "e03", ages: "both", key: "cuddle",
+          line: { big: "Kiki gives us a big cuddle and a tiny toy tent. Thank you, friends!",
+                  little: "Kiki gives us a cuddle. Thank you, friends!" } },
+        { art: "e04", ages: "both", key: "kind",
+          line: { big: "You were so kind! A gold star for Kiki's camp on our helper map!",
+                  little: "You were so kind! A gold star for our helper map!" } }
+      ]
+    },
+
+    gus: {
+      // G: Gus's Goose Chase. Gus the goat's geese waddled away from the farm:
+      // the child's words find them all, the last one on a golden egg.
+      sound: "G",
+      wash: "#6f9a4a",
+      intro: [
+        { art: "s01", ages: "both", key: "guitar",
+          line: "Pelly the pelican brought us a letter. Oops! That's a little guitar!" },
+        { art: "s02", ages: "both", key: "goat",
+          line: { big: "Here's the real letter. It's from Gus the goat. Come quick, his geese got out!",
+                  little: "The real letter is from Gus the goat. Come quick!" } },
+        { art: "s03", ages: "big", key: "gate",
+          line: "We run up the farm lane. Oh no, the wooden gate is wide open!" },
+        { art: "s04", ages: "both", key: "goose",
+          line: { big: "Gus has five geese, and they all waddled away! Let's find every goose.",
+                  little: "Gus's geese waddled away! Let's find every goose." } },
+        { art: "s05", ages: "both", key: "garden",
+          line: { big: "Honk, honk! Two geese are in the garden, nibbling the lettuce.",
+                  little: "Honk! Two geese are in the garden!" } },
+        { art: "s06", ages: "big", key: "gopher",
+          line: "A friendly gopher pops out of a hole and waves us to the pond. Thank you, gopher!" },
+        { art: "s07", ages: "both", key: "giggle",
+          line: { big: "Splash! Two more geese are swimming in the pond. They giggle and flap!",
+                  little: "Two more geese are in the pond! They giggle and flap!" } },
+        { art: "s08", ages: "both", key: "gallop",
+          line: { big: "One more goose to find! Let's gallop up the hill to look.",
+                  little: "One more! Let's gallop up the hill!" } }
+      ],
+      ending: [
+        { art: "e01", ages: "both", key: "golden",
+          line: { big: "There she is, sitting on a golden egg! Every goose is home.",
+                  little: "She's sitting on a golden egg! Every goose is home." } },
+        { art: "e02", ages: "big", key: "games",
+          line: "We play silly farm games with Gus and all five geese." },
+        { art: "e03", ages: "both", key: "gift",
+          line: { big: "Gus gives us a gift, a soft little feather. Thank you, friends!",
+                  little: "Gus gives us a gift. Thank you, friends!" } },
+        { art: "e04", ages: "both", key: "goodbye",
+          line: { big: "Goodbye, Gus! A gold star for Gus's farm on our helper map!",
+                  little: "Goodbye, Gus! A gold star for our helper map!" } }
+      ]
+    },
+
+    shelly: {
+      // SH: Shelly's Shell Show. The waves washed Shelly the shark's shells
+      // away before her show: the child's words dig, shake and find them all.
+      sound: "SH",
+      wash: "#2f8fa8",
+      intro: [
+        { art: "s01", ages: "both", key: "shoe",
+          line: "Pelly the pelican brought us a letter. Oops! That's a fuzzy pink shoe!" },
+        { art: "s02", ages: "both", key: "shark",
+          line: { big: "Here's the real letter. It's from Shelly the shark. Come quick, she needs our help!",
+                  little: "The real letter is from Shelly the shark. Come quick!" } },
+        { art: "s03", ages: "big", key: "shore",
+          line: "We walk along the sandy shore to Shelly's little blue cove." },
+        { art: "s04", ages: "both", key: "shells",
+          line: { big: "Shelly's shell show is today, but the waves washed her shells away! Let's find the shells.",
+                  little: "The waves washed Shelly's shells away! Let's find the shells." } },
+        { art: "s05", ages: "both", key: "shovel",
+          line: { big: "We dig in the sand with a little shovel. Look, a pink shell!",
+                  little: "We dig with a little shovel. A pink shell!" } },
+        { art: "s06", ages: "big", key: "ship",
+          line: "An old toy ship is stuck in the sand, and a stripy shell is hiding inside!" },
+        { art: "s07", ages: "both", key: "shiny",
+          line: { big: "Under a rock, a shiny shell sparkles in the water. Just one more to go!",
+                  little: "A shiny shell sparkles in the water!" } },
+        { art: "s08", ages: "both", key: "shake",
+          line: { big: "Where is the last shell? Let's shake the seaweed and see!",
+                  little: "Let's shake the seaweed and see!" } }
+      ],
+      ending: [
+        { art: "e01", ages: "both", key: "shine",
+          line: { big: "Plop! Out falls the last shell. Every shell is back, and they shine in the sun!",
+                  little: "Every shell is back, and they shine!" } },
+        { art: "e02", ages: "big", key: "show",
+          line: "The shell show begins, and all the little fish swim close to look." },
+        { art: "e03", ages: "both", key: "share",
+          line: { big: "Shelly lets us share her very best shell. Thank you, friends!",
+                  little: "Shelly lets us share her best shell. Thank you!" } },
+        { art: "e04", ages: "both", key: "shout",
+          line: { big: "Let's shout hooray! A gold star for Shelly's cove on our helper map!",
+                  little: "Let's shout hooray! A gold star for our helper map!" } }
+      ]
+    },
+
+    chip: {
+      // CH: Chip's Cherry Pie. A bird flew off with Chip the chipmunk's
+      // cherries: the child's words chase it, bake the pie and start the picnic.
+      sound: "CH",
+      wash: "#a8543f",
+      intro: [
+        { art: "s01", ages: "both", key: "chair",
+          line: "Pelly the pelican brought us a letter. Oops! That's a tiny wooden chair!" },
+        { art: "s02", ages: "both", key: "chipmunk",
+          line: { big: "Here's the real letter. It's from Chip the chipmunk. Come to his picnic!",
+                  little: "The real letter is from Chip the chipmunk. Come to his picnic!" } },
+        { art: "s03", ages: "big", key: "chimney",
+          line: "We follow the puffs of smoke from Chip's chimney through the woods." },
+        { art: "s04", ages: "both", key: "cherries",
+          line: { big: "Chip wants to bake a cherry pie for the picnic, but his cherries are gone! Let's find the cherries.",
+                  little: "Chip's cherries are gone! Let's find the cherries." } },
+        { art: "s05", ages: "both", key: "chase",
+          line: { big: "A cheeky bird flew off with them! Let's chase the bird to the big tree.",
+                  little: "A bird took them! Let's chase the bird!" } },
+        { art: "s06", ages: "big", key: "chick",
+          line: "Up in the nest, a little chick hands down the basket of cherries. Thank you, chick!" },
+        { art: "s07", ages: "both", key: "chop",
+          line: { big: "Back at home, we chop and stir and pop the pie in the oven.",
+                  little: "We chop and stir and bake the pie!" } },
+        { art: "s08", ages: "both", key: "chocolate",
+          line: { big: "The pie smells so good. Chip adds a drizzle of chocolate on top!",
+                  little: "Chip adds chocolate on top. Yum!" } }
+      ],
+      ending: [
+        { art: "e01", ages: "both", key: "cheer",
+          line: { big: "Ding! The pie is ready, and everyone at the picnic gives a big cheer!",
+                  little: "Ding! The pie is ready! Let's cheer!" } },
+        { art: "e02", ages: "big", key: "chew",
+          line: "We chew and munch on warm, sweet cherry pie. The little chick has some too." },
+        { art: "e03", ages: "both", key: "chalk",
+          line: { big: "Chip draws a big thank you heart in chalk, just for us!",
+                  little: "Chip draws us a heart in chalk!" } },
+        { art: "e04", ages: "both", key: "champion",
+          line: { big: "You're a pie champion! A gold star for Chip's woods on our helper map!",
+                  little: "You're a pie champion! A gold star for our helper map!" } }
+      ]
+    },
+
+    theo: {
+      // TH: Theo's Big Show. Theo the bear's thunder drum is lost before his
+      // show at the forest theater: the child's words find it and start the show.
+      sound: "TH",
+      wash: "#4b4f8f",
+      intro: [
+        { art: "s01", ages: "both", key: "thimble",
+          line: "Pelly the pelican brought us a letter. Oops! That's a tiny thimble!" },
+        { art: "s02", ages: "both", key: "theater",
+          line: { big: "Here's the real letter. It's from Theo the bear. Come to his show at the forest theater!",
+                  little: "The real letter is from Theo the bear. Come to his show at the theater!" } },
+        { art: "s03", ages: "big", key: "thick",
+          line: "We tiptoe through the thick green woods to the little stage under the trees." },
+        { art: "s04", ages: "both", key: "thunder",
+          line: { big: "Theo plays the thunder drum in the show, but his drum is lost! Let's find the thunder drum.",
+                  little: "Theo's thunder drum is lost! Let's find the thunder drum." } },
+        { art: "s05", ages: "both", key: "think",
+          line: { big: "Hmm, let's think. Where did Theo play it last? Behind the stage!",
+                  little: "Hmm, let's think. Where can it be?" } },
+        { art: "s06", ages: "big", key: "thistle",
+          line: "We peek behind a purple thistle. No drum, just a sleepy snail." },
+        { art: "s07", ages: "both", key: "thump",
+          line: { big: "Thump, thump! We hear a noise behind the big bush. What is that?",
+                  little: "Thump, thump! What is that?" } },
+        { art: "s08", ages: "both", key: "thin",
+          line: { big: "It's the drum! A little squirrel is tapping it with a thin stick.",
+                  little: "It's the drum! A squirrel taps it with a thin stick." } }
+      ],
+      ending: [
+        { art: "e01", ages: "both", key: "thousand",
+          line: { big: "The show begins, and a thousand fireflies light up the stage.",
+                  little: "A thousand fireflies light up the show!" } },
+        { art: "e02", ages: "big", key: "thud",
+          line: "Theo plays the drum. Thud, boom, thud! Everyone dances along." },
+        { art: "e03", ages: "both", key: "thank",
+          line: { big: "Theo gives us a big bear hug. Thank you, friends!",
+                  little: "Theo gives us a hug. Thank you, friends!" } },
+        { art: "e04", ages: "both", key: "thumbs",
+          line: { big: "Two thumbs up! A gold star for Theo's theater on our helper map!",
+                  little: "Two thumbs up! A gold star for our helper map!" } }
+      ]
     }
   };
 })(this);

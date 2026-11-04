@@ -5441,6 +5441,18 @@
       line: "Sandy the sea turtle's sandcastle keeps falling down. Help her build it!" },
     { id: "zippy", sound: "Z", hero: "zippy", name: "Zippy's Zoo Parade", title: "Zippy's Zoo Parade",
       line: "Zippy the zebra's parade float is stuck, and the zoo parade can't start. Help it go!" },
+    // TALK2 (2 Nov 2026, Travis: yes to "talking Day 1 stories for five more
+    // sounds: K, G, SH, CH and TH"): the next sounds after the "popular" five
+    { id: "kiki", sound: "K", hero: "kiki", name: "Kiki's Camping Night", title: "Kiki's Camping Night",
+      line: "The wind blew Kiki the kitten's tent down before camping night. Help fix her camp!" },
+    { id: "gus", sound: "G", hero: "gus", name: "Gus's Goose Chase", title: "Gus's Goose Chase",
+      line: "Gus the goat's geese waddled away from the farm. Help find every one!" },
+    { id: "shelly", sound: "SH", hero: "shelly", name: "Shelly's Shell Show", title: "Shelly's Shell Show",
+      line: "The waves washed away Shelly the shark's shells before her show. Help find them!" },
+    { id: "chip", sound: "CH", hero: "chip", name: "Chip's Cherry Pie", title: "Chip's Cherry Pie",
+      line: "A bird flew off with Chip the chipmunk's cherries. Help him bake his pie!" },
+    { id: "theo", sound: "TH", hero: "theo", name: "Theo's Big Show", title: "Theo's Big Show",
+      line: "Theo the bear's thunder drum is lost before his big show. Help find it!" },
   ];
   // TALK_ON false: every child's Day 1 is the lighthouse again (a Day 1
   // already finished as a talking story stays that story). The suites that

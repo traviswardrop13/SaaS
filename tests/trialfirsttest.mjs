@@ -206,7 +206,7 @@ try {
   // game's, and the game it opens is open to the child.
   for (const [label, sounds, age, done] of [
     ["a child on R (Robo's Rocket waits on Home)", ["R"], "7", false],
-    ["a child on K (no talking story)", ["K"], "7", false],
+    ["a child on P (no talking story)", ["P"], "7", false],
     ["a child of 3 (Fruit Slice, not Feed Echo)", ["P"], "3", false],
     ["a child whose story today is already done", ["R"], "7", true],
   ]) await scenario("the free days start, then the hand-off, " + label, async () => {

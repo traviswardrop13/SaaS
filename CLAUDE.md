@@ -389,9 +389,11 @@ changing one. What follows from the rule:
     <today's story>." The story is `Sona.day1For(sounds)` with the sounds
     setup is about to save: the talking story in the first sound that has
     one (R Robo's Rocket, S Sandy's Sandcastle, L Lulu's Lantern Party, Z
-    Zippy's Zoo Parade, F Fizz and the Sleepy Fireflies; "Pick all sounds"
-    gives Fizz, F being the first of them in play order), else The
-    Lighthouse Sneeze; `_talkDay` uses the same rule (`_talkFor`), so the
+    Zippy's Zoo Parade, F Fizz and the Sleepy Fireflies, and since 2 Nov
+    2026, TALK2, K Kiki's Camping Night, G Gus's Goose Chase, SH Shelly's
+    Shell Show, CH Chip's Cherry Pie, TH Theo's Big Show; "Pick all sounds"
+    gives Kiki, K being the first of them in play order), else The
+    Lighthouse Sneeze (now only P, B, M, N, T, D, V, J and the voiced TH); `_talkDay` uses the same rule (`_talkFor`), so the
     card and Home can never disagree. Where this child is shown no story
     (`Sona.storyShown()` false: a phone that cannot buy, without Premium)
     the line is "Fruit Slice first, then a book." "A new story every day."
@@ -2712,7 +2714,15 @@ the page.
   Rocket" (`robo`), S "Sandy's Sandcastle" (`sandy`), L "Lulu's Lantern
   Party" (`lulu`), Z "Zippy's Zoo Parade" (`zippy`), F "Fizz and the Sleepy
   Fireflies" (`fizz`), the "popular" sounds Travis named on 2 Oct 2026 ("r s
-  l z f"). Each is Days 1-3's shape: Pelly's wrong thing first, the letter,
+  l z f"). **And five more since 2 Nov 2026 (TALK2**, Travis: yes to
+  "talking Day 1 stories for five more sounds: K, G, SH, CH and TH"): K
+  "Kiki's Camping Night" (`kiki`, Kiki the kitten's tent blew down), G
+  "Gus's Goose Chase" (`gus`, Gus the goat's geese waddled away), SH
+  "Shelly's Shell Show" (`shelly`, the waves took Shelly the shark's
+  shells), CH "Chip's Cherry Pie" (`chip`, a bird took Chip the chipmunk's
+  cherries), TH "Theo's Big Show" (`theo`, Theo the bear's thunder drum is
+  lost). Each place is new to the daily stories on purpose (K was first a
+  kite and G a garden, too close to Day 10's kite and Day 4's garden). Each is Days 1-3's shape: Pelly's wrong thing first, the letter,
   the problem, the child's words fixing it, an ending, a gold star for the
   helper map; 8 + 4 pages for ages 5-8, 6 + 3 for 3-4.
 - **The key words.** Every page has one `key`: a whole word in its line (both
@@ -2724,8 +2734,8 @@ the page.
   named, nothing about how to talk, no grade word), and none says "say".
 - **Which child gets which** (`_talkDay()`): the first of the child's
   practice sounds (`rotSounds()`: homework first, then the family's picks)
-  that has a talking story; none, the lighthouse as before (a child on K, G,
-  TH...). Setup's plan card names it as Day 1's book, after Fruit Slice, by the
+  that has a talking story; none, the lighthouse as before (a child on P, B,
+  M, N, T, D, V, J or the voiced TH). Setup's plan card names it as Day 1's book, after Fruit Slice, by the
   same rule before the profile is saved (`Sona.day1For(sounds)`, one helper
   `_talkFor` for both: "THE PLAN MOMENT", 31 Oct 2026); since that evening
   a new child plays Fruit Slice first and meets the story on Home. A Day 1 already finished stays what it was: the finish keeps its
@@ -2786,10 +2796,15 @@ the page.
   purpose (S then SH); a child the phone can't hear can finish Day 1 by a
   grown-up's Skip or "Not now" (the lighthouse day could not be finished
   without being heard).
-- **For Travis:** the five stories and their titles; that the talking story
-  replaces the lighthouse for a child on R, S, L, Z or F (the lighthouse
-  stays for every other sound); the next sounds (K, G, TH, SH, CH...);
-  pictures once the key is renewed, and a Home clip for each.
+- **For Travis:** the ten stories and their titles; that the talking story
+  replaces the lighthouse for a child on R, S, L, Z, F, K, G, SH, CH or TH
+  (the lighthouse stays for the rest); the next sounds (J, V, the voiced
+  TH...); a Home clip for each.
+- **For Rachel, TALK2's too:** every key word of the five new stories (the
+  PR lists them), among them "color" (K before a vowel, with an R-coloured
+  end), "cocoa", "gopher" and "theater"; that a 3-4 year old on K or G now
+  meets a talking story where the lighthouse asked no K or G word on its
+  pages; and that the voiced TH ("this", "that") still has no story.
 `talkstorytest` plays it all.
 
 **Light the Way** (Day 1, `lighthouse.js`, `LIGHTHOUSE1`). A night sea under
@@ -3221,20 +3236,32 @@ offer, the level sheet, the grown-ups check and "Home opens the offer once".
   is measured, never guessed** (`fitHome`): the card's picture takes the
   room left, set in pixels, 3:4 at most. The card comes first: while it
   would be flatter than 4:3 the rest makes room one step at a time
-  (`fit1`…`fit5`: "Your games" smaller, the board's head and foot, the
-  doors' pictures to 5:2, the words on the card, then "Your games"' heading
-  read but not drawn). With every step taken the card may go flatter than
+  (`fit1`…`fit6`: "Your games" smaller, the board's head and foot, the
+  doors' pictures to 5:2, the words on the card, "Your games"' heading
+  read but not drawn, then the card's words higher on their shade). With every step taken the card may go flatter than
   4:3 as long as its words still sit on it (on a finished day, with no
   play button, a short strip on the smallest screens); on an iPad it
   narrows instead, staying 4:3. The trail's stars stay between the heading
   and the card on a short board head. One screen at 375×667 (an iPhone SE
   in the app), 390×844, 430×932, Travis's iPhone 16 Pro in the app, an
-  iPhone SE on the website (375×553) on any day but one with "Your games",
-  768×1024 and an iPad on its side, in every state. **Only a screen too
+  iPhone SE on the website (375×553) on any day but one still to play with
+  "Your games", 768×1024 and an iPad on its side, in every state. **A
+  finished day's line can be two lines on the SE** ("Come back tomorrow for
+  Day 12 and a new game!" always; Day 2's had half a pixel to spare, and
+  GitHub's test browser wrapped it): the sixth step (`fit6`, 3 Nov 2026)
+  lifts the card's words on their shade so the page still fits; without it
+  Home scrolled there with the card back at 4:3. **The fit has a few pixels
+  to spare, so the suites lay text out as an iPhone does** (every letter at
+  its own fractional width, `tests/_env.mjs`: `--font-render-hinting=none`
+  and an adopted `*{text-rendering:geometricPrecision}` sheet). CI's
+  headless Chromium snapped letters to whole pixels, about 5% wider, so a
+  game name in "Your games" wrapped there alone and `homestorytest` failed
+  on main from 1 Nov to 3 Nov 2026 while every local run passed. **Only a screen too
   short for all of it scrolls**, with every step taken and nothing cut off,
   the card 4:3 (or as tall as its words need): a 4-inch phone (320×568)
-  with "Your games", a long title or the website's founding banner, the SE
-  on the website with "Your games", a phone on its side. Every button at
+  with "Your games", a long title, or the website's founding banner on a
+  finished day (the banner alone fits since `fit6`), the SE on the website
+  with "Your games" on a day still to play, a phone on its side. Every button at
   least 44 px. A turn or any change of window size re-fits while Home is
   one screen (nothing scrolls, so Safari's bars never fold away under a
   finger); a page that scrolls re-fits only on a new width, as before.

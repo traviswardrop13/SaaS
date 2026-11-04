@@ -482,7 +482,7 @@ await scenario('the reminder ask: only where a reminder can be set and the price
 // under it. Where this child is shown no story (Sona.storyShown: a phone that
 // cannot buy, without Premium) it says "Fruit Slice first, then a book." and
 // nothing under it. Never on a re-walk, for a second child or a clinician. ──
-const DAY1={robo:'Robo\'s Rocket',lighthouse:'The Lighthouse Sneeze',fizz:'Fizz and the Sleepy Fireflies'};
+const DAY1={robo:'Robo\'s Rocket',lighthouse:'The Lighthouse Sneeze',kiki:'Kiki\'s Camping Night'};
 const PLAN_TITLE='Play a game, then read a book.',PLAN_PIC='/assets/crafted/home-fruit.webp';
 const DAY1PAGE=['**/__day1.html',r=>r.fulfill({status:200,contentType:'text/html',body:'<!doctype html><title>day1</title><script src="/sona.js"></script>'})];
 // the plan card as a parent sees it
@@ -552,7 +552,7 @@ await scenario('the plan moment: a short build beat before the ready screen, onc
  }
 });
 await scenario('the plan card: Day 1 is Fruit Slice, then the story Home will show for this child\'s sounds',async()=>{
- for(const [label,walk,id] of [['an R child',{sounds:['R']},'robo'],['a K child (no talking story)',{sounds:['K']},'lighthouse'],['"Not sure? Pick all sounds" (the list setup saves: every sound, easiest first)',{explore:true},'fizz']]){
+ for(const [label,walk,id] of [['an R child',{sounds:['R']},'robo'],['a P child (no talking story)',{sounds:['P']},'lighthouse'],['"Not sure? Pick all sounds" (the list setup saves: every sound, easiest first)',{explore:true},'kiki']]){
   const {context,page,errors}=await fresh({webSales:true,routes:[DAY1PAGE]});try{
    await setupWalk(page,'ready',Object.assign({name:'Mia',age:'8'},walk));
    await page.evaluate(()=>Promise.all([...document.querySelectorAll('[data-step="ready"] img')].map(i=>i.complete?0:new Promise(r=>{i.onload=i.onerror=r;setTimeout(r,2000);}))));
@@ -573,7 +573,7 @@ await scenario('the plan card: Day 1 is Fruit Slice, then the story Home will sh
  // Slice's, answered 404) is left out: the card is its words, never a broken
  // image
  {const {context,page,errors}=await fresh({webSales:true,routes:[['**/assets/crafted/home-fruit.webp',r=>r.fulfill({status:404,body:''})]]});try{
-  await setupWalk(page,'ready',{name:'Mia',age:'8',sounds:['K']});await page.waitForTimeout(150);
+  await setupWalk(page,'ready',{name:'Mia',age:'8',sounds:['P']});await page.waitForTimeout(150);
   const p=await planShown(page);
   ok('a Day 1 picture that failed before the screen showed steps aside: the card is its words alone (Fruit Slice, then The Lighthouse Sneeze), with no broken image and no empty box',p.shown&&p.story==='lighthouse'&&p.title===PLAN_TITLE&&p.line==='Fruit Slice first, then '+DAY1.lighthouse+'.'&&!p.pic&&!p.broken.length&&p.more==='A new story every day.',p);
   clean('plan card, a picture that failed first',errors);
@@ -581,7 +581,7 @@ await scenario('the plan card: Day 1 is Fruit Slice, then the story Home will sh
  // a picture that fails while the screen shows keeps its box, empty: nothing moves under a finger
  {let fail;const late=new Promise(r=>{fail=r;});
   const {context,page,errors}=await fresh({webSales:true,routes:[['**/assets/crafted/home-fruit.webp',async r=>{await late;r.fulfill({status:404,body:''});}]]});try{
-  await setupWalk(page,'ready',{name:'Mia',age:'8',sounds:['K']});await page.waitForTimeout(150);
+  await setupWalk(page,'ready',{name:'Mia',age:'8',sounds:['P']});await page.waitForTimeout(150);
   const a=await planShown(page);
   fail();await page.waitForFunction(()=>document.getElementById('planImg').classList.contains('gone'),null,{timeout:3000});await page.waitForTimeout(100);
   const b=await planShown(page);
@@ -590,8 +590,8 @@ await scenario('the plan card: Day 1 is Fruit Slice, then the story Home will sh
  }finally{fail();await context.close();}}
  // Sona.day1For, the one rule: the first of the sounds with a talking story, else the lighthouse
  {const {context,page,errors}=await fresh();try{
-  const d=await page.evaluate(()=>{const f=l=>Sona.day1For(l).id;const one=Sona.day1For(['R']);one.title='x';return {r:f(['R']),k:f(['K']),lower:f(['s']),ks:f(['K','S']),thz:f(['TH','Z']),none:f([]),junk:f(['XX']),play:f(Sona.PLAY_ORDER),copy:Sona.STORY_TALK[0].title,shape:Object.keys(Sona.day1For(['K'])).sort().join(),talk:[Sona.day1For(['L']).talk,Sona.day1For(['K']).talk],pic:Sona.day1For(['K']).pic};});
-  ok('Sona.day1For: R Robo, K the lighthouse, s (any case) Sandy, K then S Sandy, TH then Z Zippy, none or no known sound R\'s Robo, every sound in play order Fizz',d.r==='robo'&&d.k==='lighthouse'&&d.lower==='sandy'&&d.ks==='sandy'&&d.thz==='zippy'&&d.none==='robo'&&d.junk==='robo'&&d.play==='fizz',d);
+  const d=await page.evaluate(()=>{const f=l=>Sona.day1For(l).id;const one=Sona.day1For(['R']);one.title='x';return {r:f(['R']),k:f(['K']),p:f(['P']),lower:f(['s']),ps:f(['P','S']),thz:f(['TH','Z']),jz:f(['J','Z']),none:f([]),junk:f(['XX']),play:f(Sona.PLAY_ORDER),copy:Sona.STORY_TALK[0].title,shape:Object.keys(Sona.day1For(['P'])).sort().join(),talk:[Sona.day1For(['L']).talk,Sona.day1For(['P']).talk],pic:Sona.day1For(['P']).pic};});
+  ok('Sona.day1For: R Robo, K Kiki, P the lighthouse, s (any case) Sandy, P then S Sandy, TH then Z Theo, J then Z Zippy, none or no known sound R\'s Robo, every sound in play order Kiki (K comes first)',d.r==='robo'&&d.k==='kiki'&&d.p==='lighthouse'&&d.lower==='sandy'&&d.ps==='sandy'&&d.thz==='theo'&&d.jz==='zippy'&&d.none==='robo'&&d.junk==='robo'&&d.play==='kiki',d);
   ok('…a copy each time (the list is never changed through it), with the card\'s fields',d.copy==='Robo\'s Rocket'&&d.shape==='hero,id,line,pic,talk,title'&&d.talk[0]===true&&d.talk[1]===false&&d.pic==='/assets/crafted/home-lighthouse.webp',d);
   await page.evaluate(()=>sessionStorage.setItem('sona.talkoff','1'));
   ok('…and it follows the talking stories\' off switch as _talkDay does (the lighthouse for everyone)',await page.evaluate(()=>Sona.day1For(['R']).id==='lighthouse'));

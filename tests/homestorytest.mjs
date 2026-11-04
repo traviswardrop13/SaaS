@@ -729,7 +729,7 @@ for (const [w, h] of SIZES) {
 // The shortest phone and landscape tablet viewports keep the complete Home
 // visible, including the doors and the game a finished story left.
 await section("fit on the shortest screens", async () => {
-  for (const [w, h, label, opts] of [[375, 553, "an iPhone SE in Safari", { sub: true }], [375, 553, "an iPhone SE in Safari, a story finished today", { sub: true, quest: { i: 0, last: 13, s: 1, ls: 0, lk: "story", done: "TODAY", got: [] } }], [1024, 768, "an iPad on its side", { sub: true }], [1133, 744, "an iPad mini on its side", { sub: true }]]) {
+  for (const [w, h, label, opts] of [[375, 553, "an iPhone SE in Safari", { sub: true }], [375, 553, "an iPhone SE in Safari, a story finished today", { sub: true, quest: { i: 0, last: 13, s: 1, ls: 0, lk: "story", done: "TODAY", got: [] } }], [375, 553, "an iPhone SE in Safari, Day 13 finished today", { sub: true, quest: { i: 0, last: 13, s: 13, ls: 12, lk: "story", done: "TODAY", got: [] } }], [1024, 768, "an iPad on its side", { sub: true }], [1133, 744, "an iPad mini on its side", { sub: true }]]) {
     const { ctx, pg, errors } = await open({ ...opts, viewport: { width: w, height: h } });
     await pg.evaluate(() => document.fonts && document.fonts.ready); await pg.waitForTimeout(100);
     const m = await measure(pg), at = w + "x" + h + " (" + label + "): ", done = /finished/.test(label);

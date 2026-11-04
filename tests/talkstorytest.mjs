@@ -204,10 +204,10 @@ await section("Day 1's slot", async () => {
   const r = await probe({ focus: ["R"] });
   ok("a child on R, Day 1 not finished: today's adventure is the R talking story, Day 1, its own game key", r.q.kind === "story" && r.q.state === "open" && r.q.day === 1 && r.q.id === "robo" && r.q.talk && r.q.game === "robo" && r.q.pic === "/assets/crafted/home-robo.webp", r.q);
   ok("…the story opens by the story's rule (Premium: open), and storyDay finds it; the lighthouse is no day for this child", r.access === true && r.day && r.day.day === 1 && r.day.talk === true && r.lh === null, r);
-  const k = await probe({ focus: ["K"] });
-  ok("a child on a sound with no talking story (K): Day 1 is the lighthouse, as before", k.q.id === "lighthouse" && !k.q.talk && k.day === null, k.q);
-  const hw = await probe({ focus: ["K", "R"] });
-  ok("…a child on K then R: the first of their sounds that has a talking story (R)", hw.q.id === "robo", hw.q);
+  const k = await probe({ focus: ["P"] });
+  ok("a child on a sound with no talking story (P): Day 1 is the lighthouse, as before", k.q.id === "lighthouse" && !k.q.talk && k.day === null, k.q);
+  const hw = await probe({ focus: ["P", "R"] });
+  ok("…a child on P then R: the first of their sounds that has a talking story (R)", hw.q.id === "robo", hw.q);
   const done = await probe({ focus: ["R"], quest: { f: [0], s: 1, ls: 0, lk: "story", done: "2026-10-01", fd: "2026-10-01", a: "2026-09-30", sv: "2026-09-30" } });
   ok("a lighthouse finished before this build stays the lighthouse: Day 1 done, the R story is no day here", done.q.id !== "robo" && done.lh && done.lh.day === 1 && done.day === null, done);
   const off = await probe({ focus: ["R"], talkoff: true });
