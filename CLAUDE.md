@@ -127,10 +127,37 @@ That third run also stopped (exit 143) after confirmed repeated machine deep
 sleep despite a verified idle-sleep prevention assertion: 38 suites had
 completed, 27 passed and 11 had timing failures. Its results are not a
 release pass and justify no app or test expectation change. Runtime, tests,
-tools and the voice index remain frozen at `bbe56df1`. No fourth run starts
-until Travis confirms the Mac is plugged in, open and awake. The existing
+tools and the voice index were frozen at `bbe56df1` at that stop. A fourth
+run waited for Travis to confirm the Mac was plugged in, open and awake. The existing
 late-web-charter-price assertion remains valid on source review: it tests
 the separate annual web checkout, not the native monthly seven-day offer.
+
+**Current release candidate (4 Nov 2026): `1c2260c8`.** Travis confirmed
+physical readiness on 3 Nov. The fourth run then stopped deliberately after
+eight green suites to integrate published main `4a30d86d` (#258/#259).
+The integrated candidate preserves the approved Map, parent-only target pin,
+strict sound shelf and seven eight-page books, plus upstream's TALK2 stories,
+sixth Home fit step and test font normalization. The headless audio-output
+fix is retained. Books and Settings remain unchanged; Home keeps its
+fit-dependent scroll lock. All six focused groups exited 0: compact Home
+21 scenarios, Home 761 checks, talking stories 61, setup stability 322,
+setup screens 268 and trial hand-off 84. The clean tracked-source typecheck
+also exited 0; the voice index is current (808 fixed lines, 80 expansions,
+356 bank words).
+
+The fifth full run was stopped on 4 Nov (exit 143): 75 suites completed,
+with 19 failures/timeouts, while macOS repeatedly entered Maintenance Sleep
+and DarkWake on battery despite the scoped keep-awake assertion. It is not
+a release pass. The power record is
+`/private/tmp/sona-r5-machine-sleep-evidence.log`; exact results are in
+`/private/tmp/sona-home-books-release-20261103-r5-stopped.json`.
+All 2,105 frozen source/test/tool files still match `1c2260c8`; no product,
+test, tool or voice-index edit was made in response. No further local full
+run is started automatically. The request for an explicit exception to the
+full-battery-before-any-push rule, solely to upload the review branch and
+run the complete checks on GitHub, awaits Travis's answer. Nothing has been
+uploaded or released, and a complete passing battery remains required before
+production publication.
 
 **Latest first-day flow (upstream #251/#253, 31 Oct 2026) supersedes the
 earlier Picnic-first review experiment.** Setup opens ordinary Fruit Slice,

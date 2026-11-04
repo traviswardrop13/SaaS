@@ -437,7 +437,7 @@
       "savedIdentity": "Upstream fourteen-slot schedule and saved t1 identity preserved. No signature-v1 route or Picnic game alias is activated.",
       "clinical": "Existing upstream prompts, models, three-saying word moments and rep counting preserved; no new cue or accepted-rep simulation used for screenshots."
     },
-    "homeCover": "Talking stories use their existing canonical Home cover; legacy stories retain their original portrait with Home/Echo fallback. Sandy’s internal soup opening remains unchanged and correctly belongs to the talking story.",
+    "homeCover": "Talking stories use their existing canonical Home cover; legacy stories retain their original portrait with Home/Echo fallback. Sandy\u2019s internal soup opening remains unchanged and correctly belongs to the talking story.",
     "screenshots": [
       {
         "file": "home-preview.png",
@@ -635,9 +635,9 @@
     }
   },
   "currentReleaseCandidate": {
-    "date": "2026-11-02",
-    "upstream": "9777a94a44f9bb39929789211ff102ac2b1385c5",
-    "scope": "Chosen Play Map, read-only target badges, parent-only target setting, strict sound shelf, seven eight-page books. Preserve upstream setup and monthly-first store-owned trial. No Gym or avatar.",
+    "date": "2026-11-04",
+    "upstream": "4a30d86ddc9c8bde8ec321f6b27b32e5e366fd57",
+    "scope": "Chosen Play Map, read-only target badges, parent-only target setting, strict sound shelf, seven eight-page books. Preserve upstream setup, monthly-first store-owned trial, disabled free-round flag and TALK2 stories. No Gym or avatar.",
     "originalCatalogAudit": {
       "oldBooks": 48,
       "newBooks": 55,
@@ -661,7 +661,7 @@
     "fullBattery": {
       "command": "node tests/run-all.mjs",
       "suites": 165,
-      "status": "R3 invalidated by confirmed machine deep sleep and explicitly stopped; full165-suite pass still required; no automatic fourth run",
+      "status": "R5 invalidated by confirmed macOS sleep and stopped; complete passing battery still required. Permission to upload the review branch for GitHub checks is pending.",
       "firstRun": {
         "status": "Stopped",
         "completedSuites": 69,
@@ -770,8 +770,55 @@
         "sourceFrozenCommit": "bbe56df1bfd919ea5beeb66342f9ebebdccbd86b",
         "ownedProcessesAfterStop": 0
       },
-      "resumeRequirement": "Travis confirms Mac physically plugged in, open and awake before another full165-suite run; do not auto-restart.",
-      "firstGameLatePriceSourceReview": "No stale-contract change found: this fixture explicitly forces browser web-sales/paidUI, preserves annual WEB_PLAN and tests3300ms charter-standard response after2500ms button release; native monthly7day selection and disabledFREEPLAY do not replace that webrail. No source or test edits justified without awake runtime evidence."
+      "resumeRequirement": "No automatic local rerun. Explicit permission to upload the review branch before a local full pass for GitHub-hosted full checks is pending. A complete passing battery is still required before production publication.",
+      "firstGameLatePriceSourceReview": "No stale-contract change found: this fixture explicitly forces browser web-sales/paidUI, preserves annual WEB_PLAN and tests3300ms charter-standard response after2500ms button release; native monthly7day selection and disabledFREEPLAY do not replace that webrail. No source or test edits justified without awake runtime evidence.",
+      "fourthRun": {
+        "complete": false,
+        "exitCode": 143,
+        "completedSuites": 8,
+        "passedSuites": 8,
+        "currentAtStop": "replaytest.mjs",
+        "reason": "Deliberately stopped before integrating newer published main 4a30d86d",
+        "result": "/private/tmp/sona-home-books-release-20261103-r4-stopped.json",
+        "log": "/private/tmp/sona-home-books-release-20261103-r4.log"
+      },
+      "fifthRun": {
+        "complete": false,
+        "completedSuites": 75,
+        "currentAtStop": "daily-lanterntest.mjs",
+        "failedSuites": [
+          "voicetest3.mjs",
+          "progtest.mjs",
+          "shapetest.mjs",
+          "gatecheck.mjs",
+          "fittest.mjs",
+          "zoomtest.mjs",
+          "day1.mjs",
+          "shoptest.mjs",
+          "talkstorytest.mjs",
+          "storycoretest.mjs",
+          "homestorytest.mjs",
+          "compacthometest.mjs",
+          "adventureplaytest.mjs",
+          "adventurespotstest.mjs",
+          "storygametest.mjs",
+          "daily-waterwheeltest.mjs",
+          "daily-postboattest.mjs",
+          "daily-bakerytest.mjs",
+          "daily-bridgetest.mjs"
+        ],
+        "sourceFrozenCommit": "1c2260c8912130b0ac652c7bc7c7921f2128eeb8",
+        "log": "/private/tmp/sona-home-books-release-20261103-r5.log",
+        "reason": "Confirmed macOS sleep/DarkWake despite scoped-is assertion; stopped under rootproven-sleep directive.",
+        "exitCode": 143,
+        "failedSuiteCount": 19,
+        "result": "/private/tmp/sona-home-books-release-20261103-r5-stopped.json",
+        "sleepEvidence": "/private/tmp/sona-r5-machine-sleep-evidence.log",
+        "sourceManifestComparison": "/private/tmp/sona-r5-frozen-manifest-comparison.json",
+        "sourceFilesChecked": 2105,
+        "sourceMismatches": 0,
+        "ownedProcessesAfterStop": 0
+      }
     },
     "clinicalReview": {
       "date": "2026-11-02",
@@ -780,9 +827,74 @@
       "scope": "New books' words and pictures and the parent-only target sound setting",
       "upstreamBoundary": "This confirmation is not extended to the separate upstream Day 1 clinical questions recorded in CLAUDE.md."
     },
-    "publication": "Pending complete passing release checks; normal Git authentication and push dry run succeeded, no push or main merge claimed.",
-    "runtimeCommit": "bbe56df1bfd919ea5beeb66342f9ebebdccbd86b",
+    "publication": "Pending complete passing release checks. Normal Git authentication works. Exception to upload the review branch for GitHub full checks requested, not yet granted; no upload, PR, main merge or release claimed.",
+    "runtimeCommit": "1c2260c8912130b0ac652c7bc7c7921f2128eeb8",
     "testCorrectionCommit": "250f4b4e498950854bf959c18b86e6b2321afd8e",
-    "homeBooksSettingsMatch": "82d3c70ea65f8f6f5eb1421e6776318b02f4987d"
+    "homeBooksSettingsMatch": {
+      "BooksAndSettings": "82d3c70ea65f8f6f5eb1421e6776318b02f4987d",
+      "Home": "Chosen Map preserved at 1c2260c8 with fit-dependent scroll lock and sixth copy fit step"
+    },
+    "integratedCandidateChecks": {
+      "runtimeCommit": "1c2260c8912130b0ac652c7bc7c7921f2128eeb8",
+      "upstream": "4a30d86ddc9c8bde8ec321f6b27b32e5e366fd57",
+      "focusedChecks": [
+        {
+          "suite": "compacthometest",
+          "exitCode": 0,
+          "seconds": 23.7,
+          "log": "/private/tmp/sona-release-4a30-compacthometest.log"
+        },
+        {
+          "suite": "homestorytest",
+          "exitCode": 0,
+          "seconds": 74.0,
+          "log": "/private/tmp/sona-release-4a30-homestorytest.log"
+        },
+        {
+          "suite": "talkstorytest",
+          "exitCode": 0,
+          "seconds": 51.8,
+          "log": "/private/tmp/sona-release-4a30-talkstorytest.log"
+        },
+        {
+          "suite": "setupsteadytest",
+          "exitCode": 0,
+          "seconds": 206.5,
+          "log": "/private/tmp/sona-release-4a30-setupsteadytest.log"
+        },
+        {
+          "suite": "setupscreenstest",
+          "exitCode": 0,
+          "seconds": 117.0,
+          "log": "/private/tmp/sona-release-4a30-setupscreenstest.log"
+        },
+        {
+          "suite": "trialfirsttest",
+          "exitCode": 0,
+          "seconds": 19.9,
+          "log": "/private/tmp/sona-release-4a30-trialfirsttest.log"
+        }
+      ],
+      "assertionCounts": {
+        "compactHomeScenarios": 21,
+        "home": 761,
+        "talkingStories": 61,
+        "setupStability": 322,
+        "setupScreens": 268,
+        "trialHandOff": 84
+      },
+      "typecheck": {
+        "exitCode": 0,
+        "evidence": "Root verified 105 tracked TypeScript/TSX/JSON inputs byte-identical to the clean snapshot; tsc --noEmit -p tsconfig.json exited 0"
+      },
+      "voiceIndex": {
+        "exitCode": 0,
+        "fixed": 808,
+        "expansions": 80,
+        "bankWords": 356,
+        "contentDiff": "Generated from integrated source including the five already-published TALK2 variants"
+      },
+      "manifest": "/private/tmp/sona-release-1c2260c8-frozen-manifest.json"
+    }
   }
 }
