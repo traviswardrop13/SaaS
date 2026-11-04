@@ -173,11 +173,9 @@
   </style>
   <link href="/crafted-home.css" rel="stylesheet" />
 </head>
-<body>
+<body class="playmap-home">
   <!-- HOME AND THE ARCADE (STORY1, 22 Oct 2026): one page, two views. Home
-       is today's story, big, on the Play Map's trail since 31 Oct 2026
-       (between the stars of the stories finished and tomorrow, locked),
-       with two doors under it (Arcade: every game,
+       is today's story, big, with two doors under it (Arcade: every game,
        and only games since 23 Oct 2026; Books: the bookshelf), then "Your
        games" once a story is finished (FOUND1); the Trophy Road is the gift
        button in the top bar.
@@ -194,24 +192,7 @@
     </header>
     <a id="trialBanner"><img class="tb-echo" src="/assets/crafted/echo-wave.webp" alt="" onerror="this.src='/assets/crafted/echo-welcome.webp'"><span id="trialMsg"></span><span class="tb-pill" aria-hidden="true">Share an idea</span></a>
     <section class="home-only" aria-labelledby="homeTitle">
-      <!-- THE PLAY MAP (31 Oct 2026; Travis: "yes build play map with those
-           changes"). Home is a little world on a soft mint board: Echo
-           stands at the start of a dotted trail under "Let's explore.", the
-           trail carries a gold star for every story this child has finished
-           (Sona.storyFound(), read only), dives into today's card under a
-           "Today" flag, comes out under it and ends at tomorrow, a dark
-           locked pill. The card is the day's reel as before (HOMECLIP1), the
-           trail's centrepiece; the Arcade and Books doors sit right under the
-           board. The trail is drawn on the phone (paintTrail) from where the
-           card and the pill landed; it is decoration, hidden from a screen
-           reader, takes no tap and never moves. No count, no streak word, no
-           timer, and no sound switch: a child never changes their sound
-           here. -->
-      <div id="homeMap">
-        <svg id="mapTrail" aria-hidden="true" focusable="false"></svg>
-        <div class="map-head"><span class="map-echo" id="mapEcho" aria-hidden="true"><img src="/assets/crafted/echo-welcome.webp" alt="" width="56" height="64" decoding="async" /></span><h1 id="homeTitle" tabindex="-1">Let's explore.</h1></div>
-        <div class="map-spot">
-          <span class="map-today" id="mapToday" aria-hidden="true">Today</span>
+      <div class="map-intro"><h1 id="homeTitle" tabindex="-1">Let's explore.</h1><div class="home-sound" id="homeSoundWrap" hidden><span class="sound-note" id="homeSoundNote">Your sound</span><span class="sound-value" id="homeSoundValue"></span></div></div>
       <!-- THE STORY CARD (STORY1; the daily adventure card of QUEST1, 13 Oct
            2026, made big). It only reads Sona.questToday(): on a story day
            its tap is the game card's own tap (launch) on the story itself,
@@ -219,22 +200,20 @@
            game day (after the built stories, or on a phone that cannot buy
            without Premium) it is today's game, as before. Done, it shows
            tomorrow's picture, dark: never playable early. Silent.
-           HOMECLIP1 (28 Oct 2026): its picture is a tall 3:4 clip of the
-           game the child will play, muted and looping, with the day's chip,
-           title, hook and play button over its foot (paintQuest). -->
-      <button id="questCard" type="button" hidden>
-        <span class="quest-art" id="questArt" aria-hidden="true"><span class="quest-pic" id="questPic"></span><video class="quest-clip" id="questClip" muted loop playsinline autoplay preload="metadata" disablepictureinpicture disableremoteplayback x-webkit-airplay="deny" aria-hidden="true" hidden></video><span class="quest-lock" id="questLock" hidden>Premium</span></span>
-        <span class="quest-body"><span class="quest-head"><span class="quest-copy"><span class="quest-chip" id="questChip" hidden></span><span class="quest-title" id="questTitle"></span></span><span class="quest-go" id="questGo" aria-hidden="true"><svg viewBox="0 0 24 24" width="30" height="30"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor"/></svg></span></span><span class="quest-line" id="questLine"></span></span>
-      </button>
-        </div>
-        <div class="map-foot"><span class="map-tomorrow" id="mapTomorrow" aria-hidden="true"><svg class="map-lock" viewBox="0 0 24 24" focusable="false"><path d="M8 11V8a4 4 0 0 1 8 0v3"/><rect x="5.5" y="11" width="13" height="9.5" rx="2.5"/></svg><span>Tomorrow</span></span></div>
+           PLAYMAP1 (31 Oct 2026): the real story picture is the action.
+           Only finished adventures earn a star; the future stays locked. -->
+      <div class="play-map" id="playMap">
+        <svg class="map-trail" viewBox="0 0 400 400" preserveAspectRatio="none" aria-hidden="true"><path d="M70 36 C122 4 194 16 205 52 S377 73 352 135 C333 178 54 132 45 218 S332 292 320 343 Q312 383 230 385" fill="none" stroke="#fff" stroke-width="18" stroke-linecap="round"/><path d="M70 36 C122 4 194 16 205 52 S377 73 352 135 C333 178 54 132 45 218 S332 292 320 343 Q312 383 230 385" fill="none" stroke="#b7dccc" stroke-width="10" stroke-linecap="round"/><path d="M70 36 C122 4 194 16 205 52 S377 73 352 135 C333 178 54 132 45 218 S332 292 320 343 Q312 383 230 385" fill="none" stroke="#79aaa5" stroke-width="2" stroke-dasharray="1 9" stroke-linecap="round"/></svg>
+        <div class="map-earned" id="mapEarned" hidden><ol id="mapHistory" aria-label="Finished adventures"></ol><span id="mapHistoryCount" hidden></span></div>
+        <button id="questCard" type="button" hidden><span class="quest-body" id="questSummary" hidden><span class="quest-art" id="questArt" aria-hidden="true"><span class="quest-pic" id="questPic"></span></span><span class="quest-copy"><span class="quest-meta"><span class="quest-label" id="questLabel">Today's adventure</span><span class="quest-chip" id="questChip" hidden></span><span class="quest-lock" id="questLock" hidden>Premium</span></span><span class="quest-title" id="questTitle"></span><span class="quest-line" id="questLine"></span></span></span><span class="quest-go" id="questGo" aria-hidden="true"><span id="questActionLabel">Start today</span><span class="quest-arrow">→</span></span><span id="questDone" hidden aria-hidden="true"><span class="map-lock-icon"><svg width="13" height="17" viewBox="0 0 20 24"><path d="M5 10V7a5 5 0 0 1 10 0v3" fill="none" stroke="currentColor" stroke-width="2.5"/><rect x="2" y="10" width="16" height="12" rx="4" fill="currentColor"/></svg></span> Come back tomorrow!</span></button>
+        <div class="map-tomorrow" id="mapTomorrow" aria-label="Tomorrow is locked. Come back tomorrow!"><span class="tomorrow-lock" aria-hidden="true"><svg width="17" height="20" viewBox="0 0 20 24"><path d="M5 10V7a5 5 0 0 1 10 0v3" fill="none" stroke="currentColor" stroke-width="2.5"/><rect x="2" y="10" width="16" height="12" rx="4" fill="currentColor"/></svg></span><span><strong>Tomorrow</strong><span>Come back tomorrow!</span></span></div>
       </div>
       <!-- the two doors: a picture and one word each, for a child who can't
            read yet. Books is the one way to the bookshelf: the Arcade has no
            Books card since 23 Oct 2026. -->
       <div id="homeDoors">
-        <button id="arcadeBtn" type="button"><span class="door-pic" id="arcadePic" aria-hidden="true"></span><span class="door-copy"><span class="door-word">Arcade</span><span class="door-sub">All the games</span></span></button>
-        <button id="homeBooksBtn" type="button"><span class="door-pic" id="homeBooksPic" aria-hidden="true"></span><span class="door-copy"><span class="door-word">Books</span><span class="shelf-tag door-tag" id="homeBooksTag">Free</span></span></button>
+        <button id="arcadeBtn" type="button" aria-label="Games. All the games."><span class="door-pic" id="arcadePic" aria-hidden="true"></span><span class="door-copy"><span class="door-word">Games</span><span class="door-arrow" aria-hidden="true">↗</span></span></button>
+        <button id="homeBooksBtn" type="button"><span class="door-pic" id="homeBooksPic" aria-hidden="true"></span><span class="door-copy"><span class="door-word">Books</span><span class="door-arrow" aria-hidden="true">↗</span></span><span class="shelf-tag door-tag" id="homeBooksTag">Free</span></button>
       </div>
       <!-- YOUR GAMES (FOUND1, 23 Oct 2026): every story leaves its game
            behind. The games this child's finished stories left, newest
@@ -537,87 +516,34 @@
         var art=document.getElementById("questArt"),pic=document.getElementById("questPic");
         pic.textContent="";art.classList.remove("fallback");art.setAttribute("data-story",story||"");
         if(!src)return false;
-        var im=node("img");im.alt="";im.decoding="async";
-        im.onerror=function(){im.onerror=null;art.classList.add("fallback");im.src="/assets/crafted/echo-welcome.webp";};
-        im.src=src;pic.appendChild(im);return true;
+        var day=null;try{day=story&&S.storyDay?S.storyDay(story):null;}catch(e){}
+        var talk=!!(day&&day.talk),im=node("img"),homeFallback=story&&!talk?src:"";im.alt="";im.decoding="async";
+        im.onerror=function(){if(homeFallback){var fallback=homeFallback;homeFallback="";im.src=fallback;return;}im.onerror=null;art.classList.add("fallback");im.src="/assets/crafted/echo-welcome.webp";};
+        im.src=story&&!talk?"/assets/adventure/"+story+"/s01.webp":src;pic.appendChild(im);return true;
       }
       function gamePicture(game){
         if(craftedCards[game.key])return questPicture("/assets/crafted/home-"+craftedCards[game.key]+".webp","");
         questPicture("","");var st=S.gameSticker(game.key);S.paintSticker(document.getElementById("questPic"),st[0],st[1]);return true;
       }
-      // THE DAY'S REEL (HOMECLIP1, 28 Oct 2026; Travis: "the daily practice
-      // is taking up more of the screen so the games and books are lower and
-      // the daily practice is like a 3 second reel essentially of the game
-      // that the child will play"). The card's picture is a short clip of the
-      // game this day plays (/assets/home/reel/<game>.mp4: the story's game on
-      // a story day, today's game on a game day), muted and looping, over its
-      // poster (the clip's first frame, <game>.webp), over the picture the
-      // card had before if the poster has not landed (reelPicture). The clip
-      // is seen only once it is really playing, so one that never starts (no
-      // H.264, Low Power Mode, a missing file) leaves the poster as it is:
-      // never a black or broken frame. It plays nothing under Reduce Motion,
-      // with the data saver on, on a finished day (tomorrow's poster, dark),
-      // on a hidden page or in the Arcade. No sound, and nothing written.
-      var REEL="/assets/home/reel/",clip=document.getElementById("questClip"),clipKey="",shownPic="";
-      function calm(){try{return !!(window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches);}catch(e){return false;}}
-      function canClip(){
-        try{if(navigator.connection&&navigator.connection.saveData)return false;}catch(e){}
-        try{return !!(clip&&clip.canPlayType&&clip.canPlayType('video/mp4; codecs="avc1.640028"'));}catch(e){return false;}
-      }
-      function clipOff(){
-        if(!clip)return;
-        clipKey="";clip.classList.remove("on");clip.hidden=true;
-        try{clip.pause();}catch(e){}
-        if(clip.hasAttribute("src")||clip.hasAttribute("poster")){clip.removeAttribute("src");clip.removeAttribute("poster");try{clip.load();}catch(e){}}
-      }
-      // plays on Home, in front; anywhere else it holds still (a pause also
-      // stops the autoplay attribute from starting it behind the Arcade)
-      function clipSync(){
-        if(!clip||!clipKey)return;
-        if(document.hidden||app.getAttribute("data-view")!=="home"){try{clip.pause();}catch(e){}return;}
-        try{clip.muted=true;var r=clip.play();if(r&&r.then)r.then(null,function(){});}catch(e){}
-      }
-      function clipOn(key){
-        if(!clip||!key||calm()||!canClip()){clipOff();return;}
-        if(clipKey!==key){clipOff();clipKey=key;clip.poster=REEL+key+".webp";clip.src=REEL+key+".mp4";}
-        clip.hidden=false;clipSync();
-      }
-      if(clip){
-        clip.muted=true;clip.defaultMuted=true;
-        clip.addEventListener("playing",function(){if(clipKey)clip.classList.add("on");});
-        clip.addEventListener("error",function(){if(clipKey)clipOff();});
-        try{var calmQ=window.matchMedia("(prefers-reduced-motion: reduce)"),recalm=function(){try{paintQuest();}catch(e){}};if(calmQ.addEventListener)calmQ.addEventListener("change",recalm);else if(calmQ.addListener)calmQ.addListener(recalm);}catch(e){}
-        window.addEventListener("pagehide",function(){try{clip.pause();}catch(e){}});
-      }
-      // the picture under the clip: its poster, else what the card showed
-      // before (a story's painted Home picture or a game's Home card, then
-      // Echo on the story's wash). The same picture is never painted twice
-      // in a row, so coming back to the front never blinks it.
-      function reelPicture(key,story,fallback){
-        var art=document.getElementById("questArt"),pic=document.getElementById("questPic"),id=key+"|"+story;
-        if(id===shownPic&&pic.firstChild)return;
-        shownPic=id;pic.textContent="";art.classList.remove("fallback");art.setAttribute("data-story",story||"");
-        if(!key){fallback();return;}
-        var im=node("img");im.alt="";im.decoding="async";
-        im.onerror=function(){im.onerror=null;if(im.parentNode===pic)fallback();};
-        im.src=REEL+key+".webp";pic.appendChild(im);
-      }
+      // PLAYMAP1: the day's own illustration, never an in-game screen.
+      // One still picture keeps Home quiet and clear on every connection.
       function paintQuest(){
         var card=document.getElementById("questCard");if(!card)return;
         var q=null;try{q=S.questToday?S.questToday():null;}catch(e){q=null;}
         var story=!!(q&&q.kind==="story"&&q.story);
         var game=story?{kind:"story",key:"adventure",name:q.story.title,go:"/adventure.html",tier:"premium"}:(q&&questGames[q.game]);
-        if(!q||!game){card.hidden=true;clipOff();return;}
+        if(!q||!game){card.hidden=true;document.getElementById("questSummary").hidden=true;return;}
         var done=q.state==="done",next=done?q.next:null,open=access(game).allowed;
-        // tomorrow, shown dark: the next story's poster, or the next game's,
-        // and nothing plays (tomorrow is never early); open, today's game,
-        // playing
-        if(next&&next.kind==="story"&&next.story)reelPicture(next.game,next.story.id,function(){questPicture(next.story.pic,next.story.id);});
-        else if(next&&questGames[next.game])reelPicture(next.game,"",function(){gamePicture(questGames[next.game]);});
-        else if(story)reelPicture(q.game,q.story.id,function(){questPicture(q.story.pic,q.story.id);});
-        else reelPicture(game.key,"",function(){gamePicture(game);});
-        if(done)clipOff();else clipOn(q.game);
+        // Tomorrow's picture stays a preview of the next day, never early.
+        if(next&&next.kind==="story"&&next.story)questPicture(next.story.pic,next.story.id);
+        else if(next&&questGames[next.game])gamePicture(questGames[next.game]);
+        else if(story)questPicture(q.story.pic,q.story.id);
+        else gamePicture(game);
         card.classList.toggle("done",done);
+        document.getElementById("mapTomorrow").hidden=done;
+        document.getElementById("questLabel").textContent=done?"Tomorrow":"Today's adventure";
+        document.getElementById("questSummary").classList.toggle("done",done);
+        document.getElementById("questSummary").hidden=false;
         var chip=document.getElementById("questChip");chip.textContent=story?"Day "+q.day:"";chip.hidden=!story||done;
         document.getElementById("questLock").hidden=done||open;
         var title=done?(story?"Day "+q.day+" done!":"All done for today!"):(story?q.story.title:game.name);
@@ -629,12 +555,33 @@
         document.getElementById("questTitle").textContent=title;
         document.getElementById("questLine").textContent=line;
         document.getElementById("questGo").hidden=done;
+        document.getElementById("questDone").hidden=!done;
+        document.getElementById("questActionLabel").textContent=!open?"Unlock adventure":q.seen?"Keep going":"Start today";
         card.setAttribute("aria-label",done?title+" "+line:"Today's adventure"+(story?", day "+q.day+": "+title+".":": "+title+".")+" "+line+(open?" Play.":" Premium."));
         card.setAttribute("aria-disabled",done?"true":"false");
         card.onclick=function(){if(done)return;launch(game);};
         card.hidden=false;
       }
       try{paintQuest();}catch(e){var qc=document.getElementById("questCard");if(qc)qc.hidden=true;}
+      // A calendar visit, skipped story or practice count never earns a star.
+      // This is the finished-story ledger, not a streak or dated history.
+      function paintMapHistory(){
+        var earned=document.getElementById("mapEarned"),list=document.getElementById("mapHistory"),count=document.getElementById("mapHistoryCount");
+        var finished=[];try{finished=S.storyFound?S.storyFound():[];}catch(e){}
+        list.textContent="";earned.hidden=!finished.length;count.hidden=finished.length<=2;
+        count.textContent=finished.length+" adventures finished";
+        finished.slice(-2).forEach(function(story){
+          var info=S.storyDay?S.storyDay(story.id):null;
+          var day=info?info.day:story.day||0;
+          var star=node("li","map-star");star.setAttribute("data-story",story.id);
+          var label=(day?"Day "+day:"Adventure")+" finished: "+story.title;
+          star.setAttribute("aria-label",label);star.title=label;
+          var icon=node("span","map-star-icon");icon.setAttribute("aria-hidden","true");
+          icon.innerHTML='<svg viewBox="0 0 32 32" width="32" height="32"><path d="m16 2 4.3 8.7 9.6 1.4-7 6.8 1.7 9.6-8.6-4.6-8.6 4.6 1.7-9.6-7-6.8 9.6-1.4z" fill="#edc565" stroke="#b28d35" stroke-width="1.2" stroke-linejoin="round"/></svg>';
+          star.appendChild(icon);star.appendChild(node("span","map-star-label",day?"Day "+day:"Finished"));list.appendChild(star);
+        });
+      }
+      try{paintMapHistory();}catch(e){}
       // FOUND1: Your games, the games this child's finished stories left
       // behind, newest first (the one found today says "New!"). Read only;
       // shown only where the story's rule opens them (storyReplay asks it
@@ -662,126 +609,35 @@
         row.hidden=false;
       }
       try{paintFound();}catch(e){var fr=document.getElementById("foundRow");if(fr)fr.hidden=true;}
-      // THE PLAY MAP'S TRAIL (31 Oct 2026). Drawn from where Echo, the card,
-      // its "Today" flag and tomorrow's pill landed, so it fits every phone
-      // and every fit step (fitHome draws it last, and again on a new width,
-      // fonts ready and coming back to the front): from Echo's feet it waves
-      // under the heading and dives into the card under its flag (the card
-      // covers the rest), comes out under the card and ends at tomorrow. On
-      // it, one gold star for each story this child has finished
-      // (Sona.storyFound(): read only, nothing new stored), spread evenly
-      // between Echo and the flag, the newest nearest today; the one found
-      // today a little bigger, with a soft glow. Never a number: a screen
-      // reader is not told the trail is there (aria-hidden), and nothing on
-      // it moves or takes a tap. Every colour is crafted-home.css's.
-      var SVGNS="http://www.w3.org/2000/svg",STAR="M32 5l8.2 18.6L60 25.8 44.9 39.2 49.8 59 32 48.4 14.2 59l4.9-19.8L4 25.8l19.8-2.2Z";
-      function svgNode(tag,cls,at){
-        var e=document.createElementNS(SVGNS,tag),k;if(cls)e.setAttribute("class",cls);
-        if(at)for(k in at)if(Object.prototype.hasOwnProperty.call(at,k))e.setAttribute(k,String(at[k]));
-        return e;
-      }
-      function r1(n){return Math.round(n*10)/10;}
-      function pt(x,y){return r1(x)+" "+r1(y);}
-      function trailFound(){
-        var n=0,fresh=false;
-        try{n=S.storyFound?S.storyFound().length:0;}catch(e){n=0;}
-        try{var q=S.questToday?S.questToday():null;fresh=!!(q&&q.kind==="story"&&q.state==="done");}catch(e){fresh=false;}
-        n=Math.max(0,Math.min(99,n|0));
-        return {n:n,fresh:fresh&&n>0};
-      }
-      function paintTrail(){
-        var map=document.getElementById("homeMap"),svg=document.getElementById("mapTrail"),card=document.getElementById("questCard");
-        if(!map||!svg)return;
-        var bare=!card||card.hidden;
-        map.classList.toggle("bare",bare);
-        while(svg.firstChild)svg.removeChild(svg.firstChild);
-        var found=trailFound();svg.setAttribute("data-stars",String(bare?0:found.n));
-        if(bare||app.getAttribute("data-view")!=="home")return;
-        var m=map.getBoundingClientRect();if(!(m.width>0&&m.height>0))return;
-        function box(el){var r=el.getBoundingClientRect();return {l:r.left-m.left,t:r.top-m.top,r:r.right-m.left,b:r.bottom-m.top,w:r.width,h:r.height};}
-        var c=box(card),e=box(document.getElementById("mapEcho")),f=box(document.getElementById("mapToday")),p=box(document.getElementById("mapTomorrow"));
-        svg.setAttribute("viewBox","0 0 "+r1(m.width)+" "+r1(m.height));
-        // the little world first, under the trail: a cloud at the head's far
-        // corner, two leaves at the foot's near one, one by tomorrow
-        var cloud=svgNode("g","map-cloud",{transform:"translate("+pt(m.width-56,14)+")"});
-        cloud.appendChild(svgNode("ellipse","",{cx:20,cy:13,rx:20,ry:8}));
-        cloud.appendChild(svgNode("circle","",{cx:14,cy:9,r:8}));
-        cloud.appendChild(svgNode("circle","",{cx:25,cy:7,r:9}));
-        svg.appendChild(cloud);
-        function leaf(x,y,turn,size){
-          var g=svgNode("g","",{transform:"translate("+pt(x,y)+") rotate("+turn+") scale("+r1(size/20)+")"});
-          g.appendChild(svgNode("path","map-leaf",{d:"M0 0C5-8 15-8 20 0C15 8 5 8 0 0Z"}));
-          g.appendChild(svgNode("path","map-vein",{d:"M2 0H16"}));
-          svg.appendChild(g);
-        }
-        var footY=p.t+p.h/2;
-        leaf(c.l+4,footY+6,-28,20);leaf(c.l+20,footY+10,-62,15);
-        leaf(p.l-24,p.b+2,-150,13);
-        // the trail: a soft sand road with dots on it, in two pieces (the
-        // card hides where it runs behind)
-        function road(d){svg.appendChild(svgNode("path","trail-band",{d:d}));var dots=svgNode("path","trail-dots",{d:d});svg.appendChild(dots);return dots;}
-        // (a road carrying many stars waves less, so they stay clear of the
-        // heading above and the card below)
-        var sx=e.l+e.w*0.62,sy=e.b-5,tx=f.l+f.w/2,ty=c.t+16,yr=c.t-13,L=Math.max(40,tx-sx),amp=found.n>8?0.5:1;
-        var a=road("M"+pt(sx,sy)+"C"+pt(sx+L*0.2,sy+9*amp)+" "+pt(sx+L*0.34,yr-11*amp)+" "+pt(sx+L*0.52,yr-2*amp)+"S"+pt(tx-L*0.1,yr-10*amp)+" "+pt(tx,ty));
-        var ex=c.l+c.w*0.24,ey=c.b-16,px=p.l+6,py=p.t+p.h/2;
-        road("M"+pt(ex,ey)+"C"+pt(ex,c.b+14)+" "+pt(ex+16,py)+" "+pt(ex+50,py)+"S"+pt(px-40,py-9)+" "+pt(px,py));
-        if(!found.n)return;
-        // the stars: from just past Echo to just before the flag, along the
-        // road (a phone that cannot measure the road gets them on a line)
-        var len=0,from=0,to=0,s;
-        try{len=a.getTotalLength();}catch(x){len=0;}
-        function at(d){if(len){var q=a.getPointAtLength(d);return {x:q.x,y:q.y};}var k=d/100;return {x:sx+(tx-sx)*k,y:yr};}
-        if(len){
-          for(s=0;s<=len&&at(s).x<e.r-4;s+=2);from=s;
-          for(;s<=len&&at(s).x<f.l-8;s+=2);to=Math.max(from+10,s);
-        }else{from=Math.max(0,(e.r-4-sx)/(tx-sx)*100);to=Math.max(from+10,(f.l-8-sx)/(tx-sx)*100);}
-        // the one found today takes a wider place (it is bigger); a long
-        // trail of stars (two weeks of stories on a small phone) is a
-        // zigzag, every other star a little higher, rather than stars too
-        // small to see; never under the card, which would hide them
-        var wide=found.fresh?1.6:1,gap=(to-from)/(found.n-1+wide),lift=gap<14?11:0,size=Math.max(12,Math.min(20,Math.sqrt(gap*gap+lift*lift)*0.92)),i,g,o,big,z,marks=[];
-        for(i=0;i<found.n;i++){
-          big=found.fresh&&i===found.n-1;z=big?Math.min(26,size*1.3):size;
-          o=at(from+gap*(big?i+wide/2:i+0.5));
-          marks.push({x:o.x,y:o.y,z:z,big:big,up:!!lift&&i%2!==(found.n-1)%2});
-        }
-        // every star stays between the heading's words and the card's top
-        // edge: when the board's head is short (the fit's second step) the
-        // road runs close to both, and a star on it would reach into the
-        // heading or slip under the card. In a zigzag the raised stars keep
-        // a whole star's height above their neighbours (lift, or what room
-        // there is, never less than the star), so none sits on another.
-        var hb=box(document.getElementById("homeTitle")).b-4,cb=c.t-1,up=lift?Math.max(size,Math.min(lift,cb-hb-size)):0;
-        for(i=0;i<marks.length;i++){
-          o=marks[i];z=o.z;big=o.big;
-          var lo=hb+z/2+up,hi=cb-z/2;
-          o.y=lo>hi?(lo+hi)/2:Math.max(lo,Math.min(hi,o.y));
-          if(o.up)o.y-=up;
-          g=svgNode("g","trail-mark"+(big?" fresh":""),{transform:"translate("+pt(o.x-z/2,o.y-z/2)+") scale("+(Math.round(z/64*1000)/1000)+")"});
-          if(big)g.appendChild(svgNode("circle","trail-glow",{cx:32,cy:33,r:40}));
-          g.appendChild(svgNode("path","trail-star",{d:STAR}));
-          g.appendChild(svgNode("circle","trail-shine",{cx:25,cy:21,r:4}));
-          svg.appendChild(g);
-        }
-      }
       var lockedKey=new URLSearchParams(location.search).get("locked");
       library.groups.forEach(function(group){group.games.forEach(function(game){if(game.key===lockedKey&&!access(game).allowed)showLocked(game);});});
       // BOOKS: the shelf opens for every family (30 Sep 2026). Without
-      // Premium, one book is free and the rest ask for a grown-up there; the
-      // tag says which, so a parent reads "1 free book", not "Premium". Home's
+      // Premium, the tag describes books on the chosen sound's shelf, never
+      // a free book hidden by that choice. Home's
       // Books door is the one way to it (the Arcade's Books card went on 23
       // Oct 2026).
       var homeBooksBtn=document.getElementById("homeBooksBtn");
       function paintBooksTags(){
         // only the free books that are free on this phone (trial first: none
         // for a family without the free version)
-        var freeBooks=(S.FREE_BOOKS||[]).filter(function(t){return !S.bookFree||S.bookFree(t);}).length;
+        var freeBooks=S.freeBooksOnShelf?S.freeBooksOnShelf():0;
         var booksOpen=S.booksOpen?S.booksOpen():!S.gated("books");
         var tag=S.isFree()?"Free":booksOpen?"Included":freeBooks?(freeBooks===1?"1 free book":freeBooks+" free books"):"Premium";
         document.getElementById("homeBooksTag").textContent=tag;
       }
       paintBooksTags();
+      // The current sound is a read-only landmark. Family choices remain in
+      // Grown-ups Settings; an assigned sound stays the therapist's.
+      var soundWrap=document.getElementById("homeSoundWrap");
+      var soundOwner=S.kkey?S.kkey("sona.profile.v1"):"";
+      function paintHomeSound(){
+        var current=S.targetSound?S.targetSound():"",label=S.soundLabel?S.soundLabel(current):current;
+        var assigned=!!(S.homeworkSounds&&S.homeworkSounds().length);
+        document.getElementById("homeSoundValue").textContent=label;
+        soundWrap.hidden=!current;soundWrap.classList.toggle("sound-long",label.length>3);
+        soundWrap.setAttribute("aria-label","Current sound: "+label+(assigned?". From your speech therapist.":". Sounds can be changed in Grown-ups Settings."));
+      }
+      paintHomeSound();
       function openBooks(){clearMessage();location.href="/library.html";}
       homeBooksBtn.onclick=openBooks;
       // ── the two views ──
@@ -792,12 +648,13 @@
       // Home" goes back if it was pushed, else replaces the address. Back and
       // Forward read the address again. Nothing here writes or sends.
       function viewOf(){return /[?&](?:view=arcade(?:[&#]|$)|locked=)/.test(location.search)?"arcade":"home";}
-      function setView(v){app.setAttribute("data-view",v);document.title=v==="arcade"?"Sona — Play library":"Sona";}
+      function setView(v){
+        app.setAttribute("data-view",v);document.body.classList.toggle("playmap-home",v==="home");document.title=v==="arcade"?"Sona — Play library":"Sona";
+      }
       function showView(v,focus){
         clearMessage();setView(v);
         try{window.scrollTo(0,0);}catch(e){}
         fitHome();
-        clipSync();
         if(focus){var h=document.getElementById(v==="arcade"?"arcadeTitle":"homeTitle");try{h.focus({preventScroll:true});}catch(e){}}
       }
       var backFocus=false;
@@ -832,95 +689,42 @@
       };
       window.addEventListener("popstate",function(){var f=backFocus;backFocus=false;showView(viewOf(),f);});
       window.addEventListener("pagehide",function(){try{history.scrollRestoration="auto";}catch(e){}});
-      // THE FIT: ONE SCREEN, NOTHING TO SCROLL (1 Nov 2026; Travis, of a
-      // recording of Home sliding up and down: "I don't like how this
-      // homepage can scroll up and down. Just make it one ... flat screen
-      // ... There's nothing that makes being able to scroll up and down
-      // helpful"). Everything Home has (the top bar, the board with its
-      // heading, the day's card and tomorrow, the Arcade and Books doors,
-      // and "Your games" once a story is finished) is on the one screen,
-      // above the home bar, and the page does not move (html.home-flat).
-      // The day's card takes what room is left: its picture is as tall as
-      // the screen allows, 3:4 at most (the day's reel, HOMECLIP1), set in
-      // pixels from what the rest measured (measured, never guessed, as the
-      // plan screen's offer is). The card comes first: while its picture
-      // would be flatter than 4:3, the rest makes room one step at a time
-      // (fit1…fit6, crafted-home.css): "Your games" smaller first, then the
-      // board's head and foot, then the doors' pictures, then the words on
-      // the card, then "Your games" without its drawn heading (a screen
-      // reader still reads it), and last the card's words higher on their
-      // shade: a finished day's line is two lines on an iPhone SE ("Come
-      // back tomorrow for Day 12 and a new game!" always, Day 2's in a font
-      // a hair wider), and without that step the page scrolled there. With
-      // every step taken it may be flatter than 4:3, as long
-      // as the words over its foot still sit on it (MIN_PIC above them); on
-      // an iPad the card then narrows to keep 4:3 rather than stretch into a
-      // strip. A screen too short even for that (a phone on its side) keeps
-      // every step and scrolls rather than cut anything off: there the
-      // picture is 4:3.
-      var FIT_STEPS=6,MIN_PIC=12;
+      // PLAYMAP1: compress the picture and gaps first. Lock page movement
+      // only while the complete Home fits; a shorter or enlarged screen
+      // keeps natural scrolling, and the Arcade always releases the lock.
+      var FIT_STEPS=6;
       function fitHome(){
         if(app.getAttribute("data-view")!=="home"){document.documentElement.classList.remove("home-flat");return;}
-        var card=document.getElementById("questCard"),art=document.getElementById("questArt"),words=card&&card.querySelector(".quest-body");
         var i;for(i=1;i<=FIT_STEPS;i++)app.classList.remove("fit"+i);
-        if(art)art.style.height="";
-        // measured as it will be shown: a page that scrolls while it is
-        // measured can grow a scrollbar (a laptop's) and measure narrower
-        document.documentElement.classList.add("home-flat");
-        // what reaches furthest down (the home bar's room is the page's own
-        // bottom padding), measured from the top of the page
-        function bottom(){var y=window.pageYOffset||0;return app.getBoundingClientRect().bottom+y;}
-        var flat=false;
-        if(!card||card.hidden||!art){flat=bottom()<=window.innerHeight+0.5;}
-        else{
-          card.style.maxWidth="";
-          var w=art.getBoundingClientRect().width,tall=Math.round(w*4/3),low=Math.ceil(w*0.75),h,least;
-          for(i=0;;i++){
-            art.style.height=tall+"px";
-            h=Math.min(tall,Math.floor(tall-(bottom()-window.innerHeight)));
-            least=(words?words.offsetHeight:0)+MIN_PIC;
-            if(h>=Math.max(low,least)){flat=true;break;}
-            if(i===FIT_STEPS){if(h>=least)flat=true;else h=Math.max(low,least);break;}
-            app.classList.add("fit"+(i+1));
-          }
-          art.style.height=h+"px";
-          // an iPad keeps the card 4:3 at its flattest: narrower, centred
-          // (never so narrow that its words outgrow it)
-          if(flat&&h<low&&window.innerWidth>=600){
-            card.style.maxWidth=Math.round(h/0.75)+"px";
-            if(words&&words.offsetHeight+MIN_PIC>h)card.style.maxWidth="";
-          }
+        function overflow(){
+          var found=document.getElementById("foundRow"),doors=document.getElementById("homeDoors"),last=found&&!found.hidden?found:doors;
+          var pad=parseFloat(getComputedStyle(app).paddingBottom)||0;
+          return last.getBoundingClientRect().bottom+pad+(window.pageYOffset||0)-window.innerHeight-1;
         }
+        for(i=1;i<=FIT_STEPS&&overflow()>0;i++)app.classList.add("fit"+i);
+        var flat=overflow()<=0;
         document.documentElement.classList.toggle("home-flat",flat);
         if(flat)try{window.scrollTo(0,0);}catch(e){}
-        paintTrail();
       }
       fitHome();
-      // (and once more when this script is done: the founding banner, the
-      // website's tallest Home, is shown by the script after this one)
+      // The founding banner is drawn by the next script after this one.
       setTimeout(fitHome,0);
-      // a turn, a new width or a new height fits again (Home no longer
-      // scrolls, so Safari's bars no longer fold away under a finger); a
-      // page too short to fit, which still scrolls, re-fits only on a new
-      // width, so its bars folding away never re-lay the card out mid-swipe
-      var fitW=window.innerWidth,fitH=window.innerHeight;
-      window.addEventListener("resize",function(){
-        var flat=document.documentElement.classList.contains("home-flat");
-        if(window.innerWidth===fitW&&(!flat||window.innerHeight===fitH))return;
-        fitW=window.innerWidth;fitH=window.innerHeight;fitHome();
-      });
+      // A height-only resize fits the complete Home again too.
+      window.addEventListener("resize",fitHome);
       try{if(document.fonts&&document.fonts.ready)document.fonts.ready.then(fitHome);}catch(e){}
+      try{new MutationObserver(fitHome).observe(document.getElementById("trialBanner"),{attributes:true,attributeFilter:["style","hidden"],childList:true,subtree:true});}catch(e){}
       // A cached library can return after a trial expires or an adult changes
       // preview state. Re-evaluate its labels without reviving stale access.
       window.addEventListener("pageshow",function(event){if(event.persisted)location.reload();});
       // An iPhone keeps Home alive behind a game; when it comes back to the
       // front the tags are read again, like today's reps in the corner.
-      // (and the day's clip holds still while Home is behind something)
       document.addEventListener("visibilitychange",function(){
-        if(document.hidden){clipSync();return;}
+        if(document.hidden)return;
+        if(S.kkey&&S.kkey("sona.profile.v1")!==soundOwner){location.reload();return;}
         if(library.picks&&S.localDay&&S.localDay()!==library.picks.day){location.reload();return;}
         paintBests();
         try{paintQuest();}catch(e){}
+        try{paintMapHistory();paintHomeSound();}catch(e){}
         try{paintFound();}catch(e){}
         fitHome();
       });

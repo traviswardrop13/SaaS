@@ -551,6 +551,11 @@
 
   function getProfile() {
     const p = Object.assign(clone(DEFAULT_PROFILE), load(PKEY, {}));
+    // A pin belongs to this child's selected sounds. An old backup or a
+    // removed sound must never strand the child on a hidden choice. Reading
+    // only normalizes in memory; Home remains a read-only page.
+    const target = _targetPin(p);
+    if (target) p.targetSound = target; else delete p.targetSound;
     // ONE coach voice for every family (Travis, 29 Sep 2026). The voice picker
     // is gone, so a voice saved from it (Sarah, George…) is overridden here
     // rather than honoured: with no picker left, an old pick would strand that
@@ -695,7 +700,10 @@
     // a child this save sets up starts their story calendar today (CAL1):
     // setup, the Speech Check and the pilot page all set a child up here
     const setUpNow = !!(patch && patch.onboarded === true) && !getProfile().onboarded;
-    save(PKEY, Object.assign(getProfile(), patch || {}));
+    const next = Object.assign(getProfile(), patch || {});
+    const target = _targetPin(next);
+    if (target) next.targetSound = target; else delete next.targetSound;
+    save(PKEY, next);
     if (setUpNow) { try { _questAnchor(null, true); } catch (e) {} }
     // …and pay it: today's reps already said earn against the lowered goal
     // now (30 once it is met, like any goal day), not at a next rep that may
@@ -920,8 +928,35 @@
     // Homework first: this is the whole point of assigning it.
     const hs = homeworkSounds();
     if (hs.length) return hs;
-    const f = ((getProfile().focusSounds) || []).map((s) => String(s).toUpperCase()).filter((s) => WORDS[s]);
+    const p = getProfile(), pin = _targetPin(p);
+    if (pin) return [pin];
+    const f = _targetFamilySounds(p);
     return f.length ? f : ["R"];
+  }
+  // One chosen sound works like a language choice: books and the existing
+  // game/practice readers agree, while the family's other selected sounds
+  // and all earned work stay intact. No pin preserves the old rotation.
+  function _targetFamilySounds(p) {
+    const list = p && Array.isArray(p.focusSounds) ? p.focusSounds : [];
+    return list.map((s) => String(s).toUpperCase()).filter((s, i, a) => ALL_SOUNDS.indexOf(s) >= 0 && a.indexOf(s) === i);
+  }
+  function _targetPin(p) {
+    const s = String(p && p.targetSound || "").toUpperCase();
+    return _targetFamilySounds(p).indexOf(s) >= 0 ? s : "";
+  }
+  function targetSoundOptions() {
+    const assigned = homeworkSounds();
+    return assigned.length ? assigned : _targetFamilySounds(getProfile());
+  }
+  function targetSound() { return rotSound(); }
+  function setTargetSound(sound) {
+    // A family control must not claim to change an active assignment.
+    // Keep the saved family preference for when that assignment ends.
+    if (homeworkSounds().length) return false;
+    const s = String(sound == null ? "" : sound).toUpperCase();
+    if (s && _targetFamilySounds(getProfile()).indexOf(s) < 0) return false;
+    saveProfile({ targetSound: s });
+    return true;
   }
   // The position to practice: the assignment's, else the family's setting.
   // One reader for both, so a page cannot honour homework for the sound and
@@ -2673,7 +2708,17 @@
   // demonstration window gated() still honours for the rest: a new family
   // would otherwise watch a shelf of open books lock three days in.
   const FREE_BOOKS = ["Rory and the Rainbow"];
+  // Discovery metadata only: Home must describe the selected sound's shelf,
+  // which no longer borrows another sound's free book. readtest checks this
+  // small map against the actual book catalog; access still uses bookFree.
+  const FREE_BOOK_SOUNDS = { "Rory and the Rainbow": "R" };
   function bookFree(title) { return FREE_BOOKS.indexOf(String(title || "")) !== -1 && freeVersion(); }
+  function freeBooksOnShelf() {
+    var p = getProfile() || {}, focus = Array.isArray(p.focusSounds) ? p.focusSounds : [];
+    var restricted = homeworkSounds().length || p.targetSound || (!playMode() && focus.length);
+    var sound = restricted ? String(targetSound() || "").toUpperCase() : "";
+    return FREE_BOOKS.filter(function (title) { return bookFree(title) && (!sound || FREE_BOOK_SOUNDS[title] === sound); }).length;
+  }
   function booksOpen() { return isFree() || premium() || trialActive(); }
   function bookLocked(title) { return !bookFree(title) && !booksOpen(); }
   // earlyAdopter lives on the PROFILE, and the profile is per-kid — so a
@@ -9677,5 +9722,5 @@
   try { _questAnchors(); } catch (e) {}
   try { installDebug(); } catch (e) {}
 
-  global.Sona = { questToday, questEnd, QUEST_DAYS, QUEST_LEN, STORY_DAYS, storyOpen, storyShown, storyEnding, storySeen, storyFound, storyReplay, STORY_SAY_TIMES, STORY_TALK, storyDay, day1For, pcmWave, mediaPCM, voiceAsMedia, libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, goalDays, dayReps, dayGoal, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, goClip, GO_WAIT_MS, WORDS, wordsFor, GAME_WORDS, gameWords, POSITIONS, FAMILY_POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, rungWin, ladderContent, GAME_LEVELS, gameTop, gameAsk, gameHold, FREE_MODE, isFree, WEB_SALES, webSales, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, homePicks, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, freeVersion, trialFirst, offerOnLock, FREE_BOOKS, bookFree, booksOpen, bookLocked, seasonPick, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, firstGameKey, firstGameStart, firstGameEnd, FREE_PLAY_ON, freePlayOn, freePlayDue, freePlayStart, freePlayActive, freePlayEnd, CRAFTED_CARDS, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, micNative, micOpen, micProbe, micSource, micDeaf, micRecorder, micQuiet, micStats, micFifo: nmFifo, NATIVE_MIC_GAIN, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repWeeks, gameRep, repsBeacon, gameBest, gameBestOffer, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES, trophyState, trophies, coinsNow, PLAY_LEVEL_AT, PLAY_LEVEL_LINES, playLevelsOpen, playLevel, playLevelAsk, setPlayLevel, playLevelInfo, playBest, playBestOffer, buddyId, buddySprite, chestState, chestOpen, ROAD_LANDS, ROAD_STOPS, MONTH_STEPS, roadStop, roadState, roadOpen, monthOpen, roadSettle, roadRolledSeen, buddiesKept, shopItem, buyItem, undoBuy, equip, BOARD_LIVE, boardLive, boardAllowed, boardState, boardStart, boardClaim, boardFlush, boardView, boardNick, boardLeave, boardAsk, boardCancel, parentEmail, reportEmail, reportSync, reportStatus, reportSet, reportOff, reportFlush, homeOfferDue, offerSeen, notifyAvailable, notifyState, notifyRefresh, notifyAsk, trialReminderOn, trialReminderArm, trialReminderSync, trialReminderSold, nudgeConsent, nudgeState, soundMark, clipsSettled, storePlan, buyPlan, planWords, planSay, planBillDate, setupWall, setupAfterMark, setupAfter, setupAfterClear, setupAsks, setupAsksSave, SETUP_THERAPY };
+  global.Sona = { questToday, questEnd, QUEST_DAYS, QUEST_LEN, STORY_DAYS, storyOpen, storyShown, storyEnding, storySeen, storyFound, storyReplay, STORY_SAY_TIMES, STORY_TALK, storyDay, day1For, pcmWave, mediaPCM, voiceAsMedia, libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, goalDays, dayReps, dayGoal, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, goClip, GO_WAIT_MS, WORDS, wordsFor, GAME_WORDS, gameWords, POSITIONS, FAMILY_POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, rungWin, ladderContent, GAME_LEVELS, gameTop, gameAsk, gameHold, FREE_MODE, isFree, WEB_SALES, webSales, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, targetSound, targetSoundOptions, setTargetSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, homePicks, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, freeVersion, trialFirst, offerOnLock, FREE_BOOKS, freeBooksOnShelf, bookFree, booksOpen, bookLocked, seasonPick, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, firstGameKey, firstGameStart, firstGameEnd, FREE_PLAY_ON, freePlayOn, freePlayDue, freePlayStart, freePlayActive, freePlayEnd, CRAFTED_CARDS, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, micNative, micOpen, micProbe, micSource, micDeaf, micRecorder, micQuiet, micStats, micFifo: nmFifo, NATIVE_MIC_GAIN, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repWeeks, gameRep, repsBeacon, gameBest, gameBestOffer, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES, trophyState, trophies, coinsNow, PLAY_LEVEL_AT, PLAY_LEVEL_LINES, playLevelsOpen, playLevel, playLevelAsk, setPlayLevel, playLevelInfo, playBest, playBestOffer, buddyId, buddySprite, chestState, chestOpen, ROAD_LANDS, ROAD_STOPS, MONTH_STEPS, roadStop, roadState, roadOpen, monthOpen, roadSettle, roadRolledSeen, buddiesKept, shopItem, buyItem, undoBuy, equip, BOARD_LIVE, boardLive, boardAllowed, boardState, boardStart, boardClaim, boardFlush, boardView, boardNick, boardLeave, boardAsk, boardCancel, parentEmail, reportEmail, reportSync, reportStatus, reportSet, reportOff, reportFlush, homeOfferDue, offerSeen, notifyAvailable, notifyState, notifyRefresh, notifyAsk, trialReminderOn, trialReminderArm, trialReminderSync, trialReminderSold, nudgeConsent, nudgeState, soundMark, clipsSettled, storePlan, buyPlan, planWords, planSay, planBillDate, setupWall, setupAfterMark, setupAfter, setupAfterClear, setupAsks, setupAsksSave, SETUP_THERAPY };
 })(window);

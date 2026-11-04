@@ -102,231 +102,193 @@ body::before{content:"";position:fixed;left:0;right:0;top:0;height:env(safe-area
    release badge, not the row's promise. */
 .game-new{position:absolute;left:6px;bottom:6px;padding:3px 6px;border-radius:99px;background:#fffdf2eb;color:var(--ink);font:800 9px/1.2 Nunito,sans-serif;box-shadow:0 1px 4px #583e2918;}
 
-/* YOUR GAMES (FOUND1, 23 Oct 2026): the games a child's finished stories
-   left behind, under Home's two doors (where the Trophy Road card was: the
-   road is the gift button in the top bar now). One row that scrolls
-   sideways, newest first, each tile the story's Home picture at 16:9 with
-   its game's name; the one found today wears a teal "New!" (orange means
-   only the practice sound's letters). A picture that will not load is Echo
-   on a plain wash, never a blank tile. */
-#foundRow{margin:0 0 18px;}
-#foundRow[hidden]{display:none;}
-#foundTitle{margin:0 0 8px;font:800 18px/1.1 "Baloo 2",sans-serif;color:var(--ink);}
-/* the list scrolls sideways, which clips at its padding: 8 px all round
-   (taken back by the margin, so nothing moves) holds the whole focus ring,
-   3 px drawn 4 px outside a tile */
-#foundList{display:flex;gap:10px;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x proximity;scroll-padding-inline:8px;padding:8px;margin:-6px -8px 0;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
-#foundList::-webkit-scrollbar{display:none;}
-.found-tile{flex:none;display:flex;flex-direction:column;width:clamp(128px,38vw,176px);min-height:44px;padding:0;border-radius:18px;overflow:hidden;scroll-snap-align:start;background:linear-gradient(#fffefb,#fff7e9);border:1px solid #efe2ce;box-shadow:0 3px 0 #e9d8bb,0 6px 14px #6947200d;color:var(--ink);font:inherit;text-align:left;cursor:pointer;transition:transform .12s;}
-.found-tile:active{transform:translateY(2px) scale(.98);}
-.found-pic{position:relative;display:block;width:100%;aspect-ratio:16/9;overflow:hidden;background:#efe6d5;}
-.found-pic img{display:block;width:100%;height:100%;object-fit:cover;}
-.found-pic.fallback img{width:auto;height:88%;margin:4% auto 0;object-fit:contain;}
-.found-new{position:absolute;top:6px;left:6px;padding:3px 8px;border-radius:999px;background:var(--craft-teal);color:#fff;font:800 12px/1.2 "Baloo 2",sans-serif;box-shadow:0 2px 0 #0e6b70;}
-.found-tile.fresh{border-color:var(--craft-teal);box-shadow:0 3px 0 #0e6b7055,0 0 0 2px var(--craft-teal),0 6px 14px #6947200d;}
-.found-name{display:block;padding:7px 10px 9px;font:800 15px/1.15 "Baloo 2",sans-serif;}
-@media(prefers-reduced-motion:reduce){.found-tile{transition:none;}.found-tile:active{transform:none;}}
-
-/* HOME AND THE ARCADE (STORY1, 22 Oct 2026): two views of one page. Each is
-   hidden on its wrapper only: a block's own [hidden] belongs to its painter
-   (the story card, the road card, the preview notice). */
+/* PLAYMAP1: Home is a quiet map of real finished adventures and today's
+   story. The existing Arcade keeps its scrolling shelves and presentation. */
+html.home-flat,html.home-flat body{height:100%;min-height:0;overflow:hidden;}
 #libraryApp[data-view="home"] .arcade-only,#libraryApp[data-view="arcade"] .home-only{display:none;}
 #homeTitle:focus,#arcadeTitle:focus{outline:none;}
-
-/* THE PLAY MAP (31 Oct 2026; Travis: "yes build play map with those
-   changes"). Home is a little world on a soft mint board, as wide as the
-   page and a little wider (its padding is the page's own margin, so the
-   card inside keeps the whole width): its head is Echo standing at the
-   start of the trail beside "Let's explore."; then today's card, the day's
-   reel (HOMECLIP1), with a "Today" flag where the trail dives into it; then
-   its foot, where the trail comes out and ends at tomorrow, a dark locked
-   pill. The trail, its gold stars (one a story finished), the leaves and
-   the cloud are drawn by today.html (paintTrail) on #mapTrail, under
-   everything, from where these landed; their colours are all here. Nothing
-   on the board moves, and only the card takes a tap. */
-#homeMap{--map-head:72px;--map-foot:46px;position:relative;margin:6px -12px 0;padding:6px 11px 2px;border-radius:30px;background:linear-gradient(180deg,#e1f2e7 0%,#eaf6ec 55%,#f3f4e5 100%);border:1px solid #d5e9da;box-shadow:inset 0 1px 0 #ffffffb3,0 3px 0 #d9e9d9;}
-#mapTrail{position:absolute;left:0;top:0;width:100%;height:100%;overflow:visible;pointer-events:none;z-index:0;}
-.map-head{position:relative;z-index:1;display:flex;align-items:flex-start;gap:8px;height:var(--map-head);}
-.map-echo{flex:none;display:block;width:56px;height:64px;margin-top:2px;}
-.map-echo img{display:block;width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 4px 3px #2f4a3a2b);}
-#homeTitle{flex:1;min-width:0;margin:7px 0 0;font:800 30px/1.05 "Baloo 2",sans-serif;letter-spacing:-.7px;color:var(--ink);}
-.map-spot{position:relative;z-index:1;}
-/* the flag sits on the card's top edge, left of the Premium tag's corner */
-.map-today{position:absolute;z-index:2;left:70%;top:-15px;transform:translateX(-50%);padding:4px 11px 3px;border-radius:99px;background:#fffdf7;color:var(--ink);font:800 12px/1.2 "Baloo 2",sans-serif;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;box-shadow:0 2px 0 #d8cbb0,0 3px 8px #2f4a3a1f;pointer-events:none;}
-.map-foot{position:relative;z-index:1;display:flex;align-items:center;justify-content:flex-end;height:var(--map-foot);}
-.map-tomorrow{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 13px 0 10px;border-radius:99px;background:#3a2b20;color:#fff1de;font:800 13px/1 "Baloo 2",sans-serif;box-shadow:0 3px 0 #1f150e59;pointer-events:none;}
-.map-lock{display:block;flex:none;width:15px;height:15px;}
-.map-lock path,.map-lock rect{fill:none;stroke:#f4dcb6;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;}
-/* no card today (a catalog that cannot name one): no trail, no flag, no tomorrow */
-#homeMap.bare #mapTrail,#homeMap.bare .map-today,#homeMap.bare .map-foot{display:none;}
-/* the trail: a soft sand road with dots on it, and what lies on it */
-#mapTrail .trail-band{fill:none;stroke:#f3e4c6;stroke-width:14;stroke-linecap:round;stroke-linejoin:round;}
-#mapTrail .trail-dots{fill:none;stroke:#c6a573;stroke-width:4.5;stroke-linecap:round;stroke-dasharray:.1 11;}
-#mapTrail .trail-star{fill:#f7c948;stroke:#d69f2b;stroke-width:4;stroke-linejoin:round;}
-#mapTrail .trail-shine{fill:#fff;opacity:.85;}
-#mapTrail .trail-glow{fill:#fff3c4;opacity:.95;}
-#mapTrail .map-leaf{fill:#a3d6b6;}
-#mapTrail .map-vein{fill:none;stroke:#7cbb96;stroke-width:1.5;stroke-linecap:round;}
-#mapTrail .map-cloud{fill:#fff;opacity:.92;}
-/* the phone's home bar: measured by the fit, never seen */
-#homeInset{position:absolute;left:0;bottom:0;width:0;height:env(safe-area-inset-bottom);visibility:hidden;pointer-events:none;}
-
-/* THE STORY CARD (QUEST1's daily adventure card, 13 Oct 2026, made big for
-   STORY1; HOMECLIP1, 28 Oct 2026, made the day's reel: Travis, "the daily
-   practice is taking up more of the screen so the games and books are lower
-   and the daily practice is like a 3 second reel essentially of the game
-   that the child will play"). A tall 3:4 picture across the page: the clip
-   of the game the child will play, over its poster, over today's painted
-   picture while the poster has not landed (today.html, reelPicture). Over
-   its foot, on a soft dark wash: the day's chip, the title, the big round
-   teal play button (64 px) and the hook. Without Premium a small cream
-   "Premium" tag sits at the picture's top right. Done, it shows tomorrow's
-   poster dark, plays nothing and takes no tap. On an iPad it is a centred
-   3:4 card, 480 px wide at most. */
-#questCard{position:relative;display:block;width:100%;margin:0;padding:0;border-radius:26px;background:#efe6d5;border:1px solid #efdcbc;box-shadow:0 4px 0 #e6cfa6,0 10px 22px #69472014;color:#fff;font:inherit;text-align:left;cursor:pointer;overflow:hidden;isolation:isolate;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;transition:transform .12s;}
-#questCard[hidden]{display:none;}
-#questCard:active{transform:translateY(2px) scale(.99);}
-#questCard.done{cursor:default;}
-#questCard.done:active{transform:none;}
-.quest-art{position:relative;display:block;width:100%;aspect-ratio:3/4;background:#efe6d5;overflow:hidden;border-radius:25px;transition:none;}
-/* each story's wash, shown while its picture loads or if it never comes
-   (Echo stands on it): the night sea, honey wood, the morning river; the
-   same colours as each story's wash in adventures.js */
-.quest-art[data-story="lighthouse"]{background:#2b2f5e;}
-.quest-art[data-story="windup"]{background:#b9783f;}
-.quest-art[data-story="bridge"]{background:#5fb8c2;}
-.quest-art[data-story="waterwheel"]{background:#8fbf68;}
-.quest-art[data-story="postboat"]{background:#3f9fc0;}
-.quest-art[data-story="bakery"]{background:#cc8b43;}
-.quest-art[data-story="kite"]{background:#8cc3e3;}
-.quest-art[data-story="rooftops"]{background:#8cc0dc;}
-.quest-art[data-story="lantern"]{background:#56598a;}
-.quest-art[data-story="trainline"]{background:#a9cbe0;}
-.quest-art[data-story="concert"]{background:#6fb39b;}
-.quest-art[data-story="observatory"]{background:#c4945a;}
-.quest-art[data-story="frontdoor"]{background:#94ac7d;}
-.quest-art[data-story="nestlift"]{background:#d99a62;}
-/* TALK1: Day 1's talking stories, each its own wash (talk-stories.js) */
-.quest-art[data-story="robo"]{background:#3a4f8a;}
-.quest-art[data-story="sandy"]{background:#3fa7b5;}
-.quest-art[data-story="lulu"]{background:#34507a;}
-.quest-art[data-story="zippy"]{background:#62a87a;}
-.quest-art[data-story="kiki"]{background:#7a6fb0;}
-.quest-art[data-story="gus"]{background:#6f9a4a;}
-.quest-art[data-story="shelly"]{background:#2f8fa8;}
-.quest-art[data-story="chip"]{background:#a8543f;}
-.quest-art[data-story="theo"]{background:#4b4f8f;}
-.quest-art[data-story="fizz"]{background:#3b5b4b;}
-.quest-pic{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;}
-.quest-pic img{display:block;width:100%;height:100%;object-fit:cover;}
-.quest-pic svg{width:46%;height:auto;max-height:86%;}
-/* Echo on the story's wash: standing in the picture's top half, clear of
-   the words over its foot */
-.quest-art.fallback .quest-pic{align-items:flex-start;padding-top:9%;}
-.quest-art.fallback .quest-pic img{width:auto;height:54%;object-fit:contain;filter:drop-shadow(0 6px 4px #1d120a33);}
-/* the clip: over the picture, and seen only once it is really playing, so
-   a clip that never starts leaves the picture as it is. Taps go to the
-   card, and the phone draws none of its own video buttons on it. */
-.quest-clip{position:absolute;inset:0;display:block;width:100%;height:100%;object-fit:cover;border-radius:inherit;background:transparent;opacity:0;pointer-events:none;transition:opacity .3s;}
-.quest-clip.on{opacity:1;}
-.quest-clip[hidden]{display:none;}
-.quest-clip::-webkit-media-controls,.quest-clip::-webkit-media-controls-start-playback-button,.quest-clip::-webkit-media-controls-overlay-play-button{display:none!important;-webkit-appearance:none;}
-#questCard.done .quest-art{background:#2a2119;}
-#questCard.done .quest-pic img,#questCard.done .quest-pic svg{filter:brightness(.15) saturate(0);opacity:.55;}
-.quest-lock{position:absolute;right:12px;top:12px;padding:4px 10px;border-radius:99px;background:#fff7e8f2;color:#715031;font:800 12px/1.2 Nunito,sans-serif;box-shadow:0 1px 4px #583e2930;}
-.quest-chip[hidden],.quest-lock[hidden]{display:none;}
-/* the words over the picture's foot: a warm dark wash that fades in from
-   clear, so the game shows above it and the white words read on any clip */
-.quest-body{position:absolute;left:0;right:0;bottom:0;display:flex;flex-direction:column;gap:7px;padding:58px 15px 15px 17px;border-radius:0 0 25px 25px;background:linear-gradient(180deg,#26150800 0%,#2615087a 30%,#261508d6 62%,#261508f0 100%);}
-.quest-head{display:flex;align-items:flex-end;gap:12px;}
-.quest-copy{flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:5px;}
-.quest-chip{padding:2px 11px;border-radius:99px;background:#fffdf2f2;color:var(--ink);font:800 15px/1.3 "Baloo 2",sans-serif;box-shadow:0 1px 4px #1d120a40;}
-.quest-title{font:800 27px/1.06 "Baloo 2",sans-serif;letter-spacing:-.4px;color:#fff;text-shadow:0 2px 8px #1d120a73;}
-.quest-line{font:700 14.5px/1.36 Nunito,sans-serif;color:#fff1de;text-shadow:0 1px 5px #1d120a8c;}
-.quest-go{flex:none;display:flex;align-items:center;justify-content:center;width:64px;height:64px;border-radius:50%;background:linear-gradient(#239ca2,#14858d);color:#fff;box-shadow:0 4px 0 #0b5d63,0 6px 16px #0b1f1f59;}
-.quest-go svg{display:block;margin-left:3px;}
-.quest-go[hidden]{display:none;}
-
-/* THE TWO DOORS: side by side, a picture and one word each, cream like the
-   road card (teal is for the one main action, the story's play button). On a
-   phone each door is a tile, its picture in a band across the top and the
-   word under it, like the Arcade's own game cards. The Arcade's painting is
-   Echo among the games' things (a watermelon, a basketball, a piano key, a
-   ball, a bone) out at its edges: a square crop kept Echo and threw the games
-   away, so a child who can't read saw two doors of Echo. A 2:1 band keeps
-   them in. On an iPad the picture sits beside the word at 3:2, which keeps
-   them too. Since Home became one screen (1 Nov 2026) the fit's third step
-   flattens the doors' pictures to 5:2 when the card would otherwise go
-   flatter than 4:3; the doors are always on the screen. */
-#homeDoors{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:14px 0 16px;}
-#homeDoors>button{display:flex;flex-direction:column;align-items:stretch;min-width:0;min-height:88px;padding:0;border-radius:20px;overflow:hidden;background:linear-gradient(#fffefb,#fff7e9);border:1px solid #efe2ce;box-shadow:0 3px 0 #e9d8bb,0 6px 14px #6947200d;color:var(--ink);font:inherit;text-align:left;cursor:pointer;transition:transform .12s;}
-#homeDoors>button:active{transform:translateY(2px) scale(.98);}
-.door-pic{position:relative;flex:none;display:flex;align-items:center;justify-content:center;width:100%;aspect-ratio:2/1;overflow:hidden;background:#efe6d5;transition:none;}
-.door-pic img{display:block;width:100%;height:100%;object-fit:cover;}
-.door-pic.fallback{background:#fff1d2;}
-.door-pic.fallback img{width:88%;height:88%;object-fit:contain;}
-/* the books' old sticker, if their picture never loads: whole and square in
-   the band (it fills its box and slices, which in a band left a blue strip of
-   cover); its inline style is sona.js's */
-.door-pic>.stk{position:relative!important;inset:auto!important;width:auto;height:88%;aspect-ratio:1;background:transparent!important;}
-.door-copy{flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:3px;padding:8px 12px 10px;transition:none;}
-.door-word{font:800 22px/1.05 "Baloo 2",sans-serif;letter-spacing:-.3px;color:var(--ink);}
-/* the small line is as tall as the Books tag beside it, so the two words sit
-   level */
-.door-sub{display:flex;align-items:center;min-height:22px;font:800 11px/1.25 Nunito,sans-serif;color:var(--muted);}
-.door-tag{font-size:10px;padding:4px 7px;background:#f6e8d3;color:#775431;}
-/* the Arcade's way back: a cream pill, a second choice */
 .arcade-top{display:flex;margin-top:16px;}
-#homeBack{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:8px 17px 8px 13px;border-radius:999px;border:1.5px solid var(--cream-line);background:var(--cream-card);box-shadow:0 3px 0 var(--cream-line);color:var(--cream-ink);font:800 16px/1 "Baloo 2",sans-serif;cursor:pointer;transition:transform .12s;}
+#homeBack{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:8px 17px 8px 13px;border-radius:999px;border:1.5px solid var(--cream-line);background:var(--cream-card);box-shadow:0 3px 0 var(--cream-line);color:var(--cream-ink);font:800 16px/1 "Baloo 2",sans-serif;cursor:pointer;}
 #homeBack span{font-size:22px;line-height:1;margin-top:-2px;}
 #homeBack:active{transform:translateY(2px);box-shadow:0 1px 0 var(--cream-line);}
 .arcade-top+.library-intro{margin-top:12px;}
-
-/* THE FIT: ONE SCREEN, NOTHING TO SCROLL (fitHome in today.html; Travis,
-   1 Nov 2026: "Just make it one ... flat screen"). Home's whole page is on
-   the one screen and does not move (html.home-flat). The day's card takes
-   the room left: today.html sets its picture's height in pixels, 3:4 at
-   most (.quest-art's own aspect-ratio is then only its first guess). When
-   that would leave it flatter than 4:3, the rest makes room one step at a
-   time: fit1 "Your games" smaller, fit2 the board's head and foot, fit3 the
-   doors' pictures, fit4 the words on the card, fit5 "Your games" with its
-   heading read, not drawn, fit6 the card's words a little higher on their
-   shade (a finished day's line, "Come back tomorrow for Day 12 and a new
-   game!", is two lines at 375 px, and a font a hair wider makes "Day 2"'s
-   two lines as well: without it an iPhone SE in Safari scrolled). A screen too
-   short for all of it (a phone on its side) keeps fit6 and scrolls rather
-   than cut anything off. Everything a step resizes never transitions:
-   sona.css gives every property a 0.01 ms transition under Reduce Motion,
-   and a box mid-transition reports the size it WAS, so the fit measured a
-   step as doing nothing (and the page's own foot, which changes between
-   Home and the Arcade, was still the Arcade's when Home measured it on the
-   way back). .quest-art and .door-pic carry it on their own rules; a new
-   rule below adds its element here (homestorytest checks every one). */
-#libraryApp,#homeTitle,#homeMap,.map-head,.map-echo,.map-foot,.quest-body,.quest-title,.quest-line,#homeDoors,#trialBanner,.door-word,.door-copy,#foundRow,#foundTitle,#foundList,.found-tile,.found-pic,.found-name{transition:none;}
-html.home-flat,html.home-flat body{height:100%;min-height:0;overflow:hidden;}
-/* the page's foot is the home bar's room and a breath, nothing under the
-   last block (the doors, or "Your games") */
-#libraryApp[data-view="home"]{padding-bottom:calc(14px + env(safe-area-inset-bottom));}
-#libraryApp[data-view="home"] #homeDoors{margin-bottom:0;}
-#libraryApp[data-view="home"] #foundRow{margin:12px 0 0;}
-#libraryApp.fit1 #foundTitle{margin-bottom:4px;font-size:16px;}
-#libraryApp.fit1 .found-tile{width:clamp(104px,30vw,136px);border-radius:15px;}
-#libraryApp.fit1 .found-name{padding:4px 8px 6px;font-size:13px;}
-#libraryApp.fit1 .found-new{top:4px;left:4px;padding:2px 6px;font-size:11px;}
-#libraryApp.fit2 #homeMap{--map-head:54px;--map-foot:42px;margin-top:0;padding-top:4px;}
-#libraryApp.fit2 .map-echo{width:46px;height:53px;margin-top:0;}
-#libraryApp.fit2 #homeTitle{font-size:25px;margin-top:6px;}
-#libraryApp.fit2 #trialBanner{margin-top:10px;}
-#libraryApp.fit3 #homeDoors{margin-top:10px;}
-#libraryApp.fit3 .door-pic{aspect-ratio:5/2;}
-#libraryApp.fit3 .door-copy{padding:6px 11px 7px;}
-#libraryApp.fit3 .door-word{font-size:20px;}
-#libraryApp.fit4 .quest-body{padding:40px 13px 13px 15px;gap:5px;}
-#libraryApp.fit4 .quest-title{font-size:23px;}
-#libraryApp.fit4 .quest-line{font-size:13px;line-height:1.3;}
-#libraryApp.fit5 #foundTitle{position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;}
-#libraryApp.fit6 .quest-body{padding-top:20px;}
-
-@media(min-width:600px){#homeMap{--map-head:84px;--map-foot:50px;max-width:524px;margin:12px auto 0;padding:8px 21px 4px;border-radius:34px;}.map-echo{width:66px;height:76px;}#homeTitle{font-size:40px;margin-top:10px;}#questCard{max-width:480px;margin:0 auto;}.quest-title{font-size:30px;}.quest-line{font-size:16px;}.quest-body{padding:70px 20px 20px 22px;gap:9px;}#homeDoors{gap:16px;margin:18px 0 20px;}#homeDoors>button{flex-direction:row;align-items:center;gap:14px;padding:8px 14px 8px 8px;}.door-pic{width:138px;height:92px;aspect-ratio:auto;border-radius:15px;}.door-copy{padding:0;gap:5px;}.door-word{font-size:26px;}.door-sub{font-size:13px;}}
-@media(max-width:350px){#homeMap{--map-head:64px;margin:4px -10px 0;padding:4px 9px 2px;border-radius:26px;}.map-echo{width:50px;height:57px;}#homeTitle{font-size:26px;}.quest-title{font-size:23px;}.quest-line{font-size:13.5px;}.quest-body{padding:48px 12px 12px 14px;gap:6px;}.quest-head{gap:10px;}#homeDoors{gap:10px;}.door-copy{padding:7px 10px 9px;}.door-word{font-size:19px;}}
-@media(prefers-reduced-motion:reduce){#questCard,#homeDoors>button,#homeBack{transition:none;}#questCard:active,#homeDoors>button:active,#homeBack:active{transform:none;}}
+body.playmap-home{background:linear-gradient(180deg,#eef8ff,#edf8f4 65%,#dfefe4);background-attachment:fixed;}
+body.playmap-home::before{background:#eef8ff;backdrop-filter:none;-webkit-backdrop-filter:none;}
+#libraryApp[data-view="home"]{--ink:#184963;--muted:#526f7b;display:flex;flex-direction:column;max-width:600px;min-height:100svh;height:100svh;padding:calc(15px + env(safe-area-inset-top)) 22px calc(18px + env(safe-area-inset-bottom));}
+#libraryApp[data-view="home"] .library-header{min-height:44px;gap:9px;}
+#libraryApp[data-view="home"] .library-label{display:block;flex:1;font-size:29px;letter-spacing:-1px;}
+#libraryApp[data-view="home"] #buddyBtn{width:44px;height:44px;border:2px solid #fff;background:#eaf3ec;box-shadow:0 2px 0 #d5e7df;}
+#libraryApp[data-view="home"] #giftBtn{width:44px;height:44px;margin-left:0;}
+#libraryApp[data-view="home"] .gift-ring{background:conic-gradient(#176886 calc(var(--fill,0)*1%),#dcebea 0);box-shadow:none;}
+#libraryApp[data-view="home"] .gift-ring::after{inset:3px;background:#fafffd;}
+#libraryApp[data-view="home"] #parentBtn{width:auto;height:44px;min-height:44px;border:1px solid #d5e6e8;border-radius:17px;background:#faffff;box-shadow:none;padding:10px 12px;}
+#libraryApp[data-view="home"] #parentBtn>span:last-child{display:inline;font-size:11px;}
+#libraryApp[data-view="home"] #parentBtn .pic-gear{display:none;}
+.home-only{display:flex;flex-direction:column;flex:1;min-height:0;gap:13px;padding-top:14px;}
+.map-intro{display:flex;align-items:center;justify-content:space-between;gap:12px;flex:none;}
+#homeTitle{margin:0;font:800 32px/1.06 "Baloo 2",sans-serif;letter-spacing:-.8px;color:var(--ink);}
+.home-sound{display:flex;align-items:center;flex:none;gap:8px;max-width:146px;padding:8px 12px;border:1.5px solid #fff;border-radius:17px;background:#ffffffc9;color:#176886;}
+.sound-note{font:800 11px/1.1 Nunito,sans-serif;white-space:nowrap;}
+.sound-value{font:800 23px/1 "Baloo 2",sans-serif;white-space:nowrap;}
+.home-sound.sound-long{gap:6px;padding-left:9px;padding-right:9px;}
+.home-sound.sound-long .sound-value{font-size:19px;}
+.play-map{position:relative;display:flex;flex-direction:column;justify-content:center;gap:13px;flex:1 0 auto;min-height:285px;isolation:isolate;padding:0 9px;}
+.map-trail{position:absolute;inset:-2% -3%;width:106%;height:104%;z-index:-2;pointer-events:none;overflow:visible;}
+.play-map::before{content:"";position:absolute;left:1%;right:1%;top:16%;bottom:12%;border-radius:45% 55% 41% 59%;background:#d6ecdf99;transform:rotate(-5deg);z-index:-3;}
+.map-earned{display:flex;align-items:center;justify-content:space-between;gap:12px;flex:none;min-height:48px;padding:0 14px;}
+#mapHistory{display:flex;align-items:center;gap:27px;margin:0;padding:0;list-style:none;}
+.map-star{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:44px;}
+.map-star-icon{display:flex;align-items:center;justify-content:center;}
+.map-star-label{font:900 11px/1 Nunito,sans-serif;color:#496e76;white-space:nowrap;}
+#mapHistoryCount{max-width:102px;font:800 11px/1.25 Nunito,sans-serif;color:#526f7b;text-align:right;}
+#questCard{position:relative;display:block;flex:1;width:100%;min-height:205px;max-height:none;margin:0;padding:0;overflow:hidden;border:4px solid #fff;border-radius:29px;background:#dbeee5;color:#fff;box-shadow:0 5px 0 #b9d6cb;cursor:pointer;text-align:left;isolation:isolate;}
+.quest-body{display:block;position:absolute;inset:0;}
+.quest-art,.quest-pic{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;}
+.quest-pic img{display:block;width:100%;height:100%;object-fit:cover;}
+.quest-pic svg{width:55%;height:75%;}
+.quest-art.fallback .quest-pic img{width:82%;height:90%;object-fit:contain;}
+.quest-copy{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:flex-end;gap:4px;padding:42px 14px 65px;background:linear-gradient(180deg,#123b4b00 20%,#123b4b14 38%,#123b4bdb 75%,#123b4bea);color:white;}
+.quest-meta{position:absolute;left:12px;right:12px;top:11px;display:flex;align-items:center;gap:7px;flex-wrap:wrap;}
+.quest-label,.quest-chip,.quest-lock{padding:4px 7px;border-radius:9px;background:#fffef4ed;color:#235567;font:900 11px/1.1 Nunito,sans-serif;white-space:nowrap;}
+.quest-label{letter-spacing:.4px;}
+.quest-chip{margin-left:auto;}
+.quest-lock{color:#6f5937;}
+.quest-title{display:block;font:800 27px/1 "Baloo 2",sans-serif;letter-spacing:-.4px;text-shadow:0 1px 2px #123b4b33;}
+.quest-line{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font:800 12px/1.25 Nunito,sans-serif;color:#fff;}
+.quest-go,#questDone{position:absolute;left:12px;right:12px;bottom:12px;display:flex;align-items:center;justify-content:center;gap:10px;min-height:44px;padding:10px 13px;border-radius:16px;background:#176886;color:white;box-shadow:0 3px 0 #0c4d6b;font:800 19px/1 "Baloo 2",sans-serif;white-space:nowrap;}
+.quest-arrow{font:800 25px/1 Nunito,sans-serif;}
+#questCard:active .quest-go{transform:translateY(2px);box-shadow:0 1px 0 #0c4d6b;}
+#questCard.done{cursor:default;box-shadow:0 4px 0 #b9cfca;}
+#questCard.done .quest-art{filter:grayscale(.7) brightness(.4);}
+#questCard.done .quest-copy{background:linear-gradient(180deg,#173e4d15,#173e4d6b 40%,#173e4de8 100%);}
+#questCard.done .quest-label{background:#dae7e6;color:#31505c;}
+#questDone{background:#173f50;box-shadow:none;font-size:17px;}
+.map-lock-icon{display:flex;align-items:center;justify-content:center;}
+.map-tomorrow{display:flex;align-items:center;align-self:flex-end;flex:none;gap:8px;min-height:39px;padding-right:7px;color:#456676;}
+.tomorrow-lock{display:flex;align-items:center;justify-content:center;width:35px;height:35px;border:2px solid #fff;border-radius:50%;background:#254e60;color:#d4e3e5;box-shadow:0 2px 0 #bfd3ce;}
+.map-tomorrow>span:last-child{display:flex;flex-direction:column;gap:3px;}
+.map-tomorrow strong{font:800 15px/1 "Baloo 2",sans-serif;}
+.map-tomorrow>span>span{font:800 11px/1.1 Nunito,sans-serif;color:#526f7b;}
+#homeDoors{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;flex:none;margin:0 2px;}
+#homeDoors>button{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;min-width:0;min-height:112px;padding:9px 8px;border:2px solid #fff;border-radius:29px;background:#f9fffc;color:var(--ink);box-shadow:0 4px 0 #c9e2d4;text-align:left;cursor:pointer;}
+.door-pic{position:relative;display:flex;align-items:center;justify-content:center;width:82px;height:54px;overflow:hidden;border-radius:18px;background:#e6eee6;}
+.door-pic img{display:block;width:100%;height:100%;object-fit:cover;}
+.door-pic.fallback img{width:85%;height:90%;object-fit:contain;}
+.door-pic>.stk{position:relative!important;inset:auto!important;width:auto;height:88%;aspect-ratio:1;background:transparent!important;}
+.door-copy{display:flex;align-items:center;gap:6px;}
+.door-word{font:800 24px/1 "Baloo 2",sans-serif;letter-spacing:-.3px;}
+.door-arrow{font:700 18px/1 Nunito,sans-serif;color:#72968d;}
+.door-tag{position:absolute;right:6px;top:6px;padding:3px 5px;border:1px solid #fff9;border-radius:8px;background:#fff9ebed;color:#675e37;font:900 11px/1.1 Nunito,sans-serif;}
+#homeDoors>button:active{transform:translateY(2px);box-shadow:0 2px 0 #c9e2d4;}
+#foundRow{flex:none;margin:0;min-width:0;}
+#foundTitle{margin:0 0 6px;font:800 17px/1 "Baloo 2",sans-serif;color:var(--ink);}
+#foundList{display:flex;gap:9px;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x proximity;scroll-padding-inline:7px;padding:7px;margin:-5px -7px -7px;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+#foundList::-webkit-scrollbar{display:none;}
+.found-tile{display:flex;align-items:center;flex:none;gap:8px;width:166px;min-height:52px;padding:5px;border:1px solid #d8e8df;border-radius:15px;scroll-snap-align:start;background:#fff;color:var(--ink);font:inherit;text-align:left;cursor:pointer;}
+.found-pic{position:relative;display:block;flex:none;width:58px;height:40px;overflow:hidden;border-radius:10px;background:#e7eee6;}
+.found-pic img{display:block;width:100%;height:100%;object-fit:cover;}
+.found-pic.fallback img{width:85%;height:90%;margin:auto;object-fit:contain;}
+.found-name{font:800 14px/1.12 "Baloo 2",sans-serif;}
+.found-new{position:absolute;left:2px;top:2px;border-radius:5px;padding:2px 4px;background:#176886;color:#fff;font:900 11px/1 Nunito,sans-serif;}
+.found-tile.fresh{border-color:#75a99b;box-shadow:0 0 0 1px #75a99b;}
+.found-tile:active{transform:translateY(1px);}
+#homeInset{position:absolute;left:0;bottom:0;width:0;height:env(safe-area-inset-bottom);visibility:hidden;pointer-events:none;}
+#libraryApp[data-view="home"] #trialBanner{margin-top:9px;min-height:44px;padding:5px 9px;gap:7px;border-color:#dce8df;border-radius:14px;background:#eff6ec;box-shadow:none;color:#4d6a56;font-size:11px;}
+#libraryApp[data-view="home"] #trialBanner .tb-echo{width:28px;height:28px;}
+#libraryApp[data-view="home"] #trialBanner .tb-pill{display:none;}
+/* Fit spends picture height and decorative gaps before text or controls. */
+#libraryApp.fit1 .home-only{gap:10px;padding-top:11px;}
+#libraryApp.fit1 .play-map{gap:10px;min-height:265px;}
+#libraryApp.fit1 #homeDoors>button{min-height:98px;padding:7px;}
+#libraryApp.fit1 .door-pic{height:45px;width:76px;}
+#libraryApp.fit2 #questCard{min-height:182px;}
+#libraryApp.fit2 .play-map{min-height:242px;gap:9px;}
+#libraryApp.fit2 #homeDoors>button{min-height:87px;border-radius:24px;}
+#libraryApp.fit2 .door-pic{height:38px;width:68px;border-radius:14px;}
+#libraryApp.fit2 .door-word{font-size:22px;}
+#libraryApp.fit3 .home-only{gap:8px;padding-top:8px;}
+#libraryApp.fit3 #homeTitle{font-size:29px;}
+#libraryApp.fit3 .home-sound{padding:6px 9px;}
+#libraryApp.fit3 .play-map{min-height:224px;gap:7px;padding-left:6px;padding-right:6px;}
+#libraryApp.fit3 #questCard{min-height:168px;border-radius:23px;}
+#libraryApp.fit3 .quest-title{font-size:23px;}
+#libraryApp.fit3 .quest-copy{padding-left:11px;padding-right:11px;}
+#libraryApp.fit3 .map-earned{min-height:44px;padding:0 9px;}
+#libraryApp.fit3 #homeDoors>button{min-height:78px;padding:6px;gap:3px;}
+#libraryApp.fit3 .door-pic{height:33px;width:62px;border-radius:12px;}
+#libraryApp.fit3 .door-word{font-size:21px;}
+#libraryApp.fit4 .home-only{gap:7px;padding-top:6px;}
+#libraryApp.fit4 #homeTitle{font-size:27px;}
+#libraryApp.fit4 .play-map{min-height:205px;gap:6px;}
+#libraryApp.fit4 #questCard{min-height:166px;border-width:3px;}
+#libraryApp.fit4 .quest-meta{top:7px;left:9px;right:9px;gap:4px;}
+#libraryApp.fit4 .quest-label,#libraryApp.fit4 .quest-chip,#libraryApp.fit4 .quest-lock{padding:3px 5px;}
+#libraryApp.fit4 .quest-copy{padding:33px 10px 58px;gap:2px;}
+#libraryApp.fit4 .quest-title{font-size:21px;}
+#libraryApp.fit4 .quest-line{font-size:11px;line-height:1.2;}
+#libraryApp.fit4 .quest-go,#libraryApp.fit4 #questDone{left:9px;right:9px;bottom:8px;font-size:17px;padding:9px;}
+#libraryApp.fit4 .map-earned{min-height:39px;}
+#libraryApp.fit4 .map-star-icon svg{width:26px;height:26px;}
+#libraryApp.fit4 .map-tomorrow{min-height:32px;gap:6px;}
+#libraryApp.fit4 .tomorrow-lock{width:30px;height:30px;}
+#libraryApp.fit4 .map-tomorrow strong{font-size:13px;}
+#libraryApp.fit4 #foundTitle{font-size:15px;margin-bottom:4px;}
+#libraryApp.fit4 .found-tile{min-height:46px;}
+#libraryApp.fit4 .found-pic{height:34px;width:50px;}
+#libraryApp.fit4 .found-name{font-size:13px;}
+#libraryApp.fit5{padding-top:calc(8px + env(safe-area-inset-top));padding-bottom:calc(8px + env(safe-area-inset-bottom));}
+#libraryApp.fit5 .home-only{gap:5px;padding-top:4px;}
+#libraryApp.fit5 #homeTitle{font-size:25px;}
+#libraryApp.fit5 .home-sound{padding:5px 8px;gap:6px;}
+#libraryApp.fit5 .sound-value{font-size:21px;}
+#libraryApp.fit5 .play-map{min-height:189px;gap:5px;}
+#libraryApp.fit5 #questCard{min-height:166px;border-radius:20px;}
+#libraryApp.fit5 .quest-title{font-size:20px;}
+#libraryApp.fit5 #homeDoors>button{min-height:68px;padding:4px;border-radius:21px;gap:2px;}
+#libraryApp.fit5 .door-pic{width:55px;height:27px;border-radius:10px;}
+#libraryApp.fit5 .door-word{font-size:20px;}
+#libraryApp.fit5 #foundTitle{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
+/* The last fit step leaves room for a two-line finished-day message. */
+#libraryApp.fit6 .quest-copy{padding-top:20px;}
+#libraryApp,.home-only,.map-intro,#homeTitle,.home-sound,.home-sound *,.play-map,.play-map *,#homeDoors,#homeDoors *,#foundRow,#foundRow *,#trialBanner,#trialBanner *{transition:none;}
+@media(min-width:600px){
+ #libraryApp[data-view="home"]{max-width:780px;padding-left:42px;padding-right:42px;}
+ #libraryApp[data-view="home"] .library-label{font-size:34px;}
+ #libraryApp[data-view="home"] #parentBtn{width:auto;gap:7px;padding:10px 14px;border-radius:17px;}
+ #libraryApp[data-view="home"] #parentBtn>span:last-child{display:inline;font-size:12px;}
+ .home-only{gap:17px;padding-top:19px;}
+ #homeTitle{font-size:40px;}
+ .home-sound{gap:10px;padding:10px 14px;}
+ .sound-value{font-size:27px;}
+ .play-map{padding-left:34px;padding-right:34px;gap:15px;}
+ #questCard{min-height:260px;max-height:none;border-radius:32px;}
+ .quest-title{font-size:35px;}
+ .quest-line{font-size:14px;}
+ .quest-copy{padding:50px 20px 75px;gap:6px;}
+ .quest-go,#questDone{left:18px;right:18px;bottom:17px;min-height:48px;font-size:21px;}
+ .map-earned{padding:0 29px;}
+ #mapHistory{gap:46px;}
+ .map-star-icon svg{width:38px;height:38px;}
+ .map-tomorrow{padding-right:22px;}
+ #homeDoors{gap:22px;}
+ #homeDoors>button{flex-direction:row;gap:15px;min-height:100px;}
+ .door-pic{width:99px;height:66px;}
+ .door-word{font-size:28px;}
+ .found-tile{width:190px;min-height:58px;}
+ .found-pic{width:70px;height:44px;}
+ .found-name{font-size:16px;}
+}
+@media(min-width:760px) and (max-height:850px),(min-width:600px) and (max-height:550px){
+ #libraryApp[data-view="home"]{max-width:1000px;}
+ .home-only{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto;gap:14px 25px;}
+ .map-intro{grid-column:1/-1;grid-row:1;}
+ .play-map{grid-column:1;grid-row:2;padding:0 10px;min-height:0;}
+ #questCard{min-height:220px;max-height:none;}
+ #homeDoors{grid-column:2;grid-row:2;display:flex;flex-direction:column;gap:18px;margin:0;justify-content:center;}
+ #homeDoors>button{flex-direction:column;min-height:130px;}
+ .door-pic{width:125px;height:72px;}
+ #foundRow{grid-column:1/-1;grid-row:3;}
+ .quest-title{font-size:29px;}
+}
+@media(max-width:350px){#libraryApp[data-view="home"]{padding-left:16px;padding-right:16px;}.library-label{font-size:27px!important;}#homeTitle{font-size:28px;}.home-sound{gap:6px;padding:7px 9px;}.sound-value{font-size:22px;}.sound-note{font-size:11px;}.home-sound.sound-long{gap:4px;padding-left:6px;padding-right:6px;}.home-sound.sound-long .sound-value{font-size:17px;}.quest-title{font-size:24px;}.door-tag{right:4px;top:4px;padding:2px 4px;}}
+@media(prefers-reduced-motion:reduce){#questCard:active .quest-go,#homeDoors>button:active,.found-tile:active,#homeBack:active{transform:none;}.gift-dot{animation:none;}}

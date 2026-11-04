@@ -376,8 +376,6 @@ for (const [game, title, art] of SKIES) {
   }
   ok("Play Studio setup actions are coral, at rest and pressed, without changing other pages' teal", notCoral.length === 0, notCoral.join(" | "));
   const SECOND = [["arcade-hoops.html", ["#goHome", "#primerNo"]], ["arcade-bubbles.html", ["#goHome", "#primerNo"]], ["arcade-soccer.html", ["#goHome", "#primerNo"]], ["arcade-dino.html", ["#goHome", "#primerNo"]], ["arcade-feed.html", ["#goHome", "#primerNo"]], ...ARCADE.map((f) => [f, ["#endHome", "#revDone"]]), ["settings.html", ["button.btn.ghost"]],
-    // the bookshelf's "More books" (1 Oct 2026) opens a second shelf: a second choice
-    ["library.html", ["#moreBtn"]],
     // the daily story: the player's Hear it, "Watch the story again", the ✕
     // and the grown-ups' Skip; each game's "Not now" and "Hear what to do".
     // Not a story game's #goHome: its end card turns it into the teal "See

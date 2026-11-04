@@ -22,6 +22,10 @@
     body::before{content:"";position:fixed;left:0;right:0;top:0;height:env(safe-area-inset-top);background:rgba(255,247,236,.86);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);z-index:30;pointer-events:none;}
     .shelfhead{display:flex;align-items:center;gap:10px;margin:18px 2px 8px;}
     .shelfhead h2{margin:0;}
+    .library-sound{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:20px 0 12px;}
+    .library-sound-caption{font-weight:800;color:var(--muted);font-size:13px;}
+    .library-sound strong{display:inline-block;border:1px solid var(--cream-line);border-radius:99px;background:var(--cream-card);color:var(--cream-ink);padding:5px 11px;font-size:14px;line-height:1.35;font-weight:800;}
+    .library-sound p{width:100%;margin:0;font-size:13px;line-height:1.4;color:var(--muted);}
     /* warm tag pair (fix pack 1c) — the green pair was legacy Duolingo chrome */
     .shelfhead .tag{font-size:11px;font-weight:800;color:#7a5200;background:#ffe7c4;border-radius:99px;padding:3px 9px;}
     /* story shelf (D1): covers standing on rails — no gradient buttons */
@@ -53,17 +57,6 @@
     #bookUnlock{display:block;min-height:44px;margin-top:8px;border:0;border-radius:999px;padding:9px 18px;background:linear-gradient(180deg,var(--act-hi),var(--act));box-shadow:0 4px 0 var(--act-d);text-shadow:0 1px 0 var(--act-d);color:#fff;font:inherit;font-weight:800;cursor:pointer;}
     #bookMessageClose{flex:none;width:36px;height:36px;border:0;border-radius:50%;background:#fff0d8;color:var(--ink);font-size:23px;cursor:pointer;}
     .bookBtn .doneStar{position:absolute;top:-7px;left:2px;z-index:2;filter:drop-shadow(0 2px 2px rgba(120,60,10,.3));}
-    /* MORE BOOKS: the closed control under the child's own shelf. Its colours
-       are action.css's cream pill (a second choice); only its size and place
-       are set here: tall and full width, because a small finger presses it. */
-    #moreBtn{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;min-height:56px;margin:26px 0 6px;padding:0 22px;font-size:18px;line-height:1.2;
-      scroll-margin-top:calc(14px + env(safe-area-inset-top));}
-    #moreBtn .chev{width:18px;height:18px;flex:none;transition:transform .2s;}
-    #moreBtn[aria-expanded="true"] .chev{transform:rotate(180deg);}
-    #moreBooks .shelfhead{margin-top:22px;}
-    /* a small finger taps twice: for a beat after More books opens or closes,
-       nothing on the page takes a tap (see MORE BOOKS in the script) */
-    .wrap.settling{pointer-events:none;}
     /* word box */
     .wcard{border:2px solid var(--line);border-bottom-width:4px;background:#fff;border-radius:16px;padding:14px 6px 10px;cursor:pointer;
       display:flex;flex-direction:column;align-items:center;gap:5px;transition:transform .06s;}
@@ -241,18 +234,13 @@
       <span id="advSub" style="display:block;font-weight:800;font-size:12px;color:rgba(255,255,255,.85);margin-top:2px;">A brand-new story, written just for you — never the same twice</span></span>
     </button>
 
-    <div class="shelfhead"><h2>Sound stories</h2><span class="tag">ECHO READS</span></div>
-    <div class="shelf" id="shelf"></div>
-
-    <!-- MORE BOOKS (Travis, 1 Oct 2026): every other sound's book, closed up
-         under the child's own shelf until this is tapped; a second tap closes
-         it. Closed on every load, and not shown when nothing is behind it.
-         The books are put on #moreShelf the first time it opens. -->
-    <button id="moreBtn" class="cream-pill" type="button" aria-expanded="false" aria-controls="moreBooks" hidden><span id="moreLabel">More books</span><svg class="chev" viewBox="0 0 20 20" aria-hidden="true"><path d="M4 7.5l6 6 6-6" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-    <div id="moreBooks" role="region" aria-labelledby="moreHead" hidden>
-      <div class="shelfhead"><h2 id="moreHead">Books for other sounds</h2></div>
-      <div class="shelf" id="moreShelf"></div>
+    <div class="library-sound" id="librarySoundBox" hidden>
+      <span class="library-sound-caption">Current sound</span>
+      <strong id="librarySoundValue"></strong>
+      <p id="librarySoundNote"></p>
     </div>
+    <div class="shelfhead"><h2 id="bookSoundHeading">Sound stories</h2><span class="tag">ECHO READS</span></div>
+    <div class="shelf" id="shelf"></div>
 
     <!-- A Premium book asks for a grown-up, the way a Premium game on Home
          does: the child is never sent to a price, and the grown-up finds it
@@ -1050,6 +1038,95 @@
         { e: "🦋", t: "A butterfly flies fast — wow!" },
         { e: "🎉", t: "Fifi has fun with her friends." },
         { e: "👋", t: "Fifi waves: farewell, farewell!" } ] },
+      // Append new books so a saved numeric book link keeps its meaning.
+      // Rachel's review draft: eight pages using existing initial B-bank
+      // targets, under the unchanged book age, voicing and play-rep rules.
+      { sound: "B", emoji: "🐻", title: "Bear's Lost Ball", colors: ["#6ec3ff", "#3d9be0"],
+        cover: "/assets/books/bear-lost-ball/cover.webp", coverAlt: "Bear holds his red ball beside a friendly bee in a sunny park.",
+        keys: ["bear", "ball", "bus", "boat", "bee", "ball", "bee", "bed"],
+        words: ["ball", "bear", "bear's", "bed", "bee", "big", "boat", "bounces", "bus", "by"], pages: [
+        { e: "🐻", t: "Bear has a big red ball.", art: "/assets/books/bear-lost-ball/p01.webp", alt: "Bear holds a red ball with a cream stripe beside a river in the park." },
+        { e: "🔴", t: "The ball bounces away!", art: "/assets/books/bear-lost-ball/p02.webp", alt: "The red ball bounces away as Bear reaches after it." },
+        { e: "🚌", t: "Bear looks by the bus.", art: "/assets/books/bear-lost-ball/p03.webp", alt: "Bear looks beside a parked teal bus, but the ball is not there." },
+        { e: "⛵", t: "Bear looks by the boat.", art: "/assets/books/bear-lost-ball/p04.webp", alt: "Bear looks beside a red rowboat on the river bank, but the ball is not there." },
+        { e: "🐝", t: "A bee finds the ball!", art: "/assets/books/bear-lost-ball/p05.webp", alt: "A friendly bee finds the red ball in the grass while Bear cheers." },
+        { e: "🔴", t: "Bear bounces the ball.", art: "/assets/books/bear-lost-ball/p06.webp", alt: "Bear happily bounces his red ball on the sunny park path." },
+        { e: "🐝", t: "Bear and the bee play ball.", art: "/assets/books/bear-lost-ball/p07.webp", alt: "Bear and the friendly bee play with the red ball on the grass." },
+        { e: "🛏️", t: "Bear takes his ball to bed.", art: "/assets/books/bear-lost-ball/p08.webp", alt: "Bear sleeps in bed with his red ball safely beside him." } ] },
+      // Eight-page sound books (Travis, 30 Oct 2026); Rachel reviews each
+      // line, picture and existing-bank key before release. Append only.
+      { sound: "R", emoji: "🚀", title: "Rabbit and the Rocket", colors: ["#ff7a6e", "#8a6fc4"],
+        cover: "/assets/books/rabbit-rocket-rescue/cover.webp", coverAlt: "Rabbit and a friendly blue robot proudly hold a small toy rocket beside a muddy patch.",
+        keys: ["rabbit", "rocket", "rabbit", "robot", "rock", "rabbit", "robot", "rocket"],
+        words: ["rabbit", "robot", "rock", "rocket"], pages: [
+        { e: "🚀", t: "Rabbit has a toy rocket.", art: "/assets/books/rabbit-rocket-rescue/p01.webp", alt: "Rabbit holds a small red-and-cream toy rocket beside a muddy patch." },
+        { e: "🚀", t: "The rocket is stuck in mud.", art: "/assets/books/rabbit-rocket-rescue/p02.webp", alt: "The toy rocket is stuck upright in shallow mud." },
+        { e: "🚀", t: "Rabbit gives it a tug.", art: "/assets/books/rabbit-rocket-rescue/p03.webp", alt: "Rabbit tugs at the rocket from the dry edge of the mud." },
+        { e: "🚀", t: "A robot comes to help.", art: "/assets/books/rabbit-rocket-rescue/p04.webp", alt: "A friendly blue robot arrives to help Rabbit." },
+        { e: "🚀", t: "The robot puts a rock by the mud.", art: "/assets/books/rabbit-rocket-rescue/p05.webp", alt: "The robot places a low, rounded tan rock beside the mud." },
+        { e: "🚀", t: "Rabbit hops onto the rock.", art: "/assets/books/rabbit-rocket-rescue/p06.webp", alt: "Rabbit stands safely on the low rock beside the rocket." },
+        { e: "🚀", t: "The robot and Rabbit give a big tug.", art: "/assets/books/rabbit-rocket-rescue/p07.webp", alt: "Rabbit and the robot pull the toy rocket together." },
+        { e: "🚀", t: "Up comes the rocket! Rabbit is so happy.", art: "/assets/books/rabbit-rocket-rescue/p08.webp", alt: "Rabbit and the robot happily hold the rescued toy rocket on dry ground." } ] },
+      { sound: "S", emoji: "🧦", title: "Seal and the Sock", colors: ["#62bdff", "#46a6ec"],
+        cover: "/assets/books/seal-sandy-sock/cover.webp", coverAlt: "A cream-gray seal happily holds a clean yellow sock with a teal cuff.",
+        keys: ["seal", "sock", "seal", "sand", "seal", "sock", "sun", "sock"],
+        words: ["sand", "seal", "sock", "sun"], pages: [
+        { e: "🧦", t: "A seal has a sock.", art: "/assets/books/seal-sandy-sock/p01.webp", alt: "A cream-gray seal holds a yellow sock with a teal cuff." },
+        { e: "🧦", t: "The sock is full of sand.", art: "/assets/books/seal-sandy-sock/p02.webp", alt: "The seal peers into the sock, which contains a little sand." },
+        { e: "🧦", t: "The seal gives it a shake.", art: "/assets/books/seal-sandy-sock/p03.webp", alt: "The seal shakes sand out of the upside-down sock." },
+        { e: "🧦", t: "Sand goes on the seal!", art: "/assets/books/seal-sandy-sock/p04.webp", alt: "A little sand lands on the surprised seal's head." },
+        { e: "🧦", t: "The seal can dunk the sock in a tub.", art: "/assets/books/seal-sandy-sock/p05.webp", alt: "The seal dips the yellow sock into a shallow tub of water." },
+        { e: "🧦", t: "The sock is wet and heavy.", art: "/assets/books/seal-sandy-sock/p06.webp", alt: "The damp sock droops above the tub, dripping water." },
+        { e: "🧦", t: "The seal hangs it in the sun.", art: "/assets/books/seal-sandy-sock/p07.webp", alt: "The seal clips the sock onto a low line in the warm sun." },
+        { e: "🧦", t: "The sock is dry. The seal can put it on.", art: "/assets/books/seal-sandy-sock/p08.webp", alt: "The seal proudly wears the dry sock on one front flipper." } ] },
+      { sound: "L", emoji: "🔒", title: "Lion and the Lock", colors: ["#ffd45e", "#f0bb33"],
+        cover: "/assets/books/lion-locked-box/cover.webp", coverAlt: "A golden lion cub holds a key beside a teal box with a gold lock.",
+        keys: ["lion", "lock", "lion", "lemon", "leaf", "lamp", "lamp", "lock"],
+        words: ["lamp", "leaf", "lemon", "lion", "lock"], pages: [
+        { e: "🔒", t: "A lion has a box with a lock.", art: "/assets/books/lion-locked-box/p01.webp", alt: "A golden lion cub points to the lock on a small teal box." },
+        { e: "🔒", t: "The lock needs a key.", art: "/assets/books/lion-locked-box/p02.webp", alt: "The lion looks at the closed gold lock and its keyhole." },
+        { e: "🔒", t: "The lion peeks into a bag.", art: "/assets/books/lion-locked-box/p03.webp", alt: "The lion peeks into a cream bag beside the locked box." },
+        { e: "🔒", t: "A lemon! No key.", art: "/assets/books/lion-locked-box/p04.webp", alt: "The lion finds a yellow lemon in the bag instead of a key." },
+        { e: "🔒", t: "The lion peeks under a leaf.", art: "/assets/books/lion-locked-box/p05.webp", alt: "The lion lifts a broad green leaf and looks underneath." },
+        { e: "🔒", t: "No key. The lion turns on a lamp.", art: "/assets/books/lion-locked-box/p06.webp", alt: "The lion switches on a small cream lamp with a teal base." },
+        { e: "🔒", t: "A key is by the lamp!", art: "/assets/books/lion-locked-box/p07.webp", alt: "The lion spots a gold key beside the lamp in its warm light." },
+        { e: "🔒", t: "Pop! The lock is open. A tiny teddy is inside!", art: "/assets/books/lion-locked-box/p08.webp", alt: "The lock is open and the lion finds a tiny brown teddy inside the box." } ] },
+      { sound: "SH", emoji: "🚢", title: "Sheep and the Ship", colors: ["#c08cf0", "#a86fe0"],
+        cover: "/assets/books/sheep-ship-rescue/cover.webp", coverAlt: "A fluffy sheep holds a toy ship beside a teal shoe and a garden puddle.",
+        keys: ["sheep", "ship", "sheep", "shoe", "sheep", "shoe", "ship", "ship"],
+        words: ["sheep", "ship", "shoe"], pages: [
+        { e: "🚢", t: "A sheep has a toy ship.", art: "/assets/books/sheep-ship-rescue/p01.webp", alt: "A fluffy sheep holds a small red-and-cream toy ship." },
+        { e: "🚢", t: "The ship is in a big puddle.", art: "/assets/books/sheep-ship-rescue/p02.webp", alt: "The toy ship floats in a garden puddle just beyond the sheep's reach." },
+        { e: "🚢", t: "The sheep has no boat.", art: "/assets/books/sheep-ship-rescue/p03.webp", alt: "The sheep looks at the toy ship with empty paws." },
+        { e: "🚢", t: "A shoe can be a boat!", art: "/assets/books/sheep-ship-rescue/p04.webp", alt: "The sheep notices a large teal shoe beside the puddle." },
+        { e: "🚢", t: "The sheep puts the shoe in the puddle.", art: "/assets/books/sheep-ship-rescue/p05.webp", alt: "The sheep pushes the teal shoe onto the puddle like a little boat." },
+        { e: "🚢", t: "The shoe bumps the ship.", art: "/assets/books/sheep-ship-rescue/p06.webp", alt: "The floating shoe gently nudges the toy ship toward the dry edge." },
+        { e: "🚢", t: "The sheep picks up the ship.", art: "/assets/books/sheep-ship-rescue/p07.webp", alt: "The sheep lifts the toy ship out of the puddle." },
+        { e: "🚢", t: "The ship is safe and dry.", art: "/assets/books/sheep-ship-rescue/p08.webp", alt: "The sheep hugs the dry toy ship on a towel beside the shoe." } ] },
+      { sound: "CH", emoji: "🧺", title: "Chicken and the Picnic", colors: ["#ff9446", "#ef7d2c"],
+        cover: "/assets/books/chicken-picnic/cover.webp", coverAlt: "A russet-red hen and a white bunny share a picnic on a red gingham cloth.",
+        keys: ["chicken", "cheese", "cherry", "chocolate", "chair", "chair", "chicken", "cheese"],
+        words: ["chair", "cheese", "cherry", "chicken", "chocolate"], pages: [
+        { e: "🧺", t: "A chicken has a big picnic.", art: "/assets/books/chicken-picnic/p01.webp", alt: "A russet-red hen stands beside a picnic bag and folded gingham cloth." },
+        { e: "🧺", t: "The chicken puts cheese in a bag.", art: "/assets/books/chicken-picnic/p02.webp", alt: "The hen puts a cheese wedge into the cream picnic bag." },
+        { e: "🧺", t: "A cherry goes in, too.", art: "/assets/books/chicken-picnic/p03.webp", alt: "The hen adds a small cup of prepared cherry halves to the bag." },
+        { e: "🧺", t: "In goes a bit of chocolate.", art: "/assets/books/chicken-picnic/p04.webp", alt: "The hen adds a little piece of chocolate to the picnic bag." },
+        { e: "🧺", t: "The chicken puts the bag on a chair.", art: "/assets/books/chicken-picnic/p05.webp", alt: "The hen sets the full picnic bag on a low teal chair." },
+        { e: "🧺", t: "Oh no! The chair tips.", art: "/assets/books/chicken-picnic/p06.webp", alt: "The low chair tips and the picnic bag slides toward the hen." },
+        { e: "🧺", t: "The chicken grabs the bag!", art: "/assets/books/chicken-picnic/p07.webp", alt: "The hen safely catches the bag before it reaches the ground." },
+        { e: "🧺", t: "The chicken and a pal eat the cheese.", art: "/assets/books/chicken-picnic/p08.webp", alt: "The hen and a white bunny share cheese on the picnic cloth." } ] },
+      { sound: "TH", emoji: "🎨", title: "My Thumb Paints a Gift", colors: ["#a7b4ff", "#7a88e6"],
+        cover: "/assets/books/thumb-paint-gift/cover.webp", coverAlt: "A child proudly holds a card with a blue-and-pink thumbprint butterfly.",
+        keys: ["think", "thumb", "thumb", "think", "thumb", "thumb", "think", "thumb"],
+        words: ["think", "thumb"], forbid: ["DH"], pages: [
+        { e: "🎨", t: "I think I can make a gift.", art: "/assets/books/thumb-paint-gift/p01.webp", alt: "A child has an idea for a gift at a craft table." },
+        { e: "🎨", t: "I dip my thumb in blue paint.", art: "/assets/books/thumb-paint-gift/p02.webp", alt: "The child dips a thumb into blue paint." },
+        { e: "🎨", t: "My thumb makes a dot.", art: "/assets/books/thumb-paint-gift/p03.webp", alt: "A blue thumbprint appears on a white card." },
+        { e: "🎨", t: "I think it needs a buddy.", art: "/assets/books/thumb-paint-gift/p04.webp", alt: "The child looks thoughtfully at the single blue thumbprint." },
+        { e: "🎨", t: "I dip my thumb in pink paint.", art: "/assets/books/thumb-paint-gift/p05.webp", alt: "The child dips a clean thumb into pink paint." },
+        { e: "🎨", t: "My thumb makes a pink dot.", art: "/assets/books/thumb-paint-gift/p06.webp", alt: "A pink thumbprint appears beside the blue one." },
+        { e: "🎨", t: "I think of a butterfly.", art: "/assets/books/thumb-paint-gift/p07.webp", alt: "The child adds a body and antennae to make a blue-and-pink butterfly." },
+        { e: "🎨", t: "My thumb made a butterfly! A gift for Mom.", art: "/assets/books/thumb-paint-gift/p08.webp", alt: "The child proudly gives the butterfly card to Mom." } ] },
     ];
 
     /* ---- speech (no scoring, just listening) ---- */
@@ -1188,47 +1265,34 @@
     function readable(st){ return bookOpen(st) && !LOCKED[st.title]; }
 
     /* ---- shelf ---- */
-    // BOOKS1: the shelf holds the child's OWN sounds. A library full of books
-    // for sounds nobody is working on is a library a child scrolls past — and
-    // for a kid on /r/, a Theo-the-Sloth /th/ book is practice they were never
-    // assigned. That is still why the other sounds' books are CLOSED when the
-    // page opens (Travis, 1 Oct 2026: "less easy to find or less in your face
-    // ... the kids just seeing books based on their letter/s"). They are not
-    // out of reach, though (Travis, the same day: "the other ones ... they're
-    // still there, but like closed up ... there's like a button you can press
-    // to like drop down and then it shows the books for the other letters"):
-    // every in-season book this shelf leaves off waits behind "More books",
-    // under it (MORE, below). WHICH books the shelf holds is chosen exactly
-    // as before; their ORDER now starts with the sound practice is on (see
-    // focusOrder, below). Two escape hatches, because an empty shelf is
-    // worse than an unfocused one:
-    //   - play mode (PLAY1) rotates every sound, so it gets the whole shelf
-    //   - if a filter would leave nothing this child can read, show every
-    //     readable book first (for a family without Premium, the free one),
-    //     then the child's own, Premium or coming (a shelf of grey is worse
-    //     than either)
-    // A limited-time book (season: {startsOn, endsOn}, Travis, 1 Oct 2026:
-    // "put a halloween book in limited time") is on the shelf for its window
-    // and on nobody's outside it. Halloween has one for several sounds (2 Oct
-    // 2026: "make a version for other letter"), so a child gets the one in
-    // their own sound, and a child whose sounds have none gets the one marked
-    // anySound (Boo the Bat): Sona.seasonPick (Home's Limited time row asked
-    // it too, until the Arcade lost its books on 23 Oct 2026).
+    // A selected sound is a whole shelf, like a selected language (Travis,
+    // 30 Oct 2026). Do not add other sounds through a free-book or holiday
+    // fallback. No selected sound, or unpinned play mode, may browse them all.
+    // Season windows still decide which matching books are available today.
     function inSeason(st){ var d = todayLocal(); return !st.season || (st.season.startsOn <= d && d <= st.season.endsOn); }
     STORIES = STORIES.filter(inSeason);
     var ALL_STORIES = STORIES.slice();
     var focusOrder = (profile.focusSounds || []).map(function (x) { return String(x).toUpperCase(); });
     var playMode = false; try { playMode = !!(window.Sona && Sona.playMode && Sona.playMode()); } catch (e) {}
-    // With more than one sound, the one practice is on now leads: its books
-    // are first on the shelf (inside "readable, then Premium", below). Only
-    // the order moves: a sound that is not one of the child's own (an SLP's
-    // homework can name one) is left alone, and brings no books up here.
-    try { var nowSnd = window.Sona && Sona.rotSound && Sona.rotSound(); if (nowSnd && focusOrder.indexOf(String(nowSnd).toUpperCase()) > 0) { focusOrder.splice(focusOrder.indexOf(String(nowSnd).toUpperCase()), 1); focusOrder.unshift(String(nowSnd).toUpperCase()); } } catch (e) {}
+    var assignedSounds = Sona.homeworkSounds ? Sona.homeworkSounds() : [];
+    var currentSound = Sona.targetSound ? Sona.targetSound() : (Sona.rotSound ? Sona.rotSound() : focusOrder[0]);
+    if (assignedSounds.length || (!playMode && focusOrder.length) || profile.targetSound) {
+      focusOrder = currentSound ? [String(currentSound).toUpperCase()] : focusOrder;
+      playMode = false;
+    }
+    // The child's shelf only reads the parent's current sound. Changes stay
+    // behind Grown-ups in Settings; an active assignment remains first.
+    (function () {
+      var box = document.getElementById("librarySoundBox"), value = document.getElementById("librarySoundValue"), note = document.getElementById("librarySoundNote");
+      var allSounds = playMode || !focusOrder.length;
+      if (!allSounds && !currentSound) return;
+      box.hidden = false;
+      value.textContent = allSounds ? "All sounds" : sndLabel(currentSound) + " sound";
+      note.textContent = assignedSounds.length ? "From your speech therapist." : (allSounds ? "Browse every sound." : "Only books for this sound.");
+      if (!allSounds) document.getElementById("bookSoundHeading").textContent = sndLabel(currentSound) + " sound stories";
+    })();
     if (!playMode && focusOrder.length) {
-      var SEASON_MINE = (window.Sona && Sona.seasonPick) ? Sona.seasonPick(STORIES.filter(function (st) { return st.season; }), focusOrder) : null;
-      var mine = STORIES.filter(function (st) { return st.season ? (!SEASON_MINE || SEASON_MINE.indexOf(st) !== -1) : focusOrder.indexOf(String(st.sound).toUpperCase()) !== -1; });
-      if (mine.some(readable)) STORIES = mine;
-      else if (mine.length) STORIES = STORIES.filter(readable).concat(mine);
+      STORIES = STORIES.filter(function (st) { return focusOrder.indexOf(String(st.sound).toUpperCase()) !== -1; });
     }
     // readable first, then the Premium books, then the coming ones
     function shelfRank(st){ return !bookOpen(st) ? 2 : LOCKED[st.title] ? 1 : 0; }
@@ -1251,9 +1315,8 @@
       try { if (libRead()[st.title]) return true; } catch (e) {}
       try { var g = JSON.parse(localStorage.getItem((window.Sona&&Sona.kkey)?Sona.kkey("sona.games.v1"):"sona.games.v1") || "{}"); return !!(g[st.sound] && g[st.sound].story && g[st.sound].story.done); } catch (e) { return false; }
     }
-    // One book's button, for either shelf: the child's own (#shelf) and the
-    // one behind "More books" (#moreShelf) are built here and nowhere else, so
-    // a book behaves the same wherever it stands.
+    // One book button on the selected shelf. Filtering never changes its
+    // entitlement or what happens after the child opens it.
     function addBook(st, host) {
       var b = document.createElement("button"), open = bookOpen(st), locked = open && LOCKED[st.title];
       // while other books are locked, the free one says it is free
@@ -1277,7 +1340,7 @@
       host.appendChild(b);
     }
     // BY LETTER (Travis, 2 Oct 2026: "organize the books by letter too"):
-    // each sound's books sit together under a small heading, on both shelves.
+    // each sound's books sit together when browsing without a target.
     // Inside a sound the order is the shelf's own (readable, then Premium).
     function soundOf(st) { return String(st.sound).toUpperCase(); }
     function addGrouped(list, host, order) {
@@ -1296,8 +1359,8 @@
         addBook(st, host);
       });
     }
-    // the child's sounds in their practice order (the one on now first);
-    // while other books are locked, the free one still leads on its own
+    // The selected sound's books retain their catalog order. In all-books
+    // browsing only, the available free book still leads.
     var MAIN_ORDER = focusOrder.slice();
     STORIES.forEach(function (st) { if (MAIN_ORDER.indexOf(soundOf(st)) === -1) MAIN_ORDER.push(soundOf(st)); });
     var mainList = STORIES.slice(), lead = mainList[0];
@@ -1307,67 +1370,6 @@
     }
     addGrouped(mainList, shelf, MAIN_ORDER);
 
-    // MORE BOOKS (Travis, 1 Oct 2026: "a kid, like they might be like wanting
-    // to just do the Halloween one"). Every in-season book the shelf above
-    // left off, behind one closed control: the other sounds' books, and in
-    // October the other sounds' Halloween books too (the shelf above keeps
-    // only the one Sona.seasonPick gives this child), so the two shelves
-    // together are the whole in-season list, each book once. Nothing is
-    // remembered: it is closed on every load. Play mode, or a shelf that
-    // already holds everything, has nothing behind it, so the control never
-    // shows. Readable first, then Premium (every book that is made is out, so
-    // there is no "coming" rank to order here any more); inside a rank the
-    // sounds keep the order STORIES names them in, so one sound's books sit
-    // together (in October the sounds with a Halloween book come first).
-    // The buttons are made on the first open, not at load: a cover that is
-    // on the page is downloaded whether or not it shows, and a child who never
-    // opens this should not pay for forty of them.
-    var SOUND_ORDER = [];
-    ALL_STORIES.forEach(function (st) { var s = String(st.sound).toUpperCase(); if (SOUND_ORDER.indexOf(s) === -1) SOUND_ORDER.push(s); });
-    var MORE = ALL_STORIES.filter(function (st) { return STORIES.indexOf(st) === -1; });
-    MORE.sort(function (a, b) {
-      var ar = shelfRank(a), br = shelfRank(b);
-      if (ar !== br) return ar - br;
-      var sa = SOUND_ORDER.indexOf(String(a.sound).toUpperCase()), sb = SOUND_ORDER.indexOf(String(b.sound).toUpperCase());
-      if (sa !== sb) return sa - sb;
-      return ALL_STORIES.indexOf(a) - ALL_STORIES.indexOf(b);
-    });
-    (function () {
-      var btn = document.getElementById("moreBtn"), box = document.getElementById("moreBooks"), host = document.getElementById("moreShelf"), built = false;
-      var wrap = document.querySelector(".wrap"), settle = null, SETTLE_MS = 700;
-      if (!MORE.length) return;
-      document.getElementById("moreLabel").textContent = "More books (" + MORE.length + ")";
-      btn.hidden = false;
-      btn.onclick = function () {
-        var open = btn.getAttribute("aria-expanded") !== "true";
-        if (open && !built) { built = true; addGrouped(MORE, host, SOUND_ORDER); }
-        btn.setAttribute("aria-expanded", open ? "true" : "false");
-        box.hidden = !open;
-        // a menu is silent: the page's own tap chime, never a voice
-        clearLocked(); chime("tap");
-        // A SMALL FINGER TAPS TWICE. Opening slides this button to the top of
-        // the screen and closing lets the page spring back, so the second tap
-        // of a double tap landed on whatever had just moved under the finger:
-        // a book the child never picked (its reader opened, or without
-        // Premium the grown-up message for it came up, a push toward the plan
-        // screen nobody asked for), or the Home button. So for a beat nothing
-        // on the page takes a tap, this button included: a double tap opens
-        // it once, or closes it once. A timer, not the clock: it must lift
-        // even where the phone's time stands still (the tests freeze it).
-        // Scrolling and the keyboard are untouched.
-        wrap.classList.add("settling"); clearTimeout(settle);
-        settle = setTimeout(function () { wrap.classList.remove("settling"); }, SETTLE_MS);
-        if (!open) return;
-        // the control is often the last thing on the screen: bring it to the
-        // top, so the child sees the books it just opened
-        try {
-          if (box.getBoundingClientRect().top > window.innerHeight - 220) {
-            var calm = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
-            btn.scrollIntoView({ block: "start", behavior: calm ? "auto" : "smooth" });
-          }
-        } catch (e) {}
-      };
-    })();
     // THE GROWN-UP MESSAGE for a Premium book, worded like Home's for a game.
     var bookNotice = document.getElementById("bookNotice");
     function clearLocked(){ bookNotice.hidden = true; document.getElementById("bookMessage").textContent = ""; }

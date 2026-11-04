@@ -41,6 +41,204 @@ So:
   just a failure with fewer words.
 
 ## Project
+**Sound-focused review build (29 Oct 2026, Travis's request).** A parent may
+pin one of the child's existing selected sounds as the current target, like
+a language choice. Target changes stay in Settings behind Grown-ups; Home
+and Books only display the shared `targetSound()`, with no child picker or
+preference writer (Travis, 31 Oct 2026). Other focus sounds and all progress
+remain. No saved pin
+keeps the existing practice rotation. Active clinician homework wins and
+disables family target changes. **Books shows only the current target's
+stories** (Travis, 30 Oct 2026, superseding More books below): no other-sound
+fold, free-book fallback or seasonal fallback. Changing the selected sound
+switches the shelf. Unpinned play mode with no family target or homework can
+still browse every sound. Access rules for every book remain unchanged.
+Home's Books tag counts only free books on that shelf; it never advertises
+a different sound's free title.
+**Improved Play Map is the chosen Home (Travis and Rachel, 31 Oct
+2026).** Rachel preferred the first direction; the improved Map has been
+restored after the Studio comparison. This supersedes the tall game-video
+Home and earlier compact layouts below. A large original portrait story
+picture contains the Start action, accurate day, title and hook. Gold stars
+represent only saved completed adventures, labelled with their real story
+days; skipped days never become stars. Tomorrow is dark and locked, with no
+early play. A completed day's story stays inert. Buddy, Rewards and Grown-ups
+remain at the top, with Games and Books below the trail. The small current
+sound badge is read-only; target changes stay behind Grown-ups. Home remains
+silent and reuses original artwork. A bounded fit check caught 18 px of
+overflow on the busiest 320×568 screen. Only the most compact layout now
+visually hides the “Your games” heading, preserving its accessible label and
+every replay button; that exact case passes. Release checks remain pending. The
+Arcade still scrolls. Access, saved progress, models, cues and rep rules are
+unchanged. Travis confirmed Rachel's approval of the parent-only target
+behavior and the new books on 2 Nov 2026 (below).
+
+The alternative Studio Home was saved outside the active Home. Unfinished
+Practice Gym runtime changes and its standalone test are preserved in
+`/private/tmp/sona-unshipped-gym-before-merge/` with exact hashes and a restore
+note. They are excluded from the merge; `charge.html` and `sona.js` were
+restored to their pre-Gym versions. Avatar work is deferred. Do not resume
+either draft without a new request.
+
+**Merge authorized (Travis, 31 Oct 2026).** Travis's explicit “merge”
+supersedes the earlier keep-local instruction for the finished Play Map,
+parent-only target settings, sound-specific books and existing review-branch
+work. The unfinished Gym and avatar work are excluded. The full 164-suite
+release battery remains unfinished and must pass before a push, along with
+the required typecheck. The stopped pre-redesign run is not a release pass;
+do not claim that publishing or the merge has completed before it happens.
+
+**Release resumed (Travis, 2 Nov 2026):** “okay finish and release the home
+screen and books first.” This resumes the stopped release of the approved
+Map and sound-specific books. The latest main changes (#255/#256), including
+name-first setup and the store-owned seven-day monthly trial on top, are
+preserved. The Map keeps its measured layout; page movement is locked only
+while its complete content fits, and the Arcade always releases that lock.
+The new lock check fails the pre-fix page and passes all 21 compact Home
+scenarios. A fresh full battery is still required before any push. GitHub
+access was subsequently restored through the normal Git sign-in and a
+successful push dry run; nothing has been published yet. **Rachel's review
+confirmed (Travis, 2 Nov 2026): “Yes, Rachel has approved them”**, answering
+the explicit question about the new books' words and pictures and the
+parent-only target sound setting. This confirms that scope, not the separate
+upstream Day 1 review questions recorded below. No Gym, avatar or new
+clinical behavior is included.
+
+The first 2 Nov release run stopped after 69 completed suites: 65 passed and four
+failed on leftover test expectations (the new R book's title, the old Home
+wash selectors and the retired Picnic alias). It was not a release pass.
+The Picnic-specific tests were restored exactly from current main, the R
+title guard now includes the exact new title and rejects off-sound books,
+and the Home fallback check follows the approved Map. These are test-only
+corrections; that candidate's production files remained identical to
+`82d3c70e`. The next complete run (`250f4b4e`, 164 suites) exited 1: 154
+passed, two retained outdated Home-wash/free-book shelf expectations and
+eight timed out during system sleep. Neither run is a release pass.
+The two stale checks now follow the Map's opaque picture fallback and the
+selected-sound shelf; the free Rory check remains on an explicitly selected
+R shelf. The affected activity suite passes 568 checks. Latest main #257
+is integrated at `bbe56df1`, preserving `FREE_PLAY_ON = false`, its new
+helpers and the sound-target readers. Its free-round suite passes 19/19.
+Home, its CSS, Books and Settings are unchanged from `82d3c70e`.
+The generated voice index changed only source line references and is
+current. A fresh complete 165-suite run with the Mac kept awake from its
+start is required against this frozen candidate before any push.
+That third run also stopped (exit 143) after confirmed repeated machine deep
+sleep despite a verified idle-sleep prevention assertion: 38 suites had
+completed, 27 passed and 11 had timing failures. Its results are not a
+release pass and justify no app or test expectation change. Runtime, tests,
+tools and the voice index were frozen at `bbe56df1` at that stop. A fourth
+run waited for Travis to confirm the Mac was plugged in, open and awake. The existing
+late-web-charter-price assertion remains valid on source review: it tests
+the separate annual web checkout, not the native monthly seven-day offer.
+
+**Current release candidate (4 Nov 2026): `146fa107`.** Travis confirmed
+physical readiness on 3 Nov. The fourth run then stopped deliberately after
+eight green suites to integrate published main `4a30d86d` (#258/#259).
+The integrated candidate preserves the approved Map, parent-only target pin,
+strict sound shelf and seven eight-page books, plus upstream's TALK2 stories,
+sixth Home fit step and test font normalization. The headless audio-output
+fix is retained. Books and Settings remain unchanged; Home keeps its
+fit-dependent scroll lock. All six focused groups exited 0: compact Home
+21 scenarios, Home 761 checks, talking stories 61, setup stability 322,
+setup screens 268 and trial hand-off 84. The clean tracked-source typecheck
+also exited 0; the voice index is current (808 fixed lines, 80 expansions,
+356 bank words).
+
+The fifth full run was stopped on 4 Nov (exit 143): 75 suites completed,
+with 19 failures/timeouts, while macOS repeatedly entered Maintenance Sleep
+and DarkWake on battery despite the scoped keep-awake assertion. It is not
+a release pass. The power record is
+`/private/tmp/sona-r5-machine-sleep-evidence.log`; exact results are in
+`/private/tmp/sona-home-books-release-20261103-r5-stopped.json`.
+All 2,105 frozen source/test/tool files still match `1c2260c8`; no product,
+test, tool or voice-index edit was made in response. No further local full
+run is started automatically. **Review-branch upload exception approved (Travis, 4 Nov 2026): “Run full
+checks on GitHub.”** This explicitly permits uploading the finished review
+branch and opening its draft PR before a local full pass, so the complete
+battery can run independently of this Mac. It does not waive validation:
+production publication must wait for the complete passing checks. No upload
+or release is claimed by this record.
+
+Published main `ef791055` (#260, TALKCLIP) is also integrated. Its twenty
+new clip/poster assets, recorder/capture tools, asset test and rulebook notes
+are retained exactly. The approved Map keeps its original portrait picture:
+its HTML, CSS and JavaScript are byte-identical to `1c2260c8`, with no video
+element, reel loader or request, so these assets are not activated there.
+The updated Node-only asset test exits 0 (35 clips); optional decoded-frame
+checks are skipped because ffmpeg is unavailable locally. Voice-index
+freshness still exits 0; no TypeScript changed. The new source manifest has
+2,125 files. The complete battery is still pending; the limited pre-push
+exception above is approved. This integration is not a release pass.
+
+**GitHub validation and test portability (4 Nov 2026).** The approved
+review-branch upload is complete; the first cloud run reported a genuine
+failure in `speechevidencetest`: quick F counted 3 of 4 (246/247 checks),
+with no script error. This is not attributed to Mac sleep. The same quick
+suite passed 10/10 twice locally without changing any assertion or sound.
+Main `4a30d86d`'s Ubuntu run `41750629238` passed the complete battery,
+including F 4/4 and speech evidence 247/247. The headless
+`--disable-audio-output` workaround is now scoped to macOS, where its clock
+fix was demonstrated. Mac launch arguments remain identical; Linux launch
+arguments now match main exactly. This is a test portability correction,
+not proof that the flag caused the F failure. No product, fixture, scoring
+or clinical threshold changed. Syntax and argument checks pass; a fresh
+complete cloud pass remains required before release.
+
+The first GitHub run (`41870353527`) completed all 165 suites: 163 passed,
+with the quick-F failure above and one test-output portability error.
+`compacthometest` tried to save its screenshot under `/private/tmp`, which
+does not exist on Ubuntu. It now uses the shared `_env.OUT` contract
+(`TEST_OUT` or the operating system's temporary directory); screenshot
+filenames and all 21 scenarios/checks are unchanged. The corrected focused
+run exits 0 on macOS with the standard `/tmp` default exercised explicitly.
+A search of every test changed by this branch found no other absolute Mac
+output path. No app, fixture or acceptance assertion changed. Both test
+portability corrections require a fresh complete passing cloud run before
+production publication.
+
+The second GitHub run (`41876745642`, with the Darwin-scoped audio fix)
+completed all 165 suites: 164 passed, and only the pre-fix compact screenshot
+path failed. Speech evidence passed 247/247, including F 4/4; this is an
+observed pass after the portability correction, not proof of causation.
+The portable screenshot fix has now passed its 21 focused scenarios. A
+fresh complete passing cloud run of the final candidate is still required.
+
+**Latest first-day flow (upstream #251/#253, 31 Oct 2026) supersedes the
+earlier Picnic-first review experiment.** Setup opens ordinary Fruit Slice,
+through its existing practice page, for every age. Home then offers Day 1's
+sound-specific talking story for R, S, L, Z or F, otherwise the original
+lighthouse. The upstream fourteen-slot calendar and saved `t1` identity for
+completed Day 1 remain authoritative. No `signature-v1` route or Picnic
+alias is activated. `storyDay(id)` returns the upstream story object, not a
+numeric display day. The target pin feeds the existing `rotSounds()` reader,
+so the selected sound and active homework also govern the new Day 1 choice.
+Upstream's speech prompts, three-saying word moments, counting and first-game
+rules are preserved; their Rachel-review questions remain recorded below.
+
+**More books, 8–12 pages** (Travis, 30 Oct 2026): the review adds one
+eight-page story each for R, S, L, SH, CH and TH: Rabbit and the Rocket,
+Seal and the Sock, Lion and the Lock, Sheep and the Ship, Chicken and the
+Picnic, and My Thumb Paints a Gift. Bear's Lost Ball is a seventh new book
+relative to published main, expanded from its six-page local draft: those
+six lines/pictures stay, with two new play scenes before bed.
+Every key is an existing initial-bank word; no target bank, age gate,
+microphone, scorer or play-rep rule changes. All seven meet the fuller-book
+whole-line phonology rule, with one independently stored picture per page.
+The catalog holds 49 year-round books, 55 during October. The original 13
+six-page books and existing twelve-page books remain unchanged.
+**Keep the original artwork** (Travis, 30 Oct 2026): existing books including
+Sunny the Seal are unchanged, and new book/adventure art matches the original
+soft3D look. New art is versioned. Review sources/prompts live in
+`design/sound-first-session/` and `design/adventure/fruitpicnic-*`.
+**Rachel reviews the selected-target behavior, every new story line/key and
+matching picture before release.** The review page and generated
+`VOICE_SCRIPT.md` list the exact words. Travis confirmed on 2 Nov 2026 that
+Rachel has approved the new books' words and pictures and the parent-only
+target sound setting. Children's voice replacement remains
+research only: no licensed,
+clinically approved recording pack was selected or installed.
+
 Sona (speaksona.com) — kids' speech-practice PWA in public/, Next.js API
 routes, Capacitor iOS shell that remote-loads the site. Solo founder, ships
 fast.

@@ -111,7 +111,7 @@ await section("days", async () => {
     if (!A[d.id] || A[d.id].intro.length !== 8 || A[d.id].ending.length !== 4) bad.push("its scenes in adventures.js");
     if (!existsSync(ROOT + "/assets/crafted/home-" + d.hero + ".webp")) bad.push("Home's picture home-" + d.hero + ".webp");
     for (const sc of A[d.id] ? A[d.id].intro.concat(A[d.id].ending) : []) if (!existsSync(ROOT + "/assets/adventure/" + d.id + "/" + sc.art + ".webp")) bad.push("the picture " + d.id + "/" + sc.art);
-    if (!new RegExp('\\.quest-art\\[data-story="' + d.id + '"\\]\\{background:#[0-9a-f]{6};\\}', "i").test(readFileSync(ROOT + "/crafted-home.css", "utf8"))) bad.push("Home's wash for a picture still loading");
+    if (!/#questCard\s*\{[^}]*\bbackground:#[0-9a-f]{6}\b/i.test(readFileSync(ROOT + "/crafted-home.css", "utf8"))) bad.push("Home's opaque fallback for a picture still loading");
     ok("Day " + (DAYS.indexOf(d) + 1) + " (" + d.id + "): its page, game, words (\"three times\"), scenes, pictures and record", !bad.length, bad);
   }
 });
