@@ -160,7 +160,7 @@
          her credential sits is hers and Travis's to change. -->
     <div class="step sell" data-step="rachel">
       <div class="rachel-photo"><img src="/assets/rachel-wardrop-profile.jpg" width="260" height="260" alt="Rachel Wardrop" /></div>
-      <h1 class="qh" id="rachelTitle" tabindex="-1">Built with Rachel, <span class="nobr">MS, CF-SLP,</span></h1>
+      <h1 class="qh" id="rachelTitle" tabindex="-1">Built with Rachel, <span class="nobr">MS, CF-SLP</span></h1>
       <p class="rachel-line" id="rachelLine"><span class="vh" aria-hidden="true">Built with Rachel, MS, CF-SLP, </span>a pediatric speech-language pathologist in her clinical fellowship.</p>
       <p class="rachel-pill">Sona co-founder</p>
     </div>
@@ -375,6 +375,13 @@
     <div class="step" data-step="remind">
       <h1 class="qh" id="remindTitle" tabindex="-1">Want reminders during your free trial?</h1>
       <p class="muted remind-line">A practice reminder each day, and one the day before it ends.</p>
+      <!-- What the reminders look like (4 Nov 2026): the two real notifications,
+           word for word sona.js's NUDGE and TRIAL_REMIND, as iPhone shows them.
+           A picture, not a promise of when: it is marked "Example". -->
+      <div class="remind-demo" aria-hidden="true">
+        <div class="remind-note"><img src="/icon-192.png" alt="" width="34" height="34" /><span><b>Sona</b><span>Ready for 5 minutes of practice? Echo is waiting to play.</span></span><i>now</i></div>
+        <div class="remind-note"><img src="/icon-192.png" alt="" width="34" height="34" /><span><b>Sona</b><span>Your free trial ends tomorrow.</span></span><i>Day 6</i></div>
+      </div>
       <button type="button" class="btn remind-yes" id="remindYes">Turn on reminders</button>
       <button type="button" class="remind-no" id="remindNo">Not now</button>
     </div>

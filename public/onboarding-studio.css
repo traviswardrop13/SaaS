@@ -81,7 +81,10 @@ body[data-setup-screen="reel"] .ob { overflow:hidden; }
 .ob .rachel-photo { width:78%; max-width:265px; aspect-ratio:1 / 1.1; height:auto; border:8px solid #ffd47c; border-radius:24px; transform:rotate(3deg); box-shadow:none; margin:0 auto 25px; }
 .ob .rachel-photo img { object-fit:cover; border-radius:17px; }
 .ob .step[data-step="rachel"] .qh { text-align:center; font-size:28px; }
-.rachel-line { color:#786959; font-size:14px; }
+/* Rachel's screen (4 Nov 2026, Travis: "let's fix Rachel's screen"): the
+   line under her name is centred like the name above it, and the name no
+   longer ends on a dangling comma. */
+.rachel-line { color:#786959; font-size:14px; text-align:center; text-wrap:balance; }
 .rachel-pill { color:var(--act-d); border-color:var(--studio-line); background:#fffdf8; box-shadow:none; font-size:11px; }
 /* Keep the native name step's frozen sizing rules. More space before Age. */
 body[data-setup-screen="name"] .studio-brand { display:none; }

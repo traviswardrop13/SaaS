@@ -9419,6 +9419,25 @@
     }
     // a free row only, and only when the page says this phone will show it
     if (o.headsUp === true) w.headsUp = PLAN_HEADS_UP;
+    // THE 3-STEP TRIAL TIMELINE (Travis, 4 Nov 2026: "let's add a 3-step
+    // trial timeline"). Only on a row whose free days are certain and
+    // counted in days (a week is read as 7), three or more of them, so
+    // every step falls on its own day. Today counts as day 1: the free days
+    // end, and the first charge falls, as day N ends; Apple lets a parent
+    // cancel up to 24 hours before that, i.e. through day N-1. When the
+    // phone will remind (headsUp) the middle step says so, and the separate
+    // reminder line steps aside: one promise, said once. No dates (Travis,
+    // 6 Oct 2026: "I just want it to say three days"). Every word Travis's
+    // and Rachel's to change.
+    const DAYS = plan.sure === true && plan.free && plan.free.unit === "day" ? Number(plan.free.n) : 0;
+    if (DAYS >= 3) {
+      w.steps = [
+        { when: "Today", text: "Everything unlocks" },
+        { when: "Day " + (DAYS - 1), text: w.headsUp ? "We remind you" : "Cancel by today, pay nothing" },
+        { when: "Day " + DAYS, text: w.amount + " starts" },
+      ];
+      w.headsUp = "";
+    }
     return w;
   }
   // The card's one status line, by code (buyPlan's codes, and the page's own
