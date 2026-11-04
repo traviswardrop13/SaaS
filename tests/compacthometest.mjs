@@ -1,7 +1,7 @@
 // Home fits its whole set of doors and found games, rather than only its hero.
 // These assertions failed on the previous card-only fit on every phone size.
 import assert from 'node:assert/strict';
-import { chromium, launchOpts } from './_env.mjs';
+import { chromium, launchOpts, OUT } from './_env.mjs';
 import { serve, open } from './_phone.mjs';
 
 const server = await serve();
@@ -47,7 +47,7 @@ try {
         else assert.ok(width>=760&&height<=850&&gamesDoor.bottom<=booksDoor.top&&Math.abs(gamesDoor.left-booksDoor.left)<1&&Math.abs(gamesDoor.width-booksDoor.width)<1,'landscape Map doors form one aligned stack beside the story');
         if((width===390&&mode==='fresh')||(width===320&&height===568&&mode!=='history')||(width===1024&&mode==='fresh')) {
           const name=`sona-home-${width}x${height}-${mode}.png`;
-          await page.screenshot({path:(process.env.TEST_OUT||'/private/tmp')+'/'+name});
+          await page.screenshot({path:OUT+'/'+name});
         }
         for(const b of m.boxes.filter(b=>b.visible)) assert.ok(b.top>=0&&b.bottom<=m.height-4,`${b.id} outside screen: ${JSON.stringify(m)}`);
         if(mode!=='fresh') assert.ok(m.boxes.find(b=>b.id==='foundRow').visible,'all earned games remain reachable');

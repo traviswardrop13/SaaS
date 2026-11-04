@@ -48,7 +48,7 @@
     "currentIntegratedCandidate": "Pending; the recorded exit0 applies only to the earlier merge named above."
   },
   "regressionEvidence": "New target selection, stale-sibling protection, whole-Home fit and signature-adventure checks failed against saved pre-change sources. Five Auto-selection checks fail against the pre-fix Home, including real keyboard selection of the already-current sound. The final reimagined-Home suite fails the saved old layout in 145 of 596 checks; four visible sound-chip checks fail the old Home while 42 sound checks still pass.",
-  "releaseState": "Release and clinical scope approved. Review branch uploaded under explicit GitHub-check exception; first cloud run reported quick F3/4, so production release remains gated. Test portability correction scopes the Mac audio workaround to Darwin; app source and clinical behavior unchanged. Fresh complete cloud pass required. Gym and avatar excluded.",
+  "releaseState": "Release and clinical scope approved. First GitHub battery completed all 165 suites with 163 passing and two test portability failures. Mac audio workaround is Darwin-only; compact screenshots use shared OUT. App, fixtures, scoring and acceptance assertions unchanged. Fresh full cloud pass remains required. Gym and avatar excluded.",
   "bookExpansion": {
     "requested": "Six new eight-page books for R,S,L,SH,CH,TH plus Bear's Lost Ball, expanded from its local six-page draft; all seven are additions relative to published main. Strict selected-sound shelf.",
     "sourceChecks": "All public script syntax parses; exact captions and bank-only key words validated with existing booklex plus official CMUdict entries.",
@@ -661,7 +661,7 @@
     "fullBattery": {
       "command": "node tests/run-all.mjs",
       "suites": 165,
-      "status": "First GitHub run reported a real quick-F failure (3 of 4). Mac-only audio workaround is now scoped to Darwin, restoring Linux launch arguments to passing main. Fresh complete cloud validation remains required; cause of F failure not claimed proven.",
+      "status": "First cloud run completed all 165 suites: 163 passed, two failed (quick F3/4 and a macOS-only screenshot path). Audio workaround is Darwin-only and compact screenshots now use shared OUT. Fresh full cloud pass required; no release claimed.",
       "firstRun": {
         "status": "Stopped",
         "completedSuites": 69,
@@ -818,6 +818,55 @@
         "sourceFilesChecked": 2105,
         "sourceMismatches": 0,
         "ownedProcessesAfterStop": 0
+      },
+      "firstCloudRun": {
+        "run": 41870353527,
+        "headSha": "6fdf22f2f650107f91498163c40e5ee11b53f441",
+        "workflowStatus": "completed",
+        "workflowConclusion": "failure",
+        "suiteCount": 165,
+        "uniqueSuites": 165,
+        "failedSuites": [
+          "speechevidencetest.mjs",
+          "compacthometest.mjs"
+        ],
+        "testCommandExitCodes": [
+          "1"
+        ],
+        "allSuitesGreen": false,
+        "checkout": [
+          {
+            "context": [
+              "2026-11-04T16:46:04.6967005Z [command]/usr/bin/git log -1 --format=%H",
+              "2026-11-04T16:46:04.7001035Z d875484f7dda507ee466c167564efc15f88d14a4",
+              "2026-11-04T16:46:04.7228298Z ##[group]Run actions/setup-node@v4",
+              "2026-11-04T16:46:04.7228460Z with:",
+              "2026-11-04T16:46:04.7228583Z   node-version: 22",
+              "2026-11-04T16:46:04.7228715Z   always-auth: false",
+              "2026-11-04T16:46:04.7228837Z   check-latest: false"
+            ],
+            "shaCandidates": [
+              "d875484f7dda507ee466c167564efc15f88d14a4"
+            ]
+          }
+        ],
+        "commandStep": [
+          {
+            "completedAt": "2026-11-04T19:15:13Z",
+            "conclusion": "failure",
+            "name": "Run node tests/run-all.mjs",
+            "number": 6,
+            "startedAt": "2026-11-04T16:46:52Z",
+            "status": "completed"
+          }
+        ],
+        "actualFailureLines": [
+          "2026-11-04T17:12:53.2684720Z FAIL F \u00d74 at 500ms with the sound on: all four count (4 of 4, as before) \u2192 {\"tries\":3}",
+          "2026-11-04T17:12:53.2687640Z SUITE FAILED: speechevidencetest.mjs",
+          "2026-11-04T17:23:22.3681123Z SUITE FAILED: compacthometest.mjs",
+          "2026-11-04T19:15:13.2605157Z FAIL F \u00d74 at 500ms with the sound on: all four count (4 of 4, as before) \u2192 {\"tries\":3}",
+          "2026-11-04T19:15:13.2606084Z 2 SUITE(S) FAILED: speechevidencetest.mjs, compacthometest.mjs"
+        ]
       }
     },
     "clinicalReview": {
@@ -996,6 +1045,27 @@
       },
       "argumentProofFile": "/private/tmp/sona-audio-portability-flags-proof.json",
       "releaseGate": "Fresh complete cloud pass still required; no production publication claimed"
+    },
+    "testOutputPortabilityCorrection": {
+      "date": "2026-11-04",
+      "file": "tests/compacthometest.mjs",
+      "change": "Import shared OUT and replace the hardcoded /private/tmp screenshot fallback",
+      "fixtureOrAssertionChanges": 0,
+      "screenshotFilenamesUnchanged": true,
+      "otherBranchChangedTestsWithMacPaths": 0,
+      "focusedProof": {
+        "exitCode": 0,
+        "scenarios": 21,
+        "log": "/private/tmp/sona-compact-portable-output-focused.log",
+        "platform": "macOS",
+        "tempDefaultSimulation": {
+          "TEST_OUT": "",
+          "TMPDIR": "/tmp",
+          "resolvedOUT": "/tmp"
+        },
+        "negativeControl": "Actual Ubuntu cloud run 41870353527 failed ENOENT opening /private/tmp/sona-home-320x568-fresh.png before this fix",
+        "filenamesUnchanged": true
+      }
     }
   }
 }

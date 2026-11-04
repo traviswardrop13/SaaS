@@ -185,6 +185,18 @@ not proof that the flag caused the F failure. No product, fixture, scoring
 or clinical threshold changed. Syntax and argument checks pass; a fresh
 complete cloud pass remains required before release.
 
+The first GitHub run (`41870353527`) completed all 165 suites: 163 passed,
+with the quick-F failure above and one test-output portability error.
+`compacthometest` tried to save its screenshot under `/private/tmp`, which
+does not exist on Ubuntu. It now uses the shared `_env.OUT` contract
+(`TEST_OUT` or the operating system's temporary directory); screenshot
+filenames and all 21 scenarios/checks are unchanged. The corrected focused
+run exits 0 on macOS with the standard `/tmp` default exercised explicitly.
+A search of every test changed by this branch found no other absolute Mac
+output path. No app, fixture or acceptance assertion changed. Both test
+portability corrections require a fresh complete passing cloud run before
+production publication.
+
 **Latest first-day flow (upstream #251/#253, 31 Oct 2026) supersedes the
 earlier Picnic-first review experiment.** Setup opens ordinary Fruit Slice,
 through its existing practice page, for every age. Home then offers Day 1's
