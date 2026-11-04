@@ -2,10 +2,11 @@
 // practice is like a 3 second reel essentially of the game that the child
 // will play"). Home asks for /assets/home/reel/<game>.mp4, with <game>.webp
 // as its poster, for whatever today's card holds: a story day's game
-// (STORY_DAYS' `game`) or the game of the day (QUEST_DAYS' `game`). This
+// (STORY_DAYS' `game`), a talking Day 1 story (STORY_TALK's `id`, its own
+// game key) or the game of the day (QUEST_DAYS' `game`). This
 // holds what reaches the phone, without a browser (the test Chromium cannot
 // play H.264 anyway):
-//   - every game either list can name has a clip and a poster, and the folder
+//   - every game the three lists can name has a clip and a poster, and the folder
 //     holds nothing else (a dotfile such as Finder's .DS_Store aside: git
 //     ignores it). Both lists are read from public/sona.js, so a new story
 //     day, or a new game of the day, fails here until its clip is filmed;
@@ -124,11 +125,17 @@ const STORY = [...story.matchAll(/\bgame: "([a-z]+)"/g)].map((m) => m[1]);
 const QUEST = [...new Set([...quest.matchAll(/\bgame: "([a-z]+)"/g)].map((m) => m[1]))];
 ok("STORY_DAYS names a game for every day (14 on 28 Oct 2026, the list may grow)", STORY.length >= 14 && new Set(STORY).size === STORY.length, STORY.join(","));
 ok("QUEST_DAYS names the game of the day's games (11 on 28 Oct 2026)", QUEST.length >= 11, QUEST.join(","));
-const REEL = [...new Set(STORY.concat(QUEST))];
+// TALKCLIP (4 Nov 2026): a talking Day 1 story (STORY_TALK, TALK1/TALK2) is
+// its own game key, so Home asks for /assets/home/reel/<its id>.mp4 on its
+// day: one page of it, the word said three times and the page turning
+const talk = block("const STORY_TALK = [", "\n  ];");
+const TALK = [...talk.matchAll(/\{ id: "([a-z]+)", sound: "[A-Z]+"/g)].map((m) => m[1]);
+ok("STORY_TALK names the talking Day 1 stories (10 on 4 Nov 2026, the list may grow)", TALK.length >= 10 && new Set(TALK).size === TALK.length && !TALK.some((k) => STORY.includes(k) || QUEST.includes(k)), TALK.join(","));
+const REEL = [...new Set(STORY.concat(QUEST, TALK))];
 
 const rec = readFileSync(path.join(ROOT, "tools/homereel/record.mjs"), "utf8");
 const keys = (rec.match(/export const KEYS = \[([^\]]*)\]/) || [, ""])[1].match(/"([a-z]+)"/g) || [];
-ok("the recorder films exactly the story days' games, in STORY_DAYS' order", JSON.stringify(keys.map((s) => s.slice(1, -1))) === JSON.stringify(STORY), keys.join(","));
+ok("the recorder films exactly the story days' games, in STORY_DAYS' order, then the talking stories, in STORY_TALK's", JSON.stringify(keys.map((s) => s.slice(1, -1))) === JSON.stringify(STORY.concat(TALK)), keys.join(","));
 ok("the recorder encodes to the same budget", /BUDGET = \{ mp4: 300000, webp: 60000 \}/.test(rec));
 ok("the recorder is a manual tool, not part of the battery", !/homereel\/record/.test(readFileSync(path.join(ROOT, "tests/run-all.mjs"), "utf8")));
 

@@ -27,7 +27,8 @@
 //     env(safe-area-inset-*) is swapped for them as each file is served,
 //     the way tests/onboardingtest.mjs does;
 //   - the microphone is a fake that hears a "child" only when a scene says
-//     so (window.__dev.voice), with the voiced shape the test suites use;
+//     so (window.__dev.voice), with the voiced shape the test suites use
+//     (a child on R; cfg.shape "hiss" gives a hissing one, for S, SH, F...);
 //     the voice service is down, so lines fall back to the (silent) browser
 //     voice, and nothing plays out loud;
 //   - the clock uses the review day in Idaho (AT below): October's live
@@ -144,8 +145,16 @@ export function device(cfg) {
       const wave = (i) => { const p = 2 * Math.PI * 187.5 * i / sr; return 22 * Math.sin(p) + 16 * Math.sin(2 * p) + 12 * Math.sin(3 * p) + 9 * Math.sin(4 * p); };
       a.getByteTimeDomainData = (d) => { const v = live(); for (let i = 0; i < d.length; i++) d[i] = v ? Math.round(128 + wave(i)) : 128 - (i & 1); };
       a.getFloatTimeDomainData = (d) => { const v = live(); for (let i = 0; i < d.length; i++) d[i] = v ? wave(i) / 128 : -(i & 1) / 128; };
-      a.getByteFrequencyData = (d) => { d.fill(0); if (!live()) return; const bin = sr / a.fftSize; [187.5, 375, 562.5, 750].forEach((f) => { const k = Math.round(f / bin); if (k < d.length) d[k] = 230; }); };
-      a.getFloatFrequencyData = (d) => { const v = live(), bin = (sr / 2) / d.length; for (let i = 0; i < d.length; i++) d[i] = v && i * bin < 6000 ? (i % 4 === 0 ? -40 : -70) : -110; };
+      // cfg.shape "hiss": the same loudness, its energy 4 to 8 kHz instead (a
+      // child on S, SH, F...: sona.js's soundFamily), so a page that checks
+      // the sound's family hears the right kind of sound
+      const hiss = cfg.shape === "hiss";
+      a.getByteFrequencyData = (d) => {
+        d.fill(0); if (!live()) return; const bin = sr / a.fftSize;
+        if (hiss) { for (let k = Math.round(4000 / bin); k <= Math.round(8000 / bin) && k < d.length; k++) d[k] = 220; return; }
+        [187.5, 375, 562.5, 750].forEach((f) => { const k = Math.round(f / bin); if (k < d.length) d[k] = 230; });
+      };
+      a.getFloatFrequencyData = (d) => { const v = live(), bin = (sr / 2) / d.length; for (let i = 0; i < d.length; i++) d[i] = v && (hiss ? i * bin >= 4000 && i * bin <= 8000 : i * bin < 6000) ? (i % 4 === 0 ? -40 : -70) : -110; };
       return a;
     }
   }

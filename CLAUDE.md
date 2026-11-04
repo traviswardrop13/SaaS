@@ -2812,8 +2812,9 @@ the page.
   so the fireflies sleep before the feather (the model still paints the
   paper lanterns softly lit before s06 says they twinkle on: left, as a
   nit). A picture that fails to load still shows its story's wash. No buddy
-  is laid over these pictures, and Home has no clip for them yet (the card
-  falls back to the picture).
+  is laid over these pictures. Home's card plays a 3-second clip of each
+  since 4 Nov 2026 (TALKCLIP, under HOMEREEL1 below); the story's painted
+  Home picture is what it falls back to.
 - **For Rachel** (built on defaults until she answers; the PR lists every
   word): every key word and line; three sayings a page; a child is asked
   their sound's words whatever their age (the story games' rule, not the
@@ -3555,6 +3556,33 @@ in `tools/homereel/out/sheets/` before committing a clip. **Travis's
 calls:** which moment each clip shows, the crops, about 3 s a clip.
 **Rachel's:** nothing here asks a child anything new; every clip is on R
 and shows the reward a child earns by saying the word (the move itself).
+
+**The talking Day 1 stories have their clips too (TALKCLIP, 4 Nov 2026)**
+(Travis, yes to "make Home's Day 1 card move for the talking stories": "merge
+and go"). A talking story is its own game key (`STORY_TALK`'s `id`, TALK1),
+so Home already asked for `/assets/home/reel/<id>.mp4` on its day and, with
+none, showed the painted picture still. Now each of the ten has one, filmed
+by the same recorder (`talkScene` in `tools/homereel/record.mjs`): one page
+of the real player, the child (the fake microphone, with the story's kind of
+sound: `capture.mjs`'s `cfg.shape` "hiss" for S, Z, SH, CH, F and TH) saying
+its key word three times, the three dots filling, the word's pop and the
+page turning to the next picture, 3 s. The page is the fourth (Lulu's the
+seventh: she is on her island until then), where the hero is on the page
+with Echo. **What is staged for the frame, and only that:** on Home the
+card's title, line and play button cover the clip's lower part, and a small
+phone cuts its top and bottom off, so the player's caption box (its line,
+Hear it and the mic), the ✕ and Skip, and the little Echo on the caption's
+corner are hidden, the frame is the picture's lower 520 points down to its
+foot, and the "Can you say <word>?" bubble with its dots is moved up, as it
+is, to a fifth of the way down the frame (`TALK_ASK_AT`), where every
+phone's card shows it. The picture, the bubble, its dots, the pop and the
+page turn are the page's own. `homereeltest` now reads `STORY_TALK` too, so
+a new talking story fails it until its clip is filmed (`KEYS` lists the
+story days' games, then the talking stories). **Travis's calls:** the page
+each clip shows, the bubble's place, hiding the caption. **Rachel's:**
+nothing new is asked; each clip shows a child saying the page's key word
+three times (the words she already has to review: rocket, log, feather,
+sandcastle, zap, camp, goose, shells, cherries, thunder).
 
 **A book page fills the screen, and the child says one word to turn it** (the
 family's redesign brief, 28 Sep 2026). The picture fills the screen and the

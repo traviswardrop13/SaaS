@@ -18,7 +18,9 @@
 // Writes public/assets/home/reel/<game>.mp4 (540x720, 3:4, 30 fps, 3 to
 // 3.5 s, H.264 High 4.0, no audio track, moov first, tagged BT.709) and
 // <game>.webp (its first frame), one for each story day's game (STORY_DAYS'
-// `game` in public/sona.js), and a contact sheet per clip in
+// `game` in public/sona.js) and each talking Day 1 story (STORY_TALK's `id`:
+// see "Day 1 in the child's own sound" below for how those are framed), and
+// a contact sheet per clip in
 // tools/homereel/out/sheets/ (git ignores out/): LOOK at every sheet before
 // committing a clip (a card or a banner over the play, a dead stretch, a move
 // the finger should not have made, the moment off the frame). The game of the
@@ -65,6 +67,7 @@
 //     and the budgets counted strictly (300,000 and 60,000 bytes);
 //   - Rachel's: nothing here asks a child anything new; the clips show the
 //     reward a child earns by saying the word (the move itself), on R.
+import { readFileSync } from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { reelKit, both, FPS, NAME, VIEW } from "../setupreel/kit.mjs";
@@ -896,8 +899,110 @@ async function* gearWork(page) {
   await page.mouse.up(); yield;
 }
 
-// the story days' games, in STORY_DAYS' order (tests/homereeltest.mjs reads
-// this list and holds it to sona.js's)
-export const KEYS = ["lighthouse", "windup", "bridge", "waterwheel", "postboat", "bakery", "frontdoor", "lantern", "trainline", "kite", "nestlift", "concert", "rooftops", "observatory"];
+// ── Day 1 in the child's own sound: the talking stories (TALK1, TALK2) ──
+// A talking story has no game: every page asks one word in the child's
+// sound, and the child's voice turns the page (adventure.html). Its clip is
+// one page of that, the way the game clips are one move: the page's key word
+// lit in the caption, "Can you say <word>?" and its three dots, the dots
+// filling as the child says it, the word popping with Echo's cheer, and the
+// page turning to the next picture. The child is the fake microphone, now
+// with the story's kind of sound (a hiss for S, SH, F...: sona.js's
+// soundFamily), so the page's own check says yes; the pages before are
+// played off film the same way.
+const SONA = readFileSync(path.join(REPO, "public/sona.js"), "utf8");
+export const TALK = [...((SONA.match(/const STORY_TALK = \[([\s\S]*?)\n  \];/) || ["", ""])[1]).matchAll(/\{ id: "([a-z]+)", sound: "([A-Z]+)"/g)].map((m) => ({ id: m[1], sound: m[2] }));
+const HISS = (() => { const m = SONA.match(/const SHAPE_FAM = \{ hiss: \{([^}]*)\}/); return new Set(m ? [...m[1].matchAll(/([A-Z]+):1/g)].map((x) => x[1]) : []); })();
+// the page filmed: the fourth (index 3), where every story but one has its
+// hero on the page with Echo and the problem in front of them, and the next
+// page's picture comes in at the end; Lulu the lamb is on her island until
+// the seventh, where Echo finds her (each story's pages, looked at for this)
+const TALK_PAGE = { lulu: 6 };
+function talkScene(id, sound) {
+  const PAGE = id in TALK_PAGE ? TALK_PAGE[id] : 3;
+  return {
+    url: "/adventure.html", seconds: 3, most: 30, crop() { return this._s.talkCrop; },
+    cfg: { seed: { "sona.profile.v1": JSON.stringify({ ...JSON.parse(KID["sona.profile.v1"]), focusSounds: [sound] }) }, dice: 7, shape: HISS.has(sound) ? "hiss" : "low" },
+    what: "page " + (PAGE + 1) + " said three times and turned",
+    probe: () => { const a = window.__adventure || {}, p = window.__talkPage; return { said: a.idx === p && a.said >= 1, turned: a.idx > p, idx: a.idx, n: a.said, bar: a.bar }; },
+    end: talkEnd,
+    async stage(s) {
+      const { page } = s;
+      await must(page, "the talking story", until(page, (id) => window.__adventure && __adventure.talk && __adventure.id === id && __adventure.view === "scene", 20000, id));
+      await images(page);
+      s.talk = talkTalker(page);
+      // the pages before, said and turned off film
+      // (to the moment the page's ask bubble is up, before anything is said)
+      for (let t = 0; t < 90 * 30 && !(await page.evaluate((p) => __adventure.idx === p && __adventure.ask && __adventure.said === 0, PAGE)); t++) await step(page, s.talk);
+      await must(page, "page " + (PAGE + 1) + "'s word", page.evaluate((p) => __adventure.idx === p && __adventure.ask && __adventure.said === 0, PAGE));
+      await page.evaluate((p) => { window.__talkPage = p; }, PAGE);
+      // How the clip is framed, the one thing staged here. On Home the card's
+      // own title and line cover the clip's lower part, and on a small phone
+      // its top and bottom are cut off, so: the caption card's box, line and
+      // buttons are hidden (two layers of words are unreadable), and so are
+      // the ✕ and Skip at the top, and the little Echo on the card's corner
+      // (moved up with the bubble he sat on a hero's face, and every picture
+      // has Echo painted in it); the frame is the picture's lower part, down
+      // to its foot; and the ask bubble is moved up, as it is, to a fifth of
+      // the way down the frame (TALK_ASK_AT), where every phone's card shows
+      // it. Nothing else moves: the picture is placed by the page (hidden,
+      // the card keeps its size), and the bubble, its dots, the word's pop
+      // and the page turn are the page's own.
+      const at = await page.evaluate((frac) => {
+        const pic = document.querySelector(".advlayer.in .advpic") || document.querySelector(".advpic"), ask = document.getElementById("capAsk");
+        const crop = Math.round(pic.getBoundingClientRect().bottom) - 520, dy = Math.round(crop + frac * 520 - ask.getBoundingClientRect().top);
+        const st = document.createElement("style");
+        st.textContent = ".advtop,.advecho{visibility:hidden!important}.advcard{background:none!important;border-color:transparent!important;box-shadow:none!important}.advcard>.advtext,.advcard>.advrow{visibility:hidden!important}.advask{transform:translateY(" + dy + "px)!important}";
+        document.head.appendChild(st);
+        return { crop, dy };
+      }, TALK_ASK_AT);
+      s.talkCrop = at.crop;
+      await images(page);
+    },
+    drive() { return this._s.talk(); },
+    debug: () => { const a = window.__adventure; return a && { idx: a.idx, view: a.view, bar: a.bar, said: a.said, tries: a.tries, word: a.word, voice: a.voice, primer: a.primer }; },
+  };
+}
+// The child: once the page's mic is live, its word said for 0.3 s (the books'
+// and talkstorytest's length), then quiet until the mic is live again.
+function talkTalker(page) {
+  let on = 0, wait = 0;
+  return async () => {
+    if (on > 0) { if (--on === 0) await page.evaluate(() => { __dev.voice = false; }); return; }
+    const a = await page.evaluate(() => window.__adventure || {});
+    if (a.primer) { await page.evaluate(() => document.getElementById("micYes").click()); return; }
+    if (a.bar !== "live") { wait = 0; return; }
+    if (wait++ < 4) return;
+    wait = 0; on = 9;
+    await page.evaluate(() => { __dev.voice = true; });
+  };
+}
+// The clip ends 18 frames after the page turns and opens 4 frames before the
+// first saying is heard (the page's word lit and Echo listening), 2.5 to 3.5 s
+// in all; if the three sayings and the turn take longer than that, it opens
+// later, on a dot already filled.
+function talkEnd(h) {
+  const end = h.length - 1, at = end - 18;
+  const rose = (f, i) => i > 0 && !!h[i][f] && !h[i - 1][f];
+  if (!rose("turned", at)) return false;
+  let e = at;
+  while (e > 0 && !rose("said", e)) e--;
+  if (!rose("said", e)) throw new Error("the page turned with no word heard");
+  let start = Math.max(0, e - 4);
+  if (end + 1 - start > MAX) start = end + 1 - MAX;
+  if (end + 1 - start < 75) start = Math.max(0, end + 1 - 75);
+  this._t = { heard: +((e - start) / FPS).toFixed(2), turned: +((at - start) / FPS).toFixed(2), len: +((end + 1 - start) / FPS).toFixed(2) };
+  return end + 1 - start;
+}
+// where the ask bubble's top sits in the frame (a fraction of its height):
+// Home's card shows the frame's top three fifths on a big phone, and from
+// about a sixth to a half of it on a 4.7-inch one
+const TALK_ASK_AT = 0.22;
+for (const t of TALK) SCENES[t.id] = talkScene(t.id, t.sound);
+
+// the story days' games, in STORY_DAYS' order, then the talking stories, in
+// STORY_TALK's (tests/homereeltest.mjs reads this list and holds it to
+// sona.js's)
+export const KEYS = ["lighthouse", "windup", "bridge", "waterwheel", "postboat", "bakery", "frontdoor", "lantern", "trainline", "kite", "nestlift", "concert", "rooftops", "observatory",
+  "robo", "lulu", "fizz", "sandy", "zippy", "kiki", "gus", "shelly", "chip", "theo"];
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) await main(SCENES, KEYS);
