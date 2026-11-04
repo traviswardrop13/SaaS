@@ -3124,7 +3124,13 @@ offer, the level sheet, the grown-ups check and "Home opens the offer once".
   Day 12 and a new game!" always; Day 2's had half a pixel to spare, and
   GitHub's test browser wrapped it): the sixth step (`fit6`, 3 Nov 2026)
   lifts the card's words on their shade so the page still fits; without it
-  Home scrolled there with the card back at 4:3. **Only a screen too
+  Home scrolled there with the card back at 4:3. **The fit has a few pixels
+  to spare, so the suites lay text out as an iPhone does** (every letter at
+  its own fractional width, `tests/_env.mjs`: `--font-render-hinting=none`
+  and an adopted `*{text-rendering:geometricPrecision}` sheet). CI's
+  headless Chromium snapped letters to whole pixels, about 5% wider, so a
+  game name in "Your games" wrapped there alone and `homestorytest` failed
+  on main from 1 Nov to 3 Nov 2026 while every local run passed. **Only a screen too
   short for all of it scrolls**, with every step taken and nothing cut off,
   the card 4:3 (or as tall as its words need): a 4-inch phone (320×568)
   with "Your games", a long title, or the website's founding banner on a
