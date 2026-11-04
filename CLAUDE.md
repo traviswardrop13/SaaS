@@ -197,6 +197,13 @@ output path. No app, fixture or acceptance assertion changed. Both test
 portability corrections require a fresh complete passing cloud run before
 production publication.
 
+The second GitHub run (`41876745642`, with the Darwin-scoped audio fix)
+completed all 165 suites: 164 passed, and only the pre-fix compact screenshot
+path failed. Speech evidence passed 247/247, including F 4/4; this is an
+observed pass after the portability correction, not proof of causation.
+The portable screenshot fix has now passed its 21 focused scenarios. A
+fresh complete passing cloud run of the final candidate is still required.
+
 **Latest first-day flow (upstream #251/#253, 31 Oct 2026) supersedes the
 earlier Picnic-first review experiment.** Setup opens ordinary Fruit Slice,
 through its existing practice page, for every age. Home then offers Day 1's

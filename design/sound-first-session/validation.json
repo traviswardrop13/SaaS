@@ -48,7 +48,7 @@
     "currentIntegratedCandidate": "Pending; the recorded exit0 applies only to the earlier merge named above."
   },
   "regressionEvidence": "New target selection, stale-sibling protection, whole-Home fit and signature-adventure checks failed against saved pre-change sources. Five Auto-selection checks fail against the pre-fix Home, including real keyboard selection of the already-current sound. The final reimagined-Home suite fails the saved old layout in 145 of 596 checks; four visible sound-chip checks fail the old Home while 42 sound checks still pass.",
-  "releaseState": "Release and clinical scope approved. First GitHub battery completed all 165 suites with 163 passing and two test portability failures. Mac audio workaround is Darwin-only; compact screenshots use shared OUT. App, fixtures, scoring and acceptance assertions unchanged. Fresh full cloud pass remains required. Gym and avatar excluded.",
+  "releaseState": "Release and clinical scope approved. Second GitHub battery completed all 165 suites with 164 passing; only the old compact screenshot path failed. Speech evidence passed 247/247 including F4/4. Portable screenshot correction passed 21 focused scenarios. Final complete cloud pass remains required. Gym and avatar excluded.",
   "bookExpansion": {
     "requested": "Six new eight-page books for R,S,L,SH,CH,TH plus Bear's Lost Ball, expanded from its local six-page draft; all seven are additions relative to published main. Strict selected-sound shelf.",
     "sourceChecks": "All public script syntax parses; exact captions and bank-only key words validated with existing booklex plus official CMUdict entries.",
@@ -661,7 +661,7 @@
     "fullBattery": {
       "command": "node tests/run-all.mjs",
       "suites": 165,
-      "status": "First cloud run completed all 165 suites: 163 passed, two failed (quick F3/4 and a macOS-only screenshot path). Audio workaround is Darwin-only and compact screenshots now use shared OUT. Fresh full cloud pass required; no release claimed.",
+      "status": "Second cloud run completed all 165 suites: 164 passed, only the pre-fix compact screenshot path failed. Speech evidence passed 247/247 including F4/4. Portable screenshot correction passed all21 focused scenarios; final complete cloud pass remains required.",
       "firstRun": {
         "status": "Stopped",
         "completedSuites": 69,
@@ -866,6 +866,55 @@
           "2026-11-04T17:23:22.3681123Z SUITE FAILED: compacthometest.mjs",
           "2026-11-04T19:15:13.2605157Z FAIL F \u00d74 at 500ms with the sound on: all four count (4 of 4, as before) \u2192 {\"tries\":3}",
           "2026-11-04T19:15:13.2606084Z 2 SUITE(S) FAILED: speechevidencetest.mjs, compacthometest.mjs"
+        ]
+      },
+      "secondCloudRun": {
+        "run": 41876745642,
+        "headSha": "ddafe6d24922c12b35f6d250aa2e77f298d78140",
+        "workflowStatus": "completed",
+        "workflowConclusion": "failure",
+        "suiteCount": 165,
+        "uniqueSuites": 165,
+        "failedSuites": [
+          "compacthometest.mjs"
+        ],
+        "testCommandExitCodes": [
+          "1"
+        ],
+        "allSuitesGreen": false,
+        "checkout": [
+          {
+            "context": [
+              "2026-11-04T17:22:05.0644219Z [command]/usr/bin/git log -1 --format=%H",
+              "2026-11-04T17:22:05.0659887Z 6b30eb7b8a7740053a1d894163cba6c1e772e690",
+              "2026-11-04T17:22:05.0946699Z ##[group]Run actions/setup-node@v4",
+              "2026-11-04T17:22:05.0946987Z with:",
+              "2026-11-04T17:22:05.0947189Z   node-version: 22",
+              "2026-11-04T17:22:05.0947399Z   always-auth: false",
+              "2026-11-04T17:22:05.0947611Z   check-latest: false"
+            ],
+            "shaCandidates": [
+              "6b30eb7b8a7740053a1d894163cba6c1e772e690"
+            ]
+          }
+        ],
+        "commandStep": [
+          {
+            "completedAt": "2026-11-04T20:04:52Z",
+            "conclusion": "failure",
+            "name": "Run node tests/run-all.mjs",
+            "number": 6,
+            "startedAt": "2026-11-04T17:23:14Z",
+            "status": "completed"
+          }
+        ],
+        "F4Lines": [
+          "2026-11-04T17:50:09.2428828Z PASS F \u00d74 at 500ms with the sound on: all four count (4 of 4, as before)",
+          "2026-11-04T17:50:09.2429363Z PASS F \u00d74 at 500ms with the sound on: no script error"
+        ],
+        "actualFailureLines": [
+          "2026-11-04T18:01:12.7682189Z SUITE FAILED: compacthometest.mjs",
+          "2026-11-04T20:04:52.8376762Z 1 SUITE(S) FAILED: compacthometest.mjs"
         ]
       }
     },
