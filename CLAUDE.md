@@ -153,11 +153,12 @@ a release pass. The power record is
 `/private/tmp/sona-home-books-release-20261103-r5-stopped.json`.
 All 2,105 frozen source/test/tool files still match `1c2260c8`; no product,
 test, tool or voice-index edit was made in response. No further local full
-run is started automatically. The request for an explicit exception to the
-full-battery-before-any-push rule, solely to upload the review branch and
-run the complete checks on GitHub, awaits Travis's answer. Nothing has been
-uploaded or released, and a complete passing battery remains required before
-production publication.
+run is started automatically. **Review-branch upload exception approved (Travis, 4 Nov 2026): “Run full
+checks on GitHub.”** This explicitly permits uploading the finished review
+branch and opening its draft PR before a local full pass, so the complete
+battery can run independently of this Mac. It does not waive validation:
+production publication must wait for the complete passing checks. No upload
+or release is claimed by this record.
 
 Published main `ef791055` (#260, TALKCLIP) is also integrated. Its twenty
 new clip/poster assets, recorder/capture tools, asset test and rulebook notes
@@ -167,8 +168,8 @@ element, reel loader or request, so these assets are not activated there.
 The updated Node-only asset test exits 0 (35 clips); optional decoded-frame
 checks are skipped because ffmpeg is unavailable locally. Voice-index
 freshness still exits 0; no TypeScript changed. The new source manifest has
-2,125 files. The complete battery and the requested pre-push exception are
-still pending; this integration is not a release pass.
+2,125 files. The complete battery is still pending; the limited pre-push
+exception above is approved. This integration is not a release pass.
 
 **Latest first-day flow (upstream #251/#253, 31 Oct 2026) supersedes the
 earlier Picnic-first review experiment.** Setup opens ordinary Fruit Slice,

@@ -48,7 +48,7 @@
     "currentIntegratedCandidate": "Pending; the recorded exit0 applies only to the earlier merge named above."
   },
   "regressionEvidence": "New target selection, stale-sibling protection, whole-Home fit and signature-adventure checks failed against saved pre-change sources. Five Auto-selection checks fail against the pre-fix Home, including real keyboard selection of the already-current sound. The final reimagined-Home suite fails the saved old layout in 145 of 596 checks; four visible sound-chip checks fail the old Home while 42 sound checks still pass.",
-  "releaseState": "Release authorized and Rachel review confirmed; latest main #257 remains integrated with FREE_PLAY_ON=false. R3 stopped after confirmed machine sleep despite an idle-sleep prevention assertion. No complete passing battery or release is claimed. Runtime/tests/tools/voice index remain frozen at bbe56df1. A fresh full run waits for Travis to confirm the Mac is plugged in, open and awake. GitHub normal write access is restored; nothing pushed or merged remotely. Gym and avatar excluded.",
+  "releaseState": "Release and Rachel review approved. Runtime/source frozen at 146fa107 with all 2,125 manifest entries matching. R5 stopped after confirmed macOS sleep; no full-pass or release claim. Travis explicitly approved \u201cRun full checks on GitHub\u201d on 4 November, permitting review-branch upload and draft PR before a local full pass; production publication still requires complete passing checks. No local rerun. Gym and avatar excluded.",
   "bookExpansion": {
     "requested": "Six new eight-page books for R,S,L,SH,CH,TH plus Bear's Lost Ball, expanded from its local six-page draft; all seven are additions relative to published main. Strict selected-sound shelf.",
     "sourceChecks": "All public script syntax parses; exact captions and bank-only key words validated with existing booklex plus official CMUdict entries.",
@@ -661,7 +661,7 @@
     "fullBattery": {
       "command": "node tests/run-all.mjs",
       "suites": 165,
-      "status": "R5 invalidated by confirmed macOS sleep and stopped; complete passing battery still required. Permission to upload the review branch for GitHub checks is pending.",
+      "status": "R5 invalidated by confirmed macOS sleep and stopped; complete passing battery still required. Travis approved review-branch upload and draft PR for GitHub full checks on 4 November.",
       "firstRun": {
         "status": "Stopped",
         "completedSuites": 69,
@@ -770,7 +770,7 @@
         "sourceFrozenCommit": "bbe56df1bfd919ea5beeb66342f9ebebdccbd86b",
         "ownedProcessesAfterStop": 0
       },
-      "resumeRequirement": "No automatic local rerun. Explicit permission to upload the review branch before a local full pass for GitHub-hosted full checks is pending. A complete passing battery is still required before production publication.",
+      "resumeRequirement": "No automatic local rerun. Explicit exception approved on 4 November to upload the finished review branch and open a draft PR before a local full pass, solely for GitHub-hosted full checks. Complete passing checks remain required before production publication.",
       "firstGameLatePriceSourceReview": "No stale-contract change found: this fixture explicitly forces browser web-sales/paidUI, preserves annual WEB_PLAN and tests3300ms charter-standard response after2500ms button release; native monthly7day selection and disabledFREEPLAY do not replace that webrail. No source or test edits justified without awake runtime evidence.",
       "fourthRun": {
         "complete": false,
@@ -827,7 +827,7 @@
       "scope": "New books' words and pictures and the parent-only target sound setting",
       "upstreamBoundary": "This confirmation is not extended to the separate upstream Day 1 clinical questions recorded in CLAUDE.md."
     },
-    "publication": "Pending complete passing release checks. Normal Git authentication works. Exception to upload the review branch for GitHub full checks requested, not yet granted; no upload, PR, main merge or release claimed.",
+    "publication": "Review-branch upload and draft PR authorized for GitHub full checks by explicit 4 November exception. Complete passing checks remain required before production publication. No upload, PR, main merge or release claimed by this documentation.",
     "runtimeCommit": "146fa107df753d0cfd8449487cda55a9032ab0f6",
     "testCorrectionCommit": "250f4b4e498950854bf959c18b86e6b2321afd8e",
     "homeBooksSettingsMatch": {
@@ -921,6 +921,14 @@
       "manifest": "/private/tmp/sona-release-146fa107-frozen-manifest.json",
       "sourceFiles": 2125,
       "fullBattery": "Pending; no local full restart or full-pass claim"
+    },
+    "reviewBranchUploadException": {
+      "date": "2026-11-04",
+      "approvedBy": "Travis",
+      "answer": "Run full checks on GitHub",
+      "scope": "Upload finished review branch and open draft PR before a local full pass, to run the complete checks independently of this Mac",
+      "releaseGate": "Production publication only after all complete checks pass",
+      "publicationClaim": false
     }
   }
 }
