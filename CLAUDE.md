@@ -171,6 +171,20 @@ freshness still exits 0; no TypeScript changed. The new source manifest has
 2,125 files. The complete battery is still pending; the limited pre-push
 exception above is approved. This integration is not a release pass.
 
+**GitHub validation and test portability (4 Nov 2026).** The approved
+review-branch upload is complete; the first cloud run reported a genuine
+failure in `speechevidencetest`: quick F counted 3 of 4 (246/247 checks),
+with no script error. This is not attributed to Mac sleep. The same quick
+suite passed 10/10 twice locally without changing any assertion or sound.
+Main `4a30d86d`'s Ubuntu run `41750629238` passed the complete battery,
+including F 4/4 and speech evidence 247/247. The headless
+`--disable-audio-output` workaround is now scoped to macOS, where its clock
+fix was demonstrated. Mac launch arguments remain identical; Linux launch
+arguments now match main exactly. This is a test portability correction,
+not proof that the flag caused the F failure. No product, fixture, scoring
+or clinical threshold changed. Syntax and argument checks pass; a fresh
+complete cloud pass remains required before release.
+
 **Latest first-day flow (upstream #251/#253, 31 Oct 2026) supersedes the
 earlier Picnic-first review experiment.** Setup opens ordinary Fruit Slice,
 through its existing practice page, for every age. Home then offers Day 1's

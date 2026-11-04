@@ -48,7 +48,7 @@
     "currentIntegratedCandidate": "Pending; the recorded exit0 applies only to the earlier merge named above."
   },
   "regressionEvidence": "New target selection, stale-sibling protection, whole-Home fit and signature-adventure checks failed against saved pre-change sources. Five Auto-selection checks fail against the pre-fix Home, including real keyboard selection of the already-current sound. The final reimagined-Home suite fails the saved old layout in 145 of 596 checks; four visible sound-chip checks fail the old Home while 42 sound checks still pass.",
-  "releaseState": "Release and Rachel review approved. Runtime/source frozen at 146fa107 with all 2,125 manifest entries matching. R5 stopped after confirmed macOS sleep; no full-pass or release claim. Travis explicitly approved \u201cRun full checks on GitHub\u201d on 4 November, permitting review-branch upload and draft PR before a local full pass; production publication still requires complete passing checks. No local rerun. Gym and avatar excluded.",
+  "releaseState": "Release and clinical scope approved. Review branch uploaded under explicit GitHub-check exception; first cloud run reported quick F3/4, so production release remains gated. Test portability correction scopes the Mac audio workaround to Darwin; app source and clinical behavior unchanged. Fresh complete cloud pass required. Gym and avatar excluded.",
   "bookExpansion": {
     "requested": "Six new eight-page books for R,S,L,SH,CH,TH plus Bear's Lost Ball, expanded from its local six-page draft; all seven are additions relative to published main. Strict selected-sound shelf.",
     "sourceChecks": "All public script syntax parses; exact captions and bank-only key words validated with existing booklex plus official CMUdict entries.",
@@ -661,7 +661,7 @@
     "fullBattery": {
       "command": "node tests/run-all.mjs",
       "suites": 165,
-      "status": "R5 invalidated by confirmed macOS sleep and stopped; complete passing battery still required. Travis approved review-branch upload and draft PR for GitHub full checks on 4 November.",
+      "status": "First GitHub run reported a real quick-F failure (3 of 4). Mac-only audio workaround is now scoped to Darwin, restoring Linux launch arguments to passing main. Fresh complete cloud validation remains required; cause of F failure not claimed proven.",
       "firstRun": {
         "status": "Stopped",
         "completedSuites": 69,
@@ -929,6 +929,73 @@
       "scope": "Upload finished review branch and open draft PR before a local full pass, to run the complete checks independently of this Mac",
       "releaseGate": "Production publication only after all complete checks pass",
       "publicationClaim": false
+    },
+    "testHarnessPortabilityCorrection": {
+      "date": "2026-11-04",
+      "file": "tests/_env.mjs",
+      "change": "Scope --disable-audio-output to Darwin only; preserve mute, font normalization and caller arguments",
+      "productionFilesChanged": 0,
+      "fixturesOrAssertionsChanged": 0,
+      "causalClaim": "Not proven that this flag caused the quick F failure",
+      "observedCloudFailure": {
+        "suite": "speechevidencetest.mjs",
+        "check": "F \u00d74 at 500ms with sound on",
+        "expectedTries": 4,
+        "actualTries": 3,
+        "passedChecks": 246,
+        "totalChecks": 247,
+        "scriptErrors": 0
+      },
+      "baseline": {
+        "commit": "4a30d86ddc9c8bde8ec321f6b27b32e5e366fd57",
+        "runId": 41750629238,
+        "jobId": 126314546551,
+        "url": "https://github.com/traviswardrop13/SaaS/actions/runs/41750629238",
+        "conclusion": "success",
+        "speechEvidence": "247/247, F/T/TH quick repetitions each 4/4",
+        "os": "Ubuntu 24.04.5",
+        "chromium": "156.0.8078.4, build1248"
+      },
+      "localQuickRuns": [
+        {
+          "run": 1,
+          "exitCode": 0,
+          "seconds": 23.98,
+          "log": "/private/tmp/sona-speechev-cloud-F4-quick-1.log",
+          "F4": [
+            "PASS F \u00d74 at 500ms with the sound on: all four count (4 of 4, as before)",
+            "PASS F \u00d74 at 500ms with the sound on: no script error"
+          ]
+        },
+        {
+          "run": 2,
+          "exitCode": 0,
+          "seconds": 23.55,
+          "log": "/private/tmp/sona-speechev-cloud-F4-quick-2.log",
+          "F4": [
+            "PASS F \u00d74 at 500ms with the sound on: all four count (4 of 4, as before)",
+            "PASS F \u00d74 at 500ms with the sound on: no script error"
+          ]
+        }
+      ],
+      "argumentProof": {
+        "macArgsIdentical": true,
+        "macArgs": [
+          "--mute-audio",
+          "--disable-audio-output",
+          "--font-render-hinting=none",
+          "--autoplay-policy=no-user-gesture-required"
+        ],
+        "linuxArgsEqualMain": true,
+        "linuxArgs": [
+          "--mute-audio",
+          "--font-render-hinting=none",
+          "--autoplay-policy=no-user-gesture-required"
+        ],
+        "syntaxExitCode": 0
+      },
+      "argumentProofFile": "/private/tmp/sona-audio-portability-flags-proof.json",
+      "releaseGate": "Fresh complete cloud pass still required; no production publication claimed"
     }
   }
 }
