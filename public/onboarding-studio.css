@@ -85,6 +85,7 @@ body[data-setup-screen="reel"] .ob { overflow:hidden; }
    line under her name is centred like the name above it, and the name no
    longer ends on a dangling comma. */
 .rachel-line { color:#786959; font-size:14px; text-align:center; text-wrap:balance; }
+#rachelTitle .sr-comma { font-size:0; }   /* read aloud, never drawn */
 .rachel-pill { color:var(--act-d); border-color:var(--studio-line); background:#fffdf8; box-shadow:none; font-size:11px; }
 /* Keep the native name step's frozen sizing rules. More space before Age. */
 body[data-setup-screen="name"] .studio-brand { display:none; }

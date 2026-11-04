@@ -73,7 +73,7 @@ await scenario("a family that can buy", async () => {
     await toReady(page, "Mia", "mia.mom@example.com");
     ok("nothing is sent from the email step itself", leads(requests).length === 0, leads(requests));
     ok("before the price, setup shows the Fruit Slice demo (under \"Speech practice. Through play.\"), Rachel, what the child loves and their games, and no problem slide or Piano Tiles demo",
-      JSON.stringify(sold) === JSON.stringify(["Speech practice. Through play.", "Built with Rachel, MS, CF-SLP", "What does Mia love?", "Games for Mia."]) &&
+      JSON.stringify(sold) === JSON.stringify(["Speech practice. Through play.", "Built with Rachel, MS, CF-SLP,", "What does Mia love?", "Games for Mia."]) &&
       (await page.locator('[data-step="problem"]').count()) === 0, sold);
     ok("Rachel's own screen carries her line word for word, and setup ends on the ready screen with the child's name",
       rachelLine === "Built with Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical fellowship." &&
@@ -97,8 +97,8 @@ await scenario("a family that can buy", async () => {
     const card = await text(page, "#iapCard"), button = await text(page, "#iapBuy");
     ok("Continue goes to the price, while the grown-up still holds the phone: one plan, the store's own words",
       /3 days free, then \$9\.99 a month\./.test(card) && button === "Start practicing!" && !/\$59\.99|a year|yearly/i.test(card), { card, button });
-    ok("…as one row (Monthly, 3-day free trial, the price), one check line, and no date anywhere",
-      (await page.locator("#iapTL li").count()) === 0 && /Monthly\s+3-day free trial\s+\$9\.99\/mo/.test(card) && /No payment today · Subscription auto-renews/.test(card) && /Cancel anytime\./.test(card) && !/(Mon|Tues|Wednes|Thurs|Fri|Satur|Sun)day/.test(card), card);
+    ok("…as one row (Monthly, 3-day free trial, the price), one check line, the 3-step timeline (4 Nov 2026), and no date anywhere",
+      (await page.locator("#iapTL li").count()) === 3 && /Today\s+Everything unlocks\s+Day 2\s+Cancel by today, pay nothing\s+Day 3\s+\$9\.99\/mo starts/.test(card) && /Monthly\s+3-day free trial\s+\$9\.99\/mo/.test(card) && /No payment today · Subscription auto-renews/.test(card) && /Cancel anytime\./.test(card) && !/(Mon|Tues|Wednes|Thurs|Fri|Satur|Sun)day/.test(card), card);
     ok("…and no reminder is promised anywhere on the price screen (Sona sends none yet)",
       !/\b(remind|reminder|email|e-mail|notify|notification)/i.test(await text(page, "body")), await text(page, "body"));
     const ways = { notNow: await page.locator("#declineLink").waitFor({ state: "visible", timeout: 4000 }).then(() => true, () => false), restore: await page.locator("#iapRestore").isVisible(),

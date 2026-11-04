@@ -1688,7 +1688,8 @@
             if (OLD || typeof Sona.notifyRefresh !== "function") return;
             Sona.notifyRefresh().then(function () {
               if (APPLE.busy || APPLE.done || !pricedNow()) return;
-              if ((wordsOf(picked()).headsUp || "") !== (elAhead.textContent || "")) paintApple();
+              var nw = wordsOf(picked()), mid = elTL.querySelector(".tli.mid p");
+              if ((nw.headsUp || "") !== (elAhead.textContent || "") || ((nw.steps && nw.steps[1]) ? nw.steps[1].text : "") !== (mid ? mid.textContent : "")) paintApple();
             }, function () {});
           } catch (e) {}
         }

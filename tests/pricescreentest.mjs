@@ -118,6 +118,10 @@ const SNAP = () => {
     radiosPainted: [...document.querySelectorAll("[role=radio]")].filter(seen).length,
     old: ["tiFree", "tiDate", "trialIntro", "iapPlanMo", "iapPlans", "iapMath", "iapMathMo"].filter((id) => !!g(id)),
     msg: text("iapMsg"), line: tidy(g("planLine").textContent), cancel: seen(g("planCancel")),
+    // the heads-up: the line under the button, or (4 Nov 2026) the 3-step
+    // timeline's middle step above it, which then says it in the line's place
+    step: (() => { const m = document.querySelector("#iapTL .tli.mid p"); return m && seen(m) ? tidy(m.textContent) : ""; })(),
+    stepAbove: seen(g("iapTL")) ? g("iapTL").getBoundingClientRect().bottom <= g("iapBuy").getBoundingClientRect().top : null,
     ahead: text("iapAhead"), aheadUnder: seen(g("iapAhead")) ? g("iapAhead").getBoundingClientRect().top >= g("iapBuy").getBoundingClientRect().bottom && (!seen(note) || note.getBoundingClientRect().bottom <= g("iapBuy").getBoundingClientRect().top || g("iapAhead").getBoundingClientRect().top >= note.getBoundingClientRect().bottom) : null,
     decline: text("declineLink"), declineSeen: seen(g("declineLink")), restoreSeen: seen(g("iapRestore")),
     legal: seen(g("iapLegal")) ? tidy(g("iapLegal").innerText) : "", afterCard: after(card), afterDecline: seen(g("declineRow")) ? after(g("declineRow")) : "",
@@ -186,7 +190,7 @@ function differs(s, w) {
   want("tag", s.tag, w.tag);
   want("price", s.price, s.tile ? w.price : "");
   want("what", s.what, s.tile ? w.what : "");
-  want("rows", s.rows, w.rows.map((r) => [r.when, flat(r.text)]));
+  want("rows", s.rows, ((w.steps && w.steps.length) ? w.steps : w.rows).map((r) => [r.when, flat(r.text)]));   // the 3-step timeline since 4 Nov 2026
   want("note", s.note, flat(w.note));
   if (w.noteFirst) want("note under the row, above the button", s.noteAbove, true);
   if (w.noteLast) want("small print under the button", s.noteAbove, false);
@@ -538,12 +542,15 @@ try {
   // (NOTIFY1's trialReminderOn, faked here by _phone.mjs's `remind`) AND the
   // picked row is a free trial ──
   await scenario("the heads-up line", async () => {
-    const LINE = "We'll remind you the day before it ends.";
+    // since 4 Nov 2026 a sure free trial says it as the timeline's middle
+    // step, above the button, and the line under the button steps aside
+    const LINE = "We remind you";
+    const said = (s) => s.ahead === "" && s.step === LINE && s.stepAbove === true;
     for (const door of DOORS) {
       await load(...at(door, { store: STORES.monthlyFree, remind: true })); await until("free");
       const s = await snap();
       ok("this phone will show it, a free trial, from " + door[0] + ": the one line under the button, after the small print, word for word",
-        s.ahead === LINE && s.aheadUnder === true && (s.body.match(/remind/gi) || []).length === 1 && !/notif|e-?mail/i.test(s.body), [s.ahead, s.aheadUnder, (s.body.match(/[^\n]*remind[^\n]*/gi) || [])]);
+        said(s) && (s.body.match(/remind/gi) || []).length === 1 && !/notif|e-?mail/i.test(s.body), [s.ahead, s.aheadUnder, (s.body.match(/[^\n]*remind[^\n]*/gi) || [])]);
     }
     await load(...at(SETUP, { store: STORES.monthlyFree, remind: true, elig: "missing" })); await until("free");
     let s = await snap();
@@ -563,20 +570,20 @@ try {
     await load(...at(SETUP, { store: STORES.monthlyFree, offering: "all", remind: true })); await until("free");
     s = await snap();
     const asked = await page.evaluate(() => window.__phone.trialReminderCalls.slice());
-    ok("two rows, Monthly (free) picked on arrival: the line, under the button", s.ahead === LINE && s.aheadUnder === true && (s.body.match(/remind/gi) || []).length === 1, s.ahead);
+    ok("two rows, Monthly (free) picked on arrival: the line, under the button", said(s) && (s.body.match(/remind/gi) || []).length === 1, s.ahead);
     ok("…sona.js is asked about each plan the card paints, the free ones included", asked.indexOf("free") > -1, asked);
     await page.locator("#iapLife").click(); s = await snap();
-    ok("…the one payment picked: the line goes, nothing says remind", s.ahead === "" && !/remind/i.test(s.body), s.ahead);
+    ok("…the one payment picked: the line goes, nothing says remind", s.ahead === "" && s.step === "" && !/remind/i.test(s.body), s.ahead);
     await page.locator("#iapPlan").click(); s = await snap();
-    ok("…Monthly picked again: the line comes back", s.ahead === LINE && s.aheadUnder === true, s.ahead);
+    ok("…Monthly picked again: the line comes back", said(s), s.ahead);
     // the yearly row switched back on (sellYearly): charged today, the line leaves with it
     await load(...at(SETUP, { sellYearly: true, store: { monthly: { price: "$9.99", free: "P3D" }, annual: { price: "$59.99" } }, offering: "both", remind: true })); await until("free");
     s = await snap();
-    ok("the yearly row switched on, charged today, Monthly (free) picked on arrival: the line", s.ahead === LINE, s.ahead);
+    ok("the yearly row switched on, charged today, Monthly (free) picked on arrival: the line", said(s), [s.ahead, s.step]);
     await page.locator("#iapYear").click(); s = await snap();
-    ok("…a tap on the yearly row charged today: no line", s.ahead === "" && !/remind/i.test(s.body), s.ahead);
+    ok("…a tap on the yearly row charged today: no line", s.ahead === "" && s.step === "" && !/remind/i.test(s.body), s.ahead);
     await page.locator("#iapPlan").click(); s = await snap();
-    ok("…and a tap on the free Monthly row brings it back", s.ahead === LINE, s.ahead);
+    ok("…and a tap on the free Monthly row brings it back", said(s), [s.ahead, s.step]);
     // after a sale the line leaves with the price
     await calm(page); await page.locator("#iapBuy").click(); await until("done");
     s = await snap();
@@ -599,8 +606,8 @@ try {
     const day = await page.evaluate(() => new Date(Date.now() + 3 * 86400000).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" }));
     ok("the App Store today: Monthly, 3-day free trial, $9.99/mo, the button, all from the store",
       s.name === "Monthly" && s.under === "3-day free trial" && s.amt === "$9.99/mo" && s.price === "3 days free, then $9.99 a month." && s.button === "Start practicing!", [s.tag, s.price, s.button]);
-    ok("…no dated rows, and the billing day (Thursday, October 8) is nowhere on the screen: just one check line",
-      s.rows.length === 0 && day === "Thursday, October 8" && s.body.indexOf(day) === -1 && !/October/.test(s.body) && s.check === "No payment today · Subscription auto-renews", [s.rows, s.check, day]);
+    ok("…the 3-step timeline (4 Nov 2026) and no date: the billing day (Thursday, October 8) is nowhere on the screen, and one check line",
+      s.rows.length === 3 && s.rows[0][0] === "Today" && day === "Thursday, October 8" && s.body.indexOf(day) === -1 && !/October/.test(s.body) && s.check === "No payment today · Subscription auto-renews", [s.rows, s.check, day]);
     ok("…and the small print under the button says the price that starts, and Cancel anytime",
       s.note === "3 days free, then $9.99 a month. Cancel anytime." && s.noteAbove === false, [s.note, s.noteAbove]);
     await calm(page); await page.locator("#iapBuy").click(); await until("done");
@@ -1125,7 +1132,7 @@ try {
           if (m.overX > 0) say("the page scrolls sideways by " + m.overX);
           if (Math.abs(m.tile.width - m.inner) > 2) say("the tile is " + m.tile.width + " wide in a " + m.inner + " card");
           if (shape === "free days, not sure" && !(m.note && m.note.top >= m.tile.bottom && m.note.bottom <= m.buy.top)) say("the not-sure note is not between the row and the button");
-          if (m.tl) say("dated rows are painted");
+          if (m.tl && !/^free days, sure/.test(shape)) say("dated rows are painted (only a sure free trial has its 3-step timeline, 4 Nov 2026)");
           if (!(m.fonts.price >= m.fonts.buy)) say("the price is not the largest word about money " + JSON.stringify(m.fonts));
           if (m.guard !== "none") say("the rotate cover is showing");
         }
@@ -1156,7 +1163,7 @@ try {
       const card = g("iapCard"), cs = getComputedStyle(card);
       return { fold: innerHeight - sb, scrollY, overX: document.documentElement.scrollWidth - innerWidth, fit: document.body.className.split(/\s+/).filter((c) => /^fit\d$/.test(c)).join(" "),
         inner: card.getBoundingClientRect().width - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) - parseFloat(cs.borderLeftWidth) - parseFloat(cs.borderRightWidth),
-        head: box(g("offerTitle")), life: box(g("iapLife")), month: box(g("iapPlan")), note: box(g("iapNote")), ahead: box(g("iapAhead")), buy: box(g("iapBuy")), decline: box(g("declineLink")) };
+        head: box(g("offerTitle")), life: box(g("iapLife")), month: box(g("iapPlan")), note: box(g("iapNote")), ahead: box(g("iapAhead")) || (/remind/i.test((document.querySelector("#iapTL .tli.mid p") || {}).textContent || "") ? box(g("iapTL")) : null), buy: box(g("iapBuy")), decline: box(g("declineLink")) };
     };
     const results = await Promise.all(SIZES.map(async ([w, h, st, sb]) => {
       const { context, page: pg, errors: errs } = await open(browser, base, { app: "buy", safeArea: { top: st, bottom: sb } }, { width: w, height: h });
@@ -1234,7 +1241,7 @@ try {
       const card = g("iapCard"), cs = getComputedStyle(card);
       return { fold: innerHeight - sb, scrollY, overX: document.documentElement.scrollWidth - innerWidth, fit: document.body.className.split(/\s+/).filter((c) => /^fit\d$/.test(c)).join(" "),
         inner: card.getBoundingClientRect().width - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) - parseFloat(cs.borderLeftWidth) - parseFloat(cs.borderRightWidth),
-        head: box(g("offerTitle")), year: box(g("iapYear")), month: box(g("iapPlan")), life: box(g("iapLife")), ahead: box(g("iapAhead")), buy: box(g("iapBuy")), decline: box(g("declineLink")) };
+        head: box(g("offerTitle")), year: box(g("iapYear")), month: box(g("iapPlan")), life: box(g("iapLife")), ahead: box(g("iapAhead")) || (/remind/i.test((document.querySelector("#iapTL .tli.mid p") || {}).textContent || "") ? box(g("iapTL")) : null), buy: box(g("iapBuy")), decline: box(g("declineLink")) };
     };
     const results = await Promise.all(SIZES.map(async ([w, h, st, sb]) => {
       const { context, page: pg, errors: errs } = await open(browser, base, { app: "buy", sellYearly: true, safeArea: { top: st, bottom: sb } }, { width: w, height: h });
