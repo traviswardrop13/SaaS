@@ -287,7 +287,7 @@ try {
       ok(tag + "a radio group with Monthly picked when the screen opens, the one payment not",
         r.group === "radiogroup" && r.label === "Choose a plan" && r.life.role === "radio" && r.month.role === "radio" && r.month.checked === "true" && r.life.checked === "false" && r.month.tab === 0 && r.life.tab === -1, r);
       ok(tag + "the card state, the title, the check line, the small print, the button and the header line are the monthly plan's free trial (\"No payment today\")",
-        s.state === "free" && s.title === flat(w.m.title) && /^No payment today/.test(s.check) && s.check === flat(w.m.check) && s.note === flat(w.m.note) &&
+        s.state === "free" && s.title === flat(w.m.title) && s.check === "" && s.check === flat(w.m.check) && s.note === flat(w.m.note) &&
         s.button === w.m.button && s.act === "buy" && s.buttons === 1 && s.line === (kept ? "Today: the free version. " : "") + w.m.header &&
         !/one payment|no subscription/i.test(s.note + " " + s.button + " " + s.check + " " + s.title + " " + s.line), [s.state, s.title, s.check, s.note, s.button, s.line]);
       ok(tag + "nothing on the screen is about a year, every figure is the store's, and no saving or ratio is claimed",
@@ -361,7 +361,7 @@ try {
     await load(...at(SETUP, two({ store: { monthly: { price: "$9.99", free: "P1W" }, annual: { price: "$59.99", free: "P1W" }, lifetime: { price: "$59.99" } } }))); await until("free");
     r = await rows(); s = await snap();
     ok("a week free in the store: \"7-day free trial\" on the monthly row and, Monthly picked as the screen opens, \"7 days free, then $9.99 a month.\" under the button, with no 3 anywhere",
-      r.month.sub === "7-day free trial" && s.note === "7 days free, then $9.99 a month. Cancel anytime." && !/3.day|3 days|three/i.test(s.body), [r.month.sub, s.note]);
+      r.month.sub === "7-day free trial" && s.note === "7 days free, then $9.99 a month. Auto-renews. Cancel anytime." && !/3.day|3 days|three/i.test(s.body), [r.month.sub, s.note]);
 
     // late: a parent reading the monthly row alone comes back to the app and
     // the fresh answer now carries the one payment. It comes in UNPICKED: the
@@ -496,7 +496,7 @@ try {
     await page.locator("#iapYear").click();
     s = await snap(); r = await rows();
     ok("a week free in the store: \"7-day free trial\" on both rows and, Yearly picked, \"7 days free, then $59.99 a year.\" under the button",
-      r.year.sub === "7-day free trial" && r.month.sub === "7-day free trial" && s.note === "7 days free, then $59.99 a year. Cancel anytime." && !/3.day|3 days|three/i.test(s.body), [r.year.sub, r.month.sub, s.note]);
+      r.year.sub === "7-day free trial" && r.month.sub === "7-day free trial" && s.note === "7 days free, then $59.99 a year. Auto-renews. Cancel anytime." && !/3.day|3 days|three/i.test(s.body), [r.year.sub, r.month.sub, s.note]);
 
     // "Best value" only when the store's yearly price is below twelve monthly ones
     await load(...at(SETUP, yr({ store: { monthly: { price: "$9.99", free: "P3D" }, annual: { price: "$129.99", free: "P3D" } } }))); await until("free");
@@ -544,7 +544,7 @@ try {
   await scenario("the heads-up line", async () => {
     // since 4 Nov 2026 a sure free trial says it as the timeline's middle
     // step, above the button, and the line under the button steps aside
-    const LINE = "We remind you";
+    const LINE = "Reminder";
     const said = (s) => s.ahead === "" && s.step === LINE && s.stepAbove === true;
     for (const door of DOORS) {
       await load(...at(door, { store: STORES.monthlyFree, remind: true })); await until("free");
@@ -607,9 +607,9 @@ try {
     ok("the App Store today: Monthly, 3-day free trial, $9.99/mo, the button, all from the store",
       s.name === "Monthly" && s.under === "3-day free trial" && s.amt === "$9.99/mo" && s.price === "3 days free, then $9.99 a month." && s.button === "Start practicing!", [s.tag, s.price, s.button]);
     ok("…the 3-step timeline (4 Nov 2026) and no date: the billing day (Thursday, October 8) is nowhere on the screen, and one check line",
-      s.rows.length === 3 && s.rows[0][0] === "Today" && day === "Thursday, October 8" && s.body.indexOf(day) === -1 && !/October/.test(s.body) && s.check === "No payment today · Subscription auto-renews", [s.rows, s.check, day]);
+      s.rows.length === 3 && s.rows[0][0] === "Today" && day === "Thursday, October 8" && s.body.indexOf(day) === -1 && !/October/.test(s.body) && s.check === "", [s.rows, s.check, day]);
     ok("…and the small print under the button says the price that starts, and Cancel anytime",
-      s.note === "3 days free, then $9.99 a month. Cancel anytime." && s.noteAbove === false, [s.note, s.noteAbove]);
+      s.note === "3 days free, then $9.99 a month. Auto-renews. Cancel anytime." && s.noteAbove === false, [s.note, s.noteAbove]);
     await calm(page); await page.locator("#iapBuy").click(); await until("done");
     s = await snap();
     ok("buying it opens Apple's sheet once, on the monthly product, with no second ask of the store", same(s.bought, [IDS.monthly]) && s.asked.length === 1, [s.bought, s.asked]);
@@ -621,7 +621,7 @@ try {
     await load(...at(SETUP, { store: { monthly: { price: "$12.49", free: "P1W" }, annual: { price: "$59.99", free: "P3D" } } })); await until("free");
     s = await snap();
     ok("a store with a week free at $12.49 says 7 days and $12.49 everywhere: the row, the line, the small print, the button",
-      s.under === "7-day free trial" && s.amt === "$12.49/mo" && s.price === "7 days free, then $12.49 a month." && s.button === "Start practicing!" && s.note === "7 days free, then $12.49 a month. Cancel anytime." &&
+      s.under === "7-day free trial" && s.amt === "$12.49/mo" && s.price === "7 days free, then $12.49 a month." && s.button === "Start practicing!" && s.note === "7 days free, then $12.49 a month. Auto-renews. Cancel anytime." &&
       (s.body.match(/\$[\d.,]+/g) || []).every((x) => x === "$12.49") && !/\b3 days\b/i.test(s.body), [s.tag, s.price, s.button, s.rows]);
     await calm(page); await page.locator("#iapBuy").click(); await until("done");
     s = await snap();
@@ -663,7 +663,7 @@ try {
     await load(...at(SETUP, { store: STORES.monthlyFree, elig: { monthly: 2 } })); await until("free");
     const s = await snap();
     ok("Apple says this buyer gets the free days: the check line says it plainly, and the only note is the small print",
-      s.note === "3 days free, then $9.99 a month. Cancel anytime." && s.check === "No payment today · Subscription auto-renews" && !/new subscribers/i.test(s.cardText) && same(told(s), ["free-sure"]), [s.note, s.rows, told(s)]);
+      s.note === "3 days free, then $9.99 a month. Auto-renews. Cancel anytime." && s.check === "" && !/new subscribers/i.test(s.cardText) && same(told(s), ["free-sure"]), [s.note, s.rows, told(s)]);
     // the two new store calls are optional: slow or broken, the card is as if they did not exist
     for (const [label, cfg, sure] of [["the \"can this buyer have free days\" ask never answers", { elig: "hang" }, false], ["the purchase sync never answers", { sync: "hang" }, true],
       ["the purchase sync fails", { sync: "fail" }, true], ["the customer record cannot be read", { info: "fail" }, true]]) {
@@ -697,7 +697,7 @@ try {
     await tick(900);
     await page.waitForFunction(() => /^3 days free, then/.test(document.getElementById("iapNote").textContent));
     s = await snap();
-    ok("a late \"eligible\": the \"new subscribers\" note goes and the check line states it plainly", !!noteBefore && s.note === "3 days free, then $9.99 a month. Cancel anytime." && /^No payment today/.test(s.check), [noteBefore, s.note, s.rows]);
+    ok("a late \"eligible\": the \"new subscribers\" note goes and the check line states it plainly", !!noteBefore && s.note === "3 days free, then $9.99 a month. Auto-renews. Cancel anytime." && s.check === "" && s.rows.length === 3, [noteBefore, s.note, s.rows]);
 
     // back at the front with the store out of reach: that is not news about the plan
     await load(...at(SETUP, { store: STORES.monthlyFree })); await until("free");

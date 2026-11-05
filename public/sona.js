@@ -9368,7 +9368,7 @@
   // o.headsUp: true only when the page has been told this phone will show
   // its own heads-up the day before this row's free days end (see above).
   const PLAN_HEADS_UP = "We'll remind you the day before it ends.";   // Travis's and Rachel's words to change
-  const PLAN_STEP_HEADS_UP = "We remind you";   // the same promise, as the timeline's middle step (4 Nov 2026)
+  const PLAN_STEP_HEADS_UP = "Reminder";   // the same promise, as the timeline's middle step (4 Nov 2026)
   function planWords(plan, o) {
     o = o || {};
     const WHAT = o.freeVersion ? "Every game and every book." : "Daily practice, every game and every book.";
@@ -9474,12 +9474,17 @@
     // and Rachel's to change.
     const DAYS = plan.sure === true && plan.free && plan.free.unit === "day" ? Number(plan.free.n) : 0;
     if (DAYS >= 3) {
+      // (Travis, 5 Nov 2026: "a little bit too busy": a word or two a step,
+      // and the check line steps aside, since the steps say "no payment
+      // today"; the small print under the button carries "Auto-renews")
       w.steps = [
-        { when: "Today", text: "Everything unlocks" },
-        { when: "Day " + (DAYS - 1), text: w.headsUp ? PLAN_STEP_HEADS_UP : "Cancel by today, pay nothing" },
-        { when: "Day " + DAYS, text: w.amount + " starts" },
+        { when: "Today", text: "Free" },
+        { when: "Day " + (DAYS - 1), text: w.headsUp ? PLAN_STEP_HEADS_UP : "Still free" },
+        { when: "Day " + DAYS, text: w.amount },
       ];
       w.headsUp = "";
+      w.check = "";
+      w.note = w.price + " Auto-renews. Cancel anytime.";
     }
     return w;
   }

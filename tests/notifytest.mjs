@@ -465,8 +465,8 @@ const now = (page) => page.evaluate(() => Date.now());
 {
   // (since 4 Nov 2026 a sure free trial counted in days says it as the
   // 3-step timeline's middle step, and the line under the button steps aside)
-  const LINE = "We remind you";
-  const ahead = (page) => page.evaluate(() => { const e = document.getElementById("iapAhead"), m = document.querySelector("#iapTL .tli.mid p"); return e && !e.hidden ? "line: " + e.textContent : m && m.textContent === "We remind you" ? m.textContent : ""; });
+  const LINE = "Reminder";
+  const ahead = (page) => page.evaluate(() => { const e = document.getElementById("iapAhead"), m = document.querySelector("#iapTL .tli.mid p"); return e && !e.hidden ? "line: " + e.textContent : m && m.textContent === "Reminder" ? m.textContent : ""; });
   const priced = (page) => page.waitForFunction(() => { const c = document.getElementById("iapCard"); return c && c.getAttribute("data-state") === "free"; });
   for (const [label, was, now, before, after] of [
     ["iOS was allowed last time, and is off now (the parent turned it off in iOS Settings)", "granted", "denied", LINE, ""],

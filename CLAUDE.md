@@ -1244,24 +1244,34 @@ screen at seven phone sizes with the charter line showing, and re-prices
 every yearly figure when the price check answers late.
 
 **THE 3-STEP TRIAL TIMELINE (Travis, 4 Nov 2026: "let's just leave the
-pricing options as they are ... But let's add a 3-step trial timeline")**.
-The rows, their order, the pick and the tags are unchanged. Under the check
-line, only while the picked row is a SURE free trial counted in days (3 or
-more; a week reads as 7): **Today** "Everything unlocks" › **Day N-1** "We
-remind you" where this phone will show the reminder (`trialReminderOn`), else
-"Cancel by today, pay nothing" › **Day N** "$9.99/mo starts" (`planWords`'
-`steps`, drawn across the card in `#iapTL.steps`). Today is day 1; Apple's
-cancel line is 24 hours before the end, i.e. the end of day N-1. When the
-middle step carries the reminder, the line under the button ("We'll remind
-you the day before it ends.") steps aside: one promise, said once
-(`PLAN_STEP_HEADS_UP`, the only other reminder words `planwordstest` allows).
-No dates, still (6 Oct 2026). Never on the one payment, a charged-today row
-or a not-sure row. Every word Travis's and Rachel's to change. The same day:
-**setup's reminder screen shows Sona's two real notifications** (NUDGE and
-TRIAL_REMIND, word for word, marked as iPhone draws them), and **Rachel's
-screen** centres the line under her name and draws no comma at the end of the
-heading (it is still read aloud, `.sr-comma`, so her line reads as one
-sentence). `pricescreentest`, `planwordstest`, `setupbuytest`, `notifytest`.
+pricing options as they are ... But let's add a 3-step trial timeline";
+made shorter on 5 Nov 2026: "just a little bit too busy")**. The rows, their
+order, the pick and the tags are unchanged. Under the rows, only while the
+picked row is a SURE free trial counted in days (3 or more; a week reads as
+7): **Today** "Free" › **Day N-1** "Reminder" where this phone will show the
+reminder (`trialReminderOn`), else "Still free" › **Day N** "$9.99/mo" (the
+store's amount) (`planWords`' `steps`, drawn across the card in
+`#iapTL.steps`). On such a card the check line ("No payment today ·
+Subscription auto-renews") steps aside (`check` is empty: the steps say it)
+and the small print under the button carries the renewal: "7 days free, then
+$9.99 a month. Auto-renews. Cancel anytime." When the middle step is the
+reminder, the line under the button ("We'll remind you the day before it
+ends.") steps aside too: one promise, said once (`PLAN_STEP_HEADS_UP`, the
+only other reminder word `planwordstest` allows). No dates, still (6 Oct
+2026). Never on the one payment, a charged-today row or a not-sure row.
+Every word Travis's and Rachel's to change. The same days: **setup's
+reminder screen shows Sona's two real notifications** (NUDGE and
+TRIAL_REMIND, word for word, marked as iPhone draws them); **Rachel's
+screen** centres the line under her name and draws no comma at the end of
+the heading (it is still read aloud, `.sr-comma`, so her line reads as one
+sentence); and **setup's two game demos swap by themselves** (Travis, 5 Nov
+2026: "I don't want them to click on it to see it. I just want it to auto
+do it ... 1 to 2 seconds"): Normal speed 2 s, After practice 2 s, round and
+round, the matching button shown picked (`DEMO_SWAP_MS` in
+`onboarding.html`); a tap jumps to a side and the swapping carries on; each
+demo starts on Normal speed; nothing swaps off screen, in the background or
+under Reduce Motion. `pricescreentest`, `planwordstest`, `setupbuytest`,
+`notifytest`, `iaptest`, `trialfirsttest`.
 
 **THE FREE TRIAL ON TOP AND PICKED AGAIN, 7 DAYS, "RECOMMENDED" (2 Nov
 2026)** (Travis, after asking whether the trial or the one payment should be

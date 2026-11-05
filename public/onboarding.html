@@ -1148,18 +1148,33 @@
     // 4 Nov 2026: Travis preferred these two slides to the one demo that
     // played itself).
     var demoLive=null,demoKey="",demoSlow={reel:false,piano:false};
-    function stopDemo(){if(demoLive)demoLive.destroy();demoLive=null;demoKey="";}
+    // THE DEMOS SWAP BY THEMSELVES (Travis, 5 Nov 2026: "I don't want them to
+    // click on it to see it. I just want it to auto do it ... 1 to 2 seconds
+    // ... the button looks like it's selected for after practice, and then
+    // it swaps back and forth"). Normal speed, then After practice, round and
+    // round, the matching button shown picked. A tap still jumps to that side
+    // and the swapping carries on from there. Off the screen, in the
+    // background or under Reduce Motion nothing swaps (nothing in setup moves
+    // under Reduce Motion), and a tap still shows each side.
+    var DEMO_SWAP_MS={normal:2000,slow:2000},demoTimer=0;
+    function demoCycle(key){
+      clearTimeout(demoTimer);demoTimer=0;
+      if(!demoLive||demoKey!==key||stillMotion())return;
+      demoTimer=setTimeout(function(){demoTimer=0;if(ORDER[idx]!==key||document.hidden||finished)return;demoSlow[key]=!demoSlow[key];paintDemo(key);},demoSlow[key]?DEMO_SWAP_MS.slow:DEMO_SWAP_MS.normal);
+    }
+    function stopDemo(){clearTimeout(demoTimer);demoTimer=0;if(demoLive)demoLive.destroy();demoLive=null;demoKey="";}
     function paintDemo(key){
       if(key!=="reel"&&key!=="piano"){stopDemo();return;}
       if(document.hidden||finished){stopDemo();return;}
       var scene=document.getElementById(key==="reel"?"fruitDemoScene":"pianoDemoScene");
       var api=key==="reel"?window.SonaFruitDemo:window.SonaPianoDemo;
-      if(demoKey!==key){stopDemo();if(api){demoLive=api.mount(scene);demoKey=key;}}
+      if(demoKey!==key){stopDemo();demoSlow[key]=false;if(api){demoLive=api.mount(scene);demoKey=key;}}
       var slow=!!demoSlow[key];scene.classList.toggle("slow",slow);
       scene.querySelector(".demo-speed").textContent=slow?"After practice":"Normal speed";
       scene.querySelector(".demo-message").textContent=slow?(key==="reel"?"Slower fruit.":"Slower keys."):(key==="reel"?"Swipe to slice.":"Tap the keys.");
       steps[key].querySelectorAll("[data-demo-mode]").forEach(function(b){var on=(b.dataset.demoMode==="slow")===slow;b.classList.toggle("on",on);b.setAttribute("aria-pressed",String(on));});
       if(demoLive)demoLive.setSlow(slow);
+      demoCycle(key);
     }
     ["reel","piano"].forEach(function(key){steps[key].querySelectorAll("[data-demo-mode]").forEach(function(b){b.onclick=function(){if(ORDER[idx]!==key||settling())return;demoSlow[key]=b.dataset.demoMode==="slow";paintDemo(key);};});});
     document.addEventListener("visibilitychange",function(){if(document.hidden)stopDemo();else if(!finished)paintDemo(ORDER[idx]);});
