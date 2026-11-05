@@ -23,8 +23,11 @@ export function parkedSona(source, keys = PARK) {
   return keys.reduce((src, key) => isParked(src, key) ? src : src.replace(catalogLine(key), "$1comingSoon: true, "), source);
 }
 
+// A key with no catalog line (a story day's game: Light the Way, Wind-Up Toys,
+// Puzzle Bridge, which the Say & Play harness also plays) has nothing to
+// unpark, so it is passed over, where parking one is an error.
 export function unparkedSona(source, keys = PARK) {
-  return keys.reduce((src, key) => isParked(src, key) ? src.replace(catalogLine(key), "$1") : src, source);
+  return keys.reduce((src, key) => { const m = src.match(catalogLine(key)); return m && m[2] ? src.replace(catalogLine(key), "$1") : src; }, source);
 }
 
 // Serve a context (or page) the parked sona.js. `pub` is the public/ folder.
