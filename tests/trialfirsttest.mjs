@@ -163,8 +163,8 @@ try {
       const day = await page.evaluate(() => new Date(Date.now() + 3 * 86400000).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" }));
       ok("the store says the monthly plan starts with 3 free days, so the card says so: the row, the check line, and the button",
         s.state === "free" && s.under === "3-day free trial" && s.price === "$9.99/mo" && s.check === "No payment today · Subscription auto-renews" && s.btn === "Start practicing!" && !/a year/i.test(s.body), [s.state, s.tag, s.price, s.btn]);
-      ok("…with no dated rows and no date (" + day + " is nowhere), and one small line under the button: the price, and Cancel anytime",
-        s.rows.length === 0 && s.body.indexOf(day) === -1 && s.note === "3 days free, then $9.99 a month. Cancel anytime.", [s.rows, s.note]);
+      ok("…with the 3-step timeline (4 Nov 2026) and no date (" + day + " is nowhere), and one small line under the button: the price, and Cancel anytime",
+        s.rows.length === 3 && s.body.indexOf(day) === -1 && s.note === "3 days free, then $9.99 a month. Cancel anytime.", [s.rows, s.note]);
       ok("…and no promise of a reminder: Sona sends none", !/remind|e-?mail|notif/i.test(s.body), (s.body.match(/[^\n]*(remind|e-?mail|notif)[^\n]*/i) || [""])[0]);
       ok("…\"Not now\" (not \"keep the free version\") under it, and no \"What stays free\"", s.declineShown && s.decline === "Not now" && !s.freeCard, [s.decline, s.freeCard]);
       ok("…and nothing on it says anything stays free", !/stays? free|free games|free version/i.test(s.body) && s.check3 === "No ads, ever" && !/free version/.test(s.line),
