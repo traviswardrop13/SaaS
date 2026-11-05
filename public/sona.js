@@ -4821,7 +4821,8 @@
   // save still tells the child the truth about the round they just played).
   function _lvRow(p, key, lv) {
     const r = _lvOf(_lvOf(p.best, key), String(lv));
-    return (r && typeof r.n === "number" && r.n >= 1 && r.n <= 99999 && Math.floor(r.n) === r.n) ? r.n : 0;
+    // a game whose count changed (BESTS1's stamp) reads its old count as no best
+    return (r && typeof r.n === "number" && r.n >= 1 && r.n <= 99999 && Math.floor(r.n) === r.n && _bestCounted(key, r)) ? r.n : 0;
   }
   function playBest(key, lv) {
     try { key = _lvKey(key); lv = parseInt(lv, 10); return (key && (lv === 2 || lv === 3)) ? _lvRow(_lvState(), key, lv) : 0; } catch (e) { return 0; }
@@ -4836,7 +4837,7 @@
       out.best = n; out.isNew = true;
       p.best = (p.best && typeof p.best === "object") ? p.best : {};
       p.best[key] = (p.best[key] && typeof p.best[key] === "object") ? p.best[key] : {};
-      p.best[key][String(lv)] = { n: n, at: today() };
+      p.best[key][String(lv)] = _bestRec(key, n);
       save(PLAYLEVELKEY, p);
     } catch (e) {}
     return out;
@@ -5229,11 +5230,29 @@
   // 1 is ignored (best = prev). Pages feature-detect both: a phone holding an
   // older sona.js must still play the game.
   const BESTKEY = "sona.bests.v1", BEST_MAX = 99999;
+  // A game whose count CHANGED keeps its best only in the new count, stamped
+  // on the record (c). Sound Sprint counted metres until 5 Nov 2026, and
+  // every finished race is exactly 570 m, so a child's best could never go
+  // up (and the metres were never on screen: the race shows stars). It now
+  // counts the stars the child grabs. A record without the stamp is the old
+  // count: it reads as no best at all (no Home tag, and the next race is a
+  // first best), never a number of stars to beat. The Level 2 and 3 bests
+  // (LEVELS1's playBest) read the same stamp.
+  const BEST_COUNT = { run: "stars" };
+  function _bestCounted(key, rec) {
+    const c = Object.prototype.hasOwnProperty.call(BEST_COUNT, key) ? BEST_COUNT[key] : "";
+    return !c || rec.c === c;
+  }
+  function _bestRec(key, n) {
+    const rec = { n: n, at: today() };
+    if (Object.prototype.hasOwnProperty.call(BEST_COUNT, key)) rec.c = BEST_COUNT[key];
+    return rec;
+  }
   function _bestN(n) { return typeof n === "number" && n >= 1 && n <= BEST_MAX && Math.floor(n) === n; }
   function _bests() { const all = load(BESTKEY, {}); return Array.isArray(all) ? {} : all; }
   function _bestOf(all, key) {
     const rec = Object.prototype.hasOwnProperty.call(all, key) ? all[key] : null;
-    return (rec && typeof rec === "object" && _bestN(rec.n)) ? rec.n : 0;
+    return (rec && typeof rec === "object" && _bestN(rec.n) && _bestCounted(key, rec)) ? rec.n : 0;
   }
   function gameBest(key) {
     try { key = gameKey(key); return key ? _bestOf(_bests(), key) : 0; } catch (e) { return 0; }
@@ -5248,7 +5267,7 @@
       // answered before the write: a phone that cannot save (storage full or
       // off) still tells the child the truth about the round they just played
       out.best = n; out.isNew = true;
-      all[key] = { n: n, at: today() };
+      all[key] = _bestRec(key, n);
       save(BESTKEY, all);
     } catch (e) {}
     return out;
