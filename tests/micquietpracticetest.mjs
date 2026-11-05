@@ -294,7 +294,8 @@ await scenario('prompt, five tries and the win', async () => {
     ok('five counted tries fill the meter with no chime at all: seen, not heard', s.reps === 5 && s.meter === 5 && chimes.length === 0, { reps: s.reps, meter: s.meter, chimes });
     const complete = s.events.find((e) => e.kind === 'chime' && e.label === 'complete'), win = voiceAt(s, "You did it. Let's play.");
     ok('the win line waits ~600ms after the chime instead of landing on it', !!complete && win - complete.t >= 550, { chime: complete && complete.t, win });
-    ok('closing the mic at the end of the window keeps the one keepsake clip whole', s.effects.includes('saveRecording'), s.effects);
+    // No clip is kept since 5 Nov 2026 (Travis: "dont save").
+    ok('a round that ends in a pass keeps no clip', !s.effects.includes('saveRecording'), s.effects);
     ok('with the mic numbers switched off, no numbers box is drawn', await page.evaluate(() => !document.getElementById('micNumbers')));
     clean('prompt and win', errors);
   } finally { await context.close(); }

@@ -1587,11 +1587,11 @@
   // has one answer, and the answer never changes underneath a child.
   // Short on purpose (Travis, 1 Oct 2026: "make this much more concise"; 2
   // Oct 2026: "still too long ... just say audio is never recorded or
-  // uploaded"). Two things, both true: nothing is uploaded, and the one try a
-  // day kept on the phone for a parent to play back. Not "never recorded":
-  // that one try IS recorded, on the phone, and a consent line must not deny
-  // it (mictest). The privacy page and /support keep the long version.
-  const MIC_PROMISE = "Grown-ups: audio is never uploaded. One try a day is saved on this phone so you can listen back.";
+  // uploaded"). Both halves are true by construction since 5 Nov 2026
+  // (Travis: "dont save"): saveRecording keeps nothing, and no route accepts
+  // audio (mictest). Still not "never recorded": the practice page holds a
+  // try in memory while it listens. The privacy page and /support say more.
+  const MIC_PROMISE = "Grown-ups: audio is never uploaded or saved.";
   // Rachel-approved play recommendation. Every game remains available by choice.
   function playStyle() {
     var age = Number(getProfile().childAge);
@@ -3123,8 +3123,12 @@
     return false;
   }
 
-  // --- recordings (the child's audio attempts) kept in IndexedDB so a parent
-  //     can review them later. Best-effort: never throws into the lesson. ---
+  // --- recordings: NONE ARE KEPT (Travis, 5 Nov 2026: "dont save"). Until
+  //     then one passed try a day per child was kept in IndexedDB for the
+  //     Progress page's "Saved tries"; that shelf went the same day, so a kept
+  //     clip was a child's voice on the phone that nobody could play. The
+  //     store stays only so old clips can be deleted (below), and so a child
+  //     removed in Settings still has nothing left behind. ---
   function idb() {
     return new Promise((res, rej) => {
       try {
@@ -3135,33 +3139,8 @@
       } catch (e) { rej(e); }
     });
   }
-  async function saveRecording(rec) {
-    const kid = _slot(), day = today();
-    try {
-      const db = await idb();
-      return await new Promise((res, rej) => {
-        const tx = db.transaction("recordings", "readwrite");
-        // KIDS1: stamp the owning child. The store is one IndexedDB table for
-        // the device, so without this a sibling's Progress page listed — and
-        // played — another child's voice.
-        const store = tx.objectStore("recordings");
-        let saved = false;
-        const request = store.openCursor();
-        request.onsuccess = function () {
-          const cursor = request.result;
-          if (cursor) {
-            const row = cursor.value;
-            if ((row.kid || "") === kid && _localDay(new Date(row.date).getTime()) === day) return;
-            cursor.continue(); return;
-          }
-          store.add(Object.assign({}, rec, { date: new Date().toISOString(), kid: kid }));
-          saved = true;
-        };
-        tx.oncomplete = () => res(saved);
-        tx.onerror = () => rej(tx.error);
-      });
-    } catch (e) { return false; }
-  }
+  // Kept as a name an older cached page may still call; it saves nothing.
+  function saveRecording() { return Promise.resolve(false); }
   async function listRecordings(limit = 50) {
     const mine = _slot();
     try {
@@ -3200,6 +3179,24 @@
     _clipWork = Promise.all([_clipWork, p]).then(() => {}, () => {});
     return p;
   }
+  // Every clip an earlier build kept, for every child, deleted once per
+  // device. The done-mark is "_sona…", never "sona.", so a backup does not
+  // carry it to a new phone, where an old build may have kept clips too.
+  // Never on Home, which only reads (roadtest): the first page after it does.
+  function _dropAllRecordings() {
+    try { if (!global.indexedDB || _notifyHome() || localStorage.getItem("_sonaClipsGone")) return Promise.resolve(0); } catch (e) { return Promise.resolve(0); }
+    const p = idb().then((db) => new Promise((res) => {
+      try {
+        const tx = db.transaction("recordings", "readwrite");
+        tx.objectStore("recordings").clear();
+        tx.oncomplete = () => { try { localStorage.setItem("_sonaClipsGone", "1"); } catch (e) {} res(1); };
+        tx.onerror = tx.onabort = () => res(0);
+      } catch (e) { res(0); }
+    })).catch(() => 0);
+    _clipWork = Promise.all([_clipWork, p]).then(() => {}, () => {});
+    return p;
+  }
+  try { _dropAllRecordings(); } catch (e) {}
   function _dropRecordingsNow(slot) {
     slot = slot || "";
     return idb().then((db) => new Promise((res) => {

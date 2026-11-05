@@ -211,12 +211,13 @@ await scenario('sound selection and private paced handoff',async()=>{
   // NO GROWN-UPS LINE ON SETUP'S MICROPHONE STEP (Travis, 31 Oct 2026: "let's
   // get rid of the grown-ups audio is never uploaded ... Just get rid of
   // that"). The shared promise stays on every other mic ask (the games, the
-  // books, the practice page), and it is still the true one: one try a day IS
-  // saved on the phone for a parent to play back, so never "never recorded".
+  // books, the practice page), and it is still the true one: nothing is saved
+  // or uploaded (5 Nov 2026), and never "never recorded": practice holds a try
+  // in memory while it listens.
   // Setup's step says nothing about audio at all, so it can say nothing false.
   const promise=await page.evaluate(()=>({line:!!document.getElementById('micPromise'),text:document.querySelector('[data-step="mic"]').innerText.replace(/\s+/g,' ').trim(),shared:Sona.MIC_PROMISE||'',title:document.querySelector('[data-step="mic"] .qh').innerText}));
   ok('setup\'s microphone step shows no grown-ups line: no #micPromise, and nothing about audio being uploaded, recorded or saved',!promise.line&&!(promise.shared&&promise.text.includes(promise.shared))&&!/upload|record|saved|stays on|never leaves|private/i.test(promise.text)&&promise.text.split(/\s+/).length<=8,promise.text);
-  ok('…while the shared promise every other mic ask shows is still the accurate one, in a couple of short lines',!!promise.shared&&/never uploaded/.test(promise.shared)&&/saved on this phone/.test(promise.shared)&&!/never recorded/i.test(promise.shared)&&promise.shared.split(/\s+/).length<=20,promise.shared);
+  ok('…while the shared promise every other mic ask shows is still the accurate one, in a couple of short lines',!!promise.shared&&/never uploaded or saved/.test(promise.shared)&&!/never recorded/i.test(promise.shared)&&promise.shared.split(/\s+/).length<=20,promise.shared);
   ok('…under "Let Echo hear <Name>"',promise.title==='Let Echo hear Milo',promise.title);
   ok('microphone action is explicit and offers a quiet skip',/Turn on Echo's ears/.test(await page.locator('#nextBtn').innerText())&&await page.locator('#micNotNow').count()===1);
   await notNow(page);await atHandoff(page);

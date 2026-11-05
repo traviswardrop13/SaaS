@@ -41,6 +41,52 @@ So:
   just a failure with fewer words.
 
 ## Project
+**The grown-ups' pages, simplified (Travis, 5 Nov 2026: "simplify drastically
+the settings").** This supersedes every older note below that puts a goal
+picker, a rep line, Saved tries, a summary box, "How scoring works", the review
+ask, Firsts or Recent practice on Progress.
+- **The Grown-ups door is silent.** No tap chime on the Grown-ups button, no
+  success chime when the code is right (`today.html`).
+- **Progress is one phone screen:** the week's tries and seven practice-day
+  bubbles (a bubble is a day with practice, `momWeek().days`, not a goal day),
+  "Accuracy by sound — Coming soon" (no percentage anywhere on the page),
+  Practice levels (each sound's tries and ladder rung; kept over Recent
+  practice as the more useful of the two) and the pilot-only "Send progress to
+  my SLP". **No footnote** (Travis, same day: "take out built with Rachel on
+  the progress sheet. Take out a practice snapshot, not a clinical
+  assessment"): Progress no longer names Rachel, so `shiptest`'s list of pages
+  that introduce her drops it. This is an exception to the clinical rule that
+  parent-facing summaries carry the hedge and her byline, made while the page
+  shows no percentage, score or verdict; **Rachel to confirm**, and a
+  percentage coming back brings the hedge back with it. **No goal
+  can be changed on any grown-up page now**: the days-a-week buttons and the
+  daily reps picker went ("the new goal ... is just minutes per day", which
+  setup asks and saves as `dailyGoal`). The goal machinery itself (gift ring,
+  chests, goal stamps, homework's own number) is unchanged.
+- **No clip is kept any more** (Travis, same day: "dont save"). Saved tries
+  left Progress, so `saveRecording` keeps nothing (it stays only as a name an
+  old cached page may call), practice never calls it, and each device clears
+  every clip an older build kept, once (`_dropAllRecordings`, done-mark
+  `_sonaClipsGone`, never `sona.` so a backup can't carry it; never on Home,
+  which only reads, so the first other page does it: `roadtest`). `MIC_PROMISE`,
+  `parents.html`, `for-slps.html`, `privacy.html` (updated 5 Nov 2026),
+  `/support` and `/families` now say audio is never saved. The practice page
+  still runs its recorder into memory while it listens and throws the result
+  away; removing the recorder itself is a separate, larger change.
+- **Settings shows the chosen sounds as one line** ("S, L, R", or "All
+  sounds") with a **Change** button that opens the grid of every sound
+  (Travis, same day: "yeah change button").
+- **Talk to us fits one screen:** Rachel's card is her name with "MS, CF-SLP ·
+  Co-founder" and one line, "I'm a pediatric speech-language pathologist in
+  my clinical fellowship."; "We read every message." is the page's subtitle;
+  the form asks "What would make Sona better?", with its helper text inside
+  the boxes. **No "Recommend us?"** and **one privacy line**, "We use your
+  email only to reply." (Travis, same day: "take out please leave out your
+  child's name. And take out it isn't added to any mailing list"; both stay
+  true, they are just unsaid). A clinician on the web still reads the
+  student-name line. The body no longer carries `recommend`; the route still
+  accepts it blank.
+
 **Sound-focused review build (29 Oct 2026, Travis's request).** A parent may
 pin one of the child's existing selected sounds as the current target, like
 a language choice. Target changes stay in Settings behind Grown-ups; Home
@@ -300,8 +346,9 @@ anonymous "built / made / designed / shaped / reviewed with / by a (licensed)
 (pediatric) SLP / speech-language pathologist" or "our SLP"; a page that puts
 Rachel and "SLP" or "speech-language pathologist" in one sentence without
 "MS, CF-SLP" somewhere on it; any CCC or "certified" claim; and any of the
-pages that introduce her (parents, subscribe, trial, progress, talk, slp)
-missing it.
+pages that introduce her (parents, subscribe, trial, talk, slp)
+missing it (Progress left that list on 5 Nov 2026, when it stopped naming
+her).
 One of those places is setup (Travis, 29 Sep 2026: a Meet Rachel screen with
 her photo). **Since 22 Oct 2026 she has her own screen again** (Travis: "a
 bigger slide of Rachel that's just like all by itself of like her
@@ -5149,15 +5196,14 @@ the app) is a later idea, not built; it is Rachel's to shape.
 ## Hard rules
 - Merges to main/prod only on Travis's explicit go ("merge").
 - **No audio ever leaves the device.** There is no cloud scorer: every verdict
-  is decided on the phone from the spectral shape of what was said. One clip a
-  day may be kept in local IndexedDB so a parent can listen back — it is never
-  uploaded. The consent copy says exactly this, and it is true because there is
-  no mechanism to break it, not because a checkbox is off. Its short form, the
-  grown-ups line on every mic ask but setup's (Travis took it off setup's
-  microphone step on 31 Oct 2026) (`MIC_PROMISE`), is "audio is never
-  uploaded. One try a day is saved on this phone so you can listen back."
-  (Travis, 2 Oct 2026, asked for "audio is never recorded or uploaded"):
-  never "never recorded", which that one saved try would make false. `mictest` pins the
+  is decided on the phone from the spectral shape of what was said. **Nothing
+  is saved either** (since 5 Nov 2026; until then one clip a day was kept in
+  local IndexedDB so a parent could listen back). The consent copy says
+  exactly this, and it is true because there is no mechanism to break it, not
+  because a checkbox is off. Its short form, the grown-ups line on every mic
+  ask but setup's (Travis took it off setup's microphone step on 31 Oct 2026)
+  (`MIC_PROMISE`), is "audio is never uploaded or saved." Still never "never
+  recorded": the practice page holds a try in memory while it listens. `mictest` pins the
   mechanism's absence: no route but the two founder clip tools (`isolate`,
   `voice-change`, behind `FOUNDER_KEY`) accepts a file, and no family page
   posts to one. `/api/stt` was deleted on 25 Sep 2026 for exactly this.

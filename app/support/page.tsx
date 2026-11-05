@@ -39,12 +39,9 @@ export default function SupportPage() {
           work. You can re-run it anytime from the parent dashboard.
         </Faq>
         <Faq q="Do you store my child's voice?">
-          Sona may save one clear practice try per child per day on the phone so
-          you can listen back. The microphone listens during practice and optional
-          voice-enabled games and books; sound checks happen on the phone itself. Sona never
-          uploads recordings. A grown-up can choose to share a saved clip through
-          the phone&apos;s share sheet. Clearing the app&apos;s data removes local
-          clips. See our{" "}
+          No. The microphone listens during practice and optional voice-enabled
+          games and books; sound checks happen on the phone itself, in the moment.
+          Sona never saves or uploads recordings. See our{" "}
           <a className="text-[#1cb0f6] underline" href="/privacy">
             Privacy Policy
           </a>

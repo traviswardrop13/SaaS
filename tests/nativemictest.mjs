@@ -1349,8 +1349,9 @@ async function practiceRound(t, label, nm, extra = {}) {
     if (nm.mode === "new") {
       t.ok(label + ": the page never called getUserMedia: every mic was Sona's own", p.gum === 0 && p.opened >= 2, p);
       t.ok(label + ": \"Your turn\" only once the phone's samples flow into a live stream", st.turns.length > 0 && st.turns.every((x) => x.live && x.chunks > 0), st.turns);
-      const kept = await page.evaluate(async () => (await Sona.listRecordings()).map((x) => ({ type: x.blob && x.blob.type, size: x.blob && x.blob.size })));
-      t.ok(label + ": the keepsake clip is a WAV, kept in this phone's own storage (IndexedDB)", st.saved.length === 1 && st.saved[0].type === "audio/wav" && st.saved[0].size > 100000 && kept.length === 1 && kept[0].type === "audio/wav" && kept[0].size === st.saved[0].size, { saved: st.saved, kept });
+      const kept = await page.evaluate(async () => (await Sona.listRecordings()).length);
+      // No clip is kept since 5 Nov 2026 (Travis: "dont save").
+      t.ok(label + ": no clip is kept, in this phone's storage or anywhere", st.saved.length === 0 && kept === 0, { saved: st.saved, kept });
       t.ok(label + ": the mic numbers say whose mic it is: \"mic: Sona's own\", its mode, route, boost, chunk, queue, gaps and close", /mic: Sona's own · default mode · in iPhone Microphone · out Speaker · boost ×1\.0 · chunk 21 ms · queue \d+ ms · gaps 0 · restarts 0 · close (\d+ ms|\?)/.test(boxText) && /\d+ fps · \d+ Hz · echo cancel off · noise off · auto gain \?/.test(boxText), boxText);
       network(t, label, requests, t0 - 2000, t1);
     } else {
@@ -1362,7 +1363,7 @@ async function practiceRound(t, label, nm, extra = {}) {
     practice[label].records = st.practice.join();
     clean(t, label, errors);
     if (nm.mode === "new") {
-      // a second round the same day: its tries count, and no second clip is kept
+      // a second round the same day: its tries count, and still no clip is kept
       await page.evaluate(() => sessionStorage.setItem("sona.run.v1", JSON.stringify({ active: true, round: 0, scores: [], sum: 0, sound: "R", level: 1, pending: false, games: ["slice", "tiles", "stack", "run", "glide"], tries: 0 })));
       await page.goto(base + "/charge.html?daily=1");
       await until(page, () => document.getElementById("turnStatus").textContent === "Your turn", 12000);
@@ -1370,7 +1371,7 @@ async function practiceRound(t, label, nm, extra = {}) {
       const again = await until(page, () => window.reps >= 5, 6000);
       await page.waitForTimeout(900);
       const r = await page.evaluate(async () => ({ saves: Number(sessionStorage.getItem("__tSaved") || 0), kept: (await Sona.listRecordings()).length }));
-      t.ok(label + ": the keepsake is once a day: a second round the same day keeps no second clip", again && r.saves === 1 && r.kept === 1, r);
+      t.ok(label + ": a second round the same day counts its tries and keeps no clip either", again && r.saves === 0 && r.kept === 0, r);
     }
   } finally { await context.close(); }
 }
