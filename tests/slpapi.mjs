@@ -738,9 +738,11 @@ if (A) {
   const updStep = ob.slice(ob.indexOf('<div class="step" data-step="updates">'), ob.search(/<div class="step[^"]*" data-step="ready">/));
   // Travis, 4 Nov 2026: "instead of we'll also send occasional tips from
   // Rachel, just say something like ... track weekly progress" (as the
-  // landing pages lost the line on 25 Sep 2026)
-  ok("the email step says what the email is for, in Travis's words, and that it can be stopped",
-    updStep.length > 0 && /Track your child(&rsquo;|’|')s progress every week\. Unsubscribe anytime\./.test(updStep) && !/occasional tips/.test(updStep), updStep.slice(0, 300));
+  // landing pages lost the line on 25 Sep 2026); since 5 Nov 2026 the
+  // heading says what it is for and the line under the box only that it is
+  // free and can be stopped
+  ok("the email step says what the email is for, and that it can be stopped",
+    updStep.length > 0 && /See their progress <br>every Monday/.test(updStep) && /Free\. Unsubscribe anytime\./.test(updStep) && !/occasional tips/.test(updStep), updStep.slice(0, 300));
 
   // The consent line, everywhere an email can join the list (Travis's wording)
   // — except the landing page, where Travis took it out on 25 Sep 2026 ("get
@@ -754,8 +756,10 @@ if (A) {
   // The heading asks for the weekly progress report (Travis, 15 Oct 2026),
   // and it is a real one: the phone sends its numbers (sona.js REPORT1) and
   // lib/report.ts mails them. reporttest plays both.
-  ok("family email step asks for the weekly progress report, says it is optional and how to unsubscribe, and the report it names is real",
-    /Weekly progress\?/.test(updStep) && /\(optional\)/.test(updStep) && /Unsubscribe anytime/.test(updStep) &&
+  // Since 5 Nov 2026 the step is optional by its Skip (no "(optional)" on the
+  // label), and its button names the report.
+  ok("family email step asks for the weekly progress report, can be skipped, says how to unsubscribe, and the report it names is real",
+    /See their progress <br>every Monday/.test(updStep) && /id="updSkip">Skip</.test(updStep) && /Unsubscribe anytime/.test(updStep) && /updates: "Get the report"/.test(read("public/onboarding.html")) &&
     /function runReports\(/.test(read("lib/report.ts")) && /function reportSync\(/.test(read("public/sona.js")) && /runReports\(/.test(read("app/api/cron/nurture/route.ts")));
   ok("the Speech Check no longer promises to email a report it never sends", !/email your child's report/.test(read("public/check.html")));
   ok("the privacy policy names Resend as the email list and says it holds nothing about a child",
