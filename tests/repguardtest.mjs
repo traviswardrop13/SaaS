@@ -472,6 +472,7 @@ try{
         const before=state();Sona.logAttempt({game:'charge',sound:'R',pass:true,reps:0,word:'rrrr'});const afterZero=state();
         Sona.logAttempt({game:'charge',sound:'R',pass:true,reps:3,word:'rrrr'});
         const o=Sona.outcomes().R,day=o.days[Sona.localDay()],week=Sona.weekReps();
+        // No clip is kept since 5 Nov 2026 (Travis: "dont save").
         const first=await Sona.saveRecording({sound:'R',word:'rrrr',blob:new Blob(['first fixture'],{type:'audio/webm'})});
         const second=await Sona.saveRecording({sound:'S',word:'ssss',blob:new Blob(['second fixture'],{type:'audio/webm'})});
         const mine=(await Sona.listRecordings()).length;
@@ -483,23 +484,28 @@ try{
       });
       ok('logAttempt with zero reps changes no practice state',result.zeroUnchanged,result);
       ok('three voiced tries remain one sound check',result.o.tries===3&&result.o.attempts===1&&result.day.tries===3&&result.day.a===1&&result.week===3,result);
-      ok('two sounds cannot save two recordings for one child on one day',result.first===true&&result.second===false&&result.mine===1,result);
-      ok('a sibling gets one separate daily recording',result.other===true&&result.otherCount===1&&result.originalCount===1,result);
+      ok('saveRecording keeps nothing, however often it is called',result.first===false&&result.second===false&&result.mine===0,result);
+      ok('…for a sibling too',result.other===false&&result.otherCount===0&&result.originalCount===0,result);
     }finally{await close(context,page);}
   });
   // A removed child's saved tries never reach a child added later (30 Sep
   // 2026). removeKid left the clips in the device's one table, and addKid gave
   // the next child the lowest free slot — the removed child's — so the new
   // sibling's Progress page played, and could share, the removed child's voice.
+  // No build keeps a clip since 5 Nov 2026, so the clips here are planted as an
+  // older build left them; the clean-up must still hold.
   if(WEB&&process.env.REPGUARD_ONLY!=='positive')await scenario('a removed child takes their saved tries',async()=>{
     const{page,context}=await fresh({shared:true});
     try{
       const result=await page.evaluate(async()=>{
         const rows=()=>new Promise(res=>{const o=indexedDB.open('sona',1);o.onupgradeneeded=()=>o.result.createObjectStore('recordings',{keyPath:'id',autoIncrement:true});o.onsuccess=()=>{const g=o.result.transaction('recordings','readonly').objectStore('recordings').getAll();g.onsuccess=()=>{o.result.close();res(g.result.map(r=>r.kid||''));};};o.onerror=()=>res(null);});
         const settle=async(slot)=>{for(let i=0;i<20;i++){const r=await rows();if(r&&!r.includes(slot))return r;await new Promise(t=>setTimeout(t,50));}return rows();};
-        const first=await Sona.saveRecording({sound:'R',word:'rabbit',blob:new Blob(['milo'],{type:'audio/webm'})});
+        const plant=(kid,word)=>new Promise(res=>{const o=indexedDB.open('sona',1);o.onsuccess=()=>{const tx=o.result.transaction('recordings','readwrite');tx.objectStore('recordings').add({sound:'S',word,date:new Date().toISOString(),kid,blob:new Blob([word],{type:'audio/webm'})});tx.oncomplete=()=>{o.result.close();res(true);};};o.onerror=()=>res(false);});
+        await Sona.clipsSettled();
+        const first=await plant('','rabbit');
         const ana=Sona.addKid('Ana','5');
-        const anaSaved=await Sona.saveRecording({sound:'S',word:'sun',blob:new Blob(['ana'],{type:'audio/webm'})});
+        await Sona.clipsSettled();
+        const anaSaved=await plant(ana,'sun');
         const anaListed=(await Sona.listRecordings()).length;
         const removed=Sona.removeKid(ana);
         const left=await settle(ana);

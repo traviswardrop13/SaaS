@@ -31,6 +31,7 @@ const SUITES = [
   "chargepacingtest.mjs", // listen/model/child-turn handoff and replay ordering
   "readtest.mjs",  // books never go silent: browser-voice fallback when TTS dies
   "booktest.mjs",  // BOOKS2: full-screen pages; say the key word to turn the page — Say & Play's check, a quiet mic, silence never turns it, no practice data
+  "targetsoundtest.mjs", // A chosen sound stays per child, drives the bookshelf, and keeps assigned homework first
   "arttooltest.mjs", // ART2: the book and game art tools never draw over hand-made art
   "setupreeltest.mjs", // SETUPREEL1: setup's game reel: a clip and a poster for every game on the list (never Coming soon), H.264 with no audio track, moov first, 540 x 720, under 300 KB and 60 KB
   "homereeltest.mjs", // HOMEREEL1: Home's card clips: a clip and a poster for every story day's game and every game of the day (read from sona.js), H.264 High 4.0 with no audio track, moov first, 540 x 720, under 300 KB and 60 KB, the poster its first frame
@@ -71,7 +72,8 @@ const SUITES = [
   "questtest.mjs", // QUEST1: the 14-day daily adventure; Home only reads, a round of today's game finishes the day once, a sticker never coins, a new day is the next game day played or not (CAL1), ages 3-4 get their own
   "talkstorytest.mjs", // TALK1: Day 1 talks in the child's own sound: five stories (R, S, L, Z, F), every page's word starting with its sound before a vowel, Day 1's slot by the child's sounds (a Day 1 finished stays what it was), the player's word moment (three sayings, silence never turns a page, Not now reads on with Next), the day finished on the intro's last word, the replay
   "storycoretest.mjs", // STORY1: the daily story's rules in sona.js: the fourteen stories come before the game of the day for every child, a new story every calendar day played or not with a skipped one coming back (CAL1), Premium by the books' rule (never the demonstration window, never a locked card on a phone that cannot buy), one sticker a finished day, the offer a locked card opens, a story's game hands back to its story
-  "homestorytest.mjs", // STORY1/HOMECLIP1/PLAYMAP1 on Home: the Play Map (Echo at the start of a trail, a gold star a story finished, tomorrow locked, no sound control), one big card with the day's game clip (open, locked, done, Day 4 after Day 3, a game day after Day 14), its poster and every fallback, never under Reduce Motion or on a done day, the Arcade and Books doors, Back and Forward, Home only reads, the whole card on the first screen at every size
+  "homestorytest.mjs", // Play Map: original portrait story and action, real completed days, locked tomorrow, no child sound picker/video, doors, earned games, access/routes/history and quiet behavior
+  "compacthometest.mjs", // Entire Home, including doors and found games, fits supported phones and iPads; Arcade still scrolls
   // adventuretest is run in two parts (its wrappers set ADVENTURE_PART): whole,
   // with fourteen stories, it took about 290 s of the 300 a suite gets.
   "adventureplaytest.mjs", // STORY1: the story's player: entitlement before any sound, the website waits for a tap, the app plays as media, ages 3-4's scenes, sound off, Skip, "Let's go!", the ending and its sticker, the buddy on its painted spot at a phone, nothing written but seen
@@ -131,6 +133,7 @@ const SUITES = [
   "sayitcardtest.mjs", // SAYIT1: the six round games' say-it card speaks (ask, Rachel's take, "Go!") before it listens, and is never frozen; a child answering right on "Go!" is heard
   "firstgametest.mjs", // FIRST1: setup goes straight to the first game; its end card is the one offer; Home greys the rest
   "sayplaytest.mjs", // SAYPLAY1: the twenty Say & Play games: only a voice moves them, quiet mic, no practice data
+  "wordpictest.mjs", // WORDPIC1: every Say & Play game, and the daily adventure's, shows the word's picture, not an empty box
   "playgamestest.mjs", // PLAYGAMES1: Hoops, Soccer Goal and Dino Dig played through: the word earns the move, every round ends on a win
   "racecartest.mjs", // real steering, brakes, speech slow-road powers, eight pit stops, fit and interruption safety
   "flowertest.mjs", // FLOWER1: actual poured drops grow a plant, speech widens the shower, progress survives help
@@ -211,6 +214,7 @@ for (const s of SUITES) {
     const lines = ((r.stdout || "") + "\n" + (r.stderr || "")).split("\n").filter((l) => /^\s*(FAIL|✗|Error|TypeError|ReferenceError|AssertionError)/.test(l) || /FAILURES? \//.test(l) || /\d+ failures?\b/i.test(l));
     fails[s] = lines.slice(0, 60).map((l) => l.length > 700 ? l.slice(0, 700) + " …" : l);
     say(1, "SUITE FAILED: " + bad[bad.length - 1] + "\n");
+    say(1, "  process: " + JSON.stringify({ status: r.status, signal: r.signal, error: r.error ? { code: r.error.code || null, message: r.error.message } : null }) + "\n");
   }
 }
 let tail = "";

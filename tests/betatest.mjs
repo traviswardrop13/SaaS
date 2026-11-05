@@ -137,8 +137,8 @@ for (const [who, seed] of [["a fresh family", () => {}],
   ok("…and Echo hosts every step of setup, start to finish",
     hosts.length > 1 && hosts.every((h) => h.endsWith(":echo")), JSON.stringify(hosts));
   // (a child already set up walking setup again is not sold to again: no screens that sell)
-  ok("…a walk that reaches the microphone, by way of both one-tap questions, " + (who === "a fresh family" ? "the screens that sell (the Fruit Slice demo, Rachel, what the child loves, their games), " : "") + "the optional email step and the ready screen",
-    hosts.map((h) => h.split(":")[0]).join() === (who === "a fresh family" ? "welcome,name,reel,rachel,interests,games,therapy,sounds,minutes,updates,ready,mic" : "welcome,name,therapy,sounds,minutes,updates,ready,mic"), JSON.stringify(hosts));
+  ok("…a walk that reaches the microphone, by way of both one-tap questions, " + (who === "a fresh family" ? "the screens that sell (the Fruit Slice and Piano Tiles demos, Rachel, what the child loves), " : "") + "the optional email step and the ready screen",
+    hosts.map((h) => h.split(":")[0]).join() === (who === "a fresh family" ? "welcome,name,reel,piano,rachel,interests,therapy,sounds,minutes,updates,ready,mic" : "welcome,name,therapy,sounds,minutes,updates,ready,mic"), JSON.stringify(hosts));
   await ob2.close();
 }
 
@@ -150,15 +150,17 @@ ok("after the hello comes the child's name and age", (await onStep(page)) === "n
 await page.evaluate(() => { document.getElementById("obName").value = "Milo"; });
 await clickNext(); // name → the Fruit Slice demo, "Speech practice. Through play."
 // (the "problem" slide went on 31 Oct 2026: its words now head the Fruit Slice
-// demo; Piano Tiles' demo went on 1 Nov 2026)
+// demo; Piano Tiles' demo follows it again since 4 Nov 2026)
 ok("after the name comes the Fruit Slice demo, the first screen that sells Sona, headed \"Speech practice. Through play.\"",
-  (await onStep(page)) === "reel" && await page.evaluate(() => document.getElementById("reelTitle").textContent === "Speech practice.Through play." && !document.querySelector('[data-step="problem"]') && !document.querySelector('[data-step="piano"]')), await onStep(page));
+  (await onStep(page)) === "reel" && await page.evaluate(() => document.getElementById("reelTitle").textContent === "Speech practice.Through play." && !document.querySelector('[data-step="problem"]')), await onStep(page));
+await clickNext(); // → the Piano Tiles demo
+ok("…then the Piano Tiles demo, \"Say the sound to slow the keys.\"",
+  (await onStep(page)) === "piano" && await page.evaluate(() => document.getElementById("pianoTitle").textContent === "Say the soundto slow the keys."), await onStep(page));
 await clickNext(); // → Rachel, on her own
 ok("…then Rachel on her own screen, her line word for word",
   (await onStep(page)) === "rachel" && await page.evaluate(() => document.getElementById("rachelLine").textContent) === RACHEL_LINE, await onStep(page));
 await clickNext(); // → "What does Milo love?"
-ok("after Rachel comes \"What does Milo love?\", then \"Games Milo will love\"", (await onStep(page)) === "interests" && await page.evaluate(() => document.getElementById("intName").textContent) === "Milo", await onStep(page));
-await clickNext(); // → the games
+ok("after Rachel comes \"What does Milo love?\" (no games screen after it since 4 Nov 2026)", (await onStep(page)) === "interests" && await page.evaluate(() => document.getElementById("intName").textContent === "Milo" && !document.querySelector('[data-step="games"]')), await onStep(page));
 await clickNext(); // → "Is Milo in speech therapy?"
 ok("…then one tap: \"Is Milo in speech therapy?\"", (await onStep(page)) === "therapy", await onStep(page));
 await clickNext(); // an answer → the sounds
@@ -186,14 +188,14 @@ const meet = await page.evaluate(() => {
            segHidden: document.getElementById("seg").hidden,
            card: st ? getComputedStyle(st).backgroundColor : "", body: getComputedStyle(document.body).backgroundColor,
            build: !!document.getElementById("obBuild"), saved: JSON.parse(localStorage.getItem("sona.profile.v1") || "{}").onboarded === true,
-           plan: document.getElementById("planCard").hidden ? "" : document.getElementById("planTitle").textContent + " " + document.getElementById("planLine").textContent };
+           plan: document.getElementById("planCard").hidden ? "" : document.getElementById("planTitle").textContent };
 });
 ok("the screen after the email step is \"Milo's practice is ready!\", it asks nothing, and Rachel is not on it (she had her own screen)",
   meet.step === "ready" && meet.title === "Milo's practice is ready!" && meet.asks === 0 && meet.segHidden && !meet.rachel, JSON.stringify(meet));
 ok("…on the page's cream (no card behind the screen), the build beat gone before it shows, and nothing saved until its Continue",
   meet.card === "rgba(0, 0, 0, 0)" && meet.body === "rgb(255, 245, 233)" && !meet.build && !meet.saved, JSON.stringify(meet));
-ok("…with Day 1's card on this first setup: \"Play a game, then read a book.\", Fruit Slice first",
-  /^Play a game, then read a book\. Fruit Slice first, then .+\.$/.test(meet.plan), JSON.stringify(meet));
+ok("…with Day 1's card on this first setup: \"Play a game, then read a book.\" and nothing more (4 Nov 2026: less text)",
+  meet.plan === "Play a game, then read a book.", JSON.stringify(meet));
 await clickNext(); // ready → mic (the profile is saved here)
 ok("no build beat covers the microphone step either",
   await page.evaluate(() => !document.getElementById("obBuild")));
@@ -216,7 +218,7 @@ const sharedPromise = await page.evaluate(() => Sona.MIC_PROMISE);
 ok("…and it says nothing about the microphone it could get wrong: no grown-ups line, nothing about audio uploaded, recorded or saved",
   !atMic.says.includes(sharedPromise) && !/upload|record|saved|stays on|never leaves/i.test(atMic.says) && !/micPromise/.test(readFileSync(ROOT + "/onboarding.html", "utf8")));
 ok("…while the practice page still shows the shared promise, and it is the accurate one",
-  /\$\("micPromise"\)\.textContent=S\.MIC_PROMISE/.test(readFileSync(ROOT + "/charge.html", "utf8")) && /never uploaded/.test(sharedPromise) && /saved on this phone/.test(sharedPromise) && !/never recorded/i.test(sharedPromise));
+  /\$\("micPromise"\)\.textContent=S\.MIC_PROMISE/.test(readFileSync(ROOT + "/charge.html", "utf8")) && /never uploaded or saved/.test(sharedPromise) && !/never recorded/i.test(sharedPromise));
 ok("…and offers an in-app decline before the OS prompt", /Not now/.test(atMic.says));
 await page.evaluate(() => document.getElementById("micNotNow").click()); await page.waitForTimeout(250); // mic → the hand-off, at once
 ok("…and the hand-off follows the microphone with no build beat in between",
@@ -428,13 +430,13 @@ const stepAsk = await page.evaluate(() => {
   return {
     on: !!(st && st.classList.contains("on")),
     optional: /optional/i.test((st || {}).textContent || ""),
-    consent: /We.ll also send occasional tips from Rachel\. Unsubscribe anytime\./.test((st || {}).textContent || ""),
+    consent: /Track your child.s progress every week\. Unsubscribe anytime\./.test((st || {}).textContent || ""),
     cta: document.getElementById("nextBtn").textContent,
     skip: !!document.getElementById("updSkip"),
     required: !!document.querySelector("#updEmail[required]"),
   };
 });
-ok("the email step offers Rachel's tips, with Travis's consent line on it", stepAsk.on && stepAsk.consent, JSON.stringify(stepAsk));
+ok("the email step carries Travis's line (4 Nov 2026: \"track weekly progress\", in place of the tips line)", stepAsk.on && stepAsk.consent, JSON.stringify(stepAsk));
 ok("…says it is optional, has a Skip, and never blocks the way on",
   stepAsk.optional && !stepAsk.required && stepAsk.skip && /Continue/.test(stepAsk.cta), JSON.stringify(stepAsk));
 await clickNext(); // Skip, with the box blank → ready

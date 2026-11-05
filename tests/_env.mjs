@@ -78,7 +78,12 @@ const exe = process.env.CHROMIUM_PATH || (existsSync("/opt/pw-browsers/chromium"
 // --font-render-hinting=medium gives CI's numbers to the pixel). The full
 // Chromium a cloud container uses already lays text out this way.
 export function launchOpts(args) {
-  const o = { args: ["--mute-audio", "--font-render-hinting=none", ...(args || [])] };
+  // Fake output keeps headless macOS Web Audio's clock running without a
+  // hardware device: R/M evidence passed 8/8 with it, versus 2/8 without.
+  // Keep this Mac-only workaround off Linux, whose ordinary audio backend
+  // passed the complete main battery. This does not change speech fixtures.
+  // Chromium: media/base/media_switches.cc, kDisableAudioOutput.
+  const o = { args: ["--mute-audio", ...(process.platform === "darwin" ? ["--disable-audio-output"] : []), "--font-render-hinting=none", ...(args || [])] };
   if (exe) o.executablePath = exe;
   return o;
 }

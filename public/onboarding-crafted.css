@@ -111,7 +111,7 @@ body.hello-wait[data-setup-screen="welcome"] .obfoot { pointer-events: none; }
 /* Echo stands beside a question only where he says something to it; the
    screens that show a game, Rachel or Echo himself keep the room */
 body[data-setup-screen="reel"] .ob .mascot, body[data-setup-screen="rachel"] .ob .mascot,
-body[data-setup-screen="interests"] .ob .mascot, body[data-setup-screen="games"] .ob .mascot, body[data-setup-screen="sounds"] .ob .mascot,
+body[data-setup-screen="interests"] .ob .mascot, body[data-setup-screen="sounds"] .ob .mascot,
 body[data-setup-screen="minutes"] .ob .mascot, body[data-setup-screen="ready"] .ob .mascot, body[data-setup-screen="mic"] .ob .mascot,
 body[data-setup-screen="achieve"] .ob .mascot { display: none; }
 .ob .qh { font-size: 30px; line-height: 1.12; letter-spacing: -.02em; color: #48280f; overflow-wrap: anywhere; text-wrap: balance; }
@@ -247,34 +247,12 @@ body[data-setup-screen="reel"] .obfoot #backBtn { padding: 0 14px; border-radius
 .rachel-line { margin: 0 auto; max-width: 330px; font-size: 17px; line-height: 1.45; font-weight: 700; color: #71573d; text-wrap: balance; }
 .rachel-pill { align-self: center; margin: 16px 0 0; padding: 6px 15px; border-radius: 999px; border: 1.5px solid #e9dcc7; background: #fffdf8; font: 800 13px/1.2 'Nunito', sans-serif; color: #48280f; }
 
-/* the games, in Home's painted cards, the ones a pick fits ringed */
-.ob .step[data-step="games"].on { justify-content: center; }
-.sell-grid { margin: 14px 0 0; }
-.sell-kicker { margin: 10px 0 6px; color: #0a7f7c; font-size: 12px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
-.sell-kicker:first-child { margin-top: 2px; }
-.sell-games { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px 8px; }
-.sell-games.two { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 12px; }
-.sell-games li { display: flex; flex-direction: column; align-items: center; gap: 5px; min-width: 0; }
-.sell-art { display: block; width: 100%; aspect-ratio: 16 / 9; border-radius: 12px; overflow: hidden; background: #f4eddf; box-shadow: 0 2px 0 #e8dcc9a0; }
-.sell-art img, .sell-art svg { display: block; width: 100%; height: 100%; object-fit: cover; }
-.sell-games li.loved .sell-art { box-shadow: 0 0 0 3px #11b3b0, 0 4px 0 #9edcd8; }
-.sell-name { font: 800 13px/1.15 'Baloo 2', sans-serif; color: #5b3a20; overflow-wrap: anywhere; }
-.sell-grid:not(.both) .sell-games.two .sell-name { font-size: 15px; }
-/* the peek's "and 7 more" under a capped group (22 Oct 2026: 18 games opened) */
-.sell-more { margin: 6px 0 0; text-align: center; color: #5b3a20; font: 800 13px/1.15 'Baloo 2', sans-serif; }
-/* both age groups (no age given): the little kids' two games take the big
-   kids' size, centred, so all eleven fit a 4-inch phone with no scroll */
-.sell-grid.both .sell-games.two { display: flex; justify-content: center; gap: 8px; }
-.sell-grid.both .sell-games.two li { width: calc((100% - 16px) / 3); }
 @media (max-height: 700px) {
   .ob .sell-line { font-size: 15.5px; }
   .ba { margin-top: 16px; gap: 10px; }
   .ba-row { padding: 10px; gap: 12px; }
   .ba-tag { font-size: 17px; } .ba-say { font-size: 15px; }
   .rachel-line { font-size: 15.5px; }
-  .sell-grid { margin-top: 10px; }
-  .sell-games { gap: 8px 6px; }
-  .sell-name { font-size: 12px; }
 }
 @media (max-height: 600px) {
   .ob .step.sell .qh { font-size: 23px; margin-bottom: 4px; }
@@ -282,10 +260,6 @@ body[data-setup-screen="reel"] .obfoot #backBtn { padding: 0 14px; border-radius
   .ba-pic { width: 40%; } .ba-tag { font-size: 16px; } .ba-say { font-size: 14px; }
   .rachel-photo { margin-bottom: 12px; }
   .rachel-pill { margin-top: 10px; }
-  .sell-kicker { margin: 6px 0 4px; font-size: 11px; }
-  .sell-games { gap: 6px 6px; }
-  .sell-name { font-size: 11.5px; }
-  .sell-more { margin-top: 4px; font-size: 12px; }
 }
 
 /* ── WHAT DOES <NAME> LOVE? Seven tiles, any number picked ───────────── */
@@ -389,21 +363,16 @@ body[data-setup-screen="remind"] #nextBtn { display: none; }
 #readyTitle { overflow-wrap: anywhere; margin-bottom: 12px; }
 .ready-chips { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
 .ready-chips li { padding: 8px 13px; border-radius: 14px; background: #fff; border: 1px solid #e4d7c3; font-weight: 800; font-size: 15px; color: #5b3a20; }
-.ready-lines { list-style: none; margin: 16px 0 0; padding: 0; display: grid; gap: 6px; }
-.ready-lines li { font-weight: 700; font-size: 15.5px; line-height: 1.4; color: #5b3a20; text-wrap: balance; }
-.ob .ready-hedge { font-size: 12px; margin: 14px 0 0; }
 @media (max-height: 700px) {
   .ready-echo { width: 104px; height: 104px; }
   .ready-chips li { font-size: 14px; padding: 6px 10px; }
-  .ready-lines { margin-top: 12px; }
-  .ready-lines li { font-size: 14.5px; }
 }
 @media (max-height: 600px) { .ready-echo { width: 84px; height: 84px; margin-bottom: 4px; } }
 
 /* THE PLAN CARD (31 Oct 2026: Travis, "build the plan moment and straight
    into day 1"): Day 1's story under the chips, a parent's first setup only.
-   A statement, not a button: its picture, a "Day 1" pill, the title and the
-   story's Home line, and "A new story every day." under it. The picture
+   A statement, not a button: its picture, a "Day 1" pill and the title
+   (one line since 4 Nov 2026: "too much text"). The picture
    keeps its box (16:9, the Home picture's own shape) before it loads, so
    nothing moves as it arrives; one that has failed by the time the screen
    is drawn is left out (the card is its words), one that fails while it
@@ -417,13 +386,9 @@ body[data-setup-screen="remind"] #nextBtn { display: none; }
 .plan-words { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; min-width: 0; flex: 1 1 auto; }
 .plan-day { padding: 2px 9px; border-radius: 99px; background: #ffe4cc; color: #93422f; font: 900 11px/1.4 'Nunito', sans-serif; letter-spacing: .04em; }
 .plan-title { font: 800 17px/1.15 'Baloo 2', sans-serif; color: #3d342e; overflow-wrap: anywhere; }
-.plan-line { font-size: 12.5px; line-height: 1.35; font-weight: 700; color: #786959; }
-.ob .plan-more { margin: 8px 0 0; font-size: 13px; line-height: 1.4; font-weight: 800; color: #786959; }
 @media (max-height: 700px) {
   .plan-card { margin-top: 12px; }
   .plan-title { font-size: 16px; }
-  .plan-line { font-size: 12px; }
-  .ob .plan-more { margin-top: 6px; font-size: 12.5px; }
 }
 @media (max-height: 600px) {
   .plan-card { padding: 8px 12px; margin-top: 10px; }

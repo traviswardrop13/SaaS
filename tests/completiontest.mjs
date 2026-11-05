@@ -92,9 +92,10 @@ async function evidence(page) {
 async function showHistory(page) {
   await page.evaluate(() => Sona.gateVerify());
   await page.goto(origin + "/progress.html");
-  const more = page.getByText("More details", { exact: false });
-  if (await more.count()) await more.click();
-  return page.locator("#recent").innerText();
+  // Recent practice, the per-session list, went on 5 Nov 2026 (Travis:
+  // "only keep one of practice levels ... or recent practice"). The stored
+  // row is checked above; the page must still never show a word total.
+  return page.locator(".wrap").innerText();
 }
 async function reachable(page, selector) {
   return page.evaluate((selector) => {
@@ -139,7 +140,7 @@ await scenario("saved three-beat completion", async () => {
     await page.locator("#runDone").click();await page.waitForURL(/today.html/);
     ok("Done returns Home and closes the saved run",await page.evaluate(()=>!JSON.parse(sessionStorage.getItem("sona.run.v1")).active));
     const history=await showHistory(page);
-    ok("parent history uses detected tries",/25 tries/.test(history)&&!/0 words/.test(history),history);
+    ok("Progress never shows a legacy word total",/Practice levels/.test(history)&&!/\d+ words?\b/i.test(history),history);
     ok("completion has no page errors",errors.length===0,errors);
   }finally{await context.close();}
 });

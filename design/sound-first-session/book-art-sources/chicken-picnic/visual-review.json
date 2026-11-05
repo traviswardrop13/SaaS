@@ -1,0 +1,10 @@
+{
+  "tool": "built-in image_gen",
+  "visualReview": "All individual generated images and final cover-plus-eight-page contact sheet inspected against story text/key and original style reference.",
+  "pages": 8,
+  "pageAssets": "768x768 WebP, each below 200000 bytes",
+  "coverAsset": "384x384 WebP, below 40000 bytes",
+  "distinctImages": 9,
+  "continuity": "Same russet hen, cream picnic bag, teal chair and red gingham cloth; cherries are pitted halves, chocolate enters on page4, food stays inside caught bag on pages5\u20137, bunny first appears in ending.",
+  "clinicalReview": "Pending Rachel review; artwork validation is not clinical approval."
+}

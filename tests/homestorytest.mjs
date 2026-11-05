@@ -1,5 +1,5 @@
-// HOME (STORY1, 22 Oct 2026; Travis chose both age groups, today's painted
-// clay look, and the story is Premium). Home is one big card, today's story,
+// HOME (STORY1; the 31 Oct 2026 redesign keeps the original painted art
+// and Premium story rules). A quiet Map, read-only sound and daily adventure
 // with two doors under it (Arcade: every game, as Home was, and since 23 Oct
 // 2026 only games; Books: the bookshelf, its one way in) and, since 23 Oct
 // 2026 (FOUND1), "Your games": the games the child's finished stories left
@@ -17,32 +17,20 @@
 //   - Books: Home's door is the one way to the bookshelf, with its own tag;
 //   - Home stays quiet: nothing written, sent or spoken, on load, on coming
 //     back to the front, or moving between the views;
-//   - the day's reel (HOMECLIP1, 28 Oct 2026): the card's picture is a tall
-//     3:4 clip of the game the day plays (/assets/home/reel/<game>.mp4,
-//     muted, looping, inline), over its poster, over the picture the card had
-//     before; never under Reduce Motion, never on a finished day (tomorrow's
-//     poster, dark), held still on a hidden page and in the Arcade, and a
-//     clip that cannot start leaves the poster as it is;
-//   - the fit: Home is one screen (1 Nov 2026; Travis: "Just make it one
-//     ... flat screen"): the whole page, card, doors and "Your games", on
-//     the screen with nothing to scroll up or down at every phone and iPad
-//     size, the card's picture taking the room left (3:4 at most); only a
-//     screen too short for it (a 4-inch phone with "Your games", a phone on
-//     its side) scrolls, with nothing cut off; every button at least 44 px,
-//     no sideways scroll;
+//   - the original story/game illustration, with no video, poster reel or
+//     media playback, including after visibility and view changes;
+//   - the fit: the card's title and play button on the first screen at five
+//     sizes, the doors and earned games on that same screen, every button
+//     at least 44 px, no page scroll;
 //   - Reduce Motion: nothing animates, and the fit is the same as without it
 //     and holds still through re-fits (coming back to the front, ‹ Home);
-//   - a story picture that has not landed is Echo on the story's wash;
-//   - the Play Map (31 Oct 2026; Travis: "yes build play map with those
-//     changes"): "Let's explore." with Echo at the start of a drawn trail,
-//     one gold star on it for each story finished (the one found today
-//     bigger), the trail diving into the card under a "Today" flag and
-//     ending at tomorrow, a dark locked pill; never a count, a streak or a
-//     timer, no sound control, nothing on it takes a tap or moves.
+//   - a story picture that has not landed is Echo on the story's wash.
 import { createServer } from "node:http";
 import { readFileSync, existsSync, statSync } from "node:fs";
 import path from "node:path";
-import { chromium, ROOT, launchOpts } from "./_env.mjs";
+import { chromium, ROOT as PUBLIC_ROOT, launchOpts } from "./_env.mjs";
+import { isTeal } from "./_phone.mjs";
+const ROOT = process.env.SONA_HOME_PUBLIC_ROOT || PUBLIC_ROOT;
 
 let fails = 0, count = 0;
 function ok(label, pass, detail = "") { count++; if (!pass) fails++; console.log((pass ? "PASS " : "FAIL ") + label + (pass ? "" : "  → " + (typeof detail === "string" ? detail : JSON.stringify(detail)))); }
@@ -82,22 +70,18 @@ const browser = await chromium.launch(launchOpts());
 // open; stamp: what the free-version sweep wrote. quest: the adventure record,
 // with "TODAY" read as this phone's own date. The idea sheet starts answered
 // and the offer from Home already shown: neither is this suite's subject.
-// Every page here stands in a phone that plays no H.264 (canPlayType says
-// "" to an MP4), whatever this Chromium can do: a plain Chromium build plays
-// none, but CI's newer one does, and the clip then played there (29 Oct
-// 2026). "a phone that plays the clips" below stands in one that does.
-function seed({ age = 7, sub = false, ea = false, sell = false, stamp = "kept", quest = null } = {}) {
+function seed({ age = 7, sub = false, ea = false, sell = false, stamp = "kept", quest = null, talk = false, focus = ["R"], target = "" } = {}) {
   return `(() => {
     const cpt = HTMLMediaElement.prototype.canPlayType;
     HTMLMediaElement.prototype.canPlayType = function (t) { return /mp4|avc1/i.test(String(t)) ? "" : cpt.call(this, t); };
-    // TALK1: this suite plays the lighthouse as Day 1 (a child on a sound with no talking story still meets it); talkstorytest plays the talking ones
-    try { sessionStorage.setItem("sona.talkoff", "1"); sessionStorage.setItem("sona.paidui", "1"); sessionStorage.setItem("sona.websalesui", "${sell ? 1 : 0}"); } catch (e) {}
+    // Legacy calendar cases opt out of TALK1; the talking-Day1 cases below use the product default.
+    try { sessionStorage.setItem("sona.talkoff", "${talk ? 0 : 1}"); sessionStorage.setItem("sona.paidui", "1"); sessionStorage.setItem("sona.websalesui", "${sell ? 1 : 0}"); } catch (e) {}
     const say = (t) => { if (String(t || "").trim()) { const a = JSON.parse(sessionStorage.getItem("test.speech") || "[]"); a.push(String(t)); sessionStorage.setItem("test.speech", JSON.stringify(a)); } return Promise.resolve(); };
     let sona; Object.defineProperty(window, "Sona", { configurable: true, get: () => sona, set: (v) => { sona = v; v.speak = say; v.speakNow = say; } });
     if (window.speechSynthesis) window.speechSynthesis.speak = (u) => say(u && u.text);
     if (localStorage.getItem("__seeded")) return; localStorage.setItem("__seeded", "1");
     const d = new Date(), p2 = (n) => String(n).padStart(2, "0"), TODAY = d.getFullYear() + "-" + p2(d.getMonth() + 1) + "-" + p2(d.getDate());
-    localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Mia", childAge: "${age}", focusSounds: ["R"], onboarded: true, voiceOn: true, volume: 0.8${ea ? ", earlyAdopter: true" : ""} }));
+    localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Mia", childAge: "${age}", focusSounds: ${JSON.stringify(focus)}, targetSound: ${JSON.stringify(target)}, onboarded: true, voiceOn: true, volume: 0.8${ea ? ", earlyAdopter: true" : ""} }));
     localStorage.setItem("sona.freeera.v1", "post");
     ["sona.freeera2.v1", "sona.freeera3.v1", "sona.freeera4.v1", "sona.freeera5.v1"].forEach((k) => localStorage.setItem(k, "done"));
     localStorage.setItem("sona.freever.v1", "${stamp}"); localStorage.setItem("sona.buddyset.v1", "kept");
@@ -121,14 +105,8 @@ async function home(pg, page = "/today.html") {
   await pg.waitForFunction(() => window.Sona && !document.getElementById("libraryApp").hidden && document.querySelector("#activityGroups .game-card"));
   await pg.waitForTimeout(250);
 }
-// HOMECLIP1: the clip and its poster live here; until a key's poster has
-// landed on disk the card shows the picture it had before (pic), and Echo if
-// that has not landed either. The seed stands in a phone that plays no H.264,
-// so it is always the poster here; "a phone that plays the clips" below
-// stands in one that does.
-const REEL = "/assets/home/reel/";
-const onDisk = (p) => existsSync(ROOT + p);
-const shows = (key, pic) => (onDisk(REEL + key + ".webp") ? REEL + key + ".webp" : pic && onDisk(pic) ? pic : "/assets/crafted/echo-welcome.webp");
+const onDisk = (p) => !!p && existsSync(ROOT + p);
+const shows = (key, pic) => onDisk("/assets/adventure/"+key+"/s01.webp") ? "/assets/adventure/"+key+"/s01.webp" : onDisk(pic) ? pic : "/assets/crafted/echo-welcome.webp";
 // what the story card shows
 const card = (pg) => pg.evaluate(() => {
   const c = document.getElementById("questCard"), $ = (id) => document.getElementById(id), vis = (e) => !!(e && e.offsetParent && !e.hidden);
@@ -137,8 +115,9 @@ const card = (pg) => pg.evaluate(() => {
     title: $("questTitle").textContent, line: $("questLine").textContent, go: vis($("questGo")) ? { w: go.width, h: go.height } : null,
     done: c.classList.contains("done"), disabled: c.getAttribute("aria-disabled"), aria: c.getAttribute("aria-label"),
     img: im ? new URL(im.getAttribute("src"), location.href).pathname : null, fallback: art.classList.contains("fallback"), story: art.getAttribute("data-story"),
-    dark: im ? getComputedStyle(im).filter : "", text: c.innerText, h: r.height,
-    clip: (() => { const v = $("questClip"); return { hidden: v.hidden, src: v.getAttribute("src"), poster: v.getAttribute("poster"), on: v.classList.contains("on"), muted: v.muted }; })() };
+    dark: im ? getComputedStyle(im).filter : "", previewMuted: Number(getComputedStyle(art).opacity) < 1 || /brightness\(0\./.test(getComputedStyle(art).filter) || /brightness\(0\./.test(im ? getComputedStyle(im).filter : ""), text: c.innerText, h: r.height,
+    action: $("questActionLabel") ? $("questActionLabel").textContent : null,
+    videos: document.querySelectorAll("video").length };
 });
 const view = (pg) => pg.evaluate(() => document.getElementById("libraryApp").getAttribute("data-view"));
 const store = (pg) => pg.evaluate(() => JSON.stringify(Object.keys(localStorage).sort().map((k) => [k, localStorage.getItem(k)])));
@@ -152,7 +131,51 @@ const pathOf = (pg) => { const u = new URL(pg.url()); return u.pathname + u.sear
 // words a child must never read on Home
 const BAD = /coming soon|\bscores?\b|\bpoints?\b|\$\s?\d|of 14\b/i;
 
-ok("(the fourteen story days are found in sona.js)", STORY.length === 14 && STORY.slice(0, 3).map((d) => d.id).join() === "lighthouse,windup,bridge", STORY);
+// Pin the choice a child sees: the adventure is first and largest, Practice
+// is secondary, and the Studio doors use drawn arrows instead of font glyphs.
+async function studioComposition(pg) {
+  const m = await pg.evaluate(() => {
+    const box = e => { if (!e || !e.offsetParent) return null; const r=e.getBoundingClientRect(); return {t:r.top,b:r.bottom,w:r.width,h:r.height}; };
+    const card=document.getElementById('questCard'),practice=document.querySelector('.practice-band'),doors=document.getElementById('homeDoors');
+    return {card:box(card),art:box(document.getElementById('questArt')),copy:box(document.querySelector('.quest-copy')),practice:box(practice),doors:box(doors),
+      practiceHeading:practice?.querySelector('h2')?.textContent,
+      readonly:!!practice&&!practice.querySelector('button,a[href],input,select,[role=combobox]'),
+      action:getComputedStyle(document.getElementById('questGo')).backgroundColor,
+      trail:document.querySelectorAll('#playMap,#mapTomorrow,#mapEarned,#mapHistory,.map-trail').length,
+      pictures:[...doors.querySelectorAll('.door-pic')].map(e=>({tilt:getComputedStyle(e).transform,src:e.querySelector('img')?.getAttribute('src')})),
+      arrows:[...doors.querySelectorAll('.door-arrow')].map(e=>({drawn:e.matches('svg')||!!e.querySelector('svg'),text:e.textContent.trim()}))};
+  });
+  ok('Home has no token Tomorrow trail or completed-star decoration',m.trail===0,m);
+  ok('the adventure comes before the smaller Practice area and the Studio doors',!!m.practice&&m.practiceHeading==='Practice'&&m.card.b<=m.practice.t+1&&m.practice.b<=m.doors.t+1&&m.card.h>m.doors.h*1.5&&m.practice.h<m.doors.h,m);
+  ok('the large adventure image has its own space above the title and action',!!m.art&&!!m.copy&&m.art.h>=158&&m.art.w>=m.card.w-12&&m.art.b<=m.copy.t+1&&m.copy.b<=m.card.b+1,m);
+  ok('Start today keeps the distinct teal main action',isTeal(m.action),m.action);
+  ok('Games and Books use two clean drawn arrows, with no emoji or font arrow',m.arrows.length===2&&m.arrows.every(a=>a.drawn&&a.text===''),m.arrows);
+  ok('the Studio doors keep their original pictures, tilted inside the cards',m.pictures.length===2&&m.pictures.every((p,i)=>p.tilt!=='none'&&p.src==='/assets/crafted/home-'+(i===0?'arcade':'books')+'.webp'),m.pictures);
+  ok('the smaller Practice sound remains read-only',m.readonly,m);
+}
+
+// This bounded check is also run against an exported pre-change public tree.
+if(process.env.SONA_HOME_STUDIO_PROOF==='1'){
+  const {ctx,pg,errors}=await open({sub:true,talk:true,focus:['S'],target:'S'});
+  await pg.evaluate(()=>document.fonts.ready);await pg.waitForTimeout(100);
+  await studioComposition(pg);ok('the Studio composition has no runtime errors',errors.length===0,errors);await ctx.close();
+  await browser.close();server.close();console.log(fails?fails+' FAILURES / '+count+' Studio checks':'ALL GREEN — '+count+' Studio checks');process.exit(fails?1:0);
+}
+
+// Two bounded cover checks; the full suite below keeps the same assertions.
+if(process.env.SONA_HOME_TALK_COVER_PROOF==="1"){
+  for(const [label,opts,id,src] of [
+    ["Sandy's Home cover",{sub:true,talk:true,focus:["S"],target:"S"},"sandy","/assets/crafted/home-sandy.webp"],
+    ["the original lighthouse portrait",{sub:true},"lighthouse","/assets/adventure/lighthouse/s01.webp"]
+  ]){
+    const {ctx,pg,errors}=await open(opts);const c=await card(pg);
+    const loaded=await pg.evaluate(()=>{var i=document.querySelector('#questPic img');return !!(i&&i.complete&&i.naturalWidth>0);});
+    ok(label+" stays correct and loaded",c.story===id&&c.img===src&&loaded&&errors.length===0,{c,errors});await ctx.close();
+  }
+  await browser.close();server.close();console.log(fails?fails+" FAILURES / "+count+" cover checks":"ALL GREEN — "+count+" cover checks");process.exit(fails?1:0);
+}
+
+ok("(the fourteen calendar slots are found in sona.js)", STORY.length === 14 && STORY.slice(0, 3).map((d) => d.id).join() === "lighthouse,windup,bridge", STORY);
 // the story with the longest title, for the fit (Home's card must hold it)
 const LONGEST = STORY.reduce((n, d, i) => (d.title.length > STORY[n].title.length ? i : n), 0);
 
@@ -162,11 +185,11 @@ await section("an open story", async () => {
     const { ctx, pg, errors } = await open({ sub: true, age });
     const c = await card(pg), a = "age " + age + ": ";
     const top = await pg.evaluate(() => ({ h1: document.querySelector("h1").textContent, title: document.title, view: document.getElementById("libraryApp").getAttribute("data-view"), text: document.querySelector(".home-only").innerText }));
-    ok(a + "Home opens on \"Let's explore.\" (the Play Map's heading), its first heading, titled \"Sona\"", top.h1 === "Let's explore." && top.title === "Sona" && top.view === "home", top);
+    ok(a + "Home keeps its focus heading, titled \"Sona\"", top.h1 === "Home" && top.title === "Sona" && top.view === "home", top);
     ok(a + "the story card shows Day 1, its title and its hook (both age groups get the story)", c.shown && c.chip === "Day 1" && c.title === STORY[0].title && c.line === STORY[0].line, c);
-    ok(a + "…with a big round play button (at least 64 px) and no Premium tag", c.go && c.go.w >= 64 && c.go.h >= 64 && c.lock === null && c.disabled === "false", c);
-    ok(a + "…its picture is the poster of the day's clip (until that lands, the story's own picture, or Echo on its wash)", c.story === "lighthouse" && c.img === shows("lighthouse", "/assets/crafted/home-lighthouse.webp"), c);
-    ok(a + "…and on a phone that plays no H.264 (the seed's) the clip stays hidden and loads nothing", c.clip.hidden && !c.clip.src && !c.clip.on, c.clip);
+    ok(a + "…with a readable Start today action (at least 44 px high) and no Premium tag", c.go && c.go.w >= 44 && c.go.h >= 44 && c.action === "Start today" && c.lock === null && c.disabled === "false", c);
+    ok(a + "…its picture is the original story illustration, or Echo on its wash", c.story === "lighthouse" && c.img === shows("lighthouse", "/assets/crafted/home-lighthouse.webp"), c);
+    ok(a + "…with no video element", c.videos === 0, c.videos);
     ok(a + "…and its label says it all for a screen reader", c.aria === "Today's adventure, day 1: " + STORY[0].title + ". " + STORY[0].line + " Play.", c.aria);
     ok(a + "nothing on Home says coming soon, score, points, a price or \"of 14\"", !BAD.test(top.text), top.text);
     ok(a + "a tap opens the story", await tapTo(pg, "#questCard", /\/adventure\.html$/), pg.url());
@@ -175,12 +198,23 @@ await section("an open story", async () => {
   }
 });
 
+await section("a started story", async () => {
+  const { ctx, pg, errors } = await open({ sub: true, quest: { i: 0, last: 13, s: 0, done: "", seen: "TODAY|lighthouse", got: [] } });
+  try {
+    const c = await card(pg), before = await store(pg);
+    ok("a story already started today says Keep going and keeps the same original picture", c.action === "Keep going" && c.story === "lighthouse" && c.img === shows("lighthouse", "/assets/crafted/home-lighthouse.webp"), c);
+    ok("showing its resume action does not finish or rewrite the story", !c.done && c.disabled === "false" && before === await store(pg));
+    ok("Keep going opens the existing story player", await tapTo(pg, "#questCard", /\/adventure\.html$/), pg.url());
+    ok("the resume action has no page errors", errors.length === 0, errors);
+  } finally { await ctx.close(); }
+});
+
 await section("a locked story", async () => {
   for (const stamp of ["post", "kept"]) {
     const { ctx, pg, errors } = await open({ sell: true, stamp });
     const c = await card(pg), w = stamp === "post" ? "a family who owes the price: " : "a family keeping the free version, where Sona sells: ";
     ok(w + "the story still shows, with a small Premium tag on its picture", c.shown && c.chip === "Day 1" && c.title === STORY[0].title && c.lock === "Premium", c);
-    ok(w + "…the play button stays, and the label says Premium", c.go && c.go.w >= 64 && / Premium\.$/.test(c.aria), c);
+    ok(w + "…Unlock adventure stays actionable, and the label says Premium", c.go && c.go.h >= 44 && c.action === "Unlock adventure" && / Premium\.$/.test(c.aria), c);
     // the price's answer is held (204: the browser stays put), so what Home
     // did before leaving can still be read
     const navs = [];
@@ -200,7 +234,7 @@ await section("a story finished today", async () => {
     const { ctx, pg, errors } = await open({ sub: true, quest: { i: 0, last: 13, s: 1, ls: 0, lk: "story", done: "TODAY", got: [] } });
     const c = await card(pg);
     ok("Day 1 done: \"Day 1 done!\" and \"Come back tomorrow for Day 2 and a new game!\"", c.title === "Day 1 done!" && c.line === "Come back tomorrow for Day 2 and a new game!" && c.done, c);
-    ok("…with tomorrow's poster (Day 2's game), shown dark, and no clip", c.story === "windup" && c.img === shows("windup", "/assets/crafted/home-windup.webp") && /brightness\(0\.15\)/.test(c.dark) && c.clip.hidden && !c.clip.src, c);
+    ok("…with tomorrow's original story picture shown dark", c.story === "windup" && c.img === shows("windup", "/assets/crafted/home-windup.webp") && c.previewMuted && c.videos === 0, c);
     ok("…no play button, no chip, no tag, and aria-disabled", c.go === null && c.chip === null && c.lock === null && c.disabled === "true" && c.aria === "Day 1 done! Come back tomorrow for Day 2 and a new game!", c);
     // (forced: Playwright itself refuses a tap on an aria-disabled button)
     await pg.locator("#questCard").click({ force: true }); await pg.waitForTimeout(300);
@@ -212,7 +246,7 @@ await section("a story finished today", async () => {
     const { ctx, pg, errors } = await open({ sub: true, quest: { i: 4, last: 3, s: 3, ls: 2, lk: "story", done: "TODAY", got: [] } });
     const c = await card(pg);
     ok("Day 3 done: \"Day 3 done!\" and \"Come back tomorrow for Day 4 and a new game!\"", c.title === "Day 3 done!" && c.line === "Come back tomorrow for Day 4 and a new game!" && c.done && c.go === null, c);
-    ok("…with Day 4's poster, dark", c.story === STORY[3].id && c.img === shows(STORY[3].id, "/assets/crafted/home-" + STORY[3].id + ".webp") && !c.fallback && /brightness\(0\.15\)/.test(c.dark), c);
+    ok("…with Day 4's original story picture, dark", c.story === STORY[3].id && c.img === shows(STORY[3].id, "/assets/crafted/home-" + STORY[3].id + ".webp") && !c.fallback && c.previewMuted, c);
     ok("no page errors", errors.length === 0, errors);
     await ctx.close();
   }
@@ -220,7 +254,7 @@ await section("a story finished today", async () => {
     const { ctx, pg, errors } = await open({ sub: true, quest: { i: 4, last: 3, s: 14, ls: 13, lk: "story", done: "TODAY", got: [] } });
     const c = await card(pg);
     ok("Day 14 done: \"Day 14 done!\" and \"Come back tomorrow for a new adventure!\" (no Day 15 is promised)", c.title === "Day 14 done!" && c.line === "Come back tomorrow for a new adventure!" && c.done && c.go === null, c);
-    ok("…with tomorrow's game's poster, dark", c.img === shows("glide", "/assets/crafted/home-glide.webp") && /brightness\(0\.15\)/.test(c.dark) && !c.story, c);
+    ok("…with tomorrow's original game picture, dark", c.img === shows("glide", "/assets/crafted/home-glide.webp") && c.previewMuted && !c.story, c);
     ok("no page errors", errors.length === 0, errors);
     await ctx.close();
   }
@@ -307,92 +341,6 @@ await section("Your games: the games the stories left", async () => {
   }
 });
 
-// ── the Play Map (31 Oct 2026; Travis: "yes build play map with those
-// changes"): today's card on a drawn trail, a gold star for each story
-// finished behind it, tomorrow locked ahead ──
-const trail = (pg) => pg.evaluate(() => {
-  const $ = (id) => document.getElementById(id), map = $("homeMap"), svg = $("mapTrail"), m = map.getBoundingClientRect();
-  const box = (e) => { if (!e) return null; const r = e.getBoundingClientRect(); if (!r.width && !r.height) return null; return { l: r.left, r: r.right, t: r.top, b: r.bottom, w: r.width, h: r.height }; };
-  // a path's point, in the page's own pixels (the drawing is the board's size, at its corner)
-  const end = (p, at) => { const L = p.getTotalLength(), q = p.getPointAtLength(at === "start" ? 0 : L); return { x: q.x + m.left, y: q.y + m.top }; };
-  const dots = [...svg.querySelectorAll(".trail-dots")], marks = [...svg.querySelectorAll(".trail-mark")];
-  const vb = (svg.getAttribute("viewBox") || "").split(" ").map(Number);
-  return { found: Sona.storyFound().length, q: (() => { const q = Sona.questToday(); return { kind: q.kind, state: q.state }; })(),
-    bands: svg.querySelectorAll(".trail-band").length, dots: dots.length, stars: svg.querySelectorAll(".trail-star").length, data: svg.getAttribute("data-stars"),
-    fresh: marks.map((g, i) => (g.classList.contains("fresh") ? i : -1)).filter((i) => i >= 0), starBoxes: marks.map((g) => box(g.querySelector(".trail-star"))),
-    a: dots[0] ? { s: end(dots[0], "start"), e: end(dots[0]) } : null, b: dots[1] ? { s: end(dots[1], "start"), e: end(dots[1]) } : null,
-    vb: { w: vb[2], h: vb[3], mw: m.width, mh: m.height },
-    hidden: svg.getAttribute("aria-hidden") === "true" && $("mapToday").getAttribute("aria-hidden") === "true" && $("mapTomorrow").getAttribute("aria-hidden") === "true" && $("mapEcho").getAttribute("aria-hidden") === "true",
-    taps: [svg, $("mapToday"), $("mapTomorrow")].map((e) => getComputedStyle(e).pointerEvents),
-    echo: box($("mapEcho").querySelector("img")), echoSrc: new URL($("mapEcho").querySelector("img").getAttribute("src"), location.href).pathname,
-    h1: box($("homeTitle")), h1Text: $("homeTitle").textContent, card: box($("questCard")), map: box(map),
-    flag: box($("mapToday")), flagText: $("mapToday").textContent, pill: box($("mapTomorrow")), pillText: $("mapTomorrow").textContent, pillLock: !!$("mapTomorrow").querySelector("svg.map-lock"),
-    pillBg: getComputedStyle($("mapTomorrow")).backgroundColor, doors: box($("homeDoors")), premium: box($("questLock")),
-    controls: [...document.querySelectorAll(".home-only button, .home-only a, .home-only input, .home-only select, .home-only textarea, .home-only [role=button], .home-only [role=switch], .home-only [role=radio], .home-only [tabindex]:not(#homeTitle)")].filter((e) => e.offsetParent).map((e) => e.id || e.className || e.tagName),
-    text: document.querySelector(".home-only").innerText };
-});
-const inside = (p, b, pad = 0) => !!p && !!b && p.x >= b.l - pad && p.x <= b.r + pad && p.y >= b.t - pad && p.y <= b.b + pad;
-await section("the Play Map", async () => {
-  for (const [label, opts, want] of [
-    ["a fresh child (no story finished yet)", { sub: true }, { n: 0, fresh: false }],
-    ["Day 1 finished today", { sub: true, quest: { i: 0, last: 13, s: 1, ls: 0, lk: "story", done: "TODAY", got: [] } }, { n: 1, fresh: true }],
-    ["five stories finished, Day 6 open", { sub: true, quest: { i: 0, last: 13, s: 5, ls: 4, lk: "story", done: "2026-01-01", got: [] } }, { n: 5, fresh: false }],
-    ["all fourteen finished at 320x568, the last today", { sub: true, viewport: { width: 320, height: 568 }, quest: { i: 0, last: 13, s: 14, ls: 13, lk: "story", done: "TODAY", got: [] } }, { n: 14, fresh: true }],
-    ["a game day after Day 14", { sub: true, quest: { i: 3, last: 2, s: 14, ls: 13, lk: "story", done: "2026-01-01" } }, { n: 14, fresh: false }],
-    ["a locked story at 320x568 (three finished in the free days)", { sell: true, stamp: "post", viewport: { width: 320, height: 568 }, quest: { i: 0, last: 13, s: 3, ls: 2, lk: "story", done: "2026-01-01", got: [] } }, { n: 3, fresh: false }],
-    ["a phone that cannot buy (the game of the day)", { sell: false, stamp: "post", quest: { i: 2, last: 1, done: "2026-01-01" } }, { n: 0, fresh: false }],
-    ["an iPad, three finished", { sub: true, viewport: { width: 768, height: 1024 }, quest: { i: 0, last: 13, s: 3, ls: 2, lk: "story", done: "2026-01-01", got: [] } }, { n: 3, fresh: false }],
-  ]) {
-    const { ctx, pg, errors } = await open(opts);
-    await pg.evaluate(() => document.fonts && document.fonts.ready); await pg.waitForTimeout(100);
-    const t = await trail(pg), at = label + ": ";
-    ok(at + "the board says \"Let's explore.\", with Echo standing at the start of a drawn trail (a road and its dots, in two pieces)", t.h1Text === "Let's explore." && t.bands === 2 && t.dots === 2 && !!t.echo && t.echoSrc === "/assets/crafted/echo-welcome.webp" && t.echo.r <= t.h1.l + 1 && inside(t.a.s, t.echo, 2) && t.a.s.y >= t.echo.t + t.echo.h * 0.7, { a: t.a, echo: t.echo, h1: t.h1 });
-    ok(at + "…drawn to the board's own size", Math.abs(t.vb.w - t.vb.mw) < 0.6 && Math.abs(t.vb.h - t.vb.mh) < 0.6, t.vb);
-    ok(at + "the trail dives into today's card under its \"Today\" flag, which sits on the card's top edge", t.flagText === "Today" && t.flag.t < t.card.t && t.flag.b > t.card.t && t.flag.l >= t.card.l && t.flag.r <= t.card.r && inside(t.a.e, t.card) && t.a.e.x >= t.flag.l && t.a.e.x <= t.flag.r, { e: t.a.e, flag: t.flag, card: t.card });
-    ok(at + "…clear of the Premium tag", !t.premium || t.flag.b <= t.premium.t || t.flag.r <= t.premium.l, { flag: t.flag, premium: t.premium });
-    ok(at + "one gold star on the trail for each story finished (" + want.n + ", read from Sona.storyFound())", t.stars === want.n && t.found === want.n && t.data === String(want.n), { stars: t.stars, found: t.found, data: t.data });
-    ok(at + (want.fresh ? "the star found today is the one nearest today, a little bigger" : "no star marked as found today"), want.fresh ? t.fresh.length === 1 && t.fresh[0] === want.n - 1 && t.starBoxes[want.n - 1].w > t.starBoxes[0].w - 0.5 : t.fresh.length === 0, { fresh: t.fresh, boxes: t.starBoxes.slice(-2) });
-    // behind today: between Echo and the flag, above the card (which would
-    // hide them), under the heading's words, and none on top of another (the
-    // star shapes; the soft glow behind today's may reach its neighbour)
-    const clash = t.starBoxes.filter((s, i) => t.starBoxes.some((o, j) => j !== i && s.l + 2 < o.r && o.l + 2 < s.r && s.t + 2 < o.b && o.t + 2 < s.b)).length;
-    ok(at + "…every star behind today: past Echo, before the flag, above the card, below the heading, none on another", t.starBoxes.every((s) => s.l >= t.echo.r - 6 && s.r <= t.flag.l + 2 && s.b <= t.card.t + 1 && s.t >= t.h1.b - 6 && s.t >= t.map.t && s.w >= 10) && clash === 0, { stars: t.starBoxes, echo: t.echo, flag: t.flag, card: t.card, h1: t.h1, clash });
-    // tomorrow: a dark pill with a lock, under the card at its right edge,
-    // where the trail ends
-    const dark = ((c) => { const [r, g, b] = (c.match(/\d+/g) || []).map(Number); return 0.2126 * r + 0.7152 * g + 0.0722 * b < 80; })(t.pillBg);
-    ok(at + "tomorrow is a dark, locked spot ahead: \"Tomorrow\" and a lock, under the card at its right edge, where the trail ends", t.pillText === "Tomorrow" && t.pillLock && dark && t.pill.t >= t.card.b && t.pill.b <= t.map.b && Math.abs(t.pill.r - t.card.r) <= 1.5 && inside(t.b.s, t.card) && inside(t.b.e, t.pill, 1), { pill: t.pill, card: t.card, b: t.b, bg: t.pillBg });
-    ok(at + "the trail is decoration: hidden from a screen reader, and nothing on it takes a tap", t.hidden && t.taps.every((v) => v === "none"), { hidden: t.hidden, taps: t.taps });
-    ok(at + "no sound control on Home: the card, the two doors and the found games are its only controls", t.controls.every((c) => /^(?:questCard|arcadeBtn|homeBooksBtn|found-tile(?: fresh)?)$/.test(c)), t.controls);
-    ok(at + "never a count, a streak or a timer on Home", !/\b\d+\s*(?:of|\/)\s*\d+\b|\b\d+\s*(?:stars?|days?|stories)\b|streak|in a row|\d+:\d\d|\b(?:hours?|minutes?)\b/i.test(t.text), t.text);
-    ok(at + "the doors come right after the board", t.doors.t - t.map.b >= 8 && t.doors.t - t.map.b <= 30, { map: t.map, doors: t.doors });
-    ok(at + "no page errors", errors.length === 0, errors);
-    await ctx.close();
-  }
-  {
-    // the trail follows a new width (a turn, an iPad's split view): drawn
-    // again, still diving under the flag and ending at tomorrow, the same stars
-    const { ctx, pg, errors } = await open({ sub: true, quest: { i: 0, last: 13, s: 5, ls: 4, lk: "story", done: "2026-01-01", got: [] } });
-    await pg.setViewportSize({ width: 430, height: 932 }); await pg.waitForTimeout(250);
-    let t = await trail(pg);
-    ok("a new width draws the trail again: under the flag, to tomorrow, the same five stars", t.stars === 5 && inside(t.a.e, t.card) && t.a.e.x >= t.flag.l && t.a.e.x <= t.flag.r && inside(t.b.e, t.pill, 1) && Math.abs(t.vb.w - t.vb.mw) < 0.6, { a: t.a, flag: t.flag, vb: t.vb });
-    // …and coming back from the Arcade
-    await pg.locator("#arcadeBtn").click(); await pg.waitForTimeout(600);
-    const away = await pg.evaluate(() => !!document.getElementById("homeMap").offsetParent);
-    await pg.locator("#homeBack").click(); await pg.waitForTimeout(250);
-    t = await trail(pg);
-    ok("…the Arcade shows no board, and back on Home the trail is drawn again, whole", !away && t.stars === 5 && t.dots === 2 && inside(t.a.e, t.card) && inside(t.b.e, t.pill, 1), { away, t: { stars: t.stars, dots: t.dots } });
-    ok("no page errors", errors.length === 0, errors);
-    await ctx.close();
-  }
-  {
-    // the source: Home reads the stories finished, writes no sound and asks nothing of the trail
-    const code = SRC.replace(/<!--[\s\S]*?-->/g, " ").replace(/(^|[^:"'\\])\/\/[^\n]*/g, "$1");
-    ok("the trail's stars are read from Sona.storyFound(); Home never saves a profile or touches the child's sounds", /n=S\.storyFound\?S\.storyFound\(\)\.length:0;/.test(code) && !/saveProfile|focusSounds|rotAdvance|setSound/.test(code));
-    ok("the trail is drawn last in every fit (fitHome ends with paintTrail)", /function fitHome\(\)\{[\s\S]*?paintTrail\(\);\s*\}/.test(code));
-    ok("the trail and the flag are aria-hidden in the markup, the board's heading is the page's h1", /<svg id="mapTrail" aria-hidden="true"/.test(SRC) && /<span class="map-today" id="mapToday" aria-hidden="true">Today<\/span>/.test(SRC) && /<h1 id="homeTitle" tabindex="-1">Let's explore\.<\/h1>/.test(SRC) && (SRC.match(/<h1\b/g) || []).length === 2);
-  }
-});
-
 await section("after the stories: the game of the day", async () => {
   {
     const { ctx, pg, errors } = await open({ sub: true, quest: { i: 3, last: 2, s: 14, ls: 13, lk: "story", done: "2026-01-01" } });
@@ -425,17 +373,99 @@ await section("after the stories: the game of the day", async () => {
   }
 });
 
+// Home reads the sanitized finished-story ledger, including TALK1 variants.
+// These assertions preserve skipped-day, sibling and legacy calendar truth.
+const finished = pg => pg.evaluate(() => Sona.storyFound().map(d=>({id:d.id,title:d.title,day:d.day})));
+await section("finished adventures remain truthful", async () => {
+  {
+    const {ctx,pg,errors}=await open({sub:true,talk:true,quest:{a:"TODAY",sv:"TODAY",f:[],s:0,done:""}});
+    const f=await finished(pg),c=await card(pg);
+    ok("a fresh child gets the sound-specific Robo Day1 without invented finished adventures",f.length===0&&c.story==="robo"&&c.chip==="Day 1",{f,c});
+    const before=await store(pg),replays=await found(pg);
+    ok("a fresh Home invents no completed adventure or replay",!replays.shown&&replays.tiles.length===0,replays);
+    await studioComposition(pg);
+    ok("showing the adventure and smaller Practice area writes no progress",before===await store(pg));
+    ok("the current sound is read-only, with no nested picker",await pg.evaluate(()=>!document.querySelector('#homeSound,#homeSoundWrap select,#homeSoundWrap input,#homeSoundWrap button,#homeSoundWrap [role=combobox]')));
+    ok("fresh Home has no runtime errors",errors.length===0,errors);await ctx.close();
+  }
+  {
+    const {ctx,pg}=await open({sub:true,talk:true,quest:{a:"TODAY",sv:"TODAY",f:[0],s:1,ls:0,t1:"robo",lk:"story",fd:"TODAY",done:"TODAY",got:[]}});
+    const f=await finished(pg),c=await card(pg),before=await store(pg);
+    ok("the saved talking story remains completed Day1",f.length===1&&f[0].id==="robo"&&f[0].day===1,f);
+    const replays=await found(pg);ok("the completed talking story leaves only its true replay",replays.shown&&replays.tiles.length===1&&replays.tiles[0].id==='robo',replays);
+    await pg.locator("#questCard").click({force:true});await pg.waitForTimeout(100);
+    ok("done-day tomorrow stays dark and inert, with no early quest change",c.done&&c.disabled==="true"&&c.previewMuted&&c.go===null&&pathOf(pg)==="/today.html"&&before===await store(pg),c);
+    await ctx.close();
+  }
+  for(const [label,quest,ids] of [
+    ["skipped Days2 and3 never count as finished",{a:"TODAY",sv:"TODAY",f:[0,3],s:2,ls:3,lk:"story",done:"2025-12-31"},"lighthouse,waterwheel"],
+    ["Home preserves every finished adventure, including longer histories",{a:"TODAY",sv:"TODAY",f:[0,1,2],s:3,ls:2,lk:"story",done:"2025-12-31"},"lighthouse,windup,bridge"],
+    ["legacy s-counts preserve the original two stories",{s:2,ls:1,lk:"story",done:"2025-12-31"},"lighthouse,windup"],
+    ["a game-only day invents no finished story ledger",{i:4,last:3,lk:"game",done:"TODAY"},""]
+  ]){
+    const {ctx,pg}=await open({sub:true,age:/legacy|game-only/.test(label)?4:7,quest});
+    const before=await store(pg),f=await finished(pg);
+    ok(label,f.map(x=>x.id).join()===ids,f);
+    const replays=await found(pg);ok("Your games shows every real completed adventure once, newest first",replays.tiles.map(x=>x.id).join()===f.slice().reverse().map(x=>x.id).join()&&replays.shown===(f.length>0),replays);
+    await pg.evaluate(()=>document.dispatchEvent(new Event("visibilitychange")));
+    ok("reading this history changes no saved progress",before===await store(pg));await ctx.close();
+  }
+  {
+    const {ctx,pg}=await open({sub:true,talk:true,quest:{a:"TODAY",sv:"TODAY",f:[0],s:1,ls:0,t1:"robo",lk:"story",done:"2025-12-31"}});
+    const original=await pg.evaluate(()=>Sona.activeKid().slot);
+    await pg.evaluate(()=>{Sona.addKid("Ana","4");Sona.saveProfile({onboarded:true,focusSounds:["R"],targetSound:"R"});});
+    await home(pg);ok("a sibling inherits no finished adventure or earned replay",(await finished(pg)).length===0&&(await found(pg)).tiles.length===0);
+    await pg.evaluate(slot=>Sona.switchKid(slot),original);await home(pg);
+    ok("switching back restores only the first child's saved Robo story",(await finished(pg)).map(x=>x.id).join()==="robo"&&(await found(pg)).tiles.map(x=>x.id).join()==="robo");await ctx.close();
+  }
+  {
+    const {ctx,pg}=await open({sell:true,stamp:"post",quest:{f:[0,3],s:2,ls:3,lk:"story",done:"2025-12-31"}});
+    ok("finished history survives access expiry without granting replay",(await finished(pg)).map(x=>x.id).join()==="lighthouse,waterwheel"&&await pg.evaluate(()=>!Sona.storyReplay("lighthouse")));await ctx.close();
+  }
+});
+
+// Default-on talking stories use the current target, while a completed
+// Day1 keeps its recorded identity after a parent changes the practice sound.
+await section("Home follows upstream sound-specific Day1",async()=>{
+  for(const [sound,id] of [["R","robo"],["L","lulu"],["F","fizz"],["S","sandy"],["Z","zippy"]]){
+    const {ctx,pg,errors}=await open({sub:true,talk:true,focus:[sound],target:sound});
+    const c=await card(pg),q=await pg.evaluate(()=>Sona.questToday());
+    ok(sound+": Home shows the current talking Day1 and its original cover",q.story.talk&&q.story.id===id&&c.story===id&&c.chip==='Day 1'&&c.title===q.story.title&&c.img==='/assets/crafted/home-'+id+'.webp',{c,q});
+    ok(sound+": a story tap uses the shared adventure player",await tapTo(pg,'#questCard',/\/adventure\.html$/));
+    ok(sound+": no page errors",errors.length===0,errors);await ctx.close();
+  }
+  {
+    const {ctx,pg}=await open({sub:true,talk:true,focus:['R','S'],target:'S'});
+    ok("a parent-selected target wins over the first family sound for new Day1",await pg.evaluate(()=>Sona.questToday().story.id==='sandy'&&document.getElementById('homeSoundValue').textContent==='S'));
+    await ctx.close();
+  }
+  {
+    const {ctx,pg}=await open({sub:true,talk:true,focus:['R','S'],target:'S',quest:{a:'TODAY',sv:'TODAY',f:[0],s:1,ls:0,t1:'robo',lk:'story',fd:'TODAY',done:'TODAY',got:[]}});
+    const f=await finished(pg),replays=await found(pg);
+    ok("changing the target preserves the previously completed Day1 variant and its replay",f.length===1&&f[0].id==='robo'&&f[0].day===1&&replays.tiles.length===1&&replays.tiles[0].id==='robo',{f,replays});await ctx.close();
+  }
+  {
+    const {ctx,pg}=await open({sub:true,talk:true,quest:{a:'TODAY',sv:'TODAY',f:[0],s:1,ls:0,lk:'story',fd:'TODAY',done:'TODAY',got:[]}});
+    ok("a legacy lighthouse completion is never rewritten as a new talking story",(await finished(pg))[0].id==='lighthouse');await ctx.close();
+  }
+});
+
+// Bounded restoration smoke: the approved Map states and real history above
+// can be checked without rerunning the full release/appearance matrix.
+if(process.env.SONA_HOME_MAP_PROOF==="1"){
+  await browser.close();server.close();
+  console.log(fails ? fails+" FAILURES / "+count+" Map smoke checks" : "ALL GREEN — "+count+" Map smoke checks");
+  process.exit(fails?1:0);
+}
+
 // ── 2. the source: the card's tap is launch(), and Home only reads ──
 {
   const code = SRC.replace(/<!--[\s\S]*?-->/g, " ").replace(/(^|[^:"'\\])\/\/[^\n]*/g, "$1");
   ok("the card's tap is the game card's own tap (launch: access, the price, levels)", (SRC.match(/card\.onclick=function\(\)\{if\(done\)return;launch\(game\);\}/g) || []).length === 1);
-  // HOMECLIP1: the day's reel is one video, in the card's picture
-  ok("the day's clip: one muted, looping, inline video in the card's picture, the phone's own video buttons off, hidden from a screen reader",
-    /<span class="quest-art" id="questArt" aria-hidden="true"><span class="quest-pic" id="questPic"><\/span><video class="quest-clip" id="questClip" muted loop playsinline autoplay preload="metadata" disablepictureinpicture disableremoteplayback x-webkit-airplay="deny" aria-hidden="true" hidden><\/video>/.test(SRC) && (SRC.match(/<video\b/g) || []).length === 1);
-  ok("…its clip and poster are the day's game's, under /assets/home/reel/, and a finished day plays none",
-    /var REEL="\/assets\/home\/reel\/"/.test(SRC) && /clip\.poster=REEL\+key\+"\.webp";clip\.src=REEL\+key\+"\.mp4";/.test(SRC) && /if\(done\)clipOff\(\);else clipOn\(q\.game\);/.test(SRC));
-  ok("…muted again before every play, and never started under Reduce Motion or on a phone that cannot play it",
-    /clip\.muted=true;var r=clip\.play\(\)/.test(SRC) && /if\(!clip\|\|!key\|\|calm\(\)\|\|!canClip\(\)\)\{clipOff\(\);return;\}/.test(SRC));
+  ok("Home uses original illustrations, with no video element or reel loader",
+    !/<video\b|questClip|assets\/home\/reel\//.test(SRC));
+  ok("the adventure is one button with a text action, never nested controls",
+    /<button[^>]*id="questCard"/.test(SRC) && /id="questActionLabel"/.test(SRC));
   ok("…on a story day the item is the story card itself, \"adventure\" to the rules, opening adventure.html",
     /var game=story\?\{kind:"story",key:"adventure",name:q\.story\.title,go:"\/adventure\.html",tier:"premium"\}/.test(SRC));
   ok("Home never finishes a quest (no questEnd anywhere in today.html, comments included)", !/questEnd/.test(SRC));
@@ -453,17 +483,6 @@ await section("after the stories: the game of the day", async () => {
   ok("…and the Arcade's Books card is gone, from the markup and the code (no card, picture, tag, line or heading)", !/id="(?:booksCard|libraryBooksArt|booksTag|booksLine|booksHeading)"/.test(SRC) && !/\b(?:booksCard|libraryBooksArt|booksTag|booksLine|booksHeading)\b/.test(code), (code.match(/\b(?:booksCard|libraryBooksArt|booksTag|booksLine|booksHeading)\b/g) || []));
   ok("…and no row draws a book tile (no book card, no book access, no book launch)", !/book-card|bookAccess|kind==="book"\)\{|kind==="book"\?/.test(code));
   ok("the offer-from-Home guard is untouched: ?view=arcade does not skip it", /!\/\[\?&\]\(gate\|locked\|libraryPreview\)=\/\.test\(q\)/.test(SRC) && /S\.homeOfferDue\(\)\)\{[\s\S]{0,300}return;\s*\}\s*app\.hidden=false;\s*setView\(viewOf\(\)\);/.test(SRC));
-  {
-    // Home's card and the story player show the same colour while a story's
-    // picture loads (the card's wash, then the page's)
-    const css = readFileSync(ROOT + "/crafted-home.css", "utf8"), adv = readFileSync(ROOT + "/adventures.js", "utf8");
-    const wrong = STORY.map((d) => d.id).filter((id) => {
-      const home = (css.match(new RegExp('\\.quest-art\\[data-story="' + id + '"\\]\\{background:(#[0-9a-f]{6});')) || [])[1];
-      const player = (adv.match(new RegExp("\\n    " + id + ": \\{\\n      wash: \"(#[0-9a-f]{6})\"")) || [])[1];
-      return !home || home !== player;
-    });
-    ok("each story's wash is the same colour on Home's card and in the story player", wrong.length === 0, wrong);
-  }
   ok("each view is hidden on its wrapper, never by a block's own hidden", /#libraryApp\[data-view="home"\] \.arcade-only,#libraryApp\[data-view="arcade"\] \.home-only\{display:none;\}/.test(readFileSync(ROOT + "/crafted-home.css", "utf8")));
 }
 
@@ -498,9 +517,8 @@ await section("the views", async () => {
   await pg.locator("#homeBack").click(); await pg.waitForTimeout(200);
   s = await pg.evaluate(() => ({ same: window.__same, y: window.pageYOffset, focus: document.activeElement && document.activeElement.id, title: document.title, story: !!document.getElementById("questCard").offsetParent }));
   ok("\"‹ Home\" goes back to Home (the step the door added), with no reload", s.same === 1 && pathOf(pg) === "/today.html" && (await view(pg)) === "home" && s.story && s.title === "Sona" && s.focus === "homeTitle", { url: pg.url(), s });
-  // (the door sits below the fold here since HOMECLIP1, so the child had
-  // scrolled down to it: the browser put that scroll back after the view's
-  // own, and Home came back halfway down, its focused heading out of sight)
+  // History restoration must not reopen Home partway down with its focused
+  // heading out of sight.
   ok("…at its top, the heading that has the focus in sight, not where the door was tapped", s.y === 0, s);
   await pg.goForward(); await pg.waitForTimeout(200);
   ok("Forward opens the Arcade again, still with no reload", (await pg.evaluate(() => window.__same)) === 1 && (await view(pg)) === "arcade" && pathOf(pg) === "/today.html?view=arcade");
@@ -557,8 +575,7 @@ await section("a double tap", async () => {
   for (const vp of [{ width: 430, height: 932 }, { width: 390, height: 844 }, { width: 320, height: 568 }]) {
     const at = vp.width + "x" + vp.height + ": ";
     const { ctx, pg, errors } = await open({ sub: true, viewport: vp });
-    // (on a small phone the doors sit below the fold since HOMECLIP1: a child
-    // swipes up to them first, and the Arcade then opens at its top)
+    // The Arcade opens at its top and must not receive the second tap.
     await pg.locator("#arcadeBtn").scrollIntoViewIfNeeded();
     const b = await pg.locator("#arcadeBtn").boundingBox();
     const spot = await pg.evaluate((r) => {
@@ -641,8 +658,8 @@ await section("Books", async () => {
     await ctx.close();
   }
   const { ctx, pg } = await open({ sub: true });
-  const a = await pg.evaluate(() => ({ word: document.querySelector("#arcadeBtn .door-word").textContent, sub: document.querySelector("#arcadeBtn .door-sub").textContent, pic: !!document.querySelector("#arcadePic img") }));
-  ok("the Arcade door: a picture, \"Arcade\" and \"All the games\"", a.word === "Arcade" && a.sub === "All the games" && a.pic, a);
+  const a = await pg.evaluate(() => ({ word: document.querySelector("#arcadeBtn .door-word").textContent, label: document.getElementById("arcadeBtn").getAttribute("aria-label"), pic: !!document.querySelector("#arcadePic img") }));
+  ok("the Games door: its original picture, visible Games label and accessible All the games description", a.word === "Games" && a.label === "Games. All the games." && a.pic, a);
   await ctx.close();
 });
 
@@ -672,19 +689,9 @@ await section("Home stays quiet", async () => {
 });
 
 // ── 6. the fit ──
-// HOMECLIP1 (28 Oct 2026) made the day's card Home's one big thing, a tall
-// 3:4 reel; the Play Map (31 Oct 2026) set it on a board between its head
-// (Echo and "Let's explore.") and its foot (tomorrow). Since 1 Nov 2026
-// Home is ONE SCREEN (Travis, of a recording of Home sliding up and down:
-// "Just make it one ... flat screen ... There's nothing that makes being
-// able to scroll up and down helpful"): the top bar, the board, the doors
-// and "Your games" are all on the screen and nothing moves up or down; the
-// card's picture takes the room left, 3:4 at most, and the rest makes room
-// for it before it goes flatter than 4:3 (fit1…fit6). Only a screen too
-// short for all of it scrolls, and then nothing is cut off and the card is
-// 4:3. Every phone and iPad size here is one screen in every state, but a
-// 4-inch phone (320x568) with "Your games", or with the website's founding
-// banner on a finished day (the banner alone fits since fit6, 3 Nov 2026).
+// The whole Home stays on one screen, including both doors and earned games.
+// The story picture sits above its footer, with smaller Practice and Studio
+// doors below on phones, or beside it on tablets. Every action stays visible.
 const SIZES = [[320, 568], [375, 667], [390, 844], [430, 932], [768, 1024]];
 const STATES = [
   ["Day 1, open", { sub: true }],
@@ -696,14 +703,12 @@ const STATES = [
   ["ages 3-4", { sub: true, age: 4 }],
   ["the founding banner", { ea: true }],
 ];
-const FLAT_320 = new Set(["Day 1, open", "locked", "ages 3-4", "done", "the founding banner"]);
 const measure = (pg) => pg.evaluate(() => {
   const box = (e) => { if (!e || !e.offsetParent) return null; const r = e.getBoundingClientRect(); return { l: r.left, r: r.right, t: r.top, b: r.bottom, w: r.width, h: r.height }; };
   const $ = (id) => document.getElementById(id), art = document.querySelector(".quest-art"), page = document.querySelector(".home-only").getBoundingClientRect();
   const buttons = [...document.querySelectorAll(".home-only button, .home-only a[href], #libraryApp header button, #libraryApp header a")].filter((e) => e.offsetParent).map((e) => ({ id: e.id, w: e.getBoundingClientRect().width, h: e.getBoundingClientRect().height }));
-  // a tap at an element's middle reaches it (the clip and the words over the
-  // picture never take the card's tap); a door below the fold is scrolled to
-  // first, and the page put back where it was
+  // A tap reaches the actual card or door, including through its decoration.
+  // Restore the page after probing, so a scroll cannot hide a fit failure.
   const reach = (id) => {
     const e = $(id); if (!e || !e.offsetParent) return null;
     const y0 = window.pageYOffset; let r = e.getBoundingClientRect();
@@ -712,14 +717,9 @@ const measure = (pg) => pg.evaluate(() => {
     window.scrollTo(0, y0);
     return !!h && (h === e || e.contains(h) || (id === "questGo" && $("questCard").contains(h)));
   };
-  // one screen: html.home-flat, nothing taller than the window, and a
-  // scroll (the wheel's, a script's) leaves the page where it is
-  const flat = document.documentElement.classList.contains("home-flat"), tall = document.documentElement.scrollHeight;
-  window.scrollTo(0, 400); document.scrollingElement.scrollTop = 400; const moved = window.pageYOffset; window.scrollTo(0, 0);
-  const fits = [...document.querySelectorAll("#libraryApp header, .home-only > *")].filter((e) => e.offsetParent && e.id !== "homeInset").every((e) => e.getBoundingClientRect().bottom <= window.innerHeight + 0.5);
-  const steps = [...document.getElementById("libraryApp").classList].filter((c) => /^fit\d$/.test(c));
-  return { flat, tall, moved, fits, steps, y: window.pageYOffset, ih: window.innerHeight, ox: document.documentElement.scrollWidth - document.documentElement.clientWidth, page: { l: page.left, r: page.right },
-    go: box($("questGo")), card: box($("questCard")), map: box($("homeMap")), pill: box($("mapTomorrow")), title: box($("questTitle")), line: box($("questLine")), words: box(document.querySelector(".quest-body")), arcade: box($("arcadeBtn")), books: box($("homeBooksBtn")), art: box(art), buttons,
+  return { y: window.pageYOffset, ih: window.innerHeight, scroll: document.documentElement.scrollHeight, client: document.documentElement.clientHeight, ox: document.documentElement.scrollWidth - document.documentElement.clientWidth, page: { l: page.left, r: page.right },
+    practice:box(document.querySelector('.practice-band')), go: box($("questGo")), doneAction:box($("questDone")), card: box($("questCard")), summary: box($("questSummary")), title: box($("questTitle")), line: box($("questLine")), titleFont: parseFloat(getComputedStyle($("questTitle")).fontSize), words: box(document.querySelector(".quest-body")), arcade: box($("arcadeBtn")), books: box($("homeBooksBtn")), art: box(art), buttons,
+    smallText: [...document.querySelectorAll(".home-only .sound-caption,.home-only .sound-note,.home-only .quest-label,.home-only .quest-chip,.home-only .quest-lock,.home-only .door-tag,.home-only .found-new")].filter(e=>e.getClientRects().length && getComputedStyle(e).visibility!=="hidden").map(e=>({text:e.textContent,fontSize:parseFloat(getComputedStyle(e).fontSize)})),
     found: box(document.querySelector("#foundRow:not([hidden])")), fresh: box(document.querySelector("#foundRow:not([hidden]) .found-tile.fresh")),
     pics: [box($("arcadePic")), box($("homeBooksPic"))], doorWords: [...document.querySelectorAll("#homeDoors .door-word")].map(box),
     hit: { questCard: reach("questCard"), questGo: reach("questGo"), arcadeBtn: reach("arcadeBtn"), homeBooksBtn: reach("homeBooksBtn") }, after: window.pageYOffset };
@@ -731,61 +731,42 @@ for (const [w, h] of SIZES) {
       await pg.evaluate(() => document.fonts && document.fonts.ready); await pg.waitForTimeout(100);
       const m = await measure(pg), at = w + "x" + h + " " + label + ": ";
       const done = label.startsWith("done");
-      const goOk = done ? m.go === null : !!m.go && m.go.w >= 64 && m.go.h >= 64 && m.go.b <= m.ih && m.go.t >= 0 && m.hit.questGo;
-      ok(at + "the card's play button is on the first screen" + (done ? " (none when done)" : ", at least 64 px, and a tap there is the card's"), m.y === 0 && m.after === 0 && goOk, { go: m.go, hit: m.hit });
+      const goOk = done ? m.go === null : !!m.go && m.go.w >= 44 && m.go.h >= 44 && m.go.b <= m.ih && m.go.t >= 0 && m.hit.questGo;
+      ok(at + "the card's play button is on the first screen" + (done ? " (none when done)" : ", at least 44 px, and a tap there is the card's"), m.y === 0 && m.after === 0 && goOk, { go: m.go, hit: m.hit });
       ok(at + "…and so is its title, with the whole card above the home bar", !!m.title && m.title.t >= 0 && m.title.b <= m.ih && !!m.card && m.card.b <= m.ih && m.hit.questCard, { title: m.title, card: m.card, ih: m.ih });
-      ok(at + "the words sit over the picture's foot, all on the picture", !!m.words && !!m.art && m.words.t >= m.art.t - 0.5 && m.words.b <= m.art.b + 0.5 && m.line && m.line.b <= m.art.b, { words: m.words, art: m.art, line: m.line });
-      // a tall reel, 3:4, giving way on the shortest screens, never flatter
-      // than 4:3; on a phone it spans the page, on an iPad it is a centred
-      // card 480 px wide at most
-      const ratio = m.art ? m.art.h / m.art.w : 0;
-      // ONE SCREEN (1 Nov 2026): everything on the screen, nothing to scroll
-      const oneScreen = w >= 375 || FLAT_320.has(label);
-      if (oneScreen) ok(at + "Home is one screen: the whole page fits and nothing scrolls up or down", m.flat && m.tall <= m.ih && m.moved === 0 && m.fits, { flat: m.flat, tall: m.tall, ih: m.ih, moved: m.moved, fits: m.fits, steps: m.steps });
-      else ok(at + "a screen too short for it scrolls, with every step taken and nothing cut off (the card 4:3, or as tall as its words need)", !m.flat && m.steps.length === 6 && ratio >= 0.75 - 0.01 && ratio <= 4 / 3, { flat: m.flat, steps: m.steps, ratio });
-      // the picture is the day's reel, 3:4 at its tallest; flatter than 4:3
-      // only once every other step has made room for it
-      ok(at + "the picture is the day's reel: 3:4 at its tallest, never flatter than 4:3 until everything else has made room", ratio <= 4 / 3 + 0.01 && (ratio >= 0.75 - 0.01 || m.steps.length === 6), { art: m.art, ratio, steps: m.steps });
-      const across = w >= 600 ? m.card.w <= 480.5 && Math.abs((m.card.l - m.page.l) - (m.page.r - m.card.r)) < 1.5 && ratio >= 0.75 - 0.01 : m.card.w >= m.page.r - m.page.l - 1;
-      ok(at + (w >= 600 ? "on an iPad the card is centred, 480 px wide at most, and never flatter than 4:3 (it narrows instead)" : "the card spans the page"), across, { card: m.card, page: m.page, ratio });
-      // the Play Map (31 Oct 2026): tomorrow on the board right under the
-      // card, then the doors right under the board
-      ok(at + "tomorrow sits on the board right under the card, and the doors come right after the board, side by side, at least 88 px tall, and a tap reaches each", !!m.arcade && !!m.books && !!m.pill && m.pill.t >= m.card.b && m.pill.b <= m.map.b && m.map.b - m.card.b <= 56 && m.arcade.t - m.map.b >= 8 && m.arcade.t - m.map.b <= 30 && Math.abs(m.arcade.t - m.books.t) < 1 && m.arcade.r <= m.books.l && m.arcade.h >= 88 && m.books.h >= 88 && m.hit.arcadeBtn && m.hit.homeBooksBtn, { card: m.card, map: m.map, pill: m.pill, arcade: m.arcade, books: m.books, hit: m.hit });
-      ok(at + "every button is at least 44 px, and nothing scrolls sideways", m.ox <= 1 && m.buttons.every((b) => b.w >= 44 && b.h >= 44), { ox: m.ox, small: m.buttons.filter((b) => b.w < 44 || b.h < 44) });
-      // FOUND1: the game a story left today waits in "Your games", under
-      // the doors (on the screen, with the rest, since 1 Nov 2026)
-      if (done) ok(at + "the game found today (New!) is in \"Your games\", after the doors" + (oneScreen ? ", on the screen" : ""), !!m.found && !!m.fresh && m.found.t >= m.arcade.b && (!oneScreen || m.fresh.b <= m.ih), { found: m.found, fresh: m.fresh, arcade: m.arcade });
-      // the Arcade's painting is Echo among the games' things, out at its
-      // edges: a square crop kept Echo and dropped every game, so a child who
-      // can't read saw two doors of Echo. Each door's picture is a wide band
-      // (3:2 on an iPad, 2:1 on a phone), and the two words sit level.
-      ok(at + "each door's picture is wide enough to show the games' things (3:2 to 5:2), and the two words sit level", m.pics.every((p) => p && p.w / p.h >= 1.45 && p.w / p.h <= 2.55) && m.doorWords.length === 2 && Math.abs(m.doorWords[0].t - m.doorWords[1].t) < 1, { pics: m.pics, words: m.doorWords });
+      ok(at + "the original story art, title and action share one clear card", !!m.summary && !!m.art && m.art.t >= m.card.t && m.art.b <= m.card.b && m.title.t >= m.card.t && m.title.b <= m.card.b && m.line && (m.line.w<=1 || m.line.b <= (m.go?m.go.t:m.doneAction?m.doneAction.t:m.card.b)) && m.titleFont >= 20, {summary:m.summary,art:m.art,title:m.title,line:m.line,go:m.go,card:m.card,font:m.titleFont});
+      // The former 158px minimum measured a full-card picture behind the
+      // title and action. The Studio picture has its own unobscured area;
+      // compact screens share space with a complete footer and earned games.
+      ok(at + "the real story picture stays clear above its title and footer", !!m.art && m.art.h >= Math.min(158,m.card.h*.35) && m.art.w >= m.card.w-12 && m.art.r<=m.card.r && m.art.b<=m.title.t, {art:m.art,card:m.card,title:m.title});
+      ok(at + "the card stays inside the page, centred on phones and beside the doors on tablets", m.card.l >= m.page.l - 1 && m.card.r <= m.page.r + 1 && (w<700?Math.abs((m.card.l - m.page.l) - (m.page.r - m.card.r)) < 1.5:m.card.r<=m.arcade.l), { card: m.card, page: m.page,arcade:m.arcade });
+      const phoneDoors=w<700&&m.practice&&m.practice.t>=m.card.b&&m.practice.b<=m.arcade.t&&Math.abs(m.arcade.t-m.books.t)<1&&m.arcade.r<=m.books.l;
+      const tabletDoors=w>=700&&m.arcade.l>=m.card.r&&m.arcade.b<=m.books.t&&Math.abs(m.arcade.l-m.books.l)<1;
+      ok(at + "both Studio doors stay clear of the adventure, at least 44 px tall, and a tap reaches each", !!m.arcade && !!m.books && (phoneDoors||tabletDoors) && m.arcade.h >= 44 && m.books.h >= 44 && m.hit.arcadeBtn && m.hit.homeBooksBtn, { card: m.card,practice:m.practice, arcade: m.arcade, books: m.books, hit: m.hit });
+      ok(at + "every button is at least 44 px, and the complete Home needs no page scroll", m.scroll <= m.client + 1 && m.ox <= 1 && m.buttons.every((b) => b.w >= 44 && b.h >= 44), { scroll: m.scroll - m.client, ox: m.ox, small: m.buttons.filter((b) => b.w < 44 || b.h < 44) });
+      ok(at + "the story action stays inside its card without overlapping the doors", (done?!!m.doneAction&&m.doneAction.b<=m.card.b:!!m.go&&m.go.b<=m.card.b)&&(m.arcade.t>=m.card.b||m.arcade.l>=m.card.r), {go:m.go,done:m.doneAction,card:m.card,doors:m.arcade});
+      ok(at+"the smaller Practice area stays clear of the adventure and both doors",!!m.practice&&(w<700?m.practice.t>=m.card.b&&m.practice.b<=m.arcade.t:m.practice.l>=m.card.r&&m.practice.t>=m.books.b),{practice:m.practice,card:m.card,doors:[m.arcade,m.books]});
+      if(w===390&&label==="Day 1, open")ok(at + "normal phone doors stay comfortable and the title stays readable", m.arcade.h>=100&&m.books.h>=100&&m.titleFont>=22,{games:m.arcade,books:m.books,titleFont:m.titleFont});
+      ok(at + "captions and helper text stay readable at 11 px or larger", m.smallText.every(t => t.fontSize >= 11), m.smallText.filter(t => t.fontSize < 11));
+      // FOUND1: the game a story left today waits on the same screen, under
+      // the doors; only the earned-games list itself scrolls sideways.
+      if (done) ok(at + "the game found today (New!) is in \"Your games\", after both doors", !!m.found && !!m.fresh && m.found.t >= Math.max(m.arcade.b,m.books.b) && m.found.b <= m.ih, { found: m.found, fresh: m.fresh, arcade: m.arcade,books:m.books });
+      ok(at + "both illustrated doors remain visible, with labels aligned on their row or stack", m.pics.every((p) => p && p.w >= 32 && p.h >= 26) && m.doorWords.length === 2 && (w<700?Math.abs(m.doorWords[0].t - m.doorWords[1].t) < 1:Math.abs(m.doorWords[0].l-m.doorWords[1].l)<1), { pics: m.pics, words: m.doorWords });
       ok(at + "no page errors", errors.length === 0, errors);
       await ctx.close();
     }
   });
 }
 
-// an iPhone SE on the website (375x553 under Safari's bars) and an iPad on
-// its side, the shortest screens Home meets: one screen on the SE (the
-// reel a little flatter than 4:3 once the rest has made room) and on the
-// iPads (whose card narrows to stay 4:3), the day a story is finished too
-// (the done card, with no play button, is a short strip there). Its line,
-// "Come back tomorrow for Day 2 and a new game!", had half a pixel to spare
-// at 375 px: CI's Chromium wrapped it, and with two lines the card's words
-// no longer sat on the strip, so the page scrolled. Day 13's line ("…for
-// Day 14 …") is two lines in every font, so it holds the fit to a two-line
-// line wherever this runs (fit6 lifts the words on their shade for it).
+// The shortest phone and landscape tablet viewports keep the complete Home
+// visible, including the doors and the game a finished story left.
 await section("fit on the shortest screens", async () => {
-  for (const [w, h, label, opts] of [[375, 553, "an iPhone SE in Safari", { sub: true }], [375, 553, "an iPhone SE in Safari, a story finished today", { sub: true, quest: { i: 0, last: 13, s: 1, ls: 0, lk: "story", done: "TODAY", got: [] } }], [375, 553, "an iPhone SE in Safari, Day 13 finished today, its line two lines", { sub: true, quest: { i: 0, last: 13, s: 13, ls: 12, lk: "story", done: "TODAY", got: [] } }], [1024, 768, "an iPad on its side", { sub: true }], [1133, 744, "an iPad mini on its side", { sub: true }]]) {
+  for (const [w, h, label, opts] of [[375, 553, "an iPhone SE in Safari", { sub: true }], [375, 553, "an iPhone SE in Safari, a story finished today", { sub: true, quest: { i: 0, last: 13, s: 1, ls: 0, lk: "story", done: "TODAY", got: [] } }], [375, 553, "an iPhone SE in Safari, Day 13 finished today", { sub: true, quest: { i: 0, last: 13, s: 13, ls: 12, lk: "story", done: "TODAY", got: [] } }], [1024, 768, "an iPad on its side", { sub: true }], [1133, 744, "an iPad mini on its side", { sub: true }]]) {
     const { ctx, pg, errors } = await open({ ...opts, viewport: { width: w, height: h } });
     await pg.evaluate(() => document.fonts && document.fonts.ready); await pg.waitForTimeout(100);
     const m = await measure(pg), at = w + "x" + h + " (" + label + "): ", done = /finished/.test(label);
-    const ratio = m.art.h / m.art.w;
-    ok(at + "the card's title" + (done ? "" : " and play button") + " on the first screen, 3:4 at most", m.y === 0 && m.title.b <= m.ih && m.card.b <= m.ih && (done ? m.go === null : !!m.go && m.go.b <= m.ih && m.go.h >= 64) && ratio <= 4 / 3 + 0.01, { title: m.title, go: m.go, card: m.card, ih: m.ih, ratio });
-    ok(at + "one screen: the whole page fits and nothing scrolls up or down" + (w >= 600 ? ", the card no flatter than 4:3" : ""), m.flat && m.tall <= m.ih && m.moved === 0 && m.fits && (w < 600 || ratio >= 0.75 - 0.01), { flat: m.flat, tall: m.tall, ih: m.ih, moved: m.moved, fits: m.fits, ratio, steps: m.steps });
-    if (/two lines/.test(label)) ok(at + "(the card's line really is two lines here)", !!m.line && m.line.h > 25 && /Day 14/.test(await pg.evaluate(() => document.getElementById("questLine").textContent)), { line: m.line });
-    ok(at + "the doors right after the card" + (done ? ", then the game found today" : ""), m.arcade.t >= m.card.b && m.hit.arcadeBtn && m.hit.homeBooksBtn && (!done || (!!m.fresh && m.fresh.t >= m.arcade.b && m.fresh.b <= m.ih)), { card: m.card, arcade: m.arcade, fresh: m.fresh });
+    ok(at + "the card's title" + (done ? "" : " and play button") + " on the first screen, all content fitted without vertical scrolling", m.y === 0 && m.title.b <= m.ih && m.card.b <= m.ih && (done ? m.go === null : !!m.go && m.go.b <= m.ih && m.go.h >= 44) && m.scroll <= m.client + 1 && m.art.h >= Math.min(158,m.card.h*.35)&&m.art.b<=m.title.t, { title: m.title, go: m.go, card: m.card, ih: m.ih, art:m.art });
+    ok(at + "the doors stay adjacent and reachable" + (done ? ", with the game found today" : ""), (m.arcade.t >= m.card.b || m.arcade.l >= m.card.r) && m.hit.arcadeBtn && m.hit.homeBooksBtn && (!done || (!!m.fresh && m.fresh.t >= m.arcade.b)), { card: m.card, arcade: m.arcade, fresh: m.fresh });
     ok(at + "no page errors", errors.length === 0, errors);
     await ctx.close();
   }
@@ -818,6 +799,9 @@ await section("Reduce Motion", async () => {
   }
   ok("…and a press does not squash the story card or a door", Object.values(pressed).every((t) => t === "none"), pressed);
   await pg.locator("#arcadeBtn").click(); await pg.waitForTimeout(80);
+  // A visible-view switch needs a painted frame before Chromium retires its
+  // global 0.01ms Reduce Motion transitions. Real motion still fails below.
+  await pg.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
   const s2 = await still();
   ok("…nor does the switch to the Arcade animate", s2.running === 0 && (await view(pg)) === "arcade", s2);
   ok("Reduce Motion: no page errors", errors.length === 0, errors);
@@ -837,8 +821,7 @@ await section("Reduce Motion", async () => {
 // the sizes where it flipped (a 4.7-inch iPhone in Safari, two iPads on their
 // side, the founding banner), the fit under Reduce Motion is the one without
 // it, and two quick returns to the front and a trip to the Arcade change
-// nothing. (Since HOMECLIP1 the fit holds the card's foot on screen, not the
-// doors: the same rule, measured on the card.)
+// nothing. The redesigned Home keeps the card and both doors in view.
 await section("Reduce Motion: the fit", async () => {
   {
     const { ctx, pg, errors } = await open({ sub: true, reduce: true, viewport: { width: 320, height: 568 } });
@@ -858,7 +841,7 @@ await section("Reduce Motion: the fit", async () => {
       app.className = had;
       return { rules: rules.length, out };
     });
-    ok("every element a fit step resizes (each #libraryApp.fitN rule in crafted-home.css) never transitions", loose.rules >= 9 && loose.out.length === 0, loose);
+    ok("every element a fit step resizes (each #libraryApp.fitN rule in crafted-home.css) never transitions", loose.rules > 0 && loose.out.length === 0, loose);
     ok("…no page errors", errors.length === 0, errors);
     await ctx.close();
   }
@@ -878,7 +861,7 @@ await section("Reduce Motion: the fit", async () => {
     const first = await fitOf(pg);
     // (the card's foot, its title and play button, above the home bar; the
     // doors come after it, wherever that is, and must not move either)
-    const onScreen = (m) => m.y === 0 && m.card <= m.room && m.go <= m.room;
+    const onScreen = (m) => m.y === 0 && m.card <= m.room && m.go <= m.room && m.doors <= m.room;
     ok(at + "the fit is the one without Reduce Motion, with the card's title and play button on screen", first.fit === want.fit && first.card === want.card && first.doors === want.doors && onScreen(first) && (label !== "the founding banner" || first.banner), { first, want });
     await pg.evaluate(() => { document.dispatchEvent(new Event("visibilitychange")); document.dispatchEvent(new Event("visibilitychange")); });
     await settle(pg);
@@ -899,11 +882,11 @@ await section("pictures", async () => {
   const fruit = readFileSync(ROOT + "/assets/crafted/home-fruit.webp");
   {
     const { ctx, pg } = await open({ sub: true }, null);
-    await ctx.route(/\/assets\/crafted\/home-(?:lighthouse|arcade)\.webp$|\/assets\/home\/reel\/lighthouse\.webp$/, (r) => r.fulfill({ status: 404, body: "" }));
+    await ctx.route(/\/assets\/adventure\/lighthouse\/s01\.webp$|\/assets\/crafted\/home-(?:lighthouse|arcade)\.webp$/, (r) => r.fulfill({ status: 404, body: "" }));
     await home(pg); await pg.waitForTimeout(200);
     const c = await card(pg);
-    const wash = await pg.evaluate(() => getComputedStyle(document.getElementById("questArt")).backgroundColor);
-    ok("a story whose clip's poster and picture have not landed: Echo's welcome pose on the story's own wash (never a blank, never invented art)", c.fallback && c.img === "/assets/crafted/echo-welcome.webp" && wash === "rgb(43, 47, 94)", { c, wash });
+    const wash = await pg.evaluate(() => getComputedStyle(document.getElementById("questCard")).backgroundColor);
+    ok("a missing original story picture uses Echo on an opaque card background", c.fallback && c.img === "/assets/crafted/echo-welcome.webp" && /^rgb\(/.test(wash), { c, wash });
     const door = await pg.evaluate(() => ({ fb: document.getElementById("arcadePic").classList.contains("fallback"), src: document.querySelector("#arcadePic img").getAttribute("src") }));
     ok("…and the Arcade door's picture falls back to Echo cheering", door.fb && door.src === "/assets/crafted/echo-cheer.webp", door);
     await ctx.close();
@@ -911,213 +894,37 @@ await section("pictures", async () => {
   {
     const { ctx, pg } = await open({ sub: true }, null);
     await ctx.route(/\/assets\/crafted\/home-(?:lighthouse|arcade)\.webp$/, (r) => r.fulfill({ status: 200, contentType: "image/webp", body: fruit }));
-    await ctx.route(/\/assets\/home\/reel\/lighthouse\.webp$/, (r) => r.fulfill({ status: 404, body: "" }));
+    await ctx.route(/\/assets\/adventure\/lighthouse\/s01\.webp$/, r=>r.fulfill({status:404,body:""}));
     await home(pg); await pg.waitForTimeout(200);
     const c = await card(pg);
     const loaded = await pg.evaluate(() => { const i = document.querySelector("#questPic img"); return i.complete && i.naturalWidth > 0; });
-    ok("once it lands (and while the clip's poster has not), the story's own picture is shown", !c.fallback && c.img === "/assets/crafted/home-lighthouse.webp" && loaded, c);
+    ok("once it lands, the story's own picture is shown", !c.fallback && c.img === "/assets/crafted/home-lighthouse.webp" && loaded, c);
     ok("…and the Arcade door's own", await pg.evaluate(() => !document.getElementById("arcadePic").classList.contains("fallback") && document.querySelector("#arcadePic img").getAttribute("src") === "/assets/crafted/home-arcade.webp"));
     await ctx.close();
   }
 });
 
-// ── 9. the day's reel (HOMECLIP1, 28 Oct 2026) ──
-// Travis: "the daily practice is taking up more of the screen ... like a 3
-// second reel essentially of the game that the child will play". The seed's
-// phone plays no H.264, so above the clip never starts. Here a phone that
-// does is stood in: canPlayType says yes to an MP4, each play() is counted
-// (with the address it plays and whether it is muted) and says "playing",
-// each pause() is counted, and the clip's own request is held, as a phone
-// still loading it would hold it. What it plays is read from the page's own
-// Sona.questToday(), the day's game.
-const PLAYS = () => {
-  window.__clip = { play: [], pause: 0 };
-  HTMLMediaElement.prototype.canPlayType = function (t) { return /mp4/.test(t) ? "probably" : ""; };
-  HTMLMediaElement.prototype.play = function () { const el = this; window.__clip.play.push({ src: el.getAttribute("src"), muted: el.muted }); Promise.resolve().then(() => el.dispatchEvent(new Event("playing"))); return Promise.resolve(); };
-  HTMLMediaElement.prototype.pause = function () { window.__clip.pause++; };
-};
-const REFUSES = () => {
-  window.__clip = { play: [], pause: 0 };
-  HTMLMediaElement.prototype.canPlayType = function (t) { return /mp4/.test(t) ? "probably" : ""; };
-  HTMLMediaElement.prototype.play = function () { window.__clip.play.push({ src: this.getAttribute("src"), muted: this.muted }); return Promise.reject(new DOMException("Low Power Mode", "NotAllowedError")); };
-  HTMLMediaElement.prototype.pause = function () { window.__clip.pause++; };
-};
-const posterBytes = readFileSync(ROOT + "/assets/crafted/home-fruit.webp");
-async function phone(opts = {}, page = "/today.html", { init = PLAYS, clip = () => {}, poster = null, before = null } = {}) {
-  const { ctx, pg, errors } = await open(opts, null);
-  await ctx.addInitScript(init);
-  // (the last route added is asked first)
-  await ctx.route(/\/assets\/home\/reel\/\w+\.mp4$/, clip);
-  if (poster) await ctx.route(/\/assets\/home\/reel\/\w+\.webp$/, poster);
-  if (before) await before(ctx, pg);
-  if (page) await home(pg, page);
-  return { ctx, pg, errors };
-}
-const landed = (r) => r.fulfill({ status: 200, contentType: "image/webp", body: posterBytes });
-const missing = (r) => r.fulfill({ status: 404, body: "" });
-const reel = (pg) => pg.evaluate(() => {
-  const v = document.getElementById("questClip"), q = Sona.questToday(), im = document.querySelector("#questPic img");
-  return { kind: q.kind, state: q.state, game: q.game, next: q.next ? q.next.game : null, hidden: v.hidden, src: v.getAttribute("src"), poster: v.getAttribute("poster"), on: v.classList.contains("on"),
-    opacity: getComputedStyle(v).opacity, events: getComputedStyle(v).pointerEvents, muted: v.muted, loop: v.loop, autoplay: v.autoplay, inline: v.playsInline, preload: v.preload, aria: v.getAttribute("aria-hidden"),
-    img: im ? new URL(im.getAttribute("src"), location.href).pathname : null, played: window.__clip.play.slice(), paused: window.__clip.pause, view: document.getElementById("libraryApp").getAttribute("data-view") };
-});
-const getComputedStyle0 = (pg) => pg.evaluate(() => getComputedStyle(document.getElementById("questClip")).pointerEvents);
-const hide = (pg, hidden) => pg.evaluate((h) => { Object.defineProperty(document, "hidden", { configurable: true, get: () => h }); document.dispatchEvent(new Event("visibilitychange")); }, hidden);
-await section("the day's reel", async () => {
-  {
-    const { ctx, pg, errors } = await phone({ sub: true }, "/today.html", { poster: landed });
-    await pg.waitForTimeout(450);
-    const r = await reel(pg);
-    ok("a story day: the clip is the story's game, /assets/home/reel/<game>.mp4, with its poster", r.kind === "story" && !!r.game && r.src === REEL + r.game + ".mp4" && r.poster === REEL + r.game + ".webp" && !r.hidden, r);
-    ok("…muted, looping, inline, autoplaying, only its first frames asked for, and hidden from a screen reader", r.muted && r.loop && r.autoplay && r.inline && r.preload === "metadata" && r.aria === "true", r);
-    ok("…it plays, muted, and is seen once it is really playing", r.played.length === 1 && r.played[0].src === r.src && r.played[0].muted && r.on && r.opacity === "1", r);
-    ok("…over its poster (the clip's first frame), which shows until it plays", r.img === REEL + r.game + ".webp", r.img);
-    const tap = await pg.evaluate(() => { const c = document.getElementById("questCard"), b = c.getBoundingClientRect(), h = document.elementFromPoint(b.left + b.width / 2, b.top + b.height * 0.3); return { inCard: c.contains(h), isClip: h && h.id === "questClip" }; });
-    ok("…and a tap on the moving picture is the card's: the clip takes no tap", tap.inCard && !tap.isClip && (await getComputedStyle0(pg)) === "none", tap);
-    // hidden: it holds still; back in front it plays again, the same clip
-    await hide(pg, true);
-    let h = await reel(pg);
-    ok("the page hidden (another app, a locked phone): the clip is paused", h.paused >= 1 && h.played.length === 1, h);
-    await hide(pg, false); await pg.waitForTimeout(100);
-    let v = await reel(pg);
-    ok("…and back in front it plays again, the same clip, never loaded afresh", v.played.length === 2 && v.played[1].src === r.src && v.src === r.src && v.on, v);
-    // the Arcade: it holds still; ‹ Home plays it again
-    const p0 = v.paused;
-    await pg.locator("#arcadeBtn").click(); await pg.waitForTimeout(100);
-    h = await reel(pg);
-    ok("the Arcade: the clip holds still behind it", h.view === "arcade" && h.paused > p0 && h.played.length === 2, h);
-    await pg.waitForTimeout(550); // past the half second Home ignores taps after a switch
-    await pg.locator("#homeBack").click(); await pg.waitForTimeout(150);
-    v = await reel(pg);
-    ok("…and back on Home it plays again", v.view === "home" && v.played.length === 3 && v.src === r.src, v);
-    await pg.waitForTimeout(450); // past the half second Home ignores taps after a switch
-    ok("…and a tap on the card still opens the story", await tapTo(pg, "#questCard", /\/adventure\.html$/), pg.url());
-    ok("no page errors", errors.length === 0, errors);
-    await ctx.close();
-  }
-  {
-    // Home is still silent and writes nothing with the clip playing
-    const { ctx, pg, errors } = await phone({ sub: true }, null, { poster: landed });
-    await pg.goto(origin + "/__sona"); await pg.waitForFunction(() => window.Sona && Sona.questToday);
-    const before = await store(pg);
-    asked.length = 0;
-    await home(pg); await pg.waitForTimeout(200);
-    await hide(pg, true); await hide(pg, false); await pg.waitForTimeout(150);
-    await pg.locator("#arcadeBtn").click(); await pg.waitForTimeout(600);
+// ── 9. original artwork and no media, in every Home state ──
+await section("original illustrations stay still", async () => {
+  for (const [label, opts] of STATES) {
+    const { ctx, pg, errors } = await open(opts, null);
+    const media = [];
+    await ctx.addInitScript(() => {
+      window.__mediaPlays = 0;
+      HTMLMediaElement.prototype.canPlayType = () => "probably";
+      HTMLMediaElement.prototype.play = function () { window.__mediaPlays++; return Promise.resolve(); };
+    });
+    ctx.on("request", r => { if (/\/assets\/home\/reel\/|\.(?:mp4|webm)(?:\?|$)/.test(r.url())) media.push(r.url()); });
+    await home(pg);
+    const before = await store(pg), initial = await card(pg), firstQuest = await pg.evaluate(() => ({state:Sona.questToday().state,game:Sona.questToday().game}));
+    await pg.evaluate(() => { Object.defineProperty(document, "hidden", { configurable: true, get: () => true }); document.dispatchEvent(new Event("visibilitychange")); Object.defineProperty(document, "hidden", { configurable: true, get: () => false }); document.dispatchEvent(new Event("visibilitychange")); });
+    await pg.locator("#arcadeBtn").click(); await pg.waitForTimeout(550);
     await pg.locator("#homeBack").click(); await pg.waitForTimeout(200);
-    const r = await reel(pg);
-    ok("with the clip playing, Home writes nothing, sends nothing and says nothing", r.played.length >= 1 && (await store(pg)) === before && asked.filter((x) => x.from === "/today.html").length === 0 && (await speech(pg)).length === 0, { played: r.played.length, asked: asked.filter((x) => x.from === "/today.html") });
-    ok("no page errors", errors.length === 0, errors);
-    await ctx.close();
-  }
-  {
-    // opened straight into the Arcade: the clip never starts behind it
-    const { ctx, pg, errors } = await phone({ sub: true }, "/today.html?view=arcade", { poster: landed });
-    await pg.waitForTimeout(200);
-    const r = await reel(pg);
-    ok("opened in the Arcade: the clip is never started behind it (and its autoplay is held off)", r.view === "arcade" && r.played.length === 0 && r.paused >= 1, r);
-    await pg.locator("#homeBack").click(); await pg.waitForTimeout(150);
-    const v = await reel(pg);
-    ok("…until Home shows, then it plays", v.view === "home" && v.played.length === 1 && v.src === REEL + v.game + ".mp4", v);
-    ok("no page errors", errors.length === 0, errors);
-    await ctx.close();
-  }
-  {
-    // a game day: today's game's clip
-    const { ctx, pg, errors } = await phone({ sub: true, quest: { i: 3, last: 2, s: 14, ls: 13, lk: "story", done: "2026-01-01" } }, "/today.html", { poster: landed });
-    await pg.waitForTimeout(150);
-    const r = await reel(pg);
-    ok("a game day: the clip is that game's (/assets/home/reel/<game>.mp4), playing", r.kind === "game" && r.state === "open" && r.src === REEL + r.game + ".mp4" && r.played.length === 1 && r.on, r);
-    ok("no page errors", errors.length === 0, errors);
-    await ctx.close();
-  }
-  {
-    // a finished day: tomorrow's poster, dark, and no clip at all
-    const { ctx, pg, errors } = await phone({ sub: true, quest: { i: 0, last: 13, s: 1, ls: 0, lk: "story", done: "TODAY", got: [] } }, "/today.html", { poster: landed });
-    await pg.waitForTimeout(200);
-    const r = await reel(pg), c = await card(pg);
-    ok("a finished day: tomorrow's poster, dark", r.state === "done" && !!r.next && r.img === REEL + r.next + ".webp" && /brightness\(0\.15\)/.test(c.dark), { r, dark: c.dark });
-    ok("…and nothing plays: no clip loaded, none started (tomorrow is never early)", r.hidden && !r.src && !r.poster && r.played.length === 0, r);
-    await hide(pg, true); await hide(pg, false); await pg.waitForTimeout(100);
-    const v = await reel(pg);
-    ok("…not even after coming back to the front", v.hidden && !v.src && v.played.length === 0, v);
-    ok("no page errors", errors.length === 0, errors);
-    await ctx.close();
-  }
-  {
-    // Reduce Motion: the poster, still; and switched on while Home is open,
-    // the clip stops and goes
-    const { ctx, pg, errors } = await phone({ sub: true, reduce: true }, "/today.html", { poster: landed });
-    await pg.waitForTimeout(150);
-    let r = await reel(pg);
-    ok("under Reduce Motion no clip plays: the poster, still", r.hidden && !r.src && r.played.length === 0 && r.img === REEL + r.game + ".webp", r);
-    await pg.emulateMedia({ reducedMotion: "no-preference" }); await pg.waitForTimeout(150);
-    r = await reel(pg);
-    ok("…Reduce Motion turned off while Home is open: the clip starts", !r.hidden && r.src === REEL + r.game + ".mp4" && r.played.length === 1, r);
-    await pg.emulateMedia({ reducedMotion: "reduce" }); await pg.waitForTimeout(150);
-    r = await reel(pg);
-    ok("…and turned on again: it stops and goes, the poster stays", r.hidden && !r.src && !r.on && r.paused >= 1 && r.img === REEL + r.game + ".webp", r);
-    ok("no page errors", errors.length === 0, errors);
-    await ctx.close();
-  }
-  {
-    // the data saver: the poster only, nothing downloaded
-    const { ctx, pg, errors } = await phone({ sub: true }, "/today.html", { poster: landed, before: (c) => c.addInitScript(() => { Object.defineProperty(Navigator.prototype, "connection", { configurable: true, get: () => ({ saveData: true }) }); }) });
-    await pg.waitForTimeout(150);
-    const r = await reel(pg);
-    ok("with the data saver on: the poster only, no clip asked for", r.hidden && !r.src && r.played.length === 0 && r.img === REEL + r.game + ".webp", r);
-    ok("no page errors", errors.length === 0, errors);
-    await ctx.close();
-  }
-});
-
-await section("the day's reel when something is missing", async () => {
-  {
-    // a clip that is missing (404): it goes, the poster stays
-    const { ctx, pg, errors } = await phone({ sub: true }, "/today.html", { clip: missing, poster: landed });
-    await pg.waitForFunction(() => document.getElementById("questClip").hidden, null, { timeout: 4000 }).catch(() => {});
-    const r = await reel(pg);
-    ok("a clip that is missing: it goes (hidden, nothing loading), and the poster stays", r.hidden && !r.src && !r.on && r.img === REEL + r.game + ".webp", r);
-    ok("no page errors", errors.length === 0, errors);
-    await ctx.close();
-  }
-  {
-    // a phone that refuses to start it (Low Power Mode): never a black or
-    // broken frame, the poster as it is, and no error
-    const { ctx, pg, errors } = await phone({ sub: true }, "/today.html", { init: REFUSES, poster: landed });
-    await pg.waitForTimeout(450);
-    const r = await reel(pg);
-    ok("a phone that refuses to start the clip (Low Power Mode): the clip is never seen, the poster shows", r.played.length === 1 && !r.on && r.opacity === "0" && r.img === REEL + r.game + ".webp", r);
-    ok("…and nothing on the page goes wrong", errors.length === 0, errors);
-    await ctx.close();
-  }
-  {
-    // the poster has not landed: the card's picture from before (the story's
-    // painted Home picture), under a clip that plays as before
-    const { ctx, pg, errors } = await phone({ sub: true }, "/today.html", { poster: missing });
-    await pg.waitForTimeout(450);
-    const r = await reel(pg), q = await pg.evaluate(() => Sona.questToday());
-    ok("a poster that has not landed: the story's own painted picture under the clip", r.img === q.story.pic && !r.hidden && r.on, { r, pic: q.story.pic });
-    ok("no page errors", errors.length === 0, errors);
-    await ctx.close();
-  }
-  {
-    // a game day whose poster has not landed: the game's Home card
-    const { ctx, pg, errors } = await phone({ sub: true, quest: { i: 3, last: 2, s: 14, ls: 13, lk: "story", done: "2026-01-01" } }, "/today.html", { poster: missing });
-    await pg.waitForTimeout(300);
-    const r = await reel(pg), card0 = await pg.evaluate((k) => (Sona.CRAFTED_CARDS || {})[k], (await reel(pg)).game);
-    ok("a game day whose poster has not landed: that game's Home card", r.kind === "game" && !!card0 && r.img === "/assets/crafted/home-" + card0 + ".webp", { r, card0 });
-    ok("no page errors", errors.length === 0, errors);
-    await ctx.close();
-  }
-  {
-    // a finished day whose tomorrow has no poster yet: tomorrow's painted
-    // picture, dark, as before
-    const { ctx, pg, errors } = await phone({ sub: true, quest: { i: 0, last: 13, s: 1, ls: 0, lk: "story", done: "TODAY", got: [] } }, "/today.html", { poster: missing });
-    await pg.waitForTimeout(300);
-    const r = await reel(pg), q = await pg.evaluate(() => Sona.questToday()), c = await card(pg);
-    ok("a finished day whose tomorrow has no poster yet: tomorrow's painted picture, dark, and no clip", q.next && q.next.story && r.img === q.next.story.pic && /brightness\(0\.15\)/.test(c.dark) && r.hidden && r.played.length === 0, { r, next: q.next });
-    ok("no page errors", errors.length === 0, errors);
+    const after = await card(pg), q = await pg.evaluate(() => Sona.questToday());
+    ok(label + ": Home never requests a reel or starts media, including on return", media.length === 0 && initial.videos === 0 && after.videos === 0 && await pg.evaluate(() => __mediaPlays === 0), media);
+    ok(label + ": the original illustration stays after returning to Home", initial.img === after.img && /\/assets\/(?:crafted|adventure)\//.test(after.img || ""), { initial: initial.img, after: after.img });
+    ok(label + ": the primary action is one button, with no nested control", await pg.evaluate(() => { const c = document.getElementById("questCard"); return c.tagName === "BUTTON" && c.querySelectorAll("button,a,input,select").length === 0; }));
+    ok(label + ": the state, quiet and read-only rules still hold", before === await store(pg) && q.state === firstQuest.state && q.game === firstQuest.game && (await speech(pg)).length === 0 && errors.length === 0, errors);
     await ctx.close();
   }
 });

@@ -41,6 +41,270 @@ So:
   just a failure with fewer words.
 
 ## Project
+**The grown-ups' pages, simplified (Travis, 5 Nov 2026: "simplify drastically
+the settings").** This supersedes every older note below that puts a goal
+picker, a rep line, Saved tries, a summary box, "How scoring works", the review
+ask, Firsts or Recent practice on Progress.
+- **The Grown-ups door is silent.** No tap chime on the Grown-ups button, no
+  success chime when the code is right (`today.html`).
+- **Progress is one phone screen:** the week's tries and seven practice-day
+  bubbles (a bubble is a day with practice, `momWeek().days`, not a goal day),
+  "Accuracy by sound — Coming soon" (no percentage anywhere on the page),
+  Practice levels (each sound's tries and ladder rung; kept over Recent
+  practice as the more useful of the two) and the pilot-only "Send progress to
+  my SLP". **No footnote** (Travis, same day: "take out built with Rachel on
+  the progress sheet. Take out a practice snapshot, not a clinical
+  assessment"): Progress no longer names Rachel, so `shiptest`'s list of pages
+  that introduce her drops it. This is an exception to the clinical rule that
+  parent-facing summaries carry the hedge and her byline, made while the page
+  shows no percentage, score or verdict; **Rachel to confirm**, and a
+  percentage coming back brings the hedge back with it. **No goal
+  can be changed on any grown-up page now**: the days-a-week buttons and the
+  daily reps picker went ("the new goal ... is just minutes per day", which
+  setup asks and saves as `dailyGoal`). The goal machinery itself (gift ring,
+  chests, goal stamps, homework's own number) is unchanged.
+- **No clip is kept any more** (Travis, same day: "dont save"). Saved tries
+  left Progress, so `saveRecording` keeps nothing (it stays only as a name an
+  old cached page may call), practice never calls it, and each device clears
+  every clip an older build kept, once (`_dropAllRecordings`, done-mark
+  `_sonaClipsGone`, never `sona.` so a backup can't carry it; never on Home,
+  which only reads, so the first other page does it: `roadtest`). `MIC_PROMISE`,
+  `parents.html`, `for-slps.html`, `privacy.html` (updated 5 Nov 2026),
+  `/support` and `/families` now say audio is never saved. The practice page
+  still runs its recorder into memory while it listens and throws the result
+  away; removing the recorder itself is a separate, larger change.
+- **Settings shows the chosen sounds as one line** ("S, L, R", or "All
+  sounds") with a **Change** button that opens the grid of every sound
+  (Travis, same day: "yeah change button").
+- **Talk to us fits one screen:** Rachel's card is her name with "MS, CF-SLP ·
+  Co-founder" and one line, "I'm a pediatric speech-language pathologist in
+  my clinical fellowship."; "We read every message." is the page's subtitle;
+  the form asks "What would make Sona better?", with its helper text inside
+  the boxes. **No "Recommend us?"** and **one privacy line**, "We use your
+  email only to reply." (Travis, same day: "take out please leave out your
+  child's name. And take out it isn't added to any mailing list"; both stay
+  true, they are just unsaid). A clinician on the web still reads the
+  student-name line. The body no longer carries `recommend`; the route still
+  accepts it blank.
+
+**Sound-focused review build (29 Oct 2026, Travis's request).** A parent may
+pin one of the child's existing selected sounds as the current target, like
+a language choice. Target changes stay in Settings behind Grown-ups; Home
+and Books only display the shared `targetSound()`, with no child picker or
+preference writer (Travis, 31 Oct 2026). Other focus sounds and all progress
+remain. No saved pin
+keeps the existing practice rotation. Active clinician homework wins and
+disables family target changes. **Books shows only the current target's
+stories** (Travis, 30 Oct 2026, superseding More books below): no other-sound
+fold, free-book fallback or seasonal fallback. Changing the selected sound
+switches the shelf. Unpinned play mode with no family target or homework can
+still browse every sound. Access rules for every book remain unchanged.
+Home's Books tag counts only free books on that shelf; it never advertises
+a different sound's free title.
+**Adventure Studio Home approved (Travis, 4 Nov 2026).** Travis chose the
+new standalone comparison, changed its small coral label to **"Practice"**,
+then explicitly said **"And then let's merge this new look."** This
+supersedes the Play Map's appearance described below. The day's original
+picture comes first beneath the buddy, Rewards and Grown-ups header; its
+title and complete hook sit in a separate dark footer with the teal Start
+today action. The smaller coral Practice area follows, showing the current
+sound read-only, then the lavender Games and yellow Books cards with tilted
+original artwork and drawn line arrows. The decorative trail, tomorrow pill
+and map stars are removed. A completed day's main card still shows tomorrow
+dark and stays inert; accurate day, locked/seen labels, access, earned replay
+games and Books tags keep their shared rules. Talking stories keep their
+original Home covers; the original story portraits and fallback chain stay.
+Home stays silent and reads only. Practice is a visual landmark, not a new
+session: no Gym route, microphone, scorer, cue or practice rule is added.
+The measured fit keeps the whole Home still only when everything fits;
+shorter screens may scroll safely, and the Arcade always scrolls. Release
+validation and publication are tracked separately; this approval records
+the requested appearance and merge authorization, not a completed release.
+
+**Improved Play Map is the chosen Home (Travis and Rachel, 31 Oct
+2026).** Rachel preferred the first direction; the improved Map has been
+restored after the Studio comparison. This supersedes the tall game-video
+Home and earlier compact layouts below. A large original portrait story
+picture contains the Start action, accurate day, title and hook. Gold stars
+represent only saved completed adventures, labelled with their real story
+days; skipped days never become stars. Tomorrow is dark and locked, with no
+early play. A completed day's story stays inert. Buddy, Rewards and Grown-ups
+remain at the top, with Games and Books below the trail. The small current
+sound badge is read-only; target changes stay behind Grown-ups. Home remains
+silent and reuses original artwork. A bounded fit check caught 18 px of
+overflow on the busiest 320×568 screen. Only the most compact layout now
+visually hides the “Your games” heading, preserving its accessible label and
+every replay button; that exact case passes. Release checks remain pending. The
+Arcade still scrolls. Access, saved progress, models, cues and rep rules are
+unchanged. Travis confirmed Rachel's approval of the parent-only target
+behavior and the new books on 2 Nov 2026 (below).
+
+The alternative Studio Home was saved outside the active Home. Unfinished
+Practice Gym runtime changes and its standalone test are preserved in
+`/private/tmp/sona-unshipped-gym-before-merge/` with exact hashes and a restore
+note. They are excluded from the merge; `charge.html` and `sona.js` were
+restored to their pre-Gym versions. Avatar work is deferred. Do not resume
+either draft without a new request.
+
+**Merge authorized (Travis, 31 Oct 2026).** Travis's explicit “merge”
+supersedes the earlier keep-local instruction for the finished Play Map,
+parent-only target settings, sound-specific books and existing review-branch
+work. The unfinished Gym and avatar work are excluded. The full 164-suite
+release battery remains unfinished and must pass before a push, along with
+the required typecheck. The stopped pre-redesign run is not a release pass;
+do not claim that publishing or the merge has completed before it happens.
+
+**Release resumed (Travis, 2 Nov 2026):** “okay finish and release the home
+screen and books first.” This resumes the stopped release of the approved
+Map and sound-specific books. The latest main changes (#255/#256), including
+name-first setup and the store-owned seven-day monthly trial on top, are
+preserved. The Map keeps its measured layout; page movement is locked only
+while its complete content fits, and the Arcade always releases that lock.
+The new lock check fails the pre-fix page and passes all 21 compact Home
+scenarios. A fresh full battery is still required before any push. GitHub
+access was subsequently restored through the normal Git sign-in and a
+successful push dry run; nothing has been published yet. **Rachel's review
+confirmed (Travis, 2 Nov 2026): “Yes, Rachel has approved them”**, answering
+the explicit question about the new books' words and pictures and the
+parent-only target sound setting. This confirms that scope, not the separate
+upstream Day 1 review questions recorded below. No Gym, avatar or new
+clinical behavior is included.
+
+The first 2 Nov release run stopped after 69 completed suites: 65 passed and four
+failed on leftover test expectations (the new R book's title, the old Home
+wash selectors and the retired Picnic alias). It was not a release pass.
+The Picnic-specific tests were restored exactly from current main, the R
+title guard now includes the exact new title and rejects off-sound books,
+and the Home fallback check follows the approved Map. These are test-only
+corrections; that candidate's production files remained identical to
+`82d3c70e`. The next complete run (`250f4b4e`, 164 suites) exited 1: 154
+passed, two retained outdated Home-wash/free-book shelf expectations and
+eight timed out during system sleep. Neither run is a release pass.
+The two stale checks now follow the Map's opaque picture fallback and the
+selected-sound shelf; the free Rory check remains on an explicitly selected
+R shelf. The affected activity suite passes 568 checks. Latest main #257
+is integrated at `bbe56df1`, preserving `FREE_PLAY_ON = false`, its new
+helpers and the sound-target readers. Its free-round suite passes 19/19.
+Home, its CSS, Books and Settings are unchanged from `82d3c70e`.
+The generated voice index changed only source line references and is
+current. A fresh complete 165-suite run with the Mac kept awake from its
+start is required against this frozen candidate before any push.
+That third run also stopped (exit 143) after confirmed repeated machine deep
+sleep despite a verified idle-sleep prevention assertion: 38 suites had
+completed, 27 passed and 11 had timing failures. Its results are not a
+release pass and justify no app or test expectation change. Runtime, tests,
+tools and the voice index were frozen at `bbe56df1` at that stop. A fourth
+run waited for Travis to confirm the Mac was plugged in, open and awake. The existing
+late-web-charter-price assertion remains valid on source review: it tests
+the separate annual web checkout, not the native monthly seven-day offer.
+
+**Current release candidate (4 Nov 2026): `146fa107`.** Travis confirmed
+physical readiness on 3 Nov. The fourth run then stopped deliberately after
+eight green suites to integrate published main `4a30d86d` (#258/#259).
+The integrated candidate preserves the approved Map, parent-only target pin,
+strict sound shelf and seven eight-page books, plus upstream's TALK2 stories,
+sixth Home fit step and test font normalization. The headless audio-output
+fix is retained. Books and Settings remain unchanged; Home keeps its
+fit-dependent scroll lock. All six focused groups exited 0: compact Home
+21 scenarios, Home 761 checks, talking stories 61, setup stability 322,
+setup screens 268 and trial hand-off 84. The clean tracked-source typecheck
+also exited 0; the voice index is current (808 fixed lines, 80 expansions,
+356 bank words).
+
+The fifth full run was stopped on 4 Nov (exit 143): 75 suites completed,
+with 19 failures/timeouts, while macOS repeatedly entered Maintenance Sleep
+and DarkWake on battery despite the scoped keep-awake assertion. It is not
+a release pass. The power record is
+`/private/tmp/sona-r5-machine-sleep-evidence.log`; exact results are in
+`/private/tmp/sona-home-books-release-20261103-r5-stopped.json`.
+All 2,105 frozen source/test/tool files still match `1c2260c8`; no product,
+test, tool or voice-index edit was made in response. No further local full
+run is started automatically. **Review-branch upload exception approved (Travis, 4 Nov 2026): “Run full
+checks on GitHub.”** This explicitly permits uploading the finished review
+branch and opening its draft PR before a local full pass, so the complete
+battery can run independently of this Mac. It does not waive validation:
+production publication must wait for the complete passing checks. No upload
+or release is claimed by this record.
+
+Published main `ef791055` (#260, TALKCLIP) is also integrated. Its twenty
+new clip/poster assets, recorder/capture tools, asset test and rulebook notes
+are retained exactly. The approved Map keeps its original portrait picture:
+its HTML, CSS and JavaScript are byte-identical to `1c2260c8`, with no video
+element, reel loader or request, so these assets are not activated there.
+The updated Node-only asset test exits 0 (35 clips); optional decoded-frame
+checks are skipped because ffmpeg is unavailable locally. Voice-index
+freshness still exits 0; no TypeScript changed. The new source manifest has
+2,125 files. The complete battery is still pending; the limited pre-push
+exception above is approved. This integration is not a release pass.
+
+**GitHub validation and test portability (4 Nov 2026).** The approved
+review-branch upload is complete; the first cloud run reported a genuine
+failure in `speechevidencetest`: quick F counted 3 of 4 (246/247 checks),
+with no script error. This is not attributed to Mac sleep. The same quick
+suite passed 10/10 twice locally without changing any assertion or sound.
+Main `4a30d86d`'s Ubuntu run `41750629238` passed the complete battery,
+including F 4/4 and speech evidence 247/247. The headless
+`--disable-audio-output` workaround is now scoped to macOS, where its clock
+fix was demonstrated. Mac launch arguments remain identical; Linux launch
+arguments now match main exactly. This is a test portability correction,
+not proof that the flag caused the F failure. No product, fixture, scoring
+or clinical threshold changed. Syntax and argument checks pass; a fresh
+complete cloud pass remains required before release.
+
+The first GitHub run (`41870353527`) completed all 165 suites: 163 passed,
+with the quick-F failure above and one test-output portability error.
+`compacthometest` tried to save its screenshot under `/private/tmp`, which
+does not exist on Ubuntu. It now uses the shared `_env.OUT` contract
+(`TEST_OUT` or the operating system's temporary directory); screenshot
+filenames and all 21 scenarios/checks are unchanged. The corrected focused
+run exits 0 on macOS with the standard `/tmp` default exercised explicitly.
+A search of every test changed by this branch found no other absolute Mac
+output path. No app, fixture or acceptance assertion changed. Both test
+portability corrections require a fresh complete passing cloud run before
+production publication.
+
+The second GitHub run (`41876745642`, with the Darwin-scoped audio fix)
+completed all 165 suites: 164 passed, and only the pre-fix compact screenshot
+path failed. Speech evidence passed 247/247, including F 4/4; this is an
+observed pass after the portability correction, not proof of causation.
+The portable screenshot fix has now passed its 21 focused scenarios. A
+fresh complete passing cloud run of the final candidate is still required.
+
+**Latest first-day flow (upstream #251/#253, 31 Oct 2026) supersedes the
+earlier Picnic-first review experiment.** Setup opens ordinary Fruit Slice,
+through its existing practice page, for every age. Home then offers Day 1's
+sound-specific talking story for R, S, L, Z or F, otherwise the original
+lighthouse. The upstream fourteen-slot calendar and saved `t1` identity for
+completed Day 1 remain authoritative. No `signature-v1` route or Picnic
+alias is activated. `storyDay(id)` returns the upstream story object, not a
+numeric display day. The target pin feeds the existing `rotSounds()` reader,
+so the selected sound and active homework also govern the new Day 1 choice.
+Upstream's speech prompts, three-saying word moments, counting and first-game
+rules are preserved; their Rachel-review questions remain recorded below.
+
+**More books, 8–12 pages** (Travis, 30 Oct 2026): the review adds one
+eight-page story each for R, S, L, SH, CH and TH: Rabbit and the Rocket,
+Seal and the Sock, Lion and the Lock, Sheep and the Ship, Chicken and the
+Picnic, and My Thumb Paints a Gift. Bear's Lost Ball is a seventh new book
+relative to published main, expanded from its six-page local draft: those
+six lines/pictures stay, with two new play scenes before bed.
+Every key is an existing initial-bank word; no target bank, age gate,
+microphone, scorer or play-rep rule changes. All seven meet the fuller-book
+whole-line phonology rule, with one independently stored picture per page.
+The catalog holds 49 year-round books, 55 during October. The original 13
+six-page books and existing twelve-page books remain unchanged.
+**Keep the original artwork** (Travis, 30 Oct 2026): existing books including
+Sunny the Seal are unchanged, and new book/adventure art matches the original
+soft3D look. New art is versioned. Review sources/prompts live in
+`design/sound-first-session/` and `design/adventure/fruitpicnic-*`.
+**Rachel reviews the selected-target behavior, every new story line/key and
+matching picture before release.** The review page and generated
+`VOICE_SCRIPT.md` list the exact words. Travis confirmed on 2 Nov 2026 that
+Rachel has approved the new books' words and pictures and the parent-only
+target sound setting. Children's voice replacement remains
+research only: no licensed,
+clinically approved recording pack was selected or installed.
+
 Sona (speaksona.com) — kids' speech-practice PWA in public/, Next.js API
 routes, Capacitor iOS shell that remote-loads the site. Solo founder, ships
 fast.
@@ -82,8 +346,9 @@ anonymous "built / made / designed / shaped / reviewed with / by a (licensed)
 (pediatric) SLP / speech-language pathologist" or "our SLP"; a page that puts
 Rachel and "SLP" or "speech-language pathologist" in one sentence without
 "MS, CF-SLP" somewhere on it; any CCC or "certified" claim; and any of the
-pages that introduce her (parents, subscribe, trial, progress, talk, slp)
-missing it.
+pages that introduce her (parents, subscribe, trial, talk, slp)
+missing it (Progress left that list on 5 Nov 2026, when it stopped naming
+her).
 One of those places is setup (Travis, 29 Sep 2026: a Meet Rachel screen with
 her photo). **Since 22 Oct 2026 she has her own screen again** (Travis: "a
 bigger slide of Rachel that's just like all by itself of like her
@@ -172,7 +437,8 @@ changing one. What follows from the rule:
   credit. They release their loops on departure/background and stay still
   under Reduce Motion. The old recorded reel assets remain available but
   are not loaded by setup.
-  **Since 1 Nov 2026** (Travis: "we'll ask the child's name and age first,
+  **Since 1 Nov 2026** (its demo and email-example parts undone on 4 Nov
+  2026, below) (Travis: "we'll ask the child's name and age first,
   right after the hello. And let's improve them, make the demo speed
   buttons more clear, and play the slowdown by itself"; then "we can get
   rid of piano tiles as the demo. And just keep fruit slice"): a first
@@ -216,13 +482,48 @@ changing one. What follows from the rule:
   picked. Returning families, second children and clinicians
   keep their shorter paths. Native keyboard, privacy/replay, purchase,
   reminder eligibility and explicit hand-off rules are unchanged.
+  **Since 4 Nov 2026: the two old demos back, the games screen gone, and
+  less text** (Travis: "I want to go back to the old two slides that we had
+  on the onboarding for demoing what it's like to play a game. I don't like
+  this new update. And then the slide that says games for Joe, let's
+  improve it or get rid of it. It hardly shows anything additional ... the
+  Joe's practice is ready page has too much text and so does the weekly
+  progress. Get rid of the box above that's the example and underneath it
+  ... instead of we'll also send occasional tips from Rachel, just say
+  something like ... track weekly progress"). A first setup is now the hello
+  → name and age → **the Fruit Slice demo → the Piano Tiles demo** (the
+  31 Oct slides exactly: "Speech practice. Through play." and "Say the sound
+  to slow the keys.", each with the two buttons **Normal speed / After
+  practice** the parent taps; nothing plays by itself; `onboarding-piano-demo.js`
+  is back) → Rachel → what they love → therapy → sounds → minutes → email →
+  (the build beat) → ready → (reminder) → the price → microphone → hand-off.
+  - **"Games <Name> will love" is gone** (the demos just before it show the
+    same games playing). What they love is still asked and kept on the
+    profile (`profile.interests`), but no screen now shows a result of it;
+    `INTEREST_GAMES` went with the grid.
+  - **The email step is the heading, the box and one line**: "Track your
+    child's progress every week. Unsubscribe anytime." The example email
+    card is gone, and so is "We'll also send occasional tips from Rachel."
+    on this step (as on the landing pages since 25 Sep 2026). **The address
+    still joins the email list**, so Rachel's tips still reach it; the step
+    no longer says so. Travis's call; the clinician's own email step and the
+    other email boxes keep the tips line.
+  - **The ready screen is Echo, "<Name>'s practice is ready!", the chips and
+    the Day 1 card**, the card one line ("Play a game, then read a book.").
+    Gone: "Fruit Slice first, then <story>.", "A new story every day.", the
+    therapy sentence ("Sona is practice for the days between speech
+    visits." / "… you can do at home.") and "Sona practices — it doesn't
+    test or diagnose." (the sounds screen still says it). The card still
+    names Home's Day 1 story in `data-story` (`Sona.day1For`). **So the
+    therapy answer is now shown nowhere**: it is still kept on the phone
+    (`Sona.setupAsksSave`), and whether the question stays is Travis's call.
   Name uses the label "Age" with more space before it. Minutes are 3 / 5 /
   10, with five selected only for a fresh first parent; a restored skip or
   existing family retains its goal. At the existing six-reps/minute product
   conversion these save 18 / 30 / 60 reps, not a clinical dosage claim.
-  Suggested games are a few larger previews, still filtered by the actual
-  catalog, age and access. Email consent and Rachel's full credential
-  remain. **The microphone step carries no grown-ups line since 31 Oct
+  Suggested games were a few larger previews, still filtered by the actual
+  catalog, age and access (that screen went on 4 Nov 2026). Rachel's full
+  credential remains. **The microphone step carries no grown-ups line since 31 Oct
   2026** (Travis: "let's get rid of the grown-ups audio is never uploaded,
   one try a day ... Just get rid of that"): only "Let Echo hear <Name>",
   "Turn on Echo's ears" and "Not now". The promise (`MIC_PROMISE`) stays on
@@ -259,8 +560,9 @@ changing one. What follows from the rule:
     (`planBeat()` in `onboarding.html`).
   - **The plan card on the ready screen**, under the chips: Day 1 is a game,
     then a book. Fruit Slice's Home picture (`home-fruit.webp`), a "Day 1"
-    pill, "Play a game, then read a book." and "Fruit Slice first, then
-    <today's story>." The story is `Sona.day1For(sounds)` with the sounds
+    pill and "Play a game, then read a book." (until 4 Nov 2026 also
+    "Fruit Slice first, then <today's story>." and "A new story every
+    day."; since then the story is only the card's `data-story`). The story is `Sona.day1For(sounds)` with the sounds
     setup is about to save: the talking story in the first sound that has
     one (R Robo's Rocket, S Sandy's Sandcastle, L Lulu's Lantern Party, Z
     Zippy's Zoo Parade, F Fizz and the Sleepy Fireflies, and since 2 Nov
@@ -448,7 +750,9 @@ changing one. What follows from the rule:
     Dinosaurs, Animals, Space, Building, Food), each a piece of the games'
     own painted art; Continue or Skip, nothing picked for them. Kept on the
     profile as ids (`profile.interests`) when asked (an older profile's story
-    themes stay when not). The picks only order the next screen: **"Games
+    themes stay when not). **(Since 4 Nov 2026 the games screen is gone and
+    the picks order nothing on screen; what follows is its history.)** The
+    picks only ordered the next screen: **"Games
     <Name> will love"** shows the games a pick fits first, ringed, then the
     rest, each part in Home's order (`INTEREST_GAMES` in `onboarding.html`:
     sports Hoops and Soccer Goal, music Piano Tiles, dinosaurs Dino Dig,
@@ -522,7 +826,8 @@ changing one. What follows from the rule:
     (`Sona.parentEmail()`). It is not one of the questions and has no
     progress segment. It is optional: empty or Skip go on, and a
     wrong-looking address stays with one line ("That email doesn't look
-    right."). Travis's line, "We'll also send occasional tips from Rachel.
+    right."). (Since 4 Nov 2026 its line is "Track your child's progress
+    every week. Unsubscribe anytime.": see above.) Travis's line, "We'll also send occasional tips from Rachel.
     Unsubscribe anytime.", is on screen before anything is sent. **Its
     heading is "Get the weekly progress report"** (Travis, 15 Oct 2026: "i
     want the setup page to say get the weekly progress report", with no
@@ -545,7 +850,8 @@ changing one. What follows from the rule:
     PostHog's session recording (REPLAY1, below) is off while this question
     and the ready screen are on screen, and both steps carry `ph-no-capture`,
     so no recording holds the answer.
-  - **The ready screen** ("<Name>'s practice is ready!", Echo cheering with
+  - **The ready screen** (shorter since 4 Nov 2026: no therapy sentence and
+    no hedge, see above) ("<Name>'s practice is ready!", Echo cheering with
     a sparkle that plays once, no sound) repeats only what the parent said
     (the age group if given, the sounds, or "Every sound, easiest first",
     and "N min a day") with the therapy sentence and "Sona practices — it
@@ -2017,7 +2323,8 @@ any day, still once a week).
   parents are off the list), and three runs of 250 send about 750 a week
   (`stopped: "cap"` on a Wednesday). Past either, it needs Resend's batch send
   and its own list of parents.
-- **For Travis:** the consent line beside every email box says "occasional
+- **For Travis:** the consent line beside every email box (but setup's
+  family email step since 4 Nov 2026) says "occasional
   tips from Rachel", and the list now hears from Sona weekly: his words to
   change if they should say so. Every parent who gave an email since 24 Sep
   2026 is on it, the waiting list's included (once Kit's leavers are in).
@@ -2137,7 +2444,9 @@ linked to the parent's email (Travis's task, no review). `planwordstest` plays
 the phone side ("the list hears"), `slpapi` the route and `contactstest` the
 list. Wherever an email joins the list, the page says
 so first, in Travis's words: "We'll also send occasional tips from Rachel.
-Unsubscribe anytime." **Except the landing pages**, where Travis took the line
+Unsubscribe anytime." **Except setup's family email step** (4 Nov 2026,
+Travis: "just say something like ... track weekly progress": it says "Track
+your child's progress every week. Unsubscribe anytime.") **and the landing pages**, where Travis took the line
 out (25 Sep 2026: "get rid of this text"); their "What's stored" answers
 still say the email is on the list at Resend. Meta's `Lead` fires only when an email was given.
 
@@ -4907,15 +5216,14 @@ the app) is a later idea, not built; it is Rachel's to shape.
 ## Hard rules
 - Merges to main/prod only on Travis's explicit go ("merge").
 - **No audio ever leaves the device.** There is no cloud scorer: every verdict
-  is decided on the phone from the spectral shape of what was said. One clip a
-  day may be kept in local IndexedDB so a parent can listen back — it is never
-  uploaded. The consent copy says exactly this, and it is true because there is
-  no mechanism to break it, not because a checkbox is off. Its short form, the
-  grown-ups line on every mic ask but setup's (Travis took it off setup's
-  microphone step on 31 Oct 2026) (`MIC_PROMISE`), is "audio is never
-  uploaded. One try a day is saved on this phone so you can listen back."
-  (Travis, 2 Oct 2026, asked for "audio is never recorded or uploaded"):
-  never "never recorded", which that one saved try would make false. `mictest` pins the
+  is decided on the phone from the spectral shape of what was said. **Nothing
+  is saved either** (since 5 Nov 2026; until then one clip a day was kept in
+  local IndexedDB so a parent could listen back). The consent copy says
+  exactly this, and it is true because there is no mechanism to break it, not
+  because a checkbox is off. Its short form, the grown-ups line on every mic
+  ask but setup's (Travis took it off setup's microphone step on 31 Oct 2026)
+  (`MIC_PROMISE`), is "audio is never uploaded or saved." Still never "never
+  recorded": the practice page holds a try in memory while it listens. `mictest` pins the
   mechanism's absence: no route but the two founder clip tools (`isolate`,
   `voice-change`, behind `FOUNDER_KEY`) accepts a file, and no family page
   posts to one. `/api/stt` was deleted on 25 Sep 2026 for exactly this.

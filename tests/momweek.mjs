@@ -98,15 +98,16 @@ errs = [];
 await page.evaluate(() => sessionStorage.setItem("sona.gate.v1", String(Date.now()))); // pass the parent gate
 await page.goto("http://localhost:8128/progress.html"); await page.waitForTimeout(1000);
 const prog = await page.evaluate(() => ({
-  msg: document.getElementById("wkGoalMsg").textContent,
+  msg: document.getElementById("wkDays").textContent,
   days: document.querySelectorAll("#week .day").length,
-  on: document.querySelector("#wkGoalPick .gbtn.on") ? document.querySelector("#wkGoalPick .gbtn.on").dataset.g : null,
+  picker: !!document.querySelector("#wkGoalPick, .gbtn, #dailyGoalPick"),
 }));
-ok("progress goal button on", prog.on, "3");
-// 29 Sep 2026: the seven Monday–Sunday days and the week streak, checked here
-// now that Progress is the only place they are drawn.
+// 5 Nov 2026 (Travis): the week's bubbles stay, the days-a-week buttons go.
+ok("progress has no goal buttons", prog.picker, false);
+// 29 Sep 2026: the seven Monday–Sunday days, checked here now that Progress
+// is the only place they are drawn; each bubble is a day with practice.
 ok("progress 7 days", prog.days, 7);
-ok("progress names the week streak", /3 weeks in a row at your goal/.test(prog.msg), true);
+ok("progress counts the week's practice days", /^\d+ days? practiced$/.test(prog.msg), true);
 console.log("      progress msg:", prog.msg);
 console.log(errs.length ? "FAIL progress pageerrors: " + errs[0] : "PASS progress no pageerrors");
 if (errs.length) fails++;

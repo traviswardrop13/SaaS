@@ -50,12 +50,12 @@ async function toReady(page, name, email = "") {
   await page.waitForFunction(() => window.Sona && document.getElementById("nextBtn"));
   await tap(page, "#nextBtn");                                           // the hello
   await step(page, "name"); await page.locator("#obName").fill(name); await tap(page, '#obAge [data-age="6"]'); await tap(page, "#nextBtn");
-  for (const key of ["reel", "rachel"]) {                               // the name first since 1 Nov 2026
+  for (const key of ["reel", "piano", "rachel"]) {                      // the name first since 1 Nov 2026; Piano Tiles back on 4 Nov
     await step(page, key); sold.push(await text(page, '[data-step="' + key + '"] h1'));
     if (key === "rachel") rachelLine = await page.evaluate(() => document.getElementById("rachelLine").textContent);
     await tap(page, "#nextBtn");
   }
-  for (const key of ["interests", "games"]) { await step(page, key); sold.push(await text(page, '[data-step="' + key + '"] h1')); await tap(page, "#nextBtn"); }
+  for (const key of ["interests"]) { await step(page, key); sold.push(await text(page, '[data-step="' + key + '"] h1')); await tap(page, "#nextBtn"); }
   await step(page, "therapy"); await tap(page, '#obTherapy .ask-pick[data-val="t_yes"]');
   await step(page, "sounds");                                            // R is the picker's own first pick: tap it only if it is not on
   if ((await page.locator('#obSounds [data-sound="R"]').getAttribute("aria-pressed")) !== "true") await tap(page, '#obSounds [data-sound="R"]');
@@ -72,8 +72,8 @@ await scenario("a family that can buy", async () => {
   try {
     await toReady(page, "Mia", "mia.mom@example.com");
     ok("nothing is sent from the email step itself", leads(requests).length === 0, leads(requests));
-    ok("before the price, setup shows the Fruit Slice demo (under \"Speech practice. Through play.\"), Rachel, what the child loves and their games, and no problem slide or Piano Tiles demo",
-      JSON.stringify(sold) === JSON.stringify(["Speech practice. Through play.", "Built with Rachel, MS, CF-SLP,", "What does Mia love?", "Games for Mia."]) &&
+    ok("before the price, setup shows the Fruit Slice demo (under \"Speech practice. Through play.\"), the Piano Tiles demo, Rachel and what the child loves, and no problem slide or games screen",
+      JSON.stringify(sold) === JSON.stringify(["Speech practice. Through play.", "Say the sound to slow the keys.", "Built with Rachel, MS, CF-SLP,", "What does Mia love?"]) &&
       (await page.locator('[data-step="problem"]').count()) === 0, sold);
     ok("Rachel's own screen carries her line word for word, and setup ends on the ready screen with the child's name",
       rachelLine === "Built with Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical fellowship." &&
@@ -81,11 +81,11 @@ await scenario("a family that can buy", async () => {
       { title: await text(page, "#readyTitle"), rachel: rachelLine });
     ok("…and nothing has asked the phone for the microphone yet", (await page.evaluate(() => window.__phone.mic.requests.length)) === 0);
     // THE PLAN MOMENT (31 Oct 2026): the ready screen says Day 1 is a game,
-    // then a book: Fruit Slice first, then the talking story in Mia's sound
-    ok("the ready screen's plan card says Day 1 is \"Play a game, then read a book.\": Fruit Slice first, then Robo's Rocket for a child on R, and \"A new story every day.\"",
+    // then a book (one line since 4 Nov 2026); the card still names the
+    // talking story in Mia's sound for Home
+    ok("the ready screen's plan card says Day 1 is \"Play a game, then read a book.\" and nothing more; Robo's Rocket for a child on R",
       (await page.evaluate(() => { const c = document.getElementById("planCard"); return !c.hidden && c.dataset.story + "|" + c.dataset.game; })) === "robo|slice" &&
-      (await text(page, "#planTitle")) === "Play a game, then read a book." && (await text(page, "#planLine")) === "Fruit Slice first, then Robo's Rocket." &&
-      (await text(page, "#planMore")) === "A new story every day.", await text(page, "#planCard"));
+      (await text(page, "#planTitle")) === "Play a game, then read a book." && (await text(page, "#planCard")) === "Day 1 Play a game, then read a book.", await text(page, "#planCard"));
     await tap(page, "#nextBtn");
     await page.waitForURL(/\/subscribe\.html\?setup=1$/, { timeout: 12000 });
     {
@@ -212,11 +212,11 @@ await scenario("a phone that cannot buy", async () => {
   try {
     await toReady(page, "Zoe");
     // a phone that shows no story (the game of the day, not a locked story)
-    // still has Day 1's card: Fruit Slice, then a book (the free one), and no
-    // promise of a story a day
-    ok("with no story shown on this phone, the plan card still says Day 1: \"Fruit Slice first, then a book.\", with no \"A new story every day.\"",
-      (await page.evaluate(() => { const c = document.getElementById("planCard"); return !c.hidden && document.getElementById("planMore").hidden && c.dataset.story + "|" + c.dataset.game; })) === "|slice" &&
-      (await text(page, "#planTitle")) === "Play a game, then read a book." && (await text(page, "#planLine")) === "Fruit Slice first, then a book.", await text(page, "#planCard"));
+    // still has Day 1's card: a game, then a book (the free one), and no
+    // story named
+    ok("with no story shown on this phone, the plan card still says Day 1: \"Play a game, then read a book.\", no story named",
+      (await page.evaluate(() => { const c = document.getElementById("planCard"); return !c.hidden && c.dataset.story + "|" + c.dataset.game; })) === "|slice" &&
+      (await text(page, "#planCard")) === "Day 1 Play a game, then read a book.", await text(page, "#planCard"));
     await tap(page, "#nextBtn");
     await step(page, "mic");
     ok("with nothing to sell, Continue goes on in the page to the microphone: the price page is never asked for",

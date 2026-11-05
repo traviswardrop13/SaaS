@@ -187,6 +187,9 @@ s06: { x: 0.455, y: 0.795, h: 0.17, pose: "rest" },  // on the floor just right 
 e03: { x: 0.865, y: 0.78, h: 0.145, pose: "cheer" }, // on the floor just right of Owl, clear of her raised slipper, cheering
 e04: { x: 0.63, y: 0.688, h: 0.19, pose: "cheer" },  // on the empty right half of the bench, right of Echo, cheering, feet on the bench top level with his; its head reaches the map's bottom frame and covers no star or place
 s04: null, s07: null, s08: null, e01: null, e02: null,
+// Day 15: fruitpicnic
+// Stable index 14; Day 1 on the new older-child itinerary. No buddy overlay.
+s01: null, s02: null, s03: null, e01: null, e02: null,
 ```
 
 The bottom eighth of every page is calm (ground, floor or water) for the

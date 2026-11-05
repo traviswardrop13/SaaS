@@ -74,7 +74,7 @@ function unparked(source, keys) {
 }
 // Ordinary families use the restored free release. The paid seam rehearses
 // future locks without changing the release or granting a real entitlement.
-async function fixture({ age = "4", paid = false, premium = false, viewport = { width: 390, height: 844 }, path = "/activities.html", origin = BASE, catalog = null, now = null, unpark = [], park = [] } = {}) {
+async function fixture({ age = "4", paid = false, premium = false, sounds = ["S"], viewport = { width: 390, height: 844 }, path = "/activities.html", origin = BASE, catalog = null, now = null, unpark = [], park = [] } = {}) {
   const ctx = await browser.newContext({ viewport });
   await ctx.route("**/*", (route) => {
     const url = new URL(route.request().url());
@@ -95,7 +95,7 @@ async function fixture({ age = "4", paid = false, premium = false, viewport = { 
       })();`;
     return route.fulfill({ contentType: MIME[file.split(".").pop()] || "application/octet-stream", body });
   });
-  await ctx.addInitScript(({ age, paid, premium }) => {
+  await ctx.addInitScript(({ age, paid, premium, sounds }) => {
     if (!localStorage.getItem("sona.test.librarySeed")) {
       localStorage.setItem("sona.test.librarySeed", "1");
       localStorage.setItem("sona.freeera.v1", "post");
@@ -106,7 +106,7 @@ async function fixture({ age = "4", paid = false, premium = false, viewport = { 
       // slow machine met that sheet over a card (Soccer, 1 Oct 2026). It is
       // not this suite's subject: it starts already answered.
       localStorage.setItem("sona.pulse.v1", JSON.stringify({ cool: Date.now() + 365 * 24 * 3600 * 1000 }));
-      const profile = { childName: "Mia", focusSounds: ["S"], onboarded: true, volume: 0, voiceOn: false, soundOn: false };
+      const profile = { childName: "Mia", focusSounds: sounds, onboarded: true, volume: 0, voiceOn: false, soundOn: false };
       if (premium) profile.earlyAdopter = true;
       if (age !== null) profile.childAge = age;
       localStorage.setItem("sona.profile.v1", JSON.stringify(profile));
@@ -115,7 +115,7 @@ async function fixture({ age = "4", paid = false, premium = false, viewport = { 
         localStorage.setItem("sona.demo.v1", JSON.stringify({ started: Date.now() - 100 * 3600000, done: Date.now() - 90000 }));
       }
     }
-  }, { age, paid, premium });
+  }, { age, paid, premium, sounds });
   const pg = await ctx.newPage(); pg.setDefaultTimeout(5000);
   const errors = [];
   pg.on("pageerror", (error) => errors.push(error.message));
@@ -701,19 +701,25 @@ if (present && hasContract) {
     try {
       const isFree = await free.pg.evaluate(() => Sona.isFree());
       const tag = await free.pg.locator("#homeBooksTag").textContent();
-      // the free version of today's pricing, or Free while Sona is free
-      ok("on the free version Home's Books door says " + (isFree ? "Free" : "1 free book"), tag === (isFree ? "Free" : "1 free book") && await free.pg.locator("#homeBooksBtn").isVisible(), tag);
+      // The door describes only the current sound's shelf, never another
+      // sound's free title; the shared reader supplies its free-book count.
+      const freeCount = await free.pg.evaluate(() => Sona.freeBooksOnShelf());
+      const expectedTag = isFree ? "Free" : freeCount ? freeCount + " free " + (freeCount === 1 ? "book" : "books") : "Premium";
+      ok("the S shelf's Books door describes its own free-book count", tag === expectedTag && await free.pg.locator("#homeBooksBtn").isVisible(), { tag, expectedTag, freeCount });
       await free.pg.locator("#homeBooksBtn").click();
       await free.pg.waitForURL(/\/library\.html(?:[?#]|$)/);
       ok("Home's Books door opens the bookshelf", new URL(free.pg.url()).pathname === "/library.html" && new URL(free.pg.url()).search === "");
       await free.pg.waitForSelector("#shelf .bookBtn");
+      const selected = await free.pg.evaluate(() => [...document.querySelectorAll("#shelf .bookBtn .bt")].map((b) => ({ title: b.textContent, sound: ALL_STORIES.find((s) => s.title === b.textContent)?.sound })));
+      ok("the S shelf contains only S books, with no free R fallback", selected.length > 0 && selected.every((b) => b.sound === "S") && !selected.some((b) => b.title === "Rory and the Rainbow"), selected);
       ok("…which leads with the books: the adventure and Feed Echo tiles are hidden",
         await free.pg.locator("#shelf .bookBtn").count() > 0 && !await free.pg.locator("#advTile").isVisible() && !await free.pg.locator("#feedTile").isVisible());
     } finally { await free.ctx.close(); }
-    const { ctx, pg } = await fixture({ paid: true, path: "/today.html" });
+    const { ctx, pg } = await fixture({ paid: true, sounds: ["R"], path: "/today.html" });
     try {
       const before = await state(pg);
-      ok("a family without Premium sees how many books are free on the door", (await pg.locator("#homeBooksTag").textContent()) === "1 free book", await pg.locator("#homeBooksTag").textContent());
+      const freeCount = await pg.evaluate(() => Sona.freeBooksOnShelf());
+      ok("a family on R without Premium sees its real free-book count on the door", freeCount === 1 && (await pg.locator("#homeBooksTag").textContent()) === freeCount + " free book", await pg.locator("#homeBooksTag").textContent());
       await pg.locator("#homeBooksBtn").click();
       await pg.waitForURL(/\/library\.html(?:[?#]|$)/);
       await pg.waitForSelector("#shelf .bookBtn");

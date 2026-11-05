@@ -26,6 +26,7 @@ import { chromium, ROOT, launchOpts } from "./_env.mjs";
 import { serve } from "./_phone.mjs";
 import { fakeDevice } from "./_sayplaydevice.mjs";
 import { advance, until, sayWord } from "./_sayplay-realgame.mjs";
+import { inspectHomeFallback } from "./_home-fallback.mjs";
 
 let fails = 0, count = 0;
 function ok(label, pass, detail = "") { count++; if (!pass) fails++; console.log((pass ? "PASS " : "FAIL ") + label + (pass ? "" : "  → " + (typeof detail === "string" ? detail : JSON.stringify(detail)).slice(0, 1500))); }
@@ -111,7 +112,6 @@ await section("days", async () => {
     if (!A[d.id] || A[d.id].intro.length !== 8 || A[d.id].ending.length !== 4) bad.push("its scenes in adventures.js");
     if (!existsSync(ROOT + "/assets/crafted/home-" + d.hero + ".webp")) bad.push("Home's picture home-" + d.hero + ".webp");
     for (const sc of A[d.id] ? A[d.id].intro.concat(A[d.id].ending) : []) if (!existsSync(ROOT + "/assets/adventure/" + d.id + "/" + sc.art + ".webp")) bad.push("the picture " + d.id + "/" + sc.art);
-    if (!new RegExp('\\.quest-art\\[data-story="' + d.id + '"\\]\\{background:#[0-9a-f]{6};\\}', "i").test(readFileSync(ROOT + "/crafted-home.css", "utf8"))) bad.push("Home's wash for a picture still loading");
     ok("Day " + (DAYS.indexOf(d) + 1) + " (" + d.id + "): its page, game, words (\"three times\"), scenes, pictures and record", !bad.length, bad);
   }
 });
@@ -119,6 +119,10 @@ await section("days", async () => {
 // ── the browser ──
 const srv = await serve();
 const browser = await chromium.launch(launchOpts());
+await section("Home's missing-picture fallback",async()=>{
+  const fallback=await inspectHomeFallback(browser,ROOT);
+  ok("Home's day card keeps opaque paint beneath a picture that failed to load",fallback.live.opaque&&fallback.failedPictures.length>0&&fallback.errors.length===0,fallback);
+});
 async function phone(cfg = {}, viewport = { width: 393, height: 852 }) {
   const context = await browser.newContext({ viewport, reducedMotion: "reduce" });
   await context.addInitScript(fakeDevice, { age: "7", micok: true, permission: "granted", speechMs: 100, ...cfg });
