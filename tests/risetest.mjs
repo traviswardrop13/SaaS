@@ -16,6 +16,7 @@ import { createServer } from "http";
 import { readFileSync, existsSync, statSync } from "fs";
 import path from "path";
 import { chromium, ROOT as SOURCE_ROOT, launchOpts } from "./_env.mjs";
+import { heartsOffRow } from "./_heartsrow.mjs";
 
 const ROOT = process.env.SONATEST_PUBLIC_ROOT || SOURCE_ROOT, PORT = 8269, BASE = "http://127.0.0.1:" + PORT;
 const MIME = { html: "text/html", js: "text/javascript", css: "text/css", svg: "image/svg+xml", png: "image/png", webp: "image/webp", woff2: "font/woff2", mp3: "audio/mpeg", wav: "audio/wav" };
@@ -417,6 +418,16 @@ await scenario("hearts, pace and best", async () => {
 });
 
 // ── a whole climb ──
+// HEARTSROW1 (_heartsrow.mjs): the hearts never fold onto a second line as the count grows
+await scenario("the hearts stay on one line", async () => {
+  const { context, page, errors } = await open();
+  try {
+    const bad = await heartsOffRow(page, ["Garden", "Clouds", { word: "The top!", bar: false }]);
+    ok("the three hearts stay on one line, at full size, beside a count of 1, 10, 52 or 100 and each word the top bar can show, at 320, 375 and 390 wide; nothing in the top bar spills, is cut or moves the close button", bad.length === 0, bad);
+    ok("…with no runtime errors", errors.length === 0, errors);
+  } finally { await context.close(); }
+});
+
 await scenario("a whole climb", async () => {
   const { context, page, errors } = await open();
   try {
