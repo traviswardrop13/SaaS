@@ -41,6 +41,33 @@ So:
   just a failure with fewer words.
 
 ## Project
+**The grown-ups' pages, simplified (Travis, 5 Nov 2026: "simplify drastically
+the settings").** This supersedes every older note below that puts a goal
+picker, a rep line, Saved tries, a summary box, "How scoring works", the review
+ask, Firsts or Recent practice on Progress.
+- **The Grown-ups door is silent.** No tap chime on the Grown-ups button, no
+  success chime when the code is right (`today.html`).
+- **Progress is one phone screen:** the week's tries and seven practice-day
+  bubbles (a bubble is a day with practice, `momWeek().days`, not a goal day),
+  "Accuracy by sound — Coming soon" (no percentage anywhere on the page),
+  Practice levels (each sound's tries and ladder rung; kept over Recent
+  practice as the more useful of the two), the pilot-only "Send progress to my
+  SLP", and the hedge plus the settled Rachel line as a footnote. **No goal
+  can be changed on any grown-up page now**: the days-a-week buttons and the
+  daily reps picker went ("the new goal ... is just minutes per day", which
+  setup asks and saves as `dailyGoal`). The goal machinery itself (gift ring,
+  chests, goal stamps, homework's own number) is unchanged.
+- **Saved tries left Progress**, so nothing in the app plays the one clip a day
+  `saveRecording` may still keep on the phone, while `parents.html`,
+  `privacy.html` and `for-slps.html` say a parent "can listen back". Whether to
+  stop keeping the clip (and change that copy) or bring a player back is
+  Travis's open call.
+- **Talk to us fits one screen:** Rachel's card is her name with "MS, CF-SLP ·
+  Co-founder" and one line, "I'm a pediatric speech-language pathologist in
+  my clinical fellowship."; "We read every message." is the page's subtitle;
+  the form asks "What would make Sona better?" and "Recommend us?", with its
+  helper text inside the boxes. Same chips, same fields, same privacy lines.
+
 **Sound-focused review build (29 Oct 2026, Travis's request).** A parent may
 pin one of the child's existing selected sounds as the current target, like
 a language choice. Target changes stay in Settings behind Grown-ups; Home

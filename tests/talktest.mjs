@@ -108,7 +108,7 @@ try {
       ok('the privacy lines are shown', /leave out your child's name/.test(all) && /only to reply\. It isn't added to any mailing list/.test(all));
       ok('the reply email is prefilled from setup', await t.page.inputValue('#fbEmail') === 'mom@example.test');
       ok('a parent gets the family question and chips',
-        (await t.page.locator('#fbLead').innerText()) === 'What would make Sona better for your family?' &&
+        (await t.page.locator('#fbLead').innerText()) === 'What would make Sona better?' &&
         JSON.stringify(await t.page.locator('#fbChips .talk-chip').allInnerTexts()) === JSON.stringify(FAMILY_CHIPS));
       const hp = await t.page.evaluate(() => {
         const el = document.getElementById('website'), r = el.getBoundingClientRect();

@@ -556,7 +556,11 @@ ok("proof strip: named SLP credential above the plan",
   await page.evaluate(() => localStorage.removeItem("sona.outcomes.v1"));
 }
 
-// ── progress report: narrative hero + non-clinical hedge + review pre-gate ──
+// ── progress report: one screen, the non-clinical hedge, nothing else ──
+// Travis, 5 Nov 2026 ("simplify drastically"): the week's practice days,
+// accuracy by sound as "Coming soon", each sound's practice level and the
+// hedge. The summary box ("A fresh week is ready"), Saved tries, "How scoring
+// works", the review ask, Firsts and Recent practice are gone.
 {
   const iso = new Date().toISOString().slice(0, 10);
   await page.evaluate((d) => {
@@ -565,24 +569,24 @@ ok("proof strip: named SLP credential above the plan",
     g.totals = Object.assign({}, g.totals, { sessions: 6, words: 40, stars: 3 });
     g.streak = g.streak || { count: 1, lastDate: d };
     localStorage.setItem("sona.progress.v1", JSON.stringify(g));
-    // A day logged since tries were counted (REPWEEKS1): sound checks alone are not reps.
     const out = {}; out.R = { attempts: 24, passes: 20, tries: 24, days: {} }; out.R.days[d] = { a: 24, p: 20, tries: 24 };
     localStorage.setItem("sona.outcomes.v1", JSON.stringify(out));
     localStorage.removeItem("sona.rateask.v1");
   }, iso);
   await page.goto("http://localhost:8131/progress.html"); await page.waitForTimeout(800);
   t = await page.evaluate(() => ({
-    story: document.getElementById("storyLine").textContent,
     hedge: document.body.textContent.includes("A practice snapshot, not a clinical assessment"),
-    rate: document.getElementById("rateCard").style.display,
-    yesHref: document.getElementById("rateYes").getAttribute("href"),
-    noHref: document.getElementById("rateNo").getAttribute("href"),
+    gone: ["storyLine", "rateCard", "recordingsCard", "howCard", "firstsCard", "recent", "share", "copySummary", "wkGoalPick", "dailyGoalPick", "clearest", "boardNote"].filter((id) => document.getElementById(id)),
+    acc: document.getElementById("accCard").innerText,
+    pct: /\d\s*%/.test(document.querySelector(".wrap").innerText),
+    levels: document.getElementById("bysound").innerText,
   }));
-  ok("report opens with a narrative sentence (name + sound + count)", /practiced the R sound with 24 tries this week/.test(t.story));
   ok("non-clinical hedge present", t.hedge);
-  // AN EMPTY REPORT IS THE STATE MOST LIKELY TO READ AS "BROKEN". A parent who
-  // opens Progress before any practice must be told what will fill it and
-  // handed the one action that fills it — not left on a blank card.
+  ok("the removed cards and controls stay gone", t.gone.length === 0, t.gone);
+  ok("accuracy by sound says Coming soon, and no percentage shows anywhere", /Accuracy by sound/.test(t.acc) && /Coming soon/.test(t.acc) && !t.pct, t);
+  ok("practice levels name each practiced sound with its tries", /R sound/.test(t.levels) && /24 tries/.test(t.levels), t.levels);
+  // AN EMPTY REPORT IS THE STATE MOST LIKELY TO READ AS "BROKEN": it says
+  // what will fill it.
   {
     const ctx = await browser.newContext(); const pg = await ctx.newPage();
     await pg.goto("http://localhost:8131/today.html"); await pg.waitForTimeout(300);
@@ -593,28 +597,10 @@ ok("proof strip: named SLP credential above the plan",
       sessionStorage.setItem("sona.gate.v1", String(Date.now()));
     });
     await pg.goto("http://localhost:8131/progress.html"); await pg.waitForTimeout(900);
-    const empty = await pg.evaluate(() => {
-      const one = document.getElementById("storyLine");
-      return {
-        says: one.textContent,
-        action: !!one.querySelector('a[href="/today.html"]'),
-        cards: [...document.querySelectorAll("#bysound p, #acc p")].map((e) => !!e.querySelector('a[href="/today.html"]')),
-      };
-    });
-    ok("an empty report explains what will appear", /adds its first tries to this page/.test(empty.says), empty.says);
-    ok("…and hands the parent one next action", empty.action, empty.says);
-    ok("empty detail cards do not duplicate the main practice action",
-      empty.cards.length > 0 && empty.cards.every((hasAction) => !hasAction), JSON.stringify(empty.cards));
+    const empty = await pg.evaluate(() => document.getElementById("bysound").textContent);
+    ok("an empty report explains what will appear", /Sounds appear here after sound practice/.test(empty), empty);
     await ctx.close();
   }
-  // "Could be better" goes to Talk to us now, not a mailto (29 Sep 2026): every
-  // family note reaches the team through that one in-app page.
-  ok("review pre-gate shows after real value, Bear-style fork",
-    t.rate === "block" && /action=write-review/.test(t.yesHref) && t.noHref === "/talk.html");
-  await page.evaluate(() => document.getElementById("rateX").click());
-  await page.goto("http://localhost:8131/progress.html"); await page.waitForTimeout(700);
-  t = await page.evaluate(() => document.getElementById("rateCard").style.display);
-  ok("dismissed pre-gate stays quiet on the next visit (60d cooldown)", t !== "block");
   await page.evaluate(() => { localStorage.removeItem("sona.outcomes.v1"); localStorage.removeItem("sona.rateask.v1"); });
 }
 

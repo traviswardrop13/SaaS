@@ -1166,16 +1166,15 @@ try {
     ok('both states: …which says "Sona may offer" it, off unless a grown-up turns it on and confirms by email',
       privacy.includes('Sona may offer a monthly Practice Board.') && /It is off for every child unless a grown-up turns it\s+on in Settings and confirms by tapping a link we email to them/.test(privacy));
     ok('both states: …and the COPPA list says the board is off unless a parent turns it on', /<li>The Practice Board is off unless a parent turns it on and confirms by email\./.test(privacy));
-    for (const n of ['progress.html', 'parents.html', 'onboarding.html']) {
+    // Progress carried a board line beside its sharing buttons until the
+    // summary box went (Travis, 5 Nov 2026); privacy.html still says it.
+    for (const n of ['parents.html', 'onboarding.html']) {
       const found = sentences(page(n));
       ok('both states: ' + n + ' names the Practice Board only as something Sona may offer',
         found.length > 0 && found.every((s) => /if Sona offers|if it’s offered|may offer/i.test(s)), found);
     }
-    // Rachel has not reviewed the board line, so it never sits above her
-    // "Reviewed by" byline in "How scoring works" (final review).
-    const how = (page('progress.html').match(/id="howBody"[\s\S]*?Reviewed by Rachel/) || [''])[0];
-    ok('both states: progress.html keeps the board line out of "How scoring works", whose "Reviewed by Rachel" covers only what she reviewed',
-      how.length > 200 && !/Practice Board/.test(how), how.length);
+    ok('both states: progress.html says nothing about the board (its summary box and "How scoring works" are gone)',
+      !/Practice Board/.test(page('progress.html')));
     // The clinician's setup step is read by a speech therapist, none of whose
     // families can ever be on the board (a phone holding their link is
     // "clinic"), so it says that and never that "a family may choose" it.
