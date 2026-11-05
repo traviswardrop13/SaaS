@@ -88,7 +88,7 @@
       targets: targets.map(function (p) { return { id: p.id, x: p.x, y: p.y, r: magnet(), w: p.w, h: p.h, placed: placed[p.id] }; }),
       tray: tray.map(function (p) { return { id: p.id, x: p.x, y: p.y, w: p.w, h: p.h }; }), pieces: pieces.map(function (p) { return { id: p.id, x: p.x, y: p.y, placed: placed[p.id] }; }),
       placed: { coal: placed.coal, nose: placed.nose, hat: placed.hat, scarf: placed.scarf, arms: placed.arms }, growthRate: growthRate(), magnet: magnet(), held: held ? held.type === "ball" ? "ball" : pieces[held.index].id : null,
-      pointerId: owner, keyboardHeld: keyboardHeld, misses: misses, stageMisses: stageMisses, level: level(), rollHelp: rollLevel(), tryTime: tryTime, rollTry: rollTry, celebrating: doneAt > 0, powerLive: powerLive, width: W, height: H, coordinates: "positions normalized to canvas; radii/distance/magnet use canvas width; growthRate is progress per width of real rolling distance" };
+      pointerId: owner, keyboardHeld: keyboardHeld, misses: misses, stageMisses: stageMisses, level: level(), rollHelp: rollLevel(), tryTime: tryTime, rollTry: rollTry, celebrating: doneAt > 0, powerLive: powerLive, lane: laneShown(), trail: trail.length, width: W, height: H, coordinates: "positions normalized to canvas; radii/distance/magnet use canvas width; growthRate is progress per width of real rolling distance" };
   }
   function hud() {
     if (!cv || !stack.length) return;
@@ -100,6 +100,13 @@
     var i = image("bg"); if (i) { var scale = Math.max(W / i.naturalWidth, H / i.naturalHeight), w = i.naturalWidth * scale, h = i.naturalHeight * scale; ctx.drawImage(i, (W - w) / 2, (H - h) / 2, w, h); }
     else { var g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, "#b9ddea"); g.addColorStop(0.55, "#e9f2ef"); g.addColorStop(1, "#d4e6ea"); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H); }
   }
+  // The snow lane is only there while it holds something: the snowball being
+  // rolled, or (the face and clothes steps) the pieces still in its tray. It
+  // used to stay for good, with every roll's smudge trail, so its top showed
+  // above the word panel between steps and it sat under the finished
+  // snowman in the finale. A word turn, a cheer and the finale have none,
+  // and each word starts a clean lane (onWord clears the trail).
+  function laneShown() { return !won && active && (mode() === "roll" ? !stacked[stage] : pieces.some(function (p) { return !placed[p.id]; })); }
   function snowLane() {
     var x = zone.left * W, y = zone.top * H, w = (zone.right - zone.left) * W, h = (zone.bottom - zone.top) * H;
     var laneHelp = mode() === "roll" && active && !stacked[stage] && ball.progress < 1 && rollLevel() >= 1;
@@ -156,7 +163,7 @@
     ctx.beginPath(); ctx.moveTo(ex, ey); ctx.lineTo(hx - uy * 13, hy + ux * 13); ctx.lineTo(hx + uy * 13, hy - ux * 13); ctx.closePath(); ctx.fill(); ctx.restore();
   }
   function draw() {
-    if (!ctx || !stack.length) return; ctx.clearRect(0, 0, W, H); background(); snowLane(); drawStack();
+    if (!ctx || !stack.length) return; ctx.clearRect(0, 0, W, H); background(); if (laneShown()) snowLane(); drawStack();
     if (mode() === "roll" && !stacked[stage]) { var r = ballR(); drawBall(ball.x * W, ball.y * H, r, ball.angle, true); if (active && ball.progress < 1) { var x = ball.x * W, y = ball.y * H + r + 12; for (var n = 0; n < 5; n++) { ctx.fillStyle = ball.progress >= (n + 1) / 5 ? "#408e96" : "rgba(255,255,248,.95)"; ctx.beginPath(); ctx.arc(x + (n - 2) * 9, y, 3, 0, Math.PI * 2); ctx.fill(); } } else if (active && level() >= 1) arrow(ball.x * W, ball.y * H - r, stack[stage].x, stack[stage].y + stack[stage].r); else if (active) { ctx.save(); ctx.strokeStyle = "rgba(57,131,140,.68)"; ctx.lineWidth = 2; ctx.setLineDash([4, 7]); ctx.beginPath(); ctx.moveTo(ball.x * W, ball.y * H - r); ctx.lineTo(stack[stage].x, stack[stage].y + stack[stage].r); ctx.stroke(); ctx.restore(); } }
     drawAccessories();
   }
@@ -229,8 +236,8 @@
   function reset() { cancelGesture(); active = false; paused = false; won = false; stage = 0; completed = 0; power = 0; misses = 0; stageMisses = 0; tryTime = 0; rollTry = 0; doneAt = 0; powerLive = false; stacked = [false, false, false]; rotations = [0, 0, 0]; placed = { coal: false, nose: false, hat: false, scarf: false, arms: false }; ball = { x: zone.left + (zone.right - zone.left) * 0.26, y: (zone.top + zone.bottom) / 2, progress: 0, distance: 0, angle: 0 }; trail = []; buildAccessories(); banner("Let's make a snowy little friend!"); hud(); draw(); }
   window.Snowman = {
     init: function (a, n) { api = a; stages = n || 5; cv = $("snowmanCanvas"); ctx = cv.getContext("2d"); loadArt(); controls(); fit(); reset(); raf = requestAnimationFrame(frame); },
-    onWord: function (index) { cancelGesture(); stage = index; stageMisses = 0; tryTime = 0; rollTry = 0; doneAt = 0; if (stage < 3) ball = { x: zone.left + (zone.right - zone.left) * 0.26, y: (zone.top + zone.bottom) / 2, progress: 0, distance: 0, angle: 0 }; buildAccessories(); earnPower(); api.instruct(STEP_LINES[stage]); },
+    onWord: function (index) { cancelGesture(); stage = index; stageMisses = 0; tryTime = 0; rollTry = 0; doneAt = 0; trail = []; if (stage < 3) ball = { x: zone.left + (zone.right - zone.left) * 0.26, y: (zone.top + zone.bottom) / 2, progress: 0, distance: 0, angle: 0 }; buildAccessories(); earnPower(); api.instruct(STEP_LINES[stage]); },
     onHelp: earnPower, pause: pause, resume: function (playing) { paused = playing === false; last = 0; hud(); }, reset: reset,
-    finale: function () { cancelGesture(); active = false; power = 0; doneAt = 0; won = true; banner("A snow friend, made by you!"); hud(); draw(); }
+    finale: function () { cancelGesture(); active = false; power = 0; doneAt = 0; won = true; trail = []; banner("A snow friend, made by you!"); hud(); draw(); }
   };
 })();
