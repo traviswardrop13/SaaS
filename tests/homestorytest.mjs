@@ -29,6 +29,7 @@ import { createServer } from "node:http";
 import { readFileSync, existsSync, statSync } from "node:fs";
 import path from "node:path";
 import { chromium, ROOT as PUBLIC_ROOT, launchOpts } from "./_env.mjs";
+import { isTeal } from "./_phone.mjs";
 const ROOT = process.env.SONA_HOME_PUBLIC_ROOT || PUBLIC_ROOT;
 
 let fails = 0, count = 0;
@@ -130,6 +131,37 @@ const pathOf = (pg) => { const u = new URL(pg.url()); return u.pathname + u.sear
 // words a child must never read on Home
 const BAD = /coming soon|\bscores?\b|\bpoints?\b|\$\s?\d|of 14\b/i;
 
+// Pin the choice a child sees: the adventure is first and largest, Practice
+// is secondary, and the Studio doors use drawn arrows instead of font glyphs.
+async function studioComposition(pg) {
+  const m = await pg.evaluate(() => {
+    const box = e => { if (!e || !e.offsetParent) return null; const r=e.getBoundingClientRect(); return {t:r.top,b:r.bottom,w:r.width,h:r.height}; };
+    const card=document.getElementById('questCard'),practice=document.querySelector('.practice-band'),doors=document.getElementById('homeDoors');
+    return {card:box(card),art:box(document.getElementById('questArt')),copy:box(document.querySelector('.quest-copy')),practice:box(practice),doors:box(doors),
+      practiceHeading:practice?.querySelector('h2')?.textContent,
+      readonly:!!practice&&!practice.querySelector('button,a[href],input,select,[role=combobox]'),
+      action:getComputedStyle(document.getElementById('questGo')).backgroundColor,
+      trail:document.querySelectorAll('#playMap,#mapTomorrow,#mapEarned,#mapHistory,.map-trail').length,
+      pictures:[...doors.querySelectorAll('.door-pic')].map(e=>({tilt:getComputedStyle(e).transform,src:e.querySelector('img')?.getAttribute('src')})),
+      arrows:[...doors.querySelectorAll('.door-arrow')].map(e=>({drawn:e.matches('svg')||!!e.querySelector('svg'),text:e.textContent.trim()}))};
+  });
+  ok('Home has no token Tomorrow trail or completed-star decoration',m.trail===0,m);
+  ok('the adventure comes before the smaller Practice area and the Studio doors',!!m.practice&&m.practiceHeading==='Practice'&&m.card.b<=m.practice.t+1&&m.practice.b<=m.doors.t+1&&m.card.h>m.doors.h*1.5&&m.practice.h<m.doors.h,m);
+  ok('the large adventure image has its own space above the title and action',!!m.art&&!!m.copy&&m.art.h>=158&&m.art.w>=m.card.w-12&&m.art.b<=m.copy.t+1&&m.copy.b<=m.card.b+1,m);
+  ok('Start today keeps the distinct teal main action',isTeal(m.action),m.action);
+  ok('Games and Books use two clean drawn arrows, with no emoji or font arrow',m.arrows.length===2&&m.arrows.every(a=>a.drawn&&a.text===''),m.arrows);
+  ok('the Studio doors keep their original pictures, tilted inside the cards',m.pictures.length===2&&m.pictures.every((p,i)=>p.tilt!=='none'&&p.src==='/assets/crafted/home-'+(i===0?'arcade':'books')+'.webp'),m.pictures);
+  ok('the smaller Practice sound remains read-only',m.readonly,m);
+}
+
+// This bounded check is also run against an exported pre-change public tree.
+if(process.env.SONA_HOME_STUDIO_PROOF==='1'){
+  const {ctx,pg,errors}=await open({sub:true,talk:true,focus:['S'],target:'S'});
+  await pg.evaluate(()=>document.fonts.ready);await pg.waitForTimeout(100);
+  await studioComposition(pg);ok('the Studio composition has no runtime errors',errors.length===0,errors);await ctx.close();
+  await browser.close();server.close();console.log(fails?fails+' FAILURES / '+count+' Studio checks':'ALL GREEN — '+count+' Studio checks');process.exit(fails?1:0);
+}
+
 // Two bounded cover checks; the full suite below keeps the same assertions.
 if(process.env.SONA_HOME_TALK_COVER_PROOF==="1"){
   for(const [label,opts,id,src] of [
@@ -153,7 +185,7 @@ await section("an open story", async () => {
     const { ctx, pg, errors } = await open({ sub: true, age });
     const c = await card(pg), a = "age " + age + ": ";
     const top = await pg.evaluate(() => ({ h1: document.querySelector("h1").textContent, title: document.title, view: document.getElementById("libraryApp").getAttribute("data-view"), text: document.querySelector(".home-only").innerText }));
-    ok(a + "Home opens with its Map heading, titled \"Sona\"", top.h1 === "Let's explore." && top.title === "Sona" && top.view === "home", top);
+    ok(a + "Home keeps its focus heading, titled \"Sona\"", top.h1 === "Home" && top.title === "Sona" && top.view === "home", top);
     ok(a + "the story card shows Day 1, its title and its hook (both age groups get the story)", c.shown && c.chip === "Day 1" && c.title === STORY[0].title && c.line === STORY[0].line, c);
     ok(a + "…with a readable Start today action (at least 44 px high) and no Premium tag", c.go && c.go.w >= 44 && c.go.h >= 44 && c.action === "Start today" && c.lock === null && c.disabled === "false", c);
     ok(a + "…its picture is the original story illustration, or Echo on its wash", c.story === "lighthouse" && c.img === shows("lighthouse", "/assets/crafted/home-lighthouse.webp"), c);
@@ -341,41 +373,40 @@ await section("after the stories: the game of the day", async () => {
   }
 });
 
-// The Map reads the sanitized finished-story ledger, including TALK1 variants.
+// Home reads the sanitized finished-story ledger, including TALK1 variants.
 // These assertions preserve skipped-day, sibling and legacy calendar truth.
 const finished = pg => pg.evaluate(() => Sona.storyFound().map(d=>({id:d.id,title:d.title,day:d.day})));
-const trail = pg => pg.evaluate(()=>({exists:!!document.getElementById('playMap'),stars:[...document.querySelectorAll('#mapHistory .map-star')].map(e=>({id:e.dataset.story,label:e.getAttribute('aria-label'),controls:e.querySelectorAll('button,a,input,select,[tabindex],[role=button]').length})),count:document.getElementById('mapHistoryCount').hidden?null:document.getElementById('mapHistoryCount').textContent}));
 await section("finished adventures remain truthful", async () => {
   {
     const {ctx,pg,errors}=await open({sub:true,talk:true,quest:{a:"TODAY",sv:"TODAY",f:[],s:0,done:""}});
     const f=await finished(pg),c=await card(pg);
     ok("a fresh child gets the sound-specific Robo Day1 without invented finished adventures",f.length===0&&c.story==="robo"&&c.chip==="Day 1",{f,c});
-    const t=await trail(pg),before=await store(pg);
-    ok("fresh Map invents no completed stars",t.exists&&t.stars.length===0&&t.count===null,t);
-    await pg.locator('#mapTomorrow').dispatchEvent('click');await pg.locator('#mapTomorrow').dispatchEvent('keydown',{key:'Enter'});
-    ok("open-day Tomorrow is an inert locked preview",await pg.evaluate(()=>{const e=document.getElementById('mapTomorrow');return !e.hidden&&!e.matches('button,a[href],[tabindex],[role=button]')&&!e.querySelector('button,a[href],[tabindex],[role=button]');})&&pathOf(pg)==='/today.html'&&before===await store(pg));
+    const before=await store(pg),replays=await found(pg);
+    ok("a fresh Home invents no completed adventure or replay",!replays.shown&&replays.tiles.length===0,replays);
+    await studioComposition(pg);
+    ok("showing the adventure and smaller Practice area writes no progress",before===await store(pg));
     ok("the current sound is read-only, with no nested picker",await pg.evaluate(()=>!document.querySelector('#homeSound,#homeSoundWrap select,#homeSoundWrap input,#homeSoundWrap button,#homeSoundWrap [role=combobox]')));
-    ok("fresh Map has no runtime errors",errors.length===0,errors);await ctx.close();
+    ok("fresh Home has no runtime errors",errors.length===0,errors);await ctx.close();
   }
   {
     const {ctx,pg}=await open({sub:true,talk:true,quest:{a:"TODAY",sv:"TODAY",f:[0],s:1,ls:0,t1:"robo",lk:"story",fd:"TODAY",done:"TODAY",got:[]}});
     const f=await finished(pg),c=await card(pg),before=await store(pg);
     ok("the saved talking story remains completed Day1",f.length===1&&f[0].id==="robo"&&f[0].day===1,f);
-    const t=await trail(pg);ok("the completed talking story earns one true Day1 star",t.stars.length===1&&t.stars[0].id==='robo'&&/Day 1\b/.test(t.stars[0].label)&&t.stars[0].controls===0,t);
+    const replays=await found(pg);ok("the completed talking story leaves only its true replay",replays.shown&&replays.tiles.length===1&&replays.tiles[0].id==='robo',replays);
     await pg.locator("#questCard").click({force:true});await pg.waitForTimeout(100);
     ok("done-day tomorrow stays dark and inert, with no early quest change",c.done&&c.disabled==="true"&&c.previewMuted&&c.go===null&&pathOf(pg)==="/today.html"&&before===await store(pg),c);
     await ctx.close();
   }
   for(const [label,quest,ids] of [
     ["skipped Days2 and3 never count as finished",{a:"TODAY",sv:"TODAY",f:[0,3],s:2,ls:3,lk:"story",done:"2025-12-31"},"lighthouse,waterwheel"],
-    ["Map preserves every finished adventure, including longer histories",{a:"TODAY",sv:"TODAY",f:[0,1,2],s:3,ls:2,lk:"story",done:"2025-12-31"},"lighthouse,windup,bridge"],
+    ["Home preserves every finished adventure, including longer histories",{a:"TODAY",sv:"TODAY",f:[0,1,2],s:3,ls:2,lk:"story",done:"2025-12-31"},"lighthouse,windup,bridge"],
     ["legacy s-counts preserve the original two stories",{s:2,ls:1,lk:"story",done:"2025-12-31"},"lighthouse,windup"],
     ["a game-only day invents no finished story ledger",{i:4,last:3,lk:"game",done:"TODAY"},""]
   ]){
     const {ctx,pg}=await open({sub:true,age:/legacy|game-only/.test(label)?4:7,quest});
     const before=await store(pg),f=await finished(pg);
     ok(label,f.map(x=>x.id).join()===ids,f);
-    const t=await trail(pg);ok("the Map shows only the latest real finished stories and honest total",t.stars.map(x=>x.id).join()===f.slice(-2).map(x=>x.id).join()&&t.stars.every(x=>x.controls===0)&&t.count===(f.length>2?f.length+' adventures finished':null),t);
+    const replays=await found(pg);ok("Your games shows every real completed adventure once, newest first",replays.tiles.map(x=>x.id).join()===f.slice().reverse().map(x=>x.id).join()&&replays.shown===(f.length>0),replays);
     await pg.evaluate(()=>document.dispatchEvent(new Event("visibilitychange")));
     ok("reading this history changes no saved progress",before===await store(pg));await ctx.close();
   }
@@ -383,9 +414,9 @@ await section("finished adventures remain truthful", async () => {
     const {ctx,pg}=await open({sub:true,talk:true,quest:{a:"TODAY",sv:"TODAY",f:[0],s:1,ls:0,t1:"robo",lk:"story",done:"2025-12-31"}});
     const original=await pg.evaluate(()=>Sona.activeKid().slot);
     await pg.evaluate(()=>{Sona.addKid("Ana","4");Sona.saveProfile({onboarded:true,focusSounds:["R"],targetSound:"R"});});
-    await home(pg);ok("a sibling inherits no finished adventure or Map stars",(await finished(pg)).length===0&&(await trail(pg)).stars.length===0);
+    await home(pg);ok("a sibling inherits no finished adventure or earned replay",(await finished(pg)).length===0&&(await found(pg)).tiles.length===0);
     await pg.evaluate(slot=>Sona.switchKid(slot),original);await home(pg);
-    ok("switching back restores only the first child's saved Robo story",(await finished(pg)).map(x=>x.id).join()==="robo"&&(await trail(pg)).stars.map(x=>x.id).join()==="robo");await ctx.close();
+    ok("switching back restores only the first child's saved Robo story",(await finished(pg)).map(x=>x.id).join()==="robo"&&(await found(pg)).tiles.map(x=>x.id).join()==="robo");await ctx.close();
   }
   {
     const {ctx,pg}=await open({sell:true,stamp:"post",quest:{f:[0,3],s:2,ls:3,lk:"story",done:"2025-12-31"}});
@@ -395,7 +426,7 @@ await section("finished adventures remain truthful", async () => {
 
 // Default-on talking stories use the current target, while a completed
 // Day1 keeps its recorded identity after a parent changes the practice sound.
-await section("the Map follows upstream sound-specific Day1",async()=>{
+await section("Home follows upstream sound-specific Day1",async()=>{
   for(const [sound,id] of [["R","robo"],["L","lulu"],["F","fizz"],["S","sandy"],["Z","zippy"]]){
     const {ctx,pg,errors}=await open({sub:true,talk:true,focus:[sound],target:sound});
     const c=await card(pg),q=await pg.evaluate(()=>Sona.questToday());
@@ -410,8 +441,8 @@ await section("the Map follows upstream sound-specific Day1",async()=>{
   }
   {
     const {ctx,pg}=await open({sub:true,talk:true,focus:['R','S'],target:'S',quest:{a:'TODAY',sv:'TODAY',f:[0],s:1,ls:0,t1:'robo',lk:'story',fd:'TODAY',done:'TODAY',got:[]}});
-    const f=await finished(pg),t=await trail(pg);
-    ok("changing the target preserves the previously completed Day1 variant and its true star",f.length===1&&f[0].id==='robo'&&t.stars.length===1&&t.stars[0].id==='robo'&&/Day 1\b/.test(t.stars[0].label),{f,t});await ctx.close();
+    const f=await finished(pg),replays=await found(pg);
+    ok("changing the target preserves the previously completed Day1 variant and its replay",f.length===1&&f[0].id==='robo'&&f[0].day===1&&replays.tiles.length===1&&replays.tiles[0].id==='robo',{f,replays});await ctx.close();
   }
   {
     const {ctx,pg}=await open({sub:true,talk:true,quest:{a:'TODAY',sv:'TODAY',f:[0],s:1,ls:0,lk:'story',fd:'TODAY',done:'TODAY',got:[]}});
@@ -659,8 +690,8 @@ await section("Home stays quiet", async () => {
 
 // ── 6. the fit ──
 // The whole Home stays on one screen, including both doors and earned games.
-// The original story picture carries its title and action; Tomorrow stays
-// separate and inert, without pushing either illustrated door off screen.
+// The story picture sits above its footer, with smaller Practice and Studio
+// doors below on phones, or beside it on tablets. Every action stays visible.
 const SIZES = [[320, 568], [375, 667], [390, 844], [430, 932], [768, 1024]];
 const STATES = [
   ["Day 1, open", { sub: true }],
@@ -687,7 +718,7 @@ const measure = (pg) => pg.evaluate(() => {
     return !!h && (h === e || e.contains(h) || (id === "questGo" && $("questCard").contains(h)));
   };
   return { y: window.pageYOffset, ih: window.innerHeight, scroll: document.documentElement.scrollHeight, client: document.documentElement.clientHeight, ox: document.documentElement.scrollWidth - document.documentElement.clientWidth, page: { l: page.left, r: page.right },
-    tomorrow:box($("mapTomorrow")), go: box($("questGo")), doneAction:box($("questDone")), card: box($("questCard")), summary: box($("questSummary")), title: box($("questTitle")), line: box($("questLine")), titleFont: parseFloat(getComputedStyle($("questTitle")).fontSize), words: box(document.querySelector(".quest-body")), arcade: box($("arcadeBtn")), books: box($("homeBooksBtn")), art: box(art), buttons,
+    practice:box(document.querySelector('.practice-band')), go: box($("questGo")), doneAction:box($("questDone")), card: box($("questCard")), summary: box($("questSummary")), title: box($("questTitle")), line: box($("questLine")), titleFont: parseFloat(getComputedStyle($("questTitle")).fontSize), words: box(document.querySelector(".quest-body")), arcade: box($("arcadeBtn")), books: box($("homeBooksBtn")), art: box(art), buttons,
     smallText: [...document.querySelectorAll(".home-only .sound-caption,.home-only .sound-note,.home-only .quest-label,.home-only .quest-chip,.home-only .quest-lock,.home-only .door-tag,.home-only .found-new")].filter(e=>e.getClientRects().length && getComputedStyle(e).visibility!=="hidden").map(e=>({text:e.textContent,fontSize:parseFloat(getComputedStyle(e).fontSize)})),
     found: box(document.querySelector("#foundRow:not([hidden])")), fresh: box(document.querySelector("#foundRow:not([hidden]) .found-tile.fresh")),
     pics: [box($("arcadePic")), box($("homeBooksPic"))], doorWords: [...document.querySelectorAll("#homeDoors .door-word")].map(box),
@@ -704,22 +735,23 @@ for (const [w, h] of SIZES) {
       ok(at + "the card's play button is on the first screen" + (done ? " (none when done)" : ", at least 44 px, and a tap there is the card's"), m.y === 0 && m.after === 0 && goOk, { go: m.go, hit: m.hit });
       ok(at + "…and so is its title, with the whole card above the home bar", !!m.title && m.title.t >= 0 && m.title.b <= m.ih && !!m.card && m.card.b <= m.ih && m.hit.questCard, { title: m.title, card: m.card, ih: m.ih });
       ok(at + "the original story art, title and action share one clear card", !!m.summary && !!m.art && m.art.t >= m.card.t && m.art.b <= m.card.b && m.title.t >= m.card.t && m.title.b <= m.card.b && m.line && (m.line.w<=1 || m.line.b <= (m.go?m.go.t:m.doneAction?m.doneAction.t:m.card.b)) && m.titleFont >= 20, {summary:m.summary,art:m.art,title:m.title,line:m.line,go:m.go,card:m.card,font:m.titleFont});
-      ok(at + "the real story picture remains large and visible inside its card", !!m.art && m.art.h >= 158 && m.art.w >= m.card.w-12 && m.art.r<=m.card.r && m.art.b<=m.card.b, {art:m.art,card:m.card});
-      ok(at + "the card is centred inside the page and never wider than it", m.card.l >= m.page.l - 1 && m.card.r <= m.page.r + 1 && Math.abs((m.card.l - m.page.l) - (m.page.r - m.card.r)) < 1.5, { card: m.card, page: m.page });
-      ok(at + "the doors come right after the card, side by side, at least 44 px tall, and a tap reaches each", !!m.arcade && !!m.books && m.arcade.t - m.card.b >= 0 && m.arcade.t - m.card.b <= 115 && Math.abs(m.arcade.t - m.books.t) < 1 && m.arcade.r <= m.books.l && m.arcade.h >= 44 && m.books.h >= 44 && m.hit.arcadeBtn && m.hit.homeBooksBtn, { card: m.card, arcade: m.arcade, books: m.books, hit: m.hit });
+      // The former 158px minimum measured a full-card picture behind the
+      // title and action. The Studio picture has its own unobscured area;
+      // compact screens share space with a complete footer and earned games.
+      ok(at + "the real story picture stays clear above its title and footer", !!m.art && m.art.h >= Math.min(158,m.card.h*.35) && m.art.w >= m.card.w-12 && m.art.r<=m.card.r && m.art.b<=m.title.t, {art:m.art,card:m.card,title:m.title});
+      ok(at + "the card stays inside the page, centred on phones and beside the doors on tablets", m.card.l >= m.page.l - 1 && m.card.r <= m.page.r + 1 && (w<700?Math.abs((m.card.l - m.page.l) - (m.page.r - m.card.r)) < 1.5:m.card.r<=m.arcade.l), { card: m.card, page: m.page,arcade:m.arcade });
+      const phoneDoors=w<700&&m.practice&&m.practice.t>=m.card.b&&m.practice.b<=m.arcade.t&&Math.abs(m.arcade.t-m.books.t)<1&&m.arcade.r<=m.books.l;
+      const tabletDoors=w>=700&&m.arcade.l>=m.card.r&&m.arcade.b<=m.books.t&&Math.abs(m.arcade.l-m.books.l)<1;
+      ok(at + "both Studio doors stay clear of the adventure, at least 44 px tall, and a tap reaches each", !!m.arcade && !!m.books && (phoneDoors||tabletDoors) && m.arcade.h >= 44 && m.books.h >= 44 && m.hit.arcadeBtn && m.hit.homeBooksBtn, { card: m.card,practice:m.practice, arcade: m.arcade, books: m.books, hit: m.hit });
       ok(at + "every button is at least 44 px, and the complete Home needs no page scroll", m.scroll <= m.client + 1 && m.ox <= 1 && m.buttons.every((b) => b.w >= 44 && b.h >= 44), { scroll: m.scroll - m.client, ox: m.ox, small: m.buttons.filter((b) => b.w < 44 || b.h < 44) });
-      ok(at + "the story action stays inside its card without overlapping the doors", (done?!!m.doneAction&&m.doneAction.b<=m.card.b:!!m.go&&m.go.b<=m.card.b)&&m.arcade.t>=m.card.b, {go:m.go,done:m.doneAction,card:m.card,doors:m.arcade});
-      ok(at+"tomorrow stays separate, locked and clear of the story action and doors",!m.tomorrow||(m.tomorrow.t>=m.card.b-1&&m.tomorrow.b<=m.arcade.t-1),{tomorrow:m.tomorrow,card:m.card,doors:m.arcade});
+      ok(at + "the story action stays inside its card without overlapping the doors", (done?!!m.doneAction&&m.doneAction.b<=m.card.b:!!m.go&&m.go.b<=m.card.b)&&(m.arcade.t>=m.card.b||m.arcade.l>=m.card.r), {go:m.go,done:m.doneAction,card:m.card,doors:m.arcade});
+      ok(at+"the smaller Practice area stays clear of the adventure and both doors",!!m.practice&&(w<700?m.practice.t>=m.card.b&&m.practice.b<=m.arcade.t:m.practice.l>=m.card.r&&m.practice.t>=m.books.b),{practice:m.practice,card:m.card,doors:[m.arcade,m.books]});
       if(w===390&&label==="Day 1, open")ok(at + "normal phone doors stay comfortable and the title stays readable", m.arcade.h>=100&&m.books.h>=100&&m.titleFont>=22,{games:m.arcade,books:m.books,titleFont:m.titleFont});
       ok(at + "captions and helper text stay readable at 11 px or larger", m.smallText.every(t => t.fontSize >= 11), m.smallText.filter(t => t.fontSize < 11));
       // FOUND1: the game a story left today waits on the same screen, under
       // the doors; only the earned-games list itself scrolls sideways.
-      if (done) ok(at + "the game found today (New!) is in \"Your games\", after the doors", !!m.found && !!m.fresh && m.found.t >= m.arcade.b && m.found.b <= m.ih, { found: m.found, fresh: m.fresh, arcade: m.arcade });
-      // the Arcade's painting is Echo among the games' things, out at its
-      // edges: a square crop kept Echo and dropped every game, so a child who
-      // can't read saw two doors of Echo. Each door's picture is a wide band
-      // (3:2 on an iPad, 2:1 on a phone), and the two words sit level.
-      ok(at + "both illustrated doors remain visible and their words sit level", m.pics.every((p) => p && p.w >= 32 && p.h >= 26) && m.doorWords.length === 2 && Math.abs(m.doorWords[0].t - m.doorWords[1].t) < 1, { pics: m.pics, words: m.doorWords });
+      if (done) ok(at + "the game found today (New!) is in \"Your games\", after both doors", !!m.found && !!m.fresh && m.found.t >= Math.max(m.arcade.b,m.books.b) && m.found.b <= m.ih, { found: m.found, fresh: m.fresh, arcade: m.arcade,books:m.books });
+      ok(at + "both illustrated doors remain visible, with labels aligned on their row or stack", m.pics.every((p) => p && p.w >= 32 && p.h >= 26) && m.doorWords.length === 2 && (w<700?Math.abs(m.doorWords[0].t - m.doorWords[1].t) < 1:Math.abs(m.doorWords[0].l-m.doorWords[1].l)<1), { pics: m.pics, words: m.doorWords });
       ok(at + "no page errors", errors.length === 0, errors);
       await ctx.close();
     }
@@ -733,7 +765,7 @@ await section("fit on the shortest screens", async () => {
     const { ctx, pg, errors } = await open({ ...opts, viewport: { width: w, height: h } });
     await pg.evaluate(() => document.fonts && document.fonts.ready); await pg.waitForTimeout(100);
     const m = await measure(pg), at = w + "x" + h + " (" + label + "): ", done = /finished/.test(label);
-    ok(at + "the card's title" + (done ? "" : " and play button") + " on the first screen, all content fitted without vertical scrolling", m.y === 0 && m.title.b <= m.ih && m.card.b <= m.ih && (done ? m.go === null : !!m.go && m.go.b <= m.ih && m.go.h >= 44) && m.scroll <= m.client + 1 && m.art.h >= 158, { title: m.title, go: m.go, card: m.card, ih: m.ih, art:m.art });
+    ok(at + "the card's title" + (done ? "" : " and play button") + " on the first screen, all content fitted without vertical scrolling", m.y === 0 && m.title.b <= m.ih && m.card.b <= m.ih && (done ? m.go === null : !!m.go && m.go.b <= m.ih && m.go.h >= 44) && m.scroll <= m.client + 1 && m.art.h >= Math.min(158,m.card.h*.35)&&m.art.b<=m.title.t, { title: m.title, go: m.go, card: m.card, ih: m.ih, art:m.art });
     ok(at + "the doors stay adjacent and reachable" + (done ? ", with the game found today" : ""), (m.arcade.t >= m.card.b || m.arcade.l >= m.card.r) && m.hit.arcadeBtn && m.hit.homeBooksBtn && (!done || (!!m.fresh && m.fresh.t >= m.arcade.b)), { card: m.card, arcade: m.arcade, fresh: m.fresh });
     ok(at + "no page errors", errors.length === 0, errors);
     await ctx.close();

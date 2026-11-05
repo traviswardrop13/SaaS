@@ -22,6 +22,7 @@ import { readFileSync, existsSync, statSync } from "node:fs";
 import path from "node:path";
 import vm from "node:vm";
 import { chromium, ROOT, launchOpts } from "./_env.mjs";
+import { inspectHomeFallback } from "./_home-fallback.mjs";
 
 let count = 0, fails = 0;
 function ok(label, pass, detail = "") { count++; if (!pass) fails++; console.log((pass ? "PASS " : "FAIL ") + label + (pass ? "" : "  → " + (typeof detail === "string" ? detail : JSON.stringify(detail)))); }
@@ -75,8 +76,6 @@ const STORY_IDS = [...((SRC.match(/const STORY_DAYS = \[([\s\S]*?)\n  \];/) || [
   const TCODE = readFileSync(ROOT + "/talk-stories.js", "utf8");
   ok("talk-stories.js is data alone and ES5: no call, no storage, no request, no arrow, let, const, class or template",
     !/fetch\(|localStorage|sessionStorage|Sona\.|XMLHttpRequest|sendBeacon/.test(TCODE) && !/=>|\blet\s|\bconst\s|\bclass\s|`/.test(TCODE));
-  const HOME_CSS = readFileSync(ROOT + "/crafted-home.css", "utf8");
-  ok("Home's day card keeps an opaque fallback when a story picture is unavailable", /#questCard\s*\{[^}]*\bbackground:#[0-9a-f]{6}\b/i.test(HOME_CSS));
   // the picture prompts, and the pictures that exist
   const P = JSON.parse(readFileSync(path.resolve(ROOT, "../tools/art/adventure-prompts.json"), "utf8"));
   const parts = ["s01", "s02", "s03", "s04", "s05", "s06", "s07", "s08", "e01", "e02", "e03", "e04"];
@@ -111,6 +110,10 @@ const server = createServer((req, res) => {
 await new Promise((r) => server.listen(0, "127.0.0.1", r));
 const origin = "http://127.0.0.1:" + server.address().port;
 const browser = await chromium.launch(launchOpts());
+await section("Home's missing-picture fallback",async()=>{
+  const fallback=await inspectHomeFallback(browser,ROOT);
+  ok("Home's day card keeps an opaque fallback when a story picture is unavailable",fallback.live.opaque&&fallback.failedPictures.length>0&&fallback.errors.length===0,fallback);
+});
 
 // A set-up child with every era stamp; premium an early adopter.
 function seed(c) {
