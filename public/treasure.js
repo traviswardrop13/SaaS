@@ -19,6 +19,20 @@
   var POWER=12,GOALS=[{x:.18,y:.83},{x:.16,y:.59},{x:.84,y:.63},{x:.84,y:.40},{x:.17,y:.47},{x:.17,y:.24},{x:.56,y:.29},{x:.84,y:.23}];
   var CHANNELS=[[[.43,.85]],[[.08,.81],[.08,.64]],[[.35,.61],[.65,.63]],[[.93,.61],[.93,.43]],[[.76,.41],[.56,.43]],[[.08,.47],[.08,.25]],[[.35,.25],[.46,.28]],[[.60,.28],[.81,.28]]];
   var ISLANDS=[{x:.35,y:.715,rx:.24,ry:.060},{x:.66,y:.51,rx:.21,ry:.065},{x:.32,y:.35,rx:.23,ry:.070},{x:.73,y:.17,rx:.22,ry:.065}];
+  // The map as it is PAINTED, for the safe path alone: each island's sand,
+  // its palm tree (which stands up off the beach, well past the solid
+  // outline above), the rocks at its edge, and the compass rose and rope.
+  // The calm-seas line used to go round ISLANDS only, so it ran straight
+  // over the palm trees. A boat still bumps only ISLANDS: the voyage is as
+  // hard as it was. Measured off treasure-map-play-v2.webp, in map fractions.
+  var DRAWN=[{x:.70,y:.19,rx:.22,ry:.07},{x:.78,y:.10,rx:.11,ry:.04},
+    {x:.33,y:.355,rx:.235,ry:.07},{x:.27,y:.275,rx:.10,ry:.035},{x:.61,y:.37,rx:.035,ry:.02},
+    {x:.64,y:.52,rx:.26,ry:.07},{x:.72,y:.445,rx:.085,ry:.035},{x:.395,y:.532,rx:.035,ry:.015},
+    {x:.37,y:.71,rx:.26,ry:.07},{x:.315,y:.625,rx:.095,ry:.035},{x:.465,y:.63,rx:.035,ry:.015},{x:.17,y:.632,rx:.04,ry:.015},{x:.60,y:.678,rx:.03,ry:.015},
+    {x:.20,y:.127,rx:.145,ry:.095},{x:.90,y:.89,rx:.08,ry:.06}];
+  // open water between the drawings, so the line can go round a palm tree
+  // (between the compass and the top-left palm, above the middle palm...)
+  var OPEN=[[.41,.228],[.45,.12],[.25,.555],[.55,.62],[.90,.32],[.72,.39]];
   var $=function(id){return document.getElementById(id);},art={};
   [["map","treasure-map-play-v2.webp"],["boat","treasure-boat.webp"],["chest","treasure-chest.webp"]].forEach(function(p){var i=new Image();i.onload=function(){draw();};i.src="/assets/crafted/game/"+p[1];art[p[0]]=i;});
   function image(k){var i=art[k];return i&&i.complete&&i.naturalWidth?i:null;}
@@ -33,20 +47,30 @@
   function grab(){return [.12,.16,.25,9][ladder()];}
   function screen(p){return box.rotated?{x:box.x+p.y*box.w,y:box.y+(1-p.x)*box.h}:{x:box.x+p.x*box.w,y:box.y+p.y*box.h};}
   function point(e){var r=cv.getBoundingClientRect(),x=box.rotated?1-(e.clientY-r.top-box.y)/box.h:(e.clientX-r.left-box.x)/box.w,y=box.rotated?(e.clientX-r.left-box.x)/box.w:(e.clientY-r.top-box.y)/box.h;return{x:clamp(x,.065,.935),y:clamp(y,.065,.93)};}
-  function land(p){return ISLANDS.some(function(i){var x=(p.x-i.x)/i.rx,y=(p.y-i.y)/i.ry;return x*x+y*y<1;});}
+  function inside(list,p){return list.some(function(i){var x=(p.x-i.x)/i.rx,y=(p.y-i.y)/i.ry;return x*x+y*y<1;});}
+  function land(p){return inside(ISLANDS,p);}
   function fit(){if(!cv)return;var r=cv.getBoundingClientRect();W=r.width;H=r.height;var wide=window.matchMedia("(orientation:landscape) and (max-height:500px)").matches,head=$("top").getBoundingClientRect().bottom,top=wide?head+8:Math.max(95,$("seaBanner").getBoundingClientRect().bottom+8),bottom=wide?12:Math.max(116,parseFloat(getComputedStyle($("seaControls")).bottom)+$("seaControls").offsetHeight+50),avail=Math.max(110,H-top-bottom),w=wide?Math.min(W-180,avail*1.5):Math.min(W-14,avail*2/3);box=wide?{x:8+(W-180-w)/2,y:top+(avail-w/1.5)/2,w:w,h:w/1.5,rotated:true}:{x:(W-w)/2,y:top+(avail-w*1.5)/2,w:w,h:w*1.5,rotated:false};var d=Math.min(2,window.devicePixelRatio||1);cv.width=Math.round(W*d);cv.height=Math.round(H*d);ctx.setTransform(d,0,0,d,0,0);draw();}
-  function clearWater(a,b){var n=Math.max(2,Math.ceil(dist(a,b)/.008));for(var i=0;i<=n;i++)if(land({x:a.x+(b.x-a.x)*i/n,y:a.y+(b.y-a.y)*i/n}))return false;return true;}
+  function clearWater(a,b,solid){var n=Math.max(2,Math.ceil(dist(a,b)/.008));for(var i=0;i<=n;i++)if(solid({x:a.x+(b.x-a.x)*i/n,y:a.y+(b.y-a.y)*i/n}))return false;return true;}
   function safeChannel(){
     // A shortest visible route around the actual coast, from wherever the
     // child is now. A fixed connector could send a mid-voyage help line
     // straight through an island. Recompute only at a stop or earned power.
-    var nav=[];CHANNELS.forEach(function(c){c.forEach(function(p){nav.push({x:p[0],y:p[1]});});});GOALS.forEach(function(p){nav.push(p);});[.08,.93].forEach(function(x){[.1,.25,.43,.60,.81,.90].forEach(function(y){nav.push({x:x,y:y});});});
-    var nodes=[{x:boat.x,y:boat.y},GOALS[leg]].concat(nav.filter(function(p){return !land(p);})),cost=[],prev=[],closed=[],n=nodes.length;
+    var nav=[];CHANNELS.forEach(function(c){c.forEach(function(p){nav.push({x:p[0],y:p[1]});});});GOALS.forEach(function(p){nav.push(p);});OPEN.forEach(function(p){nav.push({x:p[0],y:p[1]});});[.08,.93].forEach(function(x){[.1,.25,.43,.60,.81,.90].forEach(function(y){nav.push({x:x,y:y});});});
+    var from={x:boat.x,y:boat.y},goal=GOALS[leg];
+    // Round everything painted. The line may still leave a boat stopped on
+    // a beach, and reach a ring that sits on one (the last one does).
+    hint=shortest(from,goal,nav,function(p){return land(p)||(dist(p,from)>.05&&dist(p,goal)>.07&&inside(DRAWN,p));});
+    // A boat sailed up onto a painted palm can be hemmed in by the drawings:
+    // it still gets the path round the solid islands, never none.
+    if(!hint.length)hint=shortest(from,goal,nav,land);
+  }
+  function shortest(from,goal,nav,solid){
+    var nodes=[from,goal].concat(nav.filter(function(p){return !solid(p);})),cost=[],prev=[],closed=[],n=nodes.length,out=[];
     for(var i=0;i<n;i++)cost[i]=Infinity;cost[0]=0;
     for(var count=0;count<n;count++){var u=-1;for(var j=0;j<n;j++)if(!closed[j]&&(u<0||cost[j]<cost[u]))u=j;if(u<0||!isFinite(cost[u]))break;if(u===1)break;closed[u]=true;
-      for(var v=0;v<n;v++)if(!closed[v]&&v!==u&&clearWater(nodes[u],nodes[v])){var c=cost[u]+dist(nodes[u],nodes[v]);if(c<cost[v]){cost[v]=c;prev[v]=u;}}
+      for(var v=0;v<n;v++)if(!closed[v]&&v!==u&&clearWater(nodes[u],nodes[v],solid)){var c=cost[u]+dist(nodes[u],nodes[v]);if(c<cost[v]){cost[v]=c;prev[v]=u;}}
     }
-    hint=[];if(!isFinite(cost[1]))return;for(var at=1;at!=null;at=prev[at]){hint.unshift({x:nodes[at].x,y:nodes[at].y});if(at===0)break;}
+    if(!isFinite(cost[1]))return out;for(var at=1;at!=null;at=prev[at]){out.unshift({x:nodes[at].x,y:nodes[at].y});if(at===0)break;}return out;
   }
   function path(points,color,width,dash){if(!points.length)return;ctx.strokeStyle=color;ctx.lineWidth=width;ctx.lineCap="round";ctx.lineJoin="round";ctx.setLineDash(dash||[]);ctx.beginPath();points.forEach(function(p,i){var s=screen(p);if(i)ctx.lineTo(s.x,s.y);else ctx.moveTo(s.x,s.y);});ctx.stroke();ctx.setLineDash([]);}
   function draw(){
