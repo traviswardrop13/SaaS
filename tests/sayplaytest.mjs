@@ -768,6 +768,42 @@ await scenario("hoops played through", async () => {
     clean("hoops", errors);
   } finally { await context.close(); }
 });
+// A SHOT THE GAME CALLS GOOD GOES IN (5 Nov 2026). The ball was sent to where
+// the hoop was heading, while the rim it meets is the drawn one, which eases
+// along a little behind that (about 0.1 m on a slow slide, a quarter metre at
+// Level 3), so a swipe counted good could clip the rim or miss: about one shot
+// in four on a sliding hoop. Played at Level 3, the fastest slide, straight on
+// the court (Hoops.onWord stands in for the word: this is the ball's flight,
+// and the word turn is played above): the space bar (the game's own shot at
+// the drawn hoop) and swipes a little either side of it.
+await scenario("hoops: good shots at a sliding hoop", async () => {
+  const { context, page, errors } = await fresh("arcade-hoops.html", { age: "7", micok: true, permission: "granted" });
+  try {
+    await page.locator("#startOvl.show").waitFor();
+    // the start card would take the swipes: put it aside (no word turn here)
+    await page.evaluate(() => { Hoops.setLevel(3); document.getElementById("startOvl").classList.remove("show"); });
+    const box = await court(page), shots = [];
+    for (let i = 0; i < 9; i++) {
+      await page.evaluate(() => Hoops.onWord());
+      await until(page, () => window.__hoops.state === "ready", 3000);
+      await page.waitForTimeout(150 + (i * 337) % 1200);   // the hoop somewhere else on its slide each time
+      const before = await hoops(page);
+      if (i % 3 === 0) await page.keyboard.press(" ");
+      else { const up = 240; await swipe(page, box, ((before.hoopX + (i % 3 === 1 ? 0.45 : -0.45)) / 2.4) * up / box.width, up); }
+      const shot = await until(page, (b) => window.__hoops.shots > b.shots, 1000, before);
+      await until(page, (b) => window.__hoops.baskets > b.baskets || window.__hoops.misses > b.misses, 4000, before);
+      const after = await hoops(page);
+      shots.push({ shot: shot, good: shot && !!(after.flick && after.flick.good), amp: before.amp, in: after.baskets > before.baskets, made: after.lastShot, flick: after.flick });
+      if (after.baskets > before.baskets) await until(page, () => window.__hoops.state === "idle", 4000);
+      else await until(page, () => window.__hoops.state === "ready", 4000);
+      await page.waitForTimeout(150);
+    }
+    const good = shots.filter((s) => s.good && s.amp > 0);
+    ok("hoops: every try was a shot, and there were good ones at a sliding hoop to judge (not vacuous)", shots.every((s) => s.shot) && good.length >= 6, shots);
+    ok("hoops: every shot the game counted good went in clean (a swish: no rim, no miss), at a hoop sliding at Level 3", good.every((s) => s.in && s.made === "swish"), shots);
+    clean("hoops sliding", errors);
+  } finally { await context.close(); }
+});
 
 // ── SOCCER GOAL: the second game rebuilt to be played (Travis, 1 Oct 2026:
 // "go finish soccer"). The word earns the ball; the child swipes it past a
