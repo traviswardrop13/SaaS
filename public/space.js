@@ -41,10 +41,13 @@
   var POWER = 10, THRUST = 0.34, STEER = 0.36;
   // Every line the banner can show (kind words only: never "missed",
   // "wrong" or a score). fit() makes room for the tallest, so a line that
-  // wraps on a narrow phone never covers the flying space.
+  // wraps on a narrow phone never covers the flying space. `word` is the
+  // first thing a flight says: the rocket waits up top and the glow is
+  // below. It said Hold Engine to go, but holding Engine flies the rocket UP,
+  // away from the pad; an arrow starts the flight just as well, toward it.
   var SAY = {
     ready: "Ready for a little space trip?",
-    word: "Easy flight! Hold Engine to go",
+    word: "Easy flight! Steer to the glow",
     help: "Easy flight! Aim for the glow",
     fly: "Aim for the glow. Land gently",
     pad1: "So close! Aim for the glow",
@@ -117,7 +120,25 @@
     var room = Math.max(65, groundY - playTop); shipH = Math.min(90, W * 0.22, room * 0.28); shipW = shipH * 367 / 512;
     stopInputs(); level();
     if (!piloted) { ship.x = spawn.x; ship.y = spawn.y; } else { ship.x = clamp(ship.x, shipW / W, 1 - shipW / W); ship.y = clamp(ship.y, (playTop + shipH / 2) / H, pad.y - shipH / H / 2); }
-    hud(); draw();
+    panelH = $("turnPanel").offsetHeight; hud(); draw(); liftPanel();
+  }
+  // While the child talks, the word panel sits in the empty sky instead of
+  // over the landing pad (it covered the pad on every phone): just above the
+  // pad, and above the rocket too when the rocket is low (standing on the
+  // pad it just landed on, between flights), never over the banner. On a
+  // phone too short for the panel between a rocket waiting up top and the
+  // pad (a help ask on a 4-inch phone) the pad wins. It runs whenever the
+  // rocket stops for a turn (hud) and whenever the panel changes size (a
+  // help ask's is taller). Only the panel moves: the ground and the flight
+  // stay exactly as they were.
+  var panelH = 0, lifted = -1;
+  function liftPanel() {
+    var app = $("app"); if (!app || !cv) return;
+    var bottom = groundY - 26, top = ship.y * H - shipH / 2, low = ship.y * H + shipH / 2;
+    if (low > bottom - panelH && top < bottom && (top + low) / 2 > bottom - panelH / 2) bottom = top - 8;
+    bottom = Math.max(bottom, playTop - 16 + panelH);
+    var lift = Math.max(0, Math.round(H - bottom));
+    if (lift !== lifted) { lifted = lift; app.style.setProperty("--space-lift", lift + "px"); }
   }
   function background() {
     var i = image("bg");
@@ -227,6 +248,8 @@
     $("spaceHelp").disabled = !allowed || thrust || Math.abs(steering) > 0.01;
     $("spacePower").hidden = !(active && power > 0 && !won); $("spacePowerFill").style.width = power / POWER * 100 + "%";
     var soft = (active && ladder() >= 3) || (Math.abs(ship.vy) <= safeVy() && Math.abs(ship.vx) <= safeVx()); $("spaceSpeed").textContent = !piloted ? "Ready to fly" : soft ? "Nice and gentle" : "Little engine bursts"; $("spaceLamp").classList.toggle("soft", soft && piloted);
+    // the panel shows only while the flight is stopped: place it then, not every frame of a flight
+    if (!allowed) liftPanel();
     publish();
   }
   function banner(text) { $("spaceBanner").textContent = text; }
@@ -347,6 +370,7 @@
       api = a; stages = n || 8; cv = $("spaceCanvas"); ctx = cv.getContext("2d");
       try { calm = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches); } catch (e) {}
       loadArt(); controls(); fit(); reset(); raf = requestAnimationFrame(frame);
+      try { if (window.ResizeObserver) new ResizeObserver(function () { panelH = $("turnPanel").offsetHeight; liftPanel(); }).observe($("turnPanel")); } catch (e) {}
       // the banner's font can arrive after the first fit: measure again then
       try { if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { if (!piloted) fit(); }); } catch (e) {}
     },
