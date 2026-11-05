@@ -246,12 +246,19 @@ await scenario("a whole round", async () => {
     await page.locator("#revOvl.show").waitFor({ timeout: 12000 });
     await page.waitForFunction(() => __f.live === 1, null, { timeout: 12000 });
     await heardCard(page);
+    const finBox0 = await page.evaluate(() => !document.getElementById("gameHearts").hidden && getComputedStyle(document.getElementById("hudspacer")).visibility);
     await playSong(page);
     await page.waitForFunction(() => phase === "song" && SONGS[song].finale, null, { timeout: 8000 });
     b = await best(page);
     ok("the row carries on from song to song: the say-it card between them neither breaks it nor adds to it, and passing 14 moves the number again", after2 > 0 && b.combo === after2 + 10 && b.row === b.combo && b.pill === String(b.row) && neverDown(b.pills), { after2, ...b });
     s = await st(page);
     ok("after song 3 the grand finale comes straight in, with no card", !s.card && s.mics === 2 && s.REV === 1, s);
+    // the finale costs no hearts, so they step aside, and their cream box goes
+    // with them: hiding the hearts alone left an empty cream bar (5 Nov 2026).
+    // The box keeps its room, so the top bar does not close up around it.
+    const fin = await page.evaluate(() => { const hs = document.getElementById("hudspacer");
+      return { hearts: document.getElementById("gameHearts").hidden, box: getComputedStyle(hs).visibility, w: Math.round(hs.getBoundingClientRect().width) }; });
+    ok("in the finale the hearts and their cream box are both hidden, the box keeping its room", fin.hearts && fin.box === "hidden" && fin.w >= 54 && finBox0 === "visible", { fin, finBox0 });
     await page.waitForFunction(() => tiles.some((q) => q.wait && q.y >= HITY() - q.h + 39), null, { timeout: 8000 });
     await page.waitForTimeout(1200);
     ok("…and its tiles wait on the keys, so it can't be missed", await page.evaluate(() => tiles.every((q) => !q.gone) && tiles.some((q) => q.wait && !q.hit)));

@@ -346,7 +346,11 @@
     // helpL1: at Level 2 or 3, a lost heart puts the rest of that song on
     // Level 1's beat and fall for that song (SONGS_L1), until the next song
     var helpL1=false;
-    function paintHearts(){ var e=$("gameHearts"); e.innerHTML=S.heartRow(hearts,HEART_MAX,16); e.setAttribute("aria-label",hearts+" hearts left"); e.hidden=!!SONGS[song].finale; }
+    // The finale costs no hearts, so they step aside, and so does the cream
+    // box they sit in: hiding the hearts alone left an empty cream bar in the
+    // top bar all through Ode to Joy. The box keeps its room (visibility, as
+    // Fruit Slice's giant does), so the top bar does not close up around it.
+    function paintHearts(){ var e=$("gameHearts"), fin=!!SONGS[song].finale; e.innerHTML=S.heartRow(hearts,HEART_MAX,16); e.setAttribute("aria-label",hearts+" hearts left"); e.hidden=fin; $("hudspacer").style.visibility=fin?"hidden":""; }
     function loseHeart(now){
       if(!playing||phase!=="song"||SONGS[song].finale||slowTurn||slowMs>0||now-heartHitAt<HEART_GAP_MS)return;
       heartHitAt=now; hearts=Math.max(0,hearts-1); paceK=Math.max(1,paceK-.12); paintHearts();
