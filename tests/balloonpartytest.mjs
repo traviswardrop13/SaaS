@@ -59,6 +59,12 @@ try{
    ok('a real drag and release attaches balloon '+(stage+1),await until(page,n=>__sayplay.step>n,5000,stage));
   }
   await advance(page,3300);s=await state(page);ok('five deliveries fill the garland and finish the party',s.speech.phase==='end'&&s.speech.step===5&&s.party.delivered===5&&s.party.won,s);
+  // the five painted balloons are five plainly named colours, read off the
+  // canvas: a hue-rotate() once painted the yellow one olive-brown (lightness
+  // 0.2) and the green one dark (0.26)
+  const colours=await page.evaluate(()=>{const c=document.getElementById('partyCanvas'),x=c.getContext('2d'),k=c.width/__balloon.width,W=__balloon.width,H=__balloon.height,sz=Math.min(68,W*.16);return __balloon.goals.map(g=>{let r=0,gg=0,b=0,n=0;for(let dx=-.15;dx<=.21;dx+=.06)for(let dy=-.05;dy<=.26;dy+=.06){const d=x.getImageData(Math.round((g.x*W+dx*sz)*k),Math.round((g.y*H+dy*sz)*k),1,1).data;r+=d[0];gg+=d[1];b+=d[2];n++;}r/=n*255;gg/=n*255;b/=n*255;const mx=Math.max(r,gg,b),mn=Math.min(r,gg,b),l=(mx+mn)/2,d=mx-mn,h=d?(mx===r?((gg-b)/d+6)%6:mx===gg?(b-r)/d+2:(r-gg)/d+4)*60:0;return{h:Math.round(h),s:d?+(d/(1-Math.abs(2*l-1))).toFixed(2):0,l:+l.toFixed(2)};});});
+  const named=c=>c.s<.45?'grey':c.l<.35?'muddy':c.h<18||c.h>=340?'red':c.h>=38&&c.h<62&&c.l>=.45?'yellow':c.h>=95&&c.h<160?'green':c.h>=190&&c.h<240?'blue':c.h>=255&&c.h<310?'purple':'muddy';
+  ok('the garland is a red, a yellow, a green, a blue and a purple balloon',colours.map(named).join()==='red,yellow,green,blue,purple',{colours,named:colours.map(named)});
   const audio=await page.evaluate(()=>({leaks:__quiet.leakFrames,live:__quiet.live(),overlap:__quiet.sounds.filter(s=>__quiet.mics.some(m=>s.start<(m.end==null?__quiet.now():m.end)&&m.asked<s.end)).length,lines:__quiet.speech}));ok('no party sound or instruction reaches a live microphone',audio.leaks===0&&audio.live===0&&audio.overlap===0,audio);ok('the child hears how to pump and guide',audio.lines.some(t=>/pump/i.test(t)&&/drag|pull|guide/i.test(t)),audio.lines);
   ok('the intro says the word earns the balloon, and no calm wind',audio.lines.some(t=>/two times to get a balloon/i.test(t))&&!audio.lines.some(t=>/wind/i.test(t)),audio.lines);
   ok('Echo says what to do in play',audio.lines.some(t=>/^Tap the pump/.test(t))&&audio.lines.some(t=>/^Now pull your balloon/.test(t)),audio.lines);

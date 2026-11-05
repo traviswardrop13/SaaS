@@ -18,12 +18,21 @@
   var inflation = 0, power = 0, pumps = 0, drops = 0, misses = 0, balloon = { x: 0.5, y: 0.64 };
   // clock: real play seconds (not paused, page shown), for the pull-in glide
   // and the celebration beat before api.done(), as hoops.js keeps it.
-  var clock = 0, doneAt = 0, pull = null, told = {}, canTint = true;
+  var clock = 0, doneAt = 0, pull = null, told = {}, tinted = [];
   var goal = { x: 0.5, y: 0.3, r: 0.105 }, goals = [], home = { x: 0.5, y: 0.64 };
   var drag = null, dragSurface = null, dragOffset = { x: 0, y: 0 }, dragStart = null, moved = false;
   var bodyW = 74, playTop = 100, playBottom = 650, pumpTimer = 0, sparkles = [], art = {};
-  var POWER = 10, WIND = 0.018, HUES = [0, 65, 150, 210, 290], PULL_S = 0.32, BEAT_S = 1.15;
-  var COLORS = ["#ef6a78", "#eac85d", "#67c8b9", "#74b8e8", "#b690d7"];
+  var POWER = 10, WIND = 0.018, PULL_S = 0.32, BEAT_S = 1.15;
+  // Red, yellow, green, blue, purple: the painted balloons and, if the art
+  // fails, the drawn ones (COLORS) are the same five plainly named colours.
+  var COLORS = ["#ef6a78", "#eac85d", "#62bf6c", "#74b8e8", "#b690d7"];
+  // How the red sprite becomes the other four (h: hue in degrees; l: the
+  // lightness its mid red becomes; s: a saturation scale). A canvas
+  // hue-rotate() keeps red's low luminance, so it painted the yellow balloon
+  // olive-brown and the green one dark; this keeps each balloon's shading
+  // and moves its body to a real yellow, green, blue or purple.
+  var TINTS = [null, { h: 48, l: 0.58, s: 1 }, { h: 130, l: 0.47, s: 0.8 }, { h: 212, l: 0.56, s: 1 }, { h: 278, l: 0.62, s: 1 }];
+  var RED_L = 0.56, TINT_W = 256;
   var $ = function (id) { return document.getElementById(id); };
   function clamp(n, lo, hi) { return Math.max(lo, Math.min(hi, n)); }
   function canPlay() { return active && !paused && !away && !won && !document.hidden; }
@@ -43,6 +52,47 @@
     });
   }
   function image(name) { var i = art[name]; return i && i.complete && i.naturalWidth ? i : null; }
+  function hsl(r, g, b) {
+    var max = Math.max(r, g, b), min = Math.min(r, g, b), l = (max + min) / 2, d = max - min, h = 0, s = 0;
+    if (d) {
+      s = d / (1 - Math.abs(2 * l - 1));
+      h = max === r ? ((g - b) / d + 6) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+    }
+    return [h * 60, s, l];
+  }
+  function channel(p, q, t) { t = (t + 1) % 1; return t < 1 / 6 ? p + (q - p) * 6 * t : t < 0.5 ? q : t < 2 / 3 ? p + (q - p) * (2 / 3 - t) * 6 : p; }
+  // The painted balloon in colour n. Red is the sprite itself; each other
+  // colour is made once, the first time it is drawn, on a small canvas (the
+  // sprite is never drawn much wider than 160 device pixels). Only the red
+  // body and knot move: the cream string and the white shine keep their own
+  // colour, and lightness is mapped so the mid red lands on the new colour's
+  // while white stays white and the darkest shade stays dark. null while the
+  // sprite is loading, or when the phone will not let the page read it
+  // back: the drawn balloon in its own colour then stands in, as without art.
+  function sprite(color) {
+    var i = image("balloon"); if (!i || !color) return i;
+    if (tinted[color] !== undefined) return tinted[color];
+    tinted[color] = null;
+    try {
+      var c = document.createElement("canvas"), k = Math.min(1, TINT_W / i.naturalWidth), x = c.getContext("2d");
+      c.width = Math.round(i.naturalWidth * k); c.height = Math.round(i.naturalHeight * k);
+      x.drawImage(i, 0, 0, c.width, c.height);
+      var data = x.getImageData(0, 0, c.width, c.height), p = data.data, t = TINTS[color];
+      for (var n = 0; n < p.length; n += 4) {
+        if (!p[n + 3]) continue;
+        var o = hsl(p[n] / 255, p[n + 1] / 255, p[n + 2] / 255), away = Math.abs((o[0] - 355 + 540) % 360 - 180);
+        // how red this pixel is: the body and the knot all, the string none
+        var w = away <= 22 ? 1 : Math.max(0, 1 - (away - 22) / 18);
+        if (!w) continue;
+        var l = o[2] <= RED_L ? o[2] / RED_L * t.l : t.l + (o[2] - RED_L) / (1 - RED_L) * (1 - t.l);
+        var sat = Math.min(1, o[1] * t.s), q = l < 0.5 ? l * (1 + sat) : l + sat - l * sat, lo = 2 * l - q, hue = t.h / 360;
+        var rgb = [channel(lo, q, hue + 1 / 3), channel(lo, q, hue), channel(lo, q, hue - 1 / 3)];
+        for (var j = 0; j < 3; j++) p[n + j] = Math.round(p[n + j] + (rgb[j] * 255 - p[n + j]) * w);
+      }
+      x.putImageData(data, 0, 0); tinted[color] = c;
+    } catch (e) {}
+    return tinted[color];
+  }
   function fit() {
     if (!cv) return;
     var r = cv.getBoundingClientRect(); W = Math.max(1, r.width); H = Math.max(1, r.height);
@@ -62,20 +112,17 @@
     ctx.drawImage(i, (W - w) / 2, (H - h) / 2, w, h);
   }
   function drawBalloon(p, amount, color, size, bob) {
-    var x = p.x * W, y = p.y * H + bob, w = size * (0.32 + 0.68 * amount), i = image("balloon");
+    var x = p.x * W, y = p.y * H + bob, w = size * (0.32 + 0.68 * amount), i = sprite(color);
     ctx.save(); ctx.translate(x, y);
-    // The colours are one red sprite turned by a canvas filter. A WebKit
-    // without canvas filters would paint five red balloons, so there every
-    // balloon but the red one is drawn in its own colour instead.
-    if (i && (color === 0 || canTint)) {
+    // The colours are one red sprite, recoloured once each by sprite() (no
+    // canvas filter, so every WebKit paints all five).
+    if (i) {
       // The source is half envelope and half string. Scale by envelope width,
       // not the tall image box; keep the actual painted string visible.
-      if (color) ctx.filter = "hue-rotate(" + HUES[color] + "deg)";
-      var h = w * i.naturalHeight / i.naturalWidth;
+      var h = w * (i.naturalHeight || i.height) / (i.naturalWidth || i.width);
       ctx.drawImage(i, -w / 2, -w * 0.61, w, h);
     } else {
       // Asset failure still leaves a visible, graspable balloon and a string.
-      // No hue filter is set here, so fallback colours remain their own.
       ctx.strokeStyle = "#f9edd5"; ctx.lineWidth = 2;
       ctx.beginPath(); ctx.moveTo(0, w * 0.6); ctx.bezierCurveTo(-w * 0.2, w, w * 0.25, w * 1.25, 0, w * 1.8); ctx.stroke();
       var g = ctx.createRadialGradient(-w * 0.22, -w * 0.28, 2, 0, 0, w * 0.7); g.addColorStop(0, "#fff6e9"); g.addColorStop(0.38, COLORS[color]); g.addColorStop(1, COLORS[color]);
@@ -135,7 +182,7 @@
   }
   function publish() {
     window.__balloon = { active: active, paused: paused, stage: stage, stages: stages, inflation: inflation, power: power, pumpGain: gain(), wind: windNow(), misses: misses, level: level(), reach: reach(), ringScale: ringScale(), pulling: !!pull, celebrating: doneAt > 0,
-      balloon: { x: balloon.x, y: balloon.y }, goal: { x: goal.x, y: goal.y, r: goal.r }, dragging: drag !== null, pointerId: drag,
+      balloon: { x: balloon.x, y: balloon.y }, goal: { x: goal.x, y: goal.y, r: goal.r }, goals: goals.map(function (g) { return { x: g.x, y: g.y }; }), dragging: drag !== null, pointerId: drag,
       delivered: delivered, won: won, pumps: pumps, drops: drops, full: full(), banner: $("partyBanner").textContent, width: W, height: H, coordinates: "normalized-to-canvas; goal radius uses canvas width" };
   }
   function hud() {
@@ -278,7 +325,7 @@
     goal = goals[0] || goal; balloon.x = home.x; balloon.y = home.y; banner("Let's make a balloon party!"); hud(); draw();
   }
   window.Balloon = {
-    init: function (a, n) { api = a; stages = n || 5; cv = $("partyCanvas"); ctx = cv.getContext("2d"); canTint = "filter" in ctx; loadArt(); controls(); fit(); reset(); raf = requestAnimationFrame(frame); },
+    init: function (a, n) { api = a; stages = n || 5; cv = $("partyCanvas"); ctx = cv.getContext("2d"); loadArt(); controls(); fit(); reset(); raf = requestAnimationFrame(frame); },
     onWord: function (index) {
       stage = index; goal = goals[stage]; inflation = 0; pumps = 0; misses = 0; doneAt = 0; pull = null; told = {};
       releaseCapture(); balloon.x = home.x; balloon.y = home.y; earnPower(); say("pump", "Tap the pump to fill your balloon.");
