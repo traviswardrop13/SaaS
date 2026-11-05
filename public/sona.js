@@ -3182,8 +3182,9 @@
   // Every clip an earlier build kept, for every child, deleted once per
   // device. The done-mark is "_sona…", never "sona.", so a backup does not
   // carry it to a new phone, where an old build may have kept clips too.
+  // Never on Home, which only reads (roadtest): the first page after it does.
   function _dropAllRecordings() {
-    try { if (!global.indexedDB || localStorage.getItem("_sonaClipsGone")) return Promise.resolve(0); } catch (e) { return Promise.resolve(0); }
+    try { if (!global.indexedDB || _notifyHome() || localStorage.getItem("_sonaClipsGone")) return Promise.resolve(0); } catch (e) { return Promise.resolve(0); }
     const p = idb().then((db) => new Promise((res) => {
       try {
         const tx = db.transaction("recordings", "readwrite");

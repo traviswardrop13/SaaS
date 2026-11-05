@@ -67,7 +67,8 @@ ask, Firsts or Recent practice on Progress.
   left Progress, so `saveRecording` keeps nothing (it stays only as a name an
   old cached page may call), practice never calls it, and each device clears
   every clip an older build kept, once (`_dropAllRecordings`, done-mark
-  `_sonaClipsGone`, never `sona.` so a backup can't carry it). `MIC_PROMISE`,
+  `_sonaClipsGone`, never `sona.` so a backup can't carry it; never on Home,
+  which only reads, so the first other page does it: `roadtest`). `MIC_PROMISE`,
   `parents.html`, `for-slps.html`, `privacy.html` (updated 5 Nov 2026),
   `/support` and `/families` now say audio is never saved. The practice page
   still runs its recorder into memory while it listens and throws the result
