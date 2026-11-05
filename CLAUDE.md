@@ -51,8 +51,14 @@ ask, Firsts or Recent practice on Progress.
   bubbles (a bubble is a day with practice, `momWeek().days`, not a goal day),
   "Accuracy by sound — Coming soon" (no percentage anywhere on the page),
   Practice levels (each sound's tries and ladder rung; kept over Recent
-  practice as the more useful of the two), the pilot-only "Send progress to my
-  SLP", and the hedge plus the settled Rachel line as a footnote. **No goal
+  practice as the more useful of the two) and the pilot-only "Send progress to
+  my SLP". **No footnote** (Travis, same day: "take out built with Rachel on
+  the progress sheet. Take out a practice snapshot, not a clinical
+  assessment"): Progress no longer names Rachel, so `shiptest`'s list of pages
+  that introduce her drops it. This is an exception to the clinical rule that
+  parent-facing summaries carry the hedge and her byline, made while the page
+  shows no percentage, score or verdict; **Rachel to confirm**, and a
+  percentage coming back brings the hedge back with it. **No goal
   can be changed on any grown-up page now**: the days-a-week buttons and the
   daily reps picker went ("the new goal ... is just minutes per day", which
   setup asks and saves as `dailyGoal`). The goal machinery itself (gift ring,
@@ -65,8 +71,13 @@ ask, Firsts or Recent practice on Progress.
 - **Talk to us fits one screen:** Rachel's card is her name with "MS, CF-SLP ·
   Co-founder" and one line, "I'm a pediatric speech-language pathologist in
   my clinical fellowship."; "We read every message." is the page's subtitle;
-  the form asks "What would make Sona better?" and "Recommend us?", with its
-  helper text inside the boxes. Same chips, same fields, same privacy lines.
+  the form asks "What would make Sona better?", with its helper text inside
+  the boxes. **No "Recommend us?"** and **one privacy line**, "We use your
+  email only to reply." (Travis, same day: "take out please leave out your
+  child's name. And take out it isn't added to any mailing list"; both stay
+  true, they are just unsaid). A clinician on the web still reads the
+  student-name line. The body no longer carries `recommend`; the route still
+  accepts it blank.
 
 **Sound-focused review build (29 Oct 2026, Travis's request).** A parent may
 pin one of the child's existing selected sounds as the current target, like
@@ -307,8 +318,9 @@ anonymous "built / made / designed / shaped / reviewed with / by a (licensed)
 (pediatric) SLP / speech-language pathologist" or "our SLP"; a page that puts
 Rachel and "SLP" or "speech-language pathologist" in one sentence without
 "MS, CF-SLP" somewhere on it; any CCC or "certified" claim; and any of the
-pages that introduce her (parents, subscribe, trial, progress, talk, slp)
-missing it.
+pages that introduce her (parents, subscribe, trial, talk, slp)
+missing it (Progress left that list on 5 Nov 2026, when it stopped naming
+her).
 One of those places is setup (Travis, 29 Sep 2026: a Meet Rachel screen with
 her photo). **Since 22 Oct 2026 she has her own screen again** (Travis: "a
 bigger slide of Rachel that's just like all by itself of like her

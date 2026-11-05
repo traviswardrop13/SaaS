@@ -17,7 +17,8 @@ function ok(label, pass, detail) { checks++; if (!pass) fails++; console.log((pa
 async function scenario(label, run) { try { await run(); } catch (e) { ok(label + ' completes', false, e.stack); } }
 
 const SOURCE = readFileSync(path.join(ROOT, 'talk.html'), 'utf8');
-const BODY_KEYS = ['app', 'chips', 'email', 'from', 'kind', 'recommend', 'text', 'website'];
+// No "recommend" since 5 Nov 2026 (Travis: "take out ... the recommend us"); the route still accepts it blank.
+const BODY_KEYS = ['app', 'chips', 'email', 'from', 'kind', 'text', 'website'];
 const FAMILY_CHIPS = ['More games', 'New sounds to practice', 'Progress reports', 'Easier for my kid', "Something's broken", 'Something else'];
 
 const MIME = { html: 'text/html', js: 'text/javascript', svg: 'image/svg+xml', css: 'text/css', png: 'image/png', jpg: 'image/jpeg', webp: 'image/webp', woff2: 'font/woff2', json: 'application/json', webmanifest: 'application/manifest+json' };
@@ -105,7 +106,10 @@ try {
       const all = await t.page.locator('body').innerText();
       ok('no credential beyond the settled wording, on the page or in its source', !/\bCCC\b|certified|fully licen[sc]ed/i.test(all + SOURCE));
       ok('the page never says booked', !/booked/i.test(all));
-      ok('the privacy lines are shown', /leave out your child's name/.test(all) && /only to reply\. It isn't added to any mailing list/.test(all));
+      // One line since 5 Nov 2026 (Travis: "take out please leave out your
+      // child's name. And take out it isn't added to any mailing list").
+      ok('the one privacy line is shown, and nothing more', /We use your email only to reply\./.test(all) && !/leave out|mailing list/i.test(all), all);
+      ok('…and no recommend question', await t.page.locator('#fbRec, #fbRecLabel').count() === 0 && !/recommend/i.test(all));
       ok('the reply email is prefilled from setup', await t.page.inputValue('#fbEmail') === 'mom@example.test');
       ok('a parent gets the family question and chips',
         (await t.page.locator('#fbLead').innerText()) === 'What would make Sona better?' &&
@@ -133,7 +137,6 @@ try {
       ok('an empty feedback shows the inline hint and posts nothing', (await t.page.locator('#fbStatus').innerText()) === 'Pick a chip or write a quick thought first.' && t.posts.length === 0);
       await chip(t.page, '#fbChips', 'More games').click();
       await chip(t.page, '#fbChips', "Something's broken").click();
-      await chip(t.page, '#fbRec', 'Maybe').click();
       await t.page.fill('#fbText', 'More animal words please.');
       t.state.reply = { status: 200, body: { ok: true, stored: true, delivered: false }, delay: 500 };
       // Two clicks in the same tick: one message.
@@ -146,8 +149,8 @@ try {
       const p = t.posts[0], b = p.body;
       ok('it is a JSON POST', p.method === 'POST' && /application\/json/.test(p.type), p);
       ok('the body is exactly the allowlisted fields', JSON.stringify(Object.keys(b).sort()) === JSON.stringify(BODY_KEYS), Object.keys(b));
-      ok('…carrying the chips, the answer and the words',
-        b.kind === 'feedback' && JSON.stringify(b.chips) === JSON.stringify(['More games', "Something's broken"]) && b.recommend === 'Maybe' && b.text === 'More animal words please.' && b.email === 'mom@example.test' && b.app === 'web' && b.from === 'family' && b.website === '', b);
+      ok('…carrying the chips and the words',
+        b.kind === 'feedback' && JSON.stringify(b.chips) === JSON.stringify(['More games', "Something's broken"]) && b.text === 'More animal words please.' && b.email === 'mom@example.test' && b.app === 'web' && b.from === 'family' && b.website === '', b);
       ok("never the child's name, the clinician code or a child id, though the profile holds them", noChildData(p.raw), p.raw);
       const done = await t.page.locator('#fbSuccess').innerText();
       ok('the thank-you says it reached the team, never booked', /reached|received/.test(done) && !/booked/i.test(done), done);
@@ -184,6 +187,7 @@ try {
       await open(t);
       ok('a clinician in a browser gets the caseload question and chips',
         /caseload/.test(await t.page.locator('#fbLead').innerText()) && (await t.page.locator('#fbChips .talk-chip').allInnerTexts()).includes('Easier to assign'));
+      ok("…and still the line about a student's name", /leave out any child's or student's name/.test(await t.page.locator('.talk-note').innerText()));
     } finally { await t.context.close(); }
   });
 

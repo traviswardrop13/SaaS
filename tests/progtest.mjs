@@ -556,10 +556,10 @@ ok("proof strip: named SLP credential above the plan",
   await page.evaluate(() => localStorage.removeItem("sona.outcomes.v1"));
 }
 
-// ── progress report: one screen, the non-clinical hedge, nothing else ──
+// ── progress report: one screen, nothing else ──
 // Travis, 5 Nov 2026 ("simplify drastically"): the week's practice days,
-// accuracy by sound as "Coming soon", each sound's practice level and the
-// hedge. The summary box ("A fresh week is ready"), Saved tries, "How scoring
+// accuracy by sound as "Coming soon" and each sound's practice level. The
+// footnote (hedge and Rachel line), the summary box ("A fresh week is ready"), Saved tries, "How scoring
 // works", the review ask, Firsts and Recent practice are gone.
 {
   const iso = new Date().toISOString().slice(0, 10);
@@ -575,13 +575,15 @@ ok("proof strip: named SLP credential above the plan",
   }, iso);
   await page.goto("http://localhost:8131/progress.html"); await page.waitForTimeout(800);
   t = await page.evaluate(() => ({
-    hedge: document.body.textContent.includes("A practice snapshot, not a clinical assessment"),
+    foot: /practice snapshot|clinical assessment|Rachel/.test(document.body.textContent),
     gone: ["storyLine", "rateCard", "recordingsCard", "howCard", "firstsCard", "recent", "share", "copySummary", "wkGoalPick", "dailyGoalPick", "clearest", "boardNote"].filter((id) => document.getElementById(id)),
     acc: document.getElementById("accCard").innerText,
     pct: /\d\s*%/.test(document.querySelector(".wrap").innerText),
     levels: document.getElementById("bysound").innerText,
   }));
-  ok("non-clinical hedge present", t.hedge);
+  // The footnote went too (Travis, 5 Nov 2026: "take out built with Rachel
+  // ... take out a practice snapshot"): no score or verdict is left to hedge.
+  ok("no footnote: no practice-snapshot line and no Rachel line", !t.foot);
   ok("the removed cards and controls stay gone", t.gone.length === 0, t.gone);
   ok("accuracy by sound says Coming soon, and no percentage shows anywhere", /Accuracy by sound/.test(t.acc) && /Coming soon/.test(t.acc) && !t.pct, t);
   ok("practice levels name each practiced sound with its tries", /R sound/.test(t.levels) && /24 tries/.test(t.levels), t.levels);

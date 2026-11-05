@@ -79,10 +79,6 @@
     .family-talk .talk-chip{min-height:40px;padding:7px 12px;font-size:13px;}
     body.family-talk textarea{min-height:46px;height:46px;margin-top:10px;padding:10px 14px;}
     body.family-talk div.field{margin-top:10px;font-size:13px;}
-    .family-talk .talk-rec{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-top:10px;}
-    body.family-talk .talk-rec div.field{margin:0;font-size:12.5px;}
-    .family-talk .talk-rec .talk-chips{margin-top:0;}
-    .family-talk .talk-rec .talk-chip{padding:6px 8px;font-size:12.5px;}
     body.family-talk #fbEmail{min-height:44px;margin-top:10px;padding:10px 14px;}
     body.family-talk .talk-notes{margin-top:8px;padding-top:0;border-top:none;}
     .family-talk .talk-note{margin-top:0;font-size:12px;line-height:1.45;}
@@ -130,14 +126,16 @@
         <div id="fbChips" class="talk-chips" role="group" aria-labelledby="fbLead"></div>
         <label class="sr-only" for="fbText">Anything else? (optional)</label>
         <textarea id="fbText" rows="1" maxlength="2000" placeholder="Anything else? (optional)"></textarea>
-        <div class="talk-rec"><div class="field" id="fbRecLabel">Recommend us?</div>
-        <div id="fbRec" class="talk-chips" role="group" aria-labelledby="fbRecLabel"></div></div>
         <label class="sr-only" for="fbEmail">Want a reply? Your email (optional)</label>
         <input id="fbEmail" type="email" maxlength="254" inputmode="email" autocomplete="email" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="Want a reply? Your email (optional)" />
       </div>
 
       <div class="talk-notes">
-        <p class="talk-note"><span id="talkPrivate">Please leave out your child's name.</span> We use your email only to reply. It isn't added to any mailing list.</p>
+        <!-- One line (Travis, 5 Nov 2026: "take out please leave out your
+             child's name. And take out it isn't added to any mailing list").
+             A clinician on the web still gets the student-name line: a
+             district reads this form too. -->
+        <p class="talk-note"><span id="talkPrivate" hidden></span>We use your email only to reply.</p>
       </div>
 
       <div class="talk-hp" aria-hidden="true">
@@ -173,13 +171,12 @@
       var CHIPS = isSlp
         ? ["More sounds", "Better progress data", "Easier to assign", "More game variety", "Something's broken", "Something else"]
         : ["More games", "New sounds to practice", "Progress reports", "Easier for my kid", "Something's broken", "Something else"];
-      var REC = ["Definitely", "Maybe", "Not yet"];
       var EMAIL = /^[^\s@<>()[\]\\,;:"]+@[^\s@<>()[\]\\,;:"]+\.[^\s@<>()[\]\\,;:"]{2,}$/;
       var FAIL = "Couldn't send. Your message is still here — please try again.";
-      var BUSY = false, picked = {}, rec = "";
+      var BUSY = false, picked = {};
 
       if (isSlp) $("fbLead").textContent = "You're the expert — what would make Sona more useful on your caseload?";
-      if (isSlp) $("talkPrivate").textContent = "Please leave out any child's or student's name and anything private.";
+      if (isSlp) { $("talkPrivate").textContent = "Please leave out any child's or student's name and anything private. "; $("talkPrivate").hidden = false; }
       // Prefilled from setup, editable, and never saved back: this address
       // is for one reply, not a change to the profile.
       var saved = typeof p.email === "string" ? p.email : "";
@@ -196,21 +193,12 @@
         return b;
       }
       function clearNotices() { $("fbStatus").textContent = ""; $("fbSuccess").hidden = true; }
-      function paintSingle(host, value, values) {
-        [].slice.call(host.children).forEach(function (n, i) { n.setAttribute("aria-pressed", String(values[i] === value)); });
-      }
 
       CHIPS.forEach(function (label) {
         chip(label, $("fbChips"), function (b) {
           picked[label] = !picked[label];
           b.setAttribute("aria-pressed", String(!!picked[label]));
           clearNotices();
-        });
-      });
-      REC.forEach(function (label) {
-        chip(label, $("fbRec"), function () {
-          rec = rec === label ? "" : label;
-          paintSingle($("fbRec"), rec, REC);
         });
       });
 
@@ -243,7 +231,6 @@
           kind: "feedback",
           chips: chips,
           text: text,
-          recommend: rec,
           email: email,
           app: native ? "ios" : "web",
           from: isSlp ? "slp" : "family",
@@ -255,9 +242,9 @@
           .then(function (j) {
             setBusy(false);
             if (!j || !j.ok) return say((j && typeof j.error === "string" && j.error) || FAIL);
-            picked = {}; rec = "";
+            picked = {};
             $("fbText").value = "";
-            [].slice.call(document.querySelectorAll("#fbChips .talk-chip, #fbRec .talk-chip")).forEach(function (b) { b.setAttribute("aria-pressed", "false"); });
+            [].slice.call(document.querySelectorAll("#fbChips .talk-chip")).forEach(function (b) { b.setAttribute("aria-pressed", "false"); });
             $("fbSuccess").textContent = "Thank you — your message reached the Sona team.";
             $("fbSuccess").hidden = false;
             try { $("fbSuccess").scrollIntoView({ behavior: "smooth", block: "nearest" }); } catch (e) {}

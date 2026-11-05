@@ -534,7 +534,9 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
   ok("…and no page or app surface claims a certification she does not hold", claims.length === 0, claims.join(" | "));
   ok("…and no line presents Sona's own SLP without naming her ('Built with a licensed SLP', 'our SLP')", anon.length === 0, anon.join(" | "));
   ok("…and every page that calls Rachel an SLP carries 'MS, CF-SLP'", unpaired.length === 0, unpaired.join(", "));
-  const carry = ["parents", "subscribe", "trial", "progress", "talk", "slp"]
+  // Progress left this list on 5 Nov 2026: it no longer names Rachel at all
+  // (Travis: "take out built with Rachel on the progress sheet").
+  const carry = ["parents", "subscribe", "trial", "talk", "slp"]
     .filter((n) => !/Rachel(?: Wardrop)?, MS, CF-SLP/.test(visible("public/" + n + ".html")));
   ok("…and the pages that introduce her all carry it", carry.length === 0, carry.join(", "));
   // The line changed on 1 Oct 2026 (Travis): she is described as "a pediatric
