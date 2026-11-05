@@ -110,7 +110,13 @@ async function scenario(name, fn) { try { await fn(); } catch (e) { ok(name + " 
 // Shared device lets each rebuilt game exercise the same real speech engine.
 // The engine's own checks run on the catalog as it will be when a game comes
 // back: the same sona.js, with each Say & Play game's comingSoon lifted.
-const UNPARKED_SONA = readFileSync(ROOT + "/sona.js", "utf8").replace(/\bsay: true, comingSoon: true, /g, "say: true, ");
+// every Say & Play game open: comingSoon taken off each say game's line,
+// wherever on the line it sits (since 5 Nov 2026 four are parked again,
+// with comingSoon after their tier, as tests/_parked.mjs parks one)
+const UNPARKED_SONA = readFileSync(ROOT + "/sona.js", "utf8").replace(/^(\s{4}\w+: \{ name: [^\n]*?)comingSoon: true, (?=[^\n]*\bsay: true\b)/gm, "$1");
+// the four parked in the real catalog since 5 Nov 2026 (Travis, after the
+// game audit: "hide those 4"); every other Say & Play game is open
+const PARKED_NOW = ["puppy", "gifts", "fishtank", "monster"];
 async function fresh(file, cfg = {}) {
   // Engine-only checks keep a fixed scene as the real catalog games are rebuilt.
   if (file === "arcade-treasure.html") file = "_sayplay-scene.html";
@@ -447,16 +453,17 @@ await scenario("catalog in the app", async () => {
     const simple = cat.lib.find((g) => g.id === "simple").keys, arcade = cat.lib.find((g) => g.id === "arcade").keys;
     ok("Home lists the ages 3-4 games under Simple play and the 5-8 games under Arcade",
       SAY.every((g) => (g.group === "simple" ? simple : arcade).includes(g.key)));
-    // none parked and none with a day since 22 Oct 2026 (Travis: "turn on
-    // all 18 games"); the order with some parked is checked below
+    // none with a day since 15 Oct 2026, and none parked from 22 Oct 2026
+    // (Travis: "turn on all 18 games") until 5 Nov 2026, when four went back
+    // (PARKED_NOW); the order with some parked is checked below
     const days = await page.evaluate((keys) => keys.map((k) => ({ k, parked: !!Sona.GAME_ACTS[k].comingSoon, on: Sona.GAME_ACTS[k].comingOn || "" })), simple);
-    ok("the Simple play shelf has no parked game and no day on any", days.length > 2 && days.every((d) => !d.parked && !d.on), days.filter((d) => d.parked || d.on));
+    ok("the Simple play shelf has no day on any game, and only the games parked on 5 Nov 2026 are parked", days.length > 2 && days.every((d) => !d.on && d.parked === PARKED_NOW.includes(d.k)), days.filter((d) => d.on || d.parked !== PARKED_NOW.includes(d.k)));
     ok("no Say & Play game joins the daily adventure", !cat.adventure.some((k) => KEYS.includes(k)), cat.adventure);
     ok("each game wears its own sticker", cat.stickers.every((s, i) => s === "sp-" + KEYS[i]));
     // COMING SOON, HIDDEN (Travis, 19 Oct 2026): a parked game has no card on
     // Home at all, and its card is back the day comingSoon comes off its line.
     const parked = KEYS.filter((k, i) => cat.acts[i] && cat.acts[i].comingSoon), open = KEYS.filter((k) => !parked.includes(k));
-    ok("Home shows a card for every Say & Play game, all twenty open", parked.length === 0 && open.length === 20 && open.every((k) => cat.cards.includes(k)), open.filter((k) => !cat.cards.includes(k)));
+    ok("Home shows a card for every open Say & Play game, and none for the four parked on 5 Nov 2026", parked.length === PARKED_NOW.length && PARKED_NOW.every((k) => parked.includes(k)) && open.length === KEYS.length - PARKED_NOW.length && open.every((k) => cat.cards.includes(k)) && !parked.some((k) => cat.cards.includes(k)), { parked, missing: open.filter((k) => !cat.cards.includes(k)) });
     clean("catalog", errors);
   } finally { await context.close(); }
   // with some parked again, they sort after the playable ones and have no
@@ -468,7 +475,7 @@ await scenario("catalog in the app", async () => {
     await withParked.page.waitForFunction(() => !!window.Sona && document.querySelectorAll("#activityGroups button[data-game]").length > 0);
     const days = await withParked.page.evaluate(() => Sona.activityLibrary().groups.find((g) => g.id === "simple").games.map((x) => ({ k: x.key, parked: !!x.comingSoon })));
     const firstParked = days.findIndex((d) => d.parked);
-    ok("parked again: the Simple play shelf lists its playable games, then the parked ones", firstParked > 0 && days.slice(firstParked).every((d) => d.parked) && days.filter((d) => d.parked).length === PARK.filter((k) => days.some((d) => d.k === k)).length, days);
+    ok("parked again: the Simple play shelf lists its playable games, then the parked ones", firstParked > 0 && days.slice(firstParked).every((d) => d.parked) && days.filter((d) => d.parked).length === PARK.concat(PARKED_NOW.filter((k) => !PARK.includes(k))).filter((k) => days.some((d) => d.k === k)).length, days);
     const home = await withParked.page.evaluate((keys) => ({ cards: keys.filter((k) => document.querySelector('#libraryApp [data-game="' + k + '"]')),
       disabled: document.querySelectorAll("#libraryApp button[data-game]:disabled").length, coming: /coming soon|coming [a-z]{3} \d/i.test(document.getElementById("libraryApp").innerText) }), PARK);
     ok("no parked game shows on Home: no card, no greyed-out slot, no Coming soon label", home.cards.length === 0 && home.disabled === 0 && !home.coming, home);

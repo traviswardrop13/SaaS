@@ -55,6 +55,11 @@ const comingSoonKeys = [...SONA_SRC.matchAll(/^\s{4}(\w+): \{[^\n]*\bcomingSoon:
 // With none parked, the sections that pin what parking does park these
 // again in the sona.js the browser is served (tests/_parked.mjs).
 const parkKeys = [...PARK].sort();
+// Four went back to Coming soon on 5 Nov 2026 (Travis, after the game audit:
+// "hide those 4"): the real catalog's parked games are exactly these.
+const PARKED_NOW = ["fishtank", "gifts", "monster", "puppy"];
+// what a section that parks PARK sees parked: those, and the real ones
+const parkedSeen = [...new Set([...parkKeys, ...comingSoonKeys])].sort();
 // HIDDEN UNTIL IT OPENS (Travis, 19 Oct 2026, from a parent-funnel review:
 // the greyed Coming soon cards cluttered Home). Home draws only these: every
 // catalog game but the parked ones. The catalog itself still lists them all.
@@ -159,7 +164,7 @@ await section("library prerequisites", async () => {
       freeKeys = games.filter(game => game.available && !game.comingSoon && game.tier === "free").map(game => game.key).sort();
       premiumKeys = games.filter(game => game.available && !game.comingSoon && game.tier === "premium").map(game => game.key).sort();
       ok("Coming soon: exactly the catalog's parked lines (none since 22 Oct 2026)", same(games.filter(game => game.comingSoon).map(game => game.key).sort(), comingSoonKeys) && parkedSay.every((key) => sayLittle.includes(key) || sayBig.includes(key)), comingSoonKeys);
-      ok("…so Peekaboo and every rebuilt Say & Play game is playable", ["peekaboo", ...sayLittle, ...sayBig].every((key) => playableKeys.includes(key)), playableKeys);
+      ok("…so Peekaboo and every rebuilt Say & Play game not parked is playable", ["peekaboo", ...sayLittle, ...sayBig].filter((key) => !comingSoonKeys.includes(key)).every((key) => playableKeys.includes(key)), playableKeys);
       ok("…and the six first games and Rise Up are never Coming soon", ["feed", ...adventureKeys, "rise"].every((key) => playableKeys.includes(key)), playableKeys);
     }
     ok("Home's Arcade presents the game picker, with a card for every game but the parked ones", await pg.getByRole("heading", {name:"Pick a game!",exact:true}).count() === 1 && await pg.locator("#activityGroups button[data-game]").count() === homeKeys.length, await pg.locator("#activityGroups button[data-game]").count());
@@ -383,8 +388,8 @@ if (present && hasContract) {
   // draws a card: only taking comingSoon off does.
   await section("parked games stay off Home", async () => {
     const parkedLines = [...SONA_SRC.matchAll(/^\s{4}(\w+): \{[^\n]*\bcomingSoon: true\b[^\n]*/gm)].map((m) => ({ key: m[1], line: m[0] }));
-    ok("no game is parked in the catalog since 22 Oct 2026, and none carries a day",
-      parkedLines.length === 0 && same(comingSoonKeys, []) && !/^\s{4}\w+: \{[^\n]*\bcomingOn\b/m.test(SONA_SRC), parkedLines.map((p) => p.key));
+    ok("only the four games parked on 5 Nov 2026 are parked in the catalog, and none carries a day",
+      same(parkedLines.map((p) => p.key).sort(), PARKED_NOW) && same(comingSoonKeys, PARKED_NOW) && !/^\s{4}\w+: \{[^\n]*\bcomingOn\b/m.test(SONA_SRC), parkedLines.map((p) => p.key));
     const rebuilt = [...SONA_SRC.matchAll(/^\s{4}(soccer|dino): \{ name: [^\n]*/gm)].map((m) => m[0]);
     ok("…and Soccer Goal and Dino Dig, rebuilt, carry no day and are not parked", rebuilt.length === 2 && rebuilt.every((line) => !/\bcomingSoon\b|\bcomingOn\b/.test(line)), rebuilt);
     const cardsAt = async (now, opts = {}) => {
@@ -405,7 +410,7 @@ if (present && hasContract) {
       for (const [who, opts] of [["the free version", {}], ["a family without Premium", { paid: true }], ["a family with Premium", { paid: true, premium: true }]]) {
         const r = await cardsAt(now, opts);
         ok(when + ", " + who + ": no parked game has a card on Home, and nothing says Coming soon", r.got.cards.length === 0 && !r.got.coming, r.got.cards);
-        ok("…while the catalog still lists the parked ones, and none opens", same(r.got.catalog, parkKeys) && r.got.access.allowed === false && r.got.access.reason === "coming-soon", JSON.stringify([r.got.catalog.length, r.got.access]));
+        ok("…while the catalog still lists the parked ones, and none opens", same(r.got.catalog, parkedSeen) && r.got.access.allowed === false && r.got.access.reason === "coming-soon", JSON.stringify([r.got.catalog.length, r.got.access]));
         ok("…and Soccer Goal and Dino Dig, rebuilt, are on Home with no day on them", [r.got.soccer, r.got.dino].every((g) => !!g && !g.disabled && !/Coming/.test(g.label)), JSON.stringify([r.got.soccer, r.got.dino]));
         ok("…with no page errors", r.errors.length === 0, r.errors);
       }
@@ -851,7 +856,7 @@ if (present && hasContract) {
           const shelves = await shelfRows(pg);
           const keys = shelves.flatMap((s) => s.rows.flatMap((r) => r.cards.map((c) => c.key)));
           ok(viewport.width + "px, " + unpark.join(" and ") + " opened: each is on its shelf, and every row is still full",
-            unpark.every((k) => keys.includes(k)) && keys.length === homeKeys.length - park.length + unpark.length && fullRows(shelves), JSON.stringify(shelves.map((s) => s.rows.map((r) => [Math.round(r.left), Math.round(r.right), r.cards.map((c) => c.key).join(" ")]))));
+            unpark.every((k) => keys.includes(k)) && keys.length === homeKeys.length - park.filter((k) => !comingSoonKeys.includes(k)).length + unpark.length && fullRows(shelves), JSON.stringify(shelves.map((s) => s.rows.map((r) => [Math.round(r.left), Math.round(r.right), r.cards.map((c) => c.key).join(" ")]))));
           ok(viewport.width + "px, " + unpark.join(" and ") + " opened: both shelves still lay out alike, " + perRow(viewport.width) + " cards a row", evenRows(shelves, viewport.width), rowCounts(shelves));
         } finally { await ctx.close(); }
       });
