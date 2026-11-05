@@ -782,12 +782,13 @@ await scenario("hoops: good shots at a sliding hoop", async () => {
     await page.locator("#startOvl.show").waitFor();
     // the start card would take the swipes: put it aside (no word turn here)
     await page.evaluate(() => { Hoops.setLevel(3); document.getElementById("startOvl").classList.remove("show"); });
-    // Shots go on until six good ones at a sliding hoop have been judged (20
+    // Shots go on until six good ones at a sliding hoop have been judged (30
     // at most): whether a swipe beside the hoop counts as good depends on
-    // where the hoop has slid to by then, which a busy machine moves on.
+    // where the hoop has slid to by then and on the swipe's speed, both of
+    // which a busy machine moves on (GitHub's runner: about two in five).
     const box = await court(page), shots = [];
     const judged = () => shots.filter((s) => s.good && s.amp > 0).length;
-    for (let i = 0; i < 20 && (i < 9 || judged() < 6); i++) {
+    for (let i = 0; i < 30 && (i < 9 || judged() < 6); i++) {
       await page.evaluate(() => Hoops.onWord());
       await until(page, () => window.__hoops.state === "ready", 3000);
       await page.waitForTimeout(150 + (i * 337) % 1200);   // the hoop somewhere else on its slide each time
