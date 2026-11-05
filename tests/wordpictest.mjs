@@ -14,6 +14,7 @@ import path from 'node:path';
 import {ROOT as SOURCE_ROOT} from './_env.mjs';
 import {gameHarness,advance,until} from './_sayplay-realgame.mjs';
 import {dailyHarness} from './_daily-adventure.mjs';
+import {unparkedSona} from './_parked.mjs';
 
 const ROOT=process.env.SONATEST_PUBLIC_ROOT||SOURCE_ROOT;
 let checks=0,failures=0;
@@ -26,6 +27,10 @@ const keys=[...acts.matchAll(/^\s*([a-z]+):\s*\{[^\n]*go: "\/arcade-([a-z]+)\.ht
   .filter(m=>m[1]===m[2]&&existsSync(path.join(ROOT,'arcade-'+m[2]+'.html'))&&/\/sayplay\.js"/.test(readFileSync(path.join(ROOT,'arcade-'+m[2]+'.html'),'utf8')))
   .map(m=>m[1]);
 ok('the catalog lists the Say & Play games (at least twenty)',keys.length>=20,keys);
+// A parked game (four since 5 Nov 2026) bounces Home before its first word,
+// so every page here is served a catalog with all of them open: a parked
+// game's picture is checked too, ready for the day it comes back.
+const UNPARKED=unparkedSona(sona,keys);
 
 // The picture inside the box: drawn, a real size, and inside the box's edges.
 const measure=page=>page.evaluate(()=>{
@@ -47,6 +52,7 @@ try{
   for(const viewport of [{width:390,height:844},{width:320,height:568}]){
     for(const key of keys){
       const {page,context,errors}=await h.fresh({viewport});
+      await context.route(/\/sona\.js(\?.*)?$/,r=>r.fulfill({contentType:'text/javascript',body:UNPARKED}));
       try{
         if(!page.url().endsWith('/arcade-'+key+'.html'))await page.goto(page.url().replace(/arcade-[a-z]+\.html/,'arcade-'+key+'.html'));
         await advance(page,1200);
