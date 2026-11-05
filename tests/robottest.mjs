@@ -115,11 +115,22 @@ try{
   ok('no help ever finishes a circuit by itself',(await state(page)).speech.step===1&&await page.evaluate(()=>!__quiet.voice));
   ok('struggling play has no runtime errors',errors.length===0,errors);await context.close();
  }
- // ages 3-4 (not on this shelf, but gentler if ever offered): glow from the first miss
+ // ages 3-4 (not on this shelf, but gentler if ever offered): glow from the first miss.
+ // The age is the one setup saves (profile.childAge, read through
+ // Sona.playStyle like every other game): this suite once seeded a made-up
+ // `age` field, which the game also read, so it passed while a real
+ // four-year-old got the big kids' ladder.
  {
-  const {page,context}=await h.fresh();await page.evaluate(()=>Sona.saveProfile({age:4}));await page.locator('#startBtn').click();await sayWord(page);
+  const {page,context}=await h.fresh({device:{age:'4'}});
+  ok('the 4-year-old is seeded the way setup saves an age',await page.evaluate(()=>Sona.getProfile().childAge==='4'&&Sona.getProfile().age===undefined&&Sona.playStyle()==='simple'));
+  await page.locator('#startBtn').click();await sayWord(page);
   await page.locator('#robotTest').click();let s=await state(page);ok('a 4-year-old gets the blueprint and the glow from the first miss',s.robot.help===2,s.robot);
   await page.locator('#robotTest').click();s=await state(page);ok('…and the snapping wires from the second',s.robot.help===3,s.robot);await context.close();
+ }
+ // a 7-year-old (the harness's default child) keeps the ladder as built: one step a miss
+ {
+  const {page,context}=await h.fresh();await page.locator('#startBtn').click();await sayWord(page);
+  await page.locator('#robotTest').click();const s=await state(page);ok('a 7-year-old gets only the outline from the first miss',s.robot.help===1,s.robot);await context.close();
  }
  {
   const {page,context,errors}=await h.fresh({blockAssets:true});await page.locator('#startBtn').click();await sayWord(page);const s=await solve(page);ok('missing painted assets cannot break the real circuit controls',s.connected&&hasCircuit(s),s);await page.locator('#robotTest').click();ok('the fallback robot still assembles from a working circuit',await until(page,()=>__sayplay.step===1,5000));ok('failed artwork has no runtime errors',errors.length===0,errors);await context.close();
