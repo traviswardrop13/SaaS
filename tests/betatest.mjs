@@ -216,7 +216,7 @@ const sharedPromise = await page.evaluate(() => Sona.MIC_PROMISE);
 ok("…and it says nothing about the microphone it could get wrong: no grown-ups line, nothing about audio uploaded, recorded or saved",
   !atMic.says.includes(sharedPromise) && !/upload|record|saved|stays on|never leaves/i.test(atMic.says) && !/micPromise/.test(readFileSync(ROOT + "/onboarding.html", "utf8")));
 ok("…while the practice page still shows the shared promise, and it is the accurate one",
-  /\$\("micPromise"\)\.textContent=S\.MIC_PROMISE/.test(readFileSync(ROOT + "/charge.html", "utf8")) && /never uploaded/.test(sharedPromise) && /saved on this phone/.test(sharedPromise) && !/never recorded/i.test(sharedPromise));
+  /\$\("micPromise"\)\.textContent=S\.MIC_PROMISE/.test(readFileSync(ROOT + "/charge.html", "utf8")) && /never uploaded or saved/.test(sharedPromise) && !/never recorded/i.test(sharedPromise));
 ok("…and offers an in-app decline before the OS prompt", /Not now/.test(atMic.says));
 await page.evaluate(() => document.getElementById("micNotNow").click()); await page.waitForTimeout(250); // mic → the hand-off, at once
 ok("…and the hand-off follows the microphone with no build beat in between",

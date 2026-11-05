@@ -93,9 +93,16 @@ async function page(mic) {
   ok("…and says plainly that nothing is uploaded",
     /never uploads recordings|never uploaded|no recording is ever uploaded|not uploaded/i.test(primer),
     "the strongest claim Sona makes should be stated, not implied");
-  ok("…and is honest about the one clip kept on the phone",
-    /saved on this phone|on this device/i.test(primer),
-    "a clip a parent can play back exists locally; consent copy should say so");
+  // Since 5 Nov 2026 (Travis: "dont save") no clip is kept, so the line says
+  // so, and saveRecording keeps nothing (checked below).
+  ok("…and says nothing is saved either",
+    /never uploaded or saved/i.test(primer) && !/saved on this phone|listen back/i.test(primer),
+    "no clip is kept on the phone any more; consent copy must not promise one");
+  {
+    const sonaSrc = readFileSync(ROOT + "/sona.js", "utf8");
+    ok("…and that is true by construction: saveRecording keeps nothing, and practice never calls it",
+      /function saveRecording\(\) \{ return Promise\.resolve\(false\); \}/.test(sonaSrc) && !/saveRecording\(/.test(charge) && /objectStore\("recordings"\)\.clear\(\)/.test(sonaSrc));
+  }
 }
 
 // ── 1b. there is no door a child's recording could go through ──

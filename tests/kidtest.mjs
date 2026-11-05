@@ -405,6 +405,8 @@ ok("it says each child keeps their own sounds and progress", /Each child keeps t
   ok("…so the cards follow what the child earned: the sound, a syllable, then the short word",
     g.rung === 1 && g.hold === "" && g.top === 2 && g.asks[0] === "rrrr" && /^r(ee|ah|oh)$/.test(g.asks[1]) && g.asks[2] === "rot", JSON.stringify(g));
   // a parent's next change on this page writes the profile back without it
+  // (the sound grid opens behind "Change" since 5 Nov 2026)
+  await page.click('#soundsChange');
   await page.click('#sounds .sound[data-s="S"]'); await page.waitForTimeout(250);
   g = await read();
   ok("the next change saved on Settings (a sound tapped) takes the old pick out of the stored profile", g.stored === undefined && g.read === undefined, JSON.stringify({ stored: g.stored }));
@@ -470,8 +472,13 @@ ok("it says each child keeps their own sounds and progress", /Each child keeps t
     ["", "2", "3", "4", "5"].forEach((n) => localStorage.setItem("sona.freeera" + n + ".v1", n ? "done" : "post"));
     Sona.saveProfile({ childName: "Milo", childAge: "7", focusSounds: ["R"], onboarded: true });
     Sona.gateVerify();
+    // No build keeps a clip since 5 Nov 2026 and each device deletes any
+    // old one once ("_sonaClipsGone"). Remove must still leave nothing, so
+    // this plants a clip an older build kept for Ana, past that clean-up.
+    localStorage.setItem("_sonaClipsGone", "1");
     Sona.addKid("Ana", "5");
-    await Sona.saveRecording({ sound: "S", word: "sun", blob: new Blob(["ana"], { type: "audio/webm" }) });
+    await Sona.clipsSettled();
+    await new Promise((res) => { const o = indexedDB.open("sona", 1); o.onsuccess = () => { const tx = o.result.transaction("recordings", "readwrite"); tx.objectStore("recordings").add({ sound: "S", word: "sun", date: new Date().toISOString(), kid: "k2", blob: new Blob(["ana"], { type: "audio/webm" }) }); tx.oncomplete = () => { o.result.close(); res(); }; }; });
     Sona.switchKid("");
   });
   await p2.goto("http://localhost:8153/settings.html"); await p2.waitForTimeout(700);

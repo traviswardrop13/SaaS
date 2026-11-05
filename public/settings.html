@@ -74,6 +74,11 @@
     .family-settings #addKidBtn{margin-top:10px;}
     /* sounds */
     .family-settings #soundsLbl{margin-top:18px;}
+    .family-settings .sound-summary{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:4px;}
+    .family-settings #soundsChosen{font-family:"Baloo 2",sans-serif;font-weight:800;font-size:18px;color:var(--ink);overflow-wrap:anywhere;}
+    .family-settings #soundsChange{width:auto;flex:none;min-height:44px;padding:9px 18px;font-size:14px;}
+    .family-settings #soundsPick{margin-top:8px;}
+    .family-settings #soundsPick[hidden]{display:none;}
     .family-settings .sound .hint{display:block;margin-top:1px;font-family:"Nunito",sans-serif;font-size:9.5px;font-weight:800;color:var(--muted);}
     .family-settings #posBox[hidden],.family-settings #posNote[hidden]{display:none;}
     .family-settings #posNote{margin-top:10px;}
@@ -179,9 +184,15 @@
         <label class="field" for="childAge">Age</label>
         <input id="childAge" type="number" min="2" max="14" inputmode="numeric" placeholder="e.g. 5" />
       </div></div>
+      <!-- The chosen sounds in one line, and the grid of every sound only
+           after "Change" (Travis, 5 Nov 2026: "yeah change button"): the
+           grid was most of a screen on its own. -->
       <div class="field" id="soundsLbl">Sounds to practice</div>
-      <p class="muted set-lead">Tap a sound to add or remove it.</p>
-      <div class="sounds" id="sounds" role="group" aria-labelledby="soundsLbl"></div>
+      <div class="sound-summary"><span id="soundsChosen"></span><button type="button" class="btn ghost" id="soundsChange" aria-expanded="false" aria-controls="soundsPick">Change</button></div>
+      <div id="soundsPick" hidden>
+        <p class="muted set-lead">Tap a sound to add or remove it.</p>
+        <div class="sounds" id="sounds" role="group" aria-labelledby="soundsLbl"></div>
+      </div>
       <label class="field" for="targetSound">Current target sound</label>
       <select id="targetSound" aria-describedby="targetSoundNote"></select>
       <p id="targetSoundNote" class="muted set-lead"></p>
@@ -443,6 +454,7 @@
       // show what was kept, so a name typed with stray spaces reads as saved
       childEl.value = name;
       paintName();
+      paintChosen();
       if (typeof repaintKids === "function") repaintKids();
       paintTargetSound();
       showSaved(from);
@@ -482,6 +494,17 @@
       wrap.appendChild(b);
     });
     paintHints();
+    // The one line: the chosen sounds in the picker's own order.
+    function paintChosen() {
+      var list = Sona.ALL_SOUNDS.filter(function (s) { return sel.has(s); });
+      document.getElementById("soundsChosen").textContent = list.length === Sona.ALL_SOUNDS.length ? "All sounds"
+        : list.map(function (s) { return Sona.soundLabel ? Sona.soundLabel(s) : s; }).join(", ");
+    }
+    paintChosen();
+    document.getElementById("soundsChange").onclick = function () {
+      var box = document.getElementById("soundsPick"), open = box.hidden;
+      box.hidden = !open; this.textContent = open ? "Done" : "Change"; this.setAttribute("aria-expanded", String(open));
+    };
     function paintTargetSound() {
       var pick = document.getElementById("targetSound"), note = document.getElementById("targetSoundNote");
       var current = Sona.getProfile(), assigned = Sona.homeworkSounds ? Sona.homeworkSounds() : [];

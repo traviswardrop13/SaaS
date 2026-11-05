@@ -63,11 +63,18 @@ ask, Firsts or Recent practice on Progress.
   daily reps picker went ("the new goal ... is just minutes per day", which
   setup asks and saves as `dailyGoal`). The goal machinery itself (gift ring,
   chests, goal stamps, homework's own number) is unchanged.
-- **Saved tries left Progress**, so nothing in the app plays the one clip a day
-  `saveRecording` may still keep on the phone, while `parents.html`,
-  `privacy.html` and `for-slps.html` say a parent "can listen back". Whether to
-  stop keeping the clip (and change that copy) or bring a player back is
-  Travis's open call.
+- **No clip is kept any more** (Travis, same day: "dont save"). Saved tries
+  left Progress, so `saveRecording` keeps nothing (it stays only as a name an
+  old cached page may call), practice never calls it, and each device clears
+  every clip an older build kept, once (`_dropAllRecordings`, done-mark
+  `_sonaClipsGone`, never `sona.` so a backup can't carry it). `MIC_PROMISE`,
+  `parents.html`, `for-slps.html`, `privacy.html` (updated 5 Nov 2026),
+  `/support` and `/families` now say audio is never saved. The practice page
+  still runs its recorder into memory while it listens and throws the result
+  away; removing the recorder itself is a separate, larger change.
+- **Settings shows the chosen sounds as one line** ("S, L, R", or "All
+  sounds") with a **Change** button that opens the grid of every sound
+  (Travis, same day: "yeah change button").
 - **Talk to us fits one screen:** Rachel's card is her name with "MS, CF-SLP ·
   Co-founder" and one line, "I'm a pediatric speech-language pathologist in
   my clinical fellowship."; "We read every message." is the page's subtitle;
@@ -5124,15 +5131,14 @@ the app) is a later idea, not built; it is Rachel's to shape.
 ## Hard rules
 - Merges to main/prod only on Travis's explicit go ("merge").
 - **No audio ever leaves the device.** There is no cloud scorer: every verdict
-  is decided on the phone from the spectral shape of what was said. One clip a
-  day may be kept in local IndexedDB so a parent can listen back — it is never
-  uploaded. The consent copy says exactly this, and it is true because there is
-  no mechanism to break it, not because a checkbox is off. Its short form, the
-  grown-ups line on every mic ask but setup's (Travis took it off setup's
-  microphone step on 31 Oct 2026) (`MIC_PROMISE`), is "audio is never
-  uploaded. One try a day is saved on this phone so you can listen back."
-  (Travis, 2 Oct 2026, asked for "audio is never recorded or uploaded"):
-  never "never recorded", which that one saved try would make false. `mictest` pins the
+  is decided on the phone from the spectral shape of what was said. **Nothing
+  is saved either** (since 5 Nov 2026; until then one clip a day was kept in
+  local IndexedDB so a parent could listen back). The consent copy says
+  exactly this, and it is true because there is no mechanism to break it, not
+  because a checkbox is off. Its short form, the grown-ups line on every mic
+  ask but setup's (Travis took it off setup's microphone step on 31 Oct 2026)
+  (`MIC_PROMISE`), is "audio is never uploaded or saved." Still never "never
+  recorded": the practice page holds a try in memory while it listens. `mictest` pins the
   mechanism's absence: no route but the two founder clip tools (`isolate`,
   `voice-change`, behind `FOUNDER_KEY`) accepts a file, and no family page
   posts to one. `/api/stt` was deleted on 25 Sep 2026 for exactly this.

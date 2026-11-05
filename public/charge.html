@@ -2062,7 +2062,6 @@
         })().catch(function(){control.cancel();});
       });
     }
-    function clipBlob(){return !attemptInterrupted&&chunks.length?new Blob(chunks,{type:(rec&&rec.mimeType)||"audio/webm"}):null;}
     // The same tri-state verdict, using only local evidence from this attempt.
     // A pause does not erase an earlier transcript or change its scoring rule.
     async function verifyClip(){
@@ -2217,13 +2216,9 @@
       showTurtle(true);
       var v=await burstAndVerify();
       if(v===null || !(await practiceReady()))return;
-      // One honest PASSED clip a day is kept ON-DEVICE (never uploaded) so the
-      // parent can hear first-try vs today on the Progress "Listen" shelf.
-      if(v==="pass" && reps>0 && !DEMO_REPLAY){ try{
-        // KIDS1: per-child, or one sibling's saved clip blocks the other's
-        var rk=(S&&S.kkey)?S.kkey("sona.reclast"):"sona.reclast", tdy=new Date().toDateString();
-        if(localStorage.getItem(rk)!==tdy){ var rb=clipBlob(); if(rb&&S&&S.saveRecording){ S.saveRecording({sound:SOUND,word:String(ITEM.word||ITEM.t).toLowerCase(),level:ITEM.level,blob:rb}); localStorage.setItem(rk,tdy); } }
-      }catch(e){} }
+      // No clip is kept (Travis, 5 Nov 2026: "dont save"). Until then one
+      // passed try a day went to Sona.saveRecording for Progress's "Saved
+      // tries", which left the page the same day.
       // SLP gating: the rung only ever advances on HONEST evidence — two clean
       // scored rounds at the stretch level, never on mercy or offline scoring.
       if(v==="pass" && useRung>=RUNG && S && S.rungWin && !DEMO_REPLAY){

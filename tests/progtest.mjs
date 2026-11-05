@@ -279,7 +279,7 @@ ok("primer shows before the mic prompt", mp.shown);
 // uploaded, and the one try a day kept on the phone. Not "never recorded":
 // that one try is recorded, on the phone, and the line must not deny it.
 ok("primer explains listening honestly",
-  /never uploaded/.test(mp.txt) && /One try a day is saved on this phone/.test(mp.txt) && !/never recorded/i.test(mp.txt), mp.txt);
+  /never uploaded or saved/.test(mp.txt) && !/listen back|saved on this phone/.test(mp.txt) && !/never recorded/i.test(mp.txt), mp.txt);
 ok("primer offers a soft decline (protects the OS prompt)", /Not now/.test(mp.txt));
 await page.evaluate(() => document.getElementById("micPrimeBtn").click());
 await page.waitForTimeout(500);

@@ -183,6 +183,7 @@ try {
   await page.locator("#targetSound").selectOption("S");
   ok("Settings alone can deliberately switch the family back to S",await page.evaluate(()=>Sona.getProfile().targetSound==="S"&&Sona.rotSound()==="S"));
   if(process.env.TARGET_SOUND_SCREENSHOTS)await page.screenshot({path:path.join(process.env.TARGET_SOUND_SCREENSHOTS,"settings-sound.png"),fullPage:true});
+  await page.locator('#soundsChange').click(); // the grid opens behind "Change" since 5 Nov 2026
   await page.locator('#sounds [data-s="S"]').click();
   ok("removing the parent's selected sound clears its pin safely",await page.evaluate(()=>document.getElementById("targetSound").value===""&&Sona.targetSound()==="R"&&!Sona.getProfile().targetSound));
   await page.locator('#sounds [data-s="S"]').click();
