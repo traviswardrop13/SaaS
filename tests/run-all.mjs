@@ -133,6 +133,7 @@ const SUITES = [
   "sayitcardtest.mjs", // SAYIT1: the six round games' say-it card speaks (ask, Rachel's take, "Go!") before it listens, and is never frozen; a child answering right on "Go!" is heard
   "firstgametest.mjs", // FIRST1: setup goes straight to the first game; its end card is the one offer; Home greys the rest
   "sayplaytest.mjs", // SAYPLAY1: the twenty Say & Play games: only a voice moves them, quiet mic, no practice data
+  "wordpictest.mjs", // WORDPIC1: every Say & Play game, and the daily adventure's, shows the word's picture, not an empty box
   "playgamestest.mjs", // PLAYGAMES1: Hoops, Soccer Goal and Dino Dig played through: the word earns the move, every round ends on a win
   "racecartest.mjs", // real steering, brakes, speech slow-road powers, eight pit stops, fit and interruption safety
   "flowertest.mjs", // FLOWER1: actual poured drops grow a plant, speech widens the shower, progress survives help
