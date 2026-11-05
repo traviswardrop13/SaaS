@@ -64,12 +64,28 @@
   function drawGate(){
     if(distance<LEG-58&&!gate&&!finished&&!doneAt)return;
     var z=gate||doneAt?19:Math.max(19,LEG-distance),p=project(gateX(),z),w=W*.30*p.s,lv=gate?level():0,rx=w*.58*SCALE[lv],glow=gate&&lv>=2;
-    ctx.save();ctx.globalAlpha=(glow?.9:.75)+.1*Math.sin(clock*(glow?7:4));
-    if(glow){ctx.fillStyle="rgba(136,238,231,.32)";ctx.beginPath();ctx.ellipse(p.x,p.y,rx,w*.16*Math.min(2,SCALE[lv]),0,0,Math.PI*2);ctx.fill();}
-    ctx.strokeStyle="#fff9df";ctx.lineWidth=Math.max(3,(glow?9:6)*p.s);ctx.shadowColor="#40c6cd";ctx.shadowBlur=glow?26:15;ctx.beginPath();ctx.ellipse(p.x,p.y,rx,w*.16*Math.min(2,SCALE[lv]),0,0,Math.PI*2);ctx.stroke();ctx.restore();
+    // during the cheer the ring and its sign are drawn round the car instead (drawCheer)
+    if(!doneAt){ctx.save();ctx.globalAlpha=(glow?.9:.75)+.1*Math.sin(clock*(glow?7:4));
+      if(glow){ctx.fillStyle="rgba(136,238,231,.32)";ctx.beginPath();ctx.ellipse(p.x,p.y,rx,w*.16*Math.min(2,SCALE[lv]),0,0,Math.PI*2);ctx.fill();}
+      ctx.strokeStyle="#fff9df";ctx.lineWidth=Math.max(3,(glow?9:6)*p.s);ctx.shadowColor="#40c6cd";ctx.shadowBlur=glow?26:15;ctx.beginPath();ctx.ellipse(p.x,p.y,rx,w*.16*Math.min(2,SCALE[lv]),0,0,Math.PI*2);ctx.stroke();ctx.restore();}
     if(leg===total-1)sprite("racecar-finish",W/2,p.y-W*.1*p.s,W*.8*p.s,W*.8*p.s*.38);
-    else{ctx.fillStyle="#fff7e8";ctx.font="800 "+Math.max(12,23*p.s)+"px Nunito";ctx.textAlign="center";ctx.fillText("PIT STOP",p.x,p.y-w*.25);}
+    else if(!doneAt){ctx.fillStyle="#fff7e8";ctx.font="800 "+Math.max(12,23*p.s)+"px Nunito";ctx.textAlign="center";ctx.fillText("PIT STOP",p.x,p.y-w*.25);}
     if(pointing())drawArrow(p);
+  }
+  // The cheer, the moment the car gets in. The car stops on the ring, and its
+  // picture (wider than the ring) used to cover all of it and the PIT STOP
+  // sign, so the moment the child steered for showed only the car. Now the
+  // ring goes round the car's wheels, its far half drawn behind the car and
+  // its near half in front, and the sign stands over the roof. The finish
+  // keeps its banner, which is already above the car.
+  var cheerAt=null;
+  function drawCheer(front){
+    var c=project(car,15),cw=Math.min(130,W*.29),ch=cw*.74,g=project(gateX(),19),y=c.y-ch*.1,rx=Math.max(W*.30*g.s*.58,cw*.6),ry=Math.max(9,ch*.2);
+    ctx.save();ctx.strokeStyle="#fff9df";ctx.lineWidth=Math.max(3,7*g.s);ctx.shadowColor="#40c6cd";ctx.shadowBlur=18;ctx.beginPath();ctx.ellipse(c.x,y,rx,ry,0,front?0:Math.PI,front?Math.PI:Math.PI*2);ctx.stroke();ctx.restore();
+    if(!front)return;
+    var size=Math.max(14,23*g.s),sy=c.y-ch-size*.6;cheerAt={ring:{x:c.x,y:y,rx:rx,ry:ry},car:{x:c.x,top:c.y-ch,bottom:c.y,w:cw},sign:leg<total-1?{x:c.x,y:sy,size:size}:null};publish();
+    if(leg===total-1)return;
+    ctx.save();ctx.font="800 "+size+"px Nunito";ctx.textAlign="center";ctx.lineJoin="round";ctx.lineWidth=4;ctx.strokeStyle="rgba(47,143,149,.8)";ctx.strokeText("PIT STOP",c.x,sy);ctx.fillStyle="#fff7e8";ctx.fillText("PIT STOP",c.x,sy);ctx.restore();
   }
   // A bouncing arrow from the car toward the ring (or down into it when the
   // car is already above it), for children who can't read "Drag into the ring".
@@ -83,11 +99,15 @@
     if(slow>0){ctx.strokeStyle="#88eee7";ctx.lineWidth=4;ctx.globalAlpha=.65;ctx.beginPath();ctx.ellipse(0,-h*.42,w*.56,h*.67,0,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1;}
     if(!sprite("racecar-car",0,0,w,h)){ctx.fillStyle="#d4655e";ctx.fillRect(-w/2,-h,w,h);}ctx.restore();
   }
-  function draw(){if(!ctx||!W||!H)return;ctx.clearRect(0,0,W,H);drawRoad();objects.slice().sort(function(a,b){return b.z-a.z;}).forEach(drawObject);drawGate();drawCar();}
+  function draw(){if(!ctx||!W||!H)return;ctx.clearRect(0,0,W,H);drawRoad();objects.slice().sort(function(a,b){return b.z-a.z;}).forEach(drawObject);drawGate();cheerAt=null;if(doneAt)drawCheer(false);drawCar();if(doneAt)drawCheer(true);}
   function publish(){window.__racecar={running:running,paused:parked,leg:leg,legs:total,distance:distance,travel:travel,car:car,target:target,slow:slow,factor:slow>0?.48:1,braking:braking,hits:hits,passed:passed,gate:gate,gateX:gateX(),finished:finished,
-    level:level(),misses:misses,gateWait:gateWait,activeGate:activeGate,arrow:pointing(),inRing:gate&&inRing(),celebrating:doneAt>0,young:young,
+    level:level(),misses:misses,gateWait:gateWait,activeGate:activeGate,arrow:pointing(),inRing:gate&&inRing(),celebrating:doneAt>0,young:young,cheer:cheerAt,stars:+$("raceStarCount").textContent,
     objects:objects.map(function(o){return{id:o.id,kind:o.kind,x:o.x,z:o.z};})};}
-  function hud(){var pct=clamp((leg+distance/LEG)/total,0,1);dirty=true;$("raceProgressFill").style.width=(pct*100)+"%";$("raceDistance").textContent=finished?"Finished!":"Start";$("racePower").hidden=!(slow>0&&running);$("racePowerFill").style.width=(slow/POWER*100)+"%";$("raceHelp").disabled=!running||slow>POWER-2||finished;
+  // The stars caught this race. They were always counted (passed) and never
+  // shown, so catching one did nothing a child could see but a tap chime.
+  var shownStars=-1;
+  function stars(){if(shownStars===passed)return;shownStars=passed;$("raceStarCount").textContent=String(passed);$("raceStars").setAttribute("aria-label",passed===1?"1 star caught":passed+" stars caught");}
+  function hud(){var pct=clamp((leg+distance/LEG)/total,0,1);dirty=true;stars();$("raceProgressFill").style.width=(pct*100)+"%";$("raceDistance").textContent=finished?"Finished!":"Start";$("racePower").hidden=!(slow>0&&running);$("racePowerFill").style.width=(slow/POWER*100)+"%";$("raceHelp").disabled=!running||slow>POWER-2||finished;
     $("raceHint").textContent=braking?"Nice and steady":gate?(pointing()?"Follow the arrow":"Drag into the ring"):slow>0?"Slow road!":"Drag to steer";publish();}
   function addObjects(){var xs=[-.65,0,.65],i=(serial*2+leg)%3,x=xs[i],id=serial++,kind=serial%3===0?"car":"cone";objects.push({id:id,kind:kind,x:x,z:kind==="car"?55:70,hit:false});objects.push({id:serial++,kind:"star",x:xs[(i+1)%3],z:55,hit:false});}
   function fingerOn(){return drag!==null||keys.left||keys.right;}

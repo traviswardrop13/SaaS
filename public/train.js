@@ -61,6 +61,19 @@
   // which way the friend is, for the arrow and the glowing button
   function towards() { var d = STOPS[stage] - position; return Math.abs(d) <= berth() ? 0 : d > 0 ? 1 : -1; }
   function banner(text) { if ($("trainBanner").textContent !== text) $("trainBanner").textContent = text; }
+  // The banner follows the step (the status pill says the moment). It used
+  // to keep "Hold Forward. Let go by our friend" after the train had stopped
+  // by the friend, under a pill saying "All aboard!". Now, when the train
+  // comes to rest by the friend it says to drag them in, and when the child
+  // drives off again before boarding it says to drive. Only on a change,
+  // so a miss's own kind words stay until the next one.
+  var atFriend = false;
+  function stepBanner() {
+    if (!canPlay() || !waiting()) return;
+    var ready = canBoard(); if (ready === atFriend) return; atFriend = ready;
+    if (ready) { if (!held) banner(ladder() >= 2 ? "Follow the arrow into the door" : "Drag our friend into the door"); }
+    else if (driving()) banner(backOwner !== null || keys.back ? "Hold Back. Let go by our friend" : "Hold Forward. Let go by our friend");
+  }
   function image(name) { var i = art[name]; return i && i.complete && i.naturalWidth ? i : null; }
   function loadArt() {
     [["bg", "/assets/crafted/game/train-countryside-v1.webp"], ["train", "/assets/crafted/game/train-engine-coach-v1.webp"]].concat(FRIENDS.map(function (name) { return [name, "/assets/crafted/buddy-" + name + "-sit.webp"]; })).forEach(function (p) { var i = new Image(); i.onload = function () { if (p[0] === "train") fit(); else draw(); }; i.src = p[1]; art[p[0]] = i; });
@@ -122,7 +135,7 @@
     $("trainForward").classList.toggle("guide", g && dir > 0); $("trainBack").classList.toggle("guide", g && dir < 0);
     p.classList.toggle("guide", guide() && canBoard() && !held);
     $("trainPower").hidden = power <= 0; $("trainPowerFill").style.width = power / POWER * 100 + "%";
-    $("trainStatusText").textContent = statusText();
+    $("trainStatusText").textContent = statusText(); stepBanner();
     $("trainLamp").className = canBoard() || held ? "ready" : ""; snapshot();
   }
   function background() {
@@ -293,7 +306,7 @@
   }
   function earnPower() { active = true; paused = false; power = POWER; powerArmed = false; last = 0; hud(); }
   function pause() { paused = true; last = 0; stopInputs(); cancelPassenger(); hud(); }
-  function newTrip() { stageMisses = 0; tryTime = 0; attemptOpen = false; wasInside = false; wasMoving = false; saidMiss = {}; lastMiss = ""; doneAt = 0; }
+  function newTrip() { stageMisses = 0; tryTime = 0; attemptOpen = false; wasInside = false; wasMoving = false; saidMiss = {}; lastMiss = ""; doneAt = 0; atFriend = false; }
   function reset() { stopInputs(); cancelPassenger(); newTrip(); active = false; paused = false; won = false; stage = 0; boarded = 0; power = 0; powerArmed = false; position = 0.25; velocity = 0; misses = 0; last = 0; updateGeometry(); banner("Ready for five friendly stops?"); hud(); draw(); }
   window.Train = {
     init:function (a,n) { api = a; stages = n || 5; cv = $("trainCanvas"); ctx = cv.getContext("2d"); loadArt(); controls(); fit(); reset(); raf = requestAnimationFrame(frame); },

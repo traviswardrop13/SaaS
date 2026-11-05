@@ -68,7 +68,10 @@
     startRow = Math.floor(boardPath[0] / 3); endRow = Math.floor(boardPath[boardPath.length - 1] / 3);
     tiles = []; rotations = 0; tests = 0; solved = false; hintIndex = -1; connected = false;
     misses = 0; work = 0; lastTapAt = -99; idleSince = clock; doneAt = 0; nudged = false;
-    try { var age = parseInt(window.Sona && Sona.getProfile ? Sona.getProfile().age : "", 10); little = age > 0 && age <= 4; } catch (e) { little = false; }
+    // Ages 2 to 4, by the app's one reader (Sona.playStyle, as every other
+    // game asks). This read `profile.age`, which nothing saves (setup keeps
+    // childAge), so a little one never got the gentler ladder.
+    try { little = !!(window.Sona && Sona.playStyle && Sona.playStyle() === "simple"); } catch (e) { little = false; }
     for (var i = 0; i < 9; i++) {
       var at = boardPath.indexOf(i), target;
       if (at >= 0) target = (at === 0 ? 8 : direction(i, boardPath[at - 1])) | (at === boardPath.length - 1 ? 2 : direction(i, boardPath[at + 1]));

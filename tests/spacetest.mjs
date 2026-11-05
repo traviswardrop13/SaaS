@@ -66,6 +66,9 @@ async function steerDrop(p){
 }
 const rect=(p,ids)=>p.evaluate(ids=>{const out={width:innerWidth,height:innerHeight,scroll:document.documentElement.scrollHeight};ids.forEach(id=>{const e=document.getElementById(id);if(!e)return;const r=e.getBoundingClientRect(),cs=getComputedStyle(e);out[id]={x:r.x,y:r.y,right:r.right,bottom:r.bottom,w:r.width,h:r.height,shown:cs.visibility!=='hidden'&&cs.display!=='none'&&!e.hidden&&r.width>0};});return out;},ids);
 const inside=(r,f)=>r&&r.x>=0&&r.y>=0&&r.right<=f.width+.5&&r.bottom<=f.height+.5;
+// where the word panel sits while the child talks, against the landing pad
+// (its glow reaches 19 px above the ground), the rocket and the banner
+const sky=p=>p.evaluate(()=>{const c=document.getElementById('spaceCanvas').getBoundingClientRect(),g=__space,e=document.getElementById('turnPanel'),t=e.getBoundingClientRect(),b=document.getElementById('spaceBanner').getBoundingClientRect();return{shown:getComputedStyle(e).visibility!=='hidden',panelTop:t.top,panelBottom:t.bottom,padTop:c.top+g.pad.y*c.height-19,shipTop:c.top+(g.ship.y-g.ship.h/2)*c.height,shipBottom:c.top+(g.ship.y+g.ship.h/2)*c.height,banner:b.bottom};});
 const hitsItself=(p,id)=>p.evaluate(id=>{const e=document.getElementById(id),r=e.getBoundingClientRect(),t=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);return !!t&&(t===e||e.contains(t));},id);
 try{
  h=await gameHarness('space',PORT);
@@ -89,6 +92,9 @@ try{
   ok('every banner line is kind (no missed, wrong, fail, score or points)',lines.length>=10&&lines.every(l=>!UNKIND.test(l)),lines.filter(l=>UNKIND.test(l)));
   ok('the start card, the mic card and the spoken intro say the word earns each flight',/<p>Say each word two times to start a flight\.<\/p>/.test(page)&&/id="primer"[\s\S]*?Say each word two times to start a flight\./.test(page)&&/intro:"Say each word two times to start a flight\./.test(page),null);
   ok('the help pill is labelled as extra help',/id="spaceHelp"[^>]*aria-label="Extra help: say your word for an easy flight"/.test(page),null);
+  // holding Engine flies the rocket UP, away from the pad: no banner may send a child there to go
+  const first=(say.match(/word:\s*"([^"]+)"/)||[])[1]||'';
+  ok('no banner says to hold Engine to go, and a flight\'s first words point at the glow',!lines.some(l=>/hold engine/i.test(l))&&/glow/i.test(first),{first,lines});
  }
  // ── a held engine through a background: the pointer lets go, the flight waits ──
  jobs.push(['background',async()=>{
@@ -105,7 +111,7 @@ try{
   await advance(page,12500);s=await state(page);const reps0=await page.evaluate(()=>__quiet.sfx.filter(x=>x.name==='correct').length);
   ok('a whole window of silence earns nothing: the mic waits for a tap',s.speech.phase==='nudge'&&s.speech.said===0&&s.speech.step===0&&!s.space.active&&!s.space.piloted&&s.space.power===0&&reps0===0,s);
   await page.locator('#micBtn').click();
-  ok('two accepted sayings earn the first flight',await sayWord(page));s=await state(page);const origin={...s.space.ship},gentle=s.space.gravity,forgiving=s.space.safeVy;await advance(page,1800);s=await state(page);ok('the word and idle animation never pilot or land for the child',!s.space.piloted&&s.space.ship.x===origin.x&&s.space.ship.y===origin.y&&s.space.landed===0&&s.speech.step===0,s);
+  ok('two accepted sayings earn the first flight',await sayWord(page));s=await state(page);ok('the flight\'s first words send the child to the glow, not to the engine',/glow/i.test(s.space.banner)&&!/hold engine/i.test(s.space.banner),s.space.banner);const origin={...s.space.ship},gentle=s.space.gravity,forgiving=s.space.safeVy;await advance(page,1800);s=await state(page);ok('the word and idle animation never pilot or land for the child',!s.space.piloted&&s.space.ship.x===origin.x&&s.space.ship.y===origin.y&&s.space.landed===0&&s.speech.step===0,s);
   const flown=await thrustPointer(page,700,{drag:45,cancelOther:true});ok('one held thumb really thrusts and steers',flown.space.thrust&&flown.space.piloted&&flown.space.ship.vx>0&&flown.space.ship.x>origin.x&&flown.space.ship.y<origin.y,flown);s=await state(page);ok('releasing that thumb cuts the engines and steering',!s.space.thrust&&s.space.steering===0,s);
   await thrustPointer(page,11000);s=await state(page);ok('speech genuinely eases gravity and landing speed',s.space.power===0&&s.space.ladder===0&&gentle<s.space.gravity*.7&&forgiving>s.space.safeVy*1.3,{gentle,ordinary:s.space.gravity,forgiving,ordinarySpeed:s.space.safeVy});
   await keys(page,['ArrowLeft']);await advance(page,1200);await keys(page);await advance(page,11000);s=await state(page);ok('a missed or hard touchdown retries the same accepted word',s.space.retries===1&&s.space.ladder===1&&s.space.active&&!s.space.piloted&&s.space.landed===0&&s.speech.step===0,s);
@@ -187,16 +193,19 @@ try{
  for(const viewport of [{width:320,height:568},{width:375,height:667},{width:390,height:844},{width:393,height:852},{width:768,height:1024}])jobs.push(['fit '+viewport.width,async()=>{
   const tag=viewport.width+'x'+viewport.height,{page,context,errors}=await fresh({viewport});await page.locator('#startBtn').click();await until(page,()=>__sayplay.listening);
   const turn=await rect(page,['turnPanel','hear','word','picBox','top']);
+  let k=await sky(page);ok('while the child says the first word, the panel hides neither the landing pad nor the waiting rocket '+tag,k.shown&&k.panelBottom<=k.padTop&&k.panelTop>=k.shipBottom&&k.panelTop>=k.banner,k);
   ok('a word turn fits '+tag,turn.turnPanel.shown&&inside(turn.turnPanel,turn)&&turn.turnPanel.y>=turn.top.bottom&&turn.hear.w>=44&&turn.hear.h>=44&&inside(turn.word,turn),turn);
   await sayWord(page);const fit=await page.evaluate(()=>{const rects=['spaceCanvas','spaceLeft','spaceThrust','spaceRight','spaceHelp'].map(id=>{const r=document.getElementById(id).getBoundingClientRect();return{id,x:r.x,y:r.y,right:r.right,bottom:r.bottom,w:r.width,h:r.height};});return{width:innerWidth,height:innerHeight,scroll:document.documentElement.scrollHeight,rects};});ok('spaceport fits '+tag,fit.scroll<=fit.height+1&&fit.rects.every(r=>r.x>=0&&r.y>=0&&r.right<=fit.width&&r.bottom<=fit.height),fit);ok('all flight controls stay large enough to touch '+tag,fit.rects.filter(r=>r.id!=='spaceCanvas').every(r=>r.w>=44&&r.h>=44),fit);
   const hud=await rect(page,['spaceCanvas','spaceHelp','spaceStatus','spaceControls','spaceBanner']),g=(await state(page)).space,c=hud.spaceCanvas,ground=c.y+g.groundY*c.h,spawnTop=c.y+(g.spawn.y-g.ship.h/2)*c.h;
   ok('no pill or control covers a landing pad, and the banner never covers the rocket '+tag,['spaceHelp','spaceStatus','spaceControls'].every(id=>!hud[id].shown||hud[id].y>=ground+8)&&spawnTop>=hud.spaceBanner.bottom,{ground,spawnTop,hud});
   await page.locator('#spaceHelp').click();await until(page,()=>__sayplay.listening);
   const ask=await rect(page,['turnPanel','helpBack','hear','top']);
+  k=await sky(page);ok('a help ask leaves the landing pad in sight '+tag,k.shown&&k.panelBottom<=k.padTop&&k.panelTop>=k.banner,k);
   ok('a help ask and its Back to the game pill fit '+tag,inside(ask.turnPanel,ask)&&ask.turnPanel.y>=ask.top.bottom&&ask.helpBack.shown&&inside(ask.helpBack,ask)&&ask.helpBack.w>=44&&ask.helpBack.h>=44&&ask.hear.h>=44&&await hitsItself(page,'helpBack'),ask);
   await page.screenshot({path:path.join(OUT,'sona-space-help-'+viewport.width+'.png')});
   await page.locator('#helpBack').click();await advance(page,20);ok('Back to the game returns to the flight '+tag,(await state(page)).speech.phase==='play'&&!(await state(page)).space.paused);
-  ok('a child can really land on this screen '+tag,await land(page,0),await state(page));await page.screenshot({path:path.join(OUT,'sona-space-'+viewport.width+'.png')});ok('fit has no runtime errors '+tag,errors.length===0,errors);await context.close();
+  ok('a child can really land on this screen '+tag,await land(page,0),await state(page));
+  await until(page,()=>__sayplay.phase==='turn');k=await sky(page);ok('between flights the panel sits above the rocket standing on its pad '+tag,k.shown&&k.panelBottom<=k.shipTop&&k.panelBottom<=k.padTop&&k.panelTop>=k.banner,k);await page.screenshot({path:path.join(OUT,'sona-space-'+viewport.width+'.png')});ok('fit has no runtime errors '+tag,errors.length===0,errors);await context.close();
  }]);
  }
  if(part==='all'||part==='landscape')for(const viewport of [{width:844,height:390},{width:568,height:320}])jobs.push(['landscape '+viewport.width,async()=>{

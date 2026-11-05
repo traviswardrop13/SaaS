@@ -75,6 +75,9 @@ try{
   ok('the train never runs off down the line: it waits a little past the friend',s.train.position<=s.train.station.position+.551,s.train.position);
   await page.mouse.up();const rel=(await tr(page)).velocity;await advance(page,120);s=await state(page);ok('releasing the throttle really brakes the train',Math.abs(s.train.velocity)<Math.abs(rel),s);await until(page,()=>Math.abs(__train.velocity)<.001,2500);
   ok('Back can recover an overshot station',await stationStop(page),await tr(page));s=await state(page);ok('a real stop lines the door up with the platform',Math.abs(s.train.position-s.train.station.position)<=s.train.berth&&Math.abs(s.train.velocity)<=s.train.safeSpeed&&s.train.canBoard&&s.train.passenger.visible,s);
+  // the banner follows the step: it once still said "Hold Forward. Let go by
+  // our friend" here, under a status pill saying "All aboard!"
+  ok('stopped by the friend, the banner says to drag them in (ladder 1)',s.train.status==='All aboard!'&&s.train.banner==='Drag our friend into the door',{banner:s.train.banner,status:s.train.status,ladder:s.train.ladder});
   // a tap on the friend that moves nothing is not a miss
   const m0=s.train.stageMisses;await hold(page,'#trainPassenger');await page.mouse.up();await advance(page,60);s=await state(page);ok('a tap on the friend is not a miss',s.train.stageMisses===m0&&s.train.boarded===0,s.train);
   s=await dropAt(page,{x:.1,y:s.train.door.y});ok('a misplaced passenger never boards, and it is a kind miss',s&&s.boarded===0&&s.stageMisses===m0+1&&s.lastMiss==='door'&&!s.passenger.dragging&&!UNKIND.test(s.banner),s);
@@ -107,7 +110,7 @@ try{
   ok('the help word slows travel and widens the stop and the door',s.train.maxSpeed<normal.speed*.8&&s.train.berth>normal.berth*1.4&&s.train.door.r>normal.r&&s.train.boarded===1&&s.speech.step===1&&s.train.power===10&&!s.train.powerArmed,{normal,after:s.train});
   await advance(page,8000);ok('the help power waits for the finger instead of running out while Echo talks',(await tr(page)).power===10);
   ok('real controls stop at the second station',await stationStop(page),await tr(page));ok('actual dragging boards the second friend',await board(page),await tr(page));await nextWord(page,1);
-  for(let stage=2;stage<5;stage++){if(!await sayWord(page))throw Error('Could not earn train leg '+stage);s=await state(page);ok('the next word alone does not board friend '+(stage+1),s.train.boarded===stage&&s.speech.step===stage,s);ok('physical travel stops at station '+(stage+1),await stationStop(page),await tr(page));ok('physical release boards friend '+(stage+1),await board(page),await tr(page));if(stage<4)await nextWord(page,stage);}
+  for(let stage=2;stage<5;stage++){if(!await sayWord(page))throw Error('Could not earn train leg '+stage);s=await state(page);ok('the next word alone does not board friend '+(stage+1),s.train.boarded===stage&&s.speech.step===stage&&s.train.banner==='Hold Forward. Let go by our friend',s);ok('physical travel stops at station '+(stage+1),await stationStop(page),await tr(page));s=await state(page);ok('…and the banner says to drag friend '+(stage+1)+' in',s.train.status==='All aboard!'&&s.train.banner==='Drag our friend into the door',{banner:s.train.banner,status:s.train.status});ok('physical release boards friend '+(stage+1),await board(page),await tr(page));if(stage<4)await nextWord(page,stage);}
   await until(page,()=>__sayplay.phase==='end',12000);s=await state(page);ok('five real stops and passenger drops finish the trip',s.speech.phase==='end'&&s.speech.step===5&&s.train.boarded===5&&s.train.won,s);
   const audio=await page.evaluate(()=>({leaks:__quiet.leakFrames,live:__quiet.live(),overlap:__quiet.sounds.filter(s=>__quiet.mics.some(m=>s.start<(m.end==null?__quiet.now():m.end)&&m.asked<s.end)).length,lines:__quiet.speech}));
   ok('train directions and chimes stay outside microphone turns',audio.leaks===0&&audio.live===0&&audio.overlap===0,audio);ok('the child hears how to stop and board',/let go/i.test(audio.lines.join('|'))&&/drag|aboard/i.test(audio.lines.join('|')),audio.lines);
@@ -132,6 +135,7 @@ try{
    await hold(page,'#trainForward');await until(page,()=>Math.abs(__train.position-__train.station.position)<.004&&Math.abs(__train.velocity)<.001,9000);s=await tr(page);
    ok('big ladder 3: holding either button drives to the friend and stops, but the finger must let go',Math.abs(s.position-s.station.position)<.004&&!s.canBoard&&s.status==='Let go now!',s);
    s=await release(page);ok('big ladder 3: letting go there is a good stop',s.canBoard&&s.boarded===0,s);
+   ok('big ladder 3: stopped by the friend, the banner says to follow the arrow into the door',s.banner==='Follow the arrow into the door'&&s.status==='All aboard!',{banner:s.banner,status:s.status});
    s=await dropAt(page,{x:s.train.x+s.train.w*.12,y:s.door.y+.02});ok('big ladder 3: a sloppy drop over the coach boards',s&&s.boarded===1,s);
    await nextWord(page,0);ok('big: the next word',await sayWord(page));s=await tr(page);ok('big: the next trip starts at ladder 0',s.ladder===0&&s.stageMisses===0,s);
    ok('big: a good stop',await stationStop(page));await advance(page,11000);s=await tr(page);ok('big: the word\'s own easy stops are over before the door tries',s.power===0&&s.canBoard,s);const base=s.door.baseR,dx=r=>({x:s.door.x+r,y:s.door.y});
@@ -154,7 +158,11 @@ try{
  if(!part||part==='keyboard'){
   const {page,context}=await fresh();await page.locator('#startBtn').focus();await page.keyboard.press('Space');await advance(page,200);ok('Space presses Let\'s play (the page no longer swallows it)',await page.evaluate(()=>__sayplay.phase!=='ready'));
   await sayWord(page);let s=await tr(page);const before=s.position;await page.locator('#trainForward').focus();await page.keyboard.down('Space');await advance(page,1300);s=await tr(page);ok('keyboard hold drives the actual train',s.position>before+.1&&s.velocity>0,s);await page.keyboard.up('Space');await until(page,()=>Math.abs(__train.velocity)<.001,2500);ok('keyboard release stops the same engine',Math.abs((await tr(page)).velocity)<.001);
-  await page.locator('#trainHearStep').evaluate(e=>{window.__heard=0;e.addEventListener('click',()=>window.__heard++);e.focus();});await page.keyboard.press('Space');await advance(page,100);ok('Space presses Hear step',await page.evaluate(()=>__heard===1));await context.close();
+  await page.locator('#trainHearStep').evaluate(e=>{window.__heard=0;e.addEventListener('click',()=>window.__heard++);e.focus();});await page.keyboard.press('Space');await advance(page,100);ok('Space presses Hear step',await page.evaluate(()=>__heard===1));
+  // driving off again before boarding: the banner says to drive again
+  ok('the keyboard driver stops by the friend',await stationStop(page));s=await tr(page);ok('…and the banner says to drag them in',s.banner==='Drag our friend into the door',s.banner);
+  await hold(page,'#trainBack');await advance(page,100);s=await tr(page);ok('holding Back again from the stop: the banner says to drive, not to drag',!s.canBoard&&s.banner==='Hold Back. Let go by our friend',{banner:s.banner,canBoard:s.canBoard});
+  await release(page);await context.close();
  }
  // ── (e) fit: play, a word turn and a help ask, at four sizes ──
  if(!part||part==='fit'){

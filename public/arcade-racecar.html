@@ -8,14 +8,14 @@
     <canvas id="raceCanvas" role="img" aria-label="A mountain race track. Drag left or right to steer around cones and into the glowing ring."></canvas>
     <div id="raceBanner" role="status">Your very own race day</div>
     <div id="raceControls">
-      <button id="raceBrake" class="cream-pill" aria-label="Hold to brake"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14M16 5v14" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></svg></button>
+      <button id="raceBrake" class="cream-pill" aria-label="Hold to brake"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.3 1.5h7.4l6.8 6.8v7.4l-6.8 6.8H8.3l-6.8-6.8V8.3Z" fill="currentColor"/><text class="brakeWord" x="12" y="14.6" text-anchor="middle">STOP</text></svg></button>
       <span id="raceHint">Drag to steer</span>
       <button id="raceHelp" class="act-pill" aria-label="Extra help: say your word again to slow the road"><img src="/assets/crafted/echo-wave.webp" alt=""><span>Slow road</span><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="12" rx="3" fill="currentColor"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4M9 21h6" fill="none" stroke="currentColor" stroke-width="2"/></svg></button>
     </div>
     <div id="racePower" hidden><span>Slow road</span><div><i id="racePowerFill"></i></div></div>
   </div>
   <header id="top"><button id="close" aria-label="Back to games"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg></button><span class="hudpill" id="raceTitle">Race Car</span><span id="spacer"></span><span class="hudpill" id="dots" role="img" aria-label="0 of 8"></span></header>
-  <div id="raceProgress"><span id="raceDistance">Start</span><div><i id="raceProgressFill"></i></div><span>Finish</span></div>
+  <div id="raceProgress"><span id="raceDistance">Start</span><div><i id="raceProgressFill"></i></div><span>Finish</span><span id="raceStars" role="img" aria-label="0 stars caught"><img src="/assets/crafted/game/star.webp" alt="" onerror="this.hidden=true"><b id="raceStarCount">0</b></span></div>
   <section id="turnPanel" aria-live="polite">
     <div id="picBox"><span id="pic"></span></div><div id="word"></div>
     <button id="hear" class="cream-pill" aria-label="Hear the word again"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4Zm12 0a5 5 0 0 1 0 6m3-9a9 9 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span>Hear it</span></button>

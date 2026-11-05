@@ -250,7 +250,7 @@ await section("an old cap, and who never sees the sheet", async () => {
 
 // ── 3. the silent, passive library ──────────────────────────────────────
 await section("Home only reads", async () => {
-  const f = await fresh({ trophies: 800, premium: true, levels: { pick: { slice: 3, run: 2 }, seen: { slice: 3, run: 3 } }, bests: { run: { n: 570, at: "2026-10-02" } } });
+  const f = await fresh({ trophies: 800, premium: true, levels: { pick: { slice: 3, run: 2 }, seen: { slice: 3, run: 3 } }, bests: { run: { n: 570, at: "2026-10-02", c: "stars" } } });
   try {
     await f.page.goto(origin + "/__seed");
     const before = await store(f.page);
@@ -284,9 +284,9 @@ await section("Home only reads", async () => {
 // ── 4. small phones ─────────────────────────────────────────────────────
 for (const vp of [{ width: 320, height: 568 }, { width: 390, height: 844 }, { width: 768, height: 1024 }]) {
   await section("fit at " + vp.width, async () => {
-    const f = await fresh({ ...vp, trophies: 800, premium: true, levels: { pick: { run: 3, tiles: 2, hoops: 2, bubbles: 3 }, seen: { run: 3, tiles: 3, hoops: 3, bubbles: 3 } }, bests: { run: { n: 570, at: "2026-10-02" } } });
+    const f = await fresh({ ...vp, trophies: 800, premium: true, levels: { pick: { run: 3, tiles: 2, hoops: 2, bubbles: 3 }, seen: { run: 3, tiles: 3, hoops: 3, bubbles: 3 } }, bests: { run: { n: 570, at: "2026-10-02", c: "stars" } } });
     try {
-      await f.page.evaluate(() => { localStorage.setItem("sona.playlevel.v1", JSON.stringify(Object.assign(JSON.parse(localStorage.getItem("sona.playlevel.v1")), { best: { run: { "3": { n: 570, at: "2026-10-20" } }, tiles: { "2": { n: 53, at: "2026-10-20" } } } }))); });
+      await f.page.evaluate(() => { localStorage.setItem("sona.playlevel.v1", JSON.stringify(Object.assign(JSON.parse(localStorage.getItem("sona.playlevel.v1")), { best: { run: { "3": { n: 570, at: "2026-10-20", c: "stars" } }, tiles: { "2": { n: 53, at: "2026-10-20" } } } }))); });
       await home(f.page);
       const w = vp.width + "px: ";
       if (vp.width === 320) { await card(f.page, "run").scrollIntoViewIfNeeded(); await f.page.screenshot({ path: path.join(OUT, "roadtest-badges-320.png") }); }

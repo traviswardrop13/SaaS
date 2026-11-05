@@ -7,6 +7,20 @@ const state=p=>p.evaluate(()=>({speech:window.__sayplay,sea:window.__treasure}))
 async function drawRoute(p,points,steps=12){const b=await p.locator('#seaCanvas').boundingBox(),s=(await state(p)).sea,map=s.map,coords=[s.boat,...points],screen=v=>map.rotated?{x:b.x+map.x+v.y*map.w,y:b.y+map.y+(1-v.x)*map.h}:{x:b.x+map.x+v.x*map.w,y:b.y+map.y+v.y*map.h};const first=screen(coords[0]);await p.mouse.move(first.x,first.y);await p.mouse.down();for(const v of coords.slice(1)){const pt=screen(v);await p.mouse.move(pt.x,pt.y,{steps});}await p.mouse.up();}
 // How much of a path, in map fractions, is painted the hint's cream colour.
 const creamAlong=(p,pts)=>p.evaluate(pts=>{const c=document.getElementById('seaCanvas'),k=c.width/c.getBoundingClientRect().width,x=c.getContext('2d'),m=__treasure.map;let hit=0,n=0;for(let i=1;i<pts.length;i++){const a=pts[i-1],b=pts[i],len=Math.hypot((b.x-a.x)*m.w,(b.y-a.y)*m.h);for(let d=0;d<len;d+=1){const f=d/len,px=m.x+(a.x+(b.x-a.x)*f)*m.w,py=m.y+(a.y+(b.y-a.y)*f)*m.h;if(i===1&&f<.35)continue;const v=x.getImageData(Math.round(px*k),Math.round(py*k),1,1).data;n++;if(v[0]>235&&v[1]>230&&v[2]>185)hit++;}}return n?hit/n:0;},pts);
+// Where the calm-seas path crosses a painted island, read off the map picture
+// itself: sand, rocks, trunks and palm leaves are warm or leaf green, the sea
+// is blue (white surf is neither). Only inside boxes round the four islands
+// and their palms (the parchment edge, the compass and the gulls are not
+// islands). As in the game, the line
+// may leave the boat's own spot and reach the ring's, since a boat can stop
+// on a beach and the last ring sits on one. The game's own outlines are not
+// used: they are what drew the line over the palm trees.
+const crossesIsland=(p,pts)=>p.evaluate(async({pts,src})=>{
+ if(!window.__mapPx){const img=new Image();img.src=src;await img.decode();const c=document.createElement('canvas');c.width=img.naturalWidth;c.height=img.naturalHeight;const x=c.getContext('2d');x.drawImage(img,0,0);window.__mapPx={w:c.width,h:c.height,d:x.getImageData(0,0,c.width,c.height).data};}
+ const m=window.__mapPx,boxes=[[.47,.125,.905,.26],[.64,.06,.905,.125],[.11,.23,.66,.44],[.33,.415,.905,.61],[.11,.58,.65,.79]],dist=(a,b)=>Math.hypot(a.x-b.x,(a.y-b.y)*1.5),boat=pts[0],goal=pts[pts.length-1],out=[];
+ const island=(x,y)=>{if(!boxes.some(b=>x>=b[0]&&x<=b[2]&&y>=b[1]&&y<=b[3]))return false;const i=(Math.min(m.h-1,Math.floor(y*m.h))*m.w+Math.min(m.w-1,Math.floor(x*m.w)))*4,r=m.d[i],g=m.d[i+1],bl=m.d[i+2];if(r>205&&g>205&&bl>205)return false;return (r>=g-5&&r-bl>30)||(g>bl+60&&bl<150);};
+ for(let i=1;i<pts.length;i++){const a=pts[i-1],b=pts[i],len=Math.hypot((b.x-a.x)*m.w,(b.y-a.y)*m.h);for(let k=0;k<=len;k++){const f=k/Math.max(1,len),q={x:a.x+(b.x-a.x)*f,y:a.y+(b.y-a.y)*f};if(dist(q,boat)<.05||dist(q,goal)<.07)continue;if(island(q.x,q.y))out.push([+q.x.toFixed(3),+q.y.toFixed(3)]);}}
+ return out;},{pts,src:'/assets/crafted/game/treasure-map-play-v2.webp'});
 const inView=(r,vw,vh)=>r&&r.width>0&&r.x>=-.5&&r.y>=-.5&&r.right<=vw+.5&&r.bottom<=vh+.5;
 const rects=p=>p.evaluate(()=>{const g=id=>{const e=document.getElementById(id);if(!e||e.hidden)return null;const r=e.getBoundingClientRect(),cs=getComputedStyle(e);return cs.visibility==='hidden'||cs.display==='none'?null:{x:r.x,y:r.y,right:r.right,bottom:r.bottom,width:r.width,height:r.height};};return{vw:innerWidth,vh:innerHeight,reset:g('seaReset'),help:g('seaHelp'),banner:g('seaBanner'),controls:g('seaControls'),power:g('seaPower'),top:g('top'),panel:g('turnPanel'),hear:g('hear'),back:g('helpBack'),mic:g('micBtn')};});
 try{
@@ -46,7 +60,10 @@ try{
   await page.screenshot({path:path.join(OUT,'sona-treasure-sailing.png')});
   for(let leg=0;leg<8;leg++){
    if(leg&&!await sayWord(page))throw new Error('No earned word for harbour '+leg);
-   s=await state(page);await drawRoute(page,[...s.sea.channel,s.sea.goal]);
+   s=await state(page);
+   const cross=await crossesIsland(page,[s.sea.boat,...s.sea.channel]);
+   ok('the calm-seas path to harbour '+(leg+1)+' goes round every painted island, palm trees too',s.sea.hintShown==='bold'&&s.sea.channel.length>0&&cross.length===0,{n:cross.length,at:cross.slice(0,3),path:[s.sea.boat,...s.sea.channel]});
+   await drawRoute(page,[...s.sea.channel,s.sea.goal]);
    const reached=await until(page,()=>__treasure.celebrating||__sayplay.step>__treasure.leg,20000);s=await state(page);ok('a drawn safe route actually sails to harbour '+(leg+1),reached,s);if(!reached)break;
    if(leg===0){ok('the harbour cheer plays first and the step waits for it',s.sea.celebrating&&s.speech.step===0&&await page.evaluate(()=>__quiet.sfx.some(x=>/correct/.test(x.name||x))),{sea:s.sea,sfx:await page.evaluate(()=>__quiet.sfx.slice(-3))});
     await advance(page,600);s=await state(page);ok('…for about a second',s.speech.step===0,s.speech);}
@@ -65,6 +82,7 @@ try{
   const before=await creamAlong(page,[s.sea.boat,...s.sea.channel]);
   await drawRoute(page,[{x:.5,y:.79},{x:.32,y:.70}]);await until(page,()=>__treasure.misses>0,14000);s=await state(page);
   ok('struggle: miss 1 (a bump) slows the current and shows the safe path faintly',s.sea.ladder===1&&s.sea.current===.009&&s.sea.hintShown==='pale'&&s.sea.calm===0&&s.speech.step===0,s.sea);
+  {const cross=await crossesIsland(page,[s.sea.boat,...s.sea.channel]);ok('struggle: the path from where the boat bumped goes round the painted islands too',cross.length===0,{n:cross.length,at:cross.slice(0,3),path:[s.sea.boat,...s.sea.channel]});}
   await advance(page,100);const after=await creamAlong(page,[s.sea.boat,...s.sea.channel]);ok('struggle: the safe path is really painted on the map with calm seas off',after>before+.1,{before,after});
   const short=async n=>{const b=(await state(page)).sea.boat;await drawRoute(page,[{x:b.x-.06,y:b.y}],4);return until(page,k=>__treasure.misses>k,14000,n);};
   ok('struggle: a line that stops short is miss 2',await short(1));s=await state(page);ok('struggle: after two misses the current stops, the path is bold and the ring zone is about twice as big',s.sea.ladder===2&&s.sea.current===0&&s.sea.hintShown==='bold'&&s.sea.zone>=.045*2.2,s.sea);

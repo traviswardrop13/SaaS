@@ -538,7 +538,20 @@
     try { api.hint(""); api.cheer(""); } catch (e) {}
     publish();
   }
-  function hoopAt(dt) { return hoopTarget(hoopClock + dt); }
+  // Where the hoop the ball will meet is in dt seconds. The rim is drawn, and
+  // bounces the ball, at hoopX, which eases toward hoopTarget() a little
+  // behind it (step()); aiming at hoopTarget() itself sent a good shot to
+  // where the hoop was heading, up to a quarter metre past where it was drawn
+  // once it slid (about 0.1 on a slow slide), so a swipe the game counted as
+  // good could clip the rim or miss (5 Nov 2026). So this plays step()'s own
+  // easing forward over the flight, a screen frame at a time. Over a flight
+  // the hoop moves while misses < 2 (hoopMoving(): the ball is in hand, then
+  // flying); with two misses it is still and this is hoopX.
+  function hoopAt(dt) {
+    var x = hoopX, t = hoopClock, n = Math.max(1, Math.ceil(dt * 60)), h = dt / n, moving = misses < 2;
+    for (var i = 0; i < n; i++) { if (moving) t += h; x += (hoopTarget(t) - x) * Math.min(1, h * 6); }
+    return x;
+  }
 
   // ── what the engine calls ──
   function publish() {
