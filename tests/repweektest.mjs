@@ -151,6 +151,8 @@ await scenario("Home's gift button", async () => {
       pill: box("giftBtn"), gear: box("parentBtn"), buddy: box("buddyBtn"), old: !!document.getElementById("repPill"),
       label: (() => { const e = document.querySelector(".library-label"), r = e.getBoundingClientRect(); return {display:getComputedStyle(e).display,clipped:e.scrollWidth > e.clientWidth + 1,l:r.left,r:r.right}; })(),
       firstH1: document.querySelector("h1").textContent,
+      homeFocus: document.querySelector("h1").id === "homeTitle" && document.getElementById("homeTitle").tabIndex === -1,
+      story: !!document.getElementById("questCard").offsetParent,
     };
   });
   const keys = await page.evaluate(() => Object.keys(localStorage).filter((k) => /rep|week/i.test(k)));
@@ -159,7 +161,7 @@ await scenario("Home's gift button", async () => {
   ok("it is a link to the Trophy Road with a full-size tap target", s.tag === "A" && s.href === "/road.html" && s.pill.h >= 44 && s.pill.w >= 44, s);
   ok("it sits in the header, between the buddy and the gear, touching neither", s.inHeader && s.pill.l >= s.buddy.r && s.pill.r <= s.gear.l, s);
   ok("the phone wordmark fits between the buddy and gift without covering either", s.label.display === "none" || (!s.label.clipped && s.label.l >= s.buddy.r && s.label.r <= s.pill.l), s);
-  ok("the page's first heading is the Play Map's \"Let's explore.\"", s.firstH1 === "Let's explore.", s.firstH1);
+  ok("Home keeps its focus heading with today's adventure present", s.firstH1 === "Home" && s.homeFocus && s.story, s);
   ok("Home stores nothing new about reps or weeks", JSON.stringify(before) === JSON.stringify(keys), { before, keys });
   ok("no sideways scroll at 375px", (await overflow(page)) <= 1);
   await page.screenshot({ path: OUT + "/repweek-home-375.png" });

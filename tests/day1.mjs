@@ -48,10 +48,10 @@ async function home(age, premium, park, path = "/today.html?view=arcade") {
 const shownH1 = () => [...document.querySelectorAll("h1")].filter((h) => h.offsetParent).map((h) => h.textContent).join("|");
 for (const age of ["3", "4", "5", "8"]) {
   const { ctx, pg } = await home(age, true, true, "/today.html");
-  const front = await pg.evaluate((f) => ({ first: document.querySelector("h1")?.textContent || "", shown: new Function("return (" + f + ")()")(), story: !!document.getElementById("questCard")?.offsetParent,
+  const front = await pg.evaluate((f) => ({ first: document.querySelector("h1")?.textContent || "", shown: new Function("return (" + f + ")()")(), homeFocus:document.querySelector("h1")?.id==='homeTitle'&&document.getElementById('homeTitle')?.tabIndex===-1, story: !!document.getElementById("questCard")?.offsetParent,
     booksDoor: !!document.getElementById("homeBooksBtn")?.offsetParent, booksTag: document.getElementById("homeBooksTag")?.textContent || "" }), shownH1.toString());
-  // (the Play Map's heading since 31 Oct 2026; the card is still today's adventure)
-  ok("age " + age + ": Home opens on the Play Map, \"Let's explore.\", with today's story card", front.first === "Let's explore." && front.shown === "Let's explore." && front.story, JSON.stringify(front));
+  // The Studio keeps a Home focus landmark; the adventure stays the main choice.
+  ok("age " + age + ": Home keeps its focus heading with today's story card", front.first === "Home" && front.shown === "Home" && front.homeFocus && front.story, JSON.stringify(front));
   // Home's Books door is the one way to the bookshelf since 23 Oct 2026
   // (the Arcade's Books card is gone), so it is on screen with its tag.
   ok("age " + age + ": Home's Books door is on screen, with its tag", front.booksDoor && ["Free", "Included", "1 free book", "Premium"].includes(front.booksTag), JSON.stringify(front));
