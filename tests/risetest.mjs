@@ -45,7 +45,8 @@ await scenario("source pins", async () => {
     code.includes('var STRETCHES=[{name:"Garden",len:28000,every:2600,speed:1,sway:0},{name:"Clouds",len:32000,every:2400,speed:1.1,sway:0.16},{name:"Stars",len:36000,every:2200,speed:1.2,sway:0.22}];'));
   ok("only the rest between stretches asks for the sound", /sayCard\("Say \\u201C"\+SAYTXT\+"\\u201D to rise higher!","none"\)/.test(code));
   ok("the sound power is the shared helper's: first ask after six seconds, eight seconds of help (no ms set), and no heart back (a new life only on a loss)",
-    PAGE.includes('<script>window.SLOW_HELP={phase:"climb",action:"slow the falling blocks",earned:"Slow blocks!",first:6000};</script>')
+    // (left: the stretch's play left, so Echo starts no ask its end would cut off)
+    PAGE.includes('window.SLOW_HELP={phase:"climb",action:"slow the falling blocks",earned:"Slow blocks!",first:6000,left:function(){return STRETCHES[stage].len-climbMs;}};</script>')
     && !/SLOW_HELP=\{[^}]*\bms:/.test(code) && /src="\/arcade-speech-help\.js"/.test(code) && /src="\/arcade-sayit\.js"/.test(code) && /src="\/rise\.js"/.test(code));
   ok("nothing in the climb is practice data", !/logAttempt|bumpReps|recordSession|recordRung|rotAdvance|repsBeacon/.test(code + board));
   // the one place the page asks for the mic: the say-it card (and Echo's turn through it)
