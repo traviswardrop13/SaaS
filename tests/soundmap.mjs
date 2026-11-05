@@ -6,10 +6,11 @@
 // The cloud scorer is gone, but the bug CLASS is not: every map that has to
 // know about a sound is cross-checked here against the roster.
 //
-// Pure source parsing — no browser needed.
+// Pure source parsing (and one sandboxed run of gamecontent.js) — no browser needed.
 import { readFileSync, existsSync } from "fs";
 import { fileURLToPath } from "url";
 import path from "path";
+import vm from "vm";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const sona = readFileSync(ROOT + "/public/sona.js", "utf8");
@@ -110,6 +111,88 @@ ok("the consent copy states it plainly",
     !/if\(fed===\d+\)\s*say\(/.test(feed),
     "an every-Nth-answer line talks over a child who is about to go again",
   );
+}
+
+// ---- 7b. no prompt asks a child to say a word we never ask them to say ----
+// syllables() is onset + vowel, so nobody chose its output: G spelled "gay"
+// and P spelled "poo", shown in big letters and spoken "Ready? Say gay, five
+// times." (Travis, 30 Sep 2026). They are swapped, not dropped, so every sound
+// still has five. The list is checked against what the generator really
+// returns (run, not read) and against every word in the bank.
+{
+  const NEVER_SAY = ["gay", "poo"];
+  const box = { window: {} };
+  vm.runInNewContext(readFileSync(ROOT + "/public/gamecontent.js", "utf8"), box);
+  const SC = box.window.SonaContent;
+  ok("gamecontent.js runs on its own and exports syllables()", !!(SC && SC.syllables));
+  const bad = [], short = [];
+  for (const s of ALL) {
+    const sy = SC ? SC.syllables(s).map((x) => String(x.t).toLowerCase()) : [];
+    if (new Set(sy).size !== 5) short.push(`${s}: ${sy.join(", ")}`);
+    sy.forEach((t) => { if (NEVER_SAY.includes(t)) bad.push(`${s}: ${t}`); });
+    if (SC) SC.syllables(s).forEach((x) => { if (x.say !== x.t) bad.push(`${s}: shows ${x.t}, says ${x.say}`); });
+  }
+  ok("no sound's syllables include a never-say word", bad.length === 0,
+    `a child would be asked to say: ${bad.join("; ")}`);
+  ok("…and every sound still has five different syllables", short.length === 0,
+    `swapped must not mean dropped: ${short.join("; ")}`);
+  const g = SC ? SC.syllables("G").map((x) => x.t).join() : "", p = SC ? SC.syllables("P").map((x) => x.t).join() : "";
+  ok("G says guy and P says pie, and nothing else moved",
+    g === "gah,gee,goo,goh,guy" && p === "pah,pee,pie,poh,pay", `G: ${g} · P: ${p}`);
+  const bankWords = [...(mWords ? mWords[1] : "").matchAll(/\bw:\s*"([^"]+)"/g)].map((m) => m[1].toLowerCase());
+  ok("the word bank was read", bankWords.length > 100, `got ${bankWords.length}`);
+  const badBank = bankWords.filter((w) => w.split(/\s+/).some((x) => NEVER_SAY.includes(x)));
+  ok("no word in Sona.WORDS is a never-say word", badBank.length === 0, badBank.join(", "));
+
+  const themeMatch=sona.match(/const GAME_WORDS\s*=\s*(\{[\s\S]*?\n  \});/);
+  ok("the separate game-only word table is present",!!themeMatch);
+  const themes=themeMatch?vm.runInNewContext("("+themeMatch[1]+")"):{};
+  const themeWords=Object.values(themes).flatMap(sounds=>Object.values(sounds).flat());
+  const badThemes=themeWords.filter(w=>w.split(/\s+/).some(t=>NEVER_SAY.includes(t.toLowerCase())));
+  ok("no game-only theme word is a never-say word",themeWords.length>20&&badThemes.length===0,badThemes.join(", "));
+
+  // ---- 7c. what a game's say-it card may ask for, past the bare sound ----
+  // (Travis, 1 Oct 2026: "start with isolation then ree rah roh then rot".)
+  // One syllable a card, from the same generator, so the swaps above hold; a
+  // skip list for the ones Echo's computer voice would model wrong ("gee"
+  // reads "jee", "thee" is the loud th) or that are potty words ("pee"); and
+  // a switch, one sound at a time. Which syllables and which word are
+  // Rachel's calls: this holds the code to the list, not the list to a rule.
+  const on = SC && SC.GAME_SYL_ON ? [...SC.GAME_SYL_ON] : [];
+  ok("gamecontent.js exports the game asks: gameSyllables(), gameWord() and their three lists",
+    !!(SC && SC.gameSyllables && SC.gameWord && SC.GAME_SYL_ON && SC.GAME_SKIP && SC.GAME_SHORT));
+  ok("only R is switched on: a sound goes in after its lines were LISTENED to on a phone, and then here",
+    on.join() === "R", on.join());
+  const off = ALL.filter((x) => !on.includes(x));
+  ok("a sound that is not switched on gets no game syllable and no short word (its cards keep the bare sound)",
+    off.every((x) => SC.gameSyllables(x).length === 0 && SC.gameWord(x) === ""), off.filter((x) => SC.gameSyllables(x).length || SC.gameWord(x)).join(", "));
+  ok("R's game syllables are ree, rah, roh, in that order, and its short word is rot",
+    SC.gameSyllables("R").map((x) => x.t).join() === "ree,rah,roh" && SC.gameWord("R") === "rot" && Object.keys(SC.GAME_SHORT).join() === "R",
+    SC.gameSyllables("R").map((x) => x.t).join() + " · " + SC.gameWord("R"));
+  // …and what each of the others would get the day it is switched on
+  ALL.forEach((x) => { if (!SC.GAME_SYL_ON.includes(x)) SC.GAME_SYL_ON.push(x); });
+  const SKIPPED = { P: ["pee"], G: ["gee"], TH: ["thee"] }, wrong = [];
+  for (const x of ALL) {
+    const five = SC.syllables(x).map((y) => y.t), gs = SC.gameSyllables(x);
+    if (gs.length !== 3 || new Set(gs.map((y) => y.t)).size !== 3) wrong.push(`${x}: not three (${gs.map((y) => y.t).join(", ")})`);
+    gs.forEach((y) => {
+      if (!five.includes(y.t)) wrong.push(`${x}: ${y.t} is not one of syllables()`);
+      if (y.say !== y.t) wrong.push(`${x}: shows ${y.t}, says ${y.say}`);
+      if (NEVER_SAY.includes(y.t) || (SKIPPED[x] || []).includes(y.t)) wrong.push(`${x}: ${y.t} is never asked`);
+    });
+  }
+  ok("every sound's game syllables are three of its own five, none a never-say word, none on the skip list (pee, gee, the quiet th's thee)",
+    wrong.length === 0, wrong.join("; "));
+  ok("a skipped syllable is replaced by the next of that sound's five, never dropped",
+    SC.gameSyllables("P").map((x) => x.t).join() === "pah,poh,pie" && SC.gameSyllables("G").map((x) => x.t).join() === "gah,goh,goo" && SC.gameSyllables("TH").map((x) => x.t).join() === "thah,thoh,thoo",
+    ["P", "G", "TH"].map((x) => x + ": " + SC.gameSyllables(x).map((y) => y.t).join(",")).join(" · "));
+  const LEAD = { K: /^[ck]/, J: /^[jg]/, S: /^s(?!h)/, T: /^t(?!h)/, THV: /^th/ };
+  const badShort = Object.keys(SC.GAME_SHORT).filter((x) => {
+    const w = String(SC.GAME_SHORT[x]);
+    return !ALL.includes(x) || !/^[a-z]+$/.test(w) || NEVER_SAY.includes(w) || !(LEAD[x] || new RegExp("^" + x.toLowerCase())).test(w) || (w !== "rot" && !bankWords.includes(w));
+  });
+  ok("every short word is one word, starts with its sound, and (rot aside: Travis's word) is in the word bank",
+    badShort.length === 0, badShort.map((x) => x + ": " + SC.GAME_SHORT[x]).join(", "));
 }
 
 

@@ -1,0 +1,26 @@
+/* Day 5 controls stay separate from the shared story/SayPlay shell. */
+.daily-postboat-canvas { touch-action:none; }
+.postboat-controls { position:absolute; inset:0; pointer-events:none; touch-action:none; color:#586d55; font-family:inherit; }
+.postboat-controls [hidden] { display:none !important; }
+.postboat-controls button { box-sizing:border-box; pointer-events:auto; -webkit-tap-highlight-color:transparent; touch-action:none; font-family:inherit; font-weight:700; cursor:pointer; transition:none !important; }
+.postboat-direction { position:absolute; min-width:44px; width:44px; min-height:44px; height:44px; border:1px solid rgba(101,119,88,.30); border-radius:12px; background:var(--act-cream,#f5edcf); color:#52765f; font-family:Arial,sans-serif !important; font-size:28px; line-height:1; padding:1px 0 5px; box-shadow:0 3px 0 rgba(75,108,72,.14); }
+.postboat-up { left:60px; bottom:63px; }
+.postboat-left { left:12px; bottom:15px; }
+.postboat-down { left:60px; bottom:15px; }
+.postboat-right { left:108px; bottom:15px; }
+.postboat-stop { left:12px; bottom:63px; font-size:19px; padding:0; }
+.postboat-action { position:absolute; right:12px; bottom:65px; width:136px; min-height:44px; height:44px; border:1px solid rgba(62,109,93,.32); border-radius:14px; padding:6px 8px; color:#fbf8e3; background:var(--act-teal,#3c8585); box-shadow:0 3px 0 rgba(50,80,66,.18); font-size:14px; line-height:1.05; display:flex; align-items:center; justify-content:center; gap:6px; }
+.postboat-action-icon { display:block; width:21px; height:21px; flex:0 0 21px; overflow:visible; }
+.postboat-action span { display:block; }
+.postboat-help { position:absolute !important; left:auto !important; right:12px !important; bottom:15px !important; transform:none !important; min-width:0 !important; width:136px !important; min-height:44px !important; height:44px !important; padding:5px 8px !important; font-size:14px !important; line-height:1.05 !important; }
+.postboat-help img { width:29px !important; height:29px !important; object-fit:contain; }
+.postboat-help.powered { box-shadow:0 0 0 3px rgba(192,211,154,.70),0 3px 0 rgba(50,80,66,.14); }
+.postboat-direction:active,.postboat-action:active { transform:translateY(2px); box-shadow:0 1px 0 rgba(50,80,66,.15); }
+.postboat-controls button:disabled { opacity:.42; cursor:default; }
+.postboat-controls button:focus-visible { outline:3px solid #fff8d4; outline-offset:2px; box-shadow:0 0 0 5px #4a8e83; }
+.postboat-boat { position:absolute; width:48px; height:48px; min-width:48px; min-height:48px; transform:translate(-50%,-50%); border:0; border-radius:50%; background:transparent; color:transparent; padding:0; }
+.postboat-boat:focus-visible { outline:2px dashed #fff9d6 !important; box-shadow:none !important; }
+.postboat-caption { position:absolute; left:10px; bottom:110px; width:calc(100% - 20px); min-height:14px; text-align:center; font-size:10px; font-weight:700; line-height:14px; pointer-events:none; color:#687b5c; }
+.postboat-sr { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+@media(max-width:350px) { .postboat-action,.postboat-help { width:136px !important; right:10px !important; font-size:13px !important; } .postboat-left,.postboat-stop { left:10px; } .postboat-up,.postboat-down { left:58px; } .postboat-right { left:106px; } }
+@media(prefers-reduced-motion:reduce) { .postboat-controls *,.postboat-help,.postboat-banner { animation:none !important; transition:none !important; } }

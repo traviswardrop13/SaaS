@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#fff6e9">
+  <title>Sona — Grow a Flower</title>
+  <link href="/fonts.css" rel="stylesheet"><link href="/sayplay.css" rel="stylesheet"><link href="/flower.css" rel="stylesheet">
+</head>
+<body data-phase="boot">
+  <main id="app">
+    <canvas id="gardenCanvas" role="img" aria-label="A sunny flower garden. Say each word two times to fill the watering can, then hold it over the glowing soil."></canvas>
+    <header id="top"><button id="close" type="button" aria-label="Back to games"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg></button><span class="hudpill" id="ttl">Grow a Flower</span><span id="spacer"></span><span class="hudpill" id="dots" role="img" aria-label="0 of 5"></span></header>
+    <div id="gardenBanner" role="status" aria-live="polite">Let's grow a flower!</div>
+    <button id="gardenCan" type="button" hidden aria-label="Watering can. Hold it and drag it over the glowing soil to pour. With a keyboard, move with the arrow keys, then hold Space or Enter to pour." aria-pressed="false"></button>
+    <div id="gardenWater" role="progressbar" aria-label="Water reaching the soil" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="garden-water-label"><span id="gardenStage">Water the seed</span><span id="gardenPower" hidden>Gentle shower</span></div><div class="garden-water-track"><i id="gardenWaterFill"></i></div></div>
+    <div id="gardenControls">
+      <button id="gardenRefill" class="cream-pill" type="button" disabled aria-label="Refill watering can"><svg viewBox="0 0 24 30" aria-hidden="true"><path d="M12 2C10 7 3 12 3 19a9 9 0 0 0 18 0C21 12 14 7 12 2Z" fill="none" stroke="currentColor" stroke-width="2.5"/><path d="M7 20a5 5 0 0 0 5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span class="garden-refill-label"><span>Refill</span><span class="garden-reservoir" aria-hidden="true"><i id="gardenReservoirFill"></i></span></span></button>
+      <button id="gardenHelp" class="act-pill" type="button" disabled aria-label="Optional extra help: say your word two times again for a wider shower"><img src="/assets/crafted/echo-wave.webp" alt=""><span>Gentle shower</span><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3" fill="currentColor"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4M9 21h6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+    </div>
+    <section id="turnPanel" aria-live="polite"><div id="picBox"><span id="pic"></span></div><div id="word"></div><button id="hear" class="cream-pill" type="button" aria-label="Hear the word again"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4Zm12 0a5 5 0 0 1 0 6m3-9a9 9 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span>Hear it</span></button><div id="listenRow"><span id="echoWrap"><img id="echoFace" src="/assets/crafted/echo-welcome.webp" alt="Echo"></span><span id="micState"></span><span id="cheer"></span><button id="micBtn" type="button" hidden aria-label="Listen again"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="12" rx="3" fill="currentColor"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4M9 21h6" fill="none" stroke="currentColor" stroke-width="2"/></svg></button></div></section>
+  </main>
+  <div class="ovl" id="startOvl"><div class="ovlCard"><img class="garden-intro" src="/assets/crafted/home-flower.webp" alt="A little flower garden"><h1 id="startTitle">Grow a Flower</h1><p>Say each word two times to fill your can. Hold it over the glowing soil.</p><p>Stuck? Tap Echo and say it again for a wider shower.</p><p class="small" id="startSound"></p><button id="startBtn" class="act-pill" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 5 11 7-11 7Z" fill="currentColor"/></svg><span>Let's play</span></button></div></div>
+  <div class="ovl" id="primer"><div class="ovlCard"><img class="ovlEcho" src="/assets/crafted/echo-listen.webp" alt=""><h2>Let Echo hear you!</h2><p>Say each word two times to fill your can.</p><p class="small" id="micPromise"></p><button class="btn" id="primerYes" type="button">Turn on Echo's ears</button><button class="ghost" id="primerNo" type="button">Not now</button></div></div>
+  <div class="ovl" id="pauseOvl"><div class="ovlCard"><img class="ovlEcho" src="/assets/crafted/echo-think.webp" alt=""><h2>A little garden break</h2><p>Your flower is waiting right here.</p><button class="btn" id="resume" type="button">Keep playing</button></div></div>
+  <div class="ovl" id="endOvl"><div class="ovlCard"><img class="ovlEcho endStar" src="/assets/crafted/echo-cheer.webp" alt=""><h2 id="endTitle"></h2><p id="endSub"></p><button class="btn" id="again" type="button">Grow another</button><button class="ghost" id="goHome" type="button">Back to games</button></div></div>
+  <script src="/sona.js"></script><script src="/crafted-words.js"></script><script src="/sayplay.js"></script><script src="/flower.js"></script>
+  <script>
+    SayPlay.start({key:"flower",title:"Grow a Flower",intro:"Say each word two times to fill your watering can. Then hold the can over the glowing soil. Tap the water drop for more water.",steps:[[],[],[],[],[]],finale:[],done:{title:"Your flower grew!",sub:"You watered a little seed into a beautiful flower."},play:window.Flower});
+    if(!document.body.hidden){try{Sona.track("game opened",{game:"flower"});}catch(e){}}
+  </script>
+</body>
+</html>

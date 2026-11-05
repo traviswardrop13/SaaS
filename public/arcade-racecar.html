@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"><meta name="theme-color" content="#fff6e9">
+<title>Sona — Race Car</title><link href="/fonts.css" rel="stylesheet"><link href="/sayplay.css" rel="stylesheet"><link href="/racecar.css" rel="stylesheet">
+</head><body data-phase="boot">
+<main id="app">
+  <div id="raceWorld">
+    <canvas id="raceCanvas" role="img" aria-label="A mountain race track. Drag left or right to steer around cones and into the glowing ring."></canvas>
+    <div id="raceBanner" role="status">Your very own race day</div>
+    <div id="raceControls">
+      <button id="raceBrake" class="cream-pill" aria-label="Hold to brake"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14M16 5v14" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></svg></button>
+      <span id="raceHint">Drag to steer</span>
+      <button id="raceHelp" class="act-pill" aria-label="Extra help: say your word again to slow the road"><img src="/assets/crafted/echo-wave.webp" alt=""><span>Slow road</span><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="12" rx="3" fill="currentColor"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4M9 21h6" fill="none" stroke="currentColor" stroke-width="2"/></svg></button>
+    </div>
+    <div id="racePower" hidden><span>Slow road</span><div><i id="racePowerFill"></i></div></div>
+  </div>
+  <header id="top"><button id="close" aria-label="Back to games"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg></button><span class="hudpill" id="raceTitle">Race Car</span><span id="spacer"></span><span class="hudpill" id="dots" role="img" aria-label="0 of 8"></span></header>
+  <div id="raceProgress"><span id="raceDistance">Start</span><div><i id="raceProgressFill"></i></div><span>Finish</span></div>
+  <section id="turnPanel" aria-live="polite">
+    <div id="picBox"><span id="pic"></span></div><div id="word"></div>
+    <button id="hear" class="cream-pill" aria-label="Hear the word again"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4Zm12 0a5 5 0 0 1 0 6m3-9a9 9 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span>Hear it</span></button>
+    <div id="listenRow"><span id="echoWrap"><img id="echoFace" src="/assets/crafted/echo-welcome.webp" alt="Echo"></span><span id="micState"></span><span id="cheer"></span><button id="micBtn" hidden aria-label="Listen again"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="12" rx="3" fill="currentColor"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4M9 21h6" fill="none" stroke="currentColor" stroke-width="2"/></svg></button></div>
+  </section>
+</main>
+<div class="ovl" id="startOvl"><div class="ovlCard"><img class="raceStartCar" src="/assets/crafted/game/racecar-car.webp" alt="A little red race car"><h1 id="startTitle">Race Car</h1><p>Steer around the cones and into the glowing ring!</p><div class="raceDemo" aria-hidden="true"><svg viewBox="0 0 160 48"><path d="M20 24h120m-12-10 12 10-12 10M32 14 20 24l12 10" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round"/><circle cx="80" cy="24" r="14" fill="currentColor"/></svg></div><p>Say your word two times to drive each stretch.</p><p class="small" id="startSound"></p><button id="startBtn" class="act-pill"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 5 11 7-11 7Z" fill="currentColor"/></svg><span>Let's race</span></button></div></div>
+<div class="ovl" id="primer"><div class="ovlCard"><img class="ovlEcho" src="/assets/crafted/echo-listen.webp" alt=""><h2>Let Echo hear you!</h2><p>Say your word to drive each stretch.</p><p class="small" id="micPromise"></p><button class="btn" id="primerYes">Turn on Echo's ears</button><button class="ghost" id="primerNo">Not now</button></div></div>
+<div class="ovl" id="pauseOvl"><div class="ovlCard"><img class="ovlEcho" src="/assets/crafted/echo-think.webp" alt=""><h2>Parked for a moment</h2><p>Your car is right where you left it.</p><button class="btn" id="resume">Keep racing</button></div></div>
+<div class="ovl" id="endOvl"><div class="ovlCard"><img class="ovlEcho endStar" src="/assets/crafted/echo-cheer.webp" alt=""><h2 id="endTitle"></h2><p id="endSub"></p><button class="btn" id="again">Race again</button><button class="ghost" id="goHome">Back to games</button></div></div>
+<script src="/sona.js"></script><script src="/crafted-words.js"></script><script src="/sayplay.js"></script><script src="/racecar.js"></script>
+<script>
+SayPlay.start({key:"racecar",title:"Race Car",intro:"Say each word two times to drive. Then drag to steer into the glowing ring.",steps:[[],[],[],[],[],[],[],[]],finale:[],done:{title:"You crossed the finish!",sub:"Great driving. Great talking!"},play:window.RaceCar});
+// a child aged 3 or 4 gets the ring's help one step sooner (the engine reads no storage)
+try{var raceKid=Sona.getProfile&&Sona.getProfile(),raceAge=raceKid?parseInt(raceKid.childAge,10):0;if(window.RaceCar&&RaceCar.setYoung)RaceCar.setYoung(raceAge>0&&raceAge<5);}catch(e){}
+if(!document.body.hidden){try{Sona.track("game opened",{game:"racecar"});}catch(e){}}
+</script></body></html>

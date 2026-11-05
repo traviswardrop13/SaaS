@@ -4,6 +4,7 @@
 import { createServer } from "http";
 import { readFileSync, existsSync } from "fs";
 import { chromium, ROOT, launchOpts } from "./_env.mjs";
+import { servePark } from "./_parked.mjs";
 
 const MIME = { html: "text/html", js: "text/javascript", svg: "image/svg+xml", css: "text/css", png: "image/png", webp: "image/webp", mp3: "audio/mpeg" };
 const srv = createServer((req, res) => {
@@ -17,61 +18,95 @@ const srv = createServer((req, res) => {
 });
 await new Promise((r) => srv.listen(8178, r));
 
+// The catalog's 29 titles, less the ones parked as Coming soon: since 19 Oct
+// 2026 Home draws no parked game (Travis: hide the Coming soon cards).
+const HOME_CARDS = 29 - [...readFileSync(ROOT + "/sona.js", "utf8").matchAll(/^\s{4}\w+: \{[^\n]*\bcomingSoon: true\b/gm)].length;
 const browser = await chromium.launch(launchOpts());
 let fails = 0;
 const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL ") + n + (p ? "" : "  → " + (extra || ""))); };
 // Explicit cohorts keep entitlement checks independent of the family pricing
 // switch. `premium` represents a grandfathered family; ordinary seeds are
 // post-era families, with paid-state behavior exercised only through the seam.
-const seed = (age, premium) => `for(const key of ["sona.freeera.v1","sona.freeera2.v1","sona.freeera3.v1","sona.freeera4.v1"])localStorage.setItem(key,key==="sona.freeera.v1"?"post":"done");localStorage.setItem("sona.profile.v1",JSON.stringify({childName:"Mia",childAge:"${age}",focusSounds:["R"],onboarded:true,voiceOn:false${premium ? ",earlyAdopter:true" : ""}}))`;
+const seed = (age, premium) => `for(const key of ["sona.freeera.v1","sona.freeera2.v1","sona.freeera3.v1","sona.freeera4.v1","sona.freeera5.v1"])localStorage.setItem(key,key==="sona.freeera.v1"?"post":"done");localStorage.setItem("sona.profile.v1",JSON.stringify({childName:"Mia",childAge:"${age}",focusSounds:["R"],onboarded:true,voiceOn:false${premium ? ",earlyAdopter:true" : ""}}))`;
 
-async function home(age, premium) {
+// The game library is Home's Arcade since 22 Oct 2026 (STORY1): Home itself
+// leads with today's story, and every game is one tap away, at ?view=arcade.
+// park: serve the sona.js with four games parked again (tests/_parked.mjs);
+// none is parked since 22 Oct 2026, and these checks pin what parking does
+async function home(age, premium, park, path = "/today.html?view=arcade") {
   const ctx = await browser.newContext();
+  if (park) await servePark(ctx, ROOT);
   const pg = await ctx.newPage();
   await pg.goto("http://localhost:8178/today.html");
   await pg.evaluate(seed(age || "7", premium));
-  await pg.goto("http://localhost:8178/today.html");
+  await pg.goto("http://localhost:8178" + path);
   await pg.waitForTimeout(700);
   return { ctx, pg };
 }
 
 // ── Home starts with real choices, across both age groups. ──
+const shownH1 = () => [...document.querySelectorAll("h1")].filter((h) => h.offsetParent).map((h) => h.textContent).join("|");
 for (const age of ["3", "4", "5", "8"]) {
-  const { ctx, pg } = await home(age, true);
-  const st = await pg.evaluate(() => ({
-    heading: document.querySelector("h1")?.textContent || "",
+  const { ctx, pg } = await home(age, true, true, "/today.html");
+  const front = await pg.evaluate((f) => ({ first: document.querySelector("h1")?.textContent || "", shown: new Function("return (" + f + ")()")(), story: !!document.getElementById("questCard")?.offsetParent,
+    booksDoor: !!document.getElementById("homeBooksBtn")?.offsetParent, booksTag: document.getElementById("homeBooksTag")?.textContent || "" }), shownH1.toString());
+  // (the Play Map's heading since 31 Oct 2026; the card is still today's adventure)
+  ok("age " + age + ": Home opens on the Play Map, \"Let's explore.\", with today's story card", front.first === "Let's explore." && front.shown === "Let's explore." && front.story, JSON.stringify(front));
+  // Home's Books door is the one way to the bookshelf since 23 Oct 2026
+  // (the Arcade's Books card is gone), so it is on screen with its tag.
+  ok("age " + age + ": Home's Books door is on screen, with its tag", front.booksDoor && ["Free", "Included", "1 free book", "Premium"].includes(front.booksTag), JSON.stringify(front));
+  await pg.goto("http://localhost:8178/today.html?view=arcade"); await pg.waitForTimeout(400);
+  const st = await pg.evaluate((f) => ({
+    heading: new Function("return (" + f + ")()")(),
     keys: [...document.querySelectorAll("#activityGroups .game-card")].map(e => e.dataset.game),
     groups: [...document.querySelectorAll("#activityGroups .activity-group")].map(e => e.dataset.group),
-    playable: [...document.querySelectorAll("#activityGroups .game-card")].filter(e => !["bubbles", "peekaboo"].includes(e.dataset.game)).map(e => ({key:e.dataset.game,accessible:e.dataset.locked === "false"&&!e.disabled})),
-    parked: [...document.querySelectorAll("#activityGroups .game-card")].filter(e => ["bubbles", "peekaboo"].includes(e.dataset.game)).map(e => ({key:e.dataset.game,disabled:e.disabled,label:e.textContent,access:Sona.gameAccess(e.dataset.game)})),
+    playable: [...document.querySelectorAll("#activityGroups .game-card")].filter(e => !Sona.gameAct(e.dataset.game).comingSoon).map(e => ({key:e.dataset.game,accessible:e.dataset.locked === "false"&&!e.disabled})),
+    parked: [...document.querySelectorAll("#libraryApp .game-card")].filter(e => (Sona.gameAct(e.dataset.game) || {}).comingSoon).map(e => e.dataset.game),
+    catalogParked: Object.keys(Sona.GAME_ACTS).filter(k => Sona.GAME_ACTS[k].comingSoon).map(k => ({key:k,access:Sona.gameAccess(k)})),
+    coming: /coming soon/i.test(document.getElementById("libraryApp").innerText),
     forbidden: !!document.querySelector("#goBtn, #heroCard, #jarRow"),
     run: sessionStorage.getItem("sona.run.v1"),
-    books: document.getElementById("booksComingSoon")?.textContent || "",
-    bookDoors: document.querySelectorAll('a[href*="chapter.html"],a[href*="library.html"],a[href*="story.html"],#booksComingSoon button,#booksComingSoon a').length,
-  }));
-  ok("age " + age + ": Home opens directly to Pick a game", /pick a game/i.test(st.heading) && new URL(pg.url()).pathname === "/today.html", JSON.stringify(st));
-  ok("age " + age + ": every catalog game appears once in the age shelves", st.keys.length === 8 && new Set(st.keys).size === 8, JSON.stringify(st.keys));
-  ok("age " + age + ": both suggested age groups remain available", st.groups.length === 2 && st.playable.length === 6 && st.playable.every(e => e.accessible), JSON.stringify(st));
-  ok("age " + age + ": Bubble Pop and Peekaboo stay visible as disabled Coming soon cards", st.parked.length === 2 && st.parked.every(e => e.disabled && /coming soon/i.test(e.label) && e.access.allowed === false && e.access.reason === "coming-soon"), JSON.stringify(st.parked));
+    booksCard: ["booksCard", "libraryBooksArt", "booksTag", "booksLine", "booksHeading"].filter((id) => document.getElementById(id)),
+    bookCards: document.querySelectorAll('#libraryApp .book-card, #featuredGroups [data-collection="seasonal"], #featuredGroups [data-collection="new"]').length,
+    booksDoorShown: !!document.getElementById("homeBooksBtn")?.offsetParent,
+    bookDoors: document.querySelectorAll('a[href*="chapter.html"],a[href*="story.html"]').length,
+  }), shownH1.toString());
+  ok("age " + age + ": Home's Arcade opens directly to Pick a game", st.heading === "Pick a game!" && new URL(pg.url()).pathname === "/today.html", JSON.stringify(st));
+  // 29 = the six released games, Rise Up, the twenty Say & Play games, and two parked.
+  // The Say & Play games are Coming soon until each is rebuilt (Travis, 26
+  // Sep 2026), so what is playable is the six first games plus any rebuilt;
+  // since 19 Oct 2026 Home shows only those (Travis: hide Coming soon).
+  ok("age " + age + ": every catalog game but the parked ones appears once in the age shelves", st.keys.length === 29 - st.catalogParked.length && new Set(st.keys).size === st.keys.length, JSON.stringify(st.keys));
+  ok("age " + age + ": both suggested age groups remain available, with the six first games playable", st.groups.length === 2 && st.playable.length >= 6 && st.playable.every(e => e.accessible) &&
+    ["slice", "tiles", "stack", "run", "glide", "feed"].every(k => st.playable.some(e => e.key === k)), JSON.stringify(st));
+  ok("age " + age + ": Peekaboo and the other parked games have no card on Home, and none opens", st.parked.length === 0 && !st.coming && st.playable.length === st.keys.length && ["peekaboo"].every(k => st.catalogParked.some(e => e.key === k)) && !st.catalogParked.some(e => e.key === "bubbles") &&
+    st.catalogParked.every(e => e.access.allowed === false && e.access.reason === "coming-soon"), JSON.stringify([st.parked, st.catalogParked]));
   ok("age " + age + ": opening Home does not start a journey or display the retired adventure", !st.run && !st.forbidden, JSON.stringify(st));
-  ok("age " + age + ": books remain passive Coming soon", /coming soon/i.test(st.books) && st.bookDoors === 0, JSON.stringify(st));
+  // The books are on (Travis, 26 Sep 2026: "yes turn them on"), but since
+  // 23 Oct 2026 the Arcade is games only (Travis: "organize the arcade so
+  // that there are no books in there"): no Books card, no book in any row
+  // (Today's picks is two games; What's new and Limited time, which carried
+  // books, are gone), and Home's Books door belongs to Home's view, not this
+  // one. The adventure and chapter readers stay parked.
+  ok("age " + age + ": the Arcade has no books, and no parked reader has a door", st.booksCard.length === 0 && st.bookCards === 0 && !st.booksDoorShown && st.bookDoors === 0, JSON.stringify({ booksCard: st.booksCard, bookCards: st.bookCards, booksDoorShown: st.booksDoorShown, bookDoors: st.bookDoors }));
   await ctx.close();
 }
 
 // The retained paid-state seam still distinguishes released free games from
 // Premium games. Coming soon remains separate and unavailable to both cohorts.
 {
-  const {ctx, pg} = await home("7");
+  const {ctx, pg} = await home("7", false, true);
   await pg.evaluate(() => sessionStorage.setItem("sona.paidui", "1"));
   await pg.reload();
-  const st = await pg.evaluate(() => ({
-    heading:document.querySelector("h1").textContent,
+  const st = await pg.evaluate((f) => ({
+    heading:new Function("return (" + f + ")()")(),
     cards:[...document.querySelectorAll("#activityGroups .game-card")].map(e => ({key:e.dataset.game,locked:e.dataset.locked==="true",disabled:e.disabled,tier:Sona.gameAct(e.dataset.game).tier,comingSoon:!!Sona.gameAct(e.dataset.game).comingSoon,tag:e.querySelector(".game-access").textContent})),
-  }));
+    parkedInCatalog:Object.keys(Sona.GAME_ACTS).filter(k => Sona.GAME_ACTS[k].comingSoon).length,
+  }), shownH1.toString());
   const released=st.cards.filter(c => !c.comingSoon), parked=st.cards.filter(c => c.comingSoon);
   ok("the paid-state seam still opens directly to the game library", /pick a game/i.test(st.heading) && await pg.locator("#goBtn").count()===0, st);
-  ok("the paid-state seam locks exactly the released Premium games without prices", released.length===6&&released.every(c=>c.locked===(c.tier==="premium")&&!c.disabled&&c.tag===(c.tier==="premium"?"Premium":"Free")), released);
-  ok("Coming soon stays disabled even on the paid-state seam", parked.length===2&&parked.every(c=>c.locked&&c.disabled&&c.tag==="Coming soon"), parked);
+  ok("the paid-state seam locks exactly the released Premium games without prices", released.length>=6&&released.length+st.parkedInCatalog===29&&released.every(c=>c.locked===(c.tier==="premium")&&!c.disabled&&c.tag===(c.tier==="premium"?"Premium":"Free")), released);
+  ok("Coming soon has no card even on the paid-state seam", parked.length===0&&st.parkedInCatalog>=2, parked);
   await pg.locator('#activityGroups .game-card[data-game="slice"]').click();
   await pg.waitForURL(/charge\.html/);
   ok("the paid-state seam keeps free game practice one tap away",new URL(pg.url()).pathname==="/charge.html"&&new URL(pg.url()).searchParams.get("game")==="arcade-slice.html",pg.url());
@@ -83,13 +118,25 @@ for (const age of ["3", "4", "5", "8"]) {
 {
   const {ctx, pg} = await home("7");
   const errs = []; pg.on("pageerror", e => errs.push(String(e)));
-  await pg.goto("http://localhost:8178/activities.html?libraryPreview=1&locked=tiles#booksComingSoon");
+  // (the fragment was #booksCard until the Arcade lost its Books card on 23
+  // Oct 2026; the redirect keeps any # part exactly, so it now names the
+  // shelves, which are still there)
+  await pg.goto("http://localhost:8178/activities.html?libraryPreview=1&locked=tiles#activityGroups");
   await pg.waitForURL(/today\.html/);
   const u = new URL(pg.url());
-  ok("the old library URL preserves query and fragment on the new Home", u.pathname === "/today.html" && u.searchParams.get("libraryPreview") === "1" && u.searchParams.get("locked") === "tiles" && u.hash === "#booksComingSoon", pg.url());
+  ok("the old library URL preserves query and fragment on the new Home", u.pathname === "/today.html" && u.searchParams.get("libraryPreview") === "1" && u.searchParams.get("locked") === "tiles" && u.hash === "#activityGroups", pg.url());
+  await pg.waitForTimeout(400);
+  // ?locked= lands on the Arcade's shelves (where a grey game's note lives),
+  // never on Home's view
+  const lk = await pg.evaluate(() => ({ view: document.getElementById("libraryApp")?.getAttribute("data-view"), shelves: document.querySelectorAll("#activityGroups .game-card").length }));
+  ok("…and its ?locked= opens the Arcade, with the shelves on it", lk.view === "arcade" && lk.shelves > 0, JSON.stringify(lk));
   ok("the Home library loads without page errors", errs.length === 0, errs.join(" | "));
   const homeSource = readFileSync(ROOT + "/today.html", "utf8").replace(/<!--[\s\S]*?-->/g, "").replace(/\/\/[^\n]*/g, "");
-  ok("Home has no door to a parked reader", !/chapter\.html|library\.html|story\.html/.test(homeSource));
+  ok("Home has no door to a parked reader", !/chapter\.html|story\.html/.test(homeSource));
+  ok("…and its one book door is the bookshelf", /location\.href="\/library\.html"/.test(homeSource));
+  // One door since 23 Oct 2026: Home's Books button, its one handler, and no
+  // Books card left in the markup for a second one to hang off.
+  ok("…opened only by Home's Books door", (homeSource.match(/location\.href="\/library\.html"/g) || []).length === 1 && /homeBooksBtn\.onclick=openBooks;/.test(homeSource) && !/booksCard/.test(homeSource), "");
   await ctx.close();
 }
 
@@ -195,12 +242,12 @@ for (const age of ["3", "4", "5", "8"]) {
 // Browsing is not practice: neither idle time nor reload can award progress.
 {
   const {ctx, pg} = await home("7");
-  const snapshot = () => pg.evaluate(() => ({ goal:Sona.goalState(), coins:Sona.getCoins(), run:sessionStorage.getItem("sona.run.v1"), ticket:sessionStorage.getItem("sona.play.token") }));
+  const snapshot = () => pg.evaluate(() => ({ goal:Sona.goalState(), coins:Sona.getCoins(), trophies:Sona.trophies ? Sona.trophies() : 0, road:localStorage.getItem("sona.road.v1"), run:sessionStorage.getItem("sona.run.v1"), ticket:sessionStorage.getItem("sona.play.token") }));
   const before = await snapshot();
   await pg.waitForTimeout(1200);
   await pg.reload();
   await pg.waitForTimeout(500);
-  ok("idle Home and reload do not invent reps, coins, a run or an earned ticket", JSON.stringify(await snapshot()) === JSON.stringify(before), JSON.stringify({before, after:await snapshot()}));
+  ok("idle Home and reload do not invent reps, coins, trophies, road claims, a run or an earned ticket", JSON.stringify(await snapshot()) === JSON.stringify(before), JSON.stringify({before, after:await snapshot()}));
   await ctx.close();
 }
 
@@ -246,7 +293,7 @@ for (const age of ["3", "4", "5", "8"]) {
   }));
   ok("practice progress starts empty before a game is chosen", zero.goal.n === 0 && zero.goal.pct === 0, JSON.stringify(zero));
   const half = await pg.evaluate(() => {
-    Sona.bumpReps(13);                 // VAD-counted reps are the only input
+    Sona.bumpReps(15);                 // half the default of 30 (one default for every age since 5 Oct 2026)
     return { g: Sona.goalState() };
   });
   ok("reps move the meter", half.g.pct > 0.4 && half.g.pct < 0.6, JSON.stringify(half.g));
@@ -257,44 +304,49 @@ for (const age of ["3", "4", "5", "8"]) {
   await ctx.close();
 }
 
-// ── 7. COIN1: coins are minted from reps, never double-paid ──
+// ── 7. COIN3: practice earns trophies; coins come only from chests and the Trophy Road ──
+// (11 Oct 2026, D2.) Reps used to mint a coin per five and the daily chapter
+// five more, and Home banked them on every load. That mint is retired: a rep
+// earns trophies at the rep itself (TROPHY1), coins come only from the daily
+// chest and Trophy Road gifts, and mintCoins()/mintStoryBonus() only read.
 {
   const { ctx, pg } = await home("7");
   const c = await pg.evaluate(() => {
-    const start = Sona.getCoins();
-    Sona.bumpReps(12); Sona.mintCoins();
+    const start = Sona.getCoins(), t0 = Sona.trophies ? Sona.trophies() : -1;
+    Sona.bumpReps(12); const minted = Sona.mintCoins();
     const after12 = Sona.getCoins();
-    Sona.mintCoins(); Sona.mintCoins();          // a double-fire must not pay twice
+    Sona.mintCoins(); Sona.mintCoins();
     const afterRepeat = Sona.getCoins();
-    Sona.markStoryRead();                        // story bonus, once
+    Sona.markStoryRead();                        // the daily chapter's old bonus
     const afterStory = Sona.getCoins();
     Sona.markStoryRead();
-    return { start, after12, afterRepeat, afterStory, afterTwice: Sona.getCoins() };
+    const afterTwice = Sona.getCoins();
+    Sona.logAttempt({ sound: "R", word: "rabbit", pass: false, game: "practice" });   // a voiced try that missed
+    return { start, minted, after12, afterRepeat, afterStory, afterTwice, afterTry: Sona.getCoins(), t0, t1: Sona.trophies ? Sona.trophies() : -1 };
   });
-  ok("reps mint coins", c.after12 === c.start + 2, JSON.stringify(c));
-  ok("minting twice pays once", c.afterRepeat === c.after12, JSON.stringify(c));
-  ok("finishing the story pays a bonus", c.afterStory === c.after12 + 5, JSON.stringify(c));
-  ok("…and only the first time that day", c.afterTwice === c.afterStory, JSON.stringify(c));
+  ok("reps mint no coins: mintCoins() only reads the balance", c.after12 === c.start && c.minted === c.start && c.afterRepeat === c.start, JSON.stringify(c));
+  ok("finishing the story pays no coins, the first time or again", c.afterStory === c.start && c.afterTwice === c.start, JSON.stringify(c));
+  ok("a voiced practice try earns one trophy at the default goal (a miss counts the same), and no coin", c.t0 === 0 && c.t1 === 1 && c.afterTry === c.start, JSON.stringify(c));
   await ctx.close();
 }
 
-// Returning Home pays coins already earned through practice. This integration
-// must survive removing the old star-jar UI; calling mintCoins directly above
-// cannot detect a missing Home payout or a reload that double-pays it.
+// Returning Home pays nothing (COIN3). Home used to bank the coins twelve reps
+// minted; it now only reads, so a return or a reload moves no coin and no trophy.
 {
   const {ctx, pg} = await home("7");
   const earned = await pg.evaluate(() => {
     const coins = Sona.getCoins();
     Sona.bumpReps(12);
-    return {coins, beforeReturn:Sona.getCoins(), reps:Sona.repsToday()};
+    Sona.logAttempt({ sound: "R", reps: 3 });
+    return {coins, trophies:Sona.trophies(), reps:Sona.repsToday()};
   });
-  ok("honest practice leaves its coins owed until Home handles the return", earned.reps === 12 && earned.beforeReturn === earned.coins, JSON.stringify(earned));
+  ok("honest practice earns its trophies at the rep, not on a return Home", earned.reps === 12 && earned.trophies === 3, JSON.stringify(earned));
   await pg.reload();
-  const first = await pg.evaluate(() => ({coins:Sona.getCoins(),reps:Sona.repsToday()}));
-  ok("returning to the library grants the two coins earned by twelve reps", first.coins === earned.coins + 2 && first.reps === earned.reps, JSON.stringify({earned,first}));
+  const first = await pg.evaluate(() => ({coins:Sona.getCoins(),trophies:Sona.trophies(),reps:Sona.repsToday()}));
+  ok("returning to the library grants no coins and no trophies", first.coins === earned.coins && first.trophies === earned.trophies && first.reps === earned.reps, JSON.stringify({earned,first}));
   await pg.reload();
-  const again = await pg.evaluate(() => ({coins:Sona.getCoins(),reps:Sona.repsToday()}));
-  ok("reloading the library cannot pay those earned coins twice", JSON.stringify(again) === JSON.stringify(first), JSON.stringify({first,again}));
+  const again = await pg.evaluate(() => ({coins:Sona.getCoins(),trophies:Sona.trophies(),reps:Sona.repsToday()}));
+  ok("reloading the library changes nothing either", JSON.stringify(again) === JSON.stringify(first), JSON.stringify({first,again}));
   await ctx.close();
 }
 
@@ -348,8 +400,8 @@ for (const age of ["3", "4", "5", "8"]) {
   await pg.evaluate(() => localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Mia", childAge: "7", focusSounds: ["R"], onboarded: true })));
   await pg.goto("http://localhost:8178/library.html");
   await pg.waitForTimeout(700);
-  const r = await pg.evaluate(() => [...document.querySelectorAll(".bookBtn")].map((b) => b.textContent));
-  ok("an /r/ child sees only /r/ books", r.length > 0 && r.every((t) => /R(ory|eba|uby|emy|ex)/.test(t)), JSON.stringify(r));
+  const r = await pg.evaluate(() => [...document.querySelectorAll(".bookBtn .bt")].map((b) => b.textContent));
+  ok("an /r/ child sees only /r/ books", r.length > 0 && r.every((t) => /^R(ory|eba|uby|emy|ex|osie|ay)\b/.test(t) || t === "Rabbit and the Rocket"), JSON.stringify(r));
   ok("…and there are still real books to read", r.length >= 3, String(r.length));
 
   // play mode rotates every sound, so it keeps the whole shelf
@@ -358,8 +410,10 @@ for (const age of ["3", "4", "5", "8"]) {
   const all = await pg.evaluate(() => document.querySelectorAll(".bookBtn").length);
   ok("a play-mode child keeps the whole shelf", all > r.length, all + " vs " + r.length);
 
-  // a sound with no books must never leave an empty room
-  await pg.evaluate(() => localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Mia", childAge: "7", focusSounds: ["Z"], onboarded: true })));
+  // a sound with no books must never leave an empty room. Every one of the 19
+  // sounds has a book now (the fuller books, 26 Sep 2026), so a code the shelf
+  // doesn't carry stands in for the next sound someone adds without one.
+  await pg.evaluate(() => localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Mia", childAge: "7", focusSounds: ["XX"], onboarded: true })));
   await pg.goto("http://localhost:8178/library.html"); await pg.waitForTimeout(700);
   const none = await pg.evaluate(() => document.querySelectorAll(".bookBtn").length);
   ok("a sound with no books falls back to the full shelf, never an empty one", none > 0, String(none));
@@ -373,7 +427,7 @@ for (const age of ["3", "4", "5", "8"]) {
 // more — not a read story (gone with the books), not a finished adventure.
 // The only way in is the charge.html hand-off.
 {
-  const ARCADE = ["arcade-slice.html", "arcade-tiles.html", "arcade-stack.html", "arcade-run.html", "arcade-glide.html"];
+  const ARCADE = ["arcade-slice.html", "arcade-tiles.html", "arcade-stack.html", "arcade-run.html", "arcade-glide.html", "arcade-rise.html"];
   async function land(url, prep, withQuery = false) {
     const ctx = await browser.newContext();
     const pg = await ctx.newPage();
@@ -402,7 +456,8 @@ for (const age of ["3", "4", "5", "8"]) {
   // to a price
   for (const g of ARCADE) {
     const key = g.replace(/^arcade-|\.html$/g, "");
-    const tier = key === "slice" || key === "stack" ? "free" : "premium";
+    // Block Stacker joined Premium, 27 Sep 2026; Piano Tiles turned free, 30 Sep 2026
+    const tier = key === "slice" || key === "tiles" ? "free" : "premium";
     const to = await land(g, 'sessionStorage.setItem("sona.paidui","1")', true);
     ok(`on the free version, typed ${g} is refused (${tier})`,
       tier === "free" ? to === "/today.html" : to === "/today.html?locked=" + key, to);
@@ -415,7 +470,7 @@ for (const age of ["3", "4", "5", "8"]) {
   // A URL flag is not an earned ticket. An expired Premium choice returns
   // to the child-safe library, which keeps the selected game and free choices.
   ok("an expired Premium hand-off without an earned ticket returns to its library choice",
-    (await land("arcade-tiles.html?from=charge", 'sessionStorage.setItem("sona.paidui","1");localStorage.setItem("sona.demo.v1",JSON.stringify({started:1,done:1}));localStorage.setItem("sona.trial.v1",JSON.stringify({start:Date.now()-40*86400000,days:3}))', true)) === "/today.html?locked=tiles");
+    (await land("arcade-stack.html?from=charge", 'sessionStorage.setItem("sona.paidui","1");localStorage.setItem("sona.demo.v1",JSON.stringify({started:1,done:1}));localStorage.setItem("sona.trial.v1",JSON.stringify({start:Date.now()-40*86400000,days:3}))', true)) === "/today.html?locked=stack");
   ok("a LIVE trial still does not open a typed game URL — every game is entered through charge.html",
     (await land("arcade-tiles.html", 'localStorage.setItem("sona.demo.v1",JSON.stringify({started:1,done:1}));localStorage.setItem("sona.trial.v1",JSON.stringify({start:Date.now(),days:3}))')) === "/today.html");
   ok("…while the charge hand-off opens it on that live trial",
@@ -435,37 +490,57 @@ for (const age of ["3", "4", "5", "8"]) {
 // ── Deliberate selection, not an automatic adventure. ──
 // Every visible choice names and illustrates the game practice actually earns.
 // The card may appear in New as well, so exercise each canonical age shelf.
-for (const key of ["feed", "slice", "tiles", "stack", "run", "glide"]) {
+const CHOSEN_ART = {
+  feed: {card:"home-feed.webp", scene:"picnic-game.webp", title:"Feed Echo"},
+  slice: {card:"home-fruit.webp", scene:"orchard-game.webp", title:"Fruit Slice"},
+  tiles: {card:"home-piano.webp", scene:"piano-stage.webp", title:"Piano Tiles"},
+  stack: {card:"home-stack.webp", scene:"moon-village.webp", title:"Block Stacker"},
+  run: {card:"home-run.webp", scene:"sprint-lane.webp", title:"Sound Sprint"},
+  glide: {card:"home-glide.webp", scene:"glide-countryside.webp", title:"Flappy Glide"},
+  rise: {card:"home-rise.webp", scene:"game/rise-garden.webp", title:"Rise Up"},
+};
+for (const key of ["feed", "slice", "tiles", "stack", "run", "glide", "rise"]) {
+  const expected = CHOSEN_ART[key];
   const {ctx, pg} = await home("7", true);
   const card = pg.locator('#activityGroups .game-card[data-game="' + key + '"]');
-  const visible = await card.evaluate(e => ({name:e.querySelector(".game-name").textContent,art:e.querySelector("use").getAttribute("href")}));
+  await card.scrollIntoViewIfNeeded();
+  const visible = await card.evaluate(async e => {
+    const picture = e.querySelector(".game-art img");
+    if (picture) await picture.decode().catch(() => {});
+    return {
+      name:e.querySelector(".game-name").textContent,
+      art:picture ? new URL(picture.currentSrc || picture.src).pathname : "",
+      decoded:!!picture && picture.complete && picture.naturalWidth > 0 && picture.naturalHeight > 0,
+    };
+  });
+  ok(key + ": the chosen card names and loads the right illustrated game", visible.name === expected.title && visible.art === "/assets/crafted/" + expected.card && visible.decoded, JSON.stringify(visible));
   await card.click();
   await pg.waitForURL(/(?:charge|arcade-(?:feed|bubbles|peekaboo))\.html/);
   const result = await pg.evaluate(() => ({
     game: window.GAME || null, title: (document.getElementById("gameTitle") || {}).textContent,
     run: sessionStorage.getItem("sona.run.v1"), ticket: sessionStorage.getItem("sona.play.token"),
-    sticker: "#" + Sona.gameSticker(window.GAME || location.pathname.split("/").pop())[0],
+    scene: getComputedStyle(document.getElementById("app")).backgroundImage,
   }));
   if (key === "feed") {
     ok(key + ": choosing the simple game opens its integrated practice", new URL(pg.url()).pathname === "/arcade-" + key + ".html", pg.url());
+    ok(key + ": integrated practice keeps its picnic theme", result.scene.includes("/assets/crafted/" + expected.scene), result.scene);
   } else {
     const u = new URL(pg.url());
     ok(key + ": choosing the game opens its practice, not an unrelated daily run", u.pathname === "/charge.html" && u.searchParams.get("game") === "arcade-" + key + ".html" && !u.searchParams.has("daily") && String(result.title).toLowerCase() === visible.name.toLowerCase(), JSON.stringify({url:pg.url(),visible,result}));
-    ok(key + ": practice preserves the chosen card's art", visible.art === result.sticker, JSON.stringify({visible,result}));
+    ok(key + ": practice preserves the chosen card's game theme", result.game === "arcade-" + key + ".html" && result.scene.includes("/assets/crafted/" + expected.scene), JSON.stringify({visible,result}));
   }
   ok(key + ": choosing a card never awards a ticket or creates a daily journey", result.ticket === null && result.run === null, JSON.stringify(result));
   await ctx.close();
 }
 
 // A parked game is unavailable even on a previously earned or paid return.
-// It keeps a visible place in the library without becoming a hidden launch door.
-for (const key of ["bubbles", "peekaboo"]) {
-  const {ctx, pg} = await home("4");
-  const before = await pg.evaluate(() => ({run:sessionStorage.getItem("sona.run.v1"),ticket:sessionStorage.getItem("sona.play.token"),reps:Sona.repsToday()}));
-  await pg.locator('#activityGroups .game-card[data-game="' + key + '"]').evaluate(el => el.click());
-  await pg.waitForTimeout(200);
-  const after = await pg.evaluate(() => ({run:sessionStorage.getItem("sona.run.v1"),ticket:sessionStorage.getItem("sona.play.token"),reps:Sona.repsToday()}));
-  ok(key + ": the disabled library card does not navigate, earn or start anything", new URL(pg.url()).pathname === "/today.html" && JSON.stringify(before) === JSON.stringify(after), JSON.stringify({before,after,url:pg.url()}));
+// Since 19 Oct 2026 it has no place in the library at all, so there is no
+// card to become a hidden launch door.
+// (Bubble Pop came back on 30 Sep 2026, Peekaboo on 22 Oct; it is parked
+// again here.)
+for (const key of ["peekaboo"]) {
+  const {ctx, pg} = await home("4", false, true);
+  ok(key + ": the library has no card for it, so nothing to tap", await pg.locator('#libraryApp [data-game="' + key + '"]').count() === 0 && await pg.locator("#activityGroups .game-card").count() > 0);
   await pg.evaluate(key => {
     Sona.saveSub({active:true,source:"stripe"});
     sessionStorage.setItem("sona.play.token","arcade-" + key + ".html");
@@ -485,7 +560,7 @@ for (const round of [0, 2, 5]) {
   await pg.reload();
   await pg.waitForTimeout(700);
   const state = await pg.evaluate(() => ({run:JSON.parse(sessionStorage.getItem("sona.run.v1")),cards:document.querySelectorAll("#activityGroups .game-card").length,oldHero:!!document.getElementById("goBtn")}));
-  ok("saved round " + round + ": reopening shows the library without resuming or changing earned progress", new URL(pg.url()).pathname === "/today.html" && state.cards === 8 && !state.oldHero && JSON.stringify(saved) === JSON.stringify(state.run), JSON.stringify(state));
+  ok("saved round " + round + ": reopening shows the library without resuming or changing earned progress", new URL(pg.url()).pathname === "/today.html" && state.cards === HOME_CARDS && !state.oldHero && JSON.stringify(saved) === JSON.stringify(state.run), JSON.stringify(state));
   await pg.locator('#activityGroups .game-card[data-game="slice"]').click();
   await pg.waitForURL(/charge\.html/);
   ok("saved round " + round + ": a new chosen game still opens its own practice", new URL(pg.url()).searchParams.get("game") === "arcade-slice.html" && await pg.evaluate(() => window.GAME === "arcade-slice.html"), pg.url());
@@ -533,7 +608,7 @@ for (const round of [0, 2, 5]) {
   ok("the fifth return finishes the saved journey",
     done.shown && done.run.active === true && done.run.finishing === true && done.run.round === 5 && done.run.sum === 57, JSON.stringify(done));
   await pg.goto("http://localhost:8178/today.html");
-  ok("an unfinished finale cannot take over the Home library", await pg.locator("#activityGroups .game-card").count() === 8 && await pg.locator("#goBtn").count() === 0);
+  ok("an unfinished finale cannot take over the Home library", await pg.locator("#activityGroups .game-card").count() === HOME_CARDS && await pg.locator("#goBtn").count() === 0);
   await pg.goto("http://localhost:8178/charge.html?daily=1");
   ok("the earned legacy finale remains available through its explicit return", await pg.locator("#runOvl").evaluate(e => e.classList.contains("show")));
 
@@ -545,7 +620,7 @@ for (const round of [0, 2, 5]) {
     sessionStorage.setItem("sona.run.v1", JSON.stringify(run));
   });
   await pg.goto("http://localhost:8178/today.html");
-  ok("a finished active record cannot produce a sixth-round Home resume", await pg.locator("#goBtn").count() === 0 && await pg.locator("#activityGroups .game-card").count() === 8);
+  ok("a finished active record cannot produce a sixth-round Home resume", await pg.locator("#goBtn").count() === 0 && await pg.locator("#activityGroups .game-card").count() === HOME_CARDS);
   await ctx.close();
 }
 

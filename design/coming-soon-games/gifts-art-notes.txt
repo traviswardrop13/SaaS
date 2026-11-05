@@ -1,0 +1,28 @@
+Surprise Boxes art reuse — 2026-10-17
+
+No new raster generation, no image variants and no asset edits.
+The five actual wrapping, ribbon, latch, twist and lid gestures should remain code-native so their visible moving parts match interaction geometry. Reuse the existing high-quality backdrop and toy characters below.
+
+Background:
+public/assets/crafted/game/monster-salon-v1.webp —800×1200 RGB,39536 bytes.
+Inspected with view_image. This is a sunny generic mint room with decorative peripheral shelves and a clear center; there are no characters or salon tools baked into it.
+Wooden floor begins around normalized source y.65. Keep the active present's bottom on that floor after cover rendering, or draw a native tabletop underneath. The central region x.15–.85,y.18–.62 is visually quiet for shelf/control separation.
+Keep original file unchanged. Its original generation provenance remains in design/coming-soon-games/monster-art-notes.txt.
+
+Five matching front-facing toy cutouts, all existing512×512 RGBA with true transparency:
+public/assets/crafted/buddy-bunny-sit.webp —36786 bytes; alpha64 bounds(137,31,387,476).
+public/assets/crafted/buddy-dino-sit.webp —42602 bytes; alpha64 bounds(106,31,405,477).
+public/assets/crafted/buddy-octopus-sit.webp —59866 bytes; alpha64 bounds(49,30,475,473).
+public/assets/crafted/buddy-panda-sit.webp —40554 bytes; alpha64 bounds(75,31,437,476).
+public/assets/crafted/buddy-bee-sit.webp —43884 bytes; alpha64 bounds(51,30,462,473).
+All were inspected together on a dark contact sheet, /tmp/sona-gifts-toys-qa.png.
+Their visible top is around source y.06; feet/base around source y.925–.932. Keep the native square aspect and anchor the visible base to the shelf; do not stretch each animal to a common rectangular body.
+If using dynamic source cropping, use the exact bounds above plus a small transparent margin, preserving full ears/antennae. Existing tracked-source origin is the provenance for these reused assets; no new origin is claimed.
+
+Reference only:
+public/assets/crafted/home-gifts.webp has Echo, wrapped gifts and a bunny; keep as existing intro/card art.
+public/assets/crafted/game/peekaboo-bg.webp has baked doors and is unsuitable behind a separate physical present.
+public/assets/crafted/game/flower-bg.webp has a baked dirt bed and garden tools, so it is a poorer fit than the clean mint room.
+public/assets/crafted/game/robot-workshop-v1.webp has a useful bench but baked workshop tools, so the mint room provides a quieter scene.
+
+No generation prompt exists for this task because no image was generated.

@@ -1,0 +1,38 @@
+/* THE ACTION COLOUR — one file, every kid page (design brief, 28 Sep 2026).
+   The family's redesign brief: "Teal main buttons and mic ... Secondary buttons
+   are cream. No bright green buttons." It reverses the Aug 10 review's orange
+   action colour, and the values are provisional until the designer's STYLE.md
+   arrives — which is why they live here, once, instead of being pasted into
+   fourteen pages. Change a value here and every button follows.
+
+   Orange stays, but only for the practice sound's letters (the r in "rabbit"),
+   never for a button: a child should learn one meaning per colour. */
+:root{
+  --act-hi:#48ccd7;   /* top of the teal pill */
+  --act:#1f98a6;      /* body of the teal pill, and the mic */
+  --act-d:#16767f;    /* its drop shadow, and teal text on cream */
+  --act-glow:rgba(31,152,166,.35);
+  --cream:#fff6e9;    /* secondary pill */
+  --cream-card:#fffaf1;
+  --cream-line:#ecdcc5;
+  --cream-ink:#5b2d05;
+  --snd:#ef6f23;      /* the practice sound's letters, and nothing else */
+}
+/* Main action: the teal pill. White text on the light top of the gradient is
+   only ~2:1, so the text carries a dark teal shadow to stay readable. */
+.act-pill{border:none;cursor:pointer;border-radius:999px;color:#fff;
+  background:linear-gradient(180deg,var(--act-hi),var(--act));box-shadow:0 6px 0 var(--act-d);
+  text-shadow:0 1px 0 var(--act-d);font-family:"Baloo 2",system-ui,sans-serif;font-weight:800;
+  transition:transform .06s,box-shadow .06s;}
+.act-pill:active{transform:translateY(4px);box-shadow:0 2px 0 var(--act-d);}
+/* Second choice: the cream pill ("Back to games"). */
+.cream-pill{border:2px solid var(--cream-line);cursor:pointer;border-radius:999px;color:var(--cream-ink);
+  background:var(--cream);box-shadow:0 5px 0 var(--cream-line);
+  font-family:"Baloo 2",system-ui,sans-serif;font-weight:800;transition:transform .06s,box-shadow .06s;}
+.cream-pill:active{transform:translateY(3px);box-shadow:0 2px 0 var(--cream-line);}
+/* The mic: a teal disc. A page that only SHOWS the mic's state keeps it a
+   status (role=img), never a button — see charge.html. */
+.act-mic{border-radius:50%;color:#fff;background:radial-gradient(circle at 35% 30%,var(--act-hi),var(--act) 70%);
+  box-shadow:0 5px 0 var(--act-d),0 0 0 6px rgba(72,204,215,.18);}
+/* The practice sound's letters: orange, bold. Sona.soundMark() wraps them. */
+.snd{color:var(--snd);}

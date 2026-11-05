@@ -76,12 +76,12 @@ function device(config){
   function nativeEvent(event){const entries=JSON.parse(sessionStorage.getItem('sona.test.nativeEvents')||'[]');entries.push(event);sessionStorage.setItem('sona.test.nativeEvents',JSON.stringify(entries));}
   let sona;
   Object.defineProperty(window,'Sona',{configurable:true,get:()=>sona,set(value){sona=value;value.confetti=()=>{};
-    value.speechStart=()=>new Promise(resolve=>{const entry={id:h.nativeStarts.length+1,settled:false,grant(){if(this.settled)return;this.settled=true;h.nativeActive=this.id;nativeEvent('start:'+this.id);resolve(true);}};h.nativeStarts.push(entry);if(!h.deferNative)entry.grant();});
-    value.speechStop=()=>{const id=h.nativeActive;h.nativeStops.push(id);if(id!==null)nativeEvent('stop:'+id);h.nativeActive=null;return Promise.resolve({text:'rrrr',onDevice:true});};
+    value.speechStart=(o)=>new Promise(resolve=>{h.heardWord=(o&&o.words&&o.words[0])||'rrrr';const entry={id:h.nativeStarts.length+1,settled:false,grant(){if(this.settled)return;this.settled=true;h.nativeActive=this.id;nativeEvent('start:'+this.id);resolve(true);}};h.nativeStarts.push(entry);if(!h.deferNative)entry.grant();});
+    value.speechStop=()=>{const id=h.nativeActive;h.nativeStops.push(id);if(id!==null)nativeEvent('stop:'+id);h.nativeActive=null;return Promise.resolve({text:h.heardWord||'rrrr',onDevice:true});};
   }});
   if(!localStorage.getItem('sona.test.audioSeed')){
     localStorage.setItem('sona.test.audioSeed','1');
-    localStorage.setItem('sona.freeera.v1','post');localStorage.setItem('sona.freeera2.v1','done');localStorage.setItem('sona.freeera3.v1','done');localStorage.setItem('sona.freeera4.v1','done');localStorage.setItem('sona.micok','1');
+    localStorage.setItem('sona.freeera.v1','post');localStorage.setItem('sona.freeera2.v1','done');localStorage.setItem('sona.freeera3.v1','done');localStorage.setItem('sona.freeera4.v1','done');localStorage.setItem('sona.freeera5.v1','done');localStorage.setItem('sona.micok','1');
     localStorage.setItem('sona.profile.v1',JSON.stringify({childName:'Mia',childAge:'7',focusSounds:['R'],onboarded:true,earlyAdopter:true,volume:0,voiceOn:false,soundOn:false}));
     sessionStorage.setItem('sona.run.v1',JSON.stringify({active:true,round:0,scores:[],sum:0,sound:'R',level:1,pending:false,games:['slice','tiles','stack','run','glide']}));
   }
@@ -142,7 +142,11 @@ for(const edge of ['cache','fetch'])await scenario('late '+edge+' response',asyn
     await page.waitForFunction(()=>__audioHarness.pcm.some(p=>p.starts));
     const resumed=await state(page);ok('Resume plays one fresh '+edge+' result',resumed.pcm===1&&resumed.pcmLive===1,resumed);
     const requests=await page.evaluate(edge=>edge==='cache'?__audioHarness.cacheKeys:__audioHarness.fetches.map(f=>f.text),edge);
-    ok('Resume retains the captured prompt for '+edge,requests.length===2&&requests.every(t=>t===original),requests);
+    // 2 Oct 2026: the prompt ends on "Go!", Echo's own clip, looked up once
+    // on its own (charge.html, GO, ON ITS OWN); the prompt's words are what
+    // a pause must not lose or change.
+    const own=requests.filter(t=>!/(^|\|)Go!$/.test(t));
+    ok('Resume retains the captured prompt for '+edge+' (and "Go!", its own clip, is asked for once at most)',own.length===2&&own.every(t=>t===original)&&requests.length-own.length<=1,requests);
     await page.evaluate(()=>__audioHarness.pcm.find(p=>p.active).end());await page.waitForFunction(()=>__audioDone===1);
     ok('resumed '+edge+' playback releases the speaker guard',!(await state(page)).guard);noErrors(edge+' cancellation',errors);
   }finally{await context.close();}

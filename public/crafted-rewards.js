@@ -1,0 +1,28 @@
+/* The same reward illustration in the collection and adventure chest. */
+(function (global) {
+  "use strict";
+    function stickerArt(id) {
+      var shared={star:'star',gift:'gift',fire:'flame',bolt:'bolt',heart:'heart',balloon:'balloon'};
+      if(shared[id])return Sona.icon(shared[id],44);
+      var sprite={rocket:'ob-rocket',unicorn:'ob-unicorn',dragon:'ob-dragon',robot:'ob-robot',cake:'sp-cake'};
+      if(sprite[id])return '<svg viewBox="0 0 120 120" aria-hidden="true"><use href="#'+sprite[id]+'"></use></svg>';
+      var paths={
+        trophy:'<path d="M19 10h26v18q0 15-13 17-13-2-13-17Z" fill="#e7bd55"/><path d="M19 15H8q0 19 15 20m22-20h11q0 19-15 20" stroke="#c39233" stroke-width="5" fill="none"/><path d="M28 43h8v10H24v6h16v-6H28Z" fill="#c39233"/><path d="M24 13v17q0 8 6 10" stroke="#ffe593" stroke-width="3" fill="none"/>',
+        medal:'<path d="m16 4 16 20L48 4H36l-4 6-4-6Z" fill="#559fa3"/><circle cx="32" cy="40" r="19" fill="#e7bd55"/><circle cx="32" cy="40" r="14" fill="none" stroke="#c39233" stroke-width="2"/><path d="m32 30 3 7 8 1-6 5 2 8-7-4-7 4 2-8-6-5 8-1Z" fill="#fff0ab"/>',
+        crown:'<path d="m8 20 13 9L32 10l11 19 13-9-5 31H13Z" fill="#e9c365" stroke="#bf9238" stroke-width="2"/><rect x="13" y="47" width="38" height="8" rx="3" fill="#ce9c39"/><circle cx="32" cy="35" r="4" fill="#4eaaad"/>',
+        rainbow:'<path d="M7 51a25 25 0 0 1 50 0" stroke="#df8d7e" stroke-width="9" fill="none"/><path d="M14 51a18 18 0 0 1 36 0" stroke="#eccf75" stroke-width="7" fill="none"/><path d="M20 51a12 12 0 0 1 24 0" stroke="#78aaa3" stroke-width="6" fill="none"/><ellipse cx="12" cy="52" rx="11" ry="6" fill="#fff9e9"/><ellipse cx="52" cy="52" rx="11" ry="6" fill="#fff9e9"/>',
+        gem:'<path d="m14 12-9 17 27 30 27-30-9-17Z" fill="#83c9cb"/><path d="m14 12 10 17 8-17 8 17 10-17M5 29h54M24 29l8 30 8-30" stroke="#dcf5e7" stroke-width="2" fill="none"/>',
+        sun:'<g stroke="#d7b05c" stroke-width="4" stroke-linecap="round"><path d="M32 4v6m0 44v6M4 32h6m44 0h6M12 12l4 4m32 32 4 4M12 52l4-4m32-32 4-4"/></g><circle cx="32" cy="32" r="16" fill="#ecc86f"/><circle cx="27" cy="27" r="3" fill="#ffedac"/>',
+        moon:'<path d="M42 6C14 2 3 34 24 52c14 12 30 3 35-8-24 6-40-14-17-38Z" fill="#e5c66f"/><path d="m11 9 2 5 5 1-5 2-2 5-2-5-5-2 5-1Z" fill="#8b9bbb"/>',
+        flower:'<g fill="#d890a4"><ellipse cx="32" cy="16" rx="10" ry="13"/><ellipse cx="32" cy="48" rx="10" ry="13"/><ellipse cx="16" cy="32" rx="13" ry="10"/><ellipse cx="48" cy="32" rx="13" ry="10"/></g><circle cx="32" cy="32" r="12" fill="#e9c975"/><circle cx="28" cy="28" r="3" fill="#fff0af"/>',
+        crystal:'<circle cx="32" cy="25" r="21" fill="#a59ac3"/><circle cx="27" cy="19" r="7" fill="#d8d2e8" opacity=".8"/><path d="m14 46 6-8q12 8 24 0l6 8v10H14Z" fill="#b89960"/><path d="m40 13 2 5 5 2-5 2-2 5-2-5-5-2 5-2Z" fill="#fff4ca"/>',
+        ribbon:'<path d="M28 30C6 9 3 23 11 43c3 6 12-1 17-7Zm8 0C58 9 61 23 53 43c-3 6-12-1-17-7Z" fill="#d98b9d"/><path d="m26 35-10 24 12-5 5 6 2-25m4 0 10 24-12-5-5 6-2-25" fill="#c47189"/><rect x="25" y="24" width="14" height="18" rx="5" fill="#e6aab3"/>',
+        clover:'<path d="M32 33C2 32 3 6 20 9q10-10 12 14 2-24 12-14c17-3 18 23-12 24-30 0-29 26-12 23q10 10 12-14 2 24 12 14c17 3 18-23-12-23Z" fill="#81ae75"/><path d="m32 31 8 29" stroke="#54814f" stroke-width="4"/>',
+        butterfly:'<path d="M28 29C8-7 1 10 8 33c-12 22 13 31 22 9M36 29C56-7 63 10 56 33c12 22-13 31-22 9" fill="#ba9dce"/><path d="M27 34C13 17 10 30 18 41m19-7c14-17 17-4 9 7" stroke="#e3cce8" stroke-width="7" stroke-linecap="round"/><path d="M32 20v32m0-28-7-10m7 10 7-10" stroke="#79668a" stroke-width="4" stroke-linecap="round"/>',
+        whale:'<path d="M8 37C4 17 33 9 44 31l9 5 8-9v17l-15 3C33 64 13 59 8 37Z" fill="#659dab"/><path d="M11 41q15 12 31 0-2 13-18 12Z" fill="#b8d8d5"/><circle cx="35" cy="32" r="3" fill="#354b56"/><path d="M19 17V7m0 7L12 8m7 6 8-7" stroke="#81babd" stroke-width="3" stroke-linecap="round"/>'
+      };
+      return '<svg viewBox="0 0 64 64" aria-hidden="true">'+(paths[id]||'')+'</svg>';
+    }
+  global.SonaRewardArt = stickerArt;
+  if (global.Sona && global.Sona.stickerSheet) global.Sona.stickerSheet();
+})(window);

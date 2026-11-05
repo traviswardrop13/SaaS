@@ -1,0 +1,1192 @@
+{
+  "atlases": [
+    {
+      "file": "feed-words-01.webp",
+      "width": 1254,
+      "height": 1254,
+      "source": "/Users/traviswardrop/.codex/generated_images/01a0e945-e36b-70b0-a272-4519f342c4a1/exec-9ea9fbbe-c343-4db0-9932-13a62a46db09.png",
+      "prompt": null,
+      "items": [
+        {
+          "word": "angel",
+          "row": 0,
+          "col": 0,
+          "sourceRect": {
+            "x": 12,
+            "y": 13,
+            "width": 409,
+            "height": 409
+          }
+        },
+        {
+          "word": "apple",
+          "row": 0,
+          "col": 1,
+          "sourceRect": {
+            "x": 450,
+            "y": 33,
+            "width": 364,
+            "height": 364
+          }
+        },
+        {
+          "word": "arm",
+          "row": 0,
+          "col": 2,
+          "sourceRect": {
+            "x": 860,
+            "y": 39,
+            "width": 370,
+            "height": 370
+          }
+        },
+        {
+          "word": "arrow",
+          "row": 1,
+          "col": 0,
+          "sourceRect": {
+            "x": 29,
+            "y": 435,
+            "width": 379,
+            "height": 379
+          }
+        },
+        {
+          "word": "baby",
+          "row": 1,
+          "col": 1,
+          "sourceRect": {
+            "x": 445,
+            "y": 421,
+            "width": 394,
+            "height": 394
+          }
+        },
+        {
+          "word": "badge",
+          "row": 1,
+          "col": 2,
+          "sourceRect": {
+            "x": 874,
+            "y": 440,
+            "width": 354,
+            "height": 354
+          }
+        },
+        {
+          "word": "bag",
+          "row": 2,
+          "col": 0,
+          "sourceRect": {
+            "x": 20,
+            "y": 812,
+            "width": 394,
+            "height": 394
+          }
+        },
+        {
+          "word": "ball",
+          "row": 2,
+          "col": 1,
+          "sourceRect": {
+            "x": 456,
+            "y": 846,
+            "width": 343,
+            "height": 343
+          }
+        },
+        {
+          "word": "balloon",
+          "row": 2,
+          "col": 2,
+          "sourceRect": {
+            "x": 827,
+            "y": 813,
+            "width": 427,
+            "height": 427
+          }
+        }
+      ]
+    },
+    {
+      "file": "feed-words-02.webp",
+      "width": 1254,
+      "height": 1254,
+      "source": "/Users/traviswardrop/.codex/generated_images/01a0e945-e36b-70b0-a272-4519f342c4a1/exec-ade04b86-cf50-4949-9d32-0cfcca6e05e7.png",
+      "prompt": null,
+      "items": [
+        {
+          "word": "banana",
+          "row": 0,
+          "col": 0,
+          "sourceRect": {
+            "x": 36,
+            "y": 16,
+            "width": 365,
+            "height": 365
+          }
+        },
+        {
+          "word": "bath",
+          "row": 0,
+          "col": 1,
+          "sourceRect": {
+            "x": 427,
+            "y": 29,
+            "width": 395,
+            "height": 395
+          }
+        },
+        {
+          "word": "bathe",
+          "row": 0,
+          "col": 2,
+          "sourceRect": {
+            "x": 853,
+            "y": 10,
+            "width": 378,
+            "height": 378
+          }
+        },
+        {
+          "word": "bathtub",
+          "row": 1,
+          "col": 0,
+          "sourceRect": {
+            "x": 13,
+            "y": 434,
+            "width": 393,
+            "height": 393
+          }
+        },
+        {
+          "word": "beach",
+          "row": 1,
+          "col": 1,
+          "sourceRect": {
+            "x": 429,
+            "y": 419,
+            "width": 395,
+            "height": 395
+          }
+        },
+        {
+          "word": "bear",
+          "row": 1,
+          "col": 2,
+          "sourceRect": {
+            "x": 868,
+            "y": 419,
+            "width": 386,
+            "height": 386
+          }
+        },
+        {
+          "word": "bed",
+          "row": 2,
+          "col": 0,
+          "sourceRect": {
+            "x": 26,
+            "y": 822,
+            "width": 388,
+            "height": 388
+          }
+        },
+        {
+          "word": "bee",
+          "row": 2,
+          "col": 1,
+          "sourceRect": {
+            "x": 448,
+            "y": 855,
+            "width": 351,
+            "height": 351
+          }
+        },
+        {
+          "word": "bees",
+          "row": 2,
+          "col": 2,
+          "sourceRect": {
+            "x": 833,
+            "y": 811,
+            "width": 409,
+            "height": 409
+          }
+        }
+      ]
+    },
+    {
+      "file": "feed-words-03.webp",
+      "width": 1254,
+      "height": 1254,
+      "source": "/Users/traviswardrop/.codex/generated_images/01a0e945-e36b-70b0-a272-4519f342c4a1/exec-f60b139b-0145-4dba-9279-e4640df7779a.png",
+      "prompt": null,
+      "items": [
+        {
+          "word": "bell",
+          "row": 0,
+          "col": 0,
+          "sourceRect": {
+            "x": 48,
+            "y": 38,
+            "width": 313,
+            "height": 405
+          }
+        },
+        {
+          "word": "bicycle",
+          "row": 0,
+          "col": 1,
+          "sourceRect": {
+            "x": 396,
+            "y": 72,
+            "width": 480,
+            "height": 367
+          }
+        },
+        {
+          "word": "bird",
+          "row": 0,
+          "col": 2,
+          "sourceRect": {
+            "x": 892,
+            "y": 93,
+            "width": 352,
+            "height": 352
+          }
+        },
+        {
+          "word": "birthday",
+          "row": 1,
+          "col": 0,
+          "sourceRect": {
+            "x": 19,
+            "y": 459,
+            "width": 427,
+            "height": 427
+          }
+        },
+        {
+          "word": "blocks",
+          "row": 1,
+          "col": 1,
+          "sourceRect": {
+            "x": 443,
+            "y": 481,
+            "width": 402,
+            "height": 402
+          }
+        },
+        {
+          "word": "boat",
+          "row": 1,
+          "col": 2,
+          "sourceRect": {
+            "x": 826,
+            "y": 450,
+            "width": 428,
+            "height": 428
+          }
+        },
+        {
+          "word": "bone",
+          "row": 2,
+          "col": 0,
+          "sourceRect": {
+            "x": 35,
+            "y": 881,
+            "width": 372,
+            "height": 372
+          }
+        },
+        {
+          "word": "book",
+          "row": 2,
+          "col": 1,
+          "sourceRect": {
+            "x": 416,
+            "y": 919,
+            "width": 443,
+            "height": 262
+          }
+        },
+        {
+          "word": "branch",
+          "row": 2,
+          "col": 2,
+          "sourceRect": {
+            "x": 878,
+            "y": 872,
+            "width": 358,
+            "height": 358
+          }
+        }
+      ]
+    },
+    {
+      "file": "feed-words-04.webp",
+      "width": 1254,
+      "height": 1254,
+      "source": "/Users/traviswardrop/.codex/generated_images/01a0e945-e36b-70b0-a272-4519f342c4a1/exec-7c1b718b-3d20-4721-b85a-7b8da7c36b16.png",
+      "prompt": null,
+      "items": [
+        {
+          "word": "breathe",
+          "row": 0,
+          "col": 0,
+          "sourceRect": {
+            "x": 22,
+            "y": 22,
+            "width": 389,
+            "height": 389
+          }
+        },
+        {
+          "word": "bridge",
+          "row": 0,
+          "col": 1,
+          "sourceRect": {
+            "x": 437,
+            "y": 38,
+            "width": 384,
+            "height": 384
+          }
+        },
+        {
+          "word": "broom",
+          "row": 0,
+          "col": 2,
+          "sourceRect": {
+            "x": 852,
+            "y": 38,
+            "width": 357,
+            "height": 357
+          }
+        },
+        {
+          "word": "brother",
+          "row": 1,
+          "col": 0,
+          "sourceRect": {
+            "x": 34,
+            "y": 432,
+            "width": 392,
+            "height": 392
+          }
+        },
+        {
+          "word": "brush",
+          "row": 1,
+          "col": 1,
+          "sourceRect": {
+            "x": 453,
+            "y": 447,
+            "width": 360,
+            "height": 360
+          }
+        },
+        {
+          "word": "bucket",
+          "row": 1,
+          "col": 2,
+          "sourceRect": {
+            "x": 861,
+            "y": 451,
+            "width": 363,
+            "height": 363
+          }
+        },
+        {
+          "word": "bug",
+          "row": 2,
+          "col": 0,
+          "sourceRect": {
+            "x": 33,
+            "y": 866,
+            "width": 344,
+            "height": 344
+          }
+        },
+        {
+          "word": "bulldozer",
+          "row": 2,
+          "col": 1,
+          "sourceRect": {
+            "x": 425,
+            "y": 842,
+            "width": 397,
+            "height": 397
+          }
+        },
+        {
+          "word": "bus",
+          "row": 2,
+          "col": 2,
+          "sourceRect": {
+            "x": 847,
+            "y": 854,
+            "width": 377,
+            "height": 377
+          }
+        }
+      ]
+    },
+    {
+      "file": "feed-words-05.webp",
+      "width": 1254,
+      "height": 1254,
+      "source": "/Users/traviswardrop/.codex/generated_images/01a0e988-6375-7152-bb54-03a8da5f88d9/exec-59533b96-33e6-4b48-84c8-7456efc4f6f6.png",
+      "prompt": "Use case: illustration-story. Asset type: production transparent sprite atlas for children's word-picture game, one square image arranged in an EXACT 3 by 3 grid. Style: rich tactile hand-painted clay and carved wooden storybook objects, rounded friendly dimensional forms, soft upper-left lighting, warm cream and cocoa with colorful accents. Matching a lush crafted little world. Each object occupies its own equal square cell, centered at x=16.67%,50%,83.33% and y=16.67%,50%,83.33%. Keep a generous 15% margin INSIDE EVERY CELL. Do not cross cell boundaries. Real transparent alpha background everywhere outside objects; no cast shadows, no ground, no scenery outside a specified miniature vignette. No labels, no borders, no lines, no text except explicit numerals requested, no emoji, no collage panels, no phone or UI. Exactly nine clearly recognizable subjects in ROW-MAJOR order. Cell 1 (top left): single four-hole red sewing button. Cell 2 (top middle): yellow taxi cab with roof lamp, no lettering. Cell 3 (top right): small empty wooden bird cage. Cell 4 (middle left): slice of cake with cream and strawberry. Cell 5 (center): friendly full-body camel with two humps. Cell 6 (middle right): sealed metal food can with blank coral wrapper. Cell 7 (bottom left): small red passenger car. Cell 8 (bottom middle): orange carrot with leafy green top. Cell 9 (bottom right): toy stone castle with three towers.",
+      "items": [
+        {
+          "word": "button",
+          "row": 0,
+          "col": 0,
+          "sourceRect": {
+            "x": 58,
+            "y": 71,
+            "width": 303,
+            "height": 303
+          }
+        },
+        {
+          "word": "cab",
+          "row": 0,
+          "col": 1,
+          "sourceRect": {
+            "x": 407,
+            "y": 59,
+            "width": 440,
+            "height": 327
+          }
+        },
+        {
+          "word": "cage",
+          "row": 0,
+          "col": 2,
+          "sourceRect": {
+            "x": 864,
+            "y": 18,
+            "width": 386,
+            "height": 386
+          }
+        },
+        {
+          "word": "cake",
+          "row": 1,
+          "col": 0,
+          "sourceRect": {
+            "x": 35,
+            "y": 436,
+            "width": 361,
+            "height": 361
+          }
+        },
+        {
+          "word": "camel",
+          "row": 1,
+          "col": 1,
+          "sourceRect": {
+            "x": 435,
+            "y": 410,
+            "width": 420,
+            "height": 420
+          }
+        },
+        {
+          "word": "can",
+          "row": 1,
+          "col": 2,
+          "sourceRect": {
+            "x": 886,
+            "y": 453,
+            "width": 340,
+            "height": 340
+          }
+        },
+        {
+          "word": "car",
+          "row": 2,
+          "col": 0,
+          "sourceRect": {
+            "x": 12,
+            "y": 819,
+            "width": 435,
+            "height": 435
+          }
+        },
+        {
+          "word": "carrot",
+          "row": 2,
+          "col": 1,
+          "sourceRect": {
+            "x": 458,
+            "y": 826,
+            "width": 406,
+            "height": 406
+          }
+        },
+        {
+          "word": "castle",
+          "row": 2,
+          "col": 2,
+          "sourceRect": {
+            "x": 861,
+            "y": 806,
+            "width": 373,
+            "height": 407
+          }
+        }
+      ]
+    },
+    {
+      "file": "feed-words-06.webp",
+      "width": 1254,
+      "height": 1254,
+      "source": "/Users/traviswardrop/.codex/generated_images/01a0e988-6375-7152-bb54-03a8da5f88d9/exec-780cccb7-999e-47a3-97e9-15347f02e14e.png",
+      "prompt": "Use case: illustration-story. Asset type: production transparent sprite atlas for children's word-picture game, one square image arranged in an EXACT 3 by 3 grid. Style: rich tactile hand-painted clay and carved wooden storybook objects, rounded friendly dimensional forms, soft upper-left lighting, warm cream and cocoa with colorful accents. Matching a lush crafted little world. Each object occupies its own equal square cell, centered at x=16.67%,50%,83.33% and y=16.67%,50%,83.33%. Keep a generous 15% margin INSIDE EVERY CELL. Do not cross cell boundaries. Real transparent alpha background everywhere outside objects; no cast shadows, no ground, no scenery outside a specified miniature vignette. No labels, no borders, no lines, no text except explicit numerals requested, no emoji, no collage panels, no phone or UI. Exactly nine clearly recognizable subjects in ROW-MAJOR order. Cell 1 (top left): friendly orange full-body cat. Cell 2 (top middle): miniature rocky cave entrance. Cell 3 (top right): simple wooden chair. Cell 4 (middle left): yellow wedge of Swiss cheese. Cell 5 (center): one red cherry with stem and leaf. Cell 6 (middle right): friendly white full-body chicken. Cell 7 (bottom left): golden potato chips spilling from a plain cream bowl. Cell 8 (bottom middle): partly unwrapped dark chocolate bar. Cell 9 (bottom right): round wooden analog clock.",
+      "items": [
+        {
+          "word": "cat",
+          "row": 0,
+          "col": 0,
+          "sourceRect": {
+            "x": 0,
+            "y": 4,
+            "width": 417,
+            "height": 417
+          }
+        },
+        {
+          "word": "cave",
+          "row": 0,
+          "col": 1,
+          "sourceRect": {
+            "x": 415,
+            "y": 3,
+            "width": 423,
+            "height": 423
+          }
+        },
+        {
+          "word": "chair",
+          "row": 0,
+          "col": 2,
+          "sourceRect": {
+            "x": 851,
+            "y": 21,
+            "width": 397,
+            "height": 397
+          }
+        },
+        {
+          "word": "cheese",
+          "row": 1,
+          "col": 0,
+          "sourceRect": {
+            "x": 49,
+            "y": 460,
+            "width": 346,
+            "height": 346
+          }
+        },
+        {
+          "word": "cherry",
+          "row": 1,
+          "col": 1,
+          "sourceRect": {
+            "x": 463,
+            "y": 425,
+            "width": 376,
+            "height": 376
+          }
+        },
+        {
+          "word": "chicken",
+          "row": 1,
+          "col": 2,
+          "sourceRect": {
+            "x": 845,
+            "y": 418,
+            "width": 409,
+            "height": 409
+          }
+        },
+        {
+          "word": "chips",
+          "row": 2,
+          "col": 0,
+          "sourceRect": {
+            "x": 24,
+            "y": 818,
+            "width": 408,
+            "height": 408
+          }
+        },
+        {
+          "word": "chocolate",
+          "row": 2,
+          "col": 1,
+          "sourceRect": {
+            "x": 426,
+            "y": 823,
+            "width": 401,
+            "height": 401
+          }
+        },
+        {
+          "word": "clock",
+          "row": 2,
+          "col": 2,
+          "sourceRect": {
+            "x": 858,
+            "y": 836,
+            "width": 368,
+            "height": 368
+          }
+        }
+      ]
+    },
+    {
+      "file": "feed-words-07.webp",
+      "width": 1254,
+      "height": 1254,
+      "source": "/Users/traviswardrop/.codex/generated_images/01a0e988-6375-7152-bb54-03a8da5f88d9/exec-448b2932-8464-4413-a4ea-9cd607d59488.png",
+      "prompt": "Use case: illustration-story. Asset type: production transparent sprite atlas for children's word-picture game, one square image arranged in an EXACT 3 by 3 grid. Style: rich tactile hand-painted clay and carved wooden storybook objects, rounded friendly dimensional forms, soft upper-left lighting, warm cream and cocoa with colorful accents. Matching a lush crafted little world. Each object occupies its own equal square cell, centered at x=16.67%,50%,83.33% and y=16.67%,50%,83.33%. Keep a generous 15% margin INSIDE EVERY CELL. Do not cross cell boundaries. Real transparent alpha background everywhere outside objects; no cast shadows, no ground, no scenery outside a specified miniature vignette. No labels, no borders, no lines, no text except explicit numerals requested, no emoji, no collage panels, no phone or UI. Exactly nine clearly recognizable subjects in ROW-MAJOR order. Cell 1 (top left): one fluffy white cloud. Cell 2 (top middle): yellow corn cob with only a few leaves and visible kernels. Cell 3 (top right): cream coffee mug with brown coffee and slight steam. Cell 4 (middle left): wooden artist palette with colorful paint blobs representing color. Cell 5 (center): one chocolate chip cookie. Cell 6 (middle right): full yellow ear of corn with green husks. Cell 7 (bottom left): small teal upholstered couch. Cell 8 (bottom middle): friendly full-body black and white cow. Cell 9 (bottom right): small friendly coral red crab.",
+      "items": [
+        {
+          "word": "cloud",
+          "row": 0,
+          "col": 0,
+          "sourceRect": {
+            "x": 29,
+            "y": 24,
+            "width": 403,
+            "height": 403
+          }
+        },
+        {
+          "word": "cob",
+          "row": 0,
+          "col": 1,
+          "sourceRect": {
+            "x": 448,
+            "y": 45,
+            "width": 377,
+            "height": 377
+          }
+        },
+        {
+          "word": "coffee",
+          "row": 0,
+          "col": 2,
+          "sourceRect": {
+            "x": 871,
+            "y": 18,
+            "width": 383,
+            "height": 383
+          }
+        },
+        {
+          "word": "color",
+          "row": 1,
+          "col": 0,
+          "sourceRect": {
+            "x": 42,
+            "y": 442,
+            "width": 375,
+            "height": 375
+          }
+        },
+        {
+          "word": "cookie",
+          "row": 1,
+          "col": 1,
+          "sourceRect": {
+            "x": 461,
+            "y": 454,
+            "width": 348,
+            "height": 348
+          }
+        },
+        {
+          "word": "corn",
+          "row": 1,
+          "col": 2,
+          "sourceRect": {
+            "x": 832,
+            "y": 422,
+            "width": 414,
+            "height": 414
+          }
+        },
+        {
+          "word": "couch",
+          "row": 2,
+          "col": 0,
+          "sourceRect": {
+            "x": 18,
+            "y": 830,
+            "width": 424,
+            "height": 424
+          }
+        },
+        {
+          "word": "cow",
+          "row": 2,
+          "col": 1,
+          "sourceRect": {
+            "x": 436,
+            "y": 802,
+            "width": 402,
+            "height": 402
+          }
+        },
+        {
+          "word": "crab",
+          "row": 2,
+          "col": 2,
+          "sourceRect": {
+            "x": 855,
+            "y": 844,
+            "width": 377,
+            "height": 377
+          }
+        }
+      ]
+    },
+    {
+      "file": "feed-words-08.webp",
+      "width": 1254,
+      "height": 1254,
+      "source": "/Users/traviswardrop/.codex/generated_images/01a0e988-6375-7152-bb54-03a8da5f88d9/exec-e022410c-1c9f-4ae8-bd06-4fb5ae58b510.png",
+      "prompt": "Use case: illustration-story. Asset type: production transparent sprite atlas for children's word-picture game, one square image arranged in an EXACT 3 by 3 grid. Style: rich tactile hand-painted clay and carved wooden storybook objects, rounded friendly dimensional forms, soft upper-left lighting, warm cream and cocoa with colorful accents. Matching a lush crafted little world. Each object occupies its own equal square cell, centered at x=16.67%,50%,83.33% and y=16.67%,50%,83.33%. Keep a generous 15% margin INSIDE EVERY CELL. Do not cross cell boundaries. Real transparent alpha background everywhere outside objects; no cast shadows, no ground, no scenery outside a specified miniature vignette. No labels, no borders, no lines, no text except explicit numerals requested, no emoji, no collage panels, no phone or UI. Exactly nine clearly recognizable subjects in ROW-MAJOR order. Cell 1: teal ceramic cup with a handle. Cell 2: fully clothed adult father figurine wearing a green sweater, blue trousers and brown shoes, waving warmly. Cell 3: full-body friendly deer. Cell 4: small wooden desk with one drawer. Cell 5: a dinner plate containing rice, green peas, carrot slices and a bread roll. Cell 6: friendly long-necked turquoise dinosaur. Cell 7: one empty cream ceramic plate. Cell 8: a stack of three cream ceramic plates. Cell 9: fully clothed storybook adult figurine wearing an orange sweater, blue trousers and brown shoes, with two small spiral curves above the head indicating dizziness; friendly and unharmed.",
+      "items": [
+        {
+          "word": "cup",
+          "row": 0,
+          "col": 0,
+          "sourceRect": {
+            "x": 50,
+            "y": 57,
+            "width": 375,
+            "height": 375
+          }
+        },
+        {
+          "word": "dad",
+          "row": 0,
+          "col": 1,
+          "sourceRect": {
+            "x": 419,
+            "y": 7,
+            "width": 426,
+            "height": 426
+          }
+        },
+        {
+          "word": "deer",
+          "row": 0,
+          "col": 2,
+          "sourceRect": {
+            "x": 893,
+            "y": 0,
+            "width": 320,
+            "height": 430
+          }
+        },
+        {
+          "word": "desk",
+          "row": 1,
+          "col": 0,
+          "sourceRect": {
+            "x": 9,
+            "y": 441,
+            "width": 396,
+            "height": 396
+          }
+        },
+        {
+          "word": "dinner",
+          "row": 1,
+          "col": 1,
+          "sourceRect": {
+            "x": 421,
+            "y": 426,
+            "width": 412,
+            "height": 412
+          }
+        },
+        {
+          "word": "dinosaur",
+          "row": 1,
+          "col": 2,
+          "sourceRect": {
+            "x": 868,
+            "y": 422,
+            "width": 383,
+            "height": 390
+          }
+        },
+        {
+          "word": "dish",
+          "row": 2,
+          "col": 0,
+          "sourceRect": {
+            "x": 8,
+            "y": 830,
+            "width": 406,
+            "height": 406
+          }
+        },
+        {
+          "word": "dishes",
+          "row": 2,
+          "col": 1,
+          "sourceRect": {
+            "x": 425,
+            "y": 826,
+            "width": 406,
+            "height": 406
+          }
+        },
+        {
+          "word": "dizzy",
+          "row": 2,
+          "col": 2,
+          "sourceRect": {
+            "x": 900,
+            "y": 811,
+            "width": 263,
+            "height": 439
+          }
+        }
+      ]
+    },
+    {
+      "file": "feed-words-09.webp",
+      "width": 1254,
+      "height": 1254,
+      "source": "/Users/traviswardrop/.codex/generated_images/01a0e988-6375-7152-bb54-03a8da5f88d9/exec-47629ebc-6a2f-4228-9243-a889d64b8e6b.png",
+      "prompt": "Use case: illustration-story. Asset type: production transparent sprite atlas for children's word-picture game, one square image arranged in an EXACT 3 by 3 grid. Style: rich tactile hand-painted clay and carved wooden storybook objects, rounded friendly dimensional forms, soft upper-left lighting, warm cream and cocoa with colorful accents. Matching a lush crafted little world. Each object occupies its own equal square cell, centered at x=16.67%,50%,83.33% and y=16.67%,50%,83.33%. Keep a generous 15% margin INSIDE EVERY CELL. Do not cross cell boundaries. Real transparent alpha background everywhere outside objects; no cast shadows, no ground, no scenery outside a specified miniature vignette. No labels, no borders, no lines, no text except explicit numerals requested, no emoji, no collage panels, no phone or UI. Exactly nine clearly recognizable subjects in ROW-MAJOR order. Cell 1 (top left): friendly tan full-body dog. Cell 2 (top middle): soft cloth girl doll in coral dress. Cell 3 (top right): simple wooden door in a small frame. Cell 4 (middle left): white dove with folded wings. Cell 5 (center): friendly small green full-body dragon. Cell 6 (middle right): empty coral dress on a simple hanger. Cell 7 (bottom left): friendly adult driver clearly seated behind steering wheel with miniature car front. Cell 8 (bottom middle): wooden toy drum with two sticks. Cell 9 (bottom right): friendly child drummer playing a small wooden drum.",
+      "items": [
+        {
+          "word": "dog",
+          "row": 0,
+          "col": 0,
+          "sourceRect": {
+            "x": 19,
+            "y": 24,
+            "width": 391,
+            "height": 391
+          }
+        },
+        {
+          "word": "doll",
+          "row": 0,
+          "col": 1,
+          "sourceRect": {
+            "x": 437,
+            "y": 34,
+            "width": 383,
+            "height": 383
+          }
+        },
+        {
+          "word": "door",
+          "row": 0,
+          "col": 2,
+          "sourceRect": {
+            "x": 861,
+            "y": 27,
+            "width": 381,
+            "height": 381
+          }
+        },
+        {
+          "word": "dove",
+          "row": 1,
+          "col": 0,
+          "sourceRect": {
+            "x": 27,
+            "y": 443,
+            "width": 365,
+            "height": 365
+          }
+        },
+        {
+          "word": "dragon",
+          "row": 1,
+          "col": 1,
+          "sourceRect": {
+            "x": 447,
+            "y": 417,
+            "width": 403,
+            "height": 403
+          }
+        },
+        {
+          "word": "dress",
+          "row": 1,
+          "col": 2,
+          "sourceRect": {
+            "x": 857,
+            "y": 421,
+            "width": 387,
+            "height": 387
+          }
+        },
+        {
+          "word": "driver",
+          "row": 2,
+          "col": 0,
+          "sourceRect": {
+            "x": 12,
+            "y": 809,
+            "width": 411,
+            "height": 411
+          }
+        },
+        {
+          "word": "drum",
+          "row": 2,
+          "col": 1,
+          "sourceRect": {
+            "x": 469,
+            "y": 854,
+            "width": 340,
+            "height": 340
+          }
+        },
+        {
+          "word": "drummer",
+          "row": 2,
+          "col": 2,
+          "sourceRect": {
+            "x": 839,
+            "y": 811,
+            "width": 397,
+            "height": 397
+          }
+        }
+      ]
+    },
+    {
+      "file": "feed-words-10.webp",
+      "width": 1254,
+      "height": 1254,
+      "source": "/Users/traviswardrop/.codex/generated_images/01a0e988-6375-7152-bb54-03a8da5f88d9/exec-77417853-81aa-4e3b-905c-0cd66df4b61e.png",
+      "prompt": "Use case: illustration-story. Asset type: production transparent sprite atlas for children's word-picture game, one square image arranged in an EXACT 3 by 3 grid. Style: rich tactile hand-painted clay and carved wooden storybook objects, rounded friendly dimensional forms, soft upper-left lighting, warm cream and cocoa with colorful accents. Matching a lush crafted little world. Each object occupies its own equal square cell, centered at x=16.67%,50%,83.33% and y=16.67%,50%,83.33%. Keep a generous 15% margin INSIDE EVERY CELL. Do not cross cell boundaries. Real transparent alpha background everywhere outside objects; no cast shadows, no ground, no scenery outside a specified miniature vignette. No labels, no borders, no lines, no text except explicit numerals requested, no emoji, no collage panels, no phone or UI. Exactly nine clearly recognizable subjects in ROW-MAJOR order. Cell 1 (top left): yellow full-body duck. Cell 2 (top middle): human ear educational model, clay toy style. Cell 3 (top right): one ivory egg. Cell 4 (middle left): friendly gray full-body elephant. Cell 5 (center): toy steam train engine. Cell 6 (middle right): small teal electric desk fan. Cell 7 (bottom left): miniature farm vignette with red barn and small fence. Cell 8 (bottom middle): father gently standing with child at his side. Cell 9 (bottom right): single soft blue feather.",
+      "items": [
+        {
+          "word": "duck",
+          "row": 0,
+          "col": 0,
+          "sourceRect": {
+            "x": 32,
+            "y": 20,
+            "width": 392,
+            "height": 392
+          }
+        },
+        {
+          "word": "ear",
+          "row": 0,
+          "col": 1,
+          "sourceRect": {
+            "x": 454,
+            "y": 25,
+            "width": 365,
+            "height": 365
+          }
+        },
+        {
+          "word": "egg",
+          "row": 0,
+          "col": 2,
+          "sourceRect": {
+            "x": 882,
+            "y": 55,
+            "width": 332,
+            "height": 332
+          }
+        },
+        {
+          "word": "elephant",
+          "row": 1,
+          "col": 0,
+          "sourceRect": {
+            "x": 29,
+            "y": 405,
+            "width": 424,
+            "height": 424
+          }
+        },
+        {
+          "word": "engine",
+          "row": 1,
+          "col": 1,
+          "sourceRect": {
+            "x": 450,
+            "y": 419,
+            "width": 374,
+            "height": 374
+          }
+        },
+        {
+          "word": "fan",
+          "row": 1,
+          "col": 2,
+          "sourceRect": {
+            "x": 862,
+            "y": 426,
+            "width": 374,
+            "height": 374
+          }
+        },
+        {
+          "word": "farm",
+          "row": 2,
+          "col": 0,
+          "sourceRect": {
+            "x": 17,
+            "y": 801,
+            "width": 440,
+            "height": 440
+          }
+        },
+        {
+          "word": "father",
+          "row": 2,
+          "col": 1,
+          "sourceRect": {
+            "x": 451,
+            "y": 790,
+            "width": 436,
+            "height": 436
+          }
+        },
+        {
+          "word": "feather",
+          "row": 2,
+          "col": 2,
+          "sourceRect": {
+            "x": 867,
+            "y": 831,
+            "width": 387,
+            "height": 387
+          }
+        }
+      ]
+    },
+    {
+      "file": "feed-words-11.webp",
+      "width": 1254,
+      "height": 1254,
+      "source": "/Users/traviswardrop/.codex/generated_images/01a0e988-6375-7152-bb54-03a8da5f88d9/exec-7d10e49b-acfe-4d80-8a93-56b0db3a458e.png",
+      "prompt": "Use case: illustration-story. Asset type: production transparent sprite atlas for children's word-picture game, one square image arranged in an EXACT 3 by 3 grid. Style: rich tactile hand-painted clay and carved wooden storybook objects, rounded friendly dimensional forms, soft upper-left lighting, warm cream and cocoa with colorful accents. Matching a lush crafted little world. Each object occupies its own equal square cell, centered at x=16.67%,50%,83.33% and y=16.67%,50%,83.33%. Keep a generous 15% margin INSIDE EVERY CELL. Do not cross cell boundaries. Real transparent alpha background everywhere outside objects; no cast shadows, no ground, no scenery outside a specified miniature vignette. No labels, no borders, no lines, no text except explicit numerals requested, no emoji, no collage panels, no phone or UI. Exactly nine clearly recognizable subjects in ROW-MAJOR order. Cell 1 (top left): hand with index finger extended upright, educational clay model. Cell 2 (top middle): small safe campfire on two logs. Cell 3 (top right): single orange full-body fish. Cell 4 (middle left): large dimensional carved wooden numeral 5. Cell 5 (center): simple coral triangular flag on short wooden pole. Cell 6 (middle right): plate of food with sandwich, apple slices and carrots. Cell 7 (bottom left): single bare foot educational clay model. Cell 8 (bottom middle): single wooden handled metal fork. Cell 9 (bottom right): large dimensional carved wooden numeral 4.",
+      "items": [
+        {
+          "word": "finger",
+          "row": 0,
+          "col": 0,
+          "sourceRect": {
+            "x": 0,
+            "y": 16,
+            "width": 395,
+            "height": 395
+          }
+        },
+        {
+          "word": "fire",
+          "row": 0,
+          "col": 1,
+          "sourceRect": {
+            "x": 430,
+            "y": 26,
+            "width": 382,
+            "height": 382
+          }
+        },
+        {
+          "word": "fish",
+          "row": 0,
+          "col": 2,
+          "sourceRect": {
+            "x": 848,
+            "y": 38,
+            "width": 377,
+            "height": 377
+          }
+        },
+        {
+          "word": "five",
+          "row": 1,
+          "col": 0,
+          "sourceRect": {
+            "x": 36,
+            "y": 443,
+            "width": 361,
+            "height": 361
+          }
+        },
+        {
+          "word": "flag",
+          "row": 1,
+          "col": 1,
+          "sourceRect": {
+            "x": 458,
+            "y": 433,
+            "width": 364,
+            "height": 364
+          }
+        },
+        {
+          "word": "food",
+          "row": 1,
+          "col": 2,
+          "sourceRect": {
+            "x": 831,
+            "y": 418,
+            "width": 410,
+            "height": 410
+          }
+        },
+        {
+          "word": "foot",
+          "row": 2,
+          "col": 0,
+          "sourceRect": {
+            "x": 45,
+            "y": 818,
+            "width": 378,
+            "height": 378
+          }
+        },
+        {
+          "word": "fork",
+          "row": 2,
+          "col": 1,
+          "sourceRect": {
+            "x": 439,
+            "y": 812,
+            "width": 382,
+            "height": 382
+          }
+        },
+        {
+          "word": "four",
+          "row": 2,
+          "col": 2,
+          "sourceRect": {
+            "x": 851,
+            "y": 823,
+            "width": 366,
+            "height": 366
+          }
+        }
+      ]
+    }
+  ]
+}

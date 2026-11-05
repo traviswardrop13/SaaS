@@ -308,12 +308,24 @@
         if (!response.ok) { job.reason = "api-error"; job.status = response.status; return null; }
         job.voiceInfo = { source: response.headers.get("X-Sona-Voice-Provider") || "server", model: response.headers.get("X-Sona-Voice-Model"),
           cache: response.headers.get("X-Sona-Voice-Cache"), revision: response.headers.get("X-Sona-Voice-Revision") };
+        // "0": a stand-in while the usual voice model was busy — play, never save.
+        job.keep = response.headers.get("X-Sona-Voice-Keep") !== "0";
         return response.arrayBuffer();
       }).then(function (bytes) { done(bytes && bytes.byteLength ? bytes : null); }).catch(function () { job.reason = "network-error"; done(null); });
     });
   }
   function pcm(job, bytes) {
     return operation(job, function (done, cleanup) {
+      if (S.mediaPCM && S.voiceAsMedia && S.voiceAsMedia()) {
+        // the iPhone app plays the word as media (sona.js mediaPCM says why);
+        // one that never starts goes to the browser voice like a refused context
+        var m = S.mediaPCM(bytes, { volume: volume() });
+        cleanup(function () { m.stop(); });
+        m.done.then(function (how) { done(how !== "failed"); });
+        $("promptHint").textContent = "Listen to Echo.";
+        if (S.voiceDiagnostic) S.voiceDiagnostic(job.voiceInfo || { source: "server" });
+        return;
+      }
       unlockContext();
       var node = null, gain = null, timer = setTimeout(function () { done(false); }, 1000), ended = false;
       cleanup(function () { ended = true; clearTimeout(timer); if (node) { node.onended = null; try { node.stop(); node.disconnect(); } catch (e) {} } if (gain) gain.disconnect(); });
@@ -358,11 +370,11 @@
     job.cancel = function () { if (job.cancelled) return; job.cancelled = true; job.stops.slice().forEach(function (stop) { stop(); }); };
     audioJob = job; speaking = true; unlockContext();
     $("promptHint").textContent = "Getting Echo ready…";
-    var key = (profile.voiceId || "echo") + "|" + (S.TTS_CACHE_VERSION || "v8") + "|" + word;
+    var key = (profile.voiceId || "echo") + "|" + (S.TTS_CACHE_VERSION || "v9") + "|" + word;
     cache(job, key).then(function (bytes) {
       if (!job.live()) return null;
-      if (bytes) { job.voiceInfo = { source: "cache", cache: "device", revision: S.TTS_CACHE_VERSION || "v8" }; return bytes; }
-      return fetchWord(job, word).then(function (fresh) { if (fresh && job.live()) cache(job, key, fresh); return fresh; });
+      if (bytes) { job.voiceInfo = { source: "cache", cache: "device", revision: S.TTS_CACHE_VERSION || "v9" }; return bytes; }
+      return fetchWord(job, word).then(function (fresh) { if (fresh && job.live() && job.keep !== false) cache(job, key, fresh); return fresh; });
     }).then(function (bytes) {
       if (!job.live()) return;
       return settle(job).then(function () {

@@ -5,6 +5,11 @@
 // Sona's, or a return from the background — used to start with the capped
 // bar and no background, and counted the hum as one try per reopen. Noise is
 // never a rep: every window must stay at zero.
+// SONA'S OWN MIC (13 Oct 2026): the same rooms again inside the iPhone app,
+// where the page hears the phone's own mic (tests/_nativemic.mjs) with no
+// noise suppression and no auto gain: the room reaches the page at its full
+// level. With Sona's voice off ("close"); the voice-on mode routes the page's
+// own output into a synthetic stream, which the phone's mic cannot hear.
 // REPGUARD1: real Web Audio signals enter the real practice engine through a
 // synthetic MediaStream. No hardware microphone, speaker, or external network.
 // These fixtures reject common non-speech; they cannot establish that speech
@@ -13,7 +18,8 @@
 import { createServer } from 'node:http';
 import { readFileSync, existsSync, statSync } from 'node:fs';
 import path from 'node:path';
-import { chromium, ROOT, launchOpts } from '/home/user/SaaS/tests/_env.mjs';
+import { chromium, ROOT, launchOpts } from './_env.mjs';
+import { nativeMic } from './_nativemic.mjs';
 const publicRoot = process.env.SONATEST_PUBLIC_ROOT || ROOT;
 const MIME = { html:'text/html', js:'text/javascript', css:'text/css', svg:'image/svg+xml', png:'image/png', webp:'image/webp', woff2:'font/woff2', mp3:'audio/mpeg' };
 const server = createServer((req,res) => {
@@ -133,24 +139,29 @@ function signalDevice(config){
     if(first&&config.warm&&h.floorGain)h.floorGain.gain.setValueAtTime(1,ctx.currentTime+config.warm/1000);
     // config.room: a steady room ({kind:'pink'|'white'|'hum', db}) that every
     // mic hears from the moment it opens (seeded, looped 8s).
-    if(config.room){const n=ctx.sampleRate*8,b=ctx.createBuffer(1,n,ctx.sampleRate),x=b.getChannelData(0);let st=99,b0=0,b1=0,b2=0,e=0;
-      for(let i=0;i<n;i++){st=(Math.imul(st,1664525)+1013904223)>>>0;const w=st/2147483648-1,t=i/ctx.sampleRate;
-        if(config.room.kind==='pink'){b0=.99765*b0+w*.099046;b1=.963*b1+w*.2965164;b2=.57*b2+w*1.0526913;x[i]=b0+b1+b2+w*.1848;}
-        else if(config.room.kind==='hum'){let v=.3*w;for(let k=1;k<=6;k++)v+=Math.sin(2*Math.PI*120*k*t)/k;x[i]=v;}
-        else x[i]=w;
-        e+=x[i]*x[i];}
-      const g=Math.pow(10,config.room.db/20)/Math.sqrt(e/n);for(let i=0;i<n;i++)x[i]*=g;
+    if(config.room){const b=ctx.createBuffer(1,ctx.sampleRate*8,ctx.sampleRate);b.getChannelData(0).set(h.roomPcm(ctx.sampleRate));
       const src=ctx.createBufferSource();src.buffer=b;src.loop=true;connect.call(src,destination);src.start();}
     h.ctx=ctx;h.destination=destination;h.streams.push(destination.stream);return destination.stream;
   }});
+  h.roomPcm=rate=>{const n=rate*8,x=new Float32Array(n);let st=99,b0=0,b1=0,b2=0,e=0;
+    for(let i=0;i<n;i++){st=(Math.imul(st,1664525)+1013904223)>>>0;const w=st/2147483648-1,t=i/rate;
+      if(config.room.kind==='pink'){b0=.99765*b0+w*.099046;b1=.963*b1+w*.2965164;b2=.57*b2+w*1.0526913;x[i]=b0+b1+b2+w*.1848;}
+      else if(config.room.kind==='hum'){let v=.3*w;for(let k=1;k<=6;k++)v+=Math.sin(2*Math.PI*120*k*t)/k;x[i]=v;}
+      else x[i]=w;
+      e+=x[i]*x[i];}
+    const g=Math.pow(10,config.room.db/20)/Math.sqrt(e/n);for(let i=0;i<n;i++)x[i]*=g;
+    return x;};
+  // config.nm: the same room, into the phone's own mic instead (the fake
+  // phone runs after this script, so it is handed over from a third one)
+  h.nativeRoom=()=>{if(config.room&&window.__nm)__nm.ctl.room(h.roomPcm(48000),48000);};
   let sona;
   Object.defineProperty(window,'Sona',{configurable:true,get:()=>sona,set(value){
     sona=value;
     value.speechPerm=()=>Promise.resolve(true);
-    value.speechStart=()=>{if(config.native)h.recognizing=true;return Promise.resolve(!!config.native);};
+    value.speechStart=(o)=>{h.heardWord=(o&&o.words&&o.words[0])||'rrrr';if(config.native)h.recognizing=true;return Promise.resolve(!!config.native);};
     // With the voice on, the fake recognizer transcribes only what it heard:
     // Echo's R, if the room ever reached it while it was running.
-    value.speechStop=()=>{const heard=h.recognizing&&h.recognizerHeard;h.recognizing=false;return Promise.resolve({text:config.native&&(!config.voice||heard)?'rrrr':''});};
+    value.speechStop=()=>{const heard=h.recognizing&&h.recognizerHeard;h.recognizing=false;return Promise.resolve({text:config.native&&(!config.voice||heard)?h.heardWord:''});};
     value.isNativeApp=()=>!!config.native;
     const verdict=value.hearVerdict;
     value.hearVerdict=function(...args){h.verifyCalls++;return verdict.apply(value,args);};
@@ -188,7 +199,7 @@ function signalDevice(config){
     await new Promise(resolve=>{let ended=false;const finish=()=>{if(ended)return;ended=true;clearTimeout(timer);node.onended=null;try{node.stop();}catch{}resolve();};const timer=setTimeout(finish,Math.ceil(buffer.duration*1000)+500);node.onended=finish;node.start();});
     node.disconnect();h.source=null;return buffer.duration;
   };
-  localStorage.setItem('sona.freeera.v1','post');localStorage.setItem('sona.freeera2.v1','done');localStorage.setItem('sona.freeera3.v1','done');localStorage.setItem('sona.freeera4.v1','done');localStorage.setItem('sona.micok','1');
+  localStorage.setItem('sona.freeera.v1','post');localStorage.setItem('sona.freeera2.v1','done');localStorage.setItem('sona.freeera3.v1','done');localStorage.setItem('sona.freeera4.v1','done');localStorage.setItem('sona.freeera5.v1','done');localStorage.setItem('sona.micok','1');
   localStorage.setItem('sona.profile.v1',JSON.stringify(config.voice?{childName:'Test child',childAge:'7',focusSounds:[config.sound],onboarded:true,voiceOn:true,soundOn:true,volume:.8}:{childName:'Test child',childAge:'7',focusSounds:[config.sound],onboarded:true,voiceOn:false,soundOn:false,volume:0}));
   localStorage.setItem('sona.progress.v1',JSON.stringify({sessions:[],totals:{sessions:0,words:0,stars:0,coins:0,rounds:0},streak:{count:0,lastDate:''},bySound:{},stage:{},chests:{},missed:[]}));
   sessionStorage.setItem('sona.run.v1',JSON.stringify({active:true,round:0,sum:0,scores:[],pending:false,sound:config.sound,level:1,demo:false,games:['slice','tiles','stack','run','glide']}));
@@ -196,7 +207,19 @@ function signalDevice(config){
 async function fresh(config={}){
   const context=await browser.newContext({viewport:{width:390,height:844}});
   await context.route('**/*',route=>route.request().url().startsWith(origin+'/')?route.continue():route.abort());
+  // A sound-alone round's prompt carries Rachel's recorded sound inside
+  // Echo's words (HUMAN_CLIPS; since 29 Sep 2026 one cut take, joined on the
+  // phone). This suite is about what the mic hears AFTER the prompt, so her
+  // recording is absent here and the calm whole TTS line stands in, as
+  // before. micquietpracticetest and chargepacingtest cover the joined line.
+  await context.route(/\/coach\/say-echo\//,route=>route.fulfill({status:404,body:''}));
   await context.addInitScript(signalDevice,{sound:'R',native:false,...config});
+  // config.nm: inside the iPhone app on Sona's own mic. The fake phone keeps
+  // this suite's own fakes (no world, no audit) and counts any getUserMedia.
+  if(config.nm){
+    await context.addInitScript(nativeMic,{mode:'new',world:false,audit:false,...config.nm});
+    await context.addInitScript(()=>{const h=window.__repHarness;if(h&&h.nativeRoom)h.nativeRoom();});
+  }
   const page=await context.newPage();page.setDefaultTimeout(config.voice?9000:5000);const errors=[];page.on('pageerror',e=>errors.push(e.message));
   if(config.shared){await page.goto(origin+'/__shared');await page.waitForFunction(()=>window.Sona);return{context,page,errors};}
   await page.goto(origin+'/charge.html?daily=1&sound='+(config.sound||'R'));
@@ -212,21 +235,24 @@ async function completeSegment(page){
 async function close(context,page){await page.evaluate(()=>{try{window.engineControl?.cancel();}catch{}try{__repHarness.ctx?.close();}catch{}}).catch(()=>{});await context.close();}
 const KINDS=(process.env.KINDS||'hum,pink,white').split(',');
 const DBS=(process.env.DBS||'-20,-15').split(',').map(Number);
-const MODES=(process.env.MODES||'close,echo').split(',');
+const MODES=(process.env.MODES||'close,echo,own').split(',');
 try{
   for(const mode of MODES)for(const kind of KINDS)for(const db of DBS){
-    const voice=mode==='echo';
-    const{page,context,errors}=await fresh({room:{kind,db},voice,...(voice?{micDelay:100}:{})});
+    const voice=mode==='echo',own=mode==='own';
+    const{page,context,errors}=await fresh({room:{kind,db},voice,...(voice?{micDelay:100}:{}),...(own?{nm:{}}:{})});
     try{
       await page.waitForTimeout(1200);
       const w1=await page.evaluate(()=>({reps,room:typeof room!=='undefined'&&room?room.rms:null,learn:!!(engineAttempt&&engineAttempt.segment&&engineAttempt.segment.learn)}));
-      if(mode==='close')await page.evaluate(()=>{if(typeof closeMicForSound==='function')closeMicForSound();else engineAttempt.segment.finish('model');});
+      if(mode!=='echo')await page.evaluate(()=>{if(typeof closeMicForSound==='function')closeMicForSound();else engineAttempt.segment.finish('model');});
       else {await page.locator('#echoBuddy').click();}
       const t0=Date.now();
       await page.waitForFunction(()=>engineAttempt&&engineAttempt.segment&&!engineAttempt.segment.closed&&performance.now()-engineAttempt.segment.startedAt>600,{},{timeout:9000});
       const w2=await page.evaluate(()=>({reps,room:typeof room!=='undefined'&&room?room.rms:null,learn:!!(engineAttempt.segment.learn),evid:window.__evid||[]}));
-      ok(`${kind} at ${db} dBFS (${mode==='echo'?'tap on Echo':'Sona sound'}): no try in the first window`,w1.reps===0,w1);
+      ok(`${kind} at ${db} dBFS (${mode==='echo'?'tap on Echo':own?'Sona sound, on Sona\'s own mic':'Sona sound'}): no try in the first window`,w1.reps===0,w1);
       ok(`…and none after the window reopens`,w2.reps===0,w2);
+      // (not vacuous: the page did hear the room, and knew it for too loud)
+      if(own){const p=await page.evaluate(()=>({gum:__nm.gum,opened:__nm.opened,own:!!(micStream&&micStream.sonaNative),loud:typeof roomLoud!=='undefined'&&roomLoud}));
+        ok(`…heard on Sona's own mic (the phone's micOpen, never getUserMedia), as a room too loud to be one`,p.gum===0&&p.opened>=1&&p.own&&p.loud===true,p);}
       ok(`…with no page errors`,errors.length===0,errors.slice(0,2));
     }catch(e){ok(`${mode} ${kind} ${db} completes`,false,String(e).slice(0,200));}
     finally{await close(context,page);}

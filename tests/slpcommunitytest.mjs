@@ -11,9 +11,10 @@ const accounts = {
   alex: { ok:true, email:'alex@example.test', name:'Alex SLP', code:'alex-test', familyKey:'TEST2345', onboarded:true },
   blair: { ok:true, email:'blair@example.test', name:'Blair SLP', code:'', familyKey:'', onboarded:false }
 };
+// 29 Sep 2026: the seeded welcome no longer names Travis (his ask); this mirrors the route's seed.
 const welcome = {
   id:'71109159-5b68-4af1-851c-35c918bc3050', author:'Rachel', title:'Hey everyone! 👋',
-  text:"I’m Rachel! My husband Travis and I started Sona, and I’m so happy you’re here.\n\nI’d love for this to be a place where we can swap ideas, share resources, and help each other make homework and planning a little easier. And if something in Sona is confusing or could work better, tell us—we’re building it with you.\n\nCome say hi! What setting do you work in, and what’s one thing you’d love help with right now?",
+  text:"I’m Rachel! My husband and I started Sona, and I’m so happy you’re here.\n\nI’d love for this to be a place where we can swap ideas, share resources, and help each other make homework and planning a little easier. And if something in Sona is confusing or could work better, tell us—we’re building it with you.\n\nCome say hi! What setting do you work in, and what’s one thing you’d love help with right now?",
   category:'discussions', pinned:true, canDelete:false, createdAt:'2026-09-23T00:00:00.000Z', replies:[]
 };
 let posts = [], serial = 0, failWrite = false, failRead = false, paginate = false;

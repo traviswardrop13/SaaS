@@ -107,12 +107,7 @@ function device(config) {
             // config.child: the child's script, from the moment the first
             // prompt ends — they start `onset` ms later and hold `hold` ms,
             // then say it again `more` times (300ms each, 500ms apart).
-            if (h.promptEnd == null && /^Ready\?/.test(e.label)) h.promptEnd = now();
-            if (config.child && !h.childStarted && /^Ready\?/.test(e.label)) {
-              h.childStarted = true; const c = config.child; let t = c.onset;
-              say(t, c.hold); t += c.hold + 500;
-              for (let i = 0; i < c.more; i++, t += 800) say(t, 300);
-            }
+            if (/^Ready\?/.test(e.label)) promptEnded();
             if (b.onended) b.onended();
           }, 90);
         } };
@@ -147,15 +142,46 @@ function device(config) {
   window.AudioContext = window.webkitAudioContext = Context;
   class Recorder { constructor(stream) { this.stream = stream; this.state = 'inactive'; this.mimeType = 'audio/webm'; } start() { this.state = 'recording'; } stop() { if (this.state === 'inactive') return; this.state = 'inactive'; later(() => { if (this.ondataavailable) this.ondataavailable({ data: new Blob(['local'], { type: 'audio/webm' }) }); if (this.onstop) this.onstop(); }, 0); } }
   window.MediaRecorder = Recorder;
-  // ---- the slow model plays through an <audio> element ----
+  // The first prompt has ended: the child's script (config.child) starts from
+  // here — they start `onset` ms later and hold `hold` ms, then say it again
+  // `more` times (300ms each, 500ms apart).
+  function promptEnded() {
+    if (h.promptEnd == null) h.promptEnd = now();
+    if (config.child && !h.childStarted) {
+      h.childStarted = true; const c = config.child; let t = c.onset;
+      say(t, c.hold); t += c.hold + 500;
+      for (let i = 0; i < c.more; i++, t += 800) say(t, 300);
+    }
+  }
+  // ---- the slow model, and the prompt, play through an <audio> element ----
+  // 25 Sep 2026: a sound-alone round's prompt is Rachel's July take in Echo's
+  // voice (/coach/say-echo/<SOUND>.mp3) — a clip, not a TTS line, and the
+  // prompt all the same: the child's script starts from its end. With
+  // config.noClip the clip fails to play, the way a missing file does, and the
+  // page must fall back to the calm TTS line.
   window.Audio = class { constructor(src) { this.src = src; this.volume = 1; this.playbackRate = 1; }
-    play() { log('media', 'slow model'); h.sounding++; later(() => { h.sounding--; ended(now()); if (this.onended) this.onended(); }, 90); return Promise.resolve(); }
+    async play() {
+      const human = /\/coach\/say-echo\//.test(this.src), generated=this.src.indexOf('blob:')===0&&this.playbackRate===1;
+      if (human && config.noClip) { later(() => { if (this.onerror) this.onerror(); }, 30); return; }
+      // The native route wraps the same PCM in WAV. Read its carried line id
+      // so timing/overlap assertions still observe the actual generated line.
+      let label=human?'human prompt':'slow model';
+      if(generated){const bytes=await(await realFetch(this.src)).arrayBuffer();label=h.lines[new DataView(bytes).getInt16(44,true)-1]||'?';}
+      log(generated?'voice':'media',label);h.sounding++;
+      later(() => { h.sounding--; ended(now()); if (human || /^Ready\?/.test(label)) promptEnded(); if (this.onended) this.onended(); }, 90);
+    }
     pause() {} removeAttribute() {} load() {} };
   window.speechSynthesis.speak = (u) => { log('browser voice', u.text); h.sounding++; later(() => { h.sounding--; ended(now()); if (u.onend) u.onend(); }, 60); };
   window.speechSynthesis.cancel = () => {};
   // ---- the voice service: every line gets an id, carried in its PCM ----
   const realFetch = window.fetch.bind(window);
+  // 29 Sep 2026: Rachel's one recorded sound (/coach/say-echo/<S>-sound.wav)
+  // is fetched and joined into Echo's line; config.noClip makes it missing.
   window.fetch = (url, options) => {
+    if (/\/coach\/say-echo\//.test(String(url))) {
+      h.clips = (h.clips || 0) + 1;
+      if (config.noClip) return Promise.resolve({ ok: false, status: 404, arrayBuffer: async () => new ArrayBuffer(0) });
+    }
     if (String(url) !== '/api/tts') return realFetch(url, options);
     const id = h.lines.push(JSON.parse(options.body).text), pcm = new Int16Array(2400); pcm[0] = id;
     return Promise.resolve({ ok: true, status: 200, headers: { get: () => null }, arrayBuffer: async () => pcm.buffer.slice(0) });
@@ -165,8 +191,8 @@ function device(config) {
   Object.defineProperty(window, 'Sona', { configurable: true, get: () => sona, set(value) {
     sona = value;
     value.isNativeApp = () => true; value.speechPerm = () => Promise.resolve(true);
-    value.speechStart = () => { h.recognizing = true; log('recognizer-start'); return Promise.resolve(true); };
-    value.speechStop = () => { h.recognizing = false; return Promise.resolve({ text: h.verify === 'fail' ? 'poopoo' : 'rrrr' }); };
+    value.speechStart = (o) => { h.heardWord = (o && o.words && o.words[0]) || 'rrrr'; h.recognizing = true; log('recognizer-start'); return Promise.resolve(true); };
+    value.speechStop = () => { h.recognizing = false; return Promise.resolve({ text: h.verify === 'fail' ? 'poopoo' : h.heardWord }); };
     value.confetti = () => { log('celebration', 'confetti'); };
     for (const key of Object.keys(value.sfx || {})) {
       if (key === 'stop' || typeof value.sfx[key] !== 'function') continue;
@@ -181,8 +207,10 @@ function device(config) {
     const q = document.getElementById('quietTitle'); if (q && /grown-up/.test(q.textContent)) h.grownUp = true;
   }).observe(document, { subtree: true, childList: true, characterData: true });
 
-  localStorage.setItem('sona.freeera.v1', 'post'); localStorage.setItem('sona.freeera2.v1', 'done'); localStorage.setItem('sona.freeera3.v1', 'done'); localStorage.setItem('sona.freeera4.v1', 'done'); localStorage.setItem('sona.micok', '1');
+  localStorage.setItem('sona.freeera.v1', 'post'); localStorage.setItem('sona.freeera2.v1', 'done'); localStorage.setItem('sona.freeera3.v1', 'done'); localStorage.setItem('sona.freeera4.v1', 'done'); localStorage.setItem('sona.freeera5.v1', 'done'); localStorage.setItem('sona.micok', '1');
   localStorage.setItem('sona.profile.v1', JSON.stringify({ childName: 'Mia', childAge: '7', focusSounds: ['R'], onboarded: true, earlyAdopter: true, voiceOn: true, soundOn: true, volume: 0.5 }));
+  // the mic numbers' switch (five taps on "Account" in Settings, 2 Oct 2026)
+  if (config.micNumbers) localStorage.setItem('sona.micnumbers', '1');
   const n = config.round || 0;
   sessionStorage.setItem('sona.run.v1', JSON.stringify({ active: true, round: n, scores: Array(n).fill(7), sum: n * 7, sound: 'R', level: 1, pending: false, games: ['slice', 'tiles', 'stack', 'run', 'glide'], tries: n * 5 }));
 }
@@ -238,6 +266,7 @@ function audit(name, s) {
 }
 const voiceAt = (s, line) => (s.events.find((e) => e.kind === 'voice' && e.label === line) || {}).t;
 const lines = (s) => s.events.filter((e) => e.kind === 'voice').map((e) => e.label);
+const prompts = (s) => s.events.filter((e) => e.kind === 'media' && e.label === 'human prompt');
 function clean(name, errors) { ok(name + ': no page errors', errors.length === 0, errors); }
 
 await scenario('prompt, five tries and the win', async () => {
@@ -247,9 +276,13 @@ await scenario('prompt, five tries and the win', async () => {
     await spoken(page, "You did it. Let's play."); await page.waitForTimeout(120);
     const s = await state(page);
     audit('prompt and win', s);
-    // 24 Sep 2026: no spoken "Your turn." — the glowing mic hands the turn over.
-    ok('the prompt is calm: the cue, the sound and the count, no "Go!", no spoken "Your turn."', lines(s)[0] === 'Ready? Pull your tongue back and up, and make your R sound, five times.', lines(s));
-    const firstOpen = s.events.find((e) => e.kind === 'mic-open'), prompt = s.events.find((e) => e.kind === 'voice');
+    // 29 Sep 2026: the prompt is Echo's words with Rachel's recorded R in the
+    // letter's place, joined into ONE clip (its label is its first half) —
+    // her whole July line no longer plays, and nothing speaks it twice. The
+    // calm whole TTS line is pinned below, where her recording is missing.
+    const asked = await page.evaluate(() => __quiet.lines.slice());
+    ok('the prompt is Echo\'s words with Rachel\'s R, once, as one clip', prompts(s).length === 0 && lines(s).filter((l) => /^Ready\?/.test(l)).length === 1 && lines(s)[0] === 'Ready? Pull your tongue back and up, and make your' && asked.includes('sound, five times.') && !asked.some((l) => /make your R sound/.test(l)) && await page.evaluate(() => __quiet.clips >= 1), { prompts: prompts(s).length, lines: lines(s), asked });
+    const firstOpen = s.events.find((e) => e.kind === 'mic-open'), prompt = s.events.find((e) => WORDS.includes(e.kind));
     ok('the explainer-tap permission request still happens before Echo speaks', !!firstOpen && firstOpen.t < prompt.t && !prompt.micLive, { firstOpen, prompt });
     const firstClose = s.events.find((e) => e.kind === 'mic-close');
     ok('…and that mic stays open ~300ms to measure the room before Echo speaks', !!firstClose && firstClose.t - firstOpen.t >= 280 && firstClose.t < prompt.t, { firstOpen, firstClose, prompt });
@@ -262,6 +295,7 @@ await scenario('prompt, five tries and the win', async () => {
     const complete = s.events.find((e) => e.kind === 'chime' && e.label === 'complete'), win = voiceAt(s, "You did it. Let's play.");
     ok('the win line waits ~600ms after the chime instead of landing on it', !!complete && win - complete.t >= 550, { chime: complete && complete.t, win });
     ok('closing the mic at the end of the window keeps the one keepsake clip whole', s.effects.includes('saveRecording'), s.effects);
+    ok('with the mic numbers switched off, no numbers box is drawn', await page.evaluate(() => !document.getElementById('micNumbers')));
     clean('prompt and win', errors);
   } finally { await context.close(); }
 });
@@ -272,15 +306,34 @@ await scenario('wrong sound: coaching, the easier word and the round end', async
     await yourTurn(page); await bursts(page, 5);
     await spoken(page, "Let's try that one again. Pull your tongue back and up like a tiger growl.");
     await yourTurn(page); await bursts(page, 3);
-    await spoken(page, "I have an idea. Let's try this one. Make your R sound.");
+    // Echo's idea steps down to the sound: her R takes the letter's place,
+    // so the joined line's label is its first half.
+    await spoken(page, "I have an idea. Let's try this one. Make your");
     await yourTurn(page); await bursts(page, 3);
     await spoken(page, "Good practicing. Let's play."); await page.waitForTimeout(120);
     const s = await state(page);
     audit('coaching', s);
     ok('the syllable prompt is calm too', /^Ready\? Say [a-z]+, five times\.$/.test(lines(s)[0]), lines(s));
-    ok('no coaching line shouts: every one ends in a full stop', lines(s).length === 4 && lines(s).every((l) => /\.$/.test(l) && !/!/.test(l)), lines(s));
+    const asked = await page.evaluate(() => __quiet.lines.slice());
+    ok('no coaching line shouts: every one ends in a full stop (the idea line on its second half)', lines(s).length === 4 && lines(s).every((l) => !/!/.test(l)) && lines(s).filter((l) => !/\.$/.test(l)).join() === "I have an idea. Let's try this one. Make your" && asked.includes('sound.'), { lines: lines(s), asked });
     ok('each retry opened a fresh mic after the coaching line', s.events.filter((e) => e.kind === 'mic-open').length === 4, s.events.filter((e) => e.kind === 'mic-open'));
     clean('coaching', errors);
+  } finally { await context.close(); }
+});
+
+// Rachel's recorded sound is missing (a missing file): the page speaks the
+// calm whole TTS line instead, letter and all — the cue, the sound and the count, no "Go!", no
+// spoken "Your turn." (24 Sep 2026) — and the round is otherwise the same.
+await scenario('the clip is missing: the calm TTS line is the prompt', async () => {
+  const { context, page, errors } = await fresh({ noClip: true });
+  try {
+    await yourTurn(page); await bursts(page, 5);
+    await spoken(page, "You did it. Let's play."); await page.waitForTimeout(120);
+    const s = await state(page);
+    audit('missing clip', s);
+    ok('the fallback prompt is calm: the cue, the sound and the count, no "Go!", no spoken "Your turn."', lines(s)[0] === 'Ready? Pull your tongue back and up, and make your R sound, five times.' && prompts(s).length === 0, lines(s));
+    ok('five tries still count and win the game', s.reps === 5 && s.meter === 5, { reps: s.reps, meter: s.meter });
+    clean('missing clip', errors);
   } finally { await context.close(); }
 });
 
@@ -288,16 +341,18 @@ await scenario('tap Echo, the turtle and an unprompted prompt mid-window', async
   const { context, page, errors } = await fresh();
   try {
     await yourTurn(page); await bursts(page, 2);
-    const repeat = 'Ready? Make your R sound, five times.';
-    await page.locator('#echoBuddy').click(); await spoken(page, repeat);
+    // 29 Sep 2026: every replay of the prompt is Echo's words with her R
+    // joined in again, one clip each (labelled by its first half).
+    const replayed = (n) => page.waitForFunction((n) => __quiet.events.filter((e) => e.kind === 'voice' && /^Ready\?/.test(e.label)).length === n, n, { polling: 20 });
+    await page.locator('#echoBuddy').click(); await replayed(2);
     await yourTurn(page);
     const mid = await state(page);
     ok('a tap on Echo keeps the tries already heard', mid.meter === 2 && mid.reps === 2, mid);
-    await page.locator('#turtleBtn').click(); await page.waitForFunction(() => __quiet.events.some((e) => e.kind === 'media'));
+    await page.locator('#turtleBtn').click(); await page.waitForFunction(() => __quiet.events.some((e) => e.kind === 'media' && e.label === 'slow model'));
     await yourTurn(page);
     // The idle nudge's own call (armIdle → playPrompt) made mid-window. The
     // nudge is not armed today; this pins the path it would take.
-    await page.evaluate(() => { playPrompt(); }); await page.waitForFunction((line) => __quiet.events.filter((e) => e.kind === 'voice' && e.label === line).length === 2, repeat);
+    await page.evaluate(() => { playPrompt(); }); await replayed(3);
     await yourTurn(page); await bursts(page, 3);
     await spoken(page, "You did it. Let's play."); await page.waitForTimeout(120);
     const s = await state(page);
@@ -433,6 +488,30 @@ await scenario('a room as loud as a TV during the reading is not a room', async 
   } finally { await context.close(); }
 });
 
+// ── MIC NUMBERS (2 Oct 2026). Travis, in the iPhone app: "I have to say
+// the word super close to the phone or else it won't seem to hear it". With
+// the switch on (five taps on "Account" in Settings), a box at the top of the
+// page shows the mic's own levels while it listens: now, the loudest moment
+// of the last two seconds, the bar a sound must clear, the room, each sound
+// that cleared it and whether it counted, the frame rate and what the phone
+// says it does to the mic. It only shows numbers: a try counts exactly as it
+// did, the box never takes a tap, and nothing it shows is ever sent. ──
+await scenario('mic numbers', async () => {
+  const { context, page, errors } = await fresh({ micNumbers: true });
+  const posts = []; page.on('request', (r) => { if (r.method() !== 'GET') posts.push(r.url() + ' ' + (r.postData() || '')); });
+  try {
+    await yourTurn(page);
+    const shown = await page.waitForFunction(() => /counts above/.test((document.getElementById('micNumbers') || {}).textContent || ''), {}, { timeout: 3000 }).then(() => true, () => false);
+    ok('mic numbers: the box shows while the mic listens: the level now, the loudest moment, the bar and the room', shown && await page.evaluate(() => { const t = document.getElementById('micNumbers').textContent; return /now (-?\d+ dB|silent)/.test(t) && /loudest in 2 s/.test(t) && /counts above -\d+ dB/.test(t) && /room /.test(t) && /\d+ fps · \d+ Hz · echo cancel/.test(t); }), await page.evaluate(() => (document.getElementById('micNumbers') || {}).textContent));
+    await bursts(page, 1);
+    const last = await page.waitForFunction(() => /last sound: loudest -?\d+ dB, middle -?\d+ dB, [\d.]+ s, counted/.test(document.getElementById('micNumbers').textContent), {}, { timeout: 3000 }).then(() => true, () => false);
+    ok('mic numbers: a sound that cleared the bar is listed with how loud it was, and that it counted', last && (await page.evaluate(() => window.reps)) === 1, await page.evaluate(() => ({ text: document.getElementById('micNumbers').textContent, reps: window.reps })));
+    ok('mic numbers: the box never takes a tap', await page.evaluate(() => getComputedStyle(document.getElementById('micNumbers')).pointerEvents === 'none'));
+    ok('mic numbers: nothing the box shows is ever sent', !posts.some((p) => /counts above|loudest|fps|dB/.test(p)), posts);
+    clean('mic numbers', errors);
+  } finally { await context.close(); }
+});
+
 await scenario('the quiet screen', async () => {
   const { context, page, errors } = await fresh();
   try {
@@ -442,7 +521,7 @@ await scenario('the quiet screen', async () => {
     await spoken(page, line); await page.waitForTimeout(120);
     const s = await state(page);
     audit('quiet screen', s);
-    ok('the quiet screen keeps Rachel\'s line word for word', lines(s)[1] === line && await page.locator('#quietOvl.show').count() === 1, lines(s));
+    ok('the quiet screen keeps Rachel\'s line word for word', lines(s).filter((l) => !/^Ready\?/.test(l))[0] === line && await page.locator('#quietOvl.show').count() === 1, lines(s));
     ok('silence is never a try', s.reps === 0 && !s.effects.includes('logAttempt') && !s.effects.includes('bumpReps'), s);
     clean('quiet screen', errors);
   } finally { await context.close(); }

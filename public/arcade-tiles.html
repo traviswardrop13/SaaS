@@ -41,6 +41,11 @@
     #endTitle:after{content:"";position:absolute;left:50%;bottom:-8px;transform:translateX(-50%) rotate(45deg);width:16px;height:16px;background:#fff;border-radius:3px;}
     #endSub.later{display:block!important;opacity:0;font-size:12.5px;color:var(--muted,#b08d63);transition:opacity .5s ease;margin-top:2px;}
     #endSub.later.in{opacity:1;}
+    /* The row and the child's best (Beat Your Best): it is the card's one
+       piece of news, so it is set to be read, not as a footnote. Each
+       sentence wraps whole. */
+    #endSub.later.best{font-size:16px;line-height:1.3;max-width:none;}
+    #endSub.best span{display:inline-block;white-space:nowrap;}
     /* ── end-overlay celebration: star drop + Echo leap (Duolingo-ABC three-element stack) ── */
     #endOvl .ovlCard{padding-top:24px;}
     .endStar{animation:starDrop .35s cubic-bezier(.3,1.6,.5,1) both;}
@@ -50,23 +55,48 @@
     @keyframes echoLeap{0%{transform:translateY(110px)}100%{transform:translateY(0)}}
     @keyframes echoHop{0%,100%{transform:translateY(0)}45%{transform:translateY(-14px) rotate(-5deg)}}
     @media (prefers-reduced-motion: reduce){ .endStar,.echoWin img{animation:none;} }
+    /* ── the round's HUD, banner and card (27 Sep 2026) ── */
+    #timer{color:#4a2c14;letter-spacing:0;gap:8px;}
+    #timer .wv{white-space:nowrap;}
+    #timer .wbar{display:block;width:64px;height:10px;border-radius:99px;background:#e9e2f6;overflow:hidden;}
+    #timer .wbar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#4dabf7,#ff6b8a);transition:width .25s;}
+    #banner{position:absolute;left:0;right:0;top:17%;text-align:center;z-index:4;pointer-events:none;opacity:0;padding:0 16px;}
+    #banner .pill{display:inline-block;background:rgba(255,255,255,.95);border-radius:26px;padding:10px 26px 12px;box-shadow:0 6px 0 rgba(20,10,60,.4);}
+    #banner b{display:block;font-family:"Baloo 2";font-weight:800;font-size:38px;color:#43318c;line-height:1.05;}
+    #banner span{display:block;font-family:"Baloo 2";font-weight:800;font-size:17px;color:#8a6f52;margin-top:2px;}
+    #banner span:empty{display:none;}
+    #banner.in{animation:bannerIn 1.9s ease both;}
+    @keyframes bannerIn{0%{opacity:0;transform:scale(.6)}12%{opacity:1;transform:scale(1.08)}20%{transform:scale(1)}80%{opacity:1;transform:scale(1)}100%{opacity:0;transform:translateY(-12px)}}
+    @keyframes bannerFade{0%,100%{opacity:0}15%,80%{opacity:1}}
+    #revHearts{display:flex;justify-content:center;gap:8px;}
+    #revHearts .wdot{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#f3e3cf;color:#b08d63;font-family:"Baloo 2";font-weight:800;font-size:17px;}
+    #revHearts .wdot.on{background:#58cc02;box-shadow:0 3px 0 #46a302;}
+    #revHearts .wdot svg{width:20px;height:20px;}
+    @media (prefers-reduced-motion: reduce){ #banner.in{animation-name:bannerFade;} }
   </style>
+  <link href="/crafted-games.css" rel="stylesheet">
+  <link href="/crafted-tiles.css" rel="stylesheet">
 </head>
-<body>
+<body data-crafted="tiles">
   <div id="app">
     <canvas id="cv"></canvas>
     <div id="top">
       <button id="close">✕</button>
-      <div class="hudpill"><svg viewBox="0 0 64 64" style="width:19px;height:19px;vertical-align:-4px"><rect x="8" y="14" width="48" height="36" rx="6" fill="#fff" stroke="#d8cfec" stroke-width="2"/><line x1="20" y1="14" x2="20" y2="50" stroke="#d8cfec" stroke-width="2.5"/><line x1="32" y1="14" x2="32" y2="50" stroke="#d8cfec" stroke-width="2.5"/><line x1="44" y1="14" x2="44" y2="50" stroke="#d8cfec" stroke-width="2.5"/><rect x="16" y="14" width="8" height="19" rx="2" fill="#2f2266"/><rect x="40" y="14" width="8" height="19" rx="2" fill="#2f2266"/></svg> <b id="score">0</b></div>
-      <div id="hudspacer"></div>
+      <div class="hudpill" id="rowPill" role="img" aria-label="Notes in a row: 0"><svg viewBox="0 0 64 64" style="width:19px;height:19px;vertical-align:-4px" aria-hidden="true"><rect x="8" y="14" width="48" height="36" rx="6" fill="#fff" stroke="#d8cfec" stroke-width="2"/><line x1="20" y1="14" x2="20" y2="50" stroke="#d8cfec" stroke-width="2.5"/><line x1="32" y1="14" x2="32" y2="50" stroke="#d8cfec" stroke-width="2.5"/><line x1="44" y1="14" x2="44" y2="50" stroke="#d8cfec" stroke-width="2.5"/><rect x="16" y="14" width="8" height="19" rx="2" fill="#2f2266"/><rect x="40" y="14" width="8" height="19" rx="2" fill="#2f2266"/></svg> <b id="score">0</b></div>
+      <div id="hudspacer"><span id="gameHearts" class="game-hearts" role="img"></span></div>
       <div id="timer" class="hudpill"></div>
     </div>
+    <div id="slowControl" hidden>
+      <button id="slowKeys" type="button"><img src="/assets/crafted/echo-welcome.webp" alt="" onerror="if(this.src.indexOf('echo-welcome')<0)this.src='/assets/crafted/echo-welcome.webp'"><span id="slowSound">rrrr</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg></button>
+      <p id="slowStatus" role="status">Say rrrr when Echo asks</p><span class="slowTrack"><i id="slowMeter"></i></span>
+    </div>
     <div id="flash"></div>
+    <div id="banner" aria-live="polite"><div class="pill"><b id="bnBig"></b><span id="bnSmall"></span></div></div>
   </div>
 
   <div class="ovl" id="needOvl">
     <div class="ovlCard">
-      <img class="ovlEcho" src="/coach/echo/echo-star.svg" alt="" />
+      <img class="ovlEcho" src="/assets/crafted/echo-wave.webp" alt="" onerror="if(this.src.indexOf('echo-welcome')<0)this.src='/assets/crafted/echo-welcome.webp'" />
       <h2 id="needTitle">This game needs a ticket!</h2>
       <p>Say your sound 5 times to fill it up</p>
       <button class="btn" id="goCharge"><svg viewBox="0 0 64 64" style="width:18px;height:18px;vertical-align:-3px"><path d="M36 4 14 36h13l-5 24 24-34H33Z" fill="#ffd21c" stroke="#f0a800" stroke-width="2.5" stroke-linejoin="round"/><circle cx="30" cy="15" r="2.5" fill="#fff" opacity=".9"/></svg> Fill my ticket!</button>
@@ -76,7 +106,7 @@
 
   <div class="ovl" id="revOvl">
     <div class="ovlCard">
-      <img class="ovlEcho" src="/coach/echo/echo-listening.svg" alt="" />
+      <img class="ovlEcho" src="/assets/crafted/echo-listen.webp" alt="" onerror="if(this.src.indexOf('echo-welcome')<0)this.src='/assets/crafted/echo-welcome.webp'" />
       <h2 id="revTitle">Say it!</h2>
       <p id="revHearts" style="font-size:26px;"></p>
       <div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(180deg,#ffa05a,#ff8a3d);box-shadow:0 4px 0 #ef6f23,0 0 0 10px rgba(255,138,61,.14);display:flex;align-items:center;justify-content:center;margin:2px 0;"><svg viewBox="0 0 24 24" style="width:24px;height:24px;fill:#fff"><path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg></div>
@@ -87,18 +117,26 @@
 
   <div class="ovl" id="endOvl">
     <div class="ovlCard">
-      <div class="big endStar" id="endEmoji"><svg viewBox="0 0 64 64" style="width:56px;height:56px"><path d="M32 5l8.2 18.6L60 25.8 44.9 39.2 49.8 59 32 48.4 14.2 59l4.9-19.8L4 25.8l19.8-2.2Z" fill="#ffd21c"/><circle cx="25" cy="21" r="3" fill="#fff" opacity=".85"/></svg></div>
+      <div class="big endStar" id="endEmoji"><img src="/assets/crafted/game/star.webp" alt="" width="64" height="64" style="width:64px;height:64px;object-fit:contain"></div>
       <h2 id="endTitle">Great round!</h2>
       <p id="endSub"></p>
-      <div class="echoWin"><img src="/coach/echo/echo-celebrate.svg" alt="" /></div>
-      <button class="btn blue" id="endCharge">WOOHOO! Next →</button>
+      <div class="echoWin"><img src="/assets/crafted/echo-cheer.webp" alt="" onerror="if(this.src.indexOf('echo-welcome')<0)this.src='/assets/crafted/echo-welcome.webp'" /></div>
+      <button class="btn blue" id="endCharge">Play again</button>
       <button class="btn" id="endAgain" style="display:none;"></button>
-      <button class="btn ghost" id="endHome">Back to the house</button>
+      <button class="btn ghost" id="endHome">Back home</button>
     </div>
   </div>
 
 
   <script src="/sona.js"></script>
+  <!-- SLOW KEYS (Travis, 28 Sep 2026: "inside the game ... they say the sound
+       to slow down the keys"). Since 3 Oct 2026 Echo asks mid-song and the
+       song keeps going while he listens; one saying earns eight seconds of
+       slow keys. The turn, the ask and the reward are the round games' one
+       copy, /arcade-speech-help.js; this page keeps its own mic and ear. -->
+  <script>window.SLOW_HELP={phase:"song",action:"slow the keys",earned:"Slow keys!",first:6000,eligible:function(){return !SONGS[song].finale;}};</script>
+  <script src="/arcade-speech-help.js"></script>
+  <script src="/arcade-sayit.js"></script>
   <script>
     // Check access before any game resources start. The earned speech token
     // remains a separate requirement; a catalog unlock never creates one.
@@ -116,6 +154,14 @@
     if(gameEntryAllowed){
     var $=function(id){return document.getElementById(id);};
     var S=window.Sona, qp=new URLSearchParams(location.search);
+    // LEVELS INSIDE GAMES (LEVELS1, 11 Oct 2026): the level this child plays,
+    // 1 unless they picked Level 2 or 3 and it is open (Sona.playLevel). Level
+    // 1 is the round as it always was: its songs stay on their own lines below
+    // and a level only replaces them after. Harder levels bring new songs, a
+    // little quicker; never a new say-it card, heart or helper, and after a
+    // lost heart the rest of that song keeps Level 1's beat and fall. An older
+    // cached sona.js has no levels, so the page plays Level 1.
+    var LV=(S&&S.playLevel)?S.playLevel("tiles"):1; if(LV!==2&&LV!==3) LV=1;
     // ── the mic and this game's own sounds never overlap (24 Sep 2026) ──
     // On an iPhone a page holding the mic runs as a phone call: the volume
     // buttons change CALL volume and every chime is processed like a call.
@@ -126,15 +172,20 @@
     // silence, not under a chime), and the mic never opens until QUIET_MS
     // after the last sound began: the longest chime ("complete") rings about
     // 0.6 s and the rest covers speaker and Bluetooth delay, so a chime's
-    // tail can never answer the card for the child.
-    var SETTLE_MS=200, QUIET_MS=900, quietUntil=0, micClosedAt=-1e9;
+    // tail can never answer the card for the child. chimeEnd (2 Oct 2026) is
+    // when the last chime asked for will have stopped ringing: Echo's voice
+    // on the say-it card waits for that, not for the mic's quiet window, so
+    // he starts as soon as the speaker is free (/arcade-sayit.js).
+    var SETTLE_MS=200, QUIET_MS=900, quietUntil=0, micClosedAt=-1e9, chimeEnd=0;
     var rv={st:null,pending:0,gen:0,raf:0,t:0,ctx:null,src:null,floor:-1};   // floor: the room's quiet level, measured once per page (see listenFor)
+    function chimeLen(n){ return window.SayIt?SayIt.chimeMs(n):600; }
     function sfx(n){
-      if(rv.st) return;
-      if(rv.pending){ setTimeout(function(){ sfx(n); },60); return; }
+      if(rv.st||slowTurn) return;
+      if(rv.pending){ chimeEnd=Math.max(chimeEnd,performance.now()+60+chimeLen(n)); setTimeout(function(){ sfx(n); },60); return; }
       var wait=micClosedAt+SETTLE_MS-performance.now();
-      if(wait>0){ quietUntil=Math.max(quietUntil,performance.now()+wait+QUIET_MS); setTimeout(function(){ sfx(n); },wait); return; }
+      if(wait>0){ quietUntil=Math.max(quietUntil,performance.now()+wait+QUIET_MS); chimeEnd=Math.max(chimeEnd,performance.now()+wait+chimeLen(n)); setTimeout(function(){ sfx(n); },wait); return; }
       quietUntil=Math.max(quietUntil,performance.now()+QUIET_MS);
+      chimeEnd=Math.max(chimeEnd,performance.now()+chimeLen(n));
       try{ if(S&&S.sfx&&S.sfx[n])S.sfx[n](); }catch(e){}
     }
 
@@ -145,6 +196,8 @@
     $("goCharge").onclick=backToCharge; $("needHome").onclick=function(){location.href="/today.html";};
     var tok=false; try{ var _t=sessionStorage.getItem("sona.play.token"); if(_t===SELF||_t==="1"){ tok=true; sessionStorage.setItem("sona.play.active",SELF); sessionStorage.removeItem("sona.play.token"); } else if(sessionStorage.getItem("sona.play.active")===SELF){ tok=true; } }catch(e){}
     if(!tok){ try{ $("needTitle").textContent="Piano Tiles needs a ticket!"; }catch(e){} $("needOvl").classList.add("show"); }
+    // once per load, and only at Level 2 or 3: the game and the level, nothing else
+    if(tok&&LV>1){ try{ Sona.track("level played",{game:"tiles",level:LV}); }catch(e){} }
 
     var cv=$("cv"), ctx=cv.getContext("2d"), W=0,H=0,DPR=Math.min(2,window.devicePixelRatio||1);
     function fit(){ var r=$("app").getBoundingClientRect(); W=r.width; H=r.height; cv.width=W*DPR; cv.height=H*DPR; ctx.setTransform(DPR,0,0,DPR,0,0); }
@@ -156,135 +209,478 @@
     // Sep 2026). They ignored the slider and mute, so Settings' "Muted — the
     // games are silent" was false here, and at 0.22 they rang ~6 dB over every
     // chime. Same rule as sfxVol() in sona.js (not exported, so mirrored):
-    // sound off is silent, otherwise the slider, 0.6 when never set.
+    // sound off is silent, otherwise the profile's level, 0.6 when never set.
+    // (The slider went on 30 Sep 2026: getProfile() now plays any level above
+    // zero at the one normal 0.8, and the phone's buttons do the rest.)
     var actx=null;
     function noteVol(){ try{ var p=(S&&S.getProfile)?S.getProfile():{}; if(p.soundOn===false)return 0; var v=p.volume!=null?Number(p.volume):0.6; return isFinite(v)?Math.max(0,Math.min(1,v)):0.6; }catch(e){ return 0.6; } }
-    function tone(f,dur,gain){
-      // the same guard as sfx(): never over the keep-playing mic, never under
-      // the phone's switch back from it (a dropped note there is one tap)
-      if(rv.st||rv.pending||performance.now()<micClosedAt+SETTLE_MS) return;
-      var v=noteVol(); if(!v) return;
+    // A PIANO NOTE, AND IN THE IPHONE APP IT PLAYS AS MEDIA (Travis, 1 Oct
+    // 2026: "there's no music with the tiles game. We want it to like play
+    // little songs"). Each tile was a bare triangle beep through Web Audio. An
+    // iPhone's ring/silent switch silences Web Audio, and a page that has had
+    // the mic open (the practice page before this one, the say-it card between
+    // songs) plays it as a quiet phone call, so on the phone the songs were
+    // not there. Now each note is built once, on the phone, as a short
+    // recording of a struck string (its harmonics, the higher ones dying away
+    // first), and the app plays it the way it plays Echo's voice (sona.js
+    // mediaPCM says why). A browser keeps Web Audio, at the level it had.
+    var NOTE_RATE=24000;        // what Sona.pcmWave's header says
+    var MEDIA_PEAK=0.4;         // a media element has no volume on an iPhone, so the level is in the samples
+    // a note rings 0.55 s, as the beep did: the mic's quiet window (QUIET_MS)
+    // is timed to it. The thud is a wrong key: low, short and a quarter as loud.
+    var NOTE_SECS=0.55, NOTE_GAIN=0.10, THUD_HZ=130.8, THUD_SECS=0.18, THUD_GAIN=0.025;
+    var noteWaves={}, noteBufs={}, notePlayers={}, mediaBroken=false;
+    function noteWave(f,secs){
+      var key=f+"/"+secs; if(noteWaves[key]) return noteWaves[key];
+      var n=Math.round(NOTE_RATE*secs), a=new Float32Array(n), HARM=[1,0.5,0.28,0.14,0.07], peak=0, i, k;
+      for(i=0;i<n;i++){
+        var t=i/NOTE_RATE, s=0;
+        for(k=0;k<HARM.length;k++) s+=HARM[k]*Math.exp(-t*(4+2.2*k))*Math.sin(6.283185307*f*(k+1)*t);
+        s*=Math.min(1,t/0.006)*Math.min(1,(secs-t)/0.05);   // no click going in, none going out
+        a[i]=s; if(Math.abs(s)>peak) peak=Math.abs(s);
+      }
+      for(i=0;i<n;i++) a[i]/=peak||1;
+      return noteWaves[key]=a;
+    }
+    function noteWeb(f,secs,level){
       try{
         if(!actx){var AC=window.AudioContext||window.webkitAudioContext;actx=new AC();}
         if(actx.state==="suspended")actx.resume();
-        var o=actx.createOscillator(),g=actx.createGain(),t=actx.currentTime;
-        o.type="triangle"; o.frequency.value=f;
-        g.gain.setValueAtTime(0.0001,t);
-        g.gain.exponentialRampToValueAtTime((gain||0.10)*v,t+0.015);
-        g.gain.exponentialRampToValueAtTime(0.0001,t+(dur||0.5));
-        o.connect(g); g.connect(actx.destination); o.start(t); o.stop(t+(dur||0.5)+0.05);
-        quietUntil=Math.max(quietUntil,performance.now()+QUIET_MS);
+        var key=f+"/"+secs, b=noteBufs[key];
+        if(!b){ var w=noteWave(f,secs); b=actx.createBuffer(1,w.length,NOTE_RATE); b.getChannelData(0).set(w); noteBufs[key]=b; }
+        var src=actx.createBufferSource(), g=actx.createGain();
+        src.buffer=b; g.gain.value=level;
+        src.connect(g); g.connect(actx.destination); src.start(0);
       }catch(e){}
+    }
+    // One media element a pitch, made the first time and kept: a tap replays
+    // it from the top. If the phone refuses one, that note and every note
+    // after it go to Web Audio rather than to silence.
+    function asMedia(){ return !mediaBroken&&!!(S&&S.pcmWave&&S.voiceAsMedia&&S.voiceAsMedia()); }
+    function notePlayer(f,secs,level){
+      var key=f+"/"+secs, p=notePlayers[key];
+      if(!p){
+        var w=noteWave(f,secs), bytes=new Uint8Array(w.length*2), dv=new DataView(bytes.buffer), i;
+        for(i=0;i<w.length;i++) dv.setInt16(i*2,Math.round(w[i]*level*32767),true);
+        p=new Audio(URL.createObjectURL(S.pcmWave(bytes))); p.preload="auto";
+        p.onerror=function(){ mediaBroken=true; };
+        notePlayers[key]=p;
+      }
+      return p;
+    }
+    function noteMedia(f,secs,level,webLevel){
+      try{
+        var p=notePlayer(f,secs,level);
+        try{ if(p.currentTime) p.currentTime=0; }catch(e){}
+        var r=p.play();
+        if(r&&r.then) r.then(null,function(){ mediaBroken=true; noteWeb(f,secs,webLevel); });
+      }catch(e){ mediaBroken=true; noteWeb(f,secs,webLevel); }
+    }
+    function tone(f,dur,gain){
+      // the same guard as sfx(): never over the keep-playing mic, never under
+      // the phone's switch back from it (a dropped note there is one tap).
+      // And never while the say-it card is up (2 Oct 2026): Echo may be
+      // asking, and since 1 Oct a note in the app is media, which nothing
+      // else would hold back from his line or the mic that opens after it.
+      if(reviveWait||slowTurn||rv.st||rv.pending||performance.now()<micClosedAt+SETTLE_MS) return;
+      var v=noteVol(); if(!v) return;
+      var secs=dur||NOTE_SECS, g=gain||NOTE_GAIN;
+      if(asMedia()) noteMedia(f,secs,MEDIA_PEAK*g/NOTE_GAIN,g*v);
+      else noteWeb(f,secs,g*v);
+      quietUntil=Math.max(quietUntil,performance.now()+QUIET_MS);
+      // a note still ringing as the card opens holds Echo's first word back
+      chimeEnd=Math.max(chimeEnd,performance.now()+secs*1000);
     }
 
     // ---- game state ----
     var LANES=4, playing=true, score=0, comboN=0;
-    var BESTK="sona.best.tiles", BEST=0; try{ BEST=parseInt(localStorage.getItem(BESTK)||"0",10)||0; }catch(e){}
-    // ── lives: a crash → say your sound for a new life (3 per run) ──
-    var REV=3, reviveWait=false;
-    function hearts(){ $("timer").innerHTML=(window.Sona&&Sona.heartRow)?Sona.heartRow(REV,3,17):String(REV); }
-    function crash(){
+    // ── Beat Your Best: NOTES IN A ROW (Travis, 1-2 Oct 2026) ──
+    // The one number a child sees here is the longest run of tiles tapped
+    // with none slipping past and no wrong key: comboN is the row they are
+    // on, rowBest the longest of this round, and the top-left pill shows
+    // rowBest, so it never goes down while they play (a row that broke at 20
+    // stays 20 until they pass it). The row carries on across the songs, so
+    // the top is every note of all four (ROW_TOP).
+    // It counts the finger and only the finger. The score (a golden tile is
+    // 3) is still kept for the old five-game run (no coins since COIN3), but
+    // it is no longer shown: a hidden number beside a count of notes is what
+    // the old "Best" got wrong. Nothing here is practice data.
+    // This child's best lives in Sona.gameBest/gameBestOffer (one record per
+    // child, sona.js BESTS1). The old "sona.best.tiles" was one number for
+    // every child on the phone and counted the score: it is no longer read
+    // or written, and is not carried over. An older cached sona.js has no
+    // store, so the page asks first and plays on without the best.
+    var rowBest=0, startBest=0, keptRow=0, saidNewBest=false, bestBannerAt=-1e9;
+    var CAN_BEST=!!(S&&S.gameBest&&S.gameBestOffer);
+    try{ if(CAN_BEST) startBest=S.gameBest("tiles")|0; }catch(e){ startBest=0; }
+    // Level 2 and 3 keep their own best: each level's songs have their own
+    // number of notes (ROW_TOP), so one best across them would be measured
+    // against a top it could never reach
+    if(LV>1){ startBest=0; try{ startBest=S.playBest("tiles",LV)|0; }catch(e){} }
+    function rowSaid(n){ return n===1?"1 note":n+" notes in a row"; }
+    function paintRow(){ $("score").textContent=rowBest; $("rowPill").setAttribute("aria-label","Notes in a row: "+rowBest); }
+    // The store only ever goes up, so handing it the round's row early costs
+    // nothing: at the moment they pass their best, at the end of each song,
+    // when the phone is locked and on the way out. A round the phone kills
+    // half way through still keeps what the child did.
+    function keepBest(){
+      if(LV>1){ if(rowBest>keptRow){ keptRow=rowBest; try{ S.playBestOffer("tiles",LV,rowBest); }catch(e){} } return; }
+      if(!CAN_BEST||rowBest<=keptRow) return;
+      keptRow=rowBest;
+      try{ S.gameBestOffer("tiles",rowBest); }catch(e){}
+    }
+    // A tapped tile made the row longer. "New best!" is said once a round,
+    // the moment they pass the best they came in with, and never on a first
+    // ever round: there the win card sets the best ("Your best: 14!").
+    // Answers true when the banner went up, so no flash is laid over it.
+    function rowUp(){
+      if(comboN<=rowBest) return false;
+      rowBest=comboN; paintRow();
+      if(startBest>0&&!saidNewBest&&rowBest>startBest){
+        saidNewBest=true; keepBest(); bestBannerAt=performance.now();
+        banner("New best!",rowSaid(rowBest)); return true;
+      }
+      return false;
+    }
+    var HEART_MAX=3, hearts=HEART_MAX, heartHitAt=-1e9, HEART_GAP_MS=1500, outOfHearts=false, paceK=1;
+    // helpL1: at Level 2 or 3, a lost heart puts the rest of that song on
+    // Level 1's beat and fall for that song (SONGS_L1), until the next song
+    var helpL1=false;
+    function paintHearts(){ var e=$("gameHearts"); e.innerHTML=S.heartRow(hearts,HEART_MAX,16); e.setAttribute("aria-label",hearts+" hearts left"); e.hidden=!!SONGS[song].finale; }
+    function loseHeart(now){
+      if(!playing||phase!=="song"||SONGS[song].finale||slowTurn||slowMs>0||now-heartHitAt<HEART_GAP_MS)return;
+      heartHitAt=now; hearts=Math.max(0,hearts-1); paceK=Math.max(1,paceK-.12); paintHearts();
+      if(LV>1) helpL1=true;
+      // Give tiles already flying a safe landing: one fumble cannot empty three hearts.
+      for(var j=0;j<tiles.length;j++)if(!tiles[j].hit&&!tiles[j].gone)tiles[j].protected=true;
+      if(!hearts)outOfHearts=true;
+    }
+    var REV=3, reviveWait=false;   // say-the-sound cards: one between songs
+
+    // ── the round: three songs, then a grand finale (27 Sep 2026) ──
+    // The round Travis said yes to for Fruit Slice ("a clear goal... It always
+    // ends in a win. Missing is OK... The talking moves to between waves"),
+    // for the piano, with what the review of the older games asked for: tiles
+    // that play songs a child knows, a missed tile that fades while the song
+    // plays on (and the next ones slow down and wait), the first tiles waiting
+    // at the keys until tapped, the same speed on every screen (a tile took
+    // 2.2 s to fall on a small iPhone and 0.5 s on a big iPad), the say-it
+    // card between songs, and a finale whose tiles all wait for the child, so
+    // every round ends in a win.
+    var HZ={C:261.63,D:293.66,E:329.63,F:349.23,G:392.00,A:440.00,B:493.88};
+    var LANE_OF={C:0,D:0,E:1,F:1,G:2,A:3,B:3};   // the tune's shape: higher notes further right
+    // the app builds its players before the first tile lands, so the first
+    // tap of each pitch is not late
+    try{ if(asMedia()){ for(var _hz in HZ) notePlayer(HZ[_hz],NOTE_SECS,MEDIA_PEAK); notePlayer(THUD_HZ,THUD_SECS,MEDIA_PEAK*THUD_GAIN/NOTE_GAIN); } }catch(e){}
+    var SONGS=[
+      {name:"Twinkle Twinkle", notes:"CCGGAAG FFEEDDC", beat:760, fall:2.5},
+      {name:"Mary Had a Little Lamb", notes:"EDCDEEE DDD EGG", beat:700, fall:2.3},
+      {name:"Row, Row, Row Your Boat", notes:"CCCDE EDEFG", beat:660, fall:2.1},
+      {name:"Ode to Joy", notes:"EEFGGFED CCDEEDD", beat:620, fall:2.2, finale:true}
+    ];
+    // Level 2 and 3 (LEVELS1): four more songs a child may know, each a
+    // little quicker, the last one the finale whose tiles all wait. Every
+    // note is in the one octave the keys play (C to B), and every tune is an
+    // old public-domain one. The first three tiles of a round still wait.
+    var SONGS_L1=SONGS;
+    if(LV===2) SONGS=[
+      {name:"Hot Cross Buns", notes:"EDC EDC CCCCDDDD EDC", beat:700, fall:2.3},
+      {name:"Old MacDonald", notes:"CCCGAAG EEDDC", beat:660, fall:2.2},
+      {name:"London Bridge", notes:"GAGFEFG DEF EFG", beat:640, fall:2.1},
+      {name:"Au Clair de la Lune", notes:"CCCDED CEDDC", beat:600, fall:2.1, finale:true}
+    ];
+    else if(LV===3) SONGS=[
+      {name:"Are You Sleeping", notes:"CDEC CDEC EFG EFG", beat:640, fall:2.1},
+      {name:"This Old Man", notes:"GEG GEG AGFEDEF", beat:620, fall:2.0},
+      {name:"Lightly Row", notes:"GEE FDD CDEFGGG", beat:600, fall:1.95},
+      {name:"Itsy Bitsy Spider", notes:"CFFFGAA AGFGAF", beat:580, fall:2.0, finale:true}
+    ];
+    var song=0, songIx=0, songMs=0, nextAt=900, phase="song", missRun=0, waitLeft=3, finaleDone=false;
+    var tiles=[], sparks=[], keyGlow=[-1e9,-1e9,-1e9,-1e9], echoT=-1e9;
+    var HITY=function(){ return H-140; };   // the top of the keys
+    function songNotes(i){ return SONGS[i].notes.replace(/ /g,""); }
+    // every note of the four songs: the longest a row can be
+    var ROW_TOP=0; (function(){ for(var i=0;i<SONGS.length;i++) ROW_TOP+=songNotes(i).length; })();
+    // pixels a second, so a tile takes the song's fall time on every screen
+    function speedPx(){ return (HITY()+90)/(SONGS[song].fall)*slowFactor()*paceK*helpFall(); }
+    // 1, or after a lost heart at Level 2 or 3, how much slower Level 1's
+    // song in this place fell: the tile then takes Level 1's fall time
+    function helpFall(){ return helpL1?SONGS[song].fall/SONGS_L1[song].fall:1; }
+    // ── wide, chunky notes (Travis, 5 Oct 2026: "the keynotes are a little
+    // bit too skinny", beside his old App Store picture whose four lanes each
+    // carry a fat rounded tile) ──
+    // A note fills its lane, 4 px in from each side so the lanes still read,
+    // and is TILE_ASPECT times as tall as it is wide: the shape the painted
+    // tiles are cut to (tools/art/cut-tiles.py), so no screen stretches the
+    // picture or its music note. It was 88 px tall on every screen and drawn
+    // from a frame twice as wide as the painted bar, so a note showed at half
+    // its lane. Never more than a fifth of the fall, so two notes in one lane
+    // (Twinkle's C C, a beat apart: at least 28% of the fall) always keep a
+    // gap; never shorter than the old 88. Where that fifth is what holds it
+    // (a short, wide window, like a computer's browser) the note is drawn
+    // narrower instead, centred in its lane: a squashed picture is worse
+    // than a slimmer note.
+    // The time a song keeps is unchanged: a tile still starts with its BOTTOM
+    // edge just above the screen (y -90 with h 88 did the same), speedPx()
+    // is untouched, a waiting tile still rests with its bottom 40 px into the
+    // keys, and it becomes tappable at the same moment. A taller note only
+    // stays tappable a little longer at the far end.
+    var TILE_ASPECT=1.35;
+    function tileH(){ return Math.max(88,Math.min(Math.round((W/LANES-8)*TILE_ASPECT),Math.round((HITY()+90)*.2))); }
+    function tileW(){ return Math.min(W/LANES-8,Math.round(tileH()/TILE_ASPECT)); }
+    function spawn(){
+      var s=SONGS[song], ch=songNotes(song).charAt(songIx++), th=tileH();
+      tiles.push({lane:LANE_OF[ch],y:-th-2,h:th,hit:false,gone:false,note:HZ[ch],
+        wait:!!s.finale||waitLeft>0, gold:!s.finale&&song>0&&songIx>2&&Math.random()<0.12});
+      if(waitLeft>0) waitLeft--;
+    }
+    function startSong(i){
+      slowMs=0; $("slowStatus").textContent=slowIdle(); song=i; songIx=0; songMs=0; nextAt=900; phase="song"; missRun=0; helpL1=false; hud(); paintHearts();
+      banner(SONGS[i].finale?"Grand finale!":"Song "+(i+1), SONGS[i].name);
+    }
+    function endSong(){
+      phase="break"; hud(); keepBest();
+      var last=song===SONGS.length-1, next=song+1;
+      // a "New best!" earned on the song's last notes is read before the
+      // song's own banner takes its place (the banner shows for 1.9 s)
+      setTimeout(function(){
+        if(window.__ended||!playing) return;
+        banner(last?"Bravo!":"You played it!", last?"What a concert!":SONGS[song].name);
+        sfx("complete"); echoT=performance.now();
+        setTimeout(function(){
+          if(window.__ended||!playing) return;
+          if(last){ finaleDone=true; endRound(); }
+          else if(SONGS[next].finale) startSong(next);   // the finale follows the third song straight away
+          else sayCard("Say \u201C"+SAYTXT+"\u201D for song "+(next+1)+"!","none");
+        },1700);
+      },Math.max(600,bestBannerAt+1900-performance.now()));
+    }
+
+    // ── the HUD: this song's notes, the say-it card's songs ──
+    function hud(){
+      var t=$("timer"), s=SONGS[song], n=songNotes(song).length, got=phase==="break"?n:Math.min(n,songIx-tiles.filter(function(q){ return !q.hit&&!q.gone; }).length);
+      t.innerHTML='<span class="wv">'+(s.finale?"Finale":"Song "+(song+1))+'</span><span class="wbar"><i style="width:'+Math.round(Math.max(0,got)/n*100)+'%"></i></span>';
+      t.setAttribute("aria-label",(s.finale?"Grand finale":"Song "+(song+1)+" of 3")+": "+s.name);
+    }
+    var TICK='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    function songDots(){ var s=""; for(var i=0;i<3;i++) s+='<span class="wdot'+(i<=song?' on':'')+'">'+(i<=song?TICK:String(i+1))+'</span>'; return s; }
+    function banner(big,small){ var b=$("banner"); $("bnBig").textContent=big; $("bnSmall").textContent=small||""; b.classList.remove("in"); void b.offsetWidth; b.classList.add("in"); }
+    function flash(t){ var f=$("flash"); f.textContent=t; f.style.opacity=1; f.style.transform="scale(1.15)"; setTimeout(function(){f.style.opacity=0;f.style.transform="scale(1)";},600); }
+
+    // ── the say-it card, between songs ──
+    // The quoted sound in its title is the practice sound's letters, in the
+    // crafted orange (.ovl h2 b): the family's brief keeps orange for those
+    // letters alone, and Sona.soundMark decides which letters they are. The
+    // title arrives as plain text, so everything else in it is escaped.
+    function esc(t){ return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+    function sayMark(){ return (window.Sona&&Sona.soundMark)?Sona.soundMark(SAYTXT,SND):'<b class="snd">'+esc(SAYTXT)+'</b>'; }
+    function markTitle(t){ var q="\u201C"+SAYTXT+"\u201D", i=t.indexOf(q); return i<0?esc(t):esc(t.slice(0,i))+"\u201C"+sayMark()+"\u201D"+esc(t.slice(i+q.length)); }
+    function sayCard(title,snd){
       if(!playing) return;
-      playing=false; tiles=[]; sfx("tap");
+      playing=false; tiles=[]; if(snd!=="none") sfx(snd||"tap");
       if(REV>0 && CAN_LISTEN){
-        $("revTitle").textContent="Say \u201C"+SAYTXT+"\u201D to keep playing!";
-        $("revHearts").innerHTML=(window.Sona&&Sona.heartRow)?Sona.heartRow(REV,3,28):String(REV);
-        reviveWait=true; $("revOvl").classList.add("show"); openReviveMic();
+        $("revTitle").innerHTML=markTitle(title||("Say \u201C"+SAYTXT+"\u201D to keep playing!"));
+        $("revHearts").innerHTML=songDots();
+        reviveWait=true; $("revOvl").classList.add("show"); speakRevive();
       } else { endRound(); }
     }
+    // The card's old name, from when a missed tile opened it. Kept because
+    // the quiet-mic suites open the card through it.
+    function crash(){ sayCard(); }
     function doRevive(){
-      reviveWait=false; REV--; hearts();
+      if(slowTurn){finishSlowKeys(true);return;}
+      reviveWait=false; REV--; hud();
+      var life=lifeTaken(); if(life){ hearts=HEART_MAX; outOfHearts=false; paintHearts(); }
+      // the card heard the child's sound: one rep on the week's count (Sona.gameRep)
+      try{ if(S&&S.gameRep)S.gameRep(SND); }catch(e){}
       $("revOvl").classList.remove("show");
       // the mic has just closed: sfx() holds this chime SETTLE_MS
-      sfx("complete"); try{ if(S&&S.confetti)S.confetti(); }catch(e){}
-       playing=true;
+      sfx("complete"); try{ if(!life&&!outOfHearts&&S&&S.confetti)S.confetti(); }catch(e){}
+      playing=true;
+      if(phase==="break") startSong(song+1);
     }
     $("revDone").onclick=function(){ closeReviveMic(); reviveWait=false; $("revOvl").classList.remove("show"); endRound(); };
-    hearts();
 
-    var LCOL=["#ff6b8a","#4dabf7","#69db7c","#ffd43b"];
-    // founder-tuned: start noticeably SLOWER, let the ramp do the work
-    var tiles=[], fall=H*0.0031, spawnMs=920, noteIx=0, melodyDir=1;
-    var HITY=function(){ return H-140-Math.max(0,0); }; // hit line y (bar height 90 above bottom bar)
+    var LCOL=["#ee786b","#b48bdd","#91bd65","#efbe47"];
 
-    function spawn(){
-      var lane=(Math.random()*LANES)|0;
-      // gentle melody walk so consecutive notes feel intentional
-      noteIx+=melodyDir*(1+((Math.random()*2)|0)); if(noteIx>=NOTES.length-1){noteIx=NOTES.length-1;melodyDir=-1;} if(noteIx<=0){noteIx=0;melodyDir=1;}
-      tiles.push({lane:lane,y:-90,h:88,hit:false,gone:false,note:NOTES[noteIx]});
-    }
-    var spawnTimer=setInterval(function(){ if(document.hidden)return; if(playing) spawn(); },spawnMs);
-    function retime(ms){ clearInterval(spawnTimer); spawnMs=ms; spawnTimer=setInterval(function(){ if(document.hidden)return; if(playing) spawn(); },spawnMs); }
-    // gentle ramp: a touch faster every 12s, capped so it never gets frantic
-    var rampIv=setInterval(function(){ if(document.hidden)return; if(!playing)return; if(fall<H*0.0058) fall*=1.06; if(spawnMs>600) retime(spawnMs-50); },12000);
-
-    // ---- input: tap a lane when a tile is over the hit bar ----
+    // ---- input: tap a lane when a tile is over the keys ----
     function laneAt(x){ return Math.max(0,Math.min(LANES-1,(x/(W/LANES))|0)); }
     var shakeT=0;
+    // A second tap on the key they have JUST played is not a wrong key (Beat
+    // Your Best, 2 Oct 2026). A five-year-old's finger bounces, and these
+    // songs repeat their notes (Twinkle's C C, G G), which invites a tap a
+    // moment early. The row used to be only a flash, so that cost nothing;
+    // now it is the one number they chase, and a bounce on the RIGHT key
+    // would have ended it with a thud and a shake. So for DOUBLE_MS after a
+    // played tile, another tap on that same key with no tile there does
+    // nothing at all.
+    // Any other key, or the same key later, is still a wrong key: mashing
+    // the keys still ends the row, so the count stays honest.
+    var DOUBLE_MS=300, lastHitLane=-1, lastHitAt=-1e9;
     cv.addEventListener("pointerdown",function(e){
       if(!playing)return;
       var r=cv.getBoundingClientRect(), x=(e.clientX-r.left), lane=laneAt(x);
       var zoneTop=HITY()-96, zoneBot=HITY()+70, best=null;
       for(var i=0;i<tiles.length;i++){ var t=tiles[i];
         if(t.lane===lane&&!t.hit&&!t.gone&&t.y+t.h>zoneTop&&t.y<zoneBot){ if(!best||t.y>best.y)best=t; } }
+      keyGlow[lane]=performance.now();
       if(best){
-        best.hit=true; comboN++;
-        score++;
-        $("score").textContent=score;
-        tone(best.note,0.5,0.10); if(comboN%8===0){ flash(comboN+" NOTE STREAK!"); }
+        best.hit=true; comboN++; missRun=0; if(!SONGS[song].finale)paceK=Math.min(1.35,paceK+.015+Math.min(.005,startBest*.0001));
+        lastHitLane=lane; lastHitAt=performance.now();
+        score+=best.gold?3:1;
+        var popped=rowUp(); hud();
+        tone(best.note,NOTE_SECS,NOTE_GAIN);   // one note: the song's own
+        var fin=!!SONGS[song].finale, lw=W/LANES;
+        for(var k=0;k<(fin?22:best.gold?16:8);k++){ var a=Math.random()*6.28, v=(fin?3:2)+Math.random()*(fin?5:3);
+          sparks.push({x:best.lane*lw+lw/2,y:fin?best.y:HITY()-10,vx:Math.cos(a)*v,vy:Math.sin(a)*v-(fin?4:2),life:1,c:best.gold?"#ffd21c":fin?LCOL[(Math.random()*4)|0]:LCOL[best.lane]}); }
+        // The flashes say what the child can see. "+3" went with the score:
+        // beside a number that counts notes in a row it was a sum nobody
+        // could check. The row flash names the row they are ON, in the win
+        // card's own words.
+        if(popped) echoT=performance.now();
+        else if(best.gold){ flash("GOLDEN NOTE!"); echoT=performance.now(); }
+        else if(comboN%8===0){ flash(comboN+" in a row!"); echoT=performance.now(); }
       } else {
-        comboN=0; shakeT=performance.now(); tone(130.8,0.18,0.025); // soft low thud, never a death
+        // the same key again, straight after its tile: a bounce, not a wrong key
+        if(lane===lastHitLane&&performance.now()-lastHitAt<DOUBLE_MS) return;
+        // a wrong key: a tap on a lane with no tile at the keys. It ends the
+        // row (as it always ended the streak) and costs nothing else: the
+        // top-left number stays where it is.
+        comboN=0; shakeT=performance.now(); tone(THUD_HZ,THUD_SECS,THUD_GAIN); // soft low thud, never a death
       }
     });
-    function flash(t){ var f=$("flash"); f.textContent=t; f.style.opacity=1; f.style.transform="scale(1.15)"; setTimeout(function(){f.style.opacity=0;f.style.transform="scale(1)";},600); }
-
-    // timer
-    
 
     // ---- draw ----
+    var WOOD=new Image(), paintCache={}; WOOD.src="/assets/crafted/painted-wood-ivory.webp";
+    // Cache each tinted material once; the live tiles keep their original
+    // geometry and song timing while moving actual painted wood across it.
+    function paintedMaterial(col){
+      if(!WOOD.complete||!WOOD.naturalWidth) return null;
+      if(paintCache[col]) return paintCache[col];
+      var c=document.createElement("canvas"); c.width=256; c.height=256;
+      var g=c.getContext("2d"); g.drawImage(WOOD,0,0,256,256);
+      g.globalCompositeOperation="multiply"; g.fillStyle=col; g.fillRect(0,0,256,256);
+      paintCache[col]=c; return c;
+    }
+    function paintedFace(x,y,w,h,r,col,depth,edge){
+      if(w<=0||h<=0)return;
+      ctx.save(); ctx.shadowColor="rgba(16,8,30,.35)"; ctx.shadowBlur=6; ctx.shadowOffsetY=4;
+      ctx.fillStyle=edge||"#55364f"; rr(x,y+depth,w,h,r); ctx.fill();
+      ctx.shadowColor="transparent"; ctx.shadowBlur=0; ctx.shadowOffsetY=0;
+      ctx.fillStyle=col; rr(x,y,w,h,r); ctx.fill();
+      ctx.save(); rr(x,y,w,h,r); ctx.clip();
+      var material=paintedMaterial(col); if(material)ctx.drawImage(material,x,y,w,h);
+      var shade=ctx.createLinearGradient(x,y,x+w,y+h); shade.addColorStop(0,"rgba(255,255,231,.20)"); shade.addColorStop(.65,"rgba(255,255,255,0)"); shade.addColorStop(1,"rgba(56,25,45,.14)");
+      ctx.fillStyle=shade; ctx.fillRect(x,y,w,h); ctx.restore();
+      if(h>8){ctx.lineWidth=1.4;ctx.strokeStyle="rgba(255,252,227,.72)";rr(x+2,y+2,w-4,h-4,Math.max(2,r-2));ctx.stroke();}
+      ctx.restore();
+    }
+    var TILE_ART=["coral","purple","green","blue"].map(function(c){var im=new Image();im.src="/assets/crafted/game/tile-"+c+".webp";return im;});
+    TILE_ART.gold=new Image(); TILE_ART.gold.src="/assets/crafted/game/tile-gold.webp";
+    function musicMark(x,y,size,col,pair){
+      ctx.save();ctx.translate(x,y);ctx.scale(size/64,size/64);ctx.fillStyle=col;
+      if(pair){
+        ctx.beginPath();ctx.ellipse(-16,18,11,8,-.35,0,7);ctx.ellipse(12,11,11,8,-.35,0,7);ctx.fill();
+        ctx.fillRect(-9,-21,6,39);ctx.fillRect(19,-28,6,39);
+        ctx.beginPath();ctx.moveTo(-9,-23);ctx.lineTo(25,-31);ctx.lineTo(25,-19);ctx.lineTo(-9,-11);ctx.closePath();ctx.fill();
+      }else{
+        ctx.beginPath();ctx.ellipse(-9,20,12,9,-.35,0,7);ctx.fill();ctx.fillRect(-2,-29,6,49);
+        ctx.beginPath();ctx.moveTo(2,-29);ctx.bezierCurveTo(29,-21,24,-4,13,2);ctx.bezierCurveTo(21,-13,13,-16,2,-16);ctx.closePath();ctx.fill();
+      }
+      ctx.restore();
+    }
+    function keyHalo(x,y,w,amount,now){
+      ctx.save();ctx.globalAlpha=amount;
+      var light=ctx.createRadialGradient(x,y,2,x,y,w*.72);light.addColorStop(0,"rgba(255,244,176,.9)");light.addColorStop(.5,"rgba(255,205,77,.3)");light.addColorStop(1,"rgba(255,211,78,0)");
+      ctx.fillStyle=light;ctx.fillRect(x-w,y-w,w*2,w*2);
+      ctx.strokeStyle="#ffeba0";ctx.lineWidth=2.5;ctx.shadowColor="#ffc847";ctx.shadowBlur=8;
+      ctx.beginPath();ctx.ellipse(x,y,w*.45,9+3*Math.sin(now/200),0,0,7);ctx.stroke();ctx.restore();
+    }
+    var lastT=performance.now();
     function draw(){
+      var now=performance.now(), dt=Math.min(100,now-lastT), i, l; lastT=now;
+      if(document.hidden)dt=0;
+      if(playing&&slowMs>0){slowMs=Math.max(0,slowMs-dt);if(!slowMs)$("slowStatus").textContent=slowIdle();}
+      paintSlowKeys();
+      // the song: its next tile on the beat, and none while a tile waits
+      if(playing&&phase==="song"){
+        var notes=songNotes(song), waiting=tiles.some(function(t){ return t.wait&&!t.hit&&!t.gone; });
+        if(!waiting) songMs+=dt*slowFactor();
+        if(songIx<notes.length&&songMs>=nextAt&&!waiting){ spawn(); nextAt=songMs+(helpL1?SONGS_L1[song].beat:SONGS[song].beat)/paceK; }
+        if(songIx>=notes.length&&!tiles.some(function(t){ return !t.hit&&!t.gone; })) endSong();
+      }
       ctx.clearRect(0,0,W,H);
-      // concert spotlight (design 4: Piano Tiles)
-      var sp=ctx.createRadialGradient(W/2,0,10,W/2,0,H*0.85);
-      sp.addColorStop(0,"rgba(255,255,255,.10)"); sp.addColorStop(1,"rgba(255,255,255,0)");
-      ctx.fillStyle=sp; ctx.fillRect(0,0,W,H);
       var lw=W/LANES, hitY=HITY();
-      // lanes
-      for(var l=0;l<LANES;l++){ ctx.fillStyle="rgba(255,255,255,"+(l%2?0.03:0.05)+")"; ctx.fillRect(l*lw,0,lw,H); }
-      for(var l=1;l<LANES;l++){ ctx.fillStyle="rgba(255,255,255,.08)"; ctx.fillRect(l*lw-1,0,2,H); }
-      // hit bar — the keys run all the way to the screen bottom, no dead band
-      ctx.fillStyle="rgba(255,255,255,.12)";
-      ctx.fillRect(0,hitY-8,W,H-(hitY-8));
-      // piano-key hit bar: white keys with hard shadows
-      for(var l=0;l<LANES;l++){
-        var kx=l*lw+5, kw=lw-10;
-        ctx.fillStyle="rgba(0,0,0,.28)"; rr(kx,hitY-4,kw,H-(hitY-4)+12,10); ctx.fill();
-        ctx.fillStyle="#ffffff"; rr(kx,hitY-8,kw,H-(hitY-8)+12,10); ctx.fill();
-        ctx.fillStyle="rgba(0,0,0,.07)"; ctx.fillRect(kx+kw*0.36,hitY-8,kw*0.28,30);
+      // Clear lanes sit inside the painted velvet stage. The keys and tiles
+      // retain the original hit geometry; no decoration consumes a tap.
+      for(l=0;l<LANES;l++){ctx.fillStyle=l%2?"rgba(255,248,237,.012)":"rgba(16,10,42,.025)";ctx.fillRect(l*lw,0,lw,hitY);}
+      for(l=1;l<LANES;l++){ctx.fillStyle="rgba(233,212,252,.11)";ctx.fillRect(l*lw-.7,58,1.4,hitY-58);}
+      ctx.fillStyle="#3c2456";ctx.fillRect(0,hitY-7,W,H-hitY+7);
+      // Full-depth ivory faces, carved edges and short ebony tops. These are
+      // four visual keys over the same four input lanes, not extra targets.
+      for(l=0;l<LANES;l++){
+        var kx=l*lw+3, kw=lw-6, glow=Math.max(0,1-(now-keyGlow[l])/420), ky=hitY-10+glow*3, kh=H-ky-13;
+        paintedFace(kx,ky+9,kw,kh+4,11,"#ba996e",2,"#9e794c");
+        paintedFace(kx,ky,kw,kh,11,glow>0?"#f5d16c":"#fff9e8",9,glow>0?"#b88931":"#bba076");
+        if(glow>0)keyHalo(kx+kw/2,hitY-5,kw,glow,now);
+      }
+      for(l=1;l<LANES;l++){
+        var bx=l*lw-lw*.17, bw=lw*.34, bh=53;
+        paintedFace(bx,hitY-11,bw,bh,5,"#302943",5,"#191526");
+        ctx.fillStyle="rgba(230,212,244,.13)";rr(bx+3,hitY-8,bw-6,bh-12,3);ctx.fill();
       }
       // screen shake on miss-tap
-      var sh=performance.now()-shakeT<180 ? Math.sin(performance.now()/14)*4 : 0;
+      var sh=now-shakeT<180 ? Math.sin(now/14)*4 : 0, fall=playing?speedPx()*dt/1000:0;
       // tiles
-      for(var i=tiles.length-1;i>=0;i--){ var t=tiles[i];
-        t.y+=fall*(H/700);
+      for(i=tiles.length-1;i>=0;i--){ var t=tiles[i];
         if(t.hit){ t.h-=10; t.y+=5; if(t.h<=6){ tiles.splice(i,1); continue; } }
-        if(t.y>H+20){ tiles.splice(i,1); if(playing){ crash(); } continue; } // a missed tile costs a life
-        var x=t.lane*lw+6+sh, w=lw-12;
-        ctx.fillStyle=t.hit?"#fff":LCOL[t.lane];
-        rr(x,t.y,w,t.h,14); ctx.fill();
-        ctx.fillStyle="rgba(255,255,255,.25)"; rr(x,t.y,w,10,6); ctx.fill();
-        if(!t.hit){ ctx.fillStyle="rgba(255,255,255,.9)"; ctx.font="800 24px 'Baloo 2',sans-serif"; ctx.textAlign="center"; ctx.fillText("♪",x+w/2,t.y+t.h/2+9); }
+        else if(t.gone){ t.fade=(t.fade==null?1:t.fade)-0.06; t.y+=fall; if(t.fade<=0){ tiles.splice(i,1); continue; } }
+        else {
+          t.y+=fall;
+          var rest=hitY-t.h+40;   // a waiting tile stops on its key
+          if(t.wait&&t.y>rest) t.y=rest;
+          // a tile that slips past just fades; the song plays on
+          if(!t.wait&&t.y>hitY+70){ t.gone=true; if(playing&&phase==="song"){ missRun++; comboN=0; if(!t.protected)loseHeart(now); } }
+        }
+        // the whole lane but 4 px a side (tileW()), centred; the corner follows the painted tile's
+        var w=tileW(), x=t.lane*lw+(lw-w)/2+sh, cr=Math.round(w*.3);
+        ctx.globalAlpha=t.gone?Math.max(0,t.fade)*0.45:1;
+        // the crafted tiles (1 Oct 2026); a played tile and the not-yet-loaded fall back to the painted face
+        var art=!t.hit&&(t.gold?TILE_ART.gold:TILE_ART[t.lane]), artOk=art&&art.complete&&art.naturalWidth;
+        var onKey=!t.hit&&t.wait&&!t.gone&&t.y>=hitY-t.h+39;
+        // A note waiting on its key glows from BEHIND: drawn over it, the
+        // key's ring now cut straight across a note that fills the lane.
+        if(onKey) keyHalo(x+w/2,hitY-5,w*1.2,.65+.2*Math.sin(now/180),now);
+        if(artOk) ctx.drawImage(art,x,t.y,w,t.h);
+        else paintedFace(x,t.y,w,t.h,cr,t.hit?"#fff4d3":t.gold?"#f1c54d":LCOL[t.lane],5,t.gold?"#b07a26":["#b44d48","#76539f","#5f8141","#ad7b2a"][t.lane]);
+        if(onKey){
+          ctx.strokeStyle="rgba(255,237,169,"+(.7+.2*Math.sin(now/180))+")";ctx.lineWidth=3;rr(x-2,t.y-2,w+4,t.h+4,cr+2);ctx.stroke();
+          ctx.fillStyle="#fff6db";ctx.font="800 17px 'Baloo 2',sans-serif";ctx.textAlign="center";ctx.fillText("Tap!",x+w/2,t.y-12);
+        }
+        if(!t.hit&&!artOk){
+          musicMark(x+w/2,t.y+t.h/2,Math.min(w*.7,t.h*.69),t.gold?"#996216":["#a74248","#674595","#4d7a39","#a26a1c"][t.lane],t.lane%2===1);
+          // the gold tile's little star sits inside its rounder corner, not on it
+          if(t.gold){var sx=x+w-w*.22, sy=t.y+w*.22;ctx.fillStyle="#fff3ac";ctx.beginPath();for(var starI=0;starI<10;starI++){var a=-Math.PI/2+starI*Math.PI/5,rad=starI%2?3:7;starI?ctx.lineTo(sx+Math.cos(a)*rad,sy+Math.sin(a)*rad):ctx.moveTo(sx+Math.cos(a)*rad,sy+Math.sin(a)*rad);}ctx.closePath();ctx.fill();}
+        }
+        ctx.globalAlpha=1;
       }
+      // End after the array walk: ending inside it would replace the board under the loop.
+      if(outOfHearts&&playing)lifeOrEnd();
+      // sparkles over a played note; fireworks in the finale
+      for(i=sparks.length-1;i>=0;i--){ var s=sparks[i]; s.x+=s.vx; s.y+=s.vy; s.vy+=0.12; s.life-=0.025; if(s.life<=0){ sparks.splice(i,1); continue; }
+        ctx.save();ctx.globalAlpha=s.life;ctx.translate(s.x,s.y);ctx.rotate(s.life*2);ctx.fillStyle=s.c;
+        var sr=3+3*s.life;ctx.beginPath();ctx.moveTo(0,-sr);ctx.quadraticCurveTo(sr*.25,-sr*.25,sr,0);ctx.quadraticCurveTo(sr*.25,sr*.25,0,sr);ctx.quadraticCurveTo(-sr*.25,sr*.25,-sr,0);ctx.quadraticCurveTo(-sr*.25,-sr*.25,0,-sr);ctx.fill();ctx.restore(); }
       requestAnimationFrame(draw);
     }
-    function rr(x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
-    draw();
+    function rr(x,y,w,h,r){ r=Math.max(0,Math.min(r,w/2,h/2)); ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
+    startSong(0);
+    requestAnimationFrame(draw);
 
-    // ── "Say your sound to keep playing": the only time this game listens ──
+    // ── Short listening turns: song breaks or the in-board slow-keys control ──
     // (24 Sep 2026) STAR MODE is gone. It held the mic open for the whole
     // game so a shout could fire a power-up, which kept an iPhone in
     // phone-call audio from the first frame to the last. The mic now opens
-    // only while the keep-playing card shows, after the quiet window above,
+    // only during an explicit quiet speech turn, after the quiet window above,
     // and closes before the revive chime. Loudness and sound-shape numbers
     // only: nothing is recorded, nothing leaves the device, and a revive is
     // play, never practice data.
@@ -294,8 +690,56 @@
       if(!snd){ try{ snd=((S&&S.getProfile&&S.getProfile().focusSounds)||["R"])[0]; }catch(e){ snd="R"; } }
       SND=String(snd).toUpperCase(); SAYTXT=(S&&S.soundSay)?S.soundSay(SND):"rrrr";
     })();
-    function listenNote(t){ try{ $("revListen").textContent=t; }catch(e){} }
+    function listenNote(t){ try{ $("revListen").textContent=t;if(slowTurn&&!slowTurn.finishing)$("slowStatus").textContent=t; if(slowTurn&&!slowTurn.finishing)echoPose($("slowKeys").querySelector("img"),"listen"); echoPose(document.querySelector("#revOvl .ovlEcho"),reviveSpeaking()?"talk":"listen"); }catch(e){} }
+    // Echo's clay pose shows what he is doing (29 Sep 2026). On the slow-down
+    // button he talks while his line and the sound play; on the say-it card
+    // (2 Oct 2026) he talks while he asks, and listens once it is the
+    // child's turn.
+    var POSE="/assets/crafted/echo-";
+    function echoPose(img,p){ if(img&&img.getAttribute("src")!==POSE+p+".webp")img.src=POSE+p+".webp"; }
+    // Held in a variable: a preload nobody holds is collected, and the pose
+    // then loads late instead of swapping in at once.
+    var POSE_KEEP=["talk","listen","welcome"].map(function(p){ var i=new Image(); i.src=POSE+p+".webp"; return i; });
+    // It listens while the turn's mic hears ("I'm listening…") and rests
+    // again once the turn is over.
+    var slowPaint=paintSlowKeys;
+    paintSlowKeys=function(){ slowPaint(); if(!slowTurn||slowTurn.finishing)echoPose($("slowKeys").querySelector("img"),"welcome"); };
+
+    // ── Echo asks on the card (2 Oct 2026) ──
+    // Travis: "there's no voice telling them to say it. Most of these kids
+    // can't read". The card used to open its mic under a line of text. Now
+    // Echo says "To keep playing, say", one take of the sound in Rachel's
+    // own voice, then "Go!", and only then the mic opens, a short tail after
+    // his last word. The voice is /arcade-sayit.js's, the same in all five
+    // round games; it waits for a mic request still settling before the
+    // speaker route starts, and stops when the card closes or the page hides
+    // (closeReviveMic). A page without the helper just listens, as before.
+    // (2 Oct 2026, review) Echo waits only for what is still sounding: a mic
+    // request still settling, the phone's switch back from a mic just closed,
+    // a chime still ringing (chimeEnd), not the mic's own quiet window. After
+    // his "Go!" the mic waits SayIt.VOICE_TAIL_MS (250 ms, the tail every
+    // listening page keeps), not QUIET_MS: that is timed from when a chime
+    // BEGINS, and after a line that has already ended it left a child who
+    // answered right on "Go!" talking to a closed mic. On the website his
+    // voice plays through this page's own context (rv.ctx), which the
+    // child's taps on the game have already woken.
+    var sayVoice=window.SayIt?SayIt.voice({
+      up:function(){ return reviveWait&&!slowTurn; },
+      ask:function(t){ return t.line(lifeCard?LIFE_LINE:SayIt.ASK).then(function(){ return t.take(); }); },
+      wait:function(){ return rv.pending||rv.st?40:Math.max(chimeEnd,micClosedAt+SETTLE_MS)-performance.now(); },
+      note:listenNote,
+      clip:function(){ return S.ALL_SOUNDS.indexOf(SND)>=0?"/coach/say-echo/"+SND+"-sound.wav":""; },
+      ctx:function(){ if(!rv.ctx){ var AC=window.AudioContext||window.webkitAudioContext; rv.ctx=new AC(); } return rv.ctx; },
+      listen:function(spoke){ if(spoke)quietUntil=Math.max(quietUntil,performance.now()+SayIt.VOICE_TAIL_MS); openReviveMic(); }
+    }):null;
+    function speakRevive(){
+      // a sound turn still closing hands the card the speaker once it has
+      if(slowTurn){ slowTurn.cancelled=true; finishSlowKeys(false).then(function(){ if(reviveWait&&!document.hidden) speakRevive(); }); return; }
+      if(sayVoice)sayVoice.speak(); else openReviveMic();
+    }
+    function reviveSpeaking(){ return !!sayVoice&&sayVoice.speaking(); }
     function closeReviveMic(){
+      if(sayVoice)sayVoice.stop();
       rv.gen++; clearTimeout(rv.t); if(rv.raf)cancelAnimationFrame(rv.raf); rv.raf=0;
       try{ if(rv.src)rv.src.disconnect(); }catch(e){} rv.src=null;
       if(rv.st){ try{ rv.st.getTracks().forEach(function(t){t.stop();}); }catch(e){} rv.st=null; micClosedAt=performance.now(); }
@@ -306,22 +750,35 @@
     // it is asking: the ask made on the way back finds that request still
     // pending and stands down, so without this the card waited on "Get
     // ready…" for good and only "I'm done playing" got the child out.
-    function askAgain(){ if(reviveWait&&!document.hidden&&!rv.st) openReviveMic(); }
+    function askAgain(){ if(micWanted()&&!document.hidden&&!rv.st) openReviveMic(); }
     function openReviveMic(){
-      if(!reviveWait||rv.st||rv.pending||document.hidden) return;
+      if(!micWanted()||reviveSpeaking()||rv.st||rv.pending||document.hidden) return;
       var wait=quietUntil-performance.now();
       if(wait>0){ clearTimeout(rv.t); rv.t=setTimeout(openReviveMic,wait); return; }
       var gen=++rv.gen; rv.pending++;
-      navigator.mediaDevices.getUserMedia({audio:true}).then(function(st){
+      ((S&&S.micNative&&S.micNative())?S.micOpen({audio:true}):navigator.mediaDevices.getUserMedia({audio:true})).then(function(st){
         rv.pending--;
         // the card closed (or the page hid) while the phone was asking: this
         // stream is already late, so it goes straight back
-        if(gen!==rv.gen||!reviveWait||document.hidden){ try{ st.getTracks().forEach(function(t){t.stop();}); }catch(e){} micClosedAt=performance.now(); askAgain(); return; }
-        rv.st=st; listenFor(st,gen);
+        if(gen!==rv.gen||!micWanted()||document.hidden){ try{ st.getTracks().forEach(function(t){t.stop();}); }catch(e){} micClosedAt=performance.now(); askAgain(); return; }
+        rv.st=st;
+        if(slowTurn){
+          var turn=slowTurn;
+          try{turn.native=Promise.resolve(S.speechStart?S.speechStart({words:[SAYTXT],maxMs:SLOW_ASK.listen}):false);}catch(e){turn.native=Promise.resolve(false);}
+          turn.native=turn.native.then(function(v){turn.nativeSettled=true;turn.nativeStarted=!!v;return v;},function(){turn.nativeSettled=true;return false;});
+          // a sound heard just before the limit still earns it (2 Oct 2026,
+          // as Fruit Slice): heard, the mic stays open 550 ms more for
+          // Apple's recognizer, and the limit must not throw that try away
+          turn.timer=setTimeout(function(){if(slowTurn===turn)finishSlowKeys(!!turn.heardAt);},SLOW_ASK.listen);
+        }
+        listenFor(st,gen);
       }).catch(function(){
-        rv.pending--;
+        // a request that failed was the mic too (an iPhone records before
+        // it answers): Echo's voice waits SETTLE_MS after it, as Fruit Slice's
+        rv.pending--;micClosedAt=performance.now();
         // a request cut short by the page hiding asks again on the way back
-        if(gen!==rv.gen||!reviveWait||document.hidden){ askAgain(); return; }
+        if(gen!==rv.gen||!micWanted()||document.hidden){ askAgain(); return; }
+        if(slowTurn){slowMicFailed("Microphone is off");return;}
         // no microphone: the card can't hear anyone, so the round ends kindly
         reviveWait=false; $("revOvl").classList.remove("show"); endRound();
       });
@@ -349,9 +806,9 @@
       try{
         if(!rv.ctx){ var AC=window.AudioContext||window.webkitAudioContext; rv.ctx=new AC(); }
         if(rv.ctx.state==="suspended") rv.ctx.resume();
-        rv.src=rv.ctx.createMediaStreamSource(st); an=rv.ctx.createAnalyser(); an.fftSize=512; rv.src.connect(an);
+        rv.src=(S&&S.micSource)?S.micSource(rv.ctx,st):rv.ctx.createMediaStreamSource(st); an=rv.ctx.createAnalyser(); an.fftSize=512; rv.src.connect(an);
         td=new Uint8Array(an.fftSize); fd=new Uint8Array(an.frequencyBinCount); binHz=rv.ctx.sampleRate/an.fftSize;
-      }catch(e){ closeReviveMic(); reviveWait=false; $("revOvl").classList.remove("show"); endRound(); return; }
+      }catch(e){ if(slowTurn){slowMicFailed("Microphone unavailable");return;} closeReviveMic(); reviveWait=false; $("revOvl").classList.remove("show"); endRound(); return; }
       // family check: the burst must SOUND like the target's family (voiced
       // vs hiss) to fire — a scream or an S can't revive an R kid. Shape
       // numbers only; nothing recorded (see Sona.frameShape).
@@ -361,8 +818,11 @@
         var now=performance.now();
         // belt and braces: nothing plays while this mic is open, but if a
         // sound ever did, its frames would be dropped: never judged, never
-        // part of the floor, never joined to a burst after it
-        if(now<quietUntil){ heard=[]; rv.raf=requestAnimationFrame(tick); return; }
+        // part of the floor, never joined to a burst after it. The same for
+        // a frame Sona's own mic did not hear (S.micDeaf: paused, or a gap
+        // between the phone's samples): its zeros are not the room, and
+        // the floor only goes down
+        if(now<quietUntil||(S&&S.micDeaf&&S.micDeaf(st))){ heard=[]; rv.raf=requestAnimationFrame(tick); return; }
         an.getByteTimeDomainData(td);
         var sum=0; for(var i=0;i<td.length;i++){ var d=(td[i]-128)/128; sum+=d*d; }
         var shape=null; if(window.Sona&&Sona.frameShape){ an.getByteFrequencyData(fd); shape=Sona.frameShape(fd,binHz); }
@@ -378,38 +838,79 @@
           for(var j=0;j<heard.length;j++){ var f=heard[j];
             if(f.r>thr){ voiced++;
               if(f.s){ if(!shp)shp={m:0,fm:0,hm:0}; shp.m+=f.s.m; shp.fm+=f.s.fm; shp.hm+=f.s.hm; }
-              if(voiced>=6){ if(!famOK(shp)){ voiced=0; shp=null; } else { closeReviveMic(); doRevive(); return; } } }
+              if(voiced>=6){ if(!famOK(shp)){ voiced=0; shp=null; } else {
+                if(slowTurn){
+                  if(!slowTurn.heardAt)slowTurn.heardAt=now;
+                  // Give on-device recognition the rest of a short utterance;
+                  // the first six voiced frames alone can be only its onset.
+                  if(now-slowTurn.heardAt<550){rv.raf=requestAnimationFrame(tick);return;}
+                }
+                closeReviveMic(); doRevive(); return;
+              } } }
             else { voiced=0; shp=null; } }
         }
         rv.raf=requestAnimationFrame(tick);
       })();
     }
     // lock/app-switch fires visibilitychange, NOT pagehide — a mic left open
-    // there stays lit in a pocket. Coming back to the card listens again.
-    if(window.Sona&&Sona.onBackground) Sona.onBackground(closeReviveMic); else window.addEventListener("pagehide",closeReviveMic);
-    document.addEventListener("visibilitychange",function(){ if(!document.hidden&&reviveWait) openReviveMic(); });
+    // there stays lit in a pocket, and Echo stops mid-word. Coming back to
+    // the card asks again, out loud, then listens.
+    function pianoBackground(){keepBest();if(slowTurn){slowTurn.cancelled=true;finishSlowKeys(false);}else closeReviveMic();}
+    if(window.Sona&&Sona.onBackground) Sona.onBackground(pianoBackground); else window.addEventListener("pagehide",pianoBackground);
+    document.addEventListener("visibilitychange",function(){ if(!document.hidden&&reviveWait&&!slowTurn) speakRevive(); });
 
     // ---- round over ----
+    // The win card's one line under the title (Beat Your Best). The title is
+    // always the round's own win; this line only ever adds. Two short
+    // sentences, each kept whole when a narrow card has to wrap:
+    //   a first ever round sets the best   "31 notes in a row." "Your best: 31!"
+    //   passed the best they came in with  "38 notes in a row." "A new best!"
+    //   under it: an invitation, never a   "31 notes in a row." "Your best: 38. 7 away!"
+    //   loss ("you missed" is never said)
+    //   a long way under it                "9 notes in a row."  "Your best: 38."
+    //   level with it                      "38 notes in a row." "The same as your best!"
+    //   every note there is, again         "52 notes in a row." "That is every note!"
+    // "N away!" is said only when it is close (AWAY_NEAR): "7 away!" is a
+    // dare, "29 away!" is a measure of how far short they fell. And the last
+    // one is the honest top: nothing can beat every note, so a child who is
+    // there is told so, not dared to pass it.
+    var AWAY_NEAR=10;
+    function bestLine(){
+      if(rowBest<1) return [];   // nothing counted: no line at all, never "0 notes"
+      var did=rowSaid(rowBest)+".";
+      if(!CAN_BEST) return [did,""];
+      if(startBest<=0) return [did,"Your best: "+rowBest+"!"];
+      if(rowBest>startBest) return [did,"A new best!"];
+      if(rowBest>=ROW_TOP) return [did,"That is every note!"];
+      if(rowBest===startBest) return [did,"The same as your best!"];
+      return [did,"Your best: "+startBest+"."+(startBest-rowBest<=AWAY_NEAR?" "+(startBest-rowBest)+" away!":"")];
+    }
     function bankAndContinue(){ S.finishGameTurn("tiles",score); location.href="/charge.html?daily=1&banked="+score; }
     function endRound(){
+      // QUEST1: the daily adventure counts a finished round of today's game
+      try{if(window.Sona&&Sona.questEnd)Sona.questEnd("tiles");}catch(e){}
+      if(slowTurn){slowTurn.cancelled=true;return finishSlowKeys(false).then(endRound);}
       closeReviveMic();
       if(window.__ended)return; window.__ended=true;
       S.finishGameTurn("tiles",isDaily?score:null);
-      playing=false; reviveWait=false; clearInterval(spawnTimer); clearInterval(rampIv);
-      var isBest=score>BEST; if(isBest){ BEST=score; try{ localStorage.setItem(BESTK,String(BEST)); }catch(e){} }
-      var coins=Math.min(10,(score/5)|0);
-      try{ if(coins&&S&&S.addCoins)S.addCoins(coins); }catch(e){}
-      sfx("complete"); try{ if(S&&S.confetti)S.confetti(); }catch(e){}
+      playing=false; reviveWait=false; phase="done";
+      keepBest();
+      sfx("complete"); try{ if(!outOfHearts&&S&&S.confetti)S.confetti(); }catch(e){}
       if(isDaily){
+        // The old five-game run (charge.html?daily=1): Home no longer opens
+        // it, but a saved run and a typed address still do, so the round is
+        // still banked and the run moves on by itself. Its card said
+        // "+N points!" and "Banking your score…", words a child is never
+        // shown; it now says what every other card says.
         if(score===0){ $("endEmoji").style.opacity=".25"; } // gentle zero tier: dim the star, keep it warm
-        $("endTitle").textContent=score===0?"Good try!":("+"+score+" points!");
-        $("endSub").textContent=score===0?"On to the next game…":"Banking your score…";
+        $("endTitle").textContent=score===0?"Good try!":"Great round!";
+        $("endSub").textContent="On to the next game\u2026";
         $("endCharge").style.display="none"; $("endAgain").style.display="none"; $("endHome").style.display="none";
         $("endOvl").classList.add("show");
         setTimeout(bankAndContinue,1400);
         return;
       }
-      if(score===0){
+      if(score===0&&!outOfHearts){
         // gentle zero tier: encouraging copy, dimmed star, happy Echo, one warm "again" button
         $("endEmoji").style.opacity=".25";
         $("endTitle").textContent="Good try! Wanna go again?";
@@ -420,14 +921,27 @@
         return;
       }
       // one reward per moment: star + one line + Echo — no stat rows or coin counters here
-      $("endTitle").textContent=score>=30?"You\u2019re a piano star! My feathers were dancing!":"What beautiful music we made!";
-      var _es=$("endSub"); _es.textContent=score+" notes · Best: "+BEST; _es.className="later";
-      setTimeout(function(){ _es.classList.add("in"); },1000);
+      $("endTitle").textContent=outOfHearts?"Lovely music! Play again?":finaleDone?"Bravo! You played four songs!":score>=30?"You\u2019re a piano star! My feathers were dancing!":"What beautiful music we made!";
+      // the row this child played, and their own best in the same thing
+      var _es=$("endSub"), line=bestLine(), i, sp;
+      _es.textContent="";
+      for(i=0;i<line.length;i++){ if(!line[i]) continue; if(_es.firstChild) _es.appendChild(document.createTextNode(" ")); sp=document.createElement("span"); sp.textContent=line[i]; _es.appendChild(sp); }
+      if(_es.firstChild){ _es.className="later best"; setTimeout(function(){ _es.classList.add("in"); },1000); }
+      else { _es.className=""; _es.style.display="none"; }
       $("endOvl").classList.add("show");
     }
-    $("endCharge").onclick=function(){ location.href=isDaily?"/charge.html?daily=1":(S.gameAccess("stack").allowed?"/charge.html?game=arcade-stack.html":"/activities.html"); };
+    // "Play again" on top, "Back home" under it (Beat Your Best): the dare is
+    // this game's own best, so the top button is another go at THIS game. It
+    // used to be "WOOHOO! Next →", on to Block Stacker's practice page (or to
+    // the games, for a family without Premium). Another go is earned the way
+    // every turn is: back through the say-it-five-times page.
+    $("endCharge").onclick=backToCharge;
     $("endHome").onclick=function(){ S.finishGameTurn("tiles"); location.href="/today.html#play"; };
-    $("close").onclick=function(){ closeReviveMic(); S.finishGameTurn("tiles"); if(playing){ playing=false; clearInterval(spawnTimer); clearInterval(rampIv); } if(isDaily){ bankAndContinue(); return; } location.href="/today.html#play"; };
+    $("close").onclick=function(){
+      if(window.__pianoLeaving)return;window.__pianoLeaving=true;
+      function leave(){closeReviveMic();playing=false;keepBest();S.finishGameTurn("tiles");if(isDaily){bankAndContinue();return;}location.href="/today.html#play";}
+      if(slowTurn){slowTurn.cancelled=true;finishSlowKeys(false).then(leave);}else leave();
+    };
     }
   </script>
 </body>

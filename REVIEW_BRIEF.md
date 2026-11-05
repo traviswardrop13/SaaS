@@ -109,7 +109,7 @@ migration system. Multi-tab clobbering is theoretically possible everywhere.
 ## Known soft spots — aim your effort here
 
 1. **Parent-gate logic exists in 5+ copies** (`sona.js` `requireGate` + inline
-   fail-closed copies in progress/settings/voices/subscribe heads). Drift here
+   fail-closed copies in progress/settings/talk/subscribe/premium heads). Drift here
    means either a child reaching a parent page or a parent locked out. Verify
    the copies agree (TTL, key, redirect) and flag divergence precisely.
 2. **The record→score pipeline is copy-pasted across ~14 pages.** Bugs found in

@@ -1,0 +1,294 @@
+/* Crafted Home is scoped to this page; book readers and shared app styles stay independent. */
+:root{--cream:#fff6e9;--ink:#45270f;--muted:#80664d;--label:#897055;--track:#eadcc6;--orange-d:#167f87;--craft-teal:#14858d;}
+html,body{background:#fff6e9;background-image:radial-gradient(ellipse at 16% 12%,#ffefcf66,transparent 46%),radial-gradient(ellipse at 88% 62%,#f4e5c944,transparent 52%);}
+/* Cards scrolled up under the clock and battery; a strip the height of the
+   status bar (0 on phones without one, and in a browser) covers that band.
+   See-through and blurred, like the phone's own bar: a solid strip showed as
+   a paler band over the page's warm tint. */
+body::before{content:"";position:fixed;left:0;right:0;top:0;height:env(safe-area-inset-top);background:rgba(255,246,233,.86);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);z-index:30;pointer-events:none;}
+.library-wrap{max-width:840px;padding:calc(20px + env(safe-area-inset-top)) 22px calc(30px + env(safe-area-inset-bottom));}
+.library-header{gap:12px;min-height:48px;}
+.library-label{font-size:29px;color:var(--ink);line-height:1;font-weight:800;letter-spacing:-.8px;}
+#buddyBtn{width:49px;height:49px;border:3px solid #fffdf7;box-shadow:0 3px 2px #9f774d26,0 6px 13px #946c3614;background:radial-gradient(circle at 40% 35%,#fff1b7,#ffdb84);}
+#parentBtn{width:auto;min-height:44px;gap:7px;padding:9px 12px;border:1px solid #efe2ce;border-radius:15px;background:linear-gradient(#fffefb,#fff7e9);font-size:12px;font-weight:900;color:#5e4430;box-shadow:0 3px 0 #e9d8bb,0 5px 13px #6947200b;}
+#parentBtn .pic-gear{width:18px;height:18px;opacity:.7;}
+.library-intro{margin:22px 0 23px;gap:8px;min-height:87px;}
+.library-intro h1{font-size:34px;line-height:1.04;letter-spacing:-.7px;}
+.library-intro p{font-size:13px;margin-top:8px;max-width:260px;line-height:1.35;}
+#libraryEcho{width:78px;height:92px;transform:rotate(3deg);}
+#libraryEcho>img{width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 5px 3px #84613b18);}
+.activity-group{margin-top:24px;}
+.shelf-heading{margin-bottom:10px;gap:6px;}
+.shelf-heading h2{font-size:24px;line-height:1.1;font-weight:800;letter-spacing:-.4px;}
+.shelf-heading p{font-size:12px;line-height:1.4;margin-top:3px;}
+.shelf-tag.recommended{background:#e7eee1;color:#567046;font-size:9px;padding:4px 7px;border:1px solid #dae5d4;}
+.game-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 12px;}
+.game-card{border:1px solid #f0e4d2;border-radius:17px;background:#fffefa;box-shadow:0 3px 1px #e2cfb28a,0 7px 13px #62401d0c;overflow:hidden;transition:transform .16s,box-shadow .16s;}
+.game-art{aspect-ratio:1.8;border-radius:16px 16px 0 0;background:#efe6d5;}
+.crafted-card-image{display:block;width:100%;height:100%;object-fit:cover;transition:transform .25s;}
+.game-card:not(:disabled):hover{box-shadow:0 4px 1px #dcc5a1aa,0 8px 20px #68431c18;}
+.game-card:not(:disabled):hover .crafted-card-image{transform:scale(1.025);}
+.game-card:not(:disabled):active{transform:translateY(2px) scale(.99);box-shadow:0 1px 0 #dbc5a4;}
+.game-info{position:relative;display:flex;flex-direction:row;align-items:center;gap:5px;width:100%;padding:10px 11px 11px;min-height:40px;}
+.game-name{font-size:16px;line-height:1.1;font-weight:800;letter-spacing:-.25px;flex:1;}
+.game-arrow{font-family:Nunito,sans-serif;color:#927455;font-size:25px;line-height:16px;font-weight:600;flex:none;}
+.game-access{position:absolute;right:7px;bottom:calc(100% + 7px);font:800 9px/1.2 Nunito,sans-serif;padding:3px 6px;background:#fffdf2eb;color:#586e3c;box-shadow:0 1px 4px #583e2918;}
+.game-access.premium{background:#fff7e8ef;color:#715031;}
+/* BESTS1: this child's own best in a game, top left of its picture; the
+   Free / Included badge keeps the bottom right, so the two never meet. Cream
+   with ink, like every other label here: teal is for buttons and orange only
+   for the practice sound's letters. The number is the big part, for a child
+   who reads numbers before words. */
+.game-best{position:absolute;left:6px;top:6px;display:inline-flex;align-items:center;gap:3px;max-width:calc(100% - 12px);padding:2px 8px 2px 5px;border-radius:99px;background:#fffdf2f2;color:var(--ink);font:800 11px/1.3 Nunito,sans-serif;white-space:nowrap;box-shadow:0 1px 4px #583e2930;pointer-events:none;}
+.game-best b{font:800 14px/1 "Baloo 2",sans-serif;letter-spacing:-.2px;}
+.game-best-star{display:flex;flex:none;}
+.game-best-star svg{display:block;width:12px;height:12px;vertical-align:0!important;}
+/* WIDE ROWS (19 Oct 2026, when the Coming soon cards left Home). A card that
+   would sit alone in its row stretches across it as a picture-and-name row,
+   so a shelf never ends on an empty slot, whatever the catalog opens next.
+   The selectors count cards; none names a game, and both shelves follow
+   the same rule (since 23 Oct 2026, Travis: "I like how arcade shows 2 games
+   per row. Let's also do that for simple play"; the little kids' shelf was
+   all rows before):
+   - on a phone's two columns, the last card of an odd count (the thirteenth
+     little-kid game today: the sixteen big-kid games fill eight even rows);
+   - on an iPad's three columns (six half-columns, each card two of them),
+     one card left over is a row, and two left over share the row half and
+     half (today both shelves have one over: thirteen and sixteen).
+   activitytest measures every shelf for gaps at 320, 390 and 768 px, also
+   with a parked game opened on each shelf. */
+.game-grid [data-game="glide"] .crafted-card-image{object-position:center 53%;}
+@media(max-width:599px){
+ .game-grid>.game-card:last-child:nth-child(odd){grid-column:1/-1;flex-direction:row;align-items:stretch;min-height:89px;overflow:visible;}
+ .game-grid>.game-card:last-child:nth-child(odd) .game-art{width:43%;flex:none;aspect-ratio:1.7;border-radius:16px 0 0 16px;overflow:hidden;}
+ .game-grid>.game-card:last-child:nth-child(odd) .game-info{padding:14px 13px;}
+ .game-grid>.game-card:last-child:nth-child(odd) .game-name{font-size:19px;}
+ .game-grid>.game-card:last-child:nth-child(odd) .game-access{position:static;box-shadow:none;font-size:9px;padding:3px 4px;}
+}
+@media(min-width:600px){
+ .game-grid>.game-card{grid-column:span 2;}
+ .game-grid>.game-card:last-child:nth-child(3n+2),.game-grid>.game-card:nth-last-child(2):nth-child(3n+1){grid-column:span 3;}
+ .game-grid>.game-card:last-child:nth-child(3n+1){grid-column:1/-1;flex-direction:row;align-items:stretch;min-height:89px;overflow:visible;}
+ .game-grid>.game-card:last-child:nth-child(3n+1) .game-art{width:43%;flex:none;aspect-ratio:1.7;border-radius:16px 0 0 16px;overflow:hidden;}
+ .game-grid>.game-card:last-child:nth-child(3n+1) .game-info{padding:14px 13px;}
+ .game-grid>.game-card:last-child:nth-child(3n+1) .game-name{font-size:19px;}
+ .game-grid>.game-card:last-child:nth-child(3n+1) .game-access{position:static;box-shadow:none;font-size:9px;padding:3px 4px;}
+}
+.featured-group{background:#f2ebde;border:1px solid #e8d7bd;box-shadow:inset 0 1px 0 #fff;border-radius:21px;padding:16px 13px;margin:22px 0;}
+.featured-group .shelf-heading h2{font-size:21px;}
+.featured-grid{padding-bottom:6px;}
+.age-note{color:#927b61;margin-top:22px;font-size:11px;}
+.ovl{background:#30251777;backdrop-filter:blur(5px);}
+.modal{background:linear-gradient(145deg,#fffcf3,#fff6e5);border:1px solid #eee0c8;border-radius:28px;box-shadow:0 18px 55px #26190f44,inset 0 1px 0 #fff;}
+.modal h3{font-size:24px;line-height:1.15;}
+.pad button{background:#fffdfa;border:1px solid #e7d6bd;box-shadow:0 3px 0 #dfcbae;color:#4b321e;min-height:50px;}
+.pad button:last-child,#libraryUnlock{background:linear-gradient(#239ca2,#14858d);color:white;box-shadow:0 3px 0 #0c656b;}
+.sheetBtn{background:#fffdfa;border:1px solid #ecddc6;box-shadow:0 3px 0 #e6d3b5;}
+.ghost{min-height:44px;color:#7e6247;}
+#libraryNotice{background:#fffcf3;border:1px solid #e7d7bd;box-shadow:0 12px 36px #46301829;}
+#libraryMessageClose{width:44px;height:44px;background:#f0e3cd;}
+#gateQ,#wkStreak{color:#15808a;}
+#shareWeek{background:linear-gradient(#239ca2,#14858d)!important;box-shadow:0 4px 0 #0c656b!important;}
+@media(min-width:600px){.library-wrap{padding-left:30px;padding-right:30px;}.library-intro{margin:27px 0;}.library-intro h1{font-size:42px;}.library-intro p{font-size:16px;}.library-label{font-size:32px;}#libraryEcho{width:102px;height:113px;}.game-grid{grid-template-columns:repeat(6,minmax(0,1fr));gap:20px;}.game-name{font-size:18px;}}
+@media(max-width:350px){.library-wrap{padding-left:16px;padding-right:16px;}.library-label{font-size:25px;}#parentBtn{font-size:11px;padding:8px;}.library-header{gap:9px;}.library-intro h1{font-size:29px;}.library-intro p{font-size:11px;}#libraryEcho{width:66px;height:82px;}.game-name{font-size:14px;}.game-info{padding:9px 8px;}.game-grid{gap:11px 10px;}.game-grid>.game-card:last-child:nth-child(odd) .game-name{font-size:16px;}.shelf-heading h2{font-size:22px;}.shelf-tag.recommended{font-size:8px;}}
+@media(prefers-reduced-motion:reduce){.game-card,.crafted-card-image{transition:none;}.game-card:not(:disabled):hover .crafted-card-image{transform:none;}}
+
+/* Keyboard and switch access receive the same clear focus as touch. */
+.library-wrap :is(button,a):focus-visible,.ovl :is(button,a):focus-visible{outline:3px solid #14858d;outline-offset:4px;}
+.game-card:focus-visible{outline-offset:4px;box-shadow:0 3px 0 #dcc5a1;}
+
+/* Today's picks are two games (23 Oct 2026: no book covers to match since
+   the Arcade lost its books), so they keep the shelves' wide crop. New is a
+   release badge, not the row's promise. */
+.game-new{position:absolute;left:6px;bottom:6px;padding:3px 6px;border-radius:99px;background:#fffdf2eb;color:var(--ink);font:800 9px/1.2 Nunito,sans-serif;box-shadow:0 1px 4px #583e2918;}
+
+/* PLAYMAP1: Home is a quiet map of real finished adventures and today's
+   story. The existing Arcade keeps its scrolling shelves and presentation. */
+html.home-flat,html.home-flat body{height:100%;min-height:0;overflow:hidden;}
+#libraryApp[data-view="home"] .arcade-only,#libraryApp[data-view="arcade"] .home-only{display:none;}
+#homeTitle:focus,#arcadeTitle:focus{outline:none;}
+.arcade-top{display:flex;margin-top:16px;}
+#homeBack{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:8px 17px 8px 13px;border-radius:999px;border:1.5px solid var(--cream-line);background:var(--cream-card);box-shadow:0 3px 0 var(--cream-line);color:var(--cream-ink);font:800 16px/1 "Baloo 2",sans-serif;cursor:pointer;}
+#homeBack span{font-size:22px;line-height:1;margin-top:-2px;}
+#homeBack:active{transform:translateY(2px);box-shadow:0 1px 0 var(--cream-line);}
+.arcade-top+.library-intro{margin-top:12px;}
+body.playmap-home{background:linear-gradient(180deg,#eef8ff,#edf8f4 65%,#dfefe4);background-attachment:fixed;}
+body.playmap-home::before{background:#eef8ff;backdrop-filter:none;-webkit-backdrop-filter:none;}
+#libraryApp[data-view="home"]{--ink:#184963;--muted:#526f7b;display:flex;flex-direction:column;max-width:600px;min-height:100svh;height:100svh;padding:calc(15px + env(safe-area-inset-top)) 22px calc(18px + env(safe-area-inset-bottom));}
+#libraryApp[data-view="home"] .library-header{min-height:44px;gap:9px;}
+#libraryApp[data-view="home"] .library-label{display:block;flex:1;font-size:29px;letter-spacing:-1px;}
+#libraryApp[data-view="home"] #buddyBtn{width:44px;height:44px;border:2px solid #fff;background:#eaf3ec;box-shadow:0 2px 0 #d5e7df;}
+#libraryApp[data-view="home"] #giftBtn{width:44px;height:44px;margin-left:0;}
+#libraryApp[data-view="home"] .gift-ring{background:conic-gradient(#176886 calc(var(--fill,0)*1%),#dcebea 0);box-shadow:none;}
+#libraryApp[data-view="home"] .gift-ring::after{inset:3px;background:#fafffd;}
+#libraryApp[data-view="home"] #parentBtn{width:auto;height:44px;min-height:44px;border:1px solid #d5e6e8;border-radius:17px;background:#faffff;box-shadow:none;padding:10px 12px;}
+#libraryApp[data-view="home"] #parentBtn>span:last-child{display:inline;font-size:11px;}
+#libraryApp[data-view="home"] #parentBtn .pic-gear{display:none;}
+.home-only{display:flex;flex-direction:column;flex:1;min-height:0;gap:13px;padding-top:14px;}
+.map-intro{display:flex;align-items:center;justify-content:space-between;gap:12px;flex:none;}
+#homeTitle{margin:0;font:800 32px/1.06 "Baloo 2",sans-serif;letter-spacing:-.8px;color:var(--ink);}
+.home-sound{display:flex;align-items:center;flex:none;gap:8px;max-width:146px;padding:8px 12px;border:1.5px solid #fff;border-radius:17px;background:#ffffffc9;color:#176886;}
+.sound-note{font:800 11px/1.1 Nunito,sans-serif;white-space:nowrap;}
+.sound-value{font:800 23px/1 "Baloo 2",sans-serif;white-space:nowrap;}
+.home-sound.sound-long{gap:6px;padding-left:9px;padding-right:9px;}
+.home-sound.sound-long .sound-value{font-size:19px;}
+.play-map{position:relative;display:flex;flex-direction:column;justify-content:center;gap:13px;flex:1 0 auto;min-height:285px;isolation:isolate;padding:0 9px;}
+.map-trail{position:absolute;inset:-2% -3%;width:106%;height:104%;z-index:-2;pointer-events:none;overflow:visible;}
+.play-map::before{content:"";position:absolute;left:1%;right:1%;top:16%;bottom:12%;border-radius:45% 55% 41% 59%;background:#d6ecdf99;transform:rotate(-5deg);z-index:-3;}
+.map-earned{display:flex;align-items:center;justify-content:space-between;gap:12px;flex:none;min-height:48px;padding:0 14px;}
+#mapHistory{display:flex;align-items:center;gap:27px;margin:0;padding:0;list-style:none;}
+.map-star{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:44px;}
+.map-star-icon{display:flex;align-items:center;justify-content:center;}
+.map-star-label{font:900 11px/1 Nunito,sans-serif;color:#496e76;white-space:nowrap;}
+#mapHistoryCount{max-width:102px;font:800 11px/1.25 Nunito,sans-serif;color:#526f7b;text-align:right;}
+#questCard{position:relative;display:block;flex:1;width:100%;min-height:205px;max-height:none;margin:0;padding:0;overflow:hidden;border:4px solid #fff;border-radius:29px;background:#dbeee5;color:#fff;box-shadow:0 5px 0 #b9d6cb;cursor:pointer;text-align:left;isolation:isolate;}
+.quest-body{display:block;position:absolute;inset:0;}
+.quest-art,.quest-pic{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;}
+.quest-pic img{display:block;width:100%;height:100%;object-fit:cover;}
+.quest-pic svg{width:55%;height:75%;}
+.quest-art.fallback .quest-pic img{width:82%;height:90%;object-fit:contain;}
+.quest-copy{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:flex-end;gap:4px;padding:42px 14px 65px;background:linear-gradient(180deg,#123b4b00 20%,#123b4b14 38%,#123b4bdb 75%,#123b4bea);color:white;}
+.quest-meta{position:absolute;left:12px;right:12px;top:11px;display:flex;align-items:center;gap:7px;flex-wrap:wrap;}
+.quest-label,.quest-chip,.quest-lock{padding:4px 7px;border-radius:9px;background:#fffef4ed;color:#235567;font:900 11px/1.1 Nunito,sans-serif;white-space:nowrap;}
+.quest-label{letter-spacing:.4px;}
+.quest-chip{margin-left:auto;}
+.quest-lock{color:#6f5937;}
+.quest-title{display:block;font:800 27px/1 "Baloo 2",sans-serif;letter-spacing:-.4px;text-shadow:0 1px 2px #123b4b33;}
+.quest-line{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font:800 12px/1.25 Nunito,sans-serif;color:#fff;}
+.quest-go,#questDone{position:absolute;left:12px;right:12px;bottom:12px;display:flex;align-items:center;justify-content:center;gap:10px;min-height:44px;padding:10px 13px;border-radius:16px;background:#176886;color:white;box-shadow:0 3px 0 #0c4d6b;font:800 19px/1 "Baloo 2",sans-serif;white-space:nowrap;}
+.quest-arrow{font:800 25px/1 Nunito,sans-serif;}
+#questCard:active .quest-go{transform:translateY(2px);box-shadow:0 1px 0 #0c4d6b;}
+#questCard.done{cursor:default;box-shadow:0 4px 0 #b9cfca;}
+#questCard.done .quest-art{filter:grayscale(.7) brightness(.4);}
+#questCard.done .quest-copy{background:linear-gradient(180deg,#173e4d15,#173e4d6b 40%,#173e4de8 100%);}
+#questCard.done .quest-label{background:#dae7e6;color:#31505c;}
+#questDone{background:#173f50;box-shadow:none;font-size:17px;}
+.map-lock-icon{display:flex;align-items:center;justify-content:center;}
+.map-tomorrow{display:flex;align-items:center;align-self:flex-end;flex:none;gap:8px;min-height:39px;padding-right:7px;color:#456676;}
+.tomorrow-lock{display:flex;align-items:center;justify-content:center;width:35px;height:35px;border:2px solid #fff;border-radius:50%;background:#254e60;color:#d4e3e5;box-shadow:0 2px 0 #bfd3ce;}
+.map-tomorrow>span:last-child{display:flex;flex-direction:column;gap:3px;}
+.map-tomorrow strong{font:800 15px/1 "Baloo 2",sans-serif;}
+.map-tomorrow>span>span{font:800 11px/1.1 Nunito,sans-serif;color:#526f7b;}
+#homeDoors{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;flex:none;margin:0 2px;}
+#homeDoors>button{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;min-width:0;min-height:112px;padding:9px 8px;border:2px solid #fff;border-radius:29px;background:#f9fffc;color:var(--ink);box-shadow:0 4px 0 #c9e2d4;text-align:left;cursor:pointer;}
+.door-pic{position:relative;display:flex;align-items:center;justify-content:center;width:82px;height:54px;overflow:hidden;border-radius:18px;background:#e6eee6;}
+.door-pic img{display:block;width:100%;height:100%;object-fit:cover;}
+.door-pic.fallback img{width:85%;height:90%;object-fit:contain;}
+.door-pic>.stk{position:relative!important;inset:auto!important;width:auto;height:88%;aspect-ratio:1;background:transparent!important;}
+.door-copy{display:flex;align-items:center;gap:6px;}
+.door-word{font:800 24px/1 "Baloo 2",sans-serif;letter-spacing:-.3px;}
+.door-arrow{font:700 18px/1 Nunito,sans-serif;color:#72968d;}
+.door-tag{position:absolute;right:6px;top:6px;padding:3px 5px;border:1px solid #fff9;border-radius:8px;background:#fff9ebed;color:#675e37;font:900 11px/1.1 Nunito,sans-serif;}
+#homeDoors>button:active{transform:translateY(2px);box-shadow:0 2px 0 #c9e2d4;}
+#foundRow{flex:none;margin:0;min-width:0;}
+#foundTitle{margin:0 0 6px;font:800 17px/1 "Baloo 2",sans-serif;color:var(--ink);}
+#foundList{display:flex;gap:9px;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x proximity;scroll-padding-inline:7px;padding:7px;margin:-5px -7px -7px;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+#foundList::-webkit-scrollbar{display:none;}
+.found-tile{display:flex;align-items:center;flex:none;gap:8px;width:166px;min-height:52px;padding:5px;border:1px solid #d8e8df;border-radius:15px;scroll-snap-align:start;background:#fff;color:var(--ink);font:inherit;text-align:left;cursor:pointer;}
+.found-pic{position:relative;display:block;flex:none;width:58px;height:40px;overflow:hidden;border-radius:10px;background:#e7eee6;}
+.found-pic img{display:block;width:100%;height:100%;object-fit:cover;}
+.found-pic.fallback img{width:85%;height:90%;margin:auto;object-fit:contain;}
+.found-name{font:800 14px/1.12 "Baloo 2",sans-serif;}
+.found-new{position:absolute;left:2px;top:2px;border-radius:5px;padding:2px 4px;background:#176886;color:#fff;font:900 11px/1 Nunito,sans-serif;}
+.found-tile.fresh{border-color:#75a99b;box-shadow:0 0 0 1px #75a99b;}
+.found-tile:active{transform:translateY(1px);}
+#homeInset{position:absolute;left:0;bottom:0;width:0;height:env(safe-area-inset-bottom);visibility:hidden;pointer-events:none;}
+#libraryApp[data-view="home"] #trialBanner{margin-top:9px;min-height:44px;padding:5px 9px;gap:7px;border-color:#dce8df;border-radius:14px;background:#eff6ec;box-shadow:none;color:#4d6a56;font-size:11px;}
+#libraryApp[data-view="home"] #trialBanner .tb-echo{width:28px;height:28px;}
+#libraryApp[data-view="home"] #trialBanner .tb-pill{display:none;}
+/* Fit spends picture height and decorative gaps before text or controls. */
+#libraryApp.fit1 .home-only{gap:10px;padding-top:11px;}
+#libraryApp.fit1 .play-map{gap:10px;min-height:265px;}
+#libraryApp.fit1 #homeDoors>button{min-height:98px;padding:7px;}
+#libraryApp.fit1 .door-pic{height:45px;width:76px;}
+#libraryApp.fit2 #questCard{min-height:182px;}
+#libraryApp.fit2 .play-map{min-height:242px;gap:9px;}
+#libraryApp.fit2 #homeDoors>button{min-height:87px;border-radius:24px;}
+#libraryApp.fit2 .door-pic{height:38px;width:68px;border-radius:14px;}
+#libraryApp.fit2 .door-word{font-size:22px;}
+#libraryApp.fit3 .home-only{gap:8px;padding-top:8px;}
+#libraryApp.fit3 #homeTitle{font-size:29px;}
+#libraryApp.fit3 .home-sound{padding:6px 9px;}
+#libraryApp.fit3 .play-map{min-height:224px;gap:7px;padding-left:6px;padding-right:6px;}
+#libraryApp.fit3 #questCard{min-height:168px;border-radius:23px;}
+#libraryApp.fit3 .quest-title{font-size:23px;}
+#libraryApp.fit3 .quest-copy{padding-left:11px;padding-right:11px;}
+#libraryApp.fit3 .map-earned{min-height:44px;padding:0 9px;}
+#libraryApp.fit3 #homeDoors>button{min-height:78px;padding:6px;gap:3px;}
+#libraryApp.fit3 .door-pic{height:33px;width:62px;border-radius:12px;}
+#libraryApp.fit3 .door-word{font-size:21px;}
+#libraryApp.fit4 .home-only{gap:7px;padding-top:6px;}
+#libraryApp.fit4 #homeTitle{font-size:27px;}
+#libraryApp.fit4 .play-map{min-height:205px;gap:6px;}
+#libraryApp.fit4 #questCard{min-height:166px;border-width:3px;}
+#libraryApp.fit4 .quest-meta{top:7px;left:9px;right:9px;gap:4px;}
+#libraryApp.fit4 .quest-label,#libraryApp.fit4 .quest-chip,#libraryApp.fit4 .quest-lock{padding:3px 5px;}
+#libraryApp.fit4 .quest-copy{padding:33px 10px 58px;gap:2px;}
+#libraryApp.fit4 .quest-title{font-size:21px;}
+#libraryApp.fit4 .quest-line{font-size:11px;line-height:1.2;}
+#libraryApp.fit4 .quest-go,#libraryApp.fit4 #questDone{left:9px;right:9px;bottom:8px;font-size:17px;padding:9px;}
+#libraryApp.fit4 .map-earned{min-height:39px;}
+#libraryApp.fit4 .map-star-icon svg{width:26px;height:26px;}
+#libraryApp.fit4 .map-tomorrow{min-height:32px;gap:6px;}
+#libraryApp.fit4 .tomorrow-lock{width:30px;height:30px;}
+#libraryApp.fit4 .map-tomorrow strong{font-size:13px;}
+#libraryApp.fit4 #foundTitle{font-size:15px;margin-bottom:4px;}
+#libraryApp.fit4 .found-tile{min-height:46px;}
+#libraryApp.fit4 .found-pic{height:34px;width:50px;}
+#libraryApp.fit4 .found-name{font-size:13px;}
+#libraryApp.fit5{padding-top:calc(8px + env(safe-area-inset-top));padding-bottom:calc(8px + env(safe-area-inset-bottom));}
+#libraryApp.fit5 .home-only{gap:5px;padding-top:4px;}
+#libraryApp.fit5 #homeTitle{font-size:25px;}
+#libraryApp.fit5 .home-sound{padding:5px 8px;gap:6px;}
+#libraryApp.fit5 .sound-value{font-size:21px;}
+#libraryApp.fit5 .play-map{min-height:189px;gap:5px;}
+#libraryApp.fit5 #questCard{min-height:166px;border-radius:20px;}
+#libraryApp.fit5 .quest-title{font-size:20px;}
+#libraryApp.fit5 #homeDoors>button{min-height:68px;padding:4px;border-radius:21px;gap:2px;}
+#libraryApp.fit5 .door-pic{width:55px;height:27px;border-radius:10px;}
+#libraryApp.fit5 .door-word{font-size:20px;}
+#libraryApp.fit5 #foundTitle{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
+/* The last fit step leaves room for a two-line finished-day message. */
+#libraryApp.fit6 .quest-copy{padding-top:20px;}
+#libraryApp,.home-only,.map-intro,#homeTitle,.home-sound,.home-sound *,.play-map,.play-map *,#homeDoors,#homeDoors *,#foundRow,#foundRow *,#trialBanner,#trialBanner *{transition:none;}
+@media(min-width:600px){
+ #libraryApp[data-view="home"]{max-width:780px;padding-left:42px;padding-right:42px;}
+ #libraryApp[data-view="home"] .library-label{font-size:34px;}
+ #libraryApp[data-view="home"] #parentBtn{width:auto;gap:7px;padding:10px 14px;border-radius:17px;}
+ #libraryApp[data-view="home"] #parentBtn>span:last-child{display:inline;font-size:12px;}
+ .home-only{gap:17px;padding-top:19px;}
+ #homeTitle{font-size:40px;}
+ .home-sound{gap:10px;padding:10px 14px;}
+ .sound-value{font-size:27px;}
+ .play-map{padding-left:34px;padding-right:34px;gap:15px;}
+ #questCard{min-height:260px;max-height:none;border-radius:32px;}
+ .quest-title{font-size:35px;}
+ .quest-line{font-size:14px;}
+ .quest-copy{padding:50px 20px 75px;gap:6px;}
+ .quest-go,#questDone{left:18px;right:18px;bottom:17px;min-height:48px;font-size:21px;}
+ .map-earned{padding:0 29px;}
+ #mapHistory{gap:46px;}
+ .map-star-icon svg{width:38px;height:38px;}
+ .map-tomorrow{padding-right:22px;}
+ #homeDoors{gap:22px;}
+ #homeDoors>button{flex-direction:row;gap:15px;min-height:100px;}
+ .door-pic{width:99px;height:66px;}
+ .door-word{font-size:28px;}
+ .found-tile{width:190px;min-height:58px;}
+ .found-pic{width:70px;height:44px;}
+ .found-name{font-size:16px;}
+}
+@media(min-width:760px) and (max-height:850px),(min-width:600px) and (max-height:550px){
+ #libraryApp[data-view="home"]{max-width:1000px;}
+ .home-only{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto;gap:14px 25px;}
+ .map-intro{grid-column:1/-1;grid-row:1;}
+ .play-map{grid-column:1;grid-row:2;padding:0 10px;min-height:0;}
+ #questCard{min-height:220px;max-height:none;}
+ #homeDoors{grid-column:2;grid-row:2;display:flex;flex-direction:column;gap:18px;margin:0;justify-content:center;}
+ #homeDoors>button{flex-direction:column;min-height:130px;}
+ .door-pic{width:125px;height:72px;}
+ #foundRow{grid-column:1/-1;grid-row:3;}
+ .quest-title{font-size:29px;}
+}
+@media(max-width:350px){#libraryApp[data-view="home"]{padding-left:16px;padding-right:16px;}.library-label{font-size:27px!important;}#homeTitle{font-size:28px;}.home-sound{gap:6px;padding:7px 9px;}.sound-value{font-size:22px;}.sound-note{font-size:11px;}.home-sound.sound-long{gap:4px;padding-left:6px;padding-right:6px;}.home-sound.sound-long .sound-value{font-size:17px;}.quest-title{font-size:24px;}.door-tag{right:4px;top:4px;padding:2px 4px;}}
+@media(prefers-reduced-motion:reduce){#questCard:active .quest-go,#homeDoors>button:active,.found-tile:active,#homeBack:active{transform:none;}.gift-dot{animation:none;}}

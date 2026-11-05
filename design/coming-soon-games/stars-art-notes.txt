@@ -1,0 +1,24 @@
+Bedtime Stars artwork — 2026-10-17
+
+One precise edit made with the built-in image_gen tool. No API/CLI generation; no raster pattern library or extra moon sprite.
+Reference/edit target: public/assets/crafted/moon-village.webp, inspected before editing.
+Existing source remains unchanged. The edit removes all baked sky stars/dots/sparkles while preserving the small upper-right crescent, soft edge clouds, village, foliage, wooden ledge, palette and portrait composition.
+Origin: /Users/traviswardrop/.codex/generated_images/01a146f2-f9aa-7fe3-a1f3-001ad6fa611f/exec-49529f61-3c7c-4c85-b03a-a5ceb0b61e18.png
+Export: public/assets/crafted/game/stars-night-clear-v1.webp
+Export operations only: proportional resize to800×1200 and RGB WebP quality88/method6. No hand editing, semantic postprocessing, alpha edits, or crop.
+
+Composition notes:
+Use the dark open central sky for actual live constellation controls. Safe central region is approximately source x.15–.85, y.23–.68. Cloud edges are decorative and not hit targets.
+The moon stays near(.82,.13), outside the central tracing region. Village houses begin around y.65; wooden ledge begins around y.83.
+The game should own every interactive star, connecting path, pulse and traced picture. No gameplay stars or pre-drawn constellations remain in this background.
+On portrait cover rendering, transform these source regions through the actual image fit. Landscape can use its own clear center treatment rather than allowing the decorative moon to enter the tracing region.
+No additional star/moon image generated; code-native stars are appropriate to the actual controls.
+
+Exact built-in edit prompt:
+Use case: precise-object-edit
+Edit target: the supplied Sona moon-village night background.
+Primary request: remove ONLY every baked star, gold dot, tiny speck, four-point sparkle and star glow from the sky. Fill each removed mark seamlessly with the immediately surrounding blue/purple painted sky so the entire central sky is calm, empty and clear for real game-controlled constellation points.
+Preserve invariants: keep exactly the same portrait2:3 composition, framing, painted texture, dark indigo-to-lavender gradient, small golden crescent moon in the upper-right corner with its subtle glow, all soft purple edge clouds, every distant cozy village house with warm windows, all foliage and the complete wooden ledge at the bottom. Keep the same camera and style. Do not change the moon, houses, clouds, ledge, shapes, colors or their positions.
+No new stars, dots, constellations, connecting lines, objects, characters, text, UI or frame. Opaque full background. The one and only change is removal of all star/dot/sparkle marks from the sky; leave the moon intact.
+
+Export verification: {"file": "/Users/traviswardrop/.codex/worktrees/coming-soon-games/SaaS/public/assets/crafted/game/stars-night-clear-v1.webp", "dimensions": [800, 1200], "mode": "RGB", "bytes": 49902, "source_dimensions": [1024, 1536]}

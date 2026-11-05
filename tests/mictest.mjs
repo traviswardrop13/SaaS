@@ -120,6 +120,36 @@ async function page(mic) {
   const pages = readdirSync(ROOT).filter((n) => /\.(html|js)$/.test(n));
   const callers = pages.filter((n) => /\/api\/(stt|isolate|voice-change)\b/.test(noComments(readFileSync(ROOT + "/" + n, "utf8"))));
   ok("no family page posts to a transcription, isolation or re-voicing route", callers.length === 0, callers.join(", "));
+  // …NOR HANDS THE VOICE TO THE BROWSER'S OWN TRANSCRIBER (22 Oct 2026). The
+  // Web Speech API's SpeechRecognition looks local and is not: Chrome sends
+  // the audio to Google, Safari to Apple. The Speech Check and the parked
+  // story reader used it until then, so in a browser a child's words left
+  // the phone. The iPhone app's on-device check is SonaSpeech, a different
+  // name, and stays. lib/speech.ts, the one helper for it, went with them.
+  // Every page and every Next source: public/ (but its vendored PostHog),
+  // app/, components/ and lib/. The Next pages are pages too.
+  const SRC = [];
+  const walk = (d, re) => { if (!existsSync(d)) return; for (const n of readdirSync(d)) { const p = d + "/" + n; if (n === "vendor" || n === "node_modules") continue; if (statSync(p).isDirectory()) walk(p, re); else if (re.test(n)) SRC.push(p); } };
+  walk(ROOT, /\.(html|js)$/);
+  for (const dir of ["app", "components", "lib"]) walk(ROOT + "/../" + dir, /\.(ts|tsx|js|mjs)$/);
+  const listeners = SRC.filter((p) => /SpeechRecognition/.test(noComments(readFileSync(p, "utf8")))).map((p) => p.slice(ROOT.length - "public".length));
+  ok("no page or source uses the browser's speech-to-text, which uploads the audio", SRC.length > 100 && listeners.length === 0, listeners.join(", "));
+  ok("…and the helper for it is gone", !existsSync(ROOT + "/../lib/speech.ts"));
+}
+
+// ── 1b. …nor any way out of Sona's own microphone (12 Oct 2026) ──
+// In the iPhone app the phone's own code opens the mic and hands this page
+// its samples (sona.js, between the two markers below). Those samples reach
+// the page's analysers and the one local keepsake clip, and nothing else: the
+// block has no way to send anything, so the consent copy stays true by
+// construction there too.
+{
+  const sona = readFileSync(ROOT + "/sona.js", "utf8");
+  const a = sona.indexOf("SONA'S OWN MICROPHONE IN THE IPHONE APP"), b = sona.indexOf("END OF SONA'S OWN MICROPHONE");
+  const block = a > 0 && b > a ? noComments(sona.slice(a, b)) : "";
+  const sends = ["fetch(", "XMLHttpRequest", "sendBeacon", "WebSocket", "FormData", ".send("].filter((w) => block.includes(w));
+  ok("Sona's own microphone (sona.js) has no fetch, XMLHttpRequest, sendBeacon, WebSocket, FormData or .send",
+    block.length > 20000 && sends.length === 0, a < 0 || b < a ? "the block's markers are missing" : sends.join(", "));
 }
 
 // ── 1b. every OTHER page that describes the mic tells the same truth ──
@@ -260,7 +290,8 @@ async function page(mic) {
   const sona = readFileSync(ROOT + "/sona.js", "utf8");
   ok("micDenied lives in sona.js and is exported", /function micDenied/.test(sona) && /\bmicDenied,/.test(sona),
     "every recording page must reach the same screen — a second copy drifts");
-  for (const f of ["charge.html", "story.html", "check.html", "coach-call.html"]) {
+  // library.html listens for a picture book's key word (28 Sep 2026)
+  for (const f of ["charge.html", "story.html", "check.html", "coach-call.html", "library.html"]) {
     const src = noComments(readFileSync(ROOT + "/" + f, "utf8"));
     ok(f + " routes a denial to that screen", /micDenied\(/.test(src),
       "a page that records must never leave a denial unexplained");

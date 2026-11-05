@@ -1,0 +1,29 @@
+Puppy Bath artwork — 2026-10-17
+
+One new raster asset generated with the built-in image_gen tool. No API/CLI generation. Existing files remain unchanged.
+The old puppy-clean.webp bakes the complete tub, bubbles, foam and sparkles into the animal; puppy-dog.webp also bakes in mud. Neither supports a freely wriggling clean puppy with accurate removable dirt.
+Reuse game/puppy-bg.webp unchanged. The hose, nozzle, mud, water and hit feedback belong to runtime drawing; no extra raster library or background was generated.
+
+Origin: /Users/traviswardrop/.codex/generated_images/01a146f2-f9aa-7fe3-a1f3-001ad6fa611f/exec-6cd85efe-de03-4018-ab07-ee28f4f8ea11.png
+Export: public/assets/crafted/game/puppy-body-clean-v1.webp
+Source dimensions:1223×1286 RGBA. Rectangular crop:(141,15,1084,1262), then proportional resize to512×677, WebP quality88/method6/exact alpha.
+No semantic, painted, or alpha edits. The alpha channel must remain exactly equal to the resized generated alpha.
+
+Normalized anatomy relative to the EXPORTED rectangle:
+Safe mud centers: left ear(.14,.335), forehead(.50,.122), right ear(.869,.341), left front paw(.364,.919), right front paw(.637,.919).
+A patch radius around .055–.065 of sprite width fits these fur areas. All patches must share the same body transform used to draw the wriggling puppy.
+Eyes approximately(.368,.239) and(.644,.253); nose(.499,.305); mouth(.503,.395). Keep mud away from these regions.
+Red bandana lies around y.46–.64; do not use this area as clean fur.
+Paw/ground contact around y.985. Preserve the native512/677 aspect, using an actual centered image rectangle rather than stretching into a square.
+No cast floor shadow is baked into the sprite; the game may draw one behind the puppy.
+
+Exact generation prompt:
+Use case: stylized-concept
+Asset type: one clean transparent puppy body sprite for Sona's preschool Puppy Bath game.
+Primary request: a wonderfully friendly cream-colored puppy, front-facing and sitting upright, matching the richly painted handcrafted storybook toy style of Sona. Large softly rounded head, floppy warm-cream ears, gentle big glossy dark eyes, a small black nose, happy open smile with a little pink tongue, soft rosy cheeks. A simple red bandana tied at the neck, just below the chin. Show the complete clean fluffy cream body, two front paws resting in front, rounded haunches and small hind paws at the sides, one small simple tail peeking at a side. Enough clear pale fur on the forehead and BOTH floppy ears and on both lower sides/paws for the game to overlay mud spots. Keep all fur completely clean and dry.
+Composition/framing: exact straight-on front view, no three-quarter perspective, complete ears/head/feet/tail inside frame with modest transparent padding. Centered portrait cutout with short wide cuddly proportions, head and body together filling the frame. Soft dimensional brushing, tactile cream fur, warm gentle upper-left highlights and soft cool shadows only ON the puppy. True transparent alpha surrounding the puppy; no opaque backdrop or cast floor shadow.
+Avoid: no tub, bucket, bath, floor, mat, scenery, water, hose, mud, dirt, bubbles, foam, sparkle, floating objects, soap, hat, glasses, collar besides the red bandana, text, numbers, UI, border, frame, logos. Exactly ONE complete clean sitting puppy, isolated, genuinely transparent background.
+
+Export verification: {"file": "/Users/traviswardrop/.codex/worktrees/coming-soon-games/SaaS/public/assets/crafted/game/puppy-body-clean-v1.webp", "dimensions": [512, 677], "mode": "RGBA", "bytes": 104460, "alpha_bbox": [1, 0, 511, 674]}
+
+2026-10-18 (review fixes): no new raster art. The ladder's help is drawn at runtime on the canvas: a pulsing cream halo around the active mud spot (as wide as the spot really catches water) and a dashed cream arrow from the aim ring to the spot. The happy hop on a clean spot is a transform of the existing body sprite.
