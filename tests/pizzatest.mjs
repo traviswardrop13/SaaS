@@ -40,6 +40,23 @@ async function swipe(p,a,b){await stroke(p,await boardPoints(p,[a,[(a[0]+b[0])/2
 const across=(angle,r=1)=>[[-Math.cos(angle)*r,-Math.sin(angle)*r],[Math.cos(angle)*r,Math.sin(angle)*r]];
 // a short swipe along an angle, beside the middle (a child who cannot quite do it)
 const shortBeside=(angle,off=.5,half=.525)=>{const ux=Math.cos(angle),uy=Math.sin(angle),cx=-uy*off,cy=ux*off;return [[cx-ux*half,cy-uy*half],[cx+ux*half,cy+uy*half]];};
+// WHAT THE CHILD SEES OF THE FOOD (5 Nov 2026), read off the canvas itself.
+// The sauce step ends at 86% of its spots, and the dabs alone left the rest
+// bare: a crescent of dough under the cheese. So once it is done, every spot
+// must show sauce. And a slice ran out to 0.96 of the pizza's radius while
+// the painted crust is an oval (373 x 344) that ends near 0.86 at the top and
+// bottom, so the lines ran onto the plate: no pixel of a slice line may lie
+// where the painted base is see-through.
+const SAUCE=[188,98,80];
+const bareSauce=p=>p.evaluate(sauce=>{const cv=document.getElementById('pizzaCanvas'),z=__pizza,k=cv.width/z.width,d=cv.getContext('2d').getImageData(0,0,cv.width,cv.height).data;
+ return z.grid.filter(g=>{const x=Math.round(g.x*z.width*k),y=Math.round(g.y*z.height*k),i=(y*cv.width+x)*4;return Math.abs(d[i]-sauce[0])>14||Math.abs(d[i+1]-sauce[1])>14||Math.abs(d[i+2]-sauce[2])>14;}).length;},SAUCE);
+const cutsOffCrust=p=>p.evaluate(async()=>{const cv=document.getElementById('pizzaCanvas'),z=__pizza,k=cv.width/z.width,d=cv.getContext('2d').getImageData(0,0,cv.width,cv.height).data;
+ const img=new Image();img.src='/assets/crafted/game/pizza-base-v1.webp';await img.decode();const o=document.createElement('canvas');o.width=img.naturalWidth;o.height=img.naturalHeight;const oc=o.getContext('2d');oc.drawImage(img,0,0);const alpha=oc.getImageData(0,0,o.width,o.height).data;
+ const fit=Math.min(2/img.naturalWidth,2/img.naturalHeight),R=z.board.r*z.width,cx=z.board.x*z.width,cy=z.board.y*z.height,out=[];let seen=0;
+ const solid=(lx,ly)=>{const ix=Math.floor(lx/fit+img.naturalWidth/2),iy=Math.floor(ly/fit+img.naturalHeight/2);return ix>=0&&iy>=0&&ix<o.width&&iy<o.height&&alpha[(iy*o.width+ix)*4+3]>=128;};
+ for(const c of z.cuts){if(!c.done)continue;for(const dir of [1,-1]){let far=null;for(let s=.7;s<=1.02;s+=.25/R){const lx=dir*Math.cos(c.angle)*s,ly=dir*Math.sin(c.angle)*s,x=Math.round((cx+lx*R)*k),y=Math.round((cy+ly*R)*k),i=(y*cv.width+x)*4;if(d[i]<150&&d[i+1]<125&&d[i+2]<100)far={s,lx,ly};}
+  if(far){seen++;if(!solid(far.lx,far.ly))out.push({angle:+c.angle.toFixed(3),dir,s:+far.s.toFixed(3)});}}}
+ return{seen,out};});
 async function cutPizza(p){for(const [i,angle] of [0,Math.PI/4,Math.PI/2,Math.PI*3/4].entries()){if((await state(p)).pizza.cuts[i].done)continue;const [a,b]=across(angle);await swipe(p,a,b);}return finished(p,7);}
 async function reach(p,target){for(let stage=(await state(p)).speech.step;stage<target;stage++){if(!await sayWord(p))throw Error('Could not earn cooking stage '+stage);if(stage===0)await roll(p);else if(stage<3)await cover(p,stage);else if(stage<6)await topPizza(p,stage);else if(stage===6)await bake(p);}}
 // rubbing that moves: one short segment per tenth of a second of game time
@@ -125,6 +142,7 @@ try{
    ok('speech earns cooking stage '+(stage+1),await sayWord(page));s=await state(page);const wide=s.pizza.brushRadius;await advance(page,11000);s=await state(page);ok('speech widens the '+(stage===1?'sauce':'cheese')+' tool',wide>s.pizza.brushRadius*1.4&&s.pizza.ladder===0,s);
    const points=await boardPoints(page,[[0,0]]),b=await page.locator('#pizzaCanvas').boundingBox();await page.mouse.move(b.x+points[0].x*b.width,b.y+points[0].y*b.height);await page.mouse.down();await advance(page,100);const before=(await state(page)).pizza;await advance(page,1600);const after=(await state(page)).pizza;await page.mouse.up();const name=stage===1?'sauceCoverage':'cheeseCoverage';
    ok('a held still tool cannot cover the whole pizza, and is not counted as work',after[name]===before[name]&&after[name]<.5&&after.completed===stage&&after.effort===before.effort,after);ok('moving the real tool covers cooking stage '+(stage+1),await cover(page,stage),await state(page));
+   if(stage===1){s=await state(page);const bare=await bareSauce(page);ok('the finished sauce is all over: no bare dough where the last 14% of the spots were (what counts as done is unchanged: 86%)',s.pizza.completed===2&&s.pizza.sauceCoverage>=.86&&s.pizza.sauceCoverage<1&&bare===0,{bare,cells:s.pizza.grid.length,coverage:s.pizza.sauceCoverage});}
   }
   // ── toppings: a child who keeps dropping beside the spot ──
   for(let stage=3;stage<=5;stage++){
@@ -176,6 +194,7 @@ try{
   s=await swipe(page,a,b);ok('the same short swipe now cuts the nearest line',s.cuts[1].done&&s.cuts.filter(c=>c.done).length===3,s);
   [a,b]=shortBeside(Math.PI*3/4);s=await swipe(page,a,b);ok('struggler: the last cut finishes the pizza, with no help word',s.cuts.every(c=>c.done)&&s.completed===8,s);
   await until(page,()=>__sayplay.phase==='end',6000);s=await state(page);ok('eight real cooking actions finish one complete pizza',s.speech.phase==='end'&&s.speech.step===8&&s.pizza.completed===8&&s.pizza.won&&s.pizza.baked&&s.pizza.dones===8,s);
+  {const off=await cutsOffCrust(page);ok('every slice line stays on the pizza: none runs past the painted crust onto the plate',off.seen===8&&off.out.length===0,off);}
   const audio=await page.evaluate(()=>({leaks:__quiet.leakFrames,live:__quiet.live(),overlap:__quiet.sounds.filter(s=>__quiet.mics.some(m=>s.start<(m.end==null?__quiet.now():m.end)&&m.asked<s.end)).length,lines:__quiet.speech}));ok('cooking instructions and sounds stay out of the microphone',audio.leaks===0&&audio.live===0&&audio.overlap===0,audio);
   const said=audio.lines.join('|');ok('the child hears the different cooking actions',/rolling pin/.test(said)&&/Spread the sauce/.test(said)&&/cut your pizza/.test(said)&&/let go in the green/.test(said),audio.lines);
   ok('Echo says the word, two times, starts each step',audio.lines.some(t=>/two times to start the next step/i.test(t)&&/your hands/i.test(t)),audio.lines);
