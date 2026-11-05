@@ -39,6 +39,18 @@
   // game's own clock (the next word waits for it; a pause holds it)
   var misses=0,ease=0,tryTime=0,movedAt=-9,clock=0,doneAt=0,calm=false;
   var held=false,owner=null,surface=null,keyHeld=false,grab={x:0,y:0},art={},POWER=10;
+  // A SKY FULL OF LITTLE PICTURES. Each picture used to be wiped when the
+  // next began, and the end card's "A sky full of little pictures!" sat over
+  // a sky holding one. Now a finished picture stays up as a small, fainter
+  // constellation in a slot beside the tracing area (slots: upper left,
+  // upper right, lower left, lower right, in the side bands and the box's
+  // empty corners, where no picture has a star). Each is drawn on its own
+  // little canvas with the current picture's path, its glowing corridor and
+  // its stars cut out, so a kept picture never overlaps what the finger is
+  // tracing. At the finale all five gather across the sky (sky: the open
+  // sky's rectangle; skyAt: the clock when they began to gather; keptAt:
+  // when the newest one appeared, so it fades in).
+  var slots=[],sky={x0:0,y0:0,x1:390,y1:600},keptAt=-9,skyAt=-9,from=[],keepCanvas=[],KEPT_ALPHA=.62,GATHER_S=.9;
   var $=function(id){return document.getElementById(id);};
   function clamp(n,lo,hi){return Math.max(lo,Math.min(hi,n));}
   function canPlay(){return active&&!paused&&!away&&!won&&!document.hidden;}
@@ -54,24 +66,57 @@
   function image(name){var i=art[name];return i&&i.complete&&i.naturalWidth?i:null;}
   function loadArt(){[["bg","stars-night-clear-v1.webp"],["star","star.webp"]].forEach(function(p){var i=new Image();i.onload=draw;i.src="/assets/crafted/game/"+p[1];art[p[0]]=i;});}
   function makeNodes(){nodes=PICTURES[stage].points.map(function(p,n){return{x:(box.x+p[0]*box.size)/W,y:(box.y+p[1]*box.size)/H,lit:n<next};});paths=[];for(var n=1;n<next;n++)paths.push({from:{x:nodes[n-1].x,y:nodes[n-1].y},to:{x:nodes[n].x,y:nodes[n].y}});}
+  // The kept pictures' slots (in px): each side band plus the box's empty
+  // margin (no picture puts a star within .12 of the box's edge), at the
+  // box's top and at its bottom. A band too narrow for a picture a child
+  // can make out has none, and those pictures wait for the finale.
+  function makeSlots(){var m=box.size*.08,bands=[[sky.x0,box.x+m],[box.x+box.size-m,sky.x1]];slots=[null,null,null,null];
+    bands.forEach(function(b,side){var s=Math.min(b[1]-b[0],box.size*.32);if(s<26)return;var x=b[0]+(b[1]-b[0]-s)/2;slots[side]={x:x,y:box.y,size:s};slots[side+2]={x:x,y:box.y+box.size-s,size:s};});}
+  // where the five pictures sit at the finale: three across, two under them
+  function gathered(){var w=sky.x1-sky.x0,h=sky.y1-sky.y0,s=Math.min(w/3*.86,h/2*.86,box.size*.62),out=[];[[1/6,.5,5/6],[1/3,2/3]].forEach(function(row,i){row.forEach(function(f){out.push({x:sky.x0+w*f-s/2,y:sky.y0+h*(i?.73:.27)-s/2,size:s});});});return out;}
+  // one finished picture as a little constellation, `size` across with its
+  // top left at (x, y): its lines lit and a small star on every point
+  function littlePicture(g,n,x,y,size){var pts=PICTURES[n].points,i=image("star"),r=clamp(size*.09,5,11);g.save();g.translate(x,y);g.strokeStyle="#f6e8b5";g.shadowColor="#f7e1a8";g.shadowBlur=clamp(size*.05,4,9);g.lineWidth=clamp(size*.016,1.5,3);g.lineCap="round";g.lineJoin="round";g.beginPath();pts.forEach(function(p,k){if(k)g.lineTo(p[0]*size,p[1]*size);else g.moveTo(p[0]*size,p[1]*size);});g.stroke();g.shadowBlur=0;
+    pts.forEach(function(p){if(i)g.drawImage(i,p[0]*size-r,p[1]*size-r,r*2,r*2);else{g.fillStyle="#fff3bf";g.beginPath();g.arc(p[0]*size,p[1]*size,r*.45,0,Math.PI*2);g.fill();}});g.restore();detail(PICTURES[n].name,x,y,size,.85,g);}
+  // Everything of the picture being traced, with room around it, erased
+  // from a kept picture: the glowing corridor of the line the finger is on,
+  // every line of the picture, every star with its glow and the held pen.
+  function cutOut(g){if(!nodes.length)return;g.strokeStyle="#000";g.fillStyle="#000";g.lineCap="round";g.lineJoin="round";var a=nodes[Math.min(next-1,nodes.length-1)],b=nodes[Math.min(next,nodes.length-1)];
+    if(active&&next<nodes.length){g.lineWidth=(corridor()*W+8)*2;g.beginPath();g.moveTo(a.x*W,a.y*H);g.lineTo(b.x*W,b.y*H);g.stroke();}
+    g.lineWidth=28;g.beginPath();nodes.forEach(function(p,k){if(k)g.lineTo(p.x*W,p.y*H);else g.moveTo(p.x*W,p.y*H);});g.stroke();
+    var r=Math.max(37,nodeRadius()*W+6);nodes.forEach(function(p){g.beginPath();g.arc(p.x*W,p.y*H,r,0,Math.PI*2);g.fill();});if(held){g.beginPath();g.arc(pen.x*W,pen.y*H,20,0,Math.PI*2);g.fill();}}
+  // the finished pictures, other than the one in the tracing area, in their
+  // slots; the newest fades in as its word starts the next picture
+  function isKept(n){return n<4&&!!slots[n]&&completedPatterns[n]&&n!==stage;}
+  function kept(){var dpr=Math.min(2,window.devicePixelRatio||1);for(var n=0;n<4;n++){if(!isKept(n))continue;var s=slots[n],c=keepCanvas[n]||(keepCanvas[n]=document.createElement("canvas")),px=Math.max(1,Math.ceil(s.size*dpr)),g,fade=calm||n!==stage-1?1:clamp((clock-keptAt)/.5,0,1);
+    if(c.width!==px){c.width=px;c.height=px;}g=c.getContext("2d");g.setTransform(dpr,0,0,dpr,0,0);g.globalCompositeOperation="source-over";g.clearRect(0,0,s.size,s.size);littlePicture(g,n,0,0,s.size);
+    g.globalCompositeOperation="destination-out";g.translate(-s.x,-s.y);cutOut(g);g.globalCompositeOperation="source-over";
+    ctx.save();ctx.globalAlpha=KEPT_ALPHA*fade;ctx.drawImage(c,s.x,s.y,s.size,s.size);ctx.restore();}}
+  // the finale: all five gather across the sky from where they were (a
+  // kept slot, the tracing area, or nowhere: then it fades in where it goes)
+  function gather(){var to=gathered(),k=calm?1:clamp((clock-skyAt)/GATHER_S,0,1),e=1-(1-k)*(1-k);to.forEach(function(t,n){var f=from[n]||{x:t.x,y:t.y,size:t.size,a:0};ctx.save();ctx.globalAlpha=f.a+(1-f.a)*e;littlePicture(ctx,n,f.x+(t.x-f.x)*e,f.y+(t.y-f.y)*e,f.size+(t.size-f.size)*e);ctx.restore();});}
   function fit(){
     if(!cv)return;cancelStroke(true);var oldW=W,oldH=H,rect=cv.getBoundingClientRect(),dpr=Math.min(2,window.devicePixelRatio||1);W=Math.max(1,rect.width);H=Math.max(1,rect.height);cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);
     top=$("starsBanner").getBoundingClientRect().bottom-rect.top+16;bottom=$("starsControls").getBoundingClientRect().top-rect.top-14;
     var landscape=W>H&&H<500,size,patternTop;
-    if(landscape){size=Math.max(70,Math.min(W*.54,bottom-top-12));box={x:W*.63-size/2,y:top+6,size:size};minis=PICTURES.map(function(p,n){return{x:W*.17,y:top+13+n*(Math.max(100,bottom-top)-24)/4,size:25};});}
-    else{var strip=clamp(W*.12,40,56);patternTop=top+strip+18;var patternBottom=Math.min(bottom,H*.70),room=Math.max(90,patternBottom-patternTop);size=Math.min(W*.78,room);box={x:(W-size)/2,y:patternTop+(room-size)/2,size:size};minis=PICTURES.map(function(p,n){return{x:W*(n+.5)/5,y:top+strip/2,size:Math.min(42,W*.105)};});}
+    if(landscape){size=Math.max(70,Math.min(W*.54,bottom-top-12));box={x:W*.63-size/2,y:top+6,size:size};minis=PICTURES.map(function(p,n){return{x:W*.17,y:top+13+n*(Math.max(100,bottom-top)-24)/4,size:25};});sky={x0:W*.17+25,y0:top+6,x1:W-6,y1:bottom};}
+    else{var strip=clamp(W*.12,40,56);patternTop=top+strip+18;var patternBottom=Math.min(bottom,H*.70),room=Math.max(90,patternBottom-patternTop);size=Math.min(W*.78,room);box={x:(W-size)/2,y:patternTop+(room-size)/2,size:size};minis=PICTURES.map(function(p,n){return{x:W*(n+.5)/5,y:top+strip/2,size:Math.min(42,W*.105)};});sky={x0:6,y0:patternTop-10,x1:W-6,y1:patternBottom};}
+    makeSlots();
     makeNodes();if(!active||pen.x===undefined){pen={x:nodes[Math.max(0,next-1)].x,y:nodes[Math.max(0,next-1)].y};}else{pen.x=clamp(pen.x,.04,.96);pen.y=clamp(pen.y,top/H,bottom/H);}forwardTravel=0;hud();draw();
   }
-  function snapshot(){var a=nodes[Math.min(next-1,nodes.length-1)],b=nodes[Math.min(next,nodes.length-1)],length=b?distance(a,b):0;window.__stars={active:active,paused:paused,stage:stage,stages:stages,completed:completed,won:won,picture:PICTURES[stage].name,nodes:nodes.map(function(p){return{x:p.x,y:p.y,lit:p.lit};}),next:next,links:next-1,linkCount:next-1,totalLinks:nodes.length-1,currentSegment:{from:a,to:b},corridor:corridor(),nodeRadius:nodeRadius(),pen:{x:pen.x,y:pen.y},grip:{x:a.x,y:a.y},held:held,pointerId:owner,keyHeld:keyHeld,power:power,forwardTravel:forwardTravel,progress:length?clamp(forwardTravel/length,0,1):0,paths:paths.map(function(p){return{from:{x:p.from.x,y:p.from.y},to:{x:p.to.x,y:p.to.y}};}),completedPatterns:completedPatterns.slice(),failures:failures,misses:misses,ease:ease,tryTime:tryTime,celebrating:doneAt>0,width:W,height:H,coordinates:"positions normalized to canvas; corridor/nodeRadius/forwardTravel use canvas width. Native grip restarts at the last lit node; help preserves the pen's last physical position."};}
+  function rectOf(s,n){return{picture:PICTURES[n].name,x:s.x/W,y:s.y/H,w:s.size/W,h:s.size/H};}
+  function snapshot(){var a=nodes[Math.min(next-1,nodes.length-1)],b=nodes[Math.min(next,nodes.length-1)],length=b?distance(a,b):0;window.__stars={active:active,paused:paused,stage:stage,stages:stages,completed:completed,won:won,picture:PICTURES[stage].name,nodes:nodes.map(function(p){return{x:p.x,y:p.y,lit:p.lit};}),next:next,links:next-1,linkCount:next-1,totalLinks:nodes.length-1,currentSegment:{from:a,to:b},corridor:corridor(),nodeRadius:nodeRadius(),pen:{x:pen.x,y:pen.y},grip:{x:a.x,y:a.y},held:held,pointerId:owner,keyHeld:keyHeld,power:power,forwardTravel:forwardTravel,progress:length?clamp(forwardTravel/length,0,1):0,paths:paths.map(function(p){return{from:{x:p.from.x,y:p.from.y},to:{x:p.to.x,y:p.to.y}};}),completedPatterns:completedPatterns.slice(),failures:failures,misses:misses,ease:ease,tryTime:tryTime,celebrating:doneAt>0,width:W,height:H,
+      kept:[0,1,2,3].filter(isKept).map(function(n){return rectOf(slots[n],n);}),slots:slots.map(function(s,n){return s?rectOf(s,n):null;}),gathered:won?gathered().map(rectOf):[],gathering:won&&!calm&&clock-skyAt<GATHER_S,sky:{x:sky.x0/W,y:sky.y0/H,right:sky.x1/W,bottom:sky.y1/H},box:{x:box.x/W,y:box.y/H,w:box.size/W,h:box.size/H},
+      coordinates:"positions normalized to canvas; kept/slots/gathered/box rects as x,y,w,h of the canvas; corridor/nodeRadius/forwardTravel use canvas width. Native grip restarts at the last lit node; help preserves the pen's last physical position."};}
   function hud(){if(!cv||!nodes.length)return;var enabled=canPlay(),at=held?pen:nodes[Math.min(next-1,nodes.length-1)],b=$("starPen");b.disabled=!enabled;b.hidden=!active||won;b.style.left=at.x*W+"px";b.style.top=at.y*H+"px";b.setAttribute("aria-pressed",held?"true":"false");$("starsHelp").disabled=!enabled||held;$("starsHearStep").disabled=!enabled||held;$("starsPower").hidden=power<=0;$("starsPowerFill").style.width=power/POWER*100+"%";snapshot();}
   function background(){var i=image("bg");if(i){var scale=Math.max(W/i.naturalWidth,H/i.naturalHeight),w=i.naturalWidth*scale,h=i.naturalHeight*scale;ctx.drawImage(i,(W-w)/2,(H-h)/2,w,h);}else{var g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,"#172447");g.addColorStop(.7,"#494b72");g.addColorStop(1,"#79849d");ctx.fillStyle=g;ctx.fillRect(0,0,W,H);ctx.fillStyle="#efe4bc";ctx.beginPath();ctx.arc(W*.84,H*.17,26,0,Math.PI*2);ctx.fill();ctx.fillStyle="#273252";ctx.beginPath();ctx.arc(W*.87,H*.15,25,0,Math.PI*2);ctx.fill();}}
   function star(x,y,size,lit){var i=image("star");ctx.save();ctx.translate(x,y);if(lit){ctx.shadowColor="#fff2b9";ctx.shadowBlur=16;}if(i&&lit)ctx.drawImage(i,-size/2,-size/2,size,size);else{ctx.fillStyle=lit?"#fff3bf":"#bfc7d6";ctx.globalAlpha=lit?1:.58;ctx.beginPath();for(var n=0;n<10;n++){var a=-Math.PI/2+n*Math.PI/5,r=size*(n%2?.22:.5);if(n)ctx.lineTo(Math.cos(a)*r,Math.sin(a)*r);else ctx.moveTo(Math.cos(a)*r,Math.sin(a)*r);}ctx.closePath();ctx.fill();}ctx.restore();}
-  function detail(name,x,y,size,alpha){ctx.save();ctx.translate(x,y);ctx.scale(size,size);ctx.globalAlpha=alpha;ctx.strokeStyle="#e7d7b2";ctx.fillStyle="rgba(247,227,174,.08)";ctx.lineWidth=1.5/size;ctx.lineJoin="round";
-    if(name==="tent"){ctx.beginPath();ctx.moveTo(.5,.39);ctx.lineTo(.39,.84);ctx.lineTo(.61,.84);ctx.stroke();}
-    else if(name==="kite"){ctx.beginPath();ctx.moveTo(.5,.84);ctx.bezierCurveTo(.68,.97,.31,.9,.51,1.01);ctx.stroke();}
-    else if(name==="house"){ctx.strokeRect(.44,.62,.14,.22);}
-    else if(name==="boat"){ctx.beginPath();ctx.moveTo(.5,.14);ctx.lineTo(.22,.57);ctx.lineTo(.5,.57);ctx.closePath();ctx.fill();ctx.stroke();ctx.beginPath();ctx.moveTo(.14,.66);ctx.lineTo(.5,.66);ctx.stroke();}
-    else{ctx.beginPath();ctx.arc(.72,.47,.018,0,Math.PI*2);ctx.fillStyle="#fff2bb";ctx.fill();}ctx.restore();}
+  function detail(name,x,y,size,alpha,g){var c=g||ctx;c.save();c.translate(x,y);c.scale(size,size);c.globalAlpha*=alpha;c.strokeStyle="#e7d7b2";c.fillStyle="rgba(247,227,174,.08)";c.lineWidth=1.5/size;c.lineJoin="round";
+    if(name==="tent"){c.beginPath();c.moveTo(.5,.39);c.lineTo(.39,.84);c.lineTo(.61,.84);c.stroke();}
+    else if(name==="kite"){c.beginPath();c.moveTo(.5,.84);c.bezierCurveTo(.68,.97,.31,.9,.51,1.01);c.stroke();}
+    else if(name==="house"){c.strokeRect(.44,.62,.14,.22);}
+    else if(name==="boat"){c.beginPath();c.moveTo(.5,.14);c.lineTo(.22,.57);c.lineTo(.5,.57);c.closePath();c.fill();c.stroke();c.beginPath();c.moveTo(.14,.66);c.lineTo(.5,.66);c.stroke();}
+    else{c.beginPath();c.arc(.72,.47,.018,0,Math.PI*2);c.fillStyle="#fff2bb";c.fill();}c.restore();}
   function miniatures(){minis.forEach(function(m,n){var done=completedPatterns[n];ctx.save();ctx.translate(m.x-m.size/2,m.y-m.size/2);ctx.globalAlpha=done?1:.17;ctx.strokeStyle=done?"#f7e9b7":"#a6b6cd";ctx.lineWidth=1.6;ctx.lineJoin="round";ctx.beginPath();PICTURES[n].points.forEach(function(p,index){if(index)ctx.lineTo(p[0]*m.size,p[1]*m.size);else ctx.moveTo(p[0]*m.size,p[1]*m.size);});ctx.stroke();if(done)detail(PICTURES[n].name,0,0,m.size,.75);ctx.restore();});}
   function constellation(){if(!nodes.length)return;var a=nodes[Math.min(next-1,nodes.length-1)],b=nodes[Math.min(next,nodes.length-1)];if(active&&next<nodes.length){var pulse=ease&&!calm?.5+.5*Math.sin(clock*4):1;ctx.save();ctx.lineCap="round";ctx.strokeStyle=ease?"rgba(255,236,160,"+(.22+.14*pulse).toFixed(3)+")":power>0?"rgba(176,220,214,.2)":"rgba(207,222,224,.17)";ctx.lineWidth=corridor()*W*2;ctx.beginPath();ctx.moveTo(a.x*W,a.y*H);ctx.lineTo(b.x*W,b.y*H);ctx.stroke();ctx.strokeStyle=power>0?"#e5f5ce":"rgba(228,235,218,.42)";ctx.lineWidth=power>0?2.5:1.5;ctx.setLineDash([4,8]);ctx.beginPath();ctx.moveTo(a.x*W,a.y*H);ctx.lineTo(b.x*W,b.y*H);ctx.stroke();ctx.restore();if(ease)arrow(a,b,pulse);}
     ctx.save();ctx.strokeStyle="#f6e8b5";ctx.shadowColor="#f7e1a8";ctx.shadowBlur=9;ctx.lineWidth=3;ctx.lineCap="round";paths.forEach(function(p){ctx.beginPath();ctx.moveTo(p.from.x*W,p.from.y*H);ctx.lineTo(p.to.x*W,p.to.y*H);ctx.stroke();});ctx.restore();
@@ -82,7 +127,7 @@
   // ease 1 and up: a bright arrow on the path, pointing at the next star
   function arrow(a,b,pulse){var ax=a.x*W,ay=a.y*H,bx=b.x*W,by=b.y*H,len=Math.sqrt((bx-ax)*(bx-ax)+(by-ay)*(by-ay));if(len<40)return;var ux=(bx-ax)/len,uy=(by-ay)/len,tipx=ax+ux*len*.62,tipy=ay+uy*len*.62,s=13+3*pulse;
     ctx.save();ctx.fillStyle="#fff2bb";ctx.strokeStyle="#fff2bb";ctx.shadowColor="#fff2b9";ctx.shadowBlur=10;ctx.lineWidth=4;ctx.lineCap="round";ctx.beginPath();ctx.moveTo(tipx-ux*s*2.2,tipy-uy*s*2.2);ctx.lineTo(tipx-ux*s*.6,tipy-uy*s*.6);ctx.stroke();ctx.beginPath();ctx.moveTo(tipx,tipy);ctx.lineTo(tipx-ux*s-uy*s*.75,tipy-uy*s+ux*s*.75);ctx.lineTo(tipx-ux*s+uy*s*.75,tipy-uy*s-ux*s*.75);ctx.closePath();ctx.fill();ctx.restore();}
-  function draw(){if(!ctx)return;ctx.clearRect(0,0,W,H);background();miniatures();constellation();}
+  function draw(){if(!ctx)return;ctx.clearRect(0,0,W,H);background();miniatures();if(won){gather();return;}kept();constellation();}
   function distance(a,b){var dx=a.x-b.x,dy=(a.y-b.y)*H/W;return Math.sqrt(dx*dx+dy*dy);}
   function nearest(p,a,b){var dx=b.x-a.x,dy=(b.y-a.y)*H/W,length=dx*dx+dy*dy,t=length?clamp(((p.x-a.x)*dx+(p.y-a.y)*H/W*dy)/length,0,1):0;return{x:a.x+dx*t,y:a.y+(b.y-a.y)*t};}
   function projection(p,a,b){var dx=b.x-a.x,dy=(b.y-a.y)*H/W,length=Math.sqrt(dx*dx+dy*dy);return length?clamp(((p.x-a.x)*dx+(p.y-a.y)*H/W*dy)/length,0,length):0;}
@@ -122,6 +167,8 @@
     hud();draw();raf=requestAnimationFrame(frame);}
   function earnPower(){power=POWER;active=true;paused=false;last=0;banner("A wide glowing path. Follow the stars!");hud();}
   function pause(){paused=true;last=0;cancelStroke(true);hud();}
-  function reset(){cancelStroke(true);active=false;paused=false;won=false;stage=0;completed=0;next=1;power=0;failures=0;last=0;doneAt=0;freshTry();completedPatterns=[false,false,false,false,false];makeNodes();pen={x:nodes[0].x,y:nodes[0].y};banner("Let's draw a quiet little night sky");hud();draw();}
-  window.Stars={init:function(a,n){api=a;stages=n||5;try{calm=!!(window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches);}catch(e){}cv=$("starsCanvas");ctx=cv.getContext("2d");loadArt();controls();fit();reset();raf=requestAnimationFrame(frame);},onWord:function(index){cancelStroke(true);doneAt=0;freshTry();stage=index;next=1;makeNodes();pen={x:nodes[0].x,y:nodes[0].y};earnPower();api.instruct(STEP_LINES[stage]);},onHelp:earnPower,pause:pause,resume:function(playing){paused=playing===false;last=0;hud();},reset:reset,finale:function(){cancelStroke(true);doneAt=0;active=false;power=0;won=true;banner("Five little pictures. Good night, stars!");hud();draw();}};
+  function reset(){cancelStroke(true);active=false;paused=false;won=false;stage=0;completed=0;next=1;power=0;failures=0;last=0;doneAt=0;freshTry();completedPatterns=[false,false,false,false,false];from=[];keptAt=-9;skyAt=-9;makeNodes();pen={x:nodes[0].x,y:nodes[0].y};banner("Let's draw a quiet little night sky");hud();draw();}
+  window.Stars={init:function(a,n){api=a;stages=n||5;try{calm=!!(window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches);}catch(e){}cv=$("starsCanvas");ctx=cv.getContext("2d");loadArt();controls();fit();reset();raf=requestAnimationFrame(frame);},onWord:function(index){cancelStroke(true);doneAt=0;freshTry();stage=index;keptAt=clock;next=1;makeNodes();pen={x:nodes[0].x,y:nodes[0].y};earnPower();api.instruct(STEP_LINES[stage]);},onHelp:earnPower,pause:pause,resume:function(playing){paused=playing===false;last=0;hud();},reset:reset,finale:function(){cancelStroke(true);doneAt=0;active=false;power=0;
+    // where each picture starts its way to the gathered sky
+    skyAt=clock;from=PICTURES.map(function(p,n){var s=n===stage?{x:box.x,y:box.y,size:box.size,a:1}:isKept(n)?{x:slots[n].x,y:slots[n].y,size:slots[n].size,a:KEPT_ALPHA}:null;return s;});won=true;banner("Five little pictures. Good night, stars!");hud();draw();}};
 })();
