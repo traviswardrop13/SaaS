@@ -232,24 +232,24 @@ try {
     await page.locator("#obName").fill("Zephyrine");
     await page.locator('#obAge [data-age="6"]').click();
     await next(page);
-    // THE SCREENS THAT SELL (22 Oct 2026) follow it: the Fruit Slice demo and
-    // Rachel, both recorded, neither showing the name (the "problem" slide
-    // went on 31 Oct 2026, Piano Tiles' demo on 1 Nov 2026)
+    // THE SCREENS THAT SELL (22 Oct 2026) follow it: the Fruit Slice and
+    // Piano Tiles demos (both back since 4 Nov 2026) and Rachel, all
+    // recorded, none showing the name (the "problem" slide went on 31 Oct
+    // 2026)
     await page.locator('[data-step="reel"].on').waitFor(); await rest();
     await mark(page, 121);                          // Fruit Slice's sound-power demo, "Speech practice. Through play.": recorded
+    await next(page);
+    await page.locator('[data-step="piano"].on').waitFor(); await rest();
+    await mark(page, 126);                          // Piano Tiles' sound-power demo: recorded
     await next(page);
     await page.locator('[data-step="rachel"].on').waitFor(); await rest();
     await mark(page, 131);                          // Rachel, on her own: recorded
     await next(page);
-    // "What does <Name> love?" and "Games for <Name>." show the name, as ph-name; both are recorded
+    // "What does <Name> love?" shows the name, as ph-name; it is recorded
+    // ("Games for <Name>." went on 4 Nov 2026)
     await page.locator('[data-step="interests"].on').waitFor(); await rest();
     await mark(page, 141);                          // what the child loves: recorded, the name as [child]
     await calmed(); await page.locator('#obInterests [data-val="sports"]').click();
-    await next(page);
-    await page.locator('[data-step="games"].on').waitFor();
-    await page.evaluate(() => Promise.all([...document.querySelectorAll(".step.on img")].map((i) => i.decode().catch(() => {}))));
-    await rest();
-    await mark(page, 151);                          // "Games for <Name>.": recorded, the name as [child]
     await next(page);
     await page.locator('[data-step="therapy"].on').waitFor();
     await mark(page, 201);                          // the therapy question: never recorded
@@ -261,10 +261,9 @@ try {
     await calmed(); await page.locator("#backBtn").click();
     await page.locator('[data-step="therapy"].on').waitFor();
     await mark(page, 211);                          // the therapy question again, an answer held: never recorded
-    for (const k of ["games", "interests", "rachel", "reel", "name"]) { await calmed(); await page.locator("#backBtn").click(); await page.locator('[data-step="' + k + '"].on').waitFor(); }
+    for (const k of ["interests", "rachel", "piano", "reel", "name"]) { await calmed(); await page.locator("#backBtn").click(); await page.locator('[data-step="' + k + '"].on').waitFor(); }
     await page.locator("#obName").fill("Quillon");
-    for (const k of ["reel", "rachel", "interests"]) { await next(page); await page.locator('[data-step="' + k + '"].on').waitFor(); }
-    await next(page); await page.locator('[data-step="games"].on').waitFor();
+    for (const k of ["reel", "piano", "rachel", "interests"]) { await next(page); await page.locator('[data-step="' + k + '"].on').waitFor(); }
     await next(page); await page.locator('[data-step="therapy"].on').waitFor();
     await calmed();
     // This time a double tap, the way a hurried thumb answers: the second tap
@@ -304,16 +303,16 @@ try {
     const rr = w.rr(), text = w.text();
     ok("setup: a recording was sent (full snapshots of the page)", rr.filter((e) => e.type === FULL).length >= 2, rr.length);
     ok("setup: the hello's pointer was recorded (the control)", marked(rr, 101));
-    ok("setup: the game demo and Rachel's screen were recorded (the controls)", marked(rr, 121) && marked(rr, 131), [marked(rr, 121), marked(rr, 131)]);
+    ok("setup: both game demos and Rachel's screen were recorded (the controls)", marked(rr, 121) && marked(rr, 126) && marked(rr, 131), [marked(rr, 121), marked(rr, 126), marked(rr, 131)]);
     ok("setup: the minutes screen's pointer was recorded (the control)", marked(rr, 351));
     ok("setup: nothing on the screen a therapy answer lands on (the sounds)", !marked(rr, 301));
-    ok("setup: \"What does <Name> love?\" and \"Games for <Name>.\" were recorded (the controls)", marked(rr, 141) && marked(rr, 151), [marked(rr, 141), marked(rr, 151)]);
-    // every spot those two screens show the name is recorded as [child], and
-    // the screens' own words are there, so the check below is not vacuous
+    ok("setup: \"What does <Name> love?\" was recorded (the control)", marked(rr, 141), marked(rr, 141));
+    // every spot that screen shows the name is recorded as [child], and the
+    // screens' own words are there, so the check below is not vacuous
     const allNodes = nodes(rr), byId = (id) => allNodes.filter((n) => n.attributes && n.attributes.id === id);
     const said = (n) => (n.childNodes || []).map((c) => c.textContent || "").join("");
-    ok("setup: the name on the screens that sell is recorded as [child], every time (intName, gamesName)", ["intName", "gamesName"].every((id) => byId(id).length > 0 && byId(id).every((n) => said(n) === "[child]")), ["intName", "gamesName"].map((id) => byId(id).map(said)));
-    ok("setup: the screens that sell were recorded with their words (the Fruit Slice demo under \"Speech practice. Through play.\", Rachel, what they love, the games)", /Speech practice\./.test(text) && /Through play\./.test(text) && /Slows down/.test(text) && /pediatric speech-language pathologist in her clinical fellowship/.test(text) && /What does/.test(text) && /Games for/.test(text) && /Fruit Slice/.test(text));
+    ok("setup: the name on the screens that sell is recorded as [child], every time (intName)", ["intName"].every((id) => byId(id).length > 0 && byId(id).every((n) => said(n) === "[child]")), ["intName"].map((id) => byId(id).map(said)));
+    ok("setup: the screens that sell were recorded with their words (both demos, \"Speech practice. Through play.\" heading Fruit Slice's, Rachel, what they love)", /Speech practice\./.test(text) && /Through play\./.test(text) && /Say the sound/.test(text) && /to slow the keys\./.test(text) && /After practice/.test(text) && /pediatric speech-language pathologist in her clinical fellowship/.test(text) && /What does/.test(text) && /Fruit Slice/.test(text) && /Piano Tiles/.test(text));
     // every incremental event, each pointer position at its own time
     const when = (e) => (e.type === INCR && Array.isArray(e.data.positions)) ? e.data.positions.map((q) => e.timestamp + (q.timeOffset || 0)) : [e.timestamp];
     const between = rr.filter((e) => e.type === INCR && when(e).some((t) => t >= t1 && t <= t2));

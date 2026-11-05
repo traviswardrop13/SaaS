@@ -116,13 +116,13 @@ for (const k of REEL) {
   ok(k + ": a game in the catalog, open on Home (never Coming soon)", !!line && !/comingSoon:\s*true/.test(line), line || "not in GAME_ACTS");
 }
 const ob = readFileSync(path.join(ROOT, "public/onboarding.html"), "utf8");
-// one live demo since 1 Nov 2026 (Travis: "we can get rid of piano tiles as
-// the demo. And just keep fruit slice")
-ok("setup loads the one live Fruit Slice demo, and no Piano Tiles demo",
-  /<script defer src="\/onboarding-fruit-demo\.js"><\/script>/.test(ob) && !/onboarding-piano-demo|data-step="piano"|pianoDemoScene/.test(ob) &&
-  !existsSync(path.join(ROOT, "public/onboarding-piano-demo.js")) &&
-  /data-step="reel"/.test(ob) && /id="fruitDemoScene"/.test(ob) &&
-  /var SELL_FIRST=\["reel","rachel"\]/.test(ob));
+// two live demos again since 4 Nov 2026 (Travis: "I want to go back to the
+// old two slides"): Fruit Slice, then Piano Tiles, each its own script
+ok("setup loads separate live Fruit Slice and Piano Tiles demos",
+  /<script defer src="\/onboarding-fruit-demo\.js"><\/script>/.test(ob) && /<script defer src="\/onboarding-piano-demo\.js"><\/script>/.test(ob) &&
+  existsSync(path.join(ROOT, "public/onboarding-piano-demo.js")) &&
+  /data-step="reel"/.test(ob) && /id="fruitDemoScene"/.test(ob) && /data-step="piano"/.test(ob) && /id="pianoDemoScene"/.test(ob) &&
+  /var SELL_FIRST=\["reel","piano","rachel"\]/.test(ob));
 // the problem slide went on 31 Oct 2026; since 1 Nov the name comes between
 // the hello and the demo
 ok("setup has no problem slide: the name goes straight to the Fruit Slice demo",

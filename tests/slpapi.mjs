@@ -736,13 +736,17 @@ if (A) {
     fin.length > 0 && !/childName|draft\.|achEmName|nameEl|child:/.test(fin));
   // (the ready step carries ph-no-capture since 15 Oct 2026, REPLAY1)
   const updStep = ob.slice(ob.indexOf('<div class="step" data-step="updates">'), ob.search(/<div class="step[^"]*" data-step="ready">/));
-  ok("the email step says the email joins the list before it is given, in Travis's words",
-    updStep.length > 0 && /We(&rsquo;|’|')ll also send occasional tips from Rachel\. Unsubscribe anytime\./.test(updStep), updStep.slice(0, 300));
+  // Travis, 4 Nov 2026: "instead of we'll also send occasional tips from
+  // Rachel, just say something like ... track weekly progress" (as the
+  // landing pages lost the line on 25 Sep 2026)
+  ok("the email step says what the email is for, in Travis's words, and that it can be stopped",
+    updStep.length > 0 && /Track your child(&rsquo;|’|')s progress every week\. Unsubscribe anytime\./.test(updStep) && !/occasional tips/.test(updStep), updStep.slice(0, 300));
 
   // The consent line, everywhere an email can join the list (Travis's wording)
   // — except the landing page, where Travis took it out on 25 Sep 2026 ("get
   // rid of this text"); its "What's stored" answer still says the email goes
-  // to the list.
+  // to the list — and setup's family email step since 4 Nov 2026 (above). In
+  // onboarding.html the line is the clinician's own email step's.
   for (const f of ["public/slp-login.html", "public/onboarding.html", "public/check.html"]) {
     ok(`${f} says the email joins the list before it is given`,
       /also send occasional tips from Rachel\. Unsubscribe anytime\./.test(read(f)));

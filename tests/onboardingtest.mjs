@@ -103,10 +103,11 @@ async function toName(page){await setupWalk(page,'name');await page.locator('[da
 async function answer(page,key,val='skip'){await page.locator('[data-step="'+key+'"].on').waitFor();await calm(page);await page.locator(val==='skip'?'#'+key+'Skip':'[data-step="'+key+'"] .ask-pick[data-val="'+val+'"]').click();await beatOver(page);}
 const answerTherapy=(page,val)=>answer(page,'therapy',val),answerMinutes=(page,val)=>answer(page,'minutes',val);
 // THE SCREENS THAT SELL (19 Oct 2026; rebuilt 22 Oct; the problem slide went
-// on 31 Oct; since 1 Nov they follow the name, and Piano Tiles' demo is
-// gone): the Fruit Slice demo, Rachel, what the child loves and their games.
-const SELL=['reel','rachel','interests','games'];
-// hello → … → name and age → what they love → their games → the therapy
+// on 31 Oct; since 1 Nov they follow the name): the Fruit Slice and Piano
+// Tiles demos (both again since 4 Nov 2026), Rachel and what the child loves
+// ("Games <Name> will love" went on 4 Nov 2026).
+const SELL=['reel','piano','rachel','interests'];
+// hello → … → name and age → what they love → the therapy
 // question (a tap, or Skip) → the sound picker. A second child and a
 // clinician in the app are not asked, and go straight there.
 async function enter(page,{mode='speech',age='4',name='Milo',therapy='skip',interests=[]}={}){await setupWalk(page,'sounds',{name,age,therapy,interests});await page.locator('[data-step="sounds"].on').waitFor();if(mode!=='speech'){await calm(page);await page.locator('#obExploreSounds').click();}}
@@ -132,17 +133,20 @@ async function settled(page){await page.evaluate(()=>document.fonts.ready);await
 function clean(name,errors){ok(name+': no runtime errors',errors.length===0,errors);}
 function pairPosts(requests){return requests.filter(r=>new URL(r.url).pathname==='/api/pair'&&r.method==='POST');}
 const priced=requests=>requests.filter(r=>new URL(r.url).pathname==='/subscribe.html').map(r=>r.url);
-const HEDGE='Sona practices — it doesn\'t test or diagnose.';
 // THE PLAN CARD on a parent's first setup (31 Oct 2026: Day 1 is a game, then
-// a book), as a parent reads it, where this child is shown no story
-const PLAN_BOOK='Day 1 Play a game, then read a book. Fruit Slice first, then a book.';
-// [id, the button's words, the sentence the ready screen shows for it]
+// a book), as a parent reads it: one line since 4 Nov 2026 (Travis: "the
+// Joe's practice is ready page has too much text")
+const PLAN_BOOK='Day 1 Play a game, then read a book.';
+// what left the ready screen on 4 Nov 2026: the card's second line, "A new
+// story every day.", the therapy sentences and the hedge
+const READY_GONE=/Fruit Slice first|A new story every day|speech visits|practice you can do at home|test or diagnose/;
+// [id, the button's words]
 // Yes, No and Not yet since 16 Oct 2026 (Travis: "add a no so there's yes, no, and then not yet")
-const THERAPY=[['t_yes','Yes','Sona is practice for the days between speech visits.'],['t_none','No','Sona is practice you can do at home.'],['t_no','Not yet','Sona is practice you can do at home.']];
+const THERAPY=[['t_yes','Yes'],['t_none','No'],['t_no','Not yet']];
 // [value, the button's words, the chip the ready screen shows for it]: a real setting, the daily goal
 const MINUTES=[['3','3 minutes','3 min a day'],['5','5 minutes','5 min a day'],['10','10 minutes','10 min a day']];
 // the first family's whole walk, on a phone with no reminder to offer
-const FIRST_WALK='welcome,name,reel,rachel,interests,games,therapy,sounds,minutes,updates,ready,mic';
+const FIRST_WALK='welcome,name,reel,piano,rachel,interests,therapy,sounds,minutes,updates,ready,mic';
 // what the ready screen shows, as a parent reads it
 const readyShown=page=>page.evaluate(()=>{const st=document.querySelector('[data-step="ready"]'),painted=el=>!!el&&getComputedStyle(el).display!=='none'&&el.getBoundingClientRect().height>0;return {on:st.classList.contains('on'),title:document.getElementById('readyTitle').textContent,chips:[...document.querySelectorAll('#readyChips li')].map(l=>l.textContent),lines:painted(document.getElementById('readyLines'))?[...document.querySelectorAll('#readyLines li')].map(l=>l.textContent):[],text:st.innerText.replace(/\s+/g,' ').trim(),asks:st.querySelectorAll('input,select,textarea,button,a,[role="button"]').length,cta:document.getElementById('nextBtn').textContent.trim(),enabled:!document.getElementById('nextBtn').disabled,seg:document.getElementById('seg').hidden,mascot:painted(document.querySelector('.ob .mascot')),build:!!document.getElementById('obBuild'),rachel:/Rachel/.test(st.textContent)||!!st.querySelector('img[src*="rachel"]')};});
 const progress=page=>page.evaluate(()=>{const s=document.getElementById('seg');return {groups:s.children.length,lit:s.querySelectorAll('i.on').length,hidden:s.hidden,now:s.getAttribute('aria-valuenow'),max:s.getAttribute('aria-valuemax'),role:s.getAttribute('role')};});
@@ -158,14 +162,12 @@ await scenario('sound selection and private paced handoff',async()=>{
   {const pr0=await progress(page);await next(page);await page.waitForFunction(()=>document.body.dataset.setupScreen!=='welcome');
   ok('the hello (no progress segment), then the child\'s name straight after it, the first of the five',pr0.hidden&&await screen(page)==='name'&&(await progress(page)).lit===1&&!(await progress(page)).hidden);}
   await page.locator('#obName').fill('Milo');await page.locator('#obAge [data-age="4"]').click();await next(page);
-  // then the screens that sell: the demo and Rachel, each with no progress segment
-  {const sold=[];for(let i=0;i<4;i++){const s=await screen(page);sold.push(s);if(s==='interests')break;const pr=await progress(page);sold.push(pr.hidden?'no bar':'bar');await next(page);await page.waitForFunction(k=>document.body.dataset.setupScreen!==k,s);}
-  ok('…then the Fruit Slice demo and Rachel, each with no progress segment (no Piano Tiles demo since 1 Nov 2026), then "What does <Name> love?"',JSON.stringify(sold)==='["reel","no bar","rachel","no bar","interests"]',sold);}
+  // then the screens that sell: the two demos and Rachel, each with no progress segment
+  {const sold=[];for(let i=0;i<5;i++){const s=await screen(page);sold.push(s);if(s==='interests')break;const pr=await progress(page);sold.push(pr.hidden?'no bar':'bar');await next(page);await page.waitForFunction(k=>document.body.dataset.setupScreen!==k,s);}
+  ok('…then the Fruit Slice and Piano Tiles demos and Rachel, each with no progress segment, then "What does <Name> love?"',JSON.stringify(sold)==='["reel","no bar","piano","no bar","rachel","no bar","interests"]',sold);}
   ok('"What does <Name> love?" is the second of the five',await page.locator('[data-step="interests"].on').count()===1&&(await progress(page)).lit===2&&await page.locator('#intName').innerText()==='Milo');
   await next(page);
-  ok('…then the games they will love, with no progress segment',await screen(page)==='games'&&(await progress(page)).hidden);
-  await next(page);
-  ok('…then one tap, "Is <Name> in speech therapy?", and no direction page comes back',await page.locator('[data-step="therapy"].on').count()===1&&/^Is \S+ in speech therapy\?$/.test((await page.locator('#therapyTitle').innerText()).trim())&&await page.locator('[data-step="path"]').count()===0);
+  ok('…then (no games screen since 4 Nov 2026) one tap, "Is <Name> in speech therapy?", and no direction page comes back',await page.locator('[data-step="therapy"].on').count()===1&&/^Is \S+ in speech therapy\?$/.test((await page.locator('#therapyTitle').innerText()).trim())&&await page.locator('[data-step="path"]').count()===0);
   const third=await progress(page);
   ok('…it is the third of the five: three groups lit',third.groups===5&&third.lit===3&&!third.hidden&&third.now==='3'&&third.max==='5'&&third.role==='progressbar',third);
   await answerTherapy(page);
@@ -189,14 +191,14 @@ await scenario('sound selection and private paced handoff',async()=>{
   // (both questions were skipped here, so no sentence about Sona is shown),
   // plus, on a first setup, the plan card: what Day 1 is, a fact about Sona.
   const ready=await readyShown(page);
-  ok('ready shows the name, the age band and the chosen sound, then Day 1\'s card, and nothing the parent did not give',ready.on&&ready.title==='Milo\'s practice is ready!'&&JSON.stringify(ready.chips)==='["Ages 2–4","Sound: S"]'&&ready.lines.length===0&&ready.text==='Milo\'s practice is ready! Ages 2–4 Sound: S '+PLAN_BOOK+' '+HEDGE,ready);
+  ok('ready shows the name, the age band and the chosen sound, then Day 1\'s card, and nothing the parent did not give',ready.on&&ready.title==='Milo\'s practice is ready!'&&JSON.stringify(ready.chips)==='["Ages 2–4","Sound: S"]'&&ready.lines.length===0&&ready.text==='Milo\'s practice is ready! Ages 2–4 Sound: S '+PLAN_BOOK,ready);
   // (THE PLAN MOMENT, 31 Oct 2026: a first setup reaches this screen through
   // a short build beat, setupscreenstest; it is gone before the screen shows.
   // Since that afternoon Day 1 is a game, then a book, and the card shows on
-  // every parent's first setup. This phone cannot buy, so it shows no story:
-  // "then a book.", and no "A new story every day.")
-  const plan=await page.evaluate(()=>({hidden:document.getElementById('planCard').hidden,more:document.getElementById('planMore').hidden,title:document.getElementById('planTitle').textContent,line:document.getElementById('planLine').textContent,src:document.getElementById('planImg').getAttribute('src'),game:document.getElementById('planCard').dataset.game,story:document.getElementById('planCard').dataset.story}));
-  ok('…the plan card even on a phone that shows no story: Fruit Slice\'s picture, "Play a game, then read a book." and "Fruit Slice first, then a book.", with no "A new story every day."',!plan.hidden&&plan.more&&plan.title==='Play a game, then read a book.'&&plan.line==='Fruit Slice first, then a book.'&&plan.src==='/assets/crafted/home-fruit.webp'&&plan.game==='slice'&&plan.story==='',plan);
+  // every parent's first setup. This phone cannot buy, so it names no story.
+  // One line since 4 Nov 2026.)
+  const plan=await page.evaluate(()=>({hidden:document.getElementById('planCard').hidden,title:document.getElementById('planTitle').textContent,words:document.querySelector('#planCard .plan-words').textContent,src:document.getElementById('planImg').getAttribute('src'),game:document.getElementById('planCard').dataset.game,story:document.getElementById('planCard').dataset.story}));
+  ok('…the plan card even on a phone that shows no story: Fruit Slice\'s picture and "Play a game, then read a book.", nothing more',!plan.hidden&&plan.title==='Play a game, then read a book.'&&plan.words==='Day 1Play a game, then read a book.'&&plan.src==='/assets/crafted/home-fruit.webp'&&plan.game==='slice'&&plan.story==='',plan);
   ok('…the build beat gone before it shows, no progress bar, no Echo beside it (he cheers above it) and no Rachel (she has her own screen)',!ready.build&&ready.seg&&!ready.mascot&&!ready.rachel,ready);
   await page.waitForTimeout(1200);
   const waited=await page.evaluate(()=>({screen:document.body.dataset.setupScreen,saved:!!Sona.getProfile().onboarded,complete:__setup.complete,confetti:__setup.confetti,requests:__setup.requests.length}));
@@ -334,9 +336,10 @@ await scenario('the two one-tap questions',async()=>{
    if(q.key==='therapy'){await choose(page,'S');await next(page);}
   }
   await updates(page);await page.locator('[data-step="ready"].on').waitFor();
-  // both answered: the ready screen shows one sentence about Sona, and the minutes
+  // both answered: the ready screen shows the minutes, and (since 4 Nov 2026,
+  // Travis: "too much text") no sentence for the therapy answer
   let ready=await readyShown(page);
-  ok('the ready screen then shows the therapy answer\'s one sentence about Sona, never one about the child, and the minutes picked',JSON.stringify(ready.lines)===JSON.stringify([THERAPY[2][2]])&&ready.chips.indexOf(MINUTES[2][2])>-1&&ready.lines.every(l=>/^(In )?Sona\b/.test(l)&&!/Milo|your child|\b(he|she|they)\b/i.test(l)),[ready.lines,ready.chips]);
+  ok('the ready screen then shows the minutes picked, and no sentence for the therapy answer (4 Nov 2026)',ready.lines.length===0&&ready.chips.indexOf(MINUTES[2][2])>-1&&!READY_GONE.test(ready.text),[ready.lines,ready.chips,ready.text]);
   // AN ANSWER SURVIVES AN INTERRUPTION: the draft holds both, and a reload
   // (which starts a parent at the hello again) shows them pressed.
   await page.reload();
@@ -348,11 +351,12 @@ await scenario('the two one-tap questions',async()=>{
   again=await shown('minutes');
   ok('…and so does the second',again.screen==='minutes'&&JSON.stringify(again.pressed)==='["10"]'&&again.next&&await page.evaluate(()=>draft.therapy==='t_no'),again);
   await next(page);await updates(page);await page.locator('[data-step="ready"].on').waitFor();
-  // every answer has its own sentence or chip, word for word
-  const table=await page.evaluate(([th,mins])=>{const lines=()=>[...document.querySelectorAll('#readyLines li')].map(l=>l.textContent),chips=()=>[...document.querySelectorAll('#readyChips li')].map(l=>l.textContent);const out={lines:[],chips:[]};th.forEach(id=>{draft.therapy=id;draft.minutes='';paintReady();out.lines.push(lines());});mins.forEach(v=>{draft.therapy='';draft.minutes=v;paintReady();out.chips.push(chips().slice(-1)[0]);});draft.therapy='';draft.minutes='';paintReady();out.none=[lines(),getComputedStyle(document.getElementById('readyLines')).display,chips().some(c=>/min a day/.test(c))];draft.therapy='t_no';draft.minutes='10';paintReady();return out;},[THERAPY.map(a=>a[0]),MINUTES.map(a=>a[0])]);
-  ok('each therapy answer puts its own sentence on the ready screen, word for word',JSON.stringify(table.lines)===JSON.stringify(THERAPY.map(a=>[a[2]])),table.lines);
+  // every minutes pick has its own chip, word for word; no therapy answer
+  // puts anything on the screen (4 Nov 2026)
+  const table=await page.evaluate(([th,mins])=>{const text=()=>document.querySelector('[data-step="ready"]').innerText.replace(/\s+/g,' ').trim(),chips=()=>[...document.querySelectorAll('#readyChips li')].map(l=>l.textContent);const out={texts:[],chips:[]};th.forEach(id=>{draft.therapy=id;draft.minutes='';paintReady();out.texts.push(text());});mins.forEach(v=>{draft.therapy='';draft.minutes=v;paintReady();out.chips.push(chips().slice(-1)[0]);});draft.therapy='';draft.minutes='';paintReady();out.none=[text(),chips().some(c=>/min a day/.test(c))];draft.therapy='t_no';draft.minutes='10';paintReady();return out;},[THERAPY.map(a=>a[0]),MINUTES.map(a=>a[0])]);
+  ok('no therapy answer changes the ready screen: each reads exactly as no answer does',table.texts.every(t=>t===table.none[0])&&!READY_GONE.test(table.none[0]),table);
   ok('each minutes pick shows as its own chip',JSON.stringify(table.chips)===JSON.stringify(MINUTES.map(a=>a[2])),table.chips);
-  ok('…and with neither answered there is no sentence and no minutes chip',JSON.stringify(table.none)==='[[],"none",false]',table.none);
+  ok('…and with no minutes answered there is no minutes chip',table.none[1]===false,table.none);
   // a draft may not smuggle in an answer that is not one of the fixed ids
   await page.evaluate(()=>{const d=JSON.parse(localStorage.getItem('sona.obdraft.v1'));d.therapy='<b>Milo</b>';d.minutes='45';d.interests=['dragons','<i>x</i>','sports','sports'];localStorage.setItem('sona.obdraft.v1',JSON.stringify(d));});
   await page.reload();
@@ -372,7 +376,7 @@ await scenario('the answers stay on this phone',async()=>{
   const head=await page.evaluate(()=>{const tag=document.querySelector('script[src="/pixel.js"]');return {attr:tag&&tag.getAttribute('data-autoconfig'),first:window.fbq&&fbq.queue&&fbq.queue.length?Array.from(fbq.queue[0]):null};});
   ok('setup\'s pixel tag switches off Meta\'s own button-reading, before anything else is sent to it',head.attr==='off'&&JSON.stringify(head.first)==='["set","autoConfig",false,"28886011914332605"]',head);
   await enter(page,{name:'Zephyrine',age:'6',therapy:'t_yes',interests:['sports','dinosaurs']});await choose(page,'R');await toReady(page,'10','parent@example.com');
-  {const rs=await readyShown(page);ok('the walk answered both questions',JSON.stringify(rs.lines)===JSON.stringify([THERAPY[0][2]])&&rs.chips.indexOf(MINUTES[2][2])>-1,rs);}
+  {const rs=await readyShown(page);ok('the walk answered both questions (the minutes on the ready screen; the therapy answer shown nowhere since 4 Nov 2026)',rs.lines.length===0&&rs.chips.indexOf(MINUTES[2][2])>-1&&!READY_GONE.test(rs.text)&&await page.evaluate(()=>draft.therapy==='t_yes'),rs);}
   const beforeReady=leadPosts(requests).length;
   await next(page);await page.locator('[data-step="mic"].on').waitFor();
   const afterReady=leadPosts(requests).length;
@@ -406,21 +410,22 @@ await scenario('the answers stay on this phone',async()=>{
 });
 
 // "<NAME>'S PRACTICE IS READY!" repeats what the parent picked, with Echo
-// cheering and the line that Sona does not test or diagnose. Rachel is no
+// cheering (no hedge line under it since 4 Nov 2026: "too much text"; the
+// sounds screen still says Sona does not test or diagnose). Rachel is no
 // longer on it (22 Oct 2026: her own screen, setupscreenstest). The browser
 // clinician setup never shows it.
 async function atReady(page,{name='Milo',age='4',sound='S',therapy='t_no',minutes='3'}={}){await enter(page,{name,age,therapy});await choose(page,sound);await toReady(page,minutes);}
-const readyFit=()=>{const ob=document.querySelector('.ob'),c=document.querySelector('[data-step="ready"]').getBoundingClientRect(),b=document.querySelector('#nextBtn').getBoundingClientRect(),h=document.querySelector('.ready-hedge').getBoundingClientRect();return {scrollHeight:ob.scrollHeight,height:ob.clientHeight,cardTop:c.top,cardBottom:c.bottom,buttonTop:b.top,buttonBottom:b.bottom,hedgeTop:h.top,hedgeBottom:h.bottom,obSideways:ob.scrollWidth-ob.clientWidth,sideways:document.documentElement.scrollWidth-innerWidth,innerHeight};};
+const readyFit=()=>{const ob=document.querySelector('.ob'),c=document.querySelector('[data-step="ready"]').getBoundingClientRect(),b=document.querySelector('#nextBtn').getBoundingClientRect(),h=(document.getElementById('planCard').hidden?document.getElementById('readyChips'):document.getElementById('planCard')).getBoundingClientRect();return {scrollHeight:ob.scrollHeight,height:ob.clientHeight,cardTop:c.top,cardBottom:c.bottom,buttonTop:b.top,buttonBottom:b.bottom,hedgeTop:h.top,hedgeBottom:h.bottom,obSideways:ob.scrollWidth-ob.clientWidth,sideways:document.documentElement.scrollWidth-innerWidth,innerHeight};};
 await scenario('the ready screen, right before the reminder, the price or the microphone',async()=>{
  {const {context,page,errors}=await fresh();try{
   await atReady(page);
-  const shown=await page.locator('[data-step="ready"]').evaluate(el=>({page:document.body.innerText,echo:(el.querySelector('.ready-echo img')||{}).getAttribute?el.querySelector('.ready-echo img').getAttribute('src'):'',asks:el.querySelectorAll('input,select,textarea,button').length,hedge:el.querySelector('.ready-hedge').textContent}));
-  ok('ready: Echo cheers above it, and it says Sona does not test or diagnose',/echo-cheer\.webp$/.test(shown.echo)&&shown.hedge===HEDGE,shown);
+  const shown=await page.locator('[data-step="ready"]').evaluate(el=>({page:document.body.innerText,echo:(el.querySelector('.ready-echo img')||{}).getAttribute?el.querySelector('.ready-echo img').getAttribute('src'):'',asks:el.querySelectorAll('input,select,textarea,button').length,hedge:!!el.querySelector('.ready-hedge')}));
+  ok('ready: Echo cheers above it, and no small print under it (4 Nov 2026)',/echo-cheer\.webp$/.test(shown.echo)&&!shown.hedge,shown);
   ok('no CCC, certification or claim that a fellowship is behind anyone',!/\bCCC\b|certified|fully licen[sc]ed/i.test(shown.page),shown.page);
   ok('it asks nothing: Continue is ready and the progress bar is hidden',shown.asks===0&&(await page.locator('#nextBtn').innerText()).trim()==='Continue'&&await page.locator('#nextBtn').isEnabled()&&await page.locator('#seg').isHidden());
   const honest=(await readyShown(page)).text;
-  ok('the screen reads as what the parent picked, never as a result: no plan, recommendation, score, norm, price or promise',!/recommend|we think|based on|assess|evaluat|score|result|usually by|\bplan\b|\$|\bfree\b/i.test(honest)&&(honest.match(/diagnos/gi)||[]).length===1,honest);
-  ok('…and it is exactly the name, the age group, the sound, the minutes, Day 1\'s card, the one sentence and the hedge',honest==='Milo\'s practice is ready! Ages 2–4 Sounds: R · S 3 min a day '+PLAN_BOOK+' '+THERAPY[2][2]+' '+HEDGE,honest);
+  ok('the screen reads as what the parent picked, never as a result: no plan, recommendation, score, norm, diagnosis, price or promise',!/recommend|we think|based on|assess|evaluat|score|result|usually by|\bplan\b|\$|\bfree\b|diagnos/i.test(honest),honest);
+  ok('…and it is exactly the name, the age group, the sound, the minutes and Day 1\'s card (4 Nov 2026: nothing more)',honest==='Milo\'s practice is ready! Ages 2–4 Sounds: R · S 3 min a day '+PLAN_BOOK,honest);
   await calm(page);await page.locator('#backBtn').click();ok('Back from ready returns to the email step',await page.locator('[data-step="updates"].on').count()===1);
   await calm(page);await page.locator('#backBtn').click();ok('…and Back again to the minutes question, with its answer held',await page.locator('[data-step="minutes"].on').count()===1&&await page.locator('#seg').isVisible()&&await page.locator('#obMinutes [aria-pressed="true"]').getAttribute('data-val')==='3');
   await next(page);await updates(page);await page.locator('[data-step="ready"].on').waitFor();
@@ -435,7 +440,7 @@ await scenario('the ready screen, right before the reminder, the price or the mi
   await page.evaluate(()=>{window.__screens=[document.body.dataset.setupScreen];new MutationObserver(()=>__screens.push(document.body.dataset.setupScreen)).observe(document.body,{attributes:true,attributeFilter:['data-setup-screen']});});
   await page.locator('#obName').fill('Milo');await page.locator('#obAge [data-age="4"]').click();await next(page);await choose(page,'S');await next(page);
   const screens=await page.evaluate(()=>__screens);
-  ok('the clinician setup never shows ready, Rachel\'s screen, a screen that sells, or a family question, forward or back',screens.includes('name')&&!screens.some(k=>['ready','therapy','minutes','rachel','reel','interests','games','remind'].includes(k))&&await page.locator('[data-step="slp"].on').count()===1&&await page.locator('[data-step="ready"]').isHidden(),screens);
+  ok('the clinician setup never shows ready, Rachel\'s screen, a screen that sells, or a family question, forward or back',screens.includes('name')&&!screens.some(k=>['ready','therapy','minutes','rachel','reel','piano','interests','remind'].includes(k))&&await page.locator('[data-step="slp"].on').count()===1&&await page.locator('[data-step="ready"]').isHidden(),screens);
   ok('…and keeps its four progress groups',await page.locator('#seg i').count()===4);
   clean('clinician skips ready',errors);
  }finally{await context.close();}}
@@ -494,7 +499,7 @@ await scenario('the ready screen, right before the reminder, the price or the mi
     // the stress case: a 12-letter name and three sounds
     await page.evaluate(()=>{nameEl.value='Christopherr';['S','L'].forEach(s=>document.querySelector('#obSounds [data-sound="'+s+'"]').click());paintReady();});await settled(page);
     const stress=await page.evaluate(readyFit),chips=(await readyShown(page)).chips;
-    ok('a 12-letter name and three sounds at 320×568: at most a short scroll, and the hedge fully on screen without it',JSON.stringify(chips.slice(0,2))==='["Ages 7+","Sounds: R · S · L"]'&&chips.length<=3&&stress.scrollHeight-stress.height<=48&&stress.hedgeTop>=0&&stress.hedgeBottom<=stress.buttonTop&&stress.sideways<=0&&stress.obSideways<=0,stress);
+    ok('a 12-letter name and three sounds at 320×568: at most a short scroll, and Day 1\'s card fully on screen without it',JSON.stringify(chips.slice(0,2))==='["Ages 7+","Sounds: R · S · L"]'&&chips.length<=3&&stress.scrollHeight-stress.height<=48&&stress.hedgeTop>=0&&stress.hedgeBottom<=stress.buttonTop&&stress.sideways<=0&&stress.obSideways<=0,stress);
     await page.evaluate(()=>{nameEl.value='Wolfeschlegelsteinhaus';paintReady();});await settled(page);
     const long=await page.evaluate(readyFit);
     ok('a 22-letter unbroken name at 320 wide never scrolls the screen sideways',long.sideways<=0&&long.obSideways<=0,long);
@@ -536,9 +541,9 @@ await scenario('exploring sounds stays optional and can be changed before finish
   ok('choosing a sound replaces the general-play choice',await page.evaluate(()=>draft.mode==='speech'&&draft.pathReason===''&&JSON.stringify(draft.focusSounds)==='["S"]'));
   await calm(page);await page.locator('#backBtn').click();await calm(page);await page.locator('#backBtn').click();
   ok('Back from the sound picker returns to "Is <Name> in speech therapy?" with the answer held and Continue showing',await page.locator('[data-step="therapy"].on').count()===1&&await page.locator('#obTherapy [aria-pressed="true"]').getAttribute('data-val')==='t_yes'&&await page.locator('#nextBtn').isVisible());
-  for(const k of ['games','interests','rachel','reel','name']){await calm(page);await page.locator('#backBtn').click();await page.locator('[data-step="'+k+'"].on').waitFor();}
-  ok('…and on back through the games, what they love, Rachel and the demo to name and age',await page.locator('[data-step="name"].on').count()===1);
-  for(const k of ['reel','rachel','interests','games','therapy','sounds']){await next(page);await page.locator('[data-step="'+k+'"].on').waitFor();}
+  for(const k of ['interests','rachel','piano','reel','name']){await calm(page);await page.locator('#backBtn').click();await page.locator('[data-step="'+k+'"].on').waitFor();}
+  ok('…and on back through what they love, Rachel and the two demos to name and age',await page.locator('[data-step="name"].on').count()===1);
+  for(const k of ['reel','piano','rachel','interests','therapy','sounds']){await next(page);await page.locator('[data-step="'+k+'"].on').waitFor();}
   await notNow(page);await atHandoff(page);
   ok('the final profile keeps only the explicitly chosen sound',await page.evaluate(()=>Sona.getProfile().mode==='speech'&&JSON.stringify(Sona.getProfile().focusSounds)==='["S"]'));
   clean('explore and change',errors);
@@ -732,17 +737,18 @@ await scenario('a double tap never answers a one-tap question',async()=>{
    ok('a double tap on the footer\'s button on "'+from+'" moves one screen, to "'+to+'"',await page.evaluate(()=>document.body.dataset.setupScreen)===to,await screen(page));
    await page.waitForTimeout(700);
   }};
-  // (the name comes straight after the hello since 1 Nov 2026, then the demo and Rachel)
+  // (the name comes straight after the hello since 1 Nov 2026, then the two
+  // demos and Rachel)
   await twice([['welcome','name']]);
   await toName(page);await page.locator('#obName').fill('Milo');await next(page);await page.locator('[data-step="reel"].on').waitFor();await page.waitForTimeout(700);
-  await twice([['reel','rachel'],['rachel','interests']]);
+  await twice([['reel','piano'],['piano','rachel'],['rachel','interests']]);
   await page.locator('[data-step="interests"].on').waitFor();
   await page.mouse.click(cont.x,cont.y);await page.waitForTimeout(120);await page.mouse.click(cont.x,cont.y);
-  ok('a double tap on Continue on what the child loves moves one screen, to the games',await screen(page)==='games',await screen(page));
-  // Where the first answer sits once the question shows: go and look, then come Back.
-  await next(page);await page.locator('[data-step="therapy"].on').waitFor();await settled(page);
+  ok('a double tap on Continue on what the child loves moves one screen, to the therapy question (no games screen since 4 Nov 2026), and answers nothing',await page.evaluate(()=>document.body.dataset.setupScreen==='therapy'&&draft.therapy===''),await screen(page));
+  // Where the first answer sits once the question shows: look, then go Back.
+  await settled(page);
   const spot=await centre(page,'#obTherapy .ask-pick[data-val="t_yes"]');
-  await calm(page);await page.locator('#backBtn').click();await page.locator('[data-step="games"].on').waitFor();await page.waitForTimeout(600);
+  await page.waitForTimeout(600);await calm(page);await page.locator('#backBtn').click();await page.locator('[data-step="interests"].on').waitFor();await page.waitForTimeout(600);
   await page.mouse.click(cont.x,cont.y);await page.waitForTimeout(150);await page.mouse.click(spot.x,spot.y);
   ok('a tap that lands on an answer 150 ms after the question appears answers nothing',await page.evaluate(()=>document.body.dataset.setupScreen==='therapy'&&draft.therapy===''));
   await page.waitForTimeout(700);await page.mouse.click(spot.x,spot.y);
@@ -913,7 +919,10 @@ await scenario('the email step: before the price, optional, and fits',async()=>{
   await enter(page,{age:'8'});await choose(page,'R');await next(page);await answerMinutes(page,'10');await page.locator('[data-step="updates"].on').waitFor();
   const shown=await page.evaluate(()=>{const st=document.querySelector('[data-step="updates"]');return {title:document.getElementById('updTitle').textContent.trim(),helpLine:!!st.querySelector('.upd-help'),text:st.innerText.replace(/\s+/g,' ').trim(),required:!!document.querySelector('#updEmail[required]'),focus:document.activeElement.id,bubble:document.getElementById('bubble').textContent,cta:document.getElementById('nextBtn').textContent.trim(),back:getComputedStyle(document.getElementById('backBtn')).display,type:document.getElementById('updEmail').type};});
   ok('the step asks once, plainly, and is optional: a heading, an email box that is not required, Skip, Continue and Back',shown.title==='Weekly progress?'&&/optional/i.test(shown.text)&&!shown.required&&shown.type==='email'&&/Skip/.test(shown.text)&&shown.cta==='Continue'&&shown.back!=='none'&&shown.bubble==='Want a weekly report?',shown);
-  ok('Travis\'s consent line is on screen word for word, before anything is sent',shown.text.includes('We’ll also send occasional tips from Rachel. Unsubscribe anytime.')&&leadPosts(requests).length===0,shown.text);
+  // (Travis, 4 Nov 2026: "instead of we'll also send occasional tips from
+  // Rachel, just say something like ... track weekly progress"; the example
+  // email card above the box went the same day)
+  ok('Travis\'s line is on screen word for word, before anything is sent, with no example card',shown.text.includes('Track your child’s progress every week. Unsubscribe anytime.')&&!/occasional tips|Example|Last week on Sona/.test(shown.text)&&leadPosts(requests).length===0,shown.text);
   ok('…the old help line is gone (Travis, 15 Oct 2026), and the child\'s name is not on the screen',!/Rachel.s tips for practicing at home/i.test(shown.text)&&!shown.helpLine&&!/Milo/.test(shown.text),shown.text);
   ok('the heading takes focus, not the box: no keyboard comes up by itself',shown.focus==='updTitle',shown.focus);
   // Done (Enter) on the keyboard only closes it: it neither goes on nor sends
@@ -976,16 +985,16 @@ await scenario('a solid colour behind the keyboard',async()=>{
 // THE SCREENS THAT SELL (Travis, 19 Oct 2026; rebuilt 22 Oct 2026: "We want
 // to sell the product in the onboarding ... emphasize the problem ... what
 // their kid is interested in, to help customize what games to show them"):
-// before the name, the two game demos and Rachel (the "problem" slide that
-// led them went on 31 Oct 2026: its words now head the Fruit Slice demo);
-// after it, what the child loves and the games they will love. Statements with Continue and
-// Back (what the child loves is a question: any number of tiles, or none):
-// nothing stored but the draft's picks, no progress segment on a statement.
-// The games are the catalog's (no Coming soon game, no typed list).
+// after the name (since 1 Nov 2026), the Fruit Slice and Piano Tiles demos
+// (both again since 4 Nov 2026: "I want to go back to the old two slides")
+// and Rachel, then what the child loves. "Games <Name> will love" went on
+// 4 Nov 2026 ("it hardly shows anything additional or what can be done in a
+// game"). Statements with Continue and Back (what the child loves is a
+// question: any number of tiles, or none): nothing stored but the draft's
+// picks, no progress segment on a statement.
 // the two demos' headings, word for word (31 Oct 2026; each is two lines,
 // and the <br> between them is no text)
-const REEL={title:'Speech practice.'+'Through play.'};
-const GAMES=n=>({title:'Games for '+n+'.'});
+const REEL={title:'Speech practice.'+'Through play.'},PIANO={title:'Say the sound'+'to slow the keys.'};
 const INTERESTS=[['sports','Sports'],['music','Music'],['dinosaurs','Dinosaurs'],['animals','Animals'],['space','Space'],['building','Building'],['food','Food']];
 // what a sell screen shows, as a parent reads it
 const sellShown=(page,key)=>page.evaluate(key=>{const st=document.querySelector('[data-step="'+key+'"]'),painted=el=>!!el&&getComputedStyle(el).display!=='none'&&el.getBoundingClientRect().height>0,h=st.querySelector('h1'),grid=[...st.querySelectorAll('#gamesGrid li')];
@@ -994,37 +1003,29 @@ const sellShown=(page,key)=>page.evaluate(key=>{const st=document.querySelector(
   return {screen:document.body.dataset.setupScreen,title:h.textContent.trim(),line:(st.querySelector('.sell-line')||{}).textContent,asks:[...st.querySelectorAll('input,select,textarea,button,a,[role="button"]')].map(b=>b.id||b.dataset.val||b.tagName),cta:document.getElementById('nextBtn').textContent.trim(),enabled:!document.getElementById('nextBtn').disabled,back:painted(document.getElementById('backBtn')),seg:document.getElementById('seg').hidden,focus:document.activeElement===h,mascot:painted(document.querySelector('.ob .mascot')),bare,
    names:[...st.querySelectorAll('.ph-name')].map(e=>e.textContent),
    grid:grid.map(li=>li.dataset.game),loved:grid.filter(li=>li.classList.contains('loved')).map(li=>li.dataset.game),gridNames:grid.map(li=>li.querySelector('.sell-name').textContent),gridPics:grid.map(li=>(li.querySelector('img')||{}).getAttribute?li.querySelector('img').getAttribute('src'):''),kickers:[...st.querySelectorAll('.sell-kicker')].map(k=>k.textContent),words:st.innerText.replace(/\s+/g,' ').trim()};},key);
-// the catalog's own answer, read straight from GAME_ACTS: the playable games of a group
-// The Arcade view's order of a group's playable games, the order the peek takes its first few from
-const homeOrder=(page,id)=>page.evaluate(id=>Sona.activityLibrary().groups.filter(g=>g.id===id)[0].games.filter(x=>x.kind!=='book'&&!x.comingSoon&&x.available!==false).map(x=>x.key),id);
-// the "and N more" lines under the grid
-const mores=page=>page.evaluate(()=>[...document.querySelectorAll('[data-step="games"] .sell-more')].map(p=>p.textContent));
-const playable=(page,group)=>page.evaluate(g=>Object.keys(Sona.GAME_ACTS).filter(k=>{const a=Sona.GAME_ACTS[k];return (!g||a.group===g)&&!a.comingSoon&&a.available!==false;}),group);
-// the peek setup should show: the games the picks fit first, then the rest,
-// each part in Home's order, the first `cap` of them (the page's own pairs)
-const peekOf=(page,home,picks,cap)=>page.evaluate(([home,picks,cap])=>{const fit=k=>picks.some(i=>(INTEREST_GAMES[i]||[]).indexOf(k)>-1),f=home.filter(fit);return {fits:f.slice(0,cap),grid:f.concat(home.filter(k=>!fit(k))).slice(0,cap)};},[home,picks,cap]);
 const sellFit=key=>{const st=document.querySelector('[data-step="'+key+'"]').getBoundingClientRect(),b=document.getElementById('nextBtn').getBoundingClientRect(),f=document.querySelector('.obfoot').getBoundingClientRect(),h=document.querySelector('[data-step="'+key+'"] h1').getBoundingClientRect(),imgs=[...document.querySelectorAll('[data-step="'+key+'"] .sell-art img,[data-step="'+key+'"] .rachel-photo img,[data-step="'+key+'"] .demo-scene,[data-step="'+key+'"] .int-pick')].map(i=>i.getBoundingClientRect()),under=[...document.querySelectorAll('[data-step="'+key+'"] #interestsSkip')].map(i=>i.getBoundingClientRect());return {cardTop:Math.round(st.top),cardBottom:Math.round(st.bottom),footTop:Math.round(f.top),btnTop:Math.round(b.top),btnBottom:Math.round(b.bottom),headTop:Math.round(h.top),imgs:imgs.length,imgBottom:Math.round(Math.max(0,...imgs.map(r=>r.bottom),...under.map(r=>r.bottom))),imgSmall:imgs.filter(r=>r.width<40||r.height<20).length,height:innerHeight,sideways:document.documentElement.scrollWidth-innerWidth,obSideways:(()=>{const o=document.querySelector('.ob');return o.scrollWidth-o.clientWidth;})()};};
-// what this phone opens, read from the catalog's own gate (Sona.gameAccess)
-const opensHere=(page,group)=>page.evaluate(g=>Object.keys(Sona.GAME_ACTS).filter(k=>{const a=Sona.GAME_ACTS[k];return (!g||a.group===g)&&!a.comingSoon&&a.available!==false&&Sona.gameAccess(k).allowed;}),group);
 const kept=page=>page.evaluate(()=>{const o={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(/^sona\./.test(k))o[k]=localStorage.getItem(k);}o.__draft=JSON.stringify(draft);return JSON.stringify(o);});
-await scenario('the screens that sell: their words, the games, and nothing kept',async()=>{
- // a phone where the price follows setup (the trial opens every game), so
- // the grid is every playable game of the age group
+await scenario('the screens that sell: their words, and nothing kept',async()=>{
+ // a phone where the price follows setup
  const {context,page,errors,requests}=await fresh({viewport:{width:375,height:667},webSales:true});try{
   ok('(this phone can sell: the price follows setup)',await page.evaluate(()=>Sona.trialFirst()===true));
-  ok('the order: hello, name, the Fruit Slice demo, Rachel, what they love, their games, therapy, sounds, minutes, email, ready, microphone',await page.evaluate(()=>ORDER.join())===FIRST_WALK);
+  ok('the order: hello, name, the Fruit Slice and Piano Tiles demos, Rachel, what they love, therapy, sounds, minutes, email, ready, microphone',await page.evaluate(()=>ORDER.join())===FIRST_WALK);
   await setupWalk(page,'reel',{name:'Milo',age:'6'});await page.locator('[data-step="reel"].on').waitFor();await settled(page);
   const before=await kept(page);
   ok('the "problem" slide is gone (31 Oct 2026): no step, heading or picture of it is left on the page',await page.evaluate(()=>!document.querySelector('[data-step="problem"]')&&!document.getElementById('problemTitle')&&!document.querySelector('.studio-problem-art')));
-  ok('the Piano Tiles demo is gone (1 Nov 2026: "just keep fruit slice"): no step, scene or script of it is left',await page.evaluate(()=>!document.querySelector('[data-step="piano"]')&&!document.getElementById('pianoDemoScene')&&!document.querySelector('script[src*="piano-demo"]')&&!window.SonaPianoDemo));
-  let s=await sellShown(page,'reel');
-  ok('reel: one clear message, "Speech practice. Through play.", the slide it replaced\'s words, on two lines',s.screen==='reel'&&s.title===REEL.title&&await page.evaluate(()=>document.querySelector('[data-step="reel"] h1').querySelectorAll('br').length===1),s.title);
-  ok('reel: the three steps of the demo, Continue and Back, no progress segment; the heading takes focus',s.asks.length===3&&s.cta==='Continue'&&s.back&&s.seg&&!s.mascot&&s.focus,s);
-  ok('reel: a canvas demo whose three steps say what happens: normal speed, the child says the sound, the game slows down; no real game, microphone or old clip',await page.evaluate(()=>{const st=document.querySelector('.step.on');return !!st.querySelector('#fruitDemoScene canvas[role="img"]')&&[...st.querySelectorAll('[data-demo-phase]')].map(b=>b.textContent.trim()).join()==='1Normal speed,2Says “rrrr”,3Slows down'&&!document.getElementById('reelBox');}));
+  ok('the "Games <Name> will love" screen is gone (4 Nov 2026): no step or grid of it is left on the page',await page.evaluate(()=>!document.querySelector('[data-step="games"]')&&!document.getElementById('gamesGrid')&&!document.getElementById('gamesTitle')));
+  let s;
+  for(const [key,head,what,scene] of [['reel',REEL.title,'"Speech practice. Through play.", the slide it replaced\'s words','fruitDemoScene'],['piano',PIANO.title,'the useful speech help in that game','pianoDemoScene']]){
+   if(key!=='reel'){await next(page);await page.locator('[data-step="'+key+'"].on').waitFor();await settled(page);}
+   s=await sellShown(page,key);
+   ok(key+': one clear message, '+what+', on two lines',s.screen===key&&s.title===head&&await page.evaluate(k=>document.querySelector('[data-step="'+k+'"] h1').querySelectorAll('br').length===1,key),s.title);
+   ok(key+': the two speed comparisons, Continue and Back, no progress segment; the heading takes focus',s.asks.length===2&&s.cta==='Continue'&&s.back&&s.seg&&!s.mascot&&s.focus,s);
+   ok(key+': a canvas demo with two labelled modes and no real game, microphone or old clip',await page.evaluate(id=>{const st=document.querySelector('.step.on');return !!st.querySelector('#'+id+' canvas[role="img"]')&&[...st.querySelectorAll('[data-demo-mode]')].map(b=>b.textContent.trim()).join()==='Normal speed,After practice'&&!st.querySelector('[data-demo-phase]')&&!document.getElementById('reelBox');},scene));
+  }
   await next(page);await page.locator('[data-step="rachel"].on').waitFor();await settled(page);
   s=await sellShown(page,'rachel');
   ok('rachel: a statement: nothing to tap, no progress segment, no Echo, the heading takes focus',s.asks.length===0&&s.cta==='Continue'&&s.back&&s.seg&&!s.mascot&&s.focus,s);
-  ok('nothing is stored by the demo and Rachel\'s screen (no answer, no profile, no household key, the draft unchanged)',await kept(page)===before);
+  ok('nothing is stored by the demos and Rachel\'s screen (no answer, no profile, no household key, the draft unchanged)',await kept(page)===before);
   await setupWalk(page,'interests',{name:'Milo',age:'6'});await settled(page);
   s=await sellShown(page,'interests');
   ok('interests: "What does Milo love?", the name in ph-name and nowhere else',s.title==='What does Milo love?'&&JSON.stringify(s.names)==='["Milo"]'&&s.bare.length===0,s);
@@ -1033,97 +1034,30 @@ await scenario('the screens that sell: their words, the games, and nothing kept'
   // a pick, a second pick and an unpick: the draft holds ids, in the order picked
   await calm(page);await page.locator('#obInterests [data-val="dinosaurs"]').click();await page.locator('#obInterests [data-val="food"]').click();await page.locator('#obInterests [data-val="sports"]').click();await page.locator('#obInterests [data-val="food"]').click();
   ok('interests: each tile is a toggle, and the draft keeps the ids picked (nothing else)',await page.evaluate(()=>JSON.stringify(draft.interests)==='["dinosaurs","sports"]'&&JSON.stringify(JSON.parse(localStorage.getItem('sona.obdraft.v1')).interests)==='["dinosaurs","sports"]'&&!Sona.getProfile().onboarded&&[...document.querySelectorAll('#obInterests [aria-pressed="true"]')].map(b=>b.dataset.val).join()==='sports,dinosaurs'));
-  const afterPicks=await kept(page);
-  await next(page);await page.locator('[data-step="games"].on').waitFor();await settled(page);
-  s=await sellShown(page,'games');
-  ok('games: the heading is exactly "'+GAMES('Milo').title+'"',s.title===GAMES('Milo').title,s.title);
-  ok('games: the name is ph-name, and no other recorded text holds it',JSON.stringify(s.names)==='["Milo"]'&&s.bare.length===0,s);
-  const arcade=await homeOrder(page,'arcade'),peek=await peekOf(page,arcade,['dinosaurs','sports'],3);
-  // A shorter Play Studio peek: three large cards, loved ones first, the rest counted.
-  ok('games: three of the catalog\'s playable Arcade games for a 5–6 year old, the ones sports and dinosaurs fit first ('+peek.fits.join(', ')+'), ringed, then the rest, each part in the Arcade view\'s order',arcade.length>3&&JSON.stringify(arcade.slice().sort())===JSON.stringify((await playable(page,'arcade')).slice().sort())&&peek.fits.length>=3&&JSON.stringify(s.grid)===JSON.stringify(peek.grid)&&JSON.stringify(s.loved)===JSON.stringify(peek.fits),{grid:s.grid,loved:s.loved,peek,arcade});
-  ok('games: …and the rest counted under them: "and '+(arcade.length-3)+' more"',JSON.stringify(await mores(page))===JSON.stringify(['and '+(arcade.length-3)+' more']),await mores(page));
-  ok('games: never a Coming soon game, and the free and Premium ones alike, unlabelled',s.grid.length>=2&&await page.evaluate(keys=>keys.every(k=>!Sona.GAME_ACTS[k].comingSoon),s.grid)&&!/\bfree\b|premium|coming soon|\$/i.test(s.words),s.words);
-  ok('games: each with its own name and its painted Home card',JSON.stringify(s.gridNames)===JSON.stringify(await page.evaluate(keys=>keys.map(k=>Sona.GAME_ACTS[k].name),s.grid))&&JSON.stringify(s.gridPics)===JSON.stringify(await page.evaluate(keys=>keys.map(k=>'/assets/crafted/home-'+Sona.CRAFTED_CARDS[k]+'.webp'),s.grid)),s);
-  ok('…every picture loads',await page.evaluate(()=>Promise.all([...document.querySelectorAll('#gamesGrid img')].map(i=>i.decode().then(()=>i.naturalWidth>0,()=>false))).then(a=>a.length>0&&a.every(Boolean))));
-  ok('games: one age group, so no group headings',s.kickers.length===0,s.kickers);
-  ok('games: a statement: nothing to tap in it, Continue, Back, no progress segment',s.asks.length===0&&s.cta==='Continue'&&s.back&&s.seg,s);
-  ok('nothing is stored by the games screen (the draft unchanged since the picks)',await kept(page)===afterPicks);
   await next(page);await page.locator('[data-step="therapy"].on').waitFor();
-  ok('…and Continue goes on to the therapy question, the third of the five',(await progress(page)).lit===3);
-  await calm(page);await page.locator('#backBtn').click();await page.locator('[data-step="games"].on').waitFor();
-  ok('Back from the therapy question comes back to the games',await screen(page)==='games');
-  // the age and the picks, changed after Back, change the games
-  for(const k of ['interests','rachel','reel','name']){await calm(page);await page.locator('#backBtn').click();await page.locator('[data-step="'+k+'"].on').waitFor();}
-  await page.locator('#obAge [data-age="4"]').click();for(const k of ['reel','rachel','interests']){await next(page);await page.locator('[data-step="'+k+'"].on').waitFor();}
-  await calm(page);await page.locator('#obInterests [data-val="dinosaurs"]').click();await page.locator('#obInterests [data-val="sports"]').click();await page.locator('#obInterests [data-val="space"]').click();
-  await next(page);await page.locator('[data-step="games"].on').waitFor();
-  s=await sellShown(page,'games');
-  const simple=await homeOrder(page,'simple'),speek=await peekOf(page,simple,['dinosaurs','sports','space'],3);
-  ok('ages 2–4: the grid is three of the catalog\'s playable Simple play games, Bubble Pop first for a child who loves space ('+s.grid.join(', ')+'), the rest counted',JSON.stringify(simple.slice().sort())===JSON.stringify((await playable(page,'simple')).slice().sort())&&s.grid[0]==='bubbles'&&JSON.stringify(s.grid)===JSON.stringify(speek.grid)&&JSON.stringify(s.loved)===JSON.stringify(speek.fits)&&JSON.stringify(await mores(page))===JSON.stringify(simple.length>3?['and '+(simple.length-3)+' more']:[]),{grid:s.grid,loved:s.loved,speek,simple,mores:await mores(page)});
-  await calm(page);await page.locator('#backBtn').click();await page.locator('[data-step="interests"].on').waitFor();await calm(page);await page.locator('#interestsSkip').click();await page.locator('[data-step="games"].on').waitFor();
-  s=await sellShown(page,'games');
-  ok('Skip on what they love clears the picks: the Arcade view\'s first three in its own order, none ringed',JSON.stringify(s.grid)===JSON.stringify(simple.slice(0,3))&&s.loved.length===0&&await page.evaluate(()=>draft.interests.length===0),s.grid);
+  ok('…and Continue goes straight on to the therapy question, the third of the five (no games screen since 4 Nov 2026)',(await progress(page)).lit===3);
+  await calm(page);await page.locator('#backBtn').click();await page.locator('[data-step="interests"].on').waitFor();
+  ok('Back from the therapy question comes back to what they love, the picks held',await screen(page)==='interests'&&await page.evaluate(()=>[...document.querySelectorAll('#obInterests [aria-pressed="true"]')].map(b=>b.dataset.val).join()==='sports,dinosaurs'));
   ok('nothing posted, nothing sent about these screens but the screen\'s key',leadPosts(requests).length===0);
   clean('sell screens',errors);
  }finally{await context.close();}
- // no age given, and 7+
- for(const [age,label] of [['','no age'],['8','7+']]){
-  const {context,page,errors}=await fresh({viewport:{width:375,height:667},webSales:true});try{
-   await setupWalk(page,'games',{name:'Ava',age});
-   const s=await sellShown(page,'games');
-   if(!age){
-    const sh=await homeOrder(page,'simple'),ah=await homeOrder(page,'arcade'),both=sh.slice(0,2).concat(ah.slice(0,2));
-    ok('no age: two Simple play games then two Arcade ones, Home\'s first of each, each group under its catalog label',JSON.stringify(s.grid)===JSON.stringify(both)&&JSON.stringify(s.kickers)===JSON.stringify(await page.evaluate(()=>['simple','arcade'].map(id=>Sona.activityLibrary().groups.filter(g=>g.id===id)[0].ageLabel))),{grid:s.grid,both,kickers:s.kickers});
-    ok('no age: …each group\'s rest counted under it',JSON.stringify(await mores(page))===JSON.stringify([sh,ah].map((g,i)=>g.length-[2,2][i]).filter(n=>n>0).map(n=>'and '+n+' more')),await mores(page));
-   }else ok('7+: the Arcade view\'s first three Arcade games',JSON.stringify(s.grid)===JSON.stringify((await homeOrder(page,'arcade')).slice(0,3)),s.grid);
-   ok(label+': still no Coming soon game',await page.evaluate(keys=>keys.every(k=>!Sona.GAME_ACTS[k].comingSoon),s.grid));
-   clean('sell screens '+label,errors);
-  }finally{await context.close();}
- }
- // A PHONE THAT CANNOT SELL (the website while it sells nothing, so every
- // Android family; an app build with no purchase plugin): no price follows,
- // nothing there can open a Premium game, so "Games <Name> will love" lists
- // only the games this phone opens, never one it will grey out
- for(const [age,label,group] of [['6','5–6','arcade'],['4','2–4','simple'],['','no age','']]){
-  const {context,page,errors}=await fresh({viewport:{width:375,height:667}});try{
-   await setupWalk(page,'interests',{name:'Ava',age});
-   const before=await kept(page);
-   ok('cannot sell, '+label+': (no price follows setup on this phone)',await page.evaluate(()=>Sona.trialFirst()===false&&!Sona.webSales()));
-   await next(page);await page.locator('[data-step="games"].on').waitFor();
-   const s=await sellShown(page,'games'),here=await opensHere(page,group),all=await playable(page,group);
-   const free=await page.evaluate(keys=>keys.filter(k=>Sona.GAME_ACTS[k].tier==='free'),all);
-   ok('cannot sell, '+label+': the grid is exactly the games this phone opens ('+here.join(', ')+'), the free version\'s, and none it greys out',JSON.stringify(s.grid.slice().sort())===JSON.stringify(here.slice().sort())&&JSON.stringify(here.slice().sort())===JSON.stringify(free.slice().sort())&&here.length>=2,{grid:s.grid,here,free,all});
-   // (the little kids' two playable games are both free today; the big kids'
-   // Premium ones are what this rule keeps off a phone that cannot sell)
-   if(group!=='simple')ok('cannot sell, '+label+': …so a Premium game such as Hoops is not on it',all.indexOf('hoops')>-1&&s.grid.indexOf('hoops')<0&&here.length<all.length,{grid:s.grid,all});
-   ok('cannot sell, '+label+': asking which games open stores nothing',await kept(page)===before);
-   ok('cannot sell, '+label+': still unlabelled, and the same words',!/\bfree\b|premium|coming soon|\$/i.test(s.words)&&s.title===GAMES('Ava').title,s.words);
-   clean('sell screens, cannot sell, '+label,errors);
-  }finally{await context.close();}
- }
 });
 await scenario('the screens that sell fit every screen',async()=>{
- // one walk a screen size, with no age (both groups: the longest grid); the
- // other age groups are then painted on the same screen, as Back would
+ // one walk a screen size, with no age
  for(const device of [{viewport:{width:320,height:568}},{viewport:{width:375,height:667}},{viewport:{width:390,height:844},safeArea:{top:47,bottom:34}},{viewport:{width:768,height:1024}},{viewport:{width:1024,height:768}}]){
   const {context,page,errors}=await fresh(Object.assign({webSales:true},device)),size=device.viewport.width+'×'+device.viewport.height;try{
-   for(const key of ['reel','rachel','interests','games']){
+   for(const key of ['reel','piano','rachel','interests']){
     await setupWalk(page,key,{name:'Maximiliana',age:''});await page.locator('[data-step="'+key+'"].on').waitFor();await settled(page);
-    if(key==='games')ok('(fit at '+size+': a phone that sells, so the grid is the longest it gets: four games of '+(await playable(page,'')).length+', and two "more" lines)',await page.evaluate(()=>Sona.trialFirst()===true&&document.querySelectorAll('#gamesGrid li').length)===4&&(await mores(page)).length===2);
-    for(const age of key==='games'?['','6','4']:['']){
-     await page.evaluate(a=>{draft.childAge=a;paintSell();},age);
-     await page.evaluate(()=>Promise.all([...document.querySelectorAll('.step.on img')].map(i=>i.decode().catch(()=>{}))));
-     const f=await page.evaluate(sellFit,key),at=size+(key==='games'?' ('+(age?'age '+age:'no age')+')':'');
-     ok(key+' fits at '+at+': the screen on the phone and clear of the footer, its pictures with it, Continue whole, nothing sideways',f.cardTop>=0&&f.headTop>=0&&f.cardBottom<=f.footTop&&f.imgBottom<=f.footTop&&f.imgSmall===0&&f.imgs>0&&f.btnBottom<=f.height&&f.sideways<=0&&f.obSideways<=0,f);
-    }
-    await page.evaluate(()=>{draft.childAge='';paintSell();});
+    await page.evaluate(()=>Promise.all([...document.querySelectorAll('.step.on img')].map(i=>i.decode().catch(()=>{}))));
+    const f=await page.evaluate(sellFit,key),at=size;
+    ok(key+' fits at '+at+': the screen on the phone and clear of the footer, its pictures with it, Continue whole, nothing sideways',f.cardTop>=0&&f.headTop>=0&&f.cardBottom<=f.footTop&&f.imgBottom<=f.footTop&&f.imgSmall===0&&f.imgs>0&&f.btnBottom<=f.height&&f.sideways<=0&&f.obSideways<=0,f);
    }
    clean('sell fit '+size,errors);
   }finally{await context.close();}
  }
 });
 await scenario('the screens that sell: only for a family\'s first setup',async()=>{
- const NONE=['reel','rachel','interests','games','remind'];
+ const NONE=['reel','piano','rachel','interests','remind'];
  {const {context,page,errors}=await fresh();try{
   await who(page,'slp');
   ok('the browser clinician\'s own setup (?slp=1) has none of them',await page.evaluate(k=>ORDER===ORDER_SLP&&k.every(x=>ORDER.indexOf(x)<0),NONE));
@@ -1378,7 +1312,7 @@ await scenario('the price never loads: Continue comes back',async()=>{
  ok('leaving ready (or the reminder after it) saves the profile and writes the marker before it names the price page',leave.indexOf('saveSetup()')>0&&leave.indexOf('saveSetup()')<leave.indexOf('Sona.setupAfterMark')&&leave.indexOf('Sona.setupAfterMark')<leave.indexOf('"/subscribe.html?setup=1"'),leave.slice(0,200));
  ok('every "setup step" is sent through SonaAnalytics, with the screen\'s key and nothing else',(code.match(/SonaAnalytics\.track\("setup step",\{step:key\}\)/g)||[]).length===1&&!/(?:^|[^.\w])track\("setup step"/.test(code)&&!/Sona\.track\(/.test(code));
  {const keys=(code.match(/var STEP_KEYS=\{([^}]*)\}/)||[])[1]||'';
- ok('…and the fixed list of screen keys is the screens setup has: no "problem" since 31 Oct 2026',keys.split(',').map(k=>k.split(':')[0]).join()==='welcome,name,reel,rachel,interests,games,therapy,sounds,minutes,updates,ready,remind,mic,handoff,slp,email',keys);}
+ ok('…and the fixed list of screen keys is the screens setup has: no "problem" since 31 Oct 2026, no "games" since 4 Nov 2026',keys.split(',').map(k=>k.split(':')[0]).join()==='welcome,name,reel,piano,rachel,interests,therapy,sounds,minutes,updates,ready,remind,mic,handoff,slp,email',keys);}
  ok('setup paints no grown-ups microphone line of its own (31 Oct 2026): no #micPromise, and Sona.MIC_PROMISE is not read on this page',!/micPromise|MIC_PROMISE/.test(code));
  // setup makes no sound (Travis, 23 Oct 2026: "turn the sound off when they
  // press the buttons in the onboarding"; "Hear Echo", its one sound since 22
