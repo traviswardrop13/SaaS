@@ -207,6 +207,16 @@ const twice = (page) => page.evaluate(() => ({
   face: document.getElementById("echoFace").getAttribute("src"), button: !document.getElementById("micBtn").hidden,
 }));
 const gameReps = (page) => page.evaluate(() => { const g = JSON.parse(localStorage.getItem("sona.gamereps.v1") || "{}"); return Object.keys(g).reduce((n, day) => n + Object.keys(g[day]).reduce((m, k) => m + g[day][k], 0), 0); });
+// The word panel while the child plays the move a word earned (5 Nov 2026):
+// "Hear it" did nothing there, so it is not shown until the next word, and the
+// line beside "Swipe up to shoot!" praises the talking, never a result ("You
+// did it!" read as if the ball had already gone in). `hear` is what a child
+// sees of the button: hidden (its place kept) or visible.
+const panel = (page) => page.evaluate(() => ({
+  hear: getComputedStyle(document.getElementById("hear")).visibility, cheer: document.getElementById("cheer").textContent,
+  hint: document.getElementById("micState").textContent, phase: (window.__sayplay || {}).phase,
+}));
+const playPanelOk = (p) => p.phase === "play" && p.hear === "hidden" && /^(I heard you|Great talking|Nice talking)!$/.test(p.cheer) && !/did it|in!|goal|found/i.test(p.cheer);
 // the child's voice on a script, timed inside the page (a round trip per
 // change would smear a 90 ms dip): [ms on, ms off, ms on, …]
 const voiceScript = (page, spans) => page.evaluate((spans) => new Promise((done) => {
@@ -687,6 +697,7 @@ await scenario("hoops played through", async () => {
     await page.locator("#startBtn").click();
     const box = await court(page);
     await page.waitForFunction(() => window.__sayplay.listening === true);
+    ok("hoops: while the word is asked, \"Hear it\" is there", (await panel(page)).hear === "visible", await panel(page));
     // NO WORD, NO BALL: a swipe before the word does nothing
     await swipe(page, box, 0, 240);
     await page.waitForTimeout(300);
@@ -700,6 +711,7 @@ await scenario("hoops played through", async () => {
     ok("hoops: the second time brings the ball, and the mic closes", await sayForBall(page) && (await live(page)) === 0);
     ok("hoops: the word alone is not a basket: the step waits for the shot", (await game(page)).step === 0 && (await game(page)).phase === "play");
     ok("hoops: it says how to shoot", /Swipe up to shoot/.test(await page.locator("#micState").innerText()));
+    ok("hoops: with the ball in hand, \"Hear it\" is gone and the panel claims no basket yet (it praises the talking)", playPanelOk(await panel(page)), await panel(page));
     // a tap is not a shot
     await page.mouse.click(box.x + box.width / 2, box.y + box.height * 0.86);
     await page.waitForTimeout(250);
@@ -709,6 +721,7 @@ await scenario("hoops played through", async () => {
     ok("hoops: a good swipe at the hoop scores", await until(page, () => window.__hoops.baskets === 1, 4000), await hoops(page));
     ok("hoops: the basket moves the game one step and fills a dot", await until(page, () => window.__sayplay.step === 1, 3000) && (await page.locator("#dots i.on").count()) === 1);
     ok("hoops: then the next word is asked for", await until(page, () => window.__sayplay.listening === true, 8000));
+    ok("hoops: …and \"Hear it\" is back for it", (await panel(page)).hear === "visible", await panel(page));
     // A MISS NEVER COSTS A WORD: the ball comes back, no word is asked
     await sayForBall(page);
     const turnsBefore = (await log(page)).speech.length;
@@ -795,6 +808,7 @@ await scenario("soccer played through", async () => {
     ok("soccer: the second time brings the ball, and the mic closes", await sayForKick(page) && (await live(page)) === 0);
     ok("soccer: the word alone is not a goal: the step waits for the kick", (await game(page)).step === 0 && (await game(page)).phase === "play");
     ok("soccer: it says how to kick", /Swipe up to kick/.test(await page.locator("#micState").innerText()));
+    ok("soccer: with the ball on the spot, \"Hear it\" is gone and the panel claims no goal yet (it praises the talking)", playPanelOk(await panel(page)), await panel(page));
     // a tap is not a kick
     await page.mouse.click(box.x + box.width / 2, box.y + box.height * 0.86);
     await page.waitForTimeout(250);
@@ -944,6 +958,7 @@ if (PART === "play") await scenario("dino dug up", async () => {
     ok("dino: the second time brings the brush, and the mic closes", await sayForBrush(page) && (await live(page)) === 0);
     ok("dino: the word alone digs nothing: the step waits for the bone", (await game(page)).step === 0 && (await game(page)).phase === "play" && (await dig()).revealed === 0);
     ok("dino: it says how to dig", /Rub the sand/.test(await page.locator("#micState").innerText()));
+    ok("dino: with the brush out, \"Hear it\" is gone and the panel claims no bone yet (it praises the talking)", playPanelOk(await panel(page)), await panel(page));
     // a tap is not a dig
     d = await dig();
     await page.mouse.click(box.x + d.bone.x, box.y + d.bone.y);

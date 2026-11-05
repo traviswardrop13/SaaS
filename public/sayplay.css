@@ -79,6 +79,12 @@ button{font:inherit;}
 #hear{border:none;background:#e8f6fe;color:#1597d4;border-radius:18px;padding:9px 12px 7px;font-family:"Baloo 2",sans-serif;font-weight:800;font-size:13px;display:flex;flex-direction:column;align-items:center;gap:1px;cursor:pointer;box-shadow:0 3px 0 #bfe3f7;}
 #hear:active{transform:translateY(2px);box-shadow:0 1px 0 #bfe3f7;}
 #hear svg{width:26px;height:26px;}
+/* "Hear it" says the word again, so it is there only while the word is being
+   asked (the turn, and the "Tap the mic" nudge); everywhere else it did
+   nothing. In Hoops, Soccer and Dino Dig it sat beside "Swipe up to shoot!"
+   for the whole move (5 Nov 2026). visibility, not display: its cell keeps
+   its size, so the word and the panel never move when it goes or comes back. */
+body:not([data-phase=turn]):not([data-phase=nudge]) #hear{visibility:hidden;pointer-events:none;}
 #listenRow{grid-column:1/-1;display:flex;align-items:center;gap:10px;min-height:56px;}
 #echoWrap{position:relative;width:54px;height:54px;flex:none;}
 #echoWrap:before{content:"";position:absolute;inset:-3px;border-radius:50%;background:var(--act);opacity:0;}
