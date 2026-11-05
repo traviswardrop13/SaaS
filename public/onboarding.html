@@ -94,6 +94,7 @@
   <link rel="stylesheet" href="/onboarding-crafted.css" />
   <link rel="stylesheet" href="/onboarding-studio.css" />
   <script defer src="/onboarding-fruit-demo.js"></script>
+  <script defer src="/onboarding-piano-demo.js"></script>
 </head>
 <body class="ob-world" data-setup-screen="welcome">
   <!-- Play Studio: existing painted art, short copy and silent previews. -->
@@ -110,9 +111,10 @@
     <!-- SETUP, FROM SCRATCH (Travis, 22 Oct 2026: "I want to do a completely
          new onboarding ... We want to sell the product in the onboarding ...
          simplified, some of the slides have too many words"). A family's
-         first setup: the hello, two silent game previews,
-         Rachel on her own, the child's name and age, what
-         they love, the games they will love, "Is <Name> in speech therapy?",
+         first setup: the hello, the child's name and age, two silent game
+         previews (Fruit Slice, Piano Tiles), Rachel on her own, what they
+         love ("Games <Name> will love" went on 4 Nov 2026), "Is <Name> in
+         speech therapy?",
          the sounds, how long each day, the weekly report email, "<Name>'s
          practice is ready!", a reminder before the free trial ends (where
          the iPhone can set one), then the price, the microphone and the
@@ -128,25 +130,36 @@
       <div class="studio-welcome-art" aria-hidden="true"><img src="/assets/crafted/echo-welcome.webp" alt="" /><span>Hi, I’m Echo!</span></div>
     </div>
 
-    <!-- THE DEMO (a live, silent preview of the speech power: it never
-         listens, speaks or scores practice). It PLAYS ITSELF (Travis, 1 Nov
-         2026: "make the demo speed buttons more clear, and play the
-         slowdown by itself"; Piano Tiles' demo went the same day: "just
-         keep fruit slice"): normal speed, then "Your child says “rrrr”",
-         then the game slows down, round and round, with the three steps
-         under it lighting up as it goes (a tap on one jumps there). Under
-         Reduce Motion nothing moves and the steps are the parent's to tap.
-         (31 Oct 2026: its heading is the old one-message slide's words.) -->
+    <!-- TWO DEMOS, ONE GAME EACH (live, silent previews of the speech power:
+         they never listen, speak or score practice). The parent taps
+         "Normal speed" / "After practice" to see the game slow down.
+         (31 Oct 2026: the "Speech practice. Through play." slide went, and
+         its words head the Fruit Slice preview; the Piano Tiles one says
+         "Say the sound to slow the keys.") BACK AGAIN (Travis, 4 Nov 2026:
+         "I want to go back to the old two slides ... I don't like this new
+         update"): the one Fruit Slice demo that played itself (1 Nov) is
+         gone, and these are the 31 Oct slides as they were. -->
     <div class="step sell" data-step="reel">
       <p class="studio-kicker">See speech help</p>
       <h1 class="qh" id="reelTitle" tabindex="-1">Speech practice.<br>Through play.</h1>
       <div class="demo-scene fruit-scene" id="fruitDemoScene">
-        <canvas class="demo-canvas" role="img" aria-label="Fruit flies up and is sliced. When your child says their sound, the game slows down."></canvas>
+        <canvas class="demo-canvas" role="img" aria-label="Fruit launches upward and is sliced."></canvas>
         <div class="demo-top"><span>Fruit Slice</span><span class="demo-speed">Normal speed</span></div>
         <div class="demo-help"><img src="/assets/crafted/echo-listen.webp" alt="" /><strong>rrrr</strong><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3Zm-6 8v1a6 6 0 0 0 12 0v-1M12 18v3m-3 0h6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></div>
-        <p class="demo-message">Normal speed</p>
+        <p class="demo-message" role="status" aria-live="polite">Swipe to slice.</p>
       </div>
-      <div class="demo-steps" role="group" aria-label="How saying the sound slows the game"><button type="button" data-demo-phase="0" aria-pressed="true" class="on"><b>1</b><span>Normal speed</span></button><i aria-hidden="true">›</i><button type="button" data-demo-phase="1" aria-pressed="false"><b>2</b><span>Says “rrrr”</span></button><i aria-hidden="true">›</i><button type="button" data-demo-phase="2" aria-pressed="false"><b>3</b><span>Slows down</span></button></div>
+      <div class="demo-switch" role="group" aria-label="Compare Fruit Slice speed"><button type="button" data-demo-mode="normal" aria-pressed="true" class="on">Normal speed</button><button type="button" data-demo-mode="slow" aria-pressed="false">After practice</button></div>
+    </div>
+    <div class="step sell" data-step="piano">
+      <p class="studio-kicker">See speech help</p>
+      <h1 class="qh" id="pianoTitle" tabindex="-1">Say the sound<br>to slow the keys.</h1>
+      <div class="demo-scene piano-scene" id="pianoDemoScene">
+        <canvas class="demo-canvas" role="img" aria-label="Notes fall toward the keyboard and are tapped."></canvas>
+        <div class="demo-top"><span>Piano Tiles</span><span class="demo-speed">Normal speed</span></div>
+        <div class="demo-help"><img src="/assets/crafted/echo-listen.webp" alt="" /><strong>rrrr</strong><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3Zm-6 8v1a6 6 0 0 0 12 0v-1M12 18v3m-3 0h6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></div>
+        <p class="demo-message" role="status" aria-live="polite">Tap the keys.</p>
+      </div>
+      <div class="demo-switch" role="group" aria-label="Compare Piano Tiles speed"><button type="button" data-demo-mode="normal" aria-pressed="true" class="on">Normal speed</button><button type="button" data-demo-mode="slow" aria-pressed="false">After practice</button></div>
     </div>
 
     <!-- RACHEL, ON HER OWN (Travis, 22 Oct 2026: "a bigger slide of Rachel
@@ -186,9 +199,9 @@
     <!-- WHAT DOES <NAME> LOVE? (Travis, 22 Oct 2026: "ask them ... what their
          kid is interested in, to help customize what games to show them").
          Pick any, or none: Continue and Skip both go on, and nothing is
-         picked for them. The picks order the next screen's games (the games
-         a pick fits first) and are kept on the child's profile as ids; they
-         change nothing a child is asked to say. Each picture is a piece of
+         picked for them. The picks are kept on the child's profile as ids
+         (until 4 Nov 2026 they also ordered the games screen after this one,
+         which is gone); they change nothing a child is asked to say. Each picture is a piece of
          the games' own painted art. A session recording may show these
          picks (Rachel's to know); the name in the heading is "[child]". -->
     <div class="step" data-step="interests">
@@ -203,20 +216,6 @@
         <button type="button" class="int-pick" data-val="food" aria-pressed="false"><span class="int-art"><img src="/assets/crafted/fruit-strawberry.webp" alt="" /></span><span class="int-name">Food</span></button>
       </div>
       <button type="button" class="skip ask-skip" id="interestsSkip">Skip</button>
-    </div>
-
-    <!-- GAMES <NAME> WILL LOVE: the age group's playable games, read from the
-         catalog Home reads (Sona.activityLibrary): never a Coming soon game,
-         never a typed list; both groups when no age was given. Every one
-         where the price follows (the trial opens them all); only the ones
-         this phone opens where no price can follow (the website, an app with
-         no purchase plugin). The games a pick on the last screen fits come
-         first, with a soft ring; the rest follow, each in Home's order. No
-         "Free" or "Premium" here: no surface tells a family something stays
-         free. -->
-    <div class="step sell" data-step="games">
-      <h1 class="qh" id="gamesTitle" tabindex="-1">Games for <span class="ph-name" id="gamesName">your child</span>.</h1>
-      <div class="sell-grid" id="gamesGrid"></div>
     </div>
 
     <!-- buddy: built and in no order (the Buddy Shop is where a buddy is
@@ -294,26 +293,15 @@
          for the report (sona.js REPORT1, lib/report.ts). -->
     <div class="step" data-step="updates">
       <h1 class="qh" id="updTitle" tabindex="-1">Weekly progress?</h1>
-      <!-- WHAT THE EMAIL LOOKS LIKE (Travis, 1 Nov 2026: "a small picture
-           of an email or an example"). The real report's own lines
-           (lib/report.ts kidLines) for the made-up child the Monday email
-           shows (lib/weekly.ts EXAMPLE), marked as an example. No child's
-           name, because the real email never says one ("Child 1" when
-           there are two). Its words are Rachel's, as the report's are.
-           Hidden while the keyboard is up on a short window. -->
-      <div class="upd-example" aria-label="Example of the weekly email">
-        <p class="upd-ex-head"><span class="upd-ex-from">Sona</span><span class="upd-ex-tag">Example</span></p>
-        <p class="upd-ex-subject">Last week on Sona: 86 reps</p>
-        <ul class="upd-ex-lines">
-          <li>Said their sound out loud on 4 days</li>
-          <li>Reached the daily goal on 3 days</li>
-          <li>86 reps: 52 in practice, 34 in games and books</li>
-          <li>Sound: R</li>
-        </ul>
-      </div>
       <label class="field setup-label" for="updEmail">Your email (optional)</label>
       <input id="updEmail" type="email" inputmode="email" autocomplete="email" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="done" placeholder="you@email.com" />
-      <p class="muted upd-consent">We&rsquo;ll also send occasional tips from Rachel. Unsubscribe anytime.</p>
+      <!-- LESS TEXT (Travis, 4 Nov 2026: "Get rid of the box above that's the
+           example and underneath it ... instead of we'll also send occasional
+           tips from Rachel, just say something like ... track weekly
+           progress"): the example email card and the tips line went. The
+           address still joins the email list, so Rachel's tips still come;
+           the line no longer says so (his call, as on the landing pages). -->
+      <p class="muted upd-consent">Track your child&rsquo;s progress every week. Unsubscribe anytime.</p>
       <p id="updMsg" class="muted" role="status" aria-live="polite"></p>
       <button type="button" class="skip ask-skip" id="updSkip">Skip</button>
     </div>
@@ -322,18 +310,18 @@
          It repeats back what the parent picked (the age group if one was
          given, the sounds, the minutes a day) and says nothing they did not
          tell us: never the word "plan", a recommendation, a result or an age
-         norm, because nothing in Sona is an evaluation. Under it, one true
-         sentence about Sona for the therapy answer, and the line that Sona
-         does not test or diagnose. Rachel has her own screen since 22 Oct
-         2026. Where no reminder screen follows, this screen's Continue is
+         norm, because nothing in Sona is an evaluation. (Until 4 Nov 2026 a
+         sentence about Sona for the therapy answer and the line that Sona
+         does not test or diagnose sat under it.) Rachel has her own screen
+         since 22 Oct 2026. Where no reminder screen follows, this screen's Continue is
          where the profile is saved.
          THE PLAN MOMENT (31 Oct 2026): on a parent's first setup a short
          build beat comes first (planBeat, below), and the screen carries the
          plan card: what Day 1 will be, a fact about Sona's calendar, never
          about the child.
-         ph-no-capture (REPLAY1): this screen repeats the speech therapy
-         answer (#readyLines), and its size alone would tell it, so no
-         recording ever holds it; recording is also off while it shows -->
+         ph-no-capture (REPLAY1): this screen repeated the speech therapy
+         answer until 4 Nov 2026; it stays out of every recording, and
+         recording is also off while it shows -->
     <div class="step ph-no-capture" data-step="ready">
       <div class="ready-echo" aria-hidden="true"><i class="spark spark-a"></i><i class="spark spark-b"></i><i class="spark spark-c"></i><img src="/assets/crafted/echo-cheer.webp" alt="" /></div>
       <h1 class="qh" id="readyTitle" tabindex="-1"></h1>
@@ -341,24 +329,25 @@
       <!-- THE PLAN CARD (31 Oct 2026). Day 1 is a game, then a book
            (Travis: "day one, let's just say is to play a game and to read a
            book ... I want kids to go straight into a game"): Fruit Slice's
-           Home picture, a "Day 1" pill, "Play a game, then read a book." and
-           which: "Fruit Slice first, then <today's story>." (Sona.day1For,
-           the rule Home's card uses once the profile is saved: the talking
-           story in the first of the child's sounds that has one, else the
-           lighthouse), or "then a book." where this child is shown no story
-           (Sona.storyShown: a phone that cannot buy, without Premium, opens
-           the free book instead). "A new story every day." under it only
-           where a story is shown. A parent's first setup only. No button, no
+           Home picture, a "Day 1" pill and "Play a game, then read a book."
+           (since 4 Nov 2026 nothing more: "Fruit Slice first, then <today's
+           story>." and "A new story every day." went). data-story still
+           names the story Home will open (Sona.day1For, where
+           Sona.storyShown). A parent's first setup only. No button, no
            link: a statement. A picture that fails to load is never a broken
            image: it steps aside. The words are Travis's and Rachel's to
            change. -->
       <div class="plan-card" id="planCard" hidden>
         <span class="plan-pic" id="planPic" aria-hidden="true"><img id="planImg" alt="" width="768" height="432" decoding="async" /></span>
-        <span class="plan-words"><span class="plan-day">Day 1</span><span class="plan-title" id="planTitle"></span><span class="plan-line" id="planLine"></span></span>
+        <span class="plan-words"><span class="plan-day">Day 1</span><span class="plan-title" id="planTitle"></span></span>
       </div>
-      <p class="plan-more" id="planMore" hidden>A new story every day.</p>
-      <ul class="ready-lines" id="readyLines" hidden></ul>
-      <p class="muted ready-hedge">Sona practices — it doesn't test or diagnose.</p>
+      <!-- LESS TEXT (Travis, 4 Nov 2026: "the Joe's practice is ready page has
+           too much text"): Echo, the heading, the parent's answers and the
+           Day 1 card, nothing else. Gone: the card's second line ("Fruit
+           Slice first, then <story>."), "A new story every day.", the
+           therapy sentence ("Sona is practice for the days between speech
+           visits.") and "Sona practices — it doesn't test or diagnose." (the
+           sounds screen still says it). -->
     </div>
 
     <!-- A REMINDER BEFORE THE FREE TRIAL ENDS (Travis, 22 Oct 2026: "can we
@@ -575,16 +564,11 @@
     // saved: the profile is real (no Back into the questions, no draft).
     // leaving: on the way to the price, or asking the store first.
     var saved=false, leaving=false, wallP=null, seenSteps={};
-    // What a child may love (22 Oct 2026), and the games each one fits: the
-    // games screen shows the fitting ones first. Ids, never words, so a
-    // profile, a draft and a recording hold no free text. The pairs are
-    // defaults for Travis to change.
+    // What a child may love (22 Oct 2026). Ids, never words, so a profile, a
+    // draft and a recording hold no free text. Kept on the profile
+    // (profile.interests); until 4 Nov 2026 they also ordered the games
+    // screen, which is gone.
     var INTERESTS=["sports","music","dinosaurs","animals","space","building","food"];
-    // (The games that opened on 22 Oct 2026 joined the pairs they plainly
-    // fit: Race Car, Puppy Bath, Fish Tank, Space Trip, Rocket Blast, Bedtime
-    // Stars, Castle Builder, Robot Builder, Build a Snowman, Pizza Chef,
-    // Birthday Cake.)
-    var INTEREST_GAMES={sports:["hoops","soccer","racecar"],music:["tiles"],dinosaurs:["dino"],animals:["run","feed","puppy","fishtank"],space:["rise","glide","bubbles","space","rocket","stars"],building:["stack","castle","robot","snowman"],food:["slice","feed","pizza","cake"]};
     // Approved 3/5/10-minute choices use the existing six-reps/minute
     // conversion. This is a product goal, not a claim about clinical dosage.
     // A second child is not asked and keeps the existing profile default.
@@ -677,12 +661,14 @@
     if(!p.onboarded&&!SECOND&&!ASKED&&draft.role!=="slp"&&!restoredMinutes)draft.minutes="5";
     var ORDER_PARENT=[];
     // THE SCREENS THAT SELL (19 Oct 2026; rebuilt 22 Oct; the problem slide
-    // went on 31 Oct; since 1 Nov they follow the name, and the one demo is
-    // Fruit Slice's): the game playing, Rachel, what the child loves and the
-    // games they will love. Only for a family not set up yet: a child
-    // already set up walking setup again (Back from the first game) is not
-    // sold to again.
-    var SELL_FIRST=["reel","rachel"],SELL_AFTER=["interests","games"];
+    // went on 31 Oct; since 1 Nov they follow the name): the two game demos
+    // (Fruit Slice, then Piano Tiles: back on 4 Nov 2026), Rachel, and what
+    // the child loves. "Games <Name> will love" went on 4 Nov 2026 (Travis:
+    // "it hardly shows anything additional or what can be done in a game":
+    // the demos just before it show the same games playing). Only for a
+    // family not set up yet: a child already set up walking setup again
+    // (Back from the first game) is not sold to again.
+    var SELL_FIRST=["reel","piano","rachel"],SELL_AFTER=["interests"];
     // THE REMINDER SCREEN (22 Oct 2026) follows the ready screen only where
     // the iPhone can set a reminder, iOS has never been asked, and the price
     // follows (remindMay: what the page knows at once, and what the order is
@@ -1016,13 +1002,9 @@
       if (leo.innerHTML !== want) leo.innerHTML = want;
     }
 
-    // One true sentence ABOUT SONA per answer, never one about the child
-    // (nothing in Sona is an evaluation). Each is a claim about what practice
-    // with Sona is, so the words are Rachel's to change.
-    // Three answers since 16 Oct 2026 (Travis: "add a no so there's yes, no,
-    // and then not yet"): t_no reads "Not yet", and "No" (t_none) says the
-    // same sentence.
-    var READY_THERAPY={t_yes:"Sona is practice for the days between speech visits.",t_none:"Sona is practice you can do at home.",t_no:"Sona is practice you can do at home."};
+    // (The therapy answer's sentence on the ready screen went on 4 Nov 2026,
+    // with the rest of that screen's small print: the answer is still kept
+    // on this phone, Sona.setupAsksSave, and shown nowhere.)
     // A DOUBLE TAP NEVER LANDS ON THE NEXT SCREEN. A one-tap answer swaps the
     // screen under the finger, and the second tap of a double tap used to
     // answer a question the parent had not read yet (or, on the ready screen,
@@ -1061,7 +1043,7 @@
     // One anonymous count per screen REACHED, once per page load. The key
     // comes from this fixed list and nothing else is passed: there is no
     // parameter an answer, a name or an age could ride in.
-    var STEP_KEYS={welcome:1,name:1,reel:1,rachel:1,interests:1,games:1,therapy:1,sounds:1,minutes:1,updates:1,ready:1,remind:1,mic:1,handoff:1,slp:1,email:1};
+    var STEP_KEYS={welcome:1,name:1,reel:1,piano:1,rachel:1,interests:1,therapy:1,sounds:1,minutes:1,updates:1,ready:1,remind:1,mic:1,handoff:1,slp:1,email:1};
     function stepSeen(key){if(!STEP_KEYS[key]||seenSteps[key])return;seenSteps[key]=1;try{if(window.SonaAnalytics)SonaAnalytics.track("setup step",{step:key});}catch(e){}}
     // The two one-tap questions. An answer (or Skip, which holds "") goes on
     // at once and writes the draft, nothing else: never the mode, the path
@@ -1104,8 +1086,7 @@
         if(!PLAN_MOMENT||ORDER!==ORDER_PARENT||draft.role==="slp")return null;
         var st=null;
         try{if(Sona.day1For&&Sona.storyShown&&Sona.storyShown())st=Sona.day1For(savedSounds());}catch(e){st=null;}
-        return {id:st?st.id:"",pic:DAY1_PIC,title:"Play a game, then read a book.",
-          line:st&&st.title?"Fruit Slice first, then "+st.title+".":"Fruit Slice first, then a book.",story:!!(st&&st.title)};
+        return {id:st?st.id:"",pic:DAY1_PIC,title:"Play a game, then read a book."};
       }catch(e){return null;}
     }
     // Its picture is asked for as soon as the sounds are known (the screens
@@ -1129,12 +1110,11 @@
       planSrc=d.pic;planState="wait";planPic.hidden=false;planImg.classList.remove("gone");planImg.src=d.pic;
     }
     function paintPlan(){
-      var d=planStory(),more=document.getElementById("planMore");
-      planCard.hidden=!d;more.hidden=!(d&&d.story);
+      var d=planStory();
+      planCard.hidden=!d;
       if(!d)return;
       planPrep();
       document.getElementById("planTitle").textContent=d.title;
-      document.getElementById("planLine").textContent=d.line;
       planCard.dataset.story=d.id;planCard.dataset.game="slice";
       planPic.hidden=planState==="gone";
     }
@@ -1149,131 +1129,35 @@
       var chips=document.getElementById("readyChips");chips.innerHTML="";
       readyAnswers().forEach(function(t){var li=document.createElement("li");li.textContent=t;chips.appendChild(li);});
       paintPlan();
-      var lines=document.getElementById("readyLines");lines.innerHTML="";
-      if(draft.role!=="slp")[["therapy",READY_THERAPY]].forEach(function(pr){
-        var t=ORDER.indexOf(pr[0])>-1&&pr[1][draft[pr[0]]];
-        if(t){var li=document.createElement("li");li.textContent=t;lines.appendChild(li);}
-      });
-      lines.hidden=!lines.children.length;
     }
-    // THE GAMES (19 Oct 2026; ordered by what the child loves since 22 Oct).
-    // The name goes into ph-name spans by textContent only (REPLAY1). The
-    // games are the catalog's: the groups Home shows (Sona.activityLibrary),
-    // only the games a child can open (no Coming soon), each with its painted
-    // Home card (Sona.CRAFTED_CARDS). Which group is the age picked on the
-    // name step, read from the draft (the profile is saved only on the ready
-    // screen): ages 2–4 Simple play, 5 and up Arcade, both when no age was
-    // given. "Games <Name> will love" must be true for THIS phone: where the
-    // price follows (Sona.trialFirst, read the way the ready screen reads it)
-    // the trial opens every game, so all of them are shown; where no price
-    // can follow (the website, so every Android family, and an app build
-    // with no purchase plugin) only the games this phone opens are, since
-    // nothing there can open the rest. Premium, a trial or a covered caseload
-    // open every game either way (Sona.gameAccess).
-    var SELL={reel:1,rachel:1,games:1},sellPainted=null;
-    function SELL_CAP(both,id){return both?2:3;}
-    function sellStyle(){var age=Number(draft.childAge);return age>=2&&age<5&&Math.floor(age)===age?"simple":age>=5?"arcade":"";}
-    function sellsAll(){try{return !!(draft.role!=="slp"&&Sona.trialFirst&&Sona.trialFirst());}catch(e){return false;}}
-    function sellOpens(key,all){if(all)return true;try{return !Sona.gameAccess||!!Sona.gameAccess(key).allowed;}catch(e){return true;}}
-    function loved(key){return draft.interests.some(function(i){return (INTEREST_GAMES[i]||[]).indexOf(key)>-1;});}
-    function sellGroups(style,all){
-      var lib=null;try{lib=Sona.activityLibrary&&Sona.activityLibrary();}catch(e){}
-      var out=[];
-      ["simple","arcade"].forEach(function(id){
-        if(style&&id!==style)return;
-        ((lib&&lib.groups)||[]).forEach(function(g){
-          if(g.id!==id)return;
-          var games=(g.games||[]).filter(function(x){return x&&x.kind!=="book"&&!x.comingSoon&&x.available!==false&&sellOpens(x.key,all);});
-          if(games.length)out.push({id:g.id,label:g.ageLabel||g.name||"",games:games});
-        });
-      });
-      return out;
-    }
-    function cardSrc(key){var cards=Sona.CRAFTED_CARDS||{};return cards[key]?"/assets/crafted/home-"+cards[key]+".webp":"";}
-    function cardArt(host,key){
-      var src=cardSrc(key);
-      if(src){var im=document.createElement("img");im.src=src;im.alt="";im.width=768;im.height=432;im.decoding="async";host.appendChild(im);return;}
-      try{var st=Sona.gameSticker(key);Sona.paintSticker(host,st[0],st[1]);}catch(e){}
-    }
-    function paintSell(){
-      var nm=(nameEl.value||draft.childName||"").trim();
-      document.getElementById("gamesName").textContent=nm||"your child";
-      var style=sellStyle(),all=sellsAll(),painted=style+"|"+all+"|"+draft.interests.join(",");
-      if(sellPainted===painted)return;          // unchanged: no flicker of pictures already drawn
-      sellPainted=painted;
-      var groups=sellGroups(style,all);
-      var grid=document.getElementById("gamesGrid");grid.innerHTML="";grid.classList.toggle("both",groups.length>1);
-      // A peek, not the catalog (22 Oct 2026, when 18 games opened at once
-      // and the grid ran off a phone): three large previews of one age group,
-      // or two of each group when no age was given, each group's
-      // rest counted under it ("and 7 more"). The games the child's
-      // interests fit come first (ringed), so the cap never hides one before
-      // a game they did not pick.
-      groups.forEach(function(g){
-        var cap=SELL_CAP(groups.length>1,g.id);
-        if(groups.length>1){var k=document.createElement("p");k.className="sell-kicker";k.textContent=g.label;grid.appendChild(k);}
-        // the games a pick fits first, each part in Home's own order
-        var games=g.games.filter(function(x){return loved(x.key);}).concat(g.games.filter(function(x){return !loved(x.key);}));
-        var list=document.createElement("ul");list.className="sell-games"+(games.length<=2?" two":"");
-        list.setAttribute("aria-label",groups.length>1?g.label:"Games");
-        games.slice(0,cap).forEach(function(game){
-          var li=document.createElement("li");li.dataset.game=game.key;if(loved(game.key))li.className="loved";
-          var art=document.createElement("span");art.className="sell-art";art.setAttribute("aria-hidden","true");cardArt(art,game.key);li.appendChild(art);
-          var n=document.createElement("span");n.className="sell-name";n.textContent=game.name;li.appendChild(n);
-          list.appendChild(li);
-        });
-        grid.appendChild(list);
-        if(g.games.length>cap){var more=document.createElement("p");more.className="sell-more";more.textContent="and "+(g.games.length-cap)+" more";grid.appendChild(more);}
-      });
-    }
+    // The screens that sell (the two demos and Rachel): a screen reader is
+    // taken to the heading of each.
+    var SELL={reel:1,piano:1,rachel:1};
 
     // Preview only: real painted game pieces, no microphone, audio, speech
-    // verdict or practice credit. The scene owns one loop, torn down when its
-    // screen is left; backgrounding and pagehide release it too.
-    // IT PLAYS ITSELF (1 Nov 2026): three phases, round and round, each
-    // lighting its step under the scene (its bar fills for the phase's
-    // length): normal speed; Echo listening and "Your child says “rrrr”" (the
-    // game still at normal speed); then the game slowed (the scene's own
-    // speech power, at 0.45). A tap on a step jumps there and the loop goes
-    // on from it. Under Reduce Motion nothing moves: the scene is a still
-    // frame, the steps do not advance, and a tap shows that step. The words
-    // and the lengths are Travis's to change.
-    var DEMO_PHASES=[
-      {ms:3200,slow:false,say:false,speed:"Normal speed",msg:"Normal speed"},
-      {ms:1600,slow:false,say:true,speed:"Normal speed",msg:"Your child says “rrrr”"},
-      {ms:3800,slow:true,say:false,speed:"Slower!",msg:"The game slows down!"}
-    ];
-    var demoLive=null,demoOn=false,demoPhase=0,demoTimer=0,demoScene=document.getElementById("fruitDemoScene");
-    var demoStill=window.matchMedia?window.matchMedia("(prefers-reduced-motion: reduce)"):{matches:false};
-    function stopDemo(){clearTimeout(demoTimer);demoTimer=0;if(demoLive)demoLive.destroy();demoLive=null;demoOn=false;}
-    function demoShow(n){
-      demoPhase=n;var ph=DEMO_PHASES[n];
-      demoScene.classList.toggle("slow",ph.slow);demoScene.classList.toggle("say",ph.say);
-      demoScene.querySelector(".demo-speed").textContent=ph.speed;
-      demoScene.querySelector(".demo-message").textContent=ph.msg;
-      steps.reel.querySelectorAll("[data-demo-phase]").forEach(function(b){
-        var on=Number(b.dataset.demoPhase)===n;
-        // (a step lit again starts its bar again)
-        if(on&&b.classList.contains("on")){b.classList.remove("on");void b.offsetWidth;}
-        b.classList.toggle("on",on);b.setAttribute("aria-pressed",String(on));
-        if(on)b.style.setProperty("--demo-ms",ph.ms+"ms");
-      });
-      if(demoLive)demoLive.setSlow(ph.slow);
-      clearTimeout(demoTimer);demoTimer=0;
-      if(!demoStill.matches&&demoOn)demoTimer=setTimeout(function(){demoTimer=0;if(demoOn)demoShow((n+1)%DEMO_PHASES.length);},ph.ms);
-    }
+    // verdict or practice credit. Each scene owns one loop, torn down when
+    // its screen is left; backgrounding and pagehide release it too. The
+    // parent taps "Normal speed" / "After practice" to compare (back since
+    // 4 Nov 2026: Travis preferred these two slides to the one demo that
+    // played itself).
+    var demoLive=null,demoKey="",demoSlow={reel:false,piano:false};
+    function stopDemo(){if(demoLive)demoLive.destroy();demoLive=null;demoKey="";}
     function paintDemo(key){
-      if(key!=="reel"||document.hidden||finished){stopDemo();return;}
-      // (a fast parent can reach it before the deferred scene has loaded:
-      // DOMContentLoaded below mounts it then, without moving the step)
-      if(!demoLive&&window.SonaFruitDemo)demoLive=window.SonaFruitDemo.mount(demoScene);
-      if(!demoOn){demoOn=true;demoShow(0);}
-      else if(demoLive)demoLive.setSlow(DEMO_PHASES[demoPhase].slow);
+      if(key!=="reel"&&key!=="piano"){stopDemo();return;}
+      if(document.hidden||finished){stopDemo();return;}
+      var scene=document.getElementById(key==="reel"?"fruitDemoScene":"pianoDemoScene");
+      var api=key==="reel"?window.SonaFruitDemo:window.SonaPianoDemo;
+      if(demoKey!==key){stopDemo();if(api){demoLive=api.mount(scene);demoKey=key;}}
+      var slow=!!demoSlow[key];scene.classList.toggle("slow",slow);
+      scene.querySelector(".demo-speed").textContent=slow?"After practice":"Normal speed";
+      scene.querySelector(".demo-message").textContent=slow?(key==="reel"?"Slower fruit.":"Slower keys."):(key==="reel"?"Swipe to slice.":"Tap the keys.");
+      steps[key].querySelectorAll("[data-demo-mode]").forEach(function(b){var on=(b.dataset.demoMode==="slow")===slow;b.classList.toggle("on",on);b.setAttribute("aria-pressed",String(on));});
+      if(demoLive)demoLive.setSlow(slow);
     }
-    steps.reel.querySelectorAll("[data-demo-phase]").forEach(function(b){b.onclick=function(){if(ORDER[idx]!=="reel"||!demoOn||settling())return;demoShow(Number(b.dataset.demoPhase));};});
-    function demoMotion(){if(demoOn)demoShow(demoPhase);}
-    try{if(demoStill.addEventListener)demoStill.addEventListener("change",demoMotion);else if(demoStill.addListener)demoStill.addListener(demoMotion);}catch(e){}
+    ["reel","piano"].forEach(function(key){steps[key].querySelectorAll("[data-demo-mode]").forEach(function(b){b.onclick=function(){if(ORDER[idx]!==key||settling())return;demoSlow[key]=b.dataset.demoMode==="slow";paintDemo(key);};});});
     document.addEventListener("visibilitychange",function(){if(document.hidden)stopDemo();else if(!finished)paintDemo(ORDER[idx]);});
+    // A fast parent can reach a preview before a deferred art controller has
+    // loaded. Retry once both controllers are ready, without moving the step.
     document.addEventListener("DOMContentLoaded",function(){if(!finished)paintDemo(ORDER[idx]);});
     window.addEventListener("pagehide",stopDemo);
 
@@ -1351,9 +1235,6 @@
       document.body.classList.toggle("ob-answered",(key==="therapy"||key==="minutes")&&!!draft[key]);
       if(key==="ready"){paintReady();wallAsk();remindAsk();}
       if(key==="remind"){["remindYes","remindNo"].forEach(function(id){var b=document.getElementById(id);b.disabled=false;b.removeAttribute("aria-busy");b.textContent=id==="remindYes"?"Turn on reminders":"Not now";});}
-      // the games are painted with the screens that sell, so their pictures
-      // are on their way before the screen that shows them
-      if(SELL[key]||key==="interests")paintSell();
       paintDemo(key);
       if(key==="interests")paintInterests();
       // Nothing to type on these, so a screen reader is taken to the heading.

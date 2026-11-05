@@ -370,7 +370,8 @@ changing one. What follows from the rule:
   credit. They release their loops on departure/background and stay still
   under Reduce Motion. The old recorded reel assets remain available but
   are not loaded by setup.
-  **Since 1 Nov 2026** (Travis: "we'll ask the child's name and age first,
+  **Since 1 Nov 2026** (its demo and email-example parts undone on 4 Nov
+  2026, below) (Travis: "we'll ask the child's name and age first,
   right after the hello. And let's improve them, make the demo speed
   buttons more clear, and play the slowdown by itself"; then "we can get
   rid of piano tiles as the demo. And just keep fruit slice"): a first
@@ -414,13 +415,48 @@ changing one. What follows from the rule:
   picked. Returning families, second children and clinicians
   keep their shorter paths. Native keyboard, privacy/replay, purchase,
   reminder eligibility and explicit hand-off rules are unchanged.
+  **Since 4 Nov 2026: the two old demos back, the games screen gone, and
+  less text** (Travis: "I want to go back to the old two slides that we had
+  on the onboarding for demoing what it's like to play a game. I don't like
+  this new update. And then the slide that says games for Joe, let's
+  improve it or get rid of it. It hardly shows anything additional ... the
+  Joe's practice is ready page has too much text and so does the weekly
+  progress. Get rid of the box above that's the example and underneath it
+  ... instead of we'll also send occasional tips from Rachel, just say
+  something like ... track weekly progress"). A first setup is now the hello
+  → name and age → **the Fruit Slice demo → the Piano Tiles demo** (the
+  31 Oct slides exactly: "Speech practice. Through play." and "Say the sound
+  to slow the keys.", each with the two buttons **Normal speed / After
+  practice** the parent taps; nothing plays by itself; `onboarding-piano-demo.js`
+  is back) → Rachel → what they love → therapy → sounds → minutes → email →
+  (the build beat) → ready → (reminder) → the price → microphone → hand-off.
+  - **"Games <Name> will love" is gone** (the demos just before it show the
+    same games playing). What they love is still asked and kept on the
+    profile (`profile.interests`), but no screen now shows a result of it;
+    `INTEREST_GAMES` went with the grid.
+  - **The email step is the heading, the box and one line**: "Track your
+    child's progress every week. Unsubscribe anytime." The example email
+    card is gone, and so is "We'll also send occasional tips from Rachel."
+    on this step (as on the landing pages since 25 Sep 2026). **The address
+    still joins the email list**, so Rachel's tips still reach it; the step
+    no longer says so. Travis's call; the clinician's own email step and the
+    other email boxes keep the tips line.
+  - **The ready screen is Echo, "<Name>'s practice is ready!", the chips and
+    the Day 1 card**, the card one line ("Play a game, then read a book.").
+    Gone: "Fruit Slice first, then <story>.", "A new story every day.", the
+    therapy sentence ("Sona is practice for the days between speech
+    visits." / "… you can do at home.") and "Sona practices — it doesn't
+    test or diagnose." (the sounds screen still says it). The card still
+    names Home's Day 1 story in `data-story` (`Sona.day1For`). **So the
+    therapy answer is now shown nowhere**: it is still kept on the phone
+    (`Sona.setupAsksSave`), and whether the question stays is Travis's call.
   Name uses the label "Age" with more space before it. Minutes are 3 / 5 /
   10, with five selected only for a fresh first parent; a restored skip or
   existing family retains its goal. At the existing six-reps/minute product
   conversion these save 18 / 30 / 60 reps, not a clinical dosage claim.
-  Suggested games are a few larger previews, still filtered by the actual
-  catalog, age and access. Email consent and Rachel's full credential
-  remain. **The microphone step carries no grown-ups line since 31 Oct
+  Suggested games were a few larger previews, still filtered by the actual
+  catalog, age and access (that screen went on 4 Nov 2026). Rachel's full
+  credential remains. **The microphone step carries no grown-ups line since 31 Oct
   2026** (Travis: "let's get rid of the grown-ups audio is never uploaded,
   one try a day ... Just get rid of that"): only "Let Echo hear <Name>",
   "Turn on Echo's ears" and "Not now". The promise (`MIC_PROMISE`) stays on
@@ -457,8 +493,9 @@ changing one. What follows from the rule:
     (`planBeat()` in `onboarding.html`).
   - **The plan card on the ready screen**, under the chips: Day 1 is a game,
     then a book. Fruit Slice's Home picture (`home-fruit.webp`), a "Day 1"
-    pill, "Play a game, then read a book." and "Fruit Slice first, then
-    <today's story>." The story is `Sona.day1For(sounds)` with the sounds
+    pill and "Play a game, then read a book." (until 4 Nov 2026 also
+    "Fruit Slice first, then <today's story>." and "A new story every
+    day."; since then the story is only the card's `data-story`). The story is `Sona.day1For(sounds)` with the sounds
     setup is about to save: the talking story in the first sound that has
     one (R Robo's Rocket, S Sandy's Sandcastle, L Lulu's Lantern Party, Z
     Zippy's Zoo Parade, F Fizz and the Sleepy Fireflies, and since 2 Nov
@@ -646,7 +683,9 @@ changing one. What follows from the rule:
     Dinosaurs, Animals, Space, Building, Food), each a piece of the games'
     own painted art; Continue or Skip, nothing picked for them. Kept on the
     profile as ids (`profile.interests`) when asked (an older profile's story
-    themes stay when not). The picks only order the next screen: **"Games
+    themes stay when not). **(Since 4 Nov 2026 the games screen is gone and
+    the picks order nothing on screen; what follows is its history.)** The
+    picks only ordered the next screen: **"Games
     <Name> will love"** shows the games a pick fits first, ringed, then the
     rest, each part in Home's order (`INTEREST_GAMES` in `onboarding.html`:
     sports Hoops and Soccer Goal, music Piano Tiles, dinosaurs Dino Dig,
@@ -720,7 +759,8 @@ changing one. What follows from the rule:
     (`Sona.parentEmail()`). It is not one of the questions and has no
     progress segment. It is optional: empty or Skip go on, and a
     wrong-looking address stays with one line ("That email doesn't look
-    right."). Travis's line, "We'll also send occasional tips from Rachel.
+    right."). (Since 4 Nov 2026 its line is "Track your child's progress
+    every week. Unsubscribe anytime.": see above.) Travis's line, "We'll also send occasional tips from Rachel.
     Unsubscribe anytime.", is on screen before anything is sent. **Its
     heading is "Get the weekly progress report"** (Travis, 15 Oct 2026: "i
     want the setup page to say get the weekly progress report", with no
@@ -743,7 +783,8 @@ changing one. What follows from the rule:
     PostHog's session recording (REPLAY1, below) is off while this question
     and the ready screen are on screen, and both steps carry `ph-no-capture`,
     so no recording holds the answer.
-  - **The ready screen** ("<Name>'s practice is ready!", Echo cheering with
+  - **The ready screen** (shorter since 4 Nov 2026: no therapy sentence and
+    no hedge, see above) ("<Name>'s practice is ready!", Echo cheering with
     a sparkle that plays once, no sound) repeats only what the parent said
     (the age group if given, the sounds, or "Every sound, easiest first",
     and "N min a day") with the therapy sentence and "Sona practices — it
@@ -2195,7 +2236,8 @@ any day, still once a week).
   parents are off the list), and three runs of 250 send about 750 a week
   (`stopped: "cap"` on a Wednesday). Past either, it needs Resend's batch send
   and its own list of parents.
-- **For Travis:** the consent line beside every email box says "occasional
+- **For Travis:** the consent line beside every email box (but setup's
+  family email step since 4 Nov 2026) says "occasional
   tips from Rachel", and the list now hears from Sona weekly: his words to
   change if they should say so. Every parent who gave an email since 24 Sep
   2026 is on it, the waiting list's included (once Kit's leavers are in).
@@ -2315,7 +2357,9 @@ linked to the parent's email (Travis's task, no review). `planwordstest` plays
 the phone side ("the list hears"), `slpapi` the route and `contactstest` the
 list. Wherever an email joins the list, the page says
 so first, in Travis's words: "We'll also send occasional tips from Rachel.
-Unsubscribe anytime." **Except the landing pages**, where Travis took the line
+Unsubscribe anytime." **Except setup's family email step** (4 Nov 2026,
+Travis: "just say something like ... track weekly progress": it says "Track
+your child's progress every week. Unsubscribe anytime.") **and the landing pages**, where Travis took the line
 out (25 Sep 2026: "get rid of this text"); their "What's stored" answers
 still say the email is on the list at Resend. Meta's `Lead` fires only when an email was given.
 
