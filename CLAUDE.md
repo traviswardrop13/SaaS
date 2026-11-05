@@ -55,6 +55,26 @@ switches the shelf. Unpinned play mode with no family target or homework can
 still browse every sound. Access rules for every book remain unchanged.
 Home's Books tag counts only free books on that shelf; it never advertises
 a different sound's free title.
+**Adventure Studio Home approved (Travis, 4 Nov 2026).** Travis chose the
+new standalone comparison, changed its small coral label to **"Practice"**,
+then explicitly said **"And then let's merge this new look."** This
+supersedes the Play Map's appearance described below. The day's original
+picture comes first beneath the buddy, Rewards and Grown-ups header; its
+title and complete hook sit in a separate dark footer with the teal Start
+today action. The smaller coral Practice area follows, showing the current
+sound read-only, then the lavender Games and yellow Books cards with tilted
+original artwork and drawn line arrows. The decorative trail, tomorrow pill
+and map stars are removed. A completed day's main card still shows tomorrow
+dark and stays inert; accurate day, locked/seen labels, access, earned replay
+games and Books tags keep their shared rules. Talking stories keep their
+original Home covers; the original story portraits and fallback chain stay.
+Home stays silent and reads only. Practice is a visual landmark, not a new
+session: no Gym route, microphone, scorer, cue or practice rule is added.
+The measured fit keeps the whole Home still only when everything fits;
+shorter screens may scroll safely, and the Arcade always scrolls. Release
+validation and publication are tracked separately; this approval records
+the requested appearance and merge authorization, not a completed release.
+
 **Improved Play Map is the chosen Home (Travis and Rachel, 31 Oct
 2026).** Rachel preferred the first direction; the improved Map has been
 restored after the Studio comparison. This supersedes the tall game-video
