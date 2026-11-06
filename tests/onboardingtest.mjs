@@ -919,11 +919,16 @@ await scenario('the email step: before the price, optional, and fits',async()=>{
  const {context,page,errors,requests}=await fresh({viewport:{width:375,height:667}});try{
   await enter(page,{age:'8'});await choose(page,'R');await next(page);await answerMinutes(page,'10');await page.locator('[data-step="updates"].on').waitFor();
   const shown=await page.evaluate(()=>{const st=document.querySelector('[data-step="updates"]');return {title:document.getElementById('updTitle').textContent.trim(),helpLine:!!st.querySelector('.upd-help'),text:st.innerText.replace(/\s+/g,' ').trim(),required:!!document.querySelector('#updEmail[required]'),focus:document.activeElement.id,bubble:document.getElementById('bubble').textContent,cta:document.getElementById('nextBtn').textContent.trim(),back:getComputedStyle(document.getElementById('backBtn')).display,type:document.getElementById('updEmail').type};});
-  ok('the step asks once, plainly, and is optional: a heading, an email box that is not required, Skip, Continue and Back',shown.title==='Weekly progress?'&&/optional/i.test(shown.text)&&!shown.required&&shown.type==='email'&&/Skip/.test(shown.text)&&shown.cta==='Continue'&&shown.back!=='none'&&shown.bubble==='Want a weekly report?',shown);
+  // EASIER TO SAY YES TO (Travis, 5 Nov 2026: "make skip less appealing and
+  // entering the email more appealing"): the button names what it gets, the
+  // box sits low, by the thumb, and Skip is a small word up top, still one tap
+  ok('the step asks once, plainly, and is optional: a heading, what the report holds, an email box that is not required, Skip, "Get the report" and Back',shown.title==='See their progress every Monday'&&/Days they practiced Times they said their sound Sounds they.re working on/.test(shown.text)&&!shown.required&&shown.type==='email'&&/Skip/.test(shown.text)&&shown.cta==='Get the report'&&shown.back!=='none'&&shown.bubble==='Want a weekly report?',shown);
+  const place=await page.evaluate(()=>{const r=id=>document.getElementById(id).getBoundingClientRect(),box=r('updEmail'),skip=r('updSkip'),btn=r('nextBtn'),brand=document.querySelector('.studio-brand').getBoundingClientRect();return {boxBottom:box.bottom,btnTop:btn.top,skipTop:skip.top,skipBottom:skip.bottom,skipW:skip.width,skipH:skip.height,brandTop:brand.top,brandBottom:brand.bottom,skipRight:skip.right,vw:innerWidth,skipColor:getComputedStyle(document.getElementById('updSkip')).color,skipFont:parseFloat(getComputedStyle(document.getElementById('updSkip')).fontSize)};});
+  ok('…the box sits low, within 120 px of the button; Skip is small, grey, beside "Sona" at the top, and still 44 px to tap',place.btnTop-place.boxBottom<=120&&place.btnTop-place.boxBottom>=12&&place.skipBottom>place.brandTop&&place.skipTop<place.brandBottom&&place.skipRight<=place.vw&&place.skipW>=44&&place.skipH>=44&&place.skipFont<=14&&place.skipColor==='rgb(120, 105, 89)',place);
   // (Travis, 4 Nov 2026: "instead of we'll also send occasional tips from
   // Rachel, just say something like ... track weekly progress"; the example
   // email card above the box went the same day)
-  ok('Travis\'s line is on screen word for word, before anything is sent, with no example card',shown.text.includes('Track your child’s progress every week. Unsubscribe anytime.')&&!/occasional tips|Example|Last week on Sona/.test(shown.text)&&leadPosts(requests).length===0,shown.text);
+  ok('one short line under the box, before anything is sent, with no example card',shown.text.includes('Free. Unsubscribe anytime.')&&!/occasional tips|Example|Last week on Sona/.test(shown.text)&&leadPosts(requests).length===0,shown.text);
   ok('…the old help line is gone (Travis, 15 Oct 2026), and the child\'s name is not on the screen',!/Rachel.s tips for practicing at home/i.test(shown.text)&&!shown.helpLine&&!/Milo/.test(shown.text),shown.text);
   ok('the heading takes focus, not the box: no keyboard comes up by itself',shown.focus==='updTitle',shown.focus);
   // Done (Enter) on the keyboard only closes it: it neither goes on nor sends
@@ -933,8 +938,11 @@ await scenario('the email step: before the price, optional, and fits',async()=>{
   await page.locator('#updEmail').fill('not-an-email');await next(page);
   const bad=await page.evaluate(()=>({screen:document.body.dataset.setupScreen,msg:document.getElementById('updMsg').textContent,email:draft.email}));
   ok('a wrong-looking address stays on the step with one line, and sends nothing',bad.screen==='updates'&&bad.msg==='That email doesn\'t look right.'&&bad.email===''&&leadPosts(requests).length===0,bad);
-  await page.locator('#updEmail').fill('');await next(page);await beatOver(page);   // (the plan moment's beat comes first, once)
-  ok('an empty box and Continue go on, as a Skip',await screen(page)==='ready'&&await page.evaluate(()=>draft.email==='')&&leadPosts(requests).length===0);
+  await page.locator('#updEmail').fill('');await page.evaluate(()=>document.activeElement.blur());await next(page);
+  const empty=await page.evaluate(()=>({screen:document.body.dataset.setupScreen,msg:document.getElementById('updMsg').textContent,focus:document.activeElement.id,email:draft.email}));
+  ok('an empty box and "Get the report" stay on the step: it asks for the address (focus in the box) and sends nothing',empty.screen==='updates'&&empty.msg==='Add your email, or tap Skip.'&&empty.focus==='updEmail'&&empty.email===''&&leadPosts(requests).length===0,empty);
+  await calm(page);await page.locator('#updSkip').click();await beatOver(page);   // (the plan moment's beat comes first, once)
+  ok('…and Skip goes on from there',await screen(page)==='ready'&&await page.evaluate(()=>draft.email==='')&&leadPosts(requests).length===0);
   await calm(page);await page.locator('#backBtn').click();await page.locator('[data-step="updates"].on').waitFor();
   ok('Back comes to it with the line cleared',await page.evaluate(()=>document.getElementById('updMsg').textContent===''));
   await page.locator('#updEmail').fill('typed@example.com');await calm(page);await page.locator('#updSkip').click();

@@ -508,6 +508,21 @@ changing one. What follows from the rule:
     still joins the email list**, so Rachel's tips still reach it; the step
     no longer says so. Travis's call; the clinician's own email step and the
     other email boxes keep the tips line.
+  - **Since 5 Nov 2026 the email step is easier to say yes to** (Travis:
+    "lower it so it's easier to press ... make skip less appealing and
+    entering the email more appealing"). Top to bottom: "See their progress
+    every Monday", three ticked lines saying what the report holds ("Days
+    they practiced", "Times they said their sound", "Sounds they're working
+    on": `lib/report.ts`'s lines in plain words, never a made-up example),
+    Echo cheering in the room left (`echo-cheer.webp`, smaller or gone on a
+    short phone, gone while typing), then, low by the thumb, "Your email",
+    the box and "Free. Unsubscribe anytime.", and the footer's **"Get the
+    report"**. **An empty box no longer goes on as a Skip**: the button asks
+    for the address ("Add your email, or tap Skip.", the box focused).
+    **Skip is a small grey word at the top right**, across from "Sona" (the
+    price screen's X), still one tap and 44 px. No "(optional)" on the
+    label: the Skip says it. Every word is Travis's to change; the address
+    still joins the email list as above.
   - **The ready screen is Echo, "<Name>'s practice is ready!", the chips and
     the Day 1 card**, the card one line ("Play a game, then read a book.").
     Gone: "Fruit Slice first, then <story>.", "A new story every day.", the
@@ -824,10 +839,12 @@ changing one. What follows from the rule:
     its own one-tap-skippable step (`updates`) before the ready screen,
     asked once per family and only while the household has no parent email
     (`Sona.parentEmail()`). It is not one of the questions and has no
-    progress segment. It is optional: empty or Skip go on, and a
+    progress segment. It is optional: Skip goes on (since 5 Nov 2026 an
+    empty box and the button do not: see above), and a
     wrong-looking address stays with one line ("That email doesn't look
-    right."). (Since 4 Nov 2026 its line is "Track your child's progress
-    every week. Unsubscribe anytime.": see above.) Travis's line, "We'll also send occasional tips from Rachel.
+    right."). (Since 4 Nov 2026 its line was "Track your child's progress
+    every week. Unsubscribe anytime.", and since 5 Nov "Free. Unsubscribe
+    anytime." under "See their progress every Monday": see above.) Travis's line, "We'll also send occasional tips from Rachel.
     Unsubscribe anytime.", is on screen before anything is sent. **Its
     heading is "Get the weekly progress report"** (Travis, 15 Oct 2026: "i
     want the setup page to say get the weekly progress report", with no

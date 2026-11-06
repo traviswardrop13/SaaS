@@ -429,16 +429,15 @@ const stepAsk = await page.evaluate(() => {
   const st = document.querySelector('[data-step="updates"]');
   return {
     on: !!(st && st.classList.contains("on")),
-    optional: /optional/i.test((st || {}).textContent || ""),
-    consent: /Track your child.s progress every week\. Unsubscribe anytime\./.test((st || {}).textContent || ""),
+    consent: /Free\. Unsubscribe anytime\./.test((st || {}).textContent || ""),
     cta: document.getElementById("nextBtn").textContent,
     skip: !!document.getElementById("updSkip"),
     required: !!document.querySelector("#updEmail[required]"),
   };
 });
-ok("the email step carries Travis's line (4 Nov 2026: \"track weekly progress\", in place of the tips line)", stepAsk.on && stepAsk.consent, JSON.stringify(stepAsk));
-ok("…says it is optional, has a Skip, and never blocks the way on",
-  stepAsk.optional && !stepAsk.required && stepAsk.skip && /Continue/.test(stepAsk.cta), JSON.stringify(stepAsk));
+ok("the email step says it is free and can be stopped (5 Nov 2026: \"Free. Unsubscribe anytime.\")", stepAsk.on && stepAsk.consent, JSON.stringify(stepAsk));
+ok("…has a Skip, never requires the box, and its button names what it gets",
+  !stepAsk.required && stepAsk.skip && stepAsk.cta === "Get the report", JSON.stringify(stepAsk));
 await clickNext(); // Skip, with the box blank → ready
 await clickNext(); // ready → mic (the profile is saved)
 await clickNext(); // mic → the hand-off

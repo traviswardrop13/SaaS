@@ -516,7 +516,7 @@ for(const reduced of [false,true])for(const D of [DEVICES[0],DEVICES[2]]){
    if(key==='ready'){
     // the questions between Rachel and the ready screen: what the child
     // loves (none), therapy, the sounds (R, as picked), the minutes, and the
-    // email step (left empty)
+    // email step (left empty, then Skip)
     await calm(page);await page.tap('#nextBtn');await page.locator('[data-step="interests"].on').waitFor();await page.waitForTimeout(600);
     await calm(page);await page.tap('#nextBtn');await page.locator('[data-step="therapy"].on').waitFor();
     await calm(page);await page.tap('#obTherapy [data-val="t_yes"]');await page.locator('[data-step="sounds"].on').waitFor();
@@ -524,7 +524,9 @@ for(const reduced of [false,true])for(const D of [DEVICES[0],DEVICES[2]]){
     await calm(page);await page.tap('#obMinutes [data-val="10"]');await page.locator('[data-step="updates"].on').waitFor();await page.waitForTimeout(600);
    }
    await page.evaluate(()=>__steady.start());
-   await calm(page);await page.tap('#nextBtn');
+   // (the email step's way past an empty box is its Skip since 5 Nov 2026:
+   // the button there asks for the address)
+   await calm(page);await page.tap(key==='ready'?'#updSkip':'#nextBtn');
    await page.locator('[data-step="'+key+'"].on').waitFor();await page.waitForTimeout(wait);
    const fr=(await page.evaluate(()=>__steady.take())).filter(f=>f.screen===key&&f.r[card]);
    const d=drift(fr,keys),loaded=await page.evaluate(()=>[...document.querySelectorAll('.step.on img[src]')].every(i=>i.complete&&(i.naturalWidth>0||i.classList.contains('gone'))));
@@ -577,7 +579,7 @@ for(const reduced of [false,true]){
   await calm(page);await page.tap('#nextBtn');await page.locator('[data-step="minutes"].on').waitFor();
   await calm(page);await page.tap('#obMinutes [data-val="5"]');await page.locator('[data-step="updates"].on').waitFor();await page.waitForTimeout(300);
   await page.evaluate(()=>__steady.start());
-  await calm(page);await page.tap('#nextBtn');
+  await calm(page);await page.tap('#updSkip');
   await page.waitForFunction(()=>!!document.querySelector('[data-step="ready"].on'),null,{polling:'raf',timeout:5000});
   const shown=await page.evaluate(()=>({loaded:document.getElementById('planImg').complete&&document.getElementById('planImg').naturalWidth>0,story:document.getElementById('planCard').dataset.story,game:document.getElementById('planCard').dataset.game,src:document.getElementById('planImg').getAttribute('src')}));
   await page.waitForFunction(()=>{const i=document.getElementById('planImg');return i.complete&&i.naturalWidth>0;},null,{timeout:7000});await page.waitForTimeout(500);
