@@ -215,6 +215,41 @@ try {
         await clean(game+' nothing heard',page,errors);
       }finally{await context.close();}
     });
+    // NOT AN ASK THE LEG'S END WOULD CUT OFF (5 Nov 2026): an ask that started
+    // a moment before the leg ended was cut off by its end, and the leg's own
+    // card asked again about two seconds later (Sound Sprint at 69.1 s, its
+    // stretch over at 69.3 s). With the leg about to end, the ask that is due
+    // waits; the leg's card asks in its place, and the clock starts again.
+    await scenario(game+' an ask the leg\'s end would cut off',async()=>{
+      const{context,page,errors}=await fresh({game});try{
+        ok(game+': an ask needs five seconds of the leg left, seven while his line has not been said',await page.evaluate(()=>typeof SLOW_ROOM!=='undefined'&&SLOW_ROOM.ask===5000&&SLOW_ROOM.line===2000&&typeof SLOW_HELP.left==='function'));
+        await seed(page,game);await page.waitForTimeout(700);
+        await page.evaluate(game=>{
+          window.__turns=0;setInterval(()=>{if(slowTurn)__turns++;},10);
+          if(game==='slice')waveGot=WAVES[wave].goal-1;
+          if(game==='stack')floorGot=FLOORS[floor].goal-1;
+          if(game==='run'){things=[];dist=stretchStart+STRETCHES[stretch].len-40;}
+          if(game==='glide')legGot=LEGS[leg].goal-1;
+          if(game==='rise')climbMs=STRETCHES[stage].len-4000;
+        },game);
+        await ask(page);await page.waitForTimeout(1000);
+        const held=await page.evaluate(()=>({turns:__turns,held:typeof slowLegHeld!=='undefined'&&slowLegHeld,left:SLOW_HELP.left?SLOW_HELP.left():null,play:slowAskPlay,at:slowAskAt,requests:__slowTest.requests,starts:__slowTest.starts,phase}));
+        ok(game+': with the leg about to end, the ask that is due does not start: no turn, no mic',held.turns===0&&held.held&&held.left<7000&&held.play>=held.at&&held.requests===0&&held.starts===0,held);
+        await page.evaluate(game=>{
+          if(game==='slice')waveGot=WAVES[wave].goal;
+          if(game==='stack')endFloor();
+          if(game==='run')dist=stretchStart+STRETCHES[stretch].len;
+          if(game==='glide')legGot=LEGS[leg].goal;
+          if(game==='rise')climbMs=STRETCHES[stage].len;
+        },game);
+        await page.waitForFunction(()=>phase!==SLOW_HELP.phase&&!(typeof slowLegHeld!=='undefined'&&slowLegHeld),null,{timeout:4000});
+        ok(game+': when the leg ends the held ask is given up, and the clock starts again as after an ask the leg cut off: twenty seconds, not a quiet ask',await page.evaluate(()=>slowAskPlay===0&&slowAskAt===SLOW_ASK.every&&slowMissed===0&&typeof slowLegMs!=='undefined'&&slowLegMs===0));
+        await page.locator('#revOvl.show').waitFor({timeout:12000});
+        await page.waitForFunction(()=>reviveWait&&__slowTest.web===1,null,{timeout:8000});
+        ok(game+': the leg\'s own card asks, with its own mic, and Echo never started a turn of his own',await page.evaluate(()=>reviveWait&&__turns===0&&__slowTest.requests===1),await page.evaluate(()=>({turns:__turns,requests:__slowTest.requests})));
+        ok(game+' leg end: no runtime errors',errors.length===0,errors);
+      }finally{await context.close();}
+    });
     await scenario(game+' unrelated word',async()=>{
       const{context,page,errors}=await fresh({game,text:'taco'});try{
         await ask(page);await ready(page);await voiced(page);

@@ -132,7 +132,8 @@
 
   <script src="/sona.js"></script>
   <script src="/crafted-buddies.js"></script>
-  <script>window.SLOW_HELP={phase:"floor",action:"slow the block",earned:"Slow blocks!",eligible:function(){return !dropping;},first:6000};</script>
+  <script>// left: about how much play this floor has left, at its pace so far (Echo starts no ask its end would cut off: arcade-speech-help.js)
+  window.SLOW_HELP={phase:"floor",action:"slow the block",earned:"Slow blocks!",eligible:function(){return !dropping;},first:6000,left:function(){return slowLegLeft(floorGot/FLOORS[floor].goal);}};</script>
   <script src="/arcade-speech-help.js"></script>
   <script src="/arcade-sayit.js"></script>
   <script>

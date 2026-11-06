@@ -295,8 +295,9 @@ const ARCADE = [["run", "arcade-run.html"], ["slice", "arcade-slice.html"], ["st
 // with none ends on "Good try! Wanna go again?" instead). Fruit Slice sets a
 // row of five fruit through its own rowUp(); Piano Tiles sets a row
 // of seven notes the same way: their cards name the row (Beat Your Best, 1-2
-// Oct 2026).
-const SCORED = { slice: () => { score = 7; rowN = 5; rowUp(); }, tiles: () => { score = 7; comboN = 7; rowUp(); }, stack: () => { score = 7; rowN = 6; rowUp(); }, run: () => { dist = 70; }, glide: () => { score = 7; rowN = 6; rowUp(); }, rise: () => { pushed = 7; } };
+// Oct 2026). Sound Sprint's card counts the stars grabbed (5 Nov 2026), so
+// its round runs some metres and grabs seven.
+const SCORED = { slice: () => { score = 7; rowN = 5; rowUp(); }, tiles: () => { score = 7; comboN = 7; rowUp(); }, stack: () => { score = 7; rowN = 6; rowUp(); }, run: () => { dist = 70; coins = 7; $("coinN").textContent = coins; }, glide: () => { score = 7; rowN = 6; rowUp(); }, rise: () => { pushed = 7; } };
 // Beat Your Best: a game that keeps the child's own best dares them to pass
 // it, so its top button is "Play again" (back through its own practice page),
 // not "Next" on to a different game. Every arcade game now keeps a best and returns through its own practice page.

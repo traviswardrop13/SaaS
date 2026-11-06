@@ -290,20 +290,32 @@
          page to say get the weekly progress report"). The heading is the
          ask, and it is true: an address given here sets
          profile.weeklyReport, and the phone then sends a few numbers a week
-         for the report (sona.js REPORT1, lib/report.ts). -->
+         for the report (sona.js REPORT1, lib/report.ts).
+         EASIER TO SAY YES TO (Travis, 5 Nov 2026: "lower it so it's easier
+         to press ... make skip less appealing and entering the email more
+         appealing"). The box sits low, just over the button, where a thumb
+         is; the button says what it gets ("Get the report") and an
+         empty box no longer slips through it as a Skip: it asks for the
+         address. Skip is still one tap, a small grey word at the top right
+         (as the price screen's X). What the report holds is said in three
+         short lines (lib/report.ts kidLines: days, times said out loud,
+         sounds), never a made-up example; Echo cheers in the room between
+         (his existing pose, drawn smaller or not at all on a short phone). -->
     <div class="step" data-step="updates">
-      <h1 class="qh" id="updTitle" tabindex="-1">Weekly progress?</h1>
-      <label class="field setup-label" for="updEmail">Your email (optional)</label>
-      <input id="updEmail" type="email" inputmode="email" autocomplete="email" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="done" placeholder="you@email.com" />
-      <!-- LESS TEXT (Travis, 4 Nov 2026: "Get rid of the box above that's the
-           example and underneath it ... instead of we'll also send occasional
-           tips from Rachel, just say something like ... track weekly
-           progress"): the example email card and the tips line went. The
-           address still joins the email list, so Rachel's tips still come;
-           the line no longer says so (his call, as on the landing pages). -->
-      <p class="muted upd-consent">Track your child&rsquo;s progress every week. Unsubscribe anytime.</p>
-      <p id="updMsg" class="muted" role="status" aria-live="polite"></p>
-      <button type="button" class="skip ask-skip" id="updSkip">Skip</button>
+      <button type="button" class="skip upd-skip" id="updSkip">Skip</button>
+      <h1 class="qh" id="updTitle" tabindex="-1">See their progress <br>every Monday</h1>
+      <ul class="upd-gets">
+        <li>Days they practiced</li>
+        <li>Times they said their sound</li>
+        <li>Sounds they&rsquo;re working on</li>
+      </ul>
+      <div class="upd-art" aria-hidden="true"></div>
+      <div class="upd-box">
+        <label class="field setup-label" for="updEmail">Your email</label>
+        <input id="updEmail" type="email" inputmode="email" autocomplete="email" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="done" placeholder="you@email.com" />
+        <p id="updMsg" class="muted" role="status" aria-live="polite"></p>
+        <p class="muted upd-consent">Free. Unsubscribe anytime.</p>
+      </div>
     </div>
 
     <!-- "<NAME>'S PRACTICE IS READY!" (5 Oct 2026; Echo cheering since 22 Oct).
@@ -783,7 +795,7 @@
       email:   "One last thing!",
       mic:     "Let's hear you!",
     };
-    var CTA = { welcome: "Get started", email: "Continue", updates: "Continue", mic: "Turn on Echo's ears" };
+    var CTA = { welcome: "Get started", email: "Continue", updates: "Get the report", mic: "Turn on Echo's ears" };
     var idx = ORDER === ORDER_SLP ? ORDER.indexOf("name") : 0;
 
     var segEl = document.getElementById("seg");
@@ -1309,8 +1321,10 @@
       if(key==="mic"){requestSetupMic();return;}
       if(key==="name"){ draft.childName=nameEl.value.trim(); if(!draft.childName){ nameEl.focus(); nameEl.classList.add("needed"); return; } nameEl.classList.remove("needed"); }
       if(key==="sounds"){if(selSounds.size===0)return;draft.mode="speech";draft.pathReason="";}
-      // the email step: empty goes on as a Skip; a wrong-looking address stays, with one line
-      if(key==="updates"){ var ue=(updEl.value||"").trim(); if(ue&&!/^\S+@\S+\.\S+$/.test(ue)){ updEl.classList.add("needed"); updMsg.textContent="That email doesn't look right."; return; } updEl.classList.remove("needed"); draft.email=ue; updMsg.textContent=""; }
+      // the email step: its button gets the report, so an empty box asks for
+      // the address (Skip, top right, is the way past it: 5 Nov 2026); a
+      // wrong-looking address stays, with one line
+      if(key==="updates"){ var ue=(updEl.value||"").trim(); if(!ue){ updEl.classList.add("needed"); updMsg.textContent="Add your email, or tap Skip."; try{updEl.focus();}catch(e){} return; } if(!/^\S+@\S+\.\S+$/.test(ue)){ updEl.classList.add("needed"); updMsg.textContent="That email doesn't look right."; return; } updEl.classList.remove("needed"); draft.email=ue; updMsg.textContent=""; }
       if(key==="email"){ var em=(emailEl.value||"").trim(); if(!/^\S+@\S+\.\S+$/.test(em)){ emailEl.focus(); emailEl.classList.add("needed"); var ee=document.getElementById("emErr"); ee.style.display="block"; ee.textContent="Please enter a valid email — it is how you sign back in."; return; } draft.email=em; }
       
       // (the "building" beat used to fire here and cover the microphone step;

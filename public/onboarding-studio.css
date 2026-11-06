@@ -92,6 +92,24 @@ html body[data-setup-screen="name"] .ob #ageLabel { margin-top:30px; margin-bott
 .ob #obSounds .sound.on { box-shadow:0 3px 0 var(--act-d); }
 .ready-chips li { background:#fffdf8; border-color:var(--studio-line); color:var(--act-d); box-shadow:none; }
 .ob .upd-consent { font-size:11px; line-height:1.6; }
+/* THE EMAIL STEP, EASIER TO SAY YES TO (Travis, 5 Nov 2026: "lower it so
+   it's easier to press ... make skip less appealing"). The heading and what
+   the report holds at the top, the box low, just over the button, and Skip
+   a small grey word at the top right, across from "Sona" (still 44 px to
+   tap). The three lines are a list a screen reader reads; their ticks are
+   drawn, never a character it would read out. */
+.ob .step[data-step="updates"].on { display:flex; flex-direction:column; flex:1; min-height:0; }
+.ob .upd-skip { position:absolute; z-index:3; top:calc(16px + env(safe-area-inset-top)); right:14px; min-width:44px; min-height:44px; padding:10px 12px; color:#786959; font:800 13px/1.2 'Nunito',sans-serif; text-decoration:none; }
+.ob .upd-gets { list-style:none; margin:20px 0 0; padding:0; display:flex; flex-direction:column; gap:12px; }
+.ob .upd-gets li { position:relative; padding-left:34px; font:800 16px/1.35 'Nunito',sans-serif; color:var(--studio-ink); }
+.ob .upd-gets li::before { content:''; position:absolute; left:0; top:50%; width:24px; height:24px; margin-top:-12px; border-radius:50%; background:#ffe4cc url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M7 12.5l3.2 3.2L17 9' fill='none' stroke='%2393422f' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/100% no-repeat; }
+.ob .upd-art { flex:1 1 0; min-height:0; max-height:250px; margin:auto 0; background:url('/assets/crafted/echo-cheer.webp') center/contain no-repeat; }
+.ob .upd-box { padding-top:14px; }
+.ob .step[data-step="updates"] .setup-label { margin-top:0; }
+.ob .upd-box .upd-consent { margin-top:8px; }
+/* typing: the list steps aside, so the box, its line and the button stay
+   above the keyboard */
+body.keyboard-open[data-setup-screen="updates"] .ob .upd-gets,body.keyboard-open[data-setup-screen="updates"] .ob .upd-art { display:none; }
 @media(max-height:700px) {
  .ob,body[data-setup-screen="welcome"] .ob { padding-top:calc(15px + env(safe-area-inset-top)); }
  .studio-brand { font-size:26px; margin-bottom:16px; }
@@ -110,6 +128,9 @@ html body[data-setup-screen="name"] .ob #ageLabel { margin-top:30px; margin-bott
  .demo-switch button { font-size:10px; }
  .ob .rachel-photo { max-width:220px; width:65%; margin-bottom:17px; }
  .ob .step[data-step="rachel"] .qh { font-size:26px; }
+ .ob .upd-skip { top:calc(8px + env(safe-area-inset-top)); }
+ .ob .upd-gets { margin-top:14px; gap:9px; }
+ .ob .upd-gets li { font-size:15px; }
  .int-grid { gap:7px; }
  .int-pick { min-height:65px; padding:6px 8px; font-size:11px; }
  .int-art { width:34px; height:38px; }

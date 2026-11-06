@@ -587,13 +587,19 @@
     return false;
   }
   var CHEERS = ["Yes!", "You did it!", "Great talking!", "Wow!", "Nice!", "Super!"];
+  // A play game's word only EARNS the move (the ball, the brush); the child
+  // has not made it yet. So the line beside "Swipe up to shoot!" praises the
+  // talking, which did happen, and never a result: "You did it!" there read
+  // as if the shot had already gone in (5 Nov 2026). The game says the result
+  // itself once the move is made ("Swish!", "Goal!", "You found it!").
+  var HEARD = ["I heard you!", "Great talking!", "Nice talking!"];
   function gotIt() {
     if (!turnLive) return;
     heardThisTurn = true; turnLive = false; micStop(); face("cheer");
     if (G.play) {
       // the word earned the move; the child makes it (see moveDone)
       try {
-        $("cheer").textContent = CHEERS[(step + 1) % CHEERS.length]; $("micBtn").hidden = true; $("micState").textContent = "";
+        $("cheer").textContent = HEARD[step % HEARD.length]; $("micBtn").hidden = true; $("micState").textContent = "";
         $("turnPanel").classList.add("yay");
       } catch (e) {}
       sfx("correct");

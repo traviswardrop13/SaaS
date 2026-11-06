@@ -3534,16 +3534,24 @@
     // bounce note say "coming Nov 6" until that day, then "coming soon"
     // again. It is a LABEL, never a switch: only taking comingSoon off opens
     // a game.
+    //
+    // FOUR PARKED AGAIN (Travis, 5 Nov 2026, after the game audit: "hide
+    // those 4"). Puppy Bath (its Spray button aims itself, so holding it is
+    // the whole game), Surprise Boxes (the same five "surprises" in the same
+    // order every time), Fish Tank (one move five times) and Monster Makeover
+    // (the monster never changes, even its face) are Coming soon again: off
+    // Home, off the website's strip, shut for every family. Their pages and
+    // suites stay; each comes back only rebuilt, by taking comingSoon off.
     balloon: { name: "Balloon Party", sub: "Say it, then pump and float", go: "/arcade-balloon.html", group: "simple", tier: "premium", say: true, playDescription: "Say the word to get a balloon. Pump it up and pull it into the party ring." },
     flower: { name: "Grow a Flower", sub: "Say it, then water the flower", go: "/arcade-flower.html", group: "simple", tier: "premium", say: true, playDescription: "Say the word to fill the watering can. Hold it over the glowing soil to help the flower grow." },
     rocket: { name: "Rocket Blast", sub: "Say it, then blast off", go: "/arcade-rocket.html", group: "simple", tier: "premium", say: true, playDescription: "Say the word to get a rocket. Pull it back and let go to fly to a planet." },
     snowman: { name: "Build a Snowman", sub: "Say it, then roll and stack", go: "/arcade-snowman.html", group: "simple", tier: "premium", say: true, playDescription: "Say the word to get a snowball. Roll it big, stack it and dress your snowman." },
     train: { name: "Choo-Choo Train", sub: "Say it, then drive and stop", go: "/arcade-train.html", group: "simple", tier: "premium", say: true, playDescription: "Say the word to start the train. Drive to the station, stop, and help a friend aboard." },
-    puppy: { name: "Puppy Bath", sub: "Say it, then wash the puppy", go: "/arcade-puppy.html", group: "simple", tier: "premium", say: true, playDescription: "Say the word to find a muddy spot. Aim the water and wash it clean." },
+    puppy: { name: "Puppy Bath", sub: "Say it, then wash the puppy", go: "/arcade-puppy.html", group: "simple", tier: "premium", comingSoon: true, say: true, playDescription: "Say the word to find a muddy spot. Aim the water and wash it clean." },
     stars: { name: "Bedtime Stars", sub: "Say it, then draw in the stars", go: "/arcade-stars.html", group: "simple", tier: "premium", say: true, playDescription: "Say the word to start a picture. Slide from star to star to draw it in the sky." },
     cake: { name: "Birthday Cake", sub: "Say it, then bake a cake", go: "/arcade-cake.html", group: "simple", tier: "premium", say: true, playDescription: "Say the word to start each step. Stir, pour, ice and decorate your own birthday cake." },
-    gifts: { name: "Surprise Boxes", sub: "Say it, then open a present", go: "/arcade-gifts.html", group: "simple", tier: "premium", say: true, playDescription: "Say the word to get a present. Pull, peel and lift to open it." },
-    fishtank: { name: "Fish Tank", sub: "Say it, then feed a fish", go: "/arcade-fishtank.html", group: "simple", tier: "premium", say: true, playDescription: "Say the word to get fish food. Drop it above a hungry fish and watch it eat." },
+    gifts: { name: "Surprise Boxes", sub: "Say it, then open a present", go: "/arcade-gifts.html", group: "simple", tier: "premium", comingSoon: true, say: true, playDescription: "Say the word to get a present. Pull, peel and lift to open it." },
+    fishtank: { name: "Fish Tank", sub: "Say it, then feed a fish", go: "/arcade-fishtank.html", group: "simple", tier: "premium", comingSoon: true, say: true, playDescription: "Say the word to get fish food. Drop it above a hungry fish and watch it eat." },
     racecar: { name: "Race Car", sub: "Say it, then steer and race", go: "/arcade-racecar.html", group: "arcade", tier: "premium", say: true, playDescription: "Say the word to drive the next stretch. Steer around cones and into the glowing ring." },
     treasure: { name: "Treasure Map", sub: "Say it, then draw a route", go: "/arcade-treasure.html", group: "arcade", tier: "premium", say: true, playDescription: "Say the word to set sail. Draw your boat a path around the islands to the next harbour." },
     // REBUILT (Travis, 1 Oct 2026: "go finish soccer"): the word earns the
@@ -3560,7 +3568,7 @@
     dino: { name: "Dino Dig", sub: "Say it, then dig!", go: "/arcade-dino.html", group: "arcade", tier: "premium", say: true, playDescription: "Say the word to get a brush, then rub the sand to dig up a dinosaur bone." },
     space: { name: "Space Trip", sub: "Say it, then fly and land", go: "/arcade-space.html", group: "arcade", tier: "premium", say: true, playDescription: "Say the word to start a flight. Steer the rocket and land softly on the glowing pad." },
     pizza: { name: "Pizza Chef", sub: "Say it, then cook the pizza", go: "/arcade-pizza.html", group: "arcade", tier: "premium", say: true, playDescription: "Say the word to start each step. Roll, spread, top, bake and slice your own pizza." },
-    monster: { name: "Monster Makeover", sub: "Say it, then style the monster", go: "/arcade-monster.html", group: "arcade", tier: "premium", say: true, playDescription: "Say the word to get the next salon tool. Wash, brush and style a friendly monster." },
+    monster: { name: "Monster Makeover", sub: "Say it, then style the monster", go: "/arcade-monster.html", group: "arcade", tier: "premium", comingSoon: true, say: true, playDescription: "Say the word to get the next salon tool. Wash, brush and style a friendly monster." },
   };
   // Catalog access is separate from the speech needed to earn an arcade turn.
   // Free access opens released games; unfinished games stay parked for everyone.
@@ -4813,7 +4821,8 @@
   // save still tells the child the truth about the round they just played).
   function _lvRow(p, key, lv) {
     const r = _lvOf(_lvOf(p.best, key), String(lv));
-    return (r && typeof r.n === "number" && r.n >= 1 && r.n <= 99999 && Math.floor(r.n) === r.n) ? r.n : 0;
+    // a game whose count changed (BESTS1's stamp) reads its old count as no best
+    return (r && typeof r.n === "number" && r.n >= 1 && r.n <= 99999 && Math.floor(r.n) === r.n && _bestCounted(key, r)) ? r.n : 0;
   }
   function playBest(key, lv) {
     try { key = _lvKey(key); lv = parseInt(lv, 10); return (key && (lv === 2 || lv === 3)) ? _lvRow(_lvState(), key, lv) : 0; } catch (e) { return 0; }
@@ -4828,7 +4837,7 @@
       out.best = n; out.isNew = true;
       p.best = (p.best && typeof p.best === "object") ? p.best : {};
       p.best[key] = (p.best[key] && typeof p.best[key] === "object") ? p.best[key] : {};
-      p.best[key][String(lv)] = { n: n, at: today() };
+      p.best[key][String(lv)] = _bestRec(key, n);
       save(PLAYLEVELKEY, p);
     } catch (e) {}
     return out;
@@ -5221,11 +5230,29 @@
   // 1 is ignored (best = prev). Pages feature-detect both: a phone holding an
   // older sona.js must still play the game.
   const BESTKEY = "sona.bests.v1", BEST_MAX = 99999;
+  // A game whose count CHANGED keeps its best only in the new count, stamped
+  // on the record (c). Sound Sprint counted metres until 5 Nov 2026, and
+  // every finished race is exactly 570 m, so a child's best could never go
+  // up (and the metres were never on screen: the race shows stars). It now
+  // counts the stars the child grabs. A record without the stamp is the old
+  // count: it reads as no best at all (no Home tag, and the next race is a
+  // first best), never a number of stars to beat. The Level 2 and 3 bests
+  // (LEVELS1's playBest) read the same stamp.
+  const BEST_COUNT = { run: "stars" };
+  function _bestCounted(key, rec) {
+    const c = Object.prototype.hasOwnProperty.call(BEST_COUNT, key) ? BEST_COUNT[key] : "";
+    return !c || rec.c === c;
+  }
+  function _bestRec(key, n) {
+    const rec = { n: n, at: today() };
+    if (Object.prototype.hasOwnProperty.call(BEST_COUNT, key)) rec.c = BEST_COUNT[key];
+    return rec;
+  }
   function _bestN(n) { return typeof n === "number" && n >= 1 && n <= BEST_MAX && Math.floor(n) === n; }
   function _bests() { const all = load(BESTKEY, {}); return Array.isArray(all) ? {} : all; }
   function _bestOf(all, key) {
     const rec = Object.prototype.hasOwnProperty.call(all, key) ? all[key] : null;
-    return (rec && typeof rec === "object" && _bestN(rec.n)) ? rec.n : 0;
+    return (rec && typeof rec === "object" && _bestN(rec.n) && _bestCounted(key, rec)) ? rec.n : 0;
   }
   function gameBest(key) {
     try { key = gameKey(key); return key ? _bestOf(_bests(), key) : 0; } catch (e) { return 0; }
@@ -5240,7 +5267,7 @@
       // answered before the write: a phone that cannot save (storage full or
       // off) still tells the child the truth about the round they just played
       out.best = n; out.isNew = true;
-      all[key] = { n: n, at: today() };
+      all[key] = _bestRec(key, n);
       save(BESTKEY, all);
     } catch (e) {}
     return out;

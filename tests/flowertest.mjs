@@ -31,6 +31,11 @@ async function grow(p,stage,{cancelOther=false}={}){
  return (await state(p)).speech.step>stage;
 }
 const powerOff=p=>until(p,()=>__flower.power===0,13000);
+// where this word's glow is, beside where the plant grows: the glow once moved
+// to 0.42 or 0.58 while the plant stayed in the middle
+const glowAt=async p=>{const g=(await state(p)).garden;return{stage:g.stage,glow:g.target.x,plant:g.plant&&g.plant.x};};
+// the can's body is off the plant's stem, so the growth shows
+const clearOfPlant=g=>!!g.plant&&Math.abs(g.can.x-g.plant.x)>=g.can.width*0.5;
 const farRight=g=>Math.min(0.985-g.can.width*0.5,g.target.x+0.34)-g.target.x;
 try{
  h=await gameHarness('flower',8350);
@@ -49,7 +54,7 @@ try{
   await page.locator('#startBtn').click();await until(page,()=>__sayplay.listening);await advance(page,1400);let s=await state(page);ok('silence cannot water or grow a flower',!s.garden.active&&s.garden.waterProgress===0&&s.garden.grown===0&&s.speech.step===0,s);
   await until(page,()=>__sayplay.phase==='nudge',16000);s=await state(page);ok('a whole quiet listening window earns nothing: no can, no step',s.speech.phase==='nudge'&&!s.garden.active&&s.garden.reservoir===0&&s.speech.step===0&&!await page.locator('#gardenCan').isVisible(),s);
   await page.locator('#micBtn').click();
-  ok('two accepted sayings fill the can and give the shower help',await sayWord(page));s=await state(page);const helpedRadius=s.garden.catchRadius;ok('the word fills the can without watering anything',s.garden.active&&s.garden.reservoir>0&&s.garden.waterProgress===0&&s.garden.power>0,s);
+  ok('two accepted sayings fill the can and give the shower help',await sayWord(page));const glow=[await glowAt(page)];s=await state(page);const helpedRadius=s.garden.catchRadius;ok('the word fills the can without watering anything',s.garden.active&&s.garden.reservoir>0&&s.garden.waterProgress===0&&s.garden.power>0,s);
   await advance(page,2000);s=await state(page);ok('an idle can makes no water, no growth and no misses',s.garden.waterProgress===0&&s.garden.grown===0&&!s.garden.pouring&&s.garden.stepMisses===0&&s.speech.step===0,s);
   await powerOff(page);s=await state(page);const ordinaryRadius=s.garden.catchRadius;ok('speech really widens the watering catch area',helpedRadius>=ordinaryRadius*1.8&&ordinaryRadius>0&&s.garden.level===0,{helpedRadius,ordinaryRadius});
   // a short pour well beside the glow catches nothing at the first level
@@ -69,16 +74,18 @@ try{
   if(s.garden.celebrating){
    await until(page,c=>__quiet.sfx.filter(x=>x.name==='correct').length>c,1000,chimes0);
    ok('the growth plays its chime before the step counts',s.speech.step===0&&s.speech.phase==='play'&&s.garden.doneIn>0&&s.garden.doneIn<=1.15&&await page.evaluate(c=>__quiet.sfx.filter(x=>x.name==='correct').length>c,chimes0),s);
+   // the can was parked on the plant through the cheer and the next word
+   ok('as the flower grows the can goes home, off the plant (Reduce Motion: at once)',clearOfPlant(s.garden)&&!s.garden.returning&&s.garden.can.x===s.garden.home.x&&s.garden.can.y===s.garden.home.y,s.garden);
    const left=s.garden.doneIn;await advance(page,Math.max(0,Math.round(left*1000)-150));const mid=await state(page);await advance(page,400);const after=await state(page);
    ok('the step counts when the beat ends, once',mid.speech.step===0&&mid.garden.celebrating&&after.speech.step===1&&!after.garden.celebrating,{left,mid:mid.speech,after:after.speech});
   }else ok('the growth has a celebration beat',false,s);
-  ok('the ladder starts again on the next word',await sayWord(page)&&(await state(page)).garden.level===0&&(await state(page)).garden.stepMisses===0);
+  ok('the ladder starts again on the next word',await sayWord(page)&&(await state(page)).garden.level===0&&(await state(page)).garden.stepMisses===0);glow.push(await glowAt(page));
   // ── the reviewer's gesture: the can's own body over the glow, no power ──
   await powerOff(page);s=await state(page);const reservoir0=s.garden.reservoir;
   await hold(page,{ms:3000,settle:0});s=await state(page);ok('holding the can itself over the glow waters it with no help (390x844)',(s.garden.celebrating||s.speech.step===2)&&s.garden.stepMisses===0&&s.garden.level===0,{reservoir0,g:s.garden});
   await until(page,()=>__sayplay.step===2,3000);
   // ── (c) help, then silence: the same move goes on with no power ──
-  ok('word three',await sayWord(page));await powerOff(page);
+  ok('word three',await sayWord(page));glow.push(await glowAt(page));await powerOff(page);
   await hold(page,{ms:350});s=await state(page);const held={water:s.garden.waterProgress,reservoir:s.garden.reservoir,can:{...s.garden.can}};ok('a short pour over the glow catches some water',held.water>0&&held.water<1&&s.speech.step===2,s);
   await page.locator('#gardenHelp').click();await until(page,()=>__sayplay.listening);s=await state(page);ok('help holds the same garden without moving the can, with a way back',s.garden.paused&&s.garden.waterProgress===held.water&&s.garden.can.x===held.can.x&&s.speech.step===2&&await page.locator('#helpBack').isVisible(),s);
   await advance(page,13500);await until(page,()=>__sayplay.phase==='play');s=await state(page);
@@ -92,7 +99,7 @@ try{
   await page.screenshot({path:path.join(OUT,'sona-flower-watering.png')});
   ok('real caught drops grow stage 3',await grow(page,2),await state(page));
   // ── an empty can: the water drop glows and Echo says what to tap ──
-  ok('word four',await sayWord(page));s=await state(page);
+  ok('word four',await sayWord(page));glow.push(await glowAt(page));s=await state(page);
   await hold(page,{dx:farRight(s.garden),ms:1100,settle:500});s=await state(page);const lv=s.garden.level;
   let empty=false;for(let i=0;i<4&&!empty;i++){await hold(page,{ms:900,settle:500});s=await state(page);empty=s.garden.needsRefill;if(s.speech.step>3)break;}
   if(empty){
@@ -100,7 +107,9 @@ try{
    const water=s.garden.waterProgress;await page.locator('#gardenRefill').click();s=await state(page);ok('refilling the can never resets earned water',s.garden.waterProgress===water&&s.garden.reservoir>0&&!s.garden.needsRefill&&s.speech.step===3,s);
   }else ok('the can can run dry',false,s);
   ok('real caught drops grow stage 4',await grow(page,3),await state(page));
-  ok('word five',await sayWord(page));ok('real caught drops grow stage 5',await grow(page,4),await state(page));
+  ok('word five',await sayWord(page));glow.push(await glowAt(page));
+  ok('every word\'s glow is the soil the flower grows in',glow.length===5&&glow.every((x,i)=>x.stage===i&&x.plant!=null&&Math.abs(x.glow-x.plant)<1e-9),glow);
+  ok('real caught drops grow stage 5',await grow(page,4),await state(page));
   await until(page,()=>__sayplay.phase==='end',6000);s=await state(page);ok('five real waterings grow a complete flower and finish',s.speech.phase==='end'&&s.speech.step===5&&s.garden.grown===5&&s.garden.won&&!s.garden.celebrating,s);
   const audio=await page.evaluate(()=>({leaks:__quiet.leakFrames,live:__quiet.live(),overlap:__quiet.sounds.filter(s=>__quiet.mics.some(m=>s.start<(m.end==null?__quiet.now():m.end)&&m.asked<s.end)).length,lines:__quiet.speech}));ok('garden sounds and directions stay out of the microphone',audio.leaks===0&&audio.live===0&&audio.overlap===0,audio);
   ok('Echo says how to water, out loud',['Hold the can over the glowing soil.','Move the can over the glow.','Pour anywhere. The water will find the flower!'].every(t=>audio.lines.includes(t))&&audio.lines.some(t=>/two times to fill your watering can/.test(t)),audio.lines);
@@ -109,6 +118,21 @@ try{
  }
  {
   const {page,context,errors}=await fresh({blockAssets:true});await page.locator('#startBtn').click();await sayWord(page);ok('missing painted art cannot block real watering',await grow(page,0,{cancelOther:true}));ok('fallback garden has no runtime errors',errors.length===0,errors);await context.close();
+ }
+ // ── motion on: after the pour that grows the flower the can glides home,
+ // and is there, off the plant, before the cheer ends ──
+ {
+  const {page,context,errors}=await fresh();await page.emulateMedia({reducedMotion:'no-preference'});await page.reload();await page.clock.pauseAt(await page.evaluate(()=>Date.now()+1000));
+  // (with motion on the start button pulses for good, so it is never "stable")
+  await advance(page,200);await page.locator('#startBtn').click({force:true});await sayWord(page);
+  const b=await page.locator('#gardenCanvas').boundingBox();let g=(await state(page)).garden;
+  await page.mouse.move(b.x+g.can.x*b.width,b.y+g.can.y*b.height);await page.mouse.down();await advance(page,50);g=(await state(page)).garden;
+  await page.mouse.move(b.x+g.target.x*b.width,b.y+(g.target.y-g.can.height*0.9)*b.height,{steps:12});
+  const grew=await until(page,()=>__flower.celebrating,6000);await page.mouse.up();let s=await state(page);
+  ok('motion on: as the flower grows the can starts gliding off it',grew&&s.garden.returning&&s.speech.step===0,s.garden);
+  await advance(page,600);s=await state(page);
+  ok('…and is home, off the plant, while the cheer still plays',s.garden.celebrating&&!s.garden.returning&&clearOfPlant(s.garden)&&s.garden.can.x===s.garden.home.x&&s.garden.can.y===s.garden.home.y&&s.speech.step===0,s.garden);
+  ok('motion on has no runtime errors',errors.length===0,errors);await context.close();
  }
  // ── (e) fit: in play, in a word turn and in a help ask ──
  const rects=(page,ids)=>page.evaluate(ids=>{const out=[];for(const id of ids){const e=document.getElementById(id);if(!e)continue;const r=e.getBoundingClientRect();out.push({id,x:r.x,y:r.y,right:r.right,bottom:r.bottom,w:r.width,h:r.height,vis:getComputedStyle(e).visibility!=='hidden'&&!e.hidden&&r.width>0});}return{width:innerWidth,height:innerHeight,scroll:document.documentElement.scrollHeight,rects:out};},ids);

@@ -211,7 +211,7 @@ await scenario('the sound picker shows a word with each sound; the email step is
   ok('…every chip still at least 44 px tall, under one line that says what to do',chips.every(c=>c.h>=44)&&await page.evaluate(()=>document.querySelector('[data-step="sounds"] .sound-ask').textContent==='Tap the sounds your child is working on.'));
   await setupWalk(page,'updates');await calm(page);
   const upd=await page.evaluate(()=>{const st=document.querySelector('[data-step="updates"]');return {example:!!st.querySelector('.upd-example'),line:st.querySelector('.upd-consent').textContent,text:st.innerText.replace(/\s+/g,' ').trim()};});
-  ok('the email step has no example email card, and one short line under the box',!upd.example&&upd.line==='Track your child\u2019s progress every week. Unsubscribe anytime.',upd);
+  ok('the email step has no example email card, and one short line under the box',!upd.example&&upd.line==='Free. Unsubscribe anytime.',upd);
   ok('…and names no child (not even the name just typed)',!/Zephyrine/.test(upd.text),upd.text);
   clean('sound words and the email example',errors);
  }finally{await context.close();}

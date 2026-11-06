@@ -129,6 +129,36 @@ try{
   await tapAt(page,.5);s=await state(page);ok('…and a touch toward the ring pulls the car in',s.race.celebrating,s.race);
   ok('young run has no runtime errors',errors.length===0,errors);await context.close();
  }
+ // ── what the child sees: the brake, the stars caught and the pit stop's cheer ──
+ if(!part||part==='look'){
+  const {context,page,errors}=await fresh();
+  // A pause sign ("||") read as "stop the game"; the button only slows the car while held.
+  const brake=await page.evaluate(()=>{const b=document.getElementById('raceBrake'),svg=b.querySelector('svg'),r=svg.getBoundingClientRect(),t=svg.querySelector('text');return{label:b.getAttribute('aria-label'),word:t?t.textContent:'',corners:(svg.querySelector('path').getAttribute('d').match(/[lLhHvV]/g)||[]).length+1,bars:/M8 5v14M16 5v14/.test(svg.innerHTML),w:r.width};});
+  ok('the brake shows a stop sign (an octagon saying STOP), never Pause\'s two bars, and keeps its label',brake.label==='Hold to brake'&&brake.word==='STOP'&&brake.corners===8&&!brake.bars&&brake.w>=28,brake);
+  await page.locator('#startBtn').click();
+  ok('the star counter starts at none',await page.evaluate(()=>document.getElementById('raceStarCount').textContent==='0'&&document.getElementById('raceStars').getAttribute('aria-label')==='0 stars caught'));
+  if(!await word(page))throw new Error('Speech did not earn the look stretch');
+  // drive under a real star: its lane is on the board, the finger takes the car there
+  await until(page,()=>__racecar.objects.some(o=>o.kind==='star'&&o.z>32),20000);
+  const star=(await state(page)).race.objects.find(o=>o.kind==='star'&&o.z>32);await tapAt(page,star.x);
+  ok('the car catches the star in its lane',await until(page,()=>__racecar.passed>0,8000),(await state(page)).race);
+  const hud=await page.evaluate(()=>{const e=document.getElementById('raceStars'),b=e.getBoundingClientRect(),hit=document.elementFromPoint(b.x+b.width/2,b.y+b.height/2);return{text:document.getElementById('raceStarCount').textContent,label:e.getAttribute('aria-label'),passed:__racecar.passed,on:b.top>=0&&b.left>=0&&b.right<=innerWidth+.5&&b.width>0&&!!hit&&e.contains(hit)};});
+  ok('every star caught shows on a counter the child can see',hud.text===String(hud.passed)&&hud.label===(hud.passed===1?'1 star caught':hud.passed+' stars caught')&&hud.on,hud);
+  // The cheer: the car stops on the ring, and its picture (wider than the
+  // ring) used to hide all of it and the PIT STOP sign.
+  await toGate(page);await steer(page,(await state(page)).race.gateX);
+  ok('steering into the ring starts the cheer',await until(page,()=>__racecar.celebrating&&!!__racecar.cheer,3000),(await state(page)).race);
+  const cheer=await page.evaluate(()=>{const cv=document.getElementById('raceCanvas'),k=cv.width/cv.getBoundingClientRect().width,x=cv.getContext('2d'),c=__racecar.cheer;if(!c||!c.sign)return{c};
+   const bright=(px,py)=>{const d=x.getImageData(Math.round(px*k),Math.round(py*k),1,1).data;return d[0]>=240&&d[1]>=232&&d[2]>=205;};
+   let sign=0;for(let yy=c.sign.y-c.sign.size*.7;yy<=c.sign.y;yy+=1)for(let xx=c.sign.x-c.sign.size*2.2;xx<=c.sign.x+c.sign.size*2.2;xx+=1)if(bright(xx,yy))sign++;
+   let ring=0,arc=0;for(let a=.25;a<=Math.PI-.25;a+=.05){arc++;if(bright(c.ring.x+Math.cos(a)*c.ring.rx,c.ring.y+Math.sin(a)*c.ring.ry))ring++;}
+   return{c,sign,ring,arc};});
+  ok('at the cheer the PIT STOP sign is painted above the car, not under it',!!cheer.c&&!!cheer.c.sign&&cheer.c.sign.y<=cheer.c.car.top&&cheer.sign>=120,cheer);
+  ok('…and the glowing ring goes round the car, its near half in front of the wheels',!!cheer.c&&cheer.c.ring.rx>cheer.c.car.w/2&&cheer.ring>=cheer.arc*.8,cheer);
+  await page.screenshot({path:path.join(OUT,'sona-racecar-pitstop.png')});
+  ok('…then the stretch counts, once',await nextStep(page,0)&&(await state(page)).speech.step===1);
+  ok('look run has no runtime errors',errors.length===0,errors);await context.close();
+ }
  if(!part||part==='assets'){
   const {context,page}=await fresh();await page.route('**/assets/crafted/game/**',r=>r.abort());await page.reload();await page.locator('#startBtn').click();await word(page);await until(page,()=>__racecar.objects.some(o=>o.kind==='car'),18000);
   const fallback=await page.evaluate(()=>{const cv=document.getElementById('raceCanvas'),d=cv.getContext('2d').getImageData(0,0,cv.width,cv.height).data;let blue=0;for(let i=0;i<d.length;i+=4)if(d[i]===71&&d[i+1]===142&&d[i+2]===174)blue++;return blue;});

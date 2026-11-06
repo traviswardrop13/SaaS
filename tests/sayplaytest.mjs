@@ -110,7 +110,13 @@ async function scenario(name, fn) { try { await fn(); } catch (e) { ok(name + " 
 // Shared device lets each rebuilt game exercise the same real speech engine.
 // The engine's own checks run on the catalog as it will be when a game comes
 // back: the same sona.js, with each Say & Play game's comingSoon lifted.
-const UNPARKED_SONA = readFileSync(ROOT + "/sona.js", "utf8").replace(/\bsay: true, comingSoon: true, /g, "say: true, ");
+// every Say & Play game open: comingSoon taken off each say game's line,
+// wherever on the line it sits (since 5 Nov 2026 four are parked again,
+// with comingSoon after their tier, as tests/_parked.mjs parks one)
+const UNPARKED_SONA = readFileSync(ROOT + "/sona.js", "utf8").replace(/^(\s{4}\w+: \{ name: [^\n]*?)comingSoon: true, (?=[^\n]*\bsay: true\b)/gm, "$1");
+// the four parked in the real catalog since 5 Nov 2026 (Travis, after the
+// game audit: "hide those 4"); every other Say & Play game is open
+const PARKED_NOW = ["puppy", "gifts", "fishtank", "monster"];
 async function fresh(file, cfg = {}) {
   // Engine-only checks keep a fixed scene as the real catalog games are rebuilt.
   if (file === "arcade-treasure.html") file = "_sayplay-scene.html";
@@ -201,6 +207,16 @@ const twice = (page) => page.evaluate(() => ({
   face: document.getElementById("echoFace").getAttribute("src"), button: !document.getElementById("micBtn").hidden,
 }));
 const gameReps = (page) => page.evaluate(() => { const g = JSON.parse(localStorage.getItem("sona.gamereps.v1") || "{}"); return Object.keys(g).reduce((n, day) => n + Object.keys(g[day]).reduce((m, k) => m + g[day][k], 0), 0); });
+// The word panel while the child plays the move a word earned (5 Nov 2026):
+// "Hear it" did nothing there, so it is not shown until the next word, and the
+// line beside "Swipe up to shoot!" praises the talking, never a result ("You
+// did it!" read as if the ball had already gone in). `hear` is what a child
+// sees of the button: hidden (its place kept) or visible.
+const panel = (page) => page.evaluate(() => ({
+  hear: getComputedStyle(document.getElementById("hear")).visibility, cheer: document.getElementById("cheer").textContent,
+  hint: document.getElementById("micState").textContent, phase: (window.__sayplay || {}).phase,
+}));
+const playPanelOk = (p) => p.phase === "play" && p.hear === "hidden" && /^(I heard you|Great talking|Nice talking)!$/.test(p.cheer) && !/did it|in!|goal|found/i.test(p.cheer);
 // the child's voice on a script, timed inside the page (a round trip per
 // change would smear a 90 ms dip): [ms on, ms off, ms on, …]
 const voiceScript = (page, spans) => page.evaluate((spans) => new Promise((done) => {
@@ -447,16 +463,17 @@ await scenario("catalog in the app", async () => {
     const simple = cat.lib.find((g) => g.id === "simple").keys, arcade = cat.lib.find((g) => g.id === "arcade").keys;
     ok("Home lists the ages 3-4 games under Simple play and the 5-8 games under Arcade",
       SAY.every((g) => (g.group === "simple" ? simple : arcade).includes(g.key)));
-    // none parked and none with a day since 22 Oct 2026 (Travis: "turn on
-    // all 18 games"); the order with some parked is checked below
+    // none with a day since 15 Oct 2026, and none parked from 22 Oct 2026
+    // (Travis: "turn on all 18 games") until 5 Nov 2026, when four went back
+    // (PARKED_NOW); the order with some parked is checked below
     const days = await page.evaluate((keys) => keys.map((k) => ({ k, parked: !!Sona.GAME_ACTS[k].comingSoon, on: Sona.GAME_ACTS[k].comingOn || "" })), simple);
-    ok("the Simple play shelf has no parked game and no day on any", days.length > 2 && days.every((d) => !d.parked && !d.on), days.filter((d) => d.parked || d.on));
+    ok("the Simple play shelf has no day on any game, and only the games parked on 5 Nov 2026 are parked", days.length > 2 && days.every((d) => !d.on && d.parked === PARKED_NOW.includes(d.k)), days.filter((d) => d.on || d.parked !== PARKED_NOW.includes(d.k)));
     ok("no Say & Play game joins the daily adventure", !cat.adventure.some((k) => KEYS.includes(k)), cat.adventure);
     ok("each game wears its own sticker", cat.stickers.every((s, i) => s === "sp-" + KEYS[i]));
     // COMING SOON, HIDDEN (Travis, 19 Oct 2026): a parked game has no card on
     // Home at all, and its card is back the day comingSoon comes off its line.
     const parked = KEYS.filter((k, i) => cat.acts[i] && cat.acts[i].comingSoon), open = KEYS.filter((k) => !parked.includes(k));
-    ok("Home shows a card for every Say & Play game, all twenty open", parked.length === 0 && open.length === 20 && open.every((k) => cat.cards.includes(k)), open.filter((k) => !cat.cards.includes(k)));
+    ok("Home shows a card for every open Say & Play game, and none for the four parked on 5 Nov 2026", parked.length === PARKED_NOW.length && PARKED_NOW.every((k) => parked.includes(k)) && open.length === KEYS.length - PARKED_NOW.length && open.every((k) => cat.cards.includes(k)) && !parked.some((k) => cat.cards.includes(k)), { parked, missing: open.filter((k) => !cat.cards.includes(k)) });
     clean("catalog", errors);
   } finally { await context.close(); }
   // with some parked again, they sort after the playable ones and have no
@@ -468,7 +485,7 @@ await scenario("catalog in the app", async () => {
     await withParked.page.waitForFunction(() => !!window.Sona && document.querySelectorAll("#activityGroups button[data-game]").length > 0);
     const days = await withParked.page.evaluate(() => Sona.activityLibrary().groups.find((g) => g.id === "simple").games.map((x) => ({ k: x.key, parked: !!x.comingSoon })));
     const firstParked = days.findIndex((d) => d.parked);
-    ok("parked again: the Simple play shelf lists its playable games, then the parked ones", firstParked > 0 && days.slice(firstParked).every((d) => d.parked) && days.filter((d) => d.parked).length === PARK.filter((k) => days.some((d) => d.k === k)).length, days);
+    ok("parked again: the Simple play shelf lists its playable games, then the parked ones", firstParked > 0 && days.slice(firstParked).every((d) => d.parked) && days.filter((d) => d.parked).length === PARK.concat(PARKED_NOW.filter((k) => !PARK.includes(k))).filter((k) => days.some((d) => d.k === k)).length, days);
     const home = await withParked.page.evaluate((keys) => ({ cards: keys.filter((k) => document.querySelector('#libraryApp [data-game="' + k + '"]')),
       disabled: document.querySelectorAll("#libraryApp button[data-game]:disabled").length, coming: /coming soon|coming [a-z]{3} \d/i.test(document.getElementById("libraryApp").innerText) }), PARK);
     ok("no parked game shows on Home: no card, no greyed-out slot, no Coming soon label", home.cards.length === 0 && home.disabled === 0 && !home.coming, home);
@@ -680,6 +697,7 @@ await scenario("hoops played through", async () => {
     await page.locator("#startBtn").click();
     const box = await court(page);
     await page.waitForFunction(() => window.__sayplay.listening === true);
+    ok("hoops: while the word is asked, \"Hear it\" is there", (await panel(page)).hear === "visible", await panel(page));
     // NO WORD, NO BALL: a swipe before the word does nothing
     await swipe(page, box, 0, 240);
     await page.waitForTimeout(300);
@@ -693,6 +711,7 @@ await scenario("hoops played through", async () => {
     ok("hoops: the second time brings the ball, and the mic closes", await sayForBall(page) && (await live(page)) === 0);
     ok("hoops: the word alone is not a basket: the step waits for the shot", (await game(page)).step === 0 && (await game(page)).phase === "play");
     ok("hoops: it says how to shoot", /Swipe up to shoot/.test(await page.locator("#micState").innerText()));
+    ok("hoops: with the ball in hand, \"Hear it\" is gone and the panel claims no basket yet (it praises the talking)", playPanelOk(await panel(page)), await panel(page));
     // a tap is not a shot
     await page.mouse.click(box.x + box.width / 2, box.y + box.height * 0.86);
     await page.waitForTimeout(250);
@@ -702,6 +721,7 @@ await scenario("hoops played through", async () => {
     ok("hoops: a good swipe at the hoop scores", await until(page, () => window.__hoops.baskets === 1, 4000), await hoops(page));
     ok("hoops: the basket moves the game one step and fills a dot", await until(page, () => window.__sayplay.step === 1, 3000) && (await page.locator("#dots i.on").count()) === 1);
     ok("hoops: then the next word is asked for", await until(page, () => window.__sayplay.listening === true, 8000));
+    ok("hoops: …and \"Hear it\" is back for it", (await panel(page)).hear === "visible", await panel(page));
     // A MISS NEVER COSTS A WORD: the ball comes back, no word is asked
     await sayForBall(page);
     const turnsBefore = (await log(page)).speech.length;
@@ -748,6 +768,47 @@ await scenario("hoops played through", async () => {
     clean("hoops", errors);
   } finally { await context.close(); }
 });
+// A SHOT THE GAME CALLS GOOD GOES IN (5 Nov 2026). The ball was sent to where
+// the hoop was heading, while the rim it meets is the drawn one, which eases
+// along a little behind that (about 0.1 m on a slow slide, a quarter metre at
+// Level 3), so a swipe counted good could clip the rim or miss: about one shot
+// in four on a sliding hoop. Played at Level 3, the fastest slide, straight on
+// the court (Hoops.onWord stands in for the word: this is the ball's flight,
+// and the word turn is played above): the space bar (the game's own shot at
+// the drawn hoop) and swipes a little either side of it.
+await scenario("hoops: good shots at a sliding hoop", async () => {
+  const { context, page, errors } = await fresh("arcade-hoops.html", { age: "7", micok: true, permission: "granted" });
+  try {
+    await page.locator("#startOvl.show").waitFor();
+    // the start card would take the swipes: put it aside (no word turn here)
+    await page.evaluate(() => { Hoops.setLevel(3); document.getElementById("startOvl").classList.remove("show"); });
+    // Shots go on until six good ones at a sliding hoop have been judged (30
+    // at most): whether a swipe beside the hoop counts as good depends on
+    // where the hoop has slid to by then and on the swipe's speed, both of
+    // which a busy machine moves on (GitHub's runner: about two in five).
+    const box = await court(page), shots = [];
+    const judged = () => shots.filter((s) => s.good && s.amp > 0).length;
+    for (let i = 0; i < 30 && (i < 9 || judged() < 6); i++) {
+      await page.evaluate(() => Hoops.onWord());
+      await until(page, () => window.__hoops.state === "ready", 3000);
+      await page.waitForTimeout(150 + (i * 337) % 1200);   // the hoop somewhere else on its slide each time
+      const before = await hoops(page);
+      if (i % 3 === 0) await page.keyboard.press(" ");
+      else { const up = 240; await swipe(page, box, ((before.hoopX + (i % 3 === 1 ? 0.45 : -0.45)) / 2.4) * up / box.width, up); }
+      const shot = await until(page, (b) => window.__hoops.shots > b.shots, 1000, before);
+      await until(page, (b) => window.__hoops.baskets > b.baskets || window.__hoops.misses > b.misses, 4000, before);
+      const after = await hoops(page);
+      shots.push({ shot: shot, good: shot && !!(after.flick && after.flick.good), amp: before.amp, in: after.baskets > before.baskets, made: after.lastShot, flick: after.flick });
+      if (after.baskets > before.baskets) await until(page, () => window.__hoops.state === "idle", 4000);
+      else await until(page, () => window.__hoops.state === "ready", 4000);
+      await page.waitForTimeout(150);
+    }
+    const good = shots.filter((s) => s.good && s.amp > 0);
+    ok("hoops: every try was a shot, and there were good ones at a sliding hoop to judge (not vacuous)", shots.every((s) => s.shot) && good.length >= 6, shots);
+    ok("hoops: every shot the game counted good went in clean (a swish: no rim, no miss), at a hoop sliding at Level 3", good.every((s) => s.in && s.made === "swish"), shots);
+    clean("hoops sliding", errors);
+  } finally { await context.close(); }
+});
 
 // ── SOCCER GOAL: the second game rebuilt to be played (Travis, 1 Oct 2026:
 // "go finish soccer"). The word earns the ball; the child swipes it past a
@@ -788,6 +849,7 @@ await scenario("soccer played through", async () => {
     ok("soccer: the second time brings the ball, and the mic closes", await sayForKick(page) && (await live(page)) === 0);
     ok("soccer: the word alone is not a goal: the step waits for the kick", (await game(page)).step === 0 && (await game(page)).phase === "play");
     ok("soccer: it says how to kick", /Swipe up to kick/.test(await page.locator("#micState").innerText()));
+    ok("soccer: with the ball on the spot, \"Hear it\" is gone and the panel claims no goal yet (it praises the talking)", playPanelOk(await panel(page)), await panel(page));
     // a tap is not a kick
     await page.mouse.click(box.x + box.width / 2, box.y + box.height * 0.86);
     await page.waitForTimeout(250);
@@ -937,6 +999,7 @@ if (PART === "play") await scenario("dino dug up", async () => {
     ok("dino: the second time brings the brush, and the mic closes", await sayForBrush(page) && (await live(page)) === 0);
     ok("dino: the word alone digs nothing: the step waits for the bone", (await game(page)).step === 0 && (await game(page)).phase === "play" && (await dig()).revealed === 0);
     ok("dino: it says how to dig", /Rub the sand/.test(await page.locator("#micState").innerText()));
+    ok("dino: with the brush out, \"Hear it\" is gone and the panel claims no bone yet (it praises the talking)", playPanelOk(await panel(page)), await panel(page));
     // a tap is not a dig
     d = await dig();
     await page.mouse.click(box.x + d.bone.x, box.y + d.bone.y);

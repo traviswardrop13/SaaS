@@ -508,6 +508,21 @@ changing one. What follows from the rule:
     still joins the email list**, so Rachel's tips still reach it; the step
     no longer says so. Travis's call; the clinician's own email step and the
     other email boxes keep the tips line.
+  - **Since 5 Nov 2026 the email step is easier to say yes to** (Travis:
+    "lower it so it's easier to press ... make skip less appealing and
+    entering the email more appealing"). Top to bottom: "See their progress
+    every Monday", three ticked lines saying what the report holds ("Days
+    they practiced", "Times they said their sound", "Sounds they're working
+    on": `lib/report.ts`'s lines in plain words, never a made-up example),
+    Echo cheering in the room left (`echo-cheer.webp`, smaller or gone on a
+    short phone, gone while typing), then, low by the thumb, "Your email",
+    the box and "Free. Unsubscribe anytime.", and the footer's **"Get the
+    report"**. **An empty box no longer goes on as a Skip**: the button asks
+    for the address ("Add your email, or tap Skip.", the box focused).
+    **Skip is a small grey word at the top right**, across from "Sona" (the
+    price screen's X), still one tap and 44 px. No "(optional)" on the
+    label: the Skip says it. Every word is Travis's to change; the address
+    still joins the email list as above.
   - **The ready screen is Echo, "<Name>'s practice is ready!", the chips and
     the Day 1 card**, the card one line ("Play a game, then read a book.").
     Gone: "Fruit Slice first, then <story>.", "A new story every day.", the
@@ -824,10 +839,12 @@ changing one. What follows from the rule:
     its own one-tap-skippable step (`updates`) before the ready screen,
     asked once per family and only while the household has no parent email
     (`Sona.parentEmail()`). It is not one of the questions and has no
-    progress segment. It is optional: empty or Skip go on, and a
+    progress segment. It is optional: Skip goes on (since 5 Nov 2026 an
+    empty box and the button do not: see above), and a
     wrong-looking address stays with one line ("That email doesn't look
-    right."). (Since 4 Nov 2026 its line is "Track your child's progress
-    every week. Unsubscribe anytime.": see above.) Travis's line, "We'll also send occasional tips from Rachel.
+    right."). (Since 4 Nov 2026 its line was "Track your child's progress
+    every week. Unsubscribe anytime.", and since 5 Nov "Free. Unsubscribe
+    anytime." under "See their progress every Monday": see above.) Travis's line, "We'll also send occasional tips from Rachel.
     Unsubscribe anytime.", is on screen before anything is sent. **Its
     heading is "Get the weekly progress report"** (Travis, 15 Oct 2026: "i
     want the setup page to say get the weekly progress report", with no
@@ -3862,8 +3879,14 @@ played game on `sayplay.js`'s play hook (`public/<game>.js`, a hand-written
 `arcade-<key>.html`, its own suite `tests/<game>test.mjs`). **All eighteen
 opened at once** (Travis, 22 Oct 2026: "turn on all 18 games and email about
 them at 8am"), all Premium, on Home and on `parents.html`'s strip (29 games),
-instead of one at a time after he played each. No game is parked now; the
-parking still works (`freetest` parks one in the page to prove it). What every one holds:
+instead of one at a time after he played each. **Four are parked again since
+5 Nov 2026** (Travis, after the game audit: "hide those 4"): Puppy Bath (its
+Spray button aims itself), Surprise Boxes (the same five surprises in the
+same order), Fish Tank (one move five times) and Monster Makeover (the
+monster never changes). The strip says 25 games; their pages and suites
+stay (the Say & Play harness plays a parked game's own page unparked), and
+each comes back only rebuilt. `sayplaytest` and `activitytest` pin exactly
+these four as parked. What every one holds:
 - **The word (said two times) earns each step; the finger makes it.** No
   progress before the word, silence earns nothing, `api.done()` once a step.
 - **Every round ends without speaking again** (the Hoops rule). Misses make
@@ -4057,6 +4080,14 @@ rep. `sayplaytest` pins which game asks how many times. With two:
 - **A saying already heard belongs to the word**: the mic button, "Hear it" and
   a pause keep it. After one saying and 12 quiet seconds the mic closes and
   says "1 more time! Tap the mic". Silence never earns the move.
+- **During play the word panel claims nothing** (5 Nov 2026, from the game
+  audit). "Hear it" shows only while the word is asked (the turn and the "Tap
+  the mic" nudge), hidden but keeping its place everywhere else, where it did
+  nothing. In a play game (Hoops, Soccer Goal, Dino Dig) the heard word only
+  earns the move, so the line beside "Swipe up to shoot!" praises the talking
+  ("I heard you!", "Great talking!", "Nice talking!"), never a result ("You
+  did it!" read as if the shot had gone in); the game says the result once
+  the move is made. Those three lines are Rachel's to change.
 - **Each saying heard is one rep** on the week's count (two a word); still
   never practice data. Whether two is right, whether the littles should say it
   twice too (Bubble Pop asks once; the other ten ages 3-4 games and Peekaboo
@@ -4282,6 +4313,14 @@ Flappy Glide, Rise Up), from one copy in `arcade-speech-help.js`:
   take and "Go!". Each reason is preloaded through `SayIt.line`. It is the
   say-it card's voice (`SayIt.voice`, through its `ask` hook): media in the
   app, Web Audio on the website, the mic only after "Go!" and its tail.
+- **Never an ask the leg's end would cut off** (5 Nov 2026, from the game
+  audit: Echo began, the wave or stretch ended under him, and the card asked
+  again two seconds later). A due ask starts only with at least 5 s of the
+  leg left (7 s before his first line of the visit); otherwise it waits and
+  the leg's own card asks. Each page tells the helper how much is left
+  (`SLOW_HELP.left`: exact in Sound Sprint and Rise Up, estimated from the
+  leg's pace in the other four). The 5 s and 7 s are play defaults for
+  Travis to feel on a phone.
 - **The game keeps going.** Nothing holds, dims or waits, and the game's
   banners still show; Echo's button breathes while he asks and listens. Only
   the game's own sounds (its chimes, Piano Tiles' notes) stop, from his first
@@ -4535,8 +4574,12 @@ can end it earlier. A rock is a tumble (a second off the road, ten metres back),
 card; after two tumbles in a stretch the rocks thin out and the road slows.
 The child taps the lane they want or swipes (a tap used to count only as the
 left or right half of the screen). A golden coin is a coin magnet. The top
-bar shows coins and the stretch; the end card counts metres (it said
-"treats"). `tests/runtest.mjs` runs a whole race.
+bar shows stars and the stretch; **the end card and the child's best count
+stars** (5 Nov 2026; it counted metres, a number never on screen, and every
+finished race is exactly 570 m, so a best could never go up). A best saved
+in metres reads as no best (`BEST_COUNT` in sona.js stamps a changed count
+on the record), so the next race is a first best. `tests/runtest.mjs` runs
+a whole race.
 
 **Sound Sprint opens on Echo's how-to-play** (Travis, 1 Oct 2026: "when a kid
 is about to start playing sound sprint, we want the voice ... to say
@@ -4650,8 +4693,8 @@ Say & Play game; it is day 11 of the daily adventure (QUEST1). What it keeps:
 thing the child's finger did and remembers that child's best. The win card
 still says they won, then adds one line; the top button is "Play again"; and
 Home's picture of the game carries a small "Best 17". All six round games
-keep one (Fruit Slice and Piano Tiles a row, Block Stacker, Sound Sprint and
-Flappy Glide their own counts, Rise Up blocks pushed); Hoops and Soccer Goal have none yet, and Dino
+keep one (Fruit Slice and Piano Tiles a row, Block Stacker and Flappy Glide
+their own counts, Sound Sprint stars since 5 Nov 2026, Rise Up blocks pushed); Hoops and Soccer Goal have none yet, and Dino
 Dig gets no number. Level 1's best is `sona.bests.v1`; a game's Level 2 and 3
 bests live in `sona.playlevel.v1` (see "Levels inside games"), so a best is
 never measured against a level whose top it cannot reach.
@@ -5192,7 +5235,7 @@ to stand in for it. What was buildable was built on 28 Sep:
   Slice counts fruit in a row and Piano Tiles notes in a row, each beside the
   child's own best in that same thing (see "Beat Your Best"; the old "Best"
   was the hidden score, which is why it was taken off). Block Stacker (blocks
-  in a row), Sound Sprint (metres) and Flappy Glide (gaps in a row) count
+  in a row), Sound Sprint (stars) and Flappy Glide (gaps in a row) count
   their own thing beside that child's best too.
 - **Say & Play and Feed Echo** show the word with only the sound's letters
   orange (`Sona.soundMark`) beside the crafted picture. Feed's ask keeps ONE

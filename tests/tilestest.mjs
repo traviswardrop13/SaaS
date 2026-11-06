@@ -22,6 +22,7 @@ import { createServer } from "http";
 import { readFileSync, existsSync, statSync } from "fs";
 import path from "path";
 import { chromium, ROOT as SOURCE_ROOT, launchOpts } from "./_env.mjs";
+import { heartsOffRow } from "./_heartsrow.mjs";
 
 const ROOT = process.env.SONATEST_PUBLIC_ROOT || SOURCE_ROOT, BASE = "http://127.0.0.1:8265";
 const MIME = { html: "text/html", js: "text/javascript", css: "text/css", svg: "image/svg+xml", png: "image/png", webp: "image/webp", woff2: "font/woff2", mp3: "audio/mpeg" };
@@ -206,6 +207,16 @@ await scenario("hearts and pace", async () => {
   } finally {await context.close();}
 });
 
+// HEARTSROW1 (_heartsrow.mjs): the hearts never fold onto a second line as the count grows
+await scenario("the hearts stay on one line", async () => {
+  const { context, page, errors } = await open(390, 844);
+  try {
+    const bad = await heartsOffRow(page, ["Song 3", "Finale"]);
+    ok("the three hearts stay on one line, at full size, beside a count of 1, 10, 52 or 100 and each word the top bar can show, at 320, 375 and 390 wide; nothing in the top bar spills, is cut or moves the close button", bad.length === 0, bad);
+    ok("…with no runtime errors", errors.length === 0, errors);
+  } finally { await context.close(); }
+});
+
 await scenario("a whole round", async () => {
   const { context, page, errors } = await open();
   try {
@@ -235,12 +246,19 @@ await scenario("a whole round", async () => {
     await page.locator("#revOvl.show").waitFor({ timeout: 12000 });
     await page.waitForFunction(() => __f.live === 1, null, { timeout: 12000 });
     await heardCard(page);
+    const finBox0 = await page.evaluate(() => !document.getElementById("gameHearts").hidden && getComputedStyle(document.getElementById("hudspacer")).visibility);
     await playSong(page);
     await page.waitForFunction(() => phase === "song" && SONGS[song].finale, null, { timeout: 8000 });
     b = await best(page);
     ok("the row carries on from song to song: the say-it card between them neither breaks it nor adds to it, and passing 14 moves the number again", after2 > 0 && b.combo === after2 + 10 && b.row === b.combo && b.pill === String(b.row) && neverDown(b.pills), { after2, ...b });
     s = await st(page);
     ok("after song 3 the grand finale comes straight in, with no card", !s.card && s.mics === 2 && s.REV === 1, s);
+    // the finale costs no hearts, so they step aside, and their cream box goes
+    // with them: hiding the hearts alone left an empty cream bar (5 Nov 2026).
+    // The box keeps its room, so the top bar does not close up around it.
+    const fin = await page.evaluate(() => { const hs = document.getElementById("hudspacer");
+      return { hearts: document.getElementById("gameHearts").hidden, box: getComputedStyle(hs).visibility, w: Math.round(hs.getBoundingClientRect().width) }; });
+    ok("in the finale the hearts and their cream box are both hidden, the box keeping its room", fin.hearts && fin.box === "hidden" && fin.w >= 54 && finBox0 === "visible", { fin, finBox0 });
     await page.waitForFunction(() => tiles.some((q) => q.wait && q.y >= HITY() - q.h + 39), null, { timeout: 8000 });
     await page.waitForTimeout(1200);
     ok("…and its tiles wait on the keys, so it can't be missed", await page.evaluate(() => tiles.every((q) => !q.gone) && tiles.some((q) => q.wait && !q.hit)));
