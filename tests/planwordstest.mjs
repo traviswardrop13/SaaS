@@ -179,15 +179,15 @@ try {
     let w = await page.evaluate(() => Sona.storePlan().then((plan) => ({ m: Sona.planWords(plan, {}), y: Sona.planWords(plan.year, {}) })));
     ok("the yearly row's words are its own: Yearly, its free trial, the store's yearly price, Best value, and its own small print",
       w.y.state === "free" && w.y.name === "Yearly" && w.y.sub === "3-day free trial" && w.y.amount === "$59.99/yr" && w.y.tag === "Best value" && w.y.button === "Start practicing!" &&
-      flat(w.y.check) === "No payment today · Subscription auto-renews" && w.y.note === "3 days free, then $59.99 a year. Cancel anytime." && w.y.price === "3 days free, then $59.99 a year." && w.y.act === "buy", w.y);
-    ok("…and the monthly row's are unchanged, with no tag", w.m.name === "Monthly" && w.m.amount === "$9.99/mo" && w.m.tag === "" && w.m.note === "3 days free, then $9.99 a month. Cancel anytime.", w.m);
+      flat(w.y.check) === "" && w.y.note === "3 days free, then $59.99 a year. Auto-renews. Cancel anytime." && w.y.price === "3 days free, then $59.99 a year." && w.y.act === "buy", w.y);
+    ok("…and the monthly row's are unchanged, with no tag", w.m.name === "Monthly" && w.m.amount === "$9.99/mo" && w.m.tag === "" && w.m.note === "3 days free, then $9.99 a month. Auto-renews. Cancel anytime.", w.m);
     ok("…no sentence on either names a saving in dollars or a ratio", !/save|saving|%|half|\bx\d|×|per month|\/mo.*\/yr|119\.88|59\.89/i.test(JSON.stringify([w.m.tag, w.m.sub, w.m.check, w.m.note, w.y.tag, w.y.sub, w.y.check, w.y.note, w.y.price, w.y.button])), w.y);
 
     // 7 days free (Travis is setting the offer to a week in App Store Connect): the words follow the store
     p = await planFor({ store: { monthly: { price: "$9.99", free: "P1W" }, annual: { price: "$59.99", free: "P1W", unitsOnly: true } }, offering: "both" });
     w = await page.evaluate(() => Sona.storePlan().then((plan) => ({ m: Sona.planWords(plan, {}), y: Sona.planWords(plan.year, {}) })));
     ok("a week free on both products reads as 7 days on both rows, whatever shape the store sends it in",
-      !!p && p.free.text === "7 days" && p.year.free.text === "7 days" && w.m.sub === "7-day free trial" && w.y.sub === "7-day free trial" && w.y.note === "7 days free, then $59.99 a year. Cancel anytime." && w.m.price === "7 days free, then $9.99 a month." && !/3.day|3 days/.test(JSON.stringify(w)), [w.m.sub, w.y.sub, w.y.note]);
+      !!p && p.free.text === "7 days" && p.year.free.text === "7 days" && w.m.sub === "7-day free trial" && w.y.sub === "7-day free trial" && w.y.note === "7 days free, then $59.99 a year. Auto-renews. Cancel anytime." && w.m.price === "7 days free, then $9.99 a month." && !/3.day|3 days/.test(JSON.stringify(w)), [w.m.sub, w.y.sub, w.y.note]);
 
     // a yearly product with no free days: charged today, its own words; and each row's eligibility is its own
     p = await planFor({ store: { monthly: { price: "$9.99", free: "P3D" }, annual: { price: "$59.99" } }, offering: "both" });
@@ -704,9 +704,9 @@ try {
     check("every $ figure on a priced card is the store's own string", (c) => c.kind === "paid" || c.kind === "free" || c.kind === "once", (c, w, j) => { const f = j.match(/(?:US)?\$[\d,.]*\d/g) || []; return f.length >= 3 && f.every((x) => x === c.price); });
     check("the button buys exactly when there is a priced plan", any, (c, w) => (w.act === "buy") === (c.kind === "free" || c.kind === "paid" || c.kind === "once") && (c.kind !== "none" || w.act === "retry") && (c.kind !== "wait" || w.act === "wait"));
     check("no dated rows on any card (Travis, 6 Oct 2026: no billing day, just the free days)", any, (c, w) => w.rows.length === 0 && !/(Mon|Tues|Wednes|Thurs|Fri|Satur|Sun)day,/.test(JSON.stringify(w)));
-    check("a priced card is one row: the plan's name, the store's price with its period, and a check line that says it renews", (c) => c.kind === "free" || c.kind === "paid", (c, w) => w.name === (c.per === "month" ? "Monthly" : c.per === "year" ? "Yearly" : "Sona Premium") && w.amount.indexOf(c.price + "/") === 0 && /Subscription auto-renews$/.test(w.check));
+    check("a priced card is one row: the plan's name, the store's price with its period, and a check line that says it renews", (c) => c.kind === "free" || c.kind === "paid", (c, w) => w.name === (c.per === "month" ? "Monthly" : c.per === "year" ? "Yearly" : "Sona Premium") && w.amount.indexOf(c.price + "/") === 0 && (/Subscription auto-renews$/.test(w.check) || (w.check === "" && / Auto-renews\. Cancel anytime\.$/.test(w.note))));
     check("free: the tag, the tile's line and the button are built from the store's two answers", is("free"), (c, w) => w.tag === "" && w.price === c.free.text + " free, then " + c.price + " a " + c.per + "." && w.button === "Start practicing!");
-    check("free, sure: 'No payment today', and the small print under the button names the price and 'Cancel anytime.'", (c) => c.kind === "free" && c.sure, (c, w) => w.check === "No payment today \u00b7 Subscription auto-renews" && w.noteFirst === false && w.noteLast === true && w.note === c.free.text + " free, then " + c.price + " a " + c.per + ". Cancel anytime." && w.title === "Start Sona Premium with " + c.free.text + " free" && w.header === "Sona Premium: " + c.free.text + " free, then " + c.price + " a " + c.per + ".");
+    check("free, sure: 'No payment today', and the small print under the button names the price and 'Cancel anytime.'", (c) => c.kind === "free" && c.sure, (c, w) => { const st = c.free.unit === "day" && c.free.n >= 3; return w.check === (st ? "" : "No payment today \u00b7 Subscription auto-renews") && w.noteFirst === false && w.noteLast === true && w.note === c.free.text + " free, then " + c.price + " a " + c.per + "." + (st ? " Auto-renews." : "") + " Cancel anytime." && w.title === "Start Sona Premium with " + c.free.text + " free" && w.header === "Sona Premium: " + c.free.text + " free, then " + c.price + " a " + c.per + "."; });
     check("free, NOT sure: the note comes first, the row says 'new subscribers', and nothing says 'No payment today' as fact", (c) => c.kind === "free" && !c.sure, (c, w) => w.noteFirst === true && w.noteLast === false && /for new subscribers$/.test(w.sub) && w.check === "Subscription auto-renews" && !/No payment today|Nothing to pay today/.test(JSON.stringify(w)) && /new subscribers/.test(w.title) && /new subscribers/.test(w.header));
     check("free, NOT sure: the note says who gets the free time, what Apple charges otherwise, and that Apple shows the terms", (c) => c.kind === "free" && !c.sure, (c, w) => w.note === "Only new subscribers get " + c.free.text + " free. Otherwise Apple charges " + c.price + " today. Apple shows your exact terms before you confirm. Cancel anytime in Settings\u00a0→\u00a0Subscriptions.");
     check("only the not-sure card puts its note first", (c) => !(c.kind === "free" && !c.sure), (c, w) => w.noteFirst === false);
@@ -732,13 +732,18 @@ try {
         { state: "free", kind: "annual", id: "x", price: "$59.99", per: "year", free: { n: 7, unit: "day", text: "7 days" }, sure: true, why: "" }];
       plans.forEach((pl) => [true, false].forEach((fv) => {
         const off = Sona.planWords(pl, { freeVersion: fv, now }), on = Sona.planWords(pl, { freeVersion: fv, now, headsUp: true }), junk = Sona.planWords(pl, { freeVersion: fv, now, headsUp: "yes" });
-        const strip = (w) => { const c = JSON.parse(JSON.stringify(w)); delete c.headsUp; return JSON.stringify(c); };
-        out.push({ state: pl ? pl.state : "wait", kind: pl ? pl.kind : "", off: off.headsUp, on: on.headsUp, junk: junk.headsUp, same: strip(off) === strip(on), onText: JSON.stringify(on) });
+        // (since 4 Nov 2026 a sure free card counted in days says it as the
+        // timeline's middle step instead, so its steps differ there alone)
+        const strip = (w) => { const c = JSON.parse(JSON.stringify(w)); delete c.headsUp; if (c.steps) c.steps[1].text = "*"; return JSON.stringify(c); };
+        const mid = (w) => (w.steps && w.steps[1] ? w.steps[1].text : "");
+        out.push({ state: pl ? pl.state : "wait", kind: pl ? pl.kind : "", sure: !!(pl && pl.sure), off: off.headsUp, on: on.headsUp, junk: junk.headsUp, offMid: mid(off), onMid: mid(on), junkMid: mid(junk), same: strip(off) === strip(on), onText: JSON.stringify(on) });
       }));
       return out;
     });
-    ok("the heads-up line: a free card shows exactly \"We'll remind you the day before it ends.\" when the page says so, and only then",
-      ahead.filter((a) => a.state === "free").length === 6 && ahead.filter((a) => a.state === "free").every((a) => a.on === "We'll remind you the day before it ends." && a.off === "" && a.junk === ""), ahead);
+    ok("the heads-up line: a free card shows exactly \"We'll remind you the day before it ends.\" when the page says so, and only then; a sure one counted in days says \"We remind you\" as its timeline's middle step instead (4 Nov 2026), and \"Still free\" there otherwise",
+      ahead.filter((a) => a.state === "free").length === 6 && ahead.filter((a) => a.state === "free").every((a) => a.sure
+        ? (a.on === "" && a.off === "" && a.junk === "" && a.onMid === "Reminder" && a.offMid === "Still free" && a.junkMid === "Still free")
+        : (a.on === "We'll remind you the day before it ends." && a.off === "" && a.junk === "" && a.onMid === "")), ahead);
     ok("…every other card (asking, owned, none, charged today, the one payment) never shows it, whatever the page says",
       ahead.filter((a) => a.state !== "free").every((a) => a.on === "" && a.off === "" && a.junk === "" && !/remind|notif|e-?mail/i.test(a.onText)), ahead.filter((a) => a.state !== "free"));
     ok("…and the line changes nothing else on any card", ahead.every((a) => a.same), ahead.filter((a) => !a.same));
@@ -751,8 +756,9 @@ try {
     let w = await real({ store: STORES.monthlyFree });
     ok("the App Store today, a buyer who gets the free days: the exact card", same(w, {
       state: "free", title: "Start Sona Premium with 3 days free", tag: "", price: "3 days free, then $9.99 a month.", what: "Daily practice, every game and every book.",
-      rows: [], note: "3 days free, then $9.99 a month. Cancel anytime.", noteFirst: false, noteLast: true,
-      name: "Monthly", sub: "3-day free trial", amount: "$9.99/mo", check: "No payment today \u00b7 Subscription auto-renews", button: "Start practicing!", act: "buy", header: "Sona Premium: 3 days free, then $9.99 a month.", none: null, headsUp: "" }), w);
+      rows: [], note: "3 days free, then $9.99 a month. Auto-renews. Cancel anytime.", noteFirst: false, noteLast: true,
+      name: "Monthly", sub: "3-day free trial", amount: "$9.99/mo", check: "", button: "Start practicing!", act: "buy", header: "Sona Premium: 3 days free, then $9.99 a month.", none: null, headsUp: "",
+      steps: [{ when: "Today", text: "Free" }, { when: "Day 2", text: "Still free" }, { when: "Day 3", text: "$9.99/mo" }] }), w);
     w = await real({ store: STORES.monthlyFree, elig: "missing" });
     ok("…the same store when the phone cannot tell: the exact card", same(w, {
       state: "free", title: "Sona Premium: 3 days free for new subscribers", tag: "", price: "3 days free, then $9.99 a month.", what: "Daily practice, every game and every book.",
@@ -782,10 +788,11 @@ try {
     // since 22 Oct 2026 ONE sentence may (the heads-up line, on a free row,
     // when the page says this phone will show it): it is written once, as a
     // constant, and nothing else in the block, comments included, says it
-    const HEADS = 'const PLAN_HEADS_UP = "We\'ll remind you the day before it ends.";';
-    const rest = block.split(HEADS).join(" ");
-    ok("…and that source says nothing of mail, a reminder or a notification, comments included, but for the one heads-up line, written once",
-      block.split(HEADS).length === 2 && !/mail|remind|notif/i.test(rest), (rest.match(/.{0,40}(?:mail|remind|notif).{0,40}/i) || [""])[0]);
+    // (and since 4 Nov 2026 its short form, the timeline's middle step, also written once)
+    const HEADS = 'const PLAN_HEADS_UP = "We\'ll remind you the day before it ends.";', STEP = 'const PLAN_STEP_HEADS_UP = "Reminder";';
+    const rest = block.split(HEADS).join(" ").split(STEP).join(" ");
+    ok("…and that source says nothing of mail, a reminder or a notification, comments included, but for the one heads-up line and its timeline step, each written once",
+      block.split(HEADS).length === 2 && block.split(STEP).length === 2 && !/mail|remind|notif/i.test(rest), (rest.match(/.{0,40}(?:mail|remind|notif).{0,40}/i) || [""])[0]);
     // RevenueCat's webhook (app/api/revenuecat, 16 Oct 2026) now feeds a
     // "Your free days end soon" email, but only for a parent who gave the
     // app an email: a family who skipped it gets none. So the card still

@@ -9395,6 +9395,7 @@
   // o.headsUp: true only when the page has been told this phone will show
   // its own heads-up the day before this row's free days end (see above).
   const PLAN_HEADS_UP = "We'll remind you the day before it ends.";   // Travis's and Rachel's words to change
+  const PLAN_STEP_HEADS_UP = "Reminder";   // the same promise, as the timeline's middle step (4 Nov 2026)
   function planWords(plan, o) {
     o = o || {};
     const WHAT = o.freeVersion ? "Every game and every book." : "Daily practice, every game and every book.";
@@ -9488,6 +9489,30 @@
     }
     // a free row only, and only when the page says this phone will show it
     if (o.headsUp === true) w.headsUp = PLAN_HEADS_UP;
+    // THE 3-STEP TRIAL TIMELINE (Travis, 4 Nov 2026: "let's add a 3-step
+    // trial timeline"). Only on a row whose free days are certain and
+    // counted in days (a week is read as 7), three or more of them, so
+    // every step falls on its own day. Today counts as day 1: the free days
+    // end, and the first charge falls, as day N ends; Apple lets a parent
+    // cancel up to 24 hours before that, i.e. through day N-1. With the
+    // heads-up (o.headsUp) the middle step carries it, and the separate
+    // line under the button steps aside: one promise, said once. No dates (Travis,
+    // 6 Oct 2026: "I just want it to say three days"). Every word Travis's
+    // and Rachel's to change.
+    const DAYS = plan.sure === true && plan.free && plan.free.unit === "day" ? Number(plan.free.n) : 0;
+    if (DAYS >= 3) {
+      // (Travis, 5 Nov 2026: "a little bit too busy": a word or two a step,
+      // and the check line steps aside, since the steps say "no payment
+      // today"; the small print under the button carries "Auto-renews")
+      w.steps = [
+        { when: "Today", text: "Free" },
+        { when: "Day " + (DAYS - 1), text: w.headsUp ? PLAN_STEP_HEADS_UP : "Still free" },
+        { when: "Day " + DAYS, text: w.amount },
+      ];
+      w.headsUp = "";
+      w.check = "";
+      w.note = w.price + " Auto-renews. Cancel anytime.";
+    }
     return w;
   }
   // The card's one status line, by code (buyPlan's codes, and the page's own

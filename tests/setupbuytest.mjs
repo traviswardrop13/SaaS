@@ -97,8 +97,8 @@ await scenario("a family that can buy", async () => {
     const card = await text(page, "#iapCard"), button = await text(page, "#iapBuy");
     ok("Continue goes to the price, while the grown-up still holds the phone: one plan, the store's own words",
       /3 days free, then \$9\.99 a month\./.test(card) && button === "Start practicing!" && !/\$59\.99|a year|yearly/i.test(card), { card, button });
-    ok("…as one row (Monthly, 3-day free trial, the price), one check line, and no date anywhere",
-      (await page.locator("#iapTL li").count()) === 0 && /Monthly\s+3-day free trial\s+\$9\.99\/mo/.test(card) && /No payment today · Subscription auto-renews/.test(card) && /Cancel anytime\./.test(card) && !/(Mon|Tues|Wednes|Thurs|Fri|Satur|Sun)day/.test(card), card);
+    ok("…as one row (Monthly, 3-day free trial, the price), one check line, the 3-step timeline (4 Nov 2026), and no date anywhere",
+      (await page.locator("#iapTL li").count()) === 3 && /Today\s+Free\s+Day 2\s+Still free\s+Day 3\s+\$9\.99\/mo/.test(card) && /Monthly\s+3-day free trial\s+\$9\.99\/mo/.test(card) && !/No payment today/.test(card) && /Auto-renews\. Cancel anytime\./.test(card) && !/(Mon|Tues|Wednes|Thurs|Fri|Satur|Sun)day/.test(card), card);
     ok("…and no reminder is promised anywhere on the price screen (Sona sends none yet)",
       !/\b(remind|reminder|email|e-mail|notify|notification)/i.test(await text(page, "body")), await text(page, "body"));
     const ways = { notNow: await page.locator("#declineLink").waitFor({ state: "visible", timeout: 4000 }).then(() => true, () => false), restore: await page.locator("#iapRestore").isVisible(),
@@ -163,8 +163,8 @@ await scenario("a family that buys the one payment", async () => {
       (await text(page, "#iapLifeName")) === "Lifetime" && (await text(page, "#iapLifeLine")) === "Yours Forever" &&
       (await text(page, "#iapTag")) === "Recommended" && (await page.locator("#iapLifeTag").isHidden()) && !/best value/i.test(rows[2][2]) && /\$59\.99/.test(rows[2][2]) && /Billed today/.test(rows[2][2]) &&
       await page.evaluate(() => document.getElementById("iapPlan").getBoundingClientRect().bottom <= document.getElementById("iapLife").getBoundingClientRect().top), rows);
-    ok("…as it opens, Monthly's free trial: \"No payment today\" over the button, \"Start practicing!\"",
-      /No payment today/.test(await text(page, "#iapCard")) && (await text(page, "#iapBuy")) === "Start practicing!", await text(page, "#iapCard"));
+    ok("…as it opens, Monthly's free trial: the 3-step timeline over the button, \"Start practicing!\"",
+      /Today\s+Free/.test(await text(page, "#iapCard")) && (await text(page, "#iapBuy")) === "Start practicing!", await text(page, "#iapCard"));
     await tap(page, "#iapLife");
     await page.locator('#iapCard[data-state="paid"]').waitFor({ timeout: 4000 });
     ok("…a tap on Lifetime: \"Start practicing!\", and the small print says one payment, no subscription",

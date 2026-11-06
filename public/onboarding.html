@@ -173,7 +173,7 @@
          her credential sits is hers and Travis's to change. -->
     <div class="step sell" data-step="rachel">
       <div class="rachel-photo"><img src="/assets/rachel-wardrop-profile.jpg" width="260" height="260" alt="Rachel Wardrop" /></div>
-      <h1 class="qh" id="rachelTitle" tabindex="-1">Built with Rachel, <span class="nobr">MS, CF-SLP,</span></h1>
+      <h1 class="qh" id="rachelTitle" tabindex="-1">Built with Rachel, <span class="nobr">MS, CF-SLP<span class="sr-comma">,</span></span></h1>
       <p class="rachel-line" id="rachelLine"><span class="vh" aria-hidden="true">Built with Rachel, MS, CF-SLP, </span>a pediatric speech-language pathologist in her clinical fellowship.</p>
       <p class="rachel-pill">Sona co-founder</p>
     </div>
@@ -376,6 +376,13 @@
     <div class="step" data-step="remind">
       <h1 class="qh" id="remindTitle" tabindex="-1">Want reminders during your free trial?</h1>
       <p class="muted remind-line">A practice reminder each day, and one the day before it ends.</p>
+      <!-- What the reminders look like (4 Nov 2026): the two real notifications,
+           word for word sona.js's NUDGE and TRIAL_REMIND, as iPhone shows them.
+           A picture, not a promise of when: it is marked "Example". -->
+      <div class="remind-demo" aria-hidden="true">
+        <div class="remind-note"><img src="/icon-192.png" alt="" width="34" height="34" /><span><b>Sona</b><span>Ready for 5 minutes of practice? Echo is waiting to play.</span></span><i>now</i></div>
+        <div class="remind-note"><img src="/icon-192.png" alt="" width="34" height="34" /><span><b>Sona</b><span>Your free trial ends tomorrow.</span></span><i id="remindNoteDay">Day 6</i></div>
+      </div>
       <button type="button" class="btn remind-yes" id="remindYes">Turn on reminders</button>
       <button type="button" class="remind-no" id="remindNo">Not now</button>
     </div>
@@ -1153,18 +1160,36 @@
     // 4 Nov 2026: Travis preferred these two slides to the one demo that
     // played itself).
     var demoLive=null,demoKey="",demoSlow={reel:false,piano:false};
-    function stopDemo(){if(demoLive)demoLive.destroy();demoLive=null;demoKey="";}
+    // THE DEMOS SWAP BY THEMSELVES (Travis, 5 Nov 2026: "I don't want them to
+    // click on it to see it. I just want it to auto do it ... 1 to 2 seconds
+    // ... the button looks like it's selected for after practice, and then
+    // it swaps back and forth"). Normal speed, then After practice, round and
+    // round, the matching button shown picked. A tap still jumps to that side
+    // and the swapping carries on from there. Off the screen, in the
+    // background or under Reduce Motion nothing swaps (nothing in setup moves
+    // under Reduce Motion), and a tap still shows each side.
+    var DEMO_SWAP_MS={normal:2000,slow:2000},demoTimer=0;
+    function demoCycle(key){
+      clearTimeout(demoTimer);demoTimer=0;
+      if(!demoLive||demoKey!==key||stillMotion())return;
+      demoTimer=setTimeout(function(){demoTimer=0;if(ORDER[idx]!==key||document.hidden||finished||stillMotion())return;demoSlow[key]=!demoSlow[key];paintDemo(key);},demoSlow[key]?DEMO_SWAP_MS.slow:DEMO_SWAP_MS.normal);
+    }
+    // Reduce Motion switched while a demo shows: on, the waiting swap is
+    // dropped; off, the swapping starts again from the side showing
+    try{var rmq=window.matchMedia("(prefers-reduced-motion: reduce)"),rmOn=function(){var k=ORDER[idx];if(k==="reel"||k==="piano")demoCycle(k);};if(rmq.addEventListener)rmq.addEventListener("change",rmOn);else if(rmq.addListener)rmq.addListener(rmOn);}catch(e){}
+    function stopDemo(){clearTimeout(demoTimer);demoTimer=0;if(demoLive)demoLive.destroy();demoLive=null;demoKey="";}
     function paintDemo(key){
       if(key!=="reel"&&key!=="piano"){stopDemo();return;}
       if(document.hidden||finished){stopDemo();return;}
       var scene=document.getElementById(key==="reel"?"fruitDemoScene":"pianoDemoScene");
       var api=key==="reel"?window.SonaFruitDemo:window.SonaPianoDemo;
-      if(demoKey!==key){stopDemo();if(api){demoLive=api.mount(scene);demoKey=key;}}
+      if(demoKey!==key){stopDemo();demoSlow[key]=false;if(api){demoLive=api.mount(scene);demoKey=key;}}
       var slow=!!demoSlow[key];scene.classList.toggle("slow",slow);
       scene.querySelector(".demo-speed").textContent=slow?"After practice":"Normal speed";
       scene.querySelector(".demo-message").textContent=slow?(key==="reel"?"Slower fruit.":"Slower keys."):(key==="reel"?"Swipe to slice.":"Tap the keys.");
       steps[key].querySelectorAll("[data-demo-mode]").forEach(function(b){var on=(b.dataset.demoMode==="slow")===slow;b.classList.toggle("on",on);b.setAttribute("aria-pressed",String(on));});
       if(demoLive)demoLive.setSlow(slow);
+      demoCycle(key);
     }
     ["reel","piano"].forEach(function(key){steps[key].querySelectorAll("[data-demo-mode]").forEach(function(b){b.onclick=function(){if(ORDER[idx]!==key||settling())return;demoSlow[key]=b.dataset.demoMode==="slow";paintDemo(key);};});});
     document.addEventListener("visibilitychange",function(){if(document.hidden)stopDemo();else if(!finished)paintDemo(ORDER[idx]);});
@@ -1246,6 +1271,10 @@
       if(key==="therapy"||key==="minutes"){document.getElementById(key==="therapy"?"obTherapy":"obMinutes").querySelectorAll(".ask-pick").forEach(function(b){b.setAttribute("aria-pressed",String(b.dataset.val===draft[key]));});}
       document.body.classList.toggle("ob-answered",(key==="therapy"||key==="minutes")&&!!draft[key]);
       if(key==="ready"){paintReady();wallAsk();remindAsk();}
+      // the example's day is the day before this buyer's free days end (the
+      // store's own answer, remindPlan), never a typed "Day 6": a 3-day trial
+      // reminds on Day 2; a trial not counted in days shows no day at all
+      if(key==="remind"){var rdEl=document.getElementById("remindNoteDay");if(rdEl){var rf=remindPlan&&remindPlan.free,rn=rf&&rf.unit==="day"?Number(rf.n):0;rdEl.textContent=rn>=2?"Day "+(rn-1):"";rdEl.hidden=!(rn>=2);}}
       if(key==="remind"){["remindYes","remindNo"].forEach(function(id){var b=document.getElementById(id);b.disabled=false;b.removeAttribute("aria-busy");b.textContent=id==="remindYes"?"Turn on reminders":"Not now";});}
       paintDemo(key);
       if(key==="interests")paintInterests();
