@@ -159,12 +159,24 @@ await scenario('Fruit Slice, then Piano Tiles: live silent previews, with useful
    const hd=await page.evaluate(([key,id])=>{const st=document.querySelector('[data-step="'+key+'"]'),c=document.querySelector('#'+id+' canvas'),h=st.querySelector('h1');return {role:c.getAttribute('role'),label:!!c.getAttribute('aria-label'),head:h.textContent,id:h.id,kicker:(st.querySelector('.studio-kicker')||{}).textContent,focus:document.activeElement===h};},[key,id]);
    ok(key+': its canvas paints live frames, with an accessible description and the one-message heading "'+HEADS[key]+'" under "See speech help"',b-a>=5&&hd.role==='img'&&hd.label&&hd.head===HEADS[key]&&hd.id===(key==='reel'?'reelTitle':'pianoTitle')&&hd.kicker==='See speech help'&&hd.focus,{a,b,hd});
    const opens=await page.evaluate(id=>{const scene=document.getElementById(id),st=scene.closest('.step');return {slow:scene.classList.contains('slow'),label:scene.querySelector('.demo-speed').textContent,pressed:[...st.querySelectorAll('[aria-pressed="true"][data-demo-mode]')].map(b=>b.dataset.demoMode)};},id);
-   ok(key+': it opens on Normal speed, and does not play the slowdown by itself',!opens.slow&&opens.label==='Normal speed'&&JSON.stringify(opens.pressed)==='["normal"]'&&!await page.evaluate(()=>!!document.querySelector('[data-demo-phase]')),opens);
+   ok(key+': it opens on Normal speed, with no 1 Nov phase steps',!opens.slow&&opens.label==='Normal speed'&&JSON.stringify(opens.pressed)==='["normal"]'&&!await page.evaluate(()=>!!document.querySelector('[data-demo-phase]')),opens);
    for(const [mode,slow] of [['slow',true],['normal',false]]){
     await calm(page);await page.locator('[data-step="'+key+'"] [data-demo-mode="'+mode+'"]').click();
     const m=await page.evaluate(id=>{const scene=document.getElementById(id),st=scene.closest('.step');return {slow:scene.classList.contains('slow'),label:scene.querySelector('.demo-speed').textContent,message:scene.querySelector('.demo-message').textContent,pressed:[...st.querySelectorAll('[aria-pressed="true"][data-demo-mode]')].map(b=>b.dataset.demoMode)};},id);
     ok(key+': '+mode+' changes the comparison and its help message, with exactly one pressed button',m.slow===slow&&m.label===(slow?'After practice':'Normal speed')&&m.message===(slow?'Slower '+word+'.':key==='reel'?'Swipe to slice.':'Tap the keys.')&&JSON.stringify(m.pressed)===JSON.stringify([mode]),m);
    }
+   // THE DEMOS SWAP BY THEMSELVES (Travis, 5 Nov 2026): after a tap on
+   // Normal speed, about 2 s later After practice is shown picked, and about
+   // 2 s after that Normal speed again; a tap jumps and the swapping goes on
+   const side=()=>page.evaluate(id=>{const scene=document.getElementById(id),st=scene.closest('.step');return (scene.classList.contains('slow')?'slow':'normal')+'|'+[...st.querySelectorAll('[aria-pressed="true"][data-demo-mode]')].map(b=>b.dataset.demoMode).join();},id);
+   const s0=await side();await page.waitForTimeout(2300);const s1=await side();await page.waitForTimeout(2000);const s2=await side();
+   ok(key+': it swaps by itself, Normal speed, then After practice, then Normal speed, the picked button following',s0==='normal|normal'&&s1==='slow|slow'&&s2==='normal|normal',[s0,s1,s2]);
+   await calm(page);await page.locator('[data-step="'+key+'"] [data-demo-mode="slow"]').click();await page.waitForTimeout(2300);
+   ok(key+': a tap on After practice jumps there, and the swapping carries on from it',await side()==='normal|normal',await side());
+   // Reduce Motion switched on mid-screen: the waiting swap is dropped; off again, it swaps once more
+   await page.emulateMedia({reducedMotion:'reduce'});const r0=await side();await page.waitForTimeout(2300);const r1=await side();
+   await page.emulateMedia({reducedMotion:'no-preference'});await page.waitForTimeout(2300);const r2=await side();
+   ok(key+': Reduce Motion turned on stops the swapping at once, and turned off starts it again',r0===r1&&r2!==r1,[r0,r1,r2]);
    await page.evaluate(()=>__s.background());const stopped=await demoCount(page,id);await page.waitForTimeout(250);
    ok(key+': backgrounding releases its paint loop',await demoCount(page,id)===stopped,{stopped,now:await demoCount(page,id)});
    await page.evaluate(()=>__s.foreground());await page.waitForTimeout(250);ok(key+': returning to this screen starts its own scene again',await demoCount(page,id)>stopped);
@@ -189,7 +201,8 @@ await scenario('the new sales screens fit phones and tablets; reduced-motion pre
     // (the problem slide that sat before Fruit went on 31 Oct 2026, and its
     // message is Fruit's heading; since 1 Nov the name comes before it)
     if(key==='reel')ok('the name opens the Fruit Slice demo, headed by the problem slide\'s old message, with no before-and-after rows',await page.evaluate(()=>{const s=document.querySelector('.step.on');return ORDER[ORDER.indexOf('reel')-1]==='name'&&s.querySelector('h1').textContent==='Speech practice.Through play.'&&s.querySelectorAll('.ba-row').length===0&&!document.querySelector('[data-step="problem"]');}));
-    {const id=key==='reel'?'fruitDemoScene':'pianoDemoScene',a=await demoCount(page,id);await page.waitForTimeout(300);ok(key+' under Reduce Motion paints a still frame without an ongoing loop, under its own heading',a>0&&await demoCount(page,id)===a&&await page.evaluate(w=>document.querySelector('.step.on h1').textContent===w,HEADS[key]),{a,now:await demoCount(page,id)});}
+    {const id=key==='reel'?'fruitDemoScene':'pianoDemoScene',a=await demoCount(page,id);await page.waitForTimeout(300);ok(key+' under Reduce Motion paints a still frame without an ongoing loop, under its own heading',a>0&&await demoCount(page,id)===a&&await page.evaluate(w=>document.querySelector('.step.on h1').textContent===w,HEADS[key]),{a,now:await demoCount(page,id)});
+     await page.waitForTimeout(2300);ok(key+' under Reduce Motion never swaps by itself: still Normal speed after 2 s',await page.evaluate(id=>!document.getElementById(id).classList.contains('slow'),id));}
    }
    clean('sales screens fit '+vp.width,errors);
   }finally{await context.close();}
