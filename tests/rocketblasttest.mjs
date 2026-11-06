@@ -1,5 +1,11 @@
+// Rocket Blast, rebuilt (Travis, 6 Nov 2026, "yea" to the plan): the word
+// brings the rocket and nothing else, the child aims, each trip is a little
+// farther, the last planet sways, and the planets landed on are the child's
+// collection. The original rules (silence earns nothing, a miss never costs
+// a word, every round ends, help can always be left) are all still played.
 import path from 'node:path';
-import {OUT} from './_env.mjs';
+import {readFileSync,existsSync} from 'node:fs';
+import {OUT,ROOT} from './_env.mjs';
 import {gameHarness,advance,until,sayWord} from './_sayplay-realgame.mjs';
 let h,checks=0,failures=0;
 function ok(n,p,d){checks++;if(!p)failures++;console.log((p?'PASS ':'FAIL ')+n+(p?'':' '+JSON.stringify(d)));}
@@ -21,7 +27,9 @@ async function pull(p,point,{cancel=false,cancelOther=false,hold=0,background=fa
 // Independent closed-form projectile aiming. The test uses real drag/release
 // controls and physical collision; no game completion/solver callback is used.
 function aim(g){let best;for(let t=.5;t<=2.8;t+=.025){const denominator=1-g.gain*t,x=(g.target.x-g.origin.x-g.wind*t*t/2)/denominator,y=((g.target.y-g.origin.y)*g.height/g.width-g.gravity*t*t/2)/denominator,length=Math.hypot(x,y);if(y<g.pull.min*1.1||length>g.pull.max*.96)continue;const score=length+t*.015;if(!best||score<best.score)best={x:g.origin.x+x,y:g.origin.y+y*g.width/g.height,score,time:t};}if(!best)throw Error('No reachable physical launch: '+JSON.stringify(g));return best;}
-async function launch(p,stage){let s=await state(p);if(s.speech.step>stage)return true;await pull(p,aim(s.rocket));return until(p,()=>__sayplay.step>window.__rocket.stage,7000);}
+// Up to three aimed pulls: the last planet sways, so the first aim can miss
+// it, and from that miss it holds still where it is.
+async function launch(p,stage){for(let n=0;n<3;n++){let s=await state(p);if(s.speech.step>stage)return true;if(s.rocket.state!=='ready'){await until(p,()=>__rocket.state==='ready'||__sayplay.step>__rocket.stage,7000);continue;}await pull(p,aim(s.rocket));if(await until(p,(st)=>__sayplay.step>st||__rocket.state==='ready',7000,stage)&&(await state(p)).speech.step>stage)return true;}return until(p,()=>__sayplay.step>window.__rocket.stage,3000);}
 // A pull far to the side: a real downward pull that flies well wide.
 const wide=g=>({x:g.origin.x+.2,y:g.origin.y+.12*g.width/g.height});
 const powerOff=p=>until(p,()=>window.__rocket.power===0,12000);
@@ -38,9 +46,16 @@ try{
   // ── the original flow, with the ladder watched along the way ──
   {const {page,context,errors}=await fresh();const board=await page.locator('#rocketCanvas').count();ok('Rocket Blast has a real launch board',board===1);if(!board)throw Error('Rocket Blast is still a countdown animation');
   ok('the start card and Echo say the word brings the rocket',await page.evaluate(()=>/word two times to get a rocket/.test(document.getElementById('startOvl').textContent)&&/word two times to get each rocket/.test(document.getElementById('primer').textContent)));
-  await page.locator('#startBtn').click();await until(page,()=>__sayplay.listening);await advance(page,1600);let s=await state(page);ok('(a) silence cannot fly to a planet',!s.rocket.active&&s.rocket.arrived===0&&s.speech.step===0&&s.rocket.misses===0,s);ok('two sayings earn the first rocket',await sayWord(page));s=await state(page);const origin={...s.rocket.origin},wideR=s.rocket.target.r;await advance(page,1800);s=await state(page);ok('a word and idle animation cannot launch',s.rocket.state==='ready'&&s.rocket.rocket.x===origin.x&&s.rocket.rocket.y===origin.y&&s.rocket.arrived===0,s);
-  await advance(page,9500);s=await state(page);ok('speech genuinely widens the landing ring',s.rocket.power===0&&wideR>s.rocket.target.r*1.25,{wideR,normal:s.rocket.target.r});ok('waiting is never a miss',s.rocket.misses===0&&s.rocket.ladder===0,s.rocket);
-  await pull(page,{x:origin.x,y:origin.y+.005});s=await state(page);ok('a tiny pull cannot launch or spend the word',s.rocket.state==='ready'&&s.speech.step===0,s);ok('…and counts as a try, so the ring glows and the ghost shows where to pull',s.rocket.misses===1&&s.rocket.ladder===1&&!!s.rocket.ghost&&s.rocket.wind===0&&s.rocket.target.r>wideR*0.99,s.rocket);
+  await page.locator('#startBtn').click();await until(page,()=>__sayplay.listening);await advance(page,1600);let s=await state(page);ok('(a) silence cannot fly to a planet',!s.rocket.active&&s.rocket.arrived===0&&s.speech.step===0&&s.rocket.misses===0,s);ok('two sayings earn the first rocket',await sayWord(page));s=await state(page);const origin={...s.rocket.origin},wideR=s.rocket.target.r;
+  // REBUILT: the word used to switch on ten seconds of the bigger ring and the
+  // whole drawn flight path, so every launch landed. Now it brings the rocket only.
+  ok('the word brings the rocket and nothing else: no power, the small ring, no drawn path',s.rocket.active&&s.rocket.power===0&&!s.rocket.assist.fullPath&&!s.rocket.assist.snap&&s.rocket.wind===0,s.rocket);
+  {const during=await pull(page,aim(s.rocket),{cancel:true}),path=during.rocket.path,last=path[path.length-1]||{x:0,y:0},t=during.rocket.target,gap=Math.hypot(last.x-t.x,(last.y-t.y)*during.rocket.height/during.rocket.width);
+   ok('…so a pull shows only the first bit of its path, which stops well short of the planet',during.rocket.state==='pulling'&&path.length>2&&gap>t.r*1.5,{n:path.length,gap,r:t.r});
+   s=await state(page);ok('…and a pull let go of by the phone is no try and no flight',s.rocket.state==='ready'&&s.rocket.misses===0&&s.rocket.launches===0,s.rocket);}
+  await advance(page,1800);s=await state(page);ok('a word and idle animation cannot launch',s.rocket.state==='ready'&&s.rocket.rocket.x===origin.x&&s.rocket.rocket.y===origin.y&&s.rocket.arrived===0,s);
+  await advance(page,9500);s=await state(page);ok('the ring stays the small one while the child waits',s.rocket.power===0&&near(wideR,s.rocket.target.r,1e-9),{wideR,normal:s.rocket.target.r});ok('waiting is never a miss',s.rocket.misses===0&&s.rocket.ladder===0,s.rocket);
+  await pull(page,{x:origin.x,y:origin.y+.005});s=await state(page);ok('a tiny pull cannot launch or spend the word',s.rocket.state==='ready'&&s.speech.step===0,s);ok('…and counts as a try, so the ring glows, grows and the ghost shows where to pull',s.rocket.misses===1&&s.rocket.ladder===1&&!!s.rocket.ghost&&s.rocket.wind===0&&s.rocket.assist.fullPath&&s.rocket.target.r>wideR*1.25,s.rocket);
   await pull(page,{x:origin.x,y:origin.y-.08});s=await state(page);ok('an upward pull cannot launch backwards',s.rocket.state==='ready'&&s.speech.step===0&&s.rocket.ladder===2,s);
   const held=await pull(page,{x:origin.x+.02,y:origin.y+.1},{cancel:true,cancelOther:true,hold:180});s=await state(page);ok('another pointer cannot cancel the held rocket',held.rocket.held&&held.rocket.state==='pulling',held);ok('the owning cancel returns safely without launching',!s.rocket.held&&s.rocket.state==='ready'&&near(s.rocket.rocket.x,origin.x)&&near(s.rocket.rocket.y,origin.y)&&s.rocket.misses===2,s);await pull(page,{x:origin.x,y:origin.y+.1},{background:true});s=await state(page);ok('backgrounding during a pull releases it without a free flight',s.rocket.active&&!s.rocket.paused&&!s.rocket.held&&s.rocket.state==='ready'&&s.speech.step===0,s);
   await page.locator('#rocketPull').focus();await page.keyboard.press('ArrowDown');await page.keyboard.press('ArrowDown');await page.keyboard.press('ArrowDown');const launchY=(await state(page)).rocket.rocket.y;await page.keyboard.press('Enter');await advance(page,120);s=await state(page);ok('the keyboard really launches a moving rocket',s.rocket.state==='flight'&&Math.hypot(s.rocket.velocity.x,s.rocket.velocity.y)>0&&s.rocket.rocket.y<launchY,s);await page.locator('#rocketRetry').click();s=await state(page);ok('Try again keeps the accepted word and resets only flight',s.rocket.state==='ready'&&s.rocket.arrived===0&&s.speech.step===0,s);
@@ -82,6 +97,67 @@ try{
   ok('…and it reaches the planet',await until(page,()=>__sayplay.step===4,7000),await state(page));
   ok('struggle has no runtime errors',errors.length===0,errors);await context.close();
  }
+ if(!part||part==='planets'){
+  // ── the planets: a collection that is each child's own ──
+  const src=readFileSync(path.join(ROOT,'sona.js'),'utf8'),at=src.indexOf('const PER_KID'),perKid=src.slice(at,src.indexOf(']);',at));
+  ok('the planets found are each child\'s own: a per-child key, read and written through Sona.kkey',perKid.includes('"sona.rocket.v1"')&&readFileSync(path.join(ROOT,'arcade-rocket.html'),'utf8').includes('Sona.kkey("sona.rocket.v1")'));
+  const rows=p=>p.evaluate(()=>['planetRow','planetRowEnd'].map(id=>{const e=document.getElementById(id);return{id,hidden:e.hidden,label:e.getAttribute('aria-label'),text:e.textContent,got:[...e.querySelectorAll('img.got')].map(i=>i.dataset.planet),left:[...e.querySelectorAll('img.left')].map(i=>i.dataset.planet),fresh:[...e.querySelectorAll('img.new')].map(i=>i.dataset.planet)};}));
+  const kept=p=>p.evaluate(()=>JSON.parse(localStorage.getItem('sona.rocket.v1')||'null'));
+  const dotPics=p=>p.evaluate(()=>[...document.querySelectorAll('#dots i')].map(i=>({on:i.classList.contains('on'),bg:getComputedStyle(i).backgroundImage})));
+  const catalog=p=>p.evaluate(()=>Rocket.planets);
+  const end=p=>p.evaluate(()=>({title:document.getElementById('endTitle').textContent,sub:document.getElementById('endSub').textContent}));
+  const noCount=r=>!/\d/.test(r.label+r.text);
+  {const {page,context,errors}=await fresh(),cat=await catalog(page);
+   ok('there are ten planets, each with its own painted picture, and every picture is on disk',cat.length===10&&new Set(cat.map(c=>c.art)).size===10&&cat.every(c=>existsSync(path.join(ROOT,'assets/crafted/game',c.art))),cat.filter(c=>!existsSync(path.join(ROOT,'assets/crafted/game',c.art))));
+   let r=await rows(page);ok('a new child\'s start card shows every planet as a dark shape still to find, with no count',!r[0].hidden&&r[0].got.length===0&&r[0].left.length===10&&/No planets found yet/.test(r[0].label)&&noCount(r[0]),r[0]);
+   let s=await state(page);ok('a first trip is all planets the child has not found',s.rocket.planets.length===5&&new Set(s.rocket.planets).size===5&&s.rocket.planets.every(id=>!s.rocket.got.includes(id)),s.rocket);
+   const sp=s.rocket.spots,off=sp.map(x=>x.x-.5);
+   ok('each trip is a little farther: straight up first, then farther and farther to the side, and higher',Math.abs(off[0])<1e-9&&Math.abs(off[1])<Math.abs(off[2])&&Math.abs(off[2])<Math.abs(off[3])&&sp[0].rise<sp[1].rise&&sp[1].rise<sp[3].rise,sp);
+   ok('…from one side to the other',Math.sign(off[1])===-Math.sign(off[2])&&Math.sign(off[2])===-Math.sign(off[3]),off);
+   ok('…and only the last planet sways',sp[4].drift>0&&sp.slice(0,4).every(x=>!x.drift),sp);
+   await page.locator('#startBtn').click();
+   for(let st=0;st<4;st++){
+    ok('word '+(st+1)+' brings a rocket',await sayWord(page));const want=(await state(page)).rocket.planet;
+    ok('planet '+(st+1)+' is reached by a real launch',await launch(page,st),await state(page));
+    const d=await dotPics(page),art=cat.find(c=>c.id===want).art,k=await kept(page);
+    ok('the top bar shows planet '+(st+1)+' once it is reached, and no planet not reached yet',d.length===5&&d.filter(x=>x.on).length===st+1&&d[st].bg.includes(art)&&d.slice(st+1).every(x=>x.bg==='none'),{d,art});
+    ok('…and it is kept for the child the moment it is landed on',!!k&&k.got.includes(want),k);
+   }
+   // the last planet: it sways, holds still for the help word's power, and after a miss
+   ok('word 5 brings a rocket',await sayWord(page));s=await state(page);const x0=s.rocket.target.x;await advance(page,1500);s=await state(page);
+   ok('the last planet sways from side to side while the child aims',s.rocket.swaying&&Math.abs(s.rocket.target.x-x0)>0.02&&Math.abs(s.rocket.target.x-.5)<=s.rocket.drift+1e-9,{x0,x:s.rocket.target.x});
+   await page.locator('#rocketHelp').click();await until(page,()=>__sayplay.listening);ok('the help word…',await sayWord(page));s=await state(page);const xh=s.rocket.target.x;await advance(page,1200);s=await state(page);
+   ok('…holds it still while its power lasts',s.rocket.power>0&&!s.rocket.swaying&&near(s.rocket.target.x,xh,1e-9),{xh,s:s.rocket});
+   await powerOff(page);await advance(page,1000);s=await state(page);ok('…and it sways again once the power is spent',s.rocket.swaying&&!near(s.rocket.target.x,xh,1e-4),s.rocket);
+   await pull(page,wide(s.rocket));await until(page,()=>__rocket.state!=='flight',7000);s=await state(page);const xm=s.rocket.target.x;await advance(page,2000);s=await state(page);
+   ok('a miss holds it still where it is, with the ghost rocket showing where to pull',s.rocket.misses>=1&&!s.rocket.swaying&&near(s.rocket.target.x,xm,1e-9)&&!!s.rocket.ghost&&s.speech.step===4,{xm,s:s.rocket});
+   ok('the last planet is reached',await launch(page,4),await state(page));
+   await advance(page,3300);s=await state(page);r=await rows(page);const e=await end(page),k=await kept(page);
+   ok('a first trip ends: "You found new planets!"',s.speech.phase==='end'&&e.title==='You found new planets!',e);
+   ok('the end card shows this trip\'s five planets found and ringed as new, the other five still to find, with no count',!r[1].hidden&&r[1].got.length===5&&r[1].fresh.length===5&&r[1].left.length===5&&r[1].got.every(id=>s.rocket.planets.includes(id))&&noCount(r[1]),r[1]);
+   ok('…and the child keeps all five',!!k&&k.got.length===5&&s.rocket.planets.every(id=>k.got.includes(id)),k);
+   // a second trip: four planets already found, and one new one, the last and farthest
+   await page.locator('#again').click();await advance(page,350);s=await state(page);
+   ok('a second trip flies to four planets already found, then one new one last',s.rocket.planets.slice(0,4).every(id=>s.rocket.got.includes(id))&&!s.rocket.got.includes(s.rocket.planets[4])&&s.rocket.fresh.length===0,s.rocket);
+   const second=s.rocket.planets[4];
+   for(let st=0;st<5;st++){if(!await sayWord(page))throw Error('no word '+st);ok('second trip: planet '+(st+1)+' is reached',await launch(page,st),await state(page));}
+   await advance(page,3300);r=await rows(page);const e2=await end(page),name=cat.find(c=>c.id===second).name;
+   ok('a trip that finds one planet names it on the end card',e2.title==='You found '+name+'!',{e2,name});
+   ok('…and rings only that one as new',r[1].got.length===6&&r[1].fresh.length===1&&r[1].fresh[0]===second&&r[1].left.length===4,r[1]);
+   ok('planets have no runtime errors',errors.length===0,errors);await context.close();}
+  // every planet found: five of them, any order, and the end card as before
+  {const all=['bumpy','purple','ring','strawberry','snow','ocean','flower','candy','cloud','rainbow'];
+   const {page,context,errors}=await fresh({device:{seed:{'sona.rocket.v1':JSON.stringify({got:all})}}});
+   let r=await rows(page);ok('a child who has found them all sees every planet in colour, and "Every planet found!"',r[0].got.length===10&&r[0].left.length===0&&/Every planet found!/.test(r[0].label),r[0]);
+   await page.locator('#startBtn').click();let s=await state(page);ok('…and still flies to five of them',new Set(s.rocket.planets).size===5&&s.rocket.planets.every(id=>all.includes(id)),s.rocket);
+   for(let st=0;st<5;st++){if(!await sayWord(page))throw Error('no word '+st);ok('all found: planet '+(st+1)+' is reached',await launch(page,st),await state(page));}
+   await advance(page,3300);const e=await end(page);ok('…with the end card as before, naming nothing new',e.title==='Five little space adventures!',e);
+   ok('all-found has no runtime errors',errors.length===0,errors);await context.close();}
+  // a record from somewhere else (a backup, an old build) cannot add a planet that does not exist
+  {const {page,context,errors}=await fresh({device:{seed:{'sona.rocket.v1':JSON.stringify({got:['bumpy','pluto','bumpy',7]})}}});
+   const s=await state(page);ok('an unknown or doubled planet in the record is ignored',JSON.stringify(s.rocket.got)==='["bumpy"]',s.rocket.got);
+   ok('junk record has no runtime errors',errors.length===0,errors);await context.close();}
+ }
  if(!part||part==='fit'){
   {const {page,context,errors}=await fresh();await context.route(u=>/\/assets\/crafted\/(game\/|home-rocket|echo-wave)/.test(u.href),r=>r.abort());await page.reload();await advance(page,200);
    ok('a missing start picture hides itself',await page.locator('.rocket-intro').evaluate(e=>e.hidden||e.offsetHeight===0));
@@ -89,7 +165,12 @@ try{
   const inside=(r,v)=>r.x>=-0.5&&r.y>=-0.5&&r.right<=v.width+0.5&&r.bottom<=v.height+0.5;
   const rects=(page,ids)=>page.evaluate(ids=>ids.map(id=>{const e=document.getElementById(id);const r=e.getBoundingClientRect();return{id,x:r.x,y:r.y,right:r.right,bottom:r.bottom,w:r.width,h:r.height,shown:!!e.offsetParent||getComputedStyle(e).position==='fixed'};}),ids);
   for(const viewport of [{width:320,height:568},{width:375,height:667},{width:390,height:844},{width:768,height:1024}]){
-   const W=viewport.width,{page,context,errors}=await fresh({viewport});await page.locator('#startBtn').click();await until(page,()=>__sayplay.listening);
+   const W=viewport.width,{page,context,errors}=await fresh({viewport});
+   {const c=await page.evaluate(()=>{const b=document.getElementById('startBtn').getBoundingClientRect(),row=document.getElementById('planetRow').getBoundingClientRect();return{btn:b.bottom,row:row.height,h:innerHeight};});
+    ok('the start card shows the planets and its Play button without scrolling at '+W,c.row>0&&c.btn<=c.h,c);}
+   await page.locator('#startBtn').click();await until(page,()=>__sayplay.listening);
+   {const t=await page.evaluate(()=>['close','ttl','dots'].map(id=>{const r=document.getElementById(id==='ttl'?'ttl':id);const e=id==='ttl'?r.parentElement:r;const b=e.getBoundingClientRect();return{id,x:b.x,right:b.right,y:b.y,bottom:b.bottom};}));
+    ok('the top bar\'s planet row fits beside the title at '+W,t.every(x=>x.x>=-0.5&&x.right<=W+0.5)&&t[0].right<=t[1].x+0.5&&t[1].right<=t[2].x+0.5,t);}
    let r=await rects(page,['turnPanel','hear','word']);ok('the word turn fits '+W,r.every(x=>inside(x,viewport))&&r.find(x=>x.id==='hear').h>=44,r);
    await sayWord(page);
    const fit=await page.evaluate(()=>({height:innerHeight,scroll:document.documentElement.scrollHeight}));r=await rects(page,['rocketCanvas','rocketPull','rocketHelp','rocketRetry','rocketBanner','rocketControls']);
@@ -100,7 +181,10 @@ try{
    await page.locator('#rocketHelp').click();await until(page,()=>__sayplay.listening);r=await rects(page,['turnPanel','helpBack','hear']);
    ok('the help ask and its Back to the game pill fit '+W,r.every(x=>inside(x,viewport))&&r.find(x=>x.id==='helpBack').h>=44&&r.find(x=>x.id==='helpBack').w>=44,r);
    await page.locator('#helpBack').click();await advance(page,50);ok('back in play at '+W,(await state(page)).speech.phase==='play');
-   for(let stage=0;stage<(W===320||W===768?5:1);stage++){if(stage&&!await sayWord(page))throw Error('Could not earn fitted launch');ok('planet '+(stage+1)+' is reachable at '+W,await launch(page,stage),await state(page));}
+   for(let stage=0;stage<(W===320||W===768?5:1);stage++){if(stage&&!await sayWord(page))throw Error('Could not earn fitted launch');
+    if(stage){const g=(await state(page)).rocket,sp=g.spots[stage],cv=await page.locator('#rocketCanvas').boundingBox(),bn=await page.locator('#rocketBanner').boundingBox(),br=await page.locator('#rocketControls').boundingBox(),rr=g.target.r*cv.width,lo=cv.x+(sp.x-sp.drift)*cv.width-rr,hi=cv.x+(sp.x+sp.drift)*cv.width+rr,y=cv.y+g.target.y*cv.height;
+     ok('planet '+(stage+1)+' (and all of its sway) sits on the screen, clear of the banner and the buttons at '+W,lo>=0&&hi<=W&&y-rr>=bn.y+bn.height-2&&y+rr<=br.y,{lo,hi,y,rr,banner:bn,bar:br});}
+    ok('planet '+(stage+1)+' is reachable at '+W,await launch(page,stage),await state(page));}
    await page.screenshot({path:path.join(OUT,'sona-rocket-'+W+'.png')});ok('fit has no runtime errors',errors.length===0,errors);await context.close();
   }
  }
