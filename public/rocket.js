@@ -1,5 +1,25 @@
 /* Rocket Blast is a pull-back toy, not a spoken countdown animation.
-   SayPlay owns every word, microphone turn, repetition and sound. */
+   SayPlay owns every word, microphone turn, repetition and sound.
+
+   REBUILT (Travis, 6 Nov 2026, after the game audit: "yea" to the plan).
+   - The child aims for real. The word brings the rocket and nothing else:
+     it no longer switches on the bigger ring and the drawn flight path for
+     ten seconds (which made every launch land). Only the first bit of the
+     path shows. One miss shows the whole path and a ghost rocket where to
+     pull; two make any downward pull fly in, so every round still ends.
+   - Each trip is a little farther: the first planet close and straight up,
+     then farther and off to one side or the other, and the last one drifts
+     slowly from side to side (it holds still after a miss, and while the
+     help word's power lasts). There is no wind: an invisible push is no
+     game for a three-year-old.
+   - The planets are a collection: ten, each a painted friend. The round
+     visits planets the child has not found first (all five new on a first
+     trip, then one new a trip, the farthest one), and every planet landed
+     on is found for good. The top bar's row shows this trip's planets as
+     they are reached; the start and end cards show every planet found, and
+     the rest as dark shapes still to find. No count is ever shown (a count
+     reads as a grade). The page keeps the child's planets (Rocket.setup);
+     this file never touches storage. A collection, never practice data. */
 (function () {
   "use strict";
   var api, cv, ctx, art = {}, W = 390, H = 844, raf = 0, last = 0, clock = 0;
@@ -7,25 +27,134 @@
   var state = "ready", origin = { x: 0.5, y: 1 }, ship = { x: 0.5, y: 1, vx: 0, vy: 0 }, pull = { x: 0, y: 0 };
   var target = { x: 0.5, y: 0.5 }, assist = { radius: 0.12, wind: 0, fullPath: false };
   var top = 120, bottom = 740, foot = 490, shipH = 70, shipW = 50, maxPull = 0.27, minPull = 0.035, gain = 6.2, gravity = 1.25;
+  // THE PLANETS. `name` is said on the end card ("You found the Snowy
+  // Planet!") and read by a screen reader; `wide` is the ringed one, drawn
+  // wider than it is tall.
+  // A planet joins the game only with its painted picture: `later: true`
+  // keeps it out until then (Travis, 9 Nov 2026: "3 planets now", while the
+  // image account had no credits). To add one, draw it (game-sprites.json's
+  // rocket-planet-<id>, tools/art/gen-sprites.mjs), cut it
+  // (tools/art/cut-planets.py), look at it, and take `later` off its line.
+  // A child who found every planet so far meets the new one on their next
+  // round, as their one new planet.
+  var ALL_PLANETS = [
+    { id: "bumpy", name: "the Bumpy Planet", art: "rocket-planet-mint-v1.webp" },
+    { id: "purple", name: "the Purple Planet", art: "rocket-planet-lavender-v1.webp" },
+    { id: "ring", name: "the Ring Planet", art: "space-planet-ring.webp", wide: true },
+    { id: "strawberry", name: "the Strawberry Planet", art: "rocket-planet-strawberry.webp", later: true },
+    { id: "snow", name: "the Snowy Planet", art: "rocket-planet-snow.webp", later: true },
+    { id: "ocean", name: "the Ocean Planet", art: "rocket-planet-ocean.webp", later: true },
+    { id: "flower", name: "the Flower Planet", art: "rocket-planet-flower.webp", later: true },
+    { id: "candy", name: "the Candy Planet", art: "rocket-planet-candy.webp", later: true },
+    { id: "cloud", name: "the Cloud Planet", art: "rocket-planet-cloud.webp", later: true },
+    { id: "rainbow", name: "the Rainbow Planet", art: "rocket-planet-rainbow.webp", later: true }
+  ];
+  var PLANETS = ALL_PLANETS.filter(function (p) { return !p.later; });
+  // WHERE EACH TRIP GOES, by the trip's place in the round. dx: how far to
+  // the side of the launchpad (in the board's width; the side is picked for
+  // each round, alternating), rise: how high above the pad (capped by the
+  // room the screen has), drift: the last planet sways this far each way.
+  var COURSE = [
+    { dx: 0, rise: 0.46 },
+    { dx: 0.12, rise: 0.55 },
+    { dx: 0.2, rise: 0.6 },
+    { dx: 0.26, rise: 0.66 },
+    { dx: 0, rise: 0.6, drift: 0.14 }
+  ];
+  var DRIFT_SPEED = 0.9;   // radians a second: one sway there and back in about 7 s
+  // this round: the planets in trip order, each trip's spot, the ones new to
+  // this child, and the child's whole collection (kept by the page)
+  var store = null, kept = { got: [] }, round = [], spots = [], fresh = [], planet = null, drift = { amp: 0, cx: 0.5, phase: 0 };
   // The ages 3-4 ladder (CLAUDE.md, "every round ends"): misses on this
   // word's flight, never idle time. 1 miss: no wind, a bigger glowing ring,
   // the whole aim path and a ghost rocket showing where to pull. 2 or more:
   // any downward pull flies into the ring. The finger always launches.
   var stageMisses = 0, ghost = null, doneAt = 0, toldPull = false;
   var normalRadius = 0.085, easyRadius = 0.125, flightTime = 0, owner = null, ownerSurface = null, grab = { x: 0, y: 0 }, keyboardPull = false, trail = [], launches = 0;
-  var TARGET_X = [0.5, 0.72, 0.28, 0.66, 0.34], RISE = [0.52, 0.63, 0.57, 0.68, 0.64], WINDS = [0, 0.022, -0.02, 0.026, -0.024], POWER = 10;
+  var POWER = 10;
   var $ = function (id) { return document.getElementById(id); };
   function clamp(n, lo, hi) { return Math.max(lo, Math.min(hi, n)); }
   function canPlay() { return active && !paused && !away && !won && !document.hidden; }
   function banner(text) { if ($("rocketBanner").textContent !== text) $("rocketBanner").textContent = text; }
   function img(name) { var i = art[name]; return i && i.complete && i.naturalWidth ? i : null; }
   function loadArt() {
-    [["bg", "rocket-bg.webp"], ["ship", "space-lander-idle-v1.webp"], ["mint", "rocket-planet-mint-v1.webp"], ["lavender", "rocket-planet-lavender-v1.webp"], ["rings", "space-planet-ring.webp"], ["star", "star.webp"]].forEach(function (p) { var i = new Image(); i.onload = draw; i.src = "/assets/crafted/game/" + p[1]; art[p[0]] = i; });
+    [["bg", "rocket-bg.webp"], ["ship", "space-lander-idle-v1.webp"]].concat(PLANETS.map(function (p) { return [p.id, p.art]; })).forEach(function (p) { var i = new Image(); i.onload = draw; i.src = "/assets/crafted/game/" + p[1]; art[p[0]] = i; });
   }
+  // ── the child's planets: read once, written as each new one is landed on ──
+  function recall() {
+    var v = null; try { v = store && store.read ? store.read() : null; } catch (e) {}
+    var ids = PLANETS.map(function (p) { return p.id; }), got = [];
+    if (v && v.got && v.got.length) v.got.forEach(function (id) { if (ids.indexOf(id) >= 0 && got.indexOf(id) < 0) got.push(id); });
+    kept = { got: got };
+  }
+  function byId(id) { for (var i = 0; i < PLANETS.length; i++) if (PLANETS[i].id === id) return PLANETS[i]; return null; }
+  function shuffled(list) { var a = list.slice(); for (var i = a.length - 1; i > 0; i--) { var j = (Math.random() * (i + 1)) | 0, t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+  // Five planets for this round. The new ones go last, where the trips are
+  // farthest: a first round is all new, and once a child has found five,
+  // each round brings one new planet (the farthest, swaying one) and four
+  // already found. With every planet found, five of them, any order. While
+  // the game has fewer planets than trips, the round visits some twice:
+  // the repeats come before the new ones, so a new planet is still last.
+  function plan() {
+    recall();
+    var unseen = shuffled(PLANETS.filter(function (p) { return kept.got.indexOf(p.id) < 0; })), known = shuffled(PLANETS.filter(function (p) { return kept.got.indexOf(p.id) >= 0; }));
+    var newCount = Math.min(unseen.length, Math.max(1, stages - known.length));
+    var base = known.slice(0, stages - newCount), news = unseen.slice(0, newCount), pool = known.length ? known : news, filler = [];
+    while (pool.length && base.length + filler.length + news.length < stages) filler.push(pool[filler.length % pool.length]);
+    round = base.concat(filler, news);
+    var side = Math.random() < 0.5 ? -1 : 1;
+    spots = [];
+    for (var i = 0; i < stages; i++) {
+      var c = COURSE[Math.min(i, COURSE.length - 1)], jitter = c.dx ? (Math.random() - 0.5) * 0.04 : 0;
+      spots.push({ x: 0.5 + side * (c.dx + jitter), rise: c.rise + (Math.random() - 0.5) * 0.04, drift: c.drift || 0 });
+      if (c.dx) side = -side;
+    }
+    fresh = [];
+  }
+  // where this trip's planet sits, and whether it sways
+  function place() {
+    var spot = spots[Math.min(stage, spots.length - 1)] || { x: 0.5, rise: 0.5, drift: 0 };
+    planet = round[Math.min(stage, round.length - 1)] || PLANETS[0];
+    drift = { amp: spot.drift, cx: spot.x, phase: 0 }; target.x = spot.x;
+  }
+  // The last planet sways while the child aims and flies, and holds still
+  // where it is from the first miss on, and while the help word's power lasts.
+  function swaying() { return drift.amp > 0 && ladder() < 1 && power <= 0 && state !== "arrived" && !doneAt; }
+  // The trip's row in the top bar: the engine paints one dot a trip (the
+  // first `step` of them on); each dot's planet is a custom property on the
+  // row, so the engine's own repaint keeps it, and only a reached one shows.
+  function paintTrip() {
+    var dots = $("dots"); if (!dots) return;
+    for (var i = 0; i < 8; i++) { var p = round[i]; if (p) dots.style.setProperty("--p" + i, "url(/assets/crafted/game/" + p.art + ")"); else dots.style.removeProperty("--p" + i); }
+    dots.setAttribute("data-planets", "1");
+  }
+  // The collection on the start and end cards: every planet, found ones in
+  // their colours (this trip's new ones ringed on the end card), the rest
+  // dark shapes. Named, never counted.
+  function paintRows() {
+    var have = PLANETS.filter(function (p) { return kept.got.indexOf(p.id) >= 0; }), left = PLANETS.length - have.length;
+    var label = (have.length ? "Planets found: " + have.map(function (p) { return p.name.replace(/^the /, ""); }).join(", ") + "." : "No planets found yet.") + (left ? " More planets to find." : " Every planet found!");
+    ["planetRow", "planetRowEnd"].forEach(function (id) {
+      var el = $(id); if (!el) return;
+      var h = "";
+      PLANETS.forEach(function (p) { var got = kept.got.indexOf(p.id) >= 0, isNew = got && fresh.indexOf(p.id) >= 0 && id === "planetRowEnd"; h += '<img src="/assets/crafted/game/' + p.art + '" alt="" data-planet="' + p.id + '" data-found="' + (got ? 1 : 0) + '" class="' + (got ? "got" : "left") + (isNew ? " new" : "") + (p.wide ? " wide" : "") + '" onerror="this.style.visibility=\'hidden\'">'; });
+      el.innerHTML = h; el.setAttribute("aria-label", label); el.hidden = false;
+    });
+  }
+  // A planet landed on is found for good, at once (closing the app before
+  // the end card loses nothing), and the end card names what was found.
+  function keepFound(p) {
+    if (!p || kept.got.indexOf(p.id) >= 0) return false;
+    kept.got.push(p.id); fresh.push(p.id);
+    try { if (store && store.write) store.write({ got: kept.got.slice() }); } catch (e) {}
+    tellFound(); paintRows(); return true;
+  }
+  // this round's new planets, so far (none as a round starts)
+  function tellFound() { try { if (store && store.found) store.found(fresh.map(byId)); } catch (e) {} }
   function ladder() { return stageMisses >= 2 ? 2 : stageMisses; }
   function currentAssist() {
     var l = ladder(), easy = power > 0 || l >= 1;
-    return { radius: l >= 2 ? easyRadius * 1.25 : easy ? easyRadius : normalRadius, wind: easy ? 0 : WINDS[stage], fullPath: easy, snap: l >= 2 };
+    return { radius: l >= 2 ? easyRadius * 1.25 : easy ? easyRadius : normalRadius, wind: 0, fullPath: easy, snap: l >= 2 };
   }
   function radius() { return state === "flight" || state === "arrived" ? assist.radius : currentAssist().radius; }
   function wind() { return state === "flight" ? assist.wind : currentAssist().wind; }
@@ -52,11 +181,13 @@
   function point(p) { return { x: p.x, y: p.y * W / H }; }
   function setAtPad() { ship.x = origin.x; ship.y = origin.y; ship.vx = 0; ship.vy = 0; pull.x = 0; pull.y = 0; flightTime = 0; keyboardPull = false; state = "ready"; trail = []; }
   function level() {
-    var room = Math.max(70, bottom - top), rise = Math.max(0.04, (origin.y * W - top - easyRadius * W - 3) / W);
-    target.x = TARGET_X[stage]; target.y = origin.y - Math.min(RISE[stage], rise * (stage === 0 ? 0.88 : 0.96));
+    var room = Math.max(70, bottom - top), rise = Math.max(0.04, (origin.y * W - top - easyRadius * W - 3) / W), spot = spots[Math.min(stage, spots.length - 1)];
+    // x is the trip's own (place(); a swaying planet keeps where it is)
+    target.y = origin.y - Math.min(spot ? spot.rise : 0.55, rise * (stage === 0 ? 0.88 : 0.96));
     // The same width-based ballistic equations work on a short landscape
-    // board: a shorter pull then has enough spring strength to reach a side ring.
-    var needed = Math.sqrt(gravity * (rise + Math.sqrt(rise * rise + 0.24 * 0.24))) * 1.3;
+    // board: a shorter pull then has enough spring strength to reach the
+    // farthest side planet (0.26 of the width out, and a little jitter).
+    var needed = Math.sqrt(gravity * (rise + Math.sqrt(rise * rise + 0.3 * 0.3))) * 1.3;
     gain = Math.max(6.2, needed / (maxPull * 0.85));
     assist = currentAssist(); solveGhost();
   }
@@ -82,7 +213,9 @@
     window.__rocket = { active: active, paused: paused, stage: stage, stages: stages, arrived: arrived, retries: retries, launches: launches, won: won, state: state, power: power, misses: stageMisses, ladder: ladder(), ghost: ghost ? point({ x: origin.x + ghost.x, y: origin.y + ghost.y }) : null, celebrating: doneAt > 0,
       origin: o, rocket: { x: s.x, y: s.y, w: shipW / W, h: shipH / H }, pull: { x: pull.x, y: pull.y, length: Math.sqrt(pull.x * pull.x + pull.y * pull.y), min: minPull, max: maxPull },
       velocity: { x: ship.vx, y: ship.vy }, velocityPixels: { x: ship.vx * W, y: ship.vy * W }, target: { x: t.x, y: t.y, r: radius() }, gain: gain, gravity: gravity, wind: wind(), path: path,
-      assist: { radius: assist.radius, wind: assist.wind, fullPath: assist.fullPath, snap: !!assist.snap }, held: owner !== null, pointerId: owner, keyboardPull: keyboardPull, flightTime: flightTime, width: W, height: H,
+      assist: { radius: assist.radius, wind: assist.wind, fullPath: assist.fullPath, snap: !!assist.snap }, held: owner !== null,
+      planet: planet ? planet.id : "", planets: round.map(function (p) { return p.id; }), got: kept.got.slice(), fresh: fresh.slice(), catalog: PLANETS.map(function (p) { return p.id; }),
+      drift: drift.amp, swaying: swaying(), spots: spots.map(function (p) { return { x: p.x, rise: p.rise, drift: p.drift }; }), pointerId: owner, keyboardPull: keyboardPull, flightTime: flightTime, width: W, height: H,
       coordinates: "x/y normalized to canvas; pull, radius, velocity and acceleration use canvas width. Flight starts at the actual pulled rocket position." };
   }
   function hud() {
@@ -92,7 +225,7 @@
     button.setAttribute("aria-pressed", state === "pulling" ? "true" : "false");
     $("rocketHelp").disabled = !enabled || owner !== null; $("rocketRetry").disabled = !enabled || (state !== "flight" && state !== "pulling");
     $("rocketPower").hidden = power <= 0; $("rocketPowerFill").style.width = Math.max(0, power / POWER * 100) + "%";
-    $("rocketHint").textContent = state === "flight" ? "Up, up... aim for the glow!" : state === "pulling" ? "Let go to fly!" : ladder() >= 1 ? "Pull to the dots. Let go!" : "Pull down. Let go!";
+    $("rocketHint").textContent = state === "flight" ? "Up, up... aim for the planet!" : state === "pulling" ? (swaying() ? "Let go when it's close!" : "Let go to fly!") : ladder() >= 1 ? "Pull to the dots. Let go!" : "Pull down. Let go!";
     snapshot();
   }
   function background() {
@@ -104,14 +237,13 @@
     for (var n = 0; n < 12; n++) { var sx = ((n * 137.13 + 23) % 100) / 100 * W, sy = top + ((n * 47.7) % 100) / 100 * Math.max(40, origin.y * W - top); ctx.fillStyle = "rgba(255,248,209,.65)"; ctx.beginPath(); ctx.arc(sx, sy, n % 3 === 0 ? 2 : 1, 0, Math.PI * 2); ctx.fill(); }
   }
   function drawTarget() {
-    var x = target.x * W, y = target.y * W, r = radius() * W, i = img(stage === 1 || stage === 4 ? "rings" : stage === 3 ? "lavender" : "mint");
+    var x = target.x * W, y = target.y * W, r = radius() * W, wide = !!(planet && planet.wide), i = img(planet ? planet.id : "bumpy");
     var help = ladder() >= 1 && state !== "arrived", pulse = help ? 0.5 + Math.sin(clock * 4) * 0.5 : 0;
     ctx.save(); ctx.translate(x, y); ctx.shadowColor = "#efffe0"; ctx.shadowBlur = help ? 34 + pulse * 18 : 22; ctx.fillStyle = help ? "rgba(255,248,196," + (0.26 + pulse * 0.16) + ")" : "rgba(224,255,223,.14)"; ctx.beginPath(); ctx.arc(0, 0, r + (help ? 12 : 7), 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0;
-    if (i) { var size = r * (stage === 1 || stage === 4 ? 1.85 : 1.52), sc = size / Math.max(i.naturalWidth, i.naturalHeight); ctx.drawImage(i, -i.naturalWidth * sc / 2, -i.naturalHeight * sc / 2, i.naturalWidth * sc, i.naturalHeight * sc); }
+    if (i) { var size = r * (wide ? 1.85 : 1.52), sc = size / Math.max(i.naturalWidth, i.naturalHeight); ctx.drawImage(i, -i.naturalWidth * sc / 2, -i.naturalHeight * sc / 2, i.naturalWidth * sc, i.naturalHeight * sc); }
     else { var wash = ctx.createRadialGradient(-r * 0.3, -r * 0.4, 1, 0, 0, r); wash.addColorStop(0, stage === 3 ? "#e0d1ec" : "#cbe3d8"); wash.addColorStop(1, stage === 3 ? "#9588b9" : "#83b5af"); ctx.fillStyle = wash; ctx.beginPath(); ctx.arc(0, 0, r * 0.76, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = "rgba(93,126,137,.22)"; [[-.3,-.2,.2],[.28,.12,.16],[-.1,.4,.12]].forEach(function (p) { ctx.beginPath(); ctx.arc(p[0] * r, p[1] * r, p[2] * r, 0, Math.PI * 2); ctx.fill(); }); }
     ctx.strokeStyle = "#fff4bd"; ctx.lineWidth = 4; ctx.shadowColor = "#fffbd5"; ctx.shadowBlur = 13; ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.stroke(); ctx.shadowBlur = 0;
     ctx.strokeStyle = "rgba(255,255,245,.7)"; ctx.lineWidth = 1.5; ctx.setLineDash([2, 7]); ctx.beginPath(); ctx.arc(0, 0, r + 7, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
-    for (var n = 0; n < arrived; n++) { var a = -Math.PI / 2 + n * Math.PI * 2 / 5; ctx.fillStyle = "#fff5bf"; ctx.beginPath(); ctx.arc(Math.cos(a) * (r + 12), Math.sin(a) * (r + 12), 3, 0, Math.PI * 2); ctx.fill(); }
     ctx.restore();
   }
   function prediction() {
@@ -210,7 +342,7 @@
     var dx = b.x - a.x, dy = b.y - a.y, length2 = dx * dx + dy * dy, t = length2 ? clamp(((target.x - a.x) * dx + (target.y - a.y) * dy) / length2, 0, 1) : 0;
     return Math.pow(a.x + dx * t - target.x, 2) + Math.pow(a.y + dy * t - target.y, 2) <= assist.radius * assist.radius;
   }
-  function land() { ship.x = target.x; ship.y = target.y; ship.vx = 0; ship.vy = 0; state = "arrived"; arrived = Math.max(arrived, stage + 1); active = false; banner(arrived === stages ? "Five little space adventures!" : "You flew to a new little world!"); api.sfx("correct"); if (api.cheer) api.cheer("You did it!"); if (api.face) api.face("cheer");
+  function land() { ship.x = target.x; ship.y = target.y; ship.vx = 0; ship.vy = 0; state = "arrived"; arrived = Math.max(arrived, stage + 1); active = false; var isNew = keepFound(planet); banner(isNew ? "A new planet!" : arrived === stages ? "Five little space adventures!" : "You flew to a little world!"); api.sfx("correct"); if (api.cheer) api.cheer("You did it!"); if (api.face) api.face("cheer");
     // A short celebration first: the next word is asked 1.15 s of play later.
     doneAt = clock + 1.15; hud(); draw(); }
   function tick(dt) {
@@ -219,6 +351,7 @@
       clock += dt; if (clock >= doneAt) { doneAt = 0; hud(); if (api) api.done(); } return;
     }
     if (!canPlay()) return; clock += dt; power = Math.max(0, power - dt);
+    if (swaying()) { drift.phase += dt * DRIFT_SPEED; target.x = drift.cx + drift.amp * Math.sin(drift.phase); }
     if (state === "flight") {
       flightTime += dt; var before = { x: ship.x, y: ship.y };
       ship.x += ship.vx * dt + assist.wind * dt * dt / 2; ship.y += ship.vy * dt + gravity * dt * dt / 2; ship.vx += assist.wind * dt; ship.vy += gravity * dt;
@@ -246,10 +379,18 @@
     window.addEventListener("resize", fit); window.addEventListener("blur", function () { cancelPull(); hud(); }); document.addEventListener("visibilitychange", function () { if (document.hidden) pause(); });
     window.addEventListener("pagehide", function () { away = true; pause(); cancelAnimationFrame(raf); raf = 0; }); window.addEventListener("pageshow", function () { away = false; if (!raf) { last = 0; raf = requestAnimationFrame(frame); } hud(); });
   }
-  function reset() { cancelPull(); doneAt = 0; stageMisses = 0; toldPull = false; active = false; paused = false; won = false; stage = 0; arrived = 0; retries = 0; launches = 0; power = 0; clock = 0; last = 0; level(); setAtPad(); banner("Ready for a little rocket adventure?"); hud(); draw(); }
+  function reset() { cancelPull(); doneAt = 0; stageMisses = 0; toldPull = false; active = false; paused = false; won = false; stage = 0; arrived = 0; retries = 0; launches = 0; power = 0; clock = 0; last = 0; plan(); place(); level(); setAtPad(); paintTrip(); paintRows(); tellFound(); banner("Ready for a little rocket adventure?"); hud(); draw(); }
   window.Rocket = {
+    // The page keeps the child's planets: read() gives what write() was last
+    // given, and found() hears this round's new planets (each { id, name })
+    // as each is landed on. Called before SayPlay.start.
+    setup: function (hooks) { store = hooks || null; recall(); paintRows(); },
+    planets: PLANETS.map(function (p) { return { id: p.id, name: p.name, art: p.art }; }),
+    waiting: ALL_PLANETS.filter(function (p) { return p.later; }).map(function (p) { return p.id; }),
     init: function (a, n) { api = a; stages = n || 5; cv = $("rocketCanvas"); ctx = cv.getContext("2d"); loadArt(); controls(); fit(); reset(); raf = requestAnimationFrame(frame); },
-    onWord: function (index) { cancelPull(); doneAt = 0; stageMisses = 0; stage = index; level(); setAtPad(); earnPower(); },
+    // The word brings this trip's rocket, and nothing else: no bigger ring and
+    // no drawn path (the help pill's power, and a miss, still give those).
+    onWord: function (index) { cancelPull(); doneAt = 0; stageMisses = 0; stage = index; place(); level(); setAtPad(); paused = false; active = true; last = 0; banner(drift.amp ? "This planet moves! Let go when it's close" : "Pull down, aim for the planet!"); hud(); },
     onHelp: earnPower, pause: pause, resume: function (playing) { paused = playing === false; last = 0; hud(); }, reset: reset,
     finale: function () { cancelPull(); doneAt = 0; active = false; won = true; power = 0; state = "arrived"; banner("Five worlds, flown by you!"); hud(); draw(); }
   };

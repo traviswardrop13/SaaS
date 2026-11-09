@@ -1852,5 +1852,82 @@
   "size": "1536x1024",
   "transparent": true,
   "prompt": "A mother duck and three little yellow ducklings paddling in a line, side view, swimming to the right, their waterline along the bottom (no water drawn). Cheerful. Centered, filling most of the width."
+ },
+ {
+  "name": "rocket-planet-strawberry",
+  "size": "1024x1024",
+  "transparent": true,
+  "ref": "public/assets/crafted/game/rocket-planet-mint-v1.webp",
+  "refs": [
+   "public/assets/crafted/game/rocket-planet-lavender-v1.webp"
+  ],
+  "prompt": "A friendly round planet friend for a toddler's rocket game, drawn exactly like the planet in the first attached picture and its friend in the second: the same painted clay globe, the same two large kind dark glossy eyes with a white shine, the same tiny happy open smile and rosy cheeks, the same soft light from the top left. Straight-on, the whole round globe centred and nearly filling the square with a little clear space all round. One planet alone: no moons, no stars, no sparkles, no rocket, no ground, no shadow, no frame. This one is the Strawberry Planet: a ripe red strawberry-coloured globe dotted with little golden seeds, with a small cap of green leaves sitting on top.",
+  "note": "Rocket Blast's planet collection (6 Nov 2026): cut to 384x384 by tools/art/cut-planets.py."
+ },
+ {
+  "name": "rocket-planet-snow",
+  "size": "1024x1024",
+  "transparent": true,
+  "ref": "public/assets/crafted/game/rocket-planet-mint-v1.webp",
+  "refs": [
+   "public/assets/crafted/game/rocket-planet-lavender-v1.webp"
+  ],
+  "prompt": "A friendly round planet friend for a toddler's rocket game, drawn exactly like the planet in the first attached picture and its friend in the second: the same painted clay globe, the same two large kind dark glossy eyes with a white shine, the same tiny happy open smile and rosy cheeks, the same soft light from the top left. Straight-on, the whole round globe centred and nearly filling the square with a little clear space all round. One planet alone: no moons, no stars, no sparkles, no rocket, no ground, no shadow, no frame. This one is the Snowy Planet: a pale icy-blue globe with soft white snow caps at the top and bottom and a few gentle snowdrift swirls.",
+  "note": "Rocket Blast's planet collection (6 Nov 2026): cut to 384x384 by tools/art/cut-planets.py."
+ },
+ {
+  "name": "rocket-planet-ocean",
+  "size": "1024x1024",
+  "transparent": true,
+  "ref": "public/assets/crafted/game/rocket-planet-mint-v1.webp",
+  "refs": [
+   "public/assets/crafted/game/rocket-planet-lavender-v1.webp"
+  ],
+  "prompt": "A friendly round planet friend for a toddler's rocket game, drawn exactly like the planet in the first attached picture and its friend in the second: the same painted clay globe, the same two large kind dark glossy eyes with a white shine, the same tiny happy open smile and rosy cheeks, the same soft light from the top left. Straight-on, the whole round globe centred and nearly filling the square with a little clear space all round. One planet alone: no moons, no stars, no sparkles, no rocket, no ground, no shadow, no frame. This one is the Ocean Planet: a deep friendly blue globe covered in soft rolling sea waves, with one tiny round green island with a single palm tree.",
+  "note": "Rocket Blast's planet collection (6 Nov 2026): cut to 384x384 by tools/art/cut-planets.py."
+ },
+ {
+  "name": "rocket-planet-flower",
+  "size": "1024x1024",
+  "transparent": true,
+  "ref": "public/assets/crafted/game/rocket-planet-mint-v1.webp",
+  "refs": [
+   "public/assets/crafted/game/rocket-planet-lavender-v1.webp"
+  ],
+  "prompt": "A friendly round planet friend for a toddler's rocket game, drawn exactly like the planet in the first attached picture and its friend in the second: the same painted clay globe, the same two large kind dark glossy eyes with a white shine, the same tiny happy open smile and rosy cheeks, the same soft light from the top left. Straight-on, the whole round globe centred and nearly filling the square with a little clear space all round. One planet alone: no moons, no stars, no sparkles, no rocket, no ground, no shadow, no frame. This one is the Flower Planet: a sunny butter-yellow globe sprinkled with small pink and white five-petal flowers.",
+  "note": "Rocket Blast's planet collection (6 Nov 2026): cut to 384x384 by tools/art/cut-planets.py."
+ },
+ {
+  "name": "rocket-planet-candy",
+  "size": "1024x1024",
+  "transparent": true,
+  "ref": "public/assets/crafted/game/rocket-planet-mint-v1.webp",
+  "refs": [
+   "public/assets/crafted/game/rocket-planet-lavender-v1.webp"
+  ],
+  "prompt": "A friendly round planet friend for a toddler's rocket game, drawn exactly like the planet in the first attached picture and its friend in the second: the same painted clay globe, the same two large kind dark glossy eyes with a white shine, the same tiny happy open smile and rosy cheeks, the same soft light from the top left. Straight-on, the whole round globe centred and nearly filling the square with a little clear space all round. One planet alone: no moons, no stars, no sparkles, no rocket, no ground, no shadow, no frame. This one is the Candy Planet: a soft bubblegum-pink globe covered in colourful rainbow sprinkles, like a frosted cookie.",
+  "note": "Rocket Blast's planet collection (6 Nov 2026): cut to 384x384 by tools/art/cut-planets.py."
+ },
+ {
+  "name": "rocket-planet-cloud",
+  "size": "1024x1024",
+  "transparent": true,
+  "ref": "public/assets/crafted/game/rocket-planet-mint-v1.webp",
+  "refs": [
+   "public/assets/crafted/game/rocket-planet-lavender-v1.webp"
+  ],
+  "prompt": "A friendly round planet friend for a toddler's rocket game, drawn exactly like the planet in the first attached picture and its friend in the second: the same painted clay globe, the same two large kind dark glossy eyes with a white shine, the same tiny happy open smile and rosy cheeks, the same soft light from the top left. Straight-on, the whole round globe centred and nearly filling the square with a little clear space all round. One planet alone: no moons, no stars, no sparkles, no rocket, no ground, no shadow, no frame. This one is the Cloud Planet: a light sky-blue globe with fluffy white clouds wrapped around its middle like a soft belt.",
+  "note": "Rocket Blast's planet collection (6 Nov 2026): cut to 384x384 by tools/art/cut-planets.py."
+ },
+ {
+  "name": "rocket-planet-rainbow",
+  "size": "1024x1024",
+  "transparent": true,
+  "ref": "public/assets/crafted/game/rocket-planet-mint-v1.webp",
+  "refs": [
+   "public/assets/crafted/game/rocket-planet-lavender-v1.webp"
+  ],
+  "prompt": "A friendly round planet friend for a toddler's rocket game, drawn exactly like the planet in the first attached picture and its friend in the second: the same painted clay globe, the same two large kind dark glossy eyes with a white shine, the same tiny happy open smile and rosy cheeks, the same soft light from the top left. Straight-on, the whole round globe centred and nearly filling the square with a little clear space all round. One planet alone: no moons, no stars, no sparkles, no rocket, no ground, no shadow, no frame. This one is the Rainbow Planet: a globe painted in soft wide rainbow stripes, red, orange, yellow, green, blue and purple, running across it.",
+  "note": "Rocket Blast's planet collection (6 Nov 2026): cut to 384x384 by tools/art/cut-planets.py."
  }
 ]

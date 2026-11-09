@@ -11,6 +11,25 @@ html,body{height:100%;overflow:hidden;overscroll-behavior:none;background:var(--
 #dots{gap:5px;padding:13px 12px;}
 #dots i{width:8px;height:8px;}
 #dots i.on{background:var(--act);}
+/* The trip's row (rocket.js paintTrip): a dashed ring for a planet still to
+   reach, the planet itself once reached. Each dot's picture is a custom
+   property on the row, so the engine repainting the dots keeps it. */
+#dots[data-planets]{gap:4px;padding:6px 9px;}
+#dots[data-planets] i{width:24px;height:24px;border-radius:50%;background:transparent no-repeat center/contain;border:2px dashed rgba(122,108,94,.45);box-sizing:border-box;}
+#dots[data-planets] i.on{border:0;background-color:transparent;}
+#dots[data-planets] i.on:nth-child(1){background-image:var(--p0);}
+#dots[data-planets] i.on:nth-child(2){background-image:var(--p1);}
+#dots[data-planets] i.on:nth-child(3){background-image:var(--p2);}
+#dots[data-planets] i.on:nth-child(4){background-image:var(--p3);}
+#dots[data-planets] i.on:nth-child(5){background-image:var(--p4);}
+/* The collection on the start and end cards: found planets in colour (this
+   trip's new ones ringed on the end card), the rest dark shapes to find. */
+.planetRow{display:flex;flex-wrap:wrap;justify-content:center;gap:6px 8px;max-width:232px;margin:2px auto 4px;}
+.planetRow[hidden]{display:none;}
+.planetRow img{width:40px;height:40px;object-fit:contain;display:block;}
+.planetRow img.left{filter:brightness(0) opacity(.18);}
+.planetRow img.new{border-radius:50%;box-shadow:0 0 0 3px var(--cream-card),0 0 0 6px #f5c64a;}
+.planetRow img.wide.new{border-radius:40%;}
 #rocketBanner{position:absolute;z-index:3;top:calc(75px + env(safe-area-inset-top));left:16px;right:16px;width:fit-content;max-width:calc(100% - 32px);margin:0 auto;padding:8px 14px 7px;background:var(--cream-card);border-radius:20px;box-shadow:0 3px 0 var(--cream-line);color:var(--cream-ink);font-family:"Baloo 2",sans-serif;font-size:clamp(17px,4.5vw,21px);font-weight:800;line-height:1.15;text-align:center;pointer-events:none;}
 #rocketPull{position:absolute;z-index:4;transform:translate(-50%,-50%);padding:0;border:3px solid transparent;background:transparent;box-shadow:none;border-radius:42%;touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab;}
 #rocketPull:active{cursor:grabbing;}
@@ -38,6 +57,6 @@ body:not([data-phase=play]) #rocketControls,body:not([data-phase=play]) #rocketH
 .ovl{padding:20px;}
 .ovlCard{max-height:calc(100dvh - 40px - env(safe-area-inset-top) - env(safe-area-inset-bottom));overflow-y:auto;}
 button:focus-visible{outline:4px solid var(--act-d);outline-offset:4px;}
-@media(max-width:359px){#ttl{font-size:14px;}#top{gap:6px;}#dots{gap:4px;padding:13px 9px;}#dots i{width:7px;height:7px;}#rocketBanner{font-size:17px;padding:7px 12px;}#rocketHelp{min-width:144px;padding:7px 12px;}#rocketHint{font-size:18px;}}
-@media(max-height:640px){#rocketBanner{top:calc(69px + env(safe-area-inset-top));}#rocketControls{bottom:calc(14px + env(safe-area-inset-bottom));}#rocketHelp,#rocketRetry{min-height:53px;}#rocketHint{bottom:calc(84px + env(safe-area-inset-bottom));font-size:17px;}.rocket-intro{max-height:95px;}#startOvl .ovlCard{gap:7px;padding:16px;}#startTitle{font-size:27px;}#startBtn{min-height:50px;font-size:21px;margin:2px 0 6px;}}
+@media(max-width:359px){#ttl{font-size:14px;}#top{gap:6px;}#dots{gap:4px;padding:13px 9px;}#dots i{width:7px;height:7px;}#dots[data-planets]{gap:3px;padding:7px 7px;}#dots[data-planets] i{width:20px;height:20px;}#rocketBanner{font-size:17px;padding:7px 12px;}#rocketHelp{min-width:144px;padding:7px 12px;}#rocketHint{font-size:18px;}}
+@media(max-height:640px){#rocketBanner{top:calc(69px + env(safe-area-inset-top));}#rocketControls{bottom:calc(14px + env(safe-area-inset-bottom));}#rocketHelp,#rocketRetry{min-height:53px;}#rocketHint{bottom:calc(84px + env(safe-area-inset-bottom));font-size:17px;}.rocket-intro{max-height:95px;}.planetRow{gap:4px 7px;max-width:188px;}.planetRow img{width:32px;height:32px;}#startOvl .ovlCard{gap:7px;padding:16px;}#startTitle{font-size:27px;}#startBtn{min-height:50px;font-size:21px;margin:2px 0 6px;}}
 @media(orientation:landscape) and (max-height:500px){#app{max-width:900px;}#top{padding-top:calc(7px + env(safe-area-inset-top));}#rocketBanner{top:calc(60px + env(safe-area-inset-top));font-size:15px;padding:5px 11px;}#rocketControls{bottom:calc(10px + env(safe-area-inset-bottom));}#rocketHelp,#rocketRetry{min-height:46px;}#rocketRetry{width:50px;min-width:50px;}#rocketHelp{min-width:138px;padding:4px 10px;}#rocketHelp img{width:26px;height:32px;}.rocket-help-label{font-size:16px;}#rocketHint{bottom:calc(21px + env(safe-area-inset-bottom));left:80px;right:167px;font-size:16px;}#turnPanel{left:auto;right:12px;width:calc(100% - 120px);max-width:370px;bottom:calc(12px + env(safe-area-inset-bottom));padding:8px;}#picBox{width:44px;height:44px;}#word{font-size:26px;}#listenRow{min-height:36px;}#echoWrap,#echoFace{height:34px;width:34px;}#micState{font-size:16px;}.rocket-intro{display:none;}#startOvl .ovlCard{max-width:450px;gap:5px;}#startBtn{min-height:45px;font-size:20px;padding:8px 23px;}}
