@@ -104,13 +104,18 @@ try{
   const rows=p=>p.evaluate(()=>['planetRow','planetRowEnd'].map(id=>{const e=document.getElementById(id);return{id,hidden:e.hidden,label:e.getAttribute('aria-label'),text:e.textContent,got:[...e.querySelectorAll('img.got')].map(i=>i.dataset.planet),left:[...e.querySelectorAll('img.left')].map(i=>i.dataset.planet),fresh:[...e.querySelectorAll('img.new')].map(i=>i.dataset.planet)};}));
   const kept=p=>p.evaluate(()=>JSON.parse(localStorage.getItem('sona.rocket.v1')||'null'));
   const dotPics=p=>p.evaluate(()=>[...document.querySelectorAll('#dots i')].map(i=>({on:i.classList.contains('on'),bg:getComputedStyle(i).backgroundImage})));
-  const catalog=p=>p.evaluate(()=>Rocket.planets);
+  const catalog=p=>p.evaluate(()=>({planets:Rocket.planets,waiting:Rocket.waiting}));
   const end=p=>p.evaluate(()=>({title:document.getElementById('endTitle').textContent,sub:document.getElementById('endSub').textContent}));
   const noCount=r=>!/\d/.test(r.label+r.text);
-  {const {page,context,errors}=await fresh(),cat=await catalog(page);
-   ok('there are ten planets, each with its own painted picture, and every picture is on disk',cat.length===10&&new Set(cat.map(c=>c.art)).size===10&&cat.every(c=>existsSync(path.join(ROOT,'assets/crafted/game',c.art))),cat.filter(c=>!existsSync(path.join(ROOT,'assets/crafted/game',c.art))));
-   let r=await rows(page);ok('a new child\'s start card shows every planet as a dark shape still to find, with no count',!r[0].hidden&&r[0].got.length===0&&r[0].left.length===10&&/No planets found yet/.test(r[0].label)&&noCount(r[0]),r[0]);
-   let s=await state(page);ok('a first trip is all planets the child has not found',s.rocket.planets.length===5&&new Set(s.rocket.planets).size===5&&s.rocket.planets.every(id=>!s.rocket.got.includes(id)),s.rocket);
+  // A planet is in the game only with its painted picture (Travis, 9 Nov
+  // 2026: "3 planets now"); the rest wait, listed, and join one at a time.
+  // Everything below holds for any number of planets from three to ten.
+  {const {page,context,errors}=await fresh(),both=await catalog(page),cat=both.planets,gone=c=>!existsSync(path.join(ROOT,'assets/crafted/game',c.art));
+   ok('every planet in the game has its own painted picture, on disk',cat.length>=3&&new Set(cat.map(c=>c.art)).size===cat.length&&!cat.some(gone),cat.filter(gone));
+   ok('…and the ten are the game\'s planets and the ones still waiting for theirs',cat.length+both.waiting.length===10&&both.waiting.every(id=>!cat.some(c=>c.id===id)),both);
+   const many=Math.min(5,cat.length);
+   let r=await rows(page);ok('a new child\'s start card shows every planet as a dark shape still to find, with no count',!r[0].hidden&&r[0].got.length===0&&r[0].left.length===cat.length&&/No planets found yet/.test(r[0].label)&&noCount(r[0]),r[0]);
+   let s=await state(page);ok('a first trip is all planets the child has not found',s.rocket.planets.length===5&&new Set(s.rocket.planets).size===many&&s.rocket.planets.every(id=>!s.rocket.got.includes(id)),s.rocket);
    const sp=s.rocket.spots,off=sp.map(x=>x.x-.5);
    ok('each trip is a little farther: straight up first, then farther and farther to the side, and higher',Math.abs(off[0])<1e-9&&Math.abs(off[1])<Math.abs(off[2])&&Math.abs(off[2])<Math.abs(off[3])&&sp[0].rise<sp[1].rise&&sp[1].rise<sp[3].rise,sp);
    ok('…from one side to the other',Math.sign(off[1])===-Math.sign(off[2])&&Math.sign(off[2])===-Math.sign(off[3]),off);
@@ -134,22 +139,32 @@ try{
    ok('the last planet is reached',await launch(page,4),await state(page));
    await advance(page,3300);s=await state(page);r=await rows(page);const e=await end(page),k=await kept(page);
    ok('a first trip ends: "You found new planets!"',s.speech.phase==='end'&&e.title==='You found new planets!',e);
-   ok('the end card shows this trip\'s five planets found and ringed as new, the other five still to find, with no count',!r[1].hidden&&r[1].got.length===5&&r[1].fresh.length===5&&r[1].left.length===5&&r[1].got.every(id=>s.rocket.planets.includes(id))&&noCount(r[1]),r[1]);
-   ok('…and the child keeps all five',!!k&&k.got.length===5&&s.rocket.planets.every(id=>k.got.includes(id)),k);
-   // a second trip: four planets already found, and one new one, the last and farthest
+   ok('the end card shows this trip\'s planets found and ringed as new, the rest still to find, with no count',!r[1].hidden&&r[1].got.length===many&&r[1].fresh.length===many&&r[1].left.length===cat.length-many&&r[1].got.every(id=>s.rocket.planets.includes(id))&&noCount(r[1]),r[1]);
+   ok('…and the child keeps them all',!!k&&k.got.length===many&&s.rocket.planets.every(id=>k.got.includes(id)),k);
+   // Play again: a new trip, planned from what the child has found now
    await page.locator('#again').click();await advance(page,350);s=await state(page);
-   ok('a second trip flies to four planets already found, then one new one last',s.rocket.planets.slice(0,4).every(id=>s.rocket.got.includes(id))&&!s.rocket.got.includes(s.rocket.planets[4])&&s.rocket.fresh.length===0,s.rocket);
-   const second=s.rocket.planets[4];
-   for(let st=0;st<5;st++){if(!await sayWord(page))throw Error('no word '+st);ok('second trip: planet '+(st+1)+' is reached',await launch(page,st),await state(page));}
-   await advance(page,3300);r=await rows(page);const e2=await end(page),name=cat.find(c=>c.id===second).name;
-   ok('a trip that finds one planet names it on the end card',e2.title==='You found '+name+'!',{e2,name});
-   ok('…and rings only that one as new',r[1].got.length===6&&r[1].fresh.length===1&&r[1].fresh[0]===second&&r[1].left.length===4,r[1]);
-   ok('planets have no runtime errors',errors.length===0,errors);await context.close();}
-  // every planet found: five of them, any order, and the end card as before
+   ok('Play again plans a new trip from the planets the child has found, with nothing new yet',s.rocket.planets.length===5&&s.rocket.fresh.length===0&&s.rocket.got.length===many&&s.speech.step===0,s.rocket);
+   ok('planets have no runtime errors',errors.length===0,errors);await context.close();
+   // A child with one planet still to find: the trip goes to planets already
+   // found, and the new one last and farthest; finding it names it.
+   const last=cat[cat.length-1],have=cat.slice(0,-1).map(c=>c.id);
+   const one=await fresh({device:{seed:{'sona.rocket.v1':JSON.stringify({got:have})}}});
+   s=await state(one.page);
+   ok('one planet left to find: the trip flies to found planets, then the new one last',s.rocket.planets.slice(0,4).every(id=>have.includes(id))&&s.rocket.planets[4]===last.id&&s.rocket.fresh.length===0,s.rocket);
+   await one.page.locator('#startBtn').click();
+   for(let st=0;st<5;st++){if(!await sayWord(one.page))throw Error('no word '+st);ok('one left: planet '+(st+1)+' is reached',await launch(one.page,st),await state(one.page));}
+   await advance(one.page,3300);r=await rows(one.page);const e2=await end(one.page);
+   ok('a trip that finds one planet names it on the end card',e2.title==='You found '+last.name+'!',{e2,name:last.name});
+   ok('…and rings only that one as new, with every planet now found',r[1].got.length===cat.length&&r[1].fresh.length===1&&r[1].fresh[0]===last.id&&r[1].left.length===0&&/Every planet found!/.test(r[1].label),r[1]);
+   ok('one-left has no runtime errors',one.errors.length===0,one.errors);await one.context.close();}
+  // every planet found: five trips to them, any order, and the end card as
+  // before (a record may name a planet still waiting for its picture: it is
+  // ignored, never shown)
   {const all=['bumpy','purple','ring','strawberry','snow','ocean','flower','candy','cloud','rainbow'];
    const {page,context,errors}=await fresh({device:{seed:{'sona.rocket.v1':JSON.stringify({got:all})}}});
-   let r=await rows(page);ok('a child who has found them all sees every planet in colour, and "Every planet found!"',r[0].got.length===10&&r[0].left.length===0&&/Every planet found!/.test(r[0].label),r[0]);
-   await page.locator('#startBtn').click();let s=await state(page);ok('…and still flies to five of them',new Set(s.rocket.planets).size===5&&s.rocket.planets.every(id=>all.includes(id)),s.rocket);
+   const n=(await catalog(page)).planets.length;
+   let r=await rows(page);ok('a child who has found them all sees every planet in colour, and "Every planet found!"',r[0].got.length===n&&r[0].left.length===0&&/Every planet found!/.test(r[0].label),r[0]);
+   await page.locator('#startBtn').click();let s=await state(page);ok('…and still flies to them, five trips',s.rocket.planets.length===5&&new Set(s.rocket.planets).size===Math.min(5,n)&&s.rocket.planets.every(id=>all.includes(id))&&s.rocket.got.length===n,s.rocket);
    for(let st=0;st<5;st++){if(!await sayWord(page))throw Error('no word '+st);ok('all found: planet '+(st+1)+' is reached',await launch(page,st),await state(page));}
    await advance(page,3300);const e=await end(page);ok('…with the end card as before, naming nothing new',e.title==='Five little space adventures!',e);
    ok('all-found has no runtime errors',errors.length===0,errors);await context.close();}

@@ -3901,14 +3901,21 @@ said at a set moment).
     (`COURSE`), the side and a little jitter new each round. The last
     planet sways slowly side to side; it holds still where it is from the
     first miss, and while the help pill's power lasts.
-  - **The planets are a collection** (`PLANETS`, ten, each a painted friend
-    with a face): the Bumpy, Purple and Ring planets Codex drew, and seven
-    drawn on 6 Nov 2026 (Strawberry, Snowy, Ocean, Flower, Candy, Cloud,
-    Rainbow: `tools/art/game-sprites.json`, cut by
-    `tools/art/cut-planets.py`). A first round is five planets the child has
-    not found; after that, four already found and one new one, the last and
-    farthest; with all ten found, any five. A planet landed on is found for
-    good at once. The top bar's row is this trip's planets, a dashed ring
+  - **The planets are a collection** (`ALL_PLANETS`, ten, each a painted
+    friend with a face). **Three are in the game now** (Travis, 9 Nov 2026:
+    "3 planets now"): the Bumpy, Purple and Ring planets Codex drew. The
+    other seven (Strawberry, Snowy, Ocean, Flower, Candy, Cloud, Rainbow)
+    carry `later: true` until their pictures exist: the OpenAI image account
+    had no credits on 6-9 Nov 2026. To add one: draw it
+    (`NODE_USE_ENV_PROXY=1 node tools/art/gen-sprites.mjs
+    rocket-planet-<id>`, prompts in `tools/art/game-sprites.json`), cut it
+    (`python3 tools/art/cut-planets.py <id>`), look at it, take `later` off
+    its line. A child who has found every planet meets a new one on their
+    next round. A first round is five planets the child has not found (with
+    three planets, some visited twice, the repeats before the new ones);
+    after that, four already found and one new one, the last and farthest;
+    with all found, any five. A planet landed on is found for good at once;
+    a record naming a planet still waiting is ignored. The top bar's row is this trip's planets, a dashed ring
     until each is reached; the start and end cards show every planet, found
     ones in colour (this trip's new ones ringed on the end card) and the
     rest dark shapes. **Never a count** (Dino Dig's rule). The end card says

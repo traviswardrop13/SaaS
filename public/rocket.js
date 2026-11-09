@@ -29,19 +29,27 @@
   var top = 120, bottom = 740, foot = 490, shipH = 70, shipW = 50, maxPull = 0.27, minPull = 0.035, gain = 6.2, gravity = 1.25;
   // THE PLANETS. `name` is said on the end card ("You found the Snowy
   // Planet!") and read by a screen reader; `wide` is the ringed one, drawn
-  // wider than it is tall. A new planet joins with its painted picture.
-  var PLANETS = [
+  // wider than it is tall.
+  // A planet joins the game only with its painted picture: `later: true`
+  // keeps it out until then (Travis, 9 Nov 2026: "3 planets now", while the
+  // image account had no credits). To add one, draw it (game-sprites.json's
+  // rocket-planet-<id>, tools/art/gen-sprites.mjs), cut it
+  // (tools/art/cut-planets.py), look at it, and take `later` off its line.
+  // A child who found every planet so far meets the new one on their next
+  // round, as their one new planet.
+  var ALL_PLANETS = [
     { id: "bumpy", name: "the Bumpy Planet", art: "rocket-planet-mint-v1.webp" },
     { id: "purple", name: "the Purple Planet", art: "rocket-planet-lavender-v1.webp" },
     { id: "ring", name: "the Ring Planet", art: "space-planet-ring.webp", wide: true },
-    { id: "strawberry", name: "the Strawberry Planet", art: "rocket-planet-strawberry.webp" },
-    { id: "snow", name: "the Snowy Planet", art: "rocket-planet-snow.webp" },
-    { id: "ocean", name: "the Ocean Planet", art: "rocket-planet-ocean.webp" },
-    { id: "flower", name: "the Flower Planet", art: "rocket-planet-flower.webp" },
-    { id: "candy", name: "the Candy Planet", art: "rocket-planet-candy.webp" },
-    { id: "cloud", name: "the Cloud Planet", art: "rocket-planet-cloud.webp" },
-    { id: "rainbow", name: "the Rainbow Planet", art: "rocket-planet-rainbow.webp" }
+    { id: "strawberry", name: "the Strawberry Planet", art: "rocket-planet-strawberry.webp", later: true },
+    { id: "snow", name: "the Snowy Planet", art: "rocket-planet-snow.webp", later: true },
+    { id: "ocean", name: "the Ocean Planet", art: "rocket-planet-ocean.webp", later: true },
+    { id: "flower", name: "the Flower Planet", art: "rocket-planet-flower.webp", later: true },
+    { id: "candy", name: "the Candy Planet", art: "rocket-planet-candy.webp", later: true },
+    { id: "cloud", name: "the Cloud Planet", art: "rocket-planet-cloud.webp", later: true },
+    { id: "rainbow", name: "the Rainbow Planet", art: "rocket-planet-rainbow.webp", later: true }
   ];
+  var PLANETS = ALL_PLANETS.filter(function (p) { return !p.later; });
   // WHERE EACH TRIP GOES, by the trip's place in the round. dx: how far to
   // the side of the launchpad (in the board's width; the side is picked for
   // each round, alternating), rise: how high above the pad (capped by the
@@ -84,13 +92,16 @@
   // Five planets for this round. The new ones go last, where the trips are
   // farthest: a first round is all new, and once a child has found five,
   // each round brings one new planet (the farthest, swaying one) and four
-  // already found. With every planet found, five of them, any order.
+  // already found. With every planet found, five of them, any order. While
+  // the game has fewer planets than trips, the round visits some twice:
+  // the repeats come before the new ones, so a new planet is still last.
   function plan() {
     recall();
     var unseen = shuffled(PLANETS.filter(function (p) { return kept.got.indexOf(p.id) < 0; })), known = shuffled(PLANETS.filter(function (p) { return kept.got.indexOf(p.id) >= 0; }));
     var newCount = Math.min(unseen.length, Math.max(1, stages - known.length));
-    round = known.slice(0, stages - newCount).concat(unseen.slice(0, newCount));
-    while (round.length < stages) round.push(PLANETS[round.length % PLANETS.length]);
+    var base = known.slice(0, stages - newCount), news = unseen.slice(0, newCount), pool = known.length ? known : news, filler = [];
+    while (pool.length && base.length + filler.length + news.length < stages) filler.push(pool[filler.length % pool.length]);
+    round = base.concat(filler, news);
     var side = Math.random() < 0.5 ? -1 : 1;
     spots = [];
     for (var i = 0; i < stages; i++) {
@@ -375,6 +386,7 @@
     // as each is landed on. Called before SayPlay.start.
     setup: function (hooks) { store = hooks || null; recall(); paintRows(); },
     planets: PLANETS.map(function (p) { return { id: p.id, name: p.name, art: p.art }; }),
+    waiting: ALL_PLANETS.filter(function (p) { return p.later; }).map(function (p) { return p.id; }),
     init: function (a, n) { api = a; stages = n || 5; cv = $("rocketCanvas"); ctx = cv.getContext("2d"); loadArt(); controls(); fit(); reset(); raf = requestAnimationFrame(frame); },
     // The word brings this trip's rocket, and nothing else: no bigger ring and
     // no drawn path (the help pill's power, and a miss, still give those).
