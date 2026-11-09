@@ -928,7 +928,7 @@ await scenario('the email step: before the price, optional, and fits',async()=>{
   // (Travis, 4 Nov 2026: "instead of we'll also send occasional tips from
   // Rachel, just say something like ... track weekly progress"; the example
   // email card above the box went the same day)
-  ok('one short line under the box, before anything is sent, with no example card',shown.text.includes('Free. Unsubscribe anytime.')&&!/occasional tips|Example|Last week on Sona/.test(shown.text)&&leadPosts(requests).length===0,shown.text);
+  ok('one short line under the box, before anything is sent, with no example card (and no "Free", Travis, 9 Nov 2026)',shown.text.includes('Unsubscribe anytime.')&&!/\bFree\b/.test(shown.text)&&!/occasional tips|Example|Last week on Sona/.test(shown.text)&&leadPosts(requests).length===0,shown.text);
   ok('…the old help line is gone (Travis, 15 Oct 2026), and the child\'s name is not on the screen',!/Rachel.s tips for practicing at home/i.test(shown.text)&&!shown.helpLine&&!/Milo/.test(shown.text),shown.text);
   ok('the heading takes focus, not the box: no keyboard comes up by itself',shown.focus==='updTitle',shown.focus);
   // Done (Enter) on the keyboard only closes it: it neither goes on nor sends

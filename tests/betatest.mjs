@@ -429,13 +429,13 @@ const stepAsk = await page.evaluate(() => {
   const st = document.querySelector('[data-step="updates"]');
   return {
     on: !!(st && st.classList.contains("on")),
-    consent: /Free\. Unsubscribe anytime\./.test((st || {}).textContent || ""),
+    consent: /Unsubscribe anytime\./.test((st || {}).textContent || "") && !/\bFree\b/.test((st || {}).textContent || ""),
     cta: document.getElementById("nextBtn").textContent,
     skip: !!document.getElementById("updSkip"),
     required: !!document.querySelector("#updEmail[required]"),
   };
 });
-ok("the email step says it is free and can be stopped (5 Nov 2026: \"Free. Unsubscribe anytime.\")", stepAsk.on && stepAsk.consent, JSON.stringify(stepAsk));
+ok("the email step says it can be stopped (9 Nov 2026: \"Unsubscribe anytime.\", no \"Free\")", stepAsk.on && stepAsk.consent, JSON.stringify(stepAsk));
 ok("…has a Skip, never requires the box, and its button names what it gets",
   !stepAsk.required && stepAsk.skip && stepAsk.cta === "Get the report", JSON.stringify(stepAsk));
 await clickNext(); // Skip, with the box blank → ready
