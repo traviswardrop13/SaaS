@@ -90,9 +90,18 @@ const WK = "2026-10-19";
 const joined = (email, ms) => db.kv.set("nurture:0:" + email, new Date(ms).toISOString());
 const person = (email, role = "parent") => ({ email, firstName: "", role, source: "parents", plan: "" });
 const to = (from = 0) => outbox.slice(from).map((m) => m.body.to[0]);
-const run = (now, people, opts = {}) => W.runWeekly(db.cmd, fakeFetch, now, Object.assign({ sleep: noSleep, people: async () => people }, opts));
+const run = (now, people, opts = {}) => W.runWeekly(db.cmd, fakeFetch, now, Object.assign({ sleep: noSleep, people: async () => people, on: true }, opts));
 
 ok("the Kit mark is the one lib/contacts sets (the stub's name is the real one)", /export const KIT_DONE = "resend:kitunsub"/.test(read("lib/contacts.ts")));
+
+// SWITCHED OFF (Travis, 9 Nov 2026): the schedule sends no Monday email
+await scenario("switched off: the Monday run sends nothing", async () => {
+  db = store([]);
+  const sendsBefore = outbox.length;
+  const r = await W.runWeekly(db.cmd, fakeFetch, MON, { sleep: noSleep, people: async () => [{ email: "new@example.com", role: "parent" }] });
+  ok("WEEKLY_ON is false, and a scheduled Monday run sends nothing to anyone (stopped: off)",
+    /export const WEEKLY_ON = false;/.test(read("lib/weekly.ts")) && r.stopped === "off" && r.sent === 0 && outbox.length === sendsBefore, r);
+});
 
 await scenario("who gets the Monday email", async () => {
   db = store(["gone@example.com", "mom@gmail.com"]);
@@ -157,7 +166,7 @@ await scenario("what goes wrong", async () => {
   ok("the store not answering: nothing sent", r4.sent === 0, r4);
   const r5 = await run(MON, people, { deadline: Date.now() - 1 });
   ok("out of time: it stops before claiming anyone", r5.stopped === "time" && r5.sent === 0 && !db.kv.has(W.weeklyKey(WK, "a@example.com")), r5);
-  const r6 = await W.runWeekly(db.cmd, fakeFetch, MON, { sleep: noSleep, people: async () => { throw new Error("list down"); } });
+  const r6 = await W.runWeekly(db.cmd, fakeFetch, MON, { sleep: noSleep, on: true, people: async () => { throw new Error("list down"); } });
   ok("a list that cannot be read: nothing sent, and it says so", r6.sent === 0 && r6.stopped === "no list", r6);
   const r7 = await run(THU, people, { force: true });
   ok("a founder's manual run (?weekly=1) sends on any day, still once a week", r7.sent === 2 && (await run(THU + 1, people, { force: true })).sent === 0, r7);
