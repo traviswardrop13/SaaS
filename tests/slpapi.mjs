@@ -739,10 +739,11 @@ if (A) {
   // Travis, 4 Nov 2026: "instead of we'll also send occasional tips from
   // Rachel, just say something like ... track weekly progress" (as the
   // landing pages lost the line on 25 Sep 2026); since 5 Nov 2026 the
-  // heading says what it is for and the line under the box only that it is
-  // free and can be stopped
+  // heading says what it is for and the line under the box only that it can
+  // be stopped ("Unsubscribe anytime.": "Free." went on 9 Nov 2026, Travis:
+  // "remove free")
   ok("the email step says what the email is for, and that it can be stopped",
-    updStep.length > 0 && /See their progress <br>every Monday/.test(updStep) && /Free\. Unsubscribe anytime\./.test(updStep) && !/occasional tips/.test(updStep), updStep.slice(0, 300));
+    updStep.length > 0 && /See their progress <br>every Monday/.test(updStep) && />Unsubscribe anytime\.</.test(updStep) && !/Free\. Unsubscribe/.test(updStep) && !/occasional tips/.test(updStep), updStep.slice(0, 300));
 
   // The consent line, everywhere an email can join the list (Travis's wording)
   // — except the landing page, where Travis took it out on 25 Sep 2026 ("get

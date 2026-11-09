@@ -516,7 +516,8 @@ changing one. What follows from the rule:
     on": `lib/report.ts`'s lines in plain words, never a made-up example),
     Echo cheering in the room left (`echo-cheer.webp`, smaller or gone on a
     short phone, gone while typing), then, low by the thumb, "Your email",
-    the box and "Free. Unsubscribe anytime.", and the footer's **"Get the
+    the box and "Unsubscribe anytime." ("Free." went on 9 Nov 2026,
+    Travis: "remove free"), and the footer's **"Get the
     report"**. **An empty box no longer goes on as a Skip**: the button asks
     for the address ("Add your email, or tap Skip.", the box focused).
     **Skip is a small grey word at the top right**, across from "Sona" (the
@@ -843,8 +844,9 @@ changing one. What follows from the rule:
     empty box and the button do not: see above), and a
     wrong-looking address stays with one line ("That email doesn't look
     right."). (Since 4 Nov 2026 its line was "Track your child's progress
-    every week. Unsubscribe anytime.", and since 5 Nov "Free. Unsubscribe
-    anytime." under "See their progress every Monday": see above.) Travis's line, "We'll also send occasional tips from Rachel.
+    every week. Unsubscribe anytime.", and since 5 Nov "Unsubscribe
+    anytime." ("Free. Unsubscribe anytime." until 9 Nov) under "See their
+    progress every Monday": see above.) Travis's line, "We'll also send occasional tips from Rachel.
     Unsubscribe anytime.", is on screen before anything is sent. **Its
     heading is "Get the weekly progress report"** (Travis, 15 Oct 2026: "i
     want the setup page to say get the weekly progress report", with no
