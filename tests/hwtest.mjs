@@ -97,10 +97,10 @@ const CACHE = (over) => `localStorage.setItem(Sona.kkey("sona.homework.v1"), JSO
 // chose a position of their own, and neither was this one: End-of-word
 // homework still asked for "rabbit" and "I see a rabbit." Travis, 30 Sep 2026:
 // the position must actually drive the practice page, homework first, then the
-// family's setting. The games keep start-of-word words on purpose.
-// 1 Oct 2026: a family can pick only the start of a word for now
-// (Sona.FAMILY_POSITIONS), so a Middle saved earlier asks for start-of-word
-// words; homework's own position is untouched.
+// family's setting.
+// 22 Oct 2026: every position is open to families (profile.wordPosition), and
+// the games follow it too (Travis: "build that so it works in the games").
+// A position saved in the old practicePosition (before 1 Oct) is never read.
 {
   const { ctx, pg } = await page();
   await pg.addScriptTag({ url: "/gamecontent.js" });   // charge.html loads it; today.html does not
@@ -114,8 +114,16 @@ const CACHE = (over) => `localStorage.setItem(Sona.kkey("sona.homework.v1"), JSO
     eval(c);                                         // homework: S at End; the family is on Beginning
     out.hw = read("S");
     localStorage.removeItem(Sona.kkey("sona.homework.v1"));
-    Sona.saveProfile({ practicePosition: "m" });     // no homework; the family's setting says Middle, from before it was closed
+    Sona.saveProfile({ wordPosition: "m" });         // no homework; the family picked Middle
     out.fam = read("R");
+    Sona.saveProfile({ wordPosition: "i", practicePosition: "m" });   // a Middle from before 1 Oct
+    out.old = read("R");
+    Sona.saveProfile({ wordPosition: "f" });         // the games read the same place
+    out.play = Sona.playWords("R").map((w) => w.pos);
+    out.themes = Sona.gameWords("dino", "R").length;
+    Sona.saveProfile({ wordPosition: "i", practicePosition: "i" });
+    out.playI = Sona.playWords("R").map((w) => w.pos);
+    out.themesI = Sona.gameWords("dino", "R").map((w) => w.w).join();
     return out;
   }, CACHE());
   const all = (xs, p) => xs.length > 0 && xs.every((x) => x.pos === p);
@@ -126,16 +134,22 @@ const CACHE = (over) => `localStorage.setItem(Sona.kkey("sona.homework.v1"), JSO
   ok("the sentence step is gamecontent.js's, not the bare-word fallback", st.sc && framed(st.hw.sent) && framed(st.fam.sent), show(st.hw.sent));
   ok("homework at End: every sentence is built on an End word", st.hw.pos === "f" && all(st.hw.sent, "f"), show(st.hw.sent));
   ok("…and so is every word at the word step", all(st.hw.word, "f"), show(st.hw.word));
-  ok("no homework, family's old Middle setting: every sentence is built on a start-of-word word (Middle is not open to families yet)", st.fam.pos === "i" && all(st.fam.sent, "i"), show(st.fam.sent));
-  ok("…and so is every word at the word step", all(st.fam.word, "i"), show(st.fam.word));
+  ok("no homework, the family picked Middle: every sentence is built on a Middle word", st.fam.pos === "m" && all(st.fam.sent, "m"), show(st.fam.sent));
+  ok("…and so is every word at the word step", all(st.fam.word, "m"), show(st.fam.word));
+  ok("a Middle saved in the old practicePosition is never read: start-of-word words and sentences", st.old.pos === "i" && all(st.old.sent, "i") && all(st.old.word, "i"), show(st.old.word));
+  ok("the picture games' words follow the family's End of word, and the start-of-word themes stay out",
+    st.play.length > 0 && st.play.every((p) => p === "f") && st.themes === 0, JSON.stringify({ play: st.play, themes: st.themes }));
+  ok("…and back at the start of a word, start-of-word words and the themes again", st.playI.every((p) => p === "i") && st.themesI === "rock", JSON.stringify({ playI: st.playI, themesI: st.themesI }));
   await ctx.close();
 
-  // Feed Echo, Bubble Pop and the Say & Play games (Hoops) ask for
-  // start-of-word words whatever the setting says (Travis, 30 Sep 2026): which
-  // positions suit a three-year-old's game is a separate call, Rachel's.
-  const gameSrc = { "arcade-feed.html": /S\.wordsFor\(sound,\s*"i"\)/, "simple-play.js": /S\.wordsFor\(sound,\s*"i"\)/, "sayplay.js": /S\.wordsFor\(sound,\s*"i"\)/ };
+  // Feed Echo, Bubble Pop and the Say & Play games (Hoops) ask for the words
+  // of the place the child practises (22 Oct 2026; Travis: "build that so it
+  // works in the games"), through the one reader, Sona.playWords. Which
+  // positions suit a three-year-old's game is still Rachel's call
+  // (Sona.GAMES_FOLLOW_POS is the switch back).
+  const gameSrc = { "arcade-feed.html": /S\.playWords\(sound\)/, "simple-play.js": /S\.playWords\(sound\)/, "sayplay.js": /S\.playWords\(sound\)/ };
   const drifted = Object.keys(gameSrc).filter((f) => !gameSrc[f].test(noComments(readFileSync(ROOT + "/" + f, "utf8"))));
-  ok("the games keep start-of-word words", drifted.length === 0, "now reading another position: " + drifted.join(", "));
+  ok("the picture games ask the words of the place being practised", drifted.length === 0, "not reading Sona.playWords: " + drifted.join(", "));
 }
 
 // ── 2. the date window is real in both directions ──
@@ -220,12 +234,15 @@ const CACHE = (over) => `localStorage.setItem(Sona.kkey("sona.homework.v1"), JSO
   };
   const syl = (t) => /^r(ah|ee|oo|oh|ay)$/.test(t);
   let a = await asks({ sounds: ["R"], pos: "f", words: ["car", "star"] });
-  ok("end-of-word homework: the game's cards stay on the sound, then ask one of the homework's own words",
-    a.pos === "f" && a.t[0] === "rrrr" && a.t[1] === "rrrr" && ["car", "star"].indexOf(a.t[2]) >= 0, JSON.stringify(a));
+  // 22 Oct 2026: a place whose card syllables are not switched on has no
+  // syllable step, so the card after the sound asks a word, never the bare
+  // sound again (as the practice page goes sound → words there)
+  ok("end-of-word homework: the game's cards start on the sound, then ask the homework's own words",
+    a.pos === "f" && a.t[0] === "rrrr" && ["car", "star"].indexOf(a.t[1]) >= 0 && ["car", "star"].indexOf(a.t[2]) >= 0, JSON.stringify(a));
   ok("…and never a start-of-word syllable", !a.t.some(syl), JSON.stringify(a.t));
   a = await asks({ sounds: ["R"], pos: "v", words: null });
-  ok("\"er, ar, or\" homework that names no words: every card stays on the bare sound",
-    a.pos === "v" && a.top === 0 && a.t.join() === "rrrr,rrrr,rrrr", JSON.stringify(a));
+  ok("\"er, ar, or\" homework that names no words: no start-of-word syllable, and the word card asks vocalic R's own short word",
+    a.pos === "v" && a.top === 2 && a.t.join() === "rrrr,bird,bird", JSON.stringify(a));
   a = await asks({ sounds: ["R"], pos: "i", words: ["rain"] });
   ok("start-of-word homework keeps the syllable step, and its word card asks the homework's word, not the app's",
     syl(a.t[1]) && a.t[2] === "rain", JSON.stringify(a));

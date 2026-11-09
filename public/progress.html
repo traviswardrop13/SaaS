@@ -136,6 +136,7 @@
   </div>
 
   <script src="/sona.js"></script>
+  <script src="/gamecontent.js"></script>
   <script>
     // Parent-only page: a child arriving by direct URL or back-swipe (no fresh
     // pass of the home screen's grown-ups gate) is sent back to the gate.
@@ -187,7 +188,10 @@
       var row = document.createElement("div"), n = triesOf(out[k]); row.className = "levelrow";
       var nm = document.createElement("span"); nm.textContent = soundLabel(k) + " sound"; row.appendChild(nm);
       var tr = document.createElement("span"); tr.className = "n"; tr.textContent = n + (n === 1 ? " try" : " tries"); row.appendChild(tr);
-      var lv = document.createElement("span"); lv.className = "lvl"; lv.textContent = Sona.rungLabel ? Sona.rungLabel(Sona.rungOf(k)) : "Sound practice"; row.appendChild(lv);
+      var pos = Sona.soundPos(k);
+      var lv = document.createElement("span"); lv.className = "lvl";
+      lv.textContent = (pos === "i" ? "" : Sona.posInfo(pos).name + " · ") + Sona.stepLabel(k, pos);
+      row.appendChild(lv);
       bs.appendChild(row);
     });
 

@@ -291,12 +291,21 @@
       if(slot) slot.innerHTML='<span class="fd">'+((window.SonaCraftedWords&&SonaCraftedWords.picture(w.w,20))||((S&&S.pic)?S.pic(w.w,w.e,20):w.e))+'</span>';
       $("plate").dataset.fed=fed+"/"+NEED;
     }catch(e){} }
-    function pool(sound){ var ws=(S&&S.wordsFor)?(S.wordsFor(sound,"i")||[]):[]; return ws.filter(function(w){ return w&&w.w&&w.e; }).sort(function(a,b){ return a.w.length-b.w.length; }).slice(0,8); }
+    // at the place in the word the child practises (Sona.playWords, 22 Oct 2026)
+    // eight, evenly from every place under Mixed (Sona.playPool)
+    function pool(sound){ if(S&&S.playPool) return S.playPool(sound,8)||[]; var ws=(S&&S.playWords)?(S.playWords(sound)||[]):[]; return ws.filter(function(w){ return w&&w.w&&w.e; }).sort(function(a,b){ return a.w.length-b.w.length; }).slice(0,8); }
     var TARGETS=pool(SOUND);
     if(!TARGETS.length){ SOUND="R"; TARGETS=pool("R"); }
     var OTHERS=[];
     try{
-      (S.ALL_SOUNDS||[]).forEach(function(s){ if(s===SOUND)return; (S.wordsFor(s,"i")||[]).forEach(function(w){ if(w&&w.w&&w.e&&w.w[0].toLowerCase()!==String(TARGETS[0]&&TARGETS[0].w||" ")[0].toLowerCase()) OTHERS.push(w); }); });
+      // A wrong picture never has the practice sound in it anywhere: once
+      // the end of words opened, "bus" (a B word) beside "glass" was a second
+      // right answer for S. Sona.hasSound reads the spelling (an x is a k and
+      // an s). The first-letter rule stays.
+      // Nor a word filed under the practice sound at all (Z's "nose" and
+      // "rose" spell their z with an s), so a target never shows up twice.
+      var OWN={}; ((S.WORDS&&S.WORDS[SOUND])||[]).forEach(function(w){ OWN[w.w]=1; });
+      (S.ALL_SOUNDS||[]).forEach(function(s){ if(s===SOUND)return; (S.wordsFor(s,"i")||[]).forEach(function(w){ if(w&&w.w&&w.e&&!OWN[w.w]&&w.w[0].toLowerCase()!==String(TARGETS[0]&&TARGETS[0].w||" ")[0].toLowerCase()&&!(S.hasSound&&S.hasSound(w.w,SOUND))) OTHERS.push(w); }); });
     }catch(e){}
 
     // ── tiny cached TTS (same on-device cache as charge; repeat asks are free)

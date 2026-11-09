@@ -48,7 +48,8 @@ await page.evaluate((code) => {
 
 // Play a clip through a real AnalyserNode and classify with the shipped code.
 // `reps` replays short clips back-to-back the way a real 5-rep round would.
-const classify = (file, target, reps = 1) => page.evaluate(async ({ file, target, reps }) => {
+const classify = (file, target, reps = 1, item = null) => page.evaluate(async ({ file, target, reps, item }) => {
+  window.ITEM = item;
   const h = window.__runShape(target);
   h.reset();
   const ctx = new AudioContext();
@@ -79,7 +80,7 @@ const classify = (file, target, reps = 1) => page.evaluate(async ({ file, target
   const v = h.verdict();
   await ctx.close();
   return { v, shape: window.__shape || null, frames: h.S.frames };
-}, { file, target, reps });
+}, { file, target, reps, item });
 
 // (file, claimed target, expected verdict, label, reps)
 const CASES = [
@@ -99,9 +100,20 @@ const CASES = [
   ["M-demo.mp3", "S", "fail", "M as S"],
   ["THV-demo.mp3", "THV", "pass", "voiced TH as itself"],
   ["K-demo.mp3", "K", "pass", "K ungated (aspirates legitimately)"],
+  // 22 Oct 2026: a practice WORD whose other letters hiss ("star") can't be
+  // "clearly the wrong family"; one whose don't is judged as ever, and a
+  // sentence by its practice word, never by "the" or "see" around it
+  ["S-demo.mp3", "R", "pass", "S claimed as R on \"star\" (its s hisses)", 1, { t: "star", level: "word", pos: "f" }],
+  ["S-demo.mp3", "R", "fail", "S claimed as R on \"grew\" (the r taken out leaves no soft g)", 1, { t: "grew", level: "syllable", pos: "b" }],
+  ["S-demo.mp3", "R", "fail", "S claimed as R on \"tiger\" (a hard g)", 1, { t: "tiger", level: "word", pos: "v" }],
+  ["S-demo.mp3", "L", "fail", "S claimed as L on \"clean\" (a hard c)", 1, { t: "clean", level: "word", pos: "b" }],
+  ["S-demo.mp3", "R", "fail", "S claimed as R on \"Look at the rabbit.\" (the frame's th is not the word's)", 1, { t: "Look at the rabbit.", word: "rabbit", level: "sentence", pos: "i" }],
+  ["S-demo.mp3", "R", "pass", "S claimed as R on \"I see a star.\" (its word hisses)", 1, { t: "I see a star.", word: "star", level: "sentence", pos: "f" }],
+  ["M-demo.mp3", "S", "pass", "M claimed as S on the blend \"smile\" (voiced around its S)", 1, { t: "smile", level: "word", pos: "b" }],
+  ["M-demo.mp3", "S", "fail", "M claimed as S on the blend \"stop\" (nothing voiced around its S)", 1, { t: "stop", level: "word", pos: "b" }],
 ];
-for (const [file, target, want, label, reps] of CASES) {
-  const r = await classify(file, target, reps || 1);
+for (const [file, target, want, label, reps, item] of CASES) {
+  const r = await classify(file, target, reps || 1, item || null);
   const got = r.v;
   ok(`${label}: ${got}${r.shape ? ` (cent=${r.shape.cent} high=${r.shape.high} n=${r.frames})` : ` (n=${r.frames})`}`, got === want);
 }
