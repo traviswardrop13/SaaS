@@ -93,6 +93,11 @@
 //              seed carries it, as every seed carries the era stamps
 //   safeArea   { top, bottom }: px swapped in for env(safe-area-inset-*) in
 //              every served .html and .css (desktop Chromium reports zero)
+//   sellYearly true: serve a sona.js with IAP_SELL_YEARLY on, so the yearly
+//              row shows again where the offering lists it (Travis, 23 Oct
+//              2026: "get rid of the yearly option"; the card sells the one
+//              payment and monthly). Read by open(), not by the init script:
+//              open()'s sellYearly(on) changes it between loads
 //   remind     true | false | "throw": Sona.trialReminderOn (NOTIFY1, 22 Oct
 //              2026: will this phone show its own heads-up the day before a
 //              free trial ends?) is replaced by one that answers true only
@@ -516,9 +521,20 @@ export async function open(browser, base, cfg = {}, viewport = { width: 390, hei
   // own route (a stubbed Home, a held price page) answers before this one is
   // asked, and "never requests subscribe.html" has to see those too
   context.on("request", (req) => { requests.push({ url: req.url(), method: req.method(), body: req.postData() }); });
+  // the yearly row (sellYearly): the card stopped selling it on 23 Oct 2026
+  // (IAP_SELL_YEARLY in sona.js), and its code stays for the day it comes
+  // back, so a suite can still serve a sona.js with the switch on. Per load:
+  // the returned sellYearly(on) changes it for this context's next requests.
+  const live = { sellYearly: !!cfg.sellYearly };
   await context.route("**/*", async (route) => {
     const url = route.request().url();
     if (!url.startsWith(base + "/")) return route.abort();
+    if (live.sellYearly && new URL(url).pathname === "/sona.js") {
+      const res = await route.fetch(), src = await res.text(), on = src.replace("const IAP_SELL_YEARLY = false;", "const IAP_SELL_YEARLY = true;");
+      // already on: as it is. Renamed: no sona.js at all, so the suite fails loudly
+      if (on === src && !/\n  const IAP_SELL_YEARLY = true;/.test(src)) { console.error("_phone.mjs: sona.js has no `const IAP_SELL_YEARLY` switch to turn on"); return route.abort(); }
+      return route.fulfill({ response: res, body: on });
+    }
     // Desktop Chromium has zero safe-area insets. Swap in the device's real
     // ones so a footer collision is exercised, not hidden.
     if (cfg.safeArea && /\.(html|css)$/.test(new URL(url).pathname)) {
@@ -537,7 +553,7 @@ export async function open(browser, base, cfg = {}, viewport = { width: 390, hei
   page.setDefaultTimeout(8000);
   const errors = [];
   page.on("pageerror", (e) => errors.push(e.message));
-  return { context, page, errors, requests };
+  return { context, page, errors, requests, sellYearly: (on) => { live.sellYearly = !!on; } };
 }
 
 // R6 pauses taps for about half a second after a setup step changes
@@ -548,6 +564,74 @@ export async function open(browser, base, cfg = {}, viewport = { width: 390, hei
 // at all. The scenarios that test R6 itself do not call it.
 export async function calm(page) {
   await page.evaluate(() => { if (document.body) document.body.classList.remove("ob-settling", "price-settling"); });
+}
+
+// SETUP, WALKED BY WHAT IS ON SCREEN (22 Oct 2026). Which screens a family
+// meets depends on the family (a second child skips the questions, the email
+// step comes once a household has an address, the reminder only where the
+// iPhone can set one), so a suite walks setup the way a parent does: it reads
+// the screen showing (body[data-setup-screen]) and answers it, until the
+// screen `to` is showing or the page has left setup (the price, the first
+// game). It throws on a screen it does not know, so a new screen is taught
+// here once, not in every suite. Answers (all optional):
+//   name ("Mia"), age ("8"; "" picks none), interests ([] ids, or "skip"),
+//   therapy ("t_yes", or "skip"), sounds (["R"]), explore (true: "Not sure?
+//   Pick all sounds"), minutes ("5", or "skip"), email (none: Skip),
+//   remind ("no" | "yes"), mic ("notnow" | "ask").
+// → the screens seen, in order, ending with the one it stopped on.
+// THE PLAN MOMENT'S BEAT (31 Oct 2026): on a parent's first setup the answer
+// that moves on to the ready screen first shows a build beat over the page
+// (#obBuild, body.ob-building: about 2.2 s, 1 s under Reduce Motion), and the
+// screen under it keeps its name until the beat ends. The walk waits it out
+// (beatOver) and never answers through it.
+export const beatOver = (page, timeout = 8000) => page.waitForFunction(() => !document.body || (!document.getElementById("obBuild") && !document.body.classList.contains("ob-building")), null, { timeout }).catch(() => {});
+export async function setupWalk(page, to, a = {}) {
+  const seen = [];
+  const screen = () => page.evaluate(() => location.pathname === "/onboarding.html" && document.body ? document.body.dataset.setupScreen : "");
+  const tap = async (sel) => { await calm(page); await page.locator(sel).click(); };
+  for (let i = 0; i < 30; i++) {
+    let s = "";
+    try { await beatOver(page); s = await screen(); } catch (e) { return seen; }
+    if (!s) return seen;
+    if (seen[seen.length - 1] !== s) seen.push(s);
+    if (s === to) return seen;
+    if (["welcome", "reel", "piano", "rachel", "ready"].includes(s)) await tap("#nextBtn");
+    else if (s === "name") {
+      await page.locator("#obName").fill(a.name == null ? "Mia" : a.name);
+      const age = a.age == null ? "8" : a.age;
+      if (age) await tap('#obAge [data-age="' + age + '"]');
+      await tap("#nextBtn");
+    } else if (s === "interests") {
+      if (a.interests === "skip") await tap("#interestsSkip");
+      else {
+        for (const v of a.interests || []) if (await page.locator('#obInterests [data-val="' + v + '"]').getAttribute("aria-pressed") !== "true") await tap('#obInterests [data-val="' + v + '"]');
+        await tap("#nextBtn");
+      }
+    } else if (s === "therapy" || s === "minutes") {
+      const v = s === "therapy" ? (a.therapy == null ? "t_yes" : a.therapy) : (a.minutes == null ? "5" : a.minutes);
+      await tap(v === "skip" ? "#" + s + "Skip" : '[data-step="' + s + '"] .ask-pick[data-val="' + v + '"]');
+    } else if (s === "sounds") {
+      if (a.explore) await tap("#obExploreSounds");
+      else {
+        const want = a.sounds || ["R"];
+        for (const b of await page.locator("#obSounds .sound").all()) {
+          const k = await b.getAttribute("data-sound"), on = (await b.getAttribute("aria-pressed")) === "true";
+          if (on !== want.includes(k)) { await calm(page); await b.click(); }
+        }
+        await tap("#nextBtn");
+      }
+    } else if (s === "updates") {
+      if (a.email) { await page.locator("#updEmail").fill(a.email); await tap("#nextBtn"); } else await tap("#updSkip");
+    } else if (s === "remind") await tap(a.remind === "yes" ? "#remindYes" : "#remindNo");
+    else if (s === "mic") await tap(a.mic === "ask" ? "#nextBtn" : "#micNotNow");
+    else throw new Error("setupWalk cannot walk on from " + s);
+    // on once the screen has changed (or the page has gone to the price or a
+    // game): the beat before the ready screen is waited out here too
+    try { await page.waitForFunction((k) => location.pathname !== "/onboarding.html" || !document.body || document.body.dataset.setupScreen !== k, s, { timeout: 9000 }); } catch (e) {
+      if (!/destroyed|navigation|closed/i.test(String(e && e.message))) throw new Error("setupWalk: still on " + s + " after answering it");
+    }
+  }
+  throw new Error("setupWalk never reached " + to + ": " + seen.join(","));
 }
 
 // Colours, judged the way loadtest judges a strong colour: by hue, and only

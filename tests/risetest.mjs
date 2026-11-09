@@ -16,6 +16,7 @@ import { createServer } from "http";
 import { readFileSync, existsSync, statSync } from "fs";
 import path from "path";
 import { chromium, ROOT as SOURCE_ROOT, launchOpts } from "./_env.mjs";
+import { heartsOffRow } from "./_heartsrow.mjs";
 
 const ROOT = process.env.SONATEST_PUBLIC_ROOT || SOURCE_ROOT, PORT = 8269, BASE = "http://127.0.0.1:" + PORT;
 const MIME = { html: "text/html", js: "text/javascript", css: "text/css", svg: "image/svg+xml", png: "image/png", webp: "image/webp", woff2: "font/woff2", mp3: "audio/mpeg", wav: "audio/wav" };
@@ -44,7 +45,8 @@ await scenario("source pins", async () => {
     code.includes('var STRETCHES=[{name:"Garden",len:28000,every:2600,speed:1,sway:0},{name:"Clouds",len:32000,every:2400,speed:1.1,sway:0.16},{name:"Stars",len:36000,every:2200,speed:1.2,sway:0.22}];'));
   ok("only the rest between stretches asks for the sound", /sayCard\("Say \\u201C"\+SAYTXT\+"\\u201D to rise higher!","none"\)/.test(code));
   ok("the sound power is the shared helper's: first ask after six seconds, eight seconds of help (no ms set), and no heart back (a new life only on a loss)",
-    PAGE.includes('<script>window.SLOW_HELP={phase:"climb",action:"slow the falling blocks",earned:"Slow blocks!",first:6000};</script>')
+    // (left: the stretch's play left, so Echo starts no ask its end would cut off)
+    PAGE.includes('window.SLOW_HELP={phase:"climb",action:"slow the falling blocks",earned:"Slow blocks!",first:6000,left:function(){return STRETCHES[stage].len-climbMs;}};</script>')
     && !/SLOW_HELP=\{[^}]*\bms:/.test(code) && /src="\/arcade-speech-help\.js"/.test(code) && /src="\/arcade-sayit\.js"/.test(code) && /src="\/rise\.js"/.test(code));
   ok("nothing in the climb is practice data", !/logAttempt|bumpReps|recordSession|recordRung|rotAdvance|repsBeacon/.test(code + board));
   // the one place the page asks for the mic: the say-it card (and Echo's turn through it)
@@ -417,6 +419,16 @@ await scenario("hearts, pace and best", async () => {
 });
 
 // ── a whole climb ──
+// HEARTSROW1 (_heartsrow.mjs): the hearts never fold onto a second line as the count grows
+await scenario("the hearts stay on one line", async () => {
+  const { context, page, errors } = await open();
+  try {
+    const bad = await heartsOffRow(page, ["Garden", "Clouds", { word: "The top!", bar: false }]);
+    ok("the three hearts stay on one line, at full size, beside a count of 1, 10, 52 or 100 and each word the top bar can show, at 320, 375 and 390 wide; nothing in the top bar spills, is cut or moves the close button", bad.length === 0, bad);
+    ok("…with no runtime errors", errors.length === 0, errors);
+  } finally { await context.close(); }
+});
+
 await scenario("a whole climb", async () => {
   const { context, page, errors } = await open();
   try {
@@ -714,7 +726,7 @@ await scenario("no practice data", async () => {
     await page.waitForTimeout(400);
     const after = await page.evaluate(() => Object.fromEntries(Object.keys(localStorage).map((k) => [k, localStorage.getItem(k)])));
     const changed = [...new Set([...Object.keys(before), ...Object.keys(after)])].filter((k) => before[k] !== after[k]);
-    ok("a heard card changes only the week's game reps (and the trophies they earn)", changed.includes("sona.gamereps.v1") && changed.every((k) => k === "sona.gamereps.v1" || k === "sona.trophy.v1"), changed);
+    ok("a heard card changes only the week's game reps (and the trophies they earn)", changed.includes("sona.gamereps.v1") && changed.every((k) => k === "sona.gamereps.v1" || k === "sona.trophy.v1" || k === "sona.played.v1" || k === "sona.fid.v1"), changed);  // TRIAL1: "played today", once a day, by the anonymous id
     ok("…and calls no practice write", (await page.evaluate(() => __f.practice.length)) === 0);
     ok("no practice data: no runtime errors", errors.length === 0, errors);
   } finally { await context.close(); }

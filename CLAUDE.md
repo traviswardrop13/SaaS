@@ -41,6 +41,270 @@ So:
   just a failure with fewer words.
 
 ## Project
+**The grown-ups' pages, simplified (Travis, 5 Nov 2026: "simplify drastically
+the settings").** This supersedes every older note below that puts a goal
+picker, a rep line, Saved tries, a summary box, "How scoring works", the review
+ask, Firsts or Recent practice on Progress.
+- **The Grown-ups door is silent.** No tap chime on the Grown-ups button, no
+  success chime when the code is right (`today.html`).
+- **Progress is one phone screen:** the week's tries and seven practice-day
+  bubbles (a bubble is a day with practice, `momWeek().days`, not a goal day),
+  "Accuracy by sound — Coming soon" (no percentage anywhere on the page),
+  Practice levels (each sound's tries and ladder rung; kept over Recent
+  practice as the more useful of the two) and the pilot-only "Send progress to
+  my SLP". **No footnote** (Travis, same day: "take out built with Rachel on
+  the progress sheet. Take out a practice snapshot, not a clinical
+  assessment"): Progress no longer names Rachel, so `shiptest`'s list of pages
+  that introduce her drops it. This is an exception to the clinical rule that
+  parent-facing summaries carry the hedge and her byline, made while the page
+  shows no percentage, score or verdict; **Rachel to confirm**, and a
+  percentage coming back brings the hedge back with it. **No goal
+  can be changed on any grown-up page now**: the days-a-week buttons and the
+  daily reps picker went ("the new goal ... is just minutes per day", which
+  setup asks and saves as `dailyGoal`). The goal machinery itself (gift ring,
+  chests, goal stamps, homework's own number) is unchanged.
+- **No clip is kept any more** (Travis, same day: "dont save"). Saved tries
+  left Progress, so `saveRecording` keeps nothing (it stays only as a name an
+  old cached page may call), practice never calls it, and each device clears
+  every clip an older build kept, once (`_dropAllRecordings`, done-mark
+  `_sonaClipsGone`, never `sona.` so a backup can't carry it; never on Home,
+  which only reads, so the first other page does it: `roadtest`). `MIC_PROMISE`,
+  `parents.html`, `for-slps.html`, `privacy.html` (updated 5 Nov 2026),
+  `/support` and `/families` now say audio is never saved. The practice page
+  still runs its recorder into memory while it listens and throws the result
+  away; removing the recorder itself is a separate, larger change.
+- **Settings shows the chosen sounds as one line** ("S, L, R", or "All
+  sounds") with a **Change** button that opens the grid of every sound
+  (Travis, same day: "yeah change button").
+- **Talk to us fits one screen:** Rachel's card is her name with "MS, CF-SLP ·
+  Co-founder" and one line, "I'm a pediatric speech-language pathologist in
+  my clinical fellowship."; "We read every message." is the page's subtitle;
+  the form asks "What would make Sona better?", with its helper text inside
+  the boxes. **No "Recommend us?"** and **one privacy line**, "We use your
+  email only to reply." (Travis, same day: "take out please leave out your
+  child's name. And take out it isn't added to any mailing list"; both stay
+  true, they are just unsaid). A clinician on the web still reads the
+  student-name line. The body no longer carries `recommend`; the route still
+  accepts it blank.
+
+**Sound-focused review build (29 Oct 2026, Travis's request).** A parent may
+pin one of the child's existing selected sounds as the current target, like
+a language choice. Target changes stay in Settings behind Grown-ups; Home
+and Books only display the shared `targetSound()`, with no child picker or
+preference writer (Travis, 31 Oct 2026). Other focus sounds and all progress
+remain. No saved pin
+keeps the existing practice rotation. Active clinician homework wins and
+disables family target changes. **Books shows only the current target's
+stories** (Travis, 30 Oct 2026, superseding More books below): no other-sound
+fold, free-book fallback or seasonal fallback. Changing the selected sound
+switches the shelf. Unpinned play mode with no family target or homework can
+still browse every sound. Access rules for every book remain unchanged.
+Home's Books tag counts only free books on that shelf; it never advertises
+a different sound's free title.
+**Adventure Studio Home approved (Travis, 4 Nov 2026).** Travis chose the
+new standalone comparison, changed its small coral label to **"Practice"**,
+then explicitly said **"And then let's merge this new look."** This
+supersedes the Play Map's appearance described below. The day's original
+picture comes first beneath the buddy, Rewards and Grown-ups header; its
+title and complete hook sit in a separate dark footer with the teal Start
+today action. The smaller coral Practice area follows, showing the current
+sound read-only, then the lavender Games and yellow Books cards with tilted
+original artwork and drawn line arrows. The decorative trail, tomorrow pill
+and map stars are removed. A completed day's main card still shows tomorrow
+dark and stays inert; accurate day, locked/seen labels, access, earned replay
+games and Books tags keep their shared rules. Talking stories keep their
+original Home covers; the original story portraits and fallback chain stay.
+Home stays silent and reads only. Practice is a visual landmark, not a new
+session: no Gym route, microphone, scorer, cue or practice rule is added.
+The measured fit keeps the whole Home still only when everything fits;
+shorter screens may scroll safely, and the Arcade always scrolls. Release
+validation and publication are tracked separately; this approval records
+the requested appearance and merge authorization, not a completed release.
+
+**Improved Play Map is the chosen Home (Travis and Rachel, 31 Oct
+2026).** Rachel preferred the first direction; the improved Map has been
+restored after the Studio comparison. This supersedes the tall game-video
+Home and earlier compact layouts below. A large original portrait story
+picture contains the Start action, accurate day, title and hook. Gold stars
+represent only saved completed adventures, labelled with their real story
+days; skipped days never become stars. Tomorrow is dark and locked, with no
+early play. A completed day's story stays inert. Buddy, Rewards and Grown-ups
+remain at the top, with Games and Books below the trail. The small current
+sound badge is read-only; target changes stay behind Grown-ups. Home remains
+silent and reuses original artwork. A bounded fit check caught 18 px of
+overflow on the busiest 320×568 screen. Only the most compact layout now
+visually hides the “Your games” heading, preserving its accessible label and
+every replay button; that exact case passes. Release checks remain pending. The
+Arcade still scrolls. Access, saved progress, models, cues and rep rules are
+unchanged. Travis confirmed Rachel's approval of the parent-only target
+behavior and the new books on 2 Nov 2026 (below).
+
+The alternative Studio Home was saved outside the active Home. Unfinished
+Practice Gym runtime changes and its standalone test are preserved in
+`/private/tmp/sona-unshipped-gym-before-merge/` with exact hashes and a restore
+note. They are excluded from the merge; `charge.html` and `sona.js` were
+restored to their pre-Gym versions. Avatar work is deferred. Do not resume
+either draft without a new request.
+
+**Merge authorized (Travis, 31 Oct 2026).** Travis's explicit “merge”
+supersedes the earlier keep-local instruction for the finished Play Map,
+parent-only target settings, sound-specific books and existing review-branch
+work. The unfinished Gym and avatar work are excluded. The full 164-suite
+release battery remains unfinished and must pass before a push, along with
+the required typecheck. The stopped pre-redesign run is not a release pass;
+do not claim that publishing or the merge has completed before it happens.
+
+**Release resumed (Travis, 2 Nov 2026):** “okay finish and release the home
+screen and books first.” This resumes the stopped release of the approved
+Map and sound-specific books. The latest main changes (#255/#256), including
+name-first setup and the store-owned seven-day monthly trial on top, are
+preserved. The Map keeps its measured layout; page movement is locked only
+while its complete content fits, and the Arcade always releases that lock.
+The new lock check fails the pre-fix page and passes all 21 compact Home
+scenarios. A fresh full battery is still required before any push. GitHub
+access was subsequently restored through the normal Git sign-in and a
+successful push dry run; nothing has been published yet. **Rachel's review
+confirmed (Travis, 2 Nov 2026): “Yes, Rachel has approved them”**, answering
+the explicit question about the new books' words and pictures and the
+parent-only target sound setting. This confirms that scope, not the separate
+upstream Day 1 review questions recorded below. No Gym, avatar or new
+clinical behavior is included.
+
+The first 2 Nov release run stopped after 69 completed suites: 65 passed and four
+failed on leftover test expectations (the new R book's title, the old Home
+wash selectors and the retired Picnic alias). It was not a release pass.
+The Picnic-specific tests were restored exactly from current main, the R
+title guard now includes the exact new title and rejects off-sound books,
+and the Home fallback check follows the approved Map. These are test-only
+corrections; that candidate's production files remained identical to
+`82d3c70e`. The next complete run (`250f4b4e`, 164 suites) exited 1: 154
+passed, two retained outdated Home-wash/free-book shelf expectations and
+eight timed out during system sleep. Neither run is a release pass.
+The two stale checks now follow the Map's opaque picture fallback and the
+selected-sound shelf; the free Rory check remains on an explicitly selected
+R shelf. The affected activity suite passes 568 checks. Latest main #257
+is integrated at `bbe56df1`, preserving `FREE_PLAY_ON = false`, its new
+helpers and the sound-target readers. Its free-round suite passes 19/19.
+Home, its CSS, Books and Settings are unchanged from `82d3c70e`.
+The generated voice index changed only source line references and is
+current. A fresh complete 165-suite run with the Mac kept awake from its
+start is required against this frozen candidate before any push.
+That third run also stopped (exit 143) after confirmed repeated machine deep
+sleep despite a verified idle-sleep prevention assertion: 38 suites had
+completed, 27 passed and 11 had timing failures. Its results are not a
+release pass and justify no app or test expectation change. Runtime, tests,
+tools and the voice index were frozen at `bbe56df1` at that stop. A fourth
+run waited for Travis to confirm the Mac was plugged in, open and awake. The existing
+late-web-charter-price assertion remains valid on source review: it tests
+the separate annual web checkout, not the native monthly seven-day offer.
+
+**Current release candidate (4 Nov 2026): `146fa107`.** Travis confirmed
+physical readiness on 3 Nov. The fourth run then stopped deliberately after
+eight green suites to integrate published main `4a30d86d` (#258/#259).
+The integrated candidate preserves the approved Map, parent-only target pin,
+strict sound shelf and seven eight-page books, plus upstream's TALK2 stories,
+sixth Home fit step and test font normalization. The headless audio-output
+fix is retained. Books and Settings remain unchanged; Home keeps its
+fit-dependent scroll lock. All six focused groups exited 0: compact Home
+21 scenarios, Home 761 checks, talking stories 61, setup stability 322,
+setup screens 268 and trial hand-off 84. The clean tracked-source typecheck
+also exited 0; the voice index is current (808 fixed lines, 80 expansions,
+356 bank words).
+
+The fifth full run was stopped on 4 Nov (exit 143): 75 suites completed,
+with 19 failures/timeouts, while macOS repeatedly entered Maintenance Sleep
+and DarkWake on battery despite the scoped keep-awake assertion. It is not
+a release pass. The power record is
+`/private/tmp/sona-r5-machine-sleep-evidence.log`; exact results are in
+`/private/tmp/sona-home-books-release-20261103-r5-stopped.json`.
+All 2,105 frozen source/test/tool files still match `1c2260c8`; no product,
+test, tool or voice-index edit was made in response. No further local full
+run is started automatically. **Review-branch upload exception approved (Travis, 4 Nov 2026): “Run full
+checks on GitHub.”** This explicitly permits uploading the finished review
+branch and opening its draft PR before a local full pass, so the complete
+battery can run independently of this Mac. It does not waive validation:
+production publication must wait for the complete passing checks. No upload
+or release is claimed by this record.
+
+Published main `ef791055` (#260, TALKCLIP) is also integrated. Its twenty
+new clip/poster assets, recorder/capture tools, asset test and rulebook notes
+are retained exactly. The approved Map keeps its original portrait picture:
+its HTML, CSS and JavaScript are byte-identical to `1c2260c8`, with no video
+element, reel loader or request, so these assets are not activated there.
+The updated Node-only asset test exits 0 (35 clips); optional decoded-frame
+checks are skipped because ffmpeg is unavailable locally. Voice-index
+freshness still exits 0; no TypeScript changed. The new source manifest has
+2,125 files. The complete battery is still pending; the limited pre-push
+exception above is approved. This integration is not a release pass.
+
+**GitHub validation and test portability (4 Nov 2026).** The approved
+review-branch upload is complete; the first cloud run reported a genuine
+failure in `speechevidencetest`: quick F counted 3 of 4 (246/247 checks),
+with no script error. This is not attributed to Mac sleep. The same quick
+suite passed 10/10 twice locally without changing any assertion or sound.
+Main `4a30d86d`'s Ubuntu run `41750629238` passed the complete battery,
+including F 4/4 and speech evidence 247/247. The headless
+`--disable-audio-output` workaround is now scoped to macOS, where its clock
+fix was demonstrated. Mac launch arguments remain identical; Linux launch
+arguments now match main exactly. This is a test portability correction,
+not proof that the flag caused the F failure. No product, fixture, scoring
+or clinical threshold changed. Syntax and argument checks pass; a fresh
+complete cloud pass remains required before release.
+
+The first GitHub run (`41870353527`) completed all 165 suites: 163 passed,
+with the quick-F failure above and one test-output portability error.
+`compacthometest` tried to save its screenshot under `/private/tmp`, which
+does not exist on Ubuntu. It now uses the shared `_env.OUT` contract
+(`TEST_OUT` or the operating system's temporary directory); screenshot
+filenames and all 21 scenarios/checks are unchanged. The corrected focused
+run exits 0 on macOS with the standard `/tmp` default exercised explicitly.
+A search of every test changed by this branch found no other absolute Mac
+output path. No app, fixture or acceptance assertion changed. Both test
+portability corrections require a fresh complete passing cloud run before
+production publication.
+
+The second GitHub run (`41876745642`, with the Darwin-scoped audio fix)
+completed all 165 suites: 164 passed, and only the pre-fix compact screenshot
+path failed. Speech evidence passed 247/247, including F 4/4; this is an
+observed pass after the portability correction, not proof of causation.
+The portable screenshot fix has now passed its 21 focused scenarios. A
+fresh complete passing cloud run of the final candidate is still required.
+
+**Latest first-day flow (upstream #251/#253, 31 Oct 2026) supersedes the
+earlier Picnic-first review experiment.** Setup opens ordinary Fruit Slice,
+through its existing practice page, for every age. Home then offers Day 1's
+sound-specific talking story for R, S, L, Z or F, otherwise the original
+lighthouse. The upstream fourteen-slot calendar and saved `t1` identity for
+completed Day 1 remain authoritative. No `signature-v1` route or Picnic
+alias is activated. `storyDay(id)` returns the upstream story object, not a
+numeric display day. The target pin feeds the existing `rotSounds()` reader,
+so the selected sound and active homework also govern the new Day 1 choice.
+Upstream's speech prompts, three-saying word moments, counting and first-game
+rules are preserved; their Rachel-review questions remain recorded below.
+
+**More books, 8–12 pages** (Travis, 30 Oct 2026): the review adds one
+eight-page story each for R, S, L, SH, CH and TH: Rabbit and the Rocket,
+Seal and the Sock, Lion and the Lock, Sheep and the Ship, Chicken and the
+Picnic, and My Thumb Paints a Gift. Bear's Lost Ball is a seventh new book
+relative to published main, expanded from its six-page local draft: those
+six lines/pictures stay, with two new play scenes before bed.
+Every key is an existing initial-bank word; no target bank, age gate,
+microphone, scorer or play-rep rule changes. All seven meet the fuller-book
+whole-line phonology rule, with one independently stored picture per page.
+The catalog holds 49 year-round books, 55 during October. The original 13
+six-page books and existing twelve-page books remain unchanged.
+**Keep the original artwork** (Travis, 30 Oct 2026): existing books including
+Sunny the Seal are unchanged, and new book/adventure art matches the original
+soft3D look. New art is versioned. Review sources/prompts live in
+`design/sound-first-session/` and `design/adventure/fruitpicnic-*`.
+**Rachel reviews the selected-target behavior, every new story line/key and
+matching picture before release.** The review page and generated
+`VOICE_SCRIPT.md` list the exact words. Travis confirmed on 2 Nov 2026 that
+Rachel has approved the new books' words and pictures and the parent-only
+target sound setting. Children's voice replacement remains
+research only: no licensed,
+clinically approved recording pack was selected or installed.
+
 Sona (speaksona.com) — kids' speech-practice PWA in public/, Next.js API
 routes, Capacitor iOS shell that remote-loads the site. Solo founder, ships
 fast.
@@ -82,15 +346,22 @@ anonymous "built / made / designed / shaped / reviewed with / by a (licensed)
 (pediatric) SLP / speech-language pathologist" or "our SLP"; a page that puts
 Rachel and "SLP" or "speech-language pathologist" in one sentence without
 "MS, CF-SLP" somewhere on it; any CCC or "certified" claim; and any of the
-pages that introduce her (parents, subscribe, trial, progress, talk, slp)
-missing it.
+pages that introduce her (parents, subscribe, trial, talk, slp)
+missing it (Progress left that list on 5 Nov 2026, when it stopped naming
+her).
 One of those places is setup (Travis, 29 Sep 2026: a Meet Rachel screen with
-her photo). **Since 5 Oct 2026 (option B) she is on setup's "<Name>'s practice
-is ready" screen**, in a box of her own titled "About Sona", apart from what
-the parent picked: her photo and the settled line word for word, "Built with
-Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical
-fellowship." Her separate screen is gone. Where her credential sits beside a
-list a parent picked is hers and Travis's to change. She still is a
+her photo). **Since 22 Oct 2026 she has her own screen again** (Travis: "a
+bigger slide of Rachel that's just like all by itself of like her
+credentials"), the fourth of setup (since 1 Nov 2026 after the child's
+name and the Fruit Slice demo; before that, before the name): her photo, big,
+and the settled line word for word, "Built with Rachel, MS, CF-SLP, a
+pediatric speech-language pathologist in her clinical fellowship.", shown
+once (its first words are the heading, "Built with Rachel, MS, CF-SLP,", the
+rest the line under it; `#rachelLine`'s own text is the whole sentence, its
+start not drawn or read twice), and a pill, "Sona co-founder". Nothing else.
+From 5 to 22 Oct 2026 (option B) she sat in an "About Sona" box on the ready
+screen; the ready screen no longer carries her. Where her credential sits is
+hers and Travis's to change. She still is a
 Clinical Fellow: if an SLP, a district or a board asks, the answer is yes.
 
 **Never "CCC", "certified", "board-certified" or "ASHA-certified".** The
@@ -98,8 +369,8 @@ landing page claimed "Licensed & board-certified (CCC-SLP)" until it was caught
 — a specific, checkable false claim about a trademarked certification, on the
 page that sells the app. `tests/iaptest.mjs` fails if it comes back, and if
 the licence ever lapses or she moves state, that pin is where to start — and
-setup's ready screen (`onboarding.html`, her line pinned word for word in
-`tests/onboardingtest.mjs`) shows her credential to every new family.
+setup's Rachel screen (`onboarding.html`, her line pinned word for word in
+`tests/setupscreenstest.mjs`) shows her credential to every new family.
 If a change
 touches what a child is asked to say, how a sound is cued, what counts as
 practice, or what an SLP is shown, it is Rachel's call, not an engineering
@@ -120,7 +391,10 @@ Coming soon that day), and **one book, Rory and the Rainbow** (`FREE_BOOKS`
 in sona.js). Everything else is Premium and greyed out ("ask a grown-up");
 buying opens every finished game and every book. Unfinished games stay
 closed regardless of subscription, trial or earned access, and since 19 Oct
-2026 have no card on Home (see "Coming soon games are hidden"). **Since 3 Oct 2026 the free version is not every
+2026 have no card on Home (see "Coming soon games are hidden"). **The daily
+story is Premium too** (STORY1, 22 Oct 2026), by the books' rule: shown
+locked where Sona can sell, and on a phone that cannot buy replaced by the
+game of the day (see "Daily story (STORY1)"). **Since 3 Oct 2026 the free version is not every
 family's:** where Sona can sell, a family set up from then on starts with the
 trial (see "TRIAL FIRST" right below).
 
@@ -147,64 +421,430 @@ opens them) is open only to
 Premium from any source, a trial, or Sona being free open everything, as
 before. These three were defaults Travis did not pick; ask him before
 changing one. What follows from the rule:
-- **SETUP IS OPTION B: FOUR QUESTIONS, THE PRICE, THEN THE PHONE IS HANDED
-  OVER** (Travis, 4-5 Oct 2026: "number B would be good ... you can do a full
-  reset i don't really care i'm not married to anything"). A parent's setup is
-  hello → name and age → **"Is <Name> in speech therapy?"** → three
-  screens that sell Sona (19 Oct 2026, below) → sounds →
-  **"How many days a week will you practice?"** → **"Get the weekly progress
-  report"** → **"<Name>'s practice is ready"** →
-  the price → microphone → "Hand the phone to <Name>!" → Home (the first
-  game for a phone with nothing to sell). The
-  old order told a parent to hand the phone over and tap "Let's play!", and
-  then showed three money screens to the child holding it.
-  - **The two questions between are one tap each and can be skipped**
-    (Travis, 5 Oct 2026, of the first pair, "What brings you to Sona?" and
-    "How does practice go at home now?": "I don't like" them; "we could at
-    the very least ask them if they are in speech therapy or not. Oh, and
-    then also for them to be able to choose whether they want to practice
-    three days a week or … five days a week or every day"). **Therapy**
+- **PLAY STUDIO SETUP (Travis, 24 Oct 2026; supersedes the earlier visual
+  descriptions below):** the approved cream/coral prototype is now the family
+  setup. A short hello ("Little sounds. Big adventures."), separate Fruit
+  Slice and Piano Tiles speed comparisons, then Rachel and the existing
+  questions. **Since 31 Oct 2026** (Travis: "get rid of the slide that says
+  speech practice through play. And maybe put that speech practice through
+  play above the fruit slice game. And then the second one ... say the
+  sound to slow the keys") there is no one-message slide (the `problem`
+  step is gone): the Fruit Slice preview is headed "Speech practice.
+  Through play." and the Piano Tiles one "Say the sound to slow the keys.",
+  each under the kicker "See speech help". The demos use
+  painted game pieces and offer Normal speed / After practice; they are
+  silent previews, never microphone requests, speech verdicts or practice
+  credit. They release their loops on departure/background and stay still
+  under Reduce Motion. The old recorded reel assets remain available but
+  are not loaded by setup.
+  **Since 1 Nov 2026** (its demo and email-example parts undone on 4 Nov
+  2026, below) (Travis: "we'll ask the child's name and age first,
+  right after the hello. And let's improve them, make the demo speed
+  buttons more clear, and play the slowdown by itself"; then "we can get
+  rid of piano tiles as the demo. And just keep fruit slice"): a first
+  setup is the hello → **name and age** → the Fruit Slice demo → Rachel →
+  what they love → their games → therapy → sounds → minutes → email →
+  (the build beat) → ready → (reminder) → the price → microphone →
+  hand-off. **There is one demo, Fruit Slice's, and it plays itself**
+  (`DEMO_PHASES` in `onboarding.html`): normal speed (3.2 s), then Echo's
+  bubble glows and "Your child says “rrrr”" (1.6 s, the game still at
+  normal speed), then the game slows down ("Slower!", "The game slows
+  down!", the scene ringed teal, 3.8 s), round and round. Under it, in
+  place of the two "Normal speed / After practice" buttons, three steps
+  that light up as it plays, each with a bar filling for its phase: **"1
+  Normal speed" › "2 Says “rrrr”" › "3 Slows down"**; a tap on one jumps
+  there and it plays on from it. Off the screen or in the background it
+  stops and starts again at normal speed. Under Reduce Motion nothing
+  moves: the scene is a still frame, the steps do not advance and draw no
+  bar, and a tap shows that step. The Piano Tiles demo and its script
+  (`onboarding-piano-demo.js`) are gone. **Each sound on the sound picker
+  carries a word** (Travis left this step to us): the letters, and under
+  them the first start-of-word word in Sona's word bank (`Sona.WORDS`; the
+  voiced TH has none, so its first word, "mother"), its sound's letters
+  orange (`Sona.soundMark`), read as "R, as in rabbit", under one line,
+  "Tap the sounds your child is working on." (it steps aside on a 4-inch
+  phone, where the letters shrink so all nineteen fit). **The email step
+  shows what the weekly email looks like** (Travis: "a small picture of an
+  email or an example, like the Leo said his R sound 140 times this
+  week"): a small card marked "Example", the real report's subject and
+  lines (`lib/report.ts` `kidLines`) for the Monday email's made-up child
+  (`lib/weekly.ts` `EXAMPLE`: "Last week on Sona: 86 reps", "Said their
+  sound out loud on 4 days", "Reached the daily goal on 3 days", "86 reps:
+  52 in practice, 34 in games and books", "Sound: R"), hidden while the
+  keyboard is up on a short window. **It names no child**: the real email
+  never says a name ("Child 1" with two), so the example does not either
+  (Travis's "Leo" would promise what the email does not do; his to change
+  only with the email itself). `setupscreenstest` pins it to `EXAMPLE`.
+  **Travis's to change:** every word, the phases' lengths, the order.
+  **Rachel's:** the example word shown for each sound (and "mother" for
+  the voiced TH, a mid-word sound), the example report's words, and that
+  the demo still shows R ("rrrr") to every parent, before any sound is
+  picked. Returning families, second children and clinicians
+  keep their shorter paths. Native keyboard, privacy/replay, purchase,
+  reminder eligibility and explicit hand-off rules are unchanged.
+  **Since 4 Nov 2026: the two old demos back, the games screen gone, and
+  less text** (Travis: "I want to go back to the old two slides that we had
+  on the onboarding for demoing what it's like to play a game. I don't like
+  this new update. And then the slide that says games for Joe, let's
+  improve it or get rid of it. It hardly shows anything additional ... the
+  Joe's practice is ready page has too much text and so does the weekly
+  progress. Get rid of the box above that's the example and underneath it
+  ... instead of we'll also send occasional tips from Rachel, just say
+  something like ... track weekly progress"). A first setup is now the hello
+  → name and age → **the Fruit Slice demo → the Piano Tiles demo** (the
+  31 Oct slides exactly: "Speech practice. Through play." and "Say the sound
+  to slow the keys.", each with the two buttons **Normal speed / After
+  practice** the parent taps; nothing plays by itself; `onboarding-piano-demo.js`
+  is back) → Rachel → what they love → therapy → sounds → minutes → email →
+  (the build beat) → ready → (reminder) → the price → microphone → hand-off.
+  - **"Games <Name> will love" is gone** (the demos just before it show the
+    same games playing). What they love is still asked and kept on the
+    profile (`profile.interests`), but no screen now shows a result of it;
+    `INTEREST_GAMES` went with the grid.
+  - **The email step is the heading, the box and one line**: "Track your
+    child's progress every week. Unsubscribe anytime." The example email
+    card is gone, and so is "We'll also send occasional tips from Rachel."
+    on this step (as on the landing pages since 25 Sep 2026). **The address
+    still joins the email list**, so Rachel's tips still reach it; the step
+    no longer says so. Travis's call; the clinician's own email step and the
+    other email boxes keep the tips line.
+  - **Since 5 Nov 2026 the email step is easier to say yes to** (Travis:
+    "lower it so it's easier to press ... make skip less appealing and
+    entering the email more appealing"). Top to bottom: "See their progress
+    every Monday", three ticked lines saying what the report holds ("Days
+    they practiced", "Times they said their sound", "Sounds they're working
+    on": `lib/report.ts`'s lines in plain words, never a made-up example),
+    Echo cheering in the room left (`echo-cheer.webp`, smaller or gone on a
+    short phone, gone while typing), then, low by the thumb, "Your email",
+    the box and "Free. Unsubscribe anytime.", and the footer's **"Get the
+    report"**. **An empty box no longer goes on as a Skip**: the button asks
+    for the address ("Add your email, or tap Skip.", the box focused).
+    **Skip is a small grey word at the top right**, across from "Sona" (the
+    price screen's X), still one tap and 44 px. No "(optional)" on the
+    label: the Skip says it. Every word is Travis's to change; the address
+    still joins the email list as above.
+  - **The ready screen is Echo, "<Name>'s practice is ready!", the chips and
+    the Day 1 card**, the card one line ("Play a game, then read a book.").
+    Gone: "Fruit Slice first, then <story>.", "A new story every day.", the
+    therapy sentence ("Sona is practice for the days between speech
+    visits." / "… you can do at home.") and "Sona practices — it doesn't
+    test or diagnose." (the sounds screen still says it). The card still
+    names Home's Day 1 story in `data-story` (`Sona.day1For`). **So the
+    therapy answer is now shown nowhere**: it is still kept on the phone
+    (`Sona.setupAsksSave`), and whether the question stays is Travis's call.
+  Name uses the label "Age" with more space before it. Minutes are 3 / 5 /
+  10, with five selected only for a fresh first parent; a restored skip or
+  existing family retains its goal. At the existing six-reps/minute product
+  conversion these save 18 / 30 / 60 reps, not a clinical dosage claim.
+  Suggested games were a few larger previews, still filtered by the actual
+  catalog, age and access (that screen went on 4 Nov 2026). Rachel's full
+  credential remains. **The microphone step carries no grown-ups line since 31 Oct
+  2026** (Travis: "let's get rid of the grown-ups audio is never uploaded,
+  one try a day ... Just get rid of that"): only "Let Echo hear <Name>",
+  "Turn on Echo's ears" and "Not now". The promise (`MIC_PROMISE`) stays on
+  every other mic ask (the games, the books, the practice page). Home, Settings, stories, books and App
+  Store artwork are outside this change.
+  The setup offer keeps its complete benefits, store billing disclosures,
+  trial eligibility, purchase/restore and legal links. Its Lifetime row now
+  says "Lifetime", "Yours Forever" and "Billed today" under the store's
+  amount (expressly superseding the older "never lifetime" wording below);
+  its "Best Value" tag at the top right went on 2 Nov 2026, when the free
+  trial row took "Recommended" there ("THE FREE TRIAL ON TOP AND PICKED
+  AGAIN"). Prices and free periods
+  still come from the store. The three benefit lines are bolder and have
+  modest extra space above/below on screens that have room; compact layouts
+  retain room for payment choices and legal links.
+- **THE PLAN MOMENT, THEN STRAIGHT INTO A GAME (Travis, 31 Oct 2026:
+  "build the plan moment and straight into day 1"; the same evening, "when
+  somebody starts, I want them to go straight into either piano tiles or
+  fruit slice. Because that's what is advertised and what people are
+  seeing in the marketing ... day one, let's just say is to play a game and
+  to read a book", then "Fruit Slice for everyone" and the daily story kept,
+  after the game).** The beat and the card are a parent's first setup only
+  (never a child walking setup again, a second child or a clinician); the
+  hand-off's change is every family's:
+  - **A short build beat before the ready screen.** As the parent moves on
+    to "<Name>'s practice is ready!", the page shows Echo, "Building
+    <Name>'s practice…" and their own answers coming in one by one (the age
+    group, the sounds or "Every sound, easiest first", "N min a day": the
+    ready screen's chips, one list, `readyAnswers()`), about 2.2 s, then the
+    ready screen. Under Reduce Motion everything is there at once, about
+    1 s. Silent, never recorded (`ph-no-capture`, and recording is turned
+    off before it, REPLAY1), and nothing under it takes a tap or a key.
+    Once a visit: Back from ready and on again goes straight there
+    (`planBeat()` in `onboarding.html`).
+  - **The plan card on the ready screen**, under the chips: Day 1 is a game,
+    then a book. Fruit Slice's Home picture (`home-fruit.webp`), a "Day 1"
+    pill and "Play a game, then read a book." (until 4 Nov 2026 also
+    "Fruit Slice first, then <today's story>." and "A new story every
+    day."; since then the story is only the card's `data-story`). The story is `Sona.day1For(sounds)` with the sounds
+    setup is about to save: the talking story in the first sound that has
+    one (R Robo's Rocket, S Sandy's Sandcastle, L Lulu's Lantern Party, Z
+    Zippy's Zoo Parade, F Fizz and the Sleepy Fireflies, and since 2 Nov
+    2026, TALK2, K Kiki's Camping Night, G Gus's Goose Chase, SH Shelly's
+    Shell Show, CH Chip's Cherry Pie, TH Theo's Big Show; "Pick all sounds"
+    gives Kiki, K being the first of them in play order), else The
+    Lighthouse Sneeze (now only P, B, M, N, T, D, V, J and the voiced TH); `_talkDay` uses the same rule (`_talkFor`), so the
+    card and Home can never disagree. Where this child is shown no story
+    (`Sona.storyShown()` false: a phone that cannot buy, without Premium)
+    the line is "Fruit Slice first, then a book." "A new story every day."
+    sits under the card only where a story is named. A picture is never
+    broken: one that has failed by the time the screen is drawn is left out,
+    and the card is its words; one that fails while the screen shows keeps
+    its empty box, so nothing moves. On a phone 600 px tall or less the
+    picture steps aside so a long name still fits. (From the morning to the
+    evening of 31 Oct 2026 the card was the story alone, with the story's
+    own picture.)
+  - **"Let's play!" opens Fruit Slice** (its practice page first,
+    `Sona.firstGameStart()`, `/charge.html?game=arcade-slice.html`) for
+    every age (Feed Echo is no longer the 3-4s' first game:
+    `firstGameKey()` in `sona.js` answers "slice") and for a family back
+    from the price as well. **This replaces the 17 Oct 2026 "go to the
+    homepage" after a purchase** (below) and the morning's "straight into
+    Day 1" (`storyNow()`, gone): today's story waits on Home, the card's
+    "read a book". An unpaid family is still sent to the price, never handed
+    a locked game; a clinician still ends on Home.
+  - **Travis's and Rachel's to change:** every word ("Building <Name>'s
+    practice…", "Day 1", "Play a game, then read a book.", "Fruit Slice
+    first, then …", "A new story every day."), the beat's length
+    (`PLAN_BEAT_MS`, 2200; 1000 under Reduce Motion), and Fruit Slice as
+    every child's first game. **For Rachel:** a 3-4 year old now starts on
+    Fruit Slice, a big-kid game with hearts, where Feed Echo was built for
+    them; and its "Say it 5 times" page asks their sound before the game.
+  `setupscreenstest` (the beat, the card, `day1For`, the fit),
+  `setupsteadytest` (the card from its first frame, a late picture moves
+  nothing), `replaytest`, and `onboardingtest`, `firstgametest`,
+  `setupbuytest` and `trialfirsttest` (where "Let's play!" goes) play it; `_phone.mjs`'s
+  `setupWalk` waits the beat out.
+- **FREEPLAY1: ONE FREE ROUND BEFORE THE PRICE, BUILT SWITCHED OFF (2 Nov
+  2026)** (Travis: "its cuz they wanto to try it first so lets come up with
+  something where they get a free session", then "lets make day 1 just be a
+  game like fruit slice ... no charge up just str8 to the game", and, as the
+  parent most likely plays it, no hand-off screens; he agreed to wait about
+  two weeks, to ~16 Nov, to see whether the 7-day trial alone is enough,
+  then turn this on). **`FREE_PLAY_ON = false` in `sona.js`** is the one
+  switch. On, for a family who owes the price (`trialFirst()`, not a
+  clinician) and has never had the free round on this phone
+  (`Sona.freePlayDue()`):
+  - leaving setup's ready screen (or the reminder screen) goes on to the
+    microphone, not the price (the store is still asked whether this Apple
+    ID already has Premium); the microphone, either answer, goes straight
+    into **one round of Fruit Slice** (`playFree()` in `onboarding.html`,
+    `Sona.freePlayStart()`): no "Hand the phone to <Name>!" card and no
+    "Say it 5 times" page. The round opens on the play token the practice
+    page would have written (`gameAccess`'s "earned"), written by setup's own
+    tap; nothing comes from the address. It ends the tab's recording
+    (REPLAY1) as the hand-off does;
+  - the household's one round is spent the moment it opens
+    (`sona.freeplay.v1`, this phone's: `NO_EXPORT` and `NO_IMPORT`), so a
+    reload, a quit or a second setup never makes another;
+  - the round is the round (waves, hearts, Super Slice, the say-it cards and
+    a new life all ask the child's sound as ever); its end card keeps its
+    title and best line and has ONE button, **"Keep playing!"**, to the price
+    (`/subscribe.html?setup=1`, with setup's grown-ups stamp:
+    `Sona.freePlayEnd()`), with no "Back home" or "Play again"; the ✕ goes to
+    the price too. There, "Not now" goes to a locked Home, and a purchase to
+    Home with everything open (the microphone was asked already);
+  - a phone that cannot buy, a family with Premium, and the switch off: the
+    flow as before. The tests turn it on for a tab with sessionStorage
+    `sona.freeplayon` = "1", honoured on a test server only.
+  **Travis's to change:** the words ("Keep playing!"), Fruit Slice as the
+  game, and when to turn it on. **For Rachel:** the free round has no "Say
+  it 5 times" page before it, so a child's first ask of their sound is Echo's
+  mid-round Super Slice ask or the card between waves. `freeplaytest` plays
+  it.
+- **SETUP, REBUILT FROM SCRATCH: SELL SONA, A FEW QUESTIONS, THE PRICE, THEN
+  THE PHONE IS HANDED OVER** (Travis, 22 Oct 2026: "I want to do a
+  completely new onboarding ... from scratch. I want animation ... make it
+  live, animated. We want to sell the product in the onboarding ... simplified,
+  some of the slides have too many words"; he approved the storyboard, then
+  "ok go build it all"). It replaced option B (4-5 Oct 2026). For new
+  families only: a family already set up keeps everything. A parent's first
+  setup is the hello → **"Speech homework is hard at home."** → **"Practice
+  through play."** (the games playing) → **Rachel on her own** →
+  name and age (**"Who's practicing?"**) → **"What does <Name> love?"** →
+  **"Games <Name> will love"** → **"Is <Name> in speech therapy?"** →
+  sounds (**"Which sounds?"**) → **"How long each day?"** → **"Get the weekly
+  progress report"** → (a short build beat, since 31 Oct 2026) → **"<Name>'s
+  practice is ready!"** → (**"Want a
+  reminder before your free trial ends?"**, where it can be kept) → the price
+  → microphone ("Let Echo hear <Name>") → "Hand the phone to <Name>!" →
+  Fruit Slice, for every family (31 Oct 2026, above). A headline and at most
+  one short line a screen; **every word is a default for Travis and Rachel to
+  change.** A child set up before walking setup again (`REWALK`: Back from the
+  first game, a second visit) gets the questions only if the household was
+  never asked them (no `sona.setupasks.v1`: set up before 5 Oct 2026): hello,
+  name, therapy, sounds, minutes, the email step while the household has
+  none, ready, microphone. Any family set up since, a second child, or a
+  family already asked gets hello, name, sounds, ready, microphone; the clinician's own setup is unchanged. Five progress segments,
+  one a question (name, what they love, therapy, sounds, minutes); the screens
+  that sell, the email step, ready, the reminder, the microphone and the
+  hand-off take none. The machinery under it is the old page's (the globals
+  `draft`, `ORDER`, `ORDER_PARENT`, `ORDER_SLP`, `REWALK`, `obPhone`, the tap
+  lock, the name step's keyboard system, the replay hooks, the draft, the way
+  to the price and back), and so are its pins. `onboardingtest` walks it,
+  `setupscreenstest` holds the new screens, `setupsteadytest` the steadiness,
+  `replaytest` the recordings; `tests/_phone.mjs`'s `setupWalk(page, to,
+  answers)` walks it by the screen showing, so a new screen is taught once.
+  - **The hello is alive** (Travis: "make it live, animated"). The orchard
+    without Echo painted in (`orchard-game.webp`, the Fruit Slice practice
+    page's own; `welcome-orchard.webp` has him painted in and is no longer
+    used), and ONE live Echo on the path: on a visit's first hello he hops in
+    with a squash, says "Hi! I'm Echo!", "Sona" drops in letter by letter and
+    "Speech practice kids love." rises; then he bobs, now and then waves
+    (`echo-welcome` and `echo-wave` faded into each other), a cloud drifts, an
+    orange drops from a tree and rolls to a stop, a star twinkles. CSS
+    keyframes only (transform and opacity: a session recording holds no
+    stream of changes), in a layer outside `.ob` that is drawn on the hello
+    alone and hidden while the page is held blank; the loops never live
+    inside a step (a test settling a step finishes its motion, and a loop
+    would throw). Its button is "Get started", the last thing to fade in on
+    a first hello, and it takes no tap until it has (1.75 s, `hello-wait`).
+    **Under Reduce Motion nothing in setup moves, and each screen's first
+    frame is its last** (the review of 22 Oct 2026: `sona.css` cuts an
+    animation to 0.001 ms but keeps its delay, so a delayed one showed its
+    first keyframe: the problem screen's game card was invisible for 1.15 s,
+    then jumped): Echo stands on the path and says hi, the problem screen's
+    before and after are both in place, the ready screen's sparkles are not
+    drawn and Echo cheers there, the reel is one still poster under its
+    heading (which stays), and "Get started"
+    takes a tap at once. `setupsteadytest` watches the problem and ready
+    screens for 2.3 s and holds Reduce Motion's first frame to where the
+    motion-on run ended.
+  - **The problem** (redone 23 Oct 2026, Travis: "the flashcard solved
+    with games ... slide isn't very good. It's either too fast or just
+    confusing. Like the picture of a game shows up too quickly"): a before
+    and an after, one under the other, each a picture and its own words:
+    three flashcards (rug, red, run) beside "Flashcards / turn into
+    fights.", then, a clear beat later (1.5 s), Fruit Slice's painted card
+    beside "Sona's games / turn into practice.", ringed teal. Each fades up
+    in place, once; nothing is tossed or flies. A statement, nothing stored.
+  - **The reel** (Travis, 22 Oct 2026: "Do like a little clip of a few
+    games so that parents can see it"; redone 23 Oct 2026: "I want it to
+    take up the whole screen. And I want it to rotate through fruit slice,
+    piano tiles, and Flappy Glide ... they're saying ... the letter R ...
+    And then the game slows down"; then "i dont want a darkened screen up
+    there just have it say practice by playing ... for 2 seconds and then
+    fade it away. other than that they just watch the game being played",
+    and the words: just "practice through play"): three clips of real play
+    (`REEL_ORDER`: Fruit Slice, Piano Tiles, Flappy Glide, round and round),
+    4 s each, filling the screen (a layer outside `.ob`, `#reelBox`, as the
+    hello's is: a step slides in with a transform, which boxes a fixed
+    layer into it). In each clip the game's own top bar shows Echo asking
+    for the R sound ("Say rrrr when Echo asks"), the child heard ("Got
+    it!") and the game slowing down (Super Slice, slow keys, the slow help).
+    The heading, "Practice through play.", is a cream card in the middle of
+    the screen that shows for two seconds and fades away (opacity only, so
+    it keeps its focus and a screen reader still reads it); then only the
+    game, Back (on a cream pill) and Continue. No caption, no darkening, no
+    sound. In the iPhone app the layer starts under the status bar (the
+    clip's own top bar never sits under the clock or the Dynamic Island,
+    where its ✕ would look like a way to close); on a screen wider than a
+    phone (an iPad, a laptop window, aspect 3:5 or wider) the whole 1:2 clip
+    shows, centred on the dark backdrop, since filling the screen there cut
+    off its top bar and Echo's ask (the review of 23 Oct 2026). Filmed frame by frame by `tools/setupreel/record.mjs`
+    into `public/assets/setup/reel/<key>.mp4` and a poster `<key>.webp` (see
+    SETUPREEL1 below; `setupreeltest` holds the files), two muted inline
+    videos taking turns. A phone that cannot play them or refuses to start
+    one (Low Power Mode, the tests' Chromium) gets the posters, changing
+    every 4 s; a game with no poster its painted Home card. Off the screen
+    nothing plays; under Reduce Motion it is the first game's poster, still,
+    and the heading stays. **The R example:** every clip is filmed on R,
+    before any sound is picked, so a parent of a 2–4 year old sees R, a
+    sound not asked of that age (`SOUND_NORM`): Rachel's to rule on, with
+    which moment each clip shows (Travis's).
+  - **Setup makes no sound** (Travis, 23 Oct 2026: "turn the sound off when
+    they press the buttons in the onboarding"; "Hear Echo", setup's one
+    sound since 22 Oct, went with the reel's redo the same day): no tap
+    chime on any button, chip, tile or answer, the build overlay's ticks
+    included, and no voice.
+  - **Rachel on her own screen** (Travis: "a bigger slide of Rachel that's
+    just like all by itself of like her credentials"; she sat on the ready
+    screen from 5 Oct): see her credential section above.
+  - **"What does <Name> love?"**: seven tiles, any number (Sports, Music,
+    Dinosaurs, Animals, Space, Building, Food), each a piece of the games'
+    own painted art; Continue or Skip, nothing picked for them. Kept on the
+    profile as ids (`profile.interests`) when asked (an older profile's story
+    themes stay when not). **(Since 4 Nov 2026 the games screen is gone and
+    the picks order nothing on screen; what follows is its history.)** The
+    picks only ordered the next screen: **"Games
+    <Name> will love"** shows the games a pick fits first, ringed, then the
+    rest, each part in Home's order (`INTEREST_GAMES` in `onboarding.html`:
+    sports Hoops and Soccer Goal, music Piano Tiles, dinosaurs Dino Dig,
+    animals Sound Sprint and Feed Echo, space Rise Up, Flappy Glide and
+    Bubble Pop, building Block Stacker, food Fruit Slice and Feed Echo; the
+    pairs are Travis's to change; the games opened on 22 Oct 2026 joined
+    them: sports Race Car, animals Puppy Bath and Fish Tank, space Space
+    Trip, Rocket Blast and Bedtime Stars, building Castle Builder, Robot
+    Builder and Build a Snowman, food Pizza Chef and Birthday Cake). The grid
+    is the catalog's (never a Coming soon game; where no price follows, only
+    the games that phone opens), with no Free or Premium label, and **a peek,
+    not the catalog** (#232, 22 Oct 2026, when 18 games opened and the grid
+    ran off a phone): nine games of one age group, or three little-kid and
+    six big-kid games with no age (`SELL_CAP`), the loved ones first so the
+    cap never hides one, each group's rest counted under it ("and 7 more",
+    `.sell-more`). They change nothing a child is asked to say.
+    **The ids are setup's own** (`sports`, `music`, `dinosaurs`, `animals`,
+    `space`, `building`, `food`: `INTERESTS` in `onboarding.html`), no longer
+    the story themes (`dragons`, `space`…) the parked adventure reads:
+    `library.html`'s hidden adventure tile and the parked `story.html` take
+    `profile.interests[0]` as a story theme ("A brand-new sports story"), so
+    map the ids to a theme before either comes back (a comment in each says
+    so; `story.html` also reads `dailyMinutes`, now 5, 10 or 15, as a story's
+    length).
+  - **The two questions are one tap each and can be skipped.** **Therapy**
     ("Yes" / "No" / "Not yet", since 16 Oct 2026, Travis: "add a no so
     there's yes, no, and then not yet"; "Not yet" is the old "Not right now",
-    id `t_no`, and "No" is `t_none`) changes nothing a child is given: it puts one
-    true sentence about SONA on the ready screen, never one about the child
-    ("Sona is practice for the days between speech visits." / "Sona is
-    practice you can do at home.", the second for both No and Not yet; Travis took "It does not replace a speech
-    therapist." off the second on 15 Oct 2026).
-    **Days a week** (3 days / 5 days / Every day) is a real setting, the
-    child's weekly goal (`profile.weeklyGoal`, the one Progress shows), and
-    Skip leaves that goal as it was. The wording of both, the two sentences
-    and the ready screen are Rachel's to change; so is how much practice a
-    family is asked for.
-  - **Three screens that sell, before the price** (Travis, 19 Oct 2026, "go",
-    to a funnel expert's review: setup only asked questions and never showed
-    a parent what Sona is). After the therapy question: **"Speech homework is
-    hard at home."** (worksheets turn into a fight; kids practice when it
-    feels like play), **"<Name> plays on their own"** (Echo says a word, the
-    child says it, the game moves; with the painted Home card of the game
-    setup hands the child), and **"Games <Name> will play"** (a grid of the
-    age group's playable games from the catalog, never a Coming soon one;
-    where no price follows, only the games that phone opens; since 22 Oct
-    2026 a peek: Home's first nine, or three little-kid and six big-kid
-    games with no age, each group's rest counted as "and 7 more"). Statements
-    with Continue and Back: nothing asked or stored (Travis took out two
-    question screens on 5 Oct), no progress segment, only on a family's
-    first setup (never a clinician's, a second child or a re-walk). The
-    name is `ph-name` (`#aloneName`, `#aloneName2`, `#gamesName`). The words
-    are Travis's and Rachel's to change; Rachel's to check: "Saying words out
-    loud is how every game is played." is loose for the round games, where
-    the finger plays and the sound is said before and between rounds. The
-    sounds step's "Not sure? Explore all sounds" is now "Not sure? Pick all
-    sounds". `onboardingtest`, `setupsteadytest` and `replaytest` pin them.
+    id `t_no`, and "No" is `t_none`; "Your answer stays on this phone.")
+    changes nothing a child is given: it puts one true sentence about SONA
+    on the ready screen, never one about the child ("Sona is practice for the
+    days between speech visits." / "Sona is practice you can do at home.",
+    the second for both No and Not yet; Travis took "It does not replace a
+    speech therapist." off the second on 15 Oct 2026). **"How long each
+    day?"** (Travis, 22 Oct 2026: "more so like how many minutes per day";
+    5 min / 10 min / 15 min) replaced "How many days a week will you
+    practice?": a real setting, the daily goal in reps (`MINUTE_REPS`: 30,
+    60, 90; 5 minutes is the 30 every family had by default), saved as
+    `profile.dailyGoal` beside `profile.dailyMinutes`, the goal Home's gift
+    button fills toward and Progress shows (Settings until #233, 22 Oct 2026, moved the picker). Skip leaves both as they were. A second child is
+    never asked (as the days a week were not) and keeps the default 30
+    reps (whether a second child should be asked is Travis's call). The
+    days a week are no longer asked, and **setup writes none**: a new
+    family's goal reads as 4 days (`Sona.goalDays()`; Progress still offers
+    3, 4, 5 or every day, Settings no longer), and the weekly report names a plan
+    only for a child whose days a grown-up picked (REPORT1 sends `gw` only
+    when `profile.weeklyGoal` is set; with none the email says "Reached the
+    daily goal on N days" and never "That's the plan you set."). **The
+    minutes table is Rachel's call, and so is this edge of it:** it is one
+    table for every age, so a 2–4 year old can be set to 15 minutes, 90 reps
+    a day; the daily chest and goal days come only on a goal day, so a
+    little one who plays only Feed Echo and Bubble Pop needs about 18 rounds
+    for a chest at 90 (six at the default 30). The words, the two sentences,
+    the minutes-to-reps table (and whether it should differ by age) and how
+    much practice a family is asked for are Rachel's.
+  - **Built on defaults, for Rachel and Travis to rule on** (22 Oct 2026).
+    Rachel's: every word a child's parent reads in setup; 5/10/15 minutes as
+    30/60/90 reps a day (and 90 for a three-year-old); the R example shown
+    to every parent, a 2–4 year old's too; that a recording
+    may show what the child loves; that the therapy screen now says "stays on
+    this phone". Travis's: every word; the interests and the games each
+    fits; the reel's order; the reminder's words (the notification's are
+    NOTIFY1's); that a re-walk by a household never asked the questions
+    (set up before 5 Oct 2026) is asked the minutes again (and the email
+    step while the household has none), while one set up since is not; that
+    the reminder ask is only on a first setup.
   - **The email comes before the price** (Travis, 13 Oct 2026: "also move
     the email box before the price"). It used to be on the hand-off, after
     the price, so a parent who closed the price was never asked. Now it is
     its own one-tap-skippable step (`updates`) before the ready screen,
     asked once per family and only while the household has no parent email
-    (`Sona.parentEmail()`). It is not one of the four questions and has no
-    progress segment. It is optional: empty or Skip go on, and a
+    (`Sona.parentEmail()`). It is not one of the questions and has no
+    progress segment. It is optional: Skip goes on (since 5 Nov 2026 an
+    empty box and the button do not: see above), and a
     wrong-looking address stays with one line ("That email doesn't look
-    right."). Travis's line, "We'll also send occasional tips from Rachel.
+    right."). (Since 4 Nov 2026 its line was "Track your child's progress
+    every week. Unsubscribe anytime.", and since 5 Nov "Free. Unsubscribe
+    anytime." under "See their progress every Monday": see above.) Travis's line, "We'll also send occasional tips from Rachel.
     Unsubscribe anytime.", is on screen before anything is sent. **Its
     heading is "Get the weekly progress report"** (Travis, 15 Oct 2026: "i
     want the setup page to say get the weekly progress report", with no
@@ -214,10 +854,10 @@ changing one. What follows from the rule:
     WEEKLY PROGRESS REPORT" under the email list). The address is saved in the
     profile and posted once, by `postParentLead()` (the address and nothing
     else), to `/api/lead` (`source "app-setup"`, role `parent`, nothing
-    about the child), when the parent leaves the ready screen, before the
-    price, never waiting on the network. The hand-off has no email box and
-    no ×. After a Skip there is no other place to give an email (Settings
-    has no field): Travis's call.
+    about the child), when the parent leaves the ready screen (or the
+    reminder after it), before the price, never waiting on the network. The hand-off has no email box and
+    no ×. After a Skip, the one other place to give an email is Settings'
+    weekly report switch (23 Oct 2026, WEEKLY1).
   - **The therapy answer stays on the phone**: a household key
     (`sona.setupasks.v1`, `Sona.setupAsks()`), not in the profile, not in a
     backup (`NO_EXPORT`), in no request, event, title or log. In a browser
@@ -227,24 +867,80 @@ changing one. What follows from the rule:
     PostHog's session recording (REPLAY1, below) is off while this question
     and the ready screen are on screen, and both steps carry `ph-no-capture`,
     so no recording holds the answer.
-  - **The ready screen** repeats only what the parent said (name, age group
-    if given, the sounds, or "Every sound, easiest first", and the days a
-    week picked) with "Sona
-    practices — it doesn't test or diagnose." Never "plan" beside Rachel's
-    name, never an age norm, a result or a price. **The profile is saved when
-    the parent leaves it**, before the price and before the microphone.
-  - **Its Continue goes to `/subscribe.html?setup=1` when `trialFirst()` says
-    so** (after asking the store once whether this Apple ID already has
-    Premium, `Sona.setupWall()`, 2.5 s at most; the grown-ups check is marked
-    passed), else on, in the page, to the microphone. A clinician's own setup
-    still ends on Home.
+  - **The ready screen** (shorter since 4 Nov 2026: no therapy sentence and
+    no hedge, see above) ("<Name>'s practice is ready!", Echo cheering with
+    a sparkle that plays once, no sound) repeats only what the parent said
+    (the age group if given, the sounds, or "Every sound, easiest first",
+    and "N min a day") with the therapy sentence and "Sona practices — it
+    doesn't test or diagnose." Never "plan", an age norm, a result or a
+    price. On a first setup it also carries the plan card, Day 1 as a game
+    and a book (31 Oct 2026, "THE PLAN MOMENT" above): a fact about Sona's
+    calendar, never about the child. **The profile is saved when the parent leaves it** (or the
+    reminder screen after it), before the price and before the microphone.
+  - **The reminder ask** (Travis, 22 Oct 2026: "can we add push
+    notifications and have that be a step in the onboarding where we ask
+    them to turn it on to notify them a day before their trial ends"):
+    "Want reminders during your free trial?", "A practice reminder each
+    day, and one the day before it ends." (since 30 Oct 2026, NUDGE1; until
+    then "Want a reminder before your free trial ends?", "One notification,
+    the day before."; the trial reminder shows about 30 hours before the
+    end, so a cancel still counts: NOTIFY1), a teal "Turn on reminders"
+    (`Sona.nudgeConsent()`, the yes to the daily ones, then iOS's own Allow
+    box, `Sona.notifyAsk`) and a cream "Not now"; Echo says "I'll give you
+    a heads-up!". Only on a family's first setup, in an iPhone build that can
+    set one (`Sona.notifyAvailable`), while iOS has never been asked
+    (`Sona.notifyState()` "prompt"), and where the price follows
+    (`trialFirst()`) — **and only for a buyer the store says will be given
+    free days** (the review of 22 Oct 2026: an Apple ID that already had them,
+    a reinstall or a second iPad, is charged today and must never be told
+    about "your free trial"). As the ready screen shows, beside the
+    "already has Premium?" ask, setup asks the store for its plan
+    (`Sona.storePlan`) and, where sona.js has it, iOS for its real answer
+    (`Sona.notifyRefresh`, NOTIFY1: `notifyState` alone is a guess on a page
+    that has not heard from iOS), both feature-checked and bounded together
+    at 2.5 s (`remindAsk`). Leaving ready shows the reminder screen only when
+    the monthly row, the one the price screen picks on arrival, is `"free"`: a product with free days and a buyer
+    Apple has not called ineligible (a definite "not eligible" is `"paid"`),
+    **and the store is sure of it** (`plan.sure`, the price line's own test
+    in `trialReminderOn`: a "new subscribers" row may charge today, and the
+    price screen then promises no reminder, so setup asks none).
+    No store answer by then: no reminder screen, never a guess. The ready
+    screen's Continue waits on that ask ("One moment…") only while it is in
+    flight; a store that found a purchase meanwhile skips the screen too.
+    Either answer, or "Not now", goes on to the price; nothing is set here
+    (the reminder is set only once a free trial really starts: NOTIFY1).
+    While iOS's Allow box is up both buttons and Back are still; a bridge
+    that never answers holds the screen 12 s at most (`REMIND_ASK_MS`; NOTIFY1
+    itself waits 60 s), then it goes on to the price. Its two buttons are its
+    way on (no Continue), and leaving it is leaving the questions: the
+    profile is saved then. The words are Travis's and Rachel's; asking only
+    where the store offers this buyer free days (and skipping the screen
+    when it has not answered) is a default Travis did not pick (the
+    alternative, words that assume no trial, is his call).
+  - **Leaving the questions goes to `/subscribe.html?setup=1` when
+    `trialFirst()` says so** (after asking the store once whether this Apple
+    ID already has Premium, `Sona.setupWall()`, 2.5 s at most; the grown-ups
+    check is marked passed), else on, in the page, to the microphone. A
+    clinician's own setup still ends on Home.
+  - **The look** (Travis: "not sure I love the greenish button"): the main
+    buttons are a brighter teal (#11b3b0, edge #0a8784: a #16c2be → #0e9c99
+    face, a dark teal shadow under the white words), a picked chip, tile or
+    answer a teal ring on a pale teal fill; words on the page's cream, no
+    cards. Every colour is `onboarding-crafted.css`'s (the page's own
+    `<style>` is layout only). The price screen's button
+    (`.planbuy .btn.go` in `crafted-family.css`) takes the same teal with
+    the one-payment change of 22 Oct 2026 (the lifetime work, which owns
+    that file), so the two buttons a parent taps in a row match.
   - **A purchase or a restore comes BACK to setup** for the microphone and the
     hand-off: a tab-only marker (`sona.setupafter.v1`, `Sona.setupAfter()`)
     written when setup leaves for the price. **The hand-off's "Let's play!"
-    then goes Home, where the child picks a game** (Travis, 17 Oct 2026:
-    "once I start a trial, I don't want it to go jump straight into a game.
-    I just want to have it go to the homepage"); no first game is marked.
-    A phone that never left for the price still opens the first game. The marker picks a screen and
+    then opens Fruit Slice** (Travis, 31 Oct 2026: "when somebody starts, I
+    want them to go straight into either piano tiles or fruit slice", then
+    "Fruit Slice for everyone"; see "THE PLAN MOMENT" above), as it does
+    for a phone that never left for the price. From 17 to 31 Oct 2026 it
+    went Home (Travis, 17 Oct: "once I start a trial, I don't want it to go
+    jump straight into a game. I just want to have it go to the
+    homepage"), and on the morning of 31 Oct to Day 1's story. The marker picks a screen and
     grants nothing; without it (app closed on the price) the family lands on
     Home and the games ask for the microphone themselves.
     `Sona.firstGameStart()`'s mark is written by the hand-off's last tap.
@@ -316,14 +1012,15 @@ changing one. What follows from the rule:
   today.") and **the billing day** (the store's price starts "unless you
   cancel at least 24 hours before", Apple's own measure), one button, and
   "Not now" in plain sight. See "THE IPHONE SELLS ONE PLAN" for where every
-  word comes from. **No reminder is promised:** since 16 Oct 2026 Sona sends
-  one ("Your free days end soon", RCHOOK1, below), but only to a parent who
-  gave the app an email, so the price screen still promises none, and the
-  words email, remind and notify may not appear on it (`pricescreentest`,
-  `setupbuytest`, `planwordstest`), **with one exception since 22 Oct 2026**
-  (Travis: setup asks iPhone for its Allow box, so the phone itself reminds,
-  NOTIFY1): one line under the button and its small print, **"We'll remind
-  you the day before it ends."**, only when `Sona.trialReminderOn(picked
+  word comes from. **No email reminder is promised:** since 16 Oct 2026
+  Sona sends one ("Your free days end soon", RCHOOK1, below), but only to a
+  parent who gave the app an email, so the price screen never promises that
+  email, and the words email and notify, and remind outside the one line
+  below, may not appear on it (`pricescreentest`, `setupbuytest`,
+  `planwordstest`). **The one line, since 22 Oct 2026** (Travis: setup asks
+  iPhone for its Allow box, so the phone itself reminds, NOTIFY1; "THE TRIAL
+  REMINDER ON THE PRICE SCREEN", below): under the button and its small
+  print, **"We'll remind you the day before it ends."**, only when `Sona.trialReminderOn(picked
   row)` says this phone will show it AND the picked row is a free trial
   (`planWords`' `headsUp`, painted into `#iapAhead`; the page feature-checks
   the function), and only on a row whose free days are certain (`plan.sure`;
@@ -350,7 +1047,7 @@ changing one. What follows from the rule:
   anytime." Restore Purchases looks like Terms and Privacy beside it. No
   header, no line under the headline, no "at-home practice companion" line,
   no Rachel line under the offer (her
-  line is still on setup's ready screen and on Settings › Your plan). **The X
+  line is still on setup's Rachel screen and on Settings › Your plan). **The X
   IS "Not now"** (the same link, labelled "Not now" for a screen reader), so
   it leaves exactly as before. Every word is still `Sona.planWords`' and the
   store's: `name`, `sub`, `amount`, `check`, `note`, `noteLast`; `rows` is
@@ -359,16 +1056,17 @@ changing one. What follows from the rule:
   for new subscribers", no "No payment today", and the "Only new subscribers
   …" note between the row and the button. **"No ads, ever" is a promise:**
   Sona shows a child no ads; do not add one without taking the line off.
-  **Since 19 Oct 2026 the yearly plan is a second row above this one**
-  (below, "TWO PLANS ON THE IPHONE AGAIN"), **and since 22 Oct 2026 the one
-  payment a third row under it** (below, "ONE PAYMENT, A THIRD ROW").
+  **Since 23 Oct 2026 the card is two rows: this monthly row on top,
+  picked, and the one payment under it** (below, "TWO ROWS: MONTHLY ON
+  TOP"); the yearly row of 19 Oct is no longer sold.
 - **"Not now" goes to Home with everything locked:** every game and book is
-  "Premium" and the Books card says "Premium"; no microphone ask and no
+  "Premium" and Home's Books door says "Premium"; no microphone ask and no
   hand-off. Settings then says "Plan: none yet", never "free version".
 - **A tap on a grey game or book opens the price at once** (Travis, 4 Oct
   2026: "I want it to open automatically if they click on a game that is
   grayed out"): no "Ask a grown-up" note, no grown-ups check, straight to the
-  plan screen as the offer on that game (`?from=<game>`, a book `?from=library`),
+  plan screen as the offer on that game (`?from=<game>`, a book `?from=library`,
+  Home's locked story card `?from=adventure` since 22 Oct 2026, STORY1),
   for any family Sona can sell to (`offerOnLock()`), free version or not. The
   plan screen asks no check for a `?from=` visit that shows the offer: Apple
   wants a parental gate before a buy screen only in its Kids category, which
@@ -515,8 +1213,10 @@ charter price, and **it is the one picked when the plan screen opens**.
   date is the same +3 days the charge uses; the price is the store's string
   on Apple's card and the charter figure on the web, so the line never names
   a different number from the box above it, and it never promises a reminder
-  (the only one, RCHOOK1, follows an App Store trial for a parent who gave
-  the app an email, never a web purchase). It replaced a dated three-row timeline and the
+  itself: on Apple's card the one line that may ("We'll remind you the day
+  before it ends.", NOTIFY1) is its own, shown only where the phone will set
+  that notification, and RCHOOK1's email follows an App Store trial for a
+  parent who gave the app an email, never a web purchase. It replaced a dated three-row timeline and the
   Apple card's paragraph of small print, and the web's yearly small print
   steps aside for it; monthly keeps its own line, which says how to cancel.
   What Apple requires stays: each plan's price and period, the renewal, where
@@ -560,7 +1260,129 @@ both cards; `firstgametest` keeps both boxes and the button on the first
 screen at seven phone sizes with the charter line showing, and re-prices
 every yearly figure when the price check answers late.
 
-**TWO PLANS ON THE IPHONE AGAIN, AND A 7-DAY TRIAL** (Travis, 19 Oct 2026,
+**THE 3-STEP TRIAL TIMELINE (Travis, 4 Nov 2026: "let's just leave the
+pricing options as they are ... But let's add a 3-step trial timeline";
+made shorter on 5 Nov 2026: "just a little bit too busy")**. The rows, their
+order, the pick and the tags are unchanged. Under the rows, only while the
+picked row is a SURE free trial counted in days (3 or more; a week reads as
+7): **Today** "Free" › **Day N-1** "Reminder" where this phone will show the
+reminder (`trialReminderOn`), else "Still free" › **Day N** "$9.99/mo" (the
+store's amount) (`planWords`' `steps`, drawn across the card in
+`#iapTL.steps`). On such a card the check line ("No payment today ·
+Subscription auto-renews") steps aside (`check` is empty: the steps say it)
+and the small print under the button carries the renewal: "7 days free, then
+$9.99 a month. Auto-renews. Cancel anytime." When the middle step is the
+reminder, the line under the button ("We'll remind you the day before it
+ends.") steps aside too: one promise, said once (`PLAN_STEP_HEADS_UP`, the
+only other reminder word `planwordstest` allows). No dates, still (6 Oct
+2026). Never on the one payment, a charged-today row or a not-sure row.
+Every word Travis's and Rachel's to change. The same days: **setup's
+reminder screen shows Sona's two real notifications** (NUDGE and
+TRIAL_REMIND, word for word, marked as iPhone draws them); **Rachel's
+screen** centres the line under her name and draws no comma at the end of
+the heading (it is still read aloud, `.sr-comma`, so her line reads as one
+sentence); and **setup's two game demos swap by themselves** (Travis, 5 Nov
+2026: "I don't want them to click on it to see it. I just want it to auto
+do it ... 1 to 2 seconds"): Normal speed 2 s, After practice 2 s, round and
+round, the matching button shown picked (`DEMO_SWAP_MS` in
+`onboarding.html`); a tap jumps to a side and the swapping carries on; each
+demo starts on Normal speed; nothing swaps off screen, in the background or
+under Reduce Motion. `pricescreentest`, `planwordstest`, `setupbuytest`,
+`notifytest`, `iaptest`, `trialfirsttest`.
+
+**THE FREE TRIAL ON TOP AND PICKED AGAIN, 7 DAYS, "RECOMMENDED" (2 Nov
+2026)** (Travis, after asking whether the trial or the one payment should be
+the default: "I just changed it to a 7-day trial at App Store Connect ...
+put it at the default option ... just have the second option be a way of
+pointing people to the monthly 7-day trial and make it more of an easy
+choice"). This replaces the order, the pick and the "Best Value" tag of
+"THE ONE PAYMENT ON TOP AND PICKED" right below (the rest of it stands), and
+brings back "TWO ROWS: MONTHLY ON TOP" further down.
+- **Monthly on top, picked when the screen opens** (its free trial: "No
+  payment today", "Start practicing!"), the one payment under it
+  (`kindsOf`, the markup's order, `APPLE.pick` "monthly" in
+  `subscribe.html`). Why: a parent from an ad has not seen their child
+  play yet, and "No payment today" is the easiest yes; the one payment
+  beside it still makes the month look small, and anyone who wants to pay
+  once can.
+- **The free trial row wears "Recommended"** (top right, where "Best Value"
+  sat), only on a card of more than one row, only while that row is a free
+  trial, and not beside the yearly row if it is ever switched back on (its
+  own "Best value" is `planWords`'). **The one payment wears no tag**: it
+  still says "Lifetime", "Yours Forever", the store's price and "Billed
+  today". `paintRow` in `subscribe.html`; the tag's place is
+  `onboarding-price-studio.css`.
+- **The 7 days are App Store Connect's** (Travis set the monthly
+  introductory offer to 7 days there on 2 Nov 2026): every word on the
+  Apple card follows the store by itself ("7-day free trial", "7 days
+  free, then $9.99 a month. Cancel anytime."), and the free week gets its
+  daily practice reminders (NUDGE1: about four) and the reminder 30 hours
+  before it ends (NOTIFY1). Nothing in this repo types the app's trial
+  length. **The website's own card, `/api/checkout`'s Stripe trial,
+  `trial.html` and the Next `/subscribe` page still say 3 days**, true of
+  the web checkout, which sells nothing while `WEB_SALES` is off; matching
+  them to 7 is a change to the Stripe trial too, Travis's call.
+- **Travis's to check outside this repo:** the App Store listing's own
+  description and screenshots, if they name 3 days, and any ad that does.
+  **Measure it:** leave this for 2 to 3 weeks and read /leads.html's "Free
+  trials" report (TRIAL1) and RevenueCat's money per price-screen view.
+  `pricescreentest` (1b) and `setupbuytest` play it.
+
+**THE ONE PAYMENT ON TOP AND PICKED (31 Oct 2026)** (Travis: "I want to put
+the lifetime as the default. So put it at the top, like above monthly. And I
+want to switch the 7-day free trial down to 3-day trial"). This replaces the
+order and the pick in "TWO ROWS: MONTHLY ON TOP" right below (the rest of it
+stands).
+- **The one payment first, picked when the screen opens**, the monthly row
+  (its free trial) under it (`kindsOf` and the markup's order in
+  `subscribe.html`, `#iapLife` before `#iapPlan`; `APPLE.pick` starts at
+  `"lifetime"`). So the card opens on the one payment's words and button
+  ("Billed today"), its "paywall viewed" counts that pick, and the heads-up
+  line ("We'll remind you the day before it ends.") shows only once a parent
+  taps a sure free Monthly row. A one-payment row that arrives late (the card
+  showed monthly alone first) still comes in unpicked; one that goes away
+  while picked takes the pick to monthly; with none, the card is the monthly
+  row alone, as before.
+- **The free days are App Store Connect's**, not this repo's: the card says
+  what the store's introductory offer says (`planFree`). Travis set the
+  monthly subscription's introductory offer back to 3 days free there on 31
+  Oct 2026 (it was one week from 19 Oct), and every line follows by itself:
+  "3-day free trial" on the row, "3 days free, then $9.99 a month." under the
+  button. Nothing in this repo types a trial length.
+- **Setup's reminder ask still follows the monthly row** (it asks when the
+  store is sure that row is a free trial), although the one payment is now
+  picked on arrival: a parent may still pick the trial, and its daily and
+  last-day reminders need the yes asked before the price. Asking only when
+  the trial is the picked row would mean never asking (Travis's call).
+  `pricescreentest`, `setupbuytest` play it.
+
+**TWO ROWS: MONTHLY ON TOP AND PICKED, THE ONE PAYMENT UNDER IT (23 Oct
+2026)** (Travis, with a screenshot of three rows: "We need to get rid of the
+yearly option. I just want two payment options"; first with the one payment
+on top and picked, then the same day: "can we just have the ... a month as
+the top default option and then below it is the pay one time?"). This
+replaces the yearly row below and the pick under "ONE PAYMENT, A THIRD ROW".
+- **No yearly row:** `IAP_SELL_YEARLY = false` in `sona.js` (beside
+  `IAP_PRODUCTS`) stops `storePlan` asking for the yearly product even when
+  RevenueCat's offering lists it, so `plan.year` is always null and no page
+  (the price screen, the Premium page, setup's reminder ask) shows a year.
+  `IAP_PRODUCTS.annual` stays for restore; `true` brings the row back by the
+  offering, as built on 19 Oct. Taking the yearly package out of the
+  offering in RevenueCat is tidy but not needed.
+- **Monthly on top, picked when the screen opens** (its free trial: "No
+  payment today"), the one payment under it (`kindsOf` and the markup's
+  order in `subscribe.html`; `APPLE.pick` starts at `"monthly"`). Why the
+  free trial is the default: most parents take the row already picked, and
+  "No payment today" is the easiest yes for one who came from an ad; the
+  one payment beside it still makes the month look small. With no
+  one-payment row the card is monthly alone, as before; one that arrives
+  late comes in unpicked, and one that goes away while picked takes the
+  pick to monthly. The prices are App Store Connect's: changing monthly to
+  $7.99 there changes the card by itself.
+- **Setup's reminder ask** follows the monthly row (the one picked on
+  arrival again): it shows when the store is sure that row is a free trial.
+
+**TWO PLANS ON THE IPHONE AGAIN, AND A 7-DAY TRIAL** (Travis, 19 Oct 2026, until 23 Oct 2026,
 "yes" to a funnel expert's review: one plan leaves a parent only "buy or
 don't buy"; two let them compare; 3 days is too tight to see a child use it).
 This replaces "one plan, no pick" below.
@@ -616,12 +1438,19 @@ lifetime"). Apple's card can show a third row, under monthly.
   "once", no eligibility asked.
 - **Its words (`planWords`, Travis's to change):** "One payment" over "Yours
   to keep. No subscription.", the store's price with no period; picked, the
-  check line "One payment · No subscription", the button "Get Sona Premium —
-  $59.99" and the small print "One payment of $59.99. No subscription."
+  check line "One payment · Every update included" (since 1 Nov 2026,
+  Travis: "instead of one payment, no subscription, have it say one payment
+  every update"; it was "One payment · No subscription": the one payment is
+  the `full` entitlement for good, so every new game and book is in it),
+  the button "Start practicing!" (since 31 Oct 2026, Travis: "change paywall
+  button to 'Start practicing!' for the lifetime option too ... not get sona
+  prem"; it was "Get Sona Premium — $59.99") and the small print "One
+  payment of $59.99. No subscription." (kept, so a parent reads that it
+  never renews).
   Never "lifetime", "free", "Best value", a trial or a renewal (planwordstest).
-- **The pick:** yearly, monthly, then the one payment, top to bottom; yearly
-  picked on arrival (monthly without a yearly row), **never the one
-  payment**; a row that arrives on a card a parent is reading comes in
+- **The pick (until 23 Oct 2026; now see "TWO ROWS: MONTHLY ON TOP"):** yearly, monthly, then the one payment, top to bottom; yearly
+  picked on arrival (monthly without a yearly row), never the one
+  payment; a row that arrives on a card a parent is reading comes in
   unpicked, and one that goes away while picked takes the pick to monthly
   (`take()` keeps the row the parent was reading while it is there). The fit
   holds for every row picked (`APPLE.others`, `APPLE.alt(kind)`), so a tap on
@@ -700,6 +1529,26 @@ ships no typed figure; `setupbuytest` a new family from setup through a
 purchase to the first game; `iaptest` and `trialfirsttest` the rails around
 it; `chartertest` that the card's price span ships empty.
 
+**THE TRIAL REMINDER ON THE PRICE SCREEN (NOTIFY1, 22 Oct 2026, iOS 1.0.9)**
+(Travis: "notify them a day before their trial ends"). The one exception to
+"No reminder is promised" above: on Apple's card, under the button, "We'll
+remind you the day before it ends.", only when `Sona.trialReminderOn(picked
+row)` is true: a build that can set a phone notification, a parent who
+allowed it on setup's reminder screen, and a picked row that is a free trial
+the store is SURE of (`plan.sure`: a "new subscribers" row may be charged
+today, with no trial to remind of) whose reminder moment is more than an
+hour away. The notification shows about 30 hours before the trial ends
+(`TRIAL_REMIND_LEAD_MS`), not 24: Apple counts a cancel only at least 24
+hours before the end, so a reminder at exactly a day before came too late to
+act on; 30 hours is still "the day before" and "tomorrow".
+Never on a charged-today row or the one payment. It is a promise
+the code keeps: the purchase sets the reminder at once (`buyPlan`, before
+the page leaves 1.2 s after a sale), and the daily check moves it or takes
+it back. The line's words and the notification's ("Sona" / "Your free trial
+ends tomorrow.") are Travis's and Rachel's to change. The rest (the four
+native methods, the daily check, why never on Home) is under "THE TRIAL
+REMINDER (NOTIFY1)" beside RCHOOK1.
+
 **Do not hand-edit copy for a pricing flip. The surfaces read the switch.**
 The switch has changed **twelve times in eight weeks** (`git log -G'const
 FREE_MODE = (true|false)' -- public/sona.js`) — twice on the same day, twice on
@@ -720,8 +1569,9 @@ until it is stopped in those dashboards. That is an operations task.
 the free version; since 3 Oct 2026 a family set up where Sona can sell meets
 the price at the end of setup instead: see "TRIAL FIRST"). Setup goes straight into
 the first game (Travis, 27 Sep 2026: "it will choose feed echo for the littles
-and fruit slice for ages five and up"): Feed Echo for ages 3-4, Fruit Slice (its
-practice page first) from 5, a clinician's own setup still ends on Home.
+and fruit slice for ages five and up"; since 31 Oct 2026 Fruit Slice for every
+age, "Fruit Slice for everyone"): Fruit Slice (its practice page first), a
+clinician's own setup still ends on Home.
 **That first game ends with no price** (Travis, 30 Sep 2026, after playing the
 27 Sep version where it did: "the top stays as play again ... when they see
 home they see the other games they can play and that there are premium ones
@@ -931,6 +1781,14 @@ a suite about a new family's Buddy Shop seeds "post". A suite that loads a
 page before it seeds must set the stamp itself: that first load stamps
 "post". A suite that holds a page's first load to writing nothing seeds
 "kept", as it seeds `sona.freever.v1`: the sweep writes on that first load.
+The story calendar (CAL1, 28 Oct 2026) is the same kind of first-load
+write: a set-up child whose `sona.quest.v1` has no `a` gets it (today) from
+the first page that loads, and one who has finished no story, on a phone
+that shows the stories, gets `sv` too. A suite that seeds after a first
+load and then holds a later load to writing nothing seeds both itself
+(`roadtest`), and a suite that holds the record to its seed puts `a` in a
+seed whose stories are finished (the FOUND seeds of `storygametest`,
+`lighthousetest`, `winduptest`, `bridgetest`).
 
 **Tests do not pin the switch's value.** They pin that the two copies agree,
 and they exercise the purchase rails through the `?paid=1` / `sona.paidui` seam
@@ -964,24 +1822,29 @@ from a URL parameter: coverage is the server's answer to the enrolment ticket
 the device earned by redeeming code + key (`Sona.caseRefresh()`, re-asked every
 6 hours; only an authoritative answer changes anything).
 
-**THE SLP SIDE IS THE CHANNEL** (Travis, 21 Sep 2026: "im keeping it free.
-targetting slps first"). It was hidden on 19 Sep as "not a priority" and that
+**THE SLP SIDE WAS THE CHANNEL, 21 Sep to 22 Oct 2026** (Travis, 21 Sep
+2026: "im keeping it free. targetting slps first"; since 22 Oct speaksona.com
+does not look for therapists at all, below, and clinicians already here keep
+everything). It was hidden on 19 Sep as "not a priority" and that
 is now reversed. **Setup itself is for parents** (Travis, 5 Oct 2026: "I want
 to take out the button of who's setting up Sona because it's just for the
 parents"): the "Who's setting up Sona?" screen of 1 Oct is gone, and the
-hello (Echo in his world, one Continue) goes straight to the child's name. A
+hello (Echo in his world, one Continue) goes on to the screens that sell
+(see "SETUP, REBUILT FROM SCRATCH"; a family's first setup only), then the child's name. A
 speech therapist signs up at speaksona.com/for-slps. The clinician's own
 setup (`ORDER_SLP`) is kept, and kept tested, behind its own address,
 `/onboarding.html?slp=1`, which nothing in the app links to (in the iPhone
 app that address sets the app up for a child in a clinician's words, with no
-price, and ends on Home). `for-slps.html` is indexable and linked from the
-landing footer, and `betatest` pins that setup asks no such question. Since 24 Sep 2026 the channel can
+price, and ends on Home). `for-slps.html` is `noindex` and linked from
+nothing a parent reads since 22 Oct 2026 (below), and `betatest` pins that
+setup asks no such question. Since 24 Sep 2026 the channel can
 also pay: the dashboard and the free version stay free, and a clinician who
 wants every game for their families buys their own Premium and adds their
 caseload — yearly prices, never per family, never to the clinician. **Parents come first now** (Travis,
 29 Sep 2026: "lose my attachment in stop caring about the SLP stuff, but still
-leave the $5 a day add on"): the SLP ad keeps running and the offer sits in
-plain sight on the dashboard, but the new ads, and the work, go to parents.
+leave the $5 a day add on"): the offer sits in plain sight on the dashboard,
+and the new ads, and the work, go to parents. The SLP ad kept running until
+22 Oct 2026; stopping it is Travis's, in Meta.
 
 **speaksona.com is for parents and caregivers** (Travis, 26 Sep 2026: "change
 it to target parents and caregivers only. not slps"). Its yellow is pale
@@ -990,7 +1853,7 @@ top left stand out"), so Echo's bright tile is the yellowest thing on it. The
 root is `parents.html`: the headline "Speech practice kids love." (Travis, 4
 Oct 2026: "I want to make the website say speech practice kids love"; until
 then it was the parent ads' "Speech practice kids ask for.", which the ads
-and the app's welcome screen still say),
+still say; setup's hello says "Speech practice kids love." since 22 Oct 2026),
 the new Echo and the two game screens from those ads, one email box and one
 button (role `parent`, nothing else — no name, no "I'm a…"), then the App
 Store (Android: the web app). **Right under the top come the sliding games
@@ -1001,8 +1864,8 @@ once the server says yes the Lead fires, the button reads "Opening the App
 Store…" and the page leaves 150 ms later (`LEAVE_MS`, the time the pixel's
 request needs to get out). No panel and no second button come first; the
 "You're in" panel with "Get the app" is only what an iPhone visitor finds
-when they come back from the App Store. `landingtest` plays it. No Sign in in its header; the footer sends a
-speech therapist to `/for-slps`. Its pictures were cut from the ads and
+when they come back from the App Store. `landingtest` plays it. No Sign in in its header, and
+nothing on it links to `/for-slps` (22 Oct 2026, below). Its pictures were cut from the ads and
 changed only where the ads showed what the app no longer does — the STAR MODE
 gold tile, gold key and star fruit, and the "Say rrrr for GOLDEN KEYS / a
 FRENZY" banners are painted out — and the ads' text thread and "Max's" fridge
@@ -1047,9 +1910,40 @@ email and "I'm a…"** (Parent or caregiver · Speech therapist (SLP or SLPA) ·
 Other) and nothing else. The header is just Sign in (Travis, 26 Sep 2026:
 "get rid of for parents"). An SLP or SLPA also gets their dashboard account
 and sign-in email, because the iPhone app has no clinician side; everyone
-else goes to `/api/lead` with their email and role. An ad aimed at speech
-therapists belongs on speaksona.com/for-slps. `tests/landingtest.mjs` drives
-both pages.
+else goes to `/api/lead` with their email and role. `tests/landingtest.mjs`
+drives both pages.
+
+**speaksona.com is only for parents, and does not look for therapists at
+all** (Travis, 22 Oct 2026: "speaksona.com is only for parents. I don't
+want to target therapists at all"). `/for-slps` keeps working for anyone who
+has the address (clinicians already signed up, some paying for Premium), but
+it is `noindex`, out of the sitemap and `llms.txt`, and no page a parent
+reads links to it: the parent page's footer lost "For speech therapists",
+the old `/families` page its "For SLPs". The dashboard, sign-in, the
+clinician plans and every covered family are untouched; not looking for
+new therapists is not breaking the ones already here. A therapist ad, if
+one still runs, is Travis's to stop in Meta. `shiptest` and `landingtest`
+pin it.
+
+**Search engines and AI assistants** (Travis, 22 Oct 2026: a parent asking
+ChatGPT or Google how to do speech practice at home should hear about Sona).
+The site is built to be read:
+- `app/robots.ts`: every crawler welcome, the AI assistants' by name; only
+  `/api/` and `/admin/` blocked. Never block a `noindex` page there: a
+  blocked crawler never reads the noindex.
+- `app/sitemap.ts`: the root, privacy and the Terms; never an app screen or
+  a `noindex` page.
+- `app/llms.txt/route.ts`: Sona in plain text for AI assistants, every line
+  one the parent page already says. Rachel's settled line word for word, no
+  dollar figure, no count of games or books, and the cost line is the
+  parent page's own answer, chosen by `FREE_MODE` and `WEB_SALES`.
+- schema.org labels (`application/ld+json`) in `parents.html`'s head: who
+  makes Sona and what the app is, with no price.
+- `noindex`, so search sends parents to the root: `for-slps.html`,
+  `try.html`, `check.html`, `/families`, and the private surfaces below.
+Any page written to answer a parent's search ("how to practice the R sound
+at home") explains how to practice a sound, so it is Rachel's to review
+before it ships. `shiptest` pins all of it.
 
 **The app is live, and the websites send people to the App Store** (Travis,
 1 Oct 2026: "yeah send people to app store now!", with the listing checked:
@@ -1107,7 +2001,8 @@ member.
 
 Still `noindex`, correctly: `slp.html` and `slp-login.html` (a private
 dashboard and its login) and `join.html` (a family's redemption link, which
-carries a credential in the URL). Those are surfaces, not marketing.
+carries a credential in the URL). Those are surfaces, not marketing. So,
+since 22 Oct 2026, is `for-slps.html` (above).
 
 Still absent now that Premium is back (24 Sep 2026): the "working with a
 speech therapist?" card on the plan screen and the trial page; `progtest`
@@ -1239,8 +2134,9 @@ list was in, another spelling of the same Gmail inbox) is unsubscribed in
 Resend. A check that runs out of time keeps its place
 (`resend:reconcile:after`) and the next carries on. Then the welcome emails
 (`runDue`, until 150 seconds in; a day-0 email Resend turned away at sign-up
-waits for this run instead of being lost) and the weekly report (until 250),
-and last, with what is left (until 265), `backfill`: first every post that
+waits for this run instead of being lost), the weekly report (until 200),
+the Monday email (WEEKLY1, until 255), and last, with what is left (until
+265), `backfill`: first every post that
 did not fully land (`resend:retry`, address to what it carried: a purchase
 the phone tells Sona once is never lost to a busy Resend, and a later post
 for the same address carries it too; purchases first, 50 a day, each tried
@@ -1274,11 +2170,13 @@ from Rachel.
   of the child set up first). `weeklyEmail` alone (the hand-off box before 13
   Oct, which asked for a "weekly summary", and the 13-15 Oct step, which asked
   for tips) sends nothing: "Progress leaves only with a grown-up's explicit
-  consent", and those grown-ups agreed to something else. Settings has no
-  switch for them, and no status line or off switch for anyone: Travis's
-  call. Skip sets neither. A brother or sister set up later on the same phone
+  consent", and those grown-ups agreed to something else. **Since 23 Oct 2026
+  Settings has a switch** (Travis: "Yes, add the switch", WEEKLY1 below): a
+  household that skipped setup's step, or gave it for tips, turns the report
+  on there, and anyone turns it off. Skip sets neither. A brother or sister set up later on the same phone
   is in the report too (the address is the household's). Removing the child
-  whose profile holds the address stops the report.
+  whose profile holds the address stops the report (and tells the server the
+  phone has it off, WEEKLY1).
 - **Nothing is kept or sent until the address says yes** (the review, 15 Oct
   2026: a mistyped address would have sent a stranger a child's sounds every
   week, and anyone can post). The first post from a phone (setup sends one as
@@ -1317,7 +2215,9 @@ from Rachel.
   week and last (local Mondays), per set-up family child (not a clinician's
   own setup, not one mid-setup, at most 8): a random child id
   (`profile.reportId`, travels in a backup, so a moved child is still one
-  child), days with a rep, days at the daily goal, the plan's days a week,
+  child), days with a rep, days at the daily goal, the plan's days a week
+  (only when a grown-up picked them, `profile.weeklyGoal`: setup stopped
+  asking on 22 Oct 2026 and writes none, and the default 4 is never sent),
   reps, practice tries among them, and the sounds those reps were in. Never a
   name, an age, a word, a pass rate or a voice. `sona.report.v1` (device id,
   last send, `off`/`offAt`, `pend`/`pendFor`, `gaveUp`) is on `NO_EXPORT` and
@@ -1336,7 +2236,7 @@ from Rachel.
   (`report:sent:<monday>:<email>`, released if Resend refuses), with a 550 ms
   pause before each send (the first too: the welcome series has just sent), a
   429 tried once more after a longer pause and then the run stopped, stopping
-  too 250 seconds into the run, at most 250 a run. A week
+  too 200 seconds into the run (the Monday email has the time after it), at most 250 a run. A week
   with no reps sends nothing. Two phones, one address: one email, a child
   (by its id) once with the fuller count, two quiet brothers still two, at
   most three devices. A founder's manual run with `?report=1` sends on any
@@ -1345,8 +2245,9 @@ from Rachel.
   to Oct 18"), "Said their sound out loud on N days" (not "practiced": the
   days count game and book words too, and Progress's "practiced" counts the
   practice page alone), "Reached the daily goal on N days (your plan: 5 days
-  a week)", reps split "in practice" and "in games and books", the sounds, a
-  kind line ("That's the plan you set" only when every child kept it), what a
+  a week)" (no "(your plan: …)" for a child with no picked plan), reps split
+  "in practice" and "in games and books", the sounds, a kind line ("That's
+  the plan you set" only when every child has a picked plan and kept it), what a
   rep is, "A practice snapshot from your phone, not an evaluation." and
   "Rachel, MS, CF-SLP / Sona co-founder". No pass rate, no clinical words, no
   emoji, no prices (`reporttest`). **Its words, and the confirm email's, are
@@ -1364,6 +2265,99 @@ from Rachel.
   untouched.
 `reporttest` plays the phone and the server.
 
+**THE MONDAY EMAIL (WEEKLY1, 23 Oct 2026)** (Travis: "afterwards, I want to
+do 1 email a week that's kind of like the weekly progress report. And just
+send it to everybody so that they get one every week ... every Monday and if
+they're not signed up, it'll just say like what they could be monitoring";
+then "Parents only" and "Yes, add the switch"). `lib/weekly.ts`, run by the
+daily `/api/cron/nurture` after the reports (Monday, with Tuesday and
+Wednesday catching up, as REPORT1; a founder's run with `?weekly=1` sends on
+any day, still once a week).
+- **Who:** every address `everyone()` holds whose role is parent or none
+  (the Speech Check, the reminder pledge), never a speech therapist, a
+  clinician account or "Other". Not while their welcome series is on
+  (`nurture:due`) or in their first three days, so the three come first.
+  Never anyone in `email:unsub` (exact or plain mailbox). An address that
+  joined before Resend took the list from Kit (17 Oct 2026, `KIT_CUTOFF`) or
+  has no sign-up time (`nurture:0` lasts a year) waits for Kit's leavers
+  (`KIT_DONE`), as the backfill does: without `KIT_API_KEY` it waits for good.
+- **What:** a household that has the real report (this week's sent, or any
+  phone confirmed for it, `report:dev:<hash>`, even in a quiet week that
+  sends nothing) gets that and nothing from here. Everyone else gets "Your
+  child’s week on Sona, every Monday": the real report's own lines
+  (`kidLines`) for a made-up child (`EXAMPLE`: 4 days, 3 at the goal, 86 reps,
+  52 in practice, R), marked "Example · <last week>" and "These numbers are
+  made up.", then how to get theirs ("open Sona, tap Grown-ups, and turn on
+  Weekly progress report in Settings"), "Open Sona" (the App Store link), a
+  line for one who turned it on and has not tapped the link, what a rep is,
+  the hedge, Rachel's sign-off. Every week the same, dated. Nothing about a
+  child.
+- **Once an address a week** (`weekly:sent:<monday>:<email>`, SET NX, given
+  back when Resend does not take it or the store did not answer; kept for an
+  address that is not for this week, so the catch-up passes it with one
+  call). Paced like the report, at most 250 a run (`WEEKLY_CAP`), stopping on
+  a second 429 or at 255 seconds. The order is shuffled by the week, so a run
+  that stops early leaves different parents for the catch-up each week.
+  Three runs a week send about 750: past that, it needs Resend's batch send.
+- **Settings' switch** (`#reportCard`, `Sona.reportStatus`, `reportSet`,
+  `reportOff` in sona.js REPORT1): off, "Every Monday, an email with last
+  week's practice: how many days, how many reps and which sounds. Never your
+  child's name or voice.", a "Grown-up's email" box (the household's address
+  when it has one), Turn on and Travis's line ("We'll also send occasional
+  tips from Rachel. Unsubscribe anytime."); a wrong-looking address gets
+  setup's "That email doesn't look right." Turn on keeps the address on the
+  first family child's profile (one household address: the others' are
+  cleared), posts `/api/lead` (`source "app-settings"`, an in-app lead), and
+  posts the report at once so the confirm email goes now; on, "On. It goes to
+  <email> every Monday.", "Check your email: tap the link we sent to start
+  it. No email? Look in spam. Unsubscribed from Sona's emails? Reply to one
+  to get them back." until the address says yes (Settings asks the server
+  again as it opens or comes back, past the phone's daily and monthly waits,
+  `reportSync(true, true)`), or "This email unsubscribed …", and Turn off
+  ("Turned off on this phone.": each phone keeps its own switch). After Turn on the
+  line says what the server answered: a link only while it waits for one
+  ("Turned on." for a phone already confirmed). A phone with every game open
+  says `premium: true` on that lead, so the series stops for a family whose
+  purchase the server never heard of (an address given after it), with no
+  plan word claimed. Off clears `weeklyReport` on every profile and tells the
+  server `off` (lib/report.ts store): the phone is marked off for the address
+  (`report:offdev:<hash>`, device ids, 400 days and kept fresh with the
+  confirmation, `OFF_KEEP_SEC`; the confirmation stays, so an unsubscribed
+  address still hears "off"), its numbers under any spelling of the inbox in
+  every week the server could hold are deleted (its weeks are a hint: a Turn
+  off from a phone with a wrong clock is still heard), Monday's report skips
+  an off phone, the Monday email sees a household without the report, and a
+  confirm link tapped later changes nothing ("The report is off on that
+  phone"). **Only a post saying `on` lifts the mark:** the phone says `on`
+  on every post until the server has answered one for that address
+  (`onFor` in sona.report.v1: setup, Settings, or again after a Turn off),
+  so a post that left before a Turn off and lands after it keeps nothing.
+  Each Turn off is owed until the server says so (`offs` in sona.report.v1,
+  one entry an address and phone, five at most: sent from Settings as it
+  opens or comes back, and from the next practice page, every five minutes
+  at most: "Turned off. Sona will finish this the next time it's online.");
+  Turn on drops one owed for the very same address, never another spelling
+  (its numbers must go: once it is taken, the phone's next post says `on`
+  again); a Turn off waits for a post on its way, and Turn on for a Turn off
+  on its way; Settings, as it opens or comes back, sends owed Turn offs, then
+  a Turn on the server has not heard. Removing the child whose profile holds
+  the address owes the same. Known and left: a post from another tab, sent
+  in the instant after Turn on and landing after a later Turn off, could
+  still lift it. Another phone of the household keeps its own switch. Taps wait 600 ms
+  after the card changes shape. Not for a clinician's own setup.
+- **Known limits, said in the run's answer:** the audience is `everyone()`,
+  whose leads ledger is capped at 10,000 rows (`full: true`: the oldest
+  parents are off the list), and three runs of 250 send about 750 a week
+  (`stopped: "cap"` on a Wednesday). Past either, it needs Resend's batch send
+  and its own list of parents.
+- **For Travis:** the consent line beside every email box (but setup's
+  family email step since 4 Nov 2026) says "occasional
+  tips from Rachel", and the list now hears from Sona weekly: his words to
+  change if they should say so. Every parent who gave an email since 24 Sep
+  2026 is on it, the waiting list's included (once Kit's leavers are in).
+  **For Rachel:** every word of the example, and its made-up numbers.
+`weeklytest` plays the run, the email and the switch.
+
 **SESSION RECORDING (REPLAY1, 15 Oct 2026)** (Travis, of PostHog's replay
 page: "how do i start recording", then yes to recording only the grown-up
 screens with names and typing blanked out). PostHog session replay runs on
@@ -1380,20 +2374,22 @@ sessions" on in PostHog too.
   `replayAt(key, painted)` turns it off BEFORE the therapy question, the
   ready screen (`NO_REPLAY`) or the hand-off is painted and on again only
   once a screen without them is up, so a tap on Yes / Not right now is never
-  recorded (the ready card's size alone would tell the answer). **The
+  recorded (the ready card's size alone would tell the answer). The plan
+  moment's build beat before the ready screen (31 Oct 2026) starts only
+  after it is off, and is `ph-no-capture` too. **The
   screen a therapy answer lands on is not recorded either** (`replayHold`;
-  since 19 Oct 2026 that is "Speech homework is hard at home."): a double
-  tap's second tap, or a mouse moving on, would be recorded at the answer's
-  place; recording comes back one screen later ("<Name> plays on their
-  own"), reached by the fixed footer. **A child already set up walking setup again** (`REWALK`:
+  since 22 Oct 2026 that is the sounds): a double tap's second tap, or a
+  mouse moving on, would be recorded at the answer's place; recording comes
+  back one screen later ("How long each day?"), reached by the fixed
+  footer. **A child already set up walking setup again** (`REWALK`:
   Back from the first game, a second visit) is never recorded, and **the
   hand-off ends recording for the whole tab** (`sona.replayoff.v1` in
   sessionStorage, which `SonaAnalytics.replay` reads). The plan screen
   calls `replay(true)` once the offer is painted.
 - **The name: masked where it is shown, and a backstop that drops.** Every
   spot a recorded page shows the child's name is an element of class
-  `ph-name` (`#micName`, `#achName`, `#intName`, `#emName`, `#aloneName`,
-  `#aloneName2`, `#gamesName`, the plan screen's headline span), recorded as "[child]" whatever it holds
+  `ph-name` (`#micName`, `#achName`, `#intName`, `#emName`, `#gamesName`,
+  the plan screen's headline span), recorded as "[child]" whatever it holds
   (`maskTextSelector: ".ph-name"`). Before a piece of recording is sent,
   `before_send` checks the words a person reads in it (text, and the
   attributes in `READ_ATTR`; never tag names, classes, styles or
@@ -1429,17 +2425,26 @@ sessions" on in PostHog too.
   event. **For Travis:** the privacy page and the parents'
   "What's stored" answer say so; App Store Connect's App Privacy answers owe
   a line (NATIVE.md). What a recording may show of a child (the age group,
-  sounds and days a week picked in setup) is Rachel's to know.
+  what they love, the sounds and the minutes a day picked in setup) is
+  Rachel's to know.
 
-Leads from inside the app (`app-setup`, `app-trial`, `app-paid`:
-`IN_APP_SOURCES` in `lib/nurture.ts`) skip the welcome series' first email
-("Here's Sona", the App Store link) and start at "The 5-minute trick"; days 1,
-3 and 5 are unchanged (`nurturetest`). **The series is day 0 (two emails),
-day 1, day 3 and day 5** (Travis, 17 Oct 2026: "just move day two to day
-one"); someone already waiting for the old day-2 email keeps that day. **A parent whose phone reports a
+**The welcome series is three emails: day 0, day 1 and day 2** (Travis, 23
+Oct 2026: "we send them one an email immediately, the next day, and then one
+more day ... I want to send less emails in the sequence. So just 3"; it was
+two on day 0, then days 1, 3 and 5). From the website: "Here's Sona" (the App
+Store link), the recast tip ("Try this the next time they say “wabbit”"),
+then "Quick answers before you decide". Leads from inside the app
+(`app-setup`, `app-settings`, `app-trial`, `app-paid`: `IN_APP_SOURCES` in
+`lib/nurture.ts`) get "The 5-minute trick" in place of the first (`nurturetest`).
+"The balloon problem" is gone; its "Already started? You can ignore the
+button." moved to the last email. Each email has a name (`hello`, `trick`,
+`recast`, `answers`) and a `next`; an address part-way through the old five
+on 23 Oct 2026 kept a number, which `LEGACY` reads (the balloon or the old
+day-5 answers: the answers on that day, then nothing), so nobody gets one
+twice. **Then, once a week, the Monday email** (WEEKLY1, below). **A parent whose phone reports a
 purchase leaves the series** (`stopSeries`, 16 Oct 2026): the plan post takes
-the rest off the schedule, so days 3 and 5 no longer sell free days they
-started; a purchase the phone never reports (no email on it) still gets them.
+the rest off the schedule, so the last email no longer sells free days they
+started; a purchase the phone never reports (no email on it) still gets it.
 A known gap, for Travis: `parents.html` uses an ad's `utm_source` as the
 source, so an ad tagged `utm_source=app-setup` would skip the download email
 too.
@@ -1460,12 +2465,15 @@ plan too. Once per kind and address on that phone (`sona.plantold.v1`); no
 email, nothing sent; nobody is asked for one at that moment. The privacy page
 says the email list holds this. The note before the free days end
 is RevenueCat's (RCHOOK1, below), not a broadcast; the app's
-own words still promise no reminder (see "TRIAL FIRST"). Not built: App Store Connect's App Privacy answers, which should now list purchases
+own words promise only the phone's own reminder, in one line and only where
+it is set (NOTIFY1; see "TRIAL FIRST"). Not built: App Store Connect's App Privacy answers, which should now list purchases
 linked to the parent's email (Travis's task, no review). `planwordstest` plays
 the phone side ("the list hears"), `slpapi` the route and `contactstest` the
 list. Wherever an email joins the list, the page says
 so first, in Travis's words: "We'll also send occasional tips from Rachel.
-Unsubscribe anytime." **Except the landing pages**, where Travis took the line
+Unsubscribe anytime." **Except setup's family email step** (4 Nov 2026,
+Travis: "just say something like ... track weekly progress": it says "Track
+your child's progress every week. Unsubscribe anytime.") **and the landing pages**, where Travis took the line
 out (25 Sep 2026: "get rid of this text"); their "What's stored" answers
 still say the email is on the list at Resend. Meta's `Lead` fires only when an email was given.
 
@@ -1523,7 +2531,9 @@ a purchase starts, renews, is cancelled or ends.
   and is not in `email:unsub` (exact or plain mailbox): RevenueCat's
   attributes can be set by anyone holding the app's public key, so an email
   there proves nothing. No price, no number of free days (both the App
-  Store's), no child. The price screen still promises no reminder.
+  Store's), no child. The price screen never promises this email; its one
+  reminder line is the phone's own notification (NOTIFY1), shown only where
+  that is set.
 - **/leads.html** shows a Premium column and counts (free days, paying,
   cancelled, payment problem, ended, moved to another device), from
   `rc:plans`.
@@ -1538,6 +2548,152 @@ a purchase starts, renews, is cancelled or ends.
   RevenueCat).
 `rcwebhooktest` plays the route, the store, both emails and the words.
 
+**THE TRIAL REMINDER (NOTIFY1, 22 Oct 2026, iOS 1.0.9)** (Travis: "can we
+add push notifications and have that be a step in the onboarding where we
+ask them to turn it on to notify them a day before their trial ends"). One
+notification on the parent's phone the day before the free trial ends
+(about 30 hours before, so cancelling then still counts: Apple's line is 24
+hours): "Sona" / "Your free trial ends tomorrow." It is LOCAL, not a push: the phone
+sets it and shows it, so it reaches a family who gave no email too, and
+nothing leaves the phone for it. (The price screen's one line about it is in
+the pricing section: "THE TRIAL REMINDER ON THE PRICE SCREEN".)
+- **Native:** Sona's own plugin (SonaSpeech) gained `notifyStatus`,
+  `notifyAsk` (iOS's own Allow box: alerts and a sound, no badge),
+  `notifySchedule({ id, at, title, body })` (one calendar trigger that never
+  repeats; the same id replaces the one waiting; past or 400+ days away
+  refused) and `notifyCancel({ id })`, with UNUserNotificationCenter. No
+  device token, no APNs, no Push capability, no Info.plist text:
+  `scripts/install-ios-speech.py` carries it like the mic. It answers
+  Capacitor's `localNotificationHandler` so a "sona-" notification also shows
+  while Sona is open (it comes 30 hours before the trial ends, six hours
+  before the time of day it started, often when the family plays), **as a banner and in the list, WITHOUT its sound**
+  (review, 22 Oct 2026): a game's mic may be open, and iOS's chime through
+  the speaker would play into Sona's own mic, against "nothing plays while
+  the mic listens". With Sona closed it keeps its sound. Optional: a build
+  without the four methods (1.0.8 and before) offers no reminder anywhere.
+  `heartest` pins the Swift.
+- **sona.js, block NOTIFY1:** `Sona.notifyAvailable()` (all four methods
+  there, and none of them answered "not implemented" on this page: a
+  Capacitor proxy in front of an older build answers every name, so that
+  answer marks the plugin broken for the page, as the mic's `_nm.broken`
+  does), `notifyState()` ("granted" / "denied" / "prompt" / "unavailable",
+  iOS's last answer, read again as each app page opens; "provisional" reads
+  "prompt"; on a page iOS has not answered yet it is a guess, "prompt"),
+  **`notifyRefresh()`** (a Promise of the state once iOS has really
+  answered, 3 s at most: setup waits on it before it decides whether to show
+  its reminder screen, so a phone iOS already asked never sees it),
+  `notifyAsk()` (never rejects; a bridge that never answers lets the screen
+  go on after a minute, its late answer still kept), `trialReminderOn(plan?)`
+  (allowed on a build that can; with a price row, also a free trial the
+  store is sure of, `plan.sure === true`, whose reminder moment is more than
+  an hour away), `trialReminderArm(endMs)` (id `sona-trial-end` at end −
+  30 h, `TRIAL_REMIND_LEAD_MS`, only when that is more than an hour away:
+  Apple's cancel line is end − 24 h, so the reminder leaves six hours to act),
+  `trialReminderSync(force)` and **`trialReminderSold(plan)`** (the
+  purchase step for a sale `buyPlan`'s answer did not carry: an Ask to Buy
+  approved later, or Restore after "not-entitled". `subscribe.html` calls it,
+  feature-checked, before it leaves: counted, the day's mark cleared, armed
+  from the plan only for a sure free row, else RevenueCat asked).
+- **When it is set: at once, from the purchase** (one hook on `buyPlan`'s
+  success path, after `_tellPlan`): the price page leaves 1.2 s after a
+  sale, and RevenueCat's record can take 8 s, so a reminder that waited for
+  it could be lost with the page. A purchase that started a free trial
+  (Apple's period TRIAL, or, when Apple's answer names no period, a card SURE
+  it sold free days: the list's plan post decides "trial" on the card alone,
+  but this states it as fact) is set for the end in the purchase's own
+  record (`iapPurchase` returns it, `end`), else the store's own free time
+  from now; only when the purchase named no end is RevenueCat asked, once,
+  to correct it. Never waited on. **Every purchase also clears the day's
+  check mark and counts one**, so the next page asks the store again and no
+  check still waiting from before the sale (the price page's own, which
+  heard "no Premium") can take the new reminder back ("stale").
+- **And checked once a day** on an app page (and when the app comes back to
+  the front), **never on Home** (Home only reads: it neither asks iOS nor
+  the store for this, and writes nothing of it): RevenueCat's `full`
+  entitlement on TRIAL with an end sets it afresh; a paid period, no
+  Premium, or a trial the parent already cancelled (`willRenew` false) takes
+  it back; a store that does not answer changes nothing and is asked again
+  an hour later at the soonest, not on every page; a family who did not
+  allow notifications is not looked up at all. A reminder already set for
+  (within an hour of) the end stays to be shown in its last day; one set for
+  an end that moved goes.
+- **Never a child's name, never a price, never an event or a request:** the
+  words are one fixed pair, and `notifytest` holds the block to no fetch, no
+  track, no profile. `sona.notify.v1` (`state`, `asked`, `arm`, `end`,
+  `sync`, `tried`) is this phone's, on `NO_EXPORT` and `NO_IMPORT`.
+- **Setup's reminder screen and the price screen's one line** ("We'll remind
+  you the day before it ends.") read this block: the screen shows only when
+  `notifyAvailable()`, `notifyState() === "prompt"` (after
+  `notifyRefresh()`) and the price follows; the line only when
+  `trialReminderOn(picked row)`.
+- **Defaults Travis did not pick:** the words; the time of day (30 hours
+  before the end, six hours before the trial's own time of day, so a cancel
+  then still counts; the line and the notification still say "the day
+  before" and "tomorrow"); shown over the app when it is open (silently), where a
+  child mid-game may see it; taken back when the parent cancelled the trial
+  (as RCHOOK1's "Your free days end soon" email is not sent then); the
+  minute setup waits on an Allow box that never answers; a store that does
+  not answer asked again after an hour. **Travis's to know:** a parent with
+  an email may now hear twice before the free days end (this, and RCHOOK1's
+  email). Nothing here is Rachel's: the reminder says nothing about a child
+  or practice. `notifytest` plays it on a fake phone; NATIVE.md and
+  SPEECH_PLUGIN.md hold the Mac steps and the phone checklist for 1.0.9.
+
+**THE DAILY PRACTICE REMINDER (NUDGE1, 30 Oct 2026)** (Travis, after "most
+of them cancel", yes to "one short daily nudge during the free week"). One
+local notification a day while a free trial is on: "Sona" / "Ready for 5
+minutes of practice? Echo is waiting to play." (fixed words, never a name;
+Travis's and Rachel's to change). Block NUDGE1 inside NOTIFY1 in sona.js,
+on the same four native methods (1.0.9 and later), so it needs no new App
+Store build.
+- **Only with a yes under words that say so:** setup's reminder screen now
+  says "A practice reminder each day, and one the day before it ends.", and
+  its "Turn on reminders" calls `Sona.nudgeConsent()` (`nudge: 1` in
+  sona.notify.v1) before iOS's box. A parent who allowed notifications under
+  the old words ("One notification, the day before.") was promised one and
+  gets no daily one; nor does a phone whose notifications are off.
+- **When:** set when a free trial starts (`buyPlan`'s purchase hook, beside
+  the trial reminder), one for each day after the start up to the day
+  before the trial's last day, never on the day the trial reminder shows
+  (two in a day is too many), at the clock time the trial began kept
+  between 3:30 and 7:30 pm. A 3-day trial gets one, a 7-day trial about
+  four. Ids `sona-nudge-<yyyymmdd>`; what iOS holds is kept as `nudges`.
+- **Taken back:** a day's, by that day's first counted rep (`_playedToday`,
+  from `_goalCheck`, on a practice or game page: the child already played);
+  all of them, by a purchase charged today or the daily check finding the
+  trial paid, cancelled or ended. A trial whose end moved more than an hour
+  gets them again. Home still writes nothing of it.
+- Tapping it opens Sona (Home, today's story); it carries nothing.
+  **Travis's and Rachel's:** the words, the hour window, one a day, and
+  skipping the reminder's day. `notifytest` (4e) plays it on the fake phone.
+
+**THE FREE-WEEK REPORT (TRIAL1, 30 Oct 2026)** (Travis, of "most of them
+cancel": "a report showing which trial families play each day and who
+pays"). /leads.html's "Free trials" section (`/api/founders/trials`,
+`lib/trials.ts`): of the trials started in the last 90 days, how many
+played on day 1, day 2, … (each day over only the trials that reached it),
+how each ended (paid, cancelled, ended, still on free days), and, for the
+finished ones, how many paid by how many days they played.
+- **Kept per trial, under the anonymous family id only** (`fid()`, random,
+  the id every usage beacon already carries; never a name, email, sound or
+  count): `trial:<fid>` (start, length in days, one mark per day with play,
+  outcome and its time), `trials:idx`, 120 days.
+- **Fed by:** the phone's "free trial started" ({ days }, from `buyPlan`'s
+  success, only for free days) and "played today" (once a local day, the
+  first counted rep; `sona.played.v1` is this phone's, NO_EXPORT and
+  NO_IMPORT), both through `/api/track`'s allow-list, which also relays them
+  to PostHog; and RevenueCat's webhook, which now also reads the
+  `sona_fid` attribute the phone sets (`_rcEmail`, `setAttributes`,
+  feature-checked) and records how the trial went whether or not the family
+  gave an email (a family who never opens Sona again is still counted).
+  Paid stays paid; an end after a cancellation stays a cancellation; an
+  older RevenueCat message never overrides a newer one.
+- Day 1 is the first 24 hours from the start (no time zone is kept).
+- **For Travis:** the privacy page says it; App Store Connect's App Privacy
+  answers should list the device identifier as linked to purchases (it now
+  goes to RevenueCat). Trials started before this build are not in it.
+`trialstest` plays the store, the routes and the page.
+
 `/leads.html` (private, behind `FOUNDER_KEY`) lists every captured email and
 every clinician account, counts everyone since the "I'm a…" landing page
 (25 Sep 2026) by what they chose, and says what the list answered for each
@@ -1546,18 +2702,821 @@ Premium in the app as RevenueCat last told it (RCHOOK1). It has no button: the
 list fills itself, and the old "Send everyone to Kit" catch-up
 (`/api/founders/kit-sync`) is gone with Kit.
 
-## Home: choose a game, then practice
-**Home is the silent Play library (Travis, 24 Sep 2026).** `today.html` opens
-on “Pick a game!”; `activities.html` preserves old query/hash links by
-redirecting there. Setup finishes in the first game (Feed Echo for 3-4,
-Fruit Slice from 5; see "The ask happens after the product proves itself"),
-and every visit after that opens on Home. There is no old adventure-map Home or menu narration. Voice remains
-inside deliberate game/practice sessions. Parent settings, progress,
-profiles, earned coins (now visible on the Trophy Road, and spent in the Buddy Shop), homework and
-entitlement sync remain available. Home gains one Trophy Road card under
-"Pick a game!" (read-only), a level badge on a card's picture, and a level
-sheet that opens only from a tap (see "Trophies, coins and the Trophy Road"
-and "Levels inside games").
+## Daily story (STORY1): Home's big card
+**Home leads with today's story** (22 Oct 2026; Travis chose both age
+groups, today's painted clay look, and that the story is Premium). A story
+day is one to two minutes of painted pictures Echo reads aloud, a new game
+that fixes the story's problem, then a short happy ending and a sticker:
+Pelly's letter (Pelly the pelican always pulls the wrong thing out of her
+beak pouch first: a fish, a rubber duck, a banana; never "Penny", who is
+the penguin of *Penny's Pebble Party*) → the problem → "Let's
+go!" → the game → "See what happens!" → the ending → the sticker → a gold
+star on Echo's helper map. Fourteen days are built, one a calendar day, in
+order (a skipped one comes back after the others: CAL1, below):
+- **Day 1, "The Lighthouse Sneeze":** Captain Wally the walrus sneezes the
+  lamp out; the child is the light and finds seven lost boats in the fog
+  (**Light the Way**, key `lighthouse`).
+- **Day 2, "Grandpa Bear's Sleepy Toys":** the toys partied all night and ran
+  out of wind; the child winds each one just right for the Toy Parade
+  (**Wind-Up Toys**, key `windup`).
+- **Day 3, "The Puzzle Bridge":** the storm broke the bridge to Blossom
+  Island; the child fits the stones back for Grandma Tortoise's 100th
+  birthday (**Puzzle Bridge**, key `bridge`).
+- **Days 4-14 (22 Oct 2026), each around one of Codex's physical games**
+  (Travis: "connect these adventures to the shared daily player and Days
+  1-3"; then, of Codex's painted art, "this is way too ai", and he chose
+  new story pictures in this clay look, with Echo, the games' own pictures
+  kept): Day 4 "The Thirsty Waterwheel Garden" (`waterwheel`), 5 "The Little
+  Island Postboat" (`postboat`), 6 "Breakfast at the Moonberry Bakery"
+  (`bakery`), 7 "Tortoise's New Front Door" (`frontdoor`), 8 "The Glowworm
+  Lantern Walk" (`lantern`), 9 "All Aboard for Snowdrop Valley"
+  (`trainline`), 10 "The Hilltop Patchwork Kite" (`kite`), 11 "The Sandstone
+  Nest Lift" (`nestlift`), 12 "The Lily-Pad Concert" (`concert`), 13 "Seeds
+  Across the Rooftops" (`rooftops`), 14 "The Moving-Star Observatory"
+  (`observatory`). See "Days 4-14: Codex's games in the story" below.
+
+Each has a version for ages 3-4 (`Sona.playStyle() === "simple"`: the scenes
+marked for both ages, the short lines, a six-word game on Days 1-3, five words
+on Days 4-14) and one for 5-8 (eight scenes, four ending scenes, an eight-word
+game; Days 1-3's has a twist at word 5, Days 4-14's no fixed one). The buddy a
+child picked is in Days 1-3's games (Codex's eleven place none) and in 121 of
+the 168 pictures (the others, a view out of a window, a letter, a chart, a
+crowd's back, have no spot for it), laid over the painting in a pose that
+already exists, never painted in and never under a finger.
+- **Files.** (Days 4-14's own are under "Days 4-14: Codex's games in the
+  story" below.) The day list is ONE copy in `sona.js`, `STORY_DAYS` (inside the
+  QUEST1 block): id, game, page, hero, Home's title and line. (The same tag,
+  STORY1, also marks the older episode engine: `sona.js`'s "the daily run is
+  an EPISODE" block, `storytest` and the parked `story.html`; they are not
+  this.) The scenes are
+  `public/adventures.js` (`window.SonaAdventures`, loaded by the player
+  alone). The player is `public/adventure.html` with
+  `public/crafted-adventure.css`. Each game is a Say & Play game on the play
+  hook: `public/<key>.js`, `public/<key>.css`, a hand-written
+  `public/arcade-<key>.html`. Pictures: `public/assets/adventure/<id>/
+  s01-s08.webp, e01-e04.webp` (800×1200), `public/assets/crafted/game/
+  <key>-*.webp`, Home's `home-<hero>.webp` and the Arcade door's
+  `home-arcade.webp`; made by `tools/art/gen-adventure.mjs` and
+  `cut-adventure.py` from `adventure-prompts.json`. Every number a game or
+  the player reads off a picture is in `design/adventure/art-notes.md`, and
+  `design/adventure/review.html` shows every page with its line for Travis
+  and Rachel. **Adding a story:** its line in `STORY_DAYS`, its scenes in
+  `adventures.js` with the same buddy boxes in art-notes section 2
+  (`adventuretest` holds them equal), its card colour in `crafted-home.css`
+  (`homestorytest`), its game and pictures, and for a game on
+  `story-game.html` its words in `daily-adventures/pages.js`; every child
+  who finished the others meets it the next day.
+- **THE STORY IS PREMIUM, BY THE BOOKS' RULE** (`Sona.storyOpen()`: Sona
+  free, Premium from any source, or a trial; never the three-day
+  demonstration window `gated()` honours; in the founders' preview, its
+  "trial" plan). Where Sona can sell (`offerOnLock()`), a family without it
+  still SEES the story (`storyShown()`) with a small "Premium" tag, and a tap
+  opens the price at once, as a grey game's does: `/subscribe.html?from=
+  adventure` ("Unlock today's story, and every game", today's story picture
+  with Echo, no grown-ups check, never recorded, the X back Home; with every
+  story finished, the plain offer). That includes a family who keeps the free
+  version on a phone that can buy. **A phone that cannot buy, without
+  Premium, never sees a locked story:** its card is the old game of the day
+  (QUEST1), which borrows a game it can open. A wall nobody can pass is a
+  broken app. Entitlement is read again on every page, never from an
+  address: `gameAccess("adventure")` and `gameAccess` of any
+  `STORY_DAYS` game (`lighthouse`, `windup`, `bridge`, `waterwheel`…) answer
+  `storyOpen()` (tier `premium`), the engine's own check sends a
+  locked story game to `/today.html` (`gameBounce`) before any mic or sound,
+  and the player checks before any picture, sound or fetch.
+- **One scheduler, QUEST1's.** `sona.quest.v1` (per child, in backups) keeps
+  `i`, `last` and `done` and gains `f` (the stories finished, in the order
+  they were finished; `s`, their count, is still written), `ls` (the last
+  one), `fd` and `gd` (the days the last story and the last game day were
+  finished), `a` (the day this child's calendar started, CAL1), `sv` (the
+  day the stories first showed for this child, CAL1), `lk`
+  ("story" or "game"), `got` (the stickers its finish gave) and `seen`
+  ("<date>|<id>": today's intro reached "Let's go!"). A record from before
+  `f` finished its `s` stories in order. Every save MERGES (a game day's
+  write used to replace the record, and would wipe the stories).
+  `questToday()` answers `kind: "story"` while a story is left and
+  `storyShown()`, else the game of the day (`kind: "game"`).
+- **A new story every day, played or not (CAL1, 28 Oct 2026)** (Travis:
+  "every day that I look at my app, day one is still the one appearing as
+  the daily adventure. I want it to be different every day. Even if they
+  didn't do the daily practice. The day prior."; he chose "the next story,
+  and a skipped one comes back"). Until then the card waited on a story
+  until it was finished, so a child who never played saw Day 1 for good.
+  Now (`_questOn` in sona.js) every child starts at Day 1 on the first day
+  of their calendar; the day after a story is finished is the next story
+  not finished yet, the day after that the one after, and so on round, so
+  a story skipped comes back once the others have had their day (Day 1
+  played, Days 2 and 3 skipped, Day 4 played: then Days 5 to 14, then 2,
+  then 3). Still one a calendar day: a story finished today stays on the
+  card, done, with tomorrow's dark, and a game day finished today keeps the
+  story for tomorrow. **Where the calendar starts (`a`) and the stories'
+  Day 1 (`sv`):** setup writes both as it sets a child up (`saveProfile`'s
+  onboarded save, which the Speech Check and the pilot page make too), so a
+  new family's first day is Day 1; for a child who has finished nothing it
+  writes them afresh, so a brother or sister added in Settings (whom the
+  next page may already have started) begins on the day setup finishes. A
+  child set up before this build, or brought in by a backup without them,
+  gets them from the first page that loads (`_questAnchors`, beside the
+  free-era sweeps): a one-shot write, which may be Home's first load, so
+  their first day on this build is their next story in order, never a jump
+  over the days before it (a finish from before that day counts from the
+  day before it, for the same reason). **The stories' Day 1 waits for a
+  story to show:** on a phone that shows none (it cannot buy, and no
+  Premium: the card is the game of the day) `sv` is not written, and the
+  first page that shows a story writes it, so the first story a child ever
+  sees is Day 1 whenever that comes (the review of 28 Oct 2026: counting
+  from `a` made it Day 10 for a family whose Premium came nine days late).
+  A game day finished holds the story as a story holds the game: the story
+  count starts again from it (`gd`), so a game day finished the day the
+  stories open keeps Day 1 for tomorrow. A day after today (a phone clock
+  that was ahead) never counts, and the next page writes `a` and `sv` again
+  as today, so the card never stands still waiting for the calendar. A
+  backup that brings a child's profile but no quest record takes the slot's
+  old record away (`importData`), so the restored child starts their own
+  calendar and never inherits another child's. A child partway through the 14 days
+  still meets every story first: a story never moves `i`, and after the
+  last story the game of the day comes back on day `i` (the stories hold
+  its place), then moves on one a day the same way. **A story round that
+  began before midnight and ends after it** still finishes the story that
+  was open when it began (`_questYesterday`: yesterday's story, while
+  nothing has been finished since and the calendar had started): the card
+  then shows that story done, its ending and sticker open, and today's
+  story moves to tomorrow. Only a story: a game of the day is played from
+  the Arcade too, so a round of it today is today's, never yesterday's.
+- **The day is finished when the game's round ends** (the engine's end card,
+  `questEnd(<key>)`), so the sticker is given before the ending is watched
+  and closing the app in between loses nothing: ONE sticker
+  (`awardNextSticker`), no coins, no banner (the ending's sticker card shows
+  it, read from `storyEnding(id).got`), the event "adventure day done"
+  `{ game }`. `storyEnding(id).ok` opens an ending only once that story is
+  finished.
+- **The game hands back to the story** (`sayplay.js`, `G.exit` and
+  `G.again`): its end card's one teal button is "See what happens!" to
+  `/adventure.html?part=end&story=<id>` (only an address of exactly that
+  shape is taken), with no Play again. The ✕ during play still goes Home.
+- **The player** (`adventure.html`). On the website it opens on a card (the
+  story's picture, "Day N", its title, a teal "Tap to start"), because a page
+  plays nothing until a tap; in the iPhone app the intro starts at once. Seen
+  today: a teal "Keep going" (straight to the game) and a cream "Watch the
+  story again". Each scene: the picture whole, a caption card over its foot
+  (Echo, the line, a cream "Hear it", a teal Next). Echo starts the line as
+  soon as it is ready and waits at most 2.5 s; Next glows when he is done;
+  Next or a tap on the picture turns the page; taps wait 600 ms after a
+  scene appears, so a double tap never skips one; nothing turns by itself.
+  The right-arrow key turns a page too, but never leaves the last intro scene
+  (only "Let's go!" does), so it cannot cut Echo off there.
+  The last intro scene's big teal "Let's go!" stops the sound, writes
+  `storySeen(id)` (the ONE thing the page writes) and opens the game. The
+  ending opens on "Tap to see what happens", plays its scenes, then the
+  sticker card ("You got 🐚 Shell!", one reward chime, no confetti under
+  Reduce Motion) and "Back home". A cream Skip, top right, is for grown-ups
+  and not behind the grown-ups check, as the books' is: to "Let's go!" in the
+  intro, to the sticker card in the ending. Its events, "adventure opened"
+  and "adventure ending watched", carry `{ game }` alone.
+- **Echo's voice, one line at a time:** a recorded file when
+  `/assets/adventure/voice/manifest.js` lists exactly that line (the file is
+  named by FNV-1a of `TTS_CACHE_VERSION + "|" + line`, so a re-worded line has
+  no file), else the live voice through the phone's shared cache
+  (`SayIt.line`, `arcade-sayit.js`), else the browser's own voice, cut at
+  9 s; in the app every one plays as media. **No line is recorded yet** (no
+  manifest): every line plays in the live voice. `shiptest` checks a
+  manifest when there is one. Sound off (a volume of 0): captions only,
+  nothing fetched, Next live at once. Going to the background stops the line;
+  coming back plays nothing until a tap.
+- **Every story line keeps the rules** (`adventuretest`, and voicedoc's B9
+  lists all 260): 120 characters at most, plain punctuation, no child's name,
+  no speech sound named, nothing about how to talk (never louder, slowly,
+  strong, stretch, "say it"), none of score, points, correct, wrong, miss,
+  fail, charge, and the same line on every phone. **No story scene asks the
+  child to speak:** that happens only in the game's word turn. "Ah-choo!",
+  "Honk-shoo" and "Whoosh!" are story words, never targets.
+- **The buddy's spot** on each picture is a box in `adventures.js`, copied
+  from `design/adventure/art-notes.md` section 2; `adventuretest` holds the
+  two equal, so a redrawn page's new box changes both. The player keeps it
+  clear of the caption card, Echo's face and every button, and leaves it out
+  where that would lift it more than half its height (on a 320×568 phone,
+  Day 3's s04). The fox, every new family's buddy, has a peek drawn for the
+  stories' thirteen peek spots (`buddy-fox-peek.webp`); Fruit Slice never asks
+  for it, so a fox child's market is unchanged.
+- **Three sayings a word in every story game** (Travis, 23 Oct 2026: "when
+  a kid practices the daily adventure i want it to ask them to say the sound
+  3 times not twice for every daily game"). One number, `STORY_SAY_TIMES`
+  (3) in `sona.js`, which Days 1-3's pages and `story-game.html` (and the
+  test host) pass to `SayPlay.start` as `sayTimes`: three dots, "Say it 3
+  times", "2 more times!" after the first saying, "1 more time!" after the
+  second, and only the third earns the move; a help pill asks three more.
+  Every story page's words say "three times". A replay asks three too (the
+  same page). The other Say & Play games keep two, Bubble Pop one.
+- **What a story day earns:** the scenes nothing; the game one game rep for
+  each saying Echo hears (24 for ages 5-8, 18 for 3-4 on Days 1-3 and 15 on
+  Days 4-14, three more for each help pill), toward the daily goal and trophies like every game, never practice
+  data; the day one sticker.
+- **Not in the catalog, on purpose.** The story games are not in `GAME_ACTS`
+  or `ACTIVITY_KEYS` (`Sona.gameKey("lighthouse") === ""`): on no shelf, in
+  no picks row, in no setup grid, in no website game count, with no level
+  and no Best. A finished story is not on Home again (its ending still opens
+  by address), but **its game is** (FOUND1, below): Home's "Your games" row
+  plays it again.
+- **Departures from the spec, kept:** the player does not load `saycheck.js`
+  (`SayCheck.say` cannot say when a line starts, which the 2.5 s rule needs,
+  so the page plays `SayIt.line`'s bytes itself); Day 3's e02 is ages 5-8
+  only; Skip lands on the "Let's go!" scene and plays its line; a tap on the
+  last intro picture does nothing (only "Let's go!" starts the game); Day 1's
+  s01 has the buddy left of Echo; Day 1's e01 is the game's own seven boats
+  on an empty harbor, and Day 2's s07 is cut to the chart alone. Six pages
+  were touched up after drawing (art-notes lists them): the parade's
+  crocodile and jack-in-the-box laid in from their cast drawings, the helper
+  map's stars moved onto the places helped, and the bridge painted out behind
+  Day 3's first two pages (the storm broke it the night before).
+
+**TALK1: DAY 1 TALKS IN THE CHILD'S OWN SOUND (31 Oct 2026)** (Travis, of
+"people keep cancelling": "we just need to wow them in their first sessions
+so the daily adventure is prob the one most choose and the day 1 has to be
+aseosme. i htink peoploe were all getting the light house and it wqs
+average. and i want the books in the daily adventrue to be unique depedning
+on the target sound so they are practicing it throughout the story. use the
+chatgpt api to make images"; then "go build the r one and the othe rpopular
+sounds"). Day 1's slot is a TALKING STORY in the child's sound: no separate
+game, every page asks one word in that sound, and the child's voice turns
+the page.
+- **Five stories** (`public/talk-stories.js`, `window.SonaTalkStories`; the
+  day list is `STORY_TALK` in `sona.js`, beside `STORY_DAYS`): R "Robo's
+  Rocket" (`robo`), S "Sandy's Sandcastle" (`sandy`), L "Lulu's Lantern
+  Party" (`lulu`), Z "Zippy's Zoo Parade" (`zippy`), F "Fizz and the Sleepy
+  Fireflies" (`fizz`), the "popular" sounds Travis named on 2 Oct 2026 ("r s
+  l z f"). **And five more since 2 Nov 2026 (TALK2**, Travis: yes to
+  "talking Day 1 stories for five more sounds: K, G, SH, CH and TH"): K
+  "Kiki's Camping Night" (`kiki`, Kiki the kitten's tent blew down), G
+  "Gus's Goose Chase" (`gus`, Gus the goat's geese waddled away), SH
+  "Shelly's Shell Show" (`shelly`, the waves took Shelly the shark's
+  shells), CH "Chip's Cherry Pie" (`chip`, a bird took Chip the chipmunk's
+  cherries), TH "Theo's Big Show" (`theo`, Theo the bear's thunder drum is
+  lost). Each place is new to the daily stories on purpose (K was first a
+  kite and G a garden, too close to Day 10's kite and Day 4's garden). Each is Days 1-3's shape: Pelly's wrong thing first, the letter,
+  the problem, the child's words fixing it, an ending, a gold star for the
+  helper map; 8 + 4 pages for ages 5-8, 6 + 3 for 3-4.
+- **The key words.** Every page has one `key`: a whole word in its line (both
+  lines), lower case, starting with the story's sound before a vowel by its
+  pronouncing entry (`tests/booklex.json`, the books' key rule; for R no
+  second r-coloured sound), never twice in a story. Its sound's letters are
+  orange in the line (`Sona.soundMark`), the word in a soft teal highlight.
+  Every line keeps adventures.js's rules (120 characters, no name, no sound
+  named, nothing about how to talk, no grade word), and none says "say".
+- **Which child gets which** (`_talkDay()`): the first of the child's
+  practice sounds (`rotSounds()`: homework first, then the family's picks)
+  that has a talking story; none, the lighthouse as before (a child on P, B,
+  M, N, T, D, V, J or the voiced TH). Setup's plan card names it as Day 1's book, after Fruit Slice, by the
+  same rule before the profile is saved (`Sona.day1For(sounds)`, one helper
+  `_talkFor` for both: "THE PLAN MOMENT", 31 Oct 2026); since that evening
+  a new child plays Fruit Slice first and meets the story on Home. A Day 1 already finished stays what it was: the finish keeps its
+  id (`t1` in `sona.quest.v1`), and a lighthouse finished before this build
+  (index 0 done, no `t1`) is still the lighthouse. Index 0 of the record is
+  still Day 1, so nothing else in the calendar (CAL1) moved. The story's id
+  is its own game key (`STORY_KEYS`), opened by the story's rule
+  (`storyOpen()`); `Sona.storyDay(id)` finds a story by id for this child.
+  **`TALK_ON`** (`sona.js`) is the one off switch: false gives every child
+  the lighthouse again (a talking Day 1 already finished stays). The suites
+  that play the lighthouse as Day 1 set sessionStorage `sona.talkoff` for
+  their tab (adventuretest, storycoretest, homestorytest, and every story
+  game suite through `tests/_sayplaydevice.mjs`).
+- **The player** (`adventure.html`, with `saycheck.js` and
+  `talk-stories.js`): each page reads as before (Echo's line, the caption,
+  "Hear it"); when he finishes, Echo asks "Can you say... <word>." (the
+  books' word moment, SayCheck: a voice of the story's sound family, never
+  "the word was right"), a bubble over the card shows the word and **three
+  dots** (`STORY_SAY_TIMES`, the story games' number): the first two sayings
+  only paint ("2 more times!", no voice, no chime, the mic opens again), the
+  third cheers (the chime and confetti once the mic is closed, the word pops,
+  the picture bumps) and the page turns. Each saying heard is one play rep
+  (`gameRep`): 36 on a 5-8 Day 1 (it fills the default goal of 30 and opens
+  the chest, which the lighthouse day's 24 did not), 27 on a 3-4 one. Never
+  practice data. Silence never turns a page and is never a try (12 quiet
+  seconds close the mic; a tap listens again); three tries of the other
+  family turn the page kindly ("Great trying. Let's turn the page."); a
+  grown-up's yes to the mic comes first, inside the story, with the books'
+  words, and "Not now" or a refused mic reads the rest of the visit with
+  Next; the grown-ups' Skip turns one page with no word said; a hidden page
+  closes the mic, and coming back needs a tap. Nothing plays while the mic
+  listens (Echo's line holds it shut, `SayCheck.hold`). A tap on the picture
+  never turns a talking page.
+- **The day:** the intro's last page, heard (or turned by Skip, or by Next
+  with the mic off), finishes the day (`questEnd(<id>)`: one sticker) and
+  the ending plays straight on, no game and no "Tap to see what happens";
+  its last word opens the sticker card ("On Home to read again: <name>!").
+  Home's "Your games" row then holds the story itself: its replay
+  (`/adventure.html?again=1&story=<id>`, only once finished and open) tells
+  the whole story again, every page asking, and finishes nothing.
+- **Pictures:** `tools/art/adventure-prompts.json` has each story's prompts
+  (`talk: true`, its own lineup, no buddy spot); `gen-adventure.mjs --only
+  <id>` draws them and `cut-adventure.py <id>` cuts them, as Days 4-14's.
+  **Drawn the same day** (31 Oct 2026, once Travis renewed the key): every
+  page and each story's Home picture (`home-<id>.webp`), checked page by
+  page against its line and key word. Fizz's s04 and s05 were drawn again
+  so the fireflies sleep before the feather (the model still paints the
+  paper lanterns softly lit before s06 says they twinkle on: left, as a
+  nit). A picture that fails to load still shows its story's wash. No buddy
+  is laid over these pictures. Home's card plays a 3-second clip of each
+  since 4 Nov 2026 (TALKCLIP, under HOMEREEL1 below); the story's painted
+  Home picture is what it falls back to.
+- **For Rachel** (built on defaults until she answers; the PR lists every
+  word): every key word and line; three sayings a page; a child is asked
+  their sound's words whatever their age (the story games' rule, not the
+  books' `soundNorm` rule: a 4-year-old on R is asked R words, and setup
+  picks R for 2-4 year olds, the walkthrough of 31 Oct found); "xylophone"
+  (Z, spelled with an x); "fireworks" for F; S's "seashell" left out on
+  purpose (S then SH); a child the phone can't hear can finish Day 1 by a
+  grown-up's Skip or "Not now" (the lighthouse day could not be finished
+  without being heard).
+- **For Travis:** the ten stories and their titles; that the talking story
+  replaces the lighthouse for a child on R, S, L, Z, F, K, G, SH, CH or TH
+  (the lighthouse stays for the rest); the next sounds (J, V, the voiced
+  TH...); a Home clip for each.
+- **For Rachel, TALK2's too:** every key word of the five new stories (the
+  PR lists them), among them "color" (K before a vowel, with an R-coloured
+  end), "cocoa", "gopher" and "theater"; that a 3-4 year old on K or G now
+  meets a talking story where the lighthouse asked no K or G word on its
+  pages; and that the voiced TH ("this", "that") still has no story.
+`talkstorytest` plays it all.
+
+**Light the Way** (Day 1, `lighthouse.js`, `LIGHTHOUSE1`). A night sea under
+a soft veil; the word, said three times, lights the lamp; the finger moves a
+pool of light (drawn 56 px above a fingertip, or 0.8 of its radius if that is
+less, so the finger never covers it; on a mouse pointer) and HOLDS it on the
+lost boat: the boat's lantern blazes, it toots and chugs home. Ages 5-8:
+tugboat, rowboat, sailboat (a barrel decoy), banana boat (a sleepy whale),
+the teacup boat behind the cove rocks as a cloud covers the moon (the twist),
+bathtub (a rubber duck), the ferry behind fog banks (a buoy), then a sweep
+over the town lights twelve windows. Ages 3-4: five boats on a still, lighter
+sea with no decoys and a big pool, then six windows. A decoy lit is a funny
+reaction, a kind banner and one rung on the help ladder, nothing else. The
+ladder climbs with seconds of the finger SEARCHING (4, 8, 12; ages 3-4: 2, 4,
+6) or decoys lit (1, 2, 3), never with waiting, and at its top nearly any
+sweep finds the boat; nothing is ever found without a finger. Help pill:
+"Bright beam" (the pool doubles and the fog clears for 10 s). End card:
+"Every boat is home!" / "You lit the way through the fog." The lit windows
+are cut from `lighthouse-town-lit.webp`, identical to the sea outside them,
+and `lighthousetest`'s art part reads the pictures' own pixels.
+
+**Wind-Up Toys** (Day 2, `windup.js`, `WINDUP1`). The word pops the next
+toy's key out; the finger draws circles round the brass dial, either way
+(the winding is the angle swept round its centre, so a scribble does not
+wind), and LETS GO at the star on the spring meter: under 30% is no try; too
+little, the toy yawns and sits ("A little more winding!"); in the star it
+wakes with its trick and marches to the parade line; too much, a dizzy spin
+and the needle drops just under the star. Ages 5-8: bunny, frog, top,
+crocodile, then the cuckoo pops (the twist) and the top shelf's elephant,
+jack-in-the-box and hippo need more turns and a narrower star, then the
+giant music box's crank (about four circles, no star). Ages 3-4: no star and
+nothing to overdo; the meter only fills, and the toy wakes when it rings.
+Two ladders climb side by side: misses (a wider star, then the key catches in
+it, then any let-go past 30% wakes the toy) and seconds without a quarter
+turn (arrows and a moving dot, then rubbing winds, then any drag winds).
+Help pill: "Oil can" (every circle counts double and the star is wide for
+10 s). One finger owns the dial: a circling finger keeps it, but a touch that
+has not moved for 0.3 s gives way to a new one, with no try (a resting thumb
+used to own it for as long as it stayed down), and the dial losing focus
+drops an arrow-key hold. End card: "The parade is on!" / "You woke up every toy."
+
+**Puzzle Bridge** (Day 3, `bridge.js`, `BRIDGE1`). The bridge is drawn by
+the canvas, one sandstone body from the near bank to Blossom Island on
+`bridge-canyon-wide.webp`, so a stone always fits its own hole. The word
+calls a stone up out of the river, turned the wrong way; a tap (under 12 px
+and 300 ms) turns it a quarter turn, anything else slides it, and a round
+turn button does the same. The finger holding the stone keeps it: a second
+finger or a palm is ignored until it lets go (it used to take the stone's
+finger and leave the stone held for good, so the round could never end). On its hole the right way up it drops in and
+glows; the wrong way up it bobs back ("Almost! Give it a turn."), a miss; a
+drop anywhere else is not a miss. Ages 5-8: L, T, boot, arrow, step, hook,
+half-moon, then the heart keystone at the top; from word 5 the river rises
+and each stone swims a slow loop in the water. The camera follows the gap (a
+hole at least 30% of the board's width) and pulls back to the whole bridge
+for the finale. Ages 3-4: circle, square, triangle, star, moon, heart, the
+right way round, two holes open at a time, a bounce back from the wrong one.
+Ladder: misses or seconds of trying (a ghost of the stone in the hole, then
+the hole glows and an arrow says which way and how many taps, then a drop
+near the hole turns it into place). Help pill: "Calm river" (the river goes
+glassy, the stone still, the ghost shows, 10 s). End card: "The bridge is
+whole again!" / "Every stone is back where it belongs."
+
+**What the three games keep** (each its own suite, and every Say & Play
+rule): the word, said three times (two until 23 Oct 2026), earns each step
+and the finger makes it;
+silence earns nothing; the step counts 1.15 s after the cheer, on a live page
+only; the help ladder resets with each word and never finishes a move by
+itself; Echo's directions go through `api.instruct` from `STEP_LINES` (ages
+5-8) and `LITTLE_LINES` (ages 3-4), with "Hear what to do"; the optional help
+pill asks the word again through `api.practice()`, and silence or "Back to
+the game" gives the move back with no power; every painted picture has a
+drawn stand-in; Reduce Motion cuts or fades; keyboard play works; the game
+file never touches storage, reps, coins or stickers; the game's own sounds
+are media in the app. Words that fit the story (`GAME_WORDS`: boat, moon,
+key, toy, rock…) are asked on words 1, 4 and 7 (1 and 4 for ages 3-4) when
+the child's sound has one; homework words win.
+
+**For Rachel** (built on defaults until she answers; the PR body lists every
+line a child hears):
+- What a story game asks: the child's own sound at the start of a word, said
+  on its own, homework first; the story words on words 1, 4 and 7 (the
+  `GAME_WORDS` table for `lighthouse`, `windup`, `bridge`; "river" left out on
+  purpose).
+- Three sayings a word for both ages since 23 Oct 2026, Travis's call (24 a
+  day for 5-8, 18 for 3-4 on Days 1-3 and 15 on Days 4-14; it was two, and
+  the other Say & Play games still ask two, Bubble Pop once). One number,
+  `STORY_SAY_TIMES` in `sona.js`, changes every story game (and its words
+  must follow: `storygametest` pins them).
+- The day is light on speaking: 24 sayings (18 for ages 3-4, 15 on Days
+  4-14) against a daily goal of 30 (setup's 5 minutes, the default; 60 or
+  90 for 10 or 15 minutes); the story pictures ask for nothing.
+- The games do not check the age a sound is usually learned: a four-year-old
+  whose family picked R gets R words, as in Bubble Pop.
+- A child the phone cannot hear cannot finish the day: only a heard voice
+  moves the game, and there is no skip to the ending.
+- "Heard" means a voice of the right kind, not the right word; nothing here
+  is practice data or a grade.
+- Day 3's "When they hear a word, up they float!" frames the word as calling
+  the stones; every story line, each game's 14 directions and its two
+  start-card lines are hers to read.
+- What the pictures show a child: a sneeze and a walrus with a cold, toys
+  asleep after a party, a bridge broken by a storm.
+
+**For Travis** (defaults he did not pick, to judge on his phone):
+- Day 2's finger move (the spec's alternative was cloud-sheep herding).
+- A phone that cannot buy gets the game of the day; a family who keeps the
+  free version on a phone that can buy sees the story locked.
+- Once all 14 stories are finished the card is the game of the day again,
+  "Today's adventure" with no day number. A skipped story comes back after
+  the others (CAL1), but a finished one is told once: starting the stories
+  again after all 14 would be one change in `_questOn()`, and is his call
+  (today a finished story is never on Home again, and the game of the day
+  goes on for good).
+- **The helper map's stars (CAL1; reworded 29 Oct 2026, Travis: "keep
+  going" to the offer).** Since stories come in any order, no line counts
+  the stars any more: each ending's last line names the new star and,
+  where it fits, its place ("A gold star for the bridge on our helper
+  map!", "Another gold star for our helper map!"), never a number,
+  "first" or "all" (Day 1's said "its first gold star", Day 14's "Fourteen
+  gold stars … all shining bright"). The lines that leaned on an earlier
+  story stand on their own: Day 2's Pelly "is here", not "is back", and
+  its Captain Wally is "from the lighthouse" (his glasses joke from Day 1
+  is gone); Day 3's Captain Wally is "from the lighthouse"; Day 6's
+  Grandpa Bear is "from the toy shop"; Day 12's letter is from "Frog the
+  drummer", not "our friend Frog"; Day 14's Pelly brings "a letter", not
+  "another". Kept on purpose: Day 14's "Just like our adventures!" (ages
+  5-8; by then a child has seen the other stories' cards) and every
+  "Pelly" opener. `adventuretest` fails if a line counts the stars or says
+  "is back with", "our friend", "another letter" or "with his glasses on"
+  again. **What is left, Travis's and Rachel's:** the map PICTURES still
+  show the Day number's stars (Day 7's shows seven), so a child who
+  skipped days sees more stars than they earned, and a skipped Day 1
+  finished last shows a map with one star. Showing only a child's own
+  stars needs each map painted again without the stars laid on (the raw
+  pictures are not in the repo, `tools/art/out/` is ignored), and the
+  player laying stars on by `cut-adventure.py`'s `STARS` places; a
+  separate job. Every new word is theirs to change.
+- A finished story is not on Home again; its game is, in "Your games"
+  (FOUND1).
+- Under Reduce Motion both games hold still: Light the Way's boats stay on
+  their spots (the teacup's peek is a cut) and Puzzle Bridge's stones do not
+  swim.
+- Every speed, hold time, pool and star size, help timing and sound level
+  (`MEDIA_PEAK` 0.4 in each game, set without a phone to listen on); Light the
+  Way's moon (moved low so the top bar never covers it) and its brass rail
+  across a phone; Wind-Up Toys' Grandpa Bear half hidden behind a wide toy,
+  the buddy's small drawn shelf and the cuckoo's drawn doors; Puzzle Bridge's
+  hump, the ages 3-4 stones floating over the rail, the friends' size and the
+  flood's darkness.
+- Two pages to redraw first if anyone minds: Day 1's e02 (the rowboat's crew
+  reads as bunnies) and Day 2's e01 (a bear in the crowd could be Grandpa
+  Bear); and the night pages on a real phone in a dark room.
+- Before "merge": play all three games on his phone, look at
+  `design/adventure/review.html`, and listen to the recorded lines with Rachel
+  once they exist.
+
+**Days 4-14: Codex's games in the story** (22 Oct 2026). Codex built eleven
+physical games (`public/daily-adventures/<key>.js` and `.css`,
+`window.DailyAdventureGames[key]`, each with its own suite `daily-<key>test`
+on its test host `tests/fixtures/daily-adventure.html`; Codex's record of
+them is `design/daily-adventures/INTEGRATION.md`, the plan `STORY-PLAN.md`).
+Claude joined them to the story:
+- **One page for all eleven games, `public/story-game.html?story=<id>`.**
+  `STORY_DAYS` gives each of Days 4-14 a `controller` (its key in
+  `DailyAdventureGames`) and that page. Day 7's id is `frontdoor`, because
+  Day 3 owns `bridge`; its controller is still Codex's `bridge`. The page asks
+  `gameAccess()` before it puts the game's files on the page, so a family
+  without the story, an unknown id or anything after `?story=<id>` goes Home
+  before any file, mic or sound; it hands the game five moves for ages 3-4
+  and eight for 5-8 (the games' contract: ages 3-4 say FIVE words a day here,
+  six on Days 1-3); its end card's one button is "See what happens!" to the
+  story's ending, with no Play again; the engine's end card finishes the day
+  (`questEnd`). It writes nothing of its own.
+- **One shell, one copy of the words.** The page's body is the test host's,
+  element for element, and both load `public/daily-adventures/host.css`
+  after the game's own sheet (the order every fit was measured in); every
+  game's words (title, start card, help pill, banner, canvas label, end card)
+  are `public/daily-adventures/pages.js`, which the page and the test host
+  both read. `storygametest` holds the two bodies equal. The test host serves
+  `sona.js` without any story day whose game is its key, so a game is still
+  tested alone through the catalog gate it was verified on. A game relabels
+  its own help pill while playing (pages.js's `helpText` is only its first
+  paint).
+- **The story around each game is Days 1-3's format, in `adventures.js`:**
+  Pelly's letter (a new wrong thing every day: a striped sock, a teapot, a
+  pinecone, a toothbrush, a carrot, a mitten, an umbrella, a wooden spoon, a
+  sandwich, a pancake, a fluffy slipper), the problem, "Let's go!", the game,
+  the ending, and a gold star (the map shows the Day number's worth: on
+  Days 5-14 the model draws the whole map with the one star Echo
+  presses (Day 4's was drawn with its four),
+  and `cut-adventure.py`'s `STARS` lays the days before's stars on its
+  places, the game's own glossy star, as Days 1-3's maps got theirs; since
+  29 Oct 2026 the words name no number, see "The helper map's stars" under
+  "For Travis"). Eight scenes and four endings for 5-8, six
+  and three for 3-4, every line under the story-line rules. Pictures in
+  `public/assets/adventure/<id>/`, Home's `home-<id>.webp`, drawn by
+  `tools/art/gen-adventure.mjs` from `adventure-prompts.json` (a later story
+  names its own `lineups` and `who`; every opening page is told it shows
+  the problem, not the fix) and checked page by page before cutting.
+  One cast across the run: Day 9's Frog is Day 12's drummer, Day 9's Badger
+  is Day 6's Baker Badger off duty; Gardener Mouse (Day 4) and Mouse (Day 5)
+  look different; Day 7's Tortoise is not Day 3's Grandma Tortoise.
+- **Not used in the app:** Codex's three acts and endings in `stories.js`
+  (its planning record, now `ready: true`) and the narration adapter
+  `narration.js` (story cards that would stop a game at its 2nd and 6th
+  word): no app page loads either; their suites still run. No story card
+  interrupts a game.
+- **For Rachel:** every line a child hears, in the PR body; the eleven games'
+  directions (`voicedoc` B7-B8, 124 lines: 11 in B7,
+  113 in B8), among them a few to look at:
+  Rooftops' "The gutter brings every missed seed back", Postboat's "Steer
+  beside the right dock", Concert's "Your sounds are safe" (in a speech app),
+  Nest Lift's "Hold Up to lift"; ages 3-4 say five words, not six; the games
+  ask the child's own sound like every Say & Play game (no story words in
+  `GAME_WORDS` for Days 4-14).
+- **For Travis:** the two-week rotation (above); repeats only the games could
+  change (two bridge days, 3 and 7; two new front doors, 5 and 7; "too big
+  for the stairs" on 11 and 13); the games' own pictures stay Codex's painted
+  look beside the clay story pages; every new character and joke the stories
+  invented (each story's notes, in the PR).
+
+**FOUND1: every story leaves its game behind** (23 Oct 2026; Travis asked
+for "things to unlock so that kids want to be coming back every single day
+... I want to unlock like games, like a mystery game", then "you can make
+the executive decision and start going"). Four reviewers (kid pull,
+simplicity, fairness to kids, reuse) each came back with this one idea:
+- **Your games.** Under Home's two doors, once a story is finished: the
+  games the child's finished stories left, newest first, each its story's
+  Home picture and its game's `name` (`STORY_DAYS`, short: "Light the Way",
+  "Waterwheel", "Bridge Builder"…); the one found today wears a teal "New!".
+  A tap plays it again: `again`, the story's page with `?again=1` (Days 1-3's
+  own pages) or `&again=1` (`story-game.html`). `Sona.storyFound()` is the
+  list (read only; nothing new stored: finished stories are `f`, in the
+  order they were finished, so the row's newest first is the last one found;
+  per child, in backups); `Sona.storyReplay(id)` says whether one may be played, by the
+  story's rule (`storyOpen()`). Without it there is no row at all, never a
+  grey tile (a tap on one would open the price in front of a child).
+- **A replay is a game like any other:** Play again and Back home, no
+  hand-back to the story, and its round finishes nothing (`questEnd` answers
+  only today's open story). Its page sends "story game replayed" `{ game }`
+  in place of "game opened". A replay address for a story not finished yet
+  goes Home before anything is put on the page: that game is still the
+  story's surprise. A replay page brought back from the browser's cache
+  reloads, so the checks run again for whichever child is on the phone now
+  (its Play again would otherwise finish another child's story day). Still
+  not in the catalog: no shelf, picks row, setup
+  grid, website count, level or Best.
+- **Tomorrow's game is the mystery:** a finished day's card still shows
+  tomorrow's poster dark (HOMECLIP1: the first frame of tomorrow's game, or
+  the story's picture before the poster lands), and now says "Come back tomorrow for Day N
+  and a new game!" (only while `storyOpen()`: a story shown locked tomorrow
+  brings no game, so that card says "Come back tomorrow for Day N!"). The
+  same order for every child, never random, never bought.
+- **The ending says where the game went:** the sticker card adds the game's
+  Home picture and "New game on Home: <name>!" (read only).
+- **The gift button** took the place of the reps count in the top corner and
+  the Trophy Road card (see "Trophies, coins and the Trophy Road").
+- **Executive calls, Travis's to change:** story games stay on Home; the
+  reps count left Home for the ring (grown-ups lost a one-tap path to
+  Progress: it is Grown-ups, then the Progress tab, where today's count now
+  sits under the daily goal); the doors stay (the
+  plan's one row with "All games" and "Books" as tiles was not built).
+  **Not built yet:** new stories after Day 14 (about one a week, and holiday
+  stories that show only in their month, whose games stay once found: a
+  holiday-only game needs a line in the Terms, which promise Premium "every
+  new game"), and the Arcade's own-age-first shelf with "More games".
+- **For Rachel:** replaying a story game means more sayings of the child's
+  sound (play, never practice data); whether that wants a limit is hers. A
+  child the phone cannot hear can never finish a story, so never finds its
+  game; whether a grown-up may finish it for them is hers too.
+`homestorytest` (the row), `storycoretest` (the list and the replay rule),
+`storygametest` (every replay page), `lighthousefittest`, `bridgefittest`
+and `windupreplaytest` (a Days 1-3 replay played to its end card twice:
+Play again starts a clean round and finishes nothing), `adventuretest` (the
+ending's line), `roadtest` and `repweektest` (the gift button, and today's
+count on Progress) play it.
+
+`storycoretest` (the rules in `sona.js`, the offer, the hand-back),
+`homestorytest` (Home), `adventuretest` (the player; run as
+`adventureplaytest` and `adventurespotstest`, the buddy's spots at an iPad),
+`storygametest` (Days
+4-14's page and Day 4 played through), `lighthousetest` (run as
+`lighthouseplaytest`, `lighthousehelptest`, `lighthousefittest`),
+`winduptest` (and `windupreplaytest`) and `bridgetest` (run as
+`bridgeplaytest`, `bridgelittletest`, `bridgefittest`) play it; `shiptest` checks every picture and the voice
+manifest, `loadtest` the colours, and `node tools/voicedoc.mjs --check` every
+line (B7-B9).
+
+## Home: today's story, the Arcade and the Books
+**Home leads with today's story; every game is one tap away in the Arcade**
+(STORY1, 22 Oct 2026; Home was the silent Play library from 24 Sep 2026).
+`today.html` is one page with two views, `#libraryApp[data-view="home" |
+"arcade"]`: every block is built once on load, as before, and the view only
+decides what shows (hidden on the view's wrapper, never by a block's own
+`hidden`, which `paintQuest`, `paintFound` and the preview notice set
+themselves), so there is still one copy of the game card, `launch()`, the
+offer, the level sheet, the grown-ups check and "Home opens the offer once".
+- **Home** (`/today.html`): the Play Map (PLAYMAP1, below): "Let's
+  explore." (its first h1) beside Echo at the start of a trail, the day's
+  card on the trail (`#questCard`, see "Daily story (STORY1)" and "The day's reel" below:
+  a tall 3:4 clip of the game the child will play, with "Day N", the title,
+  a 64 px teal play button and the hook line over its foot, a "Premium" tag
+  top right without it; done: tomorrow's poster dark, "Day 1 done!" and
+  "Come back tomorrow for Day 2 and a new game!" ("…for Day 2!" when
+  tomorrow's story is shown locked), or "Come back tomorrow for a new
+  adventure!"), two
+  doors (`#homeDoors`: **Arcade**, `home-arcade.webp` and "All the games";
+  **Books**, `home-books.webp` and its tag ("Free", "Included", "1 free
+  book" or "Premium"), the one way to the bookshelf since the Arcade lost
+  its Books card), then "Your games" (FOUND1, below; only once a story is
+  finished).
+- **The day's reel (HOMECLIP1, 28 Oct 2026)** (Travis: "a home screen
+  refresh where the daily practice is taking up more of the screen so the
+  games and books are lower and the daily practice is like a 3 second reel
+  essentially of the game that the child will play"; he chose the game clip
+  with the story's title over it). The card is the page's one big thing: a
+  3:4 picture across the page (at most 480 px wide and centred on an iPad)
+  holding one muted, looping, inline `<video>` of
+  `/assets/home/reel/<game>.mp4`, where `<game>` is `questToday().game` (the
+  story's own game on a story day, today's game on a game day), over its
+  poster `<game>.webp` (the clip's first frame) in an `<img>`, over the
+  picture the card had before (the story's painted Home picture or the
+  game's Home card), then Echo on the story's colour. A warm dark gradient
+  under the words keeps them readable. The video is shown only once it is
+  really playing, so a missing file, a refused play (Low Power Mode) or a
+  phone with no H.264 shows the poster, never a black frame. It never
+  plays under Reduce Motion (also when that changes while Home is open), on
+  a done day (tomorrow's poster, dark, with no video loaded), with the
+  data saver on, on a hidden page or in the Arcade; it has no sound track
+  and takes no tap (`pointer-events:none`: the card's tap is unchanged).
+  The clips are real play, filmed frame by frame (HOMEREEL1, below). The Arcade door sets `history.scrollRestoration="manual"`,
+  because with the taller card a child who scrolled to the doors came back
+  from "‹ Home" halfway down the page; leaving the page (a game, the price)
+  sets it back to "auto", so Back from a game opens the Arcade where the
+  child was. **At midnight with Home in front** (an iPad left on it all
+  night) Home reloads by itself just after twelve, as it does when it comes
+  back to the front on a new day: since CAL1 the day's story moves on then,
+  and a card left from yesterday would open today's story under
+  yesterday's title. **Defaults Travis did not pick:** the
+  dark gradient (not a cream one), the 480 px cap on an iPad, and the data
+  saver showing the poster only. (Until 1 Nov 2026 the doors and the New!
+  game fell below the first screen on smaller phones; Home is one screen
+  now, "Home is one screen" below.)
+  The top bar is the buddy, the gift button and Grown-ups. On a phone the doors are tiles with the
+  picture as a 2:1 band on top (the Arcade picture's game things sit at its
+  edges, so it is never cut to a square); on an iPad, rows with a 3:2
+  picture. The card's tap stays exactly
+  `card.onclick=function(){if(done)return;launch(game);}`; on a story day
+  `game` is `{ kind: "story", key: "adventure", go: "/adventure.html", tier:
+  "premium" }`, so `launch()` opens it, or opens the price where Sona sells.
+- **The Play Map (PLAYMAP1, 31 Oct 2026)** (Travis, of a mock: "yes build
+  play map with those changes"). Home is a little world on a soft mint
+  board (`#homeMap`): Echo stands at the start of a dotted trail beside the
+  heading **"Let's explore."**; the trail carries **one gold star for each
+  story this child has finished** (`Sona.storyFound()`, read only, nothing
+  stored: the one finished today a little bigger, with a glow; a long trail
+  zigzags), dives into **today's card** under a "Today" flag, comes out
+  under it and ends at **tomorrow, a dark pill with a lock** ("Tomorrow").
+  The Arcade and Books doors come right under the board, then "Your games".
+  Travis's changes to the mock, all kept: the story stays big (the card
+  above, the trail's centrepiece, not the mock's small circle; its tap
+  unchanged); the stars are real progress, never a count ("3 of 14"), a
+  streak word or a timer; **no sound switch** (the mock had one: a child
+  never changes their sound on Home, and Home does not show it); less
+  empty space (since 1 Nov 2026 all of Home is one screen); the top
+  bar as it was. The trail, its stars, two leaves and a cloud are drawn on
+  the phone (`paintTrail`, last in every `fitHome`) from where Echo, the
+  card, the flag and the pill landed, as inline SVG: aria-hidden, no tap,
+  nothing moves, no new painted art, every colour in `crafted-home.css`.
+  **Travis's to change:** the heading "Let's explore.", the trail's look
+  (the mint board, the sand road and its dots, the leaves and the cloud),
+  where the stars sit (between Echo and the flag, evenly) and the words
+  "Today" and "Tomorrow"; the doors still say "Arcade" and "Books" (the
+  mock said "Games": one word in `today.html`). **Defaults he did not
+  pick:** a family whose stories are locked now (free days over) still
+  sees the stars it earned (they open nothing); on a game day after Day 14
+  the trail shows all fourteen. `homestorytest` ("the Play Map") pins it.
+- **The Arcade** (`/today.html?view=arcade`): "‹ Home", then "Pick a game!",
+  Today's picks (two games), the two shelves, the age note, Best tags, level
+  badges, the locked note and the price on a grey tap. **Games only, one row
+  on top** (Travis, 23 Oct 2026: "organize the arcade so that there are no
+  books in there ... I like how arcade shows 2 games per row. Let's also do
+  that for simple play ... depending on the age they choose, have those
+  games appear first ... I only want either today's picks or limited time
+  ... have 2 games listed there, and then go directly to either simple play
+  or arcade"; he left the row to us):
+  - **No books:** no Books card and no book in any row; the bookshelf is
+    Home's Books door. `HOME_BOOKS` (the books the top rows could show) is
+    gone from `sona.js`; the bookshelf keeps every book and its own
+    limited-time ones (`Sona.seasonPick`).
+  - **One row, Today's picks:** two games of the first shelf under it (the
+    child's own age group, `playStyle()`, or Simple play while no age is
+    set), one from each half of that shelf, new each day, stable
+    for the day, read only, the same for a child whatever their name and
+    different for a brother or sister (`activityLibrary().picks`,
+    `Sona.homePicks`). If neither opens for a family, one is swapped for an
+    open game. **What's new and Limited time are gone** (`activityLibrary()`
+    has no `featured`): Limited time only ever held the Halloween books, and
+    calling an everyday game "limited" would not be true. A real
+    limited-time game, if one is ever made, needs a row again (Travis's
+    call). The row is a two-column grid at every width, the shelves' wide
+    pictures.
+  - **The child's own age group's shelf first** (already so since 21 Sep
+    2026): ages 2-4 Simple play then Arcade, 5 and up Arcade then Simple
+    play, no age yet Simple play first; "For your child" on theirs.
+  - **Simple play is two to a row, like Arcade** (it was all full-width
+    rows): see "Coming soon games are hidden" for the count rule.
+  - **For Rachel:** nothing a child says changes; the picks no longer bring
+    up a book in the child's sound (a book word is play, never practice).
+- **Moving between them.** The Arcade door pushes `?view=arcade` and switches
+  at once, and for 500 ms after the Arcade door or "‹ Home" no tap on the
+  page does anything (a double tap's second tap used to open whatever the new
+  view put under the finger: a card in Today's picks, or the price); "‹ Home" goes back if it was pushed, else replaces the address;
+  Back and Forward read the address again. `?locked=` opens the Arcade with
+  its note. `activities.html` (old links) adds `view=arcade` unless the
+  address has `view=` or `locked=`, keeping the rest of it. Titles: "Sona" on
+  Home, "Sona — Play library" in the Arcade. **Every game's exit, the price's
+  X, setup's end and `firstGameEnd` still go to plain `/today.html`, which is
+  Home:** after any game a child lands on Home, not back in the Arcade
+  (Travis's to change: a tab-only marker could return them).
+- **Home is one screen: nothing scrolls up or down** (Travis, 1 Nov 2026,
+  of a recording of Home sliding up and down on his phone: "I don't like
+  how this homepage can scroll up and down. Just make it one ... flat
+  screen ... There's nothing that makes being able to scroll up and down
+  helpful"). The top bar, the board (heading, the day's card, tomorrow),
+  the Arcade and Books doors and "Your games" are all on the screen, above
+  the home bar, and the page does not move (`html.home-flat`: overflow
+  hidden, set only while Home fits; the Arcade still scrolls). **The fit
+  is measured, never guessed** (`fitHome`): the card's picture takes the
+  room left, set in pixels, 3:4 at most. The card comes first: while it
+  would be flatter than 4:3 the rest makes room one step at a time
+  (`fit1`…`fit6`: "Your games" smaller, the board's head and foot, the
+  doors' pictures to 5:2, the words on the card, "Your games"' heading
+  read but not drawn, then the card's words higher on their shade). With every step taken the card may go flatter than
+  4:3 as long as its words still sit on it (on a finished day, with no
+  play button, a short strip on the smallest screens); on an iPad it
+  narrows instead, staying 4:3. The trail's stars stay between the heading
+  and the card on a short board head. One screen at 375×667 (an iPhone SE
+  in the app), 390×844, 430×932, Travis's iPhone 16 Pro in the app, an
+  iPhone SE on the website (375×553) on any day but one still to play with
+  "Your games", 768×1024 and an iPad on its side, in every state. **A
+  finished day's line can be two lines on the SE** ("Come back tomorrow for
+  Day 12 and a new game!" always; Day 2's had half a pixel to spare, and
+  GitHub's test browser wrapped it): the sixth step (`fit6`, 3 Nov 2026)
+  lifts the card's words on their shade so the page still fits; without it
+  Home scrolled there with the card back at 4:3. **The fit has a few pixels
+  to spare, so the suites lay text out as an iPhone does** (every letter at
+  its own fractional width, `tests/_env.mjs`: `--font-render-hinting=none`
+  and an adopted `*{text-rendering:geometricPrecision}` sheet). CI's
+  headless Chromium snapped letters to whole pixels, about 5% wider, so a
+  game name in "Your games" wrapped there alone and `homestorytest` failed
+  on main from 1 Nov to 3 Nov 2026 while every local run passed. **Only a screen too
+  short for all of it scrolls**, with every step taken and nothing cut off,
+  the card 4:3 (or as tall as its words need): a 4-inch phone (320×568)
+  with "Your games", a long title, or the website's founding banner on a
+  finished day (the banner alone fits since `fit6`), the SE on the website
+  with "Your games" on a day still to play, a phone on its side. Every button at
+  least 44 px. A turn or any change of window size re-fits while Home is
+  one screen (nothing scrolls, so Safari's bars never fold away under a
+  finger); a page that scrolls re-fits only on a new width, as before.
+  **Travis's to know:** on a phone where "Your games" shows, the day's card
+  is shorter than on a fresh day (about square on his phone), since
+  everything shares one screen.
+
+Setup finishes in the first game, Fruit Slice for every age since 31 Oct 2026
+(see "The ask happens after the product proves itself" and "THE PLAN MOMENT,
+THEN STRAIGHT INTO A GAME"; that morning it opened today's story), and every
+visit after that opens on Home. **Home is silent and only reads:** on load, on coming back
+to the front and between the views it writes nothing, sends nothing and
+speaks nothing, and its source never says `questEnd`, comments included
+(the one exception is sona.js's own: the first load that finds a set-up
+child with no story calendar writes its first day, once, CAL1).
+There is no old adventure-map Home or menu narration. Voice remains inside
+deliberate game/practice sessions (setup's "Hear Echo", from 22 to 23 Oct
+2026, is gone: setup makes no sound). Parent settings, progress, profiles,
+earned coins (now visible on the Trophy Road, and spent in the Buddy Shop),
+homework and entitlement sync remain available. Home's way to the Trophy
+Road is the gift button in the top bar (read-only, FOUND1); the Arcade's cards carry a level badge on
+their picture, and a level sheet opens only from a tap (see "Trophies, coins
+and the Trophy Road" and "Levels inside games"). `homestorytest` pins Home;
+`activitytest`, `fittest`, `homepickstest` and the rest play the Arcade.
 
 **The fuller books** (Travis, 26 Sep 2026: "do one for each letter"): one
 twelve-page story per sound, first on each sound's shelf in `library.html`.
@@ -1588,7 +3547,7 @@ draws over hand-made art and refuses a book name it doesn't build;
 book-picture path any page uses.
 **The books are on** (Travis, 26 Sep 2026: "yes turn them on"), and **one is
 free** (30 Sep 2026: "one book uh so like the letter r book ... to be free and
-the rest is grayed out"). Home's Books card always opens `library.html` and
+the rest is grayed out"). Home's Books door always opens `library.html` and
 says "1 free book" to a family without Premium. On the shelf each book asks
 `Sona.bookLocked(title)`: the books in `FREE_BOOKS` (Rory and the Rainbow) are
 open in every pricing state, marked "Free" while others are locked; every
@@ -1609,18 +3568,20 @@ in `STORIES` carries `opens`; the shelf's `opens` support stays, so a future
 book can still wait for a day ("Coming Oct 9"). The six-page books (painted,
 see below) sit after every twelve-page one in `STORIES`: they put the sound
 anywhere in a word and are last in line to be redone. A limited-time book
-carries `season` instead and is on the shelf, and Home's Limited time row,
-only inside its window. **Halloween (October 2026) has one for six sounds**
+carries `season` instead and is on the shelf only inside its window (Home's
+Limited time row showed it too until 23 Oct 2026, when the Arcade lost its
+books). **Halloween (October 2026) has one for six sounds**
 (Travis, 2 Oct 2026: "take a popular book like the halloween and make a
 version for other letter even just the popular ones like r s l z f"): Boo the
 Bat (B, `anySound`), Rory the Rabbit (R), Sid the Seagull (S), Leon's
 Trick-or-Treat Night (L), Zoe the Zebra (Z) and Finn the Fish (F), each
 starring that sound's own hero under the same sound rule. A child sees the
 one in their own sound; a child whose sounds have none sees Boo
-(`Sona.seasonPick`, which the shelf and Home both ask); play mode and a child
-with no sounds yet see them all. Home's card,
-the website and the Premium page say "new ones on the way", never "every
-week", "a book for every sound" or a weekday. `readtest` pins that nothing
+(`Sona.seasonPick`, which the bookshelf asks; Home's Limited time row did too
+until 23 Oct 2026); play mode and a child with no sounds yet see them all.
+The Premium page and the plan screen say "new ones on the way" (the Arcade's
+Books card did too until 23 Oct 2026; Home's Books door carries no line),
+never "every week", "a book for every sound" or a weekday. `readtest` pins that nothing
 waits; `landingtest` the website's count.
 
 **The other sounds' books wait behind "More books"** (Travis, 1 Oct 2026: "it
@@ -1640,10 +3601,8 @@ made is live"), and the free book first when their own have nothing to read.
 (`Sona.rotSound()`) sees the S books first, then the R ones. Only the order
 moves, inside "readable, then Premium", so without Premium the free book
 still leads; a homework sound that is not one of the child's own brings no
-books up. Home's What's new row
-follows the same rule: books in the child's own sounds only, that sound's
-first (`HOME_BOOKS` in sona.js names each book's sound; play mode and a child
-with no sounds yet see them all). Under the shelf sits one cream pill, "More
+books up. (Home's What's new row followed the same rule until 23 Oct 2026,
+when the Arcade lost its books.) Under the shelf sits one cream pill, "More
 books (N)", N being how many books are behind it for this child, closed on every
 load with nothing remembered; a tap opens "Books for other sounds", every
 in-season book the top shelf left off, and a second tap closes it. **The other
@@ -1730,6 +3689,102 @@ objects live in `public/assets/crafted/`, each surface's styles in
 Real controls and game objects stay HTML and canvas; a picture is never the
 interface. New art in this style comes from an image model (Travis generates
 it in ChatGPT); the twelve-page books are still the simpler drawings.
+
+**Setup's game reel is real play, filmed (SETUPREEL1, 22 Oct 2026; three
+clips of the sound power since 23 Oct 2026)** (Travis: "Do like a little clip
+of a few games so that parents can see it"; then "rotate through fruit slice,
+piano tiles, and Flappy Glide ... they're saying ... the letter R ... And then
+the game slows down ... a 3-second of those three games"). The clips on
+setup's "Practice through play." screen are
+`public/assets/setup/reel/<key>.mp4`, each with a poster `<key>.webp` (its
+first frame): slice, tiles, glide. Nothing in them is drawn or edited:
+`tools/setupreel/record.mjs` (run by hand, never in the battery; its header
+says how; its machinery, `tools/setupreel/kit.mjs`, is shared with Home's
+recorder, HOMEREEL1) opens each game page as it is on `tools/appstore/capture.mjs`'s
+fake phone, plays it with the page's own controls and the fake microphone,
+and films one 1/30 s frame at a time on Playwright's virtual clock. **Each
+clip shows the sound power, earned the way a child earns it:** about a
+second of play, Echo's own mid-round ask (started by the page's own ask
+clock, no tap), the fake mic saying "rrrr", the page's own check saying yes,
+and then the game slowed (Super Slice, slow keys, the slow help) with the
+finger still playing; every heart kept. The game slows about 1.3 s after the
+sound is heard (the page's listening check and the mic's settle); the
+tool reports both moments (`say` 1.0 s, `slow` about 2.3 s), which setup's
+caption followed for a few hours on 23 Oct 2026 and no longer reads (the
+game's own top bar says it). A clip is 4.0 s,
+540×1080 (1:2, the whole game under the status bar, so setup can fill the
+screen with it), H.264 High, no audio track (it can never make a sound), moov
+first, tagged BT.709, at most 400 KB, its poster at most 80 KB. The tool stops
+on a clip or poster over budget, a crop that leaves the screen, or the
+child's name in the page's text in any frame (a word drawn on a canvas it
+cannot see: check the sheets). `setupreeltest` holds the files, that `KEYS`
+is its list and `REEL_ORDER` the same three, and that every game on it is
+playable, never a Coming soon one. **A new game on the reel** is a scene in
+`record.mjs`, its key in `KEYS` and in the test's `REEL`, and setup's
+`REEL_ORDER`; run the tool alone (it is CPU heavy, port
+9303) and look at every contact sheet in `tools/setupreel/out/sheets/` before
+committing a clip. **Travis's calls:** the three games, the moments, the 4 s,
+the crops. **Rachel's:** every clip is on R (since 23 Oct 2026 nothing on
+setup says R is only an example), so a parent of a 2–4 year old sees R asked and earned, a sound not
+asked of that age, and the clips show the reward a child earns by saying the
+sound.
+
+**Home's day card plays real play too (HOMEREEL1, 28 Oct 2026)** (Travis:
+"the daily practice is like a 3 second reel essentially of the game that the
+child will play"). The card's clips are `public/assets/home/reel/<game>.mp4`,
+each with a poster `<game>.webp` (its first frame), one for every game the
+card can hold: the fourteen story days' games (`STORY_DAYS`' `game`) and the
+eleven games of the day (`QUEST_DAYS`). The story games' clips (about 3 to
+3.5 s) are filmed by `tools/homereel/record.mjs`: one move of the game, a
+word just heard (said three times, as every story game asks) and the finger
+playing it to the moment it pays off (a boat found and tooting home, a toy
+wound, a stone dropping into its hole), cut so the loop starts on the play;
+never a start card, an end card, a wait for a word or the turn panel, and
+Echo's mid-round asks held. The games of the day's clips (4 s) are the 3:4
+ones setup's recorder filmed before setup went to 1:2 (in git at the commit
+before 09d8f1b), copied in. A clip is 540×720 (3:4), H.264 High 4.0 (what
+Home's `canPlayType('video/mp4; codecs="avc1.640028"')` asks), 2.5 to 4 s,
+no audio track, moov first, tagged BT.709, at most 300 KB, its poster at
+most 60 KB. Both recorders film through one machinery,
+`tools/setupreel/kit.mjs` (the virtual clock, the fake phone, the crop, the
+child's-name check, the encode and the budgets), so a Home clip is made
+exactly as setup's are; each recorder gives it its frame, its budgets and
+its scenes. `homereeltest` holds the files: every game either list can name
+has its clip and poster, and the folder holds nothing else, so a new story
+day or a new game of the day fails it until its clip is filmed. **A new
+story day** is a scene in `tools/homereel/record.mjs` and a key in its
+`KEYS`; run it alone (CPU heavy, port 9304) and look at every contact sheet
+in `tools/homereel/out/sheets/` before committing a clip. **Travis's
+calls:** which moment each clip shows, the crops, about 3 s a clip.
+**Rachel's:** nothing here asks a child anything new; every clip is on R
+and shows the reward a child earns by saying the word (the move itself).
+
+**The talking Day 1 stories have their clips too (TALKCLIP, 4 Nov 2026)**
+(Travis, yes to "make Home's Day 1 card move for the talking stories": "merge
+and go"). A talking story is its own game key (`STORY_TALK`'s `id`, TALK1),
+so Home already asked for `/assets/home/reel/<id>.mp4` on its day and, with
+none, showed the painted picture still. Now each of the ten has one, filmed
+by the same recorder (`talkScene` in `tools/homereel/record.mjs`): one page
+of the real player, the child (the fake microphone, with the story's kind of
+sound: `capture.mjs`'s `cfg.shape` "hiss" for S, Z, SH, CH, F and TH) saying
+its key word three times, the three dots filling, the word's pop and the
+page turning to the next picture, 3 s. The page is the fourth (Lulu's the
+seventh: she is on her island until then), where the hero is on the page
+with Echo. **What is staged for the frame, and only that:** on Home the
+card's title, line and play button cover the clip's lower part, and a small
+phone cuts its top and bottom off, so the player's caption box (its line,
+Hear it and the mic), the ✕ and Skip, and the little Echo on the caption's
+corner are hidden, the frame is the picture's lower 520 points down to its
+foot, and the "Can you say <word>?" bubble with its dots is moved up, as it
+is, to a fifth of the way down the frame (`TALK_ASK_AT`), where every
+phone's card shows it. The picture, the bubble, its dots, the pop and the
+page turn are the page's own. `homereeltest` now reads `STORY_TALK` too, so
+a new talking story fails it until its clip is filmed (`KEYS` lists the
+story days' games, then the talking stories). **Travis's calls:** the page
+each clip shows, the bubble's place, hiding the caption. **Rachel's:**
+nothing new is asked; each clip shows a child saying the page's key word
+three times (the words she already has to review: rocket, log, feather,
+sandcastle, zap, camp, goose, shells, cherries, thunder).
 
 **A book page fills the screen, and the child says one word to turn it** (the
 family's redesign brief, 28 Sep 2026). The picture fills the screen and the
@@ -1823,8 +3878,14 @@ played game on `sayplay.js`'s play hook (`public/<game>.js`, a hand-written
 `arcade-<key>.html`, its own suite `tests/<game>test.mjs`). **All eighteen
 opened at once** (Travis, 22 Oct 2026: "turn on all 18 games and email about
 them at 8am"), all Premium, on Home and on `parents.html`'s strip (29 games),
-instead of one at a time after he played each. No game is parked now; the
-parking still works (`freetest` parks one in the page to prove it). What every one holds:
+instead of one at a time after he played each. **Four are parked again since
+5 Nov 2026** (Travis, after the game audit: "hide those 4"): Puppy Bath (its
+Spray button aims itself), Surprise Boxes (the same five surprises in the
+same order), Fish Tank (one move five times) and Monster Makeover (the
+monster never changes). The strip says 25 games; their pages and suites
+stay (the Say & Play harness plays a parked game's own page unparked), and
+each comes back only rebuilt. `sayplaytest` and `activitytest` pin exactly
+these four as parked. What every one holds:
 - **The word (said two times) earns each step; the finger makes it.** No
   progress before the word, silence earns nothing, `api.done()` once a step.
 - **Every round ends without speaking again** (the Hoops rule). Misses make
@@ -1838,7 +3899,12 @@ parking still works (`freetest` parks one in the page to prove it). What every o
   earns a power on top. **It can always be left:** silence, a pause, or the
   "Back to the game" pill gives the earned move straight back with no power
   (`endHelp` in `sayplay.js`, added because Codex's version froze the game
-  until the child spoke). `sayplaytest`'s "help ask" scenario pins it.
+  until the child spoke). `sayplaytest`'s "help ask" scenario pins it. The
+  pill and "Back to the game" sit in the same place, so a tap within half a
+  second of either switch on the very spot the switching tap touched does
+  nothing (22 Oct 2026: a double tap on the pill asked and cancelled at
+  once; `helpDoubleTap`): a tap elsewhere, a key and silence are never held
+  back. `lighthousetest`'s help part plays it.
 - **A cheer before the next word:** the step counts about 1.15 s after the
   success, so its chime is heard (a step finished mid-direction stops only
   Echo's voice, `stopVoice`).
@@ -1863,9 +3929,10 @@ grey slot, on any shelf, in Today's picks, the daily adventure card or the
 level sheet. A parked game's card comes back by itself the day its
 `comingSoon` comes off. A typed address to one still bounces home with
 "<Game> is coming soon" (and a `comingOn` day still labels that note). The
-shelves count cards, never names (`crafted-home.css`): the little kids'
-shelf is all wide rows; on a phone the last card of an odd count is a wide
-row; on an iPad one card left over is a wide row and two share it.
+shelves count cards, never names (`crafted-home.css`), and both shelves
+follow one rule (since 23 Oct 2026; the little kids' shelf was all wide rows
+before): on a phone two to a row, the last card of an odd count a wide row;
+on an iPad three to a row, one card left over a wide row and two sharing it.
 `activitytest` and `sayplaytest` pin it. The paragraph just below is the
 history before it.
 
@@ -1935,10 +4002,9 @@ sticker is still a frame of the pitch (`public/assets/games/soccer.webp`,
 through `PLAYED`), and painted art drops in at that name. Inside the game the stadium, Bo and the ball are
 painted (4 Oct 2026, `tools/art/game-sprites.json`, cut to
 `public/assets/crafted/game/soccer-*.webp`); the pitch, goal and net stay
-drawn, because they move and carry the perspective. On Home eight of the nine
-big-kid games fill four even rows of two and Rise Up, the ninth, is a
-full-width row on a phone, so neither Flappy Glide nor Hoops is full-width any
-more. `sayplaytest` plays a
+drawn, because they move and carry the perspective. On Home the sixteen
+big-kid games fill eight even rows of two on a phone (since the eighteen
+rebuilt games opened on 22 Oct 2026), so no big-kid card is full-width there. `sayplaytest` plays a
 whole game.
 
 **Dino Dig is the third one back** (Travis, 1 Oct 2026: "go to the next game"),
@@ -1982,7 +4048,9 @@ A collection, never practice data. `tests/dinotest.mjs` digs all four.
 **The word is said two times** (Travis, 1 Oct 2026: "ask them to say it two
 times. and if they say it once to have it say '1 more time'"). In the Say &
 Play word games (`sayplay.js`: Hoops, Soccer Goal, Dino Dig and the parked
-ones) a turn needs two sayings. It is one setting a game, `game.sayTimes`, and
+ones) a turn needs two sayings (the daily story's games three since 23 Oct
+2026: `Sona.STORY_SAY_TIMES`, see "Daily story (STORY1)"; with three the
+first saying shows "2 more times!"). It is one setting a game, `game.sayTimes`, and
 two unless the game's page says otherwise. **Bubble Pop asks once**
 (`sayTimes: 1` in `arcade-bubbles.html`): it is the littles' game, built on
 main to be said once, and whether a three-year-old should say a word twice is
@@ -2013,6 +4081,14 @@ rep. `sayplaytest` pins which game asks how many times. With two:
 - **A saying already heard belongs to the word**: the mic button, "Hear it" and
   a pause keep it. After one saying and 12 quiet seconds the mic closes and
   says "1 more time! Tap the mic". Silence never earns the move.
+- **During play the word panel claims nothing** (5 Nov 2026, from the game
+  audit). "Hear it" shows only while the word is asked (the turn and the "Tap
+  the mic" nudge), hidden but keeping its place everywhere else, where it did
+  nothing. In a play game (Hoops, Soccer Goal, Dino Dig) the heard word only
+  earns the move, so the line beside "Swipe up to shoot!" praises the talking
+  ("I heard you!", "Great talking!", "Nice talking!"), never a result ("You
+  did it!" read as if the shot had gone in); the game says the result once
+  the move is made. Those three lines are Rachel's to change.
 - **Each saying heard is one rep** on the week's count (two a word); still
   never practice data. Whether two is right, whether the littles should say it
   twice too (Bubble Pop asks once; the other ten ages 3-4 games and Peekaboo
@@ -2239,6 +4315,14 @@ Flappy Glide, Rise Up), from one copy in `arcade-speech-help.js`:
   take and "Go!". Each reason is preloaded through `SayIt.line`. It is the
   say-it card's voice (`SayIt.voice`, through its `ask` hook): media in the
   app, Web Audio on the website, the mic only after "Go!" and its tail.
+- **Never an ask the leg's end would cut off** (5 Nov 2026, from the game
+  audit: Echo began, the wave or stretch ended under him, and the card asked
+  again two seconds later). A due ask starts only with at least 5 s of the
+  leg left (7 s before his first line of the visit); otherwise it waits and
+  the leg's own card asks. Each page tells the helper how much is left
+  (`SLOW_HELP.left`: exact in Sound Sprint and Rise Up, estimated from the
+  leg's pace in the other four). The 5 s and 7 s are play defaults for
+  Travis to feel on a phone.
 - **The game keeps going.** Nothing holds, dims or waits, and the game's
   banners still show; Echo's button breathes while he asks and listens. Only
   the game's own sounds (its chimes, Piano Tiles' notes) stop, from his first
@@ -2467,8 +4551,11 @@ card between rounds said the bare sound. What is built is the first slice:
 three lists and `kidtest` that Settings has no picker and an old pick is
 dropped.
 
-**The week's reps** (Travis, 28-29 Sep 2026). Home's top corner shows today toward the daily goal, and a
-tap on it opens the grown-ups check, then Progress; Progress keeps sound practice apart from play. (Settings
+**The week's reps** (Travis, 28-29 Sep 2026). Home's top corner showed today toward the daily goal, and a
+tap on it opened the grown-ups check, then Progress, until 23 Oct 2026: it is the gift button's ring now
+(FOUND1), with the number in its spoken label, and grown-ups read it on Progress (Grown-ups, then the
+Progress tab: "Today: 12 of 30 reps." under the daily goal, "Today: 45 reps. Goal met." past it, every rep
+counted, practice, games and books, as the goal counts them); Progress keeps sound practice apart from play. (Settings
 kept an eight-week chart and the best week until 22 Oct 2026, when the
 Settings simplification took the card out; the rep line and the daily goal
 moved to Progress.) One count, `Sona.repWeeks`/`weekReps`:
@@ -2476,7 +4563,8 @@ the practice page's voiced tries (`outcomes().days[].tries`, only days since
 tries were counted, 22 Sep 2026) **plus every sound a game asked for and
 heard** (`Sona.gameRep`, Travis: "yeah count as reps"): the say-it card
 between rounds, Echo's sound powers, each saying of a Hoops, Soccer Goal or
-Dino Dig word (two a word), a Bubble Pop word (said once), Feed Echo's heard
+Dino Dig word (two a word), a story game's word (three a word), a Bubble Pop
+word (said once), Feed Echo's heard
 word and each accepted book key word (one a page).
 Game reps live in their own per-child ledger (`sona.gamereps.v1`) and never
 enter `outcomes()`, so no pass rate, clinician's note or shared progress
@@ -2498,8 +4586,12 @@ can end it earlier. A rock is a tumble (a second off the road, ten metres back),
 card; after two tumbles in a stretch the rocks thin out and the road slows.
 The child taps the lane they want or swipes (a tap used to count only as the
 left or right half of the screen). A golden coin is a coin magnet. The top
-bar shows coins and the stretch; the end card counts metres (it said
-"treats"). `tests/runtest.mjs` runs a whole race.
+bar shows stars and the stretch; **the end card and the child's best count
+stars** (5 Nov 2026; it counted metres, a number never on screen, and every
+finished race is exactly 570 m, so a best could never go up). A best saved
+in metres reads as no best (`BEST_COUNT` in sona.js stamps a changed count
+on the record), so the next race is a first best. `tests/runtest.mjs` runs
+a whole race.
 
 **Sound Sprint opens on Echo's how-to-play** (Travis, 1 Oct 2026: "when a kid
 is about to start playing sound sprint, we want the voice ... to say
@@ -2538,8 +4630,9 @@ balloon, the shield, the blocks, their pushes and pictures; it never touches
 storage, the mic or a sound) and `public/arcade-rise.html` is the round, its
 hearts, the say-it card and the sound power, the way Flappy Glide's page is.
 It is entered through its practice page (`/charge.html?game=arcade-rise.html`,
-which fills Flappy Glide's balloon), is Premium, and is the ninth card on the
-big kids' shelf (a full-width row on a phone). It is **not** in the old
+which fills Flappy Glide's balloon), is Premium, and is on the big kids'
+shelf (a full-width row on a phone while it was the ninth and last, until the
+eighteen rebuilt games opened on 22 Oct 2026). It is **not** in the old
 five-game run (`adventure: false`, which `adventureGames()` skips) and not a
 Say & Play game; it is day 11 of the daily adventure (QUEST1). What it keeps:
 - **The finger only moves the shield, by as much as it moves**, from wherever
@@ -2612,8 +4705,8 @@ Say & Play game; it is day 11 of the daily adventure (QUEST1). What it keeps:
 thing the child's finger did and remembers that child's best. The win card
 still says they won, then adds one line; the top button is "Play again"; and
 Home's picture of the game carries a small "Best 17". All six round games
-keep one (Fruit Slice and Piano Tiles a row, Block Stacker, Sound Sprint and
-Flappy Glide their own counts, Rise Up blocks pushed); Hoops and Soccer Goal have none yet, and Dino
+keep one (Fruit Slice and Piano Tiles a row, Block Stacker and Flappy Glide
+their own counts, Sound Sprint stars since 5 Nov 2026, Rise Up blocks pushed); Hoops and Soccer Goal have none yet, and Dino
 Dig gets no number. Level 1's best is `sona.bests.v1`; a game's Level 2 and 3
 bests live in `sona.playlevel.v1` (see "Levels inside games"), so a best is
 never measured against a level whose top it cannot reach.
@@ -2754,24 +4847,37 @@ Clash Royale").** A child's practice now fills a road of gifts they can see.
   opened", "road gift opened", "month gift opened") are sent by `sona.js` and
   carry nothing: no stop or step number (a stop is a lifetime trophy count),
   no coins.
-- **Home's one card** (`#roadCard`, under "Pick a game!"): the next gift's
-  picture (or the waiting one, or the chest when it is ready) and a five-part
-  bar; the counts are small and the words are in its label; a teal dot when
-  something is ready. It only reads `Sona.roadState()`; a tap goes to the road.
+- **Home's gift button** (`#giftBtn`, in the top bar since 23 Oct 2026,
+  FOUND1; it replaced the Trophy Road card under the doors and the reps count
+  in the corner): a ring filling toward today's goal (the goal is what opens
+  today's chest) and a teal dot when the chest is ready or a gift waits; the
+  words are in its label ("Trophy Road. 12 of 30 reps today. A gift is
+  waiting."). Its picture is the road's own painted chest
+  (`road-chest.webp`), never the drawn kit's orange gift: orange on a
+  child's screen means only the practice sound's letters. It only reads
+  `Sona.dayGoal()` and `Sona.roadState()`; a tap goes to the road, with no
+  grown-ups check.
 - **Test seeds may set `sona.trophy.v1` directly** (`{v:1, t, d, dn, m, mn}`)
   rather than replay weeks of reps. `trophytest` pins the economy (no browser);
-  `roadtest` plays Home's card, the road page and the sticker book.
+  `roadtest` plays Home's gift button, the road page and the sticker book.
 - **For Rachel:** a try counts toward the goal, and so earns trophies, even
   when Apple's listener heard a clearly different word ("taco"); whether it
   should is hers. **For Travis and Rachel:** a little one who only plays Feed
   Echo and Bubble Pop needs six rounds to open the chest at the default goal.
 
 **The daily adventure (QUEST1, 13 Oct 2026)** (Travis: "go build the daily
-adventure", a 14-day run of one game a day with a little story). Home shows
-one card under "Pick a game!" (`#questCard`): "Day 3 of 14", one line from
-Echo's world ("The wind blew Echo's tower down. Help him build it back up!"),
-the game's own painted Home picture and a teal play button. A tap is that
-game card's own tap (`launch`: access, the price, "Pick a level").
+adventure", a 14-day run of one game a day with a little story). **Since 22
+Oct 2026 the stories come first** (STORY1, above): the same scheduler shows
+Home's big card a story while one is left, for every child, and this game of
+the day after the last one, or on a phone that cannot buy without Premium.
+On a game day the card (`#questCard`, on the Play Map's trail) shows the
+game's name, one line from Echo's world ("The wind blew Echo's tower down.
+Help him build it back up!"), the game's clip over its poster (HOMECLIP1;
+the game's own painted Home picture only until the poster lands) and the
+teal play button. **The "Day N of 14" counter is gone**, so that after Day 3
+of the story no child sees "Day 1 of 14"; the child's place in the 14 days
+(`i`) is never moved by a story. A tap is that game card's own tap (`launch`:
+access, the price, "Pick a level").
 - **One list per age group** (`QUEST_DAYS` in `sona.js`): ages 5-8 the nine
   big-kid games (Rise Up on day 11 since 14 Oct 2026), never the same game
   two days running; ages 3-4 Feed Echo
@@ -2784,21 +4890,35 @@ game card's own tap (`launch`: access, the price, "Pick a level").
   adventure only picks the game and says why.
 - **The gift is a sticker, the next one** (`awardNextSticker`; two on days 7
   and 14), never coins (COIN3), with a quiet note for five seconds, no voice.
-- **A missed day loses nothing**: the adventure waits on its day, moves on
-  once a quest is done and never twice in a calendar day. A done day shows
-  "Come back tomorrow for Day N+1!" with tomorrow's picture dark, never
-  playable early. No timer, no countdown, nothing random.
+- **A new day is a new game day, played or not** (CAL1, 28 Oct 2026; until
+  then it waited on its day until a quest was done): the day after a game
+  day finished is the next of the 14, the day after that the one after,
+  back to day 1 after day 14; with none finished it counts from the day
+  before the child's calendar started (`a`, see STORY1's "A new story every
+  day"). Never finished twice in a calendar day. A done game day
+  shows "All done for today!" and "Come back tomorrow for a new adventure!"
+  ("…for Day N and a new game!" when tomorrow is a story the child can
+  open, "…for Day N!" when it is shown locked) with tomorrow's picture dark,
+  never playable early. No timer, no countdown, nothing random.
 - **A family without Premium is never sent to a locked game**: a day whose
   game this phone cannot open borrows the next open game in the list, with
-  that game's own line (`QUEST_LINE`).
-- **Home only reads** (`questToday()`), as roadtest and trophytest require.
-  Per child (`sona.quest.v1`, `PER_KID`). The event "adventure day done"
-  carries the game key only.
-- **Defaults Travis did not pick:** stickers rather than coins, waiting on a
-  missed day, restarting after 14, a lost round counting, and the games'
-  Home pictures rather than new art. **For Rachel:** the 28 lines say
+  that game's own line (`QUEST_LINE`). A story is the one exception, on
+  purpose: where Sona can sell, it is shown locked and its tap opens the
+  price (STORY1).
+- **Home only reads** (`questToday()`, which always answers a `kind`,
+  "story" or "game"), as roadtest and trophytest require; the one write a
+  Home load can make is sona.js's one-shot `a` for a child who has none
+  (CAL1). Per child
+  (`sona.quest.v1`, `PER_KID`); every save merges into the record, which also
+  holds the stories' fields (STORY1). The event "adventure day done" carries
+  the game key only.
+- **Defaults Travis did not pick:** stickers rather than coins, restarting
+  after 14, a lost round counting, the games' Home pictures rather than new
+  art, and a calendar that starts on each child's first day with the CAL1
+  build (not on the day the stories began). **For Rachel:** the 28 lines say
   nothing about how to talk; whether a story should ever name a sound is hers.
-`tests/questtest.mjs` plays it.
+`tests/questtest.mjs` plays the game days, `storycoretest` the stories in
+front of them.
 
 **Levels inside games (LEVELS1, Travis, 9 Oct 2026: "kids see games and
 levels but have to unlock them"; he chose levels inside games, not locked
@@ -3075,9 +5195,9 @@ seventeen rebuilt games (it had no card from 19 Oct); since 16 Oct 2026 it is
 a played game on `sayplay.js` (see "The eighteen rebuilt by Codex"), and
 `simple-play.js` remains in the repo for its tests. **Bubble Pop is back** (Travis, 30 Sep
 2026), free, the second game for ages 3-4 beside Feed Echo (rebuilt on 1 Oct
-2026; see "Bubble Pop is rebuilt to be played"): a full-width Home card like
-Feed Echo's
-(`crafted-home.css`), no release date so no New shelf, and a website tile
+2026; see "Bubble Pop is rebuilt to be played"): a Home card beside Feed
+Echo's at the head of the little kids' shelf (two to a row since 23 Oct 2026,
+`crafted-home.css`), no release date so never tagged New, and a website tile
 cut from that painted card (`/assets/site/games/bubbles.webp`). The adventure
 (`story.html`) and chapter readers are still parked: their engines and tests
 stay, but no public menu opens them, and the bookshelf hides its adventure tile.
@@ -3127,7 +5247,7 @@ to stand in for it. What was buildable was built on 28 Sep:
   Slice counts fruit in a row and Piano Tiles notes in a row, each beside the
   child's own best in that same thing (see "Beat Your Best"; the old "Best"
   was the hidden score, which is why it was taken off). Block Stacker (blocks
-  in a row), Sound Sprint (metres) and Flappy Glide (gaps in a row) count
+  in a row), Sound Sprint (stars) and Flappy Glide (gaps in a row) count
   their own thing beside that child's best too.
 - **Say & Play and Feed Echo** show the word with only the sound's letters
   orange (`Sona.soundMark`) beside the crafted picture. Feed's ask keeps ONE
@@ -3161,17 +5281,30 @@ the app) is a later idea, not built; it is Rachel's to shape.
 ## Hard rules
 - Merges to main/prod only on Travis's explicit go ("merge").
 - **No audio ever leaves the device.** There is no cloud scorer: every verdict
-  is decided on the phone from the spectral shape of what was said. One clip a
-  day may be kept in local IndexedDB so a parent can listen back — it is never
-  uploaded. The consent copy says exactly this, and it is true because there is
-  no mechanism to break it, not because a checkbox is off. Its short form, the
-  grown-ups line on every mic ask (`MIC_PROMISE`), is "audio is never
-  uploaded. One try a day is saved on this phone so you can listen back."
-  (Travis, 2 Oct 2026, asked for "audio is never recorded or uploaded"):
-  never "never recorded", which that one saved try would make false. `mictest` pins the
+  is decided on the phone from the spectral shape of what was said. **Nothing
+  is saved either** (since 5 Nov 2026; until then one clip a day was kept in
+  local IndexedDB so a parent could listen back). The consent copy says
+  exactly this, and it is true because there is no mechanism to break it, not
+  because a checkbox is off. Its short form, the grown-ups line on every mic
+  ask but setup's (Travis took it off setup's microphone step on 31 Oct 2026)
+  (`MIC_PROMISE`), is "audio is never uploaded or saved." Still never "never
+  recorded": the practice page holds a try in memory while it listens. `mictest` pins the
   mechanism's absence: no route but the two founder clip tools (`isolate`,
   `voice-change`, behind `FOUNDER_KEY`) accepts a file, and no family page
   posts to one. `/api/stt` was deleted on 25 Sep 2026 for exactly this.
+  **Nor the browser's own speech-to-text** (22 Oct 2026): the Web Speech
+  API's `SpeechRecognition` looks local and is not (Chrome sends the audio
+  to Google, Safari to Apple). The Speech Check and the parked story reader
+  used it, so in a browser a child's words left the phone; both now judge
+  from voicing alone, `lib/speech.ts` is gone, and `mictest` fails if any
+  page uses it again. The iPhone app's on-device check is SonaSpeech, which
+  never uses Apple's servers. **For Rachel:** without it the Speech Check
+  hears only whether each word was said, never how, so its results now say
+  "Heard it" per word and "We heard <Name> say N of M words … it can't tell
+  which sounds need practice", with no "on track", "ready to practice" or
+  age verdict (its old paths stay in the code, unreachable). It is `noindex`
+  and nothing links to it. Whether it stays, and what its results may say,
+  is hers.
 - No silence counted as reps; voice boosts never logged as SLP data.
 - Never rewrite pushed git history. Push after every verified milestone.
 - A child's name never leaves the device to any CRM, ad pixel or analytics
@@ -3255,17 +5388,20 @@ are enforced in code and pinned by tests — change them only on Rachel's say-so
   It's too busy. Let's get rid of as much as we possibly can, including like
   we want the minimum viable features"; it was already "short" on 30 Sep).
   Top to bottom: **Your family** (switch, add, remove a child); **one card
-  for the child picked** (name, age, sounds to practice, Word position and
-  "Each day's practice starts with", each with its one grey line, and
-  "Reset progress" last: the two pickers are what Travis asked for the same
-  day, see "Word positions and the practice steps"); the "Sound is off in Sona."
-  line only while muted; the Practice Board card only while it is live or
-  owed; **Account** (the plan line with See Premium and Restore, then
+  for the child picked** (name, age, sounds to practice, current target
+  sound, Word position, "Each day's practice starts with", and "Reset
+  progress" last). See "Word positions and the practice steps" for the two
+  new pickers. The "Sound is off in Sona." line appears while muted.
+  **Weekly progress report** (WEEKLY1, 23 Oct 2026) shows an email box and
+  Turn on when off, and the destination and Turn off when on. The Practice
+  Board card appears while live or owed, followed by **Account** (the plan
+  line with See Premium and Restore, then
   Privacy · Terms); the clinician's "Open dashboard →" only for a
   clinician in a browser; and **"Moving to a new phone?"** at the foot.
   Gone from it: the week-by-week reps card (the daily goal and the rep line
-  moved to Progress, beside the days-a-week buttons; Home's rep count opens
-  Progress), the game-card picker and the "Level 1 only" picker (saved
+  moved to Progress, beside the days-a-week buttons, with today's count
+  under the daily goal; Home's corner is the gift button, to the Trophy
+  Road), the game-card picker and the "Level 1 only" picker (saved
   values are ignored, so nobody is stuck: see each one's section), the Buddy
   & world card (the shop is Home's), the play-mode note, the age line, the
   page's subtitle, the divider, "Help" (the Talk to us tab is the same
@@ -3315,6 +5451,11 @@ full word and applying that to each letter … build that so it works in the
 games … I'm not sure if only some need to do the progression, or if all of
 them do. But let's at least just build it in so it's an option that can be
 selected."
+
+On 9 Nov 2026 Travis confirmed Rachel's approval of the family position
+picker, the games following the chosen position and the starting-step picker.
+The new syllable models still need their separate listening review.
+
 - **Every position is open.** Settings' Word position (Beginning, Middle,
   End, Vocalic R, Blends, Mixed) saves `profile.wordPosition`, per child. The
   old `profile.practicePosition` (picks from before 1 Oct, pilot links) is
@@ -3348,11 +5489,13 @@ selected."
   Mixed homework is not sent back to the sound. A step with nothing in it is
   skipped, never asked (`Sona.ladderSteps`): that closed a bug where the
   fifth round asked the empty "talking" step, fell back to "rrrr", and two
-  clean "rrrr"s marked a sound Mastered. Progress shows each place's step (a
-  skipped step is named by the next one it has: past the sound at a place
-  with no syllables, "Words") and says "All steps done", never "Talking" or
-  "Mastered"; its Firsts are per child and per place. The day's adventure
-  keeps one place for all its rounds (`run.pos`).
+  clean "rrrr"s marked a sound Mastered. In the compact Progress screen,
+  each sound's row shows the current position and the next available step.
+  For example, once the sound is earned at the end of a word, the row says
+  "End · Words" while the new syllables are off. It shows "All steps done"
+  after the last step. The daily practice climb keeps its original position
+  in `run.pos`. Explicit homework words can still replace the bank, and games
+  read the current position when they open.
 - **"Each day's practice starts with"** (`profile.ladderStart`: the sound,
   syllables, words or sentences). Default: the sound, every step, as before.
   A later start skips the steps below it (they count as the child's for the
@@ -3425,16 +5568,13 @@ selected."
   "the" or "see" around it; a soft c or g only where it is surely soft, so
   "tiger", "girl" and "grew" are judged as ever), nor an S blend for its
   voiced ones ("snake", "smile"; "stop" and "ski" are judged as ever).
-- **Rachel's calls, built on defaults until she answers:** every syllable
-  table, and which places are switched on; whether R's end and vocalic R are
-  one climb and the sound alone counts everywhere; whether a grown-up may
-  start above the sound, and the cue on that first round; the picture games
-  (also for ages 2 to 4) following the position; Feed Echo's wrong pictures;
-  `SENT_FORM`; bare-sound and syllable tries left out of the position pass
-  rate; the syllable listening rule and `HEAR_ALIKE`; "cah" for car still
-  passing at the end of a word (`HEAR_SUBS_END`, unchanged); "sandwich" moved
-  to end-of-word CH; vocalic R and blends (and R's end) held for ages 2 to 4
-  from a grown-up's pick; the step-down choices (`STEP_SYL`).
+- **Clinical follow-ups:** review the new syllable tables, listening rule
+  and `HEAR_ALIKE` before enabling any new syllable. Rachel can refine
+  whether R's end and vocalic R share a climb, first-round and step-down cues,
+  the age restrictions, and the sentence forms. The existing medial T bank
+  includes water, letter and button (often a flap or glottal stop in American
+  English). The medial V bank includes gloves, where V is in a final cluster.
+  Those existing words still need her bank review.
 `tests/posladdertest.mjs` holds these rules; `kidtest` the Settings pickers;
 `progtest`, `hwtest`, `gameasktest`, `heartest` and `soundmap` the rest.
 
@@ -3538,7 +5678,8 @@ accepted game and book asks. **The default is 30 reps a day at every age**
 (Travis, that evening: "we'll just set the default to thirty reps per day.
 Right now it's set to fifty", which it was for ages 5–8; "if they say three
 days per week, that will make their goal ninety reps a week"), and 4 days a
-week for a family never asked. Setup asks the days (3, 5 or every day); on
+week for a family never asked. Setup asks the minutes a day (22 Oct 2026: 5,
+10 or 15, saved as 30, 60 or 90 reps a day) and no longer the days; on
 Progress grown-ups choose 3, 4, 5 or every day and a daily number (in
 Settings until 22 Oct 2026), and a number picked there is kept. **"Every day" is 7 again**: for a few hours on 5
 Oct a saved 7 read as 5. An
@@ -3566,8 +5707,8 @@ flow or an approval screen for families:
 
 | Review question | Product behavior shipping |
 |---|---|
-| Daily default |30 at every age, adjustable|
+| Daily default |30 at every age, adjustable; setup's 5 / 10 / 15 minutes are 30 / 60 / 90|
 | What a rep means |Voiced practice try, accepted game ask or accepted book word; no silence|
 | Homework and play |Home includes play toward the displayed goal; clinician report stays practice-only|
-| Weekly target |4 days by default; setup offers 3, 5 or every day; Progress 3, 4, 5 or every day; earned-day stamps|
+| Weekly target |4 days by default (setup no longer asks); Progress 3, 4, 5 or every day; earned-day stamps|
 | Book check limitations |One accepted word is a play rep, without a clinical correctness claim|

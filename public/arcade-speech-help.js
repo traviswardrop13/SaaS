@@ -28,9 +28,9 @@
        child who isn't playing along isn't asked every twenty seconds;
      - a tap on Echo still asks at once, the same way: a shortcut, never needed.
    Play time only: no ask during a say-it card, a break, a finale, the power
-   itself, a hidden page or a phone that has said no to the mic. A round that
-   ends while he is asking ends the turn first (the card never meets a live
-   turn). */
+   itself, a hidden page or a phone that has said no to the mic, and none the
+   leg's end would cut off (SLOW_HELP.left, below). A round that ends while
+   he is asking ends the turn first (the card never meets a live turn). */
     var slowTurn=null, slowMs=0, slowTotal=8000, slowSaid={};
     var SLOW_ASK={first:10000, every:20000, quiet:40000, listen:8000};
     var slowAskPlay=0, slowAskAt=SLOW_HELP.first||SLOW_ASK.first, slowMissed=0, slowNoMic=false, slowAskLast=0, slowVoice=null;
@@ -181,15 +181,49 @@
     function slowAskReady(){
       return !!tok&&playing&&phase===SLOW_HELP.phase&&!window.__ended&&!window.__speechLeaving&&!window.__pianoLeaving&&!document.hidden&&!reviveWait&&!slowTurn&&!(slowMs>0)&&!rv.pending&&!rv.st&&CAN_LISTEN&&!slowNoMic&&(!SLOW_HELP.eligible||SLOW_HELP.eligible());
     }
+    // NOT AN ASK THE LEG'S END WOULD CUT OFF (5 Nov 2026). The game keeps going
+    // while Echo asks, so an ask that started a moment before the wave, song,
+    // floor, stretch or leg ended was cut off by its end, and the say-it card
+    // between legs asked for the sound again about two seconds later: Echo
+    // twice, the first time half said (Sound Sprint asked at 69.1 s and its
+    // stretch ended at 69.3 s). So Echo does not START an ask the leg cannot
+    // hold. Each page says about how much play is left in its leg
+    // (SLOW_HELP.left, in ms; none, or not a number, is "plenty"), and an ask
+    // needs SLOW_ROOM.ask of it (Rachel's take, "Go!" and a moment for the
+    // child to answer: once heard, a turn is no longer cut off), plus
+    // SLOW_ROOM.line while his own line has not been said this visit.
+    // An ask held that way is the one the leg's own card asks in its place:
+    // when the leg ends, the ask clock starts again just as it did after an
+    // ask the leg's end cut off (and, as then, it is not a quiet ask). Nothing
+    // else moves: SLOW_ASK's waits, what he asks, when the mic opens. An ask
+    // the leg CAN hold starts exactly when it always did, and a tap on Echo
+    // still asks at once. The two numbers are play defaults, set without a
+    // phone to listen on: Travis's to feel. Smaller, a quick child's answer
+    // can still be cut off; larger, an ask a quick child would have finished
+    // waits for the next leg.
+    var SLOW_ROOM={ask:5000, line:2000}, slowLegMs=0, slowLegHeld=false;
+    // A page that counts things through its leg (fruit, notes, blocks, gaps)
+    // passes how much of it is done (0..1): what is left, at this leg's own
+    // pace so far. Nothing done yet is "plenty".
+    function slowLegLeft(done){ return done>0&&slowLegMs>0?slowLegMs*(1-Math.min(1,done))/done:Infinity; }
+    function slowLegRoom(){
+      if(!SLOW_HELP.left) return true;
+      var left=NaN; try{ left=+SLOW_HELP.left(); }catch(e){}
+      return isNaN(left)||left>=SLOW_ROOM.ask+(slowSaid[slowLineText()]?0:SLOW_ROOM.line);
+    }
     setInterval(function(){
       var now=performance.now(), dt=slowAskLast?Math.min(now-slowAskLast,1000):0; slowAskLast=now;
       try{
         if(slowTurn&&!slowTurn.finishing&&(phase!==SLOW_HELP.phase||window.__ended)){ slowTurn.cancelled=true; finishSlowKeys(false); return; }
+        // the leg's own play time (slowLegLeft's pace); out of the leg it
+        // starts again, and an ask it held is given up to the leg's card
+        if(phase===SLOW_HELP.phase){ if(playing&&!document.hidden&&!reviveWait) slowLegMs+=dt; }
+        else{ slowLegMs=0; if(slowLegHeld){ slowLegHeld=false; slowAskPlay=0; slowAskAt=slowMissed>=2?SLOW_ASK.quiet:SLOW_ASK.every; } }
         // the new-life line is fetched once a heart is gone, not at page load
         if(!lifeWarm&&typeof hearts==="number"&&hearts<(SLOW_HELP.hearts||3)&&window.SayIt&&SayIt.line&&S.getProfile().voiceOn){ lifeWarm=true; SayIt.line(LIFE_LINE); }
         if(!slowAskReady()) return;
         slowAskPlay+=dt;
-        if(slowAskPlay>=slowAskAt) beginSlowKeys();
+        if(slowAskPlay>=slowAskAt){ slowLegHeld=!slowLegRoom(); if(!slowLegHeld) beginSlowKeys(); }
       }catch(e){}
     },200);
     document.getElementById("slowKeys").onclick=beginSlowKeys;

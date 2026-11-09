@@ -96,6 +96,45 @@ phone checklist, the gate before submitting and the off switch
 `NSMicrophoneUsageDescription` is already required (below), and the mic is
 never used in the background.
 
+## The trial reminder (22 Oct 2026, iOS 1.0.9)
+
+**What a family sees.** Near the end of setup, after "<Name>'s practice is
+ready", one screen asks "Want a reminder before your free trial ends?". "Turn
+on reminders" shows iOS's own Allow box. If they allow it and start the free
+trial, the phone shows one notification the day before the trial ends: "Sona /
+Your free trial ends tomorrow." (Travis: "notify them a day before their
+trial ends"). It comes 30 hours before the end, not 24: Apple counts a cancel
+only at least 24 hours before the end, so a reminder at exactly a day before
+came too late to act on. So it shows six hours before the time of day the
+trial started, and it shows even
+while Sona is open (as a silent banner then: a game's mic may be listening). Each day Sona is opened it checks the trial with
+RevenueCat: once the parent has cancelled it, or it has become a paid plan
+(a switch to the yearly plan, say), the reminder is taken back.
+
+**It is a local notification, not a push.** The phone sets it and the phone
+shows it, through Sona's own plugin (SonaSpeech: `notifyStatus`, `notifyAsk`,
+`notifySchedule`, `notifyCancel`). No server sends it, there is no device
+token, and nothing about the family leaves the phone for it. So **nothing to
+turn on in Xcode or at Apple**: no Push Notifications capability, no APNs key,
+no Background Modes, no Info.plist text (the Allow box is iOS's own words).
+"Phase 2 — Push notifications" below is a different, later thing and is not
+needed for this.
+
+**On the Mac, for 1.0.9:** `git pull`, then
+`python3 scripts/install-ios-speech.py --check` and the same without
+`--check` (it copies the new plugin in between its markers in
+AppDelegate.swift, exactly as for the mic), Version **1.0.9**, Build one
+higher, run on the iPhone, and the phone checklist in `SPEECH_PLUGIN.md`
+("The trial reminder"). The website half (the setup screen, when to set the
+reminder and its words) goes live with a normal merge; older builds have no
+reminder methods, so they never show the screen.
+
+**App Store Connect:** App Privacy has nothing new for this (nothing is
+collected). In the review notes for 1.0.9: "During setup the app offers to
+turn on notifications so it can remind the parent once, the day before the
+App Store free trial ends (30 hours before, so cancelling still counts). It is a local notification scheduled on the
+device; there is no push service and nothing is sent to a server."
+
 ## Prereqs (on your Mac)
 - macOS + **Xcode** (free from the App Store) + Command Line Tools
 - **Node 22+** (required by the pinned Capacitor 8 CLI)
@@ -264,13 +303,16 @@ that cannot regress out from under you.
 - **URLs:** Privacy `speaksona.com/privacy`, Support `speaksona.com/support`
 - **Coins (Trophy Road, 11 Oct 2026):** Coins are earned only through daily chests and Trophy Road gifts and are never sold: no consumable in-app purchase, and no random rewards (every prize is shown before it opens).
 - **Session recording (15 Oct 2026, REPLAY1):** PostHog may record parent setup (until the hand-off) and the plan screen's offer when a grown-up opened it (from setup, or after the first practice run) inside the app, as a replay of the page and where it was tapped, under the anonymous device id. The child's name is recorded only as "[child]", a piece of recording that would still hold a child's name or a parent's email is not sent, and every typed box is an empty shape; the speech therapy question and the ready screen are never in a recording; no child's practice, game or book screen ever is. In App Privacy that is *Usage Data → Product Interaction* (App Functionality / Analytics, not tracking), with the device id as the identifier: add it when the answers below are filed.
-- **RevenueCat webhook (16 Oct 2026, RCHOOK1):** a parent's email (setup's email step, only if given) now goes to RevenueCat too, and RevenueCat tells Sona's server when that parent's Premium starts, renews, is cancelled or ends. In App Privacy: *Contact Info → Email Address* (already there for the list; add App Functionality, since RevenueCat links it to the purchase) and *Purchases → Purchase History*, linked to the user, purposes App Functionality and Developer's Advertising or Marketing (it decides which of Sona's own emails a parent gets), not tracking. No review needed.
+- **RevenueCat webhook (16 Oct 2026, RCHOOK1):** a parent's email (setup's email step or, since 23 Oct 2026, the weekly report's switch in Settings, only if given) now goes to RevenueCat too, and RevenueCat tells Sona's server when that parent's Premium starts, renews, is cancelled or ends. In App Privacy: *Contact Info → Email Address* (already there for the list; add App Functionality, since RevenueCat links it to the purchase) and *Purchases → Purchase History*, linked to the user, purposes App Functionality and Developer's Advertising or Marketing (it decides which of Sona's own emails a parent gets), not tracking. No review needed.
+- **Free-week report (30 Oct 2026, TRIAL1):** the app now also gives RevenueCat the anonymous device id (the `sona_fid` attribute), so RevenueCat's webhook can say how a free trial went for a family who gave no email; Sona's server keeps, per trial, which days had practice (yes or no) and how it ended, for 120 days. In App Privacy: *Identifiers → Device ID*, linked to *Purchases → Purchase History*, purposes Analytics and App Functionality, not tracking. No review needed, and no new build: the phone side is a web change. The daily practice reminder (NUDGE1) uses the 1.0.9 notification methods already in the build, so it needs no new build either.
 - **App Privacy, owed (not yet answered in App Store Connect):** the anonymous device id and the product-interaction events `/api/track` already relays (practice started and completed, the daily goal, the plan funnel), now including the chest, Trophy Road gift, month gift, Buddy Shop ("shop item got") and game-level events. None carries a name, a count of trophies or coins held, or audio. The practice and daily-goal events do carry the sound being practised (for example "R"), as the privacy page says, and "shop item got" carries the item and its price in coins, never a balance.
 
 ## Apple Guideline 4.2 ("minimum functionality")
 A pure website-in-a-box can be rejected. Your app has native value (mic-based practice; push next), which helps it pass. If review pushes back, the fix is more native features → do phase 2.
 
 ## Phase 2 — Push notifications (the retention lever; after v1 ships)
+Not needed for the trial reminder (above): that one is local and set on the
+phone. This is for messages a server sends.
 ```bash
 npm install @capacitor/push-notifications
 npx cap sync ios
@@ -405,6 +447,20 @@ before the price at the end of setup are skipped). A store that has no
 monthly product, or answers with the yearly one, sells nothing in its place.
 The card never states a saving: the price is Apple's.
 
+## Two rows: monthly on top, the one payment under it (23 Oct 2026)
+
+Travis, 23 Oct 2026: "get rid of the yearly option. I just want two payment
+options", then "can we just have the ... a month as the top default option and
+then below it is the pay one time?". The Apple card shows no yearly row,
+whatever RevenueCat's offering lists (`IAP_SELL_YEARLY = false` in
+`public/sona.js`; the yearly product stays in App Store Connect and in
+`IAP_PRODUCTS` so a yearly buyer still restores). Monthly is on top and picked
+when the screen opens (its free trial), the one payment under it. A web
+deploy only: no app build, no store change. Taking the yearly package out of
+the current offering in RevenueCat is tidy but not needed. **Phone check:**
+the price screen shows two rows, Monthly (picked) then One payment, and no
+"/yr" anywhere.
+
 ## Two plans again, and the store's free days (19 Oct 2026)
 
 Travis, 19 Oct 2026, "yes" to a funnel review: the price screen offers yearly
@@ -439,10 +495,14 @@ yearly buyer is still recognised on a restore.
 Travis, 22 Oct 2026: "ok go build it all", the one-time purchase on the price
 screen; "i dont wanna say lifetime". The card can show a third row under
 monthly: **"One payment"**, "Yours to keep. No subscription.", the App
-Store's price with no period; picked, the button says "Get Sona Premium —
-$59.99" (the store's price). It is never picked when the screen opens (yearly
-is, or monthly without a yearly row), never says "lifetime", "free" or "Best
-value", and has no free days. The web card is unchanged: the website sells
+Store's price with no period; picked, the button said "Get Sona Premium —
+$59.99" (the store's price). It was never picked when the screen opened
+(monthly was). Since then the page's own row reads "Lifetime" / "Yours
+Forever" / "Best Value" (24 Oct 2026), it sits on top and is picked when the
+screen opens (31 Oct 2026), its button says "Start practicing!" (31 Oct) and
+its check line "One payment · Every update included" (1 Nov 2026). Its words
+from `planWords` never say "lifetime", "free" or "Best value", and it has no
+free days. The web card is unchanged: the website sells
 subscriptions only. Nothing here needs code: the row appears by itself once
 these are true, in this order (the same order as the yearly row, for the
 same reason: offered but not attached, Apple would take a parent's money and
@@ -489,7 +549,7 @@ purchase, already listed with the subscriptions.
 RevenueCat tells Sona's server whenever an App Store purchase of Sona Premium
 starts, renews, is cancelled or ends (`app/api/revenuecat/route.ts`,
 `lib/revenuecat.ts`). The app hands RevenueCat the parent's email (setup's
-email step), so each message names the parent, and RevenueCat's own
+email step, or the weekly report's switch in Settings), so each message names the parent, and RevenueCat's own
 dashboard shows that email instead of ANONYMOUS. Sona then stops the welcome
 series for a buyer, sends "Your free days end soon" a day or
 two before the free days end (only while they are still on them), and "We

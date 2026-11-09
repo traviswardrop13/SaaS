@@ -180,12 +180,31 @@
     else { ctx.fillStyle = "#e5d2b2"; ctx.strokeStyle = "#b89a77"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-size * 0.12, size * 0.35); ctx.lineTo(-size * 0.1, 0); ctx.lineTo(size * 0.1, 0); ctx.lineTo(size * 0.13, size * 0.35); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.beginPath(); ctx.ellipse(0, -size * 0.07, size * 0.39, size * 0.27, 0, Math.PI, Math.PI * 2); ctx.closePath(); ctx.fill(); ctx.stroke(); }
     ctx.restore();
   }
+  // Where the crust ends, in pizza radii, across and down. The painted base
+  // is wider than it is tall (373 x 344), so sprite() fits it 2 wide and
+  // about 1.84 tall, and its crust stops a little inside the picture (a soft
+  // edge): 0.93 to 0.955 of the picture's half-width and half-height, measured
+  // round it. CRUST keeps a line a few pixels inside that. The drawn stand-in
+  // is a circle of radius 1.
+  var CRUST = 0.9;
+  function crustEdge() {
+    var i = image("base"); if (!i) return { x: 1, y: 1 };
+    var fit = Math.min(2 / i.naturalWidth, 2 / i.naturalHeight);
+    return { x: i.naturalWidth * fit / 2 * CRUST, y: i.naturalHeight * fit / 2 * CRUST };
+  }
   function food(x, y, radius) {
     ctx.save(); ctx.translate(x, y); ctx.scale(radius, radius);
     var scale = stage === 0 && completed === 0 ? 0.64 + clamp(rollWork / 7, 0, 1) * 0.36 : 1;
     if (!sprite("base", 0, 0, scale * 2, scale * 2, 1)) { var crust = ctx.createRadialGradient(-0.2, -0.2, 0.15, 0, 0, scale); crust.addColorStop(0, "#f4dfab"); crust.addColorStop(0.82, "#f0d39a"); crust.addColorStop(1, "#d1aa68"); ctx.fillStyle = crust; ctx.beginPath(); ctx.arc(0, 0, scale, 0, Math.PI * 2); ctx.fill(); }
     ctx.save(); ctx.beginPath(); ctx.ellipse(0, 0, 0.78, 0.72, 0, 0, Math.PI * 2); ctx.clip();
-    ctx.fillStyle = "#bc6250"; sauceDots.forEach(function (p) { ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill(); });
+    ctx.fillStyle = "#bc6250";
+    // Once the sauce step is done the sauce is all over, as "Spread the sauce
+    // all over." promised. The step still ends at 86% of its spots (stamp());
+    // the dabs alone left the rest bare, a crescent of dough under the cheese
+    // and the toppings (5 Nov 2026). Drawn only: inside the clip above, this
+    // is the sauce's own oval, and nothing counted changes.
+    if (completed >= 2) ctx.fillRect(-1, -1, 2, 2);
+    sauceDots.forEach(function (p) { ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill(); });
     grid.forEach(function (g, index) {
       if (!g.cheese) return;
       ctx.strokeStyle = index % 2 ? "#e9cb7e" : "#f7e4a5"; ctx.lineWidth = 0.025; ctx.lineCap = "round";
@@ -193,7 +212,15 @@
     });
     ctx.restore();
     toppings.forEach(function (t) { ingredientArt(t.type, t.x, t.y, t.type === "pepper" ? 0.31 : 0.3, 1); });
-    cuts.forEach(function (done, index) { if (!done) return; ctx.strokeStyle = "rgba(106,74,39,.85)"; ctx.lineWidth = 0.025; var a = ANGLES[index]; ctx.beginPath(); ctx.moveTo(-Math.cos(a) * 0.96, -Math.sin(a) * 0.96); ctx.lineTo(Math.cos(a) * 0.96, Math.sin(a) * 0.96); ctx.stroke(); });
+    // a slice runs from crust to crust and stops there. At 0.96 of the
+    // pizza's radius every way round it ran past the oval crust onto the
+    // plate (5 Nov 2026); it now ends on the crust's own edge (crustEdge)
+    var edge = crustEdge();
+    cuts.forEach(function (done, index) {
+      if (!done) return; ctx.strokeStyle = "rgba(106,74,39,.85)"; ctx.lineWidth = 0.025;
+      var a = ANGLES[index], c = Math.cos(a), s = Math.sin(a), r = 1 / Math.sqrt(c * c / (edge.x * edge.x) + s * s / (edge.y * edge.y));
+      ctx.beginPath(); ctx.moveTo(-c * r, -s * r); ctx.lineTo(c * r, s * r); ctx.stroke();
+    });
     ctx.restore();
   }
   // a thick arrow, cream under teal, so it reads on dough, sauce and wood

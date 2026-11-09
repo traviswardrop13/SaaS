@@ -8,7 +8,7 @@
 //     touch-action:manipulation, which sona.js puts on EVERY element of every
 //     app page: touch-action is not inherited and WebKit intersects it only up
 //     to the nearest scroll container, so a rule on <html> alone misses a tap
-//     inside Home's scrolling rows.
+//     inside Home's scrolling row ("Your games").
 // What must survive: the grown-up pages keep pinch zoom (no meta lock; it is
 // a parent's way to read small print), a page's own touch-action:none on a
 // game board still wins, and the clinician dashboard keeps its own touch rules.
@@ -87,10 +87,11 @@ async function fresh() {
     sessionStorage.setItem('sona.gate.v1', String(Date.now()));
   });
   const open = async (file) => {
-    target = '/' + file;
+    // (the page's own path: a query, like Home's ?view=arcade, is the page's)
+    target = '/' + file.split('?')[0];
     // 'commit', then the page's own readyState: a navigation answered 204
     // leaves Playwright's load wait hanging though the page has loaded
-    await page.goto(origin + target, { waitUntil: 'commit' });
+    await page.goto(origin + '/' + file, { waitUntil: 'commit' });
     await page.waitForFunction(() => document.readyState === 'complete');
     await page.waitForTimeout(200);
   };
@@ -142,14 +143,40 @@ try {
     } finally { await context.close(); }
   });
 
-  await scenario('Home: a game card in a scrolling row', async () => {
+  // the story card leads Home since 22 Oct 2026 (STORY1): a double tap on it
+  // (a three-year-old's tap) never zooms either
+  await scenario('Home: the story card and its two doors', async () => {
     const { context, page, open } = await fresh();
     try {
       await open('today.html');
-      await page.waitForSelector('.game-card');
+      await page.waitForSelector('#questCard');
       const m = await page.evaluate(([fn]) => {
         const effective = new Function('return ' + fn)();
-        const cards = [...document.querySelectorAll('.game-card')];
+        const els = ['#questCard', '#questGo', '#arcadeBtn', '#homeBooksBtn'];
+        const now = els.map(effective);
+        const sheet = document.getElementById('sonaNoZoom'); sheet.disabled = true;
+        const without = els.map(effective);
+        sheet.disabled = false;
+        return { now, without };
+      }, [effective.toString()]);
+      ok('Home\'s story card, its play button and both doors: a double tap does not zoom', m.now.every(v => v && v !== 'auto'), m.now);
+      ok('…and without the rule they would (the check has teeth)', m.without.every(v => v === 'auto'), m.without);
+    } finally { await context.close(); }
+  });
+
+  await scenario('Home: a game card in a scrolling row', async () => {
+    const { context, page, open } = await fresh();
+    try {
+      // Home's scrolling row is "Your games" (FOUND1) since the Arcade's
+      // Today's picks became a plain two-column grid (23 Oct 2026): three
+      // finished stories leave three of their games in it. The Arcade's game
+      // cards (STORY1) are on the same page, built once whatever the view.
+      await page.evaluate(() => localStorage.setItem('sona.quest.v1', JSON.stringify({ i: 0, last: 13, s: 3, ls: 2, lk: 'story', got: [] })));
+      await open('today.html');
+      await page.waitForSelector('#foundRow:not([hidden]) .found-tile');
+      const m = await page.evaluate(([fn]) => {
+        const effective = new Function('return ' + fn)();
+        const cards = [...document.querySelectorAll('.game-card, .found-tile')];
         const scroller = el => { for (let n = el.parentElement; n; n = n.parentElement) { const cs = getComputedStyle(n); if (/^(auto|scroll)$/.test(cs.overflowX) || /^(auto|scroll)$/.test(cs.overflowY)) return n; } return null; };
         const inRow = cards.find(c => { const s = scroller(c); return s && s !== document.documentElement && s !== document.body; }) || null;
         const card = cards[0];

@@ -46,9 +46,7 @@
     .family-talk .talk-avatar{width:64px;height:64px;flex:none;border-radius:50%;object-fit:cover;border:3px solid #fff;box-shadow:0 3px 8px #4a6a5226;}
     .family-talk .talk-rachel h2{font-size:19px;margin-bottom:4px;}
     .family-talk .talk-rachel p{font-size:14px;color:#4f6558;font-weight:700;}
-    .family-talk .talk-sign{margin-top:8px;color:var(--ink)!important;font-size:13px!important;}
     .family-talk .talk-form h2{font-size:20px;}
-    .family-talk .talk-hint{margin-top:4px;font-size:13px;font-weight:700;color:var(--muted);}
     .family-talk .talk-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;}
     .family-talk .talk-chip{min-height:44px;padding:9px 14px;border:1px solid #dfceb7;border-radius:999px;background:#fffdfa;color:var(--ink);font-weight:800;font-size:14px;cursor:pointer;box-shadow:0 2px 0 #e8d9c540;}
     .family-talk .talk-chip[aria-pressed="true"]{color:#096c74;background:#e1f1ea;border-color:#69aba1;box-shadow:inset 0 0 0 1px #69aba140,0 2px 0 #c2dacc;}
@@ -58,17 +56,39 @@
     .family-talk .talk-note{margin-top:10px;font-size:12.5px;font-weight:700;line-height:1.5;color:var(--muted);}
     .family-talk .talk-notes{margin-top:18px;padding-top:12px;border-top:1px dashed var(--line);}
     .family-talk .talk-notes .talk-note:first-child{margin-top:0;}
-    .family-talk #fbSend{margin-top:18px;}
     .family-talk #fbStatus{margin-top:10px;font-size:14px;font-weight:800;color:#994d36;}
     .family-talk #fbStatus:empty{display:none;}
     .family-talk #fbSuccess{margin-top:14px;padding:14px 16px;border:1px solid #dae2cd;border-radius:16px;background:#edf3e5;color:#3f5a3f;font-weight:800;font-size:14.5px;line-height:1.45;}
     /* The honeypot: off-screen for people, still a field for a form-filling
        bot. Not display:none, which some bots skip. */
     .family-talk .talk-hp{position:absolute;left:-10000px;top:auto;width:1px;height:1px;overflow:hidden;}
+    /* ONE SCREEN (Travis, 5 Nov 2026: "Shorten Rachel's description ... just
+       have that be on one page"). Rachel's card is two short lines under her
+       name; the form's helper text sits inside its boxes; every tap target
+       stays at least 40px. */
+    .family-talk .talk-rachel{padding:10px 14px;gap:12px;align-items:center;}
+    .family-talk .talk-avatar{width:52px;height:52px;}
+    .family-talk .talk-rachel h2{font-size:17px;margin-bottom:2px;}
+    .family-talk .talk-rachel p{font-size:13px;line-height:1.4;}
+    .family-talk .talk-co{font-family:"Nunito",sans-serif;font-size:12.5px;font-weight:800;color:var(--muted);}
+    body.family-talk .family-pagehead{margin-bottom:10px;}
+    body.family-talk .card+.card{margin-top:10px;}
+    body.family-talk .talk-form{padding:14px 16px;}
+    .family-talk .talk-form h2{font-size:17px;}
+    .family-talk .talk-chips{gap:6px;margin-top:8px;}
+    .family-talk .talk-chip{min-height:40px;padding:7px 12px;font-size:13px;}
+    body.family-talk textarea{min-height:46px;height:46px;margin-top:10px;padding:10px 14px;}
+    body.family-talk div.field{margin-top:10px;font-size:13px;}
+    body.family-talk #fbEmail{min-height:44px;margin-top:10px;padding:10px 14px;}
+    body.family-talk .talk-notes{margin-top:8px;padding-top:0;border-top:none;}
+    .family-talk .talk-note{margin-top:0;font-size:12px;line-height:1.45;}
+    .family-talk #fbSend{margin-top:10px;min-height:46px;}
+    body.family-talk .wrap{padding-bottom:calc(8px + env(safe-area-inset-bottom));}
+    .family-talk .sr-only{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0;}
     @media(max-width:350px){
-      .family-talk .talk-rachel{gap:11px;}
-      .family-talk .talk-avatar{width:52px;height:52px;}
-      .family-talk .talk-chip{padding:8px 12px;font-size:13px;}
+      .family-talk .talk-rachel{gap:10px;}
+      .family-talk .talk-avatar{width:44px;height:44px;}
+      .family-talk .talk-chip{padding:6px 10px;font-size:12.5px;}
     }
   </style>
 </head>
@@ -83,18 +103,17 @@
       <a href="/settings.html" data-tab="settings"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2.2"/><circle cx="9" cy="17" r="2.2"/></svg>Settings</a>
       <a href="/talk.html" data-tab="talk" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11.5a7.5 7.5 0 0 1-11 6.6L4 19.5l1.4-4.3A7.5 7.5 0 1 1 20 11.5Z"/><path d="M8.8 10h6.4M8.8 13.3h4"/></svg>Talk to us</a>
     </nav>
-    <div class="family-pagehead"><img src="/assets/crafted/echo-welcome.webp" alt="" /><div><h1>Talk to us</h1><p>Share a thought or ask a question.</p></div></div>
+    <div class="family-pagehead"><img src="/assets/crafted/echo-welcome.webp" alt="" /><div><h1>Talk to us</h1><p>We read every message.</p></div></div>
 
     <!-- Rachel's credential (CLAUDE.md; Travis, 29 Sep 2026): "MS, CF-SLP"
          after her name, beside the plain words a parent reads, and nothing
          that claims more. The card names nobody else: Travis asked for his
          name off it ("don't mention my name"). -->
     <section class="card talk-rachel" aria-labelledby="rachelHi">
-      <img class="talk-avatar" src="/assets/rachel-wardrop-profile.jpg" width="64" height="64" alt="Rachel Wardrop" />
+      <img class="talk-avatar" src="/assets/rachel-wardrop-profile.jpg" width="52" height="52" alt="Rachel Wardrop" />
       <div>
-        <h2 id="rachelHi">Hi, I'm Rachel.</h2>
-        <p>I'm Sona's co-founder and a pediatric speech-language pathologist in my clinical fellowship. We read every message — tell us how Sona fits your family's day, what could work better, and what you'd love to see.</p>
-        <p class="talk-sign">Rachel, MS, CF-SLP · Co-founder</p>
+        <h2 id="rachelHi">Rachel, MS, CF-SLP <span class="talk-co">· Co-founder</span></h2>
+        <p>I'm a pediatric speech-language pathologist in my clinical fellowship.</p>
       </div>
     </section>
 
@@ -103,20 +122,20 @@
            answers; a tapped chip gets an answer from someone who'd never have
            written in. (Moved here from Settings' "Help us improve".) -->
       <div id="feedbackFields">
-        <h2 id="fbLead">What would make Sona better for your family?</h2>
-        <p class="talk-hint">Tap any that fit. Typing is optional.</p>
+        <h2 id="fbLead">What would make Sona better?</h2>
         <div id="fbChips" class="talk-chips" role="group" aria-labelledby="fbLead"></div>
-        <label class="field" for="fbText">Anything else? (optional)</label>
-        <textarea id="fbText" rows="3" maxlength="2000" placeholder="A quick thought is plenty."></textarea>
-        <div class="field" id="fbRecLabel">Would you recommend Sona to a friend?</div>
-        <div id="fbRec" class="talk-chips" role="group" aria-labelledby="fbRecLabel"></div>
-        <label class="field" for="fbEmail">Want a reply? Your email (optional)</label>
-        <input id="fbEmail" type="email" maxlength="254" inputmode="email" autocomplete="email" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="you@email.com" />
+        <label class="sr-only" for="fbText">Anything else? (optional)</label>
+        <textarea id="fbText" rows="1" maxlength="2000" placeholder="Anything else? (optional)"></textarea>
+        <label class="sr-only" for="fbEmail">Want a reply? Your email (optional)</label>
+        <input id="fbEmail" type="email" maxlength="254" inputmode="email" autocomplete="email" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="Want a reply? Your email (optional)" />
       </div>
 
       <div class="talk-notes">
-        <p class="talk-note" id="talkPrivate">Please leave out your child's name and anything private.</p>
-        <p class="talk-note">We use your email only to reply. It isn't added to any mailing list.</p>
+        <!-- One line (Travis, 5 Nov 2026: "take out please leave out your
+             child's name. And take out it isn't added to any mailing list").
+             A clinician on the web still gets the student-name line: a
+             district reads this form too. -->
+        <p class="talk-note"><span id="talkPrivate" hidden></span>We use your email only to reply.</p>
       </div>
 
       <div class="talk-hp" aria-hidden="true">
@@ -152,13 +171,12 @@
       var CHIPS = isSlp
         ? ["More sounds", "Better progress data", "Easier to assign", "More game variety", "Something's broken", "Something else"]
         : ["More games", "New sounds to practice", "Progress reports", "Easier for my kid", "Something's broken", "Something else"];
-      var REC = ["Definitely", "Maybe", "Not yet"];
       var EMAIL = /^[^\s@<>()[\]\\,;:"]+@[^\s@<>()[\]\\,;:"]+\.[^\s@<>()[\]\\,;:"]{2,}$/;
       var FAIL = "Couldn't send. Your message is still here — please try again.";
-      var BUSY = false, picked = {}, rec = "";
+      var BUSY = false, picked = {};
 
       if (isSlp) $("fbLead").textContent = "You're the expert — what would make Sona more useful on your caseload?";
-      if (isSlp) $("talkPrivate").textContent = "Please leave out any child's or student's name and anything private.";
+      if (isSlp) { $("talkPrivate").textContent = "Please leave out any child's or student's name and anything private. "; $("talkPrivate").hidden = false; }
       // Prefilled from setup, editable, and never saved back: this address
       // is for one reply, not a change to the profile.
       var saved = typeof p.email === "string" ? p.email : "";
@@ -175,21 +193,12 @@
         return b;
       }
       function clearNotices() { $("fbStatus").textContent = ""; $("fbSuccess").hidden = true; }
-      function paintSingle(host, value, values) {
-        [].slice.call(host.children).forEach(function (n, i) { n.setAttribute("aria-pressed", String(values[i] === value)); });
-      }
 
       CHIPS.forEach(function (label) {
         chip(label, $("fbChips"), function (b) {
           picked[label] = !picked[label];
           b.setAttribute("aria-pressed", String(!!picked[label]));
           clearNotices();
-        });
-      });
-      REC.forEach(function (label) {
-        chip(label, $("fbRec"), function () {
-          rec = rec === label ? "" : label;
-          paintSingle($("fbRec"), rec, REC);
         });
       });
 
@@ -222,7 +231,6 @@
           kind: "feedback",
           chips: chips,
           text: text,
-          recommend: rec,
           email: email,
           app: native ? "ios" : "web",
           from: isSlp ? "slp" : "family",
@@ -234,9 +242,9 @@
           .then(function (j) {
             setBusy(false);
             if (!j || !j.ok) return say((j && typeof j.error === "string" && j.error) || FAIL);
-            picked = {}; rec = "";
+            picked = {};
             $("fbText").value = "";
-            [].slice.call(document.querySelectorAll("#fbChips .talk-chip, #fbRec .talk-chip")).forEach(function (b) { b.setAttribute("aria-pressed", "false"); });
+            [].slice.call(document.querySelectorAll("#fbChips .talk-chip")).forEach(function (b) { b.setAttribute("aria-pressed", "false"); });
             $("fbSuccess").textContent = "Thank you — your message reached the Sona team.";
             $("fbSuccess").hidden = false;
             try { $("fbSuccess").scrollIntoView({ behavior: "smooth", block: "nearest" }); } catch (e) {}

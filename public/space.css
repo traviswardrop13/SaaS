@@ -35,7 +35,8 @@ html,body{height:100%;overflow:hidden;overscroll-behavior:none;background:var(--
 #spaceSpeed{font-family:"Baloo 2",sans-serif;font-size:15px;font-weight:800;line-height:1.05;color:var(--cream-ink);}
 #spaceLamp{display:block;width:10px;height:10px;border-radius:50%;background:#d0b4a0;flex:none;box-shadow:0 0 0 3px var(--cream-line);}
 #spaceLamp.soft{background:#75a894;box-shadow:0 0 0 3px #dce9d9;}
-#turnPanel{position:absolute;z-index:8;left:14px;right:14px;bottom:calc(16px + env(safe-area-inset-bottom));margin:0;background:var(--cream-card);box-shadow:0 5px 0 var(--cream-line),0 10px 45px rgba(48,35,21,.25);}
+/* --space-lift (space.js liftPanel): while the child talks, the panel sits above the landing pad */
+#turnPanel{position:absolute;z-index:8;left:14px;right:14px;bottom:max(calc(16px + env(safe-area-inset-bottom)),var(--space-lift,0px));margin:0;background:var(--cream-card);box-shadow:0 5px 0 var(--cream-line),0 10px 45px rgba(48,35,21,.25);}
 #turnPanel.yay{box-shadow:0 5px 0 var(--cream-line);}
 #hear{background:var(--cream);color:var(--act-d);box-shadow:0 3px 0 var(--cream-line);min-width:44px;min-height:44px;}
 #hear svg{width:24px;height:24px;}

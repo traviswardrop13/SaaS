@@ -11,8 +11,9 @@
 //   - a card whose child plays Level 2 or 3 carries a small numeral and pips
 //     on its picture (top right, clear of the best tag and the Free/Included
 //     label), and its label says the level;
-//   - a grey Premium card, a book and Feed Echo never open the sheet, and a
-//     Coming soon game has no card to tap (19 Oct 2026);
+//   - a grey Premium card, Home's Books door and Feed Echo never open the
+//     sheet, a Coming soon game has no card to tap (19 Oct 2026), and the
+//     Arcade has no book at all (23 Oct 2026);
 //   - Home stays the silent library: no voice, no event, nothing written on
 //     load or on coming back to the front, only the "seen" mark and the pick
 //     on a child's tap; nothing fits off the screen at 320 px;
@@ -21,7 +22,7 @@
 //     in the levels record) changes nothing: the badges, the sheet, the road's
 //     Game levels and its level gifts all follow the trophies, as earned.
 // The Trophy Road (step 6, 11 Oct 2026) joined in sections 7 to 10:
-//   - Home's one card under "Pick a game!": the next gift's picture (or the
+//   - Home's one card under the story's two doors: the next gift's picture (or the
 //     waiting one, or the chest when it is ready) and a bar filling toward
 //     it, the words in its label; it only reads, and sends nothing;
 //   - the road page: today's chest in each state and its three taps, a Big
@@ -91,6 +92,9 @@ async function fresh({ width = 375, height = 812, trophies = 0, levels = null, p
     // it and write the legacy set on Home's first load, and the snapshots
     // below hold Home to writing nothing
     localStorage.setItem("sona.buddyset.v1", "kept");
+    // …and the days this child's story calendar and stories started (CAL1):
+    // without them, sona.js writes them on Home's first load, once
+    localStorage.setItem("sona.quest.v1", JSON.stringify({ a: TODAY, sv: TODAY }));
     localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Mia", childAge: "7", focusSounds: ["R"], onboarded: true, voiceOn: false, soundOn: false, volume: 0 }));
     sessionStorage.setItem("sona.paidui", "1");
     if (premium) localStorage.setItem("sona.sub.v1", JSON.stringify({ active: true, since: Date.now(), source: "stripe" }));
@@ -101,7 +105,11 @@ async function fresh({ width = 375, height = 812, trophies = 0, levels = null, p
   }, { trophies, levels, premium, bests, extra, TODAY, ledger });
   return { context, page, errors };
 }
-async function home(page) { await page.goto(origin + "/today.html"); await page.waitForFunction(() => window.Sona && document.querySelector("#activityGroups .game-card")); await page.waitForTimeout(150); }
+// The game cards (their levels, badges and the level sheet) are Home's Arcade
+// since 22 Oct 2026 (STORY1); the Trophy Road card is on Home itself, under
+// the story card's two doors.
+async function home(page) { await page.goto(origin + "/today.html?view=arcade"); await page.waitForFunction(() => window.Sona && document.querySelector("#activityGroups .game-card")); await page.waitForTimeout(150); }
+async function homeView(page) { await page.goto(origin + "/today.html"); await page.waitForFunction(() => window.Sona && document.querySelector("#activityGroups .game-card")); await page.waitForTimeout(150); }
 const card = (page, key) => page.locator('#activityGroups .game-card[data-game="' + key + '"]').first();
 const sheetOpen = (page) => page.evaluate(() => document.getElementById("levelOvl").classList.contains("show"));
 const levels = (page) => page.evaluate(() => JSON.parse(localStorage.getItem("sona.playlevel.v1") || "null"));
@@ -227,15 +235,22 @@ await section("an old cap, and who never sees the sheet", async () => {
     ok("Feed Echo never opens the sheet (one level until Rachel says)", feedTo && new URL(feedTo).pathname === "/arcade-feed.html" && !(await levels(f.page)), feedTo);
     await home(f.page);
     ok("a Coming soon game has no card on Home, so no badge and no sheet", (await f.page.locator('#libraryApp [data-game="peekaboo"]').count()) === 0 && (await f.page.locator("#libraryApp .game-card:disabled").count()) === 0);
-    const bookTo = await tapAway(f.page, f.page.locator("#booksCard"));
-    ok("the books never open it", bookTo && new URL(bookTo).pathname === "/library.html" && !(await levels(f.page)), bookTo);
+    // THE ARCADE IS GAMES ONLY (Travis, 23 Oct 2026: "organize the arcade so
+    // that there are no books in there"): no Books card and no book in Today's
+    // picks, so the one way to a book is Home's Books door, and it still goes
+    // straight to the shelf, never through the sheet or the levels record
+    const arcadeBooks = await f.page.evaluate(() => document.querySelectorAll("#libraryApp #booksCard, #libraryApp #libraryBooksArt, #libraryApp #booksTag, #libraryApp .book-card").length);
+    ok("the Arcade has no book to tap: no Books card, no book card in any row", arcadeBooks === 0, arcadeBooks);
+    await homeView(f.page);
+    const bookTo = await tapAway(f.page, f.page.locator("#homeBooksBtn"));
+    ok("…and Home's Books door never opens it", bookTo && new URL(bookTo).pathname === "/library.html" && !(await levels(f.page)), bookTo);
     ok("no page errors", f.errors.length === 0, f.errors);
   } finally { await f.context.close(); }
 });
 
 // ── 3. the silent, passive library ──────────────────────────────────────
 await section("Home only reads", async () => {
-  const f = await fresh({ trophies: 800, premium: true, levels: { pick: { slice: 3, run: 2 }, seen: { slice: 3, run: 3 } }, bests: { run: { n: 570, at: "2026-10-02" } } });
+  const f = await fresh({ trophies: 800, premium: true, levels: { pick: { slice: 3, run: 2 }, seen: { slice: 3, run: 3 } }, bests: { run: { n: 570, at: "2026-10-02", c: "stars" } } });
   try {
     await f.page.goto(origin + "/__seed");
     const before = await store(f.page);
@@ -269,9 +284,9 @@ await section("Home only reads", async () => {
 // ── 4. small phones ─────────────────────────────────────────────────────
 for (const vp of [{ width: 320, height: 568 }, { width: 390, height: 844 }, { width: 768, height: 1024 }]) {
   await section("fit at " + vp.width, async () => {
-    const f = await fresh({ ...vp, trophies: 800, premium: true, levels: { pick: { run: 3, tiles: 2, hoops: 2, bubbles: 3 }, seen: { run: 3, tiles: 3, hoops: 3, bubbles: 3 } }, bests: { run: { n: 570, at: "2026-10-02" } } });
+    const f = await fresh({ ...vp, trophies: 800, premium: true, levels: { pick: { run: 3, tiles: 2, hoops: 2, bubbles: 3 }, seen: { run: 3, tiles: 3, hoops: 3, bubbles: 3 } }, bests: { run: { n: 570, at: "2026-10-02", c: "stars" } } });
     try {
-      await f.page.evaluate(() => { localStorage.setItem("sona.playlevel.v1", JSON.stringify(Object.assign(JSON.parse(localStorage.getItem("sona.playlevel.v1")), { best: { run: { "3": { n: 570, at: "2026-10-20" } }, tiles: { "2": { n: 53, at: "2026-10-20" } } } }))); });
+      await f.page.evaluate(() => { localStorage.setItem("sona.playlevel.v1", JSON.stringify(Object.assign(JSON.parse(localStorage.getItem("sona.playlevel.v1")), { best: { run: { "3": { n: 570, at: "2026-10-20", c: "stars" } }, tiles: { "2": { n: 53, at: "2026-10-20" } } } }))); });
       await home(f.page);
       const w = vp.width + "px: ";
       if (vp.width === 320) { await card(f.page, "run").scrollIntoViewIfNeeded(); await f.page.screenshot({ path: path.join(OUT, "roadtest-badges-320.png") }); }
@@ -280,8 +295,8 @@ for (const vp of [{ width: 320, height: 568 }, { width: 390, height: 844 }, { wi
         ok(w + key + "'s badge is inside its picture, top right, clear of the best tag and the label", g && g.text && g.inArt && g.topRight && g.clearOfBest && g.clearOfLabel, g);
       }
       ok(w + "Home has no sideways scroll", (await overflow(f.page)) <= 1, await overflow(f.page));
-      const hdr = await f.page.evaluate(() => { const p = document.getElementById("repPill").getBoundingClientRect(), g = document.getElementById("parentBtn").getBoundingClientRect(), b = document.getElementById("buddyBtn").getBoundingClientRect(); return { apart: p.left >= b.right && p.right <= g.left, inside: g.right <= document.documentElement.clientWidth, oneLine: p.height <= 45 }; });
-      ok(w + "the header still fits side by side (repweektest's numbers)", hdr.apart && hdr.inside && hdr.oneLine, hdr);
+      const hdr = await f.page.evaluate(() => { const p = document.getElementById("giftBtn").getBoundingClientRect(), g = document.getElementById("parentBtn").getBoundingClientRect(), b = document.getElementById("buddyBtn").getBoundingClientRect(); return { apart: p.left >= b.right && p.right <= g.left, inside: g.right <= document.documentElement.clientWidth, oneLine: p.height <= 49 && p.width >= 44 && p.height >= 44 }; });
+      ok(w + "the header still fits side by side: the buddy, the gift button (at least 44 px) and Grown-ups", hdr.apart && hdr.inside && hdr.oneLine, hdr);
       await f.page.evaluate(() => { const p = JSON.parse(localStorage.getItem("sona.playlevel.v1")); delete p.seen.slice; localStorage.setItem("sona.playlevel.v1", JSON.stringify(p)); });
       await home(f.page);
       await card(f.page, "slice").scrollIntoViewIfNeeded(); await card(f.page, "slice").click(); await f.page.waitForTimeout(150);
@@ -339,86 +354,73 @@ await section("Settings has no Game levels", async () => {
   ok("no word on the sheet or in the level lines is one a child must never see (score, points, rare, missed, hurry, streak…)", !bad, bad);
 }
 
-// ── 7. Home's Trophy Road card ──────────────────────────────────────────
+// ── 7. Home's gift button (FOUND1, 23 Oct 2026) ─────────────────────────
+// The Trophy Road card under Home's doors and the reps count in the corner
+// became one button in the top bar: a ring filling toward today's goal (what
+// opens today's chest) and a teal dot when the road has something to open.
 const roadSeen = { got: {}, items: {}, m: TODAY.slice(0, 7), mgot: {} };
 const opened = (...ns) => JSON.stringify(Object.assign({}, roadSeen, { got: Object.fromEntries(ns.map((n) => [n, 1])) }));
-const cardOf = (page) => page.evaluate(() => {
-  const c = document.getElementById("roadCard"); if (!c) return null;
-  const r = c.getBoundingClientRect(), intro = document.querySelector(".library-intro");
-  return { shown: !c.hidden && r.height > 0, label: c.getAttribute("aria-label"), href: c.getAttribute("href"), dot: !document.getElementById("roadDot").hidden,
-    bar: [...document.querySelectorAll("#roadBar i")].map((i) => (i.className === "on" ? 1 : 0)).join(""),
-    pic: (() => { const p = document.getElementById("roadPic"), im = p.querySelector("img"); return im ? im.getAttribute("src") : p.querySelector(".road-level") ? "level" : p.querySelector(".road-coins") ? "coins" : p.querySelector(".road-stk") ? "sticker" : p.innerHTML.slice(0, 40); })(),
-    small: document.getElementById("roadSmall").textContent, afterIntro: intro && intro.nextElementSibling === c, h1: document.querySelector("h1") && document.querySelector("h1").textContent,
+const giftOf = (page) => page.evaluate(() => {
+  const c = document.getElementById("giftBtn"); if (!c) return null;
+  const r = c.getBoundingClientRect(), ring = document.getElementById("giftRing");
+  return { shown: !c.hidden && r.height > 0, label: c.getAttribute("aria-label"), href: c.getAttribute("href"), dot: !document.getElementById("giftDot").hidden,
+    fill: ring.style.getPropertyValue("--fill"), full: c.classList.contains("full"), icon: document.querySelector("#giftIc img") ? document.querySelector("#giftIc img").getAttribute("src") : null, svg: !!document.querySelector("#giftIc svg"),
+    inHeader: !!c.closest(".library-header"), card: !!document.getElementById("roadCard"), pill: !!document.getElementById("repPill"),
     gameish: c.hasAttribute("data-game") || c.hasAttribute("data-locked") || c.classList.contains("game-card"), h: r.height, w: r.width, l: r.left, rt: r.right };
 });
-await section("Home's road card", async () => {
+await section("Home's gift button", async () => {
   let f = await fresh({ trophies: 0 });
   try {
     await f.page.goto(origin + "/__seed");
     const before = await store(f.page);
     asked.length = 0;
-    await home(f.page);
-    const c = await cardOf(f.page);
-    ok("the card sits right under \"Pick a game!\", which stays the page's first heading, and opens the road", c && c.shown && c.afterIntro && c.h1 === "Pick a game!" && c.href === "/road.html", c);
-    ok("a new child: the first gift's picture (coins), an empty bar, no dot, and its label says where the next gift is", c.pic === "coins" && c.bar === "00000" && !c.dot && c.label === "Trophy Road. 0 trophies. 0 coins. Next gift at 30 trophies.", c);
-    ok("the counts under the bar are small numbers beside the drawn trophy and coin, never a word to read", /^0\s*0$/.test(c.small.trim()) && (await f.page.locator("#roadSmall svg").count()) === 2, c.small);
+    await homeView(f.page);
+    const c = await giftOf(f.page);
+    ok("Home has no Trophy Road card and no reps count: one gift button in the top bar opens the road", c && c.shown && c.inHeader && !c.card && !c.pill && c.href === "/road.html", c);
+    ok("…its picture is the road's own painted chest, never the drawn kit's orange gift (orange on a child's screen is only the practice sound's letters)", c.icon === "/assets/crafted/road-chest.webp" && !c.svg, c);
+    ok("a new child: an empty ring, no dot, and its label says today's reps toward the goal", c.fill === "0" && !c.full && !c.dot && c.label === "Trophy Road. 0 of 30 reps today.", c);
     ok("it is a link, not a game card: no data-game, data-locked or .game-card", !c.gameish);
-    ok("loading Home with the card writes nothing", (await store(f.page)) === before);
-    await f.page.evaluate(() => { Object.defineProperty(document, "hidden", { configurable: true, get: () => true }); document.dispatchEvent(new Event("visibilitychange")); Sona.gameRep("R"); Sona.gameRep("R"); Sona.gameRep("R"); Object.defineProperty(document, "hidden", { configurable: true, get: () => false }); document.dispatchEvent(new Event("visibilitychange")); });
+    ok("loading Home with the button writes nothing", (await store(f.page)) === before);
+    await f.page.evaluate(() => { Object.defineProperty(document, "hidden", { configurable: true, get: () => true }); document.dispatchEvent(new Event("visibilitychange")); for (let k = 0; k < 15; k++) Sona.gameRep("R"); Object.defineProperty(document, "hidden", { configurable: true, get: () => false }); document.dispatchEvent(new Event("visibilitychange")); });
     await f.page.waitForTimeout(150);
-    const c2 = await cardOf(f.page);
-    ok("a rep made while Home was behind a game repaints the card when Home comes back to the front", /^Trophy Road\. 3 trophies\./.test(c2.label) && c2.bar === "00000" && /^3/.test(c2.small.trim()), c2);
+    const c2 = await giftOf(f.page);
+    ok("reps made while Home was behind a game fill the ring when Home comes back to the front (15 of 30: half)", c2.fill === "50" && /^Trophy Road\. 15 of 30 reps today\./.test(c2.label), c2);
     const own = asked.filter((a) => a.from === "/today.html" && /^\/api\/(board|track)\b/.test(a.path));
     ok("Home made no /api/board or /api/track request on load or coming back", own.length === 0, own);
     ok("Home never spoke", (await speech(f.page)).length === 0);
   } finally { await f.context.close(); }
 
-  f = await fresh({ trophies: 120, extra: { "sona.road.v1": opened(1, 2) } });
-  try {
-    await home(f.page);
-    const c = await cardOf(f.page);
-    ok("the next stop is a level: its picture leads with the numeral, the bar is two-fifths full, and the label says \"Level 2 at 150 trophies.\"",
-      c.pic === "level" && c.bar === "11000" && !c.dot && c.label === "Trophy Road. 120 trophies. 0 coins. Level 2 at 150 trophies.", c);
-  } finally { await f.context.close(); }
-
-  f = await fresh({ trophies: 340, extra: { "sona.road.v1": opened(1, 2, 3, 4, 5) } });
-  try {
-    await home(f.page);
-    const c = await cardOf(f.page);
-    ok("the next stop is the Sun hat: its painted picture, and \"Next gift at 380 trophies.\"", c.pic === "/assets/crafted/hat-sunhat.webp" && !c.dot && c.label === "Trophy Road. 340 trophies. 0 coins. Next gift at 380 trophies.", c);
-  } finally { await f.context.close(); }
-
   f = await fresh({ trophies: 50 });
   try {
-    await home(f.page);
-    const c = await cardOf(f.page);
-    ok("a gift waiting on the road: its picture, a full bar, the teal dot, and \"A gift is waiting.\"", c.pic === "coins" && c.bar === "11111" && c.dot && /A gift is waiting\.$/.test(c.label), c);
-    const dot = await f.page.evaluate(() => getComputedStyle(document.getElementById("roadDot")).backgroundColor);
-    ok("…the dot is teal, never orange (orange is only the practice sound's letters)", dot === "rgb(20, 133, 141)", dot);
+    await homeView(f.page);
+    const c = await giftOf(f.page);
+    ok("a gift waiting on the road: the teal dot, and \"A gift is waiting.\"", c.dot && /A gift is waiting\.$/.test(c.label), c);
+    const dot = await f.page.evaluate(() => getComputedStyle(document.getElementById("giftDot")).backgroundColor);
+    ok("…the dot is teal, never orange (orange is only the practice sound's letters)", (() => { const m = (dot.match(/\d+/g) || []).map(Number); return m.length >= 3 && m[1] > m[0] + 40 && m[2] > m[0] + 40; })(), dot);
   } finally { await f.context.close(); }
 
   f = await fresh({ trophies: 100 });
-  try { await home(f.page); const c = await cardOf(f.page); ok("two waiting say so in the label", c.dot && /2 gifts are waiting\.$/.test(c.label), c.label); } finally { await f.context.close(); }
+  try { await homeView(f.page); const c = await giftOf(f.page); ok("two waiting say so in the label", c.dot && /2 gifts are waiting\.$/.test(c.label), c.label); } finally { await f.context.close(); }
 
   f = await fresh({ trophies: 30, extra: { "sona.road.v1": opened(1), "sona.goaldays.v1": JSON.stringify({ [TODAY]: 30 }) } });
   try {
     await f.page.goto(origin + "/__seed");
     const before = await store(f.page);
     asked.length = 0;
-    await home(f.page);
-    const c = await cardOf(f.page);
-    ok("today's goal met (a stamp): the painted chest leads, the bar is full, the dot shows, and \"Your chest is ready.\"", /road-chest\.webp$/.test(c.pic) && c.bar === "11111" && c.dot && /Your chest is ready\.$/.test(c.label), c);
+    await homeView(f.page);
+    const c = await giftOf(f.page);
+    ok("today's goal met (a stamp): the ring is full, the dot shows, and \"Goal met. Your chest is ready.\"", c.fill === "100" && c.full && c.dot && /Goal met\. Your chest is ready\.$/.test(c.label), c);
     ok("…and Home still writes nothing: it never opens the chest, settles a month or sends an event", (await store(f.page)) === before && asked.filter((a) => a.from === "/today.html" && /^\/api\/(board|track)\b/.test(a.path)).length === 0);
   } finally { await f.context.close(); }
 
   for (const vp of [{ width: 320, height: 568 }, { width: 375, height: 667 }, { width: 768, height: 1024 }]) {
     f = await fresh({ ...vp, trophies: 1350, extra: { "sona.road.v1": opened(...Array.from({ length: 14 }, (_, i) => i + 1)), "sona.goaldays.v1": JSON.stringify({ [TODAY]: 30 }) } });
     try {
-      await home(f.page);
-      const c = await cardOf(f.page), w = vp.width + "px: ";
-      const hdr = await f.page.evaluate(() => { const p = document.getElementById("repPill").getBoundingClientRect(), g = document.getElementById("parentBtn").getBoundingClientRect(), b = document.getElementById("buddyBtn").getBoundingClientRect(); return { apart: p.left >= b.right && p.right <= g.left, inside: g.right <= document.documentElement.clientWidth, oneLine: p.height <= 45 }; });
-      ok(w + "the card fits inside the page, at least 60 px tall, with no sideways scroll, and the header still fits", c.shown && c.l >= 0 && c.rt <= vp.width && c.h >= 60 && (await overflow(f.page)) <= 1 && hdr.apart && hdr.inside && hdr.oneLine, { c, hdr });
-      if (vp.width === 320) await f.page.screenshot({ path: path.join(OUT, "roadtest-card-320.png") });
+      await homeView(f.page);
+      const c = await giftOf(f.page), w = vp.width + "px: ";
+      const hdr = await f.page.evaluate(() => { const p = document.getElementById("giftBtn").getBoundingClientRect(), g = document.getElementById("parentBtn").getBoundingClientRect(), b = document.getElementById("buddyBtn").getBoundingClientRect(); return { apart: p.left >= b.right && p.right <= g.left, inside: g.right <= document.documentElement.clientWidth, oneLine: p.height <= 49 && p.width >= 44 && p.height >= 44 }; });
+      ok(w + "the button is a full tap target inside the page, with no sideways scroll, and the header fits on one line", c.shown && c.l >= 0 && c.rt <= vp.width && c.h >= 44 && c.w >= 44 && (await overflow(f.page)) <= 1 && hdr.apart && hdr.inside && hdr.oneLine, { c, hdr });
+      if (vp.width === 320) await f.page.screenshot({ path: path.join(OUT, "roadtest-gift-320.png") });
     } finally { await f.context.close(); }
   }
 });
@@ -493,6 +495,10 @@ await section("the road page: stops and the month", async () => {
   let f = await fresh({ trophies: 2000 });
   try {
     await road(f.page);
+    // how it works, in pictures (22 Oct 2026): talk › trophies › chest › coins › shop
+    const how = await f.page.evaluate(() => { const r = document.getElementById("howRow"), b = r.getBoundingClientRect(); return { label: r.getAttribute("aria-label"), role: r.getAttribute("role"), words: [...r.querySelectorAll(".rd-how-step b")].map((x) => x.textContent), pics: [...r.querySelectorAll(".rd-how-pic")].every((x) => !!x.querySelector("svg")), fits: b.right <= innerWidth + 0.5 && b.left >= -0.5, beforeHero: !!(r.compareDocumentPosition(document.getElementById("hero")) & Node.DOCUMENT_POSITION_FOLLOWING) }; });
+    ok("the road says how coins are earned, in pictures first: Talk › Trophies › Chest › Coins › Shop, with every picture painted, above the road, inside the screen", JSON.stringify(how.words) === JSON.stringify(["Talk", "Trophies", "Chest", "Coins", "Shop"]) && how.pics && how.fits && how.beforeHero && how.role === "img", how);
+    ok("…and its label is the whole sentence a grown-up reads out: talk for trophies, the goal opens the chest, the chest gives coins, coins go to the Buddy Shop", how.label === "Talk to earn trophies. Reach your goal to open today's chest. The chest gives coins. Spend coins in the Buddy Shop.", how.label);
     const stops = await f.page.evaluate(() => [...document.querySelectorAll("#roadList .rd-stop")].map((r) => ({ n: +r.dataset.stop, open: r.classList.contains("open"), tag: r.tagName, flag: (r.querySelector(".rd-flag") || {}).textContent || "" })));
     const ns = stops.map((s) => s.n);
     ok("with 2,000 trophies and nothing opened, every stop from 1 to 21 waits on the page, each a button that says \"Open!\"", [...Array(21)].every((_, i) => ns.includes(i + 1)) && stops.filter((s) => s.n <= 21).every((s) => s.open && s.tag === "BUTTON" && s.flag === "Open!"), stops.slice(0, 3));
@@ -615,7 +621,9 @@ await section("the road page: game levels, fit, and what never happens", async (
     ok("…and the old cap is left in the record, only never read", (await levels(f.page)).cap === 1);
   } finally { await f.context.close(); }
   f = await fresh({ trophies: 120, levels: { cap: 1 }, extra: { "sona.road.v1": opened(1, 2) } });
-  try { await home(f.page); const c = await cardOf(f.page); ok("…with stop 3 next, Home's card shows the level and \"Level 2 at 150 trophies.\", old cap or not", c.pic === "level" && c.bar === "11000" && /Level 2 at 150 trophies\.$/.test(c.label), c); } finally { await f.context.close(); }
+  // (Home's road card, which showed this, is the gift button since FOUND1:
+  // the road page itself says what stop 3 brings)
+  try { await road(f.page); const s3 = await f.page.evaluate(() => { const r = document.querySelector('#roadList .rd-stop[data-stop="3"]'); return r ? { level: !!r.querySelector(".ga-lv"), label: r.getAttribute("aria-label") } : null; }); ok("…with stop 3 next, the road shows its level gift and \"Level 2 in every game\", old cap or not", s3 && s3.level && /^At 150 trophies: Level 2 in every game and 20 coins\./.test(s3.label) && !/Open!$/.test(s3.label), s3); } finally { await f.context.close(); }
   f = await fresh({ trophies: 120 });
   try { await road(f.page); ok("before Level 2 opens there is no Game levels panel", await f.page.locator("#levelsCard").isHidden()); } finally { await f.context.close(); }
 
@@ -661,13 +669,15 @@ await section("the sticker book", async () => {
   try { await e.page.goto(origin + "/stickers.html"); await e.page.waitForSelector("#grid .st"); ok("an empty book says where stickers come from", (await e.page.locator("#empty").innerText()) === "Open gifts on the Trophy Road to fill your book!"); } finally { await e.context.close(); }
 });
 
-// ── 10. the copy a child can see on the road and Home's card ────────────
+// ── 10. the copy a child can see on the road and Home's gift button ─────
 await section("the copy", async () => {
   const strip = (t) => t.replace(/<!--[\s\S]*?-->/g, " ").replace(/<style[\s\S]*?<\/style>/gi, " ").replace(/(^|[^:"'\\])\/\/[^\n]*/g, "$1").replace(/<[^>]+>/g, " ");
   const home = readFileSync(path.join(ROOT, "today.html"), "utf8");
-  const text = strip(readFileSync(path.join(ROOT, "road.html"), "utf8")) + strip((home.match(/<a id="roadCard"[\s\S]*?<\/a>/) || [""])[0] + (home.match(/function paintRoad\(\)\{[\s\S]*?\n {4}\}/) || [""])[0]);
+  const gift = (home.match(/<a id="giftBtn"[\s\S]*?<\/a>/) || [""])[0] + (home.match(/function paintGift\(\)\{[\s\S]*?\n {4}\}/) || [""])[0];
+  ok("Home's gift button and its painter are found", gift.length > 600, gift.length);
+  const text = strip(readFileSync(path.join(ROOT, "road.html"), "utf8")) + strip(gift);
   const bad = text.match(/\b(score|points?|high score|rare|epic|legendary|mystery|you're back|missed|lost|behind|hurry|ends in|last chance|streak|days left)\b|\$\d/gi);
-  ok("no word on the road page or Home's card is one a child must never see, and no price", text.length > 3000 && !bad, bad);
+  ok("no word on the road page or Home's gift button is one a child must never see, and no price", text.length > 3000 && !bad, bad);
 });
 
 console.log(fails ? `\n${fails} FAILED` : "\nall road and level checks passed");

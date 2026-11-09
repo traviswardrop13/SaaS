@@ -19,7 +19,10 @@
 //     not, and no price at all when the store does not answer);
 //   - "Not now" goes to Home with every game and book locked;
 //   - a purchase from setup goes back to setup, for the microphone and the
-//     hand-off, when the tab still carries setup's marker; else Home.
+//     hand-off, when the tab still carries setup's marker; else Home;
+//   - and that hand-off's "Let's play!" opens the first game, Fruit Slice,
+//     for every child (31 Oct 2026: it went Home from 17 Oct, and that
+//     morning, briefly, to today's story).
 // Setup's own half (ready, the marker being written, the microphone after the
 // price) is played in setupbuytest and onboardingtest; here /onboarding.html
 // is a stub, so this suite holds whatever that page is doing. Every size and
@@ -159,9 +162,9 @@ try {
       // zone, exactly as a parent's phone would write it. Never a typed date.
       const day = await page.evaluate(() => new Date(Date.now() + 3 * 86400000).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" }));
       ok("the store says the monthly plan starts with 3 free days, so the card says so: the row, the check line, and the button",
-        s.state === "free" && s.under === "3-day free trial" && s.price === "$9.99/mo" && s.check === "No payment today · Subscription auto-renews" && s.btn === "Start practicing!" && !/a year/i.test(s.body), [s.state, s.tag, s.price, s.btn]);
-      ok("…with no dated rows and no date (" + day + " is nowhere), and one small line under the button: the price, and Cancel anytime",
-        s.rows.length === 0 && s.body.indexOf(day) === -1 && s.note === "3 days free, then $9.99 a month. Cancel anytime.", [s.rows, s.note]);
+        s.state === "free" && s.under === "3-day free trial" && s.price === "$9.99/mo" && s.check === "" && s.btn === "Start practicing!" && !/a year/i.test(s.body), [s.state, s.tag, s.price, s.btn]);
+      ok("…with the 3-step timeline (4 Nov 2026) and no date (" + day + " is nowhere), and one small line under the button: the price, and Cancel anytime",
+        s.rows.length === 3 && s.body.indexOf(day) === -1 && s.note === "3 days free, then $9.99 a month. Auto-renews. Cancel anytime.", [s.rows, s.note]);
       ok("…and no promise of a reminder: Sona sends none", !/remind|e-?mail|notif/i.test(s.body), (s.body.match(/[^\n]*(remind|e-?mail|notif)[^\n]*/i) || [""])[0]);
       ok("…\"Not now\" (not \"keep the free version\") under it, and no \"What stays free\"", s.declineShown && s.decline === "Not now" && !s.freeCard, [s.decline, s.freeCard]);
       ok("…and nothing on it says anything stays free", !/stays? free|free games|free version/i.test(s.body) && s.check3 === "No ads, ever" && !/free version/.test(s.line),
@@ -191,6 +194,51 @@ try {
       ok("free days started, " + (marker ? "marker" : "no marker") + ": no page errors", errors.length === 0, errors);
     } finally { await context.close(); }
   });
+  // STRAIGHT INTO A GAME (Travis, 31 Oct 2026: "when somebody starts, I want
+  // them to go straight into either piano tiles or fruit slice. Because
+  // that's what is advertised", then "Fruit Slice for everyone"). Back from
+  // the free days starting, setup's own microphone and hand-off (the real
+  // page here, not the stub), and "Let's play!" opens the first game, Fruit
+  // Slice (its practice page first), whatever the child's sound or age, and
+  // whether or not today's story is open or done: the story waits on Home.
+  // It replaces the 17 Oct "go to the homepage" and that morning's "straight
+  // into Day 1". The first-game mark is written, so its end card is the first
+  // game's, and the game it opens is open to the child.
+  for (const [label, sounds, age, done] of [
+    ["a child on R (Robo's Rocket waits on Home)", ["R"], "7", false],
+    ["a child on P (no talking story)", ["P"], "7", false],
+    ["a child of 3 (Fruit Slice, not Feed Echo)", ["P"], "3", false],
+    ["a child whose story today is already done", ["R"], "7", true],
+  ]) await scenario("the free days start, then the hand-off, " + label, async () => {
+    const { context, page, errors } = await open(browser, BASE, { app: "buy", stamp: "post", setUp: true, age, marker: true, intro: "free3" });
+    try {
+      await context.route("**/today.html", (r) => r.fulfill({ contentType: "text/html", body: "<!doctype html><title>home</title><p>home</p>" }));
+      await context.route("**/charge.html**", (r) => r.fulfill({ contentType: "text/html", body: '<!doctype html><title>game</title><p>game</p><script src="/sona.js"></script>' }));
+      await context.route("**/adventure.html**", (r) => r.fulfill({ contentType: "text/html", body: "<!doctype html><title>story</title><p>story</p>" }));
+      await page.goto(BASE + "/subscribe.html?setup=1");
+      await priced(page); await calm(page);
+      await page.evaluate(([s, done]) => {
+        const k = "sona.profile.v1", p = JSON.parse(localStorage.getItem(k)); p.focusSounds = s; localStorage.setItem(k, JSON.stringify(p));
+        if (done) { const d = Sona.localDay(); localStorage.setItem(Sona.kkey("sona.quest.v1"), JSON.stringify({ f: [0], s: 1, ls: 0, fd: d, lk: "story", done: d, a: d, sv: d, t1: "robo" })); }
+      }, [sounds, done]);
+      await page.locator("#iapBuy").click();
+      await page.waitForURL(/\/onboarding\.html$/, { timeout: 8000 });
+      await page.locator('[data-step="mic"].on').waitFor();
+      const before = await page.evaluate(() => sessionStorage.getItem("sona.firstgame.v1"));
+      await calm(page); await page.locator("#micNotNow").click();
+      await page.locator('[data-step="achieve"].on').waitFor();
+      await calm(page); await page.locator("#nextBtn").click();
+      await page.waitForURL((u) => u.pathname !== "/onboarding.html", { timeout: 8000 });
+      await page.waitForFunction(() => document.readyState !== "loading" && window.Sona && Sona.gameAccess).catch(() => {});
+      const end = await page.evaluate(() => ({ path: location.pathname + location.search, mark: sessionStorage.getItem("sona.firstgame.v1"), marker: sessionStorage.getItem("sona.setupafter.v1"),
+        open: !!(window.Sona && Sona.gameAccess && Sona.gameAccess("slice").allowed), premium: !!(window.Sona && Sona.premium && Sona.premium()) }));
+      ok("\"Let's play!\" after the free days start opens the first game, Fruit Slice's practice page, " + label + ": never Home, never the story",
+        end.path === "/charge.html?game=arcade-slice.html" && end.marker === null, end);
+      ok("…the first-game mark is Fruit Slice's, written by the hand-off's last tap (none while the microphone step showed)", before === null && end.mark === "slice", { before, mark: end.mark });
+      ok("…and the game it opens is open to the child: the free days opened every game", end.open && end.premium, end);
+      ok("the hand-off after the free days start (" + label + "): no page errors", errors.length === 0, errors);
+    } finally { await context.close(); }
+  });
   // THE ONE PAYMENT (22 Oct 2026): a third row when RevenueCat's offering
   // lists it. Bought from setup's price, it is Premium like any purchase:
   // the price is owed no more, every game opens, and the buyer goes back
@@ -202,7 +250,7 @@ try {
       await priced(page); await calm(page);
       await page.locator("#iapLife").click(); await calm(page);
       const btn = await page.evaluate(() => document.getElementById("iapBuy").innerText.trim());
-      ok("the one payment picked: its button names the store's price, and nothing says free", btn === "Get Sona Premium — $59.99" && !/free/i.test(btn), btn);
+      ok("the one payment picked: its button is \"Start practicing!\" (the price is on its row), and nothing says free", btn === "Start practicing!" && !/free/i.test(btn), btn);
       await page.locator("#iapBuy").click();
       await page.waitForURL(/\/onboarding\.html$/, { timeout: 8000 });
       const got = await page.evaluate((keys) => ({ bought: localStorage.getItem("__bought"), sub: JSON.parse(localStorage.getItem("sona.sub.v1") || "{}"), first: Sona.trialFirst(), open: keys.filter((k) => Sona.gameAccess(k).allowed) }), FREE4);
@@ -225,10 +273,18 @@ try {
         return b ? { k, locked: b.dataset.locked, label: (b.querySelector(".game-access") || {}).textContent } : { k, missing: true }; }), FREE4);
       ok("\"Not now\" goes Home with Fruit Slice, Piano Tiles, Feed Echo and Bubble Pop locked, each marked Premium, none \"Free\"",
         h.every((c) => c.locked === "true" && c.label === "Premium"), h);
-      const books = await page.evaluate(() => document.getElementById("booksTag").textContent);
-      ok("…and the Books card says Premium, not \"1 free book\"", books === "Premium", books);
+      // Home's Books door is the one way to the books since 23 Oct 2026 (the
+      // Arcade's Books card went: Travis, "no books in there"), so its tag is
+      // the one that must not promise a free book to a family who owes the price
+      const books = await page.evaluate(() => { const t = document.getElementById("homeBooksTag"); return t ? t.textContent : null; });
+      ok("…and Home's Books door says Premium, not \"1 free book\"", books === "Premium", books);
       // a grey game opens the price at once (Travis, 4 Oct 2026: "I want it
       // to open automatically if they click on a game that is grayed out")
+      // (the games are behind Home's Arcade door since 22 Oct 2026, STORY1:
+      // the path a "Not now" family really takes)
+      await page.locator("#arcadeBtn").click(); await page.waitForTimeout(550); // Home ignores a tap for half a second after a view switch (a double tap)
+      const shelf = await page.evaluate(() => ({ view: document.getElementById("libraryApp").dataset.view, card: !!document.getElementById("booksCard"), books: document.querySelectorAll("#libraryApp .book-card").length }));
+      ok("…and the Arcade it opens holds games only: no Books card and no book in any row (23 Oct 2026)", shelf.view === "arcade" && !shelf.card && shelf.books === 0, shelf);
       await page.locator('#activityGroups .game-card[data-game="slice"]').click();
       await page.waitForURL(/\/subscribe\.html\?from=slice$/);
       await page.waitForFunction(() => document.body.classList.contains("offer"));
@@ -279,6 +335,7 @@ try {
     const { context, page, errors } = await fresh({ app: "buy", stamp: "post", setUp: true, intro: "free3", noGate: true });
     try {
       await page.goto(BASE + "/today.html"); await page.waitForFunction(() => document.querySelectorAll(".game-card").length > 0);
+      await page.locator("#arcadeBtn").click(); await page.waitForTimeout(550); // Home ignores a tap for half a second after a view switch (a double tap)
       await page.locator('#activityGroups .game-card[data-game="stack"]').click();
       await page.waitForURL(/\/subscribe\.html\?from=stack$/);
       await page.waitForFunction(() => document.body.classList.contains("offer") && getComputedStyle(document.getElementById("iapCard")).display !== "none");
@@ -303,6 +360,7 @@ try {
     const { context, page, errors } = await fresh({ app: "nobuy", stamp: "post", setUp: true });
     try {
       await page.goto(BASE + "/today.html"); await page.waitForFunction(() => document.querySelectorAll(".game-card").length > 0);
+      await page.locator("#arcadeBtn").click(); await page.waitForTimeout(550); // Home ignores a tap for half a second after a view switch (a double tap)
       await page.locator('#activityGroups .game-card[data-game="stack"]').click();
       await page.waitForTimeout(500);
       const v = await page.evaluate(() => ({ path: location.pathname, notice: !document.getElementById("libraryNotice").hidden, msg: document.getElementById("libraryMessage").textContent }));

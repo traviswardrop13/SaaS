@@ -18,7 +18,16 @@
    explain the two sayings in a separate sentence, before any target word.
    Nothing is spoken between the two sayings or glued onto the target.
 
-   ONE GAME ASKS ONCE: game.sayTimes (1 or 2; two unless the page says 1).
+   THREE TIMES IN THE STORY GAMES (Travis, 23 Oct 2026: "when a kid
+   practices the daily adventure i want it to ask them to say the sound 3
+   times not twice for every daily game"). The daily story's fourteen games
+   (Days 1-3's pages and story-game.html) pass game.sayTimes 3, read from
+   Sona.STORY_SAY_TIMES: three dots, "Say it 3 times", "2 more times!" after
+   the first saying, "1 more time!" after the second, and only the third earns
+   the move. Every other game keeps its own number. How many a child is asked
+   for is Rachel's call, and that one constant is where she changes it.
+
+   ONE GAME ASKS ONCE: game.sayTimes (1, 2 or 3; two unless the page says).
    Travis asked for two in the word games, the ones for ages 5-8 he was
    playing (Hoops, Soccer Goal, Dino Dig). Bubble Pop, the littles' game on
    this engine, was built to be said once, and whether a three-year-old should
@@ -81,8 +90,9 @@
   // care, and its second half would then be the second saying. A word said
   // again always starts later than that: the first one has to finish, and the
   // gap has to pass. So this takes nothing from a child who says it twice fast.
-  // SAY_TIMES is two unless the game's page asks for one (game.sayTimes, read
-  // in start(); the note at the top of this file says which game and why).
+  // SAY_TIMES is two unless the game's page asks for one or three
+  // (game.sayTimes, read in start(); the note at the top of this file says
+  // which game and why).
   var SAY_TIMES = 2, GAP_MS = 200, APART_MS = 450;
   var quietUntil = 0, micClosedAt = -1e9, chimesDue = 0, chimeEnd = 0;
   var SFX_MS = { tap: 120, correct: 400, complete: 700 };
@@ -359,7 +369,7 @@
     listening = !!on; publish();
     try {
       document.body.setAttribute("data-listen", on ? "on" : "off");
-      $("micState").textContent = on ? (oneMore() ? MORE + "!" : "Your turn!") : (turnLive ? "Listen" : "");
+      $("micState").textContent = on ? (oneMore() ? moreLeft() + "!" : "Your turn!") : (turnLive ? "Listen" : "");
     } catch (e) {}
     face(on ? "listen" : (turnLive ? "talk" : "welcome"));
   }
@@ -372,7 +382,7 @@
     // child loses only the optional power, never what their word already
     // won. This also covers a mic that failed to open for the help word.
     if (helpTurn) { endHelp(); return; }
-    try { $("micState").textContent = oneMore() ? MORE + "! Tap the mic" : "Tap the mic, then say it"; $("micBtn").hidden = false; } catch (e) {}
+    try { $("micState").textContent = oneMore() ? moreLeft() + "! Tap the mic" : "Tap the mic, then say it"; $("micBtn").hidden = false; } catch (e) {}
     face("think");
     setPhase("nudge");
   }
@@ -492,13 +502,15 @@
     var h = ""; for (var i = 0; i < G.steps.length; i++) h += '<i class="' + (i < step ? "on" : "") + '"></i>';
     try { $("dots").innerHTML = h; $("dots").setAttribute("aria-label", step + " of " + G.steps.length); } catch (e) {}
   }
-  // "Say it 2 times" and its two dots, under the word. The engine puts them on
-  // the page itself: twenty pages can't drift, and a page the phone saved
+  // "Say it 2 times" and its dots (one a saying), under the word. The engine
+  // puts them on the page itself: twenty pages can't drift, and a page the phone saved
   // before today still gets them with this file. The word and the line share
   // one box, so the word keeps its place in the panel's grid.
   // A game that asks once gets none of it: no line, no dots, and never "1 more
   // time" (oneMore() is false for it), so its panel is the one its page drew.
-  var MORE = "1 more time";
+  // what is left to say once a saying is heard: "1 more time" (the last), or
+  // "2 more times" when the game asks for three
+  function moreLeft() { var n = SAY_TIMES - said; return n + " more " + (n === 1 ? "time" : "times"); }
   function oneMore() { return said > 0 && said < SAY_TIMES; }
   function addTwice() {
     if (SAY_TIMES < 2) return;
@@ -525,8 +537,8 @@
   // ── a turn: show the word, Echo says it, the child says it, the game moves ──
   function nextTurn(same) {
     micStop(); stopAudio(); audioPaused=!!document.hidden; heardThisTurn = false; clearTimeout(nextTurn._t);
-    // a new word starts at none of two; the same word again ("Hear it", or
-    // back from a pause) keeps a saying Echo has already heard
+    // a new word starts at none of its sayings; the same word again ("Hear
+    // it", or back from a pause) keeps a saying Echo has already heard
     if (!same || !word) { word = pickWord(); said = 0; }
     paintSaid();
     try {
@@ -561,8 +573,8 @@
       micOpen();
     });
   }
-  // The voice check heard one saying of the word. The first only ticks its
-  // dot and asks for one more: all of it on screen, in this same frame, and
+  // The voice check heard one saying of the word. Each but the last only ticks
+  // its dot and asks for the rest: all of it on screen, in this same frame, and
   // none of it a sound, because the mic is still open and stays open (Travis,
   // 1 Oct 2026: "there is a little delay when i say it once" — the child sees
   // they were heard at once). The last one earns the move. True: the turn is
@@ -570,7 +582,8 @@
   function heardOne() {
     if (!turnLive) return true;
     // each saying the game asked for and heard is one rep on the week's count
-    // (Travis, 29 Sep 2026), so a word is two (one where the game asks once).
+    // (Travis, 29 Sep 2026), so a word is two (one where the game asks once,
+    // three in the story games).
     // Still play, never practice data (Sona.gameRep keeps its own ledger).
     try { if (S && S.gameRep) S.gameRep(SOUND); } catch (e) {}
     said++; paintSaid();
@@ -579,13 +592,19 @@
     return false;
   }
   var CHEERS = ["Yes!", "You did it!", "Great talking!", "Wow!", "Nice!", "Super!"];
+  // A play game's word only EARNS the move (the ball, the brush); the child
+  // has not made it yet. So the line beside "Swipe up to shoot!" praises the
+  // talking, which did happen, and never a result: "You did it!" there read
+  // as if the shot had already gone in (5 Nov 2026). The game says the result
+  // itself once the move is made ("Swish!", "Goal!", "You found it!").
+  var HEARD = ["I heard you!", "Great talking!", "Nice talking!"];
   function gotIt() {
     if (!turnLive) return;
     heardThisTurn = true; turnLive = false; micStop(); face("cheer");
     if (G.play) {
       // the word earned the move; the child makes it (see moveDone)
       try {
-        $("cheer").textContent = CHEERS[(step + 1) % CHEERS.length]; $("micBtn").hidden = true; $("micState").textContent = "";
+        $("cheer").textContent = HEARD[step % HEARD.length]; $("micBtn").hidden = true; $("micState").textContent = "";
         $("turnPanel").classList.add("yay");
       } catch (e) {}
       sfx("correct");
@@ -627,9 +646,30 @@
     // resume() already reads "step" as "the next word".
     else { setPhase("step"); nextTurn._t = setTimeout(function () { if (!paused) nextTurn(); }, 250); }
   }
+  // The help pill and "Back to the game" sit in the same place at the foot
+  // of the screen, so a double tap's second tap landed on the other one (22
+  // Oct 2026: a double tap on the pill asked for the help and cancelled it,
+  // and a double tap on "Back to the game" asked again). So a tap within
+  // half a second of either switch, on the very spot the switching tap
+  // touched, does nothing; a tap anywhere else, a key, and silence or a
+  // pause (which end the ask at any time) are never held back.
+  // (a touch counts only while fresh: a switch made by a key, a script or
+  // silence has no spot, and the second tap must have come after the switch)
+  var downAt = null, helpSwitchAt = -1e9, helpSwitchSpot = null, HELP_SETTLE_MS = 500;
+  try { document.addEventListener("pointerdown", function (e) { downAt = { x: e.clientX, y: e.clientY, t: performance.now() }; }, true); } catch (e) {}
+  function helpSwitched(byTap) {
+    var now = performance.now();
+    helpSwitchAt = now;
+    helpSwitchSpot = byTap && downAt && now - downAt.t < HELP_SETTLE_MS ? { x: downAt.x, y: downAt.y } : null;
+  }
+  function helpDoubleTap() {
+    var now = performance.now();
+    return !!helpSwitchSpot && !!downAt && now - helpSwitchAt < HELP_SETTLE_MS && downAt.t >= helpSwitchAt &&
+      Math.abs(downAt.x - helpSwitchSpot.x) < 48 && Math.abs(downAt.y - helpSwitchSpot.y) < 48;
+  }
   function practiceHelp() {
-    if (phase !== "play" || paused || helpTurn || !G.play || !G.play.onHelp) return false;
-    helpTurn=true;
+    if (phase !== "play" || paused || helpTurn || !G.play || !G.play.onHelp || helpDoubleTap()) return false;
+    helpTurn=true; helpSwitched(true);
     if (G.play.pause) G.play.pause();
     said=0;
     nextTurn(true);
@@ -638,9 +678,9 @@
   }
   // The way out of a help ask, with no speech needed: silence (nudge), a
   // pause, or the "Back to the game" pill. No power and no step credit.
-  function endHelp() {
+  function endHelp(byTap) {
     if (!helpTurn) return;
-    helpTurn = false; turnLive = false; said = 0;
+    helpTurn = false; turnLive = false; said = 0; helpSwitched(byTap === true);
     micStop(); stopVoice(); clearTimeout(nextTurn._t);
     paintSaid(); showHelpBack(false);
     try { $("micBtn").hidden = true; $("micState").textContent = ""; $("cheer").textContent = ""; } catch (e) {}
@@ -654,7 +694,7 @@
     if (!b && on) {
       try {
         b = document.createElement("button"); b.id = "helpBack"; b.type = "button"; b.className = "cream-pill";
-        b.textContent = "Back to the game"; b.onclick = function () { if (helpTurn && !paused) endHelp(); };
+        b.textContent = "Back to the game"; b.onclick = function (e) { if (helpTurn && !paused && !(e && e.detail > 0 && helpDoubleTap())) endHelp(true); };
         $("turnPanel").appendChild(b);
       } catch (e) { return; }
     }
@@ -696,6 +736,11 @@
     sfx("tap"); nextTurn();
   }
   function home() { stopAudio(); micStop(); location.href = "/today.html"; }
+  // a story's game hands back to its story instead of Home (STORY1): the end
+  // card's one button opens the story's ending. Only an address of that one
+  // shape is taken; anything else in G.exit leaves the card as it was. The ✕
+  // during play still goes Home: a child who leaves mid-game wants out.
+  function storyExit() { stopAudio(); micStop(); location.href = G.exit.href; }
 
   // ── pause: a hidden page stops everything; coming back needs one tap ──
   function pause() {
@@ -726,8 +771,9 @@
   }
   function start(game) {
     G = game;
-    // how many times this game asks for a word: one only if its page says so
-    SAY_TIMES = G.sayTimes === 1 ? 1 : 2;
+    // how many times this game asks for a word: two unless its page says one
+    // or three (the story games, Sona.STORY_SAY_TIMES)
+    SAY_TIMES = G.sayTimes === 1 ? 1 : G.sayTimes === 3 ? 3 : 2;
     if (!S) return;
     // Catalog access is checked before any mic or audio work starts.
     if (!S.gameAccess(G.key).allowed) { document.body.hidden = true; S.gameBounce(G.key); return; }
@@ -755,6 +801,13 @@
       face: face,
     }, G.steps.length);
     $("close").onclick = home; $("goHome").onclick = home; $("again").onclick = again; $("startBtn").onclick = begin;
+    if (G.exit && typeof G.exit.href === "string" && /^\/adventure\.html\?part=end&story=[a-z]+$/.test(G.exit.href)) {
+      $("goHome").onclick = storyExit; $("goHome").textContent = G.exit.label || "See what happens!";
+      $("goHome").className = "btn";            // teal, the end card's main button
+    }
+    // a story's game has no Play again: the story goes on, and another round
+    // would finish nothing (the day is already done)
+    if (G.again === false) $("again").hidden = true;
     $("hear").onclick = function () { if (!turnLive || paused) return; nextTurn(true); };
     $("micBtn").onclick = function () {
       if (!turnLive || paused) return;

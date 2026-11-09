@@ -72,6 +72,22 @@
       <div class="card"><span class="muted">Moved to another device</span><b id="pMoved">0</b></div>
     </div>
 
+    <!-- FREE TRIALS (TRIAL1, 30 Oct 2026): of the families who started a free
+         trial in the app, which of its days had play and how it ended. Every
+         family, email or not: kept by an anonymous id, never shown here. -->
+    <h2>Free trials</h2>
+    <p class="muted">Families who started a free trial in the last 90 days, whether or not they gave an email. A day counts as played when the child said their sound at least once. Day 1 is the first 24 hours.</p>
+    <div class="cards">
+      <div class="card"><span class="muted">Trials started</span><b id="tTotal">0</b></div>
+      <div class="card"><span class="muted">Still on free days</span><b id="tOpen">0</b></div>
+      <div class="card"><span class="muted">Paid</span><b id="tPaid">0</b></div>
+      <div class="card"><span class="muted">Cancelled</span><b id="tCancelled">0</b></div>
+      <div class="card"><span class="muted">Ended, not paid</span><b id="tEnded">0</b></div>
+    </div>
+    <p class="muted" id="tWait">Loading…</p>
+    <div class="tw"><table id="tDays" hidden></table></div>
+    <div class="tw" style="margin-top:10px"><table id="tPlay" hidden></table></div>
+
     <h2>Since the new landing page</h2>
     <p class="muted">Everyone who left an email since 25 Sep 2026, 1:20 pm Mountain, when speaksona.com started asking “I’m a…”. Each person counts once.</p>
     <div class="cards">
@@ -231,11 +247,33 @@
           table($("tSlp"), SLP_COLS, j.clinicians);
           $("out").hidden = false;
           loadMessages(key);
+          loadTrials(key);
         })
         .catch(function () {
           $("go").disabled = false; $("go").textContent = "Show leads";
           $("err").textContent = "Network hiccup — try again.";
         });
+    }
+    // FREE TRIALS (TRIAL1): /api/founders/trials, numbers only
+    function pct(a, b) { return b ? Math.round(100 * a / b) + "%" : "–"; }
+    function loadTrials(key) {
+      fetch("/api/founders/trials", { headers: { "x-founder-key": key }, cache: "no-store" })
+        .then(function (r) { return r.json(); })
+        .then(function (j) {
+          if (!j || !j.ok) { $("tWait").textContent = (j && j.error) || "Couldn't load the trials."; return; }
+          var o = j.outcomes || {};
+          $("tTotal").textContent = j.total || 0; $("tOpen").textContent = o.open || 0; $("tPaid").textContent = o.paid || 0;
+          $("tCancelled").textContent = o.cancelled || 0; $("tEnded").textContent = (o.ended || 0) + (o.billing || 0);
+          if (!j.total) { $("tWait").textContent = "No trials yet. They show here from the app update that counts them."; return; }
+          $("tWait").textContent = "";
+          var d = $("tDays"), rows = "<tr><th>Day</th><th>Played</th><th>Of trials that reached it</th><th></th></tr>";
+          (j.byDay || []).forEach(function (r) { rows += "<tr><td>Day " + r.day + "</td><td>" + r.played + "</td><td>" + r.of + "</td><td>" + pct(r.played, r.of) + "</td></tr>"; });
+          d.innerHTML = rows; d.hidden = false;
+          var p = $("tPlay"), rows2 = "<tr><th>Finished trials</th><th>Trials</th><th>Paid</th><th></th></tr>";
+          (j.byPlay || []).forEach(function (r) { rows2 += "<tr><td>" + String(r.label).replace(/[<>&]/g, "") + "</td><td>" + r.trials + "</td><td>" + r.paid + "</td><td>" + pct(r.paid, r.trials) + "</td></tr>"; });
+          p.innerHTML = rows2; p.hidden = false;
+        })
+        .catch(function () { $("tWait").textContent = "Network hiccup loading the trials."; });
     }
     // MESSAGES: parents' "Talk to us" and therapists' "Talk to Rachel", one
     // list, newest first. Its own request, so a hiccup here never hides the

@@ -46,34 +46,35 @@ body::before{content:"";position:fixed;left:0;right:0;top:0;height:env(safe-area
 /* WIDE ROWS (19 Oct 2026, when the Coming soon cards left Home). A card that
    would sit alone in its row stretches across it as a picture-and-name row,
    so a shelf never ends on an empty slot, whatever the catalog opens next.
-   The selectors count cards; none names a game:
-   - the little kids' shelf is all rows (Feed Echo and Bubble Pop today);
-   - on a phone's two columns, the last card of an odd count (Rise Up, the
-     ninth big-kid game, today: the other eight fill four even rows of two);
+   The selectors count cards; none names a game, and both shelves follow
+   the same rule (since 23 Oct 2026, Travis: "I like how arcade shows 2 games
+   per row. Let's also do that for simple play"; the little kids' shelf was
+   all rows before):
+   - on a phone's two columns, the last card of an odd count (the thirteenth
+     little-kid game today: the sixteen big-kid games fill eight even rows);
    - on an iPad's three columns (six half-columns, each card two of them),
      one card left over is a row, and two left over share the row half and
-     half (none today: nine big-kid games make three even rows).
+     half (today both shelves have one over: thirteen and sixteen).
    activitytest measures every shelf for gaps at 320, 390 and 768 px, also
    with a parked game opened on each shelf. */
 .game-grid [data-game="glide"] .crafted-card-image{object-position:center 53%;}
 @media(max-width:599px){
- .activity-group[data-group="simple"] .game-grid>.game-card,.game-grid>.game-card:last-child:nth-child(odd){grid-column:1/-1;flex-direction:row;align-items:stretch;min-height:89px;overflow:visible;}
- .activity-group[data-group="simple"] .game-grid>.game-card .game-art,.game-grid>.game-card:last-child:nth-child(odd) .game-art{width:43%;flex:none;aspect-ratio:1.7;border-radius:16px 0 0 16px;overflow:hidden;}
- .activity-group[data-group="simple"] .game-grid>.game-card .game-info,.game-grid>.game-card:last-child:nth-child(odd) .game-info{padding:14px 13px;}
- .activity-group[data-group="simple"] .game-grid>.game-card .game-name,.game-grid>.game-card:last-child:nth-child(odd) .game-name{font-size:19px;}
- .activity-group[data-group="simple"] .game-grid>.game-card .game-access,.game-grid>.game-card:last-child:nth-child(odd) .game-access{position:static;box-shadow:none;font-size:9px;padding:3px 4px;}
+ .game-grid>.game-card:last-child:nth-child(odd){grid-column:1/-1;flex-direction:row;align-items:stretch;min-height:89px;overflow:visible;}
+ .game-grid>.game-card:last-child:nth-child(odd) .game-art{width:43%;flex:none;aspect-ratio:1.7;border-radius:16px 0 0 16px;overflow:hidden;}
+ .game-grid>.game-card:last-child:nth-child(odd) .game-info{padding:14px 13px;}
+ .game-grid>.game-card:last-child:nth-child(odd) .game-name{font-size:19px;}
+ .game-grid>.game-card:last-child:nth-child(odd) .game-access{position:static;box-shadow:none;font-size:9px;padding:3px 4px;}
 }
 @media(min-width:600px){
  .game-grid>.game-card{grid-column:span 2;}
  .game-grid>.game-card:last-child:nth-child(3n+2),.game-grid>.game-card:nth-last-child(2):nth-child(3n+1){grid-column:span 3;}
- .activity-group[data-group="simple"] .game-grid>.game-card,.game-grid>.game-card:last-child:nth-child(3n+1){grid-column:1/-1;flex-direction:row;align-items:stretch;min-height:89px;overflow:visible;}
- .activity-group[data-group="simple"] .game-grid>.game-card .game-art,.game-grid>.game-card:last-child:nth-child(3n+1) .game-art{width:43%;flex:none;aspect-ratio:1.7;border-radius:16px 0 0 16px;overflow:hidden;}
- .activity-group[data-group="simple"] .game-grid>.game-card .game-info,.game-grid>.game-card:last-child:nth-child(3n+1) .game-info{padding:14px 13px;}
- .activity-group[data-group="simple"] .game-grid>.game-card .game-name,.game-grid>.game-card:last-child:nth-child(3n+1) .game-name{font-size:19px;}
- .activity-group[data-group="simple"] .game-grid>.game-card .game-access,.game-grid>.game-card:last-child:nth-child(3n+1) .game-access{position:static;box-shadow:none;font-size:9px;padding:3px 4px;}
+ .game-grid>.game-card:last-child:nth-child(3n+1){grid-column:1/-1;flex-direction:row;align-items:stretch;min-height:89px;overflow:visible;}
+ .game-grid>.game-card:last-child:nth-child(3n+1) .game-art{width:43%;flex:none;aspect-ratio:1.7;border-radius:16px 0 0 16px;overflow:hidden;}
+ .game-grid>.game-card:last-child:nth-child(3n+1) .game-info{padding:14px 13px;}
+ .game-grid>.game-card:last-child:nth-child(3n+1) .game-name{font-size:19px;}
+ .game-grid>.game-card:last-child:nth-child(3n+1) .game-access{position:static;box-shadow:none;font-size:9px;padding:3px 4px;}
 }
 .featured-group{background:#f2ebde;border:1px solid #e8d7bd;box-shadow:inset 0 1px 0 #fff;border-radius:21px;padding:16px 13px;margin:22px 0;}
-.featured-group[data-collection="seasonal"]{background:#f8ead4;border-color:#ead1aa;}
 .featured-group .shelf-heading h2{font-size:21px;}
 .featured-grid{padding-bottom:6px;}
 .age-note{color:#927b61;margin-top:22px;font-size:11px;}
@@ -89,71 +90,202 @@ body::before{content:"";position:fixed;left:0;right:0;top:0;height:env(safe-area
 #gateQ,#wkStreak{color:#15808a;}
 #shareWeek{background:linear-gradient(#239ca2,#14858d)!important;box-shadow:0 4px 0 #0c656b!important;}
 @media(min-width:600px){.library-wrap{padding-left:30px;padding-right:30px;}.library-intro{margin:27px 0;}.library-intro h1{font-size:42px;}.library-intro p{font-size:16px;}.library-label{font-size:32px;}#libraryEcho{width:102px;height:113px;}.game-grid{grid-template-columns:repeat(6,minmax(0,1fr));gap:20px;}.game-name{font-size:18px;}}
-@media(max-width:350px){.library-wrap{padding-left:16px;padding-right:16px;}.library-label{font-size:25px;}#parentBtn{font-size:11px;padding:8px;}.library-header{gap:9px;}.library-intro h1{font-size:29px;}.library-intro p{font-size:11px;}#libraryEcho{width:66px;height:82px;}.game-name{font-size:14px;}.game-info{padding:9px 8px;}.game-grid{gap:11px 10px;}.activity-group[data-group="simple"] .game-grid>.game-card .game-name,.game-grid>.game-card:last-child:nth-child(odd) .game-name{font-size:16px;}.shelf-heading h2{font-size:22px;}.shelf-tag.recommended{font-size:8px;}}
+@media(max-width:350px){.library-wrap{padding-left:16px;padding-right:16px;}.library-label{font-size:25px;}#parentBtn{font-size:11px;padding:8px;}.library-header{gap:9px;}.library-intro h1{font-size:29px;}.library-intro p{font-size:11px;}#libraryEcho{width:66px;height:82px;}.game-name{font-size:14px;}.game-info{padding:9px 8px;}.game-grid{gap:11px 10px;}.game-grid>.game-card:last-child:nth-child(odd) .game-name{font-size:16px;}.shelf-heading h2{font-size:22px;}.shelf-tag.recommended{font-size:8px;}}
 @media(prefers-reduced-motion:reduce){.game-card,.crafted-card-image{transition:none;}.game-card:not(:disabled):hover .crafted-card-image{transform:none;}}
 
 /* Keyboard and switch access receive the same clear focus as touch. */
 .library-wrap :is(button,a):focus-visible,.ovl :is(button,a):focus-visible{outline:3px solid #14858d;outline-offset:4px;}
 .game-card:focus-visible{outline-offset:4px;box-shadow:0 3px 0 #dcc5a1;}
 
-/* book covers in the top rows are square */
-.featured-grid .book-card .game-art{aspect-ratio:1;}
-.featured-grid .book-card .crafted-card-image{object-fit:cover;}
-
-/* Mixed daily picks keep equally sized cover and game art; age-group scenes
-   retain their wide crops. New is a release badge, not the row's promise. */
-.featured-group[data-collection="picks"] .game-art{aspect-ratio:1;}
-.featured-group[data-collection="picks"] .game-info{min-height:66px;}
+/* Today's picks are two games (23 Oct 2026: no book covers to match since
+   the Arcade lost its books), so they keep the shelves' wide crop. New is a
+   release badge, not the row's promise. */
 .game-new{position:absolute;left:6px;bottom:6px;padding:3px 6px;border-radius:99px;background:#fffdf2eb;color:var(--ink);font:800 9px/1.2 Nunito,sans-serif;box-shadow:0 1px 4px #583e2918;}
 
-/* THE TROPHY ROAD CARD (HOME3, 11 Oct 2026): one cream card under "Pick a
-   game!". A picture leads (the next gift, a gift waiting, or the chest),
-   beside a five-part bar filling toward it; the counts are small. The dot
-   that says "something is ready" is teal: orange means only the practice
-   sound's letters. It is a link, never a game card, so no game's rules see it. */
-#roadCard{display:flex;align-items:center;gap:12px;width:100%;min-height:60px;margin:-6px 0 18px;padding:9px 12px 9px 9px;border-radius:22px;background:linear-gradient(#fffefb,#fff7e9);border:1px solid #efe2ce;box-shadow:0 3px 0 #e9d8bb,0 6px 14px #6947200d;color:var(--ink);text-decoration:none;position:relative;transition:transform .12s;}
-#roadCard[hidden]{display:none;}
-#roadCard:active{transform:translateY(2px) scale(.99);}
-.road-pic{flex:none;display:flex;align-items:center;justify-content:center;width:62px;height:56px;}
-.road-art{position:relative;display:flex;align-items:center;justify-content:center;width:100%;height:100%;}
-.road-art>img{display:block;width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 3px 2px #5a3a1428);}
-.road-ic{display:inline-flex;flex:none;}
-.road-ic svg{display:block;vertical-align:0!important;}
-.road-coins .road-ic{margin:0 -9px;filter:drop-shadow(0 2px 1px #8a5a0033);}
-.road-coins .road-ic:nth-child(2){margin-bottom:10px;}
-.road-stk>span{display:flex;align-items:center;justify-content:center;width:46px;height:46px;border-radius:50%;background:#fff;border:3px dashed #e6cf98;}
-.road-level{flex-direction:column;}
-.road-lvpics{display:flex;gap:2px;width:100%;height:30px;border-radius:8px;overflow:hidden;}
-.road-lvpics i{flex:1;background:#efe6d5 center/cover no-repeat;}
-.road-level b{position:absolute;left:50%;bottom:0;transform:translateX(-50%);min-width:26px;padding:0 5px;border-radius:9px;background:#fffdf7;border:2px solid var(--craft-teal);font:800 18px/1.1 "Baloo 2",sans-serif;text-align:center;}
-.road-place{border-radius:12px;background:#cfe8c0 center/cover no-repeat;}
-.road-copy{flex:1;min-width:0;display:flex;flex-direction:column;gap:7px;}
-.road-bar{display:flex;gap:4px;}
-.road-bar i{flex:1;height:12px;border-radius:99px;background:#eadcc6;box-shadow:inset 0 1px 2px #9b79312a;}
-.road-bar i.on{background:linear-gradient(#ffe17a,#f2b10a);box-shadow:inset 0 -1px 0 #c98f00;}
-.road-small{display:flex;align-items:center;gap:4px;font:800 14px/1 "Baloo 2",sans-serif;color:var(--muted);white-space:nowrap;}
-.road-small .road-ic:nth-of-type(2){margin-left:8px;}
-.road-dot{position:absolute;top:7px;left:58px;width:11px;height:11px;border-radius:50%;background:var(--craft-teal);box-shadow:0 0 0 2px #fffdf7;animation:roadDot 2s ease-in-out infinite;}
-.road-dot[hidden]{display:none;}
-.road-go{flex:none;font-family:Nunito,sans-serif;color:#927455;font-size:28px;line-height:1;font-weight:600;}
-@keyframes roadDot{0%,100%{transform:scale(1)}50%{transform:scale(1.25)}}
-@media(max-width:350px){#roadCard{gap:9px;padding-right:9px;}.road-pic{width:54px;height:50px;}}
-@media(prefers-reduced-motion:reduce){#roadCard{transition:none;}.road-dot{animation:none;}#roadCard:active{transform:none;}}
-
-/* QUEST1: the daily adventure card (13 Oct 2026), under the Trophy Road card.
-   Done, it shows tomorrow's game dark and takes no tap. */
-#questCard{display:flex;align-items:center;gap:12px;width:100%;min-height:76px;margin:0 0 18px;padding:9px 12px 9px 9px;border-radius:22px;background:linear-gradient(#fffefb,#fff4df);border:1px solid #efdcbc;box-shadow:0 3px 0 #e6cfa6,0 6px 14px #6947200d;color:var(--ink);font:inherit;text-align:left;cursor:pointer;transition:transform .12s;}
-#questCard[hidden]{display:none;}
-#questCard:active{transform:translateY(2px) scale(.99);}
+/* Home and the Arcade share one page. Only the fitting Home is locked;
+   the existing Arcade keeps its scrolling shelves and presentation. */
+html.home-flat,html.home-flat body{height:100%;min-height:0;overflow:hidden;}
+#libraryApp[data-view="home"] .arcade-only,#libraryApp[data-view="arcade"] .home-only{display:none;}
+#homeTitle:focus,#arcadeTitle:focus{outline:none;}
+.arcade-top{display:flex;margin-top:16px;}
+#homeBack{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:8px 17px 8px 13px;border-radius:999px;border:1.5px solid var(--cream-line);background:var(--cream-card);box-shadow:0 3px 0 var(--cream-line);color:var(--cream-ink);font:800 16px/1 "Baloo 2",sans-serif;cursor:pointer;}
+#homeBack span{font-size:22px;line-height:1;margin-top:-2px;}
+#homeBack:active{transform:translateY(2px);box-shadow:0 1px 0 var(--cream-line);}
+.arcade-top+.library-intro{margin-top:12px;}
+/* ADVENTURESTUDIO1: the approved Home keeps the shared story action and
+   readers; only its composition changes. Arcade rules above remain scoped. */
+body.playmap-home{background:#fff5e9;}
+body.playmap-home::before{background:#fff5e9;backdrop-filter:none;-webkit-backdrop-filter:none;}
+#libraryApp[data-view="home"]{--ink:#272337;--muted:#756b85;--studio-paper:#fff5e9;--studio-coral:#ff806b;--studio-lilac:#d9ceff;--studio-yellow:#ffdf7f;display:flex;flex-direction:column;max-width:560px;min-height:100svh;height:100svh;padding:calc(18px + env(safe-area-inset-top)) 20px calc(22px + env(safe-area-inset-bottom));}
+#libraryApp[data-view="home"] .library-header{flex:none;min-height:48px;gap:10px;}
+#libraryApp[data-view="home"] .library-label{display:block;flex:1;font-size:35px;letter-spacing:-1.2px;color:var(--ink);}
+#libraryApp[data-view="home"] #buddyBtn{width:45px;height:45px;border:2px solid var(--ink);background:#ffe4a7;box-shadow:0 3px 0 var(--ink);}
+#libraryApp[data-view="home"] #giftBtn{width:44px;height:44px;margin-left:0;}
+#libraryApp[data-view="home"] .gift-ring{background:conic-gradient(#117f84 calc(var(--fill,0)*1%),var(--ink) 0);box-shadow:0 3px 0 var(--ink);}
+#libraryApp[data-view="home"] .gift-ring::after{inset:2px;background:var(--studio-paper);}
+#libraryApp[data-view="home"] #parentBtn{width:44px;height:44px;min-height:44px;border:2px solid var(--ink);border-radius:50%;background:var(--studio-paper);box-shadow:0 3px 0 var(--ink);padding:9px;color:var(--ink);}
+#libraryApp[data-view="home"] #parentBtn>span:last-child{display:none;}
+#libraryApp[data-view="home"] #parentBtn .pic-gear{display:block;width:22px;height:22px;opacity:1;}
+.home-only{display:flex;flex-direction:column;flex:1;min-height:0;gap:15px;padding-top:15px;}
+.home-title{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
+#questCard{position:relative;display:flex;flex-direction:column;flex:1 0 auto;width:100%;min-height:320px;max-height:none;margin:0;padding:0;overflow:hidden;border:3px solid var(--ink);border-radius:27px;background:var(--ink);color:var(--studio-paper);box-shadow:0 6px 0 #afa0ba;cursor:pointer;text-align:left;isolation:isolate;}
+.quest-body{display:flex;flex-direction:column;flex:1;min-height:0;}
+.quest-art{display:block;position:relative;flex:1;min-height:140px;background:#d7eceb;overflow:hidden;}
+.quest-pic{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;}
+.quest-pic img{display:block;width:100%;height:100%;object-fit:cover;object-position:center;}
+.quest-pic svg{width:55%;height:75%;}
+.quest-art.fallback .quest-pic img{width:82%;height:90%;object-fit:contain;}
+.quest-copy{position:static;display:flex;flex-direction:column;flex:none;gap:6px;padding:15px 16px 0;background:var(--ink);color:var(--studio-paper);}
+.quest-meta{position:absolute;left:13px;right:13px;top:13px;display:flex;align-items:center;gap:7px;flex-wrap:wrap;pointer-events:none;}
+.quest-label,.quest-chip,.quest-lock{padding:7px 9px;border-radius:9px;background:var(--studio-paper);color:var(--ink);font:900 11px/1.1 Nunito,sans-serif;white-space:nowrap;box-shadow:0 2px 0 #27233718;}
+.quest-label{letter-spacing:1.05px;text-transform:uppercase;}
+.quest-chip{margin-left:auto;font-size:11px;}
+.quest-lock{color:#665135;}
+.quest-title{display:block;font:800 31px/1.04 "Baloo 2",sans-serif;letter-spacing:-.65px;}
+.quest-line{display:block;font:700 12px/1.4 Nunito,sans-serif;color:#e6e0f1;}
+.quest-go,#questDone{display:flex;align-items:center;justify-content:space-between;gap:10px;flex:none;min-height:53px;margin:13px 16px 17px;padding:11px 17px 12px;border-radius:15px;background:#117f84;color:#fff;box-shadow:0 3px 0 #07585d;font:800 25px/1 "Baloo 2",sans-serif;letter-spacing:-.45px;}
+.home-arrow{display:block;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+.quest-arrow{width:32px;height:28px;}
+#questCard:not(.done):active .quest-go{transform:translateY(2px);box-shadow:0 1px 0 #07585d;}
 #questCard.done{cursor:default;}
-#questCard.done:active{transform:none;}
-.quest-pic{flex:none;width:96px;height:54px;border-radius:14px;overflow:hidden;background:#f3e6cf;display:flex;align-items:center;justify-content:center;}
-.quest-pic img{display:block;width:100%;height:100%;object-fit:cover;}
-#questCard.done .quest-pic img,#questCard.done .quest-pic svg{filter:brightness(.15) saturate(0);opacity:.55;}
-.quest-copy{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;}
-.quest-day{font:800 13px/1.2 "Baloo 2",sans-serif;color:var(--muted);}
-.quest-line{font:800 15px/1.25 Nunito,sans-serif;color:var(--ink);}
-.quest-go{flex:none;display:flex;align-items:center;justify-content:center;width:46px;height:46px;border-radius:50%;background:var(--craft-teal);color:#fff;box-shadow:0 3px 0 #0b5d63;}
-.quest-go[hidden]{display:none;}
-@media(max-width:350px){#questCard{gap:9px;}.quest-pic{width:72px;height:46px;}.quest-line{font-size:14px;}.quest-go{width:40px;height:40px;}}
-@media(prefers-reduced-motion:reduce){#questCard{transition:none;}#questCard:active{transform:none;}}
+#questCard.done .quest-art{filter:grayscale(.7) brightness(.4);}
+#questCard.done .quest-label{background:#e0dbe7;color:#4e455b;}
+#questDone{justify-content:center;background:#393247;box-shadow:none;font-size:17px;line-height:1.2;letter-spacing:0;}
+.quest-lock-icon{display:flex;align-items:center;justify-content:center;flex:none;}
+.practice-band{display:flex;align-items:center;justify-content:space-between;gap:12px;flex:none;min-height:65px;padding:10px 15px 11px;border:2px solid var(--ink);border-radius:19px;background:var(--studio-coral);box-shadow:0 4px 0 var(--ink);}
+.practice-band h2{margin:0;font:800 25px/1 "Baloo 2",sans-serif;letter-spacing:-.5px;}
+.home-sound{display:flex;align-items:center;gap:10px;flex:none;max-width:61%;color:var(--ink);}
+.sound-note{max-width:40px;font:900 11px/1.15 Nunito,sans-serif;letter-spacing:.8px;text-transform:uppercase;}
+.sound-value{display:flex;align-items:center;justify-content:center;flex:none;min-width:41px;min-height:41px;padding:4px 9px 0;border:2px solid var(--ink);border-radius:11px;background:var(--studio-paper);font:800 33px/1 "Baloo 2",sans-serif;white-space:nowrap;}
+.home-sound.sound-long{gap:6px;}
+.home-sound.sound-long .sound-value{font-size:18px;padding:5px 6px 2px;}
+#homeDoors{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;flex:none;min-height:143px;}
+#homeDoors>button{position:relative;display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-start;min-width:0;min-height:143px;padding:16px 13px;border:3px solid var(--ink);border-radius:24px;background:var(--studio-lilac);box-shadow:0 5px 0 var(--ink);color:var(--ink);text-align:left;overflow:hidden;cursor:pointer;isolation:isolate;}
+#homeDoors>#homeBooksBtn{background:var(--studio-yellow);}
+.door-copy{position:relative;z-index:1;display:block;width:100%;}
+.door-word{font:800 31px/1 "Baloo 2",sans-serif;letter-spacing:-.9px;}
+.door-arrow{position:absolute;right:0;top:0;width:20px;height:20px;stroke-width:1.7;}
+.door-meta{position:relative;z-index:1;max-width:68%;margin-top:7px;font:900 11px/1.2 Nunito,sans-serif;}
+.door-pic{position:absolute;display:flex;align-items:center;justify-content:center;right:-8px;bottom:-15px;width:99px;height:86px;border:2px solid var(--ink);border-radius:17px;background:var(--studio-paper);overflow:hidden;transform:rotate(-12deg);z-index:-1;}
+#homeBooksPic{right:-7px;bottom:-14px;transform:rotate(11deg);}
+.door-pic img{display:block;width:100%;height:100%;object-fit:cover;}
+.door-pic.fallback img{width:85%;height:90%;object-fit:contain;}
+.door-pic>.stk{position:relative!important;inset:auto!important;width:auto;height:88%;aspect-ratio:1;background:transparent!important;}
+.door-tag{position:absolute;left:10px;bottom:10px;max-width:65%;padding:3px 5px;border:1px solid #fff9;border-radius:7px;background:#fff5e9ed;color:#635337;font:900 11px/1.1 Nunito,sans-serif;white-space:normal;}
+#homeDoors>button:active{transform:translateY(2px);box-shadow:0 3px 0 var(--ink);}
+#foundRow{flex:none;margin:0;min-width:0;}
+#foundTitle{margin:0 0 6px;font:800 17px/1 "Baloo 2",sans-serif;color:var(--ink);}
+#foundList{display:flex;gap:9px;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x proximity;scroll-padding-inline:7px;padding:7px;margin:-5px -7px -7px;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+#foundList::-webkit-scrollbar{display:none;}
+.found-tile{display:flex;align-items:center;flex:none;gap:8px;width:166px;min-height:52px;padding:5px;border:1px solid #d8cce3;border-radius:15px;scroll-snap-align:start;background:#fffdf9;color:var(--ink);font:inherit;text-align:left;cursor:pointer;}
+.found-pic{position:relative;display:block;flex:none;width:58px;height:40px;overflow:hidden;border-radius:10px;background:#e7eee6;}
+.found-pic img{display:block;width:100%;height:100%;object-fit:cover;}
+.found-pic.fallback img{width:85%;height:90%;margin:auto;object-fit:contain;}
+.found-name{font:800 14px/1.12 "Baloo 2",sans-serif;}
+.found-new{position:absolute;left:2px;top:2px;border-radius:5px;padding:2px 4px;background:#117f84;color:#fff;font:900 11px/1 Nunito,sans-serif;}
+.found-tile.fresh{border-color:#117f84;box-shadow:0 0 0 1px #117f84;}
+.found-tile:active{transform:translateY(1px);}
+#homeInset{position:absolute;left:0;bottom:0;width:0;height:env(safe-area-inset-bottom);visibility:hidden;pointer-events:none;}
+#libraryApp[data-view="home"] #trialBanner{flex:none;margin-top:9px;min-height:44px;padding:5px 9px;gap:7px;border-color:#e2d6c8;border-radius:14px;background:#fff9f0;box-shadow:none;color:#665640;font-size:11px;}
+#libraryApp[data-view="home"] #trialBanner .tb-echo{width:28px;height:28px;}
+#libraryApp[data-view="home"] #trialBanner .tb-pill{display:none;}
+/* Fit spends the picture and spare spacing first. Copy stays complete and
+   every interactive control stays at least 44 px. A shorter screen scrolls. */
+#libraryApp.fit1 .home-only{gap:11px;padding-top:11px;}
+#libraryApp.fit1 #questCard{min-height:288px;}
+#libraryApp.fit1 #homeDoors,#libraryApp.fit1 #homeDoors>button{min-height:125px;}
+#libraryApp.fit2 #questCard{min-height:260px;}
+#libraryApp.fit2 .quest-art{min-height:112px;}
+#libraryApp.fit2 .quest-copy{padding:12px 14px 0;gap:5px;}
+#libraryApp.fit2 .quest-title{font-size:27px;}
+#libraryApp.fit2 .quest-go,#libraryApp.fit2 #questDone{margin:10px 14px 14px;min-height:48px;font-size:23px;padding:10px 14px;}
+#libraryApp.fit2 #homeDoors,#libraryApp.fit2 #homeDoors>button{min-height:110px;}
+#libraryApp.fit2 .door-pic{width:84px;height:73px;}
+#libraryApp.fit3 .home-only{gap:9px;padding-top:9px;}
+#libraryApp.fit3 #questCard{min-height:240px;border-radius:23px;}
+#libraryApp.fit3 .quest-art{min-height:104px;}
+#libraryApp.fit3 .practice-band{min-height:53px;padding:6px 12px 7px;border-radius:16px;}
+#libraryApp.fit3 .practice-band h2{font-size:23px;}
+#libraryApp.fit3 .sound-value{min-height:35px;min-width:35px;font-size:28px;}
+#libraryApp.fit3 .home-sound.sound-long .sound-value{font-size:16px;}
+#libraryApp.fit3 .door-word{font-size:27px;}
+#libraryApp.fit3 #homeDoors>button{padding:12px 10px;border-radius:20px;}
+#libraryApp.fit4 #questCard{min-height:220px;}
+#libraryApp.fit4 .quest-art{min-height:88px;}
+#libraryApp.fit4 .quest-copy{padding:10px 12px 0;gap:4px;}
+#libraryApp.fit4 .quest-title{font-size:24px;}
+#libraryApp.fit4 .quest-line{font-size:11px;line-height:1.3;}
+#libraryApp.fit4 .quest-go,#libraryApp.fit4 #questDone{margin:9px 12px 12px;min-height:44px;font-size:21px;padding:8px 13px;}
+#libraryApp.fit4 #homeDoors,#libraryApp.fit4 #homeDoors>button{min-height:99px;}
+#libraryApp.fit4 .door-pic{width:74px;height:65px;border-radius:13px;}
+#libraryApp.fit4 .door-meta{font-size:11px;margin-top:5px;}
+#libraryApp.fit4 .door-tag{font-size:11px;left:7px;bottom:7px;}
+#libraryApp.fit4 #foundTitle{font-size:15px;margin-bottom:4px;}
+#libraryApp.fit4 .found-tile{min-height:46px;}
+#libraryApp.fit4 .found-pic{height:34px;width:50px;}
+#libraryApp.fit4 .found-name{font-size:13px;}
+#libraryApp[data-view="home"].fit5{padding-top:calc(8px + env(safe-area-inset-top));padding-bottom:calc(8px + env(safe-area-inset-bottom));}
+#libraryApp.fit5 .home-only{gap:7px;padding-top:7px;}
+#libraryApp.fit5 #questCard{min-height:204px;border-radius:21px;}
+#libraryApp.fit5 .quest-art{min-height:75px;}
+#libraryApp.fit5 .quest-meta{left:9px;right:9px;top:9px;gap:4px;}
+#libraryApp.fit5 .quest-label,#libraryApp.fit5 .quest-chip,#libraryApp.fit5 .quest-lock{padding:5px 6px;font-size:11px;}
+#libraryApp.fit5 #foundTitle{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
+#libraryApp.fit6 .quest-art{min-height:62px;}
+#libraryApp.fit6 #questCard{min-height:190px;}
+#libraryApp,.home-only,.home-title,.practice-band,.practice-band *,.home-sound,.home-sound *,#questCard,#questCard *,#homeDoors,#homeDoors *,#foundRow,#foundRow *,#trialBanner,#trialBanner *{transition:none;}
+@media(max-height:700px) and (max-width:699px){
+ #libraryApp[data-view="home"]{padding:calc(12px + env(safe-area-inset-top)) 14px calc(16px + env(safe-area-inset-bottom));}
+ #libraryApp[data-view="home"] .library-header{min-height:44px;}
+ #libraryApp[data-view="home"] .library-label{font-size:31px;}
+ #libraryApp[data-view="home"] #buddyBtn{width:44px;height:44px;}
+ .home-only{gap:11px;padding-top:11px;}
+ #questCard{min-height:236px;border-radius:22px;}
+ .quest-art{min-height:104px;}
+ .quest-meta{top:9px;left:9px;right:9px;}
+ .quest-label,.quest-chip,.quest-lock{padding:5px 7px;font-size:11px;}
+ .quest-copy{padding:10px 12px 0;gap:4px;}
+ .quest-title{font-size:25px;}
+ .quest-line{font-size:11px;line-height:1.3;}
+ .quest-go,#questDone{min-height:44px;margin:9px 12px 13px;padding:8px 13px;font-size:23px;border-radius:12px;}
+ #questDone{font-size:16px;}
+ .practice-band{min-height:53px;padding:6px 12px 7px;border-radius:16px;}
+ .practice-band h2{font-size:23px;}
+ .sound-note{font-size:11px;}
+ .sound-value{min-height:35px;min-width:35px;padding-top:3px;font-size:28px;border-radius:9px;}
+ .home-sound.sound-long .sound-value{font-size:16px;}
+ #homeDoors{gap:12px;min-height:106px;}
+ #homeDoors>button{min-height:106px;padding:12px 10px;border-radius:20px;}
+ .door-word{font-size:27px;}
+ .door-meta{font-size:11px;margin-top:5px;}
+ .door-arrow{width:18px;height:18px;}
+ .door-pic{width:74px;height:65px;border-radius:13px;right:-10px;bottom:-12px;}
+ #homeBooksPic{right:-10px;bottom:-12px;}
+ .door-tag{left:7px;bottom:7px;}
+}
+@media(min-width:700px){
+ #libraryApp[data-view="home"]{max-width:1080px;padding:calc(30px + env(safe-area-inset-top)) 38px calc(38px + env(safe-area-inset-bottom));}
+ #libraryApp[data-view="home"] .library-header{min-height:52px;}
+ .home-only{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(230px,1fr);grid-template-rows:minmax(0,1fr) minmax(0,1fr) auto auto;gap:22px 28px;padding-top:22px;}
+ #questCard{grid-column:1;grid-row:1/4;min-height:340px;}
+ .practice-band{grid-column:2;grid-row:3;min-height:72px;}
+ #homeDoors{grid-column:2;grid-row:1/3;display:flex;flex-direction:column;gap:23px;min-height:0;}
+ #homeDoors>button{flex:1;min-height:135px;padding:24px 21px;}
+ .door-word{font-size:38px;}
+ .door-meta{font-size:13px;max-width:78%;}
+ .door-arrow{width:27px;height:27px;}
+ .door-pic{width:145px;height:127px;right:-5px;bottom:-16px;}
+ #homeBooksPic{right:-4px;bottom:-15px;}
+ .door-tag{left:18px;bottom:16px;font-size:11px;}
+ .quest-copy{padding:19px 21px 0;}
+ .quest-title{font-size:35px;}
+ .quest-line{font-size:14px;}
+ .quest-go,#questDone{min-height:58px;margin:15px 21px 22px;font-size:28px;}
+ #questDone{font-size:20px;}
+ .practice-band h2{font-size:27px;}
+ #foundRow{grid-column:1/-1;grid-row:4;}
+ .found-tile{width:190px;min-height:58px;}
+ .found-pic{width:70px;height:44px;}
+ .found-name{font-size:16px;}
+}
+@media(prefers-reduced-motion:reduce){#questCard:not(.done):active .quest-go,#homeDoors>button:active,.found-tile:active,#homeBack:active{transform:none;}.gift-dot{animation:none;}}

@@ -93,9 +93,16 @@ async function page(mic) {
   ok("…and says plainly that nothing is uploaded",
     /never uploads recordings|never uploaded|no recording is ever uploaded|not uploaded/i.test(primer),
     "the strongest claim Sona makes should be stated, not implied");
-  ok("…and is honest about the one clip kept on the phone",
-    /saved on this phone|on this device/i.test(primer),
-    "a clip a parent can play back exists locally; consent copy should say so");
+  // Since 5 Nov 2026 (Travis: "dont save") no clip is kept, so the line says
+  // so, and saveRecording keeps nothing (checked below).
+  ok("…and says nothing is saved either",
+    /never uploaded or saved/i.test(primer) && !/saved on this phone|listen back/i.test(primer),
+    "no clip is kept on the phone any more; consent copy must not promise one");
+  {
+    const sonaSrc = readFileSync(ROOT + "/sona.js", "utf8");
+    ok("…and that is true by construction: saveRecording keeps nothing, and practice never calls it",
+      /function saveRecording\(\) \{ return Promise\.resolve\(false\); \}/.test(sonaSrc) && !/saveRecording\(/.test(charge) && /objectStore\("recordings"\)\.clear\(\)/.test(sonaSrc));
+  }
 }
 
 // ── 1b. there is no door a child's recording could go through ──
@@ -120,6 +127,21 @@ async function page(mic) {
   const pages = readdirSync(ROOT).filter((n) => /\.(html|js)$/.test(n));
   const callers = pages.filter((n) => /\/api\/(stt|isolate|voice-change)\b/.test(noComments(readFileSync(ROOT + "/" + n, "utf8"))));
   ok("no family page posts to a transcription, isolation or re-voicing route", callers.length === 0, callers.join(", "));
+  // …NOR HANDS THE VOICE TO THE BROWSER'S OWN TRANSCRIBER (22 Oct 2026). The
+  // Web Speech API's SpeechRecognition looks local and is not: Chrome sends
+  // the audio to Google, Safari to Apple. The Speech Check and the parked
+  // story reader used it until then, so in a browser a child's words left
+  // the phone. The iPhone app's on-device check is SonaSpeech, a different
+  // name, and stays. lib/speech.ts, the one helper for it, went with them.
+  // Every page and every Next source: public/ (but its vendored PostHog),
+  // app/, components/ and lib/. The Next pages are pages too.
+  const SRC = [];
+  const walk = (d, re) => { if (!existsSync(d)) return; for (const n of readdirSync(d)) { const p = d + "/" + n; if (n === "vendor" || n === "node_modules") continue; if (statSync(p).isDirectory()) walk(p, re); else if (re.test(n)) SRC.push(p); } };
+  walk(ROOT, /\.(html|js)$/);
+  for (const dir of ["app", "components", "lib"]) walk(ROOT + "/../" + dir, /\.(ts|tsx|js|mjs)$/);
+  const listeners = SRC.filter((p) => /SpeechRecognition/.test(noComments(readFileSync(p, "utf8")))).map((p) => p.slice(ROOT.length - "public".length));
+  ok("no page or source uses the browser's speech-to-text, which uploads the audio", SRC.length > 100 && listeners.length === 0, listeners.join(", "));
+  ok("…and the helper for it is gone", !existsSync(ROOT + "/../lib/speech.ts"));
 }
 
 // ── 1b. …nor any way out of Sona's own microphone (12 Oct 2026) ──

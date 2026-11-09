@@ -204,6 +204,7 @@ edges; for the scenes, nothing changed outside the box.
 | File | Verdict |
 |---|---|
 | buddy-fox-rest, buddy-fox-cheer | pass |
+| buddy-fox-peek | pass (22 Oct 2026, for the daily stories' peek spots only: Fruit Slice keeps the fox painted into its counter and never asks for it; checked beside the fox it was drawn from, its paws flat on the bottom edge) |
 | buddy-bunny-rest, buddy-bunny-cheer, buddy-bunny-run, buddy-bunny-peek, buddy-bunny-sit | pass |
 | buddy-dragon-rest, buddy-dragon-cheer, buddy-dragon-run, buddy-dragon-peek, buddy-dragon-sit | pass |
 | buddy-cat-rest, buddy-cat-cheer, buddy-cat-run, buddy-cat-peek | pass (the runner shows the tips of its whiskers and one cheek, as asked) |

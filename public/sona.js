@@ -167,10 +167,12 @@
   // "sit"   = sitting on Block Stacker's bench (512x512); falls back to rest.
   // "portrait" = the 288px round badge every screen uses.
   // The fox keeps its painted Fruit Slice counter and Block Stacker bench, so
-  // it has no peek or sit. Each line is added by the art step that lands its
-  // files; how each was drawn, cut and checked is design/crafted-world/buddies-v3.md.
+  // it has no sit, and Fruit Slice never asks for its peek: that one is for
+  // the daily stories' peek spots (STORY1). Each line is added by the art step
+  // that lands its files; how each was drawn, cut and checked is
+  // design/crafted-world/buddies-v3.md.
   const BUDDY_ART = {
-    fox:     { run: ["/assets/crafted/fox-runner.webp", 390, 205, 480, 840], rest: "/assets/crafted/buddy-fox-rest.webp", cheer: "/assets/crafted/buddy-fox-cheer.webp" },
+    fox:     { run: ["/assets/crafted/fox-runner.webp", 390, 205, 480, 840], rest: "/assets/crafted/buddy-fox-rest.webp", cheer: "/assets/crafted/buddy-fox-cheer.webp", peek: "/assets/crafted/buddy-fox-peek.webp" },
     bunny:   { run: ["/assets/crafted/buddy-bunny-run.webp"], rest: "/assets/crafted/buddy-bunny-rest.webp", cheer: "/assets/crafted/buddy-bunny-cheer.webp", peek: "/assets/crafted/buddy-bunny-peek.webp", sit: "/assets/crafted/buddy-bunny-sit.webp" },
     dragon:  { run: ["/assets/crafted/buddy-dragon-run.webp"], rest: "/assets/crafted/buddy-dragon-rest.webp", cheer: "/assets/crafted/buddy-dragon-cheer.webp", peek: "/assets/crafted/buddy-dragon-peek.webp", sit: "/assets/crafted/buddy-dragon-sit.webp" },
     cat:     { run: ["/assets/crafted/buddy-cat-run.webp"], rest: "/assets/crafted/buddy-cat-rest.webp", cheer: "/assets/crafted/buddy-cat-cheer.webp", peek: "/assets/crafted/buddy-cat-peek.webp", sit: "/assets/crafted/buddy-cat-sit.webp" },
@@ -287,7 +289,9 @@
     // (Echo's how-to-play, shown for the first three): a sibling gets their own
     "sona.sprintintro.v1",
     // QUEST1: where this child is in the 14-day daily adventure, and the day
-    // they last finished one (a brother or sister has their own adventure)
+    // they last finished one (a brother or sister has their own adventure);
+    // since STORY1, also the stories they finished and the gift of the last
+    // one; since CAL1, the day their calendar started
     "sona.quest.v1",
     // each child's own best in each game (BESTS1, Sona.gameBest): a brother
     // or sister starts with none, and it goes when the child is removed. The
@@ -435,10 +439,17 @@
     // game, road or Settings page, and slot "" is cleared here because the
     // PER_KID sweep below leaves the first child's keys (BOARD2)
     try { _boardDrop(slot); _boardPendForget([slot]); } catch (e) {}
+    // the weekly report's address, when it is on this child's profile, goes
+    // with them: unless a brother or sister holds the same one, the server is
+    // told this phone has it off (REPORT1, WEEKLY1), from the next Settings
+    // or practice page
+    let held = "";
+    try { const rp = _loadFor(slot, PKEY, {}); if (rp.weeklyReport === true) held = String(rp.email || "").trim().toLowerCase(); } catch (e) {}
     v.list = v.list.filter((k) => k.slot !== slot);
     if (v.active === slot) { _switchRun(slot, v.list[0].slot); v.active = v.list[0].slot; }
     try { sessionStorage.removeItem("sona.run.v1@" + (slot || "first")); } catch (e) {}
     _saveKids(v);
+    try { if (held && reportEmail() !== held) _reportOffOwe(held); } catch (e) {}
     // drop that child's practice data; slot "" (the first kid) shares the
     // un-suffixed keys, so only a suffixed slot is safe to clear
     if (slot) { try { PER_KID.forEach((k) => localStorage.removeItem(k + "@" + slot)); } catch (e) {} }
@@ -545,6 +556,11 @@
 
   function getProfile() {
     const p = Object.assign(clone(DEFAULT_PROFILE), load(PKEY, {}));
+    // A pin belongs to this child's selected sounds. An old backup or a
+    // removed sound must never strand the child on a hidden choice. Reading
+    // only normalizes in memory; Home remains a read-only page.
+    const target = _targetPin(p);
+    if (target) p.targetSound = target; else delete p.targetSound;
     // ONE coach voice for every family (Travis, 29 Sep 2026). The voice picker
     // is gone, so a voice saved from it (Sarah, George…) is overridden here
     // rather than honoured: with no picker left, an old pick would strand that
@@ -686,7 +702,14 @@
     // Stamp that earned day in this writer; read-only goal readers stay pure.
     const dailyChange = patch && Object.prototype.hasOwnProperty.call(patch, "dailyGoal");
     const previousGoal = dailyChange ? repGoal() : null;
-    save(PKEY, Object.assign(getProfile(), patch || {}));
+    // a child this save sets up starts their story calendar today (CAL1):
+    // setup, the Speech Check and the pilot page all set a child up here
+    const setUpNow = !!(patch && patch.onboarded === true) && !getProfile().onboarded;
+    const next = Object.assign(getProfile(), patch || {});
+    const target = _targetPin(next);
+    if (target) next.targetSound = target; else delete next.targetSound;
+    save(PKEY, next);
+    if (setUpNow) { try { _questAnchor(null, true); } catch (e) {} }
     // …and pay it: today's reps already said earn against the lowered goal
     // now (30 once it is met, like any goal day), not at a next rep that may
     // never come that day (the ledger never goes back to an earlier day).
@@ -988,8 +1011,35 @@
     // Homework first: this is the whole point of assigning it.
     const hs = homeworkSounds();
     if (hs.length) return hs;
-    const f = ((getProfile().focusSounds) || []).map((s) => String(s).toUpperCase()).filter((s) => WORDS[s]);
+    const p = getProfile(), pin = _targetPin(p);
+    if (pin) return [pin];
+    const f = _targetFamilySounds(p);
     return f.length ? f : ["R"];
+  }
+  // One chosen sound works like a language choice: books and the existing
+  // game/practice readers agree, while the family's other selected sounds
+  // and all earned work stay intact. No pin preserves the old rotation.
+  function _targetFamilySounds(p) {
+    const list = p && Array.isArray(p.focusSounds) ? p.focusSounds : [];
+    return list.map((s) => String(s).toUpperCase()).filter((s, i, a) => ALL_SOUNDS.indexOf(s) >= 0 && a.indexOf(s) === i);
+  }
+  function _targetPin(p) {
+    const s = String(p && p.targetSound || "").toUpperCase();
+    return _targetFamilySounds(p).indexOf(s) >= 0 ? s : "";
+  }
+  function targetSoundOptions() {
+    const assigned = homeworkSounds();
+    return assigned.length ? assigned : _targetFamilySounds(getProfile());
+  }
+  function targetSound() { return rotSound(); }
+  function setTargetSound(sound) {
+    // A family control must not claim to change an active assignment.
+    // Keep the saved family preference for when that assignment ends.
+    if (homeworkSounds().length) return false;
+    const s = String(sound == null ? "" : sound).toUpperCase();
+    if (s && _targetFamilySounds(getProfile()).indexOf(s) < 0) return false;
+    saveProfile({ targetSound: s });
+    return true;
   }
   // The position to practice: the assignment's, else the family's setting.
   // One reader for both, so a page cannot honour homework for the sound and
@@ -1693,11 +1743,11 @@
   // has one answer, and the answer never changes underneath a child.
   // Short on purpose (Travis, 1 Oct 2026: "make this much more concise"; 2
   // Oct 2026: "still too long ... just say audio is never recorded or
-  // uploaded"). Two things, both true: nothing is uploaded, and the one try a
-  // day kept on the phone for a parent to play back. Not "never recorded":
-  // that one try IS recorded, on the phone, and a consent line must not deny
-  // it (mictest). The privacy page and /support keep the long version.
-  const MIC_PROMISE = "Grown-ups: audio is never uploaded. One try a day is saved on this phone so you can listen back.";
+  // uploaded"). Both halves are true by construction since 5 Nov 2026
+  // (Travis: "dont save"): saveRecording keeps nothing, and no route accepts
+  // audio (mictest). Still not "never recorded": the practice page holds a
+  // try in memory while it listens. The privacy page and /support say more.
+  const MIC_PROMISE = "Grown-ups: audio is never uploaded or saved.";
   // Rachel-approved play recommendation. Every game remains available by choice.
   function playStyle() {
     var age = Number(getProfile().childAge);
@@ -2286,7 +2336,13 @@
   const GAME_WORDS = {
     soccer: { B:["ball","bear"], N:["net"], T:["toe"], F:["foot"], S:["sock"], SH:["shoe","shirt"], K:["cup"], M:["medal"], L:["leg"] },
     hoops: { B:["ball"], N:["net"], S:["sock"], SH:["shoe","shirt"], K:["cup"], M:["medal"], L:["leg"] },
-    dino: { B:["bone","bucket"], R:["rock"], M:["mountain","map"], N:["nest"], T:["tooth"], D:["dinosaur"], K:["cave"], F:["foot"], V:["volcano"], S:["sand","sun"], SH:["shell"], L:["leaf","lizard"], TH:["thorn"] }
+    dino: { B:["bone","bucket"], R:["rock"], M:["mountain","map"], N:["nest"], T:["tooth"], D:["dinosaur"], K:["cave"], F:["foot"], V:["volcano"], S:["sand","sun"], SH:["shell"], L:["leaf","lizard"], TH:["thorn"] },
+    // STORY1's three games (22 Oct 2026; the table is Rachel's to review):
+    // two syllables at most, so a three-year-old is never asked a long word.
+    // "river" is left out on purpose: its second R is a harder target.
+    lighthouse: { B:["boat"], M:["moon","mouse"], N:["net"], F:["fish"], SH:["ship","shell"], S:["seal"], R:["rock","rain"], L:["lamp","ladder"], D:["duck"], T:["turtle"], P:["pig"] },
+    windup: { B:["ball","bear","bus"], M:["monkey","mouse"], F:["fox"], SH:["ship"], R:["robot","rocket"], L:["lion"], D:["doll","duck"], T:["toy","top"], K:["key","kite"], G:["game","gift"], Z:["zebra"], J:["jeep","jet"], V:["van"] },
+    bridge: { B:["boat","bee"], M:["mug"], N:["nest","net"], F:["fish"], SH:["shell","ship"], S:["sand","seal"], R:["rock","rain","rose"], L:["leaf"], D:["duck"], T:["turtle"], K:["cake","cookie"], G:["gift","gate"], P:["pie"], J:["jam","juice"], CH:["cherry","cheese"], V:["vase"] }
   };
   // Every theme is a start-of-word word ("sock", "rock"), so a child
   // practising another place gets none: a themed "rock" every third turn
@@ -2566,6 +2622,12 @@
   // whose mic listens and how loud it hears; on another family's phone it
   // would change what counts as heard. It is refused by importData too.
   const NO_EXPORT = ["sona.setupasks.v1", "sona.obdraft.v1", "sona.board.v1", "sona.boardcache.v1", "sona.boardpend.v1", "sona.boardleave.v1", "sona.boardask.v1", "sona.nativemic",
+    // FREEPLAY1: the household's one free round was had on this phone
+    "sona.freeplay.v1",
+    // the trial reminder (NOTIFY1): this phone's iOS answer and what iOS holds for it
+    "sona.notify.v1",
+    // TRIAL1: the day this phone last said "played today" (one beacon a day)
+    "sona.played.v1",
     // what this phone showed (the offer from Home, 13 Oct 2026), like freever
     "sona.offerseen.v1",
     // the weekly report's device id and last send (REPORT1): this phone's own
@@ -2618,7 +2680,7 @@
   // one that does (hand-made, or from a build that slips) is not let in either.
   const NO_IMPORT = ["sona.sub.v1", "sona.slpunlock", "sona.caseplan.v1", "sona.founder", "sona.founding.v1", "sona.paidui", "sona.websalesui", "sona.pilot.v1", "sona.trial.v1",
     "sona.freeera.v1", "sona.freeera2.v1", "sona.freeera3.v1", "sona.freeera4.v1", "sona.freeera5.v1", "sona.freever.v1",
-    "sona.setupasks.v1", "sona.obdraft.v1",
+    "sona.setupasks.v1", "sona.obdraft.v1", "sona.freeplay.v1",
     // the kept-buddies stamp (OWN1) is true of this device, like freever; what
     // a household owns travels inside each child's profile instead
     "sona.buddyset.v1",
@@ -2628,6 +2690,9 @@
     // the native mic's measurement setting (NATIVE MIC): true of one test
     // phone only, and it changes what counts as heard, so it never moves to another
     "sona.nativemic",
+    // the trial reminder (NOTIFY1): a backup never brings another phone's
+    // iOS answer, or a reminder iOS does not hold here
+    "sona.notify.v1", "sona.played.v1",
     // the offer from Home was shown on THIS phone (13 Oct 2026): a backup
     // never brings the mark, so it can never take that one showing away
     "sona.offerseen.v1",
@@ -2705,6 +2770,21 @@
           else if ((base === OUTKEY || base === GAMEREPKEY || base === GOALKEY) && !(sfx in brought)) brought[sfx] = false;
         });
         Object.keys(brought).forEach((sfx) => { if (!brought[sfx]) localStorage.removeItem(TROPHYKEY + sfx); });
+      } catch (e) {}
+      // A CHILD'S STORY CALENDAR COMES WITH THE CHILD (CAL1, 28 Oct 2026). A
+      // backup that brings a child's profile but no quest record (a child who
+      // had finished nothing, or a backup from before the stories) takes away
+      // the record of whoever sat in that slot here, so the child restored
+      // starts their own calendar on the next page that loads, never another
+      // child's start day or finished stories.
+      try {
+        const qb = {};
+        Object.keys(data).forEach((k) => {
+          const at = k.indexOf("@"), base = at < 0 ? k : k.slice(0, at), sfx = at < 0 ? "" : k.slice(at);
+          if (base === QUESTKEY) qb[sfx] = true;
+          else if (base === PKEY && !(sfx in qb)) qb[sfx] = false;
+        });
+        Object.keys(qb).forEach((sfx) => { if (!qb[sfx]) localStorage.removeItem(QUESTKEY + sfx); });
       } catch (e) {}
       if (!n) return { ok: false, error: "No Sona data found in that backup." };
       // The backup can also replace the child list, so the grandfathered
@@ -3004,7 +3084,17 @@
   // demonstration window gated() still honours for the rest: a new family
   // would otherwise watch a shelf of open books lock three days in.
   const FREE_BOOKS = ["Rory and the Rainbow"];
+  // Discovery metadata only: Home must describe the selected sound's shelf,
+  // which no longer borrows another sound's free book. readtest checks this
+  // small map against the actual book catalog; access still uses bookFree.
+  const FREE_BOOK_SOUNDS = { "Rory and the Rainbow": "R" };
   function bookFree(title) { return FREE_BOOKS.indexOf(String(title || "")) !== -1 && freeVersion(); }
+  function freeBooksOnShelf() {
+    var p = getProfile() || {}, focus = Array.isArray(p.focusSounds) ? p.focusSounds : [];
+    var restricted = homeworkSounds().length || p.targetSound || (!playMode() && focus.length);
+    var sound = restricted ? String(targetSound() || "").toUpperCase() : "";
+    return FREE_BOOKS.filter(function (title) { return bookFree(title) && (!sound || FREE_BOOK_SOUNDS[title] === sound); }).length;
+  }
   function booksOpen() { return isFree() || premium() || trialActive(); }
   function bookLocked(title) { return !bookFree(title) && !booksOpen(); }
   // earlyAdopter lives on the PROFILE, and the profile is per-kid — so a
@@ -3409,8 +3499,12 @@
     return false;
   }
 
-  // --- recordings (the child's audio attempts) kept in IndexedDB so a parent
-  //     can review them later. Best-effort: never throws into the lesson. ---
+  // --- recordings: NONE ARE KEPT (Travis, 5 Nov 2026: "dont save"). Until
+  //     then one passed try a day per child was kept in IndexedDB for the
+  //     Progress page's "Saved tries"; that shelf went the same day, so a kept
+  //     clip was a child's voice on the phone that nobody could play. The
+  //     store stays only so old clips can be deleted (below), and so a child
+  //     removed in Settings still has nothing left behind. ---
   function idb() {
     return new Promise((res, rej) => {
       try {
@@ -3421,33 +3515,8 @@
       } catch (e) { rej(e); }
     });
   }
-  async function saveRecording(rec) {
-    const kid = _slot(), day = today();
-    try {
-      const db = await idb();
-      return await new Promise((res, rej) => {
-        const tx = db.transaction("recordings", "readwrite");
-        // KIDS1: stamp the owning child. The store is one IndexedDB table for
-        // the device, so without this a sibling's Progress page listed — and
-        // played — another child's voice.
-        const store = tx.objectStore("recordings");
-        let saved = false;
-        const request = store.openCursor();
-        request.onsuccess = function () {
-          const cursor = request.result;
-          if (cursor) {
-            const row = cursor.value;
-            if ((row.kid || "") === kid && _localDay(new Date(row.date).getTime()) === day) return;
-            cursor.continue(); return;
-          }
-          store.add(Object.assign({}, rec, { date: new Date().toISOString(), kid: kid }));
-          saved = true;
-        };
-        tx.oncomplete = () => res(saved);
-        tx.onerror = () => rej(tx.error);
-      });
-    } catch (e) { return false; }
-  }
+  // Kept as a name an older cached page may still call; it saves nothing.
+  function saveRecording() { return Promise.resolve(false); }
   async function listRecordings(limit = 50) {
     const mine = _slot();
     try {
@@ -3486,6 +3555,24 @@
     _clipWork = Promise.all([_clipWork, p]).then(() => {}, () => {});
     return p;
   }
+  // Every clip an earlier build kept, for every child, deleted once per
+  // device. The done-mark is "_sona…", never "sona.", so a backup does not
+  // carry it to a new phone, where an old build may have kept clips too.
+  // Never on Home, which only reads (roadtest): the first page after it does.
+  function _dropAllRecordings() {
+    try { if (!global.indexedDB || _notifyHome() || localStorage.getItem("_sonaClipsGone")) return Promise.resolve(0); } catch (e) { return Promise.resolve(0); }
+    const p = idb().then((db) => new Promise((res) => {
+      try {
+        const tx = db.transaction("recordings", "readwrite");
+        tx.objectStore("recordings").clear();
+        tx.oncomplete = () => { try { localStorage.setItem("_sonaClipsGone", "1"); } catch (e) {} res(1); };
+        tx.onerror = tx.onabort = () => res(0);
+      } catch (e) { res(0); }
+    })).catch(() => 0);
+    _clipWork = Promise.all([_clipWork, p]).then(() => {}, () => {});
+    return p;
+  }
+  try { _dropAllRecordings(); } catch (e) {}
   function _dropRecordingsNow(slot) {
     slot = slot || "";
     return idb().then((db) => new Promise((res) => {
@@ -3784,14 +3871,14 @@
     // "all the other games are ... grayed out except they can replay feed echo
     // and fruit slice"). Only matters when pricing is on; free while Sona is.
     stack: { name: "Block Stacker", sub: "Say it 5× to play",          go: "/charge.html?game=arcade-stack.html", group: "arcade", tier: "premium", playDescription: "Time your tap to stack the blocks." },
-    run:   { name: "Sound Sprint",  sub: "Say it 5× to play",          go: "/charge.html?game=arcade-run.html", group: "arcade", tier: "premium", playDescription: "Switch lanes and collect coins." },
+    run:   { name: "Sound Sprint",  sub: "Say it 5× to play",          go: "/charge.html?game=arcade-run.html", group: "arcade", tier: "premium", playDescription: "Switch lanes and collect stars." },
     glide: { name: "Flappy Glide",  sub: "Say it 5× to play",          go: "/charge.html?game=arcade-glide.html", group: "arcade", tier: "premium", playDescription: "Tap to glide through the gaps." },
     // Rise Up (Travis, 9 Oct 2026: "lets build the game rise up"): a round game like Flappy Glide, entered through its practice page; adventure: false keeps it out of the old five-game run.
     rise:  { name: "Rise Up",       sub: "Say it 5× to play",          go: "/charge.html?game=arcade-rise.html", group: "arcade", tier: "premium", adventure: false, playDescription: "Drag the shield to keep your balloon safe." },
     feed:  { name: "Feed Echo",     sub: "Say it & tap — Echo's hungry!", go: "/arcade-feed.html", group: "simple", tier: "free", playDescription: "Find the picture and feed Echo. No timer." },
     // Back from Coming soon on 30 Sep 2026 (Travis: "the two free games for
     // older kids, the two free games for younger kids"): with Feed Echo, the
-    // free version's games for ages 3-4. No release date, so no New shelf.
+    // free version's games for ages 3-4. No release date, so never tagged New.
     // Rebuilt on 1 Oct 2026 ("Say it, and Echo blows bubbles") on the Say &
     // Play engine, but NOT a `say` game: that flag would list it twice on
     // Home, point its sticker at one that does not exist, and take it out of
@@ -3823,16 +3910,24 @@
     // bounce note say "coming Nov 6" until that day, then "coming soon"
     // again. It is a LABEL, never a switch: only taking comingSoon off opens
     // a game.
+    //
+    // FOUR PARKED AGAIN (Travis, 5 Nov 2026, after the game audit: "hide
+    // those 4"). Puppy Bath (its Spray button aims itself, so holding it is
+    // the whole game), Surprise Boxes (the same five "surprises" in the same
+    // order every time), Fish Tank (one move five times) and Monster Makeover
+    // (the monster never changes, even its face) are Coming soon again: off
+    // Home, off the website's strip, shut for every family. Their pages and
+    // suites stay; each comes back only rebuilt, by taking comingSoon off.
     balloon: { name: "Balloon Party", sub: "Say it, then pump and float", go: "/arcade-balloon.html", group: "simple", tier: "premium", say: true, playDescription: "Say the word to get a balloon. Pump it up and pull it into the party ring." },
     flower: { name: "Grow a Flower", sub: "Say it, then water the flower", go: "/arcade-flower.html", group: "simple", tier: "premium", say: true, playDescription: "Say the word to fill the watering can. Hold it over the glowing soil to help the flower grow." },
     rocket: { name: "Rocket Blast", sub: "Say it, then blast off", go: "/arcade-rocket.html", group: "simple", tier: "premium", say: true, playDescription: "Say the word to get a rocket. Pull it back and let go to fly to a planet." },
     snowman: { name: "Build a Snowman", sub: "Say it, then roll and stack", go: "/arcade-snowman.html", group: "simple", tier: "premium", say: true, playDescription: "Say the word to get a snowball. Roll it big, stack it and dress your snowman." },
     train: { name: "Choo-Choo Train", sub: "Say it, then drive and stop", go: "/arcade-train.html", group: "simple", tier: "premium", say: true, playDescription: "Say the word to start the train. Drive to the station, stop, and help a friend aboard." },
-    puppy: { name: "Puppy Bath", sub: "Say it, then wash the puppy", go: "/arcade-puppy.html", group: "simple", tier: "premium", say: true, playDescription: "Say the word to find a muddy spot. Aim the water and wash it clean." },
+    puppy: { name: "Puppy Bath", sub: "Say it, then wash the puppy", go: "/arcade-puppy.html", group: "simple", tier: "premium", comingSoon: true, say: true, playDescription: "Say the word to find a muddy spot. Aim the water and wash it clean." },
     stars: { name: "Bedtime Stars", sub: "Say it, then draw in the stars", go: "/arcade-stars.html", group: "simple", tier: "premium", say: true, playDescription: "Say the word to start a picture. Slide from star to star to draw it in the sky." },
     cake: { name: "Birthday Cake", sub: "Say it, then bake a cake", go: "/arcade-cake.html", group: "simple", tier: "premium", say: true, playDescription: "Say the word to start each step. Stir, pour, ice and decorate your own birthday cake." },
-    gifts: { name: "Surprise Boxes", sub: "Say it, then open a present", go: "/arcade-gifts.html", group: "simple", tier: "premium", say: true, playDescription: "Say the word to get a present. Pull, peel and lift to open it." },
-    fishtank: { name: "Fish Tank", sub: "Say it, then feed a fish", go: "/arcade-fishtank.html", group: "simple", tier: "premium", say: true, playDescription: "Say the word to get fish food. Drop it above a hungry fish and watch it eat." },
+    gifts: { name: "Surprise Boxes", sub: "Say it, then open a present", go: "/arcade-gifts.html", group: "simple", tier: "premium", comingSoon: true, say: true, playDescription: "Say the word to get a present. Pull, peel and lift to open it." },
+    fishtank: { name: "Fish Tank", sub: "Say it, then feed a fish", go: "/arcade-fishtank.html", group: "simple", tier: "premium", comingSoon: true, say: true, playDescription: "Say the word to get fish food. Drop it above a hungry fish and watch it eat." },
     racecar: { name: "Race Car", sub: "Say it, then steer and race", go: "/arcade-racecar.html", group: "arcade", tier: "premium", say: true, playDescription: "Say the word to drive the next stretch. Steer around cones and into the glowing ring." },
     treasure: { name: "Treasure Map", sub: "Say it, then draw a route", go: "/arcade-treasure.html", group: "arcade", tier: "premium", say: true, playDescription: "Say the word to set sail. Draw your boat a path around the islands to the next harbour." },
     // REBUILT (Travis, 1 Oct 2026: "go finish soccer"): the word earns the
@@ -3849,7 +3944,7 @@
     dino: { name: "Dino Dig", sub: "Say it, then dig!", go: "/arcade-dino.html", group: "arcade", tier: "premium", say: true, playDescription: "Say the word to get a brush, then rub the sand to dig up a dinosaur bone." },
     space: { name: "Space Trip", sub: "Say it, then fly and land", go: "/arcade-space.html", group: "arcade", tier: "premium", say: true, playDescription: "Say the word to start a flight. Steer the rocket and land softly on the glowing pad." },
     pizza: { name: "Pizza Chef", sub: "Say it, then cook the pizza", go: "/arcade-pizza.html", group: "arcade", tier: "premium", say: true, playDescription: "Say the word to start each step. Roll, spread, top, bake and slice your own pizza." },
-    monster: { name: "Monster Makeover", sub: "Say it, then style the monster", go: "/arcade-monster.html", group: "arcade", tier: "premium", say: true, playDescription: "Say the word to get the next salon tool. Wash, brush and style a friendly monster." },
+    monster: { name: "Monster Makeover", sub: "Say it, then style the monster", go: "/arcade-monster.html", group: "arcade", tier: "premium", comingSoon: true, say: true, playDescription: "Say the word to get the next salon tool. Wash, brush and style a friendly monster." },
   };
   // Catalog access is separate from the speech needed to earn an arcade turn.
   // Free access opens released games; unfinished games stay parked for everyone.
@@ -3915,6 +4010,17 @@
     } catch (e) { return null; }
   }
   function gameAccess(key, options) {
+    // STORY1: today's story and its fourteen games are Premium by the books'
+    // rule (storyOpen: never the demonstration window, never an earned turn
+    // or a saved run), and are known by name: they are in no catalog, so
+    // gameKey() below would refuse them. The reasons are the catalog's own,
+    // so Home's tag reads a story exactly as it reads a Premium game.
+    if (_storyKey(key)) {
+      var sp = libraryPreview(), so = storyOpen();
+      return { allowed: so, tier: "premium", preview: sp,
+        reason: so ? (sp ? "trial" : isFree() ? "free-mode" : premium() ? "entitled" : "trial")
+          : (sp && previewPlan().state === "expired" ? "expired" : "premium") };
+    }
     key = gameKey(key);
     var act = key && GAME_ACTS[key], preview = libraryPreview();
     var result = { allowed: false, tier: act ? act.tier : "premium", reason: "unknown", preview: preview };
@@ -3962,7 +4068,9 @@
     } catch (e) {}
   }
   function gameBounce(key) {
-    try { location.replace("/activities.html" + (gameKey(key) ? "?locked=" + key : "")); } catch (e) {}
+    // a story's address goes Home, where today's story card is, never to the
+    // Arcade's "locked" note (which knows only the catalog's games)
+    try { location.replace(_storyKey(key) ? "/today.html" : "/activities.html" + (gameKey(key) ? "?locked=" + key : "")); } catch (e) {}
   }
 
   // Age suggests a style of play, never access or a speech target. Keep this
@@ -3971,52 +4079,11 @@
     { id: "simple", name: "Simple play", ageLabel: "Suggested ages 3–4", description: "Little taps. Big discoveries." },
     { id: "arcade", name: "Arcade", ageLabel: "Suggested ages 5–8", description: "A little more action and adventure." },
   ];
-  // The books Home's top rows can show. releasedOn: the day it came out (it
-  // sits under What's new for 30 days). season: { startsOn, endsOn } puts it
-  // under Limited time for that window instead. Folder = public/assets/books/<slug>.
-  const HOME_BOOKS = [
-    // Existing covers can be daily picks too; no release date is invented.
-    { slug: "rory-rainbow", title: "Rory and the Rainbow", sound: "R" },
-    { slug: "penny-pebble-party", title: "Penny's Pebble Party", sound: "P" },
-    { slug: "bo-beach-day", title: "Bo's Beach Day", sound: "B" },
-    { slug: "mia-makes-muffins", title: "Mia Makes Muffins", sound: "M" },
-    { slug: "ned-needs-a-net", title: "Ned Needs a Net", sound: "N" },
-    { slug: "toby-tiny-tuba", title: "Toby's Tiny Tuba", sound: "T" },
-    { slug: "dot-digs-a-pool", title: "Dot Digs a Pool", sound: "D" },
-    { slug: "kip-kite", title: "Kip's Kite", sound: "K" },
-    { slug: "goldie-guitar", title: "Goldie's Guitar", sound: "G" },
-    { slug: "finn-finds-a-feather", title: "Finn Finds a Feather", sound: "F" },
-    { slug: "val-the-van", title: "Val the Van", sound: "V" },
-    { slug: "sid-the-seagull", title: "Sid the Seagull", sound: "S" },
-    { slug: "zoe-and-the-zipper", title: "Zoe and the Zipper", sound: "Z" },
-    { slug: "shay-the-shy-shark", title: "Shay the Shy Shark", sound: "SH" },
-    { slug: "chip-the-chipmunk", title: "Chip the Chipmunk", sound: "CH" },
-    { slug: "jax-and-the-jam-jar", title: "Jax and the Jam Jar", sound: "J" },
-    { slug: "leo-lucky-leaf", title: "Leo's Lucky Leaf", sound: "L" },
-    { slug: "theo-thunder-day", title: "Theo's Thunder Day", sound: "TH" },
-    { slug: "this-bear-that-bee", title: "This Bear, That Bee", sound: "THV" },
-    { slug: "rosie-red-wagon", title: "Rosie and the Red Wagon", sound: "R", releasedOn: "2026-10-01" },
-    { slug: "ray-lost-ring", title: "Ray and the Lost Ring", sound: "R", releasedOn: "2026-10-01" },
-    { slug: "sam-sailboat", title: "Sam's Sailboat", sound: "S", releasedOn: "2026-10-01" },
-    { slug: "sophie-silly-soup", title: "Sophie's Silly Soup", sound: "S", releasedOn: "2026-10-01" },
-    { slug: "libby-lemon", title: "Libby and the Lemon", sound: "L", releasedOn: "2026-10-01" },
-    { slug: "leon-lantern", title: "Leon's Lantern", sound: "L", releasedOn: "2026-10-01" },
-    { slug: "shane-shiny-shell", title: "Shane and the Shiny Shell", sound: "SH", releasedOn: "2026-10-01" },
-    { slug: "shawn-shadow", title: "Shawn and His Shadow", sound: "SH", releasedOn: "2026-10-01" },
-    { slug: "thor-thank-you", title: "Thor Says Thank You", sound: "TH", releasedOn: "2026-10-01" },
-    { slug: "thelma-thirsty-plant", title: "Thelma's Thirsty Plant", sound: "TH", releasedOn: "2026-10-01" },
-    { slug: "boo-bat-halloween", title: "Boo the Bat on Halloween", sound: "B", anySound: true, season: { startsOn: "2026-10-01", endsOn: "2026-10-31" } },
-    { slug: "rory-halloween", title: "Rory the Rabbit on Halloween", sound: "R", season: { startsOn: "2026-10-01", endsOn: "2026-10-31" } },
-    { slug: "sid-halloween", title: "Sid the Seagull on Halloween", sound: "S", season: { startsOn: "2026-10-01", endsOn: "2026-10-31" } },
-    { slug: "leon-halloween", title: "Leon's Trick-or-Treat Night", sound: "L", season: { startsOn: "2026-10-01", endsOn: "2026-10-31" } },
-    { slug: "zoe-halloween", title: "Zoe the Zebra on Halloween", sound: "Z", season: { startsOn: "2026-10-01", endsOn: "2026-10-31" } },
-    { slug: "finn-halloween", title: "Finn the Fish on Halloween", sound: "F", season: { startsOn: "2026-10-01", endsOn: "2026-10-31" } },
-  ];
   // Halloween has a limited-time book for several sounds (Travis, 2 Oct 2026:
   // "take a popular book like the halloween and make a version for other
   // letter"). A child gets the one in their own sound; a child whose sounds
   // have none gets the one written for everyone (anySound: Boo the Bat).
-  // Home's Limited time row and the bookshelf both ask here, so they agree.
+  // The bookshelf asks here (Home's Limited time row did until 23 Oct 2026).
   function seasonPick(list, sounds) {
     var want = (sounds || []).map(function (x) { return String(x).toUpperCase(); });
     var mine = list.filter(function (b) { return want.indexOf(String(b.sound).toUpperCase()) !== -1; });
@@ -4027,16 +4094,14 @@
     var validAge = age >= 2 && age <= 14 && Math.floor(age) === age;
     var recommended = validAge ? playStyle() : null;
     var now = options && typeof options.now === "number" && isFinite(options.now) ? options.now : Date.now();
-    var date = new Date(now), day = Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
     function catalogDay(value) {
       if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return NaN;
       var parsed = Date.parse(value + "T00:00:00Z");
       return isFinite(parsed) && new Date(parsed).toISOString().slice(0, 10) === value ? parsed : NaN;
     }
-    // A day string is the read-only seam for daily picks. Existing release
-    // rows retain their UTC-day rule when only a timestamp is supplied.
+    // A day string is the read-only seam for daily picks; a timestamp alone
+    // is read on the family's own calendar.
     var requestedDay = options && isFinite(catalogDay(options.day)) ? options.day : "";
-    if (requestedDay) day = catalogDay(requestedDay);
     // A parked game's day (comingOn, see GAME_ACTS; none carries one since 15
     // Oct 2026) on the family's own calendar, the way the bookshelf dates its
     // books: "Coming Oct 9" until the day, then "Coming soon" again if the
@@ -4075,84 +4140,46 @@
           .concat(keys.filter(function (key) { return GAME_ACTS[key].comingSoon; }).sort(parkedOrder)).map(entry),
       };
     });
+    // The child's own age group's shelf comes first (Travis, 23 Oct 2026:
+    // "if they're young, 3 to 4, have simple play show up higher, and vice
+    // versa"); with no age yet, Simple play leads, as the catalog lists it.
     if (recommended === "arcade") groups.reverse();
-    // Release dates expire honestly after thirty calendar dates. Seasonal rows
-    // exist only when a finished item has a real active start/end date; no placeholders.
-    var fresh = ACTIVITY_KEYS.filter(function (key) {
-      var act = GAME_ACTS[key], released = catalogDay(act.releasedOn);
-      return act.available !== false && !act.comingSoon && released <= day && day - released < 30 * 86400000;
-    }).sort(function (a, b) { return catalogDay(GAME_ACTS[b].releasedOn) - catalogDay(GAME_ACTS[a].releasedOn); }).map(entry);
-    var seasonal = ACTIVITY_KEYS.filter(function (key) {
-      var act = GAME_ACTS[key], season = act.season;
-      return act.available !== false && !act.comingSoon && season && catalogDay(season.startsOn) <= day && day <= catalogDay(season.endsOn);
-    }).map(entry);
-    // Books join the two top rows (Travis, 1 Oct 2026: "at the top ... what's
-    // new ... the next section like limited time where we have books and
-    // games"). HOME_BOOKS names each book's day out and, for a limited-time
-    // one, its window; a book is still opened (or not) by the shelf's rules.
-    function bookEntry(b) { return { key: "book:" + b.slug, kind: "book", name: b.title, slug: b.slug, sound: b.sound, cover: "/assets/books/" + b.slug + "/cover.webp", go: "/library.html?book=" + b.slug, playDescription: "A picture book with Echo.", tier: bookFree(b.title) ? "free" : "premium", releasedOn: b.releasedOn || null, available: true, comingSoon: false }; }
-    // only the child's own sounds, the one practised now first (Travis, 1 Oct
-    // 2026: "the kids just seeing books based on their letter/s")
-    var mySounds = (getProfile().focusSounds || []).map(function (x) { return String(x).toUpperCase(); });
-    var nowSound = ""; try { nowSound = String(rotSound() || "").toUpperCase(); } catch (e) {}
-    var freshBooks = HOME_BOOKS.filter(function (b) { var r = catalogDay(b.releasedOn); return !b.season && r <= day && day - r < 30 * 86400000 && (!mySounds.length || playMode() || mySounds.indexOf(b.sound) !== -1); })
-      .sort(function (a, b) { return (b.sound === nowSound) - (a.sound === nowSound); })
-      .map(bookEntry);
-    var limitedBooks = HOME_BOOKS.filter(function (b) { return b.season && catalogDay(b.season.startsOn) <= day && day <= catalogDay(b.season.endsOn); });
-    // the limited-time book in this child's sound (seasonPick); play mode,
-    // which rotates every sound, and a child with no sounds yet see them all
-    var sounds = getProfile().focusSounds || [];
-    if (sounds.length && !playMode()) limitedBooks = seasonPick(limitedBooks, sounds);
-    limitedBooks = limitedBooks.map(bookEntry);
-    // At most five across, so a row never becomes a long side-scroll.
-    var ROW = 5, newRow = fresh.concat(freshBooks).slice(0, ROW), limitedRow = seasonal.concat(limitedBooks).slice(0, ROW);
-    var featured = [];
-    if (newRow.length) featured.push({ id: "new", name: "What's new", games: newRow });
-    if (limitedRow.length) featured.push({ id: "seasonal", name: "Limited time", games: limitedRow });
+    // ONE ROW ABOVE THE SHELVES, GAMES ONLY (Travis, 23 Oct 2026: "organize
+    // the arcade so that there are no books in there ... I only want either
+    // today's picks or limited time ... have 2 games listed there, and then go
+    // directly to either simple play or arcade"). Today's picks is that row:
+    // it is real every day, where Limited time only ever held the Halloween
+    // books, and an everyday game called "limited" would be a fib. What's new
+    // and Limited time are gone, and so are the books in the picks: the
+    // bookshelf, behind Home's Books door, keeps every book and its own
+    // limited-time ones (seasonPick, above).
     // Today's picks change with the local calendar, without saving a shuffle
-    // or calling fid() (which creates an id). Lanes are disjoint where the
-    // catalog permits it: a book + game, then two games the following day.
-    // The two littles games cannot avoid every repeat; never borrow an older
-    // child's game or an unrelated sound's book just to fill that gap.
+    // or calling fid() (which creates an id): two games of the first shelf
+    // under them (the child's own age group, or Simple play while no age is
+    // set), one from each half of it, so the two never match.
     var pickDay = catalogDay(localToday), ordinal = Math.floor(pickDay / 86400000);
     var seed = _slot(); try { seed += ":" + (localStorage.getItem("sona.fid.v1") || ""); } catch (e) {}
     function pickHash(text) { var h = 2166136261; for (var i = 0; i < text.length; i++) { h ^= text.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
     function ranked(list) { return list.slice().sort(function (a, b) { var x = pickHash(seed + "|" + a.key), y = pickHash(seed + "|" + b.key); return x - y || (a.key < b.key ? -1 : a.key > b.key ? 1 : 0); }); }
     function walk(list, step, lane) { return list.length ? list[((step + pickHash(seed + "|" + lane)) % list.length + list.length) % list.length] : null; }
-    function opens(item) { return item && (item.kind === "book" ? !bookLocked(item.name) : gameAccess(item.key).allowed); }
+    function opens(item) { return item && gameAccess(item.key).allowed; }
     function freshPick(item) { var r = catalogDay(item.releasedOn); item.isNew = r <= pickDay && pickDay - r < 30 * 86400000; return item; }
-    var pickGames = ranked(ACTIVITY_KEYS.filter(function (key) { var a = GAME_ACTS[key]; return a.group === playStyle() && a.available !== false && !a.comingSoon && !a.season; }).map(entry));
-    // An active assignment leads the sound pool, exactly as practice does.
-    // Read its window against the requested calendar, so a date preview stays
-    // deterministic even across an assignment's start or due day.
-    var pickSounds = mySounds, hw = (load(HWKEY, {}) || {}).hw;
-    if (hw && (!hw.start || localToday >= hw.start) && (!hw.due || localToday <= hw.due) && Array.isArray(hw.sounds)) {
-      var assigned = hw.sounds.map(function (x) { return String(x).toUpperCase(); }).filter(function (x) { return !!WORDS[x]; });
-      if (assigned.length) pickSounds = assigned;
-    }
-    var pickBooks = HOME_BOOKS.filter(function (b) { var r = catalogDay(b.releasedOn); return !b.season && (!isFinite(r) || r <= pickDay) && (!pickSounds.length || playMode() || pickSounds.indexOf(b.sound) !== -1); });
-    var firstSound = pickSounds.indexOf(nowSound) !== -1 ? nowSound : pickSounds[0];
-    var currentBooks = pickBooks.filter(function (b) { return b.sound === firstSound; });
-    if (currentBooks.length) pickBooks = currentBooks;
-    pickBooks = ranked(pickBooks.map(bookEntry));
+    var pickGroup = recommended || ACTIVITY_GROUPS[0].id;
+    var pickGames = ranked(ACTIVITY_KEYS.filter(function (key) { var a = GAME_ACTS[key]; return a.group === pickGroup && a.available !== false && !a.comingSoon; }).map(entry));
     var split = Math.max(1, Math.floor(pickGames.length / 2));
     var leftGames = pickGames.slice(0, split), rightGames = pickGames.slice(split);
-    var bookDay = ordinal % 2 === 0 && pickBooks.length;
-    var left = bookDay ? walk(pickBooks, Math.floor(ordinal / 2), "books") : walk(leftGames, ordinal, "left");
+    var left = walk(leftGames, ordinal, "left");
     var right = walk(rightGames, ordinal, "right");
     if (!right) right = walk(pickGames.filter(function (g) { return !left || g.key !== left.key; }), ordinal, "right");
-    // Picks stay useful for a free family: if neither chosen tile opens,
-    // replace one game with an open choice. The book stays in their sound.
+    // Picks stay useful for a free family: if neither chosen game opens,
+    // replace one with an open choice.
     if (left && right && !opens(left) && !opens(right)) {
       var openGames = pickGames.filter(opens);
-      if (openGames.length) {
-        if (bookDay) right = walk(openGames, ordinal, "open");
-        else left = walk(openGames.filter(function (g) { return g.key !== right.key; }), ordinal, "open") || left;
-      }
+      if (openGames.length) left = walk(openGames.filter(function (g) { return g.key !== right.key; }), ordinal, "open") || left;
     }
     var choices = [left, right].filter(function (item, i, all) { return item && (!i || item.key !== all[0].key); }).map(freshPick);
     var picks = { id: "picks", name: "Today's picks", tag: "Changes daily", day: localToday, games: choices };
-    return { recommended: recommended, groups: groups, featured: featured, picks: picks };
+    return { recommended: recommended, groups: groups, picks: picks };
   }
   function homePicks(dayStr) { return activityLibrary({ day: dayStr }).picks.games; }
   // Home previews the same adventure that practice launches. Feed Echo has
@@ -4751,6 +4778,7 @@
   // never calls this.
   function _goalCheck() {
     try { _boardSendLeaves(true); } catch (e) {}   // BOARD2: queued board deletions, at most once a minute; a no-op when none
+    try { _playedToday(); } catch (e) {}           // TRIAL1 / NUDGE1: the first counted rep of the day
     try {
       const d = dayGoal(), t = today(), stamps = load(GOALKEY, {});
       if (!d.done) return;
@@ -5174,7 +5202,8 @@
   // save still tells the child the truth about the round they just played).
   function _lvRow(p, key, lv) {
     const r = _lvOf(_lvOf(p.best, key), String(lv));
-    return (r && typeof r.n === "number" && r.n >= 1 && r.n <= 99999 && Math.floor(r.n) === r.n) ? r.n : 0;
+    // a game whose count changed (BESTS1's stamp) reads its old count as no best
+    return (r && typeof r.n === "number" && r.n >= 1 && r.n <= 99999 && Math.floor(r.n) === r.n && _bestCounted(key, r)) ? r.n : 0;
   }
   function playBest(key, lv) {
     try { key = _lvKey(key); lv = parseInt(lv, 10); return (key && (lv === 2 || lv === 3)) ? _lvRow(_lvState(), key, lv) : 0; } catch (e) { return 0; }
@@ -5189,7 +5218,7 @@
       out.best = n; out.isNew = true;
       p.best = (p.best && typeof p.best === "object") ? p.best : {};
       p.best[key] = (p.best[key] && typeof p.best[key] === "object") ? p.best[key] : {};
-      p.best[key][String(lv)] = { n: n, at: today() };
+      p.best[key][String(lv)] = _bestRec(key, n);
       save(PLAYLEVELKEY, p);
     } catch (e) {}
     return out;
@@ -5582,11 +5611,29 @@
   // 1 is ignored (best = prev). Pages feature-detect both: a phone holding an
   // older sona.js must still play the game.
   const BESTKEY = "sona.bests.v1", BEST_MAX = 99999;
+  // A game whose count CHANGED keeps its best only in the new count, stamped
+  // on the record (c). Sound Sprint counted metres until 5 Nov 2026, and
+  // every finished race is exactly 570 m, so a child's best could never go
+  // up (and the metres were never on screen: the race shows stars). It now
+  // counts the stars the child grabs. A record without the stamp is the old
+  // count: it reads as no best at all (no Home tag, and the next race is a
+  // first best), never a number of stars to beat. The Level 2 and 3 bests
+  // (LEVELS1's playBest) read the same stamp.
+  const BEST_COUNT = { run: "stars" };
+  function _bestCounted(key, rec) {
+    const c = Object.prototype.hasOwnProperty.call(BEST_COUNT, key) ? BEST_COUNT[key] : "";
+    return !c || rec.c === c;
+  }
+  function _bestRec(key, n) {
+    const rec = { n: n, at: today() };
+    if (Object.prototype.hasOwnProperty.call(BEST_COUNT, key)) rec.c = BEST_COUNT[key];
+    return rec;
+  }
   function _bestN(n) { return typeof n === "number" && n >= 1 && n <= BEST_MAX && Math.floor(n) === n; }
   function _bests() { const all = load(BESTKEY, {}); return Array.isArray(all) ? {} : all; }
   function _bestOf(all, key) {
     const rec = Object.prototype.hasOwnProperty.call(all, key) ? all[key] : null;
-    return (rec && typeof rec === "object" && _bestN(rec.n)) ? rec.n : 0;
+    return (rec && typeof rec === "object" && _bestN(rec.n) && _bestCounted(key, rec)) ? rec.n : 0;
   }
   function gameBest(key) {
     try { key = gameKey(key); return key ? _bestOf(_bests(), key) : 0; } catch (e) { return 0; }
@@ -5601,7 +5648,7 @@
       // answered before the write: a phone that cannot save (storage full or
       // off) still tells the child the truth about the round they just played
       out.best = n; out.isNew = true;
-      all[key] = { n: n, at: today() };
+      all[key] = _bestRec(key, n);
       save(BESTKEY, all);
     } catch (e) {}
     return out;
@@ -5616,19 +5663,28 @@
   //   - It asks for nothing new. Practice happens inside the game exactly as
   //     it always does; the quest only picks the game and says why. No cue,
   //     no target, no count of anything said (cueing and targets are Rachel's).
-  //   - A missed day loses nothing: the adventure waits on the day it is on.
-  //     It moves on once, when a quest is finished, and never twice in one
-  //     calendar day; tomorrow's quest is shown, dark, never playable early.
+  //   - A new day is a new adventure (CAL1, 28 Oct 2026; Travis: "every day
+  //     that I look at my app, day one is still the one appearing ... I want
+  //     it to be different every day. Even if they didn't do the daily
+  //     practice the day prior"). It used to wait on its day until that day
+  //     was finished; now each calendar day moves it on one, played or not
+  //     (_questOn), and a story left unplayed comes back once the others have
+  //     had their day. Still one a day: it is finished at most once in a
+  //     calendar day, and tomorrow's is shown, dark, never playable early.
   //   - No coins: coins come from the chest and the Trophy Road only (COIN3).
   //     No timer, no countdown, nothing random (the sticker is the next one).
   //   - A family without Premium is never sent to a locked game: a quest whose
   //     game this phone cannot open gives its day to the next one in the list
   //     it can. With nothing open at all it stays as written, and the card's
   //     tap goes where any grey game's tap goes (the price, where Sona sells).
+  //     (A STORY is the exception, on purpose: where Sona can sell, a family
+  //     without Premium sees today's story locked, and its tap opens the
+  //     price. See STORY1 below.)
   //   - Home only reads questToday(). questEnd() is called by a game's end
   //     card and does nothing unless that game is today's open quest.
   // Ages 5-8 get the big-kid games; 3-4 get Feed Echo and Bubble Pop
-  // (playStyle()). After day 14 it starts again at day 1.
+  // (playStyle()). After day 14 it starts again at day 1. Since 22 Oct 2026
+  // the stories (STORY1) come before the game of the day, for both ages.
   const QUESTKEY = "sona.quest.v1", QUEST_LEN = 14;
   const QUEST_DAYS = {
     arcade: [
@@ -5673,11 +5729,312 @@
     rise: "Keep the balloon safe from the falling blocks!",
     feed: "Echo is hungry! Help him eat.", bubbles: "Pop Echo's bubbles!",
   };
+  // ── STORY1: the daily story comes first (22 Oct 2026; Travis chose both
+  // age groups, today's painted clay look, and the story is Premium). A story
+  // day is this same one-a-day scheduler with a story in front of the game:
+  // Pelly's letter and the problem (adventure.html), one round of the story's
+  // own game (arcade-<game>.html, on the Say & Play engine), then the ending
+  // and its sticker. What it keeps, on purpose:
+  //   - The books' rule (storyOpen): Sona free, Premium from any source, or a
+  //     trial; never the three-day demonstration window gated() still
+  //     honours. Where Sona can sell, a family without it still SEES the
+  //     story (storyShown), locked, and a tap opens the price like a grey
+  //     game. A phone that cannot buy keeps the game of the day: a wall
+  //     nobody can pass is a broken app.
+  //   - Every child starts at story 1 on the first day of their calendar
+  //     (`a`: the day they were set up, or for a child set up before CAL1,
+  //     the first day this build ran for them), and each day after shows the
+  //     next story, whether or not yesterday's was played (CAL1, 28 Oct
+  //     2026). A story left unplayed comes back once the others have had
+  //     their day. `f` lists the stories finished, in the order they were
+  //     finished, so a story appended here reaches every child who finished
+  //     the others, the next day. A story never moves `i`: after the last
+  //     one, the game of the day carries on by the calendar from where it was.
+  //   - Still one item a day: a story finished today is today's finish, and
+  //     a game day finished today keeps the story for tomorrow.
+  //   - The day finishes when the story's game round ends (questEnd, from its
+  //     end card), so its one sticker is given before the ending is watched:
+  //     closing the app in between loses nothing. No coins, and no banner
+  //     (the ending's sticker card shows the gift, read from storyEnding).
+  //   - None of it is in GAME_ACTS or ACTIVITY_KEYS: a story's game is on no
+  //     shelf, in no picks row, in no setup grid and in no game count.
+  //     gameAccess and gameBounce know the story keys by name (_storyKey).
+  // Adding a story is two edits: a line here, its scenes in adventures.js.
+  // Home's picture is /assets/crafted/home-<hero>.webp. `name` is its game's
+  // name, short enough for a tile on Home's row of found games (FOUND1).
+  //   Days 4-14 (22 Oct 2026) are Codex's physical games, one shared page:
+  //   `controller` is the game's key in window.DailyAdventureGames
+  //   (/daily-adventures/<controller>.js), and story-game.html?story=<id>
+  //   plays it. Day 7's id is "frontdoor" because Day 3 already owns
+  //   "bridge"; its controller is still Codex's "bridge".
+  // How many times each story game asks for a word (Travis, 23 Oct 2026:
+  // "when a kid practices the daily adventure i want it to ask them to say
+  // the sound 3 times not twice for every daily game"). Every story page
+  // passes it to SayPlay.start as sayTimes, so a story day's game asks three
+  // sayings a word (and a help pill three more), and each heard saying is
+  // one game rep. The other Say & Play games keep two (Bubble Pop one). The
+  // number a child is asked for is Rachel's call: this is where it changes.
+  const STORY_SAY_TIMES = 3;
+  const STORY_DAYS = [
+    { id: "lighthouse", game: "lighthouse", page: "/arcade-lighthouse.html", hero: "lighthouse", name: "Light the Way",
+      title: "The Lighthouse Sneeze",
+      line: "Captain Wally sneezed out the lighthouse lamp! Help the little boats get home." },
+    { id: "windup", game: "windup", page: "/arcade-windup.html", hero: "windup", name: "Wind-Up Toys",
+      title: "Grandpa Bear's Sleepy Toys",
+      line: "Grandpa Bear's toys are fast asleep. Wake them up for the Toy Parade!" },
+    { id: "bridge", game: "bridge", page: "/arcade-bridge.html", hero: "bridge", name: "Puzzle Bridge",
+      title: "The Puzzle Bridge",
+      line: "The storm broke the bridge to Blossom Island. Build it back for the big party!" },
+    { id: "waterwheel", game: "waterwheel", controller: "waterwheel", page: "/story-game.html?story=waterwheel", hero: "waterwheel", name: "Waterwheel",
+      title: "The Thirsty Waterwheel Garden",
+      line: "Gardener Mouse's flowers are thirsty. Fix the troughs and get her waterwheel turning!" },
+    { id: "postboat", game: "postboat", controller: "postboat", page: "/story-game.html?story=postboat", hero: "postboat", name: "Postboat",
+      title: "The Little Island Postboat",
+      line: "Otter's big boat is stuck in the reeds. Take the parcels in the little postboat!" },
+    { id: "bakery", game: "bakery", controller: "bakery", page: "/story-game.html?story=bakery", hero: "bakery", name: "Bakery",
+      title: "Breakfast at the Moonberry Bakery",
+      line: "Baker Badger's new bakery opens today, and every tray is empty. Let's bake breakfast!" },
+    { id: "frontdoor", game: "frontdoor", controller: "bridge", page: "/story-game.html?story=frontdoor", hero: "frontdoor", name: "Bridge Builder",
+      title: "Tortoise's New Front Door",
+      line: "Tortoise is moving today! Build a bridge to his new house and roll his cart across." },
+    { id: "lantern", game: "lantern", controller: "lantern", page: "/story-game.html?story=lantern", hero: "lantern", name: "Lantern Walk",
+      title: "The Glowworm Lantern Walk",
+      line: "Glowworm's hiccups popped out the lamp plugs! Light up the woods for his lantern walk." },
+    { id: "trainline", game: "trainline", controller: "trainline", page: "/story-game.html?story=trainline", hero: "trainline", name: "Valley Train",
+      title: "All Aboard for Snowdrop Valley",
+      line: "The new valley train has no tracks! Lay the tracks and take everyone to their stop." },
+    { id: "kite", game: "kite", controller: "kite", page: "/story-game.html?story=kite", hero: "kite", name: "Patchwork Kite",
+      title: "The Hilltop Patchwork Kite",
+      line: "Goat's giant kite isn't sewn yet. Stitch it, balance it, and fly it high!" },
+    { id: "nestlift", game: "nestlift", controller: "nestlift", page: "/story-game.html?story=nestlift", hero: "nestlift", name: "Nest Lift",
+      title: "The Sandstone Nest Lift",
+      line: "Mama Swallow's bundles won't fit up the stairs. Balance the basket lift and carry them up!" },
+    { id: "concert", game: "concert", controller: "concert", page: "/story-game.html?story=concert", hero: "concert", name: "Pond Concert",
+      title: "The Lily-Pad Concert",
+      line: "Frog, Newt and Duck all play at once. Be their conductor at the pond concert!" },
+    { id: "rooftops", game: "rooftops", controller: "rooftops", page: "/story-game.html?story=rooftops", hero: "rooftops", name: "Seed Launcher",
+      title: "Seeds Across the Rooftops",
+      line: "No seeds on the rooftops yet! Help Gardener Bird send them up with her springboard." },
+    { id: "observatory", game: "observatory", controller: "observatory", page: "/story-game.html?story=observatory", hero: "observatory", name: "Star Machine",
+      title: "The Moving-Star Observatory",
+      line: "Owl's wooden sun, moon and stars won't move. Fit the gears and turn the big wheel!" },
+  ];
+  // ── TALK1: Day 1 talks in the child's own sound (Travis, 31 Oct 2026: "we
+  // just need to wow them in their first sessions ... the day 1 has to be
+  // awesome ... i want the books in the daily adventure to be unique
+  // depending on the target sound so they are practicing it throughout the
+  // story"; then "go build the r one and the other popular sounds"). A
+  // talking story has no separate game: every page asks one word in its
+  // sound and the child's voice turns the page (adventure.html's word
+  // moment, the books' SayCheck); the intro's last word finishes the day and
+  // the ending plays straight on. Its scenes are /talk-stories.js.
+  // Day 1's slot (STORY_DAYS[0], index 0 in the quest record) is the
+  // talking story in the first of the child's practice sounds that has one
+  // (rotSounds(): homework first, then the family's picks), else the
+  // lighthouse as before. A Day 1 already finished stays what it was: the
+  // finish keeps its id (`t1`), and a lighthouse finished before this build
+  // (index 0 done, no t1) is still the lighthouse. Each id is also its own
+  // game key, so gameAccess answers it by the story's rule (storyOpen).
+  const STORY_TALK = [
+    { id: "robo", sound: "R", hero: "robo", name: "Robo's Rocket", title: "Robo's Rocket",
+      line: "Robo the robot built a rocket, but it won't wake up. Help him fly it!" },
+    { id: "lulu", sound: "L", hero: "lulu", name: "Lulu's Lantern Party", title: "Lulu's Lantern Party",
+      line: "Lulu the little lamb is stuck on an island, and the lanterns are dark. Help bring her home!" },
+    { id: "fizz", sound: "F", hero: "fizz", name: "Fizz and the Sleepy Fireflies", title: "Fizz and the Sleepy Fireflies",
+      line: "Fizz the fox's party is tonight, but the fireflies are too sleepy to glow. Help wake them up!" },
+    { id: "sandy", sound: "S", hero: "sandy", name: "Sandy's Sandcastle", title: "Sandy's Sandcastle",
+      line: "Sandy the sea turtle's sandcastle keeps falling down. Help her build it!" },
+    { id: "zippy", sound: "Z", hero: "zippy", name: "Zippy's Zoo Parade", title: "Zippy's Zoo Parade",
+      line: "Zippy the zebra's parade float is stuck, and the zoo parade can't start. Help it go!" },
+    // TALK2 (2 Nov 2026, Travis: yes to "talking Day 1 stories for five more
+    // sounds: K, G, SH, CH and TH"): the next sounds after the "popular" five
+    { id: "kiki", sound: "K", hero: "kiki", name: "Kiki's Camping Night", title: "Kiki's Camping Night",
+      line: "The wind blew Kiki the kitten's tent down before camping night. Help fix her camp!" },
+    { id: "gus", sound: "G", hero: "gus", name: "Gus's Goose Chase", title: "Gus's Goose Chase",
+      line: "Gus the goat's geese waddled away from the farm. Help find every one!" },
+    { id: "shelly", sound: "SH", hero: "shelly", name: "Shelly's Shell Show", title: "Shelly's Shell Show",
+      line: "The waves washed away Shelly the shark's shells before her show. Help find them!" },
+    { id: "chip", sound: "CH", hero: "chip", name: "Chip's Cherry Pie", title: "Chip's Cherry Pie",
+      line: "A bird flew off with Chip the chipmunk's cherries. Help him bake his pie!" },
+    { id: "theo", sound: "TH", hero: "theo", name: "Theo's Big Show", title: "Theo's Big Show",
+      line: "Theo the bear's thunder drum is lost before his big show. Help find it!" },
+  ];
+  // TALK_ON false: every child's Day 1 is the lighthouse again (a Day 1
+  // already finished as a talking story stays that story). The suites that
+  // play the lighthouse as Day 1 set sessionStorage "sona.talkoff" for their
+  // tab: a child on a sound with no talking story still meets it there, and
+  // talkstorytest plays the talking ones.
+  const TALK_ON = true;
+  function _talkById(id) { for (let i = 0; i < STORY_TALK.length; i++) if (STORY_TALK[i].id === id) return STORY_TALK[i]; return null; }
+  // The talking story for a list of practice sounds, in their order: the
+  // first sound that has one (TALK_ON and the suites' "sona.talkoff" read
+  // here, once), else null. ONE rule for Day 1's slot, read by _talkDay for
+  // the child playing now and by day1For for setup's plan card, so the card
+  // a parent reads and the story the child then meets can never disagree.
+  function _talkFor(want) {
+    if (!TALK_ON) return null;
+    try { if (sessionStorage.getItem("sona.talkoff") === "1") return null; } catch (e) {}
+    for (let i = 0; i < want.length; i++) for (let j = 0; j < STORY_TALK.length; j++) if (STORY_TALK[j].sound === want[i]) return STORY_TALK[j];
+    return null;
+  }
+  // the talking story in Day 1's slot for the child playing now, or null
+  function _talkDay() {
+    try {
+      const v = load(QUESTKEY, {}) || {}, f = Array.isArray(v.f) ? v.f.map(Number) : [];
+      const done0 = f.indexOf(0) >= 0 || (!Array.isArray(v.f) && parseInt(v.s, 10) > 0);
+      if (done0) return _talkById(v.t1) || null;
+      return _talkFor(rotSounds());
+    } catch (e) {}
+    return null;
+  }
+  // THE PLAN MOMENT (Travis, 31 Oct 2026: "build the plan moment and straight
+  // into day 1"). Setup's ready screen shows the story a new child will meet
+  // as Day 1, before the profile is saved, so it asks here with the list of
+  // sounds setup is about to save (focusSounds: the picks in their order, or
+  // PLAY_ORDER for "Pick all sounds"). Read the way rotSounds reads a saved
+  // profile's list (upper case, sounds with words, R when none), with this
+  // child's homework first exactly as rotSounds puts it, so the answer is
+  // the one _talkDay gives once the profile is saved. → { id, title, line,
+  // hero, pic, talk } (a copy), never null: the talking story, else Day 1 of
+  // STORY_DAYS (the lighthouse). Read only.
+  function day1For(sounds) {
+    let want = [];
+    try {
+      const hs = homeworkSounds();
+      want = hs.length ? hs : (Array.isArray(sounds) ? sounds : []).map((s) => String(s).toUpperCase()).filter((s) => WORDS[s]);
+    } catch (e) {}
+    if (!want.length) want = ["R"];
+    let t = null; try { t = _talkFor(want); } catch (e) {}
+    const d = t || STORY_DAYS[0];
+    return { id: d.id, title: d.title, line: d.line, hero: d.hero, pic: "/assets/crafted/home-" + d.hero + ".webp", talk: !!t };
+  }
+  // "adventure" is the story card itself (Home's access(), the price's ?from=)
+  const STORY_KEYS = ["adventure"].concat(STORY_DAYS.map((d) => d.game), STORY_TALK.map((d) => d.id));
+  // try: gameAccess may in principle be asked before this block has run
+  function _storyKey(k) { try { return typeof k === "string" && STORY_KEYS.indexOf(k) >= 0; } catch (e) { return false; } }
+  // the books' rule, and the founders' preview reads its own plan, as
+  // gameAccess does for a Premium game
+  function storyOpen() {
+    try {
+      if (libraryPreview()) return previewPlan().state === "trial";
+      return isFree() || premium() || trialActive();
+    } catch (e) { return false; }
+  }
+  // show a story on Home at all: open, or locked where the price can open it
+  function storyShown() { try { return storyOpen() || offerOnLock(); } catch (e) { return false; } }
+  // a copy, so no page can change the list by changing what it was handed
+  function _storyInfo(n) {
+    const t = n === 0 ? _talkDay() : null;
+    if (t) return { id: t.id, game: t.id, page: "/adventure.html", hero: t.hero, title: t.title, line: t.line, pic: "/assets/crafted/home-" + t.hero + ".webp", day: 1,
+      name: t.name, again: "/adventure.html?again=1&story=" + t.id, talk: true, sound: t.sound };
+    const d = STORY_DAYS[n]; if (!d) return null;
+    return { id: d.id, game: d.game, page: d.page, hero: d.hero, title: d.title, line: d.line, pic: "/assets/crafted/home-" + d.hero + ".webp", day: n + 1,
+      name: d.name, again: d.page + (d.page.indexOf("?") >= 0 ? "&" : "?") + "again=1" };
+  }
+  // A story by its id (adventure.html): a STORY_DAYS day, or the talking
+  // story Day 1's slot holds for this child. A talking story another child
+  // (or another sound) would get is no day here.
+  function storyDay(id) {
+    for (let n = 0; n < STORY_DAYS.length; n++) {
+      const d = _storyInfo(n);
+      if (d && d.id === id) return d;
+    }
+    return null;
+  }
+  // FOUND1 (23 Oct 2026; Travis: "unlock like games, like a mystery game",
+  // and "you can make the executive decision"): every story leaves its game
+  // behind. The stories this child has finished, in order, each a copy with
+  // `again`, the address that plays its game once more (a round that
+  // finishes nothing: Play again, Back home, no hand-back to the story).
+  // Read only, and nothing new is stored: finished stories are `f` (in the
+  // order they were finished, so Home's row, newest first, starts with the
+  // last one), a brother or sister has found only their own, and a backup
+  // brings them. Its game opens by the story's rule (gameAccess: storyOpen),
+  // and Home shows the row only where that rule opens them.
+  function storyFound() {
+    try { return _questSt().f.map(_storyInfo); } catch (e) { return []; }
+  }
+  // the one found game a replay address may play: its story finished, and
+  // its game open to this child (story-game.html and the three story pages)
+  function storyReplay(id) {
+    try { return storyOpen() && storyFound().some((d) => d.id === id); } catch (e) { return false; }
+  }
   function _questSt() {
-    const v = load(QUESTKEY, {}) || {};
+    const v = load(QUESTKEY, {}) || {}, SL = STORY_DAYS.length;
     let i = parseInt(v.i, 10); if (!(i >= 0 && i < QUEST_LEN)) i = 0;
     let last = parseInt(v.last, 10); if (!(last >= 0 && last < QUEST_LEN)) last = (i + QUEST_LEN - 1) % QUEST_LEN;
-    return { i, last, done: typeof v.done === "string" ? v.done : "" };
+    // STORY1's fields, each read on its own: a record from before them, or a
+    // broken one, is a child who has finished no story. `f` is the stories
+    // finished, in the order they were finished (CAL1); a record from before
+    // it finished them in order, so its count `s` is the first s stories.
+    // More than this build knows (a backup from a newer one) is every story
+    // finished, and a story this build does not know is left out.
+    const f = [];
+    if (Array.isArray(v.f)) v.f.forEach((x) => { const n = Number(x); if (Number.isInteger(n) && n >= 0 && n < SL && f.indexOf(n) < 0) f.push(n); });
+    else { let s = parseInt(v.s, 10); if (!(s >= 0)) s = 0; if (s > SL) s = SL; for (let n = 0; n < s; n++) f.push(n); }
+    let ls = parseInt(v.ls, 10);
+    // a page still holding the build before CAL1 finishes a story by `s`
+    // alone, writing its `ls` and no `f`: that story is finished all the same
+    if (v.lk === "story" && Array.isArray(v.f) && ls >= 0 && ls < SL && f.indexOf(ls) < 0) f.push(ls);
+    if (!(ls >= 0 && ls < SL)) ls = f.length ? f[f.length - 1] : 0;
+    // what was finished last: a story only if that story really is finished
+    // (a record from before stories, done today, is a game day done today)
+    const lk = v.lk === "story" && f.indexOf(ls) >= 0 ? "story" : "game";
+    const done = typeof v.done === "string" ? v.done : "";
+    // the days the calendar counts from (CAL1): when the last story and the
+    // last game day were finished (`done` is the last finish, of the kind
+    // `lk` says), and `a`, the day this child's calendar started
+    const fd = lk === "story" && _isDay(done) ? done : (_isDay(v.fd) ? v.fd : "");
+    const gd = lk === "game" && _isDay(done) ? done : (_isDay(v.gd) ? v.gd : "");
+    const got = Array.isArray(v.got) ? v.got.filter((id) => STICKERS.some((x) => x.id === id)).slice(0, 2) : [];
+    const seen = typeof v.seen === "string" && /^\d{4}-\d{2}-\d{2}\|[a-z]+$/.test(v.seen) ? v.seen : "";
+    return { i, last, done, f, s: f.length, ls, lk, fd, gd, a: _isDay(v.a) ? v.a : "", sv: _isDay(v.sv) ? v.sv : "", got, seen };
+  }
+  // CAL1: a "YYYY-MM-DD" day as a whole number of days (counted in UTC, so a
+  // clock change in the night never makes two days one), NaN for anything else
+  function _isDay(x) { return typeof x === "string" && /^\d{4}-\d{2}-\d{2}$/.test(x); }
+  function _dayNo(x) { if (!_isDay(x)) return NaN; const p = x.split("-"); return Math.round(Date.UTC(+p[0], +p[1] - 1, +p[2]) / 864e5); }
+  // CAL1: the day a child's calendar starts (`a`), and the day their stories
+  // first showed (`sv`: a phone that cannot buy, without Premium, shows the
+  // game of the day instead, and the stories' Day 1 waits for the first day
+  // a story is on the card). Setup writes both as it sets a child up
+  // (saveProfile, so the first day is Day 1), afresh for a child who has
+  // finished nothing yet (a brother or sister added in Settings may have
+  // been started by an earlier page). A child set up before this build, or
+  // brought in by a backup without them, gets them from the first page that
+  // finds none (_questAnchors, at load): a one-shot write like the free-era
+  // sweeps, so it may be Home's first load, and that child's first day on
+  // this build is their next story in order. A day after today (a phone
+  // clock that was ahead) is written again as today, or the card would
+  // stand still until the calendar caught up. Every page after only reads
+  // them. slot null is the child playing now; setup true is setup's save.
+  function _questAnchor(slot, setup) {
+    let rec = slot == null ? load(QUESTKEY, {}) : _loadFor(slot, QUESTKEY, {});
+    if (!rec || typeof rec !== "object" || Array.isArray(rec)) rec = {};
+    const t = today(), T = _dayNo(t), later = (x) => !_isDay(x) || _dayNo(x) > T;
+    let shown = false; try { shown = storyShown(); } catch (e) {}
+    // no story finished, and (for setup's fresh start) no game day either
+    const noStory = !(Array.isArray(rec.f) ? rec.f.length > 0 : parseInt(rec.s, 10) > 0);
+    let changed = false;
+    if (setup && noStory && !_isDay(rec.done)) {
+      rec.a = t; if (shown) rec.sv = t; else delete rec.sv;
+      changed = true;
+    } else {
+      if (later(rec.a)) { rec.a = t; changed = true; }
+      if (shown && noStory && later(rec.sv)) { rec.sv = t; changed = true; }
+    }
+    if (!changed) return;
+    if (slot == null) save(QUESTKEY, rec); else saveFor(slot, QUESTKEY, rec);
+  }
+  function _questAnchors() {
+    let slots = [""];
+    try { const v = JSON.parse(localStorage.getItem(KIDSKEY) || "null"); if (v && v.list && v.list.length) slots = v.list.map((k) => k.slot || ""); } catch (e) {}
+    slots.forEach((slot) => {
+      try {
+        const pr = JSON.parse(localStorage.getItem(slot ? PKEY + "@" + slot : PKEY) || "null");
+        if (pr && (pr.onboarded || pr.childName)) _questAnchor(slot, false);
+      } catch (e) {}
+    });
   }
   // The quest on day index n, with its game resolved for THIS phone.
   function _questAt(list, n) {
@@ -5690,25 +6047,111 @@
     }
     return { game: own.game, line: own.line };
   }
+  // CAL1: what the adventure is on calendar day D (_dayNo) for a child who
+  // has not finished that day's: a story while one is left to show, else the
+  // game of the day.
+  //   A story: the day after the last story finished (ls, on fd) is the next
+  //   story after it not finished yet, the day after that the one after, and
+  //   so on round, so a story skipped comes back after the others have had
+  //   their day. With none finished it counts the same way from the day
+  //   before the stories first showed (`sv`, else the calendar's start `a`),
+  //   so the first day a story is on the card is Day 1. A game day finished
+  //   (gd: the card was a game, on a phone that showed no story) holds the
+  //   story, as a story holds the game: the story count starts again from it.
+  //   The game of the day: the day after the last game day finished (last,
+  //   on gd) is the next of the 14, and so on round. The stories hold it
+  //   where it was: it counts from the last story finished when that came
+  //   later, so the day after the last story is day `i` again; with neither,
+  //   from the day before the calendar started, so the first day is day `i`.
+  // A finish from before the calendar started counts from the day before it
+  // too, so a child's first day on this build is the next one in order and
+  // never a jump over the days before it. A day later than D never counts (a
+  // phone clock that was ahead wrote it), and a clock that went back is the
+  // day after.
+  function _questOn(st, list, D, storyNext) {
+    const SL = STORY_DAYS.length, A = _dayNo(st.a), from = (A <= D ? A : D) - 1;
+    // days since the latest of these days (a "YYYY-MM-DD" or a day number),
+    // or since the day before the calendar started, at least one
+    const since = (...days) => Math.max(1, D - days.reduce((m, x) => { const n = typeof x === "number" ? x : _dayNo(x); return n > m && n <= D ? n : m; }, from));
+    if (storyNext) {
+      const b = st.f.length ? st.ls : -1, left = [];
+      for (let j = 1; j <= SL; j++) { const n = (b + j + SL) % SL; if (st.f.indexOf(n) < 0) left.push(n); }
+      const k = st.f.length ? since(st.fd, st.gd) : since(_dayNo(st.sv) - 1, st.gd);
+      const n = left[(k - 1) % left.length], d = _storyInfo(n);
+      return { kind: "story", day: n + 1, game: d.game, line: d.line, story: d };
+    }
+    const n = (st.last + since(st.gd, st.f.length ? st.fd : "")) % QUEST_LEN, q = _questAt(list, n);
+    return { kind: "game", day: n + 1, game: q.game, line: q.line };
+  }
   // Read only: what the adventure card shows today.
-  //   state "open": today's quest, not finished yet (day = 1..14)
-  //   state "done": today's was finished; next = tomorrow's, shown dark
+  //   kind  "story": a story day (STORY1); story = its STORY_DAYS entry (a
+  //                  copy, with pic and day); day = 1..STORY_DAYS.length;
+  //                  game = the story's own game; seen (open only): today's
+  //                  intro already reached "Let's go!"
+  //         "game":  the game of the day (day = 1..14)
+  //   state "open": today's item, not finished yet
+  //   state "done": today's was finished; next = tomorrow's, shown dark:
+  //                 { kind: "story", day, game, story } or { kind: "game", day, game }
   function questToday() {
     const list = QUEST_DAYS[playStyle()] || QUEST_DAYS.arcade, st = _questSt();
-    const done = st.done === today();
-    const n = done ? st.last : st.i, q = _questAt(list, n);
-    const out = { state: done ? "done" : "open", day: n + 1, total: QUEST_LEN, game: q.game, line: q.line };
-    if (done) { const t = _questAt(list, st.i); out.next = { day: st.i + 1, game: t.game }; }
-    return out;
+    const D = _dayNo(today()), done = st.done === today();
+    // a story is the adventure while one is left to show
+    const storyNext = st.f.length < STORY_DAYS.length && storyShown();
+    if (done) {
+      // today's stays on the card, done; tomorrow's is the calendar's next
+      // day counted from the finish just written
+      const t = _questOn(st, list, D + 1, storyNext);
+      const next = t.kind === "story" ? { kind: "story", day: t.day, game: t.game, story: t.story } : { kind: "game", day: t.day, game: t.game };
+      if (st.lk === "story") {
+        const d = _storyInfo(st.ls);
+        return { kind: "story", state: "done", day: st.ls + 1, total: STORY_DAYS.length, game: d.game, line: d.line, story: d, next };
+      }
+      const q = _questAt(list, st.last);
+      return { kind: "game", state: "done", day: st.last + 1, total: QUEST_LEN, game: q.game, line: q.line, next };
+    }
+    const q = _questOn(st, list, D, storyNext);
+    if (q.kind === "story") return { kind: "story", state: "open", day: q.day, total: STORY_DAYS.length, game: q.game, line: q.line, story: q.story, seen: st.seen === today() + "|" + q.story.id };
+    return { kind: "game", state: "open", day: q.day, total: QUEST_LEN, game: q.game, line: q.line };
   }
   // A game's end card: finishes today's quest if this round was today's game.
-  // Answers { day, stickers: [...] } once, or null.
+  // Answers { day, stickers: [...] } once (a story day adds story: its id),
+  // or null. Every save MERGES into the record: a game day's write used to
+  // replace the whole object, and would now wipe the stories finished.
   function questEnd(gameKey) {
     try {
-      const q = questToday();
-      if (q.state !== "open" || q.game !== gameKey) return null;
+      let q = questToday();
+      if (q.state !== "open" || q.game !== gameKey) {
+        // a story round that began before midnight and ended after it
+        // finishes the story that was open when it began (CAL1: by then the
+        // card has moved on to the next story, which would leave the child
+        // who just played it with no ending and no sticker)
+        const y = _questYesterday();
+        if (!y || y.game !== gameKey) return null;
+        q = { kind: "story", state: "open", day: y.day, game: y.game, line: y.line, story: y.story };
+      }
+      const raw = load(QUESTKEY, {}) || {};
+      if (q.kind === "story") {
+        // a story shown locked (where the price can open it) is no story
+        // played: a round reached without it finishes nothing
+        if (!storyOpen()) return null;
+        const st = _questSt(), n = q.day - 1, f = st.f.concat(st.f.indexOf(n) < 0 ? [n] : []);
+        // the day first, so a second end card can never give a second sticker
+        // (f, the stories finished in order; s, their count, for a page still
+        // holding the build before CAL1)
+        const rec = Object.assign({}, raw, { f, s: f.length, ls: n, fd: today(), lk: "story", done: today(), got: [] });
+        // TALK1: which story Day 1's slot was, so it stays that one (a sound
+        // changed later never turns a finished Day 1 into another)
+        if (n === 0 && q.story.talk && raw.t1 == null) rec.t1 = q.story.id;
+        save(QUESTKEY, rec);
+        const got = [];
+        const one = awardNextSticker(); if (one) got.push(one);
+        rec.got = got.map((g) => g.id); save(QUESTKEY, rec);
+        track("adventure day done", { game: gameKey });
+        // no banner: the story's ending shows the sticker on its own card
+        return { day: q.day, stickers: got, story: q.story.id };
+      }
       const n = q.day - 1;
-      save(QUESTKEY, { i: (n + 1) % QUEST_LEN, last: n, done: today() });
+      save(QUESTKEY, Object.assign({}, raw, { i: (n + 1) % QUEST_LEN, last: n, gd: today(), done: today(), lk: "game" }));
       const got = [];
       const one = awardNextSticker(); if (one) got.push(one);
       if (q.day === 7 || q.day === QUEST_LEN) { const two = awardNextSticker(); if (two) got.push(two); }
@@ -5716,6 +6159,46 @@
       _questBanner(q.day, got);
       return { day: q.day, stickers: got };
     } catch (e) { return null; }
+  }
+  // CAL1: yesterday's story, still open: the one questToday() showed
+  // yesterday, when nothing has been finished since (yesterday or today) and
+  // the calendar had started by then. Only a story: its game is reached only
+  // through the story, while a game of the day is played from the Arcade
+  // too, so a round of it today is today's and never finishes yesterday's.
+  function _questYesterday() {
+    const st = _questSt(), D = _dayNo(today());
+    if (!(D >= 0) || _dayNo(st.done) >= D - 1 || !(_dayNo(st.a) <= D - 1)) return null;
+    if (!(st.f.length < STORY_DAYS.length && storyShown())) return null;
+    const y = _questOn(st, QUEST_DAYS[playStyle()] || QUEST_DAYS.arcade, D - 1, true);
+    return y.kind === "story" ? y : null;
+  }
+  // The story's ending (adventure.html?part=end): ok once that story is
+  // finished, and got = the stickers its finish gave, only on the day it was
+  // finished ({ id, e, name } each). Read only.
+  function storyEnding(id) {
+    const out = { ok: false, got: [] };
+    try {
+      const d = storyDay(id), n = d ? d.day - 1 : -1;
+      const st = _questSt();
+      if (n < 0 || st.f.indexOf(n) < 0) return out;
+      out.ok = true;
+      if (st.lk === "story" && st.ls === n && st.done === today()) {
+        out.got = st.got.map((g) => STICKERS.filter((x) => x.id === g)[0]).filter(Boolean).map((x) => ({ id: x.id, e: x.e, name: x.name }));
+      }
+    } catch (e) {}
+    return out;
+  }
+  // Today's intro reached "Let's go!" (adventure.html): the one thing the
+  // story's own page writes, so coming back the same day can offer "Keep
+  // going". Only for today's open story; nothing else in the record moves.
+  function storySeen(id) {
+    try {
+      const q = questToday();
+      if (q.kind !== "story" || q.state !== "open" || !q.story || q.story.id !== id) return false;
+      const raw = load(QUESTKEY, {}) || {};
+      raw.seen = today() + "|" + id; save(QUESTKEY, raw);
+      return true;
+    } catch (e) { return false; }
   }
   // Silent, nonblocking, like the goal note: no audio, no focus change, no
   // tap taken. Below the goal note when both show.
@@ -6050,7 +6533,10 @@
   // end of the first full practice run (charge.html's "Show a grown-up"), and
   // a tap on a locked game.
   const FIRSTKEY = "sona.firstgame.v1";
-  function firstGameKey() { return playStyle() === "simple" ? "feed" : "slice"; }
+  // Fruit Slice for every age since 31 Oct 2026 (Travis: "go straight into
+  // either piano tiles or fruit slice. Because that's what is advertised",
+  // then "Fruit Slice for everyone"); Feed Echo was the 3-4s' first game.
+  function firstGameKey() { return "slice"; }
   function firstGameStart() {
     const key = firstGameKey();
     try { sessionStorage.setItem(FIRSTKEY, key); } catch (e) {}
@@ -6061,6 +6547,63 @@
     try { mine = sessionStorage.getItem(FIRSTKEY) === gameKey(key); if (mine) sessionStorage.removeItem(FIRSTKEY); } catch (e) {}
     if (!mine) return null;
     return "/today.html";
+  }
+
+  // ── FREEPLAY1: ONE FREE ROUND BEFORE THE PRICE (2 Nov 2026) ──
+  // Travis: "its cuz they wanto to try it first so lets come up with
+  // something where they get a free session", then "lets make day 1 just be
+  // a game like fruit slice ... no charge up just str8 to the game", and,
+  // since the parent most likely plays it: no hand-off screens. Built
+  // switched OFF (FREE_PLAY_ON), to be turned on once the 7-day trial alone
+  // has been measured (around 16 Nov 2026).
+  // On, a family who owes the price (trialFirst) and has never had the free
+  // round goes from setup's microphone straight into ONE round of Fruit
+  // Slice, with no "Say it 5 times" page in front of it; the round's end
+  // card has one button, "Keep playing!", to the price
+  // (/subscribe.html?setup=1). Nothing is granted from the address: the
+  // round opens on the play token the practice page would have written
+  // (gameAccess's "earned"), written here, by setup's own tap, once per
+  // household (FREEPLAY, this phone's: NO_EXPORT and NO_IMPORT), spent the
+  // moment the round opens, so a reload or a quit never makes a second one.
+  // Practice-free: a mid-round Super Slice, a say-it card and a new life
+  // still ask the child's sound, as in every round.
+  const FREE_PLAY_ON = false;
+  const FREEPLAY = "sona.freeplay.v1", FREEPLAYTAB = "sona.freeplay.tab";
+  // the tests turn it on for one tab, on a test server only
+  function freePlayOn() {
+    if (FREE_PLAY_ON) return true;
+    try { return /^(localhost|127\.0\.0\.1)$/.test(location.hostname) && sessionStorage.getItem("sona.freeplayon") === "1"; } catch (e) { return false; }
+  }
+  function freePlayDue() {
+    if (!freePlayOn()) return false;
+    try { if (localStorage.getItem(FREEPLAY)) return false; } catch (e) { return false; }
+    return trialFirst();
+  }
+  // Opens the free round: answers its address, or null when it cannot (a
+  // phone that cannot store a thing: then the price, as before).
+  function freePlayStart() {
+    if (!freePlayDue()) return null;
+    const file = "arcade-slice.html";
+    try {
+      localStorage.setItem(FREEPLAY, "used:" + Date.now());
+      sessionStorage.setItem(FREEPLAYTAB, "slice");
+      sessionStorage.setItem("sona.play.token", file);
+      sessionStorage.removeItem("sona.play.active");
+      // no practice page came first: no step or item of one is carried in
+      ["sona.boost.sound", "sona.boost.level", "sona.boost.ask"].forEach(function (k) { sessionStorage.removeItem(k); });
+      sessionStorage.removeItem(FIRSTKEY);
+    } catch (e) { return null; }
+    return "/arcade-slice.html?from=charge";
+  }
+  function freePlayActive(key) {
+    try { return sessionStorage.getItem(FREEPLAYTAB) === gameKey(key || "slice"); } catch (e) { return false; }
+  }
+  // The round is over: where to go (the price, with setup's grown-ups stamp:
+  // a parent most likely played it), or null outside the free round.
+  function freePlayEnd() {
+    if (!freePlayActive("slice")) return null;
+    try { sessionStorage.removeItem(FREEPLAYTAB); sessionStorage.setItem("sona.gate.v1", String(Date.now())); } catch (e) {}
+    return trialFirst() ? "/subscribe.html?setup=1" : "/today.html";
   }
 
   // The crafted picture each game wears on Home's card, and on the plan
@@ -7935,6 +8478,11 @@
   // it. Offered only while RevenueCat's current offering lists it (THE
   // ONE-PAYMENT ROW, below), and kept here for restore like the other two.
   const IAP_PRODUCTS = { annual: "com.speaksona.app.annual", monthly: "com.speaksona.app.monthly", lifetime: "com.speaksona.app.lifetime" };
+  // The yearly plan is not sold on the card (Travis, 23 Oct 2026: "get rid of
+  // the yearly option. I just want two payment options"): the one payment and
+  // monthly. Its product stays above, so anyone who bought it still restores;
+  // true brings the yearly row back by RevenueCat's offering, as before.
+  const IAP_SELL_YEARLY = false;
   const IAP_PRODUCT = IAP_PRODUCTS.annual;
   const IAP_TYPE = "subs"; // auto-renewable subscription
   // The one payment is not a subscription: RevenueCat's getProducts takes
@@ -7970,6 +8518,14 @@
   // on the phone and sends it with the next purchase, restore or sync).
   function _rcEmail(P) {
     try {
+      // TRIAL1: the anonymous family id every usage beacon already carries
+      // (fid(): random, minted on this phone, never a name), so RevenueCat's
+      // own message about a free trial (it became paid, was cancelled, ended)
+      // reaches the free-week report even when the family never opens Sona
+      // again. Optional like setEmail: missing or refusing changes nothing.
+      if (P && typeof P.setAttributes === "function") { const id = fid(); if (id) _soon(() => P.setAttributes({ sona_fid: id })).catch(() => {}); }
+    } catch (e) {}
+    try {
       if (!P || typeof P.setEmail !== "function") return;
       const email = parentEmail();
       if (email) _soon(() => P.setEmail({ email: email })).catch(() => {});
@@ -7987,6 +8543,19 @@
       const f = e && e.entitlements && e.entitlements.active && e.entitlements.active[IAP_ENTITLEMENT];
       return f && f.periodType ? String(f.periodType).toUpperCase() : "";
     } catch (e2) { return ""; }
+  }
+  // When Apple says this period of Premium ends, in ms since 1970, or 0 when
+  // its answer does not say (a one payment has no end): the trial reminder
+  // (NOTIFY1) is set from the purchase's own record, before the price page
+  // leaves, not from a second lookup that page may not live to hear.
+  function _iapEnd(info) {
+    try {
+      const e = info && (info.customerInfo || info);
+      const f = e && e.entitlements && e.entitlements.active && e.entitlements.active[IAP_ENTITLEMENT];
+      let end = f ? Number(f.expirationDateMillis) : 0;
+      if (!(end > 0) && f) end = Date.parse(String(f.expirationDate || ""));
+      return end > 0 ? end : 0;
+    } catch (e2) { return 0; }
   }
   // fetch the live product (price string comes from the App Store, locale-
   // correct). kind: "annual" (default) | "monthly" | "lifetime".
@@ -8032,7 +8601,7 @@
       });
     }).then((res) => {
       if (res && res.userCancelled) throw Object.assign(new Error("cancelled"), { cancelled: true });
-      if (_iapActive(res)) { _iapUnlock(); return { ok: true, period: _iapPeriod(res) }; }
+      if (_iapActive(res)) { _iapUnlock(); return { ok: true, period: _iapPeriod(res), end: _iapEnd(res) }; }
       // some plugin versions return only {productIdentifier}; verify via customer info
       return iapRefresh(true).then((active) => { if (active) return { ok: true }; throw new Error("not-entitled"); });
     }).catch((e) => {
@@ -8425,7 +8994,7 @@
       // one read of the offering for both rows (and none at all when the store cannot be set up)
       const offer = _soon(() => iapConfigure()).then((P) => _offered(P).then((o) => ({ P: P, o: o })));
       offer.then(({ P, o }) => {
-        if (!o.annual || a.yr !== undefined) return noYear();
+        if (!IAP_SELL_YEARLY || !o.annual || a.yr !== undefined) return noYear();
         return _soon(() => iapProduct("annual")).then((yp) => {
           if (a.yr !== undefined) return;
           // its own id, by name (iapProduct also takes an unnamed lone
@@ -8528,10 +9097,43 @@
           summary: what === "trial" ? "Started Sona Premium's free days in the app" : "Bought Sona Premium in the app" }) }).catch(() => {});
     } catch (e) {}
   }
+  // ── TRIAL1: the free-week report (Travis, 30 Oct 2026, of "most of them
+  // cancel": a report of which trial families play on each day, and who
+  // pays). Two beacons through track(), the anonymous family id and nothing
+  // else: "free trial started" ({ days: how long Apple's free time is }),
+  // from a purchase whose free days really started, and "played today", once
+  // a local day, on the first counted rep (a voiced practice try, a heard
+  // game ask or book word: silence never). The server (lib/trials.ts) keeps,
+  // per trial, which of its days had play; RevenueCat's own message (with
+  // the same anonymous id, _rcEmail) says how it ended. /leads.html shows it.
+  // Never a name, an age, a sound, a count or a word.
+  const PLAYEDKEY = "sona.played.v1";
+  function _trialTold(r, plan) {
+    try {
+      const period = String((r && r.period) || "");
+      let free = period === "TRIAL";
+      if (!period) free = !!plan && plan.state === "free" && plan.sure === true;
+      if (!free) return;
+      let end = Number(r && r.end) || 0;
+      if (!(end > 0)) { const g = planBillDate(plan); end = g ? g.getTime() : 0; }
+      const days = end > Date.now() ? Math.max(1, Math.min(31, Math.round((end - Date.now()) / 86400000))) : 0;
+      track("free trial started", days ? { days: days } : {});
+    } catch (e) {}
+  }
+  function _playedToday() {
+    if (_notifyHome()) return;                   // Home only reads: a rep is never said there
+    const t = today();
+    let was = ""; try { was = localStorage.getItem(PLAYEDKEY) || ""; } catch (e) {}
+    if (was === t) return;
+    try { localStorage.setItem(PLAYEDKEY, t); } catch (e) {}
+    track("played today");
+    try { _nudgeTodayOff(); } catch (e) {}       // NUDGE1: no reminder today, the child already played
+  }
   // ── REPORT1: the weekly progress report (Travis, 15 Oct 2026: "i want the
   // setup page to say get the weekly progress report", then, told that nothing
   // sent one, "Build the real report"). Only a household whose grown-up asked
-  // for it on setup's email step (profile.weeklyReport, on the profile that
+  // for it on setup's email step, or with Settings' switch since 23 Oct 2026
+  // (WEEKLY1, below) (profile.weeklyReport, on the profile that
   // holds the address) sends anything: the address, this phone's random device
   // id, and for each child set up here a few numbers for this week and last
   // (a random id for the child, days with a rep, days at the daily goal, the
@@ -8600,11 +9202,22 @@
       if (k <= t && (!!stamps[k] || (k < GOAL_SINCE && !!pd[k]))) g++;
     });
     const s = r > 0 ? ALL_SOUNDS.filter((S) => { const by = _repDays(S, false, slot); return wd.some((k) => (by[k] || 0) > 0); }) : [];
-    const n = parseInt(p.weeklyGoal, 10);
-    return { i: id, d: d, g: g, gw: (n === 3 || n === 4 || n === 5 || n === 7) ? n : 4, r: r, p: pr, s: s };
+    // the plan's days a week ONLY when a grown-up picked them (the profile
+    // holds one: Settings, Progress, or setup before 22 Oct 2026, when it
+    // stopped asking): never goalDays()'s default 4, which the email would
+    // call "your plan" to a family that never chose it
+    const n = parseInt(p.weeklyGoal, 10), out = { i: id, d: d, g: g, r: r, p: pr, s: s };
+    if (n === 3 || n === 4 || n === 5 || n === 7) out.gw = n;
+    return out;
   }
   let _reportBusy = false, _reportDirty = false, _reportAgain = false, _reportHooked = false;
-  function reportSync(force) {
+  // the post on its way, and the Turn offs on theirs (THE SWITCH IN SETTINGS, below)
+  let _reportSyncP = null, _reportOffP = null;
+  const REPORT_OFF_RETRY_MS = 5 * 60 * 1000;
+  // recheck: Settings asking again for a phone still waiting on its link (a
+  // grown-up is looking at it), past the day and month windows; with no
+  // numbers once the phone gave up, as always
+  function reportSync(force, recheck) {
     const email = reportEmail();
     if (!email) return Promise.resolve(false);
     if (_reportBusy) { if (force) _reportAgain = true; return Promise.resolve(false); }
@@ -8612,7 +9225,8 @@
     // pend, off and gaveUp belong to one address: a corrected address starts fresh
     const off = st.off === email, quiet = st.gaveUp === email, pend = st.pendFor === email && st.pend > 0 && st.pend <= now ? now - st.pend : 0;
     const every = off || quiet ? REPORT_OFF_MS : pend > REPORT_PEND_MS ? REPORT_DAY_MS : REPORT_EVERY_MS;
-    if ((!force || every > REPORT_EVERY_MS) && st.at > 0 && st.at <= now && now - st.at < every) return Promise.resolve(false);
+    const waiting = recheck === true && force && !off && st.pendFor === email;
+    if (!waiting && (!force || every > REPORT_EVERY_MS) && st.at > 0 && st.at <= now && now - st.at < every) return Promise.resolve(false);
     if (!/^[a-f0-9]{32}$/.test(st.dev || "")) st.dev = _randomHex(16);
     st.at = now; _reportSave(st);
     let list = [];
@@ -8622,11 +9236,18 @@
     _reportBusy = true; _reportDirty = false; _reportAgain = false;
     let sent;
     try {
+      // `on`: until the server has heard this phone turned on for this
+      // address (setup, Settings, or again after a Turn off), every post says
+      // so; only such a post lifts a Turn off the server holds, so a post
+      // from before a Turn off that lands after it changes nothing (WEEKLY1)
+      const body = quiet ? { email: email, dev: st.dev, weeks: weeks, quiet: true } : { email: email, dev: st.dev, weeks: weeks };
+      if (st.onFor !== email) body.on = true;
       sent = fetch("/api/report", { method: "POST", headers: { "Content-Type": "application/json" }, keepalive: true,
-        body: JSON.stringify(quiet ? { email: email, dev: st.dev, weeks: weeks, quiet: true } : { email: email, dev: st.dev, weeks: weeks }) })
+        body: JSON.stringify(body) })
         .then((r) => r.json())
         .then((j) => {
           const s2 = _reportState();
+          if (j && j.ok && body.on) s2.onFor = email;
           // only a plain "ok" ends "off"; "pending" never does (the server
           // gives an unconfirmed phone of an unsubscribed address "pending" too)
           if (j && j.off) { s2.off = email; s2.offAt = Date.now(); delete s2.pend; delete s2.pendFor; delete s2.gaveUp; } // "off" proves the phone was confirmed
@@ -8641,8 +9262,9 @@
           return !!(j && j.ok);
         });
     } catch (e) { sent = Promise.resolve(false); }
-    return sent.catch(() => false).then((ok) => {
-      _reportBusy = false;
+    // kept while on its way, so a Turn off waits for it (reportOff)
+    return (_reportSyncP = sent.catch(() => false).then((ok) => {
+      _reportBusy = false; _reportSyncP = null;
       if (!ok) {
         // offline, a 503 or a 429: these numbers still have to go; try again in five minutes
         _reportDirty = true;
@@ -8650,9 +9272,10 @@
       } else if (_reportAgain && _reportDirty) reportSync(true);
       _reportAgain = false;
       return ok;
-    });
+    }));
   }
   function _reportTouch() {
+    _reportOffFlush(false);
     if (!reportEmail()) return;
     _reportDirty = true;
     if (!_reportHooked) {
@@ -8663,10 +9286,143 @@
     }
     reportSync(false);
   }
+  // THE SWITCH IN SETTINGS (Travis, 23 Oct 2026: "Yes, add the switch"). A
+  // household that skipped setup's email step, or gave it before the report
+  // existed (weeklyEmail alone), turns the report on there; the Monday email
+  // to every parent on the list (lib/weekly.ts) says where. One address for
+  // the household, on the profile of the first family child set up here (a
+  // child already holding the report keeps it; the others' are cleared, so
+  // reportEmail finds that one). An explicit yes starts the phone afresh for
+  // it (no "pending" clock, no giving up), so the confirm email goes now,
+  // within the server's own limits.
+  const REPORT_ADDR = (e) => e.length <= 120 && /^[\x21-\x7e]+$/.test(e) && /^[^@]+@[^@]+\.[^@]+$/.test(e);
+  function _reportSlot() {
+    let slot = null;
+    try {
+      const list = _kids().list.filter((k) => { const p = _loadFor(k.slot, PKEY, {}); return p.onboarded === true && p.role !== "slp"; });
+      const held = list.find((k) => _loadFor(k.slot, PKEY, {}).weeklyReport === true) || list[0];
+      if (held) slot = held.slot || "";
+    } catch (e) {}
+    return slot;
+  }
+  function reportStatus() {
+    const email = reportEmail(), st = _reportState();
+    return { can: _reportSlot() !== null, email: email, on: !!email,
+      pending: !!email && st.pendFor === email && st.pend > 0 && st.off !== email,
+      off: !!email && st.off === email, owed: _reportOffs(st).length > 0,
+      // the server has heard this phone turned on for the address
+      sent: !!email && st.onFor === email };
+  }
+  function reportSet(raw) {
+    const e = typeof raw === "string" ? raw.trim().toLowerCase() : "", slot = _reportSlot();
+    if (!REPORT_ADDR(e) || slot === null) return Promise.resolve(false);
+    try { _kids().list.forEach((k) => { if ((k.slot || "") === slot) return; const q = _loadFor(k.slot, PKEY, {}); if (q.weeklyReport === true) { q.weeklyReport = false; saveFor(k.slot, PKEY, q); } }); } catch (e2) {}
+    const p = _loadFor(slot, PKEY, {});
+    p.email = e; p.weeklyEmail = true; p.weeklyReport = true;
+    saveFor(slot, PKEY, p);
+    const st = _reportState(); ["at", "off", "offAt", "pend", "pendFor", "gaveUp", "onFor"].forEach((k) => { delete st[k]; });
+    // a Turn off for this very address that never reached the server is
+    // dropped: it is on again, and the next post writes the same numbers.
+    // One for another spelling of the inbox, or another inbox, still goes
+    // (it deletes that spelling's numbers; the server then asks this phone's
+    // next post to say "on" again: see _reportOffFlush)
+    st.offs = _reportOffs(st).filter((o) => o.e !== e); delete st.offOwed;
+    _reportSave(st);
+    // the email list hears it too, as from setup's email step: the grown-up
+    // read "We'll also send occasional tips from Rachel" beside the box. A
+    // phone that already has every game open says so (`premium`), so the
+    // series' "Start your free trial" is not sent to a family whose purchase
+    // the server never heard of (an address given after it); no plan word,
+    // since the phone cannot tell a trial from a payment here
+    let has = false; try { has = premium(); } catch (e4) {}
+    try {
+      fetch("/api/lead", { method: "POST", headers: { "Content-Type": "application/json" }, keepalive: true,
+        body: JSON.stringify(Object.assign({ email: e, role: "parent", source: "app-settings", summary: "Turned on the weekly progress report in Settings" }, has ? { premium: true } : {})) }).catch(() => {});
+    } catch (e3) {}
+    _reportDirty = true; // a post already on its way sends again after it, with this address
+    // after any Turn off on its way, so this post (which lifts the server's
+    // off mark) lands last
+    return (_reportOffP || Promise.resolve()).then(() => reportSync(true), () => reportSync(true));
+  }
+  // Off: no child's numbers leave this phone again, and the server is told
+  // (`off`, lib/report.ts store) that this phone has it off for the address:
+  // Monday's report skips the phone, its numbers are deleted, the Monday
+  // email (lib/weekly.ts) sees a household without the report, and an old
+  // confirm link changes nothing. The phone's next ordinary post (turned on
+  // again) lifts it. Each Turn off is owed until the server says so
+  // (`offs`, one entry an address and device, kept before anything else
+  // changes), so one made offline goes from Settings or the next practice
+  // page, and a second never pushes out a first. It waits for a post already
+  // on its way (whose numbers would otherwise land after it). Another phone
+  // of the household keeps its own switch; the email's Unsubscribe stops
+  // every one. Resolves true once the server has every one.
+  // the server's mailbox rule (lib/report.ts mailbox): Gmail dots and +tags
+  // are one inbox, and one confirmation
+  function _mailbox(raw) {
+    const e = String(raw || "").trim().toLowerCase(), at = e.lastIndexOf("@");
+    if (at < 1) return e;
+    let l = e.slice(0, at), d = e.slice(at + 1);
+    const plus = l.indexOf("+");
+    if (plus > 0) l = l.slice(0, plus);
+    if (d === "googlemail.com") d = "gmail.com";
+    if (d === "gmail.com") l = l.replace(/\./g, "");
+    return l + "@" + d;
+  }
+  function _reportOffs(st) {
+    const list = Array.isArray(st.offs) ? st.offs.filter((o) => o && typeof o.e === "string" && o.e && /^[a-f0-9]{32}$/.test(o.d || "")) : [];
+    // the one slot an earlier build of this change kept
+    if (st.offOwed && st.offOwed.e && /^[a-f0-9]{32}$/.test(st.offOwed.d || "") && !list.some((o) => o.e === st.offOwed.e && o.d === st.offOwed.d)) list.push(st.offOwed);
+    return list.slice(-5);
+  }
+  function _reportOffOwe(email) {
+    const st = _reportState();
+    if (st.onFor) { delete st.onFor; _reportSave(st); } // turned on again later, its first post says so
+    if (!email || !/^[a-f0-9]{32}$/.test(st.dev || "")) return; // a phone that never posted has nothing on the server
+    const list = _reportOffs(st).filter((o) => !(o.e === email && o.d === st.dev));
+    list.push({ e: email, d: st.dev });
+    st.offs = list; delete st.offOwed;
+    ["pend", "pendFor", "gaveUp"].forEach((k) => { delete st[k]; });
+    _reportSave(st);
+  }
+  function _reportOffFlush(force) {
+    // one at a time: a Turn off made while another is on its way follows it
+    if (_reportOffP) return _reportOffP.then(() => _reportOffFlush(force));
+    const now = Date.now(), due = _reportOffs(_reportState()).filter((o) => force || !(o.at > 0 && o.at <= now && now - o.at < REPORT_OFF_RETRY_MS));
+    if (!due.length) return Promise.resolve(!_reportOffs(_reportState()).length);
+    const one = (o) => {
+      const st = _reportState(); st.offs = _reportOffs(st).map((x) => (x.e === o.e && x.d === o.d ? Object.assign({}, x, { at: now }) : x)); delete st.offOwed; _reportSave(st);
+      let sent;
+      try {
+        sent = fetch("/api/report", { method: "POST", headers: { "Content-Type": "application/json" }, keepalive: true,
+          body: JSON.stringify({ email: o.e, dev: o.d, weeks: [-1, 0].map((w) => ({ wk: _mondayKey(w), kids: [] })), quiet: true, off: true }) })
+          .then((r) => r.json()).then((j) => !!(j && j.ok));
+      } catch (e) { sent = Promise.resolve(false); }
+      return sent.catch(() => false).then((ok) => {
+        if (ok) {
+          const s2 = _reportState(); s2.offs = _reportOffs(s2).filter((x) => !(x.e === o.e && x.d === o.d)); delete s2.offOwed;
+          // the server now has this phone off for that inbox: if the report is
+          // on here for the same inbox, its next post says "on" again
+          let cur = ""; try { cur = reportEmail(); } catch (e) {}
+          if (cur && o.d === s2.dev && _mailbox(cur) === _mailbox(o.e)) delete s2.onFor;
+          _reportSave(s2);
+        }
+        return ok;
+      });
+    };
+    _reportOffP = due.reduce((p, o) => p.then((all) => one(o).then((ok) => all && ok)), Promise.resolve(true))
+      .then((ok) => { _reportOffP = null; return ok && !_reportOffs(_reportState()).length; }, () => { _reportOffP = null; return false; });
+    return _reportOffP;
+  }
+  function reportFlush() { return _reportOffFlush(true); }
+  function reportOff() {
+    _reportOffOwe(reportEmail());
+    try { _kids().list.forEach((k) => { const q = _loadFor(k.slot, PKEY, {}); if (q.weeklyReport === true) { q.weeklyReport = false; saveFor(k.slot, PKEY, q); } }); } catch (e) {}
+    return (_reportSyncP || Promise.resolve()).then(() => _reportOffFlush(true), () => _reportOffFlush(true));
+  }
   function buyPlan(plan) {
     let p = null; try { p = plan && (plan.state === "free" || plan.state === "paid") && plan._p; } catch (e) {}
     if (!p) return Promise.reject(_buyError("no-plan"));
-    return _soon(() => iapPurchase(plan.kind, p)).then((r) => { _tellPlan(r && r.period, plan); return { ok: true }; }, (e) => {
+    return _soon(() => iapPurchase(plan.kind, p)).then((r) => { _tellPlan(r && r.period, plan); _trialRemindBought(r, plan); _trialTold(r, plan); return { ok: true }; }, (e) => {
       if (e && !e.cancelled && String(e.code) === "6") {
         // "already purchased": the sale is Apple's news that they own it
         return _soon(() => iapRestore()).then((active) => {
@@ -8701,6 +9457,409 @@
     });
   }
 
+  // ── NOTIFY1: one reminder before the free trial ends ─────────────────────
+  // Travis, 22 Oct 2026: "can we add push notifications and have that be a
+  // step in the onboarding where we ask them to turn it on to notify them a
+  // day before their trial ends". It is a LOCAL notification: this phone asks
+  // iOS to show it at a moment, through Sona's own plugin (SonaSpeech's
+  // notifyStatus, notifyAsk, notifySchedule, notifyCancel, iOS 1.0.9 and
+  // later). No server sends it and nothing leaves the phone for it: no device
+  // token, no address, no account, no event. The words are fixed here and
+  // name nobody (never a child's name, never a price); they are Travis's and
+  // Rachel's to change. It shows 30 hours before the end, not 24: Apple counts
+  // a cancel only at least 24 hours before the end, so a reminder at exactly
+  // a day before came at the cut-off itself, too late to act on. Thirty is
+  // still "tomorrow" in plain words, and the price line's "the day before".
+  //   - Asked once, by setup's reminder screen (notifyAsk: iOS's own Allow
+  //     box), only while iOS has never been asked (notifyState() "prompt";
+  //     setup waits on notifyRefresh() for iOS's real answer first).
+  //   - Set only once a free trial has really started: AT ONCE from the
+  //     purchase itself (buyPlan: the end in the purchase's own record, else
+  //     the store's own free time from now), because the price page leaves
+  //     1.2 s after a sale; then corrected from RevenueCat's record when the
+  //     purchase named no end. Only when that moment is more than an hour away.
+  //   - Checked again once a day on an app page (trialReminderSync), never on
+  //     Home ("Home only reads": Home calls nothing of this block): set afresh
+  //     while the trial is on (so a longer or moved trial follows), and taken
+  //     back once no free trial is on any more (it became a paid plan, ended,
+  //     or the parent already cancelled it: then the reminder has nothing left
+  //     to tell). A store that does not answer is asked again at most once an
+  //     hour, not on every page.
+  //   - A purchase clears the day's mark (the next page asks again), and no
+  //     check acts on a store answer it asked for before the latest purchase
+  //     (the price page's own check, still waiting when the parent bought,
+  //     would otherwise take the new reminder back).
+  // Optional like every new native call: a build without the four methods, a
+  // bridge that answers them "not implemented", a browser, or a bridge that
+  // throws or hangs changes nothing anywhere, and nothing waits on it but the
+  // reminder screen's own tap. sona.notify.v1 ({ state, asked, arm, end,
+  // sync, tried }) is true of this phone's iOS setting and of what iOS holds
+  // for it, so it is on NO_EXPORT and NO_IMPORT.
+  const NOTIFYKEY = "sona.notify.v1";
+  const TRIAL_REMIND_ID = "sona-trial-end";
+  const TRIAL_REMIND = { title: "Sona", body: "Your free trial ends tomorrow." };   // Travis's and Rachel's words to change; never a name
+  const NOTIFY_DAY_MS = 24 * 60 * 60 * 1000;
+  const TRIAL_REMIND_LEAD_MS = 30 * 60 * 60 * 1000;   // 30 h before the end: 6 h before Apple's 24 h cancel line
+  const TRIAL_REMIND_MIN_MS = 60 * 60 * 1000;         // a reminder less than an hour away is not set
+  const NOTIFY_SYNC_MS = NOTIFY_DAY_MS;               // trialReminderSync asks the store at most once a day
+  const NOTIFY_RETRY_MS = 60 * 60 * 1000;             // …and, after a store that did not answer, at most once an hour
+  const NOTIFY_ASK_MS = 60000;                        // a bridge that never answers iOS's box does not hold setup for good
+  const NOTIFY_STATUS_MS = 3000, NOTIFY_INFO_MS = 8000;
+  const NOTIFY_FIELDS = ["state", "asked", "arm", "end", "sync", "tried", "nudge", "nudges", "nend", "nclock"];
+  // A bridge that answers a method this build does not have with "not
+  // implemented" (a Capacitor proxy in front of an older build answers every
+  // name it is asked for) is no build that can remind: once one of the four
+  // says so, none is called again on this page and notifyAvailable() is false,
+  // as the mic's _nm.broken does for micOpen.
+  let _notifyBroken = false;
+  // Every purchase on this page counts one (the hook in buyPlan). A check
+  // that asked the store before the latest purchase heard about the phone
+  // before it: what it heard sets nothing, takes nothing back, and marks
+  // nothing checked.
+  let _notifyBuys = 0;
+  function _notifyPlugin() {
+    if (_notifyBroken) return null;
+    const P = speechPlugin();
+    return (P && typeof P.notifyStatus === "function" && typeof P.notifyAsk === "function"
+      && typeof P.notifySchedule === "function" && typeof P.notifyCancel === "function") ? P : null;
+  }
+  function _notifyGone(e) {
+    try { if (String(e && e.code).toUpperCase() === "UNIMPLEMENTED" || /not implemented/i.test(String(e && e.message))) _notifyBroken = true; } catch (e2) {}
+  }
+  function _notifyCall(fn) { return _soon(fn).catch((e) => { _notifyGone(e); throw e; }); }
+  // True only inside an app build whose plugin carries all four methods (and
+  // has not answered one of them "not implemented" on this page).
+  function notifyAvailable() { try { return !!_notifyPlugin(); } catch (e) { return false; } }
+  function _notifyLoad() { try { const v = JSON.parse(localStorage.getItem(NOTIFYKEY) || "{}"); return v && typeof v === "object" && !Array.isArray(v) ? v : {}; } catch (e) { return {}; } }
+  function _notifySave(patch) {
+    try {
+      const v = _notifyLoad(), keep = {};
+      Object.keys(patch).forEach((k) => { if (patch[k] == null) delete v[k]; else v[k] = patch[k]; });
+      NOTIFY_FIELDS.forEach((k) => { if (v[k] != null) keep[k] = v[k]; });
+      const out = JSON.stringify(keep), had = localStorage.getItem(NOTIFYKEY);
+      // the same answer read again on every page is not written again, and
+      // clearing marks on a phone that never had any writes nothing
+      if (had !== out && !(had == null && out === "{}")) localStorage.setItem(NOTIFYKEY, out);
+    } catch (e) {}
+  }
+  function _notifyWithin(p, ms, dflt) {
+    return new Promise((resolve) => {
+      const t = setTimeout(() => resolve(dflt), ms);
+      p.then((v) => { clearTimeout(t); resolve(v); }, () => { clearTimeout(t); resolve(dflt); });
+    });
+  }
+  // iOS's word, in this file's: "provisional" (quiet delivery, which nothing
+  // in Sona asks for) is still "prompt", because a real ask still shows the box
+  function _notifyWord(raw) { return raw === "granted" ? "granted" : raw === "denied" ? "denied" : (raw === "prompt" || raw === "provisional") ? "prompt" : ""; }
+  let _notifyBusy = null, _notifyLooked = false;
+  function _notifyRefresh() {          // → Promise<state>, never rejects
+    const P = _notifyPlugin();
+    if (!P) return Promise.resolve("unavailable");
+    if (_notifyBusy) return _notifyBusy;
+    _notifyLooked = true;
+    _notifyBusy = _notifyWithin(_notifyCall(() => P.notifyStatus()), NOTIFY_STATUS_MS, null).then((r) => {
+      _notifyBusy = null;
+      const st = _notifyWord(r && r.status);
+      if (st) _notifySave({ state: st });
+      return notifyState();
+    });
+    return _notifyBusy;
+  }
+  // iOS's answer, read afresh: notifyState() alone answers "prompt" on a page
+  // that has not heard from iOS yet (a guess, true of a fresh install), so a
+  // screen that decides from it (setup's reminder ask) waits on this first.
+  // → a Promise of notifyState()'s word once iOS has answered (the one already
+  // on its way, if any), or after NOTIFY_STATUS_MS what was known; never
+  // rejects. "unavailable" for a build that cannot remind.
+  function notifyRefresh() { try { return _notifyRefresh(); } catch (e) { return Promise.resolve("unavailable"); } }
+  // "granted" | "denied" | "prompt" | "unavailable", from what iOS last said
+  // (read again in the background on a page's first ask). A phone that never
+  // told this page anything is "prompt": a fresh install, which is the only
+  // way an app has no notification answer yet.
+  function notifyState() {
+    if (!notifyAvailable()) return "unavailable";
+    if (!_notifyLooked) _notifyRefresh();
+    const st = _notifyLoad().state;
+    return st === "granted" || st === "denied" ? st : "prompt";
+  }
+  // iOS's own Allow box (once: an answered setting resolves at once). → a
+  // Promise of "granted" | "denied" | "unavailable"; never rejects. A bridge
+  // that refuses is asked what iOS now says; one that never answers lets the
+  // screen go on after NOTIFY_ASK_MS, and its late answer is still kept.
+  function notifyAsk() {
+    const P = _notifyPlugin();
+    if (!P) return Promise.resolve("unavailable");
+    _notifySave({ asked: Date.now() });
+    const ask = _notifyCall(() => P.notifyAsk()).then((r) => {
+      const st = r && r.granted === true ? "granted" : "denied";
+      _notifySave({ state: st });
+      return st;
+    }, () => _notifyRefresh().then((st) => st === "granted" || st === "denied" ? st : "unavailable"));
+    return _notifyWithin(ask, NOTIFY_ASK_MS, "unavailable");
+  }
+  // Will Sona really remind this family? With no plan: notifications are
+  // allowed on a build that can set one. With a plan (a price screen's
+  // picked row): also, that row is a free trial the store is SURE of
+  // (plan.sure: a row that only may be free, "Only new subscribers get 3 days
+  // free. Otherwise Apple charges $9.99 today.", states nothing as fact, so
+  // it promises no reminder either), whose reminder can be set: its end more
+  // than TRIAL_REMIND_LEAD_MS (30 hours) and an hour away.
+  function trialReminderOn(plan) {
+    try {
+      if (!notifyAvailable() || notifyState() !== "granted") return false;
+      if (plan === undefined) return true;
+      if (!plan || plan.state !== "free" || plan.sure !== true) return false;
+      const d = planBillDate(plan);
+      return !!d && d.getTime() - TRIAL_REMIND_LEAD_MS > Date.now() + TRIAL_REMIND_MIN_MS;
+    } catch (e) { return false; }
+  }
+  // Set the reminder for a trial that ends at endMs: TRIAL_REMIND_LEAD_MS (30
+  // hours) before, if that is more than an hour away. → Promise<boolean> (set), never rejects. Arming
+  // again replaces the one iOS holds (one id), so it is never sent twice.
+  function trialReminderArm(endMs) {
+    const P = _notifyPlugin(), end = Number(endMs), now = Date.now();
+    if (!P || !isFinite(end) || !(end > 0) || !trialReminderOn()) return Promise.resolve(false);
+    const at = Math.round(end - TRIAL_REMIND_LEAD_MS);
+    if (!(at > now + TRIAL_REMIND_MIN_MS) || at > now + 400 * NOTIFY_DAY_MS) return Promise.resolve(false);   // the plugin refuses past 400 days too
+    return _notifyWithin(_notifyCall(() => P.notifySchedule({ id: TRIAL_REMIND_ID, at: at, title: TRIAL_REMIND.title, body: TRIAL_REMIND.body }))
+      .then((r) => !(r && r.scheduled === false)), NOTIFY_STATUS_MS, false)
+      .then((ok) => { if (ok) _notifySave({ arm: at, end: Math.round(end) }); return ok; });
+  }
+  // gen: the purchase count the caller acted on. A purchase that set the
+  // reminder while this took it back keeps its own note of what is set.
+  function _trialReminderCancel(gen) {
+    const P = _notifyPlugin();
+    if (!P) return Promise.resolve(false);
+    return _notifyWithin(_notifyCall(() => P.notifyCancel({ id: TRIAL_REMIND_ID })).then(() => true), NOTIFY_STATUS_MS, false)
+      .then((ok) => { if (ok && (gen === undefined || gen === _notifyBuys)) _notifySave({ arm: null, end: null }); return ok; });
+  }
+  // What RevenueCat says of the free trial, from the plain fields of its own
+  // entitlement record (periodType, willRenew, expirationDateMillis or
+  // expirationDate): { on, end } a free trial that will renew (end 0 when it
+  // gives none); { off } no trial: no Premium, a paid period (paid), or a
+  // trial the parent already cancelled (cancelled); { unsure } Premium whose
+  // period it does not name. null: the store did not answer.
+  function _trialOf(info) {
+    try {
+      const c = info && (info.customerInfo || info);
+      const f = c && c.entitlements && c.entitlements.active && c.entitlements.active[IAP_ENTITLEMENT];
+      if (!f) return { off: true };
+      const period = String(f.periodType || "").toUpperCase();
+      if (!period) return { unsure: true };
+      if (period !== "TRIAL") return { off: true, paid: true };
+      if (f.willRenew === false) return { off: true, cancelled: true };
+      let end = Number(f.expirationDateMillis);
+      if (!(end > 0)) end = Date.parse(String(f.expirationDate || ""));
+      return { on: true, end: end > 0 ? end : 0 };
+    } catch (e) { return null; }
+  }
+  function _trialNow() {               // → Promise<_trialOf answer, or null when the store did not answer>
+    if (!iapAvailable()) return Promise.resolve(null);
+    return _notifyWithin(iapConfigure().then((P) => P.getCustomerInfo()).then(_trialOf), NOTIFY_INFO_MS, null);
+  }
+  // Once a day on an app page (forced: now). → Promise of "armed", "near"
+  // (a trial whose reminder moment has gone), "kept" (a trial with no end
+  // given, or Premium whose period RevenueCat does not name: what is set
+  // stays), "cancelled", "off" (notifications not allowed: the store is not
+  // asked), "later" (asked today already, or the store did not answer within
+  // the last hour), "stale" (the store answered a question asked before the
+  // latest purchase: nothing done), "error" (no answer: asked again an hour
+  // later) or "unavailable".
+  let _notifySyncP = null, _notifySyncGen = -1;
+  function trialReminderSync(force) {
+    if (!notifyAvailable() || !iapAvailable()) return Promise.resolve("unavailable");
+    const k = _notifyLoad(), now = Date.now();
+    const last = Number(k.sync) || 0, tried = Number(k.tried) || 0;
+    if (!force && last > 0 && last <= now && now - last < NOTIFY_SYNC_MS) return Promise.resolve("later");
+    if (!force && tried > 0 && tried <= now && now - tried < NOTIFY_RETRY_MS) return Promise.resolve("later");
+    // one check at a time, but never one that asked before the latest purchase
+    if (_notifySyncP && _notifySyncGen === _notifyBuys) return _notifySyncP;
+    const gen = _notifyBuys, fresh = () => gen === _notifyBuys;
+    const p = _notifyRefresh().then((st) => {
+      if (st !== "granted") return "off";
+      // marked as tried BEFORE the store is asked: a store that hangs rather
+      // than fails would otherwise be asked again on every page shorter than
+      // its 8 s wait. An answer clears it; a purchase meanwhile already has.
+      if (fresh()) _notifySave({ tried: Date.now() });
+      return _trialNow().then((t) => {
+        if (!fresh()) return "stale";
+        if (!t) { _notifySave({ tried: Date.now() }); return "error"; }
+        _notifySave({ sync: Date.now(), tried: null });
+        if (t.off) { _nudgeOffAll(); return _trialReminderCancel(gen).then(() => "cancelled"); }
+        if (!t.on || !t.end) return "kept";
+        // NUDGE1: a trial whose end moved more than an hour gets its nudges again
+        { const ne = Number(_notifyLoad().nend) || 0; if (ne && Math.abs(ne - t.end) > TRIAL_REMIND_MIN_MS) _nudgeArm(t.end, null); }
+        return trialReminderArm(t.end).then((ok) => {
+          if (ok) return "armed";
+          // too late to remind for this end. One set for an end more than an
+          // hour away from it (a trial that moved) would speak of the wrong
+          // day, so it goes; one set at purchase from the store's own free
+          // time (seconds off RevenueCat's) stays, to be shown as planned.
+          const was = Number(_notifyLoad().end) || 0;
+          if (fresh() && was && Math.abs(was - t.end) > TRIAL_REMIND_MIN_MS) return _trialReminderCancel(gen).then(() => "near");
+          return "near";
+        });
+      });
+    }).catch(() => "error").then((r) => { if (_notifySyncP === p) _notifySyncP = null; return r; });
+    _notifySyncP = p; _notifySyncGen = gen;
+    return p;
+  }
+  // The one hook in buyPlan (r: iapPurchase's answer, { ok, period, end }).
+  // The purchase is counted and the day's mark cleared first, whatever was
+  // bought. A purchase that started a free trial (Apple's period TRIAL, or,
+  // when Apple's answer names no period, a card that was SURE it sold free
+  // days, plan.sure: the list's plan post decides "trial" on the card alone,
+  // but a reminder states it as fact) sets the reminder AT ONCE, before the
+  // price page leaves: for the end in the purchase's own record, else the
+  // store's own free time from now (planBillDate). Only when that record
+  // named no end is RevenueCat asked, once, to correct the moment (or, for a
+  // paid period or a trial already cancelled, take it back; a record that has
+  // not caught up with the purchase changes nothing). Never waited on, never
+  // throws.
+  function _trialRemindBought(r, plan) {
+    try {
+      const gen = ++_notifyBuys;
+      if (!notifyAvailable()) return;
+      _notifySave({ sync: null, tried: null });
+      const period = String((r && r.period) || "");
+      if (period === "NORMAL" || period === "INTRO" || period === "PREPAID") { _nudgeOffAll(); return; }   // charged: no free days to tell of
+      if (!trialReminderOn()) return;
+      const end = Number(r && r.end) > 0 ? Number(r.end) : 0;
+      const sold = !!plan && plan.state === "free" && plan.sure === true;
+      const guess = planBillDate(plan), g = guess ? guess.getTime() : 0;
+      const first = period === "TRIAL" ? (end || g) : (!period && sold) ? g : 0;
+      if (first) { trialReminderArm(first); _nudgeArm(first, Date.now()); }
+      if (period === "TRIAL" && end) return;          // the purchase's own record named the end: nothing to correct
+      _trialNow().then((t) => {
+        if (gen !== _notifyBuys || !t) return;
+        if (t.on && t.end) { if (Math.abs(t.end - first) > 60000) { trialReminderArm(t.end); _nudgeArm(t.end, null); } }
+        else if (first && (t.paid || t.cancelled)) { _trialReminderCancel(gen); _nudgeOffAll(); }
+      }).catch(() => {});
+    } catch (e) {}
+  }
+  // A sale this page saw end some other way than buyPlan's own answer: an
+  // Ask to Buy approved later (the price page's watch, then owned()), or a
+  // Restore after Apple took an order and Premium did not switch on
+  // ("not-entitled"). The same step as the purchase hook, with no purchase
+  // record: counted, the day's mark cleared (the price page's own check at
+  // load would otherwise answer "later" for a day), armed from the plan only
+  // when it is a free row the store was sure of, else RevenueCat asked to
+  // correct. plan may be null (RevenueCat alone). Never waited on, never
+  // throws.
+  function trialReminderSold(plan) { try { _trialRemindBought({}, plan || null); } catch (e) {} }
+  // ── NUDGE1: one practice reminder a day during the free trial (Travis, 30
+  // Oct 2026: "yes, I want you to build those", to "one short daily nudge
+  // during the free week ... Tapping it opens straight into" Sona). Most
+  // families who start a trial cancel, many after never opening Sona again.
+  // LOCAL, like the trial reminder above: the phone sets them, nothing leaves
+  // it for them. Only for a parent who said yes to them: setup's reminder
+  // screen says so before iOS's Allow box ("A practice reminder each day,
+  // and one the day before it ends.") and its yes calls nudgeConsent(). A
+  // parent who allowed the reminder under the old words ("One notification,
+  // the day before.") gets none: they were promised one. Set when a free
+  // trial starts (the purchase hook), for each day after that one up to the
+  // day before it ends, at the clock time the trial began, kept between 3:30
+  // and 7:30 pm (after school, before bed); never on the day the trial
+  // reminder shows (two in a day is too many) or on the trial's last day.
+  // A day the child already played (the first counted rep, _playedToday)
+  // takes that day's back; a trial that became paid, was cancelled or ended
+  // takes them all back (the daily check), and one whose end moved sets them
+  // again. The words are fixed and name nobody; Travis's and Rachel's to
+  // change. sona.notify.v1 keeps the consent (nudge), what iOS holds
+  // (nudges: [{ id, at }]), the end they were set for (nend) and the clock
+  // minute (nclock).
+  const NUDGE = { title: "Sona", body: "Ready for 5 minutes of practice? Echo is waiting to play." };   // Travis's and Rachel's words to change; never a name
+  const NUDGE_FROM = 15 * 60 + 30, NUDGE_TO = 19 * 60 + 30;     // minutes of the local day
+  const NUDGE_SOON_MS = 10 * 60 * 1000;                        // one due within ten minutes is not set
+  const NUDGE_MAX = 14;                                        // a trial of up to two weeks
+  function _nudgeYmd(ms) { const d = new Date(ms); return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate(); }
+  function _nudgeOn() { try { return notifyAvailable() && notifyState() === "granted" && _notifyLoad().nudge === 1; } catch (e) { return false; } }
+  function nudgeConsent() { _notifySave({ nudge: 1 }); }
+  function _nudgeList() { const v = _notifyLoad().nudges; return Array.isArray(v) ? v.filter((n) => n && typeof n.id === "string" && n.at > 0) : []; }
+  // Take back what iOS holds (all, or those the filter picks). → Promise, never rejects.
+  function _nudgeCancel(pick) {
+    const P = _notifyPlugin(), all = _nudgeList(), go = all.filter(pick || (() => true));
+    if (!P || !go.length) return Promise.resolve(0);
+    return Promise.all(go.map((n) => _notifyWithin(_notifyCall(() => P.notifyCancel({ id: n.id })).then(() => true), NOTIFY_STATUS_MS, false)))
+      .then(() => {
+        const left = _nudgeList().filter((n) => !go.some((g) => g.id === n.id));
+        _notifySave(left.length ? { nudges: left } : { nudges: null, nend: null });
+        return go.length;
+      });
+  }
+  // The days between a trial's start (startMs, whose clock time sets the
+  // hour) and its end. → [{ id, at }]: never the start day, the last day, or
+  // the day the trial reminder shows, never one due within ten minutes.
+  function _nudgePlan(startMs, endMs, clock) {
+    const out = [], now = Date.now(), lastDay = _nudgeYmd(endMs), remindDay = _nudgeYmd(endMs - TRIAL_REMIND_LEAD_MS);
+    const s = new Date(startMs);
+    let m = Number.isFinite(clock) ? clock : s.getHours() * 60 + s.getMinutes();
+    m = Math.max(NUDGE_FROM, Math.min(NUDGE_TO, m));
+    for (let k = 1; k <= NUDGE_MAX; k++) {
+      const d = new Date(s.getFullYear(), s.getMonth(), s.getDate() + k, Math.floor(m / 60), m % 60, 0, 0);
+      const at = d.getTime(), ymd = _nudgeYmd(at);
+      if (ymd >= lastDay || at >= endMs) break;
+      if (ymd === remindDay || at <= now + NUDGE_SOON_MS) continue;
+      out.push({ id: "sona-nudge-" + ymd, at: at });
+    }
+    return out;
+  }
+  // Set the nudges for a free trial that ends at endMs (startMs: when it
+  // began, or null to keep the clock time already chosen). Replaces what was
+  // set. → Promise<number set>, never rejects.
+  let _nudgeBusy = Promise.resolve(0);
+  function _nudgeArm(endMs, startMs) {
+    const run = () => {
+      const end = Number(endMs), P = _notifyPlugin();
+      if (!P || !_nudgeOn() || !(end > Date.now())) return Promise.resolve(0);
+      const k = _notifyLoad();
+      const clock = startMs ? null : Number(k.nclock);
+      const plan = _nudgePlan(startMs || Date.now(), end, Number.isFinite(clock) ? clock : undefined);
+      const st = new Date(startMs || Date.now());
+      const keepClock = Number.isFinite(clock) ? clock : Math.max(NUDGE_FROM, Math.min(NUDGE_TO, st.getHours() * 60 + st.getMinutes()));
+      return _nudgeCancel().then(() => {
+        const got = [];
+        let chain = Promise.resolve();
+        plan.forEach((n) => {
+          chain = chain.then(() => _notifyWithin(_notifyCall(() => P.notifySchedule({ id: n.id, at: n.at, title: NUDGE.title, body: NUDGE.body }))
+            .then((r) => !(r && r.scheduled === false)), NOTIFY_STATUS_MS, false).then((ok) => { if (ok) got.push(n); }));
+        });
+        return chain.then(() => {
+          _notifySave({ nudges: got.length ? got : null, nend: got.length ? Math.round(end) : null, nclock: keepClock });
+          return got.length;
+        });
+      });
+    };
+    _nudgeBusy = _nudgeBusy.then(run, run).catch(() => 0);
+    return _nudgeBusy;
+  }
+  function _nudgeOffAll() { const run = () => _nudgeCancel(); _nudgeBusy = _nudgeBusy.then(run, run).catch(() => 0); return _nudgeBusy; }
+  // The child played today: today's nudge, if still to come, goes.
+  function _nudgeTodayOff() {
+    if (!_nudgeList().length) return;
+    const t = _nudgeYmd(Date.now()), now = Date.now();
+    const run = () => _nudgeCancel((n) => n.id === "sona-nudge-" + t && n.at > now);
+    _nudgeBusy = _nudgeBusy.then(run, run).catch(() => 0);
+  }
+  // What the tests read: the nudges this phone holds, and the plan for a trial.
+  function nudgeState() { const k = _notifyLoad(); return { consent: k.nudge === 1, on: _nudgeOn(), nudges: _nudgeList(), end: Number(k.nend) || 0 }; }
+  // On an app page that can set one, Home excepted: iOS's answer is read as
+  // the page opens (setup decides whether to ask from it), and the trial is
+  // checked a moment later, and again whenever the app comes back to the
+  // front (a parent who changed the setting in iOS Settings, a trial that
+  // ended while Sona sat in the background); the store is asked at most once
+  // a day (once an hour after it did not answer). Home only reads (CLAUDE.md,
+  // the daily adventure and the Trophy Road): it neither asks iOS nor the
+  // store here, and writes nothing of this block.
+  function _notifyHome() { try { return /^\/today(\.html)?$/i.test(location.pathname); } catch (e) { return false; } }
+  try {
+    if (notifyAvailable() && !_notifyHome()) {
+      _notifyRefresh();
+      setTimeout(() => { trialReminderSync(false); }, 1500);
+      document.addEventListener("visibilitychange", () => { if (!document.hidden) { _notifyRefresh(); trialReminderSync(false); } });
+    }
+  } catch (e) {}
+
   // PLAN-WORDS-BEGIN
   // EVERY SENTENCE APPLE'S CARD MAY SHOW LIVES BETWEEN THESE TWO MARKERS.
   // The plan screen types no price, no day count and no "free" of its own:
@@ -8733,7 +9892,8 @@
   //   - the one-payment row (kind "lifetime") is charged once, today: its
   //     words never say "free", never "Best value", and never the store's
   //     word for it (Travis: "i dont wanna say lifetime"). It says "One
-  //     payment" and "No subscription", and its figure is the store's.
+  //     payment", "Every update included" (its check line) and "No
+  //     subscription" (its small print), and its figure is the store's.
   const PLAN_CANCEL = "Settings\u00a0→\u00a0Subscriptions";   // no-break spaces: the arrow never starts a line
   // The day the first charge falls, for a plan with free time. Apple's free
   // days are exact 24-hour days from the purchase; months and years land on
@@ -8761,6 +9921,7 @@
   // o.headsUp: true only when the page has been told this phone will show
   // its own heads-up the day before this row's free days end (see above).
   const PLAN_HEADS_UP = "We'll remind you the day before it ends.";   // Travis's and Rachel's words to change
+  const PLAN_STEP_HEADS_UP = "Reminder";   // the same promise, as the timeline's middle step (4 Nov 2026)
   function planWords(plan, o) {
     o = o || {};
     const WHAT = o.freeVersion ? "Every game and every book." : "Daily practice, every game and every book.";
@@ -8795,9 +9956,18 @@
       w.state = "paid"; w.title = "Get Sona Premium";
       w.name = "One payment"; w.sub = "Yours to keep. No subscription."; w.amount = P;
       w.price = "One payment of " + P + ".";
-      w.check = "One payment \u00b7 No subscription";
+      // The check line sells what one payment brings (Travis, 1 Nov 2026:
+      // "instead of one payment, no subscription, have it say one payment
+      // every update"): it is the `full` entitlement for good, so every new
+      // game and book is in it. The small print under the button still says
+      // "No subscription", so a parent reads that it never renews.
+      w.check = "One payment \u00b7 Every update included";
       w.note = "One payment of " + P + ". No subscription."; w.noteLast = true;   // small print, under the button
-      w.button = "Get Sona Premium — " + P; w.act = "buy";
+      // The button is the trial's own words (Travis, 31 Oct 2026: "change
+      // paywall button to 'Start practicing!' for the lifetime option too
+      // ... not get sona prem"): the price is on the row, "Billed today"
+      // under it, and the small print right under the button names it again.
+      w.button = "Start practicing!"; w.act = "buy";
       w.header = "Sona Premium: one payment of " + P + ".";
       return w;
     }
@@ -8845,6 +10015,30 @@
     }
     // a free row only, and only when the page says this phone will show it
     if (o.headsUp === true) w.headsUp = PLAN_HEADS_UP;
+    // THE 3-STEP TRIAL TIMELINE (Travis, 4 Nov 2026: "let's add a 3-step
+    // trial timeline"). Only on a row whose free days are certain and
+    // counted in days (a week is read as 7), three or more of them, so
+    // every step falls on its own day. Today counts as day 1: the free days
+    // end, and the first charge falls, as day N ends; Apple lets a parent
+    // cancel up to 24 hours before that, i.e. through day N-1. With the
+    // heads-up (o.headsUp) the middle step carries it, and the separate
+    // line under the button steps aside: one promise, said once. No dates (Travis,
+    // 6 Oct 2026: "I just want it to say three days"). Every word Travis's
+    // and Rachel's to change.
+    const DAYS = plan.sure === true && plan.free && plan.free.unit === "day" ? Number(plan.free.n) : 0;
+    if (DAYS >= 3) {
+      // (Travis, 5 Nov 2026: "a little bit too busy": a word or two a step,
+      // and the check line steps aside, since the steps say "no payment
+      // today"; the small print under the button carries "Auto-renews")
+      w.steps = [
+        { when: "Today", text: "Free" },
+        { when: "Day " + (DAYS - 1), text: w.headsUp ? PLAN_STEP_HEADS_UP : "Still free" },
+        { when: "Day " + DAYS, text: w.amount },
+      ];
+      w.headsUp = "";
+      w.check = "";
+      w.note = w.price + " Auto-renews. Cancel anytime.";
+    }
     return w;
   }
   // The card's one status line, by code (buyPlan's codes, and the page's own
@@ -9099,7 +10293,9 @@
   try { _keepFreeVersion(); } catch (e) {}
   // the kept buddies (OWN1), likewise one-shot and independent of every other stamp
   try { _keepBuddies(); } catch (e) {}
+  // each set-up child's story calendar (CAL1): written once per child
+  try { _questAnchors(); } catch (e) {}
   try { installDebug(); } catch (e) {}
 
-  global.Sona = { questToday, questEnd, QUEST_DAYS, QUEST_LEN, pcmWave, mediaPCM, voiceAsMedia, libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, goalDays, dayReps, dayGoal, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, goClip, GO_WAIT_MS, WORDS, wordsFor, GAME_WORDS, gameWords, POSITIONS, FAMILY_POSITIONS, posInfo, posPhrase, posHas, soundPos, sylPos, playWords, playPool, hasSound, GAMES_FOLLOW_POS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, rungWin, ladderKey, ladderContent, PRACTICE_TOP, ladderSteps, ladderTop, ladderStart, stepDown, stepLabel, ladderWhere, ladderPlan, GAME_LEVELS, gameTop, gameAsk, gameHold, FREE_MODE, isFree, WEB_SALES, webSales, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, homePicks, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, freeVersion, trialFirst, offerOnLock, FREE_BOOKS, bookFree, booksOpen, bookLocked, seasonPick, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, firstGameKey, firstGameStart, firstGameEnd, CRAFTED_CARDS, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, micNative, micOpen, micProbe, micSource, micDeaf, micRecorder, micQuiet, micStats, micFifo: nmFifo, NATIVE_MIC_GAIN, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repWeeks, gameRep, repsBeacon, gameBest, gameBestOffer, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES, trophyState, trophies, coinsNow, PLAY_LEVEL_AT, PLAY_LEVEL_LINES, playLevelsOpen, playLevel, playLevelAsk, setPlayLevel, playLevelInfo, playBest, playBestOffer, buddyId, buddySprite, chestState, chestOpen, ROAD_LANDS, ROAD_STOPS, MONTH_STEPS, roadStop, roadState, roadOpen, monthOpen, roadSettle, roadRolledSeen, buddiesKept, shopItem, buyItem, undoBuy, equip, BOARD_LIVE, boardLive, boardAllowed, boardState, boardStart, boardClaim, boardFlush, boardView, boardNick, boardLeave, boardAsk, boardCancel, parentEmail, reportEmail, reportSync, homeOfferDue, offerSeen, soundMark, clipsSettled, storePlan, buyPlan, planWords, planSay, planBillDate, setupWall, setupAfterMark, setupAfter, setupAfterClear, setupAsks, setupAsksSave, SETUP_THERAPY };
+  global.Sona = { questToday, questEnd, QUEST_DAYS, QUEST_LEN, STORY_DAYS, storyOpen, storyShown, storyEnding, storySeen, storyFound, storyReplay, STORY_SAY_TIMES, STORY_TALK, storyDay, day1For, pcmWave, mediaPCM, voiceAsMedia, libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, goalDays, dayReps, dayGoal, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, goClip, GO_WAIT_MS, WORDS, wordsFor, GAME_WORDS, gameWords, POSITIONS, FAMILY_POSITIONS, posInfo, posPhrase, posHas, soundPos, sylPos, playWords, playPool, hasSound, GAMES_FOLLOW_POS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, rungWin, ladderKey, ladderContent, PRACTICE_TOP, ladderSteps, ladderTop, ladderStart, stepDown, stepLabel, ladderWhere, ladderPlan, GAME_LEVELS, gameTop, gameAsk, gameHold, FREE_MODE, isFree, WEB_SALES, webSales, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, targetSound, targetSoundOptions, setTargetSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, homePicks, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, freeVersion, trialFirst, offerOnLock, FREE_BOOKS, freeBooksOnShelf, bookFree, booksOpen, bookLocked, seasonPick, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, firstGameKey, firstGameStart, firstGameEnd, FREE_PLAY_ON, freePlayOn, freePlayDue, freePlayStart, freePlayActive, freePlayEnd, CRAFTED_CARDS, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, micNative, micOpen, micProbe, micSource, micDeaf, micRecorder, micQuiet, micStats, micFifo: nmFifo, NATIVE_MIC_GAIN, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repWeeks, gameRep, repsBeacon, gameBest, gameBestOffer, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES, trophyState, trophies, coinsNow, PLAY_LEVEL_AT, PLAY_LEVEL_LINES, playLevelsOpen, playLevel, playLevelAsk, setPlayLevel, playLevelInfo, playBest, playBestOffer, buddyId, buddySprite, chestState, chestOpen, ROAD_LANDS, ROAD_STOPS, MONTH_STEPS, roadStop, roadState, roadOpen, monthOpen, roadSettle, roadRolledSeen, buddiesKept, shopItem, buyItem, undoBuy, equip, BOARD_LIVE, boardLive, boardAllowed, boardState, boardStart, boardClaim, boardFlush, boardView, boardNick, boardLeave, boardAsk, boardCancel, parentEmail, reportEmail, reportSync, reportStatus, reportSet, reportOff, reportFlush, homeOfferDue, offerSeen, notifyAvailable, notifyState, notifyRefresh, notifyAsk, trialReminderOn, trialReminderArm, trialReminderSync, trialReminderSold, nudgeConsent, nudgeState, soundMark, clipsSettled, storePlan, buyPlan, planWords, planSay, planBillDate, setupWall, setupAfterMark, setupAfter, setupAfterClear, setupAsks, setupAsksSave, SETUP_THERAPY };
 })(window);

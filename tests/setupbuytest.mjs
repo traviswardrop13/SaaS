@@ -6,16 +6,21 @@
 // joins them on one fake phone that has BOTH an App Store and a microphone
 // (tests/_phone.mjs), because the hand-over between the two pages is the part
 // neither can see:
-//   - setup asks its four things (with three screens that sell Sona right
-//     after the therapy question, 19 Oct 2026), then the optional email (13 Oct 2026: before
-//     the price, so the address is on the phone when a purchase tells the
-//     list), shows "<Name>'s practice is ready", and only then the price,
-//     while the grown-up still holds the phone;
+//   - setup sells Sona (the games playing, Rachel on her own, then what the
+//     child loves and their games: 22 Oct 2026; the problem slide went on 31
+//     Oct 2026), asks its
+//     questions, then the optional email (13 Oct 2026: before the price, so
+//     the address is on the phone when a purchase tells the list), shows
+//     "<Name>'s practice is ready!", and only then the price, while the
+//     grown-up still holds the phone;
 //   - the price is ONE plan with the store's own words, and no reminder is
 //     promised (Sona sends none yet);
 //   - a purchase comes BACK to setup for the microphone and "Hand the phone
-//     to <Name>!", and then goes Home, where the child picks a game (17 Oct
-//     2026: no jump straight into a game after the free days start);
+//     to <Name>!", and then opens the first game, Fruit Slice, as the ready
+//     screen's Day 1 says ("Play a game, then read a book."; 31 Oct 2026:
+//     "go straight into either piano tiles or fruit slice. Because that's
+//     what is advertised"; from 17 Oct it went Home, and that morning,
+//     briefly, to today's story);
 //   - "Not now" goes Home, with no microphone ask and no hand-off;
 //   - a phone that cannot buy never sees a price and goes on in the page;
 //   - the two answers a parent taps reach no request at all.
@@ -35,20 +40,27 @@ const step = (page, key) => page.locator('[data-step="' + key + '"].on').waitFor
 const text = (page, sel) => page.evaluate((s) => { const e = document.querySelector(s); return e ? e.innerText.replace(/\s+/g, " ").trim() : null; }, sel);
 
 // a parent's setup, as far as the ready screen (an address on the email step, or Skip)
-// (sold: the headings of the three screens that sell, as the parent read them)
+// (sold: the headings of the screens that sell, as the parent read them;
+// rachelLine: Rachel's line on her own screen, 22 Oct 2026)
 const sold = [];
+let rachelLine = "";
 async function toReady(page, name, email = "") {
-  sold.length = 0;
+  sold.length = 0; rachelLine = "";
   await page.goto(base + "/onboarding.html");
   await page.waitForFunction(() => window.Sona && document.getElementById("nextBtn"));
   await tap(page, "#nextBtn");                                           // the hello
   await step(page, "name"); await page.locator("#obName").fill(name); await tap(page, '#obAge [data-age="6"]'); await tap(page, "#nextBtn");
+  for (const key of ["reel", "piano", "rachel"]) {                      // the name first since 1 Nov 2026; Piano Tiles back on 4 Nov
+    await step(page, key); sold.push(await text(page, '[data-step="' + key + '"] h1'));
+    if (key === "rachel") rachelLine = await page.evaluate(() => document.getElementById("rachelLine").textContent);
+    await tap(page, "#nextBtn");
+  }
+  for (const key of ["interests"]) { await step(page, key); sold.push(await text(page, '[data-step="' + key + '"] h1')); await tap(page, "#nextBtn"); }
   await step(page, "therapy"); await tap(page, '#obTherapy .ask-pick[data-val="t_yes"]');
-  for (const key of ["problem", "alone", "games"]) { await step(page, key); sold.push(await text(page, '[data-step="' + key + '"] h1')); await tap(page, "#nextBtn"); }
   await step(page, "sounds");                                            // R is the picker's own first pick: tap it only if it is not on
   if ((await page.locator('#obSounds [data-sound="R"]').getAttribute("aria-pressed")) !== "true") await tap(page, '#obSounds [data-sound="R"]');
   await tap(page, "#nextBtn");
-  await step(page, "goal"); await tap(page, '#obGoal .ask-pick[data-val="5"]');
+  await step(page, "minutes"); await tap(page, '#obMinutes .ask-pick[data-val="5"]');
   await step(page, "updates");
   if (email) { await page.locator("#updEmail").fill(email); await tap(page, "#nextBtn"); } else await tap(page, "#updSkip");
   await step(page, "ready");
@@ -60,13 +72,20 @@ await scenario("a family that can buy", async () => {
   try {
     await toReady(page, "Mia", "mia.mom@example.com");
     ok("nothing is sent from the email step itself", leads(requests).length === 0, leads(requests));
-    ok("before the price, three screens sell Sona, after the therapy question: the problem, the child playing alone, the games",
-      JSON.stringify(sold) === JSON.stringify(["Speech homework is hard at home.", "Mia plays on their own", "Games Mia will play"]), sold);
-    ok("setup ends on the ready screen: the child's name, and Rachel's line word for word",
-      (await text(page, "#readyTitle")) === "Mia's practice is ready" &&
-      (await text(page, "#readyRachel")) === "Built with Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical fellowship.",
-      { title: await text(page, "#readyTitle"), rachel: await text(page, "#readyRachel") });
+    ok("before the price, setup shows the Fruit Slice demo (under \"Speech practice. Through play.\"), the Piano Tiles demo, Rachel and what the child loves, and no problem slide or games screen",
+      JSON.stringify(sold) === JSON.stringify(["Speech practice. Through play.", "Say the sound to slow the keys.", "Built with Rachel, MS, CF-SLP,", "What does Mia love?"]) &&
+      (await page.locator('[data-step="problem"]').count()) === 0, sold);
+    ok("Rachel's own screen carries her line word for word, and setup ends on the ready screen with the child's name",
+      rachelLine === "Built with Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical fellowship." &&
+      (await text(page, "#readyTitle")) === "Mia's practice is ready!",
+      { title: await text(page, "#readyTitle"), rachel: rachelLine });
     ok("…and nothing has asked the phone for the microphone yet", (await page.evaluate(() => window.__phone.mic.requests.length)) === 0);
+    // THE PLAN MOMENT (31 Oct 2026): the ready screen says Day 1 is a game,
+    // then a book (one line since 4 Nov 2026); the card still names the
+    // talking story in Mia's sound for Home
+    ok("the ready screen's plan card says Day 1 is \"Play a game, then read a book.\" and nothing more; Robo's Rocket for a child on R",
+      (await page.evaluate(() => { const c = document.getElementById("planCard"); return !c.hidden && c.dataset.story + "|" + c.dataset.game; })) === "robo|slice" &&
+      (await text(page, "#planTitle")) === "Play a game, then read a book." && (await text(page, "#planCard")) === "Day 1 Play a game, then read a book.", await text(page, "#planCard"));
     await tap(page, "#nextBtn");
     await page.waitForURL(/\/subscribe\.html\?setup=1$/, { timeout: 12000 });
     {
@@ -78,8 +97,8 @@ await scenario("a family that can buy", async () => {
     const card = await text(page, "#iapCard"), button = await text(page, "#iapBuy");
     ok("Continue goes to the price, while the grown-up still holds the phone: one plan, the store's own words",
       /3 days free, then \$9\.99 a month\./.test(card) && button === "Start practicing!" && !/\$59\.99|a year|yearly/i.test(card), { card, button });
-    ok("…as one row (Monthly, 3-day free trial, the price), one check line, and no date anywhere",
-      (await page.locator("#iapTL li").count()) === 0 && /Monthly\s+3-day free trial\s+\$9\.99\/mo/.test(card) && /No payment today · Subscription auto-renews/.test(card) && /Cancel anytime\./.test(card) && !/(Mon|Tues|Wednes|Thurs|Fri|Satur|Sun)day/.test(card), card);
+    ok("…as one row (Monthly, 3-day free trial, the price), one check line, the 3-step timeline (4 Nov 2026), and no date anywhere",
+      (await page.locator("#iapTL li").count()) === 3 && /Today\s+Free\s+Day 2\s+Still free\s+Day 3\s+\$9\.99\/mo/.test(card) && /Monthly\s+3-day free trial\s+\$9\.99\/mo/.test(card) && !/No payment today/.test(card) && /Auto-renews\. Cancel anytime\./.test(card) && !/(Mon|Tues|Wednes|Thurs|Fri|Satur|Sun)day/.test(card), card);
     ok("…and no reminder is promised anywhere on the price screen (Sona sends none yet)",
       !/\b(remind|reminder|email|e-mail|notify|notification)/i.test(await text(page, "body")), await text(page, "body"));
     const ways = { notNow: await page.locator("#declineLink").waitFor({ state: "visible", timeout: 4000 }).then(() => true, () => false), restore: await page.locator("#iapRestore").isVisible(),
@@ -91,6 +110,11 @@ await scenario("a family that can buy", async () => {
     const bought = await page.evaluate(() => ({ id: localStorage.getItem("__bought"), premium: !!(window.Sona && Sona.premium && Sona.premium()), game: sessionStorage.getItem("sona.firstgame.v1") }));
     ok("starting the free days buys the MONTHLY plan and comes back to setup on the microphone screen, not a game",
       bought.id === IDS.monthly && bought.premium && !bought.game, bought);
+    // no grown-ups line on setup's microphone screen since 31 Oct 2026
+    // (Travis: "let's get rid of the grown-ups audio is never uploaded"): the
+    // promise stays on every other mic ask, in the games and books
+    ok("…whose microphone screen carries no grown-ups line about audio",
+      (await page.locator("#micPromise").count()) === 0 && !/never uploaded|listen back/i.test(await text(page, '[data-step="mic"]')), await text(page, '[data-step="mic"]'));
     await tap(page, "#nextBtn");                                         // Turn on Echo's ears
     await step(page, "achieve");
     ok("the microphone is asked for after the price, then \"Hand the phone to Mia!\"",
@@ -103,11 +127,13 @@ await scenario("a family that can buy", async () => {
         all.length === 2 && plan.length === 1 && plan[0].plan === "trial" && plan[0].source === "app-trial" && plan[0].email === "mia.mom@example.com" && plan[0].role === "parent", all);
     }
     await tap(page, "#nextBtn");                                         // Let's play!
-    await page.waitForURL(/\/today\.html$/, { timeout: 12000 });
+    await page.waitForURL(/\/charge\.html\?game=arcade-slice\.html$/, { timeout: 12000 });
     {
-      const home = await page.evaluate(() => ({ game: sessionStorage.getItem("sona.firstgame.v1"), slice: Sona.gameAccess("slice").allowed }));
-      ok("\"Let's play!\" after the free days start goes Home to pick a game, not straight into one, with the games open",
-        /\/today\.html$/.test(page.url()) && !home.game && home.slice === true, { url: page.url(), home });
+      const first = await page.evaluate(() => { const q = Sona.questToday(); return { game: sessionStorage.getItem("sona.firstgame.v1"), slice: Sona.gameAccess("slice").allowed, open: Sona.storyOpen(), q: q.kind + "|" + q.state + "|" + q.day + "|" + (q.story && q.story.id) }; });
+      ok("\"Let's play!\" after the free days start opens the first game, Fruit Slice's practice page, as the plan card said, not Home or the story, and it is open",
+        /\/charge\.html\?game=arcade-slice\.html$/.test(page.url()) && first.game === "slice" && first.slice === true, { url: page.url(), first });
+      ok("…and Day 1's story, Robo's Rocket, waits on Home, open and unplayed (the \"then read a book\" half)",
+        first.q === "story|open|1|robo" && first.open, first);
     }
     const leaked = requests.filter((r) => /t_yes|t_none|t_no|speech therapy|in therapy/i.test(r.url + " " + (r.body || "")));
     ok("the two answers the parent tapped are in no request, address or body, anywhere in the walk", leaked.length === 0, leaked.slice(0, 3));
@@ -117,8 +143,12 @@ await scenario("a family that can buy", async () => {
   } finally { await context.close(); }
 });
 
-// THE ONE PAYMENT (22 Oct 2026): RevenueCat's offering lists it, so the price
-// has a third row. A parent who picks it is charged once, comes back to
+// THE ONE PAYMENT (22 Oct 2026): RevenueCat's offering lists it, and since
+// 23 Oct 2026 it is the row under monthly (Travis: "I just want two payment
+// options", then "can we just have the ... a month as the top default option
+// and then below it is the pay one time?"); the yearly product the offering
+// also lists is not sold. The price opens on Monthly's free trial; a parent
+// who taps One payment, then the button, is charged once, comes back to
 // setup for the microphone and the hand-off, and the list hears "paid".
 await scenario("a family that buys the one payment", async () => {
   const { context, page, errors, requests } = await open(browser, base, { app: "buy", mic: "grant", offering: "all" });
@@ -128,11 +158,17 @@ await scenario("a family that buys the one payment", async () => {
     await page.waitForURL(/\/subscribe\.html\?setup=1$/, { timeout: 12000 });
     await page.locator('#iapCard[data-state="free"]').waitFor({ timeout: 12000 });
     const rows = await page.evaluate(() => ["iapYear", "iapPlan", "iapLife"].map((id) => { const e = document.getElementById(id); return e && !e.hidden ? [id, e.getAttribute("aria-checked"), e.innerText.replace(/\s+/g, " ").trim()] : null; }));
-    ok("the price has three rows, yearly picked, the one payment last and unpicked, and it never says lifetime",
-      rows.every(Boolean) && rows[0][1] === "true" && rows[2][1] === "false" && /^One payment Yours to keep\. No subscription\. \$59\.99/.test(rows[2][2]) && !/lifetime/i.test(await text(page, "body")), rows);
+    ok("the price has two rows, Monthly on top, picked and \"Recommended\" (2 Nov 2026), Lifetime under it with its short copy and store price and no tag, no yearly row",
+      rows[0] === null && !!rows[1] && !!rows[2] && rows[1][1] === "true" && rows[2][1] === "false" &&
+      (await text(page, "#iapLifeName")) === "Lifetime" && (await text(page, "#iapLifeLine")) === "Yours Forever" &&
+      (await text(page, "#iapTag")) === "Recommended" && (await page.locator("#iapLifeTag").isHidden()) && !/best value/i.test(rows[2][2]) && /\$59\.99/.test(rows[2][2]) && /Billed today/.test(rows[2][2]) &&
+      await page.evaluate(() => document.getElementById("iapPlan").getBoundingClientRect().bottom <= document.getElementById("iapLife").getBoundingClientRect().top), rows);
+    ok("…as it opens, Monthly's free trial: the 3-step timeline over the button, \"Start practicing!\"",
+      /Today\s+Free/.test(await text(page, "#iapCard")) && (await text(page, "#iapBuy")) === "Start practicing!", await text(page, "#iapCard"));
     await tap(page, "#iapLife");
-    ok("…picked: \"Get Sona Premium — $59.99\", and the small print says one payment, no subscription",
-      (await text(page, "#iapBuy")) === "Get Sona Premium — $59.99" && /One payment of \$59\.99\. No subscription\./.test(await text(page, "#iapCard")), await text(page, "#iapCard"));
+    await page.locator('#iapCard[data-state="paid"]').waitFor({ timeout: 4000 });
+    ok("…a tap on Lifetime: \"Start practicing!\", and the small print says one payment, no subscription",
+      (await text(page, "#iapBuy")) === "Start practicing!" && /One payment of \$59\.99\. No subscription\./.test(await text(page, "#iapCard")) && !/No payment today/.test(await text(page, "#iapCard")), await text(page, "#iapCard"));
     await tap(page, "#iapBuy");
     await page.waitForURL(/\/onboarding\.html$/, { timeout: 12000 });
     await step(page, "mic");
@@ -141,9 +177,11 @@ await scenario("a family that buys the one payment", async () => {
     await tap(page, "#nextBtn");
     await step(page, "achieve");
     await tap(page, "#nextBtn");
-    await page.waitForURL(/\/today\.html$/, { timeout: 12000 });
+    await page.waitForURL(/\/charge\.html\?game=arcade-slice\.html$/, { timeout: 12000 });
+    ok("…then the first game, Fruit Slice, for a one-payment buyer too (31 Oct 2026), and open to the child",
+      await page.evaluate(() => sessionStorage.getItem("sona.firstgame.v1") === "slice" && Sona.gameAccess("slice").allowed), page.url());
     const all = leads(requests), plan = all.filter((l) => l.plan);
-    ok("…then Home, and the list hears \"paid\" for the same address, never a trial", plan.length === 1 && plan[0].plan === "paid" && plan[0].source === "app-paid" && plan[0].email === "ava.mom@example.com", all);
+    ok("…and the list hears \"paid\" for the same address, never a trial", plan.length === 1 && plan[0].plan === "paid" && plan[0].source === "app-paid" && plan[0].email === "ava.mom@example.com", all);
     ok("…with nothing about the child in any request", !requests.some((r) => /\bAva\b/.test(decodeURIComponent(r.url) + " " + (r.body || ""))));
     ok("a family that buys the one payment: no page errors", errors.length === 0, errors);
   } finally { await context.close(); }
@@ -173,6 +211,12 @@ await scenario("a phone that cannot buy", async () => {
   const { context, page, errors, requests } = await open(browser, base, { mic: "grant" });   // a browser: the website does not sell
   try {
     await toReady(page, "Zoe");
+    // a phone that shows no story (the game of the day, not a locked story)
+    // still has Day 1's card: a game, then a book (the free one), and no
+    // story named
+    ok("with no story shown on this phone, the plan card still says Day 1: \"Play a game, then read a book.\", no story named",
+      (await page.evaluate(() => { const c = document.getElementById("planCard"); return !c.hidden && c.dataset.story + "|" + c.dataset.game; })) === "|slice" &&
+      (await text(page, "#planCard")) === "Day 1 Play a game, then read a book.", await text(page, "#planCard"));
     await tap(page, "#nextBtn");
     await step(page, "mic");
     ok("with nothing to sell, Continue goes on in the page to the microphone: the price page is never asked for",
@@ -181,7 +225,8 @@ await scenario("a phone that cannot buy", async () => {
     await step(page, "achieve");
     await tap(page, "#nextBtn");
     await page.waitForURL(/\/charge\.html\?game=arcade-slice\.html$/, { timeout: 12000 });
-    ok("…then the hand-off and the first game, which the free version opens", /arcade-slice/.test(page.url()), page.url());
+    ok("…then the hand-off and the first game, Fruit Slice, which the free version opens",
+      /arcade-slice/.test(page.url()) && await page.evaluate(() => sessionStorage.getItem("sona.firstgame.v1") === "slice" && Sona.gameAccess("slice").allowed), page.url());
     ok("a phone that cannot buy: no page errors", errors.length === 0, errors);
   } finally { await context.close(); }
 });

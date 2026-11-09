@@ -17,6 +17,7 @@ import { createServer } from "http";
 import { readFileSync, existsSync, statSync } from "fs";
 import path from "path";
 import { chromium, ROOT as SOURCE_ROOT, launchOpts } from "./_env.mjs";
+import { heartsOffRow } from "./_heartsrow.mjs";
 
 const ROOT = process.env.SONATEST_PUBLIC_ROOT || SOURCE_ROOT, BASE = "http://127.0.0.1:8266";
 const MIME = { html: "text/html", js: "text/javascript", css: "text/css", svg: "image/svg+xml", png: "image/png", webp: "image/webp", woff2: "font/woff2", mp3: "audio/mpeg" };
@@ -58,7 +59,11 @@ ok("three stretches, the park, the beach and the forest, then the finish line",
   /\{name:"the park",len:160,/.test(code) && /\{name:"the beach",len:190,/.test(code) && /\{name:"the forest",len:220,/.test(code) && /function drawFinish\(/.test(code));
 ok("a rock is a tumble, never the card", /things\.splice\(i,1\); startFall\(\); continue;/.test(code) && !/things\.splice\(i,1\); crash\(\);/.test(code));
 ok("only a checkpoint asks for the sound", /sayCard\("Say \\u201C"\+SAYTXT\+"\\u201D to run to "/.test(code));
-ok("the end card counts metres and the child's own best", !/treats/.test(code) && /function bestLine/.test(code) && /S\.gameBestOffer\("run",n\)/.test(code));
+// BESTRUN1 (5 Nov 2026): the best is the stars the child grabs, the number
+// the top bar shows all race. It was metres, never on screen, and every race
+// that reaches the finish is 570 m, so it could never go up.
+ok("the end card counts stars (the top bar's count) and the child's own best, never metres", !/treats/.test(code) && /function bestLine\(\)\{\s*var n=coins;/.test(code) && /function keepBest\(\)\{\s*var n=coins;/.test(code) && /S\.gameBestOffer\("run",n\)/.test(code) && /n===1\?"1 star":n\+" stars"/.test(code) && !/every metre!|n\+" m"/.test(code));
+ok("a grabbed star is kept at once and can say \"New best!\"; a metre never is", /coins\+\+; \$\("coinN"\)\.textContent=coins; sfx\("coin"\); bestReached\(\);/.test(code) && !/dist\+=metres;[^\n]*bestReached/.test(code));
 ok("nothing in the race is practice data", !/logAttempt|bumpReps|recordSession|recordRung|rotAdvance|repsBeacon/.test(code));
 ok("the page asks for the mic in one place only: the say-it card", (code.match(/getUserMedia\(/g) || []).length === 1 && /function openReviveMic\(\)/.test(code));
 
@@ -118,7 +123,11 @@ function fakePhone(cfg) {
   localStorage.setItem("sona.freeera.v1", "post"); ["sona.freeera2.v1", "sona.freeera3.v1", "sona.freeera4.v1", "sona.freeera5.v1"].forEach((k) => localStorage.setItem(k, "done"));
   localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Mia", childAge: "7", focusSounds: ["R"], onboarded: true, earlyAdopter: true, voiceOn: cfg.volume !== 0, soundOn: true, volume: cfg.volume == null ? 0.6 : cfg.volume }));
   if (cfg.seen !== null) localStorage.setItem("sona.sprintintro.v1", String(cfg.seen == null ? 3 : cfg.seen));
-  if(cfg.best)localStorage.setItem("sona.bests.v1",JSON.stringify({ run: {n:cfg.best,at:"2026-10-01"} }));
+  // a best in stars carries BESTS1's stamp (c); cfg.metres is one kept in metres before 5 Nov 2026
+  if(cfg.best)localStorage.setItem("sona.bests.v1",JSON.stringify({ run: {n:cfg.best,at:"2026-11-05",c:"stars"} }));
+  if(cfg.metres)localStorage.setItem("sona.bests.v1",JSON.stringify({ run: {n:cfg.metres,at:"2026-10-01"} }));
+  if(cfg.lvMetres)localStorage.setItem("sona.playlevel.v1",JSON.stringify({ pick: { run: 2 }, best: { run: { "2": {n:cfg.lvMetres,at:"2026-10-20"} } } }));
+  if(cfg.trophies)localStorage.setItem("sona.trophy.v1",JSON.stringify({ v:1, t:cfg.trophies, d:{}, dn:0, m:"", mn:0 }));
   localStorage.setItem("sona.best.run","99999");
   sessionStorage.setItem("sona.play.token", "arcade-run.html");
 }
@@ -135,6 +144,23 @@ async function open(cfg = {}, size = { width: 390, height: 844 }) {
 const st = (page) => page.evaluate(() => ({ phase, stretch, dist, coins, REV, tumbles, playing, lane, card: document.getElementById("revOvl").classList.contains("show"),
   title: document.getElementById("revTitle").textContent, ended: !!window.__ended, mics: __f.mics, live: __f.live }));
 const heard = (page) => page.evaluate(() => { closeReviveMic(); doRevive(); });
+// the runner grabs stars until the top bar's count reaches n: each one rolls
+// down the runner's own lane and is caught by the race's own collision code
+async function grab(page, n) {
+  for (;;) {
+    const c = await page.evaluate(() => coins); if (c >= n) return;
+    await page.evaluate(() => { things.push({ t: "c", e: "\u{1FA99}", lane: Math.round(laneX), y: PLAYY() - 6 }); });
+    await page.waitForFunction((c) => coins > c, c, { timeout: 3000 });
+  }
+}
+// the round ends on the kind card: the last heart, then "I'm done playing"
+async function giveUp(page) {
+  await page.evaluate(() => { hearts = 1; heartHitAt = -1e9; hurtT = -1e9; falling.on = false; startFall(); });
+  await page.waitForFunction(() => reviveWait || window.__ended);
+  await page.evaluate(() => { if (reviveWait) document.getElementById("revDone").click(); });
+  await page.locator("#endOvl.show").waitFor();
+  return page.evaluate(() => ({ sub: document.getElementById("endSub").textContent, shown: getComputedStyle(document.getElementById("endSub")).display !== "none", coins, star: document.getElementById("coinN").textContent }));
+}
 // run the rest of this stretch quickly: jump to just before its end
 const nearEnd = (page) => page.evaluate(() => { things = []; dist = stretchStart + STRETCHES[stretch].len - 2; });
 async function tapAt(page, x, y, x2) {
@@ -142,8 +168,9 @@ async function tapAt(page, x, y, x2) {
 }
 
 // ── the start card ──
-const LINE = "Tap a lane to move side to side. Dodge the rocks and the cactus, and grab the gold coins!";
-ok("Echo's line is true to the race: lanes, rocks and a cactus to dodge, gold coins to grab (no gold star)", code.includes('var START_LINE="' + LINE + '";') && !/gold star/i.test(LINE));
+const LINE = "Tap a lane to move side to side. Dodge the rocks and the cactus, and grab the gold stars!";
+ok("Echo's line is true to the race: lanes, rocks and a cactus to dodge, gold stars to grab (never \"coins\": real coins come from the chest and the road)", code.includes('var START_LINE="' + LINE + '";') && !/coin/i.test(LINE));
+ok("the race never calls its pickups coins where a child sees or hears it", !/Grab coins|COIN MAGNET|collect coins/i.test(code) && !/collect coins/i.test(readFileSync(ROOT + "/sona.js", "utf8")));
 ok("Echo has seven seconds to begin, and a line that plays gets its own length", /START_WAIT_MS=7000,/.test(code) && /startCap\(my,START_WAIT_MS\)/.test(code) && /startCap\(my,Math\.max\(4000,ms\+START_TAIL_MS\)\+500\)/.test(code));
 ok("the count of races is the child's own", /S\.kkey\("sona\.sprintintro\.v1"\)/.test(code) && /"sona\.sprintintro\.v1",/.test(strip(readFileSync(ROOT + "/sona.js", "utf8")).match(/const PER_KID = new Set\(\[([\s\S]*?)\]\);/)[1]));
 const card = (page) => page.evaluate(() => ({ shown: document.getElementById("startOvl").classList.contains("show"), held: raceHeld, playing, saying: sc.saying,
@@ -166,7 +193,9 @@ await scenario("hearts, pace and best", async () => {
     ok("the opening is gentle, and an old phone-wide best is ignored",await page.evaluate(()=>hearts===3&&speed===speed0&&startBest===10&&SLOW_HELP.first===6000));
     ok("three hearts fit the smallest phone's existing HUD",await page.evaluate(()=>{const top=document.getElementById("top").getBoundingClientRect(),hs=document.getElementById("gameHearts").getBoundingClientRect();return hs.left>=top.left&&hs.right<=top.right&&hs.bottom<=top.bottom;}));
     await page.evaluate(()=>{dist=cleanSince+40;});await page.waitForFunction(()=>speed>speed0);const fast=await page.evaluate(()=>speed);
-    ok("clean metres increase pace and save the child's own best",await page.evaluate(()=>dist>=40&&Sona.gameBest("run")===dist&&saidNewBest));
+    ok("clean metres increase pace, and keep no best: metres are not the count",await page.evaluate(()=>dist>=40&&Sona.gameBest("run")===10&&!saidNewBest));
+    await grab(page,11);
+    ok("grabbing an eleventh star beats a best of 10: kept at once, \"New best!\" with the stars",await page.evaluate(()=>coins===11&&Sona.gameBest("run")===11&&saidNewBest&&document.getElementById("bnBig").textContent==="New best!"&&document.getElementById("bnSmall").textContent==="11 stars"&&JSON.parse(localStorage.getItem("sona.bests.v1")).run.c==="stars"));
     const loss=await page.evaluate(()=>{const metres=dist,at0=slowAskAt;startFall();const out={hearts,metres,after:dist,slower:speed<speed0*1.05,at:slowAskAt,at0};return out;});
     ok("a tumble costs one heart, backs off pace and preserves metres, and does not bring Echo's next ask forward",loss.hearts===2&&loss.after===loss.metres&&loss.slower&&loss.at===loss.at0,loss);
     await page.evaluate(()=>{falling.on=false;startFall();});ok("one burst of collisions cannot take every heart",await page.evaluate(()=>hearts===2));
@@ -186,11 +215,43 @@ await scenario("hearts, pace and best", async () => {
     await page.waitForFunction(()=>reviveWait||window.__ended);
     await page.evaluate(()=>{if(reviveWait)document.getElementById("revDone").click();});
     await page.locator("#endOvl.show").waitFor();
-    ok("zero hearts ends kindly with metres, own best, replay and home",await page.evaluate(()=>hearts===0&&!playing&&!reviveWait&&window.__ended&&!finaleDone&&document.getElementById("endTitle").textContent==="Whew — what a run we had!"&&/ m\./.test(document.getElementById("endSub").textContent)&&document.getElementById("endCharge").textContent==="Play again"&&__f.confetti===undefined));
+    ok("zero hearts ends kindly with the stars, own best, replay and home",await page.evaluate(()=>hearts===0&&!playing&&!reviveWait&&window.__ended&&!finaleDone&&document.getElementById("endTitle").textContent==="Whew — what a run we had!"&&document.getElementById("endSub").textContent==="11 stars. A new best!"&&document.getElementById("endCharge").textContent==="Play again"&&__f.confetti===undefined),await page.evaluate(()=>document.getElementById("endSub").textContent));
     ok("a finished round spends the turn",await page.evaluate(()=>sessionStorage.getItem("sona.play.active")===null&&sessionStorage.getItem("sona.play.token")===null));
     await page.locator("#endCharge").click();await page.waitForURL(/charge\.html/);ok("replay earns another turn in this same game",new URL(page.url()).searchParams.get("game")==="arcade-run.html");
     ok("hearts and pace have no runtime errors",errors.length===0,errors);
   }finally{await context.close();}
+});
+
+// BESTRUN1: the best is the stars. A best kept in metres before 5 Nov 2026 is
+// never a number of stars to beat: it reads as none, on this page and on Home.
+await scenario("the best is the stars the child grabs", async () => {
+  let o = await open({ metres: 570, volume: 0 });
+  try {
+    ok("a best kept in metres (an old \"Best 570\") reads as none: no number of stars is measured against it", await o.page.evaluate(() => startBest === 0 && Sona.gameBest("run") === 0), await o.page.evaluate(() => startBest));
+    await grab(o.page, 3);
+    ok("…so the first stars of the race are a first best, kept with the stars' stamp", await o.page.evaluate(() => Sona.gameBest("run") === 3 && JSON.stringify(JSON.parse(localStorage.getItem("sona.bests.v1")).run) === JSON.stringify({ n: 3, at: Sona.localDay(), c: "stars" })), await o.page.evaluate(() => localStorage.getItem("sona.bests.v1")));
+    ok("…with no \"New best!\" in play on a first best", await o.page.evaluate(() => !saidNewBest));
+    const e = await giveUp(o.page);
+    ok("the end card counts the stars the top bar showed: \"3 stars. Your best: 3!\"", e.shown && e.sub === "3 stars. Your best: 3!" && e.star === "3", e);
+    ok("…with no runtime errors", o.errors.length === 0, o.errors);
+  } finally { await o.context.close(); }
+  for (const [best, got, line] of [[12, 4, "4 stars. Your best: 12. 8 away!"], [30, 4, "4 stars. Your best: 30."], [4, 4, "4 stars. The same as your best!"], [9, 1, "1 star. Your best: 9. 8 away!"]]) {
+    o = await open({ best, volume: 0 });
+    try {
+      await grab(o.page, got);
+      const e = await giveUp(o.page);
+      ok("a best of " + best + " and " + got + " star" + (got === 1 ? "" : "s") + ": \"" + line + "\", and the best stays " + best, e.sub === line && (await o.page.evaluate(() => Sona.gameBest("run"))) === best, e);
+    } finally { await o.context.close(); }
+  }
+  // Level 2 keeps its own best (LEVELS1), and one kept there in metres reads as none too
+  o = await open({ lvMetres: 570, trophies: 200, volume: 0 });
+  try {
+    ok("Level 2: a best kept there in metres reads as none", await o.page.evaluate(() => LV === 2 && startBest === 0 && Sona.playBest("run", 2) === 0), await o.page.evaluate(() => ({ LV, startBest })));
+    await grab(o.page, 2);
+    ok("…and its stars are Level 2's own best, stamped, leaving Level 1's alone", await o.page.evaluate(() => Sona.playBest("run", 2) === 2 && JSON.parse(localStorage.getItem("sona.playlevel.v1")).best.run["2"].c === "stars" && Sona.gameBest("run") === 0));
+    const e = await giveUp(o.page);
+    ok("…and its end card says \"2 stars. Your best: 2!\"", e.sub === "2 stars. Your best: 2!", e);
+  } finally { await o.context.close(); }
 });
 
 await scenario("the start card", async () => {
@@ -203,7 +264,7 @@ await scenario("the start card", async () => {
       pics: [...document.querySelectorAll("#startTips img")].map((i) => i.getAttribute("src").split("/").pop() + (i.naturalWidth ? "" : " (missing)")), runner: getComputedStyle(document.getElementById("tipBuddy")).backgroundImage }));
     ok("a child's first race opens on the start card: Echo waving, and one button, “Let's run!”", c.shown && c.held && !c.playing && c.btn === "Let's run!" && /echo-wave\.webp$/.test(c.echo) && look.buttons === 1, { c, look });
     ok("…with three pictures from the race itself: the runner in the lanes, a rock and a cactus, a gold coin",
-      JSON.stringify(look.tips) === JSON.stringify(["Tap a lane", "Dodge", "Grab coins"]) && JSON.stringify(look.pics) === JSON.stringify(["run-rock-v2.webp", "run-cactus-v2.webp", "run-coin-v2.webp"]) && /fox-runner\.webp/.test(look.runner), look);
+      JSON.stringify(look.tips) === JSON.stringify(["Tap a lane", "Dodge", "Grab stars"]) && JSON.stringify(look.pics) === JSON.stringify(["run-rock-v2.webp", "run-cactus-v2.webp", "run-coin-v2.webp"]) && /fox-runner\.webp/.test(look.runner), look);
     ok("Echo's line is asked for as the card shows: once, word for word", TTS.asks.length === 1 && TTS.asks[0] === LINE, TTS.asks);
     ok("…and nothing is said before a tap", c.voice === 0 && c.pcm === 0 && c.synth.length === 0, c);
     const before = await stored(page);
@@ -392,6 +453,16 @@ await scenario("the start card in the iPhone app, and on a small phone", async (
   } finally { await context.close(); }
 });
 
+// HEARTSROW1 (_heartsrow.mjs): the hearts never fold onto a second line as the count grows
+await scenario("the hearts stay on one line", async () => {
+  const { context, page, errors } = await open();
+  try {
+    const bad = await heartsOffRow(page, ["Forest", { word: "Finish!", bar: false }]);
+    ok("the three hearts stay on one line, at full size, beside a count of 1, 10, 52 or 100 and each word the top bar can show, at 320, 375 and 390 wide; nothing in the top bar spills, is cut or moves the close button", bad.length === 0, bad);
+    ok("…with no runtime errors", errors.length === 0, errors);
+  } finally { await context.close(); }
+});
+
 await scenario("a whole race", async () => {
   const { context, page, errors } = await open();
   try {
@@ -414,7 +485,7 @@ await scenario("a whole race", async () => {
     await page.waitForFunction(() => Math.abs(laneX - lane) < 0.05);
     await page.evaluate(() => { things.push({ t: "c", e: "🪙", lane: lane, y: PLAYY() - 10, gold: true }); });
     await page.waitForFunction(() => performance.now() < magnetUntil, null, { timeout: 3000 });
-    ok("a golden coin turns on the coin magnet", true);
+    ok("a big gold star turns on the star magnet", true);
     // the checkpoint
     await nearEnd(page);
     await page.locator("#revOvl.show").waitFor({ timeout: 12000 });

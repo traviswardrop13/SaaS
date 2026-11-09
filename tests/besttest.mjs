@@ -66,7 +66,8 @@ async function fresh({ width = 375, height = 812, age = "7", premium = false, be
   return { context, page, errors };
 }
 async function store(page) { await page.goto(origin + "/__sona"); await page.waitForFunction(() => window.Sona && Sona.getProfile); }
-async function home(page) { await page.goto(origin + "/today.html"); await page.waitForFunction(() => window.Sona && document.querySelector("#activityGroups .game-card")); await page.waitForTimeout(200); }
+// the game cards are Home's Arcade since 22 Oct 2026 (STORY1)
+async function home(page) { await page.goto(origin + "/today.html?view=arcade"); await page.waitForFunction(() => window.Sona && document.querySelector("#activityGroups .game-card")); await page.waitForTimeout(200); }
 // What Home shows on each card, and where the tag sits against the picture
 // and the Free / Included / Premium badge.
 function cards(page) {
@@ -154,6 +155,56 @@ await section("the store", async () => {
     ok("when the phone cannot save, the answer is still never below the round just played", full.a.best === 22 && full.a.prev === 10 && full.a.isNew === true && full.kept === 10, full);
     ok("…with no page errors", errors.length === 0, errors);
   } finally { await context.close(); }
+});
+
+// ── 1b. a game whose count changed: Sound Sprint, metres → stars ──────────
+// BESTRUN1 (5 Nov 2026): every finished race was 570 m, so Sound Sprint's
+// best could never go up; it now counts stars. A best kept in metres has no
+// stamp and reads as none, so nobody is held under an old "Best 570" and no
+// star count is measured against metres. Every other game's record is as it was.
+await section("a count that changed", async () => {
+  const { context, page, errors } = await fresh({ bests: { run: { n: 570, at: "2026-10-01" }, tiles: { n: 38, at: "2026-10-02" } } });
+  try {
+    await store(page);
+    const r = await page.evaluate(() => {
+      const out = {};
+      out.oldRun = Sona.gameBest("run"); out.tiles = Sona.gameBest("tiles");
+      out.first = Sona.gameBestOffer("run", 4); out.rec = JSON.parse(localStorage.getItem("sona.bests.v1")); out.today = Sona.localDay();
+      out.after = Sona.gameBest("run");
+      out.lower = Sona.gameBestOffer("run", 3); out.higher = Sona.gameBestOffer("run", 9);
+      out.tilesOffer = Sona.gameBestOffer("tiles", 40); out.tilesRec = JSON.parse(localStorage.getItem("sona.bests.v1")).tiles;
+      // a stamp that is not the stars' is not the stars
+      localStorage.setItem("sona.bests.v1", JSON.stringify({ run: { n: 12, at: "2026-11-05", c: "metres" } }));
+      out.wrongStamp = Sona.gameBest("run");
+      localStorage.setItem("sona.bests.v1", JSON.stringify({ run: { n: 12, at: "2026-11-05", c: "stars" } }));
+      out.stamped = Sona.gameBest("run");
+      // Level 2 and 3 (LEVELS1) read the same stamp
+      localStorage.setItem("sona.playlevel.v1", JSON.stringify({ best: { run: { "2": { n: 570, at: "2026-10-20" } }, glide: { "2": { n: 9, at: "2026-10-20" } } } }));
+      out.lvOld = Sona.playBest("run", 2); out.lvGlide = Sona.playBest("glide", 2);
+      out.lvOffer = Sona.playBestOffer("run", 2, 5); out.lvRec = JSON.parse(localStorage.getItem("sona.playlevel.v1")).best;
+      return out;
+    });
+    ok("Sound Sprint's best kept in metres reads as no best at all, while Piano Tiles' is untouched", r.oldRun === 0 && r.tiles === 38, r);
+    ok("…so the first race in stars is a first best: { best: 4, prev: 0, isNew: true }", JSON.stringify(r.first) === JSON.stringify({ best: 4, prev: 0, isNew: true }) && r.after === 4, r.first);
+    ok("…kept with the stars' stamp, over the metres", JSON.stringify(r.rec.run) === JSON.stringify({ n: 4, at: r.today, c: "stars" }), r.rec);
+    ok("…and from then on it only goes up, in stars", r.lower.isNew === false && r.lower.best === 4 && r.higher.isNew === true && r.higher.prev === 4 && r.higher.best === 9, [r.lower, r.higher]);
+    ok("every other game keeps its record exactly as before, with no stamp", JSON.stringify(r.tilesRec) === JSON.stringify({ n: 40, at: r.today }) && r.tilesOffer.prev === 38, r.tilesRec);
+    ok("a record stamped with another count is not the stars; one stamped with the stars is", r.wrongStamp === 0 && r.stamped === 12, r);
+    ok("Level 2's Sound Sprint best kept in metres reads as none; another game's Level 2 best is untouched", r.lvOld === 0 && r.lvGlide === 9, r);
+    ok("…and Level 2's first race in stars is kept with the stamp", r.lvOffer.isNew && r.lvOffer.prev === 0 && JSON.stringify(r.lvRec.run["2"]) === JSON.stringify({ n: 5, at: r.today, c: "stars" }) && JSON.stringify(r.lvRec.glide["2"]) === JSON.stringify({ n: 9, at: "2026-10-20" }), r.lvRec);
+    ok("…with no page errors", errors.length === 0, errors);
+  } finally { await context.close(); }
+
+  // Home: no "Best 570" left on Sound Sprint's picture; a best in stars is there
+  for (const [bests, want] of [[{ run: { n: 570, at: "2026-10-01" } }, null], [{ run: { n: 23, at: "2026-11-05", c: "stars" } }, "Best 23"]]) {
+    const f = await fresh({ premium: true, bests });
+    try {
+      await home(f.page);
+      const run = by(await cards(f.page), "run");
+      ok(want ? "Home: a best in stars carries its tag, \"" + want + "\"" : "Home: a best kept in metres shows no tag and says no best in the label", run.length >= 1 && run.every((c) => c.text === want && (want ? /Your best: 23\.$/.test(c.aria) : !/best/i.test(c.aria))), run);
+      ok("…with no page errors", f.errors.length === 0, f.errors);
+    } finally { await f.context.close(); }
+  }
 });
 
 // ── 2. one per child ──────────────────────────────────────────────────────
@@ -305,11 +356,11 @@ await section("Home: who sees a tag", async () => {
   } finally { await f.context.close(); }
 
   // with Premium, an opened Premium game carries its tag too; big numbers fit
-  f = await fresh({ width: 320, height: 568, premium: true, bests: { tiles: { n: 52, at: "2026-10-02" }, stack: { n: 13, at: "2026-10-02" }, run: { n: 570, at: "2026-10-02" }, hoops: { n: 99999, at: "2026-10-02" }, peekaboo: { n: 4, at: "2026-10-02" } } });
+  f = await fresh({ width: 320, height: 568, premium: true, bests: { tiles: { n: 52, at: "2026-10-02" }, stack: { n: 13, at: "2026-10-02" }, run: { n: 57, at: "2026-11-05", c: "stars" }, hoops: { n: 99999, at: "2026-10-02" }, peekaboo: { n: 4, at: "2026-10-02" } } });
   try {
     await home(f.page);
     const list = await cards(f.page);
-    ok("a Premium game the family has opened carries its tag", by(list, "stack").every((c) => c.text === "Best 13" && !c.locked) && by(list, "run").every((c) => c.text === "Best 570") && by(list, "stack").length >= 1, by(list, "stack"));
+    ok("a Premium game the family has opened carries its tag", by(list, "stack").every((c) => c.text === "Best 13" && !c.locked) && by(list, "run").every((c) => c.text === "Best 57") && by(list, "stack").length >= 1, by(list, "stack"));
     ok("the longest number still sits whole on a 320px picture, clear of the badge", by(list, "hoops").length >= 1 && by(list, "hoops").every((c) => c.text === "Best 99999" && c.inside && c.oneLine && c.clearOfBadge), by(list, "hoops"));
     ok("…and a game once played while Coming soon carries its tag now it is open", by(list, "peekaboo").length >= 1 && by(list, "peekaboo").every((c) => c.text === "Best 4" && !c.locked) && list.every((c) => !c.disabled), by(list, "peekaboo"));
     ok("…with no sideways scroll or page errors", (await overflow(f.page)) <= 1 && f.errors.length === 0, f.errors);

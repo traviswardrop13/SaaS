@@ -24,7 +24,11 @@ jobs:
     # 150, not 90 (18 Oct 2026): the eighteen rebuilt Coming soon games
     # bring eighteen browser suites, and the run on #227 was cancelled at 90
     # minutes, still running.
-    timeout-minutes: 150
+    # 200, not 150 (23 Oct 2026): the daily story's Days 4-14 bring eleven
+    # game suites and storygametest, and the run on #241 took 148 of its 150
+    # minutes; the replay parts (FOUND1) add about three more. Without the
+    # room the job is cancelled mid-run, which reads as neither pass nor fail.
+    timeout-minutes: 200
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -32,6 +36,10 @@ jobs:
           node-version: 22
       # The suites drive the real pages in headless Chromium; playwright is
       # their only dependency and is installed standalone (app deps untouched).
-      - run: npm install --no-save playwright
+      # Pinned (Travis, 5 Nov 2026: "pin it"): playwright@1.65.0 reached npm
+      # without the playwright-core@1.65.0 it needs, and the unpinned install
+      # failed every run before a single suite. 1.64.1 is the release the
+      # battery last passed on; move the pin on purpose, in its own PR.
+      - run: npm install --no-save playwright@1.64.1
       - run: npx playwright install --with-deps chromium
       - run: node tests/run-all.mjs

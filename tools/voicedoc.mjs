@@ -14,17 +14,23 @@
 //   2. The pages are read as text. Every spoken line a page builds itself
 //      (charge.html's prompt, coaching, win and quiet-screen lines; Feed
 //      Echo's asks; the round games' say-it card, sound power and how-to-play
-//      line; the picture games; the books; the parked readers; Coach Call) is
-//      located by an anchor regex on the exact source, and where a page
-//      BUILDS a line (sayLine, soundName, soundSlot, the cue-shortening rule,
-//      a game's SLOW_HELP) the page's own code is lifted out and executed, so
-//      the printed text is the page's text.
+//      line; the picture games, the daily story's among them (Days 4-14 on
+//      one shared page, story-game.html, whose games are Codex's controllers
+//      in public/daily-adventures/ and whose words are that folder's
+//      pages.js); the daily story's scenes, from adventures.js; the books;
+//      the parked readers; Coach Call) is located by an anchor regex on the
+//      exact source, and where a page BUILDS a line (sayLine, soundName,
+//      soundSlot, the cue-shortening rule, a game's SLOW_HELP, the trainline's
+//      arrival) the page's own code is lifted out and executed, so the
+//      printed text is the page's text.
 //
 // FAILS LOUDLY, on purpose. An anchor that no longer matches, a say() call
 // or a voice request the anchors do not cover, a picture game's api.instruct()
-// whose line cannot be worked out from its code, a file that reaches the voice
-// and is not read here, a parked page that gained a link, a "dead" helper
-// that gained a caller — each throws, prints why, and exits 1 with nothing on
+// whose line cannot be worked out from its code (Codex's Days 4-14
+// controllers included; his unloaded narration.js is left out by name, and
+// only while no page loads it), a file that reaches the voice and is not
+// read here, a parked page that gained a link, a "dead" helper that gained a
+// caller — each throws, prints why, and exits 1 with nothing on
 // stdout. That is the point: a line cannot quietly vanish from or appear in
 // the app without this script being looked at. When it fires, read the
 // message, look at the diff, and update the anchor (and the sheet).
@@ -49,6 +55,10 @@ process.on("uncaughtException", (e) => {
   process.stderr.write(`voicedoc: the app's spoken lines drifted from this script — nothing written.\n  ${e.message}\n`);
   process.exit(1);
 });
+// Every page and script the app can run: public/'s own, and the Days 4-14
+// games' in public/daily-adventures/ (story-game.html inserts them by name).
+const publicFiles = () => readdirSync(join(ROOT, "public")).filter((f) => f.endsWith(".html") || f.endsWith(".js")).map((f) => "public/" + f)
+  .concat(readdirSync(join(ROOT, "public/daily-adventures")).filter((f) => f.endsWith(".js")).map((f) => "public/daily-adventures/" + f));
 function lineOf(file, idx) { return src(file).slice(0, idx).split("\n").length; }
 function cite(file, idx) { return `${file}:${lineOf(file, idx)}`; }
 // One anchor: the exact source we expect. Returns the match plus a citation.
@@ -327,7 +337,7 @@ for (const f of readdirSync(join(ROOT, "public")).filter((f) => f.endsWith(".htm
 }
 const power = {};
 for (const k of HELP_KEYS) {
-  const cfg = find(roundFile(k), /<script>window\.SLOW_HELP=(\{.*\});<\/script>/, "SLOW_HELP");
+  const cfg = find(roundFile(k), /<script>(?:\/\/[^\n]*\n[ \t]*)?window\.SLOW_HELP=(\{.*\});<\/script>/, "SLOW_HELP");
   const opts = (0, eval)("(" + cfg.m[1] + ")");
   const text = opts.say || ("To " + opts.action + ", say");
   const extra = [...new Set([opts.heartSay, ...(opts.lines || [])].filter((x) => x && x !== text))];
@@ -369,27 +379,94 @@ const spInstruct = find(SAYPLAY, /return say\(t\)\.then/, "Say & Play's owned me
 coverAll(SAYPLAY, /(?<![\w$.])say\(/, [spAsk, spIntro, spInstruct]);
 coverAll(SAYPLAY, TTS_CALL, [spVoice], "a voice request"); coverAll(SAYPLAY, SPEAK_CALL, [], "a voice call");
 const spLine = (w) => spAsk.m[1] + w + spAsk.m[2];
-// Which game a page is, from the catalog. A page that loads a speaking
-// script and is in no catalog entry is a page the sheet cannot name.
+// The daily story's games (STORY1, 22 Oct 2026) are picture games on the
+// same engine, but in no catalog: a child reaches each only from its day of
+// the story (sona.js STORY_DAYS), never from a shelf. Days 1-3 each have a
+// page of their own, and a game's name is the title that page hands the
+// engine. Days 4-14 are Codex's physical games and share ONE page,
+// story-game.html?story=<id> (a day's `controller` says which game): the page
+// looks the day up, takes the game's words from daily-adventures/pages.js
+// (DailyAdventurePages[controller]: title, intro, start card…), inserts
+// /daily-adventures/<controller>.js once it has loaded, and hands
+// SayPlay.start that controller as its play game. So each of those eleven
+// games is named by its pages.js title, its two-times sentence is pages.js's
+// intro, and the shared page's play scripts are the controllers it inserts by
+// name, one a day, never a <script src>. (Day 7's id and game are
+// "frontdoor" and its controller is "bridge": Day 3 owns the key "bridge".)
+const STORY_PAGE = "public/story-game.html", PAGES_JS = "public/daily-adventures/pages.js", DA = "public/daily-adventures/";
+const PAGES = (() => { const w = {}; try { new Function("window", src(PAGES_JS))(w); } catch (e) { fail(`daily-adventures/pages.js does not run on its own (${e.message}) — it is data, read as it stands.`); } return w.DailyAdventurePages; })();
+if (!PAGES) fail("daily-adventures/pages.js no longer sets window.DailyAdventurePages — re-read the daily story's games.");
+const sgDay = find(STORY_PAGE, /var m = \/\^\\\?story=\(\[a-z\]\+\)\(&again=1\)\?\$\/\.exec\(location\.search\), day = null;\n\s*try \{ \(S\.STORY_DAYS \|\| \[\]\)\.forEach\(function \(d\) \{ if \(m && d\.id === m\[1\] && d\.controller\) day = d; \}\); \} catch \(e\) \{\}\n\s*var copy = day && PAGES\[day\.controller\];/, "story-game.html: the day from ?story=, its words from pages.js by its controller");
+const sgScript = find(STORY_PAGE, /var js = document\.createElement\("script"\); js\.src = "\/daily-adventures\/" \+ day\.controller \+ "\.js";/, "story-game.html inserts the day's controller by name");
+find(STORY_PAGE, /var game = window\.DailyAdventureGames && window\.DailyAdventureGames\[day\.controller\];/, "story-game.html plays the game that controller registers");
+// (FOUND1: the page builds the engine's settings, takes the story's
+// hand-back off for a replay from Home's row, then starts it)
+const sgStart = find(STORY_PAGE, /var cfg = \{\n\s*key: day\.game, title: copy\.title, intro: copy\.intro, steps: steps, finale: \[\], done: copy\.done,\n[\s\S]*?\n\s*play: game, sounds: game\.sounds, soundMs: game\.soundMs\n\s*\};\n[\s\S]*?\n\s*SayPlay\.start\(cfg\);/, "story-game.html hands the engine the game's key, title, intro and controller");
+const sgCount = find(STORY_PAGE, /var count = S\.playStyle\(\) === "simple" \? (\d+) : (\d+), steps = \[\];/, "story-game.html: words a round, ages 3-4 and 5-8");
+const STORY_GAMES = {};
+(S.STORY_DAYS || []).forEach((d, i) => {
+  const f = "public" + String(d.page).split("?")[0];
+  if (!existsSync(join(ROOT, f))) fail(`STORY_DAYS names ${d.page} for the story "${d.title}", and it is not there.`);
+  if (d.controller) {
+    // the shared page plays exactly ?story=<letters>, and only a day with a controller
+    if (f !== STORY_PAGE || d.page !== `/story-game.html?story=${d.id}` || !/^[a-z]+$/.test(d.id) || !/^[a-z]+$/.test(d.controller)) fail(`STORY_DAYS puts Day ${i + 1} ("${d.title}") on the controller "${d.controller}" at ${d.page} — only story-game.html?story=<its id> plays a controller. Re-read the daily story's games.`);
+    const copy = PAGES[d.controller], play = DA + d.controller + ".js";
+    if (!copy || typeof copy.title !== "string" || typeof copy.intro !== "string") fail(`pages.js has no title and intro for the controller "${d.controller}" (Day ${i + 1}, "${d.title}").`);
+    if (!existsSync(join(ROOT, play))) fail(`Day ${i + 1} ("${d.title}") plays ${play}, which is not there.`);
+    if (!new RegExp(`window\\.DailyAdventureGames\\.${d.controller}\\s*=`).test(src(play))) fail(`${play} does not register window.DailyAdventureGames.${d.controller} — story-game.html would send Day ${i + 1} home.`);
+    STORY_GAMES[d.game] = { name: copy.title, go: d.page, story: d, day: i + 1, page: f, controller: d.controller, play };
+  } else {
+    if (f === STORY_PAGE) fail(`STORY_DAYS puts Day ${i + 1} ("${d.title}") on story-game.html with no controller — the page would send it home.`);
+    const t = find(f, new RegExp(`SayPlay\\.start\\(\\{\\s*key: "${d.game}", title: "([^"]+)"`), `${d.game}'s game title`);
+    STORY_GAMES[d.game] = { name: t.m[1], go: d.page, story: d, day: i + 1, page: f };
+  }
+});
+// Which game a page is, from the catalog (or the story's day list). A page
+// that loads a speaking script and is in neither is a page the sheet cannot
+// name. The shared story page is many games, read day by day (spEntries).
+const keyOfPageOr = (f) => Object.keys(S.GAME_ACTS).find((k) => String(S.GAME_ACTS[k].go).split("?")[0] === "/" + f)
+  || Object.keys(STORY_GAMES).find((k) => !STORY_GAMES[k].controller && STORY_GAMES[k].go === "/" + f);
 const gameOfPage = (f) => {
-  const key = Object.keys(S.GAME_ACTS).find((k) => String(S.GAME_ACTS[k].go).split("?")[0] === "/" + f);
+  if ("public/" + f === STORY_PAGE) fail(`public/${f} is the daily story's shared game page and was read as one game — read it through its days (spEntries) in tools/voicedoc.mjs.`);
+  const key = keyOfPageOr(f);
   if (!key) fail(`public/${f} loads a speaking game script but GAME_ACTS has no game at /${f}. Add it to the script.`);
-  return S.GAME_ACTS[key];
+  return S.GAME_ACTS[key] || STORY_GAMES[key];
 };
 const pagesLoading = (script) => readdirSync(join(ROOT, "public")).filter((f) => f.endsWith(".html") && loads("public/" + f, script)).sort();
-const keyOfPage = (f) => { gameOfPage(f); return Object.keys(S.GAME_ACTS).find((k) => String(S.GAME_ACTS[k].go).split("?")[0] === "/" + f); };
-const spPages = pagesLoading("/sayplay.js");
-const spGames = spPages.map(gameOfPage);
+const keyOfPage = (f) => { gameOfPage(f); return keyOfPageOr(f); };
+const gameByKey = (k) => S.GAME_ACTS[k] || STORY_GAMES[k];
+// A picture game's name as the sheet prints it: a parked one says so, a
+// story's game says which day.
+const gameLabel = (k) => gameByKey(k).name + (gameByKey(k).comingSoon ? " (Coming soon; preview only)" : STORY_GAMES[k] && !S.GAME_ACTS[k] ? ` (Day ${STORY_GAMES[k].day} of the daily story)` : "");
+// One entry per picture game: a page and the game on it. The shared story
+// page is one entry per day that plays a controller on it.
+const sharedKeys = Object.keys(STORY_GAMES).filter((k) => STORY_GAMES[k].controller);
+const spEntries = pagesLoading("/sayplay.js").flatMap((page) => {
+  if ("public/" + page !== STORY_PAGE) return [{ page, key: keyOfPage(page) }];
+  if (!sharedKeys.length) fail(`${STORY_PAGE} loads sayplay.js and no day of STORY_DAYS plays a controller on it.`);
+  return sharedKeys.map((key) => ({ page, key }));
+});
+for (const k of sharedKeys) if (!spEntries.some((e) => e.key === k)) fail(`Day ${STORY_GAMES[k].day} ("${STORY_GAMES[k].story.title}") plays on ${STORY_PAGE}, which no longer loads sayplay.js — re-read the daily story's games.`);
+// the story's games after the catalog's, in the order of their days, so the
+// catalog's rows keep their numbers
+const storyDay = (k) => (!S.GAME_ACTS[k] && STORY_GAMES[k] ? STORY_GAMES[k].day : 0);
+spEntries.sort((a, b) => storyDay(a.key) - storyDay(b.key));
+const spGames = spEntries.map((e) => gameByKey(e.key));
 if (!spGames.length) fail("no page loads sayplay.js any more — the picture games moved.");
 // Each picture game is a page that loads sayplay.js and then its own play
-// script (hoops.js, monster.js…). The page may give the engine one spoken
-// line, its `intro:`; the play script speaks only through api.instruct(),
-// and every one of those calls is read here: the line it can say is worked
-// out from the play script's own code (a literal, a table such as
-// STEP_LINES, a one-line helper such as ladderLine(), or a wrapper such as
-// balloon.js's say(key, text), followed to its callers). A call whose line
-// cannot be worked out that way fails, so a new spoken line in any of these
-// games cannot reach a child without this sheet listing it.
+// script (hoops.js, monster.js…; for Days 4-14 of the story, the controller
+// story-game.html inserts). The page may give the engine one spoken line,
+// its `intro:`; the play script speaks only through api.instruct(), and every
+// one of those calls is read here: the line it can say is worked out from the
+// play script's own code (a literal, a table such as STEP_LINES, a helper
+// whose every return is a line, such as ladderLine() or Codex's
+// instruction(), a local variable and every value it is given, literals
+// around one choice joined with +, or a wrapper such as balloon.js's
+// say(key, text), followed to its callers, through Codex's direction queue
+// too). Two lines built from a game's own data are read by an anchor that
+// runs the game's code (PLAY_ANCHORS). A call whose line cannot be worked out
+// that way fails, so a new spoken line in any of these games cannot reach a
+// child without this sheet listing it.
 // The same text with comments (and, with strings, string contents) blanked,
 // character for character, so an index into it is an index into the file.
 function blanked(file, strings) {
@@ -410,6 +487,56 @@ function closeOf(code, open, file, at) {
 }
 // Indices at bracket depth 0 where `test` holds.
 function topIdx(code, test) { const out = []; let depth = 0; for (let i = 0; i < code.length; i++) { const c = code[i]; if ("([{".includes(c)) depth++; else if (")]}".includes(c)) depth--; else if (!depth && test(i)) out.push(i); } return out; }
+// Where an expression that starts at `from` ends: the first ; or , at its own
+// depth, or the bracket that closes around it (`if(x)return "…";`, `{return "…"}`).
+function exprEnd(code, from) { let depth = 0; for (let i = from; i < code.length; i++) { const c = code[i]; if ("([{".includes(c)) depth++; else if (")]}".includes(c)) { if (!depth) return i; depth--; } else if (!depth && (c === ";" || c === ",")) return i; } return code.length; }
+// A line no general rule reads truly, anchored where it is said: the game's
+// own code is lifted out and run once for each value it can be called with.
+// Each anchor must still match and must still cover a call that speaks.
+//   trainline.js's arrival direction (Day 9): the stop's sign and the
+//   passenger's name are two parts of one line, both chosen by the same
+//   passenger, so the one-choice rule for a line built with + (playLines)
+//   would list "the sled sign … the duck family", which no child hears. Run
+//   per passenger the round delivers (makeGoals' delivery("…")), from the
+//   game's own passenger table.
+//   rooftops.js's missed pod (Day 13): returned(p, impact) says miss(impact.why),
+//   the reason on the object flightStep() returns for a miss. Every `why:` in
+//   flightStep's returns is read with playLines' own rules (ctx.says), and
+//   the anchor holds only while `why` appears nowhere else and returned() is
+//   called only with flightStep's answer.
+// lines(m, file, ctx): m the anchor's match; ctx.named(n) a function's
+// {open, close}, ctx.says(from, to, at) the lines an expression can say,
+// ctx.CODE the file with comments and strings blanked.
+const PLAY_ANCHORS = {
+  "public/daily-adventures/rooftops.js": [{
+    label: "a missed pod's reason, impact.why",
+    re: /function returned\(p,impact\)\{[^\n]*?miss\(impact\.why\);\}\n/,
+    lines(m, file, ctx) {
+      find(file, /var impact=flightStep\(p,sub,wind\(\),false\);if\(impact\)\{if\(impact\.kind==="land"\)landed\(p,impact\);else returned\(p,impact\);\}/, "returned() is handed flightStep()'s answer");
+      if ([...ctx.CODE.matchAll(/(?<![\w$.])returned\(/g)].length !== 2) fail(`${file} calls returned() other than with flightStep()'s answer — the reason it says (${cite(file, m.index)}) may come from somewhere else. Re-read it.`);
+      const fs = ctx.named("flightStep"), whys = [...ctx.CODE.matchAll(/\bwhy\b/g)];
+      const inFs = whys.filter((w) => w.index > fs.open && w.index < fs.close && ctx.CODE.startsWith("why:", w.index));
+      if (!inFs.length || whys.length !== inFs.length + 1) fail(`${file} gives or reads a pod's \`why\` outside flightStep()'s returns and returned() — re-read the missed pod's reason (${cite(file, m.index)}).`);
+      return inFs.flatMap((w) => ctx.says(w.index + 4, exprEnd(ctx.CODE, w.index + 4), m.index));
+    },
+  }],
+  "public/daily-adventures/trainline.js": [{
+    label: "the trainline's arrival direction, one per delivered passenger",
+    re: /function arrivalCue\(\)\{var t=task\(\);if\(!t\|\|t\.kind!=="deliver"\)return;var p=passenger\(t\.passenger\),sign=([^;]+);banner\([^;]*\);instruct\("arrival-"\+p\.id,([^;]+)\);\}/,
+    lines(m, file) {
+      const table = find(file, /passengers=(\[\{[^\n]*?\}\]);/, "the trainline's passengers");
+      const people = (0, eval)(table.m[1]);
+      const ids = [...new Set(allIdx(file, /delivery\("(\w+)"\)/).map((h) => h.m[1]))];
+      if (!ids.length) fail(`${file}: no delivery("…") in its goals — the arrival direction at ${cite(file, m.index)} would be said for no one. Re-read it.`);
+      return ids.map((id) => {
+        const p = people.find((x) => x.id === id) || fail(`${file}: its goals deliver "${id}", whom its passenger table (${table.cite}) does not list.`);
+        const text = new Function("p", `var sign=${m[1]}; return ${m[2]};`)(p);
+        if (typeof text !== "string" || !text.trim() || /undefined|null/.test(text)) fail(`${file}: the arrival direction at ${cite(file, m.index)} reads "${text}" for ${id}.`);
+        return text;
+      });
+    },
+  }],
+};
 function playLines(file) {
   const RAW = blanked(file, false), CODE = blanked(file, true);
   const fns = [];
@@ -436,26 +563,88 @@ function playLines(file) {
   };
   const none = () => ({ lines: [], params: new Set() });
   const merge = (a, b) => ({ lines: a.lines.concat(b.lines), params: new Set([...a.params, ...b.params]) });
+  // The functions inside f.
+  const inside = (f) => fns.filter((g) => g.open > f.open && g.close < f.close);
+  // Whether f's own body (not a function inside it) declares `var … n …`.
+  const declares = (f, n) => {
+    const inner = inside(f);
+    for (const v of CODE.slice(f.open + 1, f.close).matchAll(/(?<![\w$.])var\s+/g)) {
+      let i = f.open + 1 + v.index + v[0].length;
+      if (inner.some((g) => i > g.open && i < g.close)) continue;
+      for (;;) {
+        const d = /^\s*([\w$]+)\s*/.exec(CODE.slice(i)); if (!d) break;
+        if (d[1] === n) return true;
+        i += d[0].length;
+        if (CODE[i] === "=") i = exprEnd(CODE, i + 1);
+        if (CODE[i] !== ",") break; i++;
+      }
+    }
+    return false;
+  };
+  // A local variable that carries a line (Codex's Days 4-14 games:
+  // `var text = cond ? "…" : "…";` then instruct(key, text), or a `text`
+  // given its line in an if/else chain): every whole value it is given
+  // anywhere in the function that declares it (the functions inside that one
+  // included) is a line it can carry. A variable declared again inside, or
+  // changed with += and the like, fails.
+  function local(n, scope, at, depth) {
+    const f = scope.find((x) => declares(x, n));
+    if (!f) return null;
+    if (inside(f).some((g) => g.params.includes(n) || declares(g, n))) fail(`${file}: ${n}, said at ${cite(file, at)}, is declared again inside the function that declares it — the script cannot tell which value is said. Add an anchor for it in tools/voicedoc.mjs.`);
+    let got = none(), sets = 0;
+    for (const s of CODE.slice(f.open + 1, f.close).matchAll(new RegExp(`(?<![\\w$.])${n.replace(/\$/g, "\\$")}\\s*([-+*/%&|^]?=(?![=>])|\\+\\+|--)`, "g"))) {
+      const i = f.open + 1 + s.index;
+      if (s[1] !== "=") fail(`${file}: ${n}, said at ${cite(file, at)}, is changed with ${s[1]} at ${cite(file, i)} — the script reads only a variable given whole values. Add an anchor for it in tools/voicedoc.mjs.`);
+      const from = i + s[0].length, to = exprEnd(CODE, from);
+      const v = resolve(RAW.slice(from, to), CODE.slice(from, to), enclosing(from), at, depth + 1);
+      if (v.params.size) fail(`${file}: ${n}, said at ${cite(file, at)}, is given a parameter at ${cite(file, i)} — the script cannot follow it. Add an anchor for it in tools/voicedoc.mjs.`);
+      got = merge(got, v); sets++;
+    }
+    if (!sets) fail(`${file}: ${n}, said at ${cite(file, at)}, is declared but never given a line.`);
+    return got;
+  }
   // What an expression can say. Only its branches are read: a ternary's
   // condition and an index inside [] choose a line, they are not one.
-  function resolve(r, c, params, at, depth) {
+  // `scope` is the functions around it, innermost first.
+  function resolve(r, c, scope, at, depth) {
     if (depth > 8) fail(`${file}: the line said at ${cite(file, at)} is built through too many helpers to read.`);
+    const params = scope.flatMap((f) => f.params);
     const lead = c.length - c.trimStart().length; r = r.slice(lead).trimEnd(); c = c.slice(lead).trimEnd();
     while (c[0] === "(" && closeOf(c, 0, file, 0) === c.length - 1) { r = r.slice(1, -1).trim(); c = c.slice(1, -1).trim(); }
-    const unknown = () => fail(`${file} has a mechanical instruction the script does not know at ${cite(file, at)}: it says \`${r.slice(0, 80)}\`, which is not a literal, a table of lines, a one-line helper or a wrapper's own parameter.\n  Add an anchor for it in tools/voicedoc.mjs.`);
+    const unknown = () => fail(`${file} has a mechanical instruction the script does not know at ${cite(file, at)}: it says \`${r.slice(0, 80)}\`, which is not a literal, a table of lines, a helper whose every return is a line, a local variable given lines, literals around one choice, or a wrapper's own parameter.\n  Add an anchor for it in tools/voicedoc.mjs.`);
     const q = topIdx(c, (i) => c[i] === "?" && c[i + 1] !== "." && c[i + 1] !== "?" && c[i - 1] !== "?")[0];
     if (q !== undefined) {
       let nest = 0, colon = -1;
       for (const i of topIdx(c, (i) => i > q && (c[i] === "?" || c[i] === ":"))) { if (c[i] === "?") nest++; else if (nest) nest--; else { colon = i; break; } }
       if (colon < 0) unknown();
-      return merge(resolve(r.slice(q + 1, colon), c.slice(q + 1, colon), params, at, depth + 1), resolve(r.slice(colon + 1), c.slice(colon + 1), params, at, depth + 1));
+      return merge(resolve(r.slice(q + 1, colon), c.slice(q + 1, colon), scope, at, depth + 1), resolve(r.slice(colon + 1), c.slice(colon + 1), scope, at, depth + 1));
     }
     for (const op of ["||", "&&"]) {
       const at2 = topIdx(c, (i) => c.startsWith(op, i));
       if (!at2.length) continue;
       const parts = []; let from = 0; for (const i of at2) { parts.push([from, i]); from = i + 2; } parts.push([from, c.length]);
       const use = op === "&&" ? parts.slice(-1) : parts;
-      return use.reduce((acc, [a, b]) => merge(acc, resolve(r.slice(a, b), c.slice(a, b), params, at, depth + 1)), none());
+      return use.reduce((acc, [a, b]) => merge(acc, resolve(r.slice(a, b), c.slice(a, b), scope, at, depth + 1)), none());
+    }
+    // A line built with + (bakery.js: "Hold the " + (… ? "flour cup" : "jug")
+    // + " over the bowl…"): literals around at most ONE part that can say more
+    // than one thing, so every line listed is one a child can hear. Two parts
+    // that vary may be chosen together (a stop's sign and its passenger), and
+    // their product would list lines nobody says: that fails, for an anchor.
+    const plus = topIdx(c, (i) => c[i] === "+" && c[i + 1] !== "+" && c[i + 1] !== "=" && c[i - 1] !== "+");
+    if (plus.length) {
+      const cuts = [0, ...plus.map((i) => i + 1)], ends = [...plus, c.length];
+      const alts = cuts.map((a, k) => {
+        const pc = c.slice(a, ends[k]).trim(), pr = r.slice(a, ends[k]).trim();
+        if (!pc) unknown();
+        if (/^(["'])\s*\1$/.test(pc)) return [(0, eval)(pr)];
+        const got = resolve(pr, pc, scope, at, depth + 1);
+        if (got.params.size || !got.lines.length) unknown();
+        return got.lines.map((l) => l.text);
+      });
+      if (alts.filter((a) => a.length > 1).length > 1) fail(`${file}: the line said at ${cite(file, at)} is built with + from more than one part that varies (\`${r.slice(0, 80)}\`) — the parts may be chosen together, so the script will not list every pairing.\n  Add an anchor for it in tools/voicedoc.mjs (PLAY_ANCHORS).`);
+      let texts = [""]; for (const a of alts) texts = texts.flatMap((t) => a.map((x) => t + x));
+      return { lines: texts.filter((t) => t.trim()).map((text) => ({ text, table: null, path: [] })), params: new Set() };
     }
     if (/^(["'])\s*\1$/.test(c)) { const text = (0, eval)(r); return { lines: text.trim() ? [{ text, table: null, path: [] }] : [], params: new Set() }; }
     let m = /^([\w$]+)(\(\s*\))?$/.exec(c);
@@ -464,16 +653,23 @@ function playLines(file) {
       if (params.includes(n)) return { lines: [], params: new Set([n]) };
       const fn = named(n);
       if (fn) {
-        const bodyC = CODE.slice(fn.open + 1, fn.close), bodyR = RAW.slice(fn.open + 1, fn.close);
-        const rets = topIdx(bodyC, (i) => /^return\b/.test(bodyC.slice(i)) && !/[\w$.]/.test(bodyC[i - 1] || ""));
-        if (rets.length !== 1) unknown();
-        const from = rets[0] + 6, semi = topIdx(bodyC, (i) => i > from && bodyC[i] === ";")[0] ?? bodyC.length;
-        const got = resolve(bodyR.slice(from, semi), bodyC.slice(from, semi), fn.params, at, depth + 1);
-        if (got.params.size) unknown();
+        // Every return of the helper outside the functions inside it (Codex's
+        // instruction(): `if(…)return "…"; … return loaded ? "…" : "…";`).
+        // A bare `return;` says nothing.
+        const inner = inside(fn);
+        const rets = [...CODE.slice(fn.open + 1, fn.close).matchAll(/(?<![\w$.])return\b/g)].map((x) => fn.open + 1 + x.index).filter((i) => !inner.some((g) => i > g.open && i < g.close));
+        if (!rets.length) unknown();
+        let got = none();
+        for (const i of rets) {
+          const from = i + 6, to = exprEnd(CODE, from);
+          if (CODE.slice(from, to).trim()) got = merge(got, resolve(RAW.slice(from, to), CODE.slice(from, to), [fn], at, depth + 1));
+        }
+        if (got.params.size || !got.lines.length) unknown();
         return got;
       }
       const t = table(n);
       if (t) return { lines: leaves(t.v, [], n, at), params: new Set() };
+      if (!m[2]) { const v = local(n, scope, at, depth); if (v) return v; }
       unknown();
     }
     m = /^([\w$]+)(?=[.[])/.exec(c);
@@ -497,17 +693,45 @@ function playLines(file) {
     if (h[1] !== "api") fail(`${file} calls ${h[1]}.instruct at ${cite(file, h.index)} — the script only follows api.instruct(). Add it to tools/voicedoc.mjs.`);
     if (!h[2] && !/^\s*(\)|&&|\|\||\?)/.test(CODE.slice(h.index + h[0].length))) fail(`${file} hands api.instruct on at ${cite(file, h.index)} — the script cannot follow what it will say. Add it to tools/voicedoc.mjs.`);
   }
-  const speakers = [{ name: "api.instruct", arg: 0 }], said = [];
+  // THE DIRECTION QUEUE (bakery.js, bridge.js, trainline.js: Codex's Days
+  // 4-14 games, 22 Oct 2026). A wrapper `function NAME(key, text)` queues
+  // {key:key, text:text, scope:scope}, and flushDirections() hands the next
+  // queued item's text to api.instruct(item.text), one direction at a time.
+  // The line is the wrapper's own parameter, so the wrapper is the speaker and
+  // its callers say the lines. Read only while the queue holds nothing else:
+  // one push (the wrapper's), one unshift (a pause putting back the item that
+  // was playing, directionActive, itself only ever a queued item or null).
+  let queue = null;
+  if (/(?<![\w$.])directionQueue\b/.test(CODE)) {
+    const flush = find(file, /var item = directionQueue\.shift\(\);\n[^\n]*\n[^\n]*\n\s*directionBusy = true; directionActive = item; said\[item\.key\] = true;\n\s*try \{ result = api\.instruct\(item\.text\); \}/, "the direction queue hands api.instruct the next queued item's text");
+    const push = find(file, /function ([\w$]+)\(key, text\) \{\n[^\n]*\n\s*var scope = directionScope\(\);\n\s*if \(!directionQueue\.some\(function \(item\) \{ return item\.key === key && item\.scope === scope; \}\)\) directionQueue\.push\(\{key:key, text:text, scope:scope\}\);\n\s*flushDirections\(\);/, "the direction queue's one way in, NAME(key, text)");
+    find(file, /var interrupted = directionActive;\n[^\n]*\n[^\n]*\n\s*if \(interrupted && interrupted\.scope === directionScope\(\)\) \{\n[^\n]*\n\s*if \(!directionQueue\.some\(function \(item\) \{ return item\.key === interrupted\.key && item\.scope === interrupted\.scope; \}\)\) directionQueue\.unshift\(interrupted\);/, "a pause puts back the item that was playing");
+    const count = (re) => [...CODE.matchAll(re)].length;
+    if (count(/(?<![\w$.])directionQueue\s*\.\s*(push|unshift|splice|concat|fill|copyWithin)\b/g) !== 2 || count(/(?<![\w$.])directionQueue\s*(\[|=(?!=)(?!\s*\[\s*\]))/g)) fail(`${file} adds to its directionQueue other than through ${push.m[1]}(key, text) and a pause's put-back — the script cannot follow what it will say. Add it to tools/voicedoc.mjs.`);
+    for (const a of CODE.matchAll(/(?<![\w$.])directionActive\s*=(?!=)\s*([\w$]+)/g)) if (a[1] !== "item" && a[1] !== "null") fail(`${file} sets directionActive to ${a[1]} at ${cite(file, a.index)} — a pause would put that back in the queue. Add it to tools/voicedoc.mjs.`);
+    queue = { flush, speaker: { name: push.m[1], arg: 1 } };
+  }
+  const anchors = (PLAY_ANCHORS[file] || []).map((a) => ({ ...find(file, a.re, a.label), a, used: false }));
+  const ctx = {
+    CODE,
+    named: (n) => named(n) || fail(`${file} no longer defines ${n}() — re-read its anchor in PLAY_ANCHORS.`),
+    says: (from, to, at) => { const got = resolve(RAW.slice(from, to), CODE.slice(from, to), enclosing(from), at, 1); if (got.params.size || !got.lines.length) fail(`${file}: the line read for the instruction at ${cite(file, at)} (from ${cite(file, from)}) is not one the script can follow.`); return got.lines.map((l) => l.text); },
+  };
+  const speakers = [{ name: "api.instruct", arg: 0 }].concat(queue ? [queue.speaker] : []), said = [];
   for (let s = 0; s < speakers.length; s++) {
     const sp = speakers[s], esc = sp.name.replace(/[.$]/g, "\\$&");
     for (const h of CODE.matchAll(new RegExp(`(?<![\\w$.])${esc}\\(`, "g"))) {
       if (/function\s*$/.test(CODE.slice(Math.max(0, h.index - 12), h.index))) continue;
+      // the queue's own hand-off: its lines are the wrapper's callers'
+      if (queue && !s && h.index >= queue.flush.idx && h.index < queue.flush.end) continue;
       const open = h.index + h[0].length - 1, close = closeOf(CODE, open, file, 0);
       const cuts = topIdx(CODE.slice(open + 1, close), (i) => CODE[open + 1 + i] === ",").map((i) => open + 1 + i);
       const bounds = [open + 1, ...cuts.map((i) => i + 1)], ends = [...cuts, close];
       if (sp.arg >= bounds.length || !CODE.slice(bounds[sp.arg], ends[sp.arg]).trim()) fail(`${file} calls ${sp.name}() with no line at ${cite(file, h.index)}.`);
+      const an = anchors.find((x) => h.index >= x.idx && h.index < x.end);
+      if (an) { an.used = true; for (const text of an.a.lines(an.m, file, ctx)) said.push({ text, table: null, path: [], at: h.index }); continue; }
       const around = enclosing(h.index);
-      const got = resolve(RAW.slice(bounds[sp.arg], ends[sp.arg]), CODE.slice(bounds[sp.arg], ends[sp.arg]), around.flatMap((f) => f.params), h.index, 0);
+      const got = resolve(RAW.slice(bounds[sp.arg], ends[sp.arg]), CODE.slice(bounds[sp.arg], ends[sp.arg]), around, h.index, 0);
       for (const l of got.lines) said.push({ ...l, at: h.index });
       for (const p of got.params) {
         const fn = around.find((f) => f.params.includes(p));
@@ -517,26 +741,66 @@ function playLines(file) {
     }
     if (s) for (const h of CODE.matchAll(new RegExp(`(?<![\\w$.])${esc}\\b(?!\\s*\\()`, "g"))) fail(`${file} passes ${sp.name}, which speaks, around as a value at ${cite(file, h.index)} — the script cannot follow what it will say. Add it to tools/voicedoc.mjs.`);
   }
+  for (const an of anchors) if (!an.used) fail(`${file}: the anchor for ${an.a.label} (${an.cite}) no longer covers a call that speaks — re-read it and update PLAY_ANCHORS in tools/voicedoc.mjs.`);
   // One row per distinct line: the steps in their order, then the rest as the code meets them.
+  // A game for both age groups (the story's, STORY1) keeps ages 3-4's steps in
+  // LITTLE_LINES: a line in both tables is one row with both steps.
   const rows = [];
+  const stepOf = (l, t) => (l.table === t && l.path.length === 1 ? l.path[0] : null);
   for (const l of said) {
     let row = rows.find((x) => x.text === l.text);
-    if (!row) rows.push((row = { text: l.text, step: l.table === "STEP_LINES" && l.path.length === 1 ? l.path[0] : null, at: [], from: new Set() }));
+    if (!row) rows.push((row = { text: l.text, step: stepOf(l, "STEP_LINES"), little: stepOf(l, "LITTLE_LINES"), at: [], from: new Set() }));
+    else if (row.little != null || l.table === "LITTLE_LINES") { row.step ??= stepOf(l, "STEP_LINES"); row.little ??= stepOf(l, "LITTLE_LINES"); }
     if (!row.at.includes(l.at)) row.at.push(l.at);
     if (l.table) row.from.add(l.table);
   }
-  return rows.sort((a, b) => (a.step ?? 1e9) - (b.step ?? 1e9) || a.at[0] - b.at[0]).map((x) => ({ ...x, cites: x.at.sort((a, b) => a - b).map((i) => cite(file, i)), tableCites: [...x.from].map((n) => cite(file, tables[n].at)) }));
+  const order = (x) => x.step ?? (x.little != null ? 1000 + x.little : 1e9);
+  return rows.sort((a, b) => order(a) - order(b) || a.at[0] - b.at[0]).map((x) => ({ ...x, cites: x.at.sort((a, b) => a - b).map((i) => cite(file, i)), tableCites: [...x.from].map((n) => cite(file, tables[n].at)) }));
 }
-const spPlay = spPages.map((page) => {
-  const key = keyOfPage(page), f = "public/" + page, text = src(f);
-  // the page's own line: its `intro:` (the two-times sentence), a literal or nothing
+// The shared story page's static scripts after sayplay.js are pages.js alone
+// (the games' words, which speak nothing themselves); each day's play script
+// is the controller the page inserts by name (sgScript).
+{
+  const scripts = [...src(STORY_PAGE).matchAll(/<script src="(\/[^"]+\.js)"><\/script>/g)].map((m) => m[1]);
+  const after = scripts.slice(scripts.indexOf("/sayplay.js") + 1);
+  if (after.join() !== "/daily-adventures/pages.js") fail(`${STORY_PAGE} loads ${after.length ? after.join(", ") : "nothing"} after sayplay.js — the script expects only /daily-adventures/pages.js there, and each day's controller inserted by name (${sgScript.cite}).`);
+  const users = pagesLoading("/daily-adventures/pages.js");
+  if (users.join() !== "story-game.html") fail(`daily-adventures/pages.js is now loaded by ${users.join(", ") || "no page"} — only the shared story page read it. Add the new page's lines to the script.`);
+}
+// A Days 4-14 game's two-times sentence: pages.js's intro for its controller,
+// one literal for both ages, which the shared page hands the engine.
+function pagesIntro(key) {
+  const g = STORY_GAMES[key], text = src(PAGES_JS);
+  const from = text.search(new RegExp(`\\n  ${g.controller}:\\{\\n`)), to = from < 0 ? -1 : text.indexOf("\n  }", from + 1);
+  if (from < 0 || to < 0) fail(`pages.js's "${g.controller}" block is not where the script looks for it (\`\\n  ${g.controller}:{\`).`);
+  const block = text.slice(from, to), all = [...block.matchAll(/(?<![\w-])intro\s*:/g)];
+  const lit = /(?<![\w-])intro\s*:\s*('(?:[^'\\\n]|\\.)*'|"(?:[^"\\\n]|\\.)*")\s*[,}\n]/.exec(block);
+  if (all.length !== 1 || !lit) fail(`pages.js's "${g.controller}" gives its intro ${all.length === 1 ? "as something other than one literal" : all.length + " times"} — the script reads one literal.`);
+  const line = (0, eval)(lit[1]);
+  if (line !== PAGES[g.controller].intro) fail(`pages.js's "${g.controller}" intro reads differently as text and as code — re-read it.`);
+  return [{ key, line, cite: `${cite(PAGES_JS, from + lit.index)} via ${sgStart.cite}` }];
+}
+const spPlay = spEntries.map(({ page, key }) => {
+  const f = "public/" + page, text = src(f);
+  if (STORY_GAMES[key] && STORY_GAMES[key].controller) return { key, page: f, file: STORY_GAMES[key].play, intro: pagesIntro(key), lines: playLines(STORY_GAMES[key].play) };
+  // the page's own line: its `intro:` (the two-times sentence), a literal or
+  // nothing. A game for both age groups (the story's, STORY1) gives one per
+  // age: `little ? "<ages 3-4>" : "<ages 5-8>"`, written there or in a
+  // `var NAME = little ? … : …;` that intro: names.
   const intros = allIdx(f, /(?<![\w-])intro\s*:/);
   if (intros.length > 1) fail(`${f} gives intro: ${intros.length} times — the script reads one.`);
-  let intro = null;
+  const intro = [];
   if (intros.length) {
-    const m = /^intro\s*:\s*("(?:[^"\\]|\\.)*")/.exec(text.slice(intros[0].idx));
-    if (!m) fail(`${f} builds its intro: at ${cite(f, intros[0].idx)} instead of giving it as one literal — the script cannot read it. Add an anchor for it in tools/voicedoc.mjs.`);
-    intro = { key, line: JSON.parse(m[1]), cite: cite(f, intros[0].idx) };
+    const STR = '("(?:[^"\\\\]|\\\\.)*")', at = intros[0].idx, rest = text.slice(at);
+    const one = /^intro\s*:\s*("(?:[^"\\]|\\.)*")/.exec(rest);
+    const two = (re, idx) => { const m = re.exec(text.slice(idx)); return m && [{ key, line: JSON.parse(m[2]), ages: "5-8", cite: cite(f, idx) }, { key, line: JSON.parse(m[1]), ages: "3-4", cite: cite(f, idx) }]; };
+    const named = /^intro\s*:\s*([A-Z_][A-Z0-9_]*)\b/.exec(rest);
+    const byAge = !one && (named
+      ? (() => { const v = new RegExp(`var ${named[1]} = little\\s*\\?\\s*${STR}\\s*:\\s*${STR};`).exec(text); return v && two(new RegExp(`^var ${named[1]} = little\\s*\\?\\s*${STR}\\s*:\\s*${STR};`), v.index); })()
+      : two(new RegExp(`^intro\\s*:\\s*little \\? ${STR} : ${STR}`), at));
+    if (one) intro.push({ key, line: JSON.parse(one[1]), cite: cite(f, at) });
+    else if (byAge) intro.push(...byAge);
+    else fail(`${f} builds its intro: at ${cite(f, at)} instead of giving it as one literal (or one per age, \`little ? "…" : "…"\`) — the script cannot read it. Add an anchor for it in tools/voicedoc.mjs.`);
   }
   // its play script: what it loads after sayplay.js
   const scripts = [...text.matchAll(/<script src="(\/[^"]+\.js)"><\/script>/g)].map((m) => m[1]);
@@ -546,12 +810,24 @@ const spPlay = spPages.map((page) => {
   if (!existsSync(join(ROOT, file))) fail(`${f} loads ${after[0]}, which is not there.`);
   return { key, page: f, file, intro, lines: playLines(file) };
 });
-// Nothing else hands the instruction owner a line.
-for (const f of readdirSync(join(ROOT, "public")).filter((f) => f.endsWith(".html") || f.endsWith(".js"))) {
-  const m = /\.instruct\s*\(/.exec(src("public/" + f));
-  if (m && !spPlay.some((g) => g.file === "public/" + f)) fail(`public/${f} calls .instruct( at ${cite("public/" + f, m.index)} and is not a picture game's play script — this script does not read it. Add it to tools/voicedoc.mjs.`);
+// Nothing else hands the instruction owner a line: no file in public/, nor in
+// public/daily-adventures/ (where the Days 4-14 controllers live).
+// narration.js there is Codex's optional story card around a controller: it
+// hands api.instruct the lines of his planning record (stories.js), but no
+// app page loads it (the story a child is read is adventures.js's, B9). It is
+// left out by name, and only while that holds: a page that loads or inserts
+// it, or a day whose controller is named for it, fails here.
+const NARRATION = DA + "narration.js";
+for (const f of publicFiles()) {
+  if (f === NARRATION) continue;
+  if (/narration\.js|DailyAdventureNarration/.test(f.endsWith(".js") ? blanked(f, false) : src(f))) fail(`${f} names narration.js (or DailyAdventureNarration) — Codex's story card may now speak in the app, and this script left its lines out. Read them in tools/voicedoc.mjs.`);
 }
-const spIntros = spPlay.filter((g) => g.intro).map((g) => g.intro);
+if ((S.STORY_DAYS || []).some((d) => d.controller === "narration")) fail("a day of STORY_DAYS has the controller \"narration\" — story-game.html would insert narration.js, whose lines this script leaves out.");
+for (const f of publicFiles()) {
+  const m = /\.instruct\s*\(/.exec(src(f));
+  if (m && f !== NARRATION && !spPlay.some((g) => g.file === f)) fail(`${f} calls .instruct( at ${cite(f, m.index)} and is not a picture game's play script — this script does not read it. Add it to tools/voicedoc.mjs.`);
+}
+const spIntros = spPlay.flatMap((g) => g.intro);
 
 // ───────────────────────── parked / unlinked pages ─────────────────────────
 // simple-play.js (Bubble Pop and Peekaboo were built on it): the bare word.
@@ -660,14 +936,14 @@ find(LB, /var p = say\(text\), tok = sayToken;/, "readAlong() forwards to say()"
 // The key word as Echo shows and says it: stored lower-case, a name keeps its capital.
 const keyShownFn = find(LB, /^    function keyShown\(word\) \{\n[\s\S]*?^    \}$/m, "function keyShown()");
 const keyShownOf = (book, word) => new Function("BOOK", keyShownFn.m[0] + "\nreturn keyShown;")(book)(word);
-// saycheck.js: the key-word moment's voice and mic. Only the Books page loads it.
+// saycheck.js: Books and TALK1 share the key-word moment's voice and mic.
 const SCK = "public/saycheck.js";
 const checkVoice = find(SCK, /fetch\("\/api\/tts", \{ method: "POST", headers: \{ "Content-Type": "application\/json" \}, body: JSON\.stringify\(\{ text: t, voice: prof\(\)\.voiceId \|\| "", stable: true \}\)/, "saycheck.js's voice request");
 coverAll(SCK, TTS_CALL, [checkVoice], "a voice request"); coverAll(SCK, SPEAK_CALL, [], "a voice call");
 coverAll(SCK, /(?<![\w$.])say\(/, []);
 {
   const users = pagesLoading("/saycheck.js");
-  if (users.join() !== "library.html") fail(`saycheck.js is now loaded by ${users.join(", ") || "no page"} — only the Books page spoke through it. Add the new page's lines to the script.`);
+  if (users.join() !== "adventure.html,library.html") fail(`saycheck.js is now loaded by ${users.join(", ") || "no page"} — only Books and the talking-story player are covered. Add the new page's lines to the script.`);
 }
 const STORIES = (0, eval)(find(LB, /var STORIES = (\[[\s\S]*?\n    \]);/, "STORIES table").m[1]);
 
@@ -747,31 +1023,104 @@ const ccLines = []; // {text, line, when}
   if (ccLines.length < 30) fail(`coach-call.html: only ${ccLines.length} lines rendered — the tables changed shape.`);
 }
 
+// ───────────────────────── the daily story (adventure.html) ─────────────────────────
+// STORY1 (22 Oct 2026): Echo reads each scene of the day's story aloud. The
+// lines are adventures.js's and TALK1's talk-stories.js, read exactly as the
+// page reads them (ages 3-4 skip big-kid scenes and read short lines). TALK1
+// also uses the Books word moment; its two voice calls are anchored below.
+// A line plays from a recorded file when the voice
+// manifest lists exactly those words, else in the live voice (arcade-sayit.js's
+// SayIt.line: the phone's shared cache and the voice service), else in the
+// browser's own voice. The game each day opens is a picture game (B7, B8, C8).
+const ADV = "public/adventure.html", ADVS = "public/adventures.js", TALKS = "public/talk-stories.js";
+const advSkip = find(ADV, /if \(little && sc\.ages === "big"\) return;/, "ages 3-4 skip the big-kid scenes");
+const advScenes = find(ADV, /var t = typeof sc\.line === "string" \? sc\.line : \(\(little && sc\.line\.little\) \|\| sc\.line\.big\);\n\s*out\.push\(\{ art: sc\.art, src: "\/assets\/adventure\/" \+ day\.id \+ "\/" \+ sc\.art \+ "\.webp", text: t,/, "a scene's line is its story data (ages 3-4 read the short one)");
+const advRead = find(ADV, /clipFor\(sc\.text\)\.then\(function \(clip\) \{/, "Echo reads the scene on screen");
+const advPre = find(ADV, /want = run\.slice\(from\)\.map\(function \(sc\) \{ return sc\.text; \}\);/, "the story's lines ahead are fetched before they are needed");
+const advPump = find(ADV, /clipFor\(t\)\.then\(function \(\) \{ inflight--; pump\(\); \}\);/, "…two at a time");
+const advLive = find(ADV, /return SI\.line\(text\)\.then\(/, "the story's live voice (SayIt.line)");
+const advSynth = find(ADV, /var u = new SpeechSynthesisUtterance\(text\);/, "the story's browser-voice fallback");
+const advHash = find(ADV, /var s = unescape\(encodeURIComponent\(\(\(S && S\.TTS_CACHE_VERSION\) \|\| "v9"\) \+ "\|" \+ text\)\), h = 0x811c9dc5;/, "a recorded line's file: FNV-1a of TTS_CACHE_VERSION|line");
+const advFile = find(ADV, /return M && M\.files && M\.files\[h\] === text \? "\/assets\/adventure\/voice\/" \+ h \+ "\.mp3" : "";/, "a recorded file plays only for its own words");
+const advMuted = find(ADV, /if \(!sc \|\| !soundOn\(\)\) \{ setVoice\("off"\); after\(\); return; \}/, "the story says nothing while Sona's sound is off");
+const advAsk = find(ADV, /SC\.say\(\(again \? "(One more time\.\.\. )" : "(Can you say\.\.\. )"\) \+ M\.word \+ "(\.)", function/, "talking-story key-word ask");
+const advBye = find(ADV, /SC\.say\("(Great trying\. Let's turn the page\.)", function/, "talking-story line after three tries");
+find(ADV, /key: TALK \? sc\.key \|\| "" : ""/, "only TALK1 scenes carry a key word");
+find(ADV, /M = \{ word: sc\.key, said: 0, tries: 0, ok: false, leaving: false, page: idx \};/, "the talking-story word is the current scene's key");
+if (advAsk.m.slice(1).join() !== bookAsk.m.slice(1).join() || advBye.m[1] !== bookBye.m[1]) fail("the talking story and Books no longer share their word-moment lines — list the new lines separately.");
+coverAll(ADV, /SC\.say\(/, [advAsk, advBye], "a SayCheck spoken line");
+coverAll(ADV, /(?<![\w$.])clipFor\(/, [advRead, advPump], "a spoken line", true);
+coverAll(ADV, /\.line\(/, [advLive], "a voice request");
+coverAll(ADV, TTS_CALL, [], "a voice request"); coverAll(ADV, SPEAK_CALL, [], "a voice call");
+coverAll(ADV, /SpeechSynthesisUtterance\(/, [advSynth], "a browser-voice line", true);
+if (!loads(ADV, "/adventures.js") || !loads(ADV, "/arcade-sayit.js")) fail("adventure.html no longer loads adventures.js and arcade-sayit.js — re-read the daily story's section.");
+{
+  const users = pagesLoading("/adventures.js");
+  if (users.join() !== "adventure.html") fail(`adventures.js is now loaded by ${users.join(", ") || "no page"} — only the story's player read it. Add the new page's lines to the script.`);
+}
+const ADVENTURES = (() => { const w = {}; new Function("window", src(ADVS))(w); return w.SonaAdventures; })();
+if (!ADVENTURES) fail("adventures.js no longer sets window.SonaAdventures — re-read the daily story's section.");
+for (const d of S.STORY_DAYS || []) if (!ADVENTURES[d.id]) fail(`STORY_DAYS has the story "${d.id}" and adventures.js has no scenes for it.`);
+for (const id of Object.keys(ADVENTURES)) if (!(S.STORY_DAYS || []).some((d) => d.id === id)) fail(`adventures.js has scenes for "${id}", which STORY_DAYS does not list (no child would see them).`);
+if (!loads(ADV, "/talk-stories.js") || pagesLoading("/talk-stories.js").join() !== "adventure.html") fail("talk-stories.js must be read only by adventure.html; add any new reader's lines explicitly.");
+find(ADV, /function storyData\(d\) \{ return d\.talk \? T\[d\.id\] : A\[d\.id\]; \}/, "the player selects TALK1 data only for a talking story");
+const TALK_STORIES = (() => { const w = {}; new Function("window", src(TALKS)).call(w, w); return w.SonaTalkStories; })();
+if (!TALK_STORIES) fail("talk-stories.js no longer sets window.SonaTalkStories.");
+for (const d of S.STORY_TALK || []) if (!TALK_STORIES[d.id]) fail(`STORY_TALK has no scene data for "${d.id}".`);
+for (const id of Object.keys(TALK_STORIES)) if (!(S.STORY_TALK || []).some((d) => d.id === id)) fail(`talk-stories.js has unlisted story "${id}".`);
+// The recorded file's name, as the page works it out (8 hex digits).
+const advHashOf = (t) => { let h = 0x811c9dc5; for (const b of Buffer.from(S.TTS_CACHE_VERSION + "|" + t, "utf8")) { h ^= b; h = Math.imul(h, 0x01000193) >>> 0; } return h.toString(16).padStart(8, "0"); };
+const ADV_MANIFEST = "public/assets/adventure/voice/manifest.js";
+const advRecorded = existsSync(join(ROOT, ADV_MANIFEST)) ? (() => { const w = {}; new Function("window", src(ADV_MANIFEST))(w); return ((w.SonaAdventureVoice || {}).files) || {}; })() : null;
+// One row per distinct line, in the order a child meets them: Day 1's story
+// and ending, then Day 2's, and so on for every day of STORY_DAYS; each with
+// every scene it is said on.
+const advLines = [];
+const NARRATED_STORIES = (S.STORY_DAYS || []).map((d, i) => ({ ...d, file: ADVS, data: ADVENTURES[d.id], label: `Day ${i + 1}` }))
+  .concat((S.STORY_TALK || []).map((d) => ({ ...d, file: TALKS, data: TALK_STORIES[d.id], label: `Day 1, ${d.sound}` })));
+NARRATED_STORIES.forEach((d) => {
+  const text = src(d.file), from = text.indexOf("\n    " + d.id + ": {");
+  if (from < 0) fail(`${d.file}'s "${d.id}" moved — re-read the daily story's section.`);
+  for (const part of ["intro", "ending"]) (d.data[part] || []).forEach((sc) => {
+    const at = text.indexOf(`art: "${sc.art}"`, from);
+    if (at < 0) fail(`${d.file}: "${d.id}" scene ${sc.art} is not where the script looks for it.`);
+    const said = typeof sc.line === "string" ? [[sc.line, sc.ages === "big" ? "ages 5-8" : "both ages"]]
+      : sc.ages === "big" ? [[sc.line.big, "ages 5-8"]] : sc.line.little ? [[sc.line.big, "ages 5-8"], [sc.line.little, "ages 3-4"]] : [[sc.line.big, "both ages"]];
+    for (const [line, ages] of said) {
+      if (typeof line !== "string" || !line.trim()) fail(`${d.file}: "${d.id}" scene ${sc.art} has no line.`);
+      let row = advLines.find((r) => r.text === line);
+      if (!row) advLines.push((row = { text: line, uses: [], cites: [] }));
+      row.uses.push(`${d.label} ("${d.title}"), ${part === "intro" ? "the story" : "the ending"}, ${sc.art}, ${ages}`);
+      row.cites.push(cite(d.file, at));
+    }
+  });
+});
+
 // A file that reaches the voice at all must be one this script reads: that is
 // what makes "a page that gains a spoken line is in the sheet" true. (The
 // picture games and the round games' power button speak through the shared
-// scripts read above; the pages themselves hold no voice call.)
+// scripts read above; the pages themselves hold no voice call. The Days 4-14
+// controllers in public/daily-adventures/ are scanned with them.)
 {
-  const READ = [CH, FEED, SLICE, TILES, RUN, HELP, SAYIT, SAYPLAY, SCK, LB, SP, CK, ST, CP, CC, LISTEN, "public/sona.js"];
-  for (const f of readdirSync(join(ROOT, "public")).filter((f) => f.endsWith(".html") || f.endsWith(".js"))) {
-    const text = src("public/" + f);
+  const READ = [CH, FEED, SLICE, TILES, RUN, HELP, SAYIT, SAYPLAY, SCK, LB, SP, CK, ST, CP, CC, ADV, LISTEN, "public/sona.js"];
+  for (const f of publicFiles()) {
+    const text = src(f);
     const m = /\/api\/tts|SpeechSynthesisUtterance/.exec(text) || SPEAK_CALL.exec(text);
-    if (m && !READ.includes("public/" + f)) fail(`public/${f} now reaches Echo's voice at ${cite("public/" + f, m.index)} (${m[0]}) and this script does not read it. Add its lines to the sheet.`);
+    if (m && !READ.includes(f)) fail(`${f} now reaches Echo's voice at ${cite(f, m.index)} (${m[0]}) and this script does not read it. Add its lines to the sheet.`);
   }
   // Rachel's held demos (<SOUND>-demo.mp3) play nowhere but the parked Coach Call.
-  for (const f of readdirSync(join(ROOT, "public")).filter((f) => (f.endsWith(".html") || f.endsWith(".js")) && "public/" + f !== CC)) {
-    const m = /-demo\.mp3/.exec(src("public/" + f));
-    if (m) fail(`public/${f} plays a <SOUND>-demo.mp3 at ${cite("public/" + f, m.index)} — only the parked Coach Call did. Part A says so; re-read it.`);
+  for (const f of publicFiles().filter((f) => f !== CC)) {
+    const m = /-demo\.mp3/.exec(src(f));
+    if (m) fail(`${f} plays a <SOUND>-demo.mp3 at ${cite(f, m.index)} — only the parked Coach Call did. Part A says so; re-read it.`);
   }
 }
 
 // Dead helpers must stay dead.
 {
-  const pages = readdirSync(join(ROOT, "public")).filter((f) => (f.endsWith(".html") || f.endsWith(".js")) && f !== "sona.js" && f !== "gamecontent.js");
-  for (const f of pages) {
-    const text = src("public/" + f);
+  for (const f of publicFiles().filter((f) => f !== "public/sona.js" && f !== GC)) {
+    const text = src(f);
     const m = /\b(actionCue|repeatCue|coachLine|chats)\(/.exec(text);
-    if (m) fail(`public/${f} calls ${m[1]}() at ${cite("public/" + f, m.index)} — that helper was dead. Move its line out of Part E.`);
+    if (m) fail(`${f} calls ${m[1]}() at ${cite(f, m.index)} — that helper was dead. Move its line out of Part E.`);
   }
 }
 const deadActionCue = find("public/sona.js", /function actionCue\(sound, reps, action\) \{/, "actionCue");
@@ -933,18 +1282,26 @@ P();
 }
 bTable(`B5 — The round games (${4 + ROUND_KEYS.reduce((n, k) => n + 1 + power[k].extra.length, 0)})`, `The say-it card in all six round games (one voice for all six, \`arcade-sayit.js\`), their shared new-life instruction, Echo's power button in all six (instruction at ${helpLine.cite}, her sound at ${helpSound.cite}), and ${roundName("run")}'s how-to-play line. None of them is spoken while Sona's sound is off (${[sayitMuted, helpMuted, runMuted].map((a) => a.cite.replace("public/", "")).join(", ")}). The lines ending in "say" are followed by the sound itself, which is Rachel's recording (Part A), never TTS.`);
 B("book-end.mp3", bookEnd.m[1], 'The last page of every book ("The End!"), with the star and the chime.', 'Warm and pleased, winding down. Still has its "!".', bookEnd.cite);
-B("book-turn.mp3", bookBye.m[1], `A book page's key word (C9): after ${NUMWORD[bookTries.m[1]] || bookTries.m[1]} tries that were a voice but not the book's kind of sound, Echo says this and the page turns. Screen: "Great trying! Let's turn the page."`, "Kind and light. The page turns on a good note.", bookBye.cite);
+B("book-turn.mp3", bookBye.m[1], `A book page's key word (C9), also TALK1's page word (C11): after ${NUMWORD[bookTries.m[1]] || bookTries.m[1]} tries that were a voice but not the target's kind of sound, Echo says this and the page turns. Screen: "Great trying! Let's turn the page."`, "Kind and light. The page turns on a good note.", `${bookBye.cite}; ${advBye.cite}`);
 bTable("B6 — Books (2)");
 const spIntroLines = [...new Set(spIntros.map((a) => a.line))];
-spIntroLines.forEach((line, i) => { const uses = spIntros.filter((a) => a.line === line); B("picture-two-times-" + (i + 1) + ".mp3", line, uses.map((a) => roundName(a.key) + (S.GAME_ACTS[a.key].comingSoon ? " (Coming soon; preview only)" : "")).join(", ") + ": once before the first isolated word ask of a visit; never between the first and second saying.", "Clear and friendly, its own sentence. Leave a short natural pause before the target word.", uses.map((a) => a.cite).join("; ") + "; played at " + spIntro.cite); });
-bTable(`B7 — Picture-game instructions (${spIntroLines.length})`, "The two-times sentence a picture game's page gives the engine (`intro:`). Queued games are explicitly marked Coming soon; their instructions are listed for preview review and do not mean the game is released.");
+spIntroLines.forEach((line, i) => { const uses = spIntros.filter((a) => a.line === line); B("picture-two-times-" + (i + 1) + ".mp3", line, uses.map((a) => gameLabel(a.key) + (a.ages ? ", ages " + a.ages : "")).join(", ") + ": once before the first isolated word ask of a visit; never between the first and second saying.", "Clear and friendly, its own sentence. Leave a short natural pause before the target word.", uses.map((a) => a.cite).join("; ") + "; played at " + spIntro.cite); });
+bTable(`B7 — Picture-game instructions (${spIntroLines.length})`, "The two-times sentence a picture game's page gives the engine (`intro:`); Days 4-14 of the daily story share one page, `story-game.html`, which hands the engine that day's `intro` from `daily-adventures/pages.js`. Queued games are explicitly marked Coming soon; their instructions are listed for preview review and do not mean the game is released.");
 P();
-spPlay.forEach((game) => { let help = 0; game.lines.forEach((l) => {
-  const name = roundName(game.key) + (S.GAME_ACTS[game.key].comingSoon ? " (Coming soon; preview only)" : "");
-  const what = l.step != null ? `the direction for step ${l.step + 1}` : "a direction said during play (the next move, a nudge, or help after a miss: see where it is said)";
-  B("picture-" + game.key + (l.step != null ? "-step-" + (l.step + 1) : "-help-" + (++help)) + ".mp3", l.text, `${name}: ${what}. Through Say & Play's instruction owner: never into an open microphone; help, a pause and finishing the move cancel it.`, "Short, playful and clear. This describes the finger action, not a speech target.", (l.tableCites.length ? "lines at " + l.tableCites.join("; ") + "; " : "") + "said at " + l.cites.join(", ") + "; owned at " + spInstruct.cite);
+spPlay.forEach((game) => { let help = 0; const ages = game.lines.some((l) => l.little != null); game.lines.forEach((l) => {
+  const name = gameLabel(game.key);
+  const steps = [l.step != null && `step ${l.step + 1}${ages ? " for ages 5-8" : ""}`, l.little != null && `step ${l.little + 1} for ages 3-4`].filter(Boolean);
+  const what = steps.length ? `the direction for ${steps.join(" and ")}` : "a direction said during play (the next move, a nudge, or help after a miss: see where it is said)";
+  B("picture-" + game.key + (l.step != null ? "-step-" + (l.step + 1) : l.little != null ? "-little-step-" + (l.little + 1) : "-help-" + (++help)) + ".mp3", l.text, `${name}: ${what}. Through Say & Play's instruction owner: never into an open microphone; help, a pause and finishing the move cancel it.`, "Short, playful and clear. This describes the finger action, not a speech target.", (l.tableCites.length ? "lines at " + l.tableCites.join("; ") + "; " : "") + "said at " + l.cites.join(", ") + "; owned at " + spInstruct.cite);
 }); });
-bTable(`B8 — Picture-game directions (${spPlay.reduce((n, g) => n + g.lines.length, 0)})`, "Every line each picture game's play script can hand to `api.instruct()`, worked out from its code: a literal, or every line in a table it reads (so where a table also feeds the on-screen banner, a line can be listed that a child only sees). None is a speech target, none is counted, and none plays between the two sayings of a word.");
+bTable(`B8 — Picture-game directions (${spPlay.reduce((n, g) => n + g.lines.length, 0)})`, "Every line each picture game's play script can hand to `api.instruct()` (for Days 4-14 of the daily story, the controller in `daily-adventures/` that `story-game.html` inserts), worked out from its code: a literal, every line in a table it reads (so where a table also feeds the on-screen banner, a line can be listed that a child only sees), or every line a helper can return or a variable can hold (so a line can be listed for a moment that rarely comes). None is a speech target, none is counted, and none plays between the two sayings of a word.");
+P();
+advLines.forEach((r) => B(`adventure/voice/${advHashOf(r.text)}.mp3`, r.text, r.uses.join("; ") + (advRecorded ? (advRecorded[advHashOf(r.text)] === r.text ? ". Recorded." : ". Not recorded yet: the live voice.") : "."),
+  "A picture book read to one small child: warm, unhurried, a beat at each full stop. The story's own sounds (\"Ah-choo!\", \"Honk-shoo\") are story words, never a speech target." + (r.text.includes("!") ? ' Has a "!": a little lift, not a shout.' : ""), r.cites.join(", ")));
+{
+  const rec = advRecorded ? advLines.filter((r) => advRecorded[advHashOf(r.text)] === r.text).length : 0;
+  bTable(`B9 — The daily story (${advLines.length})`, `Echo reads every scene of the day's story (\`adventure.html\`; the scenes are \`adventures.js\` plus TALK1's \`talk-stories.js\`; the fourteen calendar stories and five sound-specific Day1 variants are listed in sona.js): Pelly's letter and the problem before the game, the happy ending after it. Ages 3-4 skip the scenes marked ages 5-8 and hear the short lines (${advSkip.cite}, ${advScenes.cite}). The original stories lead to the game's word turn (C8); TALK1 asks each page's key through the shared word moment (C11). Unlike B1-B8 these already have a player: a line plays from \`public/assets/${"adventure/voice/<file>"}\` when \`/assets/adventure/voice/manifest.js\` lists exactly those words (the file is named by the voice version and the words, ${advHash.cite}, so a re-worded line has no file and plays in the live voice: ${advFile.cite}); ${advRecorded ? `${rec} of ${advLines.length} are recorded` : "there is no manifest yet, so every line plays in the live voice"} (${advLive.cite}), the browser's own voice the last resort (${advSynth.cite}). Nothing is said while Sona's sound is off (${advMuted.cite}). Read at ${advRead.cite}; the lines ahead are fetched two at a time (${advPre.cite}).`);
+}
 P();
 P("Not in this list because they speak nothing: Home, setup, settings, the voice");
 P("picker, the mic-permission screens, the chest captions and every in-round label.");
@@ -965,7 +1322,9 @@ const cTable = () => { P(); P("| # | File | Say this | When | Source |"); P("|--
 const needWord = (n) => NUMWORD[n];
 const cuedTemplate = wordsOf(runSayLine({ ...TEMPLATE_ENV, ITEM: isoItem("R"), cued: false }));
 const plainTemplate = wordsOf(runSayLine({ ...TEMPLATE_ENV, ITEM: isoItem("R"), cued: true }));
-const targetTemplate = wordsOf(runSayLine({ ...TEMPLATE_ENV, ITEM: { t: "{target}", say: "{target}", display: "{target}", level: "syllable" }, cued: true }));
+const targetItem = { t: "{target}", say: "{target}", display: "{target}", level: "syllable" };
+const targetTemplate = wordsOf(runSayLine({ ...TEMPLATE_ENV, ITEM: targetItem, cued: true }));
+const cuedTargetTemplate = wordsOf(runSayLine({ ...TEMPLATE_ENV, ITEM: { ...targetItem, cueFirst: true }, cued: false }));
 
 P();
 P("### C1 — The first prompt of a sound-alone round");
@@ -973,7 +1332,7 @@ P();
 P(`\`${cuedTemplate}\`, then "${GO}" (${GO_ROW}) (${promptStart.cite}, built at ${sayLineFn.cite})`);
 P();
 P("Spoken once, into a closed mic, right after the mic opens and the room is measured.");
-P("Every session's first round is a sound-alone round, so a child hears this every day.");
+P("The day starts here by default. Settings can start practice at a later step (C3).");
 P(`With the sound models on, Echo says the words and one take of Rachel's recorded sound (\`${SLOT.R.clip.replace("/R-", "/{SOUND}-")}\`, Part A) plays in the letter's place: "${SLOT.R.before} [${S.soundSay("R")}] ${SLOT.R.after}" (${soundSlotFn.cite}; spoken at ${promptCall.cite}).`);
 P();
 P("**Fillers.**");
@@ -1007,11 +1366,10 @@ P("### C3 — The prompt on a syllable, word or sentence round");
 P();
 P(`\`${targetTemplate}\`, then "${GO}" (${sayLineFn.cite}; targets from \`ladderContent\`)`);
 P();
-P("Round two onward of an adventure climbs sound → syllable → word → sentence, capped");
-P("one rung above what the child has mastered. One target per round; the same line");
-P("repeats on a tap. {n} as in C1. **Best left to TTS in the cloned voice** — the");
-P("blank is a word, and words render fine; only bare sounds do not. Listed so nothing");
-P("is hidden.");
+P(`If Settings starts the day above the sound, the first round includes the mouth cue: \`${cuedTargetTemplate}\`, then "${GO}".`);
+P("Practice climbs through the available steps at the chosen position, up to one step");
+P("past what the child has earned or the day's starting step. Echo repeats the target");
+P("on a tap. {n} as in C1. **Best left to TTS in the cloned voice.**");
 P();
 P(`**{target} = a syllable, at the start of a word** (the default) — the sound's onset plus ah / ee / oo / oh / ay (${sylFn.cite}), except G's "gay" is "guy" and P's "poo" is "pie": two words a child is never asked to say (Travis, 30 Sep 2026); ${SOUNDS.length} × 5 = ${SOUNDS.length * 5} (TH and THV share the same five):`);
 P();
@@ -1038,7 +1396,7 @@ totals.fillers += posSylCount;
 P();
 P(`**{target} = a word** — the sound's words at the place practised (\`Sona.soundPos()\`): an SLP's homework position first, for its own sounds, then the one chosen in Settings (default Beginning); vocalic R exists only for R, blends only for R, S and L, so another sound picked there uses the start of a word; THV has no Beginning words, so it uses all ten. Any other bank word reaches this prompt when an SLP's homework names it. The whole bank is Part D (${wordsLine.cite}).`);
 P();
-P(`**{target} = a sentence** — one of ${SENTENCE_FRAMES.length} frames with a bank word dropped in (${sentFrames.cite}): ${SENTENCE_FRAMES.map((f) => `"${f}"`).join(", ")}. The word comes from the same practice position as the word round (homework first, then Settings; default Beginning; "Mixed" opens the whole bank), so ${SENTENCE_FRAMES.length} × ${Object.values(S.WORDS).reduce((a, b) => a + b.length, 0)} = ${SENTENCE_FRAMES.length * Object.values(S.WORDS).reduce((a, b) => a + b.length, 0)} sentences are possible; not expanded here.`);
+P(`**{target} = a sentence** — one of ${SENTENCE_FRAMES.length} frames with a bank word dropped in (${sentFrames.cite}): ${SENTENCE_FRAMES.map((f) => `"${f}"`).join(", ")}. The word comes from the same practice position as the word round (homework first, then Settings; default Beginning; "Mixed" uses the bank across positions, with the same exclusions for ages 2–4). The available frames depend on each word's form.`);
 P();
 P(`For Rachel: each bank word's place in a sentence is \`SENT_FORM\` (${sentForm.cite}): "an" before a vowel ("I see an egg."), nothing for a thing you don't count ("Here is milk."), "Here are" for more than one ("Here are grapes."), "the" for the one sun and moon, "my" for family ("I see my mom."), and never a sentence for a word that is not a thing ("think", "happy", "breathe", the numbers). Echo is given the sentence without its full stop ("Ready? Say I see a robot, five times.").`);
 totals.fillers += SENTENCE_FRAMES.length;
@@ -1112,18 +1470,43 @@ GAME_ON.forEach((s) => { const g = gameSteps(s); g.syl.concat(g.word).forEach((a
 cTable();
 
 // C8 the picture games
-const spLive = spGames.filter((g) => !g.comingSoon), spSoon = spGames.filter((g) => g.comingSoon);
+const spLive = spGames.filter((g) => !g.comingSoon && !g.story), spSoon = spGames.filter((g) => g.comingSoon), spStory = spGames.filter((g) => g.story);
 P();
 P("### C8 — The picture games (Say & Play)");
 P();
 P(`\`${spLine("{word}")}\` (${spAsk.cite})`);
 P();
 P(`One shared script (\`sayplay.js\`) runs every picture game. Each turn shows a picture and`);
-P(`its word, Echo models the word with this line, then "${GO}" (${GO_ROW}), then the mic opens. ${spIntros.map((a) => roundName(a.key) + (S.GAME_ACTS[a.key].comingSoon ? " (Coming soon; preview only)" : "")).join(", ")} first explain that each word is said two times, in a separate sentence (B7). Nothing plays between the two sayings. The cheers ("Yes!", "You did it!") are text. The sound is the one the`);
+P(`its word, Echo models the word with this line, then "${GO}" (${GO_ROW}), then the mic opens. ${[...new Set(spIntros.map((a) => gameLabel(a.key)))].join(", ")} first explain that each word is said two times, in a separate sentence (B7). Nothing plays between the two sayings. The cheers ("Yes!", "You did it!") are text. The sound is the one the`);
 P(`child's rotation is on (else R); the pool is up to ten of that sound's shortest`);
 P(`words with a picture at the place in the word the child practises, evenly from every place under Mixed (${spPoolFn.cite}). **Best left to TTS.**`);
 P();
 P(`Live today (${spLive.length}): ${spLive.map((g) => g.name).join(", ") || "none"}. Coming soon (${spSoon.length}), the same line when they open: ${spSoon.map((g) => g.name).join(", ") || "none"}.`);
+if (spStory.length) {
+  // Words a round, from each page: a day with a page of its own gives
+  // `steps: little ? A : B` (arrays of empty steps, written there or named);
+  // the shared page counts them out (sgCount).
+  const NUM = ["no", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve"];
+  const ARR = "\\[(?:\\[\\], ?)*\\[\\]\\]", STEP = `(${ARR}|[A-Z_][A-Z0-9_]*)`;
+  const words = (g) => {
+    if (g.controller) return { little: Number(sgCount.m[1]), big: Number(sgCount.m[2]), cite: sgCount.cite };
+    const s = find(g.page, new RegExp(`steps: little \\? ${STEP} : ${STEP}, finale:`), `${g.name}'s words a round`);
+    const n = (x) => { if (x[0] !== "[") x = (new RegExp(`\\b${x} = (${ARR})[,;]`).exec(src(g.page)) || fail(`${g.page} names its steps ${x} and does not give them as an array of empty steps — the script cannot count its words.`))[1]; return x.match(/\[\]/g).length; };
+    return { little: n(s.m[1]), big: n(s.m[2]), cite: s.cite };
+  };
+  const groups = [];
+  for (const g of spStory) { const w = words(g), last = groups[groups.length - 1]; if (last && last.big === w.big && last.little === w.little) last.days.push(g.day); else groups.push({ ...w, days: [g.day] }); }
+  for (const x of groups) if (!NUM[x.big] || !NUM[x.little]) fail(`a story game's round has ${x.big} or ${x.little} words (${x.cite}) — the sheet has no word for that.`);
+  const range = (d) => (d.length === 1 ? `Day ${d[0]}` : d[d.length - 1] - d[0] === d.length - 1 ? `Days ${d[0]}-${d[d.length - 1]}` : `Days ${d.join(", ")}`);
+  // how many times each story game asks a word (STORY_SAY_TIMES, three since
+  // 23 Oct 2026), read from sona.js so the sheet never says a stale count
+  const storySay = find("public/sona.js", /const STORY_SAY_TIMES = (\d+);/, "STORY_SAY_TIMES"), sayN = Number(storySay.m[1]);
+  if (!NUM[sayN]) fail(`STORY_SAY_TIMES is ${sayN} (${storySay.cite}) — the sheet has no word for that.`);
+  const times = `${NUM[sayN]} times`;
+  const say = groups.length === 1 ? `Ages 5-8 say ${NUM[groups[0].big]} words a round, ages 3-4 ${NUM[groups[0].little]}, each ${times}.`
+    : `${groups.map((x) => `${range(x.days)}: ages 5-8 say ${NUM[x.big]} words a round, ages 3-4 ${NUM[x.little]}`).join("; ")}. Each word ${times}.`;
+  P(); P(`In the daily story (${spStory.length}), reached only from that day's story and never from a shelf: ${spStory.map((g) => `${g.name} (Day ${g.day}, "${g.story.title}")`).join(", ")}. ${say}`);
+}
 P();
 P("| Sound | {word} pool |");
 P("|---|---|");
@@ -1133,7 +1516,7 @@ P();
 P("**Game words, when available.** Existing illustrated bank words, selected at turns 1, 4 and 7 without repeating an already used themed word. Homework words replace this selection. Rachel reviews these lists before release.");
 P("| Game | Sound | Themed words |");
 P("|---|---|---|");
-Object.keys(S.GAME_WORDS || {}).forEach((k) => Object.keys(S.GAME_WORDS[k]).forEach((s) => { const ws = S.gameWords(k, s).map((w) => w.w); spCount += ws.length; P(`| ${S.GAME_ACTS[k].name} | ${SOUND_TITLE(s)} | ${ws.join(", ")} |`); }));
+Object.keys(S.GAME_WORDS || {}).forEach((k) => Object.keys(S.GAME_WORDS[k]).forEach((s) => { const ws = S.gameWords(k, s).map((w) => w.w); spCount += ws.length; P(`| ${(gameByKey(k) || fail(`GAME_WORDS has words for "${k}", which is no game in the catalog or the daily story.`)).name} | ${SOUND_TITLE(s)} | ${ws.join(", ")} |`); }));
 totals.fillers += spCount;
 
 // C9 Books
@@ -1143,7 +1526,7 @@ const coverLine = (b) => b.title + bookCover.m[1] + S.soundLabel(b.sound).replac
 P();
 P(`### C9 — Books (\`library.html\`): ${STORIES.length} books, ${bookPages} pages`);
 P();
-P("Live: Home's Books card opens the shelf. Echo reads everything in a book aloud.");
+P("Live: Home's Books door opens the shelf. Echo reads everything in a book aloud.");
 P("**Best left to TTS** — it is a lot of text, and it changes when a book does. Listed so");
 P("nothing is hidden. Four templates, and two fixed lines (B6):");
 P();
@@ -1167,6 +1550,14 @@ if (simpleLive.length) {
   P();
   P(`The only spoken line is the word alone, when the picture is revealed (${simpleSay.cite}) and on "Hear it" (${simpleHear.cite}) — the same per-sound pools as Feed Echo (C6). **Best left to TTS.**`);
 }
+
+// C11 TALK1: narrator lines are fixed clips in B9; these are the word asks.
+const talkWordCount = (S.STORY_TALK || []).reduce((n, d) => n + ["intro", "ending"].reduce((a, part) => a + (TALK_STORIES[d.id][part] || []).filter(sc => sc.key).length, 0), 0);
+P(); P(`### C11 — Talking Day1 stories: ${(S.STORY_TALK || []).length} variants, ${talkWordCount} page keys`); P();
+P(`After each narrated page (B9), Echo asks \`${advAsk.m[2]}{word}${advAsk.m[3]}\`, or \`${advAsk.m[1]}{word}${advAsk.m[3]}\` after a voiced shape miss (${advAsk.cite}). The word is that page's key. The player uses the existing ${S.STORY_SAY_TIMES} sayings per page; silence never advances it. These asks are shared with Books; the book-turn line is B6. No sound model or prompt is changed by this index.`);
+P(); P("| Day1 story | Sound | Intro keys | Ending keys |"); P("|---|---|---|---|");
+(S.STORY_TALK || []).forEach(d => { const data = TALK_STORIES[d.id]; P(`| ${esc(d.title)} | ${d.sound} | ${data.intro.map(sc => sc.key).filter(Boolean).join(", ")} | ${data.ending.map(sc => sc.key).filter(Boolean).join(", ")} |`); });
+totals.fillers += talkWordCount;
 
 // ── Part D ──
 P();
@@ -1310,7 +1701,7 @@ P("folders; they were a wish-list. They are gone, and so is the old `tools/voice
 P();
 P("---");
 P();
-P(`**Totals.** Part A: ${SOUNDS.length} sound models (${SOUNDS.length * 2} files, Rachel's). Part B: **${totals.fixed} fixed clips** to record. Part C: **${totals.expansions} template lines written out** (C1 ${SOUNDS.length * NEEDS.length} + C2 ${SOUNDS.length * NEEDS.length} + C7 ${cardLines}) plus ${totals.fillers} fillers listed (${SOUNDS.length} cues, ${SOUNDS.length} sound names, ${sylCount} syllables, ${SENTENCE_FRAMES.length} sentence frames, ${feedCount} Feed Echo words, ${cardLines} game-card asks, ${spCount} picture-game words, ${bookPages} book pages in ${STORIES.length} books). Part D: **${totals.words} bank entries, ${totals.distinct} distinct words** (TTS). Part E: ${totals.parked} parked/unlinked lines not to record (${chapterLines} chapter pages, ${ccLines.length} Coach Call, ${checkWords.length} Speech Check, the rest single lines).`);
+P(`**Totals.** Part A: ${SOUNDS.length} sound models (${SOUNDS.length * 2} files, Rachel's). Part B: **${totals.fixed} fixed clips** to record. Part C: **${totals.expansions} template lines written out** (C1 ${SOUNDS.length * NEEDS.length} + C2 ${SOUNDS.length * NEEDS.length} + C7 ${cardLines}) plus ${totals.fillers} fillers listed (${SOUNDS.length} cues, ${SOUNDS.length} sound names, ${sylCount} syllables, ${SENTENCE_FRAMES.length} sentence frames, ${feedCount} Feed Echo words, ${cardLines} game-card asks, ${spCount} picture-game words, ${bookPages} book pages in ${STORIES.length} books, ${talkWordCount} talking-story page keys). Part D: **${totals.words} bank entries, ${totals.distinct} distinct words** (TTS). Part E: ${totals.parked} parked/unlinked lines not to record (${chapterLines} chapter pages, ${ccLines.length} Coach Call, ${checkWords.length} Speech Check, the rest single lines).`);
 P();
 P(`Record B first (${totals.fixed} lines — an hour), then C1 and C2 (${SOUNDS.length * NEEDS.length * 2} lines, where you perform the sound), and stop there: the rest of Part C and Part D are words, and words are what TTS already does well.`);
 

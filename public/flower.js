@@ -10,7 +10,14 @@
   var can = { x: 0.23, y: 0.4 }, home = { x: 0.23, y: 0.4 }, target = { x: 0.5, y: 0.67, r: 0.075 };
   var canW = 140, canH = 110, bedY = 560, playTop = 110, baseRadius = 28, plantH = 210;
   var drag = null, dragSurface = null, offset = { x: 0, y: 0 }, drops = [], splashes = [], emission = 0;
-  var landed = 0, missed = 0, refills = 0, art = {}, POWER = 10, TARGETS = [0.5, 0.42, 0.58, 0.45, 0.55];
+  // PLANT_X: the one flower grows here, and every step's glow is its soil.
+  // The glow used to move to 0.42 or 0.58 while the plant stayed in the
+  // middle, so a child watered bare soil beside the flower.
+  var landed = 0, missed = 0, refills = 0, art = {}, POWER = 10, PLANT_X = 0.5;
+  // After a pour grows the flower the can glides back home (BACK_S), so the
+  // growth, the cheer and the next word are not hidden under it. Under
+  // Reduce Motion it is simply back home.
+  var back = null, BACK_S = 0.45, calm = false;
   // EVERY FLOWER GROWS (the Hoops rule, for ages 3-4). stepMiss counts the
   // drops this step that fell beside the glow, which only a pouring finger
   // makes (an idle can makes none). From MISS_AT[0] (about half a second of
@@ -52,7 +59,7 @@
     canW = Math.min(164, W * 0.36, (bedY - playTop) * 0.72); canH = canW * 0.8;
     plantH = Math.min(250, W * 0.58, bedY - playTop - 30); baseRadius = clamp(W * 0.075, 24, 42);
     home = { x: 0.23, y: (playTop + (bedY - playTop) * 0.4) / H };
-    target = { x: TARGETS[stage], y: bedY / H, r: baseRadius / W };
+    target = { x: PLANT_X, y: bedY / H, r: baseRadius / W };
     stopPour();
     if (!active && !grown) { can.x = home.x; can.y = home.y; } else setCan(can);
     hud(); draw();
@@ -89,7 +96,7 @@
     ctx.restore();
   }
   function plant() {
-    var x = W * 0.5, y = bedY + 7, amount = Math.min(5, grown + waterProgress * 0.15), bloom = image("bloom"), sprout = image("sprout");
+    var x = W * PLANT_X, y = bedY + 7, amount = Math.min(5, grown + waterProgress * 0.15), bloom = image("bloom"), sprout = image("sprout");
     ctx.save(); ctx.translate(x, y); ctx.scale(1 + Math.sin(time * 1.8) * (won ? 0.015 : 0.003), 1);
     if (grown === 0) {
       ctx.fillStyle = "#b78150"; ctx.beginPath(); ctx.ellipse(0, -3, 22, 9, 0, 0, Math.PI * 2); ctx.fill();
@@ -158,6 +165,7 @@
       catchRadius: radius() / W, can: { x: can.x, y: can.y, width: canW / W, height: canH / H }, spout: spout(), target: { x: target.x, y: target.y, r: radius() / W },
       pouring: pouring, dragging: drag !== null, pointerId: drag, grown: grown, won: won, drops: drops.length, landed: landed, missed: missed, refills: refills, width: W, height: H,
       stepMisses: stepMiss, level: level(), overPatch: active ? overPatch() : false, celebrating: doneAt > 0, doneIn: doneAt ? Math.max(0, doneAt - time) : 0, needsRefill: active && reservoir <= 0,
+      plant: { x: PLANT_X }, home: { x: home.x, y: home.y }, returning: !!back,
       coordinates: "normalized-to-canvas; target radius and catchRadius use canvas width" };
   }
   function hud() {
@@ -236,8 +244,10 @@
   function complete() {
     if (!canPlay()) return;
     waterProgress = 1; grown = Math.max(grown, stage + 1); active = false; power = 0; stopPour(); drops = []; stepMiss = 0;
+    // the can leaves the plant so the child sees what the water grew
+    if (calm) homeCan(); else back = { x: can.x, y: can.y, t: 0 };
     banner(grown === 5 ? "You grew a beautiful flower!" : "Look! Your flower is growing");
-    for (var k = 0; k < 14; k++) { var a = k / 14 * Math.PI * 2; sparkles.push({ x: 0.5, y: (bedY - plantH * 0.5) / H, vx: Math.cos(a) * 80, vy: Math.sin(a) * 60, age: 0, c: k % 2 ? "#f6d76b" : "#f0a4bc" }); }
+    for (var k = 0; k < 14; k++) { var a = k / 14 * Math.PI * 2; sparkles.push({ x: PLANT_X, y: (bedY - plantH * 0.5) / H, vx: Math.cos(a) * 80, vy: Math.sin(a) * 60, age: 0, c: k % 2 ? "#f6d76b" : "#f0a4bc" }); }
     try { api.sfx("correct"); api.cheer(grown === 5 ? "A flower!" : "It grew!"); } catch (e) {}
     doneAt = time + 1.15; hud(); draw();
   }
@@ -246,7 +256,13 @@
     sparkles.forEach(function (k) { k.age += dt; }); sparkles = sparkles.filter(function (k) { return k.age < 1.1; });
     if (doneAt) {
       time += dt; splashes.forEach(function (k) { k.age += dt; }); splashes = splashes.filter(function (k) { return k.age < 0.4; });
-      if (time >= doneAt) { doneAt = 0; hud(); if (api) api.done(); } else publish();
+      if (back) {
+        back.t += dt; var g = Math.min(1, back.t / BACK_S), e = 1 - (1 - g) * (1 - g);
+        can.x = back.x + (home.x - back.x) * e; can.y = back.y + (home.y - back.y) * e;
+        if (g >= 1) homeCan();
+      }
+      // the glide ends well inside the beat; never leave the can mid-air
+      if (time >= doneAt) { doneAt = 0; homeCan(); hud(); if (api) api.done(); } else publish();
       return;
     }
     if (!canPlay()) return;
@@ -285,21 +301,22 @@
   function frame(now) { var dt = last ? Math.min(0.05, (now - last) / 1000) : 0; last = now; tick(dt); draw(); raf = requestAnimationFrame(frame); }
   function earnPower() { power = POWER; paused = false; active = true; last = 0; banner("A gentle shower! Hold the can over the glow"); hud(); }
   function pause() { paused = true; last = 0; stopPour(); hud(); }
+  function homeCan() { back = null; can.x = home.x; can.y = home.y; }
   function reset() {
     stopPour(); active = false; paused = false; stage = 0; grown = 0; won = false; waterProgress = 0; reservoir = 0; power = 0; time = 0; last = 0; landed = 0; missed = 0; refills = 0; drops = []; splashes = [];
     stepMiss = 0; said = {}; doneAt = 0; sparkles = [];
-    target.x = TARGETS[0]; target.y = bedY / H; can.x = home.x; can.y = home.y; banner("Let's grow a flower!"); hud(); draw();
+    target.x = PLANT_X; target.y = bedY / H; homeCan(); banner("Let's grow a flower!"); hud(); draw();
   }
   window.Flower = {
-    init: function (a, n) { api = a; stages = n || 5; cv = $("gardenCanvas"); ctx = cv.getContext("2d"); loadArt(); controls(); fit(); reset(); raf = requestAnimationFrame(frame); },
+    init: function (a, n) { api = a; stages = n || 5; try { calm = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches); } catch (e) {} cv = $("gardenCanvas"); ctx = cv.getContext("2d"); loadArt(); controls(); fit(); reset(); raf = requestAnimationFrame(frame); },
     onWord: function (index) {
-      stage = index; target.x = TARGETS[index]; waterProgress = 0; reservoir = 1.8; drops = []; splashes = []; stopPour(); can.x = home.x; can.y = home.y;
+      stage = index; target.x = PLANT_X; waterProgress = 0; reservoir = 1.8; drops = []; splashes = []; stopPour(); homeCan();
       stepMiss = 0; said = {}; doneAt = 0; earnPower(); tell("start", "Hold the can over the glowing soil.");
     },
     onHelp: earnPower,
     pause: pause,
     resume: function (playing) { paused = playing === false; last = 0; hud(); },
     reset: reset,
-    finale: function () { stopPour(); active = false; power = 0; won = true; doneAt = 0; banner("A flower you grew yourself!"); hud(); draw(); }
+    finale: function () { stopPour(); active = false; power = 0; won = true; doneAt = 0; back = null; banner("A flower you grew yourself!"); hud(); draw(); }
   };
 })();

@@ -7,27 +7,30 @@ import { kvCmd } from "@/lib/slpAuth";
  * day, with a real unsubscribe link. That's it."). It replaces hand-sending a
  * Kit export every day, and keeps working after Kit is cancelled (24 Oct).
  *
- * Five emails from Rachel (CONTENT below: two at sign-up, then day 1, 3 and 5), each with a
- * one-tap unsubscribe link (/api/email/unsub, the same HMAC token the Friday
- * email uses) and the mailing address (EMAIL_POSTAL) — CAN-SPAM. Nothing
- * about a child, ever: the only thing this file knows is an email address.
+ * Three emails from Rachel (CONTENT below: one at sign-up, then day 1 and
+ * day 2), each with a one-tap unsubscribe link (/api/email/unsub, the same
+ * HMAC token the Friday email uses) and the mailing address (EMAIL_POSTAL) —
+ * CAN-SPAM. Nothing about a child, ever: the only thing this file knows is an
+ * email address. After the third, a parent hears from Sona once a week, on
+ * Mondays (lib/weekly.ts).
  *
- * - the first two: sent by /api/lead the moment a grown-up gives their email.
+ * - the first: sent by /api/lead the moment a grown-up gives their email.
  *   Once per address, ever (`nurture:0:<email>`, set NX before sending, so a
  *   double tap or a retry cannot send two; its value is the sign-up time).
- *   An email given INSIDE the app (IN_APP_SOURCES: setup's email step, or a
- *   purchase's plan post) skips the first, "Here's Sona", whose whole point
- *   is the App Store link they have no use for, and starts at the 5-minute
- *   email (Travis, 13 Oct 2026, with setup's email box moved before the price).
+ *   An email given INSIDE the app (IN_APP_SOURCES: setup's email step,
+ *   Settings' weekly report switch, or a purchase's plan post) starts with
+ *   "The 5-minute trick" instead of "Here's Sona", whose whole point is the
+ *   App Store link they have no use for (Travis, 13 Oct 2026, with setup's
+ *   email box moved before the price).
  * - the rest: the next one's time sits in the sorted set `nurture:due` and
- *   its number in `nurture:next:<email>`; /api/cron/nurture sends what is due
+ *   its name in `nurture:next:<email>`; /api/cron/nurture sends what is due
  *   once a day. ZREM is the claim, so two overlapping runs cannot both send.
  * Anyone in `email:unsub` (the Friday email's suppression set) leaves it.
  * A parent who starts Sona Premium leaves it too (stopSeries, 16 Oct 2026),
  * once the phone tells /api/lead or RevenueCat's own message names their
  * email (lib/revenuecat.ts); a purchase with no email anywhere (none on the
- * phone, so none at RevenueCat) is not seen, so day 3 and day 5 still say
- * "already started? ignore the button" rather than assume. Someone who
+ * phone, so none at RevenueCat) is not seen, so the last email still says
+ * "Already started? You can ignore the button." rather than assume. Someone who
  * started Premium and gives their email again later (`nurture:0` long
  * gone) gets day 0's tip and nothing else: never "Here's Sona", which sells
  * free days Apple will not give twice.
@@ -48,33 +51,44 @@ export const DUE_KEY = "nurture:due";
  * (sona.js _tellPlan), which can be the first time the server hears the
  * address if the setup post never arrived.
  */
-export const IN_APP_SOURCES = ["app-setup", "app-trial", "app-paid"] as const;
+export const IN_APP_SOURCES = ["app-setup", "app-settings", "app-trial", "app-paid"] as const;
 export const inAppSource = (s: unknown): boolean => typeof s === "string" && (IN_APP_SOURCES as readonly string[]).includes(s);
-/** CONTENT[0] is "Here's Sona" (the App Store link); CONTENT[1], "The 5-minute trick", is also day 0. */
-export const IN_APP_START = 1;
+/** The day-0 email: "Here's Sona" (the App Store link) from the website, "The 5-minute trick" from inside the app. */
+export const WEB_START: Id = "hello";
+export const IN_APP_START: Id = "trick";
 
 type Kv = (cmd: (string | number)[]) => Promise<unknown>;
 type Fetch = typeof fetch;
 
-export type Step = number;
+/** Each email by name, so a reworded or dropped email never shifts another's place. */
+export type Id = "hello" | "trick" | "recast" | "answers";
+export type Step = Id;
 
-type Content = { day: number; subject: string; preview: string; paras: string[]; button: string; after: string[]; ps?: string };
+type Content = { id: Id; day: number; next?: Id; subject: string; preview: string; paras: string[]; button: string; after: string[]; ps?: string };
 
 /**
  * THE SEQUENCE (Travis, 7 Oct 2026: "a super short email ... to send them
  * directly to the app store and then a second email that's like the five
- * minute trick ... then day two day three day five"). Built from his spec
+ * minute trick ... then day two day three day five"; cut to three on 23 Oct
+ * 2026: "we send them one an email immediately, the next day, and then one
+ * more day ... I want to send less emails in the sequence. So just 3, and
+ * then afterwards, I want to do 1 email a week"). Built from his spec
  * (sona-email-system.md, A1-A5), with what is not true of the app today
  * taken out: no cup tower, no "correct" or scoring (Sona hears "a voice of
  * the right kind", never grades), no yearly price and no "free forever"
  * games (a new family meets the trial first; the price is Apple's, so no
  * figure is typed), no testimonial (none exists yet). `day` is days after
- * sign-up. Rachel's claims (the bike, the recast tip, the ages) are hers to
- * confirm.
+ * sign-up, `next` the email after it. From the website: "Here's Sona", the
+ * recast tip, the quick answers; from inside the app: "The 5-minute trick"
+ * in place of the first. "The balloon problem" (day 3) and the website's
+ * second day-0 email went on 23 Oct 2026. Rachel's claims (the bike, the
+ * recast tip, the ages) are hers to confirm.
  */
 export const CONTENT: Content[] = [
   {
+    id: "hello",
     day: 0,
+    next: "recast",
     subject: "Here\u2019s Sona",
     preview: "Your download link, and what to do tonight",
     paras: [
@@ -89,7 +103,9 @@ export const CONTENT: Content[] = [
     ],
   },
   {
+    id: "trick",
     day: 0,
+    next: "recast",
     subject: "The 5-minute trick",
     preview: "Speech sounds work like riding a bike",
     paras: [
@@ -105,7 +121,9 @@ export const CONTENT: Content[] = [
   {
     // day 1 since 17 Oct 2026 (Travis: "day zero, day one, day three, day
     // five. So just move day two to day one")
+    id: "recast",
     day: 1,
+    next: "answers",
     subject: "Try this the next time they say \u201cwabbit\u201d",
     preview: "One small habit that helps a lot",
     paras: [
@@ -119,21 +137,9 @@ export const CONTENT: Content[] = [
     after: [],
   },
   {
-    day: 3,
-    subject: "The balloon problem",
-    preview: "A lot of speech apps let kids skip the talking",
-    paras: [
-      "Hi there,",
-      "A lot of kids\u2019 speech apps let children tap their way through without ever saying a word. It looks like practice, but it\u2019s really just a game.",
-      "Sona asks for the sound, and listens. In Hoops, saying the word is what earns the ball. Silence never counts.",
-      "So the minutes your child spends in Sona are minutes spent talking. That\u2019s screen time you don\u2019t have to feel guilty about.",
-    ],
-    button: "Try Sona free",
-    after: [],
-    ps: "Already started? You can ignore the button.",
-  },
-  {
-    day: 5,
+    // day 2 since 23 Oct 2026 (it was day 5, after "The balloon problem")
+    id: "answers",
+    day: 2,
     subject: "Quick answers before you decide",
     preview: "What it costs, how to cancel, and what Sona is (and isn\u2019t)",
     paras: [
@@ -148,8 +154,33 @@ export const CONTENT: Content[] = [
     ],
     button: "Start your free trial",
     after: [],
+    // "The balloon problem" carried this line until 23 Oct 2026
+    ps: "Already started? You can ignore the button.",
   },
 ];
+
+const BY_ID = new Map<string, Content>(CONTENT.map((c) => [c.id, c]));
+export const mailOf = (id: unknown): Content | undefined => (typeof id === "string" ? BY_ID.get(id) : undefined);
+/** The emails one path gets, in order: the day-0 email, then each `next`. */
+export function series(first: Id): Id[] {
+  const out: Id[] = [];
+  for (let c = mailOf(first); c && out.length < CONTENT.length; c = mailOf(c.next)) out.push(c.id);
+  return out;
+}
+
+/**
+ * `nurture:next` as the five-email build kept it, a number (its place in the
+ * old list), for an address that was part-way through on 23 Oct 2026: 0 was
+ * "Here's Sona" and 1 "The 5-minute trick" (each a day-0 email Resend turned
+ * away, due now), 2 the recast tip, and 3 ("The balloon problem") and 4 the
+ * quick answers, which is now the last. Nobody is sent an email twice or
+ * jumps back; someone waiting for the balloon gets the answers on that day.
+ */
+const LEGACY: Record<string, Id> = { "0": "hello", "1": "trick", "2": "recast", "3": "answers", "4": "answers" };
+function keptStep(kept: unknown): Id {
+  const k = kept === null || kept === undefined ? "" : String(kept);
+  return mailOf(k)?.id || LEGACY[k] || "recast";
+}
 
 export function unsubToken(email: string, secret: string): string {
   return createHmac("sha256", secret).update(email).digest("hex").slice(0, 24);
@@ -158,7 +189,7 @@ export function unsubToken(email: string, secret: string): string {
 export const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
 export function render(step: Step, unsubUrl: string, postal: string): { subject: string; html: string; text: string } {
-  const c = CONTENT[step];
+  const c = mailOf(step) as Content;
   const P = 'style="margin:0 0 16px;font-size:16px;line-height:1.55;color:#2b2b2b;"';
   const html =
     `<!doctype html><html><body style="margin:0;padding:0;background:#ffffff;">` +
@@ -211,7 +242,7 @@ export type SendResult = "sent" | "unsub" | "failed";
 
 export async function sendStep(email: string, step: Step, kv: Kv = kvCmd, f: Fetch = fetch): Promise<SendResult> {
   const cfg = config();
-  if (!cfg || !CONTENT[step]) return "failed";
+  if (!cfg || !mailOf(step)) return "failed";
   const unsub = await unsubscribed(email, kv);
   if (unsub === true) return "unsub";
   if (unsub !== false) return "failed";
@@ -280,23 +311,17 @@ export async function enroll(rawEmail: string, kv: Kv = kvCmd, f: Fetch = fetch,
     if (first !== "OK") return false;
     // started Premium before (stopSeries' mark, kept for good): the tip only
     const stopped = Boolean(await kv(["GET", stopKey(email)]));
-    // every day-0 email goes now, in order (Travis, 7 Oct 2026: "two emails
-    // right away"); the first one out decides what /api/lead reports
-    let step = opts.inApp || stopped ? IN_APP_START : 0, firstSent: SendResult | null = null, r: SendResult = "failed";
-    while (CONTENT[step] && CONTENT[step].day === 0) {
-      r = await sendStep(email, step, kv, f);
-      if (firstSent === null) firstSent = r;
-      if (r === "unsub") break;
-      // Resend busy (its two requests a second are shared with the contact
-      // list): this one waits for the next daily run instead of being lost
-      if (r === "failed") break;
-      step++;
+    // the one day-0 email goes now (it was two until 23 Oct 2026)
+    const step: Id = opts.inApp || stopped ? IN_APP_START : WEB_START;
+    const r = await sendStep(email, step, kv, f);
+    // Resend busy (its two requests a second are shared with the contact
+    // list): it waits for the next daily run instead of being lost
+    const next = r === "failed" ? step : mailOf(step)?.next;
+    if (r !== "unsub" && next && !stopped) {
+      await kv(["SET", nextKey(email), next, "EX", 31536000]);
+      await kv(["ZADD", DUE_KEY, r === "failed" ? now : now + (mailOf(next) as Content).day * DAY_MS, email]);
     }
-    if (r !== "unsub" && CONTENT[step] && !stopped) {
-      await kv(["SET", nextKey(email), step, "EX", 31536000]);
-      await kv(["ZADD", DUE_KEY, r === "failed" ? now : now + CONTENT[step].day * DAY_MS, email]);
-    }
-    return firstSent === "sent";
+    return r === "sent";
   } catch {
     return false;
   }
@@ -305,10 +330,11 @@ export async function enroll(rawEmail: string, kv: Kv = kvCmd, f: Fetch = fetch,
 /**
  * /api/cron/nurture: send every email that is due, then schedule the one
  * after it from the sign-up time (so a late run never pushes the rest back).
- * ZREM is the claim. An address enrolled before the sequence grew has no
- * `nurture:next` and is on step 1, which is what it was waiting for. An
- * unsubscribed address leaves the sequence; a failed send moves on, so one
- * bad address can never loop.
+ * ZREM is the claim. A kept step that is no email's name is read as the
+ * five-email build kept it (LEGACY), and a missing one (a lost write) as the
+ * recast tip, the email after either day-0 one. An unsubscribed address
+ * leaves the sequence; a failed send moves on, so one bad address can never
+ * loop.
  */
 export async function runDue(kv: Kv = kvCmd, f: Fetch = fetch, now: number = Date.now(), opts: { deadline?: number } = {}): Promise<{ due: number; sent: number; left: number }> {
   const due = (await kv(["ZRANGEBYSCORE", DUE_KEY, "-inf", now, "LIMIT", 0, 500])) as unknown;
@@ -322,22 +348,19 @@ export async function runDue(kv: Kv = kvCmd, f: Fetch = fetch, now: number = Dat
     const claimed = await kv(["ZREM", DUE_KEY, e]);
     if (Number(claimed) !== 1) continue; // another run took it
     if (await kv(["GET", stopKey(e)])) { await kv(["DEL", nextKey(e)]); continue; } // started Premium
-    // no step kept: someone from the two-email build, on step 1. A kept 0 is
-    // a first email Resend turned away at sign-up, and it is sent now.
-    const kept = await kv(["GET", nextKey(e)]);
-    const n = Number(kept);
-    const step = kept === null || kept === undefined || !Number.isInteger(n) || n < 0 || !CONTENT[n] ? 1 : n;
+    // a kept day-0 email is one Resend turned away at sign-up: it goes now
+    const step = keptStep(await kv(["GET", nextKey(e)]));
     const r = await sendStep(e, step, kv, f);
     if (r === "sent") sent++;
-    const next = step + 1;
-    if (r === "unsub" || !CONTENT[next]) {
+    const next = mailOf(mailOf(step)?.next);
+    if (r === "unsub" || !next) {
       await kv(["DEL", nextKey(e)]);
       continue;
     }
     const startedIso = (await kv(["GET", "nurture:0:" + e])) as string | null;
     const started = startedIso ? Date.parse(startedIso) : NaN;
-    const at = Number.isFinite(started) ? started + CONTENT[next].day * DAY_MS : now + (CONTENT[next].day - CONTENT[step].day) * DAY_MS;
-    await kv(["SET", nextKey(e), next, "EX", 31536000]);
+    const at = Number.isFinite(started) ? started + next.day * DAY_MS : now + (next.day - (mailOf(step) as Content).day) * DAY_MS;
+    await kv(["SET", nextKey(e), next.id, "EX", 31536000]);
     await kv(["ZADD", DUE_KEY, Math.max(at, now + 1), e]);
   }
   return { due: due.length, sent, left: due.length - done };

@@ -829,6 +829,18 @@
   "note": "No model sheet was drawn (A1): the buddy's own cheer pose, already checked against its badge, rides along as the body reference in its place, with the badge for the face."
  },
  {
+  "name": "buddy-fox-peek",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "tools/art/out/edit/fox-peek-ref.png",
+   "public/assets/crafted/buddy-fox-cheer.webp",
+   "public/assets/crafted/buddy-fox-v2.webp"
+  ],
+  "prompt": "Pip the fox from the second picture, the same character as the round badge in the third picture, peeking over a counter exactly as the fox in the first picture does: its head, the tops of its shoulders and both front paws resting side by side on the ledge, facing us with a happy smile, the same size and angle as the fox in the first picture. Same face and colours as the second picture: bright orange fur, a white muzzle and white chest, dark brown paws and ear tips. Everything below the paws is cut off in one straight, flat, horizontal line across the bottom. No counter, no ledge, no wood, no fruit drawn: only the character, alone.",
+  "note": "For the daily stories only (STORY1, 22 Oct 2026): their three peek spots showed the fox, every new family's buddy, as its round badge. Fruit Slice never reads it: a fox child keeps the fox painted into the counter (arcade-slice.html returns before any buddy picture for the fox)."
+ },
+ {
   "name": "buddy-bunny-rest",
   "size": "1024x1024",
   "transparent": true,
@@ -1495,5 +1507,350 @@
    "public/assets/crafted/buddy-unicorn-v2.webp"
   ],
   "prompt": "Luna the unicorn from the second picture, the same character as the round badge in the third picture, as a full-body clay toy sitting exactly as the fox in the first picture does: sitting down, facing us, both front paws resting together in front of it, a big happy smile, the same pose, angle and size. Same face, colours and proportions as the second picture: white fur, a golden spiral horn, a soft rainbow mane in pink, orange, yellow, mint and lilac, pink inside its ears, rosy cheeks, small pale-pink hooves. Centred, about 85% of the square, sitting on the bottom edge. Only the character, alone: no bench, no wood, no night sky, no background, no shadow."
+ },
+ {
+  "name": "lighthouse-sea-base",
+  "size": "1024x1536",
+  "transparent": false,
+  "prompt": "This is a cozy NIGHT picture, not a sunny one: a soft blue-violet evening lit warmly by lamps, never dark or scary. A tall portrait game background: the open sea at night seen from high up in a lighthouse (no window frame, no ledge, no lamp: only the view). A deep blue-violet sky with a few tiny soft stars and a few soft lilac wisps of cloud fills the top third; the horizon is a soft straight line about one third of the way down. Below it, calm deep-blue water with small gentle clay waves and a few soft lilac fog wisps lying low on the water. On the LEFT, between 45% and 65% down from the top, a cove of big rounded clay rocks juts out from the left edge to about a third of the width, with a small pocket of calm water behind its front rocks. In the LOWER RIGHT a BIG grassy hill on the shore fills the whole lower right quarter of the picture: its top edge runs from the water about 60% down at the middle of the width, up gently to the right edge; it covers everything from there down to the bottom and across to the right edge, with soft dark-green grass, a few tiny bushes, and NO houses and NO buildings at all (houses are added later, so the hill's broad upper slope stays open and plain). Along the very bottom, about 92% down, a simple wooden dock with a few posts runs along the foot of the hill from about 40% of the width to the right edge, with no lights, no lanterns, no bulbs. Smooth, soft clay painting, not grainy. The middle of the sea is open, empty water. No boats, no animals, no people, no houses, no lighthouse, no lamp, no moon, no beam of light, nothing glowing, no text."
+ },
+ {
+  "name": "lighthouse-town-row1",
+  "size": "1536x1024",
+  "transparent": true,
+  "prompt": "This is a cozy NIGHT picture, not a sunny one: a soft blue-violet evening lit warmly by lamps, never dark or scary. A straight row of exactly FOUR little clay cottages side by side, touching, front view, seen at night in soft cool moonlight: round-shouldered cream clay walls, rounded terracotta red roofs, and each cottage has exactly ONE big round window in the middle of its front wall, unlit (deep-blue glass with a thin cream frame and a small cross, no light inside). A few small green bushes at their feet. No doors, no other windows, no chimney smoke, no people, no lights. The row fills most of the width. Alone on a fully transparent background, no ground, no shadow."
+ },
+ {
+  "name": "lighthouse-town-row2",
+  "size": "1536x1024",
+  "transparent": true,
+  "prompt": "This is a cozy NIGHT picture, not a sunny one: a soft blue-violet evening lit warmly by lamps, never dark or scary. A straight row of exactly FOUR little clay cottages side by side, touching, front view, seen at night in soft cool moonlight: round-shouldered cream clay walls, rounded soft teal blue roofs, and each cottage has exactly ONE big round window in the middle of its front wall, unlit (deep-blue glass with a thin cream frame and a small cross, no light inside). A few small green bushes at their feet. No doors, no other windows, no chimney smoke, no people, no lights. The row fills most of the width. Alone on a fully transparent background, no ground, no shadow."
+ },
+ {
+  "name": "lighthouse-town-row3",
+  "size": "1536x1024",
+  "transparent": true,
+  "prompt": "This is a cozy NIGHT picture, not a sunny one: a soft blue-violet evening lit warmly by lamps, never dark or scary. A straight row of exactly FOUR little clay cottages side by side, touching, front view, seen at night in soft cool moonlight: round-shouldered cream clay walls, rounded plum purple roofs, and each cottage has exactly ONE big round window in the middle of its front wall, unlit (deep-blue glass with a thin cream frame and a small cross, no light inside). A few small green bushes at their feet. No doors, no other windows, no chimney smoke, no people, no lights. The row fills most of the width. Alone on a fully transparent background, no ground, no shadow."
+ },
+ {
+  "name": "lighthouse-bulbs",
+  "size": "1536x1024",
+  "transparent": true,
+  "prompt": "This is a cozy NIGHT picture, not a sunny one: a soft blue-violet evening lit warmly by lamps, never dark or scary. A long string of small round lantern bulbs hanging in three gentle swags along a thin dark wire, every bulb glowing warm butter-yellow with a soft glow, wide and thin, running the full width of the picture. Only the string of bulbs, alone on a fully transparent background."
+ },
+ {
+  "name": "lighthouse-ledge",
+  "size": "1536x1024",
+  "transparent": true,
+  "prompt": "This is a cozy NIGHT picture, not a sunny one: a soft blue-violet evening lit warmly by lamps, never dark or scary. A wide strip for the very bottom of a game screen, alone on a fully transparent background: the window ledge of a lighthouse lamp room, seen from inside, straight on. A thick, flat ledge of warm honey wood with a cream stone top runs the FULL width of the picture, cut off by its left and right edges (no ends, no corners showing). Along its front top edge runs a polished brass railing whose top bar is about 18% down from the top of the picture; everything above that bar is transparent. Below the ledge, the warm wooden wall of the lamp room fills down to the bottom edge, plain and calm. Warm lamplight. Nothing stands on the ledge: no lamp, no characters, no objects."
+ },
+ {
+  "name": "lighthouse-lamp-off",
+  "size": "1024x1024",
+  "transparent": true,
+  "prompt": "A big brass lighthouse lamp, alone, front view, standing upright: a round glass lantern with a big glass lens held in a polished brass frame, on a round brass base, with a small domed brass cap on top. It is OFF: the glass is dark blue-grey with soft reflections, no light, no glow. Chunky and friendly. About three quarters as wide as it is tall. Centered, about 85% of the square's height."
+ },
+ {
+  "name": "lighthouse-lamp-on",
+  "size": "1024x1024",
+  "transparent": true,
+  "ref": "tools/art/out/game/lighthouse-lamp-off.png",
+  "prompt": "The very same lamp as in the attached picture, exactly the same shape, size and position, now switched ON: its glass glows warm butter-yellow from inside, bright and cozy, with a soft warm glow just around the glass. Nothing else changes."
+ },
+ {
+  "name": "lighthouse-moon",
+  "size": "1024x1024",
+  "transparent": true,
+  "prompt": "One round cream-colored clay moon with a few soft shallow craters and a gentle soft glow at its edge. No face. Centered, about 80% of the square."
+ },
+ {
+  "name": "lighthouse-cloud",
+  "size": "1024x1024",
+  "transparent": true,
+  "prompt": "This is a cozy NIGHT picture, not a sunny one: a soft blue-violet evening lit warmly by lamps, never dark or scary. One soft, puffy night cloud in lilac-grey clay with gently lit edges, much wider than it is tall, round lumpy top and a flatter bottom. Centered, filling the square's width."
+ },
+ {
+  "name": "lighthouse-boat-tug",
+  "size": "1024x1024",
+  "transparent": true,
+  "prompt": "A little red-and-white clay tugboat with a short chimney and a round wheelhouse, a cheerful yellow duck captain in a little captain's hat at the wheel. Three-quarter view, floating, its waterline along the bottom (no water drawn). A round lantern on a short pole glows warm butter-yellow, the brightest thing on it. The lantern stands at the front of the boat. Cheerful, chunky and simple. Centered, about 80% of the square. Only the boat and its crew, alone."
+ },
+ {
+  "name": "lighthouse-boat-row",
+  "size": "1024x1024",
+  "transparent": true,
+  "prompt": "A little wooden rowboat with three little grey mice sitting in it, one holding the oars. Three-quarter view, floating, its waterline along the bottom (no water drawn). A round lantern on a short pole glows warm butter-yellow, the brightest thing on it. The lantern stands at the back of the boat. Cheerful, chunky and simple. Centered, about 80% of the square. Only the boat and its crew, alone."
+ },
+ {
+  "name": "lighthouse-boat-sail",
+  "size": "1024x1024",
+  "transparent": true,
+  "prompt": "A small sailboat with one white sail and a blue hull, a friendly grey seal in a striped shirt sitting in it. Three-quarter view, floating, its waterline along the bottom (no water drawn). A round lantern on a short pole glows warm butter-yellow, the brightest thing on it. The lantern hangs at the front of the boat. Cheerful, chunky and simple. Centered, about 80% of the square. Only the boat and its crew, alone."
+ },
+ {
+  "name": "lighthouse-boat-banana",
+  "size": "1024x1024",
+  "transparent": true,
+  "prompt": "A boat made from one big curved yellow banana, a happy little brown monkey sitting in it holding a small paddle. Three-quarter view, floating, its waterline along the bottom (no water drawn). A round lantern on a short pole glows warm butter-yellow, the brightest thing on it. The lantern stands at the back of the banana. Cheerful, chunky and simple. Centered, about 80% of the square. Only the boat and its crew, alone."
+ },
+ {
+  "name": "lighthouse-boat-teacup",
+  "size": "1024x1024",
+  "transparent": true,
+  "prompt": "A big white teacup with blue flowers floating like a boat, two little green frogs sitting inside it, smiling. Three-quarter view, floating, its waterline along the bottom (no water drawn). A tiny round lantern on a short pole at the cup's rim glows warm butter-yellow, the brightest thing on it. Cheerful, chunky and simple. Centered, about 80% of the square. Only the boat and its crew, alone."
+ },
+ {
+  "name": "lighthouse-boat-bathtub",
+  "size": "1024x1024",
+  "transparent": true,
+  "prompt": "A white clawfoot bathtub floating like a boat, a pink pig in a shower cap sitting in it with a scrub brush, soap bubbles at the rim. Three-quarter view, floating, its waterline along the bottom (no water drawn). A round lantern on a short pole glows warm butter-yellow, the brightest thing on it. The lantern stands at the tub's back end. Cheerful, chunky and simple. Centered, about 80% of the square. Only the boat and its crew, alone."
+ },
+ {
+  "name": "lighthouse-boat-ferry",
+  "size": "1024x1024",
+  "transparent": true,
+  "prompt": "A big, round, friendly ferry boat with two decks and round portholes, full of small animal families waving (rabbits, bears and ducks). Three-quarter view, floating, its waterline along the bottom (no water drawn). A round lantern on its top deck glows warm butter-yellow, the brightest thing on it. Cheerful, chunky and simple. Centered, about 80% of the square. Only the boat and its crew, alone."
+ },
+ {
+  "name": "lighthouse-whale",
+  "size": "1024x1024",
+  "transparent": true,
+  "prompt": "A big friendly blue clay whale floating at the surface of the sea, fast asleep: both eyes closed, a little sleepy smile, its back and head above the waterline along the bottom, side three-quarter view, much wider than tall. NO water spout (it is asleep), and no water, splash or puddle drawn under it: the whale alone. Centered, filling the square's width."
+ },
+ {
+  "name": "lighthouse-whale-wink",
+  "size": "1024x1024",
+  "transparent": true,
+  "ref": "tools/art/out/game/lighthouse-whale.png",
+  "prompt": "The very same whale as in the attached picture, exactly the same shape, size and position, now opening ONE eye and blowing a small playful spout of water from the top of its head. Nothing else changes."
+ },
+ {
+  "name": "lighthouse-barrel",
+  "size": "1024x1024",
+  "transparent": true,
+  "prompt": "A wooden barrel with brass hoops floating upright, its bottom along the waterline at the bottom (no water drawn), three-quarter view. Centered, about 70% of the square."
+ },
+ {
+  "name": "lighthouse-buoy",
+  "size": "1024x1024",
+  "transparent": true,
+  "prompt": "A round red-and-white striped sea buoy floating, its bottom along the waterline (no water drawn), with a little white seagull sleeping on its top, eyes closed. Centered, about 80% of the square."
+ },
+ {
+  "name": "lighthouse-duckie",
+  "size": "1024x1024",
+  "transparent": true,
+  "prompt": "A giant yellow rubber duck toy floating, cheerful smile, orange beak, its bottom along the waterline (no water drawn), three-quarter view. Centered, about 80% of the square."
+ },
+ {
+  "name": "lighthouse-wally",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "tools/art/out/adventure/lighthouse/c-wally.png"
+  ],
+  "prompt": "Captain Wally the walrus from the attached picture, the very same character (his navy captain's hat, round glasses on his nose, red nose, white mustache, tusks and red-and-white stripy scarf), standing and waving one flipper high, happy, full body, front view. Centered, about 85% of the square's height, feet on the bottom of the drawing. Only Wally, alone: no ground, no shadow."
+ },
+ {
+  "name": "windup-shop",
+  "size": "1024x1536",
+  "transparent": false,
+  "prompt": "A tall portrait game background: inside a warm honey-wood toy shop on a sunny morning, seen from behind the workbench. The top of a long honey-wood workbench is a flat surface whose front edge is a straight horizontal line 60% down from the top; the bench's plain wooden front fills everything below that line to the bottom edge, calm and simple. Above the bench: the back wall with honey-wood shelves holding a few small blocks, spools of thread and paper streamers left from a party; a big round window on the left shows a bright sunny town square with colorful bunting; on the right, a little wooden ramp slopes down from the bench's right end toward the shop's open door at the right edge, which looks out on the sunny square. The upper right of the back wall is plain wood. The middle of the bench top is empty. No characters, no toys, no clock, no text."
+ },
+ {
+  "name": "windup-shelf",
+  "size": "1024x1536",
+  "transparent": false,
+  "ref": "tools/art/out/game/windup-shop.png",
+  "prompt": "The same toy shop as in the attached picture (the same honey wood, light and colors), now looking up at its TOP shelf: a long, deep honey-wood shelf whose front edge is a straight horizontal line 62% down from the top; the shelf's plain wooden front fills everything below that line to the bottom edge, calm and simple. Above it, the shop's wall high up near the ceiling, with wooden beams, paper streamers and a small round window with morning light. The middle of the shelf top is empty. No characters, no toys, no clock, no text."
+ },
+ {
+  "name": "windup-bunny",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "tools/art/out/adventure/windup/c-bunny.png"
+  ],
+  "prompt": "The wind-up toy in the attached picture, drawn again as the very same toy (the same shape, colors, face and size proportions), awake and standing happily, three-quarter view, but WITHOUT any wind-up key: no key and no hole anywhere on it. Centered, about 85% of the square, its feet on the bottom of the drawing. Only the toy, alone: no ground, no shadow, no background."
+ },
+ {
+  "name": "windup-frog",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "tools/art/out/adventure/windup/c-frog.png"
+  ],
+  "prompt": "The wind-up toy in the attached picture, drawn again as the very same toy (the same shape, colors, face and size proportions), awake and standing happily, three-quarter view, but WITHOUT any wind-up key: no key and no hole anywhere on it. Centered, about 85% of the square, its feet on the bottom of the drawing. Only the toy, alone: no ground, no shadow, no background."
+ },
+ {
+  "name": "windup-top",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "tools/art/out/adventure/windup/c-top.png"
+  ],
+  "prompt": "The wind-up toy in the attached picture, drawn again as the very same toy (the same shape, colors, face and size proportions), awake and standing happily, three-quarter view, but WITHOUT any wind-up key: no key and no hole anywhere on it. Centered, about 85% of the square, its feet on the bottom of the drawing. Only the toy, alone: no ground, no shadow, no background."
+ },
+ {
+  "name": "windup-croc",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "tools/art/out/adventure/windup/c-croc.png"
+  ],
+  "prompt": "The wind-up toy in the attached picture, drawn again as the very same toy (the same shape, colors, face and size proportions), awake and standing happily, three-quarter view, but WITHOUT any wind-up key: no key and no hole anywhere on it. Centered, about 85% of the square, its feet on the bottom of the drawing. Only the toy, alone: no ground, no shadow, no background."
+ },
+ {
+  "name": "windup-elephant",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "tools/art/out/adventure/windup/c-elephant.png"
+  ],
+  "prompt": "The wind-up toy in the attached picture, drawn again as the very same toy (the same shape, colors, face and size proportions), awake and standing happily, three-quarter view, but WITHOUT any wind-up key: no key and no hole anywhere on it. Centered, about 85% of the square, its feet on the bottom of the drawing. Only the toy, alone: no ground, no shadow, no background."
+ },
+ {
+  "name": "windup-hippo",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "tools/art/out/adventure/windup/c-hippo.png"
+  ],
+  "prompt": "The wind-up toy in the attached picture, drawn again as the very same toy (the same shape, colors, face and size proportions), awake and standing happily, three-quarter view, but WITHOUT any wind-up key: no key and no hole anywhere on it. Centered, about 85% of the square, its feet on the bottom of the drawing. Only the toy, alone: no ground, no shadow, no background."
+ },
+ {
+  "name": "windup-jack-closed",
+  "size": "1024x1024",
+  "transparent": true,
+  "ref": "tools/art/out/game/windup-jack-open.png",
+  "prompt": "The very same jack-in-the-box as in the attached picture (the same red box with yellow stars, the same yellow lid and trim, the same size, angle and place in the picture), but now with its lid CLOSED and the puppy hidden inside: no puppy, no spring showing. Nothing else changes. Only the box, alone: no ground, no shadow, no background."
+ },
+ {
+  "name": "windup-jack-open",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "tools/art/out/adventure/windup/c-jack.png"
+  ],
+  "prompt": "The wind-up toy in the attached picture, drawn again as the very same toy (the same shape, colors, face and size proportions), awake and standing happily, three-quarter view, but WITHOUT any wind-up key: no key and no hole anywhere on it. Its lid is open and the springy puppy has popped out on its spring. Centered, about 85% of the square, its feet on the bottom of the drawing. Only the toy, alone: no ground, no shadow, no background."
+ },
+ {
+  "name": "windup-nightcap",
+  "size": "1024x1024",
+  "transparent": true,
+  "prompt": "One small, soft striped nightcap, pale blue and white stripes, its floppy tip ending in a white pompom, seen from the front-side as if it sits on a little head (nobody wearing it). Centered, about 70% of the square."
+ },
+ {
+  "name": "windup-dial",
+  "size": "1024x1024",
+  "transparent": true,
+  "prompt": "A big round polished brass disc seen straight on from the front, perfectly circular and flat, with a ridged (knurled) rim and two soft engraved rings, and a small round brass hub in the very middle. Filling 95% of the square. No numbers, no marks."
+ },
+ {
+  "name": "windup-key",
+  "size": "1024x1024",
+  "transparent": true,
+  "prompt": "The handle of a toy's wind-up key: a polished brass butterfly-shaped handle (two rounded wings joined at a short middle stem), seen straight on from the front, flat, perfectly symmetrical. Centered, about 80% of the square."
+ },
+ {
+  "name": "windup-gauge",
+  "size": "1536x1024",
+  "transparent": true,
+  "prompt": "A meter frame for a game, seen straight on: a half-circle arch, like a rainbow, made of a thick band of soft rainbow colors (red at the left end, then orange, yellow, green and blue to violet at the right end), with a polished brass rim along both its edges, and a small round brass hub at the middle of the bottom where a needle will pivot, a little gold star on the hub. The arch's two feet rest on the bottom of the picture. No needle, no numbers, no ticks, no text."
+ },
+ {
+  "name": "windup-musicbox",
+  "size": "1024x1024",
+  "transparent": true,
+  "prompt": "A giant wooden music box, its lid open showing a shiny brass drum with little pins inside, honey wood painted with little flowers and stars on its sides (no letters), three-quarter view, standing. No crank and no handle on it. Centered, about 85% of the square."
+ },
+ {
+  "name": "windup-crank",
+  "size": "1536x1024",
+  "transparent": true,
+  "prompt": "A brass crank handle for a music box, alone: one straight polished brass arm lying horizontally across the middle, a round brass pivot cap at its LEFT end and a round cherry-red wooden knob standing up at its RIGHT end, seen from the front. Much wider than tall."
+ },
+ {
+  "name": "windup-grandpa",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "tools/art/out/adventure/windup/c-grandpa.png"
+  ],
+  "prompt": "Grandpa Bear from the attached picture, the very same character (mustard knitted cardigan, long floppy red sleeping cap with a white pompom, white mustache), fast asleep in a wooden rocking chair: head tipped back, mouth open, snoring happily. The whole chair in the picture, three-quarter view. Centered, about 85% of the square. Only Grandpa Bear in his chair, alone: no floor, no shadow, no sleep letters."
+ },
+ {
+  "name": "windup-cuckoo",
+  "size": "1024x1024",
+  "transparent": true,
+  "prompt": "A wooden cuckoo clock with a carved little roof, its small door open and a cheerful round clay bird popped out on a little stick, a round clock face with NO numbers (only two hands and small dots), two pine-cone weights hanging on chains below. Front view. Centered, about 85% of the square's height."
+ },
+ {
+  "name": "windup-oilcan",
+  "size": "1024x1024",
+  "transparent": true,
+  "prompt": "A little polished brass oil can with a round body, a small curved handle and a long thin spout, three-quarter view. Centered, about 75% of the square."
+ },
+ {
+  "name": "bridge-canyon",
+  "size": "1024x1536",
+  "transparent": false,
+  "prompt": "A tall portrait game background: a bright river canyon on a fresh, sparkling spring morning after a storm, seen exactly from the SIDE, like a stage set (not from above, not looking up the river). The river flows from left to right across the bottom third of the picture: turquoise water with soft white curls, and smooth round stones on the riverbed seen through the clear water at the very bottom. On the LEFT edge stands a tall cliff of warm peach sandstone with grass and a little path on its flat top (the near bank): its flat top is about 45% down, and it reaches from the left edge to about 20% of the width, its face dropping straight down to the river. On the RIGHT edge stands Blossom Island: a tall round rocky island with pink blossom trees and a small paper-lantern arbour on its flat top, about 40% down, reaching from about 80% of the width to the right edge, its face dropping straight down to the river. BETWEEN them, from 20% to 80% of the width and from the top of the picture down to the river, there is only open air: a soft blue morning sky with a fading rainbow, and the far canyon wall pale and far behind with a little waterfall. NO bridge, no arch, no stones in the air, no characters, no text."
+ },
+ {
+  "name": "bridge-canyon-wide",
+  "size": "1536x1024",
+  "transparent": false,
+  "ref": "tools/art/out/game/bridge-canyon.png",
+  "prompt": "The same river canyon as the attached picture (the same cliffs, colors, light, waterfall and Blossom Island), painted as a WIDE picture, seen exactly from the side like a stage set: the river flows from left to right across the bottom third; on the LEFT edge the near bank's sandstone cliff with its grassy flat top about 50% down, reaching to about 15% of the width; on the RIGHT edge Blossom Island with its pink trees and lantern arbour, its flat top about 45% down, from about 85% of the width; between them only open air, a soft blue sky with a fading rainbow and the pale far canyon wall with its little waterfall. NO bridge, no arch, no stones in the air, no characters, no text."
+ },
+ {
+  "name": "bridge-stone",
+  "size": "1024x1024",
+  "transparent": false,
+  "prompt": "A seamless, tileable texture of warm sandstone, seen straight on, flat and evenly lit: soft peach-and-honey sandstone with a gentle clay-like grain and a few tiny speckles. No cracks, no edges, no shadows, no carved shapes, no bricks. The pattern must tile seamlessly when repeated in every direction."
+ },
+ {
+  "name": "bridge-spiral",
+  "size": "1024x1024",
+  "transparent": true,
+  "prompt": "A spiral carved into stone, as a shape on its own: a smooth rounded groove curling three times around from the middle outward, in plain light grey-white clay, seen straight on. Centered, about 80% of the square."
+ },
+ {
+  "name": "bridge-moss",
+  "size": "1024x1024",
+  "transparent": true,
+  "prompt": "A soft cap of green moss: a rounded, lumpy, cushion-like mound of fresh green moss with a few tiny white flowers, seen from the front, much wider than tall. Centered, filling the square's width."
+ },
+ {
+  "name": "bridge-blossom",
+  "size": "1024x1024",
+  "transparent": true,
+  "prompt": "A puff of pink blossom: a round cluster of little pink and white cherry blossoms with a few small green leaves. Centered, about 80% of the square."
+ },
+ {
+  "name": "bridge-grandma",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "tools/art/out/adventure/bridge/c-grandma.png"
+  ],
+  "prompt": "Grandma Tortoise from the attached picture, the very same character (flower crown, round spectacles, patterned shell), standing upright and waving her little flowered hanky high above her head, happy, full body, front view. Centered, about 85% of the square's height. Only Grandma Tortoise, alone: no ground, no shadow."
+ },
+ {
+  "name": "bridge-crowd",
+  "size": "1536x1024",
+  "transparent": true,
+  "refs": [
+   "tools/art/out/adventure/lighthouse/cast.png",
+   "tools/art/out/adventure/windup/cast.png"
+  ],
+  "prompt": "Three friends from the attached lineups waiting together, standing close side by side, full body, three-quarter view facing right, happy and excited: Captain Wally the walrus (first picture) holding a big birthday cake with pink frosting, Grandpa Bear in his mustard cardigan (second picture), and the drummer bunny wind-up toy with its drum (second picture). Only these three, each exactly once, drawn exactly as in the lineups. No Echo, no ground, no shadow."
+ },
+ {
+  "name": "bridge-ducks",
+  "size": "1536x1024",
+  "transparent": true,
+  "prompt": "A mother duck and three little yellow ducklings paddling in a line, side view, swimming to the right, their waterline along the bottom (no water drawn). Cheerful. Centered, filling most of the width."
  }
 ]

@@ -375,6 +375,17 @@
        them; teal from the tokens */
     #iapTL .tli.now .tld{background:linear-gradient(160deg,var(--act-hi),var(--act));border-color:transparent;box-shadow:0 3px 0 0 var(--act-d);}
     #iapTL .tli.bill .tld{background:#fffdf7;border:2px solid var(--act);box-shadow:none;}
+    /* THE 3-STEP TRIAL TIMELINE (4 Nov 2026): Today, the reminder (or last
+       free day to cancel), the day the trial ends, side by side under the
+       check line, joined by a dashed rail from dot to dot. */
+    #iapTL.steps{display:flex;margin:12px 0 0;padding:0;text-align:center;}
+    #iapTL.steps .tli{flex:1 1 0;min-width:0;padding:0 2px;}
+    #iapTL.steps .tli:not(:last-child):after{content:"";position:absolute;top:10px;left:calc(50% + 15px);right:calc(-50% + 15px);bottom:auto;width:auto;height:3px;border-radius:99px;background:repeating-linear-gradient(90deg,#decfb5 0 6px,transparent 6px 11px);}
+    #iapTL.steps .tld{position:relative;left:auto;top:auto;margin:0 auto 4px;width:22px;height:22px;}
+    #iapTL.steps .tli.mid .tld{background:#fffdf7;border:2px solid var(--act);box-shadow:none;}
+    #iapTL.steps .tli b{font-size:14px;line-height:1.2;}
+    #iapTL.steps .tli p{font-size:12px;line-height:1.3;margin-top:1px;}
+    body.fit7.offer #iapTL.steps .tli:not(:last-child){padding-bottom:0;}
     #iapMsg{margin-top:10px;font-weight:800;font-size:12.5px;}
     #iapMsg:empty{display:none;}
     body.offer #iapMsg{text-align:center;}
@@ -434,6 +445,7 @@
     body.fit9 #offerTitle{font-size:19px;}
   </style>
   <link rel="stylesheet" href="/crafted-family.css" />
+  <link rel="stylesheet" href="/onboarding-price-studio.css" />
 </head>
 <body class="crafted-family family-subscribe">
   <div class="wrap">
@@ -531,8 +543,9 @@
            who bought it is still recognised and can restore.
            TWO ROWS, WHEN THE STORE CAN SELL BOTH (Travis, 19 Oct 2026: "go,
            yes to 1 2 3", to showing monthly and yearly so parents compare).
-           The yearly row (#iapYear) sits above the monthly one and is picked
-           when the screen opens, but it is shown ONLY when Sona.storePlan
+           The yearly row (#iapYear) sits above the monthly one (picked when
+           the screen opened until 23 Oct 2026; off the card since, while
+           IAP_SELL_YEARLY is false), but it is shown ONLY when Sona.storePlan
            hands back a yearly plan (plan.year): the store returned the yearly
            product AND RevenueCat's current offering lists it. Otherwise the
            card is the monthly row alone, exactly as before, and neither row
@@ -543,8 +556,20 @@
            A THIRD ROW, THE ONE PAYMENT (Travis, 22 Oct 2026, for iOS 1.0.9;
            "i dont wanna say lifetime"): #iapLife, under the monthly row, by
            the yearly row's rule (plan.life: the store returned the one-payment
-           product AND RevenueCat's current offering lists it). It is never
-           picked on arrival, and one that arrives late comes in unpicked.
+           product AND RevenueCat's current offering lists it).
+           TWO ROWS, MONTHLY ON TOP AND PICKED (Travis, 23 Oct 2026: "get rid
+           of the yearly option. I just want two payment options"; first with
+           the one payment on top and picked, then, the same day, "can we just
+           have the ... a month as the top default option and then below it is
+           the pay one time?"): the monthly row, with its free trial, on top
+           and picked when the screen opens; #iapLife under it; no yearly row
+           (IAP_SELL_YEARLY in sona.js). A one-payment row that arrives late
+           comes in unpicked. From 31 Oct to 2 Nov 2026 the one payment was on
+           top and picked; since 2 Nov (Travis, with the free trial set to 7
+           days in App Store Connect: "put it at the default option ... make
+           it more of an easy choice") monthly is on top and picked again, it
+           wears "Recommended" and the one payment wears no tag (it said
+           "Best Value").
            #iapAhead is the one line under the button about the phone's own
            heads-up the day before the free days end, painted (from
            planWords) only when this phone will really show it.
@@ -571,7 +596,7 @@
           <span class="tag" id="iapLifeTag" hidden></span>
           <span class="oneplan-dot" aria-hidden="true"></span>
           <span class="oneplan-l"><span class="oneplan-name" id="iapLifeName"></span><span class="oneplan-sub" id="iapLifeLine"></span></span>
-          <span class="oneplan-amt" id="iapLifeAmt"></span>
+          <span class="oneplan-billing"><span class="oneplan-amt" id="iapLifeAmt"></span><span class="oneplan-billed" id="iapLifeBilled" hidden>Billed today</span></span>
           <span class="oneplan-price" id="iapLifePrice"></span>
           <span class="oneplan-what" id="iapLifeWhat"></span>
         </div>
@@ -842,6 +867,8 @@
     // parked as Coming soon is no door (19 Oct 2026: Home shows no card for
     // one, and Premium does not open it), so a typed ?from= for one is
     // Settings › Your plan, never "Unlock <a game Premium won't open>".
+    // ?from=adventure (22 Oct 2026, STORY1): a tap on Home's locked story
+    // card. Same as a grey game: no check, the X goes Home, never recorded.
     var OFFER_FIRST = /[?&]first=1(&|$)/.test(location.search), OFFER_FROM = "";
     // ?setup=1: setup's ready screen, for a family who starts with the trial
     // (Sona.trialFirst). The grown-up is still holding the phone: the price
@@ -851,10 +878,10 @@
     var OFFER_SETUP = /[?&]setup=1(&|$)/.test(location.search);
     try {
       var _f = new URLSearchParams(location.search).get("from") || "";
-      OFFER_FROM = (_f === "library" || _f === "home") ? _f : (Sona.gameKey ? Sona.gameKey(_f) : "");
+      OFFER_FROM = (_f === "library" || _f === "home" || _f === "adventure") ? _f : (Sona.gameKey ? Sona.gameKey(_f) : "");
       if (OFFER_FROM && Sona.GAME_ACTS && Sona.GAME_ACTS[OFFER_FROM] && Sona.GAME_ACTS[OFFER_FROM].comingSoon) OFFER_FROM = "";
     } catch (e) {}
-    var OFFER_SOURCE = OFFER_SETUP ? "setup" : OFFER_FIRST ? "first-run" : OFFER_FROM === "library" ? "from-library" : OFFER_FROM === "home" ? "from-home" : OFFER_FROM ? "from-game" : "settings";
+    var OFFER_SOURCE = OFFER_SETUP ? "setup" : OFFER_FIRST ? "first-run" : OFFER_FROM === "library" ? "from-library" : OFFER_FROM === "home" ? "from-home" : OFFER_FROM === "adventure" ? "from-adventure" : OFFER_FROM ? "from-game" : "settings";
 
     // APPLE'S CARD, ITS WHOLE STATE (5 Oct 2026). Up here because three
     // blocks read it: the native rail that paints the card, fitOffer(), and
@@ -873,11 +900,12 @@
     //            them replaces it, never a tap (see ask())
     //   poll, pendingKind, stop   the watch for an Ask to Buy approval
     //   pick     "annual" | "monthly" | "lifetime": the row the parent picked.
-    //            Yearly when the screen opens (19 Oct 2026); it only counts
+    //            Monthly when the screen opens (23 Oct 2026; yearly from 19 to
+    //            23 Oct); it only counts
     //            while the store's answer has that row (plan.year, plan.life:
     //            the one payment, 22 Oct 2026, never picked on arrival), so
     //            with one row the card is the monthly plan whatever this says
-    var APPLE = { plan: null, busy: false, msg: "", done: "", counted: false, told: {}, shape: "", gen: 0, asks: 0, poll: 0, pendingKind: "", stop: null, pick: "annual" };
+    var APPLE = { plan: null, busy: false, msg: "", done: "", counted: false, told: {}, shape: "", gen: 0, asks: 0, poll: 0, pendingKind: "", pendingPlan: null, unentPlan: null, stop: null, pick: "monthly" };
     // THE ONE SHOWING FROM HOME (Sona.homeOfferDue, 13 Oct 2026) is spent
     // only once the offer frame is up AND the store gave a definite answer:
     // a priced card, "nothing to sell", or Premium already there (and always
@@ -1114,7 +1142,8 @@
     // ONE PAINT FUNCTION (5 Oct 2026). Travis: "get rid of the annual option
     // and update the copy so that it says three days free, then $9.99 a
     // month". The app sold the monthly product alone; since 19 Oct 2026 the
-    // yearly one can be a second row, picked on arrival, when the store's
+    // yearly one can be a second row (never picked on arrival since 23 Oct
+    // 2026, and off the card while IAP_SELL_YEARLY is false), when the store's
     // answer carries it (plan.year: the store has it AND RevenueCat's
     // offering lists it). What the card may say about either is not decided
     // here: Sona.storePlan() asks the store (the products, whether THIS buyer
@@ -1202,7 +1231,7 @@
           if (!priced(p)) return [];
           var out = [];
           if (p.year) out.push("annual");
-          out.push("monthly");
+          out.push("monthly");                // monthly on top, picked (23 Oct 2026)
           if (p.life) out.push("lifetime");
           return out;
         }
@@ -1221,12 +1250,27 @@
         // else whether this row is the picked one
         function paintRow(ids, w, hide, on) {
           var row = g(ids.row);
+          // Travis's shorter lifetime labels (24 Oct 2026) are presentation
+          // only. The store still owns the amount and the picked plan still
+          // owns the button, billing disclosure and purchase underneath it.
+          var life = ids.row === "iapLife" && w.state === "paid";
+          // THE FREE TRIAL IS THE EASY CHOICE (Travis, 2 Nov 2026: "have the
+          // second option be a way of pointing people to the monthly 7-day
+          // trial and make it more of an easy choice"): on a card of more than
+          // one row the monthly row, when it is a free trial, wears
+          // "Recommended", and the one payment wears no tag (it said "Best
+          // Value" from 24 Oct). One row alone wears none, and so does a card
+          // with the yearly row switched back on (its own "Best value" is
+          // planWords', IAP_SELL_YEARLY).
+          var rec = ids.row === "iapPlan" && w.state === "free" && on !== null && kindsOf(APPLE.plan).indexOf("annual") < 0;
           row.hidden = hide;
-          g(ids.tag).textContent = w.tag || ""; g(ids.tag).hidden = !w.tag;
+          g(ids.tag).textContent = rec ? "Recommended" : life ? "" : w.tag || ""; g(ids.tag).hidden = !rec && (life || !w.tag);
           g(ids.price).textContent = w.price || "";
           g(ids.what).textContent = w.what || "";
-          g(ids.name).textContent = w.name || ""; g(ids.line).textContent = w.sub || ""; g(ids.line).hidden = !w.sub;
+          g(ids.name).textContent = life ? "Lifetime" : w.name || "";
+          g(ids.line).textContent = life ? "Yours Forever" : w.sub || ""; g(ids.line).hidden = !life && !w.sub;
           g(ids.amt).textContent = w.amount || "";
+          if (ids.row === "iapLife") g("iapLifeBilled").hidden = hide || !life;
           if (on === null) { row.removeAttribute("role"); row.removeAttribute("aria-checked"); row.removeAttribute("tabindex"); }
           else { row.setAttribute("role", "radio"); row.setAttribute("aria-checked", on ? "true" : "false"); row.tabIndex = on ? 0 : -1; }
         }
@@ -1303,9 +1347,14 @@
           g("iapTitle").textContent = done ? wordsOf(null).title : w.title;
           g("iapCheck").textContent = w.check || ""; g("iapCheck").hidden = done || !w.check || w.state === "none" || w.state === "owned";
           while (elTL.firstChild) elTL.removeChild(elTL.firstChild);
-          (w.rows || []).forEach(function (row, i) {
+          // the 3-step trial timeline (planWords' steps, 4 Nov 2026), drawn
+          // across the card; the old dated rows (always empty since 6 Oct
+          // 2026) down it
+          var steps = (w.steps && w.steps.length) ? w.steps : (w.rows || []);
+          elTL.classList.toggle("steps", steps === w.steps);
+          steps.forEach(function (row, i) {
             var li = document.createElement("li"), dot = document.createElement("span"), b = document.createElement("b"), p = document.createElement("p");
-            li.className = "tli " + (i === 0 ? "now" : "bill");
+            li.className = "tli " + (i === 0 ? "now" : i === steps.length - 1 ? "bill" : "mid");
             dot.className = "tld"; dot.setAttribute("aria-hidden", "true");
             b.textContent = row.when; p.textContent = row.text;
             li.appendChild(dot); li.appendChild(b); li.appendChild(p); elTL.appendChild(li);
@@ -1349,8 +1398,9 @@
           // UNPICKED, and a row that goes away takes the pick to monthly: the
           // row the parent was reading stays picked while it is still there,
           // so the same button never starts buying another plan without a
-          // tap. Yearly is picked when the screen opens on several rows (the
-          // one payment never is); after that only a tap changes the pick.
+          // tap. Monthly is picked when the screen opens (23 Oct 2026, the free
+          // trial: the yearly row, when sold, and the one payment never are);
+          // after that only a tap changes the pick.
           if (wasKind && kindsOf(APPLE.plan).indexOf(wasKind) > -1) APPLE.pick = wasKind;
           if (APPLE.plan.state === "owned") owned(); else paintApple();
         }
@@ -1487,9 +1537,16 @@
         // to the buy tap. NOT a sale: nothing is counted and nothing is
         // celebrated. The one exception is an Ask to Buy sent from this very
         // screen and now approved, which is this screen's sale.
+        // A sale that buyPlan's own answer did not carry (an Ask to Buy
+        // approved later, a Restore after "not-entitled"): sona.js runs its
+        // purchase step for the trial reminder, before the page leaves.
+        // Feature-checked: an older cached sona.js has no such function.
+        function soldElsewhere(plan) {
+          try { if (typeof Sona.trialReminderSold === "function") Sona.trialReminderSold(plan || null); } catch (e) {}
+        }
         function owned() {
           if (APPLE.done) return;
-          if (APPLE.pendingKind) { bought(APPLE.pendingKind); return; }
+          if (APPLE.pendingKind) { soldElsewhere(APPLE.pendingPlan); bought(APPLE.pendingKind); return; }
           tell("owned");
           if (OFFER_FIRST || OFFER_FROM || OFFER_SETUP) { appleDone("owned", 1000); return; }
           // Settings › Your plan: stay, as the page a subscriber opens
@@ -1561,7 +1618,8 @@
             // "nothing was charged" is never said: after a failure the phone
             // does not know that. A cancelled sheet says nothing at all.
             if (code !== "busy") APPLE.msg = say(code);
-            if (code === "pending") APPLE.pendingKind = plan.kind;
+            if (code === "pending") { APPLE.pendingKind = plan.kind; APPLE.pendingPlan = plan; }
+            if (code === "not-entitled") APPLE.unentPlan = plan;
             // an approval may still be on its way, whatever this tap ended in:
             // keep watching, and keep saying so if the tap left nothing to say
             if (APPLE.pendingKind) { watch(); if (!APPLE.msg) APPLE.msg = say("pending"); }
@@ -1595,7 +1653,7 @@
             try { elMsg.scrollIntoView({ block: "nearest" }); } catch (e) {}
             if (APPLE.pendingKind) watch();
           };
-          try { Sona.iapRestore().then(function (active) { if (active) appleDone("restored", 1000); else stays("no-purchases"); }, function () { stays("restore-failed"); }); }
+          try { Sona.iapRestore().then(function (active) { if (active) { if (APPLE.unentPlan) soldElsewhere(APPLE.unentPlan); appleDone("restored", 1000); } else stays("no-purchases"); }, function () { stays("restore-failed"); }); }
           catch (e) { stays("restore-failed"); }
         };
 
@@ -1619,9 +1677,25 @@
             try { Sona.iapRefresh(true).then(function (active) { if (active && gen === APPLE.gen && !APPLE.busy && !APPLE.done) owned(); }, function () {}); } catch (e) {}
           }, 10000);
         }
-        document.addEventListener("visibilitychange", function () { if (!document.hidden) reask(); });
+        // THE REMINDER LINE FOLLOWS iOS'S OWN ANSWER. trialReminderOn reads
+        // what iOS last told this phone, and the card can paint before iOS
+        // has answered this page (or after the parent changed the setting in
+        // iOS Settings and came back): once iOS answers, the card is painted
+        // again if that line would now say something else. The plan is the
+        // same, so only the line under the button changes.
+        function aheadCheck() {
+          try {
+            if (OLD || typeof Sona.notifyRefresh !== "function") return;
+            Sona.notifyRefresh().then(function () {
+              if (APPLE.busy || APPLE.done || !pricedNow()) return;
+              var nw = wordsOf(picked()), mid = elTL.querySelector(".tli.mid p");
+              if ((nw.headsUp || "") !== (elAhead.textContent || "") || ((nw.steps && nw.steps[1]) ? nw.steps[1].text : "") !== (mid ? mid.textContent : "")) paintApple();
+            }, function () {});
+          } catch (e) {}
+        }
+        document.addEventListener("visibilitychange", function () { if (!document.hidden) { reask(); aheadCheck(); } });
 
-        if (OLD) paintApple(); else ask(false);
+        if (OLD) paintApple(); else { ask(false); aheadCheck(); }
       } catch (e) {}
     })();
 
@@ -1711,7 +1785,7 @@
         // app, a card that showed a price. Leaving "We couldn't reach the App
         // Store" is not turning a price down.
         // keepalive, because this navigates immediately afterwards
-        if (!inApp || APPLE.counted) { try { if (Sona.track) Sona.track("offer dismissed", { surface: OFFER_SETUP ? "setup" : OFFER_FIRST ? "first-run" : OFFER_FROM === "home" ? "home" : "from-game" }); } catch (x) {} }
+        if (!inApp || APPLE.counted) { try { if (Sona.track) Sona.track("offer dismissed", { surface: OFFER_SETUP ? "setup" : OFFER_FIRST ? "first-run" : OFFER_FROM === "home" ? "home" : OFFER_FROM === "adventure" ? "adventure" : "from-game" }); } catch (x) {} }
       });
     })();
 
@@ -1922,16 +1996,28 @@
         // what Premium opens TODAY: released games outside the free tier
         // (without the free version, that is every released game)
         var open = Object.keys(acts).filter(function (k) { return (acts[k].tier !== "free" || !FREE_VER) && !acts[k].comingSoon; });
-        var game = OFFER_FROM && OFFER_FROM !== "library" && OFFER_FROM !== "home" ? acts[OFFER_FROM] : null;
+        var game = OFFER_FROM && OFFER_FROM !== "library" && OFFER_FROM !== "home" && OFFER_FROM !== "adventure" ? acts[OFFER_FROM] : null;
+        // A tap on Home's locked story card (?from=adventure, STORY1): today's
+        // story, read from sona.js and never from the address. With no story
+        // today (every one finished) it is the plain offer, so the page never
+        // names a story that is not there.
+        var story = null;
+        if (OFFER_FROM === "adventure") { try { var tq = Sona.questToday ? Sona.questToday() : null; story = tq && tq.kind === "story" && tq.story ? tq.story : null; } catch (e) { story = null; } }
 
         // the games themselves, in Home's art: the tapped one large (on the
         // web card), or the Premium ones fanned like a hand of cards, with
-        // Echo in front
+        // Echo in front. A story: its own Home picture, large, with Echo
+        // waving, on both cards (a picture that fails leaves Echo alone).
         var pics = game && art[OFFER_FROM] && !document.body.classList.contains("onerow") ? [OFFER_FROM] : open.filter(function (k) { return art[k]; }).slice(0, 4);
         var box = document.getElementById("offerArt");
-        if (pics.length === 1) box.className = "offer-art solo";
-        box.innerHTML = pics.map(function (k) { return '<span class="oc"><img src="/assets/crafted/home-' + art[k] + '.webp" alt="" /></span>'; }).join("") +
-          '<img class="echo" src="/assets/crafted/' + (pics.length === 1 ? "echo-wave" : "echo-cheer") + '.webp" alt="" />';
+        if (story) {
+          box.className = "offer-art solo";
+          box.innerHTML = '<span class="oc"><img src="' + story.pic + '" alt="" onerror="this.parentNode.style.visibility=\'hidden\'" /></span><img class="echo" src="/assets/crafted/echo-wave.webp" alt="" />';
+        } else {
+          if (pics.length === 1) box.className = "offer-art solo";
+          box.innerHTML = pics.map(function (k) { return '<span class="oc"><img src="/assets/crafted/home-' + art[k] + '.webp" alt="" /></span>'; }).join("") +
+            '<img class="echo" src="/assets/crafted/' + (pics.length === 1 ? "echo-wave" : "echo-cheer") + '.webp" alt="" />';
+        }
 
         // From setup the headline carries on from the screen the parent just
         // left ("<Name>'s practice is ready"). It names no sound: setup
@@ -1947,6 +2033,7 @@
         };
         if (OFFER_SETUP && name) named("", "'s practice is ready");
         else if (OFFER_SETUP) titleEl.textContent = "Practice is ready";
+        else if (story) titleEl.textContent = "Unlock today's story, and every game";
         else if (game) titleEl.textContent = "Unlock " + game.name + ", and every other game";
         else if (name) named("Unlock every game for ", "");
         else titleEl.textContent = "Unlock every game";

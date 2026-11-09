@@ -134,7 +134,8 @@
        song keeps going while he listens; one saying earns eight seconds of
        slow keys. The turn, the ask and the reward are the round games' one
        copy, /arcade-speech-help.js; this page keeps its own mic and ear. -->
-  <script>window.SLOW_HELP={phase:"song",action:"slow the keys",earned:"Slow keys!",first:6000,eligible:function(){return !SONGS[song].finale;}};</script>
+  <script>// left: about how much play this song has left, at its pace so far (Echo starts no ask its end would cut off: arcade-speech-help.js)
+  window.SLOW_HELP={phase:"song",action:"slow the keys",earned:"Slow keys!",first:6000,eligible:function(){return !SONGS[song].finale;},left:function(){return slowLegLeft(songDone());}};</script>
   <script src="/arcade-speech-help.js"></script>
   <script src="/arcade-sayit.js"></script>
   <script>
@@ -346,7 +347,11 @@
     // helpL1: at Level 2 or 3, a lost heart puts the rest of that song on
     // Level 1's beat and fall for that song (SONGS_L1), until the next song
     var helpL1=false;
-    function paintHearts(){ var e=$("gameHearts"); e.innerHTML=S.heartRow(hearts,HEART_MAX,16); e.setAttribute("aria-label",hearts+" hearts left"); e.hidden=!!SONGS[song].finale; }
+    // The finale costs no hearts, so they step aside, and so does the cream
+    // box they sit in: hiding the hearts alone left an empty cream bar in the
+    // top bar all through Ode to Joy. The box keeps its room (visibility, as
+    // Fruit Slice's giant does), so the top bar does not close up around it.
+    function paintHearts(){ var e=$("gameHearts"), fin=!!SONGS[song].finale; e.innerHTML=S.heartRow(hearts,HEART_MAX,16); e.setAttribute("aria-label",hearts+" hearts left"); e.hidden=fin; $("hudspacer").style.visibility=fin?"hidden":""; }
     function loseHeart(now){
       if(!playing||phase!=="song"||SONGS[song].finale||slowTurn||slowMs>0||now-heartHitAt<HEART_GAP_MS)return;
       heartHitAt=now; hearts=Math.max(0,hearts-1); paceK=Math.max(1,paceK-.12); paintHearts();
@@ -399,6 +404,9 @@
     var tiles=[], sparks=[], keyGlow=[-1e9,-1e9,-1e9,-1e9], echoT=-1e9;
     var HITY=function(){ return H-140; };   // the top of the keys
     function songNotes(i){ return SONGS[i].notes.replace(/ /g,""); }
+    // how much of this song is played (0..1), as the HUD's bar shows it: Echo
+    // reads it so he starts no ask the song's end would cut off
+    function songDone(){ var n=songNotes(song).length; return Math.max(0,Math.min(n,songIx-tiles.filter(function(q){ return !q.hit&&!q.gone; }).length))/n; }
     // every note of the four songs: the longest a row can be
     var ROW_TOP=0; (function(){ for(var i=0;i<SONGS.length;i++) ROW_TOP+=songNotes(i).length; })();
     // pixels a second, so a tile takes the song's fall time on every screen

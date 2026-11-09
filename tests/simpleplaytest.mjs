@@ -136,8 +136,9 @@ if(present)for(const game of pages){
       await click(page,'#playAgain');await phase(page,'choose');
       const replay=await visibleState(page);
       ok(game+': replay starts a fresh five-turn round',replay.phase==='choose'&&replay.progress===first.progress&&!(await page.locator('#finishPanel').isVisible()));
-      await click(page,'#backLibrary');await page.waitForURL('**/today.html');
-      ok(game+': library exit returns to game choices',new URL(page.url()).pathname==='/today.html');
+      // the old library address (/activities.html) opens Home's Arcade since 22 Oct 2026 (STORY1): the game choices
+      await click(page,'#backLibrary');await page.waitForURL(u=>new URL(u).pathname==='/today.html');
+      ok(game+': library exit returns to game choices',new URL(page.url()).pathname==='/today.html'&&new URL(page.url()).searchParams.get('view')==='arcade',page.url());
       clean(game,errors);
     }finally{await context.close();}
   });

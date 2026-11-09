@@ -141,7 +141,8 @@
       gameEntryAllowed=true;
     })();
   </script>
-  <script>window.SLOW_HELP={phase:"fly",action:"slow the beams",earned:"Slow beams!",eligible:function(){return !falling.on;},first:6000};</script>
+  <script>// left: about how much play this leg has left, at its pace so far (Echo starts no ask its end would cut off: arcade-speech-help.js)
+  window.SLOW_HELP={phase:"fly",action:"slow the beams",earned:"Slow beams!",eligible:function(){return !falling.on;},first:6000,left:function(){return slowLegLeft(legGot/LEGS[leg].goal);}};</script>
   <script src="/arcade-speech-help.js"></script>
   <script src="/arcade-sayit.js"></script>
   <script>

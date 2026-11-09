@@ -161,7 +161,7 @@ const CARD = () => {
 // the same card, in Sona.planWords's own words for what the store answered
 const WORDS = () => Sona.storePlan().then((plan) => Sona.planWords(plan, { freeVersion: Sona.freeVersion() }));
 const sameWords = (c, w) => c.title === w.title && c.tag === w.tag && c.price === w.amount && c.name === w.name && c.under === w.sub && c.check === w.check.replace(/\u00a0/g, " ") && c.note === w.note.replace(/\u00a0/g, " ") &&
-  c.button === w.button && c.act === w.act && JSON.stringify(c.rows) === JSON.stringify(w.rows.map((r) => [r.when, r.text.replace(/\u00a0/g, " ")])) &&
+  c.button === w.button && c.act === w.act && JSON.stringify(c.rows) === JSON.stringify(((w.steps && w.steps.length) ? w.steps : w.rows).map((r) => [r.when, r.text.replace(/\u00a0/g, " ")])) &&
   c.none === (w.none ? w.none.title + " " + w.none.text : "");
 
 await page.goto("http://localhost:8147/subscribe.html"); await page.waitForTimeout(900);
@@ -189,16 +189,16 @@ ok("the card says what Sona.planWords says for the store's answer, field by fiel
 ok("the store's price is painted with its period on the plan's row, the free days under its name", t.price === "$9.99/mo" && t.name === "Monthly" && t.under === "3-day free trial", JSON.stringify([t.name, t.under, t.price]));
 // Apple requires the price, period and cancellation terms on the paywall itself
 ok("required furniture: Restore + Terms of Use + Privacy + renewal terms",
-  t.restore && /Terms of Use/.test(t.seen) && /Privacy/.test(t.seen) && /Subscription auto-renews/.test(t.seen) && /\$9\.99 a month\. Cancel anytime\./.test(t.seen), t.seen.slice(0, 400));
+  t.restore && /Terms of Use/.test(t.seen) && /Privacy/.test(t.seen) && /Auto-renews/.test(t.seen) && /\$9\.99 a month\. Auto-renews\. Cancel anytime\./.test(t.seen), t.seen.slice(0, 400));
 {
   // the day the first charge falls is computed in the page, as a parent's
   // phone would write it. Never a typed date.
   const day = await page.evaluate(() => new Date(Date.now() + 3 * 86400000).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" }));
-  ok("free days: no dated rows and no date at all (Travis, 6 Oct 2026), one check line, the button, all from the store",
-    t.state === "free" && t.rows.length === 0 && t.seen.indexOf(day) === -1 && t.check === "No payment today · Subscription auto-renews" && t.button === "Start practicing!", JSON.stringify([t.check, t.rows, t.button, day]));
+  ok("free days: the 3-step timeline (4 Nov 2026) and no date at all (Travis, 6 Oct 2026), one check line, the button, all from the store",
+    t.state === "free" && t.rows.length === 3 && t.rows[0][0] === "Today" && t.seen.indexOf(day) === -1 && t.check === "" && t.button === "Start practicing!", JSON.stringify([t.check, t.rows, t.button, day]));
 }
 ok("…Apple said this buyer gets them, so the small print is one plain line under the button, and no 'new subscribers' note is on the card",
-  t.note === "3 days free, then $9.99 a month. Cancel anytime." && !t.noteFirst && !/new subscribers/i.test(t.seen), JSON.stringify([t.note, t.noteFirst]));
+  t.note === "3 days free, then $9.99 a month. Auto-renews. Cancel anytime." && !t.noteFirst && !/new subscribers/i.test(t.seen), JSON.stringify([t.note, t.noteFirst]));
 ok("…and nothing on the card is about a year", !/a year|\/yr|yearly|once a year|59\.99/i.test(t.seen), t.seen.slice(0, 300));
 ok("nothing on the price screen says email, remind or notify: Sona sends no reminder, so it promises none",
   !/e-?mail|remind|notif/i.test(t.page), (t.page.match(/[^\n]*(e-?mail|remind|notif)[^\n]*/i) || [""])[0]);

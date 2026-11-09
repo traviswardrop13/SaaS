@@ -313,7 +313,7 @@ await scenario("heard", async () => {
   ok("The End: Echo cheers on the card", end && endEcho.src === "/assets/crafted/echo-cheer.webp" && endEcho.loaded, endEcho);
   const after = await snapshot(page);
   const readKey = await page.evaluate(() => Sona.kkey("sona.lib.read.v1"));
-  const moved = Object.keys(Object.assign({}, before, after)).filter((k) => before[k] !== after[k] && k !== "sona.micok" && k !== readKey && k !== "sona.gamereps.v1" && k !== "sona.goaldays.v1" && k !== "sona.trophy.v1");
+  const moved = Object.keys(Object.assign({}, before, after)).filter((k) => before[k] !== after[k] && k !== "sona.micok" && k !== readKey && k !== "sona.gamereps.v1" && k !== "sona.goaldays.v1" && k !== "sona.trophy.v1" && k !== "sona.played.v1" && k !== "sona.fid.v1");  // TRIAL1: the day's first rep says "played today" (the anonymous id, no practice)
   ok("a book read to The End by voice changes no practice key (only the read-star)", end && moved.length === 0 && /Rory and the Rainbow/.test(after[readKey] || ""), moved.map((k) => k + "=" + String(after[k]).slice(0, 60)));
   ok("…two accepted words add exactly 2 play reps", (await page.evaluate(() => Sona.dayReps())) === 2);
   // TROPHY1 (11 Oct 2026): an accepted book word is a play rep, so it earns
@@ -706,7 +706,7 @@ await scenario("six-page book", async () => {
   ok("…and the sixth ends on The End, with a chime for each page heard", end && l.sfx.filter((x) => x.name === "correct").length === 6 && l.mics.length === 6, { end, sfx: l.sfx.map((x) => x.name), mics: l.mics.length });
   const after = await snapshot(page);
   const readKey = await page.evaluate(() => Sona.kkey("sona.lib.read.v1"));
-  const moved = Object.keys(Object.assign({}, before, after)).filter((k) => before[k] !== after[k] && k !== readKey && k !== "sona.gamereps.v1" && k !== "sona.goaldays.v1" && k !== "sona.trophy.v1");
+  const moved = Object.keys(Object.assign({}, before, after)).filter((k) => before[k] !== after[k] && k !== readKey && k !== "sona.gamereps.v1" && k !== "sona.goaldays.v1" && k !== "sona.trophy.v1" && k !== "sona.played.v1" && k !== "sona.fid.v1");  // TRIAL1: the day's first rep says "played today" (the anonymous id, no practice)
   ok("…a six-page book read to The End by voice changes no practice key (only the read-star)", end && moved.length === 0 && /Reba the Robot/.test(after[readKey] || ""), moved.map((k) => k + "=" + String(after[k]).slice(0, 60)));
   ok("…six accepted words add exactly 6 play reps", (await page.evaluate(() => Sona.dayReps())) === 6);
   noOverlap("six-page book", l);
@@ -820,60 +820,52 @@ await scenario("no key words", async () => {
   await context.close();
 });
 
-// ── 10. a book from behind "More books" is the same book (Travis, 1 Oct 2026) ──
-// The other sounds' books wait closed under the child's own shelf. One opened
-// from there reads and asks exactly as it would on a child's own shelf, and
-// the age rule is still the BOOK's sound, not the child's: a six-year-old on
-// R is asked an S book's words (S, by 5); a four-year-old is not.
-async function openFromMore(page, title) {
-  await click(page, "moreBtn");
-  await page.evaluate((t) => [...document.querySelectorAll("#moreShelf .bookBtn")].find((b) => b.querySelector(".bt").textContent === t).click(), title);
-  await page.waitForTimeout(150);
-  await click(page, "bkNext");   // the title page's Start
+// ── 10. changing the selected sound keeps the reader's own age/voice rules ──
+// Sound selection changes discovery, never what counts as a heard book word.
+// A six-year-old may say S words (S, by 5); a four-year-old just hears them.
+async function selectBookSound(page, sound) {
+  // Saved parent preference is fixture setup; targetsoundtest drives the
+  // real grown-ups gate and Settings picker. Books itself stays read-only.
+  await page.evaluate(s => { if (!Sona.setTargetSound(s)) throw new Error("invalid parent sound fixture"); }, sound);
+  await page.reload();
 }
-await scenario("more books", async () => {
-  // an S is a hiss: the check is the book's own sound family, wherever the book stood
-  const { context, page, errors } = await fresh({ micok: true, age: "6", shape: "hiss", today: "2026-10-05" });
-  const shut = await page.evaluate(() => ({ open: document.getElementById("moreBtn").getAttribute("aria-expanded"), n: document.querySelectorAll("#moreShelf .bookBtn").length, sfx: __quiet.sfx.length, speech: __quiet.speech.length }));
-  await openFromMore(page, "Sid the Seagull");
+await scenario("selected sound", async () => {
+  const { context, page, errors } = await fresh({ micok: true, age: "6", shape: "hiss", focus: ["R", "S"], today: "2026-10-05" });
+  await selectBookSound(page, "S");
+  const shelf = await page.evaluate(() => ({ more: !!document.getElementById("moreBtn"), sounds: STORIES.map((b) => b.sound), sfx: __quiet.sfx.length, speech: __quiet.speech.length }));
+  await openBook(page, "Sid the Seagull");
   const went = await waitLive(page);
   const st = await page.evaluate(() => ({ word: window.__book.word, ask: document.getElementById("bkAsk").textContent, norm: Sona.soundNorm("S") }));
-  ok("a book opened from behind More books asks for its own word, like any book on the shelf", shut.open === "false" && shut.n === 0 && went && st.word === "seagull" && st.ask === "Can you say seagull?" && st.norm === 5, { shut, st });
-  ok("…and the shelf made no sound of its own before it was touched", shut.sfx === 0 && shut.speech === 0, { shut });
+  ok("a newly selected S shelf shows S alone and its reader asks for the same S word", !shelf.more && shelf.sounds.every((s) => s === "S") && went && st.word === "seagull" && st.ask === "Can you say seagull?" && st.norm === 5, { shelf, st });
+  ok("…the parent-selected shelf makes no voice or chime before the book is touched", shelf.sfx === 0 && shelf.speech === 0, { shelf });
   await voice(page, 260);
   ok("…and a voice of that book's kind (an S is a hiss) turns its page", await until(page, () => window.__book && window.__book.page === 1, 3000));
-  noOverlap("more books", await log(page));
-  clean("more books", errors);
+  noOverlap("selected sound", await log(page));
+  clean("selected sound", errors);
   await context.close();
 });
-// Menus are silent: the More books button makes the page's tap chime and
-// nothing else, opening and closing. Counted with NO book opened afterwards:
-// opening one stops any line in flight and drops a waiting chime, so a count
-// taken after a book cannot tell a button that spoke, or one that never
-// chimed, from the real one.
-await scenario("more books silent", async () => {
-  const { context, page, errors } = await fresh({ age: "6", today: "2026-10-05" });
+await scenario("sound selector silent", async () => {
+  const { context, page, errors } = await fresh({ age: "6", focus: ["R", "S"], today: "2026-10-05" });
   const tts = []; page.on("request", (q) => { if (/\/api\/tts/.test(q.url())) tts.push(q.url()); });
   const heard = () => page.evaluate(() => ({ sfx: __quiet.sfx.map((x) => x.name), speech: __quiet.speech.slice(), voices: __quiet.sounds.filter((x) => x.kind !== "osc").map((x) => x.kind), mics: __quiet.requests,
-    open: document.getElementById("moreBtn").getAttribute("aria-expanded"), books: [...document.querySelectorAll("#moreShelf .bookBtn")].filter((b) => b.offsetParent !== null).length, reader: document.getElementById("book").classList.contains("show") }));
-  const quiet = (x, taps) => JSON.stringify(x.sfx) === JSON.stringify(taps) && x.speech.length === 0 && x.voices.length === 0 && x.mics === 0 && !x.reader;
+    sounds: STORIES.map((b) => b.sound), reader: document.getElementById("book").classList.contains("show") }));
+  const quiet = (x) => x.sfx.length === 0 && x.speech.length === 0 && x.voices.length === 0 && x.mics === 0 && !x.reader;
   const before = await heard();
-  await click(page, "moreBtn"); await page.waitForTimeout(900);
-  const opened = await heard(), ttsOpened = tts.length;
-  await click(page, "moreBtn"); await page.waitForTimeout(900);
-  const closed = await heard();
-  ok("opening More books makes exactly one sound, the page's tap chime: no voice, no line asked of the voice service, no mic", quiet(before, []) && opened.open === "true" && opened.books > 0 && quiet(opened, ["tap"]) && ttsOpened === 0, { before, opened, ttsOpened });
-  ok("…and closing it is the same one chime, and still no voice", closed.open === "false" && closed.books === 0 && quiet(closed, ["tap", "tap"]) && tts.length === 0, { closed, tts });
-  clean("more books silent", errors);
+  await selectBookSound(page, "S"); const onS = await heard();
+  await selectBookSound(page, "R"); const onR = await heard();
+  ok("selecting S rebuilds its shelf without a spoken line, voice request, mic or open reader", quiet(before) && quiet(onS) && onS.sounds.length > 0 && onS.sounds.every((s) => s === "S") && tts.length === 0, { before, onS, tts });
+  ok("…and selecting R again is equally quiet", quiet(onR) && onR.sounds.length > 0 && onR.sounds.every((s) => s === "R") && tts.length === 0, { onR, tts });
+  clean("sound selector silent", errors);
   await context.close();
 });
-await scenario("more books age", async () => {
-  const { context, page, errors } = await fresh({ micok: true, age: "4", today: "2026-10-05" });
-  await openFromMore(page, "Sid the Seagull");
+await scenario("selected sound age", async () => {
+  const { context, page, errors } = await fresh({ micok: true, age: "4", focus: ["R", "S"], today: "2026-10-05" });
+  await selectBookSound(page, "S");
+  await openBook(page, "Sid the Seagull");
   await page.waitForTimeout(2500);
   const st = await page.evaluate(() => ({ mode: window.__book.mode, primer: window.__book.primer, requests: __quiet.requests, kw: !!document.querySelector(".bktext .kw"), speech: __quiet.speech.slice() }));
-  ok("a 4-year-old who opens an S book from behind More books hears it read, and is never asked to say its words", st.mode === "next" && !st.primer && st.requests === 0 && !st.kw && !st.speech.some((t) => /Can you say/.test(t)) && await shown(page, "bkNext"), st);
-  clean("more books age", errors);
+  ok("a 4-year-old opening a selected S book hears it read and is never asked to say its words", st.mode === "next" && !st.primer && st.requests === 0 && !st.kw && !st.speech.some((t) => /Can you say/.test(t)) && await shown(page, "bkNext"), st);
+  clean("selected sound age", errors);
   await context.close();
 });
 

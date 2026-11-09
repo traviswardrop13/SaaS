@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { configured, runDue } from "@/lib/nurture";
 import { runReports } from "@/lib/report";
+import { runWeekly } from "@/lib/weekly";
 import { backfill, syncUnsubscribes } from "@/lib/contacts";
 import { runRc } from "@/lib/revenuecat";
 
@@ -9,10 +10,11 @@ import { runRc } from "@/lib/revenuecat";
  * soon", "We miss you at Sona": lib/revenuecat.ts), the welcome series'
  * day-after email to everyone it is due for (lib/nurture.ts), and on Monday
  * (Tuesday and Wednesday catch up) last week's progress report to every
- * household that asked for it (lib/report.ts). Same auth as
- * /api/cron/weekly — the Vercel cron bearer, or FOUNDER_KEY for a manual run.
- * A manual run with ?report=1 sends the report on any day (still once an
- * address a week).
+ * household that asked for it (lib/report.ts), then the Monday email to every
+ * other parent on the list, an example of that report (lib/weekly.ts). Same
+ * auth as /api/cron/weekly — the Vercel cron bearer, or FOUNDER_KEY for a
+ * manual run. A manual run with ?report=1 sends the report on any day, and
+ * ?weekly=1 the Monday email (each still once an address a week).
  *
  * The email list (lib/contacts.ts, 16 Oct 2026) has two parts. First (45
  * seconds at most) the unsubscribes Sona's link still owes Resend, Kit's
@@ -50,7 +52,10 @@ export async function GET(req: NextRequest) {
   const rc = await runRc(undefined, undefined, started, { deadline: started + 100000 });
   // stop sending well before maxDuration, so no address is left claimed and unsent
   const r = await runDue(undefined, undefined, undefined, { deadline: started + 150000 });
-  const report = await runReports(undefined, undefined, undefined, { force: okManual && req.nextUrl.searchParams.get("report") === "1", deadline: started + 250000 });
+  const report = await runReports(undefined, undefined, undefined, { force: okManual && req.nextUrl.searchParams.get("report") === "1", deadline: started + 200000 });
+  // after the reports, so an address that has one this week is never sent the example
+  let weekly: unknown = null;
+  try { weekly = await runWeekly(undefined, undefined, undefined, { force: okManual && req.nextUrl.searchParams.get("weekly") === "1", deadline: started + 255000 }); } catch (e) { weekly = said(e); }
   try { older = await backfill({ deadline: started + 265000 }); } catch (e) { older = said(e); }
-  return NextResponse.json({ ok: true, ...r, rc, report, list: { unsub, older } });
+  return NextResponse.json({ ok: true, ...r, rc, report, weekly, list: { unsub, older } });
 }

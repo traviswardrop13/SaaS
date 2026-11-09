@@ -381,6 +381,7 @@ ok("it says each child keeps their own sounds and progress", /Each child keeps t
   pos = await read();
   ok("under homework the position picker shows the homework's, locked, and says so", pos.off && pos.value === "m" && pos.practice === "m" && /^Set by the speech therapist’s homework: Middle of word\./.test(pos.note), JSON.stringify(pos));
   ok("…and the day starts at the sound, locked, and the line says the homework climbs every step", pos.startOff && pos.start === "" && (await page.evaluate(() => Sona.ladderStart())) === 0 && /^The homework climbs every step, from the sound\. R in the middle of words: “rrrr”/.test(pos.ladderNote), pos.ladderNote);
+  await page.click("#soundsChange");
   await page.click('#sounds [data-s="L"]'); await page.waitForTimeout(250);
   ok("…and changing a sound under homework keeps the family's own position and start", (await page.evaluate(() => [Sona.getProfile().wordPosition, Sona.getProfile().ladderStart].join())) === "f,word");
   await page.click('#sounds [data-s="L"]'); await page.waitForTimeout(250);
@@ -455,6 +456,8 @@ ok("it says each child keeps their own sounds and progress", /Each child keeps t
   ok("…so the cards follow what the child earned: the sound, a syllable, then the short word",
     g.rung === 1 && g.hold === "" && g.top === 2 && g.asks[0] === "rrrr" && /^r(ee|ah|oh)$/.test(g.asks[1]) && g.asks[2] === "rot", JSON.stringify(g));
   // a parent's next change on this page writes the profile back without it
+  // (the sound grid opens behind "Change" since 5 Nov 2026)
+  await page.click('#soundsChange');
   await page.click('#sounds .sound[data-s="S"]'); await page.waitForTimeout(250);
   g = await read();
   ok("the next change saved on Settings (a sound tapped) takes the old pick out of the stored profile", g.stored === undefined && g.read === undefined, JSON.stringify({ stored: g.stored }));
@@ -520,8 +523,13 @@ ok("it says each child keeps their own sounds and progress", /Each child keeps t
     ["", "2", "3", "4", "5"].forEach((n) => localStorage.setItem("sona.freeera" + n + ".v1", n ? "done" : "post"));
     Sona.saveProfile({ childName: "Milo", childAge: "7", focusSounds: ["R"], onboarded: true });
     Sona.gateVerify();
+    // No build keeps a clip since 5 Nov 2026 and each device deletes any
+    // old one once ("_sonaClipsGone"). Remove must still leave nothing, so
+    // this plants a clip an older build kept for Ana, past that clean-up.
+    localStorage.setItem("_sonaClipsGone", "1");
     Sona.addKid("Ana", "5");
-    await Sona.saveRecording({ sound: "S", word: "sun", blob: new Blob(["ana"], { type: "audio/webm" }) });
+    await Sona.clipsSettled();
+    await new Promise((res) => { const o = indexedDB.open("sona", 1); o.onsuccess = () => { const tx = o.result.transaction("recordings", "readwrite"); tx.objectStore("recordings").add({ sound: "S", word: "sun", date: new Date().toISOString(), kid: "k2", blob: new Blob(["ana"], { type: "audio/webm" }) }); tx.oncomplete = () => { o.result.close(); res(); }; }; });
     Sona.switchKid("");
   });
   await p2.goto("http://localhost:8153/settings.html"); await p2.waitForTimeout(700);

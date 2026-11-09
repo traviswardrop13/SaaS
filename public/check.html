@@ -4,6 +4,12 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
   <title>Sona — Free Speech Check</title>
+  <!-- noindex (22 Oct 2026): nothing on the site links here, and since the
+       browser's speech-to-text came out (it uploaded the audio) the check
+       hears only whether a word was said, never how. Whether it stays, and
+       what its results may say, is Rachel's call; search should not send
+       parents to it meanwhile. -->
+  <meta name="robots" content="noindex" />
   <link href="/fonts.css" rel="stylesheet">
   <link rel="manifest" href="/manifest.webmanifest" />
   <meta name="theme-color" content="#1cb0f6" />
@@ -67,14 +73,14 @@
       <div class="center">
         <img src="/coach/echo/echo-idle.svg" alt="Echo" style="width:132px;height:132px;object-fit:contain;filter:drop-shadow(0 10px 16px rgba(20,90,160,.22));animation:floaty 4s ease-in-out infinite;" />
         <h1>Free 2-minute<br/>Speech Check</h1>
-        <p class="lead">Your child says a few words, and we'll show you which sounds are on track and which to practice — designed with Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical fellowship.</p>
+        <p class="lead">Your child says a few words out loud with Echo, and we'll set Sona up with those sounds — designed with Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical fellowship.</p>
         <span class="slptag">✓ Built with Rachel, MS, CF-SLP</span>
         <div class="field"><label for="cName">Child's first name</label><input id="cName" type="text" placeholder="e.g. Mia" /></div>
         <div class="field"><label for="cAge">Child's age</label>
           <select id="cAge"><option value="">Choose…</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select>
         </div>
         <button class="btn" id="startBtn">Start the check →</button>
-        <p class="disclaimer">This is a quick check, not a diagnosis. It shows which sounds to practice at home. If you have concerns, talk to a licensed speech-language pathologist.</p>
+        <p class="disclaimer">This is a quick check, not a diagnosis. It listens for whether each word was said, not how it sounded. If you have concerns, talk to a licensed speech-language pathologist.</p>
       </div>
     </section>
 
@@ -96,7 +102,7 @@
       <div class="center">
         <img src="/coach/echo/echo-celebrate.svg" alt="Echo" style="width:122px;height:122px;object-fit:contain;filter:drop-shadow(0 10px 16px rgba(20,90,160,.22));" onerror="this.onerror=null;this.src='/coach/echo/echo-idle.svg';" />
         <h1 id="gateTitle">The results are ready! 🎉</h1>
-        <p class="lead" id="gateText">Pop in your email to see which sounds are on track and which to practice — plus a simple at-home plan from Echo.</p>
+        <p class="lead" id="gateText">Pop in your email to see what Echo heard.</p>
         <div class="field"><label for="email">📧 Your email</label><input id="email" type="email" inputmode="email" placeholder="you@email.com" /></div>
         <button class="btn blue" id="gateBtn">See the results →</button>
         <p class="disclaimer" id="gateMsg">We&rsquo;ll also send occasional tips from Rachel. Unsubscribe anytime.</p>
@@ -114,8 +120,8 @@
         <div id="rlist" style="margin-top:8px;"></div>
 
         <div style="background:#fff;border-radius:18px;padding:15px 16px;margin-top:18px;box-shadow:0 8px 22px -14px rgba(20,90,160,.4);text-align:center;">
-          <div style="font-weight:800;font-size:15px;color:var(--blue-d);">📬 Report on the way</div>
-          <div id="emailedText" style="color:var(--muted);font-weight:700;font-size:13.5px;margin-top:4px;line-height:1.45;">We just emailed this report — check your inbox in a minute.</div>
+          <div style="font-weight:800;font-size:15px;color:var(--blue-d);">📬 Tips on the way</div>
+          <div id="emailedText" style="color:var(--muted);font-weight:700;font-size:13.5px;margin-top:4px;line-height:1.45;">We'll email you occasional tips from Rachel. Unsubscribe anytime.</div>
         </div>
 
         <div style="background:linear-gradient(180deg,#ffffff,#f1faff);border:2px solid #d9ecff;border-radius:18px;padding:18px 16px;margin-top:14px;text-align:center;">
@@ -156,11 +162,14 @@
     function matchText(t,w){t=norm(t);w=norm(w);if(!t)return false;if(t.indexOf(w)>=0||w.indexOf(t)>=0)return true;var i=0;while(i<Math.min(t.length,w.length)&&t[i]===w[i])i++;return i>=3;}
 
     function recordTurn(maxMs){ maxMs=maxMs||7000; return new Promise(function(resolve){
-      var done=false,chunks=[],rec=null,sr=null,transcript="",spoke=false,lastV=0,raf=null,msrc=null,bars=null;
+      // NO SpeechRecognition (22 Oct 2026). In Chrome (and Safari) the
+      // browser's speech-to-text sends the audio to the browser maker's
+      // servers, which broke "no audio ever leaves the device". The turn is
+      // judged from voicing heard on the phone alone; `transcript` stays empty.
+      var done=false,chunks=[],rec=null,transcript="",spoke=false,lastV=0,raf=null,msrc=null,bars=null;
       var micBtn=$("micBtn"),ico=micBtn.querySelector("svg");
-      function finish(){ if(done)return; done=true; try{rec&&rec.state!=="inactive"&&rec.stop();}catch(e){} try{sr&&sr.stop();}catch(e){} micBtn.classList.remove("rec"); if(raf)cancelAnimationFrame(raf); try{msrc&&msrc.disconnect();}catch(e){} if(bars)bars.remove(); if(ico)ico.style.display=""; $("micState").textContent=""; setTimeout(function(){ resolve({transcript:transcript,blob:chunks.length?new Blob(chunks,{type:(rec&&rec.mimeType)||"audio/webm"}):null,spoke:spoke}); },120); }
+      function finish(){ if(done)return; done=true; try{rec&&rec.state!=="inactive"&&rec.stop();}catch(e){} micBtn.classList.remove("rec"); if(raf)cancelAnimationFrame(raf); try{msrc&&msrc.disconnect();}catch(e){} if(bars)bars.remove(); if(ico)ico.style.display=""; $("micState").textContent=""; setTimeout(function(){ resolve({transcript:transcript,blob:chunks.length?new Blob(chunks,{type:(rec&&rec.mimeType)||"audio/webm"}):null,spoke:spoke}); },120); }
       try{ if(micStream&&window.MediaRecorder){ rec=new MediaRecorder(micStream); rec.ondataavailable=function(e){if(e.data&&e.data.size)chunks.push(e.data);}; rec.start(); } }catch(e){}
-      try{ var SR=window.SpeechRecognition||window.webkitSpeechRecognition; if(SR){ sr=new SR(); sr.lang="en-US"; sr.interimResults=false; sr.maxAlternatives=3; sr.onresult=function(ev){for(var i=0;i<ev.results.length;i++)for(var k=0;k<ev.results[i].length;k++)transcript+=" "+ev.results[i][k].transcript; finish();}; sr.onerror=function(){}; sr.start(); } }catch(e){}
       try{ if(micStream){ var c=getCtx(); msrc=c.createMediaStreamSource(micStream); var an=c.createAnalyser(); an.fftSize=512; msrc.connect(an); var fdt=new Uint8Array(an.frequencyBinCount),td=new Uint8Array(an.fftSize); bars=document.createElement("div"); bars.className="wavebars"; for(var b2=0;b2<7;b2++)bars.appendChild(document.createElement("i")); if(ico)ico.style.display="none"; micBtn.appendChild(bars); var t0=performance.now(),nS=0,nN=0,thr=0,v=0;
         (function tick(){ if(done)return; an.getByteFrequencyData(fdt); [].forEach.call(bars.children,function(el,k){el.style.height=(8+fdt[2+k*3]/255*30)+"px";}); an.getByteTimeDomainData(td); var sum=0; for(var i=0;i<td.length;i++){var d=(td[i]-128)/128;sum+=d*d;} var rms=Math.sqrt(sum/td.length),now=performance.now(); if(now-t0<300){nS+=rms;nN++;} else { if(!thr)thr=Math.min(0.1,Math.max(0.014,(nS/Math.max(1,nN))*2.6)); if(rms>thr){v++;lastV=now;if(v>=2){spoke=true;$("micState").textContent="I hear you! 👂";}}else if(rms<thr*0.7)v=0; if(spoke&&now-lastV>=1000){finish();return;} } raf=requestAnimationFrame(tick); })();
       } }catch(e){}
@@ -205,7 +214,14 @@
       window._practice=practice;
       $("sumTitle").textContent=(CHILD?CHILD+"'s":"Your child's")+" Speech Check";
       var txt;
-      if(practice.length===0) txt="Great news — every sound we checked is on track or right on schedule for age "+AGE+". Keep it up with daily play!";
+      // WHAT THE CHECK CAN SAY (22 Oct 2026). With the browser's speech-to-text
+      // gone (it uploaded the audio), a turn is judged on voicing alone: the
+      // phone hears THAT a word was said, never HOW. So a voiced word is
+      // "Heard it", never "On track", and the summary claims no verdict on any
+      // sound. The "prac" and "dev" paths below stay for whatever Rachel
+      // decides the check should be; today nothing reaches them.
+      var heard=results.filter(function(r){return r.got===true;}).length;
+      if(practice.length===0) txt="We heard "+(CHILD||"your child")+" say "+heard+" of "+WORDS.length+" words. This quick check listens only for whether a word was said, not how it sounded, so it can't tell which sounds need practice.";
       else txt="A few sounds are ready to practice: "+practice.join(", ")+". That's totally normal — and exactly what daily play with Echo helps with.";
       $("sumText").textContent=txt;
       // a readable report, kept on this page: the lead post below carries the
@@ -213,7 +229,7 @@
       var onTrack=[],dev=[];
       results.forEach(function(r){ var c=classify(r); if(c==="ok")onTrack.push(r.s); else if(c==="dev")dev.push(r.s); });
       var rl=[(CHILD?CHILD+"'s":"Your child's")+" Speech Check — age "+AGE, "", txt, ""];
-      if(onTrack.length) rl.push("On track: "+onTrack.join(", "));
+      if(onTrack.length) rl.push("Heard: "+onTrack.join(", "));
       if(practice.length) rl.push("Ready to practice: "+practice.join(", "));
       if(dev.length) rl.push("Still developing (typical at age "+AGE+"): "+dev.join(", "));
       rl.push("","This is a quick check, not a diagnosis. If you have concerns, talk to a licensed speech-language pathologist.");
@@ -224,7 +240,7 @@
       var order={prac:0,dev:1,ok:2,skip:3};
       results.slice().sort(function(a,b){return order[classify(a)]-order[classify(b)];}).forEach(function(r){
         var c=classify(r); var lab,tag,cl;
-        if(c==="ok"){lab="On track";tag="✓";cl="ok";}
+        if(c==="ok"){lab="Heard it";tag="✓";cl="ok";}
         else if(c==="prac"){lab="Ready to practice";tag="🎯";cl="prac";}
         else if(c==="dev"){lab="Still developing — normal at "+AGE;tag="🌱";cl="dev";}
         else {lab="Didn't catch it";tag="•";cl="ok";}
@@ -250,7 +266,9 @@
       // seed the profile so the app is tailored to what the check found (used at launch)
       try{ if(window.Sona){ var focus=(window._practice&&window._practice.length)?window._practice:WORDS.map(function(w){return w.s;}); Sona.saveProfile({ childName:CHILD, childAge:String(AGE||""), focusSounds:focus.slice(0,4), checkEmail:email, email:email, onboarded:true }); } }catch(e){}
       try{ if(window.sonaTrack) sonaTrack("Lead"); }catch(e){}
-      var et=$("emailedText"); if(et) et.textContent="We just emailed "+(CHILD?CHILD+"'s":"your child's")+" report to "+email+" — check your inbox in a minute.";
+      // No report is emailed (the lead post carries the address and campaign
+      // tags only), so the card promises only the tips the list really sends.
+      var et=$("emailedText"); if(et) et.textContent="We'll email "+email+" occasional tips from Rachel. Unsubscribe anytime.";
       var ct=$("comingText"); if(ct) ct.textContent="A whole world of speech games for "+(CHILD||"your child")+"'s sounds — say it right to power the game. We'll email you the moment it's ready.";
       show("sResults");
     };

@@ -74,6 +74,11 @@
     .family-settings #addKidBtn{margin-top:10px;}
     /* sounds */
     .family-settings #soundsLbl{margin-top:18px;}
+    .family-settings .sound-summary{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:4px;}
+    .family-settings #soundsChosen{font-family:"Baloo 2",sans-serif;font-weight:800;font-size:18px;color:var(--ink);overflow-wrap:anywhere;}
+    .family-settings #soundsChange{width:auto;flex:none;min-height:44px;padding:9px 18px;font-size:14px;}
+    .family-settings #soundsPick{margin-top:8px;}
+    .family-settings #soundsPick[hidden]{display:none;}
     .family-settings .sound .hint{display:block;margin-top:1px;font-family:"Nunito",sans-serif;font-size:9.5px;font-weight:800;color:var(--muted);}
     .family-settings #posBox[hidden],.family-settings #posNote[hidden]{display:none;}
     .family-settings #posNote{margin-top:10px;}
@@ -109,7 +114,9 @@
     .family-settings #reset{width:auto;min-height:44px;padding:9px 16px;font-size:14px;color:#a3301f;border-color:#e9b9ab;background:#fff8f5;}
     /* the Practice Board (BOARD2): hidden unless the board is on, or a child
        still has an entry here to remove */
-    .family-settings #boardCard[hidden],.family-settings #boardMoveNote[hidden]{display:none;}
+    .family-settings #boardCard[hidden],.family-settings #boardMoveNote[hidden],.family-settings #reportCard[hidden]{display:none;}
+    .family-settings #reportMsg{display:block;margin-top:10px;}
+    .family-settings #reportMsg:empty{display:none;}
     .family-settings #boardMoveNote{margin:6px 0 4px;padding:9px 12px;border-radius:12px;background:#fff3df;font-size:13px;font-weight:800;line-height:1.45;color:var(--ink);}
     .family-settings .bd-line{margin-top:10px;font-size:14px;font-weight:700;line-height:1.5;color:var(--ink);overflow-wrap:anywhere;}
     .family-settings .bd-line b{font-weight:800;}
@@ -180,23 +187,21 @@
         <label class="field" for="childAge">Age</label>
         <input id="childAge" type="number" min="2" max="14" inputmode="numeric" placeholder="e.g. 5" />
       </div></div>
+      <!-- The chosen sounds in one line, and the grid of every sound only
+           after "Change" (Travis, 5 Nov 2026: "yeah change button"): the
+           grid was most of a screen on its own. -->
       <div class="field" id="soundsLbl">Sounds to practice</div>
-      <p class="muted set-lead">Tap a sound to add or remove it.</p>
-      <div class="sounds" id="sounds" role="group" aria-labelledby="soundsLbl"></div>
-      <!-- EVERY WORD POSITION CAN BE PICKED (Travis, 22 Oct 2026: "a full,
-           in-depth, thorough build-out of word positions … build that so it
-           works in the games"). From 1 Oct only the start of a word was open,
-           "because it's not built yet"; each place now has its own syllables,
-           words, sentences and climb, and the picture games use its words.
-           The script greys out only what this child cannot use: an id
-           Sona.FAMILY_POSITIONS does not open ("coming soon"), and vocalic R
-           or blends when none of the child's sounds has them. Under a speech
-           therapist's homework the picker shows the homework's position and
-           is locked, like the daily goal on Progress. The grey line under it shows only
-           when something needs saying. Saved as profile.wordPosition. With
-           only one position open (FAMILY_POSITIONS) the picker hides and the
-           line says which one practice uses, as Settings did from 22 Oct. -->
-      <div id="posBox">
+      <div class="sound-summary"><span id="soundsChosen"></span><button type="button" class="btn ghost" id="soundsChange" aria-expanded="false" aria-controls="soundsPick">Change</button></div>
+      <div id="soundsPick" hidden>
+        <p class="muted set-lead">Tap a sound to add or remove it.</p>
+        <div class="sounds" id="sounds" role="group" aria-labelledby="soundsLbl"></div>
+      </div>
+      <label class="field" for="targetSound">Current target sound</label>
+      <select id="targetSound" aria-describedby="targetSoundNote"></select>
+      <p id="targetSoundNote" class="muted set-lead"></p>
+      <!-- Families choose a position here. Homework displays its assignment
+           and keeps the family's preference for when it ends. -->
+      <div id="posBox" hidden>
         <label class="field" for="practicePos">Word position</label>
         <select id="practicePos" aria-describedby="posNote">
           <option value="i">Beginning of word</option>
@@ -241,6 +246,20 @@
       <span>Sound is off in Sona.</span>
       <button type="button" class="btn" id="soundOnBtn">Turn sound on</button>
     </div>
+
+    <!-- THE WEEKLY PROGRESS REPORT'S SWITCH (Travis, 23 Oct 2026: "Yes, add
+         the switch"). REPORT1's report went only to a household whose setup
+         email step was given an address; one that skipped it, or gave it
+         before the report existed, turns it on here, and the Monday email to
+         every parent on the list (lib/weekly.ts) says where. One address for
+         the household (Sona.reportSet); nothing but the confirm email is
+         sent until the address says yes. Shown only with a family child set
+         up here (never for a clinician's own setup alone). -->
+    <section class="card" id="reportCard" aria-labelledby="reportTitle" hidden>
+      <div class="set-head"><h2 id="reportTitle">Weekly progress report</h2></div>
+      <div id="reportBody"></div>
+      <p class="muted set-msg" id="reportMsg" role="status" aria-live="polite"></p>
+    </section>
 
     <!-- THE PRACTICE BOARD (BOARD2, 11 Oct 2026; Travis, 9 Oct 2026: "a
          board of every kid in Sona … days practiced"). BUILT DARK: hidden
@@ -317,7 +336,7 @@
              code does the same job, a copy that fails shows the code in the
              box below, and a download inside the iPhone app was never shown
              to save anything. -->
-        <p class="muted set-lead">Copy the code here, then paste it on the new phone under “Restore from a backup code”. Sona can't restore practice for you, so keep the code somewhere safe. It does not expire. Saved voice clips never go in a backup: they stay on this phone.</p>
+        <p class="muted set-lead">Copy the code here, then paste it on the new phone under “Restore from a backup code”. Sona can't restore practice for you, so keep the code somewhere safe. It does not expire.</p>
         <div class="set-actions">
           <button class="btn ghost" id="backupCopy">Copy backup code</button>
           <span id="backupMsg" class="muted set-msg"></span>
@@ -513,7 +532,9 @@
       // show what was kept, so a name typed with stray spaces reads as saved
       childEl.value = name;
       paintName();
+      paintChosen();
       if (typeof repaintKids === "function") repaintKids();
+      paintTargetSound();
       paintPractice();
       showSaved(from);
     }
@@ -552,6 +573,37 @@
       wrap.appendChild(b);
     });
     paintHints();
+    // The one line: the chosen sounds in the picker's own order.
+    function paintChosen() {
+      var list = Sona.ALL_SOUNDS.filter(function (s) { return sel.has(s); });
+      document.getElementById("soundsChosen").textContent = list.length === Sona.ALL_SOUNDS.length ? "All sounds"
+        : list.map(function (s) { return Sona.soundLabel ? Sona.soundLabel(s) : s; }).join(", ");
+    }
+    paintChosen();
+    document.getElementById("soundsChange").onclick = function () {
+      var box = document.getElementById("soundsPick"), open = box.hidden;
+      box.hidden = !open; this.textContent = open ? "Done" : "Change"; this.setAttribute("aria-expanded", String(open));
+    };
+    function paintTargetSound() {
+      var pick = document.getElementById("targetSound"), note = document.getElementById("targetSoundNote");
+      var current = Sona.getProfile(), assigned = Sona.homeworkSounds ? Sona.homeworkSounds() : [];
+      var options = Sona.targetSoundOptions ? Sona.targetSoundOptions() : (current.focusSounds || []);
+      var sound = Sona.targetSound ? Sona.targetSound() : Sona.rotSound();
+      pick.innerHTML = "";
+      if (!assigned.length) {
+        var auto = document.createElement("option"); auto.value = ""; auto.textContent = "Automatic · " + Sona.soundLabel(sound); pick.appendChild(auto);
+      }
+      options.forEach(function (s) { var option = document.createElement("option"); option.value = s; option.textContent = Sona.soundLabel(s) + " sound"; pick.appendChild(option); });
+      pick.value = assigned.length ? sound : (current.targetSound || "");
+      pick.disabled = !!assigned.length || !Sona.setTargetSound;
+      note.textContent = assigned.length ? "From your speech therapist. Your family choice returns when the assignment ends." : "Choose one sound for games and books, or let Sona rotate through your selected sounds.";
+    }
+    paintTargetSound();
+    document.getElementById("targetSound").onchange = function () {
+      if (activeSlot() !== loadSlot) { location.reload(); return; }
+      if (!Sona.setTargetSound || !Sona.setTargetSound(this.value)) { paintTargetSound(); return; }
+      paintTargetSound(); paintPractice(); showSaved(this);
+    };
 
     // Text fields save when the parent leaves them (or presses return), not on
     // every keystroke: a half-typed name should not flash across the page.
@@ -593,6 +645,92 @@
       // the steps line reads the climb the reset just cleared
       paintPractice();
     };
+
+    // ── THE WEEKLY PROGRESS REPORT'S SWITCH (23 Oct 2026) ─────────────────
+    // Off: what the report holds, an email box (the household's address when
+    // it has one) and Turn on, with Travis's line before anything is sent.
+    // On: where it goes, a word while the address has not said yes (or has
+    // unsubscribed), and Turn off. The address is the household's, never a
+    // child's name; sona.js REPORT1 sends and keeps the rest.
+    (function () {
+      var card = document.getElementById("reportCard"), body = document.getElementById("reportBody"), msg = document.getElementById("reportMsg");
+      if (!card || !body || !Sona.reportStatus || !Sona.reportSet || !Sona.reportOff) return;
+      var busy = false;
+      // the card changes shape under the finger when it turns on or off: a
+      // double tap's second tap must not land on the new button (Turn off
+      // sits where Turn on was), so taps wait a moment after each switch
+      function settle() { busy = true; setTimeout(function () { busy = false; }, 600); }
+      function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+      function btn(text, cls, fn) { var b = el("button", "btn" + (cls ? " " + cls : ""), text); b.type = "button"; b.onclick = fn; return b; }
+      function say(t) { msg.textContent = t || ""; }
+      function paint() {
+        var st = Sona.reportStatus();
+        card.hidden = !st.can && !st.on;
+        while (body.firstChild) body.removeChild(body.firstChild);
+        if (st.on) {
+          var on = el("p", "bd-line"); on.appendChild(document.createTextNode("On. It goes to ")); on.appendChild(el("b", "", st.email)); on.appendChild(document.createTextNode(" every Monday."));
+          body.appendChild(on);
+          if (st.off) body.appendChild(el("p", "muted set-lead", "This email unsubscribed from Sona's emails, so no report is sent."));
+          else if (st.pending) body.appendChild(el("p", "muted set-lead", "Check your email for Sona's link, and tap it to start. No email? Look in spam. Unsubscribed from Sona's emails? Reply to one to get them back."));
+          var off = el("div", "set-actions"); off.appendChild(btn("Turn off", "ghost", function () {
+            if (busy) return; busy = true;
+            // per phone: another phone or tablet with it on keeps its own switch
+            var done = function (sent) { paint(); settle(); say(sent ? "Turned off on this phone." : "Turned off on this phone. Sona will finish this the next time it's online."); };
+            Sona.reportOff().then(done, function () { done(false); });
+          }));
+          body.appendChild(off);
+          return;
+        }
+        body.appendChild(el("p", "muted set-lead", "Every Monday, an email with last week's practice: how many days, how many reps and which sounds. Never your child's name or voice."));
+        var lab = el("label", "field bd-email", "Grown-up's email"); lab.setAttribute("for", "reportEmail");
+        var inp = el("input"); inp.id = "reportEmail"; inp.type = "email"; inp.setAttribute("inputmode", "email"); inp.setAttribute("autocomplete", "email");
+        inp.value = (Sona.parentEmail ? Sona.parentEmail() : "") || "";
+        body.appendChild(lab); body.appendChild(inp);
+        var go = el("div", "set-actions"); go.appendChild(btn("Turn on", "", function () {
+          if (busy) return;
+          var em = (inp.value || "").trim();
+          if (!em) { say("Type the grown-up's email first."); inp.focus(); return; }
+          busy = true; say("");
+          Sona.reportSet(em).then(function (sent) {
+            var now = Sona.reportStatus();
+            if (!now.on) { busy = false; say("That email doesn't look right."); inp.focus(); return; }
+            paint(); settle();
+            // what the server said, not what was hoped: a link only while it waits for one
+            say(!sent ? "Saved. Sona will send the link the next time it's online." : now.pending ? "Check your email for the link to start it." : now.off ? "" : "Turned on.");
+          }, function () { busy = false; paint(); });
+        }));
+        body.appendChild(go);
+        body.appendChild(el("p", "muted", "We'll also send occasional tips from Rachel. Unsubscribe anytime."));
+      }
+      paint();
+      // a Turn off made offline goes as soon as Settings is open again, and a
+      // Turn on the server has not heard yet tries again
+      // (in that order: a Turn off the server takes can ask for the "on" again)
+      function catchUp() {
+        var st0 = Sona.reportStatus();
+        (st0.owed && Sona.reportFlush ? Sona.reportFlush() : Promise.resolve()).then(function () {
+          var s1 = Sona.reportStatus();
+          if (!s1.on || (s1.sent && !s1.pending) || !Sona.reportSync) return;
+          // repaint on any change the answer made (waiting began, or ended)
+          return Sona.reportSync(true, true).then(function () {
+            var s2 = Sona.reportStatus();
+            if (busy || !s2.on || (s2.pending === s1.pending && s2.off === s1.off)) return;
+            paint(); if (!s2.pending) say("");
+          });
+        }).then(function () {}, function () {});
+      }
+      catchUp();
+      // back from Mail with the link tapped: "Check your email" goes. Only
+      // while on, so a box being typed in is never wiped
+      document.addEventListener("visibilitychange", function () {
+        if (document.visibilityState !== "visible" || busy) return;
+        var st = Sona.reportStatus();
+        if (st.on) paint();
+        // waiting on the link: ask the server again, so a tapped link shows at
+        // once (catchUp also sends an owed Turn off, and a Turn on not heard)
+        catchUp();
+      });
+    })();
 
     // ── THE PRACTICE BOARD (BOARD2, 11 Oct 2026; built dark) ──────────────
     // One card for the household. Hidden while the board is off, unless a

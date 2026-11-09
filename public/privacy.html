@@ -41,7 +41,7 @@
     <a class="back" id="privacyBack" href="/">&lsaquo; Back</a>
     <header><span class="leo">🦜</span><span class="name">Sona</span></header>
     <h1>Privacy Policy</h1>
-    <div class="updated">Last updated: October 16, 2026</div>
+    <div class="updated">Last updated: November 5, 2026</div>
 
     <p class="lede">Sona ("Sona," "we," "us") helps children practice their speech sounds at home,
     alongside their speech therapy. We built Sona for kids, so protecting their privacy — and giving
@@ -65,8 +65,8 @@
         level. This is counted on the device; what leaves it is described below.</li>
       <li><strong>Trophies, coins and game levels</strong> — counted on the device from your child's
         practice and play, and never sold. They live in the app's own storage (a backup moves them).</li>
-      <li><strong>Voice recordings</strong> — when a child practices, Sona records short audio clips of
-        practice for local playback. The sound checks run on the device; Sona does not receive these clips.</li>
+      <li><strong>Voice</strong> — when a child practices, the microphone listens and the sound checks
+        run on the device, in the moment. Sona does not save the audio and does not receive it.</li>
       <li><strong>Optional names you provide</strong> — if you add names of family members or friends
         to personalize daily stories, that text is used to generate those stories.</li>
       <li><strong>Payment information</strong> — handled by our payment processor (Stripe) when a
@@ -102,10 +102,10 @@
     <p><strong>Sona checks practice sounds on the phone.</strong> The mic listens during practice
     and optional voice-enabled games and books. Sona never uploads your child's recordings or uses a cloud
     service to check their speech.</p>
-    <p>The app may keep <strong>one clear practice try per child per day</strong> in the device's
-    own storage so a grown-up can listen back. It stays on that device. A grown-up can choose
-    to share a saved clip using the phone's share sheet; the selected app or recipient then
-    handles that copy. Clearing the app's data removes the local clips.</p>
+    <p><strong>Sona does not save recordings.</strong> Each try is checked in the moment and
+    then discarded; nothing is kept on the device or anywhere else. (Earlier versions kept one
+    practice try per child per day on the phone for a grown-up to play back; the app deletes
+    any such clip the next time it opens.)</p>
     <p>Sona does not collect children's recordings for advertising, sell them, or use them
     to build advertising profiles.</p>
 
@@ -166,11 +166,11 @@
 
     <!-- REPORT1 (15 Oct 2026): sona.js sends, lib/report.ts keeps and mails. -->
     <h2>The weekly progress report (only if a grown-up asks for it)</h2>
-    <p>When you set up Sona you can give your email to get a weekly progress report. Only then does
-    your phone send Sona&rsquo;s server, as setup ends and then every half hour or so while your child
+    <p>When you set up Sona, or later in Settings, you can give your email to get a weekly progress report. Only then does
+    your phone send Sona&rsquo;s server, as setup ends (or as you turn it on) and then every half hour or so while your child
     practices, a few numbers for each child on that phone, for this week and last: how many days they
     said their sound out loud, how many days they reached the daily goal, how many days a week you
-    planned, how many reps they did (and how many of those were in practice rather than games and
+    planned (if you picked them), how many reps they did (and how many of those were in practice rather than games and
     books), and which sounds those reps were in, with your email address, a random number for the
     phone and a random number for each child. Never a name, an age, a word, a voice or how well a
     sound matched. Nothing is kept until you tap the confirm link we email you, so a mistyped address
@@ -180,10 +180,14 @@
     them. We keep those numbers until three weeks after the week they count and use
     them only to email you the report on Mondays; the email says &ldquo;Child 1&rdquo;, never a name.
     To remember that you confirmed, we keep a scrambled form of your address with the phone&rsquo;s
-    random number, until 120 days after the phone last sent. Unsubscribe from it and nothing more is
+    random number, until 120 days after a phone of that address last sent. Unsubscribe from it and nothing more is
     kept or emailed. A phone you confirmed stops sending its numbers, and once a month checks, with no
     numbers, whether the address is back on the list; a phone you never confirmed keeps checking as
-    above, and Sona keeps nothing it sends.</p>
+    above, and Sona keeps nothing it sends. Turn it off in Settings and that phone sends nothing more:
+    Sona deletes its numbers (under any spelling of the address) and adds a note that the report is off
+    on that phone (its random number, under the scrambled address), so nothing it sent before and no old
+    confirm link can start it again; that it was confirmed is kept as above. The note is kept up to 400
+    days, and for as long as another phone of that address keeps sending.</p>
 
     <h2>Service providers we share data with</h2>
     <p>We share limited information with trusted providers only so the service can function:</p>
@@ -197,9 +201,11 @@
         and payment details, and nothing about a child.</li>
       <li><strong>In-app purchases</strong> — Premium bought inside the iPhone or iPad app is sold and
         billed by Apple, and RevenueCat checks with Apple whether that purchase is active, under a random
-        identifier. If you gave the app your email (setup&rsquo;s email step), the app also gives that
+        identifier. If you gave the app your email (setup&rsquo;s email step, or the weekly progress report&rsquo;s switch in Settings), the app also gives that
         email to RevenueCat, and RevenueCat tells our server when your Premium starts, renews, is
-        cancelled or ends, with that email. Neither Apple nor RevenueCat is given a child&rsquo;s name or
+        cancelled or ends, with that email. The app also gives RevenueCat the same random device
+        identifier our usage counts carry, so our server can tell, without any email, whether a free
+        trial turned into a paid plan, was cancelled or ended. Neither Apple nor RevenueCat is given a child&rsquo;s name or
         anything about their practice.</li>
       <li><strong>Hosting</strong> — Vercel runs the site and its server routes.</li>
       <li><strong>Data store</strong> — Upstash holds clinician accounts, the caseload information
@@ -214,7 +220,9 @@
         RevenueCat gave that phone, so we can tell when Premium moves to another device. It never holds audio.</li>
       <li><strong>Email delivery</strong> — Resend delivers a clinician&rsquo;s sign-in link, the one
         thank-you email when you sign up on speaksona.com, the welcome emails and tips from Rachel to
-        anyone who gave us their address, the weekly progress report to a grown-up who asked for it, and,
+        anyone who gave us their address, the weekly progress report to a grown-up who asked for it, an
+        email on Mondays to the other parents on our list showing an example report (made-up numbers,
+        nothing about their child), and,
         for a parent who gave the app their email, a note a day or two before Premium&rsquo;s free days
         end (only while they are still on them) and one note after Premium ends, and the one
         invite email a clinician can ask us to send a parent. These emails never go to children and never
@@ -224,8 +232,8 @@
         Sona keeps no copy (only a scrambled form for one day). Resend also delivers, to the Sona team&rsquo;s own inbox, a copy of each
         message sent from &ldquo;Talk to us&rdquo;, with the email address you gave (if any) so we can
         reply.</li>
-      <li><strong>Email list</strong> — Resend also keeps Sona&rsquo;s email list, and sends the occasional
-        email a grown-up agreed to when they gave us their address. It holds that email address, a
+      <li><strong>Email list</strong> — Resend also keeps Sona&rsquo;s email list, and sends its emails:
+        the welcome emails and tips from Rachel, and, to parents, an email on Mondays. It holds that email address, a
         clinician&rsquo;s own first name, whether the person is a speech therapist, a parent or something
         else, where they gave it (this website, the app or a sign-up page), and, for a parent who gave the app their
         address, whether they started Sona Premium there (its free days, or paid at once) —
@@ -252,7 +260,9 @@
     duration) tied to a random device identifier, never to a name, email, voice, or recording.
     Our server passes those counts on to PostHog under the same random identifier: for example, that
     a practice session was completed, that a chest or a Trophy Road gift was opened, or that a game
-    level was played.
+    level was played. While a free trial is on, our server also keeps, under that identifier, which
+    days of the trial had any practice (yes or no for each day, nothing more) and how the trial
+    ended, so we can see whether families get to try Sona before deciding; it keeps that for 120 days.
     Limited, privacy-respecting analytics (PostHog, with autocapture turned off) run on adult-facing
     pages of our website and of the app — such as marketing, parent setup, and settings — to
     understand general usage under the same anonymous identifier.
@@ -314,7 +324,9 @@
     and which random RevenueCat identifier that email came with (and when Premium last moved away from that identifier), for 400 days after RevenueCat last mentioned it;
     a Practice Board entry, only if a grown-up turned it on, for as long as described above;
     and the weekly progress report&rsquo;s numbers, with the address it goes to, for three weeks
-    (and a scrambled form of that address, to remember it confirmed, for 120 days after the phone last sent).
+    (and a scrambled form of that address, to remember it confirmed, for 120 days after a phone of that address last sent,
+    and, if the report was turned off on a phone, a note of that, the phone&rsquo;s random number under that scrambled
+    address, for up to 400 days, longer while another phone of that address keeps sending).
     To stop abuse, our server also keeps the internet address a request came from, for up to an hour,
     to count requests (for the Practice Board, only a scrambled form of it).</p>
     <p>We use reasonable safeguards, including encrypted connections. No method of transmission or

@@ -195,6 +195,26 @@ try {
         await clean('song ended mid-ask',page,errors);
       }finally{await context.close();}
     });
+    // NOT AN ASK THE SONG'S END WOULD CUT OFF (5 Nov 2026): with the song
+    // about to end, the ask that is due waits, and the card for the next song
+    // asks in its place; the clock starts again as after an ask the end cut off
+    await scenario('an ask the song\'s end would cut off',async()=>{
+      const{context,page,errors}=await fresh();try{
+        await page.waitForFunction(()=>tiles.length>0);await page.waitForTimeout(700);
+        await page.evaluate(()=>{window.__turns=0;setInterval(()=>{if(slowTurn)__turns++;},10);
+          waitLeft=0;tiles=[];songIx=songNotes(song).length-1;nextAt=songMs+1e9;});
+        await ask(page);await page.waitForTimeout(1000);
+        const held=await page.evaluate(()=>({turns:__turns,held:typeof slowLegHeld!=='undefined'&&slowLegHeld,left:SLOW_HELP.left?SLOW_HELP.left():null,done:typeof songDone==='function'?songDone():null,play:slowAskPlay,at:slowAskAt,requests:__slowTest.requests,starts:__slowTest.starts}));
+        ok('with the song about to end, the ask that is due does not start: no turn, no mic',held.turns===0&&held.held&&held.left<7000&&held.done>.9&&held.play>=held.at&&held.requests===0&&held.starts===0,held);
+        await page.evaluate(()=>{songIx=songNotes(song).length;});
+        await page.waitForFunction(()=>phase!=='song'&&!(typeof slowLegHeld!=='undefined'&&slowLegHeld),null,{timeout:4000});
+        ok('when the song ends the held ask is given up, and the clock starts again: twenty seconds, not a quiet ask',await page.evaluate(()=>slowAskPlay===0&&slowAskAt===SLOW_ASK.every&&slowMissed===0));
+        await page.locator('#revOvl.show').waitFor({timeout:12000});
+        await page.waitForFunction(()=>reviveWait&&__slowTest.web===1,null,{timeout:8000});
+        ok('the card for the next song asks, with its own mic, and Echo never started a turn of his own',await page.evaluate(()=>reviveWait&&__turns===0&&__slowTest.requests===1),await page.evaluate(()=>({turns:__turns,requests:__slowTest.requests})));
+        ok('song end: no runtime errors',errors.length===0,errors);
+      }finally{await context.close();}
+    });
     for(const width of [393,320])await scenario('phone fit '+width,async()=>{
       const{context,page,errors}=await fresh({width});try{
         await page.waitForTimeout(250);

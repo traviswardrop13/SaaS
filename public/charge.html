@@ -595,9 +595,9 @@
     // sync mid-round cannot change the place under the child. The syllables,
     // words and sentences are that place's, and so is the climb (RUNG).
     var POS=(S&&S.soundPos)?S.soundPos(SOUND):"i";
-    // The day's adventure keeps the place it started at for all its rounds,
-    // as it keeps its sound: a homework sync or a Settings change between
-    // two rounds must not move the child from the end of words to the start.
+    // Keep the position selected at the start of a daily practice climb.
+    // A newly assigned word list can still override the practice bank.
+    // The games read the current practice position when they open.
     if(isDaily&&run&&run.active){ if(run.pos&&(!S||!S.FAMILY_POSITIONS||S.FAMILY_POSITIONS.indexOf(run.pos)>=0))POS=run.pos; else{ run.pos=POS; runSave(run); } }
     var RUNG=(S&&S.rungOf)?S.rungOf(SOUND,POS):0;
     // START: the step the day's first round asks ("Each day's practice starts
@@ -2119,7 +2119,6 @@
         })().catch(function(){control.cancel();});
       });
     }
-    function clipBlob(){return !attemptInterrupted&&chunks.length?new Blob(chunks,{type:(rec&&rec.mimeType)||"audio/webm"}):null;}
     // The same tri-state verdict, using only local evidence from this attempt.
     // A pause does not erase an earlier transcript or change its scoring rule.
     async function verifyClip(){
@@ -2276,13 +2275,9 @@
       showTurtle(true);
       var v=await burstAndVerify();
       if(v===null || !(await practiceReady()))return;
-      // One honest PASSED clip a day is kept ON-DEVICE (never uploaded) so the
-      // parent can hear first-try vs today on the Progress "Listen" shelf.
-      if(v==="pass" && reps>0 && !DEMO_REPLAY){ try{
-        // KIDS1: per-child, or one sibling's saved clip blocks the other's
-        var rk=(S&&S.kkey)?S.kkey("sona.reclast"):"sona.reclast", tdy=new Date().toDateString();
-        if(localStorage.getItem(rk)!==tdy){ var rb=clipBlob(); if(rb&&S&&S.saveRecording){ S.saveRecording({sound:SOUND,word:String(ITEM.word||ITEM.t).toLowerCase(),level:ITEM.level,blob:rb}); localStorage.setItem(rk,tdy); } }
-      }catch(e){} }
+      // No clip is kept (Travis, 5 Nov 2026: "dont save"). Until then one
+      // passed try a day went to Sona.saveRecording for Progress's "Saved
+      // tries", which left the page the same day.
       // SLP gating: the rung only ever advances on HONEST evidence — two clean
       // scored rounds at the stretch level, never on mercy or offline scoring.
       if(v==="pass" && useRung>=RUNG && S && S.rungWin && !DEMO_REPLAY){

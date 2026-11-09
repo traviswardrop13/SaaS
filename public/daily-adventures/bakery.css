@@ -1,0 +1,26 @@
+.daily-bakery-canvas { touch-action:none; }
+.bakery-controls { position:absolute; inset:0; pointer-events:none; touch-action:none; font-family:inherit; color:#637452; }
+.bakery-controls [hidden] { display:none !important; }
+.bakery-controls button,.bakery-controls input { box-sizing:border-box; pointer-events:auto; touch-action:none; -webkit-tap-highlight-color:transparent; transition:none !important; }
+.bakery-controls button { font-family:inherit; font-size:14px; font-weight:700; line-height:1.1; cursor:pointer; }
+.bakery-handle { position:absolute; min-width:44px; min-height:44px; padding:0; border:0; border-radius:12px; background:transparent; color:transparent; transform:translate(-50%,-50%); }
+.bakery-controls button:focus-visible,.bakery-controls input:focus-visible { outline:3px solid #fff6d2; outline-offset:2px; box-shadow:0 0 0 5px #4b8c7f; }
+.bakery-controls button:disabled { cursor:default; opacity:.42; }
+.bakery-action,.bakery-level { position:absolute; left:12px; bottom:15px; width:136px; min-height:44px; height:44px; border:1px solid rgba(96,106,73,.3); border-radius:14px; padding:6px 8px; display:flex; align-items:center; justify-content:center; gap:6px; font-family:inherit; font-size:14px; font-weight:700; line-height:1.05; background:var(--act-teal,#3c8585); color:#faf5dd; box-shadow:0 3px 0 rgba(54,84,63,.18); }
+.bakery-action svg,.bakery-level svg { width:22px; height:22px; flex:0 0 22px; }
+.bakery-level { bottom:65px; background:var(--act-cream,#f5edcf); color:#687954; }
+.bakery-help { position:absolute !important; left:auto !important; right:12px !important; bottom:15px !important; transform:none !important; min-width:0 !important; width:136px !important; min-height:44px !important; height:44px !important; padding:5px 7px !important; font-size:14px !important; line-height:1.05 !important; }
+.bakery-help img { width:29px !important; height:29px !important; object-fit:contain; }
+.bakery-help.powered { box-shadow:0 0 0 3px rgba(195,209,154,.75),0 3px 0 rgba(54,84,63,.18); }
+.bakery-batch { position:absolute; bottom:65px; width:90px; min-height:44px; height:44px; border:1px solid rgba(113,117,80,.3); border-radius:12px; padding:4px; background:var(--act-cream,#f5edcf); color:#667852; transform:translateX(-50%); display:flex; align-items:center; justify-content:center; gap:3px; font-family:inherit; font-size:11px; font-weight:700; }
+.bakery-batch img { width:25px; height:26px; object-fit:contain; flex:0 0 25px; }
+.bakery-batch[aria-pressed="true"] { box-shadow:inset 0 0 0 2px #7d9d83; }
+.bakery-heat { position:absolute; height:44px; margin:0; background:transparent; accent-color:#4b8d81; cursor:pointer; -webkit-appearance:none; appearance:none; }
+.bakery-heat::-webkit-slider-runnable-track { height:16px; border:0; border-radius:8px; background:transparent; }
+.bakery-heat::-webkit-slider-thumb { -webkit-appearance:none; appearance:none; width:30px; height:44px; margin-top:-14px; border:2px solid #f5eccb; border-radius:12px; background:#4b8d81; box-shadow:0 2px 2px rgba(71,88,57,.22); }
+.bakery-heat::-moz-range-track { height:16px; background:transparent; border:0; }
+.bakery-heat::-moz-range-thumb { width:28px; height:40px; border:2px solid #f5eccb; border-radius:12px; background:#4b8d81; }
+.bakery-caption { position:absolute; left:10px; bottom:111px; width:calc(100% - 20px); min-height:14px; text-align:center; font-size:10px; line-height:14px; font-weight:700; pointer-events:none; color:#6d7b58; }
+.bakery-sr { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+@media(max-width:350px) { .bakery-action,.bakery-level { left:10px; font-size:13px; } .bakery-help { right:10px !important; font-size:13px !important; } .bakery-batch { width:86px; font-size:11px; } }
+@media(prefers-reduced-motion:reduce) { .bakery-controls *,.bakery-help { animation:none !important; transition:none !important; } }
