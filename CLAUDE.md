@@ -3923,6 +3923,60 @@ these four as parked. What every one holds:
   `design/coming-soon-games-2026-10-16.md` and
   `design/coming-soon-games/*-art-notes.txt`.
 
+**The audit's rebuilds, one game at a time (group 3, Travis, 5-6 Nov
+2026: "start group 3")**. The game audit of 5 Nov 2026 found most say-it
+games easy to the point of automatic and the same every time. Its weak
+games are rebuilt one at a time, closest to good first: Rocket Blast, Build
+a Snowman, Robot Builder, Choo-Choo Train, Birthday Cake. Each rebuild is
+agreed with Travis in plain words first and played by him on his phone (the
+PR's Vercel preview) before it merges. **A rebuild changes the finger play,
+never the talking:** the word, how many times, when the mic opens and what
+counts stay the engine's, because changing those is group 2, which waits for
+Rachel (each saying doing its own thing, words that fit the game, a word
+said at a set moment).
+- **Rocket Blast, rebuilt (6 Nov 2026, Travis: "yea" to the plan).**
+  `public/rocket.js`, `arcade-rocket.html`, `rocket.css`.
+  - **The child aims.** The word brings the rocket and nothing else. Until
+    then it also switched on ten seconds of the bigger ring and the whole
+    drawn flight path, so every launch landed. Now only the first bit of the
+    path shows. One miss shows the whole path and a ghost rocket where to
+    pull; two make any downward pull fly in, so every round still ends. The
+    help pill ("Big ring") still gives ten seconds of the easy ring. No
+    wind (an invisible push is no game for a three-year-old).
+  - **Each trip is a little farther:** the first planet straight up and
+    close, then farther and higher, off to one side and then the other
+    (`COURSE`), the side and a little jitter new each round. The last
+    planet sways slowly side to side; it holds still where it is from the
+    first miss, and while the help pill's power lasts.
+  - **The planets are a collection** (`ALL_PLANETS`, ten, each a painted
+    friend with a face). **Three are in the game now** (Travis, 9 Nov 2026:
+    "3 planets now"): the Bumpy, Purple and Ring planets Codex drew. The
+    other seven (Strawberry, Snowy, Ocean, Flower, Candy, Cloud, Rainbow)
+    carry `later: true` until their pictures exist: the OpenAI image account
+    had no credits on 6-9 Nov 2026. To add one: draw it
+    (`NODE_USE_ENV_PROXY=1 node tools/art/gen-sprites.mjs
+    rocket-planet-<id>`, prompts in `tools/art/game-sprites.json`), cut it
+    (`python3 tools/art/cut-planets.py <id>`), look at it, take `later` off
+    its line. A child who has found every planet meets a new one on their
+    next round. A first round is five planets the child has not found (with
+    three planets, some visited twice, the repeats before the new ones);
+    after that, four already found and one new one, the last and farthest;
+    with all found, any five. A planet landed on is found for good at once;
+    a record naming a planet still waiting is ignored. The top bar's row is this trip's planets, a dashed ring
+    until each is reached; the start and end cards show every planet, found
+    ones in colour (this trip's new ones ringed on the end card) and the
+    rest dark shapes. **Never a count** (Dino Dig's rule). The end card says
+    "You found the Snowy Planet!" for one new planet, "You found new
+    planets!" for more, and "Five little space adventures!" for none.
+  - **Each child's own:** `sona.rocket.v1` (`{ got: [ids] }`), on
+    `PER_KID`, read and written by the page through `Sona.kkey`; `rocket.js`
+    never touches storage. It rides in backups, like Dino Dig's. An unknown
+    or doubled id in it is ignored. A collection, never practice data.
+  - **Travis's to change:** the planets' names, the course (how far, how
+    high, the sway's size and speed: `COURSE`, `DRIFT_SPEED`), one new
+    planet a round. **For Rachel:** nothing a child says changes.
+  `rocketblasttest` plays it (parts `main`, `struggle`, `planets`, `fit`).
+
 **Coming soon games are hidden** (Travis, 19 Oct 2026, "yes", to a funnel
 expert's review: eighteen greyed cards cluttered Home and pushed parents
 away). Home draws no parked game at all: no card, no "Coming soon" label, no

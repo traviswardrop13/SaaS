@@ -285,6 +285,9 @@
     // Dino Dig's round of dinosaurs: which one is next and the ones found
     // (arcade-dino.html keeps it). A collection, never practice data.
     "sona.dino.v1",
+    // Rocket Blast's planets: the ones this child has landed on (6 Nov 2026,
+    // arcade-rocket.html keeps it). A collection, never practice data.
+    "sona.rocket.v1",
     // how many races this child has started from Sound Sprint's start card
     // (Echo's how-to-play, shown for the first three): a sibling gets their own
     "sona.sprintintro.v1",
