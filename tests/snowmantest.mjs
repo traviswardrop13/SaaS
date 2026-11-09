@@ -1,3 +1,8 @@
+// Build a Snowman, rebuilt (Travis, 9 Nov 2026: "yes build the snowman"):
+// the word brings the snowball or the pieces and turns on no easy mode, the
+// child picks the hat (top hat, party hat, crown) and the neck (scarf or bow
+// tie), Echo explains each kind of step once a visit, and a see-through copy
+// shows the move until the child touches it. Every older rule still plays.
 import path from 'node:path';
 import {OUT} from './_env.mjs';
 import {gameHarness,advance,until,sayWord} from './_sayplay-realgame.mjs';
@@ -12,14 +17,59 @@ async function roll(p,stage,{miss=false}={}){
  s=await state(p);if(!s.snow.ball.ready){await p.mouse.up();return false;}await move(p,miss?{x:left,y}:s.snow.target);await p.mouse.up();if(miss){await advance(p,90);return (await state(p)).speech.step===stage;}return until(p,st=>__sayplay.step>st,4000,stage);
 }
 async function smallRoll(p,dx){await grab(p);let s=await state(p);await move(p,{x:s.snow.ball.x+dx,y:s.snow.ball.y},10);await p.mouse.up();await advance(p,50);}
-async function piece(p,target,{background=false}={}){
- const s=(await state(p)).snow,index=s.tray.findIndex(t=>t.id===target.id),b=await p.locator('#snowPiece'+index).boundingBox();if(!b)throw Error('No real tray piece '+target.id);await p.mouse.move(b.x+b.width/2,b.y+b.height/2);await p.mouse.down();await move(p,target);
+async function piece(p,target,{background=false,look=''}={}){
+ const s=(await state(p)).snow,index=s.tray.findIndex(t=>t.id===target.id&&(!look||t.look===look)),b=index<0?null:await p.locator('#snowPiece'+index).boundingBox();if(!b)throw Error('No real tray piece '+target.id+' '+look);await p.mouse.move(b.x+b.width/2,b.y+b.height/2);await p.mouse.down();await move(p,target);
  if(background){await p.evaluate(()=>__quiet.background());await advance(p,350);await p.mouse.up();await p.evaluate(()=>__quiet.foreground());await p.locator('#resume').click();await advance(p,100);}else{await p.mouse.up();await advance(p,90);}
 }
-async function decorate(p,stage){let s=await state(p);for(const t of s.snow.targets.filter(t=>!t.placed))await piece(p,t);return until(p,st=>__sayplay.step>st,4000,stage);}
+// Drags every piece the tray holds onto the snowman, slot by slot: the
+// dressing step offers one slot at a time (the hat's looks, then the neck's,
+// then the arms). `pick` names a look for a slot ({hat:'crown'}).
+async function decorate(p,stage,pick={}){for(let n=0;n<8;n++){const s=await state(p);if(s.speech.step>stage||s.snow.celebrating)break;const t=s.snow.targets.find(t=>!t.placed);if(!t){await advance(p,100);continue;}await piece(p,t,{look:pick[t.id]||''});}return until(p,st=>__sayplay.step>st,4000,stage);}
+const STEP_LINES=['Roll it back and forth','Roll another snowball','Roll the little snowball','Drag the coal face','Pick a hat and a scarf'];
+const spoken=p=>p.evaluate(L=>__quiet.speech.map(x=>typeof x==='string'?x:(x&&(x.text||x.line))||'').filter(t=>L.some(l=>t.indexOf(l)>=0)),STEP_LINES);
 const part=process.env.SNOWMAN_PART,PORT=8356;
 try{
  h=await gameHarness('snowman',PORT);const fresh=(opts={})=>h.fresh({...opts,device:{age:'4',...opts.device}});
+ if(!part||part==='rebuild'){
+  // ── the rebuild: no easy mode from the word, Echo once a visit, the demo,
+  //    and the hat and neck the child picks ──
+  {const {page,context,errors}=await fresh();await page.locator('#startBtn').click();
+   ok('two sayings earn the first snowball',await sayWord(page));let s=await state(page);
+   ok('the word brings the snowball and nothing else: no power, slow rolling, a finger-sized circle',s.snow.active&&s.snow.power===0&&Math.abs(s.snow.growthRate-0.6)<1e-9&&s.snow.magnet*s.snow.width<=Math.max(30,s.snow.target.r*s.snow.width*0.6)+0.5,s.snow);
+   ok('until the child touches the snowball, a see-through one shows how to roll',s.snow.demo==='roll'&&!s.snow.touched,s.snow);
+   ok('Echo explains rolling the first time',await until(page,()=>__snowman.told.indexOf('roll')>=0,4000)&&await until(page,()=>__quiet.speech.some(t=>/Roll it back and forth/.test(t)),6000),await spoken(page));
+   await grab(page);s=await state(page);ok('a touch ends the demo for the step',s.snow.touched&&s.snow.demo==='',s.snow);await page.mouse.up();
+   ok('the first snowball still stacks by real rolling',await roll(page,0));
+   for(let st=1;st<3;st++){ok('word '+(st+1)+' brings the next snowball',await sayWord(page));s=await state(page);ok('snowball '+(st+1)+': no line from Echo, the see-through roll shows the move instead',s.snow.demo==='roll'&&s.snow.power===0,s.snow);ok('snowball '+(st+1)+' stacks',await roll(page,st));}
+   let lines=await spoken(page);ok('three snowballs, one rolling line from Echo',lines.filter(t=>/Roll/.test(t)).length===1,lines);
+   ok('the face word brings the coal and carrot',await sayWord(page));s=await state(page);ok('the face pieces sit in the tray with the see-through drag showing',s.snow.mode==='face'&&s.snow.demo==='drag'&&s.snow.tray.length===2,s.snow);
+   ok('the face goes on',await decorate(page,3));
+   ok('the dressing word brings the hats',await sayWord(page));s=await state(page);
+   const hats=s.snow.tray.map(t=>t.look);ok('the dressing starts with the hats: three to pick from, one spot on the snowman',s.snow.dressing==='hat'&&s.snow.tray.length===3&&s.snow.tray.every(t=>t.id==='hat')&&[...hats].sort().join()==='crown,party,tophat'&&s.snow.targets.length===1&&s.snow.targets[0].choice,s.snow);
+   await piece(page,s.snow.targets[0],{look:'party'});s=await state(page);
+   ok('the party hat picked is the one on the snowman, and the neck pieces come next',s.snow.placed.hat==='party'&&s.snow.dressing==='scarf'&&[...s.snow.tray.map(t=>t.look)].sort().join()==='bow,scarf'&&s.speech.step===4,s.snow);
+   ok('…with the see-through drag showing again for the new pieces',s.snow.demo==='drag',s.snow);
+   await piece(page,s.snow.targets[0],{look:'bow'});s=await state(page);
+   ok('the bow tie picked is on, and the twig arms come last',s.snow.placed.scarf==='bow'&&s.snow.dressing==='arms'&&s.snow.tray.length===1&&s.snow.tray[0].id==='arms',s.snow);
+   ok('the arms finish the snowman',await decorate(page,4));await advance(page,3300);s=await state(page);
+   ok('the snowman is done, wearing what the child picked',s.speech.phase==='end'&&s.snow.won&&s.snow.placed.hat==='party'&&s.snow.placed.scarf==='bow'&&s.snow.placed.arms,s.snow);
+   lines=await spoken(page);ok('a whole snowman: Echo explained the rolling, the face and the dressing, once each',lines.length===3&&/Roll it back/.test(lines[0])&&/Drag the coal face/.test(lines[1])&&/Pick a hat and a scarf/.test(lines[2]),lines);
+   await page.locator('#endOvl').evaluate(e=>e.style.visibility='hidden');await page.screenshot({path:path.join(OUT,'sona-snowman-picked.png')});await page.locator('#endOvl').evaluate(e=>e.style.visibility='');
+   // Play again: no lines from Echo now, the demo shows every move
+   await page.locator('#again').click();await advance(page,350);
+   for(let st=0;st<3;st++){if(!await sayWord(page))throw Error('again word '+st);if(st===0){s=await state(page);ok('Play again: the first snowball shows the see-through roll, and Echo says nothing',s.snow.demo==='roll',s.snow);}if(!await roll(page,st))throw Error('again roll '+st);}
+   if(!await sayWord(page))throw Error('again face');if(!await decorate(page,3))throw Error('again face drag');
+   if(!await sayWord(page))throw Error('again dress');if(!await decorate(page,4,{hat:'crown',scarf:'scarf'}))throw Error('again dress drag');await advance(page,3300);s=await state(page);
+   ok('a second snowman can wear something else: the crown and the scarf',s.snow.placed.hat==='crown'&&s.snow.placed.scarf==='scarf'&&s.snow.won,s.snow);
+   lines=await spoken(page);ok('Play again added no lines from Echo',lines.length===3,lines);
+   await page.locator('#endOvl').evaluate(e=>e.style.visibility='hidden');await page.screenshot({path:path.join(OUT,'sona-snowman-crown.png')});
+   ok('the rebuild has no runtime errors',errors.length===0,errors);await context.close();}
+  // "Hear what to do" still says the step's line on a tap
+  {const {page,context,errors}=await fresh();await page.locator('#startBtn').click();await sayWord(page);await roll(page,0);await sayWord(page);const before=(await spoken(page)).length;
+   await page.locator('#snowmanHearStep').click();await until(page,()=>__quiet.speech.some(t=>/Roll another/.test(t)),6000);
+   ok('"Hear what to do" says the step\'s line on a tap, also on a step Echo kept quiet',(await spoken(page)).length===before+1&&(await spoken(page)).some(t=>/Roll another/.test(t)),await spoken(page));
+   ok('hear-step has no runtime errors',errors.length===0,errors);await context.close();}
+ }
  if(!part||part==='main'){
   {// (d) parked: a typed address goes Home, which says it is coming soon, before any mic or sound
    const {page,context,errors}=await fresh({unpark:false});

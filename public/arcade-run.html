@@ -185,8 +185,8 @@
       gameEntryAllowed=true;
     })();
   </script>
-  <script>// left: the metres this stretch has left, at ten a second (the road's count while no help is on; Echo starts no ask its end would cut off: arcade-speech-help.js)
-  window.SLOW_HELP={phase:"run",action:"slow the course",earned:"Slow course!",eligible:function(){return !falling.on&&!raceHeld;},first:6000,left:function(){return (STRETCHES[stretch].len-(dist-stretchStart))*100;}};</script>
+  <!-- left: the metres this stretch has left, at ten a second (the road's count while no help is on; Echo starts no ask its end would cut off: arcade-speech-help.js) -->
+  <script>window.SLOW_HELP={phase:"run",action:"slow the course",earned:"Slow course!",eligible:function(){return !falling.on&&!raceHeld;},first:6000,left:function(){return (STRETCHES[stretch].len-(dist-stretchStart))*100;}};</script>
   <script src="/arcade-speech-help.js"></script>
   <script src="/arcade-sayit.js"></script>
   <script>

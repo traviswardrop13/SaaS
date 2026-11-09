@@ -134,8 +134,8 @@
        song keeps going while he listens; one saying earns eight seconds of
        slow keys. The turn, the ask and the reward are the round games' one
        copy, /arcade-speech-help.js; this page keeps its own mic and ear. -->
-  <script>// left: about how much play this song has left, at its pace so far (Echo starts no ask its end would cut off: arcade-speech-help.js)
-  window.SLOW_HELP={phase:"song",action:"slow the keys",earned:"Slow keys!",first:6000,eligible:function(){return !SONGS[song].finale;},left:function(){return slowLegLeft(songDone());}};</script>
+  <!-- left: about how much play this song has left, at its pace so far (Echo starts no ask its end would cut off: arcade-speech-help.js) -->
+  <script>window.SLOW_HELP={phase:"song",action:"slow the keys",earned:"Slow keys!",first:6000,eligible:function(){return !SONGS[song].finale;},left:function(){return slowLegLeft(songDone());}};</script>
   <script src="/arcade-speech-help.js"></script>
   <script src="/arcade-sayit.js"></script>
   <script>
