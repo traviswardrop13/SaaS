@@ -5574,7 +5574,8 @@ The new syllable models still need their separate listening review.
   the age restrictions, and the sentence forms. The existing medial T bank
   includes water, letter and button (often a flap or glottal stop in American
   English). The medial V bank includes gloves, where V is in a final cluster.
-  Those existing words still need her bank review.
+  Family Middle and Mixed skip those four words until Rachel reviews the
+  bank. Clinician assignments keep their existing pools and named words.
 `tests/posladdertest.mjs` holds these rules; `kidtest` the Settings pickers;
 `progtest`, `hwtest`, `gameasktest`, `heartest` and `soundmap` the rest.
 

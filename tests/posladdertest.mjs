@@ -101,6 +101,24 @@ const words = (S, s, p) => S.WORDS[s].filter((w) => (w.pos || "i") === p).map((w
   ok("…while their speech therapist's homework keeps its own place", hw.S.soundPos("R") === "v");
 }
 
+// ── 2c. hold disputed existing bank entries from the new family pools ──
+{
+  const t = boot({ profile: { wordPosition: "m", focusSounds: ["T"] } });
+  const tWords = t.S.ladderContent("T", 2).map((w) => w.word);
+  ok("family medial T offers guitar and potato in Practice and picture games while the other entries await review",
+    tWords.join() === "guitar,potato" && t.S.playWords("T").map((w) => w.w).join() === tWords.join(), tWords);
+  t.S.saveProfile({ wordPosition: "mix" });
+  const mixed = t.S.ladderContent("T", 3).map((w) => w.word).concat(t.S.playWords("T").map((w) => w.w));
+  ok("family Mixed also leaves out medial T's water, letter and button", mixed.length > 0 && !mixed.some((w) => ["water", "letter", "button"].includes(w)), mixed);
+  homework(t, { sounds: ["T"], pos: "m" });
+  ok("medial T homework still has its existing word bank", t.S.ladderContent("T", 2).map((w) => w.word).join() === "water,guitar,potato,button,letter");
+  const v = boot({ profile: { wordPosition: "m", focusSounds: ["V"] } });
+  const vWords = v.S.playWords("V").map((w) => w.w);
+  ok("family medial V holds gloves for review and keeps the other four words", vWords.join() === "river,oven,seven,driver", vWords);
+  homework(v, { sounds: ["V"], pos: "m", words: ["gloves"] });
+  ok("the clinician can still explicitly assign gloves", v.S.playWords("V").map((w) => w.w).join() === "gloves");
+}
+
 // ── 3. one climb per place ──
 {
   const p = boot({ profile: { wordPosition: "f" } }), { S } = p;

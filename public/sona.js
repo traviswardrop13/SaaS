@@ -2396,10 +2396,15 @@
     } catch (e) {}
     return [];
   }
+  // These existing medial entries stay available to clinicians, but wait
+  // for review before the new family Middle or Mixed pools model them.
+  const FAMILY_MEDIAL_REVIEW = { T: ["water", "letter", "button"], V: ["gloves"] };
   function wordsFor(sound, pos) {
     const pick = homeworkWords(sound);
     if (pick.length) return pick;
-    const list = (WORDS[sound] || []).slice();
+    let list = (WORDS[sound] || []).slice();
+    const held = FAMILY_MEDIAL_REVIEW[sound];
+    if (held && (pos === "m" || pos === "mix") && !_hwFor(sound)) list = list.filter((w) => held.indexOf(w.w) < 0);
     // a little one's Mixed (a grown-up's pick, not homework) leaves out vocalic
     // R and blends, R's end words with them (soundPos)
     if (pos === "mix" && _littleOne() && !_hwFor(sound)) return list.filter(function (w) { return !_heldLittle(sound, w.pos); });
