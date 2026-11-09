@@ -69,6 +69,21 @@ try{
    await page.locator('#snowmanHearStep').click();await until(page,()=>__quiet.speech.some(t=>/Roll another/.test(t)),6000);
    ok('"Hear what to do" says the step\'s line on a tap, also on a step Echo kept quiet',(await spoken(page)).length===before+1&&(await spoken(page)).some(t=>/Roll another/.test(t)),await spoken(page));
    ok('hear-step has no runtime errors',errors.length===0,errors);await context.close();}
+  // The see-through copy really moves with motion on, and stands still under
+  // Reduce Motion: read where drawDemo() put it at three moments, 0.6 s
+  // apart (a quarter of its 2.4 s loop, so three samples can never all match
+  // by chance), and that it was drawn in between. Each set waits a few
+  // frames first, so a frame drawn before Reduce Motion changed is not read.
+  {const {page,context,errors}=await fresh();await page.locator('#startBtn').click();await sayWord(page);
+   const samples=async()=>{const out=[];await advance(page,100);for(let n=0;n<3;n++){if(n)await advance(page,600);out.push((await state(page)).snow.demoShown);}return out;};
+   const moved=a=>new Set(a.map(d=>Math.round(d.x)+','+Math.round(d.y))).size>1,drawn=a=>a.every((d,n)=>!n||d.n>a[n-1].n);
+   let a=await samples();ok('Reduce Motion: the see-through snowball is drawn, standing still',a.every(d=>d.kind==='roll')&&drawn(a)&&!moved(a),a);
+   await page.emulateMedia({reducedMotion:'no-preference'});a=await samples();
+   ok('motion on: the see-through snowball rolls back and forth',a.every(d=>d.kind==='roll')&&drawn(a)&&moved(a),a);
+   if(!await roll(page,0))throw Error('demo roll 0');for(let st=1;st<3;st++){if(!await sayWord(page)||!await roll(page,st))throw Error('demo roll '+st);}
+   if(!await sayWord(page))throw Error('demo face word');a=await samples();ok('motion on: the see-through piece glides to its spot',a.every(d=>d.kind==='drag')&&drawn(a)&&moved(a),a);
+   await page.emulateMedia({reducedMotion:'reduce'});a=await samples();ok('Reduce Motion again: the see-through piece stands still',a.every(d=>d.kind==='drag')&&drawn(a)&&!moved(a),a);
+   ok('demo motion has no runtime errors',errors.length===0,errors);await context.close();}
  }
  if(!part||part==='main'){
   {// (d) parked: a typed address goes Home, which says it is coming soon, before any mic or sound

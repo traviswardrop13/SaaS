@@ -41,7 +41,7 @@
   // told: the kinds of step Echo has explained on this page (never reset by
   // Play again); touched: the child has put a finger on this step's piece,
   // which ends the see-through demo for the step.
-  var told = {}, touched = false;
+  var told = {}, touched = false, demoShown = { kind: "", x: 0, y: 0, n: 0 };
   var api, cv, ctx, W = 390, H = 844, raf = 0, last = 0, art = {}, active = false, paused = false, away = false, won = false, stage = 0, stages = 5, completed = 0, power = 0;
   var stacked = [false, false, false], rotations = [0, 0, 0], stack = [], zone = { left: 0.06, right: 0.94, top: 0.7, bottom: 0.84 }, tray = [], targets = [];
   var ball = { x: 0.3, y: 0.8, progress: 0, distance: 0, angle: 0 }, placed = { coal: false, nose: false, hat: false, scarf: false, arms: false }, pieces = [];
@@ -141,7 +141,7 @@
       stack: stack.map(function (p, n) { return { x: p.x / W, y: p.y / H, r: p.r / W, placed: stacked[n] }; }), stacked: stacked.slice(),
       targets: targets.map(function (p) { return { id: p.id, choice: p.choice, x: p.x, y: p.y, r: magnet(), w: p.w, h: p.h, placed: !!placed[p.id] }; }),
       tray: tray.map(function (p) { return { id: p.id, look: p.look, x: p.x, y: p.y, w: p.w, h: p.h }; }), pieces: pieces.map(function (p) { return { id: p.id, look: p.look, x: p.x, y: p.y, placed: !!placed[p.id] }; }),
-      placed: { coal: placed.coal, nose: placed.nose, hat: placed.hat, scarf: placed.scarf, arms: placed.arms }, dressing: stage === 4 ? dressSlot() : "", demo: demoKind(), told: Object.keys(told), touched: touched,
+      placed: { coal: placed.coal, nose: placed.nose, hat: placed.hat, scarf: placed.scarf, arms: placed.arms }, dressing: stage === 4 ? dressSlot() : "", demo: demoKind(), demoShown: { kind: demoShown.kind, x: demoShown.x, y: demoShown.y, n: demoShown.n }, told: Object.keys(told), touched: touched,
       looks: { hat: LOOKS.hat.map(function (l) { return l.id; }), scarf: LOOKS.scarf.map(function (l) { return l.id; }) }, growthRate: growthRate(), magnet: magnet(), held: held ? held.type === "ball" ? "ball" : pieces[held.index].id : null,
       pointerId: owner, keyboardHeld: keyboardHeld, misses: misses, stageMisses: stageMisses, level: level(), rollHelp: rollLevel(), tryTime: tryTime, rollTry: rollTry, celebrating: doneAt > 0, powerLive: powerLive, lane: laneShown(), trail: trail.length, width: W, height: H, coordinates: "positions normalized to canvas; radii/distance/magnet use canvas width; growthRate is progress per width of real rolling distance" };
   }
@@ -242,14 +242,17 @@
     ctx.save(); ctx.globalAlpha = Math.max(0, fade);
     if (kind === "roll") {
       var r = ballR(), a = zone.left + (zone.right - zone.left) * 0.2, b = zone.right - (zone.right - zone.left) * 0.2, x = still ? b : a + (b - a) * (0.5 - 0.5 * Math.cos(2 * Math.PI * t)); ctx.globalAlpha = still ? 0.42 : 0.4;
-      drawBall(x * W, ball.y * H, r, (x - ball.x) * W / Math.max(1, r), false);
+      shown(x * W, ball.y * H); drawBall(x * W, ball.y * H, r, (x - ball.x) * W / Math.max(1, r), false);
     } else if (kind === "lift") {
-      var to = stack[stage], fx = ball.x * W, fy = ball.y * H; drawBall(fx + (to.x - fx) * ease, fy + (to.y - fy) * ease, ballR(), ball.angle, false);
+      var to = stack[stage], fx = ball.x * W, fy = ball.y * H; shown(fx + (to.x - fx) * ease, fy + (to.y - fy) * ease); drawBall(demoShown.x, demoShown.y, ballR(), ball.angle, false);
     } else {
       var p = pieces.filter(function (q) { return !placed[q.id]; })[0], shape = pieceShape(p.id, p.look), sx = p.x * W, sy = p.y * H, scale = 0.6 + 0.4 * ease;
-      drawPiece(p.id, sx + (shape.x - sx) * ease, sy + (shape.y - sy) * ease, shape.w * scale, shape.h * scale, Math.max(0, fade), p.look);
+      shown(sx + (shape.x - sx) * ease, sy + (shape.y - sy) * ease); drawPiece(p.id, demoShown.x, demoShown.y, shape.w * scale, shape.h * scale, Math.max(0, fade), p.look);
     }
     ctx.restore();
+    // where the copy was last drawn, and how many times (the test reads it:
+    // with motion on it moves, under Reduce Motion it stands still)
+    function shown(x, y) { demoShown = { kind: kind, x: x, y: y, n: demoShown.n + 1 }; }
   }
   function point(event) { var rect = cv.getBoundingClientRect(); return { x: (event.clientX - rect.left) / W, y: (event.clientY - rect.top) / H }; }
   function clippedDistance(a, b) {
