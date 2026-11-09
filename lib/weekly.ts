@@ -60,6 +60,16 @@ type Kv = (cmd: (string | number)[]) => Promise<unknown>;
 type Fetch = typeof fetch;
 
 export const WEEKLY_CAP = 250;
+
+/**
+ * THE MONDAY EMAIL IS SWITCHED OFF (Travis, 9 Nov 2026: "we dont have the
+ * resend weekly email going out tomorrow i don't want that"). While false the
+ * daily cron sends no Monday email to anyone; nothing else changes (the real
+ * weekly report a parent asked for and confirmed, REPORT1, still goes, and so
+ * do the welcome emails). A founder's manual run (?weekly=1) still sends: that
+ * is a deliberate tap, not the schedule. Turning it back on is this one line.
+ */
+export const WEEKLY_ON = false;
 export const WEEKLY_KEEP_SEC = 10 * 24 * 60 * 60;
 export const SERIES_DAYS = 3;
 export const KIT_CUTOFF = Date.parse("2026-10-17T00:00:00Z");
@@ -126,8 +136,10 @@ export const LEDGER_CAP = 10000;
  * `people` is everyone() unless a test hands in its own.
  */
 export async function runWeekly(kv: Kv = kvCmd, f: Fetch = fetch, now: number = Date.now(),
-  opts: { force?: boolean; deadline?: number; sleep?: (ms: number) => Promise<void>; people?: () => Promise<Contact[]> } = {}): Promise<WeeklyResult> {
+  opts: { force?: boolean; deadline?: number; sleep?: (ms: number) => Promise<void>; people?: () => Promise<Contact[]>; on?: boolean } = {}): Promise<WeeklyResult> {
   const res: WeeklyResult = { week: null, people: 0, sent: 0, failed: 0, skipped: 0, waiting: 0 };
+  // switched off: the schedule sends nothing (`on` is the suites' seam only)
+  if (!WEEKLY_ON && !opts.force && opts.on !== true) { res.stopped = "off"; return res; }
   const cfg = config();
   if (!cfg || (!opts.force && !SEND_DAYS.includes(new Date(now).getUTCDay()))) return res;
   const sleep = opts.sleep || ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
