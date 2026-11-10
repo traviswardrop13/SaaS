@@ -95,7 +95,7 @@ ok("Echo's power button still asks and checks the bare sound while the card veri
 ok("a verified native word card reaches one game rep only on pass, with no practice data or correct celebration",
   revive.startsWith("function doRevive(){") && (revive.match(/S\.gameRep\(SND\)/g) || []).length === 1
   && (code.match(/gameRep\(/g) || []).length === 1 && (code.match(/\bdoRevive\(/g) || []).length === 2
-  && /S\.speechTurn\(\{sound:SND,word:ask\?ask\.text:SAYTXT,level:level\}\)/.test(cardHelp)
+  && /S\.speechTurn\(\{sound:SND,word:ask\?ask\.text:SAYTXT,level:level,pos:ask\?ask\.pos:""\}\)/.test(cardHelp)
   && /t\.check\.finish\(\)\.then\(function\(verdict\)\{/.test(cardHelp)
   && /var accepted=t\.check\.required\?verdict==="pass":verdict!=="fail";\s*if\(accepted\)\{doRevive\(\);return;\}/.test(cardHelp)
   && (cardHelp.match(/\bdoRevive\(/g) || []).length === 1
