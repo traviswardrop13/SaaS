@@ -18,6 +18,10 @@
 
   // Native app (Capacitor): ship zero third-party tracking (kids/COPPA). Web is unaffected.
   if (window.Capacitor) return;
+  // The guides (/guides, 28 Oct 2026): which speech guide a parent reads ("how
+  // to help a lisp") says something about their child, so Meta is never told.
+  // The root layout loads this file on every Next page, so it is held here.
+  try { if (/^\/guides(\/|$)/.test(location.pathname)) return; } catch (e) {}
 
   if (!META_PIXEL_ID) return;
 
