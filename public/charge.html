@@ -412,6 +412,8 @@
     var DEMO_REPLAY = (IS_DEMO || !!(_runPeek&&_runPeek.active&&_runPeek.demo))
       && !!(window.Sona && window.Sona.demoDone && window.Sona.demoDone());
     var S=window.Sona;
+    var practiceOwner=S&&S.kkey?S.kkey("sona.profile.v1"):"";
+    function practiceOwned(){return !(S&&S.kkey)||S.kkey("sona.profile.v1")===practiceOwner;}
     // Resolve the requested catalog item before microphone or audio work. New
     // adventures use an accessible deck; a saved run keeps its original plan.
     var catalogDaily=qp.get("daily")==="1"||qp.get("session")==="1";
@@ -430,6 +432,7 @@
     var practiceWaiters=[], practiceTimers=[], pauseFocus=null, pauseInert=[], practiceClosing=Promise.resolve();
     function practiceReady(){
       if(practiceClosed || (practiceTerminal && document.hidden)) return Promise.resolve(false);
+      if(!practiceOwned())return goPracticeHome().then(function(){return false;});
       if(document.hidden && !practicePaused) pausePractice();
       if(!practicePaused) return Promise.resolve(true);
       return new Promise(function(resolve){ practiceWaiters.push(resolve); });
@@ -462,7 +465,7 @@
       if(engineControl)engineControl.cancel();
       // A native start may still be awaiting availability. Keep this page alive
       // until its final stop settles, or navigation can discard that cleanup.
-      practiceClosing=recognitionStop();
+      practiceClosing=Promise.all([recognitionStop(),wordClosing]);
       stopMic(); cancelPracticeAudio();
       try{ if(S&&S.sfx&&S.sfx.stop)S.sfx.stop(); }catch(e){}
       practiceTimers.slice().forEach(function(wake){wake();});
@@ -1126,6 +1129,7 @@
       // The native recognizer holds the phone's mic through its own tap: its
       // stop is a mic close too.
       if(r&&r.stoppedAt)micClosedAt=Math.max(micClosedAt,r.stoppedAt);
+      await wordClosing;
       await micSettled();
     }
     // The mic opens only into silence: nothing of Sona's queued or sounding,
@@ -1599,6 +1603,8 @@
     // 15 s is also the most the plugin allows one listen (SonaSpeechPlugin).
     var REC_BUDGET=15000;
     var recognitionTexts=[], recognitionRemaining=REC_BUDGET, recognitionState=null;
+    var wordClosing=Promise.resolve(), wordCheckIssue=false;
+    function needsWordCheck(){return !!(S&&S.isNativeApp&&S.isNativeApp()&&ITEM&&/^(word|sentence)$/.test(ITEM.level));}
     // ---- ROOM FLOOR (24 Sep 2026) ----
     // How loud the room is when nobody is talking. Two things come from it:
     // the loudness bar a sound must clear to start a try (thr, 3x the room)
@@ -1788,7 +1794,7 @@
       if(recognitionRemaining<=0 || !(S&&S.speechStart)) return;
       var r={startedAt:performance.now(),budget:recognitionRemaining,settled:false,stop:null,timer:null};
       recognitionState=r;
-      try{ r.pending=Promise.resolve(S.speechStart({ words:[String(ITEM.word||ITEM.say||ITEM.t||"").toLowerCase()], maxMs: Math.ceil(r.budget) })); }
+      try{ r.pending=Promise.resolve(S.speechStart({ words:[], maxMs: Math.ceil(r.budget) })); }
       catch(e){ r.pending=Promise.resolve(false); }
       r.pending=r.pending.then(function(v){r.settled=true;r.started=!!v;return v;},function(){r.settled=true;return false;});
       r.timer=setTimeout(function(){if(recognitionState===r)recognitionStop();},r.budget);
@@ -1812,6 +1818,8 @@
       return new Promise(function(resolve){
         var attempt={cancelled:false,settled:false,segment:null}; engineAttempt=attempt;
         reps=0; paintReps(0); chunks=[]; rec=null; shapeReset(); attemptInterrupted=false;
+        wordCheckIssue=false;
+        var checkWords=needsWordCheck();
         recognitionTexts=[]; recognitionRemaining=REC_BUDGET; recognitionState=null;
         var voiced=0,silent=0,inBurst=false,thr=0,lastRep=0,burstFrames=[];
         var evid=speechEvidence(),counted=false,heardAt=0,burstAt=0;
@@ -1865,7 +1873,8 @@
             seg.timers.forEach(clearTimeout); if(seg.raf!=null)cancelAnimationFrame(seg.raf);
             try{if(seg.src)seg.src.disconnect();}catch(e){}
             try{$("micWrap").classList.remove("hear");$("echoBuddy").classList.remove("heard");echoPose();}catch(e){}
-            Promise.all([recorderStop(),recognitionStop()]).then(function(){
+            if(seg.wordTurn){wordClosing=seg.wordTurn.cancel().then(function(){micClosedAt=Math.max(micClosedAt,performance.now());});}
+            Promise.all([recorderStop(),recognitionStop(),wordClosing]).then(function(){
               // The mic closes at the end of EVERY window, not only before a
               // sound (24 Sep 2026): the next window reopens it into silence.
               // After the recorder, so the keepsake clip is whole; and only
@@ -1909,7 +1918,36 @@
             }catch(e){seg.recorder=null;rec=null;}}
             // The window is open; the cue waits for the first frame that can
             // hear the child (listenReady in tick), so no glowing mic yet.
-            recognitionStart(); engineOn=true; updateTurn();
+            if(checkWords)armWord();else recognitionStart();
+            engineOn=true; updateTurn();
+            function armWord(){
+              seg.wordReady=false;seg.wordChecking=false;seg.wordCandidate=false;seg.wordNeedGap=false;seg.wordQuietAt=0;
+              if(!(S&&S.speechTurn)){wordCheckIssue=true;seg.finish("unverified");return;}
+              var turn=S.speechTurn({sound:SOUND,word:String(ITEM.word||ITEM.t||""),level:ITEM.level,frame:ITEM.level==="sentence"?String(ITEM.t||""):"",pos:ITEM.pos||""});
+              seg.wordTurn=turn;
+              turn.ready.then(function(okay){
+                if(!current()||seg.wordTurn!==turn){turn.cancel();return;}
+                if(!okay){wordCheckIssue=true;seg.finish("unverified");return;}
+                seg.wordReady=true;
+              });
+            }
+            function checkWord(){
+              if(!current()||seg.wordChecking||!seg.wordCandidate)return;
+              seg.wordChecking=true;seg.wordReady=false;listenReady=false;micGo(false);
+              var turn=seg.wordTurn;
+              turn.finish().then(function(verdict){
+                if(!practiceOwned()){goPracticeHome();return;}
+                if(!current()||seg.wordTurn!==turn)return;
+                if(verdict==="cancelled"){control.cancel();stopMic();return;}
+                if(verdict==="pass")creditRep(performance.now());else wordCheckIssue=true;
+                voiced=0;silent=0;inBurst=false;counted=false;burstFrames=[];evid.drop();
+                seg.wordCandidate=false;seg.wordQuietAt=0;
+                // The bounded tail may have ended while the child was still
+                // talking. A new recognizer alone is not a new saying: wait
+                // for real quiet before another word can be nominated.
+                if(successAt===null){seg.wordNeedGap=true;seg.wordGapAt=0;seg.wordChecking=false;}
+              });
+            }
             function micLive(){
               if(!micOk||!micStream)return false;
               try{var t=micStream.getAudioTracks()[0];return !t||(t.readyState==="live"&&!t.muted);}catch(e){return true;}
@@ -1925,6 +1963,7 @@
             // No repeated coaching before the quiet state; replay is child-directed.
             var mw=$("micWrap");
             function tick(){
+              if(!practiceOwned()){goPracticeHome();return;}
               if(!current() || practicePaused)return;
               var wallNow=performance.now();
               // Echo starting to talk ends the window (24 Sep 2026): a short
@@ -1939,9 +1978,23 @@
                 seg.finish("model");return;
               }
               if(!micLive()){seg.finish("microphone");return;}
+              // A paused/starved native stream is missing sound, not quiet.
+              // Its zeros must never finish a word or separate two sayings.
+              if(checkWords&&S&&S.micDeaf&&S.micDeaf(micStream)){
+                seg.wordGapAt=0;seg.wordQuietAt=0;
+                seg.raf=requestAnimationFrame(tick);return;
+              }
+              // Native words wait for their own fresh recognizer. A result
+              // still settling cannot credit the next saying or light its mic.
+              if(checkWords&&((!seg.wordReady&&!seg.wordNeedGap)||seg.wordChecking)){seg.raf=requestAnimationFrame(tick);return;}
               an.getByteTimeDomainData(td);an.getByteFrequencyData(fd);
               var sum=0;for(var i=0;i<td.length;i++){var d=(td[i]-128)/128;sum+=d*d;}
               var rms=Math.sqrt(sum/td.length),now=wallNow;
+              if(checkWords&&seg.wordNeedGap){
+                if(rms<=thr){if(!seg.wordGapAt)seg.wordGapAt=now;if(now-seg.wordGapAt>=200)armWord();}
+                else seg.wordGapAt=0;
+                seg.raf=requestAnimationFrame(tick);return;
+              }
               // ROOM FLOOR: every window samples its own first quarter-second.
               // With the page's room already set it listens meanwhile; without
               // one it waits for the reading (thr stays 0 until readRoom).
@@ -1954,6 +2007,7 @@
               // that never shows any is not a try: no count, no "heard", and
               // its frames never reach the shape checker.
               if(rms>thr){
+                if(checkWords)seg.wordQuietAt=0;
                 voiced++;silent=0;
                 if(!inBurst&&voiced>=4&&(successAt!==null||now-lastRep>350)){inBurst=true;burstAt=now;}
                 if(!counted){
@@ -1961,6 +2015,7 @@
                   if(evid.frame(now)&&inBurst&&!seg.learn)countRep(now);
                 }else if(inBurst) shapeFrame(fd,binHz);
               }else{
+                if(checkWords&&seg.wordCandidate&&!seg.wordQuietAt)seg.wordQuietAt=now;
                 silent++;voiced=0;
                 if(!inBurst){burstFrames=[];evid.drop();if(seg.learn&&rms<=ROOM_MAX)learnRoom(now,rms);}
                 if(silent>=3&&now-heardAt>250){try{mw.classList.remove("hear");$("echoBuddy").classList.remove("heard");echoPose();}catch(e){}}
@@ -1969,6 +2024,11 @@
                 if(inBurst&&!counted&&(silent>=8||evid.quietFor(now)>=EVID.quietMs)&&heardTry())countRep(now);
                 if(silent>=8){inBurst=false;counted=false;burstFrames=[];evid.drop();}
               }
+              // Five voiced frames only nominate a saying. Apple must hear
+              // its end, not just its first ~80ms, before it earns a fruit.
+              // Time without a frame is not observed quiet. The first valid
+              // quiet frame after a missing feed starts a fresh tail clock.
+              if(checkWords&&seg.wordCandidate&&seg.wordQuietAt&&now-seg.wordQuietAt>=200)checkWord();
               if(micNums.on)micNumsFrame(now,rms,thr,room&&room.rms,reps,micStream,ctx);
               seg.raf=requestAnimationFrame(tick);
             }
@@ -2034,6 +2094,13 @@
             function countRep(now){
               counted=true;
               burstFrames.forEach(function(frame){shapeFrame(frame,binHz);});burstFrames=[];
+              if(checkWords){
+                if(!seg.wordCandidate){seg.wordCandidate=true;seg.wordAt=now;seg.wordQuietAt=0;}
+                return;
+              }
+              creditRep(now);
+            }
+            function creditRep(now){
               // Keep hearing the final try, including after a pause, without
               // awarding another rep or replaying its reward.
               if(successAt!==null)return;
@@ -2062,7 +2129,7 @@
             // Coaching and background pauses must not spend listening time.
             function finishTail(){var remaining=successAt-activeMs();if(remaining<=0)seg.finish("done");else later(finishTail,remaining);}
             // Preserve the existing 20-second cap, even for a final short try.
-            function deadline(){var remaining=20000-activeMs();if(remaining<=0){judgePending(performance.now());seg.finish("done");}else later(deadline,remaining);}
+            function deadline(){var remaining=20000-activeMs();if(remaining<=0){judgePending(performance.now());if(checkWords&&seg.wordCandidate)wordCheckIssue=true;seg.finish("done");}else later(deadline,remaining);}
 
             later(deadline,20000-activeMs());
             if(successAt!==null)later(finishTail,successAt-activeMs());
@@ -2114,6 +2181,7 @@
               if(!(await practiceReady())||closed()){finishAttempt(false);return;}
               finishAttempt(true);return;
             }
+            if(result==="unverified"){finishAttempt(true);return;}
           }
           finishAttempt(false);
         })().catch(function(){control.cancel();});
@@ -2123,6 +2191,9 @@
     // A pause does not erase an earlier transcript or change its scoring rule.
     async function verifyClip(){
       await recognitionStop();
+      // Every native word counted above has its OWN accepted transcript.
+      // A round-wide "rabbit taco taco" must never approve five sayings.
+      if(needsWordCheck())return reps>0?"pass":"unknown";
       try{
         if(S&&S.hearVerdict){
           var text=recognitionTexts.join(" ");
@@ -2166,7 +2237,7 @@
         NEED=save;
         // Even a native transcript cannot manufacture a try when the mic found
         // no sustained speech. No outcomes, totals, clips, coaching or rewards.
-        if(reps===0){if(await showQuiet())continue;return null;}
+        if(reps===0){if(await showQuiet(wordCheckIssue?"word":null))continue;return null;}
         turnPhase="checking";micGo(false);$("gpState").textContent="";
         var l=$("leo");l.classList.add("think");
         var v=await verifyClip();
@@ -2238,8 +2309,9 @@
       // shell. Asked AFTER the mic grant, deliberately — the mic prompt must
       // ride directly on the primer tap (storytest pins that), and the mic
       // dialog leading also reads sanely to a parent: hear first, then
-      // understand. No-op on web; denial just means spectral-only verdicts.
-      try{ if(S&&S.speechPerm&&S.isNativeApp&&S.isNativeApp()) S.speechPerm(); }catch(e){}
+      // understand. No-op on web. Native word turns with no local check remain
+      // unverified; a permission answer must land before a turn tries to start.
+      try{ if(S&&S.speechPerm&&S.isNativeApp&&S.isNativeApp()) await S.speechPerm(); }catch(e){}
       tele("practice started",{sound:SOUND,game:GMETA.n});
       // Mark the demonstration as UNDER WAY the moment real practice starts,
       // so a refresh, a back-swipe or a locked screen resumes it instead of
@@ -2436,14 +2508,14 @@
         q.innerHTML='<div class="ovlCard quiet-card"><img src="/assets/crafted/echo-think.webp" alt="Echo" onerror="this.onerror=null;this.src=\'/assets/crafted/echo-welcome.webp\'"/><h2 id="quietTitle" tabindex="-1"></h2><p id="quietCopy"></p><button class="btn" id="quietGo">Try again</button><button class="btn ghost" id="quietLater">Maybe later</button></div>';
         document.body.appendChild(q);
       }
-      var microphone=cause==="microphone";
-      $("quietTitle").textContent=microphone?"Let's get a grown-up":"I couldn't hear you!";
-      $("quietCopy").textContent=microphone?"Another app may be using the microphone. Close it, then try again.":"Say it big — I'm all ears!";
+      var microphone=cause==="microphone",word=cause==="word";
+      $("quietTitle").textContent=microphone?"Let's get a grown-up":word?"Let's try that word again.":"I couldn't hear you!";
+      $("quietCopy").textContent=microphone?"Another app may be using the microphone. Close it, then try again.":word?"Try the word in Echo's bubble, or come back later.":"Say it big — I'm all ears!";
       q.classList.add("show");$("app").inert=true;$("quietGo").focus({preventScroll:true});
       // Word for word, "!" and all, while every other line went calm (24 Sep
       // 2026): "Say it big" tells a child how to produce the sound, so any
       // rewording is Rachel's call. The mic is already closed (stopMic above).
-      if(!microphone)say("I couldn't hear you! Say it big — I'm all ears!");
+      if(!word){if(!microphone)say("I couldn't hear you! Say it big — I'm all ears!");}
       return new Promise(function(resolve){
         function finish(retry){q.classList.remove("show");$("app").inert=false;$("quietGo").onclick=null;$("quietLater").onclick=null;resolve(retry);}
         $("quietGo").onclick=function(){if(practicePaused||practiceClosed||document.hidden)return;cancelPracticeAudio();finish(true);};

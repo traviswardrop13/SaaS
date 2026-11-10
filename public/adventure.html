@@ -108,6 +108,9 @@
   (function () {
     "use strict";
     var S = window.Sona, A = window.SonaAdventures, HOME = "/today.html";
+    // The story is chosen for this child before any narration or mic work.
+    // A later sibling selection retires this loaded story; it never adopts it.
+    var storyOwner = S && S.kkey ? S.kkey("sona.profile.v1") : "", storyRetired = false;
     // ── timings ──
     // LINE_WAIT_MS: Echo starts a line as soon as it is ready and waits at
     // most this long; a line not ready by then leaves the caption, with Next
@@ -218,6 +221,13 @@
         little: little, media: MEDIA, sound: soundOn(), seen: seen, played: played.slice(),
         talk: TALK, word: M ? M.word : null, said: M ? M.said : 0, tries: M ? M.tries : 0, bar: bar, micOff: micOff,
         ask: !capAsk.hidden, primer: !micOvl.hidden, finished: finished };
+    }
+    function storyOwned() {
+      if (!storyRetired && (!S.kkey || S.kkey("sona.profile.v1") === storyOwner)) return true;
+      storyRetired = true; hush(); stopAll(); M = null; micOff = true;
+      capAsk.hidden = true; micBtn.hidden = true; micState.hidden = true;
+      [startBtn, againBtn, nextBtn, goBtn, skipBtn].forEach(function (button) { button.disabled = true; });
+      pub(); return false;
     }
 
     // ── the website's own Web Audio, woken inside a tap ──
@@ -458,9 +468,10 @@
     // then(): a talking story's page asks its word once Echo has read it
     // (or at once with the sound off); a story page does nothing more
     function startLine(then) {
+      if (!storyOwned()) return;
       stopVoice();
       var sc = run[idx], tok = vtok;
-      function after() { if (tok === vtok && then) then(); }
+      function after() { if (storyOwned() && tok === vtok && then) then(); }
       if (!sc || !soundOn()) { setVoice("off"); after(); return; }
       if (document.hidden) { setVoice("done"); after(); return; }
       setVoice("loading");
@@ -469,7 +480,7 @@
         clearTimeout(late);
         // a tap (Next, Hear it, Skip, the picture) or the page hiding has
         // moved vtok on: this line is no longer wanted
-        if (tok !== vtok || document.hidden) return;
+        if (!storyOwned() || tok !== vtok || document.hidden) return;
         setVoice("speaking"); holdVoice(true);
         return playClip(clip, sc.text, tok).then(function () { if (tok === vtok) { holdVoice(false); setVoice("done"); after(); } });
       }).then(null, function () { if (tok === vtok) { holdVoice(false); setVoice("done"); after(); } });
@@ -589,6 +600,7 @@
 
     // ── a scene ──
     function show(i) {
+      if (!storyOwned()) return;
       stopVoice();
       var focused = document.activeElement === nextBtn || document.activeElement === goBtn || document.activeElement === micBtn;
       view = "scene"; idx = i; shownAt = now();
@@ -608,6 +620,7 @@
     }
     function tapOk() { return now() - shownAt >= TAP_GUARD_MS; }
     function turn() {
+      if (!storyOwned()) return;
       if (view !== "scene" || !tapOk()) return;
       // TALK1: a talking page turns on its word; Next is there only once
       // the mic is off for this visit (then it turns as a story page does)
@@ -620,6 +633,7 @@
       else if (mode === "end") showStickers();
     }
     function begin() {
+      if (!storyOwned()) return;
       wake();
       if (mode === "intro" && !opened) { opened = true; try { Sona.track("adventure opened", { game: day.game }); } catch (e) {} }
       show(0);
@@ -639,6 +653,7 @@
     }
     // the sticker card: the gift the game's round gave (read, never given here)
     function showStickers() {
+      if (!storyOwned()) return;
       stopVoice();
       view = "stickers"; shownAt = now();
       cap.hidden = true; skipBtn.hidden = true; endOvl.hidden = false;
@@ -676,8 +691,8 @@
     /* The books' word moment (library.html), on every page of a talking
        story: Echo reads the page, the key word lights up, Echo asks "Can you
        say... <word>." and the teal mic listens through SayCheck (Say & Play's
-       check: a voice of the story's sound family). It can't tell the word,
-       so "heard" means Echo heard the child, never that it was right.
+       check: a voice of the story's sound family, plus a fresh word match
+       on the iPhone). "Heard" means Echo heard a try, never a pronunciation grade.
        - THREE SAYINGS A PAGE (Sona.STORY_SAY_TIMES, the story games' number):
          a dot for each; the first two only paint ("2 more times!", no voice
          and no chime: the mic has just closed and opens again), the last one
@@ -737,6 +752,7 @@
       setBar("next"); echoPose("welcome");
     }
     function startMoment() {
+      if (!storyOwned()) return;
       var sc = run[idx];
       if (!TALK || view !== "scene" || !sc || !sc.key) return;
       if (!talkOn()) { setBar("next"); return; }
@@ -746,6 +762,7 @@
       if (document.hidden) { setBar("nudge"); echoPose("think"); return; }
       setBar("wait", "Listen…");
       SC.ready(function (st) {
+        if (!storyOwned()) return;
         if (tok !== momTok || !M) return;
         if (st === "nomic") return momentOff();
         if (st === "go") { M.ok = true; return ask(false); }
@@ -756,10 +773,12 @@
       $("micPromise").textContent = (S && S.MIC_PROMISE) || "";
       micOvl.hidden = false; pub();
       $("micYes").onclick = function () {
+        if (!storyOwned()) return;
         if (tok !== momTok || !M || document.hidden) return;
         micOvl.hidden = true; pub();
         stopVoice();   // the phone's own prompt never opens under a voice
         SC.permit(function (r) {
+          if (!storyOwned()) return;
           if (tok !== momTok || !M) return;
           if (r === "denied") return denied();
           if (r === "nomic") return momentOff();
@@ -780,6 +799,7 @@
     }
     // Echo models the word, calm, the word alone at the end; then the mic
     function ask(again) {
+      if (!storyOwned()) return;
       if (!M) return;
       var tok = momTok;
       setBar("wait", again ? "One more time…" : "Listen…");
@@ -787,13 +807,16 @@
       SC.say((again ? "One more time... " : "Can you say... ") + M.word + ".", function () { if (tok === momTok) listenNow(); });
     }
     function listenNow() {
+      if (!storyOwned()) return;
       if (!M) return;
       var tok = momTok;
       SC.listen(day.sound, function (out) { if (tok === momTok) answer(out); },
-        function () { if (tok === momTok) { setBar("live", M && M.said ? leftNote() : ""); echoPose("listen"); } });
+        function () { if (storyOwned() && tok === momTok) { setBar("live", M && M.said ? leftNote() : ""); echoPose("listen"); } }, { word: M.word, level: "word", owner: storyOwner });
     }
     function leftNote() { var n = TIMES - (M ? M.said : 0); return n === 1 ? "1 more time!" : n + " more times!"; }
     function answer(out) {
+      if (out === "stale") storyRetired = true;
+      if (!storyOwned()) return;
       if (!M) return;
       var tok = momTok;
       if (out === "heard") {
@@ -812,7 +835,7 @@
         var kw = capText.querySelector(".advkw"); if (kw) kw.classList.add("yay");
         if (layer && !rm()) layer.classList.add("pop");
         try { SC.chime("correct"); } catch (e) {}
-        SC.quiet(function () { if (tok === momTok && !rm() && S.confetti) { try { S.confetti({ count: 60, duration: 1100 }); } catch (e) {} } });
+        SC.quiet(function () { if (storyOwned() && tok === momTok && !rm() && S.confetti) { try { S.confetti({ count: 60, duration: 1100 }); } catch (e) {} } });
         turnT = setTimeout(function () { if (tok === momTok) talkNext(); }, 1300);
         return;
       }
@@ -825,6 +848,10 @@
         SC.say("Great trying. Let's turn the page.", function () { if (tok === momTok) talkNext(); });
         return;
       }
+      if (out === "word" || out === "unverified") {
+        setBar("nudge", "Let's try “" + M.word + "” again. Tap the mic."); echoPose("think");
+        return;
+      }
       if (out === "denied") return denied();
       if (out === "nomic") return momentOff();
       if (out === "failed") return momentOff(true);
@@ -834,6 +861,7 @@
     // the next page; past the intro's last, the day is finished and the
     // ending plays straight on; past the ending's last, the sticker card
     function talkNext() {
+      if (!storyOwned()) return;
       endMoment();
       if (idx < run.length - 1) { show(idx + 1); return; }
       if (mode === "intro") {
@@ -854,6 +882,7 @@
       if (view === "scene" && !TALK && !(mode === "intro" && idx === run.length - 1)) turn();
     });
     hearBtn.onclick = function () {
+      if (!storyOwned()) return;
       if (view !== "scene") return;
       wake();
       if (!TALK) { startLine(); return; }
@@ -866,11 +895,13 @@
     };
     // after a quiet window (or coming back to the page): the tap listens again
     micBtn.onclick = function () {
+      if (!storyOwned()) return;
       if (view !== "scene" || bar !== "nudge" || voice === "speaking") return;
       hush(); wake();
       if (M && M.ok) { setBar("wait", ""); listenNow(); } else startMoment();
     };
     goBtn.onclick = function () {
+      if (!storyOwned()) return;
       if (view !== "scene" || !tapOk()) return;
       stopAll();
       try { S.storySeen(day.id); } catch (e) {}
@@ -878,6 +909,7 @@
     };
     // the grown-ups' Skip: the intro to "Let's go!", the ending to its sticker
     skipBtn.onclick = function () {
+      if (!storyOwned()) return;
       if (view !== "scene") return;
       stopVoice();
       // a talking story: one page, with no word said
@@ -886,6 +918,7 @@
     };
     closeBtn.onclick = function () { if (TALK) hush(); stopAll(); location.href = HOME; };
     startBtn.onclick = function () {
+      if (!storyOwned()) return;
       if (view !== "start") return;
       // "Keep going": today's intro was already watched, straight to the game
       if (mode === "intro" && seen) { stopAll(); location.href = day.page; return; }
@@ -902,6 +935,7 @@
     // A hidden page stops Echo, and coming back plays nothing until a tap on
     // Hear it or Next: Next glows instead.
     if (S.onBackground) S.onBackground(function () {
+      if (!storyOwned()) return;
       var was = voice;
       stopAll();
       if (view === "scene" && (was === "loading" || was === "late" || was === "speaking")) setVoice("done");

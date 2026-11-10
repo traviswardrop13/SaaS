@@ -31,6 +31,109 @@
    itself, a hidden page or a phone that has said no to the mic, and none the
    leg's end would cut off (SLOW_HELP.left, below). A round that ends while
    he is asking ends the turn first (the card never meets a live turn). */
+    // The cards used to bypass the local word check used by sound powers.
+    // Keep that check per saying, after Echo and before any life/card reward.
+    // The page still requires its unchanged voiced, family-checked burst.
+    var cardSpeechTurn=null, cardSpeechClosing=null;
+    function cardPageOwned(){return !(S&&S.kkey)||S.kkey("sona.profile.v1")===cardPageOwner;}
+    function retireCardSpeech(){
+      if(window.__speechOwnerGone)return;
+      window.__speechOwnerGone=true;window.__speechLeaving=true;window.__pianoLeaving=true;
+      playing=false;reviveWait=false;
+      var closing=closeReviveMic();
+      try{$("revOvl").classList.remove("show");}catch(e){}
+      if(slowTurn){slowTurn.cancelled=true;closing=Promise.all([closing,finishSlowKeys(false)]);}
+      Promise.resolve(closing).then(function(){
+        // A request belongs to the old page even if it returns after the
+        // child changed. Its generation guard must close that late stream.
+        return new Promise(function(done){(function wait(){if(rv.pending)setTimeout(wait,30);else done();})();});
+      }).then(function(){try{return S.micQuiet?S.micQuiet():null;}catch(e){return null;}}).then(function(){location.replace("/today.html");});
+    }
+    function cancelCardSpeech(){
+      var t=cardSpeechTurn;
+      if(!t)return cardSpeechClosing||Promise.resolve();
+      cardSpeechTurn=null;t.cancelled=true;
+      if(!t.check.active)return t.check.cancel();
+      rv.pending++;
+      var p=Promise.resolve(t.check.cancel()).catch(function(){}).then(function(){
+        try{return S.micQuiet?S.micQuiet():null;}catch(e){return null;}
+      }).then(function(){
+        rv.pending--;micClosedAt=performance.now();
+        if(cardSpeechClosing===p)cardSpeechClosing=null;
+        // A muted card may have come back while cancellation still owned the
+        // mic. Its first reopen stood down; hand that pending turn back now.
+        if(!window.__speechLeaving&&!window.__pianoLeaving&&!window.__ended&&!document.hidden&&!slowTurn&&reviveWait&&!rv.pending&&!rv.st&&!reviveSpeaking())askAgain();
+      });
+      cardSpeechClosing=p;return p;
+    }
+    function startCardSpeech(gen){
+      if(!cardPageOwned()){retireCardSpeech();return Promise.resolve();}
+      var ask=typeof ASK!=="undefined"&&ASK&&!lifeCard?ASK:null;
+      var level=ask?ask.level:"isolation",check;
+      if(S&&S.speechTurn)check=S.speechTurn({sound:SND,word:ask?ask.text:SAYTXT,level:level,pos:ask?ask.pos:""});
+      else{
+        // A cached sona.js without this helper cannot verify a native word.
+        // Keep the existing bare-sound/browser fallback, never a word credit.
+        if(!(S&&S.isNativeApp&&S.isNativeApp()&&/^(word|sentence)$/.test(level)))return Promise.resolve();
+        check={active:true,required:true,ready:Promise.resolve(false),finish:function(){return Promise.resolve("unavailable");},cancel:function(){return Promise.resolve();}};
+      }
+      var t={check:check,gen:gen,child:cardPageOwner,heardAt:0,lastLoud:0,finishing:false,cancelled:false};
+      cardSpeechTurn=t;
+      return check.ready.then(function(){
+        if(!cardPageOwned()){retireCardSpeech();return check.cancel();}
+        if(cardSpeechTurn!==t||gen!==rv.gen||document.hidden)return check.cancel();
+      });
+    }
+    // Native recognition needs the whole utterance, not its first six frames.
+    // A short answer leaves 200 ms quiet and at least the existing 550 ms
+    // recognition tail. A word MUST reach quiet: its existing eight-second
+    // unanswered-card step-back cancels a held utterance without any credit.
+    // Bare sounds retain the existing bounded recognition-tail fallback.
+    // Browser cards keep their original immediate sound-shape behavior.
+    function cardSpeechDeaf(now){
+      var t=cardSpeechTurn;
+      if(t&&!t.finishing){t.heardAt=0;t.lastLoud=now;}
+    }
+    function cardSpeechWait(st,gen,now,loud){
+      if(!cardPageOwned()){retireCardSpeech();return true;}
+      var t=cardSpeechTurn;
+      if(!t||!t.check.active)return false;
+      if(t.finishing)return true;
+      if(!t.heardAt){t.heardAt=now;t.lastLoud=now;}
+      if(loud)t.lastLoud=now;
+      if(now-t.heardAt<550||(now-t.lastLoud<200&&(t.check.required||now-t.heardAt<2500)))return true;
+      t.finishing=true;
+      t.check.finish().then(function(verdict){
+        if(!cardPageOwned()){retireCardSpeech();return;}
+        if(cardSpeechTurn!==t||t.cancelled||gen!==rv.gen||!reviveWait||document.hidden||window.__ended)return;
+        cardSpeechTurn=null;
+        closeReviveMic();
+        var closedGen=rv.gen, quiet;
+        try{quiet=S.micQuiet?S.micQuiet():Promise.resolve();}catch(e){quiet=Promise.resolve();}
+        // Both local listeners have to release the iPhone before its speaker
+        // or a navigation gets the turn. The same pending count already holds
+        // every card voice, chime, new mic request and sound-power ask.
+        rv.pending++;
+        var closing=Promise.resolve(quiet).catch(function(){}).then(function(){
+          rv.pending--;micClosedAt=performance.now();
+          if(cardSpeechClosing===closing)cardSpeechClosing=null;
+        });
+        cardSpeechClosing=closing;
+        closing.then(function(){
+          if(!cardPageOwned()){retireCardSpeech();return;}
+          if(closedGen!==rv.gen||!reviveWait||document.hidden||window.__ended||window.__speechLeaving||window.__pianoLeaving||(S.kkey&&S.kkey("sona.profile.v1")!==t.child))return;
+          if(verdict==="cancelled")return;
+          var accepted=t.check.required?verdict==="pass":verdict!=="fail";
+          if(accepted){doRevive();return;}
+          // An unverified harder word steps down through the card's existing
+          // idea line; it earns nothing and the next card keeps that same ask.
+          if(t.check.required&&typeof ASK!=="undefined"&&ASK&&ASK.rung){
+            askHeld=ASK;ASK=cardAsk(0);paintAsk();speakRevive(true);
+          }else speakRevive();
+        });
+      });
+      return true;
+    }
     var slowTurn=null, slowMs=0, slowTotal=8000, slowSaid={};
     var SLOW_ASK={first:10000, every:20000, quiet:40000, listen:8000};
     var slowAskPlay=0, slowAskAt=SLOW_HELP.first||SLOW_ASK.first, slowMissed=0, slowNoMic=false, slowAskLast=0, slowVoice=null;

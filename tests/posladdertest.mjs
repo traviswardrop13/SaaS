@@ -277,6 +277,12 @@ const words = (S, s, p) => S.WORDS[s].filter((w) => (w.pos || "i") === p).map((w
   // the cards take their place from the homework's own words, as the practice page does
   const hw = at("i", { gameLevel: "syllable" }); homework(hw, { pos: "i", words: ["car", "star"] });
   ok("start-of-word homework that names end words: the cards never ask a start-of-word syllable", hw.S.sylPos("R") === "f" && [0, 1, 2].map((c) => hw.S.gameAsk("R", c).text).every((t) => !/^r[aeiou]/.test(t)), [0, 1, 2].map((c) => hw.S.gameAsk("R", c).text));
+  const mixedCard = at("mix", { ladderStart: "word" }).S.gameAsk("R", 1, { first: true });
+  ok("the default Mixed word card labels rot as Beginning for speech checking", mixedCard.text === "rot" && mixedCard.level === "word" && mixedCard.pos === "i", mixedCard);
+  const blendCard = at("b").S.gameAsk("R", 1, { first: true });
+  ok("a blend word card carries the actual blend position for speech checking", blendCard.text === "tree" && blendCard.level === "word" && blendCard.pos === "b", blendCard);
+  const homeworkCards = [1, 2].map((c) => hw.S.gameAsk("R", c));
+  ok("a named end word overrides the assignment's Beginning label when checking a card", homeworkCards.every((a) => ["car", "star"].includes(a.text) && a.level === "word" && a.pos === "f"), homeworkCards);
   // a practice syllable switched on is not a card line until the cards are
   const mx = at("mix"); mx.SC.SYL_POS_ON.f.push("R");
   mx.session["sona.boost.sound"] = "R"; mx.session["sona.boost.level"] = "syllable"; mx.session["sona.boost.ask"] = "ar"; mx.session["sona.boost.pos"] = "mix";

@@ -1079,7 +1079,9 @@ scenario("source pins", async (t) => {
   // names itself (a fault elsewhere turning micNative() off must not let a
   // start close it), an ended one only while the page is still on Sona's mic
   t.ok("speechStart adds the stream only on Sona's own mic, from the handle itself", /const h = _nm\.last, mine = h && !h\.web && \(h\.state !== "ended" \|\| micNative\(\)\);\s*const o = mine \? Object\.assign\(\{\}, opts \|\| \{\}, \{ g: h\.g \}\) : \(opts \|\| \{\}\);/.test(SONA));
-  // the 24 call sites: each asks the helper first and keeps its old line as the fallback
+  // The original 24 sites and the new quiet-gap analyser: every source keeps
+  // its web fallback. The extra analyser observes quiet before a new native
+  // word session; it does not open another microphone.
   const R = (f) => readFileSync(ROOT + "/" + f, "utf8");
   const n = (src, re) => (src.match(re) || []).length;
   const charge = R("charge.html");
@@ -1103,17 +1105,20 @@ scenario("source pins", async (t) => {
     sites.push([f + ": its source", src, new RegExp(s + " = \\(S && S\\.micSource\\) \\? S\\.micSource\\(" + c + ", " + v + "\\) : " + c + "\\.createMediaStreamSource\\(" + v + "\\);", "g"), 1]);
     sites.push([f + ": the grown-up's yes", src, new RegExp("\\(\\(S && S\\.micNative && S\\.micNative\\(\\)\\) \\? S\\.micProbe\\(\\{ audio: true, video: false \\}\\) : navigator\\.mediaDevices\\.getUserMedia\\(\\{ audio: true, video: false \\}\\)\\)\\.then\\(function \\(" + v + "\\) \\{", "g"), 1]);
   }
+  sites.push(["saycheck.js: its native word's quiet-gap source", R("saycheck.js"), /src = S\.micSource \? S\.micSource\(gapCtx, st\) : gapCtx\.createMediaStreamSource\(st\);/g, 1]);
   sites.push(["onboarding.html: setup's mic step", R("onboarding.html"), /request=\(Sona\.micNative&&Sona\.micNative\(\)\)\?Sona\.micProbe\(\{audio:true,video:false\}\):navigator\.mediaDevices\.getUserMedia\(\{audio:true,video:false\}\);/g, 1]);
   const missing = sites.filter(([, src, re, want]) => n(src, re) !== want).map(([name, src, re, want]) => name + " (" + n(src, re) + "/" + want + ")");
   const total = sites.reduce((k, s) => k + s[3], 0);
-  t.ok("all 24 listening call sites ask Sona's helper first and keep their old line as the fallback", total === 24 && missing.length === 0, missing);
+  t.ok("all 25 listening/source call sites ask Sona's helper first and keep their web fallback", total === 25 && missing.length === 0, missing);
   // …and nowhere else. The games' "one place asks for the mic" pins count
   // getUserMedia( only, and the patterns above only the helper-or-fallback
   // line, so a second listening site written as a bare S.micOpen(...) (no
   // fallback) would pass both. Every helper call, per file, exactly.
   const H = { open: /\bS(ona)?\.micOpen\(/g, probe: /\bS(ona)?\.micProbe\(/g, source: /\bS(ona)?\.micSource\(/g, rec: /\bS(ona)?\.micRecorder\(/g, deaf: /\bS(ona)?\.micDeaf\(/g };
-  const want = { "charge.html": { open: 1, probe: 0, source: 2, rec: 1, deaf: 0 }, "arcade-feed.html": { open: 1, probe: 1, source: 1, rec: 0, deaf: 1 },
-    "sayplay.js": { open: 1, probe: 1, source: 1, rec: 0, deaf: 1 }, "saycheck.js": { open: 1, probe: 1, source: 1, rec: 0, deaf: 1 },
+  // Word-session and quiet-gap readers also discard a starved/paused native
+  // feed; those new checks must not turn missing samples into observed quiet.
+  const want = { "charge.html": { open: 1, probe: 0, source: 2, rec: 1, deaf: 1 }, "arcade-feed.html": { open: 1, probe: 1, source: 1, rec: 0, deaf: 2 },
+    "sayplay.js": { open: 1, probe: 1, source: 1, rec: 0, deaf: 3 }, "saycheck.js": { open: 1, probe: 1, source: 2, rec: 0, deaf: 2 },
     "onboarding.html": { open: 0, probe: 1, source: 0, rec: 0, deaf: 0 } };
   for (const g of ["slice", "tiles", "stack", "run", "glide"]) want["arcade-" + g + ".html"] = { open: 1, probe: 0, source: 1, rec: 0, deaf: 1 };
   for (const f of ["story.html", "check.html", "coach-call.html", "simple-play.js"]) want[f] = { open: 0, probe: 0, source: 0, rec: 0, deaf: 0 };
@@ -1742,8 +1747,9 @@ const PLAY = {
     start: (page) => page.locator("#startBtn").click(),
     listening: () => /Your turn/.test(document.getElementById("bSub").textContent) && __nm.mics.some((m) => m.start != null && m.end == null),
     idle: () => document.getElementById("grid").classList.contains("locked"),
-    // the word unlocks the pictures
-    heard: async (page) => { await page.evaluate(() => __nm.ctl.say(0, 500, "R", 0.05)); return until(page, () => !document.getElementById("grid").classList.contains("locked"), 3000); },
+    // The audio fixture exercises the native transport/family gate; Apple's
+    // stand-in must also hear THIS asked word, not its old empty transcript.
+    heard: async (page) => { await page.evaluate(() => { __nm.ctl.set({ text: document.querySelector("#bMain b").textContent }); return __nm.ctl.say(0, 500, "R", 0.05); }); return until(page, () => !document.getElementById("grid").classList.contains("locked"), 3000); },
   },
   hoops: {
     name: "Hoops", path: "/arcade-hoops.html", kid: {}, tts: 4800,
@@ -1752,10 +1758,10 @@ const PLAY = {
     idle: () => (window.__hoops || {}).state === "idle",
     // say it two times: once is "1 more time!", twice brings the ball
     heard: async (page) => {
-      await page.evaluate(() => __nm.ctl.say(0, 500, "R", 0.05));
+      await page.evaluate(() => { __nm.ctl.set({ text: __sayplay.word }); return __nm.ctl.say(0, 500, "R", 0.05); });
       const once = await until(page, () => window.__sayplay.said === 1 && (window.__hoops || {}).state === "idle", 2500);
       await page.waitForTimeout(700);
-      await page.evaluate(() => __nm.ctl.say(0, 500, "R", 0.05));
+      await page.evaluate(() => { __nm.ctl.set({ text: __sayplay.word }); return __nm.ctl.say(0, 500, "R", 0.05); });
       return once && until(page, () => window.__hoops && window.__hoops.state === "ready", 3000);
     },
   },
@@ -1770,7 +1776,7 @@ const PLAY = {
     listening: () => window.__book && window.__book.mode === "live" && __nm.mics.some((m) => m.start != null && m.end == null),
     idle: () => window.__book.page === 0,
     // the word turns the page
-    heard: async (page) => { await page.evaluate(() => __nm.ctl.say(0, 500, "R", 0.05)); return until(page, () => window.__book.page === 1, 3000); },
+    heard: async (page) => { await page.evaluate(() => { __nm.ctl.set({ text: __book.word }); return __nm.ctl.say(0, 500, "R", 0.05); }); return until(page, () => window.__book.page === 1, 3000); },
   },
 };
 for (const [key, P] of Object.entries(PLAY)) {

@@ -171,7 +171,12 @@ try{
    // t.mute / t.web: the same seed with Sona muted (a level of zero is the
    // only mute there is: getProfile heals soundOn:false), or in a plain browser
    localStorage.setItem('sona.profile.v1',JSON.stringify({onboarded:true,focusSounds:['R'],childAge:'4',voiceOn:true,soundOn:true,volume:localStorage.getItem('t.mute')==='1'?0:.6,earlyAdopter:true}));localStorage.setItem('sona.micok','1');
-   if(localStorage.getItem('t.web')!=='1')window.Capacitor={isNativePlatform:()=>true,getPlatform:()=>"ios",Plugins:{}};
+   // This block verifies chime routing, so its fake iPhone supplies the
+   // actual requested word to the real shared on-device word-check helper.
+   if(localStorage.getItem('t.web')!=='1')window.Capacitor={isNativePlatform:()=>true,getPlatform:()=>"ios",Plugins:{SonaSpeech:{
+    available:async()=>({available:true,onDevice:true,authorized:true}),requestPermission:async()=>({granted:true}),
+    start:async()=>({started:true}),stop:async()=>({text:(window.__sayplay&&__sayplay.word)||'',onDevice:true})
+   }}};
    window.h={media:[],tracks:[],mic:0,osc:0,pcm:0,refuse:false,hang:false,last:null};
    h.live=()=>h.tracks.filter(t=>t.readyState==='live').length;
    // refuse: the phone will not start a media element. hang: play() is still
@@ -188,12 +193,21 @@ try{
    AC.prototype.createBuffer=function(c,n,r){if(n>1)h.pcm++;return mkBuf.call(this,c,n,r);};
    // the microphone: a real stream carrying a 300 Hz tone, silent until h.talk()
    navigator.mediaDevices.getUserMedia=()=>{h.mic++;const c=h.micCtx||(h.micCtx=new AC());c.resume();const o=mkOsc.call(c),g=c.createGain(),d=c.createMediaStreamDestination();o.frequency.value=300;g.gain.value=0;o.connect(g);g.connect(d);o.start();h.micGain=g;h.tracks.push(d.stream.getTracks()[0]);return Promise.resolve(d.stream);};
-   // the child says the word as often as the game asks (two times since 1 Oct
-   // 2026): each saying lasts until the game has counted it, then a breath,
-   // then the next, until the game takes the word. Paced by what the game
-   // heard, not by a clock, so a busy machine's slow frames cannot merge two.
-   h.talk=()=>{let said=__sayplay.said,quietAt=0;h.micGain.gain.value=.5;const t=setInterval(()=>{const sp=window.__sayplay;if(!sp||sp.phase!=='turn'){h.micGain.gain.value=0;clearInterval(t);return;}
-    if(!quietAt&&sp.said!==said){said=sp.said;quietAt=performance.now();h.micGain.gain.value=0;}else if(quietAt&&performance.now()-quietAt>700){quietAt=0;h.micGain.gain.value=.5;}},30);};
+   // A native word needs its quiet ending before it can be credited. Give
+   // each saying a finite voiced burst, then wait for its verified dot and
+   // the next fresh listening turn; holding until credit would deadlock.
+   h.talk=async()=>{
+    const wait=predicate=>new Promise(resolve=>{const limit=performance.now()+5000;(function tick(){const sp=window.__sayplay;
+     if(!sp||sp.phase!=='turn'||performance.now()>=limit)return resolve(false);if(predicate(sp))return resolve(true);setTimeout(tick,30);
+    })();});
+    while(await wait(sp=>sp.listening)){
+     const said=__sayplay.said;h.micGain.gain.value=.5;await new Promise(resolve=>setTimeout(resolve,450));h.micGain.gain.value=0;
+     // Preserve a real breath even if a browser already counted the burst.
+     await new Promise(resolve=>setTimeout(resolve,700));
+     if(!(await wait(sp=>sp.said>said)))break;
+    }
+    h.micGain.gain.value=0;
+   };
   });
   const pg=await ctx4.newPage(),errs=[];pg.on('pageerror',e=>errs.push(e.message));
   const tick=()=>pg.waitForTimeout(60);

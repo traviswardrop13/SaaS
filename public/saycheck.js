@@ -10,14 +10,15 @@
    sayplay.js. Change one, change both.
 
    What the mic is allowed to do, the same hard lines Say & Play keeps:
-   - It hears loudness and the sound's rough shape only (voiced vs hiss). It
-     records nothing, uploads nothing and scores nothing, and writes nothing
+   - The browser hears loudness and the sound's rough shape (voiced vs hiss).
+     In the iPhone app a word also needs a fresh on-device listening check.
+     It records nothing, uploads nothing and scores nothing, and writes nothing
      but "sona.micok" (the grown-up already said yes). A word said here is
      PLAY, never practice data: nothing here calls logAttempt, bumpReps,
      recordSession, recordRung, rotAdvance or awards anything. Whether it
      should count is Rachel's call; until she makes it, it doesn't.
    - It can tell "a voice of the right family" apart from silence and from a
-     sound of the other family. It cannot tell the word, so a page must never
+     sound of the other family. This is not a pronunciation grade, so a page must never
      call a "heard" right or wrong: it means Echo heard the child.
    - It is open only for the child's turn. On an iPhone a page holding the mic
      runs as a phone call, so nothing plays while a track is live or while a
@@ -43,6 +44,7 @@
 
   function now() { return performance.now(); }
   function prof() { try { return (S && S.getProfile) ? (S.getProfile() || {}) : {}; } catch (e) { return {}; } }
+  function childKey() { try { return S && S.kkey ? S.kkey("sona.profile.v1") : ""; } catch (e) { return ""; } }
   function vol() { var v = prof().volume, n = Number(v == null ? 0.8 : v); return isFinite(n) ? Math.max(0, Math.min(1, n)) : 0.8; }
 
   // ── the phone's quiet: what every sound waits on ──
@@ -56,7 +58,7 @@
   function whenQuiet(fn, my, dropped) {
     (function check() {
       if (my != null && my !== vgen) { if (dropped) dropped(); return; }
-      if (asking || stream) { setTimeout(check, 60); return; }
+      if (asking || stream || speechClosing) { setTimeout(check, 60); return; }
       var w = Math.max(settleLeft(), chimeEnd - now());
       if (w > 0) { setTimeout(check, w); return; }
       fn();
@@ -200,11 +202,18 @@
 
   // ── the mic: one listening window at a time ──
   var gen = 0, src = null, raf = 0, listenT = 0, openT = 0, roomFloor = -1;
+  var speechTurn = null, speechClosing = 0, wordNeedsGap = false;
   function p20(list) { var a = list.slice().sort(function (x, y) { return x - y; }); return a[Math.floor((a.length - 1) * 0.2)]; }
   function micStop() {
     gen++; clearTimeout(listenT); clearTimeout(openT); if (raf) cancelAnimationFrame(raf); raf = 0;
     try { if (src) src.disconnect(); } catch (e) {} src = null;
     if (stream) { try { stream.getTracks().forEach(function (t) { t.stop(); }); } catch (e) {} stream = null; micClosedAt = now(); }
+    var turn = speechTurn; speechTurn = null;
+    if (!turn) return Promise.resolve();
+    speechClosing++;
+    return Promise.resolve(turn.cancel()).catch(function () {}).then(function () {
+      speechClosing--; micClosedAt = now();
+    });
   }
   // Everything stops: the mic, Echo's line, and any chime still waiting.
   function stop() {
@@ -231,47 +240,96 @@
   // One listening window. cb(outcome), exactly once unless stop() comes first:
   //   "heard"  a voiced burst of the sound's family (the mic is already closed)
   //   "shape"  a voiced burst of the other family, then quiet: one real try
+  //   "word" a clear different word on the iPhone; "unverified" no word answer
+  //          Neither is a shape try: repeated unrelated words never turn a page.
+  //   "stale" the page's child changed; retire the old moment, never retry it
   //   "quiet"  LISTEN_MS with no voice
   //   "hidden" the page was hidden before the mic could open
   //   "denied" the mic is refused;  "nomic" there is no mic to use
   //   "failed" the mic wouldn't open this time (busy, interrupted)
   // onLive() fires once, when the mic can actually hear (the room's floor is
   // known): that, and nothing earlier, is "Your turn".
-  function listen(sound, cb, onLive) {
+  function listen(sound, cb, onLive, target) {
+    // The page supplies the owner from before narration/permission work. A
+    // direct caller still captures one NOW, before any asynchronous mic open.
+    var owner = target && typeof target.owner === "string" ? target.owner : childKey();
     micStop();
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { cb("nomic"); return; }
     var my = gen;
-    (function open() {
+    function owned() { return childKey() === owner; }
+    function current() {
+      if (my !== gen) return false;
+      if (!owned()) { answer("stale"); return false; }
+      return true;
+    }
+    function answer(out) {
       if (my !== gen) return;
+      if (!owned()) out = "stale";
+      var closed = micStop(), after = gen;
+      Promise.resolve(closed).then(function () { if (after === gen) cb(owned() ? out : "stale"); });
+    }
+    (function open() {
+      if (!current()) return;
       if (document.hidden) { cb("hidden"); return; }
       var w = Math.max(quietUntil - now(), settleLeft(), chimeEnd - now());
-      if (asking || speaking || holds > 0 || chimesDue > 0 || w > 0) { openT = setTimeout(open, Math.max(w, 60)); return; }
+      if (asking || speaking || holds > 0 || chimesDue > 0 || speechClosing || w > 0) { openT = setTimeout(open, Math.max(w, 60)); return; }
       asking = true;
       ((S && S.micNative && S.micNative()) ? S.micOpen({ audio: true, video: false }) : navigator.mediaDevices.getUserMedia({ audio: true, video: false })).then(function (st) {
         asking = false;
-        if (my !== gen || document.hidden) {
+        if (my !== gen || document.hidden || !owned()) {
           try { st.getTracks().forEach(function (t) { t.stop(); }); } catch (e) {}
           micClosedAt = now();
-          if (my === gen) cb("hidden");
+          if (my === gen) answer(owned() ? "hidden" : "stale");
           return;
         }
         stream = st;
         try { localStorage.setItem("sona.micok", "1"); } catch (e) {}
+        function begin() {
+        if (!current()) return;
+        var turn = null;
+        if (target && target.word && S && S.speechTurn) {
+          turn = S.speechTurn({ sound: sound, word: target.word, level: target.level || "word", frame: target.frame || "", pos: target.pos || "" });
+          speechTurn = turn;
+        } else if (target && target.word && S && S.isNativeApp && S.isNativeApp()) {
+          // A cached shared file without the word checker cannot verify one.
+          answer("unverified"); return;
+        }
         var c, an, td, fd, binHz;
         try {
           c = getCtx(); src = (S && S.micSource) ? S.micSource(c, st) : c.createMediaStreamSource(st); an = c.createAnalyser(); an.fftSize = 512; src.connect(an);
           td = new Uint8Array(an.fftSize); fd = new Uint8Array(an.frequencyBinCount); binHz = c.sampleRate / an.fftSize;
-        } catch (e) { micStop(); cb("failed"); return; }
-        var heard = [], live = false, failed = false, lastLoud = 0;
-        listenT = setTimeout(function () { if (my !== gen) return; micStop(); cb(failed ? "shape" : "quiet"); }, LISTEN_MS);
+        } catch (e) { answer("failed"); return; }
+        var heard = [], live = false, failed = false, lastLoud = 0, candidateAt = 0, quietAt = 0, finishing = false;
+        function finishWord() {
+          if (finishing || !current()) return;
+          finishing = true; clearTimeout(listenT); if (raf) cancelAnimationFrame(raf); raf = 0;
+          // A word begun while this verdict is settling belongs to no new
+          // saying. The next native session first observes its own quiet gap.
+          wordNeedsGap = true;
+          speechClosing++;
+          Promise.resolve(turn.finish()).catch(function () { return "unavailable"; }).then(function (verdict) {
+            speechClosing--; micClosedAt = now();
+            if (!current()) return;
+            if (speechTurn === turn) speechTurn = null;
+            answer(verdict === "pass" ? "heard" : verdict === "fail" ? "word" : "unverified");
+          });
+        }
+        Promise.resolve(turn ? turn.ready : true).then(function (ready) {
+          if (!current()) return;
+          if (turn && turn.required && !ready) { answer("unverified"); return; }
+          listenT = setTimeout(function () {
+            if (!current()) return;
+            if (candidateAt && turn && turn.required) { answer("unverified"); return; }
+            answer(failed ? (turn && turn.required ? "word" : "shape") : "quiet");
+          }, LISTEN_MS);
         (function tick() {
-          if (my !== gen) return;
+          if (!current()) return;
           var t = now();
           // belt and braces: nothing plays while the mic is open, and if
           // anything did, its frames are dropped, never judged. So is a frame
           // Sona's own mic did not hear (S.micDeaf: paused, or a gap between
           // the phone's samples): its zeros would sink the room's level
-          if (speaking || holds > 0 || t < quietUntil || (S && S.micDeaf && S.micDeaf(st))) { heard = []; raf = requestAnimationFrame(tick); return; }
+          if (speaking || holds > 0 || t < quietUntil || (S && S.micDeaf && S.micDeaf(st))) { heard = []; quietAt = 0; raf = requestAnimationFrame(tick); return; }
           an.getByteTimeDomainData(td);
           var sum = 0; for (var i = 0; i < td.length; i++) { var d = (td[i] - 128) / 128; sum += d * d; }
           var shape = null; if (S && S.frameShape) { an.getByteFrequencyData(fd); shape = S.frameShape(fd, binHz); }
@@ -291,17 +349,56 @@
               if (f.r > thr) {
                 voiced++;
                 if (f.s) { if (!shp) shp = { m: 0, fm: 0, hm: 0 }; shp.m += f.s.m; shp.fm += f.s.fm; shp.hm += f.s.hm; }
-                if (voiced >= 5) { if (!famOK(shp, sound)) { voiced = 0; shp = null; failed = true; } else { micStop(); cb("heard"); return; } }
+                if (voiced >= 5) {
+                  if (!famOK(shp, sound)) { voiced = 0; shp = null; failed = true; }
+                  else if (turn && turn.required) { if (!candidateAt) candidateAt = t; break; }
+                  else { answer("heard"); return; }
+                }
               } else { voiced = 0; shp = null; }
             }
-            if (heard[heard.length - 1].r > thr) lastLoud = t;
-            if (failed && t - lastLoud >= TRY_GAP_MS) { micStop(); cb("shape"); return; }
+            if (heard[heard.length - 1].r > thr) { lastLoud = t; quietAt = 0; }
+            else if (!quietAt) quietAt = t;
+            // A few onset frames cannot identify a word. Keep the native
+            // listener through its end and a short quiet tail. A continuing
+            // utterance never earns a dot merely because its timer ran out.
+            // Paused/starved frames are not observed quiet: the tail starts
+            // again at the first valid quiet frame after any skipped samples.
+            if (candidateAt && quietAt && t - quietAt >= 200) { finishWord(); return; }
+            if (failed && !candidateAt && t - lastLoud >= TRY_GAP_MS) { answer(turn && turn.required ? "word" : "shape"); return; }
           }
           raf = requestAnimationFrame(tick);
         })();
+        }).catch(function () { answer("unverified"); });
+        }
+        if (wordNeedsGap && target && target.word && S && S.isNativeApp && S.isNativeApp()) {
+          // After the prior verdict the mic was closed briefly. Hear quiet
+          // again before starting Apple, so its transcript cannot contain the
+          // end of a saying that began while the old check was finishing.
+          var gapAt = 0, gapAn, gapData;
+          try {
+            var gapCtx = getCtx(); src = S.micSource ? S.micSource(gapCtx, st) : gapCtx.createMediaStreamSource(st);
+            gapAn = gapCtx.createAnalyser(); gapAn.fftSize = 512; src.connect(gapAn); gapData = new Uint8Array(gapAn.fftSize);
+          } catch (e) { answer("failed"); return; }
+          listenT = setTimeout(function () { answer("unverified"); }, LISTEN_MS);
+          (function gapTick() {
+            if (!current()) return;
+            var t = now();
+            if (S.micDeaf && S.micDeaf(st)) { gapAt = 0; raf = requestAnimationFrame(gapTick); return; }
+            gapAn.getByteTimeDomainData(gapData);
+            var sum = 0; for (var i = 0; i < gapData.length; i++) { var d = (gapData[i] - 128) / 128; sum += d * d; }
+            if (Math.sqrt(sum / gapData.length) <= Math.max(0.04, roomFloor * 3)) {
+              if (!gapAt) gapAt = t;
+              if (t - gapAt >= 200) {
+                wordNeedsGap = false; clearTimeout(listenT); try { src.disconnect(); } catch (e) {} src = null;
+                begin(); return;
+              }
+            } else gapAt = 0;
+            raf = requestAnimationFrame(gapTick);
+          })();
+        } else begin();
       }).catch(function (e) {
         asking = false; micClosedAt = Math.max(micClosedAt, now());
-        if (my === gen) cb(errKind(e));
+        if (my === gen) answer(errKind(e));
       });
     })();
   }

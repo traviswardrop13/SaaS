@@ -76,7 +76,8 @@ function device(config){
   function nativeEvent(event){const entries=JSON.parse(sessionStorage.getItem('sona.test.nativeEvents')||'[]');entries.push(event);sessionStorage.setItem('sona.test.nativeEvents',JSON.stringify(entries));}
   let sona;
   Object.defineProperty(window,'Sona',{configurable:true,get:()=>sona,set(value){sona=value;value.confetti=()=>{};
-    value.speechStart=(o)=>new Promise(resolve=>{h.heardWord=(o&&o.words&&o.words[0])||'rrrr';const entry={id:h.nativeStarts.length+1,settled:false,grant(){if(this.settled)return;this.settled=true;h.nativeActive=this.id;nativeEvent('start:'+this.id);resolve(true);}};h.nativeStarts.push(entry);if(!h.deferNative)entry.grant();});
+    // The fixture supplies the requested utterance, not a recognition hint.
+    value.speechStart=(o)=>new Promise(resolve=>{const item=window.ITEM;h.heardWord=String((item&&(item.word||item.t))||'rrrr');const entry={id:h.nativeStarts.length+1,settled:false,grant(){if(this.settled)return;this.settled=true;h.nativeActive=this.id;nativeEvent('start:'+this.id);resolve(true);}};h.nativeStarts.push(entry);if(!h.deferNative)entry.grant();});
     value.speechStop=()=>{const id=h.nativeActive;h.nativeStops.push(id);if(id!==null)nativeEvent('stop:'+id);h.nativeActive=null;return Promise.resolve({text:h.heardWord||'rrrr',onDevice:true});};
   }});
   if(!localStorage.getItem('sona.test.audioSeed')){

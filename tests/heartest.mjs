@@ -5,7 +5,8 @@
 // These pin the decision rules — including the exact case that motivated the
 // feature: a kid saying "poopoo" instead of an R sound must not advance — and
 // the two safety properties: unknown NEVER fails a child the recognizer can't
-// parse, and the plugin is never trusted unless it attests on-device.
+// parse (native words remain unverified), and the plugin is never trusted
+// unless it attests on-device.
 import { createServer } from "http";
 import { readFileSync, existsSync, mkdtempSync, mkdirSync, writeFileSync, rmSync } from "fs";
 import { spawnSync } from "child_process";
@@ -65,8 +66,8 @@ ok('"sip" for the SH sound FAILS (S is not SH)', (await V("sip", "SH", "")) === 
 ok('"this" for TH passes', (await V("this", "TH", "")) === "pass");
 
 // UNKNOWN IS NOT A FAIL. Apple's models are adult-tuned; disordered child
-// speech often will not transcribe. A child the recognizer cannot parse must
-// be judged by the spectral check exactly as before this feature existed.
+// speech often will not transcribe. Unknown is not a pronunciation failure;
+// native words remain unverified, while other turns retain spectral fallback.
 ok("an empty transcript is unknown, never fail", (await V("", "R", "rabbit")) === "unknown");
 ok("silence/whitespace is unknown", (await V("   ", "R", "rabbit")) === "unknown");
 ok("punctuation-only noise is unknown", (await V("...!!", "R", "rabbit")) === "unknown");
@@ -208,7 +209,7 @@ ok('"cat" does not fuzzy-match "car"... it does not need to — it has no R; but
     return out;
   });
   ok("an on-device plugin is available and starts", run.avail === true && run.started === true, JSON.stringify(run));
-  ok("…the target word biases the recognizer (contextualStrings)",
+  ok("…the low-level API forwards an explicitly supplied vocabulary",
     run.opts && Array.isArray(run.opts.words) && run.opts.words[0] === "rabbit", JSON.stringify(run.opts));
   ok("…and the round's transcript yields the fail the feature exists for",
     run.verdict === "fail", JSON.stringify(run));
@@ -229,12 +230,35 @@ ok('"cat" does not fuzzy-match "car"... it does not need to — it has no R; but
     "the unavailable path must refuse, never fall back to the network");
   ok("recognition sessions are bounded (an abandoned round can't hold the mic)",
     /maxMs/.test(swift) && /15000/.test(swift));
-  ok("verifyClip prefers the on-device transcript and falls back to spectral",
-    /async function verifyClip\(\)[\s\S]{0,400}await recognitionStop\(\)[\s\S]{0,400}hearVerdict[\s\S]{0,400}shapeVerdict\(\)/.test(charge)
-    && /function recognitionStop\(\)[\s\S]{0,700}S\.speechStop\(\)/.test(charge));
-  ok("the round biases recognition toward the practice word",
-    /speechStart\(\{ words:/.test(charge));
-  ok("the judge is told the round's kind, on a sentence round the sentence, and the place in the word (a blend said without its sound fails)",
+  // WORDCHECK1: check each path inside its own function, without arbitrary
+  // character windows that change when explanatory comments grow.
+  const compact = (src) => src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:"'\\])\/\/[^\n]*/g, "$1").replace(/\s+/g, "");
+  const section = (src, start, end) => { const a = src.indexOf(start), b = a < 0 ? -1 : src.indexOf(end, a + start.length); return a >= 0 && b > a ? src.slice(a, b) : ""; };
+  const perWord = compact(section(charge, "function armWord(){", "function micLive(){"));
+  const verify = compact(section(charge, "async function verifyClip(){", "// ---- the flow ----"));
+  const stopped = compact(section(charge, "function recognitionStop(){", "function startEngine(){"));
+  const legacyStart = section(charge, "function recognitionStart(){", "function recognitionStop(){");
+  const wordTurn = section(sona, "function speechTurn(opts) {", "// ── SONA'S OWN MICROPHONE");
+  const unbiasedStart = (src) => {
+    const calls = [...compact(src).matchAll(/\bspeechStart\(\{([^{}]*)\}\)/g)];
+    return calls.length === 1 && (calls[0][1].match(/\bwords:/g) || []).length === 1 && /\bwords:\[\]/.test(calls[0][1]);
+  };
+  ok("native word practice verifies each saying before crediting only a pass",
+    compact(charge).includes("varcheckWords=needsWordCheck();")
+    && compact(charge).includes("if(checkWords)armWord();elserecognitionStart();")
+    && /S\.speechTurn\(\{sound:SOUND,word:[^}]*level:ITEM\.level,frame:/.test(perWord)
+    && perWord.includes("turn.finish().then(function(verdict){")
+    && perWord.includes('if(verdict==="pass")creditRep(performance.now());elsewordCheckIssue=true;'));
+  const nativeGate = verify.indexOf('if(needsWordCheck())returnreps>0?"pass":"unknown";');
+  const transcript = verify.indexOf("S.hearVerdict("), spectral = verify.indexOf("returnshapeVerdict();");
+  ok("native words use verified sayings; other turns keep transcript then spectral fallback",
+    verify.indexOf("awaitrecognitionStop();") >= 0 && nativeGate > verify.indexOf("awaitrecognitionStop();")
+    && transcript > nativeGate && spectral > transcript
+    && verify.includes('if(hv!=="unknown")returnhv;') && stopped.includes("S.speechStop()"));
+  ok("practice recognition starts without an answer hint", unbiasedStart(legacyStart));
+  ok("shared per-word recognition starts without an answer hint", unbiasedStart(wordTurn));
+  // END WORDCHECK1.
+  ok("the judge is told the round's kind and, on a sentence round, the sentence, plus the item position",
     /S\.hearVerdict\(text,SOUND,[^;]*\{level:ITEM\.level,frame:ITEM\.level==="sentence"\?String\(ITEM\.t\|\|""\):"",pos:ITEM\.pos\|\|""\}\)/.test(charge));
   ok("Apple listens up to 15 s an attempt (9 s left a child who waited for Echo's nudge about one)",
     /var REC_BUDGET=15000;/.test(charge) && (charge.match(/recognitionRemaining=REC_BUDGET/g) || []).length === 2 && !/recognitionRemaining=9000/.test(charge));

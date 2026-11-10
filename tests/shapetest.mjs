@@ -24,12 +24,18 @@ const src = readFileSync(ROOT + "/charge.html", "utf8");
 // ("no recording is ever uploaded") true rather than aspirational.
 // HEAR1 widened this: the verdict is now on-device TRANSCRIPT first (the
 // SonaSpeech plugin, requiresOnDeviceRecognition), on-device SPECTRAL second.
-// Both paths stay on the phone; what this pins is that no third path exists.
-ok("every verdict is on-device: transcript first, spectral fallback",
-  /async function verifyClip\(\)\{[\s\S]{0,700}await recognitionStop\(\)[\s\S]{0,400}hearVerdict[\s\S]{0,400}return shapeVerdict\(\);[\s\S]{0,20}\}/.test(src)
-  && /function recognitionStop\(\)[\s\S]{0,700}S\.speechStop\(\)/.test(src));
+// Native words now check each saying before crediting it; other turns keep
+// transcript first, then spectral fallback. All of those checks stay local.
+const wordSrc = src.match(/function armWord\(\)\{[\s\S]*?function micLive\(\)\{/)?.[0] || "";
+ok("every verdict is on-device: per-word checks, transcript/spectral fallback",
+  /async function verifyClip\(\)\{[\s\S]{0,700}await recognitionStop\(\)[\s\S]{0,700}hearVerdict[\s\S]{0,400}return shapeVerdict\(\);[\s\S]{0,20}\}/.test(src)
+  && /function recognitionStop\(\)[\s\S]{0,700}S\.speechStop\(\)/.test(src)
+  && /if\(checkWords\)armWord\(\);else recognitionStart\(\);/.test(src)
+  && /S\.speechTurn\(\{sound:SOUND,word:/.test(wordSrc)
+  && /turn\.finish\(\)\.then\(function\(verdict\)\{[\s\S]*if\(verdict==="pass"\)creditRep\(performance\.now\(\)\);else wordCheckIssue=true;/.test(wordSrc)
+  && /if\(needsWordCheck\(\)\)return reps>0\?"pass":"unknown";/.test(src));
 ok("…and the verdict path makes no network call",
-  !/function verifyClip[\s\S]{0,900}fetch\(/.test(src));
+  !/function verifyClip[\s\S]{0,900}fetch\(/.test(src) && !/\b(fetch|XMLHttpRequest|sendBeacon)\s*\(/.test(wordSrc));
 ok("no page uploads a clip to a scorer", !/api\/score/.test(src));
 ok("shape only receives counted-burst frames", /burstFrames\.forEach[\s\S]{0,120}shapeFrame/.test(src) && /else if\(inBurst\) shapeFrame\(fd,binHz\)/.test(src));
 const shapeSrc = src.match(/var SHAPE=\{[\s\S]*?return "pass";\n    \}/)?.[0];

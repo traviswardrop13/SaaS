@@ -2140,7 +2140,7 @@
         const own = mine.filter((w) => w.pos === pos)[0] || mine[0] || null;
         if (own) { text = hand.ask; at = own.pos; }
         else if (hw.length) { const w = hw[(dayNum() + card) % hw.length]; text = String(w.w).toLowerCase(); at = w.pos; }
-        else { text = (SC.gameWord && SC.gameWord(sound, pos)) || ""; at = pos; }
+        else { text = (SC.gameWord && SC.gameWord(sound, pos)) || ""; at = pos === "mix" ? "i" : pos; }
         if (text) rung = 2; else { text = bare; at = ""; }
       }
       if (!rung && syls.length) {
@@ -2158,7 +2158,7 @@
       }
     }
     return {
-      rung: rung, level: GAME_LEVELS[rung], text: text, html: soundMark(text, sound, at),
+      rung: rung, level: GAME_LEVELS[rung], text: text, pos: at, html: soundMark(text, sound, at),
       // how Echo models it: the bare sound is Rachel's recording; a syllable
       // or word is one line in his own voice, which the page must fall back
       // from (to card 0) the moment it cannot play
@@ -6784,8 +6784,8 @@
   // the iOS shell the SonaSpeech plugin runs Apple's recognizer with
   // requiresOnDeviceRecognition = true — audio never leaves the phone, and if
   // on-device recognition is unavailable the plugin REFUSES to start rather
-  // than falling back to Apple's servers. Fail closed; the spectral check is
-  // always the fallback, so web/Android behaviour is unchanged.
+  // than falling back to Apple's servers. Web checks and unclear sound or
+  // syllable checks can use the spectral fallback; native words need a match.
   //
   // The plugin returns raw transcripts only. The PASS/FAIL DECISION lives
   // here, on purpose: what counts as an attempt at a sound is clinical logic,
@@ -6810,6 +6810,7 @@
     return P.requestPermission().then((r) => { _speechOk = null; return !!(r && r.granted); }).catch(() => false);
   }
   function speechStart(opts) {
+    if (_speechTurnFault) return Promise.resolve(false);
     const P = speechPlugin(); if (!P) return Promise.resolve(false);
     return speechAvailable().then((okay) => {
       if (!okay) return false;
@@ -6829,6 +6830,101 @@
   function speechStop() {
     const P = speechPlugin(); if (!P) return Promise.resolve(null);
     return P.stop().then((r) => (r && r.onDevice ? r : null)).catch(() => null);
+  }
+
+  // One saying, one on-device transcript. Word games used to reward the
+  // sound's broad family alone: "taco" could unlock "rabbit". Call after the
+  // page's mic opens, wait for ready, and finish AFTER the whole voiced burst.
+  // This owns no audio, storage or rewards; the page must still detect voice.
+  // Browsers retain their sound-only check. In the app an unavailable or
+  // unclear WORD check is unverified, never a successful word or a failed
+  // pronunciation. Bare sounds/syllables retain their existing shape fallback.
+  var _speechTurnCurrent = null, _speechTurnFault = false;
+  function speechTurn(opts) {
+    opts = opts || {};
+    var native = isNativeApp(), level = String(opts.level || "word");
+    var sound = String(opts.sound || ""), word = String(opts.word || "");
+    var frame = String(opts.frame || ""), pos = String(opts.pos || ""), child = kkey("sona.profile.v1");
+    var previous = _speechTurnCurrent;
+    var r = { active: native, required: native && (level === "word" || level === "sentence"), cancelled: false, started: false, startSettled: false, pending: null, closing: null, result: null };
+    function valid() {
+      return !r.cancelled && _speechTurnCurrent === r && !document.hidden && kkey("sona.profile.v1") === child;
+    }
+    function bounded(promise, ms, fallback, expired) {
+      return new Promise(function (resolve) {
+        var done = false, timer = setTimeout(function () {
+          if (done) return; done = true;
+          if (expired) expired();
+          resolve(fallback);
+        }, ms);
+        Promise.resolve(promise).then(function (value) {
+          if (done) return; done = true; clearTimeout(timer); resolve(value);
+        }, function () {
+          if (done) return; done = true; clearTimeout(timer); resolve(fallback);
+        });
+      });
+    }
+    function stopNative() {
+      try { return bounded(speechStop(), 2500, null, function () { _speechTurnFault = true; }); }
+      catch (e) { return Promise.resolve(null); }
+    }
+    function close() {
+      if (r.closing) return r.closing;
+      // Availability/permission may still be pending. Cancellation prevents
+      // those from ever starting. An actual start in flight needs TWO stops:
+      // immediately, then after its answer, before another saying can start.
+      if (r.timeoutStop) {
+        r.closing = r.timeoutStop;
+      } else if (r.pending && !r.startSettled) {
+        r.closing = Promise.all([stopNative(), r.pending]).then(stopNative);
+      } else r.closing = r.started ? stopNative() : Promise.resolve(null);
+      r.closing = r.closing.then(function (result) { r.started = false; return result; });
+      return r.closing;
+    }
+    r.cancel = function () { r.cancelled = true; return close().then(function () {}); };
+    var before = previous ? previous.cancel() : Promise.resolve();
+    _speechTurnCurrent = r;
+    r.ready = before.then(function () {
+      if (!native) return true;
+      if (!valid() || _speechTurnFault) return false;
+      return bounded(speechAvailable(), 3000, null).then(function (okay) {
+        if (okay === null) return false;
+        if (okay || !valid()) return okay;
+        return bounded(speechPerm(), 60000, false).then(function (granted) { return granted && valid() ? bounded(speechAvailable(), 3000, false) : false; });
+      }).then(function (okay) {
+        if (!okay || !valid() || _speechTurnFault) return false;
+        // No answer in contextualStrings: a hint toward "rabbit" is useful
+        // dictation, but undermines checking what was actually said.
+        var starting = Promise.resolve(speechStart({ words: [], maxMs: 15000 }));
+        r.pending = bounded(starting, 5000, false, function () {
+          r.startTimedOut = true; _speechTurnFault = true; r.timeoutStop = stopNative();
+        });
+        // A broken bridge must not freeze a word forever or start a listener
+        // later under Echo. After a start/stop timeout this page makes no new
+        // native starts; a late old start is stopped again, safely in isolation.
+        starting.then(function () { if (r.startTimedOut) stopNative(); }, function () {});
+        return r.pending.then(function (started) {
+          r.startSettled = true; r.started = !!started;
+          if (!valid() || r.startTimedOut) return close().then(function () { return false; });
+          return r.started;
+        }, function () { r.startSettled = true; return false; });
+      });
+    }).catch(function () { return false; });
+    r.finish = function () {
+      if (r.result) return r.result;
+      r.result = r.ready.then(function (started) {
+        if (!valid()) return close().then(function () { return "cancelled"; });
+        if (!native) return "unknown";
+        if (!started) return "unavailable";
+        return close().then(function (result) {
+          if (!valid()) return "cancelled";
+          if (!result || result.onDevice !== true) return "unavailable";
+          return hearVerdict(result.text, sound, word, { level: level, frame: frame, pos: pos });
+        });
+      }).catch(function () { return valid() ? "unavailable" : "cancelled"; });
+      return r.result;
+    };
+    return r;
   }
 
   // ── SONA'S OWN MICROPHONE IN THE IPHONE APP (NATIVE MIC, Oct 2026) ────────
@@ -8042,7 +8138,8 @@
   /**
    * hearVerdict(transcript, sound, word, opts?) → "pass" | "fail" | "unknown"
    * opts: { level: "isolation"|"syllable"|"word"|"sentence", frame: the
-   *         sentence the child was asked to say, when there is one }
+   *         sentence the child was asked to say, when there is one, pos: the
+   *         position of the target sound in this item }
    *
    * pass    — a real try at the target: the word, or a close version of it
    *           ("wabbit" for rabbit, "wed" for red, "cah" for car, "rainy" for
@@ -8055,8 +8152,8 @@
    * unknown — nothing to judge: no words, only filler ("uh", "hmm"), or only
    *           the words around the target ("Here is a …"). Unknown is NEVER a
    *           fail. Apple's models are tuned on adults and a child's speech
-   *           often will not transcribe, so unknown hands the try to the
-   *           sound-shape check, exactly as before this feature existed.
+   *           often will not transcribe. Sound and syllable callers may use
+   *           the shape check; a native word turn needs a positive match.
    *
    * Two things are set aside before judging: a grown-up coaching ("say
    * rabbit") — the word after "say" is theirs, not the child's — and, on a
@@ -10305,5 +10402,5 @@
   try { _questAnchors(); } catch (e) {}
   try { installDebug(); } catch (e) {}
 
-  global.Sona = { questToday, questEnd, QUEST_DAYS, QUEST_LEN, STORY_DAYS, storyOpen, storyShown, storyEnding, storySeen, storyFound, storyReplay, STORY_SAY_TIMES, STORY_TALK, storyDay, day1For, pcmWave, mediaPCM, voiceAsMedia, libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, goalDays, dayReps, dayGoal, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, goClip, GO_WAIT_MS, WORDS, wordsFor, GAME_WORDS, gameWords, POSITIONS, FAMILY_POSITIONS, posInfo, posPhrase, posHas, soundPos, sylPos, playWords, playPool, hasSound, GAMES_FOLLOW_POS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, rungWin, ladderKey, ladderContent, PRACTICE_TOP, ladderSteps, ladderTop, ladderStart, stepDown, stepLabel, ladderWhere, ladderPlan, GAME_LEVELS, gameTop, gameAsk, gameHold, FREE_MODE, isFree, WEB_SALES, webSales, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, targetSound, targetSoundOptions, setTargetSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, homePicks, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, freeVersion, trialFirst, offerOnLock, FREE_BOOKS, freeBooksOnShelf, bookFree, booksOpen, bookLocked, seasonPick, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, firstGameKey, firstGameStart, firstGameEnd, FREE_PLAY_ON, freePlayOn, freePlayDue, freePlayStart, freePlayActive, freePlayEnd, CRAFTED_CARDS, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, micNative, micOpen, micProbe, micSource, micDeaf, micRecorder, micQuiet, micStats, micFifo: nmFifo, NATIVE_MIC_GAIN, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repWeeks, gameRep, repsBeacon, gameBest, gameBestOffer, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES, trophyState, trophies, coinsNow, PLAY_LEVEL_AT, PLAY_LEVEL_LINES, playLevelsOpen, playLevel, playLevelAsk, setPlayLevel, playLevelInfo, playBest, playBestOffer, buddyId, buddySprite, chestState, chestOpen, ROAD_LANDS, ROAD_STOPS, MONTH_STEPS, roadStop, roadState, roadOpen, monthOpen, roadSettle, roadRolledSeen, buddiesKept, shopItem, buyItem, undoBuy, equip, BOARD_LIVE, boardLive, boardAllowed, boardState, boardStart, boardClaim, boardFlush, boardView, boardNick, boardLeave, boardAsk, boardCancel, parentEmail, reportEmail, reportSync, reportStatus, reportSet, reportOff, reportFlush, homeOfferDue, offerSeen, notifyAvailable, notifyState, notifyRefresh, notifyAsk, trialReminderOn, trialReminderArm, trialReminderSync, trialReminderSold, nudgeConsent, nudgeState, soundMark, clipsSettled, storePlan, buyPlan, planWords, planSay, planBillDate, setupWall, setupAfterMark, setupAfter, setupAfterClear, setupAsks, setupAsksSave, SETUP_THERAPY };
+  global.Sona = { questToday, questEnd, QUEST_DAYS, QUEST_LEN, STORY_DAYS, storyOpen, storyShown, storyEnding, storySeen, storyFound, storyReplay, STORY_SAY_TIMES, STORY_TALK, storyDay, day1For, pcmWave, mediaPCM, voiceAsMedia, libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, goalDays, dayReps, dayGoal, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, goClip, GO_WAIT_MS, WORDS, wordsFor, GAME_WORDS, gameWords, POSITIONS, FAMILY_POSITIONS, posInfo, posPhrase, posHas, soundPos, sylPos, playWords, playPool, hasSound, GAMES_FOLLOW_POS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, rungWin, ladderKey, ladderContent, PRACTICE_TOP, ladderSteps, ladderTop, ladderStart, stepDown, stepLabel, ladderWhere, ladderPlan, GAME_LEVELS, gameTop, gameAsk, gameHold, FREE_MODE, isFree, WEB_SALES, webSales, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, targetSound, targetSoundOptions, setTargetSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, homePicks, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, freeVersion, trialFirst, offerOnLock, FREE_BOOKS, freeBooksOnShelf, bookFree, booksOpen, bookLocked, seasonPick, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, firstGameKey, firstGameStart, firstGameEnd, FREE_PLAY_ON, freePlayOn, freePlayDue, freePlayStart, freePlayActive, freePlayEnd, CRAFTED_CARDS, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, speechTurn, micNative, micOpen, micProbe, micSource, micDeaf, micRecorder, micQuiet, micStats, micFifo: nmFifo, NATIVE_MIC_GAIN, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repWeeks, gameRep, repsBeacon, gameBest, gameBestOffer, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES, trophyState, trophies, coinsNow, PLAY_LEVEL_AT, PLAY_LEVEL_LINES, playLevelsOpen, playLevel, playLevelAsk, setPlayLevel, playLevelInfo, playBest, playBestOffer, buddyId, buddySprite, chestState, chestOpen, ROAD_LANDS, ROAD_STOPS, MONTH_STEPS, roadStop, roadState, roadOpen, monthOpen, roadSettle, roadRolledSeen, buddiesKept, shopItem, buyItem, undoBuy, equip, BOARD_LIVE, boardLive, boardAllowed, boardState, boardStart, boardClaim, boardFlush, boardView, boardNick, boardLeave, boardAsk, boardCancel, parentEmail, reportEmail, reportSync, reportStatus, reportSet, reportOff, reportFlush, homeOfferDue, offerSeen, notifyAvailable, notifyState, notifyRefresh, notifyAsk, trialReminderOn, trialReminderArm, trialReminderSync, trialReminderSold, nudgeConsent, nudgeState, soundMark, clipsSettled, storePlan, buyPlan, planWords, planSay, planBillDate, setupWall, setupAfterMark, setupAfter, setupAfterClear, setupAsks, setupAsksSave, SETUP_THERAPY };
 })(window);

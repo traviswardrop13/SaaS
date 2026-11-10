@@ -199,6 +199,9 @@
     var feedAllowed=!!(S&&S.gameAccess("feed").allowed);
     if(!feedAllowed&&S)S.gameBounce("feed");
     if(feedAllowed){
+    var feedOwner=S&&S.kkey?S.kkey("sona.profile.v1"):"",feedRetiring=false;
+    function feedOwned(){return !(S&&S.kkey)||S.kkey("sona.profile.v1")===feedOwner;}
+    function retireStaleFeed(){if(feedOwned())return false;if(!feedRetiring){feedRetiring=true;leaveFeed();}return true;}
     // "game opened" (12 Oct 2026): this game skips the practice page, so its
     // "practice started" never fires; the game key only, never the child
     if(!document.hidden){ try{ Sona.track("game opened",{game:"feed"}); }catch(e){} }
@@ -236,10 +239,10 @@
     function sfx(n,then,due){
       if(document.hidden||audioPaused||micStream){ if(due)chimesDue--; return; }
       var wait=micClosedAt+SETTLE_MS-performance.now();
-      if(micAsking||wait>0){
+      if(micAsking||wordClosing||wait>0){
         if(!due)chimesDue++;
         if(!micAsking)quietUntil=Math.max(quietUntil,performance.now()+wait+QUIET_MS);
-        setTimeout(function(){ sfx(n,then,true); },micAsking?60:wait); return;
+        setTimeout(function(){ sfx(n,then,true); },micAsking||wordClosing?60:wait); return;
       }
       if(due)chimesDue--;
       quietUntil=Math.max(quietUntil,performance.now()+QUIET_MS);
@@ -257,7 +260,7 @@
     // answer (feedMicOpen closes a stale one and stamps micClosedAt), then
     // SETTLE_MS, then any chime that was waiting on the same answer.
     function micQuiet(){ return new Promise(function(done){ (function check(){
-      if(micAsking||chimesDue>0){ setTimeout(check,60); return; }
+      if(micAsking||wordCheck||wordClosing||chimesDue>0){ setTimeout(check,60); return; }
       var wait=Math.max(settleLeft(),chimeEnd-performance.now());
       if(wait>0){ setTimeout(check,wait); return; }
       done();
@@ -427,6 +430,17 @@
     // voice stops, and closes when the turn ends (a right pick, a heard
     // word), on Play again, at the finish and when the page hides. ──
     var heardThisTurn=false, stars=0, micStream=null, micAsking=false, micGen=0, micSrc=null, micRaf=0, micT=0;
+    var wordCheck=null, wordClosing=0, wordDrain=null;
+    function wordWait(p){
+      wordClosing++;
+      var done=Promise.resolve(p).catch(function(){}).then(function(){wordClosing--;micClosedAt=performance.now();});
+      wordDrain=Promise.all([wordDrain,done]);return wordDrain;
+    }
+    function cancelWordCheck(){
+      var check=wordCheck;wordCheck=null;
+      if(check){try{wordWait(check.cancel());}catch(e){}}
+      return wordClosing?wordDrain:null;
+    }
     // What counts as "heard" (24 Sep 2026): the bar is 3× the room's quiet
     // level, and that level belongs to the page, not the turn. micFloor is
     // the 20th-percentile loudness of the quietest FLOOR_MS the mic has heard
@@ -448,10 +462,12 @@
     // held in a variable: a preload nobody holds is collected and loads late
     var POSE_KEEP=["talk","listen","cheer","welcome"].map(function(p){ var i=new Image(); i.src=POSE+p+".webp"; return i; });
     function feedMicStop(){
+      var closing=cancelWordCheck();
       echoPose("welcome");
       micGen++; clearTimeout(micT); clearTimeout(listenT); if(micRaf)cancelAnimationFrame(micRaf); micRaf=0;
       try{ if(micSrc)micSrc.disconnect(); }catch(e){} micSrc=null;
       if(micStream){ try{ micStream.getTracks().forEach(function(t){t.stop();}); }catch(e){} micStream=null; micClosedAt=performance.now(); }
+      return closing;
     }
     function listenable(){ return turnLive&&!heardThisTurn&&!speaking&&!ttsPlaying&&!document.hidden&&!audioPaused; }
     // The mic used to open only when navigator.permissions said "granted",
@@ -461,13 +477,16 @@
     // way the Say & Play games do.
     var LISTEN_MS=8000, listenT=0;
     function feedMicOpen(){
+      if(retireStaleFeed())return;
       if(!listenable()||micStream||micAsking)return;
+      if(wordClosing){clearTimeout(micT);micT=setTimeout(feedMicOpen,60);return;}
       if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){ nudge(); return; }
       var wait=quietLeft();
       if(wait>0){ clearTimeout(micT); micT=setTimeout(feedMicOpen,wait); return; }
       var gen=++micGen; micAsking=true; hideMicBtn();
       ((S&&S.micNative&&S.micNative())?S.micOpen({audio:true,video:false}):navigator.mediaDevices.getUserMedia({audio:true,video:false})).then(function(stream){
         micAsking=false;
+        if(!feedOwned()){try{stream.getTracks().forEach(function(t){t.stop();});}catch(e){}micClosedAt=performance.now();retireStaleFeed();return;}
         if(gen!==micGen||!listenable()){ try{ stream.getTracks().forEach(function(t){t.stop();}); }catch(e){} micClosedAt=performance.now(); if(listenable())feedMicOpen(); return; }
         micStream=stream;
         try{ localStorage.setItem("sona.micok","1"); }catch(e){}
@@ -475,11 +494,15 @@
         // it would hear nothing and silence every chime until the turn ended
         try{ var ctx=getCtx(),src=(S&&S.micSource)?S.micSource(ctx,stream):ctx.createMediaStreamSource(stream),an=ctx.createAnalyser(); an.fftSize=512; src.connect(an); micSrc=src; }
         catch(e){ feedMicStop(); nudge(); return; }
+        var check=S&&S.speechTurn?S.speechTurn({sound:SOUND,word:target.w,level:"word",pos:target.pos}):null;
+        if(!check&&S&&S.isNativeApp&&S.isNativeApp()){feedMicStop();nudge();return;}
+        if(check&&check.required){feedNativeListen(gen,stream,an,ctx.sampleRate/an.fftSize,check);return;}
         echoPose("listen"); $("bSub").textContent="Your turn! Say “"+target.w+"”";
         // silence never unlocks a picture: the window closes and the mic waits for a tap
         clearTimeout(listenT); listenT=setTimeout(function(){ if(gen===micGen&&turnLive&&!heardThisTurn){ feedMicStop(); nudge(); } },LISTEN_MS);
         var td=new Uint8Array(an.fftSize),fd=new Uint8Array(an.frequencyBinCount),binHz=ctx.sampleRate/an.fftSize,heard=[];
         (function tick(){
+          if(retireStaleFeed())return;
           if(gen!==micGen)return;
           // belt and braces: nothing plays while this mic is open, and if
           // anything did, its frames would never be judged or join a burst.
@@ -509,16 +532,7 @@
               }
             }
             if(voiced>=4){
-              // The word unlocks the pictures and shows the asked one, never a
-              // pronunciation grade: "Echo heard you", not "correct".
-              $("grid").classList.remove("locked");
-              var cards=document.querySelectorAll("#grid .cardBtn");
-              for(var c=0;c<cards.length;c++)if(cards[c].querySelector(".w").textContent===target.w)cards[c].classList.add("speechHint");
-              $("bSub").textContent="Tap the glowing picture!";
-              heardThisTurn=true; stars++; try{ window.__heard=stars; }catch(e){} try{ $("starN").textContent=stars; }catch(e){}
-              try{ if(S&&S.gameRep)S.gameRep(SOUND); }catch(e){}   // one rep on the week's count, never practice data
-              $("heard").classList.add("show"); setTimeout(function(){ $("heard").classList.remove("show"); if(turnLive&&heardThisTurn)echoPose("welcome"); },1400);
-              feedMicStop(); echoPose("cheer"); sfx("tap"); return;   // heard once is the whole turn: close, THEN the little chime
+              feedHeard(); return;
             }
           }
           micRaf=requestAnimationFrame(tick);
@@ -530,6 +544,66 @@
         if(e&&e.name==="NotAllowedError"){ turnLive=false; denied(); return; }
         nudge(); });
     }
+    function feedHeard(){
+      if(retireStaleFeed())return;
+      // The word unlocks the pictures, with no pronunciation grade. Native
+      // turns arrive here only after the local text check accepts this word.
+      $("grid").classList.remove("locked");
+      var cards=document.querySelectorAll("#grid .cardBtn");
+      for(var c=0;c<cards.length;c++)if(cards[c].querySelector(".w").textContent===target.w)cards[c].classList.add("speechHint");
+      $("bSub").textContent="Tap the glowing picture!";
+      heardThisTurn=true; stars++;try{window.__heard=stars;}catch(e){}try{$("starN").textContent=stars;}catch(e){}
+      try{if(S&&S.gameRep)S.gameRep(SOUND);}catch(e){}
+      $("heard").classList.add("show");setTimeout(function(){$("heard").classList.remove("show");if(turnLive&&heardThisTurn)echoPose("welcome");},1400);
+      feedMicStop();echoPose("cheer");sfx("tap");
+    }
+    function feedNativeListen(gen,stream,an,binHz,check){
+      wordCheck=check;
+      var owner=S.kkey?S.kkey("sona.gamereps.v1"):"",asked=target,td=new Uint8Array(an.fftSize),fd=new Uint8Array(an.frequencyBinCount),heard=[],burst=false,lastLoud=0,finishing=false;
+      function current(){return !retireStaleFeed()&&gen===micGen&&wordCheck===check&&target===asked&&listenable()&&(!S.kkey||S.kkey("sona.gamereps.v1")===owner);}
+      function finishWord(){
+        if(finishing||!current())return;
+        finishing=true;clearTimeout(listenT);if(micRaf)cancelAnimationFrame(micRaf);micRaf=0;
+        $("bSub").textContent="Listening check…";
+        var result;try{result=check.finish();}catch(e){result=Promise.resolve("unavailable");}
+        var verdict=Promise.resolve(result).catch(function(){return "unavailable";});
+        wordWait(verdict).then(function(){return verdict;}).then(function(out){
+          if(!current()){if(wordCheck===check)feedMicStop();return;}wordCheck=null;
+          if(out==="pass")feedHeard();else{feedMicStop();nudge();}
+        });
+      }
+      Promise.resolve(check.ready).then(function(ready){
+        if(!current()){if(wordCheck===check)feedMicStop();return;}
+        if(!ready){feedMicStop();nudge();return;}
+        echoPose("listen");$("bSub").textContent="Your turn! Say “"+target.w+"”";
+        // The bounded window must not turn one continuous held sound into an
+        // accepted word: without the quiet ending it offers another try.
+        listenT=setTimeout(function(){if(current()){feedMicStop();nudge();}},LISTEN_MS);
+        (function tick(){
+          if(!current()){if(wordCheck===check)feedMicStop();return;}
+          if(S.micDeaf&&S.micDeaf(stream)){heard=[];burst=false;micRaf=requestAnimationFrame(tick);return;}
+          an.getByteTimeDomainData(td);var sum=0;for(var i=0;i<td.length;i++){var d=(td[i]-128)/128;sum+=d*d;}
+          var now=performance.now(),level=Math.sqrt(sum/td.length),shape=null;if(S.frameShape){an.getByteFrequencyData(fd);shape=S.frameShape(fd,binHz);}
+          heard.push({t:now,r:level,s:shape});while(now-heard[0].t>HEARD_MS)heard.shift();
+          if(now-heard[0].t>=FLOOR_MS){var q=[];for(var k=heard.length-1;k>=0&&now-heard[k].t<=FLOOR_MS;k--)q.push(heard[k].r);var fl=p20(q);if(micFloor<0||fl<micFloor)micFloor=fl;}
+          if(micFloor>=0){
+            var thr=Math.max(0.035,micFloor*3),voiced=0,shp=null;
+            if(burst){if(level>thr)lastLoud=now;if(now-lastLoud>=200){finishWord();return;}}
+            else for(var j=0;j<heard.length;j++){
+              var f=heard[j];if(f.r>thr){
+                voiced++;if(f.s){if(!shp)shp={m:0,fm:0,hm:0};shp.m+=f.s.m;shp.fm+=f.s.fm;shp.hm+=f.s.hm;}
+                if(voiced>=4){
+                  var fam=S.soundFamily?S.soundFamily(SOUND):"any",cent=shp&&shp.m?shp.fm/shp.m:0,high=shp&&shp.m?shp.hm/shp.m:0;
+                  if((fam==="low"&&cent>1800&&high>.22)||(fam==="hiss"&&cent<1100&&high<.10)){voiced=0;shp=null;}
+                  else{burst=true;lastLoud=now;break;}
+                }
+              }else{voiced=0;shp=null;}
+            }
+          }
+          micRaf=requestAnimationFrame(tick);
+        })();
+      }).catch(function(){if(wordCheck===check&&gen===micGen){feedMicStop();nudge();}});
+    }
     // No voice in the window (or no mic right now): the mic button waits. Its
     // tap says the word again and listens again; it never feeds Echo.
     function nudge(){
@@ -539,6 +613,7 @@
     }
     function hideMicBtn(){ $("micBtn").hidden=true; }
     $("micBtn").onclick=function(){
+      if(retireStaleFeed())return;
       if(!turnLive||heardThisTurn||micStream||micAsking)return;
       hideMicBtn(); echoPose("talk"); $("bSub").textContent="Listen…";
       sayGo("Say... "+target.w+".").then(function(){
@@ -552,6 +627,7 @@
     var NEED=5, fed=0, turnLive=false, target=null, usedIdx=[];
     function shuffle(a){ for(var i=a.length-1;i>0;i--){ var j=(Math.random()*(i+1))|0,t=a[i]; a[i]=a[j]; a[j]=t; } return a; }
     function nextTurn(){
+      if(retireStaleFeed())return;
       feedMicStop(); heardThisTurn=false; hideMicBtn();   // Echo is about to ask: never over an open mic
       var ti; do{ ti=(Math.random()*TARGETS.length)|0; }while(TARGETS.length>1&&usedIdx.indexOf(ti)>=0&&usedIdx.length<TARGETS.length);
       usedIdx.push(ti); if(usedIdx.length>=TARGETS.length)usedIdx=[];
@@ -592,6 +668,7 @@
       });
     }
     function pick(w,btn){
+      if(retireStaleFeed())return;
       if(!turnLive)return;
       if(!heardThisTurn){
         // the word comes first: a tap before Echo has heard it wobbles and
@@ -651,7 +728,7 @@
         if(document.hidden||audioPaused||micStream||profile.soundOn===false||Number(profile.volume)===0)return;
         // like sfx(): a mic request still being answered is waited out, not a
         // reason to drop the concert, and the wait ends with the end card
-        if(micAsking){ setTimeout(function(){ if(concertDue())playUke(delaySec); },60); return; }
+        if(micAsking||wordClosing){ setTimeout(function(){ if(concertDue())playUke(delaySec); },60); return; }
         var ctx=getCtx(), t=ctx.currentTime+(delaySec!=null?delaySec:UKE_AFTER_CHIME_MS/1000);
         var master=ctx.createGain(); master.gain.value=(profile.volume!=null?profile.volume:0.8)*0.2; master.connect(ctx.destination);
         // ukulele voicings (G4-C4-E4-A4 strings): C, F, G7, C — the campfire cadence
@@ -674,6 +751,7 @@
     function stopUke(){ try{ ukeNodes.forEach(function(n){ try{n.stop();}catch(e){} }); ukeNodes=[]; }catch(e){} ukeUntil=0; }
 
     function finish(){
+      if(retireStaleFeed())return;
       feedMicStop(); $("startOvl").classList.remove("show");
       var daily=S.simpleAdventure&&S.simpleAdventure("feed",true);
       // QUEST1: the daily adventure counts a finished round of today's game
@@ -697,8 +775,9 @@
  fed=0; stars=0; roundBump=0; paintScale();
       try{ $("plate").querySelectorAll(".well").forEach(function(w){ w.innerHTML=""; }); $("plate").dataset.fed="0/5"; $("starN").textContent="0"; }catch(e){}
       $("endOvl").classList.remove("show"); sfx("tap"); nextTurn(); };
-    $("goHome").onclick=function(){ stopFeedAudio();feedMicStop(); location.href="/today.html"; };
-    $("close").onclick=function(){ stopFeedAudio();feedMicStop(); location.href="/today.html"; };
+    function leaveFeed(){stopFeedAudio();var closing=feedMicStop();if(closing)closing.then(function(){location.href="/today.html";});else location.href="/today.html";}
+    $("goHome").onclick=leaveFeed;
+    $("close").onclick=leaveFeed;
 
     function backgroundFeed(){stopFeedAudio();feedMicStop();nudge();}
     if(S&&S.onBackground)S.onBackground(backgroundFeed);
@@ -710,7 +789,7 @@
     // Say & Play games) ──
     try{ $("startSound").textContent="Today’s sound: "+((S&&S.soundLabel)?S.soundLabel(SOUND):SOUND); }catch(e){}
     $("startOvl").classList.add("show");
-    $("startBtn").onclick=function(){ $("startOvl").classList.remove("show"); goWait=(S&&S.GO_WAIT_MS)||0; micReady().then(nextTurn); };
+    $("startBtn").onclick=function(){if(retireStaleFeed())return; $("startOvl").classList.remove("show"); goWait=(S&&S.GO_WAIT_MS)||0; micReady().then(nextTurn); };
     function micReady(){ return new Promise(function(done){
       if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){ bye("Echo can’t hear here","Feed Echo needs a microphone, and this browser doesn’t have one Echo can use."); return; }
       try{ if(localStorage.getItem("sona.micok")==="1")return done(); }catch(e){}
@@ -726,6 +805,7 @@
         $("micPromise").textContent=(S&&S.MIC_PROMISE)||"";
         $("primer").classList.add("show");
         $("primerYes").onclick=function(){
+          if(retireStaleFeed())return;
           if(document.hidden)return;
           $("primer").classList.remove("show"); micAsking=true;
           ((S&&S.micNative&&S.micNative())?S.micProbe({audio:true,video:false}):navigator.mediaDevices.getUserMedia({audio:true,video:false})).then(function(stream){
@@ -747,7 +827,7 @@
         +'<p class="small">Grown-ups: you can turn the microphone on whenever you like, from this screen or your phone’s Settings.</p>'
         +'<button class="btn" id="byeBtn" type="button">Okay</button>';
       card.querySelector("h2").textContent=title; card.querySelectorAll("p")[0].textContent=text;
-      card.querySelector("#byeBtn").onclick=function(){ stopFeedAudio(); feedMicStop(); location.href="/today.html"; };
+      card.querySelector("#byeBtn").onclick=leaveFeed;
       $("primer").classList.add("show");
     }
     }
