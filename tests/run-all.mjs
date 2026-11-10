@@ -143,7 +143,8 @@ const SUITES = [
   "spacetest.mjs", // SPACE1: real thrust, steering and soft touchdowns, speech eases gravity without autopiloting
   "monstertest.mjs", // MONSTER1: real salon gestures, persistent styling and speech-assisted tools
   "rocketblasttest.mjs", // ROCKET1: pull-and-release physics, five real planet arrivals, speech-widened landing rings
-  "snowmantest.mjs", // SNOWMAN1: real snow rolling and stacking, manual face/clothes and speech-help recovery
+  "snowmantest.mjs", // SNOWMAN1: real snow rolling and stacking, the child's own hat and neck, Echo once a visit, the see-through demo
+  "voicedoctest.mjs", // VOICEDOC1: every line Echo can say is in VOICE_SCRIPT.md and the checker can still read each page (it was out of the battery, so a moved line broke it unseen, 5-9 Nov 2026)
   "traintest.mjs", // TRAIN1: held driving, real station stops and hand-placed passengers, speech-slowed travel
   "puppytest.mjs", // PUPPY1: moving fur patches washed only by real water particles, speech-steadied puppy
   "bedtimestarstest.mjs", // STARS1: continuous constellation tracing, real wider speech path and preserved connections

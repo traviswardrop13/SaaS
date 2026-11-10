@@ -3977,6 +3977,41 @@ said at a set moment).
     high, the sway's size and speed: `COURSE`, `DRIFT_SPEED`), one new
     planet a round. **For Rachel:** nothing a child says changes.
   `rocketblasttest` plays it (parts `main`, `struggle`, `planets`, `fit`).
+- **Build a Snowman, rebuilt (9 Nov 2026, Travis: "yes build the snowman",
+  then "merge the snowman").** `public/snowman.js`.
+  - **No easy mode from the word.** The word brings the snowball or the
+    pieces and nothing else. Until then it also switched on ten seconds of
+    double-speed rolling and wider glowing spots, so the rolling and
+    stacking nearly did themselves. The help pill ("Snowy help") still
+    gives them, and the miss ladder still ends every step.
+  - **Every snowman is different.** The dressing step goes one slot at a
+    time, in a new order each round (`LOOKS`, `DRESS`): three hats to pick
+    from (the Buddy Shop's own painted top hat, party hat and crown, so no
+    new art), then the scarf or a bow tie (`hat-bow.webp`), then the twig
+    arms. Each look sits by its own picture's measure (`s`, `b`). A third
+    neck piece joins once it has a picture.
+  - **Echo explains each kind of step once a visit** (`told`: the rolling,
+    the face, the dressing): 3 lines a first snowman, where it was 5, none
+    on Play again. "Hear what to do" still says the step's line on a tap.
+    Step 5's line is "Pick a hat and a scarf, then add the twig arms."
+  - **A see-through copy shows the move** (`demoKind`, `drawDemo`) until the
+    child touches the step's piece: the snowball rolling back and forth,
+    the grown ball lifting to its circle, a piece gliding to its spot. It
+    stands still under Reduce Motion and gives way to the ladder's arrow.
+    The plan said a pointing finger; the app has no finger picture, so the
+    copy of the piece shows the move instead.
+  - **Travis's to change:** the hats and neck pieces, the banners, how often
+    Echo explains. **For Rachel:** nothing a child says changes; one of
+    Echo's directions is reworded and he says his directions less often.
+  `snowmantest` plays it (parts `rebuild`, `main`, `ladder`, `keyboard`,
+  `fit`).
+- **The voice-line list is in the battery since 9 Nov 2026**
+  (`voicedoctest` in `run-all`): `VOICE_SCRIPT.md` lists every line Echo can
+  say with where it is said, so a change that moves such a line must run
+  `node tools/voicedoc.mjs --write` and commit the list. The checker had
+  been unable to read the six round games' sound-power line since 5 Nov
+  2026 (a code comment inside that one-line script), unseen because it was
+  out of the battery; the comment is now an HTML comment above it.
 
 **Coming soon games are hidden** (Travis, 19 Oct 2026, "yes", to a funnel
 expert's review: eighteen greyed cards cluttered Home and pushed parents

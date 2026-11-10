@@ -1,5 +1,22 @@
 /* Build a Snowman: real rolling distance, three stack contacts, then five
-   hand-placed decorations. SayPlay alone owns speech, voice and repetitions. */
+   hand-placed decorations. SayPlay alone owns speech, voice and repetitions.
+
+   REBUILT (Travis, 9 Nov 2026: "yes build the snowman", the plan after the
+   game audit). Finger play only; what a child says and when are unchanged.
+   - The word brings the snowball or the pieces, and nothing else. It used
+     to switch on ten seconds of faster rolling and bigger glowing spots, so
+     the rolling and stacking nearly did themselves. The help pill ("Snowy
+     help") still gives those, and a miss or a long try still steps the
+     help up (the ladder below), so every step still ends.
+   - Every snowman is different: the hat is the child's pick of three (a top
+     hat, a party hat, a crown: the Buddy Shop's own painted hats) and the
+     neck the child's pick of the scarf or a bow tie, one after the other,
+     in a new order each round. A third neck piece joins with its picture.
+   - Echo explains each kind of step once a visit (the rolling, the face,
+     the dressing); the steps after, and every step of Play again, show the
+     move instead: a see-through copy of the snowball rolls back and forth,
+     or of the piece glides to its spot, until the child touches it. "Hear
+     what to do" still says the line on a tap. */
 (function () {
   "use strict";
   var STEP_LINES = [
@@ -7,11 +24,31 @@
     "Roll another snowball, then lift it onto the middle circle.",
     "Roll the little snowball, then lift it onto the head circle.",
     "Drag the coal face and carrot onto the little snowball.",
-    "Drag the hat, scarf, and twig arms onto your snowman."
+    "Pick a hat and a scarf, then add the twig arms."
   ];
+  // THE CHOICES (slot: the looks a child picks from, in the order the tray
+  // first shows them; shuffled each round). `fit` places a hat so its brim
+  // sits where the top hat's does: `s` its size against the top hat's box,
+  // `b` how far down its picture the brim is (each picture's own measure).
+  var LOOKS = {
+    hat: [{ id: "tophat", name: "top hat", art: "/assets/crafted/hat-tophat.webp", s: 1, b: 0.855 },
+      { id: "party", name: "party hat", art: "/assets/crafted/hat-party.webp", s: 0.9, b: 0.93 },
+      { id: "crown", name: "crown", art: "/assets/crafted/hat-crown.webp", s: 0.78, b: 0.891 }],
+    scarf: [{ id: "scarf", name: "scarf", art: "/assets/crafted/game/snowman-scarf-v1.webp" },
+      { id: "bow", name: "bow tie", art: "/assets/crafted/hat-bow.webp" }]
+  };
+  var DRESS = ["hat", "scarf", "arms"], order = { hat: LOOKS.hat.slice(), scarf: LOOKS.scarf.slice() };
+  // told: the kinds of step Echo has explained on this page (never reset by
+  // Play again); touched: the child has put a finger on this step's piece,
+  // which ends the see-through demo for the step.
+  var told = {}, touched = false, demoShown = { kind: "", x: 0, y: 0, n: 0 };
   var api, cv, ctx, W = 390, H = 844, raf = 0, last = 0, art = {}, active = false, paused = false, away = false, won = false, stage = 0, stages = 5, completed = 0, power = 0;
   var stacked = [false, false, false], rotations = [0, 0, 0], stack = [], zone = { left: 0.06, right: 0.94, top: 0.7, bottom: 0.84 }, tray = [], targets = [];
   var ball = { x: 0.3, y: 0.8, progress: 0, distance: 0, angle: 0 }, placed = { coal: false, nose: false, hat: false, scarf: false, arms: false }, pieces = [];
+  function lookOf(slot, id) { var list = LOOKS[slot] || []; for (var n = 0; n < list.length; n++) if (list[n].id === id) return list[n]; return null; }
+  function shuffled(list) { var a = list.slice(); for (var i = a.length - 1; i > 0; i--) { var j = (Math.random() * (i + 1)) | 0, t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+  // the dressing step's slot the tray holds now: the hat, then the neck, then the arms
+  function dressSlot() { for (var n = 0; n < DRESS.length; n++) if (!placed[DRESS[n]]) return DRESS[n]; return ""; }
   var top = 120, bottom = 750, maxR = 50, trail = [], held = null, owner = null, surface = null, grab = { x: 0, y: 0 }, keyboardHeld = false, misses = 0;
   // Every step ends without speech (the Hoops rule, gentler for ages 3-4).
   // stageMisses: real failed lifts or drops this step. After one the target
@@ -41,23 +78,40 @@
     return (level() >= 1 ? Math.max(px * 2, balls ? 60 : 80) : px) / W;
   }
   function loadArt() {
-    [["bg", "/assets/crafted/game/snowman-bg.webp"], ["ball", "/assets/crafted/game/snowman-ball-clean-v1.webp"], ["nose", "/assets/crafted/game/snowman-carrot-v1.webp"], ["scarf", "/assets/crafted/game/snowman-scarf-v1.webp"], ["arms", "/assets/crafted/game/snowman-twig-arms-v1.webp"], ["hat", "/assets/crafted/hat-tophat.webp"]].forEach(function (p) { var i = new Image(); i.onload = draw; i.src = p[1]; art[p[0]] = i; });
+    var list = [["bg", "/assets/crafted/game/snowman-bg.webp"], ["ball", "/assets/crafted/game/snowman-ball-clean-v1.webp"], ["nose", "/assets/crafted/game/snowman-carrot-v1.webp"], ["arms", "/assets/crafted/game/snowman-twig-arms-v1.webp"]];
+    LOOKS.hat.concat(LOOKS.scarf).forEach(function (l) { list.push([l.id, l.art]); });
+    list.forEach(function (p) { var i = new Image(); i.onload = draw; i.src = p[1]; art[p[0]] = i; });
   }
-  function pieceShape(id) {
+  // Where a piece goes on the snowman. A slot with choices (the hat, the
+  // neck) places each look by its own picture; without a look, the slot's
+  // spot as the first choice would sit.
+  function pieceShape(id, look) {
     var head = stack[2], middle = stack[1], r = head.r;
     if (id === "coal") return { x: head.x, y: head.y, w: r * 1.55, h: r * 1.28 };
     if (id === "nose") return { x: head.x + r * 0.432, y: head.y + r * 0.07, w: r * 0.95, h: r * 0.95 * 101 / 256 };
-    if (id === "hat") return { x: head.x, y: head.y - r * 1.68, w: r * 2.25, h: r * 2.25 };
-    if (id === "scarf") { var scarfW = r * 2.62, scarfH = scarfW * 259 / 384; return { x: head.x - scarfW * 0.05, y: head.y + r * 0.82 + scarfH * 0.12, w: scarfW, h: scarfH }; }
+    if (id === "hat") { var hat = lookOf("hat", look) || LOOKS.hat[0], size = r * 2.25 * hat.s; return { x: head.x, y: head.y - r * 0.881 - size * (hat.b - 0.5), w: size, h: size }; }
+    if (id === "scarf") {
+      if (look === "bow") return { x: head.x, y: head.y + r * 0.96, w: r * 1.3, h: r * 1.3 };
+      var scarfW = r * 2.62, scarfH = scarfW * 259 / 384; return { x: head.x - scarfW * 0.05, y: head.y + r * 0.82 + scarfH * 0.12, w: scarfW, h: scarfH };
+    }
     var armW = maxR * 4.7, armH = armW * 174 / 512;
     return { x: middle.x, y: middle.y - armH * 0.378, w: armW, h: armH };
   }
+  // The tray: the face step's coal and carrot together; the dressing step's
+  // one slot at a time, every look of it to pick from (the arms alone).
   function buildAccessories() {
-    var ids = stage < 3 ? [] : stage === 3 ? ["coal", "nose"] : ["hat", "scarf", "arms"], previous = pieces;
-    targets = ids.map(function (id) { var p = pieceShape(id); return { id: id, x: p.x / W, y: p.y / H, w: p.w / W, h: p.h / H }; });
-    tray = ids.map(function (id, n) { return { id: id, x: zone.left + (zone.right - zone.left) * (n + 0.5) / ids.length, y: (zone.top + zone.bottom) / 2, w: 70 / W, h: 70 / H }; });
-    pieces = ids.map(function (id, n) { var old = previous.filter(function (p) { return p.id === id; })[0]; return { id: id, x: old && held && held.index === n ? old.x : tray[n].x, y: old && held && held.index === n ? old.y : tray[n].y }; });
+    var slot = stage === 4 ? dressSlot() : "", previous = pieces, items;
+    if (stage < 3) items = [];
+    else if (stage === 3) items = [{ id: "coal" }, { id: "nose" }];
+    else if (order[slot]) items = order[slot].map(function (l) { return { id: slot, look: l.id }; });
+    else items = slot ? [{ id: slot }] : [];
+    var slots = []; items.forEach(function (it) { if (slots.indexOf(it.id) < 0) slots.push(it.id); });
+    targets = slots.map(function (id) { var p = pieceShape(id); return { id: id, choice: !!order[id], x: p.x / W, y: p.y / H, w: p.w / W, h: p.h / H }; });
+    tray = items.map(function (it, n) { return { id: it.id, look: it.look || "", x: zone.left + (zone.right - zone.left) * (n + 0.5) / items.length, y: (zone.top + zone.bottom) / 2, w: 70 / W, h: 70 / H }; });
+    pieces = items.map(function (it, n) { var old = held && held.type === "piece" ? previous[held.index] : null, mine = old && old.id === it.id && (old.look || "") === (it.look || ""); return { id: it.id, look: it.look || "", x: mine ? old.x : tray[n].x, y: mine ? old.y : tray[n].y }; });
+    if (held && held.type === "piece") { var keep = -1; pieces.forEach(function (p, n) { var o = previous[held.index]; if (o && p.id === o.id && p.look === (o.look || "")) keep = n; }); if (keep < 0) detach(); else held.index = keep; }
   }
+  function targetFor(id) { for (var n = 0; n < targets.length; n++) if (targets[n].id === id) return targets[n]; return null; }
   function fit() {
     if (!cv) return;
     var rect = cv.getBoundingClientRect(), dpr = Math.min(2, window.devicePixelRatio || 1); W = Math.max(1, rect.width); H = Math.max(1, rect.height); cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -85,15 +139,16 @@
       ball: { x: ball.x, y: ball.y, r: ballR() / W, progress: ball.progress, ready: ball.progress >= 1, distance: ball.distance, angle: ball.angle },
       rollZone: { left: zone.left, right: zone.right, top: zone.top, bottom: zone.bottom }, target: { x: target.x / W, y: target.y / H, r: target.r / W },
       stack: stack.map(function (p, n) { return { x: p.x / W, y: p.y / H, r: p.r / W, placed: stacked[n] }; }), stacked: stacked.slice(),
-      targets: targets.map(function (p) { return { id: p.id, x: p.x, y: p.y, r: magnet(), w: p.w, h: p.h, placed: placed[p.id] }; }),
-      tray: tray.map(function (p) { return { id: p.id, x: p.x, y: p.y, w: p.w, h: p.h }; }), pieces: pieces.map(function (p) { return { id: p.id, x: p.x, y: p.y, placed: placed[p.id] }; }),
-      placed: { coal: placed.coal, nose: placed.nose, hat: placed.hat, scarf: placed.scarf, arms: placed.arms }, growthRate: growthRate(), magnet: magnet(), held: held ? held.type === "ball" ? "ball" : pieces[held.index].id : null,
+      targets: targets.map(function (p) { return { id: p.id, choice: p.choice, x: p.x, y: p.y, r: magnet(), w: p.w, h: p.h, placed: !!placed[p.id] }; }),
+      tray: tray.map(function (p) { return { id: p.id, look: p.look, x: p.x, y: p.y, w: p.w, h: p.h }; }), pieces: pieces.map(function (p) { return { id: p.id, look: p.look, x: p.x, y: p.y, placed: !!placed[p.id] }; }),
+      placed: { coal: placed.coal, nose: placed.nose, hat: placed.hat, scarf: placed.scarf, arms: placed.arms }, dressing: stage === 4 ? dressSlot() : "", demo: demoKind(), demoShown: { kind: demoShown.kind, x: demoShown.x, y: demoShown.y, n: demoShown.n }, told: Object.keys(told), touched: touched,
+      looks: { hat: LOOKS.hat.map(function (l) { return l.id; }), scarf: LOOKS.scarf.map(function (l) { return l.id; }) }, growthRate: growthRate(), magnet: magnet(), held: held ? held.type === "ball" ? "ball" : pieces[held.index].id : null,
       pointerId: owner, keyboardHeld: keyboardHeld, misses: misses, stageMisses: stageMisses, level: level(), rollHelp: rollLevel(), tryTime: tryTime, rollTry: rollTry, celebrating: doneAt > 0, powerLive: powerLive, lane: laneShown(), trail: trail.length, width: W, height: H, coordinates: "positions normalized to canvas; radii/distance/magnet use canvas width; growthRate is progress per width of real rolling distance" };
   }
   function hud() {
     if (!cv || !stack.length) return;
     var enabled = canPlay(), b = $("snowBall"); b.hidden = mode() !== "roll" || stacked[stage]; b.disabled = !enabled; b.style.left = ball.x * W + "px"; b.style.top = ball.y * H + "px"; b.style.width = Math.max(64, ballR() * 2.12) + "px"; b.style.height = Math.max(64, ballR() * 2.12) + "px"; b.setAttribute("aria-pressed", held && held.type === "ball" ? "true" : "false");
-    for (var n = 0; n < 3; n++) { var button = $("snowPiece" + n), p = pieces[n], shown = mode() !== "roll" && p && !placed[p.id], dragging = held && held.type === "piece" && held.index === n, shape = p ? pieceShape(p.id) : { w: 0, h: 0 }; button.hidden = !shown; button.disabled = !enabled || !!held && !dragging; if (p) { button.style.left = p.x * W + "px"; button.style.top = p.y * H + "px"; button.style.width = Math.max(64, dragging ? shape.w : 74) + "px"; button.style.height = Math.max(64, dragging ? shape.h : 74) + "px"; button.setAttribute("aria-label", "Pick up the " + (p.id === "coal" ? "coal face" : p.id === "nose" ? "carrot nose" : p.id === "arms" ? "twig arms" : p.id) + ". Drag to its glowing shape, then let go. Keyboard: Space to pick up, arrow keys to move, Space to place."); button.setAttribute("aria-pressed", dragging ? "true" : "false"); } }
+    for (var n = 0; n < 3; n++) { var button = $("snowPiece" + n), p = pieces[n], shown = mode() !== "roll" && p && !placed[p.id], dragging = held && held.type === "piece" && held.index === n, shape = p ? pieceShape(p.id, p.look) : { w: 0, h: 0 }; button.hidden = !shown; button.disabled = !enabled || !!held && !dragging; if (p) { button.style.left = p.x * W + "px"; button.style.top = p.y * H + "px"; button.style.width = Math.max(64, dragging ? shape.w : 74) + "px"; button.style.height = Math.max(64, dragging ? shape.h : 74) + "px"; var look = lookOf(p.id, p.look); button.setAttribute("aria-label", "Pick up the " + (look ? look.name : p.id === "coal" ? "coal face" : p.id === "nose" ? "carrot nose" : p.id === "arms" ? "twig arms" : p.id) + ". Drag to its glowing shape, then let go. Keyboard: Space to pick up, arrow keys to move, Space to place."); button.setAttribute("aria-pressed", dragging ? "true" : "false"); } }
     $("snowmanHelp").disabled = !enabled || !!held; $("snowmanHearStep").disabled = !enabled || !!held; $("snowmanPower").hidden = power <= 0; $("snowmanPowerFill").style.width = power / POWER * 100 + "%"; snapshot();
   }
   function background() {
@@ -130,12 +185,13 @@
     coal(x - rr * 0.36, y - rr * 0.23, rr * 0.115); coal(x + rr * 0.36, y - rr * 0.23, rr * 0.115);
     for (var n = 0; n < 5; n++) { var a = Math.PI * 0.22 + n * Math.PI * 0.14; coal(x + Math.cos(a) * rr * 0.54, y + Math.sin(a) * rr * 0.48, rr * 0.075); }
   }
-  function drawPiece(id, x, y, w, h, alpha) {
+  function drawPiece(id, x, y, w, h, alpha, look) {
     ctx.save(); ctx.globalAlpha = alpha === undefined ? 1 : alpha;
     if (id === "coal") coalFace(x, y, w, h);
-    else { var i = image(id); if (i) { var sc = Math.min(w / i.naturalWidth, h / i.naturalHeight), iw = i.naturalWidth * sc, ih = i.naturalHeight * sc; ctx.drawImage(i, x - iw / 2, y - ih / 2, iw, ih); }
+    else { var i = image(look || (id === "hat" ? "tophat" : id)); if (i) { var sc = Math.min(w / i.naturalWidth, h / i.naturalHeight), iw = i.naturalWidth * sc, ih = i.naturalHeight * sc; ctx.drawImage(i, x - iw / 2, y - ih / 2, iw, ih); }
       else if (id === "nose") { ctx.fillStyle = "#d79765"; ctx.beginPath(); ctx.moveTo(x - w * 0.45, y - h * 0.34); ctx.quadraticCurveTo(x - w * 0.15, y - h * 0.5, x + w * 0.5, y); ctx.lineTo(x - w * 0.45, y + h * 0.34); ctx.closePath(); ctx.fill(); }
       else if (id === "hat") { ctx.fillStyle = "#8d72a3"; ctx.fillRect(x - w * 0.31, y - h * 0.4, w * 0.62, h * 0.62); ctx.beginPath(); ctx.ellipse(x, y + h * 0.24, w * 0.48, h * 0.1, 0, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = "#e1c783"; ctx.fillRect(x - w * 0.31, y + h * 0.05, w * 0.62, h * 0.11); }
+      else if (id === "scarf" && look === "bow") { ctx.fillStyle = "#e58fa4"; [-1, 1].forEach(function (side) { ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + side * w * 0.45, y - h * 0.28); ctx.lineTo(x + side * w * 0.45, y + h * 0.28); ctx.closePath(); ctx.fill(); }); ctx.beginPath(); ctx.arc(x, y, w * 0.1, 0, Math.PI * 2); ctx.fill(); }
       else if (id === "scarf") { ctx.strokeStyle = "#b76571"; ctx.lineWidth = h * 0.23; ctx.lineCap = "round"; ctx.beginPath(); ctx.moveTo(x - w * 0.42, y - h * 0.25); ctx.quadraticCurveTo(x, y - h * 0.05, x + w * 0.43, y - h * 0.25); ctx.moveTo(x - w * 0.18, y - h * 0.14); ctx.lineTo(x - w * 0.3, y + h * 0.43); ctx.stroke(); }
       else { ctx.strokeStyle = "#826c5c"; ctx.lineWidth = Math.max(3, h * 0.065); ctx.lineCap = "round"; [-1, 1].forEach(function (side) { ctx.beginPath(); ctx.moveTo(x + side * w * 0.15, y + h * 0.25); ctx.lineTo(x + side * w * 0.44, y - h * 0.22); ctx.moveTo(x + side * w * 0.34, y - h * 0.06); ctx.lineTo(x + side * w * 0.34, y - h * 0.4); ctx.moveTo(x + side * w * 0.39, y - h * 0.13); ctx.lineTo(x + side * w * 0.49, y - h * 0.04); ctx.stroke(); }); }
     }
@@ -144,14 +200,16 @@
   function drawStack() {
     if (placed.arms) { var arms = pieceShape("arms"); drawPiece("arms", arms.x, arms.y, arms.w, arms.h); }
     stack.forEach(function (p, n) { if (stacked[n]) drawBall(p.x, p.y, p.r, rotations[n], n === 0); else { ctx.save(); ctx.fillStyle = "rgba(247,253,250,.25)"; var help = n === stage && level() >= 1; ctx.strokeStyle = help ? "#e8b84a" : n === stage ? "#5b9b9f" : "rgba(104,151,167,.38)"; ctx.lineWidth = help ? 6 : n === stage ? 3 : 2; ctx.setLineDash(help ? [] : [5, 7]); if (n === stage) { ctx.shadowColor = help ? "#ffe680" : "#fff9dd"; ctx.shadowBlur = help ? 26 : 13; } ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); ctx.restore(); } });
-    ["coal", "nose", "scarf", "hat"].forEach(function (id) { if (placed[id]) { var p = pieceShape(id); drawPiece(id, p.x, p.y, p.w, p.h); } });
+    ["coal", "nose", "scarf", "hat"].forEach(function (id) { if (placed[id]) { var look = typeof placed[id] === "string" ? placed[id] : "", p = pieceShape(id, look); drawPiece(id, p.x, p.y, p.w, p.h, 1, look); } });
   }
   function drawAccessories() {
     if (mode() === "roll") return;
     var help = level() >= 1;
-    targets.forEach(function (p) { if (placed[p.id]) return; var shape = pieceShape(p.id); ctx.save(); ctx.shadowColor = help ? "#ffe680" : "#fff6c2"; ctx.shadowBlur = help ? 28 : 14; drawPiece(p.id, shape.x, shape.y, shape.w, shape.h, 0.28); ctx.strokeStyle = help ? "#e8b84a" : "rgba(55,132,140,.6)"; ctx.lineWidth = help ? 4 : 2; ctx.setLineDash(help ? [] : [3, 6]); ctx.beginPath(); ctx.ellipse(shape.x, shape.y, Math.max(17, shape.w * 0.53), Math.max(17, shape.h * 0.5), 0, 0, Math.PI * 2); ctx.stroke(); ctx.restore(); });
-    if (help && active) pieces.forEach(function (p, n) { if (placed[p.id] || held && !(held.type === "piece" && held.index === n)) return; var t = pieceShape(p.id); arrow(p.x * W, p.y * H - 40, t.x, t.y + Math.min(t.h * 0.5, 30)); });
-    pieces.forEach(function (p, n) { if (placed[p.id]) return; var dragging = held && held.type === "piece" && held.index === n, shape = pieceShape(p.id), scale = dragging ? 1 : Math.min(1, 62 / Math.max(shape.w, shape.h)); if (!dragging) { ctx.fillStyle = "rgba(255,251,240,.92)"; ctx.strokeStyle = "#d6e3e1"; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(p.x * W, p.y * H, 38, 36, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); } drawPiece(p.id, p.x * W, p.y * H, shape.w * scale, shape.h * scale); });
+    // A slot the child picks for shows its spot, never one of its looks.
+    targets.forEach(function (p) { if (placed[p.id]) return; var shape = pieceShape(p.id); ctx.save(); ctx.shadowColor = help ? "#ffe680" : "#fff6c2"; ctx.shadowBlur = help ? 28 : 14; if (!p.choice) drawPiece(p.id, shape.x, shape.y, shape.w, shape.h, 0.28); ctx.strokeStyle = help ? "#e8b84a" : "rgba(55,132,140,.6)"; ctx.lineWidth = help ? 4 : 2; ctx.setLineDash(help ? [] : [3, 6]); ctx.beginPath(); ctx.ellipse(shape.x, shape.y, Math.max(17, shape.w * 0.53), Math.max(17, shape.h * 0.5), 0, 0, Math.PI * 2); ctx.stroke(); ctx.restore(); });
+    // one arrow a slot (three hats to pick from get one, from the middle one)
+    if (help && active) { var drawn = {}; pieces.forEach(function (p, n) { if (placed[p.id] || drawn[p.id] || held && !(held.type === "piece" && held.index === n)) return; var same = pieces.filter(function (q) { return q.id === p.id; }), from = held ? p : same[Math.floor((same.length - 1) / 2)]; drawn[p.id] = true; var t = pieceShape(p.id, from.look); arrow(from.x * W, from.y * H - 40, t.x, t.y + Math.min(t.h * 0.5, 30)); }); }
+    pieces.forEach(function (p, n) { if (placed[p.id]) return; var dragging = held && held.type === "piece" && held.index === n, shape = pieceShape(p.id, p.look), scale = dragging ? 1 : Math.min(1, 62 / Math.max(shape.w, shape.h)); if (!dragging) { ctx.fillStyle = "rgba(255,251,240,.92)"; ctx.strokeStyle = "#d6e3e1"; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(p.x * W, p.y * H, 38, 36, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); } drawPiece(p.id, p.x * W, p.y * H, shape.w * scale, shape.h * scale, 1, p.look); });
   }
   // The ladder's arrow: a bold gold line with a head, from the piece to where
   // it goes. Drawn only once a miss (or a long try) asked for it.
@@ -165,7 +223,36 @@
   function draw() {
     if (!ctx || !stack.length) return; ctx.clearRect(0, 0, W, H); background(); if (laneShown()) snowLane(); drawStack();
     if (mode() === "roll" && !stacked[stage]) { var r = ballR(); drawBall(ball.x * W, ball.y * H, r, ball.angle, true); if (active && ball.progress < 1) { var x = ball.x * W, y = ball.y * H + r + 12; for (var n = 0; n < 5; n++) { ctx.fillStyle = ball.progress >= (n + 1) / 5 ? "#408e96" : "rgba(255,255,248,.95)"; ctx.beginPath(); ctx.arc(x + (n - 2) * 9, y, 3, 0, Math.PI * 2); ctx.fill(); } } else if (active && level() >= 1) arrow(ball.x * W, ball.y * H - r, stack[stage].x, stack[stage].y + stack[stage].r); else if (active) { ctx.save(); ctx.strokeStyle = "rgba(57,131,140,.68)"; ctx.lineWidth = 2; ctx.setLineDash([4, 7]); ctx.beginPath(); ctx.moveTo(ball.x * W, ball.y * H - r); ctx.lineTo(stack[stage].x, stack[stage].y + stack[stage].r); ctx.stroke(); ctx.restore(); } }
-    drawAccessories();
+    drawAccessories(); drawDemo();
+  }
+  // THE SEE-THROUGH DEMO: until the child touches this step's piece, a pale
+  // copy shows the move (rolling back and forth on the snow, lifting the
+  // grown ball to its circle, a piece gliding to its spot) once every 2.4 s
+  // of play. It takes no tap and never moves anything. The ladder's arrow
+  // replaces it once a miss or a long try asks for help. Under Reduce Motion
+  // the copy stands still, partway along the move.
+  function demoKind() {
+    if (!active || touched || held || doneAt || won || level() >= 1 || !stack.length) return "";
+    if (mode() === "roll") return stacked[stage] ? "" : ball.progress < 1 ? (rollLevel() >= 1 ? "" : "roll") : "lift";
+    return pieces.some(function (p) { return !placed[p.id]; }) ? "drag" : "";
+  }
+  function drawDemo() {
+    var kind = demoKind(); if (!kind) return;
+    var still = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches), t = still ? 0.6 : (clock % 2.4) / 2.4, ease = 0.5 - 0.5 * Math.cos(Math.PI * Math.min(1, t / 0.8)), fade = still ? 0.42 : 0.42 * Math.sin(Math.PI * Math.min(1, t / 0.9));
+    ctx.save(); ctx.globalAlpha = Math.max(0, fade);
+    if (kind === "roll") {
+      var r = ballR(), a = zone.left + (zone.right - zone.left) * 0.2, b = zone.right - (zone.right - zone.left) * 0.2, x = still ? b : a + (b - a) * (0.5 - 0.5 * Math.cos(2 * Math.PI * t)); ctx.globalAlpha = still ? 0.42 : 0.4;
+      shown(x * W, ball.y * H); drawBall(x * W, ball.y * H, r, (x - ball.x) * W / Math.max(1, r), false);
+    } else if (kind === "lift") {
+      var to = stack[stage], fx = ball.x * W, fy = ball.y * H; shown(fx + (to.x - fx) * ease, fy + (to.y - fy) * ease); drawBall(demoShown.x, demoShown.y, ballR(), ball.angle, false);
+    } else {
+      var p = pieces.filter(function (q) { return !placed[q.id]; })[0], shape = pieceShape(p.id, p.look), sx = p.x * W, sy = p.y * H, scale = 0.6 + 0.4 * ease;
+      shown(sx + (shape.x - sx) * ease, sy + (shape.y - sy) * ease); drawPiece(p.id, demoShown.x, demoShown.y, shape.w * scale, shape.h * scale, Math.max(0, fade), p.look);
+    }
+    ctx.restore();
+    // where the copy was last drawn, and how many times (the test reads it:
+    // with motion on it moves, under Reduce Motion it stands still)
+    function shown(x, y) { demoShown = { kind: kind, x: x, y: y, n: demoShown.n + 1 }; }
   }
   function point(event) { var rect = cv.getBoundingClientRect(); return { x: (event.clientX - rect.left) / W, y: (event.clientY - rect.top) / H }; }
   function clippedDistance(a, b) {
@@ -175,13 +262,13 @@
   }
   function moveHeld(p) {
     if (!held || !canPlay()) return;
-    if (held.type === "ball") { var old = { x: ball.x, y: ball.y }, r = ballR(); ball.x = clamp(p.x, r / W + 0.015, 1 - r / W - 0.015); ball.y = clamp(p.y, (top + r) / H, (bottom - r) / H); var mdx = ball.x - old.x, mdy = (ball.y - old.y) * H / W, moved = Math.sqrt(mdx * mdx + mdy * mdy), d = rollLevel() >= 2 ? moved : clippedDistance(old, ball); if (moved * W > 0.5) lastMove = clock; if (d > 0) { ball.distance += d; ball.progress = Math.min(1, ball.progress + d * growthRate()); ball.angle += ((ball.x - old.x) || (ball.y - old.y) * H / W) / Math.max(0.01, r / W); trail.push({ x: ball.x, y: ball.y, r: r / W * 0.13 }); if (trail.length > 160) trail.shift(); } banner(ball.progress >= 1 ? "Big enough! Lift it to the glowing circle" : rollLevel() >= 1 ? "Roll it back and forth on the snow!" : "Roll, roll, roll through the snow!"); }
+    if (held.type === "ball") { var old = { x: ball.x, y: ball.y }, r = ballR(); ball.x = clamp(p.x, r / W + 0.015, 1 - r / W - 0.015); ball.y = clamp(p.y, (top + r) / H, (bottom - r) / H); var mdx = ball.x - old.x, mdy = (ball.y - old.y) * H / W, moved = Math.sqrt(mdx * mdx + mdy * mdy), d = rollLevel() >= 2 ? moved : clippedDistance(old, ball); if (moved * W > 0.5) lastMove = clock; if (d > 0) { ball.distance += d; if (ball.progress < 1 && ball.progress + d * growthRate() >= 1) touched = false; ball.progress = Math.min(1, ball.progress + d * growthRate()); ball.angle += ((ball.x - old.x) || (ball.y - old.y) * H / W) / Math.max(0.01, r / W); trail.push({ x: ball.x, y: ball.y, r: r / W * 0.13 }); if (trail.length > 160) trail.shift(); } banner(ball.progress >= 1 ? "Big enough! Lift it to the glowing circle" : rollLevel() >= 1 ? "Roll it back and forth on the snow!" : "Roll, roll, roll through the snow!"); }
     else { var piece = pieces[held.index]; if (Math.abs(p.x - piece.x) * W + Math.abs(p.y - piece.y) * H > 0.5) lastMove = clock; piece.x = clamp(p.x, 0.05, 0.95); piece.y = clamp(p.y, (top + 10) / H, (bottom - 10) / H); }
     hud(); draw();
   }
   function down(event, kind, index) {
     if (!canPlay() || held || event.button !== undefined && event.button !== 0 || kind === "piece" && placed[pieces[index].id]) return;
-    event.preventDefault(); var p = point(event), object = kind === "ball" ? ball : pieces[index]; held = { type: kind, index: index }; powerLive = true; holdFrom.x = object.x; holdFrom.y = object.y; owner = event.pointerId; surface = event.currentTarget; keyboardHeld = false; grab.x = p.x - object.x; grab.y = p.y - object.y; try { surface.setPointerCapture(owner); } catch (e) {} hud(); draw();
+    event.preventDefault(); var p = point(event), object = kind === "ball" ? ball : pieces[index]; held = { type: kind, index: index }; powerLive = true; touched = true; holdFrom.x = object.x; holdFrom.y = object.y; owner = event.pointerId; surface = event.currentTarget; keyboardHeld = false; grab.x = p.x - object.x; grab.y = p.y - object.y; try { surface.setPointerCapture(owner); } catch (e) {} hud(); draw();
   }
   function move(event) { if (event.pointerId !== owner || !canPlay()) return; event.preventDefault(); var p = point(event); moveHeld({ x: p.x - grab.x, y: p.y - grab.y }); }
   function detach() { var old = held, id = owner, oldSurface = surface; held = null; owner = null; surface = null; keyboardHeld = false; if (id !== null && oldSurface) try { if (oldSurface.hasPointerCapture(id)) oldSurface.releasePointerCapture(id); } catch (e) {} return old; }
@@ -189,6 +276,7 @@
   // A short celebration beat, then the step counts: the next word is asked
   // 250 ms after done(), and that ask stops chimes, so "correct" plays first.
   // doneAt runs on the game's own clock, which stops while paused or hidden.
+  function dressBanner() { var slot = dressSlot(); return slot === "hat" ? "Pick a hat for your snowman!" : slot === "scarf" ? "Pick a scarf or a bow tie!" : "Now the twig arms!"; }
   function finishStage() { completed = Math.max(completed, stage + 1); active = false; detach(); stageMisses = 0; tryTime = 0; rollTry = 0; api.sfx("correct"); try { if (api.face) api.face("cheer"); } catch (e) {} banner(stage === 4 ? "A snow friend, made by you!" : stage < 3 ? "Yay! It fits just right!" : "That looks just right!"); doneAt = clock + 1.15; hud(); draw(); }
   function drop() {
     if (!held || !canPlay()) return; var old = detach();
@@ -202,8 +290,12 @@
       else banner("Lift your snowball into the glowing circle");
     }
     else {
-      var p = pieces[old.index], t2 = targets[old.index], x = p.x - t2.x, y = (p.y - t2.y) * H / W, tx = (p.x - tray[old.index].x) * W, ty = (p.y - tray[old.index].y) * H, tried = tx * tx + ty * ty >= 24 * 24;
-      if (x * x + y * y <= magnet() * magnet() || level() >= 2 && tried && p.y * H < lane) { placed[p.id] = true; api.sfx("tap"); if (pieces.every(function (piece) { return placed[piece.id]; })) { finishStage(); return; } banner("One more snowy finishing touch!"); }
+      var p = pieces[old.index], t2 = targetFor(p.id), x = p.x - t2.x, y = (p.y - t2.y) * H / W, tx = (p.x - tray[old.index].x) * W, ty = (p.y - tray[old.index].y) * H, tried = tx * tx + ty * ty >= 24 * 24;
+      if (x * x + y * y <= magnet() * magnet() || level() >= 2 && tried && p.y * H < lane) {
+        placed[p.id] = p.look || true; api.sfx("tap");
+        // the dressing step: on to the next slot's choices, with a fresh ladder
+        if (stage === 4 && dressSlot()) { stageMisses = 0; tryTime = 0; touched = false; buildAccessories(); banner(dressBanner()); hud(); draw(); return; }
+        if (pieces.every(function (piece) { return placed[piece.id]; })) { finishStage(); return; } banner("One more snowy finishing touch!"); }
       else { misses++; if (tried) stageMisses++; p.x = tray[old.index].x; p.y = tray[old.index].y; banner(!tried ? "Drag it to the glowing shape." : level() >= 2 ? "Nearly! Drop it on the snowman." : "So close! Follow the arrow."); }
     }
     hud(); draw();
@@ -211,7 +303,7 @@
   function release(event, canceled) { if (event.pointerId !== owner) return; event.preventDefault(); if (canceled || !canPlay()) cancelGesture(); else drop(); hud(); draw(); }
   function keyboard(event, kind, index) {
     if (!canPlay() || owner !== null || kind === "piece" && placed[pieces[index].id]) return;
-    var key = event.key; if (key === " " || key === "Enter") { event.preventDefault(); if (event.repeat) return; if (!held) { var o = kind === "ball" ? ball : pieces[index]; held = { type: kind, index: index }; keyboardHeld = true; powerLive = true; holdFrom.x = o.x; holdFrom.y = o.y; } else if (held.type === kind && held.index === index) drop(); hud(); draw(); return; }
+    var key = event.key; if (key === " " || key === "Enter") { event.preventDefault(); if (event.repeat) return; if (!held) { var o = kind === "ball" ? ball : pieces[index]; held = { type: kind, index: index }; keyboardHeld = true; powerLive = true; touched = true; holdFrom.x = o.x; holdFrom.y = o.y; } else if (held.type === kind && held.index === index) drop(); hud(); draw(); return; }
     if (key === "Escape") { event.preventDefault(); cancelGesture(); hud(); draw(); return; }
     if (!held || !keyboardHeld || held.type !== kind || held.index !== index) return;
     var dx = 0, dy = 0, stepSize = event.shiftKey ? 0.018 : 0.07; if (key === "ArrowLeft") dx = -stepSize; else if (key === "ArrowRight") dx = stepSize; else if (key === "ArrowUp") dy = -stepSize * W / H; else if (key === "ArrowDown") dy = stepSize * W / H; else return; event.preventDefault(); var p = kind === "ball" ? ball : pieces[index]; moveHeld({ x: p.x + dx, y: p.y + dy });
@@ -231,12 +323,21 @@
     if (doneAt && !paused && !away && !document.hidden && clock >= doneAt) { doneAt = 0; if (api) api.done(); }
     hud(); draw(); raf = requestAnimationFrame(frame);
   }
-  function earnPower() { active = true; paused = false; power = POWER; powerLive = false; last = 0; banner(stage < 3 ? "Roll in the snow, then lift to the glow" : stage === 3 ? "Add a face and a carrot nose" : "A hat, a scarf, and twig arms!"); hud(); draw(); }
+  function stepBanner() { return stage < 3 ? "Roll in the snow, then lift to the glow" : stage === 3 ? "Add a face and a carrot nose" : dressBanner(); }
+  // The help pill's word: ten seconds of faster rolling and bigger spots.
+  function earnPower() { active = true; paused = false; power = POWER; powerLive = false; last = 0; banner(stage === 4 ? dressBanner() : stage < 3 ? "Snowy help! Roll fast, then lift to the glow" : "Snowy help! Big glowing spots"); hud(); draw(); }
   function pause() { paused = true; last = 0; cancelGesture(); hud(); }
-  function reset() { cancelGesture(); active = false; paused = false; won = false; stage = 0; completed = 0; power = 0; misses = 0; stageMisses = 0; tryTime = 0; rollTry = 0; doneAt = 0; powerLive = false; stacked = [false, false, false]; rotations = [0, 0, 0]; placed = { coal: false, nose: false, hat: false, scarf: false, arms: false }; ball = { x: zone.left + (zone.right - zone.left) * 0.26, y: (zone.top + zone.bottom) / 2, progress: 0, distance: 0, angle: 0 }; trail = []; buildAccessories(); banner("Let's make a snowy little friend!"); hud(); draw(); }
+  function reset() { cancelGesture(); active = false; paused = false; won = false; stage = 0; completed = 0; power = 0; misses = 0; stageMisses = 0; tryTime = 0; rollTry = 0; doneAt = 0; powerLive = false; touched = false; order = { hat: shuffled(LOOKS.hat), scarf: shuffled(LOOKS.scarf) }; stacked = [false, false, false]; rotations = [0, 0, 0]; placed = { coal: false, nose: false, hat: false, scarf: false, arms: false }; ball = { x: zone.left + (zone.right - zone.left) * 0.26, y: (zone.top + zone.bottom) / 2, progress: 0, distance: 0, angle: 0 }; trail = []; buildAccessories(); banner("Let's make a snowy little friend!"); hud(); draw(); }
   window.Snowman = {
     init: function (a, n) { api = a; stages = n || 5; cv = $("snowmanCanvas"); ctx = cv.getContext("2d"); loadArt(); controls(); fit(); reset(); raf = requestAnimationFrame(frame); },
-    onWord: function (index) { cancelGesture(); stage = index; stageMisses = 0; tryTime = 0; rollTry = 0; doneAt = 0; trail = []; if (stage < 3) ball = { x: zone.left + (zone.right - zone.left) * 0.26, y: (zone.top + zone.bottom) / 2, progress: 0, distance: 0, angle: 0 }; buildAccessories(); earnPower(); api.instruct(STEP_LINES[stage]); },
+    // The word brings the snowball or the pieces, and nothing else. Echo says
+    // how only the first time this page meets each kind of step.
+    onWord: function (index) {
+      cancelGesture(); stage = index; stageMisses = 0; tryTime = 0; rollTry = 0; doneAt = 0; trail = []; touched = false;
+      if (stage < 3) ball = { x: zone.left + (zone.right - zone.left) * 0.26, y: (zone.top + zone.bottom) / 2, progress: 0, distance: 0, angle: 0 };
+      buildAccessories(); active = true; paused = false; last = 0; banner(stepBanner()); hud(); draw();
+      var kind = mode(); if (!told[kind]) { told[kind] = true; api.instruct(STEP_LINES[stage]); }
+    },
     onHelp: earnPower, pause: pause, resume: function (playing) { paused = playing === false; last = 0; hud(); }, reset: reset,
     finale: function () { cancelGesture(); active = false; power = 0; doneAt = 0; won = true; trail = []; banner("A snow friend, made by you!"); hud(); draw(); }
   };

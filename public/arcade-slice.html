@@ -161,8 +161,8 @@
        nobody taps: Echo asks mid-wave ("Super Slice! Say rrrr. Go!") and the
        fruit keep flying while he listens; the sound once, quick or held, is
        ten seconds of Super Slice (/arcade-speech-help.js). -->
-  <script>// left: about how much play this wave has left, at its pace so far, never past its 45 seconds (Echo starts no ask its end would cut off: arcade-speech-help.js)
-  window.SLOW_HELP={phase:"wave",action:"get Super Slice",earned:"SUPER SLICE!",say:"Super Slice! Say",first:6000,ms:10000,earnSfx:"reward",left:function(){return Math.min(WAVE_CAP_MS-wavePlay,slowLegLeft(waveGot/WAVES[wave].goal));}};</script>
+  <!-- left: about how much play this wave has left, at its pace so far, never past its 45 seconds (Echo starts no ask its end would cut off: arcade-speech-help.js) -->
+  <script>window.SLOW_HELP={phase:"wave",action:"get Super Slice",earned:"SUPER SLICE!",say:"Super Slice! Say",first:6000,ms:10000,earnSfx:"reward",left:function(){return Math.min(WAVE_CAP_MS-wavePlay,slowLegLeft(waveGot/WAVES[wave].goal));}};</script>
   <script src="/arcade-speech-help.js"></script>
   <script src="/arcade-sayit.js"></script>
   <script>
