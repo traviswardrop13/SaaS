@@ -111,6 +111,10 @@ const SUITES = [
   "setupbuytest.mjs", // SETUPBUY1: a new family end to end: setup, the price, a purchase, then the microphone, the hand-off and the first game
   "freeplaytest.mjs", // FREEPLAY1: one free Fruit Slice round before the price (built switched off)
   "heartest.mjs",  // HEAR1: on-device recognition verdicts — poopoo fails, unknown never does
+  "wordturntest.mjs", // one local transcript per saying, no answer hint or stale native session
+  "practicewordchecktest.mjs", // random words cannot earn native practice reps; each word is checked separately
+  "wordgametest.mjs", // Say & Play and Feed Echo require a fresh verified word on the iPhone
+  "arcadewordchecktest.mjs", // all round-game checkpoint/life cards reject clear unrelated words
   "trialstest.mjs", // TRIAL1: the free-week report: a trial's start, its days with play and how it ended, under the anonymous id only; /api/track, /api/revenuecat, /api/founders/trials and /leads.html
   "notifytest.mjs", // NOTIFY1 and NUDGE1: one local reminder the day before the free trial ends: only on a build that can, only once allowed, armed by a trial purchase or the daily check, taken back when no trial is on, never a name, nothing leaves the phone
   "loadtest.mjs",  // LOAD1: per-game loading scenes, ticket pill, ghost reveals

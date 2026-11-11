@@ -79,10 +79,29 @@ ok("what the card asks comes from the one reader, Sona.gameAsk, for the card it 
   /a=S\.gameAsk\(SND,n\)/.test(code) && /function cardWant\(n\)\{ return n&&askHeld\?askHeld:cardAsk\(n\); \}/.test(code) && /var want=cardWant\(card\|\|0\)/.test(code) && /<script src="\/gamecontent\.js"><\/script>/.test(PAGE));
 ok("a syllable or word is painted only with Echo's line in hand: the card opens on it only if the bytes are there, else on the bare sound",
   /ASK=line&&line\.bytes\?want:cardAsk\(0\); askNext=want\.say&&ASK!==want\?want:null;/.test(code) && /if\(bytes\)\{ASK=askNext;paintAsk\(\);\}else\{askLineDrop\(\);lead=false;\}/.test(code) && /if\(!last\) askReady\(wave\+1\);/.test(code));
-ok("Echo's power button still asks the bare sound: SAYTXT is soundSay, and the helper is untouched by the card's ask",
-  /SAYTXT=\(S&&S\.soundSay\)\?S\.soundSay\(SND\):"rrrr"/.test(code) && !/(^|[^\w])ASK\b|gameAsk|cardAsk|askHeld/.test(strip(readFileSync(ROOT + "/arcade-speech-help.js", "utf8"))));
-ok("a heard card is one game rep and nothing else: nothing on the page says \"correct\"",
-  /function doRevive\(\)\{[\s\S]{0,260}S\.gameRep\(SND\)/.test(code) && (code.match(/gameRep\(/g) || []).length === 1 && !/correct/i.test(code));
+// Card verification now shares this file with sound powers. Only the power
+// section must ignore ASK; its bare-sound display, recognition and verdict stay
+// separate from the card's selected word and its asynchronous pass callback.
+const speechHelp = strip(readFileSync(ROOT + "/arcade-speech-help.js", "utf8"));
+const powerHelp = speechHelp.slice(speechHelp.indexOf("var slowTurn="));
+const cardHelp = speechHelp.slice(0, speechHelp.indexOf("var slowTurn="));
+const revive = code.slice(code.indexOf("function doRevive(){"), code.indexOf('$("revDone").onclick='));
+ok("Echo's power button still asks and checks the bare sound while the card verifies its own ask",
+  /SAYTXT=\(S&&S\.soundSay\)\?S\.soundSay\(SND\):"rrrr"/.test(code)
+  && powerHelp.startsWith("var slowTurn=") && !/(^|[^\w])ASK\b|gameAsk|cardAsk|askHeld/.test(powerHelp)
+  && /\$\("slowSound"\)\.textContent=SAYTXT\|\|"rrrr"/.test(powerHelp)
+  && /S\.speechStart\(\{words:\[SAYTXT\],maxMs:SLOW_ASK\.listen\}\)/.test(code)
+  && /S\.hearVerdict\(result&&result\.text\|\|"",SND,SAYTXT,\{level:"isolation"\}\)/.test(powerHelp));
+ok("a verified native word card reaches one game rep only on pass, with no practice data or correct celebration",
+  revive.startsWith("function doRevive(){") && (revive.match(/S\.gameRep\(SND\)/g) || []).length === 1
+  && (code.match(/gameRep\(/g) || []).length === 1 && (code.match(/\bdoRevive\(/g) || []).length === 2
+  && /S\.speechTurn\(\{sound:SND,word:ask\?ask\.text:SAYTXT,level:level,pos:ask\?ask\.pos:""\}\)/.test(cardHelp)
+  && /t\.check\.finish\(\)\.then\(function\(verdict\)\{/.test(cardHelp)
+  && /var accepted=t\.check\.required\?verdict==="pass":verdict!=="fail";\s*if\(accepted\)\{doRevive\(\);return;\}/.test(cardHelp)
+  && (cardHelp.match(/\bdoRevive\(/g) || []).length === 1
+  && /if\(!slowTurn&&cardSpeechWait\(st,gen,now,heard\[heard\.length-1\]\.r>thr\)\)\{rv\.raf=requestAnimationFrame\(tick\);return;\}/.test(code)
+  && !/logAttempt|bumpReps|recordSession|recordRung|rotAdvance|repsBeacon|gameRep\(/.test(cardHelp)
+  && !/correct/i.test(code + cardHelp));
 ok("nothing in the round is practice data", !/logAttempt|bumpReps|recordSession|recordRung|rotAdvance|repsBeacon/.test(code));
 ok("the page asks for the mic in one place only: the say-it card", (code.match(/getUserMedia\(/g) || []).length === 1 && /function openReviveMic\(\)/.test(code));
 ok("its own sounds play only through sfx(), so they keep the quiet rules",

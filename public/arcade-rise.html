@@ -165,6 +165,8 @@
     // on the say-it card waits for that, not for the mic's quiet window, so
     // he starts as soon as the speaker is free (/arcade-sayit.js).
     var SETTLE_MS=200, QUIET_MS=900, quietUntil=0, micClosedAt=-1e9, chimeEnd=0;
+    // This page keeps the child it opened for across every asynchronous mic request.
+    var cardPageOwner=S&&S.kkey?S.kkey("sona.profile.v1"):"";
     var rv={st:null,pending:0,gen:0,raf:0,t:0,ctx:null,src:null,floor:-1};   // floor: the room's quiet level, measured once per page (see listenFor)
     function chimeLen(n){ return window.SayIt?SayIt.chimeMs(n):600; }
     function sfx(n){
@@ -398,6 +400,7 @@
     // quiet-mic suites open the card through it.
     function crash(){ sayCard(); }
     function doRevive(){
+      if(!cardPageOwned()){retireCardSpeech();return;}
       if(slowTurn){finishSlowKeys(true);return;}
       reviveWait=false; REV--; hud();
       var life=lifeTaken(); if(life){ hearts=HEART_MAX; outOfHearts=false; paintHearts(); }
@@ -588,17 +591,20 @@
       listen:function(spoke){ if(spoke)quietUntil=Math.max(quietUntil,performance.now()+SayIt.VOICE_TAIL_MS); openReviveMic(); }
     }):null;
     function speakRevive(){
+      if(!cardPageOwned()){retireCardSpeech();return;}
       // a sound turn still closing hands the card the speaker once it has
       if(slowTurn){ slowTurn.cancelled=true; finishSlowKeys(false).then(function(){ if(reviveWait&&!document.hidden) speakRevive(); }); return; }
       if(sayVoice)sayVoice.speak(); else openReviveMic();
     }
     function reviveSpeaking(){ return !!sayVoice&&sayVoice.speaking(); }
     function closeReviveMic(){
+      var closing=cancelCardSpeech();
       if(sayVoice)sayVoice.stop();
       rv.gen++; clearTimeout(rv.t); if(rv.raf)cancelAnimationFrame(rv.raf); rv.raf=0;
       try{ if(rv.src)rv.src.disconnect(); }catch(e){} rv.src=null;
       if(rv.st){ try{ rv.st.getTracks().forEach(function(t){t.stop();}); }catch(e){} rv.st=null; micClosedAt=performance.now(); }
       listenNote("Get ready…");
+      return closing;
     }
     // A request that was already late when it settled asks again if the card
     // is still up and on screen (24 Sep 2026). The phone can be locked while
@@ -607,6 +613,7 @@
     // ready…" for good and only "I'm done playing" got the child out.
     function askAgain(){ if(micWanted()&&!document.hidden&&!rv.st) openReviveMic(); }
     function openReviveMic(){
+      if(!cardPageOwned()){retireCardSpeech();return;}
       if(!micWanted()||reviveSpeaking()||rv.st||rv.pending||document.hidden) return;
       var wait=quietUntil-performance.now();
       if(wait>0){ clearTimeout(rv.t); rv.t=setTimeout(openReviveMic,wait); return; }
@@ -615,7 +622,7 @@
         rv.pending--;
         // the card closed (or the page hid) while the phone was asking: this
         // stream is already late, so it goes straight back
-        if(gen!==rv.gen||!micWanted()||document.hidden){ try{ st.getTracks().forEach(function(t){t.stop();}); }catch(e){} micClosedAt=performance.now(); askAgain(); return; }
+        if(gen!==rv.gen||!micWanted()||document.hidden||!cardPageOwned()){ try{ st.getTracks().forEach(function(t){t.stop();}); }catch(e){} micClosedAt=performance.now(); if(!cardPageOwned())retireCardSpeech();else askAgain(); return; }
         rv.st=st;
         if(slowTurn){
           var turn=slowTurn;
@@ -626,7 +633,8 @@
           // Apple's recognizer, and the limit must not throw that try away
           turn.timer=setTimeout(function(){if(slowTurn===turn)finishSlowKeys(!!turn.heardAt);},SLOW_ASK.listen);
         }
-        listenFor(st,gen);
+        if(slowTurn)listenFor(st,gen);
+        else startCardSpeech(gen).then(function(){if(gen===rv.gen&&micWanted()&&!document.hidden)listenFor(st,gen);});
       }).catch(function(){
         // a request that failed was the mic too (an iPhone records before
         // it answers): Echo's voice waits SETTLE_MS after it, as Fruit Slice's
@@ -670,6 +678,7 @@
       function famOK(shp){ if(!shp||!shp.m) return true; var cent=shp.fm/shp.m, high=shp.hm/shp.m, fam=(window.Sona&&Sona.soundFamily)?Sona.soundFamily(SND):"any"; if(fam==="low") return !(cent>1800&&high>0.22); if(fam==="hiss") return !(cent<1100&&high<0.10); return true; }
       (function tick(){
         if(gen!==rv.gen) return;
+        if(!cardPageOwned()){retireCardSpeech();return;}
         var now=performance.now();
         // belt and braces: nothing plays while this mic is open, but if a
         // sound ever did, its frames would be dropped: never judged, never
@@ -677,7 +686,7 @@
         // a frame Sona's own mic did not hear (S.micDeaf: paused, or a gap
         // between the phone's samples): its zeros are not the room, and
         // the floor only goes down
-        if(now<quietUntil||(S&&S.micDeaf&&S.micDeaf(st))){ heard=[]; rv.raf=requestAnimationFrame(tick); return; }
+        if(now<quietUntil||(S&&S.micDeaf&&S.micDeaf(st))){ heard=[]; if(!slowTurn)cardSpeechDeaf(now); rv.raf=requestAnimationFrame(tick); return; }
         an.getByteTimeDomainData(td);
         var sum=0; for(var i=0;i<td.length;i++){ var d=(td[i]-128)/128; sum+=d*d; }
         var shape=null; if(window.Sona&&Sona.frameShape){ an.getByteFrequencyData(fd); shape=Sona.frameShape(fd,binHz); }
@@ -700,6 +709,7 @@
                   // the first six voiced frames alone can be only its onset.
                   if(now-slowTurn.heardAt<550){rv.raf=requestAnimationFrame(tick);return;}
                 }
+                if(!slowTurn&&cardSpeechWait(st,gen,now,heard[heard.length-1].r>thr)){rv.raf=requestAnimationFrame(tick);return;}
                 closeReviveMic(); doRevive(); return;
               } } }
             else { voiced=0; shp=null; } }
@@ -722,6 +732,7 @@
 
     // ---- round over ----
     function endRound(){
+      if(!cardPageOwned()){retireCardSpeech();return;}
       if(slowTurn){slowTurn.cancelled=true;return finishSlowKeys(false).then(endRound);}
       closeReviveMic();
       if(window.__ended)return; window.__ended=true;
@@ -752,8 +763,9 @@
     $("endCharge").onclick=backToCharge;
     $("endHome").onclick=function(){ S.finishGameTurn("rise"); location.href="/today.html#play"; };
     $("close").onclick=function(){
+      if(!cardPageOwned()){retireCardSpeech();return;}
       if(window.__speechLeaving)return;window.__speechLeaving=true;
-      function leave(){keepBest();closeReviveMic();playing=false;S.finishGameTurn("rise");location.href="/today.html#play";}
+      function leave(){playing=false;var closing=closeReviveMic();Promise.resolve(closing).then(function(){keepBest();S.finishGameTurn("rise");location.href="/today.html#play";});}
       if(slowTurn){slowTurn.cancelled=true;finishSlowKeys(false).then(leave);}else leave();
     };
     }

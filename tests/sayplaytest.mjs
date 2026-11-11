@@ -318,7 +318,9 @@ ok("ages 3-4 play five words a game and ages 5-8 play eight", GAMES.every((g) =>
   // one shape; no Play again; the ✕ during play still goes Home.
   // (storycoretest plays it on a page; this pins the engine's few lines.)
   ok("a story's game hands back to its story: one address shape, the end card's teal button, no Play again, and the ✕ still goes Home",
-    eng.includes("function storyExit() { stopAudio(); micStop(); location.href = G.exit.href; }")
+    eng.includes("function storyExit() { leave(G.exit.href); }")
+    && eng.includes('function home() { leave("/today.html"); }')
+    && eng.includes("function leave(href) { stopAudio(); var closing = micStop(); if (closing) closing.then(function () { location.href = href; }); else location.href = href; }")
     && eng.includes('if (G.exit && typeof G.exit.href === "string" && /^\\/adventure\\.html\\?part=end&story=[a-z]+$/.test(G.exit.href)) { $("goHome").onclick = storyExit; $("goHome").textContent = G.exit.label || "See what happens!"; $("goHome").className = "btn"; }')
     && eng.includes('if (G.again === false) $("again").hidden = true;')
     && eng.includes('$("close").onclick = home; $("goHome").onclick = home;'));
@@ -437,14 +439,15 @@ ok("the engine records nothing and uploads nothing: no recorder, no upload", !/M
 const flat = engine.replace(/\s+/g, " ");
 ok("a play game's step counts only when the game says the move is done, and only in its play phase",
   /function moveDone\(\) \{ if \(phase !== "play" \|\| paused\) return; step\+\+; paintDots\(\);/.test(flat) && (flat.match(/moveDone/g) || []).length === 2);
-ok("no tap moves a game: the only caller of a step is the voice check, after the sound-family check, on the last of the sayings",
+ok("no tap moves a game: only the browser's family check or the app's verified word reaches the last saying",
   (flat.match(/(?<!function )gotIt\(\)/g) || []).length === 1 && /said\+\+; paintSaid\(\); if \(said >= SAY_TIMES\) \{ gotIt\(\); return true; \}/.test(flat)
-  && (flat.match(/(?<!function )heardOne\(\)/g) || []).length === 1 && /if \(!famOK\(shp\)\) \{ voiced = 0; shp = null; \} else if \(heardOne\(\)\) return;/.test(flat));
+  && (flat.match(/(?<!function )heardOne\(\)/g) || []).length === 2 && /if \(!famOK\(shp\)\) \{ voiced = 0; shp = null; \} else if \(heardOne\(\)\) return;/.test(flat)
+  && /if \(out !== "pass"\) \{ micStop\(\); nudge\(\); return; \} if \(heardOne\(\)\) return;/.test(flat));
 ok("a word is said two times unless its page says otherwise, and each saying after the first counts only after the voice has dropped under the bar for a timed gap, and never straight after the one before",
   /var SAY_TIMES = 2, GAP_MS = 200, APART_MS = 450;/.test(flat) && /if \(f\.t <= lastSaid\) continue;/.test(flat) && /if \(f\.r > thr\) \{ gapAt = 0; if \(!armed \|\| \(lastSaid && f\.t - lastSaid < APART_MS\)\) continue; voiced\+\+;/.test(flat)
   && /if \(!armed\) \{ if \(!gapAt\) gapAt = f\.t; else if \(f\.t - gapAt >= GAP_MS\) armed = true; \}/.test(flat));
 ok("each saying heard is one rep on the week's count, counted in one place: where the voice check passed",
-  (flat.match(/gameRep/g) || []).length === 2 && /function heardOne\(\) \{ if \(!turnLive\) return true; try \{ if \(S && S\.gameRep\) S\.gameRep\(SOUND\); \} catch \(e\) \{\} said\+\+;/.test(flat));
+  (flat.match(/gameRep/g) || []).length === 2 && /function heardOne\(\) \{ if \(retireStalePage\(\)\) return true; if \(!turnLive\) return true; try \{ if \(S && S\.gameRep\) S\.gameRep\(SOUND\); \} catch \(e\) \{\} said\+\+;/.test(flat));
 ok("every saying but the last plays nothing: it only paints, and the same mic goes on listening",
   /if \(said >= SAY_TIMES\) \{ gotIt\(\); return true; \} showTurn\(true\); return false; \}/.test(flat));
 
@@ -1389,7 +1392,16 @@ async function inApp(cfg) {
   await context.route("**/*", (route) => (route.request().url().startsWith(BASE + "/") ? route.continue() : route.abort()));
   await context.addInitScript(fakeDevice, Object.assign({ age: "4", micok: true, permission: "granted" }, cfg || {}));
   await context.addInitScript(() => {
-    window.Capacitor = { isNativePlatform: () => true, getPlatform: () => "ios", Plugins: {} };
+    // These positive native-audio cases supply the requested utterance,
+    // independently of the recognizer's empty hint list. The real word gate
+    // still waits for sayOnce's finite burst and its quiet ending.
+    let heardWord = "";
+    window.Capacitor = { isNativePlatform: () => true, getPlatform: () => "ios", Plugins: { SonaSpeech: {
+      available: async () => ({ available: true, onDevice: true, authorized: true }),
+      requestPermission: async () => ({ granted: true }),
+      start: async () => { heardWord = (window.__sayplay && window.__sayplay.word) || ""; return { started: true }; },
+      stop: async () => ({ text: heardWord, onDevice: true }),
+    } } };
     window.__media = [];
     const Real = window.Audio;
     window.Audio = function (src) { const a = new Real(src); const rec = { src: String(src || ""), plays: 0 }; window.__media.push(rec); const play = a.play.bind(a); a.play = function () { rec.plays++; return play(); }; return a; };

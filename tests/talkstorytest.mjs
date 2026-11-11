@@ -26,7 +26,7 @@ import { inspectHomeFallback } from "./_home-fallback.mjs";
 
 let count = 0, fails = 0;
 function ok(label, pass, detail = "") { count++; if (!pass) fails++; console.log((pass ? "PASS " : "FAIL ") + label + (pass ? "" : "  → " + (typeof detail === "string" ? detail : JSON.stringify(detail)))); }
-async function section(label, run) { try { await run(); } catch (e) { ok(label + " completes", false, e.stack); } }
+async function section(label, run) { if (process.env.TALK_SCENARIO && label !== process.env.TALK_SCENARIO) return; try { await run(); } catch (e) { ok(label + " completes", false, e.stack); } }
 
 // ── 1. the stories ─────────────────────────────────────────────────────────
 const sandbox = { window: {} }; sandbox.this = sandbox.window;
@@ -104,7 +104,8 @@ const server = createServer((req, res) => {
     if (/^\/assets\/adventure\/[a-z]+\/[se]\d\d\.webp$/.test(p)) { res.writeHead(200, { "content-type": "image/svg+xml" }); res.end(PORTRAIT); return; }
     const file = path.join(ROOT, p);
     if (!file.startsWith(ROOT) || !existsSync(file) || !statSync(file).isFile()) { res.writeHead(404); res.end(); return; }
-    res.writeHead(200, { "content-type": MIME[file.split(".").pop()] || "application/octet-stream" }); res.end(readFileSync(file));
+    const previous = process.env.TALK_WORD_OLD && ["/adventure.html", "/saycheck.js"].includes(url.pathname) ? path.join(process.env.TALK_WORD_OLD, path.basename(file)) : null;
+    res.writeHead(200, { "content-type": MIME[file.split(".").pop()] || "application/octet-stream" }); res.end(readFileSync(previous || file));
   });
 });
 await new Promise((r) => server.listen(0, "127.0.0.1", r));
@@ -133,6 +134,15 @@ function seed(c) {
 function fakeDevice(cfg) {
   const T0 = performance.now(), now = () => (performance.now() - T0) / 1000;
   const h = window.__q = { now, mics: [], sounds: [], sfx: [], confetti: [], requests: 0, voice: false, shape: cfg.shape || "low", hidden: false, speaking: 0 };
+  if (cfg.wordCheck) {
+    h.apple = { text: "taco", live: false, starts: [], stops: 0 };
+    window.Capacitor = { isNativePlatform: () => true, getPlatform: () => "ios", Plugins: { SonaSpeech: {
+      available: () => Promise.resolve({ available: true, onDevice: true }),
+      requestPermission: () => Promise.resolve({ granted: true }),
+      start: (opts) => { h.apple.starts.push(opts); h.apple.live = true; return Promise.resolve(); },
+      stop: () => { const text = h.apple.live ? h.apple.text : ""; h.apple.live = false; h.apple.stops++; return new Promise((r) => setTimeout(() => r({ text, onDevice: true }), h.apple.stopDelay || 0)); }
+    } } };
+  }
   h.micOn = () => h.mics.filter((m) => m.end == null).length;
   h.playingNow = () => { const t = now(); return h.speaking > 0 || h.sounds.some((s) => s.start <= t && t < s.end); };
   Object.defineProperty(document, "hidden", { configurable: true, get: () => h.hidden });
@@ -142,7 +152,7 @@ function fakeDevice(cfg) {
     if (cfg.micMode === "deny") return Promise.reject(new DOMException("Denied", "NotAllowedError"));
     const rec = { start: now(), end: null }; h.mics.push(rec);
     const track = { kind: "audio", readyState: "live", stop() { if (this.readyState !== "ended") { this.readyState = "ended"; rec.end = now(); } } };
-    return Promise.resolve({ getTracks: () => [track], getAudioTracks: () => [track] });
+    return new Promise((resolve) => setTimeout(() => resolve({ getTracks: () => [track], getAudioTracks: () => [track] }), cfg.micDelay || 0));
   };
   function param(v) { const p = { _v: v }; p.setValueAtTime = p.linearRampToValueAtTime = p.exponentialRampToValueAtTime = p.setTargetAtTime = p.cancelScheduledValues = () => {}; Object.defineProperty(p, "value", { get: () => p._v, set: (x) => { p._v = x; } }); return p; }
   function AC() { this.state = "running"; this.sampleRate = 48000; this.destination = {}; }
@@ -177,6 +187,7 @@ function fakeDevice(cfg) {
   let sona;
   Object.defineProperty(window, "Sona", { configurable: true, get: () => sona, set(v) {
     sona = v; v.confetti = () => { h.confetti.push({ at: now(), live: h.micOn() }); };
+    if (cfg.wordCheck) v.voiceAsMedia = () => false;
     Object.keys(v.sfx || {}).forEach((k) => { const real = v.sfx[k]; if (typeof real !== "function" || k === "stop") return; v.sfx[k] = function () { h.sfx.push({ name: k, at: now(), live: h.micOn() }); return real.apply(this, arguments); }; });
   } });
 }
@@ -232,6 +243,124 @@ await section("the orange letters", async () => {
 });
 
 // ── 3. the player ──────────────────────────────────────────────────────────
+await section("iPhone checks each story saying", async () => {
+  const { ctx, pg, errors } = await open({ focus: ["R"], wordCheck: true });
+  try {
+    await click(pg, "startBtn");
+    ok("iPhone story: red is asked and the mic listens", await live(pg) && (await st(pg)).word === "red", await st(pg));
+    const reps = await pg.evaluate(() => Sona.dayReps());
+    for (let i = 0; i < 3; i++) {
+      if (i) { await click(pg, "micBtn"); await live(pg); }
+      await talk(pg, 320);
+      await until(pg, () => __adventure.bar === "nudge" || __adventure.said > 0, 3500);
+      ok("iPhone story: taco try " + (i + 1) + " earns no dot, rep, page or celebration", await pg.evaluate((before) => __adventure.idx === 0 && __adventure.said === 0 && __adventure.tries === 0 && Sona.dayReps() === before && __q.sfx.filter((x) => x.name === "correct").length === 0 && __q.confetti.length === 0, reps), await st(pg));
+      if ((await st(pg)).said > 0) break;
+    }
+    if ((await st(pg)).said === 0) {
+      await pg.evaluate(() => { __q.apple.text = "wed"; }); await click(pg, "micBtn"); await live(pg); await talk(pg, 320);
+      ok("iPhone story: close attempt wed earns only its own first dot", await until(pg, () => __adventure.said === 1, 3500) && await pg.evaluate((before) => Sona.dayReps() === before + 1, reps), await st(pg));
+      await live(pg); await pg.evaluate(() => { __q.apple.text = "taco"; }); await talk(pg, 320);
+      await until(pg, () => __adventure.bar === "nudge" || __adventure.said > 1, 3500);
+      ok("iPhone story: the earlier wed cannot approve a later taco", await pg.evaluate((before) => __adventure.said === 1 && __adventure.idx === 0 && Sona.dayReps() === before + 1, reps), await st(pg));
+    }
+    ok("iPhone story: no runtime errors", errors.length === 0, errors);
+  } finally { await ctx.close(); }
+});
+
+await section("iPhone held story word is one saying", async () => {
+  const { ctx, pg, errors } = await open({ focus: ["R"], wordCheck: true });
+  try {
+    await click(pg, "startBtn");
+    ok("iPhone held story word: the first word is listening", await live(pg));
+    const reps = await pg.evaluate(() => { __q.apple.text = "red"; return Sona.dayReps(); });
+    await pg.evaluate(() => { __q.voice = true; }); await pg.waitForTimeout(6700);
+    ok("iPhone held story word: a continuing utterance earns no timer-based dot or rep", await pg.evaluate((before) => __adventure.idx === 0 && __adventure.said === 0 && Sona.dayReps() === before && __q.apple.starts.length === 1, reps), await st(pg));
+    await pg.evaluate(() => { __q.voice = false; });
+    ok("iPhone held story word: its real end earns just one dot", await until(pg, () => __adventure.said === 1, 3500) && await pg.evaluate((before) => Sona.dayReps() === before + 1, reps), await st(pg));
+    ok("iPhone held story word: after a real quiet gap, the next saying listens", await live(pg));
+    await talk(pg, 320);
+    ok("iPhone held story word: a new saying can then earn the second dot", await until(pg, () => __adventure.said === 2, 3500), await st(pg));
+    ok("iPhone held story word: no runtime errors", errors.length === 0, errors);
+  } finally { await ctx.close(); }
+});
+
+await section("iPhone story waits for a fresh quiet gap", async () => {
+  const { ctx, pg, errors } = await open({ focus: ["R"], wordCheck: true });
+  try {
+    await click(pg, "startBtn"); await live(pg);
+    const reps = await pg.evaluate(() => { __q.apple.text = "red"; __q.apple.stopDelay = 700; return Sona.dayReps(); });
+    await talk(pg, 320);
+    ok("iPhone story quiet gap: the first completed word is being checked", await until(pg, () => __q.apple.stops === 1, 2500));
+    await pg.evaluate(() => { __q.voice = true; }); await pg.waitForTimeout(1400);
+    ok("iPhone story quiet gap: speech during the old verdict cannot start another recognizer", await pg.evaluate((before) => __adventure.said === 1 && __q.apple.starts.length === 1 && Sona.dayReps() === before + 1, reps), await st(pg));
+    await pg.evaluate(() => { __q.voice = false; __q.apple.stopDelay = 0; });
+    ok("iPhone story quiet gap: real quiet arms a fresh session without adding a dot", await live(pg) && (await st(pg)).said === 1, await st(pg));
+    await talk(pg, 320);
+    ok("iPhone story quiet gap: the new saying then earns its own dot", await until(pg, () => __adventure.said === 2, 3500), await st(pg));
+    ok("iPhone story quiet gap: no runtime errors", errors.length === 0, errors);
+  } finally { await ctx.close(); }
+});
+
+await section("iPhone story ignores a deaf microphone gap", async () => {
+  const { ctx, pg, errors } = await open({ focus: ["R"], wordCheck: true });
+  try {
+    await click(pg, "startBtn");
+    ok("iPhone deaf gap: the requested word is listening", await live(pg));
+    const before = await pg.evaluate(() => {
+      __q.apple.text = "red"; __q.invalidMic = false;
+      const deaf = Sona.micDeaf;
+      Sona.micDeaf = (stream) => __q.invalidMic || !!(deaf && deaf(stream));
+      const plugin = Capacitor.Plugins.SonaSpeech, stop = plugin.stop;
+      plugin.stop = () => { __q.apple.stopAt = performance.now(); return stop(); };
+      return { reps: Sona.dayReps(), stops: __q.apple.stops };
+    });
+    await pg.evaluate(() => { __q.voice = true; }); await pg.waitForTimeout(180);
+    await pg.evaluate(() => { __q.voice = false; __q.invalidMic = true; });
+    await pg.waitForTimeout(350);
+    // One valid quiet animation frame, then make the feed unavailable again.
+    // The delayed snapshot lets an incorrect native stop/result settle, while
+    // preventing the snapshot's own wait from supplying more valid quiet.
+    const brief = await pg.evaluate(() => new Promise((resolve) => {
+      __q.invalidMic = false;
+      requestAnimationFrame(() => {
+        __q.invalidMic = true;
+        setTimeout(() => resolve({ said: __adventure.said, reps: Sona.dayReps(), stops: __q.apple.stops }), 60);
+      });
+    }));
+    ok("iPhone deaf gap: missing samples plus one quiet frame earn no dot, rep or native stop", brief.said === 0 && brief.reps === before.reps && brief.stops === before.stops, brief);
+    await pg.evaluate(() => { __q.quietFrom = performance.now(); __q.invalidMic = false; });
+    ok("iPhone deaf gap: 200ms of observed quiet then earns exactly one saying", await until(pg, () => __adventure.said === 1, 3500) && await pg.evaluate((base) => Sona.dayReps() === base.reps + 1 && __q.apple.stops === base.stops + 1 && __q.apple.stopAt - __q.quietFrom >= 200, before), await st(pg));
+    ok("iPhone deaf gap: no runtime errors", errors.length === 0, errors);
+  } finally { await ctx.close(); }
+});
+
+for (const when of ["opening", "retry"]) await section("story child switch during " + when, async () => {
+  const { ctx, pg, errors } = await open({ focus: ["R"], wordCheck: true, micDelay: when === "opening" ? 700 : 0 });
+  try {
+    const children = await pg.evaluate(() => {
+      const first = Sona.activeKid().slot, firstKey = Sona.kkey("sona.gamereps.v1");
+      const sibling = Sona.addKid("Leo", "7"); Sona.saveProfile({ onboarded: true, focusSounds: ["R"] });
+      const siblingKey = Sona.kkey("sona.gamereps.v1"), siblingQuest = Sona.kkey("sona.quest.v1"), questBefore = localStorage.getItem(siblingQuest); Sona.switchKid(first);
+      return { first, sibling, firstKey, siblingKey, siblingQuest, questBefore };
+    });
+    await click(pg, "startBtn");
+    if (when === "opening") {
+      ok("story owner: the mic request is in flight", await until(pg, () => __q.requests === 1 && __q.apple.starts.length === 0));
+    } else {
+      await live(pg); await talk(pg, 320);
+      ok("story owner: the first child's wrong word waits for retry", await until(pg, () => __adventure.bar === "nudge", 3500));
+    }
+    const before = await pg.evaluate(() => ({ requests: __q.requests, starts: __q.apple.starts.length }));
+    await pg.evaluate((kid) => { Sona.switchKid(kid); __q.apple.text = "wed"; }, children.sibling);
+    if (when === "retry") await click(pg, "micBtn");
+    await pg.waitForTimeout(1100); await talk(pg, 320); await pg.waitForTimeout(900);
+    const result = await pg.evaluate((c) => ({ idx: __adventure.idx, word: __adventure.word, said: __adventure.said, live: __q.micOn(), requests: __q.requests, starts: __q.apple.starts.length,
+      first: localStorage.getItem(c.firstKey), sibling: localStorage.getItem(c.siblingKey), quest: localStorage.getItem(c.siblingQuest), cheers: __q.sfx.filter((s) => s.name === "correct").length }), children);
+    ok("story owner: a child switch while " + when + " retires the old word without dots, credit or rewards", result.idx === 0 && result.word === null && result.said === 0 && result.live === 0 && result.requests === before.requests && result.starts === before.starts && !result.first && !result.sibling && result.quest === children.questBefore && result.cheers === 0, result);
+    ok("story owner " + when + ": no runtime errors", errors.length === 0, errors);
+  } finally { await ctx.close(); }
+});
+
 await section("one page, three sayings", async () => {
   const { ctx, pg, errors } = await open({ focus: ["R"] }, { rm: false });
   try {

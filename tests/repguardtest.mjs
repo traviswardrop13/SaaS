@@ -172,7 +172,8 @@ function signalDevice(config){
   Object.defineProperty(window,'Sona',{configurable:true,get:()=>sona,set(value){
     sona=value;
     value.speechPerm=()=>Promise.resolve(true);
-    value.speechStart=(o)=>{h.heardWord=(o&&o.words&&o.words[0])||'rrrr';if(config.native)h.recognizing=true;return Promise.resolve(!!config.native);};
+    // The fixture supplies the requested utterance, not a recognition hint.
+    value.speechStart=(o)=>{const item=window.ITEM;h.heardWord=String((item&&(item.word||item.t))||'rrrr');if(config.native)h.recognizing=true;return Promise.resolve(!!config.native);};
     // With the voice on, the fake recognizer transcribes only what it heard:
     // Echo's R, if the room ever reached it while it was running.
     value.speechStop=()=>{const heard=h.recognizing&&h.recognizerHeard;h.recognizing=false;return Promise.resolve({text:config.native&&(!config.voice||heard)?h.heardWord:''});};

@@ -155,10 +155,11 @@ function fakeDevice(config) {
   let sona;
   Object.defineProperty(window, 'Sona', { configurable: true, get: () => sona, set(value) {
     sona = value;
-    // The recognizer "hears" the word the round asked Apple to listen for. A fixed
-    // "rrrr" stopped passing word rounds on 28 Sep (only the word or a close version counts).
+    // This fixture supplies the requested utterance independently of recognition
+    // hints: production now starts Apple with an unbiased, empty word list.
     value.speechStart = (o) => {
-      h.heardWord = (o && o.words && o.words[0]) || 'rrrr';
+      const item = window.ITEM;
+      h.heardWord = String((item && (item.word || item.t)) || 'rrrr');
       h.nativeStarts++;
       return h.nativeStartMode === 'pending' ? new Promise((resolve) => h.nativeWaiters.push(resolve)) : Promise.resolve(true);
     };

@@ -50,7 +50,8 @@ const server = createServer((req, res) => {
   if (url.pathname.startsWith("/api/")) { res.writeHead(503, { "content-type": "application/json" }); res.end("{}"); return; }
   if (!existsSync(file) || !statSync(file).isFile()) { res.writeHead(404); res.end(); return; }
   res.writeHead(200, { "content-type": MIME[file.split(".").pop()] || "application/octet-stream" });
-  res.end(readFileSync(url.pathname === "/library.html" && process.env.BOOK_LIBRARY_SOURCE ? process.env.BOOK_LIBRARY_SOURCE : file));
+  const previous = process.env.BOOK_WORD_OLD && ["/library.html", "/saycheck.js"].includes(url.pathname) ? path.join(process.env.BOOK_WORD_OLD, path.basename(file)) : null;
+  res.end(readFileSync(previous || (url.pathname === "/library.html" && process.env.BOOK_LIBRARY_SOURCE ? process.env.BOOK_LIBRARY_SOURCE : file)));
 });
 await new Promise((resolve) => server.listen(PORT, "127.0.0.1", resolve));
 const browser = await chromium.launch(launchOpts());
@@ -106,6 +107,15 @@ function fakeDevice(cfg) {
   const T0 = performance.now();
   const now = () => (performance.now() - T0) / 1000;
   const h = window.__quiet = { cfg, now, mics: [], sounds: [], sfx: [], speech: [], confetti: [], notes: [], requests: 0, voice: false, shape: cfg.shape || "low", hidden: false, speaking: 0, leakFrames: 0 };
+  if (cfg.wordCheck) {
+    h.apple = { text: "taco", live: false, starts: [], stops: 0 };
+    window.Capacitor = { isNativePlatform: () => true, getPlatform: () => "ios", Plugins: { SonaSpeech: {
+      available: () => Promise.resolve({ available: true, onDevice: true }),
+      requestPermission: () => Promise.resolve({ granted: true }),
+      start: (opts) => { h.apple.starts.push(opts); h.apple.live = true; return Promise.resolve(); },
+      stop: () => { const text = h.apple.live ? h.apple.text : ""; h.apple.live = false; h.apple.stops++; return new Promise((r) => setTimeout(() => r({ text, onDevice: true }), h.apple.stopDelay || 0)); }
+    } } };
+  }
   // live(): tracks the page holds now. micOn(): also a request still being
   // answered (an iPhone is recording before getUserMedia returns).
   h.live = () => h.mics.filter((m) => m.start != null && m.end == null).length;
@@ -122,7 +132,7 @@ function fakeDevice(cfg) {
     if (cfg.micMode === "busy") return Promise.reject(new DOMException("Could not start audio source", "NotReadableError"));
     const rec = { asked: now(), start: now(), end: null }; h.mics.push(rec);
     const track = { kind: "audio", readyState: "live", stop() { if (this.readyState !== "ended") { this.readyState = "ended"; rec.end = now(); } } };
-    return Promise.resolve({ getTracks: () => [track], getAudioTracks: () => [track] });
+    return new Promise((resolve) => setTimeout(() => resolve({ getTracks: () => [track], getAudioTracks: () => [track] }), cfg.micDelay || 0));
   };
   function param(v) { const p = { _v: v }; p.setValueAtTime = p.linearRampToValueAtTime = p.exponentialRampToValueAtTime = p.setTargetAtTime = p.cancelScheduledValues = () => {}; Object.defineProperty(p, "value", { get: () => p._v, set: (x) => { p._v = x; } }); return p; }
   function endAt(t) { return t == null || t < now() ? now() : t; }
@@ -177,6 +187,7 @@ function fakeDevice(cfg) {
   let sona;
   Object.defineProperty(window, "Sona", { configurable: true, get: () => sona, set(value) {
     sona = value;
+    if (cfg.wordCheck) value.voiceAsMedia = () => false;
     value.confetti = () => { h.confetti.push({ at: now(), live: h.micOn() }); };
     Object.keys(value.sfx || {}).forEach((k) => { const real = value.sfx[k]; if (typeof real !== "function" || k === "stop") return; value.sfx[k] = function () { h.sfx.push({ name: k, at: now(), live: h.micOn() }); return real.apply(this, arguments); }; });
   } });
@@ -239,6 +250,78 @@ function noOverlap(label, l) {
 }
 const clean = (label, errors) => ok(label + ": no runtime errors", errors.length === 0, errors);
 const snapshot = (page) => page.evaluate(() => { const o = {}; for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); o[k] = localStorage.getItem(k); } return o; });
+
+await scenario("iPhone checks the book word", async () => {
+  const { context, page, errors } = await fresh({ micok: true, wordCheck: true });
+  try {
+    await openBook(page, "Rory and the Rainbow");
+    ok("iPhone book: rabbit is asked and the mic listens", await waitLive(page), await book(page));
+    const reps = await page.evaluate(() => Sona.dayReps());
+    for (let i = 0; i < 3; i++) {
+      if (i) { await click(page, "bkMic"); await waitLive(page); }
+      await voice(page, 320);
+      await until(page, () => __book.mode === "nudge" || __book.page > 0, 3500);
+      ok("iPhone book: taco try " + (i + 1) + " earns no page turn, rep, try credit or celebration", await page.evaluate((before) => __book.page === 0 && __book.tries === 0 && Sona.dayReps() === before && __quiet.sfx.filter((x) => x.name === "correct").length === 0 && __quiet.confetti.length === 0, reps), await book(page));
+      if ((await book(page)).page > 0) break;
+    }
+    if ((await book(page)).page === 0) {
+      await page.evaluate(() => { __quiet.apple.text = ""; });
+      await click(page, "bkMic"); await waitLive(page); await voice(page, 320);
+      await until(page, () => __book.mode === "nudge" || __book.page > 0, 3500);
+      ok("iPhone book: an unclear native answer gives a retry with no rep or page", await page.evaluate((before) => __book.page === 0 && __book.tries === 0 && Sona.dayReps() === before, reps), await book(page));
+      await page.evaluate(() => { __quiet.apple.text = "wabbit"; });
+      await click(page, "bkMic");
+      await waitLive(page);
+      await voice(page, 320);
+      ok("iPhone book: a fresh close attempt wabbit turns the page and adds one rep", await until(page, () => __book.page === 1, 4500) && await page.evaluate((before) => Sona.dayReps() === before + 1, reps), await book(page));
+      ok("iPhone book: recognition starts fresh and never receives a target-word hint", await page.evaluate(() => __quiet.apple.starts.length >= 5 && __quiet.apple.starts.every((o) => !(o.words || []).length)), await page.evaluate(() => __quiet.apple.starts));
+    }
+    clean("iPhone book word", errors);
+  } finally { await context.close(); }
+});
+
+await scenario("iPhone cancels a book word", async () => {
+  const { context, page, errors } = await fresh({ micok: true, wordCheck: true });
+  try {
+    await openBook(page, "Rory and the Rainbow"); await waitLive(page);
+    const reps = await page.evaluate(() => { __quiet.apple.text = "wabbit"; __quiet.apple.stopDelay = 700; return Sona.dayReps(); });
+    await voice(page, 320);
+    ok("iPhone book cancellation: the full word reaches a pending native check", await until(page, () => __quiet.apple.stops > 0, 2500));
+    await click(page, "bkSkip"); await page.waitForTimeout(1000);
+    ok("iPhone book cancellation: Skip moves once, and a late matching answer earns nothing", await page.evaluate((before) => __book.page === 1 && Sona.dayReps() === before && !__quiet.apple.live && __quiet.sfx.filter((x) => x.name === "correct").length === 0 && __quiet.confetti.length === 0, reps), await book(page));
+    clean("iPhone book cancellation", errors);
+  } finally { await context.close(); }
+});
+
+async function bookSibling(page) {
+  return page.evaluate(() => {
+    const first = Sona.activeKid().slot, firstKey = Sona.kkey("sona.gamereps.v1");
+    const sibling = Sona.addKid("Leo", "7"); Sona.saveProfile({ onboarded: true, focusSounds: ["R"] });
+    const siblingKey = Sona.kkey("sona.gamereps.v1"); Sona.switchKid(first);
+    return { first, sibling, firstKey, siblingKey };
+  });
+}
+for (const when of ["opening", "retry"]) await scenario("book child switch during " + when, async () => {
+  const { context, page, errors } = await fresh({ micok: true, wordCheck: true, micDelay: when === "opening" ? 700 : 0 });
+  try {
+    const children = await bookSibling(page);
+    await openBook(page, "Rory and the Rainbow");
+    if (when === "opening") {
+      ok("book owner: the mic request is in flight", await until(page, () => __quiet.requests === 1 && __quiet.apple.starts.length === 0, 9000));
+    } else {
+      await waitLive(page); await voice(page, 320);
+      ok("book owner: the first child's wrong word waits for retry", await until(page, () => __book.mode === "nudge", 3500));
+    }
+    const before = await page.evaluate(() => ({ requests: __quiet.requests, starts: __quiet.apple.starts.length }));
+    await page.evaluate((kid) => { Sona.switchKid(kid); __quiet.apple.text = "wabbit"; }, children.sibling);
+    if (when === "retry") await click(page, "bkMic");
+    await page.waitForTimeout(1100); await voice(page, 320); await page.waitForTimeout(1600);
+    const result = await page.evaluate((c) => ({ page: __book.page, word: __book.word, live: __quiet.live(), requests: __quiet.requests, starts: __quiet.apple.starts.length,
+      shown: document.getElementById("book").classList.contains("show"), first: localStorage.getItem(c.firstKey), sibling: localStorage.getItem(c.siblingKey), cheers: __quiet.sfx.filter((s) => s.name === "correct").length }), children);
+    ok("book owner: a child switch while " + when + " retires the old word without credit or celebration", !result.shown && result.word === null && result.page === 0 && result.live === 0 && result.requests === before.requests && result.starts === before.starts && !result.first && !result.sibling && result.cheers === 0, result);
+    clean("book owner " + when, errors);
+  } finally { await context.close(); }
+});
 
 // ── 2. the grown-up's yes comes first, and "Not now" reads on with Next ──
 await scenario("primer", async () => {
@@ -333,7 +416,7 @@ await scenario("sibling rep guard", async () => {
     ok("sibling guard: the original child's book is listening", await waitLive(page));
     const original = await page.evaluate(() => { const old=Sona.activeKid().slot; Sona.addKid("Sibling",6); return old; });
     await voice(page,260);
-    ok("sibling guard: the existing reading turn can finish", await until(page,()=>window.__book.page===1,5000));
+    ok("sibling guard: switching children closes the stale book without finishing its page", await until(page,()=>!document.getElementById("book").classList.contains("show")&&window.__book.word===null&&window.__book.page===0&&__quiet.live()===0,5000));
     ok("sibling guard: a stale book never credits the newly active child", await page.evaluate(()=>Sona.dayReps()===0));
     await page.evaluate((slot)=>Sona.switchKid(slot),original);
     ok("sibling guard: a switched-away reading turn adds no rep", await page.evaluate(()=>Sona.dayReps()===0));
@@ -562,7 +645,7 @@ await scenario("denied, on Sona's own mic", async () => {
   await context.close();
 });
 await scenario("busy, on Sona's own mic", async () => {
-  const { context, page, errors } = await fresh({ micok: true, nm: { openFail: "busy" } });
+  const { context, page, errors } = await fresh({ micok: true, nm: { openFail: "busy", text: "rabbit" } });
   await openBook(page, "Rory and the Rainbow");
   const first = await waitLive(page, 6000);
   const a = await page.evaluate(() => ({ gum: __nm.gum, opens: __nm.opens.length, busy: Sona.micStats().busy, native: Sona.micNative() }));

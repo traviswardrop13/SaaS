@@ -457,9 +457,19 @@ try{
  // ── the iPhone app: the shop's own sounds are media, never Web Audio ──
  if(!part||part==='app'){
   const {page,context,errors}=await fresh({raw:true});
-  await context.addInitScript(()=>{window.Capacitor={isNativePlatform:()=>true};});await page.reload();const now=await page.evaluate(()=>Date.now());await page.clock.pauseAt(now+1000);
+  // This is an app audio audit with successful, explicitly requested words.
+  // Each native session snapshots its own word; no global pass or reused text.
+  await context.addInitScript(()=>{
+   let utterance='';
+   window.Capacitor={isNativePlatform:()=>true,Plugins:{SonaSpeech:{
+    available:()=>Promise.resolve({available:true,onDevice:true,authorized:true}),
+    requestPermission:()=>Promise.resolve({granted:true}),
+    start:()=>{utterance=(window.__sayplay&&__sayplay.word)||'';return Promise.resolve();},
+    stop:()=>{const text=utterance;utterance='';return Promise.resolve({text,onDevice:true});}
+   }}};
+  });await page.reload();const now=await page.evaluate(()=>Date.now());await page.clock.pauseAt(now+1000);
   ok('the page knows it is in the app',await page.evaluate(()=>Sona.voiceAsMedia()));
-  await begin(page);await sayWord(page);const n0=await page.evaluate(()=>__quiet.sounds.length);
+  await begin(page);ok('in the app, matching word attempts bring out the toy key',await sayWord(page));const n0=await page.evaluate(()=>__quiet.sounds.length);
   await circle(page,1.2);await advance(page,1500);await windToStar(page);await stepped(page,0);
   const kinds=await page.evaluate(n=>__quiet.sounds.slice(n).map(x=>x.kind),n0);
   ok('in the app the clicks, the yawn and the toy\'s jingle play as media, never as Web Audio',kinds.length>5&&kinds.every(k=>k==='media'||k==='speech'),kinds);

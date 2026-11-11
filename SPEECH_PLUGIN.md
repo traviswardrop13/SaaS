@@ -6,12 +6,17 @@ request, and **refuses to start** when on-device recognition is unavailable —
 it never falls back to Apple's servers. That is what keeps "no audio ever
 leaves the device" true as a mechanism, not a promise.
 
-The plugin returns **raw transcripts only**. Pass/fail lives in `sona.js`
-(`hearVerdict`) so Rachel can tune what counts as a try without an App Store
-review. `charge.html` listens during each practice attempt (up to 15 s), biased
-toward the practice word, and `verifyClip()` prefers the transcript verdict; a
-try the recognizer can't make out is "unknown", which defers to the spectral
-check — never a fail caused by the recognizer.
+The plugin returns **raw transcripts only**. The web code checks them in
+`sona.js` (`hearVerdict`). In iPhone builds with SonaSpeech, Practice words and sentences,
+picture games, word cards, and the words in books and stories require a fresh
+on-device transcript for each saying. A voiced attempt earns credit when it
+matches the prompted word or an existing accepted close form. The check sends
+no vocabulary hint to Apple and uses the position of the word actually shown,
+including blends in a Mixed pool. Wrong, empty, or unavailable results earn
+no word credit. Bare sounds and syllables keep the shape fallback when the
+transcript is unclear. The website and iPhone builds that lack SonaSpeech
+use the existing sound-shape check. Those builds gain word verification when
+an App Store update bundles SonaSpeech.
 
 Since 12 Oct 2026 the same plugin also **owns the microphone in the iPhone
 app**: `micPermission`, `micOpen` and `micClose`. See "Sona's own microphone"
@@ -226,10 +231,12 @@ to Claude: that line is what shows the reminder while Sona is open.
 - [ ] At an R word, say "taco" → it must NOT count; Echo asks again.
 - [ ] Say "Here is a taco" on a sentence round → must NOT count.
 - [ ] Say the word, even imperfectly ("wabbit") → counts.
-- [ ] Say the word as your last try, just before Echo ends the turn → counts
-      (the final word used to be cut off).
-- [ ] Mumble something unintelligible → behaves exactly like the app did
-      before this feature (spectral check decides). This is the "unknown" path.
+- [ ] At a blend word, drop the practiced sound ("top" for "stop"), then
+      say the complete word. The first attempt earns zero, the second one.
+- [ ] Alternate the requested word with an unrelated word on repeated turns.
+      Only the requested word earns credit each time.
+- [ ] Stay quiet or mumble on a word turn. Neither earns credit, and there is
+      another chance to say the word.
 - [ ] The mic numbers: Settings → tap Account 5 times, then a practice round.
       The box gains a line like "mic: Sona's own · default mode · in iPhone
       Microphone · out Speaker · boost ×1.0 · chunk 100 ms · queue 190 ms ·

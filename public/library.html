@@ -283,6 +283,9 @@
   <script src="/sona.js"></script>
   <script src="/saycheck.js"></script>
   <script>
+    // This loaded shelf belongs to this child. Permission and voice work
+    // must never transfer an old book word to a newly selected sibling.
+    var readerOwner = Sona.kkey ? Sona.kkey("sona.profile.v1") : "", readerRetired = false;
     var profile = Sona.getProfile();
     // BEFORE THE ADVENTURE TILE COMES BACK (it is hidden today): since 22 Oct
     // 2026 setup's "What does <Name> love?" saves profile.interests as its
@@ -1189,6 +1192,7 @@
     // source has a watchdog of its own length plus a beat.
     function say(text) {
       return new Promise(function (resolve) {
+        if (!readerOwned()) return resolve();
         if (!text) return resolve();
         var tok = ++sayToken, held = false, over = false, dog = null, ctrl = null;
         playing = true;
@@ -1202,7 +1206,7 @@
         function halt() { try { if (ctrl) ctrl.abort(); } catch (e) {} fin(); }
         curStop = halt;
         function go() {
-          if (tok !== sayToken || document.hidden) return fin();
+          if (!readerOwned() || tok !== sayToken || document.hidden) return fin();
           if (SC) { SC.hold(true); held = true; }
           // a hung fetch used to leave `playing` true forever, which silently
           // disabled the Hear button for the rest of the session
@@ -1211,7 +1215,7 @@
           fetch("/api/tts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: text, voice: profile.voiceId || "" }), signal: ctrl ? ctrl.signal : undefined })
             .then(function (r) { if (to) clearTimeout(to); if (!r.ok) throw 0; return r.arrayBuffer(); })
             .then(function (buf) {
-              if (tok !== sayToken) return fin(); // superseded — don't overlap
+              if (!readerOwned() || tok !== sayToken) return fin(); // superseded — don't overlap
               if (!buf || !buf.byteLength) throw 0;
               if (media()) {
                 // stopSpeech() stops it like a source; one that never starts
@@ -1220,7 +1224,7 @@
                 curSrc = m;
                 m.done.then(function (how) {
                   if (curSrc === m) curSrc = null;
-                  if (how === "failed" && tok === sayToken) speakFallback(text).then(fin, fin); else fin();
+                  if (how === "failed" && readerOwned() && tok === sayToken) speakFallback(text).then(fin, fin); else fin();
                 });
                 return;
               }
@@ -1238,7 +1242,7 @@
             })
             .catch(function () {
               if (to) clearTimeout(to);
-              if (tok !== sayToken) return fin();
+              if (!readerOwned() || tok !== sayToken) return fin();
               speakFallback(text).then(fin, fin);
             });
         }
@@ -1512,8 +1516,13 @@
     var bookEl = document.getElementById("book"), bkStage = document.getElementById("bkStage"), bkHead = document.getElementById("bkHead"), bkCount = document.getElementById("bkCount");
     var bkPrev = document.getElementById("bkPrev"), bkNext = document.getElementById("bkNext"), bkHear = document.getElementById("bkHear");
     var bkMicWrap = document.getElementById("bkMicWrap"), bkMic = document.getElementById("bkMic"), bkSkip = document.getElementById("bkSkip"), bkPrimer = document.getElementById("bkPrimer");
+    function readerOwned() {
+      if (!readerRetired && (!Sona.kkey || Sona.kkey("sona.profile.v1") === readerOwner)) return true;
+      readerRetired = true; closeBook(); return false;
+    }
 
     function openBook(st) {
+      if (!readerOwned()) return;
       if (!bookOpen(st) || bookLocked(st)) return;
       BOOK = st; page = -1;
       bookRepKey = window.Sona && Sona.kkey ? Sona.kkey("sona.gamereps.v1") : "";
@@ -1654,6 +1663,7 @@
     }
     var STAR = '<svg viewBox="0 0 64 64" style="width:min(44vw,170px);height:min(44vw,170px)"><path d="M32 5l8.2 18.6L60 25.8 44.9 39.2 49.8 59 32 48.4 14.2 59l4.9-19.8L4 25.8l19.8-2.2Z" fill="#ffd21c"/><circle cx="25" cy="21" r="3" fill="#fff" opacity=".85"/></svg>';
     function showPage() {
+      if (!readerOwned()) return;
       endMoment();
       stopSpeech();
       bookEl.classList.remove("tall"); bookEl.classList.remove("edges"); bookEl.style.removeProperty("--bk-lift"); bookEl.style.removeProperty("--bk-ask");
@@ -1739,9 +1749,9 @@
        boat?', and the teal mic appears. When the child says it, a small
        celebration plays and the page turns. After 3 tries, Echo says
        something kind and the page turns anyway. A small Skip for grown-ups."
-       The listening is Say & Play's check (SayCheck): a voice of the book's
-       sound family. It can't tell the word, so "heard" means Echo heard the
-       child, never that the word was right, and nothing here grades.
+       SayCheck keeps the browser's sound-family check; in the iPhone app
+       the word also needs its own fresh on-device listening match. "Heard"
+       means Echo heard a try, never a pronunciation grade.
        The rules it keeps:
        - PLAY, NOT PRACTICE. An accepted word adds one play rep toward the
          daily goal. It never logs an attempt, a session, a rung, a rotation
@@ -1834,6 +1844,7 @@
       return 'Can you say <span class="bkw">' + mark + "</span>?";
     }
     function startMoment() {
+      if (!readerOwned()) return;
       if (!momentOn()) { setBar("next"); return; }
       var tok = momTok;
       M = { word: keyShown(BOOK.keys[page]), tries: 0, ok: false, leaving: false };
@@ -1846,6 +1857,7 @@
       if (document.hidden) { setBar("nudge"); echoPose("think"); return; }
       setBar("wait", "Listen…");
       SC.ready(function (st) {
+        if (!readerOwned()) return;
         if (tok !== momTok) return;
         if (st === "nomic") return momentOff();
         if (st === "go") { M.ok = true; return ask(false); }
@@ -1858,12 +1870,14 @@
       document.getElementById("bkMicPromise").textContent = (window.Sona && Sona.MIC_PROMISE) || "";
       bkPrimer.hidden = false; publish();
       document.getElementById("bkPrimerYes").onclick = function () {
+        if (!readerOwned()) return;
         if (tok !== momTok || !M || document.hidden) return;
         bkPrimer.hidden = true; publish();
         // The phone's mic prompt must never open under a voice: a word tapped
         // just before this question came up may still be reading.
         if (playing) stopSpeech();
         SC.permit(function (r) {
+          if (!readerOwned()) return;
           if (tok !== momTok || !M) return;
           if (r === "denied") return denied();
           if (r === "nomic") return momentOff();
@@ -1884,6 +1898,7 @@
     }
     // Echo models the word, calm, the word alone at the end; then the mic.
     function ask(again) {
+      if (!readerOwned()) return;
       if (!M) return;
       var tok = momTok;
       setBar("wait", again ? "One more time…" : "Listen…");
@@ -1891,13 +1906,16 @@
       SC.say((again ? "One more time... " : "Can you say... ") + M.word + ".", function () { if (tok === momTok) listenNow(); });
     }
     function listenNow() {
+      if (!readerOwned()) return;
       if (!M) return;
       var tok = momTok;
       setBar("wait", "");
       SC.listen(BOOK.sound, function (out) { if (tok === momTok) answer(out); },
-        function () { if (tok === momTok) { setBar("live"); echoPose("listen"); } });
+        function () { if (readerOwned() && tok === momTok) { setBar("live"); echoPose("listen"); } }, { word: M.word, level: "word", owner: readerOwner });
     }
     function answer(out) {
+      if (out === "stale") readerRetired = true;
+      if (!readerOwned()) return;
       if (!M) return;
       var tok = momTok;
       if (out === "heard") {
@@ -1909,7 +1927,7 @@
         echoPose("cheer");
         var kw = bkStage.querySelector(".bktext .kw"); if (kw) kw.classList.add("yay");
         chime("correct");
-        SC.quiet(function () { if (tok === momTok && window.Sona && Sona.confetti) Sona.confetti({ count: 60, duration: 1100 }); });
+        SC.quiet(function () { if (readerOwned() && tok === momTok && window.Sona && Sona.confetti) Sona.confetti({ count: 60, duration: 1100 }); });
         turnT = setTimeout(function () { if (tok === momTok) turnPage(); }, 1200);
         return;
       }
@@ -1923,6 +1941,10 @@
         SC.say("Great trying. Let's turn the page.", function () { if (tok === momTok) turnPage(); });
         return;
       }
+      if (out === "word" || out === "unverified") {
+        setBar("nudge", "Let's try “" + M.word + "” again. Tap the mic."); echoPose("think");
+        return;
+      }
       if (out === "denied") return denied();
       if (out === "nomic") return momentOff();
       if (out === "failed") return momentOff(true);
@@ -1930,8 +1952,9 @@
       // waits for a tap, and the tap only listens again.
       setBar("nudge"); echoPose("think");
     }
-    function turnPage() { endMoment(); if (BOOK && page < BOOK.pages.length) { page++; showPage(); } }
+    function turnPage() { if (!readerOwned()) return; endMoment(); if (BOOK && page < BOOK.pages.length) { page++; showPage(); } }
     function wordTap(sp) {
+      if (!readerOwned()) return;
       if (playing || (M && M.leaving)) return;
       var w = sp.textContent.replace(/[^a-zA-Z']/g, ""), tok = hush();
       if (M && M.ok) setBar("wait", "");
@@ -1941,6 +1964,7 @@
     }
 
     bkNext.onclick = function () {
+      if (!readerOwned()) return;
       if (!BOOK) return;
       if (page >= BOOK.pages.length) { closeBook(); return; }
       endMoment(); page++; showPage(); chime("tap");
@@ -1948,6 +1972,7 @@
     // for grown-ups: turns the page with no word said
     bkSkip.onclick = function () { if (!BOOK || page < 0 || page >= BOOK.pages.length) return; turnPage(); };
     bkPrev.onclick = function () {
+      if (!readerOwned()) return;
       if (!BOOK) return;
       endMoment();
       if (page >= BOOK.pages.length) { page = -1; showPage(); return; } // Read again
@@ -1955,6 +1980,7 @@
     };
     // Hear it: the mic closes, Echo reads the page again, then asks again
     bkHear.onclick = function () {
+      if (!readerOwned()) return;
       if (!BOOK || page < 0 || page >= BOOK.pages.length || playing || (M && M.leaving)) return;
       var tok = hush(), pg = BOOK.pages[page];
       if (barMode !== "next") setBar("wait", M ? "Listen…" : "");
@@ -1965,6 +1991,7 @@
     };
     // after a quiet window (or coming back to the page): the tap listens again
     bkMic.onclick = function () {
+      if (!readerOwned()) return;
       // not while the book is reading a tapped word: hush() stops only the
       // mic, so asking for it now would open it under the book's own voice
       if (!BOOK || barMode !== "nudge" || playing) return;
@@ -1976,6 +2003,7 @@
     // side too); coming back needs a tap on the mic. A page already turning
     // is left to turn.
     if (window.Sona && Sona.onBackground) Sona.onBackground(function () {
+      if (!readerOwned()) return;
       stopSpeech();
       if (echoIs("talk")) echoPose("welcome");   // his line stopped, so does his beak
       if (!BOOK || barMode === "next" || (M && M.leaving)) return;
