@@ -4056,6 +4056,38 @@ said at a set moment).
     button's picture. **For Rachel:** nothing a child says changes.
   `traintest` plays it (parts `rebuild`, `main`, `ladder`, `keyboard`,
   `fit`).
+- **Birthday Cake, rebuilt (11 Nov 2026, Travis: "build the rest", the
+  last of group 3).** `public/cake.js`, `arcade-cake.html`, `cake.css`.
+  - **The word starts the step and nothing else.** Until then it also
+    switched on ten seconds of cooking power (a faster spoon, a wider tin,
+    a bigger icing tip, stronger magnets), so the steps nearly cooked
+    themselves. The Cooking help pill's word still gives it, and the miss
+    ladder still does.
+  - **A new party every round** (`newParty`, never repeating the round
+    before's buddy, fruit tray or swirl pattern): one of the eleven buddies
+    with a sitting picture has a birthday and sits left of the tray row in
+    the shop's party hat (`HAT_AT` sets it on each head); their age, 3, 4 or
+    5, is how many candles go on; three of Fruit Slice's nine fruits are on
+    the tray; the six swirls come in one of four patterns
+    (`ICE_PATTERNS`); three of five icing colours (`ICE_COLORS`, never
+    orange) sit in pots on the tray, and a tap fills the bag with one (a
+    finished swirl keeps its colour). The start banner is "Bake a cake for
+    <name>!" and the end card "Happy birthday, <name>!" (the page's
+    `Cake.onParty`). No new art: a drawn party garland across the kitchen,
+    a drawn metal tin and piped rosettes.
+  - **The candles come from one box** (`#cakeCandles`, each its own
+    colour), light as they go on, and the last one finishes the step. **The
+    paper fan is gone:** in the finale the birthday buddy blows them out,
+    one by one, with a puff of smoke.
+  - **Echo explains each step once a visit** (`told`, as Build a Snowman
+    does), in shorter lines; the opening line no longer mentions Cooking
+    help. "Hear what to do" still says the step's line on a tap.
+  - **Travis's to change:** the buddies, ages, fruit, patterns and colours,
+    the banner and end card words. **For Rachel:** nothing a child says
+    changes; Echo's five directions are reworded shorter and said once a
+    visit.
+  `caketest` plays it (parts `rebuild`, `main`, `struggle`, `help`,
+  `keyboard`, `fit`).
 - **The next batch (Travis, 11 Nov 2026: "start the next batch of games"):**
   Space Trip, Bedtime Stars, Pizza Chef, Treasure Map, Balloon Party, one at
   a time, the same way.
