@@ -349,6 +349,7 @@
     #freeDay img{width:96px;height:96px;object-fit:contain;display:block;margin:0 auto 6px;}
     #freeDay h2{font-family:"Baloo 2";font-weight:800;font-size:28px;line-height:1.1;color:var(--ink);margin:0;}
     #freeDay p{font-weight:800;font-size:15.5px;line-height:1.45;color:var(--muted);margin:10px 0 18px;}
+    #freeDay .fd-calm{display:block;}
     #freeDay .btn{width:100%;font-size:19px;padding:15px 18px;}
     body.onerow.offer #declineLink{width:44px !important;height:44px;min-height:0;padding:0 !important;font-size:0;line-height:44px;background:transparent;border:0;box-shadow:none;color:#a08a70;}
     body.onerow.offer #declineLink:before{content:"\2715";font-size:19px;font-weight:800;}
@@ -1781,7 +1782,11 @@
           '<p id="freeDayLine"></p>' +
           '<button type="button" class="btn" id="freeDayGo">Let\u2019s play!</button>' +
         '</div>';
-      d.querySelector("#freeDayLine").textContent = "Every game and book is open" + (when ? " until " + when + " tomorrow" : " for a day") + ". No card. Nothing to cancel.";
+      // two lines, so "cancel." never wraps alone; the space stays in the text
+      // (a screen reader, and freedaytest, read one sentence after another)
+      var fdl = d.querySelector("#freeDayLine"), fdb = document.createElement("span");
+      fdl.textContent = "Every game and book is open" + (when ? " until " + when + " tomorrow" : " for a day") + ". ";
+      fdb.className = "fd-calm"; fdb.textContent = "No card. Nothing to cancel."; fdl.appendChild(fdb);
       document.body.appendChild(d);
       var go = d.querySelector("#freeDayGo");
       go.onclick = function () {

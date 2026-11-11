@@ -631,8 +631,8 @@ await section("the demonstration window", async () => {
   ok("…which still mints no coins, asks for nothing new and picks nothing at random",
     block.length > 0 && !/addCoins|mintCoins|logAttempt|bumpReps|gameRep\(|recordRung|Math\.random|awardRandomSticker/.test(code));
   ok("…and whose lines say nothing about how to talk", !/louder|slowly|strong|stretch|say it/i.test((block.match(/const STORY_DAYS = \[[\s\S]*?\n  \];/) || [""])[0]));
-  ok("storyOpen is the books' rule, and the founders' preview reads its own plan",
-    /function storyOpen\(\) \{[\s\S]{0,200}libraryPreview\(\)\) return previewPlan\(\)\.state === "trial";[\s\S]{0,40}return isFree\(\) \|\| premium\(\) \|\| trialActive\(\);/.test(SONA)
+  ok("storyOpen is the books' rule (a free day too, FREEDAY1), and the founders' preview reads its own plan",
+    /function storyOpen\(\) \{[\s\S]{0,200}libraryPreview\(\)\) return previewPlan\(\)\.state === "trial";[\s\S]{0,40}return isFree\(\) \|\| premium\(\) \|\| trialActive\(\) \|\| freeDayActive\(\);/.test(SONA)
     && /function storyShown\(\) \{ try \{ return storyOpen\(\) \|\| offerOnLock\(\);/.test(SONA));
   ok("gameAccess and gameBounce know the story keys before the catalog's check", /function gameAccess\(key, options\) \{[\s\S]{0,600}if \(_storyKey\(key\)\) \{[\s\S]{0,400}\}\s*key = gameKey\(key\);/.test(SONA) && /_storyKey\(key\) \? "\/today\.html"/.test(SONA));
   ok("the story readers are on the one-line export", /global\.Sona = \{[^\n]*\bSTORY_DAYS, storyOpen, storyShown, storyEnding, storySeen\b/.test(SONA));
