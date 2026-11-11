@@ -1,13 +1,17 @@
 /* Robot Builder: a real rotate-the-wires puzzle, one circuit per robot part.
    Say & Play owns every word, microphone, rep, permission and voice. This
-   board only owns finger play. Speech reveals the blueprint; it never turns
-   a connector, tests a circuit, or assembles a part for the child. */
+   board only owns finger play. The word opens the next circuit and nothing
+   else: it never shows the answer, turns a connector, tests a circuit or
+   assembles a part for the child (9 Nov 2026, the game audit's rebuild: the
+   word used to switch on ten seconds of the blueprint, the pale lines that
+   show how every wire should sit, so each puzzle solved itself). The
+   blueprint comes only from the Blueprint button's word or the miss ladder. */
 (function () {
   "use strict";
   var api = null, tiles = [], buttons = [], stage = 0, assembled = 0;
   var active = false, paused = false, boardReady = false, connected = false, solved = false, won = false;
   var startRow = 1, endRow = 1, blueprint = 0, POWER = 10, rotations = 0, tests = 0, hintIndex = -1;
-  var raf = 0, lastTime = 0, away = false, boardPath = [], total = 8;
+  var raf = 0, lastTime = 0, away = false, boardPath = [], total = 8, lastRoute = "";
   // Every circuit ends in a working robot part, with no speech needed. A
   // failed Test power is a miss; finger work that has not joined the wires
   // yet counts too (6, 12 and 20 s of tapping, never idle time; tapping is
@@ -20,18 +24,36 @@
   var $ = function (id) { return document.getElementById(id); };
   var DIRS = [1, 2, 4, 8], OPPOSITE = [4, 8, 1, 2], DX = [0, 1, 0, -1], DY = [-1, 0, 1, 0];
   var NAMES = ["north", "east", "south", "west"];
-  // Eight hand-made routes. The first is a short, straight introduction;
-  // the last visits all nine tiles. Adjacent indices are always neighbours.
-  var PATHS = [
-    [3, 4, 5],
-    [0, 3, 4, 5],
-    [6, 3, 4, 1, 2],
-    [0, 1, 4, 7, 8],
-    [3, 0, 1, 4, 5],
-    [6, 7, 4, 1, 2, 5, 8],
-    [0, 3, 6, 7, 4, 5, 2],
-    [6, 3, 0, 1, 4, 7, 8, 5, 2]
-  ];
+  // A new puzzle every circuit (9 Nov 2026: the eight hand-made routes came
+  // in the same order every round). The route is picked by chance among
+  // every way through the board of the circuit's length, from the battery's
+  // column (left) to the bulb's (right): the first circuit is a straight row
+  // of three, each one a little longer, and the last winds through all nine
+  // tiles. The battery and the bulb sit wherever the route starts and ends.
+  // A route never repeats the circuit before it.
+  var LENGTHS = [3, 4, 5, 5, 6, 7, 8, 9];
+  var NEXT = [[1, 3], [0, 2, 4], [1, 5], [0, 4, 6], [1, 3, 5, 7], [2, 4, 8], [3, 7], [4, 6, 8], [5, 7]];
+  var ROUTES = null;
+  function routes() {
+    if (ROUTES) return ROUTES;
+    ROUTES = [];
+    function walk(path) {
+      var at = path[path.length - 1];
+      if (at % 3 === 2) ROUTES.push(path.slice());
+      for (var n = 0; n < NEXT[at].length; n++) if (path.indexOf(NEXT[at][n]) < 0) { path.push(NEXT[at][n]); walk(path); path.pop(); }
+    }
+    walk([0]); walk([3]); walk([6]);
+    return ROUTES;
+  }
+  function pick(n) { return Math.min(n - 1, Math.floor(Math.random() * n)); }
+  function routeFor(index) {
+    var want = LENGTHS[Math.min(LENGTHS.length - 1, Math.round(index * (LENGTHS.length - 1) / Math.max(1, total - 1)))];
+    var all = routes().filter(function (r) { return r.length === want; });
+    var fresh = all.filter(function (r) { return r.join() !== lastRoute; });
+    var route = (fresh.length ? fresh : all)[pick((fresh.length ? fresh : all).length)];
+    lastRoute = route.join();
+    return route.slice();
+  }
   var PARTS = [
     { id: "leg-left", name: "left leg" }, { id: "leg-right", name: "right leg" },
     { id: "torso", name: "body" }, { id: "arm-left", name: "left arm" },
@@ -39,6 +61,46 @@
     { id: "antenna", name: "antenna" }, { id: "heart", name: "heart" }
   ];
   var partEls = [], keptImages = [];
+  // Paint your robot (9 Nov 2026): the child taps a paint pot on the start
+  // card and every part comes out in that colour. The colours are the parts'
+  // own painted art turned round the colour wheel (a CSS hue-rotate on each
+  // part's picture), so no new art; orange is left out, because orange on a
+  // child's screen means only the practice sound's letters. Kept for the
+  // visit (Build again keeps it), never stored.
+  var COATS = [
+    { id: "blue", name: "Blue", hue: 0, swatch: "#2fb6e8" },
+    { id: "purple", name: "Purple", hue: 60, swatch: "#9a7cee" },
+    { id: "pink", name: "Pink", hue: 140, swatch: "#ef6cb2" },
+    { id: "green", name: "Green", hue: 300, swatch: "#43bd4f" }
+  ];
+  var coat = "blue";
+  function setCoat(id) {
+    var found = null;
+    for (var c = 0; c < COATS.length; c++) if (COATS[c].id === id) found = COATS[c];
+    if (!found) return;
+    coat = found.id;
+    var stand = $("robotStand");
+    if (stand) {
+      for (var k = 0; k < COATS.length; k++) stand.classList.remove("coat-" + COATS[k].id);
+      stand.classList.add("coat-" + coat); stand.style.setProperty("--robot-hue", found.hue + "deg");
+    }
+    var pots = document.querySelectorAll("#robotPaints [data-coat]");
+    for (var p = 0; p < pots.length; p++) pots[p].setAttribute("aria-checked", pots[p].getAttribute("data-coat") === coat ? "true" : "false");
+    publish();
+  }
+  function buildPaints() {
+    var box = $("robotPaints"); if (!box) return;
+    var row = box.querySelector(".robot-pots");
+    COATS.forEach(function (c) {
+      var b = document.createElement("button"); b.type = "button"; b.className = "robot-pot";
+      b.setAttribute("role", "radio"); b.setAttribute("data-coat", c.id); b.setAttribute("aria-label", c.name);
+      b.style.setProperty("--pot", c.swatch);
+      // a pot of paint in its own colour: the tin, its paint, a drip and a shine
+      b.innerHTML = '<svg viewBox="0 0 40 40" aria-hidden="true"><path d="M7 13h26l-2.6 19.2a4 4 0 0 1-4 3.5H13.6a4 4 0 0 1-4-3.5Z" class="pot-paint"/><ellipse cx="20" cy="13" rx="13" ry="4.6" class="pot-paint"/><ellipse cx="20" cy="13" rx="13" ry="4.6" class="pot-top"/><path d="M26 15c0 4 2 5.5 2 8.5a2 2 0 0 1-4 0c0-2 1-3 1.4-5" class="pot-paint pot-drip"/><path d="M12.5 18.5l1.2 12" class="pot-shine"/></svg>';
+      b.onclick = function () { if (c.id !== coat) { try { api.sfx("tap"); } catch (e) {} } setCoat(c.id); };
+      row.appendChild(b);
+    });
+  }
   function rotateMask(mask, turns) {
     turns = ((turns % 4) + 4) % 4;
     while (turns--) mask = ((mask << 1) & 15) | ((mask >> 3) & 1);
@@ -64,7 +126,7 @@
     return d;
   }
   function makePuzzle(index) {
-    stage = index; boardPath = PATHS[index % PATHS.length].slice();
+    stage = index; boardPath = routeFor(index);
     startRow = Math.floor(boardPath[0] / 3); endRow = Math.floor(boardPath[boardPath.length - 1] / 3);
     tiles = []; rotations = 0; tests = 0; solved = false; hintIndex = -1; connected = false;
     misses = 0; work = 0; lastTapAt = -99; idleSince = clock; doneAt = 0; nudged = false;
@@ -75,10 +137,14 @@
     for (var i = 0; i < 9; i++) {
       var at = boardPath.indexOf(i), target;
       if (at >= 0) target = (at === 0 ? 8 : direction(i, boardPath[at - 1])) | (at === boardPath.length - 1 ? 2 : direction(i, boardPath[at + 1]));
-      else target = rotateMask((i + index) % 2 ? 3 : 5, (i + index) % 4);
+      else target = rotateMask(pick(2) ? 3 : 5, pick(4));
       var base = target === 5 || target === 10 ? 5 : 3;
       var correct = targetRotation(base, target);
-      tiles.push({ mask: base, rotation: (correct + 1 + (i + index) % 3) % 4, correctRotation: correct, inPath: at >= 0, powered: false });
+      // every wire on the route starts turned the wrong way: a corner by one,
+      // two or three turns, a straight one by a quarter (half a turn would
+      // look the same as right)
+      var off = base === 5 ? (pick(2) ? 1 : 3) : 1 + pick(3);
+      tiles.push({ mask: base, rotation: (correct + off) % 4, correctRotation: correct, inPath: at >= 0, powered: false });
     }
     // Removing the source's west-facing connector makes initial disconnection
     // certain, even if a different lucky route exists through the spare tiles.
@@ -125,6 +191,7 @@
     window.__robot = { active: active, paused: paused, stage: stage, stages: total, blueprint: blueprint, boardReady: boardReady,
       connected: connected, solved: solved, assembled: assembled, won: won, startRow: startRow, endRow: endRow,
       rotations: rotations, tests: tests, hintIndex: hintIndex, misses: misses, work: +work.toFixed(2), help: helpLevel(), doneAt: doneAt,
+      route: boardPath.slice(), coat: coat,
       tiles: tiles.map(function (tile) { return { mask: tile.mask, rotation: tile.rotation, correctRotation: tile.correctRotation, inPath: tile.inPath, powered: tile.powered }; }) };
   }
   function paintBridges() {
@@ -318,7 +385,7 @@
   window.Robot = {
     init: function (a, n) {
       api = a; total = n || 8;
-      buildRobot(); buildBoard(); reset();
+      buildRobot(); buildBoard(); buildPaints(); setCoat("blue"); reset();
       $("robotTest").onclick = testPower; $("robotHelp").onclick = help;
       window.addEventListener("resize", paint);
       document.addEventListener("visibilitychange", function () { if (document.hidden) pause(); });
@@ -326,7 +393,11 @@
       window.addEventListener("pageshow", function () { away = false; if (!raf) { lastTime = 0; raf = requestAnimationFrame(frame); } paint(); });
       raf = requestAnimationFrame(frame);
     },
-    onWord: function (index) { makePuzzle(index); boardReady = true; earnBlueprint(); },
+    // the word opens the next circuit, and only that: no blueprint
+    onWord: function (index) {
+      makePuzzle(index); boardReady = true; active = true; paused = false; lastTime = 0;
+      setBanner("Join the wires, battery to bulb"); paint();
+    },
     onHelp: earnBlueprint,
     pause: pause,
     resume: resume,
