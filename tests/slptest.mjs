@@ -57,7 +57,11 @@ let DATA = fixture();
 const log = [];
 // GET /api/slp/plan, in the route's own shape (app/api/slp/plan). Not covered
 // by default; section 9 flips it to see the family messages follow.
-const PLAN_NONE = { ok: true, active: false, source: "none", periodEnd: null, cancelAtPeriodEnd: false, price: "$79.99", perMonth: "under $7 a month", self: { eligible: true, workEmail: true, approved: false, requested: false } };
+// Their own Premium OFF (a clinician from 29 Sep 2026), so the offer is the
+// first step: "Get Premium", $59.99. SELF_ON is a 24–29 Sep work email.
+const SELF_OFF = { active: false, eligible: false, source: "none", periodEnd: null, cancelAtPeriodEnd: false, canRequest: false, workEmail: true, approved: false, requested: false, price: "$59.99", perMonth: "under $5 a month" };
+const SELF_ON = { ...SELF_OFF, active: true, eligible: true, source: "work-email" };
+const PLAN_NONE = { ok: true, active: false, source: "none", periodEnd: null, cancelAtPeriodEnd: false, price: "$59.99", perMonth: "under $5 a month", both: { price: "$119.98", perMonth: "under $10 a month" }, self: SELF_OFF };
 let PLAN = PLAN_NONE;
 const acct = { ok: true, email: "rachel@example.com", code: "rachel-k4", familyKey: "ABCD2345", name: "Rachel K", clinic: "Bright Steps", onboarded: true };
 const srv = createServer((req, res) => {
@@ -116,6 +120,8 @@ async function open(hash) {
   const groups = await pg.locator("#todayBody .card h2").allTextContents();
   // The Premium offer has its own page (24 Sep 2026); Today answers who
   // practiced, and a price there would crowd out the one question it is for.
+  // Since 29 Sep 2026 the top bar carries the offer on every page (9b), but
+  // Today's own cards still never sell.
   ok("Today never sells: no price and no Premium card", !/\$\d|Premium/.test(txt), txt.slice(0, 240));
   ok("Today keeps three useful groups and pending invites", groups.length === 4 && /Gone quiet/.test(groups[0]) && /Homework ending .*or missed/.test(groups[1]) && /practiced.*last 7 days/i.test(groups[2]) && /Invited, not joined yet/.test(groups[3]), groups.join("|"));
   const quiet = cards.filter({has:pg.locator("h2",{hasText:"Gone quiet"})});
@@ -285,13 +291,72 @@ async function open(hash) {
       ok(`${label}: Settings says the families get every game`, /Your caseload has Premium, so they get every game too/.test(settings), settings);
     } else {
       ok(`${label}: the caseload message promises the free version and no Premium`, /free for your family: daily practice and free games\./.test(snip) && !/Premium/.test(snip), snip);
-      ok(`${label}: Settings says what the free version is and where Premium lives`, /daily practice and free games/.test(settings) && /With Caseload Premium they get every game/.test(settings), settings);
+      ok(`${label}: Settings says what the free version is and where Premium lives`, /daily practice and free games/.test(settings) && /With Premium for your caseload they get every game/.test(settings), settings);
     }
     ok(`${label}: never pilot, trial or forever`, !/pilot|trial|forever/i.test(snip + settings), snip);
     ok(`${label}: learning the plan is a read, never a write`, !log.some((l) => l.m !== "GET"), JSON.stringify(log.filter((l) => l.m !== "GET")));
     await ctx.close();
   }
   PLAN = PLAN_NONE;
+}
+
+// ── 9b. the offer in the top bar (Travis, 29 Sep 2026: "yes add the $80 button
+//        to the first screen") ──
+// A clinician from the ad lands on Community and a returning one on Today; the
+// price lived only on the Premium page, which neither sees first. The offer
+// now follows them to every page: the server's price, only once the plan has
+// answered, never to a caseload already covered, and it fits a phone.
+{
+  const bar = (pg) => pg.evaluate(() => { const b = document.getElementById("premiumTop"); return { hidden: b.hidden || getComputedStyle(b).display === "none", text: b.innerText.replace(/\s+/g, " ").trim(), href: b.getAttribute("href") }; });
+  for (const hash of ["#today", "#community", "#caseload"]) {
+    PLAN = PLAN_NONE; DATA = fixture();
+    const { ctx, pg } = await open(hash);
+    const b = await bar(pg);
+    ok(`own Premium off: ${hash} shows Get Premium with its price, and it opens the plan`, !b.hidden && /^Get Premium/.test(b.text) && /\$59\.99 a year/.test(b.text) && b.href === "#premium", JSON.stringify(b));
+    await ctx.close();
+  }
+  {
+    PLAN = PLAN_NONE; DATA = fixture(); log.length = 0;
+    const { ctx, pg } = await open("#today");
+    await pg.click("#premiumTop"); await pg.waitForTimeout(250);
+    const onPlan = await pg.evaluate(() => document.getElementById("page-premium").classList.contains("active"));
+    ok("…a tap opens the Premium page, where the bar stops repeating the offer", onPlan && (await bar(pg)).hidden);
+    await pg.evaluate(() => { location.hash = "#community"; }); await pg.waitForTimeout(250);
+    ok("…and it is back on the next page", !(await bar(pg)).hidden);
+    ok("…and showing it is a read, never a write", !log.some((l) => l.m !== "GET"), JSON.stringify(log.filter((l) => l.m !== "GET")));
+    await ctx.close();
+  }
+  {
+    PLAN = { ...PLAN_NONE, self: { ...SELF_OFF, price: "$64.99" } };  // the server's figure, whatever it is
+    const { ctx, pg } = await open("#today");
+    const b = await bar(pg);
+    ok("the price is the server's, never typed into the page", /\$64\.99 a year/.test(b.text) && !/59\.99/.test(b.text), b.text);
+    await ctx.close();
+  }
+  {
+    // 29 Sep 2026: once their own Premium is on, the bar offers the next step.
+    PLAN = { ...PLAN_NONE, price: "$54.99", self: SELF_ON };
+    const { ctx, pg } = await open("#today");
+    const b = await bar(pg);
+    ok("own Premium on, caseload not: the bar offers Add your caseload, at the caseload's price", !b.hidden && /^Add your caseload/.test(b.text) && /\$54\.99 a year/.test(b.text) && b.href === "#premium", JSON.stringify(b));
+    await ctx.close();
+  }
+  for (const [label, plan] of [["paid", { ...PLAN_NONE, self: SELF_ON, active: true, source: "paid", periodEnd: 1822000000 }], ["grandfathered", { ...PLAN_NONE, active: true, source: "grandfathered", self: { ...SELF_ON, source: "grandfathered" } }],
+    ["a 24–29 Sep free-mail clinician, who asks rather than buys", { ...PLAN_NONE, self: { ...SELF_OFF, workEmail: false, canRequest: true } }], ["the plan didn't answer", { ok: false, error: "Couldn't check your plan just now." }]]) {
+    PLAN = plan; DATA = fixture();
+    const { ctx, pg } = await open("#today");
+    ok(`${label}: no offer in the bar`, (await bar(pg)).hidden);
+    await ctx.close();
+  }
+  PLAN = PLAN_NONE; DATA = fixture();
+  for (const width of [390, 360]) {
+    const ctx = await browser.newContext({ viewport: { width, height: 800 } });
+    const pg = await ctx.newPage();
+    await pg.goto(U("#community")); await pg.waitForTimeout(900);
+    const fit = await pg.evaluate(() => { const r = (id) => document.getElementById(id).getBoundingClientRect(); const t = r("premiumTop"), d = r("downloadApp"), c = r("copyAppLink"); return { over: document.documentElement.scrollWidth - innerWidth, row: t.bottom <= d.top + 1, inside: [t, d, c].every((q) => q.left >= 0 && q.right <= innerWidth) }; });
+    ok(`${width}px phone: the offer takes its own row and nothing runs off the screen`, fit.over <= 0 && fit.row && fit.inside, JSON.stringify(fit));
+    await ctx.close();
+  }
 }
 
 // ── 10. a parent's email: typed only if the clinician wants, used once ──

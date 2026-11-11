@@ -6,10 +6,11 @@
 // The cloud scorer is gone, but the bug CLASS is not: every map that has to
 // know about a sound is cross-checked here against the roster.
 //
-// Pure source parsing — no browser needed.
+// Pure source parsing (and one sandboxed run of gamecontent.js) — no browser needed.
 import { readFileSync, existsSync } from "fs";
 import { fileURLToPath } from "url";
 import path from "path";
+import vm from "vm";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const sona = readFileSync(ROOT + "/public/sona.js", "utf8");
@@ -110,6 +111,144 @@ ok("the consent copy states it plainly",
     !/if\(fed===\d+\)\s*say\(/.test(feed),
     "an every-Nth-answer line talks over a child who is about to go again",
   );
+}
+
+// ---- 7b. no prompt asks a child to say a word we never ask them to say ----
+// syllables() is onset + vowel, so nobody chose its output: G spelled "gay"
+// and P spelled "poo", shown in big letters and spoken "Ready? Say gay, five
+// times." (Travis, 30 Sep 2026). They are swapped, not dropped, so every sound
+// still has five. The list is checked against what the generator really
+// returns (run, not read) and against every word in the bank.
+{
+  const NEVER_SAY = ["gay", "poo"];
+  const box = { window: {} };
+  vm.runInNewContext(readFileSync(ROOT + "/public/gamecontent.js", "utf8"), box);
+  const SC = box.window.SonaContent;
+  ok("gamecontent.js runs on its own and exports syllables()", !!(SC && SC.syllables));
+  const bad = [], short = [];
+  for (const s of ALL) {
+    const sy = SC ? SC.syllables(s).map((x) => String(x.t).toLowerCase()) : [];
+    if (new Set(sy).size !== 5) short.push(`${s}: ${sy.join(", ")}`);
+    sy.forEach((t) => { if (NEVER_SAY.includes(t)) bad.push(`${s}: ${t}`); });
+    if (SC) SC.syllables(s).forEach((x) => { if (x.say !== x.t) bad.push(`${s}: shows ${x.t}, says ${x.say}`); });
+  }
+  ok("no sound's syllables include a never-say word", bad.length === 0,
+    `a child would be asked to say: ${bad.join("; ")}`);
+  ok("…and every sound still has five different syllables", short.length === 0,
+    `swapped must not mean dropped: ${short.join("; ")}`);
+  const g = SC ? SC.syllables("G").map((x) => x.t).join() : "", p = SC ? SC.syllables("P").map((x) => x.t).join() : "";
+  ok("G says guy and P says pie, and nothing else moved",
+    g === "gah,gee,goo,goh,guy" && p === "pah,pee,pie,poh,pay", `G: ${g} · P: ${p}`);
+  const bankWords = [...(mWords ? mWords[1] : "").matchAll(/\bw:\s*"([^"]+)"/g)].map((m) => m[1].toLowerCase());
+  ok("the word bank was read", bankWords.length > 100, `got ${bankWords.length}`);
+  const badBank = bankWords.filter((w) => w.split(/\s+/).some((x) => NEVER_SAY.includes(x)));
+  ok("no word in Sona.WORDS is a never-say word", badBank.length === 0, badBank.join(", "));
+
+  const themeMatch=sona.match(/const GAME_WORDS\s*=\s*(\{[\s\S]*?\n  \});/);
+  ok("the separate game-only word table is present",!!themeMatch);
+  const themes=themeMatch?vm.runInNewContext("("+themeMatch[1]+")"):{};
+  const themeWords=Object.values(themes).flatMap(sounds=>Object.values(sounds).flat());
+  const badThemes=themeWords.filter(w=>w.split(/\s+/).some(t=>NEVER_SAY.includes(t.toLowerCase())));
+  ok("no game-only theme word is a never-say word",themeWords.length>20&&badThemes.length===0,badThemes.join(", "));
+
+  // ---- 7c. what a game's say-it card may ask for, past the bare sound ----
+  // (Travis, 1 Oct 2026: "start with isolation then ree rah roh then rot".)
+  // One syllable a card, from the same generator, so the swaps above hold; a
+  // skip list for the ones Echo's computer voice would model wrong ("gee"
+  // reads "jee", "thee" is the loud th) or that are potty words ("pee"); and
+  // a switch, one sound at a time. Which syllables and which word are
+  // Rachel's calls: this holds the code to the list, not the list to a rule.
+  const on = SC && SC.GAME_SYL_ON ? [...SC.GAME_SYL_ON] : [];
+  ok("gamecontent.js exports the game asks: gameSyllables(), gameWord() and their three lists",
+    !!(SC && SC.gameSyllables && SC.gameWord && SC.GAME_SYL_ON && SC.GAME_SKIP && SC.GAME_SHORT));
+  ok("only R is switched on: a sound goes in after its lines were LISTENED to on a phone, and then here",
+    on.join() === "R", on.join());
+  const off = ALL.filter((x) => !on.includes(x));
+  ok("a sound that is not switched on gets no game syllable and no short word (its cards keep the bare sound)",
+    off.every((x) => SC.gameSyllables(x).length === 0 && SC.gameWord(x) === ""), off.filter((x) => SC.gameSyllables(x).length || SC.gameWord(x)).join(", "));
+  ok("R's game syllables are ree, rah, roh, in that order, and its short word is rot",
+    SC.gameSyllables("R").map((x) => x.t).join() === "ree,rah,roh" && SC.gameWord("R") === "rot" && Object.keys(SC.GAME_SHORT).join() === "R",
+    SC.gameSyllables("R").map((x) => x.t).join() + " · " + SC.gameWord("R"));
+  // …and what each of the others would get the day it is switched on
+  ALL.forEach((x) => { if (!SC.GAME_SYL_ON.includes(x)) SC.GAME_SYL_ON.push(x); });
+  const SKIPPED = { P: ["pee"], G: ["gee"], TH: ["thee"] }, wrong = [];
+  for (const x of ALL) {
+    const five = SC.syllables(x).map((y) => y.t), gs = SC.gameSyllables(x);
+    if (gs.length !== 3 || new Set(gs.map((y) => y.t)).size !== 3) wrong.push(`${x}: not three (${gs.map((y) => y.t).join(", ")})`);
+    gs.forEach((y) => {
+      if (!five.includes(y.t)) wrong.push(`${x}: ${y.t} is not one of syllables()`);
+      if (y.say !== y.t) wrong.push(`${x}: shows ${y.t}, says ${y.say}`);
+      if (NEVER_SAY.includes(y.t) || (SKIPPED[x] || []).includes(y.t)) wrong.push(`${x}: ${y.t} is never asked`);
+    });
+  }
+  ok("every sound's game syllables are three of its own five, none a never-say word, none on the skip list (pee, gee, the quiet th's thee)",
+    wrong.length === 0, wrong.join("; "));
+  ok("a skipped syllable is replaced by the next of that sound's five, never dropped",
+    SC.gameSyllables("P").map((x) => x.t).join() === "pah,poh,pie" && SC.gameSyllables("G").map((x) => x.t).join() === "gah,goh,goo" && SC.gameSyllables("TH").map((x) => x.t).join() === "thah,thoh,thoo",
+    ["P", "G", "TH"].map((x) => x + ": " + SC.gameSyllables(x).map((y) => y.t).join(",")).join(" · "));
+  const LEAD = { K: /^[ck]/, J: /^[jg]/, S: /^s(?!h)/, T: /^t(?!h)/, THV: /^th/ };
+  const badShort = Object.keys(SC.GAME_SHORT).filter((x) => {
+    const w = String(SC.GAME_SHORT[x]);
+    return !ALL.includes(x) || !/^[a-z]+$/.test(w) || NEVER_SAY.includes(w) || !(LEAD[x] || new RegExp("^" + x.toLowerCase())).test(w) || (w !== "rot" && !bankWords.includes(w));
+  });
+  ok("every short word is one word, starts with its sound, and (rot aside: Travis's word) is in the word bank",
+    badShort.length === 0, badShort.map((x) => x + ": " + SC.GAME_SHORT[x]).join(", "));
+}
+
+// ---- 7d. a syllable for every place in a word (Travis, 22 Oct 2026: "not
+// just saying the sound of the letter R, but to progress where we're doing
+// re, ra, ru, and then we're doing a full word and applying that to each
+// letter") ----
+// Middle, End, Vocalic R and Blends each have a table of syllables Rachel can
+// read (gamecontent.js). This holds the tables to the never-say list in every
+// form a child could end up saying: what the card shows, what Echo's voice is
+// given, and a blend said WITHOUT its sound (the commonest blend error, which
+// is why S's blend is "spa", never "spee"); and to the listening rule: a
+// place is asked only once someone has listened (SYL_POS_ON, GAME_POS_ON).
+{
+  const box = { window: {} };
+  vm.runInNewContext(readFileSync(ROOT + "/public/gamecontent.js", "utf8"), box);
+  const SC = box.window.SonaContent;
+  const NEVER = ["gay", "poo", "ass", "allah", "jah", "pee", "poop", "butt", "fart", "god", "damn", "hell", "sex", "nig", "fag", "kill"];
+  const SPELL = { P: "p", B: "b", M: "m", N: "n", T: "t", D: "d", K: "[ck]", G: "g", F: "f", V: "v", S: "s|c(?=e)", Z: "z|s(?=e)", SH: "sh", CH: "t?ch", J: "dge|g(?=e)|j", L: "l", R: "r", TH: "th", THV: "th" };
+  const tables = SC && SC.syllableTables ? SC.syllableTables() : [];
+  ok("every place has its own tables: Middle and End for every sound, Vocalic R for R, Blends for R, S and L",
+    ["m", "f"].every((p) => ALL.every((x) => tables.some((t) => t.pos === p && t.sound === x)))
+    && tables.filter((t) => t.pos === "v").map((t) => t.sound).join() === "R" && tables.filter((t) => t.pos === "b").map((t) => t.sound).sort().join() === "L,R,S",
+    tables.map((t) => t.pos + ":" + t.sound).join(" "));
+  const bad = [], thin = [];
+  for (const t of tables) {
+    if (t.items.length < 3) thin.push(t.pos + " " + t.sound);
+    for (const it of t.items) {
+      const forms = [it.t, it.say].concat(it.t.split("-"), it.say.split("-"));
+      if (t.pos === "b") forms.push(it.t.replace(new RegExp(SPELL[t.sound]), ""));   // a blend said without its sound
+      if (t.sound === "Z" && t.pos === "f") forms.push(it.t.replace(/z|s(?=e)/, "s"));  // a final z said as s
+      // as heard: letters only, a doubled letter once, a vowel's h dropped ("ahss" is "as")
+      const norm = (f) => String(f).toLowerCase().replace(/[^a-z]/g, "").replace(/(.)\1+/g, "$1").replace(/([aeiou])h(?![aeiou])/g, "$1");
+      forms.forEach((f) => { const w = String(f).toLowerCase().replace(/[^a-z]/g, ""); if (NEVER.includes(w) || NEVER.includes(norm(f)) || norm(f) === "as") bad.push(`${t.pos} ${t.sound}: ${it.t} (${f})`); });
+      if (!new RegExp(SPELL[t.sound]).test(it.t)) bad.push(`${t.pos} ${t.sound}: ${it.t} does not spell its sound`);
+      if (t.pos === "m" && !/^[a-z]+-[a-z]+$/.test(it.t)) bad.push(`m ${t.sound}: ${it.t} is not two beats`);
+    }
+  }
+  ok("no syllable at any place is, says, or (as a blend without its sound) leaves a never-say word, and each spells its sound", bad.length === 0, bad.join("; "));
+  ok("every table has at least three syllables to choose from", thin.length === 0, thin.join(", "));
+  ok("a middle syllable keeps its hyphen in what Echo is given (two beats, never \"eerie\"), and leaves out ah-lah, ah-jah, ee-ree and ee-lee",
+    tables.filter((t) => t.pos === "m").every((t) => t.items.every((it) => it.say === it.t)) && !tables.some((t) => t.items.some((it) => /^(ah-lah|ah-jah|ee-ree|ee-lee)$/.test(it.t))));
+  const voc = tables.filter((t) => t.pos === "v")[0];
+  ok("vocalic R has no \"er\" (a voice reads it as a hesitation), and gives Echo real words to say (are, ore)",
+    !!voc && !voc.items.some((x) => x.t === "er") && voc.items.map((x) => x.say).join() === "are,ore,air,ear,ire");
+  // the listening rule
+  ok("every new place ships switched off for the practice page, until someone has listened (/listen.html)",
+    JSON.stringify(SC.SYL_POS_ON) === JSON.stringify({ m: [], f: [], v: [], b: [] }), JSON.stringify(SC.SYL_POS_ON));
+  ok("a place that is not switched on has no syllables to ask (the climb skips the step); one with no table uses the start of a word",
+    SC.syllables("S", "f").length === 0 && SC.syllables("R", "m").length === 0 && SC.syllables("S", "v").map((x) => x.t).join() === SC.syllables("S").map((x) => x.t).join());
+  ok("no game card asks a new place's syllables until it is listed in GAME_POS_ON (none yet)",
+    JSON.stringify(SC.GAME_POS_ON) === JSON.stringify({ R: [] }) && ["m", "f", "v", "b"].every((p) => SC.gameSyllables("R", p).length === 0));
+  // …and what each place would ask the day it is switched on
+  ALL.forEach((x) => ["m", "f", "v", "b"].forEach((p) => { if (!SC.SYL_POS_ON[p].includes(x)) SC.SYL_POS_ON[p].push(x); }));
+  const on = [];
+  for (const t of tables) { const got = SC.syllables(t.sound, t.pos).map((x) => x.t).join(); if (got !== t.items.map((x) => x.t).join()) on.push(t.pos + " " + t.sound + ": " + got); }
+  ok("switched on, every place asks exactly its own table", on.length === 0, on.join("; "));
 }
 
 

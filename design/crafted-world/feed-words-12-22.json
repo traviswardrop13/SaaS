@@ -1,0 +1,1205 @@
+{
+  "generator": "Built-in image_gen",
+  "styleReference": "design/crafted-world/references/05-library-practice-feed-final.png",
+  "atlases": [
+    {
+      "file": "feed-words-12.webp",
+      "width": 1254,
+      "height": 1254,
+      "source": "/Users/traviswardrop/.codex/generated_images/01a0e946-2ef0-7ca1-985d-ec16de49617a/exec-cc5e6b37-436b-4971-b3ec-07b137f08895.png",
+      "promptType": "recovered production brief",
+      "prompt": "Recovered production brief (not an exact transcript): square transparent 3 by 3 atlas of the nine inventory words in row-major order, with 15% cell padding. Match the hand-crafted tactile 3D clay and painted wood style of design/crafted-world/references/05-library-practice-feed-final.png. Full complete subjects, no labels, borders, background, external shadows or emoji.",
+      "items": [
+        {
+          "word": "fox",
+          "row": 0,
+          "col": 0,
+          "sourceRect": {
+            "x": 0,
+            "y": 0,
+            "width": 420,
+            "height": 418
+          }
+        },
+        {
+          "word": "frog",
+          "row": 0,
+          "col": 1,
+          "sourceRect": {
+            "x": 420,
+            "y": 0,
+            "width": 416,
+            "height": 418
+          }
+        },
+        {
+          "word": "game",
+          "row": 0,
+          "col": 2,
+          "sourceRect": {
+            "x": 836,
+            "y": 0,
+            "width": 418,
+            "height": 390
+          }
+        },
+        {
+          "word": "gate",
+          "row": 1,
+          "col": 0,
+          "sourceRect": {
+            "x": 0,
+            "y": 418,
+            "width": 420,
+            "height": 377
+          }
+        },
+        {
+          "word": "gift",
+          "row": 1,
+          "col": 1,
+          "sourceRect": {
+            "x": 420,
+            "y": 418,
+            "width": 416,
+            "height": 418
+          }
+        },
+        {
+          "word": "giraffe",
+          "row": 1,
+          "col": 2,
+          "sourceRect": {
+            "x": 836,
+            "y": 390,
+            "width": 418,
+            "height": 446
+          }
+        },
+        {
+          "word": "girl",
+          "row": 2,
+          "col": 0,
+          "sourceRect": {
+            "x": 0,
+            "y": 795,
+            "width": 420,
+            "height": 459
+          }
+        },
+        {
+          "word": "glass",
+          "row": 2,
+          "col": 1,
+          "sourceRect": {
+            "x": 420,
+            "y": 836,
+            "width": 416,
+            "height": 418
+          }
+        },
+        {
+          "word": "glove",
+          "row": 2,
+          "col": 2,
+          "sourceRect": {
+            "x": 836,
+            "y": 836,
+            "width": 418,
+            "height": 418
+          }
+        }
+      ]
+    },
+    {
+      "file": "feed-words-13.webp",
+      "width": 1254,
+      "height": 1254,
+      "source": "/Users/traviswardrop/.codex/generated_images/01a0e946-2ef0-7ca1-985d-ec16de49617a/exec-229b26d9-ea8d-48c1-9977-29fcae7d93a0.png",
+      "promptType": "recovered production brief",
+      "prompt": "Recovered production brief (not an exact transcript): square transparent 3 by 3 atlas of the nine inventory words in row-major order, with 15% cell padding. Match the hand-crafted tactile 3D clay and painted wood style of design/crafted-world/references/05-library-practice-feed-final.png. Full complete subjects, no labels, borders, background, external shadows or emoji.",
+      "items": [
+        {
+          "word": "gloves",
+          "row": 0,
+          "col": 0,
+          "sourceRect": {
+            "x": 0,
+            "y": 0,
+            "width": 418,
+            "height": 418
+          }
+        },
+        {
+          "word": "goat",
+          "row": 0,
+          "col": 1,
+          "sourceRect": {
+            "x": 418,
+            "y": 0,
+            "width": 418,
+            "height": 418
+          }
+        },
+        {
+          "word": "goose",
+          "row": 0,
+          "col": 2,
+          "sourceRect": {
+            "x": 836,
+            "y": 0,
+            "width": 418,
+            "height": 418
+          }
+        },
+        {
+          "word": "grapes",
+          "row": 1,
+          "col": 0,
+          "sourceRect": {
+            "x": 0,
+            "y": 418,
+            "width": 418,
+            "height": 418
+          }
+        },
+        {
+          "word": "guitar",
+          "row": 1,
+          "col": 1,
+          "sourceRect": {
+            "x": 418,
+            "y": 418,
+            "width": 418,
+            "height": 418
+          }
+        },
+        {
+          "word": "gum",
+          "row": 1,
+          "col": 2,
+          "sourceRect": {
+            "x": 836,
+            "y": 418,
+            "width": 418,
+            "height": 417
+          }
+        },
+        {
+          "word": "ham",
+          "row": 2,
+          "col": 0,
+          "sourceRect": {
+            "x": 0,
+            "y": 836,
+            "width": 418,
+            "height": 418
+          }
+        },
+        {
+          "word": "hammer",
+          "row": 2,
+          "col": 1,
+          "sourceRect": {
+            "x": 418,
+            "y": 836,
+            "width": 418,
+            "height": 418
+          }
+        },
+        {
+          "word": "hand",
+          "row": 2,
+          "col": 2,
+          "sourceRect": {
+            "x": 836,
+            "y": 835,
+            "width": 418,
+            "height": 419
+          }
+        }
+      ]
+    },
+    {
+      "file": "feed-words-14.webp",
+      "width": 1254,
+      "height": 1254,
+      "source": "/Users/traviswardrop/.codex/generated_images/01a0e946-2ef0-7ca1-985d-ec16de49617a/exec-e61c322c-772e-4d74-a412-e686b49d62ab.png",
+      "promptType": "recovered production brief",
+      "prompt": "Recovered production brief (not an exact transcript): square transparent 3 by 3 atlas of the nine inventory words in row-major order, with 15% cell padding. Match the hand-crafted tactile 3D clay and painted wood style of design/crafted-world/references/05-library-practice-feed-final.png. Full complete subjects, no labels, borders, background, external shadows or emoji.",
+      "items": [
+        {
+          "word": "happy",
+          "row": 0,
+          "col": 0,
+          "sourceRect": {
+            "x": 0,
+            "y": 0,
+            "width": 418,
+            "height": 418
+          }
+        },
+        {
+          "word": "hat",
+          "row": 0,
+          "col": 1,
+          "sourceRect": {
+            "x": 418,
+            "y": 0,
+            "width": 414,
+            "height": 418
+          }
+        },
+        {
+          "word": "hose",
+          "row": 0,
+          "col": 2,
+          "sourceRect": {
+            "x": 832,
+            "y": 0,
+            "width": 422,
+            "height": 418
+          }
+        },
+        {
+          "word": "house",
+          "row": 1,
+          "col": 0,
+          "sourceRect": {
+            "x": 0,
+            "y": 418,
+            "width": 418,
+            "height": 418
+          }
+        },
+        {
+          "word": "ice",
+          "row": 1,
+          "col": 1,
+          "sourceRect": {
+            "x": 418,
+            "y": 418,
+            "width": 414,
+            "height": 418
+          }
+        },
+        {
+          "word": "jacket",
+          "row": 1,
+          "col": 2,
+          "sourceRect": {
+            "x": 832,
+            "y": 418,
+            "width": 422,
+            "height": 418
+          }
+        },
+        {
+          "word": "jam",
+          "row": 2,
+          "col": 0,
+          "sourceRect": {
+            "x": 0,
+            "y": 836,
+            "width": 418,
+            "height": 418
+          }
+        },
+        {
+          "word": "jar",
+          "row": 2,
+          "col": 1,
+          "sourceRect": {
+            "x": 418,
+            "y": 836,
+            "width": 414,
+            "height": 418
+          }
+        },
+        {
+          "word": "jeep",
+          "row": 2,
+          "col": 2,
+          "sourceRect": {
+            "x": 832,
+            "y": 836,
+            "width": 422,
+            "height": 418
+          }
+        }
+      ]
+    },
+    {
+      "file": "feed-words-15.webp",
+      "width": 1254,
+      "height": 1254,
+      "source": "/Users/traviswardrop/.codex/generated_images/01a0e946-2ef0-7ca1-985d-ec16de49617a/exec-7e4d8cef-5411-43af-afd5-291382f90b81.png",
+      "promptType": "recovered production brief",
+      "prompt": "Recovered production brief (not an exact transcript): square transparent 3 by 3 atlas of the nine inventory words in row-major order, with 15% cell padding. Match the hand-crafted tactile 3D clay and painted wood style of design/crafted-world/references/05-library-practice-feed-final.png. Full complete subjects, no labels, borders, background, external shadows or emoji.",
+      "items": [
+        {
+          "word": "jet",
+          "row": 0,
+          "col": 0,
+          "sourceRect": {
+            "x": 0,
+            "y": 0,
+            "width": 421,
+            "height": 417
+          }
+        },
+        {
+          "word": "juice",
+          "row": 0,
+          "col": 1,
+          "sourceRect": {
+            "x": 421,
+            "y": 0,
+            "width": 415,
+            "height": 418
+          }
+        },
+        {
+          "word": "kangaroo",
+          "row": 0,
+          "col": 2,
+          "sourceRect": {
+            "x": 836,
+            "y": 0,
+            "width": 418,
+            "height": 426
+          }
+        },
+        {
+          "word": "ketchup",
+          "row": 1,
+          "col": 0,
+          "sourceRect": {
+            "x": 0,
+            "y": 417,
+            "width": 421,
+            "height": 419
+          }
+        },
+        {
+          "word": "key",
+          "row": 1,
+          "col": 1,
+          "sourceRect": {
+            "x": 421,
+            "y": 418,
+            "width": 415,
+            "height": 401
+          }
+        },
+        {
+          "word": "king",
+          "row": 1,
+          "col": 2,
+          "sourceRect": {
+            "x": 836,
+            "y": 426,
+            "width": 418,
+            "height": 410
+          }
+        },
+        {
+          "word": "kitchen",
+          "row": 2,
+          "col": 0,
+          "sourceRect": {
+            "x": 0,
+            "y": 836,
+            "width": 421,
+            "height": 418
+          }
+        },
+        {
+          "word": "kite",
+          "row": 2,
+          "col": 1,
+          "sourceRect": {
+            "x": 421,
+            "y": 819,
+            "width": 415,
+            "height": 435
+          }
+        },
+        {
+          "word": "knife",
+          "row": 2,
+          "col": 2,
+          "sourceRect": {
+            "x": 836,
+            "y": 836,
+            "width": 418,
+            "height": 418
+          }
+        }
+      ]
+    },
+    {
+      "file": "feed-words-16.webp",
+      "width": 1254,
+      "height": 1254,
+      "source": "/Users/traviswardrop/.codex/generated_images/01a0e946-2ef0-7ca1-985d-ec16de49617a/exec-65c68f9e-072a-46d5-a15f-a29e186f1ff7.png",
+      "promptType": "recovered production brief",
+      "prompt": "Recovered production brief (not an exact transcript): square transparent 3 by 3 atlas of the nine inventory words in row-major order, with 15% cell padding. Match the hand-crafted tactile 3D clay and painted wood style of design/crafted-world/references/05-library-practice-feed-final.png. Full complete subjects, no labels, borders, background, external shadows or emoji.",
+      "items": [
+        {
+          "word": "koala",
+          "row": 0,
+          "col": 0,
+          "sourceRect": {
+            "x": 0,
+            "y": 0,
+            "width": 418,
+            "height": 418
+          }
+        },
+        {
+          "word": "ladder",
+          "row": 0,
+          "col": 1,
+          "sourceRect": {
+            "x": 418,
+            "y": 0,
+            "width": 418,
+            "height": 418
+          }
+        },
+        {
+          "word": "lamp",
+          "row": 0,
+          "col": 2,
+          "sourceRect": {
+            "x": 836,
+            "y": 0,
+            "width": 418,
+            "height": 418
+          }
+        },
+        {
+          "word": "leaf",
+          "row": 1,
+          "col": 0,
+          "sourceRect": {
+            "x": 0,
+            "y": 418,
+            "width": 418,
+            "height": 413
+          }
+        },
+        {
+          "word": "leash",
+          "row": 1,
+          "col": 1,
+          "sourceRect": {
+            "x": 418,
+            "y": 418,
+            "width": 418,
+            "height": 418
+          }
+        },
+        {
+          "word": "leather",
+          "row": 1,
+          "col": 2,
+          "sourceRect": {
+            "x": 836,
+            "y": 418,
+            "width": 418,
+            "height": 418
+          }
+        },
+        {
+          "word": "leg",
+          "row": 2,
+          "col": 0,
+          "sourceRect": {
+            "x": 0,
+            "y": 831,
+            "width": 418,
+            "height": 423
+          }
+        },
+        {
+          "word": "lemon",
+          "row": 2,
+          "col": 1,
+          "sourceRect": {
+            "x": 418,
+            "y": 836,
+            "width": 418,
+            "height": 418
+          }
+        },
+        {
+          "word": "letter",
+          "row": 2,
+          "col": 2,
+          "sourceRect": {
+            "x": 836,
+            "y": 836,
+            "width": 418,
+            "height": 418
+          }
+        }
+      ]
+    },
+    {
+      "file": "feed-words-17.webp",
+      "width": 1254,
+      "height": 1254,
+      "source": "/Users/traviswardrop/.codex/generated_images/01a0e988-d16e-7933-bac1-27926699e5e4/exec-8fdb06a8-fa0e-4a60-a34a-c981c81762da.png",
+      "promptType": "exact tool prompt",
+      "prompt": "Use case: illustration-story. Asset type: production sprite atlas, square 1536x1536 transparent PNG. Reference image is STYLE ONLY: match the tactile clay and carved wood objects on the right-hand phone of this Sona concept. Create exactly NINE separate objects in a strict invisible 3-column by 3-row grid of equal square cells. Row-major cell order: 1. a friendly full-body golden lion with fluffy mane; 2. a green lizard with curled tail; 3. a closed brass padlock; 4. a spiral rainbow lollipop on wooden stick; 5. a lunchbox opened to show a sandwich and apple; 6. a magic wand with one bright star-shaped sparkle; 7. a red horseshoe magnet; 8. a folded paper map with winding dotted path and trees, no labels; 9. a little wooden abacus with colored beads to represent math. Each object must fit completely inside its own cell with at least 15 percent empty padding on every edge; center it and keep it separate from every neighbor. No object may cross cell boundaries. Full complete silhouettes. Hand-crafted dimensional clay and painted wood, rich soft rounded forms, warm upper-left lighting, subtle material texture. Object colors recognizably natural. Real alpha transparency across the entire background and between all objects. No external cast shadows, no background, no checkerboard, no card panels, no grid, no border, no words or labels, no emojis. Only the number 9 if explicitly requested as a subject may contain a numeral. No extra objects beyond those specified.",
+      "items": [
+        {
+          "word": "lion",
+          "row": 0,
+          "col": 0,
+          "sourceRect": {
+            "x": 0,
+            "y": 0,
+            "width": 418,
+            "height": 437
+          }
+        },
+        {
+          "word": "lizard",
+          "row": 0,
+          "col": 1,
+          "sourceRect": {
+            "x": 418,
+            "y": 0,
+            "width": 418,
+            "height": 436
+          }
+        },
+        {
+          "word": "lock",
+          "row": 0,
+          "col": 2,
+          "sourceRect": {
+            "x": 836,
+            "y": 0,
+            "width": 418,
+            "height": 418
+          }
+        },
+        {
+          "word": "lollipop",
+          "row": 1,
+          "col": 0,
+          "sourceRect": {
+            "x": 0,
+            "y": 437,
+            "width": 418,
+            "height": 414
+          }
+        },
+        {
+          "word": "lunch",
+          "row": 1,
+          "col": 1,
+          "sourceRect": {
+            "x": 418,
+            "y": 436,
+            "width": 418,
+            "height": 409
+          }
+        },
+        {
+          "word": "magic",
+          "row": 1,
+          "col": 2,
+          "sourceRect": {
+            "x": 836,
+            "y": 418,
+            "width": 418,
+            "height": 429
+          }
+        },
+        {
+          "word": "magnet",
+          "row": 2,
+          "col": 0,
+          "sourceRect": {
+            "x": 0,
+            "y": 851,
+            "width": 418,
+            "height": 403
+          }
+        },
+        {
+          "word": "map",
+          "row": 2,
+          "col": 1,
+          "sourceRect": {
+            "x": 418,
+            "y": 845,
+            "width": 418,
+            "height": 409
+          }
+        },
+        {
+          "word": "math",
+          "row": 2,
+          "col": 2,
+          "sourceRect": {
+            "x": 836,
+            "y": 847,
+            "width": 418,
+            "height": 407
+          }
+        }
+      ]
+    },
+    {
+      "file": "feed-words-18.webp",
+      "width": 1254,
+      "height": 1254,
+      "source": "/Users/traviswardrop/.codex/generated_images/01a0e988-d16e-7933-bac1-27926699e5e4/exec-509dcf00-cd0f-464d-8e43-716b2eb8bbcf.png",
+      "promptType": "exact tool prompt",
+      "prompt": "Use case: illustration-story. Asset type: production sprite atlas, square 1536x1536 transparent PNG. Reference image is STYLE ONLY: match the tactile clay and carved wood objects on the right-hand phone of this Sona concept. Create exactly NINE separate objects in a strict invisible 3-column by 3-row grid of equal square cells. Row-major cell order: 1. a gold award medal on a teal ribbon; 2. a clear glass full of white milk; 3. a mother in warm coral clothes hugging a little child to represent mom; 4. a friendly brown monkey with curled tail; 5. a golden crescent moon; 6. a soft brown moth with open patterned wings; 7. a mother in teal clothes holding her baby to represent mother; 8. a snow-capped mountain miniature; 9. a friendly small gray mouse with long tail. Each object must fit completely inside its own cell with at least 15 percent empty padding on every edge; center it and keep it separate from every neighbor. No object may cross cell boundaries. Full complete silhouettes. Hand-crafted dimensional clay and painted wood, rich soft rounded forms, warm upper-left lighting, subtle material texture. Object colors recognizably natural. Real alpha transparency across the entire background and between all objects. No external cast shadows, no background, no checkerboard, no card panels, no grid, no border, no words or labels, no emojis. Only the number 9 if explicitly requested as a subject may contain a numeral. No extra objects beyond those specified.",
+      "items": [
+        {
+          "word": "medal",
+          "row": 0,
+          "col": 0,
+          "sourceRect": {
+            "x": 0,
+            "y": 0,
+            "width": 418,
+            "height": 418
+          }
+        },
+        {
+          "word": "milk",
+          "row": 0,
+          "col": 1,
+          "sourceRect": {
+            "x": 418,
+            "y": 0,
+            "width": 418,
+            "height": 418
+          }
+        },
+        {
+          "word": "mom",
+          "row": 0,
+          "col": 2,
+          "sourceRect": {
+            "x": 836,
+            "y": 0,
+            "width": 418,
+            "height": 421
+          }
+        },
+        {
+          "word": "monkey",
+          "row": 1,
+          "col": 0,
+          "sourceRect": {
+            "x": 0,
+            "y": 418,
+            "width": 418,
+            "height": 415
+          }
+        },
+        {
+          "word": "moon",
+          "row": 1,
+          "col": 1,
+          "sourceRect": {
+            "x": 418,
+            "y": 418,
+            "width": 418,
+            "height": 418
+          }
+        },
+        {
+          "word": "moth",
+          "row": 1,
+          "col": 2,
+          "sourceRect": {
+            "x": 836,
+            "y": 421,
+            "width": 418,
+            "height": 415
+          }
+        },
+        {
+          "word": "mother",
+          "row": 2,
+          "col": 0,
+          "sourceRect": {
+            "x": 0,
+            "y": 833,
+            "width": 418,
+            "height": 421
+          }
+        },
+        {
+          "word": "mountain",
+          "row": 2,
+          "col": 1,
+          "sourceRect": {
+            "x": 418,
+            "y": 836,
+            "width": 418,
+            "height": 418
+          }
+        },
+        {
+          "word": "mouse",
+          "row": 2,
+          "col": 2,
+          "sourceRect": {
+            "x": 836,
+            "y": 836,
+            "width": 418,
+            "height": 418
+          }
+        }
+      ]
+    },
+    {
+      "file": "feed-words-19.webp",
+      "width": 1254,
+      "height": 1254,
+      "source": "/Users/traviswardrop/.codex/generated_images/01a0e988-d16e-7933-bac1-27926699e5e4/exec-50c161f5-973e-4d9c-92df-1674abd01e3a.png",
+      "promptType": "exact tool prompt",
+      "prompt": "Use case: illustration-story. Asset type: production sprite atlas, square 1536x1536 transparent PNG. Reference image is STYLE ONLY: match the tactile clay and carved wood objects on the right-hand phone of this Sona concept. Create exactly NINE separate objects in a strict invisible 3-column by 3-row grid of equal square cells. Row-major cell order: 1. a natural friendly smiling mouth with lips and visible teeth, cropped closeup of just the mouth; 2. a blueberry muffin in a paper cup; 3. a teal ceramic mug with handle; 4. a single metal carpentry nail with flat head and pointed tip; 5. a small twig nest containing three eggs; 6. a wooden handled catching net with mesh; 7. one freestanding carved wooden number 9; 8. a bowl of noodles lifted by a fork; 9. a simple natural human nose from the front, rounded clay teaching model. Each object must fit completely inside its own cell with at least 15 percent empty padding on every edge; center it and keep it separate from every neighbor. No object may cross cell boundaries. Full complete silhouettes. Hand-crafted dimensional clay and painted wood, rich soft rounded forms, warm upper-left lighting, subtle material texture. Object colors recognizably natural. Real alpha transparency across the entire background and between all objects. No external cast shadows, no background, no checkerboard, no card panels, no grid, no border, no words or labels, no emojis. Only the number 9 if explicitly requested as a subject may contain a numeral. No extra objects beyond those specified.",
+      "items": [
+        {
+          "word": "mouth",
+          "row": 0,
+          "col": 0,
+          "sourceRect": {
+            "x": 0,
+            "y": 0,
+            "width": 418,
+            "height": 418
+          }
+        },
+        {
+          "word": "muffin",
+          "row": 0,
+          "col": 1,
+          "sourceRect": {
+            "x": 418,
+            "y": 0,
+            "width": 418,
+            "height": 418
+          }
+        },
+        {
+          "word": "mug",
+          "row": 0,
+          "col": 2,
+          "sourceRect": {
+            "x": 836,
+            "y": 0,
+            "width": 418,
+            "height": 418
+          }
+        },
+        {
+          "word": "nail",
+          "row": 1,
+          "col": 0,
+          "sourceRect": {
+            "x": 0,
+            "y": 418,
+            "width": 418,
+            "height": 418
+          }
+        },
+        {
+          "word": "nest",
+          "row": 1,
+          "col": 1,
+          "sourceRect": {
+            "x": 418,
+            "y": 418,
+            "width": 418,
+            "height": 418
+          }
+        },
+        {
+          "word": "net",
+          "row": 1,
+          "col": 2,
+          "sourceRect": {
+            "x": 836,
+            "y": 418,
+            "width": 418,
+            "height": 418
+          }
+        },
+        {
+          "word": "nine",
+          "row": 2,
+          "col": 0,
+          "sourceRect": {
+            "x": 0,
+            "y": 836,
+            "width": 418,
+            "height": 418
+          }
+        },
+        {
+          "word": "noodle",
+          "row": 2,
+          "col": 1,
+          "sourceRect": {
+            "x": 418,
+            "y": 836,
+            "width": 418,
+            "height": 418
+          }
+        },
+        {
+          "word": "nose",
+          "row": 2,
+          "col": 2,
+          "sourceRect": {
+            "x": 836,
+            "y": 836,
+            "width": 418,
+            "height": 418
+          }
+        }
+      ]
+    },
+    {
+      "file": "feed-words-20.webp",
+      "width": 1254,
+      "height": 1254,
+      "source": "/Users/traviswardrop/.codex/generated_images/01a0e988-d16e-7933-bac1-27926699e5e4/exec-18af546f-82e9-4117-927c-3db9fee110f7.png",
+      "promptType": "exact tool prompt",
+      "prompt": "Use case: illustration-story. Asset type: production sprite atlas, square 1536x1536 transparent PNG. Reference image is STYLE ONLY: match the tactile clay and carved wood objects on the right-hand phone of this Sona concept. Create exactly NINE separate objects in a strict invisible 3-column by 3-row grid of equal square cells. Row-major cell order: 1. a brown walnut, one whole nut and one opened half; 2. a miniature blue ocean wave curling with white foam; 3. one orange fruit with a leaf; 4. a miniature kitchen oven with visible oven door; 5. a friendly brown owl; 6. one cream paper page with a folded corner and faint abstract lines, no letters; 7. a wooden artist paint palette with bright colors and brush; 8. a matching long-sleeved child's pajama top and trousers with star pattern; 9. a dark frying pan with wooden handle. Each object must fit completely inside its own cell with at least 15 percent empty padding on every edge; center it and keep it separate from every neighbor. No object may cross cell boundaries. Full complete silhouettes. Hand-crafted dimensional clay and painted wood, rich soft rounded forms, warm upper-left lighting, subtle material texture. Object colors recognizably natural. Real alpha transparency across the entire background and between all objects. No external cast shadows, no background, no checkerboard, no card panels, no grid, no border, no words or labels, no emojis. Only the number 9 if explicitly requested as a subject may contain a numeral. No extra objects beyond those specified.",
+      "items": [
+        {
+          "word": "nut",
+          "row": 0,
+          "col": 0,
+          "sourceRect": {
+            "x": 0,
+            "y": 0,
+            "width": 429,
+            "height": 418
+          }
+        },
+        {
+          "word": "ocean",
+          "row": 0,
+          "col": 1,
+          "sourceRect": {
+            "x": 429,
+            "y": 0,
+            "width": 407,
+            "height": 418
+          }
+        },
+        {
+          "word": "orange",
+          "row": 0,
+          "col": 2,
+          "sourceRect": {
+            "x": 836,
+            "y": 0,
+            "width": 418,
+            "height": 418
+          }
+        },
+        {
+          "word": "oven",
+          "row": 1,
+          "col": 0,
+          "sourceRect": {
+            "x": 0,
+            "y": 418,
+            "width": 429,
+            "height": 418
+          }
+        },
+        {
+          "word": "owl",
+          "row": 1,
+          "col": 1,
+          "sourceRect": {
+            "x": 429,
+            "y": 418,
+            "width": 407,
+            "height": 416
+          }
+        },
+        {
+          "word": "page",
+          "row": 1,
+          "col": 2,
+          "sourceRect": {
+            "x": 836,
+            "y": 418,
+            "width": 418,
+            "height": 418
+          }
+        },
+        {
+          "word": "paint",
+          "row": 2,
+          "col": 0,
+          "sourceRect": {
+            "x": 0,
+            "y": 836,
+            "width": 429,
+            "height": 418
+          }
+        },
+        {
+          "word": "pajamas",
+          "row": 2,
+          "col": 1,
+          "sourceRect": {
+            "x": 429,
+            "y": 834,
+            "width": 407,
+            "height": 420
+          }
+        },
+        {
+          "word": "pan",
+          "row": 2,
+          "col": 2,
+          "sourceRect": {
+            "x": 836,
+            "y": 836,
+            "width": 418,
+            "height": 418
+          }
+        }
+      ]
+    },
+    {
+      "file": "feed-words-21.webp",
+      "width": 1254,
+      "height": 1254,
+      "source": "/Users/traviswardrop/.codex/generated_images/01a0e988-d16e-7933-bac1-27926699e5e4/exec-0645b2c0-1cee-42eb-bd27-88e44b436133.png",
+      "promptType": "exact tool prompt",
+      "prompt": "Use case: illustration-story. Asset type: production sprite atlas, square 1536x1536 transparent PNG. Reference image is STYLE ONLY: match the tactile clay and carved wood objects on the right-hand phone of this Sona concept. Create exactly NINE separate objects in a strict invisible 3-column by 3-row grid of equal square cells. Row-major cell order: 1. a friendly full-body giant panda; 2. a stack of three blank cream paper sheets; 3. a colorful green and red parrot; 4. a ripe peach with one leaf; 5. a single peanut in its shell with one kernel beside it; 6. a dark blue ballpoint pen; 7. a yellow wooden pencil with pink eraser; 8. a golden baked lattice pie in round dish; 9. a friendly pink pig. Each object must fit completely inside its own cell with at least 15 percent empty padding on every edge; center it and keep it separate from every neighbor. No object may cross cell boundaries. Full complete silhouettes. Hand-crafted dimensional clay and painted wood, rich soft rounded forms, warm upper-left lighting, subtle material texture. Object colors recognizably natural. Real alpha transparency across the entire background and between all objects. No external cast shadows, no background, no checkerboard, no card panels, no grid, no border, no words or labels, no emojis. Only the number 9 if explicitly requested as a subject may contain a numeral. No extra objects beyond those specified.",
+      "items": [
+        {
+          "word": "panda",
+          "row": 0,
+          "col": 0,
+          "sourceRect": {
+            "x": 0,
+            "y": 0,
+            "width": 418,
+            "height": 435
+          }
+        },
+        {
+          "word": "paper",
+          "row": 0,
+          "col": 1,
+          "sourceRect": {
+            "x": 418,
+            "y": 0,
+            "width": 418,
+            "height": 418
+          }
+        },
+        {
+          "word": "parrot",
+          "row": 0,
+          "col": 2,
+          "sourceRect": {
+            "x": 836,
+            "y": 0,
+            "width": 418,
+            "height": 418
+          }
+        },
+        {
+          "word": "peach",
+          "row": 1,
+          "col": 0,
+          "sourceRect": {
+            "x": 0,
+            "y": 435,
+            "width": 418,
+            "height": 401
+          }
+        },
+        {
+          "word": "peanut",
+          "row": 1,
+          "col": 1,
+          "sourceRect": {
+            "x": 418,
+            "y": 418,
+            "width": 418,
+            "height": 418
+          }
+        },
+        {
+          "word": "pen",
+          "row": 1,
+          "col": 2,
+          "sourceRect": {
+            "x": 836,
+            "y": 418,
+            "width": 418,
+            "height": 417
+          }
+        },
+        {
+          "word": "pencil",
+          "row": 2,
+          "col": 0,
+          "sourceRect": {
+            "x": 0,
+            "y": 836,
+            "width": 418,
+            "height": 418
+          }
+        },
+        {
+          "word": "pie",
+          "row": 2,
+          "col": 1,
+          "sourceRect": {
+            "x": 418,
+            "y": 836,
+            "width": 418,
+            "height": 418
+          }
+        },
+        {
+          "word": "pig",
+          "row": 2,
+          "col": 2,
+          "sourceRect": {
+            "x": 836,
+            "y": 835,
+            "width": 418,
+            "height": 419
+          }
+        }
+      ]
+    },
+    {
+      "file": "feed-words-22.webp",
+      "width": 1254,
+      "height": 1254,
+      "source": "/Users/traviswardrop/.codex/generated_images/01a0e988-d16e-7933-bac1-27926699e5e4/exec-ea39b026-63ad-4743-bd96-e92a6608e1a3.png",
+      "promptType": "exact tool prompt",
+      "prompt": "Use case: illustration-story. Asset type: production sprite atlas, square 1536x1536 transparent PNG. Reference image is STYLE ONLY: match the tactile clay and carved wood objects on the right-hand phone of this Sona concept. Create exactly NINE separate objects in a strict invisible 3-column by 3-row grid of equal square cells. Row-major cell order: 1. a plump gray pigeon; 2. a soft square blue pillow; 3. a red push pin; 4. a triangular slice of cheese and tomato pizza; 5. a blue and cream propeller airplane; 6. an empty cream ceramic dinner plate; 7. a brown potato; 8. an orange pumpkin with green stem, no face; 9. a friendly brown and white puppy. Each object must fit completely inside its own cell with at least 15 percent empty padding on every edge; center it and keep it separate from every neighbor. No object may cross cell boundaries. Full complete silhouettes. Hand-crafted dimensional clay and painted wood, rich soft rounded forms, warm upper-left lighting, subtle material texture. Object colors recognizably natural. Real alpha transparency across the entire background and between all objects. No external cast shadows, no background, no checkerboard, no card panels, no grid, no border, no words or labels, no emojis. Only the number 9 if explicitly requested as a subject may contain a numeral. No extra objects beyond those specified.",
+      "items": [
+        {
+          "word": "pigeon",
+          "row": 0,
+          "col": 0,
+          "sourceRect": {
+            "x": 0,
+            "y": 0,
+            "width": 418,
+            "height": 418
+          }
+        },
+        {
+          "word": "pillow",
+          "row": 0,
+          "col": 1,
+          "sourceRect": {
+            "x": 418,
+            "y": 0,
+            "width": 418,
+            "height": 418
+          }
+        },
+        {
+          "word": "pin",
+          "row": 0,
+          "col": 2,
+          "sourceRect": {
+            "x": 836,
+            "y": 0,
+            "width": 418,
+            "height": 418
+          }
+        },
+        {
+          "word": "pizza",
+          "row": 1,
+          "col": 0,
+          "sourceRect": {
+            "x": 0,
+            "y": 418,
+            "width": 418,
+            "height": 418
+          }
+        },
+        {
+          "word": "plane",
+          "row": 1,
+          "col": 1,
+          "sourceRect": {
+            "x": 418,
+            "y": 418,
+            "width": 418,
+            "height": 410
+          }
+        },
+        {
+          "word": "plate",
+          "row": 1,
+          "col": 2,
+          "sourceRect": {
+            "x": 836,
+            "y": 418,
+            "width": 418,
+            "height": 417
+          }
+        },
+        {
+          "word": "potato",
+          "row": 2,
+          "col": 0,
+          "sourceRect": {
+            "x": 0,
+            "y": 836,
+            "width": 418,
+            "height": 418
+          }
+        },
+        {
+          "word": "pumpkin",
+          "row": 2,
+          "col": 1,
+          "sourceRect": {
+            "x": 418,
+            "y": 828,
+            "width": 418,
+            "height": 426
+          }
+        },
+        {
+          "word": "puppy",
+          "row": 2,
+          "col": 2,
+          "sourceRect": {
+            "x": 836,
+            "y": 835,
+            "width": 418,
+            "height": 419
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -29,16 +29,32 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
   // is dotted AND is the relay — so a relay event fired from any other page
   // was invisible to this check twice over, which is precisely the silence
   // the suite exists to break.
-  const relayed = new Set();
+  const relayed = new Set(), viaS = new Set(), picked = new Set();
   const files = ["sona.js", ...readdirSync(ROOT).filter((f) => f.endsWith(".html"))];
   for (const f of files) {
     const src = readFileSync(ROOT + "/" + f, "utf8");
     for (const m of src.matchAll(/(?:^|[^.\w])(?:track|tele)\(\s*"([^"]+)"/g)) relayed.add(m[1]);
     for (const m of src.matchAll(/\bSona\.track\(\s*"([^"]+)"/g)) relayed.add(m[1]);
+    // a page's own short name for the app (var S = window.Sona) is the relay
+    // too, and a call can pick its name (FOUND1's replay pages:
+    // track(replay ? "story game replayed" : "game opened", …)): both names
+    if (/\bS\s*=\s*window\.Sona\b/.test(src)) for (const m of src.matchAll(/(?:^|[^.\w])S\.track\(\s*"([^"]+)"/g)) { relayed.add(m[1]); viaS.add(m[1]); }
+    for (const m of src.matchAll(/(?:^|[^.\w])(?:(?:Sona|S)\.)?(?:track|tele)\(\s*[\w.]+\s*\?\s*"([^"]+)"\s*:\s*"([^"]+)"/g)) { relayed.add(m[1]); relayed.add(m[2]); picked.add(m[1]); picked.add(m[2]); }
   }
   ok("the scan looks at every page that can reach the relay, not a fixed pair",
     files.length > 10, files.length + " files");
+  ok("…including a page's own S.track and a call that picks its name (the replay pages' \"story game replayed\")",
+    viaS.has("story finished") && picked.has("story game replayed") && picked.has("game opened"), JSON.stringify({ viaS: [...viaS], picked: [...picked] }));
   const allowed = (relay.match(/const EVENTS = new Set\(\[([\s\S]*?)\]\)/) || ["", ""])[1];
+  // Named, so the next one is a decision: an event a PARKED page fires that
+  // was never allow-listed. Listing it here keeps it out of PostHog, as it
+  // has always been; un-parking its page means adding it to EVENTS.
+  const PARKED = { "story finished": "chapter.html, the parked chapter reader (no menu opens it)" };
+  for (const [ev, why] of Object.entries(PARKED)) {
+    ok(`a parked page's event, named: "${ev}" (${why}) is still fired there and still not in EVENTS`,
+      relayed.has(ev) && !allowed.includes(`"${ev}"`), "fixed or gone: take it off PARKED");
+    relayed.delete(ev);
+  }
   for (const ev of [...relayed].sort()) {
     ok(`relay accepts "${ev}"`, allowed.includes(`"${ev}"`),
       "fired by the app but not in EVENTS — /api/track drops it silently, so it looks like nobody did it");
@@ -127,13 +143,24 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
   ok("…and a brand-new clinician is marked as one",
     /if \(j\.signedIn\) sonaTrack\("CompleteRegistration"\)/.test(handler));
 
+  // THE ROOT IS THE PARENT PAGE NOW (26 Sep 2026), and the parent ads land on
+  // it: the same regression, the same rule. PageView on load, Lead only once
+  // the server said yes, and no CompleteRegistration — a parent has no account.
+  const parents = readFileSync(ROOT + "/parents.html", "utf8");
+  ok("the parent page, where the parent ads land, loads the pixel", /<script src="\/pixel\.js"><\/script>/.test(parents));
+  const pgo = parents.slice(parents.indexOf("function go()"));
+  ok("…and fires Lead only after the server accepted the sign-up",
+    pgo.indexOf("if (!j || !j.ok)") > 0 && pgo.indexOf('sonaTrack("Lead")') > pgo.indexOf("if (!j || !j.ok)"));
+  ok("…with no parameters, and never CompleteRegistration", /sonaTrack\("Lead"\); \} catch/.test(pgo) && !/CompleteRegistration/.test(parents));
+  ok("…and the ad's own click id rides along with the lead", /"fbclid"/.test(parents) && /utm_content/.test(parents) && /\}, attrib\)\)/.test(parents));
+
   // WHERE THE PIXEL MAY LOAD, as an allow-list. A deny-list would mean every
   // new page is tracked until someone remembers to exclude it, and the pages
   // that come next are a child's. These four are the grown-up marketing
   // funnel; every other page — the practice screens, the clinician's caseload,
   // the family's redemption link — carries or is one keystroke from a child's
   // identity and gets no ad tracking at all.
-  const MARKETING = new Set(["check.html", "subscribe.html", "onboarding.html", "for-slps.html"]);
+  const MARKETING = new Set(["check.html", "subscribe.html", "onboarding.html", "for-slps.html", "parents.html", "try.html"]);
   const pages = readdirSync(ROOT).filter((f) => f.endsWith(".html"));
   const strays = pages.filter((f) => !MARKETING.has(f) && /pixel\.js/.test(readFileSync(ROOT + "/" + f, "utf8")));
   ok("no page outside the grown-up marketing funnel loads the ad pixel", strays.length === 0, strays.join(", "));

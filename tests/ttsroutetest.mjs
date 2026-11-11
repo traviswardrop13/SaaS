@@ -64,10 +64,11 @@ class NextResponse extends Response {
   }
 }
 function fixture(env = EL, vendor = () => pcm(), limited = null) {
-  const calls = [], timers = new Map(), exports = {}, settings = { ...env };
+  const calls = [], timers = new Map(), exports = {}, settings = { ...env }, logs = [];
   let timerId = 0;
   const context = {
     exports, process: { env: settings }, AbortController, Response, Uint8Array, ArrayBuffer, Error,
+    console: { warn: (...a) => logs.push(a.join(" ")), log: (...a) => logs.push(a.join(" ")), error: (...a) => logs.push(a.join(" ")) },
     setTimeout(fn, ms) { const id = ++timerId; timers.set(id, { fn, ms }); return id; },
     clearTimeout(id) { timers.delete(id); },
     async fetch(url, options) {
@@ -83,7 +84,7 @@ function fixture(env = EL, vendor = () => pcm(), limited = null) {
   };
   vm.runInNewContext(code, context, { filename: "app/api/tts/route.ts" });
   return {
-    calls, timers, env: settings,
+    calls, timers, logs, env: settings,
     post: (body = { text: "Ready to play?" }) => exports.POST({ json: async () => body }),
     get: () => exports.GET(),
     expire() { for (const { fn } of [...timers.values()]) fn(); },
@@ -95,9 +96,10 @@ function expectVoice(response, provider, model, cache = "miss") {
   assert.equal(response.headers.get("x-sona-voice-provider"), provider);
   assert.equal(response.headers.get("x-sona-voice-model"), model);
   assert.equal(response.headers.get("x-sona-voice-cache"), cache);
-  // v8 (24 Sep 2026): levelled clips + calmer settings + a fixed seed. Must
-  // match TTS_CACHE_VERSION in public/sona.js (pinned below).
-  assert.equal(response.headers.get("x-sona-voice-revision"), "v8");
+  // v9 (28 Sep 2026): Eleven v4 Turbo for every line (v8, 24 Sep: levelled
+  // clips + calmer settings + a fixed seed). Must match TTS_CACHE_VERSION in
+  // public/sona.js (pinned below).
+  assert.equal(response.headers.get("x-sona-voice-revision"), "v9");
 }
 async function expectFailure(response, status = 502) {
   assert.equal(response.status, status);
@@ -114,7 +116,8 @@ const test = (name, run) => tests.push({ name, run });
 test("ElevenLabs preserves chosen voice, uses the calm delivery, reports actual provider", async () => {
   const f = fixture();
   const response = await f.post({ text: "Ready?", voice: "profile-voice", stable: true });
-  expectVoice(response, "elevenlabs", "eleven_multilingual_v2");
+  expectVoice(response, "elevenlabs", "eleven_v4_turbo");
+  assert.equal(f.calls[0].body.model_id, "eleven_v4_turbo");
   assert.ok(f.calls[0].url.includes("/profile-voice?output_format=pcm_24000"));
   // Rewritten deliberately, 24 Sep 2026 (was stability 0.55, style 0.3): Travis
   // asked for "relaxed and sweet, like talking to a little kid". style 0 and
@@ -131,16 +134,16 @@ test("ElevenLabs preserves chosen voice, uses the calm delivery, reports actual 
 test("Identical effective speech is cached; changing delivery/model/voice produces new audio", async () => {
   const f = fixture(EL, (_, count) => pcm(count));
   const first = await f.post({ text: "[excited] Hello" });
-  expectVoice(first, "elevenlabs", "eleven_multilingual_v2");
+  expectVoice(first, "elevenlabs", "eleven_v4_turbo");
   const cached = await f.post({ text: "Hello" });
-  expectVoice(cached, "elevenlabs", "eleven_multilingual_v2", "hit");
+  expectVoice(cached, "elevenlabs", "eleven_v4_turbo", "hit");
   assert.equal(f.calls.length, 1, "cache uses text actually sent to this model");
   assert.deepEqual(new Uint8Array(await first.arrayBuffer()), new Uint8Array(await cached.arrayBuffer()));
   f.env.ELEVENLABS_SPEED = "0.90";
-  expectVoice(await f.post({ text: "Hello" }), "elevenlabs", "eleven_multilingual_v2");
+  expectVoice(await f.post({ text: "Hello" }), "elevenlabs", "eleven_v4_turbo");
   assert.equal(f.calls[1].body.voice_settings.speed, 0.9);
-  f.env.ELEVENLABS_MODEL = "eleven_turbo_v2_5";
-  expectVoice(await f.post({ text: "Hello" }), "elevenlabs", "eleven_turbo_v2_5");
+  f.env.ELEVENLABS_PRIMARY_MODEL = "eleven_v4";
+  expectVoice(await f.post({ text: "Hello" }), "elevenlabs", "eleven_v4");
   await f.post({ text: "Hello", voice: "another-voice" });
   assert.equal(f.calls.length, 4);
 });
@@ -157,10 +160,10 @@ test("A live speed change cannot replay a clip made with old settings", async ()
 test("Configured model change cannot replay the old model's cache", async () => {
   const f = fixture();
   await f.post({ text: "Hello" });
-  f.env.ELEVENLABS_MODEL = "eleven_turbo_v2_5";
+  f.env.ELEVENLABS_PRIMARY_MODEL = "eleven_v4";
   await f.post({ text: "Hello" });
   assert.equal(f.calls.length, 2);
-  assert.equal(f.calls[1].body.model_id, "eleven_turbo_v2_5");
+  assert.equal(f.calls[1].body.model_id, "eleven_v4");
 });
 
 test("Long story text stays out of the short-prompt cache", async () => {
@@ -181,11 +184,11 @@ test("v3 opt-in sends only supported controls and keeps delivery tags", async ()
 test("v3 fallback reports and caches the model that really synthesized the clip", async () => {
   const f = fixture({ ...EL, ELEVENLABS_V3: "1" }, (_, count) => count === 1
     ? new Response(secret, { status: 403 }) : pcm());
-  expectVoice(await f.post({ text: "[excited] Hello" }), "elevenlabs", "eleven_multilingual_v2");
+  expectVoice(await f.post({ text: "[excited] Hello" }), "elevenlabs", "eleven_v4_turbo");
   assert.equal(f.calls[1].body.text, "Hello");
   assert.ok(f.calls[0].options.signal);
   assert.equal(f.calls[0].options.signal, f.calls[1].options.signal, "fallback shares the same deadline");
-  expectVoice(await f.post({ text: "Hello" }), "elevenlabs", "eleven_multilingual_v2", "hit");
+  expectVoice(await f.post({ text: "Hello" }), "elevenlabs", "eleven_v4_turbo", "hit");
   assert.equal(f.calls.length, 2);
 });
 
@@ -221,7 +224,9 @@ for (const [name, env] of [["ElevenLabs", EL], ["OpenAI", OA]]) {
     const f = fixture(env, (_, count) => new Response(new Uint8Array(count === 1 ? [] : [1])));
     await expectFailure(await f.post());
     await expectFailure(await f.post());
-    assert.equal(f.calls.length, 2);
+    // ElevenLabs: a broken body from v4 Turbo moves on to v2 (also broken
+    // here), so two models per line; nothing cached either time.
+    assert.equal(f.calls.length, name === "ElevenLabs" ? 4 : 2);
   });
   test(`${name} vendor work is bounded below the browser timeout`, async () => {
     const f = fixture(env, ({ options }) => new Promise((_, reject) => {
@@ -251,6 +256,7 @@ test("Response-body downloads also share the deadline", async () => {
   assert.equal(f.timers.size, 1);
   f.expire();
   await expectFailure(await request, 504);
+  assert.equal(f.calls.length, 1, "a spent deadline does not start the fallback");
 });
 
 test("Health identifies the configured provider without claiming synthesis succeeded", async () => {
@@ -262,7 +268,11 @@ test("Health identifies the configured provider without claiming synthesis succe
     assert.equal(body.configured, provider !== "none");
     assert.equal(body.synthesisVerified, false);
     assert.equal(body.voiceId, voice);
-    assert.equal(body.revision, "v8"); // 24 Sep 2026: bumped with the levelling
+    assert.equal(body.revision, "v9"); // 28 Sep 2026: bumped with Eleven v4 Turbo
+    if (provider === "elevenlabs") {
+      assert.equal(body.model, "eleven_v4_turbo", "health names the model every line is made with");
+      assert.equal(body.fallbackModel, "eleven_multilingual_v2");
+    }
     assert.match(body.hint, /profile voice overrides/);
     assert.ok(!raw.includes(EL.ELEVENLABS_API_KEY) && !raw.includes(OA.OPENAI_API_KEY));
     assert.equal(f.calls.length, 0, "health does not call a vendor");
@@ -276,7 +286,7 @@ test("Every ElevenLabs request carries one fixed integer seed", async () => {
   await f.post({ text: "Well done." });
   await f.post({ text: "Pick a game.", voice: "another-voice" });
   const seeds = f.calls.map((c) => c.body.seed);
-  assert.equal(seeds.length, 4, "v3 attempt, v2 fallback, and two more lines");
+  assert.equal(seeds.length, 4, "v3 attempt, v4 Turbo fallback, and two more lines");
   assert.ok(Number.isInteger(seeds[0]) && seeds[0] >= 0 && seeds[0] <= 4294967295, "an integer ElevenLabs accepts");
   assert.ok(seeds.every((s) => s === seeds[0]), "the same seed for every line, model and voice");
 });
@@ -346,23 +356,23 @@ test("The levelled clip is what is cached; a cache hit is not levelled twice", a
   const f = fixture(EL, () => clip(samples));
   const first = new Uint8Array(await (await f.post({ text: "Well done." })).arrayBuffer());
   const hit = await f.post({ text: "Well done." });
-  expectVoice(hit, "elevenlabs", "eleven_multilingual_v2", "hit");
+  expectVoice(hit, "elevenlabs", "eleven_v4_turbo", "hit");
   assert.equal(f.calls.length, 1);
   const raw = new Uint8Array(await clip(samples).arrayBuffer());
   assert.notDeepEqual(first, raw, "the response is the levelled clip, not the vendor's bytes");
   assert.deepEqual(new Uint8Array(await hit.arrayBuffer()), first, "the hit is byte-identical to the levelled miss");
 });
 
-// ── v8 everywhere (24 Sep 2026) ──
+// ── One version everywhere (v8 24 Sep 2026, v9 28 Sep 2026) ──
 // The phone keys its saved clips by TTS_CACHE_VERSION; the server stamps
 // VOICE_REVISION. If they drift, families replay the old unlevelled takes
 // forever. Pages that fall back to a literal when Sona is missing must fall
 // back to the SAME version, or that page alone keeps the old clips.
-test("Server revision, device cache version and every page fallback agree on v8", async () => {
+test("Server revision, device cache version and every page fallback agree on v9", async () => {
   const sona = readFileSync(path.join(root, "public/sona.js"), "utf8");
   const device = sona.match(/const TTS_CACHE_VERSION = "([^"]+)";/)?.[1];
   const server = source.match(/const VOICE_REVISION = "([^"]+)";/)?.[1];
-  assert.equal(server, "v8");
+  assert.equal(server, "v9");
   assert.equal(device, server, "sona.js TTS_CACHE_VERSION moves with the route's VOICE_REVISION");
   const { readdirSync } = await import("node:fs");
   const stale = [];
@@ -371,6 +381,173 @@ test("Server revision, device cache version and every page fallback agree on v8"
     for (const m of text.matchAll(/TTS_CACHE_VERSION\)?\s*\|\|\s*["'](v\d+)["']/g)) if (m[1] !== device) stale.push(`${file}: ${m[0]}`);
   }
   assert.deepEqual(stale, [], "a page falls back to an older voice version");
+});
+
+// ── Eleven v4 Turbo for every line (Travis, 28 Sep 2026) ──
+test("Every line is made with Eleven v4 Turbo, with the calm settings and no tags", async () => {
+  const f = fixture();
+  expectVoice(await f.post({ text: "[excited] You did it. Let's play." }), "elevenlabs", "eleven_v4_turbo");
+  assert.equal(f.calls.length, 1, "one request: no v2 round trip first");
+  assert.equal(f.calls[0].body.model_id, "eleven_v4_turbo");
+  assert.deepEqual(f.calls[0].body.voice_settings, {
+    stability: 0.7, similarity_boost: 0.85, style: 0, speed: 0.93, use_speaker_boost: true,
+  });
+  assert.equal(f.calls[0].body.text, "You did it. Let's play.", "v4 would perform a tag; the calm register strips it");
+});
+
+test("A leftover ELEVENLABS_MODEL=v2 in production cannot undo the switch", async () => {
+  const f = fixture({ ...EL, ELEVENLABS_MODEL: "eleven_multilingual_v2" });
+  expectVoice(await f.post({ text: "Nice one." }), "elevenlabs", "eleven_v4_turbo");
+  const health = await (await f.get()).json();
+  assert.equal(health.model, "eleven_v4_turbo");
+});
+
+test("If v4 Turbo refuses a voice, that voice falls back to v2 and stops paying for the refusal", async () => {
+  const f = fixture(EL, ({ body }) => body.model_id === "eleven_v4_turbo" && body.text !== "ok"
+    ? new Response(secret, { status: 422 }) : pcm());
+  expectVoice(await f.post({ text: "Nice one.", voice: "old-clone" }), "elevenlabs", "eleven_multilingual_v2");
+  assert.deepEqual(f.calls.map((c) => c.body.model_id), ["eleven_v4_turbo", "eleven_multilingual_v2"]);
+  assert.equal(f.calls[0].options.signal, f.calls[1].options.signal, "the fallback shares the same deadline");
+  await f.post({ text: "Well done.", voice: "old-clone" });
+  assert.deepEqual(f.calls.slice(2).map((c) => c.body.model_id), ["eleven_multilingual_v2"], "the refused voice skips v4 Turbo next time");
+  expectVoice(await f.post({ text: "ok", voice: "another-voice" }), "elevenlabs", "eleven_v4_turbo");
+  assert.equal(f.calls[3].body.model_id, "eleven_v4_turbo", "one voice's refusal never moves other families off v4 Turbo");
+});
+
+test("A busy or failing v4 Turbo falls back for that line only, and is tried again next time", async () => {
+  for (const status of [429, 500, 503]) {
+    const f = fixture(EL, (_, count) => count === 1 ? new Response(secret, { status }) : pcm());
+    expectVoice(await f.post({ text: "Nice one." }), "elevenlabs", "eleven_multilingual_v2");
+    await f.post({ text: "Well done." });
+    assert.equal(f.calls[2].body.model_id, "eleven_v4_turbo", `a ${status} is not remembered as a refusal`);
+  }
+});
+
+test("A bad key is not remembered as a v4 Turbo refusal", async () => {
+  const f = fixture(EL, (_, count) => count <= 2 ? new Response(secret, { status: 401 }) : pcm());
+  await expectFailure(await f.post({ text: "Nice one." }));
+  assert.deepEqual(f.calls.map((c) => c.body.model_id), ["eleven_v4_turbo", "eleven_multilingual_v2"]);
+  expectVoice(await f.post({ text: "Nice one." }), "elevenlabs", "eleven_v4_turbo");
+});
+
+// ── Stand-ins are played, never kept (review of the v4 switch, 28 Sep 2026) ──
+// The phone keys saved clips by voice|revision|text — not model — so a v2 clip
+// saved under v9 while v4 Turbo was busy would replay the old voice forever.
+test("A clip made by the usual model says keep; a stand-in after a busy v4 Turbo says don't", async () => {
+  const ok = fixture();
+  assert.equal((await ok.post({ text: "Nice one." })).headers.get("x-sona-voice-keep"), "1");
+  assert.equal((await ok.post({ text: "Nice one." })).headers.get("x-sona-voice-keep"), "1", "a server cache hit of the usual clip is kept too");
+  for (const status of [429, 500, 503]) {
+    const f = fixture(EL, ({ body }) => body.model_id === "eleven_v4_turbo" ? new Response(secret, { status }) : pcm());
+    const r = await f.post({ text: "Nice one." });
+    expectVoice(r, "elevenlabs", "eleven_multilingual_v2");
+    assert.equal(r.headers.get("x-sona-voice-keep"), "0", `a stand-in after a ${status} is not kept`);
+    const hit = await f.post({ text: "Nice one." });
+    expectVoice(hit, "elevenlabs", "eleven_multilingual_v2", "hit");
+    assert.equal(hit.headers.get("x-sona-voice-keep"), "0", "a server-cached stand-in is still a stand-in");
+    assert.equal(f.calls.filter((c) => c.body.model_id === "eleven_v4_turbo").length, 2, "v4 Turbo is asked again every time");
+  }
+});
+
+test("A dropped connection or broken body from v4 Turbo still reaches v2, as a stand-in", async () => {
+  for (const fail of [() => { throw new Error(secret); }, () => new Response(new Uint8Array([1]))]) {
+    const f = fixture(EL, (call) => call.body.model_id === "eleven_v4_turbo" ? fail() : pcm());
+    const r = await f.post({ text: "Nice one." });
+    expectVoice(r, "elevenlabs", "eleven_multilingual_v2");
+    assert.equal(r.headers.get("x-sona-voice-keep"), "0");
+    expectVoice(await f.post({ text: "Well done." }), "elevenlabs", "eleven_multilingual_v2");
+    assert.equal(f.calls.filter((c) => c.body.model_id === "eleven_v4_turbo").length, 2, "not remembered as a refusal");
+  }
+});
+
+test("After a refusal the v2 clip plays but is never kept: the phone's v9 key means v4 Turbo", async () => {
+  // Second review, 28 Sep 2026: a mistyped ELEVENLABS_PRIMARY_MODEL or a
+  // retired model refuses EVERY voice. Kept, those v2 takes would outlive the fix.
+  const f = fixture(EL, ({ body }) => body.model_id === "eleven_v4_turbo" ? new Response(secret, { status: 422 }) : pcm());
+  const first = await f.post({ text: "Nice one.", voice: "old-clone" });
+  expectVoice(first, "elevenlabs", "eleven_multilingual_v2");
+  assert.equal(first.headers.get("x-sona-voice-keep"), "0");
+  const next = await f.post({ text: "Well done.", voice: "old-clone" });
+  assert.equal(next.headers.get("x-sona-voice-keep"), "0", "the remembered-refusal path is not kept either");
+  assert.equal(f.calls.length, 3, "the refusal was remembered after v2 answered: no doomed v4 call");
+  const hit = await f.post({ text: "Well done.", voice: "old-clone" });
+  expectVoice(hit, "elevenlabs", "eleven_multilingual_v2", "hit");
+  assert.equal(hit.headers.get("x-sona-voice-keep"), "0", "nor a server cache hit of it");
+});
+
+test("A refusal answered from v2's server cache is still remembered", async () => {
+  let refuse = false;
+  const f = fixture(EL, ({ body }) => refuse && body.model_id === "eleven_v4_turbo" ? new Response(secret, { status: 422 }) : pcm());
+  f.env.ELEVENLABS_PRIMARY_MODEL = "eleven_multilingual_v2";
+  await f.post({ text: "Nice one.", voice: "v" }); // puts v2's clip in the server cache
+  delete f.env.ELEVENLABS_PRIMARY_MODEL; refuse = true;
+  const r = await f.post({ text: "Nice one.", voice: "v" }); // v4 refuses, v2 answers from the cache
+  expectVoice(r, "elevenlabs", "eleven_multilingual_v2", "hit");
+  f.calls.length = 0;
+  await f.post({ text: "Well done.", voice: "v" });
+  assert.deepEqual(f.calls.map((c) => c.body.model_id), ["eleven_multilingual_v2"]);
+});
+
+test("With the v3 opt-in: busy v3 makes v4 a stand-in; refused v3 leaves v4 kept", async () => {
+  const busy = fixture({ ...EL, ELEVENLABS_V3: "1" }, ({ body }) => body.model_id === "eleven_v3" ? new Response(secret, { status: 503 }) : pcm());
+  const a = await busy.post({ text: "Nice one." });
+  expectVoice(a, "elevenlabs", "eleven_v4_turbo");
+  assert.equal(a.headers.get("x-sona-voice-keep"), "0");
+  const refused = fixture({ ...EL, ELEVENLABS_V3: "1" }, ({ body }) => body.model_id === "eleven_v3" ? new Response(secret, { status: 403 }) : pcm());
+  const b = await refused.post({ text: "Nice one." });
+  expectVoice(b, "elevenlabs", "eleven_v4_turbo");
+  assert.equal(b.headers.get("x-sona-voice-keep"), "1");
+});
+
+test("A 401 on v4 Turbo that v2 then answers is a stand-in, and v4 is tried again", async () => {
+  const f = fixture(EL, (_, count) => count === 1 ? new Response(secret, { status: 401 }) : pcm());
+  const r = await f.post({ text: "Nice one." });
+  expectVoice(r, "elevenlabs", "eleven_multilingual_v2");
+  assert.equal(r.headers.get("x-sona-voice-keep"), "0");
+  await f.post({ text: "Well done." });
+  assert.equal(f.calls[2].body.model_id, "eleven_v4_turbo", "a 401 is the key, not a refusal of the model");
+});
+
+test("A refusal is remembered only when v2 then answers: a voice every model rejects is not pinned to v2", async () => {
+  let down = true;
+  const f = fixture(EL, () => down ? new Response(secret, { status: 404 }) : pcm());
+  await expectFailure(await f.post({ text: "Nice one.", voice: "flaky-voice" }));
+  assert.deepEqual(f.calls.map((c) => c.body.model_id), ["eleven_v4_turbo", "eleven_multilingual_v2"]);
+  down = false;
+  expectVoice(await f.post({ text: "Nice one.", voice: "flaky-voice" }), "elevenlabs", "eleven_v4_turbo");
+});
+
+test("The refusal memory is capped, since the voice is whatever a page sends", async () => {
+  const f = fixture(EL, ({ body }) => body.model_id === "eleven_v4_turbo" ? new Response(secret, { status: 422 }) : pcm());
+  for (let i = 0; i < 205; i++) await f.post({ text: "Nice one.", voice: `made-up-${i}` });
+  f.calls.length = 0;
+  await f.post({ text: "Nice one.", voice: "made-up-0" });
+  assert.equal(f.calls[0].body.model_id, "eleven_v4_turbo", "the memory was cleared at its cap instead of growing");
+});
+
+test("A fallback leaves a log line with the model and status, never the words", async () => {
+  const f = fixture(EL, ({ body }) => body.model_id === "eleven_v4_turbo" ? new Response(secret, { status: 503 }) : pcm());
+  await f.post({ text: "Ready, Mia? Say rabbit." });
+  assert.ok(f.logs.some((l) => /eleven_v4_turbo/.test(l) && /503/.test(l)), f.logs.join(" / "));
+  assert.ok(f.logs.every((l) => !/Mia|rabbit/.test(l) && !l.includes(secret)), "no spoken text or vendor body in logs");
+  // The thrown path too: the error carries the words and the vendor detail.
+  const t = fixture(EL, ({ body }) => { if (body.model_id === "eleven_v4_turbo") throw new Error(`${secret} Ready, Mia? Say rabbit.`); return pcm(); });
+  await t.post({ text: "Ready, Mia? Say rabbit.", voice: "voice-id-xyz" });
+  assert.ok(t.logs.some((l) => /eleven_v4_turbo/.test(l)), t.logs.join(" / "));
+  assert.ok(t.logs.every((l) => !/Mia|rabbit|voice-id-xyz/.test(l) && !l.includes(secret)), t.logs.join(" / "));
+});
+
+test("Every page that keeps clips on the phone skips a stand-in", async () => {
+  const { readdirSync } = await import("node:fs");
+  const missing = [];
+  for (const file of readdirSync(path.join(root, "public")).filter((f) => /\.(html|js)$/.test(f))) {
+    const text = readFileSync(path.join(root, "public", file), "utf8");
+    const saves = /ttsPut\(|cache\(job, key, fresh\)/.test(text) && text.includes('"/api/tts"');
+    // The header must be READ in code, not merely named in a comment.
+    const reads = /(headers\.get|header)\("X-Sona-Voice-Keep"\)/.test(text.replace(/\/\/[^\n]*|\/\*[\s\S]*?\*\//g, ""));
+    if (saves && !reads) missing.push(file);
+  }
+  assert.deepEqual(missing, [], "these pages save clips without checking X-Sona-Voice-Keep");
 });
 
 test("Missing configuration, blank input, and rate limits never call a vendor", async () => {

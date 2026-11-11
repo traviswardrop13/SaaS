@@ -17,6 +17,11 @@ import { rateLimit } from "@/lib/rateLimit";
  *    48h TTL, and SINGLE USE — redeeming deletes the stash
  *  - best-effort: with no KV configured the app still works, the code line
  *    just never appears
+ *
+ * 2 Oct 2026: no page uses it now. Setup's first screen lost its code box
+ * (Travis: "take off moving from another phone enter your code"), and the web
+ * success page sends a buyer to Settings › Restore with their email instead of
+ * minting a code. Kept, unused, until either comes back.
  */
 export const runtime = "nodejs";
 

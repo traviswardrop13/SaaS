@@ -6,12 +6,14 @@ import { currentPlan, openCaseloadPortal, StoreUnavailable } from "@/lib/caseloa
 
 /**
  * POST /api/slp/plan/portal → { ok, url }: Stripe's billing portal for the
- * clinician's own plan — cancel, change the card, see invoices — so "cancel
+ * clinician's plans — cancel, change the card, see invoices — so "cancel
  * anytime" is a button and not an email to us.
  *
- * The customer comes from the plan mirror the signed-in account owns
+ * The customer comes from the plan mirrors the signed-in account owns
  * (lib/caseload), never from the request: a portal link is the keys to
- * someone's billing. currentPlan() recovers a plan the dashboard never saw
+ * someone's billing. Their own Premium's first, then the caseload's; the
+ * add-on is bought under the same customer (app/api/slp/plan), so one page
+ * shows both. currentPlan() recovers a plan the dashboard never saw
  * activate (Stripe search) before answering "no plan".
  *
  * Opened under the caseload's OWN portal configuration (lib/caseload
@@ -34,8 +36,12 @@ export async function POST(req: NextRequest) {
 
   let customer = "";
   try {
-    const rec = await currentPlan(s.email, { stripe });
-    customer = (rec && rec.customer) || "";
+    const own = await currentPlan(s.email, { stripe, kind: "self" });
+    customer = (own && own.customer) || "";
+    if (!customer) {
+      const rec = await currentPlan(s.email, { stripe, kind: "caseload" });
+      customer = (rec && rec.customer) || "";
+    }
   } catch (e) {
     if (e instanceof StoreUnavailable) {
       return NextResponse.json({ ok: false, error: "Couldn't reach your plan just now — try again in a moment." }, { status: 503 });

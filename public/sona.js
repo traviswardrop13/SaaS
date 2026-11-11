@@ -14,6 +14,67 @@
   function playMode() { try { return getProfile().mode === "play"; } catch (e) { return false; } }
   // Friendly labels for the sound pickers (most are just the letter; voiced TH needs marking).
   const SOUND_LABELS = { THV: "TH (v)" };
+  // Wrap server PCM without altering its leveled samples. Media playback uses
+  // the same iPhone output path as Rachel's recordings, rather than Web Audio.
+  function pcmWave(bytes) {
+    var data = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+    var h = new ArrayBuffer(44), v = new DataView(h);
+    function tag(at, text) { for(var i=0;i<text.length;i++)v.setUint8(at+i,text.charCodeAt(i)); }
+    tag(0,"RIFF");v.setUint32(4,36+data.byteLength,true);tag(8,"WAVE");tag(12,"fmt ");
+    v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);
+    v.setUint32(24,24000,true);v.setUint32(28,48000,true);v.setUint16(32,2,true);v.setUint16(34,16,true);
+    tag(36,"data");v.setUint32(40,data.byteLength,true);
+    return new Blob([h,data],{type:"audio/wav"});
+  }
+  // ECHO'S VOICE IS MEDIA IN THE IPHONE APP (1 Oct 2026: "Sounds not working
+  // again on books", with the phone-call volume slider on screen). The pages
+  // that listen used to play the voice through Web Audio. An iPhone keeps a
+  // page that just had the mic open in its call audio while Web Audio plays
+  // into it, so the voice came out quiet and the volume buttons moved CALL
+  // volume; and Web Audio alone is silenced by the ring/silent switch. A media
+  // element plays the same bytes the way Rachel's recordings do. The browser
+  // keeps Web Audio, where a tap unlocks it and an <audio> started later would
+  // be refused. Returns { done, stop }: done settles "ended", "failed" (never
+  // started: the caller falls back to the browser voice) or "stopped".
+  // THE SILENT SWITCH (15 Oct 2026, Travis: "Everything off"): left to
+  // itself WebKit plays a media element as Playback, which ignores the switch.
+  // In an app build with Sona's own mic the page sets the audio session to
+  // "transient-solo" instead, so on a silenced phone this voice, the chimes
+  // and every other sound are silent: a child hears no Echo and no sound to
+  // copy until a grown-up flips the switch. An App Store build without that
+  // mic plays through the switch as before (THE SILENT SWITCH, in the native
+  // mic block, says why and where).
+  function voiceAsMedia() { return isNativeApp(); }
+  function mediaPCM(bytes, opts) {
+    opts = opts || {};
+    var url = null, a = null, over = false, started = false, timer = 0, settle;
+    var done = new Promise(function (r) { settle = r; });
+    function finish(how) {
+      if (over) return; over = true; clearTimeout(timer);
+      try { if (a) { a.onended = null; a.onerror = null; a.onplaying = null; a.pause(); a.removeAttribute("src"); a.load(); } } catch (e) {}
+      try { if (url) URL.revokeObjectURL(url); } catch (e) {}
+      settle(how);
+    }
+    try {
+      var data = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes), rate = Number(opts.rate) || 1;
+      if (!data.byteLength) { finish("failed"); return { done: done, stop: function () {} }; }
+      // a line's own length plus a beat ends it if "ended" never comes
+      var ms = Math.ceil(data.byteLength / 48 / rate) + 1500;
+      url = URL.createObjectURL(pcmWave(data)); a = new Audio(url);
+      var v = Number(opts.volume == null ? 0.8 : opts.volume);
+      try { a.volume = isFinite(v) ? Math.max(0, Math.min(1, v)) : 0.8; } catch (e) {}
+      if (rate !== 1) { try { a.playbackRate = rate; a.preservesPitch = a.webkitPreservesPitch = a.mozPreservesPitch = false; } catch (e) {} }
+      function go() { if (started || over) return; started = true; clearTimeout(timer); timer = setTimeout(function () { finish("ended"); }, ms); }
+      a.onplaying = go;
+      a.onended = function () { finish("ended"); };
+      a.onerror = function () { finish(started ? "ended" : "failed"); };
+      // an element that never starts must not hold the page's quiet forever
+      timer = setTimeout(function () { finish(started ? "ended" : "failed"); }, 4000);
+      var p = a.play();
+      if (p && p.then) p.then(go, function () { finish(started ? "ended" : "failed"); }); else go();
+    } catch (e) { finish("failed"); }
+    return { done: done, stop: function () { finish("stopped"); } };
+  }
   function soundLabel(s) { return SOUND_LABELS[s] || s; }
   // Approximate developmental norms: the age (in years) by which most children
   // typically produce the sound. Used to show "usually by age X" and gently flag
@@ -28,33 +89,57 @@
   // (e.g. /coach/echo/echo-idle.svg) once the separated character poses arrive.
   // The buddy cast — 8 original sticker characters (design handoff, section 06).
   // `svg` is the circular sticker (120 viewBox); `emoji` stays as the canvas-game
-  // fallback until each game draws the sticker sprite directly.
+  // fallback until each game draws the sticker sprite directly. `source` and
+  // `cost` are the Buddy Shop's (SHOP1, 11 Oct 2026; see OUTFITS just below).
+  // A new buddy is appended, never inserted (item 0 is byId's fallback), and
+  // only once its painted portrait is on disk.
   const CHARACTERS = [
-    { id: 'fox', name: 'Pip', emoji: '🦊', svg: '<svg viewBox="0 0 120 120"><clipPath id="bFox"><circle cx="60" cy="60" r="56"></circle></clipPath><circle cx="60" cy="60" r="56" fill="#ffe29a"></circle><g clip-path="url(#bFox)"><path d="M30 32l16 18-22 6Z" fill="#ff8a3d"></path><path d="M90 32l-16 18 22 6Z" fill="#ff8a3d"></path><path d="M34 38l9 10-12 3.5Z" fill="#e5672a"></path><path d="M86 38l-9 10 12 3.5Z" fill="#e5672a"></path><circle cx="60" cy="72" r="28" fill="#ff8a3d"></circle><ellipse cx="60" cy="83" rx="14" ry="10" fill="#fff"></ellipse><ellipse cx="49" cy="66" rx="6" ry="7" fill="#fff"></ellipse><circle cx="50" cy="67" r="3" fill="#3d2a1a"></circle><ellipse cx="71" cy="66" rx="6" ry="7" fill="#fff"></ellipse><circle cx="70" cy="67" r="3" fill="#3d2a1a"></circle><circle cx="60" cy="79" r="3.5" fill="#3d2a1a"></circle><circle cx="41" cy="78" r="4" fill="#ffb98a"></circle><circle cx="79" cy="78" r="4" fill="#ffb98a"></circle></g></svg>', locked: false },
-    { id: 'bunny', name: 'Miso', emoji: '🐰', svg: '<svg viewBox="0 0 120 120"><clipPath id="bBun"><circle cx="60" cy="60" r="56"></circle></clipPath><circle cx="60" cy="60" r="56" fill="#cdefff"></circle><g clip-path="url(#bBun)"><ellipse cx="47" cy="30" rx="9" ry="22" fill="#f7f3ee" transform="rotate(-8 47 30)"></ellipse><ellipse cx="73" cy="30" rx="9" ry="22" fill="#f7f3ee" transform="rotate(8 73 30)"></ellipse><ellipse cx="47" cy="33" rx="4.5" ry="14" fill="#ffb9c8" transform="rotate(-8 47 33)"></ellipse><ellipse cx="73" cy="33" rx="4.5" ry="14" fill="#ffb9c8" transform="rotate(8 73 33)"></ellipse><circle cx="60" cy="74" r="27" fill="#f7f3ee"></circle><ellipse cx="49" cy="68" rx="6" ry="7" fill="#fff" stroke="#e8ddd2" stroke-width="1"></ellipse><circle cx="50" cy="69" r="3" fill="#3d2a1a"></circle><ellipse cx="71" cy="68" rx="6" ry="7" fill="#fff" stroke="#e8ddd2" stroke-width="1"></ellipse><circle cx="70" cy="69" r="3" fill="#3d2a1a"></circle><path d="M57 78h6l-3 4Z" fill="#ff8fa3"></path><rect x="55" y="84" width="10" height="8" rx="2.5" fill="#fff" stroke="#e8ddd2" stroke-width="1"></rect><line x1="60" y1="84" x2="60" y2="92" stroke="#e8ddd2" stroke-width="1.5"></line><circle cx="41" cy="80" r="4.5" fill="#ffd6c9"></circle><circle cx="79" cy="80" r="4.5" fill="#ffd6c9"></circle></g></svg>', locked: false },
-    { id: 'dragon', name: 'Ziggy', emoji: '🐲', svg: '<svg viewBox="0 0 120 120"><clipPath id="bDrg"><circle cx="60" cy="60" r="56"></circle></clipPath><circle cx="60" cy="60" r="56" fill="#ffd9e8"></circle><g clip-path="url(#bDrg)"><path d="M44 38l-6-16 13 10Z" fill="#ffe9c9"></path><path d="M76 38l6-16-13 10Z" fill="#ffe9c9"></path><path d="M52 34l4-9 4 9Z" fill="#3cae7d"></path><path d="M62 33l4-9 4 9Z" fill="#3cae7d"></path><circle cx="60" cy="72" r="28" fill="#63d6a3"></circle><ellipse cx="60" cy="84" rx="15" ry="10" fill="#a5ecc9"></ellipse><circle cx="55" cy="82" r="2" fill="#2e8f68"></circle><circle cx="65" cy="82" r="2" fill="#2e8f68"></circle><ellipse cx="48" cy="64" rx="6" ry="7" fill="#fff"></ellipse><circle cx="49" cy="65" r="3" fill="#2b2a4a"></circle><ellipse cx="72" cy="64" rx="6" ry="7" fill="#fff"></ellipse><circle cx="71" cy="65" r="3" fill="#2b2a4a"></circle><path d="M50 92q10 6 20 0" stroke="#2e8f68" stroke-width="3.5" fill="none" stroke-linecap="round"></path></g></svg>', locked: false },
-    { id: 'cat', name: 'Mochi', emoji: '🐱', svg: '<svg viewBox="0 0 120 120"><clipPath id="bCat"><circle cx="60" cy="60" r="56"></circle></clipPath><circle cx="60" cy="60" r="56" fill="#e5dcff"></circle><g clip-path="url(#bCat)"><path d="M36 32l14 14-19 7Z" fill="#ff9d7a"></path><path d="M84 32l-14 14 19 7Z" fill="#ff9d7a"></path><path d="M40 38l7 8-10 3.5Z" fill="#ffc9b3"></path><path d="M80 38l-7 8 10 3.5Z" fill="#ffc9b3"></path><circle cx="60" cy="72" r="27" fill="#ff9d7a"></circle><ellipse cx="60" cy="83" rx="13" ry="9" fill="#fff"></ellipse><ellipse cx="49" cy="66" rx="6" ry="7" fill="#fff"></ellipse><circle cx="50" cy="67" r="3" fill="#3d2a1a"></circle><ellipse cx="71" cy="66" rx="6" ry="7" fill="#fff"></ellipse><circle cx="70" cy="67" r="3" fill="#3d2a1a"></circle><path d="M57 78h6l-3 4Z" fill="#ff6b8a"></path><path d="M54 86q6 4 12 0" stroke="#e5764f" stroke-width="2.5" fill="none" stroke-linecap="round"></path><line x1="28" y1="76" x2="40" y2="78" stroke="#e5764f" stroke-width="2" stroke-linecap="round"></line><line x1="28" y1="84" x2="40" y2="83" stroke="#e5764f" stroke-width="2" stroke-linecap="round"></line><line x1="92" y1="76" x2="80" y2="78" stroke="#e5764f" stroke-width="2" stroke-linecap="round"></line><line x1="92" y1="84" x2="80" y2="83" stroke="#e5764f" stroke-width="2" stroke-linecap="round"></line></g></svg>', locked: false },
-    { id: 'bee', name: 'Buzz', emoji: '🐝', svg: '<svg viewBox="0 0 120 120"><clipPath id="bBee"><circle cx="60" cy="60" r="56"></circle></clipPath><circle cx="60" cy="60" r="56" fill="#dff5c2"></circle><g clip-path="url(#bBee)"><line x1="48" y1="38" x2="42" y2="24" stroke="#3d3d3d" stroke-width="3" stroke-linecap="round"></line><line x1="72" y1="38" x2="78" y2="24" stroke="#3d3d3d" stroke-width="3" stroke-linecap="round"></line><circle cx="42" cy="22" r="4.5" fill="#3d3d3d"></circle><circle cx="78" cy="22" r="4.5" fill="#3d3d3d"></circle><ellipse cx="26" cy="58" rx="14" ry="9" fill="#fff" opacity=".85" transform="rotate(-24 26 58)"></ellipse><ellipse cx="94" cy="58" rx="14" ry="9" fill="#fff" opacity=".85" transform="rotate(24 94 58)"></ellipse><clipPath id="bBeeB"><circle cx="60" cy="70" r="27"></circle></clipPath><circle cx="60" cy="70" r="27" fill="#ffd43b"></circle><g clip-path="url(#bBeeB)"><rect x="30" y="78" width="60" height="9" fill="#3d3d3d"></rect><rect x="30" y="92" width="60" height="9" fill="#3d3d3d"></rect></g><ellipse cx="49" cy="62" rx="6" ry="7" fill="#fff" stroke="#e8c86a" stroke-width="1"></ellipse><circle cx="50" cy="63" r="3" fill="#2b2a4a"></circle><ellipse cx="71" cy="62" rx="6" ry="7" fill="#fff" stroke="#e8c86a" stroke-width="1"></ellipse><circle cx="70" cy="63" r="3" fill="#2b2a4a"></circle><path d="M53 71q7 5 14 0" stroke="#3d3d3d" stroke-width="3" fill="none" stroke-linecap="round"></path></g></svg>', locked: false },
-    { id: 'octopus', name: 'Otto', emoji: '🐙', svg: '<svg viewBox="0 0 120 120"><clipPath id="bOct"><circle cx="60" cy="60" r="56"></circle></clipPath><circle cx="60" cy="60" r="56" fill="#ffe9c9"></circle><g clip-path="url(#bOct)"><circle cx="60" cy="64" r="28" fill="#a86ee3"></circle><circle cx="38" cy="92" r="9" fill="#a86ee3"></circle><circle cx="53" cy="97" r="9" fill="#a86ee3"></circle><circle cx="68" cy="97" r="9" fill="#a86ee3"></circle><circle cx="83" cy="92" r="9" fill="#a86ee3"></circle><circle cx="38" cy="90" r="3" fill="#c79bf0"></circle><circle cx="53" cy="95" r="3" fill="#c79bf0"></circle><circle cx="68" cy="95" r="3" fill="#c79bf0"></circle><circle cx="83" cy="90" r="3" fill="#c79bf0"></circle><ellipse cx="49" cy="58" rx="6.5" ry="7.5" fill="#fff"></ellipse><circle cx="50" cy="59" r="3.2" fill="#2b2a4a"></circle><ellipse cx="71" cy="58" rx="6.5" ry="7.5" fill="#fff"></ellipse><circle cx="70" cy="59" r="3.2" fill="#2b2a4a"></circle><ellipse cx="60" cy="72" rx="7" ry="5.5" fill="#5c3494"></ellipse><ellipse cx="60" cy="74.5" rx="4" ry="2.5" fill="#ff8fa3"></ellipse><circle cx="41" cy="68" r="4.5" fill="#c79bf0"></circle><circle cx="79" cy="68" r="4.5" fill="#c79bf0"></circle></g></svg>', locked: false },
-    { id: 'dino', name: 'Rocky', emoji: '🦖', svg: '<svg viewBox="0 0 120 120"><clipPath id="bDin"><circle cx="60" cy="60" r="56"></circle></clipPath><circle cx="60" cy="60" r="56" fill="#d6f0ff"></circle><g clip-path="url(#bDin)"><path d="M42 36l5-12 5 12Z" fill="#ffe9c9"></path><path d="M55 32l5-12 5 12Z" fill="#ffe9c9"></path><path d="M68 36l5-12 5 12Z" fill="#ffe9c9"></path><circle cx="60" cy="72" r="28" fill="#4dc6b8"></circle><ellipse cx="60" cy="85" rx="16" ry="11" fill="#a8e8e0"></ellipse><circle cx="54" cy="83" r="2.2" fill="#2e8f83"></circle><circle cx="66" cy="83" r="2.2" fill="#2e8f83"></circle><ellipse cx="48" cy="63" rx="6" ry="7" fill="#fff"></ellipse><circle cx="49" cy="64" r="3" fill="#2b2a4a"></circle><ellipse cx="72" cy="63" rx="6" ry="7" fill="#fff"></ellipse><circle cx="71" cy="64" r="3" fill="#2b2a4a"></circle><path d="M50 93q10 7 20 0" stroke="#2e8f83" stroke-width="3.5" fill="none" stroke-linecap="round"></path><path d="M55 94l3 4 3-4Z" fill="#fff"></path></g></svg>', locked: false },
-    { id: 'panda', name: 'Bao', emoji: '🐼', svg: '<svg viewBox="0 0 120 120"><clipPath id="bPan"><circle cx="60" cy="60" r="56"></circle></clipPath><circle cx="60" cy="60" r="56" fill="#ffdf9e"></circle><g clip-path="url(#bPan)"><circle cx="38" cy="42" r="11" fill="#3d3d3d"></circle><circle cx="82" cy="42" r="11" fill="#3d3d3d"></circle><circle cx="60" cy="72" r="28" fill="#fff"></circle><ellipse cx="47" cy="64" rx="9" ry="11" fill="#3d3d3d" transform="rotate(-14 47 64)"></ellipse><ellipse cx="73" cy="64" rx="9" ry="11" fill="#3d3d3d" transform="rotate(14 73 64)"></ellipse><circle cx="48" cy="64" r="3.6" fill="#fff"></circle><circle cx="49" cy="65" r="2" fill="#2b2a4a"></circle><circle cx="72" cy="64" r="3.6" fill="#fff"></circle><circle cx="71" cy="65" r="2" fill="#2b2a4a"></circle><ellipse cx="60" cy="79" rx="4" ry="3" fill="#3d3d3d"></ellipse><path d="M54 87q6 4 12 0" stroke="#3d3d3d" stroke-width="3" fill="none" stroke-linecap="round"></path><circle cx="40" cy="80" r="4.5" fill="#ffd6c9"></circle><circle cx="80" cy="80" r="4.5" fill="#ffd6c9"></circle></g></svg>', locked: false },
+    { id: 'fox', name: 'Pip', emoji: '🦊', svg: '<svg viewBox="0 0 120 120"><clipPath id="bFox"><circle cx="60" cy="60" r="56"></circle></clipPath><circle cx="60" cy="60" r="56" fill="#ffe29a"></circle><g clip-path="url(#bFox)"><path d="M30 32l16 18-22 6Z" fill="#ff8a3d"></path><path d="M90 32l-16 18 22 6Z" fill="#ff8a3d"></path><path d="M34 38l9 10-12 3.5Z" fill="#e5672a"></path><path d="M86 38l-9 10 12 3.5Z" fill="#e5672a"></path><circle cx="60" cy="72" r="28" fill="#ff8a3d"></circle><ellipse cx="60" cy="83" rx="14" ry="10" fill="#fff"></ellipse><ellipse cx="49" cy="66" rx="6" ry="7" fill="#fff"></ellipse><circle cx="50" cy="67" r="3" fill="#3d2a1a"></circle><ellipse cx="71" cy="66" rx="6" ry="7" fill="#fff"></ellipse><circle cx="70" cy="67" r="3" fill="#3d2a1a"></circle><circle cx="60" cy="79" r="3.5" fill="#3d2a1a"></circle><circle cx="41" cy="78" r="4" fill="#ffb98a"></circle><circle cx="79" cy="78" r="4" fill="#ffb98a"></circle></g></svg>', locked: false, source: 'starter', cost: null },
+    { id: 'bunny', name: 'Miso', emoji: '🐰', svg: '<svg viewBox="0 0 120 120"><clipPath id="bBun"><circle cx="60" cy="60" r="56"></circle></clipPath><circle cx="60" cy="60" r="56" fill="#cdefff"></circle><g clip-path="url(#bBun)"><ellipse cx="47" cy="30" rx="9" ry="22" fill="#f7f3ee" transform="rotate(-8 47 30)"></ellipse><ellipse cx="73" cy="30" rx="9" ry="22" fill="#f7f3ee" transform="rotate(8 73 30)"></ellipse><ellipse cx="47" cy="33" rx="4.5" ry="14" fill="#ffb9c8" transform="rotate(-8 47 33)"></ellipse><ellipse cx="73" cy="33" rx="4.5" ry="14" fill="#ffb9c8" transform="rotate(8 73 33)"></ellipse><circle cx="60" cy="74" r="27" fill="#f7f3ee"></circle><ellipse cx="49" cy="68" rx="6" ry="7" fill="#fff" stroke="#e8ddd2" stroke-width="1"></ellipse><circle cx="50" cy="69" r="3" fill="#3d2a1a"></circle><ellipse cx="71" cy="68" rx="6" ry="7" fill="#fff" stroke="#e8ddd2" stroke-width="1"></ellipse><circle cx="70" cy="69" r="3" fill="#3d2a1a"></circle><path d="M57 78h6l-3 4Z" fill="#ff8fa3"></path><rect x="55" y="84" width="10" height="8" rx="2.5" fill="#fff" stroke="#e8ddd2" stroke-width="1"></rect><line x1="60" y1="84" x2="60" y2="92" stroke="#e8ddd2" stroke-width="1.5"></line><circle cx="41" cy="80" r="4.5" fill="#ffd6c9"></circle><circle cx="79" cy="80" r="4.5" fill="#ffd6c9"></circle></g></svg>', locked: false, source: 'starter', cost: null },
+    { id: 'dragon', name: 'Ziggy', emoji: '🐲', svg: '<svg viewBox="0 0 120 120"><clipPath id="bDrg"><circle cx="60" cy="60" r="56"></circle></clipPath><circle cx="60" cy="60" r="56" fill="#ffd9e8"></circle><g clip-path="url(#bDrg)"><path d="M44 38l-6-16 13 10Z" fill="#ffe9c9"></path><path d="M76 38l6-16-13 10Z" fill="#ffe9c9"></path><path d="M52 34l4-9 4 9Z" fill="#3cae7d"></path><path d="M62 33l4-9 4 9Z" fill="#3cae7d"></path><circle cx="60" cy="72" r="28" fill="#63d6a3"></circle><ellipse cx="60" cy="84" rx="15" ry="10" fill="#a5ecc9"></ellipse><circle cx="55" cy="82" r="2" fill="#2e8f68"></circle><circle cx="65" cy="82" r="2" fill="#2e8f68"></circle><ellipse cx="48" cy="64" rx="6" ry="7" fill="#fff"></ellipse><circle cx="49" cy="65" r="3" fill="#2b2a4a"></circle><ellipse cx="72" cy="64" rx="6" ry="7" fill="#fff"></ellipse><circle cx="71" cy="65" r="3" fill="#2b2a4a"></circle><path d="M50 92q10 6 20 0" stroke="#2e8f68" stroke-width="3.5" fill="none" stroke-linecap="round"></path></g></svg>', locked: false, source: 'shop', cost: 150 },
+    { id: 'cat', name: 'Mochi', emoji: '🐱', svg: '<svg viewBox="0 0 120 120"><clipPath id="bCat"><circle cx="60" cy="60" r="56"></circle></clipPath><circle cx="60" cy="60" r="56" fill="#e5dcff"></circle><g clip-path="url(#bCat)"><path d="M36 32l14 14-19 7Z" fill="#ff9d7a"></path><path d="M84 32l-14 14 19 7Z" fill="#ff9d7a"></path><path d="M40 38l7 8-10 3.5Z" fill="#ffc9b3"></path><path d="M80 38l-7 8 10 3.5Z" fill="#ffc9b3"></path><circle cx="60" cy="72" r="27" fill="#ff9d7a"></circle><ellipse cx="60" cy="83" rx="13" ry="9" fill="#fff"></ellipse><ellipse cx="49" cy="66" rx="6" ry="7" fill="#fff"></ellipse><circle cx="50" cy="67" r="3" fill="#3d2a1a"></circle><ellipse cx="71" cy="66" rx="6" ry="7" fill="#fff"></ellipse><circle cx="70" cy="67" r="3" fill="#3d2a1a"></circle><path d="M57 78h6l-3 4Z" fill="#ff6b8a"></path><path d="M54 86q6 4 12 0" stroke="#e5764f" stroke-width="2.5" fill="none" stroke-linecap="round"></path><line x1="28" y1="76" x2="40" y2="78" stroke="#e5764f" stroke-width="2" stroke-linecap="round"></line><line x1="28" y1="84" x2="40" y2="83" stroke="#e5764f" stroke-width="2" stroke-linecap="round"></line><line x1="92" y1="76" x2="80" y2="78" stroke="#e5764f" stroke-width="2" stroke-linecap="round"></line><line x1="92" y1="84" x2="80" y2="83" stroke="#e5764f" stroke-width="2" stroke-linecap="round"></line></g></svg>', locked: false, source: 'shop', cost: 100 },
+    { id: 'bee', name: 'Buzz', emoji: '🐝', svg: '<svg viewBox="0 0 120 120"><clipPath id="bBee"><circle cx="60" cy="60" r="56"></circle></clipPath><circle cx="60" cy="60" r="56" fill="#dff5c2"></circle><g clip-path="url(#bBee)"><line x1="48" y1="38" x2="42" y2="24" stroke="#3d3d3d" stroke-width="3" stroke-linecap="round"></line><line x1="72" y1="38" x2="78" y2="24" stroke="#3d3d3d" stroke-width="3" stroke-linecap="round"></line><circle cx="42" cy="22" r="4.5" fill="#3d3d3d"></circle><circle cx="78" cy="22" r="4.5" fill="#3d3d3d"></circle><ellipse cx="26" cy="58" rx="14" ry="9" fill="#fff" opacity=".85" transform="rotate(-24 26 58)"></ellipse><ellipse cx="94" cy="58" rx="14" ry="9" fill="#fff" opacity=".85" transform="rotate(24 94 58)"></ellipse><clipPath id="bBeeB"><circle cx="60" cy="70" r="27"></circle></clipPath><circle cx="60" cy="70" r="27" fill="#ffd43b"></circle><g clip-path="url(#bBeeB)"><rect x="30" y="78" width="60" height="9" fill="#3d3d3d"></rect><rect x="30" y="92" width="60" height="9" fill="#3d3d3d"></rect></g><ellipse cx="49" cy="62" rx="6" ry="7" fill="#fff" stroke="#e8c86a" stroke-width="1"></ellipse><circle cx="50" cy="63" r="3" fill="#2b2a4a"></circle><ellipse cx="71" cy="62" rx="6" ry="7" fill="#fff" stroke="#e8c86a" stroke-width="1"></ellipse><circle cx="70" cy="63" r="3" fill="#2b2a4a"></circle><path d="M53 71q7 5 14 0" stroke="#3d3d3d" stroke-width="3" fill="none" stroke-linecap="round"></path></g></svg>', locked: false, source: 'shop', cost: 100 },
+    { id: 'octopus', name: 'Otto', emoji: '🐙', svg: '<svg viewBox="0 0 120 120"><clipPath id="bOct"><circle cx="60" cy="60" r="56"></circle></clipPath><circle cx="60" cy="60" r="56" fill="#ffe9c9"></circle><g clip-path="url(#bOct)"><circle cx="60" cy="64" r="28" fill="#a86ee3"></circle><circle cx="38" cy="92" r="9" fill="#a86ee3"></circle><circle cx="53" cy="97" r="9" fill="#a86ee3"></circle><circle cx="68" cy="97" r="9" fill="#a86ee3"></circle><circle cx="83" cy="92" r="9" fill="#a86ee3"></circle><circle cx="38" cy="90" r="3" fill="#c79bf0"></circle><circle cx="53" cy="95" r="3" fill="#c79bf0"></circle><circle cx="68" cy="95" r="3" fill="#c79bf0"></circle><circle cx="83" cy="90" r="3" fill="#c79bf0"></circle><ellipse cx="49" cy="58" rx="6.5" ry="7.5" fill="#fff"></ellipse><circle cx="50" cy="59" r="3.2" fill="#2b2a4a"></circle><ellipse cx="71" cy="58" rx="6.5" ry="7.5" fill="#fff"></ellipse><circle cx="70" cy="59" r="3.2" fill="#2b2a4a"></circle><ellipse cx="60" cy="72" rx="7" ry="5.5" fill="#5c3494"></ellipse><ellipse cx="60" cy="74.5" rx="4" ry="2.5" fill="#ff8fa3"></ellipse><circle cx="41" cy="68" r="4.5" fill="#c79bf0"></circle><circle cx="79" cy="68" r="4.5" fill="#c79bf0"></circle></g></svg>', locked: false, source: 'shop', cost: 150 },
+    { id: 'dino', name: 'Rocky', emoji: '🦖', svg: '<svg viewBox="0 0 120 120"><clipPath id="bDin"><circle cx="60" cy="60" r="56"></circle></clipPath><circle cx="60" cy="60" r="56" fill="#d6f0ff"></circle><g clip-path="url(#bDin)"><path d="M42 36l5-12 5 12Z" fill="#ffe9c9"></path><path d="M55 32l5-12 5 12Z" fill="#ffe9c9"></path><path d="M68 36l5-12 5 12Z" fill="#ffe9c9"></path><circle cx="60" cy="72" r="28" fill="#4dc6b8"></circle><ellipse cx="60" cy="85" rx="16" ry="11" fill="#a8e8e0"></ellipse><circle cx="54" cy="83" r="2.2" fill="#2e8f83"></circle><circle cx="66" cy="83" r="2.2" fill="#2e8f83"></circle><ellipse cx="48" cy="63" rx="6" ry="7" fill="#fff"></ellipse><circle cx="49" cy="64" r="3" fill="#2b2a4a"></circle><ellipse cx="72" cy="63" rx="6" ry="7" fill="#fff"></ellipse><circle cx="71" cy="64" r="3" fill="#2b2a4a"></circle><path d="M50 93q10 7 20 0" stroke="#2e8f83" stroke-width="3.5" fill="none" stroke-linecap="round"></path><path d="M55 94l3 4 3-4Z" fill="#fff"></path></g></svg>', locked: false, source: 'shop', cost: 120 },
+    { id: 'panda', name: 'Bao', emoji: '🐼', svg: '<svg viewBox="0 0 120 120"><clipPath id="bPan"><circle cx="60" cy="60" r="56"></circle></clipPath><circle cx="60" cy="60" r="56" fill="#ffdf9e"></circle><g clip-path="url(#bPan)"><circle cx="38" cy="42" r="11" fill="#3d3d3d"></circle><circle cx="82" cy="42" r="11" fill="#3d3d3d"></circle><circle cx="60" cy="72" r="28" fill="#fff"></circle><ellipse cx="47" cy="64" rx="9" ry="11" fill="#3d3d3d" transform="rotate(-14 47 64)"></ellipse><ellipse cx="73" cy="64" rx="9" ry="11" fill="#3d3d3d" transform="rotate(14 73 64)"></ellipse><circle cx="48" cy="64" r="3.6" fill="#fff"></circle><circle cx="49" cy="65" r="2" fill="#2b2a4a"></circle><circle cx="72" cy="64" r="3.6" fill="#fff"></circle><circle cx="71" cy="65" r="2" fill="#2b2a4a"></circle><ellipse cx="60" cy="79" rx="4" ry="3" fill="#3d3d3d"></ellipse><path d="M54 87q6 4 12 0" stroke="#3d3d3d" stroke-width="3" fill="none" stroke-linecap="round"></path><circle cx="40" cy="80" r="4.5" fill="#ffd6c9"></circle><circle cx="80" cy="80" r="4.5" fill="#ffd6c9"></circle></g></svg>', locked: false, source: 'starter', cost: null },
+    // The Trophy Road's own four (11 Oct 2026): painted, no sticker
+    // svg (buddyMarkup shows the emoji; the painted badge sits over it).
+    // Never Bo (the bear in goal) or Robot (Robot Builder): taken names.
+    { id: 'frog', name: 'Hops', emoji: '🐸', svg: '', portrait: "/assets/crafted/buddy-frog-v2.webp", locked: false, source: 'road', cost: null },
+    { id: 'penguin', name: 'Pebble', emoji: '🐧', svg: '', portrait: "/assets/crafted/buddy-penguin-v2.webp", locked: false, source: 'road', cost: null },
+    { id: 'lion', name: 'Sunny', emoji: '🦁', svg: '', portrait: "/assets/crafted/buddy-lion-v2.webp", locked: false, source: 'road', cost: null },
+    { id: 'unicorn', name: 'Luna', emoji: '🦄', svg: '', portrait: "/assets/crafted/buddy-unicorn-v2.webp", locked: false, source: 'road', cost: null },
   ];
+  // Hats and places. `source` is how a family that set up after the Buddy
+  // Shop (11 Oct 2026, SHOP1) gets each one: "starter" (theirs from the
+  // start), "shop" (for `cost` coins) or "road" (a Trophy Road stop gives it);
+  // a household already on Sona kept everything it could pick that day
+  // (LEGACY_SET, the OWN1 sweep). An entry joins only with its painted art.
+  // `art` is a hat's painted picture (11 Oct 2026): the shop shows it where the
+  // page's drawn hat used to be, and a new hat joins only with its picture.
   const OUTFITS = [
-    { id: "none",   name: "None",   emoji: "",   cost: 0 },
-    { id: "crown",  name: "Crown",  emoji: "👑", cost: 30 },
-    { id: "tophat", name: "Top hat",emoji: "🎩", cost: 25 },
-    { id: "cap",    name: "Cap",    emoji: "🧢", cost: 20 },
-    { id: "shades", name: "Cool",   emoji: "🕶️", cost: 25 },
-    { id: "bow",    name: "Bow",    emoji: "🎀", cost: 20 },
-    { id: "party",  name: "Party",  emoji: "🥳", cost: 40 },
+    { id: "none",   name: "None",   emoji: "",   source: "starter", cost: null },
+    { id: "crown",  name: "Crown",  emoji: "👑", source: "shop", cost: 80, art: "/assets/crafted/hat-crown.webp" },
+    { id: "tophat", name: "Top hat",emoji: "🎩", source: "shop", cost: 60, art: "/assets/crafted/hat-tophat.webp" },
+    { id: "cap",    name: "Cap",    emoji: "🧢", source: "shop", cost: 40, art: "/assets/crafted/hat-cap.webp" },
+    { id: "shades", name: "Cool",   emoji: "🕶️", source: "shop", cost: 60, art: "/assets/crafted/hat-shades.webp" },
+    { id: "bow",    name: "Bow",    emoji: "🎀", source: "shop", cost: 40, art: "/assets/crafted/hat-bow.webp" },
+    { id: "party",  name: "Party",  emoji: "🥳", source: "shop", cost: 80, art: "/assets/crafted/hat-party.webp" },
+    { id: "flowercrown", name: "Flower crown", emoji: "🌸", source: "shop", cost: 150, art: "/assets/crafted/hat-flowercrown.webp" },
+    { id: "sunhat",     name: "Sun hat",    emoji: "👒", source: "road", cost: null, art: "/assets/crafted/hat-sunhat.webp" },
+    { id: "starclip",   name: "Star clip",  emoji: "⭐", source: "road", cost: null, art: "/assets/crafted/hat-starclip.webp" },
+    { id: "headphones", name: "Headphones", emoji: "🎧", source: "road", cost: null, art: "/assets/crafted/hat-headphones.webp" },
   ];
   const BACKDROPS = [
-    { id: "sky",      name: "Sky",       cost: 0,  css: "linear-gradient(180deg,#bfe3ff,#eaf3ff)", scene: ["☁️", "🌤️", "☁️"] },
-    { id: "jungle",   name: "Jungle",    cost: 40, css: "linear-gradient(180deg,#bdf0c8,#e7fbe9)", scene: ["🌴", "🌿", "🦜"] },
-    { id: "forest",   name: "Forest",    cost: 40, css: "linear-gradient(180deg,#cbe8c0,#eef7e6)", scene: ["🌲", "🍄", "🐿️"] },
-    { id: "mountain", name: "Mountains", cost: 50, css: "linear-gradient(180deg,#d6e6ff,#f0f5ff)", scene: ["🏔️", "⛰️", "🌲"] },
-    { id: "space",    name: "Space",     cost: 60, css: "linear-gradient(180deg,#cdd6ff,#eef1ff)", scene: ["🚀", "⭐", "🪐"] },
-    { id: "beach",    name: "Beach",     cost: 50, css: "linear-gradient(180deg,#bfefff,#fff6e0)", scene: ["🏖️", "🌊", "🐚"] },
+    { id: "sky",      name: "Sky",       source: "starter", cost: null, css: "linear-gradient(180deg,#bfe3ff,#eaf3ff)", scene: ["☁️", "🌤️", "☁️"] },
+    { id: "jungle",   name: "Jungle",    source: "shop", cost: 80,  css: "linear-gradient(180deg,#bdf0c8,#e7fbe9)", scene: ["🌴", "🌿", "🦜"] },
+    { id: "forest",   name: "Forest",    source: "shop", cost: 80,  css: "linear-gradient(180deg,#cbe8c0,#eef7e6)", scene: ["🌲", "🍄", "🐿️"] },
+    { id: "mountain", name: "Mountains", source: "shop", cost: 120, css: "linear-gradient(180deg,#d6e6ff,#f0f5ff)", scene: ["🏔️", "⛰️", "🌲"] },
+    { id: "space",    name: "Space",     source: "shop", cost: 150, css: "linear-gradient(180deg,#cdd6ff,#eef1ff)", scene: ["🚀", "⭐", "🪐"] },
+    { id: "beach",    name: "Beach",     source: "shop", cost: 120, css: "linear-gradient(180deg,#bfefff,#fff6e0)", scene: ["🏖️", "🌊", "🐚"] },
+    { id: "candy",    name: "Candy land", source: "shop", cost: 250, css: "linear-gradient(180deg,#ffd9ec,#fff3f8)", scene: ["🍭", "🍬", "🧁"] },
+    { id: "snow",     name: "Snow",      source: "road", cost: null, css: "linear-gradient(180deg,#d9ebff,#f7fbff)", scene: ["❄️", "⛄", "🌲"] },
+    { id: "sea",      name: "Under the sea", source: "road", cost: null, css: "linear-gradient(180deg,#a9dcef,#e2f5fb)", scene: ["🐠", "🐚", "🌊"] },
   ];
   const byId = (list, id) => list.find((x) => x.id === id) || list[0];
   const characterById = (id) => byId(CHARACTERS, id);
@@ -66,6 +151,50 @@
     if (c.svg) return '<span style="display:inline-block;width:' + s + 'px;height:' + s + 'px;border-radius:50%;overflow:hidden;vertical-align:middle;">' + c.svg + '</span>';
     if (c.img) return '<img src="' + c.img + '" alt="' + c.name + '" style="width:' + s + 'px;height:' + s + 'px;object-fit:contain;display:inline-block;vertical-align:middle;" />';
     return '<span style="font-size:' + Math.round(s * 0.92) + 'px;line-height:1;">' + c.emoji + '</span>';
+  }
+
+  // ── BUDDY2: every painted picture of a buddy, by pose (11 Oct 2026) ──
+  // Play as your buddy (Travis, 9 Oct 2026: "they actually BE the character in
+  // the game"). A pose with no picture on disk is simply absent (no stand-in
+  // art), and each game falls back in one order: its pose → that pose's
+  // fallback pose → the portrait in a circle → the sticker SVG (xmlns added)
+  // → a plain dot.
+  // "run"   = seen from behind, running (Sound Sprint): [src, sx, sy, sw, sh] (a crop),
+  //           or just [src] when the file is already cut to the 480x840 frame.
+  // "rest"  = front, full body, standing calmly, like echo-welcome (512x512).
+  // "cheer" = front, full body, arms up, like echo-cheer (512x512); falls back to rest.
+  // "peek"  = head and paws over a ledge, bottom cut flat (Fruit Slice, 512x384).
+  // "sit"   = sitting on Block Stacker's bench (512x512); falls back to rest.
+  // "portrait" = the 288px round badge every screen uses.
+  // The fox keeps its painted Fruit Slice counter and Block Stacker bench, so
+  // it has no sit, and Fruit Slice never asks for its peek: that one is for
+  // the daily stories' peek spots (STORY1). Each line is added by the art step
+  // that lands its files; how each was drawn, cut and checked is
+  // design/crafted-world/buddies-v3.md.
+  const BUDDY_ART = {
+    fox:     { run: ["/assets/crafted/fox-runner.webp", 390, 205, 480, 840], rest: "/assets/crafted/buddy-fox-rest.webp", cheer: "/assets/crafted/buddy-fox-cheer.webp", peek: "/assets/crafted/buddy-fox-peek.webp" },
+    bunny:   { run: ["/assets/crafted/buddy-bunny-run.webp"], rest: "/assets/crafted/buddy-bunny-rest.webp", cheer: "/assets/crafted/buddy-bunny-cheer.webp", peek: "/assets/crafted/buddy-bunny-peek.webp", sit: "/assets/crafted/buddy-bunny-sit.webp" },
+    dragon:  { run: ["/assets/crafted/buddy-dragon-run.webp"], rest: "/assets/crafted/buddy-dragon-rest.webp", cheer: "/assets/crafted/buddy-dragon-cheer.webp", peek: "/assets/crafted/buddy-dragon-peek.webp", sit: "/assets/crafted/buddy-dragon-sit.webp" },
+    cat:     { run: ["/assets/crafted/buddy-cat-run.webp"], rest: "/assets/crafted/buddy-cat-rest.webp", cheer: "/assets/crafted/buddy-cat-cheer.webp", peek: "/assets/crafted/buddy-cat-peek.webp", sit: "/assets/crafted/buddy-cat-sit.webp" },
+    bee:     { run: ["/assets/crafted/buddy-bee-run.webp"], rest: "/assets/crafted/buddy-bee-rest.webp", cheer: "/assets/crafted/buddy-bee-cheer.webp", peek: "/assets/crafted/buddy-bee-peek.webp", sit: "/assets/crafted/buddy-bee-sit.webp" },
+    octopus: { run: ["/assets/crafted/buddy-octopus-run.webp"], rest: "/assets/crafted/buddy-octopus-rest.webp", cheer: "/assets/crafted/buddy-octopus-cheer.webp", peek: "/assets/crafted/buddy-octopus-peek.webp", sit: "/assets/crafted/buddy-octopus-sit.webp" },
+    dino:    { run: ["/assets/crafted/buddy-dino-run.webp"], rest: "/assets/crafted/buddy-dino-rest.webp", cheer: "/assets/crafted/buddy-dino-cheer.webp", peek: "/assets/crafted/buddy-dino-peek.webp", sit: "/assets/crafted/buddy-dino-sit.webp" },
+    panda:   { run: ["/assets/crafted/buddy-panda-run.webp"], rest: "/assets/crafted/buddy-panda-rest.webp", cheer: "/assets/crafted/buddy-panda-cheer.webp", peek: "/assets/crafted/buddy-panda-peek.webp", sit: "/assets/crafted/buddy-panda-sit.webp" },
+    frog:    { run: ["/assets/crafted/buddy-frog-run.webp"], rest: "/assets/crafted/buddy-frog-rest.webp", cheer: "/assets/crafted/buddy-frog-cheer.webp", peek: "/assets/crafted/buddy-frog-peek.webp", sit: "/assets/crafted/buddy-frog-sit.webp" },
+    penguin: { run: ["/assets/crafted/buddy-penguin-run.webp"], rest: "/assets/crafted/buddy-penguin-rest.webp", cheer: "/assets/crafted/buddy-penguin-cheer.webp", peek: "/assets/crafted/buddy-penguin-peek.webp", sit: "/assets/crafted/buddy-penguin-sit.webp" },
+    lion:    { run: ["/assets/crafted/buddy-lion-run.webp"], rest: "/assets/crafted/buddy-lion-rest.webp", cheer: "/assets/crafted/buddy-lion-cheer.webp", peek: "/assets/crafted/buddy-lion-peek.webp", sit: "/assets/crafted/buddy-lion-sit.webp" },
+    unicorn: { run: ["/assets/crafted/buddy-unicorn-run.webp"], rest: "/assets/crafted/buddy-unicorn-rest.webp", cheer: "/assets/crafted/buddy-unicorn-cheer.webp", peek: "/assets/crafted/buddy-unicorn-peek.webp", sit: "/assets/crafted/buddy-unicorn-sit.webp" },
+  };
+  const BUDDY_POSE_ORDER = { rest: ["rest"], cheer: ["cheer", "rest"], peek: ["peek"], sit: ["sit", "rest"] };
+  // "leo" (an old pick) or anything unknown is the fox, as characterById says
+  function buddyId() { try { return characterById(getProfile().character).id; } catch (e) { return "fox"; } }
+  function buddySprite(id, pose) {
+    const c = characterById(id), a = BUDDY_ART[c.id] || {};
+    if (pose === "portrait") return c.portrait || ("/assets/crafted/buddy-" + c.id + "-v2.webp");
+    if (pose === "run") { const r = a.run; return r ? { src: r[0], crop: r.length === 5 ? r.slice(1) : null } : null; }
+    const order = BUDDY_POSE_ORDER[pose] || [];
+    for (let i = 0; i < order.length; i++) if (a[order[i]]) return { src: a[order[i]], pose: order[i] };
+    return null;
   }
 
   // ── Sound Town houses: shared art + per-sound color theme ──
@@ -150,9 +279,39 @@
     "sona.rotation.v1", "sona.today.v1", "sona.episode.v2", "sona.reps.v1",
     "sona.day.v2", "sona.coinmint.v1", "sona.tickets.v1", "sona.charge.v1",
     "sona.daily.v1", "sona.session.v1", "sona.levels.v1", "sona.campaign.v1",
-    "sona.stickers.v1", "sona.attempts.v1", "sona.outcomes.v1",
+    "sona.stickers.v1", "sona.attempts.v1", "sona.outcomes.v1", "sona.gamereps.v1", "sona.goaldays.v1",
     "sona.lib.read.v1", "sona.feed.v1", "sona.call.v1", "sona.callhist.v1",
     "sona.games.v1", "sona.homework.v1", "sona.reclast",
+    // Dino Dig's round of dinosaurs: which one is next and the ones found
+    // (arcade-dino.html keeps it). A collection, never practice data.
+    "sona.dino.v1",
+    // Rocket Blast's planets: the ones this child has landed on (6 Nov 2026,
+    // arcade-rocket.html keeps it). A collection, never practice data.
+    "sona.rocket.v1",
+    // how many races this child has started from Sound Sprint's start card
+    // (Echo's how-to-play, shown for the first three): a sibling gets their own
+    "sona.sprintintro.v1",
+    // QUEST1: where this child is in the 14-day daily adventure, and the day
+    // they last finished one (a brother or sister has their own adventure);
+    // since STORY1, also the stories they finished and the gift of the last
+    // one; since CAL1, the day their calendar started
+    "sona.quest.v1",
+    // each child's own best in each game (BESTS1, Sona.gameBest): a brother
+    // or sister starts with none, and it goes when the child is removed. The
+    // old "sona.best.<game>" keys were one per phone, so siblings overwrote
+    // each other; they are not carried over.
+    "sona.bests.v1",
+    // each child's own trophies, daily chest, Trophy Road and game levels (11
+    // Oct 2026, TROPHY1 and after): a play economy, never practice data
+    "sona.trophy.v1", "sona.chest.v1", "sona.road.v1", "sona.playlevel.v1",
+    // each child's Practice Board entry and the last board they saw (BOARD2,
+    // 11 Oct 2026): never in a backup, and gone when the child is removed
+    "sona.board.v1", "sona.boardcache.v1",
+    // Progress's Firsts: the steps each child has been seen to reach. It was
+    // the phone's, so a sister's climb was dated as her brother's "first"
+    // (22 Oct 2026, with one climb per place in the word). The first child
+    // keeps the key as it was.
+    "sona.firsts.v1",
     // PER-CHILD, and it must be. This key holds the clinician code, the
     // reporting childId and the grown-up's CONSENT to share. While it was
     // shared, two siblings on one iPad reported under ONE childId: the roster
@@ -193,6 +352,11 @@
   function saveFor(slot, key, val) {
     try { localStorage.setItem((slot && PER_KID.has(key)) ? key + "@" + slot : key, JSON.stringify(val)); } catch {}
   }
+  // …and its mirror: read one child's key whoever is active (the Practice
+  // Board sends for every child on the phone, not only the one playing).
+  function _loadFor(slot, key, def) {
+    try { const v = JSON.parse(localStorage.getItem((slot && PER_KID.has(key)) ? key + "@" + slot : key)); return (v && typeof v === "object") ? v : clone(def); } catch { return clone(def); }
+  }
 
   // The switcher's list, each entry carrying the name from that kid's OWN
   // profile (the cached name goes stale the moment a parent renames a child).
@@ -219,22 +383,39 @@
       else sessionStorage.removeItem(key);
       // A game entrance token is transient; the saved ready checkpoint owns
       // any already-earned game and will issue its own token on resume.
-      ["sona.play.token", "sona.play.active", "sona.boost.sound"].forEach((k) => sessionStorage.removeItem(k));
+      ["sona.play.token", "sona.play.active", "sona.boost.sound", "sona.boost.level", "sona.boost.ask", "sona.boost.pos"].forEach((k) => sessionStorage.removeItem(k));
     } catch (e) {}
   }
   function addKid(name, age) {
     const v = _kids();
-    // slots are never reused — a removed kid's leftover keys must not become a
-    // new child's history
-    let n = 2; const taken = new Set(v.list.map((k) => k.slot));
-    while (taken.has("k" + n)) n++;
-    const slot = "k" + n;
+    // Slots are never reused — a removed kid's leftover keys and saved voice
+    // clips must not become a new child's history. It used to take the lowest
+    // free slot, so the child added after a removal was handed the removed
+    // child's slot, and their Progress page played the removed child's saved
+    // tries. Now the record keeps the highest slot ever given (`hi`); a record
+    // from before that starts from the highest slot still on the list.
+    let hi = Math.max(1, parseInt(v.hi, 10) || 1);
+    v.list.forEach((k) => { const n = parseInt(String(k.slot).slice(1), 10); if (n > hi) hi = n; });
+    const slot = "k" + (hi + 1);
+    v.hi = hi + 1;
+    // A device that removed a child before this build may still hold that
+    // child's clips under this very slot (removing used to leave them). A new
+    // slot can own none, so clear whatever is stamped with it.
+    _dropRecordings(slot);
+    // …and the Practice Board: a restored list can bring a lower `hi`, and a
+    // slot handed out again must never inherit another child's board entry or
+    // the grown-up's yes for them (BOARD2). A stray entry is queued for
+    // deletion, never kept.
+    try { _boardDrop(slot); _boardPendForget([slot]); } catch (e) {}
     // A grandfathered household stays grandfathered through its NEW children
     // too (24 Sep 2026). earlyAdopterAnyKid() only sees children still on the
     // list, so a family who added a sibling and then removed the first child
     // — the only one the sweep ever marked — dropped to the free version.
     // Read BEFORE the list changes; copied, never invented.
     const household = earlyAdopterAnyKid();
+    // A household that kept its buddies (OWN1) keeps them for a new child too,
+    // written into the profile so a backup carries them to another phone.
+    const keptSet = buddiesKept();
     v.list.push({ slot, name: String(name || "").slice(0, 24) });
     _switchRun(v.active, slot);
     v.active = slot;
@@ -244,7 +425,7 @@
       childName: String(name || "").slice(0, 24),
       childAge: String(age || ""),
       onboarded: false,
-    }, household ? { earlyAdopter: true } : {}));
+    }, household ? { earlyAdopter: true } : {}, keptSet ? { owned: _legacyInto(clone(DEFAULT_PROFILE.owned)) } : {}));
     return slot;
   }
   function switchKid(slot) {
@@ -256,21 +437,37 @@
   function removeKid(slot) {
     const v = _kids();
     if (v.list.length < 2) return false;              // never leave zero children
+    // a child on the Practice Board leaves it with the rest of their data:
+    // the deletion is queued first and goes out from the next practice,
+    // game, road or Settings page, and slot "" is cleared here because the
+    // PER_KID sweep below leaves the first child's keys (BOARD2)
+    try { _boardDrop(slot); _boardPendForget([slot]); } catch (e) {}
+    // the weekly report's address, when it is on this child's profile, goes
+    // with them: unless a brother or sister holds the same one, the server is
+    // told this phone has it off (REPORT1, WEEKLY1), from the next Settings
+    // or practice page
+    let held = "";
+    try { const rp = _loadFor(slot, PKEY, {}); if (rp.weeklyReport === true) held = String(rp.email || "").trim().toLowerCase(); } catch (e) {}
     v.list = v.list.filter((k) => k.slot !== slot);
     if (v.active === slot) { _switchRun(slot, v.list[0].slot); v.active = v.list[0].slot; }
     try { sessionStorage.removeItem("sona.run.v1@" + (slot || "first")); } catch (e) {}
     _saveKids(v);
+    try { if (held && reportEmail() !== held) _reportOffOwe(held); } catch (e) {}
     // drop that child's practice data; slot "" (the first kid) shares the
     // un-suffixed keys, so only a suffixed slot is safe to clear
     if (slot) { try { PER_KID.forEach((k) => localStorage.removeItem(k + "@" + slot)); } catch (e) {} }
+    // …and their saved tries, whichever slot they had: the clips are theirs,
+    // and no child is ever given slot "" again.
+    _dropRecordings(slot);
     return true;
   }
 
-  // SET1 replaced three audio checkboxes with one volume slider, but a profile
-  // saved BEFORE that can still carry voiceOn:false — and there is no longer a
-  // control anywhere that can set it back to true. Echo goes silent forever and
-  // the parent has nothing to press. Reconcile the legacy flags with the volume
-  // that now owns them: audible volume means audible Echo.
+  // SET1 replaced three audio checkboxes with one volume slider (gone too now,
+  // see getProfile), but a profile saved BEFORE that can still carry
+  // voiceOn:false — and there is no longer a control anywhere that can set it
+  // back to true. Echo goes silent forever and the parent has nothing to
+  // press. Reconcile the legacy flags with the volume that now owns them:
+  // audible volume means audible Echo.
   function _healAudioFlags(p) {
     if (!p || typeof p !== "object") return p;
     const vol = (p.volume != null ? p.volume : 0.6);
@@ -362,13 +559,42 @@
 
   function getProfile() {
     const p = Object.assign(clone(DEFAULT_PROFILE), load(PKEY, {}));
-    // migrate old/empty default voices (Jessica, Will, and the prior Leo) to the current voice
-    if (!p.voiceId || p.voiceId === "cgSgspJ2msm6clMCkdW9" || p.voiceId === "bIHbv24MWmeRgasZH58o" || p.voiceId === "SF6OznV7UB2AxeidTpie") p.voiceId = DEFAULT_PROFILE.voiceId;
-    // one-time repair: the default used to be 0.3 and the Settings slider that
-    // could change it was removed, so families were stuck at 30% volume with
-    // no way up. Lift only that exact value — a deliberate 0.3 is unreachable
-    // today, and anything else the family chose is left alone.
-    if (p.volume === 0.3) { p.volume = 0.8; try { save(PKEY, Object.assign({}, load(PKEY, {}), { volume: 0.8 })); } catch (e) {} }
+    // A pin belongs to this child's selected sounds. An old backup or a
+    // removed sound must never strand the child on a hidden choice. Reading
+    // only normalizes in memory; Home remains a read-only page.
+    const target = _targetPin(p);
+    if (target) p.targetSound = target; else delete p.targetSound;
+    // ONE coach voice for every family (Travis, 29 Sep 2026). The voice picker
+    // is gone, so a voice saved from it (Sarah, George…) is overridden here
+    // rather than honoured: with no picker left, an old pick would strand that
+    // family on a voice nobody else hears and they could never change back.
+    // The old pick is not kept, either: saveProfile() writes this result back,
+    // so the next save of any setting replaces it with the default. Harmless —
+    // nothing reads the saved field any more, and there is no picker to undo.
+    p.voiceId = DEFAULT_PROFILE.voiceId;
+    // The optional parent code is gone (Travis, 30 Sep 2026: "get rid of the
+    // parent code"): Home always asks for four number words, so a code saved
+    // before then opens nothing. Dropped here, so the next save of any setting
+    // stops carrying it in the profile and into backups.
+    delete p.parentPin;
+    // The game-card picker is gone too (Travis, 22 Oct 2026: "simplify
+    // settings ... the minimum viable features"). A pick saved from it would
+    // hold a child's cards at that step for good with nothing left to change
+    // it, so it is dropped here, the parent code's way: the cards follow what
+    // the child has earned on the practice page (_gameWant).
+    delete p.gameLevel;
+    // SOUND IS ON OR OFF; THE PHONE'S SIDE BUTTONS DO THE REST (Travis, 30 Sep
+    // 2026: "why can't we just use our phones to adjust volume on the side of
+    // our iphone?"). The Settings slider is gone, so a level saved from it —
+    // 30%, 100% — would be a level nobody can change again. That happened
+    // once already: the old default was 30% and families were stuck there
+    // after the first slider went. So every level above zero plays at the one
+    // normal level. Zero is kept exactly: a muted child stays silent until a
+    // grown-up taps Turn sound on in Settings, which writes the normal level
+    // back. Read-time, not written back: every page reads volume through
+    // here, and the next save of any setting stores the result.
+    const vol = p.volume == null ? NaN : Number(p.volume);
+    p.volume = (isFinite(vol) && vol <= 0) ? 0 : DEFAULT_PROFILE.volume;
     return _healAudioFlags(p);
   }
   // Playback-rate multiplier for /api/tts audio. Leo's ElevenLabs voice is
@@ -376,11 +602,12 @@
   const VOICE_PITCH = 1;
   // Shared delivery revision: server tuning must not leave families replaying
   // older, indefinitely cached prompts on their devices.
-  // v8 (24 Sep 2026): /api/tts now levels every clip to one loudness and uses
-  // calmer settings with a fixed seed. Moves in lockstep with VOICE_REVISION in
-  // app/api/tts/route.ts — a phone that kept its v7 copies would go on playing
-  // the loud, jumpy takes Travis heard, whatever the server now sends.
-  const TTS_CACHE_VERSION = "v8";
+  // v9 (28 Sep 2026): /api/tts makes every line with Eleven v4 Turbo instead of
+  // Multilingual v2. v8 (24 Sep) levelled every clip to one loudness with
+  // calmer settings and a fixed seed. Moves in lockstep with VOICE_REVISION in
+  // app/api/tts/route.ts — a phone that kept its v8 copies would go on playing
+  // the old model's takes for every line it had already heard.
+  const TTS_CACHE_VERSION = "v9";
   const _voiceEvents = [];
   function voiceDiagnostic(event) {
     event = event || {};
@@ -401,10 +628,108 @@
       events: _voiceEvents.map(function (item) { return Object.assign({}, item); }) };
   }
 
-  function saveProfile(patch) { save(PKEY, Object.assign(getProfile(), patch || {})); }
+  // ── "Go!": Echo's turn cue after a game's ask (2 Oct 2026) ──
+  // Travis: "i also wanna try to have the 11 labs voice say 'Go!'". Feed
+  // Echo, the Say & Play games (Bubble Pop, Hoops, Soccer Goal, Dino Dig) and
+  // Peekaboo say it straight after the word, as its own short clip, so a child
+  // who can't read hears that it is their turn. It is a nicety, so it never
+  // holds up a turn (review, 2 Oct 2026). Fetched like the word, every turn
+  // waited on the voice service a second time while "Listen…" sat on screen
+  // in silence: up to 8 s more when the service was slow, on every turn while
+  // it sent stand-ins (those are never saved, so "Go!" was fetched again each
+  // time), and a "Go!" the service could not send came in the browser's robot
+  // voice after Echo's word. So each game asks goClip() for the clip it can
+  // play right now, and plays nothing when there is none:
+  // - this page's copy, or this phone's saved copy (read from the phone, not
+  //   the network); if neither, nothing this turn, and the voice service is
+  //   asked in the background, so the next turn has it;
+  // - only the first ask of a visit waits for that request (waitMs, the
+  //   game's GO_WAIT_MS: 1.5 s at most after the word), so a new phone hears
+  //   "Go!" from the start;
+  // - an ordinary answer is saved on the phone; a stand-in (X-Sona-Voice-Keep
+  //   "0") is kept for this page only and never saved, so the next visit asks
+  //   again, the rule every voice line keeps (28 Sep 2026);
+  // - never the browser voice: no clip, no "Go!".
+  // Resolves with the clip's bytes (an ArrayBuffer of 24 kHz PCM) or null.
+  const GO_LINE = "Go!", GO_WAIT_MS = 1500, _go = { mem: {}, job: {} };
+  function _goStore(key, bytes) {
+    return new Promise(function (done) {
+      // a phone that never answers is the same as one without the clip
+      const timer = setTimeout(function () { done(null); }, 500);
+      const fin = function (v) { clearTimeout(timer); done(v || null); };
+      try {
+        const rq = indexedDB.open("sona-tts", 1);
+        rq.onupgradeneeded = function () { try { if (!rq.result.objectStoreNames.contains("clips")) rq.result.createObjectStore("clips"); } catch (e) {} };
+        rq.onerror = function () { fin(null); };
+        rq.onsuccess = function () {
+          try {
+            const tx = rq.result.transaction("clips", bytes ? "readwrite" : "readonly"), st = tx.objectStore("clips");
+            if (bytes) { st.put(bytes, key); tx.oncomplete = function () { fin(bytes); }; tx.onerror = function () { fin(null); }; return; }
+            const q = st.get(key); q.onsuccess = function () { fin(q.result); }; q.onerror = function () { fin(null); };
+          } catch (e) { fin(null); }
+        };
+      } catch (e) { fin(null); }
+    });
+  }
+  function _goFetch(voice) {
+    let ctl = null, to = 0;
+    try { ctl = new AbortController(); to = setTimeout(function () { try { ctl.abort(); } catch (e) {} }, 8000); } catch (e) {}
+    return fetch("/api/tts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: GO_LINE, voice: voice || "", stable: true }), signal: ctl ? ctl.signal : undefined })
+      .then(function (r) {
+        if (!r.ok) return null;
+        const keep = !(r.headers && r.headers.get && r.headers.get("X-Sona-Voice-Keep") === "0");
+        return r.arrayBuffer().then(function (b) { return b && b.byteLength ? { bytes: b, keep: keep } : null; });
+      })
+      .then(function (v) { clearTimeout(to); return v; }, function () { clearTimeout(to); return null; });
+  }
+  function goClip(voice, waitMs) {
+    const key = (voice || "echo") + "|" + TTS_CACHE_VERSION + "|" + GO_LINE;
+    if (_go.mem[key]) return Promise.resolve(_go.mem[key]);
+    let job = _go.job[key];
+    if (!job) {
+      job = _go.job[key] = {};
+      job.phone = _goStore(key);
+      job.all = job.phone.then(function (b) {
+        if (b) return b;
+        return _goFetch(voice).then(function (v) { if (!v) return null; if (v.keep) _goStore(key, v.bytes); return v.bytes; });
+      }).then(function (b) { if (b) _go.mem[key] = b; if (_go.job[key] === job) delete _go.job[key]; return b; },
+        function () { if (_go.job[key] === job) delete _go.job[key]; return null; });
+    }
+    if (!(waitMs > 0)) return job.phone.then(function (b) { return b || _go.mem[key] || null; });
+    return Promise.race([job.all, new Promise(function (done) { setTimeout(function () { done(null); }, waitMs); })])
+      .then(function (b) { return b || _go.mem[key] || null; });
+  }
+
+  function saveProfile(patch) {
+    // Lowering the daily target can complete today without another saying.
+    // Stamp that earned day in this writer; read-only goal readers stay pure.
+    const dailyChange = patch && Object.prototype.hasOwnProperty.call(patch, "dailyGoal");
+    const previousGoal = dailyChange ? repGoal() : null;
+    // a child this save sets up starts their story calendar today (CAL1):
+    // setup, the Speech Check and the pilot page all set a child up here
+    const setUpNow = !!(patch && patch.onboarded === true) && !getProfile().onboarded;
+    const next = Object.assign(getProfile(), patch || {});
+    const target = _targetPin(next);
+    if (target) next.targetSound = target; else delete next.targetSound;
+    save(PKEY, next);
+    if (setUpNow) { try { _questAnchor(null, true); } catch (e) {} }
+    // …and pay it: today's reps already said earn against the lowered goal
+    // now (30 once it is met, like any goal day), not at a next rep that may
+    // never come that day (the ledger never goes back to an earlier day).
+    // Only the difference is paid, so nothing pays twice.
+    if (dailyChange && repGoal() < previousGoal) { if (dayReps() > 0) _trophyAdd(); _goalCheck(); }
+  }
 
   function getProgress() {
+    // A read never CREATES the record (11 Oct 2026). A phone with none has no
+    // rungs to remap, so the fresh default is born migrated and nothing is
+    // saved; the first real write (a try, a coin) stores it with the flag.
+    // Home used to create it on every first load through the coin mint
+    // (retired, COIN3), which hid that any page reading progress, a game a
+    // child cannot open included, wrote this key just by looking.
+    let had = false; try { had = localStorage.getItem(_k(GKEY)) != null; } catch (e) {}
     const g = load(GKEY, DEFAULT_PROGRESS);
+    if (!had) g.ladderV = 2;
     g.totals = Object.assign({ sessions: 0, words: 0, stars: 0, coins: 0 }, g.totals || {});
     g.streak = Object.assign({ count: 0, lastDate: "" }, g.streak || {});
     g.bySound = g.bySound || {}; g.sessions = g.sessions || []; g.stage = g.stage || {}; g.chests = g.chests || {}; g.missed = g.missed || [];
@@ -444,27 +769,36 @@
     const cut = _localDay(Date.now() - 130 * 86400000); Object.keys(g.practiceDays).forEach(function (k) { if (k < cut) delete g.practiceDays[k]; });
   } }
 
-  // ── The parent's week — streaks belong to MOM, not the kid ──
-  // She picks 3, 5, or 7 practice days a week in onboarding; a practice day is
-  // any day with real logged attempts. The week streak counts consecutive weeks
-  // that met HER goal, so a 3-day family feels every bit as on-track as a
-  // 7-day one. Nothing here is ever shown to (or pressures) the child.
-  function weeklyGoalDays() { const g = parseInt(getProfile().weeklyGoal, 10); return (g === 3 || g === 5 || g === 7) ? g : 5; }
+  // Daily rep goals and the grown-up's week. Existing practice days stay in
+  // days/done for honest practice summaries; metDays/goalDone show the new goal.
+  // Before goals existed, a family's practiced days keep their earned weeks.
+  const GOALKEY = "sona.goaldays.v1", GOAL_SINCE = "2026-10-05";
+  // 3, 4, 5 or 7. "Every day" is a real choice again (Travis, 5 Oct 2026, of
+  // setup: "three days a week or five days a week or every day"); for a few
+  // hours that day a saved 7 read as 5.
+  function goalDays() { const n = parseInt(getProfile().weeklyGoal, 10); return (n === 3 || n === 4 || n === 5 || n === 7) ? n : 4; }
+  function weeklyGoalDays() { return goalDays(); }
+  // A pure read (load, not getProgress): getProgress() saves the one-time
+  // ladder migration on a record without it, and Home used to make that write
+  // on every load through mintCoins(). Since COIN3 (11 Oct 2026) Home only
+  // reads, so a reader must not be the one to write it either.
   function momWeek() {
-    const g = getProgress(); const pd = Object.assign({}, g.practiceDays || {});
-    if (g.streak && g.streak.lastDate) pd[g.streak.lastDate] = 1; // pre-history migration
-    const now = new Date(); const dow = (now.getDay() + 6) % 7; // 0 = Monday
+    const g = load(GKEY, DEFAULT_PROGRESS), pd = Object.assign({}, g.practiceDays || {}), stamps = load(GOALKEY, {}), t = today();
+    if (g.streak && g.streak.lastDate) pd[g.streak.lastDate] = 1;
+    const now = new Date(), dow = (now.getDay() + 6) % 7;
     const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - dow);
-    const key = function (d) { return _localDay(d.getTime()); };
-    const days = []; for (let i = 0; i < 7; i++) { const d = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i); days.push(!!pd[key(d)]); }
-    const goal = weeklyGoalDays(); const done = days.filter(Boolean).length;
+    const key = (d) => _localDay(d.getTime());
+    function met(k) { return k <= t && (!!stamps[k] || (k === t && dayGoal().done) || (k < GOAL_SINCE && !!pd[k])); }
+    const days = [], metDays = [];
+    for (let i = 0; i < 7; i++) { const k = key(new Date(start.getFullYear(), start.getMonth(), start.getDate() + i)); days.push(k <= t && !!pd[k]); metDays.push(met(k)); }
+    const goal = goalDays(), done = days.filter(Boolean).length, goalDone = metDays.filter(Boolean).length;
     let weekStreak = 0;
     for (let w = 1; w <= 26; w++) {
-      let c = 0; for (let i = 0; i < 7; i++) { const d = new Date(start.getFullYear(), start.getMonth(), start.getDate() - 7 * w + i); if (pd[key(d)]) c++; }
+      let c = 0; for (let i = 0; i < 7; i++) if (met(key(new Date(start.getFullYear(), start.getMonth(), start.getDate() - 7 * w + i)))) c++;
       if (c >= goal) weekStreak++; else break;
     }
-    if (done >= goal) weekStreak++;
-    return { days: days, done: done, goal: goal, hit: done >= goal, weekStreak: weekStreak, todayIx: dow, practicedToday: days[dow] };
+    if (goalDone >= goal) weekStreak++;
+    return { days, done, metDays, goalDone, goal, hit: goalDone >= goal, weekStreak, todayIx: dow, practicedToday: days[dow] };
   }
   // current stage to practice for a sound (0..3); 3 = mastered
   function stageOf(sound) { const g = getProgress(); return Math.min(3, g.stage[sound] || 0); }
@@ -489,17 +823,113 @@
   // g.stage[sound] indexes THIS array — see migrateLadder() before reordering it.
   const LADDER = ["isolation", "syllable", "word", "sentence", "conversation"];
   const LADDER_LABEL = { isolation: "Sound", syllable: "Syllables", word: "Words", sentence: "Sentences", conversation: "Talking" };
+  // The highest step the practice page can ask: "conversation" has no line
+  // to say (its items are questions with no .t). It used to be reachable on
+  // the fifth round of a day, fall back to the bare sound, and two clean
+  // "rrrr"s there marked the sound Mastered (ladderTop, below).
+  const PRACTICE_TOP = LADDER.indexOf("sentence");
   const RUNG_MASTER = 0.8; // ~80% on a rung advances to the next
-  function rungOf(sound) { const g = getProgress(); return Math.min(LADDER.length, g.stage[sound] || 0); } // 0..6
+  // ── one climb per sound AND place in the word (22 Oct 2026) ──
+  // Travis: "not just saying the sound of the letter R, but to progress where
+  // we're doing re, ra, ru, and then we're doing a full word and applying that
+  // to each letter", with every word position open. A child who says R well
+  // at the start of words may still need syllables at the end of them, so each
+  // place climbs on its own. The start of a word keeps g.stage[sound] and its
+  // "R.2" win counts, so nothing a child has earned moves; every other place
+  // lives beside it in g.stageAt ("R.f"; wins "R.f.2"), inside the same
+  // record, so a reset, a backup, a sibling and a removal treat it exactly as
+  // they treat the rest. Two places share one climb: R at the end of a word IS
+  // vocalic R (car, door, bear), so "f" for R is kept as "v". And the sound
+  // alone is the same sound wherever it sits, so once any of a sound's climbs
+  // has passed it, every climb starts above it. Which climbs share is
+  // Rachel's call (CLAUDE.md, "Word positions and the practice steps").
+  function _ladKey(sound, pos) {
+    sound = String(sound || "").toUpperCase();
+    const p = pos || soundPos(sound);
+    if (!p || p === "i") return "";
+    // TH (v) has no start-of-word words, so "anywhere in a word" is where it
+    // has always really been practised: it keeps the sound's own climb
+    if (p === "mix" && !posHas(sound, "i")) return "";
+    return sound + "." + (sound === "R" && p === "f" ? "v" : p);
+  }
+  function ladderKey(sound, pos) { sound = String(sound || "").toUpperCase(); return _ladKey(sound, pos) || sound; }
+  function _aloneDone(g, sound) {
+    if ((g.stage[sound] | 0) >= 1) return true;
+    const at = g.stageAt || {}, pre = sound + ".";
+    return Object.keys(at).some((k) => k.indexOf(pre) === 0 && (at[k] | 0) >= 1);
+  }
+  // BEFORE THIS BUILD every climb was kept in g.stage[sound], including one
+  // made under a speech therapist's homework at another place (most are
+  // "Mixed", the dashboard's default). A record from before it (no g.posV)
+  // reads that climb for the homework's own place, so a child who had reached
+  // sentences on their homework is not sent back to the sound; the first new
+  // write copies it there and marks the record (_posMark), and from then on
+  // each place keeps its own. Reading never writes.
+  function _posCarry(g, sound, k) {
+    if (g.posV || !k) return null;
+    const hw = homework();
+    if (!hw || !hw.pos || (hw.sounds || []).map((x) => String(x).toUpperCase()).indexOf(sound) < 0) return null;
+    return _ladKey(sound, hw.pos) === k ? (g.stage[sound] || 0) : null;
+  }
+  function _posMark(g) {
+    if (g.posV) return;
+    const hw = homework();
+    if (hw && hw.pos) (hw.sounds || []).forEach((x) => {
+      const s = String(x).toUpperCase(), k = _ladKey(s, hw.pos);
+      if (!k || !(g.stage[s] > 0)) return;
+      g.stageAt = g.stageAt || {};
+      if (g.stageAt[k] == null) g.stageAt[k] = g.stage[s];
+    });
+    g.posV = 1;
+  }
+  // pos: a place in the word ("i", "m", "f", "v", "b", "mix"); left out, the
+  // place this sound is practised at now (soundPos). 0..5: the first step not
+  // yet earned.
+  function rungOf(sound, pos) {
+    sound = String(sound || "").toUpperCase();
+    const g = getProgress(), k = _ladKey(sound, pos), own = (g.stageAt || {})[k];
+    let r = k ? (own != null ? own | 0 : (_posCarry(g, sound, k) || 0)) : (g.stage[sound] || 0);
+    if (r < 1 && _aloneDone(g, sound)) r = 1;
+    return Math.min(LADDER.length, r);
+  }
   function rungName(i) { return LADDER[i] || "mastered"; }
   function rungLabel(i) { return LADDER_LABEL[LADDER[i]] || "Mastered"; }
   // Record a finished round at `rung`. accuracy: 0..1 (or a pass boolean). Encouraging:
   // advances only when solid and never regresses.
-  function recordRung(sound, rung, accuracy) {
-    const g = getProgress(); const cur = g.stage[sound] || 0;
+  function recordRung(sound, rung, accuracy, pos) {
+    sound = String(sound || "").toUpperCase();
+    const k = _ladKey(sound, pos), cur = rungOf(sound, pos);
     const ok = (typeof accuracy === "number") ? accuracy >= RUNG_MASTER : !!accuracy;
-    if (ok && rung >= cur && cur < LADDER.length) { g.stage[sound] = Math.min(LADDER.length, rung + 1); save(GKEY, g); }
-    return g.stage[sound] || 0;
+    if (ok && rung >= cur && cur < LADDER.length) {
+      const g = getProgress(), v = Math.min(LADDER.length, rung + 1);
+      _posMark(g);
+      if (k) { g.stageAt = g.stageAt || {}; g.stageAt[k] = v; } else g.stage[sound] = v;
+      save(GKEY, g);
+    }
+    return rungOf(sound, pos);
+  }
+  // One clean first-listen pass at the stretch rung; the second one earns it.
+  // The rule (two passes, never down) is Rachel's and is unchanged — this is
+  // only WHOSE count it is. The practice page used to keep it in a key named
+  // for the sound and rung ("sona.rungwins.R.0") and pass that through kkey(),
+  // but PER_KID holds fixed names, so the key was never suffixed and the count
+  // was the DEVICE's: one sibling's pass plus the other's moved a level for a
+  // child who had earned half of it. It lives inside the child's own progress
+  // now, so it follows them through load()/save(), a backup and a removal.
+  // Counts left under the old keys are not read: a child at worst needs one
+  // more clean round, which is the safe direction.
+  // Each place in the word counts its own wins ("R.2" at the start, "R.v.2"
+  // for vocalic R and R at the end), so two clean rounds in two places never
+  // add up to a step in either.
+  function rungWin(sound, rung, pos) {
+    sound = String(sound || "").toUpperCase();
+    const g = getProgress(); const k = (_ladKey(sound, pos) || sound) + "." + rung;
+    _posMark(g);
+    g.rungWins = g.rungWins || {};
+    const w = (g.rungWins[k] | 0) + 1;
+    if (w >= 2) { delete g.rungWins[k]; save(GKEY, g); return recordRung(sound, rung, 1, pos); }
+    g.rungWins[k] = w; save(GKEY, g);
+    return rungOf(sound, pos);
   }
   // ── free-play rotation: one letter at a time, one rung per game ──
   // A rotation = ROT_LEN practice rounds (≈ one pass of the games — any games,
@@ -564,8 +994,8 @@
       if (!code || !childId || !ticket) return Promise.resolve(null);
       const body = { code: code, childId: childId, ticket: ticket };
       // TODAY'S TOTAL, never a delta — a retried request cannot inflate it,
-      // the same reason mintCoins() derives from the day's count rather than
-      // incrementing. Reps only; no audio, no name, nothing else.
+      // the same reason the trophy ledger (TROPHY1) pays only the difference
+      // from the day's count. Reps only; no audio, no name, nothing else.
       const cur = homework();
       if (cur) { body.forId = cur.id; body.reps = repsToday(); }
       return fetch("/api/homework", {
@@ -584,16 +1014,129 @@
     // Homework first: this is the whole point of assigning it.
     const hs = homeworkSounds();
     if (hs.length) return hs;
-    const f = ((getProfile().focusSounds) || []).map((s) => String(s).toUpperCase()).filter((s) => WORDS[s]);
+    const p = getProfile(), pin = _targetPin(p);
+    if (pin) return [pin];
+    const f = _targetFamilySounds(p);
     return f.length ? f : ["R"];
+  }
+  // One chosen sound works like a language choice: books and the existing
+  // game/practice readers agree, while the family's other selected sounds
+  // and all earned work stay intact. No pin preserves the old rotation.
+  function _targetFamilySounds(p) {
+    const list = p && Array.isArray(p.focusSounds) ? p.focusSounds : [];
+    return list.map((s) => String(s).toUpperCase()).filter((s, i, a) => ALL_SOUNDS.indexOf(s) >= 0 && a.indexOf(s) === i);
+  }
+  function _targetPin(p) {
+    const s = String(p && p.targetSound || "").toUpperCase();
+    return _targetFamilySounds(p).indexOf(s) >= 0 ? s : "";
+  }
+  function targetSoundOptions() {
+    const assigned = homeworkSounds();
+    return assigned.length ? assigned : _targetFamilySounds(getProfile());
+  }
+  function targetSound() { return rotSound(); }
+  function setTargetSound(sound) {
+    // A family control must not claim to change an active assignment.
+    // Keep the saved family preference for when that assignment ends.
+    if (homeworkSounds().length) return false;
+    const s = String(sound == null ? "" : sound).toUpperCase();
+    if (s && _targetFamilySounds(getProfile()).indexOf(s) < 0) return false;
+    saveProfile({ targetSound: s });
+    return true;
   }
   // The position to practice: the assignment's, else the family's setting.
   // One reader for both, so a page cannot honour homework for the sound and
   // quietly ignore it for the position.
+  //
+  // EVERY POSITION IS OPEN (Travis, 22 Oct 2026: "a full, in-depth, thorough
+  // build-out of word positions … build that so it works in the games"). From
+  // 1 Oct only the start of a word could be picked, "because it's not built
+  // yet"; now each place has its own syllables, words, sentences and climb
+  // (soundPos, ladderContent, rungOf) and the picture games follow it.
+  // FAMILY_POSITIONS stays the one switch: an id taken out of it greys out in
+  // Settings again ("coming soon") and reads as the start of a word here.
+  // An SLP's homework still names its own position.
+  //
+  // THE FAMILY'S PICK IS profile.wordPosition, NEVER THE OLD
+  // profile.practicePosition. That one still holds whatever a family chose
+  // before 1 Oct (or a pilot link's ?pos=), and a family who has not opened
+  // Settings since would have found their child moved to the end of words, or
+  // vocalic R, with nobody choosing it. Only today's Settings writes this one.
+  const FAMILY_POSITIONS = ["i", "m", "f", "v", "b", "mix"];
   function practicePos() {
     const hw = homework();
     if (hw && hw.pos) return hw.pos;
-    try { return getProfile().practicePosition || "i"; } catch (e) { return "i"; }
+    return _famPos();
+  }
+  function _famPos() {
+    try { const p = getProfile().wordPosition || "i"; return FAMILY_POSITIONS.indexOf(p) >= 0 ? p : "i"; } catch (e) { return "i"; }
+  }
+  function _littleOne() { try { return playStyle() === "simple"; } catch (e) { return false; } }
+  // a place a child aged 2 to 4 is not given from a grown-up's pick
+  function _heldLittle(sound, pos) { return pos === "v" || pos === "b" || (String(sound).toUpperCase() === "R" && pos === "f"); }
+  // is this sound one the active homework names?
+  function _hwFor(sound) { const hw = homework(); return !!(hw && (hw.sounds || []).map((x) => String(x).toUpperCase()).indexOf(String(sound).toUpperCase()) >= 0); }
+  // The place a sound's SYLLABLES are practised at: the place its homework's
+  // own words sit, when an assignment names them ("car", "star" under a
+  // start-of-word assignment are end-of-word R); else the place it is
+  // practised at. The practice page and the game cards both read this.
+  function sylPos(sound, P) {
+    P = P || soundPos(sound);
+    const hww = homeworkWords(sound);
+    if (!hww.length) return P;
+    const ps = {}; hww.forEach((w) => { ps[w.pos || "i"] = 1; });
+    const k = Object.keys(ps);
+    return k.length === 1 ? k[0] : "mix";
+  }
+  // Does this sound have bank words at this place?
+  function posHas(sound, pos) {
+    return (WORDS[String(sound || "").toUpperCase()] || []).some((w) => (w.pos || "i") === pos);
+  }
+  // THE PLACE A SOUND IS REALLY PRACTISED AT. practicePos() is one choice for
+  // every sound a child has, but vocalic R exists only for R, blends only for
+  // R, S and L (the picker says it: "tr, st, bl"), and TH (v) has no word that
+  // starts with it that a picture can show. So: the chosen place when this
+  // sound has words there; else the start of a word; else (TH (v)) anywhere in
+  // the word, "mix". An assignment that names this sound's own words keeps its
+  // own position whatever those words are. The practice page, the games,
+  // Settings and Progress all read this, so none can practise one place while
+  // another shows a different one.
+  function soundPos(sound) {
+    sound = String(sound || "").toUpperCase();
+    // an assignment's position belongs to the assignment's sounds
+    const hw = homework(), mine = !!(hw && (hw.sounds || []).map((x) => String(x).toUpperCase()).indexOf(sound) >= 0);
+    let p = hw && hw.pos && !mine ? _famPos() : practicePos();
+    if (homeworkWords(sound).length) return p;
+    // A child aged 2 to 4 is never given vocalic R or blends because a grown-up
+    // picked them (CLAUDE.md: "Developmental order is real"; cluster
+    // reduction is typical to about 4, vocalic R comes around 7): the start of
+    // a word instead, and Settings says so. Their speech therapist's homework
+    // still names its own place. Rachel's call.
+    // R at the end of a word IS vocalic R (car, door), so it is held too.
+    if (!mine && _littleOne() && (p === "v" || p === "b" || (sound === "R" && p === "f"))) p = "i";
+    if (p === "mix" || posHas(sound, p)) return p;
+    return posHas(sound, "i") ? "i" : "mix";
+  }
+  // ── "Each day's practice starts with" (Travis, 22 Oct 2026: "I'm not sure
+  // … if only some need to do the progression, or if all of them do. But
+  // let's at least just build it in so it's an option that can be selected") ──
+  // The step the day's first round asks, 0..3 (the sound, syllables, words,
+  // sentences); the climb goes on from there one step a round, as it always
+  // has (charge.html). "" = the sound, every step, as before. The steps a
+  // child starts above count as theirs for the climb: they stretch one past
+  // the start, and two clean rounds at the start step earn it and every step
+  // below it, the practice page's own rule for a stretch (a syllable win from
+  // a fresh start has always written "words next"). Saving the setting writes
+  // nothing on its own. A
+  // speech therapist's homework climbs every step from the sound, whatever is
+  // saved, and Settings says so: a parent must not skip steps of an
+  // assignment the therapist cannot see skipped. Whether a grown-up may skip
+  // steps at all is Rachel's call.
+  function ladderStart() {
+    if (homework()) return 0;
+    let s = ""; try { s = getProfile().ladderStart || ""; } catch (e) {}
+    const i = LADDER.indexOf(s);
+    return i > 0 && i <= PRACTICE_TOP ? i : 0;
   }
   function rotState() {
     const st = load(ROTKEY, {}); const f = rotSounds();
@@ -1194,7 +1737,6 @@
   function markStoryRead() {
     dailyStory();                                   // ensure the day is pinned
     const d = load(DAYKEY, {}); d.read = true; save(DAYKEY, d);
-    try { mintStoryBonus(); } catch (e) {}          // once per day, guarded in the ledger
     try { episodeAdvance(); } catch (e) {}          // day-guarded: sets up tomorrow
     return true;
   }
@@ -1202,7 +1744,13 @@
   // refreshes and across a parent and child looking at the same phone, because
   // the chapter is pinned for the day — so "did I already play today's set?"
   // has one answer, and the answer never changes underneath a child.
-  const MIC_PROMISE = "Grown-ups: the mic listens during practice and optional voice-enabled games. Sounds are checked on this phone; Sona never uploads recordings. Up to one clear practice try a day may be saved on this phone so you can listen back.";
+  // Short on purpose (Travis, 1 Oct 2026: "make this much more concise"; 2
+  // Oct 2026: "still too long ... just say audio is never recorded or
+  // uploaded"). Both halves are true by construction since 5 Nov 2026
+  // (Travis: "dont save"): saveRecording keeps nothing, and no route accepts
+  // audio (mictest). Still not "never recorded": the practice page holds a
+  // try in memory while it listens. The privacy page and /support say more.
+  const MIC_PROMISE = "Grown-ups: audio is never uploaded or saved.";
   // Rachel-approved play recommendation. Every game remains available by choice.
   function playStyle() {
     var age = Number(getProfile().childAge);
@@ -1244,13 +1792,17 @@
   // is the thing a five-year-old actually chases. It fills on REPS, which are
   // VAD-counted, so the meter can only move when a child actually speaks —
   // a bar that creeps up on a timer would teach exactly the wrong lesson.
-  const REP_GOAL_DEFAULT = 25;
+  const REP_GOAL_DEFAULT = 30;
   function repGoal() {
     // An assignment's daily target outranks the family's own — the clinician
     // set it, and the jar the child is filling should be the one they set.
     const hw = homework();
     if (hw && hw.repsPerDay > 0) return hw.repsPerDay;
-    const g = parseInt(getProfile().dailyGoal, 10) || 0;
+    const p = getProfile(), g = parseInt(p.dailyGoal, 10) || 0;
+    // One default for every age (Travis, 5 Oct 2026: "we'll just set the
+    // default to thirty reps per day. Right now it's set to fifty", which it
+    // was for ages 5 and up). So three days a week is a 90-rep week. A number a
+    // grown-up picked on Progress (Settings until 22 Oct 2026) is kept.
     return g > 0 ? g : REP_GOAL_DEFAULT;
   }
   function goalState() {
@@ -1258,40 +1810,24 @@
     return { n, goal, pct: Math.max(0, Math.min(1, n / goal)), full: n >= goal };
   }
 
-  // ── COIN1: coins spend across days, the meter resets each night ────────
-  // Two different jobs. The meter answers "am I done today?"; coins answer
-  // "what did all those days add up to?" — which is what carries a kid over a
-  // day when none of today's three games appeal.
-  //
-  // Coins are minted from reps, NOT from time in the app and NOT from opening
-  // things. Same rule as the meter: only a child's actual voice earns.
-  const COINS_PER = 5;                       // one coin per 5 honest reps
-  const COIN_STORY = 5;                      // finishing the daily chapter
+  // ── COIN1, now COIN3: the meter resets each night, coins are spent ─────
+  // Different jobs. The meter answers "am I done today?"; trophies (TROPHY1)
+  // answer "what did all those days add up to?", and they follow the honest
+  // rep. Coins are what a child spends (11 Oct 2026, D2): they may come only
+  // from the daily chest on a day the goal is met and from Trophy Road gifts,
+  // never from time in the app, opening things, a finished story or an arcade
+  // score, and never from a purchase. Reps used to mint them here (one coin per
+  // 5, plus 5 for the daily chapter, ledger "sona.coinmint.v1"); that mint is
+  // retired, and a balance already earned is kept. mintCoins() and
+  // mintStoryBonus() stay for cached pages, and only read the balance.
   const MYSTERY_COST = 15;                   // the 4th game, bought for a day
-  const COINKEY = "sona.coinmint.v1";
-  // Minting is derived from the day's rep count rather than incremented per
-  // rep, so a double-fired bumpReps can't double-pay — the ledger records how
-  // many coins today has already yielded and only ever pays the difference.
-  function mintCoins() {
-    const t = today(); const led = load(COINKEY, {});
-    const paid = (led.d === t ? led.paid : 0) | 0;
-    const earned = Math.floor(repsToday() / COINS_PER);
-    const owed = earned - paid;
-    if (owed > 0) { addCoins(owed); save(COINKEY, { d: t, paid: earned, story: !!(led.d === t && led.story) }); }
-    return getCoins();
-  }
-  function mintStoryBonus() {
-    const t = today(); const led = load(COINKEY, {});
-    if (led.d === t && led.story) return getCoins();      // once per day only
-    addCoins(COIN_STORY);
-    save(COINKEY, { d: t, paid: (led.d === t ? led.paid : 0) | 0, story: true });
-    return getCoins();
-  }
+  function mintCoins() { return coinsNow(); }
+  function mintStoryBonus() { return coinsNow(); }
   // The mystery game: one extra game for today, drawn from the ones NOT in
   // today's trio. Deliberately ADDITIVE — it never opens the whole deck. It
   // used to wait on today's story being read; that gate went with the books
-  // (GAMES1, 19 Sep 2026). Coins only come from reps, so a purchase is still
-  // practice-backed.
+  // (GAMES1, 19 Sep 2026). Coins come only from what practice earns (COIN3),
+  // so a purchase is still practice-backed.
   function mysteryCost() { return MYSTERY_COST; }
   function mysteryGame() {
     const d = _day();
@@ -1300,9 +1836,9 @@
   }
   // The mystery door is a PREMIUM door (24 Sep 2026): the free version is
   // practice plus its free games, and a fourth game a day is exactly what
-  // Premium adds. Coins still mint from reps for everyone — they are practice
-  // made visible, not a currency the paywall owns — so a family who upgrades
-  // later finds their jar already full.
+  // Premium adds. Coins are earned by practice for everyone (COIN3) — they
+  // are practice made visible, not a currency the paywall owns — so a family
+  // who upgrades later finds their jar already full.
   function canBuyMystery() {
     if (!isFree() && !premium()) return false;
     return !mysteryGame() && getCoins() >= MYSTERY_COST && GAME_KEYS.some(function (key) {
@@ -1355,16 +1891,295 @@
   // Practice items for a (sound, rung), wired to the existing content sources.
   // isolation/syllable score as "phoneme" (lenient); word+ score "full". Degrades
   // gracefully to words if SonaContent (gamecontent.js) isn't loaded on a page.
-  function ladderContent(sound, rung) {
+  // pos: the place in the word; left out, the place this sound is practised
+  // at (soundPos: homework's, then the family's, with its fallbacks). Every
+  // step follows it (22 Oct 2026): the syllables are built for that place
+  // ("ar" at the end of a word, "ah-rah" in the middle, "trah" in a blend;
+  // gamecontent.js holds the tables), the words sit there, and the sentences
+  // are built on those words. It used to be the word and sentence steps only,
+  // with "rah" asked of a child working on the end of words.
+  // Every item carries its own `pos` (the bank word's own tag for a word or a
+  // sentence, so "cake" is marked and booked where it is being practised;
+  // none for the sound alone), and `say`, what Echo's voice says, which may
+  // be respelled from what the card shows (`display`).
+  function ladderContent(sound, rung, pos) {
     const SC = (typeof window !== "undefined") ? window.SonaContent : null;
     const lvl = LADDER[Math.max(0, Math.min(LADDER.length - 1, rung || 0))];
-    const ws = () => wordsFor(sound) || [];
-    if (lvl === "isolation") return [{ t: soundSay(sound), say: soundSay(sound), display: soundLabel(sound), level: "isolation", mode: "phoneme" }];
-    if (lvl === "syllable") return (SC && SC.syllables ? SC.syllables(sound) : []).map((s) => ({ t: s.t, say: s.say, display: s.t, level: "syllable", mode: "phoneme" }));
-    if (lvl === "word") return ws().map((w) => ({ t: w.w, say: w.w, display: w.w, e: w.e, word: w.w, level: "word", mode: "full" }));
-    if (lvl === "sentence") return (SC && SC.sentences ? SC.sentences(sound) : ws().map((w) => ({ t: w.w, say: w.w, e: w.e, word: w.w }))).map((s) => ({ t: s.t, say: s.say, display: s.t, e: s.e, word: s.word, level: "sentence", mode: "full" }));
-    if (lvl === "conversation") return (SC && SC.chats ? SC.chats(sound) : []).map((c) => ({ q: c.q, options: c.options, level: "conversation", mode: "full" }));
+    const P = pos || soundPos(sound);
+    const ws = () => wordsFor(sound, P) || [];
+    // the syllables of the place the words really sit (sylPos)
+    const SP = sylPos(sound, P);
+    if (lvl === "isolation") return [{ t: soundSay(sound), say: soundSay(sound), display: soundLabel(sound), level: "isolation", mode: "phoneme", pos: "" }];
+    if (lvl === "syllable") return (SC && SC.syllables ? SC.syllables(sound, SP) : []).filter((s) => !(SP === "mix" && _littleOne() && !_hwFor(sound) && _heldLittle(sound, s.pos))).map((s) => ({ t: s.t, say: s.say || s.t, display: s.t, level: "syllable", mode: "phoneme", pos: s.pos || SP }));
+    // once each: "cake" is filed at the start and the end of K
+    if (lvl === "word") { const seen = {}; return ws().filter((w) => !seen[w.w] && (seen[w.w] = 1)).map((w) => ({ t: w.w, say: w.w, display: w.w, e: w.e, word: w.w, level: "word", mode: "full", pos: w.pos || "i" })); }
+    if (lvl === "sentence") return (SC && SC.sentences ? SC.sentences(sound, P) : ws().map((w) => ({ t: w.w, say: w.w, e: w.e, word: w.w, pos: w.pos }))).map((s) => ({ t: s.t, say: s.say, display: s.t, e: s.e, word: s.word, level: "sentence", mode: "full", pos: s.pos || P }));
+    if (lvl === "conversation") return (SC && SC.chats ? SC.chats(sound, P) : []).map((c) => ({ q: c.q, options: c.options, level: "conversation", mode: "full" }));
     return [];
+  }
+  // The steps this sound has something to ask at this place, in order:
+  // [0, 1, 2, 3] at the start of a word; [0, 2, 3] where the place's
+  // syllables are not switched on yet (gamecontent.js SYL_POS_ON: the climb
+  // goes from the sound straight to words); [0, 1, 2] for TH (v) at the end
+  // of a word, whose bathe, smooth, teethe and breathe no sentence can hold.
+  // The practice page climbs only these, so a step with nothing in it is
+  // never asked — and so never earned on a bare "thuh" said in its place.
+  function ladderSteps(sound, pos) {
+    const P = pos || soundPos(sound), out = [0];
+    for (let r = 1; r <= PRACTICE_TOP; r++) if (ladderContent(sound, r, P).some((it) => it && it.t)) out.push(r);
+    return out;
+  }
+  // The highest of them.
+  function ladderTop(sound, pos) { const st = ladderSteps(sound, pos); return st[st.length - 1]; }
+  // The easier target when a round steps down (CLAUDE.md: "End every
+  // speech-practice round on a success. Step the target down"). It used to
+  // be the first item one step lower, so "I see a bear." stepped down to
+  // "car". Now: a sentence steps down to its own word; a word to the
+  // syllable that shares the most of its letters ("car" → "ar", "rabbit" →
+  // "rah"); a syllable to the sound alone. Same place in the word throughout,
+  // and it may go below the step the day started at: a step down is help,
+  // not a start.
+  function stepDown(item, sound, pos) {
+    const r = LADDER.indexOf(item && item.level);
+    if (r <= 0) return null;
+    // the item's own place first: homework's "rabbit" under an end-of-word
+    // assignment steps down to "rah", not "ar"
+    const P = (item.pos && item.pos !== "mix" && item.level !== "syllable") ? item.pos : (pos || soundPos(sound));
+    let lower = [];
+    for (let s = r - 1; s >= 0 && !lower.length; s--) lower = ladderContent(sound, s, P).filter((it) => it && it.t);
+    if (!lower.length) return null;
+    if (item.level === "sentence" && item.word) {
+      const own = lower.filter((it) => it.word === item.word)[0];
+      if (own) return own;
+    }
+    if (item.level === "word" && lower[0].level === "syllable") {
+      const w = String(item.word || item.t || "").toLowerCase();
+      // R's vowel + R words: the syllable with THEIR vowel (bear → air, not
+      // "ear"), and an "er" word (bird, water) to the sound alone, since the
+      // sound alone already is that vowel
+      if (String(sound).toUpperCase() === "R" && (P === "f" || P === "v")) {
+        const want = STEP_SYL[w];
+        const hit = want ? lower.filter((it) => it.t === want)[0] : null;
+        if (hit) return hit;
+        return ladderContent(sound, 0, P)[0];
+      }
+      let best = lower[0], score = -1;
+      lower.forEach((it) => { const n = _shared(String(it.t).toLowerCase().replace(/[^a-z]/g, ""), w); if (n > score) { score = n; best = it; } });
+      return best;
+    }
+    return lower[0];
+  }
+  // A step's name for a grown-up, at this place: Sound, Syllables, Words,
+  // Sentences, or "All steps done" once the last step this place has is
+  // earned. Never "Talking", which the practice page does not ask, and never
+  // "Mastered", which reads like a grade (CLAUDE.md: nothing is an evaluation).
+  // r: a step number (left out, the one this child is on). A step this place
+  // skips is named by the next one it has: at the end of a word with no
+  // syllables switched on, the step after the sound is "Words".
+  function stepLabel(sound, pos, r) {
+    const P = pos || soundPos(sound), have = ladderSteps(sound, P);
+    if (r == null) r = rungOf(sound, P);
+    for (let i = 0; i < have.length; i++) if (have[i] >= r) return rungLabel(have[i]);
+    return "All steps done";
+  }
+  // Every place this child has climbed at for a sound, the start of a word
+  // first, for Progress: [{ pos, rung, label, done }]. Vocalic R and R at the
+  // end of a word are one climb, named for whichever is being practised.
+  function ladderWhere(sound) {
+    sound = String(sound || "").toUpperCase();
+    const g = getProgress(), out = [];
+    // TH (v)'s own climb is "anywhere in a word": it has no start-of-word words
+    if (g.stage[sound] != null) out.push(posHas(sound, "i") ? "i" : "mix");
+    Object.keys(g.stageAt || {}).forEach((k) => {
+      if (k.indexOf(sound + ".") !== 0) return;
+      let p = k.slice(sound.length + 1);
+      if (sound === "R" && p === "v" && soundPos(sound) === "f") p = "f";
+      if (out.indexOf(p) < 0) out.push(p);
+    });
+    return out.map((p) => { const r = rungOf(sound, p); return { pos: p, rung: r, label: stepLabel(sound, p), done: r > ladderTop(sound, p) }; });
+  }
+  // What the practice page will ask a sound, step by step, for Settings'
+  // lines: { sound, pos, picked, fellBack, start, top, homework, steps:
+  // [{ level, label, sample }] }. The sample is the FIRST item of each step,
+  // never a random one, so the line does not change each time a grown-up
+  // taps something. It only reads.
+  function ladderPlan(sound) {
+    sound = String(sound || "").toUpperCase();
+    const SC = (typeof window !== "undefined") ? window.SonaContent : null;
+    const pos = soundPos(sound), picked = practicePos(), have = ladderSteps(sound, pos), top = have[have.length - 1];
+    const steps = [];
+    for (let r = 0; r <= PRACTICE_TOP; r++) {
+      if (have.indexOf(r) < 0) { steps.push({ level: LADDER[r], label: rungLabel(r), sample: "" }); continue; }
+      const items = ladderContent(sound, r, pos).filter((it) => it && it.t);
+      let sample = items[0] ? (r === 0 ? items[0].t : items[0].display) : "";
+      if (LADDER[r] === "sentence" && SC && SC.sentenceFor) {
+        const w = (wordsFor(sound, pos) || []).filter((x) => SC.sentenceFor(x.w, 0))[0];
+        if (w) sample = SC.sentenceFor(w.w, 0).t;
+      }
+      steps.push({ level: LADDER[r], label: rungLabel(r), sample: sample });
+    }
+    return { sound: sound, pos: pos, picked: picked, fellBack: pos !== picked, start: Math.min(ladderStart(), top), top: top, have: have, homework: !!homework(), steps: steps };
+  }
+  // R's vowel + R words, and the vocalic syllable each steps down to
+  const STEP_SYL = { car: "ar", star: "ar", shark: "ar", door: "or", four: "or", fork: "or", corn: "or", bear: "air", chair: "air", ear: "ear" };
+  // the longest run of letters a and b share ("ar" and "car": 2)
+  function _shared(a, b) {
+    let best = 0;
+    for (let i = 0; i < a.length; i++) for (let j = 0; j < b.length; j++) {
+      let n = 0; while (a[i + n] && a[i + n] === b[j + n]) n++;
+      if (n > best) best = n;
+    }
+    return best;
+  }
+
+  // ── GAMEASK1: what a round game's say-it card asks for (Travis, 1 Oct
+  // 2026: "we need to add back the increase of complexity to the sounds in
+  // the games and start with isolation then ree rah roh then rot. and maybe
+  // have that be something to update in settings") ──
+  // The card between rounds always said the bare sound. It now climbs: the
+  // sound alone ("rrrr"), then ONE syllable a card ("ree"; a different one
+  // each calendar day, never three in a breath), then a short word ("rot").
+  // This is the one reader every round game calls.
+  //
+  // gameAsk(sound, card): card 0 is the bare sound (Echo's power button, and
+  // where a card steps back to); 1 and 2 are the two cards between rounds.
+  // The step asked is min(top, floor + card):
+  //   top   — one step past what the child has EARNED on the practice page,
+  //           the practice page's own rule, or past where "Each day's
+  //           practice starts with" starts the day, whichever is higher.
+  //           (A grown-up's game picker set it until 22 Oct 2026;
+  //           getProfile drops an old pick.)
+  //   floor — the step the "Say it 5 times" page ended on this sitting
+  //           (charge.html hands it over), so a card never asks below what
+  //           the child was just asked; its own syllable or word is reused.
+  // For a child aged 2 to 4, and while Echo's voice is off, the step is 0
+  // whatever top and floor say (gameHold): those cards keep the bare sound.
+  // Otherwise it is lowered to what can really be asked: a sound whose syllables nobody
+  // has listened to yet (SonaContent.GAME_SYL_ON) stays on the bare sound,
+  // as does a page without gamecontent.js.
+  // EVERY PLACE IN THE WORD HAS ITS OWN CARDS (22 Oct 2026). The cards ask
+  // the syllables and the short word of the place being practised
+  // (soundPos): "ar" and "car" at the end of a word, never "ree", which is a
+  // start-of-word R. A place whose game lines are not switched on
+  // (gameSyllables(sound, pos) is empty) skips the syllable step: the sound,
+  // then a word of that place if there is one (the practice page's, the
+  // homework's, or its GAME_SHORT_AT word), as end-of-word homework did.
+  // The floor also rises to the step before the day's first step
+  // (ladderStart), so a child who starts at words is not handed a syllable
+  // between rounds.
+  //
+  // HONEST LIMITS. A card hears only "a voice of the right kind": it cannot
+  // tell "ree" from "rrrr" or "rot", so harder here means what Echo ASKS,
+  // never what is checked, and Echo never says "correct". And it only READS:
+  // nothing said in a game moves the earned level (recordRung is the practice
+  // page's alone), and a heard card stays one game rep, never practice data.
+  // Which syllables, which word, the pace, and the computer voice modelling
+  // them are Rachel's calls (CLAUDE.md, "Games ask for more than the sound").
+  const GAME_LEVELS = ["isolation", "syllable", "word"];
+  function _gameContent() { return (typeof window !== "undefined" && window.SonaContent) || null; }
+  // WHAT HOLDS A SOUND'S CARDS TO THE BARE SOUND, whatever was earned. One
+  // answer, read by the cards (through _gameWant and _gameItem):
+  //   "little"   — a child aged 2 to 4. Their Home still shows the round
+  //                games (Fruit Slice is free and open to a four-year-old),
+  //                and their cards ask the bare sound exactly as before,
+  //                whatever was earned. Whether little ones should ever be
+  //                asked a syllable is Rachel's call.
+  //   "muted"    — Echo's voice is off in Sona. Only his voice can model a
+  //                syllable or a word; nothing past the bare sound is recorded.
+  //   "sound"    — this sound's syllables are not switched on yet (or the
+  //                page has no gamecontent.js).
+  //   "position" — the sound is switched on, but the place in the word it is
+  //                practised at has no game syllables yet: the cards skip
+  //                the syllable step (the sound, then a word of that place).
+  //   ""         — nothing does.
+  function gameHold(sound) {
+    sound = String(sound || "").toUpperCase();
+    try { if (playStyle() === "simple") return "little"; } catch (e) {}
+    try { const p = getProfile(); if (p.voiceOn === false || Number(p.volume) === 0) return "muted"; } catch (e) {}
+    const SC = _gameContent();
+    if (!(SC && SC.gameSyllables && SC.gameSyllables(sound).length)) return "sound";
+    if (!SC.gameSyllables(sound, sylPos(sound)).length) return "position";
+    return "";
+  }
+  // The ceiling asked for, before the sound's own limits.
+  function _gameWant(sound) {
+    const hold = gameHold(sound);
+    if (hold === "little" || hold === "muted") return 0;
+    // one step past what the child has earned, or from where the day's
+    // practice starts (a later start counts the steps below it as theirs)
+    return Math.min(2, Math.max(rungOf(sound), ladderStart()) + 1);
+  }
+  // What the practice page ended on this sitting, if it was this sound — and
+  // this place in the word: an ask handed over before a grown-up changed the
+  // position is not reused.
+  function _gameHand(sound) {
+    try {
+      if (String(sessionStorage.getItem("sona.boost.sound") || "").toUpperCase() !== sound) return null;
+      const lvl = LADDER.indexOf(sessionStorage.getItem("sona.boost.level") || "");
+      if (lvl < 0) return null;
+      const hp = sessionStorage.getItem("sona.boost.pos");
+      if (hp != null && hp !== soundPos(sound)) return null;
+      return { rung: Math.min(2, lvl), ask: String(sessionStorage.getItem("sona.boost.ask") || "").toLowerCase().trim() };
+    } catch (e) { return null; }
+  }
+  function _gameItem(sound, want, card, hand) {
+    const SC = _gameContent(), bare = soundSay(sound), pos = sylPos(sound);
+    const on = !!(SC && SC.gameSyllables && SC.gameSyllables(sound).length);
+    const syls = on ? SC.gameSyllables(sound, pos) : [];
+    let rung = 0, text = bare, at = "";
+    // A place whose card syllables are not on has no syllable step between
+    // the sound and a word, as the practice page has none there: one step up
+    // from the sound is the word ("car"), never the bare sound again.
+    if (on && want === 1 && !syls.length) want = 2;
+    if (on && want > 0) {
+      const hw = homeworkWords(sound);
+      if (want >= 2) {
+        // the practice page's own word, then the homework's, then this
+        // place's short word
+        const mine = hand && hand.rung === 2 ? (WORDS[sound] || []).filter((w) => String(w.w).toLowerCase() === hand.ask) : [];
+        const own = mine.filter((w) => w.pos === pos)[0] || mine[0] || null;
+        if (own) { text = hand.ask; at = own.pos; }
+        else if (hw.length) { const w = hw[(dayNum() + card) % hw.length]; text = String(w.w).toLowerCase(); at = w.pos; }
+        else { text = (SC.gameWord && SC.gameWord(sound, pos)) || ""; at = pos === "mix" ? "i" : pos; }
+        if (text) rung = 2; else { text = bare; at = ""; }
+      }
+      if (!rung && syls.length) {
+        // the practice page's own syllable if it just asked one of this
+        // sound's at this place (never one the skip list holds back); else
+        // today's
+        const skip = (SC.GAME_SKIP || {})[sound] || [];
+        // only a syllable the CARDS may ask here (listened to in the card's
+        // line): the start of a word's five, or a switched-on place's table
+        const may = pos === "i" || pos === "mix" ? SC.syllables(sound) : SC.syllables(sound, pos);
+        const own = hand && hand.rung === 1 && skip.indexOf(hand.ask) < 0 ? may.filter((s) => s.t === hand.ask)[0] : null;
+        const s = own || syls[(dayNum() + Math.max(1, card) - 1) % syls.length];
+        text = s.t; at = s.pos || pos;
+        rung = 1;
+      }
+    }
+    return {
+      rung: rung, level: GAME_LEVELS[rung], text: text, pos: at, html: soundMark(text, sound, at),
+      // how Echo models it: the bare sound is Rachel's recording; a syllable
+      // or word is one line in his own voice, which the page must fall back
+      // from (to card 0) the moment it cannot play
+      clip: rung ? "" : "/coach/say-echo/" + sound + "-sound.wav", say: rung ? text : "",
+    };
+  }
+  // The highest step this sound's cards can reach today: 0, 1 or 2.
+  function gameTop(sound) {
+    sound = String(sound || "").toUpperCase();
+    return _gameItem(sound, _gameWant(sound), 2, null).rung;
+  }
+  // opts.first: as on the first game of a day, ignoring the practice page's
+  // hand-over (the tests read the day's asks with it; Settings' grey line did
+  // until its picker went on 22 Oct 2026).
+  function gameAsk(sound, card, opts) {
+    sound = String(sound || "").toUpperCase();
+    card = Math.max(0, Math.min(2, parseInt(card, 10) || 0));
+    const hand = (opts && opts.first) ? null : _gameHand(sound);
+    const floor = Math.max(hand ? hand.rung : 0, ladderStart() - 1);
+    const want = card ? Math.min(_gameWant(sound), floor + card) : 0;
+    return _gameItem(sound, want, card, hand);
   }
 
   // ── the week, narrated ────────────────────────────────────────────────
@@ -1378,7 +2193,12 @@
     const w = weekWins(); const mw = momWeek();
     const name = getProfile().childName || "Your kid";
     const bits = [];
-    bits.push(name + " practiced " + mw.done + (mw.done === 1 ? " day" : " days") + " this week" + (w.reps > 0 ? " and said " + w.reps + (w.reps === 1 ? " sound" : " sounds") + " out loud." : "."));
+    // A day of practice is a practice-page day; sounds said in games are reps
+    // without one (Feed Echo and Hoops open straight from Home), so a week
+    // whose reps all came from games says so instead of "practiced 0 days ...
+    // 7 reps".
+    if (w.reps > 0 && weekReps(0, null, true) === 0) bits.push(name + " said the practice sound out loud " + w.reps + (w.reps === 1 ? " time" : " times") + " in games and books this week.");
+    else bits.push(name + " practiced " + mw.done + (mw.done === 1 ? " day" : " days") + " this week" + (w.reps > 0 ? " — " + w.reps + (w.reps === 1 ? " rep" : " reps") + ", each one said out loud." : "."));
     if (w.acc != null && w.accPrev != null && w.acc !== w.accPrev) bits.push("The " + w.label + " sound moved " + w.accPrev + "% → " + w.acc + "% on honest scoring.");
     bits.push("At this stage, lots of honest tries beat perfect tries — steady practice is exactly how sounds get built.");
     return bits;
@@ -1455,8 +2275,9 @@
     ],
     CH: [
       { w: "cheese", e: "🧀", i: 1, pos: "i" }, { w: "chair", e: "🪑", i: 1, pos: "i" }, { w: "cherry", e: "🍒", i: 1, pos: "i" }, { w: "chicken", e: "🐔", i: 1, pos: "i" }, { w: "chocolate", e: "🍫", i: 1, pos: "i" }, { w: "chips", e: "🍟", i: 1, pos: "i" },
-      { w: "teacher", e: "🧑‍🏫", pos: "m" }, { w: "kitchen", e: "🍳", pos: "m" }, { w: "sandwich", e: "🥪", pos: "m" }, { w: "ketchup", e: "🍅", pos: "m" },
-      { w: "beach", e: "🏖️", pos: "f" }, { w: "peach", e: "🍑", pos: "f" }, { w: "watch", e: "⌚", pos: "f" }, { w: "lunch", e: "🥪", pos: "f" }, { w: "branch", e: "🌿", pos: "f" }, { w: "couch", e: "🛋️", pos: "f" }
+      { w: "teacher", e: "🧑‍🏫", pos: "m" }, { w: "kitchen", e: "🍳", pos: "m" }, { w: "ketchup", e: "🍅", pos: "m" },
+      // "sandwich" ends in its ch, so it is an end word (22 Oct 2026; it was filed as middle)
+      { w: "sandwich", e: "🥪", pos: "f" }, { w: "beach", e: "🏖️", pos: "f" }, { w: "peach", e: "🍑", pos: "f" }, { w: "watch", e: "⌚", pos: "f" }, { w: "lunch", e: "🥪", pos: "f" }, { w: "branch", e: "🌿", pos: "f" }, { w: "couch", e: "🛋️", pos: "f" }
     ],
     TH: [
       { w: "thumb", e: "👍", i: 1, pos: "i" }, { w: "three", e: "3️⃣", i: 1, pos: "i" }, { w: "thread", e: "🧵", i: 1, pos: "i" }, { w: "think", e: "💭", i: 1, pos: "i" }, { w: "thirty", e: "🔢", i: 1, pos: "i" }, { w: "thorn", e: "🌹", i: 1, pos: "i" },
@@ -1513,25 +2334,83 @@
       { w: "bathe", e: "🛁", pos: "f" }, { w: "smooth", e: "🧈", pos: "f" }, { w: "teethe", e: "🦷", pos: "f" }, { w: "breathe", e: "😮‍💨", pos: "f" }
     ]
   };
-  // Word positions for targeted practice — SLPs pick where in the word the sound sits.
+  // Game-themed beginning words reuse painted bank pictures. No new words
+  // leak into Feed Echo or practice. A named homework list always wins.
+  const GAME_WORDS = {
+    soccer: { B:["ball","bear"], N:["net"], T:["toe"], F:["foot"], S:["sock"], SH:["shoe","shirt"], K:["cup"], M:["medal"], L:["leg"] },
+    hoops: { B:["ball"], N:["net"], S:["sock"], SH:["shoe","shirt"], K:["cup"], M:["medal"], L:["leg"] },
+    dino: { B:["bone","bucket"], R:["rock"], M:["mountain","map"], N:["nest"], T:["tooth"], D:["dinosaur"], K:["cave"], F:["foot"], V:["volcano"], S:["sand","sun"], SH:["shell"], L:["leaf","lizard"], TH:["thorn"] },
+    // STORY1's three games (22 Oct 2026; the table is Rachel's to review):
+    // two syllables at most, so a three-year-old is never asked a long word.
+    // "river" is left out on purpose: its second R is a harder target.
+    lighthouse: { B:["boat"], M:["moon","mouse"], N:["net"], F:["fish"], SH:["ship","shell"], S:["seal"], R:["rock","rain"], L:["lamp","ladder"], D:["duck"], T:["turtle"], P:["pig"] },
+    windup: { B:["ball","bear","bus"], M:["monkey","mouse"], F:["fox"], SH:["ship"], R:["robot","rocket"], L:["lion"], D:["doll","duck"], T:["toy","top"], K:["key","kite"], G:["game","gift"], Z:["zebra"], J:["jeep","jet"], V:["van"] },
+    bridge: { B:["boat","bee"], M:["mug"], N:["nest","net"], F:["fish"], SH:["shell","ship"], S:["sand","seal"], R:["rock","rain","rose"], L:["leaf"], D:["duck"], T:["turtle"], K:["cake","cookie"], G:["gift","gate"], P:["pie"], J:["jam","juice"], CH:["cherry","cheese"], V:["vase"] }
+  };
+  // Every theme is a start-of-word word ("sock", "rock"), so a child
+  // practising another place gets none: a themed "rock" every third turn
+  // would undo an end-of-word round (22 Oct 2026).
+  function gameWords(key,sound) {
+    sound=String(sound||"").toUpperCase();
+    if(homeworkWords(sound).length)return [];
+    if(soundPos(sound)!=="i")return [];
+    var names=(GAME_WORDS[key]||{})[sound]||[], all=[];
+    Object.keys(WORDS).forEach(function(snd){all=all.concat(WORDS[snd]);});
+    return names.map(function(name){
+      var entry=(WORDS[sound]||[]).filter(function(w){return w.w===name;})[0]||all.filter(function(w){return w.w===name;})[0];
+      return entry?{w:entry.w,e:entry.e,pos:"i"}:null;
+    }).filter(function(w){return !!w;});
+  }
+
+  // Word positions for targeted practice — where in the word the sound sits.
+  // ONE set of names (22 Oct 2026): Settings, Progress and the clinician's
+  // dashboard each had their own ("Beginning of word", "Start of word",
+  // "the beginning of words"). name: the short name; label: Settings' choice;
+  // place: how a line says it ("R at the end of words"); only: the sounds it
+  // exists for (vocalic R is R; blends here are R, S and L, as the label's
+  // "tr, st, bl" says).
   const POSITIONS = [
-    { id: "i", name: "Beginning" }, { id: "m", name: "Middle" }, { id: "f", name: "End" },
-    { id: "v", name: "Vocalic R" }, { id: "b", name: "Blends" }, { id: "mix", name: "Mixed" },
+    { id: "i", name: "Beginning", label: "Beginning of word", place: "at the start of words" },
+    { id: "m", name: "Middle", label: "Middle of word", place: "in the middle of words" },
+    { id: "f", name: "End", label: "End of word", place: "at the end of words" },
+    { id: "v", name: "Vocalic R", label: "Vocalic R (er, ar, or…)", place: "as vocalic R", only: ["R"] },
+    { id: "b", name: "Blends", label: "Blends (tr, st, bl…)", place: "in blends", only: ["R", "S", "L"] },
+    { id: "mix", name: "Mixed", label: "Mixed (all positions)", place: "anywhere in a word" },
   ];
-  function wordsFor(sound, pos) {
-    // An assignment may name its own words. Only words this app already knows
-    // are used — an SLP typing a word with no recorded target is a silent
-    // dead end, so unknown ones fall through to the bank rather than shipping
-    // a round the child cannot pass.
+  function posInfo(pos) { for (let i = 0; i < POSITIONS.length; i++) if (POSITIONS[i].id === pos) return POSITIONS[i]; return POSITIONS[0]; }
+  // "R at the end of words", "Vocalic R", "S in blends": a sound and its place,
+  // the way every grown-up line says it.
+  function posPhrase(sound, pos) {
+    const P = posInfo(pos), name = soundLabel(sound);
+    return P.id === "v" ? "Vocalic " + name : name + " " + P.place;
+  }
+  // An assignment may name its own words. Only words this app already knows
+  // are used — an SLP typing a word with no recorded target is a silent
+  // dead end, so unknown ones fall through to the bank rather than shipping
+  // a round the child cannot pass. [] when the assignment names none for
+  // this sound (the game reader, gameAsk, needs to tell the two apart).
+  function homeworkWords(sound) {
     try {
       const hw = homework();
       if (hw && hw.words && hw.words.length && hw.sounds.indexOf(String(sound).toUpperCase()) >= 0) {
         const want = {}; hw.words.forEach(function (w) { want[String(w).toLowerCase()] = 1; });
-        const pick = (WORDS[sound] || []).filter(function (w) { return want[String(w.w).toLowerCase()]; });
-        if (pick.length) return pick;
+        return (WORDS[sound] || []).filter(function (w) { return want[String(w.w).toLowerCase()]; });
       }
     } catch (e) {}
-    const list = (WORDS[sound] || []).slice();
+    return [];
+  }
+  // These existing medial entries stay available to clinicians, but wait
+  // for review before the new family Middle or Mixed pools model them.
+  const FAMILY_MEDIAL_REVIEW = { T: ["water", "letter", "button"], V: ["gloves"] };
+  function wordsFor(sound, pos) {
+    const pick = homeworkWords(sound);
+    if (pick.length) return pick;
+    let list = (WORDS[sound] || []).slice();
+    const held = FAMILY_MEDIAL_REVIEW[sound];
+    if (held && (pos === "m" || pos === "mix") && !_hwFor(sound)) list = list.filter((w) => held.indexOf(w.w) < 0);
+    // a little one's Mixed (a grown-up's pick, not homework) leaves out vocalic
+    // R and blends, R's end words with them (soundPos)
+    if (pos === "mix" && _littleOne() && !_hwFor(sound)) return list.filter(function (w) { return !_heldLittle(sound, w.pos); });
     if (pos === "mix" || pos === "all") return list;
     pos = pos || "i"; // no selection → initial position (preserves prior behavior; SLPs opt into others)
     const sel = list.filter(function (w) { return (w.pos || "i") === pos; });
@@ -1540,17 +2419,153 @@
     return init.length ? init : list;
   }
 
+  // THE PICTURE GAMES' WORDS (22 Oct 2026: Travis, "build that so it works in
+  // the games"). Hoops, Soccer Goal, Dino Dig, Bubble Pop, Feed Echo and every
+  // game on sayplay.js used to ask start-of-word words whatever was picked
+  // (they called wordsFor(sound, "i") themselves); they now ask the words of
+  // the place this sound is practised at, the same words as the practice
+  // page's word step. Once each ("cake" is filed at the start and the end of
+  // K). GAMES_FOLLOW_POS is the one switch back to start-of-word words for
+  // every game, if Rachel says so.
+  const GAMES_FOLLOW_POS = true;
+  function playWords(sound) {
+    sound = String(sound || "").toUpperCase();
+    const seen = {};
+    return (wordsFor(sound, GAMES_FOLLOW_POS ? soundPos(sound) : "i") || []).filter(function (w) {
+      if (!w || !w.w || seen[w.w]) return false; seen[w.w] = 1; return true;
+    });
+  }
+  // A game's few picture words, shortest first, taken evenly from every place
+  // the list holds: under Mixed the ten shortest of all were start- and
+  // end-of-word words only, so no game ever asked a middle word or (for R) a
+  // blend. One place is exactly the old pool: its n shortest.
+  function playPool(sound, n) {
+    const by = {}, order = [], out = [];
+    playWords(sound).filter((w) => w && w.w && w.e).forEach((w) => {
+      const k = w.pos || "i";
+      if (!by[k]) { by[k] = []; order.push(k); }
+      by[k].push(w);
+    });
+    order.forEach((k) => { by[k].sort((a, b) => a.w.length - b.w.length); });
+    for (let i = 0; out.length < n; i++) {
+      let took = false;
+      order.forEach((k) => { if (out.length < n && by[k][i]) { out.push(by[k][i]); took = true; } });
+      if (!took) break;
+    }
+    return out.sort((a, b) => a.w.length - b.w.length);
+  }
+  // Does a word have this sound anywhere in it, by its spelling? Feed Echo's
+  // wrong pictures must not: under end-of-word S, "bus" beside "glass" was two
+  // right answers. An x is a k and an s ("fox").
+  function hasSound(word, sound) {
+    const w = String(word || "").toLowerCase(), S2 = String(sound || "").toUpperCase();
+    if ((S2 === "K" || S2 === "S") && w.indexOf("x") >= 0) return true;
+    return Object.keys(_hearSpots(w, S2)).length > 0;
+  }
+
   // --- prize chests (one at the end of each sound's path) ---
   function chestClaimed(sound) { return !!getProgress().chests[sound]; }
   function claimChest(sound) { const g = getProgress(); if (g.chests[sound]) return false; g.chests[sound] = true; save(GKEY, g); try { awardNextSticker(); } catch (e) {} return true; }
 
-  // --- coins (earned in lessons, spent in the shop) ---
+  // --- coins: COIN3 (11 Oct 2026, D2): a play currency with two sources only,
+  // the daily chest and Trophy Road / month gifts. Never sold. Validated: a
+  // typo'd price can no longer make the wallet NaN or string-join it ("40"+"5"),
+  // and a zero, negative or junk amount changes nothing (not even the ladder
+  // migration getProgress() may save, so it is never called for one).
+  function _coinInt(n) { n = Math.floor(Number(n)); return (isFinite(n) && n > 0 && n < 100000) ? n : 0; }
+  // pure: reads the balance without getProgress()'s one-time ladder migration write
+  function coinsNow() { try { const g = load(GKEY, DEFAULT_PROGRESS); return Math.max(0, (g.totals && g.totals.coins) | 0); } catch (e) { return 0; } }
   function getCoins() { return getProgress().totals.coins || 0; }
-  function addCoins(n) { const g = getProgress(); g.totals.coins = (g.totals.coins || 0) + (n || 0); save(GKEY, g); return g.totals.coins; }
-  function spendCoins(n) { const g = getProgress(); if ((g.totals.coins || 0) < n) return false; g.totals.coins -= n; save(GKEY, g); return true; }
-  // --- owned cosmetics (shop) ---
-  function owns(kind, id) { const o = getProfile().owned || {}; return (o[kind] || []).indexOf(id) !== -1; }
+  function addCoins(n) { const v = _coinInt(n); if (!v) return coinsNow(); const g = getProgress(); g.totals.coins = (g.totals.coins | 0) + v; save(GKEY, g); return g.totals.coins; }
+  function spendCoins(n) { const v = _coinInt(n); if (!v) return false; const g = getProgress(); if ((g.totals.coins | 0) < v) return false; g.totals.coins = (g.totals.coins | 0) - v; save(GKEY, g); return true; }
+  // --- owned cosmetics: the Buddy Shop (SHOP1, 11 Oct 2026, D3) ---
+  // Exactly what every family could pick on 11 Oct 2026, when the old shop
+  // set `owned = true` for everything. A household set up before the shop
+  // keeps all of it (the OWN1 sweep, _keepBuddies, below the free-era sweeps);
+  // a family set up after it starts with the starters (fox, bunny, panda, no
+  // hat, the sky) and buys or wins the rest. A literal: new items never join.
+  const LEGACY_SET = {
+    characters: ["fox", "bunny", "dragon", "cat", "bee", "octopus", "dino", "panda"],
+    outfits: ["none", "crown", "tophat", "cap", "shades", "bow", "party"],
+    backdrops: ["sky", "jungle", "forest", "mountain", "space", "beach"] };
+  const SHOP_LISTS = { characters: CHARACTERS, outfits: OUTFITS, backdrops: BACKDROPS };
+  const SHOP_FIELD = { characters: "character", outfits: "outfit", backdrops: "backdrop" };
+  const UNDO_MS = 10000;
+  // strict: a catalog entry or null, never byId's fallback (so "leo" is no buddy here)
+  function _shopFind(kind, id) {
+    const l = Object.prototype.hasOwnProperty.call(SHOP_LISTS, kind) ? SHOP_LISTS[kind] : null; if (!l) return null;
+    for (let i = 0; i < l.length; i++) if (l[i].id === id) return l[i];
+    return null;
+  }
+  function _worn(kind) { const p = getProfile(); return kind === "characters" ? p.character : kind === "outfits" ? p.outfit : p.backdrop; }
+  // Owned without counting what is worn: a starter, the kept household's
+  // promise (fails open: a device that cannot read its stamp is "kept"), or
+  // the family's own list, which a backup carries to a new phone.
+  function _ownsBesidesWorn(kind, id) {
+    const it = _shopFind(kind, id); if (!it) return false;
+    if (it.source === "starter") return true;
+    if (buddiesKept() && LEGACY_SET[kind].indexOf(id) >= 0) return true;
+    const o = getProfile().owned || {}; return Array.isArray(o[kind]) && o[kind].indexOf(id) >= 0;
+  }
+  // …and what a child is wearing is theirs, however it came to be worn
+  function owns(kind, id) { return !!_shopFind(kind, id) && (_worn(kind) === id || _ownsBesidesWorn(kind, id)); }
   function addOwned(kind, id) { const p = getProfile(); const o = p.owned || { outfits: [], backdrops: [] }; o[kind] = o[kind] || []; if (o[kind].indexOf(id) === -1) o[kind].push(id); saveProfile({ owned: o }); }
+  // Pure: one item as the shop shows it. state "owned", "buy" (a shop item
+  // not owned yet) or "road" (a Trophy Road item not reached yet: its stop
+  // and trophies, from ROAD_STOPS). null for an unknown id.
+  function shopItem(kind, id) {
+    const it = _shopFind(kind, id); if (!it) return null;
+    let stop = null, at = null;
+    if (it.source === "road") ROAD_STOPS.forEach((s) => { if (stop === null && s.gift.some((g) => { const r = _roadItem(g); return r && r.kind === kind && r.id === id; })) { stop = s.n; at = s.at; } });
+    const art = kind === "characters" ? buddySprite(id, "portrait") : kind === "outfits" ? (it.art || null) : "/assets/crafted/customize-" + id + "-v2.webp";
+    const state = owns(kind, id) ? "owned" : it.source === "shop" ? "buy" : "road";
+    return { kind, id, name: it.name, cost: it.source === "shop" ? _coinInt(it.cost) : null, source: it.source || "", stop, at, art, state };
+  }
+  // Wear something the child owns. If what they wear now is theirs only
+  // because they are wearing it (an old pick, or one a backup brought), it is
+  // written into their own list first, so switching away never takes it.
+  function equip(kind, id) {
+    const field = SHOP_FIELD[kind]; if (!field || !owns(kind, id)) return false;
+    const cur = _worn(kind);
+    if (cur !== id && _shopFind(kind, cur) && !_ownsBesidesWorn(kind, cur)) addOwned(kind, cur);
+    const patch = {}; patch[field] = id; saveProfile(patch);
+    return true;
+  }
+  // Coins for a shop item: the price is the catalog's, never the page's. The
+  // coins go first (a crash under-gives, never gives twice), then the item,
+  // then it is worn. Never sold for money, never random.
+  function buyItem(kind, id) {
+    const it = shopItem(kind, id);
+    if (!it) return { ok: false, reason: "bad" };
+    if (it.state === "owned") return { ok: false, reason: "owned" };
+    if (it.state === "road") return { ok: false, reason: "road" };
+    const cost = _coinInt(it.cost); if (!cost) return { ok: false, reason: "bad" };
+    const have = coinsNow(); if (have < cost) return { ok: false, reason: "short", need: cost - have };
+    const prev = _worn(kind);
+    if (!spendCoins(cost)) return { ok: false, reason: "short", need: Math.max(1, cost - coinsNow()) };
+    addOwned(kind, id); equip(kind, id);
+    saveProfile({ lastBuy: { kind, id, cost, prev, at: Date.now() } });
+    try { track("shop item got", { kind, item: id, cost }); } catch (e) {}
+    return { ok: true, coins: coinsNow() };
+  }
+  // "Oops? Give it back", within 10 seconds of the last buy: the item leaves
+  // the child's list first, then the coins come back (never more than the
+  // catalog price), and what they wore before is put back on if they still
+  // wear the one bought. Once only.
+  function undoBuy() {
+    const p = getProfile(), lb = p.lastBuy, now = Date.now();
+    if (!lb || typeof lb !== "object" || !SHOP_FIELD[lb.kind] || !(now - lb.at >= 0 && now - lb.at <= UNDO_MS)) return { ok: false };
+    const it = _shopFind(lb.kind, lb.id), o = p.owned || {}, list = Array.isArray(o[lb.kind]) ? o[lb.kind] : [], i = list.indexOf(lb.id);
+    if (!it || it.source !== "shop" || i < 0) { saveProfile({ lastBuy: null }); return { ok: false }; }
+    list.splice(i, 1); o[lb.kind] = list;
+    const patch = { owned: o, lastBuy: null }, field = SHOP_FIELD[lb.kind];
+    // (an old pick like "leo" goes back on as it was: it reads as the fox)
+    if (p[field] === lb.id) patch[field] = (typeof lb.prev === "string" && lb.prev && lb.prev !== lb.id) ? lb.prev : SHOP_LISTS[lb.kind][0].id;
+    saveProfile(patch);
+    const back = Math.min(_coinInt(lb.cost), _coinInt(it.cost));
+    if (back) addCoins(back);
+    return { ok: true, coins: coinsNow() };
+  }
 
   // Word sessions retain their original counts. An adventure records completed
   // rounds separately: its isolation/syllable practice is not a list of words.
@@ -1596,9 +2611,44 @@
   // Everything the app persists lives under the "sona." key prefix, so a full
   // backup is a sweep of those keys — the safety net for the data-loss risk
   // (a cleared browser/app currently erases a child's whole history).
+  //
+  // TWO KEYS NEVER LEAVE IN A BACKUP (5 Oct 2026): what a parent tapped on
+  // setup's two one-tap questions ("What brings you to Sona?", "How does
+  // practice go at home now?"), and the half-finished setup that holds the
+  // same two taps before it is saved. Those screens say "Your answer stays on
+  // this device", and a backup code is something a family copies, emails to
+  // itself or pastes into another phone. Left out here AND refused by
+  // importData below, so neither half can be undone by the other.
+  // THE PRACTICE BOARD'S FIVE KEYS never leave either (BOARD2, 11 Oct 2026):
+  // a child's board token belongs to this phone (a copy on a second phone
+  // would post days for a child twice over, and a pasted one is somebody
+  // else's entry), the pending request and the deletions still to send are
+  // this phone's errands, and the therapist answer stays here, as the sheet
+  // says. A new phone asks again and joins again.
+  // THE NATIVE MIC'S MEASUREMENT SETTING never leaves either (Oct 2026):
+  // "sona.nativemic" is set by hand on Travis's test phone, and it changes
+  // whose mic listens and how loud it hears; on another family's phone it
+  // would change what counts as heard. It is refused by importData too.
+  const NO_EXPORT = ["sona.setupasks.v1", "sona.obdraft.v1", "sona.board.v1", "sona.boardcache.v1", "sona.boardpend.v1", "sona.boardleave.v1", "sona.boardask.v1", "sona.nativemic",
+    // FREEPLAY1: the household's one free round was had on this phone
+    "sona.freeplay.v1",
+    // the trial reminder (NOTIFY1): this phone's iOS answer and what iOS holds for it
+    "sona.notify.v1",
+    // TRIAL1: the day this phone last said "played today" (one beacon a day)
+    "sona.played.v1",
+    // what this phone showed (the offer from Home, 13 Oct 2026), like freever
+    "sona.offerseen.v1",
+    // the weekly report's device id and last send (REPORT1): this phone's own
+    "sona.report.v1"];
   function exportData() {
     const out = {};
-    try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && k.indexOf("sona.") === 0) out[k] = localStorage.getItem(k); } } catch (e) {}
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        // the base key, as importData judges it ("name@k2" is "name")
+        if (k && k.indexOf("sona.") === 0 && NO_EXPORT.indexOf(k.split("@")[0]) === -1) out[k] = localStorage.getItem(k);
+      }
+    } catch (e) {}
     return { app: "sona", v: 1, data: out };
   }
   function exportString() { try { return JSON.stringify(exportData()); } catch (e) { return "{}"; } }
@@ -1632,12 +2682,34 @@
   // say "this device was judged on its first load", which is true of the
   // device, not the family — and a pasted empty stamp would re-open a sweep
   // on the next load and adopt whatever the backup brought with it.
-  const NO_IMPORT = ["sona.sub.v1", "sona.slpunlock", "sona.caseplan.v1", "sona.founder", "sona.founding.v1", "sona.paidui", "sona.pilot.v1", "sona.trial.v1",
-    "sona.freeera.v1", "sona.freeera2.v1", "sona.freeera3.v1", "sona.freeera4.v1"];
+  //
+  // SETUP'S TWO ANSWERS AND ITS DRAFT, and the Practice Board's five keys, are
+  // on NO_EXPORT above too: a backup made by this build never holds them, and
+  // one that does (hand-made, or from a build that slips) is not let in either.
+  const NO_IMPORT = ["sona.sub.v1", "sona.slpunlock", "sona.caseplan.v1", "sona.founder", "sona.founding.v1", "sona.paidui", "sona.websalesui", "sona.pilot.v1", "sona.trial.v1",
+    "sona.freeera.v1", "sona.freeera2.v1", "sona.freeera3.v1", "sona.freeera4.v1", "sona.freeera5.v1", "sona.freever.v1",
+    "sona.setupasks.v1", "sona.obdraft.v1", "sona.freeplay.v1",
+    // the kept-buddies stamp (OWN1) is true of this device, like freever; what
+    // a household owns travels inside each child's profile instead
+    "sona.buddyset.v1",
+    // the Practice Board's keys (BOARD2): never brought in, so a restore can
+    // never put a child on the board, or hand one child another's entry
+    "sona.board.v1", "sona.boardcache.v1", "sona.boardpend.v1", "sona.boardleave.v1", "sona.boardask.v1",
+    // the native mic's measurement setting (NATIVE MIC): true of one test
+    // phone only, and it changes what counts as heard, so it never moves to another
+    "sona.nativemic",
+    // the trial reminder (NOTIFY1): a backup never brings another phone's
+    // iOS answer, or a reminder iOS does not hold here
+    "sona.notify.v1", "sona.played.v1",
+    // the offer from Home was shown on THIS phone (13 Oct 2026): a backup
+    // never brings the mark, so it can never take that one showing away
+    "sona.offerseen.v1",
+    // the weekly report's device id (REPORT1): a restored phone is its own device
+    "sona.report.v1"];
   // The free-era marks a sweep writes onto a profile. A backup may never
   // bring them (it would forge the promise), and it may never take them away
   // from the device it is restored onto (that would break one).
-  const ERA_MARKS = ["earlyAdopter", "freeEra", "freeEra2", "freeEra3", "freeEra4"];
+  const ERA_MARKS = ["earlyAdopter", "freeEra", "freeEra2", "freeEra3", "freeEra4", "freeEra5"];
   function importData(payload) {
     try {
       const obj = (typeof payload === "string") ? JSON.parse(payload) : payload;
@@ -1648,6 +2720,20 @@
       // over a profile that was grandfathered HERE silently ended a promise
       // this device's own sweep made. Snapshot the household first.
       const wasGrandfathered = earlyAdopterAnyKid();
+      // THE KEPT BUDDIES COME WITH THE HOUSEHOLD (OWN1, 11 Oct 2026). The
+      // stamp never comes in (NO_IMPORT), but what it says does: a backup
+      // stamped "kept", or one with no stamp at all (made before the Buddy
+      // Shop, when every family could pick everything), brings the legacy set
+      // in every set-up child's profile, a profile saved without the list (a
+      // child set up after the sweep ran) included. The Terms promise a backup
+      // never takes away an item a child already has. A backup stamped "post"
+      // brings only the list it holds. Forging one only adds cosmetic items on
+      // the phone that pastes it, which the spec accepts (§11).
+      const keptBackup = data[BUDDYSET_KEY] !== "post";
+      // THE PRACTICE BOARD FOLLOWS THE CHILD, NOT THE SLOT (BOARD2). Board
+      // keys never come in (NO_IMPORT), but a restore can put a different
+      // child into a slot, or take one away; who sits where is noted first.
+      let boardBefore = []; try { boardBefore = _boardSlots(); } catch (e) {}
       let n = 0, skipped = 0, ticket = false;
       Object.keys(data).forEach((k) => {
         if (k.indexOf("sona.") !== 0) return;
@@ -1664,12 +2750,50 @@
               // …and the marks this device already held on this very key stay
               let here = null; try { here = JSON.parse(localStorage.getItem(k) || "null"); } catch (e) {}
               if (here && typeof here === "object") ERA_MARKS.forEach((m) => { if (here[m]) p[m] = here[m]; });
+              if (keptBackup && (p.onboarded || p.childName)) p.owned = _legacyInto(p.owned);
               v = JSON.stringify(p);
             }
           } catch (e) {}
         }
         try { localStorage.setItem(k, v); n++; if (base === "sona.slpticket" && v) ticket = true; } catch (e) {}
       });
+      // A slot whose child changed (a new name) or that left the list loses
+      // its board entry here, and the entry is queued for deletion: a new
+      // child's grown-up is never told "removed after a long break", and
+      // nobody inherits another child's place or the grown-up's yes.
+      try { _boardAfterImport(boardBefore); } catch (e) {}
+      // HISTORY WITHOUT A TROPHY RECORD (final review, 12 Oct 2026). A backup
+      // made before this build, or on a phone that logged no rep since, brings
+      // the practice and play history trophies come from but no record of
+      // them. The record already here (a few reps in the iPhone app before a
+      // Safari backup was pasted) would be trusted for good and the restored
+      // weeks never counted: Level 2 locked, the road at its start. That
+      // slot's record goes, and is counted again from the history now on the
+      // phone, as at a first rep after this build.
+      try {
+        const brought = {};
+        Object.keys(data).forEach((k) => {
+          const at = k.indexOf("@"), base = at < 0 ? k : k.slice(0, at), sfx = at < 0 ? "" : k.slice(at);
+          if (base === TROPHYKEY) brought[sfx] = true;
+          else if ((base === OUTKEY || base === GAMEREPKEY || base === GOALKEY) && !(sfx in brought)) brought[sfx] = false;
+        });
+        Object.keys(brought).forEach((sfx) => { if (!brought[sfx]) localStorage.removeItem(TROPHYKEY + sfx); });
+      } catch (e) {}
+      // A CHILD'S STORY CALENDAR COMES WITH THE CHILD (CAL1, 28 Oct 2026). A
+      // backup that brings a child's profile but no quest record (a child who
+      // had finished nothing, or a backup from before the stories) takes away
+      // the record of whoever sat in that slot here, so the child restored
+      // starts their own calendar on the next page that loads, never another
+      // child's start day or finished stories.
+      try {
+        const qb = {};
+        Object.keys(data).forEach((k) => {
+          const at = k.indexOf("@"), base = at < 0 ? k : k.slice(0, at), sfx = at < 0 ? "" : k.slice(at);
+          if (base === QUESTKEY) qb[sfx] = true;
+          else if (base === PKEY && !(sfx in qb)) qb[sfx] = false;
+        });
+        Object.keys(qb).forEach((sfx) => { if (!qb[sfx]) localStorage.removeItem(QUESTKEY + sfx); });
+      } catch (e) {}
       if (!n) return { ok: false, error: "No Sona data found in that backup." };
       // The backup can also replace the child list, so the grandfathered
       // profile may no longer be in it. Access was the household's, so it
@@ -1750,7 +2874,7 @@
       d.id = "sonaMicDenied";
       d.style.cssText = "position:fixed;inset:0;z-index:9999;background:rgba(255,255,255,.97);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px;gap:10px;";
       d.innerHTML =
-        '<img src="/coach/echo/echo-idle.svg" alt="Echo" style="width:100px;height:100px;object-fit:contain;" onerror="this.outerHTML=\'<div style=&quot;font-size:64px&quot;>🦜</div>\'" />' +
+        '<img src="/assets/crafted/echo-think.webp" alt="Echo" style="width:100px;height:100px;object-fit:contain;" onerror="if(this.src.indexOf(\'echo-welcome\')<0)this.src=\'/assets/crafted/echo-welcome.webp\';else this.outerHTML=\'<div style=&quot;font-size:64px&quot;>🦜</div>\'" />' +
         '<div style="font-family:\'Baloo 2\',sans-serif;font-weight:800;font-size:24px;color:#3c3c3c;">Echo can’t hear you yet!</div>' +
         '<div style="font-family:Nunito,sans-serif;font-weight:700;font-size:15px;color:#777;max-width:300px;">Ask a grown-up to turn Echo’s ears back on:</div>' +
         '<div style="text-align:left;background:#fff6e9;border-radius:16px;padding:13px 18px;font-family:Nunito,sans-serif;font-weight:800;font-size:14px;color:#5b4a36;line-height:1.9;max-width:300px;">' +
@@ -1893,16 +3017,56 @@
   // Where a GATED KID PAGE sends the child. It used to be /trial.html — a price
   // screen, with the child's name on it, reached by a child tapping a game.
   // Home tells them to ask a grown-up; the grown-up finds the price behind the
-  // gate, in the parent corner, which is the only place a price belongs.
+  // gate, on the grown-ups' pages (Settings, the plan screen), which is the
+  // only place a price belongs.
   function gateBounce() {
     try { location.replace("/today.html?locked=1"); } catch (e) {}
+  }
+  // ── TRIAL FIRST: NOTHING FREE WHERE SONA CAN SELL (Travis, 3 Oct 2026) ──
+  // "lets add the paywall before they try anything in the app. and then they
+  // unlock everything. so fruit slice and piano tiles and feed echo and
+  // bubble pop are all part of paid or needing to start a trial", then, of
+  // the plan screen's "Not now": "yeah home locked". Setup now ends on the
+  // plan screen (trialFirst()), and the free version (the free-tier games,
+  // FREE_BOOKS, and the practice that opens them) is open only to:
+  //   - a device where nobody can buy: an app build with no purchase plugin
+  //     (the App Store's 1.0.4) or a browser while the website does not sell.
+  //     A wall nobody can pass is not a paywall, it is a broken app;
+  //   - a household already set up on this build's first load
+  //     (_keepFreeVersion): it was told those games were free;
+  //   - a family who joined through their speech therapist's link
+  //     (slpVerified): every clinician page promises them the free version.
+  //     sona.slpok travels in a backup, so a pasted one brings the free
+  //     version too, never Premium: accepted, since it is what those pages
+  //     promise.
+  // Premium from any source, a trial, or Sona being free open everything,
+  // exactly as before.
+  function canSellHere() {
+    try { return isNativeApp() ? iapAvailable() : webSales(); } catch (e) { return false; }
+  }
+  const FREEVER_KEY = "sona.freever.v1";
+  function freeVersionKept() { try { return localStorage.getItem(FREEVER_KEY) === "kept"; } catch (e) { return false; } }
+  function freeVersion() { return !canSellHere() || freeVersionKept() || slpVerified(); }
+  // A TAP ON A GREY GAME OR BOOK OPENS THE PRICE AT ONCE (Travis, 4 Oct 2026:
+  // "I want it to open automatically if they click on a game that is grayed
+  // out"), with no "Ask a grown-up" note and no grown-ups check in between,
+  // wherever Sona can sell to this family. Elsewhere (an app build with no
+  // purchase plugin, a browser that does not sell) the note stays: there is
+  // nothing to open.
+  function offerOnLock() {
+    try { return !isFree() && canSellHere() && !premium() && !trialActive(); } catch (e) { return false; }
+  }
+  // Setup ends on the plan screen, not the first game, for a family who could
+  // buy here and has nothing that opens the games yet.
+  function trialFirst() {
+    try { return !isFree() && !freeVersion() && !premium() && !trialActive(); } catch (e) { return false; }
   }
   const PRACTICE_ASKS = ["practice", "daily", "session", "demo"];
   function gated(what) {
     if (isFree()) return false;
-    // Practice is the free version. Nothing below may ever run for it: not
-    // the demonstration window, not a dead trial, not a lapsed subscription.
-    if (PRACTICE_ASKS.indexOf(what) !== -1) return false;
+    // Practice opens with the free version (see freeVersion above), or with
+    // Premium or a trial. A run that already started is never stopped.
+    if (PRACTICE_ASKS.indexOf(what) !== -1) return !(freeVersion() || premium() || trialActive() || runActive());
     if (gameKey(what)) return !gameAccess(what).allowed;
     if (premium()) return false;                     // every game, whatever the source
     if (runActive()) return false;                   // never mid-run — see above
@@ -1915,6 +3079,32 @@
     if (t && t.start && !trialExpired()) return false;
     return true;
   }
+  // THE FREE BOOK (Travis, 30 Sep 2026: "one book uh so like the letter r
+  // book ... to be free and the rest is grayed out ... once they purchase it'll
+  // open up everything else"). The shelf opens for every family; the books
+  // named here are open in every pricing state, and every other book is
+  // Premium. Named by title because the books themselves live on the shelf
+  // (library.html), and a title is what a parent sees. Rename that book and
+  // this list must follow (readtest pins it).
+  //
+  // A Premium book opens exactly when a Premium game does (gameAccess's rule:
+  // Sona free, Premium from any source, or a trial), and NOT on the
+  // demonstration window gated() still honours for the rest: a new family
+  // would otherwise watch a shelf of open books lock three days in.
+  const FREE_BOOKS = ["Rory and the Rainbow"];
+  // Discovery metadata only: Home must describe the selected sound's shelf,
+  // which no longer borrows another sound's free book. readtest checks this
+  // small map against the actual book catalog; access still uses bookFree.
+  const FREE_BOOK_SOUNDS = { "Rory and the Rainbow": "R" };
+  function bookFree(title) { return FREE_BOOKS.indexOf(String(title || "")) !== -1 && freeVersion(); }
+  function freeBooksOnShelf() {
+    var p = getProfile() || {}, focus = Array.isArray(p.focusSounds) ? p.focusSounds : [];
+    var restricted = homeworkSounds().length || p.targetSound || (!playMode() && focus.length);
+    var sound = restricted ? String(targetSound() || "").toUpperCase() : "";
+    return FREE_BOOKS.filter(function (title) { return bookFree(title) && (!sound || FREE_BOOK_SOUNDS[title] === sound); }).length;
+  }
+  function booksOpen() { return isFree() || premium() || trialActive(); }
+  function bookLocked(title) { return !bookFree(title) && !booksOpen(); }
   // earlyAdopter lives on the PROFILE, and the profile is per-kid — so a
   // founding or SLP-referred family that added a second child had the first one
   // playing free while the sibling hit a paywall on the same device. Access was
@@ -1922,10 +3112,10 @@
   //
   // Since 24 Sep 2026 NOTHING NEW WRITES IT except the free-era sweeps. It is
   // the mark of a family who was promised Sona free before pricing returned
-  // (eras one to four, including every device that redeemed a clinician's link
-  // before this build — see _grandfatherFreeEra4). A redemption made AFTER
-  // this build earns Premium only through the clinician's coverage, which can
-  // end; a promise already made cannot.
+  // (eras one to five, including every device that redeemed a clinician's
+  // link before the Caseload Premium build — see _grandfatherFreeEra4). A
+  // redemption made AFTER that build earns Premium only through the
+  // clinician's coverage, which can end; a promise already made cannot.
   function earlyAdopterAnyKid() {
     try {
       const list = _kids().list || [];
@@ -1985,9 +3175,9 @@
   }
 
   // ── CASELOAD COVERAGE: Premium that a clinician's plan pays for ─────────
-  // A family who joined through a clinician whose caseload is covered (the
-  // $79.99 "Sona Premium for your caseload" plan, or a clinician grandfathered
-  // from before it existed) gets Premium — whether or not they chose to share
+  // A family who joined through a clinician whose caseload is covered ("Sona
+  // Premium for your caseload", or a clinician grandfathered from before it
+  // existed) gets Premium — whether or not they chose to share
   // progress. Access and sharing stay separate decisions.
   //
   // The SERVER decides, from the enrolment ticket this device earned by
@@ -2228,9 +3418,9 @@
   function offerCode() { try { return localStorage.getItem("sona.offer.v1") || ""; } catch (e) { return ""; } }
 
   // ── parent gate: adults-only pages ─────────────────────────────────────
-  // The home screen's grown-ups gate (PIN or math, in today.html) calls
+  // The home screen's grown-ups gate (four number words, in today.html) calls
   // gateVerify() when the adult passes it. Parent-only pages (progress,
-  // settings, voices, subscribe) call requireGate() on load so a child can't
+  // settings, talk, subscribe) call requireGate() on load so a child can't
   // reach them by direct URL or back-swipe: without a fresh pass they're sent
   // back to the home screen with the gate open — never a scary error. The
   // pass lives in sessionStorage (per tab, gone when the app closes) and
@@ -2276,7 +3466,7 @@
   // Everything else — other origins, protocol-relative
   // "//evil.example", any other query key — is dropped, and the visitor simply
   // stays on Home.
-  const GATE_DESTS = { "/premium.html": 1, "/subscribe.html": 1, "/progress.html": 1, "/settings.html": 1, "/voices.html": 1 };
+  const GATE_DESTS = { "/premium.html": 1, "/subscribe.html": 1, "/progress.html": 1, "/settings.html": 1, "/talk.html": 1 };
   function gateDest(raw) {
     try {
       const s = String(raw || "");
@@ -2287,6 +3477,18 @@
         var query = new URLSearchParams(s.split("?")[1] || "");
         var key = gameKey(query.get("game"));
         return path + (key ? "?game=" + key : "");
+      }
+      // The plan screen opened from a locked game names that game (30 Sep
+      // 2026), so ?from= rides the bounce too — but only as a key the catalog
+      // knows, or "library" (a locked book, "See Premium"). Anything else is
+      // dropped, the same as every other query key.
+      if (path === "/subscribe.html") {
+        var q = new URLSearchParams(s.split("?")[1] || "");
+        if (q.get("first") === "1") return path + "?first=1";
+        if (q.get("setup") === "1") return path + "?setup=1";
+        var from = q.get("from");
+        from = from === "library" ? from : gameKey(from);
+        return path + (from ? "?from=" + from : "");
       }
       return path + (/[?&]first=1(&|$)/.test(s) ? "?first=1" : "");
     } catch (e) { return ""; }
@@ -2305,8 +3507,12 @@
     return false;
   }
 
-  // --- recordings (the child's audio attempts) kept in IndexedDB so a parent
-  //     can review them later. Best-effort: never throws into the lesson. ---
+  // --- recordings: NONE ARE KEPT (Travis, 5 Nov 2026: "dont save"). Until
+  //     then one passed try a day per child was kept in IndexedDB for the
+  //     Progress page's "Saved tries"; that shelf went the same day, so a kept
+  //     clip was a child's voice on the phone that nobody could play. The
+  //     store stays only so old clips can be deleted (below), and so a child
+  //     removed in Settings still has nothing left behind. ---
   function idb() {
     return new Promise((res, rej) => {
       try {
@@ -2317,33 +3523,8 @@
       } catch (e) { rej(e); }
     });
   }
-  async function saveRecording(rec) {
-    const kid = _slot(), day = today();
-    try {
-      const db = await idb();
-      return await new Promise((res, rej) => {
-        const tx = db.transaction("recordings", "readwrite");
-        // KIDS1: stamp the owning child. The store is one IndexedDB table for
-        // the device, so without this a sibling's Progress page listed — and
-        // played — another child's voice.
-        const store = tx.objectStore("recordings");
-        let saved = false;
-        const request = store.openCursor();
-        request.onsuccess = function () {
-          const cursor = request.result;
-          if (cursor) {
-            const row = cursor.value;
-            if ((row.kid || "") === kid && _localDay(new Date(row.date).getTime()) === day) return;
-            cursor.continue(); return;
-          }
-          store.add(Object.assign({}, rec, { date: new Date().toISOString(), kid: kid }));
-          saved = true;
-        };
-        tx.oncomplete = () => res(saved);
-        tx.onerror = () => rej(tx.error);
-      });
-    } catch (e) { return false; }
-  }
+  // Kept as a name an older cached page may still call; it saves nothing.
+  function saveRecording() { return Promise.resolve(false); }
   async function listRecordings(limit = 50) {
     const mine = _slot();
     try {
@@ -2365,6 +3546,59 @@
       });
     } catch (e) { return []; }
   }
+  // Delete every clip stamped with one child's slot (removeKid, and addKid for
+  // a slot an older build may have left clips under). Without it a removed
+  // child's voice stayed in the device's one table, and the next child handed
+  // that slot heard it — and could share it — on Progress. Best-effort like
+  // every clip call: resolves to how many went, never throws.
+  // Both callers are followed at once by a reload or a new page, and leaving
+  // a page aborts an IndexedDB delete that has not finished: Settings' Remove
+  // reloaded first, so the removed child's clips stayed on the phone every
+  // time. clipsSettled() resolves once every clean-up started so far is done;
+  // a page that leaves right after addKid or removeKid waits on it.
+  let _clipWork = Promise.resolve();
+  function clipsSettled() { return _clipWork; }
+  function _dropRecordings(slot) {
+    const p = _dropRecordingsNow(slot);
+    _clipWork = Promise.all([_clipWork, p]).then(() => {}, () => {});
+    return p;
+  }
+  // Every clip an earlier build kept, for every child, deleted once per
+  // device. The done-mark is "_sona…", never "sona.", so a backup does not
+  // carry it to a new phone, where an old build may have kept clips too.
+  // Never on Home, which only reads (roadtest): the first page after it does.
+  function _dropAllRecordings() {
+    try { if (!global.indexedDB || _notifyHome() || localStorage.getItem("_sonaClipsGone")) return Promise.resolve(0); } catch (e) { return Promise.resolve(0); }
+    const p = idb().then((db) => new Promise((res) => {
+      try {
+        const tx = db.transaction("recordings", "readwrite");
+        tx.objectStore("recordings").clear();
+        tx.oncomplete = () => { try { localStorage.setItem("_sonaClipsGone", "1"); } catch (e) {} res(1); };
+        tx.onerror = tx.onabort = () => res(0);
+      } catch (e) { res(0); }
+    })).catch(() => 0);
+    _clipWork = Promise.all([_clipWork, p]).then(() => {}, () => {});
+    return p;
+  }
+  try { _dropAllRecordings(); } catch (e) {}
+  function _dropRecordingsNow(slot) {
+    slot = slot || "";
+    return idb().then((db) => new Promise((res) => {
+      let n = 0;
+      try {
+        const tx = db.transaction("recordings", "readwrite");
+        const cur = tx.objectStore("recordings").openCursor();
+        cur.onsuccess = () => {
+          const c = cur.result;
+          if (!c) return;
+          if ((c.value.kid || "") === slot) { c.delete(); n++; }
+          c.continue();
+        };
+        tx.oncomplete = () => res(n);
+        tx.onerror = tx.onabort = () => res(0);
+      } catch (e) { res(0); }
+    })).catch(() => 0);
+  }
 
   // ── juice: tiny sound effects + confetti (Web Audio + canvas, no assets) ──
   // What gives the app its Duolingo "feel": a satisfying chime on success, a
@@ -2372,15 +3606,18 @@
   // files to ship and nothing to wait on.
   let _ac = null, _master = null;
   const _sfxNodes = new Set();
+  let _chimeNotes = null;   // set while a chime is being written down for the iPhone app (chimeBytes below)
   function ac() {
     try { if (!_ac) { _ac = new (window.AudioContext || window.webkitAudioContext)(); _master = _ac.createGain(); _master.gain.value = 0.9; _master.connect(_ac.destination); } if (_ac.state === "suspended") _ac.resume(); } catch (e) {}
     return _ac;
   }
-  // master volume from the profile (so the volume slider also controls SFX); 0 = muted
+  // master volume from the profile (so Sound off silences SFX too); 0 = muted
   function sfxVol() { try { const p = getProfile(); if (p.soundOn === false) return 0; return (p.volume != null ? p.volume : 0.6); } catch (e) { return 0.6; } }
   // attack: seconds to reach the peak (default 15 ms). The win chimes pass a
   // slower one so they swell in rather than snap.
   function note(freq, start, dur, type, gain, attack) {
+    // a chime being written down for the iPhone app (chimeBytes below), not played
+    if (_chimeNotes) { _chimeNotes.push({ f: freq, at: start, dur: dur, type: type || "sine", gain: gain || 0.18, attack: attack || 0.015 }); return; }
     const a = ac(); const v = sfxVol(); if (!a || v === 0) return;
     const t0 = a.currentTime + start;
     const o = a.createOscillator(), g = a.createGain();
@@ -2397,9 +3634,7 @@
   const tone = note; // back-comat
   const WIN_ATTACK = 0.025;
   // richer than plain beeps: core note + a soft octave/overtone shimmer
-  const sfx = {
-    // Stop scheduled notes too, so they cannot play when an audio context wakes.
-    stop() { for (const {o, g} of _sfxNodes) { try { o.stop(); } catch (e) {} try { o.disconnect(); g.disconnect(); } catch (e) {} } _sfxNodes.clear(); },
+  const CHIMES = {
     tap()      { note(660, 0, 0.06, "triangle", 0.10); note(990, 0.005, 0.05, "sine", 0.04); },
     // CALMER WINS (24 Sep 2026). correct and complete are the two loudest
     // chimes and they land on the big moments, right beside Echo's voice. Each
@@ -2414,6 +3649,80 @@
     coin()     { note(988, 0, 0.07, "square", 0.09); note(1319, 0.06, 0.12, "square", 0.09); },           // coin "ching"
     drop()     { note(210, 0, 0.16, "sine", 0.16); note(120, 0.04, 0.18, "sine", 0.10); },                // soft thunk
   };
+  // IN THE IPHONE APP THE CHIMES ARE MEDIA TOO (2 Oct 2026), as Echo's voice,
+  // Piano Tiles' notes and Bubble Pop's pops already are (mediaPCM, at the top
+  // of this file, says why). The "heard you" chime lands the moment the mic
+  // closes, exactly when an iPhone plays Web Audio as a quiet phone call, and
+  // not at all with the ringer switched off. So the app writes each chime down
+  // once, from the same recipe above, as a short recording, and plays it as a
+  // media element: one element a chime, replayed from the top. The level is in
+  // the samples (an iPhone gives a media element no volume): CHIME_MEDIA puts
+  // the win chime's main notes (0.113) at 0.4 of full level, where a Piano
+  // Tiles note and a bubble's pop sit. It was set without a phone to listen
+  // on. A muted Sona plays none. A browser keeps Web Audio. An element the
+  // phone refuses sends that chime, and every one after it, to Web Audio
+  // rather than to silence. When a chime may play is still each page's own
+  // rule (never over a mic); nothing here changes when, only how. On Sona's
+  // own mic (15 Oct 2026, "Everything off") the chimes, media or Web Audio,
+  // follow the ring/silent switch: THE SILENT SWITCH in the native mic block.
+  const CHIME_RATE = 24000, CHIME_MEDIA = 3.6;   // the rate is what pcmWave's header says
+  let _chimeBroken = false, _chimeGen = 0;
+  const _chimePlayers = {};
+  function chimeShape(type, ph, f) {
+    if (type === "triangle") return Math.asin(Math.sin(ph)) * 0.636619772;
+    if (type === "square") {
+      // only the harmonics a 24 kHz recording can hold: a bare square rings false notes
+      let s = 0; for (let k = 1; k * f < CHIME_RATE * 0.45; k += 2) s += Math.sin(k * ph) / k;
+      return s * 1.273239545;
+    }
+    return Math.sin(ph);
+  }
+  function chimeBytes(name) {
+    let notes; _chimeNotes = [];
+    try { CHIMES[name](); } finally { notes = _chimeNotes; _chimeNotes = null; }
+    let secs = 0; notes.forEach((n) => { secs = Math.max(secs, n.at + n.dur); });
+    const total = Math.ceil(secs * CHIME_RATE), a = new Float32Array(total);
+    notes.forEach((n) => {
+      const i0 = Math.round(n.at * CHIME_RATE), len = Math.round(n.dur * CHIME_RATE), up = Math.max(1, Math.round(n.attack * CHIME_RATE));
+      for (let i = 0; i < len && i0 + i < total; i++) {
+        // the envelope note() asks Web Audio for: up from near nothing to the
+        // peak over the attack, then down to near nothing at the note's end
+        const env = i < up ? 0.0001 * Math.pow(n.gain / 0.0001, i / up) : n.gain * Math.pow(0.0001 / n.gain, (i - up) / Math.max(1, len - up));
+        a[i0 + i] += env * chimeShape(n.type, 6.283185307 * n.f * i / CHIME_RATE, n.f);
+      }
+    });
+    const bytes = new Uint8Array(total * 2), dv = new DataView(bytes.buffer);
+    for (let i = 0; i < total; i++) dv.setInt16(i * 2, Math.round(Math.max(-1, Math.min(1, a[i] * CHIME_MEDIA)) * 32767), true);
+    return bytes;
+  }
+  function chime(name) {
+    if (_chimeBroken || !voiceAsMedia()) { CHIMES[name](); return; }
+    if (sfxVol() === 0) return;   // nothing to turn down on a media element, so a muted Sona must not start one
+    const gen = _chimeGen;
+    // (a chime stopped by sfx.stop(), or asked for by a page already hidden,
+    // also lands here, its play() cut short: that is not a refusal)
+    function web() { if (gen !== _chimeGen || document.hidden) return; _chimeBroken = true; try { CHIMES[name](); } catch (e) {} }
+    try {
+      let p = _chimePlayers[name];
+      if (!p) {
+        p = new Audio(URL.createObjectURL(pcmWave(chimeBytes(name)))); p.preload = "auto";
+        p.onerror = function () { _chimeBroken = true; };
+        _chimePlayers[name] = p;
+      }
+      try { if (p.currentTime) p.currentTime = 0; } catch (e) {}
+      const r = p.play();
+      if (r && r.then) r.then(null, web);
+    } catch (e) { web(); }
+  }
+  const sfx = {
+    // Stop scheduled notes too, so they cannot play when an audio context wakes.
+    stop() {
+      for (const {o, g} of _sfxNodes) { try { o.stop(); } catch (e) {} try { o.disconnect(); g.disconnect(); } catch (e) {} } _sfxNodes.clear();
+      _chimeGen++;
+      for (const k in _chimePlayers) { try { _chimePlayers[k].pause(); } catch (e) {} }
+    },
+  };
+  Object.keys(CHIMES).forEach((k) => { sfx[k] = function () { chime(k); }; });
   // Optional background music — plays a real track if /sfx/music.mp3 is added,
   // gated on a profile toggle (off by default). No synth music (would sound cheap).
   let _music = null;
@@ -2549,6 +3858,7 @@
     "arcade-tiles.html": { name: "Piano Tiles",   icon: "🎹", band: "Arcade",   c: "#9775fa" },
     "arcade-run.html":   { name: "Sound Sprint",  icon: "🏃", band: "Arcade",   c: "#2f9e44" },
     "arcade-glide.html": { name: "Flappy Glide",  icon: "🎈", band: "Arcade",   c: "#4f8fc7" },
+    "arcade-rise.html":  { name: "Rise Up",       icon: "🎈", band: "Arcade",   c: "#5aa6dc" },
   };
   function gameMeta(file) {
     const k = String(file || "").replace(/^\//, "").split("?")[0];
@@ -2559,19 +3869,105 @@
   // screen paints, and two copies of a list is one copy that goes stale.
   const GAME_ACTS = {
     slice: { name: "Fruit Slice",   sub: "Say it 5× to play",          go: "/charge.html?game=arcade-slice.html", group: "arcade", tier: "free", playDescription: "Swipe through the fruit." },
-    tiles: { name: "Piano Tiles",   sub: "Say it 5× to play",          go: "/charge.html?game=arcade-tiles.html", group: "arcade", tier: "premium", playDescription: "Tap each tile as it reaches the line." },
-    stack: { name: "Block Stacker", sub: "Say it 5× to play",          go: "/charge.html?game=arcade-stack.html", group: "arcade", tier: "free", playDescription: "Time your tap to stack the blocks." },
-    run:   { name: "Sound Sprint",  sub: "Say it 5× to play",          go: "/charge.html?game=arcade-run.html", group: "arcade", tier: "premium", playDescription: "Switch lanes and collect coins." },
+    // Free since 30 Sep 2026 (Travis: "fruit slice and piano tiles free ...
+    // feed echo to be free", then "two free games for older kids, the two free
+    // games for younger kids"): the free version is practice, two games for
+    // each age group (these two, Feed Echo and Bubble Pop) and one book.
+    // Every other game is Premium.
+    tiles: { name: "Piano Tiles",   sub: "Say it 5× to play",          go: "/charge.html?game=arcade-tiles.html", group: "arcade", tier: "free", playDescription: "Tap each tile as it reaches the line." },
+    // Premium since 27 Sep 2026 (Travis: once the plan screen has been seen,
+    // "all the other games are ... grayed out except they can replay feed echo
+    // and fruit slice"). Only matters when pricing is on; free while Sona is.
+    stack: { name: "Block Stacker", sub: "Say it 5× to play",          go: "/charge.html?game=arcade-stack.html", group: "arcade", tier: "premium", playDescription: "Time your tap to stack the blocks." },
+    run:   { name: "Sound Sprint",  sub: "Say it 5× to play",          go: "/charge.html?game=arcade-run.html", group: "arcade", tier: "premium", playDescription: "Switch lanes and collect stars." },
     glide: { name: "Flappy Glide",  sub: "Say it 5× to play",          go: "/charge.html?game=arcade-glide.html", group: "arcade", tier: "premium", playDescription: "Tap to glide through the gaps." },
+    // Rise Up (Travis, 9 Oct 2026: "lets build the game rise up"): a round game like Flappy Glide, entered through its practice page; adventure: false keeps it out of the old five-game run.
+    rise:  { name: "Rise Up",       sub: "Say it 5× to play",          go: "/charge.html?game=arcade-rise.html", group: "arcade", tier: "premium", adventure: false, playDescription: "Drag the shield to keep your balloon safe." },
     feed:  { name: "Feed Echo",     sub: "Say it & tap — Echo's hungry!", go: "/arcade-feed.html", group: "simple", tier: "free", playDescription: "Find the picture and feed Echo. No timer." },
-    bubbles: { name: "Bubble Pop", sub: "Pop, discover and say it together", go: "/arcade-bubbles.html", group: "simple", tier: "free", comingSoon: true, releasedOn: "2026-09-21", playDescription: "Pop a bubble. Find a little surprise." },
-    peekaboo: { name: "Peekaboo", sub: "Open a door and say it together", go: "/arcade-peekaboo.html", group: "simple", tier: "premium", comingSoon: true, releasedOn: "2026-09-21", playDescription: "Knock, knock! See what’s hiding." },
+    // Back from Coming soon on 30 Sep 2026 (Travis: "the two free games for
+    // older kids, the two free games for younger kids"): with Feed Echo, the
+    // free version's games for ages 3-4. No release date, so never tagged New.
+    // Rebuilt on 1 Oct 2026 ("Say it, and Echo blows bubbles") on the Say &
+    // Play engine, but NOT a `say` game: that flag would list it twice on
+    // Home, point its sticker at one that does not exist, and take it out of
+    // the little kids' adventure deck. Its page keeps that adventure's hand-off.
+    bubbles: { name: "Bubble Pop", sub: "Say it, and Echo blows bubbles", go: "/arcade-bubbles.html", group: "simple", tier: "free", playDescription: "Say the word. Echo blows bubbles, and you pop them all." },
+    peekaboo: { name: "Peekaboo", sub: "Say it, then find the picture", go: "/arcade-peekaboo.html", group: "simple", tier: "premium", releasedOn: "2026-09-21", playDescription: "Say the word to hide a picture behind a door. Watch the doors move, then tap the right one." },
+    // Say & Play (Travis, 26 Sep 2026: "10 more games for ages 3-4 and 10
+    // more games for ages 5-8 ... incorporating practice into it"). Every
+    // word the child says moves the game one step, so each opens straight to
+    // its game; public/sayplay.js is the one engine behind all twenty, and
+    // tools/gameart/ draws them. They are not in the daily adventure (see
+    // adventureGames), and a spoken move is play, never practice data.
+    //
+    // PARKED AS COMING SOON (Travis, 26 Sep 2026: "these games are not good.
+    // they are essentially all the exact same ... put the 20 games as coming
+    // soon"). None let a child PLAY. Each comes back one at a time, rebuilt
+    // and played by Travis first, by taking comingSoon off its own line.
+    // Since 19 Oct 2026 Home draws no parked game (Travis: the greyed cards
+    // cluttered Home); a typed address to one bounces home with "<Game> is
+    // coming soon".
+    //
+    // TWO FRIDAYS (Travis, 1 Oct 2026: "I don't want all these books and
+    // games to have different dates ... split them and have like seven or
+    // eight for next Friday and then seven or eight for the following
+    // Friday"). From 9 Oct 2026 each parked game carried a Friday
+    // (`comingOn`, three a week from 16 Oct to 20 Nov); since 15 Oct 2026
+    // (Travis: "put coming soon") none does. The support stays, as the
+    // bookshelf keeps `opens`: `comingOn: "2026-11-06"` on one line makes the
+    // bounce note say "coming Nov 6" until that day, then "coming soon"
+    // again. It is a LABEL, never a switch: only taking comingSoon off opens
+    // a game.
+    //
+    // FOUR PARKED AGAIN (Travis, 5 Nov 2026, after the game audit: "hide
+    // those 4"). Puppy Bath (its Spray button aims itself, so holding it is
+    // the whole game), Surprise Boxes (the same five "surprises" in the same
+    // order every time), Fish Tank (one move five times) and Monster Makeover
+    // (the monster never changes, even its face) are Coming soon again: off
+    // Home, off the website's strip, shut for every family. Their pages and
+    // suites stay; each comes back only rebuilt, by taking comingSoon off.
+    balloon: { name: "Balloon Party", sub: "Say it, then pump and float", go: "/arcade-balloon.html", group: "simple", tier: "premium", say: true, playDescription: "Say the word to get a balloon. Pump it up and pull it into the party ring." },
+    flower: { name: "Grow a Flower", sub: "Say it, then water the flower", go: "/arcade-flower.html", group: "simple", tier: "premium", say: true, playDescription: "Say the word to fill the watering can. Hold it over the glowing soil to help the flower grow." },
+    rocket: { name: "Rocket Blast", sub: "Say it, then blast off", go: "/arcade-rocket.html", group: "simple", tier: "premium", say: true, playDescription: "Say the word to get a rocket. Pull it back and let go to fly to a planet." },
+    snowman: { name: "Build a Snowman", sub: "Say it, then roll and stack", go: "/arcade-snowman.html", group: "simple", tier: "premium", say: true, playDescription: "Say the word to get a snowball. Roll it big, stack it and dress your snowman." },
+    train: { name: "Choo-Choo Train", sub: "Say it, then drive and stop", go: "/arcade-train.html", group: "simple", tier: "premium", say: true, playDescription: "Say the word to start the train. Drive to the station, stop, and help a friend aboard." },
+    puppy: { name: "Puppy Bath", sub: "Say it, then wash the puppy", go: "/arcade-puppy.html", group: "simple", tier: "premium", comingSoon: true, say: true, playDescription: "Say the word to find a muddy spot. Aim the water and wash it clean." },
+    stars: { name: "Bedtime Stars", sub: "Say it, then draw in the stars", go: "/arcade-stars.html", group: "simple", tier: "premium", say: true, playDescription: "Say the word to start a picture. Slide from star to star to draw it in the sky." },
+    cake: { name: "Birthday Cake", sub: "Say it, then bake a cake", go: "/arcade-cake.html", group: "simple", tier: "premium", say: true, playDescription: "Say the word to start each step. Stir, pour, ice and decorate your own birthday cake." },
+    gifts: { name: "Surprise Boxes", sub: "Say it, then open a present", go: "/arcade-gifts.html", group: "simple", tier: "premium", comingSoon: true, say: true, playDescription: "Say the word to get a present. Pull, peel and lift to open it." },
+    fishtank: { name: "Fish Tank", sub: "Say it, then feed a fish", go: "/arcade-fishtank.html", group: "simple", tier: "premium", comingSoon: true, say: true, playDescription: "Say the word to get fish food. Drop it above a hungry fish and watch it eat." },
+    racecar: { name: "Race Car", sub: "Say it, then steer and race", go: "/arcade-racecar.html", group: "arcade", tier: "premium", say: true, playDescription: "Say the word to drive the next stretch. Steer around cones and into the glowing ring." },
+    treasure: { name: "Treasure Map", sub: "Say it, then draw a route", go: "/arcade-treasure.html", group: "arcade", tier: "premium", say: true, playDescription: "Say the word to set sail. Draw your boat a path around the islands to the next harbour." },
+    // REBUILT (Travis, 1 Oct 2026: "go finish soccer"): the word earns the
+    // ball and the child swipes it past a goalie who slides along the goal
+    // line (public/soccer.js).
+    soccer: { name: "Soccer Goal", sub: "Say it, then kick!", go: "/arcade-soccer.html", group: "arcade", tier: "premium", say: true, playDescription: "Say the word to get the ball, then swipe up to kick it past the goalie." },
+    // REBUILT (Travis, 26 Sep 2026: "yes build hoops"): the word earns the
+    // ball and the child swipes it into a gliding hoop (public/hoops.js).
+    hoops: { name: "Hoops", sub: "Say it, then shoot!", go: "/arcade-hoops.html", group: "arcade", tier: "premium", say: true, playDescription: "Say the word to get the ball, then swipe up to shoot hoops." },
+    robot: { name: "Robot Builder", sub: "Say it, then connect the wires", go: "/arcade-robot.html", group: "arcade", tier: "premium", say: true, playDescription: "Say the word to open a circuit. Turn the wires to power each robot part." },
+    castle: { name: "Castle Builder", sub: "Say it, then hoist a piece", go: "/arcade-castle.html", group: "arcade", tier: "premium", say: true, playDescription: "Say the word to get a castle piece. Slide the crane over the glow and lower it in." },
+    // REBUILT (Travis, 1 Oct 2026: "go to the next game"): the word earns a
+    // brush and the child rubs the sand off a bone (public/dino.js).
+    dino: { name: "Dino Dig", sub: "Say it, then dig!", go: "/arcade-dino.html", group: "arcade", tier: "premium", say: true, playDescription: "Say the word to get a brush, then rub the sand to dig up a dinosaur bone." },
+    space: { name: "Space Trip", sub: "Say it, then fly and land", go: "/arcade-space.html", group: "arcade", tier: "premium", say: true, playDescription: "Say the word to start a flight. Steer the rocket and land softly on the glowing pad." },
+    pizza: { name: "Pizza Chef", sub: "Say it, then cook the pizza", go: "/arcade-pizza.html", group: "arcade", tier: "premium", say: true, playDescription: "Say the word to start each step. Roll, spread, top, bake and slice your own pizza." },
+    monster: { name: "Monster Makeover", sub: "Say it, then style the monster", go: "/arcade-monster.html", group: "arcade", tier: "premium", comingSoon: true, say: true, playDescription: "Say the word to get the next salon tool. Wash, brush and style a friendly monster." },
   };
   // Catalog access is separate from the speech needed to earn an arcade turn.
   // Free access opens released games; unfinished games stay parked for everyone.
   // Preserve the existing story and mystery deck; new library games stand alone.
   const GAME_KEYS = ["slice", "tiles", "stack", "run", "glide", "feed"];
-  const ACTIVITY_KEYS = GAME_KEYS.concat(["bubbles", "peekaboo"]);
+  // The Say & Play games list themselves (say: true), in catalog order.
+  // Bubble Pop and Peekaboo come before them, so the little kids' second free
+  // game (Bubble Pop) is not below ten Premium cards now that all eighteen
+  // are open (22 Oct 2026). A playable game comes before every parked one
+  // (Home draws only the playable ones since 19 Oct 2026: each shelf is
+  // those, in this order).
+  const SAY_KEYS = Object.keys(GAME_ACTS).filter(function (key) { return GAME_ACTS[key].say; });
+  const ACTIVITY_ORDER = GAME_KEYS.concat(["bubbles", "peekaboo"], SAY_KEYS, ["rise"]);
+  const ACTIVITY_KEYS = ACTIVITY_ORDER.filter(function (key) { return !GAME_ACTS[key].comingSoon; })
+    .concat(ACTIVITY_ORDER.filter(function (key) { return GAME_ACTS[key].comingSoon; }));
   function gameAct(key) { return GAME_ACTS[key] || null; }
 
   const LIBRARY_PREVIEW_KEY = "sona.librarypreview.v1", PREVIEW_PLAN_KEY = "sona.previewplan.v1";
@@ -2622,6 +4018,17 @@
     } catch (e) { return null; }
   }
   function gameAccess(key, options) {
+    // STORY1: today's story and its fourteen games are Premium by the books'
+    // rule (storyOpen: never the demonstration window, never an earned turn
+    // or a saved run), and are known by name: they are in no catalog, so
+    // gameKey() below would refuse them. The reasons are the catalog's own,
+    // so Home's tag reads a story exactly as it reads a Premium game.
+    if (_storyKey(key)) {
+      var sp = libraryPreview(), so = storyOpen();
+      return { allowed: so, tier: "premium", preview: sp,
+        reason: so ? (sp ? "trial" : isFree() ? "free-mode" : premium() ? "entitled" : "trial")
+          : (sp && previewPlan().state === "expired" ? "expired" : "premium") };
+    }
     key = gameKey(key);
     var act = key && GAME_ACTS[key], preview = libraryPreview();
     var result = { allowed: false, tier: act ? act.tier : "premium", reason: "unknown", preview: preview };
@@ -2629,7 +4036,8 @@
     if (!act || act.available === false) return result;
     // Unfinished games cannot be unlocked by a plan, saved turn or old link.
     if (act.comingSoon) { result.reason = "coming-soon"; return result; }
-    if (act.tier === "free") return allow("free");
+    // the free tier opens with the free version only (see freeVersion)
+    if (act.tier === "free" && (preview || freeVersion())) return allow("free");
     if (preview) {
       if (previewPlan().state === "trial") return allow("trial");
     } else {
@@ -2668,7 +4076,9 @@
     } catch (e) {}
   }
   function gameBounce(key) {
-    try { location.replace("/activities.html" + (gameKey(key) ? "?locked=" + key : "")); } catch (e) {}
+    // a story's address goes Home, where today's story card is, never to the
+    // Arcade's "locked" note (which knows only the catalog's games)
+    try { location.replace(_storyKey(key) ? "/today.html" : "/activities.html" + (gameKey(key) ? "?locked=" + key : "")); } catch (e) {}
   }
 
   // Age suggests a style of play, never access or a speech target. Keep this
@@ -2677,53 +4087,118 @@
     { id: "simple", name: "Simple play", ageLabel: "Suggested ages 3–4", description: "Little taps. Big discoveries." },
     { id: "arcade", name: "Arcade", ageLabel: "Suggested ages 5–8", description: "A little more action and adventure." },
   ];
+  // Halloween has a limited-time book for several sounds (Travis, 2 Oct 2026:
+  // "take a popular book like the halloween and make a version for other
+  // letter"). A child gets the one in their own sound; a child whose sounds
+  // have none gets the one written for everyone (anySound: Boo the Bat).
+  // The bookshelf asks here (Home's Limited time row did until 23 Oct 2026).
+  function seasonPick(list, sounds) {
+    var want = (sounds || []).map(function (x) { return String(x).toUpperCase(); });
+    var mine = list.filter(function (b) { return want.indexOf(String(b.sound).toUpperCase()) !== -1; });
+    return mine.length ? mine : list.filter(function (b) { return b.anySound; });
+  }
   function activityLibrary(options) {
     var age = Number(getProfile().childAge);
     var validAge = age >= 2 && age <= 14 && Math.floor(age) === age;
     var recommended = validAge ? playStyle() : null;
     var now = options && typeof options.now === "number" && isFinite(options.now) ? options.now : Date.now();
-    var date = new Date(now), day = Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
     function catalogDay(value) {
       if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return NaN;
       var parsed = Date.parse(value + "T00:00:00Z");
       return isFinite(parsed) && new Date(parsed).toISOString().slice(0, 10) === value ? parsed : NaN;
     }
+    // A day string is the read-only seam for daily picks; a timestamp alone
+    // is read on the family's own calendar.
+    var requestedDay = options && isFinite(catalogDay(options.day)) ? options.day : "";
+    // A parked game's day (comingOn, see GAME_ACTS; none carries one since 15
+    // Oct 2026) on the family's own calendar, the way the bookshelf dates its
+    // books: "Coming Oct 9" until the day, then "Coming soon" again if the
+    // game still isn't ready. A label only; gameAccess never reads it.
+    var localToday = requestedDay || _localDay(now);
+    function comingOn(act) {
+      var d = act.comingSoon && typeof act.comingOn === "string" && isFinite(catalogDay(act.comingOn)) ? act.comingOn : "";
+      return d && d > localToday ? d : null;
+    }
+    function comingLabel(on) {
+      if (!on) return "Coming soon";
+      try { var p = on.split("-"); return "Coming " + new Date(+p[0], +p[1] - 1, +p[2]).toLocaleDateString(undefined, { month: "short", day: "numeric" }); }
+      catch (e) { return "Coming soon"; }
+    }
     function entry(key) {
-      var act = GAME_ACTS[key];
+      var act = GAME_ACTS[key], on = comingOn(act);
       return { key: key, name: act.name, sub: act.sub, go: act.go, playDescription: act.playDescription,
-        tier: act.tier, releasedOn: act.releasedOn || null, available: act.available !== false, comingSoon: !!act.comingSoon };
+        tier: act.tier, releasedOn: act.releasedOn || null, available: act.available !== false, comingSoon: !!act.comingSoon,
+        comingOn: on, comingLabel: act.comingSoon ? comingLabel(on) : null };
+    }
+    // Playable games keep the catalog's order; the parked ones follow, soonest
+    // day first, any without a date last. Home draws no parked one (19 Oct
+    // 2026); they stay here for the bounce note and its day label.
+    function parkedOrder(a, b) {
+      var x = GAME_ACTS[a].comingOn || "9999", y = GAME_ACTS[b].comingOn || "9999";
+      return x < y ? -1 : x > y ? 1 : 0;
     }
     var groups = ACTIVITY_GROUPS.map(function (group) {
+      var keys = ACTIVITY_KEYS.filter(function (key) {
+        return GAME_ACTS[key].group === group.id && GAME_ACTS[key].available !== false;
+      });
       return {
         id: group.id, name: group.name, ageLabel: group.ageLabel,
         description: group.description, recommended: group.id === recommended,
-        games: ACTIVITY_KEYS.filter(function (key) {
-          return GAME_ACTS[key].group === group.id && GAME_ACTS[key].available !== false;
-        }).map(entry),
+        games: keys.filter(function (key) { return !GAME_ACTS[key].comingSoon; })
+          .concat(keys.filter(function (key) { return GAME_ACTS[key].comingSoon; }).sort(parkedOrder)).map(entry),
       };
     });
+    // The child's own age group's shelf comes first (Travis, 23 Oct 2026:
+    // "if they're young, 3 to 4, have simple play show up higher, and vice
+    // versa"); with no age yet, Simple play leads, as the catalog lists it.
     if (recommended === "arcade") groups.reverse();
-    // Release dates expire honestly after thirty calendar dates. Seasonal rows
-    // exist only when a finished item has a real active start/end date; no placeholders.
-    var fresh = ACTIVITY_KEYS.filter(function (key) {
-      var act = GAME_ACTS[key], released = catalogDay(act.releasedOn);
-      return act.available !== false && !act.comingSoon && released <= day && day - released < 30 * 86400000;
-    }).sort(function (a, b) { return catalogDay(GAME_ACTS[b].releasedOn) - catalogDay(GAME_ACTS[a].releasedOn); }).map(entry);
-    var seasonal = ACTIVITY_KEYS.filter(function (key) {
-      var act = GAME_ACTS[key], season = act.season;
-      return act.available !== false && !act.comingSoon && season && catalogDay(season.startsOn) <= day && day <= catalogDay(season.endsOn);
-    }).map(entry);
-    var featured = [];
-    if (fresh.length) featured.push({ id: "new", name: "New to Sona", games: fresh });
-    if (seasonal.length) featured.push({ id: "seasonal", name: "Seasonal favorites", games: seasonal });
-    return { recommended: recommended, groups: groups, featured: featured };
+    // ONE ROW ABOVE THE SHELVES, GAMES ONLY (Travis, 23 Oct 2026: "organize
+    // the arcade so that there are no books in there ... I only want either
+    // today's picks or limited time ... have 2 games listed there, and then go
+    // directly to either simple play or arcade"). Today's picks is that row:
+    // it is real every day, where Limited time only ever held the Halloween
+    // books, and an everyday game called "limited" would be a fib. What's new
+    // and Limited time are gone, and so are the books in the picks: the
+    // bookshelf, behind Home's Books door, keeps every book and its own
+    // limited-time ones (seasonPick, above).
+    // Today's picks change with the local calendar, without saving a shuffle
+    // or calling fid() (which creates an id): two games of the first shelf
+    // under them (the child's own age group, or Simple play while no age is
+    // set), one from each half of it, so the two never match.
+    var pickDay = catalogDay(localToday), ordinal = Math.floor(pickDay / 86400000);
+    var seed = _slot(); try { seed += ":" + (localStorage.getItem("sona.fid.v1") || ""); } catch (e) {}
+    function pickHash(text) { var h = 2166136261; for (var i = 0; i < text.length; i++) { h ^= text.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+    function ranked(list) { return list.slice().sort(function (a, b) { var x = pickHash(seed + "|" + a.key), y = pickHash(seed + "|" + b.key); return x - y || (a.key < b.key ? -1 : a.key > b.key ? 1 : 0); }); }
+    function walk(list, step, lane) { return list.length ? list[((step + pickHash(seed + "|" + lane)) % list.length + list.length) % list.length] : null; }
+    function opens(item) { return item && gameAccess(item.key).allowed; }
+    function freshPick(item) { var r = catalogDay(item.releasedOn); item.isNew = r <= pickDay && pickDay - r < 30 * 86400000; return item; }
+    var pickGroup = recommended || ACTIVITY_GROUPS[0].id;
+    var pickGames = ranked(ACTIVITY_KEYS.filter(function (key) { var a = GAME_ACTS[key]; return a.group === pickGroup && a.available !== false && !a.comingSoon; }).map(entry));
+    var split = Math.max(1, Math.floor(pickGames.length / 2));
+    var leftGames = pickGames.slice(0, split), rightGames = pickGames.slice(split);
+    var left = walk(leftGames, ordinal, "left");
+    var right = walk(rightGames, ordinal, "right");
+    if (!right) right = walk(pickGames.filter(function (g) { return !left || g.key !== left.key; }), ordinal, "right");
+    // Picks stay useful for a free family: if neither chosen game opens,
+    // replace one with an open choice.
+    if (left && right && !opens(left) && !opens(right)) {
+      var openGames = pickGames.filter(opens);
+      if (openGames.length) left = walk(openGames.filter(function (g) { return g.key !== right.key; }), ordinal, "open") || left;
+    }
+    var choices = [left, right].filter(function (item, i, all) { return item && (!i || item.key !== all[0].key); }).map(freshPick);
+    var picks = { id: "picks", name: "Today's picks", tag: "Changes daily", day: localToday, games: choices };
+    return { recommended: recommended, groups: groups, picks: picks };
   }
+  function homePicks(dayStr) { return activityLibrary({ day: dayStr }).picks.games; }
   // Home previews the same adventure that practice launches. Feed Echo has
   // its own practice/reward loop and remains an independent game choice.
   // A started adventure keeps its order when a family pauses over midnight.
   function adventureGames(firstGame) {
     var style = playStyle();
-    var deck = ACTIVITY_KEYS.filter(function (key) { return GAME_ACTS[key].group === style && gameAccess(key).allowed; });
+    // A Say & Play game is its own practice-shaped loop with no earned turn
+    // to bank, so it never joins the adventure's deck.
+    // adventure: false (Rise Up) keeps a round game out of the old five-game run.
+    var deck = ACTIVITY_KEYS.filter(function (key) { return GAME_ACTS[key].group === style && !GAME_ACTS[key].say && GAME_ACTS[key].adventure !== false && gameAccess(key).allowed; });
     var count = ROT_LEN;
     try {
       var run = JSON.parse(sessionStorage.getItem(RUNKEY) || "null");
@@ -2843,8 +4318,9 @@
     const end = new Date(start.getFullYear(), start.getMonth(), start.getDate() + 7);
     function inRange(k, a, b) { const d = new Date(k + "T12:00:00"); return d >= a && d < b; }
     function acc(a, b) { let at = 0, ps = 0; const bs = o[snd]; if (bs && bs.days) Object.keys(bs.days).forEach(function (k) { if (inRange(k, a, b)) { at += bs.days[k].a || 0; ps += bs.days[k].p || 0; } }); return at >= 5 ? Math.round(ps / at * 100) : null; }
-    let reps = 0; Object.keys(o).forEach(function (s) { const bs = o[s]; if (bs && bs.days) Object.keys(bs.days).forEach(function (k) { if (inRange(k, start, end)) reps += bs.days[k].a || 0; }); });
-    return { sound: snd, label: soundLabel(snd), reps: reps, acc: acc(start, end), accPrev: acc(prev, start), week: momWeek() };
+    // reps is Home's corner count (REPWEEKS1), not the number of sound checks:
+    // the two sat on the same screen and disagreed.
+    return { sound: snd, label: soundLabel(snd), reps: weekReps(0), acc: acc(start, end), accPrev: acc(prev, start), week: momWeek() };
   }
 
   // ── Sticker icon kit (design §7): flat 2-tone SVGs with a white glint dot.
@@ -2876,6 +4352,17 @@
     block: '<rect x="8" y="19" width="48" height="27" rx="7" fill="#69db7c"/><rect x="8" y="19" width="48" height="9" rx="4.5" fill="#85e099"/><circle cx="18" cy="26" r="2.5" fill="#fff" opacity=".85"/>',
     keys: '<rect x="8" y="14" width="48" height="36" rx="6" fill="#fff"/><line x1="20" y1="14" x2="20" y2="50" stroke="#d8cfec" stroke-width="2.5"/><line x1="32" y1="14" x2="32" y2="50" stroke="#d8cfec" stroke-width="2.5"/><line x1="44" y1="14" x2="44" y2="50" stroke="#d8cfec" stroke-width="2.5"/><rect x="16" y="14" width="8" height="19" rx="2" fill="#2f2266"/><rect x="40" y="14" width="8" height="19" rx="2" fill="#2f2266"/><circle cx="13" cy="20" r="2" fill="#fff" opacity=".9"/>',
     balloon: '<path d="M32 4C18 4 11 16 11 27c0 12 11 19 17 26h8c6-7 17-14 17-26C53 16 46 4 32 4Z" fill="#ff6b6b"/><path d="M32 4c-6 0-10 12-10 23 0 12 5 19 7 26h6c2-7 7-14 7-26C42 16 38 4 32 4Z" fill="#fff4dd"/><path d="M32 4c-2 0-4 12-4 23 0 12 2 19 3 26h2c1-7 3-14 3-26C36 16 34 4 32 4Z" fill="#ffd43b"/><rect x="25" y="53" width="14" height="9" rx="3" fill="#b5875a"/><ellipse cx="22" cy="16" rx="4" ry="7" fill="#fff" opacity=".3" transform="rotate(-16 22 16)"/>',
+    // The Trophy Road and the Practice Board's glyphs (11 Oct 2026): drawn
+    // beside a number at 12-24 px, so each is one bold shape in two tones
+    // with the kit's white glint, and no detail that turns to mud when small.
+    trophy: '<path d="M21 14H11a9 9 0 0 0 12 14M43 14h10a9 9 0 0 1-12 14" fill="none" stroke="#f0a800" stroke-width="5" stroke-linecap="round"/><path d="M18 8h28v14a14 14 0 0 1-28 0Z" fill="#ffd21c"/><rect x="28" y="34" width="8" height="12" fill="#f0a800"/><rect x="17" y="45" width="30" height="11" rx="4" fill="#f0a800"/><circle cx="25" cy="15" r="3" fill="#fff" opacity=".8"/>',
+    chest: '<path d="M8 30v-6a13 13 0 0 1 13-13h22a13 13 0 0 1 13 13v6Z" fill="#b8722b"/><rect x="8" y="29" width="48" height="26" rx="5" fill="#d9903f"/><rect x="8" y="27" width="48" height="6" fill="#ffd21c"/><rect x="26" y="24" width="12" height="15" rx="4" fill="#ffd21c"/><circle cx="32" cy="31" r="2.6" fill="#a97b00"/><circle cx="17" cy="19" r="2.5" fill="#fff" opacity=".75"/>',
+    sun: '<g fill="#ffb100"><rect x="29" y="2" width="6" height="12" rx="3"/><rect x="29" y="50" width="6" height="12" rx="3"/><rect x="2" y="29" width="12" height="6" rx="3"/><rect x="50" y="29" width="12" height="6" rx="3"/><rect x="29" y="2" width="6" height="12" rx="3" transform="rotate(45 32 32)"/><rect x="29" y="50" width="6" height="12" rx="3" transform="rotate(45 32 32)"/><rect x="2" y="29" width="12" height="6" rx="3" transform="rotate(45 32 32)"/><rect x="50" y="29" width="12" height="6" rx="3" transform="rotate(45 32 32)"/></g><circle cx="32" cy="32" r="15" fill="#ffd21c"/><circle cx="26" cy="26" r="3" fill="#fff" opacity=".8"/>',
+    // a medal carries its place as well as its colour, so first, second and
+    // third still read apart to a child who sees the colours alike
+    medalGold: '<path d="M18 3h11l7 23H25Z" fill="#4db3f2"/><path d="M46 3H35l-7 23h11Z" fill="#ff5c74"/><circle cx="32" cy="41" r="18" fill="#ffd21c"/><circle cx="32" cy="41" r="13" fill="none" stroke="#f0a800" stroke-width="3"/><path d="M29 36l4-3v16" fill="none" stroke="#a97b00" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="23" cy="34" r="2.6" fill="#fff" opacity=".8"/>',
+    medalSilver: '<path d="M18 3h11l7 23H25Z" fill="#4db3f2"/><path d="M46 3H35l-7 23h11Z" fill="#ff5c74"/><circle cx="32" cy="41" r="18" fill="#dfe5ee"/><circle cx="32" cy="41" r="13" fill="none" stroke="#a9b4c4" stroke-width="3"/><path d="M27 37a5 5 0 0 1 10 0c0 4-10 8-10 12h10" fill="none" stroke="#6d7a8c" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="23" cy="34" r="2.6" fill="#fff" opacity=".8"/>',
+    medalBronze: '<path d="M18 3h11l7 23H25Z" fill="#4db3f2"/><path d="M46 3H35l-7 23h11Z" fill="#ff5c74"/><circle cx="32" cy="41" r="18" fill="#e7a670"/><circle cx="32" cy="41" r="13" fill="none" stroke="#bd7440" stroke-width="3"/><path d="M27 34h9l-5 6a4.5 4.5 0 1 1-4 7" fill="none" stroke="#8a4c22" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="23" cy="34" r="2.6" fill="#fff" opacity=".8"/>',
   };
   function icon(name, px) { const d = ICONS[name]; return d ? '<svg viewBox="0 0 64 64" style="width:' + (px || 18) + 'px;height:' + (px || 18) + 'px;vertical-align:-3px">' + d + '</svg>' : ""; }
   // Hearts row: n filled of max; the lost ones are dashed outlines (design: New-life overlay)
@@ -2891,6 +4378,147 @@
     P: "puh", B: "buh", M: "mmm", N: "nnn", T: "tuh", D: "duh",
   };
   function soundSay(sound) { return SOUND_SAY[String(sound || "").toUpperCase()] || String(sound || "").toLowerCase(); }
+
+  // ── the practice sound's LETTERS, in orange (design brief, 28 Sep 2026) ──
+  // "The practice sound's letters are always orange (the r in rabbit, rrrr)."
+  // soundMark(text, sound, pos) returns the text as HTML, escaped, with only
+  // the letters that make the sound wrapped in <b class="snd"> (action.css).
+  // Which letters those are is a spelling question English makes hard: "sure"
+  // is an SH word, the c in "bicycle" is an S and the one after it a K, the
+  // s at the end of "cheese" is a Z. A cue pointing at a letter that doesn't
+  // make the sound teaches the wrong thing, which is worse than no narrowing —
+  // so each rule below narrows only where the spelling proves it, and anything
+  // it can't prove gets today's behaviour: the whole text orange.
+  // tests/soundmarktest.mjs runs every word in WORDS and writes the table
+  // Rachel reviews; how a sound is shown to a child is her call.
+  // At the start of a word: the book reader's LEAD map (library.html), plus gn.
+  var SM_LEAD = { SH: ["sh", "s"], CH: ["ch"], TH: ["th"], THV: ["th"], K: ["k", "c", "q"], N: ["kn", "gn", "n"],
+    R: ["wr", "r"], F: ["ph", "f"], J: ["j", "g"], S: ["s", "c"], Z: ["z", "x"], G: ["gh", "g"] };
+  // Inside a word (middle, end, blends), longest first so "ck" beats "c".
+  var SM_SPELL = { R: ["rr", "r"], S: ["ss", "s", "c"], Z: ["zz", "z", "ss", "s"], L: ["ll", "l"], K: ["ck", "k", "c", "q"],
+    G: ["gg", "g"], F: ["ff", "ph", "gh", "f"], SH: ["sh", "ss", "ti", "ci", "ce", "ch"], CH: ["tch", "ch", "t"],
+    TH: ["th"], THV: ["th"], J: ["dg", "j", "g"], P: ["pp", "p"], B: ["bb", "b"], M: ["mm", "m"], N: ["nn", "n"],
+    T: ["tt", "t"], D: ["dd", "d"], V: ["v"] };
+  // Vocalic R is the vowel the r colours, so the mark takes the vowel with it.
+  var SM_VOC = ["ear", "air", "eer", "our", "oar", "oor", "ar", "er", "ir", "or", "ur"];
+  function smEsc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;"); }
+  // A spelling that looks right but, here, makes another sound (or none).
+  function smOk(snd, sp, w, i) {
+    var a = w.charAt(i + sp.length), b = w.charAt(i - 1), rest = w.slice(i + sp.length), soft = /[eiy]/.test(a);
+    if (sp === "c") return snd === "S" ? soft : (!soft && a !== "h");        // city is S, cat is K, chip is neither
+    if (sp === "g") return snd === "J" ? soft : (a !== "h" && !(b === "n" && /^(s|ue|ues)?$/.test(rest))); // gem; night; ring, tongue
+    if (sp === "dg") return soft;                                              // badge: one J
+    if (sp === "gh") return snd === "G" ? i === 0 : rest === "";               // ghost; laugh
+    if (sp === "s") return a !== "h";                                          // sh is its own sound
+    if (sp === "p") return a !== "h";                                          // phone is F
+    if (sp === "k") return a !== "n";                                          // knife: silent k
+    if (sp === "ch") return b !== "s";                                         // school
+    if (sp === "t") return snd === "CH" ? rest.indexOf("ure") === 0          // picture
+      : (a !== "h" && rest.indexOf("ch") !== 0 && !/^i[ao]/.test(rest) && rest.indexOf("ure") !== 0);
+    if (sp === "n") return a !== "k" && !(a === "g" && /^g(s|ue|ues)?$/.test(rest)); // ink, ring: the ng sound
+    if (sp === "b") return !(b === "m" && /^s?$/.test(rest));                 // lamb: silent b
+    if (sp === "d") return !(a === "g" && /[eiy]/.test(w.charAt(i + 2)));      // badge is J
+    if (snd === "SH" && /^(ti|ci|ce|ss)$/.test(sp)) return /[aeiou]/.test(a); // nation, special, ocean, tissue
+    return true;
+  }
+  function smAt(snd, list, w, i) {
+    for (var k = 0; k < list.length; k++) if (w.substr(i, list[k].length) === list[k] && smOk(snd, list[k], w, i)) return [i, i + list[k].length];
+    return null;
+  }
+  function smCons(c) { return /[a-z]/.test(c) && !/[aeiouy]/.test(c); }
+  // [start, end) of the sound in lower-case word w at position pos, or null.
+  function smFind(snd, w, pos) {
+    var lead = SM_LEAD[snd] || [snd.charAt(0).toLowerCase()], spell = SM_SPELL[snd] || lead, i, h, k, tails, t, end, rest;
+    if (pos === "i") return smAt(snd, lead, w, 0);
+    if (pos === "m") {                   // inside: never the first letter, never the last sound
+      for (i = 1; i < w.length; i++) { h = smAt(snd, spell, w, i); rest = h && w.slice(h[1]); if (h && rest && rest !== "e" && rest !== "ue") return h; }
+      return null;
+    }
+    if (pos === "f") {                   // last sound, past a silent e (cake, nose, cage) or the b of lamb
+      tails = snd === "M" ? ["", "e", "ue", "b"] : ["", "e", "ue"];
+      for (t = 0; t < tails.length; t++) {
+        end = w.length - tails[t].length;
+        if (end < 1 || w.slice(end) !== tails[t]) continue;
+        for (k = 0; k < spell.length; k++) if (end - spell[k].length >= 0 && w.substr(end - spell[k].length, spell[k].length) === spell[k] && smOk(snd, spell[k], w, end - spell[k].length)) return [end - spell[k].length, end];
+      }
+      return null;
+    }
+    if (pos === "v") {                   // vocalic R: an r after a vowel, before no vowel (bird, chair, tiger)
+      if (snd !== "R") return null;
+      for (i = 0; i < w.length; i++) { h = smAt(snd, SM_VOC, w, i); rest = h && w.slice(h[1]); if (h && (/^es?$/.test(rest) || !/^[aeiouyr]/.test(rest))) return h; }
+      return null;
+    }
+    if (pos === "b") {                   // a blend: the sound's own letter, beside ANOTHER consonant (tree, spoon) —
+      // the twin of a doubled letter is the same sound, not a blend: "glass" must not mark its last s alone
+      for (i = 0; i < w.length; i++) {
+        h = smAt(snd, i === 0 ? lead : spell, w, i);
+        if (h && ((smCons(w.charAt(i - 1)) && w.charAt(i - 1) !== w.charAt(i)) || (smCons(w.charAt(h[1])) && w.charAt(h[1]) !== w.charAt(h[1] - 1)))) return h;
+      }
+      return null;
+    }
+    return null;
+  }
+  // When the position rule finds nothing: if the sound's spellings occur
+  // exactly once in the word, that one IS the sound (a word asked at a place
+  // its own spelling does not show). Two or more is a guess.
+  function smOnly(snd, w) {
+    var lead = SM_LEAD[snd] || [snd.charAt(0).toLowerCase()], spell = SM_SPELL[snd] || lead, hits = [], i = 0, h;
+    var all = lead.concat(spell).sort(function (a, b) { return b.length - a.length; });
+    while (i < w.length) { h = smAt(snd, i === 0 ? all : spell, w, i); if (h) { hits.push(h); i = h[1]; } else i++; }
+    return hits.length === 1 ? hits[0] : null;
+  }
+  // The word bank's own position for w, preferring the one asked for.
+  function smBankPos(snd, w, pos) {
+    var hit = (WORDS[snd] || []).filter(function (x) { return x && String(x.w).toLowerCase() === w; });
+    if (!hit.length) return "";
+    for (var k = 0; k < hit.length; k++) if ((hit[k].pos || "i") === pos) return pos;
+    return hit[0].pos || "i";
+  }
+  // "rrrr", "sh sh", "shhh", "kuh": the sound on its own, so all of it is the sound.
+  function smIsolation(t, snd) {
+    var s = t.toLowerCase().trim(), toks, k, j, sp, ok, spells;
+    if (s === soundSay(snd) || s === snd.toLowerCase() || s === String(soundLabel(snd)).toLowerCase()) return true;
+    toks = s.replace(/[^a-z\s]/g, " ").trim().split(/\s+/);
+    if (!toks[0]) return false;
+    spells = (SM_LEAD[snd] || [snd.charAt(0).toLowerCase()]).concat(SM_SPELL[snd] || []);
+    for (k = 0; k < toks.length; k++) {
+      ok = toks[k] === soundSay(snd);
+      for (j = 0; !ok && j < spells.length; j++) { sp = spells[j]; ok = new RegExp("^(?:" + sp + ")+" + sp.slice(-1) + "*$").test(toks[k]); }
+      if (!ok) return false;
+    }
+    return true;
+  }
+  // One word, with any punctuation around it kept outside the mark. null = unsure.
+  function smWord(tok, snd, pos) {
+    var m = String(tok).match(/^([^A-Za-z]*)([\s\S]*?)([^A-Za-z]*)$/), core = m[2], w = core.toLowerCase(), hit = null;
+    if (!w) return null;
+    var p = /^[imfvb]$/.test(pos || "") ? pos : "", bank = smBankPos(snd, w, p);
+    if (p) hit = smFind(snd, w, p);
+    if (!hit && bank && bank !== p) hit = smFind(snd, w, bank);
+    if (!hit && !p && !bank) hit = smFind(snd, w, "i");
+    if (!hit) hit = smOnly(snd, w);
+    if (!hit) return null;
+    return smEsc(m[1]) + smEsc(core.slice(0, hit[0])) + '<b class="snd">' + smEsc(core.slice(hit[0], hit[1])) + "</b>" + smEsc(core.slice(hit[1])) + smEsc(m[3]);
+  }
+  function soundMark(text, sound, pos) {
+    var t = String(text == null ? "" : text), snd = String(sound || "").toUpperCase(), whole = '<b class="snd">' + smEsc(t) + "</b>";
+    if (!t.trim() || !snd) return t.trim() ? whole : smEsc(t);
+    try {
+      if (smIsolation(t, snd)) return whole;
+      var parts = t.split(/(\s+)/), words = parts.filter(function (x) { return x && !/^\s+$/.test(x); });
+      if (words.length === 1) return smWord(t, snd, pos) || whole;
+      // A sentence: mark only its practice words (the bank's words for this
+      // sound). "Here is a bus" must not light up the z-sounding s of "is".
+      var out = "", marked = 0;
+      for (var k = 0; k < parts.length; k++) {
+        var x = parts[k], core = x.replace(/^[^A-Za-z]+|[^A-Za-z]+$/g, "").toLowerCase(), html = null;
+        if (core && smBankPos(snd, core, pos)) html = smWord(x, snd, pos);
+        if (html) marked++;
+        out += html || smEsc(x);
+      }
+      return marked ? out : whole;
+    } catch (e) { return whole; }
+  }
   // "Are you ready? Say rrrr 4 times to rev your engine!"  — reps>1 adds the
   // count; action is the game's verb ("rev your engine", "pop the bubble").
   function actionCue(sound, reps, action) {
@@ -3045,9 +4673,14 @@
       d.a++; if (pass) d.p++;
       // by word position (initial/medial/final/vocalic/blends) — the clinical breakdown.
       // Prefer the word's own tagged position; else fall back to the practice setting.
-      let pos = a.pos || "";
+      // A try at the sound alone or a syllable is not a WORD at any place
+      // (22 Oct 2026): "rrrr" and "ree" were booked under the position being
+      // practised, so with the end of words open a bare R would have counted
+      // as an end-of-word R in the clinician's pass rate by position.
+      let pos = a.pos && a.pos !== "mix" ? a.pos : "";
       if (!pos && word) { const hit = (WORDS[sound] || []).filter(function (x) { return x.w === word; })[0]; if (hit) pos = hit.pos || "i"; }
       if (!pos) { try { pos = practicePos(); } catch (e) { pos = ""; } }
+      if (a.level === "isolation" || a.level === "syllable") pos = "";
       if (pos && pos !== "mix" && pos !== "all") {
         bs.byPos = bs.byPos || {}; const bp = bs.byPos[pos] || (bs.byPos[pos] = { a: 0, p: 0 }); bp.a++; if (pass) bp.p++;
       }
@@ -3057,6 +4690,8 @@
       // keep Today/Progress alive from real game play (not just the lesson flow):
       // every scored attempt counts a word and keeps today's streak going.
       try { const g = getProgress(); g.totals.words = (g.totals.words || 0) + reps; bumpStreak(g); save(GKEY, g); } catch (e2) {}
+      _trophyAdd();
+      _goalCheck();
       // pilot/founding beacon: consented, counts-only, throttled to 1/min inside sendProgress
       try { sendProgress("auto"); } catch (e3) {}
     } catch (e) {}
@@ -3064,10 +4699,11 @@
   function outcomes() { return load(OUTKEY, {}); }
 
   // ── weekly practice volume (the parent's headline metric) ────────────────
-  // Total honest reps this Mon–Sun week, summed from the attempt log. Volume
-  // is a PARENT-side motivator: kids keep the ring, never rep quotas. The
-  // beacon ships {anonymous id, week, count} — no names, no audio, no
-  // accuracy — so families can see how their practice volume compares.
+  // Total honest reps in a Mon–Sun local week, from the day ledger. Volume is
+  // a PARENT-side motivator. Home's corner shows the week's count to whoever
+  // holds the phone — a number that only climbs, never a target — and every
+  // comparison (last week, best week) sits behind the grown-ups gate. The
+  // count stays on this device: the anonymous volume beacon is retired.
   function fid() {
     try {
       let f = localStorage.getItem("sona.fid.v1");
@@ -3084,24 +4720,1508 @@
     const wk = 1 + Math.round(((t - jan4) / 86400000 - 3 + ((jan4.getDay() + 6) % 7)) / 7);
     return y + "-W" + String(wk).padStart(2, "0");
   }
-  function weekReps(offsetWeeks) {
-    const now = new Date(); if (offsetWeeks) now.setDate(now.getDate() + offsetWeeks * 7);
-    const dow = (now.getDay() + 6) % 7;
-    const mon = new Date(now); mon.setDate(now.getDate() - dow); mon.setHours(0, 0, 0, 0);
-    const sun = new Date(mon); sun.setDate(mon.getDate() + 7);
-    const out = outcomes(); let total = 0;
+  // REPWEEKS1 (Travis, 28 Sep 2026: the week's reps in Home's top corner, and
+  // week by week in Settings, a card that went on 22 Oct 2026). ONE bucketing
+  // of the day ledger feeds Home and Progress, so no two surfaces can disagree about "this week" —
+  // Home's old Grown-ups pop-up summed sound checks while Progress summed
+  // tries, and showed two different numbers for the same week.
+  //
+  // A rep is a voiced try the practice screen counted: days[day].tries. Days
+  // logged before tries were counted (22 Sep 2026) hold only .a, one per sound
+  // check — a floor, not a count — so they add nothing. Falling back to them
+  // made the first counted week look like a leap, and handed out a "best week"
+  // won against numbers that were never counted. For the same reason a week
+  // before REPS_SINCE (the Monday of that week) cannot hold a rep at all: a
+  // .tries dated earlier is a phone clock that was wrong, and would otherwise
+  // stand as a best week no child could ever beat.
+  const REPS_SINCE = "2026-09-21";
+  function _dayTries(d) { return d && typeof d.tries === "number" && d.tries > 0 ? Math.floor(d.tries) : 0; }
+  function _weekStart(y, m, d) { const t = new Date(y, m, d); t.setDate(t.getDate() - (t.getDay() + 6) % 7); return t; }
+  // Monday's local day key for the week holding dayKey ("YYYY-MM-DD"). Built
+  // from date parts, never parsed, so a DST night cannot slide a day across.
+  function _weekOf(dayKey) {
+    const p = String(dayKey).split("-"); if (p.length !== 3) return "";
+    const t = _weekStart(+p[0], +p[1] - 1, +p[2]); return isNaN(t.getTime()) ? "" : _localDay(t.getTime());
+  }
+  function _mondayKey(offsetWeeks) { const n = new Date(); return _localDay(_weekStart(n.getFullYear(), n.getMonth(), n.getDate() + 7 * (offsetWeeks || 0)).getTime()); }
+  // One daily ledger feeds both daily goals and week totals. It never writes.
+  // slot: one child's ledger whoever is active (the weekly report, REPORT1,
+  // counts every child on the phone); left out, the active child's.
+  function _repDays(sound, practiceOnly, slot) {
+    const out = slot === undefined ? outcomes() : _loadFor(slot, OUTKEY, {}), counts = {};
+    function add(k, n) { const w = _weekOf(k); if (n > 0 && isFinite(n) && w && w >= REPS_SINCE && /^\d{4}-\d{2}-\d{2}$/.test(k)) counts[k] = (counts[k] || 0) + n; }
     Object.keys(out).forEach((s) => {
+      if (sound && s !== sound) return;
       const days = (out[s] && out[s].days) || {};
-      Object.keys(days).forEach((d) => {
-        const t = new Date(d + "T12:00:00");
-        if (t >= mon && t < sun) total += days[d] ? (typeof days[d].tries === "number" ? days[d].tries : days[d].a || 0) : 0;
-      });
+      Object.keys(days).forEach((k) => add(k, _dayTries(days[k])));
     });
-    return total;
+    // Play reps, including accepted book words, never enter clinical outcomes.
+    const gr = practiceOnly ? {} : slot === undefined ? load(GAMEREPKEY, {}) : _loadFor(slot, GAMEREPKEY, {});
+    Object.keys(gr).forEach((k) => { const d = gr[k] || {}; Object.keys(d).forEach((s) => { if (!sound || s === sound) add(k, Math.max(0, Math.floor(Number(d[s]) || 0))); }); });
+    return counts;
+  }
+  function _repBuckets(sound, practiceOnly) {
+    const days = _repDays(sound, practiceOnly), weeks = {};
+    Object.keys(days).forEach((k) => { const w = _weekOf(k); weeks[w] = (weeks[w] || 0) + days[k]; });
+    return weeks;
+  }
+  function dayReps(dayKey, practiceOnly) { return _repDays(null, practiceOnly)[dayKey || today()] || 0; }
+  function dayGoal() { const n = dayReps(), goal = repGoal(); return { n, goal, done: !!load(GOALKEY, {})[today()] || n >= goal }; }
+  // A silent, nonblocking note can appear over a live microphone. No audio,
+  // confetti, focus change, parent gate or input interception belongs here.
+  function _goalBanner(n) {
+    if (document.hidden) return;
+    try {
+      if (document.getElementById("sonaGoalBanner")) return;
+      const b = document.createElement("div"); b.id = "sonaGoalBanner"; b.setAttribute("role", "status");
+      b.textContent = "You did it! " + n + " reps today. Keep playing!";
+      b.style.cssText = "position:fixed;z-index:1200;top:calc(env(safe-area-inset-top,0px) + 12px);left:50%;transform:translateX(-50%);width:max-content;max-width:calc(100% - 32px);padding:12px 18px;border-radius:20px;background:#fff8e9;color:#4a2c14;box-shadow:0 4px 20px #4a2c1426;font:800 17px/1.35 'Nunito',sans-serif;text-align:center;pointer-events:none";
+      document.body.appendChild(b); setTimeout(() => b.remove(), 4000);
+    } catch (e) {}
+  }
+  // The stamp, the event and the banner happen once a day, as before; the
+  // early return moved (11 Oct 2026) so the Practice Board's hook can run
+  // after the stamp on a later rep (a board day needs BOARD_MIN_REPS too),
+  // and queued board deletions go out from practice and game pages. Home
+  // never calls this.
+  function _goalCheck() {
+    try { _boardSendLeaves(true); } catch (e) {}   // BOARD2: queued board deletions, at most once a minute; a no-op when none
+    try { _playedToday(); } catch (e) {}           // TRIAL1 / NUDGE1: the first counted rep of the day
+    try {
+      const d = dayGoal(), t = today(), stamps = load(GOALKEY, {});
+      if (!d.done) return;
+      if (!stamps[t]) { stamps[t] = d.goal; save(GOALKEY, stamps); track("rep goal met"); _goalBanner(d.n); }
+      try { _boardQueue(_slot()); } catch (e) {}   // BOARD2: a no-op unless this child is on the board
+    } finally {
+      // REPORT1: the weekly report's numbers, after today's goal stamp so they
+      // count it; at most every 30 minutes, and a no-op unless asked for
+      try { _reportTouch(); } catch (e) {}
+    }
+  }
+  // ── GAMEREPS1: a sound said inside a game is a rep too (Travis, 29 Sep
+  // 2026: "yeah count as reps"). Every place a game asks for the sound and
+  // hears it (the say-it card between rounds, Echo's sound powers, a Hoops
+  // word, Feed Echo's picture hint) adds one here, and the week's count
+  // above reads it with the practice page's tries. It is NOT practice data:
+  // it never enters outcomes(), so no pass rate, clinician's note or shared
+  // progress sees it; since 11 Oct 2026 it earns trophies, a play currency
+  // (TROPHY1). Only a voiced try that passed the game's own check ever calls
+  // it, so silence still never counts.
+  const GAMEREPKEY = "sona.gamereps.v1";
+  function gameRep(sound) {
+    try {
+      const s = String(sound || "").toUpperCase(); if (ALL_SOUNDS.indexOf(s) < 0) return;
+      const t = today(), gr = load(GAMEREPKEY, {}), d = gr[t] || (gr[t] = {});
+      // kept like the day ledger, unpruned: the best week reads all of it
+      d[s] = (d[s] || 0) + 1; save(GAMEREPKEY, gr); _trophyAdd(); _goalCheck();
+    } catch (e) {}
+  }
+  // sound narrows the count to one sound — Progress names the week's busiest
+  // sound beside the total, and both have to come from the same rule.
+  function weekReps(offsetWeeks, sound, practiceOnly) { return _repBuckets(sound, practiceOnly)[_mondayKey(offsetWeeks)] || 0; }
+  // The last n weeks, oldest first, ending with this one. The list never
+  // starts before the first week with a counted rep: a zero bar for a week
+  // nobody was counting would say the child did nothing. best is the best
+  // FINISHED week, so this week is measured against it rather than itself;
+  // days dated after this week (a phone clock that was wrong) never count.
+  // Reads only — Home calls it on every load and must write nothing.
+  function repWeeks(n) {
+    n = Math.max(1, Math.min(52, parseInt(n, 10) || 8));
+    const wk = _repBuckets(), cur = _mondayKey(0);
+    const past = Object.keys(wk).filter((k) => k < cur).sort();
+    let best = null;
+    past.forEach((k) => { if (!best || wk[k] > best.reps) best = { start: k, reps: wk[k] }; });
+    const first = past.length ? past[0] : cur;
+    const weeks = [];
+    for (let i = n - 1; i >= 0; i--) {
+      const k = _mondayKey(-i); if (k < first) continue;
+      weeks.push({ start: k, reps: wk[k] || 0, current: i === 0, best: !!best && k === best.start });
+    }
+    const thisWeek = wk[cur] || 0;
+    return { weeks: weeks, thisWeek: thisWeek, lastWeek: wk[_mondayKey(-1)] || 0, best: best, newBest: !!best && thisWeek > best.reps, since: past.length ? past[0] : (thisWeek ? cur : null) };
   }
   // Retained as a no-op for cached pages. Family comparisons and their beacon
   // are retired; counts remain local except consented pilot progress sharing.
+  // The opt-in Practice Board (BOARD2, below) is a separate thing: goal days
+  // only, under a nickname, after a grown-up's email confirmation.
   function repsBeacon() {}
+
+  // ── TROPHY1 (Travis, 9 Oct 2026: "a currency so they can buy stuff"; D1,
+  // refined 11 Oct 2026). Trophies follow the honest rep (a practice try
+  // through logAttempt, an accepted game ask or book word through gameRep),
+  // and a day at the goal is always 30 of them, whatever the goal: a grown-up
+  // raising the goal cannot earn more, and a speech therapist's low dose cannot
+  // earn less. At the default goal of 30 that is one trophy a rep. Never spent,
+  // never lost: the ledger is "paid up to today's derived count", so a double
+  // call, a reload or a goal change can never pay twice or take one back. A
+  // pass and a miss count the same (effort, not accuracy). It never enters
+  // outcomes(), sendProgress or any clinician view, and "Reset progress"
+  // leaves it. A child already on Sona starts with what their real reps since
+  // REPS_SINCE earned, counted once, at the first rep after this build.
+  const TROPHYKEY = "sona.trophy.v1", TROPHY_FILL = 30;
+  // The goal a day is measured against: the stamp it met (the goal at that
+  // moment); today's goal for today; 30 before goal stamps existed; and for a
+  // past day that never met its goal, never less than 30, so it is never
+  // over-paid.
+  function _goalOn(k, stamps) {
+    const s = stamps[k] | 0; if (s > 0) return s;
+    if (k < GOAL_SINCE) return TROPHY_FILL;
+    const g = Math.max(1, repGoal() | 0);
+    return k === today() ? g : Math.max(TROPHY_FILL, g);
+  }
+  function _dayTrophies(k, reps, stamps) { return Math.min(TROPHY_FILL, Math.floor(TROPHY_FILL * Math.max(0, reps | 0) / _goalOn(k, stamps))); }
+  function _trophyToday() { const t = today(); return _dayTrophies(t, dayReps(t), load(GOALKEY, {})); }
+  // every day BEFORE today (or only one month of them). Pure.
+  function _trophyHist(ym) {
+    const days = _repDays(null, false), stamps = load(GOALKEY, {}), t = today(); let n = 0;
+    Object.keys(days).forEach((k) => { if (k >= t || (ym && k.slice(0, 7) !== ym)) return; n += _dayTrophies(k, days[k], stamps); });
+    return n;
+  }
+  // Pure: Home, the road and the levels read this, and it writes nothing.
+  function trophyState() {
+    const t = today(), ym = t.slice(0, 7), s = load(TROPHYKEY, {});
+    if (!(s.v >= 1)) { const dn = _trophyToday(); return { total: _trophyHist() + dn, today: dn, month: _trophyHist(ym) + dn, ym }; }
+    const dn = s.d === t ? (s.dn | 0) : 0, mn = s.m === ym ? (s.mn | 0) : 0;
+    return { total: s.t | 0, today: dn, month: mn, ym };
+  }
+  function trophies() { return trophyState().total; }
+  // logAttempt and gameRep call this after the rep is saved, and saveProfile
+  // when a lowered goal fills today with reps already said.
+  function _trophyAdd() {
+    try {
+      const t = today(), ym = t.slice(0, 7); let s = load(TROPHYKEY, {});
+      if (!(s.v >= 1)) s = { v: 1, t: _trophyHist(), d: t, dn: 0, m: ym, mn: _trophyHist(ym) };
+      if (s.d !== t) { s.d = t; s.dn = 0; }
+      if (s.m !== ym) { if (s.m) { s.pm = s.m; s.pmn = s.mn | 0; } s.m = ym; s.mn = 0; }
+      const add = _trophyToday() - (s.dn | 0);
+      if (add > 0) { s.dn = (s.dn | 0) + add; s.t = (s.t | 0) + add; s.mn = (s.mn | 0) + add; }
+      save(TROPHYKEY, s);
+    } catch (e) {}
+  }
+
+  // ── CHEST1: the daily chest (Travis, 9 Oct 2026: "a currency so they can
+  // buy stuff"; D2, 11 Oct 2026). One chest a day, on a day the daily goal is
+  // met (the same stamp dayGoal() reads). Fixed contents, shown before it
+  // opens: 10 coins, and every fifth chest is a Big Chest of 25 coins and a
+  // sticker. Nothing random, no timer; a day without the goal shows nothing
+  // missed, and no chest piles up for later. Opened only on the Trophy Road
+  // page, after three taps; Home only reads chestState().
+  const CHESTKEY = "sona.chest.v1", CHEST_COINS = 10, CHEST_BIG_EVERY = 5, CHEST_BIG_COINS = 25;
+  // Pure. big/coins/sticker describe the next chest to open (today's, when it
+  // is still shut); openedBig says whether the one opened today was a Big
+  // Chest, so the road shows the chest the child really opened.
+  function chestState() {
+    const c = load(CHESTKEY, {}), opened = c.last === today(), big = ((c.n | 0) + 1) % CHEST_BIG_EVERY === 0;
+    return { ready: !opened && dayGoal().done, opened, big, coins: big ? CHEST_BIG_COINS : CHEST_COINS, sticker: big,
+      openedBig: opened && (c.n | 0) > 0 && (c.n | 0) % CHEST_BIG_EVERY === 0 };
+  }
+  function chestOpen() {
+    const st = chestState(); if (!st.ready) return null;
+    // the ledger first: a crash under-pays, never pays twice
+    const c = load(CHESTKEY, {}); c.n = (c.n | 0) + 1; c.last = today(); save(CHESTKEY, c);
+    const got = [{ coins: st.coins }]; addCoins(st.coins);
+    if (st.sticker) got.push(_grantSticker());
+    try { track("chest opened"); } catch (e) {}
+    return got;
+  }
+  // the next sticker in the book; a full book pays 20 coins instead
+  function _grantSticker() { const s = awardNextSticker(); if (s) return { sticker: s.id, name: s.name }; addCoins(20); return { coins: 20, full: true }; }
+
+  // ── ROAD1 / MONTH1: the Trophy Road (Travis, 9 Oct 2026: "motivated over
+  // weeks and months like Clash Royale"). Numbered stops across five lands, by
+  // lifetime trophies, each gift fixed and shown before it is reached: coins,
+  // stickers, "Level 2 opens in every game" (levels open by the trophy count
+  // itself, LEVELS1; the stop is the celebration), and the road's own
+  // buddies, hats and places. Nothing random, no timer, nothing lost: a
+  // reached stop waits until it is opened. An item a child already owns pays
+  // its coins (ROAD_ALT); an item listed on a stop AFTER a child opened it is
+  // still given, once (roadSettle). A new item joins its stop only once its
+  // painted art is on disk.
+  // "October path" (MONTH_STEPS) is a small path by the trophies earned this
+  // calendar month; it starts again each month, and every reached step of an
+  // ended month is handed out by roadSettle(), which only the road page calls
+  // (never Home). Kept per child. No event carries a stop or step number.
+  const ROADKEY = "sona.road.v1", MONTH_SINCE = "2026-10", ROAD_BONUS_EVERY = 150;
+  const ROAD_ALT = { characters: 100, outfits: 50, backdrops: 80 };
+  const ROAD_LANDS = [
+    { id: "meadow", name: "Sunny Meadow", from: 0, art: "customize-forest-v2" }, { id: "beach", name: "Beach Bay", from: 300, art: "customize-beach-v2" },
+    { id: "snow", name: "Snowy Peak", from: 750, art: "customize-snow-v2" }, { id: "sea", name: "Under the Sea", from: 1350, art: "customize-sea-v2" },
+    { id: "sky", name: "Starry Sky", from: 2100, art: "customize-space-v2" }, { id: "champ", name: "Champion Trail", from: 3000, art: "customize-mountain-v2" } ];
+  // The stop table Travis approved (11 Oct 2026), with the road's own
+  // buddies, hats and places (frog, penguin, lion, unicorn; sunhat, starclip,
+  // headphones; snow, sea), which joined their stops once their painted art
+  // was on disk. An earlier build of the road paid stops 6, 12, 15, 19 and
+  // 25 what their item is worth in coins (ROAD_ALT); a child who opened one
+  // then keeps those coins and is handed the item by roadSettle, once, with
+  // no second payment.
+  const ROAD_STOPS = [
+    { n: 1, at: 30, gift: [{ coins: 20 }] },
+    { n: 2, at: 80, gift: [{ sticker: 1 }] },
+    { n: 3, at: 150, gift: [{ level: 2 }, { coins: 20 }] },
+    { n: 4, at: 220, gift: [{ coins: 30 }] },
+    { n: 5, at: 300, big: true, gift: [{ coins: 40 }, { sticker: 1 }, { land: "beach" }] },
+    { n: 6, at: 380, gift: [{ hat: "sunhat" }] },
+    { n: 7, at: 460, gift: [{ coins: 40 }] },
+    { n: 8, at: 540, gift: [{ sticker: 1 }] },
+    { n: 9, at: 640, gift: [{ coins: 50 }] },
+    { n: 10, at: 750, big: true, gift: [{ level: 3 }, { buddy: "frog" }, { coins: 50 }, { land: "snow" }] },
+    { n: 11, at: 850, gift: [{ sticker: 1 }] },
+    { n: 12, at: 950, gift: [{ place: "snow" }] },
+    { n: 13, at: 1050, gift: [{ coins: 60 }] },
+    { n: 14, at: 1150, gift: [{ sticker: 1 }] },
+    { n: 15, at: 1250, gift: [{ hat: "starclip" }] },
+    { n: 16, at: 1350, big: true, gift: [{ buddy: "penguin" }, { coins: 60 }, { land: "sea" }] },
+    { n: 17, at: 1475, gift: [{ coins: 70 }] },
+    { n: 18, at: 1600, gift: [{ sticker: 1 }] },
+    { n: 19, at: 1725, gift: [{ place: "sea" }] },
+    { n: 20, at: 1850, gift: [{ coins: 80 }] },
+    { n: 21, at: 1975, gift: [{ sticker: 1 }] },
+    { n: 22, at: 2100, big: true, gift: [{ buddy: "lion" }, { coins: 80 }, { land: "sky" }] },
+    { n: 23, at: 2250, gift: [{ coins: 90 }] },
+    { n: 24, at: 2400, gift: [{ sticker: 1 }] },
+    { n: 25, at: 2550, gift: [{ hat: "headphones" }] },
+    { n: 26, at: 2700, gift: [{ coins: 100 }] },
+    { n: 27, at: 2850, gift: [{ sticker: 1 }] },
+    { n: 28, at: 3000, big: true, gift: [{ buddy: "unicorn" }, { coins: 100 }, { sticker: 1 }, { land: "champ" }] } ];
+  const MONTH_STEPS = [
+    { n: 1, at: 40, gift: [{ coins: 5 }] }, { n: 2, at: 100, gift: [{ sticker: 1 }] }, { n: 3, at: 180, gift: [{ coins: 10 }] },
+    { n: 4, at: 260, gift: [{ sticker: 1 }] }, { n: 5, at: 340, gift: [{ coins: 15 }] }, { n: 6, at: 420, gift: [{ sticker: 1 }] },
+    { n: 7, at: 500, gift: [{ coins: 20 }] }, { n: 8, at: 600, big: true, gift: [{ coins: 30 }, { sticker: 1 }] } ];
+  const MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+  const _ROAD_KINDS = { buddy: "characters", hat: "outfits", place: "backdrops" };
+  // A stop by number: the table up to 28, then the Champion Trail's bonus
+  // stops every 150 trophies, 30 coins and a sticker by turns.
+  function roadStop(n) {
+    n = parseInt(n, 10); if (!(n >= 1)) return null;
+    if (n <= ROAD_STOPS.length) return ROAD_STOPS[n - 1];
+    const k = n - ROAD_STOPS.length;
+    return { n, at: ROAD_STOPS[ROAD_STOPS.length - 1].at + k * ROAD_BONUS_EVERY, gift: k % 2 ? [{ coins: 30 }] : [{ sticker: 1 }] };
+  }
+  function _roadReached(t) {             // the highest stop a lifetime count reaches (0 before the first)
+    const last = ROAD_STOPS[ROAD_STOPS.length - 1];
+    if (t >= last.at) return ROAD_STOPS.length + Math.floor((t - last.at) / ROAD_BONUS_EVERY);
+    let n = 0; ROAD_STOPS.forEach((s) => { if (t >= s.at) n = s.n; }); return n;
+  }
+  function _roadRec() {
+    const r = load(ROADKEY, {}), o = (v) => (v && typeof v === "object" && !Array.isArray(v)) ? v : {};
+    return { got: o(r.got), items: o(r.items), m: typeof r.m === "string" ? r.m : "", mgot: o(r.mgot), rolled: Array.isArray(r.rolled) ? r.rolled : [] };
+  }
+  // an item gift on a stop: {kind, id, name}, only for a catalog entry (never byId's fallback)
+  function _roadItem(g) {
+    for (const k in _ROAD_KINDS) if (g && typeof g[k] === "string") {
+      const kind = _ROAD_KINDS[k], list = kind === "characters" ? CHARACTERS : kind === "outfits" ? OUTFITS : BACKDROPS;
+      for (let i = 0; i < list.length; i++) if (list[i].id === g[k]) return { kind, id: g[k], name: list[i].name };
+      return null;
+    }
+    return null;
+  }
+  function _ymNext(ym) { const y = +ym.slice(0, 4), m = +ym.slice(5, 7); return m === 12 ? (y + 1) + "-01" : y + "-" + String(m + 1).padStart(2, "0"); }
+  function _monthName(ym) { return MONTH_NAMES[(+String(ym).slice(5, 7) || 1) - 1] || ""; }
+  // Pure: every ended month not yet settled, with the reached steps it still
+  // owes ({m, steps}). The month last visited owes what was not opened then;
+  // a first visit starts at the later of MONTH_SINCE and the first month of
+  // the child's trophy history.
+  function _monthsOwed(r) {
+    const cur = today().slice(0, 7), out = [];
+    let from = r.m;
+    if (!from) { const days = Object.keys(_repDays(null, false)).sort(); from = days.length ? days[0].slice(0, 7) : cur; }
+    if (from < MONTH_SINCE) from = MONTH_SINCE;
+    if (!/^\d{4}-\d{2}$/.test(from) || from >= cur) return out;
+    const tr = load(TROPHYKEY, {});
+    for (let m = from, guard = 0; m < cur && guard < 240; m = _ymNext(m), guard++) {
+      const count = (tr.v >= 1 && tr.m === m) ? (tr.mn | 0) : (tr.v >= 1 && tr.pm === m) ? (tr.pmn | 0) : _trophyHist(m);
+      const done = m === r.m ? r.mgot : {};
+      const steps = MONTH_STEPS.filter((s) => count >= s.at && !done[s.n]);
+      out.push({ m, steps });
+    }
+    return out;
+  }
+  // Pure: the item gifts listed on stops already opened that were never handed over.
+  function _roadLate(r) {
+    const out = [];
+    Object.keys(r.got).forEach((k) => {
+      const s = roadStop(k); if (!s || !r.got[k]) return;
+      s.gift.forEach((g) => { const it = _roadItem(g); if (it && !r.items[s.n + ":" + it.id]) out.push({ n: s.n, item: it }); });
+    });
+    return out;
+  }
+  // Pure: everything the road page and Home's card show.
+  function roadState() {
+    const ts = trophyState(), t = ts.total, r = _roadRec(), cur = ts.ym, stop = _roadReached(t);
+    let land = ROAD_LANDS[0]; ROAD_LANDS.forEach((l) => { if (t >= l.from) land = l; });
+    let waiting = 0, lowest = null;
+    for (let n = 1; n <= stop; n++) if (!r.got[n]) { waiting++; if (lowest === null) lowest = n; }
+    // a phone clock set back before the month last visited: monthOpen can't
+    // open this month's steps (that would open a month twice), so none is
+    // shown reached or counted as waiting until the clock catches up
+    const mgot = r.m === cur ? r.mgot : {}, frozen = !!r.m && r.m > cur;
+    const steps = MONTH_STEPS.map((s) => ({ n: s.n, at: s.at, gift: s.gift, big: !!s.big, reached: !frozen && ts.month >= s.at, got: !!mgot[s.n] }));
+    steps.forEach((s) => { if (s.reached && !s.got) waiting++; });
+    _monthsOwed(r).forEach((o) => { waiting += o.steps.length; });
+    _roadLate(r).forEach((x) => { if (!owns(x.item.kind, x.item.id)) waiting++; });
+    const nx = roadStop(stop + 1);
+    return { trophies: t, coins: coinsNow(), land: { id: land.id, name: land.name, art: land.art }, stop, got: Object.assign({}, r.got),
+      next: { n: nx.n, at: nx.at, gift: nx.gift, big: !!nx.big }, waiting, lowestWaiting: lowest,
+      month: { ym: cur, name: _monthName(cur), count: ts.month, steps }, chest: chestState(), rolled: r.rolled.slice() };
+  }
+  // Hands over one gift and says what the child got. An item is recorded
+  // before this runs (the ledger first); one already owned pays its coins.
+  function _roadGive(g) {
+    if (g.coins) { const c = _coinInt(g.coins); if (c) addCoins(c); return { coins: c }; }
+    if (g.sticker) return _grantSticker();
+    if (g.level) return { level: g.level | 0 };
+    if (g.land) { const l = ROAD_LANDS.filter((x) => x.id === g.land)[0]; return { land: g.land, name: l ? l.name : "" }; }
+    const it = _roadItem(g); if (!it) return null;
+    if (owns(it.kind, it.id)) { const c = ROAD_ALT[it.kind] | 0; addCoins(c); return { alt: { kind: it.kind, id: it.id, name: it.name, coins: c } }; }
+    addOwned(it.kind, it.id); return { item: it };
+  }
+  function roadOpen(n) {
+    const s = roadStop(n); if (!s) return { ok: false, reason: "not-yet" };
+    const r = _roadRec();
+    if (r.got[s.n]) return { ok: false, reason: "opened" };
+    if (trophies() < s.at) return { ok: false, reason: "not-yet" };
+    r.got[s.n] = 1; s.gift.forEach((g) => { const it = _roadItem(g); if (it) r.items[s.n + ":" + it.id] = 1; });
+    save(ROADKEY, r);
+    const gifts = []; s.gift.forEach((g) => { const x = _roadGive(g); if (x) gifts.push(x); });
+    try { track("road gift opened"); } catch (e) {}
+    return { ok: true, gifts };
+  }
+  function monthOpen(step) {
+    const s = MONTH_STEPS.filter((x) => x.n === parseInt(step, 10))[0]; if (!s) return { ok: false, reason: "not-yet" };
+    const ts = trophyState(); let r = _roadRec();
+    if (r.m !== ts.ym) { roadSettle(); r = _roadRec(); }   // a page left open across the month's end
+    if (r.m !== ts.ym) return { ok: false, reason: "not-yet" };
+    if (r.mgot[s.n]) return { ok: false, reason: "opened" };
+    if (ts.month < s.at) return { ok: false, reason: "not-yet" };
+    r.mgot[s.n] = 1; save(ROADKEY, r);
+    const gifts = []; s.gift.forEach((g) => { const x = _roadGive(g); if (x) gifts.push(x); });
+    try { track("month gift opened"); } catch (e) {}
+    return { ok: true, gifts };
+  }
+  // The road page's load, and only the road page's: every ended month's
+  // reached steps go into the wallet (listed in rolled for one notice), then
+  // any item listed on an opened stop after it was opened is given. null when
+  // nothing was handed out.
+  function roadSettle() {
+    try {
+      const cur = today().slice(0, 7); let r = _roadRec();
+      const owed = (r.m && r.m > cur) ? [] : _monthsOwed(r), rolled = [], late = [];
+      if (!r.m || r.m < cur) {
+        // the ledger first (a crash under-pays, never pays twice): the month
+        // moves on and the notice names each month that handed something out
+        r.m = cur; r.mgot = {};
+        owed.forEach((o) => { if (o.steps.length) r.rolled.push({ m: o.m, gifts: [].concat.apply([], o.steps.map((s) => s.gift)) }); });
+        r.rolled = r.rolled.slice(-12);
+        save(ROADKEY, r);
+        owed.forEach((o) => {
+          if (!o.steps.length) return;
+          const gifts = []; o.steps.forEach((s) => s.gift.forEach((g) => { const x = _roadGive(g); if (x) gifts.push(x); }));
+          rolled.push({ m: o.m, gifts });
+        });
+      }
+      r = _roadRec();
+      const owe = _roadLate(r);
+      if (owe.length) {
+        owe.forEach((x) => { r.items[x.n + ":" + x.item.id] = 1; });
+        save(ROADKEY, r);
+        owe.forEach((x) => { if (!owns(x.item.kind, x.item.id)) { addOwned(x.item.kind, x.item.id); late.push(x.item); } });
+      }
+      return (rolled.length || late.length) ? { rolled, late } : null;
+    } catch (e) { return null; }
+  }
+  // the road page's month notice was seen: it is not shown again
+  function roadRolledSeen() { const r = _roadRec(); if (!r.rolled.length) return; r.rolled = []; save(ROADKEY, r); }
+
+  // ── LEVELS1 (Travis, 9 Oct 2026: "levels inside games"). Every game opens
+  // exactly as before: nothing here is read by gameAccess, gated, premium or
+  // the catalog, and a level is never sold. Inside nine of them, Level 2 opens
+  // at 150 trophies and Level 3 at 750, for all of them at once. Harder levels
+  // change only finger play (speed, counts, new songs); never what a child
+  // says, how often, the hearts, or any help that makes every round end, and
+  // every help path reads Level 1's numbers (each page keeps its Level 1
+  // tables on their own lines and overrides after them). Feed Echo keeps one
+  // level until Rachel says, and a parked game has none. Kept per child
+  // (PER_KID). A tap plays the level last picked; Home asks once per game when
+  // a new level opens (playLevelAsk), and that tap and a pick are the only
+  // writes Home makes. A child's
+  // longest row at Level 2 and 3 is kept here; Level 1's stays with Beat Your
+  // Best, so a best is never measured against a level whose top it cannot
+  // reach. Nothing here is sent anywhere: the game page says "level played".
+  const PLAYLEVELKEY = "sona.playlevel.v1", PLAY_LEVEL_AT = [0, 150, 750];
+  // what the sheet and the road say under each level (kid copy, beneath the numeral)
+  const PLAY_LEVEL_LINES = {
+    slice:   ["The fruit stand", "Faster fruit!", "Fruit party!"],
+    tiles:   ["Twinkle, Mary, Row Your Boat", "Hot Cross Buns and more", "Are You Sleeping and more"],
+    stack:   ["A tall tower", "Taller and faster", "The tallest tower!"],
+    run:     ["Park, beach, forest", "A faster run", "The fastest run!"],
+    glide:   ["Easy flying", "Narrow gaps", "Sky champion!"],
+    bubbles: ["Bubbles bob", "More bubbles!", "Bonus bubbles!"],
+    hoops:   ["The hoop starts still", "The hoop slides from the start", "The hoop zooms!"],
+    soccer:  ["Bo waits at first", "Bo slides sooner", "Bo dives!"],
+    dino:    ["Big brush", "Smaller brush", "Deep dig!"] };
+  // a game with levels, by its own key (never a name off Object.prototype),
+  // and never one parked as Coming soon
+  function _lvKey(key) {
+    if (typeof key !== "string" || !Object.prototype.hasOwnProperty.call(PLAY_LEVEL_LINES, key)) return "";
+    return (GAME_ACTS[key] && GAME_ACTS[key].comingSoon) ? "" : key;
+  }
+  function _lvState() { const p = load(PLAYLEVELKEY, {}); return (p && typeof p === "object" && !Array.isArray(p)) ? p : {}; }
+  function _lvOf(map, key) { return (map && typeof map === "object" && Object.prototype.hasOwnProperty.call(map, key)) ? map[key] : undefined; }
+  // Pure: how many levels are open for this child, 1 to 3.
+  // A "Level 1 only" saved from Settings (cap: 1) is ignored: the picker went
+  // on 22 Oct 2026 ("simplify settings"), and a cap nobody can lift would keep
+  // that child on Level 1 for good. It rides in backups, so it is ignored on
+  // read rather than swept once.
+  function playLevelsOpen() {
+    const t = trophies(); let n = 1;
+    for (let i = 1; i < PLAY_LEVEL_AT.length; i++) if (t >= PLAY_LEVEL_AT[i]) n = i + 1;
+    return n;
+  }
+  // Pure: the level a game page plays. A pick above what is open (a restored
+  // backup can lower trophies) plays the highest open level, and is kept.
+  function playLevel(key) {
+    key = _lvKey(key); if (!key) return 1;
+    const pick = parseInt(_lvOf(_lvState().pick, key), 10) || 1;
+    return Math.max(1, Math.min(pick, playLevelsOpen()));
+  }
+  // Home's tap only: true once per game per newly opened level, and it records that.
+  function playLevelAsk(key) {
+    key = _lvKey(key); const open = playLevelsOpen();
+    if (!key || open < 2) return false;
+    const p = _lvState(); p.seen = (p.seen && typeof p.seen === "object") ? p.seen : {};
+    if ((_lvOf(p.seen, key) | 0) >= open) return false;
+    p.seen[key] = open; save(PLAYLEVELKEY, p); return true;
+  }
+  // a child's tap on the sheet or the road; it sends nothing
+  function setPlayLevel(key, n) {
+    key = _lvKey(key); n = parseInt(n, 10);
+    if (!key || !(n >= 1 && n <= playLevelsOpen())) return false;
+    const p = _lvState(); p.pick = (p.pick && typeof p.pick === "object") ? p.pick : {};
+    p.pick[key] = n; save(PLAYLEVELKEY, p); return true;
+  }
+  // Pure: what the sheet and the road show for one game.
+  function playLevelInfo(key) {
+    const k = _lvKey(key), open = playLevelsOpen(), t = trophies();
+    return { key: k || String(key), pick: playLevel(k),
+      levels: (k ? PLAY_LEVEL_LINES[k] : []).map((line, i) => ({ n: i + 1, line, open: i + 1 <= open, at: PLAY_LEVEL_AT[i], have: t })) };
+  }
+  // A child's longest row at Level 2 or 3, by Level 1's rules: whole numbers
+  // 1..99999, only ever up, answered before the write (a phone that cannot
+  // save still tells the child the truth about the round they just played).
+  function _lvRow(p, key, lv) {
+    const r = _lvOf(_lvOf(p.best, key), String(lv));
+    // a game whose count changed (BESTS1's stamp) reads its old count as no best
+    return (r && typeof r.n === "number" && r.n >= 1 && r.n <= 99999 && Math.floor(r.n) === r.n && _bestCounted(key, r)) ? r.n : 0;
+  }
+  function playBest(key, lv) {
+    try { key = _lvKey(key); lv = parseInt(lv, 10); return (key && (lv === 2 || lv === 3)) ? _lvRow(_lvState(), key, lv) : 0; } catch (e) { return 0; }
+  }
+  function playBestOffer(key, lv, n) {
+    const out = { best: 0, prev: 0, isNew: false };
+    try {
+      key = _lvKey(key); lv = parseInt(lv, 10);
+      if (!key || !(lv === 2 || lv === 3)) return out;
+      const p = _lvState(); out.prev = out.best = _lvRow(p, key, lv);
+      if (!(typeof n === "number" && n >= 1 && n <= 99999 && Math.floor(n) === n) || n <= out.prev) return out;
+      out.best = n; out.isNew = true;
+      p.best = (p.best && typeof p.best === "object") ? p.best : {};
+      p.best[key] = (p.best[key] && typeof p.best[key] === "object") ? p.best[key] : {};
+      p.best[key][String(lv)] = _bestRec(key, n);
+      save(PLAYLEVELKEY, p);
+    } catch (e) {}
+    return out;
+  }
+
+  // ── BOARD2: the Practice Board, the phone's half (Travis, 9 Oct 2026: "a
+  // board of every kid in Sona … days practiced"; D8, 11 Oct 2026). BUILT
+  // DARK: BOARD_LIVE is false here and in lib/board.ts (boardapitest pins the
+  // two equal), and only a preview seam on localhost turns it on, for tests.
+  // Switching it on is Travis's go, after a lawyer has named the consent
+  // method; nothing in this block shows or sends anything while it is off,
+  // except a deletion still owed (below).
+  //   - A day on the board is a goal day (today's goal stamp) with at least
+  //     BOARD_MIN_REPS reps. The phone only says "this child met the goal so
+  //     many seconds ago"; the server works the day out by its own clock and
+  //     counts it once, a day late at most and never early (lib/board.ts).
+  //   - A grown-up turns it on for the household's children at once, by a
+  //     link emailed to them (the four number words stop a child who can't
+  //     read, not one who can). Nothing here says "on" until the server has
+  //     handed back a member for that child (boardClaim), and the address is
+  //     never kept.
+  //   - Off for a phone set up through a speech therapist or a school, one
+  //     shared by more than four children, a family who says a therapist or a
+  //     school sent them, and a child under 5 (boardAllowed): checked at join,
+  //     at every send and at every view, and a child who stops being allowed
+  //     leaves by themselves.
+  //   - Deleting always works: a deletion is queued on the phone FIRST, then
+  //     sent whether or not the board is live, from Settings, the road page,
+  //     the board page and (at most once a minute) every rep on a practice or
+  //     game page. Home never calls anything here.
+  //   - Never a name, an age, a sound, audio, fid or childId: the server gets
+  //     a buddy id per child, a time-zone offset and "how long ago".
+  // Every reply can arrive after a switch of child, so each async function
+  // takes its slot first and writes through saveFor, never save().
+  const BOARD_LIVE = false;   // pinned equal to lib/board.ts by boardapitest; flipping it is Travis's go (spec §16 step 12)
+  function boardLive() {
+    if (BOARD_LIVE) return true;
+    try { return /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname) && sessionStorage.getItem("sona.boardpreview.v1") === "1"; } catch (e) { return false; }
+  }
+  const BOARDKEY = "sona.board.v1", BOARDCACHEKEY = "sona.boardcache.v1", BOARDPENDKEY = "sona.boardpend.v1", BOARDLEAVEKEY = "sona.boardleave.v1", BOARDASKKEY = "sona.boardask.v1";
+  // a board day needs this many reps as well as the goal stamp (Rachel to confirm, R-B1)
+  const BOARD_MIN_REPS = 10, BOARD_PEND_MS = 48 * 3600 * 1000, BOARD_AGO_MAX = 172800, BOARD_LEAVE_GIVEUP = 30 * 864e5;
+  // the family's offset from UTC, in minutes, to the nearest quarter hour
+  function _tz() { return Math.round(-new Date().getTimezoneOffset() / 15) * 15; }
+  function _boardSlot(slot) { return (slot === undefined || slot === null) ? _slot() : String(slot); }
+  function _boardSlots() { return _kids().list.map((k) => { const s = k.slot || ""; return { slot: s, name: String(_loadFor(s, PKEY, {}).childName || "") }; }); }
+  function _boardBuddy(slot) { try { return characterById(_loadFor(slot, PKEY, {}).character).id; } catch (e) { return "fox"; } }
+  function _boardClear(slot, key) { try { localStorage.removeItem((slot && PER_KID.has(key)) ? key + "@" + slot : key); } catch (e) {} }
+  function _leaveList() { const l = load(BOARDLEAVEKEY, []); return Array.isArray(l) ? l.filter((x) => x && typeof x.t === "string" && x.t) : []; }
+  function _boardQueueLeave(token) {
+    if (typeof token !== "string" || !token) return;
+    const l = _leaveList(); if (l.some((x) => x.t === token)) return;
+    l.push({ t: token, at: Date.now() }); save(BOARDLEAVEKEY, l);
+  }
+  // steps 1 and 2 of leaving: the token is queued for deletion FIRST, then
+  // this phone's two keys go (slot "" too). Answers the entry that was there.
+  function _boardDrop(slot) {
+    let e = {};
+    try { e = _loadFor(slot, BOARDKEY, {}); if (e && typeof e.token === "string" && e.token) _boardQueueLeave(e.token); } catch (x) {}
+    _boardClear(slot, BOARDKEY); _boardClear(slot, BOARDCACHEKEY);
+    return e || {};
+  }
+  // A pending request was asked for these slots by position. A slot whose
+  // child is gone keeps its place as null, so a claim deletes that member
+  // instead of handing it to whoever sits in the slot next.
+  function _boardPendForget(slots) {
+    try {
+      const p = load(BOARDPENDKEY, null); if (!p || !Array.isArray(p.slots)) return;
+      let hit = false; p.slots = p.slots.map((s) => { if (s !== null && slots.indexOf(s) >= 0) { hit = true; return null; } return s; });
+      if (hit) save(BOARDPENDKEY, p);
+    } catch (e) {}
+  }
+  function _boardAfterImport(before) {
+    const now = _kids().list.map((k) => k.slot || ""), changed = [];
+    (before || []).forEach((b) => {
+      if (now.indexOf(b.slot) >= 0 && String(_loadFor(b.slot, PKEY, {}).childName || "") === b.name) return;
+      _boardDrop(b.slot); changed.push(b.slot);
+    });
+    if (changed.length) _boardPendForget(changed);
+  }
+  // a live pending request (48 hours), or null. Pure.
+  function _boardPend() {
+    const p = load(BOARDPENDKEY, null);
+    if (!p || typeof p.pend !== "string" || !p.pend || !Array.isArray(p.slots) || !(Date.now() - (Number(p.at) || 0) < BOARD_PEND_MS)) return null;
+    return p;
+  }
+  function _boardPendDrop(pend) { try { const p = load(BOARDPENDKEY, null); if (!pend || !p || p.pend === pend) _boardClear("", BOARDPENDKEY); } catch (e) {} }
+  // One POST to a board route. Never throws: an error, a timeout or no
+  // network is status 0, which every caller treats as "try again later".
+  function _boardPost(name, body) {
+    let ctl = null, to = 0;
+    try { ctl = new AbortController(); to = setTimeout(() => { try { ctl.abort(); } catch (e) {} }, 10000); } catch (e) { ctl = null; }
+    const done = (x) => { clearTimeout(to); return x; };
+    try {
+      return fetch("/api/board/" + name, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body), cache: "no-store", credentials: "same-origin", signal: ctl ? ctl.signal : undefined })
+        .then((r) => r.text().then((t) => { let j = {}; try { j = JSON.parse(t); } catch (e) {} return { status: r.status, j: (j && typeof j === "object" && !Array.isArray(j)) ? j : {} }; }), () => ({ status: 0, j: {} }))
+        .then(done, () => done({ status: 0, j: {} }));
+    } catch (e) { return Promise.resolve(done({ status: 0, j: {} })); }
+  }
+
+  // Who may be on the board: { ok, why }. Read for the child the line is
+  // about (slot), never just the one playing. "off" only pauses: it never
+  // deletes anything here, and queued deletions still go out.
+  function _boardClinic(slot) {
+    try {
+      if (["sona.slp", "sona.slpok", "sona.slpunlock", "sona.slpticket"].some((k) => !!localStorage.getItem(k))) return true;
+      if (localStorage.getItem(BOARDASKKEY) === "clinic") return true;
+      if (_kids().list.some((k) => _loadFor(k.slot || "", PKEY, {}).role === "slp")) return true;
+      const pi = _loadFor(slot, "sona.pilot.v1", {});
+      if (pi.consent || pi.code) return true;
+      return false;
+    } catch (e) { return true; }   // can't tell: off
+  }
+  function boardAllowed(slot) {
+    slot = _boardSlot(slot);
+    if (!boardLive()) return { ok: false, why: "off" };
+    if (!_kids().list.some((k) => (k.slot || "") === slot)) return { ok: false, why: "none" };
+    if (_boardClinic(slot)) return { ok: false, why: "clinic" };
+    if (_kids().list.length > 4) return { ok: false, why: "many" };
+    const age = _loadFor(slot, PKEY, {}).childAge, a = String(age == null ? "" : age).trim();
+    if (!/^\d+$/.test(a) || parseInt(a, 10) < 5) return { ok: false, why: "young" };
+    return { ok: true, why: "" };
+  }
+  // Pure: what Settings, the road and the board page show for one child.
+  function boardState(slot) {
+    slot = _boardSlot(slot);
+    const e = _loadFor(slot, BOARDKEY, {}), p = _boardPend(), a = boardAllowed(slot), on = !!(e.on && typeof e.token === "string" && e.token);
+    return { on, nick: on && typeof e.nick === "string" ? e.nick : "", days: on ? Math.max(0, e.days | 0) : 0, joined: on ? String(e.joined || "") : "",
+      pending: !!p, code: p ? String(p.code || "") : "", asked: !!p && p.slots.indexOf(slot) >= 0, gone: !on && !!e.gone, why: a.ok ? "" : a.why, leaving: _leaveList().length };
+  }
+  // The Settings sheet's question, "Did a speech therapist or a school send
+  // you to Sona?": "clinic" or "no", kept on this phone only (a new phone
+  // asks again). Called with no answer it only reads.
+  function boardAsk(ans) {
+    try {
+      if (ans === "clinic" || ans === "no") localStorage.setItem(BOARDASKKEY, ans);
+      const v = localStorage.getItem(BOARDASKKEY); return (v === "clinic" || v === "no") ? v : "";
+    } catch (e) { return ""; }
+  }
+
+  // "Email me the link": up to four children the grown-up ticked, in order.
+  // The phone sends their buddies, its time zone and the address, and keeps
+  // only what the server hands back (a pending value and a short code). The
+  // address is never stored here. "Send it again" is the same call: it adds
+  // the pending value when the same children are asked for again.
+  async function boardStart(email, slots) {
+    if (!boardLive()) return { ok: false, error: "off" };
+    const em = typeof email === "string" ? email.trim() : "";
+    if (!em || em.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) return { ok: false, error: "email" };
+    if (!Array.isArray(slots) || slots.length < 1 || slots.length > 4) return { ok: false, error: "kids" };
+    const want = slots.map(String);
+    if (want.some((s, i) => want.indexOf(s) !== i) || want.some((s) => !boardAllowed(s).ok)) return { ok: false, error: "kids" };
+    const old = _boardPend(), body = { email: em, kids: want.map((s) => ({ buddy: _boardBuddy(s) })), tz: _tz() };
+    if (old && old.slots.length === want.length && old.slots.every((s, i) => s === want[i])) body.pend = old.pend;
+    const r = await _boardPost("start", body), j = r.j;
+    if (r.status === 200 && j.ok && typeof j.pend === "string" && j.pend) {
+      const code = String(j.code || "").slice(0, 8);
+      // "confirmed": the grown-up already pressed the email's button, so the
+      // server sent nothing and kept the request's own 48 hours; Finish is
+      // all that is left (Settings runs it), and the clock is not reset
+      const kept = !!(j.confirmed && old && old.pend === j.pend);
+      save(BOARDPENDKEY, { pend: j.pend, at: kept ? old.at : Date.now(), slots: want, code });
+      return kept ? { ok: true, code, confirmed: true } : { ok: true, code };
+    }
+    if (r.status === 400 && j.error === "email") return { ok: false, error: "email" };
+    if (r.status === 429 || j.limit) return { ok: false, error: "limit" };
+    if (r.status === 503 && (j.paused || j.resting)) return { ok: false, error: "resting" };
+    if (r.status === 503 && j.off) return { ok: false, error: "off" };
+    return { ok: false, error: "busy" };
+  }
+  // "Cancel" while waiting: this phone forgets the request. The server's
+  // half holds nothing about a child and runs out by itself in 48 hours;
+  // no child is put on the board without this phone's Finish.
+  function boardCancel() { _boardPendDrop(); return true; }
+  // "Finish": once the grown-up has pressed the email's button, one member
+  // per ticked child, in order. Repeatable: a repeated answer changes nothing,
+  // and a member this phone cannot place (the child is gone, no longer
+  // allowed, or already on with another entry) is queued for deletion.
+  async function boardClaim() {
+    if (!boardLive()) return { ok: false, off: true };
+    if (!load(BOARDPENDKEY, null)) return { ok: false, none: true };
+    const p = _boardPend();
+    if (!p) { _boardPendDrop(); return { ok: false, expired: true }; }
+    const r = await _boardPost("claim", { pend: p.pend }), j = r.j;
+    if (r.status === 202 || (r.status === 200 && j.waiting)) return { ok: false, waiting: true };
+    if (r.status === 404 || r.status === 401 || j.expired) { _boardPendDrop(p.pend); return { ok: false, expired: true }; }
+    if (r.status === 503 && j.paused) return { ok: false, resting: true };
+    if (r.status === 503 && j.off) return { ok: false, off: true };
+    if (!(r.status === 200 && j.ok && Array.isArray(j.members))) return { ok: false, busy: true };
+    const now = load(BOARDPENDKEY, null), slots = (now && now.pend === p.pend && Array.isArray(now.slots)) ? now.slots : p.slots;
+    const here = _kids().list.map((k) => k.slot || ""), got = [];
+    let fresh = 0;
+    j.members.forEach((m, i) => {
+      if (!m || typeof m.token !== "string" || !m.token) return;
+      // taken off since by the email's remove link: nothing to turn on
+      if (typeof m.nick !== "string" || !m.nick) return;
+      const slot = i < slots.length ? slots[i] : null;
+      if (slot === null || here.indexOf(slot) < 0 || !boardAllowed(slot).ok) { _boardQueueLeave(m.token); return; }
+      const e = _loadFor(slot, BOARDKEY, {});
+      if (e.on && e.token) { if (e.token !== m.token) _boardQueueLeave(m.token); got.push({ slot, nick: String(e.nick || "") }); return; }
+      saveFor(slot, BOARDKEY, { on: true, token: m.token, nick: m.nick.slice(0, 40), joined: _localDay(), q: [], qd: "", days: 0 });
+      _boardClear(slot, BOARDCACHEKEY);
+      fresh++; got.push({ slot, nick: m.nick.slice(0, 40) });
+    });
+    _boardPendDrop(p.pend);
+    // today counts for the child using Sona now; a brother or sister's today
+    // counts from their next rep
+    try { _boardQueue(_slot()); } catch (e) {}
+    try { await boardFlush(); } catch (e) {}
+    if (fresh) track("board turned on");
+    return { ok: true, members: got };
+  }
+  // A goal day for the child playing now: queued once a day, after the goal
+  // stamp and at least BOARD_MIN_REPS reps, then sent. Only from _goalCheck
+  // (every rep on a practice or game page) and boardClaim.
+  function _boardQueue(slot) {
+    if (slot !== _slot() || !boardLive()) return;
+    const e = _loadFor(slot, BOARDKEY, {}), t = today();
+    if (!e.on || !e.token || e.qd === t) return;
+    if (!dayGoal().done || dayReps() < BOARD_MIN_REPS) return;
+    e.qd = t; e.q = (Array.isArray(e.q) ? e.q : []).concat([{ at: Date.now() }]).slice(-3);
+    saveFor(slot, BOARDKEY, e);
+    try { const f = boardFlush(); if (f && f.catch) f.catch(() => {}); } catch (x) {}
+  }
+  // Every deletion still owed, sent whether or not the board is live. A
+  // deletion goes when the server says it is done (or there is nothing to
+  // delete); a rotated key (401) is retried for 30 days; a busy server or no
+  // network keeps it for next time. throttle: at most once a minute (the
+  // per-rep caller).
+  let _leaveAt = 0, _leaveRun = null;
+  function _boardSendLeaves(throttle) {
+    if (!_leaveList().length) return Promise.resolve();
+    if (_leaveRun) return throttle ? _leaveRun : _leaveRun.then(() => _boardSendLeaves(false));
+    if (throttle && Date.now() - _leaveAt < 60000 && Date.now() >= _leaveAt) return Promise.resolve();
+    _leaveAt = Date.now();
+    _leaveRun = (async () => {
+      const drop = [];
+      for (const x of _leaveList()) {
+        const r = await _boardPost("leave", { token: x.t });
+        if ((r.status === 200 && r.j.deleted) || r.status === 404) drop.push(x.t);
+        else if (r.status === 401 && Date.now() - (Number(x.at) || 0) > BOARD_LEAVE_GIVEUP) drop.push(x.t);
+      }
+      if (drop.length) save(BOARDLEAVEKEY, _leaveList().filter((x) => drop.indexOf(x.t) < 0));
+    })().catch(() => {}).then(() => { _leaveRun = null; });
+    return _leaveRun;
+  }
+  // Deletions first, live or not; then, only while the board is on, every
+  // child on this phone (not only the one playing): a child no longer allowed
+  // leaves, and each queued day goes out. Never from Home.
+  async function _boardFlushOnce() {
+    try { await _boardSendLeaves(false); } catch (e) {}
+    if (!boardLive()) return;
+    const slots = _kids().list.map((k) => k.slot || "");
+    for (const slot of slots) {
+      const e = _loadFor(slot, BOARDKEY, {});
+      if (!e.on || typeof e.token !== "string" || !e.token) continue;
+      if (!boardAllowed(slot).ok) { await boardLeave(slot); continue; }
+      const q = Array.isArray(e.q) ? e.q : [];
+      if (!q.length) continue;
+      const done = [], buddy = _boardBuddy(slot);
+      let days = null, gone = false;
+      for (const item of q) {
+        const at = Number(item && item.at) || 0;
+        let ago = Math.round((Date.now() - at) / 1000);
+        // older than two days (or a clock moved back): the server would refuse it, so it goes
+        if (!(ago >= -300 && ago <= BOARD_AGO_MAX)) { done.push(at); continue; }
+        ago = Math.max(0, ago);
+        const r = await _boardPost("day", { token: e.token, ago, tz: _tz(), buddy });
+        if (r.status === 200 && r.j.ok) { done.push(at); if (typeof r.j.days === "number") days = Math.max(0, r.j.days | 0); }
+        else if (r.status === 404 && r.j.gone) { gone = true; break; }
+        else if (r.status === 400) done.push(at);
+        // 401 (a rotated key, never "gone"), 429, 503, 5xx, offline: kept for the next send
+      }
+      // written to the child the work started for, onto what is there NOW
+      const cur = _loadFor(slot, BOARDKEY, {});
+      if (cur.token !== e.token) continue;   // turned off meanwhile
+      if (gone) { saveFor(slot, BOARDKEY, { on: false, gone: true }); _boardClear(slot, BOARDCACHEKEY); continue; }
+      cur.q = (Array.isArray(cur.q) ? cur.q : []).filter((x) => done.indexOf(Number(x && x.at) || 0) < 0);
+      if (days !== null) cur.days = days;
+      saveFor(slot, BOARDKEY, cur);
+    }
+  }
+  let _flushRun = null, _flushMore = false;
+  function boardFlush() {
+    if (_flushRun) { _flushMore = true; return _flushRun; }
+    _flushRun = (async () => { do { _flushMore = false; await _boardFlushOnce(); } while (_flushMore); })().catch(() => {}).then(() => { _flushRun = null; });
+    return _flushRun;
+  }
+  // The board page's one read, for the child playing now (or slot). Other
+  // children's rows are the server's once-a-day snapshot; the child's own
+  // days are live. A failure shows the last board from earlier today.
+  function _boardRow(x) {
+    const b = x && typeof x.buddy === "string" ? characterById(x.buddy).id : "fox";
+    return { place: Math.max(1, x && x.place | 0), nick: String((x && x.nick) || "").slice(0, 40), buddy: b, days: Math.max(0, x && x.days | 0), me: !!(x && x.me) };
+  }
+  async function boardView(slot) {
+    slot = _boardSlot(slot);
+    if (!boardLive()) return { ok: false, off: true };
+    const e = _loadFor(slot, BOARDKEY, {});
+    if (!e.on || !e.token) return { ok: false, notOn: true, gone: !!e.gone };
+    if (!boardAllowed(slot).ok) { await boardLeave(slot); return { ok: false, off: true }; }
+    const mine = { nick: String(e.nick || ""), buddy: _boardBuddy(slot), days: Math.max(0, e.days | 0), place: null };
+    const r = await _boardPost("view", { token: e.token }), j = r.j;
+    if (r.status === 200 && j.ok) {
+      const me = j.me && typeof j.me === "object" ? j.me : {};
+      const view = { ok: true, month: String(j.month || "").slice(0, 7), quiet: !!j.quiet,
+        top: (Array.isArray(j.top) ? j.top : []).slice(0, 20).map(_boardRow),
+        more: (Array.isArray(j.more) ? j.more : []).slice(0, 10).map((x) => ({ place: Math.max(1, x && x.place | 0), n: Math.max(0, x && x.n | 0), days: Math.max(0, x && x.days | 0) })),
+        me: { nick: String(me.nick || mine.nick).slice(0, 40), buddy: typeof me.buddy === "string" ? characterById(me.buddy).id : mine.buddy, days: Math.max(0, me.days | 0), place: (me.place | 0) > 0 ? me.place | 0 : null } };
+      const cur = _loadFor(slot, BOARDKEY, {});
+      if (cur.token !== e.token) return { ok: false, off: true };
+      saveFor(slot, BOARDCACHEKEY, Object.assign({}, view, { at: Date.now() }));
+      cur.days = view.me.days; if (view.me.nick) cur.nick = view.me.nick; saveFor(slot, BOARDKEY, cur);
+      track("board viewed");
+      return view;
+    }
+    if (r.status === 404 && j.gone) {
+      if (_loadFor(slot, BOARDKEY, {}).token === e.token) { saveFor(slot, BOARDKEY, { on: false, gone: true }); _boardClear(slot, BOARDCACHEKEY); }
+      return { ok: false, gone: true };
+    }
+    // resting: the days still count, so the child's own card shows what this phone knows
+    if (r.status === 503 && j.paused) { track("board viewed"); return { ok: false, resting: true, me: mine }; }
+    if (r.status === 503 && j.off) return { ok: false, off: true };
+    const c = _loadFor(slot, BOARDCACHEKEY, null);
+    if (c && c.ok && typeof c.at === "number" && c.at <= Date.now() && Date.now() - c.at < 864e5 && _localDay(c.at) === today()) {
+      track("board viewed");
+      return Object.assign({}, c, { stale: true });
+    }
+    return { ok: false, busy: true, me: mine };
+  }
+  // "New nickname": another made-up one from the server's lists, at most one
+  // a day and three a month. Never typed.
+  async function boardNick(slot) {
+    slot = _boardSlot(slot);
+    if (!boardLive()) return { off: true };
+    const e = _loadFor(slot, BOARDKEY, {});
+    if (!e.on || !e.token) return { off: true };
+    const r = await _boardPost("nick", { token: e.token }), j = r.j;
+    if (r.status === 200 && j.ok && typeof j.nick === "string" && j.nick) {
+      const nick = j.nick.slice(0, 40), cur = _loadFor(slot, BOARDKEY, {});
+      if (cur.token === e.token) {
+        cur.nick = nick; saveFor(slot, BOARDKEY, cur);
+        const c = _loadFor(slot, BOARDCACHEKEY, null);
+        if (c && c.me) { c.me.nick = nick; (Array.isArray(c.top) ? c.top : []).forEach((x) => { if (x && x.me) x.nick = nick; }); saveFor(slot, BOARDCACHEKEY, c); }
+      }
+      return { nick };
+    }
+    if (r.status === 429 || j.limit) return { limit: true };
+    if (r.status === 404 && j.gone) {
+      if (_loadFor(slot, BOARDKEY, {}).token === e.token) { saveFor(slot, BOARDKEY, { on: false, gone: true }); _boardClear(slot, BOARDCACHEKEY); }
+      return { gone: true };
+    }
+    if (r.status === 503 && j.paused) return { resting: true };
+    return { busy: true };
+  }
+  // "Turn off" (and every other way a child leaves): (1) the deletion is
+  // queued first, (2) this phone's keys go, slot "" included, (3) it is sent
+  // now, live or not, (4) "board turned off". queued says it is still owed
+  // (no network): the next practice, game, road or Settings page sends it.
+  async function boardLeave(slot) {
+    slot = _boardSlot(slot);
+    const e = _boardDrop(slot), had = typeof e.token === "string" && !!e.token;
+    try { await _boardSendLeaves(false); } catch (x) {}
+    if (had) track("board turned off");
+    return { ok: true, nick: had ? String(e.nick || "") : "", queued: had && _leaveList().some((x) => x.t === e.token) };
+  }
+
+  // ── BESTS1: "Beat Your Best" (Travis, 1-2 Oct 2026: "whatever you think is
+  // best for kids you can do"). Each big-kid game counts ONE real thing the
+  // child's FINGER did (fruit sliced in a row, notes in a row) and remembers
+  // this child's own best: the win card adds one line and Home's picture
+  // carries a small "Best 17". The rules it keeps, all of them on purpose:
+  //   - It counts the finger, never the voice. Nothing here grades speech, so
+  //     it is not practice data: outcomes(), sendProgress(), Progress and the
+  //     clinician's note never read it (besttest pins that), and it mints no
+  //     coins. It stays on the phone; like other play data it rides in a
+  //     backup, which is a grown-up moving their own family's phone.
+  //   - One record per CHILD (PER_KID), so no child ever sees another's best.
+  //   - It only ever goes up. A lower round changes nothing; there is no way
+  //     to lose a best by playing.
+  //   - Whole numbers of real things only. A game's hidden number (a golden
+  //     fruit is worth 3) was once shown as "Best" beside a count of fruit and
+  //     did not match it; a caller passes the count the child can see.
+  // gameBest(key) is the child's best (a whole number from 1) or 0 for a game
+  // never played, and Home shows no tag for 0. gameBestOffer(key, n) stores n
+  // when it beats the best and answers { best, prev, isNew }: prev is the
+  // best before this round (0 = their first ever, which just sets it), isNew
+  // is true when n went in, and best is never below a valid n, so a win card
+  // can always say "Your best: {best}". An n that is not a whole number from
+  // 1 is ignored (best = prev). Pages feature-detect both: a phone holding an
+  // older sona.js must still play the game.
+  const BESTKEY = "sona.bests.v1", BEST_MAX = 99999;
+  // A game whose count CHANGED keeps its best only in the new count, stamped
+  // on the record (c). Sound Sprint counted metres until 5 Nov 2026, and
+  // every finished race is exactly 570 m, so a child's best could never go
+  // up (and the metres were never on screen: the race shows stars). It now
+  // counts the stars the child grabs. A record without the stamp is the old
+  // count: it reads as no best at all (no Home tag, and the next race is a
+  // first best), never a number of stars to beat. The Level 2 and 3 bests
+  // (LEVELS1's playBest) read the same stamp.
+  const BEST_COUNT = { run: "stars" };
+  function _bestCounted(key, rec) {
+    const c = Object.prototype.hasOwnProperty.call(BEST_COUNT, key) ? BEST_COUNT[key] : "";
+    return !c || rec.c === c;
+  }
+  function _bestRec(key, n) {
+    const rec = { n: n, at: today() };
+    if (Object.prototype.hasOwnProperty.call(BEST_COUNT, key)) rec.c = BEST_COUNT[key];
+    return rec;
+  }
+  function _bestN(n) { return typeof n === "number" && n >= 1 && n <= BEST_MAX && Math.floor(n) === n; }
+  function _bests() { const all = load(BESTKEY, {}); return Array.isArray(all) ? {} : all; }
+  function _bestOf(all, key) {
+    const rec = Object.prototype.hasOwnProperty.call(all, key) ? all[key] : null;
+    return (rec && typeof rec === "object" && _bestN(rec.n) && _bestCounted(key, rec)) ? rec.n : 0;
+  }
+  function gameBest(key) {
+    try { key = gameKey(key); return key ? _bestOf(_bests(), key) : 0; } catch (e) { return 0; }
+  }
+  function gameBestOffer(key, n) {
+    const out = { best: 0, prev: 0, isNew: false };
+    try {
+      key = gameKey(key); if (!key) return out;
+      const all = _bests();
+      out.prev = out.best = _bestOf(all, key);
+      if (!_bestN(n) || n <= out.prev) return out;
+      // answered before the write: a phone that cannot save (storage full or
+      // off) still tells the child the truth about the round they just played
+      out.best = n; out.isNew = true;
+      all[key] = _bestRec(key, n);
+      save(BESTKEY, all);
+    } catch (e) {}
+    return out;
+  }
+
+  // ── QUEST1: the daily adventure (Travis, 12-13 Oct 2026: "a new quest or
+  // like daily activity that they complete every day. That is only showing up
+  // for that day ... a 14-day rotation", then "go build the daily adventure").
+  // One quest a day: a line from Echo and ONE round of one game. Finishing a
+  // round of that game (its end card) finishes the day and gives a sticker
+  // (two on days 7 and 14). What it keeps, on purpose:
+  //   - It asks for nothing new. Practice happens inside the game exactly as
+  //     it always does; the quest only picks the game and says why. No cue,
+  //     no target, no count of anything said (cueing and targets are Rachel's).
+  //   - A new day is a new adventure (CAL1, 28 Oct 2026; Travis: "every day
+  //     that I look at my app, day one is still the one appearing ... I want
+  //     it to be different every day. Even if they didn't do the daily
+  //     practice the day prior"). It used to wait on its day until that day
+  //     was finished; now each calendar day moves it on one, played or not
+  //     (_questOn), and a story left unplayed comes back once the others have
+  //     had their day. Still one a day: it is finished at most once in a
+  //     calendar day, and tomorrow's is shown, dark, never playable early.
+  //   - No coins: coins come from the chest and the Trophy Road only (COIN3).
+  //     No timer, no countdown, nothing random (the sticker is the next one).
+  //   - A family without Premium is never sent to a locked game: a quest whose
+  //     game this phone cannot open gives its day to the next one in the list
+  //     it can. With nothing open at all it stays as written, and the card's
+  //     tap goes where any grey game's tap goes (the price, where Sona sells).
+  //     (A STORY is the exception, on purpose: where Sona can sell, a family
+  //     without Premium sees today's story locked, and its tap opens the
+  //     price. See STORY1 below.)
+  //   - Home only reads questToday(). questEnd() is called by a game's end
+  //     card and does nothing unless that game is today's open quest.
+  // Ages 5-8 get the big-kid games; 3-4 get Feed Echo and Bubble Pop
+  // (playStyle()). After day 14 it starts again at day 1. Since 22 Oct 2026
+  // the stories (STORY1) come before the game of the day, for both ages.
+  const QUESTKEY = "sona.quest.v1", QUEST_LEN = 14;
+  const QUEST_DAYS = {
+    arcade: [
+      { game: "slice", line: "Echo is packing a picnic. Slice some fruit for the basket!" },
+      { game: "tiles", line: "It's the meadow concert tonight. Play a song with Echo!" },
+      { game: "stack", line: "The wind blew Echo's tower down. Help him build it back up!" },
+      { game: "run", line: "Race Echo to the beach before the waves roll in!" },
+      { game: "glide", line: "Take the balloon up high and look at the whole meadow!" },
+      { game: "hoops", line: "It's game day! Shoot some hoops with Echo." },
+      { game: "dino", line: "Something is buried by the cliff. Dig it up!" },
+      { game: "soccer", line: "Can you kick the ball past Bo the bear?" },
+      { game: "slice", line: "The fruit trees are full again. Slice a big feast!" },
+      { game: "tiles", line: "Echo made up a new song. Play it with him!" },
+      { game: "rise", line: "Toy blocks are falling! Keep the balloon safe all the way up to the stars." },
+      { game: "stack", line: "Build a tower so tall it touches the clouds!" },
+      { game: "glide", line: "Fly the balloon home over the hills!" },
+      { game: "hoops", line: "The big final game! Shoot hoops with Echo." },
+    ],
+    simple: [
+      { game: "feed", line: "Echo is hungry! Help him eat his lunch." },
+      { game: "bubbles", line: "It's a bubble day! Pop Echo's bubbles." },
+      { game: "feed", line: "Echo wants a snack. Can you feed him?" },
+      { game: "bubbles", line: "The wind is full of bubbles. Pop them all!" },
+      { game: "feed", line: "Echo's tummy is rumbling. Time for breakfast!" },
+      { game: "bubbles", line: "Echo found his bubble wand. Pop, pop, pop!" },
+      { game: "feed", line: "Echo is having a picnic. Feed him a treat!" },
+      { game: "bubbles", line: "Big bubbles, little bubbles. Pop them with Echo!" },
+      { game: "feed", line: "Echo played all day. Now he needs his dinner!" },
+      { game: "bubbles", line: "The sky is full of bubbles. Can you pop them?" },
+      { game: "feed", line: "Echo is very, very hungry. Help him eat!" },
+      { game: "bubbles", line: "Echo blew the biggest bubbles ever. Pop them!" },
+      { game: "feed", line: "It's Echo's party! Feed him some party food." },
+      { game: "bubbles", line: "One more bubble day! Pop them all with Echo." },
+    ],
+  };
+  // a day whose own game cannot open here borrows another game's day line
+  const QUEST_LINE = {
+    slice: "Echo needs fruit. Slice some for him!", tiles: "Play a song with Echo!",
+    stack: "Help Echo build a tall tower!", run: "Race with Echo!",
+    glide: "Fly the balloon with Echo!", hoops: "Shoot hoops with Echo!",
+    soccer: "Kick the ball past Bo the bear!", dino: "Dig for dinosaur bones!",
+    rise: "Keep the balloon safe from the falling blocks!",
+    feed: "Echo is hungry! Help him eat.", bubbles: "Pop Echo's bubbles!",
+  };
+  // ── STORY1: the daily story comes first (22 Oct 2026; Travis chose both
+  // age groups, today's painted clay look, and the story is Premium). A story
+  // day is this same one-a-day scheduler with a story in front of the game:
+  // Pelly's letter and the problem (adventure.html), one round of the story's
+  // own game (arcade-<game>.html, on the Say & Play engine), then the ending
+  // and its sticker. What it keeps, on purpose:
+  //   - The books' rule (storyOpen): Sona free, Premium from any source, or a
+  //     trial; never the three-day demonstration window gated() still
+  //     honours. Where Sona can sell, a family without it still SEES the
+  //     story (storyShown), locked, and a tap opens the price like a grey
+  //     game. A phone that cannot buy keeps the game of the day: a wall
+  //     nobody can pass is a broken app.
+  //   - Every child starts at story 1 on the first day of their calendar
+  //     (`a`: the day they were set up, or for a child set up before CAL1,
+  //     the first day this build ran for them), and each day after shows the
+  //     next story, whether or not yesterday's was played (CAL1, 28 Oct
+  //     2026). A story left unplayed comes back once the others have had
+  //     their day. `f` lists the stories finished, in the order they were
+  //     finished, so a story appended here reaches every child who finished
+  //     the others, the next day. A story never moves `i`: after the last
+  //     one, the game of the day carries on by the calendar from where it was.
+  //   - Still one item a day: a story finished today is today's finish, and
+  //     a game day finished today keeps the story for tomorrow.
+  //   - The day finishes when the story's game round ends (questEnd, from its
+  //     end card), so its one sticker is given before the ending is watched:
+  //     closing the app in between loses nothing. No coins, and no banner
+  //     (the ending's sticker card shows the gift, read from storyEnding).
+  //   - None of it is in GAME_ACTS or ACTIVITY_KEYS: a story's game is on no
+  //     shelf, in no picks row, in no setup grid and in no game count.
+  //     gameAccess and gameBounce know the story keys by name (_storyKey).
+  // Adding a story is two edits: a line here, its scenes in adventures.js.
+  // Home's picture is /assets/crafted/home-<hero>.webp. `name` is its game's
+  // name, short enough for a tile on Home's row of found games (FOUND1).
+  //   Days 4-14 (22 Oct 2026) are Codex's physical games, one shared page:
+  //   `controller` is the game's key in window.DailyAdventureGames
+  //   (/daily-adventures/<controller>.js), and story-game.html?story=<id>
+  //   plays it. Day 7's id is "frontdoor" because Day 3 already owns
+  //   "bridge"; its controller is still Codex's "bridge".
+  // How many times each story game asks for a word (Travis, 23 Oct 2026:
+  // "when a kid practices the daily adventure i want it to ask them to say
+  // the sound 3 times not twice for every daily game"). Every story page
+  // passes it to SayPlay.start as sayTimes, so a story day's game asks three
+  // sayings a word (and a help pill three more), and each heard saying is
+  // one game rep. The other Say & Play games keep two (Bubble Pop one). The
+  // number a child is asked for is Rachel's call: this is where it changes.
+  const STORY_SAY_TIMES = 3;
+  const STORY_DAYS = [
+    { id: "lighthouse", game: "lighthouse", page: "/arcade-lighthouse.html", hero: "lighthouse", name: "Light the Way",
+      title: "The Lighthouse Sneeze",
+      line: "Captain Wally sneezed out the lighthouse lamp! Help the little boats get home." },
+    { id: "windup", game: "windup", page: "/arcade-windup.html", hero: "windup", name: "Wind-Up Toys",
+      title: "Grandpa Bear's Sleepy Toys",
+      line: "Grandpa Bear's toys are fast asleep. Wake them up for the Toy Parade!" },
+    { id: "bridge", game: "bridge", page: "/arcade-bridge.html", hero: "bridge", name: "Puzzle Bridge",
+      title: "The Puzzle Bridge",
+      line: "The storm broke the bridge to Blossom Island. Build it back for the big party!" },
+    { id: "waterwheel", game: "waterwheel", controller: "waterwheel", page: "/story-game.html?story=waterwheel", hero: "waterwheel", name: "Waterwheel",
+      title: "The Thirsty Waterwheel Garden",
+      line: "Gardener Mouse's flowers are thirsty. Fix the troughs and get her waterwheel turning!" },
+    { id: "postboat", game: "postboat", controller: "postboat", page: "/story-game.html?story=postboat", hero: "postboat", name: "Postboat",
+      title: "The Little Island Postboat",
+      line: "Otter's big boat is stuck in the reeds. Take the parcels in the little postboat!" },
+    { id: "bakery", game: "bakery", controller: "bakery", page: "/story-game.html?story=bakery", hero: "bakery", name: "Bakery",
+      title: "Breakfast at the Moonberry Bakery",
+      line: "Baker Badger's new bakery opens today, and every tray is empty. Let's bake breakfast!" },
+    { id: "frontdoor", game: "frontdoor", controller: "bridge", page: "/story-game.html?story=frontdoor", hero: "frontdoor", name: "Bridge Builder",
+      title: "Tortoise's New Front Door",
+      line: "Tortoise is moving today! Build a bridge to his new house and roll his cart across." },
+    { id: "lantern", game: "lantern", controller: "lantern", page: "/story-game.html?story=lantern", hero: "lantern", name: "Lantern Walk",
+      title: "The Glowworm Lantern Walk",
+      line: "Glowworm's hiccups popped out the lamp plugs! Light up the woods for his lantern walk." },
+    { id: "trainline", game: "trainline", controller: "trainline", page: "/story-game.html?story=trainline", hero: "trainline", name: "Valley Train",
+      title: "All Aboard for Snowdrop Valley",
+      line: "The new valley train has no tracks! Lay the tracks and take everyone to their stop." },
+    { id: "kite", game: "kite", controller: "kite", page: "/story-game.html?story=kite", hero: "kite", name: "Patchwork Kite",
+      title: "The Hilltop Patchwork Kite",
+      line: "Goat's giant kite isn't sewn yet. Stitch it, balance it, and fly it high!" },
+    { id: "nestlift", game: "nestlift", controller: "nestlift", page: "/story-game.html?story=nestlift", hero: "nestlift", name: "Nest Lift",
+      title: "The Sandstone Nest Lift",
+      line: "Mama Swallow's bundles won't fit up the stairs. Balance the basket lift and carry them up!" },
+    { id: "concert", game: "concert", controller: "concert", page: "/story-game.html?story=concert", hero: "concert", name: "Pond Concert",
+      title: "The Lily-Pad Concert",
+      line: "Frog, Newt and Duck all play at once. Be their conductor at the pond concert!" },
+    { id: "rooftops", game: "rooftops", controller: "rooftops", page: "/story-game.html?story=rooftops", hero: "rooftops", name: "Seed Launcher",
+      title: "Seeds Across the Rooftops",
+      line: "No seeds on the rooftops yet! Help Gardener Bird send them up with her springboard." },
+    { id: "observatory", game: "observatory", controller: "observatory", page: "/story-game.html?story=observatory", hero: "observatory", name: "Star Machine",
+      title: "The Moving-Star Observatory",
+      line: "Owl's wooden sun, moon and stars won't move. Fit the gears and turn the big wheel!" },
+  ];
+  // ── TALK1: Day 1 talks in the child's own sound (Travis, 31 Oct 2026: "we
+  // just need to wow them in their first sessions ... the day 1 has to be
+  // awesome ... i want the books in the daily adventure to be unique
+  // depending on the target sound so they are practicing it throughout the
+  // story"; then "go build the r one and the other popular sounds"). A
+  // talking story has no separate game: every page asks one word in its
+  // sound and the child's voice turns the page (adventure.html's word
+  // moment, the books' SayCheck); the intro's last word finishes the day and
+  // the ending plays straight on. Its scenes are /talk-stories.js.
+  // Day 1's slot (STORY_DAYS[0], index 0 in the quest record) is the
+  // talking story in the first of the child's practice sounds that has one
+  // (rotSounds(): homework first, then the family's picks), else the
+  // lighthouse as before. A Day 1 already finished stays what it was: the
+  // finish keeps its id (`t1`), and a lighthouse finished before this build
+  // (index 0 done, no t1) is still the lighthouse. Each id is also its own
+  // game key, so gameAccess answers it by the story's rule (storyOpen).
+  const STORY_TALK = [
+    { id: "robo", sound: "R", hero: "robo", name: "Robo's Rocket", title: "Robo's Rocket",
+      line: "Robo the robot built a rocket, but it won't wake up. Help him fly it!" },
+    { id: "lulu", sound: "L", hero: "lulu", name: "Lulu's Lantern Party", title: "Lulu's Lantern Party",
+      line: "Lulu the little lamb is stuck on an island, and the lanterns are dark. Help bring her home!" },
+    { id: "fizz", sound: "F", hero: "fizz", name: "Fizz and the Sleepy Fireflies", title: "Fizz and the Sleepy Fireflies",
+      line: "Fizz the fox's party is tonight, but the fireflies are too sleepy to glow. Help wake them up!" },
+    { id: "sandy", sound: "S", hero: "sandy", name: "Sandy's Sandcastle", title: "Sandy's Sandcastle",
+      line: "Sandy the sea turtle's sandcastle keeps falling down. Help her build it!" },
+    { id: "zippy", sound: "Z", hero: "zippy", name: "Zippy's Zoo Parade", title: "Zippy's Zoo Parade",
+      line: "Zippy the zebra's parade float is stuck, and the zoo parade can't start. Help it go!" },
+    // TALK2 (2 Nov 2026, Travis: yes to "talking Day 1 stories for five more
+    // sounds: K, G, SH, CH and TH"): the next sounds after the "popular" five
+    { id: "kiki", sound: "K", hero: "kiki", name: "Kiki's Camping Night", title: "Kiki's Camping Night",
+      line: "The wind blew Kiki the kitten's tent down before camping night. Help fix her camp!" },
+    { id: "gus", sound: "G", hero: "gus", name: "Gus's Goose Chase", title: "Gus's Goose Chase",
+      line: "Gus the goat's geese waddled away from the farm. Help find every one!" },
+    { id: "shelly", sound: "SH", hero: "shelly", name: "Shelly's Shell Show", title: "Shelly's Shell Show",
+      line: "The waves washed away Shelly the shark's shells before her show. Help find them!" },
+    { id: "chip", sound: "CH", hero: "chip", name: "Chip's Cherry Pie", title: "Chip's Cherry Pie",
+      line: "A bird flew off with Chip the chipmunk's cherries. Help him bake his pie!" },
+    { id: "theo", sound: "TH", hero: "theo", name: "Theo's Big Show", title: "Theo's Big Show",
+      line: "Theo the bear's thunder drum is lost before his big show. Help find it!" },
+  ];
+  // TALK_ON false: every child's Day 1 is the lighthouse again (a Day 1
+  // already finished as a talking story stays that story). The suites that
+  // play the lighthouse as Day 1 set sessionStorage "sona.talkoff" for their
+  // tab: a child on a sound with no talking story still meets it there, and
+  // talkstorytest plays the talking ones.
+  const TALK_ON = true;
+  function _talkById(id) { for (let i = 0; i < STORY_TALK.length; i++) if (STORY_TALK[i].id === id) return STORY_TALK[i]; return null; }
+  // The talking story for a list of practice sounds, in their order: the
+  // first sound that has one (TALK_ON and the suites' "sona.talkoff" read
+  // here, once), else null. ONE rule for Day 1's slot, read by _talkDay for
+  // the child playing now and by day1For for setup's plan card, so the card
+  // a parent reads and the story the child then meets can never disagree.
+  function _talkFor(want) {
+    if (!TALK_ON) return null;
+    try { if (sessionStorage.getItem("sona.talkoff") === "1") return null; } catch (e) {}
+    for (let i = 0; i < want.length; i++) for (let j = 0; j < STORY_TALK.length; j++) if (STORY_TALK[j].sound === want[i]) return STORY_TALK[j];
+    return null;
+  }
+  // the talking story in Day 1's slot for the child playing now, or null
+  function _talkDay() {
+    try {
+      const v = load(QUESTKEY, {}) || {}, f = Array.isArray(v.f) ? v.f.map(Number) : [];
+      const done0 = f.indexOf(0) >= 0 || (!Array.isArray(v.f) && parseInt(v.s, 10) > 0);
+      if (done0) return _talkById(v.t1) || null;
+      return _talkFor(rotSounds());
+    } catch (e) {}
+    return null;
+  }
+  // THE PLAN MOMENT (Travis, 31 Oct 2026: "build the plan moment and straight
+  // into day 1"). Setup's ready screen shows the story a new child will meet
+  // as Day 1, before the profile is saved, so it asks here with the list of
+  // sounds setup is about to save (focusSounds: the picks in their order, or
+  // PLAY_ORDER for "Pick all sounds"). Read the way rotSounds reads a saved
+  // profile's list (upper case, sounds with words, R when none), with this
+  // child's homework first exactly as rotSounds puts it, so the answer is
+  // the one _talkDay gives once the profile is saved. → { id, title, line,
+  // hero, pic, talk } (a copy), never null: the talking story, else Day 1 of
+  // STORY_DAYS (the lighthouse). Read only.
+  function day1For(sounds) {
+    let want = [];
+    try {
+      const hs = homeworkSounds();
+      want = hs.length ? hs : (Array.isArray(sounds) ? sounds : []).map((s) => String(s).toUpperCase()).filter((s) => WORDS[s]);
+    } catch (e) {}
+    if (!want.length) want = ["R"];
+    let t = null; try { t = _talkFor(want); } catch (e) {}
+    const d = t || STORY_DAYS[0];
+    return { id: d.id, title: d.title, line: d.line, hero: d.hero, pic: "/assets/crafted/home-" + d.hero + ".webp", talk: !!t };
+  }
+  // "adventure" is the story card itself (Home's access(), the price's ?from=)
+  const STORY_KEYS = ["adventure"].concat(STORY_DAYS.map((d) => d.game), STORY_TALK.map((d) => d.id));
+  // try: gameAccess may in principle be asked before this block has run
+  function _storyKey(k) { try { return typeof k === "string" && STORY_KEYS.indexOf(k) >= 0; } catch (e) { return false; } }
+  // the books' rule, and the founders' preview reads its own plan, as
+  // gameAccess does for a Premium game
+  function storyOpen() {
+    try {
+      if (libraryPreview()) return previewPlan().state === "trial";
+      return isFree() || premium() || trialActive();
+    } catch (e) { return false; }
+  }
+  // show a story on Home at all: open, or locked where the price can open it
+  function storyShown() { try { return storyOpen() || offerOnLock(); } catch (e) { return false; } }
+  // a copy, so no page can change the list by changing what it was handed
+  function _storyInfo(n) {
+    const t = n === 0 ? _talkDay() : null;
+    if (t) return { id: t.id, game: t.id, page: "/adventure.html", hero: t.hero, title: t.title, line: t.line, pic: "/assets/crafted/home-" + t.hero + ".webp", day: 1,
+      name: t.name, again: "/adventure.html?again=1&story=" + t.id, talk: true, sound: t.sound };
+    const d = STORY_DAYS[n]; if (!d) return null;
+    return { id: d.id, game: d.game, page: d.page, hero: d.hero, title: d.title, line: d.line, pic: "/assets/crafted/home-" + d.hero + ".webp", day: n + 1,
+      name: d.name, again: d.page + (d.page.indexOf("?") >= 0 ? "&" : "?") + "again=1" };
+  }
+  // A story by its id (adventure.html): a STORY_DAYS day, or the talking
+  // story Day 1's slot holds for this child. A talking story another child
+  // (or another sound) would get is no day here.
+  function storyDay(id) {
+    for (let n = 0; n < STORY_DAYS.length; n++) {
+      const d = _storyInfo(n);
+      if (d && d.id === id) return d;
+    }
+    return null;
+  }
+  // FOUND1 (23 Oct 2026; Travis: "unlock like games, like a mystery game",
+  // and "you can make the executive decision"): every story leaves its game
+  // behind. The stories this child has finished, in order, each a copy with
+  // `again`, the address that plays its game once more (a round that
+  // finishes nothing: Play again, Back home, no hand-back to the story).
+  // Read only, and nothing new is stored: finished stories are `f` (in the
+  // order they were finished, so Home's row, newest first, starts with the
+  // last one), a brother or sister has found only their own, and a backup
+  // brings them. Its game opens by the story's rule (gameAccess: storyOpen),
+  // and Home shows the row only where that rule opens them.
+  function storyFound() {
+    try { return _questSt().f.map(_storyInfo); } catch (e) { return []; }
+  }
+  // the one found game a replay address may play: its story finished, and
+  // its game open to this child (story-game.html and the three story pages)
+  function storyReplay(id) {
+    try { return storyOpen() && storyFound().some((d) => d.id === id); } catch (e) { return false; }
+  }
+  function _questSt() {
+    const v = load(QUESTKEY, {}) || {}, SL = STORY_DAYS.length;
+    let i = parseInt(v.i, 10); if (!(i >= 0 && i < QUEST_LEN)) i = 0;
+    let last = parseInt(v.last, 10); if (!(last >= 0 && last < QUEST_LEN)) last = (i + QUEST_LEN - 1) % QUEST_LEN;
+    // STORY1's fields, each read on its own: a record from before them, or a
+    // broken one, is a child who has finished no story. `f` is the stories
+    // finished, in the order they were finished (CAL1); a record from before
+    // it finished them in order, so its count `s` is the first s stories.
+    // More than this build knows (a backup from a newer one) is every story
+    // finished, and a story this build does not know is left out.
+    const f = [];
+    if (Array.isArray(v.f)) v.f.forEach((x) => { const n = Number(x); if (Number.isInteger(n) && n >= 0 && n < SL && f.indexOf(n) < 0) f.push(n); });
+    else { let s = parseInt(v.s, 10); if (!(s >= 0)) s = 0; if (s > SL) s = SL; for (let n = 0; n < s; n++) f.push(n); }
+    let ls = parseInt(v.ls, 10);
+    // a page still holding the build before CAL1 finishes a story by `s`
+    // alone, writing its `ls` and no `f`: that story is finished all the same
+    if (v.lk === "story" && Array.isArray(v.f) && ls >= 0 && ls < SL && f.indexOf(ls) < 0) f.push(ls);
+    if (!(ls >= 0 && ls < SL)) ls = f.length ? f[f.length - 1] : 0;
+    // what was finished last: a story only if that story really is finished
+    // (a record from before stories, done today, is a game day done today)
+    const lk = v.lk === "story" && f.indexOf(ls) >= 0 ? "story" : "game";
+    const done = typeof v.done === "string" ? v.done : "";
+    // the days the calendar counts from (CAL1): when the last story and the
+    // last game day were finished (`done` is the last finish, of the kind
+    // `lk` says), and `a`, the day this child's calendar started
+    const fd = lk === "story" && _isDay(done) ? done : (_isDay(v.fd) ? v.fd : "");
+    const gd = lk === "game" && _isDay(done) ? done : (_isDay(v.gd) ? v.gd : "");
+    const got = Array.isArray(v.got) ? v.got.filter((id) => STICKERS.some((x) => x.id === id)).slice(0, 2) : [];
+    const seen = typeof v.seen === "string" && /^\d{4}-\d{2}-\d{2}\|[a-z]+$/.test(v.seen) ? v.seen : "";
+    return { i, last, done, f, s: f.length, ls, lk, fd, gd, a: _isDay(v.a) ? v.a : "", sv: _isDay(v.sv) ? v.sv : "", got, seen };
+  }
+  // CAL1: a "YYYY-MM-DD" day as a whole number of days (counted in UTC, so a
+  // clock change in the night never makes two days one), NaN for anything else
+  function _isDay(x) { return typeof x === "string" && /^\d{4}-\d{2}-\d{2}$/.test(x); }
+  function _dayNo(x) { if (!_isDay(x)) return NaN; const p = x.split("-"); return Math.round(Date.UTC(+p[0], +p[1] - 1, +p[2]) / 864e5); }
+  // CAL1: the day a child's calendar starts (`a`), and the day their stories
+  // first showed (`sv`: a phone that cannot buy, without Premium, shows the
+  // game of the day instead, and the stories' Day 1 waits for the first day
+  // a story is on the card). Setup writes both as it sets a child up
+  // (saveProfile, so the first day is Day 1), afresh for a child who has
+  // finished nothing yet (a brother or sister added in Settings may have
+  // been started by an earlier page). A child set up before this build, or
+  // brought in by a backup without them, gets them from the first page that
+  // finds none (_questAnchors, at load): a one-shot write like the free-era
+  // sweeps, so it may be Home's first load, and that child's first day on
+  // this build is their next story in order. A day after today (a phone
+  // clock that was ahead) is written again as today, or the card would
+  // stand still until the calendar caught up. Every page after only reads
+  // them. slot null is the child playing now; setup true is setup's save.
+  function _questAnchor(slot, setup) {
+    let rec = slot == null ? load(QUESTKEY, {}) : _loadFor(slot, QUESTKEY, {});
+    if (!rec || typeof rec !== "object" || Array.isArray(rec)) rec = {};
+    const t = today(), T = _dayNo(t), later = (x) => !_isDay(x) || _dayNo(x) > T;
+    let shown = false; try { shown = storyShown(); } catch (e) {}
+    // no story finished, and (for setup's fresh start) no game day either
+    const noStory = !(Array.isArray(rec.f) ? rec.f.length > 0 : parseInt(rec.s, 10) > 0);
+    let changed = false;
+    if (setup && noStory && !_isDay(rec.done)) {
+      rec.a = t; if (shown) rec.sv = t; else delete rec.sv;
+      changed = true;
+    } else {
+      if (later(rec.a)) { rec.a = t; changed = true; }
+      if (shown && noStory && later(rec.sv)) { rec.sv = t; changed = true; }
+    }
+    if (!changed) return;
+    if (slot == null) save(QUESTKEY, rec); else saveFor(slot, QUESTKEY, rec);
+  }
+  function _questAnchors() {
+    let slots = [""];
+    try { const v = JSON.parse(localStorage.getItem(KIDSKEY) || "null"); if (v && v.list && v.list.length) slots = v.list.map((k) => k.slot || ""); } catch (e) {}
+    slots.forEach((slot) => {
+      try {
+        const pr = JSON.parse(localStorage.getItem(slot ? PKEY + "@" + slot : PKEY) || "null");
+        if (pr && (pr.onboarded || pr.childName)) _questAnchor(slot, false);
+      } catch (e) {}
+    });
+  }
+  // The quest on day index n, with its game resolved for THIS phone.
+  function _questAt(list, n) {
+    const open = (k) => { try { return !!(GAME_ACTS[k] && !GAME_ACTS[k].comingSoon && gameAccess(k).allowed); } catch (e) { return false; } };
+    const own = list[n];
+    if (open(own.game)) return { game: own.game, line: own.line };
+    for (let j = 1; j < list.length; j++) {
+      const q = list[(n + j) % list.length];
+      if (open(q.game)) return { game: q.game, line: QUEST_LINE[q.game] || q.line };
+    }
+    return { game: own.game, line: own.line };
+  }
+  // CAL1: what the adventure is on calendar day D (_dayNo) for a child who
+  // has not finished that day's: a story while one is left to show, else the
+  // game of the day.
+  //   A story: the day after the last story finished (ls, on fd) is the next
+  //   story after it not finished yet, the day after that the one after, and
+  //   so on round, so a story skipped comes back after the others have had
+  //   their day. With none finished it counts the same way from the day
+  //   before the stories first showed (`sv`, else the calendar's start `a`),
+  //   so the first day a story is on the card is Day 1. A game day finished
+  //   (gd: the card was a game, on a phone that showed no story) holds the
+  //   story, as a story holds the game: the story count starts again from it.
+  //   The game of the day: the day after the last game day finished (last,
+  //   on gd) is the next of the 14, and so on round. The stories hold it
+  //   where it was: it counts from the last story finished when that came
+  //   later, so the day after the last story is day `i` again; with neither,
+  //   from the day before the calendar started, so the first day is day `i`.
+  // A finish from before the calendar started counts from the day before it
+  // too, so a child's first day on this build is the next one in order and
+  // never a jump over the days before it. A day later than D never counts (a
+  // phone clock that was ahead wrote it), and a clock that went back is the
+  // day after.
+  function _questOn(st, list, D, storyNext) {
+    const SL = STORY_DAYS.length, A = _dayNo(st.a), from = (A <= D ? A : D) - 1;
+    // days since the latest of these days (a "YYYY-MM-DD" or a day number),
+    // or since the day before the calendar started, at least one
+    const since = (...days) => Math.max(1, D - days.reduce((m, x) => { const n = typeof x === "number" ? x : _dayNo(x); return n > m && n <= D ? n : m; }, from));
+    if (storyNext) {
+      const b = st.f.length ? st.ls : -1, left = [];
+      for (let j = 1; j <= SL; j++) { const n = (b + j + SL) % SL; if (st.f.indexOf(n) < 0) left.push(n); }
+      const k = st.f.length ? since(st.fd, st.gd) : since(_dayNo(st.sv) - 1, st.gd);
+      const n = left[(k - 1) % left.length], d = _storyInfo(n);
+      return { kind: "story", day: n + 1, game: d.game, line: d.line, story: d };
+    }
+    const n = (st.last + since(st.gd, st.f.length ? st.fd : "")) % QUEST_LEN, q = _questAt(list, n);
+    return { kind: "game", day: n + 1, game: q.game, line: q.line };
+  }
+  // Read only: what the adventure card shows today.
+  //   kind  "story": a story day (STORY1); story = its STORY_DAYS entry (a
+  //                  copy, with pic and day); day = 1..STORY_DAYS.length;
+  //                  game = the story's own game; seen (open only): today's
+  //                  intro already reached "Let's go!"
+  //         "game":  the game of the day (day = 1..14)
+  //   state "open": today's item, not finished yet
+  //   state "done": today's was finished; next = tomorrow's, shown dark:
+  //                 { kind: "story", day, game, story } or { kind: "game", day, game }
+  function questToday() {
+    const list = QUEST_DAYS[playStyle()] || QUEST_DAYS.arcade, st = _questSt();
+    const D = _dayNo(today()), done = st.done === today();
+    // a story is the adventure while one is left to show
+    const storyNext = st.f.length < STORY_DAYS.length && storyShown();
+    if (done) {
+      // today's stays on the card, done; tomorrow's is the calendar's next
+      // day counted from the finish just written
+      const t = _questOn(st, list, D + 1, storyNext);
+      const next = t.kind === "story" ? { kind: "story", day: t.day, game: t.game, story: t.story } : { kind: "game", day: t.day, game: t.game };
+      if (st.lk === "story") {
+        const d = _storyInfo(st.ls);
+        return { kind: "story", state: "done", day: st.ls + 1, total: STORY_DAYS.length, game: d.game, line: d.line, story: d, next };
+      }
+      const q = _questAt(list, st.last);
+      return { kind: "game", state: "done", day: st.last + 1, total: QUEST_LEN, game: q.game, line: q.line, next };
+    }
+    const q = _questOn(st, list, D, storyNext);
+    if (q.kind === "story") return { kind: "story", state: "open", day: q.day, total: STORY_DAYS.length, game: q.game, line: q.line, story: q.story, seen: st.seen === today() + "|" + q.story.id };
+    return { kind: "game", state: "open", day: q.day, total: QUEST_LEN, game: q.game, line: q.line };
+  }
+  // A game's end card: finishes today's quest if this round was today's game.
+  // Answers { day, stickers: [...] } once (a story day adds story: its id),
+  // or null. Every save MERGES into the record: a game day's write used to
+  // replace the whole object, and would now wipe the stories finished.
+  function questEnd(gameKey) {
+    try {
+      let q = questToday();
+      if (q.state !== "open" || q.game !== gameKey) {
+        // a story round that began before midnight and ended after it
+        // finishes the story that was open when it began (CAL1: by then the
+        // card has moved on to the next story, which would leave the child
+        // who just played it with no ending and no sticker)
+        const y = _questYesterday();
+        if (!y || y.game !== gameKey) return null;
+        q = { kind: "story", state: "open", day: y.day, game: y.game, line: y.line, story: y.story };
+      }
+      const raw = load(QUESTKEY, {}) || {};
+      if (q.kind === "story") {
+        // a story shown locked (where the price can open it) is no story
+        // played: a round reached without it finishes nothing
+        if (!storyOpen()) return null;
+        const st = _questSt(), n = q.day - 1, f = st.f.concat(st.f.indexOf(n) < 0 ? [n] : []);
+        // the day first, so a second end card can never give a second sticker
+        // (f, the stories finished in order; s, their count, for a page still
+        // holding the build before CAL1)
+        const rec = Object.assign({}, raw, { f, s: f.length, ls: n, fd: today(), lk: "story", done: today(), got: [] });
+        // TALK1: which story Day 1's slot was, so it stays that one (a sound
+        // changed later never turns a finished Day 1 into another)
+        if (n === 0 && q.story.talk && raw.t1 == null) rec.t1 = q.story.id;
+        save(QUESTKEY, rec);
+        const got = [];
+        const one = awardNextSticker(); if (one) got.push(one);
+        rec.got = got.map((g) => g.id); save(QUESTKEY, rec);
+        track("adventure day done", { game: gameKey });
+        // no banner: the story's ending shows the sticker on its own card
+        return { day: q.day, stickers: got, story: q.story.id };
+      }
+      const n = q.day - 1;
+      save(QUESTKEY, Object.assign({}, raw, { i: (n + 1) % QUEST_LEN, last: n, gd: today(), done: today(), lk: "game" }));
+      const got = [];
+      const one = awardNextSticker(); if (one) got.push(one);
+      if (q.day === 7 || q.day === QUEST_LEN) { const two = awardNextSticker(); if (two) got.push(two); }
+      track("adventure day done", { game: gameKey });
+      _questBanner(q.day, got);
+      return { day: q.day, stickers: got };
+    } catch (e) { return null; }
+  }
+  // CAL1: yesterday's story, still open: the one questToday() showed
+  // yesterday, when nothing has been finished since (yesterday or today) and
+  // the calendar had started by then. Only a story: its game is reached only
+  // through the story, while a game of the day is played from the Arcade
+  // too, so a round of it today is today's and never finishes yesterday's.
+  function _questYesterday() {
+    const st = _questSt(), D = _dayNo(today());
+    if (!(D >= 0) || _dayNo(st.done) >= D - 1 || !(_dayNo(st.a) <= D - 1)) return null;
+    if (!(st.f.length < STORY_DAYS.length && storyShown())) return null;
+    const y = _questOn(st, QUEST_DAYS[playStyle()] || QUEST_DAYS.arcade, D - 1, true);
+    return y.kind === "story" ? y : null;
+  }
+  // The story's ending (adventure.html?part=end): ok once that story is
+  // finished, and got = the stickers its finish gave, only on the day it was
+  // finished ({ id, e, name } each). Read only.
+  function storyEnding(id) {
+    const out = { ok: false, got: [] };
+    try {
+      const d = storyDay(id), n = d ? d.day - 1 : -1;
+      const st = _questSt();
+      if (n < 0 || st.f.indexOf(n) < 0) return out;
+      out.ok = true;
+      if (st.lk === "story" && st.ls === n && st.done === today()) {
+        out.got = st.got.map((g) => STICKERS.filter((x) => x.id === g)[0]).filter(Boolean).map((x) => ({ id: x.id, e: x.e, name: x.name }));
+      }
+    } catch (e) {}
+    return out;
+  }
+  // Today's intro reached "Let's go!" (adventure.html): the one thing the
+  // story's own page writes, so coming back the same day can offer "Keep
+  // going". Only for today's open story; nothing else in the record moves.
+  function storySeen(id) {
+    try {
+      const q = questToday();
+      if (q.kind !== "story" || q.state !== "open" || !q.story || q.story.id !== id) return false;
+      const raw = load(QUESTKEY, {}) || {};
+      raw.seen = today() + "|" + id; save(QUESTKEY, raw);
+      return true;
+    } catch (e) { return false; }
+  }
+  // Silent, nonblocking, like the goal note: no audio, no focus change, no
+  // tap taken. Below the goal note when both show.
+  function _questBanner(day, got) {
+    if (document.hidden) return;
+    try {
+      if (document.getElementById("sonaQuestBanner")) return;
+      const b = document.createElement("div"); b.id = "sonaQuestBanner"; b.setAttribute("role", "status");
+      const st = got && got.length ? " You got " + got.map((g) => g.e + " " + g.name).join(" and ") + "!" : "";
+      b.textContent = "Day " + day + " adventure done!" + st;
+      const low = document.getElementById("sonaGoalBanner") ? 70 : 12;
+      b.style.cssText = "position:fixed;z-index:1200;top:calc(env(safe-area-inset-top,0px) + " + low + "px);left:50%;transform:translateX(-50%);width:max-content;max-width:calc(100% - 32px);padding:12px 18px;border-radius:20px;background:#fff8e9;color:#4a2c14;box-shadow:0 4px 20px #4a2c1426;font:800 17px/1.35 'Nunito',sans-serif;text-align:center;pointer-events:none";
+      document.body.appendChild(b); setTimeout(() => b.remove(), 5000);
+    } catch (e) {}
+  }
 
   // ── Native audio capture (iOS) ──────────────────────────────────────────────
   // ── SPEAK1: the one speech pipeline every reader shares ─────────────────
@@ -3239,7 +6359,7 @@
     try { ctrl = new AbortController(); to = setTimeout(() => { try { ctrl.abort(); } catch (e) {} }, 7000); } catch (e) {}
     return fetch("/api/tts", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text: String(text), voice: opts.voice || getProfile().voiceId || "" }),
+      body: JSON.stringify({ text: String(text), voice: getProfile().voiceId || "" }),
       signal: ctrl ? ctrl.signal : undefined,
     })
       .then((r) => {
@@ -3318,6 +6438,8 @@
   function planEligible() {
     try {
       if (isFree()) return false;                    // nothing to sell
+      if (!isNativeApp() && !webSales()) return false;   // a browser that cannot sell has nothing to offer
+      if (isNativeApp() && !iapAvailable()) return false;   // nor has an app build with no purchase plugin
       if (localStorage.getItem(PLANSEEN)) return false;
       // anyone who already has every game is never asked: subscribers,
       // founders, founding pilots, a covered clinician's families, and all
@@ -3338,10 +6460,164 @@
       return true;
     } catch (e) { return false; }
   }
+  // THE OFFER, ONCE, FROM HOME (Travis, 13 Oct 2026: "yeah, let's show the
+  // offer again"). Some families' Home locked without them ever seeing the
+  // free days: set up on the App Store's 1.0.4, which could not buy, so setup
+  // skipped the price and opened the free games; stamped "post" by the
+  // trial-first build, so the update to a build that can buy took the free
+  // version away and every game greyed out with no offer on screen. The next
+  // time such a family opens Home on a phone that can sell, the plan screen
+  // opens once as the offer (/subscribe.html?from=home), the same screen a
+  // grey-game tap opens, and its X leaves to Home exactly as that one does.
+  //
+  // Two keys, because one is not enough. PLANSEEN is spent only once a
+  // PRICED card is painted (planShown), so a store that never answers would
+  // leave it unspent and Home would open the offer again on every visit.
+  // OFFERSEEN is spent by subscribe.html the moment the offer frame is up,
+  // from any door (setup, a grey game, a first run, Home): what this phone
+  // showed, never what the family bought. It is on NO_EXPORT and NO_IMPORT
+  // like the free-version stamp; PLANSEEN still travels, so a pasted backup
+  // can take the offer away but never add one.
+  //
+  // homeOfferDue() only reads: it writes nothing, sends nothing, grants
+  // nothing and reads no address. trialFirst() is the whole "who owes the
+  // price" rule (a phone that can sell, no free version, no Premium, no
+  // trial, Sona not free); a clinician's own setup and a phone not yet set up
+  // are never asked (the second is setup's job).
+  //
+  // AN ERROR CARD IS NOT THE ONE SHOWING. The offer frame goes up before the
+  // store answers, so a store that is slow or unreachable would spend the
+  // family's one showing on "We couldn't reach the App Store." with no price
+  // on it. So subscribe.html calls offerSeen(true) only on a definite answer
+  // (a priced card, which also spends PLANSEEN; "nothing to sell"; Premium
+  // already there) and offerSeen(false) for a frame the store never priced:
+  // that marks this visit (OFFERTAB, sessionStorage, so X back to Home cannot
+  // loop) and counts the try ("try:N"). The next launch of the app tries
+  // again, at most OFFER_TRIES times in all, so a store that is broken for
+  // good never opens an error card on every launch.
+  const OFFERSEEN = "sona.offerseen.v1", OFFERTAB = "sona.offerseen.tab", OFFER_TRIES = 3;
+  function _offerTries(v) { const m = /^try:(\d+)$/.exec(v || ""); return m ? +m[1] : -1; }
+  function _offerSpent(v) { if (!v) return false; const n = _offerTries(v); return n < 0 || n >= OFFER_TRIES; }
+  function homeOfferDue() {
+    try {
+      if (!trialFirst()) return false;
+      const list = _kids().list;
+      if (!list.some((k) => { const p = _loadFor(k.slot || "", PKEY, {}); return !!(p.onboarded || p.childName); })) return false;
+      if (list.some((k) => _loadFor(k.slot || "", PKEY, {}).role === "slp")) return false;
+      if (localStorage.getItem(PLANSEEN)) return false;    // a priced card was already painted here
+      if (_offerSpent(localStorage.getItem(OFFERSEEN))) return false;   // the offer was already shown here
+      try { if (sessionStorage.getItem(OFFERTAB)) return false; } catch (e) {}   // tried this visit, the store never priced it
+      return true;
+    } catch (e) { return false; }
+  }
+  function offerSeen(final) {
+    try {
+      const v = localStorage.getItem(OFFERSEEN);
+      if (_offerSpent(v)) return;
+      if (final) { localStorage.setItem(OFFERSEEN, String(Date.now())); return; }
+      try { if (sessionStorage.getItem(OFFERTAB)) return; sessionStorage.setItem(OFFERTAB, "1"); } catch (e) {}
+      localStorage.setItem(OFFERSEEN, "try:" + (Math.max(0, _offerTries(v)) + 1));
+    } catch (e) {}
+  }
   // Kept so an older cached page cannot crash on a missing export. It is the
   // OLD, wrong shape — decide-and-consume — so it only answers eligibility and
   // never spends the one-shot; nothing in this repo calls it.
   function planMoment() { return planEligible(); }
+
+  // ── the first game, straight from setup (Travis, 27 Sep 2026) ──
+  // "upon completing the few steps inside the onboarding ... it will choose
+  // feed echo for the littles and fruit slice for ages five and up ... it'll
+  // literally go straight to the game". Setup marks which game is the first
+  // (this tab only); that game's end card asks firstGameEnd() once where to go
+  // next, and the answer is always Home.
+  //
+  // It used to be the plan screen while planEligible() said so. Travis played
+  // it on 30 Sep 2026 and turned it round: "after they play their first game
+  // after onboarding lets maybe have the second option be 'Go to Home' so the
+  // top stays as play again but then when they see home they see the other
+  // games they can play and that there are premium ones ... the flow was not
+  // good". A child who has just won one game wants another go, not a price.
+  // The offer now waits for the two moments a grown-up is actually there: the
+  // end of the first full practice run (charge.html's "Show a grown-up"), and
+  // a tap on a locked game.
+  const FIRSTKEY = "sona.firstgame.v1";
+  // Fruit Slice for every age since 31 Oct 2026 (Travis: "go straight into
+  // either piano tiles or fruit slice. Because that's what is advertised",
+  // then "Fruit Slice for everyone"); Feed Echo was the 3-4s' first game.
+  function firstGameKey() { return "slice"; }
+  function firstGameStart() {
+    const key = firstGameKey();
+    try { sessionStorage.setItem(FIRSTKEY, key); } catch (e) {}
+    return (GAME_ACTS[key] && GAME_ACTS[key].go) || "/today.html";
+  }
+  function firstGameEnd(key) {
+    let mine = false;
+    try { mine = sessionStorage.getItem(FIRSTKEY) === gameKey(key); if (mine) sessionStorage.removeItem(FIRSTKEY); } catch (e) {}
+    if (!mine) return null;
+    return "/today.html";
+  }
+
+  // ── FREEPLAY1: ONE FREE ROUND BEFORE THE PRICE (2 Nov 2026) ──
+  // Travis: "its cuz they wanto to try it first so lets come up with
+  // something where they get a free session", then "lets make day 1 just be
+  // a game like fruit slice ... no charge up just str8 to the game", and,
+  // since the parent most likely plays it: no hand-off screens. Built
+  // switched OFF (FREE_PLAY_ON), to be turned on once the 7-day trial alone
+  // has been measured (around 16 Nov 2026).
+  // On, a family who owes the price (trialFirst) and has never had the free
+  // round goes from setup's microphone straight into ONE round of Fruit
+  // Slice, with no "Say it 5 times" page in front of it; the round's end
+  // card has one button, "Keep playing!", to the price
+  // (/subscribe.html?setup=1). Nothing is granted from the address: the
+  // round opens on the play token the practice page would have written
+  // (gameAccess's "earned"), written here, by setup's own tap, once per
+  // household (FREEPLAY, this phone's: NO_EXPORT and NO_IMPORT), spent the
+  // moment the round opens, so a reload or a quit never makes a second one.
+  // Practice-free: a mid-round Super Slice, a say-it card and a new life
+  // still ask the child's sound, as in every round.
+  const FREE_PLAY_ON = false;
+  const FREEPLAY = "sona.freeplay.v1", FREEPLAYTAB = "sona.freeplay.tab";
+  // the tests turn it on for one tab, on a test server only
+  function freePlayOn() {
+    if (FREE_PLAY_ON) return true;
+    try { return /^(localhost|127\.0\.0\.1)$/.test(location.hostname) && sessionStorage.getItem("sona.freeplayon") === "1"; } catch (e) { return false; }
+  }
+  function freePlayDue() {
+    if (!freePlayOn()) return false;
+    try { if (localStorage.getItem(FREEPLAY)) return false; } catch (e) { return false; }
+    return trialFirst();
+  }
+  // Opens the free round: answers its address, or null when it cannot (a
+  // phone that cannot store a thing: then the price, as before).
+  function freePlayStart() {
+    if (!freePlayDue()) return null;
+    const file = "arcade-slice.html";
+    try {
+      localStorage.setItem(FREEPLAY, "used:" + Date.now());
+      sessionStorage.setItem(FREEPLAYTAB, "slice");
+      sessionStorage.setItem("sona.play.token", file);
+      sessionStorage.removeItem("sona.play.active");
+      // no practice page came first: no step or item of one is carried in
+      ["sona.boost.sound", "sona.boost.level", "sona.boost.ask"].forEach(function (k) { sessionStorage.removeItem(k); });
+      sessionStorage.removeItem(FIRSTKEY);
+    } catch (e) { return null; }
+    return "/arcade-slice.html?from=charge";
+  }
+  function freePlayActive(key) {
+    try { return sessionStorage.getItem(FREEPLAYTAB) === gameKey(key || "slice"); } catch (e) { return false; }
+  }
+  // The round is over: where to go (the price, with setup's grown-ups stamp:
+  // a parent most likely played it), or null outside the free round.
+  function freePlayEnd() {
+    if (!freePlayActive("slice")) return null;
+    try { sessionStorage.removeItem(FREEPLAYTAB); sessionStorage.setItem("sona.gate.v1", String(Date.now())); } catch (e) {}
+    return trialFirst() ? "/subscribe.html?setup=1" : "/today.html";
+  }
+
+  // The crafted picture each game wears on Home's card, and on the plan
+  // screen's hero (30 Sep 2026): the plan screen sells these games, so it
+  // shows them, in the same art Home does. One map, read by both pages.
+  const CRAFTED_CARDS = { slice: "fruit", tiles: "piano", stack: "stack", run: "run", glide: "glide", feed: "feed", hoops: "hoops", bubbles: "bubbles", peekaboo: "peekaboo", balloon: "balloon", flower: "flower", rocket: "rocket", snowman: "snowman", train: "train", puppy: "puppy", stars: "stars", cake: "cake", gifts: "gifts", fishtank: "fishtank", racecar: "racecar", treasure: "treasure", soccer: "soccer", robot: "robot", castle: "castle", dino: "dino", space: "space", pizza: "pizza", monster: "monster", rise: "rise" };
 
 
   // The button path: stop whatever is talking and say THIS, now.
@@ -3397,24 +6673,35 @@
   }
 
   // ── Apple in-app purchases (RevenueCat, native shell only) ───────────────
-  // The App Store build sells "Sona Yearly" ($79.99/yr, 7-day free trial —
-  // ONE offer) through Apple's sheet via the @revenuecat/purchases-capacitor
-  // plugin — reached over the same remote-page bridge SonaAudio already uses.
-  // Web visitors never touch this (Stripe stays the web rail). We purchase
-  // DIRECTLY by product id (no offerings dependency) and unlock on the "full"
-  // entitlement. The appl_ key is publishable by design.
-  // NOTE: this product id is already App Store-approved; the price lives in
-  // App Store Connect, and the paywall renders whatever ASC reports.
+  // The App Store build sells Sona Premium through Apple's sheet via the
+  // @revenuecat/purchases-capacitor plugin — reached over the same
+  // remote-page bridge SonaAudio already uses. Web visitors never touch this
+  // (Stripe stays the web rail). We purchase DIRECTLY by product id, read
+  // RevenueCat's offerings only for whether the yearly row may show, and
+  // unlock on the "full" entitlement. The appl_ key is publishable by design.
+  // NO PRICE AND NO FREE-TRIAL LENGTH IS WRITTEN HERE, and that is the point:
+  // both live in App Store Connect, and this comment went on naming a yearly
+  // price and a trial length long after the store had changed both. The app
+  // sells the monthly product (and since 19 Oct 2026 the yearly one beside
+  // it, when RevenueCat's offering lists it); storePlan() / planWords() turn
+  // the store's own answer into every figure and every "free" a parent reads.
   // ── FREE MODE ──────────────────────────────────────────────────────────
   // The switch, what "off" means since the free version shipped (24 Sep
   // 2026), and who keeps Premium regardless of it are all documented at
   // `const FREE_MODE` below, beside the four free-era sweeps. This used to
   // carry its own copy of that list, and it went stale the day the list
   // changed — one description, next to the code it describes.
-  // Recorded human model clips (/coach/say/<SOUND>[-demo].mp3) are Rachel's own
-  // voice. OFF everywhere until a non-Rachel set exists. This MUST live here,
-  // not per-page: charge.html gated it locally and coach-call.html went on
-  // playing them ungated, so her voice shipped anyway.
+  // Recorded human model clips. Rachel's July recordings live in /coach/say/
+  // and never play whole: they are the source for the tests' child fixtures,
+  // for tools/soundclips.mjs, which cuts the ONE take of each sound that
+  // plays in its place (/coach/say-echo/<S>-sound.wav, her own voice since
+  // 2 Oct 2026), and for tools/revoice.mjs, which ran her whole lines
+  // through ElevenLabs speech-to-speech into Echo's voice (the rest of
+  // /coach/say-echo/: the line practice plays when the voice service is
+  // down, and parked Coach Call's demos). ON since 25 Sep 2026 (Travis: hear
+  // the recorded sounds in the app). This MUST live here, not per-page:
+  // charge.html once gated a local copy and coach-call.html went on playing
+  // her raw voice ungated.
   // ── Backgrounding ──────────────────────────────────────────────────────
   // `pagehide` does NOT fire when a phone is locked or the user switches apps
   // on iOS — only `visibilitychange` does. Every page here holds a live mic
@@ -3483,9 +6770,12 @@
   const GAME_STICKER = {
     slice: ["st-fruit", "sky"], run: ["st-sprint", "mint"], stack: ["st-blocks", "sky"],
     tiles: ["st-piano", "sky"], glide: ["st-balloon", "sky"], feed: ["p-echo-idle", "mint"],
+    rise: ["st-balloon", "sky"],
     bubbles: ["st-bubbles", "sky"], peekaboo: ["st-peekaboo", "peach"],
     story: ["st-story", "peach"], chapter: ["st-story", "peach"],
   };
+  // Each Say & Play game wears its own scene (sp-<key>, tools/gameart/cards.mjs).
+  SAY_KEYS.forEach(function (key) { GAME_STICKER[key] = ["sp-" + key, "sky"]; });
   function gameSticker(key) { return GAME_STICKER[String(key || "").replace(/^arcade-|\.html$/g, "")] || GAME_STICKER.story; }
 
   // ── HEAR1: on-device speech recognition (native shell only) ────────────
@@ -3494,8 +6784,9 @@
   // the iOS shell the SonaSpeech plugin runs Apple's recognizer with
   // requiresOnDeviceRecognition = true — audio never leaves the phone, and if
   // on-device recognition is unavailable the plugin REFUSES to start rather
-  // than falling back to Apple's servers. Fail closed; the spectral check is
-  // always the fallback, so web/Android behaviour is unchanged.
+  // than falling back to Apple's servers. Web checks and unclear sound or
+  // syllable checks can use the spectral fallback. App builds with this
+  // bridge require a match for words.
   //
   // The plugin returns raw transcripts only. The PASS/FAIL DECISION lives
   // here, on purpose: what counts as an attempt at a sound is clinical logic,
@@ -3504,6 +6795,9 @@
   function speechPlugin() {
     try { const C = global.Capacitor; return (C && C.isNativePlatform && C.isNativePlatform() && C.Plugins && C.Plugins.SonaSpeech) ? C.Plugins.SonaSpeech : null; } catch (e) { return null; }
   }
+  // An older shell can run the same pages without the bundled plugin. Its
+  // sound-shape path remains usable until that app receives the bridge.
+  function hasSpeechBridge() { return !!speechPlugin(); }
   let _speechOk = null;
   function speechAvailable() {
     const P = speechPlugin(); if (!P) return Promise.resolve(false);
@@ -3520,10 +6814,21 @@
     return P.requestPermission().then((r) => { _speechOk = null; return !!(r && r.granted); }).catch(() => false);
   }
   function speechStart(opts) {
+    if (_speechTurnFault) return Promise.resolve(false);
     const P = speechPlugin(); if (!P) return Promise.resolve(false);
     return speechAvailable().then((okay) => {
       if (!okay) return false;
-      return P.start(opts || {}).then(() => true).catch(() => false);
+      // On Sona's own mic Apple listens on the page's stream (g) or not at
+      // all: the plugin never opens the mic the old way behind a page that
+      // owns it (call-quality AirPods). A page on the web mic names none.
+      // Asked of the handle, not of micNative(): a fault elsewhere (a worklet
+      // that failed to load) turns micNative() off while this stream carries
+      // on natively, and a start naming no stream would close it. An ended
+      // handle names its stream only while the page is still on Sona's mic,
+      // so Apple refuses it (nostream) rather than opening the old way.
+      const h = _nm.last, mine = h && !h.web && (h.state !== "ended" || micNative());
+      const o = mine ? Object.assign({}, opts || {}, { g: h.g }) : (opts || {});
+      return P.start(o).then(() => true).catch(() => false);
     });
   }
   function speechStop() {
@@ -3531,61 +6836,1414 @@
     return P.stop().then((r) => (r && r.onDevice ? r : null)).catch(() => null);
   }
 
-  // What a digraph sounds like in a transcript. Single letters match
-  // themselves; TH matches both voiced and unvoiced spellings.
-  const HEAR_HINT = { SH: ["sh"], CH: ["ch", "tch"], TH: ["th"], THV: ["th"] };
-  function _lev1(a, b) {
-    // is edit distance <= 1? (one substitution/insert/delete) — cheap check,
-    // no full matrix needed
-    if (a === b) return true;
-    const la = a.length, lb = b.length;
-    if (Math.abs(la - lb) > 1) return false;
-    let i = 0, j = 0, edits = 0;
-    while (i < la && j < lb) {
-      if (a[i] === b[j]) { i++; j++; continue; }
-      if (++edits > 1) return false;
-      if (la === lb) { i++; j++; }
-      else if (la > lb) { i++; }
-      else { j++; }
+  // One saying, one on-device transcript. Word games used to reward the
+  // sound's broad family alone: "taco" could unlock "rabbit". Call after the
+  // page's mic opens, wait for ready, and finish AFTER the whole voiced burst.
+  // This owns no audio, storage or rewards; the page must still detect voice.
+  // Browsers and shells without the speech bridge use the sound-shape check.
+  // With the bridge, a word needs a match even if recognition is unavailable
+  // or unclear. Bare sounds and syllables can still use the shape check.
+  var _speechTurnCurrent = null, _speechTurnFault = false;
+  function speechTurn(opts) {
+    opts = opts || {};
+    var native = hasSpeechBridge(), level = String(opts.level || "word");
+    var sound = String(opts.sound || ""), word = String(opts.word || "");
+    var frame = String(opts.frame || ""), pos = String(opts.pos || ""), child = kkey("sona.profile.v1");
+    var previous = _speechTurnCurrent;
+    var r = { active: native, required: native && (level === "word" || level === "sentence"), cancelled: false, started: false, startSettled: false, pending: null, closing: null, result: null };
+    function valid() {
+      return !r.cancelled && _speechTurnCurrent === r && !document.hidden && kkey("sona.profile.v1") === child;
     }
-    return edits + (la - i) + (lb - j) <= 1;
+    function bounded(promise, ms, fallback, expired) {
+      return new Promise(function (resolve) {
+        var done = false, timer = setTimeout(function () {
+          if (done) return; done = true;
+          if (expired) expired();
+          resolve(fallback);
+        }, ms);
+        Promise.resolve(promise).then(function (value) {
+          if (done) return; done = true; clearTimeout(timer); resolve(value);
+        }, function () {
+          if (done) return; done = true; clearTimeout(timer); resolve(fallback);
+        });
+      });
+    }
+    function stopNative() {
+      try { return bounded(speechStop(), 2500, null, function () { _speechTurnFault = true; }); }
+      catch (e) { return Promise.resolve(null); }
+    }
+    function close() {
+      if (r.closing) return r.closing;
+      // Availability/permission may still be pending. Cancellation prevents
+      // those from ever starting. An actual start in flight needs TWO stops:
+      // immediately, then after its answer, before another saying can start.
+      if (r.timeoutStop) {
+        r.closing = r.timeoutStop;
+      } else if (r.pending && !r.startSettled) {
+        r.closing = Promise.all([stopNative(), r.pending]).then(stopNative);
+      } else r.closing = r.started ? stopNative() : Promise.resolve(null);
+      r.closing = r.closing.then(function (result) { r.started = false; return result; });
+      return r.closing;
+    }
+    r.cancel = function () { r.cancelled = true; return close().then(function () {}); };
+    var before = previous ? previous.cancel() : Promise.resolve();
+    _speechTurnCurrent = r;
+    r.ready = before.then(function () {
+      if (!native) return true;
+      if (!valid() || _speechTurnFault) return false;
+      return bounded(speechAvailable(), 3000, null).then(function (okay) {
+        if (okay === null) return false;
+        if (okay || !valid()) return okay;
+        return bounded(speechPerm(), 60000, false).then(function (granted) { return granted && valid() ? bounded(speechAvailable(), 3000, false) : false; });
+      }).then(function (okay) {
+        if (!okay || !valid() || _speechTurnFault) return false;
+        // No answer in contextualStrings: a hint toward "rabbit" is useful
+        // dictation, but undermines checking what was actually said.
+        var starting = Promise.resolve(speechStart({ words: [], maxMs: 15000 }));
+        r.pending = bounded(starting, 5000, false, function () {
+          r.startTimedOut = true; _speechTurnFault = true; r.timeoutStop = stopNative();
+        });
+        // A broken bridge must not freeze a word forever or start a listener
+        // later under Echo. After a start/stop timeout this page makes no new
+        // native starts; a late old start is stopped again, safely in isolation.
+        starting.then(function () { if (r.startTimedOut) stopNative(); }, function () {});
+        return r.pending.then(function (started) {
+          r.startSettled = true; r.started = !!started;
+          if (!valid() || r.startTimedOut) return close().then(function () { return false; });
+          return r.started;
+        }, function () { r.startSettled = true; return false; });
+      });
+    }).catch(function () { return false; });
+    r.finish = function () {
+      if (r.result) return r.result;
+      r.result = r.ready.then(function (started) {
+        if (!valid()) return close().then(function () { return "cancelled"; });
+        if (!native) return "unknown";
+        if (!started) return "unavailable";
+        return close().then(function (result) {
+          if (!valid()) return "cancelled";
+          if (!result || result.onDevice !== true) return "unavailable";
+          return hearVerdict(result.text, sound, word, { level: level, frame: frame, pos: pos });
+        });
+      }).catch(function () { return valid() ? "unavailable" : "cancelled"; });
+      return r.result;
+    };
+    return r;
+  }
+
+  // ── SONA'S OWN MICROPHONE IN THE IPHONE APP (NATIVE MIC, Oct 2026) ────────
+  // Travis: in the app, every listen made the phone act as if it were on a
+  // call (volume buttons move call volume, AirPods drop to call quality, a
+  // parent's music ducks). The cause is WebKit, not a setting: while a page
+  // captures with getUserMedia, WebKit's own audio session is PlayAndRecord
+  // with VideoChat mode and Apple's voice processing, and the app cannot
+  // change it. So inside the app the mic is opened by Sona's native code
+  // (SonaSpeechPlugin.swift: AVAudioEngine, .playAndRecord, mode .default, no
+  // hands-free Bluetooth, no voice processing) and its samples are handed to
+  // this page as events. Pages never see the difference: micOpen() answers a
+  // stream-like handle with one track (stop, readyState, muted, getSettings),
+  // micSource() answers an AudioNode fed by those samples, micRecorder() a
+  // recorder for the keepsake clip. Every analyser, bar and timing on every
+  // listening page is untouched.
+  //
+  // NEVER LESS ABLE THAN BEFORE. Any app build without the new native code
+  // (every build in the App Store on 12 Oct 2026) declares no micOpen, so
+  // Capacitor puts none on the plugin and micNative() is false: each page runs
+  // the same getUserMedia line it always ran. A native failure that is not a
+  // refusal falls back to that same getUserMedia, for the rest of the page.
+  // NATIVE_MIC_ON = false is the off switch: a web deploy, no App Store review.
+  //
+  // NO AUDIO LEAVES THE PHONE. The samples move from Sona's native code into
+  // this page on the same phone and nowhere else: nothing in this block
+  // fetches, posts or opens a socket (mictest pins it), and the one clip a
+  // day goes only to the IndexedDB saveRecording above.
+  //
+  // SILENCE IS NEVER A TRY. Nothing here makes a sample. A late or missing
+  // chunk is exact zeros, which every listening page already reads as no
+  // sound; the mic's own warm-up zeros are never passed on.
+  const NATIVE_MIC_ON = true;
+  // The boost on the page's copy of the mic. 1.0 = none. Changing it changes
+  // which tries count as heard: Rachel's call, after Travis's phone numbers.
+  const NATIVE_MIC_GAIN = 1.0;
+  // Every knob the native mic takes is sent from here, so tuning it is a web
+  // deploy. maxMs: the phone closes a stream nobody has re-confirmed in 5
+  // minutes (a live page re-opens it at once). duck: turn other apps down
+  // while listening. speaker: .defaultToSpeaker (the same bottom mic WebKit's
+  // call mode used). ioMs 0: leave the phone's own buffer alone. frames: a
+  // hint for the tap; iOS often hands over ~100 ms whatever is asked.
+  // primeMs..: the page-side queue (see nmFifo). openMs: an open with the
+  // permission already given that has not answered by then falls back.
+  // firstMs: no real sound by then falls back. watchMs: a live stream that
+  // goes quiet this long is re-opened. probeMs: how long a new feed has to
+  // show it carries sound before the page uses the web mic instead.
+  const NATIVE_MIC = { maxMs: 300000, duck: false, speaker: true, ioMs: 0, frames: 1024,
+    primeMs: 120, primeMaxMs: 300, stepMs: 40, openMs: 4000, firstMs: 1500, watchMs: 2500,
+    probeMs: 900, resumeMs: [250, 1000, 2000, 4000], pauseMaxMs: 60000, clipMaxMs: 25000, quietMaxMs: 300 };
+  const _nmWeak = () => (typeof WeakMap === "function" ? new WeakMap() : null);
+  const _nm = { subscribed: false, subscribing: null, broken: false, why: "", busy: 0, live: [], byG: {}, lastG: 0,
+    pending: 0, stash: [], staleClosed: {}, of: _nmWeak(), mods: _nmWeak(), last: null, closing: 0, quiet: [],
+    closeMaxMs: 0, opens: [], seq: 0, epoch: 0, leave: [] };
+
+  // "sona.nativemic": "off" (this phone uses the web mic), or JSON knobs, set
+  // only by hand in Safari's Web Inspector for Travis's measurements. It is on
+  // NO_EXPORT and NO_IMPORT: a measurement setting never rides a backup onto
+  // another family's phone, where it would change what counts as heard.
+  function _nmTune() {
+    let raw = null; try { raw = localStorage.getItem("sona.nativemic"); } catch (e) {}
+    if (!raw) return {};
+    if (raw === "off") return { off: true };
+    try { const o = JSON.parse(raw); return (o && typeof o === "object") ? o : {}; } catch (e) { return {}; }
+  }
+  function _nmNum(v, lo, hi, dflt) { const x = Number(v); return (v != null && isFinite(x)) ? Math.min(hi, Math.max(lo, x)) : dflt; }
+  function micGain() { return _nmNum(_nmTune().gain, 0.25, 8, NATIVE_MIC_GAIN); }
+
+  // True only inside an app build whose plugin declares the mic methods.
+  // Old builds, a page in a browser, and every test stand-in for "the app"
+  // (Capacitor = {}, Plugins: {}, a Sona.isNativeApp override) answer false.
+  function micNative() {
+    if (!NATIVE_MIC_ON || _nm.broken) return false;
+    if (_nmTune().off) return false;
+    const P = speechPlugin();
+    return !!(P && typeof P.micOpen === "function" && typeof P.micClose === "function"
+      && typeof P.micPermission === "function" && typeof P.addListener === "function");
+  }
+
+  // ── THE SILENT SWITCH ON SONA'S OWN MIC (15 Oct 2026) ──
+  // Travis, asked "When the iPhone is on silent, what should Sona do?", picked
+  // "Everything off": nothing plays on a silenced phone, Echo included, like
+  // most iPhone games. In the app Echo's voice, the chimes, Piano Tiles' notes,
+  // Bubble Pop's pops and Rachel's take are <audio> elements (mediaPCM and the
+  // pages' own), and while an audible one plays WebKit puts the app's audio in
+  // Playback, which ignores the switch (on Sona's own mic the Web Audio
+  // sounds the games make themselves already followed it).
+  // navigator.audioSession (WKWebView, iOS 16.4 and later) overrides WebKit's
+  // choice for media elements and Web Audio alike. "transient-solo"
+  // (SoloAmbient) follows the switch and still pauses other apps' music, as
+  // Playback does today. Not "ambient": it mixes, so a parent's Spotify would
+  // keep playing into the open mic.
+  //
+  // NOT EVERY SOUND IS WEBKIT'S: the browser's robot voice (speechSynthesis,
+  // the fallback when Echo's line will not load) plays on the app's own
+  // session, which SonaSpeechPlugin.swift's sessionOff() leaves after each
+  // listen. It follows the switch only from the App Store build whose
+  // sessionOff() leaves .ambient (15 Oct 2026); in an earlier build with
+  // Sona's own mic it still plays on a silenced phone. This page change ships
+  // with a web deploy; that one needs a new App Store build.
+  //
+  // THE PRICE OF IT: while the type is anything but "auto" (or
+  // "play-and-record"), WebKit refuses getUserMedia (InvalidStateError). So it
+  // is set only where WebKit never captures, on Sona's own mic, and given back
+  // ("auto") before every capture WebKit makes, for the rest of that page:
+  // every fallback in this block goes through _webMic, and _asGuard catches a
+  // page's own getUserMedia line (its fallback, or a parked page that never
+  // asks micNative()). And WebKit holds the override for the whole web
+  // process, across same-site page loads, while each new page's getter starts
+  // at "auto": so every page load in a build that could have set it writes its
+  // own type, "auto" included (an earlier page's override, held after the
+  // kill switch or "sona.nativemic" turned Sona's mic off, would otherwise
+  // refuse this page's web mic). A browser and a build without micOpen are
+  // never touched: nothing there ever sets it.
+  //
+  // TO TAKE IT OUT, set AUDIO_SESSION_TYPE to "auto": every load then writes
+  // "auto", which also clears an override an open app still holds. Never
+  // revert this block, or roll the website back past it, while an app build
+  // with micOpen is in families' hands: code without it never writes "auto",
+  // so WebKit refuses its own mic (every fallback, and every listen once
+  // NATIVE_MIC_ON is false) until the app is closed and opened again.
+  const AUDIO_SESSION_TYPE = "transient-solo";
+  // type: what this page last wrote (null: untouched) · auto: this page gave
+  // the session back for a web capture, for good · why: what asked it to
+  const _as = { type: null, auto: false, why: "" };
+  function _asApi() {
+    try { const s = global.navigator && global.navigator.audioSession; return (s && typeof s === "object" && "type" in s) ? s : null; } catch (e) { return null; }
+  }
+  function _asWrite(type) {
+    const s = _asApi(); if (!s) return false;
+    try { s.type = type; _as.type = type; return true; } catch (e) { return false; }
+  }
+  // Every page load, and a page back from the back-forward cache (the page in
+  // between may have changed the process's override).
+  function _asApply() {
+    if (!isNativeApp() || !_asApi()) return;
+    const P = speechPlugin();
+    if (!P || typeof P.micOpen !== "function") return;   // a build that never sets it
+    if (!_as.auto && micNative()) { if (_asWrite(AUDIO_SESSION_TYPE)) _asGuard(); }
+    else _asWrite("auto");
+  }
+  // Give the session back before WebKit captures: from here to the end of
+  // this page. Writes only on a page that set it (a page that wrote "auto" at
+  // load already has it back).
+  function _asAuto(why) {
+    if (_as.auto || !_as.type || _as.type === "auto") return;
+    _as.auto = true; _as.why = String(why || "web mic");
+    _asWrite("auto");
+  }
+  // WebKit's own mic, with the session given back first.
+  function _webMic(constraints, why) {
+    _asAuto(why);
+    return navigator.mediaDevices.getUserMedia(constraints);
+  }
+  // Any getUserMedia this page makes gives the session back first, in the
+  // same turn, so WebKit's check sees "auto": a page's own fallback line runs
+  // after micNative() has said no, and the parked pages (story, check, coach
+  // call, Peekaboo) never ask it.
+  function _asGuard() {
+    try {
+      const md = global.navigator.mediaDevices;
+      if (!md || typeof md.getUserMedia !== "function" || md.getUserMedia.__sonaSession) return;
+      const real = md.getUserMedia;
+      const guard = function () { _asAuto("getUserMedia"); return real.apply(this || md, arguments); };
+      guard.__sonaSession = true;
+      md.getUserMedia = guard;
+    } catch (e) {}
+  }
+  _asApply();
+  try { global.addEventListener("pageshow", (e) => { if (e && e.persisted) _asApply(); }); } catch (e) {}
+
+  function _nmErr(name, message) {
+    try { return new DOMException(message || name, name); } catch (e) { const er = new Error(message || name); er.name = name; return er; }
+  }
+  function _nmFail(kind, code) { const e = new Error(code || kind); e.kind = kind; e.code = code || kind; return e; }
+  // what a rejection means: "denied" (a refusal), "busy" (the phone said not
+  // now), "temp" (the open ended for a reason that is not a fault),
+  // "nolistener" (the page lost its subscription), anything else a fault
+  function _nmKind(e) {
+    const c = e && (e.kind || e.code);
+    return (c === "denied" || c === "busy" || c === "temp" || c === "nolistener") ? c : "fail";
+  }
+  // a plugin call as a promise, even if the bridge throws while making it
+  function _nmP(fn) { try { return Promise.resolve(fn()); } catch (e) { return Promise.reject(e); } }
+  function _nmTimed(p, ms) {
+    return new Promise((resolve, reject) => {
+      let done = false;
+      const t = ms > 0 ? setTimeout(() => { if (!done) { done = true; reject(_nmFail("fail", "timeout")); } }, ms) : 0;
+      Promise.resolve(p).then((v) => { if (!done) { done = true; clearTimeout(t); resolve(v); } },
+        (e) => { if (!done) { done = true; clearTimeout(t); reject(e); } });
+    });
+  }
+  function _nmEmitter(o) {
+    const L = {};
+    o.addEventListener = function (t, fn) { if (typeof fn === "function") (L[t] = L[t] || []).push(fn); };
+    o.removeEventListener = function (t, fn) { const a = L[t]; if (a) { const i = a.indexOf(fn); if (i >= 0) a.splice(i, 1); } };
+    o.dispatchEvent = function (ev) {
+      const on = o["on" + ev.type];
+      try { if (typeof on === "function") on.call(o, ev); } catch (e) {}
+      (L[ev.type] || []).slice().forEach((fn) => { try { fn.call(o, ev); } catch (e) {} });
+      return true;
+    };
+    return o;
+  }
+  function _nmFire(o, type, extra) { o.dispatchEvent(Object.assign({ type: type, target: o, currentTarget: o }, extra || {})); }
+  // One chunk: base64 of n little-endian Float32 samples (an iPhone and this
+  // page are both little-endian), mono.
+  function _nmDecode(b64, n) {
+    if (typeof b64 !== "string" || !b64) return null;
+    let bin; try { bin = atob(b64); } catch (e) { return null; }
+    const len = bin.length - (bin.length % 4), u8 = new Uint8Array(len);
+    for (let i = 0; i < len; i++) u8[i] = bin.charCodeAt(i);
+    const f = new Float32Array(u8.buffer);
+    return (n > 0 && n < f.length) ? f.subarray(0, n) : f;
+  }
+
+  // ── the queue between the phone's chunks and the page's audio clock ──
+  // Chunks arrive on the page's main thread in bursts (iOS often hands over
+  // ~100 ms at a time); the audio clock wants 128 samples every 2.7 ms. This
+  // queue sits between them. It starts holding real audio (the feeder is
+  // made from the newest prime of what the mic has heard), plays out what it
+  // holds, and on running dry writes exact zeros for the missing part only,
+  // counts a gap, aims a step deeper (stepMs, up to maxPrimeMs) and resumes
+  // only once it holds that aim again. Resuming at one step (the first cut)
+  // left a busy phone's queue one step deep for good: with ~21 ms chunks a
+  // little late it ran dry every few hundred ms, and a game card whose room
+  // reading needs 450 ms without a gap never said "I'm listening…" (13 Oct
+  // 2026, CI). After a burst (chunks held behind a long task, then delivered
+  // together) it drops the oldest audio back to its aim, so the page never
+  // stays late for good. A chunk at another rate is resampled on arrival
+  // (4-point Hermite: under 0.6 dB down at 12 kHz, where linear lost ~1.8).
+  // Exact zeros stay exact zeros, so the pages' starved-frame checks still
+  // see a gap as a gap. Its source is copied, as text, into the worklet
+  // below: keep it ES5 and free of anything outside itself.
+  function nmFifo(o, outRate) {
+    var smp = function (m) { return Math.round(m * outRate / 1000); };
+    var ms = function (n) { return Math.round(n * 1000 / outRate); };
+    var f = { q: [], qi: 0, depth: 0, target: smp(o.primeMs || 120), step: Math.max(1, smp(o.stepMs || 40)),
+      most: smp(o.maxPrimeMs || 300), primed: false, gaps: 0, maxDepth: 0, avg: 0, ended: false, rs: null, rsRate: 0 };
+    function resampler(inRate) {
+      var step = inRate / outRate, p = 3, h0 = null, h1 = 0, h2 = 0;
+      return function (x) {
+        if (h0 === null) { h0 = h1 = h2 = x[0]; }
+        var n = x.length, N = n + 3, out = new Float32Array(Math.ceil((N - p) / step) + 2), k = 0;
+        var y = function (i) { return i === 0 ? h0 : i === 1 ? h1 : i === 2 ? h2 : x[i - 3]; };
+        for (;;) {
+          var i = Math.floor(p);
+          if (i + 2 > N - 1) break;
+          var t = p - i, xm1 = y(i - 1), x0 = y(i), x1 = y(i + 1), x2 = y(i + 2);
+          var c1 = 0.5 * (x1 - xm1), c2 = xm1 - 2.5 * x0 + 2 * x1 - 0.5 * x2, c3 = 0.5 * (x2 - xm1) + 1.5 * (x0 - x1);
+          out[k++] = ((c3 * t + c2) * t + c1) * t + x0;
+          p += step;
+        }
+        p -= n; h0 = y(N - 3); h1 = y(N - 2); h2 = y(N - 1);
+        return out.subarray(0, k);
+      };
+    }
+    f.drop = function (k) {
+      while (k > 0 && f.q.length) {
+        var c = f.q[0], left = c.length - f.qi;
+        if (left <= k) { f.q.shift(); f.qi = 0; f.depth -= left; k -= left; }
+        else { f.qi += k; f.depth -= k; k = 0; }
+      }
+    };
+    f.push = function (x, r) {
+      if (!x || !x.length || f.ended) return;
+      if (r && r !== outRate) { if (!f.rs || f.rsRate !== r) { f.rs = resampler(r); f.rsRate = r; } x = f.rs(x); }
+      else { f.rs = null; f.rsRate = 0; }
+      if (!x.length) return;
+      f.q.push(x); f.depth += x.length;
+      if (f.primed && f.depth > f.target + 2 * f.step) f.drop(f.depth - f.target);
+      if (f.depth > f.maxDepth) f.maxDepth = f.depth;
+    };
+    f.ready = function () { f.primed = f.depth > 0; };
+    f.read = function (out) {
+      var n = out.length, w = 0, z;
+      if (!f.primed) {
+        if (f.depth >= f.target) f.primed = true;
+        else { for (z = 0; z < n; z++) out[z] = 0; return; }
+      }
+      while (w < n && f.q.length) {
+        var c = f.q[0], take = Math.min(n - w, c.length - f.qi);
+        out.set(c.subarray(f.qi, f.qi + take), w);
+        w += take; f.qi += take; f.depth -= take;
+        if (f.qi >= c.length) { f.q.shift(); f.qi = 0; }
+      }
+      if (w < n) {
+        for (z = w; z < n; z++) out[z] = 0;
+        f.gaps++; f.primed = false; f.target = Math.min(f.most, f.target + f.step);
+      }
+      f.avg = f.avg ? f.avg * 0.99 + f.depth * 0.01 : f.depth;
+    };
+    f.stats = function () { return { gaps: f.gaps, queueMs: ms(f.avg), queueMaxMs: ms(f.maxDepth), targetMs: ms(f.target) }; };
+    return f;
+  }
+  // The worklet: the queue above, run on the audio thread. It has no input
+  // and is never connected to the speaker; the page's own analysers pull it.
+  function _nmWorkletSource() {
+    return "var nmFifo = " + nmFifo.toString() + ";\n" +
+      "class SonaMicFeed extends AudioWorkletProcessor {\n" +
+      "  constructor(options) {\n" +
+      "    super();\n" +
+      "    var o = (options && options.processorOptions) || {}, self = this;\n" +
+      "    this.f = nmFifo(o, sampleRate); this.t = 0; this.g = 0;\n" +
+      "    (o.prime || []).forEach(function (c) { self.f.push(c.pcm, c.r); });\n" +
+      "    this.f.ready();\n" +
+      "    this.port.onmessage = function (e) { var m = e.data || {}; if (m.end) self.f.ended = true; else if (m.pcm) self.f.push(m.pcm, m.r); };\n" +
+      "  }\n" +
+      "  process(inputs, outputs) {\n" +
+      "    if (this.f.ended) return false;\n" +
+      "    var ch = outputs[0] && outputs[0][0];\n" +
+      "    if (ch) this.f.read(ch);\n" +
+      "    if (this.f.gaps !== this.g || currentTime - this.t >= 0.5) { this.g = this.f.gaps; this.t = currentTime; this.port.postMessage(this.f.stats()); }\n" +
+      "    return true;\n" +
+      "  }\n" +
+      "}\n" +
+      "registerProcessor(\"sona-mic-feed\", SonaMicFeed);\n";
+  }
+  // once per audio context: the module, from a blob URL (no file to keep in step)
+  function _nmModule(ctx) {
+    let m = _nm.mods && _nm.mods.get(ctx);
+    if (m) return m;
+    m = { ok: false, p: null };
+    let url = null;
+    try { url = URL.createObjectURL(new Blob([_nmWorkletSource()], { type: "application/javascript" })); } catch (e) {}
+    // a synchronous throw from addModule is a failed load, not a page error
+    try { m.p = url ? Promise.resolve(ctx.audioWorklet.addModule(url)) : Promise.reject(_nmFail("fail", "blob")); } catch (e) { m.p = Promise.reject(e); }
+    m.p.then(() => { m.ok = true; }, () => {}).then(() => { try { if (url) URL.revokeObjectURL(url); } catch (e) {} });
+    if (_nm.mods) _nm.mods.set(ctx, m);
+    return m;
+  }
+
+  // ── one feed per (stream, audio context) ──
+  // Every micSource() on that context gets its own GainNode from it, so a
+  // page's src.disconnect() drops only its own (charge.html makes one for its
+  // room reading and one per listening window on the same stream).
+  function _nmFeeder(ctx, h) {
+    const f = { ctx, outs: [], node: null, sp: null, fifo: null, web: null, probe: null, probeT: 0, probing: false,
+      ear: null, earBuf: null, earTried: false, ended: false, gaps: 0, queueMs: 0, queueMaxMs: 0 };
+    const opts = () => ({ primeMs: h._primeMs(), stepMs: NATIVE_MIC.stepMs, maxPrimeMs: NATIVE_MIC.primeMaxMs });
+    function wire(node) {
+      f.outs.forEach((o) => { try { node.connect(o); } catch (e) {} });
+      if (f.probe) { try { node.connect(f.probe); } catch (e) {} }
+      if (f.ear) { try { node.connect(f.ear); } catch (e) {} }
+    }
+    function makeWorklet() {
+      const o = opts(); o.prime = h._recent(o.primeMs);
+      const node = new global.AudioWorkletNode(ctx, "sona-mic-feed", { numberOfInputs: 0, numberOfOutputs: 1, outputChannelCount: [1], processorOptions: o });
+      node.port.onmessage = (e) => {
+        const s = e.data || {};
+        if (typeof s.gaps === "number") f.gaps = s.gaps;
+        if (typeof s.queueMs === "number") f.queueMs = s.queueMs;
+        if (typeof s.queueMaxMs === "number" && s.queueMaxMs > f.queueMaxMs) f.queueMaxMs = s.queueMaxMs;
+      };
+      try { node.__sonaMic = true; } catch (e) {}
+      return node;
+    }
+    // the stopgap while a context's first worklet module loads (the first
+    // listen on a page), so a brand-new listen never starts on exact zeros
+    // (the games' room floor only ever goes down)
+    function makeSP() {
+      const o = opts(), fifo = nmFifo(o, ctx.sampleRate);
+      h._recent(o.primeMs).forEach((c) => fifo.push(c.pcm, c.r));
+      fifo.ready();
+      const sp = ctx.createScriptProcessor(512, 1, 1);
+      sp.onaudioprocess = (e) => {
+        const ch = e.outputBuffer.getChannelData(0);
+        if (f.ended || f.fifo !== fifo) { ch.fill(0); return; }
+        fifo.read(ch);
+        const s = fifo.stats(); f.gaps = s.gaps; f.queueMs = s.queueMs; if (s.queueMaxMs > f.queueMaxMs) f.queueMaxMs = s.queueMaxMs;
+      };
+      try { sp.__sonaMic = true; } catch (e) {}
+      f.fifo = fifo;
+      return sp;
+    }
+    function dropSP() { if (f.sp) { try { f.sp.disconnect(); } catch (e) {} f.sp.onaudioprocess = null; f.sp = null; f.fifo = null; } }
+    function dropNode() { if (f.node) { try { f.node.port.postMessage({ end: true }); } catch (e) {} try { f.node.disconnect(); } catch (e) {} f.node = null; } }
+    f.push = function (pcm, r) {
+      if (f.ended || f.web) return;
+      if (f.node) { const c = pcm.slice(); try { f.node.port.postMessage({ pcm: c, r: r }, [c.buffer]); } catch (e) {} }
+      else if (f.fifo) f.fifo.push(pcm, r);
+    };
+    f.add = function (out) {
+      f.outs.push(out);
+      const n = f.web || f.node || f.sp;
+      if (n) { try { n.connect(out); } catch (e) {} }
+      f.earStart();
+      f.probeStart();
+    };
+    // THE FEED'S OWN EAR (micDeaf). Between the phone's samples (a pause, a
+    // re-open, a chunk later than the queue is deep) the feed plays exact
+    // zeros. A page's room floor only ever goes down, so a few frames of them
+    // would set it to nothing for the rest of the page, and its bar would
+    // drop to the minimum: a TV that never answered a card would answer it.
+    // This analyser hears what the page's own analysers hear, at the same
+    // moment, and says when the last frame held a gap: a run of exact zeros
+    // (GAP_RUN, as practice's starved() reads it), which real audio, even a
+    // mic's faintest hiss, never is. Made with the page's first source, so
+    // it is full by the page's first frame.
+    const GAP_RUN = 96;
+    f.earStart = function () {
+      if (f.earTried || f.web || typeof ctx.createAnalyser !== "function") return;
+      f.earTried = true;
+      try {
+        const ear = ctx.createAnalyser();
+        if (typeof ear.getFloatTimeDomainData !== "function") return;   // old WebKit: the handle's state alone
+        ear.fftSize = 512; try { ear.__sonaMic = true; } catch (e) {}
+        f.ear = ear; f.earBuf = new Float32Array(ear.fftSize);
+        const n = f.node || f.sp; if (n) n.connect(ear);
+      } catch (e) { f.ear = null; }
+    };
+    f.deaf = function () {
+      if (f.ended) return true;
+      if (f.web || !f.ear) return false;
+      try {
+        f.ear.getFloatTimeDomainData(f.earBuf);
+        for (let i = 0, run = 0; i < f.earBuf.length; i++) { if (f.earBuf[i] !== 0) run = 0; else if (++run >= GAP_RUN) return true; }
+      } catch (e) {}
+      return false;
+    };
+    // The web mic took over (h._toWeb): the same out gains, a real source.
+    f.toWeb = function (ws) {
+      if (f.ended || f.web) return;
+      try { f.web = f.ctx.createMediaStreamSource(ws); } catch (e) { f.web = null; return; }
+      f.outs.forEach((o) => { try { f.web.connect(o); } catch (e) {} });
+      dropNode(); dropSP();
+      if (f.ear) { try { f.ear.disconnect(); } catch (e) {} f.ear = null; }
+      try { if (f.ctx.state !== "running" && f.ctx.resume) Promise.resolve(f.ctx.resume()).catch(() => {}); } catch (e) {}
+    };
+    f.end = function () {
+      if (f.ended) return;
+      f.ended = true; clearTimeout(f.probeT);
+      dropNode(); dropSP();
+      if (f.web) { try { f.web.disconnect(); } catch (e) {} f.web = null; }
+      if (f.probe) { try { f.probe.disconnect(); } catch (e) {} f.probe = null; }
+      if (f.ear) { try { f.ear.disconnect(); } catch (e) {} f.ear = null; }
+      f.outs = [];
+    };
+    // Nothing checks a graph by itself: if the feed carries nothing while the
+    // phone's chunks arrive (a worklet that loads but stays silent on some
+    // WebKit, a node nobody pulls, a context that never starts without a
+    // capture), three reads in a row say so and the web mic takes over.
+    f.probeStart = function () {
+      if (f.probing || f.web || typeof ctx.createAnalyser !== "function") return;
+      f.probing = true;
+      let bad = 0;
+      try { f.probe = ctx.createAnalyser(); f.probe.fftSize = 2048; try { f.probe.__sonaMic = true; } catch (e) {} const n = f.node || f.sp; if (n) n.connect(f.probe); } catch (e) { f.probe = null; }
+      const check = () => {
+        if (f.ended || f.web || !f.probe) return;
+        if (h.state !== "live" || document.hidden || !h.firstAt || performance.now() - h.lastAt > 500) { f.probeT = setTimeout(check, NATIVE_MIC.probeMs / 3); return; }
+        let silent = true;
+        if (ctx.state === "running" && (f.node || f.sp)) {
+          try {
+            if (typeof f.probe.getFloatTimeDomainData !== "function") silent = false;
+            else { const b = new Float32Array(f.probe.fftSize); f.probe.getFloatTimeDomainData(b); for (let i = 0; i < b.length; i++) if (b[i] !== 0) { silent = false; break; } }
+          } catch (e) { silent = false; }
+        }
+        if (!silent) { try { f.probe.disconnect(); } catch (e) {} f.probe = null; return; }
+        if (++bad >= 3) { h._toWeb(ctx.state === "running" ? "graph" : "context " + ctx.state); return; }
+        f.probeT = setTimeout(check, NATIVE_MIC.probeMs / 3);
+      };
+      f.probeT = setTimeout(check, NATIVE_MIC.probeMs / 3);
+    };
+    if (h.web) { f.toWeb(h.web); return f; }
+    const hasWorklet = !!(ctx.audioWorklet && typeof ctx.audioWorklet.addModule === "function" && typeof global.AudioWorkletNode === "function");
+    const hasSP = typeof ctx.createScriptProcessor === "function";
+    if (!hasWorklet && !hasSP) { _nm.broken = true; _nm.why = "no feed"; throw _nmErr("NotSupportedError", "this audio engine cannot take Sona's microphone"); }
+    if (!hasWorklet) { f.sp = makeSP(); return f; }
+    const mod = _nmModule(ctx);
+    if (mod.ok) { f.node = makeWorklet(); return f; }
+    if (hasSP) f.sp = makeSP();
+    mod.p.then(() => {
+      if (f.ended || f.web) return;
+      let node; try { node = makeWorklet(); } catch (e) { _nm.broken = true; _nm.why = "worklet node"; return; }
+      f.node = node; wire(node); dropSP();
+    }, () => { _nm.broken = true; _nm.why = "worklet"; });   // this listen keeps the stopgap; the next open uses the web mic
+    return f;
+  }
+
+  // ── the handle a page holds: a MediaStream to every line that reads one ──
+  function _nmHandle(P, ans, constraints) {
+    _nm.seq++;
+    const track = _nmEmitter({ kind: "audio", id: "sona-mic-" + _nm.seq, label: "Sona microphone", enabled: true, muted: false,
+      readyState: "live", contentHint: "", onended: null, onmute: null, onunmute: null });
+    const stream = _nmEmitter({ id: "sona-stream-" + _nm.seq, active: true, sonaNative: true, onaddtrack: null, onremovetrack: null });
+    const h = { P, constraints, stream, track, g: ans.g, rate: +ans.sampleRate > 0 ? +ans.sampleRate : 48000, route: ans.route || {},
+      v: ans.v || 0, state: "opening", nativeLive: true, web: null, webAsking: false, feeders: [], recorders: [], hist: [], histMs: 0,
+      lastQ: 0, firstAt: 0, lastAt: 0, openedAt: performance.now(), readyMs: null, leadZeroMs: 0, chunkMs: 0, chunks: 0,
+      restarts: 0, pauses: 0, tries: 0, pausedAt: 0, resuming: false, unmute: false, resumeT: 0, watchT: 0, closeAckMs: null, why: "",
+      _ready: null, _fail: null };
+    stream.getTracks = () => [track];
+    stream.getAudioTracks = () => [track];
+    stream.getVideoTracks = () => [];
+    stream.getTrackById = (id) => (id === track.id ? track : null);
+    stream.addTrack = () => {}; stream.removeTrack = () => {};
+    stream.clone = () => stream;
+    // stop() is synchronous, as a real track's is: by the time it returns no
+    // sample reaches this page's analysers or its clip, so a page stamps its
+    // mic-closed moment exactly where it always did. The phone's own close
+    // follows over the bridge (micQuiet() waits for it; the box shows it).
+    track.stop = () => h._end("stopped", false);
+    track.getConstraints = () => ({});
+    track.getCapabilities = () => ({});
+    track.applyConstraints = () => Promise.resolve();
+    track.clone = () => track;
+    track.getSettings = () => {
+      if (h.web) {
+        let s = {}; try { const wt = h.web.getAudioTracks()[0]; s = Object.assign({}, wt && wt.getSettings ? wt.getSettings() : {}); } catch (e) {}
+        s.sonaNative = false; s.sonaWhy = h.why; return s;
+      }
+      const st = h._stats();
+      // autoGainControl is left unset: iOS says nothing about what mode
+      // .default does to the level, and the box shows "?" rather than guess
+      return { deviceId: "sona-native", groupId: "", channelCount: 1, sampleRate: h.rate, sampleSize: 32,
+        echoCancellation: false, noiseSuppression: false, autoGainControl: undefined,
+        sonaNative: true, sonaMode: "default", sonaInput: h.route.input || "", sonaOutput: h.route.output || "", sonaGain: micGain(),
+        sonaChunkMs: Math.round(h.chunkMs), sonaQueueMs: st.queueMs, sonaGaps: st.gaps, sonaRestarts: h.restarts,
+        sonaLeadZeroMs: Math.round(h.leadZeroMs), sonaCloseMs: _nm.closeMaxMs || null };
+    };
+    h._primeMs = () => {
+      const p = _nmNum(_nmTune().primeMs, 20, NATIVE_MIC.primeMaxMs, NATIVE_MIC.primeMs);
+      return Math.min(NATIVE_MIC.primeMaxMs, Math.max(p, 1.5 * h.chunkMs + NATIVE_MIC.stepMs));
+    };
+    h._stats = () => {
+      let gaps = 0, q = 0, qm = 0;
+      h.feeders.forEach((f) => { gaps += f.gaps; if (f.queueMs > q) q = f.queueMs; if (f.queueMaxMs > qm) qm = f.queueMaxMs; });
+      return { gaps, queueMs: q, queueMaxMs: qm };
+    };
+    // the newest `ms` of what the mic heard, to start a new feed full
+    h._keep = (pcm, r) => {
+      h.hist.push({ pcm, r }); h.histMs += pcm.length * 1000 / r;
+      const keepMs = NATIVE_MIC.primeMaxMs + NATIVE_MIC.stepMs + h.chunkMs;
+      while (h.hist.length > 1 && h.histMs - h.hist[0].pcm.length * 1000 / h.hist[0].r >= keepMs) { h.histMs -= h.hist[0].pcm.length * 1000 / h.hist[0].r; h.hist.shift(); }
+    };
+    h._recent = (ms) => {
+      const out = []; let got = 0;
+      for (let k = h.hist.length - 1; k >= 0 && got < ms; k--) {
+        const c = h.hist[k], cms = c.pcm.length * 1000 / c.r;
+        if (got + cms <= ms) { out.unshift({ pcm: c.pcm.slice(), r: c.r }); got += cms; }
+        else { const keep = Math.max(1, Math.round((ms - got) * c.r / 1000)); out.unshift({ pcm: c.pcm.slice(c.pcm.length - keep), r: c.r }); got = ms; }
+      }
+      return out;
+    };
+    h._chunk = (m) => {
+      if (h.state === "ended" || h.state === "paused" || h.web) return;
+      const q = typeof m.q === "number" ? m.q : 0;
+      if (q && q <= h.lastQ) return;        // twice: a page that subscribed again can be told once per listener
+      if (q) h.lastQ = q;
+      let pcm = _nmDecode(m.d, m.n);
+      if (!pcm || !pcm.length) return;
+      const r = +m.r > 0 ? +m.r : h.rate, now = performance.now(), ms = pcm.length * 1000 / r;
+      h.rate = r; h.lastAt = now; h.chunks++; if (ms > h.chunkMs) h.chunkMs = ms;
+      if (h.unmute) { h.unmute = false; track.muted = false; _nmFire(track, "unmute"); }   // back after a pause
+      if (!h.firstAt) {
+        // the mic's warm-up: exact zeros before its first sound are not passed on
+        let i = 0; while (i < pcm.length && pcm[i] === 0) i++;
+        if (i === pcm.length) { h.leadZeroMs += ms; h._watch(); return; }
+        h.leadZeroMs += i * 1000 / r; h.firstAt = now; pcm = pcm.subarray(i);
+      }
+      h._keep(pcm, r);
+      for (let k = 0; k < h.feeders.length; k++) h.feeders[k].push(pcm, r);
+      for (let k = 0; k < h.recorders.length; k++) h.recorders[k]._push(pcm, r);
+      if (h._ready && h.histMs >= h._primeMs()) h._ready();
+      h._watch();
+    };
+    h._takeStash = () => {
+      const mine = _nm.stash.filter((c) => c.g === h.g);
+      _nm.stash = _nm.pending > 0 ? _nm.stash.filter((c) => c.g !== h.g && c.g > _nm.lastG) : [];
+      mine.forEach(h._chunk);
+    };
+    h._route = (m) => {
+      h.restarts++;
+      if (m && m.route) h.route = m.route;
+      if (m && +m.sampleRate > 0) h.rate = +m.sampleRate;
+    };
+    // the phone ended this open (micend)
+    h._native = (reason) => {
+      h.nativeLive = false; delete _nm.byG[h.g];
+      if (h.state === "opening") { if (h._fail) h._fail(reason); return; }
+      // a lost microphone on a page that still holds it is a pause, as
+      // WebKit's own capture pauses for a call and picks up after it: the
+      // round games never look at an ended track, and a card would otherwise
+      // say "I'm listening…" to nobody for the rest of the visit
+      if (reason === "interrupted" || reason === "route" || reason === "stalled" || reason === "reset" || reason === "timeout") h._pause(reason);
+      else h._end(reason, true);
+    };
+    h._pause = (reason) => {
+      if (h.state !== "live") return;
+      h.state = "paused"; h.pausedAt = performance.now(); h.pauses++; h.why = reason; h.tries = 0; h.relisted = false;
+      clearTimeout(h.watchT);
+      if (h.nativeLive) { h.nativeLive = false; delete _nm.byG[h.g]; _nmClose(h); }
+      // a re-open that went quiet before its first chunk is still muted
+      h.unmute = false; if (!track.muted) { track.muted = true; _nmFire(track, "mute"); }
+      // the 5-minute cap re-opens at once; an interruption waits for iOS's
+      // "you may record again" (micready) or tries every few seconds
+      h._later(reason === "timeout" ? 0 : reason === "interrupted" ? 4000 : NATIVE_MIC.resumeMs[0]);
+    };
+    h._later = (ms) => { clearTimeout(h.resumeT); h.resumeT = setTimeout(h._resume, ms); };
+    h._resume = () => {
+      // the web mic taking this handle over (h._toWeb) leaves it "paused"
+      // until getUserMedia answers: a micready or a return to the page in
+      // that moment must not open Sona's mic beside it
+      if (h.state !== "paused" || h.resuming || h.webAsking || h.web) return;
+      if (performance.now() - h.pausedAt > NATIVE_MIC.pauseMaxMs) { h._end("lost", true); return; }
+      if (document.hidden) { h._later(1000); return; }
+      h.resuming = true; h.tries++;
+      _nmAsk(h.P).then((ans) => {
+        h.resuming = false;
+        // the page let go, or the web mic took over, while the phone was asked
+        if (h.state !== "paused" || h.webAsking || h.web) { _nmStale(ans.g); return; }
+        h.g = ans.g; h.lastQ = 0; h.nativeLive = true; h.restarts++;
+        if (ans.route) h.route = ans.route;
+        if (+ans.sampleRate > 0) h.rate = +ans.sampleRate;
+        // unmuted by the first chunk (h._chunk), not here: until one lands
+        // the feed is still re-priming on exact zeros, and a page that reads
+        // the track hears a mic that is not hearing yet
+        _nm.byG[h.g] = h; h.state = "live"; h.unmute = true; h._takeStash();
+        h._watch();
+      }, (e) => {
+        h.resuming = false;
+        if (h.state !== "paused" || h.webAsking || h.web) return;
+        const k = _nmKind(e);
+        if (k === "denied") { h._end("denied", true); return; }
+        if (k === "fail") { h._toWeb("reopen " + ((e && e.code) || "failed")); return; }
+        if (k === "nolistener") {
+          // subscribing again is the cure, not waiting: at once, once a pause
+          _nm.subscribed = false;
+          if (!h.relisted) { h.relisted = true; h._later(0); return; }
+        }
+        h._later(NATIVE_MIC.resumeMs[Math.min(h.tries, NATIVE_MIC.resumeMs.length - 1)]);
+      });
+    };
+    // No chunk for watchMs on a visible page: the phone stopped without a
+    // word that reached us (a navigation that never happened takes the
+    // page's listeners). Yield once first: a timer can run ahead of chunks
+    // queued behind the same long task.
+    h._watch = () => {
+      clearTimeout(h.watchT);
+      if (h.state !== "live" || h.web) return;
+      h.watchT = setTimeout(() => {
+        if (h.state !== "live" || h.web) return;
+        if (document.hidden) { h._watch(); return; }
+        const seen = h.lastAt;
+        setTimeout(() => {
+          if (h.state !== "live" || h.web) return;
+          if (h.lastAt !== seen || document.hidden) { h._watch(); return; }
+          // not a reason to subscribe again: Capacitor keeps every listener
+          // it was given, so a second set has each chunk sent once per set.
+          // If the listeners really went, the phone answers the re-open
+          // "nolistener" and that subscribes again (h._resume).
+          h._pause("silent");
+        }, 80);
+      }, NATIVE_MIC.watchMs);
+    };
+    // The web mic takes this handle over, for the rest of this page: the page
+    // keeps its stream, its nodes and its recorder, and hears the child the
+    // way it always did (the phone-call mode included).
+    h._toWeb = (why) => {
+      if (h.state === "ended" || h.web || h.webAsking) return;
+      _nm.broken = true; _nm.why = why; if (_nm.last === h) _nm.last = null;
+      h.why = why; h.webAsking = true; h.unmute = false; clearTimeout(h.watchT); clearTimeout(h.resumeT);
+      if (h.nativeLive) { h.nativeLive = false; delete _nm.byG[h.g]; _nmClose(h); }   // never both mics at once
+      let ask; try { ask = _webMic(h.constraints || { audio: true }, why); } catch (e) { ask = Promise.reject(e); }
+      Promise.resolve(ask).then((ws) => {
+        h.webAsking = false;
+        if (h.state === "ended") { try { ws.getTracks().forEach((t) => t.stop()); } catch (e) {} return; }
+        h.web = ws; h.state = "live";
+        h.feeders.forEach((f) => f.toWeb(ws));
+        if (track.muted) { track.muted = false; _nmFire(track, "unmute"); }
+        try {
+          const wt = ws.getAudioTracks()[0];
+          if (wt) {
+            wt.addEventListener("ended", () => h._end("ended", true));
+            wt.addEventListener("mute", () => { track.muted = true; _nmFire(track, "mute"); });
+            wt.addEventListener("unmute", () => { track.muted = false; _nmFire(track, "unmute"); });
+          }
+        } catch (e) {}
+      }, () => { h.webAsking = false; h._end("lost", true); });
+    };
+    h._end = (reason, fire) => {
+      if (h.state === "ended") return;
+      const opening = h.state === "opening";
+      h.state = "ended"; if (!h.why) h.why = reason;
+      track.readyState = "ended"; stream.active = false;
+      clearTimeout(h.watchT); clearTimeout(h.resumeT);
+      if (h.nativeLive) { h.nativeLive = false; delete _nm.byG[h.g]; _nmClose(h); }
+      if (h.web) { try { h.web.getTracks().forEach((t) => t.stop()); } catch (e) {} }
+      if (!opening) _nmOpened(h);
+      h.feeders.splice(0).forEach((f) => f.end());
+      h.recorders.slice().forEach((rc) => rc._end());
+      _nm.live = _nm.live.filter((x) => x !== h);
+      // a real track's stop() fires no "ended"; the phone ending it does
+      if (fire) { if (reason === "interrupted") track.muted = true; _nmFire(track, "ended"); }
+      // an open ended before it was handed over (pagehide) settles at once:
+      // left to its clocks it would read as a fault on a page restored from
+      // the back-forward cache, and put that page on the web mic for good
+      if (opening && h._fail) h._fail(reason);
+    };
+    h.source = (ctx) => {
+      if (h.state === "ended") throw _nmErr("InvalidStateError", "the microphone has stopped");
+      if (!ctx || typeof ctx.createGain !== "function") throw _nmErr("NotSupportedError", "no audio context");
+      let f = null;
+      for (let k = 0; k < h.feeders.length; k++) if (h.feeders[k].ctx === ctx) f = h.feeders[k];
+      if (!f) { f = _nmFeeder(ctx, h); h.feeders.push(f); }
+      const out = ctx.createGain();
+      // left untouched at 1: some test audits read every gain they see as a sound
+      const gain = micGain(); if (gain !== 1) out.gain.value = gain;
+      try { out.__sonaMic = true; out.mediaStream = stream; } catch (e) {}
+      f.add(out);
+      return out;
+    };
+    if (_nm.of) _nm.of.set(stream, h);
+    return h;
+  }
+
+  // ── the bridge: events from the phone ──
+  function _nmStale(g) {
+    if (typeof g !== "number" || _nm.staleClosed[g]) return;
+    _nm.staleClosed[g] = 1;
+    const P = speechPlugin();
+    if (P) _nmP(() => P.micClose({ g: g })).catch(() => {});
+  }
+  function _nmChunk(m) {
+    if (!m || typeof m.g !== "number") return;
+    const h = _nm.byG[m.g];
+    if (h) { h._chunk(m); return; }
+    // an open still waiting for its answer: its first chunks can beat it here
+    if (_nm.pending > 0 && m.g > _nm.lastG) { if (_nm.stash.length < 12) _nm.stash.push(m); return; }
+    _nmStale(m.g);   // an open nobody holds: closed, once
+  }
+  function _nmEnded(m) { const h = m && _nm.byG[m.g]; if (h) h._native(String(m.reason || "closed")); }
+  function _nmRouted(m) { const h = m && _nm.byG[m.g]; if (h) h._route(m); }
+  function _nmReady() { _nm.live.forEach((h) => { if (h.state === "paused") h._resume(); }); }
+  // Subscribe once a page: first close whatever the last page left (and any
+  // Apple check it was running), so nothing is delivered while the listeners
+  // are being added (Capacitor adds them on another thread than it delivers).
+  function _nmSubscribe(P) {
+    if (_nm.subscribed) return Promise.resolve();
+    if (_nm.subscribing) return _nm.subscribing;
+    // Debug builds log every bridge event in full, and copy each log back to
+    // the phone. At ten audio chunks a second that is the phone's busiest
+    // work while Travis measures it. This flag only changes that logging.
+    try { if (global.Capacitor) global.Capacitor.isLoggingEnabled = false; } catch (e) {}
+    const p = _nmTimed(_nmP(() => P.micClose({ all: true })), NATIVE_MIC.openMs).catch(() => null).then(() => {
+      P.addListener("micpcm", _nmChunk);
+      P.addListener("micend", _nmEnded);
+      P.addListener("microute", _nmRouted);
+      P.addListener("micready", _nmReady);
+      _nm.subscribed = true;
+    });
+    _nm.subscribing = p;
+    const clear = () => { if (_nm.subscribing === p) _nm.subscribing = null; };
+    p.then(clear, clear);
+    return p;
+  }
+  // One native open: answers the phone's {g, sampleRate, route, v}.
+  // An ask the page leaves in the middle of (pagehide) ends at once as
+  // "temp", not a fault: if the page comes back from the back-forward cache,
+  // the phone's answer went to another document and would never arrive, and
+  // the clock running out would put this page on the web mic for good. An
+  // answer that does still come is closed (_nmStale).
+  function _nmAsk(P) {
+    const ep = _nm.epoch;
+    return new Promise((resolve, reject) => {
+      let out = false;
+      const leave = () => { if (!out) { out = true; reject(_nmFail("temp", "pagehide")); } };
+      const off = () => { _nm.leave = _nm.leave.filter((x) => x !== leave); };
+      _nm.leave.push(leave);
+      _nmAskOnce(P, ep).then((ans) => {
+        off();
+        if (out || _nm.epoch !== ep) { _nmStale(ans.g); leave(); return; }
+        out = true; resolve(ans);
+      }, (e) => {
+        off();
+        if (out) return;
+        out = true; reject(_nm.epoch !== ep && _nmKind(e) !== "denied" ? _nmFail("temp", "pagehide") : e);
+      });
+    });
+  }
+  function _nmAskOnce(P, ep) {
+    return _nmSubscribe(P).then(() => _nmTimed(_nmP(() => P.micPermission({})), NATIVE_MIC.openMs)).then((perm) => {
+      const state = perm && perm.state;
+      if (state === "denied") throw _nmFail("denied");
+      if (_nm.epoch !== ep) throw _nmFail("temp", "pagehide");   // the page left while asked: open nothing
+      const t = _nmTune();
+      const opts = {
+        maxMs: Math.round(_nmNum(t.maxMs, 1000, 600000, NATIVE_MIC.maxMs)),
+        duck: t.duck != null ? !!t.duck : NATIVE_MIC.duck,
+        speaker: t.speaker != null ? !!t.speaker : NATIVE_MIC.speaker,
+        ioMs: Math.round(_nmNum(t.ioMs, 0, 100, NATIVE_MIC.ioMs)),
+        frames: Math.round(_nmNum(t.frames, 256, 8192, NATIVE_MIC.frames)),
+      };
+      _nm.pending++;
+      return new Promise((resolve, reject) => {
+        let settled = false, clock = 0;
+        // the page leaving also settles this open, so nothing stays pending
+        const gone = () => { if (finish()) reject(_nmFail("temp", "pagehide")); };
+        const finish = () => {
+          if (settled) return false;
+          settled = true; _nm.pending = Math.max(0, _nm.pending - 1); clearTimeout(clock);
+          _nm.leave = _nm.leave.filter((x) => x !== gone);
+          return true;
+        };
+        _nm.leave.push(gone);
+        // a grown-up reading iOS's own dialog has no clock; an open that should be quick does
+        if (state === "granted") clock = setTimeout(() => { if (finish()) reject(_nmFail("fail", "timeout")); }, NATIVE_MIC.openMs);
+        _nmP(() => P.micOpen(opts)).then((ans) => {
+          const g = ans && typeof ans.g === "number" ? ans.g : null;
+          if (g != null && g > _nm.lastG) _nm.lastG = g;
+          if (!finish()) { _nmStale(g); return; }   // answered after the page gave up: closed at once
+          if (g == null) { reject(_nmFail("fail", "no stream")); return; }
+          resolve(ans);
+        }, (e) => { if (finish()) reject(e); });
+      });
+    });
+  }
+  function _nmOpened(h) {
+    _nm.opens.push(_nmStatOf(h));
+    while (_nm.opens.length > 10) _nm.opens.shift();
+  }
+  function _nmStatOf(h) {
+    const st = h._stats();
+    return { g: h.g, state: h.state, web: !!h.web, why: h.why, openMs: h.readyMs, leadZeroMs: Math.round(h.leadZeroMs),
+      chunkMs: Math.round(h.chunkMs), primeMs: Math.round(h._primeMs()), gaps: st.gaps, queueMs: st.queueMs, queueMaxMs: st.queueMaxMs,
+      restarts: h.restarts, pauses: h.pauses, closeMs: h.closeAckMs };
+  }
+  // Bind an answered open to a new handle; resolve once the feed can start
+  // full (primeMs of real sound after the first non-zero sample).
+  function _nmBind(P, ans, constraints) {
+    const h = _nmHandle(P, ans, constraints);
+    _nm.byG[h.g] = h; _nm.live.push(h);
+    return new Promise((resolve, reject) => {
+      let done = false;
+      const first = setTimeout(() => { if (!h.firstAt) fail("silent"); }, NATIVE_MIC.firstMs);
+      const most = setTimeout(() => { if (h.firstAt) ok(); }, NATIVE_MIC.firstMs + NATIVE_MIC.primeMaxMs);
+      function ok() {
+        if (done) return; done = true; clearTimeout(first); clearTimeout(most); h._ready = h._fail = null;
+        h.state = "live"; h.readyMs = Math.round(performance.now() - h.openedAt); _nm.last = h; h._watch();
+        resolve(h.stream);
+      }
+      function fail(reason) {
+        if (done) return; done = true; clearTimeout(first); clearTimeout(most); h._ready = h._fail = null;
+        h._end(reason, false);
+        // ended by a call, the background, another open or the page leaving: not a fault
+        const temp = reason === "interrupted" || reason === "background" || reason === "replaced" || reason === "closed"
+          || reason === "pagehide" || reason === "stopped";
+        reject(_nmFail(temp ? "temp" : "fail", reason));
+      }
+      h._ready = ok; h._fail = fail;
+      h._takeStash();
+    });
+  }
+  function _nmClose(h) {
+    const P = h.P, t0 = performance.now();
+    _nm.closing++;
+    _nmTimed(_nmP(() => P.micClose({ g: h.g })), 1000).catch(() => null).then(() => {
+      const ms = Math.round(performance.now() - t0);
+      h.closeAckMs = ms; if (ms > _nm.closeMaxMs) _nm.closeMaxMs = ms;
+      _nm.opens.forEach((x) => { if (x.g === h.g && x.closeMs == null) x.closeMs = ms; });
+      _nm.closing = Math.max(0, _nm.closing - 1);
+      if (!_nm.closing) _nm.quiet.splice(0).forEach((fn) => fn());
+    });
+  }
+
+  // ── what pages call ──
+  // micOpen(constraints): the stream. Refused: NotAllowedError, never the
+  // web mic. "Not now" from the phone: the web mic, this once. A call or the
+  // background ending it while it opens: NotReadableError, the temporary
+  // path every page already has. Anything else: the web mic for the page.
+  function micOpen(constraints) {
+    const P = speechPlugin();
+    if (!P || !micNative()) { _nm.last = null; return _webMic(constraints, "web mic"); }
+    return _nmP(() => _nmOpenNative(P, constraints, false));
+  }
+  function _nmOpenNative(P, constraints, retried) {
+    return _nmAsk(P).then((ans) => _nmBind(P, ans, constraints)).catch((e) => {
+      const k = _nmKind(e);
+      if (k === "denied") throw _nmErr("NotAllowedError", "microphone not allowed");
+      if (k === "nolistener" && !retried) { _nm.subscribed = false; return _nmOpenNative(P, constraints, true); }
+      if (k === "temp") throw _nmErr("NotReadableError", "the microphone was interrupted");
+      _nm.last = null;
+      if (k === "busy") { _nm.busy++; return _webMic(constraints, "busy"); }
+      _nm.broken = true; _nm.why = String((e && (e.code || e.message)) || k);
+      return _webMic(constraints, _nm.why);
+    });
+  }
+  // micProbe(constraints): the permission alone, for the pages that only ask
+  // (setup, the primers). No mic opens, no orange dot. A refusal is
+  // NotAllowedError; anything unclear asks the way it always did.
+  function micProbe(constraints) {
+    const P = speechPlugin();
+    const web = () => _webMic(constraints, "permission");
+    if (!P || !micNative()) return web();
+    return _nmP(() => P.micPermission({ request: true })).then((r) => {
+      const st = r && r.state;
+      if (st === "granted") return _nmDeadStream();
+      if (st === "denied") throw _nmErr("NotAllowedError", "microphone not allowed");
+      return web();
+    }, () => web());
+  }
+  function _nmDeadStream() {
+    const t = _nmEmitter({ kind: "audio", id: "sona-mic-probe", label: "Sona microphone", enabled: true, muted: false, readyState: "ended", onended: null });
+    t.stop = () => {}; t.getSettings = () => ({ sonaNative: true }); t.getConstraints = () => ({}); t.getCapabilities = () => ({}); t.clone = () => t;
+    return _nmEmitter({ id: "sona-probe", active: false, sonaNative: true, getTracks: () => [t], getAudioTracks: () => [t],
+      getVideoTracks: () => [], getTrackById: (id) => (id === t.id ? t : null) });
+  }
+  // micSource(ctx, stream): an AudioNode in ctx carrying the mic. A real
+  // MediaStream gets exactly the line every page had.
+  function micSource(ctx, stream) {
+    const h = stream && _nm.of && _nm.of.get(stream);
+    if (!h) return ctx.createMediaStreamSource(stream);
+    return h.source(ctx);
+  }
+  // micDeaf(stream[, ctx]): true while Sona's own mic is not hearing: paused
+  // (a call, a stall, a re-open), or the frame a page just read held a gap
+  // between the phone's samples (the feed's ear, above). The pages whose
+  // room floor only goes down skip those frames exactly as they skip the
+  // frames of their own sounds. False for a real MediaStream, the web mic
+  // included: those pages read it exactly as they always did.
+  function micDeaf(stream, ctx) {
+    const h = stream && _nm.of && _nm.of.get(stream);
+    if (!h || h.web) return false;
+    if (h.state !== "live" || !h.firstAt) return true;
+    for (let k = 0; k < h.feeders.length; k++) { const f = h.feeders[k]; if ((!ctx || f.ctx === ctx) && f.deaf()) return true; }
+    return false;
+  }
+  // micRecorder(stream): the keepsake clip's recorder. For Sona's own mic,
+  // one 16-bit mono WAV (48 kHz halved to 24 kHz, at most 25 s), raw samples
+  // without the boost, handed over the way MediaRecorder does: data, then
+  // stop, a task after stop(); and it stops itself if the mic ends.
+  function micRecorder(stream) {
+    const h = stream && _nm.of && _nm.of.get(stream);
+    if (!h) return new MediaRecorder(stream);
+    if (h.web) return new MediaRecorder(h.web);
+    const rc = _nmEmitter({ state: "inactive", mimeType: "audio/wav", stream: stream, ondataavailable: null, onstop: null, onstart: null, onerror: null });
+    let parts = [], rate = 0, got = 0;
+    rc._push = (pcm, r) => {
+      if (rc.state !== "recording") return;
+      if (rate && r !== rate) return;          // one rate a clip: a change mid-clip keeps what it has
+      rate = r;
+      const room = Math.round(NATIVE_MIC.clipMaxMs * r / 1000) - got;
+      if (room <= 0) return;
+      const part = pcm.length > room ? pcm.subarray(0, room) : pcm;
+      parts.push(part); got += part.length;
+    };
+    rc.start = () => {
+      if (rc.state !== "inactive") throw _nmErr("InvalidStateError", "already recording");
+      if (h.state === "ended") throw _nmErr("InvalidStateError", "the microphone has stopped");
+      parts = []; rate = 0; got = 0; rc.state = "recording"; h.recorders.push(rc);
+      setTimeout(() => _nmFire(rc, "start"), 0);
+    };
+    rc._end = () => {
+      if (rc.state === "inactive") return;
+      rc.state = "inactive"; h.recorders = h.recorders.filter((x) => x !== rc);
+      const blob = _nmWav(parts, rate); parts = [];
+      setTimeout(() => { _nmFire(rc, "dataavailable", { data: blob }); _nmFire(rc, "stop"); }, 0);
+    };
+    rc.stop = () => rc._end();
+    rc.requestData = () => {}; rc.pause = () => {}; rc.resume = () => {};
+    return rc;
+  }
+  // The clip as Echo's own voice files are kept: 24 kHz mono 16-bit, written
+  // by pcmWave (top of this file). 48 kHz halves by averaging pairs; any
+  // other rate goes through the queue's own resampler.
+  function _nmWav(parts, rate) {
+    let n = 0; parts.forEach((p) => { n += p.length; });
+    if (!n || !rate) return new Blob([], { type: "audio/wav" });   // nothing heard: an empty blob, which the page drops
+    let x;
+    if (rate === 48000) {
+      const all = new Float32Array(n); let o = 0; parts.forEach((p) => { all.set(p, o); o += p.length; });
+      x = new Float32Array(n >> 1);
+      for (let i = 0; i < x.length; i++) x[i] = (all[2 * i] + all[2 * i + 1]) / 2;
+    } else {
+      const f = nmFifo({ primeMs: 1, stepMs: 1, maxPrimeMs: 1 }, 24000);   // never primed, so it never drops
+      parts.forEach((p) => f.push(p, rate));
+      x = new Float32Array(f.depth); let o = 0; f.q.forEach((c) => { x.set(c, o); o += c.length; });
+    }
+    const pcm = new Int16Array(x.length);
+    for (let i = 0; i < x.length; i++) pcm[i] = Math.round(Math.max(-1, Math.min(1, x[i])) * 32767);
+    return pcmWave(new Uint8Array(pcm.buffer));
+  }
+  // Resolves once every close sent to the phone has been answered (at most
+  // quietMaxMs). Pages stamp their quiet tail at stop(); if Travis's phone
+  // shows closes over 50 ms, each page's settle helper waits on this too.
+  function micQuiet() {
+    if (!_nm.closing) return Promise.resolve(true);
+    return new Promise((resolve) => {
+      const t = setTimeout(() => resolve(false), NATIVE_MIC.quietMaxMs);
+      _nm.quiet.push(() => { clearTimeout(t); resolve(true); });
+    });
+  }
+  // For the phone checklist (Safari's console: Sona.micStats()) and the tests.
+  function micStats() {
+    // session: the audio-session type this page wrote (null: untouched;
+    // "transient-solo": sounds follow the silent switch; "auto": given back
+    // for WebKit's own mic, sessionWhy says what asked)
+    return { on: NATIVE_MIC_ON, native: micNative(), broken: _nm.broken, why: _nm.why, busy: _nm.busy, closeMaxMs: _nm.closeMaxMs,
+      live: _nm.live.map(_nmStatOf), opens: _nm.opens.slice(), session: _as.type, sessionWhy: _as.why || null };
+  }
+  try {
+    global.addEventListener("pagehide", () => {
+      _nm.epoch++;
+      _nm.leave.splice(0).forEach((fn) => fn());
+      _nm.live.slice().forEach((h) => h._end("pagehide", false));
+    });
+    // back from the back-forward cache: Capacitor dropped the listeners when the page left
+    global.addEventListener("pageshow", (e) => { if (e && e.persisted) _nm.subscribed = false; });
+    document.addEventListener("visibilitychange", () => { if (!document.hidden) _nmReady(); });
+  } catch (e) {}
+  // ── END OF SONA'S OWN MICROPHONE ──
+
+  // HEAR2 (28 Sep 2026): Travis, "I just don't want kids saying taco and
+  // getting a correct score. We want them to be in the ballpark." The first
+  // rules passed any word with the target LETTER anywhere in it and any word
+  // one letter off the target. So "Here is a taco" passed R ("here" has an r),
+  // "water" passed for rabbit, and "sock" passed for rock. The rules below keep
+  // the close tries and drop those.
+  //
+  // A transcript only has spelling, so each sound is matched by the ways it is
+  // spelled in the words a child practises (K is "c" in cat, F is "ph" in
+  // phone, S is "c" in ice).
+  const HEAR_SPELL = {
+    R: "r", L: "l", S: "s(?!h)|c(?=[eiy])", Z: "z", SH: "sh", CH: "t?ch", J: "dge|j|g(?=[eiy])",
+    K: "ck|k|q|c(?![eiyh])", G: "g", F: "ph|f", V: "v", TH: "th", THV: "th",
+    P: "p", B: "b", M: "m", N: "n", T: "t(?!h)", D: "d",
+  };
+  // What a close try at each sound usually comes out as: the errors a child
+  // working on that sound typically makes ("wabbit", "wed", "thun", "tat").
+  // Rachel to confirm the list; it is here so she can change it without an
+  // App Store review.
+  const HEAR_SUBS = {
+    R: ["w", "l"], L: ["w", "y"], S: ["th", "t", "sh"], Z: ["th", "d", "s"], SH: ["s", "ch"],
+    CH: ["sh", "t", "ts"], J: ["d", "z", "ch"], TH: ["f", "s", "t", "d"], THV: ["d", "v", "z"],
+    K: ["t"], G: ["d"], F: ["p", "b"], V: ["b", "f"],
+  };
+  // At the very end of a word, R and L often melt into the vowel ("cah" for car).
+  const HEAR_SUBS_END = { R: ["", "h", "w"], L: ["", "w", "o"] };
+  // How a transcript writes a sound that is not a word. On a bare-sound round
+  // these say nothing either way, so they are "unknown", never a fail.
+  const HEAR_FILLER = { a: 1, uh: 1, uhh: 1, um: 1, umm: 1, ah: 1, ahh: 1, aah: 1, eh: 1, oh: 1, ooh: 1, oo: 1, hmm: 1, hm: 1, mm: 1, mmm: 1, huh: 1, ha: 1, hah: 1, mhm: 1, er: 1, erm: 1, err: 1, aw: 1, ew: 1, whoa: 1, woah: 1 };
+  const HEAR_NUM = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve"];
+  // Where a sound sits in a word: "i" at the start, "f" at the end (a silent
+  // final e does not count: house, cake), "m" anywhere between.
+  function _hearSpots(str, sound) {
+    const out = {}, src = HEAR_SPELL[sound];
+    if (!src || !str) return out;
+    const re = new RegExp(src, "g"), end = str.length - (str.length > 2 && /e$/.test(str) ? 1 : 0);
+    let m;
+    while ((m = re.exec(str))) {
+      const at = m.index, len = m[0].length || 1;
+      out[at === 0 ? "i" : (at + len >= end ? "f" : "m")] = true;
+      if (!m[0].length) re.lastIndex++;
+    }
+    return out;
+  }
+  // The target word plus its close tries: each place the sound is spelled,
+  // swapped for a typical error. "rabbit" → wabbit, labbit; "car" → caw, cah.
+  function _hearVariants(w, sound) {
+    const out = [w], src = HEAR_SPELL[sound];
+    if (!src) return out;
+    const re = new RegExp(src, "g");
+    let m;
+    while ((m = re.exec(w))) {
+      const at = m.index, len = m[0].length || 1;
+      const subs = (HEAR_SUBS[sound] || []).concat(at + len >= w.length ? (HEAR_SUBS_END[sound] || []) : []);
+      for (let k = 0; k < subs.length; k++) {
+        const v = w.slice(0, at) + subs[k] + w.slice(at + len);
+        if (v.length >= 2) out.push(v);
+      }
+      if (!m[0].length) re.lastIndex++;
+    }
+    return out;
+  }
+  // A blend with its target sound taken out: "stop" → "top", "tree" → "tee".
+  // That is the error a blend round practises (the cluster said without the
+  // sound), so it is never a close try (22 Oct 2026, with blends open to
+  // families). Only a spelling of the sound that sits next to another
+  // consonant is taken out.
+  function _hearDrop(w, sound) {
+    const out = [], src = HEAR_SPELL[sound];
+    if (!src) return out;
+    const re = new RegExp(src, "g"), cons = (c) => !!c && /[b-df-hj-np-tv-z]/.test(c);
+    let m;
+    while ((m = re.exec(w))) {
+      const at = m.index, len = m[0].length || 1;
+      if (cons(w.charAt(at - 1)) || cons(w.charAt(at + len))) out.push(w.slice(0, at) + w.slice(at + len));
+      if (!m[0].length) re.lastIndex++;
+    }
+    return out;
+  }
+  // Is a within n edits (letters changed, added or dropped) of b?
+  function _hearNear(a, b, n) {
+    if (Math.abs(a.length - b.length) > n) return false;
+    let prev = [];
+    for (let j = 0; j <= b.length; j++) prev.push(j);
+    for (let i = 1; i <= a.length; i++) {
+      const row = [i];
+      for (let j = 1; j <= b.length; j++) row.push(Math.min(prev[j] + 1, row[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)));
+      prev = row;
+    }
+    return prev[b.length] <= n;
+  }
+  function _hearTokens(text) {
+    return String(text || "").toLowerCase()
+      .replace(/\d+/g, (d) => " " + (HEAR_NUM[+d] || d) + " ")     // Apple writes "four" as "4"
+      .replace(/[^a-z' ]+/g, " ").split(/\s+/)
+      .map((t) => t.replace(/^'+|'+$/g, "")).filter(Boolean);
+  }
+  // A SYLLABLE AT ANOTHER PLACE IN A WORD (22 Oct 2026: "ah-rah", "ar",
+  // "trah"). A start-of-word syllable is judged exactly as before. These have
+  // their own rule, because Apple writes a made-up syllable as whatever words
+  // it can ("Ah rah", "Ara", "Are", "Oh row", "Op", "Itchy", "E knee"), so
+  // its spelling is weak evidence either way. Apple's words decide only when
+  // they are clear:
+  // - pass: EVERY word heard (filler aside) is part of a try that is exactly
+  //   the target, its usual-error form or a word HEAR_ALIKE lists ("are" for
+  //   ar), joined with a vowel's h dropped: "Ah rah", "Ara", five tries in one
+  //   listen. Never a run picked out of a longer phrase, and never a try with
+  //   its sound gone ("ah" or "owe" for a melted R or L is a vowel);
+  // - fail: every word is exactly ANOTHER syllable of that place ("or" or the
+  //   "er" vocalic R leaves out, for ar; "free" for trah), or no word carries
+  //   the sound or its usual error at all ("taco", a grown-up's "is a" for
+  //   ar; "way" for play, as a blend keeps its other letter too);
+  // - unknown, so the sound-shape check decides as it did before Apple's
+  //   listener: anything else, a word with the sound in it ("Oh row", "two"
+  //   for oo-too, "Year" for ear, a grown-up's "the" for athe).
+  // Which words are alike is Rachel's to change.
+  const HEAR_ALIKE = {
+    ar: ["are", "r"], or: ["ore", "oar"], air: ["heir", "ere", "eyre"],
+    ate: ["eight"], kray: ["cray"], grew: ["grue"], clue: ["klue"], flee: ["flea"], ski: ["skee"],
+  };
+  // R's vowel + R syllables leave out the "er" of bird on purpose; said for
+  // ar or ear, it is a try at a different target
+  const HEAR_ELSE = { R: ["er", "err", "ur"] };
+  // Apple writes a syllable that sounds like a letter as the letter ("E C"
+  // for ee-see): read it as the letter's name
+  const HEAR_LETTER = { b: "bee", c: "see", d: "dee", e: "ee", f: "ef", g: "jee", h: "aitch", j: "jay", k: "kay", l: "el", m: "em", n: "en", o: "oh", p: "pee", r: "ar", s: "es", t: "tee", u: "you", v: "vee", z: "zee" };
+  function _hearFlat(x) { return String(x).replace(/[^a-z]/g, "").replace(/([aeiou])h(?![aeiou])/g, "$1"); }
+  // a consonant SOUND is left once a silent final e and a w or y that only
+  // ends a vowel ("owe", "ow", "ay") are set aside
+  function _hearHasCons(f) { return /[b-df-gj-np-tv-z]/.test(String(f).replace(/e$/, "").replace(/[wy](?![aeiou])/g, "")); }
+  function _hearPlace(heard, word, S2, dropped, pos) {
+    const tokens = heard.map((t) => (t.length === 1 && HEAR_LETTER[t]) || t);
+    const said = (t) => !HEAR_FILLER[t] || Object.keys(_hearSpots(t, S2)).length > 0;
+    const w = word.replace(/[^a-z]/g, ""), wf = _hearFlat(w);
+    // the sounds a usual error turns this one into ("ay-say" is a fine
+    // S-for-SH try at ay-shay)
+    const errs = (HEAR_SUBS[S2] || []).map((x) => x.toUpperCase()).concat((HEAR_SUBS[S2] || []).indexOf("th") >= 0 ? ["THV"] : []);
+    const SC = _gameContent(), table = [], elsewhere = [];
+    try {
+      (SC && SC.syllableTables ? SC.syllableTables() : []).forEach((tb) => {
+        tb.items.forEach((it) => {
+          if (tb.sound === S2 && tb.pos === pos) table.push(it.t, it.say);
+          else if (tb.sound !== S2 && errs.indexOf(tb.sound) < 0) elsewhere.push(_hearFlat(it.t));
+        });
+      });
+    } catch (e) {}
+    // a usual-error form spelled like ANOTHER sound's syllable is that
+    // syllable ("ache", ch for the g of age, is K's), never this one's
+    const all = _hearVariants(w, S2).map(_hearFlat).concat((HEAR_ALIKE[w] || []).map(_hearFlat));
+    const forms = all.filter((f) => _hearHasCons(f) && (f === wf || elsewhere.indexOf(f) < 0));
+    const gone = dropped.map(_hearFlat);
+    const parts = Math.max(1, word.split(/[-\s]+/).filter(Boolean).length);
+    // Can the words heard be covered, in order, by tries of one to `parts`
+    // words that each pass ok()? Filler on its own may be left over, and may
+    // start a try ("ah rah") but never finish one: "er, eh" is not "ere".
+    const covered = (ok) => {
+      const reach = [1];
+      for (let i = 0; i < tokens.length; i++) {
+        if (!reach[i]) continue;
+        if (!said(tokens[i])) reach[i + 1] = Math.max(reach[i + 1] || 0, reach[i]);
+        for (let n = 1; n <= parts && i + n <= tokens.length; n++) {
+          if (n > 1 && !said(tokens[i + n - 1])) continue;
+          if (ok(_hearFlat(tokens.slice(i, i + n).join("")))) reach[i + n] = 2;
+        }
+      }
+      return reach[tokens.length] === 2;
+    };
+    if (covered((r) => forms.indexOf(r) >= 0 && gone.indexOf(r) < 0)) return "pass";
+    if (S2 === "R" && (pos === "v" || pos === "f")) table.push.apply(table, HEAR_ELSE.R);
+    const others = gone.slice();
+    table.forEach((t) => {
+      const tw = String(t || "").toLowerCase().replace(/[^a-z]/g, "");
+      [tw].concat(HEAR_ALIKE[tw] || []).forEach((x) => { const f = _hearFlat(x); if (f && forms.indexOf(f) < 0 && f !== wf && others.indexOf(f) < 0) others.push(f); });
+    });
+    if (covered((r) => others.indexOf(r) >= 0)) return "fail";
+    // a blend keeps its other letter too: "way" for play and "too" for snoo
+    // are not a try at the blend (c and k are one sound: "klue" for clue)
+    const subs = HEAR_SUBS[S2] || [], kk = (x) => x.replace(/c/g, "k");
+    const partner = pos === "b" ? kk((w.match(/^[^aeiouy]+/) || [""])[0].replace(new RegExp(HEAR_SPELL[S2] || "$^", "g"), "")) : "";
+    // an R or L melted into the vowel at the end is a vowel to Apple ("E"
+    // for ear, "Eye" for ire): never a pass, but a try for the shape check
+    // (filler aside: a grown-up's "is a" is still no try at ar)
+    const melts = (pos === "f" || pos === "v") && !!HEAR_SUBS_END[S2];
+    for (let i = 0; i < tokens.length; i++) {
+      const t = tokens[i], f = _hearFlat(t);
+      if (!said(t) || gone.indexOf(f) >= 0) continue;
+      if (melts && f && !_hearHasCons(f)) return "unknown";
+      // the target's own spelling counts even where the sound's usual
+      // letters miss it (the k of "ache", "aches")
+      const own = all.some((x) => x && f.indexOf(x) === 0) || Object.keys(_hearSpots(t, S2)).length > 0;
+      // a word carrying only a usual error must keep the blend's other
+      // letter ("way" is no try at play; "three" for free has its r)
+      if (!own && partner && partner.split("").some((c) => kk(t).indexOf(c) < 0)) continue;
+      let carries = own;
+      for (let k = 0; !carries && k < subs.length; k++) carries = !!subs[k] && t.indexOf(subs[k]) >= 0;
+      if (carries) return "unknown";
+    }
+    return "fail";
   }
   /**
-   * hearVerdict(transcript, sound, word) → "pass" | "fail" | "unknown"
+   * hearVerdict(transcript, sound, word, opts?) → "pass" | "fail" | "unknown"
+   * opts: { level: "isolation"|"syllable"|"word"|"sentence", frame: the
+   *         sentence the child was asked to say, when there is one, pos: the
+   *         position of the target sound in this item }
    *
-   * pass    — the transcript is a real attempt at the target: the word (or one
-   *           edit away from it — "wabbit" for "rabbit" IS the practice, per
-   *           Travis: anything semi-close advances), or any word carrying the
-   *           target sound at all.
-   * fail    — the child said intelligible words with none of the target sound
-   *           in them. This is the "poopoo instead of R" case, and it is the
-   *           whole reason the recognizer exists.
-   * unknown — the recognizer heard nothing it could transcribe. NEVER a fail:
-   *           disordered child speech often will not transcribe, and Apple's
-   *           models are tuned on adults. Unknown defers to the spectral
-   *           check, so a child the recognizer cannot parse is judged exactly
-   *           as they were before this feature existed.
+   * pass    — a real try at the target: the word, or a close version of it
+   *           ("wabbit" for rabbit, "wed" for red, "cah" for car, "rainy" for
+   *           rain; "wabbit" IS the practice, per Travis). Never a different
+   *           word (Travis: "the exact / close word"). On a bare-sound round, a
+   *           short sound or mostly the sound itself ("rrr", "er").
+   * fail    — the child said clear words and none of them is a try at the
+   *           target: "taco" or "fridge" for rabbit, "Here is a taco", "sock"
+   *           for rock, "run" for rain.
+   * unknown — nothing to judge: no words, only filler ("uh", "hmm"), or only
+   *           the words around the target ("Here is a …"). Unknown is NEVER a
+   *           fail. Apple's models are tuned on adults and a child's speech
+   *           often will not transcribe. Sound and syllable callers may use
+   *           the shape check; a native word turn needs a positive match.
+   *
+   * Two things are set aside before judging: a grown-up coaching ("say
+   * rabbit") — the word after "say" is theirs, not the child's — and, on a
+   * sentence round, the sentence's other words. Without the first, a parent
+   * in the room made "taco" pass; without the second, "Here is a" did.
    */
-  function hearVerdict(transcript, sound, word) {
-    const raw = String(transcript || "").toLowerCase().replace(/[^a-z' ]+/g, " ").trim();
-    if (!raw) return "unknown";
-    const tokens = raw.split(/\s+/).filter(Boolean);
-    if (!tokens.length) return "unknown";
-    const w = String(word || "").toLowerCase().replace(/[^a-z']/g, "");
-    if (w) {
-      for (let i = 0; i < tokens.length; i++) {
-        const t = tokens[i];
-        if (t === w) return "pass";
-        if (w.length >= 4 && _lev1(t, w)) return "pass";
-        if (t.indexOf(w) === 0 && w.length >= 3) return "pass";
-      }
-    }
+  function hearVerdict(transcript, sound, word, opts) {
+    opts = opts || {};
     const S2 = String(sound || "").toUpperCase();
-    const hints = HEAR_HINT[S2] || (S2 ? [S2.toLowerCase()] : []);
+    let tokens = _hearTokens(transcript);
+    if (!tokens.length) return "unknown";
+    // a grown-up's "say …" is theirs: the one word after it, or for a
+    // syllable in two beats as many words as spell it ("say ah rah" two,
+    // "say Ara" one), so a child's own try right after it is kept
+    const parts = Math.max(1, String(word || "").split(/[-\s]+/).filter(Boolean).length);
+    const wf = _hearFlat(String(word || "").toLowerCase());
+    // "ay-say", a middle syllable, is said with a "say" of its own, and so
+    // is "ay-shay" with its usual error (the start of a word keeps its old
+    // rule, "say" included)
+    const mine = {};
+    if (opts.level === "syllable" && opts.pos && opts.pos !== "i" && opts.pos !== "mix") String(word || "").toLowerCase().split(/[-\s]+/).forEach((x) => { mine[x] = 1; _hearVariants(x, S2).forEach((v) => { mine[v] = 1; }); });
+    const said = [];
     for (let i = 0; i < tokens.length; i++) {
-      for (let h = 0; h < hints.length; h++) {
-        if (tokens[i].indexOf(hints[h]) >= 0) return "pass";
+      if ((tokens[i] === "say" || tokens[i] === "said" || tokens[i] === "saying") && !mine[tokens[i]]) {
+        let n = 1;
+        if (parts > 1) {
+          let got = ""; n = 0;
+          for (let j = i + 1; j < tokens.length && n < parts; j++) {
+            const nx = got + _hearFlat(tokens[j]);
+            if (!nx || wf.indexOf(nx) !== 0) break;
+            got = nx; n++;
+            if (got === wf) break;
+          }
+          n = Math.max(1, n);
+        }
+        i += n; continue;
       }
+      said.push(tokens[i]);
+    }
+    tokens = said;
+    const w = String(word || "").toLowerCase().replace(/[^a-z']/g, "");
+    if (opts.frame) {
+      const skip = {};
+      _hearTokens(opts.frame).forEach((t) => { if (t !== w) skip[t] = 1; });
+      tokens = tokens.filter((t) => !skip[t]);
+    }
+    // what is left that says something: filler is only filler when it has no
+    // trace of the target ("er" is a fine R, "mm" a fine M)
+    const content = tokens.filter((t) => !HEAR_FILLER[t] || Object.keys(_hearSpots(t, S2)).length);
+    if (!content.length) return "unknown";
+    const bare = opts.level === "isolation" || !w || w === String(SOUND_SAY[S2] || "");
+    if (bare) {
+      // A bare sound comes back short ("Er", "Grr", "Are") or as mostly the
+      // sound itself ("Rrrrr", "Shhhh", "Error"). A word that merely has the
+      // sound in it ("fridge", "water", "taco" for K) is not a try at the
+      // sound on its own.
+      const own = String(SOUND_SAY[S2] || S2.toLowerCase()).replace(/[aeiou]/g, "");
+      for (let i = 0; i < content.length; i++) {
+        const t = content[i];
+        if (!Object.keys(_hearSpots(t, S2)).length) continue;
+        let n = 0;
+        for (let k = 0; k < t.length; k++) if (own.indexOf(t[k]) >= 0) n++;
+        if (t.length <= 3 || n * 2 >= t.length) return "pass";
+      }
+      return "fail";
+    }
+    const dropped = opts.pos === "b" ? _hearDrop(w, S2) : [];
+    if (opts.level === "syllable" && opts.pos && opts.pos !== "i" && opts.pos !== "mix") return _hearPlace(tokens, String(word || "").toLowerCase(), S2, dropped, opts.pos);
+    const vars = _hearVariants(w, S2);
+    const near = Math.max(1, Math.floor(w.length / 3)), subs = HEAR_SUBS[S2] || [];
+    for (let i = 0; i < content.length; i++) {
+      const t = content[i];
+      if (dropped.indexOf(t) >= 0 || dropped.some((d) => t === d + "s")) continue;
+      for (let k = 0; k < vars.length; k++) {
+        const v = vars[k];
+        if (t === v || t === v + "s" || t === v + "es" || t === v + "'s") return "pass";
+      }
+      // Otherwise it has to be close to the word itself, and still carry the
+      // sound or its usual error: "rainy" for rain, "parrot" or "cawwot" for
+      // carrot, "crib" for crab. A different word does not count, even one
+      // with the sound in the same place (Travis, 28 Sep 2026: "ideally the
+      // exact / close word"): not "run" for rain, not "fridge" for carrot.
+      const has = _hearSpots(t, S2);
+      let carries = Object.keys(has).length > 0;
+      for (let k = 0; !carries && k < subs.length; k++) carries = !!subs[k] && t.indexOf(subs[k]) >= 0;
+      if (carries && _hearNear(t, w, near)) return "pass";
     }
     return "fail";
   }
@@ -3700,7 +8358,114 @@
     } catch (e) {}
   }
 
-  const HUMAN_CLIPS = false;
+  // FIFTH FREE ERA, KEPT — and it ships in the build that ends it.
+  //
+  // Sona went free again on 24 Sep 2026, the afternoon Caseload Premium
+  // merged, and stayed free until this build brought the paywall back
+  // (Travis, 30 Sep 2026: "we add the paywall today"; families first meet it
+  // on launch day, when the launch lock lifts). The rule is the one every
+  // window has kept: the sweep ships in the build that ENDS the window,
+  // never earlier, or it stamps the families it exists for before they
+  // onboard.
+  //
+  // The cohort is structural, as in eras one to three: a device already
+  // ONBOARDED on its first load of this build used Sona while it was free,
+  // and keeps Premium for good. A clinician's link redeemed in this window is
+  // not a cohort of its own, unlike era four's: since the Caseload Premium
+  // build a redemption is a ticket whose Premium is the clinician's coverage
+  // (caseCovered), and that promise keeps itself. A family whose first load
+  // is this build or later is stamped here before they onboard, and pays.
+  //
+  // Deliberately NOT gated on any earlier era's stamp: a device that first
+  // loaded during era five carries all four of them and belongs to none.
+  const GF5KEY = "sona.freeera5.v1";
+  function _grandfatherFreeEra5() {
+    try {
+      if (localStorage.getItem(GF5KEY)) return;     // swept once, on the way in
+      localStorage.setItem(GF5KEY, "done");
+      let slots = [""];
+      try {
+        const v = JSON.parse(localStorage.getItem(KIDSKEY) || "null");
+        if (v && v.list && v.list.length) slots = v.list.map((k) => k.slot || "");
+      } catch (e) {}
+      let any = false;
+      slots.forEach(function (slot) {
+        const key = slot ? PKEY + "@" + slot : PKEY;
+        try {
+          const pr = JSON.parse(localStorage.getItem(key) || "null");
+          if (pr && (pr.onboarded || pr.childName)) {
+            pr.earlyAdopter = true; pr.freeEra = true; pr.freeEra5 = true;
+            localStorage.setItem(key, JSON.stringify(pr));
+            any = true;
+          }
+        } catch (e) {}
+      });
+      if (any) localStorage.setItem(GFKEY, "grandfathered");
+    } catch (e) {}
+  }
+
+  // THE FREE VERSION, KEPT (3 Oct 2026), in the free eras' one-shot shape. A
+  // device already set up on its first load of the trial-first build was told
+  // Fruit Slice, Piano Tiles, Feed Echo, Bubble Pop and the free book were
+  // free, and keeps them ("kept"); a device not set up yet is stamped "post"
+  // before it onboards, and starts with the trial. It keeps the free version,
+  // not Premium. Not gated on any free era's stamp (a device that first
+  // loaded in an earlier window carries those too), and on NO_IMPORT like
+  // them: it is true of this device, not of a family.
+  function _keepFreeVersion() {
+    try {
+      if (localStorage.getItem(FREEVER_KEY)) return;
+      let slots = [""];
+      try {
+        const v = JSON.parse(localStorage.getItem(KIDSKEY) || "null");
+        if (v && v.list && v.list.length) slots = v.list.map((k) => k.slot || "");
+      } catch (e) {}
+      const setUp = slots.some(function (slot) {
+        try { const pr = JSON.parse(localStorage.getItem(slot ? PKEY + "@" + slot : PKEY) || "null"); return !!(pr && (pr.onboarded || pr.childName)); }
+        catch (e) { return false; }
+      });
+      localStorage.setItem(FREEVER_KEY, setUp ? "kept" : "post");
+    } catch (e) {}
+  }
+
+  // OWN1 (11 Oct 2026, D3): a household already set up on this build's first
+  // load keeps every buddy, hat and place it could pick that day ("kept"); a
+  // device not set up yet is stamped "post" before it onboards and starts with
+  // the starter buddies. The stamp is true of this device and is on NO_IMPORT;
+  // what the family owns is written into each child's profile.owned, which a
+  // backup carries, so moving phones (or into the iPhone app) takes nothing away.
+  // It reads no other sweep's stamp. Like the free-era sweeps, it is one-shot
+  // and structural: never "clean it up", and never re-run it.
+  const BUDDYSET_KEY = "sona.buddyset.v1";
+  function _legacyInto(owned) {
+    const o = (owned && typeof owned === "object" && !Array.isArray(owned)) ? owned : {};
+    Object.keys(LEGACY_SET).forEach((kind) => {
+      const have = Array.isArray(o[kind]) ? o[kind] : [];
+      LEGACY_SET[kind].forEach((id) => { if (have.indexOf(id) < 0) have.push(id); });
+      o[kind] = have;
+    });
+    return o;
+  }
+  function _keepBuddies() {
+    try {
+      if (localStorage.getItem(BUDDYSET_KEY)) return;
+      let slots = [""];
+      try { const v = JSON.parse(localStorage.getItem(KIDSKEY) || "null"); if (v && v.list && v.list.length) slots = v.list.map((k) => k.slot || ""); } catch (e) {}
+      let setUp = false;
+      slots.forEach(function (slot) {
+        try {
+          const key = slot ? PKEY + "@" + slot : PKEY, pr = JSON.parse(localStorage.getItem(key) || "null");
+          if (!(pr && (pr.onboarded || pr.childName))) return;
+          setUp = true; pr.owned = _legacyInto(pr.owned); localStorage.setItem(key, JSON.stringify(pr));
+        } catch (e) {}
+      });
+      localStorage.setItem(BUDDYSET_KEY, setUp ? "kept" : "post");
+    } catch (e) {}
+  }
+  // missing = kept (fails open), so a device that cannot read its stamp takes nothing away
+  function buddiesKept() { try { return localStorage.getItem(BUDDYSET_KEY) !== "post"; } catch (e) { return true; } }
+
+  const HUMAN_CLIPS = true;
   function humanClipsOn() { return HUMAN_CLIPS; }
 
   // ── THE FAMILY PAYWALL SWITCH ─────────────────────────────────────────
@@ -3710,25 +8475,29 @@
   // Since 24 Sep 2026 "off" no longer means "everything behind a wall". Sona
   // has a FREE VERSION — daily practice and released free-tier games —
   // and PREMIUM, which opens every released game:
-  //   OFF — the free version for everyone; Premium for premium(): a
-  //     subscription (yearly, 3 days free; the web price comes from
-  //     lib/charter.ts via /api/charter, the iOS price from App Store
-  //     Connect), a covered clinician's caseload, a founder or founding
-  //     pilot, or any of the four free eras' promises;
-  //   ON (now) — every released game for everyone, nothing sold.
+  //   OFF (now) — the free version for the families freeVersion() names
+  //     (since 3 Oct 2026 a family who could buy here starts with the price:
+  //     see TRIAL FIRST); Premium for premium(): a subscription (on the
+  //     iPhone the one plan the App Store answers with, at its price and
+  //     with any free days it reports: storePlan(); on the web, when the
+  //     website sells, the plans in lib/charter.ts via /api/charter), a
+  //     covered clinician's caseload, a founder or founding pilot, or any of
+  //     the five free eras' promises;
+  //   ON — every released game for everyone, nothing sold.
   // Practice is never gated in either state; gated() says so before anything.
   //
   // The CLINICIAN plan ("Sona Premium for your caseload", bought on the
   // dashboard) is separate and deliberately does not read this switch: what
   // it pays for is its families' Premium, reported back here by caseRefresh.
   //
-  // Era four ended in the earlier paid build; its shipped sweep stays.
-  // This new free window needs its own sweep when pricing returns, not now.
+  // Era five, the window that opened on 24 Sep 2026, ends with this build,
+  // and its sweep (_grandfatherFreeEra5) ships in it. The next free window,
+  // if there is one, gets its own sweep in the build that ends it.
   //
   // The paid rails stay TESTED in either state through the ?paid=1 seam below,
   // because a switch nobody can flip is not a switch — and every free era so
   // far has proved how fast an unexercised path rots into archaeology.
-  const FREE_MODE = true;  // Travis, 24 Sep 2026: restore family access to free; pricing needs explicit approval
+  const FREE_MODE = false;  // Travis, 30 Sep 2026: "we add the paywall today" — era five ends the day this merges
   // QA seam: ?paid=1 (or the sticky sona.paidui flag) reveals the purchase
   // rails on this device so the paid path stays exercisable — and TESTED —
   // while free mode ships. It only controls VISIBILITY; it can't unlock
@@ -3752,18 +8521,83 @@
     return true;
   }
 
+  // ── WHERE A FAMILY CAN BUY ────────────────────────────────────────────
+  // WEB_SALES is the second switch, and it is a different question from
+  // FREE_MODE: not "does Sona cost anything" but "can a FAMILY start a
+  // purchase in a web browser". Off (Travis, 1 Oct 2026: "i dont want them
+  // paying on the website"), a family buys Premium only in the iPhone and
+  // iPad app, through Apple: a family who paid on the web had no cancel
+  // button, and a cancelled web plan stayed unlocked on the phone. Mirrored in
+  // lib/pricing.ts for the server (tests/freetest.mjs fails if they disagree),
+  // and the server refuses on its own copy, whatever a page shows.
+  //
+  // It is the FAMILY web checkout and nothing else. The Apple card never reads
+  // it ("native" is isNativeApp(), always). Nor does anything a family who
+  // ALREADY pays through Stripe leans on: restore(), isSubscribed(), the
+  // receipt page. A plan off sale is not a cancelled subscription. The
+  // clinician plans, bought on the dashboard, never read it either.
+  //
+  // Pages keep BOTH states and read webSales(), failing closed:
+  //   !!(Sona.webSales && Sona.webSales())
+  // so a stale page beside a new sona.js shows no web card rather than a card
+  // whose button the server refuses.
+  //
+  // It shipped true on 1 Oct 2026, because the app on the App Store that
+  // night had no purchase plugin. OFF since 2 Oct 2026, on Travis's word
+  // ("turn off payments on website"), the day 1.0.5 (the first build that can
+  // sell) went to App Review: until that build is live, nobody can buy
+  // Premium anywhere, and he chose that.
+  const WEB_SALES = false;  // off (Travis, 2 Oct 2026: "turn off payments on website")
+  // QA seam, the sona.paidui rule again: SESSION-scoped ("1" shows the web
+  // rails, "0" hides them, anything else is the constant), so both states stay
+  // played by the tests whichever way this ships. sessionStorage only, and no
+  // URL flag: the grown-ups gate strips every query key but first= and from=,
+  // and a localStorage seam once showed a family a paywall forever (see
+  // isFree above). It only controls VISIBILITY: /api/checkout refuses on the
+  // server's switch, so forcing it on in a browser opens nothing.
+  function webSales() {
+    try {
+      const v = sessionStorage.getItem("sona.websalesui");
+      if (v === "1") return true;
+      if (v === "0") return false;
+    } catch (e) {}
+    return WEB_SALES;
+  }
+
   const IAP_KEY = "appl_nONRfALUCMiZczeCggXKEusmVtl";
   // Two auto-renewable products in the "full" entitlement. The annual id is
   // the ORIGINAL one — its price changes in App Store Connect ($39.99 →
   // $59.99, existing subscribers preserved), so early buyers keep their rate
   // without any code caring.
-  // Monthly was retired from SALE on 18 Sep 2026 — no surface offers it — but
-  // its product id STAYS here. RevenueCat needs it to recognise an existing
-  // monthly subscriber on restore or reinstall, and dropping it would strand
-  // every one of them behind a paywall they are already paying for.
-  const IAP_PRODUCTS = { annual: "com.speaksona.app.annual", monthly: "com.speaksona.app.monthly" };
+  // Monthly was retired from SALE on 18 Sep 2026, back on sale on 1 Oct 2026,
+  // and from 5 Oct 2026 the ONLY plan the iPhone's plan screen offered (its
+  // price and free days are App Store Connect's, and storePlan() below reads
+  // them from the store, so neither is typed here). Since 19 Oct 2026 the
+  // annual product can be offered again beside it, as a second row, only
+  // while RevenueCat's current offering lists it. The annual id stays here
+  // either way, as monthly's did while it was off sale: RevenueCat needs
+  // each id to recognise an existing subscriber on restore or reinstall, and
+  // dropping one would strand them behind a paywall they are already paying
+  // for.
+  // ONE PAYMENT (Travis, 22 Oct 2026: "ok go build it all", the one-time
+  // purchase on the price screen in iOS 1.0.9; "i dont wanna say lifetime"):
+  // a NON-CONSUMABLE in the same "full" entitlement, App Store name "Sona
+  // Premium, One Payment". Its id keeps the store's own word because the id
+  // is App Store Connect's and never shown; no sentence a parent reads says
+  // it. Offered only while RevenueCat's current offering lists it (THE
+  // ONE-PAYMENT ROW, below), and kept here for restore like the other two.
+  const IAP_PRODUCTS = { annual: "com.speaksona.app.annual", monthly: "com.speaksona.app.monthly", lifetime: "com.speaksona.app.lifetime" };
+  // The yearly plan is not sold on the card (Travis, 23 Oct 2026: "get rid of
+  // the yearly option. I just want two payment options"): the one payment and
+  // monthly. Its product stays above, so anyone who bought it still restores;
+  // true brings the yearly row back by RevenueCat's offering, as before.
+  const IAP_SELL_YEARLY = false;
   const IAP_PRODUCT = IAP_PRODUCTS.annual;
   const IAP_TYPE = "subs"; // auto-renewable subscription
+  // The one payment is not a subscription: RevenueCat's getProducts takes
+  // the category (iOS ignores it, so a phone answers either way), and an old
+  // plugin's purchaseProduct the store's purchase type ("inapp").
+  function _iapIsOnce(kind) { return kind === "lifetime"; }
   const IAP_ENTITLEMENT = "full";
   function iapPlugin() {
     try { const C = global.Capacitor; return (C && C.isNativePlatform && C.isNativePlatform() && C.Plugins && C.Plugins.Purchases) ? C.Plugins.Purchases : null; } catch (e) { return null; }
@@ -3772,38 +8606,111 @@
   let _iapReady = null;
   function iapConfigure() {
     const P = iapPlugin(); if (!P) return Promise.reject(new Error("no-iap"));
-    if (!_iapReady) _iapReady = Promise.resolve(P.configure({ apiKey: IAP_KEY })).catch(() => {}); // configure is idempotent enough; never block on it twice
+    if (!_iapReady) {
+      _iapReady = Promise.resolve(P.configure({ apiKey: IAP_KEY })).catch(() => {}); // configure is idempotent enough; never block on it twice
+      _iapReady.then(() => _rcEmail(P));
+    }
     return _iapReady.then(() => P);
+  }
+  // THE PARENT'S EMAIL, TO REVENUECAT (RCHOOK1, Travis, 16 Oct 2026: "Yes,
+  // show emails", over keeping RevenueCat's customers ANONYMOUS). Once the
+  // store is set up on a page, the household's parent email (parentEmail():
+  // the address the parent typed on setup's email step) is handed to
+  // RevenueCat as this customer's email. RevenueCat shows it beside each
+  // trial, payment and cancellation, and puts it in every message it sends
+  // Sona's server (/api/revenuecat): that is how the welcome emails stop for
+  // a family who bought, and how "Your free days end soon" finds the right
+  // parent. That address only, never a child's name or anything about their
+  // practice, and nothing when no email was given. Optional like every new
+  // native call: a build without setEmail, or one that throws or refuses,
+  // changes nothing, and nothing waits on it (RevenueCat keeps the address
+  // on the phone and sends it with the next purchase, restore or sync).
+  function _rcEmail(P) {
+    try {
+      // TRIAL1: the anonymous family id every usage beacon already carries
+      // (fid(): random, minted on this phone, never a name), so RevenueCat's
+      // own message about a free trial (it became paid, was cancelled, ended)
+      // reaches the free-week report even when the family never opens Sona
+      // again. Optional like setEmail: missing or refusing changes nothing.
+      if (P && typeof P.setAttributes === "function") { const id = fid(); if (id) _soon(() => P.setAttributes({ sona_fid: id })).catch(() => {}); }
+    } catch (e) {}
+    try {
+      if (!P || typeof P.setEmail !== "function") return;
+      const email = parentEmail();
+      if (email) _soon(() => P.setEmail({ email: email })).catch(() => {});
+    } catch (e) {}
   }
   function _iapActive(info) {
     try { const e = info && (info.customerInfo || info); return !!(e && e.entitlements && e.entitlements.active && e.entitlements.active[IAP_ENTITLEMENT]); } catch (e2) { return false; }
   }
   function _iapUnlock() { saveSub({ active: true, source: "apple", since: Date.now() }); }
+  // Which period Apple says Premium is in: "TRIAL" (free days), "NORMAL",
+  // "INTRO" or "PREPAID", or "" when the answer does not say (_tellPlan).
+  function _iapPeriod(info) {
+    try {
+      const e = info && (info.customerInfo || info);
+      const f = e && e.entitlements && e.entitlements.active && e.entitlements.active[IAP_ENTITLEMENT];
+      return f && f.periodType ? String(f.periodType).toUpperCase() : "";
+    } catch (e2) { return ""; }
+  }
+  // When Apple says this period of Premium ends, in ms since 1970, or 0 when
+  // its answer does not say (a one payment has no end): the trial reminder
+  // (NOTIFY1) is set from the purchase's own record, before the price page
+  // leaves, not from a second lookup that page may not live to hear.
+  function _iapEnd(info) {
+    try {
+      const e = info && (info.customerInfo || info);
+      const f = e && e.entitlements && e.entitlements.active && e.entitlements.active[IAP_ENTITLEMENT];
+      let end = f ? Number(f.expirationDateMillis) : 0;
+      if (!(end > 0) && f) end = Date.parse(String(f.expirationDate || ""));
+      return end > 0 ? end : 0;
+    } catch (e2) { return 0; }
+  }
   // fetch the live product (price string comes from the App Store, locale-
-  // correct). kind: "annual" (default) | "monthly".
+  // correct). kind: "annual" (default) | "monthly" | "lifetime".
+  // THE PRODUCT ASKED FOR, OR NOTHING (1 Oct 2026). This took the first
+  // product in the answer whatever it was. With two on sale that is how a
+  // "Monthly" button buys the yearly plan: a store that has no monthly product
+  // but answers with the yearly one would have priced and sold it under the
+  // wrong name. A product that names itself must name the id asked for; only
+  // an answer with no identifier at all (an old plugin) is taken on trust.
   function iapProduct(kind) {
     const id = IAP_PRODUCTS[kind || "annual"] || IAP_PRODUCT;
     return iapConfigure().then((P) =>
-      Promise.resolve(P.getProducts({ productIdentifiers: [id], type: IAP_TYPE }))
+      Promise.resolve(P.getProducts({ productIdentifiers: [id], type: _iapIsOnce(kind) ? "NON_SUBSCRIPTION" : IAP_TYPE }))
         .catch(() => P.getProducts({ productIdentifiers: [id] }))
-        .then((r) => (r && r.products && r.products[0]) || null)
+        .then((r) => {
+          const list = (r && r.products) || [];
+          for (let i = 0; i < list.length; i++) if (list[i] && list[i].identifier === id) return list[i];
+          return (list.length === 1 && list[0] && list[0].identifier == null) ? list[0] : null;
+        })
     );
   }
-  // buy: try the modern API first, fall back across plugin versions
-  function iapPurchase(kind) {
+  // buy. ONE PURCHASE CALL, NEVER TWO (5 Oct 2026). This used to try
+  // purchaseStoreProduct and, when that REJECTED, try purchaseProduct too
+  // ("fall back across plugin versions"). But a rejection is Apple's answer,
+  // not a missing method: a parent who cancelled the sheet, or whose purchase
+  // is waiting for Ask to Buy, was then sent through the second name, and on
+  // a bridge that answers it the second call's error replaced Apple's own
+  // (cancel read as "That didn't go through", "Waiting for approval" could
+  // never show) or a second sheet opened. Which method exists is known before
+  // anything is asked of Apple, so it is chosen first and called once.
+  // `product` (optional) is the store's own product object, already in hand
+  // from storePlan(): with it no second fetch can hang between the tap and
+  // Apple's sheet. Without it, or with one that is not the id being bought,
+  // the product is fetched here as it always was.
+  function iapPurchase(kind, product) {
     const id = IAP_PRODUCTS[kind || "annual"] || IAP_PRODUCT;
-    return iapConfigure().then((P) =>
-      iapProduct(kind).then((product) => {
-        const attempts = [];
-        if (product && P.purchaseStoreProduct) attempts.push(() => P.purchaseStoreProduct({ product }));
-        if (P.purchaseProduct) attempts.push(() => P.purchaseProduct({ productIdentifier: id, type: IAP_TYPE }));
-        let p = Promise.reject(new Error("no-purchase-api"));
-        attempts.forEach((fn) => { p = p.catch(fn); });
-        return p;
-      })
-    ).then((res) => {
+    return iapConfigure().then((P) => {
+      const have = (product && product.identifier === id) ? Promise.resolve(product) : iapProduct(kind);
+      return have.then((prod) => {
+        if (prod && typeof P.purchaseStoreProduct === "function") return P.purchaseStoreProduct({ product: prod });   // the only attempt
+        if (typeof P.purchaseProduct === "function") return P.purchaseProduct({ productIdentifier: id, type: _iapIsOnce(kind) ? "inapp" : IAP_TYPE });   // an old plugin with no product API
+        throw new Error("no-purchase-api");
+      });
+    }).then((res) => {
       if (res && res.userCancelled) throw Object.assign(new Error("cancelled"), { cancelled: true });
-      if (_iapActive(res)) { _iapUnlock(); return { ok: true }; }
+      if (_iapActive(res)) { _iapUnlock(); return { ok: true, period: _iapPeriod(res), end: _iapEnd(res) }; }
       // some plugin versions return only {productIdentifier}; verify via customer info
       return iapRefresh(true).then((active) => { if (active) return { ok: true }; throw new Error("not-entitled"); });
     }).catch((e) => {
@@ -3861,6 +8768,1476 @@
     });
   }
 
+  // ── THE PLANS THE IPHONE SELLS, AS THE STORE ANSWERS THEM (5 Oct 2026) ──
+  // Travis, 5 Oct 2026: "get rid of the annual option and update the copy so
+  // that it says three days free, then $9.99 a month". The app sold the
+  // MONTHLY product alone; since 19 Oct 2026 the yearly one can be a second
+  // row beside it, only when RevenueCat's offering lists it (THE YEARLY ROW,
+  // below: Plan.year), and since 22 Oct 2026 the one-payment product a third
+  // row by the same rule (THE ONE-PAYMENT ROW: Plan.life). The free time is whatever the store's offer says (3
+  // days on 5 Oct 2026; a week once Travis sets it in App Store Connect, as
+  // approved on 19 Oct 2026, which planFree reads as "7 days"): nothing here
+  // counts days. What a screen may say about a plan is decided HERE, once,
+  // from three answers only the store can give:
+  //   - the monthly product itself: its price, and the free time its
+  //     introductory offer carries, if it has one;
+  //   - whether THIS Apple ID may still have that offer. Apple gives one per
+  //     subscription group and yearly shares monthly's group, so a family who
+  //     took the yearly plan's free days gets none here and is charged at
+  //     once. A product that "has 3 free days" proves nothing about the buyer;
+  //   - whether this Apple ID already holds Premium. A reinstall is a new,
+  //     anonymous RevenueCat customer, so the record alone says "no" to a
+  //     family that is paying: only a purchase sync finds them.
+  // storePlan() turns those into one of four states:
+  //   free  — the product came back, its free time can be read, and the buyer
+  //           is not definitely ineligible. `sure` is true only on a definite
+  //           "eligible"; when it is false the words say "new subscribers"
+  //           and state no first charge as fact;
+  //   paid  — the product came back and has no offer, or the buyer is
+  //           definitely ineligible: charged today, never the word "free";
+  //   none  — everything else: no monthly product, the yearly one answering
+  //           in its place (iapProduct refuses it), an offer that costs money
+  //           or cannot be read, an error, no answer in time. NOTHING is sold
+  //           instead (the yearly and one-payment rows included) and no
+  //           figure is shown;
+  //   owned — this Apple ID already has Premium, so it is never sold a second
+  //           plan.
+  // The product and the purchase go through iapProduct("monthly") and
+  // iapPurchase("monthly", product), the calls real phones already use (the
+  // yearly row through iapProduct("annual") and iapPurchase("annual", ...),
+  // the one-payment row through iapProduct("lifetime") and
+  // iapPurchase("lifetime", ...)).
+  // The NEW native calls (the eligibility ask, the purchase sync, and since
+  // 19 Oct 2026 RevenueCat's getOfferings) are optional by construction:
+  // missing, throwing, rejecting or slow, each leaves the answer exactly as
+  // if the call did not exist, and none can hold the card back beyond the
+  // limits below.
+  const PLAN_WAIT_MS  = 4000;  // no product by then → none/timeout. The clock starts when storePlan() is CALLED, before the store is even set up.
+  const PLAN_GRACE_MS = 1200;  // after the product: how long eligibility, "already has it", the yearly row and the one-payment row may hold the answer back
+  const PLAN_OWN_MS   = 3000;  // after the product: how long "already has it" may hold back a pay-today price for a buyer Apple calls ineligible
+  const WALL_WAIT_MS  = 2500;  // setupWall. Starts when setupWall() is called.
+  const IAPSYNC = "sona.iapsync.v1";   // sessionStorage "1": a purchase sync has FINISHED in this app launch
+  // a call that may throw before it returns its promise (a bridge method that
+  // is missing or broken) becomes a rejection, so nothing below can throw
+  function _soon(fn) { return new Promise((resolve) => { resolve(fn()); }); }
+
+  // "Does this Apple ID hold Premium?", shared by storePlan and setupWall so
+  // setup's ask and the price screen's are one ask. The customer record
+  // first; if it says no, ONE purchase sync, then the record again.
+  // syncPurchases re-attaches an old purchase to this install without Apple's
+  // sign-in prompt (restorePurchases can show one, which is why Restore stays
+  // a button). At most one FINISHED sync per app launch.
+  let _ownP = null, _syncP = null;
+  function _iapSyncOnce() {            // → Promise<boolean>: true only if a sync was sent now and resolved. Never rejects.
+    if (_syncP) return _syncP;         // one attempt per page load
+    let had = false; try { had = sessionStorage.getItem(IAPSYNC) === "1"; } catch (e) {}
+    const P = iapPlugin();
+    if (had || !P || typeof P.syncPurchases !== "function") return (_syncP = Promise.resolve(false));
+    // the flag is written only when the sync RESOLVES: one cut off by leaving the page is sent again by the next page
+    return (_syncP = _soon(() => P.syncPurchases()).then(() => { try { sessionStorage.setItem(IAPSYNC, "1"); } catch (e) {} return true; }, () => false));
+  }
+  function _iapOwned(fresh) {          // never rejects
+    if (_ownP && !fresh) return _ownP;
+    return (_ownP = _soon(() => iapRefresh(true))
+      .then((a) => a ? true : _iapSyncOnce().then((sent) => sent ? iapRefresh(true) : false))
+      .catch(() => false));
+  }
+
+  // The free time a product's introductory offer carries:
+  //   "none"  no offer at all;
+  //   "paid"  an offer that costs money (a discounted first period): the
+  //           first charge is neither nothing nor the full price;
+  //   "odd"   an offer whose length cannot be read;
+  //   { n, unit, text }  free for that long ("3 days", "1 month", "1 year").
+  // Only the last is ever shown as free time. Weeks are said in days, as
+  // Apple's own sheet says them.
+  function planFree(p) {
+    let ip = null; try { ip = p && (p.introPrice || p.introductoryPrice); } catch (e) {}
+    if (!ip) return "none";
+    // free means a price that IS zero: a missing one is not known to be
+    if (ip.price == null || ip.price === "" || Number(ip.price) !== 0) return "paid";
+    const span = (n, u) => {
+      if (u === "W") { n = n * 7; u = "D"; }
+      if (!(n >= 1) || Math.floor(n) !== n) return null;
+      const unit = u === "D" ? "day" : u === "M" ? "month" : u === "Y" ? "year" : "";
+      // what Apple lets an offer be, with room: anything outside is a misread
+      if (!unit || (unit === "day" && n > 31) || (unit === "month" && n > 12) || (unit === "year" && n > 1)) return null;
+      return { n, unit, text: n + " " + unit + (n === 1 ? "" : "s") };
+    };
+    // the count and its unit first, then the ISO period ("P3D"): a bridge may send either
+    let free = span(Number(ip.periodNumberOfUnits), String(ip.periodUnit || "").toUpperCase().charAt(0));
+    if (!free) { const m = /^P(\d+)([DWMY])$/i.exec(String(ip.period || "")); if (m) free = span(Number(m[1]), m[2].toUpperCase()); }
+    return free || "odd";
+  }
+  // RevenueCat's answer for one product: a number or its name, either under
+  // .status or bare (which one a real phone sends is not known yet, so both
+  // are read). "no" = this buyer already used the group's offer; "none" = the
+  // product has no offer; anything unreadable is "unknown", never a "no".
+  function _planElig(r, id) {
+    let v = null; try { v = r && r[id]; if (v && typeof v === "object") v = v.status; } catch (e) { v = null; }
+    const s = String(v == null ? "" : v).toUpperCase();
+    if (s === "1" || s.indexOf("INELIGIBLE") !== -1) return "no";   // before ELIGIBLE: the name contains it
+    if (s === "3" || s.indexOf("NO_INTRO") !== -1) return "none";
+    if (s === "2" || s === "ELIGIBLE" || s === "INTRO_ELIGIBILITY_STATUS_ELIGIBLE") return "yes";   // exact: "sure" prints "Nothing to pay today" as plain fact
+    return "unknown";
+  }
+  // The Plan a page is handed. `_p` is the store's own product object, kept
+  // for buyPlan and hidden from JSON, logs and for-in: nothing may copy it
+  // into a payload by accident. FROZEN: one Plan is handed to every caller of
+  // the page load, so a page that wrote to it would change the price the next
+  // caller reads, and the words built from it.
+  // The plan storePlan() answers is always the MONTHLY one (or none/owned),
+  // and it carries `year`: the yearly Plan when the card may show a second
+  // row for it (see THE YEARLY ROW below), else null. A yearly Plan carries
+  // `best` instead: true only when the store's yearly price is below twelve
+  // of its monthly ones (the "Best value" tag; never a figure or a ratio).
+  // It also carries `life`: the one-payment Plan (THE ONE-PAYMENT ROW), else
+  // null. A one-payment Plan is always "paid" (charged today, once), its
+  // `per` is "once", and it carries neither `year`, `life` nor `best`.
+  function _plan(state, why, p, free, sure, kind, extra) {
+    const priced = state === "free" || state === "paid";
+    const yearly = kind === "annual", once = _iapIsOnce(kind);
+    const plan = {
+      state,
+      kind: priced ? (yearly ? "annual" : once ? "lifetime" : "monthly") : "",  // handed back to buyPlan (the product bought) and analytics; the card's pick reads it
+      id: priced ? String(p.identifier || (yearly ? IAP_PRODUCTS.annual : once ? IAP_PRODUCTS.lifetime : IAP_PRODUCTS.monthly)) : "",
+      price: priced ? String(p.priceString) : "",          // the store's own string, verbatim: never rebuilt from a number
+      per: priced ? (yearly ? "year" : once ? "once" : "month") : "",
+      free: state === "free" ? free : null,
+      sure: state === "free" && sure === true,
+      why: why || "",
+    };
+    if (yearly) plan.best = !!(extra && extra.best);
+    else if (!once) { plan.year = (priced && extra && extra.year) || null; plan.life = (priced && extra && extra.life) || null; }
+    if (priced) Object.defineProperty(plan, "_p", { value: p, enumerable: false });
+    if (plan.free) Object.freeze(plan.free);
+    return Object.freeze(plan);
+  }
+  // "Best value": the yearly price below twelve monthly ones, in whole cents
+  // (9.99 × 12 in floating point is 119.88000000000001, which would call a
+  // yearly price of exactly $119.88 cheaper), from the numbers the store
+  // gives, in one currency. Either number missing or odd: no tag.
+  function _yearBest(yp, mp) {
+    try {
+      const y = Math.round(Number(yp && yp.price) * 100), m = Math.round(Number(mp && mp.price) * 100);
+      if (!(y > 0 && m > 0 && isFinite(y) && isFinite(m))) return false;
+      if (yp.currencyCode && mp.currencyCode && String(yp.currencyCode) !== String(mp.currencyCode)) return false;
+      return y < 12 * m;
+    } catch (e) { return false; }
+  }
+  // ── THE YEARLY ROW (Travis, 19 Oct 2026: "go, yes to 1 2 3", to "show TWO
+  // plans on the price screen, monthly and yearly, so parents compare") ──
+  // The yearly product comes back to Apple's card as a second row, above the
+  // monthly one, ONLY when two answers say it can really be sold:
+  //   - RevenueCat's CURRENT OFFERING lists it among its packages
+  //     (Purchases.getOfferings). On 1 Oct 2026 the yearly product was
+  //     attached to no RevenueCat entitlement, so a sale would have taken a
+  //     parent's money and opened nothing. Putting it in the current offering
+  //     is Travis's switch, in RevenueCat's dashboard, and the sign it is set
+  //     up there;
+  //   - the store returns the yearly product itself, named by its own id,
+  //     with a price.
+  // getOfferings missing, throwing, slow (the same PLAN_GRACE_MS the
+  // eligibility ask gets after the monthly product), an offering without it,
+  // or no product: the card is exactly the monthly row alone, as before. The
+  // yearly row is decided when the card is first answered; a later yearly
+  // answer never adds a row under a reading parent (a fresh ask may). The
+  // monthly plan stays THE plan: no monthly product sells nothing, yearly
+  // included, exactly as before.
+  // ONE READ OF THE OFFERING FOR EACH ASK, for both rows it can add (the
+  // yearly one and the one payment): → Promise<{ annual, lifetime }>, each
+  // true only when the CURRENT offering lists that product by its own id,
+  // among its packages or as its own annual / lifetime package. Never
+  // rejects: missing, throwing or failing, neither row is listed.
+  function _offered(P) {
+    return _soon(() => {
+      if (typeof P.getOfferings !== "function") return null;
+      return P.getOfferings();
+    }).then((r) => {
+      const cur = r && typeof r === "object" ? r.current : null;
+      if (!cur || typeof cur !== "object") return { annual: false, lifetime: false };
+      const list = [].concat(Array.isArray(cur.availablePackages) ? cur.availablePackages : [], cur.annual ? [cur.annual] : [], cur.lifetime ? [cur.lifetime] : []);
+      const has = (id) => list.some((pk) => !!pk && !!pk.product && pk.product.identifier === id);
+      return { annual: has(IAP_PRODUCTS.annual), lifetime: has(IAP_PRODUCTS.lifetime) };
+    }, () => ({ annual: false, lifetime: false }));
+  }
+  // ── THE ONE-PAYMENT ROW (Travis, 22 Oct 2026, for iOS 1.0.9: "the one-time
+  // 'lifetime' purchase on the price screen"; "i dont wanna say lifetime") ──
+  // The non-consumable comes to Apple's card as a third row, under the
+  // monthly one, by the yearly row's rules: ONLY when RevenueCat's current
+  // offering lists it (attaching it to "full" and adding it to the offering
+  // is Travis's switch, in RevenueCat's dashboard, as NATIVE.md says) AND
+  // the store returns it by its own id with a price. It is charged once,
+  // today: it has no free days and no eligibility to ask, so an answer that
+  // says it has an introductory offer is a product this page cannot
+  // describe, and no row. Decided when the card is first answered, within
+  // the same PLAN_GRACE_MS; a later answer never adds it under a reading
+  // parent (a fresh ask may). No monthly product sells nothing, this row
+  // included.
+  function _lifePlan(a) {
+    const lp = a.lf;
+    if (!lp || !a.p || planFree(lp) !== "none") return null;
+    return _plan("paid", "", lp, null, false, "lifetime");
+  }
+  // the yearly Plan for an ask, or null: its own free time and its own
+  // eligibility, by monthly's rules (a first year that costs money, or one
+  // that cannot be read, is no row at all rather than a guess)
+  function _yearPlan(a) {
+    const yp = a.yr;
+    if (!yp || !a.p) return null;
+    // "Best value" compares the yearly price with twelve monthly ones. Beside
+    // a one-payment row that costs no more than the year, that tag would be a
+    // false comparison on the card ("$59.99/yr · Best value" over "One
+    // payment $59.99"), so it goes whenever that row shows and its price is
+    // at or under the year's, or the two cannot be compared.
+    const life = _lifePlan(a), lifeCheaper = !!life && (function () {
+      try {
+        const y = Math.round(Number(yp.price) * 100), l = Math.round(Number(a.lf.price) * 100);
+        if (!(y > 0 && l > 0 && isFinite(y) && isFinite(l))) return true;
+        if (!yp.currencyCode || !a.lf.currencyCode || String(yp.currencyCode) !== String(a.lf.currencyCode)) return true;
+        return l <= y;
+      } catch (e) { return true; }
+    })();
+    const intro = planFree(yp), cant = a.eligY === "no" || a.eligY === "none", best = !lifeCheaper && _yearBest(yp, a.p);
+    if (typeof intro === "object" && !cant) return _plan("free", "", yp, intro, a.eligY === "yes", "annual", { best });
+    if (intro === "none" || cant) return _plan("paid", "", yp, null, false, "annual", { best });
+    return null;
+  }
+  // what a late answer must change before every onLate hears it
+  function _planSig(p) {
+    const y = p && p.year, l = p && p.life;
+    return p ? [p.state, p.kind, p.sure, y ? y.state + "/" + y.sure + "/" + y.best : "-", l ? l.state + "/" + l.price : "-"].join("|") : "";
+  }
+
+  // ONE ASK PER PAGE LOAD, and the latest answer is the one every caller
+  // gets, "none" included: only { fresh: true } asks the store again.
+  //   opts.fresh   ask again (Try again; the app coming back to the front)
+  //   opts.onLate  called with the new Plan whenever an answer that arrived
+  //                AFTER the promise resolved changes { state, kind, sure }
+  //                or the yearly row's { state, sure, best }, or the one-
+  //                payment row's { state, price } (_planSig).
+  // LATE ANSWERS COUNT. The promise resolves on the limits above, but the
+  // three asks stay live: a "not eligible", an "already has it" or the
+  // product itself arriving later replaces the answer and tells every
+  // onLate, so a sentence the phone knows to be false never stays on screen.
+  // Callbacks are kept for the page load, each once; an ask that a later
+  // fresh one replaced tells nobody anything.
+  let _planAsk = null;
+  const _planLate = [];
+  function _planStep(a) {
+    if (a !== _planAsk) return;
+    let plan;
+    if (a.own === true) plan = _plan("owned");
+    else if (!a.got) { if (!a.timedOut) return; plan = _plan("none", "timeout"); }
+    else if (a.failed) plan = _plan("none", "error");
+    else if (!a.p) plan = _plan("none", "no-product");
+    else {
+      const ownIn = a.own !== undefined, eligIn = a.elig !== undefined || a.intro === "none";
+      // the yearly row has answered: no row, or its product and its own
+      // eligibility (none needed for a product with no offer)
+      const yearIn = a.yr !== undefined && (!a.yr || a.eligY !== undefined || planFree(a.yr) === "none");
+      // the one-payment row has answered: no row, or its product (it has no eligibility)
+      const lifeIn = a.lf !== undefined;
+      if (!(ownIn && eligIn && yearIn && lifeIn)) {
+        if (!a.graceOver) return;
+        // A buyer Apple calls ineligible has subscribed before and may be
+        // paying right now: no pay-today price while the sync is in flight.
+        if ((a.elig === "no" || (a.yr && a.eligY === "no")) && !ownIn && !a.ownOver) return;
+      }
+      // too slow to have answered by now: no yearly row, and no one-payment row, for this ask
+      if (a.yr === undefined) a.yr = null;
+      if (a.lf === undefined) a.lf = null;
+      const cant = a.elig === "no" || a.elig === "none";
+      if (typeof a.intro === "object" && !cant) plan = _plan("free", "", a.p, a.intro, a.elig === "yes", "monthly", { year: _yearPlan(a), life: _lifePlan(a) });
+      else if (a.intro === "none" || cant) plan = _plan("paid", "", a.p, null, false, "monthly", { year: _yearPlan(a), life: _lifePlan(a) });
+      // an offer that costs money, or one that cannot be read, for a buyer
+      // who may get it: the first charge is unknown, so nothing is stated
+      else plan = _plan("none", "no-product");
+    }
+    if (!a.plan) { a.plan = plan; a.resolve(plan); return; }
+    if (_planSig(plan) === _planSig(a.plan)) return;
+    a.plan = plan;
+    _planLate.slice().forEach((fn) => { try { fn(plan); } catch (e) {} });
+  }
+  function storePlan(opts) {           // → Promise<Plan>. Never rejects.
+    opts = opts || {};
+    try { if (typeof opts.onLate === "function" && _planLate.indexOf(opts.onLate) === -1) _planLate.push(opts.onLate); } catch (e) {}
+    if (!iapPlugin()) return Promise.resolve(_plan("none", "no-plugin"));
+    if (_planAsk && !opts.fresh) return _planAsk.plan ? Promise.resolve(_planAsk.plan) : _planAsk.promise;
+    // yr: the yearly product (undefined while asking, null for no row); eligY: its own eligibility
+    // lf: the one-payment product (undefined while asking, null for no row)
+    const a = { plan: null, got: false, failed: false, p: null, intro: "none", own: undefined, elig: undefined, yr: undefined, eligY: undefined, lf: undefined, timedOut: false, graceOver: false, ownOver: false };
+    a.promise = new Promise((resolve) => { a.resolve = resolve; });
+    // whoever is still waiting on the ask this one replaces gets this one's answer
+    if (_planAsk && !_planAsk.plan) _planAsk.resolve(a.promise);
+    _planAsk = a;
+    try {
+      const id = IAP_PRODUCTS.monthly;
+      // the limit first: a store that never finishes setting itself up is caught by the same clock
+      a.wait = setTimeout(() => { a.timedOut = true; _planStep(a); }, PLAN_WAIT_MS);
+      const got = (p, failed) => {
+        if (a.got) return;
+        clearTimeout(a.wait);
+        a.got = true; a.failed = !!failed;
+        // a product with no price to show is not a product
+        a.p = (p && String(p.priceString == null ? "" : p.priceString).trim()) ? p : null;
+        if (a.p) {
+          a.intro = planFree(a.p);
+          setTimeout(() => { a.graceOver = true; _planStep(a); }, PLAN_GRACE_MS);
+          setTimeout(() => { a.ownOver = true; _planStep(a); }, PLAN_OWN_MS);
+        }
+        _planStep(a);
+      };
+      _soon(() => iapProduct("monthly")).then((p) => got(p, false), () => got(null, true));
+      _iapOwned(!!opts.fresh).then((own) => { a.own = !!own; _planStep(a); });
+      _soon(() => iapConfigure()).then((P) => {
+        if (typeof P.checkTrialOrIntroductoryPriceEligibility !== "function") return "unknown";
+        return Promise.resolve(P.checkTrialOrIntroductoryPriceEligibility({ productIdentifiers: [id] })).then((r) => _planElig(r, id));
+      }).catch(() => "unknown").then((e) => { a.elig = e; _planStep(a); });
+      // THE YEARLY ROW: RevenueCat's offering first; only an offering that
+      // lists the yearly product leads to asking the store for it, so with
+      // no such offering the asks are exactly the monthly ones above. Its
+      // own eligibility is a call of its own, so monthly's never changes.
+      const noYear = () => { if (a.yr === undefined) { a.yr = null; _planStep(a); } };
+      const noLife = () => { if (a.lf === undefined) { a.lf = null; _planStep(a); } };
+      // one read of the offering for both rows (and none at all when the store cannot be set up)
+      const offer = _soon(() => iapConfigure()).then((P) => _offered(P).then((o) => ({ P: P, o: o })));
+      offer.then(({ P, o }) => {
+        if (!IAP_SELL_YEARLY || !o.annual || a.yr !== undefined) return noYear();
+        return _soon(() => iapProduct("annual")).then((yp) => {
+          if (a.yr !== undefined) return;
+          // its own id, by name (iapProduct also takes an unnamed lone
+          // product on trust; a yearly row never does), and a price to show
+          const good = !!yp && yp.identifier === IAP_PRODUCTS.annual && !!String(yp.priceString == null ? "" : yp.priceString).trim();
+          if (!good) return noYear();
+          a.yr = yp;
+          if (planFree(yp) !== "none") {
+            const yid = IAP_PRODUCTS.annual;
+            _soon(() => {
+              if (typeof P.checkTrialOrIntroductoryPriceEligibility !== "function") return "unknown";
+              return Promise.resolve(P.checkTrialOrIntroductoryPriceEligibility({ productIdentifiers: [yid] })).then((r) => _planElig(r, yid));
+            }).catch(() => "unknown").then((e) => { a.eligY = e; _planStep(a); });
+          }
+          _planStep(a);
+        });
+      }).catch(noYear);
+      // THE ONE-PAYMENT ROW, from the same read: only an offering that lists
+      // it leads to asking the store for it, so with none the asks are
+      // exactly those above. No eligibility: it has no free days to give.
+      offer.then(({ o }) => {
+        if (!o.lifetime || a.lf !== undefined) return noLife();
+        return _soon(() => iapProduct("lifetime")).then((lp) => {
+          if (a.lf !== undefined) return;
+          // by its own id (never an unnamed lone product taken on trust) and with a price to show
+          const good = !!lp && lp.identifier === IAP_PRODUCTS.lifetime && !!String(lp.priceString == null ? "" : lp.priceString).trim();
+          if (!good) return noLife();
+          a.lf = lp;
+          _planStep(a);
+        });
+      }).catch(noLife);
+    } catch (e) {
+      if (!a.plan) { a.plan = _plan("none", "error"); a.resolve(a.plan); }
+    }
+    return a.promise;
+  }
+
+  // Buy the plan a screen was handed. Resolves { ok: true }, or
+  // { ok: true, restored: true } when Apple says this Apple ID already bought
+  // it and a restore finds Premium (not a new sale: the caller must not count
+  // or celebrate it). Rejects with an Error whose .code a page can turn into
+  // words with planSay():
+  //   cancelled · pending (Ask to Buy) · not-allowed (Screen Time) ·
+  //   not-entitled (Apple took the order, Premium did not switch on) ·
+  //   offline · unavailable · busy (a purchase is already open) · failed ·
+  //   no-plan (nothing to buy was handed in).
+  // The numbers are RevenueCat's error codes, which cross the bridge as
+  // strings. No time limit on Apple's own sheet: a parent may sit on it.
+  function _buyCode(e) {
+    if (!e) return "failed";
+    const c = String(e.code == null ? "" : e.code), m = String(e.message || "");
+    if (e.cancelled || e.userCancelled || c === "1") return "cancelled";
+    if (c === "20") return "pending";
+    if (c === "3") return "not-allowed";
+    if (m === "not-entitled") return "not-entitled";
+    if (c === "10" || c === "35") return "offline";
+    if (c === "5" || m === "no-purchase-api" || m === "no-iap") return "unavailable";
+    if (c === "15") return "busy";
+    return "failed";
+  }
+  function _buyError(code) {
+    const err = new Error(code); err.code = code;
+    if (code === "cancelled") err.cancelled = true;
+    return err;
+  }
+  // THE LIST HEARS WHEN THE FREE DAYS START (Travis, 5 Oct 2026: "yeah build
+  // it"). A parent who gave the app their email (setup's email step, before
+  // the price since 13 Oct 2026) is on Sona's email list already. Once a
+  // purchase here has gone through, the list is told which kind it was
+  // through /api/lead, the one door every grown-up's email uses: "trial"
+  // when Apple started the free days, "paid" when it charged at once. The
+  // server files them under Started Premium in Resend's contacts and stops
+  // the welcome series at once, before RevenueCat's own message arrives
+  // (RCHOOK1; Kit, which this used to tag, is gone since 16 Oct 2026).
+  // What goes: that email and that one word.
+  // Never a child's name or anything about their practice. Never without an
+  // email (nobody is asked for one here), and once per kind and address on
+  // this phone.
+  const PLANTOLD = "sona.plantold.v1";
+  function parentEmail() {
+    const good = (v) => { const t = typeof v === "string" ? v.trim() : ""; return t.length <= 254 && /^\S+@\S+\.\S+$/.test(t) ? t : ""; };
+    let got = "";
+    try { got = good(load(PKEY, {}).email); } catch (e) {}
+    // the email sits on the profile of the child who was set up first; any child's will do
+    if (!got) { try { _kids().list.some((k) => { const p = JSON.parse(localStorage.getItem(k.slot ? PKEY + "@" + k.slot : PKEY) || "{}"); got = good(p.email); return !!got; }); } catch (e) {} }
+    if (!got) { try { got = good((getTrial() || {}).email) || good(getSub().email); } catch (e) {} }
+    return got;
+  }
+  function _tellPlan(period, plan) {
+    // Apple's own answer first; only when it says nothing, what the card sold
+    let what = period === "TRIAL" ? "trial" : (period === "NORMAL" || period === "INTRO" || period === "PREPAID") ? "paid" : "";
+    if (!what) { try { what = plan && plan.state === "free" ? "trial" : plan && plan.state === "paid" ? "paid" : ""; } catch (e) {} }
+    const email = what ? parentEmail() : "";
+    if (!email) return;
+    const mark = what + " " + email.toLowerCase();
+    try { if (localStorage.getItem(PLANTOLD) === mark) return; localStorage.setItem(PLANTOLD, mark); } catch (e) {}
+    try {
+      fetch("/api/lead", { method: "POST", headers: { "Content-Type": "application/json" }, keepalive: true,
+        body: JSON.stringify({ email: email, role: "parent", plan: what, source: what === "trial" ? "app-trial" : "app-paid",
+          summary: what === "trial" ? "Started Sona Premium's free days in the app" : "Bought Sona Premium in the app" }) }).catch(() => {});
+    } catch (e) {}
+  }
+  // ── TRIAL1: the free-week report (Travis, 30 Oct 2026, of "most of them
+  // cancel": a report of which trial families play on each day, and who
+  // pays). Two beacons through track(), the anonymous family id and nothing
+  // else: "free trial started" ({ days: how long Apple's free time is }),
+  // from a purchase whose free days really started, and "played today", once
+  // a local day, on the first counted rep (a voiced practice try, a heard
+  // game ask or book word: silence never). The server (lib/trials.ts) keeps,
+  // per trial, which of its days had play; RevenueCat's own message (with
+  // the same anonymous id, _rcEmail) says how it ended. /leads.html shows it.
+  // Never a name, an age, a sound, a count or a word.
+  const PLAYEDKEY = "sona.played.v1";
+  function _trialTold(r, plan) {
+    try {
+      const period = String((r && r.period) || "");
+      let free = period === "TRIAL";
+      if (!period) free = !!plan && plan.state === "free" && plan.sure === true;
+      if (!free) return;
+      let end = Number(r && r.end) || 0;
+      if (!(end > 0)) { const g = planBillDate(plan); end = g ? g.getTime() : 0; }
+      const days = end > Date.now() ? Math.max(1, Math.min(31, Math.round((end - Date.now()) / 86400000))) : 0;
+      track("free trial started", days ? { days: days } : {});
+    } catch (e) {}
+  }
+  function _playedToday() {
+    if (_notifyHome()) return;                   // Home only reads: a rep is never said there
+    const t = today();
+    let was = ""; try { was = localStorage.getItem(PLAYEDKEY) || ""; } catch (e) {}
+    if (was === t) return;
+    try { localStorage.setItem(PLAYEDKEY, t); } catch (e) {}
+    track("played today");
+    try { _nudgeTodayOff(); } catch (e) {}       // NUDGE1: no reminder today, the child already played
+  }
+  // ── REPORT1: the weekly progress report (Travis, 15 Oct 2026: "i want the
+  // setup page to say get the weekly progress report", then, told that nothing
+  // sent one, "Build the real report"). Only a household whose grown-up asked
+  // for it on setup's email step, or with Settings' switch since 23 Oct 2026
+  // (WEEKLY1, below) (profile.weeklyReport, on the profile that
+  // holds the address) sends anything: the address, this phone's random device
+  // id, and for each child set up here a few numbers for this week and last
+  // (a random id for the child, days with a rep, days at the daily goal, the
+  // plan's days a week, reps, practice tries among them, the sounds they were
+  // in). Never a name, an age, a word, a pass rate or a voice: the email says
+  // "Child 1". lib/report.ts keeps nothing until the address confirms this
+  // phone from the link it is emailed, then keeps three weeks and sends
+  // Monday's email.
+  // It is sent once as setup ends (so the confirm email comes while the parent
+  // is still holding the phone), then from _goalCheck (a rep, on a practice or
+  // game page) at most every 30 minutes, and once more when that page goes to
+  // the background, so Sunday evening's practice is in Monday's email. A post
+  // that fails is tried again five minutes later. A phone still unconfirmed
+  // two weeks on checks in once a day, and after eight weeks stops asking and
+  // checks once a month, quietly. Home never sends (it writes nothing). A
+  // confirmed phone of an address that unsubscribed is answered "off" and
+  // stops sending numbers; it checks once a month, with none, whether the
+  // address is back. sona.report.v1 (the device id, the last send, "off" and
+  // when, when it first heard "pending" and for which address, "gaveUp") is
+  // this phone's own (NO_EXPORT, NO_IMPORT): a phone restored from a backup is
+  // a second device. The child's id (profile.reportId) does travel, so after a
+  // move the email still shows that child once.
+  const REPORTKEY = "sona.report.v1", REPORT_EVERY_MS = 30 * 60 * 1000, REPORT_RETRY_MS = 5 * 60 * 1000;
+  // unconfirmed: every 30 minutes for two weeks, then once a day (a late tap
+  // on the link still starts the report within a day); a post still answered
+  // "pending" after eight weeks makes the phone give up asking, and from then
+  // it checks once a month, quietly (no numbers, and the server never sends a
+  // link for it), whether the address confirmed after all. "off" is checked
+  // every 30 days the same way, with no child's numbers.
+  const REPORT_DAY_MS = 24 * 60 * 60 * 1000, REPORT_PEND_MS = 14 * REPORT_DAY_MS, REPORT_GIVEUP_MS = 56 * REPORT_DAY_MS, REPORT_OFF_MS = 30 * REPORT_DAY_MS;
+  function _reportState() { try { const v = JSON.parse(localStorage.getItem(REPORTKEY) || "{}"); return v && typeof v === "object" && !Array.isArray(v) ? v : {}; } catch (e) { return {}; } }
+  function _reportSave(v) { try { localStorage.setItem(REPORTKEY, JSON.stringify(v)); } catch (e) {} }
+  function _randomHex(bytes) {
+    const a = new Uint8Array(bytes);
+    try { crypto.getRandomValues(a); } catch (e) { for (let i = 0; i < bytes; i++) a[i] = Math.floor(Math.random() * 256); }
+    return Array.from(a, (b) => b.toString(16).padStart(2, "0")).join("");
+  }
+  // The address the report goes to: on the profile of the child whose setup
+  // asked for it, or "" when nobody here did. Printable ASCII and at most 120
+  // characters, as the server (and its unsubscribe link) take them.
+  function reportEmail() {
+    let got = "";
+    try {
+      _kids().list.some((k) => {
+        const p = _loadFor(k.slot, PKEY, {}), e = typeof p.email === "string" ? p.email.trim().toLowerCase() : "";
+        if (p.weeklyReport === true && e.length <= 120 && /^[\x21-\x7e]+$/.test(e) && /^[^@]+@[^@]+\.[^@]+$/.test(e)) got = e;
+        return !!got;
+      });
+    } catch (e) {}
+    return got;
+  }
+  // One child's numbers for the week starting mon (a local Monday key), read
+  // from the same ledgers as Home's corner and Progress, whoever is active.
+  function _reportKid(slot, mon) {
+    const p = _loadFor(slot, PKEY, {}), all = _repDays(null, false, slot), prac = _repDays(null, true, slot);
+    const stamps = _loadFor(slot, GOALKEY, {}), pd = _loadFor(slot, GKEY, DEFAULT_PROGRESS).practiceDays || {}, t = today();
+    // the child's random id, made once and kept on the profile (so a backup carries it)
+    let id = typeof p.reportId === "string" && /^[a-f0-9]{16}$/.test(p.reportId) ? p.reportId : "";
+    if (!id) { id = _randomHex(8); p.reportId = id; saveFor(slot, PKEY, p); }
+    const parts = mon.split("-"), wd = [];
+    for (let i = 0; i < 7; i++) wd.push(_localDay(new Date(+parts[0], +parts[1] - 1, +parts[2] + i).getTime()));
+    let d = 0, g = 0, r = 0, pr = 0;
+    wd.forEach((k) => {
+      const n = all[k] || 0; if (n > 0) d++;
+      r += n; pr += prac[k] || 0;
+      if (k <= t && (!!stamps[k] || (k < GOAL_SINCE && !!pd[k]))) g++;
+    });
+    const s = r > 0 ? ALL_SOUNDS.filter((S) => { const by = _repDays(S, false, slot); return wd.some((k) => (by[k] || 0) > 0); }) : [];
+    // the plan's days a week ONLY when a grown-up picked them (the profile
+    // holds one: Settings, Progress, or setup before 22 Oct 2026, when it
+    // stopped asking): never goalDays()'s default 4, which the email would
+    // call "your plan" to a family that never chose it
+    const n = parseInt(p.weeklyGoal, 10), out = { i: id, d: d, g: g, r: r, p: pr, s: s };
+    if (n === 3 || n === 4 || n === 5 || n === 7) out.gw = n;
+    return out;
+  }
+  let _reportBusy = false, _reportDirty = false, _reportAgain = false, _reportHooked = false;
+  // the post on its way, and the Turn offs on theirs (THE SWITCH IN SETTINGS, below)
+  let _reportSyncP = null, _reportOffP = null;
+  const REPORT_OFF_RETRY_MS = 5 * 60 * 1000;
+  // recheck: Settings asking again for a phone still waiting on its link (a
+  // grown-up is looking at it), past the day and month windows; with no
+  // numbers once the phone gave up, as always
+  function reportSync(force, recheck) {
+    const email = reportEmail();
+    if (!email) return Promise.resolve(false);
+    if (_reportBusy) { if (force) _reportAgain = true; return Promise.resolve(false); }
+    const st = _reportState(), now = Date.now(), prev = st.at;
+    // pend, off and gaveUp belong to one address: a corrected address starts fresh
+    const off = st.off === email, quiet = st.gaveUp === email, pend = st.pendFor === email && st.pend > 0 && st.pend <= now ? now - st.pend : 0;
+    const every = off || quiet ? REPORT_OFF_MS : pend > REPORT_PEND_MS ? REPORT_DAY_MS : REPORT_EVERY_MS;
+    const waiting = recheck === true && force && !off && st.pendFor === email;
+    if (!waiting && (!force || every > REPORT_EVERY_MS) && st.at > 0 && st.at <= now && now - st.at < every) return Promise.resolve(false);
+    if (!/^[a-f0-9]{32}$/.test(st.dev || "")) st.dev = _randomHex(16);
+    st.at = now; _reportSave(st);
+    let list = [];
+    try { list = _kids().list.filter((k) => { const p = _loadFor(k.slot, PKEY, {}); return p.onboarded === true && p.role !== "slp"; }).slice(0, 8); } catch (e) {}
+    // a check on an address that said "off", or one the phone gave up on, carries no child's numbers
+    const weeks = [-1, 0].map((o) => { const wk = _mondayKey(o); return { wk: wk, kids: off || quiet ? [] : list.map((k) => _reportKid(k.slot, wk)) }; });
+    _reportBusy = true; _reportDirty = false; _reportAgain = false;
+    let sent;
+    try {
+      // `on`: until the server has heard this phone turned on for this
+      // address (setup, Settings, or again after a Turn off), every post says
+      // so; only such a post lifts a Turn off the server holds, so a post
+      // from before a Turn off that lands after it changes nothing (WEEKLY1)
+      const body = quiet ? { email: email, dev: st.dev, weeks: weeks, quiet: true } : { email: email, dev: st.dev, weeks: weeks };
+      if (st.onFor !== email) body.on = true;
+      sent = fetch("/api/report", { method: "POST", headers: { "Content-Type": "application/json" }, keepalive: true,
+        body: JSON.stringify(body) })
+        .then((r) => r.json())
+        .then((j) => {
+          const s2 = _reportState();
+          if (j && j.ok && body.on) s2.onFor = email;
+          // only a plain "ok" ends "off"; "pending" never does (the server
+          // gives an unconfirmed phone of an unsubscribed address "pending" too)
+          if (j && j.off) { s2.off = email; s2.offAt = Date.now(); delete s2.pend; delete s2.pendFor; delete s2.gaveUp; } // "off" proves the phone was confirmed
+          else if (j && j.ok && j.pending) {
+            if (s2.off !== email) {
+              if (s2.pendFor !== email || !(s2.pend > 0)) { s2.pend = Date.now(); s2.pendFor = email; }
+              else if (Date.now() - s2.pend > REPORT_GIVEUP_MS) s2.gaveUp = email; // still not confirmed eight weeks on
+            }
+          }
+          else if (j && j.ok) { delete s2.off; delete s2.offAt; delete s2.pend; delete s2.pendFor; delete s2.gaveUp; }
+          _reportSave(s2);
+          return !!(j && j.ok);
+        });
+    } catch (e) { sent = Promise.resolve(false); }
+    // kept while on its way, so a Turn off waits for it (reportOff)
+    return (_reportSyncP = sent.catch(() => false).then((ok) => {
+      _reportBusy = false; _reportSyncP = null;
+      if (!ok) {
+        // offline, a 503 or a 429: these numbers still have to go; try again in five minutes
+        _reportDirty = true;
+        const s3 = _reportState(); s3.at = Math.max(prev > 0 && prev <= now ? prev : 0, now - every + REPORT_RETRY_MS); _reportSave(s3);
+      } else if (_reportAgain && _reportDirty) reportSync(true);
+      _reportAgain = false;
+      return ok;
+    }));
+  }
+  function _reportTouch() {
+    _reportOffFlush(false);
+    if (!reportEmail()) return;
+    _reportDirty = true;
+    if (!_reportHooked) {
+      _reportHooked = true;
+      const flush = () => { if (_reportDirty) reportSync(true); };
+      window.addEventListener("pagehide", flush);
+      document.addEventListener("visibilitychange", () => { if (document.hidden) flush(); });
+    }
+    reportSync(false);
+  }
+  // THE SWITCH IN SETTINGS (Travis, 23 Oct 2026: "Yes, add the switch"). A
+  // household that skipped setup's email step, or gave it before the report
+  // existed (weeklyEmail alone), turns the report on there; the Monday email
+  // to every parent on the list (lib/weekly.ts) says where. One address for
+  // the household, on the profile of the first family child set up here (a
+  // child already holding the report keeps it; the others' are cleared, so
+  // reportEmail finds that one). An explicit yes starts the phone afresh for
+  // it (no "pending" clock, no giving up), so the confirm email goes now,
+  // within the server's own limits.
+  const REPORT_ADDR = (e) => e.length <= 120 && /^[\x21-\x7e]+$/.test(e) && /^[^@]+@[^@]+\.[^@]+$/.test(e);
+  function _reportSlot() {
+    let slot = null;
+    try {
+      const list = _kids().list.filter((k) => { const p = _loadFor(k.slot, PKEY, {}); return p.onboarded === true && p.role !== "slp"; });
+      const held = list.find((k) => _loadFor(k.slot, PKEY, {}).weeklyReport === true) || list[0];
+      if (held) slot = held.slot || "";
+    } catch (e) {}
+    return slot;
+  }
+  function reportStatus() {
+    const email = reportEmail(), st = _reportState();
+    return { can: _reportSlot() !== null, email: email, on: !!email,
+      pending: !!email && st.pendFor === email && st.pend > 0 && st.off !== email,
+      off: !!email && st.off === email, owed: _reportOffs(st).length > 0,
+      // the server has heard this phone turned on for the address
+      sent: !!email && st.onFor === email };
+  }
+  function reportSet(raw) {
+    const e = typeof raw === "string" ? raw.trim().toLowerCase() : "", slot = _reportSlot();
+    if (!REPORT_ADDR(e) || slot === null) return Promise.resolve(false);
+    try { _kids().list.forEach((k) => { if ((k.slot || "") === slot) return; const q = _loadFor(k.slot, PKEY, {}); if (q.weeklyReport === true) { q.weeklyReport = false; saveFor(k.slot, PKEY, q); } }); } catch (e2) {}
+    const p = _loadFor(slot, PKEY, {});
+    p.email = e; p.weeklyEmail = true; p.weeklyReport = true;
+    saveFor(slot, PKEY, p);
+    const st = _reportState(); ["at", "off", "offAt", "pend", "pendFor", "gaveUp", "onFor"].forEach((k) => { delete st[k]; });
+    // a Turn off for this very address that never reached the server is
+    // dropped: it is on again, and the next post writes the same numbers.
+    // One for another spelling of the inbox, or another inbox, still goes
+    // (it deletes that spelling's numbers; the server then asks this phone's
+    // next post to say "on" again: see _reportOffFlush)
+    st.offs = _reportOffs(st).filter((o) => o.e !== e); delete st.offOwed;
+    _reportSave(st);
+    // the email list hears it too, as from setup's email step: the grown-up
+    // read "We'll also send occasional tips from Rachel" beside the box. A
+    // phone that already has every game open says so (`premium`), so the
+    // series' "Start your free trial" is not sent to a family whose purchase
+    // the server never heard of (an address given after it); no plan word,
+    // since the phone cannot tell a trial from a payment here
+    let has = false; try { has = premium(); } catch (e4) {}
+    try {
+      fetch("/api/lead", { method: "POST", headers: { "Content-Type": "application/json" }, keepalive: true,
+        body: JSON.stringify(Object.assign({ email: e, role: "parent", source: "app-settings", summary: "Turned on the weekly progress report in Settings" }, has ? { premium: true } : {})) }).catch(() => {});
+    } catch (e3) {}
+    _reportDirty = true; // a post already on its way sends again after it, with this address
+    // after any Turn off on its way, so this post (which lifts the server's
+    // off mark) lands last
+    return (_reportOffP || Promise.resolve()).then(() => reportSync(true), () => reportSync(true));
+  }
+  // Off: no child's numbers leave this phone again, and the server is told
+  // (`off`, lib/report.ts store) that this phone has it off for the address:
+  // Monday's report skips the phone, its numbers are deleted, the Monday
+  // email (lib/weekly.ts) sees a household without the report, and an old
+  // confirm link changes nothing. The phone's next ordinary post (turned on
+  // again) lifts it. Each Turn off is owed until the server says so
+  // (`offs`, one entry an address and device, kept before anything else
+  // changes), so one made offline goes from Settings or the next practice
+  // page, and a second never pushes out a first. It waits for a post already
+  // on its way (whose numbers would otherwise land after it). Another phone
+  // of the household keeps its own switch; the email's Unsubscribe stops
+  // every one. Resolves true once the server has every one.
+  // the server's mailbox rule (lib/report.ts mailbox): Gmail dots and +tags
+  // are one inbox, and one confirmation
+  function _mailbox(raw) {
+    const e = String(raw || "").trim().toLowerCase(), at = e.lastIndexOf("@");
+    if (at < 1) return e;
+    let l = e.slice(0, at), d = e.slice(at + 1);
+    const plus = l.indexOf("+");
+    if (plus > 0) l = l.slice(0, plus);
+    if (d === "googlemail.com") d = "gmail.com";
+    if (d === "gmail.com") l = l.replace(/\./g, "");
+    return l + "@" + d;
+  }
+  function _reportOffs(st) {
+    const list = Array.isArray(st.offs) ? st.offs.filter((o) => o && typeof o.e === "string" && o.e && /^[a-f0-9]{32}$/.test(o.d || "")) : [];
+    // the one slot an earlier build of this change kept
+    if (st.offOwed && st.offOwed.e && /^[a-f0-9]{32}$/.test(st.offOwed.d || "") && !list.some((o) => o.e === st.offOwed.e && o.d === st.offOwed.d)) list.push(st.offOwed);
+    return list.slice(-5);
+  }
+  function _reportOffOwe(email) {
+    const st = _reportState();
+    if (st.onFor) { delete st.onFor; _reportSave(st); } // turned on again later, its first post says so
+    if (!email || !/^[a-f0-9]{32}$/.test(st.dev || "")) return; // a phone that never posted has nothing on the server
+    const list = _reportOffs(st).filter((o) => !(o.e === email && o.d === st.dev));
+    list.push({ e: email, d: st.dev });
+    st.offs = list; delete st.offOwed;
+    ["pend", "pendFor", "gaveUp"].forEach((k) => { delete st[k]; });
+    _reportSave(st);
+  }
+  function _reportOffFlush(force) {
+    // one at a time: a Turn off made while another is on its way follows it
+    if (_reportOffP) return _reportOffP.then(() => _reportOffFlush(force));
+    const now = Date.now(), due = _reportOffs(_reportState()).filter((o) => force || !(o.at > 0 && o.at <= now && now - o.at < REPORT_OFF_RETRY_MS));
+    if (!due.length) return Promise.resolve(!_reportOffs(_reportState()).length);
+    const one = (o) => {
+      const st = _reportState(); st.offs = _reportOffs(st).map((x) => (x.e === o.e && x.d === o.d ? Object.assign({}, x, { at: now }) : x)); delete st.offOwed; _reportSave(st);
+      let sent;
+      try {
+        sent = fetch("/api/report", { method: "POST", headers: { "Content-Type": "application/json" }, keepalive: true,
+          body: JSON.stringify({ email: o.e, dev: o.d, weeks: [-1, 0].map((w) => ({ wk: _mondayKey(w), kids: [] })), quiet: true, off: true }) })
+          .then((r) => r.json()).then((j) => !!(j && j.ok));
+      } catch (e) { sent = Promise.resolve(false); }
+      return sent.catch(() => false).then((ok) => {
+        if (ok) {
+          const s2 = _reportState(); s2.offs = _reportOffs(s2).filter((x) => !(x.e === o.e && x.d === o.d)); delete s2.offOwed;
+          // the server now has this phone off for that inbox: if the report is
+          // on here for the same inbox, its next post says "on" again
+          let cur = ""; try { cur = reportEmail(); } catch (e) {}
+          if (cur && o.d === s2.dev && _mailbox(cur) === _mailbox(o.e)) delete s2.onFor;
+          _reportSave(s2);
+        }
+        return ok;
+      });
+    };
+    _reportOffP = due.reduce((p, o) => p.then((all) => one(o).then((ok) => all && ok)), Promise.resolve(true))
+      .then((ok) => { _reportOffP = null; return ok && !_reportOffs(_reportState()).length; }, () => { _reportOffP = null; return false; });
+    return _reportOffP;
+  }
+  function reportFlush() { return _reportOffFlush(true); }
+  function reportOff() {
+    _reportOffOwe(reportEmail());
+    try { _kids().list.forEach((k) => { const q = _loadFor(k.slot, PKEY, {}); if (q.weeklyReport === true) { q.weeklyReport = false; saveFor(k.slot, PKEY, q); } }); } catch (e) {}
+    return (_reportSyncP || Promise.resolve()).then(() => _reportOffFlush(true), () => _reportOffFlush(true));
+  }
+  function buyPlan(plan) {
+    let p = null; try { p = plan && (plan.state === "free" || plan.state === "paid") && plan._p; } catch (e) {}
+    if (!p) return Promise.reject(_buyError("no-plan"));
+    return _soon(() => iapPurchase(plan.kind, p)).then((r) => { _tellPlan(r && r.period, plan); _trialRemindBought(r, plan); _trialTold(r, plan); return { ok: true }; }, (e) => {
+      if (e && !e.cancelled && String(e.code) === "6") {
+        // "already purchased": the sale is Apple's news that they own it
+        return _soon(() => iapRestore()).then((active) => {
+          if (active) return { ok: true, restored: true };
+          throw _buyError("not-entitled");
+        }, () => { throw _buyError("not-entitled"); });
+      }
+      throw _buyError(_buyCode(e));
+    });
+  }
+
+  // "Does this family still owe the price?", after asking the store once.
+  // Setup calls it as the parent leaves the ready screen, so a paying family
+  // who reinstalled goes on to the microphone instead of to a price. False at
+  // once for anyone setup would not send to the price anyway. Otherwise the
+  // answer is trialFirst() read when the store has spoken or `ms` has passed,
+  // whichever is first: the store's "yes" has by then written the
+  // subscription, and a slow store means the price screen (which runs the
+  // same ask) decides. Never rejects.
+  function setupWall(ms) {
+    let due = false; try { due = trialFirst(); } catch (e) {}
+    if (!due) return Promise.resolve(false);
+    return new Promise((resolve) => {
+      let done = false, t = 0;
+      const end = () => {
+        if (done) return; done = true; clearTimeout(t);
+        let owes = false; try { owes = trialFirst(); } catch (e) {}
+        resolve(owes);
+      };
+      t = setTimeout(end, (typeof ms === "number" && ms >= 0) ? ms : WALL_WAIT_MS);
+      _iapOwned(false).then(end, end);
+    });
+  }
+
+  // ── NOTIFY1: one reminder before the free trial ends ─────────────────────
+  // Travis, 22 Oct 2026: "can we add push notifications and have that be a
+  // step in the onboarding where we ask them to turn it on to notify them a
+  // day before their trial ends". It is a LOCAL notification: this phone asks
+  // iOS to show it at a moment, through Sona's own plugin (SonaSpeech's
+  // notifyStatus, notifyAsk, notifySchedule, notifyCancel, iOS 1.0.9 and
+  // later). No server sends it and nothing leaves the phone for it: no device
+  // token, no address, no account, no event. The words are fixed here and
+  // name nobody (never a child's name, never a price); they are Travis's and
+  // Rachel's to change. It shows 30 hours before the end, not 24: Apple counts
+  // a cancel only at least 24 hours before the end, so a reminder at exactly
+  // a day before came at the cut-off itself, too late to act on. Thirty is
+  // still "tomorrow" in plain words, and the price line's "the day before".
+  //   - Asked once, by setup's reminder screen (notifyAsk: iOS's own Allow
+  //     box), only while iOS has never been asked (notifyState() "prompt";
+  //     setup waits on notifyRefresh() for iOS's real answer first).
+  //   - Set only once a free trial has really started: AT ONCE from the
+  //     purchase itself (buyPlan: the end in the purchase's own record, else
+  //     the store's own free time from now), because the price page leaves
+  //     1.2 s after a sale; then corrected from RevenueCat's record when the
+  //     purchase named no end. Only when that moment is more than an hour away.
+  //   - Checked again once a day on an app page (trialReminderSync), never on
+  //     Home ("Home only reads": Home calls nothing of this block): set afresh
+  //     while the trial is on (so a longer or moved trial follows), and taken
+  //     back once no free trial is on any more (it became a paid plan, ended,
+  //     or the parent already cancelled it: then the reminder has nothing left
+  //     to tell). A store that does not answer is asked again at most once an
+  //     hour, not on every page.
+  //   - A purchase clears the day's mark (the next page asks again), and no
+  //     check acts on a store answer it asked for before the latest purchase
+  //     (the price page's own check, still waiting when the parent bought,
+  //     would otherwise take the new reminder back).
+  // Optional like every new native call: a build without the four methods, a
+  // bridge that answers them "not implemented", a browser, or a bridge that
+  // throws or hangs changes nothing anywhere, and nothing waits on it but the
+  // reminder screen's own tap. sona.notify.v1 ({ state, asked, arm, end,
+  // sync, tried }) is true of this phone's iOS setting and of what iOS holds
+  // for it, so it is on NO_EXPORT and NO_IMPORT.
+  const NOTIFYKEY = "sona.notify.v1";
+  const TRIAL_REMIND_ID = "sona-trial-end";
+  const TRIAL_REMIND = { title: "Sona", body: "Your free trial ends tomorrow." };   // Travis's and Rachel's words to change; never a name
+  const NOTIFY_DAY_MS = 24 * 60 * 60 * 1000;
+  const TRIAL_REMIND_LEAD_MS = 30 * 60 * 60 * 1000;   // 30 h before the end: 6 h before Apple's 24 h cancel line
+  const TRIAL_REMIND_MIN_MS = 60 * 60 * 1000;         // a reminder less than an hour away is not set
+  const NOTIFY_SYNC_MS = NOTIFY_DAY_MS;               // trialReminderSync asks the store at most once a day
+  const NOTIFY_RETRY_MS = 60 * 60 * 1000;             // …and, after a store that did not answer, at most once an hour
+  const NOTIFY_ASK_MS = 60000;                        // a bridge that never answers iOS's box does not hold setup for good
+  const NOTIFY_STATUS_MS = 3000, NOTIFY_INFO_MS = 8000;
+  const NOTIFY_FIELDS = ["state", "asked", "arm", "end", "sync", "tried", "nudge", "nudges", "nend", "nclock"];
+  // A bridge that answers a method this build does not have with "not
+  // implemented" (a Capacitor proxy in front of an older build answers every
+  // name it is asked for) is no build that can remind: once one of the four
+  // says so, none is called again on this page and notifyAvailable() is false,
+  // as the mic's _nm.broken does for micOpen.
+  let _notifyBroken = false;
+  // Every purchase on this page counts one (the hook in buyPlan). A check
+  // that asked the store before the latest purchase heard about the phone
+  // before it: what it heard sets nothing, takes nothing back, and marks
+  // nothing checked.
+  let _notifyBuys = 0;
+  function _notifyPlugin() {
+    if (_notifyBroken) return null;
+    const P = speechPlugin();
+    return (P && typeof P.notifyStatus === "function" && typeof P.notifyAsk === "function"
+      && typeof P.notifySchedule === "function" && typeof P.notifyCancel === "function") ? P : null;
+  }
+  function _notifyGone(e) {
+    try { if (String(e && e.code).toUpperCase() === "UNIMPLEMENTED" || /not implemented/i.test(String(e && e.message))) _notifyBroken = true; } catch (e2) {}
+  }
+  function _notifyCall(fn) { return _soon(fn).catch((e) => { _notifyGone(e); throw e; }); }
+  // True only inside an app build whose plugin carries all four methods (and
+  // has not answered one of them "not implemented" on this page).
+  function notifyAvailable() { try { return !!_notifyPlugin(); } catch (e) { return false; } }
+  function _notifyLoad() { try { const v = JSON.parse(localStorage.getItem(NOTIFYKEY) || "{}"); return v && typeof v === "object" && !Array.isArray(v) ? v : {}; } catch (e) { return {}; } }
+  function _notifySave(patch) {
+    try {
+      const v = _notifyLoad(), keep = {};
+      Object.keys(patch).forEach((k) => { if (patch[k] == null) delete v[k]; else v[k] = patch[k]; });
+      NOTIFY_FIELDS.forEach((k) => { if (v[k] != null) keep[k] = v[k]; });
+      const out = JSON.stringify(keep), had = localStorage.getItem(NOTIFYKEY);
+      // the same answer read again on every page is not written again, and
+      // clearing marks on a phone that never had any writes nothing
+      if (had !== out && !(had == null && out === "{}")) localStorage.setItem(NOTIFYKEY, out);
+    } catch (e) {}
+  }
+  function _notifyWithin(p, ms, dflt) {
+    return new Promise((resolve) => {
+      const t = setTimeout(() => resolve(dflt), ms);
+      p.then((v) => { clearTimeout(t); resolve(v); }, () => { clearTimeout(t); resolve(dflt); });
+    });
+  }
+  // iOS's word, in this file's: "provisional" (quiet delivery, which nothing
+  // in Sona asks for) is still "prompt", because a real ask still shows the box
+  function _notifyWord(raw) { return raw === "granted" ? "granted" : raw === "denied" ? "denied" : (raw === "prompt" || raw === "provisional") ? "prompt" : ""; }
+  let _notifyBusy = null, _notifyLooked = false;
+  function _notifyRefresh() {          // → Promise<state>, never rejects
+    const P = _notifyPlugin();
+    if (!P) return Promise.resolve("unavailable");
+    if (_notifyBusy) return _notifyBusy;
+    _notifyLooked = true;
+    _notifyBusy = _notifyWithin(_notifyCall(() => P.notifyStatus()), NOTIFY_STATUS_MS, null).then((r) => {
+      _notifyBusy = null;
+      const st = _notifyWord(r && r.status);
+      if (st) _notifySave({ state: st });
+      return notifyState();
+    });
+    return _notifyBusy;
+  }
+  // iOS's answer, read afresh: notifyState() alone answers "prompt" on a page
+  // that has not heard from iOS yet (a guess, true of a fresh install), so a
+  // screen that decides from it (setup's reminder ask) waits on this first.
+  // → a Promise of notifyState()'s word once iOS has answered (the one already
+  // on its way, if any), or after NOTIFY_STATUS_MS what was known; never
+  // rejects. "unavailable" for a build that cannot remind.
+  function notifyRefresh() { try { return _notifyRefresh(); } catch (e) { return Promise.resolve("unavailable"); } }
+  // "granted" | "denied" | "prompt" | "unavailable", from what iOS last said
+  // (read again in the background on a page's first ask). A phone that never
+  // told this page anything is "prompt": a fresh install, which is the only
+  // way an app has no notification answer yet.
+  function notifyState() {
+    if (!notifyAvailable()) return "unavailable";
+    if (!_notifyLooked) _notifyRefresh();
+    const st = _notifyLoad().state;
+    return st === "granted" || st === "denied" ? st : "prompt";
+  }
+  // iOS's own Allow box (once: an answered setting resolves at once). → a
+  // Promise of "granted" | "denied" | "unavailable"; never rejects. A bridge
+  // that refuses is asked what iOS now says; one that never answers lets the
+  // screen go on after NOTIFY_ASK_MS, and its late answer is still kept.
+  function notifyAsk() {
+    const P = _notifyPlugin();
+    if (!P) return Promise.resolve("unavailable");
+    _notifySave({ asked: Date.now() });
+    const ask = _notifyCall(() => P.notifyAsk()).then((r) => {
+      const st = r && r.granted === true ? "granted" : "denied";
+      _notifySave({ state: st });
+      return st;
+    }, () => _notifyRefresh().then((st) => st === "granted" || st === "denied" ? st : "unavailable"));
+    return _notifyWithin(ask, NOTIFY_ASK_MS, "unavailable");
+  }
+  // Will Sona really remind this family? With no plan: notifications are
+  // allowed on a build that can set one. With a plan (a price screen's
+  // picked row): also, that row is a free trial the store is SURE of
+  // (plan.sure: a row that only may be free, "Only new subscribers get 3 days
+  // free. Otherwise Apple charges $9.99 today.", states nothing as fact, so
+  // it promises no reminder either), whose reminder can be set: its end more
+  // than TRIAL_REMIND_LEAD_MS (30 hours) and an hour away.
+  function trialReminderOn(plan) {
+    try {
+      if (!notifyAvailable() || notifyState() !== "granted") return false;
+      if (plan === undefined) return true;
+      if (!plan || plan.state !== "free" || plan.sure !== true) return false;
+      const d = planBillDate(plan);
+      return !!d && d.getTime() - TRIAL_REMIND_LEAD_MS > Date.now() + TRIAL_REMIND_MIN_MS;
+    } catch (e) { return false; }
+  }
+  // Set the reminder for a trial that ends at endMs: TRIAL_REMIND_LEAD_MS (30
+  // hours) before, if that is more than an hour away. → Promise<boolean> (set), never rejects. Arming
+  // again replaces the one iOS holds (one id), so it is never sent twice.
+  function trialReminderArm(endMs) {
+    const P = _notifyPlugin(), end = Number(endMs), now = Date.now();
+    if (!P || !isFinite(end) || !(end > 0) || !trialReminderOn()) return Promise.resolve(false);
+    const at = Math.round(end - TRIAL_REMIND_LEAD_MS);
+    if (!(at > now + TRIAL_REMIND_MIN_MS) || at > now + 400 * NOTIFY_DAY_MS) return Promise.resolve(false);   // the plugin refuses past 400 days too
+    return _notifyWithin(_notifyCall(() => P.notifySchedule({ id: TRIAL_REMIND_ID, at: at, title: TRIAL_REMIND.title, body: TRIAL_REMIND.body }))
+      .then((r) => !(r && r.scheduled === false)), NOTIFY_STATUS_MS, false)
+      .then((ok) => { if (ok) _notifySave({ arm: at, end: Math.round(end) }); return ok; });
+  }
+  // gen: the purchase count the caller acted on. A purchase that set the
+  // reminder while this took it back keeps its own note of what is set.
+  function _trialReminderCancel(gen) {
+    const P = _notifyPlugin();
+    if (!P) return Promise.resolve(false);
+    return _notifyWithin(_notifyCall(() => P.notifyCancel({ id: TRIAL_REMIND_ID })).then(() => true), NOTIFY_STATUS_MS, false)
+      .then((ok) => { if (ok && (gen === undefined || gen === _notifyBuys)) _notifySave({ arm: null, end: null }); return ok; });
+  }
+  // What RevenueCat says of the free trial, from the plain fields of its own
+  // entitlement record (periodType, willRenew, expirationDateMillis or
+  // expirationDate): { on, end } a free trial that will renew (end 0 when it
+  // gives none); { off } no trial: no Premium, a paid period (paid), or a
+  // trial the parent already cancelled (cancelled); { unsure } Premium whose
+  // period it does not name. null: the store did not answer.
+  function _trialOf(info) {
+    try {
+      const c = info && (info.customerInfo || info);
+      const f = c && c.entitlements && c.entitlements.active && c.entitlements.active[IAP_ENTITLEMENT];
+      if (!f) return { off: true };
+      const period = String(f.periodType || "").toUpperCase();
+      if (!period) return { unsure: true };
+      if (period !== "TRIAL") return { off: true, paid: true };
+      if (f.willRenew === false) return { off: true, cancelled: true };
+      let end = Number(f.expirationDateMillis);
+      if (!(end > 0)) end = Date.parse(String(f.expirationDate || ""));
+      return { on: true, end: end > 0 ? end : 0 };
+    } catch (e) { return null; }
+  }
+  function _trialNow() {               // → Promise<_trialOf answer, or null when the store did not answer>
+    if (!iapAvailable()) return Promise.resolve(null);
+    return _notifyWithin(iapConfigure().then((P) => P.getCustomerInfo()).then(_trialOf), NOTIFY_INFO_MS, null);
+  }
+  // Once a day on an app page (forced: now). → Promise of "armed", "near"
+  // (a trial whose reminder moment has gone), "kept" (a trial with no end
+  // given, or Premium whose period RevenueCat does not name: what is set
+  // stays), "cancelled", "off" (notifications not allowed: the store is not
+  // asked), "later" (asked today already, or the store did not answer within
+  // the last hour), "stale" (the store answered a question asked before the
+  // latest purchase: nothing done), "error" (no answer: asked again an hour
+  // later) or "unavailable".
+  let _notifySyncP = null, _notifySyncGen = -1;
+  function trialReminderSync(force) {
+    if (!notifyAvailable() || !iapAvailable()) return Promise.resolve("unavailable");
+    const k = _notifyLoad(), now = Date.now();
+    const last = Number(k.sync) || 0, tried = Number(k.tried) || 0;
+    if (!force && last > 0 && last <= now && now - last < NOTIFY_SYNC_MS) return Promise.resolve("later");
+    if (!force && tried > 0 && tried <= now && now - tried < NOTIFY_RETRY_MS) return Promise.resolve("later");
+    // one check at a time, but never one that asked before the latest purchase
+    if (_notifySyncP && _notifySyncGen === _notifyBuys) return _notifySyncP;
+    const gen = _notifyBuys, fresh = () => gen === _notifyBuys;
+    const p = _notifyRefresh().then((st) => {
+      if (st !== "granted") return "off";
+      // marked as tried BEFORE the store is asked: a store that hangs rather
+      // than fails would otherwise be asked again on every page shorter than
+      // its 8 s wait. An answer clears it; a purchase meanwhile already has.
+      if (fresh()) _notifySave({ tried: Date.now() });
+      return _trialNow().then((t) => {
+        if (!fresh()) return "stale";
+        if (!t) { _notifySave({ tried: Date.now() }); return "error"; }
+        _notifySave({ sync: Date.now(), tried: null });
+        if (t.off) { _nudgeOffAll(); return _trialReminderCancel(gen).then(() => "cancelled"); }
+        if (!t.on || !t.end) return "kept";
+        // NUDGE1: a trial whose end moved more than an hour gets its nudges again
+        { const ne = Number(_notifyLoad().nend) || 0; if (ne && Math.abs(ne - t.end) > TRIAL_REMIND_MIN_MS) _nudgeArm(t.end, null); }
+        return trialReminderArm(t.end).then((ok) => {
+          if (ok) return "armed";
+          // too late to remind for this end. One set for an end more than an
+          // hour away from it (a trial that moved) would speak of the wrong
+          // day, so it goes; one set at purchase from the store's own free
+          // time (seconds off RevenueCat's) stays, to be shown as planned.
+          const was = Number(_notifyLoad().end) || 0;
+          if (fresh() && was && Math.abs(was - t.end) > TRIAL_REMIND_MIN_MS) return _trialReminderCancel(gen).then(() => "near");
+          return "near";
+        });
+      });
+    }).catch(() => "error").then((r) => { if (_notifySyncP === p) _notifySyncP = null; return r; });
+    _notifySyncP = p; _notifySyncGen = gen;
+    return p;
+  }
+  // The one hook in buyPlan (r: iapPurchase's answer, { ok, period, end }).
+  // The purchase is counted and the day's mark cleared first, whatever was
+  // bought. A purchase that started a free trial (Apple's period TRIAL, or,
+  // when Apple's answer names no period, a card that was SURE it sold free
+  // days, plan.sure: the list's plan post decides "trial" on the card alone,
+  // but a reminder states it as fact) sets the reminder AT ONCE, before the
+  // price page leaves: for the end in the purchase's own record, else the
+  // store's own free time from now (planBillDate). Only when that record
+  // named no end is RevenueCat asked, once, to correct the moment (or, for a
+  // paid period or a trial already cancelled, take it back; a record that has
+  // not caught up with the purchase changes nothing). Never waited on, never
+  // throws.
+  function _trialRemindBought(r, plan) {
+    try {
+      const gen = ++_notifyBuys;
+      if (!notifyAvailable()) return;
+      _notifySave({ sync: null, tried: null });
+      const period = String((r && r.period) || "");
+      if (period === "NORMAL" || period === "INTRO" || period === "PREPAID") { _nudgeOffAll(); return; }   // charged: no free days to tell of
+      if (!trialReminderOn()) return;
+      const end = Number(r && r.end) > 0 ? Number(r.end) : 0;
+      const sold = !!plan && plan.state === "free" && plan.sure === true;
+      const guess = planBillDate(plan), g = guess ? guess.getTime() : 0;
+      const first = period === "TRIAL" ? (end || g) : (!period && sold) ? g : 0;
+      if (first) { trialReminderArm(first); _nudgeArm(first, Date.now()); }
+      if (period === "TRIAL" && end) return;          // the purchase's own record named the end: nothing to correct
+      _trialNow().then((t) => {
+        if (gen !== _notifyBuys || !t) return;
+        if (t.on && t.end) { if (Math.abs(t.end - first) > 60000) { trialReminderArm(t.end); _nudgeArm(t.end, null); } }
+        else if (first && (t.paid || t.cancelled)) { _trialReminderCancel(gen); _nudgeOffAll(); }
+      }).catch(() => {});
+    } catch (e) {}
+  }
+  // A sale this page saw end some other way than buyPlan's own answer: an
+  // Ask to Buy approved later (the price page's watch, then owned()), or a
+  // Restore after Apple took an order and Premium did not switch on
+  // ("not-entitled"). The same step as the purchase hook, with no purchase
+  // record: counted, the day's mark cleared (the price page's own check at
+  // load would otherwise answer "later" for a day), armed from the plan only
+  // when it is a free row the store was sure of, else RevenueCat asked to
+  // correct. plan may be null (RevenueCat alone). Never waited on, never
+  // throws.
+  function trialReminderSold(plan) { try { _trialRemindBought({}, plan || null); } catch (e) {} }
+  // ── NUDGE1: one practice reminder a day during the free trial (Travis, 30
+  // Oct 2026: "yes, I want you to build those", to "one short daily nudge
+  // during the free week ... Tapping it opens straight into" Sona). Most
+  // families who start a trial cancel, many after never opening Sona again.
+  // LOCAL, like the trial reminder above: the phone sets them, nothing leaves
+  // it for them. Only for a parent who said yes to them: setup's reminder
+  // screen says so before iOS's Allow box ("A practice reminder each day,
+  // and one the day before it ends.") and its yes calls nudgeConsent(). A
+  // parent who allowed the reminder under the old words ("One notification,
+  // the day before.") gets none: they were promised one. Set when a free
+  // trial starts (the purchase hook), for each day after that one up to the
+  // day before it ends, at the clock time the trial began, kept between 3:30
+  // and 7:30 pm (after school, before bed); never on the day the trial
+  // reminder shows (two in a day is too many) or on the trial's last day.
+  // A day the child already played (the first counted rep, _playedToday)
+  // takes that day's back; a trial that became paid, was cancelled or ended
+  // takes them all back (the daily check), and one whose end moved sets them
+  // again. The words are fixed and name nobody; Travis's and Rachel's to
+  // change. sona.notify.v1 keeps the consent (nudge), what iOS holds
+  // (nudges: [{ id, at }]), the end they were set for (nend) and the clock
+  // minute (nclock).
+  const NUDGE = { title: "Sona", body: "Ready for 5 minutes of practice? Echo is waiting to play." };   // Travis's and Rachel's words to change; never a name
+  const NUDGE_FROM = 15 * 60 + 30, NUDGE_TO = 19 * 60 + 30;     // minutes of the local day
+  const NUDGE_SOON_MS = 10 * 60 * 1000;                        // one due within ten minutes is not set
+  const NUDGE_MAX = 14;                                        // a trial of up to two weeks
+  function _nudgeYmd(ms) { const d = new Date(ms); return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate(); }
+  function _nudgeOn() { try { return notifyAvailable() && notifyState() === "granted" && _notifyLoad().nudge === 1; } catch (e) { return false; } }
+  function nudgeConsent() { _notifySave({ nudge: 1 }); }
+  function _nudgeList() { const v = _notifyLoad().nudges; return Array.isArray(v) ? v.filter((n) => n && typeof n.id === "string" && n.at > 0) : []; }
+  // Take back what iOS holds (all, or those the filter picks). → Promise, never rejects.
+  function _nudgeCancel(pick) {
+    const P = _notifyPlugin(), all = _nudgeList(), go = all.filter(pick || (() => true));
+    if (!P || !go.length) return Promise.resolve(0);
+    return Promise.all(go.map((n) => _notifyWithin(_notifyCall(() => P.notifyCancel({ id: n.id })).then(() => true), NOTIFY_STATUS_MS, false)))
+      .then(() => {
+        const left = _nudgeList().filter((n) => !go.some((g) => g.id === n.id));
+        _notifySave(left.length ? { nudges: left } : { nudges: null, nend: null });
+        return go.length;
+      });
+  }
+  // The days between a trial's start (startMs, whose clock time sets the
+  // hour) and its end. → [{ id, at }]: never the start day, the last day, or
+  // the day the trial reminder shows, never one due within ten minutes.
+  function _nudgePlan(startMs, endMs, clock) {
+    const out = [], now = Date.now(), lastDay = _nudgeYmd(endMs), remindDay = _nudgeYmd(endMs - TRIAL_REMIND_LEAD_MS);
+    const s = new Date(startMs);
+    let m = Number.isFinite(clock) ? clock : s.getHours() * 60 + s.getMinutes();
+    m = Math.max(NUDGE_FROM, Math.min(NUDGE_TO, m));
+    for (let k = 1; k <= NUDGE_MAX; k++) {
+      const d = new Date(s.getFullYear(), s.getMonth(), s.getDate() + k, Math.floor(m / 60), m % 60, 0, 0);
+      const at = d.getTime(), ymd = _nudgeYmd(at);
+      if (ymd >= lastDay || at >= endMs) break;
+      if (ymd === remindDay || at <= now + NUDGE_SOON_MS) continue;
+      out.push({ id: "sona-nudge-" + ymd, at: at });
+    }
+    return out;
+  }
+  // Set the nudges for a free trial that ends at endMs (startMs: when it
+  // began, or null to keep the clock time already chosen). Replaces what was
+  // set. → Promise<number set>, never rejects.
+  let _nudgeBusy = Promise.resolve(0);
+  function _nudgeArm(endMs, startMs) {
+    const run = () => {
+      const end = Number(endMs), P = _notifyPlugin();
+      if (!P || !_nudgeOn() || !(end > Date.now())) return Promise.resolve(0);
+      const k = _notifyLoad();
+      const clock = startMs ? null : Number(k.nclock);
+      const plan = _nudgePlan(startMs || Date.now(), end, Number.isFinite(clock) ? clock : undefined);
+      const st = new Date(startMs || Date.now());
+      const keepClock = Number.isFinite(clock) ? clock : Math.max(NUDGE_FROM, Math.min(NUDGE_TO, st.getHours() * 60 + st.getMinutes()));
+      return _nudgeCancel().then(() => {
+        const got = [];
+        let chain = Promise.resolve();
+        plan.forEach((n) => {
+          chain = chain.then(() => _notifyWithin(_notifyCall(() => P.notifySchedule({ id: n.id, at: n.at, title: NUDGE.title, body: NUDGE.body }))
+            .then((r) => !(r && r.scheduled === false)), NOTIFY_STATUS_MS, false).then((ok) => { if (ok) got.push(n); }));
+        });
+        return chain.then(() => {
+          _notifySave({ nudges: got.length ? got : null, nend: got.length ? Math.round(end) : null, nclock: keepClock });
+          return got.length;
+        });
+      });
+    };
+    _nudgeBusy = _nudgeBusy.then(run, run).catch(() => 0);
+    return _nudgeBusy;
+  }
+  function _nudgeOffAll() { const run = () => _nudgeCancel(); _nudgeBusy = _nudgeBusy.then(run, run).catch(() => 0); return _nudgeBusy; }
+  // The child played today: today's nudge, if still to come, goes.
+  function _nudgeTodayOff() {
+    if (!_nudgeList().length) return;
+    const t = _nudgeYmd(Date.now()), now = Date.now();
+    const run = () => _nudgeCancel((n) => n.id === "sona-nudge-" + t && n.at > now);
+    _nudgeBusy = _nudgeBusy.then(run, run).catch(() => 0);
+  }
+  // What the tests read: the nudges this phone holds, and the plan for a trial.
+  function nudgeState() { const k = _notifyLoad(); return { consent: k.nudge === 1, on: _nudgeOn(), nudges: _nudgeList(), end: Number(k.nend) || 0 }; }
+  // On an app page that can set one, Home excepted: iOS's answer is read as
+  // the page opens (setup decides whether to ask from it), and the trial is
+  // checked a moment later, and again whenever the app comes back to the
+  // front (a parent who changed the setting in iOS Settings, a trial that
+  // ended while Sona sat in the background); the store is asked at most once
+  // a day (once an hour after it did not answer). Home only reads (CLAUDE.md,
+  // the daily adventure and the Trophy Road): it neither asks iOS nor the
+  // store here, and writes nothing of this block.
+  function _notifyHome() { try { return /^\/today(\.html)?$/i.test(location.pathname); } catch (e) { return false; } }
+  try {
+    if (notifyAvailable() && !_notifyHome()) {
+      _notifyRefresh();
+      setTimeout(() => { trialReminderSync(false); }, 1500);
+      document.addEventListener("visibilitychange", () => { if (!document.hidden) { _notifyRefresh(); trialReminderSync(false); } });
+    }
+  } catch (e) {}
+
+  // PLAN-WORDS-BEGIN
+  // EVERY SENTENCE APPLE'S CARD MAY SHOW LIVES BETWEEN THESE TWO MARKERS.
+  // The plan screen types no price, no day count and no "free" of its own:
+  // it paints what planWords() returns for the Plan storePlan() handed it,
+  // and its status line from planSay(). So a claim about money can only be
+  // changed here, where the tests read every state at once (planwordstest).
+  // Plain text only: a store string never becomes markup.
+  //
+  // What the words keep, whatever the store answers:
+  //   - every figure is the store's own price string, never a typed one;
+  //   - "paid" and "none" never say "free"; "none" and the waiting state
+  //     show no figure at all;
+  //   - when the phone is not sure this buyer gets the free time
+  //     (plan.sure false), no row states "nothing to pay today" or a billing
+  //     day as plain fact: each says "new subscribers", and the note says
+  //     what Apple does otherwise;
+  //   - "cancel at least 24 hours before" is Apple's own measure. The row
+  //     names a day with no time, so "a day before" could be read as the
+  //     evening before, which is too late;
+  //   - the two rows are Today and the billing day, and NOTHING ELSE. No
+  //     sentence here promises a message before the charge, with ONE
+  //     exception (Travis, 22 Oct 2026, the step in setup that asks iPhone
+  //     for its Allow box): `headsUp`, the one line under the button, only
+  //     when the page says this phone really can and will show its own
+  //     heads-up for the picked row (o.headsUp: the page asks sona.js's
+  //     trial heads-up block) and only on a free row. Without that, nothing: the message
+  //     Sona's server sends since 16 Oct 2026 reaches only a parent who gave
+  //     the app an address, so a promise here would be false for the rest.
+  //     planwordstest holds the line to exactly those cases, word for word;
+  //   - the one-payment row (kind "lifetime") is charged once, today: its
+  //     words never say "free", never "Best value", and never the store's
+  //     word for it (Travis: "i dont wanna say lifetime"). It says "One
+  //     payment", "Every update included" (its check line) and "No
+  //     subscription" (its small print), and its figure is the store's.
+  const PLAN_CANCEL = "Settings\u00a0→\u00a0Subscriptions";   // no-break spaces: the arrow never starts a line
+  // The day the first charge falls, for a plan with free time. Apple's free
+  // days are exact 24-hour days from the purchase; months and years land on
+  // the same day of the month, or its last day (31 Jan + 1 month).
+  function planBillDate(plan, now) {
+    try {
+      const f = plan && plan.state === "free" && plan.free;
+      if (!f || !(f.n >= 1)) return null;
+      const from = (now instanceof Date && !isNaN(now.getTime())) ? now : new Date();
+      if (f.unit === "day") return new Date(from.getTime() + f.n * 86400000);
+      if (f.unit !== "month" && f.unit !== "year") return null;
+      const d = new Date(from.getTime()), day = d.getDate();
+      d.setDate(1);
+      d.setMonth(d.getMonth() + (f.unit === "year" ? 12 * f.n : f.n));
+      d.setDate(Math.min(day, new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate()));
+      return d;
+    } catch (e) { return null; }
+  }
+  // plan: what storePlan() resolved, or null/undefined while it is asking,
+  // or that answer's yearly row (plan.year) or one-payment row (plan.life):
+  // each row's words are its own plan's, and the button, the check line and
+  // the small print are the words of whichever row is picked.
+  // o.freeVersion: this family already has daily practice (the free
+  // version), so Premium is not what opens it. o.now: the clock, for tests.
+  // o.headsUp: true only when the page has been told this phone will show
+  // its own heads-up the day before this row's free days end (see above).
+  const PLAN_HEADS_UP = "We'll remind you the day before it ends.";   // Travis's and Rachel's words to change
+  const PLAN_STEP_HEADS_UP = "Reminder";   // the same promise, as the timeline's middle step (4 Nov 2026)
+  function planWords(plan, o) {
+    o = o || {};
+    const WHAT = o.freeVersion ? "Every game and every book." : "Daily practice, every game and every book.";
+    const w = {
+      state: "wait", title: "Sona Premium", tag: "", price: "", what: WHAT,
+      rows: [], note: "", noteFirst: false, noteLast: false,
+      name: "Sona Premium", sub: "", amount: "", check: "",
+      button: "Checking the App Store…", act: "wait",
+      header: "Sona Premium: " + WHAT.charAt(0).toLowerCase() + WHAT.slice(1),
+      none: null, headsUp: "",
+    };
+    if (plan == null) return w;
+    if (plan.state === "owned") { w.state = "owned"; w.name = ""; w.what = ""; w.button = ""; w.act = ""; w.header = ""; return w; }
+    const P = String(plan.price || ""), per = String(plan.per || "");
+    const FREE = (plan.state === "free" && plan.free && plan.free.text) ? String(plan.free.text) : "";
+    if (!P || !per || !(plan.state === "paid" || FREE)) {
+      // nothing to sell, or a plan too broken to describe: no figure, one way on
+      const reach = plan.state === "none" && (plan.why === "timeout" || plan.why === "error");
+      w.state = "none"; w.name = ""; w.what = ""; w.button = "Try again"; w.act = "retry";
+      w.none = reach ? { title: "We couldn't reach the App Store.", text: "Check your connection, then try again." }
+                     : { title: "Sona Premium can't be bought right now.", text: "Please try again in a little while." };
+      w.header = w.none.title;
+      return w;
+    }
+    // THE ONE-PAYMENT ROW (22 Oct 2026; every word Travis's to change): its
+    // name, one line under it, the store's price with no period, then for the
+    // pick one check line, the button and the small print. A one payment
+    // with free days is not a plan this card can describe (storePlan never
+    // hands one out): nothing to sell.
+    if (plan.kind === "lifetime" || per === "once") {
+      if (plan.state !== "paid") { w.state = "none"; w.name = ""; w.what = ""; w.button = "Try again"; w.act = "retry"; w.none = { title: "Sona Premium can't be bought right now.", text: "Please try again in a little while." }; w.header = w.none.title; return w; }
+      w.state = "paid"; w.title = "Get Sona Premium";
+      w.name = "One payment"; w.sub = "Yours to keep. No subscription."; w.amount = P;
+      w.price = "One payment of " + P + ".";
+      // The check line sells what one payment brings (Travis, 1 Nov 2026:
+      // "instead of one payment, no subscription, have it say one payment
+      // every update"): it is the `full` entitlement for good, so every new
+      // game and book is in it. The small print under the button still says
+      // "No subscription", so a parent reads that it never renews.
+      w.check = "One payment \u00b7 Every update included";
+      w.note = "One payment of " + P + ". No subscription."; w.noteLast = true;   // small print, under the button
+      // The button is the trial's own words (Travis, 31 Oct 2026: "change
+      // paywall button to 'Start practicing!' for the lifetime option too
+      // ... not get sona prem"): the price is on the row, "Billed today"
+      // under it, and the small print right under the button names it again.
+      w.button = "Start practicing!"; w.act = "buy";
+      w.header = "Sona Premium: one payment of " + P + ".";
+      return w;
+    }
+    const PP = P + " a " + per;
+    // THE ROW (Travis, 6 Oct 2026, with a reference paywall: "too many words
+    // ... I don't want it to say Friday October 9th I just want it to say
+    // three days"): the plan's name, one short line under it, the store's
+    // price on the right, and one check line. No dated rows.
+    const SHORT = { month: "mo", year: "yr", week: "wk" };
+    w.name = per === "month" ? "Monthly" : per === "year" ? "Yearly" : "Sona Premium";
+    w.amount = P + "/" + (SHORT[per] || per);
+    w.sub = ""; w.check = "Subscription auto-renews"; w.noteLast = false;
+    w.act = "buy";
+    // the yearly row's one tag, and only when the store's own numbers make it
+    // true (Plan.best): never a saving in dollars, never a ratio (19 Oct 2026)
+    w.tag = plan.best === true && per === "year" ? "Best value" : "";
+    if (plan.state === "paid") {
+      w.state = "paid"; w.title = "Get Sona Premium";
+      w.price = PP + ", charged today.";
+      w.sub = "Charged today";
+      w.note = "Charged to your Apple ID today, then every " + per + ". Renews unless canceled in " + PLAN_CANCEL + ".";
+      w.button = "Subscribe — " + PP;
+      w.header = "Sona Premium: " + PP + ", charged today.";
+      return w;
+    }
+    const UNIT = plan.free.unit ? String(plan.free.unit) : "";
+    const N = parseInt(FREE, 10);
+    const TRIAL = (N > 0 && UNIT) ? N + "-" + UNIT + " free trial" : FREE + " free";
+    w.state = "free";
+    w.price = FREE + " free, then " + PP + ".";          // Travis's line (5 Oct 2026), built from the store's two answers
+    w.button = "Start practicing!";                      // Travis, 6 Oct 2026; the free days and the price are on the row and under the button
+    if (plan.sure === true) {
+      w.title = "Start Sona Premium with " + FREE + " free";
+      w.sub = TRIAL;
+      w.check = "No payment today \u00b7 Subscription auto-renews";
+      w.note = w.price + " Cancel anytime.";
+      w.noteLast = true;                                   // small print, under the button
+      w.header = "Sona Premium: " + FREE + " free, then " + PP + ".";
+    } else {
+      w.title = "Sona Premium: " + FREE + " free for new subscribers";
+      w.sub = TRIAL + " for new subscribers";
+      w.note = "Only new subscribers get " + FREE + " free. Otherwise Apple charges " + P + " today. Apple shows your exact terms before you confirm. Cancel anytime in " + PLAN_CANCEL + ".";
+      w.noteFirst = true;                                  // directly under the row, above the button
+      w.header = "Sona Premium: " + FREE + " free for new subscribers, then " + PP + ".";
+    }
+    // a free row only, and only when the page says this phone will show it
+    if (o.headsUp === true) w.headsUp = PLAN_HEADS_UP;
+    // THE 3-STEP TRIAL TIMELINE (Travis, 4 Nov 2026: "let's add a 3-step
+    // trial timeline"). Only on a row whose free days are certain and
+    // counted in days (a week is read as 7), three or more of them, so
+    // every step falls on its own day. Today counts as day 1: the free days
+    // end, and the first charge falls, as day N ends; Apple lets a parent
+    // cancel up to 24 hours before that, i.e. through day N-1. With the
+    // heads-up (o.headsUp) the middle step carries it, and the separate
+    // line under the button steps aside: one promise, said once. No dates (Travis,
+    // 6 Oct 2026: "I just want it to say three days"). Every word Travis's
+    // and Rachel's to change.
+    const DAYS = plan.sure === true && plan.free && plan.free.unit === "day" ? Number(plan.free.n) : 0;
+    if (DAYS >= 3) {
+      // (Travis, 5 Nov 2026: "a little bit too busy": a word or two a step,
+      // and the check line steps aside, since the steps say "no payment
+      // today"; the small print under the button carries "Auto-renews")
+      w.steps = [
+        { when: "Today", text: "Free" },
+        { when: "Day " + (DAYS - 1), text: w.headsUp ? PLAN_STEP_HEADS_UP : "Still free" },
+        { when: "Day " + DAYS, text: w.amount },
+      ];
+      w.headsUp = "";
+      w.check = "";
+      w.note = w.price + " Auto-renews. Cancel anytime.";
+    }
+    return w;
+  }
+  // The card's one status line, by code (buyPlan's codes, and the page's own
+  // moments). "Nothing was charged" is never said: after a failure the phone
+  // does not know that. Cancelled and busy say nothing at all.
+  const PLAN_SAY = {
+    opening: "Opening the App Store…",
+    slow: "Still waiting for the App Store. If its window has closed, tap Restore Purchases.",
+    pending: "Waiting for approval. Sona Premium opens once the purchase is approved.",
+    "not-allowed": "Purchases are turned off on this device. Check Screen Time in Settings.",
+    "not-entitled": "Apple has your order, but Premium hasn't switched on yet. Tap Restore Purchases below.",
+    offline: "We couldn't reach the App Store. Check your connection and try again.",
+    unavailable: "Sona Premium can't be bought right now. Please try again in a little while.",
+    failed: "That didn't go through. If Apple took a payment, tap Restore Purchases.",
+    bought: "Sona Premium is on. Welcome to Sona!",
+    owned: "You already have Sona Premium. Welcome back!",
+    restoring: "Checking your purchases…",
+    restored: "Restored ✓ — welcome back!",
+    "no-purchases": "No purchases found on this Apple ID.",
+    "restore-failed": "Couldn't reach the App Store — try again in a moment.",
+  };
+  function planSay(code) {
+    return (typeof code === "string" && Object.prototype.hasOwnProperty.call(PLAN_SAY, code)) ? PLAN_SAY[code] : "";
+  }
+  // PLAN-WORDS-END
+
+  // ── SETUP: THE MARKER THAT BRINGS A BUYER BACK, AND THE TWO ANSWERS ──
+  // (Travis, 4–5 Oct 2026: "number B would be good … you can do a full
+  // reset".) Setup now saves the child on its ready screen and shows the
+  // price while the grown-up still holds the phone; the microphone and the
+  // hand-off come after.
+  //
+  // THE MARKER (sessionStorage, this tab only) says "this tab left setup's
+  // ready screen for this child": the price screen reads it to send a buyer
+  // back to setup, and setup reads it to open on the microphone instead of
+  // the hello. IT PICKS A SCREEN AND GRANTS NOTHING. Whether a family owes
+  // the price is always re-read from trialFirst() (stored entitlement), so a
+  // forged marker opens a microphone step and not one game. It dies with the
+  // tab or the app, after two hours, or when another child is active.
+  const SETUPAFTER = "sona.setupafter.v1";
+  const SETUPAFTER_MS = 2 * 60 * 60 * 1000;
+  function setupAfterMark() {
+    try { sessionStorage.setItem(SETUPAFTER, JSON.stringify({ at: Date.now(), kid: _slot() })); return true; } catch (e) { return false; }
+  }
+  // Pure: it removes nothing, so asking twice gives the same answer twice.
+  function setupAfter() {
+    try {
+      const m = JSON.parse(sessionStorage.getItem(SETUPAFTER) || "null");
+      if (!m || typeof m !== "object" || typeof m.at !== "number" || typeof m.kid !== "string") return false;
+      const age = Date.now() - m.at;
+      if (!(age >= 0 && age < SETUPAFTER_MS)) return false;
+      if (m.kid !== _slot()) return false;
+      return !!getProfile().onboarded;
+    } catch (e) { return false; }
+  }
+  function setupAfterClear() { try { sessionStorage.removeItem(SETUPAFTER); } catch (e) {} }
+
+  // THE TWO ANSWERS ("What brings you to Sona?", "How does practice go at
+  // home now?") STAY ON THIS PHONE. The screens that ask say so, so it has to
+  // be true by construction: ONE household key, holding one fixed id per
+  // question or "" for a skip. Not in the profile and not in PER_KID (so
+  // sendProgress, which reads the profile, cannot carry it to a clinician),
+  // not in a backup (NO_EXPORT) and not let in by one (NO_IMPORT), and no
+  // event, lead, address, title or error message is ever given one. They
+  // change nothing a child is given; they only pick which true sentence
+  // about Sona setup's ready screen shows. Asked once per family: the key
+  // existing (even with both skipped) is what stops a second ask.
+  const SETUPASKS = "sona.setupasks.v1";
+  // ONE question since 5 Oct 2026 (Travis, of the two it replaced, "What brings
+  // you to Sona?" and "How does practice go at home now?": "I don't like"
+  // them; "we could at the very least ask them if they are in speech therapy
+  // or not"). The days-a-week pick that sits beside it in setup is a real
+  // setting (profile.weeklyGoal), not one of these.
+  // Yes, No (t_none, 16 Oct 2026) and Not yet (t_no, which read "Not right
+  // now" before; a saved t_no keeps its meaning)
+  const SETUP_THERAPY = ["t_yes", "t_none", "t_no"];
+  function _askId(list, v) { return (typeof v === "string" && list.indexOf(v) !== -1) ? v : ""; }
+  function setupAsks() {
+    let raw = null, v = null;
+    try { raw = localStorage.getItem(SETUPASKS); v = JSON.parse(raw || "null"); } catch (e) {}
+    v = (v && typeof v === "object") ? v : {};
+    // (a record from the day the old questions were live still means "asked";
+    // its one answer that was this question carries over)
+    return { asked: raw != null, therapy: _askId(SETUP_THERAPY, v.therapy) || (v.why === "w_therapist" ? "t_yes" : "") };
+  }
+  function setupAsksSave(a) {
+    a = (a && typeof a === "object") ? a : {};
+    try { localStorage.setItem(SETUPASKS, JSON.stringify({ v: 2, therapy: _askId(SETUP_THERAPY, a.therapy) })); return true; } catch (e) { return false; }
+  }
+
   // best-effort: send the pilot child's (consented) progress back to the founder. Debounced.
   let _lastSent = 0;
   function sendProgress(kind) {
@@ -3914,6 +10291,37 @@
           })
           .catch(function () {});
       } catch (e) {}
+    }
+  } catch (e) {}
+
+  // ── No double-tap zoom (Travis, 30 Sep 2026: "i double tapped the screen
+  // and it zoomed in"). A child taps fast (a bubble, a fruit, the same game
+  // card twice) and two quick taps are Safari's "zoom in", leaving the game
+  // half off the screen until a grown-up pinches it back. The kid pages'
+  // viewport lock (user-scalable=no) holds in the iOS app's web view, but
+  // Safari has ignored it since iOS 10, for accessibility. Both honour
+  // touch-action:manipulation, which drops double-tap zoom and nothing else:
+  // lists still scroll, and the grown-up pages, which carry no viewport lock
+  // on purpose, still pinch-zoom for a parent who needs bigger text.
+  // On EVERY element, not just html: touch-action is not inherited, and
+  // WebKit intersects it only up to the nearest scroll container, so a root
+  // rule misses every tap inside a scrolling row or pop-up. `*` weighs
+  // nothing and this sheet goes FIRST in <head>, so a page's own
+  // touch-action (Hoops' court and Fruit Slice's board say none) still wins;
+  // and since every element's default is auto, it only ever narrows.
+  // Injected here, not in a stylesheet, because no one sheet reaches every
+  // app page without also reaching the marketing pages: charge.html and the
+  // crafted games skip action.css, and check/pilot load only fonts.css,
+  // which parents.html and for-slps.html load too. The clinician dashboard
+  // (/slps) loads sona.js only for its sound labels; it is left out on
+  // purpose and keeps its own touch rules. tests/zoomtest.mjs pins all this.
+  try {
+    if (!/^\/slp(s|\.html)$/.test(location.pathname) && !document.getElementById("sonaNoZoom")) {
+      const _nz = document.createElement("style");
+      _nz.id = "sonaNoZoom";
+      _nz.textContent = "*{touch-action:manipulation}";
+      const _nzAt = document.head || document.documentElement;
+      _nzAt.insertBefore(_nz, _nzAt.firstChild);
     }
   } catch (e) {}
 
@@ -3988,7 +10396,15 @@
   // both are asynchronous or user-driven, so a device whose first load is
   // this build is always judged as it arrived, never as it will be.
   try { _grandfatherFreeEra4(); } catch (e) {}
+  // era five, likewise independent of every earlier stamp, and for the same
+  // reason run before anything on this load can finish setup.
+  try { _grandfatherFreeEra5(); } catch (e) {}
+  try { _keepFreeVersion(); } catch (e) {}
+  // the kept buddies (OWN1), likewise one-shot and independent of every other stamp
+  try { _keepBuddies(); } catch (e) {}
+  // each set-up child's story calendar (CAL1): written once per child
+  try { _questAnchors(); } catch (e) {}
   try { installDebug(); } catch (e) {}
 
-  global.Sona = { libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, FREE_MODE, isFree, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repsBeacon, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES };
+  global.Sona = { questToday, questEnd, QUEST_DAYS, QUEST_LEN, STORY_DAYS, storyOpen, storyShown, storyEnding, storySeen, storyFound, storyReplay, STORY_SAY_TIMES, STORY_TALK, storyDay, day1For, pcmWave, mediaPCM, voiceAsMedia, libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, goalDays, dayReps, dayGoal, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, goClip, GO_WAIT_MS, WORDS, wordsFor, GAME_WORDS, gameWords, POSITIONS, FAMILY_POSITIONS, posInfo, posPhrase, posHas, soundPos, sylPos, playWords, playPool, hasSound, GAMES_FOLLOW_POS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, rungWin, ladderKey, ladderContent, PRACTICE_TOP, ladderSteps, ladderTop, ladderStart, stepDown, stepLabel, ladderWhere, ladderPlan, GAME_LEVELS, gameTop, gameAsk, gameHold, FREE_MODE, isFree, WEB_SALES, webSales, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, targetSound, targetSoundOptions, setTargetSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, homePicks, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, freeVersion, trialFirst, offerOnLock, FREE_BOOKS, freeBooksOnShelf, bookFree, booksOpen, bookLocked, seasonPick, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, firstGameKey, firstGameStart, firstGameEnd, FREE_PLAY_ON, freePlayOn, freePlayDue, freePlayStart, freePlayActive, freePlayEnd, CRAFTED_CARDS, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, speechTurn, hasSpeechBridge, micNative, micOpen, micProbe, micSource, micDeaf, micRecorder, micQuiet, micStats, micFifo: nmFifo, NATIVE_MIC_GAIN, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repWeeks, gameRep, repsBeacon, gameBest, gameBestOffer, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES, trophyState, trophies, coinsNow, PLAY_LEVEL_AT, PLAY_LEVEL_LINES, playLevelsOpen, playLevel, playLevelAsk, setPlayLevel, playLevelInfo, playBest, playBestOffer, buddyId, buddySprite, chestState, chestOpen, ROAD_LANDS, ROAD_STOPS, MONTH_STEPS, roadStop, roadState, roadOpen, monthOpen, roadSettle, roadRolledSeen, buddiesKept, shopItem, buyItem, undoBuy, equip, BOARD_LIVE, boardLive, boardAllowed, boardState, boardStart, boardClaim, boardFlush, boardView, boardNick, boardLeave, boardAsk, boardCancel, parentEmail, reportEmail, reportSync, reportStatus, reportSet, reportOff, reportFlush, homeOfferDue, offerSeen, notifyAvailable, notifyState, notifyRefresh, notifyAsk, trialReminderOn, trialReminderArm, trialReminderSync, trialReminderSold, nudgeConsent, nudgeState, soundMark, clipsSettled, storePlan, buyPlan, planWords, planSay, planBillDate, setupWall, setupAfterMark, setupAfter, setupAfterClear, setupAsks, setupAsksSave, SETUP_THERAPY };
 })(window);

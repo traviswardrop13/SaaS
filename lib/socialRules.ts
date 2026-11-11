@@ -12,8 +12,11 @@
  * true today AND will still be true after the next pricing flip:
  *   - no price, no "free", no trial: FREE_MODE has flipped twelve times;
  *     a video that says "free" becomes false the day pricing returns;
- *   - Rachel's credential in the one settled wording, never "certified",
- *     "CCC" or anything implying the fellowship is behind her (CLAUDE.md);
+ *   - the video never names Rachel. Her credential has one settled line
+ *     (CLAUDE.md: "Rachel, MS, CF-SLP, …"), written for a page; a voice
+ *     reading "M S, C F S L P" aloud, or a writer shortening it, breaks it.
+ *     Nor may it present Sona's SLP anonymously ("built with a licensed
+ *     SLP"), and never "certified", "CCC" or "licensed …";
  *   - nothing that reads as an evaluation, a diagnosis, a cure or a promise
  *     ("Nothing in the app is an evaluation");
  *   - no developmental ages: which sounds come when is Rachel's call, and is
@@ -25,16 +28,18 @@
 
 /** Each pattern a script must not match, with the reason a person reads. */
 export const BANNED: { re: RegExp; why: string }[] = [
-  { re: /certif/i, why: "Rachel is licensed, not certified — never 'certified'" },
-  { re: /\bCCC\b|\bASHA\b/i, why: "never name ASHA or the CCC" },
-  { re: /fully licensed|clinical fellow|\bCF-SLP\b|fellowship/i, why: "the fellowship is not named in product copy, and nothing may imply it is behind her" },
+  { re: /certif/i, why: "no certification claims — Rachel holds none" },
+  { re: /\bCCC\b|\bASHA\b/i, why: "never name a certifying body" },
+  { re: /\bRachel\b|\bco-?founder|\bCF-SLP\b/i, why: "the video never names Rachel or the founders: her line, 'Rachel, MS, CF-SLP, …', is for the page, not a voice" },
+  { re: /\blicensed\b|fellowship|clinical fellow/i, why: "no credential words at all in the video" },
+  { re: /\b(built|made|designed|shaped|reviewed|created|developed)\s+(with|by)\s+(a|an|our)\s+(licensed\s+)?(pediatric\s+)?(SLP|speech[- ]language pathologist|speech therapist|expert)|\bour (SLP|speech)/i, why: "never present Sona's SLP anonymously" },
   { re: /\$|\bdollars?\b|\bprices?\b|\bpricing\b|\bcosts?\b|\bfree\b|\btrial\b|\bdiscount|\bsubscri|\bpremium\b/i, why: "no prices or 'free' — pricing changes and the video stays up" },
   { re: /\btherap(y|ies)\b|\btreat(ment|s|ing)?\b/i, why: "Sona is practice, not therapy or treatment" },
   { re: /diagnos|\bevaluat|\bassess|\bscores?\b|\bgrades?\b|\btests? (your|their|for)\b/i, why: "nothing in Sona is an evaluation, a score or a test" },
   { re: /\bcures?\b|\bfix(es|ed|ing)?\b|guarantee|\bproven\b|clinically|studies show|research shows|science shows/i, why: "no promises and no unsourced claims" },
   { re: /\bdisorder|\bapraxia|\bstutter|\bautis|\bdelay(ed|s)?\b|\blisp/i, why: "no diagnostic labels" },
   { re: /\bages? \d|\b\d+\s*-?\s*(years?|yrs?|months?)\s*-?\s*old\b|by (age|the age)|should be (able|saying)/i, why: "no developmental ages or 'should be saying' — that is Rachel's call" },
-  { re: /\bI'?m (a |an )?(speech|SLP|therapist|Rachel)|\bas a (speech|SLP|therapist)/i, why: "the presenter is not Rachel and not a clinician" },
+  { re: /\bI'?m (a |an )?(speech|SLP|therapist)|\bas a (speech|SLP|therapist)/i, why: "the presenter is not a clinician" },
 ];
 
 /** Every rule a script breaks, as readable reasons. Empty means it may post. */
@@ -72,7 +77,7 @@ export const TOPICS: string[] = [
   "Celebrate small wins: one brave new sound is a big deal",
   "The same time every day: building a practice habit that sticks",
   "Siblings and practice: making it a family game",
-  "Built with Rachel, a licensed pediatric speech-language pathologist: what she cares about most",
+  "What five minutes of Sona looks like on a busy evening",
   "Quiet house, better listening: why Sona works best in a calm room",
 ];
 
@@ -93,12 +98,12 @@ export function dayKey(d: Date): string {
  */
 export const WRITER_SYSTEM = `You write the script for one short vertical video a day for Sona (speaksona.com), a speech-practice app for young children. Parents of children who are working on speech sounds watch it on TikTok, Instagram Reels, YouTube Shorts and Facebook Reels.
 
-A friendly AI presenter reads your script on camera. The presenter is a Sona host. The presenter is NOT Rachel and NOT a speech-language pathologist, and must never speak as one.
+A friendly AI presenter reads your script on camera. The presenter is a Sona host, not a clinician, and must never speak as one.
 
 Write for parents, not children. Warm, plain, specific, no hype. One idea per video.
 
 Rules you must follow, because the video posts without a person reviewing it:
-- If you mention who built Sona, say exactly: "built with Rachel, a licensed pediatric speech-language pathologist". Never "certified", "board-certified", "CCC", "ASHA", "fully licensed" or "clinical fellow".
+- Never say who built, made or reviewed Sona, and never name its founders. Use no credential words at all: no licence, certification or professional title of any kind.
 - Never mention a price, money, "free", a trial, a discount, a subscription or Premium.
 - Sona is practice. Never call it therapy or treatment. Never say it diagnoses, tests, scores, grades, evaluates or assesses a child.
 - No promises: never "fix", "cure", "guarantee", "proven", "clinically", "studies show".

@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
   <title>Sona — Coach Call</title>
   <link href="/fonts.css" rel="stylesheet">
+  <link rel="stylesheet" href="/action.css">
   <meta name="theme-color" content="#35407e" />
   <style>
     :root{
@@ -80,8 +81,12 @@
     .ovlEcho{position:absolute;top:-52px;left:50%;transform:translateX(-50%);width:104px;height:104px;filter:drop-shadow(0 8px 12px rgba(30,24,70,.3));}
     .ovl h2{font-family:"Baloo 2";font-weight:800;font-size:24px;color:var(--ink);line-height:1.15;}
     .ovl p{color:var(--muted);font-weight:800;font-size:14.5px;max-width:280px;}
-    .btn{border:none;border-radius:20px;padding:15px 32px;font-family:"Baloo 2";font-weight:800;font-size:17px;text-transform:uppercase;letter-spacing:.04em;color:#fff;background:linear-gradient(180deg,#ffa05a,#ff8a3d);box-shadow:0 6px 0 var(--orange-d);cursor:pointer;width:100%;margin-top:4px;}
-    .btn:active{transform:translateY(4px);box-shadow:0 2px 0 var(--green-d);}
+    /* The action teal from /action.css (the family's redesign brief, 28 Sep
+       2026: every kid button is teal, orange is only the practice sound's
+       letters). This page is parked, but it pressed green, the banned
+       Duolingo action colour, so it takes the shared tokens like the rest. */
+    .btn{border:none;border-radius:20px;padding:15px 32px;font-family:"Baloo 2";font-weight:800;font-size:17px;text-transform:uppercase;letter-spacing:.04em;color:#fff;text-shadow:0 1px 0 var(--act-d);background:linear-gradient(180deg,var(--act-hi),var(--act));box-shadow:0 6px 0 var(--act-d);cursor:pointer;width:100%;margin-top:4px;}
+    .btn:active{transform:translateY(4px);box-shadow:0 2px 0 var(--act-d);}
     .btn.ghost{background:none;color:var(--muted);box-shadow:none;text-transform:none;font-size:13px;width:auto;}
   </style>
 </head>
@@ -189,12 +194,14 @@
     function say(t){ return new Promise(function(res){ if(!t||profile.voiceOn===false)return res(); if(speaking)return res(); speaking=true;
       pose("talk"); $("caption").innerHTML=t.replace(/\[[a-z ]{2,24}\]\s*/gi,"").replace(/\*(.+?)\*/g,"<b>$1</b>");
       var plain=t.replace(/\*/g,"");
-      var key=(profile.voiceId||"echo")+"|"+((window.Sona&&Sona.TTS_CACHE_VERSION)||"v8")+"|"+plain;
+      var key=(profile.voiceId||"echo")+"|"+((window.Sona&&Sona.TTS_CACHE_VERSION)||"v9")+"|"+plain;
       ttsGet(key).then(function(cached){
         if(cached) return playPCM(new Uint8Array(cached));
+        // X-Sona-Voice-Keep "0": a stand-in while the usual voice model was busy — play, never save.
+        var keep=true;
         return fetch("/api/tts",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:plain,voice:profile.voiceId||"",stable:true})})
-          .then(function(r){return r.ok?r.arrayBuffer():null;})
-          .then(function(b){ if(!b)return null; ttsPut(key,b); return playPCM(new Uint8Array(b)); });
+          .then(function(r){ if(!r.ok)return null; keep=!(r.headers&&r.headers.get&&r.headers.get("X-Sona-Voice-Keep")==="0"); return r.arrayBuffer(); })
+          .then(function(b){ if(!b)return null; if(keep)ttsPut(key,b); return playPCM(new Uint8Array(b)); });
       }).catch(function(){}).finally(function(){ speaking=false; pose("idle"); res(); });
     }); }
     // Rachel's human demo of the bare sound, when recorded (TTS never performs
@@ -206,7 +213,7 @@
     function playDemo(){
       var on=false; try{ on=!!(window.Sona&&Sona.humanClipsOn&&Sona.humanClipsOn()); }catch(e){}
       if(!on) return Promise.resolve(false);
-      return tryClip("/coach/say/"+SOUND+"-demo.mp3").then(function(ok){ return ok||tryClip("/coach/say/"+SOUND+".mp3"); });
+      return tryClip("/coach/say-echo/"+SOUND+"-demo.mp3").then(function(ok){ return ok||tryClip("/coach/say-echo/"+SOUND+".mp3"); });
     }
     function pose(p){ var e=$("echo");
       e.classList.remove("talk","cheer");
@@ -381,11 +388,11 @@
       try{ if(micStream)micStream.getTracks().forEach(function(t){t.stop();}); }catch(e){}
       // Echo remembers this call next time
       try{ localStorage.setItem("sona.callhist.v1",JSON.stringify({n:CALLN+1,last:Date.now(),lastPasses:passes,lastSound:SOUND})); }catch(e){}
-      try{ S.addCoins(5); if(S.awardNextSticker)S.awardNextSticker(); }catch(e){}
+      try{ if(S.awardNextSticker)S.awardNextSticker(); }catch(e){}
       try{ S.confetti&&S.confetti({count:120}); S.sfx.complete(); }catch(e){}
       $("doneTitle").textContent = early ? "Thanks for calling!" : "Best call ever!";
-      $("doneSub").textContent = passes>0 ? ("You taught "+BUDDYNAME+" the "+LETTER+" sound and earned 5 coins. Echo can't wait for next time!")
-                                          : ("Great practicing with Echo — 5 coins for showing up! See you next call.");
+      $("doneSub").textContent = passes>0 ? ("You taught "+BUDDYNAME+" the "+LETTER+" sound. Echo can't wait for next time!")
+                                          : ("Great practicing with Echo! See you next call.");
       $("doneOvl").classList.add("show");
     }
 

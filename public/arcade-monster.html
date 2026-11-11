@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#fff6e9">
+  <title>Sona — Monster Makeover</title>
+  <link href="/fonts.css" rel="stylesheet"><link href="/sayplay.css" rel="stylesheet"><link href="/monster.css" rel="stylesheet">
+</head>
+<body data-phase="boot" data-monster-mode="scrub">
+  <main id="app">
+    <canvas id="monsterCanvas" role="img" aria-label="A friendly little monster salon. Scrub, rinse, brush, snip, decorate and dress up one happy monster."></canvas>
+    <header id="top"><button id="close" type="button" aria-label="Back to games"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg></button><span class="hudpill" id="ttl">Monster Makeover</span><span id="spacer"></span><span class="hudpill" id="dots" role="img" aria-label="0 of 8"></span></header>
+    <div id="monsterBanner" role="status" aria-live="polite">A little monster salon</div>
+    <button id="monsterHearStep" type="button" disabled aria-label="Hear what to do in this makeover step"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4Zm12 0a5 5 0 0 1 0 6m3-9a9 9 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+    <button id="monsterTool" type="button" hidden aria-label="Makeover tool. Move with arrow keys. Hold Space or Enter while moving to scrub, brush or snip. Hold to rinse, or press and release to stamp."></button>
+    <button id="monsterAccessory" type="button" hidden aria-label="Pick up the accessory, move it with arrow keys, then press Enter to place it"></button>
+    <div id="monsterPalette" role="group" aria-label="Choose your spot color" hidden><button id="monsterColor0" class="monster-color" type="button" aria-label="Teal spots" aria-pressed="true"></button><button id="monsterColor1" class="monster-color" type="button" aria-label="Pink spots" aria-pressed="false"></button><button id="monsterColor2" class="monster-color" type="button" aria-label="Golden spots" aria-pressed="false"></button></div>
+    <div id="monsterToolCard"><img id="monsterToolPreview" src="/assets/crafted/game/puppy-sponge.webp" alt="" data-tool="sponge" onload="this.hidden=false" onerror="this.hidden=true"><span id="monsterToolName">Scrub the muddy fur</span></div>
+    <div id="monsterPower" hidden><span>Salon power</span><div><i id="monsterPowerFill"></i></div></div>
+    <div id="monsterControls"><button id="monsterHelp" class="act-pill" type="button" disabled aria-label="Salon power, extra help: say your word two times for bigger tools"><img src="/assets/crafted/echo-wave.webp" alt=""><span>Salon power</span></button></div>
+    <section id="turnPanel" aria-live="polite"><div id="picBox"><span id="pic"></span></div><div id="word"></div><button id="hear" class="cream-pill" type="button" aria-label="Hear the word again"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4Zm12 0a5 5 0 0 1 0 6m3-9a9 9 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span>Hear it</span></button><div id="listenRow"><span id="echoWrap"><img id="echoFace" src="/assets/crafted/echo-welcome.webp" alt="Echo"></span><span id="micState"></span><span id="cheer"></span><button id="micBtn" type="button" hidden aria-label="Listen again"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="12" rx="3" fill="currentColor"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4M9 21h6" fill="none" stroke="currentColor" stroke-width="2"/></svg></button></div></section>
+  </main>
+  <div class="ovl" id="startOvl"><div class="ovlCard"><img class="monster-intro" src="/assets/crafted/home-monster.webp" alt="A friendly purple monster and Echo"><h1 id="startTitle">Monster Makeover</h1><p>Say each word two times to get the next salon tool.</p><p>Then your finger does the styling.</p><p class="small" id="startSound"></p><button id="startBtn" class="act-pill" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 5 11 7-11 7Z" fill="currentColor"/></svg><span>Let's style</span></button></div></div>
+  <div class="ovl" id="primer"><div class="ovlCard"><img class="ovlEcho" src="/assets/crafted/echo-listen.webp" alt=""><h2>Let Echo hear you!</h2><p>Say each word two times to get each tool.</p><p class="small" id="micPromise"></p><button class="btn" id="primerYes" type="button">Turn on Echo's ears</button><button class="ghost" id="primerNo" type="button">Not now</button></div></div>
+  <div class="ovl" id="pauseOvl"><div class="ovlCard"><img class="ovlEcho" src="/assets/crafted/echo-think.webp" alt=""><h2>A little salon break</h2><p>Our friend is waiting right here.</p><button class="btn" id="resume" type="button">Keep styling</button></div></div>
+  <div class="ovl" id="endOvl"><div class="ovlCard"><img class="ovlEcho endStar" src="/assets/crafted/echo-cheer.webp" alt=""><h2 id="endTitle"></h2><p id="endSub"></p><button class="btn" id="again" type="button">Style again</button><button class="ghost" id="goHome" type="button">Back to games</button></div></div>
+  <script src="/sona.js"></script><script src="/crafted-words.js"></script><script src="/sayplay.js"></script><script src="/monster.js"></script>
+  <script>
+    SayPlay.start({key:"monster",title:"Monster Makeover",intro:"Say each word two times to get the next salon tool. Then use your finger to style our monster.",steps:[[],[],[],[],[],[],[],[]],finale:[],done:{title:"What a wonderful monster!",sub:"Clean fur, colorful spots, and a style all your own."},play:window.Monster});
+    if(!document.body.hidden){try{Sona.track("game opened",{game:"monster"});}catch(e){}}
+  </script>
+</body>
+</html>

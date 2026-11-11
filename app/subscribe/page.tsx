@@ -4,15 +4,34 @@ import Link from "next/link";
 import { Suspense, useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { FREE_MODE } from "@/lib/pricing";
+// On its own line: tests/freetest.mjs pins the FREE_MODE import word for word.
+import { WEB_SALES } from "@/lib/pricing";
 
-// Shown under the one plan, so every line has to be true of it. The plan is
+// The one App Store address the websites use (parents.html, for-slps.html,
+// the families page). This page cannot import it from anywhere: there is no
+// shared constant, and lib/launch.ts is not for a client page.
+const APP_STORE_URL = "https://apps.apple.com/us/app/sona-speech/id6785755867";
+
+// THREE STATES, one page (the default export at the foot chooses):
+//   Sona is free ............ FreeNotice
+//   the website sells ....... PaidPicker (everything from here to its end)
+//   it does not ............. AppOnlyNotice — since 1 Oct 2026 (Travis: "i
+//                             dont want them paying on the website"). Premium
+//                             is bought in the iPhone and iPad app.
+// The picker stays in this file whole. Selling here again is WEB_SALES in
+// lib/pricing.ts and its mirror in sona.js, not a rewrite of this page.
+//
+// THIS PAGE SELLS THE YEARLY PLAN, and only that one. Since 1 Oct 2026 there
+// is a monthly plan too ($9.99, charged today, no free trial); it is bought on
+// the plan screen (subscribe.html), which this page points to in one line. So
+// every line below has to be true of the yearly plan. The plan is
 // SONA PREMIUM (24 Sep 2026): Sona has a free version — daily practice and
-// free games (two per age group), for every family — so this list sells
+// free games and a free book, for every family — so this list sells
 // only what Premium adds, and says out loud what stays free either way, in
 // the one phrase every family surface uses. A feature every family already
 // has does not belong on a price card.
 const FEATURES = [
-  "Every game in the library, for both age groups",
+  "Every game and every book, for both age groups",
   "Starts with 3 free days — cancel anytime, no charge",
   "Every new game as it ships",
   "Daily practice and free games stay free, whether or not you subscribe",
@@ -81,16 +100,24 @@ function PaidPicker() {
     const t = setTimeout(() => settle({ open: true, left: 0, cap: 50, source: "fallback", standard: "$99.99", label: "Charter" }), 2500);
     return () => clearTimeout(t);
   }, []);
+  // has this browser set a child up? (read after mount: localStorage is not
+  // there on the server render)
+  const [setUp, setSetUp] = useState(false);
+  useEffect(() => {
+    try { setSetUp(!!JSON.parse(localStorage.getItem("sona.profile.v1") || "{}").onboarded); } catch { /* no profile */ }
+  }, []);
   const open = spots ? spots.open : true;
   const yearPrice = open ? "$59.99" : "$99.99";
   const perMonth = open ? "Under $5 a month" : "Under $8.50 a month";
 
-  // Native app (App Store build): Apple forbids non-IAP checkout, so the iOS app
-  // ships with no in-app payment. If this page is reached inside the app, bounce
-  // to the app home instead of showing Stripe. Web checkout is unaffected.
+  // Native app (App Store build): Apple forbids non-IAP checkout, so this
+  // page's Stripe card must never show inside the app. If it is reached there
+  // (an older Settings linked here), go to the plan screen, which shows the
+  // Apple card in the app. It used to bounce to Home, which told a parent who
+  // had tapped "See Premium" nothing at all. Web checkout is unaffected.
   useEffect(() => {
     if (typeof window !== "undefined" && (window as { Capacitor?: unknown }).Capacitor) {
-      window.location.replace("/today.html");
+      window.location.replace("/subscribe.html");
     }
   }, []);
 
@@ -144,15 +171,19 @@ function PaidPicker() {
             </span>
           </div>
 
-          {/* ONE PLAN as of 18 Sep 2026. The picker, the struck "$119.88" and
-              "yearly saves $59.89" all left with the monthly tier: every one of
-              them was 12 x $9.99, and a strike-through with no monthly plan
-              behind it is an anchor against a price nobody can buy. What is
-              left is checkable arithmetic — $59.99 / 12 = $4.9991 — which is
-              why it reads "under $5 a month" and never "$4.99 a month". */}
+          {/* THE YEARLY PLAN ONLY. The picker that used to sit here, the struck
+              was-price and the "yearly saves" figure all left with the monthly
+              tier on 18 Sep 2026. Monthly is on sale again since 1 Oct, on the
+              plan screen; none of those three came back with it, because the
+              saving is only true while the charter price lasts. What is left
+              is checkable arithmetic — $59.99 / 12 = $4.9991 — which is why
+              it reads "under $5 a month" and never "$4.99 a month". */}
           <div className="mt-4 rounded-2xl border-2 border-sky-500 bg-sky-50 px-4 py-4 text-left">
             <span className="block font-display text-2xl font-extrabold text-gray-900">{yearPrice}/yr</span>
-            <span className="block text-xs font-bold text-grass-600">{perMonth} · 3 days free first</span>
+            {/* "billed once a year" rides with the per-month reading: this page
+                now names a real monthly plan too, and a bare "under $5 a
+                month" beside it would read as that plan's price. */}
+            <span className="block text-xs font-bold text-grass-600">{perMonth}, billed once a year · 3 days free first</span>
             {spots && open && (
               <span className="mt-1 block text-xs font-bold text-grass-700">
                 {spots.label} price for the first {spots.cap} families — regular price <s>{spots.standard}/yr</s>
@@ -226,6 +257,21 @@ function PaidPicker() {
             Secure payment by Stripe. We never see your card details.
           </p>
 
+          {/* The monthly plan, named once with what makes it different. This
+              page cannot import lib/charter.ts (server-only), so the figure
+              is written out; chartertest fails if it ever differs from
+              MONTHLY_PRICE. It is bought on the plan screen, never here. */}
+          <p className="mt-3 text-center text-xs font-bold leading-relaxed text-gray-500">
+            Rather pay month by month? It&apos;s $9.99 a month, charged today.{" "}
+            {/* The plan screen sits behind the grown-ups check, which a
+                browser with no child set up answers by starting setup. So the
+                link is offered only where it leads to the plan screen; anyone
+                else is told where the choice is, in words. */}
+            {setUp
+              ? <a className="text-sky-700 underline" href="/subscribe.html">Choose it on the plan screen →</a>
+              : <>You can choose it inside Sona once your child is set up.</>}
+          </p>
+
           {/* The era-four grandfather sweep ships with this build (as eras one
               to three shipped with theirs), so families from every free era
               already have Premium and this page is not for them. If a sweep is
@@ -237,7 +283,7 @@ function PaidPicker() {
           </p>
 
           <p className="mt-4 text-center text-xs font-semibold leading-relaxed text-gray-500">
-            Built with Rachel, a licensed pediatric speech-language pathologist.
+            Built with Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical fellowship.
             Sona is speech practice at home — it is not therapy,
             diagnosis or an evaluation. Your child&apos;s voice is checked on the
             device and never uploaded.
@@ -248,7 +294,84 @@ function PaidPicker() {
   );
 }
 
+// The website does not sell Premium to families (Travis, 1 Oct 2026: "i dont
+// want them paying on the website"). /api/checkout refuses, so the picker
+// above could only show a price and then an error. A parent who lands here
+// from Settings, the trial page or an old link is told where Premium is
+// bought, and nothing here names a price: the iPhone's price is App Store
+// Connect's, and this repo must not type it.
+//
+// "In the app … it opens there" is deliberate. Nothing links an Apple
+// purchase to a web browser, so buying in the app does not open the games on
+// this website, and the page must never suggest it does.
+function AppOnlyNotice() {
+  // Inside the iPhone app this page would tell a parent to go and get the app
+  // they are holding. The plan screen is the right place there (it shows the
+  // Apple card), so nothing is drawn until we know this is a browser.
+  const [inBrowser, setInBrowser] = useState(false);
+  useEffect(() => {
+    if ((window as { Capacitor?: unknown }).Capacitor) {
+      window.location.replace("/subscribe.html");
+      return;
+    }
+    setInBrowser(true);
+  }, []);
+  if (!inBrowser) return null;
+
+  return (
+    <main className="min-h-screen bg-gradient-to-b from-sky-50 to-white">
+      <div className="mx-auto max-w-md px-5 py-20 text-center">
+        <img src="/coach/echo/echo-avatar.svg" alt="Sona" className="mx-auto h-20 w-20 object-contain" />
+        <h1 className="font-display mt-4 text-3xl font-extrabold text-gray-900">
+          Sona Premium is in the iPhone and iPad app
+        </h1>
+        <p className="mt-3 text-base font-bold text-gray-600">
+          Premium opens every game and every book in the Sona app. You buy it there, through
+          the App Store, and it opens there. Daily practice and the free games stay free here.
+        </p>
+        <a
+          href={APP_STORE_URL}
+          target="_blank"
+          rel="noopener"
+          className="mt-7 inline-block rounded-2xl bg-orange-400 px-7 py-4 font-display text-lg font-extrabold text-white shadow-chunky"
+        >
+          Get Sona on the App Store
+        </a>
+        <p className="mt-4 text-sm font-bold">
+          {/* the free version, in this browser (a browser with no child set up
+              is taken through setup first) */}
+          <a className="text-sky-700 underline" href="/today.html">Open Sona</a>
+        </p>
+        {/* Settings sent an ACTIVE web subscriber here ("Manage →") until 1 Oct
+            2026, and old links still do. Turning the website's checkout off
+            cancels nobody's subscription, so this page owes them three things
+            and never a dead end: it keeps working, how to get it back on a
+            device, and how to stop it. The cancel sentence is the Terms' own
+            (no cancel button exists for a web plan: that is Travis's open
+            call), at the address FreeNotice gives. */}
+        <p className="mt-8 text-sm font-bold leading-relaxed text-gray-500">
+          Already paid on speaksona.com? Your plan keeps working. It keeps renewing at the
+          price you bought it at until you cancel it. To open it on this device,{" "}
+          <a className="text-sky-700 underline" href="/trial.html">restore it with your email</a>;
+          inside Sona, that is Grown-ups &rarr; Settings &rarr; Restore. To cancel a plan
+          bought on speaksona.com,{" "}
+          <a className="text-sky-700 underline" href="mailto:wardroptravis@gmail.com?subject=Sona%20subscription">
+            email us
+          </a>{" "}
+          and we will cancel it for you. A plan bought on iPhone or iPad:{" "}
+          <strong>Settings &rarr; your Apple ID &rarr; Subscriptions</strong>.
+        </p>
+      </div>
+    </main>
+  );
+}
+
 export default function SubscribePage() {
+  // Chosen HERE, not inside SubscribeInner (freetest pins those two lines word
+  // for word): while the website is not selling, the picker never mounts, so
+  // its hooks, its /api/charter fetch and its checkout button do not exist.
+  // FREE_MODE still wins: when both are true, "Sona is free" is the truer page.
+  if (!FREE_MODE && !WEB_SALES) return <AppOnlyNotice />;
   return (
     <Suspense fallback={null}>
       <SubscribeInner />

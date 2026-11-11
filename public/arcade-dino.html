@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <title>Sona — Dino Dig</title>
+  <link href="/fonts.css" rel="stylesheet">
+  <link href="/action.css" rel="stylesheet">
+  <link href="/sayplay.css" rel="stylesheet">
+  <meta name="theme-color" content="#fff3e0" />
+  <!--
+    Dino Dig: the third Say & Play game rebuilt to be played (suggested ages
+    5-8; Travis, 1 Oct 2026: "go to the next game"). Say the word and get a
+    brush, rub the sand to uncover a bone, and the bone flies onto the
+    dinosaur's skeleton; eight bones, then the dinosaur wakes up and roars.
+    There are four dinosaurs, dug in order, a new one each round (Travis, 1 Oct
+    2026: "different types of dinosaurs to look for not just one"): the start
+    card shows the one to look for, the end card names it, and both show the
+    ones found so far. /dino.js draws them; this page keeps the child's place.
+    Written by hand, not by tools/gameart/build.mjs: the dig is drawn and
+    played in /dino.js, and every word turn, the mic and its quiet rules are
+    /sayplay.js's, as in every Say & Play game. Its start card is the same
+    teal "Let's play" pill the builder writes (tools/gameart/page.mjs), by hand.
+  -->
+  <style>
+    :root{--top:#fff3e0;--bottom:#f3d9a8;}
+    /* the dig is taller than a picture scene: the cliff above, the pit below */
+    #stageWrap.dig{width:min(100%,calc(58dvh * .79));background:#FFE2B8;}
+    #dig{display:block;width:100%;aspect-ratio:440/560;touch-action:none;-webkit-user-select:none;user-select:none;cursor:grab;}
+    #digEcho{position:absolute;right:3%;top:44%;width:15%;max-width:70px;pointer-events:none;filter:drop-shadow(0 4px 6px rgba(120,70,20,.25));}
+    #digEcho.hop{animation:echoHop .9s cubic-bezier(.3,1.5,.5,1);}
+    @keyframes echoHop{0%,100%{transform:translateY(0) rotate(0)}30%{transform:translateY(-34%) rotate(-10deg)}60%{transform:translateY(0) rotate(6deg)}80%{transform:translateY(-10%)}}
+    @media (prefers-reduced-motion: reduce){ #digEcho.hop{animation:none;} }
+    /* PLAY AS YOUR BUDDY (BUDDY2, 11 Oct 2026): the child's buddy stands at the dig,
+       opposite Echo, in the same frame, and hops with him. Its badge (no
+       standing picture) is round. It is never in the way of a finger. */
+    #digBuddy{position:absolute;left:3%;top:44%;width:15%;max-width:70px;pointer-events:none;filter:drop-shadow(0 4px 6px rgba(120,70,20,.25));}
+    #digBuddy:not([src]){display:none;}
+    #digBuddy.badge{border-radius:50%;}
+    #digBuddy.hop{animation:echoHop .9s cubic-bezier(.3,1.5,.5,1);}
+    @media (prefers-reduced-motion: reduce){ #digBuddy.hop{animation:none;} }
+  </style>
+  <link href="/crafted-games.css" rel="stylesheet">
+  <link href="/crafted-dino.css" rel="stylesheet">
+</head>
+<body data-phase="boot" data-crafted="dino">
+  <div id="app">
+    <div id="top">
+      <button id="close" aria-label="Back">✕</button>
+      <span class="hudpill"><span id="ttl">Dino Dig</span></span>
+      <span id="spacer"></span>
+      <span class="hudpill" id="dots" role="img" aria-label="0 of 8"></span>
+    </div>
+    <div id="stageWrap" class="dig">
+      <canvas id="dig" role="img" aria-label="A sandy dig site under a cliff with a dinosaur skeleton's outline. Say the word two times to get a brush, then rub the sand to uncover a bone."></canvas>
+      <img id="digEcho" src="/assets/crafted/echo-welcome.webp" alt="" onerror="if(this.src.indexOf('echo-welcome')<0)this.src='/assets/crafted/echo-welcome.webp'" />
+      <img id="digBuddy" alt="" aria-hidden="true" />
+    </div>
+    <div id="turnPanel" aria-live="polite">
+      <div id="picBox"><span id="pic"></span></div>
+      <div id="word"></div>
+      <button id="hear" aria-label="Hear it again"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4Z" fill="#1cb0f6"/><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="#1cb0f6" stroke-width="2.2" stroke-linecap="round"/></svg><span>Hear it</span></button>
+      <div id="listenRow">
+        <span id="echoWrap"><img id="echoFace" src="/assets/crafted/echo-welcome.webp" alt="Echo" onerror="if(this.src.indexOf('echo-welcome')<0)this.src='/assets/crafted/echo-welcome.webp'" /></span>
+        <span id="micState"></span>
+        <span id="cheer"></span>
+        <button id="micBtn" hidden aria-label="Listen again"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8.5" y="3" width="7" height="12" rx="3.5" fill="#fff"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M8.5 21h7" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/></svg></button>
+      </div>
+    </div>
+  </div>
+
+  <div class="ovl" id="startOvl">
+    <div class="ovlCard">
+      <h2 id="startTitle">Dino Dig</h2>
+      <p>Say the word two times to get a brush. Then rub the sand to dig up a dinosaur bone!</p>
+      <div id="dinoToday" hidden>
+        <canvas id="dinoPic" width="400" height="210" role="img" aria-label=""></canvas>
+        <p id="dinoName"></p>
+      </div>
+      <div class="dinoRow" id="dinoRow" role="img" aria-label="" hidden></div>
+      <p class="small" id="startSound"></p>
+      <button id="startBtn" class="act-pill"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15a1 1 0 0 0 1.5.9l12-7.5a1 1 0 0 0 0-1.8l-12-7.5A1 1 0 0 0 7 4.5Z" fill="#fff"/></svg><span>Let's play</span></button>
+    </div>
+  </div>
+  <div class="ovl" id="primer">
+    <div class="ovlCard">
+      <img class="ovlEcho" src="/assets/crafted/echo-listen.webp" alt="" onerror="if(this.src.indexOf('echo-welcome')<0)this.src='/assets/crafted/echo-welcome.webp'" />
+      <h2>Let Echo hear you!</h2>
+      <p>Say each word two times to get a brush.</p>
+      <p class="small" id="micPromise"></p>
+      <button class="btn" id="primerYes">Turn on Echo's ears</button>
+      <button class="ghost" id="primerNo">Not now</button>
+    </div>
+  </div>
+  <div class="ovl" id="pauseOvl">
+    <div class="ovlCard">
+      <img class="ovlEcho" src="/assets/crafted/echo-think.webp" alt="" onerror="if(this.src.indexOf('echo-welcome')<0)this.src='/assets/crafted/echo-welcome.webp'" />
+      <h2>Paused</h2>
+      <button class="btn" id="resume">Keep playing</button>
+    </div>
+  </div>
+  <div class="ovl" id="endOvl">
+    <div class="ovlCard">
+      <img class="ovlEcho endStar" src="/assets/crafted/echo-cheer.webp" alt="" onerror="if(this.src.indexOf('echo-welcome')<0)this.src='/assets/crafted/echo-welcome.webp'" />
+      <h2 id="endTitle"></h2>
+      <p id="endSub"></p>
+      <div class="dinoRow" id="dinoRowEnd" role="img" aria-label="" hidden></div>
+      <button class="btn" id="again">Play again</button>
+      <button class="ghost" id="goHome">Back home</button>
+    </div>
+  </div>
+
+  <script src="/sona.js"></script>
+  <script src="/crafted-buddies.js"></script>
+  <script src="/crafted-words.js"></script>
+  <script src="/sayplay.js"></script>
+  <script src="/dino.js"></script>
+  <script>
+    // The dig's own sounds, made on the phone and played through the engine,
+    // so they wait for a closed mic like every chime.
+    function dinoNoise(ctx, vol, dur, f0, f1, gain, type) {
+      var n = Math.round(ctx.sampleRate * dur), buf = ctx.createBuffer(1, n, ctx.sampleRate), d = buf.getChannelData(0);
+      for (var i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 1.6);
+      var src = ctx.createBufferSource(), bp = ctx.createBiquadFilter(), g = ctx.createGain(), t = ctx.currentTime;
+      src.buffer = buf; bp.type = type || "bandpass"; bp.Q.value = 1.1;
+      bp.frequency.setValueAtTime(f0, t); bp.frequency.exponentialRampToValueAtTime(f1, t + dur);
+      g.gain.setValueAtTime(gain * vol, t); src.connect(bp); bp.connect(g); g.connect(ctx.destination); src.start(t); src.stop(t + dur + 0.02);
+    }
+    function dinoTone(ctx, vol, f, dur, gain, type, fEnd, delay) {
+      var o = ctx.createOscillator(), g = ctx.createGain(), t = ctx.currentTime + (delay || 0);
+      o.type = type || "sine"; o.frequency.setValueAtTime(f, t); if (fEnd) o.frequency.exponentialRampToValueAtTime(fEnd, t + dur);
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(gain * vol, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      o.connect(g); g.connect(ctx.destination); o.start(t); o.stop(t + dur + 0.02);
+    }
+    // Which dinosaur comes next, and the ones already found, belong to the
+    // child: sona.dino.v1 is one of sona.js's per-child keys, so a brother or
+    // sister starts at the first dinosaur. It is a collection, not practice:
+    // no attempt, rep or coin, and nothing a clinician is shown.
+    var DINOKEY = (window.Sona && Sona.kkey) ? Sona.kkey("sona.dino.v1") : "sona.dino.v1";
+    var GAME = {
+      key: "dino", intro: "Say each word two times to get a brush.", title: "Dino Dig",
+      steps: [[], [], [], [], [], [], [], []], finale: [],
+      // the title is the dinosaur's own name once it wakes (found, below)
+      done: { title: "The dinosaur woke up!", sub: "Eight words, eight bones. What a digger!" },
+      play: window.Dino,
+      sounds: {
+        brush: function (ctx, vol) { dinoNoise(ctx, vol, 0.14, 1800, 900, 0.16); },
+        pop: function (ctx, vol) { dinoTone(ctx, vol, 420, 0.16, 0.12, "sine", 880); dinoTone(ctx, vol, 1046.5, 0.18, 0.05, "sine", 0, 0.08); },
+        whoosh: function (ctx, vol) { dinoNoise(ctx, vol, 0.28, 700, 2600, 0.26); },
+        clack: function (ctx, vol) { dinoTone(ctx, vol, 920, 0.09, 0.12, "triangle"); dinoTone(ctx, vol, 1320, 0.07, 0.07, "triangle", 0, 0.06); },
+        roar: function (ctx, vol) { dinoTone(ctx, vol, 150, 0.75, 0.18, "sawtooth", 80); dinoNoise(ctx, vol, 0.7, 500, 200, 0.18, "lowpass"); dinoTone(ctx, vol, 523.3, 0.3, 0.05, "sine", 0, 0.75); dinoTone(ctx, vol, 659.3, 0.4, 0.05, "sine", 0, 0.9); },
+      },
+      soundMs: { brush: 160, pop: 300, whoosh: 300, clack: 160, roar: 1350 },
+    };
+    // (a /dino.js the phone saved before there were four has no setup: it
+    // digs its one dinosaur, and the cards keep their picture rows hidden)
+    if (window.Dino && Dino.setup) Dino.setup({
+      read: function () { try { return JSON.parse(localStorage.getItem(DINOKEY) || "null"); } catch (e) { return null; } },
+      write: function (v) { try { localStorage.setItem(DINOKEY, JSON.stringify(v)); } catch (e) {} },
+      found: function (d) { GAME.done.title = "You found " + d.a + " " + d.name + "!"; },
+    });
+    // LEVELS INSIDE GAMES (LEVELS1, 11 Oct 2026): the level this child plays,
+    // 1 unless they picked Level 2 or 3 and it is open (Sona.playLevel). The
+    // engine takes it from here and never reads storage; an engine or sona.js
+    // the phone saved before levels has none, and plays Level 1. The start
+    // card names the level once; nothing else in the game does.
+    var LV = (window.Sona && Sona.playLevel) ? Sona.playLevel("dino") : 1; if (LV !== 2 && LV !== 3) LV = 1;
+    if (window.Dino && Dino.setLevel) Dino.setLevel(LV);
+    // PLAY AS YOUR BUDDY (BUDDY2, 11 Oct 2026): the child's own buddy stands
+    // at the dig (its rest pose, else its badge) and cheers with Echo: the
+    // engine swaps the buddy's own rest and cheer pictures, never Echo's.
+    (function () {
+      var B = window.SonaCraftedBuddies, el = document.getElementById("digBuddy");
+      if (!el || !B || !B.stand) return;
+      var id = (window.Sona && Sona.buddyId) ? Sona.buddyId() : "fox";
+      var pics = B.stand(el, id, function () { if (window.Dino && Dino.setBuddy) Dino.setBuddy(null); });
+      if (pics && window.Dino && Dino.setBuddy) Dino.setBuddy(pics);
+    })();
+    if (LV > 1) { try { document.getElementById("startTitle").textContent = "Dino Dig \u00b7 Level " + LV; } catch (e) {} }
+    SayPlay.start(GAME);
+    // once per load, and only at Level 2 or 3 in a game this family can open
+    // (a bounced page is hidden): the game and the level, nothing else
+    // "game opened" (12 Oct 2026): this game skips the practice page, so its
+    // "practice started" never fires; the game key only, never the child
+    if (!document.body.hidden) { try { Sona.track("game opened", { game: "dino" }); } catch (e) {} }
+    if (LV > 1 && !document.body.hidden) { try { Sona.track("level played", { game: "dino", level: LV }); } catch (e) {} }
+  </script>
+</body>
+</html>

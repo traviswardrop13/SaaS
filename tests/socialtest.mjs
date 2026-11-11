@@ -37,13 +37,17 @@ function loadTs(file) {
 
 // ── 1. the rules ──
 const R = loadTs(path.join(ROOT, "lib/socialRules.ts"));
-const clean = "Does practice feel like a fight? Try five minutes a day. In Sona, your child picks a game, says one sound on its own, and every round ends on a win. Their voice is listened to on your phone and never uploaded. Sona was built with Rachel, a licensed pediatric speech-language pathologist. Find Sona at speaksona.com.";
+const clean = "Does practice feel like a fight? Try five minutes a day. In Sona, your child picks a game, says one sound on its own, and every round ends on a win. Their voice is listened to on your phone and never uploaded. Find Sona at speaksona.com.";
 ok("an honest script passes", R.checkScript(clean).length === 0, R.checkScript(clean).join("; "));
 const bad = {
   "a certified claim": "Built with a board-certified speech pathologist.",
   "the CCC": "Made by a CCC-SLP.",
   "the fellowship": "Rachel is a clinical fellow.",
-  "fully licensed": "Rachel is fully licensed.",
+  "fully licensed": "Our host is fully licensed.",
+  "naming Rachel at all": "Sona's co-founder made this.",
+  "Rachel's name, even with her line": "Built with Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical fellowship.",
+  "the old 'licensed' line": "Built with a licensed pediatric speech-language pathologist.",
+  "an anonymous SLP": "Made by our SLP team.",
   "a price": "All this for $4.99 a month.",
   "'free'": "Download Sona free today!",
   "a trial": "Start your trial today.",
@@ -58,8 +62,8 @@ const bad = {
   "speaking as the clinician": "I'm a speech therapist and I love this app.",
 };
 for (const [what, text] of Object.entries(bad)) ok("the checker stops " + what, R.checkScript(text).length > 0, text);
-ok("the writer is told the one settled credential wording",
-  R.WRITER_SYSTEM.includes("built with Rachel, a licensed pediatric speech-language pathologist"));
+ok("the writer is told to name no one and use no credential words",
+  /never name its founders/.test(R.WRITER_SYSTEM) && /no credential words/.test(R.WRITER_SYSTEM) && !/Rachel/.test(R.WRITER_SYSTEM));
 ok("there is a topic for every day, and the rotation wraps",
   R.TOPICS.length >= 14 && R.topicFor(0) === R.TOPICS[0] && R.topicFor(R.TOPICS.length) === R.TOPICS[0] && R.topicFor(-1) === R.TOPICS[R.TOPICS.length - 1]);
 ok("the day is a UTC calendar date", R.dayKey(new Date("2026-11-11T23:30:00Z")) === "2026-11-11");

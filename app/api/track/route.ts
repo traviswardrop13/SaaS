@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { kvConfigured } from "@/lib/slpAuth";
+import { trialPlayed, trialStart } from "@/lib/trials";
 
 /**
  * First-party telemetry relay for KID pages (COPPA posture).
@@ -19,6 +21,7 @@ const PH_HOST = "https://us.i.posthog.com";
 // relay can only ever say LESS than the page asked it to.
 const EVENTS = new Set([
   "practice started", "practice completed",
+  "rep goal met",         // daily rep target reached, no child details or rep counts
   "day goal done",        // the outcome proxy: a family finished all 5 rounds
   "slp code redeemed",    // which SLPs actually send families
   // The conversion funnel, added 18 Sep 2026. Without these the relay could
@@ -34,11 +37,52 @@ const EVENTS = new Set([
                           // offer is supposed to follow, so without it the
                           // funnel cannot tell a family who saw the product
                           // from one who bounced before it started
+  // Levels inside games (11 Oct 2026, LEVELS1): sent by a game page once per
+  // load at Level 2 or 3, never by Home. It carries the game and the level
+  // (2 or 3) and nothing else: no trophy count, no name, no age.
+  "level played",
+  "game opened",          // a game page opened for play (game key only): the
+                          // games that skip the practice page are seen here
+  // The Trophy Road (11 Oct 2026, CHEST1 / ROAD1 / MONTH1): sent by sona.js
+  // when a child opens the day's chest, a road gift or a month gift, never by
+  // Home. They carry nothing: no stop or step number (a stop is a lifetime
+  // trophy count), no coins, no name.
+  "chest opened",
+  "adventure day done",   // QUEST1: today's daily-adventure quest finished (game key only)
+  // The daily story (22 Oct 2026, STORY1): sent by adventure.html, the
+  // story's own page, never by Home. Each carries the story's game key only.
+  "adventure opened",          // the story's intro started
+  "adventure ending watched",  // the story's last ending scene showed
+  // FOUND1 (23 Oct 2026): a found story game played again from Home's row,
+  // sent by that game's page (the story's game key only), never by Home.
+  "story game replayed",
+  "road gift opened",
+  "month gift opened",
+  // The Buddy Shop (11 Oct 2026, SHOP1): sent by sona.js when a child gets a
+  // buddy, hat or place with coins. It carries the kind, the catalog id and
+  // its price in coins (coins are never sold): no balance, no name.
+  "shop item got",
+  // The Practice Board (11 Oct 2026, BOARD2; built dark until Travis's go):
+  // sent by sona.js when a grown-up's link puts children on the board, when
+  // one leaves it, and when the board page shows it. They carry nothing: no
+  // token, nickname, days or place.
+  "board turned on",
+  "board turned off",
+  "board viewed",
+  // The free-week report (30 Oct 2026, TRIAL1, lib/trials.ts): "free trial
+  // started" from a purchase whose free days really began ({ days }: how
+  // long they are), and "played today" once a local day on a phone's first
+  // counted rep (nothing else). The server also keeps, per trial, which of
+  // its days had play, for /leads.html; no name, sound or count.
+  "free trial started",
+  "played today",
 ]);
-// `plan` and `surface` join the list for the events above. Still no name, no
-// age, no email, no word a child said — an unlisted key is dropped silently,
-// which is the whole point of an allow-list.
-const PROPS = new Set(["sound", "game", "duration_seconds", "attempts_count", "code", "plan", "surface", "source"]);
+// `plan` and `surface` join the list for the events above, and `level` (2 or
+// 3) for "level played". Still no name, no age, no email, no word a child
+// said — an unlisted key is dropped silently, which is the whole point of an
+// allow-list. `kind`, `item` and `cost` are the Buddy Shop's ("characters",
+// "dragon", 150): a catalog entry and its coin price, never a balance.
+const PROPS = new Set(["sound", "game", "duration_seconds", "attempts_count", "code", "plan", "surface", "source", "level", "kind", "item", "cost", "days"]);
 
 export async function POST(req: NextRequest) {
   try {
@@ -54,6 +98,15 @@ export async function POST(req: NextRequest) {
       const v = (b.p as Record<string, unknown>)[k];
       if (typeof v === "number" && isFinite(v)) props[k] = Math.max(0, Math.min(100000, Math.round(v)));
       else if (typeof v === "string") props[k] = v.slice(0, 40);
+    }
+    // TRIAL1: the free-week report's own record (never waits long: the store
+    // answers or the beacon goes on without it)
+    if (kvConfigured() && (event === "free trial started" || event === "played today")) {
+      const now = Date.now();
+      try {
+        if (event === "free trial started") await trialStart(fid, Number(props.days) || 0, now);
+        else await trialPlayed(fid, now);
+      } catch { /* the report can miss a day; the beacon still goes */ }
     }
     const ctrl = new AbortController();
     const to = setTimeout(() => ctrl.abort(), 4000);
