@@ -38,12 +38,16 @@ function nativeDevice(cfg) {
       return analyser;
     };
   }
-  if (cfg.native !== false) window.Capacitor = { isNativePlatform: () => true, Plugins: { SonaSpeech: {
-    available: () => Promise.resolve({ available: !h.unavailable, onDevice: true, authorized: !h.unavailable }),
-    requestPermission: () => Promise.resolve({ granted: !h.unavailable }),
-    start: opts => { h.starts.push({ opts, at: performance.now() }); sessionStorage.setItem('__word.nativeStarts', String((+sessionStorage.getItem('__word.nativeStarts') || 0) + 1)); return new Promise(r => setTimeout(() => r({ started: true }), h.startDelay)); },
-    stop: () => { const text = h.text, item = { at: performance.now(), end: null }; h.stops.push(item); h.pending++; return new Promise(r => setTimeout(() => { item.end = performance.now(); h.pending--; r({ text, onDevice: true }); }, h.delay)); }
-  } } };
+  if (cfg.native !== false) {
+    const plugins = {};
+    if (!cfg.noSpeechBridge) plugins.SonaSpeech = {
+      available: () => Promise.resolve({ available: !h.unavailable, onDevice: true, authorized: !h.unavailable }),
+      requestPermission: () => Promise.resolve({ granted: !h.unavailable }),
+      start: opts => { h.starts.push({ opts, at: performance.now() }); sessionStorage.setItem('__word.nativeStarts', String((+sessionStorage.getItem('__word.nativeStarts') || 0) + 1)); return new Promise(r => setTimeout(() => r({ started: true }), h.startDelay)); },
+      stop: () => { const text = h.text, item = { at: performance.now(), end: null }; h.stops.push(item); h.pending++; return new Promise(r => setTimeout(() => { item.end = performance.now(); h.pending--; r({ text, onDevice: true }); }, h.delay)); }
+    };
+    window.Capacitor = { isNativePlatform: () => true, Plugins: plugins };
+  }
   const descriptor = Object.getOwnPropertyDescriptor(window, "Sona");
   Object.defineProperty(window, "Sona", { configurable: true, get: descriptor.get, set(value) {
     descriptor.set(value);
@@ -72,11 +76,14 @@ async function fresh(kind, cfg = {}) {
   await page.locator("#startBtn").click();
   if (cfg.pendingMic) await page.waitForFunction(() => __quiet.inflight > 0);
   else if (cfg.unavailable || cfg.noHelper) await page.waitForTimeout(1000);
-  else await listening(page, kind);
+  else await listening(page, kind, cfg.noSpeechBridge);
   return { page, context, errors };
 }
-async function listening(page, kind) {
-  await page.waitForFunction(k => k === "feed" ? /Your turn/.test(document.getElementById("bSub").textContent) : window.__sayplay && __sayplay.listening, kind);
+async function listening(page, kind, allowRetry = false) {
+  await page.waitForFunction(({ kind, allowRetry }) => {
+    if (allowRetry && !document.getElementById("micBtn").hidden) return true;
+    return kind === "feed" ? /Your turn/.test(document.getElementById("bSub").textContent) : window.__sayplay && __sayplay.listening;
+  }, { kind, allowRetry });
   await page.waitForTimeout(500);
 }
 async function speak(page, text, duration = 420) {
@@ -92,8 +99,9 @@ async function sibling(page) {
 }
 const ownershipOnly = process.env.WORDGAME_PART === "ownership";
 const positionOnly = process.env.WORDGAME_PART === "position";
+const bridgeOnly = process.env.WORDGAME_PART === "bridge";
 try {
-  if (!ownershipOnly) await scenario("sayplay verifies the blend position of its actual picture word", async () => {
+  if (!ownershipOnly && !bridgeOnly) await scenario("sayplay verifies the blend position of its actual picture word", async () => {
     const { page, context, errors } = await fresh("sayplay", { sound: "S", position: "b", prompt: "stop" });
     try {
       const target = await snapshot(page);
@@ -111,6 +119,31 @@ try {
     } finally { await context.close(); }
   });
   if (!positionOnly) for (const kind of ["sayplay", "feed"]) {
+    if (!ownershipOnly) {
+      await scenario(kind + " older iPhone shell without the speech bridge", async () => {
+        const { page, context, errors } = await fresh(kind, { noSpeechBridge: true });
+        try {
+          const shell = await page.evaluate(() => ({ native: Sona.isNativeApp(), media: Sona.voiceAsMedia(), speech: !!window.Capacitor.Plugins.SonaSpeech }));
+          ok(kind + ": the older shell keeps native audio mode with no speech bridge", shell.native && shell.media && !shell.speech, shell);
+          let s = await snapshot(page);
+          ok(kind + ": silence earns nothing while the older shell listens", s.live === 1 && s.reps === 0 && (kind === "feed" ? s.locked && s.stars === "0" : s.game.listening && s.game.said === 0 && s.game.step === 0), s);
+          await speak(page, ""); s = await snapshot(page);
+          ok(kind + ": the older shell credits one voiced saying by sound shape", s.reps === 1 && s.starts.length === 0 && s.stops.length === 0 && (kind === "feed" ? !s.locked : s.game.said === 1 && s.game.step === 0), s);
+          ok(kind + ": older shell listening has no page exception", errors.length === 0, errors);
+        } finally { await context.close(); }
+      });
+      await scenario(kind + " installed speech bridge unavailable", async () => {
+        const { page, context, errors } = await fresh(kind, { unavailable: true });
+        try {
+          await speak(page, "");
+          const s = await snapshot(page);
+          ok(kind + ": an unavailable installed speech bridge requires more than sound shape", s.reps === 0 && s.starts.length === 0 && (kind === "feed" ? s.locked : s.game.said === 0 && s.game.step === 0), s);
+          ok(kind + ": unverified speech offers a quiet retry", await page.locator("#micBtn").isVisible());
+          ok(kind + ": no page exception", errors.length === 0, errors);
+        } finally { await context.close(); }
+      });
+    }
+    if (bridgeOnly) continue;
     await scenario(kind + " child changes while the microphone opens", async () => {
       const { page, context, errors } = await fresh(kind, { pendingMic: true, gumDelay: 1200, text: "rabbit" });
       try {
@@ -149,12 +182,12 @@ try {
         ok(kind + ": no page exception", errors.length === 0, errors);
       } finally { await context.close(); }
     });
-    for (const cfg of [{ text: "" }, { unavailable: true }, { noHelper: true }]) await scenario(kind + " unclear or unavailable", async () => {
+    for (const cfg of [{ text: "" }, { noHelper: true }]) await scenario(kind + " unclear or unavailable", async () => {
       const { page, context, errors } = await fresh(kind, cfg);
       try {
-        if (!cfg.unavailable) await speak(page, "");
+        await speak(page, "");
         const s = await snapshot(page);
-        ok(kind + ": " + (cfg.unavailable ? "unavailable recognition" : cfg.noHelper ? "old cached shared script" : "empty text") + " never becomes family-only success", s.reps === 0 && (kind === "feed" ? s.locked : s.game.said === 0 && s.game.step === 0), s);
+        ok(kind + ": " + (cfg.noHelper ? "old cached shared script" : "empty text") + " never becomes family-only success", s.reps === 0 && (kind === "feed" ? s.locked : s.game.said === 0 && s.game.step === 0), s);
         ok(kind + ": unverified speech offers a quiet retry", await page.locator("#micBtn").isVisible());
         ok(kind + ": no page exception", errors.length === 0, errors);
       } finally { await context.close(); }
@@ -203,7 +236,7 @@ try {
       } finally { await context.close(); }
     });
   }
-  if (!ownershipOnly && !positionOnly) await scenario("sayplay rearm waits for a fresh quiet gap", async () => {
+  if (!ownershipOnly && !positionOnly && !bridgeOnly) await scenario("sayplay rearm waits for a fresh quiet gap", async () => {
     const { page, context, errors } = await fresh("sayplay", { text: "rabbit", stopDelay: 550 });
     try {
       await page.evaluate(() => { __quiet.voice = true; }); await page.waitForTimeout(420);

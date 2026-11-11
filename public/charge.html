@@ -1604,7 +1604,10 @@
     var REC_BUDGET=15000;
     var recognitionTexts=[], recognitionRemaining=REC_BUDGET, recognitionState=null;
     var wordClosing=Promise.resolve(), wordCheckIssue=false;
-    function needsWordCheck(){return !!(S&&S.isNativeApp&&S.isNativeApp()&&ITEM&&/^(word|sentence)$/.test(ITEM.level));}
+    function needsWordCheck(){
+      if(!S||!ITEM||!/^(word|sentence)$/.test(ITEM.level))return false;
+      return S.hasSpeechBridge?S.hasSpeechBridge():!!(S.isNativeApp&&S.isNativeApp());
+    }
     // ---- ROOM FLOOR (24 Sep 2026) ----
     // How loud the room is when nobody is talking. Two things come from it:
     // the loudness bar a sound must clear to start a try (thr, 3x the room)

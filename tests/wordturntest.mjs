@@ -20,7 +20,7 @@ async function fresh(cfg={}){
     window.__wc={cfg:config,events:[],hidden:false};const h=window.__wc;
     Object.defineProperty(document,'hidden',{configurable:true,get:()=>h.hidden});
     window.Capacitor=config.browser?undefined:{isNativePlatform:()=>true,Plugins:config.missing?{}:{SonaSpeech:{
-      available:()=>new Promise(resolve=>{const done=()=>resolve({available:config.authorized!==false,onDevice:config.cloud!==true});if(config.holdAvailable)h.releaseAvailable=done;else done();}),
+      available:()=>new Promise(resolve=>{const done=()=>resolve({available:!config.unavailable&&config.authorized!==false,onDevice:config.cloud!==true});if(config.holdAvailable)h.releaseAvailable=done;else done();}),
       requestPermission:async()=>{h.events.push('permission');config.authorized=true;return {granted:!config.deny};},
       start:opts=>new Promise(resolve=>{h.events.push(['start',opts]);const done=()=>{h.events.push('started');resolve({started:true});};if(config.holdStart)h.releaseStart=done;else done();}),
       stop:()=>new Promise(resolve=>{h.events.push('stop');const done=()=>resolve({text:h.cfg.text||'',onDevice:config.cloud!==true});if(config.holdStop)h.releaseStop=done;else done();})
@@ -62,16 +62,17 @@ try{
       ok(spec.level+' sends neither the position nor the word as a recognition hint',r.starts.length===3&&r.starts.every(o=>Array.isArray(o.words)&&o.words.length===0&&o.pos===undefined),r.starts);
     }finally{await context.close();}
   }
-  for(const cfg of [{missing:true},{cloud:true},{authorized:false,deny:true}]){
+  for(const cfg of [{unavailable:true},{cloud:true},{authorized:false,deny:true}]){
     const {context,page}=await fresh(cfg);try{
-      const r=await page.evaluate(async()=>{const t=Sona.speechTurn({sound:'R',word:'rabbit',level:'word'});return {required:t.required,ready:await t.ready,result:await t.finish(),events:__wc.events};});
-      ok('unavailable native words remain unverified '+JSON.stringify(cfg),r.required&&!r.ready&&r.result==='unavailable'&&!r.events.some(Array.isArray),r);
+      const r=await page.evaluate(async()=>{const t=Sona.speechTurn({sound:'R',word:'rabbit',level:'word'});return {active:t.active,required:t.required,ready:await t.ready,result:await t.finish(),events:__wc.events};});
+      ok('an installed bridge with unavailable recognition keeps the word check required '+JSON.stringify(cfg),r.active&&r.required&&!r.ready&&r.result==='unavailable'&&!r.events.some(Array.isArray),r);
     }finally{await context.close();}
   }
-  {
-    const {context,page}=await fresh({browser:true});try{
-      const r=await page.evaluate(async()=>{const t=Sona.speechTurn({sound:'R',word:'rabbit',level:'word'});return [t.active,t.required,await t.ready,await t.finish()];});
-      ok('browser does not pretend to recognize a word',JSON.stringify(r)==='[false,false,true,"unknown"]',r);
+  for(const cfg of [{browser:true},{missing:true}]){
+    const {context,page}=await fresh(cfg);try{
+      const r=await page.evaluate(async()=>{const t=Sona.speechTurn({sound:'R',word:'rabbit',level:'word'});return {native:Sona.isNativeApp(),active:t.active,required:t.required,ready:await t.ready,result:await t.finish(),events:__wc.events};});
+      const label=cfg.browser?'a browser':'an iPhone shell without the speech bridge';
+      ok(label+' can use sound-shape listening without a word transcript',r.native===!!cfg.missing&&!r.active&&!r.required&&r.ready&&r.result==='unknown'&&r.events.length===0,r);
     }finally{await context.close();}
   }
   {

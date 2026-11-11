@@ -7,14 +7,16 @@ it never falls back to Apple's servers. That is what keeps "no audio ever
 leaves the device" true as a mechanism, not a promise.
 
 The plugin returns **raw transcripts only**. The web code checks them in
-`sona.js` (`hearVerdict`). On the iPhone app, Practice words and sentences,
+`sona.js` (`hearVerdict`). In iPhone builds with SonaSpeech, Practice words and sentences,
 picture games, word cards, and the words in books and stories require a fresh
 on-device transcript for each saying. A voiced attempt earns credit when it
 matches the prompted word or an existing accepted close form. The check sends
 no vocabulary hint to Apple and uses the position of the word actually shown,
 including blends in a Mixed pool. Wrong, empty, or unavailable results earn
 no word credit. Bare sounds and syllables keep the shape fallback when the
-transcript is unclear, and the website continues to use its sound-shape check.
+transcript is unclear. The website and iPhone builds that lack SonaSpeech
+use the existing sound-shape check. Those builds gain word verification when
+an App Store update bundles SonaSpeech.
 
 Since 12 Oct 2026 the same plugin also **owns the microphone in the iPhone
 app**: `micPermission`, `micOpen` and `micClose`. See "Sona's own microphone"

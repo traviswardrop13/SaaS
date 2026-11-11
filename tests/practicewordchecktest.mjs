@@ -1,4 +1,5 @@
-// Actual iPhone practice: every credited word needs a fresh local transcript.
+// Actual iPhone practice: an installed speech bridge checks each word locally.
+// An older shell without the bridge still listens for the sound's shape.
 // SONATEST_BASE_REF=<pre-fix commit> serves that commit's practice/sona sources.
 // SONATEST_CHARGE_SOURCE=<saved page> isolates a practice-page regression.
 import {createServer} from 'node:http';
@@ -29,7 +30,7 @@ async function fresh(cfg={}){
   const context=await browser.newContext({viewport:{width:390,height:844},reducedMotion:'reduce'});
   await context.route('**/*',r=>r.request().url().startsWith(origin+'/')?r.continue():r.abort());
   await context.addInitScript(fakeDevice,{micok:true,voiceOn:false,soundOn:false,volume:0});
-  await context.addInitScript(nativeMic,{mode:'old',world:false,audit:false,text:'taco',speech:cfg.available!==false});
+  await context.addInitScript(nativeMic,{mode:cfg.bridge===false?'none':'old',world:false,audit:false,text:'taco',speech:cfg.available!==false});
   const sound=cfg.blendLevel?'S':'R', level=cfg.blendLevel||'word';
   await context.addInitScript(({sound,level})=>{
     // Use the real homework path to choose one bank word at its actual position.
@@ -47,6 +48,31 @@ async function fresh(cfg={}){
 async function burst(page,text){await page.evaluate(t=>{__nm.cfg.text=t;__quiet.voice=true;},text);await advance(page,400);await page.evaluate(()=>{__quiet.voice=false;});await advance(page,1300);}
 const state=page=>page.evaluate(()=>({reps,stored:Sona.dayReps(),target:ITEM.word,prompt:ITEM.t,pos:ITEM.pos,starts:__nm.starts.length,recognizing:__nm.recognizing,turn:document.getElementById('turnStatus').textContent}));
 try{
+  {
+    const {context,page,errors,ready}=await fresh({bridge:false});try{
+      const olderApp=await page.evaluate(()=>Sona.isNativeApp()&&!Capacitor.Plugins.SonaSpeech);
+      ok('an older iPhone app without the speech bridge opens word practice',olderApp&&ready,await state(page));
+      await advance(page,1000);
+      const silent=await state(page);
+      ok('silence earns nothing in the older app',silent.reps===0&&silent.stored===0,silent);
+      await page.evaluate(()=>{NEED=1;__quiet.voice=true;});
+      await advance(page,400);
+      await page.evaluate(()=>{__quiet.voice=false;});
+      // Read the completed practice rep before the game handoff navigates.
+      const credited=await until(page,()=>Sona.dayReps()===1,1000);
+      const heard=await state(page);
+      ok('one voiced saying earns a rep by sound shape in the older app',credited&&heard.reps===1&&heard.starts===0&&!heard.recognizing&&errors.length===0,{heard,errors});
+    }finally{await context.close();}
+  }
+  {
+    const {context,page,errors,ready}=await fresh({available:false});try{
+      const unavailable=await page.evaluate(()=>Sona.isNativeApp()&&!!Capacitor.Plugins.SonaSpeech);
+      const retry=await page.locator('#quietGo').isVisible();
+      await burst(page,'rabbit');
+      const heard=await state(page);
+      ok('an installed bridge with unavailable recognition offers a retry and earns nothing',unavailable&&!ready&&retry&&heard.reps===0&&heard.stored===0&&heard.starts===0&&errors.length===0,{heard,errors});
+    }finally{await context.close();}
+  }
   {
     const {context,page,errors,ready}=await fresh();try{
       ok('actual native word practice opens',ready,await state(page));
