@@ -4095,6 +4095,72 @@ said at a set moment).
     button's picture. **For Rachel:** nothing a child says changes.
   `traintest` plays it (parts `rebuild`, `main`, `ladder`, `keyboard`,
   `fit`).
+- **Birthday Cake, rebuilt (11 Nov 2026, Travis: "build the rest", the
+  last of group 3).** `public/cake.js`, `arcade-cake.html`, `cake.css`.
+  - **The word starts the step and nothing else.** Until then it also
+    switched on ten seconds of cooking power (a faster spoon, a wider tin,
+    a bigger icing tip, stronger magnets), so the steps nearly cooked
+    themselves. The Cooking help pill's word still gives it, and the miss
+    ladder still does.
+  - **A new party every round** (`newParty`, never repeating the round
+    before's buddy, fruit tray or swirl pattern): one of the eleven buddies
+    with a sitting picture has a birthday and sits left of the tray row in
+    the shop's party hat (`HAT_AT` sets it on each head); their age, 3, 4 or
+    5, is how many candles go on; three of Fruit Slice's nine fruits are on
+    the tray; the six swirls come in one of four patterns
+    (`ICE_PATTERNS`); three of five icing colours (`ICE_COLORS`, never
+    orange) sit in pots on the tray, and a tap fills the bag with one (a
+    finished swirl keeps its colour). The start banner is "Bake a cake for
+    <name>!" and the end card "Happy birthday, <name>!" (the page's
+    `Cake.onParty`). No new art: a drawn party garland across the kitchen,
+    a drawn metal tin and piped rosettes.
+  - **The candles come from one box** (`#cakeCandles`, each its own
+    colour), light as they go on, and the last one finishes the step. **The
+    paper fan is gone:** in the finale the birthday buddy blows them out,
+    one by one, with a puff of smoke.
+  - **Echo explains each step once a visit** (`told`, as Build a Snowman
+    does), in shorter lines; the opening line no longer mentions Cooking
+    help. "Hear what to do" still says the step's line on a tap.
+  - **Travis's to change:** the buddies, ages, fruit, patterns and colours,
+    the banner and end card words. **For Rachel:** nothing a child says
+    changes; Echo's five directions are reworded shorter and said once a
+    visit.
+  `caketest` plays it (parts `rebuild`, `main`, `struggle`, `help`,
+  `keyboard`, `fit`).
+- **The next batch (Travis, 11 Nov 2026: "start the next batch of games"):**
+  Space Trip, Bedtime Stars, Pizza Chef, Treasure Map, Balloon Party, one at
+  a time, the same way.
+- **Space Trip, rebuilt (11 Nov 2026, Travis: "yes build space trip").**
+  `public/space.js`, `arcade-space.html`, `space.css`.
+  - **The word starts the flight and nothing else.** Until then it also
+    switched on ten seconds of Easy flight (a lighter pull, gentler
+    landings), so the first landings nearly did themselves. The Easy flight
+    button's word still gives it, and the miss ladder still does. Its ten
+    seconds now count down only while the rocket flies, never while it
+    waits. The first two flights pull a little less (`GRAVITY`).
+  - **A trip to eight planets, new every round** (`WORLDS`, `newTrip`): the
+    Moon and the Mint, Candy, Ice, Purple, Sandy, Blue and Rainbow Planets,
+    each the moon ground painted in its colour on the phone (no new art),
+    its colour glowing up from the ground, and its own pull (0.85 to 1.15
+    of the stage's; the first two flights never pull harder). A new order
+    every round, never starting on the last round's first planet. Every pad
+    sits somewhere new (the first near the middle, each next at least a
+    fifth of the screen from the last); the rocks keep their place along the
+    way from the start to the pad (`ROCKS`), so each stage is the challenge
+    it was. A landing says "You landed on the Ice Planet!".
+  - **A clean screen.** The "Ready to fly / Nice and gentle" box is gone:
+    the pad, now a thick platform in a glow, has a beacon on each end that
+    lights teal while the rocket is slow enough to land (and on the pad
+    once landed). The top bar's dots are the trip's planets, each filling in
+    its colour as it is landed on.
+  - **Echo's opening words are shorter**: "Say each word two times to start
+    a flight. Then land on each planet."
+  - **The finale:** the eight planets of the trip come out across the sky
+    in the order they were visited (all at once under Reduce Motion). The
+    end card: "What a space trip!" / "Eight planets, landed by you."
+  - **Travis's to change:** the planets, their colours and pulls, the
+    words. **For Rachel:** nothing a child says changes.
+  `spacetest` plays it (part `rebuild`, and the landings in `main`).
 - **Bedtime Stars, rebuilt (11 Nov 2026, Travis: "yes build bedtime
   stars").** `public/stars.js`, `arcade-stars.html`, `stars.css`.
   - **The word starts the picture and nothing else.** Until then it also

@@ -144,7 +144,7 @@ const SUITES = [
   "flowertest.mjs", // FLOWER1: actual poured drops grow a plant, speech widens the shower, progress survives help
   "castletest.mjs", // CASTLE1: real crane and lowering controls, speech steadies the rope, eight architectural placements
   "pizzatest.mjs", // PIZZA1: rolling, real coverage, topping drags, controlled baking, cuts and owned step instructions
-  "spacetest.mjs", // SPACE1: real thrust, steering and soft touchdowns, speech eases gravity without autopiloting
+  "spacetest.mjs", // SPACE2: real thrust, steering and soft touchdowns on eight planets; the word brings the flight and nothing else
   "monstertest.mjs", // MONSTER1: real salon gestures, persistent styling and speech-assisted tools
   "rocketblasttest.mjs", // ROCKET1: pull-and-release physics, five real planet arrivals, speech-widened landing rings
   "snowmantest.mjs", // SNOWMAN1: real snow rolling and stacking, the child's own hat and neck, Echo once a visit, the see-through demo
@@ -155,7 +155,7 @@ const SUITES = [
   "peekabootest.mjs", // PEEK1: Peekaboo on the Say & Play engine: the word hides the picture, a wrong door glows the right one, silence never finds it
   "fishtanktest.mjs", // FISHTANK1: hand-released sinking food, moving mouth catches and speech-calmed swimming
   "giftstest.mjs", // GIFTS1: five physical unwrapping mechanisms and speech-assisted handles
-  "caketest.mjs", // CAKE1: real circular mixing, caught batter, piping, custom fruit and manually fanned candles
+  "caketest.mjs", // CAKE2: real circular mixing, caught batter, piping in picked colours, custom fruit, a new birthday buddy and their candles every round
   "balloonpartytest.mjs", // BALLOON1: real pump strokes and guided garland deliveries, speech power and quiet turns
   "robottest.mjs", // ROBOT1: rotate real circuits, speech blueprints, eight assembled parts
   "treasuretest.mjs", // drawn sailing routes, solid islands, speech-calmed currents and a real treasure finish
