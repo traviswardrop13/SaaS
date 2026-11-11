@@ -34,7 +34,12 @@
   <script>
     // ages 2 to 4 get the gentler help ladder (pizza.js says what it does)
     try{if(window.Pizza&&Pizza.setLittle&&window.Sona&&Sona.playStyle)Pizza.setLittle(Sona.playStyle()==="simple");}catch(e){}
-    SayPlay.start({key:"pizza",title:"Pizza Chef",intro:"Say each word two times to start the next step. Then your hands make the pizza! Tap Chef power for extra help.",steps:[[],[],[],[],[],[],[],[]],finale:[],done:{title:"Pizza's ready!",sub:"You rolled, topped, baked and sliced it yourself."},play:window.Pizza});
+    var GAME={key:"pizza",title:"Pizza Chef",intro:"Say each word two times to start the next step. Then your hands make the pizza!",steps:[[],[],[],[],[],[],[],[]],finale:[],done:{title:"Pizza's ready!",sub:"You rolled, topped, baked and sliced it yourself."},play:window.Pizza};
+    // the end card names the silly topping (the last word said on the
+    // toppings, as a picture): "A rocket pizza!" (an older cached pizza.js
+    // has no onSilly, and the card keeps its plain title)
+    if(window.Pizza&&Pizza.onSilly)Pizza.onSilly(function(w){GAME.done.title=w?(/^[aeiou]/.test(w)?"An ":"A ")+w+" pizza!":"Pizza's ready!";});
+    SayPlay.start(GAME);
     if(!document.body.hidden){try{Sona.track("game opened",{game:"pizza"});}catch(e){}}
   </script>
 </body>

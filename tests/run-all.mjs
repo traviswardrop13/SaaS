@@ -143,7 +143,7 @@ const SUITES = [
   "racecartest.mjs", // real steering, brakes, speech slow-road powers, eight pit stops, fit and interruption safety
   "flowertest.mjs", // FLOWER1: actual poured drops grow a plant, speech widens the shower, progress survives help
   "castletest.mjs", // CASTLE1: real crane and lowering controls, speech steadies the rope, eight architectural placements
-  "pizzatest.mjs", // PIZZA1: rolling, real coverage, topping drags, controlled baking, cuts and owned step instructions
+  "pizzatest.mjs", // PIZZA2: rolling, real coverage, topping drags on moving spots, the word as the last topping, controlled baking, cuts; the word starts the step and nothing else
   "spacetest.mjs", // SPACE2: real thrust, steering and soft touchdowns on eight planets; the word brings the flight and nothing else
   "monstertest.mjs", // MONSTER1: real salon gestures, persistent styling and speech-assisted tools
   "rocketblasttest.mjs", // ROCKET1: pull-and-release physics, five real planet arrivals, speech-widened landing rings
