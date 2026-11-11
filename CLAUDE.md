@@ -4095,6 +4095,37 @@ said at a set moment).
     button's picture. **For Rachel:** nothing a child says changes.
   `traintest` plays it (parts `rebuild`, `main`, `ladder`, `keyboard`,
   `fit`).
+- **Bedtime Stars, rebuilt (11 Nov 2026, Travis: "yes build bedtime
+  stars").** `public/stars.js`, `arcade-stars.html`, `stars.css`.
+  - **The word starts the picture and nothing else.** Until then it also
+    switched on ten seconds of a wide glowing path. The Glowing path
+    button's word still gives it, and the miss ladder still does.
+  - **Twelve pictures, five a round** (`ALL`, `plan`): tent, flag, kite
+    (3-4 lines), house, boat, rocket, mountain, star (5), fish, heart, cat,
+    crown (6-7). A round is two easy, two middle and one big, the fewest
+    lines first, and a picture this child has never drawn comes before one
+    they have. The fish is a real fish now (a body and a tail; it was a
+    paper dart). Every point keeps clear of the box's edges, where the
+    finished pictures wait.
+  - **Each picture is a surprise.** Nothing names it before its last line:
+    Echo no longer says "Let's make a kite", the banner says "Follow the
+    stars. What will it be?", and the strip at the top shows a picture
+    still to draw as a dim star. On its last line it lights up and its
+    little details appear (the fish's eye, the cat's whiskers, a door).
+  - **Echo says how to draw once a visit** (`HOWTO`, on the first picture
+    and on "Hear what to do"); the help lines after a slip stay.
+  - **The child's sky** (`sona.stars.v1`, a per-child key the page keeps
+    through `Stars.setup`, as Rocket Blast's planets): every picture drawn
+    is kept at once. The start and end cards show all twelve, the ones drawn
+    in gold, the rest faint (this round's new ones ringed on the end card),
+    named in the label, never counted. The end card says "You drew a
+    heart!" for one new picture, "New pictures for your sky!" for more.
+  - **Kept as it was:** finished pictures stay in the sky, and all five
+    gather at the end.
+  - **Travis's to change:** the pictures, the round's shape, the words.
+    **For Rachel:** nothing a child says changes; Echo says one line less
+    per picture.
+  `bedtimestarstest` plays it (part `rebuild`, and every picture in `fit`).
 - **The voice-line list is in the battery since 9 Nov 2026**
   (`voicedoctest` in `run-all`): `VOICE_SCRIPT.md` lists every line Echo can
   say with where it is said, so a change that moves such a line must run

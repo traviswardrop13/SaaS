@@ -151,7 +151,7 @@ const SUITES = [
   "voicedoctest.mjs", // VOICEDOC1: every line Echo can say is in VOICE_SCRIPT.md and the checker can still read each page (it was out of the battery, so a moved line broke it unseen, 5-9 Nov 2026)
   "traintest.mjs", // TRAIN1: held driving, real station stops and hand-placed passengers, speech-slowed travel
   "puppytest.mjs", // PUPPY1: moving fur patches washed only by real water particles, speech-steadied puppy
-  "bedtimestarstest.mjs", // STARS1: continuous constellation tracing, real wider speech path and preserved connections
+  "bedtimestarstest.mjs", // STARS2: continuous constellation tracing; five of twelve surprise pictures a round, kept for the child; the word starts the picture and nothing else
   "peekabootest.mjs", // PEEK1: Peekaboo on the Say & Play engine: the word hides the picture, a wrong door glows the right one, silence never finds it
   "fishtanktest.mjs", // FISHTANK1: hand-released sinking food, moving mouth catches and speech-calmed swimming
   "giftstest.mjs", // GIFTS1: five physical unwrapping mechanisms and speech-assisted handles
