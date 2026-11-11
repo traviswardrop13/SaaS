@@ -19,15 +19,16 @@
       <span id="spacer"></span>
       <span class="hudpill" id="dots" role="img" aria-label="0 of 5"></span>
     </div>
-    <canvas id="cakeCanvas" role="img" aria-label="Your birthday kitchen. Say each word two times for the next step, then cook it with your hands."></canvas>
+    <canvas id="cakeCanvas" role="img" aria-label="A birthday kitchen. Say each word two times for the next step, then bake it with your hands."></canvas>
     <div id="cakeBanner" role="status" aria-live="polite">Say the word to bake!</div>
     <button id="cakeTool" class="cake-grip" type="button" disabled aria-label="Pick up this kitchen tool. Hold and move it. Keyboard: Space picks up, arrows move, Space releases. Shift makes smaller steps." aria-pressed="false"></button>
     <button id="cakeFruit0" class="cake-grip cake-fruit" type="button" disabled hidden aria-label="Choose a strawberry. Drag it to the cake. Keyboard: Space picks up, arrows move, Space places."></button>
     <button id="cakeFruit1" class="cake-grip cake-fruit" type="button" disabled hidden aria-label="Choose a kiwi. Drag it to the cake. Keyboard: Space picks up, arrows move, Space places."></button>
     <button id="cakeFruit2" class="cake-grip cake-fruit" type="button" disabled hidden aria-label="Choose grapes. Drag them to the cake. Keyboard: Space picks up, arrows move, Space places."></button>
-    <button id="cakeCandle0" class="cake-grip" type="button" disabled hidden aria-label="First candle. Drag it to a glowing shape. Keyboard: Space picks up, arrows move, Space places."></button>
-    <button id="cakeCandle1" class="cake-grip" type="button" disabled hidden aria-label="Second candle. Drag it to a glowing shape. Keyboard: Space picks up, arrows move, Space places."></button>
-    <button id="cakeCandle2" class="cake-grip" type="button" disabled hidden aria-label="Third candle. Drag it to a glowing shape. Keyboard: Space picks up, arrows move, Space places."></button>
+    <button id="cakeCandles" class="cake-grip cake-fruit" type="button" disabled hidden aria-label="The candle box. Drag a candle to a glowing shape. Keyboard: Space picks up, arrows move, Space places."></button>
+    <button id="cakeIce0" class="cake-grip cake-fruit cake-pot" type="button" disabled hidden aria-pressed="false" aria-label="Icing colour"></button>
+    <button id="cakeIce1" class="cake-grip cake-fruit cake-pot" type="button" disabled hidden aria-pressed="false" aria-label="Icing colour"></button>
+    <button id="cakeIce2" class="cake-grip cake-fruit cake-pot" type="button" disabled hidden aria-pressed="false" aria-label="Icing colour"></button>
     <div id="cakeControls">
       <button id="cakeHearStep" class="cream-pill" type="button" disabled aria-label="Hear what to do in this step"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4Zm12 0a5 5 0 0 1 0 6m3-9a9 9 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
       <button id="cakeHelp" class="act-pill" type="button" disabled aria-label="Extra help: say it again for easier tools"><img src="/assets/crafted/echo-wave.webp" alt=""><span class="cake-help-label"><span>Cooking help</span><span id="cakePower" hidden><i id="cakePowerFill"></i></span></span></button>
@@ -48,7 +49,7 @@
   <div class="ovl" id="startOvl">
     <div class="ovlCard">
       <img class="cake-intro" src="/assets/crafted/home-cake.webp" alt="A painted birthday kitchen"><h2 id="startTitle">Birthday Cake</h2>
-      <p>Say each word two times to start each cooking step.</p><p>Then stir, pour and decorate your cake!</p>
+      <p>Say each word two times to start each cooking step.</p><p>Then bake a birthday cake for a friend!</p>
       <p class="small" id="startSound"></p>
       <button id="startBtn" class="act-pill"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15a1 1 0 0 0 1.5.9l12-7.5a1 1 0 0 0 0-1.8l-12-7.5A1 1 0 0 0 7 4.5Z" fill="#fff"/></svg><span>Let's bake</span></button>
     </div>
@@ -85,7 +86,12 @@
   <script>
     // ages 2 to 4 get the gentler help ladder (cake.js says what it does)
     try{if(window.Cake&&Cake.setLittle&&window.Sona&&Sona.playStyle)Cake.setLittle(Sona.playStyle()==="simple");}catch(e){}
-    SayPlay.start({key:"cake",title:"Birthday Cake",intro:"Say each word two times to start each cooking step. Then your hands make the cake! Tap Cooking help for extra help.",steps:[[],[],[],[],[]],finale:[],done:{title:"Happy birthday, little baker!",sub:"A cake you made, just your way."},play:window.Cake});
+    var GAME={key:"cake",title:"Birthday Cake",intro:"Say each word two times to start each cooking step. Then bake the cake!",steps:[[],[],[],[],[]],finale:[],done:{title:"Happy birthday, little baker!",sub:"A cake you made, just your way."},play:window.Cake};
+    // each round is a buddy's birthday (cake.js picks one); the end card
+    // names them (a cake.js the phone saved before CAKE2 has no onParty and
+    // keeps the old title)
+    if(window.Cake&&Cake.onParty)Cake.onParty(function(p){GAME.done.title="Happy birthday, "+p.name+"!";});
+    SayPlay.start(GAME);
     if(!document.body.hidden){try{Sona.track("game opened",{game:"cake"});}catch(e){}}
   </script>
 </body>

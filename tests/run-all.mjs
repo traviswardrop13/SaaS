@@ -155,7 +155,7 @@ const SUITES = [
   "peekabootest.mjs", // PEEK1: Peekaboo on the Say & Play engine: the word hides the picture, a wrong door glows the right one, silence never finds it
   "fishtanktest.mjs", // FISHTANK1: hand-released sinking food, moving mouth catches and speech-calmed swimming
   "giftstest.mjs", // GIFTS1: five physical unwrapping mechanisms and speech-assisted handles
-  "caketest.mjs", // CAKE1: real circular mixing, caught batter, piping, custom fruit and manually fanned candles
+  "caketest.mjs", // CAKE2: real circular mixing, caught batter, piping in picked colours, custom fruit, a new birthday buddy and their candles every round
   "balloonpartytest.mjs", // BALLOON1: real pump strokes and guided garland deliveries, speech power and quiet turns
   "robottest.mjs", // ROBOT1: rotate real circuits, speech blueprints, eight assembled parts
   "treasuretest.mjs", // drawn sailing routes, solid islands, speech-calmed currents and a real treasure finish
