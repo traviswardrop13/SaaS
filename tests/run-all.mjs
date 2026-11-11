@@ -144,7 +144,7 @@ const SUITES = [
   "flowertest.mjs", // FLOWER1: actual poured drops grow a plant, speech widens the shower, progress survives help
   "castletest.mjs", // CASTLE1: real crane and lowering controls, speech steadies the rope, eight architectural placements
   "pizzatest.mjs", // PIZZA1: rolling, real coverage, topping drags, controlled baking, cuts and owned step instructions
-  "spacetest.mjs", // SPACE1: real thrust, steering and soft touchdowns, speech eases gravity without autopiloting
+  "spacetest.mjs", // SPACE2: real thrust, steering and soft touchdowns on eight planets; the word brings the flight and nothing else
   "monstertest.mjs", // MONSTER1: real salon gestures, persistent styling and speech-assisted tools
   "rocketblasttest.mjs", // ROCKET1: pull-and-release physics, five real planet arrivals, speech-widened landing rings
   "snowmantest.mjs", // SNOWMAN1: real snow rolling and stacking, the child's own hat and neck, Echo once a visit, the see-through demo
