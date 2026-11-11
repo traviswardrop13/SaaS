@@ -91,6 +91,11 @@
 //              (sona.offerseen.v1) unset on a set-up seed, so Home opens
 //              the plan screen once (homeoffertest). Every other set-up
 //              seed carries it, as every seed carries the era stamps
+//   freeDay    true: leave the "free day already had" mark (sona.freeday.v1)
+//              unset, so the first X on a priced card opens the free day
+//              (FREEDAY1, freedaytest). Every other seed carries a used free
+//              day whose offer-after is spent, so its X goes to a locked
+//              Home as before
 //   safeArea   { top, bottom }: px swapped in for env(safe-area-inset-*) in
 //              every served .html and .css (desktop Chromium reports zero)
 //   sellYearly true: serve a sona.js with IAP_SELL_YEARLY on, so the yearly
@@ -417,6 +422,10 @@ export function phone(cfg) {
   // era stamps are: a set-up seed without it is the stuck household and
   // Home opens the plan screen. homeoffertest asks for that with homeOffer.
   if ((live.setUp || many) && !live.homeOffer) once("sona.offerseen.v1", "1");
+  // FREEDAY1 (11 Nov 2026): this phone's one free day already had, and the
+  // offer after it already shown, as the era stamps are. freedaytest asks for
+  // a phone that never had one with freeDay.
+  if (!live.freeDay) once("sona.freeday.v1", JSON.stringify({ start: 1, after: "1" }));
   if (live.slp) once("sona.slpok", "1");
   if (live.webSells) sessionStorage.setItem("sona.websalesui", "1");
   // …and the ones written once per context: a test that clears one (a marker

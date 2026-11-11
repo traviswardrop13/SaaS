@@ -76,6 +76,9 @@ const EVENTS = new Set([
   // its days had play, for /leads.html; no name, sound or count.
   "free trial started",
   "played today",
+  // FREEDAY1 (11 Nov 2026): the X on the price screen opened the one free
+  // day on this phone ({ surface }: which door the price was opened from).
+  "free day started",
 ]);
 // `plan` and `surface` join the list for the events above, and `level` (2 or
 // 3) for "level played". Still no name, no age, no email, no word a child
