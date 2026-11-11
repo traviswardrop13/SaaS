@@ -2,9 +2,20 @@
    waiting friend through the coach door. SayPlay owns all speech and audio.
 
    THE WORD EARNS THE TRIP; THE FINGER DRIVES AND BOARDS. Saying the word
-   (two times) starts each trip. The finger then holds Forward, lets go by
-   the friend, and drags the friend into the door. The optional "Easy stops"
-   word adds ten seconds of slower driving and wider stops on top.
+   (two times) starts each trip, and nothing else (10 Nov 2026, the game
+   audit's rebuild: it used to switch on ten seconds of Easy stops too, a
+   slower train and a wider stop, so the stopping nearly did itself). The
+   finger then holds Forward, lets go by the friend, and drags the friend
+   into the door. The optional "Easy stops" word still adds ten seconds of
+   slower driving and wider stops on top.
+
+   A NEW RIDE EVERY ROUND (10 Nov 2026): the five friends waiting are picked
+   by chance from the eleven buddies with a sitting picture, and the stops
+   are nearer or farther each round (GAPS), so the child judges when to let
+   go. ONE MESSAGE: the banner at the top says what to do right now ("Let go
+   now!"); the second bubble in the corner, which often said something else,
+   is gone, and the drive button is a picture of the train with an arrow, not
+   the word "Forward", for children who cannot read yet.
 
    EVERY TRIP ENDS WITH A FRIEND ABOARD, with no speech needed (the Hoops
    rule). Each trip counts its misses: driving out past the friend, stopping
@@ -35,7 +46,14 @@
   var door = { x: 0.5, y: 0.55, w: 0.15, h: 0.1 }, friendHome = { x: 1.25, y: 0.5 }, passenger = { x: 1.25, y: 0.5 }, friendW = 54, friendH = 72;
   var forwardOwner = null, backOwner = null, passengerOwner = null, forwardSurface = null, backSurface = null, passengerSurface = null, held = false, keyboardPassenger = false, dragAssist = null, grab = { x: 0, y: 0 }, misses = 0, art = {};
   var keys = { forward: false, back: false }, STOPS = [1, 2.05, 3.10, 4.15, 5.20], FRIENDS = ["bunny", "cat", "lion", "penguin", "frog"], POWER = 10;
-  var BOUNDS = [[137,31,387,476],[89,31,423,478],[58,31,455,477],[97,31,425,476],[73,31,445,475]];
+  // every buddy with a sitting picture, and where it is drawn in its 512 px
+  // square (measured from the picture's own see-through edge)
+  var BUDDY_BOX = { bunny: [137,31,387,476], cat: [89,31,423,478], lion: [58,31,455,477], penguin: [97,31,425,476], frog: [73,31,445,475],
+    bee: [50,30,462,476], dino: [106,31,406,480], dragon: [88,30,434,479], octopus: [47,30,475,477], panda: [74,31,437,478], unicorn: [95,30,417,480] };
+  var ALL_FRIENDS = Object.keys(BUDDY_BOX), BOUNDS = FRIENDS.map(function (f) { return BUDDY_BOX[f]; });
+  // the first stop and the gaps after it, in board widths: never so short a
+  // child cannot get going, never so long the trip drags
+  var FIRST = [0.7, 0.95], GAPS = [0.8, 1.4], START = 0.25, tripFrom = START;
   var TRAIN_DOOR = { x: 0.52065, y: 0.49875, w: 0.1145, h: 0.3569 }, WINDOW = { x: 0.097, y: 0.345, w: 0.296, h: 0.215 }, WHEELS = [[0.121,0.782,0.046],[0.533,0.782,0.046],[0.746,0.782,0.046],[0.877,0.782,0.046]];
   // the help ladder (see the top of this file)
   var SPEED = [0.58, 0.36, 0.29, 0.29], BERTH = [0.08, 0.12, 0.18, 0.20], SAFE = [0.025, 0.04, 0.06, 0.08], DOOR_K = [1, 1.5, 2.25, 2.5], COAST = [0, 0.35, 0.6, 99];
@@ -44,6 +62,15 @@
   var clock = 0, doneAt = 0, cheerAt = -9, lastMiss = "";
   var $ = function (id) { return document.getElementById(id); };
   function clamp(n, lo, hi) { return Math.max(lo, Math.min(hi, n)); }
+  function between(r) { return r[0] + Math.random() * (r[1] - r[0]); }
+  // a new round: five friends by chance, and stops at new distances
+  function newRide() {
+    var pool = ALL_FRIENDS.slice(), picked = [];
+    while (picked.length < 5 && pool.length) picked.push(pool.splice(Math.min(pool.length - 1, Math.floor(Math.random() * pool.length)), 1)[0]);
+    FRIENDS = picked; BOUNDS = FRIENDS.map(function (f) { return BUDDY_BOX[f]; });
+    var at = START + between(FIRST); STOPS = [];
+    for (var n = 0; n < 5; n++) { STOPS.push(+at.toFixed(3)); at += between(GAPS); }
+  }
   function canPlay() { return active && !paused && !away && !won && !document.hidden; }
   function ladder() {
     var m = stageMisses, t = tryTime, byMiss = little ? (m >= 2 ? 3 : m >= 1 ? 2 : 0) : Math.min(3, m);
@@ -51,6 +78,10 @@
     return Math.max(byMiss, byTime);
   }
   function waiting() { return active && !won && boarded === stage; }
+  // how far back the train may go on this trip: a little behind the friend,
+  // and never in front of where the trip began (a long gap used to jump the
+  // train forward to there the moment the trip started)
+  function lowEnd() { return Math.max(0, Math.min(STOPS[stage] - 0.9, tripFrom - 0.05)); }
   function maxSpeed() { var s = SPEED[ladder()]; return power > 0 ? Math.min(s, 0.36) : s; }
   function berth() { return dragAssist ? dragAssist.berth : Math.max(BERTH[ladder()], power > 0 ? 0.14 : 0); }
   function safeSpeed() { return dragAssist ? dragAssist.safeSpeed : Math.max(SAFE[ladder()], power > 0 ? 0.045 : 0); }
@@ -60,23 +91,38 @@
   function guide() { return waiting() && ladder() >= 2; }
   // which way the friend is, for the arrow and the glowing button
   function towards() { var d = STOPS[stage] - position; return Math.abs(d) <= berth() ? 0 : d > 0 ? 1 : -1; }
-  function banner(text) { if ($("trainBanner").textContent !== text) $("trainBanner").textContent = text; }
-  // The banner follows the step (the status pill says the moment). It used
-  // to keep "Hold Forward. Let go by our friend" after the train had stopped
-  // by the friend, under a pill saying "All aboard!". Now, when the train
-  // comes to rest by the friend it says to drag them in, and when the child
-  // drives off again before boarding it says to drive. Only on a change,
-  // so a miss's own kind words stay until the next one.
-  var atFriend = false;
-  function stepBanner() {
+  // ONE MESSAGE (10 Nov 2026). The banner is the only words on the board:
+  // while a trip waits it says what to do right now (liveText), and a moment
+  // of its own (a miss's kind words, "All aboard!") shows for NOTE_S first.
+  // There was a second bubble in the corner saying the moment ("Let go
+  // now!") while this one said the step, and the two often disagreed.
+  // A note gives way sooner when the child moves on: a new press on a drive
+  // button, or the train coming to rest by the friend.
+  var NOTE_S = 2, noteUntil = -9, wasReady = false;
+  function banner(text, note) { if (note) noteUntil = clock + NOTE_S; if ($("trainBanner").textContent !== text) $("trainBanner").textContent = text; }
+  function liveText() {
+    if (held) return "Into the glowing door!";
+    if (canBoard()) return ladder() >= 2 ? "Follow the arrow into the door" : "Drag our friend into the door";
+    var d = STOPS[stage] - position, b = berth(), moving = Math.abs(velocity) > 0.01, back = d < 0;
+    // held by the friend (level 3 drives there by itself): only letting go is left
+    if (driving() && Math.abs(d) <= b && !moving) return "Let go now!";
+    if (moving) {
+      // going away from the friend: stop, then the other way
+      if (d * velocity < 0 && Math.abs(d) > b) return velocity > 0 ? "Let go, then hold Back" : "Let go, then hold Forward";
+      // a release right now would stop by the friend: say so
+      if (velocity * velocity / (2 * brake) >= Math.abs(d) - b || Math.abs(d) <= b) return "Let go now!";
+    }
+    if (ladder() >= 2) return "Follow the arrow, then let go";
+    return back ? "Hold Back. Let go by our friend" : "Hold Forward. Let go by our friend";
+  }
+  function liveBanner() {
     if (!canPlay() || !waiting()) return;
-    var ready = canBoard(); if (ready === atFriend) return; atFriend = ready;
-    if (ready) { if (!held) banner(ladder() >= 2 ? "Follow the arrow into the door" : "Drag our friend into the door"); }
-    else if (driving()) banner(backOwner !== null || keys.back ? "Hold Back. Let go by our friend" : "Hold Forward. Let go by our friend");
+    var ready = canBoard(); if (ready && !wasReady) noteUntil = -9; wasReady = ready;
+    if (clock >= noteUntil) banner(liveText());
   }
   function image(name) { var i = art[name]; return i && i.complete && i.naturalWidth ? i : null; }
   function loadArt() {
-    [["bg", "/assets/crafted/game/train-countryside-v1.webp"], ["train", "/assets/crafted/game/train-engine-coach-v1.webp"]].concat(FRIENDS.map(function (name) { return [name, "/assets/crafted/buddy-" + name + "-sit.webp"]; })).forEach(function (p) { var i = new Image(); i.onload = function () { if (p[0] === "train") fit(); else draw(); }; i.src = p[1]; art[p[0]] = i; });
+    [["bg", "/assets/crafted/game/train-countryside-v1.webp"], ["train", "/assets/crafted/game/train-engine-coach-v1.webp"]].concat(ALL_FRIENDS.map(function (name) { return [name, "/assets/crafted/buddy-" + name + "-sit.webp"]; })).forEach(function (p) { var i = new Image(); i.onload = function () { if (p[0] === "train") fit(); else draw(); }; i.src = p[1]; art[p[0]] = i; });
   }
   function updateGeometry() {
     camera = position - 0.5;
@@ -110,22 +156,8 @@
       door: { x: door.x, y: door.y, w: door.w, h: door.h, r: doorRadius(), baseR: Math.max(22, W * 0.065) / W }, held: held, owners: { forward: forwardOwner, back: backOwner, passenger: passengerOwner }, keys: { forward: keys.forward, back: keys.back }, keyboardPassenger: keyboardPassenger,
       dragAssist: dragAssist ? { berth: dragAssist.berth, safeSpeed: dragAssist.safeSpeed, radius: dragAssist.radius } : null, misses: misses, width: W, height: H,
       ladder: ladder(), stageMisses: stageMisses, tryTime: tryTime, little: little, guide: guide(), snap: waiting() && ladder() >= 3, coast: COAST[ladder()], towards: towards(), lastMiss: lastMiss, celebrating: doneAt > 0, clock: clock,
-      banner: $("trainBanner").textContent, status: $("trainStatusText").textContent,
+      banner: $("trainBanner").textContent, stops: STOPS.slice(), friends: FRIENDS.slice(), loaded: ALL_FRIENDS.filter(function (n) { return !!image(n); }), tripFrom: tripFrom, lowEnd: lowEnd(),
       train: { x: trainLeft / W, y: trainTop / H, w: trainW / W, h: trainH / H, wheelAngle: position / 0.035 }, coordinates: "screen positions normalized to canvas; world position, velocity, acceleration, berth and door radius use canvas width" };
-  }
-  function statusText() {
-    if (held) return "Into the door!";
-    if (canBoard()) return "All aboard!";
-    if (!waiting()) return "Find our friend";
-    var d = STOPS[stage] - position, b = berth();
-    // held by the friend (level 3 drives there by itself): only letting go is left
-    if (driving() && Math.abs(d) <= b && Math.abs(velocity) <= 0.01) return "Let go now!";
-    if (Math.abs(velocity) > 0.01) {
-      if (d * velocity < 0 && Math.abs(d) > b) return "Let go, then Back";
-      // a release right now would stop by the friend: say so
-      return velocity * velocity / (2 * brake) >= Math.abs(d) - b || Math.abs(d) <= b ? "Let go now!" : "Keep going";
-    }
-    return d < -b ? "Hold Back" : d > b ? "Hold Forward" : "Find our friend";
   }
   function hud() {
     if (!cv) return; var allowed = canPlay(), p = $("trainPassenger"), visible = passengerVisible(), g = guide() && !held && !canBoard(), dir = towards(); p.hidden = !visible; p.disabled = !allowed || !held && !canBoard(); p.style.left = passenger.x * W + "px"; p.style.top = passenger.y * H + "px"; p.style.width = Math.max(64, friendW + 12) + "px"; p.style.height = Math.max(64, friendH + 10) + "px"; p.setAttribute("aria-pressed", held ? "true" : "false");
@@ -135,8 +167,7 @@
     $("trainForward").classList.toggle("guide", g && dir > 0); $("trainBack").classList.toggle("guide", g && dir < 0);
     p.classList.toggle("guide", guide() && canBoard() && !held);
     $("trainPower").hidden = power <= 0; $("trainPowerFill").style.width = power / POWER * 100 + "%";
-    $("trainStatusText").textContent = statusText(); stepBanner();
-    $("trainLamp").className = canBoard() || held ? "ready" : ""; snapshot();
+    liveBanner(); snapshot();
   }
   function background() {
     var i = image("bg");
@@ -188,7 +219,7 @@
     var i = image(FRIENDS[index]), box = BOUNDS[index]; if (i) {
       var sx = faceOnly ? 40 : box[0], sy = faceOnly ? 20 : box[1], sw = faceOnly ? 432 : box[2] - box[0], sh = faceOnly ? 285 : box[3] - box[1], w = height * sw / sh;
       ctx.drawImage(i, sx, sy, sw, sh, x - w / 2, y - height / 2, w, height);
-    } else { ctx.save(); ctx.translate(x, y); ctx.fillStyle = ["#dfd4c7", "#c99778", "#d6b878", "#809ca4", "#9ebd88"][index]; ctx.beginPath(); ctx.ellipse(0, height * 0.12, height * 0.27, height * 0.32, 0, 0, Math.PI * 2); ctx.fill(); ctx.beginPath(); ctx.arc(0, -height * 0.12, height * 0.27, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = "#3e4145"; [-1, 1].forEach(function (side) { ctx.beginPath(); ctx.arc(side * height * 0.1, -height * 0.15, Math.max(2, height * 0.025), 0, Math.PI * 2); ctx.fill(); }); ctx.restore(); }
+    } else { ctx.save(); ctx.translate(x, y); ctx.fillStyle = ["#dfd4c7", "#c99778", "#d6b878", "#809ca4", "#9ebd88"][index % 5]; ctx.beginPath(); ctx.ellipse(0, height * 0.12, height * 0.27, height * 0.32, 0, 0, Math.PI * 2); ctx.fill(); ctx.beginPath(); ctx.arc(0, -height * 0.12, height * 0.27, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = "#3e4145"; [-1, 1].forEach(function (side) { ctx.beginPath(); ctx.arc(side * height * 0.1, -height * 0.15, Math.max(2, height * 0.025), 0, Math.PI * 2); ctx.fill(); }); ctx.restore(); }
   }
   function drawRiders(wx, wy, ww, wh) {
     // the newest rider hops for a moment when they climb aboard
@@ -213,7 +244,7 @@
   function draw() { if (!ctx) return; ctx.clearRect(0, 0, W, H); background(); platforms(); drawTrain(); drawPassenger(); guides(); }
   function pointerPoint(event) { var rect = cv.getBoundingClientRect(); return { x: (event.clientX - rect.left) / W, y: (event.clientY - rect.top) / H }; }
   // a press on Forward or Back starts a new stopping try (and the help clock)
-  function pressed() { if (waiting()) attemptOpen = true; powerArmed = true; }
+  function pressed() { if (waiting()) attemptOpen = true; powerArmed = true; noteUntil = -9; }
   function driveDown(event, forward) {
     if (!canPlay() || held || event.button !== undefined && event.button !== 0 || (forward ? forwardOwner : backOwner) !== null) return; event.preventDefault(); if (forward) { forwardOwner = event.pointerId; forwardSurface = event.currentTarget; } else { backOwner = event.pointerId; backSurface = event.currentTarget; } try { event.currentTarget.setPointerCapture(event.pointerId); } catch (e) {} pressed(); hud();
   }
@@ -221,7 +252,7 @@
     if (event.pointerId !== (forward ? forwardOwner : backOwner)) return; event.preventDefault(); var s = forward ? forwardSurface : backSurface; if (forward) { forwardOwner = null; forwardSurface = null; } else { backOwner = null; backSurface = null; } if (s) try { if (s.hasPointerCapture(event.pointerId)) s.releasePointerCapture(event.pointerId); } catch (e) {} hud();
   }
   function stopInputs() { var f = forwardOwner, b = backOwner, fs = forwardSurface, bs = backSurface; forwardOwner = null; backOwner = null; forwardSurface = null; backSurface = null; keys.forward = false; keys.back = false; [[f,fs],[b,bs]].forEach(function (pair) { if (pair[0] !== null && pair[1]) try { if (pair[1].hasPointerCapture(pair[0])) pair[1].releasePointerCapture(pair[0]); } catch (e) {} }); }
-  function pickUp() { if (!canBoard() || held || !passengerVisible()) return false; dragAssist = { berth: berth(), radius: doorRadius(), safeSpeed: safeSpeed(), snap: ladder() >= 3 }; held = true; powerArmed = true; stopInputs(); banner("Help our friend through the glowing door"); return true; }
+  function pickUp() { if (!canBoard() || held || !passengerVisible()) return false; dragAssist = { berth: berth(), radius: doorRadius(), safeSpeed: safeSpeed(), snap: ladder() >= 3 }; held = true; powerArmed = true; stopInputs(); noteUntil = -9; return true; }
   function passengerDown(event) { if (event.button !== undefined && event.button !== 0 || passengerOwner !== null || !pickUp()) return; event.preventDefault(); var p = pointerPoint(event); grab.x = p.x - passenger.x; grab.y = p.y - passenger.y; passengerOwner = event.pointerId; passengerSurface = event.currentTarget; keyboardPassenger = false; try { passengerSurface.setPointerCapture(passengerOwner); } catch (e) {} hud(); draw(); }
   function movePassenger(p) { if (!held || !canPlay()) return; var hw = Math.max(64, friendW + 12) / 2, hh = Math.max(64, friendH + 10) / 2; passenger.x = clamp(p.x, (hw + 4) / W, 1 - (hw + 4) / W); passenger.y = clamp(p.y, (top + hh - 12) / H, (bottom - hh) / H); hud(); draw(); }
   function passengerMove(event) { if (event.pointerId !== passengerOwner || !held) return; event.preventDefault(); var p = pointerPoint(event); movePassenger({ x: p.x - grab.x, y: p.y - grab.y }); }
@@ -232,7 +263,7 @@
   var MISS_WORDS = { past: ["So close! Hold Back.", "So close! Back a little"], short: ["Nearly! Hold Forward.", "Nearly! A little more"], door: ["So close! Drag them into the door.", "So close! Try the door again"] };
   function miss(kind) {
     var before = ladder(); misses++; stageMisses++; attemptOpen = false; lastMiss = kind;
-    banner(ladder() >= 2 ? (kind === "door" ? "Follow the arrow into the door" : "Follow the arrow, then let go") : MISS_WORDS[kind][1]);
+    banner(ladder() >= 2 ? (kind === "door" ? "Follow the arrow into the door" : "Follow the arrow, then let go") : MISS_WORDS[kind][1], true);
     if (!saidMiss[kind] || ladder() >= 2 && before < 2) { saidMiss[kind] = true; try { api.instruct(MISS_WORDS[kind][0]); } catch (e) {} }
     try { if (api.face) api.face("think"); } catch (e) {}
   }
@@ -243,7 +274,7 @@
     var overCoach = snapIn && (passenger.x * W >= trainLeft - 16 && passenger.x * W <= trainLeft + trainW + 16 && passenger.y * H <= trainTop + trainH + 16 || passenger.y < friendHome.y - (friendHome.y - door.y) * 0.4);
     var valid = canBoard() && (near || overCoach); detachPassenger(); dragAssist = null;
     if (valid) { boarded = stage + 1; active = false; velocity = 0; stopInputs(); passenger.x = door.x; passenger.y = door.y; banner(boarded === stages ? "Five friends, all aboard!" : "All aboard! Time for our next stop"); api.sfx("correct"); try { api.cheer("All aboard!"); if (api.face) api.face("cheer"); } catch (e) {} cheerAt = clock; doneAt = clock + 1.15; hud(); draw(); }
-    else { passenger.x = friendHome.x; passenger.y = friendHome.y; if (movedPx > 12) miss("door"); else banner("Drag our friend into the door"); hud(); draw(); }
+    else { passenger.x = friendHome.x; passenger.y = friendHome.y; if (movedPx > 12) miss("door"); hud(); draw(); }
   }
   function passengerUp(event, canceled) { if (event.pointerId !== passengerOwner) return; event.preventDefault(); if (canceled || !canPlay()) cancelPassenger(); else dropPassenger(); hud(); draw(); }
   function passengerKey(event) {
@@ -271,7 +302,7 @@
     var desired = held ? 0 : command * maxSpeed(), rate = !command || velocity * command < 0 ? brake : acceleration, old = velocity;
     // Buffers a little past the friend, both ways: the train never runs off
     // to the end of the line, so coming back is never a long trip.
-    if (wait) { var hi = STOPS[stage] + 0.55, lo = Math.max(0, STOPS[stage] - 0.9); if (desired > 0) desired = Math.min(desired, maxSpeed() * clamp((hi - position) / 0.3, 0, 1)); if (desired < 0) desired = Math.max(desired, -maxSpeed() * clamp((position - lo) / 0.3, 0, 1)); }
+    if (wait) { var hi = STOPS[stage] + 0.55, lo = lowEnd(); if (desired > 0) desired = Math.min(desired, maxSpeed() * clamp((hi - position) / 0.3, 0, 1)); if (desired < 0) desired = Math.max(desired, -maxSpeed() * clamp((position - lo) / 0.3, 0, 1)); }
     // Coast-in (level 1 and up): heading at the friend with the button let go
     // (or any button at level 3), the brake lands the train right by them.
     var need = velocity * velocity / (2 * Math.max(0.002, Math.abs(d))), guided = wait && !held && velocity * d > 0 && Math.abs(d) < COAST[L] && (command === 0 ? need >= brake * 0.25 : L >= 3 && need >= brake * 0.8);
@@ -280,7 +311,7 @@
     if (Math.abs(velocity) < 0.00001) velocity = 0; position += (old + velocity) * dt / 2;
     if (guided && ((STOPS[stage] - position) * d <= 0 || Math.abs(STOPS[stage] - position) < 0.003 && Math.abs(velocity) < 0.03)) { position = STOPS[stage]; velocity = 0; }
     if (position < 0) { position = 0; velocity = 0; } else if (position > STOPS[4] + 0.8) { position = STOPS[4] + 0.8; velocity = 0; }
-    if (wait) { if (position > STOPS[stage] + 0.55) { position = STOPS[stage] + 0.55; velocity = Math.min(0, velocity); } if (position < Math.max(0, STOPS[stage] - 0.9)) { position = Math.max(0, STOPS[stage] - 0.9); velocity = Math.max(0, velocity); } }
+    if (wait) { if (position > STOPS[stage] + 0.55) { position = STOPS[stage] + 0.55; velocity = Math.min(0, velocity); } if (position < lowEnd()) { position = lowEnd(); velocity = Math.max(0, velocity); } }
     updateGeometry();
     if (wait) trackMisses(command);
     hud();
@@ -306,11 +337,12 @@
   }
   function earnPower() { active = true; paused = false; power = POWER; powerArmed = false; last = 0; hud(); }
   function pause() { paused = true; last = 0; stopInputs(); cancelPassenger(); hud(); }
-  function newTrip() { stageMisses = 0; tryTime = 0; attemptOpen = false; wasInside = false; wasMoving = false; saidMiss = {}; lastMiss = ""; doneAt = 0; atFriend = false; }
-  function reset() { stopInputs(); cancelPassenger(); newTrip(); active = false; paused = false; won = false; stage = 0; boarded = 0; power = 0; powerArmed = false; position = 0.25; velocity = 0; misses = 0; last = 0; updateGeometry(); banner("Ready for five friendly stops?"); hud(); draw(); }
+  function newTrip() { stageMisses = 0; tryTime = 0; attemptOpen = false; wasInside = false; wasMoving = false; saidMiss = {}; lastMiss = ""; doneAt = 0; noteUntil = -9; wasReady = false; tripFrom = position; }
+  function reset() { stopInputs(); cancelPassenger(); newRide(); active = false; paused = false; won = false; stage = 0; boarded = 0; power = 0; powerArmed = false; position = START; velocity = 0; misses = 0; last = 0; newTrip(); updateGeometry(); banner("Ready for five friendly stops?"); hud(); draw(); }
   window.Train = {
     init:function (a,n) { api = a; stages = n || 5; cv = $("trainCanvas"); ctx = cv.getContext("2d"); loadArt(); controls(); fit(); reset(); raf = requestAnimationFrame(frame); },
-    onWord:function (index) { stopInputs(); cancelPassenger(); stage = index; newTrip(); updateGeometry(); earnPower(); banner("Hold Forward. Let go by our friend"); hud(); api.instruct(STEP_LINES[stage]); }, onHelp:earnPower, pause:pause, resume:function (playing) { paused = playing === false; last = 0; hud(); }, reset:reset,
+    // the word starts the trip, and only that: no Easy stops from it
+    onWord:function (index) { stopInputs(); cancelPassenger(); stage = index; newTrip(); updateGeometry(); active = true; paused = false; power = 0; powerArmed = false; last = 0; hud(); api.instruct(STEP_LINES[stage]); }, onHelp:earnPower, pause:pause, resume:function (playing) { paused = playing === false; last = 0; hud(); }, reset:reset,
     finale:function () { stopInputs(); cancelPassenger(); doneAt = 0; active = false; power = 0; won = true; velocity = 0; banner("Five friends, all aboard!"); hud(); draw(); },
     // ages 2 to 4 get the gentler ladder (the page asks Sona.playStyle)
     setLittle:function (on) { little = !!on; if (cv) hud(); }

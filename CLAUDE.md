@@ -4030,6 +4030,32 @@ said at a set moment).
     nothing a child says changes.
   `robottest` plays it (the seeded routes, the paint pots and the start card
   at 320×568).
+- **Choo-Choo Train, rebuilt (10 Nov 2026, Travis: "yes build the
+  train").** `public/train.js`, `arcade-train.html`, `train.css`.
+  - **The word starts the trip and nothing else.** Until then it also
+    switched on ten seconds of Easy stops (a slower train, a wider stop and
+    door), so the stopping nearly did itself. The Easy stops button's word
+    still gives them, and the miss ladder still does.
+  - **One message, and a picture to drive.** The banner at the top is the
+    only words on the board and says what to do right now (`liveText`: "Hold
+    Forward. Let go by our friend", "Let go now!", "Drag our friend into the
+    door"…); a miss's kind words or "All aboard!" show first for 2 s
+    (`NOTE_S`), giving way sooner when the child presses a drive button or
+    the train comes to rest by the friend. The second bubble in the corner
+    (`#trainStatus`), which often said something else, is gone. The drive
+    button is the painted train and an arrow, no word: ages 3-4 cannot read
+    "Forward". Echo's directions are unchanged.
+  - **A new ride every round.** The five friends are picked by chance from
+    the eleven buddies with a sitting picture (`BUDDY_BOX`, each drawn area
+    measured from the picture), and the stops are a new distance apart
+    (`FIRST` 0.7–0.95, `GAPS` 0.8–1.4 board widths), so the child judges
+    when to let go. A trip never moves the train back past where it began
+    (`lowEnd`), so a long gap no longer jumps the train ahead as a trip
+    starts.
+  - **Travis's to change:** the gaps, the banner's words, the drive
+    button's picture. **For Rachel:** nothing a child says changes.
+  `traintest` plays it (parts `rebuild`, `main`, `ladder`, `keyboard`,
+  `fit`).
 - **The voice-line list is in the battery since 9 Nov 2026**
   (`voicedoctest` in `run-all`): `VOICE_SCRIPT.md` lists every line Echo can
   say with where it is said, so a change that moves such a line must run
