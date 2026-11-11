@@ -378,10 +378,47 @@ one. Surface those in the PR body so she can review them without reading
 the diff.
 
 ## Pricing — a free version, Premium, and the cohorts no flip can take back
-**Current release: pricing is ON (Travis, 30 Sep 2026: "separate free from
-paid" ... "we add the paywall today").** `FREE_MODE = false` in
-`public/sona.js` and `lib/pricing.ts`. Families first meet it on launch day,
-when the launch lock lifts (see "The family app is locked until launch day").
+**Current release (checked against `main`, 11 Nov 2026): families pay, and
+only inside the iPhone/iPad app.** Read this first; everything below it in
+capitals with a date is history, and the newest one wins.
+- **Paid since 30 Sep 2026** (Travis: "separate free from paid" ... "we add
+  the paywall today"). `FREE_MODE = false` in `public/sona.js` and
+  `lib/pricing.ts`, unchanged since that day. The launch lock that kept
+  families out until 2 Oct 2026 is long gone (see "The family app is locked
+  until launch day").
+- **The website sells families nothing** (Travis, 2 Oct 2026: "turn off
+  payments on website"). `WEB_SALES = false` in the same two files:
+  `/api/checkout` refuses a family purchase and a browser family is told
+  Premium is in the app. Anyone already paying through Stripe keeps their
+  plan. Clinician plans are still bought on the web and read neither switch.
+- **What the iPhone price screen sells** (Travis, 11 Nov 2026: "7 days free
+  then 9.99/mo and $59 lifetime"; the store price is $59.99):
+  1. **Monthly: 7 days free, then $9.99 a month.** Top row, picked when the
+     screen opens, tagged "Recommended". The 7 days are App Store Connect's
+     introductory offer (set 2 Nov 2026), not a number in this repo.
+  2. **One payment: $59.99** (`com.speaksona.app.lifetime`, since 22 Oct
+     2026). Under monthly, no tag, no free days. The row's own label says
+     "Lifetime" / "Yours Forever" (24 Oct 2026); the sentences `planWords`
+     writes never say "lifetime".
+  3. **No yearly row.** The 19 Oct 2026 build made it optional (shown only
+     when RevenueCat's offering lists it), but `IAP_SELL_YEARLY = false`
+     since 23 Oct 2026 ("get rid of the yearly option. I just want two
+     payment options") hides it whatever RevenueCat says; `true` brings it
+     back the 19 Oct way. The product stays in `IAP_PRODUCTS` so a yearly
+     buyer still restores.
+  Every iPhone price and free-day count comes from App Store Connect through
+  RevenueCat: change it there, not here. The card's current rules are "THE
+  FREE TRIAL ON TOP AND PICKED AGAIN (2 Nov 2026)" below; the store-side
+  steps are in `NATIVE.md` ("One payment, a third row" and around it).
+- **Era five's sweep shipped.** `_grandfatherFreeEra5()` was in the 30 Sep
+  paywall build, so every device set up during the 24–30 Sep free window
+  keeps Premium for good (see "Five free eras" below).
+- **The web prices below are parked, not deleted.** The charter yearly
+  ($59.99 for the first 50 families, then $99.99) and the web monthly ($9.99,
+  no trial) sell only if `WEB_SALES` goes back on. Their rules stay true for
+  that day and for Stripe subscriptions already bought. The web trial is
+  still 3 days (`TRIAL_DAYS`), not the app's 7.
+
 **The free version:** daily practice, **two games for each age group**
 (Travis, 30 Sep 2026: "the two free games for older kids, the two free games
 for younger kids"): **Fruit Slice and Piano Tiles** for 5-8 (Piano Tiles
@@ -1552,9 +1589,11 @@ native methods, the daily check, why never on Home) is under "THE TRIAL
 REMINDER (NOTIFY1)" beside RCHOOK1.
 
 **Do not hand-edit copy for a pricing flip. The surfaces read the switch.**
-The switch has changed **twelve times in eight weeks** (`git log -G'const
-FREE_MODE = (true|false)' -- public/sona.js`) — twice on the same day, twice on
-consecutive days. Every purchase surface now branches on the switch and keeps
+The switch changed **thirteen times in eight weeks**, 4 Aug to 30 Sep 2026
+(`git log --first-parent -m -G'const FREE_MODE = (true|false)' --
+public/sona.js`; without `--first-parent -m` the 24 Sep re-free, a merge
+(#140), does not show) — twice on the same day, twice on consecutive days. It
+has not moved since 30 Sep 2026. Every purchase surface now branches on the switch and keeps
 BOTH states: `app/families/page.tsx`, `app/terms/page.tsx`, `app/subscribe/page.tsx`,
 `public/subscribe.html`, `public/trial.html`, `public/today.html`. Flipping
 pricing is **one boolean in two files**. If you find yourself rewriting a price
