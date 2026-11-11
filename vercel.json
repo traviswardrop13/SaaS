@@ -1,5 +1,8 @@
 {
   "crons": [
-    { "path": "/api/cron/weekly", "schedule": "0 16 * * 5" }
+    { "path": "/api/cron/weekly", "schedule": "0 16 * * 5" },
+    { "path": "/api/cron/social?step=make", "schedule": "17 13 * * *" },
+    { "path": "/api/cron/social?step=post", "schedule": "17 16 * * *" },
+    { "path": "/api/cron/social?step=post&retry=1", "schedule": "17 19 * * *" }
   ]
 }

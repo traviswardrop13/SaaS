@@ -410,6 +410,19 @@ reader engines and their tests stay, but no public menu opens a book.
 The existing practice, honest-rep, rotation and earned arcade-turn rules
 still apply after a child chooses an available game.
 
+## The daily short video — fully automatic (Travis, 11 Nov 2026)
+One short vertical video a day goes to Sona's own TikTok, Instagram,
+YouTube and Facebook with **nobody reviewing it**: Claude writes the script,
+HeyGen renders a talking avatar, Upload-Post posts it (`lib/social.ts`,
+`app/api/cron/social`, setup in `SOCIAL_SETUP.md`). Because no person reads
+it first, `checkScript` in `lib/socialRules.ts` is the reviewer: no price or
+"free" (pricing flips; the video stays up), the one credential wording, no
+therapy/diagnosis/score/promise, no developmental ages, the presenter never
+speaks as Rachel. `tests/socialtest.mjs` pins it. Loosening a rule there is
+loosening it on four public channels at once. `TOPICS` is what parents are
+told to do at home — Rachel's call. Every post is labelled AI-generated and
+not made for kids. `SOCIAL_PAUSED=1` in Vercel stops it.
+
 ## Hard rules
 - Merges to main/prod only on Travis's explicit go ("merge").
 - **No audio ever leaves the device.** There is no cloud scorer: every verdict

@@ -59,6 +59,7 @@ const SUITES = [
   "slpfeedbacktest.mjs", // authenticated feedback and call requests; confirmed receipt only
   "slpdesigntest.mjs", // SLP workspace: filters, failure recovery, bulk assignments, mobile layout
   "arttest.mjs",   // ART1: every sticker renders, fits its box and stays in the safe band
+  "socialtest.mjs", // SOCIAL1: the daily video — the content rules, one post a day, AI-labelled, not for kids
 ];
 
 let bad = 0;
