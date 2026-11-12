@@ -732,7 +732,9 @@
       // It returns to the SAME move: asking for help never spends a turn or
       // opens a second microphone alongside the engine's microphone.
       if (helpTurn && G.play.onHelp) { helpTurn=false; showHelpBack(false); G.play.onHelp(step); replayInstruction(); }
-      else G.play.onWord(step);
+      // the word itself rides along (Pizza Chef puts its picture on the
+      // pizza); a game that takes only the step ignores it
+      else G.play.onWord(step, word ? word.w : "");
       return;
     }
     step++; paintDots();
