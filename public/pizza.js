@@ -1,9 +1,20 @@
 /* Pizza Chef: one pizza, eight steps. Each word the child says two times
-   starts the next cooking step (and lends ten seconds of chef power); the
-   finger does all the cooking: rolls the dough, spreads the sauce, sprinkles
-   the cheese, drags three toppings of each kind to glowing spots, holds Bake
-   and takes the pizza out in the green, then swipes along four dotted lines.
-   SayPlay owns speech, audio and all reps; this file never touches them.
+   starts the next cooking step, and nothing else (CLAUDE.md, "The audit's
+   rebuilds": it lent ten seconds of chef power until 11 Nov 2026; the Chef
+   power button's own word still does). The finger does all the cooking:
+   rolls the dough, spreads the sauce, sprinkles the cheese, drags three of
+   each topping to glowing spots, holds Bake and takes the pizza out in the
+   green, then swipes along four dotted lines. SayPlay owns speech, audio and
+   all reps; this file never touches them.
+
+   A DIFFERENT PIZZA EVERY TIME (newPizza): the toppings come in a new order
+   and the glowing spots sit somewhere new (SPOTS, turned and shuffled, so
+   no two ever crowd each other). The last topping is a silly one: the word
+   just said, as its own picture (the engine hands onWord the word; its
+   picture is crafted-words.js's), three of them on the pizza, and the end
+   card names it ("A rocket pizza!"). A word with no picture is the third
+   ordinary topping. Echo says how to do each kind of step once a visit
+   (KIND, told): the three topping steps are one kind.
 
    EVERY STEP ENDS (CLAUDE.md, "Every ball ends in a basket"), and the help
    that gets it there never needs speech: the chef power is a bonus on top.
@@ -33,18 +44,30 @@
    Local food coordinates use pizza radii; published coordinates use canvas. */
 (function () {
   "use strict";
-  var STEP_LINES = [
-    "Drag the rolling pin back and forth over the dough.",
-    "Spread the sauce all over.",
-    "Move your finger to sprinkle cheese all over.",
-    "Drag each pepperoni to a glowing spot.",
-    "Drag each pepper ring to a glowing spot.",
-    "Drag each mushroom to a glowing spot.",
-    "Hold Bake, let go in the green, tap Take out.",
-    "Swipe along each dotted line to cut your pizza."
-  ];
+  // Echo's how-to for each kind of step, said once a visit, the first time
+  // that kind comes up (and on "Hear what to do"). The three topping steps
+  // are one kind.
+  var KIND = ["roll", "sauce", "cheese", "top", "top", "top", "bake", "cut"];
+  var HOWTO = {
+    roll: "Drag the rolling pin back and forth over the dough.",
+    sauce: "Spread the sauce all over.",
+    cheese: "Move your finger to sprinkle cheese all over.",
+    top: "Drag each topping to a glowing spot.",
+    bake: "Hold Bake, let go in the green, tap Take out.",
+    cut: "Swipe along each dotted line to cut your pizza."
+  };
+  var STEP_LINES = KIND.map(function (k) { return HOWTO[k]; });
   var MODES = ["roll", "sauce", "cheese", "pepperoni", "pepper", "mushroom", "bake", "cut"];
   var LABELS = ["Roll the dough", "Spread the sauce", "Sprinkle cheese", "Add pepperoni", "Add pepper rings", "Add mushrooms", "Watch the oven", "Slice your pizza"];
+  var REGULAR = ["pepperoni", "pepper", "mushroom"];
+  var TOP_LABEL = { pepperoni: "Add pepperoni", pepper: "Add pepper rings", mushroom: "Add mushrooms", word: "Add a silly topping!" };
+  // the nine glowing spots of one pizza, in pizza radii (three for each
+  // topping): every pizza turns and mirrors them and shares them out anew
+  var SPOTS = [[-0.42, -0.3], [0.4, -0.29], [0, 0.43], [-0.42, 0.29], [0.44, 0.25], [0, -0.48], [-0.5, -0.02], [0.48, 0.01], [0, -0.03]];
+  // this pizza's toppings in order, their spots, the silly topping's word
+  // and picture, which kinds of step Echo has explained this visit, and who
+  // hears the silly topping's name (the page, for the end card)
+  var tops = REGULAR.slice(), layout = null, silly = null, told = {}, onSilly = null;
   // Every other line the banner can show: short, kind, and one line on a
   // 320 px phone (fit() still makes room for the tallest). Never "missed",
   // "wrong", "fail", "score", "points" or "correct".
@@ -71,7 +94,7 @@
     share: "Ready to share!",
     finale: "Pizza, made by you!"
   };
-  var BANNERS = LABELS.concat(Object.keys(SAY).map(function (k) { return SAY[k]; }));
+  var BANNERS = LABELS.concat(Object.keys(SAY).map(function (k) { return SAY[k]; }), [TOP_LABEL.word]);
   var api, cv, ctx, W = 390, H = 844, raf = 0, last = 0, art = {}, clock = 0;
   var B = { x: 195, y: 420, r: 135 }, workTop = 140, workBottom = 650, trayY = 700;
   var active = false, paused = false, away = false, stage = 0, stages = 8, completed = 0, won = false, power = 0;
@@ -92,8 +115,27 @@
   function clamp(n, lo, hi) { return Math.max(lo, Math.min(hi, n)); }
   function live() { return !paused && !away && !document.hidden; }
   function canPlay() { return active && !won && live(); }
-  function mode() { return MODES[stage]; }
+  function mode() { return isIngredient() ? tops[stage - 3] : MODES[stage]; }
   function isIngredient() { return stage >= 3 && stage <= 5; }
+  function label() { return isIngredient() ? TOP_LABEL[mode()] : LABELS[stage]; }
+  function shuffle(list) { for (var i = list.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)), t = list[i]; list[i] = list[j]; list[j] = t; } return list; }
+  // a new pizza: the toppings in a new order, the spots turned, mirrored
+  // and shared out anew (turning keeps every gap between them)
+  function newPizza() {
+    var a = Math.random() * Math.PI * 2, c = Math.cos(a), sn = Math.sin(a), flip = Math.random() < 0.5 ? -1 : 1;
+    var pts = shuffle(SPOTS.map(function (p) { var x = p[0] * flip, y = p[1]; return { x: x * c - y * sn, y: x * sn + y * c }; }));
+    layout = [pts.slice(0, 3), pts.slice(3, 6), pts.slice(6, 9)];
+    tops = shuffle(REGULAR.slice()); silly = null; tellSilly();
+  }
+  // the word as a topping: its picture from crafted-words.js, or nothing
+  // (then the step keeps its ordinary topping)
+  function sillyFor(word) {
+    var a = null; try { a = window.SonaCraftedWords && window.SonaCraftedWords.art ? window.SonaCraftedWords.art(word) : null; } catch (e) {}
+    if (!a) return null;
+    var i = new Image(); i.onload = function () { dirty = true; }; i.src = a.file;
+    return { word: String(word).toLowerCase(), img: i, a: a };
+  }
+  function tellSilly() { try { if (onSilly) onSilly(silly ? silly.word : null); } catch (e) {} }
   function rubbing() { return stage <= 2; }
   // ── the ladder ──
   function ladder() {
@@ -130,9 +172,8 @@
   }
   function coverage(name) { var count = 0; grid.forEach(function (g) { if (g[name]) count++; }); return grid.length ? count / grid.length : 0; }
   function targetLocals() {
-    if (stage === 3) return [{ x: -0.42, y: -0.3 }, { x: 0.4, y: -0.29 }, { x: 0, y: 0.43 }];
-    if (stage === 4) return [{ x: -0.42, y: 0.29 }, { x: 0.44, y: 0.25 }, { x: 0, y: -0.48 }];
-    return [{ x: -0.5, y: -0.02 }, { x: 0.48, y: 0.01 }, { x: 0, y: -0.03 }];
+    if (!layout) newPizza();
+    return (layout[clamp(stage - 3, 0, 2)] || []).map(function (p) { return { x: p.x, y: p.y }; });
   }
   function world(p) { return { x: B.x + p.x * B.r, y: B.y + p.y * B.r }; }
   function local(p) { return { x: (p.x - B.x) / B.r, y: (p.y - B.y) / B.r }; }
@@ -173,6 +214,13 @@
     ctx.save(); ctx.globalAlpha = alpha == null ? 1 : alpha; ctx.drawImage(i, x - sw / 2, y - sh / 2, sw, sh); ctx.restore(); return true;
   }
   function ingredientArt(name, x, y, size, alpha) {
+    if (name === "word") {
+      var w = silly, im = w && w.img && w.img.complete && w.img.naturalWidth ? w.img : null;
+      ctx.save(); ctx.globalAlpha = alpha == null ? 1 : alpha;
+      if (im) { var sw = w.a.sw * im.naturalWidth, sh = w.a.sh * im.naturalHeight, k = size * 1.5 / Math.max(sw, sh); ctx.drawImage(im, w.a.sx * im.naturalWidth, w.a.sy * im.naturalHeight, sw, sh, x - sw * k / 2, y - sh * k / 2, sw * k, sh * k); }
+      else { ctx.fillStyle = "#f6dfa0"; ctx.strokeStyle = "#c9a35d"; ctx.lineWidth = size * 0.08; ctx.beginPath(); ctx.arc(x, y, size * 0.36, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); }
+      ctx.restore(); return;
+    }
     if (sprite(name, x, y, size, size, alpha)) return;
     ctx.save(); ctx.translate(x, y); ctx.globalAlpha = alpha == null ? 1 : alpha; ctx.lineWidth = size * 0.12;
     if (name === "pepperoni") { ctx.fillStyle = "#b75f51"; ctx.strokeStyle = "#995548"; ctx.beginPath(); ctx.arc(0, 0, size * 0.4, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); ctx.fillStyle = "#e1a97c"; [[-0.15, -0.13], [0.17, -0.04], [-0.04, 0.18]].forEach(function (p) { ctx.beginPath(); ctx.arc(size * p[0], size * p[1], size * 0.055, 0, Math.PI * 2); ctx.fill(); }); }
@@ -349,6 +397,7 @@
       cursor: normalizedPoint(cp), brushRadius: brush() * B.r / W, rollingGain: rollingGain(), rollProgress: clamp(rollWork / 7, 0, 1), strokeDistance: strokeDistance * B.r,
       sauceCoverage: coverage("sauce"), cheeseCoverage: coverage("cheese"), coverageThreshold: stage === 1 ? 0.86 : 0.82, grid: cells, tray: trays, targets: targets,
       ingredient: ingredient ? { index: ingredient.index, type: ingredient.type, x: ingredient.x, y: ingredient.y } : null, dragging: drag !== null, pointerId: drag, strokes: strokes, misses: misses,
+      tops: tops.slice(), silly: silly ? silly.word : null, sillyShown: !!(silly && silly.img && silly.img.complete && silly.img.naturalWidth), told: Object.keys(told), placed: toppings.map(function (t) { return t.type; }),
       stageMisses: stageMisses, effort: effort, ladder: lv, little: little, guide: active && !won && lv >= 2, snap: active && !won && lv >= 3, magnet: magnet(),
       doneIn: doneAt ? Math.max(0, doneAt - clock) : 0, dones: dones, banner: $("pizzaBanner").textContent,
       heat: heat, heatRate: heatRate(), heatCap: heatCap(), readyBand: b, ready: ready(), baking: baking, baked: baked, overheated: overheated,
@@ -372,9 +421,9 @@
     $("pizzaHeat").setAttribute("aria-valuenow", Math.round(heat * 100));
     $("pizzaPower").hidden = !(active && power > 0 && !won); $("pizzaPowerFill").style.width = power / POWER * 100 + "%";
     $("pizzaToolCard").hidden = bakingMode || isIngredient();
-    $("pizzaToolName").textContent = LABELS[stage]; var preview = $("pizzaToolPreview"), name = ["rollingpin", "spoon", "cheese"][stage] || "cutter";
+    $("pizzaToolName").textContent = label(); var preview = $("pizzaToolPreview"), name = ["rollingpin", "spoon", "cheese"][stage] || "cutter";
     if (preview.getAttribute("data-tool") !== name) { preview.setAttribute("data-tool", name); preview.src = "/assets/crafted/game/pizza-" + name + "-v1.webp"; }
-    for (var n = 0; n < 3; n++) { var button = $("pizzaIngredient" + n), t = tray(n); button.hidden = !isIngredient() || !active || trayUsed[n]; button.disabled = !allowed || !!(ingredient && ingredient.index !== n); button.style.left = t.x + "px"; button.style.top = t.y + "px"; button.style.width = t.r * 2 + "px"; button.style.height = t.r * 2 + "px"; button.setAttribute("aria-label", "Pick up " + mode() + " " + (n + 1) + ", then use arrows and Enter to place it"); }
+    for (var n = 0; n < 3; n++) { var button = $("pizzaIngredient" + n), t = tray(n); button.hidden = !isIngredient() || !active || trayUsed[n]; button.disabled = !allowed || !!(ingredient && ingredient.index !== n); button.style.left = t.x + "px"; button.style.top = t.y + "px"; button.style.width = t.r * 2 + "px"; button.style.height = t.r * 2 + "px"; button.setAttribute("aria-label", "Pick up " + (mode() === "word" && silly ? "the silly " + silly.word : mode()) + " " + (n + 1) + ", then use arrows and Enter to place it"); }
     dirty = true; publish();
   }
   function banner(text) { $("pizzaBanner").textContent = text; if (cv) publish(); }
@@ -526,7 +575,7 @@
     $("pizzaTakeOut").onclick = takeOut; $("pizzaRetry").onclick = retryBake;
     // optional extra help: the same word again for ten seconds of chef power
     $("pizzaHelp").onclick = function () { if (canPlay() && drag === null && !keyHeld && !baking && api.practice() !== false) banner(SAY.ask); };
-    $("pizzaHearStep").onclick = function () { if (canPlay() && drag === null && !baking && api.instruct) api.instruct(STEP_LINES[stage]); };
+    $("pizzaHearStep").onclick = function () { if (canPlay() && drag === null && !baking && api.instruct) api.instruct(HOWTO[KIND[stage]]); };
     window.addEventListener("resize", fit); document.addEventListener("visibilitychange", function () { if (document.hidden) pause(); });
     window.addEventListener("pagehide", function () { away = true; pause(); cancelAnimationFrame(raf); raf = 0; });
     window.addEventListener("pageshow", function () { away = false; if (!raf) { last = 0; raf = requestAnimationFrame(frame); } hud(); });
@@ -555,12 +604,14 @@
     if (dirty || canPlay() || shine > 0 || sparks.length) draw();
     raf = requestAnimationFrame(frame);
   }
-  function earnPower() { power = POWER; paused = false; active = true; last = 0; banner(LABELS[stage]); hud(); }
+  // the word's step: the food and the tool, and nothing else
+  function go() { power = 0; paused = false; active = true; last = 0; banner(label()); hud(); }
+  function earnPower() { power = POWER; paused = false; active = true; last = 0; banner(label()); hud(); }
   function pause() { paused = true; last = 0; stopGesture(); stopBake(); hud(); }
   function reset() {
     stopGesture(); stopBake(); active = false; paused = false; stage = 0; completed = 0; won = false; power = 0; rollWork = 0; strokeDistance = 0; sauceDots = []; toppings = []; used = [false, false, false]; trayUsed = [false, false, false]; heat = 0; baked = false; overheated = false; cuts = [false, false, false, false]; cursor = { x: -0.8, y: 0 }; misses = 0; strokes = 0; last = 0;
     stageMisses = 0; effort = 0; lastWork = -9; doneAt = 0; shine = 0; sparks = [];
-    makeGrid(); banner(SAY.start); hud(); draw();
+    newPizza(); makeGrid(); banner(SAY.start); hud(); draw();
   }
   window.Pizza = {
     init: function (a, n) {
@@ -571,18 +622,27 @@
       // once it has loaded, unless a finger is on the kitchen right then
       try { if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { if (drag === null && bakePointer === null && !keyHeld && !bakeKey) fit(); }); } catch (e) {}
     },
-    // a word heard two times: the next cooking step, with ten seconds of power
-    onWord: function (index) { stage = index; stageMisses = 0; effort = 0; lastWork = -9; doneAt = 0; stopGesture(); stopBake(); used = [false, false, false]; trayUsed = [false, false, false]; cursor = { x: -0.8, y: 0 }; earnPower(); if (api.instruct) api.instruct(STEP_LINES[stage]); },
+    // a word heard two times: the next cooking step, and nothing else. The
+    // last topping step makes the word itself the topping, when it has a
+    // picture. Echo explains a kind of step the first time it comes up.
+    onWord: function (index, word) {
+      stage = index; stageMisses = 0; effort = 0; lastWork = -9; doneAt = 0; stopGesture(); stopBake(); used = [false, false, false]; trayUsed = [false, false, false]; cursor = { x: -0.8, y: 0 };
+      if (stage === 5) { silly = word ? sillyFor(word) : null; tops[2] = silly ? "word" : tops[2] === "word" ? REGULAR.filter(function (t) { return tops.indexOf(t) < 0; })[0] : tops[2]; tellSilly(); }
+      go();
+      var k = KIND[stage]; if (!told[k]) { told[k] = true; if (api.instruct) api.instruct(HOWTO[k]); }
+    },
     // the optional help word: the same step, ten more seconds of power
     onHelp: earnPower,
     pause: pause,
     // back to the same move from exactly where it stopped. A help ask that
     // ended with no word also lands here: no power, the step's help unchanged
-    resume: function (playing) { paused = playing === false; last = 0; if (!paused && active && $("pizzaBanner").textContent === SAY.ask) banner(LABELS[stage]); hud(); },
+    resume: function (playing) { paused = playing === false; last = 0; if (!paused && active && $("pizzaBanner").textContent === SAY.ask) banner(label()); hud(); },
     reset: reset,
     finale: function () { stopGesture(); stopBake(); active = false; power = 0; won = true; doneAt = 0; banner(SAY.finale); hud(); draw(); },
     // ages 2 to 4 get the gentler help ladder (the page asks Sona.playStyle)
     setLittle: function (on) { little = !!on; if (cv) hud(); },
+    // the page hears the silly topping's word (null: none yet), for the end card
+    onSilly: function (fn) { onSilly = fn; tellSilly(); },
     BANNERS: BANNERS,
     STEP_LINES: STEP_LINES
   };
