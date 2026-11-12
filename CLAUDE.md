@@ -1101,6 +1101,44 @@ changing one. What follows from the rule:
 - **"Not now" goes to Home with everything locked:** every game and book is
   "Premium" and Home's Books door says "Premium"; no microphone ask and no
   hand-off. Settings then says "Plan: none yet", never "free version".
+  **Except the first time on a phone (FREEDAY1, 11 Nov 2026), below.**
+- **THE FREE DAY (FREEDAY1, Travis, 11 Nov 2026: "let the people play for
+  free for a day if they close the paywall" ... "yeah build the free day").**
+  The FIRST X on a priced card, on this phone, for a family who owes the
+  price (`trialFirst()`), opens everything (every game and book, the daily
+  story, practice) for 24 hours: no card, nothing to cancel. The X stays on
+  the page and shows a sheet: **"Today's on us!"**, "Every game and book is
+  open until 2:37 PM tomorrow. No card. Nothing to cancel.", and one button,
+  **"Let's play!"**: from setup it goes on to the microphone and the hand-off
+  exactly as a buyer does (setup's marker is kept); from any other door,
+  Home. The words are Travis's to change.
+  - **One rule in `sona.js`**: `freeDayStart(surface)` (the only writer, and
+    only subscribe.html's X calls it), `freeDayActive()` (read wherever
+    `trialActive()` opens things: `trialFirst`, `offerOnLock`, `gated`,
+    `booksOpen`, `gameAccess`, `storyOpen`), `freeDayEnds()`. It is not
+    Premium (`premium()` stays false) and not Apple's trial: it spends none
+    of the store's free days. `FREE_DAY_ON = false` puts the X back to a
+    locked Home; a day already started is kept to its end either way.
+  - **Never on**: an error card ("We couldn't reach the App Store." is not a
+    "no"), a family with the free version (its X keeps the free games), a
+    URL, a page load. **Never mentioned on the price screen before the X**:
+    a parent who knew would close the card instead of starting the trial.
+  - **Once per phone**: `sona.freeday.v1` is on `NO_EXPORT` and `NO_IMPORT`.
+    Deleting the app wipes it, so a reinstall gets another day: accepted.
+    A clock set back before the start ends the day, never lengthens it.
+  - **When it ends, Home opens the offer once more** (`homeOfferDue`), by the
+    first showing's rules (spent once a priced card is up, three tries at
+    most for a store that never answers), marked on the free day's own
+    record (`after`). Its X is a locked Home, as before.
+  - Settings › Your plan says "Plan: free day — every game and book is open
+    until Thursday 2:37 PM". The funnel hears `"free day started"` with the
+    door (`surface`), after the usual `"offer dismissed"`.
+  - **Test seeds**: every `_phone.mjs` seed carries a used free day (its X
+    goes to a locked Home, as the older suites expect) unless `freeDay:
+    true`. `tests/freedaytest.mjs` plays it.
+  - **Travis's to know**: it overlaps the measurement FREEPLAY1 was waiting
+    on (the 7-day trial alone, ~16 Nov 2026): from this build, families who
+    X the price get a day before the trial question comes back.
 - **A tap on a grey game or book opens the price at once** (Travis, 4 Oct
   2026: "I want it to open automatically if they click on a game that is
   grayed out"): no "Ask a grown-up" note, no grown-ups check, straight to the

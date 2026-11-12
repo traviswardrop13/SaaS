@@ -1119,8 +1119,13 @@
         var isFreeNow = !!(Sona.isFree && Sona.isFree());
         var trialLeft = (!isFreeNow && Sona.trialActive && Sona.trialActive()) ? (Sona.trialDaysLeft ? Sona.trialDaysLeft() : 1) : 0;
         var trialEnded = !isFreeNow && !trialLeft && !!(Sona.trialExpired && Sona.trialExpired());
+        // FREEDAY1: the free day the price screen's X opened, with its end
+        var dayEnd = (!isFreeNow && !trialLeft && Sona.freeDayEnds) ? Sona.freeDayEnds() : 0, dayWhen = "";
+        try { if (dayEnd) dayWhen = new Date(dayEnd).toLocaleString("en-US", { weekday: "long", hour: "numeric", minute: "2-digit" }); } catch (e) {}
         ac.innerHTML = isFreeNow
           ? 'Sona is <strong style="color:var(--good);">free</strong> right now — every game, every sound.'
+          : dayEnd
+            ? 'Plan: <strong>free day</strong> — every game and book is open' + (dayWhen ? ' until ' + dayWhen : '') + ' · <a href="/subscribe.html">See Premium →</a> · <a href="#" id="restoreLink">Restore</a>'
           : trialLeft
             ? 'Plan: <strong>free trial</strong> — ' + trialLeft + ' day' + (trialLeft === 1 ? '' : 's') + ' left · <a href="/subscribe.html">See plans →</a> · <a href="#" id="restoreLink">Restore</a>'
             : (trialEnded ? 'Your free trial has ended. ' : '') + ((Sona.freeVersion && !Sona.freeVersion())

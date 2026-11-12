@@ -341,6 +341,16 @@
        decline link (same href, same handler), so it leaves the same way. */
     body.onerow.offer .family-header,body.onerow.offer #offerRachel,body.onerow.offer #careLine{display:none !important;}
     body.onerow.offer #declineRow{position:absolute;top:calc(env(safe-area-inset-top) + 8px);right:10px;margin:0 !important;z-index:5;}
+    /* FREEDAY1: the free day's sheet, over the whole card */
+    #freeDay{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;
+      padding:max(16px,env(safe-area-inset-top)) 16px max(16px,env(safe-area-inset-bottom));background:rgba(74,44,20,.42);}
+    #freeDay .fd-card{width:100%;max-width:360px;background:#fff8ee;border-radius:26px;padding:26px 22px 22px;text-align:center;
+      box-shadow:0 18px 40px rgba(74,44,20,.25);}
+    #freeDay img{width:96px;height:96px;object-fit:contain;display:block;margin:0 auto 6px;}
+    #freeDay h2{font-family:"Baloo 2";font-weight:800;font-size:28px;line-height:1.1;color:var(--ink);margin:0;}
+    #freeDay p{font-weight:800;font-size:15.5px;line-height:1.45;color:var(--muted);margin:10px 0 18px;}
+    #freeDay .fd-calm{display:block;}
+    #freeDay .btn{width:100%;font-size:19px;padding:15px 18px;}
     body.onerow.offer #declineLink{width:44px !important;height:44px;min-height:0;padding:0 !important;font-size:0;line-height:44px;background:transparent;border:0;box-shadow:none;color:#a08a70;}
     body.onerow.offer #declineLink:before{content:"\2715";font-size:19px;font-weight:800;}
     /* THE X KEEPS ITS CORNER (19 Oct 2026). Once the picture has gone (fit5)
@@ -1748,6 +1758,46 @@
       } catch (e) {}
     })();
 
+    // FREEDAY1: what the X says when it has just opened the free day. It
+    // names the end to the minute, says nothing is owed, and has one button.
+    // From setup it goes on to the microphone and the hand-off, exactly as a
+    // buyer does (setup re-reads trialFirst(), which the free day answers);
+    // from anywhere else, Home. The words are Travis's to change.
+    function freeDaySheet() {
+      var when = "";
+      try {
+        var end = Sona.freeDayEnds ? Sona.freeDayEnds() : 0;
+        // "2:37 PM" never breaks across two lines
+        if (end) when = new Date(end).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }).replace(/\s+(?=[AP]M$)/, "\u00a0");
+      } catch (x) {}
+      var d = document.createElement("div");
+      d.id = "freeDay";
+      d.setAttribute("role", "dialog");
+      d.setAttribute("aria-modal", "true");
+      d.setAttribute("aria-labelledby", "freeDayTitle");
+      d.innerHTML =
+        '<div class="fd-card">' +
+          '<img src="/assets/crafted/echo-welcome.webp" alt="" />' +
+          '<h2 id="freeDayTitle">Today\u2019s on us!</h2>' +
+          '<p id="freeDayLine"></p>' +
+          '<button type="button" class="btn" id="freeDayGo">Let\u2019s play!</button>' +
+        '</div>';
+      // two lines, so "cancel." never wraps alone; the space stays in the text
+      // (a screen reader, and freedaytest, read one sentence after another)
+      var fdl = d.querySelector("#freeDayLine"), fdb = document.createElement("span");
+      fdl.textContent = "Every game and book is open" + (when ? " until " + when + " tomorrow" : " for a day") + ". ";
+      fdb.className = "fd-calm"; fdb.textContent = "No card. Nothing to cancel."; fdl.appendChild(fdb);
+      document.body.appendChild(d);
+      var go = d.querySelector("#freeDayGo");
+      go.onclick = function () {
+        go.disabled = true;
+        var next = "/today.html";
+        try { if (OFFER_SETUP) next = nextAfterBuy(); } catch (x) {}
+        location.replace(next);
+      };
+      try { go.focus(); } catch (x) {}
+    }
+
     // The decline, and the only place it is offered as a decline.
     // A locked game's offer gets the same stated way out (30 Sep 2026); there
     // the child was choosing a game, not finishing a run, so the line under
@@ -1777,15 +1827,24 @@
         // a family that just paid is never sent Home by a late tap (the row
         // is already off the screen; this is for a tap already on its way)
         if (APPLE.done) { e.preventDefault(); return; }
+        if (document.getElementById("freeDay")) { e.preventDefault(); return; }
         try { if (APPLE.stop) APPLE.stop(); } catch (x) {}
-        // from setup, "Not now" ends the hand-off: Home, with no microphone
-        // step and no hand-off card to come back to
-        if (OFFER_SETUP) { try { Sona.setupAfterClear(); } catch (x) {} }
         // "offer dismissed" only for an offer that was really made: in the
         // app, a card that showed a price. Leaving "We couldn't reach the App
         // Store" is not turning a price down.
         // keepalive, because this navigates immediately afterwards
-        if (!inApp || APPLE.counted) { try { if (Sona.track) Sona.track("offer dismissed", { surface: OFFER_SETUP ? "setup" : OFFER_FIRST ? "first-run" : OFFER_FROM === "home" ? "home" : OFFER_FROM === "adventure" ? "adventure" : "from-game" }); } catch (x) {} }
+        var priced = !inApp || APPLE.counted;
+        var surface = OFFER_SETUP ? "setup" : OFFER_FIRST ? "first-run" : OFFER_FROM === "home" ? "home" : OFFER_FROM === "adventure" ? "adventure" : "from-game";
+        if (priced) { try { if (Sona.track) Sona.track("offer dismissed", { surface: surface }); } catch (x) {} }
+        // FREEDAY1 (Travis, 11 Nov 2026): the first X on a priced card, for a
+        // family who owes the price, opens everything for a day instead of a
+        // locked Home. Only a priced card: an error card was no "no".
+        var day = false;
+        try { day = priced && !!(Sona.freeDayStart && Sona.freeDayStart(surface)); } catch (x) {}
+        if (day) { e.preventDefault(); freeDaySheet(); return; }
+        // from setup, "Not now" ends the hand-off: Home, with no microphone
+        // step and no hand-off card to come back to
+        if (OFFER_SETUP) { try { Sona.setupAfterClear(); } catch (x) {} }
       });
     })();
 

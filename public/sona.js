@@ -2638,6 +2638,8 @@
     "sona.played.v1",
     // what this phone showed (the offer from Home, 13 Oct 2026), like freever
     "sona.offerseen.v1",
+    // FREEDAY1: this phone's one free day, and the offer after it
+    "sona.freeday.v1",
     // the weekly report's device id and last send (REPORT1): this phone's own
     "sona.report.v1"];
   function exportData() {
@@ -2704,6 +2706,8 @@
     // the offer from Home was shown on THIS phone (13 Oct 2026): a backup
     // never brings the mark, so it can never take that one showing away
     "sona.offerseen.v1",
+    // FREEDAY1: a backup never brings a free day, nor takes a used one away
+    "sona.freeday.v1",
     // the weekly report's device id (REPORT1): a restored phone is its own device
     "sona.report.v1"];
   // The free-era marks a sweep writes onto a profile. A backup may never
@@ -2928,6 +2932,54 @@
   function trialExpired() { const t = getTrial(); return !!(t && t.start && Date.now() >= t.start + trialMs(t)); }
   function trialDaysLeft() { const t = getTrial(); if (!t || !t.start) return TRIAL_DAYS; return Math.max(0, Math.ceil((t.start + trialMs(t) - Date.now()) / 86400000)); }
 
+  // ── FREEDAY1: A FREE DAY FOR A FAMILY WHO CLOSES THE PRICE (11 Nov 2026) ──
+  // Travis: "im almost thinking we let the people play for free for a day if
+  // they close the paywall", then "yeah build the free day". Until now the X
+  // on the price screen took a family who owes the price (trialFirst) to a
+  // Home with every game locked: nothing the child could play, so nothing to
+  // come back for. Now the FIRST such X on this phone, on a card that showed
+  // a price, opens everything (every game, every book, the daily story,
+  // practice) for 24 hours: no card, nothing to cancel.
+  //   - Started only by subscribe.html's X, by a grown-up's own tap: never
+  //     from an address, never by a page load. Only for a family who owes
+  //     the price: one with the free version keeps its free games, as before.
+  //   - Once per phone. FREEDAY is on NO_EXPORT and NO_IMPORT, like the
+  //     offer's own mark: a backup never brings a free day and never takes
+  //     the used one away. Deleting the app wipes it, so a reinstall gets
+  //     another day: accepted, not worth fighting (Travis's to change).
+  //   - It is not Apple's free trial and spends none of it: the next price
+  //     screen still offers the store's free days.
+  //   - The price screen never mentions it before the X: a parent who knew
+  //     would close the card instead of starting the trial.
+  //   - When it ends, Home opens the offer once more (homeOfferDue), by the
+  //     first showing's rules: once a priced card is up, three tries at most.
+  //   - A day already started is kept whatever FREE_DAY_ON says later: it was
+  //     promised on screen with its end time.
+  // FREE_DAY_ON = false puts the X back to a locked Home.
+  const FREE_DAY_ON = true;
+  const FREEDAY = "sona.freeday.v1", FREE_DAY_MS = 24 * 60 * 60 * 1000;
+  function _freeDay() {
+    try { const d = JSON.parse(localStorage.getItem(FREEDAY) || "null"); return (d && typeof d === "object" && typeof d.start === "number" && isFinite(d.start)) ? d : null; } catch (e) { return null; }
+  }
+  // a clock set back before the start ends the day rather than lengthening it
+  function freeDayActive() { const d = _freeDay(); if (!d) return false; const now = Date.now(); return now >= d.start && now < d.start + FREE_DAY_MS; }
+  function freeDayEnded() { return !!_freeDay() && !freeDayActive(); }
+  // when today's free day ends (ms), or 0 when none is running
+  function freeDayEnds() { const d = _freeDay(); return (d && freeDayActive()) ? d.start + FREE_DAY_MS : 0; }
+  function freeDayDue() {
+    if (!FREE_DAY_ON) return false;
+    try { if (localStorage.getItem(FREEDAY) !== null) return false; } catch (e) { return false; }
+    return trialFirst();
+  }
+  // The X's one call: true when the free day has just begun.
+  function freeDayStart(surface) {
+    if (!freeDayDue()) return false;
+    try { localStorage.setItem(FREEDAY, JSON.stringify({ start: Date.now() })); } catch (e) { return false; }
+    if (!freeDayActive()) return false;
+    try { track("free day started", { surface: String(surface || "") }); } catch (e) {}
+    return true;
+  }
+
   // Native app (App Store build): window.Capacitor exists only inside the iOS
   // app, never in a browser. The App Store build ships with NO in-app payment
   // (Apple forbids non-IAP checkout), so the paywall is disabled and all
@@ -3054,21 +3106,23 @@
   // purchase plugin, a browser that does not sell) the note stays: there is
   // nothing to open.
   function offerOnLock() {
-    try { return !isFree() && canSellHere() && !premium() && !trialActive(); } catch (e) { return false; }
+    try { return !isFree() && canSellHere() && !premium() && !trialActive() && !freeDayActive(); } catch (e) { return false; }
   }
   // Setup ends on the plan screen, not the first game, for a family who could
   // buy here and has nothing that opens the games yet.
   function trialFirst() {
-    try { return !isFree() && !freeVersion() && !premium() && !trialActive(); } catch (e) { return false; }
+    try { return !isFree() && !freeVersion() && !premium() && !trialActive() && !freeDayActive(); } catch (e) { return false; }
   }
   const PRACTICE_ASKS = ["practice", "daily", "session", "demo"];
   function gated(what) {
     if (isFree()) return false;
     // Practice opens with the free version (see freeVersion above), or with
-    // Premium or a trial. A run that already started is never stopped.
-    if (PRACTICE_ASKS.indexOf(what) !== -1) return !(freeVersion() || premium() || trialActive() || runActive());
+    // Premium, a trial or a free day (FREEDAY1). A run that already started
+    // is never stopped.
+    if (PRACTICE_ASKS.indexOf(what) !== -1) return !(freeVersion() || premium() || trialActive() || freeDayActive() || runActive());
     if (gameKey(what)) return !gameAccess(what).allowed;
     if (premium()) return false;                     // every game, whatever the source
+    if (freeDayActive()) return false;               // FREEDAY1: everything, for the day
     if (runActive()) return false;                   // never mid-run — see above
     if (!demoDone()) return false;                   // still inside the demonstration
     // A local no-card trial is no longer STARTED by anything — the
@@ -3103,7 +3157,7 @@
     var sound = restricted ? String(targetSound() || "").toUpperCase() : "";
     return FREE_BOOKS.filter(function (title) { return bookFree(title) && (!sound || FREE_BOOK_SOUNDS[title] === sound); }).length;
   }
-  function booksOpen() { return isFree() || premium() || trialActive(); }
+  function booksOpen() { return isFree() || premium() || trialActive() || freeDayActive(); }
   function bookLocked(title) { return !bookFree(title) && !booksOpen(); }
   // earlyAdopter lives on the PROFILE, and the profile is per-kid — so a
   // founding or SLP-referred family that added a second child had the first one
@@ -4043,7 +4097,7 @@
     } else {
       if (isFree()) return allow("free-mode");
       if (premium()) return allow("entitled");
-      if (trialActive()) return allow("trial");
+      if (trialActive() || freeDayActive()) return allow("trial");
     }
     // Keep matching earned turns within a saved adventure across expiration:
     // charge resumes its original plan, and each finished turn is banked once.
@@ -5925,7 +5979,7 @@
   function storyOpen() {
     try {
       if (libraryPreview()) return previewPlan().state === "trial";
-      return isFree() || premium() || trialActive();
+      return isFree() || premium() || trialActive() || freeDayActive();
     } catch (e) { return false; }
   }
   // show a story on Home at all: open, or locked where the price can open it
@@ -6504,6 +6558,14 @@
       const list = _kids().list;
       if (!list.some((k) => { const p = _loadFor(k.slot || "", PKEY, {}); return !!(p.onboarded || p.childName); })) return false;
       if (list.some((k) => _loadFor(k.slot || "", PKEY, {}).role === "slp")) return false;
+      // FREEDAY1: once more when the free day is over. Its own mark (`after`
+      // on the free day's record), spent by offerSeen as the first showing's
+      // is, so the X back to Home never loops and a broken store tries three
+      // launches at most.
+      if (freeDayEnded() && !_offerSpent((_freeDay() || {}).after)) {
+        try { if (sessionStorage.getItem(OFFERTAB)) return false; } catch (e) {}
+        return true;
+      }
       if (localStorage.getItem(PLANSEEN)) return false;    // a priced card was already painted here
       if (_offerSpent(localStorage.getItem(OFFERSEEN))) return false;   // the offer was already shown here
       try { if (sessionStorage.getItem(OFFERTAB)) return false; } catch (e) {}   // tried this visit, the store never priced it
@@ -6512,6 +6574,17 @@
   }
   function offerSeen(final) {
     try {
+      // FREEDAY1: the showing after the free day spends its own mark
+      const fd = freeDayEnded() ? _freeDay() : null;
+      if (fd && !_offerSpent(fd.after)) {
+        if (final) fd.after = String(Date.now());
+        else {
+          try { if (sessionStorage.getItem(OFFERTAB)) return; sessionStorage.setItem(OFFERTAB, "1"); } catch (e) {}
+          fd.after = "try:" + (Math.max(0, _offerTries(fd.after)) + 1);
+        }
+        localStorage.setItem(FREEDAY, JSON.stringify(fd));
+        return;
+      }
       const v = localStorage.getItem(OFFERSEEN);
       if (_offerSpent(v)) return;
       if (final) { localStorage.setItem(OFFERSEEN, String(Date.now())); return; }
@@ -10406,5 +10479,5 @@
   try { _questAnchors(); } catch (e) {}
   try { installDebug(); } catch (e) {}
 
-  global.Sona = { questToday, questEnd, QUEST_DAYS, QUEST_LEN, STORY_DAYS, storyOpen, storyShown, storyEnding, storySeen, storyFound, storyReplay, STORY_SAY_TIMES, STORY_TALK, storyDay, day1For, pcmWave, mediaPCM, voiceAsMedia, libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, goalDays, dayReps, dayGoal, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, goClip, GO_WAIT_MS, WORDS, wordsFor, GAME_WORDS, gameWords, POSITIONS, FAMILY_POSITIONS, posInfo, posPhrase, posHas, soundPos, sylPos, playWords, playPool, hasSound, GAMES_FOLLOW_POS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, rungWin, ladderKey, ladderContent, PRACTICE_TOP, ladderSteps, ladderTop, ladderStart, stepDown, stepLabel, ladderWhere, ladderPlan, GAME_LEVELS, gameTop, gameAsk, gameHold, FREE_MODE, isFree, WEB_SALES, webSales, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, targetSound, targetSoundOptions, setTargetSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, homePicks, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, freeVersion, trialFirst, offerOnLock, FREE_BOOKS, freeBooksOnShelf, bookFree, booksOpen, bookLocked, seasonPick, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, firstGameKey, firstGameStart, firstGameEnd, FREE_PLAY_ON, freePlayOn, freePlayDue, freePlayStart, freePlayActive, freePlayEnd, CRAFTED_CARDS, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, speechTurn, hasSpeechBridge, micNative, micOpen, micProbe, micSource, micDeaf, micRecorder, micQuiet, micStats, micFifo: nmFifo, NATIVE_MIC_GAIN, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repWeeks, gameRep, repsBeacon, gameBest, gameBestOffer, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES, trophyState, trophies, coinsNow, PLAY_LEVEL_AT, PLAY_LEVEL_LINES, playLevelsOpen, playLevel, playLevelAsk, setPlayLevel, playLevelInfo, playBest, playBestOffer, buddyId, buddySprite, chestState, chestOpen, ROAD_LANDS, ROAD_STOPS, MONTH_STEPS, roadStop, roadState, roadOpen, monthOpen, roadSettle, roadRolledSeen, buddiesKept, shopItem, buyItem, undoBuy, equip, BOARD_LIVE, boardLive, boardAllowed, boardState, boardStart, boardClaim, boardFlush, boardView, boardNick, boardLeave, boardAsk, boardCancel, parentEmail, reportEmail, reportSync, reportStatus, reportSet, reportOff, reportFlush, homeOfferDue, offerSeen, notifyAvailable, notifyState, notifyRefresh, notifyAsk, trialReminderOn, trialReminderArm, trialReminderSync, trialReminderSold, nudgeConsent, nudgeState, soundMark, clipsSettled, storePlan, buyPlan, planWords, planSay, planBillDate, setupWall, setupAfterMark, setupAfter, setupAfterClear, setupAsks, setupAsksSave, SETUP_THERAPY };
+  global.Sona = { questToday, questEnd, QUEST_DAYS, QUEST_LEN, STORY_DAYS, storyOpen, storyShown, storyEnding, storySeen, storyFound, storyReplay, STORY_SAY_TIMES, STORY_TALK, storyDay, day1For, pcmWave, mediaPCM, voiceAsMedia, libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, goalDays, dayReps, dayGoal, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, goClip, GO_WAIT_MS, WORDS, wordsFor, GAME_WORDS, gameWords, POSITIONS, FAMILY_POSITIONS, posInfo, posPhrase, posHas, soundPos, sylPos, playWords, playPool, hasSound, GAMES_FOLLOW_POS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, rungWin, ladderKey, ladderContent, PRACTICE_TOP, ladderSteps, ladderTop, ladderStart, stepDown, stepLabel, ladderWhere, ladderPlan, GAME_LEVELS, gameTop, gameAsk, gameHold, FREE_MODE, isFree, WEB_SALES, webSales, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, targetSound, targetSoundOptions, setTargetSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, homePicks, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, freeVersion, trialFirst, offerOnLock, FREE_BOOKS, freeBooksOnShelf, bookFree, booksOpen, bookLocked, seasonPick, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, firstGameKey, firstGameStart, firstGameEnd, FREE_PLAY_ON, freePlayOn, freePlayDue, freePlayStart, freePlayActive, freePlayEnd, CRAFTED_CARDS, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, speechTurn, hasSpeechBridge, micNative, micOpen, micProbe, micSource, micDeaf, micRecorder, micQuiet, micStats, micFifo: nmFifo, NATIVE_MIC_GAIN, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repWeeks, gameRep, repsBeacon, gameBest, gameBestOffer, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES, trophyState, trophies, coinsNow, PLAY_LEVEL_AT, PLAY_LEVEL_LINES, playLevelsOpen, playLevel, playLevelAsk, setPlayLevel, playLevelInfo, playBest, playBestOffer, buddyId, buddySprite, chestState, chestOpen, ROAD_LANDS, ROAD_STOPS, MONTH_STEPS, roadStop, roadState, roadOpen, monthOpen, roadSettle, roadRolledSeen, buddiesKept, shopItem, buyItem, undoBuy, equip, BOARD_LIVE, boardLive, boardAllowed, boardState, boardStart, boardClaim, boardFlush, boardView, boardNick, boardLeave, boardAsk, boardCancel, parentEmail, reportEmail, reportSync, reportStatus, reportSet, reportOff, reportFlush, homeOfferDue, offerSeen, FREE_DAY_ON, freeDayDue, freeDayStart, freeDayActive, freeDayEnded, freeDayEnds, notifyAvailable, notifyState, notifyRefresh, notifyAsk, trialReminderOn, trialReminderArm, trialReminderSync, trialReminderSold, nudgeConsent, nudgeState, soundMark, clipsSettled, storePlan, buyPlan, planWords, planSay, planBillDate, setupWall, setupAfterMark, setupAfter, setupAfterClear, setupAsks, setupAsksSave, SETUP_THERAPY };
 })(window);
