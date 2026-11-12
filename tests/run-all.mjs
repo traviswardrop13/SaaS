@@ -143,7 +143,7 @@ const SUITES = [
   "racecartest.mjs", // real steering, brakes, speech slow-road powers, eight pit stops, fit and interruption safety
   "flowertest.mjs", // FLOWER1: actual poured drops grow a plant, speech widens the shower, progress survives help
   "castletest.mjs", // CASTLE1: real crane and lowering controls, speech steadies the rope, eight architectural placements
-  "pizzatest.mjs", // PIZZA1: rolling, real coverage, topping drags, controlled baking, cuts and owned step instructions
+  "pizzatest.mjs", // PIZZA2: rolling, real coverage, topping drags on moving spots, the word as the last topping, controlled baking, cuts; the word starts the step and nothing else
   "spacetest.mjs", // SPACE2: real thrust, steering and soft touchdowns on eight planets; the word brings the flight and nothing else
   "monstertest.mjs", // MONSTER1: real salon gestures, persistent styling and speech-assisted tools
   "rocketblasttest.mjs", // ROCKET1: pull-and-release physics, five real planet arrivals, speech-widened landing rings
@@ -151,7 +151,7 @@ const SUITES = [
   "voicedoctest.mjs", // VOICEDOC1: every line Echo can say is in VOICE_SCRIPT.md and the checker can still read each page (it was out of the battery, so a moved line broke it unseen, 5-9 Nov 2026)
   "traintest.mjs", // TRAIN1: held driving, real station stops and hand-placed passengers, speech-slowed travel
   "puppytest.mjs", // PUPPY1: moving fur patches washed only by real water particles, speech-steadied puppy
-  "bedtimestarstest.mjs", // STARS1: continuous constellation tracing, real wider speech path and preserved connections
+  "bedtimestarstest.mjs", // STARS2: continuous constellation tracing; five of twelve surprise pictures a round, kept for the child; the word starts the picture and nothing else
   "peekabootest.mjs", // PEEK1: Peekaboo on the Say & Play engine: the word hides the picture, a wrong door glows the right one, silence never finds it
   "fishtanktest.mjs", // FISHTANK1: hand-released sinking food, moving mouth catches and speech-calmed swimming
   "giftstest.mjs", // GIFTS1: five physical unwrapping mechanisms and speech-assisted handles

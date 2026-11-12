@@ -4161,6 +4161,63 @@ said at a set moment).
   - **Travis's to change:** the planets, their colours and pulls, the
     words. **For Rachel:** nothing a child says changes.
   `spacetest` plays it (part `rebuild`, and the landings in `main`).
+- **Bedtime Stars, rebuilt (11 Nov 2026, Travis: "yes build bedtime
+  stars").** `public/stars.js`, `arcade-stars.html`, `stars.css`.
+  - **The word starts the picture and nothing else.** Until then it also
+    switched on ten seconds of a wide glowing path. The Glowing path
+    button's word still gives it, and the miss ladder still does.
+  - **Twelve pictures, five a round** (`ALL`, `plan`): tent, flag, kite
+    (3-4 lines), house, boat, rocket, mountain, star (5), fish, heart, cat,
+    crown (6-7). A round is two easy, two middle and one big, the fewest
+    lines first, and a picture this child has never drawn comes before one
+    they have. The fish is a real fish now (a body and a tail; it was a
+    paper dart). Every point keeps clear of the box's edges, where the
+    finished pictures wait.
+  - **Each picture is a surprise.** Nothing names it before its last line:
+    Echo no longer says "Let's make a kite", the banner says "Follow the
+    stars. What will it be?", and the strip at the top shows a picture
+    still to draw as a dim star. On its last line it lights up and its
+    little details appear (the fish's eye, the cat's whiskers, a door).
+  - **Echo says how to draw once a visit** (`HOWTO`, on the first picture
+    and on "Hear what to do"); the help lines after a slip stay.
+  - **The child's sky** (`sona.stars.v1`, a per-child key the page keeps
+    through `Stars.setup`, as Rocket Blast's planets): every picture drawn
+    is kept at once. The start and end cards show all twelve, the ones drawn
+    in gold, the rest faint (this round's new ones ringed on the end card),
+    named in the label, never counted. The end card says "You drew a
+    heart!" for one new picture, "New pictures for your sky!" for more.
+  - **Kept as it was:** finished pictures stay in the sky, and all five
+    gather at the end.
+  - **Travis's to change:** the pictures, the round's shape, the words.
+    **For Rachel:** nothing a child says changes; Echo says one line less
+    per picture.
+  `bedtimestarstest` plays it (part `rebuild`, and every picture in `fit`).
+- **Pizza Chef, rebuilt (11 Nov 2026, Travis: "yes build pizza chef").**
+  `public/pizza.js`, `arcade-pizza.html`; `sayplay.js` now hands a play
+  game's `onWord` the word too (`onWord(step, word)`; other games ignore
+  it), and `crafted-words.js` gains `art(word)`, a word picture's sheet
+  and crop for a canvas.
+  - **The word starts the step and nothing else.** Until then it also
+    switched on ten seconds of chef power (a stronger pin, a bigger spoon,
+    wider spots, a slower oven, kinder cuts). The Chef power button's word
+    still gives it, and the miss ladder still does.
+  - **A different pizza every time** (`newPizza`): the toppings come in a
+    new order and the nine glowing spots are the old ones turned, mirrored
+    and shared out anew (`SPOTS`), so none ever crowds another.
+  - **The silly topping.** The last topping step's word is the topping: its
+    own picture, three on the pizza ("Add a silly topping!"), and the end
+    card names it ("A rocket pizza!", "An apple pizza!"). A word with no
+    picture is the third ordinary topping.
+  - **Echo explains each kind of step once a visit** (`KIND`, `HOWTO`): the
+    three topping steps are one kind ("Drag each topping to a glowing
+    spot."); "Hear what to do" says the step's line any time.
+  - **Echo's opening words are shorter:** "Say each word two times to start
+    the next step. Then your hands make the pizza!"
+  - **Travis's to change:** the toppings, the words, the end card's title.
+    **For Rachel:** nothing a child says changes; the word's picture (already
+    on the word panel) also lands on the pizza.
+  `pizzatest` plays it (part `rebuild`; the main part's drops beside the
+  spots find their place, since the spots move).
 - **The voice-line list is in the battery since 9 Nov 2026**
   (`voicedoctest` in `run-all`): `VOICE_SCRIPT.md` lists every line Echo can
   say with where it is said, so a change that moves such a line must run
