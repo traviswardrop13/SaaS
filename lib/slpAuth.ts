@@ -2,7 +2,7 @@ import crypto from "node:crypto";
 import { APP_READY, LAUNCH_NOTE } from "@/lib/launch";
 
 /**
- * Magic-link auth for the free SLP master account — the app's first real login.
+ * Magic-link auth for the SLP master account — the app's first real login.
  *
  * Flow: request a link (email) → we store a single-use token hash in KV and email
  * the link → verify the token → issue a signed, httpOnly session cookie.
@@ -370,9 +370,11 @@ export async function sendMagicEmail(
           `<p>${name ? "Hi " + esc(name) + "," : "Hi,"}</p>` +
           // 24 Sep 2026: this said "free for you and for every family on
           // your caseload" — the promise the grandfathered clinicians hold.
-          // A clinician signing up now is not grandfathered, so the first
-          // email they get says only what is true for every clinician.
-          `<p>Your Sona dashboard is ready — it's free, and every family you send home gets Sona's free version.</p>` +
+          // 12 Nov 2026: it said "it's free", which a new clinician's
+          // dashboard no longer is (it comes with Sona Pro, after the free
+          // trial). The same email goes to every sign-in, so it says only
+          // what is true for every clinician.
+          `<p>Your Sona dashboard is ready, and every family you send home gets Sona's free version.</p>` +
           `<p><a href="${link}" style="display:inline-block;background:#58cc02;color:#fff;font-weight:700;text-decoration:none;padding:14px 26px;border-radius:12px;font-size:16px;">Open my dashboard</a></p>` +
           `<p style="margin-top:22px;"><b>What to do first</b></p>` +
           `<ol style="padding-left:18px;color:#46627a;">` +
@@ -393,7 +395,7 @@ export async function sendMagicEmail(
          */
         text:
           (name ? "Hi " + name + ",\n\n" : "Hi,\n\n") +
-          "Your Sona dashboard is ready - it's free, and every family you send home gets Sona's free version.\n\n" +
+          "Your Sona dashboard is ready, and every family you send home gets Sona's free version.\n\n" +
           "Open it here:\n" + link + "\n\n" +
           "What to do first\n" +
           "1. Add a child - initials are enough. You pick the sound and the position.\n" +

@@ -5,7 +5,7 @@ import {
   signSession, sessionCookie, SESSION_MAX_AGE, authSecretOk, leadSig,
 } from "@/lib/slpAuth";
 import { contactsConfigured } from "@/lib/contacts";
-import { CASELOAD_TERMS } from "@/lib/caseload";
+import { PRO_TERMS } from "@/lib/caseload";
 
 export const runtime = "nodejs";
 
@@ -235,18 +235,19 @@ export async function POST(req: NextRequest) {
   // The name they gave at sign-up is the name on their homework notes, so the
   // dashboard does not have to ask for it a second time.
   //
-  // `terms` is the caseload-plan rule (lib/caseload, 24 Sep 2026; its value
-  // moved on 29 Sep): an account made from this build on carries it and pays
-  // for its own Premium and its caseload. An account WITHOUT it predates the
-  // plan and keeps the "free forever, every kid on your caseload" promise it
-  // signed up under.
+  // `terms` is the plan rule (lib/caseload, 24 Sep 2026; its value moved on
+  // 29 Sep and again on 12 Nov): an account made from this build on carries
+  // PRO_TERMS, and its dashboard, own phone and caseload all come with Sona
+  // Pro. An account WITHOUT `terms` predates every plan and keeps the "free
+  // forever, every kid on your caseload" promise it signed up under; the
+  // older stamps keep the free dashboard they were told about.
   // Structural, not a date — so it is stamped on every new account, here and
   // in the verify and account routes, and never on an existing one.
   const name = String(body.name || "").trim().slice(0, 60);
   const acctNew = {
     email, name, clinic: "", code: "", createdAt: new Date().toISOString(),
     source: String(body.source || "").slice(0, 40),
-    terms: CASELOAD_TERMS,
+    terms: PRO_TERMS,
   };
   await kvCmd(["SET", "slpacct:" + email, JSON.stringify(acctNew)]);
   const crm = tellCrm(origin, email, String(body.source || "slp-signup").slice(0, 40), name, safeAttrib(body.attrib));

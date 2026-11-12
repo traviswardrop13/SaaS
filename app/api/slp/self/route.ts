@@ -15,8 +15,10 @@ import {
  *                                own address → { ok, sent }
  *   POST { action: "request" } → "No work email? Request access" → { ok, requested }
  *
- * WHO (lib/caseload selfStatus). From 29 Sep 2026 a clinician's own Premium
- * is "Sona Premium for you", $59.99 a year, and this sends a link to anyone
+ * WHO (lib/caseload selfStatus). From 12 Nov 2026 a clinician's own Premium
+ * comes with Sona Pro; from 29 Sep to 12 Nov 2026 it was "Sona Premium for
+ * you", $59.99 a year (still renewing for those who bought it), and this
+ * sends a link to anyone
  * whose own Premium is on: paid, grandfathered, or on the older $79.99
  * caseload plan. The clinicians who signed up 24 to 29 Sep were told it was
  * free with a work address (lib/workEmail), or with the founder's approval by
@@ -69,7 +71,7 @@ export async function POST(req: NextRequest) {
     if (!self.canRequest) {
       return NextResponse.json({
         ok: false, needPlan: !self.active,
-        error: self.active ? "Your own Premium is already on." : "Premium on your own phone or tablet is Sona Premium for you.",
+        error: self.active ? "Your own Premium is already on." : "Premium on your own phone or tablet comes with Sona Pro.",
       }, { status: 409 });
     }
     // Recorded on its own key (slpaccess, a hash), never on the account
@@ -87,7 +89,7 @@ export async function POST(req: NextRequest) {
         }, { status: 403 })
       : NextResponse.json({
           ok: false, needPlan: true,
-          error: "Premium on your own phone or tablet is Sona Premium for you. Get it on this page, then send yourself a link.",
+          error: "Premium on your own phone or tablet comes with Sona Pro. Start it on this page, then send yourself a link.",
         }, { status: 403 });
   }
 

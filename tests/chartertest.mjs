@@ -323,10 +323,10 @@ ok("the user-facing word is NOT 'founding' — that already means the free SLP-r
     // free days or this buyer has used them, and the Terms may not presume some
     /New family subscriptions to Sona Premium are sold in the Sona app on iPhone and iPad, by Apple, at the price, and with any free trial, shown in the App Store\./.test(off) &&
     /We are not selling new family subscriptions on speaksona\.com\./.test(off) && !/\$\s?\d/.test(off), off.slice(0, 200));
-  // "family", every time: a clinician's plans ARE new Sona Premium
-  // subscriptions sold on speaksona.com, two sections down the same page
-  ok("…and say FAMILY subscriptions, pointing a clinician at the plans still sold here",
-    !/New Sona Premium subscriptions are sold/.test(terms) && !/We are not selling new subscriptions on/.test(terms) && /A clinician(?:&apos;|')s plans are still sold here: see Premium for clinicians below\./.test(off));
+  // "family", every time: a clinician's plan IS sold on speaksona.com, two
+  // sections down the same page (Sona Pro since 12 Nov 2026)
+  ok("…and say FAMILY subscriptions, pointing a clinician at the plan still sold here",
+    !/New Sona Premium subscriptions are sold/.test(terms) && !/We are not selling new subscriptions on/.test(terms) && /A clinician(?:&apos;|')s plan is still sold here: see Sona Pro for clinicians below\./.test(off));
   // the charter paragraph is an offer only while the website sells
   const charterOff = between(terms, ") : ( <> <strong>Charter price.</strong>", "</>");
   ok("…and with the website not selling, the charter paragraph is what a charter plan costs, not an offer",

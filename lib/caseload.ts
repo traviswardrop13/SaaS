@@ -3,8 +3,29 @@ import { kvCmd } from "@/lib/slpAuth";
 import { isWorkEmail } from "@/lib/workEmail";
 
 /**
- * SONA PREMIUM FOR CLINICIANS: two plans, one on top of the other
- * (24 Sep 2026; re-priced by Travis, 29 Sep 2026).
+ * SONA PRO: THE ONE PLAN A CLINICIAN CAN BUY NOW (Travis, 12 Nov 2026: "i
+ * needa get this setup to sell to slps ... price it between 15 and 30 a month
+ * for the dashboard and unlimited accounts for clients"; he chose $19.99 a
+ * month, a 14-day free trial, no cap on families, and the page findable).
+ *
+ *  - "Sona Pro", $19.99 a month (`plan: slp-pro`): the dashboard, every game
+ *    on the clinician's own phone or tablet, and every game for every family
+ *    who joins through their link, with no cap on how many.
+ *  - A 14-day free trial, card up front, once per clinician: the first Pro
+ *    subscription an email ever has. Stripe charges on day 15 unless they
+ *    cancel; cancelled during the trial, nothing is charged.
+ *  - THE DASHBOARD IS PART OF THE PLAN, for accounts made from this build
+ *    (`terms: PRO_TERMS`). Every older account keeps the free dashboard it
+ *    was promised; see dashboardOpen().
+ *
+ * The two yearly plans below are RETIRED FROM SALE, not cancelled: anyone
+ * holding one keeps it, renewing at the price they bought it at, and it keeps
+ * covering what it covered. Only the purchase path lost them
+ * (app/api/slp/plan refuses them), the same rule the family plan's monthly
+ * price went by.
+ *
+ * THE TWO RETIRED PLANS, one on top of the other
+ * (24 Sep 2026; re-priced by Travis, 29 Sep 2026; sold until 12 Nov 2026).
  *
  *  - "Sona Premium for you", $59.99 a year: every game on the clinician's
  *    own phone or tablet, reached by the single-use link /api/slp/self
@@ -42,6 +63,12 @@ import { isWorkEmail } from "@/lib/workEmail";
  *    it still does, at the price they subscribed at. One sold from 29 Sep
  *    carries `addon: "1"` and covers the caseload only.
  *  - PAID SELF. A live subscription stamped `plan: slp-self`.
+ *  - `terms: PRO_TERMS` (from 12 Nov 2026). Nothing until they start Sona
+ *    Pro: not the dashboard, not their own phone, not their caseload.
+ *  - SONA PRO. A live subscription stamped `plan: slp-pro`. Covers all three,
+ *    whatever the account's stamp. A month cancelled ends at the end of the
+ *    month paid for (the billing page cancels at period end), so families
+ *    keep every game to then.
  * Stripe keeps a cancelled-at-period-end subscription `active` until the
  * year that was paid for runs out, so families keep Premium to the end of
  * the paid year, then drop to the free version. past_due counts too: that is
@@ -65,6 +92,19 @@ import { isWorkEmail } from "@/lib/workEmail";
  * the spots run out.
  */
 
+// SONA PRO. A monthly price, printed as it is charged: "$19.99 a month",
+// never rounded to "$20" and never divided into anything. The trial length is
+// the one number checkout, the dashboard, for-slps and the Terms all read.
+export const PRO_CENTS = 1999;
+export const PRO_PRICE = "$19.99";
+export const PRO_PER = "a month";
+export const PRO_INTERVAL = "month" as const;            // Stripe recurring.interval
+export const PRO_TRIAL_DAYS = 14;
+export const PRO_PLAN = "slp-pro";                       // Stripe metadata.plan, on the session AND the subscription
+export const PRO_NAME = "Sona Pro";
+/** Stamped on every NEW slpacct from 12 Nov 2026: the dashboard is part of Sona Pro for them. */
+export const PRO_TERMS = "pro-2026-11-12";
+
 // The add-on. $59.99 / 12 = $4.9991, so "under $5 a month": never "$4.99 a
 // month" (that is $59.88 a year) nor "$5.00" (a rounding a reader can check
 // and catch). The same rule made the family price "under $5 a month".
@@ -86,14 +126,18 @@ export const LEGACY_CASELOAD_PRICE = "$79.99";
 // Both: $119.98 / 12 = $9.998, so "under $10 a month".
 export const BOTH_PRICE = "$119.98";
 export const BOTH_PER_MONTH = "under $10 a month";
-/** Stamped on every NEW slpacct. An account never gains or loses it after that. */
+/** The 29 Sep to 12 Nov 2026 stamp: a free dashboard, both yearly plans bought. An account never gains or loses its stamp. */
 export const CASELOAD_TERMS = "premium-2026-09-29";
 /** The 24 to 29 Sep 2026 stamp: own Premium free with a work email, as those clinicians were told. */
 export const FREE_SELF_TERMS = "caseload-2026-09";
-// A covered code may redeem up to 300 families; an uncovered one keeps the
-// ordinary 60 (app/api/slp/redeem). Copy says "every family on your
-// caseload", never "unlimited" — there is a number, and it is this one.
-export const COVERED_REDEEM_CAP = 300;
+// NO CAP ON A COVERED CASELOAD (Travis, 12 Nov 2026: "Remove the limit").
+// Until then a covered code stopped at 300 sign-ups a year and the copy could
+// not say "unlimited"; now a covered clinician's link has no number at all,
+// so "unlimited families" is true. An UNCOVERED code keeps the ordinary 60
+// (app/api/slp/redeem), which is what bounds a link posted in public by
+// someone who is not paying. The accepted risk: a paying clinician's link
+// posted in public gives strangers every game on that clinician's plan, and
+// the remedy is the clinician's Rotate button (Settings), not a number.
 
 /** Stripe statuses under which a plan is live. Everything else is not. */
 export const COVERED_STATUSES: ReadonlySet<string> = new Set(["active", "trialing", "past_due"]);
@@ -123,13 +167,13 @@ export const SELF_TOKEN_TTL = 60 * 60 * 24 * 30;
  */
 export function isClinicianPlan(md: Record<string, string> | null | undefined): boolean {
   const plan = md && md.plan;
-  return plan === CASELOAD_PLAN || plan === SELF_PLAN;
+  return plan === CASELOAD_PLAN || plan === SELF_PLAN || plan === PRO_PLAN;
 }
 
 export type Kv = (cmd: (string | number)[]) => Promise<unknown>;
 
-export type PlanKind = "caseload" | "self";
-const PLAN_OF: Record<PlanKind, string> = { caseload: CASELOAD_PLAN, self: SELF_PLAN };
+export type PlanKind = "caseload" | "self" | "pro";
+const PLAN_OF: Record<PlanKind, string> = { caseload: CASELOAD_PLAN, self: SELF_PLAN, pro: PRO_PLAN };
 
 export type PlanRecord = {
   sub: string;                 // "" when Stripe was asked and had nothing
@@ -141,11 +185,13 @@ export type PlanRecord = {
   // Caseload only: sold as the add-on (29 Sep 2026 on). Absent on a mirror
   // written before then, which is the older plan and reads as not an add-on.
   addon?: boolean;
+  // Pro only: when the free trial ends (unix seconds), while there is one.
+  trialEnd?: number | null;
 };
 
 export type PlanStatus = {
   active: boolean;
-  source: "paid" | "grandfathered" | "none";
+  source: "paid" | "grandfathered" | "pro" | "none";
   periodEnd: number | null;
   cancelAtPeriodEnd: boolean;
 };
@@ -159,7 +205,7 @@ export type SelfAccess = { eligible: boolean; workEmail: boolean; approved: bool
  */
 export type SelfStatus = {
   active: boolean;
-  source: "grandfathered" | "work-email" | "paid" | "caseload" | "none";
+  source: "grandfathered" | "work-email" | "paid" | "caseload" | "pro" | "none";
   periodEnd: number | null;
   cancelAtPeriodEnd: boolean;
   canRequest: boolean;
@@ -187,7 +233,7 @@ export class StoreUnavailable extends Error {
 const norm = (email: unknown): string => String(email || "").trim().toLowerCase();
 
 export function planKey(email: string, kind: PlanKind = "caseload"): string {
-  return (kind === "self" ? "slpplan-self:" : "slpplan:") + norm(email);
+  return (kind === "self" ? "slpplan-self:" : kind === "pro" ? "slpplan-pro:" : "slpplan:") + norm(email);
 }
 export function accessKey(email: string): string { return "slpaccess:" + norm(email); }
 export function selfTokenKey(code: string, token: string): string { return "slpself:" + String(code || "").toLowerCase() + ":" + token; }
@@ -226,6 +272,16 @@ export function grandfathered(acct: unknown): boolean {
     !Object.prototype.hasOwnProperty.call(acct, "terms");
 }
 
+/**
+ * Made from 12 Nov 2026 (`terms: PRO_TERMS`): the dashboard, their own phone
+ * and their caseload all come with Sona Pro, and with nothing else — no
+ * retired plan was ever sold to them, so none is looked for.
+ */
+export function proTerms(acct: unknown): boolean {
+  return !!acct && typeof acct === "object" && !Array.isArray(acct) &&
+    (acct as { terms?: unknown }).terms === PRO_TERMS;
+}
+
 function stripeClient(given?: Stripe | null): Stripe | null {
   if (given) return given;
   const key = process.env.STRIPE_SECRET_KEY;
@@ -261,6 +317,10 @@ export function recordFromSubscription(s: Stripe.Subscription, now = Date.now())
     checkedAt: now,
   };
   if (s.metadata && s.metadata.plan === CASELOAD_PLAN) rec.addon = s.metadata.addon === CASELOAD_ADDON;
+  if (s.metadata && s.metadata.plan === PRO_PLAN) {
+    const t = (s as unknown as { trial_end?: number | null }).trial_end;
+    rec.trialEnd = s.status === "trialing" && typeof t === "number" ? t : null;
+  }
   return rec;
 }
 
@@ -371,6 +431,14 @@ export async function planStatus(email: string, opts: PlanOpts & { acct?: Record
   if (!norm(email)) return { active: false, source: "none", periodEnd: null, cancelAtPeriodEnd: false };
   const acct = opts.acct !== undefined ? opts.acct : await readAcct(email, kv);
   if (grandfathered(acct)) return { active: true, source: "grandfathered", periodEnd: null, cancelAtPeriodEnd: false };
+  // Sona Pro first: it is the plan on sale, and it covers the caseload
+  // whatever the account's stamp.
+  const pro = await currentPlan(email, { ...opts, kv, now, kind: "pro" });
+  if (recordActive(pro, now)) {
+    return { active: true, source: "pro", periodEnd: pro!.periodEnd, cancelAtPeriodEnd: pro!.cancelAtPeriodEnd };
+  }
+  // A Pro-era account was never sold the yearly caseload plan: no search.
+  if (proTerms(acct)) return { active: false, source: "none", periodEnd: null, cancelAtPeriodEnd: false };
   const rec = await currentPlan(email, { ...opts, kv, now, kind: "caseload" });
   if (recordActive(rec, now)) {
     return { active: true, source: "paid", periodEnd: rec!.periodEnd, cancelAtPeriodEnd: rec!.cancelAtPeriodEnd };
@@ -401,6 +469,11 @@ export async function selfStatus(email: string, opts: PlanOpts & { acct?: Record
   if (grandfathered(acct)) return { active: true, source: "grandfathered", ...off, canRequest: false, ...base };
   if (earlier && access.eligible) return { active: true, source: "work-email", ...off, canRequest: false, ...base };
   const canRequest = earlier;
+  const pro = await currentPlan(email, { ...opts, kv, now, kind: "pro" });
+  if (recordActive(pro, now)) {
+    return { active: true, source: "pro", periodEnd: pro!.periodEnd, cancelAtPeriodEnd: pro!.cancelAtPeriodEnd, canRequest, ...base };
+  }
+  if (proTerms(acct)) return { active: false, source: "none", ...off, canRequest, ...base };
   const own = await currentPlan(email, { ...opts, kv, now, kind: "self" });
   if (recordActive(own, now)) {
     return { active: true, source: "paid", periodEnd: own!.periodEnd, cancelAtPeriodEnd: own!.cancelAtPeriodEnd, canRequest, ...base };
@@ -412,6 +485,53 @@ export async function selfStatus(email: string, opts: PlanOpts & { acct?: Record
     return { active: true, source: "caseload", periodEnd: cl!.periodEnd, cancelAtPeriodEnd: cl!.cancelAtPeriodEnd, canRequest, ...base };
   }
   return { active: false, source: "none", ...off, canRequest, ...base };
+}
+
+/**
+ * SONA PRO, as the dashboard and checkout need it: whether it is on, and
+ * whether this clinician may still start the free trial.
+ */
+export type ProStatus = {
+  active: boolean;
+  status: string;              // Stripe's word ("trialing", "active", "past_due", …) or "none"
+  trialEnd: number | null;     // unix seconds, while trialing
+  periodEnd: number | null;
+  cancelAtPeriodEnd: boolean;
+  trialAvailable: boolean;     // never had a Pro subscription
+};
+
+export async function proStatus(email: string, opts: PlanOpts = {}): Promise<ProStatus> {
+  const now = opts.now ?? Date.now();
+  if (!norm(email)) return { active: false, status: "none", trialEnd: null, periodEnd: null, cancelAtPeriodEnd: false, trialAvailable: false };
+  const rec = await currentPlan(email, { ...opts, now, kind: "pro" });
+  const active = recordActive(rec, now);
+  return {
+    active,
+    status: (rec && rec.status) || "none",
+    trialEnd: active && rec && rec.status === "trialing" ? rec.trialEnd ?? null : null,
+    periodEnd: (rec && rec.periodEnd) || null,
+    cancelAtPeriodEnd: !!(rec && rec.cancelAtPeriodEnd),
+    // ONE TRIAL PER CLINICIAN. Any Pro subscription Stripe ever held for this
+    // address, in any status, spends it: a trial that was cancelled, or ran
+    // out with a card that failed, is not a second fourteen days.
+    trialAvailable: !(rec && rec.sub),
+  };
+}
+
+/**
+ * IS THE DASHBOARD OPEN? Every account made before 12 Nov 2026 was told the
+ * dashboard was free, and it stays free for them, forever: a clinician's
+ * caseload, notes and homework are never held behind a price they were not
+ * shown. From 12 Nov 2026 (`terms: PRO_TERMS`) the dashboard is part of Sona
+ * Pro — trialing, active, or in the card-retry grace of past_due.
+ * A signed-in session with no account record at all is treated as new: the
+ * routes that make one make it with PRO_TERMS.
+ */
+export async function dashboardOpen(email: string, opts: PlanOpts & { acct?: Record<string, unknown> | null } = {}): Promise<boolean> {
+  const kv = opts.kv || kvCmd;
+  const acct = opts.acct !== undefined ? opts.acct : await readAcct(email, kv);
+  if (acct && !proTerms(acct)) return true;
+  return (await proStatus(email, { ...opts, kv })).active;
 }
 
 /**
@@ -431,7 +551,7 @@ export async function activateFromSession(
   if (!stripe) return { activated: false, reason: "stripe not configured" };
   const cs = await stripe.checkout.sessions.retrieve(sessionId, { expand: ["subscription"] });
   const md = cs.metadata || {};
-  const kind: PlanKind | null = md.plan === CASELOAD_PLAN ? "caseload" : md.plan === SELF_PLAN ? "self" : null;
+  const kind: PlanKind | null = md.plan === CASELOAD_PLAN ? "caseload" : md.plan === SELF_PLAN ? "self" : md.plan === PRO_PLAN ? "pro" : null;
   if (!kind) return { activated: false, reason: "not a clinician plan" };
   if (!norm(email) || norm(md.slp) !== norm(email)) return { activated: false, reason: "bought by another account" };
   if (cs.status !== "complete") return { activated: false, reason: "checkout not complete" };

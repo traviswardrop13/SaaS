@@ -51,11 +51,12 @@ export type Clinician = {
   workEmail: "yes" | "no";
   accessRequested: string;           // ISO time of the first request, or ""
   approved: "yes" | "no";
-  caseload: "paid" | "grandfathered" | "none";
+  // "pro" / "pro trial": Sona Pro, the one plan on sale from 12 Nov 2026.
+  caseload: "pro" | "pro trial" | "paid" | "grandfathered" | "none";
   // Their own Premium (29 Sep 2026): how it is on, if it is. Only a 24 to
   // 29 Sep account without a work email can still be approved by hand
   // (`canApprove`); everyone after that buys it.
-  own: "paid" | "free" | "older plan" | "none";
+  own: "pro" | "pro trial" | "paid" | "free" | "older plan" | "none";
   canApprove: "yes" | "no";
 };
 
@@ -92,6 +93,9 @@ export async function readClinicians(): Promise<Clinician[]> {
         try { plan = JSON.parse(String(await kvCmd(["GET", planKey(email)]))) as PlanRecord | null; } catch { plan = null; }
         let mine: PlanRecord | null = null;
         try { mine = JSON.parse(String(await kvCmd(["GET", planKey(email, "self")]))) as PlanRecord | null; } catch { mine = null; }
+        let pro: PlanRecord | null = null;
+        try { pro = JSON.parse(String(await kvCmd(["GET", planKey(email, "pro")]))) as PlanRecord | null; } catch { pro = null; }
+        const proOn: "pro" | "pro trial" | "" = recordActive(pro) ? (pro!.status === "trialing" ? "pro trial" : "pro") : "";
         // in Resend's contacts: lib/contacts SYNCED, which every add stamps
         // (an account's crmAt also counted the Kit years, so it is not read)
         let inList = false;
@@ -108,8 +112,8 @@ export async function readClinicians(): Promise<Clinician[]> {
           workEmail: isWorkEmail(email) ? "yes" : "no",
           accessRequested: access.requestedAt || "",
           approved: access.approved === "1" ? "yes" : "no",
-          caseload: grandfathered(a) ? "grandfathered" : recordActive(plan) ? "paid" : "none",
-          own: freeSelf ? "free" : recordActive(mine) ? "paid" : recordActive(plan) && plan!.addon !== true ? "older plan" : "none",
+          caseload: grandfathered(a) ? "grandfathered" : proOn || (recordActive(plan) ? "paid" : "none"),
+          own: freeSelf ? "free" : proOn || (recordActive(mine) ? "paid" : recordActive(plan) && plan!.addon !== true ? "older plan" : "none"),
           canApprove: earlier && !isWorkEmail(email) && access.approved !== "1" ? "yes" : "no",
         });
       } catch { /* skip */ }
