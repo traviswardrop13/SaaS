@@ -156,7 +156,7 @@ const SUITES = [
   "fishtanktest.mjs", // FISHTANK1: hand-released sinking food, moving mouth catches and speech-calmed swimming
   "giftstest.mjs", // GIFTS1: five physical unwrapping mechanisms and speech-assisted handles
   "caketest.mjs", // CAKE2: real circular mixing, caught batter, piping in picked colours, custom fruit, a new birthday buddy and their candles every round
-  "balloonpartytest.mjs", // BALLOON1: real pump strokes and guided garland deliveries, speech power and quiet turns
+  "balloonpartytest.mjs", // BALLOON2: the word brings only the balloon; a buddy's party, new colours and ring order every round, the last two rings sway
   "robottest.mjs", // ROBOT1: rotate real circuits, speech blueprints, eight assembled parts
   "treasuretest.mjs", // TREASURE2: drawn sailing routes, solid islands, a new voyage every game and the route kept on the map; the word starts the sail and nothing else
   "dinotest.mjs", // DINOS1: Dino Dig's four dinosaurs: each dug to its own finale, in order, per child, round again after the last

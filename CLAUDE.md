@@ -4241,6 +4241,38 @@ said at a set moment).
     **For Rachel:** nothing a child says changes.
   `treasuretest` plays it (part `rebuild`; the other parts sail one fixed
   voyage, by seed, so each run is the same).
+- **Balloon Party, rebuilt (12 Nov 2026, Travis: "build it all!").**
+  `public/balloon.js`, `arcade-balloon.html`.
+  - **The word brings the balloon and nothing else.** Until then it also
+    switched on ten seconds of big pumps and a big ring, so the pumping and
+    the ring nearly did themselves (six plain pumps fill a balloon now, the
+    six dots under it). The "Big pumps" button's word still gives that
+    power, and the miss ladder still lands every balloon.
+  - **A party for a buddy, new every round** (`newParty`, never repeating
+    the round before's buddy, colours or ring order): one of the eleven
+    buddies with a sitting picture sits on the grass by the picnic, above
+    the pump, in the shop's party hat (cake.js's `BUDDY_BOX` and `HAT_AT`),
+    and hops each time a balloon is tied (no hop under Reduce Motion). The
+    banners name them ("Let's make a party for Miso!", "A balloon for
+    Miso's party!") and so does the end card ("Happy party, Miso!", the
+    page's `Balloon.onParty`).
+  - **A new mix of colours, and a new ring order:** five of seven colours
+    a round (`PALETTE`: red, yellow, green, blue, purple, and now pink and
+    teal; never orange), the one red sprite recoloured on the phone as
+    before, and the five rings of the garland fill in a new order.
+  - **The last two rings sway gently** side to side (`SWAY` 0.05 of the
+    width each way, about six seconds there and back), and hold still where
+    they are from the first miss and while the help word's power lasts, as
+    Rocket Blast's last planet does. A balloon is tied where its ring was.
+    A ring at its biggest is kept on screen (`placeGoal`).
+  - **Echo explains each step once a visit** (`told`, never reset by a new
+    balloon or Play again): "Tap the pump" and "Now pull" are said once, not
+    for every balloon.
+  - **Travis's to change:** the buddies, the colours, the sway's size and
+    speed, the banner and end card words. **For Rachel:** nothing a child
+    says changes; Echo says his three directions once a visit.
+  `balloonpartytest` plays it (parts `rebuild`, `main`, `struggle`, `help`,
+  `fit`).
 - **The voice-line list is in the battery since 9 Nov 2026**
   (`voicedoctest` in `run-all`): `VOICE_SCRIPT.md` lists every line Echo can
   say with where it is said, so a change that moves such a line must run

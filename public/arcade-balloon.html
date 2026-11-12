@@ -29,7 +29,12 @@
   <div class="ovl" id="endOvl"><div class="ovlCard"><img class="ovlEcho endStar" src="/assets/crafted/echo-cheer.webp" alt=""><h2 id="endTitle"></h2><p id="endSub"></p><button class="btn" id="again" type="button">Play again</button><button class="ghost" id="goHome" type="button">Back to games</button></div></div>
   <script src="/sona.js"></script><script src="/crafted-words.js"></script><script src="/sayplay.js"></script><script src="/balloon.js"></script>
   <script>
-    SayPlay.start({key:"balloon",title:"Balloon Party",intro:"Say each word two times to get a balloon. Pump it up. Then pull it into the glowing ring and let go.",steps:[[],[],[],[],[]],finale:[],done:{title:"Party time!",sub:"You filled the party with five beautiful balloons!"},play:window.Balloon});
+    var GAME={key:"balloon",title:"Balloon Party",intro:"Say each word two times to get a balloon. Pump it up. Then pull it into the glowing ring and let go.",steps:[[],[],[],[],[]],finale:[],done:{title:"Party time!",sub:"You filled the party with five beautiful balloons!"},play:window.Balloon};
+    // each round is a party for one of the buddies (balloon.js picks one);
+    // the end card names them (a balloon.js the phone saved before BALLOON2
+    // has no onParty and keeps the old title)
+    if(window.Balloon&&Balloon.onParty)Balloon.onParty(function(p){GAME.done.title="Happy party, "+p.name+"!";});
+    SayPlay.start(GAME);
     if(!document.body.hidden){try{Sona.track("game opened",{game:"balloon"});}catch(e){}}
   </script>
 </body>
