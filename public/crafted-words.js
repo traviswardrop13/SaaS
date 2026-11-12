@@ -378,5 +378,13 @@
     var px=cw>w?x/(cw-w)*100:0,py=ch>h?y/(ch-h)*100:0;
     return '<span class="crafted-word" aria-hidden="true" style="width:' + n + 'px;height:' + n + 'px"><span class="crafted-word-crop" style="width:' + (w/max*100) + '%;height:' + (h/max*100) + '%;background-image:url(' + file + ');background-size:' + (cw/w*100) + '% ' + (ch/h*100) + '%;background-position:' + px + '% ' + py + '%"></span></span>';
   }
-  global.SonaCraftedWords = { picture: picture, sheets: sheets };
+  // the same picture for a canvas: its sheet and where it sits on it, as
+  // fractions of the sheet (Pizza Chef draws the word as a topping)
+  function art(word) {
+    var a = lookup[String(word || "").toLowerCase()];
+    if (!a) return null;
+    var crop = crops[String(word || "").toLowerCase()] || [3,3,a.col,a.row,1,1];
+    return { file: "/assets/crafted/words/feed-words-" + (a.sheet < 10 ? "0" : "") + a.sheet + ".webp", sx: crop[2] / crop[0], sy: crop[3] / crop[1], sw: crop[4] / crop[0], sh: crop[5] / crop[1] };
+  }
+  global.SonaCraftedWords = { picture: picture, art: art, sheets: sheets };
 })(window);
