@@ -4127,6 +4127,40 @@ said at a set moment).
     visit.
   `caketest` plays it (parts `rebuild`, `main`, `struggle`, `help`,
   `keyboard`, `fit`).
+- **The next batch (Travis, 11 Nov 2026: "start the next batch of games"):**
+  Space Trip, Bedtime Stars, Pizza Chef, Treasure Map, Balloon Party, one at
+  a time, the same way.
+- **Space Trip, rebuilt (11 Nov 2026, Travis: "yes build space trip").**
+  `public/space.js`, `arcade-space.html`, `space.css`.
+  - **The word starts the flight and nothing else.** Until then it also
+    switched on ten seconds of Easy flight (a lighter pull, gentler
+    landings), so the first landings nearly did themselves. The Easy flight
+    button's word still gives it, and the miss ladder still does. Its ten
+    seconds now count down only while the rocket flies, never while it
+    waits. The first two flights pull a little less (`GRAVITY`).
+  - **A trip to eight planets, new every round** (`WORLDS`, `newTrip`): the
+    Moon and the Mint, Candy, Ice, Purple, Sandy, Blue and Rainbow Planets,
+    each the moon ground painted in its colour on the phone (no new art),
+    its colour glowing up from the ground, and its own pull (0.85 to 1.15
+    of the stage's; the first two flights never pull harder). A new order
+    every round, never starting on the last round's first planet. Every pad
+    sits somewhere new (the first near the middle, each next at least a
+    fifth of the screen from the last); the rocks keep their place along the
+    way from the start to the pad (`ROCKS`), so each stage is the challenge
+    it was. A landing says "You landed on the Ice Planet!".
+  - **A clean screen.** The "Ready to fly / Nice and gentle" box is gone:
+    the pad, now a thick platform in a glow, has a beacon on each end that
+    lights teal while the rocket is slow enough to land (and on the pad
+    once landed). The top bar's dots are the trip's planets, each filling in
+    its colour as it is landed on.
+  - **Echo's opening words are shorter**: "Say each word two times to start
+    a flight. Then land on each planet."
+  - **The finale:** the eight planets of the trip come out across the sky
+    in the order they were visited (all at once under Reduce Motion). The
+    end card: "What a space trip!" / "Eight planets, landed by you."
+  - **Travis's to change:** the planets, their colours and pulls, the
+    words. **For Rachel:** nothing a child says changes.
+  `spacetest` plays it (part `rebuild`, and the landings in `main`).
 - **The voice-line list is in the battery since 9 Nov 2026**
   (`voicedoctest` in `run-all`): `VOICE_SCRIPT.md` lists every line Echo can
   say with where it is said, so a change that moves such a line must run
