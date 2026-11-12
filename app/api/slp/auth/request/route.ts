@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import crypto from "node:crypto";
 import {
   kvCmd, kvConfigured, randomToken, hashToken, sendMagicEmail,
-  signSession, sessionCookie, SESSION_MAX_AGE, authSecretOk, leadSig,
+  signSession, sessionCookie, SESSION_MAX_AGE, authSecretOk, leadSig, clinicianWorkSetting,
 } from "@/lib/slpAuth";
 import { contactsConfigured } from "@/lib/contacts";
 import { CASELOAD_TERMS } from "@/lib/caseload";
@@ -117,7 +117,7 @@ async function tellCrm(
   }
 }
 
-// POST { email, adminKey?, source? } → email a single-use magic sign-in link,
+// POST { email, adminKey?, source?, workSetting? } → email a single-use magic sign-in link,
 // and, for an account that does not exist yet, sign the clinician straight in.
 //
 // Admin override: when SLP_ADMIN_KEY is set (>= 8 chars) AND a matching adminKey
@@ -125,7 +125,7 @@ async function tellCrm(
 // to a pilot SLP directly — before Resend/email is configured. Without the key
 // the link is only ever emailed; it is never returned to the caller.
 export async function POST(req: NextRequest) {
-  let body: { email?: string; adminKey?: string; source?: string; name?: string; attrib?: unknown };
+  let body: { email?: string; adminKey?: string; source?: string; name?: string; attrib?: unknown; workSetting?: unknown };
   try {
     body = await req.json();
   } catch {
@@ -134,6 +134,10 @@ export async function POST(req: NextRequest) {
   const email = String(body.email || "").trim().toLowerCase().slice(0, 120);
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
     return NextResponse.json({ ok: false, error: "Enter a valid email." }, { status: 400 });
+  }
+  const workSetting = clinicianWorkSetting(body.workSetting);
+  if (body.workSetting !== undefined && !workSetting) {
+    return NextResponse.json({ ok: false, error: "Choose Clinic, School or Other." }, { status: 400 });
   }
   if (!kvConfigured()) {
     return NextResponse.json(
@@ -177,10 +181,6 @@ export async function POST(req: NextRequest) {
   }
 
   const origin = new URL(req.url).origin;
-  const token = randomToken();
-  await kvCmd(["SET", "slptok:" + hashToken(token), email, "EX", 900]); // 15 min
-  const link = origin + "/api/slp/auth/verify?token=" + encodeURIComponent(token);
-  const res = await sendMagicEmail(email, link, String(body.name || "").trim().slice(0, 60));
 
   /**
    * A BRAND-NEW ACCOUNT IS SIGNED IN ON THE SPOT. Cold traffic off an ad does
@@ -204,6 +204,35 @@ export async function POST(req: NextRequest) {
   let acctRaw: unknown = null;
   let acctExists = false;
   try { acctRaw = await kvCmd(["GET", "slpacct:" + email]); acctExists = acctRaw !== null; } catch { acctExists = true; }
+
+  // The name they gave at sign-up is the name on their homework notes, so the
+  // dashboard does not have to ask for it a second time.
+  //
+  // `terms` is the caseload-plan rule (lib/caseload, 24 Sep 2026; its value
+  // moved on 29 Sep): an account made from this build on carries it and pays
+  // for its own Premium and its caseload. An account WITHOUT it predates the
+  // plan and keeps the "free forever, every kid on your caseload" promise it
+  // signed up under.
+  // Structural, not a date — so it is stamped on every new account, here and
+  // in the verify and account routes, and never on an existing one.
+  const name = String(body.name || "").trim().slice(0, 60);
+  const acctNew = {
+    email, name, clinic: "", code: "", createdAt: new Date().toISOString(),
+    source: String(body.source || "").slice(0, 40),
+    terms: CASELOAD_TERMS,
+    ...(workSetting ? { workSetting } : {}),
+  };
+  // Claim the new record before sending its link. A fast email verification
+  // or another signup cannot create an empty record ahead of this write.
+  const created = acctExists ? null : await kvCmd(["SET", "slpacct:" + email, JSON.stringify(acctNew), "NX"]);
+  if (created !== "OK" && created !== null) {
+    return NextResponse.json({ ok: false, error: "Couldn't save your account just now. Try again in a moment." }, { status: 503 });
+  }
+
+  const token = randomToken();
+  await kvCmd(["SET", "slptok:" + hashToken(token), email, "EX", 900]); // 15 min
+  const link = origin + "/api/slp/auth/verify?token=" + encodeURIComponent(token);
+  const res = await sendMagicEmail(email, link, name);
 
   if (acctExists) {
     /**
@@ -232,23 +261,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true, sent: res.sent, signedIn: false, devLink: isAdmin ? link : res.devLink });
   }
 
-  // The name they gave at sign-up is the name on their homework notes, so the
-  // dashboard does not have to ask for it a second time.
-  //
-  // `terms` is the caseload-plan rule (lib/caseload, 24 Sep 2026; its value
-  // moved on 29 Sep): an account made from this build on carries it and pays
-  // for its own Premium and its caseload. An account WITHOUT it predates the
-  // plan and keeps the "free forever, every kid on your caseload" promise it
-  // signed up under.
-  // Structural, not a date — so it is stamped on every new account, here and
-  // in the verify and account routes, and never on an existing one.
-  const name = String(body.name || "").trim().slice(0, 60);
-  const acctNew = {
-    email, name, clinic: "", code: "", createdAt: new Date().toISOString(),
-    source: String(body.source || "").slice(0, 40),
-    terms: CASELOAD_TERMS,
-  };
-  await kvCmd(["SET", "slpacct:" + email, JSON.stringify(acctNew)]);
+  // A concurrent request won the account. This request gets the email link.
+  if (created !== "OK") {
+    return NextResponse.json({ ok: true, sent: res.sent, signedIn: false, devLink: isAdmin ? link : res.devLink });
+  }
   const crm = tellCrm(origin, email, String(body.source || "slp-signup").slice(0, 40), name, safeAttrib(body.attrib));
 
   const session = signSession({ email, code: "", iat: Date.now(), exp: Date.now() + SESSION_MAX_AGE * 1000 });

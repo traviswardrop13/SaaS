@@ -118,6 +118,13 @@ function esc(s: string): string {
   return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c] as string));
 }
 
+export type ClinicianWorkSetting = "clinic" | "school" | "other";
+
+/** The optional work setting belongs to the clinician's account. */
+export function clinicianWorkSetting(value: unknown): ClinicianWorkSetting | "" {
+  return value === "clinic" || value === "school" || value === "other" ? value : "";
+}
+
 export function randomToken(): string {
   return crypto.randomBytes(32).toString("base64url");
 }

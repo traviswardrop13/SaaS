@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
-import { kvCmd, kvConfigured } from "@/lib/slpAuth";
+import { clinicianWorkSetting, kvCmd, kvConfigured, type ClinicianWorkSetting } from "@/lib/slpAuth";
 import { grandfathered, recordActive, accessKey, planKey, FREE_SELF_TERMS, type PlanRecord } from "@/lib/caseload";
 import { isWorkEmail } from "@/lib/workEmail";
 
@@ -44,6 +44,7 @@ export async function readLeads(): Promise<Record<string, string>[]> {
 
 export type Clinician = {
   email: string; name: string; clinic: string; createdAt: string; source: string; inCrm: string;
+  workSetting: ClinicianWorkSetting | "";
   // The caseload plan (lib/caseload, 24 Sep 2026), for the founder's
   // clinicians table: whether the address is a work one, whether they asked
   // for their own Premium without one (and whether it was approved), and
@@ -102,6 +103,7 @@ export async function readClinicians(): Promise<Clinician[]> {
           email,
           name: String(a.name || ""),
           clinic: String(a.clinic || ""),
+          workSetting: clinicianWorkSetting(a.workSetting),
           createdAt: String(a.createdAt || ""),
           source: String(a.source || ""),
           inCrm: inList ? "yes" : "not yet",

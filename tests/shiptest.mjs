@@ -242,16 +242,20 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
     /<span class="n" id="bookCount">\d+<\/span> picture books\./.test(parents) && /\$\("bookCount"\)/.test(parents) && !/a picture book for every sound/.test(parents));
   ok("…and the sounds answer names all " + sounds.length, new RegExp(sounds.length + " speech sounds: P, B, M, N, T, D, K, G, F, V, S, Z, SH, CH, J, L, R, and both TH sounds").test(pShown));
 
-  // THE CLINICIAN PAGE, AT /for-slps, is the page it was.
+  // The clinician page keeps its public address and shared title.
+  const slpHeadline = (slps.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/) || ["", ""])[1]
+    .replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
   ok("the clinician page's headline, tab title and shared card all say 'Speech practice kids actually want to do'",
-    /<h1>Speech practice kids actually want to do\.<\/h1>/.test(slps) &&
+    slpHeadline === "Speech practice kids actually want to do." &&
     // "— Sona", not "— Sona for SLPs" (25 Sep 2026): the page speaks to
     // parents and SLPs alike.
     /<title>Speech practice kids actually want to do — Sona<\/title>/.test(slps) &&
     /og:title" content="Speech practice kids actually want to do\."/.test(slps) &&
     /twitter:title" content="Speech practice kids actually want to do\."/.test(slps) &&
     !/actually practiced at home|Never plan speech homework/.test(slps));
-  ok("…and the lede keeps Rachel's point: nothing to plan", /Nothing to plan, and you see who practiced\./.test(slps));
+  const slpLede = (slps.match(/<p class="lede">([\s\S]*?)<\/p>/) || ["", ""])[1];
+  ok("the clinician lede explains selecting a sound, sharing a family link and seeing home practice",
+    /pick a sound/i.test(slpLede) && /family link/i.test(slpLede) && /practice[^.]*at home/i.test(slpLede));
 
   // JUST SIGN IN (Travis, 26 Sep 2026: "get rid of for parents").
   const header = (slps.match(/<header>[\s\S]*?<\/header>/) || [""])[0];
@@ -262,13 +266,13 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
     /var APP_STORE = "https:\/\/apps\.apple\.com\/us\/app\/sona-speech\/id6785755867";/.test(slps) &&
     /var NEXT_URL = android \? "\/onboarding\.html" : APP_STORE;/.test(slps));
 
-  // AS SIMPLE AS IT GETS (Travis, 25 Sep 2026): on the page itself, an email
-  // and "I'm a…", one button. No name box of any kind, no pop-up, and one
-  // form, so there is no second door to get out of step with it.
+  // One form and one submit, with a workplace choice for the clinician role.
+  // landingtest drives role changes and checks the actual request bodies.
   const form = (slps.match(/<form class="signup" id="signup"[\s\S]*?<\/form>/) || [""])[0];
-  ok("one form: an email, 'I'm a…', one button, and no name",
+  ok("one form with email, role, clinician work setting and one submit",
     /id="fEmail" type="email"/.test(form) && /<select id="fRole"/.test(form) && (form.match(/<button\b/g) || []).length === 1 &&
-    (form.match(/<input\b/g) || []).length === 1 && !/name/i.test(form.replace(/aria-label|class="|autocomplete="email"/g, "")) &&
+    (form.match(/<input\b/g) || []).length === 1 && !/<textarea\b/.test(form) && (form.match(/<select\b/g) || []).length === 2 &&
+    /<label for="fWorkSetting">Where do you work\?<\/label>/.test(form) && /<select id="fWorkSetting"[^>]*\bdisabled\b/.test(form) &&
     (slps.match(/<form\b/g) || []).length === 1 && !/id="startModal"/.test(slps));
   ok("…and the answers are Parent or caregiver, Speech therapist (SLP or SLPA), Other",
     /<option value="parent">Parent or caregiver<\/option>/.test(form) &&
@@ -289,12 +293,10 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
       ok("…and say the same launch note", !!pageNote && pageNote === libNote, pageNote + " | " + libNote);
     }
   }
-  // BACK TO ECHO AND THE CASELOAD CARD (Travis, 25 Sep 2026), after one
-  // afternoon with his App Store image there instead.
   const heroR = (slps.match(/<div class="hero-r"[\s\S]*?<\/section>/) || [""])[0];
-  ok("the clinician page's hero shows Echo and the caseload card, made-up first names only",
-    /<img class="mascot" src="\/echo\.png"/.test(heroR) && /Your caseload this week/.test(heroR) &&
-    /Maya/.test(heroR) && !/hero-practice-play/.test(slps) && (slps.match(/Your caseload this week/g) || []).length === 1);
+  ok("the clinician hero uses real game and book art instead of sample caseload data",
+    /<img class="mascot"/.test(heroR) && heroR.includes('/assets/site/games/slice.webp') &&
+    heroR.includes('/assets/books/rabbit-rocket-rescue/cover.webp') && !/Your caseload this week|>\s*\d+%\s*</.test(heroR));
   // NOTHING UNDER THE BUTTON (Travis, 25 Sep 2026: "get rid of this text").
   ok("…and nothing under the form's button: no list line, no 'Next' hint, no 'No card' note",
     !/class="consent"|id="mNext"|class="hnote"/.test(slps.replace(/<!--[\s\S]*?-->/g, "")));

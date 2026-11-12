@@ -24,8 +24,8 @@
        root is now the parent page (parents.html, Travis, 26 Sep 2026: "target
        parents and caregivers only"), and this page stays for a clinician who
        already has the link or a bookmark. It still speaks to parents and SLPs
-       alike (25 Sep 2026), and the one form asks for an email and who they
-       are, nothing else.
+       alike (25 Sep 2026). The form asks for an email and role, then a work
+       setting for speech therapists.
        NOINDEX since 22 Oct 2026 (Travis: "speaksona.com is only for parents.
        I don't want to target therapists at all"): search engines leave it
        out, and nothing on the parent side links to it. It still works for
@@ -63,12 +63,13 @@
   <link rel="icon" type="image/png" href="/favicon.png?v=2" />
   <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=2" />
   <link rel="manifest" href="/manifest.webmanifest" />
-  <meta name="theme-color" content="#31B8C6" />
+  <meta name="theme-color" content="#fff8ed" />
 
   <!-- Self-hosted Baloo 2 and Nunito, not Google Fonts: every weight the
        design uses is in the variable files, and a page whose privacy section
        says what third parties it talks to should not add one for typefaces. -->
   <link href="/fonts.css" rel="stylesheet">
+  <link href="/for-slps.css" rel="stylesheet">
 
   <!-- THE AD LANDS HERE, SO THE PIXEL BELONGS HERE. The root used to be the
        Next page, which loads this from app/layout.tsx; rewriting / to this
@@ -77,184 +78,15 @@
        clicks. Nothing a child ever sees loads it (tests/telemetrytest.mjs
        holds the list), and no event below carries a name, an age or a child.
        The privacy answers further down say it is here. -->
-  <script src="/pixel.js"></script>
+  <script src="/pixel.js" data-autoconfig="off"></script>
   <script src="/analytics.js"></script>
-  <style>
-    :root{
-      --bg:#FFFAF3; --ink:#2D2A4B; --body:#4A4766; --muted:#7A7690; --line:#F0E8DB; --line2:#E8DFD0;
-      --teal:#31B8C6; --teal-d:#0E7C89; --teal-dd:#0E6E7A; --teal-sh:#09545D; --teal-p:#DDF4F6;
-      --yel:#FFD43B; --yel-p:#FFE9A8; --coral:#FF6B6B; --coral-p:#FFE1DE;
-    }
-    *{box-sizing:border-box;}
-    /* the flex rules below would otherwise beat the hidden attribute */
-    [hidden]{display:none !important;}
-    /* clip, not hidden: hidden makes body a scroll container and the sticky
-       header stops sticking. The mascot pokes past the hero's edge on phones. */
-    html,body{overflow-x:clip;}
-    body{margin:0;background:var(--bg);color:var(--ink);font-family:Nunito,system-ui,sans-serif;-webkit-font-smoothing:antialiased;}
-    a{color:var(--teal-dd);text-decoration:underline;text-underline-offset:3px;}
-    a:hover{color:#094E57;}
-    h1,h2{font-family:"Baloo 2",Nunito,sans-serif;font-weight:800;margin:0;text-wrap:balance;}
-    h2{font-size:clamp(34px,4.4vw,52px);line-height:1;letter-spacing:-1px;}
-    p{margin:0;}
-    .wrap{max-width:1200px;margin:0 auto;padding-left:24px;padding-right:24px;}
-    .baloo{font-family:"Baloo 2",Nunito,sans-serif;font-weight:800;}
-    .pill{font-weight:800;font-size:13px;letter-spacing:.4px;color:var(--teal-dd);background:var(--teal-p);padding:7px 14px;border-radius:999px;align-self:flex-start;}
-
-    /* chunky buttons: a darker 5px shelf that the button presses down onto */
-    .btn{height:58px;padding:0 26px;border:none;border-radius:16px;background:var(--teal-d);color:#fff;font:800 18px "Baloo 2",Nunito,sans-serif;cursor:pointer;white-space:nowrap;box-shadow:0 5px 0 var(--teal-sh);transition:transform .06s,box-shadow .06s;}
-    .btn:active{transform:translateY(4px);box-shadow:0 1px 0 var(--teal-sh);}
-    .btn:disabled{opacity:.7;cursor:default;}
-    .btn.yel{height:60px;padding:0 30px;font-size:19px;background:var(--yel);color:var(--ink);box-shadow:0 5px 0 #C99A00;}
-    .btn.yel:active{box-shadow:0 1px 0 #C99A00;}
-
-    /* header */
-    header{position:sticky;top:0;z-index:20;background:rgba(255,250,243,.9);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);}
-    .hbar{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-top:12px;padding-bottom:12px;}
-    .brand{display:flex;align-items:center;gap:10px;color:var(--ink);text-decoration:none;}
-    .brand img{width:40px;height:40px;display:block;}
-    .brand b{font-family:"Baloo 2",Nunito,sans-serif;font-weight:800;font-size:26px;letter-spacing:-.5px;line-height:1;}
-    .brand span{font-weight:800;font-size:12px;color:var(--teal-dd);background:var(--teal-p);padding:4px 10px;border-radius:999px;}
-    nav{display:flex;align-items:center;gap:20px;font-weight:700;font-size:15px;}
-    nav a{color:var(--body);text-decoration:none;}
-    nav a.signin{color:var(--ink);border:2px solid var(--line2);padding:8px 16px;border-radius:12px;}
-    @media(max-width:620px){ nav a.nl{display:none;} nav{gap:14px;} }
-    nav a{white-space:nowrap;}
-    @media(max-width:400px){ .brand span{display:none;} nav{font-size:14px;gap:12px;} nav a.signin{padding:7px 12px;} }
-    @media(max-width:340px){ .brand{gap:6px;} .brand img{width:32px;height:32px;} .brand b{font-size:22px;} .hbar{gap:8px;} nav{gap:10px;font-size:13px;} nav a.signin{padding:6px 10px;} }
-
-    /* hero */
-    .hero{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,440px),1fr));gap:56px;align-items:center;padding-top:72px;padding-bottom:56px;}
-    .hero-l{display:flex;flex-direction:column;gap:24px;}
-    .hero h1{font-size:clamp(44px,6.2vw,78px);line-height:.96;letter-spacing:-2px;}
-    .lede{font-size:20px;line-height:1.55;color:var(--body);max-width:500px;text-wrap:pretty;}
-    .signup{display:flex;flex-direction:column;gap:10px;max-width:520px;}
-    .srow{display:flex;flex-wrap:wrap;gap:10px;}
-    .signup input{height:58px;padding:0 20px;border-radius:16px;border:2px solid var(--line2);background:#fff;font:600 17px Nunito,sans-serif;color:var(--ink);width:100%;}
-    .srow input{flex:1 1 230px;width:auto;}
-    .signup input:focus{outline:none;border-color:var(--teal);}
-    .srow .btn{flex:none;}
-    @media(max-width:480px){ .srow .btn{flex:1 1 100%;} }
-    .consent{font-size:13px;font-weight:700;color:var(--muted);margin:0;}
-    .serr{color:#B83A3A;font-weight:800;font-size:14px;min-height:0;}
-    .serr:empty{display:none;}
-    .hnote{font-size:14px;font-weight:700;color:var(--muted);}
-    .sent{display:flex;flex-direction:column;gap:6px;max-width:520px;background:#fff;border:2px solid #BFEFF3;border-radius:18px;padding:16px 20px;}
-    .sent .t{font-family:"Baloo 2",Nunito,sans-serif;font-weight:800;font-size:22px;color:var(--teal-dd);}
-    .sent .m{font-size:15px;color:var(--body);line-height:1.5;}
-    .sent .straight{font-weight:800;}
-    .sent .again{font-size:13px;color:var(--muted);}
-    .devbox{margin-top:6px;background:#fff7e6;border:1px solid #ffe2a8;border-radius:12px;padding:10px 12px;font-size:12px;font-weight:700;color:#8a6400;line-height:1.5;word-break:break-all;}
-
-    .hero-r{position:relative;min-height:500px;display:flex;align-items:center;justify-content:center;}
-    .sun{position:absolute;width:min(92%,460px);aspect-ratio:1;border-radius:50%;background:var(--yel-p);top:0;right:0;}
-    .mascot{position:absolute;width:210px;right:-6px;top:-24px;z-index:3;transform:rotate(8deg);}
-    @media(max-width:520px){ .mascot{width:150px;right:-4px;top:-10px;} }
-    .cl{position:relative;z-index:2;width:min(100%,400px);background:#fff;border-radius:26px;box-shadow:0 2px 0 #EFE6D6,0 30px 60px -24px rgba(45,42,75,.35);padding:22px;display:flex;flex-direction:column;gap:12px;margin-top:80px;}
-    .cl .h{font-family:"Baloo 2",Nunito,sans-serif;font-weight:800;font-size:21px;}
-    .kid{display:grid;grid-template-columns:1fr auto;gap:8px 12px;align-items:center;padding:14px;border-radius:16px;background:#F6FBFB;}
-    .kid.quiet{background:#FFF3F1;}
-    .kid .n{font-weight:800;font-size:16px;}
-    .kid .n i{font-style:normal;font-weight:700;color:var(--muted);font-size:14px;}
-    .kid .r{font-family:"Baloo 2",Nunito,sans-serif;font-weight:800;font-size:19px;color:var(--teal-dd);}
-    .kid.quiet .r{font-size:15px;color:#B83A3A;}
-    .days{display:flex;gap:4px;}
-    .days span{width:24px;height:10px;border-radius:5px;background:#E6E1D8;}
-    .days span.on{background:var(--teal);}
-    .kid .s{font-size:13px;font-weight:700;color:var(--muted);}
-    .signup select{height:58px;padding:0 16px;border-radius:16px;border:2px solid var(--line2);background:#fff;font:600 17px Nunito,sans-serif;color:var(--ink);flex:1 1 200px;min-width:0;}
-    .signup select:focus{outline:none;border-color:var(--teal);}
-
-    /* facts */
-    .facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:12px;padding-bottom:24px;}
-    .fact{background:#fff;border:2px solid var(--line);border-radius:20px;padding:20px 22px;display:flex;flex-direction:column;gap:4px;}
-    .fact b{font-family:"Baloo 2",Nunito,sans-serif;font-weight:800;font-size:22px;}
-    .fact span{font-size:15px;color:var(--body);}
-
-    /* how it works */
-    .how{padding-top:96px;padding-bottom:72px;display:flex;flex-direction:column;gap:40px;}
-    .how h2{max-width:700px;}
-    .steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:20px;}
-    .step{border-radius:28px;padding:28px;display:flex;flex-direction:column;gap:18px;}
-    .step .k{font-family:"Baloo 2",Nunito,sans-serif;font-weight:800;font-size:18px;}
-    .step p{font-size:17px;line-height:1.5;color:var(--ink);}
-    .s1{background:var(--teal-p);} .s1 .k{color:var(--teal-dd);}
-    .s2{background:var(--yel-p);} .s2 .k{color:#7A5200;}
-    .s3{background:var(--coral-p);} .s3 .k{color:#A33131;}
-    .chips{display:flex;flex-wrap:wrap;gap:8px;}
-    .chips span{background:#fff;border-radius:999px;padding:8px 14px;font-weight:800;font-size:14px;}
-    .chips span.on{background:var(--teal-d);color:#fff;}
-    .bubble{background:#fff;border-radius:18px 18px 18px 4px;padding:12px 16px;font-size:14px;font-weight:600;line-height:1.45;color:var(--body);max-width:300px;}
-    .bubble u{color:var(--teal-dd);text-decoration:none;word-break:break-all;}
-    .bars{display:flex;align-items:flex-end;gap:8px;height:64px;}
-    .bars span{flex:1;background:#fff;border-radius:8px;}
-    .bars span.hi{background:var(--coral);}
-    /* the two ways in: a parent at home, an SLP with a caseload */
-    .ways{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:20px;align-items:start;}
-    .way{border-radius:28px;padding:28px;display:flex;flex-direction:column;gap:18px;}
-    .way .k{font-family:"Baloo 2",Nunito,sans-serif;font-weight:800;font-size:24px;line-height:1.1;}
-    .w1{background:var(--teal-p);} .w1 .k{color:var(--teal-dd);}
-    .w2{background:var(--yel-p);} .w2 .k{color:#7A5200;}
-    .ticks{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:14px;counter-reset:t;}
-    .ticks li{position:relative;padding-left:44px;font-size:17px;line-height:1.5;color:var(--ink);counter-increment:t;}
-    .ticks li::before{content:counter(t);position:absolute;left:0;top:-1px;width:30px;height:30px;border-radius:50%;background:#fff;font:800 16px/30px "Baloo 2",Nunito,sans-serif;text-align:center;}
-    .ticks li b{font-weight:800;}
-
-
-    /* the kid side */
-    .kidside{background:var(--teal);padding:88px 24px;}
-    .kidside .in{max-width:1200px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:48px;align-items:center;}
-    .kidside .txt{display:flex;flex-direction:column;gap:22px;color:#0F2F36;}
-    .kidside .txt p{font-size:19px;line-height:1.55;max-width:480px;text-wrap:pretty;}
-    .kidside .chips span{font-size:15px;padding:9px 16px;}
-    .phones{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
-    .phone{aspect-ratio:9/17;border-radius:32px;border:6px solid #0F2F36;overflow:hidden;background:#0F2F36;}
-    .phone img{width:100%;height:100%;object-fit:cover;object-position:top;display:block;}
-    .phone.lo{margin-top:48px;}
-
-    /* before you assign */
-    .before{padding-top:96px;padding-bottom:40px;display:flex;flex-direction:column;gap:36px;}
-    .before .intro{display:flex;flex-direction:column;gap:12px;max-width:680px;}
-    .before .intro p{font-size:18px;line-height:1.55;color:var(--body);}
-    .notes{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:16px;}
-    .note{display:flex;flex-direction:column;gap:8px;padding:24px;border-radius:22px;background:#fff;border:2px solid var(--line);}
-    .note b{font-family:"Baloo 2",Nunito,sans-serif;font-weight:800;font-size:21px;line-height:1.15;}
-    .note p{font-size:15px;line-height:1.55;color:var(--body);}
-
-    /* privacy */
-    .privacy{padding-top:72px;padding-bottom:96px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:48px;align-items:start;}
-    .privacy .l{display:flex;flex-direction:column;gap:16px;}
-    .privacy .l p{font-size:18px;line-height:1.55;color:var(--body);}
-    .privacy .l p.more{font-size:15px;}
-    .faq{display:flex;flex-direction:column;gap:10px;}
-    .q{background:#fff;border:2px solid var(--line);border-radius:20px;overflow:hidden;}
-    .q button{width:100%;display:flex;justify-content:space-between;align-items:center;gap:16px;padding:20px 22px;background:none;border:none;cursor:pointer;text-align:left;font:800 19px "Baloo 2",Nunito,sans-serif;color:var(--ink);}
-    .q button span{font-size:24px;color:var(--teal-d);flex:none;transition:transform .15s;}
-    .q button[aria-expanded="true"] span{transform:rotate(45deg);}
-    .q .a{padding:0 22px 20px;font-size:15px;line-height:1.6;color:var(--body);}
-    .q .a[hidden]{display:none;}
-
-    /* final call */
-    .final{padding:0 24px 72px;}
-    .final .in{max-width:1200px;margin:0 auto;background:var(--ink);border-radius:36px;padding:64px 40px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:32px;color:#fff;}
-    .final .l{display:flex;align-items:center;gap:28px;flex-wrap:wrap;}
-    .final img{width:120px;height:120px;}
-    .final .t{display:flex;flex-direction:column;gap:8px;max-width:520px;}
-    .final h2{font-size:clamp(32px,4vw,46px);}
-    .final p{font-size:17px;color:#D9D6EA;}
-    @media(max-width:520px){ .final .in{padding:44px 24px;} .final .btn{width:100%;} }
-
-    footer{display:flex;flex-wrap:wrap;justify-content:space-between;gap:16px;font-size:14px;color:var(--muted);padding-bottom:48px;}
-    footer .d{max-width:560px;}
-    footer .links{display:flex;gap:18px;}
-  </style>
 </head>
 <body>
 
 <header>
   <div class="wrap hbar">
     <a class="brand" href="/" aria-label="Sona">
-      <img src="/echo.png" alt="" width="40" height="40">
+      <img src="/assets/site/echo.webp" alt="" width="42" height="42">
       <b>Sona</b>
     </a>
     <!-- JUST SIGN IN (Travis, 26 Sep 2026: "get rid of for parents"). The
@@ -267,37 +99,39 @@
 </header>
 
 <main>
-<section class="wrap hero">
+<section class="hero-band">
+  <div class="wrap hero">
   <div class="hero-l">
-    <div class="pill">Built with Rachel, MS, CF-SLP</div>
-    <!-- THE PROMISE (24 Sep 2026). Travis's headline — practice a kid wants to
-         do — and Rachel's reason an SLP signs up, in the lede: something to
-         send every kid home with, without having to plan it. Seeing who
-         practiced is the third half, and stays. -->
-    <h1>Speech practice kids actually want to do.</h1>
-    <!-- FOR BOTH (25 Sep 2026): the lede names both readers, and keeps
-         Rachel's reason, which holds for either: nothing to plan, and you see
-         who practiced. -->
-    <p class="lede">A few playful minutes a day, at home. Parents get practice their child asks for, and SLPs pick the sound. Nothing to plan, and you see who practiced.</p>
+    <p class="pill">Sona for speech therapists</p>
+    <h1>Speech practice kids actually <span>want to do.</span></h1>
+    <p class="lede">Pick a sound, share a family link, and see how practice adds up at home. Kids get games and picture books to practice with.</p>
 
-    <!-- THE SIGN-UP, AS SIMPLE AS IT GETS (Travis, 25 Sep 2026): an email and
-         who they are, one button, then the App Store. No name is asked for,
-         the grown-up's or a child's. -->
     <form class="signup" id="signup" novalidate>
-      <input id="fEmail" type="email" inputmode="email" autocomplete="email" placeholder="Your email" aria-label="Your email" />
-      <div class="srow">
-        <select id="fRole" aria-label="I'm a…">
-          <option value="" selected disabled>I&rsquo;m a&hellip;</option>
-          <option value="parent">Parent or caregiver</option>
-          <option value="slp">Speech therapist (SLP or SLPA)</option>
-          <option value="other">Other</option>
-        </select>
-        <button class="btn" id="fGo" type="submit">Start free</button>
+      <div class="form-field">
+        <label for="fEmail">Your email</label>
+        <input id="fEmail" type="email" inputmode="email" autocomplete="email" placeholder="you@example.com" required />
       </div>
-      <!-- NOTHING UNDER THE BUTTON (Travis, 25 Sep 2026: "get rid of this
-           text"): the list line, the "Next: the App Store" hint and the
-           "No card" note are gone from this page. What the email is used for
-           is still answered below, under "What's stored, and where?". -->
+      <div class="form-fields">
+        <div class="form-field">
+          <label for="fRole">I&rsquo;m a&hellip;</label>
+          <select id="fRole" required>
+            <option value="" selected disabled>Choose your role</option>
+            <option value="parent">Parent or caregiver</option>
+            <option value="slp">Speech therapist (SLP or SLPA)</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div class="form-field ph-no-capture" id="fWorkSettingField" hidden>
+          <label for="fWorkSetting">Where do you work?</label>
+          <select id="fWorkSetting" name="workSetting" disabled>
+            <option value="" selected disabled>Choose your setting</option>
+            <option value="clinic">Clinic</option>
+            <option value="school">School</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn" id="fGo" type="submit">Start free</button>
       <div class="serr" id="fErr" role="alert"></div>
     </form>
     <div class="sent" id="sent" hidden>
@@ -307,38 +141,24 @@
       <button class="btn" id="nextGo" type="button" hidden>Get the app</button>
       <div class="devbox" id="devbox" hidden></div>
     </div>
+    <div class="trust">
+      <img src="/assets/rachel-wardrop-profile.jpg" alt="" width="44" height="44">
+      <p>Built with Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical fellowship.</p>
+    </div>
   </div>
 
-  <!-- BACK TO ECHO AND THE CASELOAD CARD (Travis, 25 Sep 2026: "go back to
-       what we had where its the bird and its showing the name of kids and
-       their progress"). An illustration of the dashboard, not anyone's data:
-       three made-up children, first names only. Each shown pass rate sits on
-       well over the 20 attempts below which the real dashboard shows no
-       percentage. -->
   <div class="hero-r" aria-hidden="true">
-    <div class="sun"></div>
-    <img class="mascot" src="/echo.png" alt="">
-    <div class="cl">
-      <div class="h">Your caseload this week</div>
-      <div class="kid">
-        <div class="n">Maya <i>· /r/ initial</i></div>
-        <div class="r">84%</div>
-        <div class="days"><span class="on"></span><span class="on"></span><span class="on"></span><span></span><span class="on"></span><span class="on"></span><span></span></div>
-        <div class="s">5 days · 142 reps</div>
-      </div>
-      <div class="kid">
-        <div class="n">Theo <i>· /s/ blends</i></div>
-        <div class="r">71%</div>
-        <div class="days"><span class="on"></span><span></span><span class="on"></span><span class="on"></span><span></span><span class="on"></span><span class="on"></span></div>
-        <div class="s">5 days · 96 reps</div>
-      </div>
-      <div class="kid quiet">
-        <div class="n">Ava <i>· vocalic R</i></div>
-        <div class="r">No practice yet</div>
-        <div class="days"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
-        <div class="s">0 days</div>
-      </div>
-    </div>
+    <div class="hero-halo"></div>
+    <figure class="hero-art hero-game">
+      <img src="/assets/site/games/slice.webp" width="300" height="300" alt="">
+    </figure>
+    <figure class="hero-art hero-book">
+      <img src="/assets/books/rabbit-rocket-rescue/cover.webp" width="384" height="384" alt="">
+    </figure>
+    <img class="mascot" src="/assets/site/echo.webp" width="458" height="458" alt="" fetchpriority="high">
+    <span class="spark spark-top">✦</span>
+    <span class="spark spark-low">✦</span>
+  </div>
   </div>
 </section>
 
@@ -356,54 +176,39 @@
        "Daily practice and free games" is the one phrase for the free
        version on every surface (24 Sep 2026): gameAccess() opens all four
        free games to every child, and "two games" undersold it. -->
-  <div class="fact"><b>Free for every family</b><span>Daily practice and free games, with no card.</span></div>
   <div class="fact"><b>Free for SLPs</b><span>A dashboard with every family's practice in one place. One email, no card.</span></div>
+  <div class="fact"><b>Free for every family</b><span>Daily practice and free games, with no card.</span></div>
   <div class="fact"><b>It actually listens</b><span>Every attempt is checked on the phone. Silence never counts.</span></div>
   <div class="fact"><b>No audio leaves the device</b><span>First name only, entered by the parent.</span></div>
 </section>
 
 <section class="wrap how" id="how">
-  <h2>One app, two ways in.</h2>
-  <div class="ways">
-    <!-- What a parent does. Each line is what the app does today: setup is
-         three questions, practice comes before games, and the weekly goal
-         and streak are on Home (momweek). -->
-    <div class="way w1">
-      <div class="k">For parents</div>
-      <ol class="ticks">
-        <li><b>Set up in about a minute.</b> Three quick questions on your phone, then your child plays.</li>
-        <li><b>A few minutes of practice a day.</b> Echo asks for the sound, listens, and a game comes after.</li>
-        <li><b>Watch the days add up.</b> A weekly goal and a streak, right in the app.</li>
-      </ol>
-    </div>
-    <!-- What an SLP does: the three steps this section used to be, shortened. -->
-    <div class="way w2">
-      <div class="k">For speech therapists</div>
-      <ol class="ticks">
-        <li><b>Set the target.</b> Pick the sound, the position and a daily goal.</li>
-        <li><b>Send the family link.</b> Copy the ready-made message. Parents set up their child in about 30 seconds.</li>
-        <li><b>Walk in prepared.</b> Practice days, reps and pass rate by sound and position.</li>
-      </ol>
-    </div>
-  </div>
+  <h2>From your session to their home.</h2>
+  <ol class="workflow">
+    <li class="workflow-step">
+      <h3>Set the target</h3>
+      <p>Pick a sound, a word position and a daily goal.</p>
+    </li>
+    <li class="workflow-step">
+      <h3>Send the family link</h3>
+      <p>Copy the message and share it with the parent. They set up Sona on their own device.</p>
+    </li>
+    <li class="workflow-step">
+      <h3>See what they practiced</h3>
+      <p>For families who choose to share, see practice days, reps and pass rate by sound and position.</p>
+    </li>
+  </ol>
 </section>
 
 <section class="kidside">
-  <div class="in">
+  <div class="wrap in">
     <div class="txt">
-      <h2>The part kids actually ask for.</h2>
-      <!-- What Home shows (11 Oct 2026): games after practice and the Trophy
-           Road card. Practice earns trophies, and coins come only from the
-           daily chest and the road's gifts (never sold); the Buddy Shop spends
-           them. The daily adventure is parked, so the line no longer names it.
-           Free-tier games stay free and the rest of the library is Premium, so
-           the copy no longer promises three new games a day to every family. -->
-      <p>Games to play after practice (free games, and the released library with Premium), a Trophy Road of gifts, and coins earned by practicing, never bought, to spend on new buddies. The fun is what brings kids back, so the practice keeps happening at home.</p>
-      <div class="chips"><span>Instant feedback</span><span>Games after practice</span><span>Coins to earn</span><span>Every round ends on a win</span></div>
+      <h2>A game to play. A story to read.</h2>
+      <p>Kids can play games, read sound-focused picture books and earn coins for new buddies. Families who join through your link get daily practice and free games. Premium opens the full game and book library.</p>
     </div>
-    <div class="phones">
-      <div class="phone"><img src="/slp-shot-home.jpg" width="585" height="1104" loading="lazy" alt="Sona's home screen: today's adventure and three games"></div>
-      <div class="phone lo"><img src="/slp-shot-practice.jpg" width="585" height="1104" loading="lazy" alt="A Sona practice round: Echo asks the child to say the R sound five times"></div>
+    <div class="play-gallery">
+      <figure><img src="/assets/crafted/home-piano.webp" width="768" height="432" loading="lazy" alt=""><figcaption>Piano Tiles</figcaption></figure>
+      <figure><img src="/assets/books/rory-rainbow/cover.webp" width="768" height="768" loading="lazy" alt=""><figcaption>Rory and the Rainbow</figcaption></figure>
     </div>
   </div>
 </section>
@@ -442,7 +247,7 @@
     </div>
     <div class="q">
       <button type="button" aria-expanded="false" aria-controls="a2" id="q2">What's stored, and where?<span>+</span></button>
-      <p class="a" id="a2" hidden>If you start from this page: your email and whether you're a parent, a speech therapist or something else, kept by Sona and on our email list at Resend so Rachel's tips can reach you. A speech therapist's account: email, name, clinic, code. For each consenting family: the child's first name and age, target sounds, practice days and counts, pass rate per sound, your assignments, and when the parent consented. Hosted on Vercel, stored in Upstash, emails and the email list via Resend. If you buy Premium, Stripe takes the payment and holds your email and card; we never see the card number, and nothing about a child goes to Stripe. If you type a parent's email when you add a child, we hand it to Resend to deliver that one email with the link, and Sona keeps no copy: not stored, not logged, not added to any list. Analytics (PostHog) on grown-up pages, and anonymous counts our server passes on from the app, and a Meta ad pixel on this sign-up page so we can tell which of our ads work — neither ever runs where a child practices, and neither is sent a child's name. No ads in the app, no data sales, no profiling.</p>
+      <p class="a" id="a2" hidden>If you start from this page: your email and whether you're a parent, a speech therapist or something else, kept by Sona and on our email list at Resend so Rachel's tips can reach you. A speech therapist's account: email, name, clinic, code and work setting (clinic, school or other) if provided at sign-up. For each consenting family: the child's first name and age, target sounds, practice days and counts, pass rate per sound, your assignments, and when the parent consented. Hosted on Vercel, stored in Upstash, emails and the email list via Resend. If you buy Premium, Stripe takes the payment and holds your email and card; we never see the card number, and nothing about a child goes to Stripe. If you type a parent's email when you add a child, we hand it to Resend to deliver that one email with the link, and Sona keeps no copy: not stored, not logged, not added to any list. Analytics (PostHog) on grown-up pages, and anonymous counts our server passes on from the app, and a Meta ad pixel on this sign-up page so we can tell which of our ads work — neither ever runs where a child practices, and neither is sent a child's name. No ads in the app, no data sales, no profiling.</p>
     </div>
     <div class="q">
       <button type="button" aria-expanded="false" aria-controls="a3" id="q3">How is data deleted?<span>+</span></button>
@@ -464,10 +269,10 @@
   </div>
 </section>
 
-<section class="final">
+<section class="wrap final">
   <div class="in">
     <div class="l">
-      <img src="/echo.png" alt="" width="120" height="120">
+      <img src="/assets/site/echo.webp" alt="" width="120" height="120" loading="lazy">
       <div class="t">
         <h2>Practice that feels like play.</h2>
         <p>Free to start, for families and speech therapists.</p>
@@ -575,12 +380,25 @@
       $("signup").hidden = true; $("sent").hidden = false;
     }
 
+    function syncWorkSetting() {
+      var clinician = $("fRole").value === "slp";
+      $("fWorkSettingField").hidden = !clinician;
+      $("fWorkSetting").disabled = !clinician;
+      $("fWorkSetting").required = clinician;
+    }
+
     function go() {
       var email = (($("fEmail").value) || "").trim();
       var role = $("fRole").value;
       $("fErr").textContent = "";
       if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { err("Enter a valid email."); $("fEmail").focus(); return; }
       if (!role) { err("Choose one: parent, speech therapist or other."); $("fRole").focus(); return; }
+      var workSetting = $("fWorkSetting").value;
+      if (role === "slp" && workSetting !== "clinic" && workSetting !== "school" && workSetting !== "other") {
+        err("Choose Clinic, School or Other.");
+        $("fWorkSetting").focus();
+        return;
+      }
       busy(true);
       /**
        * A SPEECH THERAPIST GETS THEIR DASHBOARD TOO. The iPhone app is the
@@ -594,7 +412,7 @@
       var req = role === "slp"
         ? fetch("/api/slp/auth/request", {
             method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email: email, source: src, attrib: attrib }),
+            body: JSON.stringify({ email: email, source: src, attrib: attrib, workSetting: workSetting }),
           })
         : fetch("/api/lead", {
             method: "POST", headers: { "Content-Type": "application/json" },
@@ -665,6 +483,9 @@
         err("Network hiccup — try again.");
       });
     }
+    $("fRole").addEventListener("change", syncWorkSetting);
+    window.addEventListener("pageshow", syncWorkSetting);
+    syncWorkSetting();
     $("signup").addEventListener("submit", function (e) { e.preventDefault(); go(); });
     $("fEmail").addEventListener("keydown", function (e) { if (e.key === "Enter" && !$("fRole").value) { e.preventDefault(); $("fRole").focus(); } });
 

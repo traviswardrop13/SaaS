@@ -1192,6 +1192,59 @@ const count = (pred) => S.calls.filter(pred).length;
   }
 }
 
+// ═════════════════════════ the clinician's work setting ═════════════════════════
+{
+  const signup = (body) => call(R.request, "POST", "/api/slp/auth/request", { body });
+  const stored = (email) => JSON.parse(KV.K.get("slpacct:" + email) || "{}");
+  const signupCalls = OUT.length;
+  for (const workSetting of ["clinic", "school", "other"]) {
+    const email = "setting." + workSetting + "@example.org";
+    const r = await signup({
+      email, workSetting, childName: "NotAccountData",
+      attrib: { utm_source: "clinic-post", workSetting: "NotAccountData", childName: "NotAccountData" },
+    });
+    const account = stored(email);
+    ok("new clinician signup saves " + workSetting + " as its own account field",
+      r.status === 200 && r.json.signedIn === true && account.workSetting === workSetting &&
+      account.clinic === "" && !!account.crmAt && !("childName" in account), JSON.stringify(account));
+  }
+  ok("signup passes neither work setting nor injected data to email or lead services",
+    OUT.slice(signupCalls).filter((o) => o.url.endsWith("/api/lead")).length === 3 &&
+    !/workSetting|NotAccountData/.test(JSON.stringify(OUT.slice(signupCalls))));
+
+  const oldEmail = "old.setting@example.org";
+  seedAcct(oldEmail, { terms: false, code: "legacy-setting", familyKey: "OLDKEY23" });
+  const repeat = await signup({ email: "setting.clinic@example.org", workSetting: "other" });
+  const legacy = await signup({ email: oldEmail, workSetting: "school" });
+  ok("signed-out sign-in cannot replace a work setting or add one to a legacy account",
+    repeat.status === 200 && repeat.json.signedIn === false && stored("setting.clinic@example.org").workSetting === "clinic" &&
+    legacy.status === 200 && legacy.json.signedIn === false && !("workSetting" in stored(oldEmail)) &&
+    stored(oldEmail).code === "legacy-setting" && C.grandfathered(stored(oldEmail)));
+
+  const legacyClient = await signup({ email: "setting.omitted@example.org" });
+  ok("clients that omit the setting can still create an account",
+    legacyClient.status === 200 && legacyClient.json.signedIn === true && !("workSetting" in stored("setting.omitted@example.org")));
+
+  for (const [i, workSetting] of ["NotAccountData", ["school"], null].entries()) {
+    const before = [OUT.length, KV.log.length];
+    const email = "setting.invalid" + i + "@example.org";
+    const r = await signup({ email, workSetting });
+    ok("invalid work setting is refused before account or email side effects (" + i + ")",
+      r.status === 400 && r.json.ok === false && !KV.K.has("slpacct:" + email) &&
+      OUT.length === before[0] && KV.log.length === before[1], JSON.stringify(r));
+  }
+
+  const school = "setting.school@example.org";
+  const saved = await call(R.account, "POST", "/api/slp/account", { as: school, body: { name: "Robin", clinic: "Maple District" } });
+  ok("saving the clinician's organization and name keeps their work setting",
+    saved.status === 200 && stored(school).clinic === "Maple District" && stored(school).workSetting === "school",
+    JSON.stringify(stored(school)));
+
+  const rows = Object.fromEntries((await F.readClinicians()).map((c) => [c.email, c]));
+  ok("founder account rows expose the saved setting and leave unclassified accounts blank",
+    rows[school]?.workSetting === "school" && rows[oldEmail]?.workSetting === "");
+}
+
 // ═════════════════════════ the family success page refuses a clinician's receipt ═════════════════════════
 {
   let r = await call(R.session, "GET", "/api/checkout/session?id=cs_test_goodcheckout001");
@@ -1497,7 +1550,7 @@ const count = (pred) => S.calls.filter(pred).length;
           lead("early@gmail.com", "parent", "2026-09-25T19:00:00Z"),  // before the page changed
         ], clinicians: [
           row({ email: "asked@gmail.com", workEmail: "no", accessRequested: iso(), approved: loads > 1 ? "yes" : "no", caseload: "none" }),
-          row({ email: "school@district.k12.ca.us", workEmail: "yes", caseload: "paid" }),
+          row({ email: "school@district.k12.ca.us", workSetting: "school", workEmail: "yes", caseload: "paid" }),
           row({ email: "early@clinic.org", workEmail: "yes", caseload: "grandfathered" }),
         ] });
       }
@@ -1516,6 +1569,18 @@ const count = (pred) => S.calls.filter(pred).length;
     const cells = await page.$$eval("#tSlp tr", (trs) => trs.map((tr) => tr.textContent));
     ok("the clinicians table in the browser has Work email, Access requested, Own Premium and Caseload",
       ["Work email", "Access requested", "Own Premium", "Caseload"].every((h) => heads.includes(h)), heads.join("|"));
+    const settingColumn = heads.indexOf("Work setting");
+    const settingCells = await page.$$eval("#tSlp tr", (rows, index) =>
+      rows.slice(1).map((row) => row.querySelectorAll("td")[index]?.textContent), settingColumn);
+    ok("the founder's table shows the work setting beside the clinician and leaves older rows blank",
+      JSON.stringify(settingCells) === JSON.stringify(["", "school", ""]), JSON.stringify(settingCells));
+    const download = page.waitForEvent("download", { timeout: 5000 });
+    await page.click("#csvSlp");
+    const csv = readFileSync(await (await download).path(), "utf8").split("\n");
+    const settingCsvColumn = csv[0].split(",").indexOf("Work setting");
+    ok("the clinician CSV includes the same work setting and blank defaults",
+      settingCsvColumn >= 0 && JSON.stringify(csv.slice(1).map((row) => row.split(",")[settingCsvColumn])) === JSON.stringify(["", "school", ""]),
+      csv[0]);
     ok("…an Approve button only for the free-mail clinician who is not yet approved", JSON.stringify(buttons) === JSON.stringify(["asked@gmail.com"]), JSON.stringify(buttons));
     ok("…and the caseload column reads paid / grandfathered / none", cells.some((c) => /paid/.test(c)) && cells.some((c) => /grandfathered/.test(c)) && cells.some((c) => /none/.test(c)));
     // Travis, 26 Sep 2026: "how many leads since we changed the landing page?

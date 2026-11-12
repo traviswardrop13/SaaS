@@ -128,9 +128,13 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
   // a live campaign with no PageView and no conversion, optimising on who taps
   // an ad instead of on who turns out to be a clinician. Money, spent wrong,
   // with nothing anywhere saying so.
+  const slpPixel = (slps.match(/<script\b[^>]*\bsrc="\/pixel\.js"[^>]*>/) || [""])[0];
   ok("the page the ad points at loads the pixel",
-    /<script src="\/pixel\.js"><\/script>/.test(slps),
+    !!slpPixel,
     "a campaign with no PageView and no Lead optimises on clicks, not on sign-ups");
+  ok("the clinician form disables Meta automatic form capture", /\bdata-autoconfig="off"/.test(slpPixel));
+  const workField = (slps.match(/<[^>]*\bid="fWorkSettingField"[^>]*>/) || [""])[0];
+  ok("the clinician's work setting is excluded from PostHog capture", /\bph-no-capture\b/.test(workField));
 
   // A tap is not a sign-up. Firing on the click would teach the campaign to
   // buy people who open forms and abandon them.
@@ -180,6 +184,7 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
   ok("no pixel event carries a name, a child, an age or an email",
     !calls.some((c) => /\b(name|child|kid|age|email|word|transcript)\b/i.test(c)),
     calls.filter((c) => /\b(name|child|kid|age|email|word|transcript)\b/i.test(c)).join(" | "));
+  ok("no pixel event carries the clinician's work setting", !calls.some(c => /\bworkSetting\b/.test(c)));
 }
 
 // ── 5. which ad produced which clinician ──
@@ -200,6 +205,8 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
     /for \(const k of ATTRIB_KEYS\)/.test(req));
   ok("…and the allow-list holds no field that could name a person",
     !/\b(child|kid|age|transcript|word)\b/.test(req.slice(req.indexOf("const ATTRIB_KEYS"), req.indexOf("function safeAttrib"))));
+  ok("work setting is excluded from the signup attribution allow-list",
+    !/\bworkSetting\b/.test(req.slice(req.indexOf("const ATTRIB_KEYS"), req.indexOf("function safeAttrib"))));
 }
 
 console.log(fails ? fails + " FAILURES" : "ALL GREEN");

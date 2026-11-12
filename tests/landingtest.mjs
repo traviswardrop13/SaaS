@@ -12,6 +12,9 @@ import { createServer } from "http";
 import { readFileSync, existsSync } from "fs";
 import { chromium, ROOT, launchOpts } from "./_env.mjs";
 
+// The archived clinician page can be served for pre-change proof while the
+// normal test keeps using the actual worktree and its shared scripts/assets.
+const FOR_SLPS = process.env.FOR_SLPS_TEST_HTML || ROOT + "/for-slps.html";
 const MIME = { html: "text/html", js: "text/javascript", css: "text/css", png: "image/png", jpg: "image/jpeg", webp: "image/webp", svg: "image/svg+xml", woff2: "font/woff2", webmanifest: "application/manifest+json" };
 let fails = 0;
 const ok = (name, cond, detail) => { if (!cond) fails++; console.log((cond ? "PASS " : "FAIL ") + name + (cond || detail === undefined ? "" : "  → " + (typeof detail === "string" ? detail : JSON.stringify(detail)))); };
@@ -35,7 +38,7 @@ const srv = createServer((req, res) => {
   if (u.pathname === "/api/charter" && charterReply) { res.writeHead(200, { "content-type": "application/json" }); res.end(JSON.stringify(charterReply)); return; }
   if (u.pathname.startsWith("/api/")) { res.writeHead(404); res.end("{}"); return; }
   // next.config.js's rewrites: / is the parent page, /for-slps the clinician page
-  const p = ROOT + (u.pathname === "/" ? "/parents.html" : u.pathname === "/for-slps" ? "/for-slps.html" : u.pathname === "/try" ? "/try.html" : u.pathname);
+  const p = u.pathname === "/for-slps" ? FOR_SLPS : ROOT + (u.pathname === "/" ? "/parents.html" : u.pathname === "/try" ? "/try.html" : u.pathname);
   if (!existsSync(p)) { res.writeHead(404); res.end(); return; }
   res.writeHead(200, { "content-type": MIME[p.split(".").pop()] || "application/octet-stream" });
   res.end(readFileSync(p));
@@ -61,7 +64,7 @@ async function fresh(opts = {}) {
   const page = await context.newPage();
   const errors = [];
   page.on("pageerror", (e) => errors.push(e.message));
-  await page.goto(origin + (opts.path || "/for-slps") + "?utm_source=fb&utm_campaign=launch&fbclid=abc123");
+  await page.goto(origin + (opts.path || "/for-slps") + "?utm_source=fb&utm_campaign=launch&fbclid=abc123" + (opts.query || ""));
   return { context, page, errors };
 }
 // WHAT THE VISITOR SEES AS THE PAGE LEAVES (4 Oct 2026). Nothing can be read
@@ -89,9 +92,13 @@ function watchLeaving() {
     e.preventDefault();
   });
 }
-async function fill(page, email, role) {
+async function fill(page, email, role, workSetting = "clinic") {
   await page.fill("#fEmail", email);
   if (role) await page.selectOption("#fRole", role);
+  const field = page.locator("#fWorkSetting");
+  // The original form has no workplace choice. Keep driving its real submit
+  // so baseline failures name the missing behavior instead of a timeout.
+  if (role === "slp" && workSetting && await field.count()) await field.selectOption(workSetting);
 }
 // WAIT FOR THE SCROLL, DON'T GUESS IT (25 Sep 2026): a fixed 700 ms wait
 // turned main red on GitHub's slower runner, on a page that worked.
@@ -368,7 +375,7 @@ charterReply = null;
   await context.close();
 }
 
-// ═════════════════ /for-slps: the clinician page, unchanged ═════════════════
+// ═════════════════ /for-slps: clinician work setting and signup ═════════════════
 // ── the form ──
 {
   const { context, page, errors } = await fresh();
@@ -376,7 +383,11 @@ charterReply = null;
   ok("…and nothing is chosen for them", (await page.inputValue("#fRole")) === "");
   const fit = await page.evaluate(() => { const r = document.getElementById("signup").getBoundingClientRect(); return { l: r.left, r: r.right, w: innerWidth, overflow: document.documentElement.scrollWidth > innerWidth }; });
   ok("on a phone the form fits the screen, with no sideways scroll", fit.l >= 0 && fit.r <= fit.w && !fit.overflow, fit);
-  ok("the hero shows Echo and the caseload card", await page.evaluate(() => { const r = document.querySelector(".hero-r"); return !!r && !!r.querySelector("img.mascot") && /Your caseload this week/.test(r.textContent); }));
+  ok("the hero shows Echo, real game and book art, and no sample caseload", await page.evaluate(() => {
+    const hero = document.querySelector(".hero-r");
+    return !!hero && !!hero.querySelector('img.mascot') && !!hero.querySelector('img[src="/assets/site/games/slice.webp"]') &&
+      !!hero.querySelector('img[src="/assets/books/rabbit-rocket-rescue/cover.webp"]') && !/Your caseload this week|\d+%/.test(hero.textContent);
+  }));
   ok("…and nothing sits under the form's button", await page.evaluate(() => !document.querySelector(".consent, #mNext, .hnote")));
 
   // What the visitor is told before anything is sent.
@@ -403,22 +414,45 @@ charterReply = null;
 // UNTIL THE APP IS READY (Travis, 25 Sep 2026): no App Store and no web app.
 // A parent or "other" is thanked and told the app launches Friday (and
 // emailed, by /api/lead); a speech therapist goes to their dashboard.
-const PAGE = readFileSync(ROOT + "/for-slps.html", "utf8");
+const PAGE = readFileSync(FOR_SLPS, "utf8");
 const READY = /var APP_READY = true;/.test(PAGE);
 const NOTE = (PAGE.match(/var LAUNCH_NOTE = "([^"]+)";/) || [])[1];
 ok("the launch note is on the page", !!NOTE);
+
+{
+  const { context, page } = await fresh({ query: "&workSetting=school" });
+  posts = []; authReply = { ok: false, error: "Synthetic signup refusal" };
+  const field = page.locator("#fWorkSetting");
+  ok("work setting is present and hidden before a clinician role is chosen", await field.count() === 1 && !await field.isVisible() && await field.isDisabled());
+  const pixel = await page.evaluate(() => (window.fbq?.queue || []).map(args => Array.from(args)));
+  const init = pixel.findIndex(args => args[0] === "init");
+  const quiet = pixel.findIndex(args => args[0] === "set" && args[1] === "autoConfig" && args[2] === false);
+  ok("the clinician form disables Meta automatic capture before init and keeps PageView", quiet >= 0 && quiet < init && pixel.some(args => args[0] === "track" && args[1] === "PageView"), pixel);
+  await fill(page, "sam@clinic.org", "slp", null);
+  ok("the clinician must choose their work setting and the URL cannot choose it", await field.count() === 1 && await field.isVisible() && await field.evaluate(el => el.required && !el.disabled && el.value === "" && [...el.options].map(o => o.value).join() === ",clinic,school,other"));
+  await page.click("#fGo");
+  await page.waitForTimeout(300);
+  ok("a clinician with no work setting sees a validation message and sends no request",
+    posts.length === 0 && await field.count() === 1 && await field.evaluate(el => el === document.activeElement) &&
+    Boolean((await page.textContent("#fErr")).trim()), posts);
+  await context.close();
+}
 
 // ── a parent, or other: /api/lead, email and role only, then thanked ──
 for (const role of ["parent", "other"]) {
   const { context, page, errors } = await fresh();
   posts = []; leadReply = { ok: true, captured: true };
-  await fill(page, "dana@example.com", role);
+  await fill(page, "dana@example.com", "slp", "school");
+  await page.selectOption("#fRole", role);
+  const field = page.locator("#fWorkSetting");
+  ok(role + ": a previous work choice is hidden, disabled and optional", await field.count() === 1 && !await field.isVisible() && await field.evaluate(el => el.disabled && !el.required));
   await page.click("#fGo");
   await page.waitForTimeout(300);
   const p = posts[0] || { body: {} };
   ok(role + ": one post, to /api/lead", posts.length === 1 && p.path === "/api/lead", posts);
   ok(role + ": it carries the email and the role, and no name of anyone",
     p.body.role === role && p.body.email === "dana@example.com" && !("name" in p.body) && !("own_name" in p.body) && !("child" in p.body) && !("age" in p.body), p.body);
+  ok(role + ": no clinician work setting reaches the lead", !("workSetting" in p.body), p.body);
   ok(role + ": …and which ad brought them", p.body.utm_source === "fb" && p.body.utm_campaign === "launch" && p.body.fbclid === "abc123" && p.body.source === "fb", p.body);
   if (!READY) {
     ok(role + ": …and asks for the welcome email", p.body.welcome === true, p.body);
@@ -450,7 +484,7 @@ for (const role of ["parent", "other"]) {
 
 // ── an SLP or SLPA: the account and the dashboard email, then the dashboard ──
 {
-  const { context, page, errors } = await fresh();
+  const { context, page, errors } = await fresh({ query: "&workSetting=school" });
   posts = []; authReply = { ok: true, sent: true, signedIn: true };
   await fill(page, "sam@clinic.org", "slp");
   const target = READY ? /apps\.apple\.com/ : /\/slp\.html#community$/;
@@ -460,6 +494,7 @@ for (const role of ["parent", "other"]) {
   const p = posts[0] || { body: {} };
   ok("SLP: one post, to the clinician sign-up (which forwards the lead itself)", posts.length === 1 && p.path === "/api/slp/auth/request", posts);
   ok("SLP: it carries the email and the ad, and no name", p.body.email === "sam@clinic.org" && !("name" in p.body) && p.body.attrib && p.body.attrib.fbclid === "abc123", p.body);
+  ok("SLP: the chosen work setting goes only to signup, outside ad attribution", p.body.workSetting === "clinic" && !!p.body.attrib && !("workSetting" in p.body.attrib), p.body);
   ok("SLP: told the dashboard link is in their email" + (READY ? "" : " and the family app launches Friday, October 2"),
     /emailed sam@clinic\.org a link/.test(await page.textContent("#sentMsg")) && (READY || /launches Friday, October 2/.test(await page.textContent("#sentMsg"))));
   ok("SLP: a new clinician is marked as one", JSON.stringify(await page.evaluate(() => window.__track)) === '["Lead","CompleteRegistration"]');
