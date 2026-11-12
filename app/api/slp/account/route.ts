@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "node:crypto";
 import { kvCmd, readSession, signSession, sessionCookie, SESSION_MAX_AGE, makeFamilyKey } from "@/lib/slpAuth";
-import { CASELOAD_TERMS } from "@/lib/caseload";
+import { PRO_TERMS } from "@/lib/caseload";
 
 const SUFFIX = "abcdefghjkmnpqrstuvwxyz23456789";
 function suffix(n: number): string { let o = ""; const b = crypto.getRandomValues(new Uint8Array(n)); for (let i = 0; i < n; i++) o += SUFFIX[b[i] % SUFFIX.length]; return o; }
@@ -41,8 +41,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "Couldn't reach your account just now — try again in a moment." }, { status: 503 });
   }
   // An account made HERE (signed in, but the record is gone) is made under
-  // the caseload plan, like every account from this build on (lib/caseload).
-  if (raw === null) acct.terms = CASELOAD_TERMS;
+  // Sona Pro, like every account from this build on (lib/caseload).
+  if (raw === null) acct.terms = PRO_TERMS;
   acct.email = s.email;
   if (typeof body.name === "string") acct.name = body.name.slice(0, 80);
   if (typeof body.clinic === "string") acct.clinic = body.clinic.slice(0, 80);

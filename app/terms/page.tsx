@@ -4,8 +4,8 @@ import { FREE_MODE } from "@/lib/pricing";
 // On its own line: tests/freetest.mjs pins the FREE_MODE import word for word.
 import { WEB_SALES } from "@/lib/pricing";
 import {
-  CASELOAD_NAME, CASELOAD_PRICE, CASELOAD_PER_MONTH, COVERED_REDEEM_CAP,
-  SELF_NAME, SELF_PRICE, SELF_PER_MONTH, LEGACY_CASELOAD_PRICE,
+  CASELOAD_NAME, CASELOAD_PRICE, SELF_NAME, SELF_PRICE, LEGACY_CASELOAD_PRICE,
+  PRO_NAME, PRO_PRICE, PRO_TRIAL_DAYS,
 } from "@/lib/caseload";
 
 export const metadata: Metadata = {
@@ -138,7 +138,7 @@ export default function TermsPage() {
                   free trial, shown in the App Store.
                 </strong>{" "}
                 We are not selling new family subscriptions on speaksona.com. A
-                clinician&apos;s plans are still sold here: see Premium for
+                clinician&apos;s plan is still sold here: see Sona Pro for
                 clinicians below.
                 <br />
                 <br />
@@ -199,7 +199,7 @@ export default function TermsPage() {
           does not read FREE_MODE, so its terms cannot hang off that switch.
           Every figure is lib/caseload.ts's — the same constants the checkout
           charges and the dashboard prints. */}
-      <Section title="Premium for clinicians">
+      <Section title="Sona Pro for clinicians">
         <CaseloadTerms />
       </Section>
 
@@ -224,7 +224,7 @@ export default function TermsPage() {
         refunds are handled by Apple at reportaproblem.apple.com. For a
         family&apos;s subscription bought on speaksona.com, email us and we will
         cancel it for you. A clinician&apos;s plans are canceled from the
-        clinician dashboard: <strong>Premium &rarr; Manage billing</strong>.
+        clinician dashboard: <strong>Sona Pro &rarr; Manage billing</strong>.
         {/* That one IS self-serve: the dashboard's button opens Stripe's
             billing portal for the clinician's plans (app/api/slp/plan/portal). */}
         <br />
@@ -252,7 +252,7 @@ export default function TermsPage() {
           </>
         )}
         Canceling stops the next renewal and leaves your access — or, for a
-        clinician&apos;s caseload plan, your families&apos; Premium — in place until the period
+        clinician&apos;s plan, your dashboard and your families&apos; Premium — in place until the period
         you have already paid for ends. Except where required by law, payments
         already made are non-refundable.
       </Section>
@@ -265,8 +265,8 @@ export default function TermsPage() {
         Please don&apos;t misuse Sona — including attempting to disrupt or reverse
         engineer the service, using a family&apos;s plan for anyone other than your
         own family, reselling access, or uploading unlawful or harmful content.
-        A clinician&apos;s Premium for their caseload covering the families on their own
-        caseload is what that plan is for, and is not reselling. We may suspend
+        A clinician&apos;s plan covering the families on their own caseload is
+        what that plan is for, and is not reselling. We may suspend
         accounts that violate these Terms.
       </Section>
 
@@ -468,7 +468,7 @@ function ReferralTerms() {
           the families it no longer covers. */}
       <strong>Families who join through a clinician&apos;s link</strong> get the
       free version at no cost, and every game at no cost while that
-      clinician&apos;s caseload is covered by the clinician&apos;s caseload plan (below) — whether or
+      clinician&apos;s caseload is covered by the clinician&apos;s plan (below) — whether or
       not the family chooses to share practice with the clinician. Families who
       joined through a clinician&apos;s link before Premium launched keep every
       game free, as they were promised. Founding Families places are free and
@@ -478,76 +478,84 @@ function ReferralTerms() {
 }
 
 /**
- * THE CLINICIAN PLANS (Travis, 24 Sep 2026; re-priced 29 Sep 2026). What the
- * checkout in app/api/slp/plan does, and nothing it doesn't: two yearly
- * plans, no trial, the caseload sold only on top of the clinician's own,
- * cancel in the billing portal, a cancelled plan runs to the end of the paid
- * year (Stripe keeps it active until then, and so does coverage). The
- * promises kept are lib/caseload.ts's WHO IS COVERED: an account with no
- * `terms` stamp was told "free forever, unlimited families — for you and
- * every kid on your caseload"; a 24 to 29 Sep account was told its own
- * Premium was free with a work email; a caseload plan bought before 29 Sep
- * keeps the price it was bought at and keeps switching on the clinician's
- * own phone.
+ * SONA PRO (Travis, 12 Nov 2026). What the checkout in app/api/slp/plan does,
+ * and nothing it doesn't: one monthly plan; a 14-day free trial the first
+ * time, card up front, charged when it ends unless cancelled; renews monthly;
+ * cancelled in the billing portal, it runs to the end of the period paid for
+ * (Stripe keeps it active until then, and so does coverage); no cap on
+ * families while it is on. The promises kept are lib/caseload.ts's WHO IS
+ * COVERED: every account made before 12 Nov 2026 keeps the free dashboard it
+ * signed up with; an account with no `terms` stamp was told "free forever,
+ * unlimited families — for you and every kid on your caseload"; a 24 to 29
+ * Sep account was told its own Premium was free with a work email; and the
+ * two yearly plans sold until 12 Nov 2026 keep renewing at their price.
+ * Every figure is a lib/caseload.ts constant.
  */
 function CaseloadTerms() {
   return (
     <>
-      A speech-language pathologist or other clinician can buy two yearly
-      plans on speaksona.com:
-      <br />
-      <br />
-      <strong>{SELF_NAME}</strong> is{" "}
-      <strong>{SELF_PRICE} per year</strong> ({SELF_PER_MONTH}): Premium on
-      your own phone or tablet, every game, turned on with a link the
-      dashboard emails to your account&apos;s address. Each link works once.
+      A speech-language pathologist or other clinician can buy{" "}
+      <strong>{PRO_NAME}</strong> on speaksona.com for{" "}
+      <strong>{PRO_PRICE} per month</strong>. It includes the clinician
+      dashboard; Premium on your own phone or tablet, every game, turned on
+      with a link the dashboard emails to your account&apos;s address (each
+      link works once); and Premium for every family who joins Sona through
+      your link, whether or not they choose to share practice with you.
       {/* Never "one phone" (24 Sep 2026): each self link works once, but the
           server sends a few a day and retires none, so a one-device limit
           would be a term nobody keeps. The words are app/api/slp/self's. */}
+      {/* UNLIMITED, AND TRUE (Travis, 12 Nov 2026: "Remove the limit"). A
+          covered code has no redeem cap at all (app/api/slp/redeem), so
+          "no limit" is what the server does, not a fair-use figure of speech.
+          Until 12 Nov this said "up to 300 sign-ups a year". */}
+      {" "}There is no limit on how many families join through your link while
+      it is active.
       <br />
       <br />
-      <strong>{CASELOAD_NAME}</strong> is{" "}
-      <strong>{CASELOAD_PRICE} per year</strong> ({CASELOAD_PER_MONTH}) on top
-      of {SELF_NAME}, for the families on your own caseload. It can be bought
-      once your own Premium is on, and it is billed as its own subscription.
+      <strong>Free trial.</strong> The first time you start {PRO_NAME}, the
+      first {PRO_TRIAL_DAYS} days are free. You enter a card at checkout and
+      are not charged that day. Unless you cancel before the trial ends, your
+      card is charged {PRO_PRICE} when it ends and then each month until you
+      cancel. If you cancel during the trial, you are never charged. One free
+      trial per clinician.
       <br />
       <br />
-      There is <strong>no free trial</strong> for either: the first year is
-      charged at checkout, and each plan renews automatically each year at the
-      price you subscribed at until you cancel it.
+      <strong>Renewal and canceling.</strong> {PRO_NAME} renews automatically
+      each month until you cancel it, from the clinician dashboard:{" "}
+      <strong>Sona Pro &rarr; Manage billing</strong>. If you cancel, your
+      dashboard and your families&apos; Premium stay on until the end of the
+      month you paid for (or of the free trial); then your families move to
+      the free version, which stays free, and removing a child from your
+      dashboard keeps working. The price does not depend on how many families
+      join, and you never earn anything from families on your own caseload.
       <br />
       <br />
-      {/* "Every family", never "unlimited". The number is COVERED_REDEEM_CAP
-          (app/api/slp/redeem), and it counts successful sign-ups over about a
-          year — a second phone or a re-tapped link counts again — not
-          distinct families, per code AND per clinician, so a new code does
-          not reset it. So it is printed as what it is, sign-ups a year (24 Sep
-          2026: "up to 300 families on one link" read as a family count the
-          counter does not keep), and the redeem error sends a family who
-          meets it to their clinician ("ask your speech therapist to contact
-          Sona"), and her to us. */}
-      While it is active, the plan covers every family on your caseload: every family who joins Sona through your link has Premium,
-      whether or not they choose to share practice with you. A single link
-      allows up to {COVERED_REDEEM_CAP} sign-ups a year, counted across every
-      code you have used, and we raise it on request. If you cancel it, your
-      families keep Premium until the end of the year you paid for, and then
-      move to the free version, which stays free. The price does not depend on
-      how many families join, and you never earn anything from families on
-      your own caseload.
+      <strong>Clinicians who signed up before 12 November 2026</strong> were
+      told the dashboard was free. It still is, with nothing to buy;{" "}
+      {PRO_NAME} adds every game for them and their caseload.
       <br />
       <br />
       <strong>Clinicians who signed up before 24 September 2026</strong> were
       promised Sona free for themselves and every family on their caseload.
       That promise stands: they and their caseload have Premium at no cost,
-      with nothing to buy and nothing to renew.
+      with no limit on families, nothing to buy and nothing to renew.
       <br />
       <br />
       <strong>Clinicians who signed up from 24 to 29 September 2026</strong>{" "}
       were told their own Premium was free with a work email (or if we approve
-      their request for access). It still is. A caseload plan bought before 29
-      September 2026 (then {LEGACY_CASELOAD_PRICE} a year) keeps renewing at that price and
-      also includes the clinician&apos;s own Premium, for as long as it
-      renews.
+      their request for access). It still is.
+      <br />
+      <br />
+      {/* Retired from sale, not cancelled: the people holding them keep them,
+          as the family plan's retired monthly price is kept for its holders. */}
+      <strong>Yearly plans sold until 12 November 2026.</strong> {SELF_NAME}{" "}
+      ({SELF_PRICE} a year) and {CASELOAD_NAME} ({CASELOAD_PRICE} a year on top
+      of it; {LEGACY_CASELOAD_PRICE} a year, including the clinician&apos;s own
+      Premium, before 29 September 2026) were replaced by {PRO_NAME} and
+      can&apos;t be bought now. If you hold one, it keeps renewing at the price
+      you subscribed at, and keeps covering what it covered, until you cancel
+      it; while your caseload is covered by one, there is no limit on families
+      either.
     </>
   );
 }

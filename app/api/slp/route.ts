@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { readSession, kvCmd, kvConfigured, rosterKey, healLegacyRoster } from "@/lib/slpAuth";
 import { readAllHomework, hwStatus, type Homework, type HomeworkRecord } from "@/lib/homework";
 import { readMeta, readInvites, readGone, readAccount, type ChildMeta } from "@/lib/roster";
+import { dashboardGate } from "@/lib/proGate";
 
 /**
  * SLP master roster — returns each family's latest progress for the SIGNED-IN
@@ -61,6 +62,10 @@ export async function GET(req: NextRequest) {
   const s = readSession(req);
   if (!s) return NextResponse.json({ ok: false, error: "sign in required" }, { status: 401 });
   if (!kvConfigured()) return NextResponse.json({ ok: true, configured: false, kids: [], invites: [] });
+  // The caseload is what Sona Pro sells, for an account made from 12 Nov
+  // 2026 (lib/proGate). 402 with needPlan: the page shows the plan instead.
+  const locked = await dashboardGate(s.email);
+  if (locked) return locked;
   const { code } = await readAccount(s.email);
   if (!code) return NextResponse.json({ ok: true, configured: true, kids: [], invites: [] });
 

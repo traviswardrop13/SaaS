@@ -3,21 +3,24 @@ import Stripe from "stripe";
 import { readSession, kvConfigured } from "@/lib/slpAuth";
 import { rateLimit } from "@/lib/rateLimit";
 import {
-  planStatus, selfStatus, activateFromSession, readAcct, readPlan, StoreUnavailable,
-  CASELOAD_CENTS, CASELOAD_PRICE, CASELOAD_PER_MONTH, CASELOAD_PLAN, CASELOAD_NAME, CASELOAD_ADDON,
-  SELF_CENTS, SELF_PRICE, SELF_PER_MONTH, SELF_PLAN, SELF_NAME, BOTH_PRICE, BOTH_PER_MONTH,
+  planStatus, selfStatus, proStatus, dashboardOpen, activateFromSession, readAcct, readPlan, grandfathered, StoreUnavailable,
+  PRO_CENTS, PRO_PRICE, PRO_PER, PRO_INTERVAL, PRO_TRIAL_DAYS, PRO_PLAN, PRO_NAME,
 } from "@/lib/caseload";
 
 /**
- * THE CLINICIAN'S TWO PLANS (lib/caseload says who is covered and why):
- * "Sona Premium for you", $59.99 a year, and "Sona Premium for your
- * caseload", $59.99 a year more, sold only on top of the first.
+ * SONA PRO, THE ONE CLINICIAN PLAN ON SALE (Travis, 12 Nov 2026; lib/caseload
+ * says who is covered and why): $19.99 a month for the dashboard, every game
+ * on the clinician's own phone, and every game for every family on their
+ * link, with a 14-day free trial the first time.
  *
  *   GET  /api/slp/plan[?session=cs_…] → where this clinician stands: the
- *        caseload at the top level (as before), their own Premium in `self`.
- *   POST /api/slp/plan { plan: "self" | "caseload" } → a Stripe Checkout
- *        link to buy one. No `plan` means the caseload, which is what a page
- *        cached from before 29 Sep 2026 is asking for.
+ *        caseload at the top level (as before), their own Premium in `self`,
+ *        Sona Pro in `pro`, and whether the dashboard is open.
+ *   POST /api/slp/plan { plan: "pro" } → a Stripe Checkout link for Sona Pro.
+ *        The two yearly plans sold until 12 Nov 2026 ("self", "caseload", or
+ *        no `plan` from a page cached before 29 Sep) are refused with
+ *        `retired: true`: a stale page showing $59.99 a year must not open a
+ *        checkout for a different price. Anyone already holding one keeps it.
  *
  * Signed-in clinicians only; the email is the SESSION's, never the body's or
  * the URL's. The success redirect brings a Checkout Session id back on the
@@ -87,21 +90,31 @@ export async function GET(req: NextRequest) {
     // One after the other, not together: the own-Premium answer reads the
     // caseload mirror too, and asked second it finds it fresh instead of
     // sending Stripe the same search twice.
+    // Pro first, so the two answers after it find its mirror fresh.
     const acct = await readAcct(s.email);
+    const pro = await proStatus(s.email);
     const plan = await planStatus(s.email, { acct });
     const self = await selfStatus(s.email, { acct });
+    const open = await dashboardOpen(s.email, { acct });
     return NextResponse.json({
       ok: true,
       active: plan.active,
       source: plan.source,
       periodEnd: plan.periodEnd,
       cancelAtPeriodEnd: plan.cancelAtPeriodEnd,
-      price: CASELOAD_PRICE,
-      perMonth: CASELOAD_PER_MONTH,
       // `eligible` keeps its old meaning for the page: "may this clinician
       // email themselves an own-phone link right now".
-      self: { ...self, eligible: self.active, price: SELF_PRICE, perMonth: SELF_PER_MONTH },
-      both: { price: BOTH_PRICE, perMonth: BOTH_PER_MONTH },
+      self: { ...self, eligible: self.active },
+      pro: {
+        ...pro,
+        name: PRO_NAME, price: PRO_PRICE, per: PRO_PER, trialDays: PRO_TRIAL_DAYS,
+        // Is there anything Pro would add? Not for a clinician whose caseload
+        // AND own phone are already on some other way (free as promised, or
+        // a retired yearly plan still renewing): the page sells them nothing.
+        offer: !pro.active && !(plan.active && self.active),
+      },
+      dashboard: { open },
+      grandfathered: grandfathered(acct),
       ...(sid ? { activated } : {}),
       ...(activatedPlan ? { activatedPlan } : {}),
       ...(retry ? { retry: true } : {}),
@@ -124,56 +137,52 @@ export async function POST(req: NextRequest) {
 
   let body: { plan?: unknown } = {};
   try { body = (await req.json()) || {}; } catch { body = {}; }
-  if (body.plan !== undefined && body.plan !== "self" && body.plan !== "caseload") {
-    return NextResponse.json({ ok: false, error: "Which plan?" }, { status: 400 });
+  // RETIRED (12 Nov 2026). Only Sona Pro is sold. A tab opened before then
+  // still shows "$59.99 a year" on its buttons; the checkout it would open
+  // must not be a monthly price the clinician never read.
+  if (body.plan !== "pro") {
+    return NextResponse.json({
+      ok: false, retired: true,
+      error: "Sona's plan for speech therapists has changed. Reload this page to see " + PRO_NAME + ".",
+    }, { status: 409 });
   }
-  const kind: "self" | "caseload" = body.plan === "self" ? "self" : "caseload";
 
   // Asked of Stripe afresh (force), not the ten-minute mirror: a clinician
-  // who paid in another tab a minute ago must not be sold a second year.
+  // who started Pro in another tab a minute ago must not be sold a second
+  // one, and the trial is given only on Stripe's own word that this address
+  // never had one. Every check here is forced, the yearly plans' too: a
+  // forced "no plan" is never remembered, and an unforced one would be — a
+  // cached negative the moment before the clinician pays, the race
+  // NEGATIVE_MS is about (caseloadtest plays it).
   let acct: Record<string, unknown> | null;
   let customer = "";
+  let trial = false;
   try {
     acct = await readAcct(s.email);
-    const self = await selfStatus(s.email, { stripe, acct, force: true });
-    if (kind === "self") {
-      if (self.active) {
-        return NextResponse.json({
-          ok: false, already: true,
-          error: self.source === "grandfathered" || self.source === "work-email"
-            ? "Your own Premium is already on, free, as promised when you signed up."
-            : "Your own Premium is already on.",
-        }, { status: 409 });
-      }
-    } else {
-      const plan = await planStatus(s.email, { stripe, acct, force: true });
-      if (plan.active) {
-        return NextResponse.json({
-          ok: false, already: true,
-          error: plan.source === "grandfathered"
-            ? "Your caseload is already covered, free, as promised when you signed up."
-            : "Your caseload is already covered.",
-        }, { status: 409 });
-      }
-      // THE ADD-ON NEEDS THE ACCOUNT (Travis, 29 Sep 2026: "they're going to
-      // still pay the 60 bucks for an account, and they can pay an extra 60
-      // bucks a year for all of their caseload"). Checked here, not only on
-      // the page, so a stale tab cannot buy the caseload alone.
-      if (!self.active) {
-        return NextResponse.json({
-          ok: false, needSelf: true,
-          error: "Your caseload is added to your own Premium. Get Premium for you first, then add your caseload.",
-        }, { status: 409 });
-      }
+    const pro = await proStatus(s.email, { stripe, force: true });
+    if (pro.active) {
+      return NextResponse.json({ ok: false, already: true, error: PRO_NAME + " is already on." }, { status: 409 });
     }
-    // The same Stripe customer for both plans, where one exists, so Manage
-    // billing shows the clinician everything they pay for on one page. Read
-    // from the stored mirrors only (the forced checks above wrote any plan
-    // they found): asking Stripe here would cache a "no plan" the moment
-    // before the clinician pays, which is the race NEGATIVE_MS is about.
-    const other = await readPlan(s.email, undefined, kind === "self" ? "caseload" : "self");
-    const mine = await readPlan(s.email, undefined, kind);
-    customer = (other && other.customer) || (mine && mine.customer) || "";
+    const plan = await planStatus(s.email, { stripe, acct, force: true });
+    const self = await selfStatus(s.email, { stripe, acct, force: true });
+    if (plan.active && self.active) {
+      return NextResponse.json({
+        ok: false, already: true,
+        error: plan.source === "grandfathered"
+          ? "Your dashboard, your own phone and your caseload are already free, as promised when you signed up."
+          : "You already have everything " + PRO_NAME + " includes.",
+      }, { status: 409 });
+    }
+    trial = pro.trialAvailable;
+    // The same Stripe customer as any plan they already hold, so Manage
+    // billing shows everything they pay for on one page. Read from the
+    // stored mirrors only (the forced checks above wrote any plan they
+    // found): asking Stripe here would cache a "no plan" the moment before
+    // the clinician pays, which is the race NEGATIVE_MS is about.
+    for (const kind of ["pro", "self", "caseload"] as const) {
+      const m = await readPlan(s.email, undefined, kind);
+      if (m && m.customer) { customer = m.customer; break; }
+    }
   } catch (e) {
     if (e instanceof StoreUnavailable) return storeDown();
     throw e;
@@ -182,47 +191,50 @@ export async function POST(req: NextRequest) {
   const origin = originOf(req);
   // A fixed Stripe Price when one is configured (so the Stripe dashboard's
   // product reporting lines up); otherwise the amount from lib/caseload, the
-  // same constant every surface prints. The caseload's variable is NEW
-  // (…_ADDON) on 29 Sep 2026: the old STRIPE_PRICE_ID_SLP_CASELOAD may name a
-  // $79.99 Price, and reading it would charge that under a $59.99 page.
-  const priceId = kind === "self" ? process.env.STRIPE_PRICE_ID_SLP_SELF : process.env.STRIPE_PRICE_ID_SLP_CASELOAD_ADDON;
+  // same constant every surface prints. Its own variable: neither of the
+  // retired plans' Price ids can ever be charged under this page.
+  const priceId = process.env.STRIPE_PRICE_ID_SLP_PRO;
   const line_items: Stripe.Checkout.SessionCreateParams.LineItem[] = priceId
     ? [{ price: priceId, quantity: 1 }]
     : [{
         quantity: 1,
         price_data: {
           currency: "usd",
-          unit_amount: kind === "self" ? SELF_CENTS : CASELOAD_CENTS,
-          recurring: { interval: "year" },
-          product_data: kind === "self"
-            ? {
-                name: SELF_NAME,
-                description: "Every game, every sound, on your own phone or tablet. Renews yearly; cancel anytime.",
-              }
-            : {
-                name: CASELOAD_NAME,
-                description: "Premium for every family who joins Sona through your link: every game, every sound. Renews yearly; cancel anytime.",
-              },
+          unit_amount: PRO_CENTS,
+          recurring: { interval: PRO_INTERVAL },
+          product_data: {
+            name: PRO_NAME,
+            description: "Your Sona dashboard, every game on your own phone or tablet, and every game for every family who joins through your link. Renews monthly; cancel anytime.",
+          },
         },
       }];
   // The stamps lib/caseload reads, on the session (for activation) AND on
-  // the subscription (for the re-check and the search recovery). A caseload
-  // sold from 29 Sep carries `addon`, so it never switches on the
-  // clinician's own phone the way the older $79.99 plan did. Never a `tier`:
-  // lib/charter counts `tier: charter` subscriptions as the fifty FAMILY
-  // spots, and neither of these is one.
-  const metadata: Record<string, string> = kind === "self"
-    ? { plan: SELF_PLAN, slp: s.email }
-    : { plan: CASELOAD_PLAN, slp: s.email, addon: CASELOAD_ADDON };
+  // the subscription (for the re-check and the search recovery). Never a
+  // `tier`: lib/charter counts `tier: charter` subscriptions as the fifty
+  // FAMILY spots, and this is not one.
+  const metadata: Record<string, string> = { plan: PRO_PLAN, slp: s.email };
   const code = String((acct && acct.code) || "");
+  // WHAT THE CLINICIAN AGREES TO, said beside the button they press (an
+  // automatic renewal after a free trial is the thing a state's renewal law
+  // asks to be spelled out at the point of purchase). Stripe prints the
+  // dates; this says the terms in the same words for-slps and the Terms use.
+  const terms = trial
+    ? "No charge today. Your free trial lasts " + PRO_TRIAL_DAYS + " days; after that, " + PRO_PRICE + " " + PRO_PER + " until you cancel. Cancel before the trial ends and you pay nothing."
+    : PRO_PRICE + " " + PRO_PER + ", charged today and every month until you cancel. Cancel anytime: your families keep every game to the end of the month you paid for.";
 
   try {
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
       line_items,
-      // No trial (Travis, 24 Sep 2026): a clinician buying has already used
-      // the free dashboard and watched families practice.
-      subscription_data: { metadata },
+      // A 14-DAY FREE TRIAL, ONCE (Travis, 12 Nov 2026), card up front: a
+      // new clinician has not seen the dashboard yet, and fourteen days is
+      // time to send a few families home and watch them practice. A trial
+      // that ends with no card on file cancels rather than lingering.
+      subscription_data: trial
+        ? { metadata, trial_period_days: PRO_TRIAL_DAYS, trial_settings: { end_behavior: { missing_payment_method: "cancel" } } }
+        : { metadata },
+      payment_method_collection: "always",
+      custom_text: { submit: { message: terms } },
       metadata,
       ...(customer ? { customer } : { customer_email: s.email }),
       client_reference_id: code || s.email,

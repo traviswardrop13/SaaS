@@ -742,7 +742,9 @@
     .premium-buy .btn { width:100%; }
     .premium-when { font-size:13px; font-weight:500; color:var(--ink); margin:14px 0 18px; }
     .premium-self .ok { margin-top:12px; font-weight:500; color:var(--green-d); overflow-wrap:anywhere; }
-    #premiumBoth { margin:-12px 0 18px; }
+    /* The closed dashboard's one line: information, not success or alarm. */
+    .send-success.pro-locked { background:#eef5fb; color:var(--ink); border:1px solid #d7e6f3; font-size:13px; }
+    #premiumReturnSetup { font-weight:600; }
     #page-settings [hidden] { display:none !important; }
     .set-plan { display:flex; align-items:center; justify-content:space-between; gap:14px; padding:12px 0; border-top:1px solid var(--line); }
     .set-plan:first-child { border-top:0; padding-top:4px; }
@@ -782,7 +784,7 @@
       <div class="nav-section">Workspace</div>
       <a class="nav-item active" data-page="today" href="#today"><span class="icon"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M16 3v4M8 3v4M3 11h18m-12 5 2 2 4-4"/></svg></span> Today <span class="badge warn" id="attnCount" style="display:none;">0</span></a>
       <a class="nav-item" data-page="caseload" href="#caseload"><span class="icon"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2m20 0v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/><circle cx="9" cy="7" r="4"/></svg></span> Caseload <span class="badge" id="familyCount" style="display:none;">0</span></a>
-      <a class="nav-item" data-page="premium" href="#premium"><span class="icon"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.6l-5.4 2.9 1.2-6-4.5-4.2 6.1-.7Z"/></svg></span> Premium</a>
+      <a class="nav-item" data-page="premium" href="#premium"><span class="icon"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.6l-5.4 2.9 1.2-6-4.5-4.2 6.1-.7Z"/></svg></span> Sona Pro</a>
       <div class="nav-section">Connect</div>
       <a class="nav-item" data-page="community" href="#community"><span class="icon"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 11a7 7 0 0 1-7 7H7l-5 3 1.7-5A7 7 0 0 1 2 11a7 7 0 0 1 7-7h5a7 7 0 0 1 7 7Z"/><path d="M7 10h10M7 14h6"/></svg></span> Community</a>
       <a class="nav-item" data-page="affiliate" href="#affiliate"><span class="icon"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18M3 12h18M5.6 5.6l12.8 12.8M5.6 18.4 18.4 5.6"/></svg></span> Affiliate partnerships <span class="soon-badge">2027</span></a>
@@ -1035,63 +1037,104 @@
 
       </div>
 
-      <!-- ════════ PREMIUM ════════
-           The clinician's two plans (Travis, 24 Sep 2026; re-priced 29 Sep
-           2026): "Sona Premium for you", $59.99 a year, every game on their
-           own phone or tablet; and "Sona Premium for your caseload", $59.99 a
-           year more, every family who joins through their link gets every
-           game. The caseload is an add-on: it is sold only once their own
-           Premium is on, and the server refuses it otherwise. Their own page,
-           never a card on Today — Today answers "who practiced", and a price
-           there would crowd the one question the dashboard exists for. Each
-           state is static markup so the register scan in tests/slptest.mjs
-           reads every word; the script only chooses which one shows and fills
-           in the figures the server sends (the prices are lib/caseload.ts's,
-           never typed here). -->
+      <!-- ════════ PREMIUM: SONA PRO ════════
+           ONE PLAN (Travis, 12 Nov 2026): Sona Pro, $19.99 a month — the
+           dashboard, every game on the clinician's own phone or tablet, and
+           every game for every family who joins through their link, with no
+           cap on families. A 14-day free trial the first time, card up front.
+           For an account made from 12 Nov 2026 the dashboard itself is part
+           of the plan (lib/proGate holds that on the server); every older
+           account keeps the free dashboard it was told about.
+           The two yearly plans sold until 12 Nov 2026 are not sold here any
+           more, but a clinician holding one still sees it, with Manage
+           billing, and a clinician covered free as promised still sees that.
+           Their own page, never a card on Today — Today answers "who
+           practiced", and a price there would crowd the one question the
+           dashboard exists for. Each state is static markup so the register
+           scan in tests/slptest.mjs reads every word; the script only chooses
+           which one shows and fills in the figures the server sends (the
+           price and the trial length are lib/caseload.ts's, never typed
+           here). -->
       <div class="page" id="page-premium">
-        <div class="page-header"><div><div class="eyebrow">Every game, for you and every family you send home</div><h1>Premium</h1><p>Sona's free version is free for every family. Premium adds every game: first on your own phone, then, if you add it, for your whole caseload.</p></div></div>
-        <div class="send-success" id="premiumReturn" role="status" hidden><span id="premiumReturnText"></span> <button class="feedback-shortcut" id="premiumCheck" type="button" hidden>Check again</button></div>
+        <div class="page-header"><div><div class="eyebrow">Your dashboard, your phone, every family</div><h1>Sona Pro</h1><p>One plan: your dashboard, every game on your own phone or tablet, and every game for every family who joins through your link.</p></div></div>
+        <div class="send-success" id="premiumReturn" role="status" hidden><span id="premiumReturnText"></span> <a id="premiumReturnSetup" href="#today" hidden>Set up your family link →</a> <button class="feedback-shortcut" id="premiumCheck" type="button" hidden>Check again</button></div>
         <div class="load-notice" id="premiumError" role="alert" hidden><span id="premiumErrorText"></span><button class="btn ghost sm" id="premiumRetry" type="button">Try again</button></div>
         <div class="loading-state" id="premiumLoading" role="status" hidden>Checking your plan…</div>
+        <!-- The dashboard is closed (an account made from 12 Nov 2026, with no
+             Sona Pro on): said once, above the offer, in the words the
+             server's own refusal uses. -->
+        <div class="send-success pro-locked" id="proLocked" role="status" hidden>Your dashboard comes with Sona Pro. <span id="proLockedTrial">Start your free trial below to see your caseload, add children and send homework home.</span><span id="proLockedNow" hidden>Start it below to see your caseload, add children and send homework home.</span></div>
         <div class="premium-layout">
-          <!-- STEP ONE: the clinician's OWN Premium. Bought ($59.99 a year),
-               or free for those who were promised it: signed up before 24 Sep
-               (free forever), or 24–29 Sep with a work email or the founder's
-               approval. Once it is on, the page emails a single-use link to
-               the ACCOUNT's own address — the one inbox the person asking is
-               supposed to control.
+          <div>
+            <section class="card premium-card" id="proOffer" aria-labelledby="proOfferTitle" hidden>
+              <div class="eyebrow">Sona Pro</div>
+              <h2 class="premium-title" id="proOfferTitle">Everything, for you and every family you send home</h2>
+              <p class="premium-price" id="proPriceLine"><b id="proPrice"></b> <span id="proPer"></span><span id="proTrialNote"> · <span id="proTrialDays"></span> days free</span></p>
+              <ul class="premium-points">
+                <li><b>Your dashboard.</b> See who practiced this week, copy a note for every child, and send homework home.</li>
+                <li><b>Unlimited families.</b> Every family who joins through your link gets every game, every sound, whether or not they choose to share practice with you.</li>
+                <li><b>Every game on your own phone or tablet,</b> so you know what you're sending home and can show a family in session.</li>
+                <li><b>One price, however many families.</b> You never earn anything on your own caseload: this is a plan you pay for, not a referral fee.</li>
+              </ul>
+              <p class="sub" style="margin:-8px 0 20px;">Practice stays free: without Sona Pro, families who join through your link still get Sona's free version — daily practice and free games.</p>
+              <div class="premium-buy">
+                <p class="warn" id="proHasYearly" hidden>You already pay for a yearly plan. Sona Pro includes everything in it, so once Sona Pro is on, cancel the yearly plan in Manage billing to avoid paying for both.</p>
+                <button class="btn green" id="proBuy" type="button">Start my free trial</button>
+                <p class="workflow-note" id="proTermsTrial">Secure checkout by Stripe. No charge today: after your free trial, <span id="proThen"></span> until you cancel. Cancel before the trial ends and you pay nothing.</p>
+                <p class="workflow-note" id="proTermsNow" hidden>Secure checkout by Stripe. Charged today, then every month until you cancel — cancel anytime. If you cancel, your dashboard and your families keep every game to the end of the month you paid for.</p>
+                <div class="err" id="proBuyErr" role="status"></div>
+              </div>
+            </section>
+            <section class="card premium-card premium-on" id="proOn" aria-labelledby="proOnTitle" hidden>
+              <div class="eyebrow">Sona Pro</div>
+              <h2 class="premium-title" id="proOnTitle">Sona Pro is on</h2>
+              <p class="sub">Your dashboard, every game on your own phone or tablet, and every game for every family who joins through your link, however many there are.</p>
+              <p class="premium-when" id="proWhen"></p>
+              <button class="btn ghost" id="proManage" type="button">Manage billing</button>
+              <p class="workflow-note">Change your card, download receipts or cancel, on Stripe's billing page.</p>
+              <div class="err" id="proManageErr" role="status"></div>
+            </section>
+            <!-- A yearly caseload plan bought before 12 Nov 2026, still
+                 renewing at the price it was bought at. -->
+            <section class="card premium-card premium-on" id="premiumPaid" aria-labelledby="premiumPaidTitle" hidden>
+              <div class="eyebrow">Your yearly caseload plan</div>
+              <h2 class="premium-title" id="premiumPaidTitle">Premium is on for your caseload</h2>
+              <p class="sub">Every family who joins through your link has every game, whether or not they choose to share practice with you, with no limit on families.</p>
+              <p class="premium-when" id="premiumWhen"></p>
+              <button class="btn ghost" id="premiumManage" type="button">Manage billing</button>
+              <p class="workflow-note">Change your card, download receipts or cancel, on Stripe's billing page.</p>
+              <div class="err" id="premiumManageErr" role="status"></div>
+            </section>
+            <section class="card premium-card premium-on" id="premiumFree" aria-labelledby="premiumFreeTitle" hidden>
+              <div class="eyebrow">Your caseload</div>
+              <h2 class="premium-title" id="premiumFreeTitle">Your caseload has Premium, free</h2>
+              <p class="sub">You joined when Sona promised free for every family on your caseload, and that promise stands.</p>
+              <p class="sub" style="margin-top:8px;">Every family who joins through your link has every game, with no limit on families. There is nothing to buy and nothing to renew.</p>
+            </section>
+          </div>
+          <!-- THE CLINICIAN'S OWN PHONE. On with Sona Pro, or free for those
+               who were promised it: signed up before 24 Sep (free forever),
+               or 24–29 Sep with a work email or the founder's approval, or
+               with a yearly plan still renewing. Once it is on, the page
+               emails a single-use link to the ACCOUNT's own address — the one
+               inbox the person asking is supposed to control.
                NEVER "ONE PHONE" (24 Sep 2026). Each link works once, but the
                server sends a few a day and retires none of them, so "on one
                phone" was a limit nobody keeps; the words are the ones
                /api/slp/self and the Terms use. -->
           <section class="card premium-card premium-self" id="premiumSelf" aria-labelledby="selfTitle" hidden>
-            <div class="eyebrow">Sona Premium for you</div>
-            <div id="selfOffer">
+            <div class="eyebrow">Your own phone or tablet</div>
+            <!-- Only the 24–29 Sep accounts see this: they were told their
+                 own Premium was free with a work email. A request is
+                 approved by hand and nothing emails the clinician when it
+                 is (24 Sep 2026: this said "we'll email you", and no route
+                 sends one). So the card shows the button the approval turns
+                 on, greyed out, and says that is what changes. -->
+            <div id="selfNeedWork" hidden>
               <h2 class="premium-title" id="selfTitle">Every game on your own phone or tablet</h2>
-              <div id="selfBuyBox">
-                <p class="premium-price" id="selfPriceLine"><b id="selfPrice"></b> a year · <span id="selfPerMonth"></span></p>
-                <ul class="premium-points">
-                  <li><b>Play every game yourself,</b> so you know what you're sending home.</li>
-                  <li><b>Show a family every game in session,</b> on your own phone or tablet.</li>
-                  <li><b>Your dashboard stays free.</b> This is for your own device, not your families'.</li>
-                </ul>
-                <div class="premium-buy">
-                  <button class="btn green" id="selfBuy" type="button">Get Premium for me</button>
-                  <p class="workflow-note">Secure checkout by Stripe. Charged when you check out, then once a year until you cancel — cancel anytime.</p>
-                  <div class="err" id="selfBuyErr" role="status"></div>
-                </div>
-              </div>
-              <!-- Only the 24–29 Sep accounts see this: they were told their
-                   own Premium was free with a work email. A request is
-                   approved by hand and nothing emails the clinician when it
-                   is (24 Sep 2026: this said "we'll email you", and no route
-                   sends one). So the card shows the button the approval turns
-                   on, greyed out, and says that is what changes. -->
-              <div id="selfNeedWork" hidden>
-                <p class="sub" style="margin-top:8px;">You signed up when your own Premium came free with your work address. Premium on your own phone or tablet needs a work email — your school or clinic address.</p>
-                <button class="btn ghost sm" id="selfRequest" type="button" style="margin-top:14px;">No work email? Request access</button>
-                <button class="btn ghost" id="selfPending" type="button" style="margin-top:14px;" disabled hidden>Email me my Premium link</button>
-              </div>
+              <p class="sub" style="margin-top:8px;">You signed up when your own Premium came free with your work address. Premium on your own phone or tablet needs a work email — your school or clinic address. It also comes with Sona Pro.</p>
+              <button class="btn ghost sm" id="selfRequest" type="button" style="margin-top:14px;">No work email? Request access</button>
+              <button class="btn ghost" id="selfPending" type="button" style="margin-top:14px;" disabled hidden>Email me my Premium link</button>
             </div>
             <div id="selfOn" hidden>
               <h2 class="premium-title" id="selfOnTitle">Premium is on for you</h2>
@@ -1110,43 +1153,6 @@
             <p class="sub ok" id="selfDone" role="status" hidden></p>
             <div class="err" id="selfErr" role="status"></div>
           </section>
-          <!-- STEP TWO: the caseload, on top of step one. -->
-          <div>
-            <section class="card premium-card" id="premiumOffer" aria-labelledby="premiumOfferTitle" hidden>
-              <div class="eyebrow">Sona Premium for your caseload</div>
-              <h2 class="premium-title" id="premiumOfferTitle">Add every family on your caseload</h2>
-              <p class="premium-price" id="premiumPriceLine"><b id="premiumPrice"></b> a year more · <span id="premiumPerMonth"></span></p>
-              <p class="sub" id="premiumBoth" hidden></p>
-              <ul class="premium-points">
-                <li><b>Every game, every sound.</b> Every family who joins through your link gets all of Sona's games, whether or not they choose to share practice with you.</li>
-                <li><b>Practice stays free.</b> Families can always use the free version at home — daily practice and free games — whether or not you buy this.</li>
-                <li id="premiumParentPrice"><b>Families you don't cover</b> can buy Premium themselves<span id="premiumParentFigure"></span>.</li>
-                <li><b>You never earn anything on your own caseload.</b> This is a plan you pay for, not a referral fee.</li>
-              </ul>
-              <div class="premium-buy">
-                <p class="warn" id="premiumNeedSelf" hidden>Your caseload is added to your own Premium. Get Premium for you first, then add your caseload.</p>
-                <p class="warn" id="premiumNeedLink" hidden>Set up your family link first — Premium reaches families through it. <a href="#today">Set up my link →</a></p>
-                <button class="btn green" id="premiumBuy" type="button">Add my caseload</button>
-                <p class="workflow-note">Secure checkout by Stripe. Charged when you check out, then once a year until you cancel — cancel anytime. If you cancel, your families keep Premium to the end of the year you paid for.</p>
-                <div class="err" id="premiumBuyErr" role="status"></div>
-              </div>
-            </section>
-            <section class="card premium-card premium-on" id="premiumPaid" aria-labelledby="premiumPaidTitle" hidden>
-              <div class="eyebrow">Sona Premium for your caseload</div>
-              <h2 class="premium-title" id="premiumPaidTitle">Premium is on for your caseload</h2>
-              <p class="sub">Every family who joins through your link has every game, whether or not they choose to share practice with you.</p>
-              <p class="premium-when" id="premiumWhen"></p>
-              <button class="btn ghost" id="premiumManage" type="button">Manage billing</button>
-              <p class="workflow-note">Change your card, download receipts or cancel, on Stripe's billing page.</p>
-              <div class="err" id="premiumManageErr" role="status"></div>
-            </section>
-            <section class="card premium-card premium-on" id="premiumFree" aria-labelledby="premiumFreeTitle" hidden>
-              <div class="eyebrow">Sona Premium for your caseload</div>
-              <h2 class="premium-title" id="premiumFreeTitle">Your caseload has Premium, free</h2>
-              <p class="sub">You joined when Sona promised free for every family on your caseload, and that promise stands.</p>
-              <p class="sub" style="margin-top:8px;">Every family who joins through your link has every game. There is nothing to buy and nothing to renew.</p>
-            </section>
-          </div>
         </div>
       </div>
 
@@ -1166,35 +1172,32 @@
         </div>
         <div class="card">
           <h2>Your caseload link</h2>
-          <!-- Was "free forever" until 24 Sep 2026. The dashboard is still free
-               and so is the free version for every family; every game is now
-               Premium, so this line says which of the two a family gets. -->
-          <p class="sub">Your dashboard is free. Families who join through your link get Sona's free version — daily practice and free games — at no cost. <span id="linkCoverage">With <a href="#premium">Premium for your caseload</a> they get every game.</span></p>
+          <!-- Was "free forever" until 24 Sep 2026. The free version is free
+               for every family; every game is Premium, so this line says
+               which of the two a family gets. It no longer says the dashboard
+               is free: from 12 Nov 2026 that depends on when the clinician
+               signed up, and the Sona Pro card below says which. -->
+          <p class="sub">Families who join through your link get Sona's free version — daily practice and free games — at no cost. <span id="linkCoverage">With <a href="#premium">Sona Pro</a> they get every game.</span></p>
           <p class="sub" style="margin-top:8px;">Create a child's link or copy your general link in Caseload → Add a child.</p>
           <a class="btn ghost sm" href="#invite" style="margin-top:12px;">Invite a family →</a>
 
         </div>
-        <!-- PREMIUM, FROM SETTINGS (Travis, 29 Sep 2026: "an upsell within
-             the app, in like the SLP settings, where they can pay an extra
-             sixty bucks a year" for the caseload). The same two plans as the
-             Premium page, one row each, and the same buttons: a tap here
-             opens the same Stripe checkout, and the return lands on the
-             Premium page. Nothing shows until the server has answered with
-             its prices. -->
+        <!-- THE PLAN, FROM SETTINGS (Travis, 29 Sep 2026: "an upsell within
+             the app, in like the SLP settings"). Since 12 Nov 2026 it is the
+             one plan, Sona Pro, with the same button as the Premium page: a
+             tap here opens the same Stripe checkout, and the return lands on
+             the Premium page. Nothing shows until the server has answered
+             with its price. -->
         <div class="card" id="setPremium">
-          <h2>Premium</h2>
+          <h2>Sona Pro</h2>
           <p class="sub" id="setPlanWait">Checking your plan…</p>
           <div id="setPlanRows" hidden>
             <div class="set-plan">
-              <div><b>For you</b><p class="sub" id="setSelfText"></p></div>
-              <button class="btn ghost sm" id="setSelfBuy" type="button" hidden>Get Premium for me</button>
-            </div>
-            <div class="set-plan">
-              <div><b>For your caseload</b><p class="sub" id="setCaseText"></p></div>
-              <button class="btn green sm" id="setCaseBuy" type="button" hidden>Add my caseload</button>
+              <div><b>Your plan</b><p class="sub" id="setProText"></p></div>
+              <button class="btn green sm" id="setProBuy" type="button" hidden>Start my free trial</button>
             </div>
             <div class="err" id="setPlanErr" role="status"></div>
-            <div class="row" id="setBilling" style="margin-top:12px;" hidden><button class="btn ghost sm" id="setManage" type="button">Manage billing</button><a class="sub" href="#premium">See Premium →</a></div>
+            <div class="row" id="setBilling" style="margin-top:12px;" hidden><button class="btn ghost sm" id="setManage" type="button">Manage billing</button><a class="sub" href="#premium">See Sona Pro →</a></div>
           </div>
         </div>
         <div class="card">
@@ -1390,6 +1393,10 @@
         if(queued.length)loadAll(function(fresh){queued.forEach(function(done){done(fresh);});});
       }
       fetch("/api/slp").then(function(r){return r.json();}).then(function(j){
+        // 402 needPlan: the dashboard is Sona Pro's for this account and it
+        // is not on (lib/proGate). Not an error to retry: the plan page says
+        // what opens it, and nothing of the caseload is shown.
+        if(j&&j.needPlan){LOCKED_SERVER=true;KIDS=[];INVITES=[];LOADED=true;settled(true);return;}
         if(!j||!j.ok){settled(false);return;}
         CONFIGURED=j.configured!==false;
         var kids=(j.kids||[]).filter(function(k){return k.childId;});
@@ -1415,7 +1422,7 @@
       document.querySelectorAll(".page").forEach(function(p){p.classList.remove("active");});
       var el=$("page-"+name); if(el)el.classList.add("active");
       document.querySelectorAll(".nav-item").forEach(function(n){var active=n.dataset.page===name||(name==="child"&&n.dataset.page==="caseload");n.classList.toggle("active",active);if(active)n.setAttribute("aria-current","page");else n.removeAttribute("aria-current");});
-      $("pageCrumb").textContent={today:"Today",caseload:"Caseload",child:"Child overview",premium:"Premium",settings:"Settings",feedback:"Talk to Rachel",affiliate:"Affiliate partnerships",community:"Community",onboarding:"Welcome"}[name]||"Today";
+      $("pageCrumb").textContent={today:"Today",caseload:"Caseload",child:"Child overview",premium:"Sona Pro",settings:"Settings",feedback:"Talk to Rachel",affiliate:"Affiliate partnerships",community:"Community",onboarding:"Welcome"}[name]||"Today";
       document.title="Sona · "+$("pageCrumb").textContent;
       setMenu(false);
       window.scrollTo(0,0);
@@ -1432,8 +1439,13 @@
     function route(){
       if(!account)return;
       var h=(location.hash||"#today").slice(1).split("/"); var name=h[0]||"today", arg=h[1]?decodeURIComponent(h[1]):null;
-      // Premium is readable before a code exists (the buy button then says the
-      // family link comes first); everything else starts at the one form.
+      // A CLOSED DASHBOARD (an account made from 12 Nov 2026, no Sona Pro on)
+      // shows the plan in place of the caseload: the server refuses the data
+      // anyway (lib/proGate), and an empty Today would read as "nobody
+      // practiced". Settings, Community and Talk to Rachel stay open.
+      if(dashLocked()&&!LOCK_OPEN_PAGES[name==="invite"?"caseload":name]){if(location.hash!=="#premium")history.replaceState(null,"","#premium");switchPage("premium");return;}
+      // The plan page is readable before a code exists; everything else
+      // starts at the one form.
       if(!code&&name!=="community"&&name!=="feedback"&&name!=="premium"){switchPage("onboarding");return;}
       if(!PREVIEW_FEATURES&&previewOnlyPage(name)){name="today";history.replaceState(null,"","#today");}
       if(name==="invite"){switchPage("caseload");openInvite();return;}
@@ -1970,32 +1982,47 @@
     $("planCopy").onclick=function(){copy($("planOutline").value,$("planCopy"));};
     $("planHomework").onclick=function(){if(CURRENT)go("child",CURRENT.childId,"homework");};
 
-    /* ── Premium: for you, then for your caseload ──────────────────
-       VIEWING ONLY READS. Opening this page sends two GETs — /api/slp/plan
-       (where this caseload stands, and the clinician's own Premium in
-       PLAN.self) and /api/charter (the family price, for the one line that
-       names it) — and nothing else until a button is pressed. Buying, billing,
-       the self link and an access request are each one POST behind one tap.
-       Settings shows the same two plans with the same buttons (buyPlan).
+    /* ── Sona Pro ─────────────────────────────────
+       VIEWING ONLY READS. Opening this page sends one GET, /api/slp/plan
+       (Sona Pro in PLAN.pro, where this caseload stands at the top level,
+       the clinician's own Premium in PLAN.self, and whether the dashboard is
+       open in PLAN.dashboard), and nothing else until a button is pressed.
+       Starting Pro, billing, the self link and an access request are each
+       one POST behind one tap. Settings shows the same plan with the same
+       button (buyPro).
 
        THE RETURN FROM STRIPE lands on /slp.html?plan_session=cs_…#premium.
        That id is a question, not proof: the server asks Stripe whether the
-       session is finished, one of this clinician's two plans, and theirs, before
+       session is finished, a clinician plan, and this clinician's, before
        it stores anything. The page forwards it, and takes it off the address
        bar only once the answer is yes (activated, or already active) — until
        then "Check again" re-asks Stripe about that same session, which reads
        it directly instead of waiting on Stripe's search index (24 Sep 2026:
        dropping it on any reply left a clinician who had just paid unable to
-       confirm it, and families joining meanwhile were told "not covered"). */
-    var PLAN=null, PLAN_AT=0, PLAN_BUSY=false, PLAN_ERR="", PLAN_GEN=0, PLAN_SESSION="";
-    var PARENT_PRICE="", PARENT_ASKED=false, BUY_BUSY=false, BUY_KIND="", MANAGE_BUSY=false, SELF_BUSY=false, SELF_SENT="", SELF_DEV="", COVERED_SHOWN=null, RETURN_KIND="";
+       confirm it, and families joining meanwhile were told "not covered").
+
+       THE LOCK (12 Nov 2026). An account made from 12 Nov 2026 has its
+       dashboard only while Sona Pro is on. The server holds that (the roster
+       answers 402 needPlan; lib/proGate); the page follows whichever it
+       heard last — the plan's `dashboard.open`, else the roster's refusal —
+       and shows this page in place of Today, Caseload and a child's page.
+       Settings, Community and Talk to Rachel stay open. */
+    var PLAN=null, PLAN_AT=0, PLAN_BUSY=false, PLAN_ERR="", PLAN_GEN=0, PLAN_SESSION="", LOCKED_SERVER=false;
+    var BUY_BUSY=false, BUY_KIND="", MANAGE_BUSY=false, SELF_BUSY=false, SELF_SENT="", SELF_DEV="", COVERED_SHOWN=null, RETURN_KIND="";
     try{var planSid=new URLSearchParams(location.search).get("plan_session");
       if(planSid!=null){ if(/^cs_[A-Za-z0-9_]{10,240}$/.test(planSid))PLAN_SESSION=planSid; else history.replaceState(null,"",location.pathname+"#premium"); }
     }catch(e){}
-    // Paid or grandfathered: the families on this link have every game.
+    // Sona Pro, a yearly plan still renewing, or grandfathered: the families
+    // on this link have every game.
     function caseCovered(){return !!(PLAN&&PLAN.active);}
-    // The clinician's own Premium: bought, or free as promised at sign-up.
+    // The clinician's own Premium: with Sona Pro, or free as promised at sign-up.
     function selfOn(){return !!(PLAN&&PLAN.self&&PLAN.self.active);}
+    function proOn(){return !!(PLAN&&PLAN.pro&&PLAN.pro.active);}
+    // Is there something to sell? Only the server's answer says so.
+    function proOffer(){return !!(PLAN&&PLAN.pro&&PLAN.pro.offer&&PLAN.pro.price);}
+    function proTrial(){return !!(PLAN&&PLAN.pro&&PLAN.pro.trialAvailable&&PLAN.pro.trialDays);}
+    function dashLocked(){return PLAN&&PLAN.dashboard?PLAN.dashboard.open===false:LOCKED_SERVER;}
+    var LOCK_OPEN_PAGES={premium:1,settings:1,community:1,feedback:1,affiliate:1};
     function answer(r){return r.json().catch(function(){return null;}).then(function(j){return {status:r.status,j:j||{}};});}
     function planDate(sec){var d=new Date(sec*1000);return isNaN(d.getTime())?"":d.toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"});}
     function loadPlan(){
@@ -2013,94 +2040,84 @@
         // session, a family's) will never succeed, so it leaves too; Check
         // again then finds a real plan by the recovery search instead.
         if(sid&&(res.j.activated===true||res.j.active===true||res.j.retry!==true)){PLAN_SESSION="";try{history.replaceState(null,"",location.pathname+"#premium");}catch(e){}}
+        var wasLocked=dashLocked();
         PLAN=res.j;PLAN_AT=Date.now();PLAN_ERR="";
         if(res.j.activatedPlan)RETURN_KIND=res.j.activatedPlan;
         // "Check again" after the id has gone still repaints the banner: the
         // recovery search may have found the plan since.
         if(sid||!$("premiumReturn").hidden)paintReturn(true);
         paintPremium();paintCoverage();
+        // The lock changed under the page (a trial just started, or ran out):
+        // fetch the caseload it can now see, and send the page where it goes.
+        if(wasLocked!==dashLocked()){
+          if(!dashLocked()){LOCKED_SERVER=false;if(code)loadAll(function(){route();});else route();}
+          else route();
+        }
       }).catch(function(){if(gen!==PLAN_GEN)return;PLAN_BUSY=false;PLAN_ERR="Couldn't reach Sona to check your plan.";paintPremium();});
     }
-    // The family price comes from /api/charter, the count checkout itself
-    // reads, and only when it answers with a price: a figure typed here would
-    // be a second copy of it, and a stale one is a promise checkout breaks.
-    // WITH ITS CONDITIONS (24 Sep 2026). "$59.99 a year" bare is true for the
-    // first fifty web buyers only, and a clinician repeats what she reads, so
-    // the charter price carries its cap (the route's, not a typed 50), both
-    // carry "on the web" (App Store Connect prices the app), and a charter
-    // answer without a usable cap prints nothing rather than the bare figure.
-    // FAMILIES NO LONGER PAY ON THE WEBSITE (Travis, 1 Oct 2026: "i dont want
-    // them paying on the website"). While the route says so (`webSales:false`)
-    // an "on the web" figure is a price no parent can pay, so the line names
-    // the place and no figure: the App Store's price is Apple's to print, not
-    // ours to type. Only an explicit false counts: an answer without the field
-    // is the selling state, and both of its branches stay below for the day
-    // the switch flips back. This is the FAMILY's purchase only; the
-    // clinician's own plans on this page never read it.
-    function loadParentPrice(){
-      if(PARENT_ASKED)return;PARENT_ASKED=true;
-      fetch("/api/charter").then(answer).then(function(res){
-        var j=res.j, money=/^\$\d+(\.\d\d)?$/, cap=typeof j.cap==="number"&&j.cap>0&&j.cap%1===0?j.cap:0;
-        if(!j.ok||j.free)PARENT_PRICE="";
-        else if(j.webSales===false)PARENT_PRICE=" in the Sona app on iPhone and iPad";
-        else if(j.open)PARENT_PRICE=typeof j.price==="string"&&money.test(j.price)&&cap?" — on the web, "+j.price+" a year for the first "+cap+" families":"";
-        else PARENT_PRICE=typeof j.standard==="string"&&money.test(j.standard)?" — on the web, "+j.standard+" a year":"";
-        paintPremium();
-      }).catch(function(){});
-    }
     // Which plan came back from Stripe is the server's answer (activatedPlan);
-    // when it never said, the caseload is read first, as the later purchase.
+    // when it never said, Sona Pro is read first. A yearly plan can still come
+    // back from a checkout opened before 12 Nov 2026 in a tab left open, and
+    // it is thanked for in its own words.
     function paintReturn(show){
       var el=$("premiumReturn");
       el.hidden=!show;if(!show)return;
       var paidCase=caseCovered()&&PLAN.source==="paid", paidSelf=selfOn()&&PLAN.self.source==="paid";
-      var kind=RETURN_KIND==="self"?(paidSelf?"self":""):RETURN_KIND==="caseload"?(paidCase?"caseload":""):(paidCase?"caseload":paidSelf?"self":"");
-      $("premiumReturnText").textContent=kind==="caseload"?"Thank you. Premium is on for your caseload: every family who joins through your link has every game.":kind==="self"?"Thank you. Premium is on for you: email yourself a link below and open it on your phone or tablet.":"We couldn't confirm that payment yet. If you just paid, give it a minute, then check again.";
-      $("premiumCheck").hidden=!!kind;
-      el.style.background=kind?"":"#fff8eb";el.style.color=kind?"":"#806132";
+      var kind=RETURN_KIND==="pro"?(proOn()?"pro":""):RETURN_KIND==="caseload"?(paidCase?"caseload":""):RETURN_KIND==="self"?(paidSelf?"self":""):(proOn()?"pro":paidCase?"caseload":paidSelf?"self":"");
+      var on=!!kind;
+      $("premiumReturnText").textContent=kind==="pro"?(PLAN.pro.status==="trialing"?"Your free trial of Sona Pro has started. Your dashboard is open, and every family who joins through your link has every game.":"Thank you. Sona Pro is on: your dashboard is open, and every family who joins through your link has every game.")
+        :kind==="caseload"?"Thank you. Premium is on for your caseload: every family who joins through your link has every game."
+        :kind==="self"?"Thank you. Premium is on for you: email yourself a link below and open it on your phone or tablet."
+        :"We couldn't confirm that payment yet. If you just paid, give it a minute, then check again.";
+      $("premiumReturnSetup").hidden=kind!=="pro"||!!code;
+      $("premiumCheck").hidden=on;
+      el.style.background=on?"":"#fff8eb";el.style.color=on?"":"#806132";
     }
-    function planEnds(p,who){
+    // When a plan renews or ends, in words. A month for Sona Pro, a year for
+    // the yearly plans still renewing.
+    function planEnds(p,who,unit){
       var end=p.periodEnd?planDate(p.periodEnd):"";
-      return p.cancelAtPeriodEnd?(end?"Ends "+end+"."+(who?" "+who+" keep Premium until then, then move to the free version.":""):"Cancelled."+(who?" "+who+" keep Premium to the end of the year you paid for, then move to the free version.":"")):(end?"Renews "+end+".":"Renews once a year.");
+      return p.cancelAtPeriodEnd?(end?"Ends "+end+"."+(who?" "+who+" keep every game until then, then move to the free version.":""):"Cancelled."+(who?" "+who+" keep every game to the end of the "+unit+" you paid for, then move to the free version.":"")):(end?"Renews "+end+".":"Renews once a "+unit+".");
+    }
+    function proWhen(){
+      var p=PLAN.pro, end=p.trialEnd?planDate(p.trialEnd):"";
+      if(p.status==="trialing")return p.cancelAtPeriodEnd?"Free trial"+(end?" until "+end:"")+". You've cancelled, so Sona Pro ends with it and you won't be charged.":"Free trial"+(end?" until "+end:"")+". Then "+p.price+" "+p.per+" until you cancel. Cancel before then and you pay nothing.";
+      if(p.status==="past_due")return "Your last payment didn't go through. Update your card in Manage billing to keep Sona Pro on.";
+      return planEnds(p,"You and your families","month");
     }
     function paintPremium(){
-      var st=!PLAN?null:(!PLAN.active?"none":(PLAN.source==="grandfathered"?"free":"paid"));
-      var self=PLAN&&PLAN.self, on=selfOn();
+      var pro=PLAN&&PLAN.pro, self=PLAN&&PLAN.self, on=selfOn(), offer=proOffer(), trial=proTrial();
+      var st=!PLAN||proOn()?null:(!PLAN.active?null:(PLAN.source==="grandfathered"?"free":PLAN.source==="paid"?"paid":null));
       $("premiumLoading").hidden=!(PLAN_BUSY&&!PLAN);
       $("premiumError").hidden=!PLAN_ERR||PLAN_BUSY;
       $("premiumErrorText").textContent=PLAN_ERR+(PLAN&&PLAN_ERR?" What's below is the last answer we had.":"");
       $("premiumRetry").disabled=PLAN_BUSY;$("premiumCheck").disabled=PLAN_BUSY;
-      $("premiumOffer").hidden=st!=="none";$("premiumPaid").hidden=st!=="paid";$("premiumFree").hidden=st!=="free";
+      $("proLocked").hidden=!dashLocked();$("proLockedTrial").hidden=!trial;$("proLockedNow").hidden=trial;
+      $("proOffer").hidden=!offer;$("proOn").hidden=!proOn();
+      $("premiumPaid").hidden=st!=="paid";$("premiumFree").hidden=st!=="free";
       paintTopBuy();paintSettingsPlan();
-      if(st==="none"){
-        $("premiumPriceLine").hidden=!PLAN.price;$("premiumPrice").textContent=PLAN.price||"";$("premiumPerMonth").textContent=PLAN.perMonth||"";
-        // "Both together" only where it is what they would pay: their own
-        // Premium bought, or about to be. A clinician whose own is free pays
-        // the add-on alone, and a total would overstate it.
-        var both=PLAN.both&&PLAN.both.price&&(!on||self.source==="paid");
-        $("premiumBoth").hidden=!both;$("premiumBoth").textContent=both?"With Premium for you, "+PLAN.both.price+" a year for both ("+PLAN.both.perMonth+").":"";
-        loadParentPrice();
-        $("premiumParentFigure").textContent=PARENT_PRICE;
+      if(offer){
+        $("proPrice").textContent=pro.price;$("proPer").textContent=pro.per||"";
+        $("proTrialNote").hidden=!trial;$("proTrialDays").textContent=trial?String(pro.trialDays):"";
+        $("proThen").textContent=pro.price+" "+(pro.per||"");
+        $("proTermsTrial").hidden=!trial;$("proTermsNow").hidden=trial;
+        // Paying for a yearly plan still renewing: say Pro includes it, so
+        // nobody pays twice without being told.
+        $("proHasYearly").hidden=!(PLAN.source==="paid"||(self&&self.source==="paid")||(self&&self.source==="caseload"));
+        $("proBuy").disabled=BUY_BUSY;$("proBuy").textContent=BUY_BUSY?"Opening secure checkout…":trial?"Start my free trial":"Get Sona Pro";
       }
-      // The caseload is an add-on: until their own Premium is on, the button
-      // says what comes first (the server refuses it too). No code, no link:
-      // Premium reaches families only through the link, so the button says
-      // that instead of selling a plan that would cover nobody yet.
-      $("premiumNeedSelf").hidden=on||!self;
-      $("premiumNeedLink").hidden=!!code||!on;
-      $("premiumBuy").disabled=!code||!on||BUY_BUSY;$("premiumBuy").textContent=BUY_BUSY&&BUY_KIND==="caseload"?"Opening secure checkout…":"Add my caseload";
-      if(st==="paid")$("premiumWhen").textContent=planEnds(PLAN,"Your families");
+      if(proOn())$("proWhen").textContent=proWhen();
+      $("proManage").disabled=MANAGE_BUSY;$("proManage").textContent=MANAGE_BUSY?"Opening billing…":"Manage billing";
+      if(st==="paid")$("premiumWhen").textContent=planEnds(PLAN,"Your families","year");
       $("premiumManage").disabled=MANAGE_BUSY;$("premiumManage").textContent=MANAGE_BUSY?"Opening billing…":"Manage billing";
-      $("premiumSelf").hidden=!self;
+      // Their own phone: shown once it is on (to send the link), or to the
+      // 24–29 Sep account that can still ask for it. Everyone else reads it
+      // in the Sona Pro card.
+      $("premiumSelf").hidden=!self||!(on||self.canRequest);
       if(self){
-        $("selfOffer").hidden=on;$("selfOn").hidden=!on;
-        // A 24–29 Sep account without a work email asks, as it was told it
-        // could; everyone else whose own Premium is off buys it.
-        $("selfBuyBox").hidden=!!self.canRequest;$("selfNeedWork").hidden=!self.canRequest;
-        $("selfPriceLine").hidden=!self.price;$("selfPrice").textContent=self.price||"";$("selfPerMonth").textContent=self.perMonth||"";
-        $("selfBuy").disabled=BUY_BUSY;$("selfBuy").textContent=BUY_BUSY&&BUY_KIND==="self"?"Opening secure checkout…":"Get Premium for me";
-        $("selfWhy").textContent={grandfathered:"Free, as promised when you signed up.","work-email":"Free with your work email, as promised when you signed up.",caseload:"It comes with your caseload plan.",paid:"Every game, every sound, on your own phone or tablet."}[self.source]||"";
-        $("selfWhen").hidden=self.source!=="paid";$("selfWhen").textContent=self.source==="paid"?planEnds(self,""):"";
+        $("selfNeedWork").hidden=on||!self.canRequest;$("selfOn").hidden=!on;
+        $("selfWhy").textContent={grandfathered:"Free, as promised when you signed up.","work-email":"Free with your work email, as promised when you signed up.",caseload:"It comes with your yearly caseload plan.",paid:"Every game, every sound, on your own phone or tablet.",pro:"It comes with Sona Pro."}[self.source]||"";
+        $("selfWhen").hidden=self.source!=="paid";$("selfWhen").textContent=self.source==="paid"?planEnds(self,"","year"):"";
         $("selfBilling").hidden=self.source!=="paid";$("selfManage").disabled=MANAGE_BUSY;$("selfManage").textContent=MANAGE_BUSY?"Opening billing…":"Manage billing";
         $("selfEmail").textContent=(account&&account.email)||"your account email";
         $("selfNeedLink").hidden=!!code;
@@ -2111,44 +2128,37 @@
         if(SELF_DEV&&on){var a=document.createElement("a");a.href=SELF_DEV;a.textContent="open it here";$("selfDone").textContent="Email isn't set up on this server, so here is your link (preview only): ";$("selfDone").appendChild(a);}
       }
     }
-    // SETTINGS' copy of the two plans: the same state, one line each, and
-    // the same buy buttons. Only the server's figures, and nothing at all
-    // until it has answered.
+    // SETTINGS' copy of the plan: one line and the same button. Only the
+    // server's figures, and nothing at all until it has answered.
     function paintSettingsPlan(){
-      var self=PLAN&&PLAN.self, on=selfOn(), st=!PLAN?null:(!PLAN.active?"none":(PLAN.source==="grandfathered"?"free":"paid"));
-      $("setPlanWait").hidden=!!self;$("setPlanRows").hidden=!self;
-      if(!self)return;
-      $("setSelfText").textContent=on?({grandfathered:"On, free, as promised when you signed up.","work-email":"On, free with your work email.",caseload:"On, with your caseload plan.",paid:"On. "+planEnds(self,"")}[self.source]||"On.")
-        :self.canRequest?"Free with a work email, as promised when you signed up. Ask on the Premium page.":(self.price?self.price+" a year: every game on your own phone or tablet.":"Every game on your own phone or tablet.");
-      $("setSelfBuy").hidden=on||!!self.canRequest||!self.price;$("setSelfBuy").disabled=BUY_BUSY;$("setSelfBuy").textContent=BUY_BUSY&&BUY_KIND==="self"?"Opening secure checkout…":"Get Premium for me";
-      $("setCaseText").textContent=st==="free"?"On, free, as promised when you signed up.":st==="paid"?"On. "+planEnds(PLAN,"Your families"):
-        (PLAN.price?PLAN.price+" a year more: every family who joins through your link gets every game.":"Every family who joins through your link gets every game.")+(on?"":" Added to Premium for you, so that comes first.");
-      $("setCaseBuy").hidden=st!=="none"||!PLAN.price;$("setCaseBuy").disabled=!on||!code||BUY_BUSY;$("setCaseBuy").textContent=BUY_BUSY&&BUY_KIND==="caseload"?"Opening secure checkout…":"Add my caseload";
-      $("setBilling").hidden=!(st==="paid"||(on&&self.source==="paid"));$("setManage").disabled=MANAGE_BUSY;$("setManage").textContent=MANAGE_BUSY?"Opening billing…":"Manage billing";
+      var pro=PLAN&&PLAN.pro, trial=proTrial();
+      $("setPlanWait").hidden=!!pro;$("setPlanRows").hidden=!pro;
+      if(!pro)return;
+      var why=PLAN.source==="grandfathered"?"Your dashboard, your own phone and your caseload are free, as promised when you signed up.":
+        PLAN.active&&selfOn()?"Your dashboard, your own phone and your caseload are already on.":"";
+      $("setProText").textContent=proOn()?"On. "+proWhen():why||((dashLocked()?"Your dashboard comes with Sona Pro: ":"")+pro.price+" "+pro.per+(trial?", free for the first "+pro.trialDays+" days":"")+". Every game for you and every family who joins through your link.");
+      $("setProBuy").hidden=!proOffer();$("setProBuy").disabled=BUY_BUSY;$("setProBuy").textContent=BUY_BUSY?"Opening secure checkout…":trial?"Start my free trial":"Get Sona Pro";
+      $("setBilling").hidden=!(proOn()||PLAN.source==="paid"||(PLAN.self&&PLAN.self.source==="paid"));$("setManage").disabled=MANAGE_BUSY;$("setManage").textContent=MANAGE_BUSY?"Opening billing…":"Manage billing";
     }
     // Where the dashboard promises families something, the promise follows
     // the plan: Settings, and the two ready-to-send messages.
     function paintCoverage(){
       var covered=caseCovered();
       if(COVERED_SHOWN===covered)return;COVERED_SHOWN=covered;
-      $("linkCoverage").innerHTML=covered?"Your caseload has Premium, so they get every game too.":'With <a href="#premium">Premium for your caseload</a> they get every game.';
+      $("linkCoverage").innerHTML=covered?"Your caseload has Premium, so they get every game too.":'With <a href="#premium">Sona Pro</a> they get every game.';
       if(code)paintLinkCard();
     }
     // The offer in the top bar (Travis, 29 Sep 2026: "yes add the $80 button
-    // to the first screen"; the same day, re-priced as $59.99 for you and
-    // $59.99 more for the caseload). A clinician from the ad lands on
-    // Community, and a returning one on Today, so the offer follows them to
-    // every page but the Premium page itself. It offers the next thing there
-    // is to buy: their own Premium, then the caseload. Only once the plan has
-    // answered, with the server's price: never a guessed figure, and nothing
-    // once there is nothing left to buy.
+    // to the first screen"; Sona Pro since 12 Nov 2026). A clinician from an
+    // ad lands on Community, and a returning one on Today, so the offer
+    // follows them to every page but the plan page itself. Only once the plan
+    // has answered, with the server's price: never a guessed figure, and
+    // nothing once there is nothing left to buy.
     function paintTopBuy(){
-      var self=PLAN&&PLAN.self, on=selfOn();
-      var want=!PLAN||!self?"":(!on&&!self.canRequest&&self.price)?"self":(on&&PLAN.active===false&&PLAN.price)?"caseload":"";
-      var show=!!want&&!$("page-premium").classList.contains("active");
+      var show=proOffer()&&!$("page-premium").classList.contains("active"), trial=proTrial();
       $("premiumTop").hidden=!show;
-      $("premiumTopLabel").textContent=want==="caseload"?"Add your caseload":"Get Premium";
-      $("premiumTopPrice").textContent=show?(want==="self"?self.price:PLAN.price)+" a year":"";
+      $("premiumTopLabel").textContent=trial?"Try Sona Pro free":"Get Sona Pro";
+      $("premiumTopPrice").textContent=show?(trial?"then ":"")+PLAN.pro.price+" "+PLAN.pro.per:"";
     }
     function renderPremium(){
       paintPremium();
@@ -2158,25 +2168,23 @@
     // an http(s) address the server handed back.
     function leaveFor(url){if(typeof url==="string"&&/^https?:\/\//.test(url)){location.assign(url);return true;}return false;}
     function planPost(path,body){return fetch(path,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body||{})}).then(answer);}
-    // One checkout for either plan, from the Premium page or from Settings.
-    // Errors show beside the button that was pressed.
-    function buyPlan(kind,errId){
+    // One checkout, from the plan page or from Settings. Errors show beside
+    // the button that was pressed. No family link needed first: the
+    // dashboard is part of the plan, and the link is made after.
+    function buyPro(errId){
       if(BUY_BUSY)return;
-      if(kind==="caseload"&&(!code||!selfOn()))return;
-      BUY_BUSY=true;BUY_KIND=kind;$(errId).textContent="";paintPremium();
-      planPost("/api/slp/plan",{plan:kind}).then(function(res){
+      BUY_BUSY=true;BUY_KIND="pro";$(errId).textContent="";paintPremium();
+      planPost("/api/slp/plan",{plan:"pro"}).then(function(res){
         if(res.j.ok&&leaveFor(res.j.url))return;   // on the way to Stripe; stays busy
         BUY_BUSY=false;BUY_KIND="";$(errId).textContent=res.j.error||"Couldn't open checkout. Try again.";
-        if(res.j.already||res.j.needSelf)loadPlan(); // changed in another tab meanwhile
+        if(res.j.already)loadPlan(); // changed in another tab meanwhile
         paintPremium();
       }).catch(function(){BUY_BUSY=false;BUY_KIND="";$(errId).textContent="Network hiccup. Try again.";paintPremium();});
     }
-    $("selfBuy").onclick=function(){buyPlan("self","selfBuyErr");};
-    $("premiumBuy").onclick=function(){buyPlan("caseload","premiumBuyErr");};
-    $("setSelfBuy").onclick=function(){buyPlan("self","setPlanErr");};
-    $("setCaseBuy").onclick=function(){buyPlan("caseload","setPlanErr");};
-    // One billing page for both plans: the add-on is bought under the same
-    // Stripe customer, so Manage billing shows everything they pay for.
+    $("proBuy").onclick=function(){buyPro("proBuyErr");};
+    $("setProBuy").onclick=function(){buyPro("setPlanErr");};
+    // One billing page for every plan: Sona Pro is bought under the same
+    // Stripe customer as a yearly plan, so Manage billing shows everything.
     function manageBilling(errId){
       if(MANAGE_BUSY)return;
       MANAGE_BUSY=true;$(errId).textContent="";paintPremium();
@@ -2185,6 +2193,7 @@
         MANAGE_BUSY=false;$(errId).textContent=res.j.error||"Couldn't open billing. Try again.";paintPremium();
       }).catch(function(){MANAGE_BUSY=false;$(errId).textContent="Network hiccup. Try again.";paintPremium();});
     }
+    $("proManage").onclick=function(){manageBilling("proManageErr");};
     $("premiumManage").onclick=function(){manageBilling("premiumManageErr");};
     $("selfManage").onclick=function(){manageBilling("selfManageErr");};
     $("setManage").onclick=function(){manageBilling("setPlanErr");};
@@ -2418,11 +2427,13 @@
         if(!j||!j.ok){location.replace("/slp-login.html");return;}
         account=j;code=j.code||"";
         // In the background, so every family message knows whether Premium is
-        // included; the Premium page shows it (and the Stripe return lands).
-        loadPlan();
+        // included; the plan page shows it (and the Stripe return lands).
+        var planReady=loadPlan();
         $("sidebarName").textContent=(account&&account.name)||code||"";
         $("accountAvatar").textContent=((account.name||"S").split(/\s+/).map(function(n){return n.charAt(0);}).slice(0,2).join("")).toUpperCase();
-        if(!code){$("loadingState").hidden=true;route();return;}
+        // No code yet: a new account. Whether its first screen is the one
+        // form or the plan is the plan's answer, so wait for it.
+        if(!code){planReady.then(function(){$("loadingState").hidden=true;route();});return;}
         if(location.hash==="#community"){route();loadAll();return;}
         loadAll(function(){route();});
       }).catch(function(){$("loadingState").hidden=true;$("loadError").hidden=false;$("loadErrorText").textContent="Couldn't connect to your workspace. Try again.";});

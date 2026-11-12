@@ -4,10 +4,10 @@
 // THE ROOT IS FOR PARENTS (Travis, 26 Sep 2026: "change it to target parents
 // and caregivers only. not slps"): parents.html, one email box, one button,
 // then the App Store (or the web app on Android), with nothing in between
-// (4 Oct 2026). The clinician page it
-// replaced (25 Sep 2026) lives on at /for-slps, still asking for an email and
-// "I'm a…" (parent or caregiver · SLP or SLPA · other), and is driven below
-// exactly as it was when it was the root. No name on either, no pop-up.
+// (4 Oct 2026). The clinician page lives at /for-slps, refreshed to sell
+// Sona Pro (Travis, 12 Nov 2026): one email box and Start free trial, which
+// signs the clinician up and takes them into their dashboard's Sona Pro page.
+// No name on either, no pop-up.
 import { createServer } from "http";
 import { readFileSync, existsSync } from "fs";
 import { chromium, ROOT, launchOpts } from "./_env.mjs";
@@ -118,15 +118,18 @@ ok("the parent page carries the launch note", !!P_NOTE);
     return !!s && !!s.querySelector('img[src="/assets/site/echo.webp"]') && !!s.querySelector('img[src="/assets/site/hero-slice.webp"]') && !!s.querySelector('img[src="/assets/site/hero-piano.webp"]');
   }));
   ok("…and Echo's bubble says a sound", /^[a-z]+!$/.test((await page.textContent("#bubble")).trim()));
-  // A PARENT PAGE HAS NO SIGN IN (26 Sep 2026), and since 22 Oct 2026 no
-  // way to the clinician page at all (Travis: "speaksona.com is only for
-  // parents. I don't want to target therapists at all").
+  // A PARENT PAGE HAS NO SIGN IN (26 Sep 2026). From 22 Oct 2026 no way to
+  // the clinician page at all; from 12 Nov 2026 (Travis: findable, "a small
+  // 'For speech therapists' link") exactly one, in the footer.
   ok("the header has no Sign in: the logo and one Start free", await page.evaluate(() => {
     const h = document.querySelector("header");
     return h.querySelectorAll("a").length === 1 && !/sign in/i.test(h.textContent) && !!h.querySelector("#topGo");
   }));
   ok("…and that button waits until the hero's own form has scrolled away", !(await page.isVisible("#topGo")));
-  ok("nothing on the page links to the clinician page", await page.evaluate(() => !document.querySelector('a[href^="/for-slps"], a[href^="/slp"]')));
+  ok("the one link to the clinician page is the footer's 'For speech therapists'", await page.evaluate(() => {
+    const all = [...document.querySelectorAll('a[href^="/for-slps"], a[href^="/slp"]')];
+    return all.length === 1 && all[0].closest("footer") && all[0].textContent === "For speech therapists" && all[0].getAttribute("href") === "/for-slps";
+  }));
   ok("…and nothing else on the page speaks to clinicians", await page.evaluate(() => {
     const main = document.querySelector("main").innerText;
     // 29 Sep 2026: Rachel's byline now reads "MS, CF-SLP" (Travis) — her credential, not copy aimed at clinicians.
@@ -368,16 +371,18 @@ charterReply = null;
   await context.close();
 }
 
-// ═════════════════ /for-slps: the clinician page, unchanged ═════════════════
+// ═════════════════ /for-slps: the clinician page, selling Sona Pro (12 Nov 2026) ═════════════════
 // ── the form ──
 {
   const { context, page, errors } = await fresh();
-  ok("/for-slps: the form is on the page itself: an email box and 'I'm a…', no name", await page.isVisible("#fEmail") && await page.isVisible("#fRole") && (await page.$("#fName")) === null && (await page.$("#startModal")) === null);
-  ok("…and nothing is chosen for them", (await page.inputValue("#fRole")) === "");
+  ok("/for-slps: the form is on the page itself: an email box and Start free trial — no 'I'm a…', no name",
+    await page.isVisible("#fEmail") && (await page.$("#fRole")) === null && (await page.$("#fName")) === null && (await page.$("#startModal")) === null &&
+    (await page.textContent("#fGo")) === "Start free trial");
   const fit = await page.evaluate(() => { const r = document.getElementById("signup").getBoundingClientRect(); return { l: r.left, r: r.right, w: innerWidth, overflow: document.documentElement.scrollWidth > innerWidth }; });
   ok("on a phone the form fits the screen, with no sideways scroll", fit.l >= 0 && fit.r <= fit.w && !fit.overflow, fit);
   ok("the hero shows Echo and the caseload card", await page.evaluate(() => { const r = document.querySelector(".hero-r"); return !!r && !!r.querySelector("img.mascot") && /Your caseload this week/.test(r.textContent); }));
-  ok("…and nothing sits under the form's button", await page.evaluate(() => !document.querySelector(".consent, #mNext, .hnote")));
+  ok("…and under the form only the line that sends a parent to their own page", await page.evaluate(() => !document.querySelector(".consent, #mNext, .hnote") && document.querySelector(".parentnote a").getAttribute("href") === "/"));
+  ok("the plan card shows the price and the free days", await page.evaluate(() => { const t = document.getElementById("pricing").innerText; return /\$19\.99/.test(t) && /a month/.test(t) && /Your first 14 days are free\./.test(t); }));
 
   // What the visitor is told before anything is sent.
   posts = [];
@@ -386,112 +391,66 @@ charterReply = null;
   await fill(page, "not-an-email");
   await page.click("#fGo");
   ok("a bad email: asked for a valid one, nothing sent", /valid email/.test(await page.textContent("#fErr")) && posts.length === 0);
-  await fill(page, "dana@example.com");
-  await page.click("#fGo");
-  ok("no answer to I'm a…: asked to choose, nothing sent", /Choose one/.test(await page.textContent("#fErr")) && posts.length === 0);
 
-  // The closing Start free comes back to this one form. (There is no For
-  // parents link any more: Travis, 26 Sep 2026.)
+  // The plan's button and the closing one both come back to this one form.
   ok("the header has no For parents link", (await page.$("#forParents")) === null);
-  await page.evaluate(() => { document.activeElement.blur(); window.scrollTo(0, document.body.scrollHeight); });
-  await page.click("#finalGo");
-  ok("the closing Start free comes back to the same form", await settles(page, () => { const r = document.getElementById("signup").getBoundingClientRect(); return r.top >= 0 && r.bottom <= innerHeight && document.activeElement && document.activeElement.id === "fEmail"; }));
+  for (const id of ["planGo", "finalGo"]) {
+    await page.evaluate(() => { document.activeElement.blur(); window.scrollTo(0, document.body.scrollHeight); });
+    await page.click("#" + id);
+    ok("#" + id + " comes back to the same form", await settles(page, () => { const r = document.getElementById("signup").getBoundingClientRect(); return r.top >= 0 && r.bottom <= innerHeight && document.activeElement && document.activeElement.id === "fEmail"; }));
+  }
   ok("no page errors", errors.length === 0, errors);
   await context.close();
 }
 
-// UNTIL THE APP IS READY (Travis, 25 Sep 2026): no App Store and no web app.
-// A parent or "other" is thanked and told the app launches Friday (and
-// emailed, by /api/lead); a speech therapist goes to their dashboard.
-const PAGE = readFileSync(ROOT + "/for-slps.html", "utf8");
-const READY = /var APP_READY = true;/.test(PAGE);
-const NOTE = (PAGE.match(/var LAUNCH_NOTE = "([^"]+)";/) || [])[1];
-ok("the launch note is on the page", !!NOTE);
-
-// ── a parent, or other: /api/lead, email and role only, then thanked ──
-for (const role of ["parent", "other"]) {
-  const { context, page, errors } = await fresh();
-  posts = []; leadReply = { ok: true, captured: true };
-  await fill(page, "dana@example.com", role);
-  await page.click("#fGo");
-  await page.waitForTimeout(300);
-  const p = posts[0] || { body: {} };
-  ok(role + ": one post, to /api/lead", posts.length === 1 && p.path === "/api/lead", posts);
-  ok(role + ": it carries the email and the role, and no name of anyone",
-    p.body.role === role && p.body.email === "dana@example.com" && !("name" in p.body) && !("own_name" in p.body) && !("child" in p.body) && !("age" in p.body), p.body);
-  ok(role + ": …and which ad brought them", p.body.utm_source === "fb" && p.body.utm_campaign === "launch" && p.body.fbclid === "abc123" && p.body.source === "fb", p.body);
-  if (!READY) {
-    ok(role + ": …and asks for the welcome email", p.body.welcome === true, p.body);
-    ok(role + ": thanked on the page with the launch note, and nothing to tap to leave",
-      (await page.textContent("#sentT")) === "You're on the list!" && (await page.textContent("#sentMsg")) === NOTE && !(await page.isVisible("#nextGo")) && !(await page.isVisible("#straight")));
-    ok(role + ": and it stays on the page: no App Store, no web app", !(await leftFor(page, "/for-slps", 2500)), page.url());
-  } else {
-    ok(role + ": then the page goes to the App Store listing", await page.waitForURL(/apps\.apple\.com/, { timeout: 5000 }).then(() => true, () => false));
-  }
-  ok(role + ": no page errors", errors.length === 0, errors);
-  await context.close();
-}
-
-// The Lead fires only after the server said yes.
-{
-  const { context, page } = await fresh();
-  posts = []; leadReply = { ok: false, error: "A valid email is required." };
-  await fill(page, "dana@example.com", "parent");
-  await page.click("#fGo");
-  await page.waitForTimeout(400);
-  ok("a refused lead shows the server's reason and stays put", /valid email is required/.test(await page.textContent("#fErr")) && /127\.0\.0\.1/.test(page.url()));
-  ok("…and fires no Lead", (await page.evaluate(() => window.__track.length)) === 0);
-  leadReply = { ok: true, captured: true };
-  await page.click("#fGo");
-  await page.waitForTimeout(500);
-  ok("an accepted lead fires Lead once, with no parameters", JSON.stringify(await page.evaluate(() => window.__track)) === '["Lead"]');
-  await context.close();
-}
-
-// ── an SLP or SLPA: the account and the dashboard email, then the dashboard ──
+// ── a new clinician: the account and the dashboard email, then the dashboard's Sona Pro page ──
 {
   const { context, page, errors } = await fresh();
   posts = []; authReply = { ok: true, sent: true, signedIn: true };
-  await fill(page, "sam@clinic.org", "slp");
-  const target = READY ? /apps\.apple\.com/ : /\/slp\.html#community$/;
-  const nav = page.waitForURL(target, { timeout: 6000 }).then(() => true, () => false);
+  await fill(page, "sam@clinic.org");
+  const nav = page.waitForURL(/\/slp\.html#premium$/, { timeout: 6000 }).then(() => true, () => false);
   await page.click("#fGo");
   await page.waitForTimeout(300);
   const p = posts[0] || { body: {} };
   ok("SLP: one post, to the clinician sign-up (which forwards the lead itself)", posts.length === 1 && p.path === "/api/slp/auth/request", posts);
-  ok("SLP: it carries the email and the ad, and no name", p.body.email === "sam@clinic.org" && !("name" in p.body) && p.body.attrib && p.body.attrib.fbclid === "abc123", p.body);
-  ok("SLP: told the dashboard link is in their email" + (READY ? "" : " and the family app launches Friday, October 2"),
-    /emailed sam@clinic\.org a link/.test(await page.textContent("#sentMsg")) && (READY || /launches Friday, October 2/.test(await page.textContent("#sentMsg"))));
+  ok("SLP: it carries the email and the ad, and no name", p.body.email === "sam@clinic.org" && !("name" in p.body) && p.body.attrib && p.body.attrib.fbclid === "abc123" && p.body.source === "fb", p.body);
+  ok("SLP: told the next step is the free trial, and that the dashboard link is in their email",
+    /Next: start your 14-day free trial — no charge today\./.test(await page.textContent("#sentMsg")) && /emailed sam@clinic\.org a link to your dashboard/.test(await page.textContent("#sentMsg")));
   ok("SLP: a new clinician is marked as one", JSON.stringify(await page.evaluate(() => window.__track)) === '["Lead","CompleteRegistration"]');
-  ok("SLP: then into " + (READY ? "the App Store" : "the dashboard's community"), await nav, page.url());
+  ok("SLP: then into the dashboard's Sona Pro page — never the App Store", await nav, page.url());
   ok("SLP: no page errors", errors.filter((e) => !/api\/slp/.test(e)).length === 0, errors);
   await context.close();
 }
-for (const [label, reply, want] of [
-  ["email refused, signed in", { ok: true, sent: false, signedIn: true }, /didn't go out just now, so bookmark the dashboard/],
-  ["email refused, not signed in", { ok: true, sent: false, signedIn: false }, /hello@speaksona\.com/],
+// The Lead fires only after the server said yes.
+{
+  const { context, page } = await fresh();
+  posts = []; authReply = { ok: false, error: "Enter a valid email." };
+  await fill(page, "sam@clinic.org");
+  await page.click("#fGo");
+  await page.waitForTimeout(400);
+  ok("a refused sign-up shows the server's reason and stays put", /Enter a valid email/.test(await page.textContent("#fErr")) && /127\.0\.0\.1/.test(page.url()));
+  ok("…and fires no Lead", (await page.evaluate(() => window.__track.length)) === 0);
+  await context.close();
+  authReply = { ok: true, sent: true, signedIn: true };
+}
+for (const [label, reply, want, leaves] of [
+  ["an existing account (not signed in), email sent", { ok: true, sent: true, signedIn: false }, /Your sign-in link is on its way to sam@clinic\.org/, false],
+  ["email refused, signed in", { ok: true, sent: false, signedIn: true }, /Bookmark it: speaksona\.com\/slp/, true],
+  ["email refused, not signed in", { ok: true, sent: false, signedIn: false }, /hello@speaksona\.com/, false],
 ]) {
   const { context, page } = await fresh();
   posts = []; authReply = reply;
-  await fill(page, "sam@clinic.org", "slp");
+  await fill(page, "sam@clinic.org");
+  const nav = page.waitForURL(/\/slp\.html#premium$/, { timeout: 4000 }).then(() => true, () => false);
   await page.click("#fGo");
-  await page.waitForTimeout(3200);
-  ok("SLP, " + label + ": says so, and stays, so the way in is not lost", want.test(await page.textContent("#sentMsg")) && /127\.0\.0\.1/.test(page.url()));
-  ok("SLP, " + label + ": " + (READY ? "the App Store is one tap away" : "and no App Store button while the app is not ready"), (await page.isVisible("#nextGo")) === READY);
+  await page.waitForTimeout(400);
+  ok("SLP, " + label + ": says so", want.test(await page.textContent("#sentMsg")), await page.textContent("#sentMsg"));
+  // (asked before the page leaves: once it has, there is nothing to read)
+  ok("SLP, " + label + ": no App Store anywhere", !(await page.$("#nextGo")) && !/apps\.apple\.com/.test(await page.content()));
+  ok("SLP, " + label + ": " + (leaves ? "and, being signed in, goes on into the dashboard" : "and stays, so the way in is not lost"), (await nav) === leaves, page.url());
   await context.close();
 }
-
-// ── Android: the same as everyone while the app is not ready ──
-{
-  const { context, page, errors } = await fresh({ ua: "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Mobile Safari/537.36" });
-  posts = []; leadReply = { ok: true, captured: true };
-  await fill(page, "lee@example.com", "parent");
-  await page.click("#fGo");
-  if (READY) ok("Android: after the lead, the web app's setup, not the App Store", await page.waitForURL(/\/onboarding\.html/, { timeout: 5000 }).then(() => true, () => false));
-  else ok("Android: thanked like everyone, and stays", (await page.waitForFunction(() => document.getElementById("sentT").textContent === "You're on the list!", null, { timeout: 3000 }).then(() => true, () => false)) && !(await leftFor(page, "/for-slps", 1500)));
-  ok("Android: no page errors", errors.length === 0, errors);
-  await context.close();
-}
+authReply = { ok: true, sent: true, signedIn: true };
 
 // ── the queued books all open on one day (27 Sep, 1 Oct 2026) ──
 // The page counts only the books the shelf has opened and tags the rest with

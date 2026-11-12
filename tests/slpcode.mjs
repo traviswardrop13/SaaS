@@ -834,7 +834,7 @@ for (const [cred, isCovered] of [[CRED, true], [CRED2, false]]) {
   // family, and every game comes with the caseload plan.
   ok("the dashboard's caseload-link card says what the link does, and what is free for every family",
     /Families who join through your link get Sona's free version — daily practice and free games — at no cost\./.test(slp) &&
-    /With <a href="#premium">Premium for your caseload<\/a> they get every game\./.test(slp));
+    /With <a href="#premium">Sona Pro<\/a> they get every game\./.test(slp));
   ok("…and the message a clinician copies to a family says 'free' and what free means",
     /function familyOffer\(\)\{[^}]*"It's free for your family: daily practice and free games\."/.test(slp) &&
     /function inviteMsg\([^)]*\)\{[^}]*\+familyOffer\(\)\+/.test(slp) && /\$\("snip"\)\.value="[^"]*"\+familyOffer\(\)\+/.test(slp));
@@ -1033,15 +1033,16 @@ for (const [cred, isCovered] of [[CRED, true], [CRED2, false]]) {
   const account = readFileSync(ROOT + "/../app/api/slp/account/route.ts", "utf8");
   ok("the ONLY credential mint is behind the session (auth-gated account route)",
     /readSession\(req\)/.test(account) && /makeFamilyKey/.test(account));
-  // 24 Sep 2026: the cap is no longer one number. A code whose caseload is
-  // covered (the clinician pays for "Sona Premium for your caseload", or was
-  // grandfathered from "free forever, every kid on your caseload") may bring
-  // COVERED_REDEEM_CAP (300) families; every other code keeps REDEEM_CAP (60).
-  // The promise this pin guards is unchanged — a leaked link still dies at N —
-  // so it now asks that N is one of those two and nothing else.
-  // tests/caseloadtest.mjs drives both caps against the real route.
-  ok("redeem enforces a per-code redemption CAP (a leaked link dies at N)",
-    /const REDEEM_CAP = 60;/.test(redeem) && /const cap = isCovered \? COVERED_REDEEM_CAP : REDEEM_CAP;/.test(redeem) && /n > cap\b/.test(redeem));
+  // 24 Sep 2026: the cap stopped being one number; 12 Nov 2026 (Travis:
+  // "Remove the limit"): a code whose caseload is covered (Sona Pro, a yearly
+  // plan still renewing, or grandfathered from "free forever, every kid on
+  // your caseload") has no cap at all; every other code keeps REDEEM_CAP (60).
+  // The promise this pin guards holds for a link nobody pays for — a leaked
+  // one still dies at 60. tests/caseloadtest.mjs drives both against the route.
+  // An UNCOVERED code's cap; a covered one has none since 12 Nov 2026
+  // ("unlimited families"), and caseloadtest plays both.
+  ok("redeem enforces a per-code redemption CAP on an uncovered code (a leaked link dies at N)",
+    /const REDEEM_CAP = 60;/.test(redeem) && /const cap = isCovered \? Infinity : REDEEM_CAP;/.test(redeem) && /n > cap\b/.test(redeem));
   ok("redeem no longer has the DoS-prone per-code failure freeze",
     !/slpredeemfail/.test(redeem), "a passer-by fat-fingering the key must not lock out the caseload");
   ok("redeem resolves the account even for an unknown code (timing-flat)",

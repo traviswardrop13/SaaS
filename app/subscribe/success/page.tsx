@@ -17,11 +17,12 @@ import { useEffect, useState } from "react";
 // no amount; what a parent reads always comes from Stripe
 const PLAN_CENTS = { annual: 5999, monthly: 999 } as const;
 const TRIAL_DAYS = 3;
-// CASELOAD_PLAN and SELF_PLAN in lib/caseload.ts, written out because that
-// module is server-only (Stripe, the store) and cannot ride into a client
-// bundle. tests/caseloadtest.mjs fails if they ever differ.
+// CASELOAD_PLAN, SELF_PLAN and PRO_PLAN in lib/caseload.ts, written out
+// because that module is server-only (Stripe, the store) and cannot ride into
+// a client bundle. tests/caseloadtest.mjs fails if they ever differ.
 const CASELOAD_PLAN_ID = "slp-caseload";
 const SELF_PLAN_ID = "slp-self";
+const PRO_PLAN_ID = "slp-pro";
 
 type Info = {
   amountCents: number | null;
@@ -79,7 +80,7 @@ export default function SubscribeSuccess() {
         // the server on every family device — not whichever browser this
         // session id is opened in. Nothing is written, no code is minted and
         // no purchase is reported: this was not a family's purchase.
-        if (j.plan === CASELOAD_PLAN_ID || j.plan === SELF_PLAN_ID) {
+        if (j.plan === CASELOAD_PLAN_ID || j.plan === SELF_PLAN_ID || j.plan === PRO_PLAN_ID) {
           setCaseload(true);
           return;
         }

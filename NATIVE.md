@@ -582,11 +582,12 @@ To switch it on (Travis, once; nothing to build in Xcode):
 Existing payers show up as they come: the next time the app opens, it hands
 RevenueCat the email, and their next renewal brings it to Sona.
 
-## The clinician plans are web-only (24 Sep 2026; re-priced 29 Sep 2026)
+## The clinician plans are web-only (24 Sep 2026; re-priced 29 Sep 2026; Sona Pro from 12 Nov 2026)
 
-"Sona Premium for you" ($59.99 a year, the clinician's own phone) and "Sona
-Premium for your caseload" ($59.99 a year more, every family on their link)
-are sold to clinicians on speaksona.com, from the dashboard — and the
+Sona Pro ($19.99 a month, 14 days free the first time: the dashboard, the
+clinician's own phone and every family on their link) — and before it "Sona
+Premium for you" and "Sona Premium for your caseload", still renewing for
+those who bought them — are sold to clinicians on speaksona.com, from the dashboard — and the
 dashboard never renders in the app: `slp.html` sends a native shell straight
 to Home before it draws or calls anything. So no clinician buy button can
 appear in the iOS build, **there is no App Store product for either plan, and

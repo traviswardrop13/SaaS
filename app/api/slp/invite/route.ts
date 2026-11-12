@@ -3,6 +3,7 @@ import { readSession, kvConfigured, sendParentInviteEmail } from "@/lib/slpAuth"
 import { rateLimit } from "@/lib/rateLimit";
 import { readAccount, normalizeInvite, createInvite, deleteInvite, cleanToken } from "@/lib/roster";
 import { covered, bumpDaily, PARENT_EMAILS_PER_DAY } from "@/lib/caseload";
+import { dashboardGate } from "@/lib/proGate";
 
 /**
  * Set a child up BEFORE the family has tapped anything.
@@ -48,13 +49,18 @@ function parentEmailOf(v: unknown): string | null {
   return e;
 }
 
-async function gate(req: NextRequest): Promise<{ code: string; familyKey: string; email: string; name: string } | NextResponse> {
+/** Deleting an invite works whatever the clinician pays; making one is Sona Pro's (lib/proGate). */
+async function gate(req: NextRequest, write = true): Promise<{ code: string; familyKey: string; email: string; name: string } | NextResponse> {
   const s = readSession(req);
   if (!s) return NextResponse.json({ ok: false, error: "sign in required" }, { status: 401 });
   const rl = await rateLimit(req, { key: "slpinvite", limit: 60, windowSec: 3600 });
   if (rl) return rl;
   if (!kvConfigured()) {
     return NextResponse.json({ ok: false, error: "no data store connected" }, { status: 503 });
+  }
+  if (write) {
+    const locked = await dashboardGate(s.email);
+    if (locked) return locked;
   }
   const { code, familyKey, name, clinic } = await readAccount(s.email);
   // No key, no link: a link without the key is an honor system, and the
@@ -126,7 +132,7 @@ export async function POST(req: NextRequest) {
 
 // DELETE { token } → { ok, removed: token }
 export async function DELETE(req: NextRequest) {
-  const g = await gate(req);
+  const g = await gate(req, false);
   if (g instanceof NextResponse) return g;
   const body = await readBody(req);
   if (!body) return NextResponse.json({ ok: false, error: "bad request" }, { status: 400 });
