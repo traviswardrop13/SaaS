@@ -412,9 +412,12 @@ scenario("the level and the pitch, every rate, chunk and delay", async (t) => {
       }
       return out;
     });
-    // (21 ms chunks up to 40 ms late can still run the queue dry now and then
-    // in this browser; the gap is zeros, left out above, and the queue's own
-    // checks below hold the iPhone's usual 100 ms chunks to none)
+    // (a gap is zeros, left out above, and the queue's own checks below hold
+    // the iPhone's usual 100 ms chunks to none. The 21 ms chunks up to 40 ms
+    // late used to run the queue dry every second or two here, a fault of the
+    // fake phone, not of this browser: it handed chunks over out of order and
+    // the page dropped one in seven as repeats. _nativemic.mjs keeps them in
+    // order now, as the phone does.)
     const loud = rows.filter((r) => !(Math.abs(r.db) <= 1));
     t.ok("the level: Sona's own mic reads within 1 dB of a real stream of the same sound, in all 16 cases", rows.length === 16 && loud.length === 0 && rows.every((r) => r.heard >= 8192), loud.length ? loud : rows.map((r) => [r.db, r.gaps, r.starved].join("/")));
     // a rate taken wrongly would put it at 326 or 276 Hz
