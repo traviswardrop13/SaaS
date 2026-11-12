@@ -1,14 +1,27 @@
-/* Space Trip: eight actual piloted landings. Each word the child says two
-   times starts the next flight. Gravity, inertia and held engines move the
-   rocket; only a soft pad contact can finish a leg. SayPlay owns speech,
-   audio, microphone and every repetition; this file never touches them.
+/* Space Trip: eight actual piloted landings, each on a different planet.
+   Each word the child says two times starts the next flight, and nothing
+   else: it brings the next planet and the rocket, never an easier flight
+   (CLAUDE.md, "The audit's rebuilds"). Gravity, inertia and held engines
+   move the rocket; only a soft pad contact can finish a leg. SayPlay owns
+   speech, audio, microphone and every repetition; this file never touches
+   them.
+
+   A NEW TRIP EVERY ROUND (newTrip): the eight planets (WORLDS: the ground's
+   colour, the sky's glow, how hard it pulls) come in a new order, and each
+   pad sits somewhere new. The rocks keep their place in the flight from the
+   start to the pad (ROCKS), so each stage is still the challenge it was
+   designed to be. The top bar's dots are the trip's planets, in their
+   colours, filling in as each is landed on; the finale puts all eight in
+   the sky.
 
    EVERY FLIGHT ENDS ON ITS PAD (CLAUDE.md, "Every ball ends in a basket").
    A miss is a real touchdown that did not land (too fast, beside the pad) or
    a bump into a rock, never time spent waiting: the rocket sits still at the
    start until a finger flies it. Each miss makes this flight easier
    (legRetries, reset by the next word):
-   - miss 0: the game as designed. The word's easy flight lasts ten seconds.
+   - miss 0: the game as designed. The help pill's easy flight (its own word,
+     on top) lasts ten seconds of flying: it never drains while the rocket
+     waits.
    - after 1 miss: the rocket falls about half as hard and drifts less, and a
      landing may be about 1.5x faster and 1.5x wider off the pad's middle.
    - after 2 misses: the pad glows, a ghost rocket shows where to stand and
@@ -35,9 +48,36 @@
   var keys = { left: false, right: false, thrust: false }, thrust = false, steering = 0, cushion = false, nudged = 0;
   // doneAt: when (on this game's own play clock) the landing is reported
   var doneAt = 0, dones = 0, cheerAt = -9, BEAT = 1.15;
-  var PAD_X = [0.5, 0.72, 0.28, 0.58, 0.22, 0.78, 0.4, 0.6], PAD_W = [0.32, 0.3, 0.3, 0.28, 0.29, 0.28, 0.27, 0.26];
-  var GRAVITY = [0.12, 0.13, 0.115, 0.14, 0.125, 0.145, 0.13, 0.15];
-  var ROCKS = [[], [], [[0.53, 0.54, 0.045]], [[0.24, 0.62, 0.05]], [[0.61, 0.54, 0.045]], [[0.45, 0.57, 0.04]], [[0.71, 0.64, 0.04]], [[0.24, 0.5, 0.04], [0.81, 0.58, 0.04]]];
+  var PAD_W = [0.32, 0.3, 0.3, 0.28, 0.29, 0.28, 0.27, 0.26];
+  // each stage's own pull (a planet makes it a little lighter or heavier).
+  // The first two are gentler than they were: the word no longer eases them
+  var GRAVITY = [0.1, 0.11, 0.115, 0.13, 0.125, 0.14, 0.13, 0.145];
+  // Rocks as [where along the way from the start to the pad (0 the start, 1
+  // the pad), how far down the sky, size]. Stored along the way, not as a
+  // place on the screen, so a pad that moves keeps each stage's rock between
+  // the rocket and its pad (or under the start) as designed. A rock past
+  // the pad that would leave the screen goes the same distance back toward
+  // the start instead.
+  var ROCKS = [[], [], [[0.49, 0.54, 0.045]], [[0.03, 0.62, 0.05]], [[0.29, 0.54, 0.045]], [[0.4, 0.57, 0.04]], [[0.16, 0.64, 0.04]], [[0.03, 0.5, 0.04], [1.8, 0.58, 0.04]]];
+  // The eight planets. `tint` paints the moon ground's colour (its light and
+  // shade stay the painting's), `glow` is the sky's colour near the ground,
+  // `floor` the ground under the painting, `dot` the top bar's little
+  // planet and the finale's, `g` how hard it pulls (the first two flights
+  // never pull harder than their stage). Never orange: orange means only
+  // the practice sound's letters.
+  var WORLDS = [
+    { id: "moon", name: "the Moon", tint: "", glow: "246,236,214", floor: ["#d7c3a5", "#a99a85"], dot: "#e4d8c2", g: 1 },
+    { id: "mint", name: "the Mint Planet", tint: "#6fd3bd", glow: "111,211,189", floor: ["#a9dfcf", "#6fae9d"], dot: "#7fd9c4", g: 0.9 },
+    { id: "candy", name: "the Candy Planet", tint: "#f39cc4", glow: "243,156,196", floor: ["#efbdd3", "#c0879f"], dot: "#f5a8cb", g: 0.85 },
+    { id: "ice", name: "the Ice Planet", tint: "#9fd3f2", glow: "170,218,245", floor: ["#cfe7f3", "#93b4c6"], dot: "#a9daf5", g: 1.1 },
+    { id: "purple", name: "the Purple Planet", tint: "#b49be6", glow: "180,155,230", floor: ["#c8b7e3", "#9483b4"], dot: "#bba4ea", g: 1 },
+    { id: "sandy", name: "the Sandy Planet", tint: "#ecc65e", glow: "236,205,110", floor: ["#ead39a", "#b9a067"], dot: "#f0cd6a", g: 1.15 },
+    { id: "blue", name: "the Blue Planet", tint: "#6f9ff0", glow: "120,165,240", floor: ["#b0c4e8", "#7389b3"], dot: "#7ea9f2", g: 0.95 },
+    { id: "rainbow", name: "the Rainbow Planet", tint: "rainbow", glow: "255,205,232", floor: ["#e6cfe6", "#b496b4"], dot: "rainbow", g: 1.05 }
+  ];
+  var RAINBOW = ["#f5a8cb", "#f0cd6a", "#7fd9c4", "#7ea9f2", "#bba4ea"];
+  // this round's trip: the planets in order, and where each pad sits
+  var trip = { worlds: WORLDS.slice(), pads: [0.5, 0.72, 0.28, 0.58, 0.22, 0.78, 0.4, 0.6] }, lastFirst = "", wonAt = -9;
   var POWER = 10, THRUST = 0.34, STEER = 0.36;
   // Every line the banner can show (kind words only: never "missed",
   // "wrong" or a score). fit() makes room for the tallest, so a line that
@@ -45,9 +85,10 @@
   // first thing a flight says: the rocket waits up top and the glow is
   // below. It said Hold Engine to go, but holding Engine flies the rocket UP,
   // away from the pad; an arrow starts the flight just as well, toward it.
+  // A landing names the planet (landedOn); the eighth says the trip is done.
   var SAY = {
     ready: "Ready for a little space trip?",
-    word: "Easy flight! Steer to the glow",
+    word: "A new planet! Steer to the glow",
     help: "Easy flight! Aim for the glow",
     fly: "Aim for the glow. Land gently",
     pad1: "So close! Aim for the glow",
@@ -55,21 +96,24 @@
     rock1: "Go around the rock. Try again!",
     again2: "Nearly! Land by the arrow",
     again3: "Tap Engine, then let go",
-    landed: "A soft landing. Nice flying!",
-    all: "Eight gentle landings!",
+    all: "Eight planets! What a trip!",
     won: "A space trip, flown by you!"
   };
-  var BANNERS = Object.keys(SAY).map(function (k) { return SAY[k]; });
+  function landedOn(w) { return "You landed on " + w.name + "!"; }
+  var BANNERS = Object.keys(SAY).map(function (k) { return SAY[k]; }).concat(WORLDS.map(landedOn));
   var $ = function (id) { return document.getElementById(id); };
   function clamp(n, lo, hi) { return Math.max(lo, Math.min(hi, n)); }
   function live() { return !paused && !away && !document.hidden; }
   function canPlay() { return active && live() && !won; }
   // ── the ladder: 0 as designed, 1 easier, 2 glow + arrow + cushion, 3 pull ──
   function ladder() { var m = legRetries; return little ? (m >= 2 ? 3 : m >= 1 ? 2 : 0) : Math.min(3, m); }
+  function world(n) { return trip.worlds[n == null ? stage : n] || WORLDS[0]; }
+  // the stage's own pull on this planet, before any help
+  function pull() { var g = world().g; return GRAVITY[stage] * (stage < 2 ? Math.min(1, g) : g); }
   function gravity() {
     var f = power > 0 ? 0.55 : 1, lv = ladder();
     if (lv >= 3) f = Math.min(f, 0.42); else if (lv >= 2) f = Math.min(f, 0.45); else if (lv >= 1) f = Math.min(f, 0.5);
-    return GRAVITY[stage] * f;
+    return pull() * f;
   }
   function damping() { var d = power > 0 ? 1.6 : 0.65, lv = ladder(); return lv >= 2 ? Math.max(d, 1.6) : lv >= 1 ? Math.max(d, 1.1) : d; }
   function verticalDamping() { var d = power > 0 ? 0.18 : 0.05; return ladder() >= 1 ? Math.max(d, 0.1) : d; }
@@ -88,11 +132,48 @@
   function loadArt() {
     [["bg", "space-bg.webp"], ["ship", "space-lander-idle-v1.webp"], ["ground", "space-moon-ground-v1.webp"], ["rock", "space-rock-v1.webp"], ["star", "star.webp"]].forEach(function (p) { var i = new Image(); i.onload = draw; i.src = "/assets/crafted/game/" + p[1]; art[p[0]] = i; });
   }
+  function rainbow(c, x0, x1) { var g = c.createLinearGradient(x0, 0, x1, 0); RAINBOW.forEach(function (col, i) { g.addColorStop(i / (RAINBOW.length - 1), col); }); return g; }
+  // The moon ground painted in a planet's colour, made once a planet: the
+  // "color" blend keeps the painting's light and shade and takes the
+  // planet's hue, and the painting's own shape is kept.
+  var groundCache = {};
+  function groundFor(w) {
+    var g = image("ground"); if (!g || !w.tint) return g;
+    if (groundCache[w.id]) return groundCache[w.id];
+    try {
+      var c = document.createElement("canvas"); c.width = g.naturalWidth; c.height = g.naturalHeight; var x = c.getContext("2d");
+      x.drawImage(g, 0, 0); x.globalCompositeOperation = "color"; x.fillStyle = w.tint === "rainbow" ? rainbow(x, 0, c.width) : w.tint; x.fillRect(0, 0, c.width, c.height);
+      x.globalCompositeOperation = "destination-in"; x.drawImage(g, 0, 0);
+      groundCache[w.id] = c; return c;
+    } catch (e) { return g; }
+  }
+  function shuffle(list) { for (var i = list.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = list[i]; list[i] = list[j]; list[j] = t; } return list; }
+  // A new trip: the planets in a new order (never starting on the planet the
+  // last trip started on), and every pad somewhere new: the first near the
+  // middle, then anywhere a rocket can reach, never right where the last
+  // one was. The rocket always starts on the other side of its pad.
+  function newTrip() {
+    var worlds = shuffle(WORLDS.slice());
+    if (worlds[0].id === lastFirst) worlds.push(worlds.shift());
+    lastFirst = worlds[0].id;
+    var pads = [0.4 + Math.random() * 0.2];
+    for (var n = 1; n < stages; n++) { var x, tries = 0; do { x = 0.22 + Math.random() * 0.56; tries++; } while (Math.abs(x - pads[n - 1]) < 0.2 && tries < 40); pads.push(x); }
+    trip = { worlds: worlds, pads: pads };
+    paintTrip();
+  }
+  // the top bar's dots are the trip's planets, each in its colour once landed
+  // (the engine redraws the dots; their colours ride on --space-w1…8)
+  function dotPaint(w) { var hi = "radial-gradient(circle at 32% 30%,rgba(255,255,255,.75) 0 22%,rgba(255,255,255,0) 28%)"; return hi + "," + (w.dot === "rainbow" ? "linear-gradient(135deg," + RAINBOW.join(",") + ")" : w.dot); }
+  function paintTrip() { var app = $("app"); if (!app) return; trip.worlds.forEach(function (w, i) { app.style.setProperty("--space-w" + (i + 1), dotPaint(w)); }); }
   function level() {
-    pad = { x: PAD_X[stage], y: groundY / H, w: PAD_W[stage] };
+    pad = { x: trip.pads[stage] == null ? 0.5 : trip.pads[stage], y: groundY / H, w: PAD_W[stage] };
     spawn = { x: pad.x > 0.5 ? 0.23 : 0.77, y: (playTop + shipH / 2 + 16) / H };
     var rockScale = Math.min(W, (groundY - playTop) * 1.2);
     obstacles = ROCKS[stage].map(function (r) {
+      var x = spawn.x + (pad.x - spawn.x) * r[0];
+      if (x < 0.1 || x > 0.9) x = pad.x - (x - pad.x);
+      return [x, r[1], r[2]];
+    }).map(function (r) {
       var radius = r[2] * rockScale, y = playTop + (groundY - playTop) * r[1];
       // A wide, short viewport must not turn a small moon rock into a wall
       // around the launch point. Keep the whole rocket's spawn box clear.
@@ -114,9 +195,9 @@
     cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     playTop = bannerBottom(rect.top) + 24;
     groundY = $("spaceControls").getBoundingClientRect().top - rect.top - (W > H && H < 500 ? 28 : 80);
-    // the pads sit on the ground: keep the ground above the Easy flight pill
-    // and the speed pill, or a pad at the side hides under one of them
-    ["spaceHelp", "spaceStatus"].forEach(function (id) { var r = $(id).getBoundingClientRect(); if (r.height > 0) groundY = Math.min(groundY, r.top - rect.top - 14); });
+    // the pads sit on the ground: keep the ground above the Easy flight pill,
+    // or a pad at the side hides under it
+    ["spaceHelp"].forEach(function (id) { var r = $(id).getBoundingClientRect(); if (r.height > 0) groundY = Math.min(groundY, r.top - rect.top - 14); });
     var room = Math.max(65, groundY - playTop); shipH = Math.min(90, W * 0.22, room * 0.28); shipW = shipH * 367 / 512;
     stopInputs(); level();
     if (!piloted) { ship.x = spawn.x; ship.y = spawn.y; } else { ship.x = clamp(ship.x, shipW / W, 1 - shipW / W); ship.y = clamp(ship.y, (playTop + shipH / 2) / H, pad.y - shipH / H / 2); }
@@ -134,7 +215,8 @@
   var panelH = 0, lifted = -1;
   function liftPanel() {
     var app = $("app"); if (!app || !cv) return;
-    var bottom = groundY - 26, top = ship.y * H - shipH / 2, low = ship.y * H + shipH / 2;
+    // 30 px: clear of the pad's beacon lights (24 px above the ground)
+    var bottom = groundY - 30, top = ship.y * H - shipH / 2, low = ship.y * H + shipH / 2;
     if (low > bottom - panelH && top < bottom && (top + low) / 2 > bottom - panelH / 2) bottom = top - 8;
     bottom = Math.max(bottom, playTop - 16 + panelH);
     var lift = Math.max(0, Math.round(H - bottom));
@@ -144,10 +226,13 @@
     var i = image("bg");
     if (i) { var scale = Math.max(W / i.naturalWidth, H / i.naturalHeight), w = i.naturalWidth * scale, h = i.naturalHeight * scale; ctx.drawImage(i, (W - w) / 2, (H - h) / 2, w, h); }
     else { var wash = ctx.createLinearGradient(0, 0, 0, H); wash.addColorStop(0, "#232749"); wash.addColorStop(0.65, "#494375"); wash.addColorStop(1, "#77738b"); ctx.fillStyle = wash; ctx.fillRect(0, 0, W, H); }
-    var floor = ctx.createLinearGradient(0, groundY, 0, H); floor.addColorStop(0, "#d7c3a5"); floor.addColorStop(1, "#a99a85"); ctx.fillStyle = floor; ctx.fillRect(0, groundY, W, H - groundY);
-    var ground = image("ground");
-    if (ground) { var gh = W * ground.naturalHeight / ground.naturalWidth; ctx.drawImage(ground, 0, groundY - gh * 0.4175, W, gh); }
-    else { ctx.fillStyle = "#e1ceb1"; ctx.beginPath(); ctx.moveTo(0, groundY + 8); ctx.quadraticCurveTo(W * 0.2, groundY - 10, W * 0.45, groundY + 3); ctx.quadraticCurveTo(W * 0.7, groundY - 6, W, groundY + 9); ctx.lineTo(W, groundY + 40); ctx.lineTo(0, groundY + 40); ctx.closePath(); ctx.fill(); }
+    var w = world(), glow = ctx.createLinearGradient(0, groundY - H * 0.42, 0, groundY);
+    // the planet's own air: its colour rising from the ground into the sky
+    glow.addColorStop(0, "rgba(" + w.glow + ",0)"); glow.addColorStop(1, "rgba(" + w.glow + "," + (w.tint ? 0.42 : 0.18) + ")"); ctx.fillStyle = glow; ctx.fillRect(0, groundY - H * 0.42, W, H * 0.42);
+    var floor = ctx.createLinearGradient(0, groundY, 0, H); floor.addColorStop(0, w.floor[0]); floor.addColorStop(1, w.floor[1]); ctx.fillStyle = floor; ctx.fillRect(0, groundY, W, H - groundY);
+    var ground = groundFor(w);
+    if (ground) { var gh = W * ground.height / ground.width; ctx.drawImage(ground, 0, groundY - gh * 0.4175, W, gh); }
+    else { ctx.fillStyle = w.tint === "rainbow" ? rainbow(ctx, 0, W) : w.tint || "#e1ceb1"; ctx.beginPath(); ctx.moveTo(0, groundY + 8); ctx.quadraticCurveTo(W * 0.2, groundY - 10, W * 0.45, groundY + 3); ctx.quadraticCurveTo(W * 0.7, groundY - 6, W, groundY + 9); ctx.lineTo(W, groundY + 40); ctx.lineTo(0, groundY + 40); ctx.closePath(); ctx.fill(); }
   }
   function guiding() { return active && !won && ladder() >= 2; }
   function drawPad() {
@@ -155,13 +240,30 @@
     ctx.save(); ctx.translate(x, y);
     // from the 3rd miss: a soft column of light, the pull that brings it in
     if (lv >= 3) { var beam = ctx.createLinearGradient(0, -(y - playTop), 0, 0); beam.addColorStop(0, "rgba(157,223,210,0)"); beam.addColorStop(1, "rgba(157,223,210,.30)"); ctx.fillStyle = beam; ctx.fillRect(-w / 2, -(y - playTop), w, y - playTop); }
-    ctx.fillStyle = lv >= 2 ? "rgba(157,223,210," + (0.32 + pulse * 0.2) + ")" : easy ? "rgba(157,223,210,.23)" : "rgba(246,244,205,.16)";
-    ctx.beginPath(); ctx.ellipse(0, 0, w / 2 + (lv >= 2 ? W * 0.06 : easy ? W * 0.035 : 0), lv >= 2 ? 19 : 13, 0, 0, Math.PI * 2); ctx.fill();
-    if (lv < 2) { ctx.strokeStyle = "rgba(245,252,220,.6)"; ctx.lineWidth = 2; ctx.setLineDash([4, 7]); ctx.beginPath(); ctx.moveTo(0, -65); ctx.lineTo(0, -12); ctx.stroke(); ctx.setLineDash([]); }
-    ctx.strokeStyle = "#887b67"; ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(-w / 2, 8); ctx.lineTo(-w / 2 + 9, -2); ctx.lineTo(w / 2 - 9, -2); ctx.lineTo(w / 2, 8); ctx.stroke();
-    ctx.fillStyle = "#e8efe0"; ctx.fillRect(-w / 2, -5, w, 8); ctx.fillStyle = "#4d9da4"; ctx.fillRect(-w / 2 + 5, -5, w - 10, 4);
-    [-1, 1].forEach(function (side) { ctx.fillStyle = "#e9d69c"; ctx.shadowColor = "#f7efb7"; ctx.shadowBlur = 10; ctx.beginPath(); ctx.arc(side * w / 2, -5, 4, 0, Math.PI * 2); ctx.fill(); }); ctx.restore();
+    // the glow the pad sits in: always there, so the pad is easy to find
+    ctx.fillStyle = lv >= 2 ? "rgba(157,223,210," + (0.36 + pulse * 0.2) + ")" : easy ? "rgba(157,223,210,.3)" : "rgba(222,246,236,.26)";
+    ctx.beginPath(); ctx.ellipse(0, 2, w / 2 + (lv >= 2 ? W * 0.07 : W * 0.045), lv >= 2 ? 21 : 17, 0, 0, Math.PI * 2); ctx.fill();
+    if (lv < 2) { ctx.strokeStyle = "rgba(245,252,220,.6)"; ctx.lineWidth = 2; ctx.setLineDash([4, 7]); ctx.beginPath(); ctx.moveTo(0, -72); ctx.lineTo(0, -28); ctx.stroke(); ctx.setLineDash([]); }
+    // a thick platform: its legs into the ground, a cream deck, a teal stripe
+    ctx.fillStyle = "#9d8f7a"; ctx.beginPath(); ctx.moveTo(-w / 2 - 4, -1); ctx.lineTo(w / 2 + 4, -1); ctx.lineTo(w / 2 - 8, 14); ctx.lineTo(-w / 2 + 8, 14); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = "#f4f1e4"; roundRect(-w / 2 - 4, -6, w + 8, 9, 4); ctx.fill();
+    ctx.fillStyle = "#4d9da4"; roundRect(-w / 2 + 6, -5, w - 12, 4, 2); ctx.fill();
+    // a beacon on each end: off until the rocket is slow enough to land on
+    // it, then a bright teal glow (gentle(), the old "Nice and gentle" pill)
+    var lit = gentle() || landed > stage;
+    [-1, 1].forEach(function (side) {
+      var bx = side * (w / 2 + 1);
+      ctx.strokeStyle = "#887b67"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(bx, -5); ctx.lineTo(bx, -14); ctx.stroke();
+      ctx.fillStyle = lit ? "#c8fff1" : "#d8cfbd"; ctx.shadowColor = lit ? "#4fe3c6" : "rgba(0,0,0,0)"; ctx.shadowBlur = lit ? 16 : 0;
+      ctx.beginPath(); ctx.arc(bx, -19, lit ? 5.5 : 4.5, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0;
+      ctx.strokeStyle = lit ? "#2fa88f" : "#a0937f"; ctx.lineWidth = 1.5; ctx.stroke();
+    });
+    ctx.restore();
   }
+  function roundRect(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+  // the rocket is slow enough to land (from the 3rd miss any touchdown near
+  // the pad lands): what the pad's beacons say
+  function gentle() { return active && !won && piloted && (ladder() >= 3 || (Math.abs(ship.vy) <= safeVy() && Math.abs(ship.vx) <= safeVx())); }
   // a thick arrow, cream under teal, so it reads on the sky and the sand
   function arrow(x1, y1, x2, y2) {
     var a = Math.atan2(y2 - y1, x2 - x1), head = 15;
@@ -226,9 +328,34 @@
     if (star) for (var n = 0; n < 5; n++) { var a = -Math.PI * (0.1 + n * 0.2); ctx.drawImage(star, x + Math.cos(a) * r - size / 2, y - shipH * 0.4 + Math.sin(a) * r * 0.55 - size / 2, size, size); }
     ctx.restore();
   }
+  // a little planet, drawn: its colour, a light side, two craters
+  function planet(w, x, y, r) {
+    ctx.save(); ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.closePath();
+    ctx.fillStyle = w.dot === "rainbow" ? rainbow(ctx, x - r, x + r) : w.dot; ctx.shadowColor = "rgba(" + w.glow + ",.9)"; ctx.shadowBlur = r * 0.7; ctx.fill(); ctx.shadowBlur = 0;
+    ctx.clip();
+    var shade = ctx.createRadialGradient(x - r * 0.35, y - r * 0.4, r * 0.1, x, y, r * 1.05); shade.addColorStop(0, "rgba(255,255,255,.55)"); shade.addColorStop(0.55, "rgba(255,255,255,0)"); shade.addColorStop(1, "rgba(40,30,70,.28)");
+    ctx.fillStyle = shade; ctx.fillRect(x - r, y - r, r * 2, r * 2);
+    ctx.fillStyle = "rgba(40,30,70,.16)"; ctx.beginPath(); ctx.arc(x + r * 0.3, y + r * 0.25, r * 0.22, 0, Math.PI * 2); ctx.fill(); ctx.beginPath(); ctx.arc(x - r * 0.25, y + r * 0.45, r * 0.13, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  }
+  // The finale: the eight planets of the trip, in the order they were
+  // visited, come out across the sky one after another (all at once under
+  // Reduce Motion), each with a star's twinkle as it arrives.
+  var FINALE_GAP = 0.18;
+  function finaleSky() {
+    var age = clock - wonAt, n = trip.worlds.length, r = Math.min(26, W * 0.062), span = Math.min(W - r * 4, 520), top = playTop + r + 14, star = image("star"), shown = 0;
+    for (var i = 0; i < n; i++) {
+      var k = calm ? 1 : clamp((age - i * FINALE_GAP) / 0.3, 0, 1); if (k <= 0) continue; shown++;
+      var x = W / 2 - span / 2 + span * i / (n - 1), y = top + (1 - Math.sin(Math.PI * i / (n - 1))) * r * 2.2, s = 0.55 + 0.45 * k;
+      ctx.save(); ctx.globalAlpha = k; planet(trip.worlds[i], x, y, r * s); ctx.restore();
+      if (star && k < 1) { var sz = r * 1.3 * (1 - k); ctx.save(); ctx.globalAlpha = 1 - k; ctx.drawImage(star, x + r * 0.5 - sz / 2, y - r * 0.8 - sz / 2, sz, sz); ctx.restore(); }
+    }
+    return shown;
+  }
+  var skyShown = 0;
   function draw() {
     if (!ctx) return; ctx.clearRect(0, 0, W, H); background(); drawPad(); drawRocks(); drawGuide(); drawShip(); drawCheer();
-    if (won) { var star = image("star"), size = Math.min(64, W * 0.16); if (star) ctx.drawImage(star, W / 2 - size / 2, playTop + 12, size, size); }
+    skyShown = won ? finaleSky() : 0;
   }
   function input() { thrust = keys.thrust || thrustOwner !== null; steering = clamp((keys.right || rightOwner !== null ? 1 : 0) - (keys.left || leftOwner !== null ? 1 : 0) + thumbSteer, -1, 1); }
   function publish() {
@@ -240,6 +367,8 @@
       misses: legRetries, ladder: lv, little: little, guide: guiding(), pull: active && !won && lv >= 3, cushion: cushion, nudged: nudged,
       celebrating: doneAt > 0, doneAt: doneAt, clock: clock, dones: dones, banner: $("spaceBanner") ? $("spaceBanner").textContent : "",
       obstacles: obstacles.map(function (o) { return { x: o.x, y: o.y, r: o.r }; }), playTop: playTop / H, groundY: groundY / H, spawn: { x: spawn.x, y: spawn.y }, width: W, height: H,
+      world: world().id, worldName: world().name, basePull: pull(), gentle: gentle(), beacons: gentle() || landed > stage, skyPlanets: skyShown,
+      trip: trip.worlds.map(function (w) { return w.id; }), pads: trip.pads.slice(),
       owners: { left: leftOwner, right: rightOwner, thrust: thrustOwner }, coordinates: "normalized-to-canvas; vx/ax use canvas widths per second; vy/gravity/thrust use canvas heights per second; radii use width; power ticks during active play" };
   }
   function hud() {
@@ -247,7 +376,6 @@
     $("spaceLeft").setAttribute("aria-pressed", steering < -0.05 ? "true" : "false"); $("spaceRight").setAttribute("aria-pressed", steering > 0.05 ? "true" : "false"); $("spaceThrust").setAttribute("aria-pressed", thrust ? "true" : "false");
     $("spaceHelp").disabled = !allowed || thrust || Math.abs(steering) > 0.01;
     $("spacePower").hidden = !(active && power > 0 && !won); $("spacePowerFill").style.width = power / POWER * 100 + "%";
-    var soft = (active && ladder() >= 3) || (Math.abs(ship.vy) <= safeVy() && Math.abs(ship.vx) <= safeVx()); $("spaceSpeed").textContent = !piloted ? "Ready to fly" : soft ? "Nice and gentle" : "Little engine bursts"; $("spaceLamp").classList.toggle("soft", soft && piloted);
     // the panel shows only while the flight is stopped: place it then, not every frame of a flight
     if (!allowed) liftPanel();
     publish();
@@ -322,7 +450,7 @@
   function touchdown() {
     ship.y = pad.y - shipH / H / 2; ship.x = clamp(ship.x, pad.x - onPad(), pad.x + onPad()); ship.vx = 0; ship.vy = 0; cushion = false;
     landed = Math.max(landed, stage + 1); active = false; power = 0; stopInputs();
-    banner(landed === stages ? SAY.all : SAY.landed);
+    banner(landed === stages ? SAY.all : landedOn(world()));
     try { api.sfx("correct"); if (api.face) api.face("cheer"); if (api.cheer) api.cheer("Soft landing!"); } catch (e) {}
     cheerAt = clock; doneAt = clock + BEAT; hud(); draw();
   }
@@ -335,8 +463,11 @@
   }
   function tick(dt) {
     if (!canPlay()) return;
-    time += dt; power = Math.max(0, power - dt); input();
+    time += dt; input();
+    // the help's easy flight counts down only while the rocket flies: a
+    // child who asked for it and then waits keeps all of it
     if (!piloted) { hud(); return; }
+    power = Math.max(0, power - dt);
     var lv = ladder(), ax = steering * STEER - ship.vx * damping();
     // from the 3rd miss the glow pulls the rocket over the pad as it falls;
     // steering still moves it, but never off the pad's light
@@ -360,11 +491,13 @@
     // the celebration beat runs on play time only: a pause or a hidden page
     // holds it, and the step is reported exactly once when it ends
     if (live()) { clock += dt; if (!active && !won) time += dt; if (doneAt && clock >= doneAt) { doneAt = 0; dones++; publish(); if (api) api.done(); } }
-    tick(dt); draw(); raf = requestAnimationFrame(frame);
+    tick(dt); draw(); if (won) publish(); raf = requestAnimationFrame(frame);
   }
+  // the word's flight: the rocket and nothing else
+  function go(line) { power = 0; paused = false; active = true; last = 0; banner(line); hud(); }
   function earnPower(line) { power = POWER; paused = false; active = true; last = 0; banner(line); hud(); }
   function pause() { paused = true; last = 0; stopInputs(); hud(); }
-  function reset() { stopInputs(); active = false; paused = false; stage = 0; landed = 0; won = false; power = 0; piloted = false; cushion = false; retries = 0; legRetries = 0; nudged = 0; time = 0; last = 0; doneAt = 0; cheerAt = -9; level(); ship = { x: spawn.x, y: spawn.y, vx: 0, vy: 0 }; banner(SAY.ready); hud(); draw(); }
+  function reset() { stopInputs(); active = false; paused = false; stage = 0; landed = 0; won = false; power = 0; piloted = false; cushion = false; retries = 0; legRetries = 0; nudged = 0; time = 0; last = 0; doneAt = 0; cheerAt = -9; wonAt = -9; newTrip(); level(); ship = { x: spawn.x, y: spawn.y, vx: 0, vy: 0 }; banner(SAY.ready); hud(); draw(); }
   window.Space = {
     init: function (a, n) {
       api = a; stages = n || 8; cv = $("spaceCanvas"); ctx = cv.getContext("2d");
@@ -374,14 +507,15 @@
       // the banner's font can arrive after the first fit: measure again then
       try { if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { if (!piloted) fit(); }); } catch (e) {}
     },
-    // the word brings the next flight: the rocket waits at the start for a finger
-    onWord: function (index) { stage = index; stopInputs(); level(); ship = { x: spawn.x, y: spawn.y, vx: 0, vy: 0 }; piloted = false; cushion = false; legRetries = 0; doneAt = 0; earnPower(SAY.word); },
+    // the word brings the next flight on the next planet, and nothing else:
+    // the rocket waits at the start for a finger
+    onWord: function (index) { stage = index; stopInputs(); level(); ship = { x: spawn.x, y: spawn.y, vx: 0, vy: 0 }; piloted = false; cushion = false; legRetries = 0; doneAt = 0; go(SAY.word); },
     // the optional help word: easy flight for the same flight, right where it is
     onHelp: function () { earnPower(ladder() >= 2 ? $("spaceBanner").textContent : SAY.help); },
     pause: pause,
     resume: function (playing) { paused = playing === false; last = 0; hud(); },
     reset: reset,
-    finale: function () { stopInputs(); active = false; power = 0; doneAt = 0; cushion = false; won = true; banner(SAY.won); hud(); draw(); },
+    finale: function () { stopInputs(); active = false; power = 0; doneAt = 0; cushion = false; won = true; wonAt = clock; banner(SAY.won); hud(); draw(); },
     // ages 2 to 4 get the gentler ladder (the page asks Sona.playStyle)
     setLittle: function (on) { little = !!on; if (cv) hud(); }
   };
