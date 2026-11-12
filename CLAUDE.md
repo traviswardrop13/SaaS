@@ -4218,6 +4218,29 @@ said at a set moment).
     on the word panel) also lands on the pizza.
   `pizzatest` plays it (part `rebuild`; the main part's drops beside the
   spots find their place, since the spots move).
+- **Treasure Map, rebuilt (11 Nov 2026, Travis: "yes build treasure
+  map").** `public/treasure.js`, `arcade-treasure.html`, `treasure.css`.
+  - **The word starts the sail and nothing else.** Until then it also
+    switched on twelve seconds of calm seas, which drew the whole safe
+    route on the map: every voyage was connect-the-dots. Now the child plans
+    the route round the islands; the safe path shows only after a miss (the
+    ladder, as before) or with the Calm seas button's own word.
+  - **A new voyage every game** (`newVoyage`): the same eight harbours, in
+    a new order, each next one of the three nearest still to visit, so the
+    treasure X, the last of them, is somewhere new. The safe path from every
+    harbour (and from round each ring, where a boat stops) to every other
+    goes round the painted islands (`Treasure.pathFor`; the test checks all
+    of them).
+  - **The route sailed stays on the map** (`trail`): a dark red dotted line
+    of each leg once its harbour is reached, so the finished map shows the
+    child's whole way to the chest. A fresh route from the harbour wipes only
+    that leg's line.
+  - **No status words at the bottom** ("Draw from your boat", "A little
+    current"): the banner at the top already says what to do.
+  - **Travis's to change:** the line's look, the "three nearest" rule.
+    **For Rachel:** nothing a child says changes.
+  `treasuretest` plays it (part `rebuild`; the other parts sail one fixed
+  voyage, by seed, so each run is the same).
 - **The voice-line list is in the battery since 9 Nov 2026**
   (`voicedoctest` in `run-all`): `VOICE_SCRIPT.md` lists every line Echo can
   say with where it is said, so a change that moves such a line must run

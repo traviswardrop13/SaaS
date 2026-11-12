@@ -158,7 +158,7 @@ const SUITES = [
   "caketest.mjs", // CAKE2: real circular mixing, caught batter, piping in picked colours, custom fruit, a new birthday buddy and their candles every round
   "balloonpartytest.mjs", // BALLOON1: real pump strokes and guided garland deliveries, speech power and quiet turns
   "robottest.mjs", // ROBOT1: rotate real circuits, speech blueprints, eight assembled parts
-  "treasuretest.mjs", // drawn sailing routes, solid islands, speech-calmed currents and a real treasure finish
+  "treasuretest.mjs", // TREASURE2: drawn sailing routes, solid islands, a new voyage every game and the route kept on the map; the word starts the sail and nothing else
   "dinotest.mjs", // DINOS1: Dino Dig's four dinosaurs: each dug to its own finale, in order, per child, round again after the last
   "bubblestest.mjs", // BUBBLES1: Bubble Pop played through: the word blows the bubbles, the finger pops them, the pops are media in the app, every round ends on a win
   // The three story games (STORY1). lighthousetest and bridgetest are run in
