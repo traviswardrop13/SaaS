@@ -42,8 +42,8 @@
 //   firstDelay ms of nothing at all before the first chunk is due
 //   warmZeros  ms of exact zeros at the start of every stream (a mic warming up)
 //   frames     1024 (default) | 4800 … samples a chunk; rate 48000 | 44100 …
-//   jitter     ms: each chunk is delivered up to this much late (in order),
-//              and at least jitterMin late
+//   jitter     ms: each chunk is delivered up to this much after its last
+//              sample (in order), and at least jitterMin after it
 //   source     what the mic hears with nobody speaking: "hiss" (the default:
 //              a real mic's own faint white hiss, hissDb, -60 dBFS) ·
 //              "silence" (exact zeros) · "tone" (toneHz 300, toneAmp 0.2) ·
@@ -299,19 +299,48 @@ export function nativeMic(cfg) {
     }
     return out;
   }
+  // IN ORDER, as the phone hands them over: its tap thread numbers each
+  // buffer, DispatchQueue.main.async queues it, and evaluateJavaScript runs
+  // each in turn, first in, first out. One timer per chunk does not keep that
+  // order. setTimeout takes whole milliseconds (29.8 is 29), and a late chunk
+  // holds the next ones back to its own moment (lastDeliver), so chunks due
+  // at the same moment fired in either order, and the page dropped the older
+  // one as a repeat (sona.js: q <= lastQ). With 1024-frame chunks up to 40 ms
+  // late that was one chunk in seven: the feed got about 87% of the sound,
+  // ran dry every second or two and re-primed on exact zeros, so a level read
+  // mostly zeros at the wrong pitch and a card missed Rachel's R (CI, Nov
+  // 2026). So each chunk waits in its stream's own queue (l.out), and its
+  // timer hands over every chunk queued up to and including it, oldest first:
+  // a timer that fires early for a later chunk takes the earlier ones with it,
+  // and the earlier chunk's own timer then finds nothing left to do. Each
+  // chunk still goes no later than its own timer, and each listener still
+  // hears each chunk in its own task (notify).
+  // LATE FROM ITS LAST SAMPLE, as on the phone: the tap has a buffer the
+  // moment its last sample is in, and the bridge's delay runs from then. The
+  // tick that makes a chunk here runs a while after that (every quarter
+  // chunk, later still when this page's main thread is busy), and counting
+  // the lateness from the tick put the two delays end to end: "40 ms late"
+  // was up to 75 ms with 100 ms chunks on a quiet machine, and on a busy one
+  // a main-thread stall came on top of it, where the phone's events would
+  // have waited out the stall in its main queue. A chunk whose moment has
+  // passed by the time its tick runs goes at once.
   function chunk(l) {
     const n = l.frames, startMs = l.openAt + cfg.firstDelay + l.emitted * 1000 / l.rate;
     const pcm = render(l, startMs, n);
     l.emitted += n; l.seq++;
     const data = { g: l.g, q: l.seq, r: l.rate, n, d: b64(pcm) };
     const late = cfg.jitter ? cfg.jitterMin + rnd() * Math.max(0, cfg.jitter - cfg.jitterMin) : 0;
-    const at = Math.max(l.lastDeliver, now() + late);
+    const at = Math.max(l.lastDeliver, startMs + n * 1000 / l.rate + late);
     l.lastDeliver = at;
+    l.out.push(data);
     later(() => {
-      if (live !== l) return;                              // a chunk from an open already closed
-      if (!has("micpcm")) { closeLive("nolistener"); return; }
-      N.chunks++; l.delivered++;
-      notify("micpcm", data);
+      while (l.out.length && l.out[0].q <= data.q) {
+        if (live !== l) { l.out.length = 0; return; }       // a chunk from an open already closed
+        if (!has("micpcm")) { closeLive("nolistener"); return; }
+        const d = l.out.shift();
+        N.chunks++; l.delivered++;
+        notify("micpcm", d);
+      }
     }, at - now());
   }
   function emitter(l) {
@@ -339,7 +368,7 @@ export function nativeMic(cfg) {
     if (live) closeLive("replaced");
     N.g += 1;
     const rate = cfg.rate, frames = Math.min(8192, Math.max(256, cfg.frames || (args && args.frames) || 1024));
-    const l = live = { g: N.g, rate, frames, openAt: now(), emitted: 0, seq: 0, lastDeliver: 0, delivered: 0, rec, floor: floorGen(rate), timer: 0 };
+    const l = live = { g: N.g, rate, frames, openAt: now(), emitted: 0, seq: 0, lastDeliver: 0, out: [], delivered: 0, rec, floor: floorGen(rate), timer: 0 };
     rec.g = l.g; N.opened++;
     persist();
     const ans = { g: l.g, sampleRate: rate, channels: 1, mode: "default", route: { input: "iPhone Microphone", inputType: "MicrophoneBuiltIn", output: "Speaker", outputType: "Speaker" }, v: 1 };
@@ -483,7 +512,7 @@ export function nativeMic(cfg) {
   // own micClose({ all: true }) gets there first)
   if (kept.live && plugin && cfg.mode === "new") {
     const rec = micRec("native"); rec.start = rec.asked; rec.g = kept.live.g; rec.stale = true;
-    const l = live = { g: kept.live.g, rate: kept.live.rate, frames: kept.live.frames, openAt: now(), emitted: 0, seq: 0, lastDeliver: 0, delivered: 0, rec, floor: floorGen(kept.live.rate), timer: 0, stale: true };
+    const l = live = { g: kept.live.g, rate: kept.live.rate, frames: kept.live.frames, openAt: now(), emitted: 0, seq: 0, lastDeliver: 0, out: [], delivered: 0, rec, floor: floorGen(kept.live.rate), timer: 0, stale: true };
     N.staleLive = l.g;
     later(() => emitter(l), cfg.staleChunkMs == null ? 100 : cfg.staleChunkMs);
   }

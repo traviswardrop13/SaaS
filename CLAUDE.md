@@ -4192,6 +4192,55 @@ said at a set moment).
     **For Rachel:** nothing a child says changes; Echo says one line less
     per picture.
   `bedtimestarstest` plays it (part `rebuild`, and every picture in `fit`).
+- **Pizza Chef, rebuilt (11 Nov 2026, Travis: "yes build pizza chef").**
+  `public/pizza.js`, `arcade-pizza.html`; `sayplay.js` now hands a play
+  game's `onWord` the word too (`onWord(step, word)`; other games ignore
+  it), and `crafted-words.js` gains `art(word)`, a word picture's sheet
+  and crop for a canvas.
+  - **The word starts the step and nothing else.** Until then it also
+    switched on ten seconds of chef power (a stronger pin, a bigger spoon,
+    wider spots, a slower oven, kinder cuts). The Chef power button's word
+    still gives it, and the miss ladder still does.
+  - **A different pizza every time** (`newPizza`): the toppings come in a
+    new order and the nine glowing spots are the old ones turned, mirrored
+    and shared out anew (`SPOTS`), so none ever crowds another.
+  - **The silly topping.** The last topping step's word is the topping: its
+    own picture, three on the pizza ("Add a silly topping!"), and the end
+    card names it ("A rocket pizza!", "An apple pizza!"). A word with no
+    picture is the third ordinary topping.
+  - **Echo explains each kind of step once a visit** (`KIND`, `HOWTO`): the
+    three topping steps are one kind ("Drag each topping to a glowing
+    spot."); "Hear what to do" says the step's line any time.
+  - **Echo's opening words are shorter:** "Say each word two times to start
+    the next step. Then your hands make the pizza!"
+  - **Travis's to change:** the toppings, the words, the end card's title.
+    **For Rachel:** nothing a child says changes; the word's picture (already
+    on the word panel) also lands on the pizza.
+  `pizzatest` plays it (part `rebuild`; the main part's drops beside the
+  spots find their place, since the spots move).
+- **Treasure Map, rebuilt (11 Nov 2026, Travis: "yes build treasure
+  map").** `public/treasure.js`, `arcade-treasure.html`, `treasure.css`.
+  - **The word starts the sail and nothing else.** Until then it also
+    switched on twelve seconds of calm seas, which drew the whole safe
+    route on the map: every voyage was connect-the-dots. Now the child plans
+    the route round the islands; the safe path shows only after a miss (the
+    ladder, as before) or with the Calm seas button's own word.
+  - **A new voyage every game** (`newVoyage`): the same eight harbours, in
+    a new order, each next one of the three nearest still to visit, so the
+    treasure X, the last of them, is somewhere new. The safe path from every
+    harbour (and from round each ring, where a boat stops) to every other
+    goes round the painted islands (`Treasure.pathFor`; the test checks all
+    of them).
+  - **The route sailed stays on the map** (`trail`): a dark red dotted line
+    of each leg once its harbour is reached, so the finished map shows the
+    child's whole way to the chest. A fresh route from the harbour wipes only
+    that leg's line.
+  - **No status words at the bottom** ("Draw from your boat", "A little
+    current"): the banner at the top already says what to do.
+  - **Travis's to change:** the line's look, the "three nearest" rule.
+    **For Rachel:** nothing a child says changes.
+  `treasuretest` plays it (part `rebuild`; the other parts sail one fixed
+  voyage, by seed, so each run is the same).
 - **Balloon Party, rebuilt (12 Nov 2026, Travis: "build it all!").**
   `public/balloon.js`, `arcade-balloon.html`.
   - **The word brings the balloon and nothing else.** Until then it also

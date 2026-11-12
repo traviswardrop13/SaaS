@@ -143,7 +143,7 @@ const SUITES = [
   "racecartest.mjs", // real steering, brakes, speech slow-road powers, eight pit stops, fit and interruption safety
   "flowertest.mjs", // FLOWER1: actual poured drops grow a plant, speech widens the shower, progress survives help
   "castletest.mjs", // CASTLE1: real crane and lowering controls, speech steadies the rope, eight architectural placements
-  "pizzatest.mjs", // PIZZA1: rolling, real coverage, topping drags, controlled baking, cuts and owned step instructions
+  "pizzatest.mjs", // PIZZA2: rolling, real coverage, topping drags on moving spots, the word as the last topping, controlled baking, cuts; the word starts the step and nothing else
   "spacetest.mjs", // SPACE2: real thrust, steering and soft touchdowns on eight planets; the word brings the flight and nothing else
   "monstertest.mjs", // MONSTER1: real salon gestures, persistent styling and speech-assisted tools
   "rocketblasttest.mjs", // ROCKET1: pull-and-release physics, five real planet arrivals, speech-widened landing rings
@@ -158,7 +158,7 @@ const SUITES = [
   "caketest.mjs", // CAKE2: real circular mixing, caught batter, piping in picked colours, custom fruit, a new birthday buddy and their candles every round
   "balloonpartytest.mjs", // BALLOON2: the word brings only the balloon; a buddy's party, new colours and ring order every round, the last two rings sway
   "robottest.mjs", // ROBOT1: rotate real circuits, speech blueprints, eight assembled parts
-  "treasuretest.mjs", // drawn sailing routes, solid islands, speech-calmed currents and a real treasure finish
+  "treasuretest.mjs", // TREASURE2: drawn sailing routes, solid islands, a new voyage every game and the route kept on the map; the word starts the sail and nothing else
   "dinotest.mjs", // DINOS1: Dino Dig's four dinosaurs: each dug to its own finale, in order, per child, round again after the last
   "bubblestest.mjs", // BUBBLES1: Bubble Pop played through: the word blows the bubbles, the finger pops them, the pops are media in the app, every round ends on a win
   // The three story games (STORY1). lighthousetest and bridgetest are run in

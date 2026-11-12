@@ -10,6 +10,9 @@ const creamAlong=(p,pts)=>p.evaluate(pts=>{const c=document.getElementById('seaC
 // Where the calm-seas path crosses a painted island, read off the map picture
 // itself: sand, rocks, trunks and palm leaves are warm or leaf green, the sea
 // is blue (white surf is neither). Only inside boxes round the four islands
+// (the bottom-left island's box starts at x .15: its sand starts at about
+// .165, and left of it is the cream foam and the little clouds along the
+// parchment's edge, which a voyage in a new order can sail past)
 // and their palms (the parchment edge, the compass and the gulls are not
 // islands). As in the game, the line
 // may leave the boat's own spot and reach the ring's, since a boat can stop
@@ -17,7 +20,7 @@ const creamAlong=(p,pts)=>p.evaluate(pts=>{const c=document.getElementById('seaC
 // used: they are what drew the line over the palm trees.
 const crossesIsland=(p,pts)=>p.evaluate(async({pts,src})=>{
  if(!window.__mapPx){const img=new Image();img.src=src;await img.decode();const c=document.createElement('canvas');c.width=img.naturalWidth;c.height=img.naturalHeight;const x=c.getContext('2d');x.drawImage(img,0,0);window.__mapPx={w:c.width,h:c.height,d:x.getImageData(0,0,c.width,c.height).data};}
- const m=window.__mapPx,boxes=[[.47,.125,.905,.26],[.64,.06,.905,.125],[.11,.23,.66,.44],[.33,.415,.905,.61],[.11,.58,.65,.79]],dist=(a,b)=>Math.hypot(a.x-b.x,(a.y-b.y)*1.5),boat=pts[0],goal=pts[pts.length-1],out=[];
+ const m=window.__mapPx,boxes=[[.47,.125,.905,.26],[.64,.06,.905,.125],[.11,.23,.66,.44],[.33,.415,.905,.61],[.15,.58,.65,.79]],dist=(a,b)=>Math.hypot(a.x-b.x,(a.y-b.y)*1.5),boat=pts[0],goal=pts[pts.length-1],out=[];
  const island=(x,y)=>{if(!boxes.some(b=>x>=b[0]&&x<=b[2]&&y>=b[1]&&y<=b[3]))return false;const i=(Math.min(m.h-1,Math.floor(y*m.h))*m.w+Math.min(m.w-1,Math.floor(x*m.w)))*4,r=m.d[i],g=m.d[i+1],bl=m.d[i+2];if(r>205&&g>205&&bl>205)return false;return (r>=g-5&&r-bl>30)||(g>bl+60&&bl<150);};
  for(let i=1;i<pts.length;i++){const a=pts[i-1],b=pts[i],len=Math.hypot((b.x-a.x)*m.w,(b.y-a.y)*m.h);for(let k=0;k<=len;k++){const f=k/Math.max(1,len),q={x:a.x+(b.x-a.x)*f,y:a.y+(b.y-a.y)*f};if(dist(q,boat)<.05||dist(q,goal)<.07)continue;if(island(q.x,q.y))out.push([+q.x.toFixed(3),+q.y.toFixed(3)]);}}
  return out;},{pts,src:'/assets/crafted/game/treasure-map-play-v2.webp'});
@@ -39,7 +42,7 @@ try{
   // (a) silence: the whole listening window and more, with no voice
   await advance(page,14000);s=await state(page);ok('silence earns nothing: no saying, no sailing, no step',!s.sea.active&&s.speech.said===0&&s.speech.step===0&&s.speech.phase!=='play'&&s.sea.boat.x===start.x,s.speech);
   await page.locator('#micBtn').click();
-  ok('two sayings earn the voyage, with calm seas and a route hint',await sayWord(page));s=await state(page);ok('speech really removes the current',s.sea.calm>10&&s.sea.current===0&&s.sea.active&&s.sea.ladder===0,s);
+  ok('two sayings earn the voyage',await sayWord(page));s=await state(page);ok('…and nothing else: no calm seas, the sea\'s own current, and no route drawn for the child',s.sea.calm===0&&s.sea.current===.018&&s.sea.hintShown===''&&s.sea.active&&s.sea.ladder===0,s);
   await advance(page,2000);s=await state(page);ok('the hint never moves the boat automatically',!s.sea.moving&&s.sea.boat.x===start.x&&s.sea.boat.y===start.y&&s.speech.step===0,s);
   await drawRoute(page,[{x:.5,y:.79},{x:.32,y:.70}]);await until(page,()=>__treasure.bumps>0,14000);s=await state(page);ok('an island blocks a real drawn route, without spending the earned word',s.sea.bumps>0&&s.sea.misses===1&&!s.sea.moving&&s.speech.step===0,s);
   // Help must guide from the actual boat after a bump, rather than join
@@ -47,7 +50,9 @@ try{
   const bumpCount=s.sea.bumps;await drawRoute(page,s.sea.channel);await until(page,n=>__sayplay.step>0||__treasure.bumps>n,12000,bumpCount);
   s=await state(page);ok('a hint after a mid-voyage bump sails safely around the same coast',s.sea.bumps===bumpCount&&s.speech.step===1,s);
   // Start the eight harbours fresh after this independently sailed route.
-  await page.reload();await page.locator('#startBtn').click();await sayWord(page);
+  // one fixed voyage (seed 5), so every run sails the same eight legs
+  // (the rebuild part plays the voyages changing)
+  await page.reload();await page.evaluate(()=>{let x=5;Math.random=()=>{x=(x*16807)%2147483647;return (x-1)/2147483646;};Treasure.reset();});await page.locator('#startBtn').click();await sayWord(page);
   await page.locator('#seaReset').click();s=await state(page);ok('return to dock offers another route with no new word required',s.sea.active&&s.sea.boat.x===start.x&&s.sea.boat.y===start.y&&s.speech.step===0,s);
   await drawRoute(page,[{x:.57,y:.86}],1);s=await state(page);ok('a quick straight drag is a valid sailing route',s.sea.moving&&s.sea.route.length>0,s);await page.locator('#seaReset').click();
   s=await state(page);const box=await page.locator('#seaCanvas').boundingBox();await page.mouse.move(box.x+s.sea.map.x+s.sea.boat.x*s.sea.map.w,box.y+s.sea.map.y+s.sea.boat.y*s.sea.map.h);await page.mouse.down();await page.evaluate(()=>document.getElementById('seaCanvas').dispatchEvent(new PointerEvent('lostpointercapture',{pointerId:99})));s=await state(page);ok('an unrelated finger release cannot erase the active route',s.sea.draft.length===1,s);await page.mouse.up();
@@ -62,7 +67,7 @@ try{
    if(leg&&!await sayWord(page))throw new Error('No earned word for harbour '+leg);
    s=await state(page);
    const cross=await crossesIsland(page,[s.sea.boat,...s.sea.channel]);
-   ok('the calm-seas path to harbour '+(leg+1)+' goes round every painted island, palm trees too',s.sea.hintShown==='bold'&&s.sea.channel.length>0&&cross.length===0,{n:cross.length,at:cross.slice(0,3),path:[s.sea.boat,...s.sea.channel]});
+   ok('the safe path to harbour '+(leg+1)+' (kept for the help, not shown by the word) goes round every painted island, palm trees too',(leg===0||s.sea.hintShown==='')&&s.sea.channel.length>0&&cross.length===0,{n:cross.length,at:cross.slice(0,3),path:[s.sea.boat,...s.sea.channel]});
    await drawRoute(page,[...s.sea.channel,s.sea.goal]);
    const reached=await until(page,()=>__treasure.celebrating||__sayplay.step>__treasure.leg,20000);s=await state(page);ok('a drawn safe route actually sails to harbour '+(leg+1),reached,s);if(!reached)break;
    if(leg===0){ok('the harbour cheer plays first and the step waits for it',s.sea.celebrating&&s.speech.step===0&&await page.evaluate(()=>__quiet.sfx.some(x=>/correct/.test(x.name||x))),{sea:s.sea,sfx:await page.evaluate(()=>__quiet.sfx.slice(-3))});
@@ -76,7 +81,12 @@ try{
  }
  // (b) a struggling child who keeps missing reaches the harbour with no more speech
  {
-  const {page,context,errors}=await h.fresh();await page.locator('#startBtn').click();ok('struggle: the word sets sail',await sayWord(page));
+  // the voyage this part was measured on: the first harbour the bottom-left
+  // one (seed 49866), so the bump below and the faint path are the same
+  // every run
+  const {page,context,errors}=await h.fresh();await page.evaluate(()=>{let x=49866;Math.random=()=>{x=(x*16807)%2147483647;return (x-1)/2147483646;};Treasure.reset();});
+  ok('struggle: the first harbour is the bottom-left one',(await state(page)).sea.order[0]===0,(await state(page)).sea.order);
+  await page.locator('#startBtn').click();ok('struggle: the word sets sail',await sayWord(page));
   await advance(page,13000);let s=await state(page);ok('struggle: calm seas has run out, nothing is shown',s.sea.calm===0&&s.sea.hintShown===''&&s.sea.ladder===0&&s.sea.current===.018,s.sea);
   const voiced=await page.evaluate(()=>__quiet.voicedFrames);
   const before=await creamAlong(page,[s.sea.boat,...s.sea.channel]);
@@ -95,8 +105,8 @@ try{
  }
  // (c) help mid-voyage, then silence: the same voyage goes on, with no power
  {
-  const {page,context,errors}=await h.fresh();await page.locator('#startBtn').click();await sayWord(page);await advance(page,13000);
-  await drawRoute(page,[{x:.43,y:.85},{x:.18,y:.83}]);await advance(page,700);let s=await state(page);ok('help-silence: the boat is sailing',s.sea.moving&&s.sea.calm===0,s.sea);
+  const {page,context,errors}=await h.fresh();await page.evaluate(()=>{let x=49866;Math.random=()=>{x=(x*16807)%2147483647;return (x-1)/2147483646;};Treasure.reset();});await page.locator('#startBtn').click();await sayWord(page);await advance(page,13000);
+  {const c=(await state(page)).sea.channel;await drawRoute(page,c);}await advance(page,700);let s=await state(page);ok('help-silence: the boat is sailing',s.sea.moving&&s.sea.calm===0,s.sea);
   await page.locator('#seaHelp').click();await until(page,()=>__sayplay.listening);s=await state(page);const held={boat:s.sea.boat,route:JSON.stringify(s.sea.route)};
   await advance(page,6000);s=await state(page);ok('help-silence: the boat waits while Echo listens',s.sea.paused&&s.speech.listening&&s.sea.boat.x===held.boat.x&&s.sea.boat.y===held.boat.y,s.sea);
   await until(page,()=>__sayplay.phase==='play',9000);s=await state(page);const hr=JSON.parse(held.route),moved=Math.hypot(s.sea.boat.x-held.boat.x,s.sea.boat.y-held.boat.y);
@@ -109,11 +119,41 @@ try{
   ok('help-back: a tap on it returns to the same harbour with no new calm',s.speech.phase==='play'&&!s.sea.paused&&s.sea.active&&s.speech.step===1&&s.sea.leg===1&&Math.abs(s.sea.calm-calmWas)<.3&&s.sea.calm<10,{s,calmWas});
   ok('help-silence: no runtime errors',errors.length===0,errors);await context.close();
  }
+ // TREASURE2, the rebuild (Travis, 11 Nov 2026: "yes build treasure map"):
+ // the harbours in a new order with the X somewhere new, the sailed route
+ // kept on the map, no status words at the bottom
+ {
+  const GOALS=[{x:.18,y:.83},{x:.16,y:.59},{x:.84,y:.63},{x:.84,y:.40},{x:.17,y:.47},{x:.17,y:.24},{x:.56,y:.29},{x:.84,y:.23}],START={x:.70,y:.86},d=(a,b)=>Math.hypot(a.x-b.x,(a.y-b.y)*1.5);
+  const orders=[];
+  for(const seed of [5,77,3001,424242]){const {page,context,errors}=await h.fresh();await page.evaluate(seed=>{let x=seed;Math.random=()=>{x=(x*16807)%2147483647;return (x-1)/2147483646;};Treasure.reset();},seed);const o=(await state(page)).sea.order;orders.push(o.join());
+   let at=START,near=true;const left=[0,1,2,3,4,5,6,7];for(const k of o){const rank=left.slice().sort((a,b)=>d(at,GOALS[a])-d(at,GOALS[b])).indexOf(k);if(rank<0||rank>2)near=false;left.splice(left.indexOf(k),1);at=GOALS[k];}
+   ok('seed '+seed+': all eight harbours, each next one of the three nearest still to visit',o.length===8&&new Set(o).size===8&&near,o);await context.close();}
+  ok('four games, four different voyages, and the X in more than one place',new Set(orders).size===4&&new Set(orders.map(o=>o.split(',')[7])).size>=2,orders);
+  const {page,context,errors}=await h.fresh();
+  ok('no status words at the bottom: the banner alone says what to do',await page.evaluate(()=>!document.getElementById('seaHint')&&!/Draw from your boat|A little current/.test(document.getElementById('seaControls').textContent)));
+  // every leg a voyage can sail has a safe path round the painted islands
+  // (from the harbour's middle and from six places round its ring, where a
+  // boat stops; a place on solid land is one no boat can be)
+  {const froms=[START];GOALS.forEach(g=>{froms.push(g);for(let k=0;k<6;k++){const a=k/6*Math.PI*2;froms.push({x:g.x+Math.cos(a)*.035,y:g.y+Math.sin(a)*.035/1.5});}});
+   const I=[{x:.35,y:.715,rx:.24,ry:.060},{x:.66,y:.51,rx:.21,ry:.065},{x:.32,y:.35,rx:.23,ry:.070},{x:.73,y:.17,rx:.22,ry:.065}],onLand=f=>I.some(i=>((f.x-i.x)/i.rx)**2+((f.y-i.y)/i.ry)**2<1),bad=[];let n=0;
+   for(const f of froms){if(onLand(f))continue;for(const [j,g] of GOALS.entries()){if(Math.hypot(f.x-g.x,f.y-g.y)<.06)continue;n++;const p=await page.evaluate(([a,b])=>Treasure.pathFor(a,b),[f,g]);const c=p.length?await crossesIsland(page,p):[{none:true}];if(c.length)bad.push({from:f,to:j,n:c.length});}}
+   ok('every harbour to every other has a safe path round the painted islands, palm trees too (from '+n+' starting places)',bad.length===0&&n>300,bad);}
+  // two legs: the sailed route stays on the map, and a fresh route wipes only this leg's
+  await page.locator('#startBtn').click();await sayWord(page);let s=await state(page);
+  await drawRoute(page,s.sea.channel);ok('trail: the first harbour is reached',await until(page,()=>__sayplay.step>0,20000));
+  const first=(await state(page)).sea.trail;ok('trail: the first leg\'s route stays on the map',first.length===1&&first[0]>3,first);
+  await sayWord(page);s=await state(page);await drawRoute(page,[{x:s.sea.boat.x+.05,y:s.sea.boat.y}],3);await advance(page,1500);
+  s=await state(page);const mid=s.sea.trail;await page.locator('#seaReset').click();s=await state(page);
+  ok('trail: a fresh route wipes only this leg\'s line, never the harbours already reached',s.sea.trail.length===2&&s.sea.trail[0]===first[0]&&s.sea.trail[1]===1&&mid[1]>=1,{first,mid,now:s.sea.trail});
+  const red=await page.evaluate(()=>{const c=document.getElementById('seaCanvas'),k=c.width/c.getBoundingClientRect().width,g=c.getContext('2d').getImageData(0,0,c.width,c.height).data;let n=0;for(let i=0;i<g.length;i+=4)if(g[i]>120&&g[i]<190&&g[i+1]<90&&g[i+2]<80)n++;return n;});
+  ok('trail: the dotted route is really drawn on the map',red>40,red);
+  ok('the voyage check has no runtime errors',errors.length===0,errors);await context.close();
+ }
  // (e) fit: start card, play, a word turn and a help ask
  for(const viewport of [{width:320,height:568},{width:375,height:667},{width:390,height:844},{width:768,height:1024},{width:393,height:852},{width:844,height:390},{width:620,height:500}]){
   const tag=viewport.width+'x'+viewport.height,{page,context,errors}=await h.fresh({viewport});await advance(page,200);const fit=await page.evaluate(()=>{const r=document.getElementById('startBtn').getBoundingClientRect();return{width:innerWidth,height:innerHeight,scroll:document.documentElement.scrollHeight,x:r.x,y:r.y,right:r.right,bottom:r.bottom,h:r.height};});
   ok('start card fits '+tag,fit.scroll<=fit.height+1&&fit.x>=0&&fit.y>=0&&fit.right<=fit.width&&fit.bottom<=fit.height&&fit.h>=44,fit);
-  if(viewport.width>viewport.height){ok('the existing phone portrait guard remains in place',await page.locator('#sonaPortraitGuard').isVisible());/* Exercise the defensive board layout underneath the app-wide guard. */await page.locator('#sonaPortraitGuard').evaluate(e=>e.remove());await page.locator('#startBtn').click();await sayWord(page);const s=await state(page);ok('landscape uses a generous map with readable boat controls',s.sea.map.rotated&&s.sea.map.w>=400&&s.sea.map.h>=260,s.sea.map);await drawRoute(page,s.sea.channel);ok('landscape drawing really sails to the harbour',await until(page,()=>__sayplay.step>0,15000));}
+  if(viewport.width>viewport.height){ok('the existing phone portrait guard remains in place',await page.locator('#sonaPortraitGuard').isVisible());/* Exercise the defensive board layout underneath the app-wide guard. */await page.locator('#sonaPortraitGuard').evaluate(e=>e.remove());await page.evaluate(()=>{let x=49866;Math.random=()=>{x=(x*16807)%2147483647;return (x-1)/2147483646;};Treasure.reset();});await page.locator('#startBtn').click();await sayWord(page);const s=await state(page);ok('landscape uses a generous map with readable boat controls',s.sea.map.rotated&&s.sea.map.w>=400&&s.sea.map.h>=260,s.sea.map);await drawRoute(page,s.sea.channel);ok('landscape drawing really sails to the harbour',await until(page,()=>__sayplay.step>0,15000));}
   else{
    await page.locator('#startBtn').click();await until(page,()=>__sayplay.listening);let r=await rects(page);
    ok('word turn fits '+tag+': the panel and Hear it are on screen and big enough',inView(r.panel,r.vw,r.vh)&&inView(r.hear,r.vw,r.vh)&&r.hear.height>=44&&r.hear.width>=44,r);
