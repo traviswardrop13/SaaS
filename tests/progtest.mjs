@@ -39,7 +39,7 @@ const ok = (n, p) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL ") + n)
 // ── source tripwires (node-side) ──
 const chargeSrc = readFileSync(ROOT + "/charge.html", "utf8");
 const todaySrc = readFileSync(ROOT + "/today.html", "utf8");
-ok("rung advance no longer daily-only", /if\(v==="pass" && useRung>=RUNG/.test(chargeSrc));
+ok("rung advance no longer daily-only", /if\(v==="pass" && reps>=NEED && useRung>=RUNG/.test(chargeSrc));
 // This used to pin the OLD formula, /Math.min(isDaily?(run?run.round:0):ROTR, RUNG+1)/,
 // which is the bug: the header counted today's ring while the rung counted the
 // persistent rotation, so the level a child got and the round a parent read were

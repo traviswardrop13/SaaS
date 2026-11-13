@@ -198,7 +198,7 @@ const words = (S, s, p) => S.WORDS[s].filter((w) => (w.pos || "i") === p).map((w
   ok("a place with no sentence step tops out at words", day([0, 1, 2], 3, 0).join() === "0,1,2,2,2" && day([0, 1, 2], 0, 3).join() === "2,2,2,2,2");
   ok("the round's step is the one its items come from: an empty step walks down, and the step with it",
     /for\(var ur=useRung;ur>=0&&!ITEMS\.length;ur--\)\{[^\n]*if\(ITEMS\.length\)useRung=ur; \}/.test(charge) && /if\(!ITEMS\.length\)\{ useRung=0;/.test(charge));
-  ok("wins are counted at the place, never in a replay of the demonstration", /if\(v==="pass" && useRung>=RUNG && S && S\.rungWin && !DEMO_REPLAY\)/.test(charge) && /S\.rungWin\(SOUND,useRung,POS\)/.test(charge));
+  ok("wins are counted at the place, never in a replay of the demonstration", /if\(v==="pass" && reps>=NEED && useRung>=RUNG && S && S\.rungWin && !DEMO_REPLAY\)/.test(charge) && /S\.rungWin\(SOUND,useRung,POS\)/.test(charge));
   ok("a try is logged with its step and place, and the place goes with the hand-over to the game",
     /level:ITEM\.level\|\|"",pos:ITEM\.pos\|\|""/.test(charge) && /sessionStorage\.setItem\("sona\.boost\.pos",POS\)/.test(charge));
   ok("Echo is given ITEM.say (a sentence without its full stop, a respelled syllable)", /ask="say "\+\(ITEM\.say\|\|ITEM\.display\|\|ITEM\.t\)/.test(charge));

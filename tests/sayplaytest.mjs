@@ -1622,9 +1622,14 @@ await scenario("two times", async () => {
     await page.evaluate(() => __quiet.foreground());
     await page.locator("#resume").click();
     ok("twice: back from a pause, the same word still needs only one more", await until(page, () => window.__sayplay.listening === true, 8000) && (await game(page)).word === word && (await game(page)).said === 1 && (await twice(page)).mic === "1 more time!");
-    // SILENCE after one: the mic closes and waits for a tap; the tap only listens again
-    ok("twice: after one saying and then a long silence, the mic closes and offers a tap",
-      await until(page, () => window.__sayplay.phase === "nudge", 14000) && (await live(page)) === 0 && await page.locator("#micBtn").isVisible());
+    // SILENCE after one: Echo says the word again by himself, once (ECHO SAYS
+    // IT AGAIN, ONCE: audit 13 Nov 2026), and listens; a second quiet window
+    // closes the mic and waits for a tap; the tap only listens again
+    const spoke0 = (await log(page)).speech.length;
+    ok("twice: after one saying and a quiet window, Echo says the word again by himself, then listens, with the saying kept",
+      await until(page, (n) => __quiet.speech.length > n, 14000, spoke0) && await until(page, () => window.__sayplay.listening === true, 4000) && (await game(page)).said === 1 && (await game(page)).step === 0 && ASK.test((await log(page)).speech[spoke0]));
+    ok("twice: after a second quiet window, the mic closes and offers a tap",
+      await until(page, () => window.__sayplay.phase === "nudge", 14000) && (await live(page)) === 0 && await page.locator("#micBtn").isVisible() && (await log(page)).speech.length === spoke0 + 1);
     t = await twice(page); g = await game(page);
     ok("twice: …it says \"1 more time! Tap the mic\", and the silence earned nothing", t.mic === "1 more time! Tap the mic" && g.step === 0 && g.said === 1 && t.dots[0] && !t.dots[1], t);
     await page.locator("#micBtn").click();
@@ -1704,8 +1709,8 @@ await scenario("three times", async () => {
     t = await twice(page); g = await game(page);
     ok("three times: …the first dot only, nothing earned, and one rep", t.dots.join() === "true,false,false" && g.phase === "turn" && g.step === 0 && (await gameReps(page)) === 1, { t, g, reps: await gameReps(page) });
     // SILENCE after one: the mic closes and waits for a tap, and the saying is kept
-    ok("three times: after one saying and a long silence, the mic closes and says \"2 more times! Tap the mic\"",
-      await until(page, () => window.__sayplay.phase === "nudge", 14000) && (await live(page)) === 0 && (await twice(page)).mic === "2 more times! Tap the mic" && (await game(page)).said === 1 && (await game(page)).step === 0, await twice(page));
+    ok("three times: after one saying and a long silence (Echo asks again once, then a second quiet window), the mic closes and says \"2 more times! Tap the mic\"",
+      await until(page, () => window.__sayplay.phase === "nudge", 32000) && (await live(page)) === 0 && (await twice(page)).mic === "2 more times! Tap the mic" && (await game(page)).said === 1 && (await game(page)).step === 0, await twice(page));
     await page.locator("#micBtn").click();
     ok("three times: the tap only listens again, and the first saying is kept", await until(page, () => window.__sayplay.listening === true, 4000) && (await game(page)).said === 1 && (await twice(page)).mic === "2 more times!");
     // THE SECOND SAYING: two dots, one more asked for, still nothing earned
@@ -1747,8 +1752,8 @@ await scenario("quiet child", async () => {
   try {
     await page.locator("#startBtn").click();
     await page.waitForFunction(() => window.__sayplay.listening === true);
-    ok("quiet: after a long silence the mic closes and offers a tap to listen again",
-      await until(page, () => window.__sayplay.phase === "nudge", 14000) && (await live(page)) === 0 && await page.locator("#micBtn").isVisible());
+    ok("quiet: after a long silence (Echo asks again once, then a second quiet window) the mic closes and offers a tap to listen again",
+      await until(page, () => window.__sayplay.phase === "nudge", 32000) && (await live(page)) === 0 && await page.locator("#micBtn").isVisible());
     ok("quiet: the silence moved nothing", (await game(page)).step === 0);
     await page.locator("#micBtn").click();
     ok("quiet: the tap only listens again: it moves nothing", await until(page, () => window.__sayplay.listening === true, 4000) && (await game(page)).step === 0);

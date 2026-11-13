@@ -118,8 +118,8 @@ try{
    ok('before the word the stones sleep: nothing to turn or slide',!s.pos&&!s.active&&s.dones===0&&!s.turn.shown,s);
    ok('…and a touch on the water only makes ripples',s.ripples>=2&&!s.pos&&s.dones===0,{ripples:s.ripples});}
   // silence, and a whole listening window, earn nothing
-  await advance(page,13000);let s=await both(page);
-  ok('a whole quiet listening window earns nothing',s.sp.phase==='nudge'&&s.sp.step===0&&!s.br.pos&&s.br.dones===0,s.sp);
+  await advance(page,13000);ok('…a quiet window first makes Echo say the word again, once, and listen again: nothing earned',await page.evaluate(()=>__sayplay.phase==='turn'&&__sayplay.step===0&&__sayplay.said===0));await advance(page,14000);let s=await both(page);
+  ok('two quiet listening windows earn nothing',s.sp.phase==='nudge'&&s.sp.step===0&&!s.br.pos&&s.br.dones===0,s.sp);
   const lines=await page.evaluate(()=>__quiet.speech.slice());
   ok('Echo explains the three sayings before the first word',lines.some(l=>l===card.start),lines);
   // Travis, 23 Oct 2026: every story game asks each word Sona.STORY_SAY_TIMES

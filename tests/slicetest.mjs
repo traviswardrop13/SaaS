@@ -113,7 +113,14 @@ ok("the row counts the finger only: a sliced fruit and the giant's burst add to 
   (code.match(/rowN\+\+/g) || []).length === 2 && /f\.sliced=true; hit\+\+; rowN\+\+;/.test(code) && /giant=null; sfx\("giant"\); echoHop\(\);\s*rowN\+\+; rowUp\(true\);/.test(code) && (code.match(/\browUp\(/g) || []).length === 3
   && !/function doRevive\(\)\{[^}]*(rowN|rowBest)/.test(code) && !/SLOW_HELP\.onEarn=function\(\)\{[^}]*(rowN|rowBest)/.test(code));
 ok("Super Slice's fruit are extras: marked as thrown, never counted toward the wave, and nothing dropped while it lasts breaks the row or feeds the two-miss help",
-  /extra:slowMs>0,/.test(code) && /if\(phase==="wave"&&!f\.extra\) waveGot\+=worth;/.test(code) && /if\(playing&&phase==="wave"&&!f\.extra&&!\(slowMs>0\)&&!slowTurn\)\{ missRun\+\+; rowN=0; loseHeart\(now\); \}/.test(code));
+  /extra:slowMs>0,/.test(code) && /if\(phase==="wave"&&!f\.extra\) waveGot\+=worth;/.test(code) && /if\(playing&&phase==="wave"&&!f\.extra&&!\(slowMs>0\)&&!slowTurn\)\{ missRun\+\+; rowN=0; if\(slicedOnce\) loseHeart\(now\); \}/.test(code));
+// NOTHING IS LOST BEFORE THE FIRST SLICE (audit 13 Nov 2026): a child who has
+// not touched the screen used to lose all three hearts in about 7.5 seconds
+ok("a fruit that falls before the child's first slice of the round costs no heart, and the first slice ends that grace",
+  /var slicedOnce=false;/.test(code) && (code.match(/slicedOnce=true/g) || []).length === 1 && /if\(hit\)\{ missRun=0; slicedOnce=true;/.test(code)
+  && (code.match(/loseHeart\(now\);/g) || []).length === 1);
+ok("until then a drawn fingertip swipes across a fruit, never while Echo asks or listens, in Super Slice or outside a wave",
+  /function drawSwipeHint\(now\)\{\s*if\(slicedOnce\|\|!playing\|\|phase!=="wave"\|\|slowTurn\|\|slowMs>0\) return;/.test(code) && /drawSwipeHint\(now\);/.test(code));
 ok("a wave's time limit reads real seconds of play, not the clock Super Slice slows", /wavePlay\+=dt;/.test(code) && /wavePlay>=WAVE_CAP_MS/.test(code) && !/waveMs>=WAVE_CAP_MS/.test(code) && /wavePlay=0;/.test(code));
 { // every string the page can put on screen: the markup's text and the script's literals (ids such as "score" are one bare word)
   const words = [...PAGE.replace(/<script[\s\S]*?<\/script>/g, " ").replace(/<style[\s\S]*?<\/style>/g, " ").matchAll(/>([^<>]+)</g)].map((m) => m[1].trim())
@@ -265,6 +272,26 @@ const end = async (page) => { await page.evaluate(() => endRound()); await page.
 // a round stopped before the giant still ends on a win
 // the two win titles: neither carries a number (the row under it is the only count on the card)
 const WIN = /^(You sliced the giant watermelon!|I saw the fruit fly! So fun!)$/;
+
+// NOTHING IS LOST BEFORE THE FIRST SLICE (audit 13 Nov 2026), played live
+await scenario("a child who has not sliced yet loses no heart", async () => {
+  const {context,page,errors}=await open();
+  try {
+    const drop = () => page.evaluate(async () => { slowTurn=null; slowMs=0; heartLastAt=-1e9; fruits.push({e:"🍎",x:W/2,y:H+200,vx:0,vy:4,g:0,r:30,rot:0,vr:0,sliced:false,extra:false});
+      await new Promise((r)=>requestAnimationFrame(()=>requestAnimationFrame(r))); return {hearts,missRun}; });
+    let out=await drop();
+    ok("a fruit that falls before the first slice costs no heart, and still counts toward the two-miss help",out.hearts===3&&out.missRun>=1,out);
+    ok("…while the drawn fingertip shows how to swipe",await page.evaluate(()=>!slicedOnce&&typeof drawSwipeHint==="function"));
+    await page.evaluate(() => { const r=cv.getBoundingClientRect(); fruits.push({e:"🍊",x:W/2,y:H/2,vx:0,vy:0,g:0,r:40,rot:0,vr:0,sliced:false,extra:false});
+      cv.dispatchEvent(new PointerEvent("pointerdown",{clientX:r.left+W/2-80,clientY:r.top+H/2,bubbles:true}));
+      cv.dispatchEvent(new PointerEvent("pointermove",{clientX:r.left+W/2+80,clientY:r.top+H/2,bubbles:true}));
+      window.dispatchEvent(new PointerEvent("pointerup",{bubbles:true})); });
+    ok("one slice ends the grace",await page.evaluate(()=>slicedOnce===true));
+    out=await drop();
+    ok("…and from then a fallen fruit costs a heart",out.hearts===2,out);
+    ok("no page errors",errors.length===0,errors);
+  } finally { await context.close(); }
+});
 
 // The finger can end the round; the speech target is never graded here.
 await scenario("three lives and an earned heart", async () => {

@@ -88,7 +88,7 @@ try{
   await page.locator('#startBtn').click();await until(page,()=>__sayplay.listening);let s;
   await advance(page,1500);s=await state(page);ok('silence never assembles a robot part',s.speech.step===0&&!s.robot.active&&s.robot.assembled===0,s);
   // (a) a whole listening window of silence: the board stays shut, the mic waits for a tap
-  await advance(page,13000);s=await state(page);ok('13 s of silence earns nothing: no circuit, no step, the mic waits',s.speech.phase==='nudge'&&!s.robot.boardReady&&s.speech.step===0&&s.speech.said===0,s);
+  await advance(page,13000);ok('…a quiet window first makes Echo say the word again, once, and listen again: nothing earned',await page.evaluate(()=>__sayplay.phase==='turn'&&__sayplay.step===0&&__sayplay.said===0));await advance(page,14000);s=await state(page);ok('two quiet windows earn nothing: no circuit, no step, the mic waits',s.speech.phase==='nudge'&&!s.robot.boardReady&&s.speech.step===0&&s.speech.said===0,s);
   await page.locator('#micBtn').click();
   ok('two accepted sayings earn the first circuit',await sayWord(page));s=await state(page);ok('the word opens a circuit and shows no answer: no blueprint, no pale lines',s.robot.active&&s.robot.blueprint===0&&!s.robot.connected&&s.robot.assembled===0&&s.speech.step===0&&s.robot.help===0&&await page.locator('.robot-tile.blueprint').count()===0&&await page.locator('#robotPower').isHidden(),s);
   ok('the initial wires really have no battery-to-socket circuit',!hasCircuit(s.robot),s.robot);

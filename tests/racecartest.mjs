@@ -50,7 +50,7 @@ try{
   await advance(page,1500);await steer(page,.6);
   let s=await state(page);ok('silence and steering never earn a drive or speech rep',s.speech.step===0&&s.speech.said===0&&!s.race.running&&s.race.distance===0,s);
   // (a) a whole listening window of silence: nothing drives, the mic waits for a tap
-  await advance(page,13000);s=await state(page);ok('13 s of silence earns nothing: no drive, no step, the mic waits',s.speech.phase==='nudge'&&!s.race.running&&s.race.distance===0&&s.speech.step===0,s);
+  await advance(page,13000);ok('…a quiet window first makes Echo say the word again, once, and listen again: nothing earned',await page.evaluate(()=>__sayplay.phase==='turn'&&__sayplay.step===0&&__sayplay.said===0));await advance(page,14000);s=await state(page);ok('two quiet windows earn nothing: no drive, no step, the mic waits',s.speech.phase==='nudge'&&!s.race.running&&s.race.distance===0&&s.speech.step===0,s);
   await page.locator('#micBtn').click();
   ok('two separate sayings earn the first driving stretch',await word(page));
   s=await state(page);ok('earned speech starts a real 52% slower road',s.race.running&&s.race.slow>6&&s.race.factor===.48,s);

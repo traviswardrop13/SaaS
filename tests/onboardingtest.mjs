@@ -172,7 +172,8 @@ await scenario('sound selection and private paced handoff',async()=>{
   ok('…it is the third of the five: three groups lit',third.groups===5&&third.lit===3&&!third.hidden&&third.now==='3'&&third.max==='5'&&third.role==='progressbar',third);
   await answerTherapy(page);
   ok('one tap (here Skip) opens the sound choices, the fourth',await page.locator('[data-step="sounds"].on').count()===1&&(await progress(page)).lit===4);
-  ok('R starts selected and the first row is R S L TH',await page.locator('#obSounds .on').getAttribute('data-sound')==='R'&&JSON.stringify(await page.locator('#obSounds .sound').evaluateAll(bs=>bs.slice(0,4).map(b=>b.dataset.sound)))==='["R","S","L","TH"]');
+  // NOTHING IS PICKED FOR THEM (audit 13 Nov 2026): R used to start ticked
+  ok('no sound starts selected, Continue waits for one, and the first row is R S L TH',await page.locator('#obSounds .on').count()===0&&await page.locator('#nextBtn').isDisabled()&&JSON.stringify(await page.locator('#obSounds .sound').evaluateAll(bs=>bs.slice(0,4).map(b=>b.dataset.sound)))==='["R","S","L","TH"]');
   const choices=await page.evaluate(()=>({labels:[...document.querySelectorAll('#obSounds .sound')].map(b=>({text:(b.querySelector('.sound-letters')||b).textContent.trim(),word:(b.querySelector('.sound-word')||{}).textContent||'',label:Sona.soundLabel(b.dataset.sound),font:parseFloat(getComputedStyle(b.querySelector('.sound-letters')||b).fontSize),width:b.getBoundingClientRect().width,height:b.getBoundingClientRect().height})),copy:document.querySelector('[data-step="sounds"]').textContent,overflow:document.documentElement.scrollWidth>innerWidth}));
   // (1 Nov 2026: each sound carries a small word under its large letters,
   // "R" over "rabbit"; setupscreenstest pins which word)
@@ -284,7 +285,7 @@ await scenario('a hello first; setup is for parents',async()=>{
   ok('…with no family question on their path, and two progress groups: name and sounds',st.steps==='welcome,name,sounds,ready,mic'&&st.groups===2,st);
   await page.locator('#obName').fill('Milo');await page.locator('#obAge [data-age="6"]').click();await next(page);
   ok('…the name leads straight to the sounds',await screen(page)==='sounds');
-  await choose(page,'S');await next(page);
+  await choose(page,'R');await choose(page,'S');await next(page);
   const ready=await readyShown(page);
   ok('…then the ready screen, with what they picked, no sentence from an answer and no Day 1 card (a parent\'s first setup only)',ready.on&&ready.title==='Milo\'s practice is ready!'&&JSON.stringify(ready.chips)==='["Ages 5–6","Sounds: R · S"]'&&ready.lines.length===0&&!/Day 1/.test(ready.text)&&await page.evaluate(()=>document.getElementById('planCard').hidden),ready);
   await notNow(page);await atHandoff(page);
@@ -415,7 +416,7 @@ await scenario('the answers stay on this phone',async()=>{
 // sounds screen still says Sona does not test or diagnose). Rachel is no
 // longer on it (22 Oct 2026: her own screen, setupscreenstest). The browser
 // clinician setup never shows it.
-async function atReady(page,{name='Milo',age='4',sound='S',therapy='t_no',minutes='3'}={}){await enter(page,{name,age,therapy});await choose(page,sound);await toReady(page,minutes);}
+async function atReady(page,{name='Milo',age='4',sound=['R','S'],therapy='t_no',minutes='3'}={}){await enter(page,{name,age,therapy});for(const one of [].concat(sound))await choose(page,one);await toReady(page,minutes);}
 const readyFit=()=>{const ob=document.querySelector('.ob'),c=document.querySelector('[data-step="ready"]').getBoundingClientRect(),b=document.querySelector('#nextBtn').getBoundingClientRect(),h=(document.getElementById('planCard').hidden?document.getElementById('readyChips'):document.getElementById('planCard')).getBoundingClientRect();return {scrollHeight:ob.scrollHeight,height:ob.clientHeight,cardTop:c.top,cardBottom:c.bottom,buttonTop:b.top,buttonBottom:b.bottom,hedgeTop:h.top,hedgeBottom:h.bottom,obSideways:ob.scrollWidth-ob.clientWidth,sideways:document.documentElement.scrollWidth-innerWidth,innerHeight};};
 await scenario('the ready screen, right before the reminder, the price or the microphone',async()=>{
  {const {context,page,errors}=await fresh();try{
@@ -452,7 +453,7 @@ await scenario('the ready screen, right before the reminder, the price or the mi
   ok('a second child\'s setup has two progress groups and no family question',await page.evaluate(()=>ORDER.join()==='welcome,name,sounds,ready,mic'&&document.querySelectorAll('#seg i').length===2));
   await toName(page);await page.locator('#obName').fill('Rosie');await page.locator('#obAge [data-age="4"]').click();await next(page);
   ok('…the hello leads to the name, and the name straight to the sounds',await screen(page)==='sounds'&&(await progress(page)).lit===2);
-  await choose(page,'S');await next(page);
+  await choose(page,'R');await choose(page,'S');await next(page);
   const ready=await readyShown(page);
   ok('…then ready, with this child\'s name and picks, no sentence from an answer and no Day 1 card (a parent\'s first setup only)',ready.on&&ready.title==='Rosie\'s practice is ready!'&&JSON.stringify(ready.chips)==='["Ages 2–4","Sounds: R · S"]'&&ready.lines.length===0&&!/Day 1/.test(ready.text)&&await page.evaluate(()=>document.getElementById('planCard').hidden),ready);
   await next(page);await page.locator('[data-step="mic"].on').waitFor();await calm(page);await page.locator('#micNotNow').click();
@@ -483,7 +484,7 @@ await scenario('the ready screen, right before the reminder, the price or the mi
  }finally{await context.close();}}
  // No age picked, two sounds, and the "explore" path: the chips say only what was given.
  {const {context,page,errors}=await fresh();try{
-  await enter(page,{name:'Ava',age:''});await choose(page,'S');await toReady(page);
+  await enter(page,{name:'Ava',age:''});await choose(page,'R');await choose(page,'S');await toReady(page);
   let ready=await readyShown(page);
   ok('with no age picked there is no age chip, and two sounds read "Sounds: R · S" (minutes skipped: no minutes chip)',JSON.stringify(ready.chips)==='["Sounds: R · S"]',ready.chips);
   await calm(page);await page.locator('#backBtn').click();await calm(page);await page.locator('#backBtn').click();await calm(page);await page.locator('#backBtn').click();await calm(page);await page.locator('#obExploreSounds').click();await toReady(page);
@@ -525,7 +526,7 @@ await scenario('the one-tap questions fit every screen, answered and not',async(
     await answer(page,key,pick);await calm(page);await page.locator('#backBtn').click();await page.locator('[data-step="'+key+'"].on').waitFor();await settled(page);
     fit=await page.evaluate(askFit,key);
     ok(key+' fits at '+at+' with an answer held: the card clear of Continue',fits(fit,'nextBtn'),fit);
-    await next(page);if(key==='therapy'){await page.locator('[data-step="sounds"].on').waitFor();await next(page);}
+    await next(page);if(key==='therapy'){await page.locator('[data-step="sounds"].on').waitFor();await choose(page,'R');await next(page);}
    }
    clean('question fit '+at,errors);
   }finally{await context.close();}
@@ -558,7 +559,7 @@ await scenario('Done closes typing without accepting setup choices',async()=>{
   ok('Done in the name field leaves the age choice on screen and dismisses focus',nameDone.step==='name'&&nameDone.focused!=='obName'&&nameDone.age==='',nameDone);
   // Keep the other checks useful when exercising the pre-fix page.
   if(nameDone.step!=='name'){await calm(page);await page.locator('#backBtn').click();}
-  await page.locator('#obAge [data-age="4"]').click();await next(page);await choose(page,'S');await next(page);
+  await page.locator('#obAge [data-age="4"]').click();await next(page);await choose(page,'R');await choose(page,'S');await next(page);
   await page.locator('#obGoals').fill('Clear sounds in words');await page.locator('#obGoals').press('Enter');
   ok('Done in goals stays on the same setup question',await page.locator('[data-step="slp"].on').count()===1&&await page.evaluate(()=>document.activeElement.id!=='obGoals'));
   await next(page);await page.locator('#obEmail').fill('clinician@example.com');await page.locator('#obEmail').press('Enter');
@@ -580,7 +581,7 @@ await scenario('Done closes typing without accepting setup choices',async()=>{
 // A reload restores draft.role; the order has to follow it or a clinician
 // finishes on the family path with no email step and no account.
 // (The one-tap questions hide Continue, so the walk taps their first answer.)
-async function walk(page){const seen=[];for(let i=0;i<20;i++){await beatOver(page);const s=await screen(page);seen.push(s);if(s==='email'||s==='mic')break;if(s==='welcome'){await who(page);continue;}if(s==='therapy'||s==='minutes'){await calm(page);await page.locator('[data-step="'+s+'"] .ask-pick').first().click();continue;}if(s==='updates'){await calm(page);await page.locator('#updSkip').click();continue;}if(s==='name'&&!await page.locator('#obName').inputValue())await page.locator('#obName').fill('Milo');await next(page);}return seen;}
+async function walk(page){const seen=[];for(let i=0;i<20;i++){await beatOver(page);const s=await screen(page);seen.push(s);if(s==='email'||s==='mic')break;if(s==='welcome'){await who(page);continue;}if(s==='therapy'||s==='minutes'){await calm(page);await page.locator('[data-step="'+s+'"] .ask-pick').first().click();continue;}if(s==='updates'){await calm(page);await page.locator('#updSkip').click();continue;}if(s==='name'&&!await page.locator('#obName').inputValue())await page.locator('#obName').fill('Milo');if(s==='sounds'&&!await page.locator('#obSounds .on').count())await choose(page,'R');await next(page);}return seen;}
 await scenario('clinician setup survives a reload',async()=>{
  const {context,page,errors,requests}=await fresh();try{
   await who(page,'slp');await page.locator('#obName').fill('Milo');await next(page);
@@ -756,7 +757,7 @@ await scenario('a double tap never answers a one-tap question',async()=>{
   ok('…and the same tap, on the same spot, once the screen has settled is taken (on to the sounds)',await page.evaluate(()=>document.body.dataset.setupScreen==='sounds'&&draft.therapy==='t_yes'));
   // the same for "Not sure? Pick all sounds" and the Skip that appears under the finger's reach
   await page.waitForTimeout(700);
-  await next(page);await page.locator('[data-step="minutes"].on').waitFor();await settled(page);
+  await choose(page,'R');await next(page);await page.locator('[data-step="minutes"].on').waitFor();await settled(page);
   const skip=await centre(page,'#minutesSkip');
   await calm(page);await page.locator('#backBtn').click();await page.locator('[data-step="sounds"].on').waitFor();await page.waitForTimeout(600);
   const explore=await centre(page,'#obExploreSounds');
@@ -885,7 +886,7 @@ await scenario('phone fit, and the hand-off asks for nothing',async()=>{
   await page.waitForTimeout(300);
   ok('welcome fits the phone without scrolling',await page.evaluate(()=>{var ob=document.querySelector('.ob');return ob.scrollHeight<=ob.clientHeight+1&&document.documentElement.scrollHeight<=innerHeight;}));
   await page.screenshot({path:path.join(tmpdir(),'sona-welcome-polish.png')});
-  await enter(page);await page.waitForTimeout(600);await page.screenshot({path:path.join(tmpdir(),'sona-sounds-polish.png')});await next(page);await notNow(page);await atHandoff(page);
+  await enter(page);await page.waitForTimeout(600);await page.screenshot({path:path.join(tmpdir(),'sona-sounds-polish.png')});await choose(page,'R');await next(page);await notNow(page);await atHandoff(page);
   ok('the hand-off fits without scrolling',await page.evaluate(()=>{var ob=document.querySelector('.ob');return ob.scrollHeight<=ob.clientHeight+1;}));
   ok('…and has no email box, no × and no Rachel line',!/Rachel|occasional tips|email/i.test(await page.locator('[data-step="achieve"]').innerText())&&await page.locator('#skipEmail,#achEmailInput,[data-step="achieve"] input').count()===0);
   await page.screenshot({path:path.join(tmpdir(),'sona-handoff-polish.png')});

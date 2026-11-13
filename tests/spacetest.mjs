@@ -151,7 +151,7 @@ try{
  jobs.push(['main',async()=>{
   const {page,context,errors}=await fresh();const canvas=await page.locator('#spaceCanvas').count();ok('Space Trip has a real piloting board',canvas===1);if(!canvas)throw Error('Space Trip is still a rocket animation');await page.locator('#startBtn').click();await until(page,()=>__sayplay.listening);await advance(page,1600);let s=await state(page);ok('silence cannot launch or land a rocket',!s.space.active&&s.space.landed===0&&s.speech.step===0,s);
   // (a) a whole listening window of silence: no flight, no saying, no step
-  await advance(page,12500);s=await state(page);const reps0=await page.evaluate(()=>__quiet.sfx.filter(x=>x.name==='correct').length);
+  await advance(page,12500);ok('…a quiet window first makes Echo say the word again, once, and listen again: nothing earned',await page.evaluate(()=>__sayplay.phase==='turn'&&__sayplay.step===0&&__sayplay.said===0));await advance(page,14000);s=await state(page);const reps0=await page.evaluate(()=>__quiet.sfx.filter(x=>x.name==='correct').length);
   ok('a whole window of silence earns nothing: the mic waits for a tap',s.speech.phase==='nudge'&&s.speech.said===0&&s.speech.step===0&&!s.space.active&&!s.space.piloted&&s.space.power===0&&reps0===0,s);
   await page.locator('#micBtn').click();
   ok('two accepted sayings earn the first flight',await sayWord(page));s=await state(page);ok('the flight\'s first words send the child to the glow, not to the engine',/glow/i.test(s.space.banner)&&!/hold engine/i.test(s.space.banner),s.space.banner);const origin={...s.space.ship};

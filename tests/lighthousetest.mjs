@@ -99,8 +99,8 @@ try{
   {const b=await page.locator('#seaCanvas').boundingBox();await page.mouse.move(b.width/2,b.height*0.4);await page.mouse.down();await page.mouse.move(b.width/2+40,b.height*0.45,{steps:4});await advance(page,300);await page.mouse.up();
    const s=await lh(page);ok('before the word the lamp is dark, and dragging lights nothing',!s.lampOn&&!s.pool&&!s.active&&s.dones===0,s);}
   // silence, and a whole listening window, earn nothing
-  await advance(page,13000);let s=await both(page);
-  ok('a whole quiet listening window earns nothing',s.sp.phase==='nudge'&&s.sp.step===0&&!s.lh.lampOn&&s.lh.dones===0,s.sp);
+  await advance(page,13000);ok('…a quiet window first makes Echo say the word again, once, and listen again: nothing earned',await page.evaluate(()=>__sayplay.phase==='turn'&&__sayplay.step===0&&__sayplay.said===0));await advance(page,14000);let s=await both(page);
+  ok('two quiet listening windows earn nothing',s.sp.phase==='nudge'&&s.sp.step===0&&!s.lh.lampOn&&s.lh.dones===0,s.sp);
   const lines=await page.evaluate(()=>__quiet.speech.slice());
   ok('Echo explains the three sayings before the first word',lines.some(l=>l===card.start),lines);
   // three sayings a word in every story game (Travis, 23 Oct 2026: "say the

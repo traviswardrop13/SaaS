@@ -454,6 +454,33 @@ await section("to the end of the intro, the ending and the sticker", async () =>
   } finally { await ctx.close(); }
 });
 
+// A TALKING STORY REMEMBERS ITS PAGE (audit 13 Nov 2026): leaving at page 4
+// used to open "Tap to start" at page 1, every word to be said again
+await section("coming back to a talking story left part-way", async () => {
+  const { ctx, pg, errors } = await open({ focus: ["R"] });
+  try {
+    await click(pg, "startBtn");
+    await live(pg);
+    for (let i = 0; i < 3; i++) { await pg.waitForTimeout(650); await click(pg, "skipBtn"); await until(pg, (n) => __adventure.idx === n, 3000, i + 1); }
+    const q = await quest(pg);
+    ok("each page shown is today's place in the quest record, and nothing else is written", q && /^\d{4}-\d{2}-\d{2}\|robo\|3$/.test(q.tp) && !q.seen && !(Array.isArray(q.f) && q.f.length), q);
+    await pg.reload(); await pg.waitForFunction(() => window.__adventure);
+    let card = await pg.evaluate(() => ({ view: __adventure.view, btn: document.getElementById("startBtn").textContent, again: document.getElementById("againBtn").textContent, againShown: !document.getElementById("againBtn").hidden }));
+    ok("back the same day: the card says \"Keep going\", with \"Start from the beginning\" under it", card.view === "start" && card.btn === "Keep going" && card.againShown && card.again === "Start from the beginning", card);
+    await click(pg, "startBtn");
+    ok("…\"Keep going\" opens the page they left, and asks its word", await until(pg, () => __adventure.view === "scene" && __adventure.idx === 3) && await live(pg), await st(pg));
+    await pg.reload(); await pg.waitForFunction(() => window.__adventure);
+    await click(pg, "againBtn");
+    ok("…\"Start from the beginning\" opens page 1", await until(pg, () => __adventure.view === "scene" && __adventure.idx === 0), await st(pg));
+    ok("no page errors", errors.length === 0, errors);
+  } finally { await ctx.close(); }
+  const old = await open({ focus: ["R"], quest: { tp: "2020-01-01|robo|5" } });
+  try {
+    const s = await st(old.pg);
+    ok("a place from another day is not today's: \"Tap to start\" at page 1, no second button", s.view === "start" && (await old.pg.textContent("#startBtn")) === "Tap to start" && !(await old.pg.isVisible("#againBtn")), s);
+  } finally { await old.ctx.close(); }
+});
+
 await section("the replay", async () => {
   const doneQ = { f: [0], s: 1, ls: 0, lk: "story", t1: "robo", done: "2026-10-01", fd: "2026-10-01", a: "2026-09-30", sv: "2026-09-30", got: [] };
   let o = await open({ focus: ["R"], quest: doneQ }, { url: "/adventure.html?again=1&story=robo" });

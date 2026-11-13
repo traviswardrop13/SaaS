@@ -112,6 +112,9 @@
   var said = 0;
   var SOUND = "R", WORDS = [], word = null, used = [], parts = {}, stageHTML = "";
   var introSaid=false, themed=[], themedUsed=[], roundWords=[], helpTurn=false;
+  // wordN counts the words asked; askedAgain is the wordN Echo has already
+  // said a second time by himself (nudge)
+  var wordN = 0, askedAgain = -1;
 
   function setPhase(p) { phase = p; document.body.setAttribute("data-phase", paused ? "paused" : p); publish(); }
   // What tests read (the page's internals stay inside this closure otherwise).
@@ -498,6 +501,15 @@
     // child loses only the optional power, never what their word already
     // won. This also covers a mic that failed to open for the help word.
     if (helpTurn) { endHelp(); return; }
+    // ECHO SAYS IT AGAIN, ONCE (audit 13 Nov 2026). A quiet window or a try
+    // the listener turned down used to close the mic onto a small button and
+    // written words: a 3-year-old who cannot read heard nothing and had no
+    // way on. The first time for each word, Echo says it again, the same
+    // "Say... robot." and "Go!" that "Hear it" plays (no new words), and the
+    // mic opens once more. It is a prompt to talk, never a step: silence
+    // still moves nothing. The second time, the mic button waits as before,
+    // so a child the phone cannot hear is not asked on a loop.
+    if (askedAgain !== wordN && !paused && !document.hidden) { askedAgain = wordN; nextTurn(true); return; }
     try { $("micState").textContent = oneMore() ? moreLeft() + "! Tap the mic" : "Tap the mic, then say it"; $("micBtn").hidden = false; } catch (e) {}
     face("think");
     setPhase("nudge");
@@ -657,7 +669,7 @@
     micStop(); stopAudio(); audioPaused=!!document.hidden; heardThisTurn = false; clearTimeout(nextTurn._t);
     // a new word starts at none of its sayings; the same word again ("Hear
     // it", or back from a pause) keeps a saying Echo has already heard
-    if (!same || !word) { word = pickWord(); said = 0; }
+    if (!same || !word) { word = pickWord(); said = 0; wordN++; }
     paintSaid();
     try {
       $("pic").innerHTML = ((window.SonaCraftedWords && window.SonaCraftedWords.picture(word.w, 64)) || ((S && S.pic) ? S.pic(word.w, word.e, 64) : word.e));

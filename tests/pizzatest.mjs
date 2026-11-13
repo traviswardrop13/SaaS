@@ -117,7 +117,7 @@ try{
   ok('the cut direction says along the line, never "across" it or "right"',/along each dotted line/.test(words.lines[7])&&!words.banners.some(t=>/swipe right/i.test(t)),words.lines[7]);
   await page.locator('#startBtn').click();await until(page,()=>__sayplay.listening);
   // (a) silence: the whole listening window passes and nothing is earned
-  const nudged=await until(page,()=>__sayplay.phase==='nudge',16000);let s=await state(page);
+  await advance(page,13000);ok('…a quiet window first makes Echo say the word again, once, and listen again: nothing earned',await page.evaluate(()=>__sayplay.phase==='turn'&&__sayplay.step===0&&__sayplay.said===0));await advance(page,14000);const nudged=await until(page,()=>__sayplay.phase==='nudge',16000);let s=await state(page);
   ok('silence cannot prepare any food',nudged&&!s.pizza.active&&s.pizza.completed===0&&s.pizza.rollProgress===0&&s.pizza.power===0&&s.speech.step===0&&s.speech.said===0,s);
   await page.locator('#micBtn').click();
   ok('two sayings earn the rolling pin',await sayWord(page));await advance(page,1000);s=await state(page);ok('an accepted word and idle animation cannot roll dough',s.pizza.rollProgress===0&&s.pizza.completed===0&&s.speech.step===0&&s.pizza.ladder===0,s);const gain=s.pizza.rollingGain;

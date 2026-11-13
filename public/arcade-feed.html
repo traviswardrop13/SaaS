@@ -604,34 +604,48 @@
         })();
       }).catch(function(){if(wordCheck===check&&gen===micGen){feedMicStop();nudge();}});
     }
-    // No voice in the window (or no mic right now): the mic button waits. Its
-    // tap says the word again and listens again; it never feeds Echo.
-    function nudge(){
+    // No voice in the window (or no mic right now): Echo asks once more (below),
+    // then the mic button waits. Its tap says the word again and listens
+    // again; it never feeds Echo.
+    // ECHO SAYS IT AGAIN, ONCE (audit 13 Nov 2026). A quiet window or a try
+    // the listener turned down used to close the mic onto a small button and
+    // a written "Tap the mic, then say …": a 3-year-old who cannot read heard
+    // nothing. The first time for each word Echo says it again by himself,
+    // exactly what the mic button does ("Say... robot." and "Go!", no new
+    // words), and listens once more. Silence still feeds nothing. The second
+    // time the button waits, as before, so a child the phone cannot hear is
+    // not asked on a loop; a hidden page (backgroundFeed) never asks.
+    var askedAgainAt=-1;
+    function nudge(still){
       if(!turnLive||heardThisTurn)return;
+      if(still!==true&&askedAgainAt!==turnN&&!document.hidden){ askedAgainAt=turnN; askAgain(); return; }
       $("micBtn").hidden=false; echoPose("think");
       $("bSub").textContent="Tap the mic, then say “"+target.w+"”";
     }
     function hideMicBtn(){ $("micBtn").hidden=true; }
-    $("micBtn").onclick=function(){
-      if(retireStaleFeed())return;
-      if(!turnLive||heardThisTurn||micStream||micAsking)return;
+    function askAgain(){
       hideMicBtn(); echoPose("talk"); $("bSub").textContent="Listen…";
       sayGo("Say... "+target.w+".").then(function(){
         quietUntil=Math.max(quietUntil,performance.now()+VOICE_TAIL_MS);
         feedMicOpen();
       });
+    }
+    $("micBtn").onclick=function(){
+      if(retireStaleFeed())return;
+      if(!turnLive||heardThisTurn||micStream||micAsking)return;
+      askAgain();
     };
     function denied(){ if(S&&S.micDenied)S.micDenied({back:"/today.html"}); }
 
     // ── the round: 5 feeds, no timer, no fail ──
-    var NEED=5, fed=0, turnLive=false, target=null, usedIdx=[];
+    var NEED=5, fed=0, turnLive=false, target=null, usedIdx=[], turnN=0;
     function shuffle(a){ for(var i=a.length-1;i>0;i--){ var j=(Math.random()*(i+1))|0,t=a[i]; a[i]=a[j]; a[j]=t; } return a; }
     function nextTurn(){
       if(retireStaleFeed())return;
       feedMicStop(); heardThisTurn=false; hideMicBtn();   // Echo is about to ask: never over an open mic
       var ti; do{ ti=(Math.random()*TARGETS.length)|0; }while(TARGETS.length>1&&usedIdx.indexOf(ti)>=0&&usedIdx.length<TARGETS.length);
       usedIdx.push(ti); if(usedIdx.length>=TARGETS.length)usedIdx=[];
-      target=TARGETS[ti];
+      target=TARGETS[ti]; turnN++;
       var opts=[target].concat(shuffle(OTHERS.slice()).slice(0,3));
       if(opts.length<2){ opts=[target].concat(TARGETS.filter(function(w){return w.w!==target.w;}).slice(0,3)); }
       shuffle(opts);
@@ -779,7 +793,7 @@
     $("goHome").onclick=leaveFeed;
     $("close").onclick=leaveFeed;
 
-    function backgroundFeed(){stopFeedAudio();feedMicStop();nudge();}
+    function backgroundFeed(){stopFeedAudio();feedMicStop();nudge(true);}
     if(S&&S.onBackground)S.onBackground(backgroundFeed);
     else{document.addEventListener("visibilitychange",function(){if(document.hidden)backgroundFeed();});window.addEventListener("pagehide",backgroundFeed);}
     paintScale();
