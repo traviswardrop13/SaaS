@@ -244,9 +244,9 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
 
   // The clinician page keeps its public address and shared title.
   const slpHeadline = (slps.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/) || ["", ""])[1]
-    .replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
-  ok("the clinician page's headline, tab title and shared card all say 'Speech practice kids actually want to do'",
-    slpHeadline === "Speech practice kids actually want to do." &&
+    .replace(/<[^>]+>/g, "").replace(/&rsquo;/g, "’").replace(/\s+/g, " ").trim();
+  ok("the clinician page leads with 'Send home practice they’ll play' and keeps its tab title and shared card",
+    slpHeadline === "Send home practice they’ll play." &&
     // "— Sona", not "— Sona for SLPs" (25 Sep 2026): the page speaks to
     // parents and SLPs alike.
     /<title>Speech practice kids actually want to do — Sona<\/title>/.test(slps) &&
@@ -294,9 +294,9 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
     }
   }
   const heroR = (slps.match(/<div class="hero-r"[\s\S]*?<\/section>/) || [""])[0];
-  ok("the clinician hero uses real game and book art instead of sample caseload data",
-    /<img class="mascot"/.test(heroR) && heroR.includes('/assets/site/games/slice.webp') &&
-    heroR.includes('/assets/books/rabbit-rocket-rescue/cover.webp') && !/Your caseload this week|>\s*\d+%\s*</.test(heroR));
+  ok("the clinician hero shows Echo and a Fruit Slice game screen without sample caseload data",
+    /<img class="mascot" src="\/assets\/site\/echo\.webp"/.test(heroR) && /<img src="\/assets\/site\/slice\.webp"/.test(heroR) &&
+    !/Your caseload this week|>\s*\d+%\s*</.test(heroR));
   // NOTHING UNDER THE BUTTON (Travis, 25 Sep 2026: "get rid of this text").
   ok("…and nothing under the form's button: no list line, no 'Next' hint, no 'No card' note",
     !/class="consent"|id="mNext"|class="hnote"/.test(slps.replace(/<!--[\s\S]*?-->/g, "")));

@@ -383,10 +383,10 @@ charterReply = null;
   ok("…and nothing is chosen for them", (await page.inputValue("#fRole")) === "");
   const fit = await page.evaluate(() => { const r = document.getElementById("signup").getBoundingClientRect(); return { l: r.left, r: r.right, w: innerWidth, overflow: document.documentElement.scrollWidth > innerWidth }; });
   ok("on a phone the form fits the screen, with no sideways scroll", fit.l >= 0 && fit.r <= fit.w && !fit.overflow, fit);
-  ok("the hero shows Echo, real game and book art, and no sample caseload", await page.evaluate(() => {
+  ok("the clinician hero shows Echo and a Fruit Slice game screen without sample caseload data", await page.evaluate(() => {
     const hero = document.querySelector(".hero-r");
-    return !!hero && !!hero.querySelector('img.mascot') && !!hero.querySelector('img[src="/assets/site/games/slice.webp"]') &&
-      !!hero.querySelector('img[src="/assets/books/rabbit-rocket-rescue/cover.webp"]') && !/Your caseload this week|\d+%/.test(hero.textContent);
+    return !!hero && !!hero.querySelector('img.mascot[src="/assets/site/echo.webp"]') &&
+      !!hero.querySelector('.hero-game img[src="/assets/site/slice.webp"]') && !/Your caseload this week|\d+%/.test(hero.textContent);
   }));
   ok("…and nothing sits under the form's button", await page.evaluate(() => !document.querySelector(".consent, #mNext, .hnote")));
 
