@@ -118,7 +118,7 @@ try{
  if(!part||part==='ladder'){
   // (a)+(b) a child who never says the help word and keeps missing still finishes every kind of step
   const {page,context,errors}=await fresh();await page.locator('#startBtn').click();await until(page,()=>__sayplay.listening);
-  await advance(page,15000);let s=await state(page);ok('silence for 15 s earns no snowball and no step',!s.snow.active&&s.snow.ball.progress===0&&s.speech.step===0,s);await page.locator('#micBtn').click();
+  await advance(page,15000);await advance(page,13000);let s=await state(page);ok('two quiet windows (Echo asks the word again once between them) earn no snowball and no step',!s.snow.active&&s.snow.ball.progress===0&&s.speech.step===0,s);await page.locator('#micBtn').click();
   if(!await sayWord(page))throw Error('no first word');
   // rolling only above the snow grows nothing at first, then the lane glows, then any rolling counts
   const z=(await state(page)).snow.rollZone,above=z.top-.12;await grab(page);await move(page,{x:.3,y:above});

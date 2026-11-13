@@ -40,7 +40,7 @@ try{
   await page.locator('#startBtn').click();await until(page,()=>window.__sayplay&&__sayplay.listening);let s=await state(page),start={...s.sea.boat};
   await drawRoute(page,[{x:.4,y:.86},{x:.18,y:.83}]);await advance(page,1500);s=await state(page);ok('a drawn route with no word earns no sailing turn',!s.sea.active&&s.speech.said===0&&s.speech.step===0&&s.sea.boat.x===start.x&&s.sea.boat.y===start.y,s);
   // (a) silence: the whole listening window and more, with no voice
-  await advance(page,14000);s=await state(page);ok('silence earns nothing: no saying, no sailing, no step',!s.sea.active&&s.speech.said===0&&s.speech.step===0&&s.speech.phase!=='play'&&s.sea.boat.x===start.x,s.speech);
+  await advance(page,14000);await advance(page,14000);s=await state(page);ok('two quiet windows earn nothing: no saying, no sailing, no step',!s.sea.active&&s.speech.said===0&&s.speech.step===0&&s.speech.phase!=='play'&&s.sea.boat.x===start.x,s.speech);
   await page.locator('#micBtn').click();
   ok('two sayings earn the voyage',await sayWord(page));s=await state(page);ok('…and nothing else: no calm seas, the sea\'s own current, and no route drawn for the child',s.sea.calm===0&&s.sea.current===.018&&s.sea.hintShown===''&&s.sea.active&&s.sea.ladder===0,s);
   await advance(page,2000);s=await state(page);ok('the hint never moves the boat automatically',!s.sea.moving&&s.sea.boat.x===start.x&&s.sea.boat.y===start.y&&s.speech.step===0,s);
