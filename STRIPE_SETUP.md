@@ -28,8 +28,9 @@ Project **sona → Settings → Environment Variables** (Production **and** Prev
 | `STRIPE_SECRET_KEY` | `sk_test_…` (then `sk_live_…` for real charges) | ✅ |
 | `NEXT_PUBLIC_SITE_URL` | your site URL, e.g. `https://getsona.com` | optional* |
 | `STRIPE_PRICE_ID` | a Price ID, if you'd rather manage the price in Stripe | optional |
-| `STRIPE_PRICE_ID_SLP_SELF` | a yearly **$59.99** Price for "Sona Premium for you" (below) | optional |
-| `STRIPE_PRICE_ID_SLP_CASELOAD_ADDON` | a yearly **$59.99** Price for "Sona Premium for your caseload" (below) | optional |
+| `STRIPE_PRICE_ID_SLP_PRO` | a **monthly $19.99** Price for "Sona Pro" (below) | optional |
+| `STRIPE_PRICE_ID_SLP_SELF` | a yearly **$59.99** Price for "Sona Premium for you" (retired from sale 12 Nov 2026; no longer read) | — |
+| `STRIPE_PRICE_ID_SLP_CASELOAD_ADDON` | a yearly **$59.99** Price for "Sona Premium for your caseload" (retired from sale 12 Nov 2026; no longer read) | — |
 | `STRIPE_PORTAL_CONFIG_CASELOAD` | a billing-portal configuration id (`bpc_…`) for the clinician plans — only if you'd rather make it yourself (below) | optional |
 
 `STRIPE_PRICE_ID_SLP_CASELOAD` (the old **$79.99** Price) is no longer read.
@@ -55,7 +56,35 @@ Then **push any commit** (or redeploy) so the new vars take effect.
   `customer.subscription.updated/deleted`) if you move to a real accounts DB.
   For now, live lookups via `/api/subscription` are enough to gate access.
 
-## The clinician plans (24 Sep 2026; re-priced 29 Sep 2026)
+## Sona Pro — the clinician plan on sale (12 Nov 2026)
+
+**$19.99 a month**, bought by a clinician from their dashboard
+(`/slp.html#premium`, or Settings → `POST /api/slp/plan { plan: "pro" }`).
+It turns on the clinician's dashboard (for accounts made from 12 Nov 2026),
+every game on their own phone, and every game for every family on their
+link, with no cap on families. Stamped `plan: slp-pro`.
+
+- **A 14-day free trial, once per clinician, card up front.** Checkout sets
+  `trial_period_days: 14` and asks for a card; Stripe charges $19.99 when the
+  trial ends unless they cancel, and a trial that ends with no card cancels.
+  A clinician who has ever had a Pro subscription gets no second trial.
+- **Nothing to create to start selling.** Checkout uses an inline monthly
+  price (1999 USD) from `lib/caseload.ts`, the same constant every page
+  prints. For tidy product reports, create a monthly $19.99 Price and set
+  `STRIPE_PRICE_ID_SLP_PRO` — it must be exactly $19.99/month, or the pages
+  and the charge disagree. Don't put a trial on the Price itself: the code
+  adds it, once.
+- **Cancel = end of the paid month** (or of the trial), through the same
+  billing-page configuration as below.
+- **A free month for someone you choose:** make a Stripe coupon (100% off,
+  duration "once" or "repeating"); checkout already accepts promotion codes.
+
+## The yearly clinician plans (24 Sep 2026; re-priced 29 Sep 2026; retired from sale 12 Nov 2026)
+
+No longer sold — the checkout refuses them — but every subscription bought
+keeps renewing at its price, and keeps covering what it covered, until the
+clinician cancels it. Nothing to do in Stripe.
+
 
 Two yearly plans, **no trial**, bought by a clinician from their dashboard
 (`/slp.html#premium`, or the Premium card in Settings → `POST /api/slp/plan`):

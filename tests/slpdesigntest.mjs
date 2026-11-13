@@ -38,20 +38,34 @@ let ACCT = acct;
 // line that names the family price. Every other /api/* call is logged, so a
 // page view that writes anything is caught.
 const PERIOD_END = Math.floor(new Date(2027, 8, 24, 12).getTime() / 1000);
-// The clinician's own Premium (29 Sep 2026), in the route's shape: on by
-// default (a 24–29 Sep work email), so the caseload add-on can be bought.
-const SELF_BASE = { price:"$59.99", perMonth:"under $5 a month", periodEnd:null, cancelAtPeriodEnd:false, canRequest:false, workEmail:true, approved:false, requested:false };
+// SONA PRO (12 Nov 2026) is the one plan on sale; "paid" and "cancelling"
+// below are a yearly caseload plan bought before then, still renewing.
+const TRIAL_END = Math.floor(new Date(2026, 10, 26, 12).getTime() / 1000);
+// The clinician's own Premium, in the route's shape: on by default (a 24–29
+// Sep work email).
+const SELF_BASE = { periodEnd:null, cancelAtPeriodEnd:false, canRequest:false, workEmail:true, approved:false, requested:false };
 const SELF = { ...SELF_BASE, active:true, eligible:true, source:"work-email" };
 const SELF_OFF = { ...SELF_BASE, active:false, eligible:false, source:"none" };
 const SELF_PAID = { ...SELF_BASE, active:true, eligible:true, source:"paid", periodEnd:PERIOD_END };
 const SELF_ASK = { ...SELF_OFF, workEmail:false, canRequest:true };
-const plan = (state, self = SELF) => ({
-  ok:true, price:"$59.99", perMonth:"under $5 a month", both:{ price:"$119.98", perMonth:"under $10 a month" }, self,
-  ...{ none:{ active:false, source:"none", periodEnd:null, cancelAtPeriodEnd:false },
-       paid:{ active:true, source:"paid", periodEnd:PERIOD_END, cancelAtPeriodEnd:false },
-       cancelling:{ active:true, source:"paid", periodEnd:PERIOD_END, cancelAtPeriodEnd:true },
-       grandfathered:{ active:true, source:"grandfathered", periodEnd:null, cancelAtPeriodEnd:false } }[state],
-});
+const PRO_BASE = { name:"Sona Pro", price:"$19.99", per:"a month", trialDays:14, trialEnd:null, periodEnd:null, cancelAtPeriodEnd:false, trialAvailable:false, offer:false };
+const PRO_OFF = { ...PRO_BASE, active:false, status:"none", trialAvailable:true, offer:true };
+const proOn = (o) => ({ ...PRO_BASE, active:true, status:"active", periodEnd:PERIOD_END, ...o });
+const plan = (state, self = SELF) => {
+  const base = { ok:true, self, pro:PRO_OFF, dashboard:{ open:true }, grandfathered:false };
+  const yearly = { pro:{ ...PRO_OFF, offer:!self.active } };
+  const pro = (o) => ({ ...base, active:true, source:"pro", periodEnd:PERIOD_END, cancelAtPeriodEnd:false, self:{ ...SELF, source:"pro" }, pro:proOn(o) });
+  return {
+    none:{ ...base, active:false, source:"none", periodEnd:null, cancelAtPeriodEnd:false },
+    paid:{ ...base, ...yearly, active:true, source:"paid", periodEnd:PERIOD_END, cancelAtPeriodEnd:false },
+    cancelling:{ ...base, ...yearly, active:true, source:"paid", periodEnd:PERIOD_END, cancelAtPeriodEnd:true },
+    grandfathered:{ ...base, active:true, source:"grandfathered", grandfathered:true, periodEnd:null, cancelAtPeriodEnd:false, pro:{ ...PRO_OFF, offer:false } },
+    trial:pro({ status:"trialing", trialEnd:TRIAL_END, periodEnd:TRIAL_END }),
+    pro:pro({}),
+    procancelling:pro({ cancelAtPeriodEnd:true }),
+    pastdue:pro({ status:"past_due" }),
+  }[state];
+};
 const CHARTER_OPEN = { ok:true, free:false, cap:50, taken:12, left:38, open:true, source:"stripe", price:"$59.99", standard:"$99.99", label:"Charter" };
 let PLAN = plan("none"), failPlan = false, CHARTER = CHARTER_OPEN, buyReply = null;
 // Replies served in order before PLAN, so one page load can meet a sequence
@@ -175,102 +189,81 @@ try {
     }
     await preview.ctx.close();
   });
-  await run("Caseload Premium offer",async()=>{
+  await run("Sona Pro offer",async()=>{
     DATA=fixture();failRoster=false;PLAN=plan("none");CHARTER=CHARTER_OPEN;buyReply=null;ACCT=acct;writes.length=0;planReads.length=0;charterReads.length=0;
     const {ctx,pg,errors}=await open("#premium");
     await pg.waitForTimeout(150);
-    ok("Caseload Premium is available without preview injection",await visible(pg,"#page-premium")&&await visible(pg,'[data-page="premium"]'));
+    ok("Sona Pro is available without preview injection",await visible(pg,"#page-premium")&&await visible(pg,'[data-page="premium"]'));
     const nav=await pg.locator(".sidebar nav").evaluate(n=>[...n.children].map(c=>c.dataset.page||c.textContent.trim()));
     ok("…and sits in Workspace, right after Caseload",JSON.stringify(nav.slice(0,4))===JSON.stringify(["Workspace","today","caseload","premium"]),nav.join(","));
-    ok("…with its own crumb",(await pg.locator("#pageCrumb").textContent())==="Premium");
+    ok("…with its own crumb, named for the plan",(await pg.locator("#pageCrumb").textContent())==="Sona Pro"&&(await pg.locator('[data-page="premium"]').innerText()).trim()==="Sona Pro");
     const page=await pg.locator("#page-premium").innerText();
-    ok("the offer names the plan and prints the server's price and per-month reading",/Add every family on your caseload/.test(page)&&/\$59\.99 a year more · under \$5 a month/.test(page),page);
-    ok("…and, their own Premium being free, no total for both (they would pay the add-on alone)",!await visible(pg,"#premiumBoth")&&!/119\.98/.test(page),page);
+    ok("the offer names the plan and prints the server's price and free days",/Sona Pro/.test(page)&&/\$19\.99 a month · 14 days free/.test(page),page);
     // The shared promise avoids counting games that are still Coming soon.
-    ok("…says what families get, and that the free version stays free",/every game, every sound/i.test(page)&&/free version at home — daily practice and free games/.test(page)&&!/two games/.test(page),page);
-    // With its conditions (24 Sep 2026): the bare "$59.99 a year" was true
-    // only for the first fifty web buyers, and a clinician repeats it.
-    ok("…prints the family price only as /api/charter answered it, with its conditions",/can buy Premium themselves — on the web, \$59\.99 a year for the first 50 families\./.test(page)&&charterReads.length>0,page);
+    ok("…says what it includes: the dashboard, unlimited families with every game, their own phone",/Your dashboard\./.test(page)&&/Unlimited families\. Every family who joins through your link gets every game, every sound/.test(page)&&/Every game on your own phone or tablet/.test(page),page);
+    ok("…and that the free version stays free",/without Sona Pro, families who join through your link still get Sona's free version — daily practice and free games/.test(page)&&!/two games/.test(page),page);
     ok("…says the clinician never earns on their own caseload",/You never earn anything on your own caseload/.test(page));
-    ok("…and how buying works: Stripe, no trial, cancel anytime, families keep it to the end of the paid year",/Secure checkout by Stripe/.test(page)&&/cancel anytime/.test(page)&&/keep Premium to the end of the year you paid for/.test(page)&&!/trial/i.test(page),page);
-    ok("…never 'unlimited', never a spots-left number",!/unlimited|spots? left/i.test(page));
-    ok("only the offer card shows",await visible(pg,"#premiumOffer")&&!await visible(pg,"#premiumPaid")&&!await visible(pg,"#premiumFree"));
+    ok("…and how starting works: Stripe, no charge today, then the monthly price until cancelled, nothing if cancelled in the trial",
+      /Secure checkout by Stripe\. No charge today: after your free trial, \$19\.99 a month until you cancel\. Cancel before the trial ends and you pay nothing\./.test(page),page);
+    // The family price went with the caseload add-on (12 Nov 2026): with
+    // Sona Pro every family on the link is covered, and the page asks
+    // /api/charter for nothing.
+    ok("…never a family price, a yearly figure or a spots-left number, and /api/charter is not asked",!/\$59\.99|\$99\.99|a year|spots? left/i.test(page)&&charterReads.length===0,page);
+    ok("only the offer card shows",await visible(pg,"#proOffer")&&!await visible(pg,"#proOn")&&!await visible(pg,"#premiumPaid")&&!await visible(pg,"#premiumFree")&&!await visible(pg,"#proLocked"));
     for(const p of ["today","caseload","premium","settings","premium"]){await pg.locator('[data-page="'+p+'"]').click();await pg.waitForTimeout(60);}
     ok("viewing it sends no write: GETs only, until a button is pressed",writes.filter(w=>w.method!=="GET"&&w.method!=="HEAD").length===0,JSON.stringify(writes.filter(w=>w.method!=="GET")));
     ok("…and the plan is asked without a session id",planReads.length>0&&planReads.every(q=>q===""),JSON.stringify(planReads));
-    await pg.locator("#premiumBuy").click();
+    ok("the button says the trial",(await pg.locator("#proBuy").innerText()).trim()==="Start my free trial");
+    await pg.locator("#proBuy").click();
     await pg.waitForURL("**/stripe-checkout-fixture",{timeout:3000}).catch(()=>{});
     const buy=writes.filter(w=>w.path==="/api/slp/plan"&&w.method==="POST");
-    ok("the buy button posts once, for the caseload, and follows the checkout link the server returned",buy.length===1&&buy[0].body.plan==="caseload"&&/\/stripe-checkout-fixture$/.test(pg.url()),pg.url()+" "+JSON.stringify(buy));
+    ok("…posts once, for Sona Pro, and follows the checkout link the server returned",buy.length===1&&JSON.stringify(buy[0].body)===JSON.stringify({plan:"pro"})&&/\/stripe-checkout-fixture$/.test(pg.url()),pg.url()+" "+JSON.stringify(buy));
     ok("no runtime errors on the offer",errors.length===0,errors.join("; "));
     await ctx.close();
+    // the trial already used: the same offer, charged from day one
+    PLAN={...plan("none"),pro:{...PRO_OFF,trialAvailable:false}};
+    const used=await open("#premium");await used.pg.waitForTimeout(150);
+    const usedPage=await used.pg.locator("#proOffer").innerText();
+    ok("trial already used: Get Sona Pro, charged today, no free days",(await used.pg.locator("#proBuy").innerText()).trim()==="Get Sona Pro"&&!/days free|No charge today/.test(usedPage)&&
+      /Charged today, then every month until you cancel — cancel anytime\. If you cancel, your dashboard and your families keep every game to the end of the month you paid for\./.test(usedPage),usedPage);
+    await used.ctx.close();
+    // a yearly plan still renewing: Pro includes it, and the page says so
+    PLAN=plan("none",SELF_PAID);
+    const yr=await open("#premium");await yr.pg.waitForTimeout(150);
+    ok("paying for a yearly plan still renewing: the offer says Sona Pro includes it, so they can cancel the yearly one",await visible(yr.pg,"#proHasYearly")&&/cancel the yearly plan in Manage billing/.test(await yr.pg.locator("#proHasYearly").innerText()));
+    await yr.ctx.close();
   });
-  await run("Caseload Premium family price",async()=>{
-    // Every figure and the cap are the route's: a cap of 40 prints 40, and a
-    // charter answer with no usable cap prints no figure rather than the bare
-    // launch price (24 Sep 2026).
-    for(const [label,reply,want] of [
-      ["unavailable",{ok:false},null],
-      ["while families pay nothing",{ok:true,free:true,cap:50,taken:0,left:0,open:false,source:"free"},null],
-      ["once the charter spots are gone",{...CHARTER_OPEN,open:false,left:0},/can buy Premium themselves — on the web, \$99\.99 a year\.$/],
-      ["with the route's own cap",{...CHARTER_OPEN,cap:40},/can buy Premium themselves — on the web, \$59\.99 a year for the first 40 families\.$/],
-      ["from a charter answer with no cap",{...CHARTER_OPEN,cap:undefined},null],
-    ]){
-      PLAN=plan("none");CHARTER=reply;
-      const {ctx,pg}=await open("#premium");await pg.waitForTimeout(150);
-      const line=await pg.locator("#premiumParentPrice").innerText();
-      if(want)ok("family price "+label+": the route's figure, on the web, with its conditions",want.test(line),line);
-      else ok("family price "+label+": the line stands with no figure",/can buy Premium themselves\.$/.test(line)&&!/\$/.test(line),line);
-      await ctx.close();
-    }
-    // Families no longer pay on the website (Travis, 1 Oct 2026: "i dont want
-    // them paying on the website"). While /api/charter says so, "on the web,
-    // $59.99 a year" is a price no parent can pay, and a clinician repeats
-    // what she reads: the line names the place and no figure (the App Store's
-    // price is Apple's to print). Only an explicit `webSales:false` counts —
-    // every reply above has no such field and still prints the web price —
-    // so both states of the switch are played here whichever way it ships.
-    for(const [label,reply] of [
-      ["as the route answers it, with no figure to print",{ok:true,free:false,webSales:false,cap:50,taken:0,left:0,open:false,source:"off"}],
-      ["even from an answer that still carries the web figures",{...CHARTER_OPEN,webSales:false}],
-    ]){
-      PLAN=plan("none");CHARTER=reply;
-      const {ctx,pg}=await open("#premium");await pg.waitForTimeout(150);
-      const line=await pg.locator("#premiumParentPrice").innerText();
-      ok("family price while the website does not sell, "+label+": bought in the Sona app, and no figure",/^Families you don't cover can buy Premium themselves in the Sona app on iPhone and iPad\.$/.test(line.trim())&&!/\$|on the web|\d/.test(line),line);
-      await ctx.close();
-    }
-    for(const [label,reply,want] of [
-      ["and the website sells",{...CHARTER_OPEN,webSales:true},/can buy Premium themselves — on the web, \$59\.99 a year for the first 50 families\.$/],
-      // a free Sona sells nothing anywhere: the bare line, whatever the web switch says
-      ["and families pay nothing",{ok:true,free:true,webSales:false,cap:50,taken:0,left:0,open:false,source:"free"},/can buy Premium themselves\.$/],
-    ]){
-      PLAN=plan("none");CHARTER=reply;
-      const {ctx,pg}=await open("#premium");await pg.waitForTimeout(150);
-      const line=await pg.locator("#premiumParentPrice").innerText();
-      ok("family price when the route names the switch "+label,want.test(line)&&!/in the Sona app/.test(line),line);
-      await ctx.close();
-    }
-    CHARTER=CHARTER_OPEN;
-  });
-  await run("Caseload Premium states",async()=>{
-    PLAN=plan("paid");writes.length=0;
+  await run("Sona Pro states",async()=>{
+    PLAN=plan("trial");writes.length=0;
     let {ctx,pg}=await open("#premium");await pg.waitForTimeout(150);
     let page=await pg.locator("#page-premium").innerText();
-    ok("paid: Premium is on, and says when it renews",await visible(pg,"#premiumPaid")&&!await visible(pg,"#premiumOffer")&&/Premium is on for your caseload/.test(page)&&/Renews Sep 24, 2027/.test(page),page);
+    ok("trial: Sona Pro is on, until when, what follows, and that cancelling costs nothing",await visible(pg,"#proOn")&&!await visible(pg,"#proOffer")&&/Sona Pro is on/.test(page)&&
+      /Free trial until Nov 26, 2026\. Then \$19\.99 a month until you cancel\. Cancel before then and you pay nothing\./.test(page),page);
+    await pg.locator("#proManage").click();
+    await pg.waitForURL("**/stripe-portal-fixture",{timeout:3000}).catch(()=>{});
+    ok("…and Manage billing opens the billing portal the server returned",writes.some(w=>w.path==="/api/slp/plan/portal"&&w.method==="POST")&&/\/stripe-portal-fixture$/.test(pg.url()),pg.url());
+    await ctx.close();
+    for(const [state,want] of [["pro",/Renews Sep 24, 2027\./],["procancelling",/Ends Sep 24, 2027\. You and your families keep every game until then, then move to the free version\./],["pastdue",/Your last payment didn't go through\. Update your card in Manage billing to keep Sona Pro on\./]]){
+      PLAN=plan(state);({ctx,pg}=await open("#premium"));await pg.waitForTimeout(150);
+      const when=await pg.locator("#proWhen").innerText();
+      ok(state+": the card says "+want,want.test(when)&&await visible(pg,"#proManage"),when);
+      await ctx.close();
+    }
+    PLAN=plan("paid");writes.length=0;({ctx,pg}=await open("#premium"));await pg.waitForTimeout(150);
+    page=await pg.locator("#page-premium").innerText();
+    ok("a yearly caseload plan still renewing: on, says when it renews, and nothing more to sell",await visible(pg,"#premiumPaid")&&!await visible(pg,"#proOffer")&&/Premium is on for your caseload/.test(page)&&/Renews Sep 24, 2027/.test(page),page);
     await pg.locator("#premiumManage").click();
     await pg.waitForURL("**/stripe-portal-fixture",{timeout:3000}).catch(()=>{});
-    ok("paid: Manage billing opens the billing portal the server returned",writes.some(w=>w.path==="/api/slp/plan/portal"&&w.method==="POST")&&/\/stripe-portal-fixture$/.test(pg.url()),pg.url());
+    ok("…and Manage billing opens the billing portal",writes.some(w=>w.path==="/api/slp/plan/portal"&&w.method==="POST")&&/\/stripe-portal-fixture$/.test(pg.url()),pg.url());
     await ctx.close();
     PLAN=plan("cancelling");({ctx,pg}=await open("#premium"));await pg.waitForTimeout(150);
     page=await pg.locator("#premiumPaid").innerText();
-    ok("cancelled: says when it ends and that families keep Premium until then",/Ends Sep 24, 2027/.test(page)&&/keep Premium until then, then move to the free version/.test(page),page);
+    ok("…cancelled: says when it ends and that families keep every game until then",/Ends Sep 24, 2027/.test(page)&&/keep every game until then, then move to the free version/.test(page),page);
     await ctx.close();
     PLAN=plan("grandfathered");writes.length=0;({ctx,pg}=await open("#premium"));await pg.waitForTimeout(150);
     page=await pg.locator("#page-premium").innerText();
     ok("grandfathered: the promise, in its own words",await visible(pg,"#premiumFree")&&/Your caseload has Premium, free/.test(page)&&/You joined when Sona promised free for every family on your caseload, and that promise stands\./.test(page),page);
-    ok("grandfathered: nothing to buy and no billing to manage",!await visible(pg,"#premiumBuy")&&!await visible(pg,"#premiumManage")&&!/\$\d/.test(await pg.locator("#premiumFree").innerText()));
-    ok("no state sends a write on view",writes.filter(w=>w.method!=="GET").length===0,JSON.stringify(writes));
+    ok("grandfathered: nothing to buy and no billing to manage",!await visible(pg,"#proBuy")&&!await visible(pg,"#proOffer")&&!await visible(pg,"#premiumManage")&&!/\$\d/.test(await pg.locator("#premiumFree").innerText()));
     await ctx.close();
   });
   await run("Premium on your own phone",async()=>{
@@ -302,57 +295,50 @@ try {
     ok("already requested: says so, with nothing to press",REQUESTED.test(await pg.locator("#premiumSelf").innerText())&&!await visible(pg,"#selfRequest")&&await pg.locator("#selfPending").isDisabled());
     await ctx.close();
   });
-  await run("Premium for you, then the caseload (29 Sep 2026)",async()=>{
-    // A clinician who signed up from 29 Sep: their own Premium is bought, and
-    // the caseload is added on top of it. Every figure is the server's.
+  await run("Your own phone, and Sona Pro from Settings",async()=>{
+    // Nothing on (a 29 Sep – 12 Nov account): their own phone is part of
+    // Sona Pro, so no separate card sells it.
     PLAN=plan("none",SELF_OFF);writes.length=0;buyReply=null;
     let {ctx,pg,errors}=await open("#premium");await pg.waitForTimeout(150);
+    ok("own phone off: no separate card for it — the Sona Pro offer names it",!await visible(pg,"#premiumSelf")&&/Every game on your own phone or tablet/.test(await pg.locator("#proOffer").innerText()));
+    await ctx.close();
+    PLAN=plan("pro");writes.length=0;({ctx,pg,errors}=await open("#premium"));await pg.waitForTimeout(150);
     let self=await pg.locator("#premiumSelf").innerText();
-    ok("own Premium off: the card sells it — the server's price and per-month reading",await visible(pg,"#selfBuy")&&/Every game on your own phone or tablet/.test(self)&&/\$59\.99 a year · under \$5 a month/.test(self)&&!await visible(pg,"#selfSend")&&!await visible(pg,"#selfRequest"),self);
-    ok("…and the caseload card says it comes second, its button off, with the total for both",await visible(pg,"#premiumNeedSelf")&&await pg.locator("#premiumBuy").isDisabled()&&
-      /Get Premium for you first, then add your caseload/.test(await pg.locator("#premiumNeedSelf").innerText())&&/With Premium for you, \$119\.98 a year for both \(under \$10 a month\)\./.test(await pg.locator("#premiumBoth").innerText()));
-    ok("…never a trial, never 'unlimited'",!/trial|unlimited/i.test(await pg.locator("#page-premium").innerText()));
-    await pg.locator("#selfBuy").click();
-    await pg.waitForURL("**/stripe-checkout-fixture",{timeout:3000}).catch(()=>{});
-    const buy=writes.filter(w=>w.path==="/api/slp/plan"&&w.method==="POST");
-    ok("Get Premium for me posts { plan: \"self\" } once and follows the checkout link",buy.length===1&&buy[0].body.plan==="self"&&/\/stripe-checkout-fixture$/.test(pg.url()),JSON.stringify(buy));
+    ok("with Sona Pro: their own phone is on, says it comes with Sona Pro, and offers the link — no second billing button",/Premium is on for you/.test(self)&&/It comes with Sona Pro\./.test(self)&&await visible(pg,"#selfSend")&&!await visible(pg,"#selfManage"),self);
     ok("no runtime errors",errors.length===0,errors.join("; "));
     await ctx.close();
 
-    PLAN=plan("none",SELF_PAID);writes.length=0;({ctx,pg,errors}=await open("#premium"));await pg.waitForTimeout(150);
-    self=await pg.locator("#premiumSelf").innerText();
-    ok("own Premium paid: on, when it renews, the link to send, and billing",/Premium is on for you/.test(self)&&/Renews Sep 24, 2027\./.test(self)&&await visible(pg,"#selfSend")&&await visible(pg,"#selfManage")&&!await visible(pg,"#selfBuy"),self);
-    ok("…and now the caseload can be added, with the total for both",!await pg.locator("#premiumBuy").isDisabled()&&!await visible(pg,"#premiumNeedSelf")&&(await pg.locator("#premiumBuy").innerText()).trim()==="Add my caseload"&&await visible(pg,"#premiumBoth"));
-    await ctx.close();
-
-    // SETTINGS carries the same two plans (Travis, 29 Sep 2026: "an upsell
+    // SETTINGS carries the same plan (Travis, 29 Sep 2026: "an upsell
     // within the app, in like the SLP settings").
-    PLAN=plan("none",SELF_PAID);writes.length=0;({ctx,pg,errors}=await open("#settings"));await pg.waitForTimeout(200);
+    PLAN=plan("none",SELF_OFF);writes.length=0;({ctx,pg,errors}=await open("#settings"));await pg.waitForTimeout(200);
     let card=await pg.locator("#setPremium").innerText();
-    ok("Settings: a Premium card — you: on, renews; your caseload: $59.99 a year more, with its button",
-      /For you/.test(card)&&/On\. Renews Sep 24, 2027\./.test(card)&&/For your caseload/.test(card)&&/\$59\.99 a year more: every family who joins through your link gets every game\./.test(card)&&
-      await visible(pg,"#setCaseBuy")&&!await pg.locator("#setCaseBuy").isDisabled()&&!await visible(pg,"#setSelfBuy")&&await visible(pg,"#setManage"),card);
+    ok("Settings: a Sona Pro card — the server's price, the free days, what it does, and the trial button",
+      /\$19\.99 a month, free for the first 14 days\. Every game for you and every family who joins through your link\./.test(card)&&await visible(pg,"#setProBuy")&&(await pg.locator("#setProBuy").innerText()).trim()==="Start my free trial"&&!await visible(pg,"#setManage"),card);
     ok("…showing it is a read, never a write",writes.filter(w=>w.method!=="GET").length===0,JSON.stringify(writes));
-    await pg.locator("#setCaseBuy").click();
+    await pg.locator("#setProBuy").click();
     await pg.waitForURL("**/stripe-checkout-fixture",{timeout:3000}).catch(()=>{});
     const add=writes.filter(w=>w.path==="/api/slp/plan"&&w.method==="POST");
-    ok("…and Add my caseload there opens the same checkout: { plan: \"caseload\" }, once",add.length===1&&add[0].body.plan==="caseload"&&/\/stripe-checkout-fixture$/.test(pg.url()),JSON.stringify(add));
+    ok("…and its button opens the same checkout: { plan: \"pro\" }, once",add.length===1&&JSON.stringify(add[0].body)===JSON.stringify({plan:"pro"})&&/\/stripe-checkout-fixture$/.test(pg.url()),JSON.stringify(add));
     await ctx.close();
 
-    PLAN=plan("none",SELF_OFF);writes.length=0;({ctx,pg}=await open("#settings"));await pg.waitForTimeout(200);
+    PLAN=plan("trial");({ctx,pg}=await open("#settings"));await pg.waitForTimeout(200);
     card=await pg.locator("#setPremium").innerText();
-    ok("Settings, own Premium off: offers it at the server's price; the caseload button waits for it",
-      /\$59\.99 a year: every game on your own phone or tablet\./.test(card)&&await visible(pg,"#setSelfBuy")&&await pg.locator("#setCaseBuy").isDisabled()&&/Added to Premium for you, so that comes first\./.test(card)&&!await visible(pg,"#setManage"),card);
+    ok("Settings, in the trial: on, until when, and billing — nothing to buy",/On\. Free trial until Nov 26, 2026\./.test(card)&&!await visible(pg,"#setProBuy")&&await visible(pg,"#setManage"),card);
     await ctx.close();
 
     PLAN=plan("grandfathered",{...SELF,source:"grandfathered"});({ctx,pg}=await open("#settings"));await pg.waitForTimeout(200);
     card=await pg.locator("#setPremium").innerText();
-    ok("Settings, grandfathered: both on, free, as promised — nothing to buy, no billing",
-      (card.match(/On, free, as promised when you signed up\./g)||[]).length===2&&!await visible(pg,"#setSelfBuy")&&!await visible(pg,"#setCaseBuy")&&!await visible(pg,"#setManage")&&!/\$\d/.test(card),card);
+    ok("Settings, grandfathered: free, as promised — nothing to buy, no billing",
+      /Your dashboard, your own phone and your caseload are free, as promised when you signed up\./.test(card)&&!await visible(pg,"#setProBuy")&&!await visible(pg,"#setManage")&&!/\$\d/.test(card),card);
+    await ctx.close();
+
+    PLAN=plan("none",SELF_PAID);({ctx,pg}=await open("#settings"));await pg.waitForTimeout(200);
+    card=await pg.locator("#setPremium").innerText();
+    ok("Settings, a yearly own-phone plan still renewing: Sona Pro offered, and billing for what they pay",await visible(pg,"#setProBuy")&&await visible(pg,"#setManage"),card);
     await ctx.close();
 
     failPlan=true;({ctx,pg}=await open("#settings"));await pg.waitForTimeout(200);
-    ok("Settings, the plan didn't answer: no figure and no button, only 'Checking'",/Checking your plan/.test(await pg.locator("#setPremium").innerText())&&!await visible(pg,"#setSelfBuy")&&!await visible(pg,"#setCaseBuy"));
+    ok("Settings, the plan didn't answer: no figure and no button, only 'Checking'",/Checking your plan/.test(await pg.locator("#setPremium").innerText())&&!await visible(pg,"#setProBuy"));
     failPlan=false;await ctx.close();
   });
   await run("The clinician's email survives a save",async()=>{
@@ -373,11 +359,13 @@ try {
     ok("no runtime errors",errors.length===0,errors.join("; "));
     await ctx.close();
   });
-  await run("Premium before a code",async()=>{
+  await run("Sona Pro before a code",async()=>{
     PLAN=plan("none");ACCT={...acct,code:"",familyKey:""};writes.length=0;
     const {ctx,pg}=await open("#premium");await pg.waitForTimeout(150);
     ok("the page opens before the clinician has picked a code",await visible(pg,"#page-premium")&&!await visible(pg,"#page-onboarding"));
-    ok("…and the buy button says the family link comes first",await pg.locator("#premiumBuy").isDisabled()&&await visible(pg,"#premiumNeedLink")&&/Set up your family link first/.test(await pg.locator("#premiumNeedLink").innerText()));
+    // The dashboard is part of the plan (12 Nov 2026), and the family link is
+    // made after: the trial does not wait for a code.
+    ok("…and the trial can start before the family link exists",!await pg.locator("#proBuy").isDisabled()&&await visible(pg,"#proBuy"));
     ok("…as does the own-phone link",await pg.locator("#selfSend").isDisabled()&&await visible(pg,"#selfNeedLink"));
     await pg.evaluate(()=>location.hash="#caseload");await pg.waitForTimeout(80);
     ok("…while every other workspace page still starts at the one form",await visible(pg,"#page-onboarding"));
@@ -387,21 +375,27 @@ try {
   await run("Premium errors are visible and retryable",async()=>{
     PLAN=plan("none");failPlan=true;
     const {ctx,pg}=await open("#premium");await pg.waitForTimeout(150);
-    ok("a failed plan read shows an error and a retry, and no offer it cannot vouch for",await visible(pg,"#premiumError")&&await visible(pg,"#premiumRetry")&&!await visible(pg,"#premiumOffer"));
+    ok("a failed plan read shows an error and a retry, and no offer it cannot vouch for",await visible(pg,"#premiumError")&&await visible(pg,"#premiumRetry")&&!await visible(pg,"#proOffer"));
     failPlan=false;await pg.locator("#premiumRetry").click();await pg.waitForTimeout(200);
-    ok("…and a retry that works clears it",!await visible(pg,"#premiumError")&&await visible(pg,"#premiumOffer"));
+    ok("…and a retry that works clears it",!await visible(pg,"#premiumError")&&await visible(pg,"#proOffer"));
     buyReply={status:502,body:{ok:false,error:"Stripe didn't answer. Try again."}};
-    await pg.locator("#premiumBuy").click();await pg.waitForTimeout(200);
-    ok("a failed checkout says why and can be pressed again",/Stripe didn't answer/.test(await pg.locator("#premiumBuyErr").innerText())&&!await pg.locator("#premiumBuy").isDisabled()&&/\/slp\.html/.test(pg.url()));
+    await pg.locator("#proBuy").click();await pg.waitForTimeout(200);
+    ok("a failed checkout says why and can be pressed again",/Stripe didn't answer/.test(await pg.locator("#proBuyErr").innerText())&&!await pg.locator("#proBuy").isDisabled()&&/\/slp\.html/.test(pg.url()));
+    // A tab opened before 12 Nov 2026 is refused by the server as retired;
+    // the page shows the server's words, which say to reload.
+    buyReply={status:409,body:{ok:false,retired:true,error:"Sona's plan for speech therapists has changed. Reload this page to see Sona Pro."}};
+    await pg.locator("#proBuy").click();await pg.waitForTimeout(200);
+    ok("a retired-plan refusal is shown in the server's own words",/Reload this page to see Sona Pro/.test(await pg.locator("#proBuyErr").innerText()));
     buyReply=null;await ctx.close();
   });
   await run("Return from Stripe",async()=>{
-    PLAN=plan("paid");planReads.length=0;writes.length=0;
+    PLAN=plan("trial");planReads.length=0;writes.length=0;
     const {ctx,pg}=await open("#premium",1440,false,false,"/slp.html?plan_session=cs_test_a1B2c3D4e5F6g7");
     await pg.waitForTimeout(200);
     ok("the session id is sent to the server to check with Stripe, once",planReads.filter(q=>q==="?session=cs_test_a1B2c3D4e5F6g7").length===1,JSON.stringify(planReads));
     ok("…then taken off the address bar",await pg.evaluate(()=>location.pathname+location.search+location.hash)==="/slp.html#premium",await pg.evaluate(()=>location.href));
-    ok("…and the page thanks them only because the server says Premium is on",/Premium is on for your caseload/.test(await pg.locator("#premiumReturn").innerText())&&await visible(pg,"#premiumPaid"));
+    ok("…and the page says the trial has started only because the server says Sona Pro is on",/Your free trial of Sona Pro has started\. Your dashboard is open/.test(await pg.locator("#premiumReturn").innerText())&&await visible(pg,"#proOn"));
+    ok("…with no set-up link: this clinician already has their family link",!await visible(pg,"#premiumReturnSetup"));
     ok("…by reading, not writing",writes.filter(w=>w.method!=="GET").length===0,JSON.stringify(writes));
     await ctx.close();
     PLAN=plan("none");planReads.length=0;
@@ -415,15 +409,22 @@ try {
     // The id stays until the answer is yes, and Check again re-asks about it.
     const SID="cs_test_retryR3try0000042";
     planReads.length=0;writes.length=0;
-    planQueue.push({...plan("none"),activated:false,retry:true},{...plan("paid"),activated:true});PLAN=plan("paid");
+    planQueue.push({...plan("none"),activated:false,retry:true},{...plan("pro"),activated:true,activatedPlan:"pro"});PLAN=plan("pro");
     const retry=await open("#premium",1440,false,false,"/slp.html?plan_session="+SID);await retry.pg.waitForTimeout(200);
     ok("activated:false: the page says it couldn't confirm yet",/couldn't confirm that payment yet/.test(await retry.pg.locator("#premiumReturn").innerText())&&await visible(retry.pg,"#premiumCheck"));
     ok("…and keeps the session id, in the address bar too",planReads.filter(q=>q==="?session="+SID).length===1&&(await retry.pg.evaluate(()=>location.search))==="?plan_session="+SID,await retry.pg.evaluate(()=>location.href));
     await retry.pg.locator("#premiumCheck").click();await retry.pg.waitForTimeout(250);
     ok("Check again asks Stripe about that same session",planReads.filter(q=>q==="?session="+SID).length===2,JSON.stringify(planReads));
-    ok("…and on activated:true says thank you, then takes the id off the address bar",/Thank you\. Premium is on for your caseload/.test(await retry.pg.locator("#premiumReturn").innerText())&&!await visible(retry.pg,"#premiumCheck")&&(await retry.pg.evaluate(()=>location.pathname+location.search+location.hash))==="/slp.html#premium",await retry.pg.evaluate(()=>location.href));
+    ok("…and on activated:true says thank you, then takes the id off the address bar",/Thank you\. Sona Pro is on/.test(await retry.pg.locator("#premiumReturn").innerText())&&!await visible(retry.pg,"#premiumCheck")&&(await retry.pg.evaluate(()=>location.pathname+location.search+location.hash))==="/slp.html#premium",await retry.pg.evaluate(()=>location.href));
     ok("…all of it by reading, never writing",writes.filter(w=>w.method!=="GET").length===0,JSON.stringify(writes));
     planQueue.length=0;await retry.ctx.close();
+    // A YEARLY CHECKOUT OPENED BEFORE 12 NOV 2026, finished after: still
+    // activated by the server, and thanked for in its own words.
+    planReads.length=0;
+    planQueue.push({...plan("paid"),activated:true,activatedPlan:"caseload"});PLAN=plan("paid");
+    const old=await open("#premium",1440,false,false,"/slp.html?plan_session=cs_test_yearlyOldTab0001");await old.pg.waitForTimeout(200);
+    ok("a yearly plan finished from an old tab is thanked for as itself, never \"couldn't confirm\"",/Thank you\. Premium is on for your caseload/.test(await old.pg.locator("#premiumReturn").innerText())&&!await visible(old.pg,"#premiumCheck")&&!await visible(old.pg,"#premiumReturnSetup"),await old.pg.locator("#premiumReturn").innerText());
+    planQueue.length=0;await old.ctx.close();
     // A REFUSAL NEVER TURNS INTO A YES (24 Sep 2026): activated:false with no
     // retry flag means Stripe answered and the session is not this account's
     // caseload purchase. Keeping it would re-ask forever, so it leaves the

@@ -108,7 +108,7 @@
 
     <h2>Therapist accounts</h2>
     <p class="muted">Everyone who signed up for the dashboard, from the start. "Not yet" means Resend doesn't have them yet: the daily run adds them, a batch a day, once Kit's unsubscribes are in.</p>
-    <p class="muted">Own Premium (every game on their own phone): therapists who signed up from 29 Sep 2026 buy it, $59.99 a year. Those who signed up 24–29 Sep were told it was free with a work email; one of them on gmail, yahoo or the like can press "Request access", and an Approve button shows here: check they're a real clinician, then Approve. "Older plan" means their own Premium comes with the $79.99 caseload plan sold before 29 Sep. Caseload: "paid" is a caseload plan ($59.99 a year on top of their own, or the older $79.99), "grandfathered" signed up before 24 Sep and is covered free forever, "none" is neither.</p>
+    <p class="muted">"pro" (or "pro trial", in its first 14 days) is Sona Pro, $19.99 a month, the one plan on sale since 12 Nov 2026: it turns on their dashboard, their own phone and their whole caseload. Own Premium (every game on their own phone): therapists who signed up 29 Sep to 12 Nov 2026 could buy it, $59.99 a year, until Sona Pro replaced it. Those who signed up 24–29 Sep were told it was free with a work email; one of them on gmail, yahoo or the like can press "Request access", and an Approve button shows here: check they're a real clinician, then Approve. "Older plan" means their own Premium comes with the $79.99 caseload plan sold before 29 Sep. Caseload: "paid" is a caseload plan ($59.99 a year on top of their own, or the older $79.99), "grandfathered" signed up before 24 Sep and is covered free forever, "none" is neither.</p>
     <span class="muted" id="approveMsg" role="status"></span>
     <div class="row"><button class="ghost" id="csvSlp">Download CSV</button></div>
     <div class="tw"><table id="tSlp"></table></div>
@@ -136,7 +136,7 @@
     var LEAD_COLS = [["at", "When"], ["email", "Email"], ["first_name", "Name"], ["role", "Who"], ["source", "From"], ["utm_campaign", "Campaign"], ["utm_content", "Ad"], ["list", "List"], ["premium", "Premium"]];
     // RevenueCat's word for each address (lib/revenuecat.ts), in plain words
     var PREMIUM = { trial: "free days", paid: "paying", cancelled: "cancelled", billing: "payment problem", ended: "ended", moved: "moved to another device" };
-    var SLP_COLS = [["createdAt", "Signed up"], ["email", "Email"], ["name", "Name"], ["clinic", "Clinic"], ["workSetting", "Work setting"], ["source", "From"], ["inCrm", "Sent to email list"],
+    var SLP_COLS = [["createdAt", "Signed up"], ["email", "Email"], ["name", "Name"], ["clinic", "Clinic"], ["clinicianRole", "Role"], ["workSetting", "Work setting"], ["source", "From"], ["inCrm", "Sent to email list"],
       ["workEmail", "Work email"], ["accessRequested", "Access requested"], ["approve", "Own Premium"], ["caseload", "Caseload"]];
     // The CSV carries the answer, not the button.
     var SLP_CSV_COLS = SLP_COLS.map(function (c) { return c[0] === "approve" ? ["approved", "Approved"] : c; });

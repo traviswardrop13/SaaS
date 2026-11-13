@@ -116,7 +116,7 @@
   // to recording only grown-up screens with names and typing blanked out.
   // Only on speaksona.com itself (a preview build or a test server on
   // localhost never records), and only on these paths:
-  //   - "/" (parents.html) and "/try": started here, in a browser only (in
+  //   - "/for-parents" (parents.html) and "/try": started here, in a browser only (in
   //     the app those pages redirect home before they render);
   //   - "/onboarding.html", the parent's setup (never a clinician's, ?slp=):
   //     the page calls SonaAnalytics.replay(on) for each screen;
@@ -125,7 +125,7 @@
   //     child's tap on a locked game, Home's own offer, or Settings.
   // Recording starts as OFF at init everywhere and is only ever switched on
   // by an explicit call, so a page that forgets to call records nothing.
-  var AUTO_PATHS = { "/": 1, "/parents.html": 1, "/try": 1, "/try.html": 1 };
+  var AUTO_PATHS = { "/for-parents": 1, "/parents.html": 1, "/try": 1, "/try.html": 1 };
   var REPLAY_AUTO = ON_SITE && !NATIVE && !window.__sonaFamilyRedirect && AUTO_PATHS[PATH] === 1;
   var REPLAY_PAGE = REPLAY_AUTO || (ON_SITE && ((PATH === "/onboarding.html" && !/[?&]slp=/.test(HERE.search || "")) || PATH === "/subscribe.html"));
 

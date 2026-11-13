@@ -18,8 +18,9 @@ import { currentPlan, openCaseloadPortal, StoreUnavailable } from "@/lib/caseloa
  *
  * Opened under the caseload's OWN portal configuration (lib/caseload
  * openCaseloadPortal), whose cancel button cancels at the end of the paid
- * year — the written promise that families keep Premium until then rests on
- * that, not on the Stripe account's default settings.
+ * period — the month of a Sona Pro plan, the year of a retired one, or the
+ * free trial — and the written promise that families keep Premium until then
+ * rests on that, not on the Stripe account's default settings.
  */
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -36,11 +37,13 @@ export async function POST(req: NextRequest) {
 
   let customer = "";
   try {
-    const own = await currentPlan(s.email, { stripe, kind: "self" });
-    customer = (own && own.customer) || "";
-    if (!customer) {
-      const rec = await currentPlan(s.email, { stripe, kind: "caseload" });
+    // Sona Pro's customer first (the plan on sale since 12 Nov 2026), then
+    // the retired yearly plans'. Pro is bought under the same customer as
+    // either of those where one exists, so one page still shows everything.
+    for (const kind of ["pro", "self", "caseload"] as const) {
+      const rec = await currentPlan(s.email, { stripe, kind });
       customer = (rec && rec.customer) || "";
+      if (customer) break;
     }
   } catch (e) {
     if (e instanceof StoreUnavailable) {

@@ -1143,7 +1143,9 @@ try {
     ok('every email went through the repo\'s Resend helper, with its key', emails.length > 0 && emails.every((m) => m.auth === 'Bearer test-only-resend'));
     const SLP = [readFileSync(path.join(ROOT, 'public/slp.html'), 'utf8')];
     (function walk(d) { for (const n of readdirSync(d)) { const p = path.join(d, n); if (statSync(p).isDirectory()) walk(p); else if (n === 'route.ts') SLP.push(readFileSync(p, 'utf8')); } })(path.join(ROOT, 'app/api/slp'));
-    ok('the clinician side never sees the board (slp.html, app/api/slp/**)', SLP.length > 5 && !SLP.some((s) => /\/api\/board|board:|Practice Board/.test(s)));
+    // \bboard: — the board's store prefix as a word, so the plan route's
+    // `dashboard: { open }` (12 Nov 2026) is not mistaken for it.
+    ok('the clinician side never sees the board (slp.html, app/api/slp/**)', SLP.length > 5 && !SLP.some((s) => /\/api\/board|\bboard:|Practice Board/.test(s)));
     const reps = await REPS.GET();
     ok('/api/reps still answers 410', reps.status === 410);
     const lib = noComments(readFileSync(path.join(ROOT, 'lib/board.ts'), 'utf8'));

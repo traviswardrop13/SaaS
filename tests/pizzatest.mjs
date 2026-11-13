@@ -1,7 +1,7 @@
 // Pizza Chef: each word said two times starts the next cooking step; the
 // finger rolls, spreads, sprinkles, tops, bakes and slices. Plays the real
 // page on a fake clock (page.clock), so every wait is on published state,
-// never on real time. PIZZA_PART=main|struggle|voice|oven|fit runs one part.
+// never on real time. PIZZA_PART=main|struggle|voice|oven|fit|rebuild runs one part.
 import path from 'node:path';
 import {OUT} from './_env.mjs';
 import {gameHarness,advance,until,sayWord} from './_sayplay-realgame.mjs';
@@ -30,6 +30,12 @@ async function dragTopping(p,index,to,{pause=false}={}){
  if(pause){await p.evaluate(()=>__quiet.background());await advance(p,350);await p.mouse.up();await p.evaluate(()=>__quiet.foreground());await p.locator('#resume').click();await advance(p,300);}
  else{await p.mouse.up();await advance(p,90);}
 }
+// The glowing spots move every pizza (newPizza), so a drop "beside" them is
+// found, not fixed: the point over the pizza farthest from every spot (and
+// at least 0.45 r from each, past the widest catch before the snap, 0.36).
+const spotLocals=s=>s.targets.map(t=>({x:(t.x-s.board.x)/s.board.r,y:(t.y-s.board.y)*s.height/(s.board.r*s.width)}));
+function besideSpots(s){const spots=spotLocals(s);let best=null,far=-1;for(let r=.55;r<=.95;r+=.1)for(let n=0;n<36;n++){const a=n/36*Math.PI*2,p=[Math.cos(a)*r,Math.sin(a)*r],d=Math.min(...spots.map(q=>Math.hypot(q.x-p[0],q.y-p[1])));if(d>far){far=d;best=p;}}if(far<.45)throw Error('no clear place beside the spots');return best;}
+const nearestSpot=(s,p)=>{const spots=spotLocals(s);let k=-1,best=Infinity;spots.forEach((q,i)=>{const d=Math.hypot(q.x-p[0],q.y-p[1]);if(!s.targets[i].filled&&d<best){best=d;k=i;}});return k;};
 // one drop of the next topping on the tray, at a point given in pizza radii
 async function dropNext(p,at){const s=(await state(p)).pizza,from=s.tray.findIndex(t=>!t.used);const [to]=await boardPoints(p,[at]);await dragTopping(p,from,to);return (await state(p)).pizza;}
 async function topPizza(p,stage){for(let n=0;n<3;n++){const s=(await state(p)).pizza,from=s.tray.findIndex(t=>!t.used),to=s.targets.find(t=>!t.filled);if(from<0||!to)break;await dragTopping(p,from,to);}return finished(p,stage);}
@@ -115,7 +121,7 @@ try{
   ok('silence cannot prepare any food',nudged&&!s.pizza.active&&s.pizza.completed===0&&s.pizza.rollProgress===0&&s.pizza.power===0&&s.speech.step===0&&s.speech.said===0,s);
   await page.locator('#micBtn').click();
   ok('two sayings earn the rolling pin',await sayWord(page));await advance(page,1000);s=await state(page);ok('an accepted word and idle animation cannot roll dough',s.pizza.rollProgress===0&&s.pizza.completed===0&&s.speech.step===0&&s.pizza.ladder===0,s);const gain=s.pizza.rollingGain;
-  await stroke(page,await boardPoints(page,[[-.35,0],[0,0]]));s=await state(page);const boosted=s.pizza.rollProgress;ok('a real rolling stroke changes dough',boosted>0&&boosted<1,s);await advance(page,11000);s=await state(page);ok('speech gives a genuinely stronger rolling stroke',gain>s.pizza.rollingGain*1.5&&s.pizza.rollProgress===boosted,s);
+  await stroke(page,await boardPoints(page,[[-.35,0],[0,0]]));s=await state(page);const boosted=s.pizza.rollProgress;ok('a real rolling stroke changes dough',boosted>0&&boosted<1,s);await advance(page,11000);s=await state(page);ok('the word brings the rolling pin and nothing else: no chef power, the pin as designed',gain===1&&s.pizza.rollingGain===1&&s.pizza.power===0&&s.pizza.rollProgress===boosted,{gain,s});
   // (c) help, then silence: the same move comes back, with no power
   let was=held(s);await page.locator('#pizzaHelp').click();await until(page,()=>__sayplay.listening);s=await state(page);
   ok('asking for help preserves the half-prepared dough and says what to say',s.pizza.paused&&s.pizza.rollProgress===was.roll&&s.speech.step===0&&await page.locator('#helpBack').isVisible()&&s.pizza.banner==='Say it for chef power',s);
@@ -139,14 +145,14 @@ try{
   ok('the step counts after the beat, exactly once',s.speech.step===1&&s.pizza.dones===1&&stepAt-doneNow>=doneIn-0.05&&stepAt-doneNow<=doneIn+0.35,{gap:stepAt-doneNow,doneIn,s});
   await advance(page,1500);s=await state(page);ok('…never twice',s.pizza.dones===1&&s.speech.step===1,s);
   for(let stage=1;stage<=2;stage++){
-   ok('speech earns cooking stage '+(stage+1),await sayWord(page));s=await state(page);const wide=s.pizza.brushRadius;await advance(page,11000);s=await state(page);ok('speech widens the '+(stage===1?'sauce':'cheese')+' tool',wide>s.pizza.brushRadius*1.4&&s.pizza.ladder===0,s);
+   ok('speech earns cooking stage '+(stage+1),await sayWord(page));s=await state(page);const wide=s.pizza.brushRadius;await advance(page,11000);s=await state(page);ok('the word brings the '+(stage===1?'sauce':'cheese')+' tool as designed, no wider',wide===s.pizza.brushRadius&&s.pizza.power===0&&s.pizza.ladder===0,s);
    const points=await boardPoints(page,[[0,0]]),b=await page.locator('#pizzaCanvas').boundingBox();await page.mouse.move(b.x+points[0].x*b.width,b.y+points[0].y*b.height);await page.mouse.down();await advance(page,100);const before=(await state(page)).pizza;await advance(page,1600);const after=(await state(page)).pizza;await page.mouse.up();const name=stage===1?'sauceCoverage':'cheeseCoverage';
    ok('a held still tool cannot cover the whole pizza, and is not counted as work',after[name]===before[name]&&after[name]<.5&&after.completed===stage&&after.effort===before.effort,after);ok('moving the real tool covers cooking stage '+(stage+1),await cover(page,stage),await state(page));
    if(stage===1){s=await state(page);const bare=await bareSauce(page);ok('the finished sauce is all over: no bare dough where the last 14% of the spots were (what counts as done is unchanged: 86%)',s.pizza.completed===2&&s.pizza.sauceCoverage>=.86&&s.pizza.sauceCoverage<1&&bare===0,{bare,cells:s.pizza.grid.length,coverage:s.pizza.sauceCoverage});}
   }
   // ── toppings: a child who keeps dropping beside the spot ──
   for(let stage=3;stage<=5;stage++){
-   ok('speech earns topping stage '+(stage+1),await sayWord(page));s=await state(page);ok('a word never places toppings for the child',s.pizza.targets.every(t=>!t.filled)&&s.pizza.completed===stage,s);const wide=s.pizza.targets[0].r;await advance(page,11000);s=await state(page);ok('speech gives topping '+(stage-2)+' a wider landing area',wide>s.pizza.targets[0].r*1.5,s);
+   ok('speech earns topping stage '+(stage+1),await sayWord(page));s=await state(page);ok('a word never places toppings for the child',s.pizza.targets.every(t=>!t.filled)&&s.pizza.completed===stage,s);const wide=s.pizza.targets[0].r;await advance(page,11000);s=await state(page);ok('the word brings topping '+(stage-2)+'\'s spots as designed, no wider',wide===s.pizza.targets[0].r&&s.pizza.power===0,s);
    if(stage===3){
     const base=s.pizza.magnet;
     const src=await page.locator('#pizzaIngredient0').boundingBox();await page.mouse.move(src.x+src.width/2,src.y+src.height/2);await page.mouse.down();await page.mouse.up();await advance(page,90);s=await state(page);
@@ -155,18 +161,18 @@ try{
     ok('a missed topping stays available and costs no word',s.pizza.targets.every(t=>!t.filled)&&s.speech.step===stage&&await page.locator('#pizzaIngredient0').isEnabled(),s);
     ok('miss 1: the spots catch a topping 1.5x further away',s.pizza.stageMisses===1&&s.pizza.ladder===1&&s.pizza.magnet>=base*1.5&&!s.pizza.guide&&!UNKIND.test(s.pizza.banner)&&/so close/i.test(s.pizza.banner),s);
     await dragTopping(page,0,s.pizza.targets[0],{pause:true});s=await state(page);ok('an interrupted topping remains playable after returning, and is no miss',!s.pizza.paused&&await page.locator('#pizzaIngredient0').isEnabled()&&s.pizza.completed===stage&&s.pizza.stageMisses===1,s);
-    // (b) struggler: always let go 0.45 r below the first spot
-    const beside=[-.42,-.3+.45];
+    // (b) struggler: always let go in the same place, beside every spot
+    const beside=besideSpots(s.pizza),first=nearestSpot(s.pizza,beside);
     s=await dropNext(page,beside);ok('miss 2: the spots glow and an arrow points the way (ladder 2)',s.stageMisses===2&&s.ladder===2&&s.guide&&s.magnet>=base*2.2&&s.banner==='Follow the arrow'&&s.targets.every(t=>!t.filled),s);
     s=await dropNext(page,beside);ok('miss 3: a topping let go over the pizza will fly to a spot (ladder 3)',s.stageMisses===3&&s.ladder===3&&s.snap&&s.targets.every(t=>!t.filled),s);
-    s=await dropNext(page,beside);ok('the 4th drop puts the pepperoni on the nearest spot, with no word said',s.targets.filter(t=>t.filled).length===1&&s.targets[0].filled,s);
+    s=await dropNext(page,beside);ok('the 4th drop puts the topping on the nearest spot, with no word said',s.targets.filter(t=>t.filled).length===1&&s.targets[first].filled,s);
     s=await dropNext(page,beside);s=await dropNext(page,beside);
     ok('the same drop fills the other two spots and finishes the step',s.completed===stage+1&&s.targets.every(t=>t.filled),s);
-    ok('struggler: the pepperoni step ends after 3 misses, with no help word',await finished(page,stage)&&(await state(page)).pizza.dones===4,await state(page));
+    ok('struggler: the first topping step ends after 3 misses, with no help word',await finished(page,stage)&&(await state(page)).pizza.dones===4,await state(page));
    }else ok('three actual drags place topping group '+(stage-2),await topPizza(page,stage),await state(page));
   }
   // ── the oven: too hot twice, then the needle stops in the green ──
-  ok('speech earns the oven',await sayWord(page));s=await state(page);const slow=s.pizza.heatRate,earnedBand={...s.pizza.readyBand};await advance(page,11000);s=await state(page);ok('speech really slows the oven gauge',slow<s.pizza.heatRate*.7&&s.pizza.ladder===0,s);ok('speech changes oven timing without moving the ready band',JSON.stringify(s.pizza.readyBand)===JSON.stringify(earnedBand),s.pizza);await advance(page,2000);s=await state(page);ok('an idle oven never bakes or finishes',s.pizza.heat===0&&!s.pizza.baked&&s.speech.step===6,s);await page.locator('#pizzaTakeOut').evaluate(e=>e.click());ok('taking out a cold pizza cannot finish baking',(await state(page)).speech.step===6);
+  ok('speech earns the oven',await sayWord(page));s=await state(page);const slow=s.pizza.heatRate,earnedBand={...s.pizza.readyBand};await advance(page,11000);s=await state(page);ok('the word brings the oven as designed: the gauge no slower',slow===s.pizza.heatRate&&s.pizza.power===0&&s.pizza.ladder===0,s);ok('speech changes oven timing without moving the ready band',JSON.stringify(s.pizza.readyBand)===JSON.stringify(earnedBand),s.pizza);await advance(page,2000);s=await state(page);ok('an idle oven never bakes or finishes',s.pizza.heat===0&&!s.pizza.baked&&s.speech.step===6,s);await page.locator('#pizzaTakeOut').evaluate(e=>e.click());ok('taking out a cold pizza cannot finish baking',(await state(page)).speech.step===6);
   const base=s.pizza.heatRate;await bakeHold(page,6000);s=await state(page);
   ok('overheating waits for a retry rather than awarding a word',s.pizza.overheated&&!s.pizza.baked&&s.speech.step===6&&await page.locator('#pizzaRetry').isVisible(),s);
   ok('hot oven 1: the oven warms a little over half as fast (ladder 1)',s.pizza.stageMisses===1&&s.pizza.ladder===1&&s.pizza.heatRate<=base*.6&&s.pizza.heatCap===1&&!UNKIND.test(s.pizza.banner),s);
@@ -181,7 +187,7 @@ try{
   ok('…and Take out glows, waiting for the finger',await page.locator('#pizzaTakeOut.guide').count()===1&&await page.locator('#pizzaTakeOut').isEnabled(),await page.locator('#pizzaTakeOut').getAttribute('class'));
   await page.locator('#pizzaTakeOut').click();ok('deliberate Take out finishes the controlled bake',await finished(page,6),await state(page));
   // ── the cuts: off the plate, off the line, then a child who cannot quite ──
-  ok('speech earns the cutter',await sayWord(page));s=await state(page);const wideCut=s.pizza.cutTolerance;await advance(page,11000);s=await state(page);ok('speech makes following the cut guides more forgiving',wideCut>s.pizza.cutTolerance*1.5&&s.pizza.ladder===0,s);
+  ok('speech earns the cutter',await sayWord(page));s=await state(page);const wideCut=s.pizza.cutTolerance;await advance(page,11000);s=await state(page);ok('the word brings the cutter as designed: the guides no more forgiving',wideCut===s.pizza.cutTolerance&&s.pizza.power===0&&s.pizza.ladder===0,s);
   s=await swipe(page,[-.2,0],[.2,0]);ok('a tiny swipe cannot count as a full slice, and is no miss',s.cuts.every(c=>!c.done)&&s.stageMisses===0&&s.banner==='Swipe all the way across'&&(await state(page)).speech.step===7,s);
   const off=11*Math.PI/180;let [a,b]=across(off);s=await swipe(page,a,b);
   ok('an 11-degree swipe at the start is a near miss',s.cuts.every(c=>!c.done)&&s.stageMisses===1&&s.ladder===1&&s.banner==='Follow a dotted line',s);
@@ -228,11 +234,43 @@ try{
   s=await rubUntil(page,x=>x.ladder>=2);ok('age 4: the much stronger pin after about 4 s',s.ladder===2&&s.effort>=4&&s.effort<4.5,s);
   // the topping ladder, shown on this phone's own trays (a layout-only jump
   // to the pepperoni: the struggle above plays the real steps)
-  await page.evaluate(()=>Pizza.onWord(3));await advance(page,11000);s=await state(page);const beside=[-.42,-.3+.45];
+  await page.evaluate(()=>Pizza.onWord(3));await advance(page,11000);s=await state(page);const beside=besideSpots(s.pizza);
   s=await dropNext(page,beside);ok('age 4, miss 1: the spots glow and the arrow shows (ladder 2)',s.ladder===2&&s.guide&&s.targets.every(t=>!t.filled),s);
   s=await dropNext(page,beside);ok('age 4, miss 2: a topping let go over the pizza flies to a spot (ladder 3)',s.ladder===3&&s.snap,s);
   s=await dropNext(page,beside);ok('age 4: the 3rd drop lands on a spot',s.targets.filter(t=>t.filled).length===1,s);
   ok('age 4 has no runtime errors',errors.length===0,errors);await context.close();
+ }
+ // ── PIZZA2, the rebuild (Travis, 11 Nov 2026: "yes build pizza chef"): a
+ //    different pizza every time, the word itself as the last topping, and
+ //    Echo's how-to once a visit for each kind of step ──
+ if(!part||part==='rebuild'){
+  const layouts=[],orders=[];
+  for(const seed of [3,91,4096]){const {page,context,errors}=await h.fresh();
+   await page.evaluate(seed=>{let x=seed;Math.random=()=>{x=(x*16807)%2147483647;return (x-1)/2147483646;};Pizza.reset();},seed);
+   const spots=[];let z;for(let st=3;st<=5;st++){await page.evaluate(st=>Pizza.onWord(st),st);await advance(page,50);z=(await state(page)).pizza;spots.push(...spotLocals(z));}
+   layouts.push(spots.map(q=>q.x.toFixed(2)+','+q.y.toFixed(2)).join(' '));orders.push(z.tops.join());
+   const gaps=[];for(let i=0;i<9;i++)for(let j=i+1;j<9;j++)gaps.push(Math.hypot(spots[i].x-spots[j].x,spots[i].y-spots[j].y));
+   ok('seed '+seed+': nine spots on the pizza, none crowding another, and three different toppings',spots.length===9&&spots.every(q=>Math.hypot(q.x,q.y)<=.53)&&Math.min(...gaps)>=.23&&new Set(z.tops).size===3&&z.tops.every(t=>['pepperoni','pepper','mushroom'].includes(t)),{spots,tops:z.tops,min:Math.min(...gaps)});
+   await page.evaluate(()=>Pizza.onWord(5,'zzzz'));z=(await state(page)).pizza;
+   ok('seed '+seed+': a word with no picture keeps an ordinary last topping',z.mode!=='word'&&z.silly===null&&['pepperoni','pepper','mushroom'].includes(z.mode)&&z.mode!==z.tops[0]&&z.mode!==z.tops[1],z);
+   ok('seed '+seed+' has no runtime errors',errors.length===0,errors);await context.close();}
+  ok('three pizzas, three different spot layouts',new Set(layouts).size===3,layouts);
+  ok('the toppings come in a new order',new Set(orders).size>=2,orders);
+  // a whole pizza: the word for the last topping is the topping
+  const {page,context,errors}=await h.fresh();await page.locator('#startBtn').click();
+  await reach(page,5);ok('the word for the last topping step is heard',await sayWord(page));await advance(page,300);let s=await state(page);
+  ok('the last topping is the word just said, as its own picture',s.pizza.mode==='word'&&s.pizza.silly===s.speech.word&&s.pizza.sillyShown&&s.pizza.banner==='Add a silly topping!'&&s.pizza.power===0,{mode:s.pizza.mode,silly:s.pizza.silly,word:s.speech.word,shown:s.pizza.sillyShown,banner:s.pizza.banner});
+  ok('its tray says what it is',(await page.locator('#pizzaIngredient0').getAttribute('aria-label')).includes('the silly '+s.speech.word));
+  const word=s.speech.word;ok('three of it go on the pizza by the finger',await topPizza(page,5)&&(await state(page)).pizza.placed.filter(t=>t==='word').length===3,(await state(page)).pizza.placed);
+  await sayWord(page);await bake(page);await sayWord(page);await cutPizza(page);await until(page,()=>__sayplay.phase==='end',6000);
+  const title=await page.locator('#endTitle').textContent();
+  ok('the end card names the silly pizza',title===(/^[aeiou]/.test(word)?'An ':'A ')+word+' pizza!',{title,word});
+  const lines=await page.evaluate(()=>__quiet.speech),how=['rolling pin back and forth','Spread the sauce all over','sprinkle cheese all over','Drag each topping to a glowing spot','let go in the green','cut your pizza'];
+  ok('Echo explains each kind of step once: one topping line for all three topping steps',how.every(t=>lines.filter(l=>l.includes(t)).length===1)&&!lines.some(l=>/Drag each (pepperoni|pepper ring|mushroom)/.test(l)),lines);
+  await page.locator('#again').click();await advance(page,350);ok('another pizza: the word earns the rolling pin',await sayWord(page));await advance(page,300);
+  const again=await page.evaluate(()=>__quiet.speech);s=await state(page);
+  ok('…and Echo does not explain it again this visit',again.filter(l=>l.includes('rolling pin back and forth')).length===1&&s.pizza.mode==='roll'&&s.pizza.silly===null,{again,s:s.pizza.mode});
+  ok('the silly pizza has no runtime errors',errors.length===0,errors);await context.close();
  }
  if(!part||part==='voice'){
   const {page,context}=await h.fresh();let pending;

@@ -1679,7 +1679,67 @@ decided and consumed in the same breath — so a parent who backed out of the
 grown-ups gate in between lost the only ask Sona will ever make, while the
 funnel counted an impression nobody saw. `iaptest.mjs` pins both halves.
 
-### Clinician Premium — for you, then for your caseload
+### Sona Pro — the one plan a clinician can buy (12 Nov 2026)
+**$19.99 a month for the dashboard, every game on the clinician's own phone,
+and every game for every family on their link, with no cap on families**
+(Travis, 12 Nov 2026: "i needa get this setup to sell to slps ... price it
+between 15 and 30 a month for the dashboard and unlimited accounts for
+clients"; asked, he chose **$19.99 a month**, **a 14-day free trial**,
+**remove the limit**, and **make /for-slps findable**). `plan: slp-pro`,
+`PRO_*` in `lib/caseload.ts`, its own mirror `slpplan-pro:<email>`,
+`STRIPE_PRICE_ID_SLP_PRO` optional.
+- **The trial: 14 days, card up front, once per clinician.** Stripe
+  `trial_period_days`, `payment_method_collection: always`, and a trial that
+  ends with no card cancels. Any Pro subscription an email ever had, in any
+  status, spends it (`proStatus().trialAvailable`); a second checkout is
+  charged from day one and its button says "Get Sona Pro". The checkout's
+  own text beside Stripe's button states the terms (no charge today; then
+  $19.99 a month until you cancel; cancel in the trial and pay nothing) —
+  an automatic renewal after a free trial is what renewal laws want spelled
+  out at the point of purchase. Never "$20", never divided into a smaller
+  figure: "$19.99 a month" is what is charged.
+- **The dashboard is part of the plan, for accounts made from 12 Nov 2026
+  only** (`terms: PRO_TERMS`, "pro-2026-11-12", stamped by every route that
+  makes an account). Every older account was told its dashboard was free and
+  keeps it free, forever (`dashboardOpen()`, from the stamp alone, no Stripe
+  call). **The lock is held on the server** (`lib/proGate.ts`): the roster,
+  the homework list, assigning homework, archiving and adding a child answer
+  402 `{ needPlan }`. **Never on a removal**: removing a child, clearing
+  homework and deleting an invite always work, paid or not — a district
+  privacy officer checks that a clinician who stops paying can still take a
+  child off. Never on the family side either (redeem, claim, sync, covered).
+  The page shows the plan in place of Today, Caseload and a child's page;
+  Settings, Community and Talk to Rachel stay open.
+- **Unlimited, and true** (Travis: "Remove the limit"). A COVERED code has no
+  redeem cap at all — Sona Pro, a yearly plan still renewing, or
+  grandfathered — so "Unlimited families" is now a fact on the dashboard,
+  the clinician page and the Terms. An uncovered code keeps 60, per code and
+  per clinician; the counters keep counting for a covered one, so a plan
+  that lapses meets 60 with the year's real number. The accepted risk: a
+  paying clinician's link posted in public gives strangers every game on
+  their plan; the remedy is Rotate in Settings.
+- **The yearly plans are retired from sale, not cancelled** (the same rule as
+  the family plan's monthly price). `/api/slp/plan` refuses anything but
+  `{ plan: "pro" }` with 409 `{ retired }` ("Reload this page to see Sona
+  Pro"), so a tab showing $59.99 a year never opens a monthly checkout. Every
+  yearly subscription keeps renewing at its price and keeps covering what it
+  covered; a clinician holding one is offered Pro only for what it does not
+  already cover (`pro.offer`), on the same Stripe customer, and the page
+  says to cancel the yearly plan once Pro is on.
+- The plan page is named **Sona Pro** (nav, crumb, title), at the same
+  `#premium` address Stripe returns to. The top-bar button says **Try Sona
+  Pro free · then $19.99 a month** (or **Get Sona Pro** once the trial is
+  spent), and nothing once there is nothing to sell. The family price line
+  ("Families you don't cover can buy Premium themselves…") went with the
+  caseload add-on: with Pro every family on the link is covered.
+- **Rachel to review the copy** that tells a clinician what Sona does for
+  their families (the Pro card, for-slps, the sign-in email). Nothing a child
+  is asked to say changed.
+
+The history below is still the rule for every account and subscription made
+under it.
+
+### The yearly clinician plans, 24 Sep to 12 Nov 2026 (retired from sale)
 **Two yearly plans, bought on the web by the clinician** (Travis, 24 Sep 2026
 — this reversed "there is no payment path for an SLP or clinic"; re-priced 29
 Sep 2026: "they're going to still pay the 60 bucks for an account, and they
@@ -1730,8 +1790,10 @@ own plan's is `STRIPE_PRICE_ID_SLP_SELF`. Both optional.
   promised "Free forever, unlimited families — for you and every kid on your
   caseload", and they and their caseload stay covered, free. Structural, no
   dates: an account with no `terms` predates it. Never backfill that field.
-- **"Every family on your caseload", never "unlimited".** The redeem cap is
-  300 for a covered clinician (60 uncovered), counted **per code AND per
+- **Since 12 Nov 2026 a covered code has NO cap, and "unlimited" is true
+  (Sona Pro, above).** Until then: **"Every family on your caseload", never
+  "unlimited".** The redeem cap was
+  300 for a covered clinician (60 uncovered, still), counted **per code AND per
   clinician** (`slpredeem:<code>` and `slpredeem-owner:<email>`, ~a year each)
   — a clinician can claim a new code at any time and every code shares one
   family key, so a per-code cap alone multiplied with every rename. It counts
@@ -1752,7 +1814,8 @@ own plan's is `STRIPE_PRICE_ID_SLP_SELF`. Both optional.
   (`sona.caseplan.v1`) never travels, and the server is asked afresh.
 - **The clinician earns nothing on their caseload, ever** — the creator-only
   rule below is unchanged, and the Premium page says so in words.
-- **The family price, on the Premium page, comes with its conditions** —
+- **Gone with the add-on on 12 Nov 2026** (every family on a Pro link is
+  covered): **The family price, on the Premium page, comes with its conditions** —
   "on the web, $59.99 a year for the first 50 families" (price and cap from
   `/api/charter`), "on the web, $99.99 a year" once the charter spots are
   gone, and nothing when the route doesn't answer. A clinician repeats what
@@ -1863,6 +1926,13 @@ from a URL parameter: coverage is the server's answer to the enrolment ticket
 the device earned by redeeming code + key (`Sona.caseRefresh()`, re-asked every
 6 hours; only an authoritative answer changes anything).
 
+**SELLING TO SLPs AGAIN, FROM 12 NOV 2026** (Travis: "i needa get this
+setup to sell to slps"). The homepage at `/` sells Sona Pro to clinicians.
+The family landing page moved to `/for-parents`, linked from the clinician
+page's footer. `/for-slps` redirects to `/` with campaign parameters intact.
+`llms.txt` and family setup still speak to parents. Marketing replay follows
+the family landing page to `/for-parents` and stays off the clinician homepage.
+
 **THE SLP SIDE WAS THE CHANNEL, 21 Sep to 22 Oct 2026** (Travis, 21 Sep
 2026: "im keeping it free. targetting slps first"; since 22 Oct speaksona.com
 does not look for therapists at all, below, and clinicians already here keep
@@ -1944,16 +2014,24 @@ pixel `ViewContent` (the fact, never who) and leaves 150 ms later. `noindex`
 allow-list. The root page with its email box is unchanged. `landingtest` plays
 it on an iPhone and an Android phone.
 
-**The clinician page lives at `/for-slps`** (the root from 22 to 26 Sep). It
-still speaks to parents and SLPs alike (Travis, 25 Sep 2026: "I don't know
-who my customer is"): the headline stays, and the one form asks for **an
-email and "I'm a…"** (Parent or caregiver · Speech therapist (SLP or SLPA) ·
-Other) and nothing else. The header is just Sign in (Travis, 26 Sep 2026:
-"get rid of for parents"). An SLP or SLPA also gets their dashboard account
-and sign-in email, because the iPhone app has no clinician side; everyone
-else goes to `/api/lead` with their email and role. `tests/landingtest.mjs`
-drives both pages.
+**The clinician page is the homepage**, refreshed to sell Sona Pro on
+12 Nov 2026. The page opens with “Send home practice they’ll play,” Echo,
+and Fruit Slice. **Start free trial** collects an email, role (SLP or SLPA),
+and setting (Clinic or School). Four facts cover the free trial, unlimited
+families, on-device checking, and audio privacy. The page shows the workflow
+in three steps, games and books, and **one plan card** at `#pricing`
+($19.99 a month, the free days, what it includes, the trial's terms), the
+clinical notes, the FAQ and the closing button. Header: Pricing and Sign in.
+A new account is signed in and taken to `/slp.html#premium`, where the trial
+is the first button; an existing address is told to check its email. Not the
+App Store: that is the family app (`APP_READY` lives on `parents.html` and
+`lib/launch.ts` only now). Its share picture is `tools/og/og-slp.html`,
+rendered by `tools/og/render-og-slp.mjs` (served as `og-slp.png?v=2`).
+Every figure is `lib/caseload.ts`'s and `shiptest` pins them; the older
+promises (free dashboard before 12 Nov, free forever before 24 Sep) are on
+the page. `tests/landingtest.mjs` drives both pages.
 
+**SUPERSEDED on 12 Nov 2026 (above): /for-slps is findable again.**
 **speaksona.com is only for parents, and does not look for therapists at
 all** (Travis, 22 Oct 2026: "speaksona.com is only for parents. I don't
 want to target therapists at all"). `/for-slps` keeps working for anyone who
@@ -1972,16 +2050,17 @@ The site is built to be read:
 - `app/robots.ts`: every crawler welcome, the AI assistants' by name; only
   `/api/` and `/admin/` blocked. Never block a `noindex` page there: a
   blocked crawler never reads the noindex.
-- `app/sitemap.ts`: the root, privacy and the Terms; never an app screen or
-  a `noindex` page.
+- `app/sitemap.ts`: the clinician homepage, `/for-parents`, privacy and
+  the Terms; never an app screen or a `noindex` page.
 - `app/llms.txt/route.ts`: Sona in plain text for AI assistants, every line
   one the parent page already says. Rachel's settled line word for word, no
   dollar figure, no count of games or books, and the cost line is the
   parent page's own answer, chosen by `FREE_MODE` and `WEB_SALES`.
 - schema.org labels (`application/ld+json`) in `parents.html`'s head: who
   makes Sona and what the app is, with no price.
-- `noindex`, so search sends parents to the root: `for-slps.html`,
-  `try.html`, `check.html`, `/families`, and the private surfaces below.
+- `noindex`, so search can send parents to `/for-parents`: `try.html`,
+  `check.html`, `/families`, and the private surfaces below. (`for-slps.html`
+  was on this list from 22 Oct to 12 Nov 2026.)
 Any page written to answer a parent's search ("how to practice the R sound
 at home") explains how to practice a sound, so it is Rachel's to review
 before it ships. `shiptest` pins all of it.
@@ -1989,7 +2068,8 @@ before it ships. `shiptest` pins all of it.
 **The app is live, and the websites send people to the App Store** (Travis,
 1 Oct 2026: "yeah send people to app store now!", with the listing checked:
 a free download, not a pre-order). `APP_READY = true` in `lib/launch.ts` and
-`var APP_READY` in `parents.html` and `for-slps.html`, pinned equal by
+`var APP_READY` in `parents.html` (and `for-slps.html` until 12 Nov 2026, when
+it stopped sending anyone to the App Store), pinned equal by
 `shiptest`: the top line reads "Now on iPhone and iPad", Start free takes the
 email and opens the App Store (Android: the web app), and the "launches
 Friday" welcome email and the clinician's P.S. stop. **Nobody on the waiting
@@ -2042,8 +2122,8 @@ member.
 
 Still `noindex`, correctly: `slp.html` and `slp-login.html` (a private
 dashboard and its login) and `join.html` (a family's redemption link, which
-carries a credential in the URL). Those are surfaces, not marketing. So,
-since 22 Oct 2026, is `for-slps.html` (above).
+carries a credential in the URL). Those are surfaces, not marketing.
+`for-slps.html` was noindex from 22 Oct to 12 Nov 2026, and is indexed again.
 
 Still absent now that Premium is back (24 Sep 2026): the "working with a
 speech therapist?" card on the plan screen and the trial page; `progtest`
@@ -2057,16 +2137,16 @@ see that it happened and paste it into a note. Not "assigning homework"
 who went quiet, what ends soon — one action per row) → Caseload (every child,
 oldest-practiced first, **Copy note on every row**) → a child page (8-week
 strip, pass rate by sound and position, the current homework, the composer)
-→ Premium (its own page, 24 Sep 2026: Today keeps exactly its four
-cards, and no price ever appears in them; viewing it only reads) → Settings
-(which carries a Premium card with the same two plans and buy buttons, 29 Sep
-2026: "an upsell … in like the SLP settings").
+→ Sona Pro (its own page at `#premium`, 24 Sep 2026: Today keeps exactly its
+four cards, and no price ever appears in them; viewing it only reads) →
+Settings (which carries a Sona Pro card with the same button, 29 Sep 2026:
+"an upsell … in like the SLP settings").
 Since 29 Sep 2026 (Travis: "yes add the $80 button to the first screen") a
 button with the server's price sits in the top bar of every page but the
-Premium page, because a clinician from the ad lands on Community and never
-saw the price. It offers the next thing to buy: **Get Premium** (their own)
-until that is on, then **Add your caseload**, then nothing. Only once the
-plan has answered; `slptest` 9b pins it.
+plan page, because a clinician from the ad lands on Community and never
+saw the price. Since 12 Nov 2026 it says **Try Sona Pro free · then $19.99 a
+month**, or **Get Sona Pro** once the trial is spent, then nothing. Only
+once the plan has answered; `slptest` 9b pins it, 9c the closed dashboard.
 Reviewed by three lenses — a school SLP, a district privacy
 officer, an engineer — whose rulings are now rules:
 - **Register.** "Pass rate" (defined on the page as "did that sound like this
@@ -2112,8 +2192,10 @@ officer, an engineer — whose rulings are now rules:
 - **One family door.** Every generated link is `join.html?slp=CODE&k=KEY`
   (`&inv=TOKEN` per child). The message says "free", never "pilot" or "trial",
   and promises what is true today: the free version, and Premium only while
-  the caseload is covered. "Free forever" and "unlimited" are gone from every
-  clinician surface (`slptest`, `shiptest`).
+  the caseload is covered. "Free forever" is gone from every clinician
+  surface (`slptest`, `shiptest`); "unlimited" came back on 12 Nov 2026 only
+  where it is true, Sona Pro's "Unlimited families", never in a family's
+  message.
 
 **The affiliate program, when it is built, is CREATOR-ONLY** (Travis, 21 Sep
 2026 — settled, do not re-open). An SLP who makes content and brings in
@@ -4161,6 +4243,118 @@ said at a set moment).
   - **Travis's to change:** the planets, their colours and pulls, the
     words. **For Rachel:** nothing a child says changes.
   `spacetest` plays it (part `rebuild`, and the landings in `main`).
+- **Bedtime Stars, rebuilt (11 Nov 2026, Travis: "yes build bedtime
+  stars").** `public/stars.js`, `arcade-stars.html`, `stars.css`.
+  - **The word starts the picture and nothing else.** Until then it also
+    switched on ten seconds of a wide glowing path. The Glowing path
+    button's word still gives it, and the miss ladder still does.
+  - **Twelve pictures, five a round** (`ALL`, `plan`): tent, flag, kite
+    (3-4 lines), house, boat, rocket, mountain, star (5), fish, heart, cat,
+    crown (6-7). A round is two easy, two middle and one big, the fewest
+    lines first, and a picture this child has never drawn comes before one
+    they have. The fish is a real fish now (a body and a tail; it was a
+    paper dart). Every point keeps clear of the box's edges, where the
+    finished pictures wait.
+  - **Each picture is a surprise.** Nothing names it before its last line:
+    Echo no longer says "Let's make a kite", the banner says "Follow the
+    stars. What will it be?", and the strip at the top shows a picture
+    still to draw as a dim star. On its last line it lights up and its
+    little details appear (the fish's eye, the cat's whiskers, a door).
+  - **Echo says how to draw once a visit** (`HOWTO`, on the first picture
+    and on "Hear what to do"); the help lines after a slip stay.
+  - **The child's sky** (`sona.stars.v1`, a per-child key the page keeps
+    through `Stars.setup`, as Rocket Blast's planets): every picture drawn
+    is kept at once. The start and end cards show all twelve, the ones drawn
+    in gold, the rest faint (this round's new ones ringed on the end card),
+    named in the label, never counted. The end card says "You drew a
+    heart!" for one new picture, "New pictures for your sky!" for more.
+  - **Kept as it was:** finished pictures stay in the sky, and all five
+    gather at the end.
+  - **Travis's to change:** the pictures, the round's shape, the words.
+    **For Rachel:** nothing a child says changes; Echo says one line less
+    per picture.
+  `bedtimestarstest` plays it (part `rebuild`, and every picture in `fit`).
+- **Pizza Chef, rebuilt (11 Nov 2026, Travis: "yes build pizza chef").**
+  `public/pizza.js`, `arcade-pizza.html`; `sayplay.js` now hands a play
+  game's `onWord` the word too (`onWord(step, word)`; other games ignore
+  it), and `crafted-words.js` gains `art(word)`, a word picture's sheet
+  and crop for a canvas.
+  - **The word starts the step and nothing else.** Until then it also
+    switched on ten seconds of chef power (a stronger pin, a bigger spoon,
+    wider spots, a slower oven, kinder cuts). The Chef power button's word
+    still gives it, and the miss ladder still does.
+  - **A different pizza every time** (`newPizza`): the toppings come in a
+    new order and the nine glowing spots are the old ones turned, mirrored
+    and shared out anew (`SPOTS`), so none ever crowds another.
+  - **The silly topping.** The last topping step's word is the topping: its
+    own picture, three on the pizza ("Add a silly topping!"), and the end
+    card names it ("A rocket pizza!", "An apple pizza!"). A word with no
+    picture is the third ordinary topping.
+  - **Echo explains each kind of step once a visit** (`KIND`, `HOWTO`): the
+    three topping steps are one kind ("Drag each topping to a glowing
+    spot."); "Hear what to do" says the step's line any time.
+  - **Echo's opening words are shorter:** "Say each word two times to start
+    the next step. Then your hands make the pizza!"
+  - **Travis's to change:** the toppings, the words, the end card's title.
+    **For Rachel:** nothing a child says changes; the word's picture (already
+    on the word panel) also lands on the pizza.
+  `pizzatest` plays it (part `rebuild`; the main part's drops beside the
+  spots find their place, since the spots move).
+- **Treasure Map, rebuilt (11 Nov 2026, Travis: "yes build treasure
+  map").** `public/treasure.js`, `arcade-treasure.html`, `treasure.css`.
+  - **The word starts the sail and nothing else.** Until then it also
+    switched on twelve seconds of calm seas, which drew the whole safe
+    route on the map: every voyage was connect-the-dots. Now the child plans
+    the route round the islands; the safe path shows only after a miss (the
+    ladder, as before) or with the Calm seas button's own word.
+  - **A new voyage every game** (`newVoyage`): the same eight harbours, in
+    a new order, each next one of the three nearest still to visit, so the
+    treasure X, the last of them, is somewhere new. The safe path from every
+    harbour (and from round each ring, where a boat stops) to every other
+    goes round the painted islands (`Treasure.pathFor`; the test checks all
+    of them).
+  - **The route sailed stays on the map** (`trail`): a dark red dotted line
+    of each leg once its harbour is reached, so the finished map shows the
+    child's whole way to the chest. A fresh route from the harbour wipes only
+    that leg's line.
+  - **No status words at the bottom** ("Draw from your boat", "A little
+    current"): the banner at the top already says what to do.
+  - **Travis's to change:** the line's look, the "three nearest" rule.
+    **For Rachel:** nothing a child says changes.
+  `treasuretest` plays it (part `rebuild`; the other parts sail one fixed
+  voyage, by seed, so each run is the same).
+- **Balloon Party, rebuilt (12 Nov 2026, Travis: "build it all!").**
+  `public/balloon.js`, `arcade-balloon.html`.
+  - **The word brings the balloon and nothing else.** Until then it also
+    switched on ten seconds of big pumps and a big ring, so the pumping and
+    the ring nearly did themselves (six plain pumps fill a balloon now, the
+    six dots under it). The "Big pumps" button's word still gives that
+    power, and the miss ladder still lands every balloon.
+  - **A party for a buddy, new every round** (`newParty`, never repeating
+    the round before's buddy, colours or ring order): one of the eleven
+    buddies with a sitting picture sits on the grass by the picnic, above
+    the pump, in the shop's party hat (cake.js's `BUDDY_BOX` and `HAT_AT`),
+    and hops each time a balloon is tied (no hop under Reduce Motion). The
+    banners name them ("Let's make a party for Miso!", "A balloon for
+    Miso's party!") and so does the end card ("Happy party, Miso!", the
+    page's `Balloon.onParty`).
+  - **A new mix of colours, and a new ring order:** five of seven colours
+    a round (`PALETTE`: red, yellow, green, blue, purple, and now pink and
+    teal; never orange), the one red sprite recoloured on the phone as
+    before, and the five rings of the garland fill in a new order.
+  - **The last two rings sway gently** side to side (`SWAY` 0.05 of the
+    width each way, about six seconds there and back), and hold still where
+    they are from the first miss and while the help word's power lasts, as
+    Rocket Blast's last planet does. A balloon is tied where its ring was.
+    A ring at its biggest is kept on screen (`placeGoal`).
+  - **Echo explains each step once a visit** (`told`, never reset by a new
+    balloon or Play again): "Tap the pump" and "Now pull" are said once, not
+    for every balloon.
+  - **Travis's to change:** the buddies, the colours, the sway's size and
+    speed, the banner and end card words. **For Rachel:** nothing a child
+    says changes; Echo says his three directions once a visit.
+  `balloonpartytest` plays it (parts `rebuild`, `main`, `struggle`, `help`,
+  `fit`).
 - **The voice-line list is in the battery since 9 Nov 2026**
   (`voicedoctest` in `run-all`): `VOICE_SCRIPT.md` lists every line Echo can
   say with where it is said, so a change that moves such a line must run

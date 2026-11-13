@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { readSession, kvCmd, kvConfigured, rosterKey } from "@/lib/slpAuth";
+import { dashboardGate } from "@/lib/proGate";
 import { rateLimit } from "@/lib/rateLimit";
 import { readAccount, cleanChildId, metaKey, writeMeta, removeChild } from "@/lib/roster";
 
@@ -22,14 +23,21 @@ import { readAccount, cleanChildId, metaKey, writeMeta, removeChild } from "@/li
  */
 export const runtime = "nodejs";
 
-/** Session → rate limit → store → code. The same gate for both verbs. */
-async function gate(req: NextRequest): Promise<{ code: string } | NextResponse> {
+/**
+ * Session → rate limit → store → (the plan, for anything but a delete) → code.
+ * Removing a child works whatever the clinician pays (lib/proGate).
+ */
+async function gate(req: NextRequest, write = true): Promise<{ code: string } | NextResponse> {
   const s = readSession(req);
   if (!s) return NextResponse.json({ ok: false, error: "sign in required" }, { status: 401 });
   const rl = await rateLimit(req, { key: "slpchild", limit: 120, windowSec: 3600 });
   if (rl) return rl;
   if (!kvConfigured()) {
     return NextResponse.json({ ok: false, error: "no data store connected" }, { status: 503 });
+  }
+  if (write) {
+    const locked = await dashboardGate(s.email);
+    if (locked) return locked;
   }
   const { code } = await readAccount(s.email);
   if (!code) return NextResponse.json({ ok: false, error: "finish your profile first" }, { status: 400 });
@@ -79,7 +87,7 @@ export async function POST(req: NextRequest) {
 
 // DELETE { childId } → { ok, removed: childId }
 export async function DELETE(req: NextRequest) {
-  const g = await gate(req);
+  const g = await gate(req, false);
   if (g instanceof NextResponse) return g;
   const body = await readBody(req);
   if (!body) return NextResponse.json({ ok: false, error: "bad request" }, { status: 400 });

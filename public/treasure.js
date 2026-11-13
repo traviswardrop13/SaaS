@@ -1,6 +1,15 @@
 /* Treasure Map is a route-drawing sailing puzzle. The child's finger plans
-   a real route; the boat follows it around solid islands. Existing isolated
-   words earn calm currents and a visible safe channel, never automatic moves.
+   a real route; the boat follows it around solid islands. Each word starts
+   the next sail and nothing else (CLAUDE.md, "The audit's rebuilds"): until
+   11 Nov 2026 it also lent twelve seconds of calm seas, which drew the
+   whole safe route on the map, so every voyage was connect-the-dots. The
+   Calm seas button's own word still does, and the miss ladder does.
+
+   A NEW VOYAGE EVERY GAME (newVoyage): the eight harbours are the same
+   places, visited in a new order (from each, one of the three nearest not
+   yet visited), so the treasure X, the last of them, is somewhere new. The
+   route the boat really sailed stays on the map as a dotted line (trail),
+   so the finished map shows the child's whole way to the treasure.
    SayPlay alone owns the microphone, quiet audio and accepted play reps.
    Every voyage ends in a harbour, with no word needed (the Hoops rule): a
    miss is a real failed try (a boat that bumps an island, a route that stops
@@ -15,6 +24,9 @@
   var active=false,paused=false,leg=0,total=8,finished=false,boat={x:.70,y:.86},heading=0,hint=[];
   var route=[],at=0,draft=[],drag=null,calm=0,bumps=0,visit=0,wake=[],moving=false;
   var misses=0,stray=null,doneWait=0,hudT=0,hintShown="",pulse=0,told=false;
+  // this game's harbours in order (indexes into GOALS; the last is the X),
+  // and the dotted line of the route really sailed, one piece a harbour
+  var START={x:.70,y:.86},order=[0,1,2,3,4,5,6,7],trail=[[]];
   var still=window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   var POWER=12,GOALS=[{x:.18,y:.83},{x:.16,y:.59},{x:.84,y:.63},{x:.84,y:.40},{x:.17,y:.47},{x:.17,y:.24},{x:.56,y:.29},{x:.84,y:.23}];
   var CHANNELS=[[[.43,.85]],[[.08,.81],[.08,.64]],[[.35,.61],[.65,.63]],[[.93,.61],[.93,.43]],[[.76,.41],[.56,.43]],[[.08,.47],[.08,.25]],[[.35,.25],[.46,.28]],[[.60,.28],[.81,.28]]];
@@ -38,6 +50,12 @@
   function image(k){var i=art[k];return i&&i.complete&&i.naturalWidth?i:null;}
   function clamp(n,a,b){return Math.max(a,Math.min(b,n));}
   function dist(a,b){var x=(a.x-b.x),y=(a.y-b.y)*1.5;return Math.sqrt(x*x+y*y);}
+  // the harbour of leg n (this one by default)
+  function goal(n){return GOALS[order[n==null?leg:n]]||GOALS[0];}
+  // a new voyage: from the start, each next harbour one of the three
+  // nearest not yet visited, so no trip crosses the whole map for nothing
+  // and the X (the last) lands somewhere new
+  function newVoyage(){var left=[0,1,2,3,4,5,6,7],at=START,out=[];while(left.length){left.sort(function(a,b){return dist(at,GOALS[a])-dist(at,GOALS[b]);});var k=Math.floor(Math.random()*Math.min(3,left.length)),pick=left.splice(k,1)[0];out.push(pick);at=GOALS[pick];}order=out;}
   function ladder(){return Math.min(3,misses);}
   function unit(){return box.rotated?box.h:box.w;}
   // The finish zone always holds the whole drawn ring (a boat that stops
@@ -55,15 +73,19 @@
     // A shortest visible route around the actual coast, from wherever the
     // child is now. A fixed connector could send a mid-voyage help line
     // straight through an island. Recompute only at a stop or earned power.
-    var nav=[];CHANNELS.forEach(function(c){c.forEach(function(p){nav.push({x:p[0],y:p[1]});});});GOALS.forEach(function(p){nav.push(p);});OPEN.forEach(function(p){nav.push({x:p[0],y:p[1]});});[.08,.93].forEach(function(x){[.1,.25,.43,.60,.81,.90].forEach(function(y){nav.push({x:x,y:y});});});
-    var from={x:boat.x,y:boat.y},goal=GOALS[leg];
+    hint=pathFor({x:boat.x,y:boat.y},goal());
+  }
+  function pathFor(from,to){
+    var nav=navPoints();
     // Round everything painted. The line may still leave a boat stopped on
     // a beach, and reach a ring that sits on one (the last one does).
-    hint=shortest(from,goal,nav,function(p){return land(p)||(dist(p,from)>.05&&dist(p,goal)>.07&&inside(DRAWN,p));});
+    var out=shortest(from,to,nav,function(p){return land(p)||(dist(p,from)>.05&&dist(p,to)>.07&&inside(DRAWN,p));});
     // A boat sailed up onto a painted palm can be hemmed in by the drawings:
     // it still gets the path round the solid islands, never none.
-    if(!hint.length)hint=shortest(from,goal,nav,land);
+    if(!out.length)out=shortest(from,to,nav,land);
+    return out;
   }
+  function navPoints(){var nav=[];CHANNELS.forEach(function(c){c.forEach(function(p){nav.push({x:p[0],y:p[1]});});});GOALS.forEach(function(p){nav.push(p);});OPEN.forEach(function(p){nav.push({x:p[0],y:p[1]});});[.08,.93].forEach(function(x){[.1,.25,.43,.60,.81,.90].forEach(function(y){nav.push({x:x,y:y});});});return nav;}
   function shortest(from,goal,nav,solid){
     var nodes=[from,goal].concat(nav.filter(function(p){return !solid(p);})),cost=[],prev=[],closed=[],n=nodes.length,out=[];
     for(var i=0;i<n;i++)cost[i]=Infinity;cost[0]=0;
@@ -76,24 +98,29 @@
   function draw(){
     if(!ctx)return;ctx.clearRect(0,0,W,H);ctx.fillStyle="#f7ecd6";ctx.fillRect(0,0,W,H);
     var map=image("map");if(map){if(box.rotated){ctx.save();ctx.translate(box.x,box.y+box.h);ctx.rotate(-Math.PI/2);ctx.drawImage(map,0,0,box.h,box.w);ctx.restore();}else ctx.drawImage(map,box.x,box.y,box.w,box.h);}else{ctx.fillStyle="#8fcbd2";ctx.fillRect(box.x,box.y,box.w,box.h);ISLANDS.forEach(function(i){var p=screen(i);ctx.fillStyle="#e6d4a5";ctx.beginPath();ctx.ellipse(p.x,p.y,box.rotated?i.ry*box.w:i.rx*box.w,box.rotated?i.rx*box.h:i.ry*box.h,0,0,Math.PI*2);ctx.fill();});}
-    var goal=screen(GOALS[leg]);
+    var ring=screen(goal());
     // Calm reveals a route, not a conveyor belt: only a route the child
     // actually draws can move the boat. The hint never fills `route`.
+    // the route really sailed to each harbour reached: a treasure map's
+    // dotted line, under everything else. The leg being sailed joins it once
+    // its harbour is reached (until then the white wake shows the boat's
+    // way, and the help's safe path is never drawn over a red line)
+    trail.forEach(function(t,i){if(t.length>1&&(i<trail.length-1||!active))path(t,"rgba(150,52,40,.78)",4,[2,9]);});
     hintShown="";
     if(active&&hint.length>1&&(calm>0||misses>=1)){var bold=calm>0||misses>=2;path(hint,bold?"rgba(255,250,218,.95)":"rgba(255,250,218,.6)",bold?6:4,[3,10]);hintShown=bold?"bold":"pale";}
     if(wake.length>1)path(wake,"rgba(255,255,255,.7)",2);
     if(route.length>at)path([boat].concat(route.slice(at)),"#226f7c",4,[6,5]);if(draft.length)path(draft,"#f8f4dc",5);
-    if(!finished){var u=unit(),k=[1,1.5,2.25,2.5][ladder()],glow=active&&misses>=2,beat=glow&&!still?1+.08*Math.sin(pulse*5):1;ctx.save();ctx.strokeStyle="#fffbd8";ctx.lineWidth=glow?6:4;ctx.shadowColor=glow?"#ffd34d":"#138b9a";ctx.shadowBlur=glow?22:12;ctx.beginPath();ctx.ellipse(goal.x,goal.y,Math.max(13,u*.045)*k*beat,Math.max(9,u*.032)*k*beat,0,0,Math.PI*2);ctx.stroke();ctx.restore();ctx.fillStyle="#5b2d05";ctx.font="800 17px 'Baloo 2',sans-serif";ctx.textAlign="center";ctx.fillText(leg===7?"X":String(leg+1),goal.x,goal.y-18);}
+    if(!finished){var u=unit(),k=[1,1.5,2.25,2.5][ladder()],glow=active&&misses>=2,beat=glow&&!still?1+.08*Math.sin(pulse*5):1;ctx.save();ctx.strokeStyle="#fffbd8";ctx.lineWidth=glow?6:4;ctx.shadowColor=glow?"#ffd34d":"#138b9a";ctx.shadowBlur=glow?22:12;ctx.beginPath();ctx.ellipse(ring.x,ring.y,Math.max(13,u*.045)*k*beat,Math.max(9,u*.032)*k*beat,0,0,Math.PI*2);ctx.stroke();ctx.restore();ctx.fillStyle="#5b2d05";ctx.font="800 17px 'Baloo 2',sans-serif";ctx.textAlign="center";ctx.fillText(leg===7?"X":String(leg+1),ring.x,ring.y-18);}
     var p=screen(boat),boatImage=image("boat"),w=Math.max(30,Math.min(box.w,box.h)*.13),h=w*1.13;
     ctx.save();ctx.translate(p.x,p.y);ctx.rotate(Math.sin(heading)*.13);ctx.fillStyle="rgba(21,103,118,.2)";ctx.beginPath();ctx.ellipse(0,6,w*.5,w*.15,0,0,Math.PI*2);ctx.fill();
     if(boatImage)ctx.drawImage(boatImage,-w/2,-h*.65,w,h);else{ctx.fillStyle="#8b5e36";ctx.beginPath();ctx.moveTo(-w/2,0);ctx.lineTo(w/2,0);ctx.lineTo(w*.25,w*.25);ctx.lineTo(-w*.25,w*.25);ctx.closePath();ctx.fill();ctx.fillStyle="#fff6e0";ctx.fillRect(-w*.1,-h*.5,w*.3,h*.5);}
     if(active&&!moving&&!drag){ctx.strokeStyle="#fff9dd";ctx.lineWidth=3;ctx.beginPath();ctx.arc(0,0,w*.7,0,Math.PI*2);ctx.stroke();}ctx.restore();
     // After two misses an arrow leaves the boat along the safe path.
     if(active&&misses>=2&&!moving&&!drag&&hint.length>1){var a=screen(hint[0]),b=screen(hint[1]),ang=Math.atan2(b.y-a.y,b.x-a.x),r=w*.95;ctx.save();ctx.translate(a.x+Math.cos(ang)*r,a.y+Math.sin(ang)*r);ctx.rotate(ang);ctx.fillStyle="#fffbd8";ctx.strokeStyle="#226f7c";ctx.lineWidth=2.5;ctx.beginPath();ctx.moveTo(18,0);ctx.lineTo(0,-11);ctx.lineTo(0,-4);ctx.lineTo(-12,-4);ctx.lineTo(-12,4);ctx.lineTo(0,4);ctx.lineTo(0,11);ctx.closePath();ctx.fill();ctx.stroke();ctx.restore();}
-    if(finished){var chest=image("chest"),s=screen(GOALS[7]);if(chest)ctx.drawImage(chest,s.x-box.w*.13,s.y-box.w*.15,box.w*.26,box.w*.26);}
+    if(finished){var chest=image("chest"),s=screen(goal(order.length-1));if(chest)ctx.drawImage(chest,s.x-box.w*.13,s.y-box.w*.15,box.w*.26,box.w*.26);}
   }
-  function publish(){window.__treasure={active:active,paused:paused,leg:leg,legs:total,boat:{x:boat.x,y:boat.y},goal:GOALS[leg],calm:calm,current:drift(),misses:misses,ladder:ladder(),zone:zone(),hintShown:hintShown,celebrating:doneWait>0,moving:moving,route:route.slice(at),draft:draft.slice(),bumps:bumps,finished:finished,map:{x:box.x,y:box.y,w:box.w,h:box.h,rotated:box.rotated},channel:hint.slice(1)};}
-  function hud(){var power=$("seaPower");power.hidden=!(active&&calm>0);$("seaPowerFill").style.width=(calm/POWER*100)+"%";$("seaHelp").disabled=!active||paused||calm>POWER-2||finished;$("seaReset").disabled=!active||paused||finished;$("seaHint").textContent=finished?"Treasure found!":doneWait>0?"A safe harbour!":moving?(drift()>0?"A little current":"Calm seas"):misses>=2?"Follow the glowing line":"Draw from your boat";publish();}
+  function publish(){window.__treasure={active:active,paused:paused,leg:leg,legs:total,boat:{x:boat.x,y:boat.y},goal:goal(),order:order.slice(),trail:trail.map(function(t){return t.length;}),calm:calm,current:drift(),misses:misses,ladder:ladder(),zone:zone(),hintShown:hintShown,celebrating:doneWait>0,moving:moving,route:route.slice(at),draft:draft.slice(),bumps:bumps,finished:finished,map:{x:box.x,y:box.y,w:box.w,h:box.h,rotated:box.rotated},channel:hint.slice(1)};}
+  function hud(){var power=$("seaPower");power.hidden=!(active&&calm>0);$("seaPowerFill").style.width=(calm/POWER*100)+"%";$("seaHelp").disabled=!active||paused||calm>POWER-2||finished;$("seaReset").disabled=!active||paused||finished;publish();}
   function tick(dt){
     // The celebration beat: the harbour cheer plays, then the step counts,
     // on a countdown that runs only while the game is on screen and playing.
@@ -102,9 +129,9 @@
     if(moving&&route.length>at){var end=route[at],dx=end.x-boat.x,dy=end.y-boat.y,d=dist(boat,end),speed=.14,step=Math.min(1,speed*dt/Math.max(.001,d));
       var next={x:boat.x+dx*step+Math.sin(t*.8+leg)*drift()*dt,y:boat.y+dy*step};next.x=clamp(next.x,.065,.935);next.y=clamp(next.y,.065,.93);heading=Math.atan2(dy,dx);
       if(land(next)){moving=false;route=[];at=0;bumps++;miss("bump");return;}
-      boat=next;if(visit++%5===0){wake.push({x:boat.x,y:boat.y});if(wake.length>25)wake.shift();}
-      if(dist(boat,GOALS[leg])<zone()){complete();return;}
-      if(d<.012){at++;if(at>=route.length){moving=false;route=[];at=0;if(dist(boat,GOALS[leg])<zone()){complete();return;}miss("short");return;}}
+      boat=next;if(visit++%5===0){wake.push({x:boat.x,y:boat.y});if(wake.length>25)wake.shift();trail[trail.length-1].push({x:boat.x,y:boat.y});}
+      if(dist(boat,goal())<zone()){complete();return;}
+      if(d<.012){at++;if(at>=route.length){moving=false;route=[];at=0;if(dist(boat,goal())<zone()){complete();return;}miss("short");return;}}
     }
     hudT+=dt;if(hudT>=.07){hudT=0;hud();}
   }
@@ -117,9 +144,9 @@
     draw();hud();
   }
   function frame(ts){var dt=last?Math.min(.04,(ts-last)/1000):0;last=ts;pulse+=dt;tick(dt);draw();raf=requestAnimationFrame(frame);}
-  function complete(){if(!active||paused||doneWait>0)return;active=false;moving=false;route=[];draft=[];drag=null;stray=null;calm=0;misses=0;doneWait=1.15;$("seaBanner").textContent=leg===7?"You found the treasure!":"A safe harbour!";try{api.sfx("correct");api.cheer("Ahoy!");api.face("cheer");}catch(e){}hud();}
+  function complete(){if(!active||paused||doneWait>0)return;trail[trail.length-1].push({x:boat.x,y:boat.y});active=false;moving=false;route=[];draft=[];drag=null;stray=null;calm=0;misses=0;doneWait=1.15;$("seaBanner").textContent=leg===7?"You found the treasure!":"A safe harbour!";try{api.sfx("correct");api.cheer("Ahoy!");api.face("cheer");}catch(e){}hud();}
   // From the third miss, any line roughly toward the ring sails the safe path.
-  function toward(d){var a=d[0],b=d[d.length-1],g=GOALS[leg],h=hint[1]||g,mx=b.x-a.x,my=b.y-a.y;return mx*(g.x-boat.x)+my*(g.y-boat.y)>0||mx*(h.x-boat.x)+my*(h.y-boat.y)>0||dist(b,g)<.15;}
+  function toward(d){var a=d[0],b=d[d.length-1],g=goal(),h=hint[1]||g,mx=b.x-a.x,my=b.y-a.y;return mx*(g.x-boat.x)+my*(g.y-boat.y)>0||mx*(h.x-boat.x)+my*(h.y-boat.y)>0||dist(b,g)<.15;}
   function controls(){
     cv.addEventListener("pointerdown",function(e){if(!active||paused||finished||drag!==null)return;var p=point(e);if(dist(p,boat)>grab()){$("seaBanner").textContent="Start your line at the boat";stray={id:e.pointerId,from:p,far:0};return;}stray=null;drag=e.pointerId;try{cv.setPointerCapture(drag);}catch(x){}moving=false;route=[];draft=[{x:boat.x,y:boat.y}];if(dist(p,boat)>.12)draft.push(p);hud();});
     cv.addEventListener("pointermove",function(e){if(stray&&e.pointerId===stray.id){stray.far=Math.max(stray.far,dist(point(e),stray.from));return;}if(e.pointerId!==drag||!active||paused)return;var p=point(e);if(dist(p,draft[draft.length-1])>.008)draft.push(p);publish();});
@@ -130,10 +157,13 @@
       if(draft.length>1&&dist(draft[0],draft[draft.length-1])>.02){route=misses>=3&&hint.length>1&&toward(draft)?hint.slice():draft.slice();at=1;moving=true;$("seaBanner").textContent="Off we sail!";}draft=[];hud();});
     function cancel(e){if(stray&&e&&e.pointerId===stray.id){stray=null;return;}if(e&&e.pointerId!==drag)return;drag=null;draft=[];hud();}cv.addEventListener("pointercancel",cancel);cv.addEventListener("lostpointercapture",cancel);
     $("seaHelp").onclick=function(){if(active&&!paused&&calm<=POWER-2)api.practice();};
-    $("seaReset").onclick=function(){if(!active||paused)return;boat=leg?{x:GOALS[leg-1].x,y:GOALS[leg-1].y}:{x:.70,y:.86};route=[];draft=[];at=0;moving=false;wake=[];safeChannel();$("seaBanner").textContent="A fresh route. Let's sail!";hud();};
+    $("seaReset").onclick=function(){if(!active||paused)return;boat=leg?{x:goal(leg-1).x,y:goal(leg-1).y}:{x:START.x,y:START.y};trail[trail.length-1]=[{x:boat.x,y:boat.y}];route=[];draft=[];at=0;moving=false;wake=[];safeChannel();$("seaBanner").textContent="A fresh route. Let's sail!";hud();};
     window.addEventListener("resize",fit);window.addEventListener("pagehide",function(){cancelAnimationFrame(raf);raf=0;paused=true;last=0;});window.addEventListener("pageshow",function(){if(!raf){last=0;raf=requestAnimationFrame(frame);}});
   }
   function power(){calm=POWER;paused=false;active=true;last=0;safeChannel();$("seaBanner").textContent="Calm seas. Follow the safe path!";hud();}
-  function reset(){active=false;paused=false;leg=0;boat={x:.70,y:.86};route=[];draft=[];at=0;drag=null;stray=null;calm=0;bumps=0;misses=0;doneWait=0;told=false;visit=0;wake=[];hint=[];moving=false;finished=false;$("seaBanner").textContent="An ocean full of adventure";hud();draw();}
-  window.Treasure={init:function(a,n){api=a;total=n;cv=$("seaCanvas");ctx=cv.getContext("2d");controls();fit();reset();raf=requestAnimationFrame(frame);},onWord:function(i){leg=i;route=[];draft=[];at=0;moving=false;wake=[];misses=0;bumps=0;stray=null;doneWait=0;power();$("seaBanner").textContent="Draw a line to the glowing ring!";hud();},onHelp:power,pause:function(){paused=true;drag=null;draft=[];stray=null;last=0;hud();},resume:function(playing){paused=playing===false;last=0;hud();},reset:reset,finale:function(){finished=true;active=false;doneWait=0;moving=false;calm=0;$("seaBanner").textContent="The treasure is yours!";hud();draw();}};
+  // the word's sail: the boat and the ring, and nothing else (no calm, no
+  // path shown); the safe path is worked out, ready for the help ladder
+  function go(){calm=0;paused=false;active=true;last=0;safeChannel();hud();}
+  function reset(){newVoyage();trail=[];active=false;paused=false;leg=0;boat={x:START.x,y:START.y};route=[];draft=[];at=0;drag=null;stray=null;calm=0;bumps=0;misses=0;doneWait=0;told=false;visit=0;wake=[];hint=[];moving=false;finished=false;$("seaBanner").textContent="An ocean full of adventure";hud();draw();}
+  window.Treasure={init:function(a,n){api=a;total=n;cv=$("seaCanvas");ctx=cv.getContext("2d");controls();fit();reset();raf=requestAnimationFrame(frame);},onWord:function(i){leg=i;route=[];draft=[];at=0;moving=false;wake=[];misses=0;bumps=0;stray=null;doneWait=0;trail.push([{x:boat.x,y:boat.y}]);go();$("seaBanner").textContent="Draw a line to the glowing ring!";hud();},pathFor:function(a,b){return pathFor(a,b);},onHelp:power,pause:function(){paused=true;drag=null;draft=[];stray=null;last=0;hud();},resume:function(playing){paused=playing===false;last=0;hud();},reset:reset,finale:function(){finished=true;active=false;doneWait=0;moving=false;calm=0;$("seaBanner").textContent="The treasure is yours!";hud();draw();}};
 })();

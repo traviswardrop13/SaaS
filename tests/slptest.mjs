@@ -17,7 +17,10 @@
 //   - assign from the child page posts the assignment for that child
 //   - (24 Sep 2026) what a family is promised follows the caseload's plan:
 //     the free version always, Premium only while the caseload is covered,
-//     and never "free forever" or "unlimited" again
+//     and never "free forever"; "unlimited" only where it is true (Sona Pro,
+//     12 Nov 2026: a covered caseload has no cap)
+//   - (12 Nov 2026) a new clinician whose dashboard is Sona Pro's, and who
+//     has not started it, is shown the plan in place of the caseload
 //   - a parent's email typed into Add a child goes to the invite route once,
 //     only when typed, and the page says whether the email really went
 import { createServer } from "http";
@@ -57,11 +60,17 @@ let DATA = fixture();
 const log = [];
 // GET /api/slp/plan, in the route's own shape (app/api/slp/plan). Not covered
 // by default; section 9 flips it to see the family messages follow.
-// Their own Premium OFF (a clinician from 29 Sep 2026), so the offer is the
-// first step: "Get Premium", $59.99. SELF_ON is a 24–29 Sep work email.
-const SELF_OFF = { active: false, eligible: false, source: "none", periodEnd: null, cancelAtPeriodEnd: false, canRequest: false, workEmail: true, approved: false, requested: false, price: "$59.99", perMonth: "under $5 a month" };
+// A clinician from 29 Sep – 12 Nov 2026: their dashboard is free (open), and
+// nothing else is on, so Sona Pro is the offer, trial first. SELF_ON is a
+// 24–29 Sep work email.
+const SELF_OFF = { active: false, eligible: false, source: "none", periodEnd: null, cancelAtPeriodEnd: false, canRequest: false, workEmail: true, approved: false, requested: false };
 const SELF_ON = { ...SELF_OFF, active: true, eligible: true, source: "work-email" };
-const PLAN_NONE = { ok: true, active: false, source: "none", periodEnd: null, cancelAtPeriodEnd: false, price: "$59.99", perMonth: "under $5 a month", both: { price: "$119.98", perMonth: "under $10 a month" }, self: SELF_OFF };
+const PRO_OFF = { active: false, status: "none", trialEnd: null, periodEnd: null, cancelAtPeriodEnd: false, trialAvailable: true, offer: true, name: "Sona Pro", price: "$19.99", per: "a month", trialDays: 14 };
+const PLAN_NONE = { ok: true, active: false, source: "none", periodEnd: null, cancelAtPeriodEnd: false, self: SELF_OFF, pro: PRO_OFF, dashboard: { open: true }, grandfathered: false };
+const PRO_ON = { ...PRO_OFF, active: true, status: "active", periodEnd: 1822000000, trialAvailable: false, offer: false };
+const PLAN_PRO = { ...PLAN_NONE, active: true, source: "pro", periodEnd: 1822000000, self: { ...SELF_ON, source: "pro" }, pro: PRO_ON };
+// 402 from the roster: a new account (from 12 Nov 2026) with no Sona Pro.
+let LOCKED = false;
 let PLAN = PLAN_NONE;
 const acct = { ok: true, email: "rachel@example.com", code: "rachel-k4", familyKey: "ABCD2345", name: "Rachel K", clinic: "Bright Steps", onboarded: true };
 const srv = createServer((req, res) => {
@@ -73,7 +82,7 @@ const srv = createServer((req, res) => {
     if (u.pathname.startsWith("/api/")) log.push({ m: req.method, p: u.pathname + u.search, b });
     if (u.pathname === "/api/slp/auth/me") return json(acct);
     if (u.pathname === "/api/slp/account") return json(req.method === "POST" && b.rotateKey ? { ...acct, familyKey: "ROTATED99" } : acct);
-    if (u.pathname === "/api/slp" && req.method === "GET") return json({ ok: true, configured: true, kids: DATA.kids, invites: DATA.invites });
+    if (u.pathname === "/api/slp" && req.method === "GET") return LOCKED ? json({ ok: false, needPlan: true, error: "Your dashboard comes with Sona Pro." }, 402) : json({ ok: true, configured: true, kids: DATA.kids, invites: DATA.invites });
     if (u.pathname === "/api/slp/homework") return json({ ok: true, hw: b.hw || null });
     if (u.pathname === "/api/slp/child" && req.method === "DELETE") { DATA.kids = DATA.kids.filter((k) => k.childId !== b.childId); return json({ ok: true, removed: b.childId }); }
     if (u.pathname === "/api/slp/plan" && req.method === "GET") return json(PLAN);
@@ -275,12 +284,14 @@ async function open(hash) {
   const src = readFileSync(HTML, "utf8")
     .replace(/<!--[\s\S]*?-->/g, "").replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:])\/\/[^\n]*/g, "$1");
   ok("the dashboard no longer promises anything 'free forever'", !/free forever/i.test(src));
-  ok("…and never says 'unlimited' — a covered caseload has a number, and the copy says every family", !/unlimited/i.test(src));
+  // 12 Nov 2026: a covered caseload has no cap, so "unlimited" is true — but
+  // only in the Sona Pro offer, never in a promise to a family.
+  ok("…and says 'unlimited' only in the Sona Pro offer, where it is true", (src.match(/unlimited/gi) || []).length === 1 && /<li><b>Unlimited families\.<\/b>/.test(src), (src.match(/[^.>"]*unlimited[^.<"]*/gi) || []).join(" | "));
   // Use the shared free-version promise without a fixed game count: parked
   // content must not be advertised as an available free game.
   ok("…and names the free version one way: free games, never 'two games'", !/two (free )?games/i.test(src) && (src.match(/daily practice and free games/g) || []).length >= 3, (src.match(/[^.>"]*two (free )?games[^.<"]*/i) || [""])[0]);
 
-  for (const [label, plan] of [["not covered", PLAN_NONE], ["paid", { ...PLAN_NONE, active: true, source: "paid", periodEnd: 1822000000 }], ["grandfathered", { ...PLAN_NONE, active: true, source: "grandfathered" }]]) {
+  for (const [label, plan] of [["not covered", PLAN_NONE], ["Sona Pro", PLAN_PRO], ["a yearly plan still renewing", { ...PLAN_NONE, active: true, source: "paid", periodEnd: 1822000000 }], ["grandfathered", { ...PLAN_NONE, active: true, source: "grandfathered", grandfathered: true }]]) {
     PLAN = plan; DATA = fixture(); log.length = 0;
     const { ctx, pg } = await open("#invite");
     await pg.waitForTimeout(200);
@@ -291,9 +302,11 @@ async function open(hash) {
       ok(`${label}: Settings says the families get every game`, /Your caseload has Premium, so they get every game too/.test(settings), settings);
     } else {
       ok(`${label}: the caseload message promises the free version and no Premium`, /free for your family: daily practice and free games\./.test(snip) && !/Premium/.test(snip), snip);
-      ok(`${label}: Settings says what the free version is and where Premium lives`, /daily practice and free games/.test(settings) && /With Premium for your caseload they get every game/.test(settings), settings);
+      ok(`${label}: Settings says what the free version is and where every game lives`, /daily practice and free games/.test(settings) && /With Sona Pro they get every game/.test(settings), settings);
     }
-    ok(`${label}: never pilot, trial or forever`, !/pilot|trial|forever/i.test(snip + settings), snip);
+    // "trial" is Sona Pro's own free days, and Settings may name it; a
+    // FAMILY's message never says trial, pilot or forever.
+    ok(`${label}: never pilot, trial or forever to a family, nor pilot or forever in Settings`, !/pilot|trial|forever/i.test(snip) && !/pilot|forever/i.test(settings), snip);
     ok(`${label}: learning the plan is a read, never a write`, !log.some((l) => l.m !== "GET"), JSON.stringify(log.filter((l) => l.m !== "GET")));
     await ctx.close();
   }
@@ -301,18 +314,18 @@ async function open(hash) {
 }
 
 // ── 9b. the offer in the top bar (Travis, 29 Sep 2026: "yes add the $80 button
-//        to the first screen") ──
-// A clinician from the ad lands on Community and a returning one on Today; the
-// price lived only on the Premium page, which neither sees first. The offer
-// now follows them to every page: the server's price, only once the plan has
-// answered, never to a caseload already covered, and it fits a phone.
+//        to the first screen"; Sona Pro since 12 Nov 2026) ──
+// A clinician from an ad lands on Community and a returning one on Today; the
+// price lived only on the plan page, which neither sees first. The offer
+// follows them to every page: the server's price, only once the plan has
+// answered, never once there is nothing to sell, and it fits a phone.
 {
   const bar = (pg) => pg.evaluate(() => { const b = document.getElementById("premiumTop"); return { hidden: b.hidden || getComputedStyle(b).display === "none", text: b.innerText.replace(/\s+/g, " ").trim(), href: b.getAttribute("href") }; });
   for (const hash of ["#today", "#community", "#caseload"]) {
     PLAN = PLAN_NONE; DATA = fixture();
     const { ctx, pg } = await open(hash);
     const b = await bar(pg);
-    ok(`own Premium off: ${hash} shows Get Premium with its price, and it opens the plan`, !b.hidden && /^Get Premium/.test(b.text) && /\$59\.99 a year/.test(b.text) && b.href === "#premium", JSON.stringify(b));
+    ok(`nothing on yet: ${hash} offers Sona Pro's free trial with its price, and it opens the plan`, !b.hidden && /^Try Sona Pro free/.test(b.text) && /then \$19\.99 a month/.test(b.text) && b.href === "#premium", JSON.stringify(b));
     await ctx.close();
   }
   {
@@ -320,29 +333,29 @@ async function open(hash) {
     const { ctx, pg } = await open("#today");
     await pg.click("#premiumTop"); await pg.waitForTimeout(250);
     const onPlan = await pg.evaluate(() => document.getElementById("page-premium").classList.contains("active"));
-    ok("…a tap opens the Premium page, where the bar stops repeating the offer", onPlan && (await bar(pg)).hidden);
+    ok("…a tap opens the plan page, where the bar stops repeating the offer", onPlan && (await bar(pg)).hidden);
     await pg.evaluate(() => { location.hash = "#community"; }); await pg.waitForTimeout(250);
     ok("…and it is back on the next page", !(await bar(pg)).hidden);
     ok("…and showing it is a read, never a write", !log.some((l) => l.m !== "GET"), JSON.stringify(log.filter((l) => l.m !== "GET")));
     await ctx.close();
   }
   {
-    PLAN = { ...PLAN_NONE, self: { ...SELF_OFF, price: "$64.99" } };  // the server's figure, whatever it is
+    PLAN = { ...PLAN_NONE, pro: { ...PRO_OFF, price: "$24.99" } };  // the server's figure, whatever it is
     const { ctx, pg } = await open("#today");
     const b = await bar(pg);
-    ok("the price is the server's, never typed into the page", /\$64\.99 a year/.test(b.text) && !/59\.99/.test(b.text), b.text);
+    ok("the price is the server's, never typed into the page", /\$24\.99 a month/.test(b.text) && !/19\.99/.test(b.text), b.text);
     await ctx.close();
   }
   {
-    // 29 Sep 2026: once their own Premium is on, the bar offers the next step.
-    PLAN = { ...PLAN_NONE, price: "$54.99", self: SELF_ON };
+    // the trial already used: the offer stands, without the free days
+    PLAN = { ...PLAN_NONE, pro: { ...PRO_OFF, trialAvailable: false } };
     const { ctx, pg } = await open("#today");
     const b = await bar(pg);
-    ok("own Premium on, caseload not: the bar offers Add your caseload, at the caseload's price", !b.hidden && /^Add your caseload/.test(b.text) && /\$54\.99 a year/.test(b.text) && b.href === "#premium", JSON.stringify(b));
+    ok("a clinician who has had the trial is offered Get Sona Pro, with no free days", !b.hidden && /^Get Sona Pro/.test(b.text) && !/free|then/.test(b.text) && /\$19\.99 a month/.test(b.text), JSON.stringify(b));
     await ctx.close();
   }
-  for (const [label, plan] of [["paid", { ...PLAN_NONE, self: SELF_ON, active: true, source: "paid", periodEnd: 1822000000 }], ["grandfathered", { ...PLAN_NONE, active: true, source: "grandfathered", self: { ...SELF_ON, source: "grandfathered" } }],
-    ["a 24–29 Sep free-mail clinician, who asks rather than buys", { ...PLAN_NONE, self: { ...SELF_OFF, workEmail: false, canRequest: true } }], ["the plan didn't answer", { ok: false, error: "Couldn't check your plan just now." }]]) {
+  for (const [label, plan] of [["Sona Pro on", PLAN_PRO], ["grandfathered", { ...PLAN_NONE, active: true, source: "grandfathered", grandfathered: true, self: { ...SELF_ON, source: "grandfathered" }, pro: { ...PRO_OFF, offer: false } }],
+    ["paying for both yearly plans still renewing", { ...PLAN_NONE, active: true, source: "paid", self: { ...SELF_ON, source: "paid" }, pro: { ...PRO_OFF, offer: false } }], ["the plan didn't answer", { ok: false, error: "Couldn't check your plan just now." }]]) {
     PLAN = plan; DATA = fixture();
     const { ctx, pg } = await open("#today");
     ok(`${label}: no offer in the bar`, (await bar(pg)).hidden);
@@ -357,6 +370,44 @@ async function open(hash) {
     ok(`${width}px phone: the offer takes its own row and nothing runs off the screen`, fit.over <= 0 && fit.row && fit.inside, JSON.stringify(fit));
     await ctx.close();
   }
+}
+
+// ── 9c. a closed dashboard (Travis, 12 Nov 2026: the price is "for the
+//        dashboard"): an account made from 12 Nov 2026 with no Sona Pro on ──
+// The server refuses the caseload (402 needPlan) and the plan says
+// dashboard.open:false; the page shows the plan in place of Today, Caseload
+// and a child's page, and leaves Settings, Community and Talk to Rachel open.
+{
+  LOCKED = true; PLAN = { ...PLAN_NONE, dashboard: { open: false } }; DATA = fixture();
+  for (const hash of ["#today", "#caseload", "#child/c1", "#invite"]) {
+    const { ctx, pg, errs } = await open(hash);
+    const st = await pg.evaluate(() => ({ active: [...document.querySelectorAll(".page.active")].map((p) => p.id), hash: location.hash,
+      locked: !document.getElementById("proLocked").hidden, text: document.getElementById("proLocked").innerText, offer: !document.getElementById("proOffer").hidden,
+      button: document.getElementById("proBuy").textContent, kids: document.body.innerText.includes("Mia"), err: !document.getElementById("loadError").hidden }));
+    ok(`closed dashboard: ${hash} shows the plan instead — with why, and the free trial first`,
+      st.active.join() === "page-premium" && st.hash === "#premium" && st.locked && /Your dashboard comes with Sona Pro\. Start your free trial below/.test(st.text) &&
+      st.offer && st.button === "Start my free trial" && !st.kids && !st.err && errs.length === 0, JSON.stringify(st) + errs.join("|"));
+    await ctx.close();
+  }
+  for (const hash of ["#settings", "#community", "#feedback"]) {
+    const { ctx, pg } = await open(hash);
+    const active = await pg.evaluate(() => [...document.querySelectorAll(".page.active")].map((p) => p.id).join());
+    ok(`closed dashboard: ${hash} stays open`, active === "page-" + hash.slice(1), active);
+    await ctx.close();
+  }
+  {
+    // the plan page's offer card reads the server's price, the trial length, and the trial's terms
+    const { ctx, pg } = await open("#premium");
+    const card = await pg.evaluate(() => document.getElementById("proOffer").innerText.replace(/\s+/g, " "));
+    ok("the offer names Sona Pro, the server's price and the free days", /\$19\.99 a month · 14 days free/.test(card) && /Unlimited families/.test(card), card.slice(0, 200));
+    ok("…and says, beside the button, no charge today and what follows", /No charge today: after your free trial, \$19\.99 a month until you cancel\. Cancel before the trial ends and you pay nothing\./.test(card), card);
+    log.length = 0;
+    await pg.click("#proBuy"); await pg.waitForTimeout(300);
+    const buy = log.find((l) => l.m === "POST" && l.p === "/api/slp/plan");
+    ok("…and its button asks the server for Sona Pro's checkout, by name", !!buy && JSON.stringify(buy.b) === JSON.stringify({ plan: "pro" }), JSON.stringify(buy));
+    await ctx.close();
+  }
+  LOCKED = false; PLAN = PLAN_NONE;
 }
 
 // ── 10. a parent's email: typed only if the clinician wants, used once ──

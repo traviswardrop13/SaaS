@@ -21,12 +21,7 @@ document.documentElement.className += " js";
   </script>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Speech practice kids love — Sona</title>
-  <!-- speaksona.com, FOR PARENTS AND CAREGIVERS ONLY (Travis, 26 Sep 2026:
-       "bring my website to life ... change it to target parents and
-       caregivers only. not slps"). next.config.js rewrites / to this file.
-       The clinician page it replaced lives on at /for-slps, but nothing here
-       links to it any more (Travis, 22 Oct 2026: "speaksona.com is only for
-       parents. I don't want to target therapists at all").
+  <!-- speaksona.com/for-parents, for families and caregivers.
 
        The pictures come from Travis's parent ads (26 Sep 2026), cut out by
        hand and changed only where the ads showed something the app no longer
@@ -38,7 +33,7 @@ document.documentElement.className += " js";
        page borrows the fridge list's idea in its own voice and quotes no
        parent at all. -->
   <meta name="description" content="Speech practice your child will ask for: a few playful minutes a day at home. Every try is checked on the phone and no audio ever leaves it. Built with Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical fellowship. Free to start." />
-  <link rel="canonical" href="https://www.speaksona.com/" />
+  <link rel="canonical" href="https://www.speaksona.com/for-parents" />
   <!-- WHAT SONA IS, FOR SEARCH ENGINES AND AI ASSISTANTS (22 Oct 2026).
        schema.org labels for who makes Sona and what the app is. No price
        (the App Store sets it), no count of games or books (the catalog moves
@@ -51,12 +46,12 @@ document.documentElement.className += " js";
   <script type="application/ld+json">
   [{"@context":"https://schema.org","@type":"Organization","name":"Sona","url":"https://www.speaksona.com/","logo":"https://www.speaksona.com/icon-512.png","email":"hello@speaksona.com","sameAs":["https://apps.apple.com/us/app/sona-speech/id6785755867"]},
    {"@context":"https://schema.org","@type":"WebSite","name":"Sona","url":"https://www.speaksona.com/"},
-   {"@context":"https://schema.org","@type":"MobileApplication","name":"Sona","url":"https://www.speaksona.com/","installUrl":"https://apps.apple.com/us/app/sona-speech/id6785755867","operatingSystem":"iOS, iPadOS","applicationCategory":"EducationalApplication","audience":{"@type":"PeopleAudience","suggestedMinAge":3,"suggestedMaxAge":8},"description":"Speech practice kids love: a few playful minutes a day at home, in games and picture books with Echo. Every try is checked on the phone and no audio ever leaves it. Built with Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical fellowship."}]
+   {"@context":"https://schema.org","@type":"MobileApplication","name":"Sona","url":"https://www.speaksona.com/for-parents","installUrl":"https://apps.apple.com/us/app/sona-speech/id6785755867","operatingSystem":"iOS, iPadOS","applicationCategory":"EducationalApplication","audience":{"@type":"PeopleAudience","suggestedMinAge":3,"suggestedMaxAge":8},"description":"Speech practice kids love: a few playful minutes a day at home, in games and picture books with Echo. Every try is checked on the phone and no audio ever leaves it. Built with Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical fellowship."}]
   </script>
 
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Sona" />
-  <meta property="og:url" content="https://www.speaksona.com/" />
+  <meta property="og:url" content="https://www.speaksona.com/for-parents" />
   <meta property="og:title" content="Speech practice kids love." />
   <meta property="og:description" content="A few playful minutes of speech practice a day, at home. Built with Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical fellowship. Free to start." />
   <meta property="og:image" content="https://speaksona.com/og-parents.png" />
@@ -401,7 +396,7 @@ document.documentElement.className += " js";
 
 <header id="hdr">
   <div class="wrap hbar">
-    <a class="brand" href="/" aria-label="Sona home">
+    <a class="brand" href="/for-parents" aria-label="Sona for parents">
       <img src="/assets/site/echo.webp" alt="" width="42" height="42">
       <b>Sona</b>
     </a>
@@ -774,7 +769,10 @@ document.documentElement.className += " js";
 
 <footer class="wrap">
   <div class="d">Sona is an at-home speech practice tool. It is not a diagnosis, evaluation, or substitute for professional care.</div>
-  <div class="links"><a href="mailto:hello@speaksona.com?subject=Sona">Email us</a><a href="/privacy.html">Privacy</a><a href="/terms">Terms</a></div>
+  <!-- ONE DOOR TO THE CLINICIAN PAGE, in the footer only (Travis, 12 Nov
+       2026: findable again, "a small 'For speech therapists' link"). Nothing
+       above the footer points a parent away from the App Store. -->
+  <div class="links"><a href="/">For speech therapists</a><a href="mailto:hello@speaksona.com?subject=Sona">Email us</a><a href="/privacy.html">Privacy</a><a href="/terms">Terms</a></div>
 </footer>
 
 <script>

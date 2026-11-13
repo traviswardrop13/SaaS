@@ -617,8 +617,12 @@ if (A) {
     /function err\(msg\)[\s\S]{0,200}scrollIntoView/.test(slps) &&
     !/\$\("fErr"\)\.textContent = [^"]*"[^"]/.test(slps.replace('$("fErr").textContent = "";', "")),
     "an error below the fold is an error nobody reads");
+  // 12 Nov 2026: a new clinician is taken into the dashboard whether or not
+  // the email went, so the signed-in answer names the bookmark instead of
+  // the email when it did not.
   ok("a signed-in clinician whose email failed is not told it is on its way",
-    /else if \(!j\.sent\)/.test(slps) && /didn't go out just now, so bookmark the dashboard/.test(slps));
+    /\(j\.sent \? " We've also emailed " \+ email \+ " a link to your dashboard\." : " Bookmark it: speaksona\.com\/slp"\)/.test(slps) &&
+    /if \(!j\.sent && !j\.signedIn\) \{[\s\S]*?our email didn't go out just now/.test(slps));
 }
 
 
@@ -644,22 +648,20 @@ if (A) {
 // ── a new clinician goes straight into the dashboard ──
 {
   const slps = read("public/for-slps.html");
-  // REWRITTEN 25 Sep 2026 (Travis): after Start free everyone goes to the
-  // App Store, clinicians included. This pinned a new clinician going straight
-  // into the dashboard; the dashboard link now comes by email, and the pop-up
-  // offers it too, so a clinician is never left without a way in.
+  // REWRITTEN AGAIN 12 Nov 2026 (Travis: "sell to slps"): the page is a
+  // clinician's, and Start free trial ends in the dashboard's Sona Pro page,
+  // where the trial is the first button. Not the App Store: that is the
+  // family app.
   const handler = slps.slice(slps.indexOf("function go()"));
-  ok("once the app is ready, a clinician whose dashboard email went is taken on to the App Store, with the dashboard a tap away",
-    /\} else if \(APP_READY\) \{[\s\S]*?\{ dashboard: !!j\.signedIn, button: true \}\);\s*if \(!j\.devLink\) goNext\(2600\);/.test(handler));
-  // UNTIL THE APP IS READY (Travis, 25 Sep 2026): no App Store; a new
-  // clinician goes into their dashboard, on the community page.
-  ok("until then, a new clinician goes into their dashboard's community",
-    /if \(j\.signedIn && !j\.devLink\) toDashboard\(1500\);/.test(handler) && /location\.href = "\/slp\.html#community"/.test(slps));
-  ok("…and when the email did not go, the page stays with the way in, and no App Store button until the app is ready",
-    /else if \(!j\.sent\) \{[\s\S]*?\{ dashboard: true, button: APP_READY \}\);\s*\} else if \(APP_READY\) \{/.test(handler));
+  ok("a new clinician is taken into the dashboard's Sona Pro page, with the dashboard a tap away meanwhile",
+    /var NEXT_URL = "\/slp\.html#premium";/.test(slps) &&
+    /\} else if \(j\.signedIn\) \{[\s\S]*?\{ dashboard: true \}\);\s*if \(!j\.devLink\) goNext\(1800\);/.test(handler) &&
+    /<a class="straight" id="straight" href="\/slp\.html#premium" hidden>/.test(slps));
+  ok("…an existing clinician is told to check their email, and the page stays",
+    /showDone\("Check your email", "Your sign-in link is on its way to " \+ email/.test(handler));
+  ok("…and nobody is sent to the App Store from this page any more", !/apps\.apple\.com|APP_STORE/.test(slps));
   ok("…and the page leaves only after the Lead has fired, so the pixel's request goes first",
-    handler.indexOf('sonaTrack("Lead")') > 0 && handler.indexOf('sonaTrack("Lead")') < handler.indexOf("goNext(") &&
-    handler.indexOf('sonaTrack("Lead")') < handler.indexOf("toDashboard("));
+    handler.indexOf('sonaTrack("Lead")') > 0 && handler.indexOf('sonaTrack("Lead")') < handler.indexOf("goNext("));
 
   // THE WELCOME (25 Sep 2026): one email, to a parent or "other", while the
   // app is not ready; a clinician hears it in their sign-in email instead.
@@ -722,7 +724,7 @@ if (A) {
     "first_name is only ever a clinician's own name; a parent's lead carries none");
   ok("…and records the list's answer on the saved lead", /list: listRes \? \(listRes\.ok \? listRes\.detail : "refused \(" \+ listRes\.detail \+ "\)"\) : "not configured"/.test(lead));
   ok("the landing page says, in its questions, that the email goes to the list at Resend",
-    /your email and whether you're a parent, a speech therapist or something else, kept by Sona and on our email list at Resend/.test(read("public/for-slps.html")) &&
+    /If you start from this page: your email, kept by Sona and on our email list at Resend/.test(read("public/for-slps.html")) &&
     /just your email, kept by Sona and on our email list at Resend/.test(read("public/parents.html")));
 
   // A parent's email used to stay on the phone; it now goes to the list, with
