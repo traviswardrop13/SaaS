@@ -1017,7 +1017,13 @@
       if (!finger || (e && e.pointerId !== finger.id)) return;
       var f = finger; finger = null;
       if (!f.onStone || !stone || stone.state !== "held") return;
-      if (!f.drag && nowS() - f.down < TAP_S) {
+      // A LITTLE ONE'S TAP IS A LET-GO (audit 13 Nov 2026). Ages 3-4 never
+      // turn a stone, so their tap did nothing at all: a three-year-old who
+      // only tapped never got a stone in, even at the top of the help ladder,
+      // while a press held a moment longer already let go, and from the
+      // second rung near the bridge slid it into place. A tap now does what
+      // that press does (and still counts as trying).
+      if (!f.drag && nowS() - f.down < TAP_S && !little) {
         // a tap: the stone stays where it was and turns
         stone.state = f.from === "away" ? "away" : "float";
         if (!turn()) tapAt = nowS();

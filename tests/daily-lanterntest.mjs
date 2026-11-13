@@ -136,6 +136,18 @@ async function finishStage(page,step,{seen}){
     if(g.target==='first'&&!seen.has('first')){seen.add('first');await firstLoop(page);continue;}
     if(g.target==='great'&&!seen.has('shared')){seen.add('shared');await sharedCheck(page);g=(await state(page)).lantern;}
     const target=g.target;await connect(page,'supply');await connect(page,'return');g=(await state(page)).lantern;
+    // A LAMP ALREADY LIT, SWITCHED OFF AGAIN (audit 13 Nov 2026): the next
+    // lamp's loop is done, the first lamp has been switched off, and the game
+    // says which switch to close (it used to sit there with no word)
+    if(target==='near'&&!seen.has('relight')&&g.served.includes('first')&&g.active&&!lamp(g,target).closed){seen.add('relight');
+      await switchTo(page,'first',false);await switchTo(page,target,true);g=(await state(page)).lantern;
+      const said=await page.evaluate(()=>document.getElementById('dailyBanner').textContent);
+      ok('a finished lamp switched off holds the next job, and the banner says which switch to close',lamp(g,target).lit&&!g.served.includes(target)&&g.target===target&&said==='Close the switch for the first mushroom lamp again.',{said,served:g.served,target});
+      await switchTo(page,'source',false);
+      const box=await page.evaluate(()=>document.getElementById('dailyBanner').textContent);g=(await state(page)).lantern;
+      ok('the power box switched off says to close the power box switch, not that a cord is missing',box==='Close the power box switch.'&&!g.served.includes(target),{box});
+      await switchTo(page,'source',true);await switchTo(page,'first',true);g=(await state(page)).lantern;
+      ok('…and closing both finishes the job',g.served.includes(target),{served:g.served});}
     if(g.active&&g.target===target&&!lamp(g,target).closed)await switchTo(page,target,true);
     g=(await state(page)).lantern;requireCheck('real terminal voltage and current power '+target,lamp(g,target).lit&&lamp(g,target).current>.04&&lamp(g,target).voltage>.04&&g.served.includes(target),lamp(g,target));
   }

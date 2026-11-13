@@ -5,5 +5,5 @@
 //
 // Its own suite for the same reason as tests/bridgeplaytest.mjs. This file
 // only picks the parts; everything else lives in bridgetest.mjs.
-process.env.BRIDGE_PART = "little,help,motion";
+process.env.BRIDGE_PART = "little,littletaps,help,motion";
 await import("./bridgetest.mjs");

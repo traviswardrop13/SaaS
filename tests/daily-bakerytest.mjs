@@ -151,10 +151,13 @@ async function bakeChecks(page,age){
   ok('cancelled tray placement cannot load the oven',batch(g).trayState==='staging'&&g.oven.batch===-1&&!g.pointer,g.pointer);
   await drag(page,'#bakeryTray',g.oven);await advance(page,6000);g=(await state(page)).bakery;
   ok('a tray in the oven waits for a real heat-control action',batch(g).trayState==='oven'&&!g.heat.touched&&batch(g).bake===0&&g.stage===step,{heat:g.heat,batch:batch(g)});
+  // THE OVEN WAITS FOR A TOUCH, NOT FOREVER (audit 13 Nov 2026): an untouched handle glows after a few seconds
+  ok('…and while it waits untouched the heat handle glows, still baking nothing by itself',g.heat.hint===true&&await page.locator('#bakeryHeat.bakery-heat--hint').count()===1&&batch(g).bake===0,{hint:g.heat.hint});
   await drag(page,'#bakeryTray',g.rack);g=(await state(page)).bakery;
   ok('moving an unbaked tray towards the rack cannot cool or finish it',batch(g).trayState==='oven'&&!batch(g).cooled&&g.ovenRemovals===0,batch(g));
   await page.locator('#bakeryHeat').focus();const previous=g.heat.setpoint;await page.keyboard.press('ArrowRight');g=(await state(page)).bakery;
   ok('the focused native heat range responds to an arrow key',g.heat.touched&&g.heat.setpoint>previous&&g.heat.touches===1,g.heat);
+  ok('…and the glow goes once the handle is touched',!g.heat.hint&&await page.locator('#bakeryHeat.bakery-heat--hint').count()===0,g.heat);
   await page.keyboard.press('End');await advance(page,5000);g=(await state(page)).bakery;const tooHot=batch(g).bake;await advance(page,2200);g=(await state(page)).bakery;
   ok('too-hot warmth pauses baking without losing the tray or awarding a job',!g.heat.useful&&batch(g).bake===tooHot&&!batch(g).baked&&g.stage===step&&g.completedGoals.length===step,{heat:g.heat,bake:batch(g).bake});
   await until(page,()=>__dailyBakery.power===0,14000);g=(await state(page)).bakery;const ordinary=g.heat.band;

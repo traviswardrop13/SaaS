@@ -3202,7 +3202,9 @@ giant music box's crank (about four circles, no star). Ages 3-4: no star and
 nothing to overdo; the meter only fills, and the toy wakes when it rings.
 Two ladders climb side by side: misses (a wider star, then the key catches in
 it, then any let-go past 30% wakes the toy) and seconds without a quarter
-turn (arrows and a moving dot, then rubbing winds, then any drag winds).
+turn (arrows and a moving dot, then rubbing winds, then any drag winds); a
+tap that stays on one spot counts at least half a second of those (audit 13
+Nov 2026: a child who only poked the dial never saw the help).
 Help pill: "Oil can" (every circle counts double and the star is wide for
 10 s). One finger owns the dial: a circling finger keeps it, but a touch that
 has not moved for 0.3 s gives way to a new one, with no try (a resting thumb
@@ -3226,7 +3228,10 @@ for the finale. Ages 3-4: circle, square, triangle, star, moon, heart, the
 right way round, two holes open at a time, a bounce back from the wrong one.
 Ladder: misses or seconds of trying (a ghost of the stone in the hole, then
 the hole glows and an arrow says which way and how many taps, then a drop
-near the hole turns it into place). Help pill: "Calm river" (the river goes
+near the hole turns it into place). Ages 3-4 never turn a stone, so their
+tap is a let-go, the same as a press (audit 13 Nov 2026: a three-year-old
+who only tapped never got a stone in): from the second rung a tap near the
+bridge slides it in. Help pill: "Calm river" (the river goes
 glassy, the stone still, the ghost shows, 10 s). End card: "The bridge is
 whole again!" / "Every stone is back where it belongs."
 
@@ -3375,6 +3380,16 @@ Claude joined them to the story:
   `narration.js` (story cards that would stop a game at its 2nd and 6th
   word): no app page loads either; their suites still run. No story card
   interrupts a game.
+- **No move a child can be stuck on** (audit 13 Nov 2026): Observatory's
+  tray gear dropped on a full axle takes its place (the gear there goes back
+  to the tray; only an empty axle took one, so a wrong size first blocked
+  the right one for good); Lantern says which switch to close when a lamp
+  already lit, or the power box, was switched off ("Close the switch for the
+  first mushroom lamp again.", "Close the power box switch.", and Echo once):
+  a job still needs every lamp lit; Bakery's heat handle glows (pulsing,
+  still under Reduce Motion) once a tray has sat in the oven untouched for
+  the ladder's first rung of seconds. The new words are Rachel's and
+  Travis's to change.
 - **For Rachel:** every line a child hears, in the PR body; the eleven games'
   directions (`voicedoc` B7-B8, 124 lines: 11 in B7,
   113 in B8), among them a few to look at:
