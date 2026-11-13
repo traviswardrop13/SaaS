@@ -4,7 +4,7 @@
   "use strict";
   var api,cv,ctx,layer,root,help,bannerEl,endButtons=[],socketButtons={},switchButtons={},modeButtons={},undoButton,statusEl,listeners=[],art={};
   var W=390,H=844,work={top:145,height:570},young=true,count=5,stage=-1,taskIndex=0,goals=[],groups=[],byId={},terminals={},wires=[],mode="supply",served=[],completed=[];
-  var active=false,paused=false,away=false,won=false,destroyed=false,initialized=false,master=true,trip=false,gesture=null,power=0,pulseTime=0,clock=0,last=0,raf=0,doneAt=0,misses=0,connections=0,disconnects=0,switches=0,undoUses=0,manualDistance=0,said={},reduceMotion=false,voltages={},reach={},traceEdges=[];
+  var active=false,paused=false,away=false,won=false,destroyed=false,initialized=false,master=true,trip=false,gesture=null,power=0,pulseTime=0,clock=0,last=0,raf=0,doneAt=0,misses=0,connections=0,disconnects=0,switches=0,undoUses=0,manualDistance=0,said={},fault=false,reduceMotion=false,voltages={},reach={},traceEdges=[];
   var POWER=12,TAU=Math.PI*2;
   function $(id){return document.getElementById(id);}
   function clamp(x,a,b){return Math.max(a,Math.min(b,x));}
@@ -56,7 +56,8 @@
   }
   function allServedLit(){return served.every(function(id){return byId[id].lit;});}
   function tryComplete(){if(!playable()||gesture||doneAt)return;var t=task(),g=group();if(!t||!g)return;if(t.kind==="feed"){if(connectedPair(g.wires.supply,"source:plus","first:in"))finishTask();return;}if(g.lit&&allServedLit()&&completeWire(g.wires.supply)&&completeWire(g.wires.return)){if(served.indexOf(g.id)<0)served.push(g.id);finishTask();}}
-  function startTask(){cancelGesture();var g=group();mode=task()&&task().kind==="loop"&&completeWire(g.wires.supply)?"return":"supply";banner(task()&&task().kind==="feed"?"Join the power box to the first lamp":"A complete loop for the "+g.name);instruct("task-"+taskIndex,"Drag both cord ends to their sockets. Add the return cord, then close the pictured switch.");hud();}
+  function jobText(){var g=group();return task()&&task().kind==="feed"?"Join the power box to the first lamp":"A complete loop for the "+g.name;}
+  function startTask(){cancelGesture();var g=group();fault=false;mode=task()&&task().kind==="loop"&&completeWire(g.wires.supply)?"return":"supply";banner(jobText());instruct("task-"+taskIndex,"Drag both cord ends to their sockets. Add the return cord, then close the pictured switch.");hud();}
   function finishTask(){if(!playable()||doneAt)return;cancelGesture();if(taskIndex<goals[stage].length-1){taskIndex++;startTask();return;}active=false;power=0;completed.push(stage);doneAt=clock+.85;sound("correct");banner(task().kind==="feed"?"Supply joined! The return and switch come next.":"A complete circuit! The path is glowing.");if(api&&api.cheer)try{api.cheer(task().kind==="feed"?"A lovely connection!":"A lovely warm light!");}catch(e){}hud();}
   function miss(text){misses++;banner(text);instruct("gentle-"+assistance(),"Match the socket circles. The glowing pulse shows where the connected cord can reach.");hud();}
   // A LAMP ALREADY LIT, SWITCHED OFF AGAIN (audit 13 Nov 2026). A job is done
@@ -66,10 +67,15 @@
   // which switch to close, and Echo says it once (the rule itself is kept: the
   // walk ends with every lamp glowing, and a shared switch still really cuts
   // its branch). The switch to close is the dark lamp's own, or the first open
-  // one between it and the power box.
-  function openSwitchFor(g){for(var v=g;v&&v.id!=="source";v=v.parent?byId[v.parent]:null)if(!v.closed)return v;return g;}
-  function darkServed(){for(var i=0;i<served.length;i++)if(!byId[served[i]].lit)return byId[served[i]];return null;}
-  function afterManual(){circuit();var cur=group(),off;if(trip){banner("The wire goes around the bulb. Lift that cord end and try the lamp route.");instruct("trip","A wire went around the bulb. Lift that cord end, then follow the lamp picture.");}else if(!master){banner("Close the power box switch.");instruct("master","The power box switch is open. Close it to send the power again.");}else if(cur&&cur.lit&&(off=darkServed())&&completeWire(cur.wires.supply)&&completeWire(cur.wires.return)){off=openSwitchFor(off);banner("Close the switch for the "+off.name+" again.");instruct("relight","A lamp you lit went dark. Close its switch again.");}else if(group()&&group().closed&&!group().lit){banner("The lamp needs a way back to the power box.");instruct("return","Follow the return cord back to the power box. A gap keeps the lamp dark.");}tryComplete();hud();draw();}
+  // shared switch between it and the power box: only a shared switch cuts the
+  // lamps after it (a lamp's own switch darkens that lamp alone). That covers
+  // the new lamp too: wired and switched on, but dark because a shared switch
+  // before it is open, it names that switch, never the return cord. Once
+  // nothing is wrong, the job's own words come back (a fault's words used to
+  // stay on screen after it was put right).
+  function cutSwitch(g){if(!g.closed)return g;for(var v=g.parent?byId[g.parent]:null;v&&v.id!=="source";v=v.parent?byId[v.parent]:null)if(v.kind==="shared"&&!v.closed)return v;return null;}
+  function darkCut(){for(var i=0;i<served.length;i++){var g=byId[served[i]];if(!g.lit&&cutSwitch(g))return cutSwitch(g);}return null;}
+  function afterManual(){circuit();var cur=group(),t=task(),off=null,was=fault;fault=true;if(trip){banner("The wire goes around the bulb. Lift that cord end and try the lamp route.");instruct("trip","A wire went around the bulb. Lift that cord end, then follow the lamp picture.");}else if(!master){banner("Close the power box switch.");instruct("master","The power box switch is open. Close it to send the power again.");}else if(cur&&t&&t.kind==="loop"&&completeWire(cur.wires.supply)&&completeWire(cur.wires.return)&&(off=cur.lit?darkCut():cur.closed?cutSwitch(cur):null)){banner("Close the switch for the "+off.name+" again.");instruct("relight","A lamp you lit went dark. Close its switch again.");}else if(cur&&cur.closed&&!cur.lit){banner("The lamp needs a way back to the power box.");instruct("return","Follow the return cord back to the power box. A gap keeps the lamp dark.");}else{fault=false;if(was&&cur)banner(jobText());}tryComplete();hud();draw();}
   function eventPoint(e){var r=cv.getBoundingClientRect();return{x:(e.clientX-r.left)*W/r.width,y:(e.clientY-r.top)*H/r.height};}
   function cancelGesture(){var g=gesture;gesture=null;if(g&&g.surface)try{if(g.surface.hasPointerCapture(g.id))g.surface.releasePointerCapture(g.id);}catch(e){}}
   function downEnd(e,n){if(!playable()||gesture||(e.button!=null&&e.button!==0))return;var w=currentWire();if(!w)return;e.preventDefault();var p=wirePoint(w,n,false);gesture={wire:w,end:n,point:{x:p.x,y:p.y},start:{x:p.x,y:p.y},travel:0,id:e.pointerId,surface:e.currentTarget,keyboard:false};try{e.currentTarget.setPointerCapture(e.pointerId);}catch(err){}hud();}
@@ -125,7 +131,7 @@
   function frame(now){if(destroyed)return;var dt=last?Math.min(.05,(now-last)/1000):0;last=now;tick(dt);draw();raf=requestAnimationFrame(frame);}
   function onWord(index){if(destroyed||index<0||index>=count)return;if(stage===index&&active){paused=false;power=POWER;hud();return;}cancelGesture();stage=index;taskIndex=0;active=true;paused=false;won=false;power=POWER;pulseTime=0;doneAt=0;misses=0;said={};last=0;startTask();draw();}
   function pause(){paused=true;last=0;cancelGesture();hud();draw();}
-  function reset(){cancelGesture();groups.forEach(function(g){g.closed=g.id==="source";g.lit=false;});wires.forEach(function(w){w.ends=[null,null];w.connections=0;w.lastEnd=0;});master=true;served=[];completed=[];stage=-1;taskIndex=0;mode="supply";active=false;paused=false;won=false;power=0;pulseTime=0;clock=0;doneAt=0;misses=0;connections=0;disconnects=0;switches=0;undoUses=0;manualDistance=0;said={};last=0;circuit();banner("The lantern path is waiting for its complete circuits.");hud();draw();}
+  function reset(){cancelGesture();groups.forEach(function(g){g.closed=g.id==="source";g.lit=false;});wires.forEach(function(w){w.ends=[null,null];w.connections=0;w.lastEnd=0;});master=true;served=[];completed=[];stage=-1;taskIndex=0;mode="supply";active=false;paused=false;won=false;power=0;pulseTime=0;clock=0;doneAt=0;misses=0;connections=0;disconnects=0;switches=0;undoUses=0;manualDistance=0;said={};fault=false;last=0;circuit();banner("The lantern path is waiting for its complete circuits.");hud();draw();}
   function finale(){cancelGesture();active=false;paused=false;power=0;doneAt=0;circuit();won=completed.length>=count&&served.length===groups.length-1&&allServedLit();banner(won?"The lantern walk is glowing!":"The woodland circuits are waiting.");hud();draw();}
   function destroy(){if(!initialized)return;destroyed=true;cancelGesture();if(raf)cancelAnimationFrame(raf);raf=0;listeners.forEach(function(l){l[0].removeEventListener(l[1],l[2],l[3]);});listeners=[];if(root&&root.parentNode)root.parentNode.removeChild(root);if(cv)cv.classList.remove("daily-lantern-canvas");if(help){help.classList.remove("lantern-help","powered");help.disabled=false;}initialized=false;active=false;publish();}
   window.DailyAdventureGames=window.DailyAdventureGames||{};

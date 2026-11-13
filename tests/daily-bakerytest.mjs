@@ -153,6 +153,15 @@ async function bakeChecks(page,age){
   ok('a tray in the oven waits for a real heat-control action',batch(g).trayState==='oven'&&!g.heat.touched&&batch(g).bake===0&&g.stage===step,{heat:g.heat,batch:batch(g)});
   // THE OVEN WAITS FOR A TOUCH, NOT FOREVER (audit 13 Nov 2026): an untouched handle glows after a few seconds
   ok('…and while it waits untouched the heat handle glows, still baking nothing by itself',g.heat.hint===true&&await page.locator('#bakeryHeat.bakery-heat--hint').count()===1&&batch(g).bake===0,{hint:g.heat.hint});
+  // …it pulses, and under Reduce Motion it glows and holds still (the handle
+  // is a slider's thumb, which the sheet's Reduce Motion `*` never reached).
+  // Three pictures a quarter second apart: the same three means it is still.
+  {const still=async()=>{const shots=[];for(let i=0;i<3;i++){if(i)await page.waitForTimeout(250);shots.push(await page.locator('#bakeryHeat').screenshot({animations:'allow'}));}return shots.every(s=>s.equals(shots[0]));};
+   const was=await page.evaluate(()=>matchMedia('(prefers-reduced-motion: reduce)').matches?'reduce':'no-preference');
+   await page.emulateMedia({reducedMotion:'no-preference'});const pulses=!(await still());
+   await page.emulateMedia({reducedMotion:'reduce'});const held=await still();
+   await page.emulateMedia({reducedMotion:was});
+   ok('…the glow pulses, and under Reduce Motion it holds still',pulses&&held,{pulses,held});}
   await drag(page,'#bakeryTray',g.rack);g=(await state(page)).bakery;
   ok('moving an unbaked tray towards the rack cannot cool or finish it',batch(g).trayState==='oven'&&!batch(g).cooled&&g.ovenRemovals===0,batch(g));
   await page.locator('#bakeryHeat').focus();const previous=g.heat.setpoint;await page.keyboard.press('ArrowRight');g=(await state(page)).bakery;

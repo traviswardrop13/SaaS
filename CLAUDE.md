@@ -3383,16 +3383,19 @@ Claude joined them to the story:
 - **No move a child can be stuck on** (audit 13 Nov 2026): Observatory's
   tray gear dropped on a full axle takes its place (the gear there goes back
   to the tray; only an empty axle took one, so a wrong size first blocked
-  the right one for good); Lantern says which switch to close when a lamp
-  already lit, or the power box, was switched off ("Close the switch for the
-  first mushroom lamp again.", "Close the power box switch.", and Echo once):
-  a job still needs every lamp lit; Bakery's heat handle glows (pulsing,
-  still under Reduce Motion) once a tray has sat in the oven untouched for
-  the ladder's first rung of seconds. The new words are Rachel's and
-  Travis's to change.
+  the right one for good), though an empty axle that catches the drop still
+  comes first, and a gear dropped on its twin changes nothing; Lantern says
+  which switch to close when a lamp already lit, a shared switch before the
+  new lamp, or the power box, was switched off ("Close the switch for the
+  first mushroom lamp again.", "Close the switch for the gathering lamps
+  again.", "Close the power box switch.", and Echo once), and the job's own
+  words come back once it is put right: a job still needs every lamp lit;
+  Bakery's heat handle glows (pulsing; under Reduce Motion it glows and
+  holds still) once a tray has sat in the oven untouched for the ladder's
+  first rung of seconds. The new words are Rachel's and Travis's to change.
 - **For Rachel:** every line a child hears, in the PR body; the eleven games'
-  directions (`voicedoc` B7-B8, 124 lines: 11 in B7,
-  113 in B8), among them a few to look at:
+  directions (`voicedoc` B7-B8, 126 lines: 11 in B7,
+  115 in B8), among them a few to look at:
   Rooftops' "The gutter brings every missed seed back", Postboat's "Steer
   beside the right dock", Concert's "Your sounds are safe" (in a speech app),
   Nest Lift's "Hold Up to lift"; ages 3-4 say five words, not six; the games
