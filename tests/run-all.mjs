@@ -185,6 +185,7 @@ const SUITES = [
   "slpdesigntest.mjs", // SLP workspace: filters, failure recovery, bulk assignments, mobile layout
   "craftedarttest.mjs", // every Feed word has loadable, usable illustrated artwork
   "arttest.mjs",   // ART1: every sticker renders, fits its box and stays in the safe band
+  "socialtest.mjs", // SOCIAL1: the daily video — the content rules, one post a day, AI-labelled, not for kids
 ];
 
 // The failed suites are named again at the very end: CI's log runs to about
