@@ -233,7 +233,7 @@ async function playthrough(age,total){
   const {page,context,errors}=await boot({device:{age}});let s=await state(page),g=s.bakery;const initial=held(g),reps=await page.evaluate(()=>Sona.weekReps(0));
   ok('age '+age+' uses five/eight real bakery goals and three/four buns per batch',g.stages===total&&s.speech.steps===total&&g.batches.every(b=>b.buns.length===(total===5?3:4)),{stages:g.stages,steps:s.speech.steps,buns:g.batches.map(b=>b.buns.length)});
   ok('the bakery uses normal Premium catalog access',await page.evaluate(()=>{const a=Sona.gameAct('bakery');return Sona.gameAccess('bakery').allowed&&a.tier==='premium'&&a.say&&a.go==='/daily-adventure.html';}));
-  await ask(page);await page.keyboard.press('ArrowRight');await advance(page,14000);s=await state(page);
+  await ask(page);await page.keyboard.press('ArrowRight');await advance(page,14000);ok('…a quiet window first makes Echo say the word again, once, and listen again: nothing earned',await page.evaluate(()=>__sayplay.phase==='turn'&&__sayplay.step===0&&__sayplay.said===0));await advance(page,14000);s=await state(page);
   ok('silence, waiting and tool keys cannot create ingredients or a finished goal',s.speech.phase==='nudge'&&s.speech.step===0&&!s.bakery.active&&equal(held(s.bakery),initial)&&await page.evaluate(n=>Sona.weekReps(0)===n,reps),s.speech);
   // 23 Oct 2026 (Travis): a story day's game asks each word three times
   // (Sona.STORY_SAY_TIMES), so two sayings are kept but earn nothing yet.

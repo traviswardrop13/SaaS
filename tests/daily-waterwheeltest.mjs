@@ -67,7 +67,7 @@ try{
     const {page,context,errors}=await boot({device:{age}});let s=await state(page);
     ok('the age '+age+' host uses its real five/eight-step path',s.wheel.stages===total&&s.speech.steps===total,{stages:s.wheel.stages,steps:s.speech.steps});
     ok('the local catalog grants normal Premium access with a daily route',await page.evaluate(()=>{const a=Sona.gameAct('waterwheel');return Sona.gameAccess('waterwheel').allowed&&a.tier==='premium'&&a.say&&a.go==='/daily-adventure.html';}));
-    const beforeReps=await page.evaluate(()=>Sona.weekReps(0));await ask(page);await advance(page,14000);s=await state(page);
+    const beforeReps=await page.evaluate(()=>Sona.weekReps(0));await ask(page);await advance(page,14000);ok('…a quiet window first makes Echo say the word again, once, and listen again: nothing earned',await page.evaluate(()=>__sayplay.phase==='turn'&&__sayplay.step===0&&__sayplay.said===0));await advance(page,14000);s=await state(page);
     ok('a full silent word window earns no troughs, water, step or rep at age '+age,s.speech.step===0&&s.speech.phase==='nudge'&&!s.wheel.active&&s.wheel.pieces.length===0&&s.wheel.delivered===0&&await page.evaluate(n=>Sona.weekReps(0)===n,beforeReps),compact(s.wheel));
     // 23 Oct 2026 (Travis: "say the sound 3 times not twice for every daily
     // game"): a story game asks each word Sona.STORY_SAY_TIMES (3) times. Each

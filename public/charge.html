@@ -2240,13 +2240,13 @@
         NEED=save;
         // Even a native transcript cannot manufacture a try when the mic found
         // no sustained speech. No outcomes, totals, clips, coaching or rewards.
-        if(reps===0){if(await showQuiet(wordCheckIssue?"word":null))continue;return null;}
+        if(reps===0){if(await showQuiet(wordCheckIssue?"word":null)){await sayAgain();continue;}return null;}
         turnPhase="checking";micGo(false);$("gpState").textContent="";
         var l=$("leo");l.classList.add("think");
         var v=await verifyClip();
         if(!(await practiceReady()))return null;
         l.classList.remove("think");
-        if(v==="unknown"){if(await showQuiet())continue;return null;}
+        if(v==="unknown"){if(await showQuiet()){await sayAgain();continue;}return null;}
         anyReps=true;attemptsTotal+=reps;logV(v);
         if(!DEMO_REPLAY){
           if(S&&S.bumpReps)S.bumpReps(reps);
@@ -2256,6 +2256,15 @@
       }
       NEED=save;return null;
     }
+    // TRY AGAIN SAYS IT AGAIN (audit 13 Nov 2026). "Try again" on the quiet
+    // card used to reopen the mic in silence: a 4-year-old who had not known
+    // what to do the first time now had no model and no "Go!" at all, only a
+    // glowing mic. Echo says his short line first, the one a tap on him says
+    // ("Ready? Make your R sound, five times. Go!", the cue already spent),
+    // into the closed mic, exactly as the round's first prompt is said. It is
+    // the same line, not new words, and it follows the tap: nothing is said
+    // on a timer (the idle nudge, armIdle, stays off).
+    async function sayAgain(){ if(await practiceReady()) await playPrompt(); }
     var lastVerdict="unknown";
     // First-ever mic ask gets a primer BEFORE the browser prompt: what Echo
     // hears and what happens to it, in parent-readable words. Skipped forever
@@ -2355,7 +2364,13 @@
       // tries", which left the page the same day.
       // SLP gating: the rung only ever advances on HONEST evidence — two clean
       // scored rounds at the stretch level, never on mercy or offline scoring.
-      if(v==="pass" && useRung>=RUNG && S && S.rungWin && !DEMO_REPLAY){
+      // A WHOLE ROUND, NOT A PART OF ONE (audit 13 Nov 2026): the 20-second
+      // cap ends a round "done" with however many tries it heard, so a child
+      // who said the sound twice and ran out of time could pass and count a
+      // step win (two of those move the step up). A win now needs every try
+      // the round asked for (reps>=NEED). The part-round itself is untouched:
+      // it still opens the game, as before. Rachel's to change.
+      if(v==="pass" && reps>=NEED && useRung>=RUNG && S && S.rungWin && !DEMO_REPLAY){
         // KIDS1: rung wins belong to the child who earned them. The count is
         // kept inside that child's progress by Sona.rungWin(); this page holds
         // no key of its own, because a key built from the sound and rung is

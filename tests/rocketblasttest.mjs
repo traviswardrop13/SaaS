@@ -70,7 +70,7 @@ try{
  if(!part||part==='struggle'){
   // ── (b) a child who keeps missing, and (c) help nobody answers ──
   const {page,context,errors}=await fresh();await page.locator('#startBtn').click();
-  await until(page,()=>__sayplay.listening);await advance(page,13500);let s=await state(page);ok('(a) a whole quiet listen earns nothing',s.speech.step===0&&!s.rocket.active&&s.rocket.arrived===0&&s.speech.phase==='nudge',s.speech);
+  await until(page,()=>__sayplay.listening);await advance(page,13500);ok('…a quiet window first makes Echo say the word again, once, and listen again: nothing earned',await page.evaluate(()=>__sayplay.phase==='turn'&&__sayplay.step===0&&__sayplay.said===0));await advance(page,14000);let s=await state(page);ok('(a) two quiet listens earn nothing',s.speech.step===0&&!s.rocket.active&&s.rocket.arrived===0&&s.speech.phase==='nudge',s.speech);
   await page.locator('#micBtn').click();ok('two sayings earn the first rocket',await sayWord(page));await powerOff(page);
   const quietFrom=await page.evaluate(()=>__quiet.voicedFrames);const ladders=[];
   for(let n=0;n<2;n++){s=await state(page);await pull(page,wide(s.rocket));await until(page,()=>__rocket.state!=='flight',7000);s=await state(page);ladders.push(s.rocket.ladder);ok('wide flight '+(n+1)+' misses and comes back',s.rocket.state==='ready'&&s.speech.step===0&&s.rocket.misses===n+1,s.rocket);}

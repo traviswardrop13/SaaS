@@ -54,7 +54,7 @@ try{
   ok('the first word turn opens',await start(page),await st(page));
   let s=await st(page);
   ok('before the word nothing is hidden and every door is shut and inert',s.pk.mode==='idle'&&s.pk.doors.every(d=>d.open===0&&!d.holds)&&await page.evaluate(()=>[0,1,2].every(i=>document.getElementById('peekDoor'+i).disabled)),s);
-  await advance(page,13000);s=await st(page);
+  await advance(page,13000);ok('…a quiet window first makes Echo say the word again, once, and listen again: nothing earned',await page.evaluate(()=>__sayplay.phase==='turn'&&__sayplay.step===0&&__sayplay.said===0));await advance(page,14000);s=await st(page);
   ok('silence earns nothing: the mic waits for a tap and no picture hides',s.sp.phase==='nudge'&&s.sp.step===0&&s.sp.said===0&&s.pk.mode==='idle'&&s.pk.finds.length===0,s);
   await tapDoor(page,1);await advance(page,500);s=await st(page);
   ok('a tap on a door is not a word',s.pk.mode==='idle'&&s.sp.step===0&&s.pk.doors.every(d=>d.open===0),s);
@@ -199,7 +199,7 @@ try{
    await start(page);
    let f=await boxes(page,['turnPanel','hear','peekBanner','close',...DOORS]);
    ok(w+': the word turn is on screen, under the doors',['turnPanel','hear','close'].every(id=>inside(f,f.el[id]))&&big(f.el.hear)&&big(f.el.close)&&DOORS.every(id=>inside(f,f.el[id])&&apart(f.el[id],f.el.turnPanel)&&apart(f.el[id],f.el.peekBanner))&&f.scroll<=f.vh+1&&f.scrollW<=f.vw+1,f);
-   await advance(page,13000);
+   await advance(page,13000);await advance(page,14000);   // a quiet window, Echo asks again, a second quiet window
    f=await boxes(page,['turnPanel','micBtn',...DOORS]);
    ok(w+': "Tap the mic" fits with the mic button',inside(f,f.el.turnPanel)&&inside(f,f.el.micBtn)&&big(f.el.micBtn)&&DOORS.every(id=>apart(f.el[id],f.el.turnPanel)),f);
    await page.locator('#micBtn').click({timeout:5000});await sayWord(page);await toSearch(page);

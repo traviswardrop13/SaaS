@@ -3124,6 +3124,12 @@ the page.
   closes the mic, and coming back needs a tap. Nothing plays while the mic
   listens (Echo's line holds it shut, `SayCheck.hold`). A tap on the picture
   never turns a talking page.
+- **It remembers its page** (audit 13 Nov 2026): each intro page shown
+  writes today's place (`Sona.storyPlace(id, page)`, the quest record's
+  `tp`, "<day>|<id>|<page>"), so a child who leaves at page 7 comes back the
+  same day to "Keep going" (that page) with a cream "Start from the
+  beginning". It only remembers a place: nothing is counted, and another day
+  reads as page 1. The non-talking stories still write only `seen`.
 - **The day:** the intro's last page, heard (or turned by Skip, or by Next
   with the mic off), finishes the day (`questEnd(<id>)`: one sticker) and
   the ending plays straight on, no game and no "Tap to see what happens";
@@ -3146,8 +3152,9 @@ the page.
 - **For Rachel** (built on defaults until she answers; the PR lists every
   word): every key word and line; three sayings a page; a child is asked
   their sound's words whatever their age (the story games' rule, not the
-  books' `soundNorm` rule: a 4-year-old on R is asked R words, and setup
-  picks R for 2-4 year olds, the walkthrough of 31 Oct found); "xylophone"
+  books' `soundNorm` rule: a 4-year-old on R is asked R words; setup no
+  longer ticks R for anyone, since 13 Nov 2026: the sound picker starts
+  empty and Continue waits for a tap); "xylophone"
   (Z, spelled with an x); "fireworks" for F; S's "seashell" left out on
   purpose (S then SH); a child the phone can't hear can finish Day 1 by a
   grown-up's Skip or "Not now" (the lighthouse day could not be finished
@@ -4667,7 +4674,10 @@ solid one at a time, and this is the first:
 - **A wave ends** when its fruit are sliced (6, 8, then 10; a golden fruit
   counts three) or after 45 seconds of play, whatever the count.
 - **A missed ordinary fruit costs a heart** during active play, outside an
-  ask or earned Super Slice. Misses ease the pace; Super Slice extras cost
+  ask or earned Super Slice, and only once the child has sliced their first
+  fruit of the round (audit 13 Nov 2026: a child who had not touched the
+  screen lost all three hearts in about 7.5 seconds). Until then a drawn
+  fingertip swipes across a fruit in the air (`drawSwipeHint`). Misses ease the pace; Super Slice extras cost
   nothing. The board keeps moving until the last heart is gone.
 - **The say-it card shows only between waves** ("Say “rrrr” for wave 2!";
   for a child on R it may ask a syllable or a short word, see "Games ask for
@@ -5885,6 +5895,20 @@ are enforced in code and pinned by tests — change them only on Rachel's say-so
 - **Child slots are never reused, and a removed child takes their saved tries**
   (`addKid` high-water mark, `removeKid` deletes that slot's clips; a page that
   leaves right after either waits on `Sona.clipsSettled()`).
+- **After a quiet or turned-down try, Echo says it again, once** (audit 13 Nov
+  2026; built on defaults, Rachel's to change). On the "Say it 5 times" page,
+  "Try again" on the quiet card plays Echo's short line (the one a tap on him
+  plays) before the mic reopens. In the word games (`sayplay.js`, every game
+  built on it) and Feed Echo, the first quiet window or turned-down try of
+  each word makes Echo say "Say... <word>." and "Go!" again (what "Hear it" or
+  the mic button plays) and listen once more; the second waits on the mic
+  button, as before, so a child the phone cannot hear is not asked on a loop.
+  No new words, nothing on a timer, and silence still moves nothing.
+- **A step win needs the whole round** (audit 13 Nov 2026; Rachel's to
+  change). The practice page's 20-second cap ends a round with however many
+  tries it heard; only a round with every try it asked for (`reps>=NEED`)
+  that passes counts toward moving up a step (`Sona.rungWin`). A part-round
+  still opens the game and still fills the jar, as before.
 
 ## Word positions and the practice steps (22 Oct 2026)
 Travis, 22 Oct 2026: "a full, in-depth, thorough build-out of word positions

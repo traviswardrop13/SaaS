@@ -96,8 +96,8 @@ try{
   ok('Echo first says how the game goes, in the start card\'s words',s.speech.listening&&/three times to find a toy's key\. Wind it with circles/.test((await audit(page)).lines.join('|')),(await audit(page)).lines);
   await advance(page,1500);s=await st(page);
   ok('silence never finds the key',!s.w.active&&!s.w.keyOut&&s.w.turns===0&&s.speech.step===0,s);
-  await advance(page,13000);s=await st(page);
-  ok('a whole quiet listening window still earns nothing, and the mic closes to wait for a tap',s.speech.phase==='nudge'&&!s.w.active&&!s.w.keyOut&&s.w.turns===0&&s.speech.step===0,s);
+  await advance(page,13000);ok('…a quiet window first makes Echo say the word again, once, and listen again: nothing earned',await page.evaluate(()=>__sayplay.phase==='turn'&&__sayplay.step===0&&__sayplay.said===0));await advance(page,14000);s=await st(page);
+  ok('two quiet listening windows still earn nothing, and the mic closes to wait for a tap',s.speech.phase==='nudge'&&!s.w.active&&!s.w.keyOut&&s.w.turns===0&&s.speech.step===0,s);
   await circle(page,1.5);s=await st(page);
   ok('before the word the key is tucked in: circling winds nothing',s.w.turns===0&&s.w.clicks===0&&!s.w.held,s.w);
   await page.locator('#micBtn').click();

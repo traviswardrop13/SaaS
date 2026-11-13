@@ -1038,16 +1038,25 @@ await scenario("feed slow mic", async () => {
   } finally { await context.close(); }
 });
 
-// ── Feed Echo: a quiet turn (no voice in the listening window) closes the mic
-// and waits on the mic button; its tap says the word again, then listens, and
-// nothing plays over the mic on the way. ──
+// ── Feed Echo: a quiet turn (no voice in the listening window) closes the
+// mic, and Echo says the word again by himself, once, then listens (ECHO SAYS
+// IT AGAIN, ONCE: audit 13 Nov 2026); a second quiet window waits on the mic
+// button; its tap says the word again, then listens, and nothing plays over
+// the mic on the way. ──
 await scenario("feed quiet turn", async () => {
   const { context, page, errors } = await fresh("arcade-feed.html", { age: "4", micok: true, permission: "granted", volume: 0.6 });
   try {
     await feedStart(page);
     await page.waitForFunction(() => __quiet.live() === 1);
+    const spoken0 = await page.evaluate(() => __quiet.speech.length), gos0 = await page.evaluate((n) => __quiet.sounds.filter((s) => s.kind === "buf" && s.len === n).length, GO_LEN);
+    const askedAgain = await until(page, (n) => __quiet.speech.length >= n + 1, 10000, spoken0);
+    const again0 = await page.evaluate((n) => __quiet.speech.slice(n), spoken0);
+    const go0 = await until(page, ([n, len]) => __quiet.sounds.filter((s) => s.kind === "buf" && s.len === len).length > n, 2000, [gos0, GO_LEN]);
+    ok("feed quiet turn: after the first quiet window Echo says the word again by himself, then \"Go!\", with no mic open and no button",
+      askedAgain && again0.length === 1 && /^Say\.\.\. [a-z]+\.$/i.test(again0[0]) && go0 && (await live(page)) === 0 && await page.evaluate(() => document.getElementById("micBtn").hidden), { again0, go0 });
+    ok("feed quiet turn: …and listens once more, and silence has fed nothing", await until(page, () => __quiet.live() === 1, 3000) && await page.evaluate(() => document.getElementById("grid").classList.contains("locked")));
     const closed = await until(page, () => __quiet.live() === 0 && !document.getElementById("micBtn").hidden, 10000);
-    ok("feed quiet turn: silence closes the mic after the listening window, and the mic button waits", closed && /Tap the mic/.test(await page.locator("#bSub").innerText()) && (await page.evaluate(() => document.getElementById("grid").classList.contains("locked"))));
+    ok("feed quiet turn: a second quiet window closes the mic, Echo does not ask a third time, and the mic button waits", closed && (await page.evaluate((n) => __quiet.speech.length, 0)) === spoken0 + 1 && /Tap the mic/.test(await page.locator("#bSub").innerText()) && (await page.evaluate(() => document.getElementById("grid").classList.contains("locked"))));
     const spoken = await page.evaluate(() => __quiet.speech.length), gos = await page.evaluate((n) => __quiet.sounds.filter((s) => s.kind === "buf" && s.len === n).length, GO_LEN);
     await page.evaluate(() => document.getElementById("micBtn").click());
     await page.waitForFunction((n) => __quiet.speech.length >= n + 1, spoken);

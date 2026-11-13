@@ -93,7 +93,18 @@ async function speak(page, text, duration = 420) {
   await page.waitForTimeout(1150);
 }
 const snapshot = page => page.evaluate(() => ({ reps: __word.reps, game: window.__sayplay, locked: document.getElementById("grid")?.classList.contains("locked"), stars: document.getElementById("starN")?.textContent, starts: __word.starts, stops: __word.stops, pending: __word.pending, live: __quiet.live(), sfx: __quiet.sfx }));
-async function retry(page, kind) { await page.locator("#micBtn").click(); await listening(page, kind); }
+// ECHO SAYS IT AGAIN, ONCE (audit 13 Nov 2026): the first turned-down or
+// unclear try of a word makes Echo ask it again and listen by himself; after
+// that the mic button waits. Either way, nothing was earned.
+const isListening = (kind) => kind === "feed" ? /Your turn/.test(document.getElementById("bSub").textContent) : !!(window.__sayplay && __sayplay.listening);
+async function offered(page, kind) {
+  return page.waitForFunction(({ kind, src }) => !document.getElementById("micBtn").hidden || (0, eval)(src)(kind), { kind, src: String(isListening) }, { timeout: 8000 }).then(() => true, () => false);
+}
+async function retry(page, kind) {
+  await offered(page, kind);
+  if (await page.locator("#micBtn").isVisible()) await page.locator("#micBtn").click();
+  await listening(page, kind);
+}
 async function sibling(page) {
   await page.evaluate(() => { Sona.addKid("Sibling", "6"); Sona.saveProfile({ ...Sona.getProfile(), onboarded: true, focusSounds: ["R"] }); });
 }
@@ -138,7 +149,7 @@ try {
           await speak(page, "");
           const s = await snapshot(page);
           ok(kind + ": an unavailable installed speech bridge requires more than sound shape", s.reps === 0 && s.starts.length === 0 && (kind === "feed" ? s.locked : s.game.said === 0 && s.game.step === 0), s);
-          ok(kind + ": unverified speech offers a quiet retry", await page.locator("#micBtn").isVisible());
+          ok(kind + ": unverified speech offers a quiet retry (Echo asks again, or the mic button)", await offered(page, kind));
           ok(kind + ": no page exception", errors.length === 0, errors);
         } finally { await context.close(); }
       });
@@ -156,10 +167,11 @@ try {
     await scenario(kind + " child changes before a word retry", async () => {
       const { page, context, errors } = await fresh(kind);
       try {
-        await speak(page, "taco"); await page.waitForFunction(() => !document.getElementById('micBtn').hidden);
+        // the first "taco" makes Echo ask again (a second native start); the second leaves the mic button
+        await speak(page, "taco"); await listening(page, kind); await speak(page, "taco"); await page.waitForFunction(() => !document.getElementById('micBtn').hidden);
         await sibling(page); await page.locator('#micBtn').click(); await page.waitForTimeout(900); await speak(page, "rabbit");
         const s = await page.evaluate(() => ({ path: location.pathname, starts: +sessionStorage.getItem('__word.nativeStarts') || 0, reps: Sona.dayReps(), live: __quiet.live() }));
-        ok(kind + ": a stale retry retires the page instead of giving the old word to the sibling", s.path !== '/_wordgame.html' && s.path !== '/arcade-feed.html' && s.starts === 1 && s.reps === 0 && s.live === 0, s);
+        ok(kind + ": a stale retry retires the page instead of giving the old word to the sibling", s.path !== '/_wordgame.html' && s.path !== '/arcade-feed.html' && s.starts === 2 && s.reps === 0 && s.live === 0, s);
         ok(kind + ": stale retry has no page exception", errors.length === 0, errors);
       } finally { await context.close(); }
     });
@@ -169,7 +181,7 @@ try {
       try {
         await speak(page, "taco"); let s = await snapshot(page);
         ok(kind + ": a same-family random word earns no rep or move", s.reps === 0 && (kind === "feed" ? s.locked && s.stars === "0" : s.game.said === 0 && s.game.step === 0), s);
-        ok(kind + ": a retry is available without a grade", await page.locator("#micBtn").isVisible());
+        ok(kind + ": a retry is available without a grade (Echo asks again, or the mic button)", await offered(page, kind));
         await retry(page, kind); await speak(page, "wabbit"); s = await snapshot(page);
         ok(kind + ": the existing close try earns exactly one saying", s.reps === 1 && (kind === "feed" ? !s.locked : s.game.said === 1 && s.game.step === 0), s);
         ok(kind + ": verification does not supply the target as a recognition hint", s.starts.length > 0 && s.starts.every(x => x.opts.words.length === 0), s.starts);
@@ -188,7 +200,7 @@ try {
         await speak(page, "");
         const s = await snapshot(page);
         ok(kind + ": " + (cfg.noHelper ? "old cached shared script" : "empty text") + " never becomes family-only success", s.reps === 0 && (kind === "feed" ? s.locked : s.game.said === 0 && s.game.step === 0), s);
-        ok(kind + ": unverified speech offers a quiet retry", await page.locator("#micBtn").isVisible());
+        ok(kind + ": unverified speech offers a quiet retry (Echo asks again, or the mic button)", await offered(page, kind));
         ok(kind + ": no page exception", errors.length === 0, errors);
       } finally { await context.close(); }
     });

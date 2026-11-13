@@ -520,7 +520,7 @@ for(const reduced of [false,true])for(const D of [DEVICES[0],DEVICES[2]]){
     await calm(page);await page.tap('#nextBtn');await page.locator('[data-step="interests"].on').waitFor();await page.waitForTimeout(600);
     await calm(page);await page.tap('#nextBtn');await page.locator('[data-step="therapy"].on').waitFor();
     await calm(page);await page.tap('#obTherapy [data-val="t_yes"]');await page.locator('[data-step="sounds"].on').waitFor();
-    await calm(page);await page.tap('#nextBtn');await page.locator('[data-step="minutes"].on').waitFor();
+    await calm(page);await page.tap('#obSounds [data-sound="R"]');await calm(page);await page.tap('#nextBtn');await page.locator('[data-step="minutes"].on').waitFor();
     await calm(page);await page.tap('#obMinutes [data-val="10"]');await page.locator('[data-step="updates"].on').waitFor();await page.waitForTimeout(600);
    }
    await page.evaluate(()=>__steady.start());
@@ -575,7 +575,8 @@ for(const reduced of [false,true]){
   for(const k of ['reel','piano','rachel','interests']){await page.locator('[data-step="'+k+'"].on').waitFor();await calm(page);await page.tap('#nextBtn');}
   await page.locator('[data-step="therapy"].on').waitFor();await calm(page);await page.tap('#obTherapy [data-val="t_yes"]');
   await page.locator('[data-step="sounds"].on').waitFor();
-  await calm(page);await page.tap('#obSounds [data-sound="R"]');await calm(page);await page.tap('#obSounds [data-sound="P"]');
+  // P alone (no sound starts ticked since 13 Nov 2026; this tapped R off first)
+  await calm(page);await page.tap('#obSounds [data-sound="P"]');
   await calm(page);await page.tap('#nextBtn');await page.locator('[data-step="minutes"].on').waitFor();
   await calm(page);await page.tap('#obMinutes [data-val="5"]');await page.locator('[data-step="updates"].on').waitFor();await page.waitForTimeout(300);
   await page.evaluate(()=>__steady.start());

@@ -146,11 +146,17 @@ await page.waitForTimeout(400);
 const scaleAfter = await page.evaluate(() => parseFloat((document.getElementById("echo").style.transform.match(/scale\(([\d.]+)\)/) || [])[1] || "1"));
 ok("Echo grows with the bite (visible, not just banked)", scaleAfter > scaleBefore + 0.04, scaleBefore + " → " + scaleAfter);
 
-// ── silence never unlocks a picture: the mic closes and waits for a tap ──
+// ── silence never unlocks a picture: after a quiet window Echo asks the
+// word again, once (audit 13 Nov 2026), and after a second the mic closes
+// and waits for a tap ──
 await page.waitForFunction(() => /Where's the/.test(document.getElementById("bMain").textContent) && window.__mic.live === 1, null, { timeout: 12000 });
 await page.waitForTimeout(8600);
+t = await page.evaluate(() => ({ mic: !document.getElementById("micBtn").hidden, locked: document.getElementById("grid").classList.contains("locked") }));
+ok("a quiet window: no mic button yet (Echo is asking again), and the pictures stay locked", !t.mic && t.locked, JSON.stringify(t));
+await page.waitForFunction(() => window.__mic.live === 1, null, { timeout: 8000 });
+await page.waitForTimeout(8600);
 t = await page.evaluate(() => ({ mic: !document.getElementById("micBtn").hidden, live: window.__mic.live, locked: document.getElementById("grid").classList.contains("locked"), sub: document.getElementById("bSub").textContent, fed: document.getElementById("plate").dataset.fed }));
-ok("a quiet turn closes the mic, keeps the pictures locked and shows the mic button", t.mic && t.live === 0 && t.locked && /Tap the mic/.test(t.sub) && /1\/5/.test(t.fed), JSON.stringify(t));
+ok("a second quiet window closes the mic, keeps the pictures locked and shows the mic button", t.mic && t.live === 0 && t.locked && /Tap the mic/.test(t.sub) && /1\/5/.test(t.fed), JSON.stringify(t));
 await page.evaluate(() => document.getElementById("micBtn").click());   // it pulses, so a real tap, not a wait for it to hold still
 await sayWord();
 ok("…and the mic button listens again: the word still unlocks the pictures", await page.evaluate(() => !document.getElementById("grid").classList.contains("locked") && document.getElementById("micBtn").hidden));

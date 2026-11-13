@@ -411,6 +411,16 @@
     // (/arcade-speech-help.js, lifeOrEnd)
     SLOW_HELP.lifeCard=function(){ sayCard("for a new life!","none",0); };
     var wave=0, waveGot=0, waveMs=0, wavePlay=0, nextToss=900, phase="wave", missRun=0, giant=null, finaleDone=false;
+    // NOTHING IS LOST BEFORE THE FIRST SLICE (audit 13 Nov 2026). Fruit Slice
+    // is every family's first game, at every age, and its only how-to was a
+    // sign a 4-year-old cannot read. A child who had not touched the screen
+    // lost all three hearts in about 7.5 seconds and met the new-life card
+    // before anyone had shown them how to swipe. Until their first slice of
+    // the round, a fallen fruit costs no heart (it still grows the two-miss
+    // help: bigger, slower fruit, one at a time), and a drawn fingertip
+    // swipes across a fruit in the air (drawSwipeHint). One slice, and the
+    // hearts are the hearts.
+    var slicedOnce=false;
 
     // ── the fruit stand from the "Say it 5 times" page, now at the bottom ──
     // Its five fruit, in its order, are the first five thrown: each jumps out
@@ -921,7 +931,7 @@
           parts.push({x:f.x,y:f.y,vx:nx*2.4,vy:ny*2.4-2,e:f.e,half:2,size:fruitSize(f),rot:f.rot,cut:cut-f.rot,vr:0.035,life:1});
           if(f.gold) gold++;
         } }
-      if(hit){ missRun=0; sfx(gold?"gold":"swish"); var popped=rowUp(); hud();
+      if(hit){ missRun=0; slicedOnce=true; sfx(gold?"gold":"swish"); var popped=rowUp(); hud();
         // The flashes say what the child can see. "+3" went with the score:
         // beside a number that counts fruit in a row it was a sum nobody
         // could check (and for a golden extra it was not even true of the
@@ -974,6 +984,27 @@
       try{ if(!gameOver&&S&&S.confetti)S.confetti(); }catch(e){}
       banner("You did it!","The giant watermelon is sliced!");
       setTimeout(endRound,1800);
+    }
+    // The first-slice how-to: a fingertip sweeps across the highest fruit in
+    // the air, leaving the same cream streak a real swipe draws, once every
+    // 1.4 seconds, until the child slices one. Never while Echo asks or
+    // listens, in Super Slice, or outside a wave.
+    function drawSwipeHint(now){
+      if(slicedOnce||!playing||phase!=="wave"||slowTurn||slowMs>0) return;
+      var f=null, i;
+      for(i=0;i<fruits.length;i++){ var c=fruits[i]; if(!c.sliced&&!c.extra&&c.y<H*0.8&&(!f||c.y<f.y)) f=c; }
+      if(!f) return;
+      var p=(now%1400)/1400; if(p>0.75) return;
+      var t=p/0.75, span=f.r*2.6, x0=f.x-span, y0=f.y+f.r*0.9, x1=f.x+span, y1=f.y-f.r*0.9;
+      var hx=x0+(x1-x0)*t, hy=y0+(y1-y0)*t, a=t<0.15?t/0.15:t>0.8?(1-t)/0.2:1;
+      ctx.save(); ctx.lineCap="round";
+      var tx=x0+(x1-x0)*Math.max(0,t-0.35), ty=y0+(y1-y0)*Math.max(0,t-0.35);
+      ctx.globalAlpha=0.85*a; ctx.strokeStyle="#fff4bf"; ctx.lineWidth=9; ctx.shadowColor="rgba(255,214,98,.8)"; ctx.shadowBlur=9;
+      ctx.beginPath(); ctx.moveTo(tx,ty); ctx.lineTo(hx,hy); ctx.stroke();
+      ctx.shadowBlur=0; ctx.strokeStyle="#fffef6"; ctx.lineWidth=5; ctx.stroke();
+      ctx.globalAlpha=a; ctx.fillStyle="rgba(255,255,255,.92)"; ctx.strokeStyle="rgba(120,50,10,.55)"; ctx.lineWidth=3;
+      ctx.beginPath(); ctx.arc(hx,hy,15,0,7); ctx.fill(); ctx.stroke();
+      ctx.restore();
     }
     function drawGiant(dt,now){
       var g=giant; g.t+=dt; g.y+=(g.ty-g.y)*0.06; g.shake*=0.85;
@@ -1056,7 +1087,7 @@
         // five that cost a child their row would teach them not to say the
         // sound. A fruit left in the air once a wave is over costs nothing
         // either, as it never did.
-        if(f.y>H+80){ fruits.splice(i,1); if(playing&&phase==="wave"&&!f.extra&&!(slowMs>0)&&!slowTurn){ missRun++; rowN=0; loseHeart(now); } continue; }
+        if(f.y>H+80){ fruits.splice(i,1); if(playing&&phase==="wave"&&!f.extra&&!(slowMs>0)&&!slowTurn){ missRun++; rowN=0; if(slicedOnce) loseHeart(now); } continue; }
         ctx.save(); ctx.translate(f.x,f.y);
         if(f.gold) glow(f.r,now);
         ctx.rotate(f.rot);
@@ -1083,6 +1114,7 @@
       }
       drawStand(now);
       if(giant) drawGiant(dt,now);
+      drawSwipeHint(now);
       // trail
       if(trail.length>1){
         var pts=trail.filter(function(q){return now-q.t<130;});

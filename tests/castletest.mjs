@@ -65,7 +65,7 @@ try{
   ok('no banner line is unkind or a grade',words.banners.length>10&&words.banners.every(t=>!UNKIND.test(t)),words.banners.filter(t=>UNKIND.test(t)));
   await page.locator('#startBtn').click();await until(page,()=>__sayplay.listening);await page.locator('#castleLower').evaluate(e=>e.click());
   // (a) silence: the whole listening window passes and nothing is earned
-  const nudged=await until(page,()=>__sayplay.phase==='nudge',16000);let s=await state(page);
+  await advance(page,13000);ok('…a quiet window first makes Echo say the word again, once, and listen again: nothing earned',await page.evaluate(()=>__sayplay.phase==='turn'&&__sayplay.step===0&&__sayplay.said===0));await advance(page,14000);const nudged=await until(page,()=>__sayplay.phase==='nudge',16000);let s=await state(page);
   ok('silence and a Lower tap earn nothing: no piece, no step, no rope power',nudged&&!s.castle.active&&s.castle.placed===0&&s.castle.power===0&&s.speech.step===0&&s.speech.said===0,s);
   await page.locator('#micBtn').click();
   ok('two accepted sayings earn the first crane piece',await sayWord(page));s=await state(page);const wide=s.castle.tolerance;

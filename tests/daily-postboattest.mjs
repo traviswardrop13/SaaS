@@ -147,7 +147,7 @@ async function playthrough(age,total){
   const {page,context,errors}=await boot({device:{age}});let s=await state(page),g=s.boat;
   ok('the age '+age+' harbour has its five/eight real goals',g.stages===total&&s.speech.steps===total,{stages:g.stages,steps:s.speech.steps});
   ok('the local catalog uses normal Premium access for Postboat',await page.evaluate(()=>{const a=Sona.gameAct('postboat');return Sona.gameAccess('postboat').allowed&&a.tier==='premium'&&a.say&&a.go==='/daily-adventure.html';}));
-  const initial=held(g),reps=await page.evaluate(()=>Sona.weekReps(0));await ask(page);await page.keyboard.press('ArrowRight');await advance(page,14000);s=await state(page);
+  const initial=held(g),reps=await page.evaluate(()=>Sona.weekReps(0));await ask(page);await page.keyboard.press('ArrowRight');await advance(page,14000);ok('…a quiet window first makes Echo say the word again, once, and listen again: nothing earned',await page.evaluate(()=>__sayplay.phase==='turn'&&__sayplay.step===0&&__sayplay.said===0));await advance(page,14000);s=await state(page);
   ok('a whole silent turn and steering input earn no movement, cargo or goal at age '+age,s.speech.phase==='nudge'&&s.speech.step===0&&!s.boat.active&&equal(held(s.boat),initial)&&await page.evaluate(n=>Sona.weekReps(0)===n,reps),s.speech);
   // Since 23 Oct 2026 a story game's word is said three times (Travis: "say
   // the sound 3 times not twice for every daily game", Sona.STORY_SAY_TIMES).

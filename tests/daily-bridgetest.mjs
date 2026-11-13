@@ -201,7 +201,7 @@ async function playthrough(age,total){
   const {page,context,errors}=await boot({device:{age}});let s=await state(page),g=s.bridge,initial=held(g),reps=await page.evaluate(()=>Sona.weekReps(0));
   ok('age '+age+' uses the real five/eight bridge goals',g.stages===total&&s.speech.steps===total,{stages:g.stages,steps:s.speech.steps});
   ok('Bridge uses normal Premium catalog access',await page.evaluate(()=>{const a=Sona.gameAct('bridge');return Sona.gameAccess('bridge').allowed&&a.tier==='premium'&&a.say&&a.go==='/daily-adventure.html';}));
-  await ask(page);await page.keyboard.press('ArrowRight');await advance(page,14000);s=await state(page);
+  await ask(page);await page.keyboard.press('ArrowRight');await advance(page,14000);ok('…a quiet window first makes Echo say the word again, once, and listen again: nothing earned',await page.evaluate(()=>__sayplay.phase==='turn'&&__sayplay.step===0&&__sayplay.said===0));await advance(page,14000);s=await state(page);
   ok('silence, waiting and hook keys cannot build or cross the bridge',s.speech.phase==='nudge'&&s.speech.step===0&&!s.bridge.active&&equal(held(s.bridge),initial)&&await page.evaluate(n=>Sona.weekReps(0)===n,reps),s.speech);
   await page.locator('#micBtn').click();const times=await storySayings(page,age);g=(await state(page)).bridge;
   const start=g.crane.x;await arrow(page,'Right',350);g=(await state(page)).bridge;ok('Space held on the right arrow really moves the gantry',g.crane.x>start+.01&&g.keys.length===0,{before:start,crane:g.crane});

@@ -525,7 +525,36 @@ await scenario('the quiet screen', async () => {
     audit('quiet screen', s);
     ok('the quiet screen keeps Rachel\'s line word for word', lines(s).filter((l) => !/^Ready\?/.test(l))[0] === line && await page.locator('#quietOvl.show').count() === 1, lines(s));
     ok('silence is never a try', s.reps === 0 && !s.effects.includes('logAttempt') && !s.effects.includes('bumpReps'), s);
+    // TRY AGAIN SAYS IT AGAIN (audit 13 Nov 2026): the retry used to reopen
+    // the mic in silence. Echo's short line (the cue already spent) comes
+    // first, into a closed mic, and the window opens after it.
+    const before = s.events.length;
+    await page.locator('#quietGo').click();
+    await yourTurn(page); await page.waitForTimeout(120);
+    const r = await state(page), after = r.events.slice(before);
+    const again = after.filter((e) => e.kind === 'voice').map((e) => e.label);
+    ok('"Try again" replays Echo\'s short line, without the cue, before the mic reopens',
+      again.length >= 1 && /^Ready\? Make your/.test(again[0]) && !again.some((l) => /tongue/.test(l))
+      && after.findIndex((e) => e.kind === 'voice') < after.findIndex((e) => e.kind === 'mic-open'), { again, after: after.map((e) => e.kind) });
+    audit('quiet screen retry', r);
     clean('quiet screen', errors);
+  } finally { await context.close(); }
+});
+
+// A WHOLE ROUND, NOT A PART OF ONE (audit 13 Nov 2026): a round the 20-second
+// cap ended after two tries used to pass and count a step win
+for (const said of [5, 2]) await scenario('a step win needs the whole round: ' + said + ' of 5 tries', async () => {
+  const { context, page, errors } = await fresh();
+  try {
+    await yourTurn(page);
+    await page.evaluate(() => { window.__wins = []; const real = Sona.rungWin; Sona.rungWin = function () { __wins.push([].slice.call(arguments)); return real.apply(this, arguments); }; });
+    await bursts(page, said);
+    if (said < 5) await page.evaluate(() => engineAttempt.segment.finish('done'));   // the 20-second cap
+    await spoken(page, "You did it. Let's play.");
+    const out = await page.evaluate(() => ({ wins: __wins.length, reps: window.reps }));
+    if (said === 5) ok('a whole round of five that passes counts one step win', out.wins === 1 && out.reps === 5, out);
+    else ok('a round the cap ended at ' + said + ' of 5 still opens the game, but counts no step win', out.wins === 0 && out.reps === said, out);
+    clean('step win, ' + said + ' tries', errors);
   } finally { await context.close(); }
 });
 

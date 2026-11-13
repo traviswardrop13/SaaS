@@ -599,7 +599,10 @@
       // a fresh one holds a legacy default list, not a choice by this family
       role: p.role || "",
       mode: p.mode || "",
-      focusSounds: (p.onboarded && p.focusSounds && p.focusSounds.length) ? p.focusSounds.slice() : ["R"],
+      // NOTHING IS PICKED FOR THEM (audit 13 Nov 2026): this was ["R"], so the
+      // picker opened with R ticked, a parent who tapped only S saved
+      // "R · S", and the first thing their child was asked was "rrrr".
+      focusSounds: (p.onboarded && p.focusSounds && p.focusSounds.length) ? p.focusSounds.slice() : [],
       slpEvaluated: p.slpEvaluated || "",
       goals: p.goals || "",
       email: p.email || "",
@@ -923,7 +926,9 @@
       draft.interests=[];paintInterests();saveDraft();settle();idx++;render();
     };
 
-    // R starts selected; a parent can change it or pick all sounds ("Not sure? Pick all sounds").
+    // Nothing starts selected, and Continue stays grey until a sound is
+    // tapped (updateNext); "Not sure? Pick all sounds" is the way on for a
+    // parent who doesn't know.
     // EACH SOUND WITH A WORD (1 Nov 2026; Travis left this step's change to
     // us): a parent who has never seen "TH" or "CH" written as a speech
     // sound sees what it sounds like, under the letters, in a word from
