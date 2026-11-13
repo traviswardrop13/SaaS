@@ -418,8 +418,9 @@
       if (!current()) { if (wordCheck === check) micStop(); return; }
       if (!ready) { micStop(); nudge(); return; }
       // A cap is not a word ending. A continuous hold at the limit earns no
-      // saying and cannot be restarted as if it were a second production.
-      listenT = setTimeout(function () { if (current()) { micStop(); nudge(); } }, LISTEN_MS);
+      // saying and cannot be restarted as if it were a second production:
+      // nor does Echo ask again over it (nudge(true)), as he does after quiet.
+      listenT = setTimeout(function () { if (current()) { var held = burst; micStop(); nudge(held); } }, LISTEN_MS);
       (function tick() {
         if (!current()) { if (wordCheck === check) micStop(); return; }
         var now = performance.now();
@@ -495,7 +496,7 @@
   // No voice in the listening window (or one saying and then none): the mic
   // closes and waits for a tap to listen again. The tap only reopens the mic;
   // it never moves the game, and a saying already heard is kept.
-  function nudge() {
+  function nudge(held) {
     if (!turnLive) return;
     // A help ask nobody answered gives the earned move straight back: the
     // child loses only the optional power, never what their word already
@@ -509,7 +510,9 @@
     // mic opens once more. It is a prompt to talk, never a step: silence
     // still moves nothing. The second time, the mic button waits as before,
     // so a child the phone cannot hear is not asked on a loop.
-    if (askedAgain !== wordN && !paused && !document.hidden) { askedAgain = wordN; nextTurn(true); return; }
+    // A window that ran out on a sound still being held (held) is not a
+    // quiet child, and the cap never rearms: the button waits.
+    if (held !== true && askedAgain !== wordN && !paused && !document.hidden) { askedAgain = wordN; nextTurn(true); return; }
     try { $("micState").textContent = oneMore() ? moreLeft() + "! Tap the mic" : "Tap the mic, then say it"; $("micBtn").hidden = false; } catch (e) {}
     face("think");
     setPhase("nudge");

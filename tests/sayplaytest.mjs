@@ -1721,7 +1721,9 @@ await scenario("three times", async () => {
     t = await twice(page); g = await game(page);
     ok("three times: …two sayings alone do not earn the move: two dots of three, no step, and two reps",
       t.dots.join() === "true,true,false" && g.phase === "turn" && g.step === 0 && (await gameReps(page)) === 2, { t, g, reps: await gameReps(page) });
-    ok("three times: nothing plays for the first two sayings: no chime, no voice", (await log(page)).sounds.length === played, { before: played, after: (await log(page)).sounds.length });
+    // the one thing heard between them is Echo asking the word again, once, after the quiet window
+    { const extra = (await log(page)).sounds.slice(played);
+      ok("three times: nothing plays for the first two sayings: no chime, no voice (only Echo's one re-ask of the word after the quiet window)", extra.length <= 1 && extra.every((x) => ASK.test(x.text || "")), extra); }
     // "HEAR IT" keeps both sayings already heard
     await page.locator("#hear").click();
     await page.waitForFunction(() => __quiet.speaking > 0);

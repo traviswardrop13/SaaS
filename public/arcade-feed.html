@@ -577,8 +577,9 @@
         if(!ready){feedMicStop();nudge();return;}
         echoPose("listen");$("bSub").textContent="Your turn! Say “"+target.w+"”";
         // The bounded window must not turn one continuous held sound into an
-        // accepted word: without the quiet ending it offers another try.
-        listenT=setTimeout(function(){if(current()){feedMicStop();nudge();}},LISTEN_MS);
+        // accepted word: without the quiet ending it offers another try, on
+        // the mic button (Echo does not ask again over a held sound).
+        listenT=setTimeout(function(){if(current()){var held=burst;feedMicStop();nudge(held);}},LISTEN_MS);
         (function tick(){
           if(!current()){if(wordCheck===check)feedMicStop();return;}
           if(S.micDeaf&&S.micDeaf(stream)){heard=[];burst=false;micRaf=requestAnimationFrame(tick);return;}
@@ -614,7 +615,8 @@
     // exactly what the mic button does ("Say... robot." and "Go!", no new
     // words), and listens once more. Silence still feeds nothing. The second
     // time the button waits, as before, so a child the phone cannot hear is
-    // not asked on a loop; a hidden page (backgroundFeed) never asks.
+    // not asked on a loop; a hidden page (backgroundFeed) and a window that
+    // ran out on a sound still held never ask.
     var askedAgainAt=-1;
     function nudge(still){
       if(!turnLive||heardThisTurn)return;
