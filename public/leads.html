@@ -136,7 +136,7 @@
     var LEAD_COLS = [["at", "When"], ["email", "Email"], ["first_name", "Name"], ["role", "Who"], ["source", "From"], ["utm_campaign", "Campaign"], ["utm_content", "Ad"], ["list", "List"], ["premium", "Premium"]];
     // RevenueCat's word for each address (lib/revenuecat.ts), in plain words
     var PREMIUM = { trial: "free days", paid: "paying", cancelled: "cancelled", billing: "payment problem", ended: "ended", moved: "moved to another device" };
-    var SLP_COLS = [["createdAt", "Signed up"], ["email", "Email"], ["name", "Name"], ["clinic", "Clinic"], ["source", "From"], ["inCrm", "Sent to email list"],
+    var SLP_COLS = [["createdAt", "Signed up"], ["email", "Email"], ["name", "Name"], ["clinic", "Clinic"], ["clinicianRole", "Role"], ["workSetting", "Work setting"], ["source", "From"], ["inCrm", "Sent to email list"],
       ["workEmail", "Work email"], ["accessRequested", "Access requested"], ["approve", "Own Premium"], ["caseload", "Caseload"]];
     // The CSV carries the answer, not the button.
     var SLP_CSV_COLS = SLP_COLS.map(function (c) { return c[0] === "approve" ? ["approved", "Approved"] : c; });

@@ -43,7 +43,7 @@ export function GET() {
 - iPhone and iPad, from the App Store. On an Android phone it works in the web browser.
 
 ## Links
-- [Sona for parents](https://www.speaksona.com/): what Sona is and how to start
+- [Sona for parents](https://www.speaksona.com/for-parents): what Sona is and how to start
 - [Sona on the App Store](https://apps.apple.com/us/app/sona-speech/id6785755867)
 - [Privacy](https://www.speaksona.com/privacy.html)
 `;

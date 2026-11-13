@@ -101,7 +101,7 @@ async function world(browser, cfg = {}) {
       if (u.pathname.startsWith("/api/")) { w.api.push({ path: u.pathname, body: req.postData() }); return route.fulfill({ status: 503, contentType: "application/json", body: "{}" }); }
       if (cfg.stubs && cfg.stubs[u.pathname]) return route.fulfill({ status: 200, contentType: "text/html", body: cfg.stubs[u.pathname] });
       if (u.pathname.indexOf("/vendor/posthog/") === 0) w.vendor.push(u.pathname);
-      const p = u.pathname === "/" ? "/parents.html" : (u.pathname === "/try" ? "/try.html" : (u.pathname === "/for-slps" ? "/for-slps.html" : u.pathname));
+      const p = { "/": "/for-slps.html", "/for-parents": "/parents.html", "/try": "/try.html" }[u.pathname] || u.pathname;
       const f = file(p);
       if (!f) return route.fulfill({ status: 404, body: "" });
       return route.fulfill({ status: 200, headers: { "content-type": MIME[f.split(".").pop().toLowerCase()] || "application/octet-stream" }, body: readFileSync(f) });
@@ -417,7 +417,7 @@ try {
     await w.context.close();
     // "Max" sits inside max-width and minmax: those are the page's own code and stay as they are
     const m = await world(browser, { seed: { "sona.profile.v1": { childName: "Max", onboarded: true } } });
-    await m.page.goto("https://speaksona.com/");
+    await m.page.goto("https://speaksona.com/for-parents");
     await recording(m.page);
     await mark(m.page, 121);
     await m.settle();
@@ -456,9 +456,9 @@ try {
     await w.context.close();
   });
 
-  // ── 4. speaksona.com and /try: recorded by themselves, nothing typed ──
+  // ── 4. /for-parents and /try: recorded by themselves, nothing typed ──
   await scenario("the two pages the ads open", async () => {
-    for (const [label, url, type] of [["speaksona.com", "https://speaksona.com/?utm_source=meta&fbclid=ABC987", true], ["/try", "https://speaksona.com/try", false]]) {
+    for (const [label, url, type] of [["/for-parents", "https://speaksona.com/for-parents?utm_source=meta&fbclid=ABC987", true], ["/try", "https://speaksona.com/try", false]]) {
       const w = await world(browser);
       await w.page.goto(url);
       await w.page.waitForFunction(() => window.posthog && window.posthog.__loaded);
@@ -484,7 +484,7 @@ try {
       ["the offer a child opens by tapping a locked game (?from=slice)", "https://speaksona.com/subscribe.html?from=slice", { phone: { app: "buy", stamp: "post", setUp: true } }, "offer"],
       ["the offer Home opens by itself (?from=home)", "https://speaksona.com/subscribe.html?from=home", { phone: { app: "buy", stamp: "post", setUp: true } }, "offer"],
       ["the speech check", "https://speaksona.com/check.html", {}, null],
-      ["the clinician page", "https://speaksona.com/for-slps", {}, null],
+      ["the clinician homepage", "https://speaksona.com/?utm_source=meta&fbclid=ABC987", {}, "clinician"],
       ["a clinician's own setup (?slp=1)", "https://speaksona.com/onboarding.html?slp=1", {}, "slp"],
       ["setup on a test server (not speaksona.com)", "http://127.0.0.1:1/onboarding.html", {}, "local"],
     ]) {
@@ -492,6 +492,11 @@ try {
       await w.page.goto(url.replace("127.0.0.1:1", "127.0.0.1"));
       await w.page.waitForFunction(() => window.posthog && window.posthog.__loaded).catch(() => {});
       if (ready === "offer") await w.page.locator("body.offer").waitFor();
+      if (ready === "clinician") {
+        await w.page.locator("#fEmail").fill("doctor.test@example.com");
+        await w.page.locator("#fRole").selectOption("slpa");
+        await w.page.locator("#fWorkSetting").selectOption("school");
+      }
       if (ready === "slp" || ready === "local") {
         await w.page.waitForFunction(() => window.Sona && document.getElementById("nextBtn"));
         if (ready === "local") await next(w.page).catch(() => {});
@@ -501,7 +506,10 @@ try {
       await w.settle(2000);
       ok(label + ": PostHog was taking this page's events, so nothing recorded means something", w.events().length > 0, w.sent.length);
       ok(label + ": nothing recorded", w.snaps().length === 0, w.snaps().length);
-      ok(label + ": the recorder was never even loaded", !w.assets.some((p) => /lazy-recorder/.test(p)), w.assets);
+      const scripts = [...w.assets, ...w.vendor];
+      ok(label + ": the recorder was never even loaded", !scripts.some((p) => /lazy-recorder/.test(p)), scripts);
+      if (ready === "clinician") ok(label + ": the signup email and selections were excluded",
+        !/doctor\.test|\bslpa\b|\bschool\b/i.test(w.text()));
       await w.context.close();
     }
   });

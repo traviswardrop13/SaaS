@@ -1680,6 +1680,11 @@ grown-ups gate in between lost the only ask Sona will ever make, while the
 funnel counted an impression nobody saw. `iaptest.mjs` pins both halves.
 
 ### Sona Pro — the one plan a clinician can buy (12 Nov 2026)
+**Free dashboard signup (13 Nov 2026).** Clinicians who confirm the email
+from the homepage get the dashboard without a subscription. Sona Pro still
+covers every game for the clinician and every family on their link. Existing
+subscriptions and the terms of the family plans still apply.
+
 **$19.99 a month for the dashboard, every game on the clinician's own phone,
 and every game for every family on their link, with no cap on families**
 (Travis, 12 Nov 2026: "i needa get this setup to sell to slps ... price it
@@ -1927,11 +1932,11 @@ the device earned by redeeming code + key (`Sona.caseRefresh()`, re-asked every
 6 hours; only an authoritative answer changes anything).
 
 **SELLING TO SLPs AGAIN, FROM 12 NOV 2026** (Travis: "i needa get this
-setup to sell to slps"). `/for-slps` is the page that sells Sona Pro —
-clinicians only, indexed, in the sitemap, and linked once from the parent
-page's footer ("For speech therapists"). It supersedes the 22 Oct 2026
-"does not look for therapists at all" below; the parent page above the
-footer, `llms.txt` and setup stay parents-only.
+setup to sell to slps"). The homepage at `/` offers clinicians a free dashboard.
+The family landing page moved to `/for-parents`, linked from the clinician
+page's footer. `/for-slps` redirects to `/` with campaign parameters intact.
+`llms.txt` and family setup still speak to parents. Marketing replay follows
+the family landing page to `/for-parents` and stays off the clinician homepage.
 
 **THE SLP SIDE WAS THE CHANNEL, 21 Sep to 22 Oct 2026** (Travis, 21 Sep
 2026: "im keeping it free. targetting slps first"; since 22 Oct speaksona.com
@@ -2014,24 +2019,19 @@ pixel `ViewContent` (the fact, never who) and leaves 150 ms later. `noindex`
 allow-list. The root page with its email box is unchanged. `landingtest` plays
 it on an iPhone and an Android phone.
 
-**The clinician page lives at `/for-slps`** (the root from 22 to 26 Sep),
-**refreshed to sell Sona Pro on 12 Nov 2026**. It speaks to clinicians only:
-"Home practice kids actually want to do.", Rachel's lede ("Nothing to plan,
-and you see who practiced"), **one email box and Start free trial** (no
-"I'm a…" any more: everyone here gets a dashboard; a parent is pointed at
-`/` in one line under the form), four facts (14 days free · unlimited
-families · it actually listens · no audio leaves the device), "Carryover you
-can see" in three steps, the kid side, **one plan card** at `#pricing`
-($19.99 a month, the free days, what it includes, the trial's terms), the
-clinical notes, the FAQ and the closing button. Header: Pricing and Sign in.
-A new account is signed in and taken to `/slp.html#premium`, where the trial
-is the first button; an existing address is told to check its email. Not the
-App Store: that is the family app (`APP_READY` lives on `parents.html` and
-`lib/launch.ts` only now). Its share picture is `tools/og/og-slp.html`,
-rendered by `tools/og/render-og-slp.mjs` (served as `og-slp.png?v=2`).
-Every figure is `lib/caseload.ts`'s and `shiptest` pins them; the older
-promises (free dashboard before 12 Nov, free forever before 24 Sep) are on
-the page. `tests/landingtest.mjs` drives both pages.
+**The clinician page is the homepage**, updated to offer a free dashboard
+on 13 Nov 2026. The hero features Echo beside an actual Fruit Slice screen.
+**Get the free dashboard** collects an email, role (SLP or SLPA), and setting
+(Clinic or School). A single-use email link opens the dashboard. The signup
+page has no prices or checkout, and describes the AI homework draft, family
+links, and clinician community. `tests/landingtest.mjs` drives both pages.
+Its share image comes from `tools/og/og-slp.html` (`og-slp.png?v=3`).
+
+**AI homework draft** lives at `/slps#homework-draft`, including before
+a clinician sets up a family link. The clinician selects the sound, position,
+and rep count. Only those three selections go to Anthropic. The clinician
+can edit and copy the draft. Drafting does not assign homework or send a
+note to a family. The original homework composer still handles assignments.
 
 **SUPERSEDED on 12 Nov 2026 (above): /for-slps is findable again.**
 **speaksona.com is only for parents, and does not look for therapists at
@@ -2052,7 +2052,7 @@ The site is built to be read:
 - `app/robots.ts`: every crawler welcome, the AI assistants' by name; only
   `/api/` and `/admin/` blocked. Never block a `noindex` page there: a
   blocked crawler never reads the noindex.
-- `app/sitemap.ts`: the root, `/for-slps` (since 12 Nov 2026), privacy and
+- `app/sitemap.ts`: the clinician homepage, `/for-parents`, privacy and
   the Terms; never an app screen or a `noindex` page.
 - `app/llms.txt/route.ts`: Sona in plain text for AI assistants, every line
   one the parent page already says. Rachel's settled line word for word, no
@@ -2060,7 +2060,7 @@ The site is built to be read:
   parent page's own answer, chosen by `FREE_MODE` and `WEB_SALES`.
 - schema.org labels (`application/ld+json`) in `parents.html`'s head: who
   makes Sona and what the app is, with no price.
-- `noindex`, so search sends parents to the root: `try.html`,
+- `noindex`, so search can send parents to `/for-parents`: `try.html`,
   `check.html`, `/families`, and the private surfaces below. (`for-slps.html`
   was on this list from 22 Oct to 12 Nov 2026.)
 Any page written to answer a parent's search ("how to practice the R sound

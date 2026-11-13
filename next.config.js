@@ -83,25 +83,19 @@ const nextConfig = {
       { source: "/icon-192.png", headers: noStore },
       { source: "/icon-512.png", headers: noStore },
       { source: "/", headers: noStore },
-      { source: "/for-slps", headers: noStore },
+      { source: "/for-parents", headers: noStore },
+      { source: "/for-slps.css", headers: noStore },
       { source: "/try", headers: noStore },
       { source: "/slps", headers: noStore },
       { source: "/subscribe", headers: noStore },
       { source: "/subscribe/success", headers: noStore },
     ];
   },
-  // Clean URLs for the SLP entry points so /for-slps (no .html) resolves to the
-  // static page instead of 404ing. Rewrite keeps the pretty URL in the address bar.
+  // The public homepage introduces Sona Pro. The family page has its own URL.
   async rewrites() {
     return [
-      // THE ROOT IS THE PARENT PAGE (Travis, 26 Sep 2026: "change it to
-      // target parents and caregivers only. not slps"). speaksona.com is where
-      // the parent ads land, so it serves that page itself rather than
-      // redirecting — a redirect costs a hop on cold paid traffic and splits
-      // the SEO. The clinician page it replaced (the root from 22 to 26 Sep)
-      // stays at /for-slps, with its own canonical.
-      { source: "/", destination: "/parents.html" },
-      { source: "/for-slps", destination: "/for-slps.html" },
+      { source: "/", destination: "/for-slps.html" },
+      { source: "/for-parents", destination: "/parents.html" },
       // The ad's bridge page (Travis, 9 Oct 2026): a headline, a button, the App Store.
       { source: "/try", destination: "/try.html" },
       { source: "/slp-login", destination: "/slp-login.html" },
@@ -110,6 +104,7 @@ const nextConfig = {
   },
   async redirects() {
     return [
+      { source: "/for-slps", destination: "/", permanent: true },
       { source: "/slp", destination: "/slps", permanent: true },
       { source: "/slp.html", destination: "/slps", permanent: true },
     ];

@@ -1,17 +1,16 @@
 // LANDING1: speaksona.com's forms, driven in a real browser against fake
 // routes, so what is posted, and where the visitor ends up, is what is checked.
 //
-// THE ROOT IS FOR PARENTS (Travis, 26 Sep 2026: "change it to target parents
-// and caregivers only. not slps"): parents.html, one email box, one button,
-// then the App Store (or the web app on Android), with nothing in between
-// (4 Oct 2026). The clinician page lives at /for-slps, refreshed to sell
-// Sona Pro (Travis, 12 Nov 2026): one email box and Start free trial, which
-// signs the clinician up and takes them into their dashboard's Sona Pro page.
-// No name on either, no pop-up.
+// The clinician page at / emails access to the free dashboard. The parent
+// page at /for-parents keeps its one email and its family app destination.
 import { createServer } from "http";
 import { readFileSync, existsSync } from "fs";
+import nextConfig from "../next.config.js";
 import { chromium, ROOT, launchOpts } from "./_env.mjs";
 
+const FOR_SLPS = process.env.FOR_SLPS_TEST_HTML || ROOT + "/for-slps.html";
+const rewrites = new Map((await nextConfig.rewrites()).map(rule => [rule.source, rule.destination]));
+const oldClinicianUrl = (await nextConfig.redirects()).find(rule => rule.source === "/for-slps");
 const MIME = { html: "text/html", js: "text/javascript", css: "text/css", png: "image/png", jpg: "image/jpeg", webp: "image/webp", svg: "image/svg+xml", woff2: "font/woff2", webmanifest: "application/manifest+json" };
 let fails = 0;
 const ok = (name, cond, detail) => { if (!cond) fails++; console.log((cond ? "PASS " : "FAIL ") + name + (cond || detail === undefined ? "" : "  → " + (typeof detail === "string" ? detail : JSON.stringify(detail)))); };
@@ -34,8 +33,13 @@ const srv = createServer((req, res) => {
   }
   if (u.pathname === "/api/charter" && charterReply) { res.writeHead(200, { "content-type": "application/json" }); res.end(JSON.stringify(charterReply)); return; }
   if (u.pathname.startsWith("/api/")) { res.writeHead(404); res.end("{}"); return; }
-  // next.config.js's rewrites: / is the parent page, /for-slps the clinician page
-  const p = ROOT + (u.pathname === "/" ? "/parents.html" : u.pathname === "/for-slps" ? "/for-slps.html" : u.pathname === "/try" ? "/try.html" : u.pathname);
+  if (u.pathname === oldClinicianUrl?.source) {
+    res.writeHead(oldClinicianUrl.permanent ? 308 : 307, { location: oldClinicianUrl.destination + u.search });
+    res.end();
+    return;
+  }
+  const route = rewrites.get(u.pathname) || u.pathname;
+  const p = route === "/for-slps.html" ? FOR_SLPS : ROOT + route;
   if (!existsSync(p)) { res.writeHead(404); res.end(); return; }
   res.writeHead(200, { "content-type": MIME[p.split(".").pop()] || "application/octet-stream" });
   res.end(readFileSync(p));
@@ -61,7 +65,7 @@ async function fresh(opts = {}) {
   const page = await context.newPage();
   const errors = [];
   page.on("pageerror", (e) => errors.push(e.message));
-  await page.goto(origin + (opts.path || "/for-slps") + "?utm_source=fb&utm_campaign=launch&fbclid=abc123");
+  await page.goto(origin + (opts.path || "/") + "?utm_source=fb&utm_campaign=launch&fbclid=abc123" + (opts.query || ""));
   return { context, page, errors };
 }
 // WHAT THE VISITOR SEES AS THE PAGE LEAVES (4 Oct 2026). Nothing can be read
@@ -89,16 +93,19 @@ function watchLeaving() {
     e.preventDefault();
   });
 }
-async function fill(page, email, role) {
+async function fill(page, email, role, workSetting = "clinic") {
   await page.fill("#fEmail", email);
-  if (role) await page.selectOption("#fRole", role);
+  // The pre-change clinician page had neither select.
+  const roleField = page.locator("#fRole"), workField = page.locator("#fWorkSetting");
+  if (role && await roleField.count()) await roleField.selectOption(role);
+  if (role && workSetting && await workField.count()) await workField.selectOption(workSetting);
 }
 // WAIT FOR THE SCROLL, DON'T GUESS IT (25 Sep 2026): a fixed 700 ms wait
 // turned main red on GitHub's slower runner, on a page that worked.
 const settles = (page, fn) => page.waitForFunction(fn, null, { timeout: 5000, polling: 50 }).then(() => true, () => false);
 const leftFor = (page, path, ms) => page.waitForURL((u) => !String(u).startsWith(origin + path + "?"), { timeout: ms }).then(() => true, () => false);
 
-// ════════════════════════ the root: the parent page ════════════════════════
+// ════════════════════════ /for-parents: the family page ════════════════════════
 const PARENTS = readFileSync(ROOT + "/parents.html", "utf8");
 const P_READY = /var APP_READY = true;/.test(PARENTS);
 const P_NOTE = (PARENTS.match(/var LAUNCH_NOTE = "([^"]+)";/) || [])[1];
@@ -106,10 +113,10 @@ ok("the parent page carries the launch note", !!P_NOTE);
 
 // ── what a parent sees, and the one form ──
 {
-  const { context, page, errors } = await fresh({ path: "/" });
+  const { context, page, errors } = await fresh({ path: "/for-parents" });
   // Travis's own line (4 Oct 2026: "I want to make the website say speech
   // practice kids love"); it was the parent ads' "…kids ask for."
-  ok("the root is the parent page: 'Speech practice kids love.'", (await page.textContent("h1")) === "Speech practice kids love.");
+  ok("/for-parents serves the parent page: 'Speech practice kids love.'", (await page.textContent("h1")) === "Speech practice kids love.");
   ok("its form is an email box and one button: no 'I'm a…', no name",
     await page.isVisible("#fEmail") && (await page.$("#fRole")) === null && (await page.$("#fName")) === null &&
     (await page.$$("#signup input")).length === 1 && (await page.$$("#signup button")).length === 1);
@@ -127,8 +134,8 @@ ok("the parent page carries the launch note", !!P_NOTE);
   }));
   ok("…and that button waits until the hero's own form has scrolled away", !(await page.isVisible("#topGo")));
   ok("the one link to the clinician page is the footer's 'For speech therapists'", await page.evaluate(() => {
-    const all = [...document.querySelectorAll('a[href^="/for-slps"], a[href^="/slp"]')];
-    return all.length === 1 && all[0].closest("footer") && all[0].textContent === "For speech therapists" && all[0].getAttribute("href") === "/for-slps";
+    const all = [...document.querySelectorAll('a[href^="/slp"], footer a[href="/"]')];
+    return all.length === 1 && all[0].closest("footer") && all[0].textContent === "For speech therapists" && all[0].getAttribute("href") === "/";
   }));
   ok("…and nothing else on the page speaks to clinicians", await page.evaluate(() => {
     const main = document.querySelector("main").innerText;
@@ -195,7 +202,7 @@ ok("the parent page carries the launch note", !!P_NOTE);
 }
 // The smallest phones still fit.
 {
-  const { context, page } = await fresh({ path: "/", viewport: { width: 320, height: 640 } });
+  const { context, page } = await fresh({ path: "/for-parents", viewport: { width: 320, height: 640 } });
   const w = await page.evaluate(() => ({ d: document.documentElement.scrollWidth, b: document.body.scrollWidth, w: innerWidth }));
   ok("at 320 px wide nothing scrolls sideways", w.d <= w.w && w.b <= w.w, w);
   await context.close();
@@ -203,7 +210,7 @@ ok("the parent page carries the launch note", !!P_NOTE);
 
 // ── a parent signs up: /api/lead, their email and "parent", then thanked ──
 {
-  const { context, page, errors } = await fresh({ path: "/" });
+  const { context, page, errors } = await fresh({ path: "/for-parents" });
   posts = []; leadReply = { ok: true, captured: true };
   await fill(page, "dana@example.com");
   await page.click("#fGo");
@@ -212,12 +219,12 @@ ok("the parent page carries the launch note", !!P_NOTE);
   ok("parent page: one post, to /api/lead", posts.length === 1 && p.path === "/api/lead", posts);
   ok("parent page: it carries the email and 'parent', and no name of anyone",
     p.body.role === "parent" && p.body.email === "dana@example.com" && !("name" in p.body) && !("own_name" in p.body) && !("child" in p.body) && !("age" in p.body), p.body);
-  ok("parent page: …and which ad brought them", p.body.utm_source === "fb" && p.body.utm_campaign === "launch" && p.body.fbclid === "abc123" && p.body.source === "fb" && p.body.landing === "/", p.body);
+  ok("parent page: …and which ad brought them", p.body.utm_source === "fb" && p.body.utm_campaign === "launch" && p.body.fbclid === "abc123" && p.body.source === "fb" && p.body.landing === "/for-parents", p.body);
   if (!P_READY) {
     ok("parent page: …and asks for the welcome email", p.body.welcome === true, p.body);
     ok("parent page: thanked with the launch note, and nothing to tap to leave",
       (await page.textContent("#sentT")) === "You're on the list!" && (await page.textContent("#sentMsg")) === P_NOTE && !(await page.isVisible("#nextGo")));
-    ok("parent page: and it stays on the page: no App Store, no web app", !(await leftFor(page, "/", 2500)), page.url());
+    ok("parent page: and it stays on the page: no App Store, no web app", !(await leftFor(page, "/for-parents", 2500)), page.url());
     // The date Travis emailed the list (30 Sep 2026), the same as the lock's.
     ok("parent page: the launch pill and the phones answer say it launches Friday, October 2",
       await page.isVisible("text=Coming to iPhone and iPad Friday, October 2") && /launches Friday, October 2/.test(await page.evaluate(() => document.getElementById("a7").textContent.replace(/\s+/g, " ")) || ""));
@@ -230,7 +237,7 @@ ok("the parent page carries the launch note", !!P_NOTE);
 // The Lead fires only after the server said yes. (The page is watched, so it
 // is still there to be asked once it has left for the App Store.)
 {
-  const { context, page } = await fresh({ path: "/", watch: true });
+  const { context, page } = await fresh({ path: "/for-parents", watch: true });
   posts = []; leadReply = { ok: false, error: "A valid email is required." };
   await fill(page, "dana@example.com");
   await page.click("#fGo");
@@ -255,7 +262,7 @@ ok("the parent page carries the launch note", !!P_NOTE);
 // is only what they find when they come back.
 const ANDROID = "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Mobile Safari/537.36";
 if (P_READY) {
-  const { context, page, errors } = await fresh({ path: "/", watch: true });
+  const { context, page, errors } = await fresh({ path: "/for-parents", watch: true });
   posts = []; leadReply = { ok: true, captured: true };
   await fill(page, "dana@example.com");
   await page.click("#fGo");
@@ -284,7 +291,7 @@ if (P_READY) for (const [what, fire] of [
   ["hidden and shown again", () => document.dispatchEvent(new Event("visibilitychange"))],
   ["put away and brought back", () => window.dispatchEvent(new Event("pagehide"))],
 ]) {
-  const { context, page } = await fresh({ path: "/", watch: true });
+  const { context, page } = await fresh({ path: "/for-parents", watch: true });
   leadReply = { ok: true, captured: true };
   await fill(page, "dana@example.com");
   await page.click("#fGo");
@@ -297,7 +304,7 @@ if (P_READY) for (const [what, fire] of [
 }
 // …and a page that has not left takes no notice of being hidden.
 {
-  const { context, page } = await fresh({ path: "/", watch: true });
+  const { context, page } = await fresh({ path: "/for-parents", watch: true });
   await fill(page, "dana@example.com");
   await page.evaluate(() => { document.dispatchEvent(new Event("visibilitychange")); window.dispatchEvent(new Event("pagehide")); });
   ok("parent page: before a sign-up, switching away and back shows no panel", !(await page.isVisible("#sent")) && await page.isVisible("#signup"));
@@ -305,7 +312,7 @@ if (P_READY) for (const [what, fire] of [
 }
 // Android leaves for the web app the same way, and its button says so.
 if (P_READY) {
-  const { context, page } = await fresh({ path: "/", ua: ANDROID, watch: true });
+  const { context, page } = await fresh({ path: "/for-parents", ua: ANDROID, watch: true });
   leadReply = { ok: true, captured: true };
   await fill(page, "lee@example.com");
   await page.click("#fGo");
@@ -317,12 +324,12 @@ if (P_READY) {
 }
 // Android: the same as everyone while the app is not ready.
 {
-  const { context, page, errors } = await fresh({ path: "/", ua: ANDROID });
+  const { context, page, errors } = await fresh({ path: "/for-parents", ua: ANDROID });
   posts = []; leadReply = { ok: true, captured: true };
   await fill(page, "lee@example.com");
   await page.click("#fGo");
   if (P_READY) ok("parent page, Android: after the lead, the web app's setup, not the App Store", await page.waitForURL(/\/onboarding\.html/, { timeout: 5000 }).then(() => true, () => false));
-  else ok("parent page, Android: thanked like everyone, and stays", (await page.waitForFunction(() => document.getElementById("sentT").textContent === "You're on the list!", null, { timeout: 3000 }).then(() => true, () => false)) && !(await leftFor(page, "/", 1500)));
+  else ok("parent page, Android: thanked like everyone, and stays", (await page.waitForFunction(() => document.getElementById("sentT").textContent === "You're on the list!", null, { timeout: 3000 }).then(() => true, () => false)) && !(await leftFor(page, "/for-parents", 1500)));
   ok("parent page, Android: no page errors", errors.length === 0, errors);
   await context.close();
 }
@@ -341,7 +348,7 @@ for (const [label, reply, want] of [
   ["the website not selling", { ok: true, free: false, webSales: false, cap: 50, taken: 0, left: 0, open: false, source: "off" }, /^Sona is free to download\. Sona Premium opens every game and every book\. You buy it in the Sona app on iPhone and iPad, which shows its price before you pay anything\.$/],
 ]) {
   charterReply = reply;
-  const { context, page, errors } = await fresh({ path: "/" });
+  const { context, page, errors } = await fresh({ path: "/for-parents" });
   const shown = await settles(page, () => document.getElementById("costText").textContent !== "") && await page.waitForFunction((re) => new RegExp(re).test(document.getElementById("costText").textContent), want.source, { timeout: 3000 }).then(() => true, () => false);
   ok("the cost answer, " + label + ": " + (await page.textContent("#costText")), shown);
   ok("…and no dollar figure anywhere on the page", !/\$\s?\d/.test(await page.evaluate(() => document.body.innerText)));
@@ -352,7 +359,7 @@ charterReply = null;
 
 // ── reduced motion: everything is simply there, and nothing moves ──
 {
-  const { context, page, errors } = await fresh({ path: "/", reducedMotion: "reduce" });
+  const { context, page, errors } = await fresh({ path: "/for-parents", reducedMotion: "reduce" });
   const still = await page.evaluate(() => {
     const rv = [].slice.call(document.querySelectorAll(".rv"));
     const tracks = [].slice.call(document.querySelectorAll(".strip .track"));
@@ -371,18 +378,38 @@ charterReply = null;
   await context.close();
 }
 
-// ═════════════════ /for-slps: the clinician page, selling Sona Pro (12 Nov 2026) ═════════════════
+// ═════════════════ the root: emailed access to the free clinician dashboard ═════════════════
 // ── the form ──
 {
-  const { context, page, errors } = await fresh();
-  ok("/for-slps: the form is on the page itself: an email box and Start free trial — no 'I'm a…', no name",
-    await page.isVisible("#fEmail") && (await page.$("#fRole")) === null && (await page.$("#fName")) === null && (await page.$("#startModal")) === null &&
-    (await page.textContent("#fGo")) === "Start free trial");
+  const { context, page, errors } = await fresh({ query: "&clinicianRole=slpa&workSetting=school" });
+  ok("the clinician form asks only for email, work setting and role", await page.evaluate(() => {
+    const form = document.getElementById("signup");
+    return [...form.querySelectorAll("input,select")].map(el => el.id).sort().join() === "fEmail,fRole,fWorkSetting" &&
+      form.querySelectorAll("button").length === 1 && !form.querySelector("textarea") &&
+      document.forms.length === 1 && !document.getElementById("startModal");
+  }));
+  const role = page.locator("#fRole"), work = page.locator("#fWorkSetting");
+  for (const [label, field, values] of [["role", role, ",slp,slpa"], ["work setting", work, ",clinic,school"]]) {
+    ok("the clinician " + label + " is visible, required, and blank despite the URL", await field.count() === 1 && await field.isVisible() &&
+      await field.evaluate((el, choices) => el.required && !el.disabled && !el.value && [...el.options].map(o => o.value).join() === choices, values));
+  }
+  const pixel = await page.evaluate(() => (window.fbq?.queue || []).map(args => Array.from(args)));
+  const init = pixel.findIndex(args => args[0] === "init");
+  const quiet = pixel.findIndex(args => args[0] === "set" && args[1] === "autoConfig" && args[2] === false);
+  ok("Meta automatic form capture is off before init and PageView is retained", quiet >= 0 && quiet < init &&
+    pixel.some(args => args[0] === "track" && args[1] === "PageView"), pixel);
   const fit = await page.evaluate(() => { const r = document.getElementById("signup").getBoundingClientRect(); return { l: r.left, r: r.right, w: innerWidth, overflow: document.documentElement.scrollWidth > innerWidth }; });
   ok("on a phone the form fits the screen, with no sideways scroll", fit.l >= 0 && fit.r <= fit.w && !fit.overflow, fit);
-  ok("the hero shows Echo and the caseload card", await page.evaluate(() => { const r = document.querySelector(".hero-r"); return !!r && !!r.querySelector("img.mascot") && /Your caseload this week/.test(r.textContent); }));
-  ok("…and under the form only the line that sends a parent to their own page", await page.evaluate(() => !document.querySelector(".consent, #mNext, .hnote") && document.querySelector(".parentnote a").getAttribute("href") === "/"));
-  ok("the plan card shows the price and the free days", await page.evaluate(() => { const t = document.getElementById("pricing").innerText; return /\$19\.99/.test(t) && /a month/.test(t) && /Your first 14 days are free\./.test(t); }));
+  ok("the clinician hero shows Echo and Fruit Slice without sample caseload data", await page.evaluate(() => {
+    const hero = document.querySelector(".hero-r");
+    return !!hero && !!hero.querySelector('img.mascot[src="/assets/site/echo.webp"]') &&
+      !!hero.querySelector('.hero-game img[src="/assets/site/slice.webp"]') && !/Your caseload this week|\d+%/.test(hero.textContent);
+  }));
+  ok("the clinician page points parents to /for-parents", await page.evaluate(() =>
+    !document.querySelector(".consent, #mNext, .hnote") && document.querySelector('a[href="/for-parents"]') !== null));
+  ok("the clinician page offers the free dashboard without prices or trial language", await page.evaluate(() =>
+    document.getElementById("fGo").textContent.trim() === "Get the free dashboard" &&
+    !document.getElementById("pricing") && !/\$\s*\d|\bfree trial\b/i.test(document.body.innerText)));
 
   // What the visitor is told before anything is sent.
   posts = [];
@@ -392,65 +419,103 @@ charterReply = null;
   await page.click("#fGo");
   ok("a bad email: asked for a valid one, nothing sent", /valid email/.test(await page.textContent("#fErr")) && posts.length === 0);
 
-  // The plan's button and the closing one both come back to this one form.
-  ok("the header has no For parents link", (await page.$("#forParents")) === null);
-  for (const id of ["planGo", "finalGo"]) {
-    await page.evaluate(() => { document.activeElement.blur(); window.scrollTo(0, document.body.scrollHeight); });
-    await page.click("#" + id);
-    ok("#" + id + " comes back to the same form", await settles(page, () => { const r = document.getElementById("signup").getBoundingClientRect(); return r.top >= 0 && r.bottom <= innerHeight && document.activeElement && document.activeElement.id === "fEmail"; }));
+  await fill(page, "sam@clinic.org");
+  if (await role.count() && await work.count()) {
+    await page.click("#fGo");
+    ok("no clinician role: focus returns to the required role, nothing sent",
+      await role.evaluate(el => el === document.activeElement) && posts.length === 0 && Boolean((await page.textContent("#fErr")).trim()));
+    await role.selectOption("slp");
+    await page.click("#fGo");
+    ok("no work setting: focus returns to the required setting, nothing sent",
+      await work.evaluate(el => el === document.activeElement) && posts.length === 0 && Boolean((await page.textContent("#fErr")).trim()));
+  } else {
+    const before = authReply;
+    authReply = { ok: false, error: "Synthetic signup refusal" };
+    await page.click("#fGo");
+    await settles(page, () => document.getElementById("fErr").textContent === "Synthetic signup refusal");
+    ok("missing clinician selections: nothing sent", posts.length === 0, posts);
+    authReply = before;
   }
+
+  await page.evaluate(() => { document.activeElement.blur(); window.scrollTo(0, document.body.scrollHeight); });
+  await page.click("#finalGo");
+  ok("the closing button returns to the signup form", await settles(page, () => {
+    const r = document.getElementById("signup").getBoundingClientRect();
+    return r.top >= 0 && r.bottom <= innerHeight && document.activeElement?.id === "fEmail";
+  }));
   ok("no page errors", errors.length === 0, errors);
   await context.close();
 }
 
-// ── a new clinician: the account and the dashboard email, then the dashboard's Sona Pro page ──
-{
-  const { context, page, errors } = await fresh();
-  posts = []; authReply = { ok: true, sent: true, signedIn: true };
-  await fill(page, "sam@clinic.org");
-  const nav = page.waitForURL(/\/slp\.html#premium$/, { timeout: 6000 }).then(() => true, () => false);
+// ── New and returning clinicians both enter through the emailed link. ──
+for (const [clinicianRole, workSetting, path] of [["slp", "clinic", "/"], ["slpa", "school", "/for-slps"]]) {
+  const { context, page, errors } = await fresh({ path });
+  const url = new URL(page.url());
+  ok(clinicianRole + ": clinician URL keeps campaign parameters", url.pathname === "/" &&
+    url.searchParams.get("utm_campaign") === "launch" && url.searchParams.get("fbclid") === "abc123", url.href);
+  posts = []; authReply = { ok: true, sent: true, signedIn: false };
+  await fill(page, "sam@clinic.org", clinicianRole, workSetting);
+  const left = leftFor(page, "/", 3000);
   await page.click("#fGo");
-  await page.waitForTimeout(300);
+  ok(clinicianRole + ": email confirmation identifies the address after delivery", await settles(page, () => {
+    const sent = document.getElementById("sent");
+    return !sent.hidden && /check your email/i.test(sent.textContent) && /sam@clinic\.org/.test(sent.textContent);
+  }));
   const p = posts[0] || { body: {} };
-  ok("SLP: one post, to the clinician sign-up (which forwards the lead itself)", posts.length === 1 && p.path === "/api/slp/auth/request", posts);
-  ok("SLP: it carries the email and the ad, and no name", p.body.email === "sam@clinic.org" && !("name" in p.body) && p.body.attrib && p.body.attrib.fbclid === "abc123" && p.body.source === "fb", p.body);
-  ok("SLP: told the next step is the free trial, and that the dashboard link is in their email",
-    /Next: start your 14-day free trial — no charge today\./.test(await page.textContent("#sentMsg")) && /emailed sam@clinic\.org a link to your dashboard/.test(await page.textContent("#sentMsg")));
-  ok("SLP: a new clinician is marked as one", JSON.stringify(await page.evaluate(() => window.__track)) === '["Lead","CompleteRegistration"]');
-  ok("SLP: then into the dashboard's Sona Pro page — never the App Store", await nav, page.url());
-  ok("SLP: no page errors", errors.filter((e) => !/api\/slp/.test(e)).length === 0, errors);
+  ok(clinicianRole + ": one post requests the free dashboard email", posts.length === 1 && p.path === "/api/slp/auth/request" &&
+    p.body.flow === "free-dashboard", posts);
+  ok(clinicianRole + ": the request carries the email and ad click, with no name",
+    p.body.email === "sam@clinic.org" && !("name" in p.body) && p.body.attrib?.fbclid === "abc123" && p.body.source === "fb", p.body);
+  ok(clinicianRole + ": work setting and role go only in the auth body", p.body.clinicianRole === clinicianRole &&
+    p.body.workSetting === workSetting && !!p.body.attrib && !("clinicianRole" in p.body.attrib) && !("workSetting" in p.body.attrib), p.body);
+  ok(clinicianRole + ": successful email delivery fires only Lead", JSON.stringify(await page.evaluate(() => window.__track)) === '["Lead"]');
+  ok(clinicianRole + ": the confirmation stays on the homepage", !(await left), page.url());
+  ok(clinicianRole + ": no page errors", errors.length === 0, errors);
   await context.close();
 }
 // The Lead fires only after the server said yes.
 {
   const { context, page } = await fresh();
   posts = []; authReply = { ok: false, error: "Enter a valid email." };
-  await fill(page, "sam@clinic.org");
+  await fill(page, "sam@clinic.org", "slp");
   await page.click("#fGo");
-  await page.waitForTimeout(400);
-  ok("a refused sign-up shows the server's reason and stays put", /Enter a valid email/.test(await page.textContent("#fErr")) && /127\.0\.0\.1/.test(page.url()));
+  ok("a refused signup shows the server's reason", await settles(page, () =>
+    /Enter a valid email/.test(document.getElementById("fErr").textContent)));
   ok("…and fires no Lead", (await page.evaluate(() => window.__track.length)) === 0);
   await context.close();
-  authReply = { ok: true, sent: true, signedIn: true };
 }
-for (const [label, reply, want, leaves] of [
-  ["an existing account (not signed in), email sent", { ok: true, sent: true, signedIn: false }, /Your sign-in link is on its way to sam@clinic\.org/, false],
-  ["email refused, signed in", { ok: true, sent: false, signedIn: true }, /Bookmark it: speaksona\.com\/slp/, true],
-  ["email refused, not signed in", { ok: true, sent: false, signedIn: false }, /hello@speaksona\.com/, false],
-]) {
+{
   const { context, page } = await fresh();
-  posts = []; authReply = reply;
-  await fill(page, "sam@clinic.org");
-  const nav = page.waitForURL(/\/slp\.html#premium$/, { timeout: 4000 }).then(() => true, () => false);
+  posts = []; authReply = { ok: true, sent: false, signedIn: false };
+  await fill(page, "sam@clinic.org", "slp");
   await page.click("#fGo");
-  await page.waitForTimeout(400);
-  ok("SLP, " + label + ": says so", want.test(await page.textContent("#sentMsg")), await page.textContent("#sentMsg"));
-  // (asked before the page leaves: once it has, there is nothing to read)
-  ok("SLP, " + label + ": no App Store anywhere", !(await page.$("#nextGo")) && !/apps\.apple\.com/.test(await page.content()));
-  ok("SLP, " + label + ": " + (leaves ? "and, being signed in, goes on into the dashboard" : "and stays, so the way in is not lost"), (await nav) === leaves, page.url());
+  const canRetry = await settles(page, () => /email/i.test(document.getElementById("fErr").textContent)) &&
+    await page.locator("#signup").isVisible() && await page.locator("#fGo").isEnabled() &&
+    !await page.locator("#sent").isVisible() && await page.inputValue("#fEmail") === "sam@clinic.org";
+  ok("a delivery failure leaves the form ready to retry without claiming the email was sent", canRetry);
+  ok("a delivery failure fires no conversion", await page.evaluate(() => window.__track.length === 0));
+  if (canRetry) {
+    authReply = { ok: true, sent: true, signedIn: false };
+    await page.click("#fGo");
+    ok("retry confirms delivery after a successful send", await settles(page, () => !document.getElementById("sent").hidden) &&
+      posts.length === 2, posts);
+  }
   await context.close();
 }
-authReply = { ok: true, sent: true, signedIn: true };
+
+// A local preview offers its test link without reporting an email delivery.
+{
+  const { context, page } = await fresh();
+  posts = []; authReply = { ok: true, sent: false, signedIn: false, devLink: origin + "/api/slp/auth/verify?token=preview" };
+  await fill(page, "sam@clinic.org", "slp");
+  await page.click("#fGo");
+  ok("local preview shows its sign-in link with no delivery claim", await settles(page, () => {
+    const sent = document.getElementById("sent");
+    return !sent.hidden && /preview sign-in/i.test(sent.textContent) && !/check your email/i.test(sent.textContent);
+  }) && await page.locator("#devbox a").getAttribute("href") === authReply.devLink);
+  ok("the preview link fires no conversion", await page.evaluate(() => window.__track.length === 0));
+  await context.close();
+}
 
 // ── the queued books all open on one day (27 Sep, 1 Oct 2026) ──
 // The page counts only the books the shelf has opened and tags the rest with
@@ -463,7 +528,7 @@ for (const [when, count, first] of [["2026-10-01T09:00:00", 36, null]]   /* ever
   await context.route("**/*", (route) => (route.request().url().startsWith(origin) ? route.continue() : route.abort()));
   const page = await context.newPage(); const errors = []; page.on("pageerror", (e) => errors.push(e.message));
   await page.clock.setFixedTime(new Date(when));
-  await page.goto(origin + "/");
+  await page.goto(origin + "/for-parents");
   const got = await page.evaluate(() => ({ n: document.getElementById("bookCount").textContent,
     tags: [...document.querySelectorAll(".tile.b:not([aria-hidden]) .soon-tag")].map((t) => t.textContent),
     openTiles: document.querySelectorAll(".tile.b:not([aria-hidden]):not(.soon)").length }));

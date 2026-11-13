@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "node:crypto";
-import { kvCmd, readSession, signSession, sessionCookie, SESSION_MAX_AGE, makeFamilyKey } from "@/lib/slpAuth";
+import { kvCmd, readSession, signSession, sessionCookie, SESSION_MAX_AGE, makeFamilyKey, replaceSlpAccount } from "@/lib/slpAuth";
 import { PRO_TERMS } from "@/lib/caseload";
 
 const SUFFIX = "abcdefghjkmnpqrstuvwxyz23456789";
@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
   // become a write: the clinician's code, family key and — since 24 Sep 2026
   // — whether they are grandfathered (no `terms` field) would all be
   // replaced by a blank. The store said nothing; neither do we.
-  if (raw === undefined) {
+  if (raw !== null && typeof raw !== "string") {
     return NextResponse.json({ ok: false, error: "Couldn't reach your account just now — try again in a moment." }, { status: 503 });
   }
   // An account made HERE (signed in, but the record is gone) is made under
@@ -90,7 +90,13 @@ export async function POST(req: NextRequest) {
   // the credential that unlocks Sona free for that SLP's families
   if (acct.code && !acct.familyKey) acct.familyKey = makeFamilyKey();
   if (!acct.createdAt) acct.createdAt = new Date().toISOString();
-  await kvCmd(["SET", acctKey, JSON.stringify(acct)]);
+  const saved = await replaceSlpAccount(acctKey, raw, acct);
+  if (saved !== "OK") {
+    const conflict = saved === null;
+    return NextResponse.json({
+      ok: false, error: conflict ? "Your account changed while you were saving. Try again." : "Couldn't save your account just now. Try again in a moment.",
+    }, { status: conflict ? 409 : 503 });
+  }
 
   // Refresh the session so it carries the (possibly new) code.
   const session = signSession({

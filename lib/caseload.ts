@@ -104,6 +104,8 @@ export const PRO_PLAN = "slp-pro";                       // Stripe metadata.plan
 export const PRO_NAME = "Sona Pro";
 /** Stamped on every NEW slpacct from 12 Nov 2026: the dashboard is part of Sona Pro for them. */
 export const PRO_TERMS = "pro-2026-11-12";
+/** Verified signups from the free clinician landing. Premium coverage follows the plan. */
+export const FREE_DASHBOARD_TERMS = "free-dashboard-2026-11-13";
 
 // The add-on. $59.99 / 12 = $4.9991, so "under $5 a month": never "$4.99 a
 // month" (that is $59.88 a year) nor "$5.00" (a rounding a reader can check
@@ -438,7 +440,7 @@ export async function planStatus(email: string, opts: PlanOpts & { acct?: Record
     return { active: true, source: "pro", periodEnd: pro!.periodEnd, cancelAtPeriodEnd: pro!.cancelAtPeriodEnd };
   }
   // A Pro-era account was never sold the yearly caseload plan: no search.
-  if (proTerms(acct)) return { active: false, source: "none", periodEnd: null, cancelAtPeriodEnd: false };
+  if (proTerms(acct) || acct?.terms === FREE_DASHBOARD_TERMS) return { active: false, source: "none", periodEnd: null, cancelAtPeriodEnd: false };
   const rec = await currentPlan(email, { ...opts, kv, now, kind: "caseload" });
   if (recordActive(rec, now)) {
     return { active: true, source: "paid", periodEnd: rec!.periodEnd, cancelAtPeriodEnd: rec!.cancelAtPeriodEnd };
@@ -473,7 +475,7 @@ export async function selfStatus(email: string, opts: PlanOpts & { acct?: Record
   if (recordActive(pro, now)) {
     return { active: true, source: "pro", periodEnd: pro!.periodEnd, cancelAtPeriodEnd: pro!.cancelAtPeriodEnd, canRequest, ...base };
   }
-  if (proTerms(acct)) return { active: false, source: "none", ...off, canRequest, ...base };
+  if (proTerms(acct) || acct?.terms === FREE_DASHBOARD_TERMS) return { active: false, source: "none", ...off, canRequest, ...base };
   const own = await currentPlan(email, { ...opts, kv, now, kind: "self" });
   if (recordActive(own, now)) {
     return { active: true, source: "paid", periodEnd: own!.periodEnd, cancelAtPeriodEnd: own!.cancelAtPeriodEnd, canRequest, ...base };
@@ -525,12 +527,13 @@ export async function proStatus(email: string, opts: PlanOpts = {}): Promise<Pro
  * shown. From 12 Nov 2026 (`terms: PRO_TERMS`) the dashboard is part of Sona
  * Pro — trialing, active, or in the card-retry grace of past_due.
  * A signed-in session with no account record at all is treated as new: the
- * routes that make one make it with PRO_TERMS.
+ * legacy routes that make one make it with PRO_TERMS. Verified free landing
+ * signups use FREE_DASHBOARD_TERMS and have a free dashboard.
  */
 export async function dashboardOpen(email: string, opts: PlanOpts & { acct?: Record<string, unknown> | null } = {}): Promise<boolean> {
   const kv = opts.kv || kvCmd;
   const acct = opts.acct !== undefined ? opts.acct : await readAcct(email, kv);
-  if (acct && !proTerms(acct)) return true;
+  if (acct && (!proTerms(acct) || acct.freeDashboard === true)) return true;
   return (await proStatus(email, { ...opts, kv })).active;
 }
 

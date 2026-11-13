@@ -113,9 +113,37 @@ export async function kvCmd(cmd: (string | number)[]): Promise<unknown> {
   }
 }
 
+const UPDATE_IF_UNCHANGED = `-- slpacct:update
+if redis.call("GET", KEYS[1]) == ARGV[1] then
+  return redis.call("SET", KEYS[1], ARGV[2])
+end
+return nil`;
+
+/** Avoid replacing a profile or dashboard opt-in written by another request. */
+export async function replaceSlpAccount(
+  key: string, previous: string | null, updated: Record<string, unknown>,
+): Promise<unknown> {
+  const next = JSON.stringify(updated);
+  return previous === null
+    ? kvCmd(["SET", key, next, "NX"])
+    : kvCmd(["EVAL", UPDATE_IF_UNCHANGED, 1, key, previous, next]);
+}
+
 /** A clinician-supplied name lands in an HTML email; escape it. */
 function esc(s: string): string {
   return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c] as string));
+}
+
+export type ClinicianRole = "slp" | "slpa";
+export type ClinicianWorkSetting = "clinic" | "school" | "other";
+
+export function clinicianRole(value: unknown): ClinicianRole | "" {
+  return value === "slp" || value === "slpa" ? value : "";
+}
+
+/** Keep "other" readable on historical accounts. */
+export function clinicianWorkSetting(value: unknown): ClinicianWorkSetting | "" {
+  return value === "clinic" || value === "school" || value === "other" ? value : "";
 }
 
 export function randomToken(): string {
@@ -141,6 +169,39 @@ export function safeEqualStr(a: string, b: string): boolean {
 }
 export function hashToken(t: string): string {
   return crypto.createHash("sha256").update(t).digest("hex");
+}
+
+export type FreeDashboardSignup = {
+  email: string;
+  clinicianRole: ClinicianRole;
+  workSetting: "clinic" | "school";
+  source: string;
+  attrib: Record<string, string>;
+};
+
+// Only the hash of the opaque URL token indexes this record. A separate
+// signature purpose keeps the pending signup from being used as a session.
+const FREE_DASHBOARD_SIGNUP_PREFIX = "free-dashboard:";
+
+export function signFreeDashboardSignup(payload: FreeDashboardSignup): string {
+  requireAuthSecret();
+  const body = Buffer.from(JSON.stringify(payload)).toString("base64url");
+  const sig = crypto.createHmac("sha256", SECRET()).update(FREE_DASHBOARD_SIGNUP_PREFIX + body).digest("base64url");
+  return FREE_DASHBOARD_SIGNUP_PREFIX + body + "." + sig;
+}
+
+export function readFreeDashboardSignup(stored: string): FreeDashboardSignup | null {
+  if (!authSecretOk() || !stored.startsWith(FREE_DASHBOARD_SIGNUP_PREFIX)) return null;
+  const [body, sig, extra] = stored.slice(FREE_DASHBOARD_SIGNUP_PREFIX.length).split(".");
+  if (!body || !sig || extra !== undefined || !sigOk(FREE_DASHBOARD_SIGNUP_PREFIX + body, sig)) return null;
+  try {
+    const value = JSON.parse(Buffer.from(body, "base64url").toString()) as FreeDashboardSignup;
+    if (!value || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(value.email) || !clinicianRole(value.clinicianRole) ||
+        (value.workSetting !== "clinic" && value.workSetting !== "school")) return null;
+    return value;
+  } catch {
+    return null;
+  }
 }
 
 export type Session = { email: string; code?: string; iat?: number; exp?: number };
@@ -351,12 +412,15 @@ export async function sendMagicEmail(
   email: string,
   link: string,
   name = "",
+  opts: { freeDashboard?: boolean } = {},
 ): Promise<{ sent: boolean; devLink: string | null }> {
   const key = process.env.RESEND_API_KEY;
   const from = process.env.RESEND_FROM || "Sona <login@speaksona.com>";
   if (!key) {
     return { sent: false, devLink: process.env.VERCEL_ENV === "production" ? null : link };
   }
+  const freeIntro = "Open your Sona dashboard to share practice with families and join the clinician community.";
+  const retryUrl = opts.freeDashboard ? "speaksona.com" : "speaksona.com/slp-login.html";
   try {
     const r = await fetch("https://api.resend.com/emails", {
       method: "POST",
@@ -364,7 +428,7 @@ export async function sendMagicEmail(
       body: JSON.stringify({
         from,
         to: [email],
-        subject: "Your Sona dashboard is ready",
+        subject: opts.freeDashboard ? "Your Sona dashboard link" : "Your Sona dashboard is ready",
         html:
           `<div style="font-family:system-ui,Segoe UI,Roboto,sans-serif;font-size:15px;color:#16384f;line-height:1.6;max-width:520px;">` +
           `<p>${name ? "Hi " + esc(name) + "," : "Hi,"}</p>` +
@@ -374,7 +438,7 @@ export async function sendMagicEmail(
           // dashboard no longer is (it comes with Sona Pro, after the free
           // trial). The same email goes to every sign-in, so it says only
           // what is true for every clinician.
-          `<p>Your Sona dashboard is ready, and every family you send home gets Sona's free version.</p>` +
+          `<p>${opts.freeDashboard ? freeIntro : "Your Sona dashboard is ready, and every family you send home gets Sona's free version."}</p>` +
           `<p><a href="${link}" style="display:inline-block;background:#58cc02;color:#fff;font-weight:700;text-decoration:none;padding:14px 26px;border-radius:12px;font-size:16px;">Open my dashboard</a></p>` +
           `<p style="margin-top:22px;"><b>What to do first</b></p>` +
           `<ol style="padding-left:18px;color:#46627a;">` +
@@ -385,7 +449,7 @@ export async function sendMagicEmail(
           // While the family app is not out (lib/launch.ts), the clinician
           // hears it here, in the email they get anyway (25 Sep 2026).
           (APP_READY ? "" : `<p style="margin-top:22px;"><b>P.S.</b> ${LAUNCH_NOTE.replace(/^Sona/, "The Sona app for families")}</p>`) +
-          `<p style="color:#6b86a3;font-size:13px;margin-top:22px;">This link expires in 15 minutes — if it does, just enter your email again at speaksona.com and we'll send a fresh one. If you didn't ask for this, you can ignore it.</p>` +
+          `<p style="color:#6b86a3;font-size:13px;margin-top:22px;">This link expires in 15 minutes — if it does, just enter your email again at ${retryUrl} and we'll send a fresh one. If you didn't ask for this, you can ignore it.</p>` +
           `</div>`,
         /**
          * A PLAIN-TEXT PART, because an HTML-only email scores worse with
@@ -395,14 +459,14 @@ export async function sendMagicEmail(
          */
         text:
           (name ? "Hi " + name + ",\n\n" : "Hi,\n\n") +
-          "Your Sona dashboard is ready, and every family you send home gets Sona's free version.\n\n" +
+          (opts.freeDashboard ? freeIntro : "Your Sona dashboard is ready, and every family you send home gets Sona's free version.") + "\n\n" +
           "Open it here:\n" + link + "\n\n" +
           "What to do first\n" +
           "1. Add a child - initials are enough. You pick the sound and the position.\n" +
           "2. Send their family the link. They set up in about 30 seconds, on their own phone.\n" +
           "3. Come back and see the days they practiced - and copy a line for your progress note.\n\n" +
           (APP_READY ? "" : "P.S. " + LAUNCH_NOTE.replace(/^Sona/, "The Sona app for families") + "\n\n") +
-          "This link expires in 15 minutes. If it does, enter your email again at speaksona.com and we'll send a fresh one. If you didn't ask for this, you can ignore it.\n",
+          "This link expires in 15 minutes. If it does, enter your email again at " + retryUrl + " and we'll send a fresh one. If you didn't ask for this, you can ignore it.\n",
       }),
     });
     /**
