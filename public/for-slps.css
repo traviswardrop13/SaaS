@@ -106,7 +106,6 @@ header {
 }
 .form-fields { display: flex; gap: 10px; }
 .form-field { display: flex; flex: 1 1 0; min-width: 0; flex-direction: column; gap: 4px; }
-.form-fields .form-field:first-child { flex-grow: 1.5; }
 .form-field label { font-size: 13px; font-weight: 900; line-height: 1.25; }
 .signup input, .signup select {
   width: 100%;
@@ -309,7 +308,8 @@ footer .links { display: flex; flex-wrap: wrap; gap: 13px; }
 }
 @media (max-width: 360px) {
   .hero { gap: 12px; padding-top: 18px; }
-  .hero-r { height: 150px; }
+  .hero-r { max-width: 255px; height: 150px; }
+  .hero-game { width: 29%; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; }
