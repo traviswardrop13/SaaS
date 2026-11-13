@@ -571,7 +571,7 @@ if (A) {
   ok("…without ever logging the key", !/console\.error[\s\S]{0,200}RESEND_API_KEY/.test(auth));
 
   ok("the page does not claim an email that was refused",
-    /if \(!j\.sent && !j\.signedIn\)/.test(slps),
+    /if \(j\.sent !== true\) \{[\s\S]*?err\(/.test(slps),
     "an existing account has no other door; 'check your email' about an email that never went is a dead end");
   ok("…and gives them a way through instead", /hello@speaksona\.com/.test(slps));
 }
@@ -581,6 +581,7 @@ if (A) {
 {
   const req = read("app/api/slp/auth/request/route.ts");
   const lead = read("app/api/lead/route.ts");
+  const slpLead = read("lib/slpLead.ts");
   // On Vercel a function can be frozen the moment its response is sent, so a
   // fetch nobody awaits may never leave. The symptom is silence: sign-up
   // works, the CRM never hears, nothing errors.
@@ -589,8 +590,8 @@ if (A) {
     req.indexOf("await crm;") < req.lastIndexOf("return out;") && !/void fetch\(origin \+ "\/api\/lead"/.test(req),
     "an un-awaited fetch in a serverless function can be dropped when the response is sent");
   ok("…with a fuse, so a slow CRM never costs a clinician their sign-in",
-    /CRM_TIMEOUT_MS = \d+/.test(req) && /ctl\.abort\(\)/.test(req));
-  ok("…and a lead the CRM did not take says so in the log", /CRM did not capture the lead/.test(req));
+    /CRM_TIMEOUT_MS = \d+/.test(slpLead) && /ctl\.abort\(\)/.test(slpLead));
+  ok("…and a lead the CRM did not take says so in the log", /CRM did not capture the lead/.test(slpLead));
 
   // The clinician's own first name reaches the CRM — as its own field, only
   // on the clinician path, and never through `name`, which stays blank
@@ -617,51 +618,21 @@ if (A) {
     /function err\(msg\)[\s\S]{0,200}scrollIntoView/.test(slps) &&
     !/\$\("fErr"\)\.textContent = [^"]*"[^"]/.test(slps.replace('$("fErr").textContent = "";', "")),
     "an error below the fold is an error nobody reads");
-  // 12 Nov 2026: a new clinician is taken into the dashboard whether or not
-  // the email went, so the signed-in answer names the bookmark instead of
-  // the email when it did not.
-  ok("a signed-in clinician whose email failed is not told it is on its way",
-    /\(j\.sent \? " We've also emailed " \+ email \+ " a link to your dashboard\." : " Bookmark it: speaksona\.com\/slp"\)/.test(slps) &&
-    /if \(!j\.sent && !j\.signedIn\) \{[\s\S]*?our email didn't go out just now/.test(slps));
+  ok("email delivery failure leaves the form available to retry",
+    /if \(j\.sent !== true\) \{\s*err\([^\n]+\);\s*return;/.test(slps));
 }
 
-
-// ── every clinician reaches the CRM exactly once ──
-{
-  const req = read("app/api/slp/auth/request/route.ts");
-  const start = req.indexOf("if (acctExists) {");
-  const existing = start > 0 ? req.slice(start, req.indexOf("return NextResponse.json", start)) : "";
-  // 23 Sep 2026: Travis signed up with his own address, got the dashboard
-  // email, and GoHighLevel never heard of him — his account predated the CRM
-  // wiring, and the CRM was told only when this route CREATED an account.
-  ok("an existing account the CRM has never heard of is sent to it on sign-in",
-    /if \(acct && !acct\.crmAt\)/.test(existing) && /await tellCrm\(/.test(existing),
-    "otherwise every clinician who signed up before the CRM was wired stays invisible to it forever");
-  ok("…once: the account is stamped when the CRM takes it, so a daily sign-in is not a daily new lead",
-    /acct\.crmAt = new Date\(\)\.toISOString\(\)/.test(existing) &&
-    /if \(captured\) await kvCmd\(\["SET", "slpacct:" \+ email, JSON\.stringify\(\{ \.\.\.acctNew, crmAt:/.test(req));
-  ok("…and a sign-in request, which is not signed in, never rewrites the account's name",
-    existing.length > 0 && !/acct\.name\s*=/.test(existing));
-}
-
-
-// ── a new clinician goes straight into the dashboard ──
+// ── the clinician homepage sends an email before sign-in ──
 {
   const slps = read("public/for-slps.html");
-  // REWRITTEN AGAIN 12 Nov 2026 (Travis: "sell to slps"): the page is a
-  // clinician's, and Start free trial ends in the dashboard's Sona Pro page,
-  // where the trial is the first button. Not the App Store: that is the
-  // family app.
   const handler = slps.slice(slps.indexOf("function go()"));
-  ok("a new clinician is taken into the dashboard's Sona Pro page, with the dashboard a tap away meanwhile",
-    /var NEXT_URL = "\/slp\.html#premium";/.test(slps) &&
-    /\} else if \(j\.signedIn\) \{[\s\S]*?\{ dashboard: true \}\);\s*if \(!j\.devLink\) goNext\(1800\);/.test(handler) &&
-    /<a class="straight" id="straight" href="\/slp\.html#premium" hidden>/.test(slps));
-  ok("…an existing clinician is told to check their email, and the page stays",
-    /showDone\("Check your email", "Your sign-in link is on its way to " \+ email/.test(handler));
-  ok("…and nobody is sent to the App Store from this page any more", !/apps\.apple\.com|APP_STORE/.test(slps));
-  ok("…and the page leaves only after the Lead has fired, so the pixel's request goes first",
-    handler.indexOf('sonaTrack("Lead")') > 0 && handler.indexOf('sonaTrack("Lead")') < handler.indexOf("goNext("));
+  ok("the homepage requests the free dashboard flow",
+    /flow: "free-dashboard"/.test(handler) && /fetch\("\/api\/slp\/auth\/request"/.test(handler));
+  ok("…and the page reports delivery only after email success",
+    /if \(j\.sent !== true\)/.test(handler) && /"Check your email"/.test(handler) &&
+    handler.indexOf("if (j.sent !== true) {") < handler.indexOf('sonaTrack("Lead")'));
+  ok("…the clinician gets no automatic dashboard or App Store navigation",
+    !/apps\.apple\.com|APP_STORE|location\.href\s*=|CompleteRegistration/.test(handler));
 
   // THE WELCOME (25 Sep 2026): one email, to a parent or "other", while the
   // app is not ready; a clinician hears it in their sign-in email instead.
@@ -807,14 +778,14 @@ if (A) {
 // ── the lead door, hardened (independent review of #131, 24 Sep 2026) ──
 {
   const lead = read("app/api/lead/route.ts");
-  const req = read("app/api/slp/auth/request/route.ts");
+  const slpLead = read("lib/slpLead.ts");
   const page = read("public/leads.html");
   ok("an address longer than email allows is refused before it is kept", /email\.length > 254/.test(lead));
   ok("a stranger is limited to ten leads an hour from one address",
     /rateLimit\(req, \{ key: "lead", limit: 10, windowSec: 3600 \}\)/.test(lead),
     "otherwise a script fills the ledger past its cap and stuffs the email list with junk");
   ok("…while our own sign-up route, which forwards every clinician from the same servers, signs its leads past it",
-    /"x-sona-lead-sig": leadSig\(email\)/.test(req) && /timingSafeEqual\(Buffer\.from\(sig\), Buffer\.from\(want\)\)/.test(lead) &&
+    /"x-sona-lead-sig": leadSig\(email\)/.test(slpLead) && /timingSafeEqual\(Buffer\.from\(sig\), Buffer\.from\(want\)\)/.test(lead) &&
     lead.indexOf("if (!internal)") > 0 && lead.indexOf("if (!internal)") < lead.indexOf("const toList"));
   if (A) {
     ok("the signature is the server's own: same for the same email, different for another",

@@ -784,6 +784,7 @@
       <div class="nav-section">Workspace</div>
       <a class="nav-item active" data-page="today" href="#today"><span class="icon"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M16 3v4M8 3v4M3 11h18m-12 5 2 2 4-4"/></svg></span> Today <span class="badge warn" id="attnCount" style="display:none;">0</span></a>
       <a class="nav-item" data-page="caseload" href="#caseload"><span class="icon"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2m20 0v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/><circle cx="9" cy="7" r="4"/></svg></span> Caseload <span class="badge" id="familyCount" style="display:none;">0</span></a>
+      <a class="nav-item" data-page="homework-draft" href="#homework-draft"><span class="icon" aria-hidden="true">✎</span> Draft homework</a>
       <a class="nav-item" data-page="premium" href="#premium"><span class="icon"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.6l-5.4 2.9 1.2-6-4.5-4.2 6.1-.7Z"/></svg></span> Sona Pro</a>
       <div class="nav-section">Connect</div>
       <a class="nav-item" data-page="community" href="#community"><span class="icon"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 11a7 7 0 0 1-7 7H7l-5 3 1.7-5A7 7 0 0 1 2 11a7 7 0 0 1 7-7h5a7 7 0 0 1 7 7Z"/><path d="M7 10h10M7 14h6"/></svg></span> Community</a>
@@ -1037,6 +1038,32 @@
 
       </div>
 
+      <div class="page" id="page-homework-draft">
+        <div class="page-header"><div><h1>Draft homework with AI</h1><p>Turn the practice you choose into a short note you can review and share with a family.</p></div></div>
+        <div class="card hwgrid">
+          <form id="draftForm">
+            <label class="fl" for="draftSound">Sound</label>
+            <select id="draftSound" required><option value="">Choose a sound</option></select>
+            <label class="fl" for="draftPosition">Word position</label>
+            <select id="draftPosition" required><option value="">Choose a position</option></select>
+            <label class="fl" for="draftReps">Reps a day</label>
+            <select id="draftReps" required><option value="">Choose a count</option></select>
+            <p class="sub">AI receives only the sound, position, and count you select.</p>
+            <button class="btn green" id="draftGenerate" type="submit" style="margin-top:12px;">Draft note</button>
+            <p class="err" id="draftError" role="alert"></p>
+          </form>
+          <section aria-labelledby="draftHeading">
+            <h2 id="draftHeading">Family note</h2>
+            <p class="sub">Read and edit the draft before sharing it.</p>
+            <label class="fl" for="draftTitle">Title</label>
+            <input id="draftTitle" maxlength="60" type="text">
+            <label class="fl" for="draftNote">Note</label>
+            <textarea id="draftNote" maxlength="240" rows="4"></textarea>
+            <button class="btn ghost sm" id="draftCopy" type="button" disabled>Copy note</button>
+          </section>
+        </div>
+      </div>
+
       <!-- ════════ PREMIUM: SONA PRO ════════
            ONE PLAN (Travis, 12 Nov 2026): Sona Pro, $19.99 a month — the
            dashboard, every game on the clinician's own phone or tablet, and
@@ -1056,7 +1083,7 @@
            price and the trial length are lib/caseload.ts's, never typed
            here). -->
       <div class="page" id="page-premium">
-        <div class="page-header"><div><div class="eyebrow">Your dashboard, your phone, every family</div><h1>Sona Pro</h1><p>One plan: your dashboard, every game on your own phone or tablet, and every game for every family who joins through your link.</p></div></div>
+        <div class="page-header"><div><h1>Sona Pro</h1><p>Get every game on your own phone or tablet, and for every family who joins through your link.</p></div></div>
         <div class="send-success" id="premiumReturn" role="status" hidden><span id="premiumReturnText"></span> <a id="premiumReturnSetup" href="#today" hidden>Set up your family link →</a> <button class="feedback-shortcut" id="premiumCheck" type="button" hidden>Check again</button></div>
         <div class="load-notice" id="premiumError" role="alert" hidden><span id="premiumErrorText"></span><button class="btn ghost sm" id="premiumRetry" type="button">Try again</button></div>
         <div class="loading-state" id="premiumLoading" role="status" hidden>Checking your plan…</div>
@@ -1071,7 +1098,6 @@
               <h2 class="premium-title" id="proOfferTitle">Everything, for you and every family you send home</h2>
               <p class="premium-price" id="proPriceLine"><b id="proPrice"></b> <span id="proPer"></span><span id="proTrialNote"> · <span id="proTrialDays"></span> days free</span></p>
               <ul class="premium-points">
-                <li><b>Your dashboard.</b> See who practiced this week, copy a note for every child, and send homework home.</li>
                 <li><b>Unlimited families.</b> Every family who joins through your link gets every game, every sound, whether or not they choose to share practice with you.</li>
                 <li><b>Every game on your own phone or tablet,</b> so you know what you're sending home and can show a family in session.</li>
                 <li><b>One price, however many families.</b> You never earn anything on your own caseload: this is a plan you pay for, not a referral fee.</li>
@@ -1422,7 +1448,7 @@
       document.querySelectorAll(".page").forEach(function(p){p.classList.remove("active");});
       var el=$("page-"+name); if(el)el.classList.add("active");
       document.querySelectorAll(".nav-item").forEach(function(n){var active=n.dataset.page===name||(name==="child"&&n.dataset.page==="caseload");n.classList.toggle("active",active);if(active)n.setAttribute("aria-current","page");else n.removeAttribute("aria-current");});
-      $("pageCrumb").textContent={today:"Today",caseload:"Caseload",child:"Child overview",premium:"Sona Pro",settings:"Settings",feedback:"Talk to Rachel",affiliate:"Affiliate partnerships",community:"Community",onboarding:"Welcome"}[name]||"Today";
+      $("pageCrumb").textContent={today:"Today",caseload:"Caseload",child:"Child overview","homework-draft":"Draft homework",premium:"Sona Pro",settings:"Settings",feedback:"Talk to Rachel",affiliate:"Affiliate partnerships",community:"Community",onboarding:"Welcome"}[name]||"Today";
       document.title="Sona · "+$("pageCrumb").textContent;
       setMenu(false);
       window.scrollTo(0,0);
@@ -1444,9 +1470,8 @@
       // anyway (lib/proGate), and an empty Today would read as "nobody
       // practiced". Settings, Community and Talk to Rachel stay open.
       if(dashLocked()&&!LOCK_OPEN_PAGES[name==="invite"?"caseload":name]){if(location.hash!=="#premium")history.replaceState(null,"","#premium");switchPage("premium");return;}
-      // The plan page is readable before a code exists; everything else
-      // starts at the one form.
-      if(!code&&name!=="community"&&name!=="feedback"&&name!=="premium"){switchPage("onboarding");return;}
+      // Drafting and the community work before a clinician creates a family code.
+      if(!code&&["community","feedback","premium","homework-draft"].indexOf(name)<0){switchPage("onboarding");return;}
       if(!PREVIEW_FEATURES&&previewOnlyPage(name)){name="today";history.replaceState(null,"","#today");}
       if(name==="invite"){switchPage("caseload");openInvite();return;}
       if(!$("page-"+name))name="today";
@@ -1455,6 +1480,30 @@
     }
     window.addEventListener("hashchange",route);
     document.querySelectorAll(".nav-item[data-page]").forEach(function(n){ n.onclick=function(e){e.preventDefault();go(n.dataset.page);}; });
+
+    ALL.forEach(function(sound){$("draftSound").add(new Option(sLabel(sound),sound));});
+    POSLIST.forEach(function(position){$("draftPosition").add(new Option(position.name,position.id));});
+    [10,15,20,30,40,60].forEach(function(reps){$("draftReps").add(new Option(reps+" a day",String(reps)));});
+    function draftText(){return [$("draftTitle").value.trim(),$("draftNote").value.trim()].filter(Boolean).join("\n\n");}
+    function updateDraftCopy(){$("draftCopy").disabled=!draftText();}
+    $("draftTitle").oninput=updateDraftCopy;
+    $("draftNote").oninput=updateDraftCopy;
+    $("draftCopy").onclick=function(){copy(draftText(),this);};
+    $("draftForm").onsubmit=function(e){
+      e.preventDefault();
+      var button=$("draftGenerate"), error=$("draftError"), title=$("draftTitle"), note=$("draftNote");
+      if(button.disabled)return;
+      var originalTitle=title.value, originalNote=note.value;
+      var details={sound:$("draftSound").value,position:$("draftPosition").value,reps:Number($("draftReps").value)};
+      button.disabled=true;button.textContent="Drafting…";error.textContent="";
+      fetch("/api/slp/homework/draft",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(details)})
+        .then(function(r){return r.json();}).then(function(j){
+          if(!j.ok){error.textContent=j.error||"Couldn't draft the note. Try again.";return;}
+          if(title.value!==originalTitle||note.value!==originalNote){error.textContent="Kept your edits. Draft again to replace them.";return;}
+          title.value=j.title;note.value=j.note;updateDraftCopy();title.focus();
+        }).catch(function(){error.textContent="Couldn't draft the note. Try again.";})
+        .then(function(){button.disabled=false;button.textContent="Draft note";});
+    };
     function setMenu(open){
       $("sidebar").classList.toggle("open",open);$("overlay").classList.toggle("open",open);
       $("menuBtn").setAttribute("aria-expanded",String(open));$("menuBtn").setAttribute("aria-label",open?"Close navigation":"Open navigation");

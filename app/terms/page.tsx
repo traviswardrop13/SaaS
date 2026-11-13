@@ -494,10 +494,15 @@ function ReferralTerms() {
 function CaseloadTerms() {
   return (
     <>
+      <strong>Free clinician dashboard.</strong> Clinicians who create an account
+      through the free dashboard signup can use the dashboard without a subscription.
+      They can draft homework, share Sona with families, and join the clinician community.
+      <br />
+      <br />
       A speech-language pathologist or other clinician can buy{" "}
       <strong>{PRO_NAME}</strong> on speaksona.com for{" "}
-      <strong>{PRO_PRICE} per month</strong>. It includes the clinician
-      dashboard; Premium on your own phone or tablet, every game, turned on
+      <strong>{PRO_PRICE} per month</strong>. It includes access for accounts
+      that signed up for a paid dashboard, and Premium on your own phone or tablet, every game, turned on
       with a link the dashboard emails to your account&apos;s address (each
       link works once); and Premium for every family who joins Sona through
       your link, whether or not they choose to share practice with you.
@@ -523,10 +528,10 @@ function CaseloadTerms() {
       <strong>Renewal and canceling.</strong> {PRO_NAME} renews automatically
       each month until you cancel it, from the clinician dashboard:{" "}
       <strong>Sona Pro &rarr; Manage billing</strong>. If you cancel, your
-      dashboard and your families&apos; Premium stay on until the end of the
+      paid dashboard access and your families&apos; Premium stay on until the end of the
       month you paid for (or of the free trial); then your families move to
-      the free version, which stays free, and removing a child from your
-      dashboard keeps working. The price does not depend on how many families
+      the free version. Free dashboard access and removing a child from your
+      dashboard keep working. The price does not depend on how many families
       join, and you never earn anything from families on your own caseload.
       <br />
       <br />

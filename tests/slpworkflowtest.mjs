@@ -12,6 +12,7 @@ const port = 8187;
 const account = {ok:true,email:'rachel@example.com',code:'rachel-k4',familyKey:'ABCD2345',name:'Rachel K',clinic:'Bright Steps',onboarded:true};
 const mime = {html:'text/html',js:'text/javascript',css:'text/css',svg:'image/svg+xml',png:'image/png',webp:'image/webp',woff2:'font/woff2'};
 let data=fixture(), posts=[], reads=[], failHw=false, failFeedback=false, delayHw=0, nextHw=0;
+let hasFamilyCode=true, draftFailure=false;
 const server = createServer((req,res)=>{
   const url=new URL(req.url,'http://localhost'); let body='';
   req.on('data',c=>body+=c);req.on('end',()=>{
@@ -19,8 +20,11 @@ const server = createServer((req,res)=>{
     const json=(value,status=200)=>{res.writeHead(status,{'content-type':'application/json','cache-control':'no-store'});res.end(JSON.stringify(value));};
     if(url.pathname.startsWith('/api/')){
       if(req.method==='GET')reads.push(url.pathname);else posts.push({path:url.pathname,body:payload});
-      if(url.pathname==='/api/slp/auth/me'||url.pathname==='/api/slp/account')return json(account);
+      if(url.pathname==='/api/slp/auth/me'||url.pathname==='/api/slp/account')return json(hasFamilyCode ? account : {...account,code:'',onboarded:false});
       if(url.pathname==='/api/slp')return json({ok:true,configured:true,kids:data.kids,invites:data.invites});
+      if(url.pathname==='/api/slp/homework/draft')return draftFailure
+        ?json({ok:false,error:'Draft temporarily unavailable'},503)
+        :json({ok:true,title:'Practice S at home',note:'Pick a regular time for today’s practice.'});
       if(url.pathname==='/api/slp/homework'){
         if(req.method==='GET')return json({ok:true,items:data.kids.map(k=>({childId:k.childId,...k.hw}))});
         const respond=()=>{
@@ -47,7 +51,7 @@ function ok(name,result,detail=''){checks++;if(!result)failures++;console.log((r
 const visible=async(pg,selector)=>await pg.locator(selector).count()>0&&await pg.locator(selector).first().isVisible();
 const exists=async(pg,selector)=>await pg.locator(selector).count()>0;
 const writes=path=>posts.filter(p=>!path||p.path===path);
-function reset(){data=fixture();posts=[];reads=[];failHw=false;failFeedback=false;delayHw=0;}
+function reset(){data=fixture();posts=[];reads=[];failHw=false;failFeedback=false;delayHw=0;hasFamilyCode=true;draftFailure=false;}
 async function open(hash='#today',width=1440){
   const ctx=await browser.newContext({viewport:{width,height:1000}}),pg=await ctx.newPage(),errors=[];
   pg.setDefaultTimeout(2200);pg.on('pageerror',e=>errors.push(e.message));
@@ -60,6 +64,30 @@ async function go(pg,hash){await pg.evaluate(hash=>location.hash=hash,hash);awai
 const text=async(pg,selector)=>await exists(pg,selector)?await pg.locator(selector).textContent():'';
 const date=n=>{const d=new Date();d.setDate(d.getDate()+n);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};
 try {
+  await section('Draft homework before setting up a family link',async()=>{
+    hasFamilyCode=false;
+    const {ctx,pg,errors}=await open('#homework-draft');
+    try {
+      ok('draft workspace opens for a new clinician without a family code',await visible(pg,'#page-homework-draft'));
+      if(!await visible(pg,'#page-homework-draft'))return;
+      await pg.locator('#draftSound').selectOption('S');
+      await pg.locator('#draftPosition').selectOption('i');
+      await pg.locator('#draftReps').selectOption('10');
+      await pg.locator('#draftGenerate').click();
+      await pg.waitForFunction(()=>document.querySelector('#draftTitle').value==='Practice S at home');
+      ok('drafting sends only the selected practice details',JSON.stringify(posts)===JSON.stringify([
+        {path:'/api/slp/homework/draft',body:{sound:'S',position:'i',reps:10}},
+      ]),JSON.stringify(posts));
+      await pg.locator('#draftNote').fill('My edited note.');
+      await pg.locator('#draftCopy').click();
+      ok('clinician can edit and copy the draft without assigning it',await pg.evaluate(()=>window.__copied.at(-1))==='Practice S at home\n\nMy edited note.'&&posts.length===1);
+      draftFailure=true;
+      await pg.locator('#draftGenerate').click();
+      await pg.getByText('Draft temporarily unavailable').waitFor();
+      ok('a failed draft preserves the clinician’s edits',await pg.locator('#draftNote').inputValue()==='My edited note.'&&!await pg.locator('#draftGenerate').isDisabled());
+      ok('the drafting workspace has no runtime errors',errors.length===0,errors.join('\n'));
+    } finally {await ctx.close();}
+  });
   // NO CALLS (Travis, 30 Sep 2026: "I don't want request to call to be an
   // option"; Rachel doesn't take phone calls): Talk to Rachel is feedback only.
   await section('Feedback, and no call request',async()=>{

@@ -95,6 +95,9 @@ function kvExec(cmd) {
     case "GETDEL": { const v = KV.K.has(key) ? KV.K.get(key) : null; KV.K.delete(key); return v; }
     case "INCR": { const n = Number(KV.K.get(key) || 0) + 1; KV.K.set(key, String(n)); return n; }
     case "EVAL": {
+      if (c[1].startsWith("-- slpacct:update\n")) {
+        return KV.K.get(c[3]) === c[4] ? kvExec(["SET", c[3], c[5]]) : null;
+      }
       // lib/rateLimit.ts: INCR and, when the bucket has none, its time limit, in one call.
       if (!/^-- rl:incr\n/.test(c[1])) throw new Error("fake kv does not speak this script");
       const k = c[3], n = Number(KV.K.get(k) || 0) + 1; KV.K.set(k, String(n));
@@ -247,7 +250,7 @@ async function call(route, method, url, o = {}) {
   if (o.body !== undefined) init.body = typeof o.body === "string" ? o.body : JSON.stringify(o.body);
   const res = await route[method](new NextRequest("https://sona.test.invalid" + url, init));
   let json = null; try { json = await res.clone().json(); } catch { json = null; }
-  return { status: res.status, json, location: res.headers.get("location") };
+  return { status: res.status, json, location: res.headers.get("location"), cookie: res.headers.get("set-cookie") };
 }
 // console.error, captured: the suite stays readable, and can prove what was never logged
 const ERRS = [];
@@ -1309,7 +1312,8 @@ const count = (pred) => S.calls.filter(pred).length;
 
   // every place an slpacct is SET from a fresh object stamps terms
   for (const f of ["app/api/slp/auth/request/route.ts", "app/api/slp/auth/verify/route.ts", "app/api/slp/account/route.ts"]) {
-    ok(`${f} stamps PRO_TERMS from lib/caseload`, /import \{ PRO_TERMS \} from "@\/lib\/caseload"/.test(read(f)) && /terms: PRO_TERMS|\.terms = PRO_TERMS/.test(read(f)) && !/CASELOAD_TERMS/.test(noComments(read(f))));
+    ok(`${f} stamps PRO_TERMS on the legacy signup path`, /import \{[^}]*PRO_TERMS[^}]*\} from "@\/lib\/caseload"/.test(read(f)) &&
+      /terms: (signup \? FREE_DASHBOARD_TERMS : )?PRO_TERMS|\.terms = PRO_TERMS/.test(read(f)) && !/CASELOAD_TERMS/.test(noComments(read(f))));
   }
 }
 
@@ -1375,6 +1379,99 @@ const count = (pred) => S.calls.filter(pred).length;
     rows[school]?.workSetting === "school" && rows[school]?.clinicianRole === "slpa" &&
     rows[oldEmail]?.workSetting === "other" && rows[oldEmail]?.clinicianRole === "" &&
     rows[omittedEmail]?.workSetting === "" && rows[omittedEmail]?.clinicianRole === "");
+}
+
+// ═════════════════════════ free dashboard email signup ═════════════════════════
+{
+  const email = "dashboard.free@example.org";
+  const key = "slpacct:" + email;
+  const signup = (body) => call(R.request, "POST", "/api/slp/auth/request", { body: {
+    flow: "free-dashboard", email, clinicianRole: "slpa", workSetting: "school",
+    attrib: { utm_campaign: "free-dashboard", workSetting: "NotAccountData" }, ...body,
+  } });
+  const before = OUT.length;
+  const r = await signup({});
+  const latestLink = () => {
+    const mail = RESEND.sent.at(-1);
+    const link = (mail?.text || "").match(/https:\/\/sona\.test\.invalid\/api\/slp\/auth\/verify\?token=[\w-]+/)?.[0];
+    return link ? new URL(link).pathname + new URL(link).search : "/api/slp/auth/verify";
+  };
+  const linkPath = latestLink();
+  ok("free signup sends a dashboard link with no account or session before verification",
+    r.status === 200 && r.json.sent === true && r.json.signedIn === false && !r.cookie && linkPath.includes("?token=") && !KV.K.has(key) &&
+    !OUT.slice(before).some((o) => o.url.endsWith("/api/lead")));
+  const verified = await call(R.verify, "GET", linkPath);
+  const account = JSON.parse(KV.K.get(key) || "{}");
+  ok("opening the link creates a free account with the saved clinician details",
+    verified.status >= 300 && verified.status < 400 && verified.cookie?.includes("slp_session=") &&
+    /\/slp\.html$/.test(verified.location || "") && account.terms === "free-dashboard-2026-11-13" &&
+    account.clinicianRole === "slpa" && account.workSetting === "school" && !!account.crmAt);
+  ok("verified free signup reaches the lead list once with attribution and no account fields",
+    OUT.slice(before).filter((o) => o.url.endsWith("/api/lead")).length === 1 &&
+    OUT.slice(before).some((o) => o.url.endsWith("/api/lead") && o.body.utm_campaign === "free-dashboard") &&
+    !/workSetting|clinicianRole|NotAccountData/.test(JSON.stringify(OUT.slice(before))));
+  const replay = await call(R.verify, "GET", linkPath);
+  ok("the same email link cannot sign in again", !replay.cookie && /err=expired/.test(replay.location || ""));
+
+  const dashboard = await call(R.plan, "GET", "/api/slp/plan", { as: email });
+  const roster = await call(R.roster, "GET", "/api/slp", { as: email });
+  ok("the free signup can open its dashboard and caseload with no paid coverage",
+    dashboard.json?.dashboard?.open === true && dashboard.json?.active === false &&
+    dashboard.json?.self?.active === false && roster.status === 200);
+
+  const returningEmail = "dashboard.returning@example.org";
+  const returningKey = "slpacct:" + returningEmail;
+  const original = seedAcct(returningEmail, { terms: C.PRO_TERMS, code: "returning-k4", familyKey: "RETKEY23" });
+  const opted = await signup({ email: returningEmail });
+  ok("an existing Pro-era account stays unchanged until it opens the free dashboard link",
+    opted.json.sent && !opted.cookie && JSON.stringify(JSON.parse(KV.K.get(returningKey))) === JSON.stringify(original) &&
+    await C.dashboardOpen(returningEmail, { kv: async (cmd) => kvExec(cmd), stripe: client }) === false);
+  const returning = await call(R.verify, "GET", latestLink());
+  const updated = JSON.parse(KV.K.get(returningKey));
+  const returningStatus = await call(R.plan, "GET", "/api/slp/plan", { as: returningEmail });
+  ok("verified returning Pro-era clinician gets dashboard access and retains terms and credentials",
+    returning.cookie?.includes("slp_session=") && JSON.stringify(updated) === JSON.stringify({ ...original, freeDashboard: true }) &&
+    returningStatus.json?.dashboard?.open === true && returningStatus.json?.active === false && returningStatus.json?.self?.active === false);
+
+  const raceEmail = "dashboard.race@example.org";
+  const raceKey = "slpacct:" + raceEmail;
+  seedAcct(raceEmail, { terms: C.PRO_TERMS, code: "raceready-k4", familyKey: "RACEKEY3" });
+  await signup({ email: raceEmail });
+  const pendingRaceLink = latestLink();
+  const fetchBeforeRace = globalThis.fetch;
+  let verifiedDuringCrm = false;
+  globalThis.fetch = async (url, init) => {
+    if (String(url).endsWith("/api/lead") && JSON.parse(init.body).email === raceEmail) {
+      const result = await call(R.verify, "GET", pendingRaceLink);
+      verifiedDuringCrm = !!result.cookie;
+    }
+    return fetchBeforeRace(url, init);
+  };
+  try {
+    await call(R.request, "POST", "/api/slp/auth/request", { body: { email: raceEmail } });
+  } finally {
+    globalThis.fetch = fetchBeforeRace;
+  }
+  ok("a legacy sign-in cannot overwrite an opt-in verified while CRM is responding",
+    verifiedDuringCrm && JSON.parse(KV.K.get(raceKey)).freeDashboard === true);
+
+  const sharing = await call(R.account, "POST", "/api/slp/account", { as: email, body: { name: "Jamie" } });
+  const invite = await call(R.invite, "POST", "/api/slp/invite", { as: email, body: { label: "AB", age: 6, sounds: ["S"], pos: "i" } });
+  ok("the free account can create a client practice link after setting up its profile",
+    sharing.status === 200 && invite.status === 200 && invite.json?.ok && /\/join\.html\?slp=/.test(invite.json.link));
+
+  const profile = await call(R.account, "POST", "/api/slp/account", { as: returningEmail, body: { name: "Robin" } });
+  ok("a later profile save preserves verified free dashboard access",
+    profile.status === 200 && JSON.parse(KV.K.get(returningKey)).freeDashboard === true &&
+    JSON.parse(KV.K.get(returningKey)).name === "Robin");
+
+  RESEND.status = 502;
+  const failedEmail = "free.refused@example.org";
+  const failed = await signup({ email: failedEmail });
+  RESEND.status = 200;
+  ok("a refused signup email creates no account, session or verified lead",
+    failed.status === 200 && failed.json.sent === false && !failed.cookie && !KV.K.has("slpacct:" + failedEmail) &&
+    !OUT.some((o) => o.url.endsWith("/api/lead") && o.body.email === failedEmail));
 }
 
 // ═════════════════════════ the family success page refuses a clinician's receipt ═════════════════════════

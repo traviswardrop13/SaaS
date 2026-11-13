@@ -109,7 +109,7 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
 
 
 // ── the root, and what a shared link looks like ──
-// Sona Pro is the root. The family landing page keeps its own address.
+// The free clinician dashboard is introduced at the root. The family page has its own address.
 {
   const parents = readFileSync(APP + "/public/parents.html", "utf8");
   const slps = readFileSync(APP + "/public/for-slps.html", "utf8");
@@ -253,18 +253,17 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
     /og:title" content="Send home practice they’ll play\."/.test(slps) &&
     /twitter:title" content="Send home practice they’ll play\."/.test(slps));
   const slpLede = (slps.match(/<p class="lede">([\s\S]*?)<\/p>/) || ["", ""])[1];
-  ok("the clinician lede describes choosing a sound, sharing the family link and seeing practice",
-    /pick a sound/i.test(slpLede) && /family link/i.test(slpLede) && /practic[^.]*at home/i.test(slpLede));
-  // Sign in for a clinician who has a dashboard; Pricing, because a
-  // clinician deciding wants the number before the form.
+  ok("the clinician lede presents AI homework, family links and the clinician community",
+    /draft homework with AI/i.test(slpLede) && /share the app with clients/i.test(slpLede) && /community of speech therapists/i.test(slpLede));
   const header = (slps.match(/<header>[\s\S]*?<\/header>/) || [""])[0].replace(/<!--[\s\S]*?-->/g, "");
-  ok("the clinician page's header: the logo, Pricing and Sign in — nothing for parents",
+  ok("the clinician header has the logo, How it works and Sign in",
     (header.match(/<a\b/g) || []).length === 3 && /<a class="signin" href="\/slp-login\.html">Sign in<\/a>/.test(header) &&
-    /<a\b[^>]*href="#pricing">Pricing<\/a>/.test(header) && !/For parents|forParents/.test(header));
+    /<a\b[^>]*href="#how">How it works<\/a>/.test(header));
   ok("a parent who lands here is pointed to /for-parents",
     (slps.match(/<a\b[^>]*href="\/for-parents"/g) || []).length === 1);
-  ok("clinician signup opens Sona Pro in the dashboard",
-    /var NEXT_URL = "\/slp\.html#premium";/.test(slps) && !/apps\.apple\.com|APP_STORE|APP_READY/.test(slps));
+  ok("clinician signup asks the auth endpoint to send the free dashboard link",
+    /fetch\("\/api\/slp\/auth\/request"/.test(slps) && /flow:\s*"free-dashboard"/.test(slps) &&
+    !/#premium|apps\.apple\.com|APP_STORE|APP_READY/.test(slps));
   const form = (slps.match(/<form class="signup" id="signup"[\s\S]*?<\/form>/) || [""])[0];
   ok("one clinician form asks only for email, SLP or SLPA, and Clinic or School",
     /id="fEmail" type="email"[^>]*\brequired\b/.test(form) && (form.match(/<button\b/g) || []).length === 1 &&
@@ -273,23 +272,20 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
     /<select id="fWorkSetting"[^>]*\brequired\b[^>]*>[\s\S]*?<option value="clinic">Clinic<\/option>[\s\S]*?<option value="school">School<\/option>/.test(form) &&
     !/<option value="(?:parent|other)"/.test(form) &&
     (slps.match(/<form\b/g) || []).length === 1 && !/id="startModal"/.test(slps));
-  ok("…its button, the plan's and the closing one all say Start free trial, and the two others bring the visitor back to the form",
-    /\$\("finalGo"\)\.onclick = function \(\) \{ toForm\(\); \};/.test(slps) && /\$\("planGo"\)\.onclick = function \(\) \{ toForm\(\); \};/.test(slps) &&
-    (slps.replace(/<!--[\s\S]*?-->/g, "").match(/>Start free trial</g) || []).length === 3 && /var LABEL = "Start free trial";/.test(slps));
+  ok("both clinician calls to action say Get the free dashboard and the closing one returns to the form",
+    /\$\("finalGo"\)\.onclick = function \(\) \{ toForm\(\); \};/.test(slps) &&
+    (slps.replace(/<!--[\s\S]*?-->/g, "").match(/>Get the free dashboard</g) || []).length === 2);
+  ok("the signup button tells clinicians that access is emailed",
+    /aria-describedby="fNext"/.test(form) && /id="fNext">[^<]*email you a sign-in link/i.test(form));
   const heroR = (slps.match(/<div class="hero-r"[\s\S]*?<\/section>/) || [""])[0];
   ok("the clinician hero shows Echo and a Fruit Slice game screen without sample caseload data",
     /<img class="mascot" src="\/assets\/site\/echo\.webp"/.test(heroR) && /<img src="\/assets\/site\/slice\.webp"/.test(heroR) &&
     !/Your caseload this week|>\s*\d+%\s*</.test(heroR));
-  // NOTHING UNDER THE BUTTON (Travis, 25 Sep 2026: "get rid of this text"),
-  // but for the one line that sends a parent to their own page.
-  ok("…and nothing else under the form's button: no list line, no 'Next' hint, no 'No card' note",
-    !/class="consent"|id="mNext"|class="hnote"/.test(slps.replace(/<!--[\s\S]*?-->/g, "")));
-  // The share card's picture is rendered from tools/og/og-slp.html, whose
-  // words must match the page's: the price and the trial are lib/caseload's.
-  const ogSrc = readFileSync(APP + "/tools/og/og-slp.html", "utf8");
-  ok("the share picture's source says the page's headline, price and trial, and Rachel's credential only as 'licensed pediatric SLP'",
-    /Home practice kids <em>actually want to do\.<\/em>/.test(ogSrc) && /14 days free, then \$19\.99 a month\./.test(ogSrc) &&
-    /Built with a licensed pediatric SLP/.test(ogSrc) && !/\bCCC\b|certified|Free to start/i.test(ogSrc.replace(/<!--[\s\S]*?-->/g, "")));
+  const ogSrc = readFileSync(APP + "/tools/og/og-slp.html", "utf8").replace(/<!--[\s\S]*?-->/g, "");
+  ok("the share picture offers the free dashboard without misstating Rachel's credentials",
+    /free dashboard/i.test(ogSrc) && !/\bCCC\b|certified|licensed pediatric SLP/i.test(ogSrc) &&
+    (!/Rachel/.test(ogSrc) || /Rachel, MS, CF-SLP/.test(ogSrc)));
+  ok("the share picture carries no dollar price or trial pitch", !/\$\s*\d|\bfree trial\b|\b\d+ days free\b/i.test(ogSrc));
 }
 
 // ── found by search and by AI assistants, as a page for parents (22 Oct 2026) ──
@@ -367,68 +363,25 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
   ok("…and no price, offer or rating", !/"(offers|price|aggregateRating)"/.test(ld || ""));
 }
 
-// ── what the clinician page promises: Sona Pro (Travis, 12 Nov 2026) ──
-// One plan, $19.99 a month, 14 days free the first time, unlimited families.
-// Until 24 Sep 2026 the page said "Free forever, unlimited families"; from
-// then to 12 Nov "free dashboard, two yearly plans". These pins hold the
-// page to what checkout does: what it costs, what it covers, how the trial
-// ends, and the older promises still kept.
+// ── The free clinician landing page and its privacy promises ──
 {
-  const slps = readFileSync(APP + "/public/for-slps.html", "utf8");
-  const shown = slps.replace(/<!--[\s\S]*?-->/g, "").replace(/<script[\s\S]*?<\/script>/g, "").replace(/<style[\s\S]*?<\/style>/g, "");
+  const slps = readFileSync(APP + "/public/for-slps.html", "utf8").replace(/<!--[\s\S]*?-->/g, "");
+  const shown = slps.replace(/<script[\s\S]*?<\/script>/g, "").replace(/<style[\s\S]*?<\/style>/g, "");
   const flat = shown.replace(/<[^>]+>/g, " ").replace(/&rsquo;/g, "'").replace(/\s+/g, " ");
-  // This page is static and cannot import lib/caseload.ts, so every figure
-  // it carries is pinned to the library's.
-  const lib = readFileSync(APP + "/lib/caseload.ts", "utf8");
-  const price = (lib.match(/\bPRO_PRICE = "([^"]+)"/) || [])[1];
-  const per = (lib.match(/\bPRO_PER = "([^"]+)"/) || [])[1];
-  const days = (lib.match(/\bPRO_TRIAL_DAYS = (\d+);/) || [])[1];
-  const figures = flat.match(/\$\d+(\.\d\d)?/g) || [];
-  ok("every dollar figure on the clinician page is lib/caseload.ts's Sona Pro price",
-    !!price && figures.length > 0 && figures.every((f) => f === price), price + " vs " + figures.join(","));
-  ok("…always said as the library says it, 'a month', never rounded or divided",
-    !!per && flat.split(price).slice(1).every((t) => t.startsWith(" " + per)) && !/\$20\b|under \$|\$4\.99|\$0\.66/.test(flat),
-    flat.split(price).slice(1).map((t) => t.slice(0, 12)).join(" | "));
-  ok("…and the free days are the library's", !!days && days === "14" && new RegExp("\\b" + days + " days free\\b").test(flat) && new RegExp("first " + days + " days are free").test(flat) &&
-    !/\b(7|30) days free\b/.test(flat));
-  ok("…and the meta tags carry the same figures", /content="[^"]*14 days free, then \$19\.99 a month/.test(slps) && !/\$59\.99|\$79\.99|\$99\.99|under \$5/.test(slps));
-  // UNLIMITED, AND TRUE (12 Nov 2026): a covered link has no cap
-  // (app/api/slp/redeem). "Forever" still never appears.
-  ok("the page says 'unlimited families', which the server makes true, and never 'forever'",
-    /Unlimited families/.test(flat) && !/forever/i.test(flat) && /const cap = isCovered \? Infinity : REDEEM_CAP;/.test(readFileSync(APP + "/app/api/slp/redeem/route.ts", "latin1")));
-  ok("the plan card: the price, the free days, what it includes",
-    /<div class="price"><b>\$19\.99<\/b><span>a month<\/span><\/div>/.test(shown) && /Your first 14 days are free\./.test(flat) &&
-    /Your dashboard\./.test(flat) && /Every family who joins through your link gets every game, every sound, whether or not they choose to share practice with you\./.test(flat) &&
-    /Every game on your own phone or tablet/.test(flat));
-  ok("…and the trial's real terms beside its button: a card, no charge that day, monthly until cancelled, families keep it to the end of the paid month",
-    /You enter a card to start the trial and aren't charged that day\. Unless you cancel before it ends, it's \$19\.99 a month until you cancel\. Cancel anytime from your dashboard: you and your families keep everything to the end of the month you paid for\./.test(flat));
-  ok("…and that the clinician never earns on their own caseload", /You never earn anything on your own caseload\./.test(flat));
-  ok("…and answers 'What does it cost?' with the same terms",
-    /What does it cost\?/.test(flat) && /Sona Pro is \$19\.99 a month, and your first 14 days are free\./.test(flat) &&
-    /cancel before it ends and you pay nothing\. After that it renews monthly until you cancel/.test(flat));
-  ok("…and tells the clinicians who signed up under older promises that they stand",
-    /Signed up before 12 November 2026\? Your dashboard stays free\./.test(flat) && /Signed up before 24 September 2026\? You and your caseload already have every game, free: that was the promise, and it stands\./.test(flat) &&
-    /Already have a Sona dashboard from before 12 November 2026\? It stays free, as promised\./.test(flat));
-  // The family price moves with the charter count, and only /api/charter may
-  // print it. A static page that typed it would be right until spot fifty.
-  ok("…and never quotes a family price", !/\$99\.99|\$59\.99/.test(flat) && /Families can always use Sona's free version, daily practice and free games, with no card\./.test(flat));
-  // REWRITTEN 24 Sep 2026. This pinned "we use it once … and keep it
-  // nowhere", and Resend only for "sign-in emails". The parent's address and
-  // the link do reach Resend, which keeps delivery logs; privacy.html said so
-  // and this page contradicted it, in the answer written for an IT reviewer.
-  ok("the storage answer names Stripe, and says who a parent's email is handed to and that Sona keeps no copy",
-    /When you start Sona Pro, Stripe takes the payment/.test(flat) &&
+  ok("the clinician landing page and its metadata advertise free access with no prices or trial pitch",
+    /free dashboard/i.test(shown) && !/\$\s*\d|\bfree trial\b|\b\d+ days free\b|id="pricing"|href="#pricing"/i.test(shown));
+  ok("the clinician offer includes homework, a client link and a community",
+    ["Create AI homework", "Share the app with clients", "Join the community"].every(label => flat.includes(label)));
+  ok("the page preserves the family's free practice without promising universal game access",
+    /daily practice and free games/i.test(flat) && !/unlimited families|free forever|gets every game/i.test(flat));
+  ok("the storage answer explains how a parent's email is handed to Resend and not kept by Sona",
     /we hand it to Resend to deliver that one email[^.]*, and Sona keeps no copy: not stored, not logged, not added to any list\./.test(flat) &&
     !/keep it nowhere/.test(flat));
-  // since 16 Oct 2026 Resend holds the email list too (Kit before it)
-  ok("…and names Resend for every email it sends, not only sign-in, and for the list", /emails and the email list via Resend/.test(flat) && !/sign-in emails via Resend/.test(flat));
-  ok("…and that removing a child works whether or not Sona Pro is on", /you remove the child from your caseload — that works whether or not Sona Pro is on/.test(flat));
-  ok("the clinician page links the Terms that carry the plan", /href="\/terms"/.test(shown));
-  const login = readFileSync(APP + "/public/slp-login.html", "utf8").replace(/<!--[\s\S]*?-->/g, "");
-  // 12 Nov 2026: "Your dashboard is free." went, since a new clinician's is
-  // Sona Pro's; the page cannot tell who is reading, so it promises neither.
-  ok("the sign-in page promises nothing 'forever', and no longer that the dashboard is free",
-    !/forever/i.test(login) && !/dashboard is free|free SLP account/i.test(login) && /Sona Pro starts with a free trial\./.test(login));
+  ok("the storage answer names Resend for emails and the list",
+    /emails and the email list via Resend/.test(flat) && !/sign-in emails via Resend/.test(flat));
+  ok("the page still explains how a clinician or family can remove a child's data",
+    /stop sharing[^.]*or you remove the child from your caseload/.test(flat));
+  ok("the clinician page links the Terms", /href="\/terms"/.test(shown));
 }
 
 // ── the Terms the clinician plan is sold under (24 Sep 2026) ──
@@ -446,8 +399,12 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
     !/COVERED_REDEEM_CAP|sign-ups a year|we raise it on request/.test(terms), terms.match(/A speech-language pathologist[^.]*\.[^.]*\./)?.[0]);
   ok("Terms: the free trial's terms — the first time, a card, no charge that day, charged when it ends unless cancelled, never if cancelled during it, once per clinician",
     /The first time you start \{PRO_NAME\}, the first \{PRO_TRIAL_DAYS\} days are free\. You enter a card at checkout and are not charged that day\. Unless you cancel before the trial ends, your card is charged \{PRO_PRICE\} when it ends and then each month until you cancel\. If you cancel during the trial, you are never charged\. One free trial per clinician\./.test(terms));
-  ok("Terms: it renews monthly until cancelled, and cancelling leaves the dashboard and the families' Premium on to the end of the paid month",
-    /\{PRO_NAME\} renews automatically each month until you cancel it/.test(terms) && /your dashboard and your families' Premium stay on until the end of the month you paid for \(or of the free trial\)/.test(terms.replace(/&apos;/g, "'")));
+  ok("Terms: Pro renews monthly and cancellation retains paid access through the paid month or trial",
+    /\{PRO_NAME\} renews automatically each month until you cancel it/.test(terms) &&
+    /paid dashboard access and your families' Premium stay on until the end of the month you paid for \(or of the free trial\)/.test(terms.replace(/&apos;/g, "'")));
+  ok("Terms: free dashboard access and removing a child survive cancellation",
+    /through the free dashboard signup can use the dashboard without a subscription\./.test(terms) &&
+    /Free dashboard access and removing a child from your dashboard keep working\./.test(terms));
   ok("Terms: every older promise is kept — the free dashboard before 12 Nov, free forever before 24 Sep, own Premium 24–29 Sep, the yearly plans still renewing",
     /Clinicians who signed up before 12 November 2026/.test(terms) && /Clinicians who signed up before 24 September 2026/.test(terms) &&
     /Clinicians who signed up from 24 to 29 September 2026/.test(terms) && /Yearly plans sold until 12 November 2026\./.test(terms) && /were replaced by \{PRO_NAME\} and can't be bought now\. If you hold one, it keeps renewing at the price you subscribed at/.test(terms.replace(/&apos;/g, "'")));

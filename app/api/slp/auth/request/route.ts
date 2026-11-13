@@ -2,10 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import crypto from "node:crypto";
 import {
   kvCmd, kvConfigured, randomToken, hashToken, sendMagicEmail,
-  signSession, sessionCookie, SESSION_MAX_AGE, authSecretOk, leadSig, clinicianRole, clinicianWorkSetting,
+  signSession, sessionCookie, SESSION_MAX_AGE, authSecretOk, clinicianRole, clinicianWorkSetting, signFreeDashboardSignup, replaceSlpAccount,
 } from "@/lib/slpAuth";
 import { contactsConfigured } from "@/lib/contacts";
 import { PRO_TERMS } from "@/lib/caseload";
+import { safeAttrib, tellCrm } from "@/lib/slpLead";
 
 export const runtime = "nodejs";
 
@@ -46,78 +47,7 @@ function safeEqual(a: string, b: string): boolean {
   return crypto.timingSafeEqual(ba, bb);
 }
 
-/**
- * Which ad produced this clinician. An ALLOW-LIST, copied in spirit from
- * /api/lead's safeLead: the object arrives from a page a stranger can put any
- * query string on, so a field that is not named here does not travel. A
- * deny-list is how `name: child` once sailed into a marketing payload.
- */
-const ATTRIB_KEYS = [
-  "utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term",
-  "fbclid", "referrer", "landing",
-] as const;
-
-function safeAttrib(raw: unknown): Record<string, string> {
-  const out: Record<string, string> = {};
-  if (!raw || typeof raw !== "object") return out;
-  const src = raw as Record<string, unknown>;
-  for (const k of ATTRIB_KEYS) {
-    const v = src[k];
-    if (typeof v === "string" && v) out[k] = v.slice(0, k === "referrer" ? 200 : 120);
-  }
-  return out;
-}
-
-/**
- * Tell the founder's email list that a clinician signed up. /api/lead is
- * the one place any opt-in goes (it adds them to Resend's contacts; Kit and
- * GoHighLevel, the lists before it, are gone), so this reuses it rather than
- * growing a second rail.
- *
- * AWAITED, WITH A SHORT FUSE — NOT FIRE-AND-FORGET. This used to be
- * `void fetch(...)` so a CRM hiccup could never cost a clinician their
- * sign-in. But on Vercel a function can be frozen the moment its response
- * is sent, and a fetch nobody awaits may never leave: the clinician signs up,
- * the dashboard works, and GoHighLevel never hears about them. Nothing
- * errors, so nothing says so. The fuse keeps the first promise — after
- * CRM_TIMEOUT_MS the sign-in goes ahead regardless — and awaiting keeps the
- * second. It runs alongside the rest of sign-up, so it costs nothing on the
- * usual path.
- *
- * The clinician's OWN first name — the one they typed about themselves.
- * Never a child's, which is the rule everywhere and has no exception in a
- * marketing payload of all places.
- */
-// Long enough for the contact list's calls (lib/contacts fuses each at
-// 2.5s), which usually finish in well under a second: one call for a new
-// address, a few more the very first time (the segments) or for one Resend
-// already has.
-const CRM_TIMEOUT_MS = 8000;
-async function tellCrm(
-  origin: string, email: string, source: string, name: string, attrib: Record<string, string>,
-): Promise<boolean> {
-  const ctl = new AbortController();
-  const fuse = setTimeout(() => ctl.abort(), CRM_TIMEOUT_MS);
-  try {
-    const r = await fetch(origin + "/api/lead", {
-      method: "POST",
-      // signed, so /api/lead's per-address flood limit never catches it
-      headers: { "Content-Type": "application/json", "x-sona-lead-sig": leadSig(email) },
-      body: JSON.stringify({ email, name, source, role: "slp", summary: "New SLP signup", ...attrib }),
-      signal: ctl.signal,
-    });
-    const j = (await r.json().catch(() => null)) as { captured?: boolean } | null;
-    if (!r.ok || !j || !j.captured) console.error("[slp signup] CRM did not capture the lead:", r.status, j);
-    return !!(r.ok && j && j.captured);
-  } catch (e) {
-    console.error("[slp signup] CRM call failed:", e instanceof Error ? e.message : String(e));
-    return false; /* never blocks sign-in */
-  } finally {
-    clearTimeout(fuse);
-  }
-}
-
-// POST { email, adminKey?, source?, clinicianRole?, workSetting? } → email a single-use magic sign-in link,
+// POST { email, adminKey?, source?, clinicianRole?, workSetting?, flow? } → email a single-use magic sign-in link,
 // and, for an account that does not exist yet, sign the clinician straight in.
 //
 // Admin override: when SLP_ADMIN_KEY is set (>= 8 chars) AND a matching adminKey
@@ -127,23 +57,30 @@ async function tellCrm(
 export async function POST(req: NextRequest) {
   let body: {
     email?: string; adminKey?: string; source?: string; name?: string; attrib?: unknown;
-    clinicianRole?: unknown; workSetting?: unknown;
+    clinicianRole?: unknown; workSetting?: unknown; flow?: unknown;
   };
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ ok: false, error: "Bad request." }, { status: 400 });
   }
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    return NextResponse.json({ ok: false, error: "Bad request." }, { status: 400 });
+  }
   const email = String(body.email || "").trim().toLowerCase().slice(0, 120);
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
     return NextResponse.json({ ok: false, error: "Enter a valid email." }, { status: 400 });
   }
+  const freeDashboard = body.flow === "free-dashboard";
+  if (body.flow !== undefined && !freeDashboard) {
+    return NextResponse.json({ ok: false, error: "Bad request." }, { status: 400 });
+  }
   const role = clinicianRole(body.clinicianRole);
-  if (body.clinicianRole !== undefined && !role) {
+  if ((freeDashboard || body.clinicianRole !== undefined) && !role) {
     return NextResponse.json({ ok: false, error: "Choose SLP or SLPA." }, { status: 400 });
   }
   const workSetting = clinicianWorkSetting(body.workSetting);
-  if (body.workSetting !== undefined && workSetting !== "clinic" && workSetting !== "school") {
+  if ((freeDashboard || body.workSetting !== undefined) && workSetting !== "clinic" && workSetting !== "school") {
     return NextResponse.json({ ok: false, error: "Choose Clinic or School." }, { status: 400 });
   }
   if (!kvConfigured()) {
@@ -183,11 +120,32 @@ export async function POST(req: NextRequest) {
     const n = await kvCmd(["INCR", rl]);
     if (n === 1) await kvCmd(["EXPIRE", rl, 3600]);
     if (typeof n === "number" && n > 5) {
+      if (freeDashboard) {
+        return NextResponse.json({ ok: false, error: "Too many links requested. Try again in an hour." }, { status: 429 });
+      }
       return NextResponse.json({ ok: true, sent: true, devLink: null }); // silently cap
     }
   }
 
   const origin = new URL(req.url).origin;
+
+  if (freeDashboard && role && (workSetting === "clinic" || workSetting === "school")) {
+    // The emailed token proves the inbox before an account or session exists.
+    const token = randomToken();
+    const pending = signFreeDashboardSignup({
+      email, clinicianRole: role, workSetting,
+      source: String(body.source || "for-slps").slice(0, 40), attrib: safeAttrib(body.attrib),
+    });
+    const key = "slptok:" + hashToken(token);
+    if (await kvCmd(["SET", key, pending, "EX", 900]) !== "OK") {
+      return NextResponse.json({ ok: false, error: "Couldn't make your sign-in link. Try again." }, { status: 503 });
+    }
+    const link = origin + "/api/slp/auth/verify?token=" + encodeURIComponent(token);
+    const res = await sendMagicEmail(email, link, "", { freeDashboard: true });
+    const devLink = isAdmin ? link : res.devLink;
+    if (!res.sent && !devLink) await kvCmd(["DEL", key]);
+    return NextResponse.json({ ok: true, sent: res.sent, signedIn: false, devLink });
+  }
 
   /**
    * A BRAND-NEW ACCOUNT IS SIGNED IN ON THE SPOT. Cold traffic off an ad does
@@ -208,14 +166,15 @@ export async function POST(req: NextRequest) {
    * 24 Sep 2026, the missing `terms` field that is their grandfathered
    * "free forever" promise.
    */
+  const acctKey = "slpacct:" + email;
   let acctRaw: unknown = null;
   let acctExists = false;
-  try { acctRaw = await kvCmd(["GET", "slpacct:" + email]); acctExists = acctRaw !== null; } catch { acctExists = true; }
+  try { acctRaw = await kvCmd(["GET", acctKey]); acctExists = acctRaw !== null; } catch { acctExists = true; }
 
   // The name they gave at sign-up is the name on their homework notes, so the
   // dashboard does not have to ask for it a second time.
   //
-  // Every new account carries PRO_TERMS. Older accounts keep their original
+  // The legacy signup path carries PRO_TERMS. Existing accounts keep their original
   // plan terms, including the free dashboard and grandfathered coverage.
   const name = String(body.name || "").trim().slice(0, 60);
   const acctNew = {
@@ -254,11 +213,11 @@ export async function POST(req: NextRequest) {
      */
     let acct: Record<string, unknown> | null = null;
     try { acct = acctRaw ? JSON.parse(String(acctRaw)) : null; } catch { acct = null; }
-    if (acct && !acct.crmAt) {
+    if (acct && !acct.crmAt && typeof acctRaw === "string") {
       const crmName = String(acct.name || body.name || "").trim().slice(0, 60);
       if (await tellCrm(origin, email, String(body.source || "slp-signup").slice(0, 40), crmName, safeAttrib(body.attrib))) {
         acct.crmAt = new Date().toISOString();
-        await kvCmd(["SET", "slpacct:" + email, JSON.stringify(acct)]);
+        await replaceSlpAccount(acctKey, acctRaw, acct);
       }
     }
     return NextResponse.json({ ok: true, sent: res.sent, signedIn: false, devLink: isAdmin ? link : res.devLink });
@@ -273,7 +232,7 @@ export async function POST(req: NextRequest) {
   const session = signSession({ email, code: "", iat: Date.now(), exp: Date.now() + SESSION_MAX_AGE * 1000 });
   // Stamped only when the CRM took it: a miss is retried on the next sign-in.
   const captured = await crm;
-  if (captured) await kvCmd(["SET", "slpacct:" + email, JSON.stringify({ ...acctNew, crmAt: new Date().toISOString() })]);
+  if (captured) await replaceSlpAccount(acctKey, JSON.stringify(acctNew), { ...acctNew, crmAt: new Date().toISOString() });
   const out = NextResponse.json({ ok: true, sent: res.sent, signedIn: true, devLink: isAdmin ? link : res.devLink });
   out.headers.set("Set-Cookie", sessionCookie(session, SESSION_MAX_AGE));
   return out;

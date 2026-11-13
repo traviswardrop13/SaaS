@@ -146,8 +146,9 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
   ok("Lead fires only after the server accepted the sign-up",
     okGate > 0 && lead > okGate,
     "otherwise the campaign optimises for opening the form, not completing it");
-  ok("…and a brand-new clinician is marked as one",
-    /if \(j\.signedIn\) sonaTrack\("CompleteRegistration"\)/.test(handler));
+  ok("…and email delivery is never counted as a completed registration",
+    handler.indexOf("if (j.sent !== true) {") > okGate &&
+    lead > handler.indexOf("if (j.sent !== true) {") && !/CompleteRegistration/.test(handler));
 
   // THE ROOT IS THE PARENT PAGE NOW (26 Sep 2026), and the parent ads land on
   // it: the same regression, the same rule. PageView on load, Lead only once
@@ -191,7 +192,7 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
 
 // ── 5. which ad produced which clinician ──
 {
-  const req = readFileSync(APP + "/app/api/slp/auth/request/route.ts", "utf8");
+  const req = readFileSync(APP + "/lib/slpLead.ts", "utf8");
   const slps = readFileSync(ROOT + "/for-slps.html", "utf8");
 
   ok("the landing page captures the ad's own click id, not just utm_source",

@@ -1,37 +1,67 @@
-<!DOCTYPE html>
-<!-- The picture a shared speaksona.com/for-slps link shows (1200 x 630).
-     Rendered to public/og-slp.png by tools/og/render-og-slp.mjs. Its words
-     are for-slps.html's own: the headline, Rachel's credential in the
-     settled form ("licensed pediatric SLP" is true; never "certified"), and
-     Sona Pro's price and trial, which are lib/caseload.ts's. Change the price
-     there, here and on the page together (12 Nov 2026). -->
-<html><head><meta charset="utf-8">
-<link href="/fonts.css" rel="stylesheet">
-<style>
-  html,body{margin:0;width:1200px;height:630px;overflow:hidden;}
-  body{background:linear-gradient(135deg,#EAF6FB 0%,#F2F8EF 100%);font-family:Nunito,sans-serif;color:#1C3550;position:relative;}
-  .c1{position:absolute;width:420px;height:420px;border-radius:50%;background:#DCEFFC;right:-110px;top:-130px;}
-  .c2{position:absolute;width:300px;height:300px;border-radius:50%;background:#E3F5DD;right:60px;bottom:-170px;}
-  .in{position:absolute;left:78px;top:66px;right:78px;}
-  .brand{display:flex;align-items:center;gap:18px;}
-  .brand img{width:66px;height:66px;border-radius:16px;background:#FFF1DA;}
-  .brand b{font-family:"Baloo 2",sans-serif;font-weight:800;font-size:34px;}
-  .brand span{font-weight:800;font-size:18px;color:#0E6E7A;background:#DDF4F6;padding:6px 14px;border-radius:999px;}
-  .pill{display:inline-block;margin-top:26px;background:#fff;border-radius:999px;padding:10px 22px;font-weight:800;font-size:21px;}
-  h1{font-family:"Baloo 2",sans-serif;font-weight:800;font-size:80px;line-height:.98;letter-spacing:-2px;margin:22px 0 0;max-width:900px;}
-  h1 em{font-style:normal;color:#1EA7E1;}
-  p{font-size:28px;font-weight:600;color:#4A6378;margin:24px 0 0;max-width:1040px;line-height:1.35;}
-  .row{display:flex;align-items:center;gap:24px;margin-top:30px;}
-  .btn{background:#0E7C89;color:#fff;font-family:"Baloo 2",sans-serif;font-weight:800;font-size:28px;padding:12px 28px;border-radius:14px;}
-  .url{font-weight:800;font-size:22px;color:#5E7A93;}
-</style></head>
+<!doctype html>
+<!-- Rendered by tools/og/render-og-slp.mjs for the clinician homepage. -->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Sona's free dashboard for speech therapists</title>
+  <link href="/fonts.css" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    html, body { width: 1200px; height: 630px; margin: 0; overflow: hidden; }
+    body {
+      position: relative;
+      background: linear-gradient(145deg, #fffaf0, #fff0bf);
+      color: #1d2b4f;
+      font-family: Nunito, sans-serif;
+    }
+    .content { position: absolute; z-index: 1; top: 72px; left: 75px; width: 655px; }
+    .brand { display: flex; align-items: baseline; gap: 17px; }
+    .brand strong { font: 800 44px/1 "Baloo 2", sans-serif; letter-spacing: -.04em; }
+    .brand span { color: #146d73; font-size: 20px; font-weight: 900; }
+    h1 { margin: 32px 0 22px; font: 800 84px/.95 "Baloo 2", sans-serif; letter-spacing: -.045em; }
+    h1 span { display: block; color: #146d73; }
+    p { max-width: 620px; margin: 0; color: #46506b; font-size: 26px; font-weight: 700; line-height: 1.35; }
+    .cta {
+      display: inline-block;
+      margin-top: 28px;
+      padding: 12px 24px;
+      border-radius: 15px;
+      background: #146d73;
+      box-shadow: 0 5px 0 #0b4e55;
+      color: #fff;
+      font: 800 26px/1.2 "Baloo 2", sans-serif;
+    }
+    .art { position: absolute; top: 58px; right: 43px; width: 415px; height: 510px; }
+    .halo { position: absolute; inset: 36px -10px 25px -19px; background: radial-gradient(circle, #ffdb71, #ffe89c 50%, transparent 72%); }
+    .phone {
+      position: absolute;
+      right: 39px;
+      top: 18px;
+      width: 220px;
+      overflow: hidden;
+      border: 8px solid #1d2b4f;
+      border-radius: 30px;
+      background: #1d2b4f;
+      box-shadow: 0 18px 30px #473c2838;
+      transform: rotate(8deg);
+    }
+    .phone img { display: block; width: 100%; height: auto; }
+    .echo { position: absolute; left: -10px; bottom: 24px; width: 250px; height: 250px; filter: drop-shadow(0 11px 12px #30294f30); }
+    .spark { position: absolute; top: 100px; left: 75px; color: #d98230; font-size: 44px; }
+  </style>
+</head>
 <body>
-  <div class="c1"></div><div class="c2"></div>
-  <div class="in">
-    <div class="brand"><img src="/echo.png" alt=""><b>Sona</b><span>for speech therapists</span></div>
-    <div class="pill">✓ Built with a licensed pediatric SLP</div>
-    <h1>Home practice kids <em>actually want to do.</em></h1>
-    <p>See who practiced. Unlimited families. 14 days free, then $19.99 a month.</p>
-    <div class="row"><div class="btn">Start free trial</div><div class="url">speaksona.com/for-slps</div></div>
+  <main class="content">
+    <div class="brand"><strong>Sona</strong><span>for speech therapists</span></div>
+    <h1>Send home practice <span>they&rsquo;ll play.</span></h1>
+    <p>Create AI homework, share the app with clients, and join the clinician community.</p>
+    <div class="cta">Get the free dashboard</div>
+  </main>
+  <div class="art" aria-hidden="true">
+    <div class="halo"></div>
+    <div class="phone"><img src="/assets/site/slice.webp" width="712" height="1388" alt=""></div>
+    <img class="echo" src="/assets/site/echo.webp" width="458" height="458" alt="">
+    <span class="spark">✦</span>
   </div>
-</body></html>
+</body>
+</html>

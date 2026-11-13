@@ -94,11 +94,6 @@
 
     <div class="card" id="formCard">
       <h1>Welcome, clinician 👋</h1>
-      <!-- Was "Free forever for SLPs" until 24 Sep 2026, then "Your dashboard
-           is free" until 12 Nov 2026, when a new clinician's dashboard became
-           part of Sona Pro. Every clinician signing in here before then keeps
-           a free dashboard; a new one starts with the free trial. The page
-           promises neither, because it cannot tell who is reading. -->
       <p class="lead">Sign in with your email — no password needed.</p>
 
       <div class="features">
@@ -126,8 +121,7 @@
     </div>
 
     <p class="note">
-      New here? Signing in creates your SLP account, and Sona Pro starts with a free trial.<br/>
-      <a href="/for-slps.html">Learn what you get →</a><br/>
+      New here? <a href="/#signup">Get your free clinician dashboard →</a><br/>
       Sona is an at-home practice tool, not a diagnosis or a substitute for professional care.
     </p>
   </div>
@@ -136,11 +130,13 @@
     var $=function(id){return document.getElementById(id);};
     var qp=new URLSearchParams(location.search);
     if(qp.get("err")==="expired") $("err").textContent="That link expired — enter your email for a fresh one.";
+    if(qp.get("err")==="store") $("err").textContent="We couldn’t open your dashboard. Return to the homepage to request a new link.";
 
     function send(){
-      if(window.__sonaFamilyRedirect)return;
+      if(window.__sonaFamilyRedirect||$("send").disabled)return;
       var email=($("email").value||"").trim();
       $("err").textContent="";
+      $("devbox").style.display="none";
       if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){$("err").textContent="Enter a valid email.";return;}
       $("send").disabled=true;$("send").textContent="Sending…";
       fetch("/api/slp/auth/request",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:email})})
@@ -148,13 +144,16 @@
         .then(function(j){
           $("send").disabled=false;$("send").textContent="Send my sign-in link";
           if(!j||!j.ok){$("err").textContent=(j&&j.error)||"Couldn't send right now.";return;}
-          $("sentMsg").textContent="We sent a sign-in link to "+email+". Tap it to open your portal — it expires in 15 minutes.";
-          $("formCard").style.display="none";$("sentCard").style.display="block";
           if(j.devLink){
-            $("sentCard").style.display="none";$("formCard").style.display="block";
-            $("devbox").style.display="block";
-            $("devbox").innerHTML='Email isn\'t configured yet, so here\'s your link (preview only): <a href="'+j.devLink+'">Open it →</a>';
+            var a=document.createElement("a");
+            a.href=j.devLink;a.textContent="Open it →";
+            $("devbox").textContent="Email isn’t configured here. Preview link: ";
+            $("devbox").appendChild(a);$("devbox").style.display="block";
+            return;
           }
+          if(!j.sent){$("err").textContent="We couldn’t send your sign-in link. Try again in a moment.";return;}
+          $("sentMsg").textContent="We sent a sign-in link to "+email+". Tap it to open your dashboard. It expires in 15 minutes.";
+          $("formCard").style.display="none";$("sentCard").style.display="block";
         })
         .catch(function(){$("send").disabled=false;$("send").textContent="Send my sign-in link";$("err").textContent="Network error — try again.";});
     }

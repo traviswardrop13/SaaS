@@ -1680,6 +1680,11 @@ grown-ups gate in between lost the only ask Sona will ever make, while the
 funnel counted an impression nobody saw. `iaptest.mjs` pins both halves.
 
 ### Sona Pro — the one plan a clinician can buy (12 Nov 2026)
+**Free dashboard signup (13 Nov 2026).** Clinicians who confirm the email
+from the homepage get the dashboard without a subscription. Sona Pro still
+covers every game for the clinician and every family on their link. Existing
+subscriptions and the terms of the family plans still apply.
+
 **$19.99 a month for the dashboard, every game on the clinician's own phone,
 and every game for every family on their link, with no cap on families**
 (Travis, 12 Nov 2026: "i needa get this setup to sell to slps ... price it
@@ -1927,7 +1932,7 @@ the device earned by redeeming code + key (`Sona.caseRefresh()`, re-asked every
 6 hours; only an authoritative answer changes anything).
 
 **SELLING TO SLPs AGAIN, FROM 12 NOV 2026** (Travis: "i needa get this
-setup to sell to slps"). The homepage at `/` sells Sona Pro to clinicians.
+setup to sell to slps"). The homepage at `/` offers clinicians a free dashboard.
 The family landing page moved to `/for-parents`, linked from the clinician
 page's footer. `/for-slps` redirects to `/` with campaign parameters intact.
 `llms.txt` and family setup still speak to parents. Marketing replay follows
@@ -2014,22 +2019,19 @@ pixel `ViewContent` (the fact, never who) and leaves 150 ms later. `noindex`
 allow-list. The root page with its email box is unchanged. `landingtest` plays
 it on an iPhone and an Android phone.
 
-**The clinician page is the homepage**, refreshed to sell Sona Pro on
-12 Nov 2026. The page opens with “Send home practice they’ll play,” Echo,
-and Fruit Slice. **Start free trial** collects an email, role (SLP or SLPA),
-and setting (Clinic or School). Four facts cover the free trial, unlimited
-families, on-device checking, and audio privacy. The page shows the workflow
-in three steps, games and books, and **one plan card** at `#pricing`
-($19.99 a month, the free days, what it includes, the trial's terms), the
-clinical notes, the FAQ and the closing button. Header: Pricing and Sign in.
-A new account is signed in and taken to `/slp.html#premium`, where the trial
-is the first button; an existing address is told to check its email. Not the
-App Store: that is the family app (`APP_READY` lives on `parents.html` and
-`lib/launch.ts` only now). Its share picture is `tools/og/og-slp.html`,
-rendered by `tools/og/render-og-slp.mjs` (served as `og-slp.png?v=2`).
-Every figure is `lib/caseload.ts`'s and `shiptest` pins them; the older
-promises (free dashboard before 12 Nov, free forever before 24 Sep) are on
-the page. `tests/landingtest.mjs` drives both pages.
+**The clinician page is the homepage**, updated to offer a free dashboard
+on 13 Nov 2026. The hero features Echo beside an actual Fruit Slice screen.
+**Get the free dashboard** collects an email, role (SLP or SLPA), and setting
+(Clinic or School). A single-use email link opens the dashboard. The signup
+page has no prices or checkout, and describes the AI homework draft, family
+links, and clinician community. `tests/landingtest.mjs` drives both pages.
+Its share image comes from `tools/og/og-slp.html` (`og-slp.png?v=3`).
+
+**AI homework draft** lives at `/slps#homework-draft`, including before
+a clinician sets up a family link. The clinician selects the sound, position,
+and rep count. Only those three selections go to Anthropic. The clinician
+can edit and copy the draft. Drafting does not assign homework or send a
+note to a family. The original homework composer still handles assignments.
 
 **SUPERSEDED on 12 Nov 2026 (above): /for-slps is findable again.**
 **speaksona.com is only for parents, and does not look for therapists at

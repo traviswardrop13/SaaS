@@ -1,7 +1,7 @@
 // LANDING1: speaksona.com's forms, driven in a real browser against fake
 // routes, so what is posted, and where the visitor ends up, is what is checked.
 //
-// The clinician page at / signs clinicians up for Sona Pro. The parent
+// The clinician page at / emails access to the free dashboard. The parent
 // page at /for-parents keeps its one email and its family app destination.
 import { createServer } from "http";
 import { readFileSync, existsSync } from "fs";
@@ -378,7 +378,7 @@ charterReply = null;
   await context.close();
 }
 
-// ═════════════════ the root: clinician signup and Sona Pro ═════════════════
+// ═════════════════ the root: emailed access to the free clinician dashboard ═════════════════
 // ── the form ──
 {
   const { context, page, errors } = await fresh({ query: "&clinicianRole=slpa&workSetting=school" });
@@ -407,7 +407,9 @@ charterReply = null;
   }));
   ok("the clinician page points parents to /for-parents", await page.evaluate(() =>
     !document.querySelector(".consent, #mNext, .hnote") && document.querySelector('a[href="/for-parents"]') !== null));
-  ok("the plan card shows the price and the free days", await page.evaluate(() => { const t = document.getElementById("pricing").innerText; return /\$19\.99/.test(t) && /a month/.test(t) && /Your first 14 days are free\./.test(t); }));
+  ok("the clinician page offers the free dashboard without prices or trial language", await page.evaluate(() =>
+    document.getElementById("fGo").textContent.trim() === "Get the free dashboard" &&
+    !document.getElementById("pricing") && !/\$\s*\d|\bfree trial\b/i.test(document.body.innerText)));
 
   // What the visitor is told before anything is sent.
   posts = [];
@@ -435,38 +437,40 @@ charterReply = null;
     authReply = before;
   }
 
-  // The plan's button and the closing one both come back to this one form.
-  ok("the header has no For parents link", (await page.$("#forParents")) === null);
-  for (const id of ["planGo", "finalGo"]) {
-    await page.evaluate(() => { document.activeElement.blur(); window.scrollTo(0, document.body.scrollHeight); });
-    await page.click("#" + id);
-    ok("#" + id + " comes back to the same form", await settles(page, () => { const r = document.getElementById("signup").getBoundingClientRect(); return r.top >= 0 && r.bottom <= innerHeight && document.activeElement && document.activeElement.id === "fEmail"; }));
-  }
+  await page.evaluate(() => { document.activeElement.blur(); window.scrollTo(0, document.body.scrollHeight); });
+  await page.click("#finalGo");
+  ok("the closing button returns to the signup form", await settles(page, () => {
+    const r = document.getElementById("signup").getBoundingClientRect();
+    return r.top >= 0 && r.bottom <= innerHeight && document.activeElement?.id === "fEmail";
+  }));
   ok("no page errors", errors.length === 0, errors);
   await context.close();
 }
 
-// ── a new clinician: the account and the dashboard email, then the dashboard's Sona Pro page ──
+// ── New and returning clinicians both enter through the emailed link. ──
 for (const [clinicianRole, workSetting, path] of [["slp", "clinic", "/"], ["slpa", "school", "/for-slps"]]) {
   const { context, page, errors } = await fresh({ path });
   const url = new URL(page.url());
   ok(clinicianRole + ": clinician URL keeps campaign parameters", url.pathname === "/" &&
     url.searchParams.get("utm_campaign") === "launch" && url.searchParams.get("fbclid") === "abc123", url.href);
-  posts = []; authReply = { ok: true, sent: true, signedIn: true };
+  posts = []; authReply = { ok: true, sent: true, signedIn: false };
   await fill(page, "sam@clinic.org", clinicianRole, workSetting);
-  const nav = page.waitForURL(/\/slp\.html#premium$/, { timeout: 6000 }).then(() => true, () => false);
+  const left = leftFor(page, "/", 3000);
   await page.click("#fGo");
-  await page.waitForTimeout(300);
+  ok(clinicianRole + ": email confirmation identifies the address after delivery", await settles(page, () => {
+    const sent = document.getElementById("sent");
+    return !sent.hidden && /check your email/i.test(sent.textContent) && /sam@clinic\.org/.test(sent.textContent);
+  }));
   const p = posts[0] || { body: {} };
-  ok(clinicianRole + ": one post, to the clinician sign-up", posts.length === 1 && p.path === "/api/slp/auth/request", posts);
-  ok("SLP: it carries the email and the ad, and no name", p.body.email === "sam@clinic.org" && !("name" in p.body) && p.body.attrib && p.body.attrib.fbclid === "abc123" && p.body.source === "fb", p.body);
+  ok(clinicianRole + ": one post requests the free dashboard email", posts.length === 1 && p.path === "/api/slp/auth/request" &&
+    p.body.flow === "free-dashboard", posts);
+  ok(clinicianRole + ": the request carries the email and ad click, with no name",
+    p.body.email === "sam@clinic.org" && !("name" in p.body) && p.body.attrib?.fbclid === "abc123" && p.body.source === "fb", p.body);
   ok(clinicianRole + ": work setting and role go only in the auth body", p.body.clinicianRole === clinicianRole &&
     p.body.workSetting === workSetting && !!p.body.attrib && !("clinicianRole" in p.body.attrib) && !("workSetting" in p.body.attrib), p.body);
-  ok("SLP: told the next step is the free trial, and that the dashboard link is in their email",
-    /Next: start your 14-day free trial — no charge today\./.test(await page.textContent("#sentMsg")) && /emailed sam@clinic\.org a link to your dashboard/.test(await page.textContent("#sentMsg")));
-  ok("SLP: a new clinician is marked as one", JSON.stringify(await page.evaluate(() => window.__track)) === '["Lead","CompleteRegistration"]');
-  ok("SLP: then into the dashboard's Sona Pro page — never the App Store", await nav, page.url());
-  ok("SLP: no page errors", errors.filter((e) => !/api\/slp/.test(e)).length === 0, errors);
+  ok(clinicianRole + ": successful email delivery fires only Lead", JSON.stringify(await page.evaluate(() => window.__track)) === '["Lead"]');
+  ok(clinicianRole + ": the confirmation stays on the homepage", !(await left), page.url());
+  ok(clinicianRole + ": no page errors", errors.length === 0, errors);
   await context.close();
 }
 // The Lead fires only after the server said yes.
@@ -475,33 +479,43 @@ for (const [clinicianRole, workSetting, path] of [["slp", "clinic", "/"], ["slpa
   posts = []; authReply = { ok: false, error: "Enter a valid email." };
   await fill(page, "sam@clinic.org", "slp");
   await page.click("#fGo");
-  await page.waitForTimeout(400);
-  ok("a refused sign-up shows the server's reason and stays put", /Enter a valid email/.test(await page.textContent("#fErr")) && /127\.0\.0\.1/.test(page.url()));
+  ok("a refused signup shows the server's reason", await settles(page, () =>
+    /Enter a valid email/.test(document.getElementById("fErr").textContent)));
   ok("…and fires no Lead", (await page.evaluate(() => window.__track.length)) === 0);
   await context.close();
-  authReply = { ok: true, sent: true, signedIn: true };
 }
-for (const [label, reply, want, leaves] of [
-  ["an existing account (not signed in), email sent", { ok: true, sent: true, signedIn: false }, /Your sign-in link is on its way to sam@clinic\.org/, false],
-  ["email refused, signed in", { ok: true, sent: false, signedIn: true }, /Bookmark it: speaksona\.com\/slp/, true],
-  ["email refused, not signed in", { ok: true, sent: false, signedIn: false }, /hello@speaksona\.com/, false],
-]) {
+{
   const { context, page } = await fresh();
-  posts = []; authReply = reply;
+  posts = []; authReply = { ok: true, sent: false, signedIn: false };
   await fill(page, "sam@clinic.org", "slp");
-  const nav = page.waitForURL(/\/slp\.html#premium$/, { timeout: 4000 }).then(() => true, () => false);
   await page.click("#fGo");
-  await page.waitForTimeout(400);
-  ok("SLP, " + label + ": says so", want.test(await page.textContent("#sentMsg")), await page.textContent("#sentMsg"));
-  if (!reply.signedIn) {
-    ok("returning clinician does not fire a new registration", JSON.stringify(await page.evaluate(() => window.__track)) === '["Lead"]');
+  const canRetry = await settles(page, () => /email/i.test(document.getElementById("fErr").textContent)) &&
+    await page.locator("#signup").isVisible() && await page.locator("#fGo").isEnabled() &&
+    !await page.locator("#sent").isVisible() && await page.inputValue("#fEmail") === "sam@clinic.org";
+  ok("a delivery failure leaves the form ready to retry without claiming the email was sent", canRetry);
+  ok("a delivery failure fires no conversion", await page.evaluate(() => window.__track.length === 0));
+  if (canRetry) {
+    authReply = { ok: true, sent: true, signedIn: false };
+    await page.click("#fGo");
+    ok("retry confirms delivery after a successful send", await settles(page, () => !document.getElementById("sent").hidden) &&
+      posts.length === 2, posts);
   }
-  // (asked before the page leaves: once it has, there is nothing to read)
-  ok("SLP, " + label + ": no App Store anywhere", !(await page.$("#nextGo")) && !/apps\.apple\.com/.test(await page.content()));
-  ok("SLP, " + label + ": " + (leaves ? "and, being signed in, goes on into the dashboard" : "and stays, so the way in is not lost"), (await nav) === leaves, page.url());
   await context.close();
 }
-authReply = { ok: true, sent: true, signedIn: true };
+
+// A local preview offers its test link without reporting an email delivery.
+{
+  const { context, page } = await fresh();
+  posts = []; authReply = { ok: true, sent: false, signedIn: false, devLink: origin + "/api/slp/auth/verify?token=preview" };
+  await fill(page, "sam@clinic.org", "slp");
+  await page.click("#fGo");
+  ok("local preview shows its sign-in link with no delivery claim", await settles(page, () => {
+    const sent = document.getElementById("sent");
+    return !sent.hidden && /preview sign-in/i.test(sent.textContent) && !/check your email/i.test(sent.textContent);
+  }) && await page.locator("#devbox a").getAttribute("href") === authReply.devLink);
+  ok("the preview link fires no conversion", await page.evaluate(() => window.__track.length === 0));
+  await context.close();
+}
 
 // ── the queued books all open on one day (27 Sep, 1 Oct 2026) ──
 // The page counts only the books the shelf has opened and tags the rest with
