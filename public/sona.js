@@ -447,8 +447,8 @@
     if (v.list.length < 2) return false;              // never leave zero children
     // a child on the Practice Board leaves it with the rest of their data:
     // the deletion is queued first and goes out from the next practice,
-    // game, road or Settings page, and slot "" is cleared here because the
-    // PER_KID sweep below leaves the first child's keys (BOARD2)
+    // game, road or Settings page, and slot "" is cleared here too, before the
+    // PER_KID sweep below takes every key of this child's (BOARD2)
     try { _boardDrop(slot); _boardPendForget([slot]); } catch (e) {}
     // the weekly report's address, when it is on this child's profile, goes
     // with them: unless a brother or sister holds the same one, the server is
@@ -975,6 +975,11 @@
     try {
       const hw = (load(HWKEY, {}) || {}).hw;
       if (!hw || !hw.sounds || !hw.sounds.length) return null;
+      // a child whose grown-up said "No thanks" or stopped sharing has no
+      // homework: one cached before it would otherwise lock their sounds in
+      // Settings for good, since nothing syncs to clear it (read only: Home
+      // calls this and writes nothing)
+      if (getProfile().slpShare === false) return null;
       const d = _localDay();
       if (hw.start && d < hw.start) return null;   // not started yet
       if (hw.due && d > hw.due) return null;       // window closed

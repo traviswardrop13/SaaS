@@ -410,6 +410,28 @@ for (const [cred, isCovered] of [[CRED, true], [CRED2, false]]) {
     forgetPosts.length === 1 && st.share === false && !st.sharing && pilotPosts.length === b2, JSON.stringify({ st, f: forgetPosts.length, p: pilotPosts.length - b2 }));
   await c2.close();
 
+  // sharing with ANOTHER clinician, then "No thanks" on this one's link: the
+  // first sharing stands (the card still shows; nothing is forgotten)
+  const c2b = await browser.newContext(); const p2b = await c2b.newPage();
+  await p2b.goto("http://localhost:8155/join.html?slp=rachel-k4&k=RACHELKEY"); await p2b.waitForTimeout(900);
+  await p2b.evaluate(() => { document.getElementById("jYes").click(); });
+  await p2b.evaluate(() => { const k = Sona.kkey("sona.pilot.v1"); const pi = JSON.parse(localStorage.getItem(k)); pi.code = "OTHER-SLP"; localStorage.setItem(k, JSON.stringify(pi)); });
+  await p2b.goto("http://localhost:8155/join.html?slp=rachel-k4&k=RACHELKEY"); await p2b.waitForTimeout(900);
+  forgetPosts.length = 0;
+  await p2b.evaluate(() => document.getElementById("jNo").click()); await p2b.waitForTimeout(500);
+  st = await p2b.evaluate(() => ({ share: Sona.getProfile().slpShare, sharing: Sona.slpSharing() }));
+  ok("'No thanks' to one clinician never stops sharing with another the child already shares with",
+    forgetPosts.length === 0 && st.share !== false && st.sharing === true, JSON.stringify({ st, f: forgetPosts.length }));
+  ok("…and a child who stopped sharing has no homework: an assignment cached before it is ignored (read only)",
+    await p2b.evaluate(() => {
+      localStorage.setItem(Sona.kkey("sona.homework.v1"), JSON.stringify({ hw: { sounds: ["S"] }, at: Date.now() }));
+      const before = !!Sona.homework();
+      Sona.saveProfile({ slpShare: false });
+      const raw = localStorage.getItem(Sona.kkey("sona.homework.v1"));
+      return before && Sona.homework() === null && /"S"/.test(raw);
+    }));
+  await c2b.close();
+
   // a child who said No, and a founding beacon, are never shown the card
   const c3 = await browser.newContext(); const p3 = await c3.newPage();
   await p3.goto("http://localhost:8155/join.html?slp=rachel-k4&k=RACHELKEY"); await p3.waitForTimeout(900);
@@ -1192,7 +1214,7 @@ for (const [cred, isCovered] of [[CRED, true], [CRED2, false]]) {
     /r\.valid[\s\S]{0,700}askConsent\(/.test(joinCode) && /Sona\.caseRefresh\(true\)/.test(joinCode) && !/earlyAdopter/.test(joinCode),
     "consent must never be the price of access");
   ok("join.html's email box is optional, after the sharing answer, and carries the list line",
-    /jYes[\s\S]{0,400}askEmail\(\)/.test(joinCode) && /jNo[\s\S]{0,500}askEmail\(\)/.test(joinCode) &&
+    /jYes[\s\S]{0,400}askEmail\(\)/.test(joinCode) && /jNo[\s\S]{0,1000}askEmail\(\)/.test(joinCode) &&
     /We'll also send occasional tips from Rachel\. Unsubscribe anytime\./.test(joinSrc));
   ok("join.html only enrols behind an explicit Yes",
     /jYes[\s\S]{0,200}slpJoinCaseload/.test(joinSrc) && /jNo/.test(joinSrc));
@@ -1260,8 +1282,9 @@ for (const [cred, isCovered] of [[CRED, true], [CRED2, false]]) {
 // clinician, plus the uncovered join and the clinician's own-phone link. And
 // three more the same day: two source devices whose backups cross to the
 // app (4h-ii), and the founding family who joins a clinician (4h-iv).
-// 13 Nov 2026: three more, the Stop sharing families (4b-ii, then).
-ok("no unexpected redeem spam", redeemCalls <= 17, String(redeemCalls));
+// 13 Nov 2026: three more, the Stop sharing families (4b-ii, then). 14 Nov
+// 2026: two more, the family sharing with another clinician (4b-ii).
+ok("no unexpected redeem spam", redeemCalls <= 19, String(redeemCalls));
 // THE LIMIT MESSAGE HAS TO REACH THE FAMILY (24 Sep 2026). The redeem route
 // answers a full link with "…ask your speech therapist to contact Sona" and a
 // down store with "try again soon"; join and pilot used to print "That code

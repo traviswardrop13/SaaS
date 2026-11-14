@@ -1,3 +1,4 @@
+import { foreignOrigin } from "@/lib/origin";
 import { NextRequest, NextResponse } from "next/server";
 import { kvConfigured } from "@/lib/slpAuth";
 import { rateLimit } from "@/lib/rateLimit";
@@ -13,8 +14,9 @@ import { trialDays, trialPlayed } from "@/lib/trials";
  * is stored, nothing else is read. Always answers ok — telemetry must never
  * break practice.
  *
- * Since 14 Nov 2026 (server.md B6): a post from another site, or with no
- * Origin (a browser and sendBeacon always send one), is dropped silently; so
+ * Since 14 Nov 2026 (server.md B6): a post another site sent (its Origin or
+ * Sec-Fetch-Site says so) is dropped silently; one with neither header is
+ * kept (a phone's background beacon may carry none); so
  * is a post past 120 a minute from one address (an IPv6 /64 as one); PostHog
  * gets 1.5 s at most; and the phone's "free trial started" only fills in a
  * trial row RevenueCat already started, never a new one (lib/trials.ts).
@@ -93,7 +95,7 @@ const PROPS = new Set(["sound", "game", "duration_seconds", "attempts_count", "c
 
 export async function POST(req: NextRequest) {
   try {
-    if (req.headers.get("origin") !== new URL(req.url).origin) return NextResponse.json({ ok: true });
+    if (foreignOrigin(req)) return NextResponse.json({ ok: true });
     const limited = await rateLimit(req, { key: "track", limit: 120, windowSec: 60, v6prefix: true });
     if (limited) return NextResponse.json({ ok: true });
     const raw = await req.text(); // sendBeacon posts text/plain

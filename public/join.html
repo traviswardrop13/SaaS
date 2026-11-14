@@ -211,7 +211,11 @@
         document.getElementById("jNo").onclick = function () {
           // declining shares nothing — and costs nothing; access stands, and
           // coverage never asked for consent in the first place
-          try { Sona.saveProfile({ slpShare: false }); } catch (e) {}
+          // ...but only with THIS clinician: a child already sharing with
+          // another one keeps sharing with them (Stop sharing in Settings ends that)
+          var other = false;
+          try { var pi = Sona.pilotInfo() || {}; var pc = String(pi.code || "").toUpperCase(); other = !!(pi.consent && pi.childId && pc && pc.indexOf("FF-") !== 0 && pc !== String(code).toUpperCase()); } catch (e) {}
+          if (!other) { try { Sona.saveProfile({ slpShare: false }); } catch (e) {} }
           if (wasSharing && Sona.slpStopSharing) Sona.slpStopSharing();
           consent.style.display = "none";
           title.textContent = "No problem!";

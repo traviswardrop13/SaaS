@@ -255,7 +255,9 @@
             if(Sona.slpJoinCaseload) Sona.slpJoinCaseload(code);
             else if(Sona.startPilot){ Sona.startPilot(code.toUpperCase()); Sona.sendProgress&&Sona.sendProgress("enroll"); }
           } else {
-            Sona.saveProfile&&Sona.saveProfile({ slpShare:false });
+            // declining this clinician never stops sharing with another one
+            var pi0=(Sona.pilotInfo&&Sona.pilotInfo())||{}, pc0=String(pi0.code||"").toUpperCase();
+            if(!(pi0.consent&&pi0.childId&&pc0&&pc0.indexOf("FF-")!==0&&pc0!==String(code).toUpperCase())) Sona.saveProfile&&Sona.saveProfile({ slpShare:false });
           }
         }catch(e){}
         finish(name, age, sounds);

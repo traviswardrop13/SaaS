@@ -9,7 +9,8 @@
 //     today is no trial), and the report built from them;
 //   - /api/track keeps "played today" and a trial's length ({ days }) only on a
 //     row RevenueCat started (never a new row: 14 Nov 2026, server.md B6),
-//     only from this site (a foreign or missing Origin is dropped), 120 a
+//     only from this site (another site's Origin or Sec-Fetch-Site is
+//     dropped; a beacon with neither is kept), 120 a
 //     minute an address, and waits on PostHog 1.5 s at most;
 //   - /api/revenuecat hears how a trial went by the anonymous id the phone
 //     handed RevenueCat (`sona_fid`), with or without an email;
@@ -181,10 +182,10 @@ await scenario("the routes", async () => {
     method: "POST", headers: { authorization: "rc-trials-secret-0123456789" }, body: JSON.stringify({ event }) }));
   const t0 = Date.now() - HOUR;
 
-  // A forged beacon: another site, or no Origin at all (a script)
-  for (const h of [{}, { origin: "https://evil.example" }]) {
+  // A forged beacon: another site's page says so by its Origin or Sec-Fetch-Site
+  for (const h of [{ "sec-fetch-site": "cross-site" }, { origin: "https://evil.example" }]) {
     const r = await send({ e: "free trial started", p: { days: 7 }, fid: FID }, { ...h, "x-real-ip": "203.0.113." + ip++ });
-    ok("/api/track drops a post " + (h.origin ? "from another site" : "with no Origin") + " silently (still ok), keeping and relaying nothing",
+    ok("/api/track drops a post " + (h.origin ? "from another site's Origin" : "a browser marks cross-site") + " silently (still ok), keeping and relaying nothing",
       r.status === 200 && (await r.json()).ok === true && !KV.H.has("trial:" + FID) && CAPTURED.length === 0);
   }
   await post({ e: "free trial started", p: { days: 7, name: "Mia", plan: "monthly" }, fid: FID });
@@ -195,8 +196,9 @@ await scenario("the routes", async () => {
   await hook({ app_user_id: "$RCAnonymousID:f1", environment: "PRODUCTION", subscriber_attributes: { sona_fid: { value: FID, updated_at_ms: t0 } },
     id: "evt-0", type: "INITIAL_PURCHASE", period_type: "TRIAL", purchased_at_ms: t0, event_timestamp_ms: t0 });
   await post({ e: "free trial started", p: { days: 7 }, fid: FID });
-  await post({ e: "played today", p: { sound: "R" }, fid: FID });
-  ok("…on a row RevenueCat started, /api/track keeps the length and today's play under the anonymous id", trial(FID).s === String(t0) && trial(FID).n === "7" && trial(FID).p0 === "1", trial(FID));
+  // A phone's background beacon may carry no Origin at all: kept, not dropped
+  await send({ e: "played today", p: { sound: "R" }, fid: FID }, { "x-real-ip": "198.51.100.1" });
+  ok("…on a row RevenueCat started, /api/track keeps the length and today's play under the anonymous id (the play beacon carried no Origin)", trial(FID).s === String(t0) && trial(FID).n === "7" && trial(FID).p0 === "1", trial(FID));
   const cap = CAPTURED.map((c) => ({ e: c.event, p: Object.keys(c.properties).sort().join() }));
   ok("…and relays what this site sent, with only what the allow-list lets through (never a name)",
     cap.length === 4 && cap[0].e === "free trial started" && !/name/.test(cap[0].p) && /days/.test(cap[0].p) && cap[1].e === "played today", cap);
@@ -216,7 +218,7 @@ await scenario("the routes", async () => {
   PH_HANGS = false;
   ok("…and waits on PostHog 1.5 s at most", slow.status === 200 && took >= 1400 && took < 2500, took);
   ok("/api/track's source: the Origin check, the rate limit and the shorter wait come before anything is kept",
-    /req\.headers\.get\("origin"\) !== new URL\(req\.url\)\.origin/.test(read("app/api/track/route.ts")) && /key: "track", limit: 120, windowSec: 60/.test(read("app/api/track/route.ts")) && /ctrl\.abort\(\), 1500\)/.test(read("app/api/track/route.ts")) && !/trialStart/.test(read("app/api/track/route.ts")));
+    /if \(foreignOrigin\(req\)\) return/.test(read("app/api/track/route.ts")) && /key: "track", limit: 120, windowSec: 60/.test(read("app/api/track/route.ts")) && /ctrl\.abort\(\), 1500\)/.test(read("app/api/track/route.ts")) && !/trialStart/.test(read("app/api/track/route.ts")));
 
   const base = { app_user_id: "$RCAnonymousID:abc", environment: "PRODUCTION", subscriber_attributes: { sona_fid: { value: FID2, updated_at_ms: t0 } } };
   let res = await (await hook({ ...base, id: "evt-1", type: "INITIAL_PURCHASE", period_type: "TRIAL", purchased_at_ms: t0, expiration_at_ms: t0 + 7 * DAY, event_timestamp_ms: t0 })).json();
