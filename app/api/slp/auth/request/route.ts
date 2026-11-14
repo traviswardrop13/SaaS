@@ -75,12 +75,14 @@ export async function POST(req: NextRequest) {
   if (body.flow !== undefined && !freeDashboard) {
     return NextResponse.json({ ok: false, error: "Bad request." }, { status: 400 });
   }
+  // Role and work setting are optional (Travis, 14 Nov 2026: the sign-up form
+  // asks for an email only). A caller that sends one must send a real value.
   const role = clinicianRole(body.clinicianRole);
-  if ((freeDashboard || body.clinicianRole !== undefined) && !role) {
+  if (body.clinicianRole !== undefined && !role) {
     return NextResponse.json({ ok: false, error: "Choose SLP or SLPA." }, { status: 400 });
   }
   const workSetting = clinicianWorkSetting(body.workSetting);
-  if ((freeDashboard || body.workSetting !== undefined) && workSetting !== "clinic" && workSetting !== "school") {
+  if (body.workSetting !== undefined && workSetting !== "clinic" && workSetting !== "school") {
     return NextResponse.json({ ok: false, error: "Choose Clinic or School." }, { status: 400 });
   }
   if (!kvConfigured()) {
@@ -129,11 +131,13 @@ export async function POST(req: NextRequest) {
 
   const origin = new URL(req.url).origin;
 
-  if (freeDashboard && role && (workSetting === "clinic" || workSetting === "school")) {
+  if (freeDashboard) {
     // The emailed token proves the inbox before an account or session exists.
     const token = randomToken();
     const pending = signFreeDashboardSignup({
-      email, clinicianRole: role, workSetting,
+      email,
+      ...(role ? { clinicianRole: role } : {}),
+      ...(workSetting === "clinic" || workSetting === "school" ? { workSetting } : {}),
       source: String(body.source || "for-slps").slice(0, 40), attrib: safeAttrib(body.attrib),
     });
     const key = "slptok:" + hashToken(token);

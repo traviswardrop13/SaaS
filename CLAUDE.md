@@ -2021,8 +2021,18 @@ it on an iPhone and an Android phone.
 
 **The clinician page is the homepage**, updated to offer a free dashboard
 on 13 Nov 2026. The hero features Echo beside an actual Fruit Slice screen.
-**Get the free dashboard** collects an email, role (SLP or SLPA), and setting
-(Clinic or School). A single-use email link opens the dashboard. The signup
+**Get the free dashboard** collects an email and nothing else (Travis, 14
+Nov 2026: "remove the your role and work setting from the opt-in page and
+just have it be your email"; until then it also asked SLP or SLPA, and
+Clinic or School). The box is labelled "Your work email" with the example
+"you@yourclinic.org" (he asked for an example that "motivates them to put
+in their work email"; it was "you@example.com"). The server still accepts
+a role or setting another caller sends, and still refuses a wrong one; an
+account made from the page holds neither. The subtitle is "Draft homework
+with AI, share the app with clients, and see who practiced at home." (Travis,
+14 Nov 2026: a third benefit "that is not like the community"; he wants it to
+lead with planning tomorrow's sessions and activities, and chose to build
+that planner first and change the line once it works). A single-use email link opens the dashboard. The signup
 page has no prices or checkout, and describes the AI homework draft, family
 links, and clinician community. `tests/landingtest.mjs` drives both pages.
 Its share image comes from `tools/og/og-slp.html` (`og-slp.png?v=3`).

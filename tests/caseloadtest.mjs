@@ -1465,6 +1465,24 @@ const count = (pred) => S.calls.filter(pred).length;
     profile.status === 200 && JSON.parse(KV.K.get(returningKey)).freeDashboard === true &&
     JSON.parse(KV.K.get(returningKey)).name === "Robin");
 
+  // EMAIL ONLY (Travis, 14 Nov 2026: the homepage asks for an email and
+  // nothing else). The link still proves the inbox first, and the account
+  // holds no role or work setting it was never told.
+  const onlyEmail = "dashboard.emailonly@example.org";
+  const lean = await call(R.request, "POST", "/api/slp/auth/request", { body: { flow: "free-dashboard", email: onlyEmail } });
+  ok("an email-only free signup sends its link with no account or session yet",
+    lean.status === 200 && lean.json.sent === true && lean.json.signedIn === false && !lean.cookie && !KV.K.has("slpacct:" + onlyEmail));
+  const leanVerified = await call(R.verify, "GET", latestLink());
+  const leanAccount = JSON.parse(KV.K.get("slpacct:" + onlyEmail) || "{}");
+  ok("…and opening it makes a free account with no role or work setting",
+    leanVerified.cookie?.includes("slp_session=") && leanAccount.terms === "free-dashboard-2026-11-13" &&
+    !("clinicianRole" in leanAccount) && !("workSetting" in leanAccount), JSON.stringify(leanAccount));
+  for (const bad of [{ clinicianRole: "parent" }, { workSetting: "other" }, { clinicianRole: null }]) {
+    const refused = await call(R.request, "POST", "/api/slp/auth/request", { body: { flow: "free-dashboard", email: "bad.choice@example.org", ...bad } });
+    ok("a free signup that sends a role or setting must send a real one: " + JSON.stringify(bad),
+      refused.status === 400 && !KV.K.has("slpacct:bad.choice@example.org"), JSON.stringify(refused.json));
+  }
+
   RESEND.status = 502;
   const failedEmail = "free.refused@example.org";
   const failed = await signup({ email: failedEmail });

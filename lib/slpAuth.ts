@@ -171,10 +171,12 @@ export function hashToken(t: string): string {
   return crypto.createHash("sha256").update(t).digest("hex");
 }
 
+// Role and work setting are optional (Travis, 14 Nov 2026: the sign-up form
+// asks for an email only). A link made before then still carries them.
 export type FreeDashboardSignup = {
   email: string;
-  clinicianRole: ClinicianRole;
-  workSetting: "clinic" | "school";
+  clinicianRole?: ClinicianRole;
+  workSetting?: "clinic" | "school";
   source: string;
   attrib: Record<string, string>;
 };
@@ -196,8 +198,9 @@ export function readFreeDashboardSignup(stored: string): FreeDashboardSignup | n
   if (!body || !sig || extra !== undefined || !sigOk(FREE_DASHBOARD_SIGNUP_PREFIX + body, sig)) return null;
   try {
     const value = JSON.parse(Buffer.from(body, "base64url").toString()) as FreeDashboardSignup;
-    if (!value || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(value.email) || !clinicianRole(value.clinicianRole) ||
-        (value.workSetting !== "clinic" && value.workSetting !== "school")) return null;
+    if (!value || typeof value.email !== "string" || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(value.email) ||
+        (value.clinicianRole !== undefined && !clinicianRole(value.clinicianRole)) ||
+        (value.workSetting !== undefined && value.workSetting !== "clinic" && value.workSetting !== "school")) return null;
     return value;
   } catch {
     return null;

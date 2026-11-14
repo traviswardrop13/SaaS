@@ -20,7 +20,7 @@
   </script>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Sona for speech therapists — send home practice they’ll play</title>
-  <meta name="description" content="Get the free Sona dashboard for speech therapists. Draft homework with AI, share the app with clients, and join the clinician community. Built with Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical fellowship." />
+  <meta name="description" content="Get the free Sona dashboard for speech therapists. Draft homework with AI, share the app with clients, and see who practiced at home. Built with Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical fellowship." />
   <link rel="canonical" href="https://www.speaksona.com/" />
 
   <!-- WHAT A SHARED LINK LOOKS LIKE. Clinicians pass this link around, so it
@@ -87,7 +87,7 @@
   <div class="hero-intro">
     <p class="eyebrow">Sona for speech therapists</p>
     <h1>Send home practice <span>they&rsquo;ll play.</span></h1>
-    <p class="lede">Draft homework with AI, share the app with clients, and join a community of speech therapists.</p>
+    <p class="lede">Draft homework with AI, share the app with clients, and see who practiced at home.</p>
   </div>
 
   <div class="hero-r" aria-hidden="true">
@@ -103,26 +103,8 @@
   <div class="hero-l">
     <form class="signup" id="signup" novalidate>
       <div class="form-field">
-        <label for="fEmail">Your email</label>
-        <input id="fEmail" type="email" inputmode="email" autocomplete="email" placeholder="you@example.com" required />
-      </div>
-      <div class="form-fields">
-        <div class="form-field ph-no-capture">
-          <label for="fRole">Your role</label>
-          <select id="fRole" name="clinicianRole" required>
-            <option value="" selected disabled>Select role</option>
-            <option value="slp">SLP</option>
-            <option value="slpa">SLPA</option>
-          </select>
-        </div>
-        <div class="form-field ph-no-capture" id="fWorkSettingField">
-          <label for="fWorkSetting">Work setting</label>
-          <select id="fWorkSetting" name="workSetting" required>
-            <option value="" selected disabled>Select setting</option>
-            <option value="clinic">Clinic</option>
-            <option value="school">School</option>
-          </select>
-        </div>
+        <label for="fEmail">Your work email</label>
+        <input id="fEmail" type="email" inputmode="email" autocomplete="email" placeholder="you@yourclinic.org" required />
       </div>
       <button class="btn" id="fGo" type="submit" aria-describedby="fNext">Get the free dashboard</button>
       <p class="next-step" id="fNext">We’ll email you a sign-in link.</p>
@@ -207,7 +189,7 @@
     </div>
     <div class="q">
       <button type="button" aria-expanded="false" aria-controls="a2" id="q2">What's stored, and where?<span>+</span></button>
-      <p class="a" id="a2" hidden>If you start from this page: your email, kept by Sona and on our email list at Resend so Rachel's tips can reach you. Your account: email, name, clinic, code, role (SLP or SLPA), and work setting (clinic or school). For each consenting family: the child's first name and age, target sounds, practice days and counts, pass rate per sound, your assignments, and when the parent consented. Hosted on Vercel, stored in Upstash, emails and the email list via Resend. If you type a parent's email when you add a child, we hand it to Resend to deliver that one email with the link, and Sona keeps no copy: not stored, not logged, not added to any list. Analytics (PostHog) on grown-up pages, and anonymous counts our server passes on from the app, and a Meta ad pixel on this sign-up page so we can tell which of our ads work — neither ever runs where a child practices, and neither is sent a child's name. No ads in the app, no data sales, no profiling.</p>
+      <p class="a" id="a2" hidden>If you start from this page: your email, kept by Sona and on our email list at Resend so Rachel's tips can reach you. Your account: email, name, clinic and code. For each consenting family: the child's first name and age, target sounds, practice days and counts, pass rate per sound, your assignments, and when the parent consented. Hosted on Vercel, stored in Upstash, emails and the email list via Resend. If you type a parent's email when you add a child, we hand it to Resend to deliver that one email with the link, and Sona keeps no copy: not stored, not logged, not added to any list. Analytics (PostHog) on grown-up pages, and anonymous counts our server passes on from the app, and a Meta ad pixel on this sign-up page so we can tell which of our ads work — neither ever runs where a child practices, and neither is sent a child's name. No ads in the app, no data sales, no profiling.</p>
     </div>
     <div class="q">
       <button type="button" aria-expanded="false" aria-controls="a3" id="q3">How is data deleted?<span>+</span></button>
@@ -296,16 +278,12 @@
     function go() {
       if ($("fGo").disabled) return;
       var email = (($("fEmail").value) || "").trim();
-      var role = $("fRole").value;
-      var workSetting = $("fWorkSetting").value;
       $("fErr").textContent = "";
       if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { err("Enter a valid email."); $("fEmail").focus(); return; }
-      if (role !== "slp" && role !== "slpa") { err("Choose SLP or SLPA."); $("fRole").focus(); return; }
-      if (workSetting !== "clinic" && workSetting !== "school") { err("Choose Clinic or School."); $("fWorkSetting").focus(); return; }
       busy(true);
       fetch("/api/slp/auth/request", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ flow: "free-dashboard", email: email, source: src, attrib: attrib, clinicianRole: role, workSetting: workSetting }),
+        body: JSON.stringify({ flow: "free-dashboard", email: email, source: src, attrib: attrib }),
       }).then(function (r) { return r.json(); }).then(function (j) {
         busy(false);
         if (!j || !j.ok) { err((j && j.error) || "Couldn't set that up right now."); return; }
