@@ -2267,10 +2267,13 @@ login is typed INTO the app. `lib/familyLogin.ts` holds the rules;
   first name (a login must not look like it names the child).
 - **Deleting goes with it.** Cancel invite, Remove from my caseload and Delete
   login each delete the login; Remove's words say so ("and their Sona login").
-- **Log in on the first screen** (`#loginLink`, under Get started) shows only on
-  the hello of a family's first setup, on a device no clinician has connected
-  yet. It reads "Log in", with no question mark: the hello holds no question
-  (onboardingtest).
+- **Log in on the first screen** (`#loginLink`, at the top right, across from
+  "Sona", where the email step's Skip sits) shows only on the hello of a
+  family's first setup, on a device no clinician has connected yet. It reads
+  "Log in", with no question mark: the hello holds no question
+  (onboardingtest). **Never in the footer:** the footer's button stays in the
+  same place on every screen, so a double tap on it moves one screen (under
+  Get started it pushed the button up, and onboardingtest's double tap missed).
 
 ## The email list: Resend's contacts (Kit and GoHighLevel are gone)
 **GoHighLevel was deleted on 24 Sep 2026 and Kit replaced it; on 16 Oct 2026

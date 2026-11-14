@@ -411,16 +411,23 @@ try {
       await page.waitForTimeout(150);
       const tag = viewport.width + "x" + viewport.height + ": ";
       const link = await box(page, "#loginLink"), btn = await box(page, "#nextBtn"), art = await box(page, ".studio-welcome-art");
-      ok(tag + "the first screen offers Log in, under Get started, opening the login form",
+      const words = await page.evaluate(() => [".studio-kicker", ".welcome-brand"].map((s) => { const r = document.querySelector(s).getBoundingClientRect(); return { x: r.x, y: r.y, right: r.right, bottom: r.bottom }; }));
+      const clear = (a, b) => a.right <= b.x + 0.5 || b.right <= a.x + 0.5 || a.bottom <= b.y + 0.5 || b.bottom <= a.y + 0.5;
+      ok(tag + "the first screen offers Log in, at the top right, opening the login form",
         !!link && link.shown && (await page.locator("#loginLink").textContent()).trim() === "Log in" &&
-        (await page.locator("#loginLink").getAttribute("href")) === "/join.html?login=1" && link.y >= btn.bottom - 1, { link, btn });
-      ok(tag + "…a full touch target, on screen, with the picture still above the button and nothing to scroll",
-        link.h >= 44 && link.bottom <= viewport.height + 0.5 && art.bottom <= btn.y + 0.5 &&
-        await page.evaluate(() => { const ob = document.querySelector(".ob"); return ob.scrollHeight <= ob.clientHeight + 1 && document.documentElement.scrollWidth <= innerWidth + 1; }), { link, art, btn });
+        (await page.locator("#loginLink").getAttribute("href")) === "/join.html?login=1" &&
+        link.y < art.y && link.right <= viewport.width + 0.5 && link.right >= viewport.width - 40, { link, art });
+      ok(tag + "…a full touch target, on screen, over none of the hello's words, with nothing to scroll",
+        link.h >= 44 && link.w >= 44 && link.y >= -0.5 && words.every((w) => clear(link, w)) && art.bottom <= btn.y + 0.5 &&
+        await page.evaluate(() => { const ob = document.querySelector(".ob"); return ob.scrollHeight <= ob.clientHeight + 1 && document.documentElement.scrollWidth <= innerWidth + 1; }), { link, words, art, btn });
       ok(tag + "…and the hello is still one message with no question", (await page.locator('[data-step="welcome"]').innerText()).indexOf("?") < 0 && (await page.locator("#nextBtn").textContent()) === "Get started");
       await page.locator("#nextBtn").click();
       await page.waitForFunction(() => document.body.dataset.setupScreen === "name");
       ok(tag + "Log in belongs to the hello only", await page.locator("#loginLink").isHidden());
+      // The footer's button is in the same place on every screen, Log in or
+      // not, so a double tap on it moves one screen (onboardingtest).
+      const btn2 = await box(page, "#nextBtn");
+      ok(tag + "…and Get started sits at the height of the next screen's button (Back takes its left there): Log in moves nothing", Math.abs(btn2.y - btn.y) < 1 && Math.abs(btn2.bottom - btn.bottom) < 1, { btn, btn2 });
       if (viewport.width === 390) { await page.locator("#backBtn").click(); await page.waitForFunction(() => document.body.dataset.setupScreen === "welcome"); await page.screenshot({ path: path.join(OUT, "sona-login-hello.png") }); }
       ok(tag + "no page errors", errors.length === 0, errors);
       await context.close();
