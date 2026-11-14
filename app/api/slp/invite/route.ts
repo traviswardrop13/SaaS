@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { readSession, kvConfigured, sendParentInviteEmail } from "@/lib/slpAuth";
+import { readSession, liveSession, kvConfigured, sendParentInviteEmail } from "@/lib/slpAuth";
 import { rateLimit } from "@/lib/rateLimit";
 import { readAccount, normalizeInvite, createInvite, deleteInvite, cleanToken } from "@/lib/roster";
 import { covered, bumpDaily, PARENT_EMAILS_PER_DAY } from "@/lib/caseload";
@@ -51,7 +51,7 @@ function parentEmailOf(v: unknown): string | null {
 
 /** Deleting an invite works whatever the clinician pays; making one is Sona Pro's (lib/proGate). */
 async function gate(req: NextRequest, write = true): Promise<{ code: string; familyKey: string; email: string; name: string } | NextResponse> {
-  const s = readSession(req);
+  const s = await liveSession(readSession(req));
   if (!s) return NextResponse.json({ ok: false, error: "sign in required" }, { status: 401 });
   const rl = await rateLimit(req, { key: "slpinvite", limit: 60, windowSec: 3600 });
   if (rl) return rl;

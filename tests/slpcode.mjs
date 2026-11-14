@@ -28,6 +28,8 @@ const pilotPosts = [];
 const redeemBodies = [];
 const leadPosts = [];
 let authRequests = 0;
+const forgetPosts = [];
+let forgetDown = false, homeworkPosts = 0;
 const srv = createServer((req, res) => {
   const u = new URL(req.url, "http://x");
   if (u.pathname === "/api/slp/redeem" && req.method === "POST") {
@@ -98,6 +100,19 @@ const srv = createServer((req, res) => {
       res.writeHead(200, { "content-type": "application/json" });
       res.end(JSON.stringify({ ok: true, valid: String(j.key || "") === "OWNER-SECRET-123" }));
     });
+    return;
+  }
+  // the family's own Stop sharing (13 Nov 2026): answers ok, or 503 when a
+  // test says the server is down
+  if (u.pathname === "/api/pilot/forget" && req.method === "POST") {
+    let body = "";
+    req.on("data", (c) => (body += c));
+    req.on("end", () => { try { forgetPosts.push(JSON.parse(body)); } catch {} res.writeHead(forgetDown ? 503 : 200, { "content-type": "application/json" }); res.end(JSON.stringify(forgetDown ? { ok: false } : { ok: true })); });
+    return;
+  }
+  if (u.pathname === "/api/homework" && req.method === "POST") {
+    homeworkPosts++;
+    res.writeHead(200, { "content-type": "application/json" }); res.end(JSON.stringify({ ok: true, hw: null }));
     return;
   }
   if (u.pathname.startsWith("/api/")) { res.writeHead(500); res.end("{}"); return; }
@@ -333,6 +348,99 @@ for (const [cred, isCovered] of [[CRED, true], [CRED2, false]]) {
   await pg.waitForURL(/\/(today|onboarding)\.html/, { timeout: 15000 });
   ok("an empty email box sends nothing and goes straight into the app", leadPosts.length === 0, JSON.stringify(leadPosts));
   await ctx.close();
+}
+
+// ── 4b-ii, then: STOP SHARING, from Settings and from "No thanks" (13 Nov 2026) ──
+// join.html and the privacy page promise it in the grown-ups' area; the only
+// control was on pilot.html, which nothing links to. And a "No thanks" on a
+// phone already sharing left the phone sending practice.
+{
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const pg = await ctx.newPage();
+  pg.on("dialog", (d) => d.accept());
+  await pg.goto("http://localhost:8155/join.html?slp=rachel-k4&k=RACHELKEY");
+  await pg.waitForTimeout(900);
+  await pg.evaluate(() => {
+    document.getElementById("jYes").click();
+    Sona.saveProfile({ childName: "Mia", childAge: "6", focusSounds: ["R"], onboarded: true });
+    localStorage.setItem(Sona.kkey("sona.homework.v1"), JSON.stringify({ hw: { id: "h1", sounds: ["S"] }, at: Date.now() }));
+    sessionStorage.setItem("sona.gate.v1", String(Date.now()));
+  });
+  ok("a child who said Yes is sharing", await pg.evaluate(() => Sona.slpSharing()) === true);
+  await pg.goto("http://localhost:8155/progress.html"); await pg.waitForTimeout(700);
+  ok("…and Progress offers 'Send progress to my SLP'", await pg.evaluate(() => getComputedStyle(document.getElementById("sendProg")).display !== "none"));
+  await pg.goto("http://localhost:8155/settings.html"); await pg.waitForTimeout(800);
+  let st = await pg.evaluate(() => { const c = document.getElementById("shareCard"); return { shown: !!c && !c.hidden && c.checkVisibility(), lead: c ? c.textContent : "" }; });
+  ok("Settings shows 'Sharing with your speech therapist' to a sharing child, with their name read on the phone", st.shown && /This phone shares Mia's practice/.test(st.lead), JSON.stringify(st));
+  // the server down: nothing changes on the phone
+  forgetDown = true; forgetPosts.length = 0;
+  await pg.click("#shareOpen"); await pg.waitForTimeout(700);
+  await pg.click("#shareYes"); await pg.waitForTimeout(600);
+  st = await pg.evaluate(() => ({ share: Sona.getProfile().slpShare, msg: document.getElementById("shareMsg").textContent, sharing: Sona.slpSharing() }));
+  ok("a Stop the server cannot take changes nothing here and says so", forgetPosts.length === 1 && st.share === true && st.sharing && /Couldn't reach the server/.test(st.msg), JSON.stringify(st));
+  forgetDown = false; forgetPosts.length = 0;
+  const before = pilotPosts.length, hwBefore = homeworkPosts;
+  await pg.click("#shareYes"); await pg.waitForTimeout(600);
+  st = await pg.evaluate(() => ({ share: Sona.getProfile().slpShare, hw: Sona.homework(), sharing: Sona.slpSharing(), pilot: Sona.isPilot(),
+    ticket: !!localStorage.getItem("sona.slpticket"), lead: document.getElementById("shareLead").textContent, confirm: document.getElementById("shareConfirm").hidden }));
+  const body = forgetPosts[0] || {};
+  ok("Stop sharing posts exactly the code, the child id and the ticket, never a name",
+    forgetPosts.length === 1 && Object.keys(body).sort().join() === "childId,code,ticket" && body.code === "RACHEL-K4" && body.ticket === "TICKET:rachel-k4" && !JSON.stringify(body).includes("Mia"), JSON.stringify(forgetPosts));
+  ok("…then records the no, clears the homework, keeps consent and the ticket (access), and says done",
+    st.share === false && !st.hw && !st.sharing && st.pilot && st.ticket && st.confirm && /Done\. Their dashboard no longer has your child\./.test(st.lead), JSON.stringify(st));
+  await pg.evaluate(() => { Sona.sendProgress("manual"); return Sona.syncHomework(true); }); await pg.waitForTimeout(400);
+  ok("…and afterwards nothing is sent: no progress, no homework sync", pilotPosts.length === before && homeworkPosts === hwBefore, (pilotPosts.length - before) + " " + (homeworkPosts - hwBefore));
+  await pg.goto("http://localhost:8155/progress.html"); await pg.waitForTimeout(700);
+  ok("…and Progress no longer offers 'Send progress to my SLP'", await pg.evaluate(() => getComputedStyle(document.getElementById("sendProg")).display === "none"));
+  await pg.goto("http://localhost:8155/settings.html"); await pg.waitForTimeout(800);
+  ok("…and the card is gone from Settings", await pg.evaluate(() => document.getElementById("shareCard").hidden === true));
+  await ctx.close();
+
+  // already sharing, the link opened again, "No thanks": the dashboard forgets
+  const c2 = await browser.newContext(); const p2 = await c2.newPage();
+  await p2.goto("http://localhost:8155/join.html?slp=rachel-k4&k=RACHELKEY"); await p2.waitForTimeout(900);
+  await p2.evaluate(() => document.getElementById("jYes").click());
+  await p2.goto("http://localhost:8155/join.html?slp=rachel-k4&k=RACHELKEY"); await p2.waitForTimeout(900);
+  forgetPosts.length = 0;
+  const b2 = pilotPosts.length;
+  await p2.evaluate(() => document.getElementById("jNo").click()); await p2.waitForTimeout(500);
+  st = await p2.evaluate(() => { Sona.sendProgress("manual"); return { share: Sona.getProfile().slpShare, sharing: Sona.slpSharing() }; });
+  await p2.waitForTimeout(300);
+  ok("'No thanks' on a phone already sharing stops sharing, and nothing more is sent",
+    forgetPosts.length === 1 && st.share === false && !st.sharing && pilotPosts.length === b2, JSON.stringify({ st, f: forgetPosts.length, p: pilotPosts.length - b2 }));
+  await c2.close();
+
+  // sharing with ANOTHER clinician, then "No thanks" on this one's link: the
+  // first sharing stands (the card still shows; nothing is forgotten)
+  const c2b = await browser.newContext(); const p2b = await c2b.newPage();
+  await p2b.goto("http://localhost:8155/join.html?slp=rachel-k4&k=RACHELKEY"); await p2b.waitForTimeout(900);
+  await p2b.evaluate(() => { document.getElementById("jYes").click(); });
+  await p2b.evaluate(() => { const k = Sona.kkey("sona.pilot.v1"); const pi = JSON.parse(localStorage.getItem(k)); pi.code = "OTHER-SLP"; localStorage.setItem(k, JSON.stringify(pi)); });
+  await p2b.goto("http://localhost:8155/join.html?slp=rachel-k4&k=RACHELKEY"); await p2b.waitForTimeout(900);
+  forgetPosts.length = 0;
+  await p2b.evaluate(() => document.getElementById("jNo").click()); await p2b.waitForTimeout(500);
+  st = await p2b.evaluate(() => ({ share: Sona.getProfile().slpShare, sharing: Sona.slpSharing() }));
+  ok("'No thanks' to one clinician never stops sharing with another the child already shares with",
+    forgetPosts.length === 0 && st.share !== false && st.sharing === true, JSON.stringify({ st, f: forgetPosts.length }));
+  ok("…and a child who stopped sharing has no homework: an assignment cached before it is ignored (read only)",
+    await p2b.evaluate(() => {
+      localStorage.setItem(Sona.kkey("sona.homework.v1"), JSON.stringify({ hw: { sounds: ["S"] }, at: Date.now() }));
+      const before = !!Sona.homework();
+      Sona.saveProfile({ slpShare: false });
+      const raw = localStorage.getItem(Sona.kkey("sona.homework.v1"));
+      return before && Sona.homework() === null && /"S"/.test(raw);
+    }));
+  await c2b.close();
+
+  // a child who said No, and a founding beacon, are never shown the card
+  const c3 = await browser.newContext(); const p3 = await c3.newPage();
+  await p3.goto("http://localhost:8155/join.html?slp=rachel-k4&k=RACHELKEY"); await p3.waitForTimeout(900);
+  await p3.evaluate(() => { document.getElementById("jNo").click(); Sona.saveProfile({ childName: "Ada", onboarded: true }); sessionStorage.setItem("sona.gate.v1", String(Date.now())); });
+  await p3.goto("http://localhost:8155/settings.html"); await p3.waitForTimeout(800);
+  ok("a child whose grown-up said No is never shown the card", await p3.evaluate(() => document.getElementById("shareCard").hidden === true && !Sona.slpSharing()));
+  ok("…and a founding beacon is not 'sharing with your speech therapist'",
+    await p3.evaluate(() => { localStorage.setItem(Sona.kkey("sona.pilot.v1"), JSON.stringify({ consent: true, code: "ff-oak", childId: "f1" })); Sona.saveProfile({ slpShare: undefined }); return Sona.slpSharing() === false; }));
+  await c3.close();
 }
 
 // ── 4b-ii½. an UNCOVERED caseload: the free version, and "free" stays true ──
@@ -1106,7 +1214,7 @@ for (const [cred, isCovered] of [[CRED, true], [CRED2, false]]) {
     /r\.valid[\s\S]{0,700}askConsent\(/.test(joinCode) && /Sona\.caseRefresh\(true\)/.test(joinCode) && !/earlyAdopter/.test(joinCode),
     "consent must never be the price of access");
   ok("join.html's email box is optional, after the sharing answer, and carries the list line",
-    /jYes[\s\S]{0,400}askEmail\(\)/.test(joinCode) && /jNo[\s\S]{0,500}askEmail\(\)/.test(joinCode) &&
+    /jYes[\s\S]{0,400}askEmail\(\)/.test(joinCode) && /jNo[\s\S]{0,1000}askEmail\(\)/.test(joinCode) &&
     /We'll also send occasional tips from Rachel\. Unsubscribe anytime\./.test(joinSrc));
   ok("join.html only enrols behind an explicit Yes",
     /jYes[\s\S]{0,200}slpJoinCaseload/.test(joinSrc) && /jNo/.test(joinSrc));
@@ -1141,6 +1249,12 @@ for (const [cred, isCovered] of [[CRED, true], [CRED2, false]]) {
   const authSrc = readFileSync(ROOT + "/../lib/slpAuth.ts", "utf8");
   ok("a clinician's session cookie can't be replayed as a family ticket",
     /t !== "enrol"/.test(authSrc) && /timingSafeEqual/.test(authSrc));
+  // …and the reverse (audit B9, 13 Nov 2026): a family's ticket, signed with
+  // the same secret, set as slp_session, was a session for "slpacct:undefined".
+  const verifySrc = (authSrc.match(/export function verifySession[\s\S]*?\n}\n/) || [""])[0];
+  ok("a family's enrolment ticket can't be replayed as a clinician's session",
+    /"t" in obj\) return null/.test(verifySrc) && /typeof obj\.email !== "string"/.test(verifySrc),
+    "a ticket has no email; every route would read and write the account \"undefined\"");
   // REWRITTEN 24 Sep 2026 (both). The gate honoured the bare device unlock,
   // and onboarding wrote earlyAdopter from slpVerified(). Neither grants now:
   // the device-wide grant is coverage (4c pins it surviving a kid switch), and
@@ -1168,7 +1282,9 @@ for (const [cred, isCovered] of [[CRED, true], [CRED2, false]]) {
 // clinician, plus the uncovered join and the clinician's own-phone link. And
 // three more the same day: two source devices whose backups cross to the
 // app (4h-ii), and the founding family who joins a clinician (4h-iv).
-ok("no unexpected redeem spam", redeemCalls <= 14, String(redeemCalls));
+// 13 Nov 2026: three more, the Stop sharing families (4b-ii, then). 14 Nov
+// 2026: two more, the family sharing with another clinician (4b-ii).
+ok("no unexpected redeem spam", redeemCalls <= 19, String(redeemCalls));
 // THE LIMIT MESSAGE HAS TO REACH THE FAMILY (24 Sep 2026). The redeem route
 // answers a full link with "…ask your speech therapist to contact Sona" and a
 // down store with "try again soon"; join and pilot used to print "That code

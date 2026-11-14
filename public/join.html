@@ -194,7 +194,7 @@
         document.getElementById("jConsentBody").textContent =
           "If you say yes, " + (name || "your child's speech therapist") + " will see your child's first name and age as you entered them, " +
           "which sounds they are practicing, practice days and how many tries each day, and a rough pass rate per sound. " +
-          "They can also send practice assignments and a short note to this app. Never any audio; recordings stay on this device. " +
+          "They can also send practice assignments and a short note to this app. Never any audio: it is never uploaded or saved. " +
           "You can stop any time, and stopping deletes everything they could see. Saying no changes nothing; Sona stays free for you.";
         try { if (Sona.confetti) Sona.confetti({ count: 150 }); } catch (e) {}
         document.getElementById("jYes").onclick = function () {
@@ -205,10 +205,18 @@
           msg.textContent = "Your therapist will see practice progress. Let's meet Echo.";
           askEmail();
         };
+        // already sharing with this very clinician: "No thanks" stops it
+        var wasSharing = false;
+        try { wasSharing = !!(Sona.slpSharing && Sona.slpSharing() && String((Sona.pilotInfo() || {}).code || "").toUpperCase() === String(code).toUpperCase()); } catch (e) {}
         document.getElementById("jNo").onclick = function () {
           // declining shares nothing — and costs nothing; access stands, and
           // coverage never asked for consent in the first place
-          try { Sona.saveProfile({ slpShare: false }); } catch (e) {}
+          // ...but only with THIS clinician: a child already sharing with
+          // another one keeps sharing with them (Stop sharing in Settings ends that)
+          var other = false;
+          try { var pi = Sona.pilotInfo() || {}; var pc = String(pi.code || "").toUpperCase(); other = !!(pi.consent && pi.childId && pc && pc.indexOf("FF-") !== 0 && pc !== String(code).toUpperCase()); } catch (e) {}
+          if (!other) { try { Sona.saveProfile({ slpShare: false }); } catch (e) {} }
+          if (wasSharing && Sona.slpStopSharing) Sona.slpStopSharing();
           consent.style.display = "none";
           title.textContent = "No problem!";
           msg.textContent = "Nothing will be shared, and Sona is still free for you. Let's meet Echo.";

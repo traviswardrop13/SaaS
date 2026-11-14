@@ -1920,6 +1920,17 @@ clinician's families Premium and undo the caseload plan.
   per-child pilot code, which "Yes, share progress" overwrites with the
   clinician's code — so a founding family lost every game the day they joined
   an uncovered clinician, and a second child never had them.
+- **Founding Families places are closed** (Travis, 14 Nov 2026; server.md
+  B4). `POST /api/founding` answers 410 and reads, stores and forwards
+  nothing (the old form took a child's first name and a parent's cell, kept
+  them for good, sent them to `LEAD_WEBHOOK_URL`, and gave any sign-up a free
+  Premium link). `founding.html` is a short "Founding Families places are
+  closed." note with a link to `/for-parents`, and no box. **Every existing
+  founding family keeps Premium:** `GET /api/founding`, the verified `?ff=`
+  path, `foundingPilot()`, `sona.founding.v1` and its `NO_IMPORT` entry are
+  unchanged, so a code minted before closing still verifies. The stored
+  `ff:app:<id>` records (child names, cells) are Travis's to redact to
+  `{id, at}` (never DEL: that strands an unopened link). `shiptest` pins it.
 - **Grandfathering is the household's too.** `addKid()` copies `earlyAdopter`
   onto a new child, and an import never takes a free-era mark away from the
   device it lands on (it never brings one either). It is still a mark on the
@@ -2021,11 +2032,39 @@ it on an iPhone and an Android phone.
 
 **The clinician page is the homepage**, updated to offer a free dashboard
 on 13 Nov 2026. The hero features Echo beside an actual Fruit Slice screen.
-**Get the free dashboard** collects an email, role (SLP or SLPA), and setting
-(Clinic or School). A single-use email link opens the dashboard. The signup
+**Get the free dashboard** collects an email and nothing else (Travis, 14
+Nov 2026: "remove the your role and work setting from the opt-in page and
+just have it be your email"; until then it also asked SLP or SLPA, and
+Clinic or School). The box is labelled "Your work email" with the example
+"you@yourclinic.org" (he asked for an example that "motivates them to put
+in their work email"; it was "you@example.com"). The server still accepts
+a role or setting another caller sends, and still refuses a wrong one; an
+account made from the page holds neither. The subtitle is "Draft homework
+with AI, share the app with clients, and see who practiced at home." (Travis,
+14 Nov 2026: a third benefit "that is not like the community"; he wants it to
+lead with planning tomorrow's sessions and activities, and chose to build
+that planner first and change the line once it works). A single-use email link opens the dashboard. The signup
 page has no prices or checkout, and describes the AI homework draft, family
 links, and clinician community. `tests/landingtest.mjs` drives both pages.
 Its share image comes from `tools/og/og-slp.html` (`og-slp.png?v=3`).
+
+**Every clinician proves the inbox before the dashboard opens** (Travis,
+13 Nov 2026, from the audit's B2/B3/B9). The sign-in page and the hidden
+clinician setup no longer make an account or sign a brand-new email in on
+the spot: `/api/slp/auth/request` only emails the link, and the verify
+route makes the account (Sona Pro terms from those doors, the free dashboard
+from the homepage's) and tells the CRM. The first sign-in by an emailed link
+writes `slpsessfrom:<email>` (once, NX), and every session issued before it
+is refused (`liveSession` in `lib/slpAuth.ts`, at every route that reads a
+session), so a cookie someone got for another person's address stops
+working; the account record and its `terms` are never touched for it, and a
+store that does not answer signs nobody out. A family's enrolment ticket is
+never a session. The email greets an account by its own name, never one
+the caller sent; one IP may ask for 20 links an hour (`slpauth`, besides 5
+an email); and a `role: "slp"` lead is never put in the parents' welcome
+series. Still open, Travis's: repeat Pro trials with a new address (B13),
+and a button page so a school's link scanner cannot use the link up.
+`caseloadtest`, `slpapi`, `slpcode` and `nurturetest` play it.
 
 **AI homework draft** lives at `/slps#homework-draft`, including before
 a clinician sets up a family link. The clinician selects the sound, position,
@@ -2385,9 +2424,14 @@ from Rachel.
 - The privacy page has its own section ("The weekly progress report (only if
   a grown-up asks for it)"), and the parents' "What's stored" answer names it.
   **For Travis:** App Store Connect's App Privacy answers should now list
-  usage data linked to the parent's email (no review needed). The old Friday
-  email (`/api/cron/weekly`, to the retired `trials` list) is separate and
-  untouched.
+  usage data linked to the parent's email (no review needed). **The old
+  Friday email is off** (Travis, 14 Nov 2026; server.md B5): `/api/cron/weekly`
+  ("Your week of brave sounds", to the retired `trials` list, which anyone
+  could add an address to, promising clips no longer kept), its cron line in
+  `vercel.json` and `/api/trial` are deleted, and `sona.js` no longer mirrors
+  a local trial anywhere (`mirrorTrial` is gone; the local trial readers stay).
+  Those addresses hear only what the Resend list sends them. `shiptest` and
+  `weeklytest` pin it.
 `reporttest` plays the phone and the server.
 
 **THE MONDAY EMAIL (WEEKLY1, 23 Oct 2026)** (Travis: "afterwards, I want to
@@ -2558,7 +2602,9 @@ Oct 2026: "we send them one an email immediately, the next day, and then one
 more day ... I want to send less emails in the sequence. So just 3"; it was
 two on day 0, then days 1, 3 and 5). From the website: "Here's Sona" (the App
 Store link), the recast tip ("Try this the next time they say “wabbit”"),
-then "Quick answers before you decide". Leads from inside the app
+then "Quick answers before you decide". It is the parents' alone: a speech
+therapist's lead (`role: "slp"`) is never enrolled (13 Nov 2026; those
+already queued may still get the rest). Leads from inside the app
 (`app-setup`, `app-settings`, `app-trial`, `app-paid`: `IN_APP_SOURCES` in
 `lib/nurture.ts`) get "The 5-minute trick" in place of the first (`nurturetest`).
 "The balloon problem" is gone; its "Already started? You can ignore the
@@ -2803,16 +2849,26 @@ finished ones, how many paid by how many days they played.
   the id every usage beacon already carries; never a name, email, sound or
   count): `trial:<fid>` (start, length in days, one mark per day with play,
   outcome and its time), `trials:idx`, 120 days.
-- **Fed by:** the phone's "free trial started" ({ days }, from `buyPlan`'s
-  success, only for free days) and "played today" (once a local day, the
-  first counted rep; `sona.played.v1` is this phone's, NO_EXPORT and
-  NO_IMPORT), both through `/api/track`'s allow-list, which also relays them
-  to PostHog; and RevenueCat's webhook, which now also reads the
+- **Fed by:** RevenueCat's webhook, which **alone starts a trial's row**
+  (since 14 Nov 2026, Travis: "only RevenueCat"; server.md B6): it reads the
   `sona_fid` attribute the phone sets (`_rcEmail`, `setAttributes`,
-  feature-checked) and records how the trial went whether or not the family
-  gave an email (a family who never opens Sona again is still counted).
-  Paid stays paid; an end after a cancellation stays a cancellation; an
-  older RevenueCat message never overrides a newer one.
+  feature-checked) and records the start and how the trial went whether or
+  not the family gave an email (a family who never opens Sona again is still
+  counted). Paid stays paid; an end after a cancellation stays a
+  cancellation; an older RevenueCat message never overrides a newer one.
+  Then the phone, through `/api/track`'s allow-list (which also relays to
+  PostHog): "played today" (once a local day, the first counted rep;
+  `sona.played.v1` is this phone's, NO_EXPORT and NO_IMPORT) marks a day of
+  a row RevenueCat started, and "free trial started" ({ days }, from
+  `buyPlan`'s success, only for free days) only fills in the length of such
+  a row (`trialDays`), never a new one. So a forged beacon cannot add a row,
+  and a TestFlight or sandbox trial (which RevenueCat ignores) is not
+  counted; a family whose RevenueCat record lacks `sona_fid` (a build whose
+  plugin has no `setAttributes`) is not in the report, and a first-day play
+  heard before RevenueCat's message (usually seconds) is missed.
+  `/api/track` also drops, silently and still answering ok, a post from
+  another site or with no Origin and any past 120 a minute from one address
+  (an IPv6 /64 as one), and waits on PostHog 1.5 s at most.
 - Day 1 is the first 24 hours from the start (no time zone is kept).
 - **For Travis:** the privacy page says it; App Store Connect's App Privacy
   answers should list the device identifier as linked to purchases (it now
@@ -5766,8 +5822,13 @@ the app) is a later idea, not built; it is Rachel's to shape.
   (`MIC_PROMISE`), is "audio is never uploaded or saved." Still never "never
   recorded": the practice page holds a try in memory while it listens. `mictest` pins the
   mechanism's absence: no route but the two founder clip tools (`isolate`,
-  `voice-change`, behind `FOUNDER_KEY`) accepts a file, and no family page
-  posts to one. `/api/stt` was deleted on 25 Sep 2026 for exactly this.
+  `voice-change`) accepts a file, and no family page posts to one. Both
+  answer only to `FOUNDER_KEY` in the `x-founder-key` header, compared in
+  constant time, on every deployment, previews included (`founderKey` in
+  `lib/founder.ts`, since 14 Nov 2026: a preview used to leave them open,
+  spending the ElevenLabs key), and voice-change refuses a voice id that is
+  not 10 to 40 letters and digits. The daily job's manual run and the
+  founder's read of `/api/feedback` take the key the same way, never `?key=`. `/api/stt` was deleted on 25 Sep 2026 for exactly this.
   **Nor the browser's own speech-to-text** (22 Oct 2026): the Web Speech
   API's `SpeechRecognition` looks local and is not (Chrome sends the audio
   to Google, Safari to Apple). The Speech Check and the parked story reader
@@ -5781,6 +5842,33 @@ the app) is a later idea, not built; it is Rachel's to shape.
   age verdict (its old paths stay in the code, unreachable). It is `noindex`
   and nothing links to it. Whether it stays, and what its results may say,
   is hers.
+  **The parked pages send no name either** (14 Nov 2026, core.md B3-B5):
+  `story.html` asks no server for a story (`/api/story`, which put the
+  child's name into an AI prompt, is deleted; it plays its built-in pages
+  and keeps the name on screen only), `coach-call.html` calls every child
+  "friend" and never reads the profile's name (each line goes to
+  `/api/tts`), and the Speech Check's pixel tag carries
+  `data-autoconfig="off"` (it has a "Child's first name" box), as setup's and
+  the clinician page's do (`planwordstest` holds the list to those three).
+  `/api/chat`, `/api/coach`, `/api/heygen/*` and `/api/pair`, which nothing
+  called, are deleted too (`shiptest`).
+- **Echo's voice has a spending cap (TTSBUDGET1, 14 Nov 2026, audit server.md
+  B1).** `/api/tts` (the one route that pays ElevenLabs by the character)
+  refuses another website's page (a foreign Origin or Sec-Fetch-Site; a
+  request with neither is allowed, so the iPhone app never loses Echo), 60
+  requests a minute per IP (an IPv6 /64 as one), a body over 4 KB and a line
+  over 200 characters (413, never cut; `ttsroutetest` holds every line in
+  `VOICE_SCRIPT.md` under it), and speaks any voice but Echo's or
+  `ELEVENLABS_VOICE_ID` in that voice. Characters are charged only when the
+  vendor is really asked (a server cache hit is free): **`TTS_IP_HOURLY_CHARS`**
+  (default 15,000 an IP an hour) and **`TTS_DAILY_CHARS`** (default 200,000 a
+  UTC day for everyone, Travis's number). Over either, a 503 like a vendor
+  outage, so every page plays the phone's own voice until it resets, with one
+  log line ("tts: daily character budget reached"). `spendBudget` in
+  `lib/rateLimit.ts` counts (one script, no partial charge; in memory when the
+  store is down). For Travis: also set a spend cap or turn off overage in
+  ElevenLabs. For Rachel: over the cap, the word a child copies is the phone's
+  voice (as on any vendor outage).
 - No silence counted as reps; voice boosts never logged as SLP data.
 - Never rewrite pushed git history. Push after every verified milestone.
 - A child's name never leaves the device to any CRM, ad pixel or analytics
@@ -5869,7 +5957,16 @@ are enforced in code and pinned by tests — change them only on Rachel's say-so
   progress" last). See "Word positions and the practice steps" for the two
   new pickers. The "Sound is off in Sona." line appears while muted.
   **Weekly progress report** (WEEKLY1, 23 Oct 2026) shows an email box and
-  Turn on when off, and the destination and Turn off when on. The Practice
+  Turn on when off, and the destination and Turn off when on. **Sharing
+  with your speech therapist** (13 Nov 2026, clinician audit B1) shows only
+  while the child picked is sharing (`Sona.slpSharing()`), with pilot.html's
+  reviewed "Stop sharing with your speech therapist" and its confirm word
+  for word (`Sona.slpStopSharing()`: `/api/pilot/forget`, then
+  `slpShare:false` and the homework cleared; consent and the ticket stay, as
+  they carry access). Allowed under "the minimum" because it withdraws a
+  consent join.html and the privacy page promise can be withdrawn here; it
+  is a removal, not a preference, and hidden for nearly every family. The
+  Practice
   Board card appears while live or owed, followed by **Account** (the plan
   line with See Premium and Restore, then
   Privacy · Terms); the clinician's "Open dashboard →" only for a
@@ -5918,6 +6015,27 @@ are enforced in code and pinned by tests — change them only on Rachel's say-so
 - **Child slots are never reused, and a removed child takes their saved tries**
   (`addKid` high-water mark, `removeKid` deletes that slot's clips; a page that
   leaves right after either waits on `Sona.clipsSettled()`).
+- **Removing a child deletes every per-child key, the first child's too** (13
+  Nov 2026, core audit B1): slot "" owns the plain keys, which removeKid used
+  to keep (name, age, the grown-up's email, every try, in every backup code).
+  The household's promises are carried out first: a free-era mark only that
+  child held goes onto the others, an "ff-" code only in their pilot record
+  becomes `sona.founding.v1`. `addKid` also clears every `PER_KID` key of the
+  slot it hands out (a restore with a lower `hi` left another child's
+  history there). Phones that removed a first child before this build still
+  hold those leftovers: a one-time cleanup is Travis's call, not built.
+- **"Undo last restore" puts the phone back** (B2): `Sona.undoImport` drops
+  every "sona." key the snapshot lacks, then writes it, so a child the restore
+  added goes again. It never drops a `NO_IMPORT` key (`NO_EXPORT` is inside
+  it) or the clinician link (`sona.slp`, `slpok`, `slpticket`): an Undo
+  neither grants nor takes away access. The snapshot still never expires.
+- **A grown-up's no stops sharing** (clinician audit B1, B5): `sendProgress`
+  and `syncHomework` send nothing while `slpShare === false`; Progress offers
+  "Send progress to my SLP" only while `Sona.slpSharing()`; "No thanks" on
+  join.html, on a phone already sharing with that clinician, also asks their
+  dashboard to forget the child (Travis's call: today it deletes). join.html's
+  consent line says "Never any audio: it is never uploaded or saved." (B11).
+  `kidtest`, `betatest`, `slpcode`, `slpapi`.
 - **After a quiet or turned-down try, Echo says it again, once** (audit 13 Nov
   2026; built on defaults, Rachel's to change). On the "Say it 5 times" page,
   "Try again" on the quiet card plays Echo's short line (the one a tap on him

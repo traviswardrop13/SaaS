@@ -494,8 +494,6 @@ try {
       if (ready === "offer") await w.page.locator("body.offer").waitFor();
       if (ready === "clinician") {
         await w.page.locator("#fEmail").fill("doctor.test@example.com");
-        await w.page.locator("#fRole").selectOption("slpa");
-        await w.page.locator("#fWorkSetting").selectOption("school");
       }
       if (ready === "slp" || ready === "local") {
         await w.page.waitForFunction(() => window.Sona && document.getElementById("nextBtn"));

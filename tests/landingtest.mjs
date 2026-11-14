@@ -93,12 +93,8 @@ function watchLeaving() {
     e.preventDefault();
   });
 }
-async function fill(page, email, role, workSetting = "clinic") {
+async function fill(page, email) {
   await page.fill("#fEmail", email);
-  // The pre-change clinician page had neither select.
-  const roleField = page.locator("#fRole"), workField = page.locator("#fWorkSetting");
-  if (role && await roleField.count()) await roleField.selectOption(role);
-  if (role && workSetting && await workField.count()) await workField.selectOption(workSetting);
 }
 // WAIT FOR THE SCROLL, DON'T GUESS IT (25 Sep 2026): a fixed 700 ms wait
 // turned main red on GitHub's slower runner, on a page that worked.
@@ -382,17 +378,20 @@ charterReply = null;
 // ── the form ──
 {
   const { context, page, errors } = await fresh({ query: "&clinicianRole=slpa&workSetting=school" });
-  ok("the clinician form asks only for email, work setting and role", await page.evaluate(() => {
+  // EMAIL ONLY (Travis, 14 Nov 2026: "remove the your role and work setting
+  // from the opt-in page and just have it be your email", with an example
+  // that asks for a work address, not you@example.com).
+  ok("the clinician form asks only for an email", await page.evaluate(() => {
     const form = document.getElementById("signup");
-    return [...form.querySelectorAll("input,select")].map(el => el.id).sort().join() === "fEmail,fRole,fWorkSetting" &&
+    return [...form.querySelectorAll("input,select")].map(el => el.id).join() === "fEmail" &&
       form.querySelectorAll("button").length === 1 && !form.querySelector("textarea") &&
       document.forms.length === 1 && !document.getElementById("startModal");
   }));
-  const role = page.locator("#fRole"), work = page.locator("#fWorkSetting");
-  for (const [label, field, values] of [["role", role, ",slp,slpa"], ["work setting", work, ",clinic,school"]]) {
-    ok("the clinician " + label + " is visible, required, and blank despite the URL", await field.count() === 1 && await field.isVisible() &&
-      await field.evaluate((el, choices) => el.required && !el.disabled && !el.value && [...el.options].map(o => o.value).join() === choices, values));
-  }
+  ok("…labelled as a work email, with a work address as the example", await page.evaluate(() => {
+    const box = document.getElementById("fEmail");
+    return document.querySelector('label[for="fEmail"]').textContent.trim() === "Your work email" &&
+      box.required && /^you@your(clinic|school)\./.test(box.placeholder) && !/example/.test(box.placeholder);
+  }));
   const pixel = await page.evaluate(() => (window.fbq?.queue || []).map(args => Array.from(args)));
   const init = pixel.findIndex(args => args[0] === "init");
   const quiet = pixel.findIndex(args => args[0] === "set" && args[1] === "autoConfig" && args[2] === false);
@@ -419,24 +418,6 @@ charterReply = null;
   await page.click("#fGo");
   ok("a bad email: asked for a valid one, nothing sent", /valid email/.test(await page.textContent("#fErr")) && posts.length === 0);
 
-  await fill(page, "sam@clinic.org");
-  if (await role.count() && await work.count()) {
-    await page.click("#fGo");
-    ok("no clinician role: focus returns to the required role, nothing sent",
-      await role.evaluate(el => el === document.activeElement) && posts.length === 0 && Boolean((await page.textContent("#fErr")).trim()));
-    await role.selectOption("slp");
-    await page.click("#fGo");
-    ok("no work setting: focus returns to the required setting, nothing sent",
-      await work.evaluate(el => el === document.activeElement) && posts.length === 0 && Boolean((await page.textContent("#fErr")).trim()));
-  } else {
-    const before = authReply;
-    authReply = { ok: false, error: "Synthetic signup refusal" };
-    await page.click("#fGo");
-    await settles(page, () => document.getElementById("fErr").textContent === "Synthetic signup refusal");
-    ok("missing clinician selections: nothing sent", posts.length === 0, posts);
-    authReply = before;
-  }
-
   await page.evaluate(() => { document.activeElement.blur(); window.scrollTo(0, document.body.scrollHeight); });
   await page.click("#finalGo");
   ok("the closing button returns to the signup form", await settles(page, () => {
@@ -448,13 +429,14 @@ charterReply = null;
 }
 
 // ── New and returning clinicians both enter through the emailed link. ──
-for (const [clinicianRole, workSetting, path] of [["slp", "clinic", "/"], ["slpa", "school", "/for-slps"]]) {
+for (const path of ["/", "/for-slps"]) {
+  const clinicianRole = path === "/" ? "homepage" : "/for-slps";
   const { context, page, errors } = await fresh({ path });
   const url = new URL(page.url());
   ok(clinicianRole + ": clinician URL keeps campaign parameters", url.pathname === "/" &&
     url.searchParams.get("utm_campaign") === "launch" && url.searchParams.get("fbclid") === "abc123", url.href);
   posts = []; authReply = { ok: true, sent: true, signedIn: false };
-  await fill(page, "sam@clinic.org", clinicianRole, workSetting);
+  await fill(page, "sam@clinic.org");
   const left = leftFor(page, "/", 3000);
   await page.click("#fGo");
   ok(clinicianRole + ": email confirmation identifies the address after delivery", await settles(page, () => {
@@ -466,8 +448,8 @@ for (const [clinicianRole, workSetting, path] of [["slp", "clinic", "/"], ["slpa
     p.body.flow === "free-dashboard", posts);
   ok(clinicianRole + ": the request carries the email and ad click, with no name",
     p.body.email === "sam@clinic.org" && !("name" in p.body) && p.body.attrib?.fbclid === "abc123" && p.body.source === "fb", p.body);
-  ok(clinicianRole + ": work setting and role go only in the auth body", p.body.clinicianRole === clinicianRole &&
-    p.body.workSetting === workSetting && !!p.body.attrib && !("clinicianRole" in p.body.attrib) && !("workSetting" in p.body.attrib), p.body);
+  ok(clinicianRole + ": the request asks no role or work setting", !("clinicianRole" in p.body) &&
+    !("workSetting" in p.body) && !!p.body.attrib && !("clinicianRole" in p.body.attrib) && !("workSetting" in p.body.attrib), p.body);
   ok(clinicianRole + ": successful email delivery fires only Lead", JSON.stringify(await page.evaluate(() => window.__track)) === '["Lead"]');
   ok(clinicianRole + ": the confirmation stays on the homepage", !(await left), page.url());
   ok(clinicianRole + ": no page errors", errors.length === 0, errors);
@@ -477,7 +459,7 @@ for (const [clinicianRole, workSetting, path] of [["slp", "clinic", "/"], ["slpa
 {
   const { context, page } = await fresh();
   posts = []; authReply = { ok: false, error: "Enter a valid email." };
-  await fill(page, "sam@clinic.org", "slp");
+  await fill(page, "sam@clinic.org");
   await page.click("#fGo");
   ok("a refused signup shows the server's reason", await settles(page, () =>
     /Enter a valid email/.test(document.getElementById("fErr").textContent)));
@@ -487,7 +469,7 @@ for (const [clinicianRole, workSetting, path] of [["slp", "clinic", "/"], ["slpa
 {
   const { context, page } = await fresh();
   posts = []; authReply = { ok: true, sent: false, signedIn: false };
-  await fill(page, "sam@clinic.org", "slp");
+  await fill(page, "sam@clinic.org");
   await page.click("#fGo");
   const canRetry = await settles(page, () => /email/i.test(document.getElementById("fErr").textContent)) &&
     await page.locator("#signup").isVisible() && await page.locator("#fGo").isEnabled() &&
@@ -507,7 +489,7 @@ for (const [clinicianRole, workSetting, path] of [["slp", "clinic", "/"], ["slpa
 {
   const { context, page } = await fresh();
   posts = []; authReply = { ok: true, sent: false, signedIn: false, devLink: origin + "/api/slp/auth/verify?token=preview" };
-  await fill(page, "sam@clinic.org", "slp");
+  await fill(page, "sam@clinic.org");
   await page.click("#fGo");
   ok("local preview shows its sign-in link with no delivery claim", await settles(page, () => {
     const sent = document.getElementById("sent");

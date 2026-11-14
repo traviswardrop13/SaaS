@@ -14,7 +14,9 @@
   <link rel="manifest" href="/manifest.webmanifest" />
   <meta name="theme-color" content="#1cb0f6" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
-  <script src="/pixel.js"></script>
+  <!-- data-autoconfig="off": this page has a "Child's first name" box, so
+       Meta's automatic form and button reading stays off (as on setup). -->
+  <script src="/pixel.js" data-autoconfig="off"></script>
   <script src="/analytics.js"></script>
   <style>
     :root{ --blue:#1cb0f6; --blue-d:#1597d4; --green:#58cc02; --green-d:#46a302; --orange:#ff9600; --orange-d:#e08600; --ink:#16384f; --muted:#6b86a3; }

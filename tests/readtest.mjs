@@ -846,8 +846,12 @@ async function waitSpoke(pg, ms) {
 // pageerror assertion here is load-bearing, not hygiene.
 {
   const { ctx, pg, errs } = await mkPage();
+  // The seeded child is "Milo": nothing this page sends may carry the name
+  // (14 Nov 2026, core.md B3: it used to post it to /api/story, an AI writer).
+  const sent = [];
+  pg.on("request", (r) => { if (new URL(r.url()).pathname.startsWith("/api/")) sent.push({ path: new URL(r.url()).pathname, body: r.postData() || "", url: r.url() }); });
   await pg.goto("http://localhost:8153/story.html");
-  await pg.waitForTimeout(1500);   // /api/story 500s fast → built-in pages
+  await pg.waitForTimeout(1500);   // no network story: its built-in pages
   const started = await pg.evaluate(() => {
     const b = document.getElementById("startBtn");
     if (!b || document.getElementById("start").style.display === "none") return false;
@@ -867,6 +871,8 @@ async function waitSpoke(pg, ms) {
   spoke = await waitSpoke(pg, 10000);
   ok("story: the button works a second time", spoke.length > 0,
     "speakNow left the queue counted-full — taps are being dropped again");
+  ok("story asks no server for a story", !sent.some((r) => r.path === "/api/story"), sent.map((r) => r.path).join(", "));
+  ok("…and nothing it sends carries the child's name", !sent.some((r) => /Milo/i.test(r.body + r.url)), sent.filter((r) => /Milo/i.test(r.body + r.url)).map((r) => r.path).join(", "));
   ok("no pageerrors on story.html", errs.length === 0, errs.join(" | "));
   await ctx.close();
 }

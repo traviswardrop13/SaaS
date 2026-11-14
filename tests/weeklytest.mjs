@@ -273,6 +273,17 @@ ok("the daily cron sends it after the reports, within its time, and ?weekly=1 fo
   const d = Number((cron.slice(b).match(/deadline: started \+ (\d+)/) || [])[1]);
   return a > 0 && b > a && c > b && d > 0 && d < 280000 && /force: okManual && req\.nextUrl\.searchParams\.get\("weekly"\) === "1"/.test(cron) && /import \{ runWeekly \} from "@\/lib\/weekly"/.test(cron);
 })());
+// server.md B10 (14 Nov 2026): a founder's run takes the key from the header
+// only (never ?key=, which lands in logs), both secrets in constant time
+ok("a founder's manual run needs the x-founder-key header (never ?key=), and the cron bearer is compared in constant time", (() => {
+  const cron = read("app/api/cron/nurture/route.ts");
+  return /const okManual = founderKey\(req\) === null;/.test(cron) && /sameSecret\(auth, `Bearer \$\{cronSecret\}`\)/.test(cron) &&
+    !/searchParams\.get\("key"\)/.test(cron) && !/=== founderKey|keyIn/.test(cron);
+})());
+ok("the old Friday email is gone: no /api/cron/weekly or /api/trial route, and the only cron is the daily one", (() => {
+  const crons = JSON.parse(read("vercel.json")).crons || [];
+  return crons.length === 1 && crons[0].path === "/api/cron/nurture" && !existsSync(path.join(REPO, "app/api/cron/weekly")) && !existsSync(path.join(REPO, "app/api/trial"));
+})());
 
 // ── the phone half: Settings' switch ──
 const MIME = { html: "text/html", js: "text/javascript", svg: "image/svg+xml", css: "text/css", png: "image/png", webp: "image/webp", woff2: "font/woff2", json: "application/json", webmanifest: "application/manifest+json" };

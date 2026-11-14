@@ -1235,9 +1235,31 @@ const count = (pred) => S.calls.filter(pred).length;
 {
   const fresh = "brand.new@riverside-schools.org";
   RESEND.sent.length = 0;
+  const leadsBefore = OUT.filter((o) => o.url.endsWith("/api/lead")).length;
   let r = await call(R.request, "POST", "/api/slp/auth/request", { body: { email: fresh, name: "Robin" } });
+  // 13 Nov 2026 (audit B3): a new email on the sign-in page used to be given
+  // an account and a cookie on the spot, so anyone could sit in a real
+  // clinician's future account. The inbox comes first now, on every door.
+  ok("a NEW email on the sign-in page gets the link and nothing else: no account, no cookie, no lead",
+    r.status === 200 && r.json.signedIn === false && r.json.sent === true && !r.cookie && !KV.K.has("slpacct:" + fresh) &&
+    OUT.filter((o) => o.url.endsWith("/api/lead")).length === leadsBefore, JSON.stringify(r));
+  const freshMail = RESEND.sent.at(-1) || {};
+  ok("…and the caller's own name never greets anyone (\"Hi,\", not \"Hi Robin,\")",
+    /^Hi,\n/.test(freshMail.text || "") && !/Robin/.test((freshMail.text || "") + (freshMail.html || "")), JSON.stringify(freshMail.text));
+  const freshLink = (freshMail.text || "").match(/https:\/\/sona\.test\.invalid(\/api\/slp\/auth\/verify\?token=[\w-]+)/)?.[1] || "/api/slp/auth/verify";
+  {
+    const sentBefore = RESEND.sent.length;
+    let last;
+    for (let i = 0; i < 21; i++) {
+      last = await call(R.request, "POST", "/api/slp/auth/request", { headers: { "x-real-ip": "203.0.113.77" }, body: { email: "loop" + i + "@victims.example" } });
+    }
+    ok("one address can ask for 20 sign-in emails an hour, whatever emails it names; the 21st is refused (audit B2)",
+      last.status === 429 && RESEND.sent.length - sentBefore === 20, String(last.status));
+  }
+  r = await call(R.verify, "GET", freshLink);
   let a = JSON.parse(KV.K.get("slpacct:" + fresh) || "{}");
-  ok("a NEW account from the sign-up route carries terms: \"pro-2026-11-12\" (the dashboard is Sona Pro's)", r.json.signedIn === true && a.terms === "pro-2026-11-12", JSON.stringify(a));
+  ok("a NEW account, made by the emailed link, carries terms: \"pro-2026-11-12\" (the dashboard is Sona Pro's)",
+    (r.cookie || "").includes("slp_session=") && a.terms === "pro-2026-11-12" && a.name === "", JSON.stringify(a));
   // 24 Sep 2026: the sign-in email said "it's free for you and for every
   // family on your caseload" — the very promise the grandfathered clinicians
   // hold, sent in writing to every NEW clinician, whose families get the
@@ -1258,9 +1280,12 @@ const count = (pred) => S.calls.filter(pred).length;
   ok("…still after the CRM stamp rewrites it", !!a.crmAt && a.terms === "pro-2026-11-12");
 
   seedAcct("veteran@clinic.org", { terms: false, code: "vet-k4", familyKey: "VETKEY23" });
-  r = await call(R.request, "POST", "/api/slp/auth/request", { body: { email: "veteran@clinic.org" } });
+  r = await call(R.request, "POST", "/api/slp/auth/request", { body: { email: "veteran@clinic.org", name: "Mallory <b>" } });
   a = JSON.parse(KV.K.get("slpacct:veteran@clinic.org"));
   ok("an EXISTING account signing in again never gains terms — it stays grandfathered", !("terms" in a) && a.code === "vet-k4" && C.grandfathered(a), JSON.stringify(a));
+  const vetMail = RESEND.sent.at(-1) || {};
+  ok("…and its email greets it by the account's own name, never one a signed-out caller sent (audit B2)",
+    /^Hi Sam Rivera,\n/.test(vetMail.text || "") && !/Mallory/.test((vetMail.text || "") + (vetMail.html || "")) && a.name === "Sam Rivera", JSON.stringify(vetMail.text));
 
   const setsBefore = KV.log.filter((c) => c[0] === "SET" && c[1] === "slpacct:outage@clinic.org").length;
   seedAcct("outage@clinic.org", { terms: false, code: "out-k4", familyKey: "OUTKEY23" });
@@ -1311,7 +1336,12 @@ const count = (pred) => S.calls.filter(pred).length;
     r.status === 503 && KV.log.filter((c) => c[0] === "SET" && c[1] === "slpacct:veteran@clinic.org").length === n0);
 
   // every place an slpacct is SET from a fresh object stamps terms
-  for (const f of ["app/api/slp/auth/request/route.ts", "app/api/slp/auth/verify/route.ts", "app/api/slp/account/route.ts"]) {
+  // …and the sign-in request route makes none at all (13 Nov 2026): no
+  // account, no session, whatever the email.
+  const reqSrc = noComments(read("app/api/slp/auth/request/route.ts"));
+  ok("the sign-in request route never writes an account or signs a session",
+    !/"SET", "slpacct:/.test(reqSrc) && !/signSession|sessionCookie/.test(reqSrc) && !/PRO_TERMS/.test(reqSrc));
+  for (const f of ["app/api/slp/auth/verify/route.ts", "app/api/slp/account/route.ts"]) {
     ok(`${f} stamps PRO_TERMS on the legacy signup path`, /import \{[^}]*PRO_TERMS[^}]*\} from "@\/lib\/caseload"/.test(read(f)) &&
       /terms: (signup \? FREE_DASHBOARD_TERMS : )?PRO_TERMS|\.terms = PRO_TERMS/.test(read(f)) && !/CASELOAD_TERMS/.test(noComments(read(f))));
   }
@@ -1321,18 +1351,26 @@ const count = (pred) => S.calls.filter(pred).length;
 {
   const signup = (body) => call(R.request, "POST", "/api/slp/auth/request", { body });
   const stored = (email) => JSON.parse(KV.K.get("slpacct:" + email) || "{}");
+  // Since 13 Nov 2026 an account is made only by its emailed link, so each
+  // sign-up here opens the link it was sent; role and setting ride on the
+  // homepage's free-dashboard link, the only door that asks for them.
+  const openLatest = () => {
+    const link = (RESEND.sent.at(-1)?.text || "").match(/https:\/\/sona\.test\.invalid(\/api\/slp\/auth\/verify\?token=[\w-]+)/)?.[1];
+    return call(R.verify, "GET", link || "/api/slp/auth/verify");
+  };
   const signupCalls = OUT.length;
   for (const [clinicianRole, workSetting] of [["slp", "clinic"], ["slpa", "school"]]) {
     const email = "setting." + workSetting + "@example.org";
     const r = await signup({
-      email, clinicianRole, workSetting, childName: "NotAccountData",
+      flow: "free-dashboard", email, clinicianRole, workSetting, childName: "NotAccountData",
       attrib: { utm_source: "clinic-post", clinicianRole: "NotAccountData", workSetting: "NotAccountData", childName: "NotAccountData" },
     });
+    const v = await openLatest();
     const account = stored(email);
-    ok("new signup saves " + clinicianRole + " and " + workSetting + " on its Pro account",
-      r.status === 200 && r.json.signedIn === true && account.clinicianRole === clinicianRole &&
-      account.workSetting === workSetting && account.terms === C.PRO_TERMS && account.clinic === "" &&
-      !!account.crmAt && !("childName" in account), JSON.stringify(account));
+    ok("new signup saves " + clinicianRole + " and " + workSetting + " on its account once the link is opened",
+      r.status === 200 && r.json.signedIn === false && (v.cookie || "").includes("slp_session=") &&
+      account.clinicianRole === clinicianRole && account.workSetting === workSetting && account.terms === C.FREE_DASHBOARD_TERMS &&
+      account.clinic === "" && !!account.crmAt && !("childName" in account), JSON.stringify(account));
   }
   ok("signup keeps role, setting and injected data out of email and lead services",
     OUT.slice(signupCalls).filter((o) => o.url.endsWith("/api/lead")).length === 2 &&
@@ -1350,9 +1388,12 @@ const count = (pred) => S.calls.filter(pred).length;
     stored(oldEmail).workSetting === "other" && stored(oldEmail).code === "legacy-setting" && C.grandfathered(stored(oldEmail)));
 
   const omittedEmail = "setting.omitted@example.org";
-  const legacyClient = await signup({ email: omittedEmail });
-  ok("clients that omit role and setting can still create an account",
-    legacyClient.status === 200 && legacyClient.json.signedIn === true &&
+  const legacyClient = await signup({ email: omittedEmail, clinicianRole: "slp", workSetting: "clinic" });
+  const noAccountYet = !KV.K.has("slpacct:" + omittedEmail);
+  const legacyOpened = await openLatest();
+  ok("the sign-in page's sign-up (no flow) makes its Pro account only from the emailed link, with no role or setting",
+    legacyClient.status === 200 && legacyClient.json.signedIn === false && !legacyClient.cookie && noAccountYet &&
+    (legacyOpened.cookie || "").includes("slp_session=") && stored(omittedEmail).terms === C.PRO_TERMS &&
     !("workSetting" in stored(omittedEmail)) && !("clinicianRole" in stored(omittedEmail)));
 
   const invalid = [
@@ -1465,6 +1506,24 @@ const count = (pred) => S.calls.filter(pred).length;
     profile.status === 200 && JSON.parse(KV.K.get(returningKey)).freeDashboard === true &&
     JSON.parse(KV.K.get(returningKey)).name === "Robin");
 
+  // EMAIL ONLY (Travis, 14 Nov 2026: the homepage asks for an email and
+  // nothing else). The link still proves the inbox first, and the account
+  // holds no role or work setting it was never told.
+  const onlyEmail = "dashboard.emailonly@example.org";
+  const lean = await call(R.request, "POST", "/api/slp/auth/request", { body: { flow: "free-dashboard", email: onlyEmail } });
+  ok("an email-only free signup sends its link with no account or session yet",
+    lean.status === 200 && lean.json.sent === true && lean.json.signedIn === false && !lean.cookie && !KV.K.has("slpacct:" + onlyEmail));
+  const leanVerified = await call(R.verify, "GET", latestLink());
+  const leanAccount = JSON.parse(KV.K.get("slpacct:" + onlyEmail) || "{}");
+  ok("…and opening it makes a free account with no role or work setting",
+    leanVerified.cookie?.includes("slp_session=") && leanAccount.terms === "free-dashboard-2026-11-13" &&
+    !("clinicianRole" in leanAccount) && !("workSetting" in leanAccount), JSON.stringify(leanAccount));
+  for (const bad of [{ clinicianRole: "parent" }, { workSetting: "other" }, { clinicianRole: null }]) {
+    const refused = await call(R.request, "POST", "/api/slp/auth/request", { body: { flow: "free-dashboard", email: "bad.choice@example.org", ...bad } });
+    ok("a free signup that sends a role or setting must send a real one: " + JSON.stringify(bad),
+      refused.status === 400 && !KV.K.has("slpacct:bad.choice@example.org"), JSON.stringify(refused.json));
+  }
+
   RESEND.status = 502;
   const failedEmail = "free.refused@example.org";
   const failed = await signup({ email: failedEmail });
@@ -1472,6 +1531,62 @@ const count = (pred) => S.calls.filter(pred).length;
   ok("a refused signup email creates no account, session or verified lead",
     failed.status === 200 && failed.json.sent === false && !failed.cookie && !KV.K.has("slpacct:" + failedEmail) &&
     !OUT.some((o) => o.url.endsWith("/api/lead") && o.body.email === failedEmail));
+}
+
+// ═════════════════════════ sessions from before the inbox was proved ═════════════════════════
+// Audit B3 and B9 (13 Nov 2026). Until then a new email on the sign-in page
+// was signed in on the spot: a stranger could hold a cookie for a real
+// clinician's address, and a stateless cookie could never be taken back. The
+// owner's first sign-in by the emailed link now ends every older session;
+// and a family's enrolment ticket is never a session.
+{
+  const victim = "squatted@riverside-schools.org";
+  const original = seedAcct(victim, { terms: C.PRO_TERMS, code: "squat-k4", familyKey: "SQUATKY3" });
+  const cookieOf = (setCookie) => (setCookie || "").split(";")[0];
+  const squat = "slp_session=" + encodeURIComponent(A.signSession({ email: victim, code: "", iat: Date.now() - 86400000, exp: Date.now() + 86400000 }));
+  const asCookie = (cookie, route, method, url, body) => call(route, method, url, { headers: { cookie }, body });
+  let r = await asCookie(squat, R.account, "GET", "/api/slp/account");
+  ok("an older session works until the owner proves the inbox (nothing tells the two apart before then)", r.status === 200 && r.json.email === victim);
+
+  await call(R.request, "POST", "/api/slp/auth/request", { body: { email: victim } });
+  const link = (RESEND.sent.at(-1)?.text || "").match(/https:\/\/sona\.test\.invalid(\/api\/slp\/auth\/verify\?token=[\w-]+)/)?.[1];
+  const first = await call(R.verify, "GET", link || "/api/slp/auth/verify");
+  const owner = cookieOf(first.cookie);
+  ok("the owner's emailed link signs them in and marks when sessions start counting",
+    owner.startsWith("slp_session=") && Number(KV.K.get("slpsessfrom:" + victim)) > 0);
+  // (the sign-in request's own CRM catch-up adds crmAt, as for any account the CRM never heard of)
+  const { crmAt: _crmAt, ...afterVerify } = JSON.parse(KV.K.get("slpacct:" + victim));
+  ok("…without rewriting the account (its terms, code and family key stay exactly as they were)",
+    JSON.stringify(afterVerify) === JSON.stringify(original), KV.K.get("slpacct:" + victim));
+
+  r = await asCookie(squat, R.account, "GET", "/api/slp/account");
+  const renew = await asCookie(squat, R.account, "POST", "/api/slp/account", { name: "Squatter" });
+  const roster = await asCookie(squat, R.roster, "GET", "/api/slp");
+  ok("…and from then the older session opens nothing, and cannot renew itself with a profile save",
+    r.status === 401 && renew.status === 401 && !renew.cookie && roster.status === 401 &&
+    JSON.parse(KV.K.get("slpacct:" + victim)).name !== "Squatter", JSON.stringify([r.status, renew.status, roster.status]));
+  r = await asCookie(owner, R.account, "GET", "/api/slp/account");
+  ok("the owner's own session works", r.status === 200 && r.json.code === "squat-k4");
+
+  await call(R.request, "POST", "/api/slp/auth/request", { body: { email: victim } });
+  const link2 = (RESEND.sent.at(-1)?.text || "").match(/https:\/\/sona\.test\.invalid(\/api\/slp\/auth\/verify\?token=[\w-]+)/)?.[1];
+  const mark = KV.K.get("slpsessfrom:" + victim);
+  const second = await call(R.verify, "GET", link2 || "/api/slp/auth/verify");
+  const a1 = await asCookie(owner, R.account, "GET", "/api/slp/account");
+  const a2 = await asCookie(cookieOf(second.cookie), R.account, "GET", "/api/slp/account");
+  ok("a later sign-in on a second device never logs the first one out", KV.K.get("slpsessfrom:" + victim) === mark && a1.status === 200 && a2.status === 200);
+
+  KV.down = true;
+  r = await asCookie(owner, R.account, "GET", "/api/slp/account");
+  KV.down = false;
+  ok("a store that does not answer never signs a clinician out", r.status === 200);
+
+  const ticket = "slp_session=" + encodeURIComponent(A.signTicket("squat-k4", 400, "kid1"));
+  ok("a family's enrolment ticket is never a clinician's session (audit B9)",
+    A.verifySession(A.signTicket("squat-k4", 400, "kid1")) === null &&
+    A.verifySession(A.signSession({ code: "", exp: Date.now() + 60000 })) === null &&
+    (await asCookie(ticket, R.account, "GET", "/api/slp/account")).status === 401 &&
+    (await asCookie(ticket, R.account, "POST", "/api/slp/account", { name: "x" })).status === 401 && !KV.K.has("slpacct:undefined"));
 }
 
 // ═════════════════════════ the family success page refuses a clinician's receipt ═════════════════════════

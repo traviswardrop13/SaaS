@@ -171,6 +171,113 @@ ok("the last child can never be removed", st.blocked === false && st.n === 1, JS
   await c2.close();
 }
 
+// ── removing the FIRST child really deletes them (core audit B1, 13 Nov 2026) ──
+// The first child owns the plain keys, and removeKid used to clear only a
+// suffixed slot: the "deleted" child's name, age, the grown-up's email and
+// every try stayed on the phone and in every backup code. The household's
+// promises (a free-era mark only the first child held, an older founding
+// device's "ff-" code only in their pilot record) are carried, never lost.
+// ── and Undo last restore puts the phone back (B2), and a new slot is empty ──
+{
+  const c3 = await browser.newContext(); const p3 = await c3.newPage();
+  await p3.goto("http://localhost:8153/today.html"); await p3.waitForTimeout(400);
+  const base = () => p3.evaluate(() => {
+    localStorage.clear(); sessionStorage.clear();
+    ["sona.freeera.v1", "sona.freeera2.v1", "sona.freeera3.v1", "sona.freeera4.v1", "sona.freeera5.v1"].forEach((k) => localStorage.setItem(k, "done"));
+    localStorage.setItem("sona.freever.v1", "kept"); localStorage.setItem("sona.buddyset.v1", "kept");
+    localStorage.setItem("sona.micok", "1");
+    localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Mia", childAge: "6", focusSounds: ["R"], onboarded: true, email: "mom@example.com", weeklyReport: true }));
+  });
+  await base();
+  st = await p3.evaluate(() => {
+    ["sona.progress.v1", "sona.attempts.v1", "sona.outcomes.v1", "sona.quest.v1", "sona.trophy.v1", "sona.goaldays.v1", "sona.firsts.v1"].forEach((k) => localStorage.setItem(k, JSON.stringify({ x: 1 })));
+    localStorage.setItem("sona.pilot.v1", JSON.stringify({ consent: true, code: "ABC", childId: "c1" }));
+    Sona.addKid("Leo", "5"); Sona.saveProfile({ onboarded: true });
+    localStorage.setItem("sona.progress.v1@k2", JSON.stringify({ leo: 1 }));
+    const removed = Sona.removeKid("");
+    const plain = ["sona.profile.v1", "sona.progress.v1", "sona.attempts.v1", "sona.outcomes.v1", "sona.quest.v1", "sona.trophy.v1", "sona.goaldays.v1", "sona.firsts.v1", "sona.pilot.v1"].filter((k) => localStorage.getItem(k) !== null);
+    const exp = Sona.exportString();
+    return { removed, plain, kids: Sona.kids().map((k) => k.name), mia: exp.indexOf("Mia") >= 0, email: exp.indexOf("mom@example.com") >= 0,
+      leo: localStorage.getItem("sona.progress.v1@k2"), house: ["sona.micok", "sona.freeera5.v1", "sona.kids.v1"].every((k) => localStorage.getItem(k) !== null) };
+  });
+  ok("removing the first child deletes their plain keys", st.removed && !st.plain.length, JSON.stringify(st));
+  ok("…and no backup code holds their name or the grown-up's email", !st.mia && !st.email, JSON.stringify(st));
+  ok("…while the sibling's data and the household's keys stay", st.leo === '{"leo":1}' && st.house && st.kids.join() === "Leo", JSON.stringify(st));
+
+  // a sibling added before addKid copied the free-era mark (24 Sep 2026)
+  await base();
+  st = await p3.evaluate(() => {
+    const pr = JSON.parse(localStorage.getItem("sona.profile.v1")); pr.earlyAdopter = true; localStorage.setItem("sona.profile.v1", JSON.stringify(pr));
+    sessionStorage.setItem("sona.paidui", "1");
+    localStorage.setItem("sona.kids.v1", JSON.stringify({ active: "", hi: 2, list: [{ slot: "", name: "Mia" }, { slot: "k2", name: "Old" }] }));
+    localStorage.setItem("sona.profile.v1@k2", JSON.stringify({ childName: "Old", childAge: "5", onboarded: true }));
+    Sona.switchKid("k2");
+    const before = Sona.premium();
+    Sona.removeKid("");
+    return { before, after: Sona.premium(), mark: !!Sona.getProfile().earlyAdopter };
+  });
+  ok("removing the only marked child carries the household's free-era grant", st.before && st.after && st.mark, JSON.stringify(st));
+
+  // an older founding device: the "ff-" code only in the first child's pilot record
+  await base();
+  st = await p3.evaluate(() => {
+    sessionStorage.setItem("sona.paidui", "1");
+    localStorage.setItem("sona.pilot.v1", JSON.stringify({ consent: true, code: "ff-oak", childId: "f1" }));
+    Sona.addKid("Leo", "5");
+    const before = Sona.premium();
+    Sona.removeKid("");
+    return { before, after: Sona.premium(), mark: localStorage.getItem("sona.founding.v1") };
+  });
+  ok("removing the first child keeps a founding household founding", st.before && st.after && /ff-oak/.test(st.mark || ""), JSON.stringify(st));
+
+  // a restore with a lower `hi` must never hand a new child another child's keys
+  await base();
+  st = await p3.evaluate(() => {
+    ["sona.progress.v1@k3", "sona.outcomes.v1@k3", "sona.trophy.v1@k3", "sona.quest.v1@k3", "sona.pilot.v1@k3", "sona.homework.v1@k3"].forEach((k) => localStorage.setItem(k, JSON.stringify({ zed: 77 })));
+    localStorage.setItem("sona.kids.v1", JSON.stringify({ active: "", hi: 2, list: [{ slot: "", name: "Mia" }, { slot: "k2", name: "Ben" }] }));
+    const slot = Sona.addKid("Cy", "5");
+    return { slot, left: Object.keys(localStorage).filter((k) => /@k3$/.test(k) && k !== "sona.profile.v1@k3" && localStorage.getItem(k).indexOf("zed") >= 0) };
+  });
+  ok("a new slot inherits no leftover per-child key", st.slot === "k3" && !st.left.length, JSON.stringify(st));
+
+  // Undo last restore: a one-child phone, a two-child backup
+  await base();
+  st = await p3.evaluate(() => {
+    const snap = Sona.exportString();
+    const backup = { app: "sona", v: 1, data: {
+      "sona.kids.v1": JSON.stringify({ active: "", hi: 3, list: [{ slot: "", name: "Ada" }, { slot: "k2", name: "Leo" }, { slot: "k3", name: "Zed" }] }),
+      "sona.profile.v1": JSON.stringify({ childName: "Ada", childAge: "6", onboarded: true }),
+      "sona.profile.v1@k2": JSON.stringify({ childName: "Leo", childAge: "5", onboarded: true }),
+      "sona.profile.v1@k3": JSON.stringify({ childName: "Zed", childAge: "5", onboarded: true }),
+      "sona.progress.v1@k3": JSON.stringify({ zed: 77 }),
+      "sona.slp": "ABC", "sona.slpticket": "t.x" } };
+    const r1 = Sona.importData(backup);
+    const mid = Sona.kids().length;
+    // written after the snapshot, on NO_IMPORT: never taken by an Undo
+    localStorage.setItem("sona.freeera5.v1", "done"); localStorage.setItem("sona.sub.v1", JSON.stringify({ active: true })); localStorage.setItem("sona.caseplan.v1", JSON.stringify({ covered: true }));
+    localStorage.setItem("sona.pilot.v1@k3", JSON.stringify({ consent: true, code: "ABC", childId: "z" }));
+    const u = Sona.undoImport(snap);
+    const slot = Sona.addKid("Cy", "5");
+    return { r1: r1.ok, mid, u: u.ok, kids: Sona.kids().map((k) => k.name), name0: JSON.parse(localStorage.getItem("sona.profile.v1")).childName,
+      k2: localStorage.getItem("sona.profile.v1@k2"), slot, cyClean: localStorage.getItem("sona.progress.v1@" + slot) === null && localStorage.getItem("sona.pilot.v1@" + slot) === null,
+      kept: ["sona.freeera5.v1", "sona.sub.v1", "sona.caseplan.v1", "sona.slp", "sona.slpticket", "sona.micok"].filter((k) => localStorage.getItem(k) === null) };
+  });
+  ok("a restore brought two more children", st.r1 && st.mid === 3, JSON.stringify(st));
+  ok("Undo last restore takes them away again, and puts the first child back", st.u && st.name0 === "Mia" && st.kids[0] === "Mia" && st.kids.length === 2 && st.kids[1] === "Cy", JSON.stringify(st));
+  ok("…leaves no key of theirs for the next new child", st.cyClean, JSON.stringify(st));
+  ok("…and never removes this phone's own keys or the clinician link", !st.kept.length, JSON.stringify(st));
+
+  // a snapshot holding nothing a restore writes is still put back
+  st = await p3.evaluate(() => {
+    const bad = Sona.undoImport("not json");
+    const kept = localStorage.getItem("sona.micok");
+    const r = Sona.undoImport({ app: "sona", v: 1, data: { "sona.sub.v1": "{}" } });
+    return { ok: r.ok, bad: bad.ok, kept, kidsKey: localStorage.getItem("sona.kids.v1"), sub: localStorage.getItem("sona.sub.v1") };
+  });
+  ok("an Undo of a near-empty snapshot succeeds; a broken one changes nothing", st.ok === true && st.bad === false && st.kept === "1" && st.kidsKey === null && st.sub !== null, JSON.stringify(st));
+  await c3.close();
+}
+
 // ── a level is earned by ONE child's two passes, never two siblings' one each ──
 // (1 Oct 2026) The practice page counted "two clean first-listen passes at the
 // stretch level" under a key named for the sound and rung

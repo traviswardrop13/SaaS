@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { readSession, kvCmd, kvConfigured, rosterKey } from "@/lib/slpAuth";
+import { readSession, liveSession, kvCmd, kvConfigured, rosterKey } from "@/lib/slpAuth";
 import { dashboardGate } from "@/lib/proGate";
 import { rateLimit } from "@/lib/rateLimit";
 import { readAccount, cleanChildId, metaKey, writeMeta, removeChild } from "@/lib/roster";
@@ -28,7 +28,7 @@ export const runtime = "nodejs";
  * Removing a child works whatever the clinician pays (lib/proGate).
  */
 async function gate(req: NextRequest, write = true): Promise<{ code: string } | NextResponse> {
-  const s = readSession(req);
+  const s = await liveSession(readSession(req));
   if (!s) return NextResponse.json({ ok: false, error: "sign in required" }, { status: 401 });
   const rl = await rateLimit(req, { key: "slpchild", limit: 120, windowSec: 3600 });
   if (rl) return rl;

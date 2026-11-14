@@ -1,6 +1,8 @@
+import { foreignOrigin } from "@/lib/origin";
 import { NextRequest, NextResponse } from "next/server";
 import { kvConfigured } from "@/lib/slpAuth";
-import { trialPlayed, trialStart } from "@/lib/trials";
+import { rateLimit } from "@/lib/rateLimit";
+import { trialDays, trialPlayed } from "@/lib/trials";
 
 /**
  * First-party telemetry relay for KID pages (COPPA posture).
@@ -11,6 +13,13 @@ import { trialPlayed, trialStart } from "@/lib/trials";
  * the anonymous family id (random device-minted, never a name/email); no body
  * is stored, nothing else is read. Always answers ok — telemetry must never
  * break practice.
+ *
+ * Since 14 Nov 2026 (server.md B6): a post another site sent (its Origin or
+ * Sec-Fetch-Site says so) is dropped silently; one with neither header is
+ * kept (a phone's background beacon may carry none); so
+ * is a post past 120 a minute from one address (an IPv6 /64 as one); PostHog
+ * gets 1.5 s at most; and the phone's "free trial started" only fills in a
+ * trial row RevenueCat already started, never a new one (lib/trials.ts).
  */
 export const runtime = "nodejs";
 
@@ -86,6 +95,9 @@ const PROPS = new Set(["sound", "game", "duration_seconds", "attempts_count", "c
 
 export async function POST(req: NextRequest) {
   try {
+    if (foreignOrigin(req)) return NextResponse.json({ ok: true });
+    const limited = await rateLimit(req, { key: "track", limit: 120, windowSec: 60, v6prefix: true });
+    if (limited) return NextResponse.json({ ok: true });
     const raw = await req.text(); // sendBeacon posts text/plain
     if (!raw || raw.length > 2000) return NextResponse.json({ ok: true });
     const b = JSON.parse(raw) as { e?: string; p?: Record<string, unknown>; fid?: string };
@@ -100,16 +112,17 @@ export async function POST(req: NextRequest) {
       else if (typeof v === "string") props[k] = v.slice(0, 40);
     }
     // TRIAL1: the free-week report's own record (never waits long: the store
-    // answers or the beacon goes on without it)
+    // answers or the beacon goes on without it). Only RevenueCat starts a
+    // row; the phone fills in its length and its days of play.
     if (kvConfigured() && (event === "free trial started" || event === "played today")) {
       const now = Date.now();
       try {
-        if (event === "free trial started") await trialStart(fid, Number(props.days) || 0, now);
+        if (event === "free trial started") await trialDays(fid, Number(props.days) || 0);
         else await trialPlayed(fid, now);
       } catch { /* the report can miss a day; the beacon still goes */ }
     }
     const ctrl = new AbortController();
-    const to = setTimeout(() => ctrl.abort(), 4000);
+    const to = setTimeout(() => ctrl.abort(), 1500);
     await fetch(`${PH_HOST}/capture/`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { rateLimit } from "@/lib/rateLimit";
+// Only next/server and @/lib/rateLimit: tools/levelclips.mjs and
+// tests/ttsroutetest.mjs load this file in a sandbox that allows nothing else.
+import { rateLimit, spendBudget, clientIp, ipBucket } from "@/lib/rateLimit";
 
 /**
  * Text-to-speech for the live coach (LITE avatar path).
@@ -43,6 +45,64 @@ const OPENAI_VOICES = new Set([
 // recording everywhere (ElevenLabs calls this best-effort determinism). It is
 // part of the cache key, so changing it can never replay an older take.
 const VOICE_SEED = 20260924;
+
+// ── Who may spend Echo's voice, and how much (TTSBUDGET1, 14 Nov 2026) ──────
+// The route is the one way Sona pays ElevenLabs per character, and it needs no
+// sign-in (a family's phone has none). The audit of 13 Nov 2026 (server.md
+// B1) found anyone could loop it: 120 requests a minute of 800 characters,
+// any voice string put into the vendor's URL, and no ceiling at all.
+//  - Other websites are refused: a browser always sends a foreign Origin (and
+//    Sec-Fetch-Site "cross-site") on a cross-site POST. A request with neither
+//    header is let through, so the iPhone app (a web view on speaksona.com,
+//    every fetch relative) can never lose Echo's voice to a missing header.
+//    This stops other pages, not scripts: the budgets below guard the money.
+//  - MAX_TEXT: the longest line any page sends is the parked chapter reader's
+//    184 characters; live lines stop at about 126 (Grow a Flower's intro).
+//    tests/ttsroutetest.mjs holds every line in VOICE_SCRIPT.md under it.
+//  - Characters are charged only when a vendor is really asked (a server
+//    cache hit is free), per IP for an hour (privacy.html: an address is kept
+//    "for up to an hour") and for everyone for a UTC day. Over either, the
+//    route answers as it does when the vendor is down, and every page plays
+//    the phone's own voice instead. TTS_IP_HOURLY_CHARS and TTS_DAILY_CHARS
+//    set the caps (Travis chose 200,000 a day).
+const MAX_TEXT = 200;
+const MAX_BODY_BYTES = 4096;
+const TTS_PER_MIN = 60;
+const DEFAULT_IP_HOURLY_CHARS = 15000;
+const DEFAULT_DAILY_CHARS = 200000;
+function envCap(value: string | undefined, fallback: number): number {
+  const n = Number(value);
+  return Number.isInteger(n) && n > 0 ? n : fallback;
+}
+function foreignOrigin(req: Request): boolean {
+  let self = "";
+  try { self = new URL(req.url).origin; } catch { /* no URL: judged by the headers alone */ }
+  const origin = req.headers.get("origin");
+  const site = req.headers.get("sec-fetch-site");
+  return Boolean((origin && origin !== self) || (site && site !== "same-origin"));
+}
+let budgetWarnedOn = "";
+/** Charge `chars`; 0 when allowed, else the Retry-After seconds. */
+async function chargeChars(req: Request, chars: number): Promise<number> {
+  const ipCap = envCap(process.env.TTS_IP_HOURLY_CHARS, DEFAULT_IP_HOURLY_CHARS);
+  if (!(await spendBudget(`rl:ttschars:${ipBucket(clientIp(req))}`, chars, ipCap, 3600))) return 3600;
+  const now = new Date();
+  const day = now.toISOString().slice(0, 10);
+  const dayCap = envCap(process.env.TTS_DAILY_CHARS, DEFAULT_DAILY_CHARS);
+  if (await spendBudget(`tts:chars:${day}`, chars, dayCap, 2 * 86400)) return 0;
+  if (budgetWarnedOn !== day) {
+    budgetWarnedOn = day;
+    console.warn("tts: daily character budget reached"); // never the text
+  }
+  const midnight = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1);
+  return Math.max(1, Math.ceil((midnight - now.getTime()) / 1000));
+}
+function budgetRefusal(provider: string, retryAfter: number) {
+  return NextResponse.json(
+    { ok: false, error: "Echo's voice is resting.", budget: true },
+    { status: 503, headers: { ...voiceHeaders(provider, "none", "miss", false), "Retry-After": String(retryAfter) } },
+  );
+}
 const PCM_HEADERS = {
   "Content-Type": "audio/L16; rate=24000; channels=1",
   "Cache-Control": "no-store",
@@ -54,7 +114,7 @@ const PCM_HEADERS = {
 //     access, or v4 Turbo on a voice it cannot use), stop paying a doomed round
 //     trip before the fallback on every single call. Keyed by model AND voice:
 //     one family's voice being refused must not move every other family off v4.
-//     Capped, because the voice is whatever string a page sends.
+//     Capped anyway (the voice is now one of two allowed ids, elevenVoice).
 //  2. audioCache — the game loop repeats a small set of short prompts ("say rrrr",
 //     "your turn!", praise lines) constantly; serve identical clips instantly.
 const refused = new Set<string>();
@@ -118,6 +178,14 @@ function elevenSettings(model: string, config: ReturnType<typeof elevenConfig>):
     speed: config.speed,
     use_speaker_boost: true,
   };
+}
+function elevenVoice(requested: string | undefined, config: ReturnType<typeof elevenConfig>) {
+  // Every page sends the profile voice, which getProfile() pins to Echo's
+  // (DEFAULT_ELEVEN_VOICE). Anything else is spoken in the configured voice,
+  // never refused (an old cached page still hears Echo) and never put into the
+  // vendor's URL. A voice picker that comes back must add its ids here.
+  const allowed = new Set([DEFAULT_ELEVEN_VOICE, config.voiceId]);
+  return requested && allowed.has(requested) ? requested : config.voiceId;
 }
 function openaiVoice(requested?: string) {
   // Pages send the child's ElevenLabs profile voice. It is not an OpenAI voice.
@@ -223,8 +291,12 @@ function pcmResponse(buf: ArrayBuffer, provider: string, model: string, cache: "
 }
 
 export async function POST(req: NextRequest) {
-  const limited = await rateLimit(req, { key: "tts", limit: 120, windowSec: 60 });
+  if (foreignOrigin(req)) return NextResponse.json({ ok: false }, { status: 403 });
+  const limited = await rateLimit(req, { key: "tts", limit: TTS_PER_MIN, windowSec: 60, v6prefix: true });
   if (limited) return limited;
+  if (Number(req.headers.get("content-length") || 0) > MAX_BODY_BYTES) {
+    return NextResponse.json({ ok: false, error: "request is too large" }, { status: 413 });
+  }
   const elevenKey = process.env.ELEVENLABS_API_KEY;
   const openaiKey = process.env.OPENAI_API_KEY;
   if (!elevenKey && !openaiKey) {
@@ -238,7 +310,7 @@ export async function POST(req: NextRequest) {
   let voiceOverride: string | undefined;
   try {
     const b = await req.json();
-    text = typeof b?.text === "string" ? b.text.slice(0, 800) : "";
+    text = typeof b?.text === "string" ? b.text : "";
     if (typeof b?.voice === "string" && b.voice) voiceOverride = b.voice;
     // `stable` remains accepted for old clients; it no longer changes delivery.
   } catch {
@@ -246,6 +318,11 @@ export async function POST(req: NextRequest) {
   }
   if (!text.trim()) {
     return NextResponse.json({ ok: false, error: "text is required" }, { status: 400 });
+  }
+  // Refused whole, never cut: a cut line would be spoken wrong. Every page
+  // plays the phone's own voice on any non-200.
+  if (text.length > MAX_TEXT) {
+    return NextResponse.json({ ok: false, error: "text is too long" }, { status: 413 });
   }
 
   const provider = elevenKey ? "elevenlabs" : "openai";
@@ -257,7 +334,10 @@ export async function POST(req: NextRequest) {
   try {
     if (elevenKey) {
       const config = elevenConfig();
-      const voiceId = voiceOverride || config.voiceId;
+      const voiceId = elevenVoice(voiceOverride, config);
+      // Charged once a request, on the first attempt that misses the server
+      // cache: a fallback model inside the same request is not charged again.
+      let charged = false;
       // v4 Turbo for every line; v2 only if it refuses or fails, so the child
       // still hears Echo. v3 is still an explicit environment opt-in. The
       // fallback is never skipped: it is the last voice before the robot one.
@@ -309,11 +389,16 @@ export async function POST(req: NextRequest) {
         // behind it moves on to that one while the deadline allows: the child
         // should hear Echo in the older voice rather than the robot voice.
         // The last model, or a spent deadline, still ends the request.
+        if (!charged) {
+          charged = true;
+          const wait = await chargeChars(req, sendText.length);
+          if (wait) return budgetRefusal(provider, wait);
+        }
         let r: Response;
         let buf: ArrayBuffer | null = null;
         try {
           r = await fetch(
-            `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=pcm_24000`,
+            `https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(voiceId)}?output_format=pcm_24000`,
             {
               method: "POST",
               headers: { "xi-api-key": elevenKey, "Content-Type": "application/json" },
@@ -359,6 +444,8 @@ export async function POST(req: NextRequest) {
     // Fallback when only OpenAI is configured (pcm = 24kHz/16-bit/mono).
     const voice = openaiVoice(voiceOverride);
     model = process.env.OPENAI_TTS_MODEL || "gpt-4o-mini-tts";
+    const wait = await chargeChars(req, text.length);
+    if (wait) return budgetRefusal(provider, wait);
     const r = await fetch("https://api.openai.com/v1/audio/speech", {
       method: "POST",
       headers: { Authorization: `Bearer ${openaiKey}`, "Content-Type": "application/json" },

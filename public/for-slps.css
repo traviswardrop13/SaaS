@@ -104,7 +104,6 @@ header {
   gap: 10px;
   width: min(100%, 520px);
 }
-.form-fields { display: flex; gap: 10px; }
 .form-field { display: flex; flex: 1 1 0; min-width: 0; flex-direction: column; gap: 4px; }
 .form-field label { font-size: 13px; font-weight: 900; line-height: 1.25; }
 .signup input, .signup select {
@@ -244,7 +243,6 @@ footer .links { display: flex; flex-wrap: wrap; gap: 13px; }
   .mascot { width: 54%; left: 8%; }
   .spark-top { left: 28%; }
   .spark-low { right: 10%; }
-  .form-fields { flex-direction: row; }
   .workflow, .notes { grid-template-columns: minmax(0, 1fr); }
   .workflow-step { padding: 18px 20px; }
 

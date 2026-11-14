@@ -1,9 +1,9 @@
 // Re-voice Rachel's July recordings into Echo's voice through the app's own
 // speech-to-speech route (app/api/voice-change: ElevenLabs Voice Changer).
 // Her pacing, warmth and — the point — the performed sound survive; only the
-// timbre becomes Echo's. Run against a PREVIEW deployment, where the route is
-// open (unguessable URL + rate limit); on production it needs FOUNDER_KEY.
-//   node tools/revoice.mjs            # public/coach/say/*.mp3 → public/coach/say-echo/
+// timbre becomes Echo's. The route needs the founder key on every deployment,
+// previews included (14 Nov 2026), so FOUNDER_KEY is required.
+//   FOUNDER_KEY=… node tools/revoice.mjs            # public/coach/say/*.mp3 → public/coach/say-echo/
 //   REVOICE_BASE=https://…vercel.app FOUNDER_KEY=… node tools/revoice.mjs
 // Bare sounds (-demo) get gentler settings than sentences: a high
 // similarity_boost re-synthesizes through the target voice's vocal-tract
@@ -15,7 +15,8 @@
 // gives its lines. That step needs `npm i --no-save lamejs`.
 import { readdirSync, readFileSync, writeFileSync, mkdirSync, existsSync, statSync } from "node:fs";
 import { execFileSync } from "node:child_process";
-const BASE = process.env.REVOICE_BASE || "https://sona-git-claude-dreamy-gauss-ywph11-traviswardrop13s-projects.vercel.app";
+const BASE = process.env.REVOICE_BASE || "https://www.speaksona.com";
+if (!process.env.FOUNDER_KEY) { console.error("Set FOUNDER_KEY: /api/voice-change answers only to the founder key."); process.exit(1); }
 const SRC = new URL("../public/coach/say/", import.meta.url).pathname;
 const OUT = new URL("../public/coach/say-echo/", import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
@@ -34,7 +35,7 @@ for (const f of files) {
     const form = new FormData();
     form.append("audio", new Blob([readFileSync(SRC + f)], { type: "audio/mpeg" }), f);
     for (const [k, v] of Object.entries(settings)) form.append(k, v);
-    const headers = process.env.FOUNDER_KEY ? { "x-founder-key": process.env.FOUNDER_KEY } : {};
+    const headers = { "x-founder-key": process.env.FOUNDER_KEY };
     const t0 = Date.now();
     try {
       const r = await fetch(BASE + "/api/voice-change", { method: "POST", body: form, headers });
