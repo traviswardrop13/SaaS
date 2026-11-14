@@ -255,13 +255,15 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
   const slpLede = (slps.match(/<p class="lede">([\s\S]*?)<\/p>/) || ["", ""])[1];
   // Travis, 14 Nov 2026: a benefit "that is not like the community"; the
   // session-planning line waits until the planner is built.
-  ok("the clinician lede presents AI homework, family links and seeing who practiced",
-    /draft homework with AI/i.test(slpLede) && /share the app with clients/i.test(slpLede) && /see who practiced at home/i.test(slpLede) &&
+  // Travis, 14 Nov 2026: "auto plan lessons", not "draft homework with AI".
+  ok("the clinician lede presents auto-planned practice, family links and seeing who practiced",
+    /auto-plan home practice/i.test(slpLede) && !/with AI/i.test(slpLede) && /share the app with clients/i.test(slpLede) && /see who practiced at home/i.test(slpLede) &&
     !/community/i.test(slpLede));
   const header = (slps.match(/<header>[\s\S]*?<\/header>/) || [""])[0].replace(/<!--[\s\S]*?-->/g, "");
-  ok("the clinician header has the logo, How it works and Sign in",
-    (header.match(/<a\b/g) || []).length === 3 && /<a class="signin" href="\/slp-login\.html">Sign in<\/a>/.test(header) &&
-    /<a\b[^>]*href="#how">How it works<\/a>/.test(header));
+  // Travis, 14 Nov 2026: "top right, get rid of how it works".
+  ok("the clinician header has the logo and Sign in, no How it works",
+    (header.match(/<a\b/g) || []).length === 2 && /<a class="signin" href="\/slp-login\.html">Sign in<\/a>/.test(header) &&
+    !/How it works/.test(header));
   ok("a parent who lands here is pointed to /for-parents",
     (slps.match(/<a\b[^>]*href="\/for-parents"/g) || []).length === 1);
   ok("clinician signup asks the auth endpoint to send the free dashboard link",
