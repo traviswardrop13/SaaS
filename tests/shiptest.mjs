@@ -253,10 +253,11 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
     /og:title" content="Send home practice they’ll play\."/.test(slps) &&
     /twitter:title" content="Send home practice they’ll play\."/.test(slps));
   const slpLede = (slps.match(/<p class="lede">([\s\S]*?)<\/p>/) || ["", ""])[1];
-  // Travis, 14 Nov 2026: a benefit "that is not like the community"; the
-  // session-planning line waits until the planner is built.
-  ok("the clinician lede presents AI homework, family links and seeing who practiced",
-    /draft homework with AI/i.test(slpLede) && /share the app with clients/i.test(slpLede) && /see who practiced at home/i.test(slpLede) &&
+  // Travis, 14 Nov 2026: a benefit "that is not like the community", and
+  // the line leads with planning tomorrow's sessions once the planner exists
+  // (PLANDAY1, the dashboard's Plan sessions page).
+  ok("the clinician lede presents session planning, family links and seeing who practiced",
+    /plan tomorrow’s sessions with AI/i.test(slpLede) && /share the app with clients/i.test(slpLede) && /see who practiced at home/i.test(slpLede) &&
     !/community/i.test(slpLede));
   const header = (slps.match(/<header>[\s\S]*?<\/header>/) || [""])[0].replace(/<!--[\s\S]*?-->/g, "");
   ok("the clinician header has the logo, How it works and Sign in",
@@ -372,8 +373,8 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
   const flat = shown.replace(/<[^>]+>/g, " ").replace(/&rsquo;/g, "'").replace(/\s+/g, " ");
   ok("the clinician landing page and its metadata advertise free access with no prices or trial pitch",
     /free dashboard/i.test(shown) && !/\$\s*\d|\bfree trial\b|\b\d+ days free\b|id="pricing"|href="#pricing"/i.test(shown));
-  ok("the clinician offer includes homework, a client link and a community",
-    ["Create AI homework", "Share the app with clients", "Join the community"].every(label => flat.includes(label)));
+  ok("the clinician offer includes session planning, homework, a client link and a community",
+    ["Plan tomorrow’s sessions", "Create AI homework", "Share the app with clients", "Join the community"].every(label => flat.includes(label)));
   ok("the page preserves the family's free practice without promising universal game access",
     /daily practice and free games/i.test(flat) && !/unlimited families|free forever|gets every game/i.test(flat));
   ok("the storage answer explains how a parent's email is handed to Resend and not kept by Sona",
