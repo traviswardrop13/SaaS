@@ -4,6 +4,7 @@ import { runReports } from "@/lib/report";
 import { runWeekly } from "@/lib/weekly";
 import { backfill, syncUnsubscribes } from "@/lib/contacts";
 import { runRc } from "@/lib/revenuecat";
+import { founderKey, sameSecret } from "@/lib/founder";
 
 /**
  * Daily: sends the notes RevenueCat's news has queued ("Your free days end
@@ -11,9 +12,10 @@ import { runRc } from "@/lib/revenuecat";
  * day-after email to everyone it is due for (lib/nurture.ts), and on Monday
  * (Tuesday and Wednesday catch up) last week's progress report to every
  * household that asked for it (lib/report.ts), then the Monday email to every
- * other parent on the list, an example of that report (lib/weekly.ts). Same
- * auth as /api/cron/weekly — the Vercel cron bearer, or FOUNDER_KEY for a
- * manual run. A manual run with ?report=1 sends the report on any day, and
+ * other parent on the list, an example of that report (lib/weekly.ts). The
+ * Vercel cron bearer, or FOUNDER_KEY in the x-founder-key header for a manual
+ * run (never ?key=, which lands in logs and history; both compared in
+ * constant time). A manual run with ?report=1 sends the report on any day, and
  * ?weekly=1 the Monday email (each still once an address a week).
  *
  * The email list (lib/contacts.ts, 16 Oct 2026) has two parts. First (45
@@ -30,11 +32,9 @@ export const maxDuration = 300;
 export async function GET(req: NextRequest) {
   const started = Date.now();
   const auth = req.headers.get("authorization") || "";
-  const keyIn = req.headers.get("x-founder-key") || req.nextUrl.searchParams.get("key") || "";
   const cronSecret = process.env.CRON_SECRET || "";
-  const founderKey = process.env.FOUNDER_KEY || "";
-  const okCron = Boolean(cronSecret) && auth === `Bearer ${cronSecret}`;
-  const okManual = Boolean(founderKey) && keyIn === founderKey;
+  const okCron = Boolean(cronSecret) && sameSecret(auth, `Bearer ${cronSecret}`);
+  const okManual = founderKey(req) === null;
   if (!okCron && !okManual) return NextResponse.json({ ok: false }, { status: 401 });
   if (!configured()) {
     // names only, never values: this is how a founder finds out why no

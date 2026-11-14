@@ -7,8 +7,10 @@
 //     a cancellation stays a cancellation, a cancellation undone clears it, a
 //     message older than the last one changes nothing, a purchase charged
 //     today is no trial), and the report built from them;
-//   - /api/track keeps "free trial started" ({ days }) and "played today"
-//     (nothing else) and still relays them, with no other property;
+//   - /api/track keeps "played today" and a trial's length ({ days }) only on a
+//     row RevenueCat started (never a new row: 14 Nov 2026, server.md B6),
+//     only from this site (a foreign or missing Origin is dropped), 120 a
+//     minute an address, and waits on PostHog 1.5 s at most;
 //   - /api/revenuecat hears how a trial went by the anonymous id the phone
 //     handed RevenueCat (`sona_fid`), with or without an email;
 //   - /api/founders/trials answers only the founder key, and returns no id;
@@ -66,14 +68,21 @@ function kvExec([op, ...a]) {
     case "EXISTS": return KV.K.has(a[0]) || KV.H.has(a[0]) ? 1 : 0;
     case "SET": KV.K.set(a[0], String(a[1])); return "OK";
     case "GET": return KV.K.has(a[0]) ? KV.K.get(a[0]) : null;
+    // lib/rateLimit's one script: INCR the bucket (its window is not played)
+    case "EVAL": { const k = String(a[2]); const n = Number(KV.K.get(k) || 0) + 1; KV.K.set(k, String(n)); return n; }
     default: throw new Error("fake kv does not speak " + op);
   }
 }
 const CAPTURED = [];
+let PH_HANGS = false;   // PostHog that never answers (only the route's own abort ends the wait)
 globalThis.fetch = async (url, init = {}) => {
   const u = String(url);
   if (u === KV_URL) { const cmd = JSON.parse(init.body); KV.log.push(cmd); return Response.json({ result: kvExec(cmd) }); }
-  if (u === "https://us.i.posthog.com/capture/") { CAPTURED.push(JSON.parse(init.body)); return Response.json({ status: 1 }); }
+  if (u === "https://us.i.posthog.com/capture/") {
+    CAPTURED.push(JSON.parse(init.body));
+    if (PH_HANGS) return new Promise((_, no) => init.signal && init.signal.addEventListener("abort", () => no(new Error("aborted"))));
+    return Response.json({ status: 1 });
+  }
   if (u === "https://api.resend.com/emails") return Response.json({ id: "re_1" });
   throw new Error("unexpected outbound call " + u);
 };
@@ -118,6 +127,15 @@ await scenario("the store", async () => {
   ok("a purchase charged today (no trial kept for it) is no trial", !KV.H.has("trial:" + FID3));
   await T.trialOutcome(FID3, "trial", t0, 3);
   ok("RevenueCat's own word that a trial started starts one, with its length", trial(FID3).s === String(t0) && trial(FID3).n === "3", trial(FID3));
+  // The phone's "free trial started" (trialDays) only fills in a row
+  // RevenueCat started: never a new row, never the index (server.md B6).
+  const FID4 = "fid_dddddd444444";
+  await T.trialDays(FID4, 7);
+  ok("the phone's word alone starts no trial: no row, nothing in the index", !KV.H.has("trial:" + FID4) && !(KV.Z.get("trials:idx") || new Map()).has(FID4));
+  await T.trialStart(FID4, 0, t0);                    // RevenueCat's row, its length not known
+  await T.trialDays(FID4, 7);
+  await T.trialDays(FID4, 3);
+  ok("…it fills in the length of a row RevenueCat started, once", trial(FID4).n === "7" && trial(FID4).s === String(t0), trial(FID4));
 });
 
 // ── 2. the report ──
@@ -152,19 +170,54 @@ await scenario("the report", async () => {
 await scenario("the routes", async () => {
   reset();
   const track = loadTs(path.join(REPO, "app/api/track/route.ts"));
-  const post = (body) => track.POST(new NextRequest("https://www.speaksona.com/api/track", { method: "POST", body: JSON.stringify(body) }));
-  await post({ e: "free trial started", p: { days: 7, name: "Mia", plan: "monthly" }, fid: FID });
-  await post({ e: "played today", p: { sound: "R" }, fid: FID });
-  ok("/api/track keeps a trial's start and today's play under the anonymous id", trial(FID).s && trial(FID).n === "7" && trial(FID).p0 === "1", trial(FID));
-  const cap = CAPTURED.map((c) => ({ e: c.event, p: Object.keys(c.properties).sort().join() }));
-  ok("…and relays both, with only what the allow-list lets through (never a name)",
-    cap.length === 2 && cap[0].e === "free trial started" && !/name/.test(cap[0].p) && /days/.test(cap[0].p) && cap[1].e === "played today", cap);
-
+  const SITE = "https://www.speaksona.com";
+  let ip = 1;
+  const send = (body, headers) => track.POST(new NextRequest(SITE + "/api/track", { method: "POST", headers, body: JSON.stringify(body) }));
+  // the phone's own beacon: this site's Origin, one address
+  const post = (body) => send(body, { origin: SITE, "x-real-ip": "198.51.100.1" });
   const rc = loadTs(path.join(REPO, "app/api/revenuecat/route.ts"));
   process.env.REVENUECAT_WEBHOOK_AUTH = "rc-trials-secret-0123456789";
   const hook = (event) => rc.POST(new NextRequest("https://www.speaksona.com/api/revenuecat", {
     method: "POST", headers: { authorization: "rc-trials-secret-0123456789" }, body: JSON.stringify({ event }) }));
   const t0 = Date.now() - HOUR;
+
+  // A forged beacon: another site, or no Origin at all (a script)
+  for (const h of [{}, { origin: "https://evil.example" }]) {
+    const r = await send({ e: "free trial started", p: { days: 7 }, fid: FID }, { ...h, "x-real-ip": "203.0.113." + ip++ });
+    ok("/api/track drops a post " + (h.origin ? "from another site" : "with no Origin") + " silently (still ok), keeping and relaying nothing",
+      r.status === 200 && (await r.json()).ok === true && !KV.H.has("trial:" + FID) && CAPTURED.length === 0);
+  }
+  await post({ e: "free trial started", p: { days: 7, name: "Mia", plan: "monthly" }, fid: FID });
+  await post({ e: "played today", p: { sound: "R" }, fid: FID });
+  ok("the phone's \"free trial started\" alone starts no row in the Free trials report (only RevenueCat can)",
+    !KV.H.has("trial:" + FID) && !(KV.Z.get("trials:idx") || new Map()).has(FID), trial(FID));
+  // RevenueCat starts the row (its length unknown here), then the phone fills it in
+  await hook({ app_user_id: "$RCAnonymousID:f1", environment: "PRODUCTION", subscriber_attributes: { sona_fid: { value: FID, updated_at_ms: t0 } },
+    id: "evt-0", type: "INITIAL_PURCHASE", period_type: "TRIAL", purchased_at_ms: t0, event_timestamp_ms: t0 });
+  await post({ e: "free trial started", p: { days: 7 }, fid: FID });
+  await post({ e: "played today", p: { sound: "R" }, fid: FID });
+  ok("…on a row RevenueCat started, /api/track keeps the length and today's play under the anonymous id", trial(FID).s === String(t0) && trial(FID).n === "7" && trial(FID).p0 === "1", trial(FID));
+  const cap = CAPTURED.map((c) => ({ e: c.event, p: Object.keys(c.properties).sort().join() }));
+  ok("…and relays what this site sent, with only what the allow-list lets through (never a name)",
+    cap.length === 4 && cap[0].e === "free trial started" && !/name/.test(cap[0].p) && /days/.test(cap[0].p) && cap[1].e === "played today", cap);
+
+  // 120 a minute from one address; the rest dropped silently
+  CAPTURED.length = 0;
+  const flood = { origin: SITE, "x-real-ip": "192.0.2.77" };
+  let allOk = true;
+  for (let i = 0; i < 125; i++) { const r = await send({ e: "game opened", p: { game: "slice" }, fid: FID3 }, flood); if (r.status !== 200) allOk = false; }
+  ok("…120 a minute from one address are relayed, the rest dropped (still answered ok)", allOk && CAPTURED.length === 120, CAPTURED.length);
+
+  // PostHog that never answers: the beacon is answered within the 1.5 s wait
+  PH_HANGS = true;
+  const t = Date.now();
+  const slow = await send({ e: "game opened", p: { game: "tiles" }, fid: FID3 }, { origin: SITE, "x-real-ip": "192.0.2.78" });
+  const took = Date.now() - t;
+  PH_HANGS = false;
+  ok("…and waits on PostHog 1.5 s at most", slow.status === 200 && took >= 1400 && took < 2500, took);
+  ok("/api/track's source: the Origin check, the rate limit and the shorter wait come before anything is kept",
+    /req\.headers\.get\("origin"\) !== new URL\(req\.url\)\.origin/.test(read("app/api/track/route.ts")) && /key: "track", limit: 120, windowSec: 60/.test(read("app/api/track/route.ts")) && /ctrl\.abort\(\), 1500\)/.test(read("app/api/track/route.ts")) && !/trialStart/.test(read("app/api/track/route.ts")));
+
   const base = { app_user_id: "$RCAnonymousID:abc", environment: "PRODUCTION", subscriber_attributes: { sona_fid: { value: FID2, updated_at_ms: t0 } } };
   let res = await (await hook({ ...base, id: "evt-1", type: "INITIAL_PURCHASE", period_type: "TRIAL", purchased_at_ms: t0, expiration_at_ms: t0 + 7 * DAY, event_timestamp_ms: t0 })).json();
   ok("/api/revenuecat: a free trial starting, from a family who gave no email, still starts its row (and is otherwise ignored, as before)",

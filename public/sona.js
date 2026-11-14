@@ -2901,18 +2901,18 @@
   function isSubscribed() { return !!getSub().active; }
 
   // --- free trial (no card): email-gated 7-day window, then the paywall ---
-  // Maximizes signups while the product is being validated. Stored locally and
-  // mirrored to KV (/api/trial) so it survives a device switch and the day-6
-  // nudge job can find expiring trials. Stripe charges only on conversion.
+  // Stored on this phone only. Nothing starts one any more (no page calls
+  // startTrial or ensureTrial since 19 Sep 2026); a family's old local trial
+  // is still honoured. It used to be mirrored to /api/trial for the old
+  // Friday email, which was turned off on 14 Nov 2026: nothing leaves.
   const TRIALKEY = "sona.trial.v1", TRIAL_DAYS = 3;
   function getTrial() { return load(TRIALKEY, null); }
   function trialMs(t) { return (((t && t.days) || TRIAL_DAYS)) * 86400000; }
-  function mirrorTrial(t) { try { fetch("/api/trial", { method: "POST", headers: { "Content-Type": "application/json" }, keepalive: true, body: JSON.stringify({ email: t.email || "", start: t.start, days: t.days || TRIAL_DAYS }) }).catch(function () {}); } catch (e) {} }
   function startTrial(email) {
     let t = getTrial();
     if (!t || !t.start) {
       t = { start: Date.now(), email: (email || "").trim(), days: TRIAL_DAYS };
-      save(TRIALKEY, t); mirrorTrial(t);
+      save(TRIALKEY, t);
       // Fired HERE, where the clock actually starts, not at the call site.
       // onboarding.html used to be the only thing reporting a trial, through
       // sonaTrack — which is a deliberate no-op in the iOS shell, so every
@@ -2922,7 +2922,7 @@
       // trial when there isn't one.
       try { track("trial started", { plan: "annual" }); } catch (e) {}
     }
-    else if (email && !t.email) { t.email = String(email).trim(); save(TRIALKEY, t); mirrorTrial(t); }
+    else if (email && !t.email) { t.email = String(email).trim(); save(TRIALKEY, t); }
     return t;
   }
   // start the clock lazily so nobody is gated before they've had their days

@@ -1,27 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
 import { rateLimit } from "@/lib/rateLimit";
+import { founderKey } from "@/lib/founder";
 
 /**
  * Speech-to-speech — re-voices a recording into the app's coach voice via
  * ElevenLabs Voice Changer. Rachel's SLP delivery (pacing, warmth, the way
  * she models each sound) is preserved; only the timbre becomes Sarah's.
  *
- * Guarded like /api/isolate: founder key on production, open on preview
- * deployments (unguessable URL + rate limit) for batch processing.
+ * Guarded like /api/isolate: the founder key (x-founder-key header) on every
+ * deployment, previews included. Its one caller is tools/revoice.mjs.
  */
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
+  // The founder key on every deployment, previews included (14 Nov 2026:
+  // a preview used to be open, spending the ElevenLabs key for anyone with
+  // its address). Header only, constant time (lib/founder founderKey).
+  const denied = founderKey(req);
+  if (denied) return denied;
   const rl = await rateLimit(req, { key: "voice-change", limit: 60, windowSec: 3600 });
   if (rl) return rl;
-
-  const isPreview = process.env.VERCEL_ENV === "preview";
-  const want = process.env.FOUNDER_KEY || "";
-  const got = req.headers.get("x-founder-key") || "";
-  if (!isPreview && (!want || got !== want)) {
-    return NextResponse.json({ ok: false, error: "locked" }, { status: 401 });
-  }
 
   const key = process.env.ELEVENLABS_API_KEY;
   if (!key) return NextResponse.json({ ok: false, error: "no ELEVENLABS_API_KEY" }, { status: 500 });
@@ -35,7 +34,12 @@ export async function POST(req: NextRequest) {
   const audio = form.get("audio");
   if (!(audio instanceof File)) return NextResponse.json({ ok: false, error: "audio file required" }, { status: 400 });
   if (audio.size > 4 * 1024 * 1024) return NextResponse.json({ ok: false, error: "audio too large" }, { status: 413 });
-  const voiceId = String(form.get("voice") || process.env.ELEVENLABS_VOICE_ID || "qBDvhofpxp92JgXJxDjB").slice(0, 40);
+  // An ElevenLabs voice id is letters and digits; anything else (a slash, a
+  // dot, a query) would reach into the vendor's path, so it is refused.
+  const voiceId = String(form.get("voice") || process.env.ELEVENLABS_VOICE_ID || "qBDvhofpxp92JgXJxDjB");
+  if (!/^[A-Za-z0-9]{10,40}$/.test(voiceId)) {
+    return NextResponse.json({ ok: false, error: "bad voice id" }, { status: 400 });
+  }
 
   // Per-request conversion strength. Defaults keep her expressiveness and stay
   // close to the target timbre — right for SENTENCES. Bare sustained phonemes

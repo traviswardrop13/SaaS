@@ -1395,8 +1395,8 @@ try {
       const tags = readFileSync(ROOT + "/" + f, "utf8").match(/<script\b[^>]*\bsrc="\/pixel\.js"[^>]*>/g) || [];
       return tags.some((t) => /data-autoconfig="off"/.test(t));
     });
-    ok("no page other than setup carries the switch (the landing pages and the plan screen keep Meta's automatic events)", tagged.filter((f) => f !== "onboarding.html").length === 0, tagged);
-    ok("setup's page carries it: onboarding.html is the one page whose pixel tag has data-autoconfig=\"off\"", same(tagged, ["onboarding.html"]), tagged);
+    ok("only the pages that ask about a child or a clinician carry the switch (the parent landing page and the plan screen keep Meta's automatic events)", tagged.filter((f) => !["check.html", "for-slps.html", "onboarding.html"].includes(f)).length === 0, tagged);
+    ok("setup, the Speech Check (it has a child's-name box) and the clinician page carry it, exactly those", same(tagged, ["check.html", "for-slps.html", "onboarding.html"]), tagged);
   });
 
   ok("no page error in the whole run", errors.length === 0, errors.slice(0, 5));

@@ -453,6 +453,35 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
   ok("CLAUDE.md: free regardless of the switch means FOUNDING pilots (ff- codes), never pilots in general",
     /founding pilots \(`ff-` codes\) and founders/.test(md) && !/; pilots and founders;/.test(md));
   ok("…and premium() agrees: founding pilots, never isPilot()", /foundingPilot\(\)/.test(prem) && !/isPilot\(\)/.test(prem), prem);
+  // Founding Families places are CLOSED (Travis, 14 Nov 2026; server.md B4).
+  // POST /api/founding answers 410 and reads, stores and forwards nothing (it
+  // took a child's name and a parent's cell, kept them for good and sent them
+  // to a CRM webhook). GET stays, so a code minted before closing still
+  // verifies and every founding family keeps Premium (sona.js is untouched).
+  const ffRoute = readFileSync(APP + "/app/api/founding/route.ts", "utf8").replace(/\/\*[\s\S]*?\*\/|\/\/[^\n]*/g, "");
+  const ffPost = (ffRoute.match(/export async function POST\([^)]*\) \{[\s\S]*?\n\}/) || [""])[0];
+  ok("Founding Families: POST /api/founding answers 410 and reads, stores and forwards nothing",
+    /status: 410/.test(ffPost) && !/req\.json|req\.text|kvCmd|SET|LPUSH|fetch\(|LEAD_WEBHOOK_URL|child|cell/.test(ffPost) && !/LEAD_WEBHOOK_URL|ff:apps|"SET"/.test(ffRoute), ffPost);
+  ok("…and GET still answers whether an earlier code exists (founding families keep their links)",
+    /export async function GET\(/.test(ffRoute) && /\["GET", "ff:app:" \+ id\]/.test(ffRoute));
+  const ffPage = readFileSync(APP + "/public/founding.html", "utf8");
+  ok("…and founding.html is a short closed note: no box, no form, nothing posted, a way to /for-parents",
+    /Founding Families places are closed\./.test(ffPage) && !/<input|<select|<textarea|<form|fetch\(|<script/i.test(ffPage) && /href="\/for-parents"/.test(ffPage));
+  // Old open routes nothing called (server.md B5, B7; 14 Nov 2026): a free
+  // AI or avatar proxy, a family's whole backup kept 48 hours, the old Friday
+  // email's list, and the parked story page's AI writer, which was sent the
+  // child's name. None may come back, and no page may call one.
+  const GONE = ["chat", "coach", "heygen", "pair", "story", "trial", "cron/weekly"];
+  ok("the deleted routes stay deleted: " + GONE.join(", "), GONE.every((r) => !existsSync(APP + "/app/api/" + r)), GONE.filter((r) => existsSync(APP + "/app/api/" + r)).join(", "));
+  const callers = readdirSync(APP + "/public").filter((f) => /\.(html|js)$/.test(f))
+    .filter((f) => /["'`]\/api\/(chat|coach|heygen|pair|story|trial|cron\/weekly)\b/.test(readFileSync(APP + "/public/" + f, "utf8")));
+  ok("…and no page or script calls one", callers.length === 0, callers.join(", "));
+  const crons = (JSON.parse(readFileSync(APP + "/vercel.json", "utf8")).crons || []).map((c) => c.path);
+  ok("…and the only daily job is /api/cron/nurture (the Friday email is off)", JSON.stringify(crons) === JSON.stringify(["/api/cron/nurture"]), crons.join(", "));
+  ok("…and story.html asks no server for a story (it was sent the child's name)", !/fetch\(\s*["']\/api\/story/.test(readFileSync(APP + "/public/story.html", "utf8")));
+  ok("…and sona.js mirrors no trial to a server", !/mirrorTrial|fetch\("\/api\/trial"/.test(sona));
+  ok("…and sona.js still honours a founding family: foundingPilot(), the verified ?ff= check, and NO_IMPORT",
+    /function foundingPilot\(\)/.test(sona) && /fetch\("\/api\/founding\?id="/.test(sona) && /const NO_IMPORT = \[[^\]]*"sona\.founding\.v1"/.test(sona));
   const setup = readFileSync(APP + "/STRIPE_SETUP.md", "utf8");
   const cl = readFileSync(APP + "/lib/caseload.ts", "utf8");
   ok("STRIPE_SETUP.md names the caseload portal env var lib/caseload.ts reads, and says the configuration cancels at period end",

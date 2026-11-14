@@ -968,7 +968,7 @@ const CC_SUBS = [
   [/\(\(HIST\.lastSound&&S\.soundLabel\)\?S\.soundLabel\(HIST\.lastSound\):LETTER\)/g, "{letter}"],
   [/\(W1\.display\|\|W1\.t\)/g, "{word1}"], [/\(W2\.display\|\|W2\.t\)/g, "{word2}"],
   [/\(CUESHORT\|\|"[^"]*"\)/g, "{cue}"],
-  [/\bBUDDYNAME\b/g, "{buddy}"], [/\bNAME\b/g, "{name}"], [/\bLETTER\b/g, "{letter}"],
+  [/\bBUDDYNAME\b/g, "{buddy}"], [/\bNAME\b/g, "friend"], [/\bLETTER\b/g, "{letter}"],
 ];
 function renderConcat(expr, extra) {
   let e = expr;
@@ -1613,7 +1613,7 @@ S.EPISODES.forEach((ep, ei) => {
 P();
 P("### E2 — Your Adventure (`story.html`, parked)");
 P();
-P(`No page opens it: the Books page keeps its tile hidden (${advTile.cite}), and it is gated behind \`Sona.gated('story')\`. Each page is read aloud when it opens (${storyPage.cite}) and on "Hear it" (${storyHear.cite}); then "${storyNowYou.m[1]}{word}${storyNowYou.m[2]}" (${storyNowYou.cite}); a heard try gets one of the five praise lines (${storyPraise.cite}); a missed one gets the bare word again (${storyRetry.cite}). The pages are normally an AI-written story from \`/api/story\` — unbounded text that cannot be pre-recorded. The fallback pages are ${STORY_FRAMES.length} frames with a bank word (${storyFrames.cite}): ${STORY_FRAMES.map((f) => `"${f}"`).join(", ")}.`);
+P(`No page opens it: the Books page keeps its tile hidden (${advTile.cite}), and it is gated behind \`Sona.gated('story')\`. Each page is read aloud when it opens (${storyPage.cite}) and on "Hear it" (${storyHear.cite}); then "${storyNowYou.m[1]}{word}${storyNowYou.m[2]}" (${storyNowYou.cite}); a heard try gets one of the five praise lines (${storyPraise.cite}); a missed one gets the bare word again (${storyRetry.cite}). The pages are its built-in ones (the AI-written story route was deleted on 14 Nov 2026, as it sent the child's name): ${STORY_FRAMES.length} frames with a bank word (${storyFrames.cite}): ${STORY_FRAMES.map((f) => `"${f}"`).join(", ")}.`);
 totals.parked += 1 + STORY_FRAMES.length;
 
 // E3 — the books moved out
@@ -1647,8 +1647,9 @@ P("No page links to it and without `?dev=1` it shows \"Coming soon\". Its lines 
 P("the old register — \"Go!\", CAPITALS, and [excited] / [whispers] / [happy] tags that are");
 P("sent to the voice as text — and three asks read \"your very best your R sound\"");
 P("because the sound phrase already starts with \"your\". Listed for completeness; skip");
-P("unless the feature is revived, and then rewrite first. Blanks: {name} the child's");
-P("name (default \"friend\"), {buddy} the buddy character (default \"Pip\"), {letter} the");
+P("unless the feature is revived, and then rewrite first. It calls every child");
+P("\"friend\" and never reads their name (14 Nov 2026). Blanks: {buddy} the buddy");
+P("character (default \"Pip\"), {letter} the");
 P("sound's label, {cue} the C1 cue, {word1}/{word2} the first two ladder words, {praise}");
 P("one of the five praise lines.");
 P();
