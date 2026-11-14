@@ -195,8 +195,9 @@ try {
     await pg.waitForTimeout(150);
     ok("Sona Pro is available without preview injection",await visible(pg,"#page-premium")&&await visible(pg,'[data-page="premium"]'));
     const nav=await pg.locator(".sidebar nav").evaluate(n=>[...n.children].map(c=>c.dataset.page||c.textContent.trim()));
-    // The AI homework draft joined Workspace between them (#289, 13 Nov 2026).
-    ok("…and sits in Workspace, after Caseload and the homework draft",JSON.stringify(nav.slice(0,5))===JSON.stringify(["Workspace","today","caseload","homework-draft","premium"]),nav.join(","));
+    // The AI homework draft joined Workspace between them (#289, 13 Nov 2026),
+    // and Plan sessions before it (PLANDAY1, 14 Nov 2026).
+    ok("…and sits in Workspace, after Caseload, Plan sessions and the homework draft",JSON.stringify(nav.slice(0,6))===JSON.stringify(["Workspace","today","caseload","plan-day","homework-draft","premium"]),nav.join(","));
     ok("…with its own crumb, named for the plan",(await pg.locator("#pageCrumb").textContent())==="Sona Pro"&&(await pg.locator('[data-page="premium"]').innerText()).trim()==="Sona Pro");
     const page=await pg.locator("#page-premium").innerText();
     ok("the offer names the plan and prints the server's price and free days",/Sona Pro/.test(page)&&/\$19\.99 a month · 14 days free/.test(page),page);

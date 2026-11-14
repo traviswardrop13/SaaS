@@ -2039,11 +2039,12 @@ Clinic or School). The box is labelled "Your work email" with the example
 "you@yourclinic.org" (he asked for an example that "motivates them to put
 in their work email"; it was "you@example.com"). The server still accepts
 a role or setting another caller sends, and still refuses a wrong one; an
-account made from the page holds neither. The subtitle is "Draft homework
-with AI, share the app with clients, and see who practiced at home." (Travis,
-14 Nov 2026: a third benefit "that is not like the community"; he wants it to
-lead with planning tomorrow's sessions and activities, and chose to build
-that planner first and change the line once it works). A single-use email link opens the dashboard. The signup
+account made from the page holds neither. The subtitle is "Auto-plan home
+practice, share the app with clients, and see who practiced at home."
+(Travis, 14 Nov 2026: a third benefit "that is not like the community";
+then "auto plan lessons", not "with AI"; no How it works link in the
+header); "What you can do with Sona" has four cards, "Plan tomorrow’s sessions" first, two to
+a row. A single-use email link opens the dashboard. The signup
 page has no prices or checkout, and describes the AI homework draft, family
 links, and clinician community. `tests/landingtest.mjs` drives both pages.
 Its share image comes from `tools/og/og-slp.html` (`og-slp.png?v=3`).
@@ -2065,6 +2066,26 @@ an email); and a `role: "slp"` lead is never put in the parents' welcome
 series. Still open, Travis's: repeat Pro trials with a new address (B13),
 and a button page so a school's link scanner cannot use the link up.
 `caseloadtest`, `slpapi`, `slpcode` and `nurturetest` play it.
+
+**Plan sessions (PLANDAY1, 14 Nov 2026)** (Travis: "auto plan sessions and
+activities for the upcoming day"; "build the planner"). The dashboard's
+`#plan-day` page, in Workspace before Draft homework, open before a family
+link exists. The clinician lists tomorrow's sessions, up to 8: a child from
+the caseload (sound, position and age range filled in from their homework
+or focus) or a session typed by initials. Each has a sound, word position
+(vocalic R only for R, blends only for R, S and L), age range (3-4, 5-6,
+7-8, 9+) and length (20, 30 or 45 minutes). "Plan my day" posts ONLY those
+four choices per session to `/api/slp/sessions/plan` (`lib/dayPlan.ts`
+rebuilds each field by field; signed in, same-origin, 12 an hour, the
+dashboard gate), which asks the AI for 2 or 3 play-based activities a
+session and refuses a reply of the wrong shape. The page joins names,
+initials and a caseload child's home practice (days of the last 7, last
+practiced) to the ideas locally, in one editable outline with Copy.
+Nothing is assigned or sent to a family; the plan lives in the tab. **For
+Rachel:** the prompt (`PLAN_PROMPT`) and the activities it suggests are
+hers to review; it lists no practice words (the clinician picks them) and
+never diagnoses, sets goals or scores. `dayplantest` and `slpworkflowtest`
+play it.
 
 **AI homework draft** lives at `/slps#homework-draft`, including before
 a clinician sets up a family link. The clinician selects the sound, position,

@@ -12,7 +12,7 @@ const port = 8187;
 const account = {ok:true,email:'rachel@example.com',code:'rachel-k4',familyKey:'ABCD2345',name:'Rachel K',clinic:'Bright Steps',onboarded:true};
 const mime = {html:'text/html',js:'text/javascript',css:'text/css',svg:'image/svg+xml',png:'image/png',webp:'image/webp',woff2:'font/woff2'};
 let data=fixture(), posts=[], reads=[], failHw=false, failFeedback=false, delayHw=0, nextHw=0;
-let hasFamilyCode=true, draftFailure=false;
+let hasFamilyCode=true, draftFailure=false, planFailure=false;
 const server = createServer((req,res)=>{
   const url=new URL(req.url,'http://localhost'); let body='';
   req.on('data',c=>body+=c);req.on('end',()=>{
@@ -25,6 +25,10 @@ const server = createServer((req,res)=>{
       if(url.pathname==='/api/slp/homework/draft')return draftFailure
         ?json({ok:false,error:'Draft temporarily unavailable'},503)
         :json({ok:true,title:'Practice S at home',note:'Pick a regular time for today’s practice.'});
+      if(url.pathname==='/api/slp/sessions/plan'){
+        if(planFailure)return json({ok:false,error:'Planning temporarily unavailable'},503);
+        return json({ok:true,plans:(payload.sessions||[]).map((s,i)=>[{name:'Sound hunt '+(i+1),how:'Hide cards; each find is a turn to practice.'},{name:'Race track',how:'Move a car one space per try.'}])});
+      }
       if(url.pathname==='/api/slp/homework'){
         if(req.method==='GET')return json({ok:true,items:data.kids.map(k=>({childId:k.childId,...k.hw}))});
         const respond=()=>{
@@ -51,7 +55,7 @@ function ok(name,result,detail=''){checks++;if(!result)failures++;console.log((r
 const visible=async(pg,selector)=>await pg.locator(selector).count()>0&&await pg.locator(selector).first().isVisible();
 const exists=async(pg,selector)=>await pg.locator(selector).count()>0;
 const writes=path=>posts.filter(p=>!path||p.path===path);
-function reset(){data=fixture();posts=[];reads=[];failHw=false;failFeedback=false;delayHw=0;hasFamilyCode=true;draftFailure=false;}
+function reset(){data=fixture();posts=[];reads=[];failHw=false;failFeedback=false;delayHw=0;hasFamilyCode=true;draftFailure=false;planFailure=false;}
 async function open(hash='#today',width=1440){
   const ctx=await browser.newContext({viewport:{width,height:1000}}),pg=await ctx.newPage(),errors=[];
   pg.setDefaultTimeout(2200);pg.on('pageerror',e=>errors.push(e.message));
@@ -86,6 +90,50 @@ try {
       await pg.getByText('Draft temporarily unavailable').waitFor();
       ok('a failed draft preserves the clinician’s edits',await pg.locator('#draftNote').inputValue()==='My edited note.'&&!await pg.locator('#draftGenerate').isDisabled());
       ok('the drafting workspace has no runtime errors',errors.length===0,errors.join('\n'));
+    } finally {await ctx.close();}
+  });
+  // PLANDAY1 (Travis, 14 Nov 2026): plan tomorrow's sessions. Only the
+  // sound, position, age range and minutes are posted; names stay local.
+  await section('Plan tomorrow before setting up a family link',async()=>{
+    hasFamilyCode=false;
+    const {ctx,pg,errors}=await open('#plan-day');
+    try {
+      ok('the planner opens for a new clinician without a family code',await visible(pg,'#page-plan-day'));
+      ok('Plan my day waits for a session',await pg.locator('#dayPlan').isDisabled());
+      await pg.locator('#dayAddBlank').click();
+      await pg.locator('.day-label').fill('JT');
+      await pg.locator('.day-sound').selectOption('S');
+      ok('blends stay open for S, vocalic R does not',await pg.evaluate(()=>{const o=v=>document.querySelector('.day-pos option[value="'+v+'"]');return !!o('b')&&!o('b').disabled&&o('v').disabled;}));
+      await pg.locator('.day-pos').selectOption('f');await pg.locator('.day-age').selectOption('3-4');await pg.locator('.day-min').selectOption('20');
+      await pg.locator('#dayPlan').click();
+      await pg.waitForFunction(()=>!document.getElementById('dayResult').hidden);
+      ok('planning sends only sound, position, age and minutes',JSON.stringify(writes('/api/slp/sessions/plan'))===JSON.stringify([
+        {path:'/api/slp/sessions/plan',body:{sessions:[{sound:'S',position:'f',age:'3-4',minutes:20}]}},
+      ]),JSON.stringify(posts));
+      const out=await pg.locator('#dayOutline').inputValue();
+      ok('the outline joins the label and the ideas on the page',/1\. JT · 20 min/.test(out)&&/Sound hunt 1: Hide cards/.test(out)&&/Planning draft for you to adapt\./.test(out),out);
+      await pg.locator('#dayOutline').fill('My edited day.');await pg.locator('#dayCopy').click();
+      ok('the plan can be edited and copied',await pg.evaluate(()=>window.__copied.at(-1))==='My edited day.');
+      planFailure=true;await pg.locator('#dayPlan').click();await pg.waitForTimeout(150);
+      ok('a failed plan keeps the edits and says so',await pg.locator('#dayOutline').inputValue()==='My edited day.'&&/temporarily unavailable/.test(await text(pg,'#dayError'))&&!await pg.locator('#dayPlan').isDisabled());
+      ok('the planner has no runtime errors',errors.length===0,errors.join('\n'));
+    } finally {await ctx.close();}
+  });
+  await section('Plan tomorrow from the caseload',async()=>{
+    const {ctx,pg,errors}=await open('#plan-day');
+    try {
+      await pg.locator('#dayFromCaseload').selectOption('c1');
+      await pg.locator('#dayFromCaseload').selectOption('c2');
+      ok('a child added once leaves the picker',!(await pg.locator('#dayFromCaseload option').allTextContents()).includes('Mia'));
+      await pg.locator('#dayPlan').click();
+      await pg.waitForFunction(()=>!document.getElementById('dayResult').hidden);
+      const sent=writes('/api/slp/sessions/plan').at(-1)?.body;
+      ok('caseload rows send their sound and age range, never a name or id',JSON.stringify(sent)===JSON.stringify({sessions:[{sound:'R',position:'m',age:'5-6',minutes:30},{sound:'K',position:'i',age:'3-4',minutes:30}]})&&!/Mia|Leo|c1|c2/.test(JSON.stringify(sent)),JSON.stringify(sent));
+      const out=await pg.locator('#dayOutline').inputValue();
+      ok('the outline names each child and their home practice, from this page',/1\. Mia · 30 min/.test(out)&&/2\. Leo · 30 min/.test(out)&&/Home practice: \d+ of the last 7 days/.test(out),out);
+      await pg.locator('.day-remove').first().click();
+      ok('removing a session gives the child back to the picker',(await pg.locator('#dayFromCaseload option').allTextContents()).includes('Mia'));
+      ok('the caseload planner has no runtime errors',errors.length===0,errors.join('\n'));
     } finally {await ctx.close();}
   });
   // NO CALLS (Travis, 30 Sep 2026: "I don't want request to call to be an
@@ -179,7 +227,7 @@ try {
   });
   for(const width of [390,320])await section('Mobile '+width,async()=>{
     const {ctx,pg,errors}=await open('#feedback',width);
-    for(const [hash,selector] of [['#feedback','#page-feedback'],['#child/c1/homework','#quickHomework'],['#child/c1/plan','#sessionPlanner']]){
+    for(const [hash,selector] of [['#feedback','#page-feedback'],['#child/c1/homework','#quickHomework'],['#child/c1/plan','#sessionPlanner'],['#plan-day','#page-plan-day']]){
       await go(pg,hash);ok(hash+' visible at '+width,await visible(pg,selector));
       const dims=await pg.evaluate(()=>({width:document.documentElement.clientWidth,scroll:document.documentElement.scrollWidth,body:document.body.scrollWidth}));
       ok(hash+' fits viewport at '+width,dims.scroll<=dims.width+1&&dims.body<=dims.width+1,JSON.stringify(dims));

@@ -374,8 +374,8 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
   const flat = shown.replace(/<[^>]+>/g, " ").replace(/&rsquo;/g, "'").replace(/\s+/g, " ");
   ok("the clinician landing page and its metadata advertise free access with no prices or trial pitch",
     /free dashboard/i.test(shown) && !/\$\s*\d|\bfree trial\b|\b\d+ days free\b|id="pricing"|href="#pricing"/i.test(shown));
-  ok("the clinician offer includes homework, a client link and a community",
-    ["Create AI homework", "Share the app with clients", "Join the community"].every(label => flat.includes(label)));
+  ok("the clinician offer includes session planning, homework, a client link and a community",
+    ["Plan tomorrow’s sessions", "Create AI homework", "Share the app with clients", "Join the community"].every(label => flat.includes(label)));
   ok("the page preserves the family's free practice without promising universal game access",
     /daily practice and free games/i.test(flat) && !/unlimited families|free forever|gets every game/i.test(flat));
   ok("the storage answer explains how a parent's email is handed to Resend and not kept by Sona",
