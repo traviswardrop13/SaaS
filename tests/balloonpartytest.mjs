@@ -134,12 +134,17 @@ try{
    s=await state(page);
    ok('balloon '+(stage+1)+': the word brings it with no power, at the plain pump and the plain ring, in its colour and for its ring',s.party.active&&s.party.power===0&&s.party.pumpGain<0.2&&s.party.ringScale===1&&s.party.reach===1&&s.party.color===q.colors[stage]&&s.party.ring===q.order[stage]&&await page.locator('#partyPower').isHidden(),s.party);
    if(stage===0)ok('…and the banner names the buddy',s.party.banner==='Pump up a balloon for '+q.name+'!',s.party.banner);
-   // the child hears "Tap the pump" out before pumping: SayPlay says nothing
-   // over a voice already speaking, so a balloon filled while Echo is still
-   // explaining the pump never hears "Now pull" this visit. The running clock
-   // used to let Echo finish here by itself; on the paused one it waits.
-   if(stage===0&&!await until(page,()=>__quiet.speech.some(t=>/^Tap the pump/.test(t))&&__quiet.speaking===0,3000))throw new Error('Echo never finished explaining the pump');
    if(!await pumpFull(page))throw new Error('could not fill balloon '+stage);
+   // a quick child fills the first balloon while Echo is still explaining the
+   // pump: SayPlay says nothing over a voice already speaking, and until 14
+   // Nov 2026 "Now pull" was dropped then, and never said that visit
+   if(stage===0){
+    const speechOf=re=>page.evaluate(src=>{const re=new RegExp(src),r=__quiet.sounds.find(x=>x.kind==='speech'&&re.test(x.text));return r?{start:r.start,end:r.end===Infinity?null:r.end}:null;},re.source);
+    const pumpLine=await speechOf(/^Tap the pump/);
+    ok('a quick child fills the first balloon while Echo is still explaining the pump',!pumpLine||pumpLine.end===null,pumpLine);
+    const heard=await until(page,()=>__quiet.speech.some(t=>/^Now pull your balloon/.test(t)),4000),a=await speechOf(/^Tap the pump/),b=await speechOf(/^Now pull your balloon/);
+    ok('…and still hears "Now pull", once "Tap the pump" is over, never over it',heard&&!!a&&!!b&&a.end!==null&&a.end<=b.start,{a,b,lines:await page.evaluate(()=>__quiet.speech.slice())});
+   }
    if(stage<3){const seen=await watchRing(page,1500);ok('balloon '+(stage+1)+': its ring stays on its spot',seen.every(v=>!v.swaying&&v.sway===0&&v.x===v.base),seen);}
    else{
     // a whole sway, watched on the game's clock: one look could land just

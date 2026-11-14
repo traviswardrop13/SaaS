@@ -88,8 +88,25 @@
   function windNow() { return power > 0 || misses > 0 ? 0 : WIND; }
   // Echo explains each kind of step once a visit: told is cleared by
   // nothing, not a new balloon and not Play again ("Hear what to do" still
-  // says the step's line on a tap).
-  function say(key, text) { if (told[key]) return; told[key] = true; try { api.instruct(text); } catch (e) {} }
+  // says the step's line on a tap). SayPlay says nothing over a voice
+  // already speaking, so a line asked for while Echo is still saying the one
+  // before waits for it (Peekaboo's line queue: SayPlay's promise settles
+  // when a line ends or is cut off) and is said only if it is still true
+  // then (when). One no longer true is not spent: it comes the next time it
+  // is. Until 14 Nov 2026 a child who filled the balloon while Echo was
+  // still explaining the pump never heard "Now pull" that visit.
+  var queued = 0, chain = Promise.resolve();
+  function say(key, text, when) {
+    if (told[key]) return; told[key] = true;
+    function go() {
+      if (when && !when()) { delete told[key]; return Promise.resolve(); }
+      try { return Promise.resolve(api.instruct(text)); } catch (e) { return Promise.resolve(); }
+    }
+    var p = queued ? chain.then(go) : go();
+    queued++; chain = p.then(function () { queued--; }, function () { queued--; });
+  }
+  // a balloon the child has not started to pull yet
+  function unpulled() { return canPlay() && !doneAt && !pull && drag === null; }
   function reduced() { return !!(motion && motion.matches); }
   // the ring balloon n goes to, and its colour (an index into PALETTE)
   function ringOf(n) { return party ? party.order[n] : n; }
@@ -317,7 +334,7 @@
     $("partyPump").classList.remove("pumping"); void $("partyPump").offsetWidth; $("partyPump").classList.add("pumping");
     clearTimeout(pumpTimer); pumpTimer = setTimeout(function () { $("partyPump").classList.remove("pumping"); }, 250);
     api.sfx("tap"); banner(full() ? "Pull it into the glowing ring!" : power > 0 ? "Big pumps! Keep going!" : "Pump, pump, pump!");
-    if (full()) say("full", "Now pull your balloon into the ring.");
+    if (full()) say("full", "Now pull your balloon into the ring.", function () { return full() && unpulled(); });
     hud(); draw();
   }
   function point(event) { var r = cv.getBoundingClientRect(); return { x: (event.clientX - r.left) / W, y: (event.clientY - r.top) / H }; }
@@ -348,7 +365,7 @@
       if (!still) { balloon.x = home.x; balloon.y = home.y; }
       banner(misses >= 2 ? "Nearly! Pull it up, then let go." : "So close! Pull it to the glowing ring.");
       try { api.cheer(misses >= 2 ? "Nearly!" : "So close!"); api.face("think"); } catch (e) {}
-      say("miss", "Pull it up to the glowing ring, then let go.");
+      say("miss", "Pull it up to the glowing ring, then let go.", function () { return misses > 0 && unpulled(); });
       hud(); draw(); return;
     }
     releaseCapture(); active = false; power = 0; pull = { x: balloon.x, y: balloon.y, t: 0 };
@@ -456,7 +473,7 @@
       stage = index; inflation = 0; pumps = 0; misses = 0; doneAt = 0; pull = null; power = 0; swayX = 0; swayPhase = 0;
       releaseCapture(); balloon.x = home.x; balloon.y = home.y; paused = false; active = true; last = 0;
       banner(stage ? "Here's the next balloon. Pump it up!" : "Pump up a balloon for " + buddyName(party.buddy) + "!");
-      hud(); say("pump", "Tap the pump to fill your balloon.");
+      hud(); say("pump", "Tap the pump to fill your balloon.", function () { return canPlay() && !full(); });
     },
     onHelp: earnPower,
     pause: pause,
