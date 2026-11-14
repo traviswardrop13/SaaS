@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { readSession, kvCmd } from "@/lib/slpAuth";
+import { readSession, liveSession, kvCmd } from "@/lib/slpAuth";
 import { rateLimit } from "@/lib/rateLimit";
 
 /** Feedback goes only to the team's feedback inbox.
@@ -28,7 +28,7 @@ const STORE_FEEDBACK = `
 
 export async function POST(req: NextRequest) {
   let session;
-  try { session = readSession(req); } catch { session = null; }
+  try { session = await liveSession(readSession(req)); } catch { session = null; }
   if (!session || typeof session.email !== "string" || !session.email) {
     return NextResponse.json({ ok: false, error: "Please sign in to send your message." }, { status: 401 });
   }

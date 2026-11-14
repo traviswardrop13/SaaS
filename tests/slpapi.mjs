@@ -319,12 +319,19 @@ if (A) {
   // clinician locked out for good, and a network error to explain it.
   const gate = req.indexOf("if (!authSecretOk())");
   ok("the sign-up route checks the signing secret at all", gate > 0);
-  ok("…before it writes the account, mints a token or pings the CRM",
+  // Since 13 Nov 2026 this route writes no account at all (the emailed
+  // link's verify route makes it); it still mints a token and may ping the CRM.
+  ok("…before it mints a token or pings the CRM, and it never writes an account",
     gate > 0 &&
     gate < req.indexOf('kvCmd(["SET", "slptok:') &&
-    gate < req.indexOf('kvCmd(["SET", "slpacct:') &&
-    gate < req.indexOf("tellCrm(origin, email, String("),
+    gate < req.indexOf("tellCrm(origin, email, String(") &&
+    req.indexOf('kvCmd(["SET", "slpacct:') < 0,
     "a half-created account is a permanent lockout: the retry can never reach the new-account branch again");
+  // Every call emails someone: one address may not loop it over a thousand
+  // inboxes (audit B2, 13 Nov 2026). An hour at most, as the privacy page says.
+  const rl = req.match(/rateLimit\(req, \{ key: "slpauth", limit: (\d+), windowSec: (\d+)/);
+  ok("the sign-up route limits each address (IP) before it mints a token or sends a link",
+    !!rl && Number(rl[1]) <= 30 && Number(rl[2]) <= 3600 && req.indexOf('rateLimit(req, { key: "slpauth"') < req.indexOf('kvCmd(["SET", "slptok:'));
   ok("…and says so in words a clinician can act on, not a stack trace",
     /Sign-in isn't switched on for this deployment yet/.test(req) && /hello@speaksona.com/.test(req));
 
@@ -585,9 +592,13 @@ if (A) {
   // On Vercel a function can be frozen the moment its response is sent, so a
   // fetch nobody awaits may never leave. The symptom is silence: sign-up
   // works, the CRM never hears, nothing errors.
+  // A new account's lead goes from the verify route since 13 Nov 2026 (the
+  // inbox is proved first); an existing account's catch-up from this route.
+  const verify = read("app/api/slp/auth/verify/route.ts");
   ok("the CRM call is awaited before the response, not fired and forgotten",
-    /const crm = tellCrm\(/.test(req) && /await crm;/.test(req) &&
-    req.indexOf("await crm;") < req.lastIndexOf("return out;") && !/void fetch\(origin \+ "\/api\/lead"/.test(req),
+    /await tellCrm\(/.test(verify) && verify.indexOf("await tellCrm(") < verify.lastIndexOf("return res;") &&
+    /await tellCrm\(origin, email/.test(req) && req.indexOf("await tellCrm(") < req.lastIndexOf("return NextResponse.json(") &&
+    !/void fetch\(origin \+ "\/api\/lead"/.test(req + verify),
     "an un-awaited fetch in a serverless function can be dropped when the response is sent");
   ok("…with a fuse, so a slow CRM never costs a clinician their sign-in",
     /CRM_TIMEOUT_MS = \d+/.test(slpLead) && /ctl\.abort\(\)/.test(slpLead));

@@ -1141,6 +1141,12 @@ for (const [cred, isCovered] of [[CRED, true], [CRED2, false]]) {
   const authSrc = readFileSync(ROOT + "/../lib/slpAuth.ts", "utf8");
   ok("a clinician's session cookie can't be replayed as a family ticket",
     /t !== "enrol"/.test(authSrc) && /timingSafeEqual/.test(authSrc));
+  // …and the reverse (audit B9, 13 Nov 2026): a family's ticket, signed with
+  // the same secret, set as slp_session, was a session for "slpacct:undefined".
+  const verifySrc = (authSrc.match(/export function verifySession[\s\S]*?\n}\n/) || [""])[0];
+  ok("a family's enrolment ticket can't be replayed as a clinician's session",
+    /"t" in obj\) return null/.test(verifySrc) && /typeof obj\.email !== "string"/.test(verifySrc),
+    "a ticket has no email; every route would read and write the account \"undefined\"");
   // REWRITTEN 24 Sep 2026 (both). The gate honoured the bare device unlock,
   // and onboarding wrote earlyAdopter from slpVerified(). Neither grants now:
   // the device-wide grant is coverage (4c pins it surviving a kid switch), and

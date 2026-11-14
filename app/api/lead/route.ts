@@ -289,7 +289,9 @@ export async function POST(req: NextRequest) {
   // answers the day after — once per address, with a real unsubscribe. An
   // email given inside the app (IN_APP_SOURCES in lib/nurture.ts) gets "The
   // 5-minute trick" in place of the App Store email: they have the app.
-  if (APP_READY && kvConfigured()) {
+  // Never a speech therapist (audit B2, 13 Nov 2026): the series is the
+  // parents' ("Here's Sona", the "wabbit" tip), as the Monday email is.
+  if (APP_READY && kvConfigured() && lead.role !== "slp") {
     try {
       welcomed = (await enroll(email, kvCmd, fetch, Date.now(), { inApp: inAppSource(lead.source) })) || welcomed;
     } catch {
