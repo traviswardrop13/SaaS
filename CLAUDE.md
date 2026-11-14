@@ -2211,6 +2211,67 @@ through that clinician's caseload code or sits on their roster — and the
 clinician's free dashboard never depends on how many of their families
 upgrade.
 
+### Family logins: a username and password the clinician makes (14 Nov 2026)
+Travis: "on the first screen of the onboarding … log in if they already have
+an account", and "in the SLP dashboard … auto-generate login username and
+password for parents that they can immediately share and have them go log
+into the app and get immediate access". **Why a login and not the link:** the
+clinician's link opens in Safari, and the iPhone app keeps its own storage, so
+a family who taps the link and then opens the app lands in a blank app. A
+login is typed INTO the app. `lib/familyLogin.ts` holds the rules;
+`tests/familylogintest.mjs` pins them.
+- **Travis's three calls (14 Nov 2026), each a person's call, not ours:**
+  1. **A login brings access + the SLP link, nothing else.** It connects the
+     device exactly as the link does (the same ticket, Premium whenever the
+     caseload is covered). NOTHING about a child is stored with it, and a
+     login on a new phone does not bring the old phone's practice back.
+  2. **Reusable, and the parent can change the password** (Settings › Your
+     login). From then on the dashboard says "the family chose their own
+     password" and the clinician no longer knows it. New password on the
+     dashboard makes a fresh one the clinician knows again (a forgotten one).
+  3. **The dashboard is phone-friendly web, no App Store yet.** It has its own
+     manifest (`public/slp.webmanifest`, "Sona SLP"), so Add to Home Screen
+     opens the dashboard (it used to open the FAMILY app: the page linked the
+     family manifest). `display: browser` on purpose: an iPhone home-screen
+     app keeps its own cookies and the emailed sign-in link opens in Safari,
+     so a full-screen icon would never be signed in. A full-screen or App Store
+     clinician app needs a sign-in that works inside it first, and Apple's
+     purchase rules would then reach Sona Pro: Travis's call, later.
+- **A login is not consent.** After the password, join.html asks the same
+  "Yes, share progress" as after a link; the invite is claimed only on yes.
+- **One door's walls, two doors.** `/api/family/login` passes the same gates
+  as `/api/slp/redeem` in the same order: per-IP limit, the store or nothing,
+  the credential, the sign-up cap (`lib/signups.ts`: the SAME counters and
+  60 as redeem, which keeps its own copy because its source is pinned;
+  familylogintest fails if they disagree), then the ticket, bound to the
+  device's own child id. On the device, `_slpVouched()` in sona.js is the one
+  function both doors call.
+- **A second phone is its own device, never the first phone's child.** A
+  roster row is written whole by its device, so a fresh phone adopting the
+  first phone's child id would wipe the practice the clinician sees. It joins
+  as its own row instead (the same as a second phone with the link), and the
+  child page says so. Merging rows is a later decision.
+- **Made for a child the clinician ADDS** (an invite), never for one who joined
+  by link: a fresh login there would bring the second phone in as a second
+  child. Once the family claims the invite, the login moves to the child
+  (`moveLoginToChild`). An unused login dies with its invite (30 days); a
+  used one lives 400 days from its last use.
+- **The password is shown once, stored never.** Only a salted scrypt hash; a
+  made password forgives case, spaces and dashes, one the family chose is
+  exact. Ten wrong tries an hour lock that username for the hour; a password
+  longer than 256 characters is turned away before the hash, and is not a
+  try. A write after a slow step (the cap's Stripe check, a new hash) reads
+  the login again first, so a claim or a deletion in between is never
+  written over with the older copy. Usernames
+  are a friendly word and four digits, never a word that is also a common
+  first name (a login must not look like it names the child).
+- **Deleting goes with it.** Cancel invite, Remove from my caseload and Delete
+  login each delete the login; Remove's words say so ("and their Sona login").
+- **Log in on the first screen** (`#loginLink`, under Get started) shows only on
+  the hello of a family's first setup, on a device no clinician has connected
+  yet. It reads "Log in", with no question mark: the hello holds no question
+  (onboardingtest).
+
 ## The email list: Resend's contacts (Kit and GoHighLevel are gone)
 **GoHighLevel was deleted on 24 Sep 2026 and Kit replaced it; on 16 Oct 2026
 Resend's contacts replaced Kit** (Travis: "I am done using Kit. I'm going to

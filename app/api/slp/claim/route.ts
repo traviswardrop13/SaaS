@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { readTicket, kvCmd, kvConfigured } from "@/lib/slpAuth";
 import { normalizeHomework, readHomework, writeHomework, isoDay, type Homework, type HomeworkRecord } from "@/lib/homework";
 import { rateLimit } from "@/lib/rateLimit";
+import { moveLoginToChild } from "@/lib/familyLogin";
 import {
   cleanChildId, cleanToken, readInviteData, claimInvite, claimHolder, finishClaim, writeMeta, unmarkGone, readAccount,
 } from "@/lib/roster";
@@ -138,6 +139,11 @@ export async function POST(req: NextRequest) {
   // Closed LAST, so a failure part-way leaves the data key for the same
   // device to retry against, rather than a claimed row with nothing behind it.
   await finishClaim(code, inv, childId);
+
+  // A login the clinician made for this invite now belongs to the child, so
+  // taking the child off the caseload takes the login too (lib/familyLogin).
+  // The claim stands whatever happens here.
+  try { await moveLoginToChild(code, inv, childId); } catch { /* the claim is done */ }
 
   return NextResponse.json({ ok: true, claimed: true, sounds: data.sounds, pos: data.pos });
 }

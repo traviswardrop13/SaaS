@@ -3303,11 +3303,11 @@
   // are separate decisions, and a family can take the app without agreeing to
   // be watched. `me` is the clinician's own one-phone token (their emailed
   // link to try Sona on their own device); only the server can read it.
-  function _slpVerify(code, key, me) {
-    // Mint this device's child id FIRST so the ticket can be bound to it. It
-    // used to be minted later, at startPilot(), which meant every ticket was
-    // code-only — and a code-only ticket is readable by every other family on
-    // the same caseload. The id is a random opaque string, not a name.
+  // Mint this device's child id FIRST so the ticket can be bound to it. It
+  // used to be minted later, at startPilot(), which meant every ticket was
+  // code-only — and a code-only ticket is readable by every other family on
+  // the same caseload. The id is a random opaque string, not a name.
+  function _mintChildId() {
     let cid = "";
     try { cid = pilotInfo().childId || ""; } catch (e) {}
     if (!cid) {
@@ -3316,6 +3316,10 @@
         const cur = pilotInfo(); save(PILOTKEY, Object.assign({}, cur, { childId: cid }));
       } catch (e) { cid = ""; }
     }
+    return cid;
+  }
+  function _slpVerify(code, key, me) {
+    const cid = _mintChildId();
     const body = { code, key, childId: cid };
     if (me && /^[A-Za-z0-9_-]{8,128}$/.test(String(me))) body.me = String(me);
     return fetch("/api/slp/redeem", {
@@ -3323,24 +3327,7 @@
       body: JSON.stringify(body),
     }).then((r) => r.json()).then((j) => {
       if (j && j.ok && j.valid) {
-        // slpok/slpunlock no longer grant anything by themselves, but they
-        // stay: they record that the server vouched for this device, and the
-        // era-four sweep and caseRefresh both read that record.
-        try { localStorage.setItem("sona.slpok", code.toUpperCase()); localStorage.setItem("sona.slpunlock", "1"); } catch (e) {}
-        // The enrolment ticket is this device's proof that it passed code+key.
-        // /api/pilot refuses a roster write without it, which is what stops
-        // anyone who merely knows the code from inventing children on a real
-        // clinician's dashboard — and /api/slp/covered refuses to say whether
-        // a caseload is covered to anyone who cannot show one.
-        try { if (j.ticket) localStorage.setItem("sona.slpticket", String(j.ticket)); } catch (e) {}
-        // a family that already finished onboarding is tagged in place — the
-        // link can arrive after setup (e.g. re-sent by the SLP). The tag is a
-        // label for the roster, NOT a grant: earlyAdopter is no longer
-        // written here (see above).
-        try { const pr = getProfile(); if (pr.onboarded || pr.childName) saveProfile({ slpCode: code.toUpperCase() }); } catch (e) {}
-        // ask straight away whether this caseload is covered, so a covered
-        // family opens Home with every game rather than on the next check
-        try { caseRefresh(true); } catch (e) {}
+        _slpVouched(code, j);
         // the funnel event means A REAL FAMILY UNLOCKED — only the valid
         // branch may fire it, or the SLP ranking counts garbage
         try { track("slp code redeemed", { code: code.toUpperCase() }); } catch (e) {}
@@ -3349,8 +3336,76 @@
       return { valid: false, error: (j && j.error) || "" };
     }).catch(() => ({ valid: false, error: "offline" }));
   }
+  // What a credential the server vouched for leaves on this device, whichever
+  // door it came through: the clinician's link (code + family key) or a login
+  // the clinician made (username + password). One function, so the two doors
+  // cannot drift apart.
+  function _slpVouched(code, j) {
+    // slpok/slpunlock no longer grant anything by themselves, but they
+    // stay: they record that the server vouched for this device, and the
+    // era-four sweep and caseRefresh both read that record.
+    try { localStorage.setItem("sona.slpok", code.toUpperCase()); localStorage.setItem("sona.slpunlock", "1"); } catch (e) {}
+    // The enrolment ticket is this device's proof that it passed code+key.
+    // /api/pilot refuses a roster write without it, which is what stops
+    // anyone who merely knows the code from inventing children on a real
+    // clinician's dashboard — and /api/slp/covered refuses to say whether
+    // a caseload is covered to anyone who cannot show one.
+    try { if (j.ticket) localStorage.setItem("sona.slpticket", String(j.ticket)); } catch (e) {}
+    // a family that already finished onboarding is tagged in place — the
+    // link can arrive after setup (e.g. re-sent by the SLP). The tag is a
+    // label for the roster, NOT a grant: earlyAdopter is no longer
+    // written here (see above).
+    try { const pr = getProfile(); if (pr.onboarded || pr.childName) saveProfile({ slpCode: code.toUpperCase() }); } catch (e) {}
+    // ask straight away whether this caseload is covered, so a covered
+    // family opens Home with every game rather than on the next check
+    try { caseRefresh(true); } catch (e) {}
+  }
   // Typed entry (join.html's form, pilot.html): same verification, same ticket.
   function slpRedeem(code, key, me) { return _slpVerify(String(code || ""), String(key || ""), me ? String(me) : ""); }
+
+  // ── A FAMILY LOGIN (14 Nov 2026) ───────────────────────────────────────
+  // The username and password a clinician made for this family, typed into
+  // the app (Log in, on setup's first screen, opens join.html's login form).
+  // It earns what the clinician's link earns, through the same server gates
+  // (/api/family/login, lib/familyLogin), and leaves the same things on this
+  // device (_slpVouched). Plus the username, so Settings can show the family
+  // their login and let them change its password. It is a username, not a
+  // secret, and it travels in a backup like the clinician's code. The
+  // password is never kept anywhere on the device.
+  //
+  // Like the link, a login CONNECTS and does not share: what the clinician
+  // sees is still asked on join.html ("Yes, share progress"). `inv` is the
+  // invite the login was made for, while it is still waiting: a yes claims it.
+  const LOGINKEY = "sona.login";
+  function loginUser() { try { return localStorage.getItem(LOGINKEY) || ""; } catch (e) { return ""; } }
+  function familyLogin(username, password) {
+    const cid = _mintChildId();
+    return fetch("/api/family/login", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: String(username || ""), password: String(password || ""), childId: cid }),
+    }).then((r) => r.json()).then((j) => {
+      if (j && j.ok && j.valid && j.code) {
+        const code = String(j.code).toUpperCase();
+        _slpVouched(code, j);
+        try { localStorage.setItem("sona.slp", code); } catch (e) {}
+        try { if (j.user) localStorage.setItem(LOGINKEY, String(j.user)); } catch (e) {}
+        try { track("family logged in", { code }); } catch (e) {}
+        return { valid: true, code, name: j.name || "", inv: j.inv || "", user: j.user || "" };
+      }
+      return { valid: false, error: (j && j.error) || "" };
+    }).catch(() => ({ valid: false, error: "offline" }));
+  }
+  // Settings › Your login: the family makes the password their own. The
+  // current one is the proof; the clinician no longer knows the new one.
+  function changeLoginPassword(current, next) {
+    const user = loginUser();
+    if (!user) return Promise.resolve({ ok: false, error: "This device isn't logged in." });
+    return fetch("/api/family/password", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: user, password: String(current || ""), newPassword: String(next || "") }),
+    }).then((r) => r.json()).then((j) => (j && j.ok ? { ok: true } : { ok: false, error: (j && j.error) || "That didn't work. Try again." }))
+      .catch(() => ({ ok: false, error: "Couldn't reach Sona. Check your connection and try again." }));
+  }
 
   // ── Founder access: the owners use the whole app, no paywall, any device ──
   // Server-verified against FOUNDER_KEY (same env that guards the founder
@@ -10432,5 +10487,5 @@
   try { _questAnchors(); } catch (e) {}
   try { installDebug(); } catch (e) {}
 
-  global.Sona = { questToday, questEnd, QUEST_DAYS, QUEST_LEN, STORY_DAYS, storyOpen, storyShown, storyEnding, storySeen, storyPlace, storyFound, storyReplay, STORY_SAY_TIMES, STORY_TALK, storyDay, day1For, pcmWave, mediaPCM, voiceAsMedia, libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, goalDays, dayReps, dayGoal, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, goClip, GO_WAIT_MS, WORDS, wordsFor, GAME_WORDS, gameWords, POSITIONS, FAMILY_POSITIONS, posInfo, posPhrase, posHas, soundPos, sylPos, playWords, playPool, hasSound, GAMES_FOLLOW_POS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, rungWin, ladderKey, ladderContent, PRACTICE_TOP, ladderSteps, ladderTop, ladderStart, stepDown, stepLabel, ladderWhere, ladderPlan, GAME_LEVELS, gameTop, gameAsk, gameHold, FREE_MODE, isFree, WEB_SALES, webSales, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, targetSound, targetSoundOptions, setTargetSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, homePicks, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, freeVersion, trialFirst, offerOnLock, FREE_BOOKS, freeBooksOnShelf, bookFree, booksOpen, bookLocked, seasonPick, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, firstGameKey, firstGameStart, firstGameEnd, FREE_PLAY_ON, freePlayOn, freePlayDue, freePlayStart, freePlayActive, freePlayEnd, CRAFTED_CARDS, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, speechTurn, hasSpeechBridge, micNative, micOpen, micProbe, micSource, micDeaf, micRecorder, micQuiet, micStats, micFifo: nmFifo, NATIVE_MIC_GAIN, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repWeeks, gameRep, repsBeacon, gameBest, gameBestOffer, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES, trophyState, trophies, coinsNow, PLAY_LEVEL_AT, PLAY_LEVEL_LINES, playLevelsOpen, playLevel, playLevelAsk, setPlayLevel, playLevelInfo, playBest, playBestOffer, buddyId, buddySprite, chestState, chestOpen, ROAD_LANDS, ROAD_STOPS, MONTH_STEPS, roadStop, roadState, roadOpen, monthOpen, roadSettle, roadRolledSeen, buddiesKept, shopItem, buyItem, undoBuy, equip, BOARD_LIVE, boardLive, boardAllowed, boardState, boardStart, boardClaim, boardFlush, boardView, boardNick, boardLeave, boardAsk, boardCancel, parentEmail, reportEmail, reportSync, reportStatus, reportSet, reportOff, reportFlush, homeOfferDue, offerSeen, notifyAvailable, notifyState, notifyRefresh, notifyAsk, trialReminderOn, trialReminderArm, trialReminderSync, trialReminderSold, nudgeConsent, nudgeState, soundMark, clipsSettled, storePlan, buyPlan, planWords, planSay, planBillDate, setupWall, setupAfterMark, setupAfter, setupAfterClear, setupAsks, setupAsksSave, SETUP_THERAPY };
+  global.Sona = { questToday, questEnd, QUEST_DAYS, QUEST_LEN, STORY_DAYS, storyOpen, storyShown, storyEnding, storySeen, storyPlace, storyFound, storyReplay, STORY_SAY_TIMES, STORY_TALK, storyDay, day1For, pcmWave, mediaPCM, voiceAsMedia, libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, goalDays, dayReps, dayGoal, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, goClip, GO_WAIT_MS, WORDS, wordsFor, GAME_WORDS, gameWords, POSITIONS, FAMILY_POSITIONS, posInfo, posPhrase, posHas, soundPos, sylPos, playWords, playPool, hasSound, GAMES_FOLLOW_POS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, rungWin, ladderKey, ladderContent, PRACTICE_TOP, ladderSteps, ladderTop, ladderStart, stepDown, stepLabel, ladderWhere, ladderPlan, GAME_LEVELS, gameTop, gameAsk, gameHold, FREE_MODE, isFree, WEB_SALES, webSales, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, targetSound, targetSoundOptions, setTargetSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, homePicks, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, freeVersion, trialFirst, offerOnLock, FREE_BOOKS, freeBooksOnShelf, bookFree, booksOpen, bookLocked, seasonPick, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, familyLogin, loginUser, changeLoginPassword, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, firstGameKey, firstGameStart, firstGameEnd, FREE_PLAY_ON, freePlayOn, freePlayDue, freePlayStart, freePlayActive, freePlayEnd, CRAFTED_CARDS, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, speechTurn, hasSpeechBridge, micNative, micOpen, micProbe, micSource, micDeaf, micRecorder, micQuiet, micStats, micFifo: nmFifo, NATIVE_MIC_GAIN, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repWeeks, gameRep, repsBeacon, gameBest, gameBestOffer, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES, trophyState, trophies, coinsNow, PLAY_LEVEL_AT, PLAY_LEVEL_LINES, playLevelsOpen, playLevel, playLevelAsk, setPlayLevel, playLevelInfo, playBest, playBestOffer, buddyId, buddySprite, chestState, chestOpen, ROAD_LANDS, ROAD_STOPS, MONTH_STEPS, roadStop, roadState, roadOpen, monthOpen, roadSettle, roadRolledSeen, buddiesKept, shopItem, buyItem, undoBuy, equip, BOARD_LIVE, boardLive, boardAllowed, boardState, boardStart, boardClaim, boardFlush, boardView, boardNick, boardLeave, boardAsk, boardCancel, parentEmail, reportEmail, reportSync, reportStatus, reportSet, reportOff, reportFlush, homeOfferDue, offerSeen, notifyAvailable, notifyState, notifyRefresh, notifyAsk, trialReminderOn, trialReminderArm, trialReminderSync, trialReminderSold, nudgeConsent, nudgeState, soundMark, clipsSettled, storePlan, buyPlan, planWords, planSay, planBillDate, setupWall, setupAfterMark, setupAfter, setupAfterClear, setupAsks, setupAsksSave, SETUP_THERAPY };
 })(window);

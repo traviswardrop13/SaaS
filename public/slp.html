@@ -24,7 +24,15 @@
   <!-- the SLP side is hidden (19 Sep 2026): reachable by direct link, not by search -->
   <meta name="robots" content="noindex">
   <link href="/fonts.css" rel="stylesheet">
-  <link rel="manifest" href="/manifest.webmanifest" />
+  <!-- ON THE CLINICIAN'S HOME SCREEN (14 Nov 2026, Travis: "phone-friendly
+       web now"). Its own manifest, so Add to Home Screen opens the dashboard
+       (it opened the family app's Home before: this page linked the family
+       manifest). It opens in the browser on purpose: an iPhone home-screen
+       app keeps its own cookies, and the sign-in link in the clinician's
+       email opens in Safari, so a full-screen icon would never be signed in. -->
+  <link rel="manifest" href="/slp.webmanifest" />
+  <link rel="apple-touch-icon" href="/assets/slp-tab-icon.png?v=2" />
+  <meta name="apple-mobile-web-app-title" content="Sona SLP" />
   <meta name="theme-color" content="#fff8ef" />
   <!--
     THE CLINICIAN'S DASHBOARD (v2, 21 Sep 2026). Built around ONE problem —
@@ -114,6 +122,12 @@
     textarea { min-height:80px; resize:vertical; line-height:1.5; }
     .linkbox { display:flex; gap:8px; margin-top:8px; flex-wrap:wrap; }
     .linkbox input { flex:1; min-width:200px; background:#f6fbff; }
+    /* a family login, shown once (14 Nov 2026): big enough to read aloud over the phone */
+    .login-out { margin-top:10px; }
+    .login-cred { display:flex; flex-wrap:wrap; gap:8px 22px; background:#f6fbff; border:1px solid var(--line); border-radius:12px; padding:12px 14px; }
+    .login-cred div { display:flex; flex-direction:column; gap:2px; min-width:0; }
+    .login-cred b { font-size:20px; letter-spacing:.04em; overflow-wrap:anywhere; font-variant-numeric:tabular-nums; }
+    .login-line { margin-top:6px; }
     .btn { border:none; border-radius:12px; padding:12px 18px; font-family:inherit; font-weight:800; font-size:14px; color:#fff; background:var(--blue); cursor:pointer; white-space:nowrap; transition:transform .1s; }
     .btn:active { transform:translateY(2px); }
     .btn:disabled { opacity:.5; cursor:default; }
@@ -854,7 +868,7 @@
           <p class="sub">Their homework is waiting the moment the family opens the link. Use initials or a nickname here — the family enters the name when they join, so nobody at your school or clinic ever sends Sona a child's name.</p>
           <div class="row">
             <div class="grow"><label class="fl" for="invName">Initials or a nickname <span style="font-weight:700;color:#aab9c8;">(not their name)</span></label><input id="invName" type="text" maxlength="40" placeholder="e.g. MK" /></div>
-            <div style="width:110px;"><label class="fl" for="invAge">Age <span style="font-weight:700;color:#aab9c8;">(optional)</span></label><select id="invAge"></select></div>
+            <div style="width:110px;max-width:34%;"><label class="fl" for="invAge">Age <span style="font-weight:700;color:#aab9c8;">(optional)</span></label><select id="invAge"></select></div>
           </div>
           <label class="fl">Target sounds <span style="font-weight:700;color:#aab9c8;">(up to 3)</span></label>
           <div class="sndpick" id="invSounds"></div>
@@ -884,6 +898,15 @@
               <label class="fl" for="invMsg">Ready-to-send message</label>
               <textarea id="invMsg" style="font-size:13.5px;"></textarea>
               <div class="row" style="margin-top:8px;"><button class="btn green sm" id="invCopyMsg">Copy message</button><span class="sub" id="invCopied"></span></div>
+              <!-- A LOGIN INSTEAD OF A LINK (14 Nov 2026). A link opens in
+                   Safari, and the iPhone app keeps its own storage, so a family
+                   who will use the app gets a username and password to type
+                   into it (Log in, on its first screen). The password is shown
+                   here once; Sona keeps only its hash (lib/familyLogin). -->
+              <h4 style="margin-top:16px;">Or a login for the Sona app</h4>
+              <p class="sub">For a family who'll use the iPhone or iPad app: they tap Log in on its first screen and type it, so nothing has to be opened in Safari first.</p>
+              <div class="row" style="margin-top:8px;"><button class="btn sm" id="invMakeLogin" type="button">Make a login</button></div>
+              <div class="login-out" id="invLoginOut" hidden></div>
             </div>
           </div>
           <details class="general-invite" id="generalInvite"><summary>Or copy your general caseload link</summary><p class="sub">The family picks the sound, and you set homework once they appear.</p>
@@ -949,13 +972,19 @@
               <div class="cardtop"><h2>Homework</h2><div class="spacer"></div><span id="chHwPill"></span></div>
               <div id="chHw"></div>
             </div>
+            <div class="card noprint" id="chLoginCard" hidden>
+              <div class="cardtop"><h2>Sona login</h2></div>
+              <p class="sub" id="chLoginLine"></p>
+              <div class="row" style="margin-top:8px;"><button class="btn ghost sm" id="chLoginNew" type="button">New password</button><button class="btn ghost sm" id="chLoginDel" type="button">Delete login</button></div>
+              <div class="login-out" id="chLoginOut" hidden></div>
+            </div>
             <div class="card" id="chNoteCard">
               <div class="cardtop"><h2>Progress note</h2><div class="spacer"></div><button class="btn ghost sm noprint" id="chNoteCopy">Copy</button></div>
               <p class="sub" id="chNoteSub">Edit before you paste it — it is a practice snapshot, not an evaluation.</p>
               <textarea class="note" id="chNote" style="margin-top:8px;"></textarea>
             </div>
           </div>
-          <div class="child-remove-area noprint"><button type="button" class="remove-link" id="chRemove" aria-describedby="chRemoveDetails">Remove from my caseload…</button><p class="sr-only" id="chRemoveDetails">Deletes, now and for good, everything Sona holds for this child on your caseload — practice history, pass rates and every assignment you set — and their phone stops sending you updates. Their family's Sona keeps working and keeps its own progress on their device. Copy the progress note first if you need it for your records.</p><div class="err" id="chRemoveErr"></div></div>
+          <div class="child-remove-area noprint"><button type="button" class="remove-link" id="chRemove" aria-describedby="chRemoveDetails">Remove from my caseload…</button><p class="sr-only" id="chRemoveDetails">Deletes, now and for good, everything Sona holds for this child on your caseload — practice history, pass rates, every assignment you set and their Sona login — and their phone stops sending you updates. Their family's Sona keeps working and keeps its own progress on their device. Copy the progress note first if you need it for your records.</p><div class="err" id="chRemoveErr"></div></div>
         </div>
 
         <section class="card workflow-panel" id="quickHomework" aria-labelledby="quickHeading" hidden>
@@ -1737,8 +1766,20 @@
       $("chNoteSub").textContent=(k.d.hwst==="active"&&k.hw.hw&&k.hw.hw.start<=isoToday()?"Covers the current homework window, from "+niceDate(k.hw.hw.start)+". ":"Covers the last two weeks. ")+"Edit before you paste it — it is a practice snapshot, not an evaluation.";
       $("composer").style.display="none"; BULK=null;
       renderQuick(k);renderPlan(k);setChildView(CHILD_VIEW);
+      paintChildLogin(k);
       var end=$("hwEndBtn"); if(end)end.onclick=function(){ end.disabled=true; postHw({childId:k.childId,action:"clear"},function(){loadAll(function(){renderChild(id);});}); };
       var again=$("hwAgainBtn"); if(again)again.onclick=function(){openComposer(false,k.hw&&k.hw.hw);};
+    }
+    // A child who joined with a login keeps it: a new password for a family
+    // who forgot theirs, or delete it. A second phone that logs in joins as
+    // its own row (its practice is its own), and the line says so.
+    function paintChildLogin(k){
+      var card=$("chLoginCard"), lg=k&&k.login; $("chLoginOut").hidden=true; $("chLoginOut").innerHTML="";
+      card.hidden=!lg; if(!lg)return;
+      $("chLoginLine").innerHTML='Username: <b>'+esc(lg.user)+'</b>. '+(lg.own?"The family chose their own password, so you don't know it. ":"")+"They can log in to Sona with it on another phone or tablet, which shows up here as its own row.";
+      $("chLoginNew").disabled=false; $("chLoginDel").disabled=false;
+      $("chLoginNew").onclick=function(){ makeLogin({childId:k.childId},$("chLoginOut"),$("chLoginNew"),function(){ k.login={user:lg.user,own:false}; }); };
+      $("chLoginDel").onclick=function(){ dropLogin({childId:k.childId},$("chLoginDel"),function(){ loadAll(function(){renderChild(k.childId);}); }); };
     }
     $("chAssignBtn").onclick=function(){openComposer(false);};
     $("chNoteBtn").onclick=function(){copy($("chNote").value,$("chNoteBtn"));};
@@ -1746,7 +1787,7 @@
     $("chPrint").onclick=function(){window.print();};
     $("chRemove").onclick=function(){
       if(!CURRENT)return; var k=CURRENT;
-      if(!confirm("Remove "+k.d.name+" from your caseload? This deletes, now and for good, everything Sona holds for "+k.d.name+" on your caseload: practice history, pass rates and every assignment you set. Their family's Sona app keeps working and keeps its own progress on their device; nothing on their device is deleted, and it stops sending you updates. Copy the progress note first if you need it for your records."))return;
+      if(!confirm("Remove "+k.d.name+" from your caseload? This deletes, now and for good, everything Sona holds for "+k.d.name+" on your caseload: practice history, pass rates, every assignment you set and their Sona login. Their family's Sona app keeps working and keeps its own progress on their device; nothing on their device is deleted, and it stops sending you updates. Copy the progress note first if you need it for your records."))return;
       $("chRemove").disabled=true;$("chRemoveErr").textContent="";
       fetch("/api/slp/child",{method:"DELETE",headers:{"Content-Type":"application/json"},body:JSON.stringify({childId:k.childId})}).then(function(r){return r.json();}).then(function(j){
         $("chRemove").disabled=false;
@@ -1859,6 +1900,36 @@
     // her clinician then saw "four" on Home.
     function familyOffer(){ return caseCovered()?"It's free for your family, and Premium is included through me, so your child gets every game.":"It's free for your family: daily practice and free games."; }
     function inviteMsg(child,link){ return "Hi! Here's your child's Sona link — the speech-practice app I mentioned. "+familyOffer()+" Open it on the phone your child will use, say yes to sharing practice with me, and they can start today. It listens and gives feedback as they play, and I'll see the practice add up on my end.\n\nYour family invite (start here):\n"+link+"\n\nDownload for iPhone or iPad:\n"+APP_STORE_URL; }
+    /* ── Family logins (14 Nov 2026) ──────────────── */
+    // A login opens the Sona app itself: the family taps Log in on its first
+    // screen and types it. The server hands the password back ONCE and keeps
+    // only its hash, so this panel is the only place it is ever shown. The
+    // message promises what familyOffer() promises, and asks for the same yes.
+    function loginMsg(user,pass){ return "Hi! Here's your login for Sona, the speech-practice app I mentioned. "+familyOffer()+"\n\n1. Get Sona for iPhone or iPad:\n"+APP_STORE_URL+"\n2. Open it and tap Log in on the first screen.\n3. Username: "+user+"\n   Password: "+pass+"\n\nThen say yes to sharing practice with me, and your child can start today. You can change the password in Sona's Settings."; }
+    function showLogin(host,user,pass){
+      host.innerHTML='<div class="login-cred"><div><span class="sub">Username</span><b>'+esc(user)+'</b></div><div><span class="sub">Password</span><b>'+esc(pass)+'</b></div></div>'+
+        '<label class="fl">Ready-to-send message</label><textarea class="login-msg" readonly style="font-size:13.5px;"></textarea>'+
+        '<div class="row" style="margin-top:8px;"><button class="btn green sm" type="button" data-copylogin>Copy login message</button></div>'+
+        '<p class="sub">This password shows only now. You can make a new one any time.</p>';
+      host.querySelector(".login-msg").value=loginMsg(user,pass);
+      var c=host.querySelector("[data-copylogin]"); c.onclick=function(){copy(host.querySelector(".login-msg").value,c);};
+      host.hidden=false;
+    }
+    function makeLogin(ref,host,btn,done){
+      btn.disabled=true; host.hidden=false; host.innerHTML='<p class="sub">Making a login…</p>';
+      fetch("/api/slp/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(ref)}).then(function(r){return r.json();}).then(function(j){
+        btn.disabled=false;
+        if(!j||!j.ok){host.innerHTML='<div class="err">'+esc((j&&j.error)||"Couldn't make a login — try again.")+'</div>';return;}
+        showLogin(host,j.user,j.password); if(done)done(j);
+      }).catch(function(){btn.disabled=false;host.innerHTML='<div class="err">Network hiccup — try again.</div>';});
+    }
+    function dropLogin(ref,btn,done){
+      if(!confirm("Delete this login? The family can't use it to log in again. Phones already set up keep working."))return;
+      btn.disabled=true;
+      fetch("/api/slp/login",{method:"DELETE",headers:{"Content-Type":"application/json"},body:JSON.stringify(ref)}).then(function(r){return r.json();}).then(function(){done();}).catch(function(){btn.disabled=false;});
+    }
+    var LAST_INV="";
+    $("invMakeLogin").onclick=function(){ if(LAST_INV)makeLogin({inv:LAST_INV},$("invLoginOut"),$("invMakeLogin"),function(){$("invMakeLogin").textContent="New password";}); };
     function invInit(){
       if(invReady)return; invReady=true;
       $("invAge").innerHTML='<option value="">—</option>'+[3,4,5,6,7,8,9,10,11,12].map(function(a){return'<option value="'+a+'">'+a+'</option>';}).join("");
@@ -1880,9 +1951,11 @@
       var pending=INVITES.filter(function(i){return !i.claimedBy;}), host=$("invList");
       $("invCount").textContent=pending.length?pending.length+" waiting":"";
       if(!pending.length){host.innerHTML='<p class="sub">Nobody is waiting. Children you add appear here until their family opens the link, then move to your caseload. An invite nobody opens deletes itself after 30 days.</p>';return;}
-      host.innerHTML=pending.map(function(i){ return '<div class="kid"><div class="kidtop"><span class="kidname">'+esc(i.label||i.child||"—")+'</span>'+(i.age?'<span class="sub" style="display:inline;">age '+esc(i.age)+'</span>':'')+'<span class="kidwhen">invited '+esc(agoText(i.createdAt))+(i.expiresAt?' · deletes itself '+esc(niceDate(i.expiresAt)):'')+'</span></div><div class="sub">'+(i.sounds&&i.sounds.length?esc(i.sounds.map(sLabel).join(", "))+' · '+esc(posName(i.pos))+' · '+esc(String(i.repsPerDay||""))+' a day':'no target set')+'</div><div class="row" style="margin-top:8px;"><button class="btn ghost sm" data-copy="'+esc(i.token)+'">Copy link</button><button class="btn ghost sm" data-msg="'+esc(i.token)+'">Copy message</button><button class="btn danger sm" data-del="'+esc(i.token)+'">Cancel invite</button></div></div>'; }).join("");
+      host.innerHTML=pending.map(function(i){ return '<div class="kid"><div class="kidtop"><span class="kidname">'+esc(i.label||i.child||"—")+'</span>'+(i.age?'<span class="sub" style="display:inline;">age '+esc(i.age)+'</span>':'')+'<span class="kidwhen">invited '+esc(agoText(i.createdAt))+(i.expiresAt?' · deletes itself '+esc(niceDate(i.expiresAt)):'')+'</span></div><div class="sub">'+(i.sounds&&i.sounds.length?esc(i.sounds.map(sLabel).join(", "))+' · '+esc(posName(i.pos))+' · '+esc(String(i.repsPerDay||""))+' a day':'no target set')+'</div>'+(i.login?'<div class="sub login-line">Login: <b>'+esc(i.login.user)+'</b>'+(i.login.own?' · the family chose their own password':'')+'</div>':'')+'<div class="row" style="margin-top:8px;"><button class="btn ghost sm" data-copy="'+esc(i.token)+'">Copy link</button><button class="btn ghost sm" data-msg="'+esc(i.token)+'">Copy message</button><button class="btn ghost sm" data-login="'+esc(i.token)+'">'+(i.login?'New password':'Make a login')+'</button>'+(i.login?'<button class="btn ghost sm" data-unlogin="'+esc(i.token)+'">Delete login</button>':'')+'<button class="btn danger sm" data-del="'+esc(i.token)+'">Cancel invite</button></div><div class="login-out" data-loginout="'+esc(i.token)+'" hidden></div></div>'; }).join("");
       host.querySelectorAll("[data-copy]").forEach(function(b){b.onclick=function(){copy(inviteLink(b.dataset.copy),b);};});
       host.querySelectorAll("[data-msg]").forEach(function(b){b.onclick=function(){copy(inviteMsg("",inviteLink(b.dataset.msg)),b);};});
+      host.querySelectorAll("[data-login]").forEach(function(b){b.onclick=function(){ var t=b.dataset.login; makeLogin({inv:t},host.querySelector('[data-loginout="'+t+'"]'),b,function(j){ INVITES.forEach(function(x){if(x.token===t)x.login={user:j.user,own:false};}); b.textContent="New password"; }); };});
+      host.querySelectorAll("[data-unlogin]").forEach(function(b){b.onclick=function(){ dropLogin({inv:b.dataset.unlogin},b,function(){loadAll(function(){renderCaseload();});}); };});
       host.querySelectorAll("[data-del]").forEach(function(b){b.onclick=function(){ b.disabled=true; fetch("/api/slp/invite",{method:"DELETE",headers:{"Content-Type":"application/json"},body:JSON.stringify({token:b.dataset.del})}).then(function(){loadAll(function(){renderCaseload();});}).catch(function(){b.disabled=false;}); };});
     }
     $("invCreate").onclick=function(){
@@ -1902,6 +1975,7 @@
         if(!j||!j.ok){err.style.color="var(--pink)";err.textContent=(j&&j.error)||"Couldn't create the link — try again.";return;}
         err.textContent="";
         var link=j.link||inviteLink(j.invite&&j.invite.token);
+        LAST_INV=(j.invite&&j.invite.token)||""; $("invLoginOut").hidden=true; $("invLoginOut").innerHTML=""; $("invMakeLogin").textContent="Make a login";
         $("invResult").style.display=""; $("invLink").value=link; $("invMsg").value=inviteMsg("",link);
         if(parentEmail)paintEmailed(j);
         // The address has done its one job; the page lets go of it too.
