@@ -253,8 +253,11 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
     /og:title" content="Send home practice they’ll play\."/.test(slps) &&
     /twitter:title" content="Send home practice they’ll play\."/.test(slps));
   const slpLede = (slps.match(/<p class="lede">([\s\S]*?)<\/p>/) || ["", ""])[1];
-  ok("the clinician lede presents AI homework, family links and the clinician community",
-    /draft homework with AI/i.test(slpLede) && /share the app with clients/i.test(slpLede) && /community of speech therapists/i.test(slpLede));
+  // Travis, 14 Nov 2026: a benefit "that is not like the community"; the
+  // session-planning line waits until the planner is built.
+  ok("the clinician lede presents AI homework, family links and seeing who practiced",
+    /draft homework with AI/i.test(slpLede) && /share the app with clients/i.test(slpLede) && /see who practiced at home/i.test(slpLede) &&
+    !/community/i.test(slpLede));
   const header = (slps.match(/<header>[\s\S]*?<\/header>/) || [""])[0].replace(/<!--[\s\S]*?-->/g, "");
   ok("the clinician header has the logo, How it works and Sign in",
     (header.match(/<a\b/g) || []).length === 3 && /<a class="signin" href="\/slp-login\.html">Sign in<\/a>/.test(header) &&
@@ -265,11 +268,10 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
     /fetch\("\/api\/slp\/auth\/request"/.test(slps) && /flow:\s*"free-dashboard"/.test(slps) &&
     !/#premium|apps\.apple\.com|APP_STORE|APP_READY/.test(slps));
   const form = (slps.match(/<form class="signup" id="signup"[\s\S]*?<\/form>/) || [""])[0];
-  ok("one clinician form asks only for email, SLP or SLPA, and Clinic or School",
+  ok("one clinician form asks only for a work email (14 Nov 2026: no role, no setting)",
     /id="fEmail" type="email"[^>]*\brequired\b/.test(form) && (form.match(/<button\b/g) || []).length === 1 &&
-    (form.match(/<input\b/g) || []).length === 1 && (form.match(/<select\b/g) || []).length === 2 && !/<textarea\b/.test(form) &&
-    /<select id="fRole"[^>]*\brequired\b[^>]*>[\s\S]*?<option value="slp">SLP<\/option>[\s\S]*?<option value="slpa">SLPA<\/option>/.test(form) &&
-    /<select id="fWorkSetting"[^>]*\brequired\b[^>]*>[\s\S]*?<option value="clinic">Clinic<\/option>[\s\S]*?<option value="school">School<\/option>/.test(form) &&
+    (form.match(/<input\b/g) || []).length === 1 && !/<select\b/.test(form) && !/<textarea\b/.test(form) &&
+    /placeholder="you@yourclinic\.org"/.test(form) &&
     !/<option value="(?:parent|other)"/.test(form) &&
     (slps.match(/<form\b/g) || []).length === 1 && !/id="startModal"/.test(slps));
   ok("both clinician calls to action say Get the free dashboard and the closing one returns to the form",

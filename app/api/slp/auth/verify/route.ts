@@ -38,7 +38,11 @@ export async function GET(req: NextRequest) {
     const newAccount = {
       email, name: "", clinic: "", code: "", createdAt: new Date().toISOString(),
       terms: signup ? FREE_DASHBOARD_TERMS : PRO_TERMS,
-      ...(signup ? { clinicianRole: signup.clinicianRole, workSetting: signup.workSetting, source: signup.source } : {}),
+      ...(signup ? {
+        ...(signup.clinicianRole ? { clinicianRole: signup.clinicianRole } : {}),
+        ...(signup.workSetting ? { workSetting: signup.workSetting } : {}),
+        source: signup.source,
+      } : {}),
     };
     const snapshot = JSON.stringify(newAccount);
     const created = await kvCmd(["SET", acctKey, snapshot, "NX"]);
