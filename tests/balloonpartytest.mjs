@@ -5,8 +5,9 @@
 // release is pulled in, and from the second miss almost any pull up (or a
 // tap on the balloon) floats it in. Each round is a party for one of the
 // buddies, with a new mix of colours and a new ring order; the last two
-// rings sway (BALLOON2). Runs on the page's fake clock (page.clock), so it
-// waits on published state, never on real time.
+// rings sway (BALLOON2). Runs on the page's fake clock (page.clock), paused
+// once the page has loaded (fresh), so the game moves only when the test
+// advances it and waits on published state, never on real time.
 // BALLOON_PART=main|rebuild|struggle|help|fit runs one part.
 import path from 'node:path';
 import {OUT} from './_env.mjs';
@@ -14,7 +15,36 @@ import {gameHarness,advance,until,sayWord} from './_sayplay-realgame.mjs';
 let h,checks=0,failures=0;const part=process.env.BALLOON_PART||'';
 function ok(n,p,d){checks++;if(!p)failures++;console.log((p?'PASS ':'FAIL ')+n+(p?'':' '+JSON.stringify(d)));}
 const state=p=>p.evaluate(()=>({speech:window.__sayplay,party:window.__balloon}));
-async function fresh(opts={}){return h.fresh({...opts,device:{age:'4',...opts.device}});}
+// page.clock.install() alone leaves the fake clock running on with real time
+// between the test's steps, and every animation frame in that gap moves the
+// sway: with other suites running at once, a few extra seconds slipped in
+// between two looks at the ring, and "…sways again" found it swung out and
+// back to where it had been held. Paused, the game's clock moves only on
+// advance(). (The parked bounce leaves the page at once, so it is not paused.)
+async function fresh(opts={}){const r=await h.fresh({...opts,device:{age:'4',...opts.device}});if(opts.unpark!==false)await r.page.clock.pauseAt(await r.page.evaluate(()=>Date.now()+1000));return r;}
+// Watch the ring for ms of the game's clock, a look every 100 ms: where it is
+// drawn (x), its own spot on the garland (base), the sway the game is giving
+// it before the screen's edge is kept clear (sway, placeGoal) and whether it
+// is swaying.
+async function watchRing(p,ms){const seen=[];for(let t=0;;t+=100){const s=(await state(p)).party;seen.push({t,x:s.goal.x,base:s.goals[s.ring].x,sway:s.sway,swaying:s.swaying,power:s.power,misses:s.misses});if(t>=ms)return seen;await advance(p,100);}}
+// What a watch of more than one whole sway (7 s) shows: it sways at every
+// look; the sway goes out to SWAY one way and back to SWAY the other; the
+// ring as drawn travels at least SWAY and is never further than SWAY from its
+// spot; and there and back takes about six seconds (twice the time between
+// two crossings of the middle, read between looks). SWAY is the size the
+// game was built to (BALLOON2: 0.05 of the width each way), not the one it
+// publishes, so a smaller or bigger sway fails here too.
+const SWAY_WATCH=7000,SWAY_EACH_WAY=0.05;
+function swayOf(seen,max=SWAY_EACH_WAY){
+ const sw=seen.map(v=>v.sway),dx=seen.map(v=>v.x-v.base),cross=[];
+ for(let i=1;i<seen.length;i++){const a=sw[i-1],b=sw[i];if((a<0)!==(b<0))cross.push(seen[i-1].t+(seen[i].t-seen[i-1].t)*a/(a-b));}
+ const r={always:seen.every(v=>v.swaying),out:Math.max(...sw),back:Math.min(...sw),travel:Math.max(...dx)-Math.min(...dx),far:Math.max(...dx.map(Math.abs)),thereAndBack:cross.length>=2?2*(cross[1]-cross[0])/1000:null};
+ r.sidetoside=r.always&&r.out>=0.95*max&&r.back<=-0.95*max&&Math.max(r.out,-r.back)<=max+1e-9&&r.travel>=max&&r.far<=max+1e-9;
+ r.aboutSix=r.always&&r.thereAndBack!==null&&r.thereAndBack>=5&&r.thereAndBack<=7;
+ return r;
+}
+// a watch in which the ring never moved and never swayed
+const still=seen=>seen.every(v=>!v.swaying&&v.x===seen[0].x);
 async function dragBalloon(p,to,{cancelOther=false}={}){const b=await p.locator('#partyCanvas').boundingBox(),s=(await state(p)).party;await p.mouse.move(b.x+s.balloon.x*b.width,b.y+s.balloon.y*b.height);await p.mouse.down();if(cancelOther)await p.evaluate(()=>document.getElementById('partyCanvas').dispatchEvent(new PointerEvent('pointercancel',{pointerId:99})));await p.mouse.move(b.x+to.x*b.width,b.y+to.y*b.height,{steps:18});await advance(p,180);await p.mouse.up();}
 async function tapBalloon(p){const b=await p.locator('#partyCanvas').boundingBox(),s=(await state(p)).party;await p.mouse.move(b.x+s.balloon.x*b.width,b.y+s.balloon.y*b.height);await p.mouse.down();await advance(p,60);await p.mouse.up();}
 async function pumpFull(p){for(let i=0;i<8;i++){if((await state(p)).party.inflation>=1)return true;await p.locator('#partyPump').click();await advance(p,100);}return (await state(p)).party.inflation>=1;}
@@ -104,21 +134,29 @@ try{
    s=await state(page);
    ok('balloon '+(stage+1)+': the word brings it with no power, at the plain pump and the plain ring, in its colour and for its ring',s.party.active&&s.party.power===0&&s.party.pumpGain<0.2&&s.party.ringScale===1&&s.party.reach===1&&s.party.color===q.colors[stage]&&s.party.ring===q.order[stage]&&await page.locator('#partyPower').isHidden(),s.party);
    if(stage===0)ok('…and the banner names the buddy',s.party.banner==='Pump up a balloon for '+q.name+'!',s.party.banner);
+   // the child hears "Tap the pump" out before pumping: SayPlay says nothing
+   // over a voice already speaking, so a balloon filled while Echo is still
+   // explaining the pump never hears "Now pull" this visit. The running clock
+   // used to let Echo finish here by itself; on the paused one it waits.
+   if(stage===0&&!await until(page,()=>__quiet.speech.some(t=>/^Tap the pump/.test(t))&&__quiet.speaking===0,3000))throw new Error('Echo never finished explaining the pump');
    if(!await pumpFull(page))throw new Error('could not fill balloon '+stage);
-   const base=s.party.goals[s.party.ring];
-   await advance(page,1500);s=await state(page);
-   if(stage<3)ok('balloon '+(stage+1)+': its ring stays on its spot',!s.party.swaying&&s.party.sway===0&&Math.abs(s.party.goal.x-base.x)<1e-9,s.party);
+   if(stage<3){const seen=await watchRing(page,1500);ok('balloon '+(stage+1)+': its ring stays on its spot',seen.every(v=>!v.swaying&&v.sway===0&&v.x===v.base),seen);}
    else{
-    ok('balloon '+(stage+1)+': its ring sways gently side to side',s.party.swaying&&Math.abs(s.party.goal.x-base.x)>0.02&&Math.abs(s.party.goal.x-base.x)<=s.party.swayMax+1e-9,{x:s.party.goal.x,base});
-    const x1=s.party.goal.x;await advance(page,1200);s=await state(page);ok('balloon '+(stage+1)+': …and keeps moving',s.party.swaying&&Math.abs(s.party.goal.x-x1)>0.005,{x1,x:s.party.goal.x});
+    // a whole sway, watched on the game's clock: one look could land just
+    // as the ring came back past where an earlier look had seen it
+    const sway=swayOf(await watchRing(page,SWAY_WATCH));
+    ok('balloon '+(stage+1)+': its ring sways gently side to side',sway.sidetoside,sway);
+    ok('balloon '+(stage+1)+': …and keeps moving, there and back in about six seconds',sway.aboutSix,sway);
     if(stage===3){
      await page.locator('#partyHelp').click();if(!await sayWord(page))throw new Error('no help word');
-     s=await state(page);const xh=s.party.goal.x;await advance(page,1500);s=await state(page);
-     ok('the help word\'s power holds the ring still',s.party.power>0&&!s.party.swaying&&Math.abs(s.party.goal.x-xh)<1e-9,{xh,s:s.party});
-     if(!await until(page,()=>__balloon.power===0,12000))throw new Error('the help power never ran out');await advance(page,1500);s=await state(page);ok('…and once the power is spent the ring sways again',s.party.power===0&&s.party.swaying&&Math.abs(s.party.goal.x-xh)>0.01,{xh,s:s.party});
+     const held=await watchRing(page,1500),xh=held[0].x;
+     ok('the help word\'s power holds the ring still',held.every(v=>v.power>0)&&still(held),held);
+     if(!await until(page,()=>__balloon.power===0,12000))throw new Error('the help power never ran out');
+     const after=await watchRing(page,SWAY_WATCH),again=swayOf(after),left=Math.max(...after.map(v=>Math.abs(v.x-xh)));
+     ok('…and once the power is spent the ring sways again',after.every(v=>v.power===0)&&again.sidetoside&&again.aboutSix&&left>0.01,{xh,left,...again});
     }else{
-     await dragBalloon(page,{x:.5,y:.85});s=await state(page);const xm=s.party.goal.x;await advance(page,2000);s=await state(page);
-     ok('a miss holds the swaying ring still where it is',s.party.misses===1&&!s.party.swaying&&Math.abs(s.party.goal.x-xm)<1e-9,{xm,s:s.party});
+     await dragBalloon(page,{x:.5,y:.85});const held=await watchRing(page,2000);
+     ok('a miss holds the swaying ring still where it is',held.every(v=>v.misses===1)&&still(held),held);
     }
    }
    if(stage===1)await page.emulateMedia({reducedMotion:'no-preference'});
