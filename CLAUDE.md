@@ -2027,6 +2027,24 @@ page has no prices or checkout, and describes the AI homework draft, family
 links, and clinician community. `tests/landingtest.mjs` drives both pages.
 Its share image comes from `tools/og/og-slp.html` (`og-slp.png?v=3`).
 
+**Every clinician proves the inbox before the dashboard opens** (Travis,
+13 Nov 2026, from the audit's B2/B3/B9). The sign-in page and the hidden
+clinician setup no longer make an account or sign a brand-new email in on
+the spot: `/api/slp/auth/request` only emails the link, and the verify
+route makes the account (Sona Pro terms from those doors, the free dashboard
+from the homepage's) and tells the CRM. The first sign-in by an emailed link
+writes `slpsessfrom:<email>` (once, NX), and every session issued before it
+is refused (`liveSession` in `lib/slpAuth.ts`, at every route that reads a
+session), so a cookie someone got for another person's address stops
+working; the account record and its `terms` are never touched for it, and a
+store that does not answer signs nobody out. A family's enrolment ticket is
+never a session. The email greets an account by its own name, never one
+the caller sent; one IP may ask for 20 links an hour (`slpauth`, besides 5
+an email); and a `role: "slp"` lead is never put in the parents' welcome
+series. Still open, Travis's: repeat Pro trials with a new address (B13),
+and a button page so a school's link scanner cannot use the link up.
+`caseloadtest`, `slpapi`, `slpcode` and `nurturetest` play it.
+
 **AI homework draft** lives at `/slps#homework-draft`, including before
 a clinician sets up a family link. The clinician selects the sound, position,
 and rep count. Only those three selections go to Anthropic. The clinician
@@ -2558,7 +2576,9 @@ Oct 2026: "we send them one an email immediately, the next day, and then one
 more day ... I want to send less emails in the sequence. So just 3"; it was
 two on day 0, then days 1, 3 and 5). From the website: "Here's Sona" (the App
 Store link), the recast tip ("Try this the next time they say “wabbit”"),
-then "Quick answers before you decide". Leads from inside the app
+then "Quick answers before you decide". It is the parents' alone: a speech
+therapist's lead (`role: "slp"`) is never enrolled (13 Nov 2026; those
+already queued may still get the rest). Leads from inside the app
 (`app-setup`, `app-settings`, `app-trial`, `app-paid`: `IN_APP_SOURCES` in
 `lib/nurture.ts`) get "The 5-minute trick" in place of the first (`nurturetest`).
 "The balloon problem" is gone; its "Already started? You can ignore the

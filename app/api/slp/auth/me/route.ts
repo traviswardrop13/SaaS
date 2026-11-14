@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { kvCmd, readSession } from "@/lib/slpAuth";
+import { kvCmd, readSession, liveSession } from "@/lib/slpAuth";
 
 export const runtime = "nodejs";
 
 // GET → who is the signed-in SLP (from the session cookie), with their account.
 export async function GET(req: NextRequest) {
-  const s = readSession(req);
+  const s = await liveSession(readSession(req));
   if (!s) return NextResponse.json({ ok: false });
   let acct: Record<string, unknown> | null = null;
   try {

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "node:crypto";
-import { kvCmd, readSession, signSession, sessionCookie, SESSION_MAX_AGE, makeFamilyKey, replaceSlpAccount } from "@/lib/slpAuth";
+import { kvCmd, readSession, liveSession, signSession, sessionCookie, SESSION_MAX_AGE, makeFamilyKey, replaceSlpAccount } from "@/lib/slpAuth";
 import { PRO_TERMS } from "@/lib/caseload";
 
 const SUFFIX = "abcdefghjkmnpqrstuvwxyz23456789";
@@ -14,7 +14,7 @@ function slug(s: string): string {
 
 // POST { name, clinic, code } → save the signed-in SLP's profile + claim their code.
 export async function POST(req: NextRequest) {
-  const s = readSession(req);
+  const s = await liveSession(readSession(req));
   if (!s) return NextResponse.json({ ok: false, error: "Not signed in." }, { status: 401 });
 
   let body: { name?: string; clinic?: string; code?: string; rotateKey?: boolean };
@@ -124,7 +124,7 @@ export async function POST(req: NextRequest) {
 // GET → the signed-in SLP's credential (auto-minting on first read via the same
 // path as POST would, but read-only friendly). Used by Settings + the dashboard.
 export async function GET(req: NextRequest) {
-  const s = readSession(req);
+  const s = await liveSession(readSession(req));
   if (!s) return NextResponse.json({ ok: false, error: "Not signed in." }, { status: 401 });
   const acctKey = "slpacct:" + s.email;
   let acct: Record<string, unknown> = {};
