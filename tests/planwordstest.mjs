@@ -1395,8 +1395,11 @@ try {
       const tags = readFileSync(ROOT + "/" + f, "utf8").match(/<script\b[^>]*\bsrc="\/pixel\.js"[^>]*>/g) || [];
       return tags.some((t) => /data-autoconfig="off"/.test(t));
     });
-    ok("no page other than setup carries the switch (the landing pages and the plan screen keep Meta's automatic events)", tagged.filter((f) => f !== "onboarding.html").length === 0, tagged);
-    ok("setup's page carries it: onboarding.html is the one page whose pixel tag has data-autoconfig=\"off\"", same(tagged, ["onboarding.html"]), tagged);
+    // The clinician homepage turned it off too (#289, 13 Nov 2026: its form
+    // is a sign-up), so the switch is on exactly these pages.
+    const OFF = ["for-slps.html", "onboarding.html"];
+    ok("no page other than setup and the clinician sign-up carries the switch (the parent page and the plan screen keep Meta's automatic events)", tagged.filter((f) => !OFF.includes(f)).length === 0, tagged);
+    ok("setup's page carries it, and the clinician sign-up's", same(tagged.slice().sort(), OFF), tagged);
   });
 
   ok("no page error in the whole run", errors.length === 0, errors.slice(0, 5));
