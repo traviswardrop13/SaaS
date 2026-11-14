@@ -20,7 +20,13 @@
 .bakery-heat::-webkit-slider-thumb { -webkit-appearance:none; appearance:none; width:30px; height:44px; margin-top:-14px; border:2px solid #f5eccb; border-radius:12px; background:#4b8d81; box-shadow:0 2px 2px rgba(71,88,57,.22); }
 .bakery-heat::-moz-range-track { height:16px; background:transparent; border:0; }
 .bakery-heat::-moz-range-thumb { width:28px; height:40px; border:2px solid #f5eccb; border-radius:12px; background:#4b8d81; }
+/* the oven's help: the handle glows teal and pulses (under Reduce Motion it
+   glows and holds still: the Reduce Motion rule at the foot names the thumb,
+   because its `*` does not reach a slider's thumb) */
+.bakery-heat--hint::-webkit-slider-thumb { box-shadow:0 0 0 5px rgba(17,179,176,.45), 0 0 16px 6px rgba(17,179,176,.55); animation:bakeryHeatHint 1.1s ease-in-out infinite alternate; }
+.bakery-heat--hint::-moz-range-thumb { box-shadow:0 0 0 5px rgba(17,179,176,.45), 0 0 16px 6px rgba(17,179,176,.55); }
+@keyframes bakeryHeatHint { from { transform:scale(1); } to { transform:scale(1.18); } }
 .bakery-caption { position:absolute; left:10px; bottom:111px; width:calc(100% - 20px); min-height:14px; text-align:center; font-size:10px; line-height:14px; font-weight:700; pointer-events:none; color:#6d7b58; }
 .bakery-sr { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
 @media(max-width:350px) { .bakery-action,.bakery-level { left:10px; font-size:13px; } .bakery-help { right:10px !important; font-size:13px !important; } .bakery-batch { width:86px; font-size:11px; } }
-@media(prefers-reduced-motion:reduce) { .bakery-controls *,.bakery-help { animation:none !important; transition:none !important; } }
+@media(prefers-reduced-motion:reduce) { .bakery-controls *,.bakery-help { animation:none !important; transition:none !important; } .bakery-heat--hint::-webkit-slider-thumb { animation:none !important; transform:none !important; } }

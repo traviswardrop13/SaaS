@@ -7,7 +7,7 @@
   var count = 5, younger = true, active = false, paused = false, away = false, destroyed = false, initialized = false, won = false, reduceMotion = false;
   var stage = -1, taskIndex = 0, selectedBatch = 0, goals = [], batches = [], completed = [], gesture = null, particles = [], splashes = [], power = 0;
   var clock = 0, raf = 0, last = 0, doneAt = 0, emission = 0, misses = 0, effort = 0, gainAt = 0, manualDistance = 0, caught = 0, spilled = 0, pourChecks = 0, levelUses = 0, ovenRemovals = 0, sortDrops = 0, said = {};
-  var setHeat = 0.15, actualHeat = 0.15, heatTouched = false, heatTouches = 0, ovenBatch = -1;
+  var setHeat = 0.15, actualHeat = 0.15, heatTouched = false, heatTouches = 0, ovenBatch = -1, heatHint = false, ovenIdle = 0;
   var KEYS = ["round", "curl", "berry"], NAMES = ["round buns", "curled buns", "berry buns"], POWER = 12, TAU = Math.PI * 2;
   function $(id) { return document.getElementById(id); }
   function clamp(n, low, high) { return Math.max(low, Math.min(high, n)); }
@@ -218,7 +218,7 @@
     for(var n=0;n<4;n++)(function(i){var b=makeButton("bakeryBun"+i,"Dough bun "+(i+1)+". Press and move to shape. Pick up the formed bun and drag it to its space.","bakery-handle bakery-bun");bunButtons.push(b);on(b,"pointerdown",function(e){downBun(e,i);});on(b,"keydown",function(e){bunKey(e,i);});})(n);
     for(var j=0;j<3;j++)(function(i){var b=makeButton("bakeryBatch"+i,"Choose "+NAMES[i],"bakery-batch bakery-batch-"+KEYS[i]);b.innerHTML='<img src="/assets/crafted/daily/day06-bun-'+KEYS[i]+'-v1.webp" alt=""><span>'+NAMES[i]+'</span>';batchButtons.push(b);on(b,"click",function(){if(canPlay()&&!gesture&&(phase()==="bake"||phase()==="arrange")){selectedBatch=i;hud();draw();}});})(j);
     heatInput=document.createElement("input");heatInput.type="range";heatInput.min="0";heatInput.max="100";heatInput.step="1";heatInput.value="15";heatInput.id="bakeryHeat";heatInput.className="bakery-heat";heatInput.setAttribute("aria-label","Oven heat. Move the handle to the golden picture.");root.appendChild(heatInput);
-    on(heatInput,"input",function(){if(!canPlay()||phase()!=="bake")return;setHeat=Number(heatInput.value)/100;heatTouched=true;heatTouches++;var band=heatBand();if(setHeat<band.low||setHeat>band.high){if(heatTouches%4===0)miss("Move the heat handle into the golden picture.");}hud();});
+    on(heatInput,"input",function(){if(!canPlay()||phase()!=="bake")return;setHeat=Number(heatInput.value)/100;heatTouched=true;heatTouches++;if(heatHint){heatHint=false;heatInput.classList.remove("bakery-heat--hint");}var band=heatBand();if(setHeat<band.low||setHeat>band.high){if(heatTouches%4===0)miss("Move the heat handle into the golden picture.");}hud();});
     caption=document.createElement("div");caption.className="bakery-caption";root.appendChild(caption);statusEl=document.createElement("div");statusEl.className="bakery-sr";statusEl.setAttribute("role","status");statusEl.setAttribute("aria-live","polite");root.appendChild(statusEl);
     [cv,toolButton,trayButton].concat(bunButtons).forEach(function(el){if(el===cv)on(el,"pointerdown",downTool);on(el,"pointermove",move);on(el,"pointerup",up);on(el,"pointercancel",up);on(el,"lostpointercapture",up);});
     if(helpEl)on(helpEl,"click",function(){if(canPlay()&&!gesture&&api&&api.practice)api.practice();});
@@ -251,7 +251,7 @@
       board:{x:wd.x,y:wd.y,w:board.w/W,h:board.h/H,bunRadius:board.bunR/W,stampRadius:stampRadius()/W,pressTargets:stamps.map(normal),traceTolerance:traceTolerance()/W,tracePoints:spiral.map(normal)},
       batches:batches.map(function(q){return{key:q.key,index:q.index,flour:q.flour,liquid:q.liquid,flourTarget:q.flourTarget,liquidTarget:q.liquidTarget,flourChecked:q.flourChecked,liquidChecked:q.liquidChecked,mix:q.mix,sweep:q.sweep,quadrants:q.quads.slice(),trayState:q.trayState,bake:q.bake,baked:q.baked,cooled:q.cooled,buns:q.buns.map(function(bun){var at=q.index===selectedBatch?bunPoint(bun):{x:0,y:0},sl=q.index===selectedBatch?slot(bun.index):{x:0,y:0};return{index:bun.index,x:at.x/W,y:at.y/H,formed:bun.formed,onTray:bun.onTray,sorted:bun.sorted,press:bun.press.slice(),pressTravel:bun.pressTravel,trace:bun.trace,traceRequired:spiral.length,well:bun.well,filled:bun.filled,slot:normal(sl),control:q.index===selectedBatch?rect(bunButtons[bun.index]):null};})};}),
       tray:{x:tp.x,y:tp.y,w:tray.w/W,h:tray.h/H,position:b?normal(trayPoint(b)):null},oven:{x:op.x,y:op.y,w:oven.w/W,h:oven.h/H,batch:ovenBatch},rack:{x:rp.x,y:rp.y,w:rack.w/W,h:rack.h/H},
-      heat:{setpoint:setHeat,actual:actualHeat,touched:heatTouched,touches:heatTouches,band:band,useful:usefulHeat(),bakeSeconds:younger?3.5:4.0,control:rect(heatInput)},baskets:baskets.map(function(q){return{key:q.key,x:q.x/W,y:q.y/H,rx:q.rx/W,ry:q.ry/H};}),
+      heat:{setpoint:setHeat,actual:actualHeat,touched:heatTouched,touches:heatTouches,hint:heatHint,band:band,useful:usefulHeat(),bakeSeconds:younger?3.5:4.0,control:rect(heatInput)},baskets:baskets.map(function(q){return{key:q.key,x:q.x/W,y:q.y/H,rx:q.rx/W,ry:q.ry/H};}),
       controls:{tool:rect(toolButton),action:rect(actionButton),level:!levelButton.hidden?rect(levelButton):null,tray:rect(trayButton),heat:rect(heatInput),batches:batchButtons.map(rect),buns:bunButtons.map(rect),help:rect(helpEl)},particles:particles.map(function(d){return{x:d.x/W,y:d.y/H,kind:d.kind,batch:d.batch};}),pointer:gesture?{kind:gesture.kind,id:gesture.id==null?"keyboard":gesture.id,keyboard:!!gesture.keyboard,index:gesture.index,from:gesture.from,x:gesture.x/W,y:gesture.y/H}:null,celebrating:doneAt>0,doneIn:doneAt?Math.max(0,doneAt-clock):0,width:W,height:H,work:{x:0,y:work.top/H,width:1,height:work.height/H},reduceMotion:reduceMotion,coordinates:"Positions normalized to dailyCanvas; r/rx/lengths use canvas width; ry/h use canvas height. Amounts are ingredient-volume units; heat is 0..1. Read-only snapshot."};
   }
   function image(key) { var i=art[key];return i&&i.complete&&i.naturalWidth?i:null; }
@@ -288,6 +288,16 @@
     if(g&&g.kind==="pour") {emission+=dt;if(clock-gainAt>0.6)effort+=dt;while(emission>=0.055){emission-=0.055;var sp=nozzle(),jitter=pourJitter(),drop={x:sp.x,y:sp.y,vx:(Math.random()-0.5)*jitter*1.6,vy:55,kind:ingredient(),batch:selectedBatch,value:0.028,age:0};if(assistance()>=2){var dy=Math.max(5,bowl.y-sp.y),t=(-55+Math.sqrt(55*55+2*300*dy))/300;drop.vx=(bowl.x-sp.x)/Math.max(0.08,t);}particles.push(drop);}}
     if(g&&(g.kind==="mix"||g.kind==="press"||g.kind==="curl")&&g.work>0&&clock-gainAt>0.6){effort+=dt;g.work=0;}
     for(var n=particles.length-1;n>=0;n--){var d=particles[n],old=d.y;d.vy+=300*dt;d.x+=d.vx*dt;d.y+=d.vy*dt;d.age+=dt;if(old<bowl.y&&d.y>=bowl.y){if(Math.abs(d.x-bowl.x)<=pourCatch()){var b=batches[d.batch];if(!b[d.kind+"Checked"]){b[d.kind]=Math.min(1.45,b[d.kind]+d.value);caught++;gainAt=clock;splashes.push({x:d.x,y:bowl.y,age:0});}}else{spilled++;if(g&&g.kind==="pour")effort+=0.12;}particles.splice(n,1);}else if(d.age>3||d.y>H+20){particles.splice(n,1);spilled++;}}
+    // THE OVEN WAITS FOR A TOUCH, NOT FOREVER (audit 13 Nov 2026). Nothing
+    // bakes until the heat handle is moved into the golden picture, and the
+    // help ladder counts only the pour, mix and shape steps and the handle's
+    // own misses, so a child who never touched the handle got no help at all:
+    // the banner just repeated. Now, once a tray has sat in the oven with the
+    // handle untouched for the ladder's first rung of seconds (2.5, ages 3-4;
+    // 4, ages 5-8), the handle glows teal and pulses (glows still under Reduce
+    // Motion). Only a cue: the golden band and the ladder are unchanged, and
+    // the child still moves the handle. Nothing bakes by itself.
+    var ovenWait=p==="bake"&&ovenBatch>=0&&!batches[ovenBatch].baked&&!heatTouched&&!(g&&g.kind==="trayDrag");ovenIdle=ovenWait?ovenIdle+dt:0;var hint=ovenWait&&ovenIdle>=(younger?2.5:4);if(hint!==heatHint){heatHint=hint;heatInput.classList.toggle("bakery-heat--hint",hint);}
     if(p==="bake"){actualHeat+=(setHeat-actualHeat)*Math.min(1,dt*1.6);if(ovenBatch>=0&&heatTouched){var b=batches[ovenBatch],lifted=g&&g.kind==="trayDrag"&&g.from==="oven";if(!lifted&&usefulHeat()){b.bake=Math.min(1,b.bake+dt/(younger?3.5:4));if(b.bake>=1&&!b.baked){b.baked=true;banner("Golden buns! Bring their tray to the cooling rack.");sound("tap");}}}}
     hud();
   }

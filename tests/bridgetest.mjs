@@ -375,6 +375,16 @@ try{
  }
 
  // ── little: ages 3-4 play six stones, the right way round, two holes open ──
+ // ── A LITTLE ONE'S TAP IS A LET-GO (audit 13 Nov 2026): a 4-year-old who only
+ // taps quickly used to tap forever, even at the top of the help ladder ──
+ if(run('littletaps')){
+  const{page,context,errors}=await fresh(littleOpts());await begin(page);await advance(page,500);
+  let s=await br(page),taps=0;
+  for(;taps<40;taps++){if(!s.pos||s.beat>0||s.dones>0)break;await page.mouse.move(s.pos.sx,s.pos.sy);await page.mouse.down();await advance(page,60);await page.mouse.up();await advance(page,200);s=await br(page);}
+  ok('3-4: a child who only taps the stone climbs the help ladder, and from its second rung a tap slides the stone into place',(s.beat>0||s.dones>0)&&taps>=3&&taps<40,{taps,ladder:s.ladder,state:s.pos&&s.pos.state});
+  ok('…and the step counts',await stepTo(page,1));
+  ok('3-4 taps: no runtime errors',errors.length===0,errors);await context.close();
+ }
  if(run('little')){
   const{page,context,errors}=await fresh(littleOpts());
   await context.route(/\/adventure\.html/,r=>r.fulfill({contentType:'text/html',body:'<!doctype html><title>ending</title>'}));

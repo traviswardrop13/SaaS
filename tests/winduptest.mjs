@@ -4,7 +4,7 @@
 // on the brass dial and lets go at the star (ages 5-8), or winds until it
 // rings (ages 3-4). Plays the real page on a paused fake clock, so every wait
 // is on published state (window.__windup, window.__sayplay), never on real
-// time. WINDUP_PART=locked|main|replay|struggle|little|help|buddy|fit|standins|keyboard|motion
+// time. WINDUP_PART=locked|main|replay|struggle|taps|little|help|buddy|fit|standins|keyboard|motion
 // runs one part (also app, source). Every part but replay runs without it;
 // replay runs only when named (its own suite, tests/windupreplaytest.mjs),
 // because the rest of the file already takes about 170 s of run-all's 300.
@@ -267,6 +267,20 @@ try{
   ok('every step finished with one word each and no help word',s.speech.step===8&&said===8&&s.w.power===0,{step:s.speech.step,said});
   ok('every banner was kind',s.w.banners.every(b=>!UNKIND.test(b)),s.w.banners);
   ok('no runtime errors (struggle)',errors.length===0,errors);await context.close();
+ }
+
+ // ── A TAP IS TRYING TOO (audit 13 Nov 2026): a child who only pokes the dial
+ // gets the circle help (it used to count nothing), and a tap still winds nothing ──
+ if(!part||part==='taps'){
+  for(const age of ['4','7']){
+   const {page,context,errors}=await fresh({device:{age}});await begin(page);
+   ok('taps ('+age+'): the first word',await sayWord(page));
+   const w=await W(page),b=await cbox(page),cx=b.x+w.dial.x,cy=b.y+w.dial.y,need=age==='4'?4:8;
+   for(let i=0;i<need;i++){await page.mouse.move(cx+(i%2),cy);await page.mouse.down();await advance(page,60);await page.mouse.up();await advance(page,300);}
+   const s=await st(page);
+   ok('taps ('+age+'): '+need+' pokes on the dial bring the arrows and the dot, and wind nothing',s.w.ladder.circle>=1&&s.w.turns===0&&s.w.tries===0&&s.w.banner==='Follow the dot around',s.w);
+   ok('taps ('+age+'): no runtime errors',errors.length===0,errors);await context.close();
+  }
  }
 
  // ── ages 3-4: one big toy, no star, wakes when the meter is full ──

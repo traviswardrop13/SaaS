@@ -37,7 +37,8 @@
      move it past); from the 3rd, letting go anywhere past 30% wakes the toy,
      the needle springing to the star as the finger lifts.
    - Trouble drawing circles: seconds of a finger moving on the board that
-     have not finished a quarter turn (`effort`; waiting is never effort).
+     have not finished a quarter turn (`effort`; waiting is never effort),
+     and half a second (`TAP`) for each tap that never moved.
      It counts a finger anywhere on the board, not only on the dial, because
      a child who can't find the dial is the child this ladder is for. After
      4 s the arrows brighten and a dot traces the circle; after 8 s rubbing
@@ -188,7 +189,7 @@
   var SPRITES = ["shop", "shelf", "bunny", "frog", "top", "croc", "elephant", "hippo", "jack-closed", "jack-open", "nightcap", "dial", "key", "gauge", "musicbox", "crank", "grandpa", "cuckoo", "oilcan"];
   var STAR_AT = 0.7;   // where the middle of the star sits on the meter (ages 5-8)
   var POWER = 10, BEAT = 1.15, REVERSE = Math.PI * 1.5, MAX_STEP = 1.2;
-  var RUB = [4, 8, 12], RUB_LITTLE = [2, 4, 6];
+  var RUB = [4, 8, 12], RUB_LITTLE = [2, 4, 6], TAP = 0.5;
   var REACT = { yawn: 1.3, dizzy: 1.3, wake: 0.65, march: 0.55, oil: 0.9 };
 
   var api = null, cv = null, ctx = null, W = 390, H = 844, raf = 0, last = 0, clock = 0;
@@ -196,7 +197,7 @@
   var little = false, steps = 8, stage = 0, cur = BIG[0];
   var active = false, paused = false, away = false, won = false, keyOut = false, keyAt = -9;
   var turns = 0, sweepTurns = 0, quarters = 0, clicks = 0, dialAngle = 0, keyAngle = 0;
-  var owner = null, ownerMoved = -9, surface = null, held = false, keyHeld = false, prev = null, prevA = null, sweep = 0, origin = 0, credit = 0, downAt = null;
+  var effortAtDown = 0, owner = null, ownerMoved = -9, surface = null, held = false, keyHeld = false, prev = null, prevA = null, sweep = 0, origin = 0, credit = 0, downAt = null;
   var misses = 0, effort = 0, lastWork = -9, lastGain = -9, shownCircle = 0, tries = 0, lastTry = "none";
   var power = 0, react = null, doneAt = 0, dones = 0, sparks = [], pending = [];
   var scene = "bench", pan = null, cuckoo = false, cuckooAt = -9, doorsAt = -9, marchOut = -9;
@@ -820,7 +821,7 @@
     }
     e.preventDefault();
     keyHeld = false;
-    owner = e.pointerId; surface = e.currentTarget; held = true; ownerMoved = -9;
+    owner = e.pointerId; surface = e.currentTarget; held = true; ownerMoved = -9; effortAtDown = effort;
     var p = point(e); prev = p; downAt = p; prevA = inRing(p) ? rel(p).a : null; sweep = 0; origin = 0; credit = 0;
     try { surface.setPointerCapture(owner); } catch (err) {}
     hud();
@@ -838,6 +839,13 @@
     if (e.pointerId !== owner) return;
     e.preventDefault();
     var lifted = e.type === "pointerup" && canPlay() && !reacting();
+    // A TAP IS TRYING TOO (audit 13 Nov 2026), as in Light the Way: a press
+    // that stayed on one spot (a finger's jiggle included) counts at least
+    // TAP seconds toward the circle help. Only a moving finger counted, so a
+    // three-year-old who poked the dial again and again never saw the arrows
+    // brighten or the dot trace the circle. It only brings the help: a tap
+    // still winds nothing.
+    if (lifted && downAt && prev && Math.sqrt(Math.pow(prev.x - downAt.x, 2) + Math.pow(prev.y - downAt.y, 2)) < 10) effort = Math.max(effort, effortAtDown + TAP);
     detach();
     if (lifted) letGo();
     hud(); draw();
