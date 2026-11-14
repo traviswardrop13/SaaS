@@ -722,6 +722,43 @@ ok("today no pageerrors", errs.length === 0);
   await ctx.close();
 }
 
+// ── Undo takes away a child the restore ADDED (core audit B2, 13 Nov 2026) ──
+// importData only writes, so Undo used to leave the restored brother on the
+// list and his keys under a slot the next new child could be handed.
+{
+  const ctx = await browser.newContext({ viewport: { width: 430, height: 932 } });
+  const pg = await ctx.newPage();
+  pg.on("dialog", (d) => d.accept());
+  await pg.goto("http://localhost:8129/today.html"); await pg.waitForTimeout(500);
+  const backup = await pg.evaluate(() => {
+    localStorage.clear();
+    localStorage.setItem("sona.freeera.v1", "post"); localStorage.setItem("sona.freeera2.v1", "done"); localStorage.setItem("sona.freeera3.v1", "done"); localStorage.setItem("sona.freeera4.v1", "done"); localStorage.setItem("sona.freeera5.v1", "done");
+    sessionStorage.setItem("sona.gate.v1", String(Date.now()));
+    Sona.saveProfile({ childName: "Ada", childAge: "7", focusSounds: ["R"], onboarded: true });
+    return JSON.stringify({ app: "sona", v: 1, data: {
+      "sona.kids.v1": JSON.stringify({ active: "", hi: 2, list: [{ slot: "", name: "Ada" }, { slot: "k2", name: "Leo" }] }),
+      "sona.profile.v1": JSON.stringify({ childName: "Ada", childAge: "7", focusSounds: ["R"], onboarded: true }),
+      "sona.profile.v1@k2": JSON.stringify({ childName: "Leo", childAge: "5", focusSounds: ["S"], onboarded: true }),
+      "sona.progress.v1@k2": JSON.stringify({ leo: 1 }) } });
+  });
+  await pg.goto("http://localhost:8129/settings.html"); await pg.waitForTimeout(800);
+  await pg.evaluate((b) => {
+    const ta = document.getElementById("restoreIn");
+    let e = ta; while (e) { if (e.tagName === "DETAILS") e.open = true; e = e.parentElement; }
+    ta.value = b; document.getElementById("restoreBk").click();
+  }, backup);
+  await pg.waitForTimeout(1600);
+  const mid = await pg.evaluate(() => Sona.kids().map((k) => k.name).join());
+  await pg.evaluate(() => {
+    let e = document.getElementById("undoRestore"); while (e) { if (e.tagName === "DETAILS") e.open = true; e = e.parentElement; }
+    document.getElementById("undoRestore").click();
+  });
+  await pg.waitForTimeout(1600);
+  const after = await pg.evaluate(() => ({ kids: Sona.kids().map((k) => k.name).join(), k2: Object.keys(localStorage).filter((k) => /@k2$/.test(k)) }));
+  ok("Undo last restore takes away the child the restore added", mid === "Ada,Leo" && after.kids === "Ada" && !after.k2.length, mid + " " + JSON.stringify(after));
+  await ctx.close();
+}
+
 // ── SET30: Settings, shorter (Travis, 30 Sep 2026) ─────────────────────
 // No volume slider ("why can't we just use our phones to adjust volume on the
 // side of our iphone?"): the phone's buttons set the level. Sona's own mute

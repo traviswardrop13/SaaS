@@ -410,6 +410,11 @@
     // the grown-up's yes for them (BOARD2). A stray entry is queued for
     // deletion, never kept.
     try { _boardDrop(slot); _boardPendForget([slot]); } catch (e) {}
+    // …and every other per-child key: a restore with a lower `hi` (or an
+    // Undo of one) could leave another child's history, trophies, homework
+    // or clinician consent under this very slot, and the new child inherited
+    // them all (core audit, 13 Nov 2026). A new slot owns nothing.
+    try { PER_KID.forEach((k) => localStorage.removeItem(k + "@" + slot)); } catch (e) {}
     // A grandfathered household stays grandfathered through its NEW children
     // too (24 Sep 2026). earlyAdopterAnyKid() only sees children still on the
     // list, so a family who added a sibling and then removed the first child
@@ -451,14 +456,27 @@
     // or practice page
     let held = "";
     try { const rp = _loadFor(slot, PKEY, {}); if (rp.weeklyReport === true) held = String(rp.email || "").trim().toLowerCase(); } catch (e) {}
+    // THE HOUSEHOLD'S PROMISES STAY WITH THE HOUSEHOLD (13 Nov 2026). Read
+    // before the list changes: a free-era mark only on this child (a sibling
+    // added before addKid copied it, 24 Sep 2026), and an older founding
+    // device's "ff-" code, kept only in this child's pilot record. Both are
+    // the household's, so they are carried out of the slot, never invented.
+    const gf = earlyAdopterAnyKid();
+    try { const pi = _loadFor(slot, PILOTKEY, {}); if (pi && pi.consent && String(pi.code || "").indexOf("ff-") === 0) _markFounding(pi.code); } catch (e) {}
     v.list = v.list.filter((k) => k.slot !== slot);
     if (v.active === slot) { _switchRun(slot, v.list[0].slot); v.active = v.list[0].slot; }
     try { sessionStorage.removeItem("sona.run.v1@" + (slot || "first")); } catch (e) {}
     _saveKids(v);
     try { if (held && reportEmail() !== held) _reportOffOwe(held); } catch (e) {}
-    // drop that child's practice data; slot "" (the first kid) shares the
-    // un-suffixed keys, so only a suffixed slot is safe to clear
-    if (slot) { try { PER_KID.forEach((k) => localStorage.removeItem(k + "@" + slot)); } catch (e) {} }
+    if (gf && !earlyAdopterAnyKid()) {
+      v.list.forEach((k) => { try { const pr = _loadFor(k.slot, PKEY, {}); pr.earlyAdopter = true; saveFor(k.slot, PKEY, pr); } catch (e) {} });
+    }
+    // drop that child's data, whichever slot they had. Slot "" (the first
+    // child) owns the plain keys: Settings promises "deleted from this
+    // device", and it used to keep them all (name, age, the grown-up's email
+    // and every try) in every backup code, and _kids() could rebuild the
+    // child from them. Household keys are not in PER_KID and stay.
+    try { PER_KID.forEach((k) => localStorage.removeItem(slot ? k + "@" + slot : k)); } catch (e) {}
     // …and their saved tries, whichever slot they had: the clips are theirs,
     // and no child is ever given slot "" again.
     _dropRecordings(slot);
@@ -979,7 +997,8 @@
   const _hwAt = {};
   function syncHomework(force) {
     try {
-      if (!isPilot()) return Promise.resolve(null);
+      // a grown-up's "No thanks" or Stop sharing: nothing leaves for this child
+      if (!isPilot() || getProfile().slpShare === false) return Promise.resolve(null);
       const now = Date.now();
       // Pin the child HERE. Everything below — the credential, the rep count,
       // and above all the write — belongs to whoever is active at this
@@ -2820,6 +2839,57 @@
     } catch (e) { return { ok: false, error: "Couldn't read that backup code." }; }
   }
 
+  // UNDO LAST RESTORE PUTS THE PHONE BACK (core audit B2, 13 Nov 2026).
+  // Settings' Undo used to call importData(snapshot), which only ever writes,
+  // so a child the restore ADDED stayed on the list, and their keys stayed
+  // under a slot the next addKid could be handed. Here every key the snapshot
+  // does not hold goes first, then the snapshot is written as a restore is.
+  // Never touched: anything on NO_IMPORT (entitlement caches, the free-era
+  // and kept-buddies stamps, the board, the report's device id: true of this
+  // phone, and NO_EXPORT is inside it), and the clinician link (sona.slp,
+  // sona.slpok, sona.slpticket), so an Undo neither grants nor takes away
+  // access, and a cached coverage answer is never left without its ticket.
+  const UNDO_KEEP = ["sona.slp", "sona.slpok", "sona.slpticket"];
+  function undoImport(payload) {
+    let data = null;
+    try {
+      const obj = (typeof payload === "string") ? JSON.parse(payload) : payload;
+      data = (obj && obj.data && typeof obj.data === "object") ? obj.data : obj;
+    } catch (e) {}
+    if (!data || typeof data !== "object") return { ok: false, error: "Couldn't read the saved copy." };
+    try {
+      let boardBefore = []; try { boardBefore = _boardSlots(); } catch (e) {}
+      let heldBefore = ""; try { heldBefore = reportEmail(); } catch (e) {}
+      const activeBefore = _slot(), slotsBefore = _kids().list.map((k) => k.slot || "");
+      const drop = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (!k || k.indexOf("sona.") !== 0 || Object.prototype.hasOwnProperty.call(data, k)) continue;
+        const base = k.split("@")[0];
+        if (NO_IMPORT.indexOf(base) !== -1 || UNDO_KEEP.indexOf(base) !== -1) continue;
+        drop.push(k);
+      }
+      drop.forEach((k) => { try { localStorage.removeItem(k); } catch (e) {} });
+      const r = importData({ app: "sona", v: 1, data: data });
+      // a snapshot of a phone that held nothing importable is still put back
+      if (!r.ok && Object.keys(data).some((k) => k.indexOf("sona.") === 0 && NO_IMPORT.indexOf(k.split("@")[0]) === -1)) return r;
+      try { _boardAfterImport(boardBefore); } catch (e) {}
+      // a child the restore brought keeps no consent record (on NO_IMPORT,
+      // so the sweep above left it) once their slot is off the list again
+      try {
+        const now = _kids().list.map((k) => k.slot || "");
+        slotsBefore.forEach((sl) => {
+          if (now.indexOf(sl) >= 0) return;
+          const key = sl ? PILOTKEY + "@" + sl : PILOTKEY;
+          if (!Object.prototype.hasOwnProperty.call(data, key)) localStorage.removeItem(key);
+        });
+      } catch (e) {}
+      try { if (heldBefore && reportEmail() !== heldBefore) _reportOffOwe(heldBefore); } catch (e) {}
+      try { _switchRun(activeBefore, _slot()); } catch (e) {}
+      return { ok: true, restored: r.restored || 0, removed: drop.length };
+    } catch (e) { return { ok: false, error: "Couldn't undo." }; }
+  }
+
   // ── Charge & Play: the ⚡ charge gate + the Daily Run ─────────────────────
   // The core loop: a quick burst of ~5 real spoken reps "charges" the game the
   // kid is about to play. Practice is the power source — never the penalty.
@@ -3408,6 +3478,48 @@
     }
   } catch (e) {}
   function slpCode() { try { return localStorage.getItem("sona.slp") || ""; } catch (e) { return ""; } }
+  // STOP SHARING, FROM SETTINGS (clinician audit B1, 13 Nov 2026). join.html,
+  // the privacy page and the clinician page all promise a grown-up can stop
+  // sharing from the grown-ups' area, and the only control was on pilot.html,
+  // which nothing links to. Read only: is the active child sharing right now?
+  // A clinician's consented enrolment (never a founding "ff-" beacon), not
+  // declined or stopped on this phone, with the ticket that proves the phone.
+  function slpSharing() {
+    try {
+      const pi = pilotInfo();
+      if (!pi.consent || !pi.childId || String(pi.code || "").indexOf("ff-") === 0) return false;
+      if (getProfile().slpShare === false) return false;
+      return !!localStorage.getItem("sona.slpticket");
+    } catch (e) { return false; }
+  }
+  // Asks the clinician's dashboard to forget the active child: the server
+  // deletes the roster row, the homework and the invite and marks the child
+  // gone (/api/pilot/forget). Only once it says so is slpShare:false written
+  // (sendProgress and syncHomework then send nothing for this child) and
+  // the cached assignment cleared. Consent, the ticket and the clinician
+  // codes stay: they carry access (the trial, coverage), and access and
+  // sharing are separate on the way out as on the way in. Never a name.
+  // A Promise of { ok, error }; it never rejects.
+  function slpStopSharing() {
+    try {
+      const slot = _slot();
+      const pi = _loadFor(slot, PILOTKEY, {});
+      const code = String(pi.code || ""), childId = String(pi.childId || "");
+      let ticket = ""; try { ticket = localStorage.getItem("sona.slpticket") || ""; } catch (e) {}
+      if (!pi.consent || !code || !childId || !ticket) return Promise.resolve({ ok: false, error: "not-enrolled" });
+      return fetch("/api/pilot/forget", {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code: code, childId: childId, ticket: ticket }),
+      }).then((r) => r.json()).then((j) => {
+        if (!(j && j.ok)) return { ok: false, error: "server" };
+        try {
+          if (_slot() === slot) saveProfile({ slpShare: false });
+          else { const pr = _loadFor(slot, PKEY, {}); pr.slpShare = false; saveFor(slot, PKEY, pr); }
+          saveFor(slot, HWKEY, { hw: null, at: Date.now() });
+        } catch (e) {}
+        return { ok: true };
+      }).catch(() => ({ ok: false, error: "server" }));
+    } catch (e) { return Promise.resolve({ ok: false, error: "server" }); }
+  }
 
   // ── special-offer links: speaksona.com/…?offer=FOUNDING50 ────────────────
   // The landing page's founding card links through with an offer code; it
@@ -10268,7 +10380,9 @@
   let _lastSent = 0;
   function sendProgress(kind) {
     try {
-      if (!isPilot()) return;
+      // consent can outlive a "No thanks" or a Stop sharing (it carries
+      // access), so the grown-up's no is read too: nothing is sent after it
+      if (!isPilot() || getProfile().slpShare === false) return;
       const now = Date.now(); if (kind !== "enroll" && kind !== "manual" && now - _lastSent < 60000) return; _lastSent = now;
       const p = getProfile(), g = getProgress();
       const payload = {
@@ -10432,5 +10546,5 @@
   try { _questAnchors(); } catch (e) {}
   try { installDebug(); } catch (e) {}
 
-  global.Sona = { questToday, questEnd, QUEST_DAYS, QUEST_LEN, STORY_DAYS, storyOpen, storyShown, storyEnding, storySeen, storyPlace, storyFound, storyReplay, STORY_SAY_TIMES, STORY_TALK, storyDay, day1For, pcmWave, mediaPCM, voiceAsMedia, libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, goalDays, dayReps, dayGoal, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, goClip, GO_WAIT_MS, WORDS, wordsFor, GAME_WORDS, gameWords, POSITIONS, FAMILY_POSITIONS, posInfo, posPhrase, posHas, soundPos, sylPos, playWords, playPool, hasSound, GAMES_FOLLOW_POS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, rungWin, ladderKey, ladderContent, PRACTICE_TOP, ladderSteps, ladderTop, ladderStart, stepDown, stepLabel, ladderWhere, ladderPlan, GAME_LEVELS, gameTop, gameAsk, gameHold, FREE_MODE, isFree, WEB_SALES, webSales, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, targetSound, targetSoundOptions, setTargetSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, homePicks, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, freeVersion, trialFirst, offerOnLock, FREE_BOOKS, freeBooksOnShelf, bookFree, booksOpen, bookLocked, seasonPick, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, firstGameKey, firstGameStart, firstGameEnd, FREE_PLAY_ON, freePlayOn, freePlayDue, freePlayStart, freePlayActive, freePlayEnd, CRAFTED_CARDS, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, speechTurn, hasSpeechBridge, micNative, micOpen, micProbe, micSource, micDeaf, micRecorder, micQuiet, micStats, micFifo: nmFifo, NATIVE_MIC_GAIN, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repWeeks, gameRep, repsBeacon, gameBest, gameBestOffer, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES, trophyState, trophies, coinsNow, PLAY_LEVEL_AT, PLAY_LEVEL_LINES, playLevelsOpen, playLevel, playLevelAsk, setPlayLevel, playLevelInfo, playBest, playBestOffer, buddyId, buddySprite, chestState, chestOpen, ROAD_LANDS, ROAD_STOPS, MONTH_STEPS, roadStop, roadState, roadOpen, monthOpen, roadSettle, roadRolledSeen, buddiesKept, shopItem, buyItem, undoBuy, equip, BOARD_LIVE, boardLive, boardAllowed, boardState, boardStart, boardClaim, boardFlush, boardView, boardNick, boardLeave, boardAsk, boardCancel, parentEmail, reportEmail, reportSync, reportStatus, reportSet, reportOff, reportFlush, homeOfferDue, offerSeen, notifyAvailable, notifyState, notifyRefresh, notifyAsk, trialReminderOn, trialReminderArm, trialReminderSync, trialReminderSold, nudgeConsent, nudgeState, soundMark, clipsSettled, storePlan, buyPlan, planWords, planSay, planBillDate, setupWall, setupAfterMark, setupAfter, setupAfterClear, setupAsks, setupAsksSave, SETUP_THERAPY };
+  global.Sona = { questToday, questEnd, QUEST_DAYS, QUEST_LEN, STORY_DAYS, storyOpen, storyShown, storyEnding, storySeen, storyPlace, storyFound, storyReplay, STORY_SAY_TIMES, STORY_TALK, storyDay, day1For, pcmWave, mediaPCM, voiceAsMedia, libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, goalDays, dayReps, dayGoal, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, goClip, GO_WAIT_MS, WORDS, wordsFor, GAME_WORDS, gameWords, POSITIONS, FAMILY_POSITIONS, posInfo, posPhrase, posHas, soundPos, sylPos, playWords, playPool, hasSound, GAMES_FOLLOW_POS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, undoImport, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, rungWin, ladderKey, ladderContent, PRACTICE_TOP, ladderSteps, ladderTop, ladderStart, stepDown, stepLabel, ladderWhere, ladderPlan, GAME_LEVELS, gameTop, gameAsk, gameHold, FREE_MODE, isFree, WEB_SALES, webSales, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, targetSound, targetSoundOptions, setTargetSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, homePicks, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, freeVersion, trialFirst, offerOnLock, FREE_BOOKS, freeBooksOnShelf, bookFree, booksOpen, bookLocked, seasonPick, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, slpSharing, slpStopSharing, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, firstGameKey, firstGameStart, firstGameEnd, FREE_PLAY_ON, freePlayOn, freePlayDue, freePlayStart, freePlayActive, freePlayEnd, CRAFTED_CARDS, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, speechTurn, hasSpeechBridge, micNative, micOpen, micProbe, micSource, micDeaf, micRecorder, micQuiet, micStats, micFifo: nmFifo, NATIVE_MIC_GAIN, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repWeeks, gameRep, repsBeacon, gameBest, gameBestOffer, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES, trophyState, trophies, coinsNow, PLAY_LEVEL_AT, PLAY_LEVEL_LINES, playLevelsOpen, playLevel, playLevelAsk, setPlayLevel, playLevelInfo, playBest, playBestOffer, buddyId, buddySprite, chestState, chestOpen, ROAD_LANDS, ROAD_STOPS, MONTH_STEPS, roadStop, roadState, roadOpen, monthOpen, roadSettle, roadRolledSeen, buddiesKept, shopItem, buyItem, undoBuy, equip, BOARD_LIVE, boardLive, boardAllowed, boardState, boardStart, boardClaim, boardFlush, boardView, boardNick, boardLeave, boardAsk, boardCancel, parentEmail, reportEmail, reportSync, reportStatus, reportSet, reportOff, reportFlush, homeOfferDue, offerSeen, notifyAvailable, notifyState, notifyRefresh, notifyAsk, trialReminderOn, trialReminderArm, trialReminderSync, trialReminderSold, nudgeConsent, nudgeState, soundMark, clipsSettled, storePlan, buyPlan, planWords, planSay, planBillDate, setupWall, setupAfterMark, setupAfter, setupAfterClear, setupAsks, setupAsksSave, SETUP_THERAPY };
 })(window);

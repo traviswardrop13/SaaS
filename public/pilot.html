@@ -181,6 +181,15 @@
         var childId=String(pi.childId||""), code=String(pi.code||"");
         if(!ticket||!childId||!code){ $("stopErr").textContent="This device isn't enrolled with a speech therapist."; return; }
         $("stopYes").disabled=true; $("stopErr").style.color="var(--muted)"; $("stopErr").textContent="Asking their dashboard to forget your child…";
+        // sona.js's own Stop (Settings' too) also clears the cached homework;
+        // the request below stays for an older cached sona.js
+        if(Sona.slpStopSharing){
+          Sona.slpStopSharing().then(function(r){
+            if(r&&r.ok){ $("stopConfirm").style.display="none"; $("stopLead").textContent="Done. Their dashboard no longer has your child. Sona is still free for you."; $("stopErr").textContent=""; }
+            else { $("stopYes").disabled=false; $("stopErr").style.color="#e0457b"; $("stopErr").textContent="Couldn't reach the server — try again in a moment."; }
+          });
+          return;
+        }
         fetch("/api/pilot/forget",{ method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ code:code, childId:childId, ticket:ticket }) })
           .then(function(r){ return r.json(); })
           .then(function(j){
