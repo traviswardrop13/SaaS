@@ -15,21 +15,36 @@ export const LIST_SYNCED = "resend:synced";
  * disagree about who is on them.
  */
 
+/** True when `given` equals `want`, compared in constant time. */
+export function sameSecret(given: string, want: string): boolean {
+  const a = Buffer.from(given || "");
+  const b = Buffer.from(want || "");
+  return a.length === b.length && b.length > 0 && crypto.timingSafeEqual(a, b);
+}
+
 /**
- * FOUNDER_KEY, 12+ characters, compared in constant time and taken from a
- * header so it stays out of URLs, browser history and server logs. Returns a
- * response to send back when the request may not proceed, else null.
+ * FOUNDER_KEY alone: 12+ characters, compared in constant time and taken
+ * from the x-founder-key header only (never ?key=), so it stays out of URLs,
+ * browser history and server logs. The same on every deployment, previews
+ * included. Returns a response to send back when the request may not
+ * proceed, else null. For a route that needs no data store (the clip tools,
+ * the daily job's manual run); founderGate adds the store check.
  */
-export function founderGate(req: NextRequest): NextResponse | null {
+export function founderKey(req: NextRequest): NextResponse | null {
   const need = process.env.FOUNDER_KEY || "";
   if (need.length < 12) {
     return NextResponse.json({ ok: false, error: "Set FOUNDER_KEY (12+ characters) in Vercel, then redeploy." }, { status: 503 });
   }
-  const given = Buffer.from(req.headers.get("x-founder-key") || "");
-  const want = Buffer.from(need);
-  if (given.length !== want.length || !crypto.timingSafeEqual(given, want)) {
+  if (!sameSecret(req.headers.get("x-founder-key") || "", need)) {
     return NextResponse.json({ ok: false, error: "Wrong key." }, { status: 401 });
   }
+  return null;
+}
+
+/** founderKey, and a connected data store: for the founder pages' routes. */
+export function founderGate(req: NextRequest): NextResponse | null {
+  const denied = founderKey(req);
+  if (denied) return denied;
   if (!kvConfigured()) return NextResponse.json({ ok: false, error: "No data store is connected." }, { status: 503 });
   return null;
 }

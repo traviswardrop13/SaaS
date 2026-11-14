@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { dashboardGate } from "@/lib/proGate";
 import { NOTE_MAX, POSITIONS, SOUND_NORM, TITLE_MAX } from "@/lib/homework";
 import { rateLimit } from "@/lib/rateLimit";
-import { kvCmd, readSession } from "@/lib/slpAuth";
+import { kvCmd, readSession, liveSession } from "@/lib/slpAuth";
 
 export const runtime = "nodejs";
 
@@ -14,7 +14,7 @@ function error(message: string, status: number) {
 }
 
 export async function POST(req: NextRequest) {
-  const session = readSession(req);
+  const session = await liveSession(readSession(req));
   if (!session) return error("Sign in to draft homework.", 401);
 
   const origin = req.headers.get("origin");

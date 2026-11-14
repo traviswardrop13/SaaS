@@ -37,7 +37,7 @@ await page.screenshot({ path: OUT + "/call-ring.png" });
 // answer → call runs; VAD gets no audio so every ask falls to "couldn't hear" and continues
 await page.evaluate(() => document.getElementById("answer").click());
 await page.waitForTimeout(1200);
-ok("greeting spoken first", /Well HI, Milo/.test(ttsPosts[0] || ""));
+ok("greeting spoken first, calling the child \"friend\"", /Well HI, friend!/.test(ttsPosts[0] || ""));
 ok("call burns one weekly slot", await page.evaluate(() => window.SonaCallsLeft() === 2));
 await page.screenshot({ path: OUT + "/call-live.png" });
 // let the script play out (TTS 500s resolve fast; listens time out at 12s → "couldn't hear" path)
@@ -48,6 +48,8 @@ ok("script advances past the asks", state.step >= 4);
 // no sustained sounds ever sent to TTS
 const bad = ttsPosts.filter((t) => /([a-z])\1\1/i.test(t));
 ok("no sustained strings in TTS (" + ttsPosts.length + " lines)", bad.length === 0);
+ok("no line sent to /api/tts carries the child's name", ttsPosts.length > 0 && !ttsPosts.some((t) => /Milo/.test(t)));
+ok("the page never reads the profile's name", !/profile\.childName/.test(readFileSync(ROOT + "/coach-call.html", "utf8")));
 ok("no pageerrors", errs.length === 0);
 if (errs.length) console.log("      err:", errs[0]);
 

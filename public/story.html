@@ -169,8 +169,11 @@
     var PAGES=FALLBACK, GENERATED=false;
     // GOAL = how many pages this run asks for, never more than we actually have.
     var GOAL=Math.min(LEVEL_GOAL,PAGES.length)||PAGES.length||5;
-    // Try to fetch a fresh, AI-written adventure themed to the kid's interest.
-    function loadStory(){return fetch("/api/story",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:NAME,interest:INTEREST,sound:SOUND,position:POS,minutes:MINUTES,diff:DIFF,level:DIFF,pages:LEVEL_GOAL})}).then(function(r){return r.ok?r.json():null;}).then(function(j){if(j&&j.ok&&j.story&&j.story.pages&&j.story.pages.length>=4){PAGES=j.story.pages;GOAL=Math.min(LEVEL_GOAL,PAGES.length);GENERATED=true;}}).catch(function(){});}
+    // No network story (14 Nov 2026): /api/story is gone. It sent the child's
+    // name to an AI service, against "a child's name never leaves the device".
+    // The page plays its built-in pages; NAME stays on screen only. Bringing
+    // written stories back needs a route that never receives the name.
+    function loadStory(){return Promise.resolve();}
 
     var audioCtx=null; function getCtx(){if(!audioCtx){var AC=window.AudioContext||window.webkitAudioContext;audioCtx=new AC();}if(audioCtx.state==="suspended")audioCtx.resume();return audioCtx;}
     // SPEAK1: shared pipeline (sona.js). The guard hooks matter: ttsBegin/

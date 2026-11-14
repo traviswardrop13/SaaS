@@ -270,6 +270,61 @@ try {
   f = await founder({ key: "founder-key-for-tests-only", endless: true });
   ok("the inbox walk is bounded: at most 200 SCAN rounds of 1000", f.status === 200 && f.calls.filter((c) => c[0] === "SCAN").length <= 200 && f.calls.filter((c) => c[0] === "SCAN").every((c) => c[5] === 1000), f.calls.filter((c) => c[0] === "SCAN").length);
   ok("the reader only reads", f.calls.every((c) => ["LRANGE", "SCAN"].includes(c[0])), [...new Set(f.calls.map((c) => c[0]))]);
+
+  // ── /api/feedback: Home's founding-family pulse (server.md B8, 14 Nov 2026) ──
+  // Same origin only, 10 an hour an address, an 8 KB body, the record built
+  // field by field with no child id, only the capped fb:beta list (never a
+  // per-code feedback:<anything> list), and a header-only founder key on GET.
+  {
+    const PULSE = loadTs(path.join(ROOT, "app/api/feedback/route.ts"));
+    async function pulse(body, opts = {}) {
+      for (const k of ENV_KEYS) delete process.env[k];
+      process.env.KV_REST_API_URL = KV; process.env.KV_REST_API_TOKEN = "fake-kv-token";
+      if (opts.webhook) process.env.FEEDBACK_WEBHOOK_URL = FEEDBACK;
+      const calls = [];
+      globalThis.fetch = async (url, init = {}) => {
+        let payload = null; try { payload = JSON.parse(init.body || "null"); } catch { payload = init.body; }
+        calls.push({ url: String(url), payload });
+        if (String(url) === KV) {
+          if (payload[0] === "EVAL" && /^-- rl:incr\n/.test(payload[1])) return Response.json({ result: opts.rateLimited ? 11 : 1 });
+          return Response.json({ result: 1 });
+        }
+        return new Response("ok", { status: 200 });
+      };
+      const headers = new Headers({ "content-type": "application/json", "x-real-ip": "pulse-test-" + (++ip) });
+      const origin = opts.origin === undefined ? SITE : opts.origin;
+      if (origin) headers.set("origin", origin);
+      const res = await PULSE.POST(new Request(SITE + "/api/feedback", { method: "POST", headers, body: opts.raw ? body : JSON.stringify(body) }));
+      const kv = calls.filter((c) => c.url === KV && c.payload[0] !== "EVAL").map((c) => c.payload);
+      return { status: res.status, kv, calls };
+    }
+    const ANSWER = { src: "pulse", q: "pulse.chips", text: "More books", childId: "kid-123", code: "ff-abc", at: "2026-11-14T10:00:00.000Z" };
+    let r = await pulse(ANSWER, { origin: null });
+    ok("/api/feedback refuses a post with no Origin (a script), touching nothing", r.status === 403 && r.calls.length === 0, r);
+    r = await pulse(ANSWER, { origin: "https://evil.example" });
+    ok("…and one from another site", r.status === 403 && r.calls.length === 0, r);
+    r = await pulse(ANSWER, { rateLimited: true });
+    ok("…10 an hour an address (bucket \"feedback\")", r.status === 429 && r.kv.length === 0 &&
+      r.calls.some((c) => c.url === KV && c.payload[0] === "EVAL" && /^rl:feedback:/.test(c.payload[3])), r.status);
+    r = await pulse("x".repeat(9000), { raw: true });
+    ok("…a body over 8 KB is refused unread", r.status === 413 && r.kv.length === 0, r.status);
+    r = await pulse(ANSWER, { webhook: true });
+    const pushed = r.kv.filter((c) => c[0] === "LPUSH");
+    const rec = pushed.length ? JSON.parse(pushed[0][2]) : {};
+    ok("the pulse answer lands in fb:beta only, never a per-code feedback list",
+      r.status === 200 && pushed.length === 1 && pushed[0][1] === "fb:beta" && !r.kv.some((c) => /^feedback:/.test(String(c[1]))), r.kv);
+    ok("…its record keeps the answer and drops the child id", rec.text === "More books" && rec.q === "pulse.chips" && rec.src === "pulse" && !("childId" in rec) && !JSON.stringify(rec).includes("kid-123"), rec);
+    const hook = r.calls.find((c) => c.url === FEEDBACK);
+    ok("…and the webhook gets no child id either", !!hook && !JSON.stringify(hook.payload).includes("kid-123"), hook);
+    for (const k of ENV_KEYS) delete process.env[k];
+    process.env.FOUNDER_KEY = "founder-key-for-tests-only"; process.env.KV_REST_API_URL = KV; process.env.KV_REST_API_TOKEN = "fake-kv-token";
+    globalThis.fetch = async () => Response.json({ result: [JSON.stringify({ text: "More books" })] });
+    const get = (url, key) => PULSE.GET(new (require(path.join(ROOT, "node_modules/next/server")).NextRequest)(url, { headers: key ? { "x-founder-key": key } : {} }));
+    ok("GET /api/feedback refuses the key in the address (?key=)", (await get(SITE + "/api/feedback?key=founder-key-for-tests-only")).status === 401);
+    ok("…and a wrong header key", (await get(SITE + "/api/feedback", "founder-key-for-tests-onlx")).status === 401);
+    const g = await get(SITE + "/api/feedback", "founder-key-for-tests-only");
+    ok("…and reads the answers with the header key", g.status === 200 && (await g.json()).items.length === 1);
+  }
 } finally {
   globalThis.fetch = originalFetch;
   for (const k of ENV_KEYS) { if (originalEnv[k] === undefined) delete process.env[k]; else process.env[k] = originalEnv[k]; }

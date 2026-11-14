@@ -11,12 +11,15 @@ import { kvCmd } from "@/lib/slpAuth";
  * which of its days had a counted rep, and how it ended. Nothing else: no
  * name, age, sound, count, word or email, and nothing about a child.
  *
- *  - The phone says "free trial started" ({ days }) from the purchase, and
- *    "played today" once a local day on the first counted rep (/api/track).
- *  - RevenueCat says how it went (/api/revenuecat), for a phone that handed
- *    it the same id (sona.js _rcEmail, the `sona_fid` attribute): paid (the
- *    free days became a paid month), cancelled, billing, or ended. A family
- *    who never opens Sona again is still heard here.
+ *  - RevenueCat starts the row (/api/revenuecat, behind its own secret), for
+ *    a phone that handed it the same id (sona.js _rcEmail, the `sona_fid`
+ *    attribute), and says how it went: paid (the free days became a paid
+ *    month), cancelled, billing, or ended. A family who never opens Sona
+ *    again is still heard here.
+ *  - The phone says "played today" once a local day on the first counted rep,
+ *    and "free trial started" ({ days }) from the purchase (/api/track). Since
+ *    14 Nov 2026 neither can START a row: anyone can post to /api/track, so
+ *    the phone only fills in a row RevenueCat made (trialDays, trialPlayed).
  *
  * Day 1 is the first 24 hours from the start, day 2 the next, and so on, by
  * the server's clock (no time zone is kept). Each trial is kept 120 days.
@@ -47,6 +50,19 @@ export async function trialStart(fid: string, days: number, at: number, kv: Kv =
   if (d >= 1 && d <= MAX_DAYS) await kv(["HSETNX", k, "n", d]);
   if (fresh) await kv(["ZADD", IDX_KEY, Math.floor(at), fid]);
   await kv(["EXPIRE", k, KEEP_SEC]);
+}
+
+/**
+ * The phone's "free trial started": the trial's length, only for a row
+ * RevenueCat already started (never a new row, never the index), and only
+ * when no length is kept yet.
+ */
+export async function trialDays(fid: string, days: number, kv: Kv = kvCmd): Promise<void> {
+  if (!fidOk(fid)) return;
+  const d = Math.round(Number(days));
+  if (!(d >= 1 && d <= MAX_DAYS)) return;
+  if (!(Number(await kv(["HGET", trialKey(fid), "s"])) > 0)) return;
+  await kv(["HSETNX", trialKey(fid), "n", d]);
 }
 
 /** The family played today: marks the trial's day, if this id has a trial. */

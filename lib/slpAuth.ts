@@ -171,10 +171,12 @@ export function hashToken(t: string): string {
   return crypto.createHash("sha256").update(t).digest("hex");
 }
 
+// Role and work setting are optional (Travis, 14 Nov 2026: the sign-up form
+// asks for an email only). A link made before then still carries them.
 export type FreeDashboardSignup = {
   email: string;
-  clinicianRole: ClinicianRole;
-  workSetting: "clinic" | "school";
+  clinicianRole?: ClinicianRole;
+  workSetting?: "clinic" | "school";
   source: string;
   attrib: Record<string, string>;
 };
@@ -196,8 +198,9 @@ export function readFreeDashboardSignup(stored: string): FreeDashboardSignup | n
   if (!body || !sig || extra !== undefined || !sigOk(FREE_DASHBOARD_SIGNUP_PREFIX + body, sig)) return null;
   try {
     const value = JSON.parse(Buffer.from(body, "base64url").toString()) as FreeDashboardSignup;
-    if (!value || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(value.email) || !clinicianRole(value.clinicianRole) ||
-        (value.workSetting !== "clinic" && value.workSetting !== "school")) return null;
+    if (!value || typeof value.email !== "string" || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(value.email) ||
+        (value.clinicianRole !== undefined && !clinicianRole(value.clinicianRole)) ||
+        (value.workSetting !== undefined && value.workSetting !== "clinic" && value.workSetting !== "school")) return null;
     return value;
   } catch {
     return null;
@@ -220,12 +223,42 @@ export function verifySession(token: string | undefined | null): Session | null 
   if (!body || !sig) return null;
   if (!sigOk(body, sig)) return null;
   try {
-    const obj = JSON.parse(Buffer.from(body, "base64url").toString()) as Session;
+    const obj = JSON.parse(Buffer.from(body, "base64url").toString()) as Session & { t?: unknown };
+    // Only a SESSION is a session (audit B9, 13 Nov 2026). A family's
+    // enrolment ticket is signed with the same secret; set as slp_session it
+    // used to pass here with no email, and every route then read and wrote
+    // "slpacct:undefined". A tagged payload, or one without an email, is not
+    // a clinician.
+    if (!obj || typeof obj !== "object" || Array.isArray(obj) || "t" in obj) return null;
+    if (typeof obj.email !== "string" || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(obj.email)) return null;
     if (obj.exp && Date.now() > obj.exp) return null;
     return obj;
   } catch {
     return null;
   }
+}
+
+/**
+ * SESSIONS FROM BEFORE THE INBOX WAS PROVED ARE OVER (audit B3, 13 Nov 2026).
+ * Until then a brand-new email typed on the sign-in page was signed in on the
+ * spot, so anyone could hold a cookie for a real clinician's address, and a
+ * session is stateless: nothing could take it back. The first sign-in by the
+ * emailed link writes `slpsessfrom:<email>` (its time, NX: once), and a
+ * session issued before that time is refused here. A separate key, so the
+ * account record, and the absent `terms` that is a grandfathered clinician's
+ * promise, are never rewritten for it. Later sign-ins never move it, so a
+ * second device does not log the first one out.
+ *
+ * No key, or a store that did not answer, leaves the session as it was: a
+ * blip never signs a clinician out (the route's own reads still fail closed).
+ */
+export async function liveSession(s: Session | null): Promise<Session | null> {
+  if (!s) return null;
+  let from: unknown;
+  try { from = await kvCmd(["GET", "slpsessfrom:" + s.email.toLowerCase()]); } catch { return s; }
+  const t = typeof from === "string" || typeof from === "number" ? Number(from) : NaN;
+  if (Number.isFinite(t) && t > 0 && (Number(s.iat) || 0) < t) return null;
+  return s;
 }
 
 /**

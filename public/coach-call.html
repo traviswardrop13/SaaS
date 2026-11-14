@@ -163,7 +163,10 @@
     var $=function(id){return document.getElementById(id);};
     var S=window.Sona;
     var profile=S?S.getProfile():{};
-    var NAME=(profile.childName||"friend");
+    // Never the profile's name (14 Nov 2026): every line is spoken through
+    // /api/tts, so a name here would leave the phone. "friend" is what a
+    // profile with no name always heard.
+    var NAME="friend";
     var SOUND=((profile.focusSounds&&profile.focusSounds[0])||"R").toUpperCase();
     if(!(S&&S.WORDS&&S.WORDS[SOUND])) SOUND="R";
     var BUDDY=(S&&S.characterById)?(S.characterById(profile.character)||S.CHARACTERS[0]):{name:"Pip"};

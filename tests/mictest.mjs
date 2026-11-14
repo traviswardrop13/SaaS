@@ -110,8 +110,9 @@ async function page(mic) {
 // accepts an uploaded recording. /api/stt (a transcription door nothing
 // called) was deleted on 25 Sep 2026 so that stays literally true. The two
 // routes that DO take a file are the founder's clip tools — cleaning and
-// re-voicing Rachel's own recordings — behind FOUNDER_KEY on production, and
-// no page under public/ calls either. Adding a third upload route, or a
+// re-voicing Rachel's own recordings — behind FOUNDER_KEY on every deployment,
+// previews included (14 Nov 2026: a preview used to be open), and no page
+// under public/ calls either. Adding a third upload route, or a
 // page that posts audio, fails here on purpose.
 {
   const { readdirSync, statSync } = await import("node:fs");
@@ -122,7 +123,16 @@ async function page(mic) {
   ok("only the two founder clip tools accept a file; no /api/stt", JSON.stringify(uploaders) === JSON.stringify(["isolate", "voice-change"]), uploaders.join(", "));
   for (const r of uploaders) {
     const src = noComments(readFileSync(API + "/" + r + "/route.ts", "utf8"));
-    ok(r + " is locked behind FOUNDER_KEY on production", /FOUNDER_KEY/.test(src) && /x-founder-key/.test(src) && /isPreview/.test(src));
+    ok(r + " is locked behind the founder key on every deployment, previews included (header only, constant time, before anything else)",
+      /const denied = founderKey\(req\);\s*if \(denied\) return denied;/.test(src) && src.indexOf("founderKey(req)") < src.indexOf("ELEVENLABS_API_KEY") && !/isPreview|VERCEL_ENV|searchParams|!== want/.test(src));
+  }
+  {
+    const fk = noComments(readFileSync(ROOT + "/../lib/founder.ts", "utf8"));
+    const body = (fk.match(/export function founderKey\([\s\S]*?\n\}/) || [""])[0];
+    ok("founderKey reads the x-founder-key header only, needs 12+ characters, and compares in constant time",
+      /x-founder-key/.test(body) && /need\.length < 12/.test(body) && /sameSecret\(/.test(body) && /timingSafeEqual/.test(fk) && !/searchParams|nextUrl/.test(body));
+    const vc = noComments(readFileSync(API + "/voice-change/route.ts", "utf8"));
+    ok("voice-change refuses a voice id that is not letters and digits (it goes into ElevenLabs' path)", /\/\^\[A-Za-z0-9\]\{10,40\}\$\/\.test\(voiceId\)/.test(vc) && /status: 400/.test(vc));
   }
   const pages = readdirSync(ROOT).filter((n) => /\.(html|js)$/.test(n));
   const callers = pages.filter((n) => /\/api\/(stt|isolate|voice-change)\b/.test(noComments(readFileSync(ROOT + "/" + n, "utf8"))));

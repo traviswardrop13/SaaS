@@ -319,12 +319,19 @@ if (A) {
   // clinician locked out for good, and a network error to explain it.
   const gate = req.indexOf("if (!authSecretOk())");
   ok("the sign-up route checks the signing secret at all", gate > 0);
-  ok("…before it writes the account, mints a token or pings the CRM",
+  // Since 13 Nov 2026 this route writes no account at all (the emailed
+  // link's verify route makes it); it still mints a token and may ping the CRM.
+  ok("…before it mints a token or pings the CRM, and it never writes an account",
     gate > 0 &&
     gate < req.indexOf('kvCmd(["SET", "slptok:') &&
-    gate < req.indexOf('kvCmd(["SET", "slpacct:') &&
-    gate < req.indexOf("tellCrm(origin, email, String("),
+    gate < req.indexOf("tellCrm(origin, email, String(") &&
+    req.indexOf('kvCmd(["SET", "slpacct:') < 0,
     "a half-created account is a permanent lockout: the retry can never reach the new-account branch again");
+  // Every call emails someone: one address may not loop it over a thousand
+  // inboxes (audit B2, 13 Nov 2026). An hour at most, as the privacy page says.
+  const rl = req.match(/rateLimit\(req, \{ key: "slpauth", limit: (\d+), windowSec: (\d+)/);
+  ok("the sign-up route limits each address (IP) before it mints a token or sends a link",
+    !!rl && Number(rl[1]) <= 30 && Number(rl[2]) <= 3600 && req.indexOf('rateLimit(req, { key: "slpauth"') < req.indexOf('kvCmd(["SET", "slptok:'));
   ok("…and says so in words a clinician can act on, not a stack trace",
     /Sign-in isn't switched on for this deployment yet/.test(req) && /hello@speaksona.com/.test(req));
 
@@ -445,6 +452,28 @@ if (A) {
   ok("…and records the choice locally only AFTER the server said ok",
     /j&&j\.ok\)\{\s*try\{ Sona\.saveProfile\(\{ slpShare:false \}\)/.test(pilotHtml));
   ok("…without touching the enrolment form the credential tests drive", /id="shareSlp"/.test(pilotHtml) && /slpRedeem\(code,key\)/.test(pilotHtml));
+  // …and from Settings, where join.html and the privacy page say it is
+  // (clinician audit B1, 13 Nov 2026): sona.js holds the one request
+  {
+    const sonaSrc = read("public/sona.js"), setHtml = read("public/settings.html"), progHtml = read("public/progress.html");
+    const stop = (sonaSrc.match(/function slpStopSharing\(\) \{([\s\S]*?)\n  \}/) || ["", ""])[1];
+    ok("Sona.slpStopSharing posts exactly the code, the child id and the ticket to /api/pilot/forget",
+      /\/api\/pilot\/forget/.test(stop) && /JSON\.stringify\(\{ code: code, childId: childId, ticket: ticket \}\)/.test(stop) && !/childName/.test(stop));
+    ok("…and records slpShare:false and clears the cached homework only AFTER the server said ok",
+      /if \(!\(j && j\.ok\)\) return \{ ok: false/.test(stop) && stop.indexOf("j.ok") < stop.indexOf("slpShare: false") && /saveFor\(slot, HWKEY, \{ hw: null/.test(stop));
+    ok("…leaving consent and the ticket alone (they carry access)", !/removeItem/.test(stop) && !/consent: false/.test(stop));
+    ok("sendProgress and syncHomework send nothing after a No thanks or a Stop",
+      /function sendProgress\(kind\) \{[\s\S]{0,400}if \(!isPilot\(\) \|\| getProfile\(\)\.slpShare === false\) return;/.test(sonaSrc) &&
+      /function syncHomework\(force\) \{[\s\S]{0,200}if \(!isPilot\(\) \|\| getProfile\(\)\.slpShare === false\) return Promise\.resolve\(null\);/.test(sonaSrc));
+    ok("Settings has a hidden 'Sharing with your speech therapist' card, shown only by Sona.slpSharing()",
+      /<section class="card" id="shareCard"[^>]*hidden>/.test(setHtml) && /Sona\.slpSharing\(\)\) return;/.test(setHtml) && /Stop sharing with your speech therapist<\/button>/.test(setHtml));
+    ok("…with pilot.html's reviewed confirm, word for word, and the two buttons",
+      /Their dashboard forgets your child right away: name, age, practice history and homework are deleted, not hidden\. Sona stays free for you, and your child's practice history stays on this device\./.test(setHtml) &&
+      />Stop sharing<\/button>/.test(setHtml) && />Keep sharing<\/button>/.test(setHtml) && /Sona\.slpStopSharing\(\)\.then/.test(setHtml));
+    ok("Progress offers 'Send progress to my SLP' only while sharing", /if \(Sona\.slpSharing \? Sona\.slpSharing\(\)/.test(progHtml));
+    ok("join.html's No thanks, on a phone already sharing with that clinician, stops sharing",
+      /wasSharing = [\s\S]{0,200}Sona\.slpSharing\(\)/.test(join) && /if \(wasSharing && Sona\.slpStopSharing\) Sona\.slpStopSharing\(\);/.test(join));
+  }
 
   // 5. the roster row: consent recorded, and never a sliced string
   ok("the pilot route persists consentAt from the device and stamps the consent wording version",
@@ -518,7 +547,7 @@ if (A) {
     ok("the consent copy names the clinician and says what they see, what they can send, what never leaves, and that stopping deletes",
       /"If you say yes, " \+ \(name \|\| "your child's speech therapist"\) \+ " will see your child's first name and age as you entered them, "/.test(join) &&
       /which sounds they are practicing, practice days and how many tries each day, and a rough pass rate per sound\. /.test(join) &&
-      /They can also send practice assignments and a short note to this app\. Never any audio; recordings stay on this device\. /.test(join) &&
+      /They can also send practice assignments and a short note to this app\. Never any audio: it is never uploaded or saved\. /.test(join) && !/recordings stay on this device/.test(join) &&
       /You can stop any time, and stopping deletes everything they could see\. Saying no changes nothing; Sona stays free for you\./.test(join));
     ok("…and the two button labels the credential suite drives are unchanged",
       />Yes, share progress<\/button>/.test(join) && />No thanks — just use Sona<\/button>/.test(join));
@@ -585,9 +614,13 @@ if (A) {
   // On Vercel a function can be frozen the moment its response is sent, so a
   // fetch nobody awaits may never leave. The symptom is silence: sign-up
   // works, the CRM never hears, nothing errors.
+  // A new account's lead goes from the verify route since 13 Nov 2026 (the
+  // inbox is proved first); an existing account's catch-up from this route.
+  const verify = read("app/api/slp/auth/verify/route.ts");
   ok("the CRM call is awaited before the response, not fired and forgotten",
-    /const crm = tellCrm\(/.test(req) && /await crm;/.test(req) &&
-    req.indexOf("await crm;") < req.lastIndexOf("return out;") && !/void fetch\(origin \+ "\/api\/lead"/.test(req),
+    /await tellCrm\(/.test(verify) && verify.indexOf("await tellCrm(") < verify.lastIndexOf("return res;") &&
+    /await tellCrm\(origin, email/.test(req) && req.indexOf("await tellCrm(") < req.lastIndexOf("return NextResponse.json(") &&
+    !/void fetch\(origin \+ "\/api\/lead"/.test(req + verify),
     "an un-awaited fetch in a serverless function can be dropped when the response is sent");
   ok("…with a fuse, so a slow CRM never costs a clinician their sign-in",
     /CRM_TIMEOUT_MS = \d+/.test(slpLead) && /ctl\.abort\(\)/.test(slpLead));

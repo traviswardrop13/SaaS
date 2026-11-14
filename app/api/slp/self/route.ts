@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { readSession, kvCmd, kvConfigured, randomToken, sendSelfLinkEmail } from "@/lib/slpAuth";
+import { readSession, liveSession, kvCmd, kvConfigured, randomToken, sendSelfLinkEmail } from "@/lib/slpAuth";
 import { rateLimit } from "@/lib/rateLimit";
 import { readAccount } from "@/lib/roster";
 import {
@@ -43,7 +43,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
-  const s = readSession(req);
+  const s = await liveSession(readSession(req));
   if (!s) return NextResponse.json({ ok: false, error: "sign in required" }, { status: 401 });
   const rl = await rateLimit(req, { key: "slpself", limit: 20, windowSec: 3600 });
   if (rl) return rl;
