@@ -11,10 +11,11 @@ let h,checks=0,failures=0;
 function ok(n,p,d){checks++;if(!p)failures++;console.log((p?'PASS ':'FAIL ')+n+(p?'':' '+JSON.stringify(d)));}
 const state=p=>p.evaluate(()=>({speech:window.__sayplay,rocket:window.__rocket}));
 const near=(a,b,e=.005)=>Math.abs(a-b)<e;
-// The page's clock still runs between the test's own steps (a busy machine
-// adds real milliseconds), so "the same flight" is checked against the
-// flight's own path from where it was parked, by its flightTime, as the
-// help-answered check does: never a fixed distance from the parked point
+// "The same flight" is checked against the flight's own path from where it
+// was parked, by its flightTime, as the help-answered check does: never a
+// fixed distance from the parked point. (Written when the page's clock still
+// ran on with real time between the test's steps; fresh() now pauses it, and
+// the path is still the right thing to check.)
 const park=s=>({x:s.rocket.rocket.x,y:s.rocket.rocket.y,vx:s.rocket.velocity.x,vy:s.rocket.velocity.y,t:s.rocket.flightTime});
 function onPath(s,p){const r=s.rocket,el=r.flightTime-p.t;if(!(el>=0))return false;if(r.state==='arrived')return true;if(r.state!=='flight')return false;return near(r.rocket.x,p.x+p.vx*el+r.wind*el*el/2)&&near(r.rocket.y,p.y+(p.vy*el+r.gravity*el*el/2)*r.width/r.height);}
 async function pull(p,point,{cancel=false,cancelOther=false,hold=0,background=false,release=true}={}){
@@ -33,9 +34,38 @@ async function launch(p,stage){for(let n=0;n<3;n++){let s=await state(p);if(s.sp
 // A pull far to the side: a real downward pull that flies well wide.
 const wide=g=>({x:g.origin.x+.2,y:g.origin.y+.12*g.width/g.height});
 const powerOff=p=>until(p,()=>window.__rocket.power===0,12000);
+// Watch the planet for ms of the game's clock, a look every 100 ms: where it
+// is (x), its own spot (centre), whether it is swaying, the power and the
+// misses. The clock is paused (fresh), so it moves only when the test
+// advances it: a busy machine cannot slip extra sway in between two looks.
+async function watchPlanet(p,ms){const seen=[];for(let t=0;;t+=100){const r=(await state(p)).rocket;seen.push({t,x:r.target.x,centre:r.spots[r.stage].x,swaying:r.swaying,power:r.power,misses:r.misses});if(t>=ms)return seen;await advance(p,100);}}
+// What a watch of more than one whole sway (7.5 s) shows: it sways at every
+// look; it goes out to DRIFT one way and back to DRIFT the other, never
+// further; and there and back takes about seven seconds (twice the time
+// between two crossings of its spot, read between looks). DRIFT is the size
+// the game was built to (COURSE's last trip: 0.14 of the width each way;
+// DRIFT_SPEED 0.9 a second), not the one it publishes, so a smaller or bigger
+// sway fails here too.
+const SWAY_WATCH=7500,DRIFT_EACH_WAY=0.14;
+function swayOf(seen,max=DRIFT_EACH_WAY){
+ const dx=seen.map(v=>v.x-v.centre),cross=[];
+ for(let i=1;i<seen.length;i++){const a=dx[i-1],b=dx[i];if((a<0)!==(b<0))cross.push(seen[i-1].t+(seen[i].t-seen[i-1].t)*a/(a-b));}
+ const r={always:seen.every(v=>v.swaying),out:Math.max(...dx),back:Math.min(...dx),thereAndBack:cross.length>=2?2*(cross[1]-cross[0])/1000:null};
+ r.sidetoside=r.always&&r.out>=0.95*max&&r.back<=-0.95*max&&Math.max(r.out,-r.back)<=max+1e-9;
+ r.aboutSeven=r.always&&r.thereAndBack!==null&&r.thereAndBack>=6&&r.thereAndBack<=8;
+ return r;
+}
+// a watch in which the planet never moved and never swayed
+const still=seen=>seen.every(v=>!v.swaying&&v.x===seen[0].x);
 const part=process.env.ROCKET_PART;
 try{
- h=await gameHarness('rocket',8355);const fresh=(opts={})=>h.fresh({...opts,device:{age:'4',...opts.device}});
+ // page.clock.install() alone leaves the fake clock running on with real
+ // time between the test's steps, and every animation frame in that gap
+ // moves the last planet's sway: with other suites running at once, extra
+ // time could slip in between two looks and catch it swung out and back to
+ // the same place. Paused, the game's clock moves only on advance(). (The
+ // parked bounce leaves the page at once, so it is not paused.)
+ h=await gameHarness('rocket',8355);const fresh=async(opts={})=>{const r=await h.fresh({...opts,device:{age:'4',...opts.device}});if(opts.unpark!==false)await r.page.clock.pauseAt(await r.page.evaluate(()=>Date.now()+1000));return r;};
  if(!part||part==='main'){
   // ── (d) parked: a typed address goes home before any mic or sound ──
   {const {page,context,errors}=await fresh({unpark:false});
@@ -129,13 +159,19 @@ try{
     ok('…and it is kept for the child the moment it is landed on',!!k&&k.got.includes(want),k);
    }
    // the last planet: it sways, holds still for the help word's power, and after a miss
-   ok('word 5 brings a rocket',await sayWord(page));s=await state(page);const x0=s.rocket.target.x;await advance(page,1500);s=await state(page);
-   ok('the last planet sways from side to side while the child aims',s.rocket.swaying&&Math.abs(s.rocket.target.x-x0)>0.02&&Math.abs(s.rocket.target.x-.5)<=s.rocket.drift+1e-9,{x0,x:s.rocket.target.x});
-   await page.locator('#rocketHelp').click();await until(page,()=>__sayplay.listening);ok('the help word…',await sayWord(page));s=await state(page);const xh=s.rocket.target.x;await advance(page,1200);s=await state(page);
-   ok('…holds it still while its power lasts',s.rocket.power>0&&!s.rocket.swaying&&near(s.rocket.target.x,xh,1e-9),{xh,s:s.rocket});
-   await powerOff(page);await advance(page,1000);s=await state(page);ok('…and it sways again once the power is spent',s.rocket.swaying&&!near(s.rocket.target.x,xh,1e-4),s.rocket);
-   await pull(page,wide(s.rocket));await until(page,()=>__rocket.state!=='flight',7000);s=await state(page);const xm=s.rocket.target.x;await advance(page,2000);s=await state(page);
-   ok('a miss holds it still where it is, with the ghost rocket showing where to pull',s.rocket.misses>=1&&!s.rocket.swaying&&near(s.rocket.target.x,xm,1e-9)&&!!s.rocket.ghost&&s.speech.step===4,{xm,s:s.rocket});
+   // each watched over a whole sway on the game's clock: one look could land
+   // just as the planet swung back past where an earlier look had seen it
+   ok('word 5 brings a rocket',await sayWord(page));let sway=swayOf(await watchPlanet(page,SWAY_WATCH));
+   ok('the last planet sways from side to side while the child aims',sway.sidetoside,sway);
+   ok('…slowly: there and back in about seven seconds',sway.aboutSeven,sway);
+   await page.locator('#rocketHelp').click();await until(page,()=>__sayplay.listening);ok('the help word…',await sayWord(page));
+   const held=await watchPlanet(page,1200),xh=held[0].x;
+   ok('…holds it still while its power lasts',held.every(v=>v.power>0)&&still(held),held);
+   await powerOff(page);const after=await watchPlanet(page,SWAY_WATCH),left=Math.max(...after.map(v=>Math.abs(v.x-xh)));sway=swayOf(after);
+   ok('…and it sways again once the power is spent',after.every(v=>v.power===0)&&sway.sidetoside&&sway.aboutSeven&&left>1e-4,{xh,left,...sway});
+   s=await state(page);await pull(page,wide(s.rocket));await until(page,()=>__rocket.state!=='flight',7000);
+   const missed=await watchPlanet(page,2000);s=await state(page);
+   ok('a miss holds it still where it is, with the ghost rocket showing where to pull',missed.every(v=>v.misses>=1)&&still(missed)&&!!s.rocket.ghost&&s.speech.step===4,{missed,s:s.rocket});
    ok('the last planet is reached',await launch(page,4),await state(page));
    await advance(page,3300);s=await state(page);r=await rows(page);const e=await end(page),k=await kept(page);
    ok('a first trip ends: "You found new planets!"',s.speech.phase==='end'&&e.title==='You found new planets!',e);

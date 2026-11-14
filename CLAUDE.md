@@ -4376,7 +4376,12 @@ said at a set moment).
     A ring at its biggest is kept on screen (`placeGoal`).
   - **Echo explains each step once a visit** (`told`, never reset by a new
     balloon or Play again): "Tap the pump" and "Now pull" are said once, not
-    for every balloon.
+    for every balloon. **A line asked for while Echo is still talking waits
+    for the one before** (Peekaboo's line queue) and is said only if it is
+    still true then; one that is not is saved for the next time it is (14
+    Nov 2026: a child who filled the balloon while Echo was still explaining
+    the pump never heard "Now pull" that visit, because SayPlay says nothing
+    over a voice already speaking).
   - **Travis's to change:** the buddies, the colours, the sway's size and
     speed, the banner and end card words. **For Rachel:** nothing a child
     says changes; Echo says his three directions once a visit.
