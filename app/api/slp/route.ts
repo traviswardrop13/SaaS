@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { readSession, kvCmd, kvConfigured, rosterKey, healLegacyRoster } from "@/lib/slpAuth";
+import { readSession, liveSession, kvCmd, kvConfigured, rosterKey, healLegacyRoster } from "@/lib/slpAuth";
 import { readAllHomework, hwStatus, type Homework, type HomeworkRecord } from "@/lib/homework";
 import { readMeta, readInvites, readGone, readAccount, type ChildMeta } from "@/lib/roster";
 import { dashboardGate } from "@/lib/proGate";
@@ -59,7 +59,7 @@ function hwFor(rec: HomeworkRecord | undefined): { status: ReturnType<typeof hwS
 export async function GET(req: NextRequest) {
   // roster read requires the SLP's own session; the code comes from the
   // authenticated account, never the query string.
-  const s = readSession(req);
+  const s = await liveSession(readSession(req));
   if (!s) return NextResponse.json({ ok: false, error: "sign in required" }, { status: 401 });
   if (!kvConfigured()) return NextResponse.json({ ok: true, configured: false, kids: [], invites: [] });
   // The caseload is what Sona Pro sells, for an account made from 12 Nov

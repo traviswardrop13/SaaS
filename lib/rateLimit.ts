@@ -29,7 +29,7 @@ if redis.call('TTL', KEYS[1]) < 0 then redis.call('EXPIRE', KEYS[1], ARGV[1]) en
 return n
 `;
 
-function clientIp(req: Request): string {
+export function clientIp(req: Request): string {
   // x-real-ip is set by Vercel's edge from the true socket peer and cannot be
   // spoofed by the client; the LEFTMOST x-forwarded-for entry is client-
   // supplied and trivially rotated to dodge a per-IP bucket. Prefer x-real-ip;
@@ -111,4 +111,51 @@ function tooMany(windowSec: number): NextResponse {
     { ok: false, error: "Too many requests — please slow down." },
     { status: 429, headers: { "Retry-After": String(windowSec) } },
   );
+}
+
+/**
+ * A spending budget: a count that grows by `amount` a call and refuses once it
+ * would pass `cap` inside `windowSec` (TTSBUDGET1, 14 Nov 2026: Echo's voice
+ * characters, per IP an hour and for everyone a day). Answers true when the
+ * amount was charged, false when it would pass the cap. A refusal charges
+ * NOTHING: the check and the charge are one script, so two requests at once
+ * cannot both slip under the cap, and a refused request never eats into what
+ * is left. Its own marker ('-- rl:spend'), so the suites that emulate
+ * '-- rl:incr' are untouched.
+ *
+ * With no KV store, or one that does not answer, it counts in this instance's
+ * memory, as rateLimit does: open across instances, never closed, because a
+ * closed budget would put every family on the phone's robot voice whenever
+ * the store blinks.
+ */
+export const RL_SPEND_SCRIPT = `-- rl:spend
+local cur = tonumber(redis.call('GET', KEYS[1]) or '0') or 0
+local amt = tonumber(ARGV[1])
+if cur + amt > tonumber(ARGV[2]) then return -1 end
+local n = redis.call('INCRBY', KEYS[1], amt)
+if redis.call('TTL', KEYS[1]) < 0 then redis.call('EXPIRE', KEYS[1], ARGV[3]) end
+return n
+`;
+const spent = new Map<string, { n: number; reset: number }>();
+
+export async function spendBudget(key: string, amount: number, cap: number, windowSec: number): Promise<boolean> {
+  const amt = Math.max(0, Math.ceil(Number(amount) || 0));
+  try {
+    if (kvConfigured()) {
+      const n = await kvCmd(["EVAL", RL_SPEND_SCRIPT, 1, key, amt, cap, windowSec]);
+      if (typeof n === "number") return n >= 0;
+    }
+  } catch {
+    // KV hiccup: count in memory instead.
+  }
+  const now = Date.now();
+  let e = spent.get(key);
+  if (!e || now > e.reset) {
+    e = { n: 0, reset: now + windowSec * 1000 };
+    spent.set(key, e);
+    if (spent.size > 5000) for (const [k, v] of spent) if (now > v.reset) spent.delete(k);
+  }
+  if (e.n + amt > cap) return false;
+  e.n += amt;
+  return true;
 }

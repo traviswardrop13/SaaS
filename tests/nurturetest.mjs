@@ -197,8 +197,8 @@ ok("no dollar figure", !/\$\d/.test(JSON.stringify(N.CONTENT)));
 
 // the wiring
 const lead = readFileSync(path.join(REPO, "app/api/lead/route.ts"), "utf8");
-ok("/api/lead enrolls every new email once the app is out, an in-app one without the App Store email",
-  /if \(APP_READY && kvConfigured\(\)\)[\s\S]{0,120}enroll\(email, kvCmd, fetch, Date\.now\(\), \{ inApp: inAppSource\(lead\.source\) \}\)/.test(lead) && /import \{ enroll, inAppSource, stopSeries \} from "@\/lib\/nurture"/.test(lead));
+ok("/api/lead enrolls every new email but a speech therapist's once the app is out, an in-app one without the App Store email",
+  /if \(APP_READY && kvConfigured\(\) && lead\.role !== "slp"\)[\s\S]{0,120}enroll\(email, kvCmd, fetch, Date\.now\(\), \{ inApp: inAppSource\(lead\.source\) \}\)/.test(lead) && /import \{ enroll, inAppSource, stopSeries \} from "@\/lib\/nurture"/.test(lead));
 // …and played: /api/lead itself, against the in-memory store and a fake
 // Resend, with only its neighbours (the store's door, the rate limit, the
 // contact list and the launch switch) stubbed. The source the app posts is what picks the
@@ -251,6 +251,11 @@ ok("/api/lead enrolls every new email once the app is out, an in-app one without
   const fromSite = await post({ email: "site@example.com", source: "parents", role: "parent" });
   ok("…and the website's sign-up still gets \"Here's Sona\", alone",
     JSON.stringify(fromSite.subjects) === JSON.stringify([subj("hello")]), fromSite);
+  // A speech therapist never gets the parents' series (audit B2, 13 Nov
+  // 2026): "Here's Sona", the "wabbit" tip and "Quick answers" are for parents.
+  const fromSlp = await post({ email: "therapist@example.org", source: "for-slps", role: "slp" });
+  ok("…but a speech therapist's sign-up (role slp) is sent none of it and is never put on the schedule",
+    fromSlp.status === 200 && fromSlp.subjects.length === 0 && !db.z.has("therapist@example.org") && !db.kv.has(N.nextKey("therapist@example.org")), fromSlp);
   const noSource = await post({ email: "check@example.com" });
   ok("…as does a post with no source (the Speech Check's default)", JSON.stringify(noSource.subjects) === JSON.stringify([subj("hello")]), noSource);
   delete process.env.EMAIL_POSTAL;

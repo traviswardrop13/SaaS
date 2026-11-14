@@ -133,10 +133,13 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
     !!slpPixel,
     "a campaign with no PageView and no Lead optimises on clicks, not on sign-ups");
   ok("the clinician form disables Meta automatic form capture", /\bdata-autoconfig="off"/.test(slpPixel));
-  const workField = (slps.match(/<[^>]*\bid="fWorkSettingField"[^>]*>/) || [""])[0];
-  ok("the clinician's work setting is excluded from PostHog capture", /\bph-no-capture\b/.test(workField));
-  ok("the clinician's role is excluded from PostHog capture",
-    /<div class="[^"]*\bph-no-capture\b[^"]*"[^>]*>\s*<label for="fRole">/.test(slps));
+  // The Speech Check has a "Child's first name" box: Meta's automatic form
+  // reading must never see it (core.md B5, website.md B6).
+  const checkPixel = (readFileSync(ROOT + "/check.html", "utf8").match(/<script\b[^>]*\bsrc="\/pixel\.js"[^>]*>/) || [""])[0];
+  ok("the Speech Check's pixel tag turns Meta's automatic form reading off", !!checkPixel && /\bdata-autoconfig="off"/.test(checkPixel));
+  // The form asks no role or work setting since 14 Nov 2026, so neither can
+  // reach PostHog (they were ph-no-capture fields until then).
+  ok("the clinician form holds no role or work setting to capture", !/id="fRole"|id="fWorkSetting"/.test(slps));
 
   // A tap is not a sign-up. Firing on the click would teach the campaign to
   // buy people who open forms and abandon them.

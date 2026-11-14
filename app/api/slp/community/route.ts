@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
-import { kvCmd, readSession } from "@/lib/slpAuth";
+import { kvCmd, readSession, liveSession } from "@/lib/slpAuth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -24,7 +24,7 @@ function unavailable() { return fail("Community is temporarily unavailable. Your
 
 async function member(req: NextRequest): Promise<Member | NextResponse> {
   let session;
-  try { session = readSession(req); } catch { session = null; }
+  try { session = await liveSession(readSession(req)); } catch { session = null; }
   if (!session || typeof session.email !== "string" || !session.email) return fail("Please sign in to open the community.", 401);
   const email = session.email.toLowerCase();
   const raw = await kvCmd(["GET", "slpacct:" + email]);

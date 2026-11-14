@@ -1,28 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
 import { rateLimit } from "@/lib/rateLimit";
+import { founderKey } from "@/lib/founder";
 
 /**
  * Voice isolation — strips room echo/noise from a recording via ElevenLabs'
  * Audio Isolation API. Used for cleaning Rachel's coaching clips before they
  * ship in the app and before voice-clone training.
  *
- * Guarded: on production it requires the founder key; on preview deployments
- * it's open (unguessable URL, rate-limited) so clips can be processed during
- * development without extra setup.
+ * Guarded: the founder key (x-founder-key header) on every deployment,
+ * previews included. No page calls it; it is a founder tool.
  */
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
+  // The founder key on every deployment, previews included (14 Nov 2026:
+  // a preview used to be open, spending the ElevenLabs key for anyone with
+  // its address). Header only, constant time (lib/founder founderKey).
+  const denied = founderKey(req);
+  if (denied) return denied;
   const rl = await rateLimit(req, { key: "isolate", limit: 60, windowSec: 3600 });
   if (rl) return rl;
-
-  const isPreview = process.env.VERCEL_ENV === "preview";
-  const want = process.env.FOUNDER_KEY || "";
-  const got = req.headers.get("x-founder-key") || "";
-  if (!isPreview && (!want || got !== want)) {
-    return NextResponse.json({ ok: false, error: "locked" }, { status: 401 });
-  }
 
   const key = process.env.ELEVENLABS_API_KEY;
   if (!key) return NextResponse.json({ ok: false, error: "no ELEVENLABS_API_KEY" }, { status: 500 });

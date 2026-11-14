@@ -38,13 +38,20 @@ export async function GET(req: NextRequest) {
     const newAccount = {
       email, name: "", clinic: "", code: "", createdAt: new Date().toISOString(),
       terms: signup ? FREE_DASHBOARD_TERMS : PRO_TERMS,
-      ...(signup ? { clinicianRole: signup.clinicianRole, workSetting: signup.workSetting, source: signup.source } : {}),
+      ...(signup ? {
+        ...(signup.clinicianRole ? { clinicianRole: signup.clinicianRole } : {}),
+        ...(signup.workSetting ? { workSetting: signup.workSetting } : {}),
+        source: signup.source,
+      } : {}),
     };
     const snapshot = JSON.stringify(newAccount);
     const created = await kvCmd(["SET", acctKey, snapshot, "NX"]);
     if (created === "OK") {
       acct = newAccount;
-      if (signup && await tellCrm(url.origin, email, signup.source, "", safeAttrib(signup.attrib))) {
+      // Every new account is made here now (13 Nov 2026: the sign-in page no
+      // longer makes one before the inbox is proved), so the CRM hears of it
+      // here, awaited, once the inbox is real.
+      if (await tellCrm(url.origin, email, signup ? signup.source : "slp-signup", "", safeAttrib(signup?.attrib))) {
         // The dashboard may already have been opened using another valid
         // link. Stamp CRM only if the account is still the same snapshot.
         await replaceSlpAccount(acctKey, snapshot, { ...newAccount, crmAt: new Date().toISOString() });
@@ -78,11 +85,16 @@ export async function GET(req: NextRequest) {
   }
   if (!acct) acct = { code: "" };
 
+  // The first sign-in that proved the inbox ends every session issued before
+  // it (liveSession in lib/slpAuth). NX: a later sign-in on another device
+  // never logs this one out. Its own key, so the account is never rewritten.
+  const now = Date.now();
+  await kvCmd(["SET", "slpsessfrom:" + email, String(now), "NX"]);
   const session = signSession({
     email,
     code: (acct.code as string) || "",
-    iat: Date.now(),
-    exp: Date.now() + SESSION_MAX_AGE * 1000,
+    iat: now,
+    exp: now + SESSION_MAX_AGE * 1000,
   });
   const res = NextResponse.redirect(url.origin + "/slp.html");
   res.headers.set("Set-Cookie", sessionCookie(session, SESSION_MAX_AGE));
