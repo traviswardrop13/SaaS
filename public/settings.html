@@ -114,7 +114,7 @@
     .family-settings #reset{width:auto;min-height:44px;padding:9px 16px;font-size:14px;color:#a3301f;border-color:#e9b9ab;background:#fff8f5;}
     /* the Practice Board (BOARD2): hidden unless the board is on, or a child
        still has an entry here to remove */
-    .family-settings #boardCard[hidden],.family-settings #boardMoveNote[hidden],.family-settings #reportCard[hidden]{display:none;}
+    .family-settings #boardCard[hidden],.family-settings #boardMoveNote[hidden],.family-settings #reportCard[hidden],.family-settings #shareCard[hidden],.family-settings #shareConfirm[hidden],.family-settings #shareOpenRow[hidden]{display:none;}
     .family-settings #reportMsg{display:block;margin-top:10px;}
     .family-settings #reportMsg:empty{display:none;}
     .family-settings #boardMoveNote{margin:6px 0 4px;padding:9px 12px;border-radius:12px;background:#fff3df;font-size:13px;font-weight:800;line-height:1.45;color:var(--ink);}
@@ -275,6 +275,27 @@
       <div class="set-head"><h2 id="boardTitle">Practice Board</h2></div>
       <div id="boardBody"></div>
       <p class="muted set-msg" id="boardMsg" role="status" aria-live="polite"></p>
+    </section>
+
+    <!-- STOP SHARING WITH YOUR SPEECH THERAPIST (13 Nov 2026, clinician
+         audit B1). The family link page and the privacy page promise a grown-up can stop
+         sharing here; the only control was on pilot.html, which nothing links
+         to. Shown only while the child picked is sharing (Sona.slpSharing),
+         so nearly every family never sees it: a removal of a consent, not a
+         preference. The words are pilot.html's reviewed ones. The child's
+         name is read on this phone only, never sent. -->
+    <section class="card" id="shareCard" aria-labelledby="shareTitle" hidden>
+      <div class="set-head"><h2 id="shareTitle">Sharing with your speech therapist</h2></div>
+      <p class="muted set-lead" id="shareLead">This phone shares <span class="kid-label">your child</span>'s practice with their speech therapist's dashboard.</p>
+      <div class="set-actions" id="shareOpenRow"><button type="button" class="btn ghost" id="shareOpen">Stop sharing with your speech therapist</button></div>
+      <div id="shareConfirm" hidden>
+        <p class="set-lead">Stop sharing with your speech therapist? Their dashboard forgets your child right away: name, age, practice history and homework are deleted, not hidden. Sona stays free for you, and your child's practice history stays on this device.</p>
+        <div class="set-actions">
+          <button type="button" class="btn" id="shareYes">Stop sharing</button>
+          <button type="button" class="btn ghost" id="shareNo">Keep sharing</button>
+        </div>
+      </div>
+      <p class="muted set-msg" id="shareMsg" role="status" aria-live="polite"></p>
     </section>
 
     <!-- No Parent code (Travis, 30 Sep 2026). The grown-ups check on Home is
@@ -732,6 +753,43 @@
       });
     })();
 
+    // ── STOP SHARING WITH YOUR SPEECH THERAPIST (13 Nov 2026) ─────────────
+    // Only while the child picked is sharing. The request is sona.js's
+    // (Sona.slpStopSharing: the ticket, the opaque child id and the code,
+    // nothing typed and never a name); nothing changes here until the server
+    // says the dashboard forgot the child.
+    (function () {
+      var card = document.getElementById("shareCard");
+      if (!card || !Sona.slpSharing || !Sona.slpStopSharing || !Sona.slpSharing()) return;
+      var openRow = document.getElementById("shareOpenRow"), conf = document.getElementById("shareConfirm"),
+          yes = document.getElementById("shareYes"), msg = document.getElementById("shareMsg"), busy = false;
+      // the card changes shape under the finger: a double tap's second tap
+      // must not land on what moved there (Stop sharing sits where Stop
+      // sharing with your speech therapist was)
+      function settle() { busy = true; setTimeout(function () { busy = false; }, 600); }
+      card.hidden = false;
+      document.getElementById("shareOpen").onclick = function () { if (busy) return; openRow.hidden = true; conf.hidden = false; msg.textContent = ""; settle(); };
+      document.getElementById("shareNo").onclick = function () { if (busy) return; conf.hidden = true; openRow.hidden = false; settle(); };
+      yes.onclick = function () {
+        if (busy) return;
+        if (activeSlot() !== loadSlot) { location.reload(); return; }
+        busy = true; yes.disabled = true; msg.textContent = "Asking their dashboard to forget your child…";
+        Sona.slpStopSharing().then(function (r) {
+          busy = false; yes.disabled = false;
+          if (r && r.ok) {
+            conf.hidden = true;
+            document.getElementById("shareLead").textContent = "Done. Their dashboard no longer has your child. Sona is still free for you.";
+            msg.textContent = "";
+            // the homework went with it: the sounds and position are the family's again
+            try { paintPractice(); } catch (e) {}
+            try { paintTargetSound(); } catch (e) {}
+          } else {
+            msg.textContent = (r && r.error === "not-enrolled") ? "This phone isn't connected to that speech therapist." : "Couldn't reach the server — try again in a moment.";
+          }
+        });
+      };
+    })();
+
     // ── THE PRACTICE BOARD (BOARD2, 11 Oct 2026; built dark) ──────────────
     // One card for the household. Hidden while the board is off, unless a
     // child still has an entry on this phone (then only "Remove {Name} from
@@ -1005,7 +1063,9 @@
         var snap = ""; try { snap = localStorage.getItem(SNAP) || ""; } catch (e) {}
         if (!snap) { paintUndo(); return; }
         if (!confirm("Put this device back the way it was before the last restore?")) return;
-        var back = Sona.importData(snap);
+        // undoImport also takes away what the restore ADDED (a child, their
+        // keys); an older cached sona.js without it still writes the snapshot
+        var back = Sona.undoImport ? Sona.undoImport(snap) : Sona.importData(snap);
         if (back.ok) {
           try { localStorage.removeItem(SNAP); } catch (e) {}
           m.style.color = "var(--good)"; m.textContent = "Put back ✓ Reloading…";

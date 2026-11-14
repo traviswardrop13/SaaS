@@ -195,10 +195,11 @@
       bs.appendChild(row);
     });
 
-    // The pilot send button is available only with both consent and a verified
-    // clinician connection, exactly like the shared sendProgress function.
+    // The pilot send button is available only while this child is sharing:
+    // consent, a verified clinician connection, and no "No thanks" or Stop
+    // sharing since (Sona.slpSharing, the rule sendProgress keeps too).
     try {
-      if (Sona.isPilot && Sona.isPilot() && Sona.pilotInfo().consentAt && localStorage.getItem("sona.slpticket")) {
+      if (Sona.slpSharing ? Sona.slpSharing() : (Sona.isPilot && Sona.isPilot() && Sona.pilotInfo().consentAt && localStorage.getItem("sona.slpticket"))) {
         var pilotButton = document.getElementById("sendProg"); pilotButton.style.display = "";
         pilotButton.onclick = function () { Sona.sendProgress("manual"); document.getElementById("shareStatus").textContent = "Progress sharing requested for your connected speech-language pathologist."; };
       }

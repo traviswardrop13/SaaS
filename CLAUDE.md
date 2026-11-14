@@ -5864,7 +5864,16 @@ are enforced in code and pinned by tests — change them only on Rachel's say-so
   progress" last). See "Word positions and the practice steps" for the two
   new pickers. The "Sound is off in Sona." line appears while muted.
   **Weekly progress report** (WEEKLY1, 23 Oct 2026) shows an email box and
-  Turn on when off, and the destination and Turn off when on. The Practice
+  Turn on when off, and the destination and Turn off when on. **Sharing
+  with your speech therapist** (13 Nov 2026, clinician audit B1) shows only
+  while the child picked is sharing (`Sona.slpSharing()`), with pilot.html's
+  reviewed "Stop sharing with your speech therapist" and its confirm word
+  for word (`Sona.slpStopSharing()`: `/api/pilot/forget`, then
+  `slpShare:false` and the homework cleared; consent and the ticket stay, as
+  they carry access). Allowed under "the minimum" because it withdraws a
+  consent join.html and the privacy page promise can be withdrawn here; it
+  is a removal, not a preference, and hidden for nearly every family. The
+  Practice
   Board card appears while live or owed, followed by **Account** (the plan
   line with See Premium and Restore, then
   Privacy · Terms); the clinician's "Open dashboard →" only for a
@@ -5913,6 +5922,27 @@ are enforced in code and pinned by tests — change them only on Rachel's say-so
 - **Child slots are never reused, and a removed child takes their saved tries**
   (`addKid` high-water mark, `removeKid` deletes that slot's clips; a page that
   leaves right after either waits on `Sona.clipsSettled()`).
+- **Removing a child deletes every per-child key, the first child's too** (13
+  Nov 2026, core audit B1): slot "" owns the plain keys, which removeKid used
+  to keep (name, age, the grown-up's email, every try, in every backup code).
+  The household's promises are carried out first: a free-era mark only that
+  child held goes onto the others, an "ff-" code only in their pilot record
+  becomes `sona.founding.v1`. `addKid` also clears every `PER_KID` key of the
+  slot it hands out (a restore with a lower `hi` left another child's
+  history there). Phones that removed a first child before this build still
+  hold those leftovers: a one-time cleanup is Travis's call, not built.
+- **"Undo last restore" puts the phone back** (B2): `Sona.undoImport` drops
+  every "sona." key the snapshot lacks, then writes it, so a child the restore
+  added goes again. It never drops a `NO_IMPORT` key (`NO_EXPORT` is inside
+  it) or the clinician link (`sona.slp`, `slpok`, `slpticket`): an Undo
+  neither grants nor takes away access. The snapshot still never expires.
+- **A grown-up's no stops sharing** (clinician audit B1, B5): `sendProgress`
+  and `syncHomework` send nothing while `slpShare === false`; Progress offers
+  "Send progress to my SLP" only while `Sona.slpSharing()`; "No thanks" on
+  join.html, on a phone already sharing with that clinician, also asks their
+  dashboard to forget the child (Travis's call: today it deletes). join.html's
+  consent line says "Never any audio: it is never uploaded or saved." (B11).
+  `kidtest`, `betatest`, `slpcode`, `slpapi`.
 - **After a quiet or turned-down try, Echo says it again, once** (audit 13 Nov
   2026; built on defaults, Rachel's to change). On the "Say it 5 times" page,
   "Try again" on the quiet card plays Echo's short line (the one a tap on him
