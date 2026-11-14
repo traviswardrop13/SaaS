@@ -195,12 +195,14 @@ try {
     await pg.waitForTimeout(150);
     ok("Sona Pro is available without preview injection",await visible(pg,"#page-premium")&&await visible(pg,'[data-page="premium"]'));
     const nav=await pg.locator(".sidebar nav").evaluate(n=>[...n.children].map(c=>c.dataset.page||c.textContent.trim()));
-    ok("…and sits in Workspace, right after Caseload",JSON.stringify(nav.slice(0,4))===JSON.stringify(["Workspace","today","caseload","premium"]),nav.join(","));
+    // The AI homework draft joined Workspace between them (#289, 13 Nov 2026).
+    ok("…and sits in Workspace, after Caseload and the homework draft",JSON.stringify(nav.slice(0,5))===JSON.stringify(["Workspace","today","caseload","homework-draft","premium"]),nav.join(","));
     ok("…with its own crumb, named for the plan",(await pg.locator("#pageCrumb").textContent())==="Sona Pro"&&(await pg.locator('[data-page="premium"]').innerText()).trim()==="Sona Pro");
     const page=await pg.locator("#page-premium").innerText();
     ok("the offer names the plan and prints the server's price and free days",/Sona Pro/.test(page)&&/\$19\.99 a month · 14 days free/.test(page),page);
     // The shared promise avoids counting games that are still Coming soon.
-    ok("…says what it includes: the dashboard, unlimited families with every game, their own phone",/Your dashboard\./.test(page)&&/Unlimited families\. Every family who joins through your link gets every game, every sound/.test(page)&&/Every game on your own phone or tablet/.test(page),page);
+    // The dashboard is free since 13 Nov 2026 (#289), so the plan no longer lists it.
+    ok("…says what it includes: unlimited families with every game, their own phone",/Unlimited families\. Every family who joins through your link gets every game, every sound/.test(page)&&/Every game on your own phone or tablet/.test(page),page);
     ok("…and that the free version stays free",/without Sona Pro, families who join through your link still get Sona's free version — daily practice and free games/.test(page)&&!/two games/.test(page),page);
     ok("…says the clinician never earns on their own caseload",/You never earn anything on your own caseload/.test(page));
     ok("…and how starting works: Stripe, no charge today, then the monthly price until cancelled, nothing if cancelled in the trial",
