@@ -2039,11 +2039,11 @@ Clinic or School). The box is labelled "Your work email" with the example
 "you@yourclinic.org" (he asked for an example that "motivates them to put
 in their work email"; it was "you@example.com"). The server still accepts
 a role or setting another caller sends, and still refuses a wrong one; an
-account made from the page holds neither. The subtitle is "Plan tomorrow’s
-sessions with AI, share the app with clients, and see who practiced at
-home." (Travis, 14 Nov 2026: a third benefit "that is not like the
-community", leading with planning once the planner was built); "What you
-can do with Sona" has four cards, "Plan tomorrow’s sessions" first, two to
+account made from the page holds neither. The subtitle is "Auto-plan home
+practice, share the app with clients, and see who practiced at home."
+(Travis, 14 Nov 2026: a third benefit "that is not like the community";
+then "auto plan lessons", not "with AI"; no How it works link in the
+header); "What you can do with Sona" has four cards, "Plan tomorrow’s sessions" first, two to
 a row. A single-use email link opens the dashboard. The signup
 page has no prices or checkout, and describes the AI homework draft, family
 links, and clinician community. `tests/landingtest.mjs` drives both pages.
