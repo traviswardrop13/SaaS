@@ -5776,6 +5776,23 @@ the app) is a later idea, not built; it is Rachel's to shape.
   age verdict (its old paths stay in the code, unreachable). It is `noindex`
   and nothing links to it. Whether it stays, and what its results may say,
   is hers.
+- **Echo's voice has a spending cap (TTSBUDGET1, 14 Nov 2026, audit server.md
+  B1).** `/api/tts` (the one route that pays ElevenLabs by the character)
+  refuses another website's page (a foreign Origin or Sec-Fetch-Site; a
+  request with neither is allowed, so the iPhone app never loses Echo), 60
+  requests a minute per IP (an IPv6 /64 as one), a body over 4 KB and a line
+  over 200 characters (413, never cut; `ttsroutetest` holds every line in
+  `VOICE_SCRIPT.md` under it), and speaks any voice but Echo's or
+  `ELEVENLABS_VOICE_ID` in that voice. Characters are charged only when the
+  vendor is really asked (a server cache hit is free): **`TTS_IP_HOURLY_CHARS`**
+  (default 15,000 an IP an hour) and **`TTS_DAILY_CHARS`** (default 200,000 a
+  UTC day for everyone, Travis's number). Over either, a 503 like a vendor
+  outage, so every page plays the phone's own voice until it resets, with one
+  log line ("tts: daily character budget reached"). `spendBudget` in
+  `lib/rateLimit.ts` counts (one script, no partial charge; in memory when the
+  store is down). For Travis: also set a spend cap or turn off overage in
+  ElevenLabs. For Rachel: over the cap, the word a child copies is the phone's
+  voice (as on any vendor outage).
 - No silence counted as reps; voice boosts never logged as SLP data.
 - Never rewrite pushed git history. Push after every verified milestone.
 - A child's name never leaves the device to any CRM, ad pixel or analytics
