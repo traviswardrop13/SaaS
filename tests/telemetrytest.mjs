@@ -133,6 +133,10 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
     !!slpPixel,
     "a campaign with no PageView and no Lead optimises on clicks, not on sign-ups");
   ok("the clinician form disables Meta automatic form capture", /\bdata-autoconfig="off"/.test(slpPixel));
+  // The Speech Check has a "Child's first name" box: Meta's automatic form
+  // reading must never see it (core.md B5, website.md B6).
+  const checkPixel = (readFileSync(ROOT + "/check.html", "utf8").match(/<script\b[^>]*\bsrc="\/pixel\.js"[^>]*>/) || [""])[0];
+  ok("the Speech Check's pixel tag turns Meta's automatic form reading off", !!checkPixel && /\bdata-autoconfig="off"/.test(checkPixel));
   const workField = (slps.match(/<[^>]*\bid="fWorkSettingField"[^>]*>/) || [""])[0];
   ok("the clinician's work setting is excluded from PostHog capture", /\bph-no-capture\b/.test(workField));
   ok("the clinician's role is excluded from PostHog capture",

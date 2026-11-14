@@ -1,14 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
+import { rateLimit } from "@/lib/rateLimit";
+import { founderGate } from "@/lib/founder";
 
 /**
  * In-the-moment, per-game feedback — sent from the feedback bubble that appears
  * on each game's win screen during a pilot/SLP session (or in ?debug mode).
  *
+ * Its live caller is Home's founding-family pulse (today.html, src "pulse");
+ * the parked story page's feedback card is the other.
+ *
  * It forwards each note to the founder's collector (FEEDBACK_WEBHOOK_URL ||
- * PILOT_WEBHOOK_URL || LEAD_WEBHOOK_URL) and, if a Vercel KV / Upstash store is
- * configured, appends it to a per-code list (feedback:<code>) for later review.
- * Both are best-effort: with nothing configured the app still works, you just
- * won't see the note come back yet.
+ * PILOT_WEBHOOK_URL || LEAD_WEBHOOK_URL) and keeps survey and pulse answers in
+ * one capped list (fb:beta) that GET reads. Both are best-effort.
+ *
+ * Hardened 14 Nov 2026 (server.md B8): same-origin only (a missing Origin is
+ * refused too), 10 an hour per IP, an 8 KB body, the record built field by
+ * field with no child id, and no per-code list (anyone could make unlimited
+ * feedback:<anything> lists, and nothing read them). GET takes the founder
+ * key from the x-founder-key header only, compared in constant time.
  */
 export const runtime = "nodejs";
 
@@ -31,27 +40,42 @@ async function kvCmd(cmd: (string | number)[]): Promise<unknown> {
   }
 }
 
+const MAX_BODY = 8 * 1024;
+
 export async function POST(req: NextRequest) {
+  // A browser always sends Origin on a POST, so a missing one is a script.
+  if (req.headers.get("origin") !== new URL(req.url).origin) {
+    return NextResponse.json({ ok: false, error: "Forbidden." }, { status: 403 });
+  }
+  const rl = await rateLimit(req, { key: "feedback", limit: 10, windowSec: 3600, v6prefix: true });
+  if (rl) return rl;
+
   let body: Record<string, unknown>;
   try {
-    body = await req.json();
+    const raw = await req.text();
+    if (raw.length > MAX_BODY) return NextResponse.json({ ok: false, error: "Too long." }, { status: 413 });
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("not an object");
+    body = parsed as Record<string, unknown>;
   } catch {
     return NextResponse.json({ ok: false, error: "Invalid JSON." }, { status: 400 });
   }
 
-  const text = String((body.text as string) || "").slice(0, 1000).trim();
+  const str = (v: unknown, n: number) => (typeof v === "string" ? v : "").slice(0, n);
+  const text = str(body.text, 1000).trim();
   if (!text) return NextResponse.json({ ok: false, error: "Empty feedback." }, { status: 400 });
 
+  // Field by field, nothing else: never a child id.
+  const at = str(body.at, 40);
   const rec = {
     text,
-    q: String((body.q as string) || "").slice(0, 80), // survey/pulse question id
-    src: String((body.src as string) || "").slice(0, 24), // "onboarding" | "pulse" | ""
-    game: String((body.game as string) || "").slice(0, 80),
-    sound: String((body.sound as string) || "").slice(0, 16),
-    code: String((body.code as string) || "").slice(0, 48),
-    childId: String((body.childId as string) || "").slice(0, 48),
-    level: body.level ?? "",
-    at: (body.at as string) || new Date().toISOString(),
+    q: str(body.q, 80), // survey/pulse question id
+    src: str(body.src, 24), // "onboarding" | "pulse" | ""
+    game: str(body.game, 80),
+    sound: str(body.sound, 16),
+    code: str(body.code, 48),
+    level: typeof body.level === "number" && Number.isFinite(body.level) ? body.level : "",
+    at: /^\d{4}-\d{2}-\d{2}T[\d:.]+Z$/.test(at) ? at : new Date().toISOString(),
   };
 
   const hook =
@@ -72,18 +96,8 @@ export async function POST(req: NextRequest) {
     // never fail the app on a capture hiccup
   }
 
-  // Append to a per-code feedback list (best-effort), newest kept.
-  try {
-    const key = "feedback:" + (rec.code || "pilot");
-    await kvCmd(["RPUSH", key, JSON.stringify(rec).slice(0, 4000)]);
-    await kvCmd(["LTRIM", key, -500, -1]);
-    await kvCmd(["EXPIRE", key, 60 * 60 * 24 * 180]); // ~6 months
-  } catch {
-    // list is best-effort
-  }
-
-  // Beta survey/pulse answers also land in ONE global list so the founder can
-  // read every early-adopter signal in a single place.
+  // Beta survey/pulse answers land in ONE capped list so the founder can read
+  // every early-adopter signal in a single place.
   try {
     if (rec.src === "onboarding" || rec.src === "pulse") {
       await kvCmd(["LPUSH", "fb:beta", JSON.stringify(rec).slice(0, 4000)]);
@@ -96,11 +110,10 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ ok: true, captured });
 }
 
-// Founder-only read: newest beta answers (?key=FOUNDER_KEY[&n=200])
+// Founder-only read: newest beta answers (x-founder-key header, [?n=200])
 export async function GET(req: NextRequest) {
-  const key = req.nextUrl.searchParams.get("key") || "";
-  const want = process.env.FOUNDER_KEY || "";
-  if (!want || key !== want) return NextResponse.json({ ok: false }, { status: 401 });
+  const denied = founderGate(req);
+  if (denied) return denied;
   const n = Math.min(500, Math.max(1, parseInt(req.nextUrl.searchParams.get("n") || "200", 10) || 200));
   const raw = (await kvCmd(["LRANGE", "fb:beta", 0, n - 1])) as string[] | undefined;
   const items = (raw || [])

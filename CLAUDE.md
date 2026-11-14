@@ -1920,6 +1920,17 @@ clinician's families Premium and undo the caseload plan.
   per-child pilot code, which "Yes, share progress" overwrites with the
   clinician's code — so a founding family lost every game the day they joined
   an uncovered clinician, and a second child never had them.
+- **Founding Families places are closed** (Travis, 14 Nov 2026; server.md
+  B4). `POST /api/founding` answers 410 and reads, stores and forwards
+  nothing (the old form took a child's first name and a parent's cell, kept
+  them for good, sent them to `LEAD_WEBHOOK_URL`, and gave any sign-up a free
+  Premium link). `founding.html` is a short "Founding Families places are
+  closed." note with a link to `/for-parents`, and no box. **Every existing
+  founding family keeps Premium:** `GET /api/founding`, the verified `?ff=`
+  path, `foundingPilot()`, `sona.founding.v1` and its `NO_IMPORT` entry are
+  unchanged, so a code minted before closing still verifies. The stored
+  `ff:app:<id>` records (child names, cells) are Travis's to redact to
+  `{id, at}` (never DEL: that strands an unopened link). `shiptest` pins it.
 - **Grandfathering is the household's too.** `addKid()` copies `earlyAdopter`
   onto a new child, and an import never takes a free-era mark away from the
   device it lands on (it never brings one either). It is still a mark on the
@@ -2403,9 +2414,14 @@ from Rachel.
 - The privacy page has its own section ("The weekly progress report (only if
   a grown-up asks for it)"), and the parents' "What's stored" answer names it.
   **For Travis:** App Store Connect's App Privacy answers should now list
-  usage data linked to the parent's email (no review needed). The old Friday
-  email (`/api/cron/weekly`, to the retired `trials` list) is separate and
-  untouched.
+  usage data linked to the parent's email (no review needed). **The old
+  Friday email is off** (Travis, 14 Nov 2026; server.md B5): `/api/cron/weekly`
+  ("Your week of brave sounds", to the retired `trials` list, which anyone
+  could add an address to, promising clips no longer kept), its cron line in
+  `vercel.json` and `/api/trial` are deleted, and `sona.js` no longer mirrors
+  a local trial anywhere (`mirrorTrial` is gone; the local trial readers stay).
+  Those addresses hear only what the Resend list sends them. `shiptest` and
+  `weeklytest` pin it.
 `reporttest` plays the phone and the server.
 
 **THE MONDAY EMAIL (WEEKLY1, 23 Oct 2026)** (Travis: "afterwards, I want to
@@ -2823,16 +2839,26 @@ finished ones, how many paid by how many days they played.
   the id every usage beacon already carries; never a name, email, sound or
   count): `trial:<fid>` (start, length in days, one mark per day with play,
   outcome and its time), `trials:idx`, 120 days.
-- **Fed by:** the phone's "free trial started" ({ days }, from `buyPlan`'s
-  success, only for free days) and "played today" (once a local day, the
-  first counted rep; `sona.played.v1` is this phone's, NO_EXPORT and
-  NO_IMPORT), both through `/api/track`'s allow-list, which also relays them
-  to PostHog; and RevenueCat's webhook, which now also reads the
+- **Fed by:** RevenueCat's webhook, which **alone starts a trial's row**
+  (since 14 Nov 2026, Travis: "only RevenueCat"; server.md B6): it reads the
   `sona_fid` attribute the phone sets (`_rcEmail`, `setAttributes`,
-  feature-checked) and records how the trial went whether or not the family
-  gave an email (a family who never opens Sona again is still counted).
-  Paid stays paid; an end after a cancellation stays a cancellation; an
-  older RevenueCat message never overrides a newer one.
+  feature-checked) and records the start and how the trial went whether or
+  not the family gave an email (a family who never opens Sona again is still
+  counted). Paid stays paid; an end after a cancellation stays a
+  cancellation; an older RevenueCat message never overrides a newer one.
+  Then the phone, through `/api/track`'s allow-list (which also relays to
+  PostHog): "played today" (once a local day, the first counted rep;
+  `sona.played.v1` is this phone's, NO_EXPORT and NO_IMPORT) marks a day of
+  a row RevenueCat started, and "free trial started" ({ days }, from
+  `buyPlan`'s success, only for free days) only fills in the length of such
+  a row (`trialDays`), never a new one. So a forged beacon cannot add a row,
+  and a TestFlight or sandbox trial (which RevenueCat ignores) is not
+  counted; a family whose RevenueCat record lacks `sona_fid` (a build whose
+  plugin has no `setAttributes`) is not in the report, and a first-day play
+  heard before RevenueCat's message (usually seconds) is missed.
+  `/api/track` also drops, silently and still answering ok, a post from
+  another site or with no Origin and any past 120 a minute from one address
+  (an IPv6 /64 as one), and waits on PostHog 1.5 s at most.
 - Day 1 is the first 24 hours from the start (no time zone is kept).
 - **For Travis:** the privacy page says it; App Store Connect's App Privacy
   answers should list the device identifier as linked to purchases (it now
@@ -5781,8 +5807,13 @@ the app) is a later idea, not built; it is Rachel's to shape.
   (`MIC_PROMISE`), is "audio is never uploaded or saved." Still never "never
   recorded": the practice page holds a try in memory while it listens. `mictest` pins the
   mechanism's absence: no route but the two founder clip tools (`isolate`,
-  `voice-change`, behind `FOUNDER_KEY`) accepts a file, and no family page
-  posts to one. `/api/stt` was deleted on 25 Sep 2026 for exactly this.
+  `voice-change`) accepts a file, and no family page posts to one. Both
+  answer only to `FOUNDER_KEY` in the `x-founder-key` header, compared in
+  constant time, on every deployment, previews included (`founderKey` in
+  `lib/founder.ts`, since 14 Nov 2026: a preview used to leave them open,
+  spending the ElevenLabs key), and voice-change refuses a voice id that is
+  not 10 to 40 letters and digits. The daily job's manual run and the
+  founder's read of `/api/feedback` take the key the same way, never `?key=`. `/api/stt` was deleted on 25 Sep 2026 for exactly this.
   **Nor the browser's own speech-to-text** (22 Oct 2026): the Web Speech
   API's `SpeechRecognition` looks local and is not (Chrome sends the audio
   to Google, Safari to Apple). The Speech Check and the parked story reader
@@ -5796,6 +5827,16 @@ the app) is a later idea, not built; it is Rachel's to shape.
   age verdict (its old paths stay in the code, unreachable). It is `noindex`
   and nothing links to it. Whether it stays, and what its results may say,
   is hers.
+  **The parked pages send no name either** (14 Nov 2026, core.md B3-B5):
+  `story.html` asks no server for a story (`/api/story`, which put the
+  child's name into an AI prompt, is deleted; it plays its built-in pages
+  and keeps the name on screen only), `coach-call.html` calls every child
+  "friend" and never reads the profile's name (each line goes to
+  `/api/tts`), and the Speech Check's pixel tag carries
+  `data-autoconfig="off"` (it has a "Child's first name" box), as setup's and
+  the clinician page's do (`planwordstest` holds the list to those three).
+  `/api/chat`, `/api/coach`, `/api/heygen/*` and `/api/pair`, which nothing
+  called, are deleted too (`shiptest`).
 - **Echo's voice has a spending cap (TTSBUDGET1, 14 Nov 2026, audit server.md
   B1).** `/api/tts` (the one route that pays ElevenLabs by the character)
   refuses another website's page (a foreign Origin or Sec-Fetch-Site; a

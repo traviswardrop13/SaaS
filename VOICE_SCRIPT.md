@@ -2492,7 +2492,7 @@ One fixed line: "You did it! Three games are unlocked." — the finish card (pub
 
 ### E2 — Your Adventure (`story.html`, parked)
 
-No page opens it: the Books page keeps its tile hidden (public/library.html:231), and it is gated behind `Sona.gated('story')`. Each page is read aloud when it opens (public/story.html:245) and on "Hear it" (public/story.html:300); then "Now you! Say... {word}!" (public/story.html:247); a heard try gets one of the five praise lines (public/story.html:271); a missed one gets the bare word again (public/story.html:280). The pages are normally an AI-written story from `/api/story` — unbounded text that cannot be pre-recorded. The fallback pages are 5 frames with a bank word (public/gamecontent.js:298): "Once, Echo saw a ___.", "He really liked the ___.", "Then a ___ came along.", "Echo and the ___ played all day.", "What a day with the ___!".
+No page opens it: the Books page keeps its tile hidden (public/library.html:231), and it is gated behind `Sona.gated('story')`. Each page is read aloud when it opens (public/story.html:248) and on "Hear it" (public/story.html:303); then "Now you! Say... {word}!" (public/story.html:250); a heard try gets one of the five praise lines (public/story.html:274); a missed one gets the bare word again (public/story.html:283). The pages are its built-in ones (the AI-written story route was deleted on 14 Nov 2026, as it sent the child's name): 5 frames with a bank word (public/gamecontent.js:298): "Once, Echo saw a ___.", "He really liked the ___.", "Then a ___ came along.", "Echo and the ___ played all day.", "What a day with the ___!".
 
 ### E3 — Books: no longer parked
 
@@ -2505,7 +2505,7 @@ Every page built on this script is live (C10) or has moved to another script.
 
 ### E5 — Speech Check (`check.html`, unlinked)
 
-The ad-funnel page; nothing in the app links to it. "Say: {word}" for each of 9 words in this order (public/check.html:196): cat, goat, fish, lion, shoe, cheese, sun, rabbit, thumb. It sends no voice id, so it always uses the default voice.
+The ad-funnel page; nothing in the app links to it. "Say: {word}" for each of 9 words in this order (public/check.html:198): cat, goat, fish, lion, shoe, cheese, sun, rabbit, thumb. It sends no voice id, so it always uses the default voice.
 
 ### E6 — Coach Call (`coach-call.html`, parked): 43 lines
 
@@ -2513,56 +2513,57 @@ No page links to it and without `?dev=1` it shows "Coming soon". Its lines still
 the old register — "Go!", CAPITALS, and [excited] / [whispers] / [happy] tags that are
 sent to the voice as text — and three asks read "your very best your R sound"
 because the sound phrase already starts with "your". Listed for completeness; skip
-unless the feature is revived, and then rewrite first. Blanks: {name} the child's
-name (default "friend"), {buddy} the buddy character (default "Pip"), {letter} the
+unless the feature is revived, and then rewrite first. It calls every child
+"friend" and never reads their name (14 Nov 2026). Blanks: {buddy} the buddy
+character (default "Pip"), {letter} the
 sound's label, {cue} the C1 cue, {word1}/{word2} the first two ladder words, {praise}
 one of the five praise lines.
 
 | Line | Where | When |
 |---|---|---|
-| [excited] Well HI, {name}! I'm Echo! I've been waiting ALL day to meet you! | public/coach-call.html:290 | opener |
-| [excited] Well HI, {name}! I was hoping you would call me all day! | public/coach-call.html:291 | opener |
-| [excited] {name}! There you are! I told {buddy} how amazing your {letter} sound was last time — he almost didn't believe me! | public/coach-call.html:293 | opener |
-| [excited] Back already?! Best part of my day. I think your {letter} sound got stronger overnight! | public/coach-call.html:294 | opener |
-| [excited] {name}! I missed you! I kept your spot on my branch warm. | public/coach-call.html:295 | opener |
-| First, a big dragon breath. [whispers] Breathe in… and blow it out. One more big one… [happy] Wonderful! | public/coach-call.html:298 | warmups |
-| Warm-up time! Wiggle your lips — blblblbl! Now a big lion yawn… aaah. [happy] Perfect. Your mouth is awake! | public/coach-call.html:299 | warmups |
-| Quick! Drumroll on your knees… faster… and FREEZE. [whispers] Wow, you're so focused today. | public/coach-call.html:300 | warmups |
-| [happy] This was my favorite call ALL day. Practice in the games, and call me again soon. Bye bye, superstar! | public/coach-call.html:303 | byes |
-| [happy] {buddy} says thank you for the lesson! Same branch, next call? Bye bye, {name}! | public/coach-call.html:304 | byes |
-| [happy] Case closed, detective {name}! Go play the games — I'll be listening for that famous {letter} sound. Bye bye! | public/coach-call.html:305 | byes |
-| {buddy} is on the call too! [whispers] Psst — {buddy} keeps getting the {letter} sound wrong. Can you teach him? | public/coach-call.html:308 | Echo says |
-| Show {buddy} your very best your {letter} sound, three times. Teach him. Go! | public/coach-call.html:309 | ask |
-| [excited] LOOK! {buddy} just said it! You TAUGHT him, {name}! You're a {letter} teacher now! | public/coach-call.html:310 | if the try passed |
-| Almost! {buddy} is watching your mouth. {cue} — go again! | public/coach-call.html:310 | if the try missed |
-| Word time! Say {word1}, three times. Go! | public/coach-call.html:313 | ask |
-| That was a PERFECT {word1}! | public/coach-call.html:314 | if the try passed |
-| So close! Break it in half with me — {word1}. Again, go! | public/coach-call.html:314 | if the try missed |
-| One more word. Say {word2}, three times. Go! | public/coach-call.html:315 | ask |
-| You are on FIRE today! | public/coach-call.html:316 | if the try passed |
-| Good trying! That one's tricky — we'll practice it in the games too. | public/coach-call.html:316 | if the try missed |
-| Last one. Show me how BIG-KID {name} says it — one giant your {letter} sound. GO! | public/coach-call.html:318 | ask |
-| THERE it is! That's the big-kid sound right there! | public/coach-call.html:319 | if the try passed |
-| I heard it in there! It's getting stronger every single day. | public/coach-call.html:319 | if the try missed |
-| Okay, {name}, listen to MY practice today: wuh… wuh… [curious] hmm. That is NOT the {letter} sound, is it? | public/coach-call.html:326 | Echo says |
-| Fix me! Say the REAL your {letter} sound, three times, so I can copy you. Go! | public/coach-call.html:327 | ask |
-| [laughs] THAT'S the one! No wonder you're the teacher around here. | public/coach-call.html:328 | if the try passed |
-| Ooh, close! {cue}. Show me again — go! | public/coach-call.html:328 | if the try missed |
-| Today we're sound detectives. [whispers] The mystery sound is… the {letter} sound! Here's my evidence: | public/coach-call.html:333 | Echo says |
-| Case number one: say your {letter} sound three times so I know you're on the case. Go! | public/coach-call.html:334 | ask |
-| [excited] Case CRACKED! You're the best detective I know. | public/coach-call.html:335 | if the try passed |
-| Hmm, the clue slipped away! {cue} — go! | public/coach-call.html:335 | if the try missed |
-| Clue word! Say {word1}, three times. Go! | public/coach-call.html:336 | ask |
-| Another clue solved! | public/coach-call.html:337 | if the try passed |
-| Tricky clue! We'll crack it in the games too. | public/coach-call.html:337 | if the try missed |
-| Today is {letter} day! I have been practicing SO hard. Want to hear my try first? | public/coach-call.html:342 | Echo says |
-| Now the real expert. Say your {letter} sound three times so I can hear how it's really done. Go! | public/coach-call.html:343 | ask |
-| [excited] WOW. That was even better than I imagined! | public/coach-call.html:344 | if the try passed |
-| Ooh, so close! {cue}. One more time — go! | public/coach-call.html:344 | if the try missed |
-| I couldn't hear you that time — scoot a little closer and we'll keep going! | public/coach-call.html:363 | runStep |
-| {praise} — one of the five praise lines (fallback "You got it!") | public/coach-call.html:370 | a retry passed, or the check could not tell |
-| You know what? That try made {buddy} smile. We'll get it next call! | public/coach-call.html:371 | runStep |
-| {praise} — one of the five praise lines (fallback "Nice one!") | public/coach-call.html:372 | a retry passed, or the check could not tell |
+| [excited] Well HI, friend! I'm Echo! I've been waiting ALL day to meet you! | public/coach-call.html:293 | opener |
+| [excited] Well HI, friend! I was hoping you would call me all day! | public/coach-call.html:294 | opener |
+| [excited] friend! There you are! I told {buddy} how amazing your {letter} sound was last time — he almost didn't believe me! | public/coach-call.html:296 | opener |
+| [excited] Back already?! Best part of my day. I think your {letter} sound got stronger overnight! | public/coach-call.html:297 | opener |
+| [excited] friend! I missed you! I kept your spot on my branch warm. | public/coach-call.html:298 | opener |
+| First, a big dragon breath. [whispers] Breathe in… and blow it out. One more big one… [happy] Wonderful! | public/coach-call.html:301 | warmups |
+| Warm-up time! Wiggle your lips — blblblbl! Now a big lion yawn… aaah. [happy] Perfect. Your mouth is awake! | public/coach-call.html:302 | warmups |
+| Quick! Drumroll on your knees… faster… and FREEZE. [whispers] Wow, you're so focused today. | public/coach-call.html:303 | warmups |
+| [happy] This was my favorite call ALL day. Practice in the games, and call me again soon. Bye bye, superstar! | public/coach-call.html:306 | byes |
+| [happy] {buddy} says thank you for the lesson! Same branch, next call? Bye bye, friend! | public/coach-call.html:307 | byes |
+| [happy] Case closed, detective friend! Go play the games — I'll be listening for that famous {letter} sound. Bye bye! | public/coach-call.html:308 | byes |
+| {buddy} is on the call too! [whispers] Psst — {buddy} keeps getting the {letter} sound wrong. Can you teach him? | public/coach-call.html:311 | Echo says |
+| Show {buddy} your very best your {letter} sound, three times. Teach him. Go! | public/coach-call.html:312 | ask |
+| [excited] LOOK! {buddy} just said it! You TAUGHT him, friend! You're a {letter} teacher now! | public/coach-call.html:313 | if the try passed |
+| Almost! {buddy} is watching your mouth. {cue} — go again! | public/coach-call.html:313 | if the try missed |
+| Word time! Say {word1}, three times. Go! | public/coach-call.html:316 | ask |
+| That was a PERFECT {word1}! | public/coach-call.html:317 | if the try passed |
+| So close! Break it in half with me — {word1}. Again, go! | public/coach-call.html:317 | if the try missed |
+| One more word. Say {word2}, three times. Go! | public/coach-call.html:318 | ask |
+| You are on FIRE today! | public/coach-call.html:319 | if the try passed |
+| Good trying! That one's tricky — we'll practice it in the games too. | public/coach-call.html:319 | if the try missed |
+| Last one. Show me how BIG-KID friend says it — one giant your {letter} sound. GO! | public/coach-call.html:321 | ask |
+| THERE it is! That's the big-kid sound right there! | public/coach-call.html:322 | if the try passed |
+| I heard it in there! It's getting stronger every single day. | public/coach-call.html:322 | if the try missed |
+| Okay, friend, listen to MY practice today: wuh… wuh… [curious] hmm. That is NOT the {letter} sound, is it? | public/coach-call.html:329 | Echo says |
+| Fix me! Say the REAL your {letter} sound, three times, so I can copy you. Go! | public/coach-call.html:330 | ask |
+| [laughs] THAT'S the one! No wonder you're the teacher around here. | public/coach-call.html:331 | if the try passed |
+| Ooh, close! {cue}. Show me again — go! | public/coach-call.html:331 | if the try missed |
+| Today we're sound detectives. [whispers] The mystery sound is… the {letter} sound! Here's my evidence: | public/coach-call.html:336 | Echo says |
+| Case number one: say your {letter} sound three times so I know you're on the case. Go! | public/coach-call.html:337 | ask |
+| [excited] Case CRACKED! You're the best detective I know. | public/coach-call.html:338 | if the try passed |
+| Hmm, the clue slipped away! {cue} — go! | public/coach-call.html:338 | if the try missed |
+| Clue word! Say {word1}, three times. Go! | public/coach-call.html:339 | ask |
+| Another clue solved! | public/coach-call.html:340 | if the try passed |
+| Tricky clue! We'll crack it in the games too. | public/coach-call.html:340 | if the try missed |
+| Today is {letter} day! I have been practicing SO hard. Want to hear my try first? | public/coach-call.html:345 | Echo says |
+| Now the real expert. Say your {letter} sound three times so I can hear how it's really done. Go! | public/coach-call.html:346 | ask |
+| [excited] WOW. That was even better than I imagined! | public/coach-call.html:347 | if the try passed |
+| Ooh, so close! {cue}. One more time — go! | public/coach-call.html:347 | if the try missed |
+| I couldn't hear you that time — scoot a little closer and we'll keep going! | public/coach-call.html:366 | runStep |
+| {praise} — one of the five praise lines (fallback "You got it!") | public/coach-call.html:373 | a retry passed, or the check could not tell |
+| You know what? That try made {buddy} smile. We'll get it next call! | public/coach-call.html:374 | runStep |
+| {praise} — one of the five praise lines (fallback "Nice one!") | public/coach-call.html:375 | a retry passed, or the check could not tell |
 
 ### E7 — Dead code: never spoken
 
