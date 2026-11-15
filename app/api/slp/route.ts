@@ -3,6 +3,7 @@ import { readSession, liveSession, kvCmd, kvConfigured, rosterKey, healLegacyRos
 import { readAllHomework, hwStatus, type Homework, type HomeworkRecord } from "@/lib/homework";
 import { readMeta, readInvites, readGone, readAccount, type ChildMeta } from "@/lib/roster";
 import { dashboardGate } from "@/lib/proGate";
+import { loginsFor } from "@/lib/familyLogin";
 
 /**
  * SLP master roster — returns each family's latest progress for the SIGNED-IN
@@ -75,12 +76,13 @@ export async function GET(req: NextRequest) {
   // would otherwise look like "nobody signed up".
   await healLegacyRoster(code);
 
-  const [flat, meta, homework, gone, invites] = await Promise.all([
+  const [flat, meta, homework, gone, invites, logins] = await Promise.all([
     kvCmd(["HGETALL", rosterKey(code)]),
     readMeta(code),
     readAllHomework(code),
     readGone(code),
     readInvites(code),          // pending only; drops index rows whose 30-day data key has expired
+    loginsFor(code),            // each family login's username and whether the family chose its own password; never a password
   ]);
 
   // The hash FIELD is the child's id; the row's own childId is what the
@@ -111,6 +113,7 @@ export async function GET(req: NextRequest) {
       synced: !!row,
       meta: meta[childId] || null,
       hw: hwFor(homework[childId]),
+      login: logins["cid:" + childId] || null,
     });
   }
   kids.sort((a, b) => String(b.at || "").localeCompare(String(a.at || "")));
@@ -126,6 +129,7 @@ export async function GET(req: NextRequest) {
     invites: invites.map((i) => ({
       token: i.token, label: i.label, age: i.age, sounds: i.sounds, pos: i.pos,
       repsPerDay: i.repsPerDay, note: i.note, createdAt: i.createdAt, expiresAt: i.expiresAt,
+      login: logins["inv:" + i.token] || null,
     })),
   });
 }

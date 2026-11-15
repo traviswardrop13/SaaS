@@ -33,6 +33,7 @@ const EVENTS = new Set([
   "rep goal met",         // daily rep target reached, no child details or rep counts
   "day goal done",        // the outcome proxy: a family finished all 5 rounds
   "slp code redeemed",    // which SLPs actually send families
+  "family logged in",     // the same, through a login the SLP made (code only)
   // The conversion funnel, added 18 Sep 2026. Without these the relay could
   // see a child practice and never see whether that turned into anything:
   "plan moment shown",    // the ask, fired once on the first completed run

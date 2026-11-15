@@ -329,6 +329,28 @@
       <p class="muted" id="micNumsNote" hidden></p>
     </section>
 
+    <!-- YOUR LOGIN (14 Nov 2026): only on a device that logged in with the
+         username and password a speech therapist made (Sona.loginUser). It
+         shows the username, never a password (the device never keeps one),
+         and lets the family make the password their own: the current one is
+         the proof, and once changed the therapist no longer knows it
+         (Travis: "Reusable, parent can change it"). -->
+    <section class="card" id="loginCard" aria-labelledby="loginTitle" hidden>
+      <div class="set-head"><h2 id="loginTitle">Your login</h2></div>
+      <p class="muted set-lead">Username: <strong id="loginUser"></strong>. Use it to log in to Sona on another phone or tablet.</p>
+      <div class="set-actions"><button class="btn" id="loginChange" type="button">Change password</button></div>
+      <div id="loginBox" hidden>
+        <label class="field" for="loginOld">Current password</label>
+        <input id="loginOld" type="password" autocomplete="current-password" autocapitalize="none" autocorrect="off" spellcheck="false" />
+        <label class="field" for="loginNew">New password</label>
+        <input id="loginNew" type="password" autocomplete="new-password" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="At least 8 characters" />
+        <div class="set-actions">
+          <button class="btn" id="loginSave" type="button">Save new password</button>
+          <span id="loginMsg" class="muted set-msg" role="status"></span>
+        </div>
+      </div>
+    </section>
+
     <!-- SLP corner: only for clinicians (profile.role === "slp"), in a
          browser. Their family link, their families and their practice are all
          on the dashboard, so this card is only the door to it (22 Oct 2026: it
@@ -1201,6 +1223,30 @@
       else if (res.ok) { msg.style.color = "#b42323"; msg.textContent = "No active subscription for that email."; }
       else { msg.style.color = "#b42323"; msg.textContent = res.error || "Couldn’t check."; }
     };
+
+    // ── Your login: the username, and the family's own password ──────────
+    (function () {
+      var user = ""; try { user = (Sona.loginUser && Sona.loginUser()) || ""; } catch (e) {}
+      var card = document.getElementById("loginCard");
+      if (!user || !card) return;
+      card.hidden = false;
+      document.getElementById("loginUser").textContent = user;
+      var box = document.getElementById("loginBox"), msg = document.getElementById("loginMsg"),
+          oldEl = document.getElementById("loginOld"), newEl = document.getElementById("loginNew"), save = document.getElementById("loginSave");
+      document.getElementById("loginChange").onclick = function () { box.hidden = false; msg.textContent = ""; try { oldEl.focus(); } catch (e) {} };
+      save.onclick = function () {
+        if ((newEl.value || "").length < 8) { msg.style.color = "#b42323"; msg.textContent = "Use at least 8 characters."; return; }
+        save.disabled = true; msg.style.color = "var(--muted)"; msg.textContent = "Saving…";
+        Sona.changeLoginPassword(oldEl.value, newEl.value).then(function (r) {
+          save.disabled = false;
+          if (r.ok) {
+            oldEl.value = ""; newEl.value = ""; box.hidden = true;
+            msg.style.color = "var(--good)"; msg.textContent = "";
+            document.getElementById("loginChange").textContent = "Password changed ✓ · Change again";
+          } else { msg.style.color = "#b42323"; msg.textContent = r.error; }
+        });
+      };
+    })();
 
     // ── KIDS1: the child switcher ────────────────────────────────────────
     // Every field below the Kids card belongs to whoever is selected here, so a

@@ -4,6 +4,7 @@ import { rateLimit } from "@/lib/rateLimit";
 import { readAccount, normalizeInvite, createInvite, deleteInvite, cleanToken } from "@/lib/roster";
 import { covered, bumpDaily, PARENT_EMAILS_PER_DAY } from "@/lib/caseload";
 import { dashboardGate } from "@/lib/proGate";
+import { deleteLogin } from "@/lib/familyLogin";
 
 /**
  * Set a child up BEFORE the family has tapped anything.
@@ -140,6 +141,9 @@ export async function DELETE(req: NextRequest) {
   const token = cleanToken(body.token);
   if (!token) return NextResponse.json({ ok: false, error: "which invite?" }, { status: 400 });
   const gone = await deleteInvite(g.code, token);
-  if (!gone) return NextResponse.json({ ok: false, error: "no such invite" }, { status: 404 });
+  // A login made for this invite goes with it: nothing the family could use
+  // outlives the invite the clinician cancelled.
+  const loginGone = await deleteLogin(g.code, { inv: token });
+  if (!gone && !loginGone) return NextResponse.json({ ok: false, error: "no such invite" }, { status: 404 });
   return NextResponse.json({ ok: true, removed: token });
 }

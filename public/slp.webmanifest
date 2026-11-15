@@ -1,0 +1,13 @@
+{
+  "name": "Sona for SLPs",
+  "short_name": "Sona SLP",
+  "description": "Your Sona caseload: who practiced at home this week, and a note to paste.",
+  "start_url": "/slp.html",
+  "scope": "/slp",
+  "display": "browser",
+  "background_color": "#fff8ef",
+  "theme_color": "#fff8ef",
+  "icons": [
+    { "src": "/assets/slp-tab-icon.png?v=2", "sizes": "192x192", "type": "image/png", "purpose": "any" }
+  ]
+}

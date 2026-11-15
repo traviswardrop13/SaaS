@@ -3,6 +3,7 @@ import { readSession, liveSession, kvCmd, kvConfigured, rosterKey } from "@/lib/
 import { dashboardGate } from "@/lib/proGate";
 import { rateLimit } from "@/lib/rateLimit";
 import { readAccount, cleanChildId, metaKey, writeMeta, removeChild } from "@/lib/roster";
+import { deleteLogin } from "@/lib/familyLogin";
 
 /**
  * One child on the signed-in clinician's caseload: archive them, bring them
@@ -98,5 +99,9 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "not on your caseload" }, { status: 404 });
   }
   const r = await removeChild(g.code, childId);
+  // Their Sona login goes too (lib/familyLogin): a clinician who takes a
+  // child off has ended what the login was for. The family keeps the app on
+  // the phones already set up, as they keep everything else there.
+  await deleteLogin(g.code, { cid: childId });
   return NextResponse.json({ ok: true, removed: r.removed });
 }

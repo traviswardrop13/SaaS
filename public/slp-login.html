@@ -24,7 +24,15 @@
   <!-- the SLP side is hidden (19 Sep 2026): reachable by direct link, not by search -->
   <meta name="robots" content="noindex">
   <link href="/fonts.css" rel="stylesheet">
-  <link rel="manifest" href="/manifest.webmanifest" />
+  <!-- ON THE CLINICIAN'S HOME SCREEN (14 Nov 2026, Travis: "phone-friendly
+       web now"). Its own manifest, so Add to Home Screen opens the dashboard
+       (it opened the family app's Home before: this page linked the family
+       manifest). It opens in the browser on purpose: an iPhone home-screen
+       app keeps its own cookies, and the sign-in link in the clinician's
+       email opens in Safari, so a full-screen icon would never be signed in. -->
+  <link rel="manifest" href="/slp.webmanifest" />
+  <link rel="apple-touch-icon" href="/assets/slp-tab-icon.png?v=2" />
+  <meta name="apple-mobile-web-app-title" content="Sona SLP" />
   <meta name="theme-color" content="#1cb0f6" />
   <style>
     :root { --blue:#1cb0f6; --blue-d:#1597d4; --green:#58cc02; --green-d:#46a302; --ink:#16384f; --muted:#6b86a3; }
