@@ -16,8 +16,11 @@ import { enroll, inAppSource, stopSeries } from "@/lib/nurture";
  *   - Resend's contacts (RESEND_API_KEY, a Full access key): the email list,
  *     via lib/contacts — in the Parents, Speech therapists or Other segment,
  *     and Started Premium once the phone says so (Kit until 16 Oct 2026);
- *   - LEAD_WEBHOOK_URL: a generic webhook. It was GoHighLevel, deleted on
- *     24 Sep 2026; remove the variable and this path goes quiet.
+ *   - LEAD_WEBHOOK_URL: GoHighLevel's CRM again (Travis, 15 Nov 2026: new
+ *     leads into GHL, with speaksona.com staying on Vercel; it was GoHighLevel
+ *     until 24 Sep 2026 too). Sent from here, the server, never from a page,
+ *     so the address stays in Vercel. Remove the variable and this path goes
+ *     quiet. See `crmUrl` below for why the details ride in the address.
  *
  * Never blocks the visitor: a capture hiccup still returns ok. `captured` says
  * whether a list actually accepted the lead, and the auth route stamps a
@@ -158,7 +161,10 @@ export async function POST(req: NextRequest) {
     practice: [] as string[],
     practice_text: "",
     summary: lead.summary,
-    report: lead.report,
+    // Never forwarded (15 Nov 2026, with GoHighLevel back): free text up to
+    // 2,000 characters, and the Speech Check's old report named the child.
+    // No caller sends one now; blank here, so none ever reaches the CRM.
+    report: "",
     utm_source: lead.utm_source,
     utm_medium: lead.utm_medium,
     utm_campaign: lead.utm_campaign,
@@ -186,17 +192,38 @@ export async function POST(req: NextRequest) {
   /**
    * CAPTURED MEANS A LIST SAID YES. It used to be set the moment a fetch
    * returned, whatever the CRM answered, so a refusal read everywhere
-   * downstream as a lead safely delivered. The legacy webhook (GoHighLevel,
-   * deleted 24 Sep 2026 — remove LEAD_WEBHOOK_URL once it is gone) and
-   * Resend's contacts run side by side, and captured is true only if one of
-   * them actually took the lead.
+   * downstream as a lead safely delivered. The webhook (GoHighLevel, back on
+   * 15 Nov 2026) and Resend's contacts run side by side, and captured is true
+   * only if one of them actually took the lead.
    */
+  /**
+   * THE DETAILS RIDE IN THE ADDRESS (15 Nov 2026). GoHighLevel's workflow
+   * (an Inbound Webhook trigger) reads a contact's fields from the URL's
+   * query, `first_name`, `last_name`, `email` and `phone`, exactly those
+   * names; sent only in the body, the contact came through empty. The JSON
+   * body still goes too (role, where it was given, the ad), for the
+   * workflow to map if Travis wants it.
+   *
+   * Each value through encodeURIComponent, so a "+" (a phone number's, or
+   * an address's "+tag") arrives as %2B, never as a space. Only what Sona
+   * holds is sent: the grown-up's email always, a clinician's own first name
+   * when they gave one (never a parent's lead: the only name there is a
+   * child's, stripped above). Sona asks nobody for a last name or a phone, so
+   * those two never go: an empty one could blank a field the CRM already has.
+   */
+  const crmUrl = (base: string): string => {
+    const q = ([["first_name", safeLead.first_name], ["email", safeLead.email]] as const)
+      .filter(([, v]) => v)
+      .map(([k, v]) => k + "=" + encodeURIComponent(v))
+      .join("&");
+    return base + (base.includes("?") ? "&" : "?") + q;
+  };
   const toHook = async (): Promise<void> => {
     if (!hook) return;
     const ctl = new AbortController();
     const fuse = setTimeout(() => ctl.abort(), 5000);
     try {
-      const r = await fetch(hook, {
+      const r = await fetch(crmUrl(hook), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(safeLead),

@@ -10,8 +10,10 @@ import { founderGate } from "@/lib/founder";
  * the parked story page's feedback card is the other.
  *
  * It forwards each note to the founder's collector (FEEDBACK_WEBHOOK_URL ||
- * PILOT_WEBHOOK_URL || LEAD_WEBHOOK_URL) and keeps survey and pulse answers in
- * one capped list (fb:beta) that GET reads. Both are best-effort.
+ * PILOT_WEBHOOK_URL) and keeps survey and pulse answers in one capped list
+ * (fb:beta) that GET reads. Both are best-effort. Never LEAD_WEBHOOK_URL
+ * (15 Nov 2026): that is GoHighLevel's CRM again, and a parent's free-text
+ * note (which may name their child) must never become a CRM contact.
  *
  * Hardened 14 Nov 2026 (server.md B8): same-origin only (a missing Origin is
  * refused too), 10 an hour per IP, an 8 KB body, the record built field by
@@ -80,8 +82,7 @@ export async function POST(req: NextRequest) {
 
   const hook =
     process.env.FEEDBACK_WEBHOOK_URL ||
-    process.env.PILOT_WEBHOOK_URL ||
-    process.env.LEAD_WEBHOOK_URL;
+    process.env.PILOT_WEBHOOK_URL;
   let captured = false;
   try {
     if (hook) {

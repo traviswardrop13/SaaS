@@ -580,7 +580,58 @@ delete process.env.KIT_API_KEY;
   R.key = "nope";
   const r3 = await post({ email: "lost@example.com", role: "parent" });
   ok("Resend refusing: the visitor still gets an answer, and captured is false", r3.status === 200 && r3.json.ok === true && r3.json.captured === false, r3);
+
+  // GoHighLevel's webhook (15 Nov 2026): its workflow reads first_name,
+  // last_name, email and phone from the address's query, so the details ride
+  // there (and the body still goes). Sent from the server, never a page.
+  const HOOK = "https://hooks.test.invalid/webhook-trigger/abc";
+  const hooked = [];
+  const viaHook = (base) => async (u, init) => {
+    if (String(u).startsWith(HOOK)) { hooked.push({ url: String(u), method: init && init.method, body: init && init.body }); return new Response("{}", { status: base }); }
+    return R.fetch(u, init);
+  };
+  const postVia = async (status, body) => {
+    const real = globalThis.fetch, had = process.env.LEAD_WEBHOOK_URL;
+    globalThis.fetch = viaHook(status);
+    process.env.LEAD_WEBHOOK_URL = HOOK;
+    try {
+      const r = await mod.exports.POST(new NextRequest("https://speaksona.com/api/lead", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }));
+      return { status: r.status, json: await r.json() };
+    } finally {
+      globalThis.fetch = real;
+      if (had === undefined) delete process.env.LEAD_WEBHOOK_URL; else process.env.LEAD_WEBHOOK_URL = had;
+    }
+  };
+  const h1 = await postVia(200, { email: "mom+sona@example.com", role: "parent", source: "app-setup", name: "Milo", child: "Milo", age: "6", practice: ["R"], report: "Milo practiced R" });
+  const q1 = hooked[0] ? new URL(hooked[0].url) : null;
+  ok("the webhook is POSTed with the email in the address's query, a + sent as %2B",
+    !!q1 && hooked[0].method === "POST" && q1.origin + q1.pathname === HOOK && q1.searchParams.get("email") === "mom+sona@example.com" &&
+    /[?&]email=mom%2Bsona%40example\.com(&|$)/.test(hooked[0].url) && h1.json.captured === true, hooked[0]);
+  ok("…a parent's lead carries no first name, no last name and no phone (Sona asks for none)",
+    !!q1 && [...q1.searchParams.keys()].join() === "email", hooked[0] && hooked[0].url);
+  ok("…and nothing about the child reaches it, in the address or the body: no name, age, sound or report",
+    hooked.length === 1 && !/Milo|practiced/i.test(hooked[0].url + hooked[0].body) &&
+    (() => { const b = JSON.parse(hooked[0].body); return b.child === "" && b.age === "" && b.report === "" && b.name === "" && b.practice.length === 0; })(), hooked[0]);
+  hooked.length = 0;
+  await postVia(200, { email: "sam@clinic.org", role: "slp", name: "Sam O'Neil & Co", source: "for-slps" });
+  const q2 = hooked[0] ? new URL(hooked[0].url) : null;
+  ok("a clinician's own first name rides in the query, every value URL-encoded",
+    !!q2 && q2.searchParams.get("first_name") === "Sam O'Neil & Co" && q2.searchParams.get("email") === "sam@clinic.org" &&
+    /first_name=Sam%20O'Neil%20%26%20Co&email=sam%40clinic\.org$/.test(hooked[0].url), hooked[0] && hooked[0].url);
+  hooked.length = 0;
+  R.key = "nope";
+  const h3 = await postVia(500, { email: "refused@example.com", role: "parent" });
+  ok("the CRM refusing (and Resend too): still an answer, and captured is false", hooked.length === 1 && h3.status === 200 && h3.json.captured === false, h3);
   currentKv = async () => null;
+}
+
+// ── only sign-ups go to the CRM: a feedback note never does ──
+{
+  const fb = read("app/api/feedback/route.ts");
+  ok("/api/feedback never falls back to the CRM's webhook (a parent's note may name their child)",
+    !/process\.env\.LEAD_WEBHOOK_URL/.test(fb) && /process\.env\.FEEDBACK_WEBHOOK_URL \|\|\s+process\.env\.PILOT_WEBHOOK_URL;/.test(fb));
+  ok("the privacy policy names GoHighLevel and what it is given, never anything about a child",
+    /<strong>Contact list<\/strong> — GoHighLevel[^<]*never anything about a child/.test(read("public/privacy.html")));
 }
 
 // ── the wiring ──
