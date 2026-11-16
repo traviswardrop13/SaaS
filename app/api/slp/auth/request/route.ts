@@ -54,6 +54,25 @@ function safeEqual(a: string, b: string): boolean {
 // is supplied, the link is returned in the response so the operator can hand it
 // to a pilot SLP directly — before Resend/email is configured. Without the key
 // the link is only ever emailed; it is never returned to the caller.
+/**
+ * EVERY EMAIL REACHES THE CRM WHEN IT IS TYPED (Travis, 16 Nov 2026: "I want
+ * every email to go to high level"). Since 13 Nov 2026 a new address reached
+ * the CRM only once its emailed link was opened, so a clinician who typed
+ * their email and never clicked was never a lead. Now the lead goes as soon
+ * as the sign-in email is actually sent (a refused send is no lead), still
+ * with no account and no cookie: the inbox is proved, and the account made,
+ * by the verify route as before. The address is not proved yet, so it may be
+ * a typo or someone else's; that is the cost Travis chose. A mark
+ * (`slpcrm:<email>`, a year) tells the verify route the CRM already has it,
+ * so opening the link does not send the same lead twice.
+ */
+async function tellCrmEarly(origin: string, email: string, source: string, attrib: Record<string, string>): Promise<void> {
+  try {
+    if (typeof (await kvCmd(["GET", "slpcrm:" + email])) === "string") return;
+    if (await tellCrm(origin, email, source, "", attrib)) await kvCmd(["SET", "slpcrm:" + email, new Date().toISOString(), "EX", 31536000]);
+  } catch { /* never blocks the sign-in email */ }
+}
+
 export async function POST(req: NextRequest) {
   let body: {
     email?: string; adminKey?: string; source?: string; attrib?: unknown;
@@ -156,6 +175,7 @@ export async function POST(req: NextRequest) {
     const res = await sendMagicEmail(email, link, "", { freeDashboard: true });
     const devLink = isAdmin ? link : res.devLink;
     if (!res.sent && !devLink) await kvCmd(["DEL", key]);
+    if (res.sent) await tellCrmEarly(origin, email, String(body.source || "for-slps").slice(0, 40), safeAttrib(body.attrib));
     return NextResponse.json({ ok: true, sent: res.sent, signedIn: false, devLink });
   }
 
@@ -165,8 +185,9 @@ export async function POST(req: NextRequest) {
    * traffic would not leak at the inbox step. But that let anyone sit in a
    * real clinician's future account under her address, with a cookie nothing
    * could take back (audit B3). Now this route only emails the link: no
-   * account, no cookie, no CRM ping. The verify route makes the account
-   * (Sona Pro terms, as before), tells the CRM, and ends every session issued
+   * account, no cookie (the CRM hears of a new address once its email is
+   * sent: tellCrmEarly, 16 Nov 2026). The verify route makes the account
+   * (Sona Pro terms, as before), and ends every session issued
    * before that first inbox-proved sign-in.
    *
    * Nothing here writes an account, so a store that did not answer can no
@@ -203,6 +224,9 @@ export async function POST(req: NextRequest) {
    * already on the account — this request is not signed in, so it may
    * inform the CRM but never rewrites the account.
    */
+  if (!acct && acctRaw === null && res.sent) {
+    await tellCrmEarly(origin, email, String(body.source || "slp-signup").slice(0, 40), safeAttrib(body.attrib));
+  }
   if (acct && !acct.crmAt && typeof acctRaw === "string") {
     if (await tellCrm(origin, email, String(body.source || "slp-signup").slice(0, 40), name, safeAttrib(body.attrib))) {
       acct.crmAt = new Date().toISOString();
