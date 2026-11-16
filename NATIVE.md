@@ -588,10 +588,11 @@ Sona Pro ($19.99 a month, 14 days free the first time: the dashboard, the
 clinician's own phone and every family on their link) — and before it "Sona
 Premium for you" and "Sona Premium for your caseload", still renewing for
 those who bought them — are sold to clinicians on speaksona.com, from the dashboard — and the
-dashboard never renders in the app: `slp.html` sends a native shell straight
-to Home before it draws or calls anything. So no clinician buy button can
-appear in the iOS build, **there is no App Store product for either plan, and
-none should be created.** The clinician's own Premium reaches their phone the
+dashboard never renders in the FAMILY app: `slp.html` sends that native shell
+straight to Home before it draws or calls anything. So no clinician buy button
+can appear in the family app, **there is no App Store product for either plan,
+and none should be created.** The clinicians' own app ("Sona for SLPs",
+16 Nov 2026, below) does show the dashboard, and sells nothing in it. The clinician's own Premium reaches their phone the
 same way a family's coverage does: by a link, and the server's answer to the
 ticket it earns.
 
@@ -605,3 +606,24 @@ existing in-app purchase (Sona Monthly since 5 Oct 2026, and Sona Yearly again o
 access bought elsewhere only while the app also sells Premium itself and never
 points a parent at buying outside it — so no page inside the app may mention
 the clinician plan or a web price.
+
+
+## Sona for SLPs: the clinicians' own app (SLPAPP1, 16 Nov 2026)
+
+Travis: "start building the SLP dashboard mobile app"; asked, he chose its own
+App Store app, and never selling in it. Everything about it (the config, the
+build steps on the Mac, App Store Connect, the reviewer's sign-in, the review
+notes) is in `native/slp-ios/README.md`. In short:
+
+- A second Capacitor shell (`com.speaksona.slp`) that loads
+  `https://www.speaksona.com/slp.html` and adds `SonaSLPApp/1` to its user
+  agent. The website reads that (`lib/slpApp.ts`): the dashboard renders, any
+  other page goes to it, and every price, offer and billing door is hidden.
+- Sign-in by the 6-digit code in the sign-in email (the link opens in Safari,
+  which an app's cookies never see). The app's sign-in is the free-dashboard
+  door, as the homepage's is.
+- **App Review's sign-in:** set `SLP_REVIEW_EMAIL` and `SLP_REVIEW_CODE` in
+  Vercel before submitting; the reviewer types that email, taps Email me a
+  code, and types the code. Nothing is emailed to it. Delete both to close it.
+- Delete your account (Settings) and Block (the community) are Apple's rules,
+  and work on the website too.

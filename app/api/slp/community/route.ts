@@ -91,7 +91,7 @@ async function memberSummary(): Promise<{ count: number; names: string[] } | nul
 }
 
 function publicReply(reply: Reply, viewer: Member) {
-  return { id: reply.id, author: reply.author, text: reply.text, createdAt: reply.createdAt, canDelete: viewer.moderator || reply.authorId === viewer.id };
+  return { id: reply.id, author: reply.author, text: reply.text, createdAt: reply.createdAt, canDelete: viewer.moderator || reply.authorId === viewer.id, mine: reply.authorId === viewer.id };
 }
 function publicPost(post: Post, viewer: Member) {
   return { ...publicReply(post, viewer), title: post.title, category: post.category, replies: (Array.isArray(post.replies) ? post.replies : []).map(r => publicReply(r, viewer)), ...(post.id === WELCOME_ID && post.authorId === WELCOME_AUTHOR_ID ? { pinned: true } : {}) };
@@ -173,12 +173,22 @@ export async function GET(req: NextRequest) {
   if (!Array.isArray(rows) || rows.length % 2) return unavailable();
   const welcome = await kvCmd(["EVAL", READ_WELCOME, 1, PREFIX + "posts", WELCOME_ID, JSON.stringify(welcomePost()), WELCOME_TEXT_BEFORE_29_SEP]);
   if (welcome !== null && typeof welcome !== "string") return unavailable();
+  // BLOCKED MEMBERS (SLPAPP1, 16 Nov 2026: Apple's rule for posts people
+  // write asks for a way to stop seeing someone). Their posts, and their
+  // replies on anyone's post, are left out for this viewer alone.
+  const blockedRaw = await kvCmd(["SMEMBERS", PREFIX + "blocks:" + viewer.id]);
+  const blocked = new Set(Array.isArray(blockedRaw) ? blockedRaw.map(String) : []);
   try {
     const posts = [];
-    for (let i = 0; i < Math.min(rows.length, PAGE_SIZE * 2); i += 2) posts.push(publicPost(JSON.parse(String(rows[i])), viewer));
+    for (let i = 0; i < Math.min(rows.length, PAGE_SIZE * 2); i += 2) {
+      const post = JSON.parse(String(rows[i])) as Post;
+      if (blocked.has(post.authorId)) continue;
+      if (blocked.size && Array.isArray(post.replies)) post.replies = post.replies.filter(r => !blocked.has(r.authorId));
+      posts.push(publicPost(post, viewer));
+    }
     const pinned = welcome === null ? [] : [publicPost(JSON.parse(welcome), viewer)];
     const members = await memberSummary();
-    return response({ ok: true, pinned, posts, nextCursor: rows.length > PAGE_SIZE * 2 ? String(rows[PAGE_SIZE * 2 - 1]) : null, ...(members ? { members } : {}) });
+    return response({ ok: true, pinned, posts, nextCursor: rows.length > PAGE_SIZE * 2 ? String(rows[PAGE_SIZE * 2 - 1]) : null, blocked: blocked.size, ...(members ? { members } : {}) });
   } catch { return unavailable(); }
 }
 
@@ -263,6 +273,7 @@ async function mutate(req: NextRequest, deleting: boolean) {
     if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("shape");
     body = value;
   } catch { return fail("Invalid community request."); }
+  if (!deleting && (body.action === "block" || body.action === "unblock-all")) return block(viewer, body);
   const action = deleting ? "delete" : body.action;
   if (!["post", "reply", "report", "delete"].includes(String(action)) || (!deleting && action === "delete")) return fail("Choose a community action.");
   const requestId = typeof body.requestId === "string" ? body.requestId : "";
@@ -293,6 +304,33 @@ async function mutate(req: NextRequest, deleting: boolean) {
   if (result.status === 429) return fail("You've reached the community posting limit. Please try again in an hour.", 429);
   if (result.status === 409) return fail(result.full ? "This discussion has reached 50 replies. Please start a new post." : "This request has changed. Please submit it again.", 409);
   return unavailable();
+}
+/**
+ * Block: stop seeing one member's posts and replies (this viewer only; they
+ * are not told). The member is named by a post or reply of theirs, since the
+ * page never holds anyone's id. "unblock-all" shows everyone again. A year,
+ * renewed by each block. Nobody blocks themselves, or Sona's pinned welcome.
+ */
+async function block(viewer: Member, body: Record<string, unknown>) {
+  const key = PREFIX + "blocks:" + viewer.id;
+  if (body.action === "unblock-all") {
+    return typeof (await kvCmd(["DEL", key])) === "number" ? response({ ok: true }) : unavailable();
+  }
+  const postId = typeof body.postId === "string" ? body.postId : "";
+  const replyId = typeof body.replyId === "string" ? body.replyId : "";
+  if (!ID.test(postId) || (replyId && !ID.test(replyId))) return fail("Choose a community post.");
+  const raw = await kvCmd(["HGET", PREFIX + "posts", postId]);
+  if (raw === undefined) return unavailable();
+  if (typeof raw !== "string") return fail("This post or reply is no longer available.", 404);
+  let post: Post;
+  try { post = JSON.parse(raw); } catch { return unavailable(); }
+  const target = replyId ? (Array.isArray(post.replies) ? post.replies.find(r => r.id === replyId) : undefined) : post;
+  if (!target) return fail("This post or reply is no longer available.", 404);
+  if (target.authorId === viewer.id) return fail("That's you.");
+  if (target.authorId === WELCOME_AUTHOR_ID) return fail("This is Sona's own post.");
+  if (typeof (await kvCmd(["SADD", key, target.authorId])) !== "number") return unavailable();
+  await kvCmd(["EXPIRE", key, 31536000]);
+  return response({ ok: true });
 }
 export async function POST(req: NextRequest) { return mutate(req, false); }
 export async function DELETE(req: NextRequest) { return mutate(req, true); }

@@ -76,6 +76,16 @@ export function invDataKey(code: string, token: string): string { return "inv:" 
 export function invClaimKey(code: string, token: string): string { return "invclaim:" + lc(code) + ":" + token; }
 export function goneKey(code: string): string { return "slpgone:" + lc(code); }
 
+/**
+ * A DELETED CLINICIAN'S CODE (lib/slpDelete, 16 Nov 2026) is kept forever as
+ * this mark, so nobody can claim it and receive the practice of the families
+ * whose phones still hold tickets for it, and /api/pilot writes nothing to it.
+ */
+export const DELETED_CODE = "!deleted";
+export async function codeDeleted(code: string, kv: Kv = kvCmd): Promise<boolean> {
+  return (await kv(["GET", "slpcode:" + lc(code)])) === DELETED_CODE;
+}
+
 /** Twelve random characters — 31^12 ≈ 8×10^17, hopeless to guess at any rate limit. */
 export function makeInviteToken(): string {
   const bytes = crypto.randomBytes(TOKEN_LEN);

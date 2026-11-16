@@ -616,9 +616,13 @@ if (A) {
   // works, the CRM never hears, nothing errors.
   // A new account's lead goes from the verify route since 13 Nov 2026 (the
   // inbox is proved first); an existing account's catch-up from this route.
-  const verify = read("app/api/slp/auth/verify/route.ts");
+  // Since 16 Nov 2026 the account (and its CRM call) is lib/slpSignIn's
+  // finishSignIn, which the verify route awaits before it answers, and the
+  // emailed code's route shares.
+  const verifyRoute = read("app/api/slp/auth/verify/route.ts");
+  const verify = read("lib/slpSignIn.ts");
   ok("the CRM call is awaited before the response, not fired and forgotten",
-    /await tellCrm\(/.test(verify) && verify.indexOf("await tellCrm(") < verify.lastIndexOf("return res;") &&
+    /await tellCrm\(/.test(verify) && /await finishSignIn\(/.test(verifyRoute) && verifyRoute.indexOf("await finishSignIn(") < verifyRoute.lastIndexOf("return res;") &&
     /await tellCrm\(origin, email/.test(req) && req.indexOf("await tellCrm(") < req.lastIndexOf("return NextResponse.json(") &&
     !/void fetch\(origin \+ "\/api\/lead"/.test(req + verify),
     "an un-awaited fetch in a serverless function can be dropped when the response is sent");
