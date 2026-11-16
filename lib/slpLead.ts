@@ -24,9 +24,9 @@ export function safeAttrib(raw: unknown): Record<string, string> {
 
 /**
  * Tell the founder's email list that a clinician signed up. /api/lead is
- * the one place any opt-in goes (it adds them to Resend's contacts; Kit and
- * GoHighLevel, the lists before it, are gone), so this reuses it rather than
- * growing a second rail.
+ * the one place any opt-in goes (it adds them to Resend's contacts and, since
+ * 15 Nov 2026, sends them to GoHighLevel again; Kit is gone), so this reuses
+ * it rather than growing a second rail.
  *
  * AWAITED, WITH A SHORT FUSE — NOT FIRE-AND-FORGET. This used to be
  * `void fetch(...)` so a CRM hiccup could never cost a clinician their

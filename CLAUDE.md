@@ -2380,7 +2380,10 @@ App Store Connect and the review notes; `tests/slpapptest.mjs` pins it all.
   holding a ticket never puts a child back, and nobody can claim it. **Refused
   while a paid plan still renews** (cancel first, on the web, or email);
   Stripe's records stay. Defaults Travis did not pick: the unsubscribe, and
-  the refusal over cancelling the plan for them.
+  the refusal over cancelling the plan for them. **GoHighLevel keeps the
+  contact** (back as the CRM since 15 Nov 2026, below): Sona only POSTs to
+  its webhook and can delete nothing there, so removing a deleted
+  clinician's contact in GoHighLevel is Travis's, by hand.
 - **Block in the community** (Apple's rule for posts people write): a member
   is blocked by one of their posts or replies (the page never holds an id),
   for that viewer alone, a year; "Show them again" clears it.
@@ -2389,7 +2392,19 @@ App Store Connect and the review notes; `tests/slpapptest.mjs` pins it all.
   fix is one native feature, not built; App Privacy answers. **Nothing here is
   Rachel's**: no word a child or a family reads changed.
 
-## The email list: Resend's contacts (Kit and GoHighLevel are gone)
+## The email list: Resend's contacts, and GoHighLevel again (Kit is gone)
+**GoHighLevel is back as the CRM, beside Resend** (Travis, 15 Nov 2026:
+speaksona.com stays on Vercel, "figure out how to get new leads to go into
+the ghl crm"). `/api/lead` POSTs every lead, from the server, to
+`LEAD_WEBHOOK_URL` (a GHL Inbound Webhook, set in Vercel for production
+only), with `email` and a clinician's own `first_name` in the URL's query
+(GHL's workflow reads them there; `encodeURIComponent`, so "+" is `%2B`) and
+the usual body. Sona asks for no last name or phone, so neither is sent.
+Never anything about a child (the body's `report` is blanked too), and
+`/api/feedback` no longer falls back to that webhook. `privacy.html` names
+GoHighLevel, as do both landing pages' "What's stored" answers.
+`contactstest` plays it. What follows is the history before it.
+
 **GoHighLevel was deleted on 24 Sep 2026 and Kit replaced it; on 16 Oct 2026
 Resend's contacts replaced Kit** (Travis: "I am done using Kit. I'm going to
 be using Resend", then "every new email goes into like a resend contact list
