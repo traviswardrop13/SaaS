@@ -99,7 +99,9 @@ export async function GET(req: NextRequest) {
     iat: now,
     exp: now + SESSION_MAX_AGE * 1000,
   });
-  const res = NextResponse.redirect(url.origin + "/slp.html");
+  // "next=pro" (the trial page's button) opens the Sona Pro page; any other
+  // value is ignored, so the link can never send anyone off the dashboard.
+  const res = NextResponse.redirect(url.origin + "/slp.html" + (url.searchParams.get("next") === "pro" ? "#premium" : ""));
   res.headers.set("Set-Cookie", sessionCookie(session, SESSION_MAX_AGE));
   return res;
 }

@@ -116,16 +116,20 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
 
   const rewrites = code.slice(code.indexOf("async rewrites()"), code.indexOf("async redirects()"));
   const redirects = code.slice(code.indexOf("async redirects()"));
-  ok("the root serves the clinician page and /for-parents serves the family page",
-    /source:\s*"\/"\s*,\s*destination:\s*"\/for-slps\.html"/.test(rewrites) &&
+  // Travis, 16 Nov 2026: the root is a one-email opt-in for the free prompt,
+  // and /start is the clinician page with the prompt and the free trial.
+  ok("the root serves the opt-in, /start the clinician page and /for-parents the family page",
+    /source:\s*"\/"\s*,\s*destination:\s*"\/optin\.html"/.test(rewrites) &&
+    /source:\s*"\/start"\s*,\s*destination:\s*"\/for-slps\.html"/.test(rewrites) &&
     /source:\s*"\/for-parents"\s*,\s*destination:\s*"\/parents\.html"/.test(rewrites));
   ok("the old clinician URL redirects permanently to the root",
     /source:\s*"\/for-slps"\s*,\s*destination:\s*"\/"\s*,\s*permanent:\s*true/.test(redirects));
   ok("each landing page declares its canonical and shared URL",
     /rel="canonical" href="https:\/\/www\.speaksona\.com\/for-parents"/.test(parents) &&
     /og:url" content="https:\/\/www\.speaksona\.com\/for-parents"/.test(parents) &&
-    /rel="canonical" href="https:\/\/www\.speaksona\.com\/"/.test(slps) &&
-    /og:url" content="https:\/\/www\.speaksona\.com\/"/.test(slps));
+    /rel="canonical" href="https:\/\/www\.speaksona\.com\/start"/.test(slps) &&
+    /og:url" content="https:\/\/www\.speaksona\.com\/start"/.test(slps) &&
+    /rel="canonical" href="https:\/\/www\.speaksona\.com\/"/.test(readFileSync(APP + "/public/optin.html", "utf8")));
   ok("both landing routes revalidate", /source: "\/", headers: noStore/.test(code) && /source: "\/for-parents", headers: noStore/.test(code));
 
   // A LINK WITH NO CARD IS A GREY BOX. Both pages are static and inherit
@@ -276,9 +280,10 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
     /placeholder="you@yourclinic\.org"/.test(form) &&
     !/<option value="(?:parent|other)"/.test(form) &&
     (slps.match(/<form\b/g) || []).length === 1 && !/id="startModal"/.test(slps));
-  ok("both clinician calls to action say Get the free dashboard and the closing one returns to the form",
+  ok("both clinician calls to action start the free trial and the closing one returns to the form",
     /\$\("finalGo"\)\.onclick = function \(\) \{ toForm\(\); \};/.test(slps) &&
-    (slps.replace(/<!--[\s\S]*?-->/g, "").match(/>Get the free dashboard</g) || []).length === 2);
+    (slps.replace(/<!--[\s\S]*?-->/g, "").match(/>Start my 14-day free trial</g) || []).length === 2 &&
+    /next:\s*"pro"/.test(slps));
   ok("the signup button tells clinicians that access is emailed",
     /aria-describedby="fNext"/.test(form) && /id="fNext">[^<]*email you a sign-in link/i.test(form));
   const heroR = (slps.match(/<div class="hero-r"[\s\S]*?<\/section>/) || [""])[0];
@@ -314,7 +319,7 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
   // as a clinician (role "slp", through /onboarding.html?slp=1, which nothing
   // links to) and never in the iPhone app.
   // parents.html is checked above: exactly one footer link, nothing else.
-  const CLIN = new Set(["for-slps.html", "slp.html", "slp-login.html", "settings.html", "parents.html"]);
+  const CLIN = new Set(["optin.html", "for-slps.html", "slp.html", "slp-login.html", "settings.html", "parents.html"]);
   const TO_CLIN = /href=["'](https?:\/\/(www\.)?speaksona\.com)?\/(for-slps|slp-login|slps\b|slp\.html|slp["'?#])/;
   const fam = pages.filter((f) => !CLIN.has(f) && TO_CLIN.test(strip(readFileSync(APP + "/public/" + f, "utf8"))))
     .concat(["app/families/page.tsx", "app/terms/page.tsx", "app/support/page.tsx", "app/privacy/page.tsx", "app/layout.tsx", "lib/nurture.ts", "lib/report.ts", "lib/revenuecat.ts"]
@@ -372,8 +377,18 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
   const slps = readFileSync(APP + "/public/for-slps.html", "utf8").replace(/<!--[\s\S]*?-->/g, "");
   const shown = slps.replace(/<script[\s\S]*?<\/script>/g, "").replace(/<style[\s\S]*?<\/style>/g, "");
   const flat = shown.replace(/<[^>]+>/g, " ").replace(/&rsquo;/g, "'").replace(/\s+/g, " ");
-  ok("the clinician landing page and its metadata advertise free access with no prices or trial pitch",
-    /free dashboard/i.test(shown) && !/\$\s*\d|\bfree trial\b|\b\d+ days free\b|id="pricing"|href="#pricing"/i.test(shown));
+  // /start sells Sona Pro's trial (16 Nov 2026): its one price line must be
+  // lib/caseload.ts's, word for word, and no other dollar figure.
+  const caseload = readFileSync(APP + "/lib/caseload.ts", "utf8");
+  const proPrice = (caseload.match(/PRO_PRICE = "([^"]+)"/) || [])[1], proDays = (caseload.match(/PRO_TRIAL_DAYS = (\d+)/) || [])[1];
+  ok("the trial page states Sona Pro's trial and price from lib/caseload.ts, and no other price",
+    flat.includes(proDays + " days free, then " + proPrice + " a month. Cancel anytime.") &&
+    (shown.match(/\$\s*\d[\d.]*/g) || []).every((m) => m.replace(/\s/g, "") === proPrice));
+  const optin = readFileSync(APP + "/public/optin.html", "utf8").replace(/<!--[\s\S]*?-->/g, "");
+  ok("the opt-in asks only for an email, posts a clinician lead and names no price",
+    (optin.match(/<input\b/g) || []).length === 1 && /fetch\("\/api\/lead"/.test(optin) && /role: "slp"/.test(optin) &&
+    !/\$\s*\d/.test(optin.replace(/<script[\s\S]*?<\/script>/g, "")) &&
+    optin.includes("Built with Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical fellowship."));
   ok("the clinician offer includes session planning, homework, a client link and a community",
     ["Plan tomorrow’s sessions", "Create AI homework", "Share the app with clients", "Join the community"].every(label => flat.includes(label)));
   ok("the page preserves the family's free practice without promising universal game access",

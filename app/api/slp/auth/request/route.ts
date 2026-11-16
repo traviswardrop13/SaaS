@@ -76,7 +76,7 @@ async function tellCrmEarly(origin: string, email: string, source: string, attri
 export async function POST(req: NextRequest) {
   let body: {
     email?: string; adminKey?: string; source?: string; attrib?: unknown;
-    clinicianRole?: unknown; workSetting?: unknown; flow?: unknown;
+    clinicianRole?: unknown; workSetting?: unknown; flow?: unknown; next?: unknown;
   };
   try {
     body = await req.json();
@@ -171,7 +171,9 @@ export async function POST(req: NextRequest) {
     if (await kvCmd(["SET", key, pending, "EX", 900]) !== "OK") {
       return NextResponse.json({ ok: false, error: "Couldn't make your sign-in link. Try again." }, { status: 503 });
     }
-    const link = origin + "/api/slp/auth/verify?token=" + encodeURIComponent(token);
+    // THE TRIAL PAGE'S BUTTON (/start, 16 Nov 2026) asks to land on Sona Pro
+    // after sign-in. Only the one fixed word; nothing else rides the link.
+    const link = origin + "/api/slp/auth/verify?token=" + encodeURIComponent(token) + (body.next === "pro" ? "&next=pro" : "");
     const res = await sendMagicEmail(email, link, "", { freeDashboard: true });
     const devLink = isAdmin ? link : res.devLink;
     if (!res.sent && !devLink) await kvCmd(["DEL", key]);

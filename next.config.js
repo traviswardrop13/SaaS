@@ -83,6 +83,7 @@ const nextConfig = {
       { source: "/icon-192.png", headers: noStore },
       { source: "/icon-512.png", headers: noStore },
       { source: "/", headers: noStore },
+      { source: "/start", headers: noStore },
       { source: "/for-parents", headers: noStore },
       { source: "/for-slps.css", headers: noStore },
       { source: "/try", headers: noStore },
@@ -94,7 +95,8 @@ const nextConfig = {
   // The public homepage introduces Sona Pro. The family page has its own URL.
   async rewrites() {
     return [
-      { source: "/", destination: "/for-slps.html" },
+      { source: "/", destination: "/optin.html" },
+      { source: "/start", destination: "/for-slps.html" },
       { source: "/for-parents", destination: "/parents.html" },
       // The ad's bridge page (Travis, 9 Oct 2026): a headline, a button, the App Store.
       { source: "/try", destination: "/try.html" },

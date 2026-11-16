@@ -269,3 +269,11 @@ footer .links { display: flex; flex-wrap: wrap; gap: 13px; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; }
 }
+
+/* The prompt on /start (16 Nov 2026). */
+.prompt-band { padding-block: clamp(26px, 5vw, 56px) 10px; display: grid; gap: 14px; }
+.prompt-band .prompt-lede { max-width: 46em; }
+.prompt-text { margin: 0; padding: 18px; max-height: 340px; overflow: auto; white-space: pre-wrap; background: var(--paper);
+  border: 1px solid var(--line); border-radius: 16px; font: 600 14px/1.5 ui-monospace, Menlo, monospace; color: var(--ink); }
+.prompt-band .btn { justify-self: start; }
+.copied { color: var(--teal-deep); font-weight: 900; min-height: 1.4em; }

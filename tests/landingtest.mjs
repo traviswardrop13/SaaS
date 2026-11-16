@@ -65,7 +65,7 @@ async function fresh(opts = {}) {
   const page = await context.newPage();
   const errors = [];
   page.on("pageerror", (e) => errors.push(e.message));
-  await page.goto(origin + (opts.path || "/") + "?utm_source=fb&utm_campaign=launch&fbclid=abc123" + (opts.query || ""));
+  await page.goto(origin + (opts.path || "/start") + "?utm_source=fb&utm_campaign=launch&fbclid=abc123" + (opts.query || ""));
   return { context, page, errors };
 }
 // WHAT THE VISITOR SEES AS THE PAGE LEAVES (4 Oct 2026). Nothing can be read
@@ -406,9 +406,12 @@ charterReply = null;
   }));
   ok("the clinician page points parents to /for-parents", await page.evaluate(() =>
     !document.querySelector(".consent, #mNext, .hnote") && document.querySelector('a[href="/for-parents"]') !== null));
-  ok("the clinician page offers the free dashboard without prices or trial language", await page.evaluate(() =>
-    document.getElementById("fGo").textContent.trim() === "Get the free dashboard" &&
-    !document.getElementById("pricing") && !/\$\s*\d|\bfree trial\b/i.test(document.body.innerText)));
+  ok("the clinician page offers Sona Pro's 14-day trial and says what it costs after", await page.evaluate(() =>
+    document.getElementById("fGo").textContent.trim() === "Start my 14-day free trial" &&
+    /14 days free, then \$19\.99 a month\. Cancel anytime\./.test(document.getElementById("fNext").textContent)));
+  ok("the prompt is on the page with a Copy button", await page.evaluate(() =>
+    /pediatric speech-language pathologist/.test(document.getElementById("promptText").textContent) &&
+    !!document.getElementById("copyPrompt")));
 
   // What the visitor is told before anything is sent.
   posts = [];
@@ -429,15 +432,15 @@ charterReply = null;
 }
 
 // ── New and returning clinicians both enter through the emailed link. ──
-for (const path of ["/", "/for-slps"]) {
-  const clinicianRole = path === "/" ? "homepage" : "/for-slps";
+for (const path of ["/start"]) {
+  const clinicianRole = "/start";
   const { context, page, errors } = await fresh({ path });
   const url = new URL(page.url());
-  ok(clinicianRole + ": clinician URL keeps campaign parameters", url.pathname === "/" &&
+  ok(clinicianRole + ": clinician URL keeps campaign parameters", url.pathname === "/start" &&
     url.searchParams.get("utm_campaign") === "launch" && url.searchParams.get("fbclid") === "abc123", url.href);
   posts = []; authReply = { ok: true, sent: true, signedIn: false };
   await fill(page, "sam@clinic.org");
-  const left = leftFor(page, "/", 3000);
+  const left = leftFor(page, "/start", 3000);
   await page.click("#fGo");
   ok(clinicianRole + ": email confirmation identifies the address after delivery", await settles(page, () => {
     const sent = document.getElementById("sent");
@@ -445,7 +448,7 @@ for (const path of ["/", "/for-slps"]) {
   }));
   const p = posts[0] || { body: {} };
   ok(clinicianRole + ": one post requests the free dashboard email", posts.length === 1 && p.path === "/api/slp/auth/request" &&
-    p.body.flow === "free-dashboard", posts);
+    p.body.flow === "free-dashboard" && p.body.next === "pro", posts);
   ok(clinicianRole + ": the request carries the email and ad click, with no name",
     p.body.email === "sam@clinic.org" && !("name" in p.body) && p.body.attrib?.fbclid === "abc123" && p.body.source === "fb", p.body);
   ok(clinicianRole + ": the request asks no role or work setting", !("clinicianRole" in p.body) &&
@@ -453,6 +456,36 @@ for (const path of ["/", "/for-slps"]) {
   ok(clinicianRole + ": successful email delivery fires only Lead", JSON.stringify(await page.evaluate(() => window.__track)) === '["Lead"]');
   ok(clinicianRole + ": the confirmation stays on the homepage", !(await left), page.url());
   ok(clinicianRole + ": no page errors", errors.length === 0, errors);
+  await context.close();
+}
+// ── the root: one email for the free prompt, then /start (16 Nov 2026) ──
+for (const path of ["/", "/for-slps"]) {
+  const { context, page, errors } = await fresh({ path });
+  ok(path + ": the opt-in keeps campaign parameters on the root", new URL(page.url()).pathname === "/" &&
+    new URL(page.url()).searchParams.get("fbclid") === "abc123", page.url());
+  ok(path + ": one email box and one button", await page.evaluate(() =>
+    document.querySelectorAll("input").length === 1 && document.querySelectorAll("#optin button").length === 1));
+  posts = []; leadReply = { ok: true, captured: true };
+  await page.fill("#oEmail", "sam@clinic.org");
+  const moved = page.waitForURL((u) => new URL(u).pathname === "/start", { timeout: 4000 }).then(() => true, () => false);
+  await page.click("#oGo");
+  ok(path + ": then the visitor lands on /start with the address filled in, never in the URL", (await moved) &&
+    !/sam/.test(page.url()) && await page.inputValue("#fEmail") === "sam@clinic.org", page.url());
+  ok(path + ": the email went to /api/lead as a clinician lead, with the ad click and nothing else", posts.length === 1 &&
+    posts[0].path === "/api/lead" && posts[0].body.email === "sam@clinic.org" && posts[0].body.role === "slp" &&
+    posts[0].body.source === "prompt-optin" && posts[0].body.attrib?.fbclid === "abc123" && !("name" in posts[0].body), posts);
+  ok(path + ": no page errors", errors.length === 0, errors);
+  await context.close();
+}
+{
+  const { context, page } = await fresh({ path: "/" });
+  posts = []; leadReply = { ok: false, error: "A valid email is required." };
+  await page.fill("#oEmail", "sam@clinic.org");
+  await page.click("#oGo");
+  ok("a refused opt-in shows the reason, stays, and fires no Lead", await settles(page, () =>
+    /valid email/.test(document.getElementById("oErr").textContent)) && new URL(page.url()).pathname === "/" &&
+    (await page.evaluate(() => window.__track.length)) === 0);
+  leadReply = { ok: true, captured: true };
   await context.close();
 }
 // The Lead fires only after the server said yes.

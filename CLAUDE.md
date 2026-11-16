@@ -1942,6 +1942,26 @@ from a URL parameter: coverage is the server's answer to the enrolment ticket
 the device earned by redeeming code + key (`Sona.caseRefresh()`, re-asked every
 6 hours; only an authoritative answer changes anything).
 
+**THE ROOT IS AN OPT-IN, /start IS THE TRIAL (16 Nov 2026)** (Travis: "the
+original speaksona.com as an opt-in page ... after they put in their email,
+it goes to the next page, which is the page to start a free trial", and a
+lead magnet that is "some sort of prompt to help ... practice that they can
+do in sessions with kids"; he chose speech therapists as the audience).
+`/` serves `public/optin.html`: one work-email box, "Send me the free
+prompt", posted to `/api/lead` (`role "slp"`, `source "prompt-optin"`, the
+ad's attrib; so it reaches GoHighLevel, which emails the prompt: Travis's
+workflow there), the Meta `Lead`, then `/start` with the address kept in
+this tab's sessionStorage (`sona.optin.email`), never the URL. `/start`
+serves `for-slps.html`: the prompt on screen with Copy, then the clinician
+page, whose button is now "Start my 14-day free trial" with "14 days free,
+then $19.99 a month. Cancel anytime." (pinned to `PRO_*` by `shiptest`).
+It still emails the sign-in link (`flow "free-dashboard"`) and adds
+`next: "pro"`, so the link opens `/slp.html#premium`, where Stripe takes
+the card; nothing else rides the link. `/for-slps` still redirects to `/`.
+**For Rachel:** every word of the prompt (`#promptText`). **For Travis:**
+the GHL workflow that emails the prompt, and the page's words.
+`landingtest` plays both pages.
+
 **SELLING TO SLPs AGAIN, FROM 12 NOV 2026** (Travis: "i needa get this
 setup to sell to slps"). The homepage at `/` offers clinicians a free dashboard.
 The family landing page moved to `/for-parents`, linked from the clinician

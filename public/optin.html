@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <script>
+// Clinician pages live in the browser: inside the family app, go Home.
+(function () {
+  var native = false;
+  try {
+    var bridge = window.Capacitor;
+    native = !!(bridge && (typeof bridge.isNativePlatform === "function" ? bridge.isNativePlatform() : true));
+  } catch (e) {}
+  if (!native) return;
+  window.__sonaFamilyRedirect = true;
+  document.documentElement.style.visibility = "hidden";
+  window.location.replace("/today.html");
+})();
+  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Sona — the free session-planning prompt for speech therapists</title>
+  <meta name="description" content="A free AI prompt for speech therapists: put in each child's sound, age and session length, and get play-based activities for tomorrow's sessions. Built with Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical fellowship." />
+  <link rel="canonical" href="https://www.speaksona.com/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Sona" />
+  <meta property="og:url" content="https://www.speaksona.com/" />
+  <meta property="og:title" content="Plan tomorrow’s sessions in two minutes." />
+  <meta property="og:description" content="A free AI prompt for speech therapists that turns each session into play-based activities." />
+  <meta property="og:image" content="https://speaksona.com/og-slp.png?v=3" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="Sona for speech therapists." />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:image" content="https://speaksona.com/og-slp.png?v=3" />
+  <link rel="icon" type="image/png" href="/favicon.png?v=2" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=2" />
+  <meta name="theme-color" content="#fff8e7" />
+  <link href="/fonts.css" rel="stylesheet">
+  <link href="/for-slps.css" rel="stylesheet">
+  <style>
+    /* Layout only; every colour is for-slps.css's. */
+    .optin { min-height: calc(100vh - 67px); display: flex; align-items: center; padding-block: clamp(28px, 6vw, 72px); }
+    .optin .in { display: grid; gap: clamp(22px, 4vw, 48px); grid-template-columns: 1fr; align-items: center; width: 100%; }
+    @media (min-width: 900px) { .optin .in { grid-template-columns: 1.1fr .9fr; } }
+    .optin h1 { font-size: clamp(2.4rem, 6vw, 4.3rem); letter-spacing: -.04em; margin: 8px 0 14px; }
+    .optin .lede { font-size: clamp(1.05rem, 1.6vw, 1.25rem); max-width: 34em; }
+    .optin ul.gets { margin: 18px 0 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+    .optin ul.gets li::before { content: "✓"; color: var(--teal); font-weight: 900; margin-right: 9px; }
+    .optin .signup { width: 100%; max-width: 460px; }
+    .optin .btn { width: 100%; }
+    .optin .small { color: var(--muted); font-size: .9rem; margin-top: 10px; }
+    .optin .trust { margin-top: 18px; }
+  </style>
+  <script src="/pixel.js" data-autoconfig="off"></script>
+  <script src="/analytics.js"></script>
+</head>
+<body>
+<header>
+  <div class="wrap hbar">
+    <a class="brand" href="/" aria-label="Sona">
+      <img src="/assets/site/echo.webp" alt="" width="42" height="42">
+      <b>Sona</b>
+    </a>
+    <nav aria-label="Site navigation">
+      <a class="signin" href="/slp-login.html">Sign in</a>
+    </nav>
+  </div>
+</header>
+
+<main class="optin">
+  <div class="wrap in">
+    <div>
+      <p class="eyebrow">Free for speech therapists</p>
+      <h1>Plan tomorrow’s sessions in two minutes.</h1>
+      <p class="lede">Get our free AI prompt. Put in each child’s sound, age and session length, and get play-based activities you can run in the room.</p>
+      <ul class="gets">
+        <li>Three activity ideas for every session</li>
+        <li>An easier and a harder version of each</li>
+        <li>Works in ChatGPT, Claude or any AI chat</li>
+      </ul>
+    </div>
+    <div>
+      <form class="signup" id="optin" novalidate>
+        <div class="form-field">
+          <label for="oEmail">Your work email</label>
+          <input id="oEmail" type="email" inputmode="email" autocomplete="email" placeholder="you@yourclinic.org" required />
+        </div>
+        <button class="btn" id="oGo" type="submit">Send me the free prompt</button>
+        <div class="serr" id="oErr" role="alert"></div>
+        <p class="small">We’ll email you the prompt and occasional tips from Rachel. Unsubscribe anytime.</p>
+      </form>
+      <div class="trust">
+        <img src="/assets/rachel-wardrop-profile.jpg" alt="" width="44" height="44">
+        <p>Built with Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical fellowship.</p>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer class="wrap">
+  <div class="d">Sona is an at-home speech practice tool. It is not a diagnosis, evaluation, or substitute for professional care.</div>
+  <div class="links"><a href="mailto:hello@speaksona.com?subject=Sona">Email us</a><a href="/privacy.html">Privacy</a><a href="/terms">Terms</a><a href="/for-parents">For parents</a></div>
+</footer>
+
+<script>
+  (function () {
+    if (window.__sonaFamilyRedirect) return;
+    var $ = function (id) { return document.getElementById(id); };
+    // Where the lead came from, clamped: it arrives from a URL a stranger controls.
+    var src = "prompt-optin", attrib = {};
+    try {
+      var q = new URLSearchParams(location.search);
+      var clean = function (v, n) { return String(v || "").replace(/[^\w .\-|/]/g, "").slice(0, n || 120); };
+      ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term", "fbclid"].forEach(function (k) {
+        var v = q.get(k); if (v) attrib[k] = clean(v);
+      });
+      attrib.referrer = clean(document.referrer, 200);
+      attrib.landing = clean(location.pathname, 120);
+    } catch (e) {}
+    var LABEL = "Send me the free prompt";
+    function busy(on) { $("oGo").disabled = on; $("oGo").textContent = on ? "Sending…" : LABEL; }
+
+    // THE EMAIL GOES TO /api/lead (and from there to GoHighLevel, which sends
+    // the prompt), then the visitor moves on to /start: the prompt on screen
+    // and the free trial. The address rides in this tab's storage, never in
+    // the address bar, so it is in no log or analytics page view.
+    function go() {
+      if ($("oGo").disabled) return;
+      var email = ($("oEmail").value || "").trim();
+      $("oErr").textContent = "";
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { $("oErr").textContent = "Enter a valid email."; $("oEmail").focus(); return; }
+      busy(true);
+      fetch("/api/lead", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email, role: "slp", source: src, attrib: attrib }),
+      }).then(function (r) { return r.json(); }).then(function (j) {
+        if (!j || !j.ok) { busy(false); $("oErr").textContent = (j && j.error) || "Couldn't send that right now. Try again."; return; }
+        try { if (window.sonaTrack) sonaTrack("Lead"); } catch (e) {}
+        try { sessionStorage.setItem("sona.optin.email", email); } catch (e) {}
+        $("oGo").textContent = "Sent! Opening your prompt…";
+        setTimeout(function () { location.href = "/start" + location.search; }, 150);
+      }).catch(function () { busy(false); $("oErr").textContent = "Network hiccup — try again."; });
+    }
+    $("optin").addEventListener("submit", function (e) { e.preventDefault(); go(); });
+  })();
+</script>
+</body>
+</html>
