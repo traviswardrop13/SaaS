@@ -1,6 +1,7 @@
 import { createHash } from "crypto";
 import { kvCmd } from "@/lib/slpAuth";
 import { APP_URL, DAY_MS, config, esc, stopSeries, unsubToken } from "@/lib/nurture";
+import { sendMail } from "@/lib/mail";
 import { PACE_MS, SEND_CAP, addressOk, suppressed } from "@/lib/report";
 
 /**
@@ -391,24 +392,14 @@ const keyFor = (kind: string, email: string, exp: number) => `rc-${kind}-${creat
 async function send(f: Fetch, cfg: NonNullable<ReturnType<typeof config>>, kind: "remind" | "miss", email: string, exp: number): Promise<{ ok: boolean; status: number }> {
   const unsubUrl = `https://speaksona.com/api/email/unsub?e=${encodeURIComponent(email)}&k=${unsubToken(email, cfg.secret)}`;
   const m = renderMail(kind, unsubUrl, cfg.postal);
-  const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), 10000);
-  try {
-    const r = await f("https://api.resend.com/emails", {
-      method: "POST", signal: ctl.signal,
-      headers: { Authorization: `Bearer ${cfg.key}`, "Content-Type": "application/json", "Idempotency-Key": keyFor(kind, email, exp) },
-      body: JSON.stringify({
-        from: cfg.from, to: [email], reply_to: cfg.replyTo, subject: m.subject, html: m.html, text: m.text,
-        headers: { "List-Unsubscribe": `<${unsubUrl}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" },
-      }),
-    });
-    if (!r.ok) console.error("[revenuecat] Resend refused", kind, r.status);
-    return { ok: r.ok, status: r.status };
-  } catch (e) {
-    console.error("[revenuecat] send threw:", e instanceof Error ? e.message : String(e));
-    return { ok: false, status: 0 };
-  } finally {
-    clearTimeout(timer);
-  }
+  // GoHighLevel when it is set up, else Resend (lib/mail)
+  const r = await sendMail({
+    from: cfg.from, to: email, replyTo: cfg.replyTo, subject: m.subject, html: m.html, text: m.text,
+    idempotencyKey: keyFor(kind, email, exp),
+    headers: { "List-Unsubscribe": `<${unsubUrl}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" },
+  }, { fetch: f, timeoutMs: 10000 });
+  if (!r.ok) console.error("[revenuecat] the email was refused", kind, r.status);
+  return { ok: r.ok, status: r.status };
 }
 
 export type RcRun = { reminded: number; missed: number; skipped: number; failed: number; stopped?: string };

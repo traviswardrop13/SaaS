@@ -640,7 +640,7 @@ try {
     const f = await start(nextEmail(), ['fox']);
     ok('when Resend refuses, start answers 503 {error:"email-off"}', f.status === 503 && f.json.error === 'email-off', f.json);
     ok('…and the new pending request is deleted', (await keysLike(P() + 'pend:')).length === pendsBefore);
-    ok('…and the log says only the status, never the address', logs.some((l) => /Resend refused the board confirmation: 500/.test(l)));
+    ok('…and the log says only the status, never the address', logs.some((l) => /refused the board confirmation: 500/.test(l)));
     resendStatus = 200;
     env({ RESEND_API_KEY: undefined });
     const logN = logs.length;

@@ -5,6 +5,7 @@ import { runWeekly } from "@/lib/weekly";
 import { backfill, syncUnsubscribes } from "@/lib/contacts";
 import { runRc } from "@/lib/revenuecat";
 import { founderKey, sameSecret } from "@/lib/founder";
+import { mailConfigured } from "@/lib/mail";
 
 /**
  * Daily: sends the notes RevenueCat's news has queued ("Your free days end
@@ -39,7 +40,8 @@ export async function GET(req: NextRequest) {
   if (!configured()) {
     // names only, never values: this is how a founder finds out why no
     // welcome email went out
-    const missing = ["RESEND_API_KEY", "UNSUB_SECRET", "EMAIL_POSTAL"].filter((k) => !(process.env[k] || "").trim());
+    const missing = ["UNSUB_SECRET", "EMAIL_POSTAL"].filter((k) => !(process.env[k] || "").trim());
+    if (!mailConfigured()) missing.unshift("GHL_API_TOKEN and GHL_LOCATION_ID (or RESEND_API_KEY)");
     return NextResponse.json({ ok: false, error: "Not set in Vercel: " + missing.join(", ") }, { status: 500 });
   }
   const said = (e: unknown) => ({ ok: false, detail: e instanceof Error ? e.message : String(e) });

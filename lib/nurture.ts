@@ -1,5 +1,6 @@
 import { createHmac } from "crypto";
 import { kvCmd } from "@/lib/slpAuth";
+import { mailConfigured, sendMail } from "@/lib/mail";
 
 /**
  * THE WELCOME SERIES, on Sona's own server (Travis, 6 Oct 2026: "new sign-ups
@@ -217,10 +218,11 @@ export function render(step: Step, unsubUrl: string, postal: string): { subject:
  * same address, under the same rules.
  */
 export function config():{ key: string; secret: string; postal: string; from: string; replyTo: string } | null {
+  // the Resend key, empty when only GoHighLevel sends (lib/mail)
   const key = process.env.RESEND_API_KEY || "";
   const secret = process.env.UNSUB_SECRET || "";
   const postal = (process.env.EMAIL_POSTAL || "").trim();
-  if (!key || !secret || !postal) return null;
+  if (!mailConfigured() || !secret || !postal) return null;
   return {
     key, secret, postal,
     from: process.env.NURTURE_FROM || "Rachel from Sona <rachel@speaksona.com>",
@@ -248,30 +250,17 @@ export async function sendStep(email: string, step: Step, kv: Kv = kvCmd, f: Fet
   if (unsub !== false) return "failed";
   const unsubUrl = `https://speaksona.com/api/email/unsub?e=${encodeURIComponent(email)}&k=${unsubToken(email, cfg.secret)}`;
   const { subject, html, text } = render(step, unsubUrl, cfg.postal);
-  try {
-    const send = () => f("https://api.resend.com/emails", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${cfg.key}`, "Content-Type": "application/json", "Idempotency-Key": `nurture-${step}-${email}` },
-      body: JSON.stringify({
-        from: cfg.from, to: [email], reply_to: cfg.replyTo, subject, html, text,
-        headers: { "List-Unsubscribe": `<${unsubUrl}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" },
-      }),
-    });
-    let r = await send();
-    // Resend's two requests a second are shared with the contact list
-    // (lib/contacts), which /api/lead fills in the same moment: a 429 is
-    // tried once more, and the idempotency key makes a second send of the
-    // same email impossible
-    if (r.status === 429) {
-      await new Promise((ok) => setTimeout(ok, 1100));
-      r = await send();
-    }
-    if (!r.ok) console.error("[nurture] Resend refused step", step, r.status);
-    return r.ok ? "sent" : "failed";
-  } catch (e) {
-    console.error("[nurture] send threw:", e instanceof Error ? e.message : String(e));
-    return "failed";
-  }
+  // GoHighLevel sends when it is set up, else Resend (lib/mail). Resend's two
+  // requests a second are shared with the contact list (lib/contacts), which
+  // /api/lead fills in the same moment: a 429 is tried once more, and the
+  // idempotency key makes a second send of the same email impossible
+  const r = await sendMail({
+    from: cfg.from, to: email, replyTo: cfg.replyTo, subject, html, text,
+    idempotencyKey: `nurture-${step}-${email}`,
+    headers: { "List-Unsubscribe": `<${unsubUrl}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" },
+  }, { fetch: f, retry429Ms: 1100 });
+  if (!r.ok) console.error("[nurture] the email was refused at step", step, r.status);
+  return r.ok ? "sent" : "failed";
 }
 
 export const nextKey = (email: string) => "nurture:next:" + email;

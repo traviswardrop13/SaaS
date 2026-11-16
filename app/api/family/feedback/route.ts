@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { kvCmd } from "@/lib/slpAuth";
 import { rateLimit } from "@/lib/rateLimit";
+import { mailConfigured, sendMail } from "@/lib/mail";
 
 /**
  * "TALK TO US" FROM THE FAMILY APP (29 Sep 2026) — public/talk.html posts
@@ -175,9 +176,10 @@ export async function POST(req: NextRequest) {
   // "<img>" shows as the characters they typed. The subject is a fixed
   // phrase, never their words.
   let emailSent = false;
-  const resendKey = process.env.RESEND_API_KEY;
+  // GoHighLevel when it is set up, else Resend (lib/mail). GoHighLevel's send
+  // has no reply-to: the sender's address is in the email's own lines.
   const to = (process.env.FEEDBACK_EMAIL_TO || "rachel@speaksona.com").trim();
-  if (resendKey && EMAIL.test(to)) {
+  if (mailConfigured() && EMAIL.test(to)) {
     const sender = rec.from === "slp" ? "Clinician" : "Parent";
     const lines = [
       `${sender} feedback from the ${rec.app === "ios" ? "iPhone app" : "web app"}`,
@@ -190,22 +192,17 @@ export async function POST(req: NextRequest) {
       `Sent at ${rec.at}. Every message is also on speaksona.com/leads.html.`,
     ];
     const esc = (v: string) => v.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-    try {
-      const response = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${resendKey}`, "Content-Type": "application/json" },
-        body: JSON.stringify({
-          from: process.env.RESEND_FROM || "Sona <login@speaksona.com>",
-          to: [to],
-          ...(rec.replyEmail ? { reply_to: rec.replyEmail } : {}),
-          subject: `New ${sender.toLowerCase()} feedback in Sona`,
-          text: lines.join("\n"),
-          html: `<div style="font-family:system-ui,sans-serif;font-size:15px;line-height:1.5;white-space:pre-wrap;">${esc(lines.join("\n"))}</div>`,
-        }),
-        signal: AbortSignal.timeout(5000),
-      });
-      emailSent = response.ok;
-    } catch { /* the stored inbox may still have it */ }
+    const response = await sendMail({
+      from: process.env.RESEND_FROM || "Sona <login@speaksona.com>",
+      to,
+      ...(rec.replyEmail ? { replyTo: rec.replyEmail } : {}),
+      subject: `New ${sender.toLowerCase()} feedback in Sona`,
+      text: lines.join("\n"),
+      html: `<div style="font-family:system-ui,sans-serif;font-size:15px;line-height:1.5;white-space:pre-wrap;">${esc(lines.join("\n"))}</div>`,
+      tags: ["sona-team"],
+    }, { timeoutMs: 5000 });
+    // a refusal leaves the stored inbox, which may still have it
+    emailSent = response.ok;
   }
   const delivered = slackSent || emailSent;
 

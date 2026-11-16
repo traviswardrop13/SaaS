@@ -1207,7 +1207,7 @@ const count = (pred) => S.calls.filter(pred).length;
     !/\/api\/lead|upsertContact|lib\/contacts|kitSubscribe|lib\/kit/.test(src) && !/console\.(log|error|warn)\([^)]*parentEmail/.test(src));
   const auth = read("lib/slpAuth.ts");
   ok("the parent sender logs no body from the provider (logBody false) — the sign-in email keeps its own",
-    /"parent invite", false\)/.test(auth) && /Resend refused the sign-in email/.test(auth));
+    /"parent invite", false\)/.test(auth) && /refused the sign-in email/.test(auth));
 }
 
 // ═════════════════════════ restore-by-email and the charter count ignore the clinician's plan ═════════════════════════
