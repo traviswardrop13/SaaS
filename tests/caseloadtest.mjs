@@ -1273,7 +1273,7 @@ const count = (pred) => S.calls.filter(pred).length;
     !/it's free|dashboard is free/i.test((welcome.html || "") + (welcome.text || "")), JSON.stringify(welcome.text));
   ok("…and the old \"free for you and for every family on your caseload\" never returns — not in the email, not in any server code",
     !OLD_PROMISE.test((welcome.html || "") + (welcome.text || "")) &&
-    ["lib/slpAuth.ts", "app/api/slp/auth/request/route.ts", "app/api/slp/auth/verify/route.ts", "app/api/slp/self/route.ts", "app/api/slp/invite/route.ts"].every((f) => !OLD_PROMISE.test(noComments(read(f)))));
+    ["lib/slpAuth.ts", "lib/slpSignIn.ts", "app/api/slp/auth/request/route.ts", "app/api/slp/auth/verify/route.ts", "app/api/slp/self/route.ts", "app/api/slp/invite/route.ts"].every((f) => !OLD_PROMISE.test(noComments(read(f)))));
   ok("…nor does the own-phone email's \"one phone\", in the route or its sender",
     !/one phone/i.test(noComments(read("app/api/slp/self/route.ts"))) &&
     !/one phone/i.test(noComments(read("lib/slpAuth.ts").slice(read("lib/slpAuth.ts").indexOf("export async function sendSelfLinkEmail")))));
@@ -1341,7 +1341,9 @@ const count = (pred) => S.calls.filter(pred).length;
   const reqSrc = noComments(read("app/api/slp/auth/request/route.ts"));
   ok("the sign-in request route never writes an account or signs a session",
     !/"SET", "slpacct:/.test(reqSrc) && !/signSession|sessionCookie/.test(reqSrc) && !/PRO_TERMS/.test(reqSrc));
-  for (const f of ["app/api/slp/auth/verify/route.ts", "app/api/slp/account/route.ts"]) {
+  // The verify route's account-making moved to lib/slpSignIn (16 Nov 2026),
+  // shared with the emailed code.
+  for (const f of ["lib/slpSignIn.ts", "app/api/slp/account/route.ts"]) {
     ok(`${f} stamps PRO_TERMS on the legacy signup path`, /import \{[^}]*PRO_TERMS[^}]*\} from "@\/lib\/caseload"/.test(read(f)) &&
       /terms: (signup \? FREE_DASHBOARD_TERMS : )?PRO_TERMS|\.terms = PRO_TERMS/.test(read(f)) && !/CASELOAD_TERMS/.test(noComments(read(f))));
   }

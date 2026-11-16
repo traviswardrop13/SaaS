@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { rateLimit } from "@/lib/rateLimit";
 import { readTicket, rosterKey, ticketOwnsChild } from "@/lib/slpAuth";
-import { isGone, fitRosterRecord } from "@/lib/roster";
+import { isGone, fitRosterRecord, codeDeleted } from "@/lib/roster";
 
 /**
  * Pilot outcome capture — receives a child's CONSENTED practice progress and
@@ -103,6 +103,11 @@ export async function POST(req: NextRequest) {
       // device ignores failures either way, and a 2xx keeps its logs quiet.
       // The mark is lifted only by a fresh invite being claimed.
       if (await isGone(code, childId)) {
+        return NextResponse.json({ ok: true, captured });
+      }
+      // A clinician who deleted their account (lib/slpDelete, 16 Nov 2026):
+      // their code is closed for good, and nothing is written for it again.
+      if (await codeDeleted(code)) {
         return NextResponse.json({ ok: true, captured });
       }
       // Cap the roster. An UPDATE to a child already on it is always allowed —

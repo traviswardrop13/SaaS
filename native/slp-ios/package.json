@@ -1,0 +1,17 @@
+{
+  "name": "sona-slp-ios",
+  "private": true,
+  "description": "The clinicians' iPhone app (SLPAPP1): a Capacitor shell that loads speaksona.com's dashboard. Built on a Mac; see README.md.",
+  "scripts": {
+    "setup": "npx cap add ios && npx cap sync ios",
+    "sync": "npx cap sync ios",
+    "open": "npx cap open ios"
+  },
+  "dependencies": {
+    "@capacitor/core": "8.4.1",
+    "@capacitor/ios": "8.4.1"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "8.4.1"
+  }
+}

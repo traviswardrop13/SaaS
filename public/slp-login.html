@@ -4,10 +4,14 @@
   <meta charset="utf-8" />
   <link rel="icon" type="image/png" href="/assets/slp-tab-icon.png?v=2" />
   <script>
-// Clinician tools live in the browser. A restored link in the native shell
-// must return to the family app before rendering or making clinician requests.
+// Clinician tools live in the browser, and in the clinicians' own app
+// (SLPAPP1, 16 Nov 2026: Capacitor adds "SonaSLPApp/<n>" to its user agent).
+// A restored link in the FAMILY app's shell must return to the family app
+// before rendering or making clinician requests.
 (function () {
-  var native = false;
+  var native = false, slpApp = false;
+  try { slpApp = /\bSonaSLPApp\/\d/.test(navigator.userAgent || ""); } catch (e) {}
+  if (slpApp) { window.__sonaSlpApp = true; document.documentElement.className += " slp-app"; return; }
   try {
     var bridge = window.Capacitor;
     native = !!(bridge && (typeof bridge.isNativePlatform === "function" ? bridge.isNativePlatform() : true));
@@ -89,6 +93,9 @@
     .ok h2 { font-family:"Baloo 2"; font-weight:800; font-size:20px; margin-top:10px; }
     .note { font-size:11.5px; color:var(--muted); font-weight:700; text-align:center; margin-top:18px; line-height:1.6; }
     a { color:var(--blue-d); }
+    .codebox { margin-top:18px; text-align:left; }
+    #code { letter-spacing:6px; font-size:22px; text-align:center; font-variant-numeric:tabular-nums; }
+    html.slp-app .web-only { display:none !important; }
     .devbox {
       margin-top:14px; background:#fff7e6; border:1px solid #ffe2a8;
       border-radius:12px; padding:11px 13px; font-size:12px; font-weight:700;
@@ -125,19 +132,34 @@
       <div class="big">✉️</div>
       <h2>Check your email</h2>
       <p class="lead" id="sentMsg">We sent a sign-in link to your inbox. Tap it to open your portal — it expires in 15 minutes.</p>
+      <!-- THE CODE (SLPAPP1, 16 Nov 2026): the same email carries six digits.
+           Typed here they sign THIS screen in: the clinicians' app, which the
+           emailed link (it opens in Safari) never can, or a computer while
+           the email is on a phone. -->
+      <div class="codebox" id="codeBox">
+        <label class="fl" for="code">6-digit code from the email</label>
+        <input id="code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="7" placeholder="123456" />
+        <button class="btn" id="codeGo">Sign in</button>
+        <div class="err" id="codeErr" role="status"></div>
+      </div>
       <button class="btn" id="again" style="margin-top:16px;background:#eef3fb;color:#46627a;box-shadow:none;">Use a different email</button>
     </div>
 
     <p class="note">
-      New here? <a href="/#signup">Get your free clinician dashboard →</a><br/>
+      <span class="web-only">New here? <a href="/#signup">Get your free clinician dashboard →</a><br/></span>
+      <span class="app-only" hidden>New here? Enter your email above: your free dashboard starts with the code.<br/></span>
       Sona is an at-home practice tool, not a diagnosis or a substitute for professional care.
     </p>
   </div>
 
   <script>
     var $=function(id){return document.getElementById(id);};
+    var APP=!!window.__sonaSlpApp, SENT_TO="";
+    var SEND_LABEL=APP?"Email me a code":"Send my sign-in link";
+    if(APP){var ao=document.querySelector(".app-only");if(ao)ao.hidden=false;$("send").textContent=SEND_LABEL;}
     var qp=new URLSearchParams(location.search);
     if(qp.get("err")==="expired") $("err").textContent="That link expired — enter your email for a fresh one.";
+    if(qp.get("deleted")==="1"){$("err").style.color="#46627a";$("err").textContent="Your account is deleted. Thank you for using Sona.";}
     if(qp.get("err")==="store") $("err").textContent="We couldn’t open your dashboard. Return to the homepage to request a new link.";
 
     function send(){
@@ -147,27 +169,54 @@
       $("devbox").style.display="none";
       if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){$("err").textContent="Enter a valid email.";return;}
       $("send").disabled=true;$("send").textContent="Sending…";
-      fetch("/api/slp/auth/request",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:email})})
+      // In the clinicians' app the free-dashboard door (the homepage's): a
+      // new clinician's account opens there, and nothing in the app is sold.
+      var req={email:email,wantCode:true};if(APP)req.flow="free-dashboard";
+      fetch("/api/slp/auth/request",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(req)})
         .then(function(r){return r.json();})
         .then(function(j){
-          $("send").disabled=false;$("send").textContent="Send my sign-in link";
+          $("send").disabled=false;$("send").textContent=SEND_LABEL;
           if(!j||!j.ok){$("err").textContent=(j&&j.error)||"Couldn't send right now.";return;}
           if(j.devLink){
             var a=document.createElement("a");
             a.href=j.devLink;a.textContent="Open it →";
             $("devbox").textContent="Email isn’t configured here. Preview link: ";
-            $("devbox").appendChild(a);$("devbox").style.display="block";
-            return;
+            $("devbox").appendChild(a);
+            if(j.devCode)$("devbox").appendChild(document.createTextNode(" · code "+j.devCode));
+            $("devbox").style.display="block";
+            if(!j.code)return;
           }
-          if(!j.sent){$("err").textContent="We couldn’t send your sign-in link. Try again in a moment.";return;}
-          $("sentMsg").textContent="We sent a sign-in link to "+email+". Tap it to open your dashboard. It expires in 15 minutes.";
+          else if(!j.sent){$("err").textContent="We couldn’t send your sign-in link. Try again in a moment.";return;}
+          SENT_TO=email;
+          $("sentMsg").textContent=APP?"We sent a 6-digit code to "+email+". Type it here. It expires in 15 minutes."
+            :"We sent a sign-in link and a 6-digit code to "+email+". Tap the link, or type the code here. Both expire in 15 minutes.";
+          $("codeErr").textContent="";$("code").value="";
           $("formCard").style.display="none";$("sentCard").style.display="block";
+          try{$("code").focus();}catch(e){}
         })
-        .catch(function(){$("send").disabled=false;$("send").textContent="Send my sign-in link";$("err").textContent="Network error — try again.";});
+        .catch(function(){$("send").disabled=false;$("send").textContent=SEND_LABEL;$("err").textContent="Network error — try again.";});
     }
     $("send").onclick=send;
     $("email").addEventListener("keydown",function(e){if(e.key==="Enter")send();});
     $("again").onclick=function(){$("sentCard").style.display="none";$("formCard").style.display="block";$("email").focus();};
+    function signInWithCode(){
+      if(window.__sonaFamilyRedirect||$("codeGo").disabled)return;
+      var c=($("code").value||"").replace(/[\s-]/g,"");
+      $("codeErr").textContent="";
+      if(!/^\d{6}$/.test(c)){$("codeErr").textContent="Type the 6 digits from the email.";return;}
+      $("codeGo").disabled=true;$("codeGo").textContent="Signing in…";
+      fetch("/api/slp/auth/code",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:SENT_TO,code:c})})
+        .then(function(r){return r.json();})
+        .then(function(j){
+          if(j&&j.ok){location.replace("/slp.html");return;}
+          $("codeGo").disabled=false;$("codeGo").textContent="Sign in";
+          $("codeErr").textContent=(j&&j.error)||"That didn’t work. Try again.";
+        })
+        .catch(function(){$("codeGo").disabled=false;$("codeGo").textContent="Sign in";$("codeErr").textContent="Network error — try again.";});
+    }
+    $("codeGo").onclick=signInWithCode;
+    $("code").addEventListener("keydown",function(e){if(e.key==="Enter")signInWithCode();});
+    $("code").addEventListener("input",function(){if(/^\d{6}$/.test(($("code").value||"").replace(/[\s-]/g,"")))signInWithCode();});
   </script>
 </body>
 </html>
