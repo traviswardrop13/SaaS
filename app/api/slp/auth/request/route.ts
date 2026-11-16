@@ -31,9 +31,9 @@ export async function GET() {
     store,                                          // KV / Upstash
     email: Boolean(process.env.RESEND_API_KEY),     // the link can actually be delivered
     // The lead reaches an email list: Resend's contacts since 16 Oct 2026
-    // (Kit from 24 Sep); the webhook is the retired GoHighLevel rail, so
-    // deleting LEAD_WEBHOOK_URL must not turn this false while Resend takes
-    // every sign-up.
+    // (Kit from 24 Sep); the webhook is GoHighLevel's (back on 15 Nov 2026),
+    // and either one is enough: deleting LEAD_WEBHOOK_URL must not turn this
+    // false while Resend takes every sign-up.
     crm: contactsConfigured() || Boolean(process.env.LEAD_WEBHOOK_URL),
     list: contactsConfigured(),
   });
