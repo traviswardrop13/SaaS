@@ -181,10 +181,10 @@ const SUITES = [
   "levelsplaytest.mjs", // LEVELS1 in Bubble Pop, Hoops, Soccer Goal and Dino Dig: the page hands the level to the engine, the help is Level 1's, the start card names it; Feed Echo keeps one
   "slptest.mjs",   // SLP1: the clinician dashboard — live Today, honest register, one door, real remove, the note
   "boardtest.mjs", // BOARD2: the Practice Board's phone half, built dark: nothing shows while off, a grown-up's email turns it on, a goal day goes once with 10 reps, Home sends nothing, deletion always works
-  "dayplantest.mjs", // the session planner: only sound, position, age and minutes reach the AI
-  "slpworkflowtest.mjs", // quick homework, per-child plans, feedback/call UI and failure recovery
+  "activityplantest.mjs", // SLPCLEAN1: Plan activities, the AI planner: only the typed text reaches the AI, read strictly, never a caseload name
+  "slpworkflowtest.mjs", // quick homework, child navigation, feedback/call UI and failure recovery
   "slpcommunityapi.mjs", // shared community access, persistence, privacy and ownership
-  "slpcommunitytest.mjs", // shared conversations, draft recovery and mobile layout
+  "slpcommunitytest.mjs", // SLPCLEAN1: the community is off the dashboard, its address lands on Today
   "slpfeedbacktest.mjs", // authenticated feedback, call requests refused; confirmed receipt only
   "slpdesigntest.mjs", // SLP workspace: filters, failure recovery, bulk assignments, mobile layout
   "craftedarttest.mjs", // every Feed word has loadable, usable illustrated artwork

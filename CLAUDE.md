@@ -2039,14 +2039,17 @@ Clinic or School). The box is labelled "Your work email" with the example
 "you@yourclinic.org" (he asked for an example that "motivates them to put
 in their work email"; it was "you@example.com"). The server still accepts
 a role or setting another caller sends, and still refuses a wrong one; an
-account made from the page holds neither. The subtitle is "Auto-plan home
-practice, share the app with clients, and see who practiced at home."
-(Travis, 14 Nov 2026: a third benefit "that is not like the community";
-then "auto plan lessons", not "with AI"; no How it works link in the
-header); "What you can do with Sona" has four cards, "Plan tomorrow’s sessions" first, two to
-a row. A single-use email link opens the dashboard. The signup
-page has no prices or checkout, and describes the AI homework draft, family
-links, and clinician community. `tests/landingtest.mjs` drives both pages.
+account made from the page holds neither. The subtitle is "Auto-plan
+session activities, share the app with clients, and see who practiced at
+home." (Travis, 14 Nov 2026: a third benefit "that is not like the
+community"; then "auto plan lessons", not "with AI"; "home practice" became
+"session activities" with SLPCLEAN1, 17 Nov 2026, when the AI homework
+draft went; no How it works link in the header); "What you can do with
+Sona" has four cards, two to a row: "Plan session activities with AI",
+"Share the app with clients", "See who practiced at home", "Send homework
+home" (SLPCLEAN1; until then the day planner, the AI homework draft and the
+community). A single-use email link opens the dashboard. The signup page
+has no prices or checkout. `tests/landingtest.mjs` drives both pages.
 Its share image comes from `tools/og/og-slp.html` (`og-slp.png?v=3`).
 
 **Every clinician proves the inbox before the dashboard opens** (Travis,
@@ -2071,6 +2074,9 @@ series. Still open, Travis's: repeat Pro trials with a new address (B13),
 and a button page so a school's link scanner cannot use the link up.
 `caseloadtest`, `slpapi`, `slpcode` and `nurturetest` play it.
 
+**SUPERSEDED on 17 Nov 2026 by Plan activities (SLPCLEAN1, just above the
+dashboard section):** the page, `lib/dayPlan.ts` and `/api/slp/sessions/plan`
+are deleted; `#plan-day` opens the new planner. History:
 **Plan sessions (PLANDAY1, 14 Nov 2026)** (Travis: "auto plan sessions and
 activities for the upcoming day"; "build the planner"). The dashboard's
 `#plan-day` page, in Workspace before Draft homework, open before a family
@@ -2091,6 +2097,9 @@ hers to review; it lists no practice words (the clinician picks them) and
 never diagnoses, sets goals or scores. `dayplantest` and `slpworkflowtest`
 play it.
 
+**SUPERSEDED on 17 Nov 2026 (SLPCLEAN1):** the AI homework draft and
+`/api/slp/homework/draft` are deleted; `#homework-draft` opens Plan
+activities. History:
 **AI homework draft** lives at `/slps#homework-draft`, including before
 a clinician sets up a family link. The clinician selects the sound, position,
 and rep count. Only those three selections go to Anthropic. The clinician
@@ -2194,6 +2203,94 @@ carries a credential in the URL). Those are surfaces, not marketing.
 Still absent now that Premium is back (24 Sep 2026): the "working with a
 speech therapist?" card on the plan screen and the trial page; `progtest`
 pins its absence. Bringing it back is a product call, not a cleanup.
+
+## SLPCLEAN1: a clean white dashboard, and an AI for planning sessions (17 Nov 2026)
+Travis: "From the one I saw before, it had too many just like colors. I want
+it more just like a clean white, simple look. And I want to remove unnecessary
+features. I want to make sure there's an AI that is specifically for in
+session activity creation and planning. So they can say, I have a kid who is
+5, who's interested in XYZ, and then it auto creates activities for that
+kid." He chose what goes, free typing for the AI, and (the same day) "top
+right, instead of copy app link, I want ... a way that they can automatically
+create a custom login username password for a parent with their email after
+they've created a free trial that they can automatically and super easily
+share". This supersedes the dashboard's look and menu described below.
+- **The menu is five places:** Plan activities (first, and where a visit with
+  no address lands), Today, Caseload, Sona Pro (`data-sells`), Settings.
+  **Removed from the dashboard:** Community, Affiliate partnerships, Draft
+  homework, Plan sessions (PLANDAY1) and a child page's "Next session" tab
+  (a "Plan activities" button opens the planner with that child's age and
+  target). **Talk to Rachel** left the menu: one link in Settings ("Questions
+  or ideas? Talk to Rachel →"), the same form at `#feedback`, Rachel's line
+  in her settled words. Old addresses never dead-end: `#plan-day`,
+  `#homework-draft` and `#child/<id>/plan` open the planner; `#community` and
+  `#affiliate` open Today. **The community's server routes stay**
+  (`/api/slp/community*`: account deletion still scrubs posts through them,
+  and old posts keep report/block/delete), and so does `/api/slp/feedback`.
+- **The look:** white page, sidebar and cards; light grey hairlines; ink
+  `#1f2328`, muted `#6b7280`; one accent, the existing teal (`#0e7c86`), only
+  for the primary button, the active menu item, links and focus rings; a
+  system font stack (no Nunito on this page), weights 400 to 650. No pastel
+  icon tiles, mascots in headings, eyebrow lines, coloured avatars or
+  multicolour status pills (a missed homework is the one muted red). The
+  week's summary on Today is a plain card with a big number. The old CSS
+  variable names stay (`--muted`, `--pink`, `--green-d`, `--line`): the
+  script paints with them. `slptest` 11 pins the white, the menu and the
+  redirects.
+- **Plan activities** (`#plan`; `lib/activityPlan.ts`,
+  `/api/slp/activities`). One box, "About the child and session" (600
+  characters, a counter), and under it, in plain sight: "Don't type a
+  child's name. What you type is sent to our AI provider (Anthropic) to write
+  the ideas." **The typed text is the only thing that crosses to the AI**
+  (the page posts `{ text }`; the route rebuilds it from that one field);
+  Travis accepted that. The page also refuses to send a caseload child's
+  name it finds in the text (whole word, as the family spelled it).
+  "Start from your caseload" writes an age, a sound and a position ("Age 6.
+  Working on R in the middle of words."), never a name. The route keeps the
+  old planner's guards in its order (live session, same origin, 30 an hour
+  as `slp-activities`, the account, `dashboardGate`), then asks
+  `claude-opus-5-5` at low effort, 3000 tokens, no `thinking` field (that
+  model refuses thinking off); a refusal, a cut-off, a malformed reply or
+  anything but 2 to 4 activities is a 502 in plain words, an empty list a
+  422. Three cards: name, You'll need, How it goes (2 to 4 steps), Make it
+  easier, Make it harder; Copy all and New ideas. Nothing is saved, assigned
+  or sent to a family; it works before a family link exists and, as PLANDAY1
+  did, not on a closed dashboard. Not added: the API's server-side refusal
+  fallback (the installed SDK predates it). **For Rachel:** the prompt
+  (`ACTIVITY_PROMPT`) and the activities it suggests are hers to review; it
+  lists no practice words (the clinician picks them) and never diagnoses,
+  sets goals, evaluates or scores. `activityplantest` plays all of it.
+- **Add a family** (the top bar's primary button, every page; "Copy app
+  link" is gone). A panel: the parent's email (required), the child's
+  initials or a nickname (optional, never a name), age and up to three
+  sounds (optional), one button, "Create login and email it". One step,
+  `/api/slp/family` (`lib/addFamily.ts`): an invite as Add a child makes it
+  ("New family" when no initials), its login (`lib/familyLogin`), and ONE
+  email (`sendFamilyLoginEmail` in `lib/slpAuth.ts`, through `sendMail`,
+  tagged `sona-parent-invite`) with the App Store link, "Open Sona and tap
+  Log in", the username, the password and the web join link. Every wall of
+  the two routes it joins: session, same origin, both rate limits
+  (`slpinvite`, `slplogin`), the store, `dashboardGate`, a finished profile,
+  the pending-invite cap, the 30-a-day parent email cap (shared with the
+  invite's email); the sign-up cap is counted where it always was, at the
+  family's login. Then the panel shows "Sent to <email>", the username and
+  password big, "Copy message" and, on a phone, "Text it" (an `sms:` link);
+  an email that did not go is said plainly and the copy and text stay.
+  **Travis's accepted trade-off: the password travels in that email**, so
+  it sits in the parent's inbox and in GoHighLevel's message history; Sona's
+  server still keeps only its hash, and the family can change it in Sona's
+  Settings › Your login (the clinician can make a new one). While nothing
+  covers the caseload (no Sona Pro, not grandfathered, no yearly plan), one
+  line in the panel says "Families get the free version. Start your free
+  Sona Pro trial so they get every game." with the trial button
+  (`data-sells`, so the clinicians' app hides it); it never blocks the login.
+  `slptest` 12 and `familylogintest` play it.
+- **Copy elsewhere follows:** the homepage (`for-slps.html`) offers "Plan
+  session activities with AI", "Share the app with clients" (a login or a
+  link), "See who practiced at home" and "Send homework home", and its
+  storage answer says what reaches Anthropic and what the login email holds;
+  the privacy page has "Activity planning" in place of "Homework drafting";
+  the Terms and the sign-in email no longer promise a community or a draft.
 
 ## The clinician's dashboard: carryover, in the honest register
 **The SLP dashboard (`public/slp.html`) is built around ONE problem — carryover
@@ -2393,7 +2490,9 @@ App Store Connect and the review notes; `tests/slpapptest.mjs` pins it all.
   clinician's contact in GoHighLevel is Travis's, by hand.
 - **Block in the community** (Apple's rule for posts people write): a member
   is blocked by one of their posts or replies (the page never holds an id),
-  for that viewer alone, a year; "Show them again" clears it.
+  for that viewer alone, a year; "Show them again" clears it. Since
+  SLPCLEAN1 (17 Nov 2026) the dashboard shows no community, so the app
+  carries no one else's posts; the route still blocks.
 - **For Travis:** build and submit from the Mac (`native/slp-ios/README.md`);
   Apple may refuse a web-only app as "a repackaged website" (4.2), and the
   fix is one native feature, not built; App Privacy answers. **Nothing here is

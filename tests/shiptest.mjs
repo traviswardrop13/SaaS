@@ -256,8 +256,10 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
   // Travis, 14 Nov 2026: a benefit "that is not like the community"; the
   // session-planning line waits until the planner is built.
   // Travis, 14 Nov 2026: "auto plan lessons", not "draft homework with AI".
-  ok("the clinician lede presents auto-planned practice, family links and seeing who practiced",
-    /auto-plan home practice/i.test(slpLede) && !/with AI/i.test(slpLede) && /share the app with clients/i.test(slpLede) && /see who practiced at home/i.test(slpLede) &&
+  // 17 Nov 2026 (SLPCLEAN1): the AI plans in-session activities now; the
+  // homework draft is gone, so the lede no longer says "home practice".
+  ok("the clinician lede presents auto-planned session activities, family links and seeing who practiced",
+    /auto-plan session activities/i.test(slpLede) && !/with AI/i.test(slpLede) && !/home practice,/i.test(slpLede) && /share the app with clients/i.test(slpLede) && /see who practiced at home/i.test(slpLede) &&
     !/community/i.test(slpLede));
   const header = (slps.match(/<header>[\s\S]*?<\/header>/) || [""])[0].replace(/<!--[\s\S]*?-->/g, "");
   // Travis, 14 Nov 2026: "top right, get rid of how it works".
@@ -374,8 +376,16 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
   const flat = shown.replace(/<[^>]+>/g, " ").replace(/&rsquo;/g, "'").replace(/\s+/g, " ");
   ok("the clinician landing page and its metadata advertise free access with no prices or trial pitch",
     /free dashboard/i.test(shown) && !/\$\s*\d|\bfree trial\b|\b\d+ days free\b|id="pricing"|href="#pricing"/i.test(shown));
-  ok("the clinician offer includes session planning, homework, a client link and a community",
-    ["Plan tomorrow’s sessions", "Create AI homework", "Share the app with clients", "Join the community"].every(label => flat.includes(label)));
+  // SLPCLEAN1 (17 Nov 2026): the dashboard lost the community, the AI
+  // homework draft and the day planner; the page promises what it has.
+  ok("the clinician offer is what the dashboard does: the AI activity planner, a client login or link, home practice and homework",
+    ["Plan session activities with AI", "Share the app with clients", "See who practiced at home", "Send homework home"].every(label => flat.includes(label)) &&
+    /Describe the child and the session\. Get play-based activities built around what they love/.test(flat));
+  ok("…and nothing it no longer has: no community, no AI homework draft, no tomorrow's sessions", !/community|Create AI homework|Draft homework|Plan tomorrow/i.test(flat),
+    (flat.match(/.{0,40}(community|Create AI homework|Draft homework|Plan tomorrow).{0,40}/i) || [""])[0]);
+  ok("…and its storage answer says what reaches the AI and what the login email holds",
+    /What you type into Plan activities goes to Anthropic, our AI provider, to write the ideas, and Sona doesn't keep it; leave out children's names\./.test(flat) &&
+    /Add a family emails the parent their Sona login too, so that email holds the password/.test(flat));
   ok("the page preserves the family's free practice without promising universal game access",
     /daily practice and free games/i.test(flat) && !/unlimited families|free forever|gets every game/i.test(flat));
   // Since 17 Nov 2026 GoHighLevel sends it and keeps it as a contact (Travis:

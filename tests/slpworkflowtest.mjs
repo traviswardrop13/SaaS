@@ -12,7 +12,7 @@ const port = 8187;
 const account = {ok:true,email:'rachel@example.com',code:'rachel-k4',familyKey:'ABCD2345',name:'Rachel K',clinic:'Bright Steps',onboarded:true};
 const mime = {html:'text/html',js:'text/javascript',css:'text/css',svg:'image/svg+xml',png:'image/png',webp:'image/webp',woff2:'font/woff2'};
 let data=fixture(), posts=[], reads=[], failHw=false, failFeedback=false, delayHw=0, nextHw=0;
-let hasFamilyCode=true, draftFailure=false, planFailure=false;
+let hasFamilyCode=true;
 const server = createServer((req,res)=>{
   const url=new URL(req.url,'http://localhost'); let body='';
   req.on('data',c=>body+=c);req.on('end',()=>{
@@ -22,13 +22,6 @@ const server = createServer((req,res)=>{
       if(req.method==='GET')reads.push(url.pathname);else posts.push({path:url.pathname,body:payload});
       if(url.pathname==='/api/slp/auth/me'||url.pathname==='/api/slp/account')return json(hasFamilyCode ? account : {...account,code:'',onboarded:false});
       if(url.pathname==='/api/slp')return json({ok:true,configured:true,kids:data.kids,invites:data.invites});
-      if(url.pathname==='/api/slp/homework/draft')return draftFailure
-        ?json({ok:false,error:'Draft temporarily unavailable'},503)
-        :json({ok:true,title:'Practice S at home',note:'Pick a regular time for today’s practice.'});
-      if(url.pathname==='/api/slp/sessions/plan'){
-        if(planFailure)return json({ok:false,error:'Planning temporarily unavailable'},503);
-        return json({ok:true,plans:(payload.sessions||[]).map((s,i)=>[{name:'Sound hunt '+(i+1),how:'Hide cards; each find is a turn to practice.'},{name:'Race track',how:'Move a car one space per try.'}])});
-      }
       if(url.pathname==='/api/slp/homework'){
         if(req.method==='GET')return json({ok:true,items:data.kids.map(k=>({childId:k.childId,...k.hw}))});
         const respond=()=>{
@@ -55,7 +48,7 @@ function ok(name,result,detail=''){checks++;if(!result)failures++;console.log((r
 const visible=async(pg,selector)=>await pg.locator(selector).count()>0&&await pg.locator(selector).first().isVisible();
 const exists=async(pg,selector)=>await pg.locator(selector).count()>0;
 const writes=path=>posts.filter(p=>!path||p.path===path);
-function reset(){data=fixture();posts=[];reads=[];failHw=false;failFeedback=false;delayHw=0;hasFamilyCode=true;draftFailure=false;planFailure=false;}
+function reset(){data=fixture();posts=[];reads=[];failHw=false;failFeedback=false;delayHw=0;hasFamilyCode=true;}
 async function open(hash='#today',width=1440){
   const ctx=await browser.newContext({viewport:{width,height:1000}}),pg=await ctx.newPage(),errors=[];
   pg.setDefaultTimeout(2200);pg.on('pageerror',e=>errors.push(e.message));
@@ -68,74 +61,8 @@ async function go(pg,hash){await pg.evaluate(hash=>location.hash=hash,hash);awai
 const text=async(pg,selector)=>await exists(pg,selector)?await pg.locator(selector).textContent():'';
 const date=n=>{const d=new Date();d.setDate(d.getDate()+n);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};
 try {
-  await section('Draft homework before setting up a family link',async()=>{
-    hasFamilyCode=false;
-    const {ctx,pg,errors}=await open('#homework-draft');
-    try {
-      ok('draft workspace opens for a new clinician without a family code',await visible(pg,'#page-homework-draft'));
-      if(!await visible(pg,'#page-homework-draft'))return;
-      await pg.locator('#draftSound').selectOption('S');
-      await pg.locator('#draftPosition').selectOption('i');
-      await pg.locator('#draftReps').selectOption('10');
-      await pg.locator('#draftGenerate').click();
-      await pg.waitForFunction(()=>document.querySelector('#draftTitle').value==='Practice S at home');
-      ok('drafting sends only the selected practice details',JSON.stringify(posts)===JSON.stringify([
-        {path:'/api/slp/homework/draft',body:{sound:'S',position:'i',reps:10}},
-      ]),JSON.stringify(posts));
-      await pg.locator('#draftNote').fill('My edited note.');
-      await pg.locator('#draftCopy').click();
-      ok('clinician can edit and copy the draft without assigning it',await pg.evaluate(()=>window.__copied.at(-1))==='Practice S at home\n\nMy edited note.'&&posts.length===1);
-      draftFailure=true;
-      await pg.locator('#draftGenerate').click();
-      await pg.getByText('Draft temporarily unavailable').waitFor();
-      ok('a failed draft preserves the clinician’s edits',await pg.locator('#draftNote').inputValue()==='My edited note.'&&!await pg.locator('#draftGenerate').isDisabled());
-      ok('the drafting workspace has no runtime errors',errors.length===0,errors.join('\n'));
-    } finally {await ctx.close();}
-  });
-  // PLANDAY1 (Travis, 14 Nov 2026): plan tomorrow's sessions. Only the
-  // sound, position, age range and minutes are posted; names stay local.
-  await section('Plan tomorrow before setting up a family link',async()=>{
-    hasFamilyCode=false;
-    const {ctx,pg,errors}=await open('#plan-day');
-    try {
-      ok('the planner opens for a new clinician without a family code',await visible(pg,'#page-plan-day'));
-      ok('Plan my day waits for a session',await pg.locator('#dayPlan').isDisabled());
-      await pg.locator('#dayAddBlank').click();
-      await pg.locator('.day-label').fill('JT');
-      await pg.locator('.day-sound').selectOption('S');
-      ok('blends stay open for S, vocalic R does not',await pg.evaluate(()=>{const o=v=>document.querySelector('.day-pos option[value="'+v+'"]');return !!o('b')&&!o('b').disabled&&o('v').disabled;}));
-      await pg.locator('.day-pos').selectOption('f');await pg.locator('.day-age').selectOption('3-4');await pg.locator('.day-min').selectOption('20');
-      await pg.locator('#dayPlan').click();
-      await pg.waitForFunction(()=>!document.getElementById('dayResult').hidden);
-      ok('planning sends only sound, position, age and minutes',JSON.stringify(writes('/api/slp/sessions/plan'))===JSON.stringify([
-        {path:'/api/slp/sessions/plan',body:{sessions:[{sound:'S',position:'f',age:'3-4',minutes:20}]}},
-      ]),JSON.stringify(posts));
-      const out=await pg.locator('#dayOutline').inputValue();
-      ok('the outline joins the label and the ideas on the page',/1\. JT · 20 min/.test(out)&&/Sound hunt 1: Hide cards/.test(out)&&/Planning draft for you to adapt\./.test(out),out);
-      await pg.locator('#dayOutline').fill('My edited day.');await pg.locator('#dayCopy').click();
-      ok('the plan can be edited and copied',await pg.evaluate(()=>window.__copied.at(-1))==='My edited day.');
-      planFailure=true;await pg.locator('#dayPlan').click();await pg.waitForTimeout(150);
-      ok('a failed plan keeps the edits and says so',await pg.locator('#dayOutline').inputValue()==='My edited day.'&&/temporarily unavailable/.test(await text(pg,'#dayError'))&&!await pg.locator('#dayPlan').isDisabled());
-      ok('the planner has no runtime errors',errors.length===0,errors.join('\n'));
-    } finally {await ctx.close();}
-  });
-  await section('Plan tomorrow from the caseload',async()=>{
-    const {ctx,pg,errors}=await open('#plan-day');
-    try {
-      await pg.locator('#dayFromCaseload').selectOption('c1');
-      await pg.locator('#dayFromCaseload').selectOption('c2');
-      ok('a child added once leaves the picker',!(await pg.locator('#dayFromCaseload option').allTextContents()).includes('Mia'));
-      await pg.locator('#dayPlan').click();
-      await pg.waitForFunction(()=>!document.getElementById('dayResult').hidden);
-      const sent=writes('/api/slp/sessions/plan').at(-1)?.body;
-      ok('caseload rows send their sound and age range, never a name or id',JSON.stringify(sent)===JSON.stringify({sessions:[{sound:'R',position:'m',age:'5-6',minutes:30},{sound:'K',position:'i',age:'3-4',minutes:30}]})&&!/Mia|Leo|c1|c2/.test(JSON.stringify(sent)),JSON.stringify(sent));
-      const out=await pg.locator('#dayOutline').inputValue();
-      ok('the outline names each child and their home practice, from this page',/1\. Mia · 30 min/.test(out)&&/2\. Leo · 30 min/.test(out)&&/Home practice: \d+ of the last 7 days/.test(out),out);
-      await pg.locator('.day-remove').first().click();
-      ok('removing a session gives the child back to the picker',(await pg.locator('#dayFromCaseload option').allTextContents()).includes('Mia'));
-      ok('the caseload planner has no runtime errors',errors.length===0,errors.join('\n'));
-    } finally {await ctx.close();}
-  });
+  // SLPCLEAN1 (17 Nov 2026): the homework draft and Plan sessions are gone;
+  // tests/activityplantest.mjs plays Plan activities, which replaced them.
   // NO CALLS (Travis, 30 Sep 2026: "I don't want request to call to be an
   // option"; Rachel doesn't take phone calls): Talk to Rachel is feedback only.
   await section('Feedback, and no call request',async()=>{
@@ -198,36 +125,31 @@ try {
     ok('failed homework request shows an error',await visible(pg,'#quickErr')&&/fail|couldn|try|error/i.test(await text(pg,'#quickErr')),await text(pg,'#quickErr'));
     await ctx.close();
   });
-  await section('Planner and child navigation',async()=>{
-    const {ctx,pg,errors}=await open('#child/c1/plan');
-    ok('session plan has a deep link',await visible(pg,'#sessionPlanner'));
-    if(!await exists(pg,'#planOutline')){await ctx.close();return;}
-    await pg.locator('#planFocus').selectOption('continue');await pg.locator('#planMinutes').selectOption('20');await pg.locator('#planQuestion').selectOption('routine');
-    const outline=await pg.locator('#planOutline').inputValue();
-    ok('planner uses known child context and selected duration',/Mia|R|middle/i.test(outline)&&/20/.test(outline),outline);
-    ok('planner cites actual supported position and homework facts',/53% \(n=30\)/.test(outline)&&/74% \(n=70\)/.test(outline)&&/2 of 6 days so far/.test(outline)&&/Last practiced today/.test(outline),outline);
-    const draft='My own session plan for Mia.\nAsk what helped home practice.';
-    await pg.locator('#planOutline').fill(draft);await pg.locator('#planCopy').click();
-    ok('editable plan is copied exactly',await pg.evaluate(()=>window.__copied.at(-1))===draft);
+  await section('Child navigation and Plan activities',async()=>{
+    const {ctx,pg,errors}=await open('#child/c1/homework');
+    ok('the homework tab has a deep link',await visible(pg,'#quickHomework'));
     await pg.locator('#chJump').selectOption('c2');await pg.waitForTimeout(100);
-    ok('child jump retains plan tab',await pg.evaluate(()=>location.hash)==='#child/c2/plan'&&await visible(pg,'#sessionPlanner'));
-    ok('another child does not inherit the prior child draft',(await pg.locator('#planOutline').inputValue())!==draft);
-    await pg.locator('#chJump').selectOption('c1');await pg.waitForTimeout(100);
-    ok('returning restores child-specific plan draft',await pg.locator('#planOutline').inputValue()===draft);
+    ok('child jump keeps the homework tab',await pg.evaluate(()=>location.hash)==='#child/c2/homework'&&await visible(pg,'#quickHomework'));
     const forward=await pg.locator('#chNext').isDisabled()?'#chPrev':'#chNext';
     const backward=forward==='#chPrev'?'#chNext':'#chPrev';
     await pg.locator(forward).click();await pg.waitForTimeout(100);
-    ok('available adjacent child preserves current workspace view',/^#child\/(?!c1\/)[^/]+\/plan$/.test(await pg.evaluate(()=>location.hash)),await pg.evaluate(()=>location.hash));
+    ok('an adjacent child keeps the current workspace view',/^#child\/(?!c2\/)[^/]+\/homework$/.test(await pg.evaluate(()=>location.hash)),await pg.evaluate(()=>location.hash));
     await pg.locator(backward).click();await pg.waitForTimeout(100);
-    ok('opposite arrow returns without leaving plan tab',await pg.evaluate(()=>location.hash)==='#child/c1/plan');
-    await pg.locator('#planHomework').click();await pg.waitForTimeout(100);
-    ok('plan-to-homework opens review without automatically assigning',await visible(pg,'#quickHomework')&&writes('/api/slp/homework').length===0);
-    ok('planning and copy do not transmit a session plan',posts.length===0,JSON.stringify(posts));
-    ok('navigation and plan editing have no runtime errors',errors.length===0,errors.join('; '));await ctx.close();
+    ok('the opposite arrow comes back on the homework tab',await pg.evaluate(()=>location.hash)==='#child/c2/homework');
+    ok('the child page has no Next session tab any more',!await exists(pg,'[data-child-view="plan"]')&&!await exists(pg,'#sessionPlanner'));
+    await go(pg,'#child/c1');
+    await pg.locator('#chPlanBtn').click();await pg.waitForTimeout(150);
+    const box=await pg.locator('#planText').inputValue();
+    ok('Plan activities on a child page opens the planner with their age and target, never their name',await pg.evaluate(()=>location.hash)==='#plan'&&/^Age 6\. Working on R in the middle of words\.\s*$/.test(box)&&!/Mia/.test(box),box);
+    await go(pg,'#child/c3/plan');
+    const old=await pg.locator('#planText').inputValue();
+    ok('an old Next session address opens the planner for that child',await pg.evaluate(()=>location.hash)==='#plan'&&/^Age 7\. Working on TH\.\s*$/.test(old)&&!/Ava/.test(old),old);
+    ok('moving around and seeding the planner sends nothing',posts.length===0,JSON.stringify(posts));
+    ok('navigation has no runtime errors',errors.length===0,errors.join('; '));await ctx.close();
   });
   for(const width of [390,320])await section('Mobile '+width,async()=>{
     const {ctx,pg,errors}=await open('#feedback',width);
-    for(const [hash,selector] of [['#feedback','#page-feedback'],['#child/c1/homework','#quickHomework'],['#child/c1/plan','#sessionPlanner'],['#plan-day','#page-plan-day']]){
+    for(const [hash,selector] of [['#feedback','#page-feedback'],['#child/c1/homework','#quickHomework'],['#plan','#page-plan'],['#settings','#page-settings']]){
       await go(pg,hash);ok(hash+' visible at '+width,await visible(pg,selector));
       const dims=await pg.evaluate(()=>({width:document.documentElement.clientWidth,scroll:document.documentElement.scrollWidth,body:document.body.scrollWidth}));
       ok(hash+' fits viewport at '+width,dims.scroll<=dims.width+1&&dims.body<=dims.width+1,JSON.stringify(dims));

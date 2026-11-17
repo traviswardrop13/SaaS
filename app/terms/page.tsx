@@ -496,7 +496,8 @@ function CaseloadTerms() {
     <>
       <strong>Free clinician dashboard.</strong> Clinicians who create an account
       through the free dashboard signup can use the dashboard without a subscription.
-      They can draft homework, share Sona with families, and join the clinician community.
+      They can plan session activities with AI, share Sona with families, and see
+      their families' home practice.
       <br />
       <br />
       A speech-language pathologist or other clinician can buy{" "}

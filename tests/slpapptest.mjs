@@ -12,7 +12,9 @@
 //   3. DELETE MY ACCOUNT (Apple's rule; the web has it too). Everything about
 //      the account goes, the code is kept closed so no family's sync is ever
 //      written again, sessions end, and a plan that still renews blocks it.
-//   4. BLOCK in the community (Apple's rule for posts people write).
+//   4. BLOCK in the community (Apple's rule for posts people write): the
+//      route still blocks; since SLPCLEAN1 (17 Nov 2026) the dashboard shows
+//      no community at all, so the app carries no one else's posts.
 //
 // Part 1 runs the real routes (TypeScript, transpiled with the repo's own
 // `typescript`, as familylogintest does) against a fake store behind the same
@@ -514,7 +516,8 @@ try {
       const tag = width + "px: ";
       ok(tag + "the dashboard renders in the clinicians' app", new URL(page.url()).pathname === "/slp.html");
       const seen = [];
-      for (const hash of ["#today", "#caseload", "#settings", "#community", "#plan-day", "#homework-draft", "#feedback"]) {
+      for (const hash of ["#plan", "#today", "#caseload", "#settings", "#feedback", "#add-family"]) {
+        if (hash === "#add-family") { await page.evaluate(() => { location.hash = "#today"; }); await page.waitForTimeout(150); await page.evaluate(() => document.getElementById("addFamilyTop").click()); await page.waitForTimeout(250); }
         await page.evaluate((h) => { location.hash = h; }, hash);
         await page.waitForTimeout(150);
         if (width < 500) await page.evaluate(() => { const m = document.getElementById("menuBtn") || document.querySelector("[aria-controls='sidebar']"); if (m) m.click(); });
@@ -522,7 +525,8 @@ try {
         const hit = t.match(SELLING);
         if (hit) seen.push(hash + ": " + hit[0] + " … " + t.slice(Math.max(0, hit.index - 60), hit.index + 60));
       }
-      ok(tag + "no price, plan offer, trial, checkout or billing door anywhere (Today, Caseload, Settings, Community, the planners, Talk to Rachel, the menu)", seen.length === 0, seen);
+      ok(tag + "no price, plan offer, trial, checkout or billing door anywhere (the planner, Today, Caseload, Settings, Talk to Rachel, the Add a family panel, the menu)", seen.length === 0, seen);
+      await page.evaluate(() => { const d = document.getElementById("famDialog"); if (d.open) d.close(); });
       ok(tag + "the Sona Pro menu item and the top bar's offer are not drawn", !(await page.locator('.nav-item[data-page="premium"]').isVisible()) && !(await page.locator("#premiumTop").isVisible()));
       await page.evaluate(() => { location.hash = "#premium"; });
       await page.waitForTimeout(200);
@@ -564,26 +568,14 @@ try {
     await context.close();
   });
 
-  await section("block in the community", async () => {
-    COMMUNITY = { ok: true, pinned: [], nextCursor: null, blocked: 2, posts: [
-      { id: "11111111-1111-4111-8111-111111111111", author: "Olive", title: "Ideas for R", category: "discussions", text: "hello", createdAt: iso(), canDelete: false, mine: false, replies: [{ id: "22222222-2222-4222-8222-222222222222", author: "Rachel", text: "mine", createdAt: iso(), canDelete: true, mine: true }] },
-    ] };
+  await section("no community in the app", async () => {
     const { context, page, errors } = await open("/slp.html#community", { viewport: { width: 1280, height: 1000 } });
-    await page.waitForSelector('[data-community-block="11111111-1111-4111-8111-111111111111"]');
-    ok("someone else's post has Block beside Report; your own reply has none",
-      await page.locator('[data-community-block="11111111-1111-4111-8111-111111111111"]:not([data-reply-id])').count() === 1 &&
-      await page.locator('[data-community-block][data-reply-id="22222222-2222-4222-8222-222222222222"]').count() === 0);
-    ok("the page says how many you blocked, and offers to show them again", /You blocked 2 members\. Show them again/.test(await page.locator("#communityUnblock").textContent()) && await page.locator("#communityUnblock").isVisible());
-    await page.locator('[data-community-block="11111111-1111-4111-8111-111111111111"]').click();
+    await page.waitForFunction(() => document.getElementById("sidebarName").textContent === "Rachel K");
     await page.waitForTimeout(250);
-    const b = posts.find((p) => p.path === "/api/slp/community" && p.body.action === "block");
-    ok("Block sends the post (never a member's id)", !!b && b.body.postId === "11111111-1111-4111-8111-111111111111" && !("authorId" in b.body), b);
-    await page.locator("#communityUnblock").click();
-    await page.waitForTimeout(250);
-    ok("Show them again sends unblock-all", posts.some((p) => p.path === "/api/slp/community" && p.body.action === "unblock-all"));
+    ok("the dashboard shows no one else's posts (SLPCLEAN1): #community opens Today, and the page asks the community for nothing",
+      (await page.evaluate(() => location.hash)) === "#today" && await page.locator("#page-today").isVisible() && !(await page.locator("[data-community-block]").count()) && !posts.some((p) => /community/.test(p.path)));
     ok("…with no page errors", errors.length === 0, errors);
     await context.close();
-    COMMUNITY = { ok: true, pinned: [], posts: [], nextCursor: null, blocked: 0 };
   });
 
   await section("every other page sends the app to the dashboard", async () => {

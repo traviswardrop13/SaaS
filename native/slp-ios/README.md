@@ -27,8 +27,11 @@ steps. The Xcode project (`ios/`) is made on a Mac and never committed.
 - The app's sign-in opens the **free dashboard** (the homepage's door), so no
   clinician meets a locked dashboard they cannot unlock in the app.
 - Settings has **Delete your account** (Apple requires it for an app that
-  makes accounts), and the community has **Block** (Apple's rule for posts
-  people write: report, block, and a moderator who can delete).
+  makes accounts). Since SLPCLEAN1 (17 Nov 2026) the dashboard shows no
+  community, so the app carries no posts by other people (the server still
+  keeps report, block and delete for posts made before).
+- **Plan activities** sends the text a clinician types to Anthropic to write
+  activity ideas; the page asks them not to type a child's name.
 
 ## Build it on the Mac (one time)
 
@@ -57,9 +60,13 @@ steps. The Xcode project (`ios/`) is made on a Mac and never committed.
 1. **New app**: platform iOS, name "Sona for SLPs" (or Travis's pick), bundle
    id `com.speaksona.slp`, SKU `sona-slp`.
 2. **Category:** Medical or Education (Travis's call); **age rating:**
-   answer "user-generated content: yes" (the community), everything else no.
+   answer "user-generated content: no" (the community left the dashboard on
+   17 Nov 2026; the AI's activity ideas are shown only to the clinician who
+   asked), everything else no.
 3. **App Privacy:** Contact Info › Email Address (App Functionality, linked to
-   the user); User Content › Other (community posts, linked); no tracking.
+   the user); User Content › Other (what a clinician types into Plan
+   activities, sent to the AI provider to answer it, not stored; Travis's
+   call whether it is "linked"); no tracking.
    The caseload the app shows (children's first names and practice) comes
    from families' phones with their consent, not from the clinician's phone:
    how to label it is Travis's call (with whoever advises him on privacy).
@@ -74,10 +81,9 @@ steps. The Xcode project (`ios/`) is made on a Mac and never committed.
 5. **Review notes**, to paste: "Sona for SLPs is the free companion app for
    speech-language pathologists who use Sona with families. Clinicians sign
    in with a code sent to their email. The app sells nothing: there are no
-   purchases, prices or links to purchase. The community lets clinicians post;
-   each post and reply can be reported, and members can be blocked;
-   moderators review reports. Settings › Delete your account deletes the
-   account and its data."
+   purchases, prices or links to purchase. Plan activities writes in-session
+   activity ideas with AI from a short description the clinician types.
+   Settings › Delete your account deletes the account and its data."
 
 ## Known and left
 
