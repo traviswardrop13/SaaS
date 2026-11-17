@@ -446,7 +446,7 @@ export async function sendMagicEmail(
   email: string,
   link: string,
   name = "",
-  opts: { freeDashboard?: boolean; code?: string } = {},
+  opts: { signup?: boolean; code?: string } = {},
 ): Promise<{ sent: boolean; devLink: string | null }> {
   // GoHighLevel sends when it is set up, else Resend (lib/mail). Through
   // GoHighLevel, an address whose email is on Do Not Disturb there (an
@@ -455,8 +455,15 @@ export async function sendMagicEmail(
   if (!mailConfigured()) {
     return { sent: false, devLink: process.env.VERCEL_ENV === "production" ? null : link };
   }
-  const freeIntro = "Open your Sona dashboard to share practice with families and join the clinician community.";
-  const retryUrl = opts.freeDashboard ? "speaksona.com" : "speaksona.com/slp-login.html";
+  // A SIGN-UP's email (the landing page's trial form, or the old
+  // free-dashboard form). 17 Nov 2026: it said "join the clinician
+  // community" (Community is gone) and was sent to people told the dashboard
+  // was free, which a new account's no longer is: the dashboard comes with
+  // the trial. It says only what is true for anyone who might be reading it,
+  // a new clinician or one who signed up long ago. Its retry address is the
+  // sign-in page: speaksona.com itself is the packet opt-in now.
+  const signupIntro = "Open your Sona dashboard to share practice with families between sessions. New to Sona? You'll pick your plan first.";
+  const retryUrl = "speaksona.com/slp-login.html";
   // The six-digit code (SLPAPP1, 16 Nov 2026), when the sign-in screen asked
   // for one: typed in the clinicians' app, which a link cannot sign in. It is
   // in the subject too, so a phone's notification shows it.
@@ -466,7 +473,7 @@ export async function sendMagicEmail(
     const r = await sendMail({
         from,
         to: email,
-        subject: code ? "Your Sona sign-in code: " + spaced : opts.freeDashboard ? "Your Sona dashboard link" : "Your Sona dashboard is ready",
+        subject: code ? "Your Sona sign-in code: " + spaced : opts.signup ? "Your Sona sign-in link" : "Your Sona dashboard is ready",
         html:
           `<div style="font-family:system-ui,Segoe UI,Roboto,sans-serif;font-size:15px;color:#16384f;line-height:1.6;max-width:520px;">` +
           `<p>${name ? "Hi " + esc(name) + "," : "Hi,"}</p>` +
@@ -476,7 +483,7 @@ export async function sendMagicEmail(
           // dashboard no longer is (it comes with Sona Pro, after the free
           // trial). The same email goes to every sign-in, so it says only
           // what is true for every clinician.
-          `<p>${opts.freeDashboard ? freeIntro : "Your Sona dashboard is ready, and every family you send home gets Sona's free version."}</p>` +
+          `<p>${opts.signup ? signupIntro : "Your Sona dashboard is ready, and every family you send home gets Sona's free version."}</p>` +
           (code ? `<p style="margin:18px 0 6px;">Your sign-in code:</p><p style="font-size:30px;font-weight:800;letter-spacing:6px;margin:0 0 6px;">${spaced}</p><p style="color:#6b86a3;font-size:13px;margin:0 0 18px;">Type it on the sign-in screen, in the app or in your browser. Or open the dashboard here:</p>` : "") +
           `<p><a href="${link}" style="display:inline-block;background:#58cc02;color:#fff;font-weight:700;text-decoration:none;padding:14px 26px;border-radius:12px;font-size:16px;">Open my dashboard</a></p>` +
           `<p style="margin-top:22px;"><b>What to do first</b></p>` +
@@ -498,7 +505,7 @@ export async function sendMagicEmail(
          */
         text:
           (name ? "Hi " + name + ",\n\n" : "Hi,\n\n") +
-          (opts.freeDashboard ? freeIntro : "Your Sona dashboard is ready, and every family you send home gets Sona's free version.") + "\n\n" +
+          (opts.signup ? signupIntro : "Your Sona dashboard is ready, and every family you send home gets Sona's free version.") + "\n\n" +
           (code ? "Your sign-in code: " + spaced + "\nType it on the sign-in screen, in the app or in your browser.\n\n" : "") +
           "Open it here:\n" + link + "\n\n" +
           "What to do first\n" +

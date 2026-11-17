@@ -3,24 +3,36 @@ import Stripe from "stripe";
 import { readSession, liveSession, kvConfigured } from "@/lib/slpAuth";
 import { rateLimit } from "@/lib/rateLimit";
 import {
-  planStatus, selfStatus, proStatus, dashboardOpen, activateFromSession, readAcct, readPlan, grandfathered, StoreUnavailable,
+  planStatus, selfStatus, proStatus, clinicStatus, dashboardOpen, activateFromSession, readAcct, readPlan, grandfathered, StoreUnavailable,
   PRO_CENTS, PRO_PRICE, PRO_PER, PRO_INTERVAL, PRO_TRIAL_DAYS, PRO_PLAN, PRO_NAME,
+  CLINIC_CENTS, CLINIC_PRICE, CLINIC_PER, CLINIC_INTERVAL, CLINIC_TRIAL_DAYS, CLINIC_PLAN, CLINIC_NAME, CLINIC_SEATS,
 } from "@/lib/caseload";
 
 /**
- * SONA PRO, THE ONE CLINICIAN PLAN ON SALE (Travis, 12 Nov 2026; lib/caseload
- * says who is covered and why): $19.99 a month for the dashboard, every game
- * on the clinician's own phone, and every game for every family on their
- * link, with a 14-day free trial the first time.
+ * THE TWO CLINICIAN PLANS ON SALE (lib/caseload says who is covered and why):
+ *  - SONA PRO (Travis, 12 Nov 2026): $19.99 a month for the dashboard, every
+ *    game on the clinician's own phone, and every game for every family on
+ *    their link.
+ *  - SONA CLINIC (Travis, 17 Nov 2026): $99 a month, everything Sona Pro
+ *    gives for every clinician the owner adds (up to CLINIC_SEATS, the owner
+ *    included), and the owner's view of them (/api/slp/team).
+ * Both with a 14-day free trial, card up front, and ONE trial per clinician
+ * across the two (lib/caseload proStatus).
  *
  *   GET  /api/slp/plan[?session=cs_…] → where this clinician stands: the
  *        caseload at the top level (as before), their own Premium in `self`,
- *        Sona Pro in `pro`, and whether the dashboard is open.
- *   POST /api/slp/plan { plan: "pro" } → a Stripe Checkout link for Sona Pro.
+ *        Sona Pro in `pro`, Sona Clinic in `clinic`, and whether the
+ *        dashboard is open.
+ *   POST /api/slp/plan { plan: "pro" | "clinic" } → a Stripe Checkout link.
  *        The two yearly plans sold until 12 Nov 2026 ("self", "caseload", or
  *        no `plan` from a page cached before 29 Sep) are refused with
  *        `retired: true`: a stale page showing $59.99 a year must not open a
  *        checkout for a different price. Anyone already holding one keeps it.
+ *        A Sona Pro holder may buy Sona Clinic (upgrading): Stripe cannot
+ *        switch one for the other on the billing page, so it is a second
+ *        subscription on the same customer, and the page tells them to
+ *        cancel Sona Pro in Manage billing once Sona Clinic is on — the
+ *        precedent the yearly holders set.
  *
  * Signed-in clinicians only; the email is the SESSION's, never the body's or
  * the URL's. The success redirect brings a Checkout Session id back on the
@@ -95,7 +107,18 @@ export async function GET(req: NextRequest) {
     const pro = await proStatus(s.email);
     const plan = await planStatus(s.email, { acct });
     const self = await selfStatus(s.email, { acct });
+    const clinic = await clinicStatus(s.email);
     const open = await dashboardOpen(s.email, { acct });
+    // Who added a member, for "Your clinic's plan covers you": the owner's
+    // own display name and practice name, never their email. The dates and
+    // status in the block are the owner's plan's, because that plan is what
+    // covers the member (a cancelled one ends their families' every game on
+    // that date too).
+    let who: { ownerName?: string; practiceName?: string } = {};
+    if (clinic.role === "member") {
+      const o = await readAcct(clinic.owner);
+      who = { ownerName: String((o && o.name) || "").slice(0, 80), practiceName: String((o && o.clinic) || "").slice(0, 80) };
+    }
     return NextResponse.json({
       ok: true,
       active: plan.active,
@@ -109,9 +132,22 @@ export async function GET(req: NextRequest) {
         ...pro,
         name: PRO_NAME, price: PRO_PRICE, per: PRO_PER, trialDays: PRO_TRIAL_DAYS,
         // Is there anything Pro would add? Not for a clinician whose caseload
-        // AND own phone are already on some other way (free as promised, or
-        // a retired yearly plan still renewing): the page sells them nothing.
-        offer: !pro.active && !(plan.active && self.active),
+        // AND own phone are already on some other way (free as promised, a
+        // retired yearly plan still renewing, or a Sona Clinic plan): the
+        // page sells them nothing.
+        offer: !pro.active && !clinic.active && !(plan.active && self.active),
+      },
+      clinic: {
+        name: CLINIC_NAME, price: CLINIC_PRICE, per: CLINIC_PER, trialDays: CLINIC_TRIAL_DAYS, seats: CLINIC_SEATS,
+        role: clinic.role, active: clinic.active, status: clinic.status, trialEnd: clinic.trialEnd,
+        periodEnd: clinic.periodEnd, cancelAtPeriodEnd: clinic.cancelAtPeriodEnd,
+        // The one trial is for either plan: the same answer as Pro's.
+        trialAvailable: pro.trialAvailable,
+        ...who,
+        // Offered to anyone it does not already cover, a Sona Pro holder
+        // included (upgrading) — and a clinician covered free as promised,
+        // since what it adds is their colleagues.
+        offer: !clinic.active,
       },
       dashboard: { open },
       grandfathered: grandfathered(acct),
@@ -137,15 +173,32 @@ export async function POST(req: NextRequest) {
 
   let body: { plan?: unknown } = {};
   try { body = (await req.json()) || {}; } catch { body = {}; }
-  // RETIRED (12 Nov 2026). Only Sona Pro is sold. A tab opened before then
-  // still shows "$59.99 a year" on its buttons; the checkout it would open
-  // must not be a monthly price the clinician never read.
-  if (body.plan !== "pro") {
+  // RETIRED (12 Nov 2026). Only Sona Pro and (17 Nov 2026) Sona Clinic are
+  // sold. A tab opened before then still shows "$59.99 a year" on its
+  // buttons; the checkout it would open must not be a monthly price the
+  // clinician never read.
+  const kind = body && body.plan === "pro" ? "pro" : body && body.plan === "clinic" ? "clinic" : null;
+  if (!kind) {
     return NextResponse.json({
       ok: false, retired: true,
-      error: "Sona's plan for speech therapists has changed. Reload this page to see " + PRO_NAME + ".",
+      error: "Sona's plans for speech therapists have changed. Reload this page to see " + PRO_NAME + " and " + CLINIC_NAME + ".",
     }, { status: 409 });
   }
+  // What this checkout sells, from lib/caseload: the same constants every
+  // surface prints, so a page and its checkout cannot disagree.
+  const offer = kind === "clinic"
+    ? {
+        plan: CLINIC_PLAN, name: CLINIC_NAME, cents: CLINIC_CENTS, price: CLINIC_PRICE, per: CLINIC_PER, interval: CLINIC_INTERVAL,
+        trialDays: CLINIC_TRIAL_DAYS, priceId: process.env.STRIPE_PRICE_ID_SLP_CLINIC,
+        description: "Everything in " + PRO_NAME + " for every clinician at your practice, up to " + CLINIC_SEATS + " including you, and your clinic view. Renews monthly; cancel anytime.",
+        keeps: "your clinicians and their families keep every game to the end of the month you paid for.",
+      }
+    : {
+        plan: PRO_PLAN, name: PRO_NAME, cents: PRO_CENTS, price: PRO_PRICE, per: PRO_PER, interval: PRO_INTERVAL,
+        trialDays: PRO_TRIAL_DAYS, priceId: process.env.STRIPE_PRICE_ID_SLP_PRO,
+        description: "Your Sona dashboard, every game on your own phone or tablet, and every game for every family who joins through your link. Renews monthly; cancel anytime.",
+        keeps: "your families keep every game to the end of the month you paid for.",
+      };
 
   // Asked of Stripe afresh (force), not the ten-minute mirror: a clinician
   // who started Pro in another tab a minute ago must not be sold a second
@@ -157,21 +210,43 @@ export async function POST(req: NextRequest) {
   let acct: Record<string, unknown> | null;
   let customer = "";
   let trial = false;
+  let upgrading = false;
   try {
     acct = await readAcct(s.email);
     const pro = await proStatus(s.email, { stripe, force: true });
-    if (pro.active) {
-      return NextResponse.json({ ok: false, already: true, error: PRO_NAME + " is already on." }, { status: 409 });
-    }
-    const plan = await planStatus(s.email, { stripe, acct, force: true });
-    const self = await selfStatus(s.email, { stripe, acct, force: true });
-    if (plan.active && self.active) {
-      return NextResponse.json({
-        ok: false, already: true,
-        error: plan.source === "grandfathered"
-          ? "Your dashboard, your own phone and your caseload are already free, as promised when you signed up."
-          : "You already have everything " + PRO_NAME + " includes.",
-      }, { status: 409 });
+    if (kind === "pro") {
+      if (pro.active) {
+        return NextResponse.json({ ok: false, already: true, error: PRO_NAME + " is already on." }, { status: 409 });
+      }
+      const plan = await planStatus(s.email, { stripe, acct, force: true });
+      const self = await selfStatus(s.email, { stripe, acct, force: true });
+      if (plan.active && self.active) {
+        return NextResponse.json({
+          ok: false, already: true,
+          error: plan.source === "grandfathered"
+            ? "Your dashboard, your own phone and your caseload are already free, as promised when you signed up."
+            : plan.source === "clinic"
+              ? "Your " + CLINIC_NAME + " plan already includes everything " + PRO_NAME + " does."
+              : "You already have everything " + PRO_NAME + " includes.",
+        }, { status: 409 });
+      }
+    } else {
+      // Sona Clinic: never twice, and never over a clinic that already
+      // covers them. A clinician on someone else's clinic leaves it first
+      // (their dashboard says how); a Pro holder may upgrade.
+      const clinic = await clinicStatus(s.email, { stripe, force: true });
+      if (clinic.active && clinic.role === "owner") {
+        return NextResponse.json({ ok: false, already: true, error: CLINIC_NAME + " is already on." }, { status: 409 });
+      }
+      if (clinic.active && clinic.role === "member") {
+        const o = await readAcct(clinic.owner);
+        const name = String((o && o.name) || "").trim().slice(0, 80);
+        return NextResponse.json({
+          ok: false, already: true,
+          error: "You're on " + (name ? name + "'s" : "your clinic's") + " " + CLINIC_NAME + " plan.",
+        }, { status: 409 });
+      }
+      upgrading = pro.active;
     }
     trial = pro.trialAvailable;
     // The same Stripe customer as any plan they already hold, so Manage
@@ -179,8 +254,8 @@ export async function POST(req: NextRequest) {
     // stored mirrors only (the forced checks above wrote any plan they
     // found): asking Stripe here would cache a "no plan" the moment before
     // the clinician pays, which is the race NEGATIVE_MS is about.
-    for (const kind of ["pro", "self", "caseload"] as const) {
-      const m = await readPlan(s.email, undefined, kind);
+    for (const k of ["pro", "clinic", "self", "caseload"] as const) {
+      const m = await readPlan(s.email, undefined, k);
       if (m && m.customer) { customer = m.customer; break; }
     }
   } catch (e) {
@@ -191,36 +266,35 @@ export async function POST(req: NextRequest) {
   const origin = originOf(req);
   // A fixed Stripe Price when one is configured (so the Stripe dashboard's
   // product reporting lines up); otherwise the amount from lib/caseload, the
-  // same constant every surface prints. Its own variable: neither of the
+  // same constant every surface prints. Each plan its own variable
+  // (STRIPE_PRICE_ID_SLP_PRO, STRIPE_PRICE_ID_SLP_CLINIC): neither of the
   // retired plans' Price ids can ever be charged under this page.
-  const priceId = process.env.STRIPE_PRICE_ID_SLP_PRO;
-  const line_items: Stripe.Checkout.SessionCreateParams.LineItem[] = priceId
-    ? [{ price: priceId, quantity: 1 }]
+  const line_items: Stripe.Checkout.SessionCreateParams.LineItem[] = offer.priceId
+    ? [{ price: offer.priceId, quantity: 1 }]
     : [{
         quantity: 1,
         price_data: {
           currency: "usd",
-          unit_amount: PRO_CENTS,
-          recurring: { interval: PRO_INTERVAL },
-          product_data: {
-            name: PRO_NAME,
-            description: "Your Sona dashboard, every game on your own phone or tablet, and every game for every family who joins through your link. Renews monthly; cancel anytime.",
-          },
+          unit_amount: offer.cents,
+          recurring: { interval: offer.interval },
+          product_data: { name: offer.name, description: offer.description },
         },
       }];
   // The stamps lib/caseload reads, on the session (for activation) AND on
-  // the subscription (for the re-check and the search recovery). Never a
-  // `tier`: lib/charter counts `tier: charter` subscriptions as the fifty
-  // FAMILY spots, and this is not one.
-  const metadata: Record<string, string> = { plan: PRO_PLAN, slp: s.email };
+  // the subscription (for the re-check and the search recovery). For Sona
+  // Clinic `slp` is the OWNER, the clinician paying. Never a `tier`:
+  // lib/charter counts `tier: charter` subscriptions as the fifty FAMILY
+  // spots, and neither plan is one.
+  const metadata: Record<string, string> = { plan: offer.plan, slp: s.email };
   const code = String((acct && acct.code) || "");
   // WHAT THE CLINICIAN AGREES TO, said beside the button they press (an
   // automatic renewal after a free trial is the thing a state's renewal law
   // asks to be spelled out at the point of purchase). Stripe prints the
-  // dates; this says the terms in the same words for-slps and the Terms use.
+  // dates; this says the terms in the same words the plan pages and the
+  // Terms use.
   const terms = trial
-    ? "No charge today. Your free trial lasts " + PRO_TRIAL_DAYS + " days; after that, " + PRO_PRICE + " " + PRO_PER + " until you cancel. Cancel before the trial ends and you pay nothing."
-    : PRO_PRICE + " " + PRO_PER + ", charged today and every month until you cancel. Cancel anytime: your families keep every game to the end of the month you paid for.";
+    ? "No charge today. Your free trial lasts " + offer.trialDays + " days; after that, " + offer.price + " " + offer.per + " until you cancel. Cancel before the trial ends and you pay nothing."
+    : offer.price + " " + offer.per + ", charged today and every month until you cancel. Cancel anytime: " + offer.keeps;
 
   try {
     const session = await stripe.checkout.sessions.create({
@@ -229,9 +303,11 @@ export async function POST(req: NextRequest) {
       // A 14-DAY FREE TRIAL, ONCE (Travis, 12 Nov 2026), card up front: a
       // new clinician has not seen the dashboard yet, and fourteen days is
       // time to send a few families home and watch them practice. A trial
-      // that ends with no card on file cancels rather than lingering.
+      // that ends with no card on file cancels rather than lingering. Once
+      // per clinician across both plans (17 Nov 2026): `trial` is proStatus'
+      // answer, which counts a Sona Clinic subscription too.
       subscription_data: trial
-        ? { metadata, trial_period_days: PRO_TRIAL_DAYS, trial_settings: { end_behavior: { missing_payment_method: "cancel" } } }
+        ? { metadata, trial_period_days: offer.trialDays, trial_settings: { end_behavior: { missing_payment_method: "cancel" } } }
         : { metadata },
       payment_method_collection: "always",
       custom_text: { submit: { message: terms } },
@@ -243,7 +319,9 @@ export async function POST(req: NextRequest) {
       success_url: `${origin}/slp.html?plan_session={CHECKOUT_SESSION_ID}#premium`,
       cancel_url: `${origin}/slp.html#premium`,
     });
-    return NextResponse.json({ ok: true, url: session.url });
+    // `cancelPro`: they hold Sona Pro and are buying Sona Clinic. The page
+    // says to cancel Sona Pro in Manage billing once Sona Clinic is on.
+    return NextResponse.json({ ok: true, url: session.url, ...(upgrading ? { cancelPro: true } : {}) });
   } catch (e: unknown) {
     return NextResponse.json({ ok: false, error: e instanceof Error ? e.message : "Checkout failed." }, { status: 502 });
   }

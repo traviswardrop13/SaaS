@@ -1,14 +1,15 @@
 import { NextResponse } from "next/server";
-import { dashboardOpen, StoreUnavailable, PRO_NAME } from "@/lib/caseload";
+import { dashboardOpen, StoreUnavailable, PRO_NAME, CLINIC_NAME } from "@/lib/caseload";
 
 /**
  * THE DASHBOARD'S LOCK, held on the server (Travis, 12 Nov 2026: the price is
  * "for the dashboard and unlimited accounts for clients"). A clinician whose
  * account was made from 12 Nov 2026 sees their caseload, adds children and
- * assigns homework only while Sona Pro is on (trialing, active, or in the
- * card-retry grace). Every older account keeps the free dashboard it was
- * promised, and dashboardOpen() answers that from the account stamp alone,
- * with no Stripe call.
+ * assigns homework only while Sona Pro or Sona Clinic covers them (17 Nov
+ * 2026: owned or joined; trialing, active, or in the card-retry grace).
+ * Every older account keeps the free dashboard it was promised, and
+ * dashboardOpen() answers that from the account stamp alone, with no Stripe
+ * call.
  *
  * Held here and not only on the page, because the page is static and its lock
  * is a picture; the data is what the plan sells.
@@ -31,7 +32,7 @@ export async function dashboardGate(email: string): Promise<NextResponse | null>
     throw e;
   }
   return NextResponse.json(
-    { ok: false, needPlan: true, error: "Your dashboard comes with " + PRO_NAME + ". Start it on the " + PRO_NAME + " page to see your caseload." },
+    { ok: false, needPlan: true, error: "Your dashboard comes with " + PRO_NAME + " or " + CLINIC_NAME + ". Start your free trial on the plan page to see your caseload." },
     { status: 402 },
   );
 }

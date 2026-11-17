@@ -69,6 +69,14 @@ import { isWorkEmail } from "@/lib/workEmail";
  *    whatever the account's stamp. A month cancelled ends at the end of the
  *    month paid for (the billing page cancels at period end), so families
  *    keep every game to then.
+ *  - SONA CLINIC (17 Nov 2026). A live subscription stamped `plan:
+ *    slp-clinic` and `slp: <owner>`. Covers all three for the owner AND for
+ *    every clinician who joined the owner's team (clinicStatus), whatever
+ *    their stamps, for as long as it is live.
+ *  - `terms: FREE_DASHBOARD_TERMS` (13 to 17 Nov 2026), or a Pro-era
+ *    account carrying `freeDashboard: true` (opted in then). A free
+ *    dashboard; their own phone and caseload come with a plan, as for
+ *    PRO_TERMS.
  * Stripe keeps a cancelled-at-period-end subscription `active` until the
  * year that was paid for runs out, so families keep Premium to the end of
  * the paid year, then drop to the free version. past_due counts too: that is
@@ -76,7 +84,8 @@ import { isWorkEmail } from "@/lib/workEmail";
  * off Premium the same afternoon.
  *
  * WHERE THE PAID STATE LIVES. One mirror per plan: `slpplan:<email>` for the
- * caseload, `slpplan-self:<email>` for the clinician's own. Never on the
+ * caseload, `slpplan-self:<email>` for the clinician's own, `slpplan-pro:`
+ * and `slpplan-clinic:` (the owner's) for the two monthly plans. Never on the
  * slpacct JSON, which two routes rewrite whole (a plan written there would be
  * erased by the next profile save), and never a key starting "slpacct:",
  * which lib/founder.ts scans as the list of clinician accounts. Each is a
@@ -102,10 +111,38 @@ export const PRO_INTERVAL = "month" as const;            // Stripe recurring.int
 export const PRO_TRIAL_DAYS = 14;
 export const PRO_PLAN = "slp-pro";                       // Stripe metadata.plan, on the session AND the subscription
 export const PRO_NAME = "Sona Pro";
-/** Stamped on every NEW slpacct from 12 Nov 2026: the dashboard is part of Sona Pro for them. */
+/**
+ * Stamped on every NEW slpacct from 12 Nov 2026: the dashboard is part of a
+ * plan for them (Sona Pro or Sona Clinic). Still the stamp for every new
+ * account after the free dashboard was reversed (17 Nov 2026), and on
+ * purpose: dashboardOpen() opens any stamp that is not this one, so a new
+ * stamp would quietly hand every new account a free dashboard.
+ */
 export const PRO_TERMS = "pro-2026-11-12";
-/** Verified signups from the free clinician landing. Premium coverage follows the plan. */
+/**
+ * The free dashboard signup, 13 to 17 Nov 2026: those accounts were told the
+ * dashboard was free, and it stays free for them. No new account is made with
+ * it any more (17 Nov 2026), except App Review's (lib/slpSignIn).
+ */
 export const FREE_DASHBOARD_TERMS = "free-dashboard-2026-11-13";
+
+// SONA CLINIC (Travis, 17 Nov 2026: "$99 a month"; every clinician at the
+// practice gets everything Sona Pro gives, and the owner sees the clinicians
+// as sub-accounts). One price for the practice, printed as it is charged:
+// "$99 a month", never "$99.00", never "$100", and never divided into a
+// per-clinician figure (the seat count is a ceiling, not a unit price).
+// The trial is Sona Pro's fourteen days, and it is ONE trial per clinician
+// across both plans (proStatus().trialAvailable). Never a `tier` key: see
+// NEVER A CHARTER SPOT above.
+export const CLINIC_CENTS = 9900;
+export const CLINIC_PRICE = "$99";
+export const CLINIC_PER = "a month";
+export const CLINIC_INTERVAL = "month" as const;          // Stripe recurring.interval
+export const CLINIC_TRIAL_DAYS = PRO_TRIAL_DAYS;
+export const CLINIC_PLAN = "slp-clinic";                  // Stripe metadata.plan, on the session AND the subscription; metadata.slp is the OWNER
+export const CLINIC_NAME = "Sona Clinic";
+/** Clinicians on one Clinic plan, the owner included; invited and joined both hold a seat. "Email us to add more." */
+export const CLINIC_SEATS = 25;
 
 // The add-on. $59.99 / 12 = $4.9991, so "under $5 a month": never "$4.99 a
 // month" (that is $59.88 a year) nor "$5.00" (a rounding a reader can check
@@ -169,13 +206,13 @@ export const SELF_TOKEN_TTL = 60 * 60 * 24 * 30;
  */
 export function isClinicianPlan(md: Record<string, string> | null | undefined): boolean {
   const plan = md && md.plan;
-  return plan === CASELOAD_PLAN || plan === SELF_PLAN || plan === PRO_PLAN;
+  return plan === CASELOAD_PLAN || plan === SELF_PLAN || plan === PRO_PLAN || plan === CLINIC_PLAN;
 }
 
 export type Kv = (cmd: (string | number)[]) => Promise<unknown>;
 
-export type PlanKind = "caseload" | "self" | "pro";
-const PLAN_OF: Record<PlanKind, string> = { caseload: CASELOAD_PLAN, self: SELF_PLAN, pro: PRO_PLAN };
+export type PlanKind = "caseload" | "self" | "pro" | "clinic";
+const PLAN_OF: Record<PlanKind, string> = { caseload: CASELOAD_PLAN, self: SELF_PLAN, pro: PRO_PLAN, clinic: CLINIC_PLAN };
 
 export type PlanRecord = {
   sub: string;                 // "" when Stripe was asked and had nothing
@@ -187,13 +224,13 @@ export type PlanRecord = {
   // Caseload only: sold as the add-on (29 Sep 2026 on). Absent on a mirror
   // written before then, which is the older plan and reads as not an add-on.
   addon?: boolean;
-  // Pro only: when the free trial ends (unix seconds), while there is one.
+  // Pro and Clinic only: when the free trial ends (unix seconds), while there is one.
   trialEnd?: number | null;
 };
 
 export type PlanStatus = {
   active: boolean;
-  source: "paid" | "grandfathered" | "pro" | "none";
+  source: "paid" | "grandfathered" | "pro" | "clinic" | "none";
   periodEnd: number | null;
   cancelAtPeriodEnd: boolean;
 };
@@ -207,7 +244,7 @@ export type SelfAccess = { eligible: boolean; workEmail: boolean; approved: bool
  */
 export type SelfStatus = {
   active: boolean;
-  source: "grandfathered" | "work-email" | "paid" | "caseload" | "pro" | "none";
+  source: "grandfathered" | "work-email" | "paid" | "caseload" | "pro" | "clinic" | "none";
   periodEnd: number | null;
   cancelAtPeriodEnd: boolean;
   canRequest: boolean;
@@ -235,7 +272,59 @@ export class StoreUnavailable extends Error {
 const norm = (email: unknown): string => String(email || "").trim().toLowerCase();
 
 export function planKey(email: string, kind: PlanKind = "caseload"): string {
-  return (kind === "self" ? "slpplan-self:" : kind === "pro" ? "slpplan-pro:" : "slpplan:") + norm(email);
+  return (kind === "self" ? "slpplan-self:" : kind === "pro" ? "slpplan-pro:" : kind === "clinic" ? "slpplan-clinic:" : "slpplan:") + norm(email);
+}
+
+/**
+ * SONA CLINIC'S TEAM (17 Nov 2026). Who is on whose Clinic plan, in two keys
+ * that must agree, never on the slpacct JSON (rewritten whole by two routes)
+ * and never under "slpacct:" (lib/founder SCANs that as the account list):
+ *  - `slpteam:<owner>`: a HASH, member email → {state, addedAt, acceptedAt?}.
+ *    The owner's typing makes a row "invited"; only the member's own tap on
+ *    the emailed link (lib/team acceptInvite) makes it "active".
+ *  - `slpteam-of:<member>`: the owner's email, written only on that tap.
+ * In the code the membership is "team", because `acct.clinic` already means
+ * the practice's NAME; the plan is "clinic" (Stripe metadata) and the page
+ * says "Sona Clinic" and "Your clinic".
+ */
+export function teamKey(owner: string): string { return "slpteam:" + norm(owner); }
+export function teamOfKey(member: string): string { return "slpteam-of:" + norm(member); }
+
+export type TeamRow = { state: "invited" | "active"; addedAt: string; acceptedAt?: string };
+
+/** One row of `slpteam:<owner>`, or null when there is none (or it is unreadable). */
+export function parseTeamRow(raw: unknown): TeamRow | null {
+  if (typeof raw !== "string" || !raw) return null;
+  try {
+    const r = JSON.parse(raw) as Partial<TeamRow>;
+    if (!r || typeof r !== "object") return null;
+    return {
+      state: r.state === "active" ? "active" : "invited",
+      addedAt: String(r.addedAt || ""),
+      ...(r.acceptedAt ? { acceptedAt: String(r.acceptedAt) } : {}),
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * The owner whose Clinic plan this clinician JOINED, or "". Joined means both
+ * keys agree: the reverse key names the owner AND the owner's row for them is
+ * "active". An owner's typing alone never puts anyone on a team. Throws when
+ * the store does not answer (an outage is not "no team").
+ */
+export async function teamOwnerOf(email: string, kv: Kv = kvCmd): Promise<string> {
+  const me = norm(email);
+  if (!me) return "";
+  const owner = await kv(["GET", teamOfKey(me)]);
+  if (owner === undefined) throw new StoreUnavailable("slpteam-of");
+  const o = typeof owner === "string" ? norm(owner) : "";
+  if (!o || o === me) return "";
+  const row = await kv(["HGET", teamKey(o), me]);
+  if (row === undefined) throw new StoreUnavailable("slpteam");
+  const r = parseTeamRow(row);
+  return r && r.state === "active" ? o : "";
 }
 export function accessKey(email: string): string { return "slpaccess:" + norm(email); }
 export function selfTokenKey(code: string, token: string): string { return "slpself:" + String(code || "").toLowerCase() + ":" + token; }
@@ -319,7 +408,7 @@ export function recordFromSubscription(s: Stripe.Subscription, now = Date.now())
     checkedAt: now,
   };
   if (s.metadata && s.metadata.plan === CASELOAD_PLAN) rec.addon = s.metadata.addon === CASELOAD_ADDON;
-  if (s.metadata && s.metadata.plan === PRO_PLAN) {
+  if (s.metadata && (s.metadata.plan === PRO_PLAN || s.metadata.plan === CLINIC_PLAN)) {
     const t = (s as unknown as { trial_end?: number | null }).trial_end;
     rec.trialEnd = s.status === "trialing" && typeof t === "number" ? t : null;
   }
@@ -439,6 +528,13 @@ export async function planStatus(email: string, opts: PlanOpts & { acct?: Record
   if (recordActive(pro, now)) {
     return { active: true, source: "pro", periodEnd: pro!.periodEnd, cancelAtPeriodEnd: pro!.cancelAtPeriodEnd };
   }
+  // Sona Clinic next (17 Nov 2026), the owner's own or the one they joined,
+  // and BEFORE the Pro-era short-circuit below: a clinician made from 12 Nov
+  // who joins a clinic is exactly who it covers.
+  const clinic = await clinicStatus(email, { ...opts, kv, now });
+  if (clinic.active) {
+    return { active: true, source: "clinic", periodEnd: clinic.periodEnd, cancelAtPeriodEnd: clinic.cancelAtPeriodEnd };
+  }
   // A Pro-era account was never sold the yearly caseload plan: no search.
   if (proTerms(acct) || acct?.terms === FREE_DASHBOARD_TERMS) return { active: false, source: "none", periodEnd: null, cancelAtPeriodEnd: false };
   const rec = await currentPlan(email, { ...opts, kv, now, kind: "caseload" });
@@ -475,6 +571,12 @@ export async function selfStatus(email: string, opts: PlanOpts & { acct?: Record
   if (recordActive(pro, now)) {
     return { active: true, source: "pro", periodEnd: pro!.periodEnd, cancelAtPeriodEnd: pro!.cancelAtPeriodEnd, canRequest, ...base };
   }
+  // Every clinician on a Sona Clinic plan gets every game on their own phone,
+  // as Sona Pro gives it; asked before the Pro-era short-circuit, as above.
+  const clinic = await clinicStatus(email, { ...opts, kv, now });
+  if (clinic.active) {
+    return { active: true, source: "clinic", periodEnd: clinic.periodEnd, cancelAtPeriodEnd: clinic.cancelAtPeriodEnd, canRequest, ...base };
+  }
   if (proTerms(acct) || acct?.terms === FREE_DASHBOARD_TERMS) return { active: false, source: "none", ...off, canRequest, ...base };
   const own = await currentPlan(email, { ...opts, kv, now, kind: "self" });
   if (recordActive(own, now)) {
@@ -499,7 +601,7 @@ export type ProStatus = {
   trialEnd: number | null;     // unix seconds, while trialing
   periodEnd: number | null;
   cancelAtPeriodEnd: boolean;
-  trialAvailable: boolean;     // never had a Pro subscription
+  trialAvailable: boolean;     // never had a Pro OR a Clinic subscription: the one trial is for either plan
 };
 
 export async function proStatus(email: string, opts: PlanOpts = {}): Promise<ProStatus> {
@@ -507,34 +609,98 @@ export async function proStatus(email: string, opts: PlanOpts = {}): Promise<Pro
   if (!norm(email)) return { active: false, status: "none", trialEnd: null, periodEnd: null, cancelAtPeriodEnd: false, trialAvailable: false };
   const rec = await currentPlan(email, { ...opts, now, kind: "pro" });
   const active = recordActive(rec, now);
+  // ONE TRIAL PER CLINICIAN, ACROSS BOTH PLANS. Any Pro or Clinic
+  // subscription Stripe ever held for this address, in any status, spends
+  // it: a trial that was cancelled, or ran out with a card that failed, is
+  // not a second fourteen days, and neither is switching plans (17 Nov 2026:
+  // two plans with a trial each would otherwise be twenty-eight days). The
+  // Clinic mirror is asked only when the Pro one has not already spent it.
+  let spent = !!(rec && rec.sub);
+  if (!spent) {
+    const clinic = await currentPlan(email, { ...opts, now, kind: "clinic" });
+    spent = !!(clinic && clinic.sub);
+  }
   return {
     active,
     status: (rec && rec.status) || "none",
     trialEnd: active && rec && rec.status === "trialing" ? rec.trialEnd ?? null : null,
     periodEnd: (rec && rec.periodEnd) || null,
     cancelAtPeriodEnd: !!(rec && rec.cancelAtPeriodEnd),
-    // ONE TRIAL PER CLINICIAN. Any Pro subscription Stripe ever held for this
-    // address, in any status, spends it: a trial that was cancelled, or ran
-    // out with a card that failed, is not a second fourteen days.
-    trialAvailable: !(rec && rec.sub),
+    trialAvailable: !spent,
   };
+}
+
+/**
+ * SONA CLINIC, for one clinician (17 Nov 2026): whether a Clinic plan covers
+ * them, and in what role.
+ *  - "owner": this address bought a Clinic plan (`slpplan-clinic:<email>`,
+ *    metadata.slp is the owner). A LAPSED owner is still "owner", with
+ *    active false: removing a clinician from the team must always work.
+ *  - "member": an owner added them AND they accepted from their own inbox
+ *    (teamOwnerOf), AND that owner's Clinic plan is live. Only then; an
+ *    invitation alone covers nobody, and a member's coverage ends the moment
+ *    the owner removes them, they leave, or the owner's plan ends.
+ * The dates and status are the plan's that covers them — the owner's, for a
+ * member. A live plan wins over a lapsed one, whichever role it is in.
+ */
+export type ClinicStatus = {
+  role: "owner" | "member" | null;
+  owner: string;               // the owner's email ("" when role is null; the clinician's own for an owner)
+  active: boolean;
+  status: string;              // Stripe's word, or "none"
+  trialEnd: number | null;     // unix seconds, while trialing
+  periodEnd: number | null;
+  cancelAtPeriodEnd: boolean;
+};
+
+export async function clinicStatus(email: string, opts: PlanOpts = {}): Promise<ClinicStatus> {
+  const kv = opts.kv || kvCmd;
+  const now = opts.now ?? Date.now();
+  const me = norm(email);
+  const none: ClinicStatus = { role: null, owner: "", active: false, status: "none", trialEnd: null, periodEnd: null, cancelAtPeriodEnd: false };
+  if (!me) return none;
+  const as = (rec: PlanRecord | null, role: "owner" | "member", owner: string): ClinicStatus => {
+    const active = recordActive(rec, now);
+    return {
+      role, owner, active,
+      status: (rec && rec.status) || "none",
+      trialEnd: active && rec && rec.status === "trialing" ? rec.trialEnd ?? null : null,
+      periodEnd: (rec && rec.periodEnd) || null,
+      cancelAtPeriodEnd: !!(rec && rec.cancelAtPeriodEnd),
+    };
+  };
+  const own = await currentPlan(me, { ...opts, kv, now, kind: "clinic" });
+  if (recordActive(own, now)) return as(own, "owner", me);
+  const owner = await teamOwnerOf(me, kv);
+  if (owner) {
+    const theirs = await currentPlan(owner, { ...opts, kv, now, kind: "clinic" });
+    if (recordActive(theirs, now)) return as(theirs, "member", owner);
+  }
+  if (own && own.sub) return as(own, "owner", me);
+  return none;
 }
 
 /**
  * IS THE DASHBOARD OPEN? Every account made before 12 Nov 2026 was told the
  * dashboard was free, and it stays free for them, forever: a clinician's
  * caseload, notes and homework are never held behind a price they were not
- * shown. From 12 Nov 2026 (`terms: PRO_TERMS`) the dashboard is part of Sona
- * Pro — trialing, active, or in the card-retry grace of past_due.
+ * shown. From 12 Nov 2026 (`terms: PRO_TERMS`) the dashboard is part of a
+ * plan — Sona Pro, or (17 Nov 2026) Sona Clinic, owned or joined — trialing,
+ * active, or in the card-retry grace of past_due.
  * A signed-in session with no account record at all is treated as new: the
- * legacy routes that make one make it with PRO_TERMS. Verified free landing
- * signups use FREE_DASHBOARD_TERMS and have a free dashboard.
+ * legacy routes that make one make it with PRO_TERMS. The 13 to 17 Nov 2026
+ * free dashboard signups (FREE_DASHBOARD_TERMS) and the Pro-era accounts that
+ * opted into it then (`freeDashboard: true`) keep a free dashboard; no new
+ * account gets either (lib/slpSignIn), and none is ever taken away.
+ * Every stamp but PRO_TERMS answers from the account alone, with no Stripe
+ * call, in that order: the stamp, then Sona Pro, then Sona Clinic.
  */
 export async function dashboardOpen(email: string, opts: PlanOpts & { acct?: Record<string, unknown> | null } = {}): Promise<boolean> {
   const kv = opts.kv || kvCmd;
   const acct = opts.acct !== undefined ? opts.acct : await readAcct(email, kv);
   if (acct && (!proTerms(acct) || acct.freeDashboard === true)) return true;
-  return (await proStatus(email, { ...opts, kv })).active;
+  if ((await proStatus(email, { ...opts, kv })).active) return true;
+  return (await clinicStatus(email, { ...opts, kv })).active;
 }
 
 /**
@@ -554,7 +720,10 @@ export async function activateFromSession(
   if (!stripe) return { activated: false, reason: "stripe not configured" };
   const cs = await stripe.checkout.sessions.retrieve(sessionId, { expand: ["subscription"] });
   const md = cs.metadata || {};
-  const kind: PlanKind | null = md.plan === CASELOAD_PLAN ? "caseload" : md.plan === SELF_PLAN ? "self" : md.plan === PRO_PLAN ? "pro" : null;
+  // A Clinic plan is the OWNER's (md.slp is the buyer), so it is activated
+  // only for the owner's own session, like every other plan.
+  const kind: PlanKind | null = md.plan === CASELOAD_PLAN ? "caseload" : md.plan === SELF_PLAN ? "self"
+    : md.plan === PRO_PLAN ? "pro" : md.plan === CLINIC_PLAN ? "clinic" : null;
   if (!kind) return { activated: false, reason: "not a clinician plan" };
   if (!norm(email) || norm(md.slp) !== norm(email)) return { activated: false, reason: "bought by another account" };
   if (cs.status !== "complete") return { activated: false, reason: "checkout not complete" };

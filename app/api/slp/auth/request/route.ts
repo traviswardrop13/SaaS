@@ -50,6 +50,7 @@ function safeEqual(a: string, b: string): boolean {
 }
 
 // POST { email, adminKey?, source?, clinicianRole?, workSetting?, flow?, wantCode? } → email a single-use magic sign-in link.
+// flow: undefined (the sign-in page), "trial" or "free-dashboard" (a sign-up form; the same thing now).
 // Nobody is signed in here: only opening the emailed link signs in (13 Nov 2026),
 // or typing the six-digit code it carries when the sign-in page asked for one
 // (`wantCode`, SLPAPP1, 16 Nov 2026: the clinicians' app, where a link opens
@@ -95,8 +96,16 @@ export async function POST(req: NextRequest) {
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
     return NextResponse.json({ ok: false, error: "Enter a valid email." }, { status: 400 });
   }
-  const freeDashboard = body.flow === "free-dashboard";
-  if (body.flow !== undefined && !freeDashboard) {
+  // A SIGN-UP DOOR: the landing page's trial form (`flow: "trial"`, 17 Nov
+  // 2026), or the free-dashboard form it replaced (`flow: "free-dashboard"`,
+  // still sent by cached pages and older builds of the clinicians' app).
+  // Both carry the sign-up's role, setting and attribution in the emailed
+  // link; NEITHER grants anything any more. The dashboard comes with the
+  // trial (Travis, 17 Nov 2026), and lib/slpSignIn makes every new account
+  // with Sona Pro's terms whichever door it came through: this flag is the
+  // caller's to send, so nothing it unlocks may depend on it.
+  const signupFlow = body.flow === "free-dashboard" || body.flow === "trial";
+  if (body.flow !== undefined && !signupFlow) {
     return NextResponse.json({ ok: false, error: "Bad request." }, { status: 400 });
   }
   // Role and work setting are optional (Travis, 14 Nov 2026: the sign-up form
@@ -162,7 +171,7 @@ export async function POST(req: NextRequest) {
     const n = await kvCmd(["INCR", rl]);
     if (n === 1) await kvCmd(["EXPIRE", rl, 3600]);
     if (typeof n === "number" && n > 5) {
-      if (freeDashboard) {
+      if (signupFlow) {
         return NextResponse.json({ ok: false, error: "Too many links requested. Try again in an hour." }, { status: 429 });
       }
       return NextResponse.json({ ok: true, sent: true, devLink: null }); // silently cap
@@ -171,7 +180,7 @@ export async function POST(req: NextRequest) {
 
   const origin = new URL(req.url).origin;
 
-  if (freeDashboard) {
+  if (signupFlow) {
     // The emailed token proves the inbox before an account or session exists.
     const token = randomToken();
     const pending = signFreeDashboardSignup({
@@ -190,7 +199,7 @@ export async function POST(req: NextRequest) {
       await kvCmd(["DEL", key]);
       return NextResponse.json({ ok: false, error: "Couldn't make your sign-in code. Try again." }, { status: 503 });
     }
-    const res = await sendMagicEmail(email, link, "", { freeDashboard: true, code });
+    const res = await sendMagicEmail(email, link, "", { signup: true, code });
     const devLink = isAdmin ? link : res.devLink;
     if (!res.sent && !devLink) await kvCmd(["DEL", key]);
     if (res.sent) await tellCrmEarly(origin, email, String(body.source || "for-slps").slice(0, 40), safeAttrib(body.attrib));

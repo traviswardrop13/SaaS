@@ -63,6 +63,19 @@ ok("the count says what is left, and that the door is open", s.left === CHARTER_
   ok("a caseload subscription (plan slp-caseload, no tier) is never a charter spot, in any status",
     c.taken === 1 && c.source === "stripe", JSON.stringify(c));
 }
+// ── nor is Sona Pro or Sona Clinic (12 and 17 Nov 2026) ──
+// Both are monthly, sold to a clinician, stamped plan + slp and never tier
+// (app/api/slp/plan). Sona Clinic is $99 a month; were one ever counted, a
+// practice would quietly take a family's $59.99 spot.
+{
+  const clin = (plan, status, interval) => ({ ...sub(interval || "month", null, status), metadata: { plan, slp: "owner@practice.org" } });
+  _resetCharterMemo();
+  const c = await charterSpots(client([{ data: [clin("slp-clinic", "active"), clin("slp-clinic", "trialing"), clin("slp-clinic", "past_due"), clin("slp-clinic", "active", "year"), clin("slp-pro", "active"), sub("year", "charter")] }]));
+  ok("a Sona Clinic or Sona Pro subscription (no tier) is never a charter spot, in any status or interval",
+    c.taken === 1 && c.source === "stripe", JSON.stringify(c));
+  const route = readFileSync(new URL("../app/api/slp/plan/route.ts", import.meta.url), "utf8").replace(/\/\*[\s\S]*?\*\//g, " ").replace(/(^|[^:"'])\/\/[^\n]*/g, "$1");
+  ok("…and the checkout that sells them never writes a tier", !/\btier\b/.test(route) && /plan: CLINIC_PLAN/.test(route) && /metadata: Record<string, string> = \{ plan: offer\.plan, slp: s\.email \}/.test(route));
+}
 
 // ── the cap ──
 _resetCharterMemo();
