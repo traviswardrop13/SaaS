@@ -5,7 +5,7 @@
   // in its user agent) is the dashboard alone. A family page opened there
   // goes to the dashboard: it would be the kids' app with no store to buy in.
   try {
-    if (/\bSonaSLPApp\/\d/.test(global.navigator.userAgent || "") && !/^\/slp(-login)?(\.html)?$/.test(global.location.pathname)) {
+    if (/\bSonaSLPApp\/\d/.test(global.navigator.userAgent || "") && !/^\/(?:slps|slp(-login)?(\.html)?)$/.test(global.location.pathname)) {
       global.location.replace("/slp.html");
     }
   } catch (e) {}

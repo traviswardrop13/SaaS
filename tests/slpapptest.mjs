@@ -442,7 +442,11 @@ const server = createServer((req, res) => {
       if (url.pathname === "/api/slp/community" && req.method === "GET") return json(COMMUNITY);
       return json({ ok: true });
     }
-    const p = url.pathname === "/" ? "/for-slps.html" : url.pathname;
+    if (url.pathname === "/slp.html" && url.searchParams.has("canonical")) {
+      res.writeHead(308, { location: "/slps" + url.search });
+      return res.end();
+    }
+    const p = url.pathname === "/" ? "/for-slps.html" : url.pathname === "/slps" ? "/slp.html" : url.pathname;
     const file = path.join(PUB, p);
     if (!existsSync(file) || !statSync(file).isFile()) { res.writeHead(404); return res.end(); }
     res.writeHead(200, { "content-type": MIME[file.split(".").pop()] || "application/octet-stream" });
@@ -571,6 +575,17 @@ try {
       ok("the share sheet receives the existing message exactly once", result.shared.length === 1 && result.shared[0].text === exactMessage && !result.shared[0].url);
       ok("dismissing the share sheet copies nothing and leaves the message available", result.copied.length === 0 &&
         await button.isEnabled() && await page.locator("#famMsg").inputValue() === exactMessage && errors.length === 0);
+    } finally {
+      await context.close();
+    }
+  });
+
+  await section("the iPhone app opens the canonical dashboard route", async () => {
+    const { context, page, errors } = await open("/slp.html?canonical=1#today");
+    try {
+      await page.waitForFunction(() => document.getElementById("sidebarName").textContent === "Rachel K");
+      ok("the iPhone stays at /slps when the production redirect leads there",
+        new URL(page.url()).pathname === "/slps" && await page.locator("#page-today").isVisible() && errors.length === 0, page.url());
     } finally {
       await context.close();
     }
