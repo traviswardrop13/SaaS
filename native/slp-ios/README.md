@@ -32,6 +32,10 @@ steps. The Xcode project (`ios/`) is made on a Mac and never committed.
   keeps report, block and delete for posts made before).
 - **Plan activities** sends the text a clinician types to Anthropic to write
   activity ideas; the page asks them not to type a child's name.
+- **Share with family** opens the iOS share sheet with the existing invite
+  message. The clinician chooses the recipient and delivery app. Today
+  shows invite creation, joining, and the first shared practice from the
+  caseload. A family has to opt into sharing before practice can appear.
 
 ## Build it on the Mac (one time)
 
@@ -53,6 +57,9 @@ steps. The Xcode project (`ios/`) is made on a Mac and never committed.
    - the top of every screen sits below the clock and the camera (the web
      view is inset for them: `contentInset: automatic`);
    - Settings › Your data › "Share CSV" opens the share sheet;
+   - Add a family and Add a child show "Share with family" on their result
+     screens. Dismissing the share sheet leaves Copy message available.
+   - Today shows Family progress after the caseload loads.
    - airplane mode: the "Can't reach Sona" page, and Try again works.
 
 ## App Store Connect
@@ -83,15 +90,13 @@ steps. The Xcode project (`ios/`) is made on a Mac and never committed.
    in with a code sent to their email. The app sells nothing: there are no
    purchases, prices or links to purchase. Plan activities writes in-session
    activity ideas with AI from a short description the clinician types.
+   The family invite opens the iOS share sheet, and Today shows the stages
+   of an invite and whether a consenting family has shared practice.
    Settings › Delete your account deletes the account and its data."
 
 ## Known and left
 
-- **Apple's "minimum functionality" rule (4.2):** an app that shows a website
-  can be refused as "a repackaged website". The family app passed with
-  native parts (the microphone, notifications); this one has none yet. If
-  review refuses it, the usual fix is one native feature (for example, a
-  notification when a child practices); that is a next step, not built.
+- Apple evaluates the complete iPhone experience under its minimum
+  functionality guideline (4.2), including the native share sheet.
 - A clinician whose paid plan still renews cannot delete the account until the
   plan is cancelled (on the website: Sona Pro › Manage billing), or by email.
-- Nothing here is Rachel's: the dashboard's words and rules are unchanged.

@@ -403,6 +403,8 @@ if (AP) {
     cfg.server && cfg.server.url === "https://www.speaksona.com" && cfg.server.appStartPath === "/slp.html" && cfg.server.cleartext === false &&
     JSON.stringify(cfg.server.allowNavigation) === JSON.stringify(["speaksona.com", "www.speaksona.com"]) && existsSync(path.join(APP, "native/slp-ios/www", cfg.server.errorPath)), cfg);
   ok("the family app's shell does not carry the word", !/SonaSLPApp/.test(read("capacitor.config.json")));
+  ok("the app ships its local start file because Capacitor checks it before loading the live dashboard",
+    !!cfg.server?.appStartPath && existsSync(path.join(APP, "native/slp-ios/www", cfg.server.appStartPath)));
   ok("its icon is a 1024 square with no transparency (App Store Connect refuses one with)", (() => { const b = readFileSync(path.join(APP, "native/slp-ios/assets/icon-1024.png")); return b.readUInt32BE(16) === 1024 && b.readUInt32BE(20) === 1024 && b[25] === 2; })());
   ok("the iOS project itself is never committed", /^\/ios$/m.test(read("native/slp-ios/.gitignore")));
 }
@@ -433,6 +435,10 @@ const server = createServer((req, res) => {
       if (url.pathname === "/api/slp/account" && req.method === "DELETE") return json(j.confirm === ACCOUNT.email ? { ok: true, deleted: true } : { ok: false, error: "Type your account's email to confirm." }, j.confirm === ACCOUNT.email ? 200 : 400);
       if (url.pathname === "/api/slp/plan" && req.method === "GET") return json(PLAN);
       if (url.pathname === "/api/slp" && req.method === "GET") return json({ ok: true, configured: true, kids: DATA.kids, invites: DATA.invites });
+      if (req.method === "POST" && url.pathname === "/api/slp/family") return json({
+        ok: true, user: "comet1234", password: "sample-password", emailed: false,
+        link: "https://www.speaksona.com/join.html?inv=synthetic-family",
+      });
       if (url.pathname === "/api/slp/community" && req.method === "GET") return json(COMMUNITY);
       return json({ ok: true });
     }
@@ -448,11 +454,19 @@ const browser = await chromium.launch(launchOpts());
 async function open(url, o = {}) {
   const context = await browser.newContext({ viewport: o.viewport || { width: 390, height: 844 }, deviceScaleFactor: 1, ...(o.app === false ? {} : { userAgent: APP_UA }) });
   await context.route("**/*", (r) => r.request().url().startsWith(BASE + "/") ? r.continue() : r.abort());
-  await context.addInitScript((native) => {
+  await context.addInitScript(({ native, share }) => {
     if (native) window.Capacitor = { isNativePlatform: () => true };
+    if (native && share) {
+      window.__shared = [];
+      window.Capacitor.getPlatform = () => "ios";
+      window.Capacitor.Plugins = { Share: { share: (payload) => {
+        window.__shared.push(payload);
+        return Promise.reject(new Error("Share canceled"));
+      } } };
+    }
     window.__copied = []; window.confirm = () => true;
     try { Object.defineProperty(navigator, "clipboard", { value: { writeText: (s) => (window.__copied.push(s), Promise.resolve()) } }); } catch (e) {}
-  }, o.native !== false);
+  }, { native: o.native !== false, share: o.share === true });
   const page = await context.newPage(), errors = [];
   page.setDefaultTimeout(4000); page.on("pageerror", (e) => errors.push(e.message));
   await page.goto(BASE + url, { waitUntil: "domcontentloaded" });
@@ -537,6 +551,98 @@ try {
       await context.close();
     });
   }
+
+  await section("iPhone shares the existing family invite", async () => {
+    const { context, page, errors } = await open("/slp.html#today", { share: true });
+    try {
+      await page.waitForFunction(() => document.getElementById("sidebarName").textContent === "Rachel K");
+      await page.locator("#addFamilyTop").click();
+      await page.locator("#famEmail").fill("parent@example.com");
+      await page.locator("#famGo").click();
+      await page.locator("#famDone").waitFor({ state: "visible" });
+      const button = page.locator("#famShare");
+      const visible = await button.isVisible();
+      ok("the iPhone offers Share with family and keeps Copy message", visible && await page.locator("#famCopy").isVisible());
+      if (!visible) return;
+      ok("the native share action takes the place of the Text it link", !await page.locator("#famText").isVisible());
+      const exactMessage = await page.locator("#famMsg").inputValue();
+      await button.click();
+      const result = await page.evaluate(() => ({ shared: window.__shared, copied: window.__copied }));
+      ok("the share sheet receives the existing message exactly once", result.shared.length === 1 && result.shared[0].text === exactMessage && !result.shared[0].url);
+      ok("dismissing the share sheet copies nothing and leaves the message available", result.copied.length === 0 &&
+        await button.isEnabled() && await page.locator("#famMsg").inputValue() === exactMessage && errors.length === 0);
+    } finally {
+      await context.close();
+    }
+  });
+
+  await section("family progress on the iPhone Today page", async () => {
+    const observedAt = new Date(Date.now() - 86400000).toISOString();
+    const expiresAt = new Date(Date.now() + 86400000).toISOString();
+    const day = observedAt.slice(0, 10);
+    const consented = { synced: true, consentAt: observedAt, at: observedAt };
+    DATA = {
+      invites: [
+        { token: "inviteastest", label: "AB", createdAt: observedAt, expiresAt },
+        { token: "invitebstest", label: "CD", createdAt: observedAt, expiresAt },
+        { token: "invitectest", label: "EF", createdAt: observedAt, expiresAt },
+        { token: "invitedtest", label: "Expired", createdAt: observedAt, expiresAt: observedAt },
+        { token: "inviteetest", label: "Claimed", createdAt: observedAt, expiresAt, claimedBy: "claimed" },
+      ],
+      kids: [
+        { childId: "claimed", synced: false, child: "Private claim name", meta: { joinedAt: observedAt } },
+        { ...consented, childId: "enrolled", child: "No practice yet", sessions: 7, best: 90, outcomes: { S: { attempts: 0, lastAt: day } } },
+        { ...consented, childId: "attempt", child: "<b>Practice name</b>", outcomes: { S: { attempts: 1, passes: 0 } } },
+        { ...consented, childId: "homework", child: "Homework attempt", hw: { status: "active", hw: null, days: { [day]: 1 } } },
+        { childId: "old", synced: true, at: observedAt, child: "Unconfirmed family", outcomes: { S: { attempts: 5 } } },
+        { ...consented, childId: "archived", child: "Archived family", meta: { archived: true }, outcomes: { S: { attempts: 8 } } },
+      ],
+    };
+    const { context, page, errors } = await open("/slp.html#today", { viewport: { width: 320, height: 568 } });
+    try {
+      await page.locator("#todayBody > .card").first().waitFor({ state: "visible" });
+      const card = page.locator("#slpIphoneProgress");
+      const present = await card.isVisible();
+      ok("the iPhone Today page shows the family progress card", present);
+      if (!present) return;
+
+      const totals = card.locator(".slp-progress-counts strong");
+      ok("counts reflect pending creation, consented joining and positive shared practice",
+        JSON.stringify(await totals.allTextContents()) === '["3","2","2"]', await totals.allTextContents());
+      const rows = card.locator(".slp-progress-rows li");
+      const labels = await rows.locator(".slp-progress-label").allTextContents();
+      ok("the preview has five rows across all three statuses",
+        labels.join("|") === "Invite created|Invite created|Joined|Joined|First practice", labels);
+      ok("claim alone shows a generic family and a caseload link",
+        await rows.nth(2).locator("a").textContent() === "New family" &&
+        await rows.nth(2).locator("a").getAttribute("href") === "#caseload");
+      ok("the first practice row links to its child and escapes shared display text",
+        await rows.nth(4).locator("a").getAttribute("href") === "#child/attempt" &&
+        await rows.nth(4).locator("a").textContent() === "<b>Practice name</b>" &&
+        await rows.nth(4).locator("b").count() === 0);
+      const text = await card.innerText();
+      ok("the progress card shows no invented send, expired invite or unshared name",
+        !/\bSent\b|Expired|Claimed|Private claim|Unconfirmed family|Archived family/.test(text), text);
+      ok("the progress card fits a 320px viewport",
+        await card.evaluate((el) => el.scrollWidth <= el.clientWidth + 1 && el.getBoundingClientRect().right <= innerWidth));
+      DATA.kids = DATA.kids.filter((child) => child.childId !== "attempt");
+      await page.locator("#todayRefresh").click();
+      await page.waitForFunction(() => document.querySelector("#slpIphoneProgress .slp-progress-counts li:last-child strong")?.textContent === "1");
+      ok("refresh removes a child gone from the authenticated roster and renders one card",
+        await card.count() === 1 && !/Practice name/.test(await card.innerText()));
+      ok("family progress renders with no page errors", errors.length === 0, errors);
+    } finally {
+      await context.close();
+    }
+
+    const web = await open("/slp.html#today", { app: false, native: false });
+    try {
+      await web.page.locator("#todayBody > .card").first().waitFor({ state: "visible" });
+      ok("browser Today keeps its existing view", await web.page.locator("#slpIphoneProgress").count() === 0);
+    } finally {
+      await web.context.close();
+    }
+  });
 
   await section("the dashboard on the web still sells", async () => {
     const { context, page } = await open("/slp.html#today", { app: false, native: false, viewport: { width: 1280, height: 1000 } });
