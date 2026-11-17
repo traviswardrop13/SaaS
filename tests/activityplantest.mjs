@@ -182,7 +182,7 @@ const PORT = 8423;
 const slpSrc = read("tests/slptest.mjs");
 const fixture = () => runInNewContext(slpSrc.slice(slpSrc.indexOf("const day ="), slpSrc.indexOf("// ── mock API:")) + "\nfixture();", { Date });
 const ACCOUNT = { ok: true, email: "rachel@example.com", code: "rachel-k4", familyKey: "ABCD2345", name: "Rachel K", clinic: "Bright Steps", onboarded: true };
-let posts = [], answer = null, noCode = false;
+let posts = [], answer = null, noCode = false, slow = 0;
 const MIME = { html: "text/html", js: "text/javascript", css: "text/css", svg: "image/svg+xml", png: "image/png", webp: "image/webp", jpg: "image/jpeg" };
 const server = createServer((req, res) => {
   const u = new URL(req.url, "http://x"); let body = "";
@@ -194,7 +194,7 @@ const server = createServer((req, res) => {
       if (req.method !== "GET") posts.push({ path: u.pathname, body: b, raw: body });
       if (u.pathname === "/api/slp/auth/me") return json(noCode ? { ...ACCOUNT, code: "", familyKey: "", onboarded: false } : ACCOUNT);
       if (u.pathname === "/api/slp") return json({ ok: true, configured: true, kids: fixture().kids, invites: [] });
-      if (u.pathname === "/api/slp/activities") { const a = answer || { status: 200, body: { ok: true, activities: [act(1), act(2), act(3)] } }; return json(a.body, a.status); }
+      if (u.pathname === "/api/slp/activities") { const a = answer || { status: 200, body: { ok: true, activities: [act(1), act(2), act(3)] } }; return setTimeout(() => json(a.body, a.status), slow); }
       return json({ ok: true });
     }
     const p = u.pathname === "/slp.html" ? ROOT + "/slp.html" : ROOT + u.pathname;
@@ -226,11 +226,29 @@ try {
     ok("…and, in plain sight under it, the name warning and where the text goes", st.note === "Don't type a child's name. What you type is sent to our AI provider (Anthropic) to write the ideas." && await page.locator("#planNote").isVisible(), st.note);
     await page.click("#planGo"); await page.waitForTimeout(100);
     ok("an empty box sends nothing and says what to do", asked().length === 0 && /Describe the child and the session first/.test(await page.locator("#planErr").innerText()));
+    // "a little more life" (Travis, 17 Nov 2026): Echo and examples that fill the box, never a name
+    const ex = await page.evaluate(() => ({ idle: !document.getElementById("planIdle").hidden, echo: document.querySelector("#planIdle img").getAttribute("src"), alt: document.querySelector("#planIdle img").getAttribute("alt"),
+      chips: [...document.querySelectorAll("#planExamples .plan-example")].map((b) => b.textContent.trim()) }));
+    ok("before any ideas: Echo and four examples, each an age, an interest and a target, never a name",
+      ex.idle && ex.echo === "/assets/brand/echo-logo.webp" && ex.alt === "" && ex.chips.length === 4 && ex.chips.every((c) => /^An? \d-year-old who loves \w+, /.test(c)) && !ex.chips.some((c) => /Mia|Leo|Ava|Sam|Zoe/.test(c)), ex);
+    await page.locator("#planExamples .plan-example").first().click();
+    ok("…a tap on one fills the box (and the counter) and sends nothing", (await page.inputValue("#planText")) === ex.chips[0] + "." && (await page.locator("#planCount").textContent()) === (ex.chips[0].length + 1) + "/600" && asked().length === 0);
     await page.fill("#planText", TEXT);
     ok("the counter follows the typing", (await page.locator("#planCount").textContent()) === TEXT.length + "/600");
-    await page.click("#planGo");
-    await page.waitForSelector("#planResult:not([hidden])");
+    slow = 700; await page.click("#planGo"); await page.waitForTimeout(150);
+    const wait = await page.evaluate(() => ({ wait: !document.getElementById("planWait").hidden, role: document.getElementById("planWait").getAttribute("role"), text: document.getElementById("planWait").innerText,
+      idle: !document.getElementById("planIdle").hidden, anim: getComputedStyle(document.querySelector("#planWait .plan-echo")).animationName }));
+    ok("while the AI works, Echo bobs in their place and says so", wait.wait && wait.role === "status" && /Echo is thinking up ideas…/.test(wait.text) && !wait.idle && wait.anim === "echoBob", wait);
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    ok("…and holds still under Reduce Motion", (await page.evaluate(() => getComputedStyle(document.querySelector("#planWait .plan-echo")).animationName)) === "none");
+    await page.emulateMedia({ reducedMotion: "no-preference" });
+    await page.waitForSelector("#planResult:not([hidden])"); slow = 0;
     ok("it posts ONE request carrying only { text }", asked().length === 1 && asked()[0].raw === JSON.stringify({ text: TEXT }), asked());
+    const look = await page.evaluate(() => ({ wait: !document.getElementById("planWait").hidden, idle: !document.getElementById("planIdle").hidden,
+      nums: [...document.querySelectorAll("#planActs .act-num")].map((n) => n.textContent + (n.getAttribute("aria-hidden") === "true" ? "" : "!")),
+      tops: [...document.querySelectorAll("#planActs .act")].map((c) => getComputedStyle(c).borderTopColor) }));
+    ok("…then three cards, numbered 1 to 3, each with its own colour on top (teal, yellow, coral), and Echo steps aside",
+      !look.wait && !look.idle && look.nums.join() === "1,2,3" && JSON.stringify(look.tops) === JSON.stringify(["rgb(14, 124, 134)", "rgb(255, 201, 60)", "rgb(242, 85, 90)"]), look);
     const cards = await page.locator("#planActs .act").count();
     const first = await page.locator("#planActs .act").first().innerText();
     ok("three activity cards: name, You'll need, How it goes as numbered steps, Make it easier and Make it harder",
@@ -244,7 +262,7 @@ try {
     answer = { status: 502, body: { ok: false, error: "Couldn't make activities. Try again or reword it." } };
     await page.click("#planGo"); await page.waitForTimeout(300);
     ok("a failure says so in plain words, offers Try again, and keeps the box and the last ideas", /Couldn't make activities\. Try again or reword it\./.test(await page.locator("#planErr").innerText()) && await page.locator("#planRetry").isVisible() &&
-      (await page.inputValue("#planText")) === TEXT && (await page.locator("#planActs .act").count()) === 3 && !(await page.locator("#planGo").isDisabled()));
+      (await page.inputValue("#planText")) === TEXT && (await page.locator("#planActs .act").count()) === 3 && await page.locator("#planResult").isVisible() && await page.locator("#planWait").isHidden() && !(await page.locator("#planGo").isDisabled()));
     answer = null; await page.click("#planRetry"); await page.waitForTimeout(300);
     ok("…and Try again asks once more and clears the error", asked().length === 4 && !(await page.locator("#planRetry").isVisible()) && !(await page.locator("#planErrText").textContent()));
     // the caseload, as a starting point: an age and a target, never a name

@@ -491,6 +491,18 @@ async function open(hash) {
   const WHITE = "rgb(255, 255, 255)", CLEAR = "rgba(0, 0, 0, 0)";
   ok("the look is white: the page, the sidebar and every Today card (the week's summary too)", look.body === WHITE && look.side === WHITE && look.cards.length >= 4 && look.cards.every((c) => c === WHITE), JSON.stringify(look));
   ok("…with no coloured tile behind a menu icon, no mascot or eyebrow in a heading, and one neutral avatar colour", look.tiles.every((c) => c === CLEAR) && look.mascots === 0 && look.avatars.length === 1, JSON.stringify(look));
+  // "a little more life" (Travis, same day): the real logo top left, a teal
+  // bar on the lit menu item, and a greeting with the clinician's OWN name.
+  const life = await pg.evaluate(() => {
+    const logo = document.querySelector(".sidebar .brand img"), bar = document.querySelector(".mobile-bar .brand img");
+    const lit = getComputedStyle(document.querySelector('.nav-item[data-page="today"]'), "::before");
+    return { side: logo.getAttribute("src"), sideAlt: logo.getAttribute("alt"), h: logo.getBoundingClientRect().height, loaded: logo.complete && logo.naturalWidth > 0,
+      bar: bar.getAttribute("src"), barAlt: bar.getAttribute("alt"), litBar: lit.content !== "none" && lit.backgroundColor, hi: document.getElementById("todayHi").textContent };
+  });
+  ok("the logo top left is Echo's own (alt empty beside the word Sona), about 38 px tall, in the sidebar and the phone bar",
+    life.side === "/assets/brand/echo-logo.webp" && life.sideAlt === "" && life.h >= 34 && life.h <= 42 && life.loaded && life.bar === life.side && life.barAlt === "", JSON.stringify(life));
+  ok("…the lit menu item carries a teal bar", life.litBar === "rgb(14, 124, 134)", JSON.stringify(life));
+  ok("…and Today greets the clinician by their own first name, never a child's", /^Good (morning|afternoon|evening), Rachel$/.test(life.hi), life.hi);
   ok("no page errors", errs.length === 0, errs.join(" | "));
   await ctx.close();
 }

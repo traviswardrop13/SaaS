@@ -71,9 +71,16 @@
        mascots in headings, no coloured avatars or status colours: a missed
        homework is the one muted red. The old variable names stay, because
        the script below paints with a few of them (--muted, --pink,
-       --green-d, --line). */
+       --green-d, --line).
+       A little life (Travis, same day: "add our actual logo top left ... and
+       we can add a little more life to the interface"): Echo's own logo top
+       left, and his yellow, coral and light blue as small accents only (the
+       planner's examples and thinking Echo, the activity cards' numbers and
+       top edges). Never a background of a whole surface, and never colour
+       that says how a child is doing. */
     :root {
       --accent: #0e7c86; --accent-d: #0b646c; --accent-bg: #eef6f7;
+      --sun: #ffc93c; --coral: #f2555a; --sky-bg: #eefbfd;
       --blue: var(--accent); --blue-d: var(--accent-d); --blue-bg: var(--accent-bg);
       --green: var(--accent); --green-d: var(--accent-d); --green-bg: var(--accent-bg);
       --ink: #1f2328; --ink-2: #374151; --muted: #6b7280; --faint: #9ca3af;
@@ -99,14 +106,16 @@
     /* ── Sidebar ─────────────────────────────────── */
     .sidebar { width:var(--sidebar-w); min-height:100vh; min-height:100dvh; background:#fff; border-right:1px solid var(--line);
       display:flex; flex-direction:column; position:fixed; left:0; top:0; bottom:0; z-index:90; padding:16px 12px 0; transition:transform .2s ease; }
-    .sidebar .brand { display:flex; align-items:center; gap:9px; padding:4px 10px 22px; font-weight:650; font-size:17px; color:var(--ink); letter-spacing:-.01em; }
-    .sidebar .brand img { width:26px; height:26px; }
+    .sidebar .brand { display:flex; align-items:center; gap:10px; padding:2px 10px 20px; font-weight:650; font-size:17px; color:var(--ink); letter-spacing:-.01em; }
+    .sidebar .brand img { width:auto; height:38px; flex-shrink:0; }
     .sidebar .brand small { font-size:12px; font-weight:500; color:var(--muted); }
     .sidebar nav { flex:1; display:flex; flex-direction:column; gap:2px; }
     .nav-item { display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:8px; font-size:14px; font-weight:500; color:var(--ink-2); text-decoration:none; min-height:38px; }
     .nav-item .icon { width:20px; display:flex; justify-content:center; color:var(--faint); }
     .nav-item:hover { background:var(--subtle); color:var(--ink); }
+    .nav-item { position:relative; }
     .nav-item.active { background:var(--accent-bg); color:var(--accent-d); font-weight:600; }
+    .nav-item.active::before { content:""; position:absolute; left:-12px; top:7px; bottom:7px; width:3px; border-radius:0 3px 3px 0; background:var(--accent); }
     .nav-item.active .icon { color:var(--accent); }
     .nav-item .badge { margin-left:auto; font-size:12px; font-weight:500; color:var(--muted); font-variant-numeric:tabular-nums; }
     .nav-item .badge.warn { background:var(--ink); color:#fff; border:0; border-radius:99px; margin-top:0; padding:0 7px; font-size:11px; font-weight:600; line-height:18px; }
@@ -122,7 +131,7 @@
     /* ── Mobile bar ──────────────────────────────── */
     .mobile-bar { display:none; position:fixed; top:0; left:0; right:0; z-index:80; height:56px; background:#fff; border-bottom:1px solid var(--line); padding:8px 16px; align-items:center; justify-content:space-between; }
     .mobile-bar .brand { display:flex; align-items:center; gap:8px; font-weight:650; font-size:16px; color:var(--ink); }
-    .mobile-bar .brand img { width:24px; height:24px; }
+    .mobile-bar .brand img { width:auto; height:34px; }
     .hamburger { display:grid; place-items:center; width:40px; height:40px; background:#fff; border:1px solid var(--line-2); border-radius:8px; font-size:18px; cursor:pointer; color:var(--ink); }
     .overlay { display:none; position:fixed; inset:0; background:rgba(17,24,39,.3); z-index:85; }
 
@@ -167,16 +176,19 @@
     .ok { color:var(--accent-d); }
 
     /* ── Buttons: one primary (teal), the rest outline ── */
-    .btn { display:inline-flex; align-items:center; justify-content:center; gap:7px; border:1px solid var(--accent); border-radius:8px; padding:8px 14px; min-height:38px;
-      font-size:14px; font-weight:500; color:#fff; background:var(--accent); cursor:pointer; white-space:nowrap; text-decoration:none; transition:background .12s, border-color .12s; }
-    .btn:hover { background:var(--accent-d); border-color:var(--accent-d); }
+    .btn { display:inline-flex; align-items:center; justify-content:center; gap:7px; border:1px solid var(--accent-d); border-radius:8px; padding:8px 14px; min-height:38px;
+      font-size:14px; font-weight:550; color:#fff; background:var(--accent) linear-gradient(180deg,#0f8691 0%,#0b6d76 100%); cursor:pointer; white-space:nowrap; text-decoration:none;
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.18), 0 1px 2px rgba(11,100,108,.28); transition:background .12s, border-color .12s, box-shadow .12s, transform .08s; }
+    .btn:hover { background:var(--accent-d) linear-gradient(180deg,#0c7680 0%,#095c64 100%); border-color:#095c64; }
+    .btn:active:not(:disabled) { transform:translateY(1px); box-shadow:inset 0 2px 3px rgba(0,0,0,.18); }
     .btn:disabled { opacity:.5; cursor:default; }
-    .btn.ghost { background:#fff; color:var(--ink); border-color:var(--line-2); }
+    .btn.ghost { background:#fff; color:var(--ink); border-color:var(--line-2); box-shadow:0 1px 1px rgba(17,24,39,.04); }
     .btn.ghost:hover { background:var(--subtle); }
-    .btn.danger { background:#fff; color:var(--danger); border-color:#f0d0cc; }
+    .btn.ghost:active:not(:disabled) { box-shadow:inset 0 1px 2px rgba(17,24,39,.08); }
+    .btn.danger { background:#fff; color:var(--danger); border-color:#f0d0cc; box-shadow:none; }
     .btn.danger:hover { background:var(--danger-bg); }
     .btn.sm { min-height:32px; padding:5px 10px; font-size:13px; }
-    .premium-top { background:#fff; color:var(--ink); border-color:var(--line-2); text-align:left; }
+    .premium-top { background:#fff; color:var(--ink); border-color:var(--line-2); text-align:left; box-shadow:0 1px 1px rgba(17,24,39,.04); }
     .premium-top:hover { background:var(--subtle); }
     .premium-top span { line-height:1.2; }
     .premium-top small { display:block; font-size:11px; font-weight:400; }
@@ -199,7 +211,7 @@
     .summary-copy { flex:1; min-width:200px; }
     .summary-label { font-size:13px; color:var(--muted); }
     .summary-title { font-size:16px; color:var(--ink); margin-top:4px; line-height:1.4; }
-    .summary-big { font-size:34px; line-height:1; font-weight:650; letter-spacing:-.02em; margin-right:2px; font-variant-numeric:tabular-nums; }
+    .summary-big { font-size:34px; line-height:1; font-weight:650; letter-spacing:-.02em; margin-right:2px; font-variant-numeric:tabular-nums; color:var(--accent-d); }
     .summary-link { font-size:13px; text-decoration:none; white-space:nowrap; }
     .group-quiet { grid-column:1; grid-row:2; }
     .group-hw { grid-column:1; grid-row:3; }
@@ -341,9 +353,31 @@
     .plan-go { margin-top:14px; }
     .plan-form .err { min-height:0; }
     .plan-form .err:has(#planErrText:empty) { margin-top:0; }
+    .plan-idle, .plan-wait { display:flex; align-items:center; gap:18px; margin-top:20px; padding:20px 22px; border:1px solid var(--line); border-radius:12px;
+      background:linear-gradient(120deg, var(--sky-bg) 0%, #fff 55%); }
+    .plan-idle { display:grid; grid-template-columns:auto minmax(0,1fr); gap:0 18px; }
+    .plan-idle .plan-echo { grid-row:1 / 3; }
+    .plan-idle .plan-examples { grid-column:2; }
+    .plan-echo { width:64px; height:auto; flex-shrink:0; }
+    .plan-idle h2 { font-size:16px; font-weight:600; }
+    .plan-idle p { font-size:13px; color:var(--muted); margin-top:3px; }
+    .plan-examples { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+    .plan-example { border:1px solid var(--line-2); background:#fff; color:var(--ink-2); border-radius:18px; padding:7px 13px; min-height:36px; font-size:13px; line-height:1.3; text-align:left; cursor:pointer; transition:border-color .12s, background .12s, color .12s; }
+    .plan-example:hover { border-color:var(--accent); background:var(--accent-bg); color:var(--accent-d); }
+    .plan-wait p { font-size:15px; font-weight:550; color:var(--ink); }
+    .plan-wait p.sub { font-size:13px; font-weight:400; color:var(--muted); margin-top:2px; }
+    @keyframes echoBob { 0%,100% { transform:translateY(0) rotate(-2deg); } 50% { transform:translateY(-6px) rotate(2deg); } }
+    @media (prefers-reduced-motion: no-preference) { .plan-wait .plan-echo { animation:echoBob 1.4s ease-in-out infinite; } }
     .acts { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; margin-top:4px; }
-    .act { margin:0; display:flex; flex-direction:column; }
-    .act h3 { font-size:16px; font-weight:600; line-height:1.35; }
+    .act { margin:0; display:flex; flex-direction:column; border-top:3px solid var(--act, var(--accent)); box-shadow:0 1px 2px rgba(17,24,39,.04); transition:box-shadow .15s, transform .15s; }
+    .act:hover { box-shadow:0 8px 22px rgba(17,24,39,.08); }
+    @media (prefers-reduced-motion: no-preference) { .act:hover { transform:translateY(-2px); } }
+    .act-1 { --act:var(--accent); --act-ink:#fff; }
+    .act-2 { --act:var(--sun); --act-ink:var(--ink); }
+    .act-3 { --act:var(--coral); --act-ink:var(--ink); }
+    .act-top { display:flex; align-items:flex-start; gap:10px; }
+    .act-num { width:26px; height:26px; border-radius:50%; background:var(--act); color:var(--act-ink); display:grid; place-items:center; font-size:13px; font-weight:650; flex-shrink:0; }
+    .act h3 { font-size:16px; font-weight:600; line-height:1.35; padding-top:2px; }
     .act-label { font-size:12px; font-weight:500; color:var(--muted); margin-top:14px; }
     .act p { font-size:14px; line-height:1.55; margin-top:3px; }
     .act ol { margin:4px 0 0 18px; font-size:14px; line-height:1.55; }
@@ -479,6 +513,11 @@
       .set-plan { flex-direction:column; align-items:stretch; }
       .plan-from > div { max-width:none; }
       #planResult { scroll-margin-top:68px; }
+      .plan-idle, .plan-wait { gap:14px; padding:16px; }
+      .plan-idle { gap:0 14px; }
+      .plan-idle .plan-echo { grid-row:1; }
+      .plan-idle .plan-examples { grid-column:1 / -1; }
+      .plan-echo { width:48px; }
       .fam-row { flex-wrap:wrap; } .fam-row > div { flex-basis:100%; } .fam-row > .fam-age { flex:1 1 100%; }
     }
     @media (max-width:420px) { .attn > .btn { max-width:140px; white-space:normal; text-align:center; } .app-actions .btn .ui-icon { display:none; } .app-actions .btn { white-space:normal; text-align:center; } }
@@ -496,7 +535,7 @@
   <a class="skip-link" href="#mainContent">Skip to content</a>
   <!-- Mobile bar -->
   <div class="mobile-bar">
-    <div class="brand"><img src="/coach/echo/echo-avatar.svg" alt="" width="24" height="24"/> Sona</div>
+    <div class="brand"><img src="/assets/brand/echo-logo.webp" alt="" width="34" height="35"/> Sona</div>
     <button class="hamburger" id="menuBtn" aria-label="Open navigation" aria-expanded="false" aria-controls="sidebar">☰</button>
   </div>
   <div class="overlay" id="overlay"></div>
@@ -506,7 +545,7 @@
        dashboard (their server routes stay: account deletion still reads the
        community); Talk to Rachel is a link in Settings. -->
   <aside class="sidebar" id="sidebar">
-    <div class="brand"><img src="/coach/echo/echo-avatar.svg" alt="" width="26" height="26"/> Sona <small>for SLPs</small></div>
+    <div class="brand"><img src="/assets/brand/echo-logo.webp" alt="" width="38" height="39"/> Sona <small>for SLPs</small></div>
     <nav aria-label="Main navigation">
       <a class="nav-item active" data-page="plan" href="#plan"><span class="icon"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5l1.9 4.6 4.6 1.9-4.6 1.9L12 16.5l-1.9-4.6L5.5 10l4.6-1.9Z"/><path d="M18.5 15.5l.8 1.9 1.9.8-1.9.8-.8 1.9-.8-1.9-1.9-.8 1.9-.8Z"/></svg></span> Plan activities</a>
       <a class="nav-item" data-page="today" href="#today"><span class="icon"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M16 3v4M8 3v4M3 11h18m-12 5 2 2 4-4"/></svg></span> Today <span class="badge warn" id="attnCount" style="display:none;">0</span></a>
@@ -786,6 +825,24 @@
           <p class="ai-note" id="planNote"><span><b>Don't type a child's name.</b> What you type is sent to our AI provider (Anthropic) to write the ideas.</span></p>
           <div class="row plan-go"><button class="btn" id="planGo" type="button">Make activities</button></div>
           <div class="err" id="planErr" role="alert"><span id="planErrText"></span> <button class="feedback-shortcut" id="planRetry" type="button" hidden>Try again</button></div>
+        </div>
+        <!-- Before the first ideas: Echo and a few examples that fill the box
+             (Travis: "a little more life"). Ages, interests and targets only,
+             never a name. While the AI works: Echo bobs (still under Reduce
+             Motion) and says so; the last ideas come back if it fails. -->
+        <section class="plan-idle" id="planIdle" aria-labelledby="planIdleHeading">
+          <img class="plan-echo" src="/assets/brand/echo-logo.webp" alt="" width="64" height="65"/>
+          <div><h2 id="planIdleHeading">Not sure where to start?</h2><p>Tap an example to fill the box, then make it yours.</p></div>
+          <div class="plan-examples" id="planExamples">
+            <button class="plan-example" type="button">A 4-year-old who loves trucks, working on K</button>
+            <button class="plan-example" type="button">A 7-year-old who loves Minecraft, R at the start of words, 30 min</button>
+            <button class="plan-example" type="button">A 5-year-old who loves animals, S blends</button>
+            <button class="plan-example" type="button">A 9-year-old who loves soccer, SH in sentences, small group</button>
+          </div>
+        </section>
+        <div class="plan-wait" id="planWait" role="status" hidden>
+          <img class="plan-echo" src="/assets/brand/echo-logo.webp" alt="" width="64" height="65"/>
+          <div><p>Echo is thinking up ideas…</p><p class="sub">This takes a few seconds.</p></div>
         </div>
         <section id="planResult" aria-labelledby="planActsHeading" hidden>
           <div class="acts-head"><h2 id="planActsHeading">Activities</h2><div class="spacer"></div><button class="btn ghost sm" id="planCopy" type="button">Copy all</button><button class="btn ghost sm" id="planAgain" type="button">New ideas</button></div>
@@ -1259,8 +1316,19 @@
     function person(k,target){var n=k.d.name||"Child";return '<div class="person"><span class="person-avatar" aria-hidden="true">'+esc(n.charAt(0))+'</span><div class="person-info">'+kidLink(k)+target+'</div></div>';}
     function practiceDots(k){var days=practiceDays(k), html='<span class="week-dots" aria-hidden="true">';for(var n=6;n>=0;n--){html+='<i class="week-dot'+(days[addDays(isoToday(),-n)]?' practiced':'')+'"></i>';}return html+'</span>';}
     function kidLink(k){return '<a class="kidname" href="#child/'+encodeURIComponent(k.childId)+'">'+esc(k.d.name)+'</a>';}
+    // "Good morning, Rachel": the clinician's OWN first name, from their
+    // account, by the hour on this device. Never a child's name. A title
+    // ("Dr.", "Ms.") keeps the word after it.
+    function greeting(){
+      var h=new Date().getHours(), part=h<12?"Good morning":h<17?"Good afternoon":"Good evening";
+      var w=String((account&&account.name)||"").trim().split(/\s+/).filter(Boolean), first=w[0]||"";
+      if(/^(dr|mr|mrs|ms|mx|miss|prof)\.?$/i.test(first)&&w[1])first+=" "+w[1];
+      first=first.replace(/[,;:]+$/,"").slice(0,40);
+      return first?part+", "+first:part;
+    }
     function renderToday(){
       var live=KIDS.filter(function(k){return !k.d.archived;}), t=isoToday();
+      $("todayHi").textContent=greeting();
       $("todaySub").textContent=new Date().toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"});
       var host=$("todayBody"), html="", pending=INVITES.filter(function(i){return !i.claimedBy;});
       if(!LOADED){host.innerHTML="";return;}
@@ -2142,6 +2210,7 @@
       planCount();
     }
     $("planText").oninput=planCount;
+    [].forEach.call(document.querySelectorAll(".plan-example"),function(b){b.onclick=function(){$("planFrom").value="";planFill(b.textContent.trim()+".");};});
     $("planFrom").onchange=function(){var k=kidById(this.value);if(k)planFill(planSeed(k));};
     function planCopyText(){
       var out=["Activities","For: "+PLAN_LAST,""];
@@ -2155,13 +2224,13 @@
     }
     function renderActs(list){
       PLAN_ACTS=list;
-      $("planActs").innerHTML=list.map(function(a){
-        return '<article class="card act"><h3>'+esc(a.name)+'</h3>'+
+      $("planActs").innerHTML=list.map(function(a,i){
+        return '<article class="card act act-'+(i%3+1)+'"><div class="act-top"><span class="act-num" aria-hidden="true">'+(i+1)+'</span><h3>'+esc(a.name)+'</h3></div>'+
           '<div class="act-label">You\'ll need</div><p>'+esc(a.need)+'</p>'+
           '<div class="act-label">How it goes</div><ol>'+a.steps.map(function(st){return '<li>'+esc(st)+'</li>';}).join("")+'</ol>'+
           '<div class="act-adjust"><div><b>Make it easier:</b> '+esc(a.easier)+'</div><div><b>Make it harder:</b> '+esc(a.harder)+'</div></div></article>';
       }).join("");
-      $("planResult").hidden=false;
+      $("planResult").hidden=false;$("planIdle").hidden=true;
     }
     function planAsk(text){
       if(PLAN_BUSY_AI)return;
@@ -2172,7 +2241,9 @@
       if(named){planError("Take out “"+named+"” first: Sona doesn't send a child's name to the AI. Their age and what they love are plenty.",false);$("planText").focus();return;}
       var gen=++PLAN_GEN_AI;PLAN_BUSY_AI=true;PLAN_LAST=text;planError("",false);
       ["planGo","planAgain"].forEach(function(id){$(id).disabled=true;});$("planGo").textContent="Making activities…";$("planGo").setAttribute("aria-busy","true");
-      function done(){if(gen!==PLAN_GEN_AI)return;PLAN_BUSY_AI=false;["planGo","planAgain"].forEach(function(id){$(id).disabled=false;});$("planGo").textContent="Make activities";$("planGo").removeAttribute("aria-busy");}
+      $("planIdle").hidden=true;$("planResult").hidden=true;$("planWait").hidden=false;
+      function done(){if(gen!==PLAN_GEN_AI)return;PLAN_BUSY_AI=false;["planGo","planAgain"].forEach(function(id){$(id).disabled=false;});$("planGo").textContent="Make activities";$("planGo").removeAttribute("aria-busy");
+        $("planWait").hidden=true;$("planResult").hidden=!PLAN_ACTS.length;$("planIdle").hidden=!!PLAN_ACTS.length;}
       fetch("/api/slp/activities",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:text})}).then(answer).then(function(res){
         if(gen!==PLAN_GEN_AI)return;done();
         var j=res.j;

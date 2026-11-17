@@ -2236,7 +2236,16 @@ share". This supersedes the dashboard's look and menu described below.
   week's summary on Today is a plain card with a big number. The old CSS
   variable names stay (`--muted`, `--pink`, `--green-d`, `--line`): the
   script paints with them. `slptest` 11 pins the white, the menu and the
-  redirects.
+  redirects. **A little life, same day** (Travis: "add our actual logo top
+  left ... and we can add a little more life to the interface"): Echo's own
+  logo (`/assets/brand/echo-logo.webp`) top left in the sidebar, the phone
+  bar and the sign-in page; Echo's yellow, coral and light blue only as
+  small accents (the planner's example chips and Echo, Echo bobbing while
+  the AI thinks, still under Reduce Motion, the activity cards' numbers and
+  top edges in teal, yellow, coral); a teal bar on the lit menu item; a
+  deeper teal primary button that presses in; and Today's "Good morning,
+  <first name>", the clinician's own name from their account, never a
+  child's. The four examples are ages, interests and targets, never a name.
 - **Plan activities** (`#plan`; `lib/activityPlan.ts`,
   `/api/slp/activities`). One box, "About the child and session" (600
   characters, a counter), and under it, in plain sight: "Don't type a
