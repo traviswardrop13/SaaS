@@ -2339,6 +2339,63 @@ login is typed INTO the app. `lib/familyLogin.ts` holds the rules;
   same place on every screen, so a double tap on it moves one screen (under
   Get started it pushed the button up, and onboardingtest's double tap missed).
 
+### Sona for SLPs: the clinicians' own iPhone app (SLPAPP1, 16 Nov 2026)
+Travis: "start building the SLP dashboard mobile app"; asked, he chose **its
+own App Store app** and **never sell in the app** (this supersedes "The
+dashboard is phone-friendly web, no App Store yet" above for the app; the
+web dashboard is unchanged). `native/slp-ios/README.md` holds the Mac steps,
+App Store Connect and the review notes; `tests/slpapptest.mjs` pins it all.
+- **A second Capacitor shell** (`native/slp-ios/capacitor.config.json`,
+  `com.speaksona.slp`, "Sona for SLPs", Travis's to rename): it loads
+  `https://www.speaksona.com/slp.html` and adds **`SonaSLPApp/1`** to its user
+  agent. That word is the whole switch (`lib/slpApp.ts`): `slp.html` and
+  `slp-login.html` render there (the FAMILY app is still sent home from them),
+  and every other page goes to the dashboard (the middleware for `.html`,
+  `sona.js` first thing, and the two front pages' first script). It grants
+  nothing: anyone can send it, and it only changes which pages show. The
+  Xcode project is made on the Mac and never committed. The icon in
+  `native/slp-ios/assets/icon-1024.png` is a draft (Echo on the navy).
+- **It sells nothing.** Every price, offer, checkout and Manage billing door
+  in `slp.html` carries `data-sells`, hidden under `html.slp-app` (the nav's
+  Sona Pro, the top bar's offer, the whole plan page, Settings' Sona Pro card,
+  "With Sona Pro they get every game"); `#premium` opens Settings in the app.
+  A plan bought on the web still works there; nothing points to buying.
+- **Sign-in by a 6-digit code** (`lib/slpSignIn.ts`,
+  `/api/slp/auth/code`): the emailed link opens in Safari and an app keeps
+  its own cookies, so the sign-in email now carries six digits when the page
+  asks (`wantCode`; in the subject too). The code proves the inbox exactly as
+  the link does (they share `finishSignIn`, moved out of the verify route),
+  once, 15 minutes, five wrong tries, only a hash kept, 30 tries an hour per
+  IP; using either spends the other. The web sign-in page shows the code box
+  too. **The app's sign-in is the free-dashboard door** (the homepage's), so a
+  new account there gets the free dashboard and a locked Pro-era account
+  opens, as the homepage's link already did: nobody meets a lock they cannot
+  open in the app.
+- **App Review's sign-in:** `SLP_REVIEW_EMAIL` + `SLP_REVIEW_CODE` (6 digits)
+  in Vercel; only while both are set, that one address is emailed nothing and
+  its fixed code signs it in (free dashboard, `source: "app-review"`).
+- **Delete my account** (Settings, web and app; `lib/slpDelete.ts`,
+  `DELETE /api/slp/account` with the email typed back): deletes the account,
+  the caseload, homework, notes, invites, family logins, counters, plan
+  notes, messages, Premium links, community posts, replies and reports that
+  quote them, and the block list; ends every session; unsubscribes the
+  address. **The clinic code stays, closed for good** (`DELETED_CODE` in
+  `lib/roster.ts`): `/api/pilot` writes nothing to it, so a family phone still
+  holding a ticket never puts a child back, and nobody can claim it. **Refused
+  while a paid plan still renews** (cancel first, on the web, or email);
+  Stripe's records stay. Defaults Travis did not pick: the unsubscribe, and
+  the refusal over cancelling the plan for them. **GoHighLevel keeps the
+  contact** (back as the CRM since 15 Nov 2026, below): Sona only POSTs to
+  its webhook and can delete nothing there, so removing a deleted
+  clinician's contact in GoHighLevel is Travis's, by hand.
+- **Block in the community** (Apple's rule for posts people write): a member
+  is blocked by one of their posts or replies (the page never holds an id),
+  for that viewer alone, a year; "Show them again" clears it.
+- **For Travis:** build and submit from the Mac (`native/slp-ios/README.md`);
+  Apple may refuse a web-only app as "a repackaged website" (4.2), and the
+  fix is one native feature, not built; App Privacy answers. **Nothing here is
+  Rachel's**: no word a child or a family reads changed.
+
 ## The email list: Resend's contacts, and GoHighLevel again (Kit is gone)
 **GoHighLevel is back as the CRM, beside Resend** (Travis, 15 Nov 2026:
 speaksona.com stays on Vercel, "figure out how to get new leads to go into
