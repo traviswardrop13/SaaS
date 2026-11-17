@@ -86,7 +86,12 @@ export async function checkSignInCode(email: string, code: string): Promise<Code
   return { ok: true, stored: rec.p };
 }
 
-export type SignInResult = { ok: true; cookie: string; email: string } | { ok: false; err: "expired" | "store" };
+/**
+ * `fresh`: this sign-in made the account (TRIALGO1, 17 Nov 2026). A brand-new
+ * clinician on the web goes straight from the email to Stripe's card page for
+ * Sona Pro's free trial, with no stop on the locked dashboard first.
+ */
+export type SignInResult = { ok: true; cookie: string; email: string; fresh: boolean } | { ok: false; err: "expired" | "store" };
 
 /**
  * What the emailed link, or the code, has proved: the inbox is real. Make the
@@ -110,6 +115,7 @@ export async function finishSignIn(origin: string, stored: unknown): Promise<Sig
   const acctKey = "slpacct:" + email;
   let acct: Record<string, unknown> | null = null;
   let raw: unknown = null;
+  let fresh = false;
   try {
     raw = await kvCmd(["GET", acctKey]);
     if (raw) acct = JSON.parse(String(raw));
@@ -135,6 +141,7 @@ export async function finishSignIn(origin: string, stored: unknown): Promise<Sig
     const created = await kvCmd(["SET", acctKey, snapshot, "NX"]);
     if (created === "OK") {
       acct = newAccount;
+      fresh = true;
       // Every new account is made here now (13 Nov 2026: the sign-in page no
       // longer makes one before the inbox is proved), so the CRM hears of it
       // here, awaited, once the inbox is real.
@@ -166,5 +173,5 @@ export async function finishSignIn(origin: string, stored: unknown): Promise<Sig
     iat: now,
     exp: now + SESSION_MAX_AGE * 1000,
   });
-  return { ok: true, cookie: sessionCookie(session, SESSION_MAX_AGE), email };
+  return { ok: true, cookie: sessionCookie(session, SESSION_MAX_AGE), email, fresh };
 }

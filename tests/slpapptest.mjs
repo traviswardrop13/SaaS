@@ -223,6 +223,7 @@ if (A && SI && R.request && R.code) {
   const cookie1 = sessionCookieFrom(r.cookie);
   ok("the right code signs this screen in: a session cookie, and the account is made", r.status === 200 && r.json.ok && !!cookie1 && !!acctOf(NEW), r);
   ok("…on the sign-in page's terms (Sona Pro, as the link from that page)", acctOf(NEW) && acctOf(NEW).terms === "pro-2026-11-12", acctOf(NEW));
+  ok("…and the answer says the code made the account (fresh), so a browser goes on to the free trial (TRIALGO1)", r.json.fresh === true, r.json);
   ok("…and the code and its link are spent with it, and the tries are cleared",
     !KV.K.has("slpsignin:" + NEW) && !KV.K.has(JSON.parse(stored).k) && !KV.K.has("slpsignintry:" + NEW));
   r = await call(R.code, "POST", "/api/slp/auth/code", { body: { email: NEW, code: code1 } });
@@ -253,12 +254,13 @@ if (A && SI && R.request && R.code) {
   r = await call(R.request, "POST", "/api/slp/auth/request", { body: { email: PROERA, wantCode: true, flow: "trial" } });
   r = await call(R.code, "POST", "/api/slp/auth/code", { body: { email: PROERA, code: r.json.devCode } });
   ok("…a returning Pro-era account signs in and is left exactly as it was: no door unlocks it", r.status === 200 && KV.K.get("slpacct:" + PROERA) === proBefore, acctOf(PROERA));
+  ok("…and is not fresh: it opens the dashboard, never checkout by itself", r.json.fresh === false, r.json);
 
   // the link still works, and spends the code
   r = await call(R.request, "POST", "/api/slp/auth/request", { body: { email: "linker@clinic.example", wantCode: true } });
   const link = r.json.devLink, code3 = r.json.devCode;
   r = await call(R.verify, "GET", link.replace(/^https?:\/\/[^/]+/, ""));
-  ok("the emailed link still signs in (to the dashboard) and spends its code", r.status === 307 && /\/slp\.html$/.test(r.location) && !!sessionCookieFrom(r.cookie) && !KV.K.has("slpsignin:linker@clinic.example"), r);
+  ok("the emailed link still signs in (a new account to the dashboard's straight-to-trial address) and spends its code", r.status === 307 && /\/slp\.html\?start=trial$/.test(r.location) && !!sessionCookieFrom(r.cookie) && !KV.K.has("slpsignin:linker@clinic.example"), r);
   r = await call(R.code, "POST", "/api/slp/auth/code", { body: { email: "linker@clinic.example", code: code3 } });
   ok("…so the code from that email no longer does", r.status === 400 && r.json.why === "gone", r);
 
@@ -586,6 +588,20 @@ try {
       await context.close();
     });
   }
+
+  // TRIALGO1 (17 Nov 2026, Travis: "i dont wanna sell on apple. just thru
+  // stipe"): a new account's ?start=trial never opens checkout in the app.
+  await section("a new account's straight-to-trial address in the app", async () => {
+    LOCK = true;
+    const { context, page, errors } = await open("/slp.html?start=trial");
+    await page.waitForFunction(() => document.getElementById("sidebarName").textContent === "Rachel K");
+    await page.waitForTimeout(500);
+    const st = await page.evaluate(() => ({ hash: location.hash, search: location.search, active: [...document.querySelectorAll(".page.active")].map((p) => p.id).join() }));
+    ok("in the app, ?start=trial asks for no checkout and shows the one plain card", !posts.some((p) => p.path === "/api/slp/plan") && st.active === "page-applock" && st.hash === "#applock", { st, posts });
+    ok("…with no page errors", errors.length === 0, errors);
+    LOCK = false;
+    await context.close();
+  });
 
   await section("the dashboard on the web still sells", async () => {
     const { context, page } = await open("/slp.html#today", { app: false, native: false, viewport: { width: 1280, height: 1000 } });

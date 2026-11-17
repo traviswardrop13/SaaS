@@ -210,7 +210,7 @@
       fetch("/api/slp/auth/code",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:SENT_TO,code:c})})
         .then(function(r){return r.json();})
         .then(function(j){
-          if(j&&j.ok){location.replace("/slp.html");return;}
+          if(j&&j.ok){location.replace(j.fresh&&!APP?"/slp.html?start=trial":"/slp.html");return;}
           $("codeGo").disabled=false;$("codeGo").textContent="Sign in";
           $("codeErr").textContent=(j&&j.error)||"That didn’t work. Try again.";
         })

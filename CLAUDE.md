@@ -2240,6 +2240,17 @@ activities and SLPAPP1's free-dashboard door.
   door is `flow: "trial"` ("free-dashboard" still accepted from a cached
   page). App Review's one account (`SLP_REVIEW_EMAIL` and its code) stays
   open (`reviewEmail`). `caseloadtest` pins it.
+- **Straight to the trial (TRIALGO1, 17 Nov 2026**, Travis: email link,
+  then the card page, then the dashboard; "i dont wanna sell on apple. just
+  thru stipe"). The sign-in that MAKES an account (`finishSignIn`'s
+  `fresh`: the email link, or the code typed on the web) lands on
+  `/slp.html?start=trial`; once the plan answers, a dashboard still locked
+  with the trial there to take opens Stripe's card page at once ("Opening
+  your free trial…"), with no stop on the locked page. The address loses
+  `?start=trial` first, so a reload or Back never opens checkout twice;
+  Stripe's Cancel, a refused checkout or a spent trial shows the locked
+  page and its button. A returning account, and the clinicians' app, never
+  go to checkout by themselves. `slptest` 9d, `slpapptest`, `caseloadtest`.
 - **The locked dashboard on the web** shows the Sona Pro page with the trial
   in place of Session games, Today, Caseload and a child's page; Settings
   (Delete my account, Sign out) and Talk to Rachel stay open; Add a family

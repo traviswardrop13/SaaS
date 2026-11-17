@@ -76,6 +76,7 @@ const PLAN_PRO = { ...PLAN_NONE, active: true, source: "pro", periodEnd: 1822000
 // 402 from the roster: a new account (from 12 Nov 2026) with no Sona Pro.
 let LOCKED = false;
 let PLAN = PLAN_NONE;
+let CHECKOUT = null, NEW_ACCT = false;
 const acct = { ok: true, email: "rachel@example.com", code: "rachel-k4", familyKey: "ABCD2345", name: "Rachel K", clinic: "Bright Steps", onboarded: true };
 const srv = createServer((req, res) => {
   const u = new URL(req.url, "http://x");
@@ -84,12 +85,16 @@ const srv = createServer((req, res) => {
   req.on("end", () => {
     let b = {}; try { b = body ? JSON.parse(body) : {}; } catch (e) {}
     if (u.pathname.startsWith("/api/")) log.push({ m: req.method, p: u.pathname + u.search, b });
-    if (u.pathname === "/api/slp/auth/me") return json(acct);
+    if (u.pathname === "/api/slp/auth/me") return json(NEW_ACCT ? { ...acct, code: "", familyKey: "", name: "", clinic: "", onboarded: false } : acct);
     if (u.pathname === "/api/slp/account") return json(req.method === "POST" && b.rotateKey ? { ...acct, familyKey: "ROTATED99" } : acct);
     if (u.pathname === "/api/slp" && req.method === "GET") return LOCKED ? json({ ok: false, needPlan: true, error: "Your dashboard comes with Sona Pro." }, 402) : json({ ok: true, configured: true, kids: DATA.kids, invites: DATA.invites });
     if (u.pathname === "/api/slp/homework") return json({ ok: true, hw: b.hw || null });
     if (u.pathname === "/api/slp/child" && req.method === "DELETE") { DATA.kids = DATA.kids.filter((k) => k.childId !== b.childId); return json({ ok: true, removed: b.childId }); }
     if (u.pathname === "/api/slp/plan" && req.method === "GET") return json(PLAN);
+    // TRIALGO1: Sona Pro's checkout. CHECKOUT is the Stripe page's address, or
+    // null for a server that refuses it.
+    if (u.pathname === "/api/slp/plan" && req.method === "POST") return CHECKOUT ? json({ ok: true, url: CHECKOUT }) : json({ ok: false, error: "Couldn't open checkout just now." }, 502);
+    if (u.pathname === "/fake-stripe") { res.writeHead(200, { "content-type": "text/html" }); res.end("<!doctype html><title>Stripe</title><p>Card page</p>"); return; }
     if (u.pathname === "/api/slp/invite" && req.method === "POST") {
       const inv = { token: "NEWTOKEN1234", label: b.label, age: b.age, sounds: b.sounds, pos: b.pos, repsPerDay: b.repsPerDay, note: b.note, createdAt: new Date().toISOString(), expiresAt: day(-30) }; DATA.invites.push(inv);
       // the route's reply: emailed, plus its own reason when the send failed
@@ -425,6 +430,50 @@ async function open(hash) {
     await ctx.close();
   }
   LOCKED = false; PLAN = PLAN_NONE;
+}
+
+// ── 9d. STRAIGHT TO THE FREE TRIAL (TRIALGO1, 17 Nov 2026; Travis: email
+//        link, then the card page, then the dashboard). The sign-in that made
+//        the account lands on /slp.html?start=trial. ──
+{
+  const PLAN_LOCKED = { ...PLAN_NONE, dashboard: { open: false } };
+  const go = async (o) => {
+    LOCKED = o.locked; PLAN = o.plan; CHECKOUT = o.checkout; NEW_ACCT = o.fresh; DATA = fixture(); log.length = 0;
+    const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+    const pg = await ctx.newPage(); const errs = []; pg.on("pageerror", (e) => errs.push(String(e)));
+    await pg.goto(U("?start=trial")); await pg.waitForTimeout(1100);
+    const posts = log.filter((l) => l.m === "POST" && l.p === "/api/slp/plan");
+    return { ctx, pg, errs, posts };
+  };
+  {
+    const { ctx, pg, errs, posts } = await go({ locked: true, plan: PLAN_LOCKED, checkout: "http://localhost:" + PORT + "/fake-stripe", fresh: true });
+    ok("a new account on a locked dashboard goes straight to Stripe's card page for Sona Pro, with no stop on the locked page",
+      posts.length === 1 && JSON.stringify(posts[0].b) === JSON.stringify({ plan: "pro" }) && new URL(pg.url()).pathname === "/fake-stripe" && errs.length === 0, JSON.stringify({ url: pg.url(), posts, errs }));
+    await pg.goBack(); await pg.waitForTimeout(1100);
+    const back = await pg.evaluate(() => ({ search: location.search, active: [...document.querySelectorAll(".page.active")].map((p) => p.id).join(), loading: !document.getElementById("loadingState").hidden }));
+    ok("…Back from Stripe lands on the locked page with its button, never checkout again", back.search === "" && back.active === "page-premium" && !back.loading &&
+      log.filter((l) => l.m === "POST" && l.p === "/api/slp/plan").length === 1, JSON.stringify(back));
+    await ctx.close();
+  }
+  {
+    const { ctx, pg, errs, posts } = await go({ locked: true, plan: PLAN_LOCKED, checkout: null, fresh: true });
+    const st = await pg.evaluate(() => ({ search: location.search, hash: location.hash, active: [...document.querySelectorAll(".page.active")].map((p) => p.id).join(),
+      loading: !document.getElementById("loadingState").hidden, err: document.getElementById("proBuyErr").textContent, button: document.getElementById("proBuy").textContent }));
+    ok("…a checkout that won't open leaves the locked page, the error beside its button, and a clean address",
+      posts.length === 1 && st.search === "" && st.hash === "#premium" && st.active === "page-premium" && !st.loading && /Couldn't open checkout/.test(st.err) && st.button === "Start my free trial" && errs.length === 0, JSON.stringify(st));
+    await ctx.close();
+  }
+  {
+    const { ctx, posts } = await go({ locked: true, plan: { ...PLAN_LOCKED, pro: { ...PRO_OFF, trialAvailable: false } }, checkout: "http://localhost:" + PORT + "/fake-stripe", fresh: true });
+    ok("…a trial already spent opens no checkout by itself (the locked page asks)", posts.length === 0, JSON.stringify(posts));
+    await ctx.close();
+  }
+  {
+    const { ctx, pg, posts } = await go({ locked: false, plan: PLAN_NONE, checkout: "http://localhost:" + PORT + "/fake-stripe", fresh: false });
+    ok("…an open dashboard opens no checkout either, and drops ?start=trial from the address", posts.length === 0 && (await pg.evaluate(() => location.search)) === "", JSON.stringify(posts));
+    await ctx.close();
+  }
+  LOCKED = false; PLAN = PLAN_NONE; CHECKOUT = null; NEW_ACCT = false;
 }
 
 // ── 10. a parent's email: typed only if the clinician wants, used once ──

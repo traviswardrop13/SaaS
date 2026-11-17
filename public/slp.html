@@ -1946,6 +1946,19 @@
     try{var planSid=new URLSearchParams(location.search).get("plan_session");
       if(planSid!=null){ if(/^cs_[A-Za-z0-9_]{10,240}$/.test(planSid))PLAN_SESSION=planSid; else history.replaceState(null,"",location.pathname+"#premium"); }
     }catch(e){}
+    /* STRAIGHT TO THE FREE TRIAL (TRIALGO1, 17 Nov 2026; Travis: "yeah lets
+       do that. i dont wanna sell on apple. just thru stipe"). The sign-in that
+       MADE an account (the email link, or the code typed on the web) arrives
+       as /slp.html?start=trial. Once the plan has answered, a dashboard still
+       locked with the trial there to take opens Stripe's card page at once,
+       instead of stopping on the locked page first. The address loses
+       ?start=trial before anything else, so a reload or Back never opens
+       checkout twice; Stripe's Cancel comes back to the locked page and its
+       button. Never in the clinicians' app, which sells nothing. */
+    var START_TRIAL=false, AUTO_TRIAL=false;
+    try{var startQ=new URLSearchParams(location.search);
+      if(startQ.get("start")==="trial"){START_TRIAL=!SLP_APP;startQ.delete("start");var restQ=startQ.toString();history.replaceState(null,"",location.pathname+(restQ?"?"+restQ:"")+location.hash);}
+    }catch(e){}
     // Sona Pro, a yearly plan still renewing, or grandfathered: the families
     // on this link have every game.
     function caseCovered(){return !!(PLAN&&PLAN.active);}
@@ -1983,7 +1996,9 @@
         paintPremium();paintCoverage();
         // The lock changed under the page (a trial just started, or ran out):
         // fetch the caseload it can now see, and send the page where it goes.
-        if(wasLocked!==dashLocked()){
+        // (Not while a new account's first screen waits on autoTrial: it may
+        // be Stripe's card page, and the locked page must not flash first.)
+        if(wasLocked!==dashLocked()&&!START_TRIAL){
           if(!dashLocked()){LOCKED_SERVER=false;if(code)loadAll(function(){route();});else route();}
           else route();
         }
@@ -2115,6 +2130,30 @@
         paintPremium();
       }).catch(function(){BUY_BUSY=false;BUY_KIND="";$(errId).textContent="Network hiccup. Try again.";paintPremium();});
     }
+    // TRIALGO1: called once, as the first screen is chosen. True when it has
+    // left for Stripe's card page (the loading screen stays up meanwhile).
+    function autoTrial(){
+      if(!START_TRIAL)return false;
+      START_TRIAL=false;
+      if(SLP_APP||BUY_BUSY||!dashLocked()||!proOffer()||!proTrial())return false;
+      AUTO_TRIAL=true;BUY_BUSY=true;BUY_KIND="pro";
+      $("loadingState").textContent="Opening your free trial…";$("loadingState").hidden=false;
+      planPost("/api/slp/plan",{plan:"pro"}).then(function(res){
+        if(res.j.ok&&leaveFor(res.j.url))return;   // on the way to Stripe
+        autoTrialBack(res.j.error||"Couldn't open checkout. Try again.");
+        if(res.j.already)loadPlan();
+      }).catch(function(){autoTrialBack("Network hiccup. Try again.");});
+      return true;
+    }
+    // Checkout didn't open (or Back from Stripe restored this page): the
+    // locked page with its button, and any error beside it.
+    function autoTrialBack(msg){
+      AUTO_TRIAL=false;BUY_BUSY=false;BUY_KIND="";
+      $("loadingState").hidden=true;$("loadingState").textContent="Loading your workspace…";
+      route();
+      if(msg)$("proBuyErr").textContent=msg;
+      paintPremium();
+    }
     $("proBuy").onclick=function(){buyPro("proBuyErr");};
     $("setProBuy").onclick=function(){buyPro("setPlanErr");};
     // One billing page for every plan: Sona Pro is bought under the same
@@ -2157,7 +2196,7 @@
     $("premiumCheck").onclick=function(){loadPlan();};
     // Back from Stripe by the browser's back button: the page may come back
     // from the cache with its buttons still saying "Opening…".
-    window.addEventListener("pageshow",function(e){if(e.persisted){BUY_BUSY=false;BUY_KIND="";MANAGE_BUSY=false;paintPremium();}});
+    window.addEventListener("pageshow",function(e){if(e.persisted){if(AUTO_TRIAL){autoTrialBack("");return;}BUY_BUSY=false;BUY_KIND="";MANAGE_BUSY=false;paintPremium();}});
 
     /* ── Settings ──────────────────────────────── */
     // POST /api/slp/account answers {code, familyKey, name, clinic} and no
@@ -2498,8 +2537,9 @@
         $("accountAvatar").textContent=((account.name||"S").split(/\s+/).map(function(n){return n.charAt(0);}).slice(0,2).join("")).toUpperCase();
         // No code yet: a new account. Whether its first screen is the one
         // form or the plan is the plan's answer, so wait for it.
-        if(!code){planReady.then(function(){$("loadingState").hidden=true;route();});return;}
-        loadAll(function(){route();});
+        // A new account (TRIALGO1) goes straight on to the free trial.
+        if(!code){planReady.then(function(){if(autoTrial())return;$("loadingState").hidden=true;route();});return;}
+        loadAll(function(){if(START_TRIAL)planReady.then(function(){if(!autoTrial())route();});else route();});
       }).catch(function(){$("loadingState").hidden=true;$("loadError").hidden=false;$("loadErrorText").textContent="Couldn't connect to your workspace. Try again.";});
     }
     $("loadRetry").onclick=function(){if(!account){boot();}else{loadAll(function(){route();});}};

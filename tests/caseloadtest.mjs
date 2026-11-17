@@ -1322,7 +1322,7 @@ const count = (pred) => S.calls.filter(pred).length;
   KV.K.set("slptok:" + A.hashToken(tok), "via.link@riverside-schools.org");
   r = await call(R.verify, "GET", "/api/slp/auth/verify?token=" + tok);
   a = JSON.parse(KV.K.get("slpacct:via.link@riverside-schools.org") || "{}");
-  ok("a NEW account from the magic link carries terms too", /\/slp\.html$/.test(r.location || "") && a.terms === "pro-2026-11-12", JSON.stringify(a));
+  ok("a NEW account from the magic link carries terms too, and goes on to the free trial (TRIALGO1)", /\/slp\.html\?start=trial$/.test(r.location || "") && a.terms === "pro-2026-11-12", JSON.stringify(a));
   KV.K.set("slptok:" + A.hashToken(tok + "2"), "veteran@clinic.org");
   await call(R.verify, "GET", "/api/slp/auth/verify?token=" + tok + "2");
   ok("…and an existing one verified again does not", !("terms" in JSON.parse(KV.K.get("slpacct:veteran@clinic.org"))));
@@ -1472,7 +1472,7 @@ const count = (pred) => S.calls.filter(pred).length;
   const account = JSON.parse(KV.K.get(key) || "{}");
   ok("opening the link creates a Sona Pro account (no free dashboard) with the saved clinician details",
     verified.status >= 300 && verified.status < 400 && verified.cookie?.includes("slp_session=") &&
-    /\/slp\.html$/.test(verified.location || "") && account.terms === C.PRO_TERMS && account.freeDashboard === undefined &&
+    /\/slp\.html\?start=trial$/.test(verified.location || "") && account.terms === C.PRO_TERMS && account.freeDashboard === undefined &&
     account.clinicianRole === "slpa" && account.workSetting === "school" && !!account.crmAt);
   ok("…and reaches the lead list once with attribution and no account fields",
     OUT.slice(before).filter((o) => o.url.endsWith("/api/lead")).length === 1 &&
@@ -1501,7 +1501,7 @@ const count = (pred) => S.calls.filter(pred).length;
   const opted = await signup({ email: returningEmail });
   const returning = await call(R.verify, "GET", latestLink());
   ok("a returning Pro-era account signs in by the homepage's link and is left exactly as it was, still closed",
-    opted.json.sent && returning.cookie?.includes("slp_session=") && JSON.stringify(JSON.parse(KV.K.get(returningKey))) === JSON.stringify(original) &&
+    opted.json.sent && returning.cookie?.includes("slp_session=") && /\/slp\.html$/.test(returning.location || "") && JSON.stringify(JSON.parse(KV.K.get(returningKey))) === JSON.stringify(original) &&
     await C.dashboardOpen(returningEmail, { kv: async (cmd) => kvExec(cmd), stripe: client }) === false);
 
   const freeEra = "dashboard.thirteenth@example.org";
