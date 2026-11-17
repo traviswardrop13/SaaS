@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "node:crypto";
-import { kvCmd, readSession, liveSession, signSession, sessionCookie, SESSION_MAX_AGE, makeFamilyKey, replaceSlpAccount } from "@/lib/slpAuth";
+import { kvCmd, readSession, liveSession, signSession, sessionCookie, SESSION_MAX_AGE, makeFamilyKey, replaceSlpAccount, clearCookie, kvConfigured } from "@/lib/slpAuth";
 import { PRO_TERMS } from "@/lib/caseload";
+import { deleteClinicianAccount } from "@/lib/slpDelete";
+import { rateLimit } from "@/lib/rateLimit";
 
 const SUFFIX = "abcdefghjkmnpqrstuvwxyz23456789";
 function suffix(n: number): string { let o = ""; const b = crypto.getRandomValues(new Uint8Array(n)); for (let i = 0; i < n; i++) o += SUFFIX[b[i] % SUFFIX.length]; return o; }
@@ -137,4 +139,40 @@ export async function GET(req: NextRequest) {
     name: (acct.name as string) || "",
     clinic: (acct.clinic as string) || "",
   });
+}
+
+/**
+ * DELETE { confirm: "<the account's email>" } → delete this clinician's
+ * account and everything Sona holds for it (lib/slpDelete). Signed in, from
+ * the dashboard's own page, with the email typed back as the confirmation.
+ * Refused while a paid plan still renews: cancel it first, so no card is
+ * charged for an account that is gone (SLPAPP1, 16 Nov 2026).
+ */
+export async function DELETE(req: NextRequest) {
+  const s = await liveSession(readSession(req));
+  if (!s) return NextResponse.json({ ok: false, error: "Not signed in." }, { status: 401 });
+  const origin = req.headers.get("origin");
+  if (origin && origin !== new URL(req.url).origin) return NextResponse.json({ ok: false, error: "Delete your account from your Sona dashboard." }, { status: 403 });
+  const limited = await rateLimit(req, { key: "slpdelete", limit: 10, windowSec: 3600 });
+  if (limited) return limited;
+  let body: { confirm?: unknown };
+  try { body = await req.json(); } catch { body = {}; }
+  const typed = String((body && body.confirm) || "").trim().toLowerCase();
+  if (typed !== s.email.toLowerCase()) {
+    return NextResponse.json({ ok: false, error: "Type your account's email to confirm." }, { status: 400 });
+  }
+  if (!kvConfigured()) return NextResponse.json({ ok: false, error: "Accounts aren't enabled here." }, { status: 503 });
+  const r = await deleteClinicianAccount(s.email);
+  if (!r.ok) {
+    if (r.why === "renews") {
+      return NextResponse.json({
+        ok: false, renews: true,
+        error: "Your paid Sona plan still renews. Cancel it first (on speaksona.com, in your dashboard's Sona Pro page, Manage billing), then delete your account. Or email hello@speaksona.com and we'll do both.",
+      }, { status: 409 });
+    }
+    return NextResponse.json({ ok: false, error: "We couldn't finish deleting your account. Try again in a moment." }, { status: 503 });
+  }
+  const res = NextResponse.json({ ok: true, deleted: true });
+  res.headers.set("Set-Cookie", clearCookie());
+  return res;
 }

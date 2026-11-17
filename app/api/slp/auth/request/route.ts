@@ -7,6 +7,7 @@ import {
 import { contactsConfigured } from "@/lib/contacts";
 import { safeAttrib, tellCrm } from "@/lib/slpLead";
 import { rateLimit } from "@/lib/rateLimit";
+import { makeSignInCode, storeSignInCode, reviewEmail } from "@/lib/slpSignIn";
 
 export const runtime = "nodejs";
 
@@ -47,8 +48,11 @@ function safeEqual(a: string, b: string): boolean {
   return crypto.timingSafeEqual(ba, bb);
 }
 
-// POST { email, adminKey?, source?, clinicianRole?, workSetting?, flow? } → email a single-use magic sign-in link.
-// Nobody is signed in here: only opening the emailed link signs in (13 Nov 2026).
+// POST { email, adminKey?, source?, clinicianRole?, workSetting?, flow?, wantCode? } → email a single-use magic sign-in link.
+// Nobody is signed in here: only opening the emailed link signs in (13 Nov 2026),
+// or typing the six-digit code it carries when the sign-in page asked for one
+// (`wantCode`, SLPAPP1, 16 Nov 2026: the clinicians' app, where a link opens
+// in Safari and can never sign the app in; /api/slp/auth/code takes it).
 //
 // Admin override: when SLP_ADMIN_KEY is set (>= 8 chars) AND a matching adminKey
 // is supplied, the link is returned in the response so the operator can hand it
@@ -76,7 +80,7 @@ async function tellCrmEarly(origin: string, email: string, source: string, attri
 export async function POST(req: NextRequest) {
   let body: {
     email?: string; adminKey?: string; source?: string; attrib?: unknown;
-    clinicianRole?: unknown; workSetting?: unknown; flow?: unknown; next?: unknown;
+    clinicianRole?: unknown; workSetting?: unknown; flow?: unknown; wantCode?: unknown; next?: unknown;
   };
   try {
     body = await req.json();
@@ -135,6 +139,14 @@ export async function POST(req: NextRequest) {
     typeof body.adminKey === "string" &&
     safeEqual(body.adminKey, adminSecret);
 
+  const wantCode = body.wantCode === true;
+
+  // App Review's account (lib/slpSignIn reviewEmail): nothing is emailed or
+  // stored; its fixed code, set in Vercel, is what signs it in.
+  if (wantCode && reviewEmail() && email === reviewEmail()) {
+    return NextResponse.json({ ok: true, sent: true, signedIn: false, devLink: null, code: true });
+  }
+
   // Every call emails someone, so one address (an IPv6 /64) may ask for at
   // most 20 links an hour, whatever emails it names (audit B2, 13 Nov 2026).
   // An hour at most: the privacy page keeps an IP no longer than that.
@@ -174,11 +186,16 @@ export async function POST(req: NextRequest) {
     // THE TRIAL PAGE'S BUTTON (/start, 16 Nov 2026) asks to land on Sona Pro
     // after sign-in. Only the one fixed word; nothing else rides the link.
     const link = origin + "/api/slp/auth/verify?token=" + encodeURIComponent(token) + (body.next === "pro" ? "&next=pro" : "");
-    const res = await sendMagicEmail(email, link, "", { freeDashboard: true });
+    const code = wantCode ? makeSignInCode() : "";
+    if (code && !(await storeSignInCode(email, code, pending, key))) {
+      await kvCmd(["DEL", key]);
+      return NextResponse.json({ ok: false, error: "Couldn't make your sign-in code. Try again." }, { status: 503 });
+    }
+    const res = await sendMagicEmail(email, link, "", { freeDashboard: true, code });
     const devLink = isAdmin ? link : res.devLink;
     if (!res.sent && !devLink) await kvCmd(["DEL", key]);
     if (res.sent) await tellCrmEarly(origin, email, String(body.source || "for-slps").slice(0, 40), safeAttrib(body.attrib));
-    return NextResponse.json({ ok: true, sent: res.sent, signedIn: false, devLink });
+    return NextResponse.json({ ok: true, sent: res.sent, signedIn: false, devLink, ...(code ? { code: true, devCode: devLink ? code : undefined } : {}) });
   }
 
   /**
@@ -208,8 +225,13 @@ export async function POST(req: NextRequest) {
 
   const token = randomToken();
   await kvCmd(["SET", "slptok:" + hashToken(token), email, "EX", 900]); // 15 min
+  const tokKey = "slptok:" + hashToken(token);
   const link = origin + "/api/slp/auth/verify?token=" + encodeURIComponent(token);
-  const res = await sendMagicEmail(email, link, name);
+  const code = wantCode ? makeSignInCode() : "";
+  if (code && !(await storeSignInCode(email, code, email, tokKey))) {
+    return NextResponse.json({ ok: false, error: "Couldn't make your sign-in code. Try again." }, { status: 503 });
+  }
+  const res = await sendMagicEmail(email, link, name, { code });
 
   /**
    * A CLINICIAN THE CRM HAS NEVER HEARD OF. The CRM was once told only when
@@ -235,5 +257,6 @@ export async function POST(req: NextRequest) {
       await replaceSlpAccount(acctKey, acctRaw, acct);
     }
   }
-  return NextResponse.json({ ok: true, sent: res.sent, signedIn: false, devLink: isAdmin ? link : res.devLink });
+  const devLink = isAdmin ? link : res.devLink;
+  return NextResponse.json({ ok: true, sent: res.sent, signedIn: false, devLink, ...(code ? { code: true, devCode: devLink ? code : undefined } : {}) });
 }

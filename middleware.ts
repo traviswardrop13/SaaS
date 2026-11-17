@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { locked, lockedPage, PREVIEW_COOKIE, previewToken } from "@/lib/launch";
+import { slpAppRequest, slpAppPageAllowed } from "@/lib/slpApp";
 
 /**
  * The launch lock (Travis, 30 Sep 2026; see LAUNCH_AT in lib/launch.ts).
@@ -12,6 +13,14 @@ import { locked, lockedPage, PREVIEW_COOKIE, previewToken } from "@/lib/launch";
  * is locked at all.
  */
 export async function middleware(req: NextRequest) {
+  // The clinicians' own app (lib/slpApp, 16 Nov 2026) is the dashboard alone:
+  // any other page goes there, before it is sent (the pages check too).
+  if (slpAppRequest(req.headers.get("user-agent")) && !slpAppPageAllowed(req.nextUrl.pathname)) {
+    const url = req.nextUrl.clone();
+    url.pathname = "/slp.html";
+    url.search = "";
+    return NextResponse.redirect(url);
+  }
   if (!locked() || !lockedPage(req.nextUrl.pathname)) return NextResponse.next();
   // The team door: a cookie only the founder key can make (app/api/launch/preview).
   const key = process.env.FOUNDER_KEY || "";

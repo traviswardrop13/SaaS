@@ -7,6 +7,9 @@
 // native shell goes straight home, before anything here renders or loads.
 (function () {
   var native = false;
+  // The clinicians' own app (SLPAPP1, 16 Nov 2026) opens its dashboard: the
+  // websites have sign-up and price pages that app never shows.
+  try { if (/\bSonaSLPApp\/\d/.test(navigator.userAgent || "")) { window.__sonaFamilyRedirect = true; document.documentElement.style.visibility = "hidden"; window.location.replace("/slp.html"); return; } } catch (e) {}
   try {
     var bridge = window.Capacitor;
     native = !!(bridge && (typeof bridge.isNativePlatform === "function" ? bridge.isNativePlatform() : true));

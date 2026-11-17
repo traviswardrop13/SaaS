@@ -4,10 +4,14 @@
   <meta charset="utf-8" />
   <link rel="icon" type="image/png" href="/assets/slp-tab-icon.png?v=2" />
   <script>
-// Clinician tools live in the browser. A restored link in the native shell
-// must return to the family app before rendering or making clinician requests.
+// Clinician tools live in the browser, and in the clinicians' own app
+// (SLPAPP1, 16 Nov 2026: Capacitor adds "SonaSLPApp/<n>" to its user agent).
+// A restored link in the FAMILY app's shell must return to the family app
+// before rendering or making clinician requests.
 (function () {
-  var native = false;
+  var native = false, slpApp = false;
+  try { slpApp = /\bSonaSLPApp\/\d/.test(navigator.userAgent || ""); } catch (e) {}
+  if (slpApp) { window.__sonaSlpApp = true; document.documentElement.className += " slp-app"; return; }
   try {
     var bridge = window.Capacitor;
     native = !!(bridge && (typeof bridge.isNativePlatform === "function" ? bridge.isNativePlatform() : true));
@@ -751,6 +755,12 @@
     .premium-card { padding:28px; }
     .premium-card.premium-on { background:#edf4ef; border-color:#dce8df; }
     .card .premium-title { font-size:22px; font-weight:600; letter-spacing:-.5px; line-height:1.3; margin-bottom:8px; overflow-wrap:anywhere; }
+    /* THE CLINICIANS' APP SELLS NOTHING (SLPAPP1, 16 Nov 2026; Travis:
+       "Never sell in the app"). Every price, offer, checkout and billing
+       door carries data-sells, and none of it is drawn in the app: Sona Pro
+       is bought on speaksona.com, and a paid plan still works in the app.
+       No pointer to buying elsewhere either (Apple's rule 3.1.1). */
+    html.slp-app [data-sells] { display:none !important; }
     .premium-price { font-size:13px; color:var(--muted); margin:6px 0 20px; }
     .premium-price b { font-size:28px; font-weight:650; color:var(--ink); letter-spacing:-.6px; margin-right:2px; }
     .premium-points { list-style:none; display:grid; gap:12px; margin:0 0 22px; padding:0; }
@@ -807,7 +817,7 @@
       <a class="nav-item" data-page="caseload" href="#caseload"><span class="icon"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2m20 0v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/><circle cx="9" cy="7" r="4"/></svg></span> Caseload <span class="badge" id="familyCount" style="display:none;">0</span></a>
       <a class="nav-item" data-page="plan-day" href="#plan-day"><span class="icon"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M16 3v4M8 3v4M3 11h18M8 15h3m-3 3h6"/></svg></span> Plan sessions</a>
       <a class="nav-item" data-page="homework-draft" href="#homework-draft"><span class="icon" aria-hidden="true">✎</span> Draft homework</a>
-      <a class="nav-item" data-page="premium" href="#premium"><span class="icon"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.6l-5.4 2.9 1.2-6-4.5-4.2 6.1-.7Z"/></svg></span> Sona Pro</a>
+      <a class="nav-item" data-page="premium" href="#premium" data-sells><span class="icon"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.6l-5.4 2.9 1.2-6-4.5-4.2 6.1-.7Z"/></svg></span> Sona Pro</a>
       <div class="nav-section">Connect</div>
       <a class="nav-item" data-page="community" href="#community"><span class="icon"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 11a7 7 0 0 1-7 7H7l-5 3 1.7-5A7 7 0 0 1 2 11a7 7 0 0 1 7-7h5a7 7 0 0 1 7 7Z"/><path d="M7 10h10M7 14h6"/></svg></span> Community</a>
       <a class="nav-item" data-page="affiliate" href="#affiliate"><span class="icon"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18M3 12h18M5.6 5.6l12.8 12.8M5.6 18.4 18.4 5.6"/></svg></span> Affiliate partnerships <span class="soon-badge">2027</span></a>
@@ -826,7 +836,7 @@
     <div class="workspace-bar">
       <div class="crumb">Workspace <span>/</span> <b id="pageCrumb">Today</b></div>
       <div class="app-actions">
-        <a class="btn app-download premium-top" id="premiumTop" href="#premium" hidden><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.6l-5.4 2.9 1.2-6-4.5-4.2 6.1-.7Z"/></svg><span><span id="premiumTopLabel">Get Premium</span><small id="premiumTopPrice"></small></span></a>
+        <a class="btn app-download premium-top" id="premiumTop" href="#premium" hidden data-sells><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.6l-5.4 2.9 1.2-6-4.5-4.2 6.1-.7Z"/></svg><span><span id="premiumTopLabel">Get Premium</span><small id="premiumTopPrice"></small></span></a>
         <a class="btn green app-download" id="downloadApp" href="https://apps.apple.com/us/app/sona-speech/id6785755867" target="_blank" rel="noopener noreferrer"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="2" width="12" height="20" rx="3"/><path d="M10 18h4M12 6v8m-3-3 3 3 3-3"/></svg><span>Download the app<small>iPhone &amp; iPad</small></span></a>
         <button class="btn ghost sm" id="copyAppLink" type="button">Copy app link</button>
       </div>
@@ -1152,7 +1162,7 @@
            which one shows and fills in the figures the server sends (the
            price and the trial length are lib/caseload.ts's, never typed
            here). -->
-      <div class="page" id="page-premium">
+      <div class="page" id="page-premium" data-sells>
         <div class="page-header"><div><h1>Sona Pro</h1><p>Get every game on your own phone or tablet, and for every family who joins through your link.</p></div></div>
         <div class="send-success" id="premiumReturn" role="status" hidden><span id="premiumReturnText"></span> <a id="premiumReturnSetup" href="#today" hidden>Set up your family link →</a> <button class="feedback-shortcut" id="premiumCheck" type="button" hidden>Check again</button></div>
         <div class="load-notice" id="premiumError" role="alert" hidden><span id="premiumErrorText"></span><button class="btn ghost sm" id="premiumRetry" type="button">Try again</button></div>
@@ -1273,7 +1283,7 @@
                which of the two a family gets. It no longer says the dashboard
                is free: from 12 Nov 2026 that depends on when the clinician
                signed up, and the Sona Pro card below says which. -->
-          <p class="sub">Families who join through your link get Sona's free version — daily practice and free games — at no cost. <span id="linkCoverage">With <a href="#premium">Sona Pro</a> they get every game.</span></p>
+          <p class="sub">Families who join through your link get Sona's free version — daily practice and free games — at no cost. <span id="linkCoverage"><span data-sells>With <a href="#premium">Sona Pro</a> they get every game.</span></span></p>
           <p class="sub" style="margin-top:8px;">Create a child's link or copy your general link in Caseload → Add a child.</p>
           <a class="btn ghost sm" href="#invite" style="margin-top:12px;">Invite a family →</a>
 
@@ -1284,7 +1294,7 @@
              tap here opens the same Stripe checkout, and the return lands on
              the Premium page. Nothing shows until the server has answered
              with its price. -->
-        <div class="card" id="setPremium">
+        <div class="card" id="setPremium" data-sells>
           <h2>Sona Pro</h2>
           <p class="sub" id="setPlanWait">Checking your plan…</p>
           <div id="setPlanRows" hidden>
@@ -1300,6 +1310,21 @@
           <h2>Your data</h2>
           <p class="sub">A spreadsheet of your caseload: first names, targets, days practiced, pass rates, homework status. It leaves out ages. No recordings ever reach your dashboard.</p>
           <button class="btn ghost sm" id="exportCsv" style="margin-top:10px;">Download CSV</button>
+        </div>
+        <!-- DELETE MY ACCOUNT (SLPAPP1, 16 Nov 2026): Apple accepts an app that
+             makes accounts only if it can delete them, and the web has it too.
+             The email typed back is the confirmation; the server refuses
+             while a paid plan still renews (lib/slpDelete). -->
+        <div class="card" id="deleteCard">
+          <h2>Delete your account</h2>
+          <p class="sub">Deletes your Sona account and everything on it, for good: your caseload, practice history, homework, family invites and logins, and your community posts. Families' own Sona apps keep working and keep their own progress, but they stop sending you updates, and any Premium your plan gave them ends. Copy any progress notes you need first.</p>
+          <div class="row" id="deleteStart" style="margin-top:10px;"><button class="btn danger sm" id="deleteOpen" type="button">Delete my account…</button></div>
+          <div id="deleteConfirm" hidden style="margin-top:10px;">
+            <label class="fl" for="deleteEmail">Type your account's email to confirm</label>
+            <input id="deleteEmail" type="email" inputmode="email" autocomplete="off" autocapitalize="off" spellcheck="false" />
+            <div class="row" style="margin-top:10px;"><button class="btn danger sm" id="deleteGo" type="button">Delete for good</button><button class="btn ghost sm" id="deleteCancel" type="button">Keep my account</button></div>
+          </div>
+          <div class="err" id="deleteErr" role="status"></div>
         </div>
       </div>
 
@@ -1329,7 +1354,7 @@
             <p class="workflow-note">Keep it about ideas and experiences. Leave out children's names and identifying details.</p><div class="row"><button class="btn green" type="submit">Post to community</button><button class="btn ghost" type="button" id="communityCancel">Cancel</button><span class="sub" id="communityPostStatus" role="status"></span></div>
           </form>
           <div class="community-filters" role="group" aria-label="Community topics"><button class="filter-tab" data-community-filter="all" aria-pressed="true">All posts</button><button class="filter-tab" data-community-filter="discussions" aria-pressed="false">Discussions</button><button class="filter-tab" data-community-filter="resources" aria-pressed="false">Resources &amp; ideas</button><button class="filter-tab" data-community-filter="cf" aria-pressed="false">CF corner</button></div>
-          <p class="sub community-status" id="communityStatus" role="status"></p><div id="communityFeed" aria-live="polite"></div><button class="btn ghost" id="communityMore" hidden>Load more conversations</button>
+          <p class="sub community-status" id="communityStatus" role="status"></p><button class="feedback-shortcut" id="communityUnblock" type="button" hidden></button><div id="communityFeed" aria-live="polite"></div><button class="btn ghost" id="communityMore" hidden>Load more conversations</button>
         </div></div>
       </div>
 
@@ -1365,6 +1390,9 @@
   <script src="/sona.js"></script>
   <script>
     // Only the local fixture server opts in. Deployed pages default closed.
+    // The clinicians' own iPhone app (SLPAPP1): set in the page's first
+    // script from the app's user agent. It sells nothing ([data-sells]).
+    var SLP_APP=window.__sonaSlpApp===true;
     var PREVIEW_FEATURES=window.SLP_PREVIEW_FEATURES===true&&/^(localhost|127\.0\.0\.1|\[?::1\]?)$/.test(location.hostname);
     document.querySelectorAll("[data-preview-only]").forEach(function(el){el.hidden=!PREVIEW_FEATURES;});
     // No page is preview-only right now: the affiliate teaser went live on
@@ -1514,6 +1542,7 @@
        until the account has a code. */
     function switchPage(name,arg){
       if(!PREVIEW_FEATURES&&previewOnlyPage(name))name="today";
+      if(SLP_APP&&name==="premium")name="settings";
       if(name==="invite"){name="caseload";}
       document.querySelectorAll(".page").forEach(function(p){p.classList.remove("active");});
       var el=$("page-"+name); if(el)el.classList.add("active");
@@ -1540,7 +1569,10 @@
       // shows the plan in place of the caseload: the server refuses the data
       // anyway (lib/proGate), and an empty Today would read as "nobody
       // practiced". Settings, Community and Talk to Rachel stay open.
-      if(dashLocked()&&!LOCK_OPEN_PAGES[name==="invite"?"caseload":name]){if(location.hash!=="#premium")history.replaceState(null,"","#premium");switchPage("premium");return;}
+      // In the clinicians' app (which sells nothing) Settings stands in, with
+      // its one neutral line; the app's own sign-in opens the free dashboard,
+      // so this is a fallback, not a way in.
+      if(dashLocked()&&!LOCK_OPEN_PAGES[name==="invite"?"caseload":name]){if(SLP_APP){if(location.hash!=="#settings")history.replaceState(null,"","#settings");switchPage("settings");return;}if(location.hash!=="#premium")history.replaceState(null,"","#premium");switchPage("premium");return;}
       // Drafting and the community work before a clinician creates a family code.
       if(!code&&["community","feedback","premium","homework-draft","plan-day"].indexOf(name)<0){switchPage("onboarding");return;}
       if(!PREVIEW_FEATURES&&previewOnlyPage(name)){name="today";history.replaceState(null,"","#today");}
@@ -2388,7 +2420,7 @@
     function paintCoverage(){
       var covered=caseCovered();
       if(COVERED_SHOWN===covered)return;COVERED_SHOWN=covered;
-      $("linkCoverage").innerHTML=covered?"Your caseload has Premium, so they get every game too.":'With <a href="#premium">Sona Pro</a> they get every game.';
+      $("linkCoverage").innerHTML=covered?"Your caseload has Premium, so they get every game too.":SLP_APP?"":'With <a href="#premium">Sona Pro</a> they get every game.';
       if(code)paintLinkCard();
     }
     // The offer in the top bar (Travis, 29 Sep 2026: "yes add the $80 button
@@ -2505,6 +2537,15 @@
       var t=isoToday(), rows=[["A practice snapshot from at-home listening on the family's device; not an evaluation. Pass rate means: did that sound like this sound. Under "+SMALL_N+" attempts is too few to read."],["child","targets","last practiced","days last 7","days last 30","words last 30","pass rate on target (14 days)","attempts (14 days)","homework status","homework","homework ends"]];
       KIDS.forEach(function(k){ var d=k.d, m=windowStats(k,addDays(t,-29),t,null), hw=k.hw&&k.hw.hw; rows.push([d.name,d.targets.map(sLabel).join(" "),d.last||"",d.week.days,m.days,m.reps,(d.two.rate==null||d.two.attempts<SMALL_N)?"":d.two.rate+"%",d.two.attempts,d.hwst,hw?(hw.title||""):"",hw?hw.due:""]); });
       var csv=rows.map(function(r){return r.map(function(v){v=String(v==null?"":v);return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;}).join(",");}).join("\n");
+      // The clinicians' app cannot save a download (an iPhone app's web view
+      // drops it): it hands the file to the iPhone's share sheet (Save to
+      // Files, Mail, AirDrop), or, where that is missing, copies the rows.
+      if(SLP_APP){
+        var name="sona-caseload-"+t+".csv",file=null;
+        try{file=new File([csv],name,{type:"text/csv"});}catch(e){file=null;}
+        if(file&&navigator.canShare&&navigator.canShare({files:[file]})){navigator.share({files:[file],title:name}).catch(function(){});return;}
+        copy(csv).then(function(done){if(done)notify("Caseload copied as CSV. Paste it into a spreadsheet or a note.");});return;
+      }
       var a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"})); a.download="sona-caseload-"+t+".csv"; document.body.appendChild(a); a.click(); setTimeout(function(){document.body.removeChild(a);},0);
     };
 
@@ -2518,6 +2559,7 @@
       $("communityTitle").focus();
     }
     function communityStatus(message){$("communityStatus").textContent=message||"";}
+    var COMMUNITY_BLOCKED=0;
     function communityRequest(method,body){
       return fetch("/api/slp/community",{method:method,headers:{"Content-Type":"application/json"},body:JSON.stringify(body)}).then(function(r){return r.json().then(function(j){
         if(!r.ok||!j||!j.ok)throw new Error((j&&j.error)||"Couldn't save. Please try again.");return j;
@@ -2547,6 +2589,7 @@
         var seen={};COMMUNITY_POSTS=(more?COMMUNITY_POSTS:[]).concat(j.posts).filter(function(p){if(seen[p.id])return false;seen[p.id]=true;return true;});
         if(Array.isArray(j.pinned))COMMUNITY_PINNED=j.pinned;
         if(j.members&&typeof j.members.count==="number")COMMUNITY_MEMBERS=j.members;
+        COMMUNITY_BLOCKED=typeof j.blocked==="number"?j.blocked:0;
         COMMUNITY_CURSOR=j.nextCursor||null;COMMUNITY_LOADING=false;communityStatus("");renderCommunity();
       });}).catch(function(e){if(generation!==COMMUNITY_FETCH)return;COMMUNITY_LOADING=false;communityStatus(e.message||"Couldn't load conversations. Try Refresh.");communityControls();});
     }
@@ -2554,9 +2597,11 @@
     function communityText(value){
       return String(value||"").split(/(https?:\/\/[^\s<>]+)/g).map(function(part){return /^https?:\/\//.test(part)?'<a href="'+esc(part)+'" target="_blank" rel="noopener noreferrer nofollow">'+esc(part)+'</a>':esc(part);}).join("");
     }
-    function communityActions(postId,replyId,canDelete){
+    // Block (SLPAPP1, 16 Nov 2026): stop seeing a member, for this clinician
+    // alone. Never on your own words, or on Sona's pinned welcome.
+    function communityActions(postId,replyId,canDelete,mine,pinned){
       var attr='="'+esc(postId)+'"'+(replyId?' data-reply-id="'+esc(replyId)+'"':'');
-      return '<button type="button" data-community-report'+attr+'>Report</button>'+(canDelete?'<button type="button" data-community-delete'+attr+'>Delete</button>':'');
+      return '<button type="button" data-community-report'+attr+'>Report</button>'+(!mine&&!pinned?'<button type="button" data-community-block'+attr+'>Block</button>':'')+(canDelete?'<button type="button" data-community-delete'+attr+'>Delete</button>':'');
     }
     // WHO IS HERE: the server's real count and first names, newest first
     // (never invented), shown only once it has answered.
@@ -2577,10 +2622,10 @@
       $("communityAvatar").textContent=name.charAt(0).toUpperCase();
       document.querySelectorAll("[data-community-filter]").forEach(function(b){b.setAttribute("aria-pressed",String(b.dataset.communityFilter===COMMUNITY_FILTER));});
       function postHtml(p){
-        var id=esc(p.id),open=!!COMMUNITY_OPEN[p.id],replies=(p.replies||[]).map(function(r){return '<div class="community-reply"><strong>'+esc(r.author)+'</strong><small>'+esc(communityDate(r.createdAt))+'</small><p>'+communityText(r.text)+'</p><div class="community-post-actions">'+communityActions(p.id,r.id,r.canDelete)+'</div></div>';}).join("");
+        var id=esc(p.id),open=!!COMMUNITY_OPEN[p.id],replies=(p.replies||[]).map(function(r){return '<div class="community-reply"><strong>'+esc(r.author)+'</strong><small>'+esc(communityDate(r.createdAt))+'</small><p>'+communityText(r.text)+'</p><div class="community-post-actions">'+communityActions(p.id,r.id,r.canDelete,r.mine,false)+'</div></div>';}).join("");
         // Only the server-verified team welcome receives Rachel's profile.
         var avatar=p.pinned?'<img class="community-avatar" src="/assets/rachel-wardrop-profile.jpg" width="42" height="42" alt="Rachel Wardrop">':'<span class="community-avatar" aria-hidden="true">'+esc((p.author||"S").charAt(0).toUpperCase())+'</span>';
-        return '<article class="card community-post'+(p.pinned?' community-pinned':'')+'"><div class="community-post-header">'+avatar+'<div><strong>'+esc(p.author)+'</strong><p>'+esc(communityDate(p.createdAt))+'</p></div><span class="community-topic">'+esc(p.pinned?"Pinned · From Rachel":(COMMUNITY_TOPICS[p.category]||"Discussions"))+'</span></div>'+(p.pinned?$("rachelAboutTemplate").innerHTML:"")+'<h3>'+esc(p.title)+'</h3><p class="community-body">'+communityText(p.text)+'</p><div class="community-post-actions"><button type="button" data-community-reply="'+id+'" aria-expanded="'+String(open)+'" aria-controls="community-replies-'+id+'">'+(open?'Hide replies':'Reply')+'</button><span class="reply-count">'+(p.replies||[]).length+' '+((p.replies||[]).length===1?'reply':'replies')+'</span>'+communityActions(p.id,null,p.canDelete)+'</div><div class="community-replies" id="community-replies-'+id+'"'+(open?'':' hidden')+'>'+replies+'<form data-community-reply-form="'+id+'"><label class="fl" for="community-reply-'+id+'">Your reply</label><textarea id="community-reply-'+id+'" maxlength="1000" required placeholder="Add to the conversation…">'+esc(COMMUNITY_REPLY_DRAFTS[p.id]||'')+'</textarea><button class="btn ghost sm" type="submit" style="margin-top:8px;">Post reply</button><span class="sub" id="community-reply-status-'+id+'" role="status"></span></form></div></article>';
+        return '<article class="card community-post'+(p.pinned?' community-pinned':'')+'"><div class="community-post-header">'+avatar+'<div><strong>'+esc(p.author)+'</strong><p>'+esc(communityDate(p.createdAt))+'</p></div><span class="community-topic">'+esc(p.pinned?"Pinned · From Rachel":(COMMUNITY_TOPICS[p.category]||"Discussions"))+'</span></div>'+(p.pinned?$("rachelAboutTemplate").innerHTML:"")+'<h3>'+esc(p.title)+'</h3><p class="community-body">'+communityText(p.text)+'</p><div class="community-post-actions"><button type="button" data-community-reply="'+id+'" aria-expanded="'+String(open)+'" aria-controls="community-replies-'+id+'">'+(open?'Hide replies':'Reply')+'</button><span class="reply-count">'+(p.replies||[]).length+' '+((p.replies||[]).length===1?'reply':'replies')+'</span>'+communityActions(p.id,null,p.canDelete,p.mine,p.pinned)+'</div><div class="community-replies" id="community-replies-'+id+'"'+(open?'':' hidden')+'>'+replies+'<form data-community-reply-form="'+id+'"><label class="fl" for="community-reply-'+id+'">Your reply</label><textarea id="community-reply-'+id+'" maxlength="1000" required placeholder="Add to the conversation…">'+esc(COMMUNITY_REPLY_DRAFTS[p.id]||'')+'</textarea><button class="btn ghost sm" type="submit" style="margin-top:8px;">Post reply</button><span class="sub" id="community-reply-status-'+id+'" role="status"></span></form></div></article>';
       }
       var html=COMMUNITY_POSTS.map(postHtml).join("");
       $("communityPinned").innerHTML=COMMUNITY_PINNED.map(postHtml).join("");
@@ -2599,6 +2644,13 @@
         COMMUNITY_WRITING=true;communityControls();
         communityRequest("DELETE",{postId:b.dataset.communityDelete,replyId:b.dataset.replyId||undefined}).then(function(){COMMUNITY_WRITING=false;notify("Deleted.");return loadCommunity(false);}).catch(function(e){COMMUNITY_WRITING=false;communityControls();communityStatus(e.message);});
       };});
+      document.querySelectorAll("[data-community-block]").forEach(function(b){b.onclick=function(){
+        if(COMMUNITY_WRITING||!confirm("Block this member? You won't see their posts or replies. They aren't told."))return;
+        COMMUNITY_WRITING=true;communityControls();
+        communityRequest("POST",{action:"block",postId:b.dataset.communityBlock,replyId:b.dataset.replyId||undefined}).then(function(){COMMUNITY_WRITING=false;notify("Blocked. You won't see this member again.");return loadCommunity(false);}).catch(function(e){COMMUNITY_WRITING=false;communityControls();communityStatus(e.message);});
+      };});
+      var unb=$("communityUnblock");
+      if(unb){unb.hidden=!COMMUNITY_BLOCKED;unb.textContent=COMMUNITY_BLOCKED===1?"You blocked 1 member. Show them again":"You blocked "+COMMUNITY_BLOCKED+" members. Show them again";}
       document.querySelectorAll("[data-community-report]").forEach(function(b){b.onclick=function(){
         if(COMMUNITY_WRITING)return;
         var reason=prompt("What should the Sona team review? Please leave out any private family details.","");if(reason===null)return;
@@ -2611,6 +2663,11 @@
     $("communityNew").onclick=$("communityCompose").onclick=function(){communityEditor(COMMUNITY_FILTER==="all"?null:COMMUNITY_FILTER);};
     $("communityCancel").onclick=function(){$("communityEditor").hidden=true;$("communityCompose").focus();};
     $("communityRefresh").onclick=function(){loadCommunity(false);};
+    $("communityUnblock").onclick=function(){
+      if(COMMUNITY_WRITING||!confirm("Show everyone you blocked again?"))return;
+      COMMUNITY_WRITING=true;communityControls();
+      communityRequest("POST",{action:"unblock-all"}).then(function(){COMMUNITY_WRITING=false;notify("Everyone is shown again.");return loadCommunity(false);}).catch(function(e){COMMUNITY_WRITING=false;communityControls();communityStatus(e.message);});
+    };
     $("communityMore").onclick=function(){loadCommunity(true);};
     document.querySelectorAll("[data-community-filter]").forEach(function(b){b.onclick=function(){COMMUNITY_FILTER=b.dataset.communityFilter;COMMUNITY_POSTS=[];COMMUNITY_CURSOR=null;loadCommunity(false);renderCommunity();};});
     $("communityEditor").onsubmit=function(e){
@@ -2663,6 +2720,19 @@
     };
 
     /* ── Auth boot ─────────────────────────────── */
+    // DELETE MY ACCOUNT: the email typed back is the yes; the server does the rest.
+    $("deleteOpen").onclick=function(){$("deleteStart").hidden=true;$("deleteConfirm").hidden=false;$("deleteErr").textContent="";$("deleteEmail").value="";try{$("deleteEmail").focus();}catch(e){}};
+    $("deleteCancel").onclick=function(){$("deleteConfirm").hidden=true;$("deleteStart").hidden=false;$("deleteErr").textContent="";};
+    $("deleteGo").onclick=function(){
+      var typed=($("deleteEmail").value||"").trim();
+      if(!typed){$("deleteErr").textContent="Type your account's email to confirm.";return;}
+      $("deleteGo").disabled=true;$("deleteGo").textContent="Deleting…";$("deleteErr").textContent="";
+      fetch("/api/slp/account",{method:"DELETE",headers:{"Content-Type":"application/json"},body:JSON.stringify({confirm:typed})}).then(function(r){return r.json();}).then(function(j){
+        if(j&&j.ok){location.replace("/slp-login.html?deleted=1");return;}
+        $("deleteGo").disabled=false;$("deleteGo").textContent="Delete for good";$("deleteErr").textContent=(j&&j.error)||"We couldn't delete your account. Try again.";
+      }).catch(function(){$("deleteGo").disabled=false;$("deleteGo").textContent="Delete for good";$("deleteErr").textContent="Network error — try again.";});
+    };
+    if(SLP_APP)$("exportCsv").textContent="Share CSV";
     $("logout").onclick=function(e){e.preventDefault();fetch("/api/slp/auth/logout",{method:"POST"}).then(function(){location.replace("/slp-login.html");}).catch(function(){location.replace("/slp-login.html");});};
     function boot(){
       if(window.__sonaFamilyRedirect)return;

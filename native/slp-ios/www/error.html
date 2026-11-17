@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Sona for SLPs</title>
+  <style>
+    :root { --ink:#16384f; --muted:#6b86a3; --teal:#11b3b0; }
+    * { box-sizing:border-box; margin:0; padding:0; }
+    body { background:#fff8ef; color:var(--ink); font-family:-apple-system,"Segoe UI",Roboto,sans-serif;
+      min-height:100vh; min-height:100dvh; display:flex; align-items:center; justify-content:center; padding:24px; text-align:center; }
+    h1 { font-size:22px; margin-bottom:8px; }
+    p { color:var(--muted); font-size:15px; line-height:1.5; max-width:320px; margin:0 auto; }
+    button { margin-top:22px; border:none; border-radius:14px; padding:14px 26px; font-size:16px; font-weight:700;
+      color:#fff; background:var(--teal); }
+  </style>
+</head>
+<body>
+  <!-- Shown by the app when speaksona.com cannot be reached (errorPath). -->
+  <main>
+    <h1>Can't reach Sona</h1>
+    <p>Your dashboard needs the internet. Check your connection, then try again.</p>
+    <button type="button" onclick="location.replace('https://www.speaksona.com/slp.html')">Try again</button>
+  </main>
+</body>
+</html>

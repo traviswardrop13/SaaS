@@ -1,0 +1,18 @@
+{
+  "appId": "com.speaksona.slp",
+  "appName": "Sona for SLPs",
+  "webDir": "www",
+  "appendUserAgent": "SonaSLPApp/1",
+  "server": {
+    "url": "https://www.speaksona.com",
+    "appStartPath": "/slp.html",
+    "errorPath": "error.html",
+    "cleartext": false,
+    "allowNavigation": ["speaksona.com", "www.speaksona.com"]
+  },
+  "ios": {
+    "contentInset": "automatic",
+    "backgroundColor": "#fff8ef",
+    "loggingBehavior": "none"
+  }
+}

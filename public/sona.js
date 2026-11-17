@@ -1,6 +1,14 @@
 /* Tiny shared state for the Sona parent prototype — localStorage only (no backend yet).
    Used by home.html, lesson.html, customize.html, progress.html and settings.html. */
 (function (global) {
+  // SLPAPP1 (16 Nov 2026): the clinicians' own iPhone app ("SonaSLPApp/<n>"
+  // in its user agent) is the dashboard alone. A family page opened there
+  // goes to the dashboard: it would be the kids' app with no store to buy in.
+  try {
+    if (/\bSonaSLPApp\/\d/.test(global.navigator.userAgent || "") && !/^\/slp(-login)?(\.html)?$/.test(global.location.pathname)) {
+      global.location.replace("/slp.html");
+    }
+  } catch (e) {}
   const PKEY = "sona.profile.v1", GKEY = "sona.progress.v1";
   const ALL_SOUNDS = ["P", "B", "M", "N", "T", "D", "K", "G", "F", "V", "S", "Z", "SH", "CH", "J", "L", "R", "TH", "THV"];
   // ── PLAY1: the play door ────────────────────────────────────────────────
