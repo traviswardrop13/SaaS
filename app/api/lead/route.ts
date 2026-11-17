@@ -5,6 +5,7 @@ import { rateLimit } from "@/lib/rateLimit";
 import { contactsConfigured, planWord, upsertContact, type ListResult } from "@/lib/contacts";
 import { APP_READY, sendWelcomeEmail } from "@/lib/launch";
 import { enroll, inAppSource, stopSeries } from "@/lib/nurture";
+import { mailConfigured } from "@/lib/mail";
 
 /**
  * THE ONE PLACE A GROWN-UP'S EMAIL GOES: the SLP sign-up (via the auth route's
@@ -37,7 +38,7 @@ export async function GET() {
   return NextResponse.json({
     ok: true,
     service: "lead",
-    email: Boolean(process.env.RESEND_API_KEY),
+    email: mailConfigured(),
     hook: Boolean(process.env.LEAD_WEBHOOK_URL),
     list: contactsConfigured(),
   });

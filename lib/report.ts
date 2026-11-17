@@ -1,6 +1,7 @@
 import { createHash, createHmac } from "crypto";
 import { kvCmd } from "@/lib/slpAuth";
 import { config, esc, unsubToken } from "@/lib/nurture";
+import { sendMail } from "@/lib/mail";
 
 /**
  * THE WEEKLY PROGRESS REPORT (Travis, 15 Oct 2026: "i want the setup page to
@@ -203,26 +204,21 @@ export async function suppressed(email: string, kv: Kv): Promise<boolean | null>
   return false;
 }
 
-/** Send one Resend email; true when Resend took it. Never throws; gives up after 10 seconds. lib/weekly.ts sends with it too. */
+/**
+ * Send one email (GoHighLevel when it is set up, else Resend: lib/mail); ok
+ * when it was taken. Never throws; gives up after 10 seconds. lib/weekly.ts
+ * sends with it too. The name is from when Resend sent everything. Through
+ * GoHighLevel the report's numbers (days, reps, sounds; never a child's
+ * name) are in that contact's GHL conversation.
+ */
 export async function resend(f: Fetch, cfg: NonNullable<ReturnType<typeof config>>, msg: { to: string; subject: string; html: string; text: string; unsubUrl: string; key: string }): Promise<{ ok: boolean; status: number }> {
-  const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), 10000);
-  try {
-    const r = await f("https://api.resend.com/emails", {
-      method: "POST", signal: ctl.signal,
-      headers: { Authorization: `Bearer ${cfg.key}`, "Content-Type": "application/json", "Idempotency-Key": msg.key },
-      body: JSON.stringify({
-        from: cfg.from, to: [msg.to], reply_to: cfg.replyTo, subject: msg.subject, html: msg.html, text: msg.text,
-        headers: { "List-Unsubscribe": `<${msg.unsubUrl}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" },
-      }),
-    });
-    if (!r.ok) console.error("[report] Resend refused", r.status);
-    return { ok: r.ok, status: r.status };
-  } catch (e) {
-    console.error("[report] send threw:", e instanceof Error ? e.message : String(e));
-    return { ok: false, status: 0 };
-  } finally {
-    clearTimeout(timer);
-  }
+  const r = await sendMail({
+    from: cfg.from, to: msg.to, replyTo: cfg.replyTo, subject: msg.subject, html: msg.html, text: msg.text,
+    idempotencyKey: msg.key,
+    headers: { "List-Unsubscribe": `<${msg.unsubUrl}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" },
+  }, { fetch: f, timeoutMs: 10000 });
+  if (!r.ok) console.error("[report] the email was refused", r.status);
+  return { ok: r.ok, status: r.status };
 }
 
 export const unsubUrlFor = (email: string, secret: string) => `https://speaksona.com/api/email/unsub?e=${encodeURIComponent(email)}&k=${unsubToken(email, secret)}`;

@@ -1,3 +1,5 @@
+import { mailConfigured, sendMail } from "@/lib/mail";
+
 /**
  * IS THE APP READY? (Travis, 25 Sep 2026.) The iPhone app closes on launch on
  * iOS 27 until 1.0.3 is in the App Store, so the landing page stops sending
@@ -89,14 +91,14 @@ export async function previewToken(key: string): Promise<string> {
 
 /**
  * THE ONE EMAIL A PARENT OR "OTHER" GETS FOR SIGNING UP while the app is not
- * ready: thank you, it launches Friday, watch for our email. Sent through
- * Resend, the same as the sign-in email, because it is the one sender that
+ * ready: thank you, it launches Friday, watch for our email. Sent by the
+ * sign-in email's sender (lib/mail: GoHighLevel, else Resend), the one that
  * works today. It carries no name — the landing page asks for none — and
  * nothing about a child. /api/lead sends it at most once per address.
  */
 export async function sendWelcomeEmail(email: string): Promise<boolean> {
-  const key = process.env.RESEND_API_KEY;
-  if (!key) return false;
+  // GoHighLevel when it is set up, else Resend (lib/mail)
+  if (!mailConfigured()) return false;
   const from = process.env.RESEND_FROM || "Sona <login@speaksona.com>";
   // WHERE A REPLY GOES (Travis, 26 Sep 2026: "where can i look to see if
   // there's been a response"). login@speaksona.com is a sending address with
@@ -104,13 +106,10 @@ export async function sendWelcomeEmail(email: string): Promise<boolean> {
   // RESEND_REPLY_TO in Vercel to an inbox that is read and replies land there.
   const replyTo = (process.env.RESEND_REPLY_TO || "").trim();
   try {
-    const r = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
+    const r = await sendMail({
         from,
-        to: [email],
-        ...(/^\S+@\S+\.\S+$/.test(replyTo) ? { reply_to: replyTo } : {}),
+        to: email,
+        ...(/^\S+@\S+\.\S+$/.test(replyTo) ? { replyTo } : {}),
         subject: "You're on the list for Sona",
         html:
           `<div style="font-family:system-ui,Segoe UI,Roboto,sans-serif;font-size:15px;color:#16384f;line-height:1.6;max-width:520px;">` +
@@ -126,13 +125,8 @@ export async function sendWelcomeEmail(email: string): Promise<boolean> {
           LAUNCH_NOTE + "\n\n" +
           "Talk soon,\nTravis and Rachel\n\n" +
           "You're getting this because this address was entered at speaksona.com. If that wasn't you, you can ignore it.\n",
-      }),
     });
-    if (!r.ok) {
-      let why = String(r.status);
-      try { why += " " + (await r.text()).slice(0, 300); } catch { /* status alone */ }
-      console.error("[launch] Resend refused the welcome email:", why);
-    }
+    if (!r.ok) console.error("[launch] the sender refused the welcome email:", (String(r.status) + " " + r.detail).trim());
     return r.ok;
   } catch (e) {
     console.error("[launch] welcome email threw:", e instanceof Error ? e.message : String(e));

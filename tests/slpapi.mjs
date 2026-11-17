@@ -340,7 +340,7 @@ if (A) {
   ok("GET on the sign-up route reports whether the funnel is wired",
     /export async function GET()/.test(req) && /ready: signing && store/.test(req));
   ok("…as presence booleans only, never the values themselves",
-    /Boolean\(process\.env\.RESEND_API_KEY\)/.test(req) &&
+    /email: mailConfigured\(\)/.test(req) &&
     /Boolean\(process\.env\.LEAD_WEBHOOK_URL\)/.test(req) &&
     !/process\.env\.SLP_AUTH_SECRET/.test((req.split("export async function POST")[0].split("export async function GET")[1]) || ""),
     "a health check that prints a secret is a leak wearing a helpful hat");
@@ -596,7 +596,7 @@ if (A) {
 
   // The usual cause of an empty inbox is an unverified sending domain, and
   // its symptom is silence. Silence is what this suite exists to break.
-  ok("a refused send says why, in the log", /Resend refused the sign-in email/.test(auth));
+  ok("a refused send says why, in the log", /refused the sign-in email/.test(auth));
   ok("…without ever logging the key", !/console\.error[\s\S]{0,200}RESEND_API_KEY/.test(auth));
 
   ok("the page does not claim an email that was refused",
@@ -774,7 +774,7 @@ if (A) {
     /function runReports\(/.test(read("lib/report.ts")) && /function reportSync\(/.test(read("public/sona.js")) && /runReports\(/.test(read("app/api/cron/nurture/route.ts")));
   ok("the Speech Check no longer promises to email a report it never sends", !/email your child's report/.test(read("public/check.html")));
   ok("the privacy policy names Resend as the email list and says it holds nothing about a child",
-    /<strong>Email list<\/strong> — Resend also keeps Sona&rsquo;s email list/.test(read("public/privacy.html")) && /never anything about a child/.test(read("public/privacy.html")) &&
+    /<strong>Email list<\/strong> — Resend keeps Sona&rsquo;s email list/.test(read("public/privacy.html")) && /never anything about a child/.test(read("public/privacy.html")) &&
     !/\bKit\b/.test(read("public/privacy.html")));
 
   // Behaviour, against a fake Resend: the welcome email (25 Sep 2026).

@@ -212,6 +212,7 @@ ok("/api/lead enrolls every new email but a speech therapist's once the app is o
     "@/lib/rateLimit": { rateLimit: async () => null },
     "@/lib/contacts": { contactsConfigured: () => false, planWord: (p) => (p === "trial" || p === "paid" ? p : ""), upsertContact: async () => null },
     "@/lib/launch": { APP_READY: true, sendWelcomeEmail: async () => false },
+    "@/lib/mail": { mailConfigured: () => true },
     "@/lib/nurture": N,
   };
   const rmod = { exports: {} };

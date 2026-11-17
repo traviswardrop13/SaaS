@@ -791,12 +791,14 @@ const BUTTON = "display:inline-block;background:#1d8a84;color:#fff;font-weight:7
 
 /**
  * The one email that turns the board on (spec §9.15), through the repo's own
- * Resend call (`resendSend`, logBody off: Resend's refusal text can quote
- * the recipient, and the address must never reach a log). No child's name,
- * no tracking pixel, and no link but the confirm link, the remove link and
- * the privacy page. Without RESEND_API_KEY, on a developer's machine only,
- * the two links go to the server console (never the address, never a
- * response).
+ * send (`resendSend`, lib/mail: GoHighLevel when it is set up, else Resend;
+ * logBody off: the sender's refusal text can quote the recipient, and the
+ * address must never reach a log). No child's name, no tracking pixel, and
+ * no link but the confirm link, the remove link and the privacy page.
+ * BEFORE THE BOARD GOES LIVE: through GoHighLevel the address is kept there
+ * as a contact, so "Sona keeps no copy of it" below must name GoHighLevel.
+ * With no sender at all, on a developer's machine only, the two links go to
+ * the server console (never the address, never a response).
  */
 export async function sendBoardConfirmEmail(
   to: string,

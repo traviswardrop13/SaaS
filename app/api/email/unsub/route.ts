@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createHmac } from "crypto";
 import { mailbox } from "@/lib/report";
 import { markUnsubscribed } from "@/lib/contacts";
+import { ghlEmailDnd } from "@/lib/mail";
 
 /**
  * Unsubscribe for the weekly parent email — scanner-proof and RFC 8058 ready.
@@ -84,5 +85,12 @@ export async function POST(req: NextRequest) {
   // if Resend doesn't answer, the address is owed and the daily run tries
   // again (`email:unsub` already stops every email Sona itself sends)
   try { await markUnsubscribed(v.email); } catch { /* never fails the unsubscribe itself */ }
+  // and GoHighLevel, which sends Sona's emails when it is set up (lib/mail):
+  // the contact's email goes on Do Not Disturb, so GHL's own workflows skip
+  // them too. A DND contact gets NO email from GHL, Sona's sign-in links
+  // included: a clinician who unsubscribes gets no sign-in email until the
+  // DND is lifted in GHL. Not configured, or no answer: `email:unsub` still
+  // stops every email Sona sends itself.
+  try { await ghlEmailDnd(v.email); } catch { /* never fails the unsubscribe itself */ }
   return page("You're unsubscribed 🧡", "No more emails from Sona. Your child's practice and report stay right in the app, always.");
 }

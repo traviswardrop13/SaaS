@@ -1,5 +1,6 @@
 import crypto from "node:crypto";
 import { APP_READY, LAUNCH_NOTE } from "@/lib/launch";
+import { mailConfigured, sendMail } from "@/lib/mail";
 
 /**
  * Magic-link auth for the SLP master account — the app's first real login.
@@ -431,7 +432,7 @@ export function clearCookie(): string {
 }
 
 /**
- * Send the sign-in link via Resend. Until RESEND_API_KEY is set, return the link
+ * Send the sign-in link (lib/mail: GoHighLevel, else Resend). Until a sender is set, return the link
  * directly so it can be tested on preview — but never leak it on production.
  */
 /**
@@ -447,9 +448,11 @@ export async function sendMagicEmail(
   name = "",
   opts: { freeDashboard?: boolean; code?: string } = {},
 ): Promise<{ sent: boolean; devLink: string | null }> {
-  const key = process.env.RESEND_API_KEY;
+  // GoHighLevel sends when it is set up, else Resend (lib/mail). Through
+  // GoHighLevel, an address whose email is on Do Not Disturb there (an
+  // unsubscribe from any Sona email) gets no sign-in link either.
   const from = process.env.RESEND_FROM || "Sona <login@speaksona.com>";
-  if (!key) {
+  if (!mailConfigured()) {
     return { sent: false, devLink: process.env.VERCEL_ENV === "production" ? null : link };
   }
   const freeIntro = "Open your Sona dashboard to share practice with families and join the clinician community.";
@@ -460,12 +463,9 @@ export async function sendMagicEmail(
   const code = /^\d{6}$/.test(opts.code || "") ? String(opts.code) : "";
   const spaced = code ? code.slice(0, 3) + " " + code.slice(3) : "";
   try {
-    const r = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
+    const r = await sendMail({
         from,
-        to: [email],
+        to: email,
         subject: code ? "Your Sona sign-in code: " + spaced : opts.freeDashboard ? "Your Sona dashboard link" : "Your Sona dashboard is ready",
         html:
           `<div style="font-family:system-ui,Segoe UI,Roboto,sans-serif;font-size:15px;color:#16384f;line-height:1.6;max-width:520px;">` +
@@ -507,19 +507,16 @@ export async function sendMagicEmail(
           "3. Come back and see the days they practiced - and copy a line for your progress note.\n\n" +
           (APP_READY ? "" : "P.S. " + LAUNCH_NOTE.replace(/^Sona/, "The Sona app for families") + "\n\n") +
           "This " + (code ? "code and link expire" : "link expires") + " in 15 minutes. If it does, enter your email again at " + retryUrl + " and we'll send a fresh one. If you didn't ask for this, you can ignore it.\n",
-      }),
     });
     /**
-     * SAY WHY, in the server log, when Resend refuses. The usual cause is a
-     * sending domain that was never verified, and its symptom is silence: the
-     * page says "check your email", the inbox stays empty, and nothing
-     * anywhere names the reason. The key is never logged; the body is
-     * Resend's own error text.
+     * SAY WHY, in the server log, when the sender refuses. The usual cause is
+     * a sending domain that was never verified, and its symptom is silence:
+     * the page says "check your email", the inbox stays empty, and nothing
+     * anywhere names the reason. The key is never logged; the rest is the
+     * sender's own error text (GoHighLevel's or Resend's).
      */
     if (!r.ok) {
-      let why = String(r.status);
-      try { why += " " + (await r.text()).slice(0, 300); } catch { /* status alone */ }
-      console.error("[slpAuth] Resend refused the sign-in email:", why);
+      console.error("[slpAuth] the sender refused the sign-in email:", (String(r.status) + " " + r.detail).trim());
     }
     return { sent: r.ok, devLink: null };
   } catch (e) {
@@ -529,38 +526,31 @@ export async function sendMagicEmail(
 }
 
 /**
- * One Resend call for the two emails below, and for the Practice Board's
- * confirmation email (lib/board.ts, 11 Oct 2026). sendMagicEmail keeps its own copy
- * on purpose — its wording and its log line are pinned, and it is the sign-in
- * door. `logBody` is false for any email addressed to someone who is not a
- * Sona account holder: Resend's refusal text can quote the recipient, and a
- * parent's address must not land in a server log (it is used for one send
- * and kept nowhere).
+ * One send (lib/mail: GoHighLevel when it is set up, else Resend; the name
+ * is from when Resend sent everything) for the two emails below, and for the
+ * Practice Board's confirmation email (lib/board.ts, 11 Oct 2026).
+ * sendMagicEmail keeps its own call on purpose — its wording and its log
+ * line are pinned, and it is the sign-in door. `logBody` is false for any
+ * email addressed to someone who is not a Sona account holder: the sender's
+ * refusal text can quote the recipient, and a parent's address must not land
+ * in a server log. Sona keeps no copy of it; GoHighLevel, when it sends,
+ * keeps it as a contact, tagged with the email's label.
  */
 export async function resendSend(
   msg: { to: string; subject: string; html: string; text: string },
   label: string,
   logBody: boolean,
 ): Promise<{ sent: boolean; configured: boolean }> {
-  const key = process.env.RESEND_API_KEY;
   const from = process.env.RESEND_FROM || "Sona <login@speaksona.com>";
-  if (!key) return { sent: false, configured: false };
-  try {
-    const r = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ from, to: [msg.to], subject: msg.subject, html: msg.html, text: msg.text }),
-    });
-    if (!r.ok) {
-      let why = String(r.status);
-      if (logBody) { try { why += " " + (await r.text()).slice(0, 300); } catch { /* status alone */ } }
-      console.error("[slpAuth] Resend refused the " + label + ":", why);
-    }
-    return { sent: r.ok, configured: true };
-  } catch (e) {
-    console.error("[slpAuth] " + label + " threw:", logBody && e instanceof Error ? e.message : "network");
-    return { sent: false, configured: true };
+  if (!mailConfigured()) return { sent: false, configured: false };
+  // GoHighLevel when it is set up, else Resend (lib/mail). Through
+  // GoHighLevel the address becomes a contact there, tagged with what sent
+  // it, so a GHL workflow can leave a transactional address alone
+  const r = await sendMail({ from, to: msg.to, subject: msg.subject, html: msg.html, text: msg.text, tags: ["sona-" + label.replace(/[^a-z]+/gi, "-").toLowerCase()] });
+  if (!r.ok) {
+    console.error("[slpAuth] the sender refused the " + label + ":", logBody ? (String(r.status) + " " + r.detail).trim() : String(r.status));
   }
+  return { sent: r.ok, configured: true };
 }
 
 /** A clinician's name for a subject line: one line, no control characters, capped. */
@@ -627,7 +617,7 @@ export async function sendParentInviteEmail(
  * Premium on for the device it is opened on — theirs — sent ONLY to the
  * account's own address, which is what proves the person asking can read
  * that inbox (a session cookie on a shared clinic computer proves less).
- * Like the sign-in email, with no RESEND_API_KEY the link comes back
+ * Like the sign-in email, with no sender set (lib/mail) the link comes back
  * directly off production so a preview can be tested, and never on
  * production.
  *

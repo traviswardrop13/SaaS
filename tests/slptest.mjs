@@ -417,7 +417,7 @@ async function open(hash) {
   await pg.evaluate(() => document.getElementById("clAdd").click()); await pg.waitForTimeout(200);
   const help = await pg.evaluate(() => document.getElementById("invComposer").innerText);
   ok("the composer offers an optional parent's email and says what happens to it",
-    /Parent's email/.test(help) && /\(optional\)/.test(help) && /We'll email them the link once\. We don't keep the address\./.test(help), help.slice(0, 200));
+    /Parent's email/.test(help) && /\(optional\)/.test(help) && /We'll email them the link once\. Our email service, GoHighLevel, keeps their address as a contact\./.test(help), help.slice(0, 200));
   ok("…and the browser is not invited to fill in the clinician's own address",
     await pg.evaluate(() => document.getElementById("invParentEmail").getAttribute("autocomplete") === "off" && document.getElementById("invParentEmail").type === "email"));
 

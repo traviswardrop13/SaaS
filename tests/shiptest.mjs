@@ -378,11 +378,13 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
     ["Plan tomorrow’s sessions", "Create AI homework", "Share the app with clients", "Join the community"].every(label => flat.includes(label)));
   ok("the page preserves the family's free practice without promising universal game access",
     /daily practice and free games/i.test(flat) && !/unlimited families|free forever|gets every game/i.test(flat));
-  ok("the storage answer explains how a parent's email is handed to Resend and not kept by Sona",
-    /we hand it to Resend to deliver that one email[^.]*, and Sona keeps no copy: not stored, not logged, not added to any list\./.test(flat) &&
+  // Since 17 Nov 2026 GoHighLevel sends it and keeps it as a contact (Travis:
+  // "I want everything on Go High Level"); the page must say so.
+  ok("the storage answer says GoHighLevel sends a parent's email and keeps it as a contact",
+    /we hand it to GoHighLevel to deliver that one email with the link, and GoHighLevel keeps it as a contact\. Sona's own server keeps no copy: not stored, not logged\./.test(flat) &&
     !/keep it nowhere/.test(flat));
-  ok("the storage answer names Resend for emails and the list",
-    /emails and the email list via Resend/.test(flat) && !/sign-in emails via Resend/.test(flat));
+  ok("the storage answer names Resend for the list and GoHighLevel for emails",
+    /the email list via Resend, emails and contacts in GoHighLevel/.test(flat) && !/sign-in emails via Resend/.test(flat));
   ok("the page still explains how a clinician or family can remove a child's data",
     /stop sharing[^.]*or you remove the child from your caseload/.test(flat));
   ok("the clinician page links the Terms", /href="\/terms"/.test(shown));

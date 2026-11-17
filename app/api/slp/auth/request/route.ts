@@ -5,6 +5,7 @@ import {
   authSecretOk, clinicianRole, clinicianWorkSetting, signFreeDashboardSignup, replaceSlpAccount,
 } from "@/lib/slpAuth";
 import { contactsConfigured } from "@/lib/contacts";
+import { mailConfigured } from "@/lib/mail";
 import { safeAttrib, tellCrm } from "@/lib/slpLead";
 import { rateLimit } from "@/lib/rateLimit";
 import { makeSignInCode, storeSignInCode, reviewEmail } from "@/lib/slpSignIn";
@@ -30,7 +31,7 @@ export async function GET() {
     ready: signing && store,
     signing,                                        // SLP_AUTH_SECRET (or non-production)
     store,                                          // KV / Upstash
-    email: Boolean(process.env.RESEND_API_KEY),     // the link can actually be delivered
+    email: mailConfigured(),                        // the link can actually be delivered (GoHighLevel, else Resend)
     // The lead reaches an email list: Resend's contacts since 16 Oct 2026
     // (Kit from 24 Sep); the webhook is GoHighLevel's (back on 15 Nov 2026),
     // and either one is enough: deleting LEAD_WEBHOOK_URL must not turn this

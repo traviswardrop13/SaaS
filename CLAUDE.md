@@ -2244,7 +2244,10 @@ officer, an engineer — whose rulings are now rules:
   progress" — never on link open — and "No thanks" leaves the SLP seeing "not
   joined", never "declined".
 - **A parent's email, typed by the clinician, is used once** (Travis, 24 Sep
-  2026). Add a child may carry it; Sona hands it to Resend to email the join
+  2026). **Since 17 Nov 2026 GoHighLevel sends it and keeps it as a contact**
+  (Travis: "I want everything on Go High Level"; tagged `sona-parent-invite`),
+  and the dashboard, for-slps and the privacy page say so; Sona's own server
+  still keeps no copy. The rest of this rule is its history. Add a child may carry it; Sona hands it to Resend to email the join
   link one time and keeps no copy — not on the invite, not in the email list or
   `/api/lead`, not in a log — at most 30 a day per clinician. Say "handed to
   Resend", never "kept nowhere": Resend has it, and a privacy officer checks.
@@ -2397,6 +2400,32 @@ App Store Connect and the review notes; `tests/slpapptest.mjs` pins it all.
   Rachel's**: no word a child or a family reads changed.
 
 ## The email list: Resend's contacts, and GoHighLevel again (Kit is gone)
+**GoHighLevel sends every email (MAIL1, 16 Nov 2026)** (Travis: "I don't
+want resend doing the emails. I want it all connected with high level").
+Every send goes through one door, `sendMail` in `lib/mail.ts`: the sign-in
+link and parent invite (`lib/slpAuth.ts`), the welcome series, the report
+and its confirm email, the Monday email, RevenueCat's notes, the launch
+email, the board's confirmation and "Talk to us". With `GHL_API_TOKEN` (a
+Private Integration token: contacts and conversations/message scopes) and
+`GHL_LOCATION_ID` both set in Vercel, the address is upserted as a GHL
+contact (`POST /contacts/upsert`, Version 2021-07-28), then the email goes
+as a conversation message (`POST /conversations/messages`, type Email,
+Version 2021-04-15; `emailFrom` is `GHL_EMAIL_FROM` or the from line's
+address); a 429 is tried once more, an 8 s fuse. Without them it is the
+Resend send exactly as before, so nothing breaks until the token is in.
+GHL's send has no reply-to, no List-Unsubscribe header and no idempotency
+key: the callers' own sent marks stop doubles. **Consequences, Travis's to
+know:** every address Sona emails becomes a GHL contact (the parent invite
+and the board's confirmation tagged `sona-parent-invite`,
+`sona-board-confirmation`: a GHL workflow on "contact created" must leave
+them alone); the weekly report's numbers (never a name) sit in GHL's
+conversation; and an unsubscribe (`/api/email/unsub`) puts the GHL
+contact's email on DND (`dndSettings.Email` "active"), after which GHL
+sends that address nothing, sign-in links included. Resend still keeps the
+email list (`lib/contacts.ts`, behind `RESEND_API_KEY`). `privacy.html`
+and the parents' "What's stored" answer say so; `for-slps.html`'s "we hand
+it to Resend" answer is left for the homepage rebuild. `mailtest` plays it.
+
 **GoHighLevel is back as the CRM, beside Resend** (Travis, 15 Nov 2026:
 speaksona.com stays on Vercel, "figure out how to get new leads to go into
 the ghl crm"). `/api/lead` POSTs every lead, from the server, to
