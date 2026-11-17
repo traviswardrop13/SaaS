@@ -2240,7 +2240,10 @@ officer, an engineer — whose rulings are now rules:
   progress" — never on link open — and "No thanks" leaves the SLP seeing "not
   joined", never "declined".
 - **A parent's email, typed by the clinician, is used once** (Travis, 24 Sep
-  2026). Add a child may carry it; Sona hands it to Resend to email the join
+  2026). **Since 17 Nov 2026 GoHighLevel sends it and keeps it as a contact**
+  (Travis: "I want everything on Go High Level"; tagged `sona-parent-invite`),
+  and the dashboard, for-slps and the privacy page say so; Sona's own server
+  still keeps no copy. The rest of this rule is its history. Add a child may carry it; Sona hands it to Resend to email the join
   link one time and keeps no copy — not on the invite, not in the email list or
   `/api/lead`, not in a log — at most 30 a day per clinician. Say "handed to
   Resend", never "kept nowhere": Resend has it, and a privacy officer checks.
