@@ -2054,7 +2054,11 @@ Its share image comes from `tools/og/og-slp.html` (`og-slp.png?v=3`).
 clinician setup no longer make an account or sign a brand-new email in on
 the spot: `/api/slp/auth/request` only emails the link, and the verify
 route makes the account (Sona Pro terms from those doors, the free dashboard
-from the homepage's) and tells the CRM. The first sign-in by an emailed link
+from the homepage's). **The CRM hears of a new address as soon as its email
+is sent, before the link is opened** (Travis, 16 Nov 2026: "I want every
+email to go to high level"; `tellCrmEarly`, marked `slpcrm:<email>` so the
+verify route never sends the same lead twice); an address not proved yet
+may be a typo or someone else's, his accepted cost. The first sign-in by an emailed link
 writes `slpsessfrom:<email>` (once, NX), and every session issued before it
 is refused (`liveSession` in `lib/slpAuth.ts`, at every route that reads a
 session), so a cookie someone got for another person's address stops

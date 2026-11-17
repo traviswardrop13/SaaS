@@ -1240,9 +1240,11 @@ const count = (pred) => S.calls.filter(pred).length;
   // 13 Nov 2026 (audit B3): a new email on the sign-in page used to be given
   // an account and a cookie on the spot, so anyone could sit in a real
   // clinician's future account. The inbox comes first now, on every door.
-  ok("a NEW email on the sign-in page gets the link and nothing else: no account, no cookie, no lead",
+  // 16 Nov 2026 (Travis: "I want every email to go to high level"): the lead
+  // goes as soon as the link is sent, still with no account and no cookie.
+  ok("a NEW email on the sign-in page gets the link and one lead: no account, no cookie",
     r.status === 200 && r.json.signedIn === false && r.json.sent === true && !r.cookie && !KV.K.has("slpacct:" + fresh) &&
-    OUT.filter((o) => o.url.endsWith("/api/lead")).length === leadsBefore, JSON.stringify(r));
+    OUT.filter((o) => o.url.endsWith("/api/lead")).length === leadsBefore + 1 && KV.K.has("slpcrm:" + fresh), JSON.stringify(r));
   const freshMail = RESEND.sent.at(-1) || {};
   ok("…and the caller's own name never greets anyone (\"Hi,\", not \"Hi Robin,\")",
     /^Hi,\n/.test(freshMail.text || "") && !/Robin/.test((freshMail.text || "") + (freshMail.html || "")), JSON.stringify(freshMail.text));
@@ -1440,9 +1442,9 @@ const count = (pred) => S.calls.filter(pred).length;
     return link ? new URL(link).pathname + new URL(link).search : "/api/slp/auth/verify";
   };
   const linkPath = latestLink();
-  ok("free signup sends a dashboard link with no account or session before verification",
+  ok("free signup sends a dashboard link with no account or session before verification, and the lead at once",
     r.status === 200 && r.json.sent === true && r.json.signedIn === false && !r.cookie && linkPath.includes("?token=") && !KV.K.has(key) &&
-    !OUT.slice(before).some((o) => o.url.endsWith("/api/lead")));
+    OUT.slice(before).filter((o) => o.url.endsWith("/api/lead")).length === 1);
   const verified = await call(R.verify, "GET", linkPath);
   const account = JSON.parse(KV.K.get(key) || "{}");
   ok("opening the link creates a free account with the saved clinician details",

@@ -134,7 +134,10 @@ export async function finishSignIn(origin: string, stored: unknown): Promise<Sig
       // Every new account is made here now (13 Nov 2026: the sign-in page no
       // longer makes one before the inbox is proved), so the CRM hears of it
       // here, awaited, once the inbox is real.
-      if (await tellCrm(origin, email, signup ? signup.source : "slp-signup", "", safeAttrib(signup?.attrib))) {
+      // The sign-in request may already have told the CRM (16 Nov 2026,
+      // `slpcrm:` in the request route): then stamp, never send it twice.
+      const toldAtRequest = typeof (await kvCmd(["GET", "slpcrm:" + email])) === "string";
+      if (toldAtRequest || await tellCrm(origin, email, signup ? signup.source : "slp-signup", "", safeAttrib(signup?.attrib))) {
         // The dashboard may already have been opened using another valid
         // link. Stamp CRM only if the account is still the same snapshot.
         await replaceSlpAccount(acctKey, snapshot, { ...newAccount, crmAt: new Date().toISOString() });
