@@ -20,16 +20,16 @@
   </script>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Speech practice kids actually want to do — Sona for SLPs</title>
-  <!-- speaksona.com. next.config.js rewrites / to this file, so this is the
-       page the ads land on and the one a clinician finds by searching.
-       Indexable on purpose; the dashboard, its login and the family's
-       redemption link stay noindex — those are private surfaces.
+  <!-- speaksona.com/for-slps. Since 17 Nov 2026 the ad lands on the free-gift
+       opt-in at the root (packet.html), which hands the clinician here, to
+       #pricing. Indexable on purpose; the dashboard, its login and the
+       family's redemption link stay noindex — those are private surfaces.
 
        Built from the 23 Sep 2026 design handoff. Where the handoff's copy
        promised something the product does not do, the page says what the
        product does instead; the PR that shipped this lists each change. -->
-  <meta name="description" content="Give every family on your caseload free daily speech practice at home. You assign the sound and the position; practice days, reps and pass rate roll up to your free dashboard. No audio ever leaves the child's device. Built with a licensed pediatric SLP." />
-  <link rel="canonical" href="https://speaksona.com/" />
+  <meta name="description" content="Send every family on your caseload home with daily speech practice. You assign the sound and the position; practice days, reps and pass rate roll up to your dashboard. 14 days free, then from $19.99 a month. No audio ever leaves the child's device. Built with a licensed pediatric SLP." />
+  <link rel="canonical" href="https://speaksona.com/for-slps" />
 
   <!-- WHAT A SHARED LINK LOOKS LIKE. The growth plan is SLPs telling other
        SLPs, which means the link gets pasted into a Facebook group, a district
@@ -39,16 +39,16 @@
        against nothing. -->
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Sona" />
-  <meta property="og:url" content="https://speaksona.com/" />
+  <meta property="og:url" content="https://speaksona.com/for-slps" />
   <meta property="og:title" content="Speech practice kids actually want to do." />
-  <meta property="og:description" content="Pick the sound, and every kid on your caseload goes home with a few minutes of practice a day with Echo, free. Nothing to plan, and you see who practiced." />
+  <meta property="og:description" content="Pick the sound, and every kid on your caseload goes home with a few minutes of practice a day with Echo. Nothing to plan, and you see who practiced. 14 days free." />
   <meta property="og:image" content="https://speaksona.com/og-slp.png" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
-  <meta property="og:image:alt" content="Sona for SLPs — speech practice kids actually want to do. Free for SLPs." />
+  <meta property="og:image:alt" content="Sona for SLPs — speech practice kids actually want to do. 14 days free." />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Speech practice kids actually want to do." />
-  <meta name="twitter:description" content="Pick the sound; every kid goes home with daily practice, free. Nothing to plan, and you see who practiced." />
+  <meta name="twitter:description" content="Pick the sound; every kid goes home with daily practice. Nothing to plan, and you see who practiced. 14 days free." />
   <meta name="twitter:image" content="https://speaksona.com/og-slp.png" />
 
   <!-- The bird with no card behind him. The home-screen icon keeps its
@@ -182,6 +182,29 @@
     .bars span{flex:1;background:#fff;border-radius:8px;}
     .bars span.hi{background:var(--coral);}
 
+    /* back from the opt-in: a slim strip under the header, nothing in the hero */
+    .packet-ready{background:var(--teal-p);border-bottom:1px solid #BFEFF3;color:var(--teal-dd);font-size:15px;}
+    .packet-ready .wrap{padding-top:10px;padding-bottom:10px;}
+    /* pricing (17 Nov 2026): two plans, each with a 14-day trial */
+    .pricing{padding-top:24px;padding-bottom:72px;display:flex;flex-direction:column;gap:32px;scroll-margin-top:80px;}
+    .pricing .intro{display:flex;flex-direction:column;gap:12px;max-width:720px;}
+    .pricing .intro p{font-size:18px;line-height:1.55;color:var(--body);}
+    .plans{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:20px;}
+    .plan{position:relative;background:#fff;border:2px solid var(--line);border-radius:28px;padding:30px;display:flex;flex-direction:column;gap:14px;}
+    .plan.pop{border-color:var(--teal);box-shadow:0 20px 40px -26px rgba(14,124,137,.5);}
+    .plan .badge{position:absolute;top:-14px;left:28px;background:var(--yel);color:var(--ink);font-weight:800;font-size:13px;padding:5px 12px;border-radius:999px;}
+    .plan .pname{font-family:"Baloo 2",Nunito,sans-serif;font-weight:800;font-size:30px;line-height:1;}
+    .plan .pfor{font-weight:700;color:var(--muted);}
+    .plan .pprice{font-size:16px;color:var(--body);font-weight:700;}
+    .plan .pprice b{font-family:"Baloo 2",Nunito,sans-serif;font-size:48px;line-height:1;color:var(--ink);letter-spacing:-1px;margin-right:4px;}
+    .plan ul{list-style:none;margin:4px 0 0;padding:0;display:flex;flex-direction:column;gap:10px;flex:1;}
+    .plan li{position:relative;padding-left:28px;font-size:15px;line-height:1.5;color:var(--body);}
+    .plan li b{color:var(--ink);}
+    .plan li:before{content:"";position:absolute;left:4px;top:7px;width:12px;height:6px;border-left:3px solid var(--teal-d);border-bottom:3px solid var(--teal-d);transform:rotate(-45deg);}
+    .plan .ppar{font-size:14px;color:var(--muted);font-weight:700;}
+    .plan .btn{width:100%;margin-top:6px;}
+    .pricing .fine{font-size:14px;line-height:1.6;color:var(--muted);max-width:820px;}
+
     /* the kid side */
     .kidside{background:var(--teal);padding:88px 24px;}
     .kidside .in{max-width:1200px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:48px;align-items:center;}
@@ -259,6 +282,9 @@
   })();
 </script>
 
+<!-- Back from the opt-in at the root: the packet, one tap away. -->
+<div class="packet-ready" id="packetReady" hidden role="status"><div class="wrap"><b>Your home-practice packet is ready.</b> <a href="/home-practice-packet" target="_blank" rel="noopener">Open the packet →</a></div></div>
+
 <main>
 <section class="wrap hero">
   <div class="hero-l">
@@ -270,15 +296,20 @@
     <h1>Speech practice kids actually want to do.</h1>
     <p class="lede">Pick the sound, and every kid goes home with daily practice. Nothing to plan, and you see who practiced.</p>
 
-    <!-- THE SIGN-UP. First name and email, one button. The name is the
-         clinician's own — it goes on the account, into the CRM and into the
-         greeting of every email after this one. A child's name is never
-         asked for here and never leaves a family's device. -->
+    <!-- THE SIGN-UP. First name and email, one button — the same hero as
+         before (Travis, 17 Nov 2026: "the same look we currently have"), now
+         starting the 14-day trial. A brand-new account is signed in on the
+         spot; from here it goes to the dashboard's Plan & billing page to
+         pick Solo or Clinic, or straight to Stripe when a plan card below
+         was pressed. The name is the clinician's own — it goes on the
+         account, into the CRM and into the greeting of every email after
+         this one. A child's name is never asked for here and never leaves a
+         family's device. -->
     <form class="signup" id="signup" novalidate>
       <input id="fName" type="text" autocomplete="given-name" maxlength="40" placeholder="First name" aria-label="First name" />
       <div class="srow">
         <input id="fEmail" type="email" inputmode="email" autocomplete="email" placeholder="you@clinic.com" aria-label="Work email" />
-        <button class="btn" id="fGo" type="submit">Get Sona free</button>
+        <button class="btn" id="fGo" type="submit">Start free trial</button>
       </div>
       <!-- The email also joins the Kit list, so the form says so before the
            button is pressed (Travis's wording, 24 Sep 2026). -->
@@ -292,7 +323,7 @@
       <div class="again" id="again">Wrong address? <a href="#" id="againLink">Try again</a></div>
       <div class="devbox" id="devbox" hidden></div>
     </div>
-    <div class="hnote">Your dashboard plus the kids' app to share with families, both free. One email, no card.</div>
+    <div class="hnote" id="hnote">14 days free, then from $19.99 a month. Cancel anytime.</div>
   </div>
 
   <!-- An illustration of the dashboard, not anyone's data: three made-up
@@ -326,7 +357,10 @@
 </section>
 
 <section class="wrap facts">
-  <!-- WHAT IS FREE, AND WHAT IS NOT (Travis, 24 Sep 2026). This row said
+  <!-- WHAT IS FREE, AND WHAT IS NOT. Rewritten 17 Nov 2026: the dashboard is
+       part of the Solo and Clinic plans now, so "Free for you" became the
+       trial. What follows is the 24 Sep 2026 history.
+       (Travis, 24 Sep 2026). This row said
        "Free forever, unlimited families — for you and every kid on your
        caseload" while every game was free. Sona now has a free version and
        Premium, so it says exactly which is which: the dashboard is free, the
@@ -339,8 +373,8 @@
        "Daily practice and free games" is the one phrase for the free
        version on every surface (24 Sep 2026): gameAccess() opens all four
        free games to every child, and "two games" undersold it. -->
-  <div class="fact"><b>Free for you</b><span>Your dashboard, with every family's practice in one place. One email, no card.</span></div>
-  <div class="fact"><b>Free for every family</b><span>Daily practice and free games. Caseload Premium adds every game: $79.99 a year.</span></div>
+  <div class="fact"><b>14 days free</b><span>Your dashboard, with every family's practice in one place. Cancel before day 15 and you pay nothing.</span></div>
+  <div class="fact"><b>Free for every family</b><span>Daily practice and free games, always. Your plan adds every game for every family on your caseload.</span></div>
   <div class="fact"><b>It actually listens</b><span>Every attempt is checked on the phone. Silence never counts.</span></div>
   <div class="fact"><b>No audio leaves the device</b><span>First name only, entered by the parent.</span></div>
 </section>
@@ -368,6 +402,50 @@
       <p>Practice days, reps and pass rate by sound and position. Ready for sessions, notes and parent updates.</p>
     </div>
   </div>
+</section>
+
+<!-- THE PLANS (Travis, 17 Nov 2026). The opt-in at the root lands here.
+     Every figure is lib/caseload.ts's (SOLO_PRICE, CLINIC_PRICE,
+     CLINIC_SEATS, PLAN_TRIAL_DAYS); this page is static and cannot import it,
+     so tests/shiptest.mjs pins the two together. The family price is never
+     typed here: it moves with the charter count and with the family switch,
+     so only /api/charter may print it, and while families pay nothing the
+     line does not show at all — "parents pay" must be a price a parent can
+     actually be charged. -->
+<section class="wrap pricing" id="pricing">
+  <div class="intro">
+    <h2>Two plans. Both start with 14 days free.</h2>
+    <p>Every family can always use Sona's free version: daily practice and free games. Your plan adds your dashboard, and every game for every family on your caseload.</p>
+  </div>
+  <div class="plans">
+    <div class="plan">
+      <div class="pname">Solo</div>
+      <div class="pfor">For one clinician</div>
+      <div class="pprice"><b>$19.99</b>a month</div>
+      <ul>
+        <li><b>Your dashboard:</b> who practiced this week, who went quiet, and whose homework ends soon.</li>
+        <li><b>Homework planning:</b> pick the sound and the position, and it's waiting when the family opens Sona.</li>
+        <li><b>Progress notes:</b> copy a ready-to-paste note for any child, in one tap.</li>
+        <li><b>The full Sona app for every family on your caseload</b> — every game, every sound, at no cost to them.</li>
+      </ul>
+      <p class="ppar" id="parentPrice" hidden>Parents who buy Sona on their own pay <span id="parentFigure"></span>.</p>
+      <button class="btn pick" type="button" data-plan="solo" data-price="$19.99">Start 14-day free trial</button>
+    </div>
+    <div class="plan pop">
+      <div class="badge">For practices</div>
+      <div class="pname">Clinic</div>
+      <div class="pfor">For your whole practice</div>
+      <div class="pprice"><b>$99</b>a month</div>
+      <ul>
+        <li><b>Everything in Solo, for every clinician at your practice</b> — up to 25.</li>
+        <li><b>Each clinician gets their own dashboard</b> and their own family link.</li>
+        <li><b>Your clinic view:</b> how many families each clinician has on Sona, and how many practiced this week. Never a child's name or practice.</li>
+        <li><b>Add or remove clinicians any time,</b> on one bill.</li>
+      </ul>
+      <button class="btn pick" type="button" data-plan="clinic" data-price="$99">Start 14-day free trial</button>
+    </div>
+  </div>
+  <p class="fine">Stripe takes your card at checkout and charges on day 15 unless you cancel first. After that it renews monthly, and you can cancel anytime; everything stays on to the end of the month you paid for. You never earn anything on your own caseload: this is a plan you pay for, not a referral fee. Signed up before these plans? Your dashboard stays free.</p>
 </section>
 
 <section class="kidside">
@@ -422,7 +500,7 @@
     </div>
     <div class="q">
       <button type="button" aria-expanded="false" aria-controls="a2" id="q2">What's stored, and where?<span>+</span></button>
-      <p class="a" id="a2" hidden>Your account (email, name, clinic, code). For each consenting family: the child's first name and age, target sounds, practice days and counts, pass rate per sound, your assignments, and when the parent consented. Hosted on Vercel, stored in Upstash, emails via Resend, and the occasional email from Rachel via Kit. If you buy Caseload Premium, Stripe takes the payment and holds your email and card; we never see the card number, and nothing about a child goes to Stripe. If you type a parent's email when you add a child, we hand it to Resend to deliver that one email with the link, and Sona keeps no copy: not stored, not logged, not added to any list. Analytics (PostHog) on grown-up pages only, and a Meta ad pixel on this sign-up page so we can tell which of our ads work — neither ever runs where a child practices, and neither is sent a child's name. No ads in the app, no data sales, no profiling.</p>
+      <p class="a" id="a2" hidden>Your account (email, name, clinic, code). For each consenting family: the child's first name and age, target sounds, practice days and counts, pass rate per sound, your assignments, and when the parent consented. Hosted on Vercel, stored in Upstash, emails via Resend, and the occasional email from Rachel via Kit. If you start a plan, Stripe takes the payment and holds your email and card; we never see the card number, and nothing about a child goes to Stripe. If you type a parent's email when you add a child, we hand it to Resend to deliver that one email with the link, and Sona keeps no copy: not stored, not logged, not added to any list. Analytics (PostHog) on grown-up pages only, and a Meta ad pixel on this sign-up page so we can tell which of our ads work — neither ever runs where a child practices, and neither is sent a child's name. No ads in the app, no data sales, no profiling.</p>
     </div>
     <div class="q">
       <button type="button" aria-expanded="false" aria-controls="a3" id="q3">How is data deleted?<span>+</span></button>
@@ -432,12 +510,13 @@
       <button type="button" aria-expanded="false" aria-controls="a4" id="q4">Do you sign agreements, like a BAA?<span>+</span></button>
       <p class="a" id="a4" hidden>Ask us and we'll answer in writing, ideally before you share the link. Families share data with us directly after consenting on their own phone, rather than the clinic sharing it for them. If we confirm a breach, we notify affected clinicians and parents within 72 hours.</p>
     </div>
-    <!-- The money answer, in full. Every figure is lib/caseload.ts's; the
-         family price is deliberately not quoted here — it moves with the
-         charter count, and only /api/charter may print it. -->
+    <!-- The money answer, in full (rewritten 17 Nov 2026 for the Solo and
+         Clinic plans). Every figure is lib/caseload.ts's; the family price is
+         deliberately not quoted here — it moves with the charter count, and
+         only /api/charter may print it. -->
     <div class="q">
       <button type="button" aria-expanded="false" aria-controls="a5" id="q5">What does it cost?<span>+</span></button>
-      <p class="a" id="a5" hidden>Your dashboard is free, and so is Sona's free version for every family: daily practice and free games, with no card. Caseload Premium is optional: $79.99 a year (under $7 a month) gives every family who joins through your link every game, whether or not they share practice with you. You buy it on the web through Stripe; there is no trial, it renews yearly, and you can cancel anytime — your families keep Premium to the end of the year you paid for. Families you don't cover can buy Premium themselves. You never earn anything on your own caseload. Signed up before Caseload Premium existed? Your caseload already has it, free: that was the promise, and it stands.</p>
+      <p class="a" id="a5" hidden>Two plans, both with 14 days free. Solo is $19.99 a month for one clinician: your dashboard, homework planning, progress notes, and every game for every family who joins through your link, whether or not they share practice with you. Clinic is $99 a month for up to 25 clinicians at one practice, each with their own dashboard, plus a clinic view of totals per clinician — never a child's data. You buy on the web through Stripe: your card is taken at checkout and charged on day 15 unless you cancel first, then monthly until you cancel — everything stays on to the end of the month you paid for. Sona's free version stays free for every family: daily practice and free games, with no card. You never earn anything on your own caseload. Signed up before these plans? Your dashboard stays free, and if you were promised free for every family on your caseload, that promise stands.</p>
     </div>
   </div>
 </section>
@@ -448,10 +527,10 @@
       <img src="/echo.png" alt="" width="120" height="120">
       <div class="t">
         <h2>Know who practiced before they walk in.</h2>
-        <p>Free for you, and free daily practice for every family on your caseload.</p>
+        <p>14 days free, then from $19.99 a month. Free daily practice for every family, always.</p>
       </div>
     </div>
-    <button class="btn yel" id="finalGo" type="button">Get Sona free</button>
+    <button class="btn yel" id="finalGo" type="button">Start free trial</button>
   </div>
 </section>
 </main>
@@ -491,7 +570,26 @@
       if (attrib.utm_source) src = attrib.utm_source.replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 30) || src;
     } catch (e) {}
 
-    var LABEL = "Get Sona free";
+    var LABEL = "Start free trial";
+    // WHICH PLAN (17 Nov 2026). The hero form names none: a new clinician
+    // then picks Solo or Clinic on the dashboard's Plan & billing page. A
+    // plan card below names one, and the form remembers it so checkout opens
+    // on that plan directly. The figure is read off the card's data-price,
+    // which shiptest pins to lib/caseload.ts like every figure on this page.
+    var PICK = null;
+    // Back from the opt-in: the packet is one tap away, wherever they scroll.
+    try { if (new URLSearchParams(location.search).get("packet") === "1") $("packetReady").hidden = false; } catch (e) {}
+    // The family price, only as /api/charter answers it, and only while
+    // families are actually charged (the same rule as the dashboard's line).
+    try {
+      fetch("/api/charter").then(function (r) { return r.json(); }).then(function (j) {
+        var money = /^\$\d+(\.\d\d)?$/, cap = typeof j.cap === "number" && j.cap > 0 && j.cap % 1 === 0 ? j.cap : 0, fig = "";
+        if (!j || !j.ok || j.free) fig = "";
+        else if (j.open) fig = typeof j.price === "string" && money.test(j.price) && cap ? "on the web, " + j.price + " a year for the first " + cap + " families" : "";
+        else fig = typeof j.standard === "string" && money.test(j.standard) ? "on the web, " + j.standard + " a year" : "";
+        if (fig) { $("parentFigure").textContent = fig; $("parentPrice").hidden = false; }
+      }).catch(function () {});
+    } catch (e) {}
     // THE ERROR SITS UNDER THE BUTTON, which on a laptop is the bottom edge of
     // the window — so a refused sign-up looked like a button that did nothing.
     // Every message is brought into view as it is shown.
@@ -499,7 +597,20 @@
       var e = $("fErr"); e.textContent = msg;
       try { e.scrollIntoView({ block: "nearest", behavior: "smooth" }); } catch (x) { e.scrollIntoView(false); }
     }
-    function busy(on) { $("fGo").disabled = on; $("fGo").textContent = on ? "Sending…" : LABEL; }
+    function busy(on, label) { $("fGo").disabled = on; $("fGo").textContent = on ? (label || "Sending…") : LABEL; }
+    // A NEW ACCOUNT GOES STRAIGHT TO STRIPE for the trial: the sign-up route
+    // has just signed it in, so the plan route answers for it. If checkout
+    // cannot open, the dashboard's Plan & billing page is the same offer.
+    function checkout(plan) {
+      busy(true, "Opening secure checkout…");
+      return fetch("/api/slp/plan", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan: plan }),
+      }).then(function (r) { return r.json(); }).then(function (j) {
+        if (j && j.ok && typeof j.url === "string" && /^https:\/\//.test(j.url)) { location.href = j.url; return; }
+        location.href = "/slp.html#premium";
+      }).catch(function () { location.href = "/slp.html#premium"; });
+    }
 
     function go() {
       var name = (($("fName").value) || "").trim();
@@ -542,15 +653,15 @@
           $("sentMsg").textContent = "Your account is here, but our email didn't go out just now. Email hello@speaksona.com and we'll open your dashboard by hand — usually within the hour.";
           $("again").hidden = true;
         } else if (!j.sent) {
-          // Signed in, but the email was refused: the dashboard is one tap
-          // away, and the page must not promise a link that is not coming.
-          $("sentMsg").textContent = "You're in — opening your dashboard now. Our email to " + email + " didn't go out just now, so bookmark the dashboard to come back to it.";
+          // Signed in, but the email was refused: checkout is one tap away,
+          // and the page must not promise a link that is not coming.
+          $("sentMsg").textContent = "You're in — taking you to start your free trial. Our email to " + email + " didn't go out just now, so bookmark your dashboard once you're in.";
           $("again").hidden = true;
         } else if (j.signedIn) {
-          $("sentMsg").textContent = "You're in — opening your dashboard now. We've also emailed " + email + " a link for next time.";
+          $("sentMsg").textContent = "You're in — taking you to start your free trial. We've also emailed " + email + " a link to your dashboard for next time.";
           $("again").hidden = true;
         } else {
-          $("sentMsg").textContent = "Your sign-in link is on its way to " + email + ". It opens straight into your dashboard — no password.";
+          $("sentMsg").textContent = "You already have a Sona account, so your sign-in link is on its way to " + email + ". Open it, then pick your plan under Plan & billing.";
           $("again").hidden = false;
         }
         // A brand-new account is signed in already, so the straight-through
@@ -563,12 +674,12 @@
           $("devbox").hidden = false;
           $("devbox").innerHTML = 'Email isn\'t configured here, so this is your link (preview only): <a href="' + j.devLink + '">Open it →</a>';
         }
-        // STRAIGHT IN (Travis, 23 Sep 2026). A brand-new account is signed in
-        // already, so it goes to the dashboard on its own rather than stopping
-        // at "check your email" — the dashboard is where the app download and
-        // the family link live. The pause lets the pixel's Lead leave first.
-        // An existing account is not signed in here and still needs its email.
-        if (j.signedIn) setTimeout(function () { location.href = "/slp.html"; }, 700);
+        // STRAIGHT TO THE TRIAL (17 Nov 2026; straight to the dashboard
+        // since 23 Sep 2026). A brand-new account is signed in already, so it
+        // goes on to Stripe for the 14-day trial rather than stopping at
+        // "check your email". The pause lets the pixel's Lead leave first. An
+        // existing account is not signed in here and still needs its email.
+        if (j.signedIn) setTimeout(function () { if (PICK) checkout(PICK.id); else location.href = "/slp.html#premium"; }, 700);
       }).catch(function () {
         busy(false);
         err("Network hiccup — try again.");
@@ -582,8 +693,16 @@
       $("fEmail").value = ""; $("fEmail").focus();
     };
 
-    // The closing button goes back to the one form rather than opening a
-    // second door: one place to sign up means one place to get it right.
+    // The closing button and the two plan cards go back to the one form
+    // rather than opening a second door: one place to sign up means one
+    // place to get it right. A card also picks its plan.
+    var cards = document.querySelectorAll("#pricing [data-plan]");
+    for (var c = 0; c < cards.length; c++) cards[c].onclick = function () {
+      PICK = { id: this.getAttribute("data-plan"), price: this.getAttribute("data-price") || "" };
+      $("hnote").textContent = "14 days free, then " + PICK.price + " a month on " + (PICK.id === "clinic" ? "Clinic" : "Solo") + ". Cancel anytime.";
+      $("fGo").textContent = LABEL;
+      $("finalGo").onclick();
+    };
     $("finalGo").onclick = function () {
       var target = $("sent").hidden ? $("signup") : $("sent");
       target.scrollIntoView({ behavior: "smooth", block: "center" });

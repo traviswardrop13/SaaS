@@ -627,7 +627,7 @@
       .app-download { padding:8px 10px; }
     }
     @media print { .heading-echo { display:none; } .card { box-shadow:none; } }
-    /* Caseload Premium: one card per plan state, beside the clinician's own phone.
+    /* Plan & billing: one card per plan state, beside the clinician's own phone.
        .btn sets display, which beats the hidden attribute; on this page the
        script hides buttons by state, so hidden has to win. */
     #page-premium [hidden], #page-clinic [hidden], .nav-item[hidden] { display:none !important; }
@@ -1863,7 +1863,7 @@
     $("planCopy").onclick=function(){copy($("planOutline").value,$("planCopy"));};
     $("planHomework").onclick=function(){if(CURRENT)go("child",CURRENT.childId,"homework");};
 
-    /* ── Caseload Premium ──────────────────────────
+    /* ── Plan & billing ──────────────────────────
        VIEWING ONLY READS. Opening this page sends two GETs — /api/slp/plan
        (where this caseload stands, and whether the clinician's own phone may
        have Premium) and /api/charter (the family price, for the one line that

@@ -55,14 +55,17 @@ const nextConfig = {
   // static page instead of 404ing. Rewrite keeps the pretty URL in the address bar.
   async rewrites() {
     return [
-      // THE ROOT IS THE CLINICIAN PAGE (22 Sep 2026). speaksona.com is where
-      // the SLP ad lands, so it serves the SLP page itself rather than
-      // redirecting — a redirect costs a hop on cold paid traffic and splits
-      // the SEO. One copy of that page exists, in public/, and both URLs show
-      // it; for-slps.html carries a canonical pointing at the root so search
-      // engines are told which one is the page. The parent landing page moved
-      // to /families and is unchanged.
-      { source: "/", destination: "/for-slps.html" },
+      // THE ROOT IS THE FREE-GIFT OPT-IN (Travis, 17 Nov 2026). speaksona.com
+      // is where the SLP ad lands, and it now asks for an email in exchange
+      // for the home-practice packet, then hands the clinician to the landing
+      // page with the plans on it (/for-slps#pricing). Served, not redirected:
+      // a redirect costs a hop on cold paid traffic. The landing page keeps
+      // its own URL and canonical (/for-slps); the parent landing page is
+      // /families and is unchanged. The iOS app also opens the root, so
+      // packet.html sends the native shell to the family app first.
+      { source: "/", destination: "/packet.html" },
+      { source: "/packet", destination: "/packet.html" },
+      { source: "/home-practice-packet", destination: "/home-practice-packet.html" },
       { source: "/for-slps", destination: "/for-slps.html" },
       { source: "/slp-login", destination: "/slp-login.html" },
       { source: "/slp", destination: "/slp.html" },

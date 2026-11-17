@@ -112,8 +112,8 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
   // a live campaign with no PageView and no conversion, optimising on who taps
   // an ad instead of on who turns out to be a clinician. Money, spent wrong,
   // with nothing anywhere saying so.
-  ok("the page the ad points at loads the pixel",
-    /<script src="\/pixel\.js"><\/script>/.test(slps),
+  ok("the page the ad points at loads the pixel — the opt-in at the root, and the landing page it hands on to",
+    /<script src="\/pixel\.js"><\/script>/.test(slps) && /<script src="\/pixel\.js"><\/script>/.test(readFileSync(ROOT + "/packet.html", "utf8")),
     "a campaign with no PageView and no Lead optimises on clicks, not on sign-ups");
 
   // A tap is not a sign-up. Firing on the click would teach the campaign to
@@ -133,7 +133,8 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
   // funnel; every other page — the practice screens, the clinician's caseload,
   // the family's redemption link — carries or is one keystroke from a child's
   // identity and gets no ad tracking at all.
-  const MARKETING = new Set(["check.html", "subscribe.html", "onboarding.html", "for-slps.html"]);
+  // packet.html joined 17 Nov 2026: it is the root now, where the SLP ad lands.
+  const MARKETING = new Set(["check.html", "subscribe.html", "onboarding.html", "for-slps.html", "packet.html"]);
   const pages = readdirSync(ROOT).filter((f) => f.endsWith(".html"));
   const strays = pages.filter((f) => !MARKETING.has(f) && /pixel\.js/.test(readFileSync(ROOT + "/" + f, "utf8")));
   ok("no page outside the grown-up marketing funnel loads the ad pixel", strays.length === 0, strays.join(", "));

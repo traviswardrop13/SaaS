@@ -28,7 +28,9 @@ Project **sona → Settings → Environment Variables** (Production **and** Prev
 | `STRIPE_SECRET_KEY` | `sk_test_…` (then `sk_live_…` for real charges) | ✅ |
 | `NEXT_PUBLIC_SITE_URL` | your site URL, e.g. `https://getsona.com` | optional* |
 | `STRIPE_PRICE_ID` | a Price ID, if you'd rather manage the price in Stripe | optional |
-| `STRIPE_PRICE_ID_SLP_CASELOAD` | a yearly **$79.99** Price for Caseload Premium (below) | optional |
+| `STRIPE_PRICE_ID_SLP_SOLO` | a monthly **$19.99** Price for Sona Solo (below) | optional |
+| `STRIPE_PRICE_ID_SLP_CLINIC` | a monthly **$99** Price for Sona Clinic (below) | optional |
+| `STRIPE_PRICE_ID_SLP_CASELOAD` | retired: the yearly $79.99 caseload plan is no longer sold (its holders keep it) | unused |
 | `STRIPE_PORTAL_CONFIG_CASELOAD` | a billing-portal configuration id (`bpc_…`) for Caseload Premium — only if you'd rather make it yourself (below) | optional |
 
 \*If unset, success/cancel redirects use the request origin, which is fine.
@@ -50,17 +52,28 @@ Then **push any commit** (or redeploy) so the new vars take effect.
   `customer.subscription.updated/deleted`) if you move to a real accounts DB.
   For now, live lookups via `/api/subscription` are enough to gate access.
 
-## Caseload Premium — the clinician plan (24 Sep 2026)
+## The clinician plans: Solo and Clinic (17 Nov 2026)
 
-"Sona Premium for your caseload": **$79.99 a year, no trial**, bought by a
-clinician from their dashboard (`/slp.html#premium` → `POST /api/slp/plan`).
-Every family who joins through that clinician's link gets Premium.
+**Sona Solo, $19.99 a month** (one clinician) and **Sona Clinic, $99 a month**
+(up to 25 clinicians at one practice), each with a **14-day free trial, card
+up front**: Stripe takes the card at checkout and charges on day 15 unless
+the clinician cancels. One trial per clinician. Bought from the landing page
+or the dashboard (`/slp.html#premium` → `POST /api/slp/plan { plan }`). The
+dashboard is part of the plan for accounts made from this build on; every
+family who joins through a covered clinician's link gets Premium.
 
-- **Nothing to create to start selling.** Checkout uses an inline yearly price
-  (7999 USD) from `lib/caseload.ts`, the same constant every page prints. If you
-  want Stripe's product reports tidy, create a yearly $79.99 Price and set
-  `STRIPE_PRICE_ID_SLP_CASELOAD` — it must be exactly $79.99/year, or the pages
-  and the charge disagree.
+The yearly $79.99 "Caseload Premium" plan below is **retired from checkout**.
+Anyone who bought it keeps it and is still read as covered.
+
+- **Nothing to create to start selling.** Checkout uses inline monthly prices
+  (1999 and 9900 USD) from `lib/caseload.ts`, the same constants every page
+  prints. If you want Stripe's product reports tidy, create the two monthly
+  Prices and set `STRIPE_PRICE_ID_SLP_SOLO` / `STRIPE_PRICE_ID_SLP_CLINIC` —
+  they must be exactly $19.99/month and $99/month, or the pages and the
+  charge disagree.
+- **Switching Solo ↔ Clinic is by hand for now.** The checkout refuses a
+  second plan and tells the clinician to email; change the subscription's
+  price in Stripe and set its `metadata.plan` to `slp-solo` or `slp-clinic`.
 - **The billing page cancels at period end, by construction.** The dashboard's
   **Manage billing** button (`POST /api/slp/plan/portal`) opens Stripe's
   billing portal under the caseload's OWN configuration — cancel **at the end
@@ -80,7 +93,8 @@ Every family who joins through that clinician's link gets Premium.
   it and opens the default rather than a dead button) — so a cancel there must
   not be immediate either.
 - **The stamps are the plan.** The session and the subscription carry
-  `metadata.plan = "slp-caseload"` and `metadata.slp = <clinician email>`, and
+  `metadata.plan` (`slp-solo`, `slp-clinic`, or the retired `slp-caseload`)
+  and `metadata.slp = <clinician email>`, and
   never `tier` — only `tier: charter` counts toward the 50 charter spots. Don't
   edit them by hand; coverage is read from them.
 - **Web only.** There is no App Store product for this plan, and there should

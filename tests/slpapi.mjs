@@ -611,7 +611,7 @@ if (A) {
     !/\$\("fErr"\)\.textContent = [^"]*"[^"]/.test(slps.replace('$("fErr").textContent = "";', "")),
     "an error below the fold is an error nobody reads");
   ok("a signed-in clinician whose email failed is not told it is on its way",
-    /else if \(!j\.sent\)/.test(slps) && /didn't go out just now, so bookmark the dashboard/.test(slps));
+    /else if \(!j\.sent\)/.test(slps) && /didn't go out just now, so bookmark your dashboard/.test(slps));
 }
 
 
@@ -637,8 +637,10 @@ if (A) {
 // ── a new clinician goes straight into the dashboard ──
 {
   const slps = read("public/for-slps.html");
-  ok("a brand-new, signed-in clinician is taken into the dashboard without a 'check your email' stop",
-    /if \(j\.signedIn\) setTimeout\(function \(\) \{ location\.href = "\/slp\.html"; \}/.test(slps));
+  // 17 Nov 2026: onward to the trial — Stripe for the plan card they
+  // pressed, else the dashboard's Plan & billing page to pick one.
+  ok("a brand-new, signed-in clinician is taken on to the trial without a 'check your email' stop",
+    /if \(j\.signedIn\) setTimeout\(function \(\) \{ if \(PICK\) checkout\(PICK\.id\); else location\.href = "\/slp\.html#premium"; \}/.test(slps));
   ok("…after the Lead has fired, so the pixel's request leaves first",
     slps.indexOf('sonaTrack("Lead")') > 0 && slps.indexOf('sonaTrack("Lead")') < slps.indexOf('if (j.signedIn) setTimeout('));
 }

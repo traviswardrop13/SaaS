@@ -162,7 +162,37 @@ decided and consumed in the same breath — so a parent who backed out of the
 grown-ups gate in between lost the only ask Sona will ever make, while the
 funnel counted an impression nobody saw. `iaptest.mjs` pins both halves.
 
-### Caseload Premium — the clinician's plan
+### Solo and Clinic — the clinician plans (Travis, 17 Nov 2026)
+**This supersedes the yearly Caseload Premium below for anything new.**
+- **Sona Solo, $19.99/month** (one clinician) and **Sona Clinic, $99/month**
+  (up to `CLINIC_SEATS` = 25 clinicians, owner included). Both: **14-day free
+  trial, card up front**, charged on day 15 unless cancelled; one trial per
+  clinician; monthly; cancel at period end. `lib/caseload.ts` holds every
+  constant (`PLANS`, `PLAN_TRIAL_DAYS`); Stripe stamps `plan: slp-solo |
+  slp-clinic`. `isClinicianPlan()` is how family billing ignores all three
+  clinician plans — never compare to one id.
+- **The dashboard is part of the plan.** New accounts carry
+  `terms: "plans-2026-11"` (`CURRENT_TERMS`) and see their caseload only with
+  a live plan or a clinic seat (`dashboardOpen()`; `GET /api/slp` answers 402
+  and the page shows only Plan & billing). Accounts with `caseload-2026-09`
+  were promised a free dashboard and keep it; accounts with no `terms` keep
+  everything. Never backfill or upgrade a `terms` stamp.
+- **Clinic owner view = totals per clinician, never a child** (Travis's
+  choice): families on Sona and how many practiced in 7 days. Families
+  consented to share with their own therapist, not a clinic owner; showing
+  children to the owner needs new consent wording — Rachel's and a privacy
+  review's call. A seat goes live only when the invitee opens the emailed
+  link (`lib/clinic.ts`).
+- **The front door is the free-gift opt-in.** `/` serves `packet.html` (the
+  home-practice packet for an email, via `/api/lead`), which hands the
+  clinician to `/for-slps#pricing`. The gift is not the dashboard. The packet
+  (`home-practice-packet.html`) uses only words from `WORDS` in `sona.js`
+  (`shiptest` pins it); its parent guide is Rachel's to approve.
+- **Community is gone** from the dashboard.
+- **"Parents normally pay" appears only when it is true**: the family price is
+  printed only from `/api/charter`, and not at all while `FREE_MODE` is on.
+
+### Caseload Premium — the clinician's plan (RETIRED from checkout 17 Nov 2026; holders keep it)
 **"Sona Premium for your caseload": $79.99 a year, bought on the web by the
 clinician** (Travis, 24 Sep 2026 — this reverses "there is no payment path for
 an SLP or clinic"). Stripe hosted checkout from the dashboard's Caseload
