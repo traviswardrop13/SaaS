@@ -371,7 +371,9 @@ export async function sendMagicEmail(
           // your caseload" — the promise the grandfathered clinicians hold.
           // A clinician signing up now is not grandfathered, so the first
           // email they get says only what is true for every clinician.
-          `<p>Your Sona dashboard is ready — it's free, and every family you send home gets Sona's free version.</p>` +
+          // 17 Nov 2026: "it's free" is gone — the dashboard is part of the
+          // Solo and Clinic plans now. What every family gets is still true.
+          `<p>Your Sona dashboard is ready, and every family you send home gets Sona's free version.</p>` +
           `<p><a href="${link}" style="display:inline-block;background:#58cc02;color:#fff;font-weight:700;text-decoration:none;padding:14px 26px;border-radius:12px;font-size:16px;">Open my dashboard</a></p>` +
           `<p style="margin-top:22px;"><b>What to do first</b></p>` +
           `<ol style="padding-left:18px;color:#46627a;">` +
@@ -389,7 +391,7 @@ export async function sendMagicEmail(
          */
         text:
           (name ? "Hi " + name + ",\n\n" : "Hi,\n\n") +
-          "Your Sona dashboard is ready - it's free, and every family you send home gets Sona's free version.\n\n" +
+          "Your Sona dashboard is ready, and every family you send home gets Sona's free version.\n\n" +
           "Open it here:\n" + link + "\n\n" +
           "What to do first\n" +
           "1. Add a child - initials are enough. You pick the sound and the position.\n" +
@@ -547,6 +549,43 @@ export async function sendSelfLinkEmail(
       "Open it on your own phone or tablet:\n" + link + "\n\n" +
       "Each link works once and expires in 30 days. If you didn't ask for this, you can ignore it.\n",
   }, "own-phone link email", true);
+  if (!r.configured) return { sent: false, devLink: process.env.VERCEL_ENV === "production" ? null : link };
+  return { sent: r.sent, devLink: null };
+}
+
+/**
+ * A CLINIC OWNER ADDED THIS CLINICIAN (17 Nov 2026). The link signs them in
+ * and accepts the seat in one tap — clicking it is what proves the inbox is
+ * theirs, so a seat is never live on an address nobody has opened. It says
+ * exactly what the owner will see, because a clinician deserves to know
+ * before they accept: totals, never a child.
+ */
+export async function sendClinicInviteEmail(
+  to: string,
+  link: string,
+  ownerName = "",
+  clinicName = "",
+): Promise<{ sent: boolean; devLink: string | null }> {
+  const who = oneLine(ownerName, 60) || "Your clinic";
+  const where = oneLine(clinicName, 80);
+  const intro = who + (where ? " at " + where : "") + " added you to their Sona clinic plan.";
+  const seen = "They will see how many families you have on Sona and how many practiced this week. Never a child's name, and never a child's practice.";
+  const r = await resendSend({
+    to,
+    subject: who + " added you to Sona",
+    html:
+      `<div style="${FRAME}">` +
+      `<p>Hi,</p>` +
+      `<p>${esc(intro)} Your own Sona dashboard is included, and every family you send home gets the full Sona app.</p>` +
+      `<p><a href="${esc(link)}" style="${BUTTON}">Open my dashboard</a></p>` +
+      `<p style="color:#46627a;">${esc(seen)}</p>` +
+      `<p style="color:#6b86a3;font-size:13px;margin-top:22px;">This link works once and expires in 14 days. If you weren't expecting this, you can ignore it.</p>` +
+      `</div>`,
+    text:
+      "Hi,\n\n" + intro + " Your own Sona dashboard is included, and every family you send home gets the full Sona app.\n\n" +
+      "Open your dashboard:\n" + link + "\n\n" + seen + "\n\n" +
+      "This link works once and expires in 14 days. If you weren't expecting this, you can ignore it.\n",
+  }, "clinic invite email", true);
   if (!r.configured) return { sent: false, devLink: process.env.VERCEL_ENV === "production" ? null : link };
   return { sent: r.sent, devLink: null };
 }

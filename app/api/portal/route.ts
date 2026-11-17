@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
-import { CASELOAD_PLAN } from "@/lib/caseload";
+import { isClinicianPlan } from "@/lib/caseload";
 
 /**
  * Self-serve "Manage subscription" — turns a checkout session id into a Stripe
@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
   const stripe = new Stripe(key);
   try {
     const s = await stripe.checkout.sessions.retrieve(sid);
-    if (s.metadata?.plan === CASELOAD_PLAN) {
+    if (isClinicianPlan(s.metadata?.plan)) {
       return NextResponse.json({ ok: false, error: "That's a clinician's plan — manage it from your Sona dashboard." }, { status: 403 });
     }
     const customer = typeof s.customer === "string" ? s.customer : s.customer?.id;

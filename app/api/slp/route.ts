@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { readSession, kvCmd, kvConfigured, rosterKey, healLegacyRoster } from "@/lib/slpAuth";
 import { readAllHomework, hwStatus, type Homework, type HomeworkRecord } from "@/lib/homework";
 import { readMeta, readInvites, readGone, readAccount, type ChildMeta } from "@/lib/roster";
+import { dashboardOpen, StoreUnavailable } from "@/lib/caseload";
 
 /**
  * SLP master roster — returns each family's latest progress for the SIGNED-IN
@@ -61,6 +62,19 @@ export async function GET(req: NextRequest) {
   const s = readSession(req);
   if (!s) return NextResponse.json({ ok: false, error: "sign in required" }, { status: 401 });
   if (!kvConfigured()) return NextResponse.json({ ok: true, configured: false, kids: [], invites: [] });
+  // THE DASHBOARD IS PART OF THE PLAN (17 Nov 2026). An account made from
+  // that build on sees its caseload only with a live Solo or Clinic plan —
+  // the 14-day trial counts — or a seat on a clinic. Accounts that signed up
+  // when the dashboard was free keep it (lib/caseload dashboardOpen). The
+  // page shows the plan picker on 402; families' devices never call this.
+  try {
+    if (!(await dashboardOpen(s.email))) {
+      return NextResponse.json({ ok: false, needPlan: true, error: "Start your free trial to open your dashboard." }, { status: 402 });
+    }
+  } catch (e) {
+    if (e instanceof StoreUnavailable) return NextResponse.json({ ok: false, error: "Couldn't reach your workspace just now — try again in a moment." }, { status: 503 });
+    throw e;
+  }
   const { code } = await readAccount(s.email);
   if (!code) return NextResponse.json({ ok: true, configured: true, kids: [], invites: [] });
 

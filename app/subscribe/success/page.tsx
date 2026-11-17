@@ -13,10 +13,11 @@ import { useEffect, useState } from "react";
 
 const PLAN_CENTS = { annual: 5999, monthly: 999 } as const;
 const TRIAL_DAYS = 3;
-// CASELOAD_PLAN in lib/caseload.ts, written out because that module is
-// server-only (Stripe, the store) and cannot ride into a client bundle.
-// tests/caseloadtest.mjs fails if the two ever differ.
-const CASELOAD_PLAN_ID = "slp-caseload";
+// Every clinician plan's Stripe stamp starts "slp-" (slp-caseload, slp-solo,
+// slp-clinic — CLINICIAN_PLANS in lib/caseload.ts). That module is
+// server-only (Stripe, the store) and cannot ride into a client bundle, so
+// this reads the prefix; tests/caseloadtest.mjs fails if a plan ever lacks it.
+const CLINICIAN_PLAN_PREFIX = "slp-";
 
 type Info = {
   amountCents: number | null;
@@ -75,7 +76,7 @@ export default function SubscribeSuccess() {
         // the server on every family device — not whichever browser this
         // session id is opened in. Nothing is written, no code is minted and
         // no purchase is reported: this was not a family's purchase.
-        if (j.plan === CASELOAD_PLAN_ID) {
+        if (typeof j.plan === "string" && j.plan.indexOf(CLINICIAN_PLAN_PREFIX) === 0) {
           setCaseload(true);
           return;
         }

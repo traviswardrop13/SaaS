@@ -282,10 +282,10 @@ async function open(hash) {
     const settings = await pg.evaluate(() => { location.hash = "#settings"; return new Promise((r) => setTimeout(() => r(document.getElementById("page-settings").innerText), 150)); });
     if (plan.active) {
       ok(`${label}: the caseload message says Premium is included`, /free for your family/.test(snip) && /Premium is included/.test(snip) && /every game/.test(snip), snip);
-      ok(`${label}: Settings says the families get every game`, /Your caseload has Premium, so they get every game too/.test(settings), settings);
+      ok(`${label}: Settings says the families get every game`, /Your plan covers them, so they get every game too/.test(settings), settings);
     } else {
       ok(`${label}: the caseload message promises the free version and no Premium`, /free for your family: daily practice and free games\./.test(snip) && !/Premium/.test(snip), snip);
-      ok(`${label}: Settings says what the free version is and where Premium lives`, /daily practice and free games/.test(settings) && /With Caseload Premium they get every game/.test(settings), settings);
+      ok(`${label}: Settings says what the free version is and where the plans live`, /daily practice and free games/.test(settings) && /With a Solo or Clinic plan they get every game/.test(settings), settings);
     }
     ok(`${label}: never pilot, trial or forever`, !/pilot|trial|forever/i.test(snip + settings), snip);
     ok(`${label}: learning the plan is a read, never a write`, !log.some((l) => l.m !== "GET"), JSON.stringify(log.filter((l) => l.m !== "GET")));

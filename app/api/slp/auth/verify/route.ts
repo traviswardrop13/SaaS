@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { kvCmd, hashToken, signSession, sessionCookie, SESSION_MAX_AGE } from "@/lib/slpAuth";
-import { CASELOAD_TERMS } from "@/lib/caseload";
+import { CURRENT_TERMS } from "@/lib/caseload";
 
 export const runtime = "nodejs";
 
@@ -33,7 +33,7 @@ export async function GET(req: NextRequest) {
   // signed in regardless; the dashboard reads the account itself.
   if (!acct && raw === null) {
     // `terms`: made under the caseload plan (lib/caseload, 24 Sep 2026).
-    acct = { email, name: "", clinic: "", code: "", createdAt: new Date().toISOString(), terms: CASELOAD_TERMS };
+    acct = { email, name: "", clinic: "", code: "", createdAt: new Date().toISOString(), terms: CURRENT_TERMS };
     await kvCmd(["SET", acctKey, JSON.stringify(acct)]);
   }
   if (!acct) acct = { code: "" };
