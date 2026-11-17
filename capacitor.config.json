@@ -3,7 +3,7 @@
   "appName": "Sona",
   "webDir": "public",
   "server": {
-    "url": "https://speaksona.com",
+    "url": "https://app.speaksona.com",
     "cleartext": false,
     "allowNavigation": ["speaksona.com", "*.speaksona.com"]
   },

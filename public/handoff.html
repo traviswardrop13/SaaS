@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="robots" content="noindex" />
+  <title>Sona</title>
+  <!-- THE OLD ADDRESS'S HALF OF THE MOVE (APPHOST1, 17 Nov 2026).
+       app.speaksona.com/moving.html opens this page, hidden, on
+       www.speaksona.com. Same site, so the browser hands it this phone's www
+       storage, and it passes a verbatim copy up to the app's address and to
+       nowhere else: postMessage's target origin means another site that
+       frames this page receives nothing. It writes nothing and loads no other
+       script (not sona.js, which would move it to the app's address).
+       Opened on its own, it just goes to the app. It works only until
+       speaksona.com points at GoHighLevel: DOMAIN_MOVE.md. -->
+  <script>
+  (function () {
+    var APP = "https://app.speaksona.com";
+    if (window.parent === window) { window.location.replace(APP + "/"); return; }
+    var items = {};
+    try {
+      for (var i = 0; i < window.localStorage.length; i++) {
+        var k = window.localStorage.key(i);
+        if (k !== null) items[k] = window.localStorage.getItem(k);
+      }
+    } catch (e) {}
+    try { window.parent.postMessage({ app: "sona-handoff", v: 1, items: items }, APP); } catch (e) {}
+  })();
+  </script>
+</head>
+<body></body>
+</html>

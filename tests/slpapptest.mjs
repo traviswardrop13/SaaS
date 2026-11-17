@@ -396,10 +396,10 @@ if (AP) {
   ok("the middleware sends the app's requests for other pages to the dashboard, before the launch lock",
     /slpAppRequest\(req\.headers\.get\("user-agent"\)\)/.test(mw) && mw.indexOf("slpAppRequest(") < mw.indexOf("locked()") && /pathname = "\/slp\.html"/.test(mw));
   const cfg = JSON.parse(read("native/slp-ios/capacitor.config.json") || "{}");
-  ok("the app's own shell: its own id, the word in its user agent, the dashboard as its first page, speaksona.com only",
+  ok("the app's own shell: its own id, the word in its user agent, the dashboard as its first page, speaksona.com only (app.speaksona.com from its next build, APPHOST1)",
     cfg.appId === "com.speaksona.slp" && cfg.appId !== JSON.parse(read("capacitor.config.json")).appId && /^SonaSLPApp\/\d+$/.test(cfg.appendUserAgent || "") &&
-    cfg.server && cfg.server.url === "https://www.speaksona.com" && cfg.server.appStartPath === "/slp.html" && cfg.server.cleartext === false &&
-    JSON.stringify(cfg.server.allowNavigation) === JSON.stringify(["speaksona.com", "www.speaksona.com"]) && existsSync(path.join(APP, "native/slp-ios/www", cfg.server.errorPath)), cfg);
+    cfg.server && cfg.server.url === "https://app.speaksona.com" && cfg.server.appStartPath === "/slp.html" && cfg.server.cleartext === false &&
+    JSON.stringify(cfg.server.allowNavigation) === JSON.stringify(["app.speaksona.com", "speaksona.com", "www.speaksona.com"]) && existsSync(path.join(APP, "native/slp-ios/www", cfg.server.errorPath)), cfg);
   ok("the family app's shell does not carry the word", !/SonaSLPApp/.test(read("capacitor.config.json")));
   ok("its icon is a 1024 square with no transparency (App Store Connect refuses one with)", (() => { const b = readFileSync(path.join(APP, "native/slp-ios/assets/icon-1024.png")); return b.readUInt32BE(16) === 1024 && b.readUInt32BE(20) === 1024 && b[25] === 2; })());
   ok("the iOS project itself is never committed", /^\/ios$/m.test(read("native/slp-ios/.gitignore")));

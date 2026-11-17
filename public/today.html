@@ -15,6 +15,10 @@
   <script>
     (function(){
       try{
+        // Not before the address move (APPHOST1, sona.js): on app.speaksona.com
+        // a phone that hasn't copied its www Sona across yet looks brand new
+        // here, and would be sent into setup instead of home.
+        if(location.hostname==="app.speaksona.com"&&!localStorage.getItem("sona.moved.v1")&&!sessionStorage.getItem("sona.moving")) return;
         // runs BEFORE sona.js, so the kid namespace has to be resolved by hand
         // here — otherwise this always reads the first child and a freshly added
         // sibling would skip setup (KIDS1)

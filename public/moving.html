@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="robots" content="noindex" />
+  <title>Sona</title>
+  <style>
+    /* THE NEW ADDRESS'S HALF OF THE MOVE (APPHOST1, 17 Nov 2026). sona.js
+       sends a phone here the first time it opens Sona on app.speaksona.com.
+       This page asks the old address's hidden page (www…/handoff.html) for
+       this same phone's Sona, copies it in verbatim, writes the one mark
+       (sona.moved.v1) that stops it ever running again, and goes on to the
+       page the family asked for. A child may be holding the phone: Echo and
+       three words, nothing to read. */
+    html,body{margin:0;height:100%;background:#fff6e9;color:#5b2d05;font-family:Nunito,system-ui,sans-serif;}
+    body{display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;}
+    img{width:120px;height:120px;animation:bob 1.2s ease-in-out infinite;}
+    p{margin:0;font-size:18px;font-weight:800;}
+    @keyframes bob{50%{transform:translateY(-8px);}}
+    @media (prefers-reduced-motion:reduce){img{animation:none;}}
+  </style>
+</head>
+<body>
+  <img src="/assets/site/echo.webp" alt="" width="120" height="120" />
+  <p>Getting Sona ready…</p>
+  <script>
+  (function () {
+    var OLD = "https://www.speaksona.com";
+    var WAIT_MS = 8000, TRIES = 3;
+    var LS = window.localStorage;
+    // Only a path on this site: the address bar could hold anything.
+    var next = "/";
+    try {
+      var asked = new URLSearchParams(window.location.search).get("next") || "";
+      if (/^\/(?!\/)/.test(asked) && asked.indexOf("/moving.html") !== 0) next = asked;
+    } catch (e) {}
+    function go() { window.location.replace(next); }
+    function mark(how) {
+      try { LS.setItem("sona.moved.v1", JSON.stringify({ how: how, at: new Date().toISOString() })); } catch (e) {}
+      try { LS.removeItem("sona.moved.tries"); } catch (e) {}
+    }
+    // No answer (offline, or speaksona.com already points elsewhere): try
+    // again on the next two opens, then stop asking, so a brand-new family
+    // never waits on this again.
+    function missed() {
+      var n = 0;
+      try { n = (parseInt(LS.getItem("sona.moved.tries"), 10) || 0) + 1; LS.setItem("sona.moved.tries", String(n)); } catch (e) {}
+      if (n >= TRIES) mark("gaveup");
+    }
+    // A family already set up on the new address keeps it: the copy never
+    // overwrites a child someone already made here.
+    function setUpHere() {
+      try {
+        for (var i = 0; i < LS.length; i++) {
+          var k = LS.key(i);
+          if (!k || !/^sona\.profile\.v1(@|$)/.test(k)) continue;
+          var p = JSON.parse(LS.getItem(k) || "null");
+          if (p && (p.onboarded || p.childName)) return true;
+        }
+      } catch (e) {}
+      return false;
+    }
+    var done = false;
+    var frame = document.createElement("iframe");
+    frame.setAttribute("aria-hidden", "true");
+    frame.tabIndex = -1;
+    frame.style.cssText = "position:absolute;width:1px;height:1px;border:0;opacity:0;pointer-events:none;";
+    window.addEventListener("message", function (e) {
+      // Only our own old address, and only the page this one opened.
+      if (done || e.origin !== OLD || e.source !== frame.contentWindow) return;
+      var d = e.data;
+      if (!d || d.app !== "sona-handoff" || d.v !== 1 || !d.items || typeof d.items !== "object") return;
+      done = true;
+      var keys = Object.keys(d.items).filter(function (k) {
+        return typeof d.items[k] === "string" && k !== "sona.moved.v1" && k !== "sona.moved.tries";
+      });
+      if (!keys.length) { mark("empty"); return go(); }
+      if (setUpHere()) { mark("kept"); return go(); }
+      var wrote = [];
+      try {
+        keys.forEach(function (k) { LS.setItem(k, d.items[k]); wrote.push(k); });
+        mark("copied");
+      } catch (err) {
+        // Half a copy is worse than none: undo it and try again next open.
+        wrote.forEach(function (k) { try { LS.removeItem(k); } catch (e) {} });
+        missed();
+      }
+      go();
+    });
+    setTimeout(function () { if (done) return; done = true; missed(); go(); }, WAIT_MS);
+    frame.src = OLD + "/handoff.html";
+    document.body.appendChild(frame);
+  })();
+  </script>
+</body>
+</html>

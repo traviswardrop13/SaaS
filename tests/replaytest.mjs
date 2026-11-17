@@ -92,12 +92,15 @@ async function world(browser, cfg = {}) {
     try { Object.defineProperty(Navigator.prototype, "webdriver", { get: () => false }); } catch (e) {}
     try { Object.defineProperty(Navigator.prototype, "userAgentData", { get: () => undefined }); } catch (e) {}
   });
+  // The app's pages live on app.speaksona.com (APPHOST1): this phone has
+  // already made the one-time move from www (domaintest plays the move).
+  await context.addInitScript(() => { try { if (location.hostname === "app.speaksona.com" && !localStorage.getItem("sona.moved.v1")) localStorage.setItem("sona.moved.v1", "{\"how\":\"empty\"}"); } catch (e) {} });
   if (cfg.phone) await context.addInitScript(phone, cfg.phone);
   if (cfg.seed) await context.addInitScript((seed) => { try { if (localStorage.getItem("__seeded")) return; localStorage.setItem("__seeded", "1"); for (const k in seed) localStorage.setItem(k, typeof seed[k] === "string" ? seed[k] : JSON.stringify(seed[k])); } catch (e) {} }, cfg.seed);
   const w = { context, sent: [], assets: [], vendor: [], api: [], aborted: [] };
   await context.route("**/*", async (route) => {
     const req = route.request(), u = new URL(req.url());
-    if (u.hostname === "speaksona.com" || u.hostname === "www.speaksona.com" || u.hostname === "127.0.0.1") {
+    if (u.hostname === "speaksona.com" || u.hostname === "www.speaksona.com" || u.hostname === "app.speaksona.com" || u.hostname === "127.0.0.1") {
       if (u.pathname.startsWith("/api/")) { w.api.push({ path: u.pathname, body: req.postData() }); return route.fulfill({ status: 503, contentType: "application/json", body: "{}" }); }
       if (cfg.stubs && cfg.stubs[u.pathname]) return route.fulfill({ status: 200, contentType: "text/html", body: cfg.stubs[u.pathname] });
       if (u.pathname.indexOf("/vendor/posthog/") === 0) w.vendor.push(u.pathname);
@@ -179,7 +182,7 @@ try {
     ok("on speaksona.com the loader and the recorder come from this site", /PH_SRC = ON_SITE \? PH_SELF \+ "\/static\/" \+ PH_VERSION \+ "\/array\.js"/.test(SRC) && /p\.src = PH_SRC/.test(SRC) && /asset_host: ON_SITE \?/.test(SRC));
     ok("only recordings are checked; ordinary events pass as PostHog wrote them", /if \(!ev \|\| ev\.event !== "\$snapshot"\) return ev;/.test(SRC));
     ok("recording is off at the start on every page", /disable_session_recording: true,/.test(SRC));
-    ok("only speaksona.com itself records", /ON_SITE = HERE\.hostname === "speaksona\.com" \|\| HERE\.hostname === "www\.speaksona\.com"/.test(SRC));
+    ok("only speaksona.com itself records (and the app's own address, APPHOST1)", /ON_SITE = HERE\.hostname === "speaksona\.com" \|\| HERE\.hostname === "www\.speaksona\.com" \|\| HERE\.hostname === "app\.speaksona\.com";/.test(SRC));
     for (const [what, re] of [
       ["no console capture", /enable_recording_console_log: false/],
       ["no page or network timings", /capture_performance: false/],
@@ -222,7 +225,7 @@ try {
     const { page } = w;
     const calmed = () => page.evaluate(() => document.body.classList.remove("ob-settling"));
     const rest = () => page.evaluate(() => new Promise((r) => setTimeout(r, 300)));
-    await page.goto("https://speaksona.com/onboarding.html?utm_source=ad&fbclid=XYZ123");
+    await page.goto("https://app.speaksona.com/onboarding.html?utm_source=ad&fbclid=XYZ123");
     await page.waitForFunction(() => window.Sona && document.getElementById("nextBtn"));
     await recording(page);
     await mark(page, 101);                          // the hello: recorded
@@ -342,7 +345,7 @@ try {
     ok("setup: every box is an empty shape (no value, no type, no placeholder)", boxes.length > 0 && boxes.every((n) => !("value" in n.attributes) && !("placeholder" in n.attributes)), boxes.slice(0, 2));
     ok("setup: no keystroke or box value was recorded", !rr.some((e) => e.type === INCR && e.data.source === INPUT));
     const metas = rr.filter((e) => e.type === META);
-    ok("setup: the page address is recorded without its query string (no ad click id)", metas.length > 0 && metas.every((e) => e.data.href === "https://speaksona.com/onboarding.html"), metas.map((e) => e.data.href));
+    ok("setup: the page address is recorded without its query string (no ad click id)", metas.length > 0 && metas.every((e) => e.data.href === "https://app.speaksona.com/onboarding.html"), metas.map((e) => e.data.href));
     // PostHog keeps one entry of the page's own load timing for its player,
     // with the address emptied (posthog-js config.js, "Initial entries are
     // required performance metadata"): that, and nothing else, may appear
@@ -372,8 +375,8 @@ try {
   await scenario("the plan screen as the offer, in the app", async () => {
     const PRACTICED = { "sona.outcomes.v1": { R: { days: { [TODAY]: { a: 12, p: 9, tries: 12 } } } }, "sona.reps.v1": { d: TODAY, n: 12 } };
     for (const [label, url, cfg] of [
-      ["from setup (?setup=1)", "https://speaksona.com/subscribe.html?setup=1", { app: "buy", stamp: "post", setUp: true, marker: true }],
-      ["after a first practice run (?first=1)", "https://speaksona.com/subscribe.html?first=1", { app: "buy", stamp: "kept", setUp: true, local: PRACTICED }],
+      ["from setup (?setup=1)", "https://app.speaksona.com/subscribe.html?setup=1", { app: "buy", stamp: "post", setUp: true, marker: true }],
+      ["after a first practice run (?first=1)", "https://app.speaksona.com/subscribe.html?first=1", { app: "buy", stamp: "kept", setUp: true, local: PRACTICED }],
     ]) {
       const w = await world(browser, { phone: cfg });
       await w.page.goto(url);
@@ -394,7 +397,7 @@ try {
       const recap = nodes(rr).filter((n) => n.attributes && /\bph-no-capture\b/.test(n.attributes.class || "") && /\bcard\b/.test(n.attributes.class));
       ok("plan screen, " + label + ": the practice recap is an empty shape", recap.length > 0 && recap.every((n) => !(n.childNodes || []).length), recap.length);
       const door = url.split("?")[1];
-      ok("plan screen, " + label + ": the address keeps only which door opened it", rr.filter((e) => e.type === META).every((e) => e.data.href === "https://speaksona.com/subscribe.html?" + door), rr.filter((e) => e.type === META).map((e) => e.data.href));
+      ok("plan screen, " + label + ": the address keeps only which door opened it", rr.filter((e) => e.type === META).every((e) => e.data.href === "https://app.speaksona.com/subscribe.html?" + door), rr.filter((e) => e.type === META).map((e) => e.data.href));
       ok("plan screen, " + label + ": every PostHog request was read", w.sent.every((x) => !x.raw));
       ok("plan screen, " + label + ": no page error", w.errors.length === 0, w.errors);
       await w.context.close();
@@ -406,7 +409,7 @@ try {
     // "Echo" is all over setup: no piece of recording holding it may go,
     // and nothing may be swapped out of the page's own words either
     const w = await world(browser, { seed: { "sona.obdraft.v1": { childName: "Echo", email: "" } } });
-    await w.page.goto("https://speaksona.com/onboarding.html");
+    await w.page.goto("https://app.speaksona.com/onboarding.html");
     await w.page.waitForFunction(() => window.Sona && document.getElementById("nextBtn"));
     await recording(w.page);
     await mark(w.page, 111);
@@ -430,7 +433,7 @@ try {
   // ── 3c. PostHog's ordinary events are not touched ──
   await scenario("ordinary events", async () => {
     const w = await world(browser, { seed: { "sona.profile.v1": { childName: "Eric", onboarded: true } } });
-    await w.page.goto("https://speaksona.com/check.html");
+    await w.page.goto("https://app.speaksona.com/check.html");
     await w.page.waitForFunction(() => window.posthog && window.posthog.__loaded);
     await w.settle(2000);
     const pv = w.events().filter((e) => e.event === "$pageview");
@@ -442,7 +445,7 @@ try {
   // into its hidden clinician screen ──
   await scenario("an old clinician-screen answer", async () => {
     const w = await world(browser, { seed: { "sona.profile.v1": { childName: "Zephyrine", onboarded: true, slpEvaluated: "yes", focusSounds: ["R"] } } });
-    await w.page.goto("https://speaksona.com/onboarding.html");
+    await w.page.goto("https://app.speaksona.com/onboarding.html");
     await w.page.waitForFunction(() => window.Sona && document.getElementById("nextBtn"));
     const painted = await w.page.evaluate(() => !!document.querySelector('#obSlp .choice.on'));
     await w.page.waitForFunction(() => window.posthog && window.posthog.__loaded);
@@ -479,13 +482,13 @@ try {
   await scenario("pages that are never recorded", async () => {
     const seeded = { phone: { setUp: true, stamp: "kept" } };
     for (const [label, url, cfg, ready] of [
-      ["Settings", "https://speaksona.com/settings.html", seeded, null],
-      ["Settings › Your plan (the plan screen without an offer)", "https://speaksona.com/subscribe.html", { phone: { app: "buy", stamp: "post", setUp: true } }, null],
-      ["the offer a child opens by tapping a locked game (?from=slice)", "https://speaksona.com/subscribe.html?from=slice", { phone: { app: "buy", stamp: "post", setUp: true } }, "offer"],
-      ["the offer Home opens by itself (?from=home)", "https://speaksona.com/subscribe.html?from=home", { phone: { app: "buy", stamp: "post", setUp: true } }, "offer"],
-      ["the speech check", "https://speaksona.com/check.html", {}, null],
+      ["Settings", "https://app.speaksona.com/settings.html", seeded, null],
+      ["Settings › Your plan (the plan screen without an offer)", "https://app.speaksona.com/subscribe.html", { phone: { app: "buy", stamp: "post", setUp: true } }, null],
+      ["the offer a child opens by tapping a locked game (?from=slice)", "https://app.speaksona.com/subscribe.html?from=slice", { phone: { app: "buy", stamp: "post", setUp: true } }, "offer"],
+      ["the offer Home opens by itself (?from=home)", "https://app.speaksona.com/subscribe.html?from=home", { phone: { app: "buy", stamp: "post", setUp: true } }, "offer"],
+      ["the speech check", "https://app.speaksona.com/check.html", {}, null],
       ["the clinician homepage", "https://speaksona.com/?utm_source=meta&fbclid=ABC987", {}, "clinician"],
-      ["a clinician's own setup (?slp=1)", "https://speaksona.com/onboarding.html?slp=1", {}, "slp"],
+      ["a clinician's own setup (?slp=1)", "https://app.speaksona.com/onboarding.html?slp=1", {}, "slp"],
       ["setup on a test server (not speaksona.com)", "http://127.0.0.1:1/onboarding.html", {}, "local"],
     ]) {
       const w = await world(browser, cfg);

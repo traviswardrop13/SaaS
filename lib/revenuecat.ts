@@ -3,6 +3,7 @@ import { kvCmd } from "@/lib/slpAuth";
 import { APP_URL, DAY_MS, config, esc, stopSeries, unsubToken } from "@/lib/nurture";
 import { sendMail } from "@/lib/mail";
 import { PACE_MS, SEND_CAP, addressOk, suppressed } from "@/lib/report";
+import { APP_ORIGIN } from "@/lib/site";
 
 /**
  * REVENUECAT TELLS SONA (RCHOOK1, Travis, 16 Oct 2026: "build the revcat
@@ -390,7 +391,7 @@ export function renderMail(kind: "remind" | "miss", unsubUrl: string, postal: st
 const keyFor = (kind: string, email: string, exp: number) => `rc-${kind}-${createHash("sha256").update(email + " " + exp).digest("hex").slice(0, 32)}`;
 
 async function send(f: Fetch, cfg: NonNullable<ReturnType<typeof config>>, kind: "remind" | "miss", email: string, exp: number): Promise<{ ok: boolean; status: number }> {
-  const unsubUrl = `https://speaksona.com/api/email/unsub?e=${encodeURIComponent(email)}&k=${unsubToken(email, cfg.secret)}`;
+  const unsubUrl = `${APP_ORIGIN}/api/email/unsub?e=${encodeURIComponent(email)}&k=${unsubToken(email, cfg.secret)}`;
   const m = renderMail(kind, unsubUrl, cfg.postal);
   // GoHighLevel when it is set up, else Resend (lib/mail)
   const r = await sendMail({

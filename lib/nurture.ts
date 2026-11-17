@@ -1,6 +1,7 @@
 import { createHmac } from "crypto";
 import { kvCmd } from "@/lib/slpAuth";
 import { mailConfigured, sendMail } from "@/lib/mail";
+import { APP_ORIGIN } from "@/lib/site";
 
 /**
  * THE WELCOME SERIES, on Sona's own server (Travis, 6 Oct 2026: "new sign-ups
@@ -248,7 +249,7 @@ export async function sendStep(email: string, step: Step, kv: Kv = kvCmd, f: Fet
   const unsub = await unsubscribed(email, kv);
   if (unsub === true) return "unsub";
   if (unsub !== false) return "failed";
-  const unsubUrl = `https://speaksona.com/api/email/unsub?e=${encodeURIComponent(email)}&k=${unsubToken(email, cfg.secret)}`;
+  const unsubUrl = `${APP_ORIGIN}/api/email/unsub?e=${encodeURIComponent(email)}&k=${unsubToken(email, cfg.secret)}`;
   const { subject, html, text } = render(step, unsubUrl, cfg.postal);
   // GoHighLevel sends when it is set up, else Resend (lib/mail). Resend's two
   // requests a second are shared with the contact list (lib/contacts), which

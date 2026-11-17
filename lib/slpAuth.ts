@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 import { APP_READY, LAUNCH_NOTE } from "@/lib/launch";
 import { mailConfigured, sendMail } from "@/lib/mail";
+import { APP_HOST } from "@/lib/site";
 
 /**
  * Magic-link auth for the SLP master account — the app's first real login.
@@ -456,7 +457,9 @@ export async function sendMagicEmail(
     return { sent: false, devLink: process.env.VERCEL_ENV === "production" ? null : link };
   }
   const freeIntro = "Open your Sona dashboard to share practice with families and join the clinician community.";
-  const retryUrl = opts.freeDashboard ? "speaksona.com" : "speaksona.com/slp-login.html";
+  // The app's address, not speaksona.com: that becomes GoHighLevel's website
+  // (APPHOST1, lib/site.ts), where there is no sign-in to retry.
+  const retryUrl = APP_HOST + "/slp-login.html";
   // The six-digit code (SLPAPP1, 16 Nov 2026), when the sign-in screen asked
   // for one: typed in the clinicians' app, which a link cannot sign in. It is
   // in the subject too, so a phone's notification shows it.

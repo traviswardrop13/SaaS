@@ -9,6 +9,52 @@
       global.location.replace("/slp.html");
     }
   } catch (e) {}
+  // ── THE APP LIVES AT app.speaksona.com (APPHOST1, 17 Nov 2026) ──────────
+  // Travis: speaksona.com becomes GoHighLevel's website, so the app moves to
+  // app.speaksona.com. A phone keeps a family's whole Sona (children,
+  // progress, coins, the free-era marks) under the exact address it was used
+  // on, so moving the address naively would hand every family an empty app.
+  // Two steps, before anything else in this file runs:
+  //  - On www (or the bare domain) in a browser: go to the same page on the
+  //    app's address. Not inside an App Store build from before the move
+  //    (Capacitor), which stays here until it updates: whether its native
+  //    mic and purchases work on another address is unproven. Not inside the
+  //    clinicians' app either: its shell only allows www.
+  //  - On the app's address, once per device: /moving.html first. It reads
+  //    this same phone's www storage through a hidden www page (same site,
+  //    so the browser shares it) and copies it here verbatim, free-era marks
+  //    included: it is the device's own record, not a pasted backup, and only
+  //    our www page can answer (moving.html checks who sent it).
+  // A sessionStorage flag stops a loop if the mark can't be written.
+  // Nothing below runs while we leave; the page is hidden so nothing flashes.
+  // DOMAIN_MOVE.md has the whole plan; domaintest plays both steps.
+  const _hostMove = (function () {
+    try {
+      const L = global.location, H = L.hostname;
+      if (/\bSonaSLPApp\/\d/.test(global.navigator.userAgent || "")) return false;
+      if (H === "www.speaksona.com" || H === "speaksona.com") {
+        const C = global.Capacitor;
+        if (C && (typeof C.isNativePlatform === "function" ? C.isNativePlatform() : true)) return false;
+        // A home-screen copy keeps its own storage, which the hidden page on
+        // the app's address may not share: it stays put rather than risk
+        // arriving empty (DOMAIN_MOVE.md says what those families do).
+        if (global.navigator.standalone === true || (global.matchMedia && global.matchMedia("(display-mode: standalone)").matches)) return false;
+        global.document.documentElement.style.visibility = "hidden";
+        L.replace("https://app.speaksona.com" + L.pathname + L.search + L.hash);
+        return true;
+      }
+      if (H === "app.speaksona.com") {
+        if (global.localStorage.getItem("sona.moved.v1")) return false;
+        if (global.sessionStorage.getItem("sona.moving")) return false;
+        global.sessionStorage.setItem("sona.moving", "1");
+        global.document.documentElement.style.visibility = "hidden";
+        L.replace("/moving.html?next=" + encodeURIComponent(L.pathname + L.search + L.hash));
+        return true;
+      }
+    } catch (e) {}
+    return false;
+  })();
+  if (_hostMove) return;
   const PKEY = "sona.profile.v1", GKEY = "sona.progress.v1";
   const ALL_SOUNDS = ["P", "B", "M", "N", "T", "D", "K", "G", "F", "V", "S", "Z", "SH", "CH", "J", "L", "R", "TH", "THV"];
   // ── PLAY1: the play door ────────────────────────────────────────────────
@@ -2664,7 +2710,7 @@
   // "sona.nativemic" is set by hand on Travis's test phone, and it changes
   // whose mic listens and how loud it hears; on another family's phone it
   // would change what counts as heard. It is refused by importData too.
-  const NO_EXPORT = ["sona.setupasks.v1", "sona.obdraft.v1", "sona.board.v1", "sona.boardcache.v1", "sona.boardpend.v1", "sona.boardleave.v1", "sona.boardask.v1", "sona.nativemic",
+  const NO_EXPORT = ["sona.moved.v1", "sona.moved.tries", "sona.setupasks.v1", "sona.obdraft.v1", "sona.board.v1", "sona.boardcache.v1", "sona.boardpend.v1", "sona.boardleave.v1", "sona.boardask.v1", "sona.nativemic",
     // FREEPLAY1: the household's one free round was had on this phone
     "sona.freeplay.v1",
     // the trial reminder (NOTIFY1): this phone's iOS answer and what iOS holds for it
@@ -2721,7 +2767,7 @@
   // SETUP'S TWO ANSWERS AND ITS DRAFT, and the Practice Board's five keys, are
   // on NO_EXPORT above too: a backup made by this build never holds them, and
   // one that does (hand-made, or from a build that slips) is not let in either.
-  const NO_IMPORT = ["sona.sub.v1", "sona.slpunlock", "sona.caseplan.v1", "sona.founder", "sona.founding.v1", "sona.paidui", "sona.websalesui", "sona.pilot.v1", "sona.trial.v1",
+  const NO_IMPORT = ["sona.moved.v1", "sona.moved.tries", "sona.sub.v1", "sona.slpunlock", "sona.caseplan.v1", "sona.founder", "sona.founding.v1", "sona.paidui", "sona.websalesui", "sona.pilot.v1", "sona.trial.v1",
     "sona.freeera.v1", "sona.freeera2.v1", "sona.freeera3.v1", "sona.freeera4.v1", "sona.freeera5.v1", "sona.freever.v1",
     "sona.setupasks.v1", "sona.obdraft.v1", "sona.freeplay.v1",
     // the kept-buddies stamp (OWN1) is true of this device, like freever; what

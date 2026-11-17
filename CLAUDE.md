@@ -2399,6 +2399,33 @@ App Store Connect and the review notes; `tests/slpapptest.mjs` pins it all.
   fix is one native feature, not built; App Privacy answers. **Nothing here is
   Rachel's**: no word a child or a family reads changed.
 
+## The app lives at app.speaksona.com (APPHOST1, 17 Nov 2026)
+Travis: point the app at app.speaksona.com "so that I can get speaksona.com
+officially inside my home base of high level". This reverses "speaksona.com
+stays on Vercel" (15 Nov): the website moves to GoHighLevel, the app and
+every API route stay on Vercel at app.speaksona.com. `DOMAIN_MOVE.md` is
+Travis's ordered checklist; `tests/domaintest.mjs` plays it.
+- **A phone's Sona is tied to the address.** So `sona.js`'s first lines send a
+  browser on www (or the bare domain) to the same page on the app's address,
+  and on the app's address send a phone with no `sona.moved.v1` to
+  `moving.html` once. That page reads this same phone's www storage through a
+  hidden `www…/handoff.html` (same site, so the browser shares it), accepts it
+  only from that origin and frame, and copies it verbatim, free-era marks
+  included: it is the device's own record, not a pasted backup. It never
+  overwrites a child already set up on the app's address ("kept"), retries a
+  silent www twice on later opens, then stops ("gaveup"). The two marks are on
+  NO_EXPORT and NO_IMPORT. `today.html`'s early setup check waits for it.
+- **Who stays on www:** an App Store build from before the move (Capacitor:
+  its plugins are proven there), the clinicians' app (its shell allows only
+  www), and a home-screen copy (its storage may not cross). The next builds of
+  both iPhone apps load app.speaksona.com.
+- **The copy only works while www still runs this app.** Never point
+  speaksona.com at GoHighLevel before Travis's step 5 in `DOMAIN_MOVE.md`;
+  never delete `handoff.html` or the move step before then either.
+- **Emailed links use `APP_ORIGIN` (`lib/site.ts`)**, never speaksona.com:
+  an email outlives the switch. Links built from a request's origin for an
+  email go through `linkOrigin()`, which leaves previews and tests alone.
+
 ## The email list: Resend's contacts, and GoHighLevel again (Kit is gone)
 **GoHighLevel sends every email (MAIL1, 16 Nov 2026)** (Travis: "I don't
 want resend doing the emails. I want it all connected with high level").
