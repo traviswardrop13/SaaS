@@ -23,7 +23,7 @@
   </script>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Sona for speech therapists — send home practice they’ll play</title>
-  <meta name="description" content="Get the free Sona dashboard for speech therapists. Auto-plan session activities, share the app with clients, and see who practiced at home. Built with Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical fellowship." />
+  <meta name="description" content="Sona Pro for speech therapists, 14 days free. Play Sona games in your sessions, share the app with clients, and see who practiced at home. Built with Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical fellowship." />
   <link rel="canonical" href="https://www.speaksona.com/" />
 
   <!-- WHAT A SHARED LINK LOOKS LIKE. Clinicians pass this link around, so it
@@ -36,15 +36,15 @@
   <meta property="og:site_name" content="Sona" />
   <meta property="og:url" content="https://www.speaksona.com/" />
   <meta property="og:title" content="Send home practice they’ll play." />
-  <meta property="og:description" content="A free dashboard for speech therapists to plan session activities with AI, share the app with clients, and see who practiced at home." />
-  <meta property="og:image" content="https://speaksona.com/og-slp.png?v=3" />
+  <meta property="og:description" content="Sona Pro for speech therapists: play Sona games in your sessions, share the app with clients, and see who practiced at home. 14 days free." />
+  <meta property="og:image" content="https://speaksona.com/og-slp.png?v=4" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
-  <meta property="og:image:alt" content="Sona's free dashboard for speech therapists." />
+  <meta property="og:image:alt" content="Sona for speech therapists." />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Send home practice they’ll play." />
-  <meta name="twitter:description" content="A free dashboard for speech therapists to plan session activities with AI, share the app with clients, and see who practiced at home." />
-  <meta name="twitter:image" content="https://speaksona.com/og-slp.png?v=3" />
+  <meta name="twitter:description" content="Sona Pro for speech therapists: play Sona games in your sessions, share the app with clients, and see who practiced at home. 14 days free." />
+  <meta name="twitter:image" content="https://speaksona.com/og-slp.png?v=4" />
 
   <!-- The bird with no card behind him. The home-screen icon keeps its
        background on purpose: iOS fills a transparent one with black. -->
@@ -89,7 +89,7 @@
   <div class="hero-intro">
     <p class="eyebrow">Sona for speech therapists</p>
     <h1>Send home practice <span>they&rsquo;ll play.</span></h1>
-    <p class="lede">Auto-plan session activities, share the app with clients, and see who practiced at home.</p>
+    <p class="lede">Play Sona games in your sessions, share the app with clients, and see who practiced at home.</p>
   </div>
 
   <div class="hero-r" aria-hidden="true">
@@ -108,7 +108,14 @@
         <label for="fEmail">Your work email</label>
         <input id="fEmail" type="email" inputmode="email" autocomplete="email" placeholder="you@yourclinic.org" required />
       </div>
-      <button class="btn" id="fGo" type="submit" aria-describedby="fNext">Get the free dashboard</button>
+      <!-- THE TRIAL, NOT A FREE DASHBOARD (SLPPRO1, 17 Nov 2026, Travis: "i
+           want this to be sona pro tho. this is what they access when they
+           create a free trial"). The price and the days are lib/caseload's
+           PRO_PRICE, PRO_PER and PRO_TRIAL_DAYS (tests/shiptest pins them):
+           the email proves the inbox, then the dashboard opens on Sona Pro's
+           page with the trial's button, card up front at Stripe. -->
+      <button class="btn" id="fGo" type="submit" aria-describedby="fTerms fNext">Start your free trial</button>
+      <p class="next-step trial-terms" id="fTerms">14 days free, then $19.99 a month. Cancel anytime.</p>
       <p class="next-step" id="fNext">We’ll email you a sign-in link.</p>
       <div class="serr" id="fErr" role="alert"></div>
     </form>
@@ -130,8 +137,8 @@
   <h2>What you can do with Sona.</h2>
   <ul class="workflow">
     <li class="workflow-step">
-      <h3>Plan session activities with AI</h3>
-      <p>Describe the child and the session. Get play-based activities built around what they love, ready to run.</p>
+      <h3>Pick Sona games for each session</h3>
+      <p>Choose a sound and an age. Sona picks three of its games, and you play them right on your device, set to that child’s sound.</p>
     </li>
     <li class="workflow-step">
       <h3>Share the app with clients</h3>
@@ -195,7 +202,7 @@
     </div>
     <div class="q">
       <button type="button" aria-expanded="false" aria-controls="a2" id="q2">What's stored, and where?<span>+</span></button>
-      <p class="a" id="a2" hidden>If you start from this page: your email, kept by Sona and on our email list at Resend so Rachel's tips can reach you, and in our contact list at GoHighLevel. Your account: email, name, clinic and code. For each consenting family: the child's first name and age, target sounds, practice days and counts, pass rate per sound, your assignments, and when the parent consented. Hosted on Vercel, stored in Upstash, the email list via Resend, emails and contacts in GoHighLevel. If you type a parent's email when you add a child, we hand it to GoHighLevel to deliver that one email with the link, and GoHighLevel keeps it as a contact. Sona's own server keeps no copy: not stored, not logged. Add a family emails the parent their Sona login too, so that email holds the password; Sona's server keeps only a scrambled copy of it. What you type into Plan activities goes to Anthropic, our AI provider, to write the ideas, and Sona doesn't keep it; leave out children's names. Analytics (PostHog) on grown-up pages, and anonymous counts our server passes on from the app, and a Meta ad pixel on this sign-up page so we can tell which of our ads work — neither ever runs where a child practices, and neither is sent a child's name. No ads in the app, no data sales, no profiling.</p>
+      <p class="a" id="a2" hidden>If you start from this page: your email, kept by Sona and on our email list at Resend so Rachel's tips can reach you, and in our contact list at GoHighLevel. Your account: email, name, clinic and code. For each consenting family: the child's first name and age, target sounds, practice days and counts, pass rate per sound, your assignments, and when the parent consented. Hosted on Vercel, stored in Upstash, the email list via Resend, emails and contacts in GoHighLevel. If you type a parent's email when you add a child, we hand it to GoHighLevel to deliver that one email with the link, and GoHighLevel keeps it as a contact. Sona's own server keeps no copy: not stored, not logged. Add a family emails the parent their Sona login too, so that email holds the password; Sona's server keeps only a scrambled copy of it. Session games sends Anthropic, our AI provider, the sound, word position, age band and session length you choose and the few words you type about what the child loves, to pick the games, and Sona doesn't keep them; leave out children's names. A game you play from Session games runs on your device and saves nothing to a family's Sona. Analytics (PostHog) on grown-up pages, and anonymous counts our server passes on from the app, and a Meta ad pixel on this sign-up page so we can tell which of our ads work — neither ever runs where a child practices, and neither is sent a child's name. No ads in the app, no data sales, no profiling.</p>
     </div>
     <div class="q">
       <button type="button" aria-expanded="false" aria-controls="a3" id="q3">How is data deleted?<span>+</span></button>
@@ -216,7 +223,7 @@
         <h2>Bring more play to home practice.</h2>
       </div>
     </div>
-    <button class="btn yel" id="finalGo" type="button">Get the free dashboard</button>
+    <button class="btn yel" id="finalGo" type="button">Start your free trial</button>
   </div>
 </section>
 </main>
@@ -256,7 +263,7 @@
       if (attrib.utm_source) src = attrib.utm_source.replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 30) || src;
     } catch (e) {}
 
-    var LABEL = "Get the free dashboard";
+    var LABEL = "Start your free trial";
 
     // THE ERROR SITS UNDER THE BUTTON, which on a laptop is the bottom edge of
     // the window — so a refused sign-up looked like a button that did nothing.
@@ -289,7 +296,7 @@
       busy(true);
       fetch("/api/slp/auth/request", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ flow: "free-dashboard", email: email, source: src, attrib: attrib }),
+        body: JSON.stringify({ flow: "trial", email: email, source: src, attrib: attrib }),
       }).then(function (r) { return r.json(); }).then(function (j) {
         busy(false);
         if (!j || !j.ok) { err((j && j.error) || "Couldn't set that up right now."); return; }
@@ -311,7 +318,7 @@
         // Report successful email delivery with no form data attached.
         try { if (window.sonaTrack) sonaTrack("Lead"); } catch (e) {}
         $("sentT").textContent = "Check your email";
-        showDone("We sent a sign-in link to " + email + ". Open it to access your dashboard.");
+        showDone("We sent a sign-in link to " + email + ". Open it to start your free trial.");
       }).catch(function () {
         busy(false);
         err("Network hiccup — try again.");

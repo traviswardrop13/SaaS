@@ -455,7 +455,7 @@ export async function sendMagicEmail(
   if (!mailConfigured()) {
     return { sent: false, devLink: process.env.VERCEL_ENV === "production" ? null : link };
   }
-  const freeIntro = "Open your Sona dashboard to plan session activities with AI and share practice with families.";
+  const freeIntro = "Open your Sona dashboard to pick Sona games for each session, share the app with families and see who practiced at home.";
   const retryUrl = opts.freeDashboard ? "speaksona.com" : "speaksona.com/slp-login.html";
   // The six-digit code (SLPAPP1, 16 Nov 2026), when the sign-in screen asked
   // for one: typed in the clinicians' app, which a link cannot sign in. It is

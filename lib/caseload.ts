@@ -15,8 +15,9 @@ import { isWorkEmail } from "@/lib/workEmail";
  *    subscription an email ever has. Stripe charges on day 15 unless they
  *    cancel; cancelled during the trial, nothing is charged.
  *  - THE DASHBOARD IS PART OF THE PLAN, for accounts made from this build
- *    (`terms: PRO_TERMS`). Every older account keeps the free dashboard it
- *    was promised; see dashboardOpen().
+ *    (`terms: PRO_TERMS`), and since 17 Nov 2026 for the free-dashboard
+ *    signups of 13 to 17 Nov too (SLPPRO1). Every account made before 12 Nov
+ *    keeps the free dashboard it was promised; see dashboardOpen().
  *
  * The two yearly plans below are RETIRED FROM SALE, not cancelled: anyone
  * holding one keeps it, renewing at the price they bought it at, and it keeps
@@ -104,7 +105,14 @@ export const PRO_PLAN = "slp-pro";                       // Stripe metadata.plan
 export const PRO_NAME = "Sona Pro";
 /** Stamped on every NEW slpacct from 12 Nov 2026: the dashboard is part of Sona Pro for them. */
 export const PRO_TERMS = "pro-2026-11-12";
-/** Verified signups from the free clinician landing. Premium coverage follows the plan. */
+/**
+ * Verified signups from the homepage's free-dashboard offer, 13 to 17 Nov
+ * 2026. SUPERSEDED (SLPPRO1, 17 Nov 2026, Travis: "i want this to be sona pro
+ * tho. this is what they access when they create a free trial", and, of these
+ * accounts, "Move them to the trial"): they now need Sona Pro like PRO_TERMS
+ * accounts, and no door makes this stamp any more. Kept for the records that
+ * carry it.
+ */
 export const FREE_DASHBOARD_TERMS = "free-dashboard-2026-11-13";
 
 // The add-on. $59.99 / 12 = $4.9991, so "under $5 a month": never "$4.99 a
@@ -521,19 +529,52 @@ export async function proStatus(email: string, opts: PlanOpts = {}): Promise<Pro
 }
 
 /**
+ * App Review's account (SLPAPP1): only while SLP_REVIEW_EMAIL and a six-digit
+ * SLP_REVIEW_CODE are both set in Vercel, that one address. lib/slpSignIn
+ * signs it in with the fixed code; here its dashboard stays open, so Apple
+ * can review the clinicians' app, which sells nothing (SLPPRO1). Unset either
+ * and it is an ordinary account.
+ */
+export function reviewEmail(): string {
+  const e = norm(process.env.SLP_REVIEW_EMAIL);
+  const code = String(process.env.SLP_REVIEW_CODE || "").replace(/[\s-]/g, "");
+  return /^\d{6}$/.test(code) && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e) ? e : "";
+}
+
+/**
+ * THE PROMISED FREE DASHBOARDS, by the account's stamp alone (never
+ * backfilled): no `terms` (before 24 Sep 2026: "free forever"), the 24 to 29
+ * Sep stamp and the 29 Sep to 12 Nov stamp. Those clinicians were told the
+ * dashboard was free, and it stays free for them, forever. Nothing else is.
+ */
+export function dashboardPromised(acct: unknown): boolean {
+  if (!acct || typeof acct !== "object" || Array.isArray(acct)) return false;
+  if (grandfathered(acct)) return true;
+  const t = (acct as { terms?: unknown }).terms;
+  return t === FREE_SELF_TERMS || t === CASELOAD_TERMS;
+}
+
+/**
  * IS THE DASHBOARD OPEN? Every account made before 12 Nov 2026 was told the
  * dashboard was free, and it stays free for them, forever: a clinician's
  * caseload, notes and homework are never held behind a price they were not
- * shown. From 12 Nov 2026 (`terms: PRO_TERMS`) the dashboard is part of Sona
- * Pro — trialing, active, or in the card-retry grace of past_due.
- * A signed-in session with no account record at all is treated as new: the
- * legacy routes that make one make it with PRO_TERMS. Verified free landing
- * signups use FREE_DASHBOARD_TERMS and have a free dashboard.
+ * shown (dashboardPromised). Everyone else needs Sona Pro: trialing, active,
+ * or in the card-retry grace of past_due. That is the 12 Nov accounts
+ * (`terms: PRO_TERMS`) and, since 17 Nov 2026 (SLPPRO1, Travis: "i want this
+ * to be sona pro tho. this is what they access when they create a free
+ * trial"), the homepage's free-dashboard signups of 13 to 17 Nov
+ * (FREE_DASHBOARD_TERMS, "Move them to the trial") and any account a
+ * free-dashboard link once opened (`freeDashboard: true`, no longer read).
+ * One who never had Sona Pro is offered the 14-day trial (proStatus).
+ * A signed-in session with no account record at all is treated as new.
+ * App Review's one account stays open (reviewEmail).
  */
 export async function dashboardOpen(email: string, opts: PlanOpts & { acct?: Record<string, unknown> | null } = {}): Promise<boolean> {
   const kv = opts.kv || kvCmd;
+  const review = reviewEmail();
+  if (review && norm(email) === review) return true;
   const acct = opts.acct !== undefined ? opts.acct : await readAcct(email, kv);
-  if (acct && (!proTerms(acct) || acct.freeDashboard === true)) return true;
+  if (dashboardPromised(acct)) return true;
   return (await proStatus(email, { ...opts, kv })).active;
 }
 

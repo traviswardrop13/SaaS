@@ -485,7 +485,8 @@ function ReferralTerms() {
  * (Stripe keeps it active until then, and so does coverage); no cap on
  * families while it is on. The promises kept are lib/caseload.ts's WHO IS
  * COVERED: every account made before 12 Nov 2026 keeps the free dashboard it
- * signed up with; an account with no `terms` stamp was told "free forever,
+ * signed up with (since SLPPRO1, 17 Nov 2026, the homepage's free-dashboard
+ * signups of 13 to 17 Nov need Sona Pro like everyone after them); an account with no `terms` stamp was told "free forever,
  * unlimited families — for you and every kid on your caseload"; a 24 to 29
  * Sep account was told its own Premium was free with a work email; and the
  * two yearly plans sold until 12 Nov 2026 keep renewing at their price.
@@ -494,16 +495,12 @@ function ReferralTerms() {
 function CaseloadTerms() {
   return (
     <>
-      <strong>Free clinician dashboard.</strong> Clinicians who create an account
-      through the free dashboard signup can use the dashboard without a subscription.
-      They can plan session activities with AI, share Sona with families, and see
-      their families' home practice.
-      <br />
-      <br />
       A speech-language pathologist or other clinician can buy{" "}
       <strong>{PRO_NAME}</strong> on speaksona.com for{" "}
-      <strong>{PRO_PRICE} per month</strong>. It includes access for accounts
-      that signed up for a paid dashboard, and Premium on your own phone or tablet, every game, turned on
+      <strong>{PRO_PRICE} per month</strong>. It includes the clinician
+      dashboard (Session games, which picks Sona games to play in your
+      sessions and opens them on your device, sharing Sona with families, and
+      your families&apos; home practice), and Premium on your own phone or tablet, every game, turned on
       with a link the dashboard emails to your account&apos;s address (each
       link works once); and Premium for every family who joins Sona through
       your link, whether or not they choose to share practice with you.
@@ -529,10 +526,10 @@ function CaseloadTerms() {
       <strong>Renewal and canceling.</strong> {PRO_NAME} renews automatically
       each month until you cancel it, from the clinician dashboard:{" "}
       <strong>Sona Pro &rarr; Manage billing</strong>. If you cancel, your
-      paid dashboard access and your families&apos; Premium stay on until the end of the
+      dashboard and your families&apos; Premium stay on until the end of the
       month you paid for (or of the free trial); then your families move to
-      the free version. Free dashboard access and removing a child from your
-      dashboard keep working. The price does not depend on how many families
+      the free version. Removing a child from your dashboard, and deleting
+      your account, keep working. The price does not depend on how many families
       join, and you never earn anything from families on your own caseload.
       <br />
       <br />

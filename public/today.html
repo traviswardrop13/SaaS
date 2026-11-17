@@ -14,6 +14,12 @@
        Covers deep links and the native shell's start URL alike. -->
   <script>
     (function(){
+      // SESSPLAY1 (17 Nov 2026): a game played in a clinician's session ends
+      // on the dashboard's Session games, never on the family's Home (its ✕,
+      // Back home and end card all come here). sona.js holds the rule; this
+      // runs before it, so the setup check below never sends a session to
+      // setup on the way. Only a record that has not run out counts.
+      try{ var sp=JSON.parse(sessionStorage.getItem("sona.sessplay.v1")||"null"); if(sp&&Number(sp.exp)>Date.now()){ document.documentElement.style.display="none"; location.replace("/slp.html#play"); return; } }catch(e){}
       try{
         // runs BEFORE sona.js, so the kid namespace has to be resolved by hand
         // here — otherwise this always reads the first child and a freshly added

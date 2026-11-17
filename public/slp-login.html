@@ -146,8 +146,8 @@
     </div>
 
     <p class="note">
-      <span class="web-only">New here? <a href="/#signup">Get your free clinician dashboard →</a><br/></span>
-      <span class="app-only" hidden>New here? Enter your email above: your free dashboard starts with the code.<br/></span>
+      <span class="web-only">New here? <a href="/#signup">Start your free trial →</a><br/></span>
+      <span class="app-only" hidden>Use the email your Sona account is under.<br/></span>
       Sona is an at-home practice tool, not a diagnosis or a substitute for professional care.
     </p>
   </div>
@@ -169,9 +169,11 @@
       $("devbox").style.display="none";
       if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){$("err").textContent="Enter a valid email.";return;}
       $("send").disabled=true;$("send").textContent="Sending…";
-      // In the clinicians' app the free-dashboard door (the homepage's): a
-      // new clinician's account opens there, and nothing in the app is sold.
-      var req={email:email,wantCode:true};if(APP)req.flow="free-dashboard";
+      // The same door in the clinicians' app as on the web (SLPPRO1, 17 Nov
+      // 2026: the app's free-dashboard door is gone). The dashboard is Sona
+      // Pro's, and the app sells nothing: without it, the app shows its one
+      // plain card (slp.html's applock).
+      var req={email:email,wantCode:true};
       fetch("/api/slp/auth/request",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(req)})
         .then(function(r){return r.json();})
         .then(function(j){

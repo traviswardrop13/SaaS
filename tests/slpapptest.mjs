@@ -235,16 +235,24 @@ if (A && SI && R.request && R.code) {
   r = await call(R.code, "POST", "/api/slp/auth/code", { body: { email: NEW, code: code2 } });
   ok("after five wrong tries even the right code is refused, and the code is gone", r.status === 400 && r.json.why === "tries" && !KV.K.has("slpsignin:" + NEW) && !r.cookie, r);
 
-  // the app's door: the free dashboard
+  // SLPPRO1 (17 Nov 2026): no door opens a free dashboard any more. The
+  // homepage's ("trial", or "free-dashboard" from a cached page) makes a
+  // Sona Pro account that keeps where the clinician came from; a returning
+  // Pro-era account stays as it was.
   const APPDOC = "app.slp@school.example";
-  r = await call(R.request, "POST", "/api/slp/auth/request", { body: { email: APPDOC, wantCode: true, flow: "free-dashboard" } });
+  r = await call(R.request, "POST", "/api/slp/auth/request", { body: { email: APPDOC, wantCode: true, flow: "trial", source: "for-slps" } });
   r = await call(R.code, "POST", "/api/slp/auth/code", { body: { email: APPDOC, code: r.json.devCode } });
-  ok("the app's sign-in (the free-dashboard door, as the homepage's) makes a free-dashboard account", r.status === 200 && acctOf(APPDOC) && acctOf(APPDOC).terms === "free-dashboard-2026-11-13", acctOf(APPDOC));
+  ok("the homepage's trial door makes a Sona Pro account (no free dashboard), with where they came from", r.status === 200 && acctOf(APPDOC) && acctOf(APPDOC).terms === "pro-2026-11-12" && acctOf(APPDOC).source === "for-slps" && acctOf(APPDOC).freeDashboard === undefined, acctOf(APPDOC));
+  const CACHED = "cached.page@school.example";
+  r = await call(R.request, "POST", "/api/slp/auth/request", { body: { email: CACHED, wantCode: true, flow: "free-dashboard" } });
+  r = await call(R.code, "POST", "/api/slp/auth/code", { body: { email: CACHED, code: r.json.devCode } });
+  ok("…and so does a homepage cached before 17 Nov (its old free-dashboard door)", r.status === 200 && acctOf(CACHED) && acctOf(CACHED).terms === "pro-2026-11-12", acctOf(CACHED));
   const PROERA = "pro.era@clinic.example";
   KV.K.set("slpacct:" + PROERA, JSON.stringify({ email: PROERA, name: "Pat", code: "", terms: "pro-2026-11-12", createdAt: iso() }));
-  r = await call(R.request, "POST", "/api/slp/auth/request", { body: { email: PROERA, wantCode: true, flow: "free-dashboard" } });
+  const proBefore = KV.K.get("slpacct:" + PROERA);
+  r = await call(R.request, "POST", "/api/slp/auth/request", { body: { email: PROERA, wantCode: true, flow: "trial" } });
   r = await call(R.code, "POST", "/api/slp/auth/code", { body: { email: PROERA, code: r.json.devCode } });
-  ok("…and opens a locked Pro-era account's dashboard, as the homepage's link does (nothing locked meets a clinician in the app)", r.status === 200 && acctOf(PROERA).freeDashboard === true && acctOf(PROERA).terms === "pro-2026-11-12", acctOf(PROERA));
+  ok("…a returning Pro-era account signs in and is left exactly as it was: no door unlocks it", r.status === 200 && KV.K.get("slpacct:" + PROERA) === proBefore, acctOf(PROERA));
 
   // the link still works, and spends the code
   r = await call(R.request, "POST", "/api/slp/auth/request", { body: { email: "linker@clinic.example", wantCode: true } });
@@ -277,7 +285,7 @@ if (A && SI && R.request && R.code) {
   r = await call(R.code, "POST", "/api/slp/auth/code", { body: { email: RV, code: "135791" } });
   ok("…a wrong code is still wrong", r.status === 400 && r.json.why === "wrong", r);
   r = await call(R.code, "POST", "/api/slp/auth/code", { body: { email: RV, code: "135790" } });
-  ok("…and its fixed code signs App Review in, onto the free dashboard", r.status === 200 && !!sessionCookieFrom(r.cookie) && acctOf(RV) && acctOf(RV).terms === "free-dashboard-2026-11-13" && acctOf(RV).source === "app-review", acctOf(RV));
+  ok("…and its fixed code signs App Review in (a Sona Pro account whose dashboard lib/caseload keeps open)", r.status === 200 && !!sessionCookieFrom(r.cookie) && acctOf(RV) && acctOf(RV).terms === "pro-2026-11-12" && acctOf(RV).source === "app-review", acctOf(RV));
   r = await call(R.code, "POST", "/api/slp/auth/code", { body: { email: "someone.else@clinic.example", code: "135790" } });
   ok("…for that address only", r.status === 400 && !r.cookie, r);
   delete process.env.SLP_REVIEW_CODE;
@@ -419,6 +427,7 @@ const PRO_OFF = { active: false, status: "none", trialEnd: null, periodEnd: null
 const SELF_OFF = { active: false, eligible: false, source: "none", periodEnd: null, cancelAtPeriodEnd: false, canRequest: false, workEmail: true, approved: false, requested: false };
 const PLAN = { ok: true, active: false, source: "none", periodEnd: null, cancelAtPeriodEnd: false, self: SELF_OFF, pro: PRO_OFF, dashboard: { open: true }, grandfathered: false };
 let COMMUNITY = { ok: true, pinned: [], posts: [], nextCursor: null, blocked: 0 };
+let LOCK = false;   // SLPPRO1: an account with no Sona Pro (and no promised free dashboard)
 const server = createServer((req, res) => {
   const url = new URL(req.url, BASE); let body = "";
   req.on("data", (c) => (body += c));
@@ -431,8 +440,8 @@ const server = createServer((req, res) => {
       if (url.pathname === "/api/slp/auth/code") return json(j.code === "246810" ? { ok: true } : { ok: false, error: "That code doesn't match. Check the email and try again." }, j.code === "246810" ? 200 : 400);
       if (url.pathname === "/api/slp/auth/me" || (url.pathname === "/api/slp/account" && req.method !== "DELETE")) return json(ACCOUNT);
       if (url.pathname === "/api/slp/account" && req.method === "DELETE") return json(j.confirm === ACCOUNT.email ? { ok: true, deleted: true } : { ok: false, error: "Type your account's email to confirm." }, j.confirm === ACCOUNT.email ? 200 : 400);
-      if (url.pathname === "/api/slp/plan" && req.method === "GET") return json(PLAN);
-      if (url.pathname === "/api/slp" && req.method === "GET") return json({ ok: true, configured: true, kids: DATA.kids, invites: DATA.invites });
+      if (url.pathname === "/api/slp/plan" && req.method === "GET") return json(LOCK ? { ...PLAN, dashboard: { open: false } } : PLAN);
+      if (url.pathname === "/api/slp" && req.method === "GET") return LOCK ? json({ ok: false, needPlan: true, error: "Your dashboard comes with Sona Pro." }, 402) : json({ ok: true, configured: true, kids: DATA.kids, invites: DATA.invites });
       if (url.pathname === "/api/slp/community" && req.method === "GET") return json(COMMUNITY);
       return json({ ok: true });
     }
@@ -478,7 +487,8 @@ try {
     await page.locator("#send").click();
     await page.waitForSelector("#sentCard", { state: "visible" });
     const req = posts.find((p) => p.path === "/api/slp/auth/request");
-    ok("…by the free-dashboard door, asking for a code", !!req && req.body.wantCode === true && req.body.flow === "free-dashboard", req);
+    ok("…by the sign-in page's own door (SLPPRO1: no free dashboard in the app), asking for a code", !!req && req.body.wantCode === true && req.body.flow === undefined, req);
+    ok("…and says to use the account's email, with no word of a trial or a free dashboard", (await page.locator(".app-only").textContent()).trim() === "Use the email your Sona account is under." && !/trial|free dashboard/i.test(await visibleText(page)));
     ok("…then the code box, focused, with the one-time-code hint (iOS offers the code from Mail)",
       await page.locator("#code").isVisible() && await page.evaluate(() => document.activeElement && document.activeElement.id === "code") && (await page.locator("#code").getAttribute("autocomplete")) === "one-time-code" && /6-digit code/.test(await page.locator("#sentMsg").textContent()));
     await page.locator("#code").fill("111111");
@@ -499,7 +509,7 @@ try {
     await page.locator("#send").click();
     await page.waitForSelector("#sentCard", { state: "visible" });
     const req = posts.find((p) => p.path === "/api/slp/auth/request");
-    ok("…and the same email carries a code, which the web may type too (the sign-in page's own door, not the free dashboard's)", !!req && req.body.wantCode === true && req.body.flow === undefined && /link and a 6-digit code/.test(await page.locator("#sentMsg").textContent()), req);
+    ok("…and the same email carries a code, which the web may type too (the sign-in page's own door)", !!req && req.body.wantCode === true && req.body.flow === undefined && /link and a 6-digit code/.test(await page.locator("#sentMsg").textContent()), req);
     ok("…with no page errors", errors.length === 0, errors);
     await context.close();
     const del = await open("/slp-login.html?deleted=1", { app: false, native: false });
@@ -516,7 +526,7 @@ try {
       const tag = width + "px: ";
       ok(tag + "the dashboard renders in the clinicians' app", new URL(page.url()).pathname === "/slp.html");
       const seen = [];
-      for (const hash of ["#plan", "#today", "#caseload", "#settings", "#feedback", "#add-family"]) {
+      for (const hash of ["#play", "#today", "#caseload", "#settings", "#feedback", "#add-family"]) {
         if (hash === "#add-family") { await page.evaluate(() => { location.hash = "#today"; }); await page.waitForTimeout(150); await page.evaluate(() => document.getElementById("addFamilyTop").click()); await page.waitForTimeout(250); }
         await page.evaluate((h) => { location.hash = h; }, hash);
         await page.waitForTimeout(150);
@@ -525,7 +535,7 @@ try {
         const hit = t.match(SELLING);
         if (hit) seen.push(hash + ": " + hit[0] + " … " + t.slice(Math.max(0, hit.index - 60), hit.index + 60));
       }
-      ok(tag + "no price, plan offer, trial, checkout or billing door anywhere (the planner, Today, Caseload, Settings, Talk to Rachel, the Add a family panel, the menu)", seen.length === 0, seen);
+      ok(tag + "no price, plan offer, trial, checkout or billing door anywhere (Session games, Today, Caseload, Settings, Talk to Rachel, the Add a family panel, the menu)", seen.length === 0, seen);
       await page.evaluate(() => { const d = document.getElementById("famDialog"); if (d.open) d.close(); });
       ok(tag + "the Sona Pro menu item and the top bar's offer are not drawn", !(await page.locator('.nav-item[data-page="premium"]').isVisible()) && !(await page.locator("#premiumTop").isVisible()));
       await page.evaluate(() => { location.hash = "#premium"; });
@@ -534,6 +544,45 @@ try {
       ok(tag + "Settings has Delete your account", await page.locator("#deleteCard").isVisible() && (await page.locator("#deleteOpen").textContent()) === "Delete my account…");
       ok(tag + "…and the caseload export shares a file there (an app cannot save a download)", (await page.locator("#exportCsv").textContent()) === "Share CSV");
       ok(tag + "…with no page errors", errors.length === 0, errors);
+      await context.close();
+    });
+  }
+
+  // SLPPRO1 (17 Nov 2026, Travis: "now they have to have a trial to be
+  // inside there"): an account with no Sona Pro sees ONE plain card in the
+  // app, with no price, no trial, no button or link to buy or to the website
+  // (App Store rule 3.1.1), and Sign out.
+  for (const width of [390, 1280]) {
+    await section("the locked dashboard in the app at " + width, async () => {
+      LOCK = true;
+      const { context, page, errors } = await open("/slp.html", { viewport: { width, height: width < 500 ? 844 : 1000 } });
+      await page.waitForFunction(() => document.getElementById("sidebarName").textContent === "Rachel K");
+      await page.waitForTimeout(400);
+      const tag = width + "px: ";
+      const card = await page.evaluate(() => ({ hash: location.hash, active: [...document.querySelectorAll(".page.active")].map((p) => p.id).join(), text: document.getElementById("page-applock").innerText.replace(/\s+/g, " ").trim() }));
+      ok(tag + "a locked account opens on the one plain card", card.hash === "#applock" && card.active === "page-applock" &&
+        /^Your account doesn't have Sona Pro yet\. Sona Pro opens the dashboard, every game for you, and every game for families on your link\. Sign out Settings$/.test(card.text), card);
+      const leak = [];
+      for (const hash of ["#play", "#today", "#caseload", "#child/c1", "#premium", "#applock"]) {
+        await page.evaluate((h) => { location.hash = h; }, hash); await page.waitForTimeout(200);
+        const st = await page.evaluate(() => ({ active: [...document.querySelectorAll(".page.active")].map((p) => p.id).join(),
+          sells: [...document.querySelectorAll("[data-sells]")].filter((el) => { const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0 && getComputedStyle(el).visibility !== "hidden"; }).length,
+          links: [...document.querySelectorAll("a[href], button")].filter((el) => { const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0; }).map((el) => el.getAttribute("href") || "").filter((h) => /^(https?:|\/\/|mailto:)/.test(h)) }));
+        const t = await visibleText(page);
+        const hit = t.match(/\$|\btrial\b|Start my|Get Sona Pro|Manage billing|checkout|a month|per month|Subscribe|Download the app/i);
+        const expect = hash === "#premium" ? "page-settings" : "page-applock";
+        if (st.active !== expect || st.sells || st.links.length || hit) leak.push({ hash, ...st, hit: hit && t.slice(Math.max(0, hit.index - 40), hit.index + 40) });
+      }
+      ok(tag + "…every page but Settings is that card, and no price, trial, way to buy, data-sells door or link off the app shows anywhere", leak.length === 0, leak);
+      await page.evaluate(() => { location.hash = "#applock"; }); await page.waitForTimeout(150);
+      ok(tag + "…and nothing in the top bar beside it (no Add a family, no App Store link)", !(await page.locator("#addFamilyTop").isVisible()) && !(await page.locator("#downloadApp").isVisible()));
+      await page.locator('#page-applock a[href="#settings"]').click(); await page.waitForTimeout(200);
+      ok(tag + "Settings opens from the card, with Delete my account", await page.locator("#page-settings").isVisible() && await page.locator("#deleteCard").isVisible());
+      await page.evaluate(() => { location.hash = "#applock"; }); await page.waitForTimeout(150);
+      await Promise.all([page.waitForURL("**/slp-login.html", { timeout: 4000 }).catch(() => {}), page.locator("#appLockOut").click()]);
+      ok(tag + "Sign out signs out", posts.some((p) => p.path === "/api/slp/auth/logout") && new URL(page.url()).pathname === "/slp-login.html", page.url());
+      ok(tag + "…with no page errors", errors.length === 0, errors);
+      LOCK = false;
       await context.close();
     });
   }

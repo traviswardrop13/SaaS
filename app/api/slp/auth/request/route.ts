@@ -95,7 +95,11 @@ export async function POST(req: NextRequest) {
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
     return NextResponse.json({ ok: false, error: "Enter a valid email." }, { status: 400 });
   }
-  const freeDashboard = body.flow === "free-dashboard";
+  // THE HOMEPAGE'S DOOR ("trial"; "free-dashboard" from a page cached before
+  // 17 Nov 2026): an email-only signup that keeps where the clinician came
+  // from. Since SLPPRO1 it opens no free dashboard: the account it makes is
+  // Sona Pro's, whose first 14 days are free (lib/slpSignIn finishSignIn).
+  const freeDashboard = body.flow === "trial" || body.flow === "free-dashboard";
   if (body.flow !== undefined && !freeDashboard) {
     return NextResponse.json({ ok: false, error: "Bad request." }, { status: 400 });
   }

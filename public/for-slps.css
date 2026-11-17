@@ -122,6 +122,8 @@ header {
 .signup select:invalid { color: #686980; }
 .signup .btn { align-self: flex-start; margin-top: 3px; min-width: 146px; }
 .next-step { color: var(--body); font-size: 13px; }
+/* the trial's terms, said beside its button (SLPPRO1) */
+.next-step.trial-terms { color: var(--ink); font-size: 14px; font-weight: 800; margin-bottom: -6px; }
 .serr { color: #a52c38; font-size: 14px; font-weight: 900; }
 .serr:empty { display: none; }
 .sent { padding: 19px 20px; border: 1px solid #ebdacf; border-radius: 19px; background: var(--paper); }

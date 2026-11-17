@@ -62,7 +62,8 @@ const text=async(pg,selector)=>await exists(pg,selector)?await pg.locator(select
 const date=n=>{const d=new Date();d.setDate(d.getDate()+n);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};
 try {
   // SLPCLEAN1 (17 Nov 2026): the homework draft and Plan sessions are gone;
-  // tests/activityplantest.mjs plays Plan activities, which replaced them.
+  // SLPPRO1 (the same evening): so is Plan activities, which replaced them.
+  // tests/sessiongamestest.mjs plays Session games, which replaced it.
   // NO CALLS (Travis, 30 Sep 2026: "I don't want request to call to be an
   // option"; Rachel doesn't take phone calls): Talk to Rachel is feedback only.
   await section('Feedback, and no call request',async()=>{
@@ -125,7 +126,7 @@ try {
     ok('failed homework request shows an error',await visible(pg,'#quickErr')&&/fail|couldn|try|error/i.test(await text(pg,'#quickErr')),await text(pg,'#quickErr'));
     await ctx.close();
   });
-  await section('Child navigation and Plan activities',async()=>{
+  await section('Child navigation and Session games',async()=>{
     const {ctx,pg,errors}=await open('#child/c1/homework');
     ok('the homework tab has a deep link',await visible(pg,'#quickHomework'));
     await pg.locator('#chJump').selectOption('c2');await pg.waitForTimeout(100);
@@ -139,17 +140,18 @@ try {
     ok('the child page has no Next session tab any more',!await exists(pg,'[data-child-view="plan"]')&&!await exists(pg,'#sessionPlanner'));
     await go(pg,'#child/c1');
     await pg.locator('#chPlanBtn').click();await pg.waitForTimeout(150);
-    const box=await pg.locator('#planText').inputValue();
-    ok('Plan activities on a child page opens the planner with their age and target, never their name',await pg.evaluate(()=>location.hash)==='#plan'&&/^Age 6\. Working on R in the middle of words\.\s*$/.test(box)&&!/Mia/.test(box),box);
+    const form=()=>pg.evaluate(()=>({hash:location.hash,s:document.getElementById('playSound').value,p:document.getElementById('playPos').value,a:document.getElementById('playAge').value,l:document.getElementById('playLoves').value}));
+    const box=await form();
+    ok('Session games on a child page chooses their sound, position and age, never their name',box.hash==='#play'&&box.s==='R'&&box.p==='m'&&box.a==='5-6'&&box.l==='',box);
     await go(pg,'#child/c3/plan');
-    const old=await pg.locator('#planText').inputValue();
-    ok('an old Next session address opens the planner for that child',await pg.evaluate(()=>location.hash)==='#plan'&&/^Age 7\. Working on TH\.\s*$/.test(old)&&!/Ava/.test(old),old);
-    ok('moving around and seeding the planner sends nothing',posts.length===0,JSON.stringify(posts));
+    const old=await form();
+    ok('an old Next session address opens Session games for that child',old.hash==='#play'&&old.s==='TH'&&old.p==='mix'&&old.a==='7-8'&&old.l==='',old);
+    ok('moving around and choosing a child sends nothing',posts.length===0,JSON.stringify(posts));
     ok('navigation has no runtime errors',errors.length===0,errors.join('; '));await ctx.close();
   });
   for(const width of [390,320])await section('Mobile '+width,async()=>{
     const {ctx,pg,errors}=await open('#feedback',width);
-    for(const [hash,selector] of [['#feedback','#page-feedback'],['#child/c1/homework','#quickHomework'],['#plan','#page-plan'],['#settings','#page-settings']]){
+    for(const [hash,selector] of [['#feedback','#page-feedback'],['#child/c1/homework','#quickHomework'],['#play','#page-play'],['#settings','#page-settings']]){
       await go(pg,hash);ok(hash+' visible at '+width,await visible(pg,selector));
       const dims=await pg.evaluate(()=>({width:document.documentElement.clientWidth,scroll:document.documentElement.scrollWidth,body:document.body.scrollWidth}));
       ok(hash+' fits viewport at '+width,dims.scroll<=dims.width+1&&dims.body<=dims.width+1,JSON.stringify(dims));

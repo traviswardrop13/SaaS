@@ -24,14 +24,23 @@ steps. The Xcode project (`ios/`) is made on a Mac and never committed.
     bought there still works in the app.
 - Sign-in is the 6-digit code from the email (`/api/slp/auth/code`), because
   the emailed link opens in Safari and an app keeps its own cookies.
-- The app's sign-in opens the **free dashboard** (the homepage's door), so no
-  clinician meets a locked dashboard they cannot unlock in the app.
+- **The dashboard is Sona Pro's** (SLPPRO1, 17 Nov 2026, Travis: "now they
+  have to have a trial to be inside there"). An account without it (and
+  without a free dashboard promised before 12 Nov 2026) sees one plain card in
+  the app: "Your account doesn't have Sona Pro yet." and what Sona Pro opens,
+  with Sign out and Settings. No price, no trial, no button or link to buy or
+  to the website (App Store rule 3.1.1). App Review's account
+  (`SLP_REVIEW_EMAIL`) stays open.
 - Settings has **Delete your account** (Apple requires it for an app that
   makes accounts). Since SLPCLEAN1 (17 Nov 2026) the dashboard shows no
   community, so the app carries no posts by other people (the server still
   keeps report, block and delete for posts made before).
-- **Plan activities** sends the text a clinician types to Anthropic to write
-  activity ideas; the page asks them not to type a child's name.
+- **Session games** (SLPPRO1): the clinician picks a sound, word position,
+  age band and session length, and may type a few words on what the child
+  loves; those go to Anthropic to pick three of Sona's own games. **Play now
+  opens the game in the app** (SESSPLAY1), set to that sound, with a
+  temporary profile: nothing is saved to a family and nothing is sent. The
+  game listens to the child, so the app now uses the **microphone**.
 
 ## Build it on the Mac (one time)
 
@@ -43,8 +52,12 @@ steps. The Xcode project (`ios/`) is made on a Mac and never committed.
    - **General › Display Name:** `Sona for SLPs` (Travis's to change).
    - **App icon:** drag `assets/icon-1024.png` into `App/Assets.xcassets/AppIcon`
      (a draft: Echo on the dashboard's navy; Travis's to replace).
-   - **Info.plist:** nothing to add. The app uses no microphone, camera,
-     location or notifications.
+   - **Info.plist:** add `NSMicrophoneUsageDescription` (Privacy -
+     Microphone Usage Description): "Sona listens to the child's practice
+     words during a game. Audio stays on this device and is never saved."
+     Session games' Play now runs Sona's games in the app, and they listen.
+     The app uses no camera, location or notifications. (The Xcode project is
+     made on the Mac and never committed, so this is a step, not a file.)
 5. Run it on your iPhone. Check:
    - it opens on the sign-in screen; "Email me a code"; the code from the
      email signs you in; Sign out and back in;
@@ -53,6 +66,11 @@ steps. The Xcode project (`ios/`) is made on a Mac and never committed.
    - the top of every screen sits below the clock and the camera (the web
      view is inset for them: `contentInset: automatic`);
    - Settings › Your data › "Share CSV" opens the share sheet;
+   - Session games: pick a sound and age, Find Sona games, then Play now on
+     a pick. iOS asks for the microphone once; the game listens; its ✕ (or
+     Back home) returns to Session games. Nothing in the game shows a price,
+     setup or Home;
+   - an account with no Sona Pro: the one plain card, no price, Sign out works;
    - airplane mode: the "Can't reach Sona" page, and Try again works.
 
 ## App Store Connect
@@ -61,12 +79,13 @@ steps. The Xcode project (`ios/`) is made on a Mac and never committed.
    id `com.speaksona.slp`, SKU `sona-slp`.
 2. **Category:** Medical or Education (Travis's call); **age rating:**
    answer "user-generated content: no" (the community left the dashboard on
-   17 Nov 2026; the AI's activity ideas are shown only to the clinician who
+   17 Nov 2026; Session games' picks are shown only to the clinician who
    asked), everything else no.
 3. **App Privacy:** Contact Info › Email Address (App Functionality, linked to
-   the user); User Content › Other (what a clinician types into Plan
-   activities, sent to the AI provider to answer it, not stored; Travis's
-   call whether it is "linked"); no tracking.
+   the user); User Content › Other (the few words a clinician types into
+   Session games about what a child loves, sent to the AI provider to pick
+   games, not stored; Travis's call whether it is "linked"); Audio: none
+   collected (a game listens on the device and keeps nothing); no tracking.
    The caseload the app shows (children's first names and practice) comes
    from families' phones with their consent, not from the clinician's phone:
    how to label it is Travis's call (with whoever advises him on privacy).
@@ -81,8 +100,10 @@ steps. The Xcode project (`ios/`) is made on a Mac and never committed.
 5. **Review notes**, to paste: "Sona for SLPs is the free companion app for
    speech-language pathologists who use Sona with families. Clinicians sign
    in with a code sent to their email. The app sells nothing: there are no
-   purchases, prices or links to purchase. Plan activities writes in-session
-   activity ideas with AI from a short description the clinician types.
+   purchases, prices or links to purchase. Session games picks Sona games
+   for a speech session with AI and plays them on the device, listening to the
+   child's practice words on the device only. An account needs a Sona Pro
+   subscription bought on speaksona.com; the review account below has one.
    Settings › Delete your account deletes the account and its data."
 
 ## Known and left

@@ -8,6 +8,27 @@
 // (SLPAPP1, 16 Nov 2026: Capacitor adds "SonaSLPApp/<n>" to its user agent).
 // A restored link in the FAMILY app's shell must return to the family app
 // before rendering or making clinician requests.
+// SESSPLAY1 (17 Nov 2026): the dashboard opening again ends a game session
+// played in this tab (Session games' "Play now"): its record and its box of
+// temporary storage go, before sona.js loads below, so this page never runs
+// as a session. Also when the page comes back from the browser's cache.
+(function () {
+  function endSession() {
+    try {
+      var ss = window.sessionStorage, gone = [], had = ss.getItem("sona.sessplay.v1") !== null;
+      // and, after a session, the game state it left in this tab (a play
+      // token would otherwise open that game once more outside the session)
+      for (var i = 0; i < ss.length; i++) {
+        var k = ss.key(i);
+        if (k === "sona.sessplay.v1" || (k && k.indexOf("sona.sp:") === 0) ||
+            (had && k && (/^sona\.(play|boost)\./.test(k) || /^sona\.run\.v1/.test(k)))) gone.push(k);
+      }
+      gone.forEach(function (k) { ss.removeItem(k); });
+    } catch (e) {}
+  }
+  endSession();
+  try { window.addEventListener("pageshow", function (e) { if (e.persisted) endSession(); }); } catch (e) {}
+})();
 (function () {
   var native = false, slpApp = false;
   try { slpApp = /\bSonaSLPApp\/\d/.test(navigator.userAgent || ""); } catch (e) {}
@@ -342,7 +363,16 @@
     .phone .pn { font-size:13px; color:var(--ink-2); line-height:1.5; margin-top:6px; }
     .phone .pm { font-size:12px; color:var(--muted); margin-top:10px; line-height:1.5; }
 
-    /* ── Plan activities (SLPCLEAN1) ─────────────── */
+    /* ── Session games (SLPPRO1; the form and cards are Plan activities', SLPCLEAN1) ── */
+    .play-fields { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:0 12px; }
+    .play-fields .fl { margin-top:12px; }
+    .pick-pic { display:block; width:calc(100% + 40px); max-width:none; margin:-20px -20px 14px; aspect-ratio:16/9; object-fit:cover; border-radius:9px 9px 0 0; background:var(--subtle); }
+    .pick-foot { margin-top:auto; padding-top:16px; }
+    .pick-foot .btn { width:100%; }
+    .idea-card { margin-top:28px; }
+    .idea-card textarea { margin-top:12px; min-height:84px; }
+    .idea-card .row { margin-top:6px; }
+    .idea-msg { font-size:13px; color:var(--accent-d); }
     .plan-form textarea { min-height:120px; font-size:15px; line-height:1.55; }
     .plan-from { display:flex; flex-wrap:wrap; align-items:flex-end; gap:8px 12px; }
     .plan-from > div { flex:1; min-width:220px; max-width:360px; }
@@ -423,6 +453,13 @@
        is bought on speaksona.com, and a paid plan still works in the app.
        No pointer to buying elsewhere either (Apple's rule 3.1.1). */
     html.slp-app [data-sells] { display:none !important; }
+    /* the app's locked card stands alone: nothing in the top bar beside it */
+    html.slp-app.app-locked .workspace-bar { display:none !important; }
+    .applock { max-width:560px; margin:24px auto 0; text-align:center; padding:32px 24px; }
+    .applock .plan-echo { margin:0 auto 14px; }
+    .applock h1 { font-size:20px; font-weight:650; letter-spacing:-.01em; }
+    .applock p { color:var(--muted); margin:8px auto 0; max-width:420px; }
+    .applock .row { justify-content:center; margin-top:20px; gap:16px; }
     .premium-price { font-size:14px; color:var(--muted); margin:6px 0 18px; }
     .premium-price b { font-size:28px; font-weight:650; color:var(--ink); letter-spacing:-.02em; margin-right:2px; }
     .premium-points { list-style:none; display:grid; gap:10px; margin:0 0 20px; padding:0; }
@@ -512,7 +549,8 @@
       .card .premium-title { font-size:18px; } .premium-price b { font-size:24px; }
       .set-plan { flex-direction:column; align-items:stretch; }
       .plan-from > div { max-width:none; }
-      #planResult { scroll-margin-top:68px; }
+      #playResult { scroll-margin-top:68px; }
+      .play-fields { grid-template-columns:repeat(2,minmax(0,1fr)); }
       .plan-idle, .plan-wait { gap:14px; padding:16px; }
       .plan-idle { gap:0 14px; }
       .plan-idle .plan-echo { grid-row:1; }
@@ -547,7 +585,7 @@
   <aside class="sidebar" id="sidebar">
     <div class="brand"><img src="/assets/brand/echo-logo.webp" alt="" width="38" height="39"/> Sona <small>for SLPs</small></div>
     <nav aria-label="Main navigation">
-      <a class="nav-item active" data-page="plan" href="#plan"><span class="icon"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5l1.9 4.6 4.6 1.9-4.6 1.9L12 16.5l-1.9-4.6L5.5 10l4.6-1.9Z"/><path d="M18.5 15.5l.8 1.9 1.9.8-1.9.8-.8 1.9-.8-1.9-1.9-.8 1.9-.8Z"/></svg></span> Plan activities</a>
+      <a class="nav-item active" data-page="play" href="#play"><span class="icon"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="7" width="19" height="11" rx="5.5"/><path d="M7.5 10.5v4M5.5 12.5h4"/><circle cx="15.5" cy="11.5" r="1" fill="currentColor"/><circle cx="17.5" cy="13.5" r="1" fill="currentColor"/></svg></span> Session games</a>
       <a class="nav-item" data-page="today" href="#today"><span class="icon"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M16 3v4M8 3v4M3 11h18m-12 5 2 2 4-4"/></svg></span> Today <span class="badge warn" id="attnCount" style="display:none;">0</span></a>
       <a class="nav-item" data-page="caseload" href="#caseload"><span class="icon"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2m20 0v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/><circle cx="9" cy="7" r="4"/></svg></span> Caseload <span class="badge" id="familyCount" style="display:none;">0</span></a>
       <a class="nav-item" data-page="premium" href="#premium" data-sells><span class="icon"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.6l-5.4 2.9 1.2-6-4.5-4.2 6.1-.7Z"/></svg></span> Sona Pro</a>
@@ -562,7 +600,7 @@
 
   <main class="main" id="mainContent" tabindex="-1">
     <div class="workspace-bar">
-      <div class="crumb">Workspace <span aria-hidden="true">/</span> <b id="pageCrumb">Plan activities</b></div>
+      <div class="crumb">Workspace <span aria-hidden="true">/</span> <b id="pageCrumb">Session games</b></div>
       <div class="app-actions">
         <a class="btn app-download premium-top" id="premiumTop" href="#premium" hidden data-sells><span><span id="premiumTopLabel">Get Premium</span><small id="premiumTopPrice"></small></span></a>
         <a class="btn ghost app-download" id="downloadApp" href="https://apps.apple.com/us/app/sona-speech/id6785755867" target="_blank" rel="noopener noreferrer"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="2" width="12" height="20" rx="3"/><path d="M10 18h4M12 6v8m-3-3 3 3 3-3"/></svg><span>Download the app<small>iPhone &amp; iPad</small></span></a>
@@ -697,7 +735,7 @@
           <button class="btn ghost sm noprint" id="chNoteBtn">Copy progress note</button>
           <button class="btn ghost sm noprint" id="chPrint">Print</button>
         </div>
-        <div class="child-tabs noprint" role="group" aria-label="Child workspace"><button class="filter-tab" data-child-view="overview" aria-pressed="true">Overview</button><button class="filter-tab" data-child-view="homework" aria-pressed="false">Quick homework</button><span class="spacer"></span><button class="btn ghost sm" id="chPlanBtn" type="button"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5l1.9 4.6 4.6 1.9-4.6 1.9L12 16.5l-1.9-4.6L5.5 10l4.6-1.9Z"/><path d="M18.5 15.5l.8 1.9 1.9.8-1.9.8-.8 1.9-.8-1.9-1.9-.8 1.9-.8Z"/></svg> Plan activities</button></div>
+        <div class="child-tabs noprint" role="group" aria-label="Child workspace"><button class="filter-tab" data-child-view="overview" aria-pressed="true">Overview</button><button class="filter-tab" data-child-view="homework" aria-pressed="false">Quick homework</button><span class="spacer"></span><button class="btn ghost sm" id="chPlanBtn" type="button"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="7" width="19" height="11" rx="5.5"/><path d="M7.5 10.5v4M5.5 12.5h4"/><circle cx="15.5" cy="11.5" r="1" fill="currentColor"/><circle cx="17.5" cy="13.5" r="1" fill="currentColor"/></svg> Session games</button></div>
         <div class="send-success" id="childSaved" role="status" hidden></div>
         <div class="twocol workflow-panel" id="chOverview">
           <div>
@@ -799,56 +837,91 @@
 
       </div>
 
-      <!-- ════════ PLAN ACTIVITIES (SLPCLEAN1, 17 Nov 2026) ════════
-           Travis: "an AI that is specifically for in session activity
-           creation and planning. So they can say, I have a kid who is 5,
-           who's interested in XYZ, and then it auto creates activities for
-           that kid." Free typing was his choice, and he accepted what it
-           means: what the clinician types in the box, and nothing else, goes
-           to /api/slp/activities, which hands it to Anthropic. The page says
-           so under the box and asks for no name, and it will not send a
-           caseload child's name it finds in the text. "Start from your
-           caseload" writes an age, a sound and a position into the box,
-           never a name. The ideas live in this tab only: nothing is saved,
-           assigned or sent to a family. Works before a family link exists.
-           It replaced Plan sessions (PLANDAY1) and the AI homework draft. -->
-      <div class="page" id="page-plan">
-        <div class="page-header"><div><h1>Plan activities</h1><p>Describe the child and the session. Sona drafts activities you can run today.</p></div></div>
+      <!-- ════════ SESSION GAMES (SLPPRO1 / SESSPLAY1, 17 Nov 2026) ════════
+           Travis, of Plan activities: "the activity planner is not what I am
+           after ... I want it built into their app ... almost like building a
+           game or something digital, and have it loaded into their app. Or
+           just suggesting what game or activity to go and play inside of Sona
+           speech", then "picks sona games but also give the slp the opp to
+           suggest a new game or activity to be built inside the app".
+           The clinician picks the sound, word position, age band and session
+           length (and may type a few words on what the child loves, never a
+           name); /api/slp/games/pick asks the AI to pick three of Sona's OWN
+           games (or the sound's talking story, or its books) from Sona's
+           catalog (lib/sonaCatalog). "Play now" asks /api/slp/play, then
+           opens the game in this tab, set to that sound (SESSPLAY1 in
+           sona.js: every game open here, a temporary child with no name,
+           nothing saved to a family and nothing sent). The idea box goes to
+           the Sona team (/api/slp/feedback, kind "idea"). It replaced Plan
+           activities (SLPCLEAN1), which replaced Plan sessions (PLANDAY1). -->
+      <div class="page" id="page-play">
+        <div class="page-header"><div><h1>Session games</h1><p>Pick a sound and an age. Sona suggests three of its games to play in your session, set to that sound.</p></div></div>
         <div class="card plan-form">
-          <div class="plan-from" id="planFromRow" hidden>
-            <div><label class="fl" for="planFrom" style="margin-top:0;">Start from your caseload <span class="opt-note">(optional)</span></label>
-            <select id="planFrom"><option value="">Choose a child</option></select></div>
+          <div class="plan-from" id="playFromRow" hidden>
+            <div><label class="fl" for="playFrom" style="margin-top:0;">Start from your caseload <span class="opt-note">(optional)</span></label>
+            <select id="playFrom"><option value="">Choose a child</option></select></div>
           </div>
-          <label class="fl" for="planText">About the child and session</label>
-          <textarea id="planText" maxlength="600" placeholder="A 5-year-old who loves dinosaurs, working on R at the start of words. 30-minute session." aria-describedby="planNote planCount"></textarea>
-          <div class="plan-count" id="planCount">0/600</div>
-          <p class="ai-note" id="planNote"><span><b>Don't type a child's name.</b> What you type is sent to our AI provider (Anthropic) to write the ideas.</span></p>
-          <div class="row plan-go"><button class="btn" id="planGo" type="button">Make activities</button></div>
-          <div class="err" id="planErr" role="alert"><span id="planErrText"></span> <button class="feedback-shortcut" id="planRetry" type="button" hidden>Try again</button></div>
+          <div class="play-fields">
+            <div><label class="fl" for="playSound">Target sound</label><select id="playSound"></select></div>
+            <div><label class="fl" for="playPos">Word position</label><select id="playPos"></select></div>
+            <div><label class="fl" for="playAge">Age</label><select id="playAge"><option value="">Choose</option><option value="3-4">3–4</option><option value="5-6">5–6</option><option value="7-8">7–8</option><option value="9+">9+</option></select></div>
+            <div><label class="fl" for="playMin">Session</label><select id="playMin"><option value="20">20 minutes</option><option value="30" selected>30 minutes</option><option value="45">45 minutes</option></select></div>
+          </div>
+          <label class="fl" for="playLoves">What do they love? <span class="opt-note">(optional)</span></label>
+          <input id="playLoves" maxlength="120" autocomplete="off" placeholder="Dinosaurs, trucks, soccer" aria-describedby="playNote playCount"/>
+          <div class="plan-count" id="playCount">0/120</div>
+          <p class="ai-note" id="playNote"><span><b>Don't type a child's name.</b> The sound, position, age, minutes and what you type here go to our AI provider (Anthropic) to pick the games.</span></p>
+          <div class="row plan-go"><button class="btn" id="playGo" type="button">Find Sona games</button></div>
+          <div class="err" id="playErr" role="alert"><span id="playErrText"></span> <button class="feedback-shortcut" id="playRetry" type="button" hidden>Try again</button></div>
         </div>
-        <!-- Before the first ideas: Echo and a few examples that fill the box
-             (Travis: "a little more life"). Ages, interests and targets only,
-             never a name. While the AI works: Echo bobs (still under Reduce
-             Motion) and says so; the last ideas come back if it fails. -->
-        <section class="plan-idle" id="planIdle" aria-labelledby="planIdleHeading">
+        <!-- Before the first picks: Echo and a few examples that fill the
+             form (ages, interests and sounds, never a name). While the AI
+             works, Echo bobs (still under Reduce Motion) and says so; the
+             last picks come back if it fails. -->
+        <section class="plan-idle" id="playIdle" aria-labelledby="playIdleHeading">
           <img class="plan-echo" src="/assets/brand/echo-logo.webp" alt="" width="64" height="65"/>
-          <div><h2 id="planIdleHeading">Not sure where to start?</h2><p>Tap an example to fill the box, then make it yours.</p></div>
-          <div class="plan-examples" id="planExamples">
-            <button class="plan-example" type="button">A 4-year-old who loves trucks, working on K</button>
-            <button class="plan-example" type="button">A 7-year-old who loves Minecraft, R at the start of words, 30 min</button>
-            <button class="plan-example" type="button">A 5-year-old who loves animals, S blends</button>
-            <button class="plan-example" type="button">A 9-year-old who loves soccer, SH in sentences, small group</button>
+          <div><h2 id="playIdleHeading">Not sure where to start?</h2><p>Tap an example to fill the form, then make it yours.</p></div>
+          <div class="plan-examples" id="playExamples">
+            <button class="plan-example" type="button" data-sound="K" data-pos="i" data-age="3-4" data-loves="trucks">Ages 3–4 · K · loves trucks</button>
+            <button class="plan-example" type="button" data-sound="R" data-pos="i" data-age="7-8" data-loves="Minecraft">Ages 7–8 · R at the start · Minecraft</button>
+            <button class="plan-example" type="button" data-sound="S" data-pos="b" data-age="5-6" data-loves="animals">Ages 5–6 · S blends · animals</button>
           </div>
         </section>
-        <div class="plan-wait" id="planWait" role="status" hidden>
+        <div class="plan-wait" id="playWait" role="status" hidden>
           <img class="plan-echo" src="/assets/brand/echo-logo.webp" alt="" width="64" height="65"/>
-          <div><p>Echo is thinking up ideas…</p><p class="sub">This takes a few seconds.</p></div>
+          <div><p>Echo is picking games…</p><p class="sub">This takes a few seconds.</p></div>
         </div>
-        <section id="planResult" aria-labelledby="planActsHeading" hidden>
-          <div class="acts-head"><h2 id="planActsHeading">Activities</h2><div class="spacer"></div><button class="btn ghost sm" id="planCopy" type="button">Copy all</button><button class="btn ghost sm" id="planAgain" type="button">New ideas</button></div>
-          <div class="acts" id="planActs"></div>
-          <p class="workflow-note">Ideas to adapt to the child in front of you; you choose the words. Nothing here is saved or sent to a family, so copy anything you want to keep.</p>
+        <section id="playResult" aria-labelledby="playHeading" hidden>
+          <div class="acts-head"><h2 id="playHeading">Sona games</h2><div class="spacer"></div><button class="btn ghost sm" id="playAgain" type="button">New picks</button></div>
+          <div class="acts" id="playPicks"></div>
+          <p class="workflow-note">Play now opens the game on this device, set to that sound. It saves nothing to a family's Sona and sends nothing. Close the game to come back here.</p>
         </section>
+        <section class="card idea-card" aria-labelledby="ideaHeading">
+          <h2 id="ideaHeading">Got an idea for a game Sona should have?</h2>
+          <p class="sub">Tell us a game or activity you'd want inside Sona. It goes straight to the Sona team.</p>
+          <label class="sr-only" for="ideaText">Your idea</label>
+          <textarea id="ideaText" maxlength="500" placeholder="A cooking game where each word adds an ingredient…"></textarea>
+          <div class="plan-count" id="ideaCount">0/500</div>
+          <div class="row"><button class="btn ghost" id="ideaGo" type="button">Send idea</button><p class="idea-msg" id="ideaMsg" role="status"></p></div>
+        </section>
+      </div>
+
+      <!-- ════════ THE APP'S LOCKED CARD (SLPPRO1, 17 Nov 2026) ════════
+           Travis: "now they have to have a trial to be inside there". In
+           the clinicians' app, an account without Sona Pro (and no free
+           dashboard promised before 12 Nov 2026) sees this one card in place
+           of every page but Settings and Talk to Rachel. The app may sell
+           nothing (App Store rule 3.1.1): no price, no trial, no button or
+           link to buy or to the website; Sign out, and Settings (which holds
+           Delete my account). The website's dashboard shows the Sona Pro
+           page with the trial instead. -->
+      <div class="page" id="page-applock">
+        <div class="card applock">
+          <img class="plan-echo" src="/assets/brand/echo-logo.webp" alt="" width="64" height="65"/>
+          <h1>Your account doesn't have Sona Pro yet.</h1>
+          <p>Sona Pro opens the dashboard, every game for you, and every game for families on your link.</p>
+          <div class="row"><button class="btn ghost" id="appLockOut" type="button">Sign out</button><a class="text-link" href="#settings">Settings</a></div>
+        </div>
       </div>
 
       <!-- ════════ PREMIUM: SONA PRO ════════
@@ -856,9 +929,13 @@
            dashboard, every game on the clinician's own phone or tablet, and
            every game for every family who joins through their link, with no
            cap on families. A 14-day free trial the first time, card up front.
-           For an account made from 12 Nov 2026 the dashboard itself is part
-           of the plan (lib/proGate holds that on the server); every older
-           account keeps the free dashboard it was told about.
+           The dashboard itself is part of the plan (lib/proGate holds that
+           on the server) for every account but those made before 12 Nov
+           2026, which keep the free dashboard they were told about. Since
+           SLPPRO1 (17 Nov 2026, Travis: "i want this to be sona pro tho.
+           this is what they access when they create a free trial") that
+           includes the homepage's signups of 13 to 17 Nov, and every new
+           clinician lands here first, on the trial.
            The two yearly plans sold until 12 Nov 2026 are not sold here any
            more, but a clinician holding one still sees it, with Manage
            billing, and a clinician covered free as promised still sees that.
@@ -877,7 +954,7 @@
         <!-- The dashboard is closed (an account made from 12 Nov 2026, with no
              Sona Pro on): said once, above the offer, in the words the
              server's own refusal uses. -->
-        <div class="send-success pro-locked" id="proLocked" role="status" hidden>Your dashboard comes with Sona Pro. <span id="proLockedTrial">Start your free trial below to see your caseload, add children and send homework home.</span><span id="proLockedNow" hidden>Start it below to see your caseload, add children and send homework home.</span></div>
+        <div class="send-success pro-locked" id="proLocked" role="status" hidden>Your dashboard comes with Sona Pro. <span id="proLockedTrial">Start your free trial below to play Sona games in your sessions, see your caseload, add families and send homework home.</span><span id="proLockedNow" hidden>Start it below to play Sona games in your sessions, see your caseload, add families and send homework home.</span></div>
         <div class="premium-layout">
           <div>
             <section class="card premium-card" id="proOffer" aria-labelledby="proOfferTitle" hidden>
@@ -885,6 +962,7 @@
               <h2 class="premium-title" id="proOfferTitle">Everything, for you and every family you send home</h2>
               <p class="premium-price" id="proPriceLine"><b id="proPrice"></b> <span id="proPer"></span><span id="proTrialNote"> · <span id="proTrialDays"></span> days free</span></p>
               <ul class="premium-points">
+                <li><b>The whole dashboard.</b> Session games picked for each child and played right on your device, your caseload, homework, and who practiced at home.</li>
                 <li><b>Unlimited families.</b> Every family who joins through your link gets every game, every sound, whether or not they choose to share practice with you.</li>
                 <li><b>Every game on your own phone or tablet,</b> so you know what you're sending home and can show a family in session.</li>
                 <li><b>One price, however many families.</b> You never earn anything on your own caseload: this is a plan you pay for, not a referral fee.</li>
@@ -1250,7 +1328,7 @@
       document.querySelectorAll(".page").forEach(function(p){p.classList.remove("active");});
       var el=$("page-"+name); if(el)el.classList.add("active");
       document.querySelectorAll(".nav-item").forEach(function(n){var active=n.dataset.page===name||(name==="child"&&n.dataset.page==="caseload")||(name==="feedback"&&n.dataset.page==="settings");n.classList.toggle("active",active);if(active)n.setAttribute("aria-current","page");else n.removeAttribute("aria-current");});
-      $("pageCrumb").textContent={plan:"Plan activities",today:"Today",caseload:"Caseload",child:"Child overview",premium:"Sona Pro",settings:"Settings",feedback:"Talk to Rachel",onboarding:"Welcome"}[name]||"Plan activities";
+      $("pageCrumb").textContent={play:"Session games",today:"Today",caseload:"Caseload",child:"Child overview",premium:"Sona Pro",settings:"Settings",feedback:"Talk to Rachel",onboarding:"Welcome",applock:"Sona Pro"}[name]||"Session games";
       document.title="Sona · "+$("pageCrumb").textContent;
       setMenu(false);
       window.scrollTo(0,0);
@@ -1258,35 +1336,40 @@
       if(name==="caseload")renderCaseload();
       if(name==="child")renderChild(arg);
       if(name==="premium")renderPremium();
-      if(name==="plan")renderPlanPage();
+      if(name==="play")renderPlayPage();
       paintTopBuy();
       if(name==="settings")renderSettings();
       if(name==="feedback")paintFeedback();
+      document.documentElement.classList.toggle("app-locked",SLP_APP&&dashLocked());
     }
     function go(name,arg,view){ if(name==="invite"&&location.hash==="#invite"){switchPage("caseload");openInvite();return;} var h="#"+name+(arg?"/"+encodeURIComponent(arg):"")+(view?"/"+view:""); if(location.hash===h){switchPage(name,arg);if(name==="child")setChildView(view||"overview");} else location.hash=h; }
     function route(){
       if(!account)return;
-      var h=(location.hash||"#plan").slice(1).split("/"); var name=h[0]||"plan", arg=h[1]?decodeURIComponent(h[1]):null;
-      // SLPCLEAN1 (17 Nov 2026): pages that left the dashboard never dead-end.
-      // The two old planners open the new one; Community and Affiliate
-      // partnerships open Today. A child's old "Next session" tab opens the
-      // planner with that child's age and target in the box (never a name).
-      var MOVED={"plan-day":"plan","homework-draft":"plan",community:"today",affiliate:"today"};
+      var h=(location.hash||"#play").slice(1).split("/"); var name=h[0]||"play", arg=h[1]?decodeURIComponent(h[1]):null;
+      // Pages that left the dashboard never dead-end. SLPCLEAN1 (17 Nov
+      // 2026): Community and Affiliate partnerships open Today. SLPPRO1 (the
+      // same evening): Plan activities, and the two planners before it, open
+      // Session games; a child's old "Next session" tab, or "Plan" address,
+      // opens it with that child's sound and age chosen (never a name).
+      var MOVED={plan:"play","plan-day":"play","homework-draft":"play",community:"today",affiliate:"today"};
       if(MOVED[name]){name=MOVED[name];arg=null;h=[name];history.replaceState(null,"","#"+name);}
-      if(name==="child"&&h[2]==="plan"){var seedKid=kidById(arg);if(seedKid)PLAN_SEED=planSeed(seedKid);name="plan";arg=null;h=[name];history.replaceState(null,"","#plan");}
-      // A CLOSED DASHBOARD (an account made from 12 Nov 2026, no Sona Pro on)
-      // shows the plan in place of the caseload: the server refuses the data
-      // anyway (lib/proGate), and an empty Today would read as "nobody
-      // practiced". Settings and Talk to Rachel stay open.
-      // In the clinicians' app (which sells nothing) Settings stands in, with
-      // its one neutral line; the app's own sign-in opens the free dashboard,
-      // so this is a fallback, not a way in.
-      if(dashLocked()&&!LOCK_OPEN_PAGES[name==="invite"?"caseload":name]){if(SLP_APP){if(location.hash!=="#settings")history.replaceState(null,"","#settings");switchPage("settings");return;}if(location.hash!=="#premium")history.replaceState(null,"","#premium");switchPage("premium");return;}
-      // The planner works before a clinician creates a family code.
-      if(!code&&["feedback","premium","plan"].indexOf(name)<0){switchPage("onboarding");return;}
+      if(name==="child"&&(h[2]==="plan"||h[2]==="play")){var seedKid=kidById(arg);if(seedKid)PLAY_SEED=seedKid.childId;name="play";arg=null;h=[name];history.replaceState(null,"","#play");}
+      if(name==="applock"&&!dashLocked()){name="play";history.replaceState(null,"","#play");}
+      // A CLOSED DASHBOARD (no Sona Pro on, and no free dashboard promised
+      // before 12 Nov 2026) shows the plan in place of everything but
+      // Settings and Talk to Rachel: the server refuses the data anyway
+      // (lib/proGate), and an empty Today would read as "nobody practiced".
+      // SLPPRO1 (17 Nov 2026): since the homepage now offers the trial, every
+      // new clinician lands here first, on the trial's button.
+      // In the clinicians' app, which may sell nothing (App Store rule
+      // 3.1.1), one plain card stands in: no price, no trial, no way to buy
+      // or to the website; Sign out, and Settings for deleting the account.
+      if(dashLocked()&&!LOCK_OPEN_PAGES[name==="invite"?"caseload":name]){var to=SLP_APP?"applock":"premium";if(location.hash!=="#"+to)history.replaceState(null,"","#"+to);switchPage(to);return;}
+      // Session games work before a clinician creates a family code.
+      if(!code&&["feedback","premium","play","applock"].indexOf(name)<0){switchPage("onboarding");return;}
       if(!PREVIEW_FEATURES&&previewOnlyPage(name)){name="today";history.replaceState(null,"","#today");}
       if(name==="invite"){switchPage("caseload");openInvite();return;}
-      if(!$("page-"+name))name="plan";
+      if(!$("page-"+name)||name==="applock"&&!SLP_APP)name="play";
       switchPage(name,arg);
       if(name==="child")setChildView(h[2]||"overview");
     }
@@ -1784,9 +1867,9 @@
       document.querySelectorAll("[data-child-view]").forEach(function(b){b.setAttribute("aria-pressed",String(b.dataset.childView===CHILD_VIEW));});
     }
     document.querySelectorAll("[data-child-view]").forEach(function(b){b.onclick=function(){if(CURRENT)go("child",CURRENT.childId,b.dataset.childView);};});
-    // "Plan activities" on a child's page opens the planner with their age
-    // and target in the box. Never their name (planSeed).
-    $("chPlanBtn").onclick=function(){if(!CURRENT)return;PLAN_SEED=planSeed(CURRENT);go("plan");};
+    // "Session games" on a child's page opens it with their sound, position
+    // and age chosen. Never their name (playSeed).
+    $("chPlanBtn").onclick=function(){if(!CURRENT)return;PLAY_SEED=CURRENT.childId;go("play");};
     function quickBase(k){
       var previous=k.hw&&k.hw.hw, sounds=previous&&previous.sounds?previous.sounds.slice():String(k.focus||"").toUpperCase().split(/[,\s]+/);
       sounds=sounds.filter(function(x,i,a){return ALL.indexOf(x)>=0&&a.indexOf(x)===i;}).slice(0,3);
@@ -2149,36 +2232,23 @@
       }).catch(function(){feedbackBusy(false);$("fbStatus").textContent="Couldn't send. Your message is still here; please try again.";});
     };
 
-    /* ── Plan activities (SLPCLEAN1, 17 Nov 2026) ──
-       Travis: "an AI that is specifically for in session activity creation
-       and planning". The clinician describes the child and the session in
-       their own words; the page posts ONLY that text, { text }, to
-       /api/slp/activities (lib/activityPlan.ts says what the AI is told).
-       Two guards on what leaves: the note under the box asks for no name,
-       and the page refuses to send a caseload child's name it finds in the
-       text. "Start from your caseload" and a child page's "Plan activities"
-       write an age, a sound and a position, never a name (planSeed). The
-       answer lives in this tab: nothing is saved, assigned or sent. */
-    var PLAN_MAX=600, PLAN_SEED="", PLAN_FILLED="", PLAN_BUSY_AI=false, PLAN_GEN_AI=0, PLAN_LAST="", PLAN_ACTS=[];
-    function planWhere(sounds,pos){
-      var list=sounds.map(sLabel).join(", ");if(!list)return "";
-      if(pos==="i")return list+" at the start of words";
-      if(pos==="m")return list+" in the middle of words";
-      if(pos==="f")return list+" at the end of words";
-      if(pos==="v")return "vocalic R";
-      if(pos==="b")return list+" blends";
-      return list;
-    }
-    // "Age 6. Working on R in the middle of words." from a child's age and
-    // targets. Nothing else of the child, and never their name.
-    function planSeed(k){
-      var b=quickBase(k), parts=[], age=parseInt(k.d.age,10), where=planWhere(b.sounds.length?b.sounds:k.d.targets.slice(0,3),b.sounds.length?b.pos:"mix");
-      if(age)parts.push("Age "+age+".");
-      if(where)parts.push("Working on "+where+".");
-      return parts.length?parts.join(" ")+" ":"";
-    }
+    /* ── Session games (SLPPRO1 / SESSPLAY1, 17 Nov 2026) ──
+       Travis: "picks sona games but also give the slp the opp to suggest a
+       new game or activity to be built inside the app". The page posts ONLY
+       the form's choices to /api/slp/games/pick: { sound, pos, age, minutes,
+       loves } (lib/gamePicks says what the AI is told). `loves` is the one
+       free text: the note under it asks for no name, and the page refuses
+       to send a caseload child's name it finds there. "Start from your
+       caseload" and a child page's "Session games" choose the child's sound,
+       position and age, never their name. "Play now" asks /api/slp/play;
+       only after the server's yes does it write this tab's session record
+       and open the game here (SESSPLAY1 in sona.js). The picks live in this
+       tab: nothing is saved, assigned or sent to a family. */
+    var LOVES_MAX=120, IDEA_MAX=500, PLAY_SEED="", PLAY_BUSY=false, PLAY_GEN=0, PLAY_LAST=null, PLAY_PICKS=[], PLAY_GOING=false;
+    var AGE_BAND_OF=function(age){age=parseInt(age,10);return !age?"":age<=4?"3-4":age<=6?"5-6":age<=8?"7-8":"9+";};
+    function posFits(sound,pos){return pos==="v"?sound==="R":pos==="b"?["R","S","L"].indexOf(sound)>=0:!!POSN[pos];}
     // A caseload child's own name, said in the text, as a whole word.
-    function planNameIn(text){
+    function playNameIn(text){
       for(var i=0;i<KIDS.length;i++){
         var n=String(KIDS[i].child||(KIDS[i].meta&&KIDS[i].meta.child)||"").trim();
         if(n.length<2)continue;
@@ -2187,75 +2257,112 @@
       }
       return "";
     }
-    function planCount(){var n=$("planText").value.length;$("planCount").textContent=n+"/"+PLAN_MAX;$("planCount").classList.toggle("over",n>=PLAN_MAX);}
-    function planError(msg,retry){$("planErrText").textContent=msg||"";$("planRetry").hidden=!retry;}
-    function paintPlanFrom(){
+    function playError(msg,retry){$("playErrText").textContent=msg||"";$("playRetry").hidden=!retry;}
+    function playCount(){var n=$("playLoves").value.length;$("playCount").textContent=n+"/"+LOVES_MAX;$("playCount").classList.toggle("over",n>=LOVES_MAX);}
+    function paintPos(){
+      var sound=$("playSound").value, keep=$("playPos").value||"i";
+      $("playPos").innerHTML=["i","m","f","v","b","mix"].filter(function(p){return posFits(sound,p);}).map(function(p){return '<option value="'+p+'">'+esc(p==="mix"?"Mixed":p==="v"?"Vocalic R":p==="b"?"Blends":POSN[p].charAt(0).toUpperCase()+POSN[p].slice(1))+'</option>';}).join("");
+      $("playPos").value=posFits(sound,keep)?keep:"i";
+    }
+    function paintPlayForm(){
+      if(!$("playSound").options.length){
+        $("playSound").innerHTML=ALL.map(function(x){return '<option value="'+esc(x)+'">'+esc(sLabel(x))+'</option>';}).join("");
+        $("playSound").value=ALL.indexOf("R")>=0?"R":ALL[0];paintPos();
+      }
       var kids=KIDS.filter(function(k){return !k.d.archived&&k.synced!==false;});
-      $("planFromRow").hidden=!kids.length;
-      var keep=$("planFrom").value;
-      $("planFrom").innerHTML='<option value="">Choose a child</option>'+kids.map(function(k){return '<option value="'+esc(k.childId)+'">'+esc(k.d.name)+'</option>';}).join("");
-      if(keep&&kids.some(function(k){return k.childId===keep;}))$("planFrom").value=keep;
+      $("playFromRow").hidden=!kids.length;
+      var keep=$("playFrom").value;
+      $("playFrom").innerHTML='<option value="">Choose a child</option>'+kids.map(function(k){return '<option value="'+esc(k.childId)+'">'+esc(k.d.name)+'</option>';}).join("");
+      if(keep&&kids.some(function(k){return k.childId===keep;}))$("playFrom").value=keep;
     }
-    // A seed replaces the box only when it holds nothing of the clinician's
-    // own (empty, or the last seed untouched); otherwise it asks first.
-    function planFill(seed){
-      var box=$("planText"), now=box.value.trim();
-      if(now&&now!==PLAN_FILLED.trim()&&now!==seed.trim()&&!confirm("Replace what you've typed?"))return;
-      box.value=seed;PLAN_FILLED=seed;planCount();
-      try{box.focus();box.setSelectionRange(seed.length,seed.length);}catch(e){}
+    // A caseload child's sound, position and age band: nothing else of the
+    // child, and never their name.
+    function playSeed(k){
+      var b=quickBase(k), sounds=b.sounds.length?b.sounds:(k.d.targets||[]).slice(0,3), sound=sounds.filter(function(x){return ALL.indexOf(x)>=0;})[0];
+      if(sound){$("playSound").value=sound;paintPos();}
+      var pos=b.sounds.length?b.pos:"i"; if(posFits($("playSound").value,pos))$("playPos").value=pos;
+      var band=AGE_BAND_OF(k.d.age); if(band)$("playAge").value=band;
     }
-    function renderPlanPage(){
-      paintPlanFrom();
-      if(PLAN_SEED){var seed=PLAN_SEED;PLAN_SEED="";$("planFrom").value="";planFill(seed);}
-      planCount();
+    function renderPlayPage(){
+      paintPlayForm();
+      if(PLAY_SEED){var k=kidById(PLAY_SEED);PLAY_SEED="";if(k){$("playFrom").value=k.childId;playSeed(k);}}
+      playCount();
     }
-    $("planText").oninput=planCount;
-    [].forEach.call(document.querySelectorAll(".plan-example"),function(b){b.onclick=function(){$("planFrom").value="";planFill(b.textContent.trim()+".");};});
-    $("planFrom").onchange=function(){var k=kidById(this.value);if(k)planFill(planSeed(k));};
-    function planCopyText(){
-      var out=["Activities","For: "+PLAN_LAST,""];
-      PLAN_ACTS.forEach(function(a,i){
-        out.push((i+1)+". "+a.name,"You'll need: "+a.need,"How it goes:");
-        a.steps.forEach(function(st,j){out.push("  "+(j+1)+") "+st);});
-        out.push("Make it easier: "+a.easier,"Make it harder: "+a.harder,"");
-      });
-      out.push("Ideas to adapt; you choose the words.");
-      return out.join("\n");
-    }
-    function renderActs(list){
-      PLAN_ACTS=list;
-      $("planActs").innerHTML=list.map(function(a,i){
-        return '<article class="card act act-'+(i%3+1)+'"><div class="act-top"><span class="act-num" aria-hidden="true">'+(i+1)+'</span><h3>'+esc(a.name)+'</h3></div>'+
-          '<div class="act-label">You\'ll need</div><p>'+esc(a.need)+'</p>'+
-          '<div class="act-label">How it goes</div><ol>'+a.steps.map(function(st){return '<li>'+esc(st)+'</li>';}).join("")+'</ol>'+
-          '<div class="act-adjust"><div><b>Make it easier:</b> '+esc(a.easier)+'</div><div><b>Make it harder:</b> '+esc(a.harder)+'</div></div></article>';
+    $("playSound").onchange=paintPos;
+    $("playLoves").oninput=playCount;
+    $("playFrom").onchange=function(){var k=kidById(this.value);if(k)playSeed(k);};
+    [].forEach.call(document.querySelectorAll("#playExamples .plan-example"),function(b){b.onclick=function(){
+      paintPlayForm();$("playFrom").value="";$("playSound").value=b.dataset.sound;paintPos();$("playPos").value=b.dataset.pos;$("playAge").value=b.dataset.age;$("playLoves").value=b.dataset.loves;playCount();
+      try{$("playGo").focus();}catch(e){}
+    };});
+    function playChoice(){return {sound:$("playSound").value,pos:$("playPos").value,age:$("playAge").value,minutes:parseInt($("playMin").value,10)||30,loves:$("playLoves").value.trim()};}
+    function playHeading(c){return sLabel(c.sound)+" · "+(c.pos==="mix"?"mixed positions":c.pos==="v"?"vocalic R":c.pos==="b"?"blends":POSN[c.pos]+" of words")+" · ages "+c.age.replace("-","–");}
+    function renderPicks(list,c){
+      PLAY_PICKS=list;PLAY_LAST=c;
+      $("playHeading").textContent=playHeading(c);
+      $("playPicks").innerHTML=list.map(function(p,i){
+        return '<article class="card act pick act-'+(i%3+1)+'"><img class="pick-pic" src="'+esc(p.pic)+'" alt="" loading="lazy" onerror="this.remove()"/>'+
+          '<div class="act-top"><span class="act-num" aria-hidden="true">'+(i+1)+'</span><h3>'+esc(p.name)+'</h3></div>'+
+          '<div class="act-label">Why it fits</div><p>'+esc(p.why)+'</p>'+
+          '<div class="act-label">How to use it in session</div><ol>'+p.how.map(function(st){return '<li>'+esc(st)+'</li>';}).join("")+'</ol>'+
+          '<div class="pick-foot"><button class="btn pick-play" type="button" data-key="'+esc(p.key)+'" aria-label="Play '+esc(p.name)+' now">Play now</button></div></article>';
       }).join("");
-      $("planResult").hidden=false;$("planIdle").hidden=true;
+      [].forEach.call($("playPicks").querySelectorAll(".pick-play"),function(b){b.onclick=function(){playNow(b.dataset.key,b);};});
+      $("playResult").hidden=false;$("playIdle").hidden=true;
     }
-    function planAsk(text){
-      if(PLAN_BUSY_AI)return;
-      text=String(text||"").trim();
-      if(text.length<3){planError("Describe the child and the session first.",false);$("planText").focus();return;}
-      if(text.length>PLAN_MAX){planError("Keep it under "+PLAN_MAX+" characters.",false);return;}
-      var named=planNameIn(text);
-      if(named){planError("Take out “"+named+"” first: Sona doesn't send a child's name to the AI. Their age and what they love are plenty.",false);$("planText").focus();return;}
-      var gen=++PLAN_GEN_AI;PLAN_BUSY_AI=true;PLAN_LAST=text;planError("",false);
-      ["planGo","planAgain"].forEach(function(id){$(id).disabled=true;});$("planGo").textContent="Making activities…";$("planGo").setAttribute("aria-busy","true");
-      $("planIdle").hidden=true;$("planResult").hidden=true;$("planWait").hidden=false;
-      function done(){if(gen!==PLAN_GEN_AI)return;PLAN_BUSY_AI=false;["planGo","planAgain"].forEach(function(id){$(id).disabled=false;});$("planGo").textContent="Make activities";$("planGo").removeAttribute("aria-busy");
-        $("planWait").hidden=true;$("planResult").hidden=!PLAN_ACTS.length;$("planIdle").hidden=!!PLAN_ACTS.length;}
-      fetch("/api/slp/activities",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:text})}).then(answer).then(function(res){
-        if(gen!==PLAN_GEN_AI)return;done();
+    function playAsk(c){
+      if(PLAY_BUSY)return;
+      if(!c.age){playError("Choose the child's age first.",false);$("playAge").focus();return;}
+      if(c.loves.length>LOVES_MAX){playError("Keep what they love under "+LOVES_MAX+" characters.",false);return;}
+      var named=playNameIn(c.loves);
+      if(named){playError("Take out “"+named+"” first: Sona doesn't send a child's name to the AI. What they love is plenty.",false);$("playLoves").focus();return;}
+      var gen=++PLAY_GEN;PLAY_BUSY=true;playError("",false);
+      ["playGo","playAgain"].forEach(function(id){$(id).disabled=true;});$("playGo").textContent="Finding games…";$("playGo").setAttribute("aria-busy","true");
+      $("playIdle").hidden=true;$("playResult").hidden=true;$("playWait").hidden=false;
+      function done(){if(gen!==PLAY_GEN)return;PLAY_BUSY=false;["playGo","playAgain"].forEach(function(id){$(id).disabled=false;});$("playGo").textContent="Find Sona games";$("playGo").removeAttribute("aria-busy");
+        $("playWait").hidden=true;$("playResult").hidden=!PLAY_PICKS.length;$("playIdle").hidden=!!PLAY_PICKS.length;}
+      fetch("/api/slp/games/pick",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({sound:c.sound,pos:c.pos,age:c.age,minutes:c.minutes,loves:c.loves})}).then(answer).then(function(res){
+        if(gen!==PLAY_GEN)return;done();
         var j=res.j;
-        if(j.ok&&Array.isArray(j.activities)&&j.activities.length){renderActs(j.activities);$("planResult").scrollIntoView({behavior:"smooth",block:"start"});return;}
+        if(j.ok&&Array.isArray(j.picks)&&j.picks.length){renderPicks(j.picks,c);$("playResult").scrollIntoView({behavior:"smooth",block:"start"});return;}
         if(j.needPlan)loadPlan();
-        planError(j.error||"Couldn't make activities. Try again or reword it.",res.status>=500||res.status===429);
-      }).catch(function(){if(gen!==PLAN_GEN_AI)return;done();planError("Couldn't reach Sona. Check your connection and try again.",true);});
+        playError(j.error||"Couldn't pick games just now. Try again.",res.status>=500||res.status===429);
+      }).catch(function(){if(gen!==PLAY_GEN)return;done();playError("Couldn't reach Sona. Check your connection and try again.",true);});
     }
-    $("planGo").onclick=function(){planAsk($("planText").value);};
-    $("planRetry").onclick=function(){planAsk(PLAN_LAST||$("planText").value);};
-    $("planAgain").onclick=function(){planAsk(PLAN_LAST);};
-    $("planCopy").onclick=function(){if(PLAN_ACTS.length)copy(planCopyText(),$("planCopy"));};
+    $("playGo").onclick=function(){playAsk(playChoice());};
+    $("playRetry").onclick=function(){playAsk(PLAY_LAST||playChoice());};
+    $("playAgain").onclick=function(){if(PLAY_LAST)playAsk(PLAY_LAST);};
+    // PLAY NOW (SESSPLAY1): the server's yes first, then this tab's record,
+    // a fresh box for the temporary child, and the game.
+    function playNow(key,btn){
+      if(PLAY_GOING||!PLAY_LAST)return;
+      var c=PLAY_LAST;PLAY_GOING=true;btn.disabled=true;btn.textContent="Opening…";playError("",false);
+      function back(msg){PLAY_GOING=false;btn.disabled=false;btn.textContent="Play now";if(msg)playError(msg,false);}
+      fetch("/api/slp/play",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({key:key,sound:c.sound,pos:c.pos,age:c.age})}).then(answer).then(function(res){
+        var j=res.j;
+        if(!j.ok||typeof j.go!=="string"||j.go.charAt(0)!=="/"||j.go.charAt(1)==="/"||!(j.exp>Date.now())){if(j.needPlan)loadPlan();back(j.error||"Couldn't open the game. Try again.");return;}
+        try{
+          var ss=window.sessionStorage, gone=[];
+          for(var i=0;i<ss.length;i++){var k=ss.key(i);if(k&&(k.indexOf("sona.sp:")===0||/^sona\.(play|boost)\./.test(k)||/^sona\.run\.v1/.test(k)))gone.push(k);}
+          gone.forEach(function(k){ss.removeItem(k);});
+          ss.setItem("sona.sessplay.v1",JSON.stringify({sound:c.sound,pos:c.pos,age:c.age,exp:j.exp,game:j.key||key}));
+        }catch(e){back("This browser won't open games here. Try another browser.");return;}
+        location.href=j.go;
+      }).catch(function(){back("Couldn't reach Sona. Check your connection and try again.");});
+    }
+    // GAME IDEAS: to the Sona team, through Talk to Rachel's route.
+    function ideaCount(){var n=$("ideaText").value.length;$("ideaCount").textContent=n+"/"+IDEA_MAX;$("ideaCount").classList.toggle("over",n>=IDEA_MAX);}
+    $("ideaText").oninput=function(){ideaCount();$("ideaMsg").textContent="";};
+    $("ideaGo").onclick=function(){
+      var text=$("ideaText").value.trim(), msg=$("ideaMsg");
+      if(!text){msg.textContent="Write your idea first.";$("ideaText").focus();return;}
+      $("ideaGo").disabled=true;msg.textContent="Sending…";
+      fetch("/api/slp/feedback",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({kind:"idea",text:text})}).then(answer).then(function(res){
+        $("ideaGo").disabled=false;
+        if(res.j.ok){$("ideaText").value="";ideaCount();msg.textContent="Sent to the Sona team. Thank you!";return;}
+        msg.textContent=res.j.error||"Couldn't send it. Try again.";
+      }).catch(function(){$("ideaGo").disabled=false;msg.textContent="Couldn't reach Sona. Check your connection and try again.";});
+    };
 
     /* ── Add a family (SLPCLEAN1, 17 Nov 2026) ──────
        Travis: "a way that they can automatically create a custom login
@@ -2307,7 +2414,9 @@
       setTimeout(function(){try{$(code?"famEmail":"famSetup").focus();}catch(e){}},0);
     }
     function closeFamily(){var d=$("famDialog");if(typeof d.close==="function"&&d.open)d.close();else{d.removeAttribute("open");$("addFamilyTop").focus();}}
-    $("addFamilyTop").onclick=openFamily;
+    // A closed dashboard adds no family: the plan opens instead (in the app,
+    // the locked card, which sells nothing). The server refuses it anyway.
+    $("addFamilyTop").onclick=function(){if(dashLocked()){go(SLP_APP?"applock":"premium");return;}openFamily();};
     $("famClose").onclick=closeFamily;
     $("famDialog").addEventListener("close",function(){try{$("addFamilyTop").focus();}catch(e){}});
     $("famDialog").addEventListener("click",function(e){if(e.target===this)closeFamily();});
@@ -2375,6 +2484,7 @@
       }).catch(function(){$("deleteGo").disabled=false;$("deleteGo").textContent="Delete for good";$("deleteErr").textContent="Network error — try again.";});
     };
     if(SLP_APP)$("exportCsv").textContent="Share CSV";
+    $("appLockOut").onclick=function(){$("logout").click();};
     $("logout").onclick=function(e){e.preventDefault();fetch("/api/slp/auth/logout",{method:"POST"}).then(function(){location.replace("/slp-login.html");}).catch(function(){location.replace("/slp-login.html");});};
     function boot(){
       if(window.__sonaFamilyRedirect)return;

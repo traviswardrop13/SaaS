@@ -182,7 +182,7 @@ try {
       await ctx.close();
     }
     const {ctx,pg}=await open("#today");
-    for(const page of ["caseload","plan","today","settings"]){await pg.locator('[data-page="'+page+'"]').click();}
+    for(const page of ["caseload","play","today","settings"]){await pg.locator('[data-page="'+page+'"]').click();}
     ok("view changes never send a write", writes.filter(w=>w.method!=="GET"&&w.method!=="HEAD").length===0,JSON.stringify(writes));
     await ctx.close();
   });
@@ -192,8 +192,9 @@ try {
     await pg.waitForTimeout(150);
     ok("Sona Pro is available without preview injection",await visible(pg,"#page-premium")&&await visible(pg,'[data-page="premium"]'));
     const nav=await pg.locator(".sidebar nav").evaluate(n=>[...n.children].map(c=>c.dataset.page||c.textContent.trim()));
-    // SLPCLEAN1 (17 Nov 2026): five places, the AI planner first.
-    ok("…and sits after Plan activities, Today and Caseload, before Settings",JSON.stringify(nav)===JSON.stringify(["plan","today","caseload","premium","settings"]),nav.join(","));
+    // SLPCLEAN1 (17 Nov 2026): five places; SLPPRO1 (the same evening):
+    // Session games first.
+    ok("…and sits after Session games, Today and Caseload, before Settings",JSON.stringify(nav)===JSON.stringify(["play","today","caseload","premium","settings"]),nav.join(","));
     ok("…with its own crumb, named for the plan",(await pg.locator("#pageCrumb").textContent())==="Sona Pro"&&(await pg.locator('[data-page="premium"]').innerText()).trim()==="Sona Pro");
     const page=await pg.locator("#page-premium").innerText();
     ok("the offer names the plan and prints the server's price and free days",/Sona Pro/.test(page)&&/\$19\.99 a month · 14 days free/.test(page),page);
@@ -209,7 +210,7 @@ try {
     // /api/charter for nothing.
     ok("…never a family price, a yearly figure or a spots-left number, and /api/charter is not asked",!/\$59\.99|\$99\.99|a year|spots? left/i.test(page)&&charterReads.length===0,page);
     ok("only the offer card shows",await visible(pg,"#proOffer")&&!await visible(pg,"#proOn")&&!await visible(pg,"#premiumPaid")&&!await visible(pg,"#premiumFree")&&!await visible(pg,"#proLocked"));
-    for(const p of ["today","caseload","plan","premium","settings","premium"]){await pg.locator('[data-page="'+p+'"]').click();await pg.waitForTimeout(60);}
+    for(const p of ["today","caseload","play","premium","settings","premium"]){await pg.locator('[data-page="'+p+'"]').click();await pg.waitForTimeout(60);}
     ok("viewing it sends no write: GETs only, until a button is pressed",writes.filter(w=>w.method!=="GET"&&w.method!=="HEAD").length===0,JSON.stringify(writes.filter(w=>w.method!=="GET")));
     ok("…and the plan is asked without a session id",planReads.length>0&&planReads.every(q=>q===""),JSON.stringify(planReads));
     ok("the button says the trial",(await pg.locator("#proBuy").innerText()).trim()==="Start my free trial");
@@ -527,7 +528,7 @@ try {
   for(const width of [1440,1024,390,320])await run("Responsive "+width,async()=>{
     DATA=fixture();failRoster=false;
     const {ctx,pg}=await open("#today",width);
-    for(const hash of ["#plan","#today","#caseload","#child/c1","#premium","#settings","#feedback"]){
+    for(const hash of ["#play","#today","#caseload","#child/c1","#premium","#settings","#feedback"]){
       await pg.evaluate(hash=>{location.hash=hash;},hash);await pg.waitForTimeout(80);
       const dims=await pg.evaluate(()=>({viewport:document.documentElement.clientWidth,scroll:document.documentElement.scrollWidth,body:document.body.scrollWidth}));
       ok(hash+" has no document horizontal overflow at "+width,dims.scroll<=dims.viewport+1&&dims.body<=dims.viewport+1,JSON.stringify(dims));

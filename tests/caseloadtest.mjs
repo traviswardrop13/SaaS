@@ -11,8 +11,9 @@
 //    spot, and lib/charter counts those); the trial comes once per clinician;
 //    the yearly plans are refused at checkout as retired;
 //  - for an account made from 12 Nov 2026 the dashboard is Sona Pro's, held
-//    on the server (402 needPlan), while a removal always works; every older
-//    account keeps its free dashboard;
+//    on the server (402 needPlan), while a removal always works; every
+//    account made before 12 Nov keeps its free dashboard (SLPPRO1, 17 Nov
+//    2026: the homepage's 13–17 Nov free-dashboard signups need Sona Pro);
 //  - the success redirect's session id is a QUESTION for Stripe, never a
 //    grant: another clinician's session, an unfinished one or a family's
 //    stores nothing;
@@ -523,7 +524,11 @@ const count = (pred) => S.calls.filter(pred).length;
 {
   const kv = async (cmd) => kvExec(cmd);
   // Every account made before 12 Nov 2026 was told its dashboard was free.
-  const eras = [["before 24 Sep (no terms)", { terms: false }, true], ["24–29 Sep", EARLY, true], ["29 Sep – 12 Nov", {}, true], ["from 12 Nov, no Sona Pro", { terms: C.PRO_TERMS }, false]];
+  // SLPPRO1 (17 Nov 2026): the homepage's free-dashboard signups of 13 to 17
+  // Nov need Sona Pro too ("Move them to the trial"), and a Pro-era account a
+  // free-dashboard link once opened (`freeDashboard: true`) is no longer open.
+  const eras = [["before 24 Sep (no terms)", { terms: false }, true], ["24–29 Sep", EARLY, true], ["29 Sep – 12 Nov", {}, true], ["from 12 Nov, no Sona Pro", { terms: C.PRO_TERMS }, false],
+    ["13–17 Nov free-dashboard signup, no Sona Pro", { terms: C.FREE_DASHBOARD_TERMS }, false], ["a Pro-era account a free-dashboard link once opened", { terms: C.PRO_TERMS, freeDashboard: true }, false]];
   const wrongEra = [];
   for (let i = 0; i < eras.length; i++) {
     const [name, o, want] = eras[i];
@@ -531,7 +536,17 @@ const count = (pred) => S.calls.filter(pred).length;
     seedAcct(e, o);
     if ((await C.dashboardOpen(e, { kv, stripe: client })) !== want) wrongEra.push(name);
   }
-  ok("the dashboard stays free for every account made before 12 Nov 2026, and is Sona Pro's after", wrongEra.length === 0, wrongEra.join(", "));
+  ok("the dashboard stays free for every account made before 12 Nov 2026, and is Sona Pro's after (the 13–17 Nov free-dashboard signups too)", wrongEra.length === 0, wrongEra.join(", "));
+  ok("the promised stamps are the three from before 12 Nov, by stamp alone", C.dashboardPromised({ email: "x" }) === true &&
+    C.dashboardPromised({ terms: "caseload-2026-09" }) && C.dashboardPromised({ terms: "premium-2026-09-29" }) && !C.dashboardPromised({ terms: C.PRO_TERMS }) &&
+    !C.dashboardPromised({ terms: C.FREE_DASHBOARD_TERMS }) && !C.dashboardPromised(null) && !C.dashboardPromised([]));
+  // App Review's one account stays open (the clinicians' app sells nothing)
+  process.env.SLP_REVIEW_EMAIL = "Era3@Riverside-Schools.org"; process.env.SLP_REVIEW_CODE = "246 810";
+  const reviewOpen = await C.dashboardOpen("era3@riverside-schools.org", { kv, stripe: client });
+  delete process.env.SLP_REVIEW_CODE;
+  const reviewNeedsCode = await C.dashboardOpen("era3@riverside-schools.org", { kv, stripe: client });
+  delete process.env.SLP_REVIEW_EMAIL;
+  ok("App Review's account (SLP_REVIEW_EMAIL and its code) is open without Sona Pro, and only while both are set", reviewOpen === true && reviewNeedsCode === false);
   S.calls.length = 0;
   await C.dashboardOpen("era2@riverside-schools.org", { kv, stripe: client });
   ok("…answered for an older account from its stamp alone, with no Stripe call", S.calls.length === 0, JSON.stringify(S.calls));
@@ -1347,7 +1362,7 @@ const count = (pred) => S.calls.filter(pred).length;
   // shared with the emailed code.
   for (const f of ["lib/slpSignIn.ts", "app/api/slp/account/route.ts"]) {
     ok(`${f} stamps PRO_TERMS on the legacy signup path`, /import \{[^}]*PRO_TERMS[^}]*\} from "@\/lib\/caseload"/.test(read(f)) &&
-      /terms: (signup \? FREE_DASHBOARD_TERMS : )?PRO_TERMS|\.terms = PRO_TERMS/.test(read(f)) && !/CASELOAD_TERMS/.test(noComments(read(f))));
+      /terms: PRO_TERMS,|\.terms = PRO_TERMS/.test(read(f)) && !/CASELOAD_TERMS|FREE_DASHBOARD_TERMS/.test(noComments(read(f))));
   }
 }
 
@@ -1357,7 +1372,7 @@ const count = (pred) => S.calls.filter(pred).length;
   const stored = (email) => JSON.parse(KV.K.get("slpacct:" + email) || "{}");
   // Since 13 Nov 2026 an account is made only by its emailed link, so each
   // sign-up here opens the link it was sent; role and setting ride on the
-  // homepage's free-dashboard link, the only door that asks for them.
+  // homepage's link (its "trial" door), the only door that asks for them.
   const openLatest = () => {
     const link = (RESEND.sent.at(-1)?.text || "").match(/https:\/\/sona\.test\.invalid(\/api\/slp\/auth\/verify\?token=[\w-]+)/)?.[1];
     return call(R.verify, "GET", link || "/api/slp/auth/verify");
@@ -1366,14 +1381,14 @@ const count = (pred) => S.calls.filter(pred).length;
   for (const [clinicianRole, workSetting] of [["slp", "clinic"], ["slpa", "school"]]) {
     const email = "setting." + workSetting + "@example.org";
     const r = await signup({
-      flow: "free-dashboard", email, clinicianRole, workSetting, childName: "NotAccountData",
+      flow: "trial", email, clinicianRole, workSetting, childName: "NotAccountData",
       attrib: { utm_source: "clinic-post", clinicianRole: "NotAccountData", workSetting: "NotAccountData", childName: "NotAccountData" },
     });
     const v = await openLatest();
     const account = stored(email);
     ok("new signup saves " + clinicianRole + " and " + workSetting + " on its account once the link is opened",
       r.status === 200 && r.json.signedIn === false && (v.cookie || "").includes("slp_session=") &&
-      account.clinicianRole === clinicianRole && account.workSetting === workSetting && account.terms === C.FREE_DASHBOARD_TERMS &&
+      account.clinicianRole === clinicianRole && account.workSetting === workSetting && account.terms === C.PRO_TERMS &&
       account.clinic === "" && !!account.crmAt && !("childName" in account), JSON.stringify(account));
   }
   ok("signup keeps role, setting and injected data out of email and lead services",
@@ -1426,13 +1441,19 @@ const count = (pred) => S.calls.filter(pred).length;
     rows[omittedEmail]?.workSetting === "" && rows[omittedEmail]?.clinicianRole === "");
 }
 
-// ═════════════════════════ free dashboard email signup ═════════════════════════
+// ═════════════════════════ the homepage's trial signup (SLPPRO1, 17 Nov 2026) ═════════════════════════
+// Travis: "i want this to be sona pro tho. this is what they access when they
+// create a free trial." The homepage's door ("trial"; "free-dashboard" from a
+// page cached before) proves the inbox exactly as before, then makes a Sona
+// Pro account: the dashboard opens on the Sona Pro page, with the 14-day
+// trial, and its data is refused until Sona Pro is on. No door opens a free
+// dashboard, and a returning account is never changed by one.
 {
-  const email = "dashboard.free@example.org";
+  const email = "dashboard.trial@example.org";
   const key = "slpacct:" + email;
   const signup = (body) => call(R.request, "POST", "/api/slp/auth/request", { body: {
-    flow: "free-dashboard", email, clinicianRole: "slpa", workSetting: "school",
-    attrib: { utm_campaign: "free-dashboard", workSetting: "NotAccountData" }, ...body,
+    flow: "trial", email, clinicianRole: "slpa", workSetting: "school",
+    attrib: { utm_campaign: "trial", workSetting: "NotAccountData" }, ...body,
   } });
   const before = OUT.length;
   const r = await signup({});
@@ -1442,89 +1463,71 @@ const count = (pred) => S.calls.filter(pred).length;
     return link ? new URL(link).pathname + new URL(link).search : "/api/slp/auth/verify";
   };
   const linkPath = latestLink();
-  ok("free signup sends a dashboard link with no account or session before verification, and the lead at once",
+  ok("the homepage's signup sends a dashboard link with no account or session before verification, and the lead at once",
     r.status === 200 && r.json.sent === true && r.json.signedIn === false && !r.cookie && linkPath.includes("?token=") && !KV.K.has(key) &&
     OUT.slice(before).filter((o) => o.url.endsWith("/api/lead")).length === 1);
+  const mail = RESEND.sent.at(-1) || {};
+  ok("…an email that promises no free dashboard", !/free dashboard/i.test(mail.text + mail.html) && /pick Sona games for each session/.test(mail.text), mail.text);
   const verified = await call(R.verify, "GET", linkPath);
   const account = JSON.parse(KV.K.get(key) || "{}");
-  ok("opening the link creates a free account with the saved clinician details",
+  ok("opening the link creates a Sona Pro account (no free dashboard) with the saved clinician details",
     verified.status >= 300 && verified.status < 400 && verified.cookie?.includes("slp_session=") &&
-    /\/slp\.html$/.test(verified.location || "") && account.terms === "free-dashboard-2026-11-13" &&
+    /\/slp\.html$/.test(verified.location || "") && account.terms === C.PRO_TERMS && account.freeDashboard === undefined &&
     account.clinicianRole === "slpa" && account.workSetting === "school" && !!account.crmAt);
-  ok("verified free signup reaches the lead list once with attribution and no account fields",
+  ok("…and reaches the lead list once with attribution and no account fields",
     OUT.slice(before).filter((o) => o.url.endsWith("/api/lead")).length === 1 &&
-    OUT.slice(before).some((o) => o.url.endsWith("/api/lead") && o.body.utm_campaign === "free-dashboard") &&
+    OUT.slice(before).some((o) => o.url.endsWith("/api/lead") && o.body.utm_campaign === "trial") &&
     !/workSetting|clinicianRole|NotAccountData/.test(JSON.stringify(OUT.slice(before))));
   const replay = await call(R.verify, "GET", linkPath);
   ok("the same email link cannot sign in again", !replay.cookie && /err=expired/.test(replay.location || ""));
 
   const dashboard = await call(R.plan, "GET", "/api/slp/plan", { as: email });
   const roster = await call(R.roster, "GET", "/api/slp", { as: email });
-  ok("the free signup can open its dashboard and caseload with no paid coverage",
-    dashboard.json?.dashboard?.open === true && dashboard.json?.active === false &&
-    dashboard.json?.self?.active === false && roster.status === 200);
+  ok("the new account's dashboard is Sona Pro's: closed, with the 14-day trial on offer, and its caseload refused (402)",
+    dashboard.json?.dashboard?.open === false && dashboard.json?.pro?.trialAvailable === true && dashboard.json?.pro?.offer === true &&
+    dashboard.json?.pro?.trialDays === 14 && roster.status === 402 && roster.json?.needPlan === true, JSON.stringify({ d: dashboard.json, r: roster.status }));
+  const sharing = await call(R.account, "POST", "/api/slp/account", { as: email, body: { name: "Jamie" } });
+  const invite = await call(R.invite, "POST", "/api/slp/invite", { as: email, body: { label: "AB", age: 6, sounds: ["S"], pos: "i" } });
+  ok("…it may save its profile, and adds no family until Sona Pro is on", sharing.status === 200 && invite.status === 402 && invite.json?.needPlan === true);
+
+  const cached = "dashboard.cached@example.org";
+  await call(R.request, "POST", "/api/slp/auth/request", { body: { flow: "free-dashboard", email: cached } });
+  await call(R.verify, "GET", latestLink());
+  ok("a homepage cached before 17 Nov (its old free-dashboard door) makes the same Sona Pro account", JSON.parse(KV.K.get("slpacct:" + cached) || "{}").terms === C.PRO_TERMS);
 
   const returningEmail = "dashboard.returning@example.org";
   const returningKey = "slpacct:" + returningEmail;
   const original = seedAcct(returningEmail, { terms: C.PRO_TERMS, code: "returning-k4", familyKey: "RETKEY23" });
   const opted = await signup({ email: returningEmail });
-  ok("an existing Pro-era account stays unchanged until it opens the free dashboard link",
-    opted.json.sent && !opted.cookie && JSON.stringify(JSON.parse(KV.K.get(returningKey))) === JSON.stringify(original) &&
-    await C.dashboardOpen(returningEmail, { kv: async (cmd) => kvExec(cmd), stripe: client }) === false);
   const returning = await call(R.verify, "GET", latestLink());
-  const updated = JSON.parse(KV.K.get(returningKey));
-  const returningStatus = await call(R.plan, "GET", "/api/slp/plan", { as: returningEmail });
-  ok("verified returning Pro-era clinician gets dashboard access and retains terms and credentials",
-    returning.cookie?.includes("slp_session=") && JSON.stringify(updated) === JSON.stringify({ ...original, freeDashboard: true }) &&
-    returningStatus.json?.dashboard?.open === true && returningStatus.json?.active === false && returningStatus.json?.self?.active === false);
+  ok("a returning Pro-era account signs in by the homepage's link and is left exactly as it was, still closed",
+    opted.json.sent && returning.cookie?.includes("slp_session=") && JSON.stringify(JSON.parse(KV.K.get(returningKey))) === JSON.stringify(original) &&
+    await C.dashboardOpen(returningEmail, { kv: async (cmd) => kvExec(cmd), stripe: client }) === false);
 
-  const raceEmail = "dashboard.race@example.org";
-  const raceKey = "slpacct:" + raceEmail;
-  seedAcct(raceEmail, { terms: C.PRO_TERMS, code: "raceready-k4", familyKey: "RACEKEY3" });
-  await signup({ email: raceEmail });
-  const pendingRaceLink = latestLink();
-  const fetchBeforeRace = globalThis.fetch;
-  let verifiedDuringCrm = false;
-  globalThis.fetch = async (url, init) => {
-    if (String(url).endsWith("/api/lead") && JSON.parse(init.body).email === raceEmail) {
-      const result = await call(R.verify, "GET", pendingRaceLink);
-      verifiedDuringCrm = !!result.cookie;
-    }
-    return fetchBeforeRace(url, init);
-  };
-  try {
-    await call(R.request, "POST", "/api/slp/auth/request", { body: { email: raceEmail } });
-  } finally {
-    globalThis.fetch = fetchBeforeRace;
-  }
-  ok("a legacy sign-in cannot overwrite an opt-in verified while CRM is responding",
-    verifiedDuringCrm && JSON.parse(KV.K.get(raceKey)).freeDashboard === true);
-
-  const sharing = await call(R.account, "POST", "/api/slp/account", { as: email, body: { name: "Jamie" } });
-  const invite = await call(R.invite, "POST", "/api/slp/invite", { as: email, body: { label: "AB", age: 6, sounds: ["S"], pos: "i" } });
-  ok("the free account can create a client practice link after setting up its profile",
-    sharing.status === 200 && invite.status === 200 && invite.json?.ok && /\/join\.html\?slp=/.test(invite.json.link));
-
-  const profile = await call(R.account, "POST", "/api/slp/account", { as: returningEmail, body: { name: "Robin" } });
-  ok("a later profile save preserves verified free dashboard access",
-    profile.status === 200 && JSON.parse(KV.K.get(returningKey)).freeDashboard === true &&
-    JSON.parse(KV.K.get(returningKey)).name === "Robin");
+  const freeEra = "dashboard.thirteenth@example.org";
+  seedAcct(freeEra, { terms: C.FREE_DASHBOARD_TERMS, code: "thirteen-k4", familyKey: "THIRTKY3" });
+  const freeEraPlan = await call(R.plan, "GET", "/api/slp/plan", { as: freeEra });
+  const freeEraRoster = await call(R.roster, "GET", "/api/slp", { as: freeEra });
+  ok("a free-dashboard signup of 13 to 17 Nov meets the trial at its next visit (\"Move them to the trial\"): closed, the trial offered, the caseload refused",
+    freeEraPlan.json?.dashboard?.open === false && freeEraPlan.json?.pro?.trialAvailable === true && freeEraRoster.status === 402, JSON.stringify(freeEraPlan.json));
+  const freeEraRemove = await call(R.child, "DELETE", "/api/slp/child", { as: freeEra, body: { childId: "gone1" } });
+  ok("…while removing a child still works, paid or not", freeEraRemove.status !== 402, freeEraRemove.status);
 
   // EMAIL ONLY (Travis, 14 Nov 2026: the homepage asks for an email and
   // nothing else). The link still proves the inbox first, and the account
   // holds no role or work setting it was never told.
   const onlyEmail = "dashboard.emailonly@example.org";
-  const lean = await call(R.request, "POST", "/api/slp/auth/request", { body: { flow: "free-dashboard", email: onlyEmail } });
-  ok("an email-only free signup sends its link with no account or session yet",
+  const lean = await call(R.request, "POST", "/api/slp/auth/request", { body: { flow: "trial", email: onlyEmail } });
+  ok("an email-only signup sends its link with no account or session yet",
     lean.status === 200 && lean.json.sent === true && lean.json.signedIn === false && !lean.cookie && !KV.K.has("slpacct:" + onlyEmail));
   const leanVerified = await call(R.verify, "GET", latestLink());
   const leanAccount = JSON.parse(KV.K.get("slpacct:" + onlyEmail) || "{}");
-  ok("…and opening it makes a free account with no role or work setting",
-    leanVerified.cookie?.includes("slp_session=") && leanAccount.terms === "free-dashboard-2026-11-13" &&
+  ok("…and opening it makes a Sona Pro account with no role or work setting",
+    leanVerified.cookie?.includes("slp_session=") && leanAccount.terms === C.PRO_TERMS &&
     !("clinicianRole" in leanAccount) && !("workSetting" in leanAccount), JSON.stringify(leanAccount));
-  for (const bad of [{ clinicianRole: "parent" }, { workSetting: "other" }, { clinicianRole: null }]) {
-    const refused = await call(R.request, "POST", "/api/slp/auth/request", { body: { flow: "free-dashboard", email: "bad.choice@example.org", ...bad } });
-    ok("a free signup that sends a role or setting must send a real one: " + JSON.stringify(bad),
+  for (const bad of [{ clinicianRole: "parent" }, { workSetting: "other" }, { clinicianRole: null }, { flow: "free" }]) {
+    const refused = await call(R.request, "POST", "/api/slp/auth/request", { body: { flow: "trial", email: "bad.choice@example.org", ...bad } });
+    ok("a signup that sends a role, setting or door must send a real one: " + JSON.stringify(bad),
       refused.status === 400 && !KV.K.has("slpacct:bad.choice@example.org"), JSON.stringify(refused.json));
   }
 

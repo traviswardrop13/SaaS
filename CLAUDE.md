@@ -1680,6 +1680,9 @@ grown-ups gate in between lost the only ask Sona will ever make, while the
 funnel counted an impression nobody saw. `iaptest.mjs` pins both halves.
 
 ### Sona Pro — the one plan a clinician can buy (12 Nov 2026)
+**SUPERSEDED on 17 Nov 2026 by SLPPRO1 (below, before SLPCLEAN1): the
+dashboard is Sona Pro's again, its 14-day trial first, for every account
+but those promised a free dashboard before 12 Nov 2026.** History:
 **Free dashboard signup (13 Nov 2026).** Clinicians who confirm the email
 from the homepage get the dashboard without a subscription. Sona Pro still
 covers every game for the clinician and every family on their link. Existing
@@ -2031,7 +2034,11 @@ allow-list. The root page with its email box is unchanged. `landingtest` plays
 it on an iPhone and an Android phone.
 
 **The clinician page is the homepage**, updated to offer a free dashboard
-on 13 Nov 2026. The hero features Echo beside an actual Fruit Slice screen.
+on 13 Nov 2026 (since 17 Nov 2026, SLPPRO1, it offers Sona Pro's trial:
+"Start your free trial", "14 days free, then $19.99 a month. Cancel
+anytime.", the lede "Play Sona games in your sessions, share the app with
+clients, and see who practiced at home.", the first card "Pick Sona games
+for each session", `og-slp.png?v=4`; what follows is its history). The hero features Echo beside an actual Fruit Slice screen.
 **Get the free dashboard** collects an email and nothing else (Travis, 14
 Nov 2026: "remove the your role and work setting from the opt-in page and
 just have it be your email"; until then it also asked SLP or SLPA, and
@@ -2204,6 +2211,138 @@ Still absent now that Premium is back (24 Sep 2026): the "working with a
 speech therapist?" card on the plan screen and the trial page; `progtest`
 pins its absence. Bringing it back is a product call, not a cleanup.
 
+## SLPPRO1 / SESSPLAY1: the dashboard is Sona Pro's, and Session games play Sona in the session (17 Nov 2026)
+Travis, looking at the clean dashboard (SLPCLEAN1, below): "i want this to be
+sona pro tho. this is what they access when they create a free trial. also
+the activity planner is not what I am after. what I need it to do is instead
+of telling them something that they need to do to prepare it, I want it
+built into their app so that it's accessible on the SLPs ... almost like
+building a game or something digital, and have it loaded into their app. Or
+just suggesting what game or activity to go and play inside of Sona speech."
+Asked, he answered: the free-dashboard signups since 13 Nov, "Move them to
+the trial"; the in-session tool "picks sona games but also give the slp the
+opp to suggest a new game or activity to be built inside the app"; the
+clinicians' iPhone app, "now they have to have a trial to be inside there".
+This supersedes "Free dashboard signup (13 Nov 2026)", SLPCLEAN1's Plan
+activities and SLPAPP1's free-dashboard door.
+- **The dashboard is Sona Pro's** (`dashboardOpen` in `lib/caseload.ts`):
+  trialing, active or in past_due's grace. **Kept free, forever, by stamp
+  alone (`dashboardPromised`):** no `terms` (before 24 Sep 2026),
+  `caseload-2026-09` and `premium-2026-09-29` (to 12 Nov 2026). Everyone
+  else needs Sona Pro: `PRO_TERMS` accounts, the homepage's 13 to 17 Nov
+  signups (`FREE_DASHBOARD_TERMS`, kept for those records, made by no door
+  now) and a Pro-era account a free-dashboard link once opened
+  (`freeDashboard: true`, no longer read). One who never had Sona Pro is
+  offered the 14-day trial (card up front, Stripe), so a 13 to 17 Nov
+  clinician meets the trial at their next visit. **Nothing is emailed to
+  them about it** (Travis's to know). Every door makes `PRO_TERMS` now
+  (`finishSignIn`), keeping where the clinician came from; the homepage's
+  door is `flow: "trial"` ("free-dashboard" still accepted from a cached
+  page). App Review's one account (`SLP_REVIEW_EMAIL` and its code) stays
+  open (`reviewEmail`). `caseloadtest` pins it.
+- **The locked dashboard on the web** shows the Sona Pro page with the trial
+  in place of Session games, Today, Caseload and a child's page; Settings
+  (Delete my account, Sign out) and Talk to Rachel stay open; Add a family
+  opens the Sona Pro page; the server holds the lock (`lib/proGate`: the
+  roster, homework, adding a child, `/api/slp/games/pick`, `/api/slp/play`,
+  `/api/slp/family` answer 402), and removals always work. A new clinician
+  lands there first, on "Start my free trial".
+- **In the clinicians' app** (`html.slp-app`) a locked account sees ONE plain
+  card (`#applock`): "Your account doesn't have Sona Pro yet." and "Sona Pro
+  opens the dashboard, every game for you, and every game for families on
+  your link.", Sign out and Settings (Delete my account). No price, no trial
+  words, no button or link to buy or to the website (App Store rule 3.1.1),
+  and the top bar is empty beside it. `slpapptest` pins that nothing
+  `data-sells`, no "$", "trial" or link off the app shows there. The app's
+  sign-in tells no one about a trial ("Use the email your Sona account is
+  under."). **Travis's to know:** Apple may question an app whose accounts
+  need a subscription bought on the web (the reader-app rules); the review
+  account is open, and the review note says Sona Pro is bought on
+  speaksona.com.
+- **The homepage** (`for-slps.html`) offers the trial: "Start your free
+  trial" (both buttons), "14 days free, then $19.99 a month. Cancel
+  anytime." beside the first (`lib/caseload`'s `PRO_*`, pinned by
+  `shiptest`), the lede "Play Sona games in your sessions, share the app
+  with clients, and see who practiced at home.", the first card "Pick Sona
+  games for each session", the share picture re-rendered
+  (`og-slp.png?v=4`). No "free dashboard" anywhere: the sign-in email's
+  intro, `slp-login.html`, the Terms, `NATIVE.md` and the app's README.
+- **Session games** (`#play`, first in the menu; `#plan`, `#plan-day`,
+  `#homework-draft` and a child's `/plan` open it). The clinician picks the
+  target sound (Sona's 19), word position (the homework composer's rule:
+  vocalic R only for R, blends only for R, S and L), age band (3-4, 5-6, 7-8,
+  9+) and session length (20, 30, 45), and may type what the child loves
+  (120 characters, under the name warning; the page refuses a caseload
+  child's name there). "Start from your caseload" and a child page's
+  "Session games" choose the child's sound, position and age band, never a
+  name. "Find Sona games" posts only those five fields to
+  `/api/slp/games/pick` (`lib/gamePicks.ts`; the planner's guards in the
+  same order, 30 an hour as `slp-games`), which asks `claude-opus-5-5` (low
+  effort, 2000 tokens, no `thinking` field) to pick 3 from **Sona's catalog**
+  (`lib/sonaCatalog.ts`: every game a child can open, the sound's talking
+  story, its bookshelf; `sessiongamestest` holds it to `GAME_ACTS` and
+  `STORY_TALK`, so a game back from Coming soon is one line there). Only
+  known keys, 2 to 4, the first 3 kept; else 502/422 in plain words. Each
+  card: the game's Home picture, name, "Why it fits", "How to use it in
+  session" (2 or 3 steps) and a teal **Play now**. Under it, **"Got an idea
+  for a game Sona should have?"** (500 characters) goes to the Sona team
+  through `/api/slp/feedback` (`kind: "idea"`, category "idea", its own
+  Slack heading): "Sent to the Sona team. Thank you!". `lib/activityPlan.ts`
+  and `/api/slp/activities` are deleted. **For Rachel:** `PICKS_PROMPT` and
+  what it suggests (it lists no practice words: Sona's games choose them for
+  the sound and position), and every catalog line. The privacy page's
+  "Session games" says what reaches Anthropic.
+- **SESSPLAY1: Play now runs the game on the clinician's device**, set to
+  that child's sound. `/api/slp/play` (signed in, same origin, the dashboard
+  gate, 120 an hour) answers a catalog key with the page to open (the
+  catalog's, never the caller's) and an end 12 hours on; only after that yes
+  does the dashboard write this TAB's record, `sessionStorage
+  "sona.sessplay.v1"` = { sound, pos, age, exp, game }, and open the game
+  (a round game's practice page, a Say & Play page, the sound's talking
+  story told whole, or the bookshelf). In `sona.js` (block SESSPLAY1, first
+  thing), while that record is valid: every `localStorage` read and write on
+  the page goes to a box in this tab's sessionStorage (`sona.sp:<key>`),
+  seeded with a temporary child (no name, the band's top age, the one sound
+  and position, set up), so **the device's family storage is never touched**
+  (a family's iPad lent to the session keeps every key); `fetch` reaches
+  only the site's own files and `/api/tts`, and every other `/api` call and
+  beacon is answered on the device, unsent (no progress, report, lead,
+  board, trial or usage event; `track` is silent); `premium()` is true and
+  `canSellHere()` false, so every game, book and the talking story is open
+  and no price, offer or setup shows; any other page (Home, setup,
+  Settings, the price, the Arcade) goes to `/slp.html#play`, so a game's ✕,
+  Back home and end card return to Session games (`today.html`'s first
+  script checks the record too, before its setup check). The mic, the word
+  turn and every clinical rule are the game's own. `slp.html` ends the
+  session as it opens (the record, the box, and any play token or run state
+  the session left, before `sona.js` loads). A record that is broken,
+  expired, more than 12 hours (and 5 minutes) ahead, or for a sound,
+  position or age band that does not exist is no session: the page behaves
+  as always. The address grants nothing; the record, like any local state,
+  could be forged by someone with the browser's tools, and gives only what a
+  forged local Premium flag would, in one tab, with its own sandbox.
+  `sessplaytest` plays all of it in a browser.
+- **In the clinicians' app** the game pages may load (`lib/slpApp.ts`
+  `SLP_APP_PLAY_PAGE`: practice, `arcade-*`, the story, the books; never
+  Home, setup or the price), and `sona.js` sends them back to the dashboard
+  unless a session runs. **The next app build needs the microphone**:
+  `NSMicrophoneUsageDescription`, "Sona listens to the child's practice
+  words during a game. Audio stays on this device and is never saved."
+  (`native/slp-ios/README.md`, `NATIVE.md`; Travis rebuilds on his Mac).
+- **For Travis:** the 13 to 17 Nov free-dashboard therapists meet the trial
+  at their next visit, and nothing is emailed to them; the app needs a new
+  build for the mic; a session's game reps and progress are thrown away when
+  the tab closes (they belong to no family); every word on the homepage,
+  the locked card and Session games is his to change.
+- **For Rachel:** the picks prompt and catalog lines; that a session game
+  uses a temporary child at the top of the age band (3-4 plays as 4, 5-6 as
+  6, 7-8 as 8, 9+ as 9), so the bookshelf asks a key word only where the
+  book's sound is typical by that age (`soundNorm`: an R book asks no word
+  of a 3-4 or 5-6 band), while the games and the talking story ask the
+  sound at any age, as they do for families; and that a child played on the
+  clinician's device starts the practice page's ladder at its first step
+  (the sound alone) every session, since nothing is kept.
+
 ## SLPCLEAN1: a clean white dashboard, and an AI for planning sessions (17 Nov 2026)
 Travis: "From the one I saw before, it had too many just like colors. I want
 it more just like a clean white, simple look. And I want to remove unnecessary
@@ -2246,7 +2385,9 @@ share". This supersedes the dashboard's look and menu described below.
   deeper teal primary button that presses in; and Today's "Good morning,
   <first name>", the clinician's own name from their account, never a
   child's. The four examples are ages, interests and targets, never a name.
-- **Plan activities** (`#plan`; `lib/activityPlan.ts`,
+- **SUPERSEDED the same evening by Session games (SLPPRO1, above):** Plan
+  activities, its library and its route are deleted. History:
+  **Plan activities** (`#plan`; `lib/activityPlan.ts`,
   `/api/slp/activities`). One box, "About the child and session" (600
   characters, a counter), and under it, in plain sight: "Don't type a
   child's name. What you type is sent to our AI provider (Anthropic) to write
@@ -2476,13 +2617,14 @@ App Store Connect and the review notes; `tests/slpapptest.mjs` pins it all.
   the link does (they share `finishSignIn`, moved out of the verify route),
   once, 15 minutes, five wrong tries, only a hash kept, 30 tries an hour per
   IP; using either spends the other. The web sign-in page shows the code box
-  too. **The app's sign-in is the free-dashboard door** (the homepage's), so a
-  new account there gets the free dashboard and a locked Pro-era account
-  opens, as the homepage's link already did: nobody meets a lock they cannot
-  open in the app.
+  too. **Since SLPPRO1 (17 Nov 2026) the app's sign-in is the sign-in page's
+  own door** (until then the homepage's free-dashboard door, which opened a
+  locked account): an account without Sona Pro sees the app's one plain
+  locked card (SLPPRO1, below).
 - **App Review's sign-in:** `SLP_REVIEW_EMAIL` + `SLP_REVIEW_CODE` (6 digits)
   in Vercel; only while both are set, that one address is emailed nothing and
-  its fixed code signs it in (free dashboard, `source: "app-review"`).
+  its fixed code signs it in (`source: "app-review"`), and its dashboard stays
+  open without Sona Pro (`reviewEmail` in `lib/caseload.ts`, SLPPRO1).
 - **Delete my account** (Settings, web and app; `lib/slpDelete.ts`,
   `DELETE /api/slp/account` with the email typed back): deletes the account,
   the caseload, homework, notes, invites, family logins, counters, plan

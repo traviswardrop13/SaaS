@@ -329,7 +329,7 @@ async function open(hash) {
 // answered, never once there is nothing to sell, and it fits a phone.
 {
   const bar = (pg) => pg.evaluate(() => { const b = document.getElementById("premiumTop"); return { hidden: b.hidden || getComputedStyle(b).display === "none", text: b.innerText.replace(/\s+/g, " ").trim(), href: b.getAttribute("href") }; });
-  for (const hash of ["#plan", "#today", "#caseload"]) {
+  for (const hash of ["#play", "#today", "#caseload"]) {
     PLAN = PLAN_NONE; DATA = fixture();
     const { ctx, pg } = await open(hash);
     const b = await bar(pg);
@@ -373,7 +373,7 @@ async function open(hash) {
   for (const width of [390, 360]) {
     const ctx = await browser.newContext({ viewport: { width, height: 800 } });
     const pg = await ctx.newPage();
-    await pg.goto(U("#plan")); await pg.waitForTimeout(900);
+    await pg.goto(U("#play")); await pg.waitForTimeout(900);
     const fit = await pg.evaluate(() => { const r = (id) => document.getElementById(id).getBoundingClientRect(); const t = r("premiumTop"), d = r("downloadApp"), c = r("addFamilyTop"); return { over: document.documentElement.scrollWidth - innerWidth, row: t.bottom <= d.top + 1 && t.bottom <= c.top + 1, inside: [t, d, c].every((q) => q.left >= 0 && q.right <= innerWidth && q.width > 0) }; });
     ok(`${width}px phone: the offer takes its own row and nothing runs off the screen`, fit.over <= 0 && fit.row && fit.inside, JSON.stringify(fit));
     await ctx.close();
@@ -387,7 +387,7 @@ async function open(hash) {
 // and a child's page, and leaves Settings and Talk to Rachel open.
 {
   LOCKED = true; PLAN = { ...PLAN_NONE, dashboard: { open: false } }; DATA = fixture();
-  for (const hash of ["#today", "#caseload", "#child/c1", "#invite"]) {
+  for (const hash of ["", "#play", "#today", "#caseload", "#child/c1", "#invite"]) {
     const { ctx, pg, errs } = await open(hash);
     const st = await pg.evaluate(() => ({ active: [...document.querySelectorAll(".page.active")].map((p) => p.id), hash: location.hash,
       locked: !document.getElementById("proLocked").hidden, text: document.getElementById("proLocked").innerText, offer: !document.getElementById("proOffer").hidden,
@@ -401,6 +401,15 @@ async function open(hash) {
     const { ctx, pg } = await open(hash);
     const active = await pg.evaluate(() => [...document.querySelectorAll(".page.active")].map((p) => p.id).join());
     ok(`closed dashboard: ${hash} stays open`, active === "page-" + hash.slice(1), active);
+    await ctx.close();
+  }
+  {
+    // SLPPRO1: Add a family on a closed dashboard opens the plan, never the panel
+    const { ctx, pg } = await open("#settings");
+    await pg.click("#addFamilyTop"); await pg.waitForTimeout(250);
+    const st = await pg.evaluate(() => ({ dialog: document.getElementById("famDialog").open, active: [...document.querySelectorAll(".page.active")].map((p) => p.id).join(), hash: location.hash }));
+    ok("closed dashboard: Add a family opens the Sona Pro page with the trial, not the panel", !st.dialog && st.active === "page-premium" && st.hash === "#premium", st);
+    ok("…and the web never shows the app's plain locked card", !(await pg.evaluate(() => document.getElementById("page-applock").classList.contains("active"))));
     await ctx.close();
   }
   {
@@ -464,18 +473,18 @@ async function open(hash) {
     active: [...document.querySelectorAll(".page.active")].map((p) => p.id).join(),
     crumb: document.getElementById("pageCrumb").textContent,
   }));
-  ok("the menu is five places, the AI planner first: Plan activities, Today, Caseload, Sona Pro, Settings", JSON.stringify(st.nav) === JSON.stringify(["plan", "today", "caseload", "premium", "settings"]), st.nav.join(","));
-  ok("…and a visit with no address lands on Plan activities", st.active === "page-plan" && st.crumb === "Plan activities", JSON.stringify(st));
-  for (const [from, to] of [["#plan-day", "#plan"], ["#homework-draft", "#plan"], ["#community", "#today"], ["#affiliate", "#today"]]) {
+  ok("the menu is five places, Session games first: Session games, Today, Caseload, Sona Pro, Settings", JSON.stringify(st.nav) === JSON.stringify(["play", "today", "caseload", "premium", "settings"]), st.nav.join(","));
+  ok("…and a visit with no address lands on Session games", st.active === "page-play" && st.crumb === "Session games", JSON.stringify(st));
+  for (const [from, to] of [["#plan", "#play"], ["#plan-day", "#play"], ["#homework-draft", "#play"], ["#community", "#today"], ["#affiliate", "#today"]]) {
     await pg.evaluate((h) => { location.hash = h; }, from); await pg.waitForTimeout(150);
     const at = await pg.evaluate(() => ({ hash: location.hash, active: [...document.querySelectorAll(".page.active")].map((p) => p.id).join() }));
     ok(`the old address ${from} lands on ${to}, never a dead end`, at.hash === to && at.active === "page-" + to.slice(1), JSON.stringify(at));
   }
   await pg.evaluate(() => { location.hash = "#nowhere"; }); await pg.waitForTimeout(150);
-  ok("an unknown address opens the planner", await pg.evaluate(() => document.getElementById("page-plan").classList.contains("active")));
-  const gone = await pg.evaluate(() => ["page-community", "page-affiliate", "page-homework-draft", "page-plan-day", "sessionPlanner", "copyAppLink"].filter((id) => document.getElementById(id)));
+  ok("an unknown address opens Session games", await pg.evaluate(() => document.getElementById("page-play").classList.contains("active")));
+  const gone = await pg.evaluate(() => ["page-community", "page-affiliate", "page-homework-draft", "page-plan-day", "page-plan", "planText", "sessionPlanner", "copyAppLink"].filter((id) => document.getElementById(id)));
   const src = readFileSync(HTML, "utf8");
-  ok("Community, Affiliate partnerships, the homework draft, the old planners and Copy app link are gone from the page", gone.length === 0 && !/\/api\/slp\/(community|homework\/draft|sessions\/plan)/.test(src), gone.join(","));
+  ok("Community, Affiliate partnerships, the homework draft, the old planners, Plan activities and Copy app link are gone from the page", gone.length === 0 && !/\/api\/slp\/(community|homework\/draft|sessions\/plan|activities)/.test(src), gone.join(","));
   ok("…and the page never asks the community route for anything", !log.some((l) => /community/.test(l.p)), JSON.stringify(log.map((l) => l.p)));
   await pg.evaluate(() => { location.hash = "#settings"; }); await pg.waitForTimeout(150);
   ok("Talk to Rachel is one link in Settings, not a menu item", !(await pg.locator('.nav-item[data-page="feedback"]').count()) && await pg.locator('#page-settings a[href="#feedback"]').isVisible() && /Talk to Rachel/.test(await pg.locator('#page-settings a[href="#feedback"]').innerText()));
@@ -512,7 +521,7 @@ async function open(hash) {
 //        a parent with their email ... super easily share") ──
 {
   const famText = (pg) => pg.evaluate(() => document.getElementById("famDialog").innerText);
-  for (const hash of ["#plan", "#today", "#caseload", "#child/c1", "#settings"]) {
+  for (const hash of ["#play", "#today", "#caseload", "#child/c1", "#settings"]) {
     PLAN = PLAN_NONE; DATA = fixture();
     const { ctx, pg } = await open(hash);
     ok(`${hash}: the top bar offers Add a family, and no Copy app link`, await pg.locator("#addFamilyTop").isVisible() && (await pg.locator("#addFamilyTop").innerText()).trim() === "Add a family" && !(await pg.locator("#copyAppLink").count()));
@@ -577,7 +586,7 @@ async function open(hash) {
     const pctx = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
     const ppg = await pctx.newPage();
     await ppg.addInitScript(() => { window.__copied = []; Object.defineProperty(navigator, "clipboard", { value: { writeText: (t) => { window.__copied.push(t); return Promise.resolve(); } } }); });
-    await ppg.goto(U("#plan")); await ppg.waitForTimeout(900);
+    await ppg.goto(U("#play")); await ppg.waitForTimeout(900);
     const fits = await ppg.evaluate(() => { const r = document.getElementById("addFamilyTop").getBoundingClientRect(); return r.width > 0 && r.left >= 0 && r.right <= innerWidth; });
     ok("390px phone: Add a family is in the top bar, on screen", fits);
     await ppg.click("#addFamilyTop"); await ppg.waitForTimeout(150);

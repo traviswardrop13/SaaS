@@ -663,8 +663,8 @@ if (A) {
 {
   const slps = read("public/for-slps.html");
   const handler = slps.slice(slps.indexOf("function go()"));
-  ok("the homepage requests the free dashboard flow",
-    /flow: "free-dashboard"/.test(handler) && /fetch\("\/api\/slp\/auth\/request"/.test(handler));
+  ok("the homepage requests the trial's flow (SLPPRO1: no free dashboard)",
+    /flow: "trial"/.test(handler) && !/free-dashboard/.test(handler) && /fetch\("\/api\/slp\/auth\/request"/.test(handler));
   ok("…and the page reports delivery only after email success",
     /if \(j\.sent !== true\)/.test(handler) && /"Check your email"/.test(handler) &&
     handler.indexOf("if (j.sent !== true) {") < handler.indexOf('sonaTrack("Lead")'));

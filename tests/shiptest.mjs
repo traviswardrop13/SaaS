@@ -258,8 +258,9 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
   // Travis, 14 Nov 2026: "auto plan lessons", not "draft homework with AI".
   // 17 Nov 2026 (SLPCLEAN1): the AI plans in-session activities now; the
   // homework draft is gone, so the lede no longer says "home practice".
-  ok("the clinician lede presents auto-planned session activities, family links and seeing who practiced",
-    /auto-plan session activities/i.test(slpLede) && !/with AI/i.test(slpLede) && !/home practice,/i.test(slpLede) && /share the app with clients/i.test(slpLede) && /see who practiced at home/i.test(slpLede) &&
+  // SLPPRO1 (the same evening): Session games, Sona's own games in session.
+  ok("the clinician lede presents Sona games in session, family links and seeing who practiced",
+    /^Play Sona games in your sessions, share the app with clients, and see who practiced at home\.$/.test(slpLede.trim()) && !/with AI|auto-plan/i.test(slpLede) &&
     !/community/i.test(slpLede));
   const header = (slps.match(/<header>[\s\S]*?<\/header>/) || [""])[0].replace(/<!--[\s\S]*?-->/g, "");
   // Travis, 14 Nov 2026: "top right, get rid of how it works".
@@ -268,8 +269,8 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
     !/How it works/.test(header));
   ok("a parent who lands here is pointed to /for-parents",
     (slps.match(/<a\b[^>]*href="\/for-parents"/g) || []).length === 1);
-  ok("clinician signup asks the auth endpoint to send the free dashboard link",
-    /fetch\("\/api\/slp\/auth\/request"/.test(slps) && /flow:\s*"free-dashboard"/.test(slps) &&
+  ok("clinician signup asks the auth endpoint for the trial's sign-in link (SLPPRO1: no free dashboard)",
+    /fetch\("\/api\/slp\/auth\/request"/.test(slps) && /flow:\s*"trial"/.test(slps) && !/free-dashboard/.test(slps) &&
     !/#premium|apps\.apple\.com|APP_STORE|APP_READY/.test(slps));
   const form = (slps.match(/<form class="signup" id="signup"[\s\S]*?<\/form>/) || [""])[0];
   ok("one clinician form asks only for a work email (14 Nov 2026: no role, no setting)",
@@ -278,20 +279,28 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
     /placeholder="you@yourclinic\.org"/.test(form) &&
     !/<option value="(?:parent|other)"/.test(form) &&
     (slps.match(/<form\b/g) || []).length === 1 && !/id="startModal"/.test(slps));
-  ok("both clinician calls to action say Get the free dashboard and the closing one returns to the form",
+  ok("both clinician calls to action say Start your free trial and the closing one returns to the form",
     /\$\("finalGo"\)\.onclick = function \(\) \{ toForm\(\); \};/.test(slps) &&
-    (slps.replace(/<!--[\s\S]*?-->/g, "").match(/>Get the free dashboard</g) || []).length === 2);
-  ok("the signup button tells clinicians that access is emailed",
-    /aria-describedby="fNext"/.test(form) && /id="fNext">[^<]*email you a sign-in link/i.test(form));
+    (slps.replace(/<!--[\s\S]*?-->/g, "").match(/>Start your free trial</g) || []).length === 2 && !/Get the free dashboard/.test(slps));
+  // SLPPRO1 (17 Nov 2026): the trial's terms beside its button, read from
+  // lib/caseload.ts (the static page cannot import it, so this pins them).
+  {
+    const cl = readFileSync(APP + "/lib/caseload.ts", "utf8");
+    const price = /export const PRO_PRICE = "([^"]+)"/.exec(cl)[1], per = /export const PRO_PER = "([^"]+)"/.exec(cl)[1], days = /export const PRO_TRIAL_DAYS = (\d+)/.exec(cl)[1];
+    ok("the signup button names the trial's terms from lib/caseload: " + days + " days free, then " + price + " " + per + ", cancel anytime",
+      /aria-describedby="fTerms fNext"/.test(form) && new RegExp('id="fTerms">' + days + " days free, then \\" + price + " " + per + "\\. Cancel anytime\\.<").test(form), (form.match(/id="fTerms">[^<]*/) || [""])[0]);
+  }
+  ok("…and tells clinicians that access is emailed",
+    /id="fNext">[^<]*email you a sign-in link/i.test(form));
   const heroR = (slps.match(/<div class="hero-r"[\s\S]*?<\/section>/) || [""])[0];
   ok("the clinician hero shows Echo and a Fruit Slice game screen without sample caseload data",
     /<img class="mascot" src="\/assets\/site\/echo\.webp"/.test(heroR) && /<img src="\/assets\/site\/slice\.webp"/.test(heroR) &&
     !/Your caseload this week|>\s*\d+%\s*</.test(heroR));
   const ogSrc = readFileSync(APP + "/tools/og/og-slp.html", "utf8").replace(/<!--[\s\S]*?-->/g, "");
-  ok("the share picture offers the free dashboard without misstating Rachel's credentials",
-    /free dashboard/i.test(ogSrc) && !/\bCCC\b|certified|licensed pediatric SLP/i.test(ogSrc) &&
+  ok("the share picture offers the free trial without misstating Rachel's credentials",
+    /Start your free trial/.test(ogSrc) && !/free dashboard/i.test(ogSrc) && !/\bCCC\b|certified|licensed pediatric SLP/i.test(ogSrc) &&
     (!/Rachel/.test(ogSrc) || /Rachel, MS, CF-SLP/.test(ogSrc)));
-  ok("the share picture carries no dollar price or trial pitch", !/\$\s*\d|\bfree trial\b|\b\d+ days free\b/i.test(ogSrc));
+  ok("the share picture carries no dollar price", !/\$\s*\d/.test(ogSrc));
 }
 
 // ── found by search and by AI assistants, as a page for parents (22 Oct 2026) ──
@@ -369,22 +378,27 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
   ok("…and no price, offer or rating", !/"(offers|price|aggregateRating)"/.test(ld || ""));
 }
 
-// ── The free clinician landing page and its privacy promises ──
+// ── The clinician landing page (Sona Pro's trial since 17 Nov 2026) and its privacy promises ──
 {
   const slps = readFileSync(APP + "/public/for-slps.html", "utf8").replace(/<!--[\s\S]*?-->/g, "");
   const shown = slps.replace(/<script[\s\S]*?<\/script>/g, "").replace(/<style[\s\S]*?<\/style>/g, "");
   const flat = shown.replace(/<[^>]+>/g, " ").replace(/&rsquo;/g, "'").replace(/\s+/g, " ");
-  ok("the clinician landing page and its metadata advertise free access with no prices or trial pitch",
-    /free dashboard/i.test(shown) && !/\$\s*\d|\bfree trial\b|\b\d+ days free\b|id="pricing"|href="#pricing"/i.test(shown));
+  // SLPPRO1 (17 Nov 2026, Travis: "i want this to be sona pro tho"): the
+  // page offers Sona Pro's trial, its one price (lib/caseload's), and never
+  // a free dashboard.
+  ok("the clinician landing page and its metadata offer the free trial, never a free dashboard, with one price and no pricing table",
+    !/free dashboard/i.test(shown) && /Start your free trial/.test(shown) && /14 days free, then \$19\.99 a month\. Cancel anytime\./.test(shown) &&
+    (shown.match(/\$\s*\d/g) || []).length === 1 && !/id="pricing"|href="#pricing"/i.test(shown));
   // SLPCLEAN1 (17 Nov 2026): the dashboard lost the community, the AI
-  // homework draft and the day planner; the page promises what it has.
-  ok("the clinician offer is what the dashboard does: the AI activity planner, a client login or link, home practice and homework",
-    ["Plan session activities with AI", "Share the app with clients", "See who practiced at home", "Send homework home"].every(label => flat.includes(label)) &&
-    /Describe the child and the session\. Get play-based activities built around what they love/.test(flat));
+  // homework draft and the day planner; SLPPRO1 replaced the planner with
+  // Session games. The page promises what it has.
+  ok("the clinician offer is what the dashboard does: Sona games in session, a client login or link, home practice and homework",
+    ["Pick Sona games for each session", "Share the app with clients", "See who practiced at home", "Send homework home"].every(label => flat.includes(label)) &&
+    /Choose a sound and an age\. Sona picks three of its games, and you play them right on your device, set to that child[’']s sound\./.test(flat) && !/Plan session activities|Plan activities/.test(flat));
   ok("…and nothing it no longer has: no community, no AI homework draft, no tomorrow's sessions", !/community|Create AI homework|Draft homework|Plan tomorrow/i.test(flat),
     (flat.match(/.{0,40}(community|Create AI homework|Draft homework|Plan tomorrow).{0,40}/i) || [""])[0]);
   ok("…and its storage answer says what reaches the AI and what the login email holds",
-    /What you type into Plan activities goes to Anthropic, our AI provider, to write the ideas, and Sona doesn't keep it; leave out children's names\./.test(flat) &&
+    /Session games sends Anthropic, our AI provider, the sound, word position, age band and session length you choose and the few words you type about what the child loves, to pick the games, and Sona doesn't keep them; leave out children's names\. A game you play from Session games runs on your device and saves nothing to a family's Sona\./.test(flat) &&
     /Add a family emails the parent their Sona login too, so that email holds the password/.test(flat));
   ok("the page preserves the family's free practice without promising universal game access",
     /daily practice and free games/i.test(flat) && !/unlimited families|free forever|gets every game/i.test(flat));
@@ -417,10 +431,11 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
     /The first time you start \{PRO_NAME\}, the first \{PRO_TRIAL_DAYS\} days are free\. You enter a card at checkout and are not charged that day\. Unless you cancel before the trial ends, your card is charged \{PRO_PRICE\} when it ends and then each month until you cancel\. If you cancel during the trial, you are never charged\. One free trial per clinician\./.test(terms));
   ok("Terms: Pro renews monthly and cancellation retains paid access through the paid month or trial",
     /\{PRO_NAME\} renews automatically each month until you cancel it/.test(terms) &&
-    /paid dashboard access and your families' Premium stay on until the end of the month you paid for \(or of the free trial\)/.test(terms.replace(/&apos;/g, "'")));
-  ok("Terms: free dashboard access and removing a child survive cancellation",
-    /through the free dashboard signup can use the dashboard without a subscription\./.test(terms) &&
-    /Free dashboard access and removing a child from your dashboard keep working\./.test(terms));
+    /dashboard and your families' Premium stay on until the end of the month you paid for \(or of the free trial\)/.test(terms.replace(/&apos;/g, "'")));
+  ok("Terms: the dashboard (Session games among it) is part of Sona Pro, and no free-dashboard signup is promised (SLPPRO1)",
+    /It includes the clinician dashboard \(Session games/.test(terms) && !/free dashboard signup|Free clinician dashboard|Free dashboard access/i.test(terms));
+  ok("Terms: removing a child and deleting the account survive cancellation",
+    /Removing a child from your dashboard, and deleting your account, keep working\./.test(terms));
   ok("Terms: every older promise is kept — the free dashboard before 12 Nov, free forever before 24 Sep, own Premium 24–29 Sep, the yearly plans still renewing",
     /Clinicians who signed up before 12 November 2026/.test(terms) && /Clinicians who signed up before 24 September 2026/.test(terms) &&
     /Clinicians who signed up from 24 to 29 September 2026/.test(terms) && /Yearly plans sold until 12 November 2026\./.test(terms) && /were replaced by \{PRO_NAME\} and can't be bought now\. If you hold one, it keeps renewing at the price you subscribed at/.test(terms.replace(/&apos;/g, "'")));
