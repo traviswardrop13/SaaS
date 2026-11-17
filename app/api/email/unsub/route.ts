@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createHmac } from "crypto";
+import { mailbox } from "@/lib/report";
+import { markUnsubscribed } from "@/lib/contacts";
+import { ghlEmailDnd } from "@/lib/mail";
 
 /**
  * Unsubscribe for the weekly parent email — scanner-proof and RFC 8058 ready.
@@ -62,7 +65,7 @@ export async function GET(req: NextRequest) {
   const v = validate(req);
   if (!v) return page("That link didn't work", "It may have expired. Reply to any Sona email and we'll take care of it by hand.");
   return page(
-    "Unsubscribe from the weekly email?",
+    "Unsubscribe from Sona emails?",
     "One tap and you're out — your child's practice and report stay right in the app, always.",
     { e: v.email, k: String(req.nextUrl.searchParams.get("k") || "") },
   );
@@ -71,9 +74,23 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const v = validate(req);
   if (!v) return page("That link didn't work", "It may have expired. Reply to any Sona email and we'll take care of it by hand.");
-  const res = await kvCmd(["SADD", "email:unsub", v.email]);
+  // the address as given, and its plain mailbox (Gmail dots and +tags), so
+  // another spelling of the same inbox is stopped too (lib/report.ts suppressed())
+  const box = mailbox(v.email);
+  const res = await kvCmd(box === v.email ? ["SADD", "email:unsub", v.email] : ["SADD", "email:unsub", v.email, box]);
   if (res === undefined) {
     return page("Almost — one hiccup", "We couldn't save that just now. Reply to any Sona email and we'll unsubscribe you by hand today.");
   }
-  return page("You're unsubscribed 🧡", "No more weekly emails. Your child's practice and report stay right in the app, always.");
+  // the email list too (lib/contacts), so a broadcast from Resend skips them;
+  // if Resend doesn't answer, the address is owed and the daily run tries
+  // again (`email:unsub` already stops every email Sona itself sends)
+  try { await markUnsubscribed(v.email); } catch { /* never fails the unsubscribe itself */ }
+  // and GoHighLevel, which sends Sona's emails when it is set up (lib/mail):
+  // the contact's email goes on Do Not Disturb, so GHL's own workflows skip
+  // them too. A DND contact gets NO email from GHL, Sona's sign-in links
+  // included: a clinician who unsubscribes gets no sign-in email until the
+  // DND is lifted in GHL. Not configured, or no answer: `email:unsub` still
+  // stops every email Sona sends itself.
+  try { await ghlEmailDnd(v.email); } catch { /* never fails the unsubscribe itself */ }
+  return page("You're unsubscribed 🧡", "No more emails from Sona. Your child's practice and report stay right in the app, always.");
 }

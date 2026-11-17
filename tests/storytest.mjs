@@ -6,10 +6,10 @@
 // — deliberately — that NO story card ever interrupts a round. The games are
 // the games.
 import { createServer } from "http";
-import { readFileSync, existsSync } from "fs";
+import { readFileSync, existsSync, readdirSync, statSync } from "fs";
 import { chromium, ROOT, launchOpts } from "./_env.mjs";
 
-const MIME = { html: "text/html", js: "text/javascript", svg: "image/svg+xml", css: "text/css", png: "image/png" };
+const MIME = { html: "text/html", js: "text/javascript", svg: "image/svg+xml", css: "text/css", png: "image/png", mp3: "audio/mpeg" };
 const srv = createServer((req, res) => {
   const u = new URL(req.url, "http://x");
   if (u.pathname.startsWith("/api/")) { res.writeHead(500); res.end("{}"); return; }
@@ -88,12 +88,12 @@ await page.waitForTimeout(800);
 const deck = await page.evaluate(() => ({
   title: document.querySelector(".library-intro h1").textContent,
   cards: [...document.querySelectorAll("#activityGroups .game-card[data-game]")].map(card => ({ k: card.dataset.game, n: card.querySelector(".game-name").textContent })),
-  expected: Sona.activityLibrary().groups.flatMap(group => group.games.map(game => game.key)),
+  expected: (g => g.flatMap(group => group.games.filter(game => !game.comingSoon).map(game => game.key)))(Sona.activityLibrary().groups), // the playable ones only: since 19 Oct 2026 Home draws no Coming soon game
   chapPill: !!document.getElementById("chapPill"),
   bookLinks: [...document.querySelectorAll('a[href]')].filter(a => /\/(chapter|story|library)\.html/.test(a.getAttribute('href'))).length,
 }));
 ok("Home invites choosing a game", /pick a game/i.test(deck.title), deck.title);
-ok("every catalog game has a named card in the age shelves", JSON.stringify(deck.cards.map(card => card.k)) === JSON.stringify(deck.expected) && deck.cards.every(card => card.n.length > 3), JSON.stringify(deck.cards));
+ok("every playable catalog game has a named card in the age shelves", JSON.stringify(deck.cards.map(card => card.k)) === JSON.stringify(deck.expected) && deck.cards.every(card => card.n.length > 3), JSON.stringify(deck.cards));
 ok("Home stays at the library until a game is chosen", /today\.html$/.test(page.url()), page.url());
 ok("home screen carries no chapter furniture or reader links", !deck.chapPill && deck.bookLinks === 0);
 
@@ -125,23 +125,141 @@ for (const url of ["/charge.html?daily=1&sound=R", "/charge.html?game=arcade-sli
 // ── the beat must FINISH SPEAKING before the round's prompt plays ──
 {
   const src = readFileSync(ROOT + "/charge.html", "utf8");
-  // Rachel's clips must be off on EVERY surface. charge.html gating its own
-  // local copy is exactly how coach-call.html kept playing them.
+  // Rachel's July recordings (/coach/say/) never play whole on any surface:
+  // what plays is /coach/say-echo/ — one take of each sound cut from them
+  // (tools/soundclips.mjs, her own voice since 2 Oct 2026), and her lines
+  // re-voiced into Echo's voice (tools/revoice.mjs) where a whole line is
+  // still needed. Switched ON on 25 Sep 2026. The switch stays shared:
+  // charge.html gating its own local copy is exactly how coach-call.html
+  // kept playing her raw lines.
   const sona = readFileSync(ROOT + "/sona.js", "utf8");
   const call = readFileSync(ROOT + "/coach-call.html", "utf8");
-  ok("the human-clip switch is shared, not per-page",
-    /const HUMAN_CLIPS = false;/.test(sona) && /humanClipsOn/.test(src),
-    "a local per-page flag lets other pages ship her voice anyway");
-  ok("coach-call.html gates its demo clips too",
-    /humanClipsOn/.test(call),
-    "playDemo() plays /coach/say/<SOUND>-demo.mp3 — Rachel's voice — and was ungated");
+  ok("the human-clip switch is shared, not per-page, and on",
+    /const HUMAN_CLIPS = true;/.test(sona) && /humanClipsOn/.test(src) && /humanClipsOn/.test(call),
+    "a local per-page flag lets other pages ship her raw voice anyway");
+  {
+    const pages = readdirSync(ROOT).filter((n) => /\.(html|js)$/.test(n));
+    const raw = pages.filter((n) => /["']\/coach\/say\//.test(readFileSync(ROOT + "/" + n, "utf8")));
+    ok("no page plays Rachel's raw takes from /coach/say/", raw.length === 0, raw.join(", "));
+    // 29 Sep 2026: practice and Fruit Slice play ONE cut take of her sound
+    // (tools/soundclips.mjs) inside Echo's v4 Turbo words; parked Coach Call
+    // still reaches for the demos. The cut takes are her own voice (R since
+    // 1 Oct, every sound since 2 Oct 2026), and still play from
+    // /coach/say-echo/, so this pin holds.
+    const slice = readFileSync(ROOT + "/arcade-slice.html", "utf8");
+    ok("practice, Fruit Slice and Coach Call play from /coach/say-echo/", /"\/coach\/say-echo\/"\+SOUND\+"-sound\.wav"/.test(src) && /"\/coach\/say-echo\/"\+SND\+"-sound\.wav"/.test(slice) && /"\/coach\/say-echo\/"\+SOUND\+"-demo\.mp3"/.test(call));
+    // Her whole July line is kept for ONE case: the voice service is down
+    // (it needs no TTS). It is never the prompt otherwise.
+    ok("her whole July line plays in practice only when the voice service is down", (src.match(/"\/coach\/say-echo\/"\+SOUND\+"\.mp3"/g) || []).length === 1 && /whole:"\/coach\/say-echo\/"\+SOUND\+"\.mp3"/.test(src) && /result==="voice-down"\)result=await playMedia\(packet\.slot\.whole/.test(src));
+    // The cut sounds join Echo's PCM sample for sample, so the page refuses
+    // anything but the route's own format: 24 kHz, mono, 16-bit, 44-byte header.
+    const cuts = ["P", "B", "M", "N", "T", "D", "K", "G", "F", "V", "S", "Z", "SH", "CH", "J", "L", "R", "TH", "THV"].map((k) => k + "-sound.wav");
+    const badCut = cuts.filter((n) => {
+      const f = ROOT + "/coach/say-echo/" + n; if (!existsSync(f)) return true;
+      const b = readFileSync(f);
+      return b.toString("ascii", 0, 4) !== "RIFF" || b.readUInt16LE(22) !== 1 || b.readUInt32LE(24) !== 24000 || b.readUInt16LE(34) !== 16 || b.toString("ascii", 36, 40) !== "data" || (b.length - 44) % 2 || (b.length - 44) / 48000 > 2.5 || (b.length - 44) / 48000 < 0.2;
+    });
+    ok("every sound has one short cut take in the format Echo's words play in", badCut.length === 0, badCut.join(", "));
+    const need = readdirSync(ROOT + "/coach/say").filter((n) => n.endsWith(".mp3"));
+    const missing = need.filter((n) => !existsSync(ROOT + "/coach/say-echo/" + n) || statSync(ROOT + "/coach/say-echo/" + n).size < 5000);
+    ok("every one of Rachel's " + need.length + " takes has a re-voiced twin", missing.length === 0, missing.join(", "));
+    // Loudness (25 Sep 2026). /api/tts levels every generated line on the
+    // server (-20 dB RMS over its spoken frames, no peak above -3 dB); a clip
+    // plays as-is, so it was the one sound left that could jump — the set came
+    // back from ElevenLabs 2–5 dB hotter than the lines around it, peaks at the
+    // ceiling. tools/levelclips.mjs brings every clip to the route's level with
+    // the route's own levelPcm; this holds it there, measured the way the route
+    // measures. A clip whose peak cap won sits under -20 dB on purpose.
+    const levels = await page.evaluate(async (names) => {
+      const measure = (x, rate) => {
+        const n = x.length; let peak = 0;
+        for (let i = 0; i < n; i++) { const a = Math.abs(x[i]); if (a > peak) peak = a; }
+        const F = Math.round(rate * 0.02), frames = [];
+        for (let s = 0; s < n; s += F) { const e = Math.min(n, s + F); let sum = 0; for (let i = s; i < e; i++) sum += x[i] * x[i]; frames.push({ sum, len: e - s }); }
+        const db = (a) => 20 * Math.log10(a || 1e-12), amp = (d) => Math.pow(10, d / 20);
+        const spoken = frames.filter((f) => f.sum / f.len >= amp(-50) ** 2);
+        let rms = 0;
+        if (spoken.length) {
+          const mean = spoken.reduce((t, f) => t + f.sum, 0) / spoken.reduce((t, f) => t + f.len, 0);
+          const speech = spoken.filter((f) => f.sum / f.len >= mean * amp(-20) ** 2);
+          rms = Math.sqrt(speech.reduce((t, f) => t + f.sum, 0) / speech.reduce((t, f) => t + f.len, 0));
+        }
+        return { peak: +db(peak).toFixed(1), rms: +db(rms).toFixed(1) };
+      };
+      const actx = new OfflineAudioContext(1, 1, 24000), out = {};
+      for (const n of names) {
+        try { const buf = await actx.decodeAudioData(await (await fetch("/coach/say-echo/" + n)).arrayBuffer()); out[n] = measure(buf.getChannelData(0), buf.sampleRate); }
+        catch (e) { out[n] = { err: String(e).slice(0, 80) }; }
+      }
+      return out;
+    }, need);
+    const off = Object.entries(levels).filter(([, m]) => m.err || m.peak > -2.5 || (Math.abs(m.rms + 20) > 0.7 && !(m.rms < -20 && m.peak > -3.6)));
+    ok("every re-voiced clip sits at the TTS level (-20 dB RMS, peaks under -3 dB)", off.length === 0, off.map(([n, m]) => n + " " + JSON.stringify(m)).join("; "));
+    // The cut takes are levelled to sound as loud as Echo's words to the ear
+    // (A-weighted, tools/aweight.mjs): a plain RMS match left hisses louder
+    // and hums quieter than the words around them. Every take sits within
+    // 1 dB of the others (the peak cap may hold one a little under), and no
+    // peak goes over −3 dBFS.
+    const { aWeightedLevel } = await import("../tools/aweight.mjs");
+    const aLevels = cuts.map((n) => {
+      const b = readFileSync(ROOT + "/coach/say-echo/" + n), x = Float64Array.from({ length: (b.length - 44) >> 1 }, (_, i) => b.readInt16LE(44 + i * 2) / 32768);
+      return { n, a: aWeightedLevel(x, 24000), peak: 20 * Math.log10(x.reduce((m, v) => Math.max(m, Math.abs(v)), 0)) };
+    });
+    const top = Math.max(...aLevels.map((l) => l.a));
+    const uneven = aLevels.filter((l) => top - l.a > 1 || l.peak > -2.95);
+    ok("every cut take sounds as loud as the others to the ear, peaks under -3 dB", uneven.length === 0, uneven.map((l) => `${l.n} ${l.a.toFixed(1)}A pk${l.peak.toFixed(1)}`).join("; "));
+    // Every take is Rachel's OWN voice (Travis, 1 Oct 2026, of the L on the
+    // practice page: "it said the weirdest sound ... insert her voice right
+    // there"). The voice changer had turned her L into an "ee" and her Z into
+    // a vowel with no hiss, and v4 Turbo's F came out voiced. So: every take
+    // is cut from her recordings, and each one still sounds like its sound,
+    // measured as the tool's notes measure it.
+    const { TAKES } = await import("../tools/soundclips.mjs");
+    const { fftPower } = await import("../tools/aweight.mjs");
+    const SOUNDS = cuts.map((n) => n.replace("-sound.wav", ""));
+    const notHers = SOUNDS.filter((k) => !TAKES[k] || !existsSync(ROOT + "/coach/say/" + TAKES[k][0]));
+    ok("every sound's one take is cut from Rachel's own recordings (tools/soundclips.mjs), never re-voiced or TTS", notHers.length === 0, notHers.join(", "));
+    const take = (k) => { const b = readFileSync(ROOT + "/coach/say-echo/" + k + "-sound.wav"); return Float64Array.from({ length: (b.length - 44) >> 1 }, (_, i) => b.readInt16LE(44 + i * 2) / 32768); };
+    // Voicing: the share of 30 ms windows (within 30 dB of the loudest) whose
+    // autocorrelation peaks over 0.5 between 70 and 400 Hz.
+    const voicedShare = (x) => {
+      const W = 720, H = 240, lo = 60, hi = 343, e = [];
+      for (let s = 0; s + W <= x.length; s += H) { let t = 0; for (let i = s; i < s + W; i++) t += x[i] * x[i]; e.push(t); }
+      const floor = Math.max(...e) / 1000; let n = 0, v = 0;
+      e.forEach((t, f) => {
+        if (t < floor) return; n++; const s = f * H; let best = 0;
+        for (let L = lo; L <= hi; L++) { let num = 0, d1 = 0, d2 = 0; for (let i = s; i + L < s + W; i++) { num += x[i] * x[i + L]; d1 += x[i] * x[i]; d2 += x[i + L] * x[i + L]; } best = Math.max(best, num / Math.sqrt(d1 * d2 + 1e-12)); }
+        if (best > 0.5) v++;
+      });
+      return n ? v / n : 0;
+    };
+    const VOICED = ["B", "M", "N", "D", "G", "V", "Z", "J", "L", "R", "THV"];
+    const wrongVoice = SOUNDS.map((k) => ({ k, v: voicedShare(take(k)) })).filter(({ k, v }) => (VOICED.includes(k) ? v < 0.8 : v > 0.25));
+    ok("every voiced sound's take is voiced, and every hiss and pop is not", wrongVoice.length === 0, wrongVoice.map(({ k, v }) => `${k} ${(v * 100).toFixed(0)}% voiced`).join("; "));
+    // Where the energy sits (512-point frames, dB of one band over another).
+    const bandsOf = (x) => {
+      const acc = new Float64Array(257), hann = Array.from({ length: 512 }, (_, i) => 0.5 - 0.5 * Math.cos((2 * Math.PI * i) / 511));
+      for (let s = 0; s + 512 <= x.length; s += 256) { const re = new Float64Array(512); for (let i = 0; i < 512; i++) re[i] = x[s + i] * hann[i]; fftPower(re).forEach((p, k) => (acc[k] += p)); }
+      const band = (a, b) => { let t = 0; for (let k = Math.ceil((a * 512) / 24000); k < (b * 512) / 24000; k++) t += acc[k]; return t; };
+      return { low: band(500, 1500), mid: band(1800, 2800), high: band(3000, 8000) };
+    };
+    const db = (a, b) => 10 * Math.log10(a / b);
+    // F, S, Z, SH, CH and TH hiss: more energy above 3 kHz than at 0.5–1.5 kHz,
+    // by 6 dB (the re-voiced Z sat 16 dB under, v4 Turbo's F 15 dB under).
+    const noHiss = ["F", "S", "Z", "SH", "CH", "TH"].map((k) => ({ k, d: db(bandsOf(take(k)).high, bandsOf(take(k)).low) })).filter(({ d }) => d < 6);
+    ok("every hissing sound's take hisses", noHiss.length === 0, noHiss.map(({ k, d }) => `${k} ${d.toFixed(1)} dB`).join("; "));
+    // An L keeps 1.8–2.8 kHz quiet, 20 dB under 0.5–1.5 kHz: the re-voiced L
+    // put an "ee"'s second formant there (9 dB under).
+    const l = bandsOf(take("L"));
+    ok("the L take sounds like an L, not an \"ee\"", db(l.mid, l.low) < -20, db(l.mid, l.low).toFixed(1) + " dB");
+  }
   // Locking the phone fires visibilitychange, NOT pagehide. Every page holding
   // a mic must release on both, or the recording indicator stays lit in a
   // pocket and game timers keep advancing.
   ok("sona.js exposes a shared onBackground()",
     /function onBackground\(/.test(sona) && /visibilitychange/.test(sona),
     "pagehide alone never fires on screen lock");
-  for (const g of ["arcade-slice", "arcade-tiles", "arcade-stack", "arcade-run", "arcade-glide", "arcade-feed"]) {
+  for (const g of ["arcade-slice", "arcade-tiles", "arcade-stack", "arcade-run", "arcade-glide", "arcade-rise", "arcade-feed"]) {
     const gs = readFileSync(ROOT + "/" + g + ".html", "utf8");
     ok(g + " releases its mic when backgrounded", /onBackground/.test(gs),
       "this game holds its own keep-playing mic and only listened to pagehide");
@@ -234,10 +352,12 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
   ok("Echo is an actor, not a portrait — his pose changes across a chapter",
     new Set(poses).size >= 2, JSON.stringify(poses.map((p) => String(p).split("/").pop())));
 
-  // the borrowed Duolingo green is gone from the story's primary action
+  // the borrowed Duolingo green is gone from the story's primary action, and
+  // so is the old orange: buttons are the action teal (the family's design
+  // brief, 28 Sep 2026); orange is only the practice sound's letters now
   const cta = await pg.evaluate(() => getComputedStyle(document.getElementById("next")).backgroundImage);
-  ok("the story CTA is Sona orange, not Duolingo green",
-    /255, 138, 61|255, 160, 90/.test(cta) && !/88, 204, 2/.test(cta), cta.slice(0, 70));
+  ok("the story CTA is Sona teal, not Duolingo green (nor the old orange)",
+    /72, 204, 215|31, 152, 166/.test(cta) && !/88, 204, 2/.test(cta) && !/255, 138, 61|255, 160, 90/.test(cta), cta.slice(0, 70));
   await pg.close();
 }
 

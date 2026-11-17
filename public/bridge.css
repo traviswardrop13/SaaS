@@ -1,0 +1,73 @@
+/* Puzzle Bridge (STORY1, Day 3): the canyon fills the screen, a kind banner
+   sits under the HUD, and Echo and the child's buddy stand on the near bank
+   above the two buttons. The colours of every button come from /action.css
+   (teal, cream); the canyon's own blues, sandstone and blossom pinks are
+   drawn on the canvas, never on a button. */
+html,body{height:100%;overflow:hidden;overscroll-behavior:none;background:#9fd8ef;}
+#app{position:fixed;inset:0;width:100%;height:100%;max-width:none;min-height:0;margin:0;padding:0;overflow:hidden;display:block;isolation:isolate;}
+#bridgeCanvas{position:absolute;inset:0;display:block;width:100%;height:100%;touch-action:none;user-select:none;-webkit-user-select:none;}
+#top{position:absolute;z-index:6;top:0;left:0;right:0;padding:calc(12px + env(safe-area-inset-top)) 14px 10px;gap:8px;pointer-events:none;}
+#top button{pointer-events:auto;}
+#close{display:grid;place-items:center;background:var(--cream-card);color:var(--cream-ink);box-shadow:0 4px 0 var(--cream-line);}
+#close svg{width:22px;height:22px;}
+.hudpill{background:var(--cream-card);box-shadow:0 4px 0 var(--cream-line);color:var(--cream-ink);}
+#ttl{font-size:15px;}
+#dots{gap:5px;padding:13px 10px;}
+#dots i{width:7px;height:7px;}
+#dots i.on{background:var(--act);}
+/* under the HUD: one kind line */
+#brRow{position:absolute;z-index:5;top:calc(70px + env(safe-area-inset-top));left:12px;right:12px;max-width:520px;margin:0 auto;display:flex;justify-content:center;pointer-events:none;}
+#brBanner{min-width:0;max-width:100%;padding:8px 14px 7px;background:var(--cream-card);border-radius:18px;box-shadow:0 3px 0 var(--cream-line);color:var(--cream-ink);font-family:"Baloo 2",sans-serif;font-size:clamp(15px,4.4vw,20px);font-weight:800;line-height:1.15;text-align:center;}
+/* Echo (left) and the buddy (right) stand on the near bank; bridge.js places
+   them. Decoration only: no finger ever lands on them. */
+#brEcho,#brBuddy{position:absolute;z-index:3;left:0;top:0;width:80px;height:80px;object-fit:contain;object-position:50% 100%;pointer-events:none;filter:drop-shadow(0 4px 6px rgba(60,40,20,.3));}
+#brBuddy:not([src]){display:none;}
+#brBuddy.badge{border-radius:50%;object-position:50% 50%;}
+#brEcho.hop,#brBuddy.hop{animation:brHop .9s cubic-bezier(.3,1.5,.5,1);}
+@keyframes brHop{0%,100%{transform:translateY(0) rotate(0)}30%{transform:translateY(-30%) rotate(-8deg)}60%{transform:translateY(0) rotate(5deg)}80%{transform:translateY(-8%)}}
+/* the stone, for the keyboard: it rides on the stone and never takes a touch */
+#brStone{position:absolute;z-index:4;left:50%;top:40%;width:72px;height:72px;min-width:44px;min-height:44px;transform:translate(-50%,-50%);padding:0;border:none;border-radius:22px;background:transparent;box-shadow:none;pointer-events:none;}
+#brStone:focus-visible{outline:4px solid #fff2bb;outline-offset:3px;}
+/* the round turn button beside the stone (bridge.js places it) */
+#brTurn{position:absolute;z-index:5;left:0;top:0;width:62px;height:62px;min-width:56px;min-height:56px;padding:0;display:grid;place-items:center;transform:translate(-50%,-50%);color:var(--act-d);touch-action:manipulation;}
+#brTurn[hidden]{display:none;}
+#brTurn svg{width:32px;height:32px;}
+#brTurn:active{transform:translate(-50%,calc(-50% + 3px));}
+#brControls{position:absolute;z-index:5;left:16px;right:16px;bottom:calc(18px + env(safe-area-inset-bottom));display:flex;justify-content:space-between;gap:12px;align-items:stretch;pointer-events:none;}
+#brControls button{pointer-events:auto;}
+#brHearStep{width:58px;min-width:58px;min-height:58px;display:grid;place-items:center;padding:8px;}
+#brHearStep svg{width:27px;height:27px;}
+#brHelp{min-height:58px;min-width:169px;display:flex;align-items:center;justify-content:center;gap:7px;padding:7px 13px;touch-action:manipulation;}
+#brHelp img{width:32px;height:39px;object-fit:contain;flex:none;}
+.br-help-label{display:flex;flex-direction:column;gap:5px;align-items:center;min-width:0;}
+.br-help-label>span{font-family:"Baloo 2",sans-serif;font-size:18px;font-weight:800;line-height:1.05;}
+#brPower{display:block;width:84px;height:4px;background:rgba(255,255,255,.28);border-radius:99px;overflow:hidden;}
+#brPower[hidden]{display:none;}
+#brPowerFill{display:block;height:100%;background:var(--cream-card);}
+#brControls button:disabled{opacity:.52;cursor:default;}
+/* the word turn sits over the bank, the canyon still in sight above it */
+#turnPanel{position:absolute;z-index:8;left:14px;right:14px;max-width:560px;margin:0 auto;bottom:calc(16px + env(safe-area-inset-bottom));background:var(--cream-card);box-shadow:0 5px 0 var(--cream-line),0 10px 45px rgba(30,40,60,.3);}
+#turnPanel.yay{box-shadow:0 5px 0 var(--cream-line);}
+/* the word's picture (crafted-words.js): two spans that are inline until
+   given a box, and an inline span ignores its width and height, so without
+   these the picture is drawn 0x0 and a child who can't read sees only the
+   letters. The rules Hoops' sheet gives it (this page loads no crafted-*.css). */
+#pic{display:flex;align-items:center;justify-content:center;width:100%;height:100%;padding:3px;}
+#pic>.crafted-word{display:inline-flex;flex:none;align-items:center;justify-content:center;vertical-align:middle;width:100%!important;height:100%!important;}
+#pic .crafted-word-crop{display:block;flex:none;background-repeat:no-repeat;}
+#hear{background:var(--cream);color:var(--act-d);box-shadow:0 3px 0 var(--cream-line);min-width:44px;min-height:44px;}
+#hear svg{width:24px;height:24px;}
+body[data-phase=play] #turnPanel,body[data-phase=finale] #turnPanel,body[data-phase=end] #turnPanel,body[data-phase=ready] #turnPanel,body[data-phase=boot] #turnPanel{visibility:hidden;pointer-events:none;}
+body:not([data-phase=play]) #brControls,body:not([data-phase=play]) #brStone,body:not([data-phase=play]) #brTurn{visibility:hidden;}
+body:not([data-phase=play]) #brControls button,body:not([data-phase=play]) #brTurn{pointer-events:none;}
+body[data-phase=boot] #brRow,body[data-phase=ready] #brRow{visibility:hidden;}
+/* the start card: Home's picture of the story, or Echo while it is on its way */
+.br-intro{width:100%;max-height:150px;aspect-ratio:16/9;object-fit:cover;border-radius:20px;border:3px solid var(--cream-card);box-shadow:0 4px 0 var(--cream-line);background:#8ccfd0;}
+.br-intro.fallback{object-fit:contain;padding:8px;}
+#startTitle{font-family:"Baloo 2",sans-serif;font-size:29px;line-height:1.1;font-weight:800;}
+.ovl{padding:20px;}
+.ovlCard{max-height:calc(100dvh - 40px - env(safe-area-inset-top) - env(safe-area-inset-bottom));overflow-y:auto;}
+button:focus-visible{outline:4px solid var(--act-d);outline-offset:4px;}
+@media (prefers-reduced-motion: reduce){ #brEcho.hop,#brBuddy.hop{animation:none;} #brTurn:active{transform:translate(-50%,-50%);} }
+@media(max-width:359px){#ttl{font-size:13px;}#top{gap:6px;}#dots{gap:4px;padding:13px 8px;}#dots i{width:6px;height:6px;}#brControls{left:12px;right:12px;}#brHelp{min-width:150px;padding:7px 10px;}#brHelp img{width:28px;height:34px;}.br-help-label>span{font-size:17px;}#brBanner{font-size:15px;padding:7px 10px;}}
+@media(max-height:640px){#brRow{top:calc(62px + env(safe-area-inset-top));}#brBanner{padding:5px 10px 4px;font-size:15px;}#brControls{bottom:calc(14px + env(safe-area-inset-bottom));}#brHearStep,#brHelp{min-height:52px;}#brHearStep{width:52px;min-width:52px;}.br-intro{max-height:95px;}#startOvl .ovlCard{gap:7px;padding:16px;}#startTitle{font-size:26px;}#startBtn{min-height:50px;font-size:21px;margin:2px 0 6px;}}

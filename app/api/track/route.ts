@@ -1,4 +1,8 @@
+import { foreignOrigin } from "@/lib/origin";
 import { NextRequest, NextResponse } from "next/server";
+import { kvConfigured } from "@/lib/slpAuth";
+import { rateLimit } from "@/lib/rateLimit";
+import { trialDays, trialPlayed } from "@/lib/trials";
 
 /**
  * First-party telemetry relay for KID pages (COPPA posture).
@@ -9,6 +13,13 @@ import { NextRequest, NextResponse } from "next/server";
  * the anonymous family id (random device-minted, never a name/email); no body
  * is stored, nothing else is read. Always answers ok — telemetry must never
  * break practice.
+ *
+ * Since 14 Nov 2026 (server.md B6): a post another site sent (its Origin or
+ * Sec-Fetch-Site says so) is dropped silently; one with neither header is
+ * kept (a phone's background beacon may carry none); so
+ * is a post past 120 a minute from one address (an IPv6 /64 as one); PostHog
+ * gets 1.5 s at most; and the phone's "free trial started" only fills in a
+ * trial row RevenueCat already started, never a new one (lib/trials.ts).
  */
 export const runtime = "nodejs";
 
@@ -19,8 +30,10 @@ const PH_HOST = "https://us.i.posthog.com";
 // relay can only ever say LESS than the page asked it to.
 const EVENTS = new Set([
   "practice started", "practice completed",
+  "rep goal met",         // daily rep target reached, no child details or rep counts
   "day goal done",        // the outcome proxy: a family finished all 5 rounds
   "slp code redeemed",    // which SLPs actually send families
+  "family logged in",     // the same, through a login the SLP made (code only)
   // The conversion funnel, added 18 Sep 2026. Without these the relay could
   // see a child practice and never see whether that turned into anything:
   "plan moment shown",    // the ask, fired once on the first completed run
@@ -34,14 +47,58 @@ const EVENTS = new Set([
                           // offer is supposed to follow, so without it the
                           // funnel cannot tell a family who saw the product
                           // from one who bounced before it started
+  // Levels inside games (11 Oct 2026, LEVELS1): sent by a game page once per
+  // load at Level 2 or 3, never by Home. It carries the game and the level
+  // (2 or 3) and nothing else: no trophy count, no name, no age.
+  "level played",
+  "game opened",          // a game page opened for play (game key only): the
+                          // games that skip the practice page are seen here
+  // The Trophy Road (11 Oct 2026, CHEST1 / ROAD1 / MONTH1): sent by sona.js
+  // when a child opens the day's chest, a road gift or a month gift, never by
+  // Home. They carry nothing: no stop or step number (a stop is a lifetime
+  // trophy count), no coins, no name.
+  "chest opened",
+  "adventure day done",   // QUEST1: today's daily-adventure quest finished (game key only)
+  // The daily story (22 Oct 2026, STORY1): sent by adventure.html, the
+  // story's own page, never by Home. Each carries the story's game key only.
+  "adventure opened",          // the story's intro started
+  "adventure ending watched",  // the story's last ending scene showed
+  // FOUND1 (23 Oct 2026): a found story game played again from Home's row,
+  // sent by that game's page (the story's game key only), never by Home.
+  "story game replayed",
+  "road gift opened",
+  "month gift opened",
+  // The Buddy Shop (11 Oct 2026, SHOP1): sent by sona.js when a child gets a
+  // buddy, hat or place with coins. It carries the kind, the catalog id and
+  // its price in coins (coins are never sold): no balance, no name.
+  "shop item got",
+  // The Practice Board (11 Oct 2026, BOARD2; built dark until Travis's go):
+  // sent by sona.js when a grown-up's link puts children on the board, when
+  // one leaves it, and when the board page shows it. They carry nothing: no
+  // token, nickname, days or place.
+  "board turned on",
+  "board turned off",
+  "board viewed",
+  // The free-week report (30 Oct 2026, TRIAL1, lib/trials.ts): "free trial
+  // started" from a purchase whose free days really began ({ days }: how
+  // long they are), and "played today" once a local day on a phone's first
+  // counted rep (nothing else). The server also keeps, per trial, which of
+  // its days had play, for /leads.html; no name, sound or count.
+  "free trial started",
+  "played today",
 ]);
-// `plan` and `surface` join the list for the events above. Still no name, no
-// age, no email, no word a child said — an unlisted key is dropped silently,
-// which is the whole point of an allow-list.
-const PROPS = new Set(["sound", "game", "duration_seconds", "attempts_count", "code", "plan", "surface", "source"]);
+// `plan` and `surface` join the list for the events above, and `level` (2 or
+// 3) for "level played". Still no name, no age, no email, no word a child
+// said — an unlisted key is dropped silently, which is the whole point of an
+// allow-list. `kind`, `item` and `cost` are the Buddy Shop's ("characters",
+// "dragon", 150): a catalog entry and its coin price, never a balance.
+const PROPS = new Set(["sound", "game", "duration_seconds", "attempts_count", "code", "plan", "surface", "source", "level", "kind", "item", "cost", "days"]);
 
 export async function POST(req: NextRequest) {
   try {
+    if (foreignOrigin(req)) return NextResponse.json({ ok: true });
+    const limited = await rateLimit(req, { key: "track", limit: 120, windowSec: 60, v6prefix: true });
+    if (limited) return NextResponse.json({ ok: true });
     const raw = await req.text(); // sendBeacon posts text/plain
     if (!raw || raw.length > 2000) return NextResponse.json({ ok: true });
     const b = JSON.parse(raw) as { e?: string; p?: Record<string, unknown>; fid?: string };
@@ -55,8 +112,18 @@ export async function POST(req: NextRequest) {
       if (typeof v === "number" && isFinite(v)) props[k] = Math.max(0, Math.min(100000, Math.round(v)));
       else if (typeof v === "string") props[k] = v.slice(0, 40);
     }
+    // TRIAL1: the free-week report's own record (never waits long: the store
+    // answers or the beacon goes on without it). Only RevenueCat starts a
+    // row; the phone fills in its length and its days of play.
+    if (kvConfigured() && (event === "free trial started" || event === "played today")) {
+      const now = Date.now();
+      try {
+        if (event === "free trial started") await trialDays(fid, Number(props.days) || 0);
+        else await trialPlayed(fid, now);
+      } catch { /* the report can miss a day; the beacon still goes */ }
+    }
     const ctrl = new AbortController();
-    const to = setTimeout(() => ctrl.abort(), 4000);
+    const to = setTimeout(() => ctrl.abort(), 1500);
     await fetch(`${PH_HOST}/capture/`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },

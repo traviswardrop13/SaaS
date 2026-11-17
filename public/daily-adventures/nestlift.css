@@ -1,0 +1,16 @@
+.daily-nestlift-canvas { touch-action:none; }
+.nestlift-controls { position:absolute; inset:0; pointer-events:none; touch-action:none; color:#5d7c6b; font-family:inherit; }
+.nestlift-controls [hidden] { display:none !important; }
+.nestlift-controls button { box-sizing:border-box; pointer-events:auto; touch-action:none; -webkit-tap-highlight-color:transparent; cursor:pointer; font-family:inherit; font-size:14px; font-weight:700; line-height:1.05; transition:none !important; }
+.nestlift-controls button:disabled { opacity:.4; cursor:default; }
+.nestlift-controls button:focus-visible { outline:3px solid #fff1b8; outline-offset:2px; box-shadow:0 0 0 5px #668774; }
+.nestlift-handle { position:absolute; min-width:44px; min-height:44px; width:48px; height:48px; padding:0; border:0; background:transparent; color:transparent; border-radius:50%; transform:translate(-50%,-50%); z-index:3; }
+.nestlift-cargo,.nestlift-basket { width:56px; height:56px; z-index:4; }
+.nestlift-winch { position:absolute; width:52px; height:52px; min-width:52px; min-height:52px; padding:9px; border:1px solid rgba(104,124,93,.35); border-radius:15px; transform:translate(-50%,-50%); background:#eee2bb; color:#65806c; box-shadow:0 3px 0 rgba(106,113,77,.2); }
+.nestlift-controls svg { width:26px; height:26px; flex:0 0 26px; }
+.nestlift-stop { position:absolute; left:10px; bottom:10px; min-width:44px; min-height:44px; width:136px; height:44px; padding:5px 8px; display:flex; align-items:center; justify-content:center; gap:6px; border:1px solid rgba(77,119,104,.3); border-radius:12px; background:var(--act-teal,#3c8585); color:#fbf2d4; box-shadow:0 3px 0 rgba(64,93,72,.18); }
+.nestlift-help { position:absolute !important; left:auto !important; right:10px !important; bottom:10px !important; transform:none !important; width:144px !important; min-width:0 !important; height:44px !important; min-height:44px !important; padding:5px 6px !important; font-size:14px !important; line-height:1.05 !important; }
+.nestlift-help img { width:28px !important; height:28px !important; object-fit:contain; }
+.nestlift-help.powered { box-shadow:0 0 0 3px rgba(213,209,153,.75),0 3px 0 rgba(76,96,70,.18); }
+.nestlift-sr { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+@media(prefers-reduced-motion:reduce) { .nestlift-controls *,.nestlift-help { animation:none !important; transition:none !important; } }

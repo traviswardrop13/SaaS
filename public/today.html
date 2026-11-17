@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Sona — Play library</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <title>Sona</title>
   <link href="/fonts.css" rel="stylesheet" />
   <link href="/sona.css" rel="stylesheet" />
   <link rel="manifest" href="/manifest.webmanifest" />
@@ -49,9 +49,10 @@
     .shelf-tag.recommended{background:#dfeecf;color:#3b5d25;}
     .game-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px;}
     .game-card{position:relative;display:flex;flex-direction:column;min-width:0;border:5px solid #fff;border-radius:23px;background:#fff;box-shadow:0 4px 0 #e8d9c5;color:var(--ink);padding:0;cursor:pointer;transition:transform .12s;text-align:left;}
-    .game-card:disabled{cursor:default;}
-    .game-card:disabled .game-art{opacity:.55;filter:saturate(.5);}
-    .game-access.coming-soon{color:#715d45;background:#f0e8db;}
+    /* a Premium game a family hasn't opened is greyed, but still taps
+       through to the price or the grown-up message (only ever seen when
+       pricing is on). A Coming soon game has no card at all (19 Oct 2026). */
+    .game-card[data-locked="true"] .game-art{opacity:.55;filter:saturate(.5);}
     .game-card:not(:disabled):active{transform:translateY(3px) scale(.98);}
     .game-art{position:relative;display:block;width:100%;aspect-ratio:1;border-radius:18px;overflow:hidden;}
     .game-info{display:flex;flex-direction:column;align-items:flex-start;gap:6px;padding:10px 6px 8px;}
@@ -59,52 +60,75 @@
     .game-access{font-size:10px;line-height:1.3;font-weight:800;color:#3f6630;background:#eaf3dd;padding:3px 7px;border-radius:99px;}
     .game-access.premium{color:#665093;background:#efe9f9;}
     .featured-group{background:#f1e9fb;border:1px solid #e5d9f5;border-radius:26px;padding:17px 15px 15px;margin:20px 0 26px;}
-    .featured-group[data-collection="seasonal"]{background:#ffe9cc;border-color:#f5d9b1;}
-    .featured-grid{display:grid;grid-auto-flow:column;grid-auto-columns:calc((100% - 15px)/2);gap:15px;overflow-x:auto;padding:1px 1px 8px;scroll-snap-type:x proximity;}
-    .featured-grid .game-card{scroll-snap-align:start;box-shadow:0 4px 0 #ded0ef;}
+    .featured-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px;padding:1px 1px 8px;}
+    .featured-grid .game-card{box-shadow:0 4px 0 #ded0ef;}
     .featured-group .shelf-heading h2{font-size:22px;}
     .featured-group .shelf-tag{background:#fff9;color:#665093;}
-    #booksComingSoon{display:flex;align-items:center;gap:15px;padding:21px 17px;background:#e6f0ee;border:1px solid #d5e4de;border-radius:25px;margin-top:32px;}
-    .book-art{position:relative;display:block;width:76px;height:86px;flex:none;}
-    .book-art>.stk{background:transparent!important;}
-    #booksComingSoon h2{font-size:23px;line-height:1.2;margin-bottom:6px;}
-    #booksComingSoon p{font-size:13px;line-height:1.5;margin-top:8px;color:#536b62;max-width:300px;}
-    #booksComingSoon .shelf-tag{background:#fff9;color:#536b62;}
     .age-note{font-size:12px;line-height:1.5;color:var(--muted);text-align:center;margin:25px 12px 0;}
     #catalogPreviewNotice{border:1px dashed #a897ba;border-radius:16px;background:#f4eefb;padding:12px 14px;font-size:12px;line-height:1.5;margin-bottom:20px;color:#665093;}
     #catalogPreviewNotice strong{display:block;}
     #libraryNotice{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:20;width:calc(100% - 32px);max-width:440px;display:flex;align-items:center;gap:10px;padding:15px 14px 15px 18px;background:#fff;border:2px solid #eed7b0;border-radius:22px;box-shadow:0 10px 32px rgba(80,50,10,.2);}
     .notice-copy{flex:1;}
-    #libraryUnlock{display:block;min-height:44px;margin-top:8px;border:0;border-radius:12px;padding:9px 15px;background:#6a508f;color:#fff;font-weight:800;cursor:pointer;}
+    /* buttons are the teal action pill (action.css, via sona.css; design brief
+       28 Sep 2026); chips and dots keep their own selection colours */
+    #libraryUnlock{display:block;min-height:44px;margin-top:8px;border:0;border-radius:999px;padding:9px 18px;background:linear-gradient(180deg,var(--act-hi),var(--act));box-shadow:0 4px 0 var(--act-d);text-shadow:0 1px 0 var(--act-d);color:#fff;font-weight:800;cursor:pointer;}
     #libraryMessage{font-weight:800;font-size:14px;line-height:1.45;color:var(--muted);}
     #libraryMessageClose{flex:none;width:36px;height:36px;border:0;border-radius:50%;background:#fff0d8;color:var(--ink);font-size:23px;cursor:pointer;}
     .library-wrap.has-message{padding-bottom:145px;}
-    @media(min-width:600px){.library-wrap{padding:26px 30px 42px;}.game-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:22px;}.featured-grid{grid-auto-columns:calc((100% - 44px)/3);gap:22px;}.library-intro{margin:28px 0;}.library-intro h1{font-size:42px;}#libraryEcho{width:100px;height:110px;}.game-name{font-size:22px;}.game-info{padding:12px 9px;}.game-access{font-size:11px;}.shelf-heading h2{font-size:27px;}.featured-group{padding:22px;}.activity-group{margin-top:34px;}}
-    @media(max-width:350px){.library-wrap{padding-left:15px;padding-right:15px;}.game-grid{gap:12px;}.library-intro h1{font-size:30px;}#libraryEcho{width:67px;height:80px;}.game-card{border-width:4px;border-radius:19px;}.game-art{border-radius:15px;}.game-name{font-size:16px;}.game-info{padding:9px 4px 6px;}.featured-group{padding:14px 11px;}.shelf-heading h2{font-size:21px;}.shelf-tag{font-size:10px;padding:4px 7px;}#booksComingSoon{gap:10px;}.book-art{width:60px;height:72px;}}
+    @media(min-width:600px){.library-wrap{padding:26px 30px 42px;}.game-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:22px;}.featured-grid{gap:22px;}.library-intro{margin:28px 0;}.library-intro h1{font-size:42px;}#libraryEcho{width:100px;height:110px;}.game-name{font-size:22px;}.game-info{padding:12px 9px;}.game-access{font-size:11px;}.shelf-heading h2{font-size:27px;}.featured-group{padding:22px;}.activity-group{margin-top:34px;}}
+    @media(max-width:350px){.library-wrap{padding-left:15px;padding-right:15px;}.game-grid{gap:12px;}.library-intro h1{font-size:30px;}#libraryEcho{width:67px;height:80px;}.game-card{border-width:4px;border-radius:19px;}.game-art{border-radius:15px;}.game-name{font-size:16px;}.game-info{padding:9px 4px 6px;}.featured-group{padding:14px 11px;}.shelf-heading h2{font-size:21px;}.shelf-tag{font-size:10px;padding:4px 7px;}}
     @media(prefers-reduced-motion:reduce){.game-card{transition:none;}}
     :root{--label:#a17c4a;--track:#f0e4d2;--orange-d:#ef6f23;}
     .library-label{flex:1;}
     #buddyBtn,#parentBtn{position:relative;display:flex;align-items:center;justify-content:center;flex:none;border:3px solid #fff;width:44px;height:44px;border-radius:50%;background:#fff;cursor:pointer;box-shadow:0 4px 0 rgba(140,70,10,.14);color:#795c3c;}
     #buddyBtn{background:#ffe5b1;overflow:hidden;}
+    /* FOUND1: the gift button, top right beside the Grown-ups button. A
+       ring (a conic gradient, --fill from 0 to 100) fills toward today's
+       goal; the dot says the road has something to open. Phones drop the
+       "Sona" wordmark rather than squeeze the buttons. */
+    #giftBtn{position:relative;display:flex;align-items:center;justify-content:center;flex:none;width:48px;height:48px;margin-left:auto;border-radius:50%;text-decoration:none;color:var(--ink);transition:transform .12s;}
+    #giftBtn:active{transform:translateY(2px) scale(.96);}
+    .gift-ring{position:absolute;inset:0;border-radius:50%;background:conic-gradient(var(--act) calc(var(--fill,0)*1%),#eadcc6 0);box-shadow:0 3px 0 #e9d8bb,0 5px 13px #6947200b;}
+    .gift-ring::after{content:"";position:absolute;inset:5px;border-radius:50%;background:linear-gradient(#fffefb,#fff7e9);}
+    /* the road's own painted chest, gold and wood: never the drawn kit's
+       orange gift, because orange on a child's screen means only the
+       practice sound's letters */
+    .gift-ic{position:relative;display:flex;width:30px;height:30px;}
+    .gift-ic img{display:block;width:30px;height:30px;object-fit:contain;}
+    .gift-dot{position:absolute;top:-2px;right:-2px;width:14px;height:14px;border-radius:50%;background:var(--act);box-shadow:0 0 0 2.5px #fffdf7;animation:giftDot 2s ease-in-out infinite;}
+    .gift-dot[hidden]{display:none;}
+    @keyframes giftDot{0%,100%{transform:scale(1)}50%{transform:scale(1.25)}}
+    @media(prefers-reduced-motion:reduce){#giftBtn{transition:none;}#giftBtn:active{transform:none;}.gift-dot{animation:none;}}
+    .library-label{min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;}
+    @media(max-width:459px){.library-label{display:none;}}
     /* founding banner (feedback invite — never pricing) */
-    #trialBanner{display:none;align-items:center;gap:8px;background:linear-gradient(120deg,#fff7e6,#ffe9c2);border:1px solid #ffe2a8;border-radius:14px;padding:9px 14px;font-weight:800;font-size:12.5px;color:#8a6400;text-decoration:none;}
+    #trialBanner{display:none;align-items:center;gap:12px;background:var(--cream-card);border:1.5px solid var(--cream-line);border-radius:20px;padding:10px 12px 10px 10px;font-weight:800;font-size:13px;line-height:1.3;color:var(--cream-ink);text-decoration:none;box-shadow:0 4px 0 var(--cream-line),0 10px 22px rgba(91,45,5,.08);}
+    #trialBanner .tb-echo{width:46px;height:46px;flex:0 0 auto;object-fit:contain;}
+    #trialBanner #trialMsg{flex:1;}
+    #trialBanner .tb-pill{flex:0 0 auto;background:linear-gradient(180deg,var(--act-hi),var(--act));color:#fff;border-radius:999px;padding:8px 13px;font-family:"Baloo 2";font-size:13px;box-shadow:0 3px 0 var(--act-d);white-space:nowrap;}
+    /* Under 360 px the pill left the sentence a column about 85 px wide,
+       four to six lines tall, and pushed Home's two doors off a 320x568
+       screen. The whole banner is the button, so the pill steps aside. */
+    @media(max-width:359px){#trialBanner .tb-pill{display:none;}}
+    .pulse-echo{display:block;width:84px;height:84px;margin:-6px auto 2px;object-fit:contain;}
+    .pulseChip.on{background:linear-gradient(180deg,var(--act-hi),var(--act))!important;color:#fff!important;border-color:var(--act-d)!important;}
 
-    /* parent gate + sheet (warm) */
+    /* parent gate + beta pulse (warm) */
     .ovl{position:fixed;inset:0;z-index:50;background:rgba(74,44,20,.5);display:none;align-items:center;justify-content:center;padding:24px;}
     .ovl.show{display:flex;}
     .modal{background:#fff;border-radius:24px;padding:22px;width:100%;max-width:330px;text-align:center;box-shadow:0 20px 50px rgba(74,44,20,.35);}
     .modal h3{font-family:"Baloo 2";font-weight:800;font-size:20px;color:var(--ink);}
     .modal p{font-weight:700;font-size:13.5px;color:var(--muted);margin-top:4px;}
-    #gateQ{font-family:"Baloo 2";font-weight:800;font-size:30px;color:var(--orange-d);margin:10px 0 2px;}
-    /* the spelled-out challenge needs room for four words, so it sets its own
-       size rather than fighting the 30px the PIN lock glyph wants */
-    #gateQ.words{font-size:20px;letter-spacing:.06em;line-height:1.45;max-width:15ch;margin:10px auto 2px;}
+    /* four spelled-out number words, sized to fit the modal on a small phone */
+    #gateQ{font-family:"Baloo 2";font-weight:800;font-size:20px;letter-spacing:.06em;line-height:1.45;max-width:15ch;color:var(--orange-d);margin:10px auto 2px;}
     #gateIn{font-family:"Baloo 2";font-weight:800;font-size:26px;letter-spacing:8px;min-height:36px;color:var(--ink);}
     .pad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px;}
     .pad button{border:none;border-radius:14px;padding:13px 0;font-family:"Baloo 2";font-weight:800;font-size:20px;background:var(--cream);color:var(--ink);cursor:pointer;box-shadow:0 3px 0 var(--track);}
     .pad button:active{transform:translateY(2px);box-shadow:none;}
     .modal.shake{animation:shake .35s;}
     @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-9px)}75%{transform:translateX(9px)}}
+    /* The beta pulse's Send button. The class is older than the pulse: it was
+       the Grown-ups pop-up's, and that pop-up is gone (30 Sep 2026). */
     .sheetBtn{display:flex;align-items:center;gap:12px;width:100%;border:none;border-radius:16px;padding:15px 16px;margin-top:10px;background:var(--cream);font-family:"Baloo 2";font-weight:800;font-size:16px;color:var(--ink);cursor:pointer;box-shadow:0 3px 0 var(--track);text-align:left;}
     .sheetBtn:active{transform:translateY(2px);box-shadow:none;}
     .ghost{border:none;background:none;color:var(--label);font-weight:800;font-size:13px;margin-top:12px;cursor:pointer;}
@@ -112,27 +136,117 @@
     #toast.show{opacity:1;}
     .modal{max-height:calc(100dvh - 48px);overflow-y:auto;}
     #trialBanner{margin-top:18px;}
+    /* LEVELS1 (11 Oct 2026): a game whose child plays Level 2 or 3 carries
+       the numeral and three pips, top right of its picture (the best keeps
+       the top left, Free / Included the bottom right, New the bottom left).
+       Cream with ink like the other labels; part of the picture, so a tap
+       on it is a tap on the game. Narrow and tall, so it stays clear of the
+       best tag on the smallest phone. */
+    .game-level{position:absolute;right:6px;top:6px;display:flex;flex-direction:column;align-items:center;gap:2px;min-width:24px;padding:3px 5px 4px;border-radius:10px;background:#fffdf2f2;color:var(--ink);box-shadow:0 1px 4px #583e2930;pointer-events:none;}
+    .game-level b{font:800 15px/1 "Baloo 2",sans-serif;}
+    .level-pips{display:flex;gap:2px;}
+    .level-pips i{display:block;width:5px;height:5px;border-radius:50%;background:#e2d2b8;}
+    .level-pips i.on{background:var(--ink);}
+    /* the level sheet: opened only by a tap on a game, once per game when a
+       new level opens. Each level leads with what a child who can't read yet
+       can use: the game's picture, a big numeral and its pips. */
+    #levelModal{position:relative;text-align:left;padding:20px 18px 16px;}
+    #levelModal h3{text-align:center;padding:0 34px;}
+    #levelModal .level-ask{text-align:center;margin-top:2px;}
+    #levelClose{position:absolute;top:10px;right:10px;width:36px;height:36px;border:0;border-radius:50%;background:#fff0d8;color:var(--ink);font-size:23px;line-height:1;cursor:pointer;}
+    .level-list{display:flex;flex-direction:column;gap:9px;margin-top:12px;}
+    .level-tile{display:flex;align-items:center;gap:10px;width:100%;min-height:56px;padding:7px 10px 7px 7px;border:2px solid #f0e2cc;border-radius:16px;background:#fffdf7;color:var(--ink);text-align:left;cursor:pointer;box-shadow:0 3px 0 #ecdcc3;}
+    .level-tile[aria-pressed="true"]{border-color:var(--act);background:#effaf8;box-shadow:0 3px 0 var(--act-d);}
+    .level-tile:not([aria-disabled="true"]):active{transform:translateY(2px);box-shadow:none;}
+    .level-tile[aria-disabled="true"]{cursor:default;background:#f6efe4;box-shadow:none;}
+    .level-tile[aria-disabled="true"] .level-art{opacity:.45;filter:saturate(.4);}
+    .level-art{display:block;flex:none;width:58px;height:36px;border-radius:9px;background:#efe6d5 center/cover no-repeat;}
+    .level-num{display:flex;flex-direction:column;align-items:center;gap:3px;flex:none;min-width:26px;}
+    .level-num b{font:800 26px/1 "Baloo 2",sans-serif;}
+    .level-num .level-pips i{width:6px;height:6px;}
+    .level-line{flex:1;min-width:0;font-size:12px;font-weight:800;line-height:1.3;color:var(--muted);}
+    .level-need{display:flex;align-items:center;gap:3px;margin-top:3px;font:800 13px/1 "Baloo 2",sans-serif;color:var(--ink);}
+    .level-need svg{width:14px;height:14px;display:block;}
+    .level-check{flex:none;width:24px;height:24px;border-radius:50%;background:var(--act);color:#fff;font-size:14px;font-weight:900;line-height:24px;text-align:center;}
+    #levelNote{min-height:18px;text-align:center;margin-top:10px;}
+    @media(prefers-reduced-motion:reduce){.level-tile:not([aria-disabled="true"]):active{transform:none;}}
   </style>
+  <link href="/crafted-home.css" rel="stylesheet" />
 </head>
-<body>
-  <main id="libraryApp" class="library-wrap" hidden>
+<body class="playmap-home">
+  <!-- HOME AND THE ARCADE (STORY1, 22 Oct 2026): one page, two views. Home
+       is today's story, big, with two doors under it (Arcade: every game,
+       and only games since 23 Oct 2026; Books: the bookshelf), then "Your
+       games" once a story is finished (FOUND1); the Trophy Road is the gift
+       button in the top bar.
+       Every block is built once on load, as before, and the view only
+       decides what shows (data-view, on the wrapper: a block's own hidden is
+       set by its painter, never by the view). The Arcade has an address of
+       its own, /today.html?view=arcade, so Back comes home. -->
+  <main id="libraryApp" class="library-wrap" data-view="home" hidden>
     <header class="library-header">
       <a id="buddyBtn" href="/customize.html" aria-label="Choose your buddy"></a>
-      <span class="library-label">Play library</span>
-      <button id="parentBtn" type="button" aria-label="Parent corner"><span class="pic-gear" aria-hidden="true"></span></button>
+      <span class="library-label">Sona</span>
+      <a id="giftBtn" href="/road.html" aria-label="Trophy Road"><span class="gift-ring" id="giftRing" aria-hidden="true"></span><span class="gift-ic" id="giftIc" aria-hidden="true"><img src="/assets/crafted/road-chest.webp" alt="" width="30" height="30" /></span><span class="gift-dot" id="giftDot" hidden></span></a>
+      <button id="parentBtn" type="button" aria-label="Grown-ups"><span class="pic-gear" aria-hidden="true"></span><span>Grown-ups</span></button>
     </header>
-    <a id="trialBanner"><span data-ic="gift" aria-hidden="true"></span> <span id="trialMsg"></span></a>
-    <div class="library-intro"><div><h1>Pick a game!</h1><p>A little practice. A lot to explore.</p></div><span id="libraryEcho" aria-hidden="true"></span></div>
-    <aside id="catalogPreviewNotice" hidden><strong>Free &amp; Premium preview</strong><span id="catalogPreviewState"></span> <a href="/premium.html">Trial preview</a> · <a href="/activities.html?libraryPreview=0">Exit preview</a></aside>
-    <div id="featuredGroups"></div>
-    <div id="activityGroups"></div>
-    <section id="booksComingSoon" aria-labelledby="booksHeading">
-      <span class="book-art" id="libraryBooksArt" aria-hidden="true"></span>
-      <div><h2 id="booksHeading">Books</h2><span class="shelf-tag">Coming soon</span><p>Stories to share, one sound at a time.</p></div>
+    <a id="trialBanner"><img class="tb-echo" src="/assets/crafted/echo-wave.webp" alt="" onerror="this.src='/assets/crafted/echo-welcome.webp'"><span id="trialMsg"></span><span class="tb-pill" aria-hidden="true">Share an idea</span></a>
+    <section class="home-only" aria-labelledby="homeTitle">
+      <h1 id="homeTitle" class="home-title" tabindex="-1">Home</h1>
+      <!-- THE STORY CARD (STORY1; the daily adventure card of QUEST1, 13 Oct
+           2026, made big). It only reads Sona.questToday(): on a story day
+           its tap is the game card's own tap (launch) on the story itself,
+           which opens adventure.html, or the price where Sona can sell; on a
+           game day (after the built stories, or on a phone that cannot buy
+           without Premium) it is today's game, as before. Done, it shows
+           tomorrow's picture, dark: never playable early. Silent.
+           ADVENTURESTUDIO1 (4 Nov 2026): the original Home picture leads;
+           the title, hook and action have their own dark footer. The old
+           trail is gone; tomorrow still cannot be played early. -->
+      <button id="questCard" type="button" hidden><span class="quest-body" id="questSummary" hidden><span class="quest-art" id="questArt" aria-hidden="true"><span class="quest-pic" id="questPic"></span></span><span class="quest-copy"><span class="quest-meta"><span class="quest-label" id="questLabel">Today's adventure</span><span class="quest-chip" id="questChip" hidden></span><span class="quest-lock" id="questLock" hidden>Premium</span></span><span class="quest-title" id="questTitle"></span><span class="quest-line" id="questLine"></span></span></span><span class="quest-go" id="questGo" aria-hidden="true"><span id="questActionLabel">Start today</span><svg class="quest-arrow home-arrow" viewBox="0 0 32 28" aria-hidden="true"><path d="M3 14h25M20 6l8 8-8 8"/></svg></span><span id="questDone" hidden aria-hidden="true"><span class="quest-lock-icon"><svg width="13" height="17" viewBox="0 0 20 24"><path d="M5 10V7a5 5 0 0 1 10 0v3" fill="none" stroke="currentColor" stroke-width="2.5"/><rect x="2" y="10" width="16" height="12" rx="4" fill="currentColor"/></svg></span> Come back tomorrow!</span></button>
+      <!-- This compact Practice landmark is not a new session or a sound
+           picker. Target changes remain in Grown-ups Settings. -->
+      <section class="practice-band" aria-labelledby="practiceTitle"><h2 id="practiceTitle">Practice</h2><div class="home-sound" id="homeSoundWrap" hidden><span class="sound-note" id="homeSoundNote">Your sound</span><span class="sound-value" id="homeSoundValue"></span></div></section>
+      <!-- the two doors: a picture and one word each, for a child who can't
+           read yet. Books is the one way to the bookshelf: the Arcade has no
+           Books card since 23 Oct 2026. -->
+      <div id="homeDoors">
+        <button id="arcadeBtn" type="button" aria-label="Games. All the games."><span class="door-pic" id="arcadePic" aria-hidden="true"></span><span class="door-copy"><span class="door-word">Games</span><svg class="door-arrow home-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19 19 5M6 5h13v13"/></svg></span><span class="door-meta">All the games</span></button>
+        <button id="homeBooksBtn" type="button"><span class="door-pic" id="homeBooksPic" aria-hidden="true"></span><span class="door-copy"><span class="door-word">Books</span><svg class="door-arrow home-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19 19 5M6 5h13v13"/></svg></span><span class="door-meta" id="homeBooksSound">Sound stories</span><span class="shelf-tag door-tag" id="homeBooksTag">Free</span></button>
+      </div>
+      <!-- YOUR GAMES (FOUND1, 23 Oct 2026): every story leaves its game
+           behind. The games this child's finished stories left, newest
+           first, each its Home picture and name; a tap plays it again (its
+           page's ?again=1). The one found today says "New!". Only where the
+           story's rule opens them (Sona.storyReplay); never a grey tile, so
+           a family without the story sees no row at all. It only reads. -->
+      <section id="foundRow" aria-labelledby="foundTitle" hidden>
+        <h2 id="foundTitle">Your games</h2>
+        <div id="foundList"></div>
+      </section>
+      <!-- the phone's home bar, measured (the fit keeps the card above it) -->
+      <span id="homeInset" aria-hidden="true"></span>
     </section>
-    <p class="age-note">Ages are a guide. Explore any game that fits.</p>
+    <section class="arcade-only" aria-labelledby="arcadeTitle">
+      <div class="arcade-top"><button id="homeBack" type="button"><span aria-hidden="true">‹</span> Home</button></div>
+      <div class="library-intro"><div><h1 id="arcadeTitle" tabindex="-1">Pick a game!</h1><p>A little practice. A lot to explore.</p></div><span id="libraryEcho" aria-hidden="true"></span></div>
+      <aside id="catalogPreviewNotice" hidden><strong>Free &amp; Premium preview</strong><span id="catalogPreviewState"></span> <a href="/premium.html">Trial preview</a> · <a href="/activities.html?libraryPreview=0">Exit preview</a></aside>
+      <div id="featuredGroups"></div>
+      <div id="activityGroups"></div>
+      <!-- THE ARCADE IS GAMES ONLY (Travis, 23 Oct 2026: "organize the
+           arcade so that there are no books in there"): Today's picks (two
+           games), then the two shelves, the child's own age group's first.
+           The books are behind Home's Books door. -->
+      <p class="age-note">Ages are a guide. Explore any game that fits.</p>
+    </section>
     <div id="libraryNotice" hidden><div class="notice-copy"><p id="libraryMessage" role="status"></p><button id="libraryUnlock" type="button">Ask a grown-up</button></div><button id="libraryMessageClose" aria-label="Close message">×</button></div>
   </main>
+  <!-- LEVELS1 (11 Oct 2026): "Pick a level", once per game when a new level
+       opens, from a tap on that game only. Silent but the tap chime. -->
+  <div class="ovl" id="levelOvl" role="dialog" aria-modal="true" aria-labelledby="levelTitle">
+    <div class="modal" id="levelModal"><button id="levelClose" type="button" aria-label="Close">×</button>
+      <h3 id="levelTitle"></h3><p class="level-ask">Pick a level</p><div id="levelList" class="level-list"></div><p id="levelNote" role="status"></p></div>
+  </div>
   <!-- parent gate -->
   <div class="ovl" id="gateOvl">
     <div class="modal" id="gateModal">
@@ -145,41 +259,20 @@
     </div>
   </div>
 
-  <!-- parent sheet -->
-  <div class="ovl" id="sheetOvl">
-    <div class="modal">
-      <h3>Parent corner</h3>
-      <p id="ageGuide">Simple play is suggested for ages 3–4; Arcade for ages 5–8. Ages are a guide. Choose any available game that fits.</p>
-      <div id="weekCard" style="background:var(--cream);border-radius:16px;padding:14px 16px;margin-top:12px;text-align:left;">
-        <div style="display:flex;align-items:center;gap:8px;">
-          <b style="font-family:'Baloo 2';font-size:15px;color:var(--ink);">This week</b>
-          <span id="wkStreak" style="margin-left:auto;font-family:'Baloo 2';font-weight:800;font-size:12.5px;color:var(--orange-d);"></span>
-        </div>
-        <div id="wkDots" style="display:flex;gap:7px;margin-top:10px;justify-content:space-between;"></div>
-        <div id="wkMsg" style="font-weight:800;font-size:12.5px;color:var(--muted);margin-top:9px;"></div>
-        <div id="wkWins" style="font-family:'Baloo 2';font-weight:800;font-size:13px;color:var(--ink);margin-top:6px;"></div>
-        <button id="shareWeek" style="display:none;width:100%;border:none;border-radius:14px;padding:12px;margin-top:10px;background:linear-gradient(180deg,#ffa05a,#ff8a3d);box-shadow:0 4px 0 var(--orange-d);color:#fff;font-family:'Baloo 2';font-weight:800;font-size:14px;cursor:pointer;">Share this week</button>
-      </div>
-      <div id="planCard" style="display:none;background:var(--cream);border-radius:16px;padding:14px 16px;margin-top:10px;text-align:left;">
-        <div style="display:flex;align-items:center;gap:8px;">
-          <b style="font-family:'Baloo 2';font-size:15px;color:var(--ink);">This week</b>
-        </div>
-        <div id="storyBits" style="font-weight:800;font-size:12px;color:var(--ink);margin-top:9px;line-height:1.55;"></div>
-        <div style="font-weight:800;font-size:10.5px;color:var(--label);margin-top:8px;">Built with Rachel — licensed speech-language pathologist. A practice snapshot, not an evaluation.</div>
-      </div>
-      <div id="planNote" style="display:none;background:var(--cream);border-radius:16px;padding:12px 16px;margin-top:10px;text-align:left;font-weight:800;font-size:12.5px;color:var(--muted);"></div>
-      <button class="sheetBtn" id="goProgress"><span class="pic-trend"></span>&nbsp; Progress &amp; SLP report</button>
-      <button class="sheetBtn" id="goSettings"><span class="pic-gear"></span>&nbsp; Settings</button>
-      <button class="ghost" id="sheetClose">Close</button>
-    </div>
-  </div>
+  <!-- NO GROWN-UPS POP-UP (Travis, 30 Sep 2026: "when they click parents and
+       put in code i want it to go straight to settings not have them choose
+       what they wanna go to"). The right code goes straight to Settings,
+       whose tab bar is the same three places the pop-up offered (Progress ·
+       Settings · Talk to us) and whose Account line says the plan the
+       pop-up's note used to. -->
 
   <!-- beta pulse — chip-first ask for founding families; X always works -->
   <div class="ovl" id="pulseOvl">
-    <div class="modal" style="position:relative;text-align:left;">
-      <button id="pulseX" aria-label="Close" style="position:absolute;top:10px;right:10px;width:34px;height:34px;border:none;border-radius:50%;background:var(--cream);color:var(--label);font-weight:800;font-size:15px;cursor:pointer;box-shadow:0 2px 0 var(--track);">✕</button>
-      <div style="font-family:'Baloo 2';font-weight:800;font-size:12px;letter-spacing:.08em;color:var(--orange-d);padding-right:40px;">BETA · YOU'RE BUILDING SONA WITH US</div>
-      <h3 id="pulseQ" style="text-align:left;margin-top:8px;">What should we build next?</h3>
+    <div class="modal" style="position:relative;background:var(--cream-card);">
+      <button id="pulseX" aria-label="Close" style="position:absolute;top:12px;right:12px;width:36px;height:36px;border:1.5px solid var(--cream-line);border-radius:50%;background:var(--cream);color:var(--cream-ink);font-weight:800;font-size:15px;cursor:pointer;box-shadow:0 3px 0 var(--cream-line);">✕</button>
+      <img class="pulse-echo" src="/assets/crafted/echo-think.webp" alt="" onerror="this.src='/assets/crafted/echo-welcome.webp'">
+      <div style="font-family:'Baloo 2';font-weight:800;font-size:12px;letter-spacing:.06em;color:var(--act-d);">YOU'RE BUILDING SONA WITH US</div>
+      <h3 id="pulseQ" style="margin-top:4px;">What should we build next?</h3>
       <div id="pulseOpts"></div>
     </div>
   </div>
@@ -187,14 +280,31 @@
   <div id="toast"></div>
 
   <script src="/sona.js"></script>
+  <script src="/crafted-buddies.js"></script>
   <script>
     (function(){
       var S=window.Sona,app=document.getElementById("libraryApp"),host=document.getElementById("activityGroups");
       var notice=document.getElementById("libraryNotice"),message=document.getElementById("libraryMessage");
-      if(!S||!S.activityLibrary){app.hidden=false;host.textContent="Your games could not load. Please reopen Sona and try again.";return;}
+      // (the line lives on the Arcade's shelf, so the Arcade is what shows)
+      if(!S||!S.activityLibrary){app.hidden=false;app.setAttribute("data-view","arcade");host.textContent="Your games could not load. Please reopen Sona and try again.";return;}
       var profile=S.getProfile();
       if(!profile.onboarded&&!profile.childName){location.replace("/onboarding.html");return;}
+      // THE OFFER, ONCE (Travis, 13 Oct 2026: "yeah, let's show the offer
+      // again"). A family locked out who never saw the free days on this phone
+      // (set up on a build that could not buy, now on one that can) gets the
+      // plan screen once, the same one a grey-game tap opens; its X comes back
+      // here. Home is never painted on that load, so nothing moves under a
+      // finger. The store is asked first (at most 2.5 s): a payer who
+      // reinstalled is found and Home reloads with every game open. Never on
+      // the grown-ups bounce, a ?locked= note or a preview. Sona.homeOfferDue
+      // only reads; subscribe.html spends the one showing.
+      var q=location.search;
+      if(S.homeOfferDue&&S.setupWall&&!/[?&](gate|locked|libraryPreview)=/.test(q)&&!(S.libraryPreview&&S.libraryPreview())&&S.homeOfferDue()){
+        S.setupWall(2500).then(function(owes){location.replace(owes?"/subscribe.html?from=home":location.pathname+location.search+location.hash);});
+        return;
+      }
       app.hidden=false;
+      setView(viewOf());
       // Preview access is tab-local; real family entitlements stay untouched.
       var preview=S.libraryPreview?S.libraryPreview():false;
       document.getElementById("catalogPreviewNotice").hidden=!preview;
@@ -203,59 +313,423 @@
         document.getElementById("catalogPreviewState").textContent=plan.state==="trial"?"Trial preview: all available games unlocked. No payment or subscription.":plan.state==="expired"?"Trial ended preview: free games stay available. Purchases are off.":"Free games stay available. Premium games open through the grown-ups gate. Purchases are off.";
       }
       var library=S.activityLibrary(),lockedGame=null;
+      // Home art is presentation only: the catalog still owns access and routes.
+      // The map lives in sona.js since 30 Sep 2026: the plan screen shows the same pictures.
+      var craftedCards=S.CRAFTED_CARDS||{};
       var unlock=document.getElementById("libraryUnlock");
       function node(tag,className,text){var el=document.createElement(tag);if(className)el.className=className;if(text)el.textContent=text;return el;}
       function access(game){return S.gameAccess?S.gameAccess(game.key):{allowed:!S.gated(game.key),tier:game.tier,reason:S.isFree()?"free-mode":"legacy"};}
       function clearMessage(){notice.hidden=true;message.textContent="";lockedGame=null;unlock.hidden=false;app.classList.remove("has-message");}
       function showLocked(game){
-        var comingSoon=game.comingSoon||access(game).reason==="coming-soon";
+        var comingSoon=parked(game);
         lockedGame=comingSoon?null:game;unlock.hidden=!!comingSoon;notice.hidden=false;app.classList.add("has-message");
-        if(comingSoon){message.textContent=game.name+" is coming soon. Pick another game to play.";return;}
-        message.textContent="Ask a grown-up to help open "+game.name+". Your free games are still ready to play!";
+        if(comingSoon){message.textContent=game.name+" is "+(game.comingLabel||"Coming soon").replace(/^Coming/,"coming")+". Pick another game to play.";return;}
+        // (trial first, 3 Oct 2026: a family without the free version has no
+        // free games to point at, so the line stops at the ask)
+        var freeVer=true;try{freeVer=!S.freeVersion||S.freeVersion();}catch(e){}
+        message.textContent="Ask a grown-up to help open "+game.name+"."+(freeVer?" Your free games are still ready to play!":"");
       }
       document.getElementById("libraryMessageClose").onclick=clearMessage;
       unlock.onclick=function(){if(lockedGame)location.href="/premium.html?game="+encodeURIComponent(lockedGame.key);};
       // Home stays quiet. Practice begins only after a child picks a game.
+      // HIDDEN UNTIL IT OPENS (Travis, 19 Oct 2026, from a parent-funnel
+      // review: the greyed "Coming soon" cards cluttered Home and pushed
+      // parents away). A game parked as Coming soon has no card anywhere on
+      // Home: not on its shelf, not in a row of picks, not on the adventure
+      // card. It comes back by itself the day its comingSoon comes off its
+      // catalog line. A typed address to one still bounces here with "<Game>
+      // is coming soon" (showLocked, below), so the parked game is still read
+      // from the catalog; it is only never drawn.
+      function parked(game){return !!(game.comingSoon||access(game).reason==="coming-soon");}
+      // (no book card anywhere in the Arcade since 23 Oct 2026: an older
+      // cached sona.js may still hand Today's picks a book, and it is left out)
+      function shown(games){return (games||[]).filter(function(game){return game.kind!=="book"&&!parked(game);});}
       function launch(game){
-        if(!access(game).allowed){showLocked(game);return;}
+        if(!access(game).allowed){
+          // a grey game opens the price at once where Sona can sell (Travis,
+          // 4 Oct 2026); a Coming soon one (only a typed address now), or a
+          // phone that cannot buy, keeps the note
+          var soon=parked(game),offer=false;try{offer=!soon&&!!(S.offerOnLock&&S.offerOnLock());}catch(e){}
+          if(offer){clearMessage();location.href="/subscribe.html?from="+encodeURIComponent(game.key);return;}
+          showLocked(game);return;
+        }
         clearMessage();
+        // LEVELS1: the first tap after a new level opens asks which to play;
+        // every other tap plays the level last picked (the game page reads it)
+        if(S.playLevelAsk&&S.playLevelAsk(game.key)){openLevels(game);return;}
         location.href=game.go;
       }
+      // BESTS1 ("Beat Your Best", Travis, 1-2 Oct 2026): a game this child can
+      // open carries their own best on its picture, "Best 17", top left (the
+      // Free / Included badge keeps the bottom right). It is this child's
+      // alone (Sona.gameBest reads the active child's record), it counts
+      // what their finger did in the game, never their voice, and a game
+      // never played shows nothing: no zero, no empty tag to fill. A greyed
+      // card (Premium not opened) never carries one: a number on a game they
+      // cannot open is only a tease. The picture is
+      // hidden from a screen reader, so the card's own label says it too.
+      // An older cached sona.js has no gameBest, and then nothing is drawn.
+      var bestCards=[];
+      // LEVELS1: the level a tap will play (1 unless Level 2 or 3 is picked
+      // and open)
+      function levelOf(key){var lv=1;try{lv=S.playLevel?S.playLevel(key):1;}catch(e){lv=1;}return (lv===2||lv===3)?lv:1;}
+      function paintBest(card){
+        // the best of the level that will play: Level 2 and 3 keep their own
+        var lv=levelOf(card.key),n=0;try{n=lv>1?(S.playBest?S.playBest(card.key,lv):0):(S.gameBest?S.gameBest(card.key):0);}catch(e){n=0;}
+        n=(typeof n==="number"&&n>=1)?Math.floor(n):0;
+        var tag=card.art.querySelector(".game-best"),tail=lv>1?" Level "+lv+".":"";
+        paintLevel(card,lv);
+        if(!n){if(tag)card.art.removeChild(tag);card.button.setAttribute("aria-label",card.label+tail);return;}
+        if(!tag){tag=node("span","game-best");card.art.appendChild(tag);}
+        tag.textContent="";
+        var star=node("span","game-best-star");star.innerHTML=S.icon?S.icon("star",12):"";tag.appendChild(star);
+        tag.appendChild(document.createTextNode("Best "));tag.appendChild(node("b","",String(n)));
+        card.button.setAttribute("aria-label",card.label+" Your best: "+n+"."+tail);
+      }
+      // the numeral and its pips (●●○), top right of the picture, only for
+      // Level 2 or 3; never a button inside the card's button
+      function pips(lv){var p=node("span","level-pips");for(var i=1;i<=3;i++)p.appendChild(node("i",i<=lv?"on":""));return p;}
+      function paintLevel(card,lv){
+        var tag=card.art.querySelector(".game-level");
+        if(lv<2){if(tag)card.art.removeChild(tag);return;}
+        if(!tag){tag=node("span","game-level");card.art.appendChild(tag);}
+        tag.textContent="";tag.appendChild(node("b","",String(lv)));tag.appendChild(pips(lv));
+      }
+      function paintBests(){bestCards.forEach(paintBest);}
+      // ── the level sheet (LEVELS1) ──
+      // Opened only by a tap, once per game when a new level opens
+      // (Sona.playLevelAsk). An open level plays at once and is remembered;
+      // a locked one says what it needs and goes nowhere. Its only writes are
+      // the "seen" mark (on the tap that opened it) and the pick. It sends
+      // nothing: the game page says "level played".
+      var levelOvl=document.getElementById("levelOvl"),levelList=document.getElementById("levelList"),levelNote=document.getElementById("levelNote"),levelFrom=null,levelAt=-1e9;
+      // A double tap on a game card: the first tap opens the sheet, and the
+      // second would land on whatever the sheet put under the finger, the
+      // backdrop (closing it, and spending the one ask) or a level the child
+      // never chose. So for half a second after it opens the sheet takes no
+      // tap (CLAUDE.md: nothing moves under a finger). Esc still closes it.
+      function levelSettling(){return Date.now()-levelAt<500;}
+      function tapChime(){try{if(S.sfx&&S.sfx.tap)S.sfx.tap();}catch(e){}}
+      function closeLevels(){levelOvl.classList.remove("show");levelList.textContent="";levelNote.textContent="";var b=levelFrom;levelFrom=null;if(b)try{b.focus();}catch(e){}}
+      function openLevels(game){
+        var info=S.playLevelInfo?S.playLevelInfo(game.key):null;
+        if(!info||!info.levels||!info.levels.length){location.href=game.go;return;}
+        levelFrom=document.activeElement;levelAt=Date.now();
+        document.getElementById("levelTitle").textContent=game.name;
+        levelList.textContent="";levelNote.textContent="";
+        var art=craftedCards[game.key]?"/assets/crafted/home-"+craftedCards[game.key]+".webp":"",first=null;
+        info.levels.forEach(function(lv){
+          var b=node("button","level-tile");b.type="button";b.setAttribute("data-level",String(lv.n));
+          var a=node("span","level-art");a.setAttribute("aria-hidden","true");if(art)a.style.backgroundImage='url("'+art+'")';b.appendChild(a);
+          var num=node("span","level-num");num.setAttribute("aria-hidden","true");num.appendChild(node("b","",String(lv.n)));num.appendChild(pips(lv.n));b.appendChild(num);
+          var line=node("span","level-line",lv.line);line.setAttribute("aria-hidden","true");b.appendChild(line);
+          if(lv.open){
+            var picked=lv.n===info.pick;b.setAttribute("aria-pressed",picked?"true":"false");
+            b.setAttribute("aria-label","Level "+lv.n+". "+lv.line);
+            if(picked){var ck=node("span","level-check","\u2713");ck.setAttribute("aria-hidden","true");b.appendChild(ck);}
+            b.onclick=function(){if(levelSettling())return;tapChime();if(S.setPlayLevel)S.setPlayLevel(game.key,lv.n);location.href=game.go;};
+            if(picked||!first)first=b;
+          }else{
+            b.setAttribute("aria-disabled","true");
+            b.setAttribute("aria-label","Level "+lv.n+". Opens at "+lv.at+" trophies. You have "+lv.have+".");
+            var need=node("span","level-need");need.innerHTML=(S.icon?S.icon("lock",14)+S.icon("trophy",14):"");need.appendChild(document.createTextNode(String(lv.at)));line.appendChild(need);
+            b.onclick=function(){if(levelSettling())return;levelNote.textContent="Level "+lv.n+" opens at "+lv.at+" trophies. Keep practicing!";};
+          }
+          levelList.appendChild(b);
+        });
+        levelOvl.classList.add("show");
+        if(first)try{first.focus();}catch(e){}
+      }
+      document.getElementById("levelClose").onclick=function(){if(!levelSettling())closeLevels();};
+      levelOvl.addEventListener("click",function(e){if(e.target===levelOvl&&!levelSettling())closeLevels();});
+      // (and that ignored tap keeps the focus where the sheet put it)
+      levelOvl.addEventListener("mousedown",function(e){if(levelSettling())e.preventDefault();});
+      document.addEventListener("keydown",function(e){if((e.key==="Escape"||e.key==="Esc")&&levelOvl.classList.contains("show"))closeLevels();});
       function gameCard(game){
         var button=node("button","game-card");button.type="button";button.dataset.game=game.key;
-        var grant=access(game),tier=grant.reason==="free-mode"?"free":game.tier;
-        var comingSoon=game.comingSoon||grant.reason==="coming-soon";
-        var label=comingSoon?"Coming soon":tier==="free"?"Free":grant.allowed?"Included":"Premium";
-        button.disabled=!!comingSoon;
+        // "Free" means open as free HERE: since 3 Oct 2026 (trial first) a
+        // free-tier game is Premium's for a family without the free version
+        var grant=access(game),tier=(grant.reason==="free-mode"||grant.reason==="free")?"free":game.tier==="free"?"premium":game.tier;
+        // (a parked game never gets here: shown() leaves it off every row)
+        var label=tier==="free"?"Free":grant.allowed?"Included":"Premium";
         button.dataset.locked=grant.allowed?"false":"true";
-        button.setAttribute("aria-label",comingSoon?game.name+". Coming soon.":game.name+". "+(game.playDescription||game.sub)+" "+(grant.allowed?label+".":"Premium. Ask a grown-up to unlock."));
-        var art=node("span","game-art");art.setAttribute("aria-hidden","true");var sticker=S.gameSticker(game.key);S.paintSticker(art,sticker[0],sticker[1]);button.appendChild(art);
+        button.setAttribute("aria-label",game.name+". "+(game.playDescription||game.sub||"")+" "+(grant.allowed?label+".":"Premium. Ask a grown-up to unlock.")+(game.isNew?" New.":""));
+        var art=node("span","game-art");art.setAttribute("aria-hidden","true");
+        if(craftedCards[game.key]){
+          var picture=node("img","crafted-card-image");picture.src="/assets/crafted/home-"+craftedCards[game.key]+".webp";picture.alt="";picture.width=768;picture.height=432;picture.decoding="async";picture.loading="lazy";art.appendChild(picture);
+        }else{var sticker=S.gameSticker(game.key);S.paintSticker(art,sticker[0],sticker[1]);}
+        if(game.isNew)art.appendChild(node("span","game-new","New"));
+        button.appendChild(art);
+        if(grant.allowed){var best={button:button,art:art,key:game.key,label:button.getAttribute("aria-label")};bestCards.push(best);paintBest(best);}
         var info=node("span","game-info");info.appendChild(node("span","game-name",game.name));
-        info.appendChild(node("span","game-access"+(comingSoon?" coming-soon":tier==="premium"?" premium":""),label));
-        button.appendChild(info);button.onclick=function(){launch(game);};return button;
+        info.appendChild(node("span","game-access"+(tier==="premium"?" premium":""),label));
+        var arrow=node("span","game-arrow","›");arrow.setAttribute("aria-hidden","true");info.appendChild(arrow);button.appendChild(info);button.onclick=function(){launch(game);};return button;
       }
-      // A cached pre-shelves sona.js still supplies the complete age groups.
-      (library.featured || []).forEach(function(collection){
+      // ONE ROW ABOVE THE SHELVES (Travis, 23 Oct 2026: "I only want either
+      // today's picks or limited time ... have 2 games listed there, and then
+      // go directly to either simple play or arcade"): Today's picks, two
+      // games of the child's own age group; a recent release carries its own
+      // honest badge. What's new and Limited time are gone (an older cached
+      // sona.js may still send them, and they are not drawn).
+      var collections=library.picks?[library.picks]:[];
+      collections.forEach(function(collection){
+        var games=shown(collection.games).slice(0,2);if(!games.length)return;
         var section=node("section","featured-group");section.dataset.collection=collection.id;section.setAttribute("aria-labelledby","collection-"+collection.id);
         var top=node("div","shelf-heading"),heading=node("h2","",collection.name);heading.id="collection-"+collection.id;top.appendChild(heading);
-        top.appendChild(node("span","shelf-tag",collection.id==="new"?"Just added":"This season"));section.appendChild(top);
-        var grid=node("div","featured-grid");collection.games.forEach(function(game){grid.appendChild(gameCard(game));});section.appendChild(grid);document.getElementById("featuredGroups").appendChild(section);
+        if(collection.tag)top.appendChild(node("span","shelf-tag",collection.tag));section.appendChild(top);
+        var grid=node("div","featured-grid");games.forEach(function(game){grid.appendChild(gameCard(game));});section.appendChild(grid);document.getElementById("featuredGroups").appendChild(section);
       });
+      // Each age group's shelf holds only games a child can see a way into
+      // (open, or Premium to ask for); no Coming soon section follows them
+      // (it did from 1 Oct to 19 Oct 2026). crafted-home.css lays each shelf
+      // out by its own count, so no row ends on an empty slot.
       library.groups.forEach(function(group){
+        var games=shown(group.games);if(!games.length)return;
         var section=node("section","activity-group");section.dataset.group=group.id;section.setAttribute("aria-labelledby","group-"+group.id);
         var top=node("div","shelf-heading"),copy=node("div"),heading=node("h2","",group.name);heading.id="group-"+group.id;copy.appendChild(heading);
         copy.appendChild(node("p","",group.ageLabel));top.appendChild(copy);
         if(group.recommended)top.appendChild(node("span","shelf-tag recommended","For your child"));section.appendChild(top);
-        var grid=node("div","game-grid");group.games.forEach(function(game){grid.appendChild(gameCard(game));});section.appendChild(grid);host.appendChild(section);
+        var grid=node("div","game-grid");
+        games.forEach(function(game){grid.appendChild(gameCard(game));});section.appendChild(grid);
+        host.appendChild(section);
       });
+      // THE STORY CARD (QUEST1, 13 Oct 2026; STORY1, 22 Oct 2026). It only
+      // reads Sona.questToday(), and its tap is the game card's own tap
+      // (launch: access, the price, levels). On a story day the item is the
+      // story itself, "adventure" to the rules (gameAccess opens it by the
+      // books' rule), and its page is adventure.html; where Sona can sell, a
+      // family without Premium sees it with a Premium tag and the tap opens
+      // the price, as a grey game's does. A game day is today's game, and only
+      // games Home shows can be on it: a parked one hides the card instead.
+      // The "Day N of 14" count is gone, so after Day 3 no child reads "Day 1
+      // of 14"; a story day's chip is that story's Day number (since CAL1 a
+      // child may meet the stories out of order, so it counts no stories
+      // played). No line here promises
+      // a story that is not built, and none says "coming soon".
+      var questGames={};library.groups.forEach(function(group){shown(group.games).forEach(function(game){questGames[game.key]=game;});});
+      // a story's picture (/assets/crafted/home-<hero>.webp) that has not
+      // landed, or will not load, is Echo on the story's own wash (the colour
+      // is crafted-home.css's, by data-story): never invented art, never a
+      // blank. A game's picture is its Home card, as on its shelf.
+      function questPicture(src,story){
+        var art=document.getElementById("questArt"),pic=document.getElementById("questPic");
+        pic.textContent="";art.classList.remove("fallback");art.setAttribute("data-story",story||"");
+        if(!src)return false;
+        var day=null;try{day=story&&S.storyDay?S.storyDay(story):null;}catch(e){}
+        var talk=!!(day&&day.talk),im=node("img"),homeFallback=story&&!talk?src:"";im.alt="";im.decoding="async";
+        im.onerror=function(){if(homeFallback){var fallback=homeFallback;homeFallback="";im.src=fallback;return;}im.onerror=null;art.classList.add("fallback");im.src="/assets/crafted/echo-welcome.webp";};
+        im.src=story&&!talk?"/assets/adventure/"+story+"/s01.webp":src;pic.appendChild(im);return true;
+      }
+      function gamePicture(game){
+        if(craftedCards[game.key])return questPicture("/assets/crafted/home-"+craftedCards[game.key]+".webp","");
+        questPicture("","");var st=S.gameSticker(game.key);S.paintSticker(document.getElementById("questPic"),st[0],st[1]);return true;
+      }
+      // ADVENTURESTUDIO1: the day's own Home illustration.
+      // One still picture keeps Home quiet and clear on every connection.
+      function paintQuest(){
+        var card=document.getElementById("questCard");if(!card)return;
+        var q=null;try{q=S.questToday?S.questToday():null;}catch(e){q=null;}
+        var story=!!(q&&q.kind==="story"&&q.story);
+        var game=story?{kind:"story",key:"adventure",name:q.story.title,go:"/adventure.html",tier:"premium"}:(q&&questGames[q.game]);
+        if(!q||!game){card.hidden=true;document.getElementById("questSummary").hidden=true;return;}
+        var done=q.state==="done",next=done?q.next:null,open=access(game).allowed;
+        // Tomorrow's picture stays a preview of the next day, never early.
+        if(next&&next.kind==="story"&&next.story)questPicture(next.story.pic,next.story.id);
+        else if(next&&questGames[next.game])gamePicture(questGames[next.game]);
+        else if(story)questPicture(q.story.pic,q.story.id);
+        else gamePicture(game);
+        card.classList.toggle("done",done);
+        document.getElementById("questLabel").textContent=done?"Tomorrow":"Today's adventure";
+        document.getElementById("questSummary").classList.toggle("done",done);
+        document.getElementById("questSummary").hidden=false;
+        var chip=document.getElementById("questChip");chip.textContent=story?"Day "+q.day:"";chip.hidden=!story||done;
+        document.getElementById("questLock").hidden=done||open;
+        var title=done?(story?"Day "+q.day+" done!":"All done for today!"):(story?q.story.title:game.name);
+        // FOUND1: tomorrow's story brings a new game, still a dark shape here
+        // (only to a child who can open it: a story shown locked tomorrow
+        // brings no game, so the line promises only the day)
+        var tmr=false;try{tmr=!!(S.storyOpen&&S.storyOpen());}catch(e){tmr=false;}
+        var line=done?(next&&next.kind==="story"?"Come back tomorrow for Day "+next.day+(tmr?" and a new game!":"!"):"Come back tomorrow for a new adventure!"):q.line;
+        document.getElementById("questTitle").textContent=title;
+        document.getElementById("questLine").textContent=line;
+        document.getElementById("questGo").hidden=done;
+        document.getElementById("questDone").hidden=!done;
+        document.getElementById("questActionLabel").textContent=!open?"Unlock adventure":q.seen?"Keep going":"Start today";
+        card.setAttribute("aria-label",done?title+" "+line:"Today's adventure"+(story?", day "+q.day+": "+title+".":": "+title+".")+" "+line+(open?" Play.":" Premium."));
+        card.setAttribute("aria-disabled",done?"true":"false");
+        card.onclick=function(){if(done)return;launch(game);};
+        card.hidden=false;
+      }
+      try{paintQuest();}catch(e){var qc=document.getElementById("questCard");if(qc)qc.hidden=true;}
+      // FOUND1: Your games, the games this child's finished stories left
+      // behind, newest first (the one found today says "New!"). Read only;
+      // shown only where the story's rule opens them (storyReplay asks it
+      // again at the tap), so a family without the story sees no row, never
+      // a grey tile that would open the price in front of a child.
+      function paintFound(){
+        var row=document.getElementById("foundRow"),list=document.getElementById("foundList");if(!row||!list)return;
+        var found=[];try{found=(S.storyFound&&S.storyReplay)?S.storyFound().filter(function(d){return S.storyReplay(d.id);}):[];}catch(e){found=[];}
+        list.textContent="";
+        if(!found.length){row.hidden=true;return;}
+        var q=null;try{q=S.questToday?S.questToday():null;}catch(e){q=null;}
+        var fresh=(q&&q.kind==="story"&&q.state==="done"&&q.story)?q.story.id:"";
+        found.slice().reverse().forEach(function(d){
+          var b=node("button","found-tile");b.type="button";b.setAttribute("data-story",d.id);
+          var pic=node("span","found-pic");pic.setAttribute("aria-hidden","true");pic.setAttribute("data-story",d.id);
+          var im=node("img");im.alt="";im.decoding="async";
+          im.onerror=function(){im.onerror=null;pic.classList.add("fallback");im.src="/assets/crafted/echo-welcome.webp";};
+          im.src=d.pic;pic.appendChild(im);
+          if(d.id===fresh){pic.appendChild(node("span","found-new","New!"));b.classList.add("fresh");}
+          b.appendChild(pic);b.appendChild(node("span","found-name",d.name));
+          b.setAttribute("aria-label",d.name+"."+(d.id===fresh?" New!":"")+" Play again.");
+          b.onclick=function(){if(!(S.storyReplay&&S.storyReplay(d.id))){paintFound();return;}clearMessage();tapChime();location.href=d.again;};
+          list.appendChild(b);
+        });
+        row.hidden=false;
+      }
+      try{paintFound();}catch(e){var fr=document.getElementById("foundRow");if(fr)fr.hidden=true;}
       var lockedKey=new URLSearchParams(location.search).get("locked");
       library.groups.forEach(function(group){group.games.forEach(function(game){if(game.key===lockedKey&&!access(game).allowed)showLocked(game);});});
+      // BOOKS: the shelf opens for every family (30 Sep 2026). Without
+      // Premium, the tag describes books on the chosen sound's shelf, never
+      // a free book hidden by that choice. Home's
+      // Books door is the one way to it (the Arcade's Books card went on 23
+      // Oct 2026).
+      var homeBooksBtn=document.getElementById("homeBooksBtn");
+      function paintBooksTags(){
+        // only the free books that are free on this phone (trial first: none
+        // for a family without the free version)
+        var freeBooks=S.freeBooksOnShelf?S.freeBooksOnShelf():0;
+        var booksOpen=S.booksOpen?S.booksOpen():!S.gated("books");
+        var tag=S.isFree()?"Free":booksOpen?"Included":freeBooks?(freeBooks===1?"1 free book":freeBooks+" free books"):"Premium";
+        document.getElementById("homeBooksTag").textContent=tag;
+      }
+      paintBooksTags();
+      // The current sound is a read-only landmark. Family choices remain in
+      // Grown-ups Settings; an assigned sound stays the therapist's.
+      var soundWrap=document.getElementById("homeSoundWrap");
+      var soundOwner=S.kkey?S.kkey("sona.profile.v1"):"";
+      function paintHomeSound(){
+        var current=S.targetSound?S.targetSound():"",label=S.soundLabel?S.soundLabel(current):current;
+        var assigned=!!(S.homeworkSounds&&S.homeworkSounds().length);
+        document.getElementById("homeSoundValue").textContent=label;
+        document.getElementById("homeBooksSound").textContent=current?label+" sound stories":"Sound stories";
+        soundWrap.hidden=!current;soundWrap.classList.toggle("sound-long",label.length>3);
+        soundWrap.setAttribute("aria-label","Current sound: "+label+(assigned?". From your speech therapist.":". Sounds can be changed in Grown-ups Settings."));
+      }
+      paintHomeSound();
+      function openBooks(){clearMessage();location.href="/library.html";}
+      homeBooksBtn.onclick=openBooks;
+      // ── the two views ──
+      // Home on a plain /today.html (every game's exit, the price's X, setup's
+      // end); the Arcade on ?view=arcade, and on ?locked= (a typed address to
+      // a grey game lands on its shelf with its note). The Arcade door pushes
+      // its address and switches at once (everything is already built); "‹
+      // Home" goes back if it was pushed, else replaces the address. Back and
+      // Forward read the address again. Nothing here writes or sends.
+      function viewOf(){return /[?&](?:view=arcade(?:[&#]|$)|locked=)/.test(location.search)?"arcade":"home";}
+      function setView(v){
+        app.setAttribute("data-view",v);document.body.classList.toggle("playmap-home",v==="home");document.title=v==="arcade"?"Sona — Play library":"Sona";
+      }
+      function showView(v,focus){
+        clearMessage();setView(v);
+        try{window.scrollTo(0,0);}catch(e){}
+        fitHome();
+        if(focus){var h=document.getElementById(v==="arcade"?"arcadeTitle":"homeTitle");try{h.focus({preventScroll:true});}catch(e){}}
+      }
+      var backFocus=false;
+      // A double tap on the Arcade door or "‹ Home" switches the view on the
+      // first tap, and the second landed on whatever the new view put under
+      // the finger: a game in Today's picks the child never picked, or the
+      // plan screen for a locked one. So for 500 ms after a switch (the level
+      // sheet's settle) no tap on the page does anything; the switching tap
+      // itself passes, because it is seen before its handler stamps viewAt.
+      var viewAt=-1e9;
+      app.addEventListener("click",function(e){if(Date.now()-viewAt<500){e.preventDefault();e.stopPropagation();}},true);
+      // Each view opens at its top (showView). Since HOMECLIP1 a child often
+      // scrolls down to the doors first, and on Back the browser put that
+      // scroll back AFTER showView's, so Home came back halfway down with its
+      // heading, which takes the focus, out of sight. These two steps are
+      // the page's own, so the page keeps their scroll (a "manual" mode goes
+      // with both history entries) while the page is in front; leaving it (a
+      // game, the price) gives the entry back to the browser, so Back from
+      // that game opens the Arcade where the child was, as before.
+      document.getElementById("arcadeBtn").onclick=function(){
+        viewAt=Date.now();
+        try{history.scrollRestoration="manual";}catch(e){}
+        try{history.pushState({view:"arcade"},"","/today.html?view=arcade");}catch(e){}
+        showView("arcade",true);
+      };
+      document.getElementById("homeBack").onclick=function(){
+        viewAt=Date.now();
+        var st=null;try{st=history.state;}catch(e){}
+        if(st&&st.view==="arcade"){backFocus=true;history.back();return;}
+        try{history.replaceState(null,"","/today.html");}catch(e){}
+        showView("home",true);
+      };
+      window.addEventListener("popstate",function(){var f=backFocus;backFocus=false;showView(viewOf(),f);});
+      window.addEventListener("pagehide",function(){try{history.scrollRestoration="auto";}catch(e){}});
+      // Compress the picture and gaps first. Lock page movement
+      // only while the complete Home fits; a shorter or enlarged screen
+      // keeps natural scrolling, and the Arcade always releases the lock.
+      var FIT_STEPS=6;
+      function fitHome(){
+        if(app.getAttribute("data-view")!=="home"){document.documentElement.classList.remove("home-flat");return;}
+        var i;for(i=1;i<=FIT_STEPS;i++)app.classList.remove("fit"+i);
+        function overflow(){
+          // On tablets Practice sits below the doors, so measure every
+          // visible block rather than assuming the doors are the last row.
+          var bottom=0,parts=[document.getElementById("questCard"),document.querySelector(".practice-band"),document.getElementById("homeDoors"),document.getElementById("foundRow")];
+          parts.forEach(function(part){if(part&&!part.hidden)bottom=Math.max(bottom,part.getBoundingClientRect().bottom);});
+          var pad=parseFloat(getComputedStyle(app).paddingBottom)||0;
+          return bottom+pad+(window.pageYOffset||0)-window.innerHeight-1;
+        }
+        for(i=1;i<=FIT_STEPS&&overflow()>0;i++)app.classList.add("fit"+i);
+        var flat=overflow()<=0;
+        document.documentElement.classList.toggle("home-flat",flat);
+        if(flat)try{window.scrollTo(0,0);}catch(e){}
+      }
+      fitHome();
+      // The founding banner is drawn by the next script after this one.
+      setTimeout(fitHome,0);
+      // A height-only resize fits the complete Home again too.
+      window.addEventListener("resize",fitHome);
+      try{if(document.fonts&&document.fonts.ready)document.fonts.ready.then(fitHome);}catch(e){}
+      try{new MutationObserver(fitHome).observe(document.getElementById("trialBanner"),{attributes:true,attributeFilter:["style","hidden"],childList:true,subtree:true});}catch(e){}
       // A cached library can return after a trial expires or an adult changes
       // preview state. Re-evaluate its labels without reviving stale access.
       window.addEventListener("pageshow",function(event){if(event.persisted)location.reload();});
-      S.paintSticker(document.getElementById("libraryEcho"),"p-echo-idle","sky");
-      var echo=document.querySelector("#libraryEcho svg");if(echo)echo.setAttribute("preserveAspectRatio","xMidYMid meet");
-      S.paintSticker(document.getElementById("libraryBooksArt"),"pt-book","sky");
+      // An iPhone keeps Home alive behind a game; when it comes back to the
+      // front the tags are read again, like today's reps in the corner.
+      document.addEventListener("visibilitychange",function(){
+        if(document.hidden)return;
+        if(S.kkey&&S.kkey("sona.profile.v1")!==soundOwner){location.reload();return;}
+        if(library.picks&&S.localDay&&S.localDay()!==library.picks.day){location.reload();return;}
+        paintBests();
+        try{paintQuest();}catch(e){}
+        try{paintHomeSound();}catch(e){}
+        try{paintFound();}catch(e){}
+        fitHome();
+      });
+      // …and at midnight with Home still in front (an iPad left on it all
+      // night, a child still on it at twelve): since CAL1 the day's story
+      // moves on then, played or not, so Home reads the new day as it does
+      // when it comes back to the front, and never shows yesterday's card
+      // (whose tap would open today's story). One timer, to just after the
+      // next local midnight; a page in the background is the handler's above.
+      var homeDay=S.localDay?S.localDay():"";
+      (function nextMidnight(){
+        var now=new Date(),then=new Date(now.getFullYear(),now.getMonth(),now.getDate()+1,0,0,2);
+        setTimeout(function(){
+          if(!document.hidden&&S.localDay&&S.localDay()!==homeDay){location.reload();return;}
+          nextMidnight();
+        },Math.max(1000,then.getTime()-now.getTime()));
+      })();
+      var echo=node("img");echo.src="/assets/crafted/echo-welcome.webp";echo.alt="";echo.width=84;echo.height=96;document.getElementById("libraryEcho").appendChild(echo);
+      // the crafted pictures (1 Oct 2026); the old sticker only if the books'
+      // can't load, and Echo cheering until the Arcade's own picture lands
+      (function(host){var im=new Image();im.className="crafted-card-image";im.alt="";im.decoding="async";im.onerror=function(){host.innerHTML="";S.paintSticker(host,"pt-book","sky");};im.src="/assets/crafted/home-books.webp";host.appendChild(im);})(document.getElementById("homeBooksPic"));
+      (function(host){var im=new Image();im.className="crafted-card-image";im.alt="";im.decoding="async";im.onerror=function(){im.onerror=null;host.classList.add("fallback");im.src="/assets/crafted/echo-cheer.webp";};im.src="/assets/crafted/home-arcade.webp";host.appendChild(im);})(document.getElementById("arcadePic"));
       // Cancel any previous spoken turn without changing the game voice preference.
       if(S.speakNow)S.speakNow("");
     })();
@@ -266,9 +740,7 @@
     var P=(S&&S.getProfile)?S.getProfile():{};
     function sfx(n){try{if(S&&S.sfx&&S.sfx[n])S.sfx[n]();}catch(e){}}
     function toast(t){var el=$("toast");el.textContent=t;el.classList.add("show");clearTimeout(toast._t);toast._t=setTimeout(function(){el.classList.remove("show");},1800);}
-    if(S&&S.buddyMarkup)$("buddyBtn").innerHTML=S.buddyMarkup(P.character||"fox",36);
-    // Bank coins already earned by honest practice, once; browsing earns nothing.
-    try{if(S&&S.mintCoins)S.mintCoins();}catch(e){}
+    if(S&&S.buddyMarkup)$("buddyBtn").innerHTML=SonaCraftedBuddies.markup(P.character||"fox",36);
     try{if(S&&S.repsBeacon)S.repsBeacon();}catch(e){}
     try{if(S&&S.syncHomework)S.syncHomework();}catch(e){}
     try{if(S&&S.iapRefresh)S.iapRefresh();}catch(e){}
@@ -280,34 +752,73 @@
         S.caseRefresh().then(function(){if(S.premium()!==wasPremium)location.reload();},function(){});
       }
     }catch(e){}
-    // ── parent gate: PIN if the parent set one, else four spelled-out digits ──
+    // ── parent gate: four spelled-out digits, for every family ──
     // It used to be arithmetic (3-8 × 3-8). Two problems: a seven-year-old who
     // knows their times tables walks straight through it, and there are only
     // about thirty plausible products to guess. Four number WORDS have to be
     // read to be answered — which is precisely what the child this gate exists
     // to stop cannot do — and there are ten thousand of them.
+    // The optional parent code is gone (Travis, 30 Sep 2026: "get rid of the
+    // parent code"); a code saved before then is simply never asked for. The
+    // words stay: purchases sit behind this door, and Apple wants a grown-up
+    // check before a buy screen.
     var NUMWORD=["ZERO","ONE","TWO","THREE","FOUR","FIVE","SIX","SEVEN","EIGHT","NINE"];
-    var gateAns="", gateNeed="", gateMode="math", gateNext=null;
+    var gateAns="", gateNeed="", gateNext=null;
+    // Where the right code goes when nothing more particular asked: straight
+    // to Settings (Travis, 30 Sep 2026: "go straight to settings not have them
+    // choose what they wanna go to"). It used to open a Grown-ups pop-up of
+    // three doors, and Settings' tab bar already is those three doors.
+    function toSettings(){ location.href="/settings.html"; }
     function openGate(next){
-      gateNext=next||null; // pass a callback to run instead of the parent sheet
-      var pin=(P.parentPin||"").trim();
+      gateNext=next||toSettings; // a callback sends the grown-up somewhere else
       gateAns="";
-      var q=$("gateQ");
-      if(pin){
-        gateMode="pin"; gateNeed=pin; q.className=""; q.textContent="🔒";
-        $("gateHint").textContent="Enter your parent code";
-      } else {
-        gateMode="words"; var d=[];
-        for(var z=0;z<4;z++) d.push((Math.random()*10)|0);
-        gateNeed=d.join("");
-        q.className="words";
-        q.textContent=d.map(function(n){return NUMWORD[n];}).join(" · ");
-        $("gateHint").textContent="Tap these numbers in order (set a code in Settings)";
-      }
+      var d=[];
+      for(var z=0;z<4;z++) d.push((Math.random()*10)|0);
+      gateNeed=d.join("");
+      $("gateQ").textContent=d.map(function(n){return NUMWORD[n];}).join(" · ");
+      $("gateHint").textContent="Tap these numbers in order";
       $("gateIn").textContent="";
       $("gateOvl").classList.add("show");
     }
-    $("parentBtn").onclick=function(){ sfx("tap"); openGate(); };
+    // SILENT (Travis, 5 Nov 2026: "when I click on grownups ... it'll make a
+    // sound ... and when I enter the code, it'll make a sound"). The door to
+    // the grown-ups' pages is for grown-ups: no tap chime, no success chime.
+    $("parentBtn").onclick=function(){ openGate(); };
+    // THE GIFT BUTTON (FOUND1, 23 Oct 2026; Travis: "simplify the homepage",
+    // and "make the executive decision"). It took the place of two things:
+    // the reps count in this corner (REPWEEKS1) and the Trophy Road card
+    // under the doors (HOME3). A ring fills as today's reps climb toward the
+    // daily goal, which is what opens today's chest, and a teal dot shows
+    // when the chest is ready or a gift waits on the road. A tap goes to the
+    // road page, which opens chests, settles months and sends every event.
+    // The count itself is for grown-ups now: Progress (behind the check)
+    // has the week's tries, and the ring's spoken label says today's.
+    // It only reads (Sona.dayGoal, Sona.roadState), on load and whenever
+    // Home comes back to the front, so a new day empties the ring. An older
+    // cached sona.js with no daily goal shows the ring empty.
+    // repNum builds the thousands comma by hand: progtest scans this page's
+    // source for a dollar sign before a digit, which a regex replace needs.
+    function repNum(n){n=String(Math.max(0,Math.floor(Number(n)||0)));var o="";while(n.length>3){o=","+n.slice(-3)+o;n=n.slice(0,-3);}return n+o;}
+    function paintGift(){
+      var btn=$("giftBtn");if(!btn)return;
+      var g=null,st=null;
+      try{if(S&&S.dayGoal)g=S.dayGoal();}catch(e){g=null;}
+      try{if(S&&S.trophyState&&S.roadState)st=S.roadState();}catch(e){st=null;}
+      var f=(g&&g.goal>0)?Math.max(0,Math.min(1,g.n/g.goal)):0;if(g&&g.done)f=1;
+      $("giftRing").style.setProperty("--fill",String(Math.round(f*100)));
+      btn.classList.toggle("full",f>=1);
+      var chest=!!(st&&st.chest&&st.chest.ready),wait=st?Math.max(0,st.waiting|0):0;
+      $("giftDot").hidden=!(chest||wait>0);
+      var label="Trophy Road.";
+      if(g)label+=" "+repNum(g.n)+" of "+repNum(g.goal)+" reps today."+(g.done?" Goal met.":"");
+      if(chest)label+=" Your chest is ready.";else if(wait>0)label+=wait===1?" A gift is waiting.":" "+wait+" gifts are waiting.";
+      btn.setAttribute("aria-label",label);
+    }
+    // a button that can't paint keeps its link, and never stops the rest of Home
+    function paintGiftSafe(){ try{ paintGift(); }catch(e){} }
+    paintGiftSafe();
+    $("giftBtn").addEventListener("click",function(){ sfx("tap"); });
+    document.addEventListener("visibilitychange",function(){ if(!document.hidden) paintGiftSafe(); });
     (function(){
       var pad=$("pad"); var keys=[1,2,3,4,5,6,7,8,9,"⌫",0,"✓"];
       keys.forEach(function(kk){
@@ -315,12 +826,11 @@
         b.onclick=function(){
           if(kk==="⌫"){ gateAns=gateAns.slice(0,-1); }
           else if(kk==="✓"){
-            if(gateAns===gateNeed){ try{ if(S&&S.gateVerify)S.gateVerify(); }catch(e){} $("gateOvl").classList.remove("show"); sfx("correct"); if(gateNext){ var fn=gateNext; gateNext=null; fn(); } else { paintWeek(); paintWins(); paintPlan(); $("sheetOvl").classList.add("show"); } }
+            if(gateAns===gateNeed){ try{ if(S&&S.gateVerify)S.gateVerify(); }catch(e){} $("gateOvl").classList.remove("show"); var fn=gateNext||toSettings; gateNext=null; fn(); }
             else { var m=$("gateModal"); m.classList.remove("shake"); void m.offsetWidth; m.classList.add("shake"); gateAns=""; }
           }
-          else { if(gateAns.length<6) gateAns+=String(kk); }
-          $("gateIn").textContent=gateAns.replace(/./g, gateMode==="pin"?"•":"$&");
-          if(gateMode==="pin"){ $("gateIn").textContent="•".repeat(gateAns.length); }
+          else { if(gateAns.length<gateNeed.length) gateAns+=String(kk); }
+          $("gateIn").textContent=gateAns;
         };
         pad.appendChild(b);
       });
@@ -331,151 +841,27 @@
     // Without this the parent solves a number puzzle and lands on the kid's
     // home screen, with no sign of the plan screen (or progress page) that
     // bounced them. Sona.gateDest re-checks the allowlist HERE too: this reads
-    // a URL, and a URL is never trusted because it arrived.
+    // a URL, and a URL is never trusted because it arrived. A bounce with no
+    // allowed destination goes to Settings, as the Grown-ups button does;
+    // replace(), so a back-swipe from there doesn't reopen this gate.
     try{
       if(/[?&]gate=1/.test(location.search)){
         var _raw=""; try{ _raw=decodeURIComponent((location.search.match(/[?&]to=([^&]*)/)||[])[1]||""); }catch(e){}
         var _to=""; try{ _to=(S&&S.gateDest)?S.gateDest(_raw):""; }catch(e){}
-        openGate(_to?function(){ location.replace(_to); }:null);
+        openGate(function(){ location.replace(_to||"/settings.html"); });
       }
     }catch(e){}
-    // Mom's week — her goal (3/5/7 days), her streak. Never shown to the kid.
-    function paintWeek(){
-      try{
-        var w=S.momWeek(), L=["M","T","W","T","F","S","S"], dots=$("wkDots"); dots.innerHTML="";
-        for(var i=0;i<7;i++){
-          var on=w.days[i], isToday=i===w.todayIx;
-          var d=document.createElement("div");
-          d.style.cssText="width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Baloo 2';font-weight:800;font-size:12px;"
-            +(on?"background:#58cc02;color:#fff;box-shadow:0 2px 0 #46a302;":"background:#fff;color:var(--label);box-shadow:inset 0 0 0 2px var(--track);")
-            +(isToday&&!on?"box-shadow:inset 0 0 0 2px var(--orange);color:var(--orange-d);":"");
-          d.textContent=on?"✓":L[i];
-          dots.appendChild(d);
-        }
-        var left=w.goal-w.done;
-        $("wkMsg").textContent = w.hit ? ("Goal met — "+Math.min(w.done,w.goal)+" of "+w.goal+" days. This week is won!")
-          : (w.practicedToday? "Practiced today ✓ — " : "")+(left===1? "1 more day and the week is won!" : left+" more days to hit your "+w.goal+"-day goal.");
-        $("wkStreak").innerHTML = w.weekStreak>0 ? ((S.icon?S.icon("flame",14):"")+" "+w.weekStreak+"-week streak") : "";
-      }catch(e){}
-    }
-    // weekly wins: reps + accuracy trend, plus a shareable card (mom's choice)
-    function paintWins(){
-      try{
-        var w=S.weekWins(); var el=$("wkWins"); if(!el)return; var bits=[];
-        if(w.reps>0) bits.push(w.reps+(w.reps===1?" sound":" sounds")+" practiced");
-        if(w.acc!=null && w.accPrev!=null && w.acc!==w.accPrev) bits.push(w.label+" sound "+w.accPrev+"% \u2192 "+w.acc+"%");
-        else if(w.acc!=null) bits.push(w.label+" sound at "+w.acc+"%");
-        el.textContent=bits.join(" \u00b7 ");
-        $("shareWeek").style.display=(w.reps>0)?"block":"none";
-      }catch(e){}
-    }
-    function shareCard(){
-      try{
-        var w=S.weekWins(), name=(P.childName||"We");
-        var cv=document.createElement("canvas"); cv.width=1080; cv.height=1350; var c=cv.getContext("2d");
-        c.fillStyle="#fff6e9"; c.fillRect(0,0,1080,1350);
-        c.fillStyle="#ffffff"; c.beginPath(); c.roundRect(70,120,940,1110,48); c.fill();
-        c.fillStyle="#ef6f23"; c.font="800 44px 'Baloo 2', sans-serif"; c.textAlign="center";
-        c.fillText("SPEECH WINS THIS WEEK",540,230);
-        c.fillStyle="#4a2c14"; c.font="800 76px 'Baloo 2', sans-serif";
-        c.fillText(name+" practiced",540,360);
-        c.fillStyle="#ff8a3d"; c.font="800 150px 'Baloo 2', sans-serif";
-        c.fillText(w.week.done+(w.week.done===1?" day":" days"),540,540);
-        var L=["M","T","W","T","F","S","S"];
-        for(var i=0;i<7;i++){ var x=250+i*97, y=640;
-          c.beginPath(); c.arc(x,y,36,0,7);
-          c.fillStyle=w.week.days[i]?"#58cc02":"#f0e4d2"; c.fill();
-          c.fillStyle=w.week.days[i]?"#fff":"#c9a878"; c.font="800 34px 'Baloo 2', sans-serif"; c.fillText(w.week.days[i]?"\u2713":L[i],x,y+12);
-        }
-        c.fillStyle="#4a2c14"; c.font="800 58px 'Baloo 2', sans-serif";
-        c.fillText(w.reps>0?(w.reps+" sounds, honestly scored"):"Real practice, honestly scored",540,790);
-        if(w.acc!=null&&w.accPrev!=null&&w.acc!==w.accPrev){
-          c.fillStyle="#58cc02"; c.font="800 88px 'Baloo 2', sans-serif";
-          c.fillText(w.label+" sound: "+w.accPrev+"% \u2192 "+w.acc+"%",540,930);
-        } else if(w.acc!=null){
-          c.fillStyle="#58cc02"; c.font="800 88px 'Baloo 2', sans-serif";
-          c.fillText(w.label+" sound: "+w.acc+"%",540,930);
-        }
-        c.fillStyle="#b08d63"; c.font="800 42px 'Baloo 2', sans-serif";
-        c.fillText("Practicing with Echo on Sona",540,1080);
-        c.fillStyle="#ef6f23"; c.font="800 46px 'Baloo 2', sans-serif";
-        c.fillText("speaksona.com",540,1160);
-        cv.toBlob(function(blob){
-          if(!blob)return;
-          var file=new File([blob],"sona-week.png",{type:"image/png"});
-          if(navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){
-            navigator.share({files:[file],title:"Sona",text:name+"'s speech practice this week"}).catch(function(){});
-          } else {
-            var a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="sona-week.png"; a.click();
-            toast("Saved! Share it anywhere");
-          }
-        },"image/png");
-      }catch(e){}
-    }
-    $("shareWeek").onclick=function(){ sfx("tap"); shareCard(); };
-    paintWins();
-    paintWeek();
     try{ document.querySelectorAll(".pic-trend").forEach(function(n){ n.innerHTML=S.icon("trend",18); }); document.querySelectorAll(".pic-gear").forEach(function(n){ n.innerHTML=S.icon("gear",18); }); document.querySelectorAll("[data-ic]").forEach(function(n){ var m=S.icon(n.dataset.ic,18); if(m) n.innerHTML=m; }); }catch(e){}
-    $("goProgress").onclick=function(){ location.href="/progress.html"; };
-    $("goSettings").onclick=function(){ location.href="/settings.html"; };
-    $("sheetClose").onclick=function(){ $("sheetOvl").classList.remove("show"); };
 
-    // ── This-week card (parent corner): the week narrated from real data.
-    function paintPlan(){
-      try{
-        var story=(S.soundStory&&S.soundStory())||[];
-        if(!story.length){ $("planCard").style.display="none"; return; }
-        $("planCard").style.display="block";
-        $("storyBits").innerHTML=story.map(function(b){ return "• "+b; }).join("<br/>");
-      }catch(e){}
-    }
-
-    // ── plan status (web only; the native app has no payments) ──
-    // Hard rule: the kid home shows zero prices, trials, or countdowns.
-    // Trial status lives in the parent corner (#planNote), behind the gate.
-    // Founding families keep a kid-safe banner that opens the feedback pulse.
+    // ── founding banner (web only) ──
+    // Hard rule: the kid home shows zero prices, trials, or countdowns. The
+    // plan and any trial are said in Settings → Account, behind the gate (the
+    // Grown-ups pop-up's plan note moved there on 30 Sep 2026, with the pop-up
+    // gone). Founding families keep a kid-safe banner that opens the feedback
+    // pulse.
     (function(){ if(!S)return; if(S.isNativeApp&&S.isNativeApp())return;
-      var b=$("trialBanner"),m=$("trialMsg"),note=$("planNote");
-      if(P.earlyAdopter){
-        if(b&&m){ m.innerHTML="Founding family — you're building Sona with us. <u>Tap to share an idea!</u>"; b.removeAttribute("href"); b.style.cursor="pointer"; b.onclick=function(ev){ if(ev&&ev.preventDefault)ev.preventDefault(); showPulse(true); }; b.style.display="flex"; }
-        if(note){ note.textContent="Your family has founding access while we build Sona together — thank you."; note.style.display="block"; }
-        return;
-      }
-      if(!note)return;
-      // Free mode: no trial, no plan, nothing to say in the parent corner. The
-      // trial key still sits on every device that met the paywall before the
-      // flip, and without this they'd read "Your free trial has ended — see
-      // plans" inside an app that is free.
-      if(S.isFree&&S.isFree())return;
-      if(S.isSubscribed&&S.isSubscribed())return;
-      // Premium through a clinician's caseload plan: say where it came from,
-      // so a parent who never bought anything is not left wondering why every
-      // game is open — or surprised if it closes when the plan ends.
-      if(S.caseCovered&&S.caseCovered()){
-        note.textContent="Sona Premium is included through your child's speech therapist — every available game is open.";
-        note.style.display="block"; return;
-      }
-      if(S.premium&&S.premium())return;
-      // Opening the home screen used to START a trial (ensureTrial), so the
-      // clock began because a parent looked at the app. It reports one now,
-      // and only if one already exists — an existing family's unexpired days
-      // are honored to the end, and nobody new is issued any.
-      var link=' <a href="/subscribe.html" style="color:var(--orange-d);font-weight:800;">';
-      // The family is on the free version and has seen what Sona does. This is
-      // the ONE place that says what that means — the kid screen never will —
-      // and it is where a parent who never saw the hand-off (a window that
-      // closed, a run never finished) learns what stays free and where Premium
-      // is. It asked gated("practice") until 24 Sep 2026; practice is never
-      // gated now, so the question is the one that is actually true: has this
-      // family got every game?
-      var sessionOver=false; try{ sessionOver=!!(S.demoDone&&S.demoDone()&&S.premium&&!S.premium()); }catch(e){}
-      var _tActive=!!(S.trialActive&&S.trialActive()), _tExpired=!!(S.trialExpired&&S.trialExpired());
-      if(sessionOver&&!_tActive&&!_tExpired){
-        note.innerHTML='Free games stay free. Explore more with Sona Premium. <a href="/premium.html" style="color:var(--orange-d);font-weight:800;">See Premium →</a>';
-        note.style.display="block"; return;
-      }
-      if(_tActive){ var dd=S.trialDaysLeft?S.trialDaysLeft():7; note.innerHTML="Your free trial: "+dd+" day"+(dd===1?"":"s")+" left."+link+"See plans →</a>"; note.style.display="block"; }
-      else if(S.trialExpired&&S.trialExpired()){ note.innerHTML="Your free trial has ended. Free games stay free."+link+"See plans →</a>"; note.style.display="block"; }
+      var b=$("trialBanner"),m=$("trialMsg");
+      if(P.earlyAdopter&&b&&m){ m.textContent="Founding family: you're building Sona with us!"; b.removeAttribute("href"); b.style.cursor="pointer"; b.onclick=function(ev){ if(ev&&ev.preventDefault)ev.preventDefault(); showPulse(true); }; b.style.display="flex"; }
     })();
 
     // ── beta pulse: chip-first (a tap beats a blank box — the Mobbin study's
@@ -491,22 +877,20 @@
       var st=pulseState();
       var w=$("pulseOpts");
       var picked={};
-      w.innerHTML='<div id="pulseChips" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;"></div>'
+      w.innerHTML='<div id="pulseChips" style="display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:14px;"></div>'
         +'<div id="pulseMore" style="display:none;">'
         +'<textarea id="pulseText" rows="2" placeholder="Anything else? (optional)" '
-        +'style="width:100%;border:2px solid var(--track);border-radius:14px;padding:12px;font-family:Nunito,sans-serif;font-weight:700;font-size:14px;color:var(--ink);resize:none;margin-top:10px;"></textarea>'
-        +'<button id="pulseSend" class="sheetBtn" style="justify-content:center;background:linear-gradient(180deg,#ffa05a,#ff8a3d);color:#fff;box-shadow:0 4px 0 var(--orange-d);">Send it</button>'
+        +'style="width:100%;border:1.5px solid var(--cream-line);background:#fff;border-radius:14px;padding:12px;font-family:Nunito,sans-serif;font-weight:700;font-size:14px;color:var(--ink);resize:none;margin-top:10px;"></textarea>'
+        +'<button id="pulseSend" class="sheetBtn" style="justify-content:center;border-radius:999px;background:linear-gradient(180deg,var(--act-hi),var(--act));color:#fff;text-shadow:0 1px 0 var(--act-d);box-shadow:0 4px 0 var(--act-d);">Send it</button>'
         +'</div>';
       var row=$("pulseChips");
       PULSE_CHIPS.forEach(function(label){
         var b=document.createElement("button");
         b.type="button"; b.textContent=label; b.className="pulseChip";
-        b.style.cssText="border:2px solid var(--track);border-radius:999px;padding:9px 14px;background:#fff;color:var(--ink);font-family:'Baloo 2';font-weight:800;font-size:13px;cursor:pointer;";
+        b.style.cssText="border:1.5px solid var(--cream-line);border-radius:999px;padding:9px 14px;background:var(--cream);color:var(--cream-ink);font-family:'Baloo 2';font-weight:800;font-size:13px;cursor:pointer;box-shadow:0 3px 0 var(--cream-line);";
         b.onclick=function(){
           picked[label]=!picked[label];
-          b.style.background=picked[label]?"linear-gradient(180deg,#ffa05a,#ff8a3d)":"#fff";
-          b.style.color=picked[label]?"#fff":"var(--ink)";
-          b.style.borderColor=picked[label]?"var(--orange-d)":"var(--track)";
+          b.classList.toggle("on",!!picked[label]);
           var any=PULSE_CHIPS.some(function(k){ return picked[k]; });
           $("pulseMore").style.display=any?"block":"none";
         };

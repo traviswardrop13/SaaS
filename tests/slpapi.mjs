@@ -23,7 +23,7 @@
 // process only.
 import { spawnSync } from "child_process";
 import { fileURLToPath, pathToFileURL } from "url";
-import { readFileSync, existsSync } from "fs";
+import { readFileSync, existsSync, readdirSync } from "fs";
 import { register } from "node:module";
 import path from "path";
 
@@ -319,12 +319,19 @@ if (A) {
   // clinician locked out for good, and a network error to explain it.
   const gate = req.indexOf("if (!authSecretOk())");
   ok("the sign-up route checks the signing secret at all", gate > 0);
-  ok("…before it writes the account, mints a token or pings the CRM",
+  // Since 13 Nov 2026 this route writes no account at all (the emailed
+  // link's verify route makes it); it still mints a token and may ping the CRM.
+  ok("…before it mints a token or pings the CRM, and it never writes an account",
     gate > 0 &&
     gate < req.indexOf('kvCmd(["SET", "slptok:') &&
-    gate < req.indexOf('kvCmd(["SET", "slpacct:') &&
-    gate < req.indexOf("tellCrm(origin, email, String("),
+    gate < req.indexOf("tellCrm(origin, email, String(") &&
+    req.indexOf('kvCmd(["SET", "slpacct:') < 0,
     "a half-created account is a permanent lockout: the retry can never reach the new-account branch again");
+  // Every call emails someone: one address may not loop it over a thousand
+  // inboxes (audit B2, 13 Nov 2026). An hour at most, as the privacy page says.
+  const rl = req.match(/rateLimit\(req, \{ key: "slpauth", limit: (\d+), windowSec: (\d+)/);
+  ok("the sign-up route limits each address (IP) before it mints a token or sends a link",
+    !!rl && Number(rl[1]) <= 30 && Number(rl[2]) <= 3600 && req.indexOf('rateLimit(req, { key: "slpauth"') < req.indexOf('kvCmd(["SET", "slptok:'));
   ok("…and says so in words a clinician can act on, not a stack trace",
     /Sign-in isn't switched on for this deployment yet/.test(req) && /hello@speaksona.com/.test(req));
 
@@ -333,19 +340,21 @@ if (A) {
   ok("GET on the sign-up route reports whether the funnel is wired",
     /export async function GET()/.test(req) && /ready: signing && store/.test(req));
   ok("…as presence booleans only, never the values themselves",
-    /Boolean\(process\.env\.RESEND_API_KEY\)/.test(req) &&
+    /email: mailConfigured\(\)/.test(req) &&
     /Boolean\(process\.env\.LEAD_WEBHOOK_URL\)/.test(req) &&
     !/process\.env\.SLP_AUTH_SECRET/.test((req.split("export async function POST")[0].split("export async function GET")[1]) || ""),
     "a health check that prints a secret is a leak wearing a helpful hat");
   // GoHighLevel was deleted and its webhook goes with it (24 Sep 2026). If the
   // list flag read the webhook alone, following the setup steps would turn it
-  // false on the day Kit starts taking every sign-up.
-  ok("…and the email-list flag counts Kit, not only the retired webhook",
-    /crm: kitConfigured\(\) \|\| Boolean\(process\.env\.LEAD_WEBHOOK_URL\)/.test(req) &&
-    /kit: kitConfigured\(\)/.test(req) && /import \{ kitConfigured \} from "@\/lib\/kit"/.test(req));
+  // false on the day the list starts taking every sign-up. Since 16 Oct 2026
+  // the list is Resend's contacts (Kit before it).
+  ok("…and the email-list flag counts Resend's contacts, not only the retired webhook",
+    /crm: contactsConfigured\(\) \|\| Boolean\(process\.env\.LEAD_WEBHOOK_URL\)/.test(req) &&
+    /list: contactsConfigured\(\)/.test(req) && /import \{ contactsConfigured \} from "@\/lib\/contacts"/.test(req));
   const founderPage = read("public/leads.html");
-  ok("the founder page no longer points at GoHighLevel",
-    !/GoHighLevel|HighLevel|\bGHL\b/.test(founderPage) && /Kit doesn't have them yet/.test(founderPage));
+  ok("the founder page no longer points at GoHighLevel or Kit, and has no button to press",
+    !/GoHighLevel|HighLevel|\bGHL\b/.test(founderPage) && /Resend doesn't have them yet/.test(founderPage) &&
+    !/kit-sync|Send everyone to/.test(founderPage) && /Nothing to press/.test(founderPage));
 }
 
 // ── source contracts: the routes ──
@@ -435,7 +444,7 @@ if (A) {
   ok("pilot.html offers 'Stop sharing with your speech therapist' to a device that is sharing",
     /Stop sharing with your speech therapist<\/button>/.test(pilotHtml) && /id="stopCard"/.test(pilotHtml) && /pi\.consent&&pi\.childId/.test(pilotHtml));
   ok("…with the confirm text agreed with the privacy review, and the two buttons",
-    /Their dashboard forgets your child right away: name, age, practice history and homework are deleted, not hidden\. Sona stays free for you, and your child's progress stays on this device\./.test(pilotHtml) &&
+    /Their dashboard forgets your child right away: name, age, practice history and homework are deleted, not hidden\. Sona stays free for you, and your child's practice history stays on this device\./.test(pilotHtml) &&
     />Stop sharing<\/button>/.test(pilotHtml) && />Keep sharing<\/button>/.test(pilotHtml));
   ok("…the call carries the ticket, the device's child id and the code from pilotInfo, nothing typed",
     /\/api\/pilot\/forget/.test(pilotHtml) && /sona\.slpticket/.test(pilotHtml) && /Sona\.pilotInfo\(\)/.test(pilotHtml) &&
@@ -443,6 +452,28 @@ if (A) {
   ok("…and records the choice locally only AFTER the server said ok",
     /j&&j\.ok\)\{\s*try\{ Sona\.saveProfile\(\{ slpShare:false \}\)/.test(pilotHtml));
   ok("…without touching the enrolment form the credential tests drive", /id="shareSlp"/.test(pilotHtml) && /slpRedeem\(code,key\)/.test(pilotHtml));
+  // …and from Settings, where join.html and the privacy page say it is
+  // (clinician audit B1, 13 Nov 2026): sona.js holds the one request
+  {
+    const sonaSrc = read("public/sona.js"), setHtml = read("public/settings.html"), progHtml = read("public/progress.html");
+    const stop = (sonaSrc.match(/function slpStopSharing\(\) \{([\s\S]*?)\n  \}/) || ["", ""])[1];
+    ok("Sona.slpStopSharing posts exactly the code, the child id and the ticket to /api/pilot/forget",
+      /\/api\/pilot\/forget/.test(stop) && /JSON\.stringify\(\{ code: code, childId: childId, ticket: ticket \}\)/.test(stop) && !/childName/.test(stop));
+    ok("…and records slpShare:false and clears the cached homework only AFTER the server said ok",
+      /if \(!\(j && j\.ok\)\) return \{ ok: false/.test(stop) && stop.indexOf("j.ok") < stop.indexOf("slpShare: false") && /saveFor\(slot, HWKEY, \{ hw: null/.test(stop));
+    ok("…leaving consent and the ticket alone (they carry access)", !/removeItem/.test(stop) && !/consent: false/.test(stop));
+    ok("sendProgress and syncHomework send nothing after a No thanks or a Stop",
+      /function sendProgress\(kind\) \{[\s\S]{0,400}if \(!isPilot\(\) \|\| getProfile\(\)\.slpShare === false\) return;/.test(sonaSrc) &&
+      /function syncHomework\(force\) \{[\s\S]{0,200}if \(!isPilot\(\) \|\| getProfile\(\)\.slpShare === false\) return Promise\.resolve\(null\);/.test(sonaSrc));
+    ok("Settings has a hidden 'Sharing with your speech therapist' card, shown only by Sona.slpSharing()",
+      /<section class="card" id="shareCard"[^>]*hidden>/.test(setHtml) && /Sona\.slpSharing\(\)\) return;/.test(setHtml) && /Stop sharing with your speech therapist<\/button>/.test(setHtml));
+    ok("…with pilot.html's reviewed confirm, word for word, and the two buttons",
+      /Their dashboard forgets your child right away: name, age, practice history and homework are deleted, not hidden\. Sona stays free for you, and your child's practice history stays on this device\./.test(setHtml) &&
+      />Stop sharing<\/button>/.test(setHtml) && />Keep sharing<\/button>/.test(setHtml) && /Sona\.slpStopSharing\(\)\.then/.test(setHtml));
+    ok("Progress offers 'Send progress to my SLP' only while sharing", /if \(Sona\.slpSharing \? Sona\.slpSharing\(\)/.test(progHtml));
+    ok("join.html's No thanks, on a phone already sharing with that clinician, stops sharing",
+      /wasSharing = [\s\S]{0,200}Sona\.slpSharing\(\)/.test(join) && /if \(wasSharing && Sona\.slpStopSharing\) Sona\.slpStopSharing\(\);/.test(join));
+  }
 
   // 5. the roster row: consent recorded, and never a sliced string
   ok("the pilot route persists consentAt from the device and stamps the consent wording version",
@@ -516,7 +547,7 @@ if (A) {
     ok("the consent copy names the clinician and says what they see, what they can send, what never leaves, and that stopping deletes",
       /"If you say yes, " \+ \(name \|\| "your child's speech therapist"\) \+ " will see your child's first name and age as you entered them, "/.test(join) &&
       /which sounds they are practicing, practice days and how many tries each day, and a rough pass rate per sound\. /.test(join) &&
-      /They can also send practice assignments and a short note to this app\. Never any audio; recordings stay on this device\. /.test(join) &&
+      /They can also send practice assignments and a short note to this app\. Never any audio: it is never uploaded or saved\. /.test(join) && !/recordings stay on this device/.test(join) &&
       /You can stop any time, and stopping deletes everything they could see\. Saying no changes nothing; Sona stays free for you\./.test(join));
     ok("…and the two button labels the credential suite drives are unchanged",
       />Yes, share progress<\/button>/.test(join) && />No thanks — just use Sona<\/button>/.test(join));
@@ -565,11 +596,11 @@ if (A) {
 
   // The usual cause of an empty inbox is an unverified sending domain, and
   // its symptom is silence. Silence is what this suite exists to break.
-  ok("a refused send says why, in the log", /Resend refused the sign-in email/.test(auth));
+  ok("a refused send says why, in the log", /refused the sign-in email/.test(auth));
   ok("…without ever logging the key", !/console\.error[\s\S]{0,200}RESEND_API_KEY/.test(auth));
 
   ok("the page does not claim an email that was refused",
-    /if \(!j\.sent && !j\.signedIn\)/.test(slps),
+    /if \(j\.sent !== true\) \{[\s\S]*?err\(/.test(slps),
     "an existing account has no other door; 'check your email' about an email that never went is a dead end");
   ok("…and gives them a way through instead", /hello@speaksona\.com/.test(slps));
 }
@@ -579,22 +610,36 @@ if (A) {
 {
   const req = read("app/api/slp/auth/request/route.ts");
   const lead = read("app/api/lead/route.ts");
+  const slpLead = read("lib/slpLead.ts");
   // On Vercel a function can be frozen the moment its response is sent, so a
   // fetch nobody awaits may never leave. The symptom is silence: sign-up
   // works, the CRM never hears, nothing errors.
+  // A new account's lead goes from the verify route since 13 Nov 2026 (the
+  // inbox is proved first); an existing account's catch-up from this route.
+  // Since 16 Nov 2026 the account (and its CRM call) is lib/slpSignIn's
+  // finishSignIn, which the verify route awaits before it answers, and the
+  // emailed code's route shares.
+  const verifyRoute = read("app/api/slp/auth/verify/route.ts");
+  const verify = read("lib/slpSignIn.ts");
   ok("the CRM call is awaited before the response, not fired and forgotten",
-    /const crm = tellCrm\(/.test(req) && /await crm;/.test(req) &&
-    req.indexOf("await crm;") < req.lastIndexOf("return out;") && !/void fetch\(origin \+ "\/api\/lead"/.test(req),
+    /await tellCrm\(/.test(verify) && /await finishSignIn\(/.test(verifyRoute) && verifyRoute.indexOf("await finishSignIn(") < verifyRoute.lastIndexOf("return res;") &&
+    /await tellCrm\(origin, email/.test(req) && req.indexOf("await tellCrm(") < req.lastIndexOf("return NextResponse.json(") &&
+    !/void fetch\(origin \+ "\/api\/lead"/.test(req + verify),
     "an un-awaited fetch in a serverless function can be dropped when the response is sent");
   ok("…with a fuse, so a slow CRM never costs a clinician their sign-in",
-    /CRM_TIMEOUT_MS = \d+/.test(req) && /ctl\.abort\(\)/.test(req));
-  ok("…and a lead the CRM did not take says so in the log", /CRM did not capture the lead/.test(req));
+    /CRM_TIMEOUT_MS = \d+/.test(slpLead) && /ctl\.abort\(\)/.test(slpLead));
+  ok("…and a lead the CRM did not take says so in the log", /CRM did not capture the lead/.test(slpLead));
 
   // The clinician's own first name reaches the CRM — as its own field, only
   // on the clinician path, and never through `name`, which stays blank
-  // because on the parent path the only name there is a child's.
+  // because on the parent path the only name there is a child's. The landing
+  // page asks nobody for a name (25 Sep 2026).
   ok("the clinician's first name travels only when the caller is a clinician",
-    /first_name: body\?\.role === "slp" && typeof body\?\.name === "string"/.test(lead));
+    /first_name: body\?\.role === "slp" && typeof body\?\.name === "string" \? body\.name\.trim\(\)\.slice\(0, 60\) : "",/.test(lead));
+  {
+    const named = readdirSync(APP + "/public").filter((f) => f.endsWith(".html") && /own_name|"fName"/.test(read("public/" + f)));
+    ok("…and no page sends a second kind of name to the list", named.length === 0, named.join(", "));
+  }
   ok("…and reaches the webhook through the allow-list",
     /first_name: lead\.first_name,/.test(lead) && /role: lead\.role,/.test(lead) && /fbclid: lead\.fbclid,/.test(lead));
 }
@@ -610,39 +655,34 @@ if (A) {
     /function err\(msg\)[\s\S]{0,200}scrollIntoView/.test(slps) &&
     !/\$\("fErr"\)\.textContent = [^"]*"[^"]/.test(slps.replace('$("fErr").textContent = "";', "")),
     "an error below the fold is an error nobody reads");
-  ok("a signed-in clinician whose email failed is not told it is on its way",
-    /else if \(!j\.sent\)/.test(slps) && /didn't go out just now, so bookmark your dashboard/.test(slps));
+  ok("email delivery failure leaves the form available to retry",
+    /if \(j\.sent !== true\) \{\s*err\([^\n]+\);\s*return;/.test(slps));
 }
 
-
-// ── every clinician reaches the CRM exactly once ──
-{
-  const req = read("app/api/slp/auth/request/route.ts");
-  const start = req.indexOf("if (acctExists) {");
-  const existing = start > 0 ? req.slice(start, req.indexOf("return NextResponse.json", start)) : "";
-  // 23 Sep 2026: Travis signed up with his own address, got the dashboard
-  // email, and GoHighLevel never heard of him — his account predated the CRM
-  // wiring, and the CRM was told only when this route CREATED an account.
-  ok("an existing account the CRM has never heard of is sent to it on sign-in",
-    /if \(acct && !acct\.crmAt\)/.test(existing) && /await tellCrm\(/.test(existing),
-    "otherwise every clinician who signed up before the CRM was wired stays invisible to it forever");
-  ok("…once: the account is stamped when the CRM takes it, so a daily sign-in is not a daily new lead",
-    /acct\.crmAt = new Date\(\)\.toISOString\(\)/.test(existing) &&
-    /if \(captured\) await kvCmd\(\["SET", "slpacct:" \+ email, JSON\.stringify\(\{ \.\.\.acctNew, crmAt:/.test(req));
-  ok("…and a sign-in request, which is not signed in, never rewrites the account's name",
-    existing.length > 0 && !/acct\.name\s*=/.test(existing));
-}
-
-
-// ── a new clinician goes straight into the dashboard ──
+// ── the clinician homepage sends an email before sign-in ──
 {
   const slps = read("public/for-slps.html");
-  // 17 Nov 2026: onward to the trial — Stripe for the plan card they
-  // pressed, else the dashboard's Plan & billing page to pick one.
-  ok("a brand-new, signed-in clinician is taken on to the trial without a 'check your email' stop",
-    /if \(j\.signedIn\) setTimeout\(function \(\) \{ if \(PICK\) checkout\(PICK\.id\); else location\.href = "\/slp\.html#premium"; \}/.test(slps));
-  ok("…after the Lead has fired, so the pixel's request leaves first",
-    slps.indexOf('sonaTrack("Lead")') > 0 && slps.indexOf('sonaTrack("Lead")') < slps.indexOf('if (j.signedIn) setTimeout('));
+  const handler = slps.slice(slps.indexOf("function go()"));
+  ok("the homepage requests the free dashboard flow",
+    /flow: "free-dashboard"/.test(handler) && /fetch\("\/api\/slp\/auth\/request"/.test(handler));
+  ok("…and the page reports delivery only after email success",
+    /if \(j\.sent !== true\)/.test(handler) && /"Check your email"/.test(handler) &&
+    handler.indexOf("if (j.sent !== true) {") < handler.indexOf('sonaTrack("Lead")'));
+  ok("…the clinician gets no automatic dashboard or App Store navigation",
+    !/apps\.apple\.com|APP_STORE|location\.href\s*=|CompleteRegistration/.test(handler));
+
+  // THE WELCOME (25 Sep 2026): one email, to a parent or "other", while the
+  // app is not ready; a clinician hears it in their sign-in email instead.
+  const leadSrc = read("app/api/lead/route.ts");
+  ok("the lead route sends the welcome only to a parent or other, only while the app is not ready, and only when the page asks",
+    /if \(!APP_READY && body\?\.welcome === true && \(lead\.role === "parent" \|\| lead\.role === "other"\) && kvConfigured\(\)\)/.test(leadSrc));
+  ok("…once per address, marked before it is sent",
+    /kvCmd\(\["SET", "launchmail:" \+ email\.toLowerCase\(\), new Date\(\)\.toISOString\(\), "NX", "EX", 31536000\]\)/.test(leadSrc) &&
+    /if \(first === "OK"\) welcomed = await sendWelcomeEmail\(email\);/.test(leadSrc));
+  ok("…after the lead is stored, never costing the visitor anything",
+    leadSrc.indexOf('LPUSH", "leads:all"') > 0 && leadSrc.indexOf('LPUSH", "leads:all"') < leadSrc.indexOf("sendWelcomeEmail(email)"));
+  ok("the clinician's sign-in email carries the launch note while the app is not ready",
+    (read("lib/slpAuth.ts").match(/APP_READY \? "" :/g) || []).length === 2);
 }
 
 
@@ -656,7 +696,7 @@ if (A) {
   // almost none. /api/lead forwarded and forgot, and called a refusal a
   // capture; setup fired Lead whether or not an email was given.
   ok("captured is true only when the CRM accepted the lead",
-    /captured = !!\(hookRes && hookRes\.ok\) \|\| !!\(kitRes && kitRes\.ok\);/.test(lead) && !/body: JSON\.stringify\(safeLead\),\s*\}\);\s*captured = true;/.test(lead),
+    /captured = !!\(hookRes && hookRes\.ok\) \|\| !!\(listRes && listRes\.ok\);/.test(lead) && !/body: JSON\.stringify\(safeLead\),\s*\}\);\s*captured = true;/.test(lead),
     "a 4xx from a broken workflow must not read as a lead delivered");
   ok("…and a refusal is logged with the CRM's own answer", /CRM webhook refused the lead/.test(lead));
   ok("every lead is also kept in our own store, capped",
@@ -678,103 +718,125 @@ if (A) {
 }
 
 
-// ── Kit: every grown-up's email joins the list; nothing about a child does ──
+// ── the email list (Resend's contacts since 16 Oct 2026, Kit before):
+//    every grown-up's email joins it; nothing about a child does ──
 {
-  const kitSrc = read("lib/kit.ts");
   const lead = read("app/api/lead/route.ts");
-  const sync = read("app/api/founders/kit-sync/route.ts");
   const ob = read("public/onboarding.html");
-  ok("Kit is reached with the v4 API key header", /"X-Kit-Api-Key": process\.env\.KIT_API_KEY/.test(kitSrc));
-  ok("the lead route sends every lead to Kit, tagged by role, with only a clinician's own first name",
-    /kitSubscribe\(\{ email: safeLead\.email, firstName: safeLead\.first_name, tag: kitTagFor\(safeLead\.role\) \}\)/.test(lead) &&
-    /first_name: body\?\.role === "slp" && typeof body\?\.name === "string"/.test(lead),
+  ok("Kit is gone: no lib/kit.ts, no catch-up route, nothing imports it",
+    !existsSync(APP + "/lib/kit.ts") && !existsSync(APP + "/app/api/founders/kit-sync") && !/@\/lib\/kit"/.test(lead));
+  ok("the lead route sends every lead to the list, with only a clinician's own first name",
+    /upsertContact\(\{ email: safeLead\.email, firstName: safeLead\.first_name, role: safeLead\.role,\s+source: safeLead\.source, plan: safeLead\.plan \}\)/.test(lead) &&
+    /first_name: body\?\.role === "slp" && typeof body\?\.name === "string"/.test(lead) &&
+    /role: body\?\.role === "slp" \? "slp" : body\?\.role === "parent" \? "parent" : body\?\.role === "other" \? "other" : ""/.test(lead),
     "first_name is only ever a clinician's own name; a parent's lead carries none");
-  ok("…and records Kit's answer on the saved lead", /kit: kitRes \? \(kitRes\.ok \? kitRes\.detail : "refused \(" \+ kitRes\.detail \+ "\)"\)/.test(lead));
-  ok("the catch-up is founder-only, batched, and stops when Kit says slow down",
-    /const denied = founderGate\(req\);/.test(sync) && /const BATCH = \d+;/.test(sync) && /r\.status === 429/.test(sync));
+  ok("…and records the list's answer on the saved lead", /list: listRes \? \(listRes\.ok \? listRes\.detail : "refused \(" \+ listRes\.detail \+ "\)"\) : "not configured"/.test(lead));
+  ok("the landing page says, in its questions, that the email goes to the list at Resend",
+    /If you start from this page: your email, kept by Sona and on our email list at Resend/.test(read("public/for-slps.html")) &&
+    /just your email, kept by Sona and on our email list at Resend/.test(read("public/parents.html")));
 
   // A parent's email used to stay on the phone; it now goes to the list, with
-  // the grown-up's email and nothing from the child on the same screen.
-  const fin = ob.slice(ob.indexOf('var em=(document.getElementById("achEmailInput")'), ob.indexOf("SonaAnalytics.track(\"onboarding completed\")"));
-  ok("a parent's weekly-summary email is sent to the list, tagged parent",
-    /fetch\("\/api\/lead",[^\n]*role:"parent"/.test(fin) && /keepalive:true/.test(fin));
+  // the grown-up's email and nothing from the child. Since 13 Oct 2026 it is
+  // given on setup's email step, before the price, and posted by one small
+  // function that is handed the address and nothing else.
+  const fin = ob.slice(ob.indexOf("function postParentLead("), ob.indexOf("function saveSetup("));
+  ok("a parent's email from setup's email step is sent to the list, tagged parent, from inside the app",
+    fin.length > 0 && /fetch\("\/api\/lead",[^\n]*role:"parent"/.test(fin) && /source:"app-setup"/.test(fin) && /keepalive:true/.test(fin) && /^function postParentLead\(email\)\{/.test(fin));
   ok("…and never with the child's name or age",
-    fin.length > 0 && !/childName|draft\.age|achEmName|nameEl|child:/.test(fin.slice(fin.indexOf('fetch("/api/lead"'))));
+    fin.length > 0 && !/childName|draft\.|achEmName|nameEl|child:/.test(fin));
+  // (the ready step carries ph-no-capture since 15 Oct 2026, REPLAY1)
+  const updStep = ob.slice(ob.indexOf('<div class="step" data-step="updates">'), ob.search(/<div class="step[^"]*" data-step="ready">/));
+  // Travis, 4 Nov 2026: "instead of we'll also send occasional tips from
+  // Rachel, just say something like ... track weekly progress" (as the
+  // landing pages lost the line on 25 Sep 2026); since 5 Nov 2026 the
+  // heading says what it is for and the line under the box only that it can
+  // be stopped ("Unsubscribe anytime.": "Free." went on 9 Nov 2026, Travis:
+  // "remove free")
+  ok("the email step says what the email is for, and that it can be stopped",
+    updStep.length > 0 && /See their progress <br>every Monday/.test(updStep) && />Unsubscribe anytime\.</.test(updStep) && !/Free\. Unsubscribe/.test(updStep) && !/occasional tips/.test(updStep), updStep.slice(0, 300));
 
-  // The consent line, everywhere an email can join the list (Travis's wording).
-  for (const f of ["public/for-slps.html", "public/slp-login.html", "public/onboarding.html", "public/check.html"]) {
+  // The consent line, everywhere an email can join the list (Travis's wording)
+  // — except the landing page, where Travis took it out on 25 Sep 2026 ("get
+  // rid of this text"); its "What's stored" answer still says the email goes
+  // to the list — and setup's family email step since 4 Nov 2026 (above). In
+  // onboarding.html the line is the clinician's own email step's.
+  for (const f of ["public/slp-login.html", "public/onboarding.html", "public/check.html"]) {
     ok(`${f} says the email joins the list before it is given`,
       /also send occasional tips from Rachel\. Unsubscribe anytime\./.test(read(f)));
   }
-  ok("…on both of the app's email boxes", (ob.match(/also send occasional tips from Rachel/g) || []).length >= 2);
+  // The heading asks for the weekly progress report (Travis, 15 Oct 2026),
+  // and it is a real one: the phone sends its numbers (sona.js REPORT1) and
+  // lib/report.ts mails them. reporttest plays both.
+  // Since 5 Nov 2026 the step is optional by its Skip (no "(optional)" on the
+  // label), and its button names the report.
+  ok("family email step asks for the weekly progress report, can be skipped, says how to unsubscribe, and the report it names is real",
+    /See their progress <br>every Monday/.test(updStep) && /id="updSkip">Skip</.test(updStep) && /Unsubscribe anytime/.test(updStep) && /updates: "Get the report"/.test(read("public/onboarding.html")) &&
+    /function runReports\(/.test(read("lib/report.ts")) && /function reportSync\(/.test(read("public/sona.js")) && /runReports\(/.test(read("app/api/cron/nurture/route.ts")));
   ok("the Speech Check no longer promises to email a report it never sends", !/email your child's report/.test(read("public/check.html")));
-  ok("the privacy policy names Kit and says it holds nothing about a child",
-    /<strong>Email list<\/strong> — Kit/.test(read("public/privacy.html")) && /never anything about a child/.test(read("public/privacy.html")));
+  ok("the privacy policy names Resend as the email list and says it holds nothing about a child",
+    /<strong>Email list<\/strong> — Resend keeps Sona&rsquo;s email list/.test(read("public/privacy.html")) && /never anything about a child/.test(read("public/privacy.html")) &&
+    !/\bKit\b/.test(read("public/privacy.html")));
 
-  // Behaviour, against a fake Kit: what is sent, and what counts as success.
-  const calls = [];
-  let createStatus = 201, formStatus = 404;
-  const realFetch = globalThis.fetch;
-  globalThis.fetch = async (url, init) => {
-    const u = String(url), body = init && init.body ? JSON.parse(init.body) : null;
-    calls.push({ u, method: init && init.method, body, key: init && init.headers && init.headers["X-Kit-Api-Key"] });
-    const res = (status, obj) => new Response(JSON.stringify(obj), { status, headers: { "Content-Type": "application/json" } });
-    if (u.endsWith("/v4/subscribers")) return res(createStatus, { subscriber: { id: 1 } });
-    if (u.includes("/v4/tags?")) return res(200, { tags: [{ id: 77, name: "sona-parent" }, { id: 78, name: "sona-slp" }], pagination: { has_next_page: false } });
-    if (/\/v4\/tags\/\d+\/subscribers$/.test(u)) return res(201, { subscriber: { id: 1 } });
-    if (/\/v4\/forms\/.+\/subscribers$/.test(u)) return res(formStatus, { errors: ["Not Found"] });
-    return res(404, {});
-  };
-  const saved = { key: process.env.KIT_API_KEY, form: process.env.KIT_FORM_ID };
-  process.env.KIT_API_KEY = "kit_test_key"; process.env.KIT_FORM_ID = "12345";
-  try {
-    const K = await import(pathToFileURL(APP + "/lib/kit.ts").href);
-    const r1 = await K.kitSubscribe({ email: "mom@example.com", firstName: "", tag: K.kitTagFor("parent") });
-    const create = calls.find((c) => c.u.endsWith("/v4/subscribers"));
-    ok("a parent is created in Kit with their email and no name", !!create && create.body.email_address === "mom@example.com" && !("first_name" in create.body));
-    ok("…with the API key sent", !!create && create.key === "kit_test_key");
-    ok("…tagged sona-parent", calls.some((c) => /\/v4\/tags\/77\/subscribers$/.test(c.u)));
-    ok("a failed form step still counts the person as in Kit, and says what failed",
-      r1.ok === true && /form 404/.test(r1.detail), JSON.stringify(r1));
-    calls.length = 0; formStatus = 201;
-    const r2 = await K.kitSubscribe({ email: "sam@clinic.org", firstName: "Sam", tag: K.kitTagFor("slp") });
-    ok("a clinician goes with their own first name and the sona-slp tag, all steps clean",
-      r2.ok && r2.detail === "added" && calls.some((c) => c.u.endsWith("/v4/subscribers") && c.body.first_name === "Sam") && calls.some((c) => /\/v4\/tags\/78\/subscribers$/.test(c.u)));
-    calls.length = 0; createStatus = 401;
-    const r3 = await K.kitSubscribe({ email: "x@y.org", tag: K.kitTagFor("parent") });
-    ok("if the subscriber itself is refused, the lead is NOT counted as in Kit", r3.ok === false && /subscriber 401/.test(r3.detail));
-    delete process.env.KIT_API_KEY;
-    const r4 = await K.kitSubscribe({ email: "x@y.org" });
-    ok("with no key, Kit is simply not configured — nothing is called", r4.ok === false && r4.detail === "not configured");
-  } finally {
-    globalThis.fetch = realFetch;
-    if (saved.key === undefined) delete process.env.KIT_API_KEY; else process.env.KIT_API_KEY = saved.key;
-    if (saved.form === undefined) delete process.env.KIT_FORM_ID; else process.env.KIT_FORM_ID = saved.form;
+  // Behaviour, against a fake Resend: the welcome email (25 Sep 2026).
+  {
+    const sent = [];
+    const realFetch0 = globalThis.fetch;
+    const savedKey = process.env.RESEND_API_KEY;
+    globalThis.fetch = async (url, init) => { sent.push({ u: String(url), body: JSON.parse(init.body), auth: init.headers.Authorization }); return new Response("{}", { status: 200 }); };
+    try {
+      const L = await import(pathToFileURL(APP + "/lib/launch.ts").href);
+      delete process.env.RESEND_API_KEY;
+      ok("with no Resend key, no welcome is sent and nothing is called", (await L.sendWelcomeEmail("mom@example.com")) === false && sent.length === 0);
+      process.env.RESEND_API_KEY = "re_test_key";
+      const okSend = await L.sendWelcomeEmail("mom@example.com");
+      const w = sent[0] || { body: {} };
+      ok("the welcome goes to that address alone, through Resend", okSend === true && w.u === "https://api.resend.com/emails" && JSON.stringify(w.body.to) === '["mom@example.com"]' && w.auth === "Bearer re_test_key");
+      ok("…says the launch note in both its parts", w.body.text.includes(L.LAUNCH_NOTE) && w.body.html.includes(L.LAUNCH_NOTE));
+      ok("…and carries no name and nothing about a child", /^Hi,/.test(w.body.text) && !/child|kid's name|\{/.test(w.body.text));
+      // 26 Sep 2026: replies reach whatever inbox RESEND_REPLY_TO names, and
+      // with it unset the email is exactly what it was.
+      ok("…with no reply-to unless one is set", !("reply_to" in w.body));
+      const savedReply = process.env.RESEND_REPLY_TO;
+      process.env.RESEND_REPLY_TO = "hello@example.com";
+      try {
+        await L.sendWelcomeEmail("dad@example.com");
+        ok("…and a family's reply goes to RESEND_REPLY_TO when it is set", (sent[1] || { body: {} }).body.reply_to === "hello@example.com");
+      } finally { if (savedReply === undefined) delete process.env.RESEND_REPLY_TO; else process.env.RESEND_REPLY_TO = savedReply; }
+    } finally {
+      globalThis.fetch = realFetch0;
+      if (savedKey === undefined) delete process.env.RESEND_API_KEY; else process.env.RESEND_API_KEY = savedKey;
+    }
   }
+
+  // Behaviour, against a fake Resend: tests/contactstest.mjs.
 }
 
 
 // ── the lead door, hardened (independent review of #131, 24 Sep 2026) ──
 {
   const lead = read("app/api/lead/route.ts");
-  const req = read("app/api/slp/auth/request/route.ts");
+  const slpLead = read("lib/slpLead.ts");
   const page = read("public/leads.html");
   ok("an address longer than email allows is refused before it is kept", /email\.length > 254/.test(lead));
   ok("a stranger is limited to ten leads an hour from one address",
     /rateLimit\(req, \{ key: "lead", limit: 10, windowSec: 3600 \}\)/.test(lead),
-    "otherwise a script fills the ledger past its cap and stuffs the Kit list with junk");
+    "otherwise a script fills the ledger past its cap and stuffs the email list with junk");
   ok("…while our own sign-up route, which forwards every clinician from the same servers, signs its leads past it",
-    /"x-sona-lead-sig": leadSig\(email\)/.test(req) && /timingSafeEqual\(Buffer\.from\(sig\), Buffer\.from\(want\)\)/.test(lead) &&
-    lead.indexOf("if (!internal)") > 0 && lead.indexOf("if (!internal)") < lead.indexOf("const toKit"));
+    /"x-sona-lead-sig": leadSig\(email\)/.test(slpLead) && /timingSafeEqual\(Buffer\.from\(sig\), Buffer\.from\(want\)\)/.test(lead) &&
+    lead.indexOf("if (!internal)") > 0 && lead.indexOf("if (!internal)") < lead.indexOf("const toList"));
   if (A) {
     ok("the signature is the server's own: same for the same email, different for another",
       A.leadSig("Sam@Clinic.org") === A.leadSig("sam@clinic.org") && A.leadSig("sam@clinic.org") !== A.leadSig("pat@clinic.org"));
   }
   ok("a timeout or network failure reads 'unreachable', never 'refused 0'",
-    /hookRes\.status \? "refused " \+ hookRes\.status : "unreachable"/.test(lead) && /sub\.status \? "subscriber " \+ sub\.status : "unreachable"/.test(read("lib/kit.ts")));
+    /hookRes\.status \? "refused " \+ hookRes\.status : "unreachable"/.test(lead) && /if \(c\.status === 0\) return "unreachable";/.test(read("lib/contacts.ts")));
   ok("the founder CSV cannot run a formula someone typed into a form",
     /if \(\/\^\[=\+\\-@\\t\\r\]\/\.test\(v\)\) v = "'" \+ v;/.test(page));
   ok("the founder page counts people, not rows", /var uniq = function \(list\)/.test(page) && /\$\("nLeads"\)\.textContent = uniq\(j\.leads\)/.test(page));
+  // 5 Oct 2026: the app tells this door when a parent starts Sona Premium
+  ok("a parent's plan arrives only as one of planWord's two words, rides in the safe copy, and goes to the list",
+    /plan: planWord\(body\?\.plan\),/.test(lead) &&
+    /plan: lead\.plan,/.test(lead) && /source: safeLead\.source, plan: safeLead\.plan \}\)/.test(lead) && /plan: safeLead\.plan,/.test(lead));
 }
 
 console.log(fails ? fails + " FAILURES" : "ALL GREEN");

@@ -1,24 +1,30 @@
 import { NextRequest, NextResponse } from "next/server";
-import { readSession, kvCmd, kvConfigured, randomToken, sendSelfLinkEmail } from "@/lib/slpAuth";
+import { readSession, liveSession, kvCmd, kvConfigured, randomToken, sendSelfLinkEmail } from "@/lib/slpAuth";
 import { rateLimit } from "@/lib/rateLimit";
 import { readAccount } from "@/lib/roster";
 import {
-  selfAccess, requestAccess, bumpDaily, selfTokenKey, StoreUnavailable,
-  SELF_LINKS_PER_DAY, SELF_TOKEN_TTL,
+  selfStatus, requestAccess, bumpDaily, selfTokenKey, StoreUnavailable,
+  SELF_LINKS_PER_DAY, SELF_TOKEN_TTL, type SelfStatus,
 } from "@/lib/caseload";
 
 /**
  * THE CLINICIAN'S OWN PHONE (24 Sep 2026): Premium on the clinician's own
- * device, free, so they can show a family every game in session.
+ * device, so they can show a family every game in session.
  *
  *   POST { action: "send" }    → email an own-phone link to the ACCOUNT's
  *                                own address → { ok, sent }
  *   POST { action: "request" } → "No work email? Request access" → { ok, requested }
  *
- * WHO. A work address (lib/workEmail), or the founder's approval by hand on
- * /leads.html for a real clinician who uses a free-mail inbox. The dashboard
- * itself stays open to any email; only this needs the evidence, because a
- * gmail-to-free-Premium door is a coupon anyone could print.
+ * WHO (lib/caseload selfStatus). From 12 Nov 2026 a clinician's own Premium
+ * comes with Sona Pro; from 29 Sep to 12 Nov 2026 it was "Sona Premium for
+ * you", $59.99 a year (still renewing for those who bought it), and this
+ * sends a link to anyone
+ * whose own Premium is on: paid, grandfathered, or on the older $79.99
+ * caseload plan. The clinicians who signed up 24 to 29 Sep were told it was
+ * free with a work address (lib/workEmail), or with the founder's approval by
+ * hand on /leads.html for a free-mail inbox, and for them it still is: they
+ * are the only accounts a request is taken from. A gmail-to-free-Premium
+ * door for everyone else would be a coupon anyone could print.
  *
  * WHY EMAIL, NOT A LINK ON THE PAGE. The link goes to the address the account
  * is under — the one inbox the person asking is supposed to control — so it
@@ -37,7 +43,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
-  const s = readSession(req);
+  const s = await liveSession(readSession(req));
   if (!s) return NextResponse.json({ ok: false, error: "sign in required" }, { status: 401 });
   const rl = await rateLimit(req, { key: "slpself", limit: 20, windowSec: 3600 });
   if (rl) return rl;
@@ -50,7 +56,24 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "bad request" }, { status: 400 });
   }
 
+  let self: SelfStatus;
+  try {
+    self = await selfStatus(s.email);
+  } catch (e) {
+    if (e instanceof StoreUnavailable) return NextResponse.json({ ok: false, error: "Couldn't check just now — try again." }, { status: 503 });
+    throw e;
+  }
+
   if (body.action === "request") {
+    // Only the 24 to 29 Sep accounts were offered this. Anyone else asking is
+    // told what their own Premium is now, rather than queued for an approval
+    // that would change nothing (selfStatus reads approval for them alone).
+    if (!self.canRequest) {
+      return NextResponse.json({
+        ok: false, needPlan: !self.active,
+        error: self.active ? "Your own Premium is already on." : "Premium on your own phone or tablet comes with Sona Pro.",
+      }, { status: 409 });
+    }
     // Recorded on its own key (slpaccess, a hash), never on the account
     // JSON two routes rewrite whole. The founder sees it on /leads.html.
     await requestAccess(s.email);
@@ -58,18 +81,16 @@ export async function POST(req: NextRequest) {
   }
   if (body.action !== "send") return NextResponse.json({ ok: false, error: "which action?" }, { status: 400 });
 
-  let eligible = false;
-  try {
-    eligible = (await selfAccess(s.email)).eligible;
-  } catch (e) {
-    if (e instanceof StoreUnavailable) return NextResponse.json({ ok: false, error: "Couldn't check just now — try again." }, { status: 503 });
-    throw e;
-  }
-  if (!eligible) {
-    return NextResponse.json({
-      ok: false, needWorkEmail: true,
-      error: "Your own Premium needs a work email. No work email? Request access and we'll take a look.",
-    }, { status: 403 });
+  if (!self.active) {
+    return self.canRequest
+      ? NextResponse.json({
+          ok: false, needWorkEmail: true,
+          error: "Your own Premium needs a work email. No work email? Request access and we'll take a look.",
+        }, { status: 403 })
+      : NextResponse.json({
+          ok: false, needPlan: true,
+          error: "Premium on your own phone or tablet comes with Sona Pro. Start it on this page, then send yourself a link.",
+        }, { status: 403 });
   }
 
   const { code, familyKey, name } = await readAccount(s.email);

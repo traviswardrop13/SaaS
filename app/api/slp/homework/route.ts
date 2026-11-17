@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { readSession, kvCmd, kvConfigured, rosterKey } from "@/lib/slpAuth";
+import { readSession, liveSession, kvCmd, kvConfigured, rosterKey } from "@/lib/slpAuth";
+import { dashboardGate } from "@/lib/proGate";
 import {
   normalizeHomework, readHomework, writeHomework, readAllHomework, hwStatus, isActive,
   type HomeworkRecord,
@@ -38,9 +39,11 @@ async function rosterChild(code: string, childId: string): Promise<{ child?: str
 }
 
 export async function GET(req: NextRequest) {
-  const s = readSession(req);
+  const s = await liveSession(readSession(req));
   if (!s) return NextResponse.json({ ok: false, error: "sign in required" }, { status: 401 });
   if (!kvConfigured()) return NextResponse.json({ ok: true, configured: false, items: [] });
+  const locked = await dashboardGate(s.email);   // Sona Pro, for a 12 Nov 2026 account (lib/proGate)
+  if (locked) return locked;
   const code = await codeFor(s.email);
   if (!code) return NextResponse.json({ ok: true, configured: true, items: [] });
 
@@ -62,7 +65,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const s = readSession(req);
+  const s = await liveSession(readSession(req));
   if (!s) return NextResponse.json({ ok: false, error: "sign in required" }, { status: 401 });
 
   const rl = await rateLimit(req, { key: "slphw", limit: 120, windowSec: 3600 });
@@ -94,6 +97,11 @@ export async function POST(req: NextRequest) {
     await writeHomework(code, childId, { hw: null, progress: prev.progress });
     return NextResponse.json({ ok: true, cleared: true });
   }
+
+  // Clearing homework (above) is a removal and always works; ASSIGNING it is
+  // the dashboard, which is Sona Pro for a 12 Nov 2026 account (lib/proGate).
+  const locked = await dashboardGate(s.email);
+  if (locked) return locked;
 
   let name = "";
   try {

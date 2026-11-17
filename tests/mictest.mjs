@@ -93,9 +93,16 @@ async function page(mic) {
   ok("…and says plainly that nothing is uploaded",
     /never uploads recordings|never uploaded|no recording is ever uploaded|not uploaded/i.test(primer),
     "the strongest claim Sona makes should be stated, not implied");
-  ok("…and is honest about the one clip kept on the phone",
-    /saved on this phone|on this device/i.test(primer),
-    "a clip a parent can play back exists locally; consent copy should say so");
+  // Since 5 Nov 2026 (Travis: "dont save") no clip is kept, so the line says
+  // so, and saveRecording keeps nothing (checked below).
+  ok("…and says nothing is saved either",
+    /never uploaded or saved/i.test(primer) && !/saved on this phone|listen back/i.test(primer),
+    "no clip is kept on the phone any more; consent copy must not promise one");
+  {
+    const sonaSrc = readFileSync(ROOT + "/sona.js", "utf8");
+    ok("…and that is true by construction: saveRecording keeps nothing, and practice never calls it",
+      /function saveRecording\(\) \{ return Promise\.resolve\(false\); \}/.test(sonaSrc) && !/saveRecording\(/.test(charge) && /objectStore\("recordings"\)\.clear\(\)/.test(sonaSrc));
+  }
 }
 
 // ── 1b. there is no door a child's recording could go through ──
@@ -103,8 +110,9 @@ async function page(mic) {
 // accepts an uploaded recording. /api/stt (a transcription door nothing
 // called) was deleted on 25 Sep 2026 so that stays literally true. The two
 // routes that DO take a file are the founder's clip tools — cleaning and
-// re-voicing Rachel's own recordings — behind FOUNDER_KEY on production, and
-// no page under public/ calls either. Adding a third upload route, or a
+// re-voicing Rachel's own recordings — behind FOUNDER_KEY on every deployment,
+// previews included (14 Nov 2026: a preview used to be open), and no page
+// under public/ calls either. Adding a third upload route, or a
 // page that posts audio, fails here on purpose.
 {
   const { readdirSync, statSync } = await import("node:fs");
@@ -115,11 +123,50 @@ async function page(mic) {
   ok("only the two founder clip tools accept a file; no /api/stt", JSON.stringify(uploaders) === JSON.stringify(["isolate", "voice-change"]), uploaders.join(", "));
   for (const r of uploaders) {
     const src = noComments(readFileSync(API + "/" + r + "/route.ts", "utf8"));
-    ok(r + " is locked behind FOUNDER_KEY on production", /FOUNDER_KEY/.test(src) && /x-founder-key/.test(src) && /isPreview/.test(src));
+    ok(r + " is locked behind the founder key on every deployment, previews included (header only, constant time, before anything else)",
+      /const denied = founderKey\(req\);\s*if \(denied\) return denied;/.test(src) && src.indexOf("founderKey(req)") < src.indexOf("ELEVENLABS_API_KEY") && !/isPreview|VERCEL_ENV|searchParams|!== want/.test(src));
+  }
+  {
+    const fk = noComments(readFileSync(ROOT + "/../lib/founder.ts", "utf8"));
+    const body = (fk.match(/export function founderKey\([\s\S]*?\n\}/) || [""])[0];
+    ok("founderKey reads the x-founder-key header only, needs 12+ characters, and compares in constant time",
+      /x-founder-key/.test(body) && /need\.length < 12/.test(body) && /sameSecret\(/.test(body) && /timingSafeEqual/.test(fk) && !/searchParams|nextUrl/.test(body));
+    const vc = noComments(readFileSync(API + "/voice-change/route.ts", "utf8"));
+    ok("voice-change refuses a voice id that is not letters and digits (it goes into ElevenLabs' path)", /\/\^\[A-Za-z0-9\]\{10,40\}\$\/\.test\(voiceId\)/.test(vc) && /status: 400/.test(vc));
   }
   const pages = readdirSync(ROOT).filter((n) => /\.(html|js)$/.test(n));
   const callers = pages.filter((n) => /\/api\/(stt|isolate|voice-change)\b/.test(noComments(readFileSync(ROOT + "/" + n, "utf8"))));
   ok("no family page posts to a transcription, isolation or re-voicing route", callers.length === 0, callers.join(", "));
+  // …NOR HANDS THE VOICE TO THE BROWSER'S OWN TRANSCRIBER (22 Oct 2026). The
+  // Web Speech API's SpeechRecognition looks local and is not: Chrome sends
+  // the audio to Google, Safari to Apple. The Speech Check and the parked
+  // story reader used it until then, so in a browser a child's words left
+  // the phone. The iPhone app's on-device check is SonaSpeech, a different
+  // name, and stays. lib/speech.ts, the one helper for it, went with them.
+  // Every page and every Next source: public/ (but its vendored PostHog),
+  // app/, components/ and lib/. The Next pages are pages too.
+  const SRC = [];
+  const walk = (d, re) => { if (!existsSync(d)) return; for (const n of readdirSync(d)) { const p = d + "/" + n; if (n === "vendor" || n === "node_modules") continue; if (statSync(p).isDirectory()) walk(p, re); else if (re.test(n)) SRC.push(p); } };
+  walk(ROOT, /\.(html|js)$/);
+  for (const dir of ["app", "components", "lib"]) walk(ROOT + "/../" + dir, /\.(ts|tsx|js|mjs)$/);
+  const listeners = SRC.filter((p) => /SpeechRecognition/.test(noComments(readFileSync(p, "utf8")))).map((p) => p.slice(ROOT.length - "public".length));
+  ok("no page or source uses the browser's speech-to-text, which uploads the audio", SRC.length > 100 && listeners.length === 0, listeners.join(", "));
+  ok("…and the helper for it is gone", !existsSync(ROOT + "/../lib/speech.ts"));
+}
+
+// ── 1b. …nor any way out of Sona's own microphone (12 Oct 2026) ──
+// In the iPhone app the phone's own code opens the mic and hands this page
+// its samples (sona.js, between the two markers below). Those samples reach
+// the page's analysers and the one local keepsake clip, and nothing else: the
+// block has no way to send anything, so the consent copy stays true by
+// construction there too.
+{
+  const sona = readFileSync(ROOT + "/sona.js", "utf8");
+  const a = sona.indexOf("SONA'S OWN MICROPHONE IN THE IPHONE APP"), b = sona.indexOf("END OF SONA'S OWN MICROPHONE");
+  const block = a > 0 && b > a ? noComments(sona.slice(a, b)) : "";
+  const sends = ["fetch(", "XMLHttpRequest", "sendBeacon", "WebSocket", "FormData", ".send("].filter((w) => block.includes(w));
+  ok("Sona's own microphone (sona.js) has no fetch, XMLHttpRequest, sendBeacon, WebSocket, FormData or .send",
+    block.length > 20000 && sends.length === 0, a < 0 || b < a ? "the block's markers are missing" : sends.join(", "));
 }
 
 // ── 1b. every OTHER page that describes the mic tells the same truth ──
@@ -260,7 +307,8 @@ async function page(mic) {
   const sona = readFileSync(ROOT + "/sona.js", "utf8");
   ok("micDenied lives in sona.js and is exported", /function micDenied/.test(sona) && /\bmicDenied,/.test(sona),
     "every recording page must reach the same screen — a second copy drifts");
-  for (const f of ["charge.html", "story.html", "check.html", "coach-call.html"]) {
+  // library.html listens for a picture book's key word (28 Sep 2026)
+  for (const f of ["charge.html", "story.html", "check.html", "coach-call.html", "library.html"]) {
     const src = noComments(readFileSync(ROOT + "/" + f, "utf8"));
     ok(f + " routes a denial to that screen", /micDenied\(/.test(src),
       "a page that records must never leave a denial unexplained");

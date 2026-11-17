@@ -1,29 +1,32 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
-import { readSession, kvConfigured } from "@/lib/slpAuth";
+import { readSession, liveSession, kvConfigured } from "@/lib/slpAuth";
 import { rateLimit } from "@/lib/rateLimit";
 import { currentPlan, openCaseloadPortal, StoreUnavailable } from "@/lib/caseload";
 
 /**
  * POST /api/slp/plan/portal → { ok, url }: Stripe's billing portal for the
- * clinician's own plan — cancel, change the card, see invoices — so "cancel
+ * clinician's plans — cancel, change the card, see invoices — so "cancel
  * anytime" is a button and not an email to us.
  *
- * The customer comes from the plan mirror the signed-in account owns
+ * The customer comes from the plan mirrors the signed-in account owns
  * (lib/caseload), never from the request: a portal link is the keys to
- * someone's billing. currentPlan() recovers a plan the dashboard never saw
+ * someone's billing. Their own Premium's first, then the caseload's; the
+ * add-on is bought under the same customer (app/api/slp/plan), so one page
+ * shows both. currentPlan() recovers a plan the dashboard never saw
  * activate (Stripe search) before answering "no plan".
  *
  * Opened under the caseload's OWN portal configuration (lib/caseload
  * openCaseloadPortal), whose cancel button cancels at the end of the paid
- * year — the written promise that families keep Premium until then rests on
- * that, not on the Stripe account's default settings.
+ * period — the month of a Sona Pro plan, the year of a retired one, or the
+ * free trial — and the written promise that families keep Premium until then
+ * rests on that, not on the Stripe account's default settings.
  */
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
-  const s = readSession(req);
+  const s = await liveSession(readSession(req));
   if (!s) return NextResponse.json({ ok: false, error: "sign in required" }, { status: 401 });
   const rl = await rateLimit(req, { key: "slpplan-portal", limit: 20, windowSec: 3600 });
   if (rl) return rl;
@@ -34,8 +37,14 @@ export async function POST(req: NextRequest) {
 
   let customer = "";
   try {
-    const rec = await currentPlan(s.email, { stripe });
-    customer = (rec && rec.customer) || "";
+    // Sona Pro's customer first (the plan on sale since 12 Nov 2026), then
+    // the retired yearly plans'. Pro is bought under the same customer as
+    // either of those where one exists, so one page still shows everything.
+    for (const kind of ["pro", "self", "caseload"] as const) {
+      const rec = await currentPlan(s.email, { stripe, kind });
+      customer = (rec && rec.customer) || "";
+      if (customer) break;
+    }
   } catch (e) {
     if (e instanceof StoreUnavailable) {
       return NextResponse.json({ ok: false, error: "Couldn't reach your plan just now — try again in a moment." }, { status: 503 });

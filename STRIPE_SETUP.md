@@ -28,10 +28,14 @@ Project **sona → Settings → Environment Variables** (Production **and** Prev
 | `STRIPE_SECRET_KEY` | `sk_test_…` (then `sk_live_…` for real charges) | ✅ |
 | `NEXT_PUBLIC_SITE_URL` | your site URL, e.g. `https://getsona.com` | optional* |
 | `STRIPE_PRICE_ID` | a Price ID, if you'd rather manage the price in Stripe | optional |
-| `STRIPE_PRICE_ID_SLP_SOLO` | a monthly **$19.99** Price for Sona Solo (below) | optional |
-| `STRIPE_PRICE_ID_SLP_CLINIC` | a monthly **$99** Price for Sona Clinic (below) | optional |
-| `STRIPE_PRICE_ID_SLP_CASELOAD` | retired: the yearly $79.99 caseload plan is no longer sold (its holders keep it) | unused |
-| `STRIPE_PORTAL_CONFIG_CASELOAD` | a billing-portal configuration id (`bpc_…`) for Caseload Premium — only if you'd rather make it yourself (below) | optional |
+| `STRIPE_PRICE_ID_SLP_PRO` | a **monthly $19.99** Price for "Sona Pro" (below) | optional |
+| `STRIPE_PRICE_ID_SLP_SELF` | a yearly **$59.99** Price for "Sona Premium for you" (retired from sale 12 Nov 2026; no longer read) | — |
+| `STRIPE_PRICE_ID_SLP_CASELOAD_ADDON` | a yearly **$59.99** Price for "Sona Premium for your caseload" (retired from sale 12 Nov 2026; no longer read) | — |
+| `STRIPE_PORTAL_CONFIG_CASELOAD` | a billing-portal configuration id (`bpc_…`) for the clinician plans — only if you'd rather make it yourself (below) | optional |
+
+`STRIPE_PRICE_ID_SLP_CASELOAD` (the old **$79.99** Price) is no longer read.
+If it is set in Vercel, it can stay or go: the code ignores it, so it can
+never charge $79.99 under a page that says $59.99.
 
 \*If unset, success/cancel redirects use the request origin, which is fine.
 
@@ -52,28 +56,56 @@ Then **push any commit** (or redeploy) so the new vars take effect.
   `customer.subscription.updated/deleted`) if you move to a real accounts DB.
   For now, live lookups via `/api/subscription` are enough to gate access.
 
-## The clinician plans: Solo and Clinic (17 Nov 2026)
+## Sona Pro — the clinician plan on sale (12 Nov 2026)
 
-**Sona Solo, $19.99 a month** (one clinician) and **Sona Clinic, $99 a month**
-(up to 25 clinicians at one practice), each with a **14-day free trial, card
-up front**: Stripe takes the card at checkout and charges on day 15 unless
-the clinician cancels. One trial per clinician. Bought from the landing page
-or the dashboard (`/slp.html#premium` → `POST /api/slp/plan { plan }`). The
-dashboard is part of the plan for accounts made from this build on; every
-family who joins through a covered clinician's link gets Premium.
+**$19.99 a month**, bought by a clinician from their dashboard
+(`/slp.html#premium`, or Settings → `POST /api/slp/plan { plan: "pro" }`).
+It turns on the clinician's dashboard (for accounts made from 12 Nov 2026),
+every game on their own phone, and every game for every family on their
+link, with no cap on families. Stamped `plan: slp-pro`.
 
-The yearly $79.99 "Caseload Premium" plan below is **retired from checkout**.
-Anyone who bought it keeps it and is still read as covered.
+- **A 14-day free trial, once per clinician, card up front.** Checkout sets
+  `trial_period_days: 14` and asks for a card; Stripe charges $19.99 when the
+  trial ends unless they cancel, and a trial that ends with no card cancels.
+  A clinician who has ever had a Pro subscription gets no second trial.
+- **Nothing to create to start selling.** Checkout uses an inline monthly
+  price (1999 USD) from `lib/caseload.ts`, the same constant every page
+  prints. For tidy product reports, create a monthly $19.99 Price and set
+  `STRIPE_PRICE_ID_SLP_PRO` — it must be exactly $19.99/month, or the pages
+  and the charge disagree. Don't put a trial on the Price itself: the code
+  adds it, once.
+- **Cancel = end of the paid month** (or of the trial), through the same
+  billing-page configuration as below.
+- **A free month for someone you choose:** make a Stripe coupon (100% off,
+  duration "once" or "repeating"); checkout already accepts promotion codes.
 
-- **Nothing to create to start selling.** Checkout uses inline monthly prices
-  (1999 and 9900 USD) from `lib/caseload.ts`, the same constants every page
-  prints. If you want Stripe's product reports tidy, create the two monthly
-  Prices and set `STRIPE_PRICE_ID_SLP_SOLO` / `STRIPE_PRICE_ID_SLP_CLINIC` —
-  they must be exactly $19.99/month and $99/month, or the pages and the
-  charge disagree.
-- **Switching Solo ↔ Clinic is by hand for now.** The checkout refuses a
-  second plan and tells the clinician to email; change the subscription's
-  price in Stripe and set its `metadata.plan` to `slp-solo` or `slp-clinic`.
+## The yearly clinician plans (24 Sep 2026; re-priced 29 Sep 2026; retired from sale 12 Nov 2026)
+
+No longer sold — the checkout refuses them — but every subscription bought
+keeps renewing at its price, and keeps covering what it covered, until the
+clinician cancels it. Nothing to do in Stripe.
+
+
+Two yearly plans, **no trial**, bought by a clinician from their dashboard
+(`/slp.html#premium`, or the Premium card in Settings → `POST /api/slp/plan`):
+
+- **"Sona Premium for you", $59.99 a year** — every game on the clinician's
+  own phone or tablet. Stamped `plan: slp-self`.
+- **"Sona Premium for your caseload", $59.99 a year more** — every family who
+  joins through that clinician's link gets Premium. Sold only once the
+  clinician's own Premium is on. Stamped `plan: slp-caseload`, `addon: "1"`,
+  and bought under the same Stripe customer, so Manage billing shows both.
+
+Caseload subscriptions bought before 29 Sep 2026 ($79.99, no `addon` stamp)
+keep renewing at $79.99 and keep covering the clinician's own phone. Nothing
+to do in Stripe for them.
+
+- **Nothing to create to start selling.** Checkout uses inline yearly prices
+  (5999 USD each) from `lib/caseload.ts`, the same constants every page
+  prints. If you want Stripe's product reports tidy, create yearly $59.99
+  Prices and set `STRIPE_PRICE_ID_SLP_SELF` and
+  `STRIPE_PRICE_ID_SLP_CASELOAD_ADDON` — each must be exactly $59.99/year, or
+  the pages and the charge disagree.
 - **The billing page cancels at period end, by construction.** The dashboard's
   **Manage billing** button (`POST /api/slp/plan/portal`) opens Stripe's
   billing portal under the caseload's OWN configuration — cancel **at the end
@@ -93,12 +125,12 @@ Anyone who bought it keeps it and is still read as covered.
   it and opens the default rather than a dead button) — so a cancel there must
   not be immediate either.
 - **The stamps are the plan.** The session and the subscription carry
-  `metadata.plan` (`slp-solo`, `slp-clinic`, or the retired `slp-caseload`)
-  and `metadata.slp = <clinician email>`, and
-  never `tier` — only `tier: charter` counts toward the 50 charter spots. Don't
-  edit them by hand; coverage is read from them.
-- **Web only.** There is no App Store product for this plan, and there should
-  not be one (`NATIVE.md`).
+  `metadata.plan` (`"slp-self"` or `"slp-caseload"`), `metadata.slp =
+  <clinician email>` and, on a caseload sold from 29 Sep, `metadata.addon =
+  "1"` — and never `tier`: only `tier: charter` counts toward the 50 charter
+  spots. Don't edit them by hand; coverage is read from them.
+- **Web only.** There is no App Store product for either plan, and there
+  should not be one (`NATIVE.md`).
 
 ## Notes
 

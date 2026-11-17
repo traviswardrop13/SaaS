@@ -1,0 +1,52 @@
+/* A toy crane over a painted beach: finger controls, never timer building. */
+html,body{height:100%;overflow:hidden;overscroll-behavior:none;background:var(--cream);}
+#app{position:fixed;inset:0;width:100%;height:100%;max-width:620px;min-height:0;margin:auto;padding:0;overflow:hidden;display:block;isolation:isolate;}
+#castleCanvas{display:block;width:100%;height:100%;touch-action:none;user-select:none;-webkit-user-select:none;}
+#top{position:absolute;z-index:5;top:0;left:0;right:0;padding:calc(12px + env(safe-area-inset-top)) 14px 10px;gap:8px;pointer-events:none;}
+#top button{pointer-events:auto;}
+#close{display:grid;place-items:center;background:var(--cream-card);color:var(--cream-ink);box-shadow:0 4px 0 var(--cream-line);}
+#close svg{width:22px;height:22px;}
+.hudpill{background:var(--cream-card);box-shadow:0 4px 0 var(--cream-line);color:var(--cream-ink);}
+#ttl{font-size:16px;}
+#dots{gap:4px;padding:13px 10px;}
+#dots i{width:6px;height:7px;}
+#dots i.on{background:var(--act);}
+#castleBanner{position:absolute;z-index:3;top:calc(74px + env(safe-area-inset-top));left:16px;right:16px;width:fit-content;max-width:calc(100% - 32px);margin:0 auto;padding:8px 14px 7px;background:var(--cream-card);border-radius:20px;box-shadow:0 3px 0 var(--cream-line);color:var(--cream-ink);font-family:"Baloo 2",sans-serif;font-size:clamp(17px,4.5vw,21px);font-weight:800;line-height:1.15;text-align:center;pointer-events:none;}
+#castleTrolley{position:absolute;z-index:4;transform:translate(-50%,-50%);width:66px;height:52px;padding:0;border:3px solid transparent;border-radius:19px;background:transparent;box-shadow:none;touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab;}
+#castleTrolley[hidden]{display:none;}
+#castleTrolley:active{cursor:grabbing;}
+#castleTrolley:focus-visible{outline:4px solid var(--act-d);outline-offset:4px;background:rgba(255,251,225,.1);}
+/* after two misses on a piece the trolley glows: slide me to the gold stop */
+#castleTrolley.guide{border-color:#ffe08a;box-shadow:0 0 0 3px rgba(255,224,138,.55),0 0 18px 4px rgba(255,207,74,.75);animation:castleNudge 1.2s ease-in-out infinite;}
+@keyframes castleNudge{0%,100%{box-shadow:0 0 0 3px rgba(255,224,138,.5),0 0 14px 2px rgba(255,207,74,.6);}50%{box-shadow:0 0 0 4px rgba(255,224,138,.75),0 0 24px 6px rgba(255,207,74,.9);}}
+@media (prefers-reduced-motion:reduce){#castleTrolley.guide{animation:none;}}
+#castleControls{position:absolute;z-index:5;left:16px;right:16px;bottom:calc(18px + env(safe-area-inset-bottom));display:grid;grid-template-columns:60px minmax(76px,1fr) minmax(110px,142px);gap:10px;align-items:stretch;}
+#castleControls button{min-height:62px;touch-action:none;font-size:19px;line-height:1.05;}
+#castleLower{display:flex;align-items:center;justify-content:center;gap:7px;padding:9px 10px;}
+#castleLower svg{width:22px;height:28px;flex:none;}
+#castleLower[aria-pressed=true]{transform:translateY(4px);box-shadow:0 1px 0 var(--act-d);}
+#castleHoist{border-radius:22px;padding:5px;display:flex;flex-direction:column;gap:2px;align-items:center;justify-content:center;font-size:16px!important;}
+#castleHoist svg{width:23px;height:23px;}
+#castleHelp{display:flex;align-items:center;justify-content:center;gap:6px;padding:7px;font-size:17px!important;}
+#castleHelp img{width:29px;height:37px;object-fit:contain;flex:none;}
+#castleControls button:disabled{opacity:.55;cursor:default;}
+#castlePieceName{position:absolute;z-index:3;left:16px;bottom:calc(102px + env(safe-area-inset-bottom));max-width:calc(100% - 190px);padding:6px 12px 5px;background:var(--cream-card);border-radius:16px;color:var(--cream-ink);font-family:"Baloo 2",sans-serif;font-size:17px;font-weight:800;line-height:1.1;box-shadow:0 3px 0 var(--cream-line);pointer-events:none;}
+#castlePower{position:absolute;z-index:3;right:18px;bottom:calc(102px + env(safe-area-inset-bottom));width:142px;padding:6px 10px 7px;background:var(--cream-card);border:2px solid var(--cream-line);border-radius:17px;box-shadow:0 3px 0 var(--cream-line);font-family:"Baloo 2",sans-serif;font-size:14px;font-weight:800;color:var(--act-d);line-height:1.1;text-align:center;pointer-events:none;}
+#castlePower[hidden]{display:none;}
+#castlePower>span{display:block;margin-bottom:4px;}
+#castlePower>div{height:5px;background:var(--cream-line);border-radius:99px;overflow:hidden;}
+#castlePowerFill{display:block;height:100%;background:var(--act);}
+#turnPanel{position:absolute;z-index:8;left:14px;right:14px;bottom:calc(16px + env(safe-area-inset-bottom));margin:0;background:var(--cream-card);box-shadow:0 5px 0 var(--cream-line),0 10px 45px rgba(48,35,21,.25);}
+#turnPanel.yay{box-shadow:0 5px 0 var(--cream-line);}
+#hear{background:var(--cream);color:var(--act-d);box-shadow:0 3px 0 var(--cream-line);min-width:44px;min-height:44px;}
+#hear svg{width:24px;height:24px;}
+body[data-phase=play] #turnPanel,body[data-phase=finale] #turnPanel,body[data-phase=end] #turnPanel,body[data-phase=ready] #turnPanel,body[data-phase=boot] #turnPanel{visibility:hidden;pointer-events:none;}
+body:not([data-phase=play]) #castleControls,body:not([data-phase=play]) #castleTrolley,body:not([data-phase=play]) #castlePieceName,body:not([data-phase=play]) #castlePower{visibility:hidden;pointer-events:none;}
+.castle-intro{width:100%;max-height:150px;aspect-ratio:16/9;object-fit:cover;border-radius:20px;border:3px solid var(--cream-card);box-shadow:0 4px 0 var(--cream-line);}
+#startTitle{font-family:"Baloo 2",sans-serif;font-size:31px;line-height:1.1;font-weight:800;}
+.ovl{padding:20px;}
+.ovlCard{max-height:calc(100dvh - 40px - env(safe-area-inset-top) - env(safe-area-inset-bottom));overflow-y:auto;}
+button:focus-visible{outline:4px solid var(--act-d);outline-offset:4px;}
+@media(max-width:359px){#ttl{font-size:14px;padding:9px 9px;}#top{gap:6px;}#dots{gap:3px;padding:13px 8px;}#dots i{width:5px;height:7px;}#castleControls{left:12px;right:12px;gap:8px;grid-template-columns:54px minmax(76px,1fr) 112px;}#castleHelp{font-size:15px!important;gap:3px;padding:6px;}#castleHelp img{width:25px;height:34px;}#castleLower{font-size:18px!important;padding:8px 7px;gap:3px;}#castleLower svg{width:18px;}#castlePieceName{left:13px;font-size:15px;max-width:calc(100% - 150px);padding:5px 8px;}#castlePower{right:14px;width:122px;font-size:13px;}#castleBanner{font-size:17px;padding:7px 12px;}}
+@media(max-height:640px){#castleBanner{top:calc(69px + env(safe-area-inset-top));}#castleControls{bottom:calc(14px + env(safe-area-inset-bottom));}#castleControls button{min-height:54px;}#castlePieceName,#castlePower{bottom:calc(86px + env(safe-area-inset-bottom));}.castle-intro{max-height:95px;}#startOvl .ovlCard{gap:7px;padding:16px;}#startTitle{font-size:27px;}#startBtn{min-height:50px;font-size:21px;margin:2px 0 6px;}}
+@media(orientation:landscape) and (max-height:500px){#app{max-width:900px;}#top{padding-top:calc(8px + env(safe-area-inset-top));}#castleBanner{top:calc(61px + env(safe-area-inset-top));font-size:15px;padding:5px 11px;}#castleControls{bottom:calc(10px + env(safe-area-inset-bottom));grid-template-columns:60px 110px 135px;justify-content:space-between;}#castleControls button{min-height:48px;}#castlePieceName,#castlePower{bottom:calc(70px + env(safe-area-inset-bottom));font-size:12px;padding:4px 8px;}#castlePower{width:110px;}#castlePieceName{max-width:145px;}#turnPanel{left:auto;right:12px;width:calc(100% - 120px);max-width:370px;bottom:calc(12px + env(safe-area-inset-bottom));padding:8px;}#picBox{width:44px;height:44px;}#word{font-size:26px;}#listenRow{min-height:36px;}#echoWrap,#echoFace{height:34px;width:34px;}#micState{font-size:16px;}.castle-intro{display:none;}#startOvl .ovlCard{max-width:450px;gap:5px;}#startBtn{min-height:45px;font-size:20px;padding:8px 23px;}}

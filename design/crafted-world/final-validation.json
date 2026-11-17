@@ -1,0 +1,402 @@
+{
+  "recordedAt": "2026-09-28T22:22:13Z",
+  "scope": "Crafted-world redesign of the active non-book family app",
+  "regressionSuiteCount": 63,
+  "failedSuites": 0,
+  "method": "Unchanged suite assertions; isolated server ports for concurrent execution.",
+  "suites": [
+    {
+      "suite": "syntaxtest.mjs",
+      "code": 0,
+      "signal": null,
+      "seconds": 0
+    },
+    {
+      "suite": "telemetrytest.mjs",
+      "code": 0,
+      "signal": null,
+      "seconds": 0
+    },
+    {
+      "suite": "shiptest.mjs",
+      "code": 0,
+      "signal": null,
+      "seconds": 0
+    },
+    {
+      "suite": "chartertest.mjs",
+      "code": 0,
+      "signal": null,
+      "seconds": 0
+    },
+    {
+      "suite": "soundmap.mjs",
+      "code": 0,
+      "signal": null,
+      "seconds": 0
+    },
+    {
+      "suite": "freetest.mjs",
+      "code": 0,
+      "signal": null,
+      "seconds": 7
+    },
+    {
+      "suite": "kidtest.mjs",
+      "code": 0,
+      "signal": null,
+      "seconds": 4
+    },
+    {
+      "suite": "storytest.mjs",
+      "code": 0,
+      "signal": null,
+      "seconds": 13
+    },
+    {
+      "suite": "slpapi.mjs",
+      "code": 0,
+      "signal": null,
+      "seconds": 0
+    },
+    {
+      "suite": "caseloadtest.mjs",
+      "code": 0,
+      "signal": null,
+      "seconds": 1
+    },
+    {
+      "suite": "ttsroutetest.mjs",
+      "code": 0,
+      "signal": null,
+      "seconds": 0
+    },
+    {
+      "suite": "voiceclienttest.mjs",
+      "code": 0,
+      "signal": null,
+      "seconds": 3
+    },
+    {
+      "suite": "landingtest.mjs",
+      "code": 0,
+      "signal": null,
+      "seconds": 28
+    },
+    {
+      "suite": "chargepacingtest.mjs",
+      "code": 0,
+      "signal": null,
+      "seconds": 11
+    },
+    {
+      "suite": "momweek.mjs",
+      "code": 0,
+      "signal": null,
+      "seconds": 5
+    },
+    {
+      "suite": "nativefamilytest.mjs",
+      "code": 0,
+      "signal": null,
+      "seconds": 4
+    },
+    {
+      "suite": "slpcode.mjs",
+      "code": 0,
+      "signal": null,
+      "seconds": 36
+    },
+    {
+      "suite": "iphonepolishtest.mjs",
+      "code": 0,
+      "signal": null,
+      "seconds": 5
+    },
+    {
+      "suite": "progressreviewtest.mjs",
+      "code": 0,
+      "signal": null,
+      "seconds": 3
+    },
+    {
+      "suite": "readtest.mjs",
+      "code": 0,
+      "signal": null,
+      "seconds": 35
+    },
+    {
+      "suite": "onboardingtest.mjs",
+      "code": 0,
+      "signal": null,
+      "seconds": 28
+    },
+    {
+      "suite": "betatest.mjs",
+      "code": 0,
+      "signal": null,
+      "seconds": 38
+    },
+    {
+      "suite": "calltest.mjs",
+      "code": 0,
+      "signal": null,
+      "seconds": 65
+    },
+    {
+      "suite": "packtest.mjs",
+      "code": 0,
+      "signal": null,
+      "seconds": 11
+    },
+    {
+      "suite": "voicetest3.mjs",
+      "code": 0,
+      "signal": null,
+      "seconds": 9
+    },
+    {
+      "suite": "speechevidencetest.mjs",
+      "code": 0,
+      "signal": null,
+      "seconds": 136
+    },
+    {
+      "suite": "progtest.mjs",
+      "code": 0,
+      "signal": null,
+      "seconds": 27
+    },
+    {
+      "suite": "gatecheck.mjs",
+      "code": 0,
+      "signal": null,
+      "seconds": 12
+    },
+    {
+      "suite": "fittest.mjs",
+      "code": 0,
+      "signal": null,
+      "seconds": 37
+    },
+    {
+      "suite": "repguardtest.mjs",
+      "code": 0,
+      "signal": null,
+      "seconds": 212
+    },
+    {
+      "suite": "homesessiontest.mjs",
+      "code": 0,
+      "signal": null,
+      "seconds": 6
+    },
+    {
+      "suite": "activitytest.mjs",
+      "code": 0,
+      "signal": null,
+      "seconds": 7
+    },
+    {
+      "suite": "shapetest.mjs",
+      "code": 0,
+      "signal": null,
+      "seconds": 92
+    },
+    {
+      "suite": "day1.mjs",
+      "code": 0,
+      "signal": null,
+      "seconds": 62
+    },
+    {
+      "suite": "freemiumtest.mjs",
+      "code": 0,
+      "signal": null,
+      "seconds": 55
+    },
+    {
+      "suite": "completiontest.mjs",
+      "code": 0,
+      "signal": null,
+      "seconds": 23
+    },
+    {
+      "suite": "simpleplaytest.mjs",
+      "code": 0,
+      "signal": null,
+      "seconds": 19
+    },
+    {
+      "suite": "pausetest.mjs",
+      "code": 0,
+      "signal": null,
+      "seconds": 64
+    },
+    {
+      "suite": "heartest.mjs",
+      "code": 0,
+      "signal": null,
+      "seconds": 3
+    },
+    {
+      "suite": "feedtest.mjs",
+      "code": 0,
+      "signal": null,
+      "seconds": 21
+    },
+    {
+      "suite": "mictest.mjs",
+      "code": 0,
+      "signal": null,
+      "seconds": 7
+    },
+    {
+      "suite": "hwtest.mjs",
+      "code": 0,
+      "signal": null,
+      "seconds": 6
+    },
+    {
+      "suite": "pauseaudiotest.mjs",
+      "code": 0,
+      "signal": null,
+      "seconds": 11
+    },
+    {
+      "suite": "iaptest.mjs",
+      "code": 0,
+      "signal": null,
+      "seconds": 62
+    },
+    {
+      "suite": "loadtest.mjs",
+      "code": 0,
+      "signal": null,
+      "seconds": 75
+    },
+    {
+      "suite": "loudroomtest.mjs",
+      "code": 0,
+      "signal": null,
+      "seconds": 59
+    },
+    {
+      "suite": "slicetest.mjs",
+      "code": 0,
+      "signal": null,
+      "seconds": 21
+    },
+    {
+      "suite": "micquietpracticetest.mjs",
+      "code": 0,
+      "signal": null,
+      "seconds": 115
+    },
+    {
+      "suite": "stacktest.mjs",
+      "code": 0,
+      "signal": null,
+      "seconds": 28
+    },
+    {
+      "suite": "runtest.mjs",
+      "code": 0,
+      "signal": null,
+      "seconds": 13
+    },
+    {
+      "suite": "glidetest.mjs",
+      "code": 0,
+      "signal": null,
+      "seconds": 15
+    },
+    {
+      "suite": "firstgametest.mjs",
+      "code": 0,
+      "signal": null,
+      "seconds": 2
+    },
+    {
+      "suite": "tilestest.mjs",
+      "code": 0,
+      "signal": null,
+      "seconds": 89
+    },
+    {
+      "suite": "micquietgamestest.mjs",
+      "code": 0,
+      "signal": null,
+      "seconds": 166
+    },
+    {
+      "suite": "slpworkflowtest.mjs",
+      "code": 0,
+      "signal": null,
+      "seconds": 5
+    },
+    {
+      "suite": "slpcommunityapi.mjs",
+      "code": 0,
+      "signal": null,
+      "seconds": 0
+    },
+    {
+      "suite": "slpcommunitytest.mjs",
+      "code": 0,
+      "signal": null,
+      "seconds": 4
+    },
+    {
+      "suite": "slpfeedbacktest.mjs",
+      "code": 0,
+      "signal": null,
+      "seconds": 0
+    },
+    {
+      "suite": "slptest.mjs",
+      "code": 0,
+      "signal": null,
+      "seconds": 17
+    },
+    {
+      "suite": "craftedarttest.mjs",
+      "code": 0,
+      "signal": null,
+      "seconds": 2
+    },
+    {
+      "suite": "arttest.mjs",
+      "code": 0,
+      "signal": null,
+      "seconds": 1
+    },
+    {
+      "suite": "slpdesigntest.mjs",
+      "code": 0,
+      "signal": null,
+      "seconds": 21
+    },
+    {
+      "suite": "sayplaytest.mjs",
+      "code": 0,
+      "signal": null,
+      "seconds": 179
+    }
+  ],
+  "additionalChecks": [
+    "TypeScript noEmit passed",
+    "git diff --check passed",
+    "Final portrait integration: child flows 37 checks, customization 30 checks, Sprint 20 checks, Glide 17 checks",
+    "Final Home captures: five viewport/age combinations without page errors or overflow",
+    "All five practice scenes and chest states captured at 393x852 and 320x568 with simulated microphone and documented visual fixtures",
+    "Independent code and visual review completed"
+  ],
+  "remainingReleaseChecks": [
+    "Physical iPhone keyboard behavior",
+    "Physical iPhone microphone recognition",
+    "Physical iPhone speaker levels"
+  ],
+  "releaseState": "Local worktree only; not merged or deployed",
+  "booksEdited": false
+}

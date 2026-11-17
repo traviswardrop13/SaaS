@@ -1,0 +1,16 @@
+/* Practice counters share the painted wooden materials of their game. */
+body[data-crafted="practice"] #stand .cnt{background-color:#d89c50;background-image:url("/assets/crafted/painted-wood-ivory.webp");background-size:220px 220px;background-blend-mode:multiply;border-color:#bb7b35;box-shadow:inset 0 4px 2px #ffe8ae,inset 0 -7px 1px #a961294d,0 7px 0 #945b30,0 14px 18px #573c2826}
+body[data-crafted="practice"] #stand .awn{background-color:#e9bb73;background-image:url("/assets/crafted/painted-wood-ivory.webp");background-size:180px 180px;background-blend-mode:multiply;border:1px solid #bd8a43;box-shadow:inset 0 2px #fff0bb,0 3px 4px #76441838}
+body[data-crafted="practice"] #stand .well{background:radial-gradient(ellipse at 50% 70%,#a86d3838,#67431c52);border:2px dashed #ffe5ad;box-shadow:inset 0 2px 3px #65401e59,0 1px #ffeecf99}
+body[data-crafted="practice"] #keyRow .key{background-color:#fff8dc;background-image:url("/assets/crafted/painted-wood-ivory.webp");background-size:180px 180px;background-blend-mode:multiply;border-color:#decda7;box-shadow:inset 0 2px #fffdf3,inset 0 -5px #e2d0a2,0 5px 0 #bba777,0 8px 8px #1d183c44}
+body[data-crafted="practice"] #keyRow .key.on{background-color:#f9c658;border-color:#d19835;box-shadow:inset 0 2px #ffebb1,inset 0 -5px #d59732,0 5px 0 #a87a2a,0 0 16px #ffdc6173}
+body[data-crafted="practice"] #reveals .blk:not(.glass){background-image:url("/assets/crafted/painted-wood-ivory.webp")!important;background-size:180px 180px;background-blend-mode:multiply;border:1px solid #8d673552;box-shadow:inset 0 2px #ffffff73,inset 0 -3px #67482033,0 3px 2px #51382f33}
+
+body[data-crafted="practice"] #chestStk{display:flex;align-items:center;justify-content:center;min-height:90px}
+body[data-crafted="practice"] #chestStk svg{width:86px;height:86px}
+
+body[data-crafted="practice"] #balloonEl{aspect-ratio:100/130}
+body[data-crafted="practice"] #balloonEl .craft-balloon{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;z-index:2}
+body[data-crafted="practice"] #balloonEl .pilot{bottom:18%;height:24%;width:30%;overflow:hidden;z-index:1}
+body[data-crafted="practice"] #balloonEl .pilot>span{width:100%!important;height:auto!important}
+body[data-crafted="practice"] #balloonEl .pilot svg{width:100%;height:auto}

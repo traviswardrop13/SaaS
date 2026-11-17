@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { readSession, kvConfigured, sendParentInviteEmail } from "@/lib/slpAuth";
+import { readSession, liveSession, kvConfigured, sendParentInviteEmail } from "@/lib/slpAuth";
 import { rateLimit } from "@/lib/rateLimit";
 import { readAccount, normalizeInvite, createInvite, deleteInvite, cleanToken } from "@/lib/roster";
 import { covered, bumpDaily, PARENT_EMAILS_PER_DAY } from "@/lib/caseload";
+import { dashboardGate } from "@/lib/proGate";
+import { deleteLogin } from "@/lib/familyLogin";
 
 /**
  * Set a child up BEFORE the family has tapped anything.
@@ -31,7 +33,7 @@ import { covered, bumpDaily, PARENT_EMAILS_PER_DAY } from "@/lib/caseload";
  * Sona sends that family ONE email with the join link. The address is used
  * for that send and for nothing else: it is not part of the invite, the
  * index row or the meta (their shapes are exactly what they were), it is not
- * logged, and it never reaches /api/lead or Kit — the only way a parent joins
+ * logged, and it never reaches /api/lead or the email list — the only way a parent joins
  * the list is by typing their own email under the consent line on
  * join.html. The daily limit counts sends per CLINICIAN, keyed on the
  * clinician, so even the meter holds nothing about the parent.
@@ -48,13 +50,18 @@ function parentEmailOf(v: unknown): string | null {
   return e;
 }
 
-async function gate(req: NextRequest): Promise<{ code: string; familyKey: string; email: string; name: string } | NextResponse> {
-  const s = readSession(req);
+/** Deleting an invite works whatever the clinician pays; making one is Sona Pro's (lib/proGate). */
+async function gate(req: NextRequest, write = true): Promise<{ code: string; familyKey: string; email: string; name: string } | NextResponse> {
+  const s = await liveSession(readSession(req));
   if (!s) return NextResponse.json({ ok: false, error: "sign in required" }, { status: 401 });
   const rl = await rateLimit(req, { key: "slpinvite", limit: 60, windowSec: 3600 });
   if (rl) return rl;
   if (!kvConfigured()) {
     return NextResponse.json({ ok: false, error: "no data store connected" }, { status: 503 });
+  }
+  if (write) {
+    const locked = await dashboardGate(s.email);
+    if (locked) return locked;
   }
   const { code, familyKey, name, clinic } = await readAccount(s.email);
   // No key, no link: a link without the key is an honor system, and the
@@ -126,7 +133,7 @@ export async function POST(req: NextRequest) {
 
 // DELETE { token } → { ok, removed: token }
 export async function DELETE(req: NextRequest) {
-  const g = await gate(req);
+  const g = await gate(req, false);
   if (g instanceof NextResponse) return g;
   const body = await readBody(req);
   if (!body) return NextResponse.json({ ok: false, error: "bad request" }, { status: 400 });
@@ -134,6 +141,9 @@ export async function DELETE(req: NextRequest) {
   const token = cleanToken(body.token);
   if (!token) return NextResponse.json({ ok: false, error: "which invite?" }, { status: 400 });
   const gone = await deleteInvite(g.code, token);
-  if (!gone) return NextResponse.json({ ok: false, error: "no such invite" }, { status: 404 });
+  // A login made for this invite goes with it: nothing the family could use
+  // outlives the invite the clinician cancelled.
+  const loginGone = await deleteLogin(g.code, { inv: token });
+  if (!gone && !loginGone) return NextResponse.json({ ok: false, error: "no such invite" }, { status: 404 });
   return NextResponse.json({ ok: true, removed: token });
 }

@@ -73,44 +73,53 @@ ok("hit after 3rd day", r2.hit, true);
 ok("weekStreak now 3", r2.weekStreak, 3);
 ok("practicedToday", r2.practicedToday, true);
 
-// UI: parent sheet card renders
+// UI: Home, where the Grown-ups button now leads straight to Settings
 await page.reload(); await page.waitForTimeout(900);
-const sheet = await page.evaluate(() => {
-  document.getElementById("sheetOvl").classList.add("show");
-  // paintWeek runs on load; read what it rendered
-  return { dots: document.getElementById("wkDots").children.length, msg: document.getElementById("wkMsg").textContent, streak: document.getElementById("wkStreak").textContent, entries: [...document.querySelectorAll(".sheetBtn")].map((b) => b.textContent.trim()) };
-});
-ok("sheet 7 dots", sheet.dots, 7);
-// The plan lives in Settings → Account, where Restore also is; duplicating it
-// in the parent sheet made a four-tap sheet into a menu.
-ok("parent sheet is a short list, not a menu", sheet.entries.length, 2);
-ok("the sheet still reaches Progress and Settings",
-  /Progress/.test(sheet.entries.join(" ")) && /Settings/.test(sheet.entries.join(" ")), true);
+const home = await page.evaluate(() => ({
+  weekCard: !!document.querySelector("#weekCard, #wkDots, #wkMsg, #wkStreak, #planCard"),
+  popup: !!document.querySelector("#sheetOvl, #goProgress, #goSettings, #goTalk"),
+}));
+// 29 Sep 2026: the Monday–Sunday week left the Grown-ups pop-up (Travis: not
+// needed the first time a parent opens it). The weekly goal now lives only on
+// Progress, checked below.
+ok("Home has no week card", home.weekCard, false);
+// 30 Sep 2026 (Travis): the pop-up itself went. The code goes straight to
+// Settings, whose tab bar is the three places the pop-up offered and whose
+// Account line is where the plan is said (familynavtest and gatecheck drive
+// that path).
+ok("Home has no Grown-ups pop-up to choose from", home.popup, false);
 // pre-path families get one step per practiced day — nobody restarts at zero
 const pcredit = await page.evaluate(() => window.Sona.pathState().steps);
 ok("path credits practiced days", pcredit >= 3, true);
-console.log("      msg:", sheet.msg, "| streak:", sheet.streak);
-await page.screenshot({ path: OUT + "/mom-sheet.png" });
+await page.screenshot({ path: OUT + "/mom-home.png" });
 
 // progress page
 errs = [];
 await page.evaluate(() => sessionStorage.setItem("sona.gate.v1", String(Date.now()))); // pass the parent gate
 await page.goto("http://localhost:8128/progress.html"); await page.waitForTimeout(1000);
 const prog = await page.evaluate(() => ({
-  msg: document.getElementById("wkGoalMsg").textContent,
-  on: document.querySelector("#wkGoalPick .gbtn.on") ? document.querySelector("#wkGoalPick .gbtn.on").dataset.g : null,
+  msg: document.getElementById("wkDays").textContent,
+  days: document.querySelectorAll("#week .day").length,
+  picker: !!document.querySelector("#wkGoalPick, .gbtn, #dailyGoalPick"),
 }));
-ok("progress goal button on", prog.on, "3");
+// 5 Nov 2026 (Travis): the week's bubbles stay, the days-a-week buttons go.
+ok("progress has no goal buttons", prog.picker, false);
+// 29 Sep 2026: the seven Monday–Sunday days, checked here now that Progress
+// is the only place they are drawn; each bubble is a day with practice.
+ok("progress 7 days", prog.days, 7);
+ok("progress counts the week's practice days", /^\d+ days? practiced$/.test(prog.msg), true);
 console.log("      progress msg:", prog.msg);
 console.log(errs.length ? "FAIL progress pageerrors: " + errs[0] : "PASS progress no pageerrors");
 if (errs.length) fails++;
 await page.screenshot({ path: OUT + "/mom-progress.png" });
 
-// onboarding goal step renders 3 choices
+// setup's daily goal step renders 3 choices (how long each day, since 22 Oct
+// 2026: 5, 10 or 15 minutes, the daily goal in reps; the days a week are
+// Settings' and Progress's, no longer asked in setup)
 errs = [];
 await page.goto("http://localhost:8128/onboarding.html"); await page.waitForTimeout(900);
-const ob = await page.evaluate(() => document.querySelectorAll("#obGoal .choice").length);
-ok("onboarding 3 cadence choices", ob, 3);
+const ob = await page.evaluate(() => document.querySelectorAll("#obMinutes .ask-pick").length);
+ok("onboarding 3 daily-goal choices", ob, 3);
 console.log(errs.length ? "FAIL onboarding pageerrors: " + errs[0] : "PASS onboarding no pageerrors");
 if (errs.length) fails++;
 

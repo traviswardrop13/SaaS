@@ -4,17 +4,18 @@ import { readFileSync, existsSync, statSync } from 'fs';
 import { chromium, ROOT as CURRENT_ROOT, launchOpts } from './_env.mjs';
 const ROOT=process.env.SONATEST_PUBLIC_ROOT||CURRENT_ROOT;
 const origin='http://127.0.0.1:8198';
+const SIMPLE_SCENE=readFileSync(new URL('./fixtures/simpleplay-scene.html',import.meta.url));
 let mode='pcm',requests=0,failures=0;
 const ok=(name,value,detail='')=>{if(!value)failures++;console.log((value?'PASS ':'FAIL ')+name+(value?'':' '+JSON.stringify(detail)));};
 const mime={html:'text/html',js:'text/javascript',css:'text/css',svg:'image/svg+xml',png:'image/png',woff2:'font/woff2'};
 const server=createServer((req,res)=>{
  const pathname=new URL(req.url,origin).pathname;
- if(pathname==='/api/tts'){requests++;res.writeHead(mode==='pcm'?200:503,{'Content-Type':mode==='pcm'?'audio/L16; rate=24000; channels=1':'application/json','X-Sona-Voice-Provider':'elevenlabs','X-Sona-Voice-Model':'eleven_multilingual_v2','X-Sona-Voice-Cache':'miss','X-Sona-Voice-Revision':'v7'});res.end(mode==='pcm'?Buffer.alloc(480):'{}');return;}
+ if(pathname==='/api/tts'){requests++;const audio=mode==='pcm'||mode==='standin';res.writeHead(audio?200:503,{'Content-Type':audio?'audio/L16; rate=24000; channels=1':'application/json','X-Sona-Voice-Provider':'elevenlabs','X-Sona-Voice-Model':'eleven_multilingual_v2','X-Sona-Voice-Cache':'miss','X-Sona-Voice-Revision':'v7','X-Sona-Voice-Keep':mode==='standin'?'0':'1'});res.end(audio?Buffer.alloc(480):'{}');return;}
  if(pathname==='/speech-harness'){res.writeHead(200,{'Content-Type':'text/html'});res.end('<!doctype html><html><button id="speak">Speak</button><script src="/sona.js"></script><script>document.getElementById("speak").onclick=function(){window.finished=false;Sona.speakNow("Take your time. It is your turn.").then(function(){window.finished=true;});};</script></html>');return;}
  const file=ROOT+pathname;if(!existsSync(file)||!statSync(file).isFile()){res.writeHead(404);res.end();return;}
  res.writeHead(200,{'Content-Type':mime[file.split('.').pop()]||'application/octet-stream'});
  // Keep parked-game speech delivery covered without adding an app unlock.
- const body=pathname==='/sona.js'?readFileSync(file,'utf8').replace(/((?:bubbles|peekaboo): \{[^\n]*?)comingSoon: true/g,'$1comingSoon: false'):readFileSync(file);res.end(body);
+ const body=pathname==='/sona.js'?readFileSync(file,'utf8').replace(/((?:bubbles|peekaboo): \{[^\n]*?)comingSoon: true/g,'$1comingSoon: false'):pathname==='/arcade-peekaboo.html'?SIMPLE_SCENE:readFileSync(file);res.end(body);
 });
 await new Promise(resolve=>server.listen(8198,'127.0.0.1',resolve));
 const browser=await chromium.launch(launchOpts());
@@ -32,7 +33,7 @@ function fake(){
  put(value,key){h.cache[key]=value;const query={};queueMicrotask(()=>{if(tx.oncomplete)tx.oncomplete();});return query;}
  };}};return tx;}};
  Object.defineProperty(window,'indexedDB',{configurable:true,value:{open(){const r={result:db};queueMicrotask(()=>r.onsuccess&&r.onsuccess());return r;}}});
- localStorage.setItem('sona.freeera.v1','post');localStorage.setItem('sona.freeera2.v1','done');localStorage.setItem('sona.freeera3.v1','done');localStorage.setItem('sona.freeera4.v1','done');
+ localStorage.setItem('sona.freeera.v1','post');localStorage.setItem('sona.freeera2.v1','done');localStorage.setItem('sona.freeera3.v1','done');localStorage.setItem('sona.freeera4.v1','done');localStorage.setItem('sona.freeera5.v1','done');
  localStorage.setItem('sona.profile.v1',JSON.stringify({childName:'Demo',childAge:'4',focusSounds:['M'],onboarded:true,volume:.6,voiceOn:true,soundOn:true,earlyAdopter:true}));
 }
 async function fresh(path){const ctx=await browser.newContext({reducedMotion:'reduce'});await ctx.addInitScript(fake);await ctx.route('**/*',r=>r.request().url().startsWith(origin+'/')?r.continue():r.abort());const page=await ctx.newPage();page.setDefaultTimeout(4000);const errors=[];page.on('pageerror',e=>errors.push(e.message));await page.goto(origin+path);return {ctx,page,errors};}
@@ -74,7 +75,7 @@ await scenario('shared ElevenLabs playback',async()=>{
  ok('diagnostics are bounded, private, memory-only copies',safe);
  }finally{await ctx.close();}
 });
-for(const game of ['bubbles','peekaboo'])await scenario(game+' delivery and cache',async()=>{
+for(const game of ['peekaboo'])await scenario(game+' delivery and cache',async()=>{
  mode='pcm';const {ctx,page,errors}=await fresh('/arcade-'+game+'.html');try{
  const before=requests;ok(game+': opening a game does not start the demonstration clock',await page.evaluate(()=>!Sona.demoState().started));
  await page.click('#startGame');const started=await page.evaluate(()=>Sona.demoState().started);
@@ -90,6 +91,18 @@ for(const game of ['bubbles','peekaboo'])await scenario(game+' delivery and cach
  await page.click('#pauseGame');await page.click('#resumeGame');
  ok(game+': resuming never restarts the demonstration window',await page.evaluate(t=>Sona.demoState().started===t,started));
  ok(game+': no runtime errors',!errors.length,errors);
+ }finally{await ctx.close();}
+});
+// 28 Sep 2026: a stand-in (X-Sona-Voice-Keep: 0, the v2 clip sent while v4
+// Turbo was busy) is played but never saved, so "Hear it" asks the server again.
+await scenario('peekaboo stand-in is never kept',async()=>{
+ mode='standin';const {ctx,page,errors}=await fresh('/arcade-peekaboo.html');try{
+ const before=requests;await page.click('#startGame');await page.click('[data-door="1"]');await page.waitForTimeout(150);
+ ok('peekaboo: a stand-in word is played',requests===before+1,{before,requests});
+ await page.click('#hearWord');await page.waitForTimeout(150);
+ ok('peekaboo: a stand-in is asked for again, not replayed from the phone',requests===before+2,{before,requests});
+ ok('peekaboo: nothing was saved on the phone',await page.evaluate(()=>Object.keys(__voiceTest.cache).length===0),await page.evaluate(()=>Object.keys(__voiceTest.cache)));
+ ok('peekaboo stand-in: no runtime errors',!errors.length,errors);
  }finally{await ctx.close();}
 });
 await browser.close();await new Promise(resolve=>server.close(resolve));

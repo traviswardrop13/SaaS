@@ -1,0 +1,65 @@
+[
+  {
+    "name": "cover",
+    "size": 384,
+    "quality": 82,
+    "bytes": 36736,
+    "sha256": "7d13eabf3d144b073b4567628cba497515c6d0ecf419c18f16133ba40e570b14"
+  },
+  {
+    "name": "p01",
+    "size": 768,
+    "quality": 84,
+    "bytes": 146412,
+    "sha256": "1e045a20ad043ecc34840f58b35f49d0100a7dfb5b3362e142ddf70f28559a25"
+  },
+  {
+    "name": "p02",
+    "size": 768,
+    "quality": 84,
+    "bytes": 142404,
+    "sha256": "becc754fe0d820c0e9a27945827370215ec43c334d8b2a164ff64085ebf230ee"
+  },
+  {
+    "name": "p03",
+    "size": 768,
+    "quality": 84,
+    "bytes": 131048,
+    "sha256": "37dd38d7a936f7a2dd88f66ed05a7ac4d1e07bbb3c0569eae46613d40db0917b"
+  },
+  {
+    "name": "p04",
+    "size": 768,
+    "quality": 84,
+    "bytes": 139516,
+    "sha256": "b12a8be85587ae0b6ed2343732d87edc4a22a14493d867f447c54488c28b0480"
+  },
+  {
+    "name": "p05",
+    "size": 768,
+    "quality": 84,
+    "bytes": 156634,
+    "sha256": "2a0a8d618b768da4d5cff354f78f8788c608546989ddeb55397872fafaa22b9d"
+  },
+  {
+    "name": "p06",
+    "size": 768,
+    "quality": 84,
+    "bytes": 139320,
+    "sha256": "7e77f26669aff7f00c420fa13696939b04756e982e62c5aa4de4dad49d7bff33"
+  },
+  {
+    "name": "p07",
+    "size": 768,
+    "quality": 84,
+    "bytes": 138788,
+    "sha256": "7769b6143ec9527b39937434ed4493c79713a50e34f6e0352fe3154e7cec9fb3"
+  },
+  {
+    "name": "p08",
+    "size": 768,
+    "quality": 84,
+    "bytes": 123484,
+    "sha256": "953d4830f6a60a46b4753e618a12a53b0d904fecd290570bebed63a5b58fbcf9"
+  }
+]

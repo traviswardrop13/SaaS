@@ -3,123 +3,146 @@ import { kvCmd } from "@/lib/slpAuth";
 import { isWorkEmail } from "@/lib/workEmail";
 
 /**
- * SONA PREMIUM FOR YOUR CASELOAD — the clinician's plan (24 Sep 2026).
+ * SONA PRO: THE ONE PLAN A CLINICIAN CAN BUY NOW (Travis, 12 Nov 2026: "i
+ * needa get this setup to sell to slps ... price it between 15 and 30 a month
+ * for the dashboard and unlimited accounts for clients"; he chose $19.99 a
+ * month, a 14-day free trial, no cap on families, and the page findable).
  *
- * $79.99 a year, bought on the web by the clinician, and every family who
- * joins through that clinician's link gets Premium — whether or not they say
- * "Yes, share progress", because access and sharing are separate promises.
+ *  - "Sona Pro", $19.99 a month (`plan: slp-pro`): the dashboard, every game
+ *    on the clinician's own phone or tablet, and every game for every family
+ *    who joins through their link, with no cap on how many.
+ *  - A 14-day free trial, card up front, once per clinician: the first Pro
+ *    subscription an email ever has. Stripe charges on day 15 unless they
+ *    cancel; cancelled during the trial, nothing is charged.
+ *  - THE DASHBOARD IS PART OF THE PLAN, for accounts made from this build
+ *    (`terms: PRO_TERMS`). Every older account keeps the free dashboard it
+ *    was promised; see dashboardOpen().
+ *
+ * The two yearly plans below are RETIRED FROM SALE, not cancelled: anyone
+ * holding one keeps it, renewing at the price they bought it at, and it keeps
+ * covering what it covered. Only the purchase path lost them
+ * (app/api/slp/plan refuses them), the same rule the family plan's monthly
+ * price went by.
+ *
+ * THE TWO RETIRED PLANS, one on top of the other
+ * (24 Sep 2026; re-priced by Travis, 29 Sep 2026; sold until 12 Nov 2026).
+ *
+ *  - "Sona Premium for you", $59.99 a year: every game on the clinician's
+ *    own phone or tablet, reached by the single-use link /api/slp/self
+ *    emails to the account's own address.
+ *  - "Sona Premium for your caseload", $59.99 a year MORE: every family who
+ *    joins through that clinician's link gets Premium, whether or not they
+ *    say "Yes, share progress" (access and sharing are separate promises).
+ *    It is an add-on. It is sold only to a clinician whose own Premium is
+ *    already on ("they're going to still pay the 60 bucks for an account,
+ *    and they can pay an extra 60 bucks a year for all of their caseload").
+ *
+ * Until 29 Sep the caseload plan was $79.99 and the clinician's own Premium
+ * was free with a work email. Both of those promises are kept for the people
+ * they were made to; see WHO IS COVERED.
+ *
  * The clinician earns nothing on their caseload, ever (CLAUDE.md: a
  * per-family payment to a clinician is a referral fee under several state
  * practice acts), and nothing here counts families toward anything a
  * clinician is paid.
  *
- * WHO IS COVERED, and the two ways in:
- *  - GRANDFATHERED. Clinicians who signed up before this build were promised
- *    "Free forever, unlimited families — for you and every kid on your
- *    caseload". They keep it. The rule is STRUCTURAL, not a date: every
- *    account created from this build on carries `terms: CASELOAD_TERMS`, so
- *    an account WITHOUT a `terms` field predates it. No clock to get wrong,
- *    no cut-off to argue about.
- *  - PAID. A live Stripe subscription stamped `plan: slp-caseload` and
- *    `slp: <clinician email>`. Stripe keeps a cancelled-at-period-end
- *    subscription `active` until the year that was paid for runs out, which
- *    is exactly decision 5: families keep Premium to the end of the paid
- *    year, then drop to the free version. past_due counts too — that is the
- *    card-retry grace, and a declined renewal must not knock forty families
- *    off Premium the same afternoon.
+ * WHO IS COVERED. Every rule is STRUCTURAL: the `terms` stamp an account was
+ * made with, or a Stripe subscription. No clock to get wrong, no cut-off to
+ * argue about.
+ *  - NO `terms` (signed up before 24 Sep 2026). Promised "Free forever,
+ *    unlimited families, for you and every kid on your caseload". Their
+ *    caseload AND their own phone are covered, free, forever.
+ *  - `terms: FREE_SELF_TERMS` (24 to 29 Sep 2026). Told their own Premium was
+ *    free with a work email (or the founder's approval). It still is. Their
+ *    caseload is the add-on, bought at today's price.
+ *  - `terms: CASELOAD_TERMS` (from 29 Sep 2026). They buy Premium for
+ *    themselves, then may add their caseload.
+ *  - PAID CASELOAD. A live subscription stamped `plan: slp-caseload` and
+ *    `slp: <email>`. One sold before 29 Sep (no `addon` stamp) was the whole
+ *    $79.99 plan and has always switched on the clinician's own phone too, so
+ *    it still does, at the price they subscribed at. One sold from 29 Sep
+ *    carries `addon: "1"` and covers the caseload only.
+ *  - PAID SELF. A live subscription stamped `plan: slp-self`.
+ *  - `terms: PRO_TERMS` (from 12 Nov 2026). Nothing until they start Sona
+ *    Pro: not the dashboard, not their own phone, not their caseload.
+ *  - SONA PRO. A live subscription stamped `plan: slp-pro`. Covers all three,
+ *    whatever the account's stamp. A month cancelled ends at the end of the
+ *    month paid for (the billing page cancels at period end), so families
+ *    keep every game to then.
+ * Stripe keeps a cancelled-at-period-end subscription `active` until the
+ * year that was paid for runs out, so families keep Premium to the end of
+ * the paid year, then drop to the free version. past_due counts too: that is
+ * the card-retry grace, and a declined renewal must not knock forty families
+ * off Premium the same afternoon.
  *
- * WHERE THE PAID STATE LIVES. `slpplan:<email>`, its own key — never on the
- * slpacct JSON, which two routes rewrite whole (a plan written there would
- * be erased by the next profile save), and never a key starting "slpacct:",
- * which lib/founder.ts scans as the list of clinician accounts. It is a
+ * WHERE THE PAID STATE LIVES. One mirror per plan: `slpplan:<email>` for the
+ * caseload, `slpplan-self:<email>` for the clinician's own. Never on the
+ * slpacct JSON, which two routes rewrite whole (a plan written there would be
+ * erased by the next profile save), and never a key starting "slpacct:",
+ * which lib/founder.ts scans as the list of clinician accounts. Each is a
  * MIRROR of Stripe, re-read when it is ten minutes old; when Stripe cannot be
  * reached the last known answer stands, so a Stripe outage never takes
- * Premium away from a caseload that paid for it.
+ * Premium away from someone who paid for it.
  *
- * NEVER A CHARTER SPOT. The subscription's metadata never carries a `tier`
- * key: lib/charter.ts counts `tier: charter` subscriptions as the fifty
- * family spots, and a clinician's plan is not a family's.
+ * NEVER A CHARTER SPOT. Neither subscription's metadata carries a `tier` key:
+ * lib/charter.ts counts `tier: charter` subscriptions as the fifty family
+ * spots, and a clinician's plan is not a family's. That is also why the
+ * clinician's own $59.99 is its own product and not the family plan at the
+ * same figure: it never takes a charter spot, and never becomes $99.99 when
+ * the spots run out.
  */
 
-export const CASELOAD_CENTS = 7999;
-export const CASELOAD_PRICE = "$79.99";
-// $79.99 / 12 = $6.6658. Never "$6.67 a month" (that is $80.04 a year) nor
-// "$6.66" (a rounding a reader can check and catch) — the same rule that
-// made the family price "under $5 a month".
-export const CASELOAD_PER_MONTH = "under $7 a month";
+// SONA PRO. A monthly price, printed as it is charged: "$19.99 a month",
+// never rounded to "$20" and never divided into anything. The trial length is
+// the one number checkout, the dashboard, for-slps and the Terms all read.
+export const PRO_CENTS = 1999;
+export const PRO_PRICE = "$19.99";
+export const PRO_PER = "a month";
+export const PRO_INTERVAL = "month" as const;            // Stripe recurring.interval
+export const PRO_TRIAL_DAYS = 14;
+export const PRO_PLAN = "slp-pro";                       // Stripe metadata.plan, on the session AND the subscription
+export const PRO_NAME = "Sona Pro";
+/** Stamped on every NEW slpacct from 12 Nov 2026: the dashboard is part of Sona Pro for them. */
+export const PRO_TERMS = "pro-2026-11-12";
+/** Verified signups from the free clinician landing. Premium coverage follows the plan. */
+export const FREE_DASHBOARD_TERMS = "free-dashboard-2026-11-13";
+
+// The add-on. $59.99 / 12 = $4.9991, so "under $5 a month": never "$4.99 a
+// month" (that is $59.88 a year) nor "$5.00" (a rounding a reader can check
+// and catch). The same rule made the family price "under $5 a month".
+export const CASELOAD_CENTS = 5999;
+export const CASELOAD_PRICE = "$59.99";
+export const CASELOAD_PER_MONTH = "under $5 a month";
 export const CASELOAD_PLAN = "slp-caseload";            // Stripe metadata.plan, on the session AND the subscription
-export const CASELOAD_TERMS = "caseload-2026-09";       // stamped on every NEW slpacct
 export const CASELOAD_NAME = "Sona Premium for your caseload";
-// A covered code may redeem up to 300 families; an uncovered one keeps the
-// ordinary 60 (app/api/slp/redeem). Copy says "every family on your
-// caseload", never "unlimited" — there is a number, and it is this one.
-export const COVERED_REDEEM_CAP = 300;
+/** metadata.addon on every caseload subscription sold from 29 Sep 2026: covers the caseload, not the clinician's own phone. */
+export const CASELOAD_ADDON = "1";
+// The clinician's own. The same figure as the add-on, and the same reading.
+export const SELF_CENTS = 5999;
+export const SELF_PRICE = "$59.99";
+export const SELF_PER_MONTH = "under $5 a month";
+export const SELF_PLAN = "slp-self";                    // Stripe metadata.plan
+export const SELF_NAME = "Sona Premium for you";
+/** What the caseload plan cost before 29 Sep 2026. Those subscriptions renew at it; the Terms say so. */
+export const LEGACY_CASELOAD_PRICE = "$79.99";
+// Both: $119.98 / 12 = $9.998, so "under $10 a month".
+export const BOTH_PRICE = "$119.98";
+export const BOTH_PER_MONTH = "under $10 a month";
+/** The 29 Sep to 12 Nov 2026 stamp: a free dashboard, both yearly plans bought. An account never gains or loses its stamp. */
+export const CASELOAD_TERMS = "premium-2026-09-29";
+/** The 24 to 29 Sep 2026 stamp: own Premium free with a work email, as those clinicians were told. */
+export const FREE_SELF_TERMS = "caseload-2026-09";
+// NO CAP ON A COVERED CASELOAD (Travis, 12 Nov 2026: "Remove the limit").
+// Until then a covered code stopped at 300 sign-ups a year and the copy could
+// not say "unlimited"; now a covered clinician's link has no number at all,
+// so "unlimited families" is true. An UNCOVERED code keeps the ordinary 60
+// (app/api/slp/redeem), which is what bounds a link posted in public by
+// someone who is not paying. The accepted risk: a paying clinician's link
+// posted in public gives strangers every game on that clinician's plan, and
+// the remedy is the clinician's Rotate button (Settings), not a number.
 
-/** Stripe statuses under which a caseload is covered. Everything else is not. */
+/** Stripe statuses under which a plan is live. Everything else is not. */
 export const COVERED_STATUSES: ReadonlySet<string> = new Set(["active", "trialing", "past_due"]);
-
-/**
- * THE TWO PLANS (Travis, 17 Nov 2026). The $79.99-a-year caseload plan above
- * is RETIRED from the purchase path, the way the family monthly plan was:
- * anyone who bought it keeps it (CASELOAD_PLAN is still recognised wherever
- * a clinician's subscription is read), but nobody new is sold it.
- *
- *  - SOLO, $19.99 a month: one clinician's dashboard, homework planning, the
- *    progress notes, and the full Sona app for every family on their caseload.
- *  - CLINIC, $99 a month: the same for every clinician at a practice, each
- *    with their own dashboard, plus the owner's clinic view — totals per
- *    clinician, never a child's data (see lib/clinic.ts for why).
- *
- * Both start with a 14-day free trial, card up front: Stripe takes the card
- * at checkout and charges on day 15 unless the clinician cancels. One trial
- * per clinician — anyone Stripe already has a clinician plan for (live or
- * lapsed) checks out without one. The dashboard itself is part of the plan
- * now: there is no free dashboard for accounts made from this build on
- * (dashboardOpen below), and the trial is how a clinician tries it.
- *
- * "$99" and never "$99.00": the same price, said the way people say it.
- */
-export const SOLO_PLAN = "slp-solo";                     // Stripe metadata.plan
-export const SOLO_CENTS = 1999;
-export const SOLO_PRICE = "$19.99";
-export const SOLO_NAME = "Sona Solo";
-export const CLINIC_PLAN = "slp-clinic";                 // Stripe metadata.plan
-export const CLINIC_CENTS = 9900;
-export const CLINIC_PRICE = "$99";
-export const CLINIC_NAME = "Sona Clinic";
-/**
- * Clinicians on one clinic plan, the owner included. A number, so the copy
- * says "up to 25 clinicians" and the server refuses the 26th: a monthly
- * price for "every clinician" with no ceiling is a district on one $99 plan.
- * Raising it is one line, and a practice that needs more emails us.
- */
-export const CLINIC_SEATS = 25;
-export const PLAN_TRIAL_DAYS = 14;
-/**
- * The terms stamp for accounts made from this build on. An account carrying
- * it has no free dashboard: it needs a live plan (its own, or its clinic's).
- * CASELOAD_TERMS accounts were promised "your dashboard is free" and keep it;
- * accounts with no `terms` at all keep everything they were promised.
- */
-export const PLANS_TERMS = "plans-2026-11";
-/** What every NEW account is stamped with. Always the newest terms. */
-export const CURRENT_TERMS = PLANS_TERMS;
-
-/** Every Stripe metadata.plan that is a clinician's, retired or not. */
-export const CLINICIAN_PLANS: ReadonlySet<string> = new Set([CASELOAD_PLAN, SOLO_PLAN, CLINIC_PLAN]);
-export function isClinicianPlan(plan: unknown): boolean {
-  return typeof plan === "string" && CLINICIAN_PLANS.has(plan);
-}
-
-export type PlanId = "solo" | "clinic";
-export type PlanOffer = { id: PlanId; stripePlan: string; name: string; cents: number; price: string; interval: "month"; trialDays: number };
-export const PLANS: Record<PlanId, PlanOffer> = {
-  solo: { id: "solo", stripePlan: SOLO_PLAN, name: SOLO_NAME, cents: SOLO_CENTS, price: SOLO_PRICE, interval: "month", trialDays: PLAN_TRIAL_DAYS },
-  clinic: { id: "clinic", stripePlan: CLINIC_PLAN, name: CLINIC_NAME, cents: CLINIC_CENTS, price: CLINIC_PRICE, interval: "month", trialDays: PLAN_TRIAL_DAYS },
-};
-export function planId(v: unknown): PlanId | null {
-  return v === "solo" || v === "clinic" ? v : null;
-}
 /** How old the mirror may be before Stripe is asked again. */
 export const RECHECK_MS = 10 * 60 * 1000;
 /**
@@ -138,7 +161,21 @@ export const SELF_LINKS_PER_DAY = 3;
 /** The own-phone link lives thirty days, and works once. */
 export const SELF_TOKEN_TTL = 60 * 60 * 24 * 30;
 
+/**
+ * Is this Stripe object (a subscription or a checkout session) one of the
+ * clinician plans? The family surfaces (restore-by-email, the family billing
+ * page, the family success page) refuse both: a clinician's receipt unlocks
+ * no device and opens no family billing page.
+ */
+export function isClinicianPlan(md: Record<string, string> | null | undefined): boolean {
+  const plan = md && md.plan;
+  return plan === CASELOAD_PLAN || plan === SELF_PLAN || plan === PRO_PLAN;
+}
+
 export type Kv = (cmd: (string | number)[]) => Promise<unknown>;
+
+export type PlanKind = "caseload" | "self" | "pro";
+const PLAN_OF: Record<PlanKind, string> = { caseload: CASELOAD_PLAN, self: SELF_PLAN, pro: PRO_PLAN };
 
 export type PlanRecord = {
   sub: string;                 // "" when Stripe was asked and had nothing
@@ -147,24 +184,37 @@ export type PlanRecord = {
   periodEnd: number | null;    // unix seconds
   cancelAtPeriodEnd: boolean;
   checkedAt: number;           // ms — when Stripe last answered
-  plan?: string;               // the subscription's metadata.plan (slp-solo, slp-clinic, slp-caseload)
+  // Caseload only: sold as the add-on (29 Sep 2026 on). Absent on a mirror
+  // written before then, which is the older plan and reads as not an add-on.
+  addon?: boolean;
+  // Pro only: when the free trial ends (unix seconds), while there is one.
+  trialEnd?: number | null;
 };
 
 export type PlanStatus = {
   active: boolean;
-  // "clinic": covered by the clinic plan of the owner who added them.
-  source: "paid" | "grandfathered" | "clinic" | "none";
+  source: "paid" | "grandfathered" | "pro" | "none";
   periodEnd: number | null;
   cancelAtPeriodEnd: boolean;
-  plan?: string;               // with "paid": which plan (slp-solo, slp-clinic, slp-caseload)
-  trialing?: boolean;          // with "paid": Stripe says the free trial is still running
-  owner?: string;              // with "clinic": the owner's email
-  // Stripe has (or had) a clinician plan for them, live or lapsed: no second
-  // free trial. Only set when Stripe was actually asked about this email.
-  hadPlan?: boolean;
 };
 
 export type SelfAccess = { eligible: boolean; workEmail: boolean; approved: boolean; requested: boolean };
+
+/**
+ * The clinician's own Premium, and why. `canRequest` is true only for a
+ * 24 to 29 Sep account without a work email: the one kind of clinician who
+ * was told "No work email? Request access" and can still be approved by hand.
+ */
+export type SelfStatus = {
+  active: boolean;
+  source: "grandfathered" | "work-email" | "paid" | "caseload" | "pro" | "none";
+  periodEnd: number | null;
+  cancelAtPeriodEnd: boolean;
+  canRequest: boolean;
+  workEmail: boolean;
+  approved: boolean;
+  requested: boolean;
+};
 
 /**
  * THE STORE DID NOT ANSWER. Distinct from "there is nothing there": kvCmd
@@ -184,7 +234,9 @@ export class StoreUnavailable extends Error {
 
 const norm = (email: unknown): string => String(email || "").trim().toLowerCase();
 
-export function planKey(email: string): string { return "slpplan:" + norm(email); }
+export function planKey(email: string, kind: PlanKind = "caseload"): string {
+  return (kind === "self" ? "slpplan-self:" : kind === "pro" ? "slpplan-pro:" : "slpplan:") + norm(email);
+}
 export function accessKey(email: string): string { return "slpaccess:" + norm(email); }
 export function selfTokenKey(code: string, token: string): string { return "slpself:" + String(code || "").toLowerCase() + ":" + token; }
 
@@ -207,8 +259,8 @@ export async function readAcct(email: string, kv: Kv = kvCmd): Promise<Record<st
 }
 
 /** The stored mirror as it stands — no Stripe call. Throws if the store is down. */
-export async function readPlan(email: string, kv: Kv = kvCmd): Promise<PlanRecord | null> {
-  return (await readJson(planKey(email), kv)) as PlanRecord | null;
+export async function readPlan(email: string, kv: Kv = kvCmd, kind: PlanKind = "caseload"): Promise<PlanRecord | null> {
+  return (await readJson(planKey(email, kind), kv)) as PlanRecord | null;
 }
 
 /**
@@ -222,16 +274,31 @@ export function grandfathered(acct: unknown): boolean {
     !Object.prototype.hasOwnProperty.call(acct, "terms");
 }
 
+/**
+ * Made from 12 Nov 2026 (`terms: PRO_TERMS`): the dashboard, their own phone
+ * and their caseload all come with Sona Pro, and with nothing else — no
+ * retired plan was ever sold to them, so none is looked for.
+ */
+export function proTerms(acct: unknown): boolean {
+  return !!acct && typeof acct === "object" && !Array.isArray(acct) &&
+    (acct as { terms?: unknown }).terms === PRO_TERMS;
+}
+
 function stripeClient(given?: Stripe | null): Stripe | null {
   if (given) return given;
   const key = process.env.STRIPE_SECRET_KEY;
   return key ? new Stripe(key) : null;
 }
 
-/** Is this subscription a clinician's plan (Solo, Clinic or the retired caseload plan), sold to THIS clinician? */
-export function isCaseloadFor(s: { metadata?: Record<string, string> | null } | null | undefined, email: string): boolean {
+/** Is this subscription the given clinician plan, sold to THIS clinician? */
+export function isPlanFor(s: { metadata?: Record<string, string> | null } | null | undefined, email: string, kind: PlanKind): boolean {
   const md = (s && s.metadata) || {};
-  return isClinicianPlan(md.plan) && norm(md.slp) === norm(email) && !!norm(email);
+  return md.plan === PLAN_OF[kind] && norm(md.slp) === norm(email) && !!norm(email);
+}
+
+/** Is this subscription a caseload plan, sold to THIS clinician? */
+export function isCaseloadFor(s: { metadata?: Record<string, string> | null } | null | undefined, email: string): boolean {
+  return isPlanFor(s, email, "caseload");
 }
 
 /**
@@ -243,19 +310,24 @@ export function recordFromSubscription(s: Stripe.Subscription, now = Date.now())
   const item = s.items?.data?.[0] as unknown as { current_period_end?: number } | undefined;
   const end = item?.current_period_end ?? (s as unknown as { current_period_end?: number }).current_period_end ?? null;
   const customer = typeof s.customer === "string" ? s.customer : (s.customer as { id?: string } | null)?.id || "";
-  return {
+  const rec: PlanRecord = {
     sub: String(s.id || ""),
     customer,
     status: String(s.status || "none"),
     periodEnd: typeof end === "number" ? end : null,
     cancelAtPeriodEnd: !!(s.cancel_at_period_end || s.cancel_at),
     checkedAt: now,
-    plan: String((s.metadata && s.metadata.plan) || CASELOAD_PLAN),
   };
+  if (s.metadata && s.metadata.plan === CASELOAD_PLAN) rec.addon = s.metadata.addon === CASELOAD_ADDON;
+  if (s.metadata && s.metadata.plan === PRO_PLAN) {
+    const t = (s as unknown as { trial_end?: number | null }).trial_end;
+    rec.trialEnd = s.status === "trialing" && typeof t === "number" ? t : null;
+  }
+  return rec;
 }
 
 /**
- * Does this mirror cover a caseload right now? The status decides — with one
+ * Is this plan live right now? The status decides — with one
  * belt. A subscription we already KNOW was set to end, whose end has passed,
  * is not covered even while Stripe is unreachable to confirm it: the paid
  * year is over, and "keep the last known status" must not quietly become
@@ -267,12 +339,12 @@ export function recordActive(r: PlanRecord | null | undefined, now = Date.now())
   return true;
 }
 
-async function writePlan(email: string, rec: PlanRecord, kv: Kv): Promise<void> {
+async function writePlan(email: string, rec: PlanRecord, kv: Kv, kind: PlanKind): Promise<void> {
   // A "nothing found" record is only a cache of a negative answer, and it
   // lives a minute (NEGATIVE_MS says why). A real subscription's mirror
   // has no expiry — it is the customer id the billing portal needs.
-  if (rec.sub) await kv(["SET", planKey(email), JSON.stringify(rec)]);
-  else await kv(["SET", planKey(email), JSON.stringify(rec), "EX", Math.ceil(NEGATIVE_MS / 1000)]);
+  if (rec.sub) await kv(["SET", planKey(email, kind), JSON.stringify(rec)]);
+  else await kv(["SET", planKey(email, kind), JSON.stringify(rec), "EX", Math.ceil(NEGATIVE_MS / 1000)]);
 }
 
 // Stripe's search language quotes with single quotes; an address is not
@@ -286,24 +358,22 @@ const q = (s: string) => s.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
  * then the latest to end, so a clinician who lapsed and re-subscribed is
  * read as the new subscription, not the old one.
  */
-async function searchPlan(stripe: Stripe, email: string, now: number): Promise<PlanRecord | null> {
+async function searchPlan(stripe: Stripe, email: string, now: number, kind: PlanKind): Promise<PlanRecord | null> {
   const res = await stripe.subscriptions.search({
-    // By the clinician alone: Stripe's search cannot mix AND with OR, and
-    // there are three clinician plans. isCaseloadFor keeps only those.
-    query: `metadata['slp']:'${q(norm(email))}'`,
+    query: `metadata['slp']:'${q(norm(email))}' AND metadata['plan']:'${PLAN_OF[kind]}'`,
     limit: 20,
   });
-  const mine = (res.data || []).filter((s) => isCaseloadFor(s, email)).map((s) => recordFromSubscription(s, now));
+  const mine = (res.data || []).filter((s) => isPlanFor(s, email, kind)).map((s) => recordFromSubscription(s, now));
   if (!mine.length) return null;
   mine.sort((a, b) =>
     (Number(recordActive(b, now)) - Number(recordActive(a, now))) || ((b.periodEnd || 0) - (a.periodEnd || 0)));
   return mine[0];
 }
 
-export type PlanOpts = { kv?: Kv; stripe?: Stripe | null; now?: number; force?: boolean };
+export type PlanOpts = { kv?: Kv; stripe?: Stripe | null; now?: number; force?: boolean; kind?: PlanKind };
 
 /**
- * The clinician's paid plan, as the mirror knows it — refreshed from Stripe
+ * One of the clinician's paid plans (`kind`, the caseload by default), as the mirror knows it — refreshed from Stripe
  * when it is RECHECK_MS old (or `force`). A Stripe failure keeps the last
  * known record, so an outage never takes Premium from a caseload that paid.
  * Throws StoreUnavailable only when the store itself cannot be read.
@@ -311,7 +381,8 @@ export type PlanOpts = { kv?: Kv; stripe?: Stripe | null; now?: number; force?: 
 export async function currentPlan(email: string, opts: PlanOpts = {}): Promise<PlanRecord | null> {
   const kv = opts.kv || kvCmd;
   const now = opts.now ?? Date.now();
-  const stored = (await readJson(planKey(email), kv)) as PlanRecord | null;
+  const kind: PlanKind = opts.kind || "caseload";
+  const stored = (await readJson(planKey(email, kind), kv)) as PlanRecord | null;
   // A negative is believed for a minute, a real mirror for ten. The store's
   // own expiry already drops a negative; this holds even where it has not.
   const fresh = stored && stored.sub ? RECHECK_MS : NEGATIVE_MS;
@@ -323,7 +394,7 @@ export async function currentPlan(email: string, opts: PlanOpts = {}): Promise<P
     if (stored && stored.sub) {
       try {
         const s = await stripe.subscriptions.retrieve(stored.sub);
-        if (isCaseloadFor(s, email)) rec = recordFromSubscription(s, now);
+        if (isPlanFor(s, email, kind)) rec = recordFromSubscription(s, now);
       } catch (e) {
         // A subscription Stripe says does not exist is an answer, not an
         // outage: fall through to the search. Anything else is an outage.
@@ -332,7 +403,7 @@ export async function currentPlan(email: string, opts: PlanOpts = {}): Promise<P
     }
     // Nothing stored, or the stored one no longer covers: look for another.
     if (!recordActive(rec, now)) {
-      const found = await searchPlan(stripe, email, now);
+      const found = await searchPlan(stripe, email, now, kind);
       if (found && (!rec || recordActive(found, now) || found.sub === rec.sub)) rec = found;
     }
     const next: PlanRecord = rec || {
@@ -344,10 +415,10 @@ export async function currentPlan(email: string, opts: PlanOpts = {}): Promise<P
     // clinician pays — so its "no plan" is stale by design, and cached it hid
     // the purchase that followed: if the success redirect was lost, every
     // family who asked in the next ten minutes was told "not covered".
-    if (next.sub || !opts.force) await writePlan(email, next, kv);
+    if (next.sub || !opts.force) await writePlan(email, next, kv, kind);
     return next;
   } catch (e) {
-    console.error("[caseload] Stripe re-check failed, keeping the last known plan:", e instanceof Error ? e.message : String(e));
+    console.error("[caseload] Stripe re-check failed, keeping the last known " + kind + " plan:", e instanceof Error ? e.message : String(e));
     return stored;
   }
 }
@@ -362,81 +433,108 @@ export async function planStatus(email: string, opts: PlanOpts & { acct?: Record
   if (!norm(email)) return { active: false, source: "none", periodEnd: null, cancelAtPeriodEnd: false };
   const acct = opts.acct !== undefined ? opts.acct : await readAcct(email, kv);
   if (grandfathered(acct)) return { active: true, source: "grandfathered", periodEnd: null, cancelAtPeriodEnd: false };
-  const rec = await currentPlan(email, { ...opts, kv, now });
+  // Sona Pro first: it is the plan on sale, and it covers the caseload
+  // whatever the account's stamp.
+  const pro = await currentPlan(email, { ...opts, kv, now, kind: "pro" });
+  if (recordActive(pro, now)) {
+    return { active: true, source: "pro", periodEnd: pro!.periodEnd, cancelAtPeriodEnd: pro!.cancelAtPeriodEnd };
+  }
+  // A Pro-era account was never sold the yearly caseload plan: no search.
+  if (proTerms(acct) || acct?.terms === FREE_DASHBOARD_TERMS) return { active: false, source: "none", periodEnd: null, cancelAtPeriodEnd: false };
+  const rec = await currentPlan(email, { ...opts, kv, now, kind: "caseload" });
   if (recordActive(rec, now)) {
-    return {
-      active: true, source: "paid", periodEnd: rec!.periodEnd, cancelAtPeriodEnd: rec!.cancelAtPeriodEnd,
-      plan: rec!.plan || CASELOAD_PLAN, trialing: rec!.status === "trialing",
-    };
+    return { active: true, source: "paid", periodEnd: rec!.periodEnd, cancelAtPeriodEnd: rec!.cancelAtPeriodEnd };
   }
-  const hadPlan = !!(rec && rec.sub);
-  const owner = await clinicOwnerOf(email, kv);
-  if (owner) {
-    const orec = await currentPlan(owner, { ...opts, kv, now, force: false });
-    if (recordActive(orec, now) && orec!.plan === CLINIC_PLAN) {
-      return { active: true, source: "clinic", periodEnd: null, cancelAtPeriodEnd: false, owner, hadPlan };
-    }
-  }
-  return { active: false, source: "none", periodEnd: null, cancelAtPeriodEnd: false, hadPlan };
-}
-
-/**
- * CLINIC MEMBERSHIP, as planStatus reads it. Two keys that must agree: the
- * member's pointer (`clinicof:<member>` = owner) and the owner's list
- * (`clinicmem:<owner>`, a hash of member → JSON). The pointer is written only
- * when the member ACCEPTS from their own inbox (lib/clinic.ts), and removing
- * them deletes both — so a stale pointer on one side covers nobody.
- * Neither key starts "slpacct:", which lib/founder.ts scans as the list of
- * clinician accounts.
- */
-export function clinicOfKey(email: string): string { return "clinicof:" + norm(email); }
-export function clinicMembersKey(owner: string): string { return "clinicmem:" + norm(owner); }
-
-export async function clinicOwnerOf(email: string, kv: Kv = kvCmd): Promise<string> {
-  const raw = await kv(["GET", clinicOfKey(email)]);
-  if (raw === undefined) throw new StoreUnavailable("clinicof");
-  const owner = norm(raw);
-  if (!owner || owner === norm(email)) return "";
-  const row = await kv(["HGET", clinicMembersKey(owner), norm(email)]);
-  if (row === undefined) throw new StoreUnavailable("clinicmem");
-  if (!row) return "";
-  try {
-    const m = JSON.parse(String(row)) as { state?: string };
-    return m && m.state === "active" ? owner : "";
-  } catch {
-    return "";
-  }
-}
-
-/**
- * MAY THIS CLINICIAN USE THE DASHBOARD? (17 Nov 2026: the dashboard is part
- * of the plan, and the free trial is how a clinician tries it.)
- *  - no `terms` (signed up under "free forever") → yes, always;
- *  - CASELOAD_TERMS (signed up under "your dashboard is free") → yes, always;
- *  - anything newer → only with a live plan: their own (trial included) or
- *    their clinic's.
- * Never a date: the stamp on the account decides, and no account ever gains
- * a newer stamp than the one it was made with.
- */
-export function freeDashboard(acct: unknown): boolean {
-  if (!acct || typeof acct !== "object" || Array.isArray(acct)) return false;
-  const terms = (acct as Record<string, unknown>).terms;
-  return grandfathered(acct) || terms === CASELOAD_TERMS;
-}
-
-export async function dashboardOpen(
-  email: string, opts: PlanOpts & { acct?: Record<string, unknown> | null; plan?: PlanStatus } = {},
-): Promise<boolean> {
-  const kv = opts.kv || kvCmd;
-  const acct = opts.acct !== undefined ? opts.acct : await readAcct(email, kv);
-  if (freeDashboard(acct)) return true;
-  const plan = opts.plan || await planStatus(email, { ...opts, kv, acct });
-  return plan.active;
+  return { active: false, source: "none", periodEnd: null, cancelAtPeriodEnd: false };
 }
 
 /** Is every family on this clinician's caseload covered? Grandfathered, or paid and live. */
 export async function covered(email: string, opts: PlanOpts = {}): Promise<boolean> {
   return (await planStatus(email, opts)).active;
+}
+
+/**
+ * The clinician's OWN Premium, and why (WHO IS COVERED, above). In the order
+ * that needs the fewest questions: the account stamp, then the store, then
+ * Stripe. A 24 to 29 Sep account with a work email (or an approval) never
+ * costs a Stripe call; neither does a grandfathered one.
+ */
+export async function selfStatus(email: string, opts: PlanOpts & { acct?: Record<string, unknown> | null } = {}): Promise<SelfStatus> {
+  const kv = opts.kv || kvCmd;
+  const now = opts.now ?? Date.now();
+  const off = { periodEnd: null, cancelAtPeriodEnd: false };
+  if (!norm(email)) return { active: false, source: "none", ...off, canRequest: false, workEmail: false, approved: false, requested: false };
+  const acct = opts.acct !== undefined ? opts.acct : await readAcct(email, kv);
+  const access = await selfAccess(email, kv);
+  const base = { workEmail: access.workEmail, approved: access.approved, requested: access.requested };
+  const earlier = !!acct && (acct as { terms?: unknown }).terms === FREE_SELF_TERMS;
+  if (grandfathered(acct)) return { active: true, source: "grandfathered", ...off, canRequest: false, ...base };
+  if (earlier && access.eligible) return { active: true, source: "work-email", ...off, canRequest: false, ...base };
+  const canRequest = earlier;
+  const pro = await currentPlan(email, { ...opts, kv, now, kind: "pro" });
+  if (recordActive(pro, now)) {
+    return { active: true, source: "pro", periodEnd: pro!.periodEnd, cancelAtPeriodEnd: pro!.cancelAtPeriodEnd, canRequest, ...base };
+  }
+  if (proTerms(acct) || acct?.terms === FREE_DASHBOARD_TERMS) return { active: false, source: "none", ...off, canRequest, ...base };
+  const own = await currentPlan(email, { ...opts, kv, now, kind: "self" });
+  if (recordActive(own, now)) {
+    return { active: true, source: "paid", periodEnd: own!.periodEnd, cancelAtPeriodEnd: own!.cancelAtPeriodEnd, canRequest, ...base };
+  }
+  // The older $79.99 caseload plan always switched on the clinician's own
+  // phone, and keeps doing so for as long as it renews. The add-on does not.
+  const cl = await currentPlan(email, { ...opts, kv, now, kind: "caseload" });
+  if (recordActive(cl, now) && cl!.addon !== true) {
+    return { active: true, source: "caseload", periodEnd: cl!.periodEnd, cancelAtPeriodEnd: cl!.cancelAtPeriodEnd, canRequest, ...base };
+  }
+  return { active: false, source: "none", ...off, canRequest, ...base };
+}
+
+/**
+ * SONA PRO, as the dashboard and checkout need it: whether it is on, and
+ * whether this clinician may still start the free trial.
+ */
+export type ProStatus = {
+  active: boolean;
+  status: string;              // Stripe's word ("trialing", "active", "past_due", …) or "none"
+  trialEnd: number | null;     // unix seconds, while trialing
+  periodEnd: number | null;
+  cancelAtPeriodEnd: boolean;
+  trialAvailable: boolean;     // never had a Pro subscription
+};
+
+export async function proStatus(email: string, opts: PlanOpts = {}): Promise<ProStatus> {
+  const now = opts.now ?? Date.now();
+  if (!norm(email)) return { active: false, status: "none", trialEnd: null, periodEnd: null, cancelAtPeriodEnd: false, trialAvailable: false };
+  const rec = await currentPlan(email, { ...opts, now, kind: "pro" });
+  const active = recordActive(rec, now);
+  return {
+    active,
+    status: (rec && rec.status) || "none",
+    trialEnd: active && rec && rec.status === "trialing" ? rec.trialEnd ?? null : null,
+    periodEnd: (rec && rec.periodEnd) || null,
+    cancelAtPeriodEnd: !!(rec && rec.cancelAtPeriodEnd),
+    // ONE TRIAL PER CLINICIAN. Any Pro subscription Stripe ever held for this
+    // address, in any status, spends it: a trial that was cancelled, or ran
+    // out with a card that failed, is not a second fourteen days.
+    trialAvailable: !(rec && rec.sub),
+  };
+}
+
+/**
+ * IS THE DASHBOARD OPEN? Every account made before 12 Nov 2026 was told the
+ * dashboard was free, and it stays free for them, forever: a clinician's
+ * caseload, notes and homework are never held behind a price they were not
+ * shown. From 12 Nov 2026 (`terms: PRO_TERMS`) the dashboard is part of Sona
+ * Pro — trialing, active, or in the card-retry grace of past_due.
+ * A signed-in session with no account record at all is treated as new: the
+ * legacy routes that make one make it with PRO_TERMS. Verified free landing
+ * signups use FREE_DASHBOARD_TERMS and have a free dashboard.
+ */
+export async function dashboardOpen(email: string, opts: PlanOpts & { acct?: Record<string, unknown> | null } = {}): Promise<boolean> {
+  const kv = opts.kv || kvCmd;
+  const acct = opts.acct !== undefined ? opts.acct : await readAcct(email, kv);
+  if (acct && (!proTerms(acct) || acct.freeDashboard === true)) return true;
+  return (await proStatus(email, { ...opts, kv })).active;
 }
 
 /**
@@ -449,21 +547,22 @@ export async function covered(email: string, opts: PlanOpts = {}): Promise<boole
  */
 export async function activateFromSession(
   email: string, sessionId: string, opts: PlanOpts = {},
-): Promise<{ activated: boolean; reason?: string }> {
+): Promise<{ activated: boolean; kind?: PlanKind; reason?: string }> {
   const kv = opts.kv || kvCmd;
   const now = opts.now ?? Date.now();
   const stripe = stripeClient(opts.stripe);
   if (!stripe) return { activated: false, reason: "stripe not configured" };
   const cs = await stripe.checkout.sessions.retrieve(sessionId, { expand: ["subscription"] });
   const md = cs.metadata || {};
-  if (!isClinicianPlan(md.plan)) return { activated: false, reason: "not a clinician plan" };
+  const kind: PlanKind | null = md.plan === CASELOAD_PLAN ? "caseload" : md.plan === SELF_PLAN ? "self" : md.plan === PRO_PLAN ? "pro" : null;
+  if (!kind) return { activated: false, reason: "not a clinician plan" };
   if (!norm(email) || norm(md.slp) !== norm(email)) return { activated: false, reason: "bought by another account" };
   if (cs.status !== "complete") return { activated: false, reason: "checkout not complete" };
   let sub = cs.subscription as Stripe.Subscription | string | null;
   if (typeof sub === "string") sub = await stripe.subscriptions.retrieve(sub);
-  if (!sub || !isCaseloadFor(sub, email)) return { activated: false, reason: "no caseload subscription" };
-  await writePlan(email, recordFromSubscription(sub, now), kv);
-  return { activated: true };
+  if (!sub || !isPlanFor(sub, email, kind)) return { activated: false, reason: "no " + kind + " subscription" };
+  await writePlan(email, recordFromSubscription(sub, now), kv, kind);
+  return { activated: true, kind };
 }
 
 /**
@@ -541,8 +640,10 @@ export async function openCaseloadPortal(
 }
 
 /**
- * The clinician's OWN free Premium, on their own phone: a work address, or a
- * founder's approval for someone who has none (lib/workEmail says why).
+ * The clinician's OWN free Premium, as the 24 to 29 Sep 2026 accounts were
+ * promised it: a work address, or a founder's approval for someone who has
+ * none (lib/workEmail says why). selfStatus() reads it for those accounts
+ * only; from 29 Sep a clinician's own Premium is bought.
  *
  * slpaccess:<email> is a HASH — requestedAt, approved, approvedAt — so the
  * clinician's "Request access" and the founder's "Approve" each write their

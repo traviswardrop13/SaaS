@@ -37,7 +37,7 @@ await page.screenshot({ path: OUT + "/call-ring.png" });
 // answer → call runs; VAD gets no audio so every ask falls to "couldn't hear" and continues
 await page.evaluate(() => document.getElementById("answer").click());
 await page.waitForTimeout(1200);
-ok("greeting spoken first", /Well HI, Milo/.test(ttsPosts[0] || ""));
+ok("greeting spoken first, calling the child \"friend\"", /Well HI, friend!/.test(ttsPosts[0] || ""));
 ok("call burns one weekly slot", await page.evaluate(() => window.SonaCallsLeft() === 2));
 await page.screenshot({ path: OUT + "/call-live.png" });
 // let the script play out (TTS 500s resolve fast; listens time out at 12s → "couldn't hear" path)
@@ -48,6 +48,8 @@ ok("script advances past the asks", state.step >= 4);
 // no sustained sounds ever sent to TTS
 const bad = ttsPosts.filter((t) => /([a-z])\1\1/i.test(t));
 ok("no sustained strings in TTS (" + ttsPosts.length + " lines)", bad.length === 0);
+ok("no line sent to /api/tts carries the child's name", ttsPosts.length > 0 && !ttsPosts.some((t) => /Milo/.test(t)));
+ok("the page never reads the profile's name", !/profile\.childName/.test(readFileSync(ROOT + "/coach-call.html", "utf8")));
 ok("no pageerrors", errs.length === 0);
 if (errs.length) console.log("      err:", errs[0]);
 
@@ -59,15 +61,18 @@ await page.goto("http://localhost:8132/coach-call.html?dev=1");
 await page.waitForTimeout(700);
 ok("cap overlay gates 4th call", await page.evaluate(() => document.getElementById("capOvl").classList.contains("show")));
 
-// home card
-await page.goto("http://localhost:8132/today.html");
+// home card (the catalog is Home's Arcade since 22 Oct 2026, STORY1)
+await page.goto("http://localhost:8132/today.html?view=arcade");
 await page.waitForTimeout(1200);
 const card = await page.evaluate(() => ({
-  keys:[...document.querySelectorAll('.activity-group .game-card')].map(t=>t.dataset.game),
-  title:document.querySelector('h1').textContent
+  keys:[...document.querySelectorAll('#activityGroups .game-card')].map(t=>t.dataset.game),
+  // every catalog game but the parked ones (Home hides Coming soon, 19 Oct 2026)
+  playable:Object.keys(Sona.GAME_ACTS).filter(k=>!Sona.GAME_ACTS[k].comingSoon).length,
+  title:document.getElementById('arcadeTitle').textContent,
+  shown:!!document.getElementById('arcadeTitle').offsetParent
 }));
 ok("Home offers games and never exposes Coach Call",
-  card.keys.length===8&&card.title==='Pick a game!'&&!card.keys.some(k=>/call/i.test(k)),JSON.stringify(card));
+  card.keys.length===card.playable&&card.playable>=11&&card.title==='Pick a game!'&&card.shown&&!card.keys.some(k=>/call/i.test(k)),JSON.stringify(card));
 
 await browser.close(); srv.close();
 console.log(fails ? fails + " FAILURES" : "ALL GREEN");

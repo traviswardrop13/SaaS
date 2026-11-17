@@ -1,0 +1,35 @@
+import { NextRequest, NextResponse } from "next/server";
+import { locked, lockedPage, PREVIEW_COOKIE, previewToken } from "@/lib/launch";
+import { slpAppRequest, slpAppPageAllowed } from "@/lib/slpApp";
+
+/**
+ * The launch lock (Travis, 30 Sep 2026; see LAUNCH_AT in lib/launch.ts).
+ * Until launch day, a family page answers with the lock page instead, at the
+ * same address: after launch a reload of that address is the real page, and
+ * the iPhone app, which loads the site on every open, needs no new build.
+ * Everything else passes: the websites, the clinician's dashboard, the API,
+ * and every picture, script and sound (the matcher sends only .html here).
+ * With LAUNCH_LOCK off (Travis reopened the app early, 30 Sep 2026) nothing
+ * is locked at all.
+ */
+export async function middleware(req: NextRequest) {
+  // The clinicians' own app (lib/slpApp, 16 Nov 2026) is the dashboard alone:
+  // any other page goes there, before it is sent (the pages check too).
+  if (slpAppRequest(req.headers.get("user-agent")) && !slpAppPageAllowed(req.nextUrl.pathname)) {
+    const url = req.nextUrl.clone();
+    url.pathname = "/slp.html";
+    url.search = "";
+    return NextResponse.redirect(url);
+  }
+  if (!locked() || !lockedPage(req.nextUrl.pathname)) return NextResponse.next();
+  // The team door: a cookie only the founder key can make (app/api/launch/preview).
+  const key = process.env.FOUNDER_KEY || "";
+  const given = req.cookies.get(PREVIEW_COOKIE)?.value || "";
+  if (key.length >= 12 && given && given === (await previewToken(key))) return NextResponse.next();
+  const url = req.nextUrl.clone();
+  url.pathname = "/launching.html";
+  url.search = "";
+  return NextResponse.rewrite(url);
+}
+
+export const config = { matcher: ["/((?!api/|_next/).*\\.html)"] };

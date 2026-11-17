@@ -1,0 +1,25 @@
+.daily-concert-canvas { touch-action:none; }
+.concert-controls { position:absolute; inset:0; pointer-events:none; touch-action:none; color:#60806e; font-family:inherit; }
+.concert-controls [hidden] { display:none !important; }
+.concert-controls button { box-sizing:border-box; pointer-events:auto; touch-action:none; -webkit-tap-highlight-color:transparent; cursor:pointer; font-family:inherit; font-size:14px; font-weight:700; line-height:1.05; transition:none !important; }
+.concert-controls button:disabled { opacity:.45; cursor:default; }
+.concert-controls button:focus-visible { outline:3px solid #fff1b8; outline-offset:2px; box-shadow:0 0 0 5px #628f77; }
+.concert-handle { position:absolute; min-width:44px; min-height:44px; width:56px; height:56px; padding:0; border:0; border-radius:50%; background:transparent; color:transparent; transform:translate(-50%,-50%); z-index:3; }
+.concert-drum { width:96px; height:80px; }
+.concert-reed { width:44px; height:96px; border-radius:9px; }
+.concert-chime { width:60px; height:76px; border-radius:12px; }
+.concert-musician { width:64px; height:80px; z-index:4; }
+.concert-baton { z-index:5; }
+.concert-choice { position:absolute; width:64px; height:64px; min-width:64px; min-height:64px; padding:2px; border:1px solid #b8b98f; border-radius:13px; background:#ece1bd; color:#6f8d73; transform:translate(-50%,-50%); overflow:hidden; }
+.concert-choice img { width:46px; height:54px; object-fit:contain; pointer-events:none; }
+.concert-choice svg { position:absolute; right:1px; bottom:2px; width:23px; height:23px; background:#f4ebca; border-radius:6px; pointer-events:none; }
+.concert-choice[aria-pressed=true],.concert-ending[aria-pressed=true] { border:3px solid #729a7a; box-shadow:0 0 0 2px #dfd59a; }
+.concert-listen { position:absolute; left:10px; bottom:10px; min-width:44px; min-height:44px; width:136px; height:44px; padding:5px 8px; display:flex; align-items:center; justify-content:center; gap:6px; border:1px solid rgba(77,119,104,.3); border-radius:12px; background:var(--act-teal,#3c8585); color:#fbf2d4; box-shadow:0 3px 0 rgba(64,93,72,.18); }
+.concert-listen svg { width:24px; height:24px; }
+.concert-ending { position:absolute; bottom:10px; width:60px; height:44px; min-width:44px; min-height:44px; padding:4px; border:1px solid #aeb48a; border-radius:12px; background:#e9ddb4; color:#6c8a71; }
+.concert-ending svg { width:28px; height:28px; }
+.concert-help { position:absolute !important; left:auto !important; right:10px !important; bottom:10px !important; transform:none !important; width:144px !important; min-width:0 !important; height:44px !important; min-height:44px !important; padding:5px 6px !important; font-size:14px !important; line-height:1.05 !important; }
+.concert-help img { width:28px !important; height:28px !important; object-fit:contain; }
+.concert-help.powered { box-shadow:0 0 0 3px rgba(208,211,152,.75),0 3px 0 rgba(76,96,70,.18); }
+.concert-sr { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+@media(prefers-reduced-motion:reduce) { .concert-controls *,.concert-help { animation:none !important; transition:none !important; } }

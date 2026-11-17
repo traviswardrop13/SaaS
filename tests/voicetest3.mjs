@@ -4,7 +4,7 @@
 // line composition for R/S/SH/THV/word/fail plus card rotation.
 // Since 24 Sep 2026 it also pins the calm voice: no "!" in any practice line,
 // the praise list, or what Echo says on Home, in setup and in the game picker;
-// the trimmed win chimes; and no coach voice labelled "Rachel".
+// the trimmed win chimes; and (29 Sep 2026) one coach voice for everyone.
 import { createServer } from "http";
 import { readFileSync, existsSync } from "fs";
 import { chromium, ROOT, OUT, launchOpts } from "./_env.mjs";
@@ -71,27 +71,39 @@ const noSustained = (name, s) => {
 // ---- E2E round 1: isolation — human clip 404s → TTS gets the clean line ----
 await page.goto("http://localhost:8123/charge.html?sound=R&game=arcade-slice.html");
 await page.waitForTimeout(2500);
-// Isolation now plays the HUMAN model clip (/coach/say/R.mp3) — the real
-// sound, which TTS can't perform. So round 1 posts NO TTS prompt; if the
-// headless env can't decode the mp3, the exact TTS fallback line is the
-// only acceptable substitute (and noSustained still guards every post).
+// 29 Sep 2026 — ECHO'S WORDS, RACHEL'S SOUND. Isolation asks the voice for
+// the WORDS around the sound, "Ready? Pull your tongue back and up, and make
+// your" and "sound, five times. Go!", and Rachel's one recorded R
+// (/coach/say-echo/R-sound.wav) takes the letter's place — the real sound,
+// which TTS can't perform, so no post ever carries it (noSustained guards
+// every post). This server refuses TTS, so the page then falls back to the
+// exact calm whole line: the only other prompt it may post.
 // CITY1: the house's story beat is spoken FIRST now, so the prompt is not
 // necessarily post 0 — pick the prompt out by its shape, same as sylLine below.
-const r1prompt = ttsPosts.filter((l) => /^Ready\?/.test(l))[0];
+// 2 Oct 2026: and "Go!" on its own, joined on after them (GO, ON ITS OWN).
+const r1halves = ttsPosts.includes("Ready? Pull your tongue back and up, and make your") && ttsPosts.includes("sound, five times.") && ttsPosts.includes("Go!");
+ok("E2E r1 asks the voice for the words around the sound, never the sound", r1halves, true);
+const r1prompt = ttsPosts.filter((l) => /^Ready\?/.test(l) && !/make your$/.test(l))[0];
 // CALM PROMPT (24 Sep 2026, rewritten deliberately): was "...five times...
 // Go!". The voice reads "… Go!" as a jump in pitch and energy. Rewritten
 // again the same day: no spoken "Your turn." — it was said into a closed mic,
 // before anything could hear the child who obeyed it; the glowing mic hands
 // the turn over instead. The mouth cue and the practice word inside it are
 // unchanged (Rachel's calls).
-const r1ok = !r1prompt || r1prompt === "Ready? Pull your tongue back and up, and make your R sound, five times.";
+// "Go!" BACK ON THE HAND-OVER (2 Oct 2026, Travis: "i also wanna try to have
+// the 11 labs voice say 'Go!'"): most children can't read, and nothing they
+// could hear told them it was their turn. It is the only "!" in the line.
+// Its words are asked for without the "Go!" first (GO, ON ITS OWN), then the
+// whole line with it if that fails: either is the exact calm line.
+const r1ok = !r1prompt || r1prompt === "Ready? Pull your tongue back and up, and make your R sound, five times." || r1prompt === "Ready? Pull your tongue back and up, and make your R sound, five times. Go!";
 if (!r1ok) fails++;
-console.log((r1ok ? "PASS" : "FAIL") + "  E2E r1 human clip replaces TTS (or exact fallback)  → " + JSON.stringify(r1prompt || "(no TTS prompt — clip played)"));
+console.log((r1ok ? "PASS" : "FAIL") + "  E2E r1 whole-line fallback is the exact calm line  → " + JSON.stringify(r1prompt || "(no whole-line post — the joined line played)"));
 if (!r1ok) fails++;
-// The recorded /coach/say/<SOUND>.mp3 set is Rachel's own voice and must not
-// ship — playPrompt falls through to TTS, the same path every other line uses.
-// Flip this assertion back only when a non-Rachel clip set is in place.
-ok("Rachel's recorded clip set stays off", /var HUMANCLIPS=false/.test(html), true);
+// The clip switch is Sona.humanClipsOn() (sona.js), never a local true: the
+// page's own default is false and only the shared switch turns it on. Since
+// 25 Sep 2026 it is ON and plays /coach/say-echo/ — Rachel's takes re-voiced
+// into Echo's voice (storytest pins that the raw /coach/say/ set never plays).
+ok("the clip switch is shared, never a local true", /var HUMANCLIPS=false; try\{ HUMANCLIPS=!!\(S&&S\.humanClipsOn&&S\.humanClipsOn\(\)\); \}/.test(html), true);
 // Free play names the selected game; the daily header is a visual path.
 ok("E2E free-play header names its selected game", await page.evaluate(() => document.getElementById("ctxLine").textContent === "Fruit Slice" && document.querySelectorAll("#ctxLine .path-dot").length === 0), true);
 
@@ -119,7 +131,7 @@ if (!r2.sylls.includes(r2.prompt)) fails++;
 // matching the prompt grammar — not simply the first thing said.
 const sylLine = ttsPosts.filter((l) => /^Ready\?/.test(l))[0] || ttsPosts[0] || "";
 // ONE syllable per round now — the card no longer rotates rah→ree→roo mid-round
-const sylWant = /^Ready\? Say [a-z]+, five times\.$/; // calm frame, no spoken "Your turn." (24 Sep 2026)
+const sylWant = /^Ready\? Say [a-z]+, five times\.$/; // calm frame, no spoken "Your turn." (24 Sep 2026); "Go!" hands it over, asked for on its own (2 Oct 2026)
 console.log((sylWant.test(sylLine) ? "PASS" : "FAIL") + "  E2E r2 spoken one syllable  → " + JSON.stringify(sylLine));
 if (!sylWant.test(sylLine)) fails++;
 for (const t of ttsPosts) noSustained("E2E:" + t.slice(0, 24), t);
@@ -159,7 +171,8 @@ const cases = await page.evaluate(
       const tip = new Function("c", "soundName", "return " + failTipSrc)(c, soundName);
       // 24 Sep 2026: the calm retry line (was "Hmm, that was a different
       // sound! {tip}. Try again!"). Pinned against charge.html's source below.
-      return "Let's try that one again. " + tip + ".";
+      // 2 Oct 2026: the mic opens straight after it, so it ends on "Go!".
+      return "Let's try that one again. " + tip + ". Go!";
     };
     out.failR = failFor("R"); out.failS = failFor("S"); out.failZ = failFor("Z"); out.failM = failFor("M");
     // card rotation: paintCard with a syllable ITEM must update the bubble target
@@ -180,37 +193,50 @@ const cases = await page.evaluate(
 // nothing; the glowing mic, lit only once the window hears, marks the turn.
 // The mouth cue (CUES tip, first clause) and the practice word are exactly
 // what they were — Rachel's calls.
-ok("R first", cases.rFirst, "Ready? Pull your tongue back and up, and make your R sound, five times.");
-ok("R repeat", cases.rRepeat, "Ready? Make your R sound, five times.");
-ok("S first", cases.sFirst, "Ready? Teeth together, and make your S sound, five times.");
-ok("S repeat", cases.sRepeat, "Ready? Make your S sound, five times.");
-ok("SH first", cases.shFirst, "Ready? Round your lips and whisper quiet, and make your S H sound, five times.");
-ok("THV first", cases.thvFirst, "Ready? Tongue between your teeth and buzz, and make your T H sound, five times.");
-ok("word level", cases.word, "Ready? Say rabbit, five times.");
-ok("syllable one target", cases.sylFirst, "Ready? Say rah, five times.");
-ok("syllable one target repeat", cases.sylRepeat, "Ready? Say rah, five times.");
+// 2 Oct 2026 (Travis: "i also wanna try to have the 11 labs voice say
+// 'Go!'"): every line that hands the turn over ends "… Go!"; the rest of the
+// frame is the calm one above.
+ok("R first", cases.rFirst, "Ready? Pull your tongue back and up, and make your R sound, five times. Go!");
+ok("R repeat", cases.rRepeat, "Ready? Make your R sound, five times. Go!");
+ok("S first", cases.sFirst, "Ready? Teeth together, and make your S sound, five times. Go!");
+ok("S repeat", cases.sRepeat, "Ready? Make your S sound, five times. Go!");
+ok("SH first", cases.shFirst, "Ready? Round your lips and whisper quiet, and make your S H sound, five times. Go!");
+ok("THV first", cases.thvFirst, "Ready? Tongue between your teeth and buzz, and make your T H sound, five times. Go!");
+ok("word level", cases.word, "Ready? Say rabbit, five times. Go!");
+ok("syllable one target", cases.sylFirst, "Ready? Say rah, five times. Go!");
+ok("syllable one target repeat", cases.sylRepeat, "Ready? Say rah, five times. Go!");
 ok("card flip prompt", cases.cardPrompt, "ree");
 // isolation shows the SUSTAINED target on screen (huge, orange) — the
 // no-sustained rule below guards SPOKEN lines only, so card* is excluded
 ok("card isolation prompt", cases.cardIso, "rrrr");
 // The tip text is Rachel's CUES wording, untouched; only the frame is calmer.
-ok("fail R", cases.failR, "Let's try that one again. Pull your tongue back and up like a tiger growl.");
-ok("fail S", cases.failS, "Let's try that one again. Teeth together, big smile, let the air hiss out.");
-ok("fail Z", cases.failZ, "Let's try that one again. Teeth together and buzz like a bee.");
-ok("fail M", cases.failM, "Let's try that one again. Lips together and hum.");
-ok("charge.html speaks exactly the calm retry line pinned above", /await say\("Let's try that one again\. "\+tip\+"\."\);/.test(html), true);
+ok("fail R", cases.failR, "Let's try that one again. Pull your tongue back and up like a tiger growl. Go!");
+ok("fail S", cases.failS, "Let's try that one again. Teeth together, big smile, let the air hiss out. Go!");
+ok("fail Z", cases.failZ, "Let's try that one again. Teeth together and buzz like a bee. Go!");
+ok("fail M", cases.failM, "Let's try that one again. Lips together and hum. Go!");
+ok("charge.html speaks exactly the calm retry line pinned above", /await say\("Let's try that one again\. "\+tip\+"\. Go!"\);/.test(html), true);
+// ...and Echo's idea, the other line the retry hands over on.
+ok("charge.html ends Echo's idea on the hand-over's \"Go!\"", /await say\("I have an idea\. Let's try this one\. "\+[^\n]*\+"\. Go!"\);/.test(html), true);
 for (const [k, v] of Object.entries(cases)) if (!/^card/.test(k)) noSustained(k, v);
 
 // ---- CALM, NOT HYPED (24 Sep 2026) ----
 // The voice reads "!" as a jump in pitch and energy. Travis heard the result
 // as "jumpy and explosive" and asked for "relaxed and sweet, like talking to a
 // little kid". So no line Echo SPEAKS in these places may carry a "!".
+// Except one (2 Oct 2026, Travis: "i also wanna try to have the 11 labs
+// voice say 'Go!'"): a line that hands the child their turn ends "Go!", and
+// that is the only "!" it may carry. Every practice line here is one.
 const noBang = (name, s) => {
   const pass = typeof s === "string" && s.length > 0 && !s.includes("!");
   if (!pass) fails++;
   console.log((pass ? "PASS" : "FAIL") + "  no \"!\"  " + name + (pass ? "" : "  → " + JSON.stringify(s)));
 };
-for (const [k, v] of Object.entries(cases)) if (!/^card/.test(k)) noBang("practice line " + k, v);
+for (const [k, v] of Object.entries(cases)) if (!/^card/.test(k)) {
+  const handOver = typeof v === "string" && v.endsWith(" Go!");
+  if (!handOver) fails++;
+  console.log((handOver ? "PASS" : "FAIL") + "  practice line " + k + " hands over with \"Go!\"" + (handOver ? "" : "  → " + JSON.stringify(v)));
+  noBang("practice line " + k + " (before its \"Go!\")", handOver ? v.slice(0, -4) : v);
+}
 // The praise list, read from the live Sona object, not from a copy.
 const praises = await page.evaluate(() => (window.Sona && Sona.PRAISES) ? Sona.PRAISES.slice() : null);
 ok("praise is the calm list", JSON.stringify(praises), JSON.stringify(["Nice one.", "Good job.", "I heard that.", "That was lovely.", "Well done."]));
@@ -243,17 +269,27 @@ for (const file of ["today.html", "onboarding.html", "activities.html"]) {
   for (const l of lines) noBang(file + ": " + l, l);
 }
 
-// ---- No coach voice is labelled "Rachel" (24 Sep 2026) ----
-// ElevenLabs' stock voice of that name sat in Settings → Choose coach voice,
-// and Sona's co-founder SLP is Rachel: a parent could think they were hearing
-// her. The voice stays (same id, so a family who chose it keeps it); the label
-// is one that belongs to nobody at Sona.
+// ---- One coach voice for everyone (29 Sep 2026) ----
+// This used to read the picker's list and pin that no voice was labelled
+// "Rachel" (24 Sep). Travis, 29 Sep 2026: one coach voice. The picker page is
+// gone, so nobody can be shown a voice named after anyone at Sona, and a voice
+// a family saved from it before (here the old stock "Rachel"/"Gentle" id and
+// Sarah) must give way to the default: there is no picker left to change back.
 {
-  const voices = readFileSync(ROOT + "/voices.html", "utf8");
-  const names = [...voices.matchAll(/\{\s*id:\s*"([^"]+)",\s*name:\s*"([^"]+)"/g)].map((m) => ({ id: m[1], name: m[2] }));
-  ok("the voice picker lists its voices", names.length >= 8, true);
-  ok("no coach voice is named Rachel", names.some((v) => /rachel/i.test(v.name)), false);
-  ok("the stock voice is still offered under a new label", names.find((v) => v.id === "21m00Tcm4TlvDq8ikWAM")?.name, "Gentle");
+  ok("there is no voice picker page", existsSync(ROOT + "/voices.html"), false);
+  const settings = readFileSync(ROOT + "/settings.html", "utf8").replace(/<!--[\s\S]*?-->/g, "");
+  ok("Settings links to no voice picker", /voices\.html|coach voice/i.test(settings), false);
+  const DEFAULT_VOICE = (readFileSync(ROOT + "/sona.js", "utf8").match(/DEFAULT_PROFILE = \{[^\n]*?voiceId: "([^"]+)"/) || [])[1];
+  ok("sona.js names a default coach voice", !!DEFAULT_VOICE, true);
+  const cv = await browser.newContext();
+  const pv = await cv.newPage();
+  await pv.goto("http://localhost:8123/sfx-harness");
+  const heard = await pv.evaluate(() => ["21m00Tcm4TlvDq8ikWAM", "EXAVITQu4vr4xnSDxMaL", ""].map((id) => {
+    localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Demo", onboarded: true, voiceId: id }));
+    return Sona.getProfile().voiceId;
+  }));
+  ok("a voice saved before the picker went still gives the default voice", JSON.stringify(heard), JSON.stringify([DEFAULT_VOICE, DEFAULT_VOICE, DEFAULT_VOICE]));
+  await cv.close();
 }
 
 // ---- Win chimes trimmed (24 Sep 2026) ----
@@ -261,6 +297,10 @@ for (const file of ["today.html", "onboarding.html", "activities.html"]) {
 // each note is 3 dB down (0.16 -> 0.113 at full volume) and swells in over
 // 25 ms instead of snapping in over 15. Durations are unchanged — pages time
 // the mic's quiet window after them.
+// Peaks are read relative to the level the profile plays at. Since 30 Sep 2026
+// sound on is one normal level (0.8) and the phone's buttons do the rest, so a
+// saved full volume plays at 0.8; read raw, the 3 dB pin below would have
+// found no note over 0.1 and passed on nothing.
 const chimes = await (async () => {
   const c2 = await browser.newContext();
   const p2 = await c2.newPage();
@@ -277,15 +317,16 @@ const chimes = await (async () => {
     localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Demo", onboarded: true, volume: 1, soundOn: true, voiceOn: true }));
   });
   await p2.goto("http://localhost:8123/sfx-harness");
-  const read = (name) => p2.evaluate((n) => { window.__notes.length = 0; Sona.sfx[n](); return window.__notes.map((x) => ({ start: x.start, peak: x.ramps[0] && x.ramps[0][0], attack: x.ramps[0] && +(x.ramps[0][1] - x.start).toFixed(4), end: x.ramps[1] && +(x.ramps[1][1] - x.start).toFixed(4), stop: x.stop })); }, name);
-  const out = { correct: await read("correct"), complete: await read("complete"), tap: await read("tap") };
+  const read = (name) => p2.evaluate((n) => { const lvl = Sona.getProfile().volume; window.__notes.length = 0; Sona.sfx[n](); return window.__notes.map((x) => ({ start: x.start, peak: x.ramps[0] && x.ramps[0][0] / lvl, attack: x.ramps[0] && +(x.ramps[0][1] - x.start).toFixed(4), end: x.ramps[1] && +(x.ramps[1][1] - x.start).toFixed(4), stop: x.stop })); }, name);
+  const out = { level: await p2.evaluate(() => Sona.getProfile().volume), correct: await read("correct"), complete: await read("complete"), tap: await read("tap") };
   await c2.close();
   return out;
 })();
+ok("a full volume saved by the old slider plays at the normal level", chimes.level, 0.8);
 for (const name of ["correct", "complete"]) {
   const notes = chimes[name];
   ok(name + ": every note is at or under 0.113 of full volume (3 dB under the old 0.16)", notes.length > 0 && notes.every((n) => n.peak <= 0.1131), true);
-  ok(name + ": the main notes are exactly 3 dB down", notes.filter((n) => n.peak > 0.1).every((n) => Math.abs(20 * Math.log10(n.peak / 0.16) + 3) < 0.05), true);
+  ok(name + ": the main notes are exactly 3 dB down", notes.some((n) => n.peak > 0.1) && notes.filter((n) => n.peak > 0.1).every((n) => Math.abs(20 * Math.log10(n.peak / 0.16) + 3) < 0.05), true);
   ok(name + ": every note swells in over 25 ms", notes.every((n) => n.attack === 0.025), true);
 }
 ok("correct keeps its length (last note ends 0.34 s in)", Math.max(...chimes.correct.map((n) => n.start + n.end)).toFixed(2), "0.34");

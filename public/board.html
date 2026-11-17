@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <title>Sona — Practice Board</title>
+  <link href="/fonts.css" rel="stylesheet" />
+  <link href="/action.css" rel="stylesheet" />
+  <link href="/crafted-road.css" rel="stylesheet" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <meta name="theme-color" content="#fff6e9" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <style>
+    /* The board page wears the Trophy Road's crafted cards (crafted-road.css):
+       cream cards, warm ink, the teal pill for the one button. Gold, silver
+       and bronze medals for the top three places, each with its number, so
+       they read apart without colour. Never red, never an arrow. */
+    .bd-sub{margin-top:6px;font-size:14px;font-weight:800;line-height:1.4;color:var(--muted);}
+    .bd-off{text-align:center;}
+    .bd-off p{font:800 20px/1.3 "Baloo 2",sans-serif;}
+    .act-pill.bd-home{margin-top:14px;min-height:52px;min-width:150px;padding:10px 26px;font-size:20px;}
+    .bd-me{display:flex;align-items:center;gap:14px;border:2px solid var(--act);background:#effaf8;box-shadow:0 4px 0 var(--act-d),0 8px 18px #62401d0f;}
+    .bd-face{flex:none;display:flex;}
+    .bd-face .crafted-buddy{box-shadow:0 2px 0 #dfcbae;border:3px solid #fffdf7;background:#fff;}
+    .bd-me-copy{flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:4px;}
+    .bd-you{display:inline-block;padding:2px 10px;border-radius:99px;background:linear-gradient(var(--act-hi),var(--act));color:#fff;text-shadow:0 1px 0 var(--act-d);font:800 13px/1.3 "Baloo 2",sans-serif;}
+    .bd-me h2{font:800 21px/1.15 "Baloo 2",sans-serif;overflow-wrap:anywhere;}
+    .bd-days{display:flex;align-items:center;flex-wrap:wrap;gap:6px;font:800 17px/1.2 "Baloo 2",sans-serif;}
+    .bd-suns{display:inline-flex;flex-wrap:wrap;gap:2px;}
+    .bd-suns i{display:inline-flex;animation:bdSun .35s ease both;}
+    .bd-suns i:nth-child(2){animation-delay:.04s}.bd-suns i:nth-child(3){animation-delay:.08s}.bd-suns i:nth-child(4){animation-delay:.12s}.bd-suns i:nth-child(5){animation-delay:.16s}
+    .bd-suns i:nth-child(6){animation-delay:.2s}.bd-suns i:nth-child(7){animation-delay:.24s}.bd-suns i:nth-child(8){animation-delay:.28s}.bd-suns i:nth-child(9){animation-delay:.32s}.bd-suns i:nth-child(10){animation-delay:.36s}
+    .bd-suns svg{display:block;width:20px;height:20px;vertical-align:0!important;}
+    .bd-say{font-size:14px;font-weight:800;line-height:1.35;color:var(--muted);}
+    .bd-note{margin-top:14px;padding:9px 14px;border-radius:16px;background:#fff8df;border:1px solid #f1dca6;font-weight:800;font-size:14px;line-height:1.35;text-align:center;}
+    .bd-rows{list-style:none;margin-top:14px;display:flex;flex-direction:column;gap:8px;}
+    .bd-row{display:flex;align-items:center;gap:10px;min-height:62px;padding:8px 12px 8px 8px;border-radius:20px;border:2px solid #f0e2cc;background:var(--card);box-shadow:0 3px 0 #ecdcc3;}
+    .bd-row.me{border-color:var(--act);background:#effaf8;box-shadow:0 3px 0 var(--act-d);}
+    .bd-place{flex:none;display:flex;align-items:center;justify-content:center;width:44px;height:44px;font:800 20px/1 "Baloo 2",sans-serif;color:#6b5238;}
+    .bd-place svg{display:block;width:40px;height:40px;vertical-align:0!important;}
+    .bd-nick{flex:1;min-width:0;font:800 17px/1.2 "Baloo 2",sans-serif;overflow-wrap:anywhere;}
+    .bd-nick small{display:block;font:800 12px/1.2 Nunito,sans-serif;color:var(--act-d);}
+    .bd-rdays{flex:none;display:inline-flex;align-items:center;gap:3px;font:800 16px/1 "Baloo 2",sans-serif;white-space:nowrap;}
+    .bd-rdays svg{display:block;width:18px;height:18px;vertical-align:0!important;}
+    .bd-more{padding:6px 12px 6px 62px;font-size:14px;font-weight:800;color:var(--muted);}
+    .bd-foot{margin-top:22px;font-size:12.5px;font-weight:700;line-height:1.5;color:var(--muted);text-align:center;}
+    @keyframes bdSun{0%{transform:scale(.4);opacity:0}70%{transform:scale(1.15);opacity:1}100%{transform:scale(1)}}
+    @media(max-width:360px){
+      .bd-me{gap:10px;}
+      .bd-row{gap:8px;padding-right:10px;}
+      .bd-nick{font-size:16px;}
+      .bd-more{padding-left:56px;}
+    }
+    @media(prefers-reduced-motion:reduce){.bd-suns i{animation:none!important;}}
+  </style>
+</head>
+<!-- THE PRACTICE BOARD, the child's page (BOARD2, 11 Oct 2026; Travis, 9 Oct
+     2026: "a board of every kid in Sona … days practiced"). BUILT DARK: while
+     Sona.boardLive() is false this page says only "The Practice Board is off."
+     It is reached from the Trophy Road, whose link shows only while the board
+     is on and this child is on it. A sun is a goal day; other children's days
+     are the server's once-a-day snapshot, this child's own are live. Names
+     never appear: nicknames the server made up, and the buddy picture. It
+     never speaks (menus are silent): the tap chime only. Events are sent by
+     sona.js, never by this page. No totals, no arrows, no streaks, no red. -->
+<body>
+  <main class="rd-wrap" id="board">
+    <header class="rd-head">
+      <a id="boardBack" class="rd-x" href="/road.html" aria-label="Back to the Trophy Road">✕</a>
+      <h1 class="rd-title">Practice Board</h1>
+    </header>
+    <p class="bd-sub" id="boardSub">Days practiced this month. A new board starts on the 1st.</p>
+
+    <section class="rd-card bd-off" id="offCard" hidden>
+      <p>The Practice Board is off.</p>
+      <button id="boardHome" type="button" class="act-pill bd-home">Home</button>
+    </section>
+
+    <section class="rd-card bd-me" id="meCard" aria-labelledby="meNick" hidden>
+      <span class="bd-face" id="meFace" aria-hidden="true"></span>
+      <div class="bd-me-copy">
+        <span class="bd-you">You</span>
+        <h2 id="meNick"></h2>
+        <p class="bd-days" id="meDays"><span id="meDaysN"></span><span class="bd-suns" id="meSuns" aria-hidden="true"></span></p>
+        <p class="bd-say" id="meLine"></p>
+      </div>
+    </section>
+
+    <p class="bd-note" id="boardNote" role="status" hidden></p>
+    <ol class="bd-rows" id="boardRows" aria-label="The board"></ol>
+
+    <p class="bd-foot" id="boardFoot">A sun is a day your child met the daily goal. Other kids' days update once a day. A new board starts on the 1st. Turn it off in Settings.</p>
+  </main>
+
+  <script src="/sona.js"></script>
+  <script src="/crafted-buddies.js"></script>
+  <script>
+    (function(){
+      var S=window.Sona,$=function(id){return document.getElementById(id);};
+      // an older cached sona.js has no board: Home is the way back
+      if(!S||!S.getProfile){location.replace("/today.html");return;}
+      var P=S.getProfile();
+      if(!P.onboarded&&!P.childName){location.replace("/today.html");return;}
+      var BUD=window.SonaCraftedBuddies||null;
+      var MONTHS=["January","February","March","April","May","June","July","August","September","October","November","December"];
+      function sfx(n){try{if(S.sfx&&S.sfx[n])S.sfx[n]();}catch(e){}}
+      function ic(n,px){try{return S.icon?S.icon(n,px||20):"";}catch(e){return "";}}
+      function el(tag,cls,text){var e=document.createElement(tag);if(cls)e.className=cls;if(text!=null)e.textContent=text;return e;}
+      function face(id,px){var s=el("span","bd-face");s.setAttribute("aria-hidden","true");if(BUD&&BUD.markup)s.innerHTML=BUD.markup(id,px);return s;}
+      function days(n){return n+(n===1?" day":" days");}
+      function monthOf(ym){var m=/^\d{4}-(\d{2})$/.exec(String(ym||""));var i=m?(+m[1])-1:new Date().getMonth();return MONTHS[i]||"";}
+      $("boardHome").onclick=function(){sfx("tap");location.href="/today.html";};
+      $("boardBack").addEventListener("click",function(){sfx("tap");});
+      function note(t){var n=$("boardNote");n.textContent=t||"";n.hidden=!t;}
+      function showOff(){
+        $("offCard").hidden=false;$("meCard").hidden=true;$("boardRows").textContent="";note("");
+        $("boardSub").hidden=true;$("boardFoot").hidden=true;
+      }
+      // the child's own card: their buddy, "You", the nickname, a sun a day
+      function paintMe(me){
+        if(!me){$("meCard").hidden=true;return;}
+        var n=Math.max(0,me.days|0);
+        var f=$("meFace");f.innerHTML=BUD&&BUD.markup?BUD.markup(me.buddy||"fox",72):"";
+        $("meNick").textContent=me.nick||"";
+        $("meDaysN").textContent=days(n);
+        var suns=$("meSuns");suns.textContent="";
+        // a sun for each day, up to ten; after that the number says it
+        for(var i=0;i<Math.min(n,10);i++){var s=el("i");s.innerHTML=ic("sun",20);suns.appendChild(s);}
+        $("meLine").textContent=n>0?"You practiced "+days(n)+" this month!":"Meet your goal today to get your first sun!";
+        $("meCard").setAttribute("aria-label","You. "+(me.nick||"")+". "+days(n)+(me.place?". Place "+me.place+".":"."));
+        $("meCard").hidden=false;
+      }
+      var MEDAL={1:"medalGold",2:"medalSilver",3:"medalBronze"};
+      function row(r){
+        var li=el("li","bd-row"+(r.me?" me":""));
+        var pl=el("span","bd-place");pl.setAttribute("aria-hidden","true");
+        if(MEDAL[r.place])pl.innerHTML=ic(MEDAL[r.place],40);else pl.textContent=String(r.place);
+        li.appendChild(pl);li.appendChild(face(r.buddy,44));
+        var nm=el("span","bd-nick",r.nick);if(r.me)nm.appendChild(el("small","","You"));li.appendChild(nm);
+        var d=el("span","bd-rdays");d.setAttribute("aria-hidden","true");d.innerHTML=ic("sun",18);d.appendChild(document.createTextNode(days(r.days)));li.appendChild(d);
+        li.setAttribute("aria-label",(r.me?"You. ":"")+"Place "+r.place+". "+r.nick+". "+days(r.days)+".");
+        return li;
+      }
+      function paintRows(v){
+        var ol=$("boardRows");ol.textContent="";
+        if(!v||v.quiet)return;
+        var top=v.top||[],more=(v.more||[]).slice();
+        top.forEach(function(r,i){
+          ol.appendChild(row(r));
+          // a tie too big to list: one line, after the last row of its place
+          var next=top[i+1];
+          if(!next||next.place!==r.place){for(var k=0;k<more.length;k++){if(more[k].place===r.place){ol.appendChild(el("li","bd-more","+"+more[k].n+" more kids with "+days(more[k].days)));more.splice(k,1);k--;}}}
+        });
+        more.forEach(function(m){ol.appendChild(el("li","bd-more","+"+m.n+" more kids with "+days(m.days)));});
+      }
+      function render(v){
+        if(!v||v.off||v.notOn||v.gone){showOff();return;}
+        $("offCard").hidden=true;$("boardSub").hidden=false;$("boardFoot").hidden=false;
+        $("boardSub").textContent="Days practiced in "+monthOf(v.month)+". A new board starts on the 1st.";
+        if(v.resting){paintMe(v.me);paintRows(null);note("The board is resting. Your days still count!");return;}
+        if(!v.ok&&!v.stale){paintMe(v.me);paintRows(null);note("The board will be back soon. Your days still count!");return;}
+        paintMe(v.me);paintRows(v);
+        note(v.quiet?"The board fills up as kids practice this month.":v.stale?"From earlier today.":"");
+      }
+      // ── load: deletions still owed go first (live or not), then the board ──
+      var live=false,on=false;
+      try{live=!!(S.boardLive&&S.boardLive());on=!!(live&&S.boardState&&S.boardState().on);}catch(e){}
+      var flush=null;try{flush=S.boardFlush?S.boardFlush():null;}catch(e){flush=null;}
+      if(!on||!S.boardView){showOff();if(flush&&flush.then)flush.then(null,function(){});return;}
+      // until the server answers, the child's own card from what this phone knows
+      try{var st=S.boardState();render({ok:false,stale:true,month:"",me:{nick:st.nick,buddy:S.buddyId?S.buddyId():"fox",days:st.days},quiet:true});note("");}catch(e){}
+      var go=function(){S.boardView().then(render,function(){render({ok:false,me:null});});};
+      if(flush&&flush.then)flush.then(go,go);else go();
+      window.addEventListener("pageshow",function(e){if(e.persisted)location.reload();});
+    })();
+  </script>
+</body>
+</html>

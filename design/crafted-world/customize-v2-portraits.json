@@ -1,0 +1,121 @@
+{
+  "generated": "2026-09-28",
+  "tool": "built-in imagegen",
+  "mode": "single portrait atlas",
+  "source": "/Users/traviswardrop/.codex/generated_images/01a0e9e0-7ac5-7820-ab1f-6abd92556547/exec-49f655db-ff7f-4b55-b755-b33ad54f2f7a.png",
+  "sourceDimensions": {
+    "width": 1254,
+    "height": 1254
+  },
+  "references": [
+    "customize-v2/current-buddies-reference.png",
+    "references/05-library-practice-feed-final.png"
+  ],
+  "prompt": "Use case: stylized-concept. Asset: a single 3-by-3 square atlas of eight children's character portrait badges for Sona, the ninth bottom-right cell left blank.\nReference image 1 is the current EIGHT character identity/color/order sheet. Reference image 2 defines the beautiful tactile painted-toy rendering of the fox/Echo, NOT the layout, text or phones.\nCreate a new atlas that matches the first reference's exact order and identity but renders all eight creatures with the soft sculpted, detailed brushed-painted handmade toy quality of the second reference's orange fox. NO flat vector faces, no emoji, no glossy plastic, no phone UI.\nExact layout: 1536x1536 square, 3 columns by 3 rows, each cell512x512; circular badge centered at each cell center with diameter440px, complete visible circle. Uniform plain warm off-white outside the circles, wide clean gutters, no text, labels, clothes, crowns, props or borders. Keep each face centered, front-facing, eyes at~60% circle height and ears/horns contained near top of circle. All characters friendly with open eyes and sweet gentle smiles. Heads can have tiny chest visible at bottom of circle; no full bodies except bee and octopus.\nRow1 LEFT Pip: orange FOX, white fluffy muzzle and chest, triangular orange ears with cream inner ears, dark brown nose, pink cheeks, warm pale gold circular background. Match the second image's orange fox's face.\nRow1 MIDDLE Miso: ivory-white BUNNY, two tall rounded ears with pink insides, small pink triangular nose, two little buck teeth, pink cheeks, pastel sky blue circle.\nRow1 RIGHT Ziggy: mint/leaf GREEN baby DRAGON, two small cream horn points on sides of head, TWO green pointed spikes on top, big pale mint oval muzzle with two nostrils, happy curved smile, pastel blush pink circle.\nRow2 LEFT Mochi: peach coral CAT, small pointy cat ears with pale pink insides, white muzzle, pink triangle nose, short whiskers, lilac circle.\nRow2 MIDDLE Buzz: round GOLDEN YELLOW BEE, two black antennae with round tips, white translucent small side wings, two charcoal body stripes, big eyes and smile, light green circle.\nRow2 RIGHT Otto: soft PURPLE OCTOPUS, round bulb head, happy little open mouth with pink tongue, lavender cheeks, small rounded tentacles and lighter suction dots below, warm pale peach circle.\nRow3 LEFT Rocky: turquoise TEAL baby DINOSAUR with THREE pale cream triangular spikes on head, mint muzzle, two nostrils and a happy curved smile with one tiny white tooth, light blue circle. Distinct from green dragon in row1.\nRow3 MIDDLE Bao: classic BLACK AND WHITE PANDA, round black ears, black oval eye patches with white eye whites and dark pupils, black little nose, pink cheeks, golden cream circle.\nRow3 RIGHT: leave completely empty plain warm off-white.\nSculpted dimensional form through warm soft shadows, delicate fur brushwork for mammals, fine painted grain for other creatures, rich but gentle colors. Friendly original storybook toy portraits. No words/numbers/logos anywhere. Preserve each character species and colors exactly and keep all eight distinct.",
+  "portraits": [
+    {
+      "id": "fox",
+      "crop": {
+        "left": 18,
+        "top": 20,
+        "width": 392,
+        "height": 392
+      },
+      "output": "public/assets/crafted/buddy-fox-v2.webp",
+      "width": 288,
+      "height": 288,
+      "quality": 90
+    },
+    {
+      "id": "bunny",
+      "crop": {
+        "left": 431,
+        "top": 18,
+        "width": 392,
+        "height": 392
+      },
+      "output": "public/assets/crafted/buddy-bunny-v2.webp",
+      "width": 288,
+      "height": 288,
+      "quality": 90
+    },
+    {
+      "id": "dragon",
+      "crop": {
+        "left": 842,
+        "top": 18,
+        "width": 392,
+        "height": 392
+      },
+      "output": "public/assets/crafted/buddy-dragon-v2.webp",
+      "width": 288,
+      "height": 288,
+      "quality": 90
+    },
+    {
+      "id": "cat",
+      "crop": {
+        "left": 18,
+        "top": 426,
+        "width": 392,
+        "height": 392
+      },
+      "output": "public/assets/crafted/buddy-cat-v2.webp",
+      "width": 288,
+      "height": 288,
+      "quality": 90
+    },
+    {
+      "id": "bee",
+      "crop": {
+        "left": 430,
+        "top": 427,
+        "width": 392,
+        "height": 392
+      },
+      "output": "public/assets/crafted/buddy-bee-v2.webp",
+      "width": 288,
+      "height": 288,
+      "quality": 90
+    },
+    {
+      "id": "octopus",
+      "crop": {
+        "left": 842,
+        "top": 427,
+        "width": 392,
+        "height": 392
+      },
+      "output": "public/assets/crafted/buddy-octopus-v2.webp",
+      "width": 288,
+      "height": 288,
+      "quality": 90
+    },
+    {
+      "id": "dino",
+      "crop": {
+        "left": 18,
+        "top": 825,
+        "width": 392,
+        "height": 392
+      },
+      "output": "public/assets/crafted/buddy-dino-v2.webp",
+      "width": 288,
+      "height": 288,
+      "quality": 90
+    },
+    {
+      "id": "panda",
+      "crop": {
+        "left": 430,
+        "top": 826,
+        "width": 392,
+        "height": 392
+      },
+      "output": "public/assets/crafted/buddy-panda-v2.webp",
+      "width": 288,
+      "height": 288,
+      "quality": 90
+    }
+  ]
+}

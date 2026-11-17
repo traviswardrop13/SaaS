@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { readSession, kvCmd, kvConfigured, rosterKey, healLegacyRoster } from "@/lib/slpAuth";
+import { readSession, liveSession, kvCmd, kvConfigured, rosterKey, healLegacyRoster } from "@/lib/slpAuth";
 import { readAllHomework, hwStatus, type Homework, type HomeworkRecord } from "@/lib/homework";
 import { readMeta, readInvites, readGone, readAccount, type ChildMeta } from "@/lib/roster";
-import { dashboardOpen, StoreUnavailable } from "@/lib/caseload";
+import { dashboardGate } from "@/lib/proGate";
+import { loginsFor } from "@/lib/familyLogin";
 
 /**
  * SLP master roster — returns each family's latest progress for the SIGNED-IN
@@ -59,22 +60,13 @@ function hwFor(rec: HomeworkRecord | undefined): { status: ReturnType<typeof hwS
 export async function GET(req: NextRequest) {
   // roster read requires the SLP's own session; the code comes from the
   // authenticated account, never the query string.
-  const s = readSession(req);
+  const s = await liveSession(readSession(req));
   if (!s) return NextResponse.json({ ok: false, error: "sign in required" }, { status: 401 });
   if (!kvConfigured()) return NextResponse.json({ ok: true, configured: false, kids: [], invites: [] });
-  // THE DASHBOARD IS PART OF THE PLAN (17 Nov 2026). An account made from
-  // that build on sees its caseload only with a live Solo or Clinic plan —
-  // the 14-day trial counts — or a seat on a clinic. Accounts that signed up
-  // when the dashboard was free keep it (lib/caseload dashboardOpen). The
-  // page shows the plan picker on 402; families' devices never call this.
-  try {
-    if (!(await dashboardOpen(s.email))) {
-      return NextResponse.json({ ok: false, needPlan: true, error: "Start your free trial to open your dashboard." }, { status: 402 });
-    }
-  } catch (e) {
-    if (e instanceof StoreUnavailable) return NextResponse.json({ ok: false, error: "Couldn't reach your workspace just now — try again in a moment." }, { status: 503 });
-    throw e;
-  }
+  // The caseload is what Sona Pro sells, for an account made from 12 Nov
+  // 2026 (lib/proGate). 402 with needPlan: the page shows the plan instead.
+  const locked = await dashboardGate(s.email);
+  if (locked) return locked;
   const { code } = await readAccount(s.email);
   if (!code) return NextResponse.json({ ok: true, configured: true, kids: [], invites: [] });
 
@@ -84,12 +76,13 @@ export async function GET(req: NextRequest) {
   // would otherwise look like "nobody signed up".
   await healLegacyRoster(code);
 
-  const [flat, meta, homework, gone, invites] = await Promise.all([
+  const [flat, meta, homework, gone, invites, logins] = await Promise.all([
     kvCmd(["HGETALL", rosterKey(code)]),
     readMeta(code),
     readAllHomework(code),
     readGone(code),
     readInvites(code),          // pending only; drops index rows whose 30-day data key has expired
+    loginsFor(code),            // each family login's username and whether the family chose its own password; never a password
   ]);
 
   // The hash FIELD is the child's id; the row's own childId is what the
@@ -120,6 +113,7 @@ export async function GET(req: NextRequest) {
       synced: !!row,
       meta: meta[childId] || null,
       hw: hwFor(homework[childId]),
+      login: logins["cid:" + childId] || null,
     });
   }
   kids.sort((a, b) => String(b.at || "").localeCompare(String(a.at || "")));
@@ -135,6 +129,7 @@ export async function GET(req: NextRequest) {
     invites: invites.map((i) => ({
       token: i.token, label: i.label, age: i.age, sounds: i.sounds, pos: i.pos,
       repsPerDay: i.repsPerDay, note: i.note, createdAt: i.createdAt, expiresAt: i.expiresAt,
+      login: logins["inv:" + i.token] || null,
     })),
   });
 }

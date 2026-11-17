@@ -1,0 +1,20 @@
+/* Story cards are below the existing pause/permission overlays. */
+#dailyStoryCard{position:fixed;inset:0;z-index:40;display:flex;align-items:center;justify-content:center;padding:calc(14px + env(safe-area-inset-top)) 14px calc(14px + env(safe-area-inset-bottom));background:rgba(34,49,38,.62);color:var(--cream-ink,#4a2c14);}
+#dailyStoryCard[hidden]{display:none;}
+.daily-story-sheet{width:min(100%,540px);max-height:100%;overflow-y:auto;overscroll-behavior:contain;border-radius:28px;background:var(--cream,#fff6e9);box-shadow:0 12px 42px rgba(24,42,26,.32);}
+#dailyStoryArt{display:block;width:100%;height:clamp(110px,25dvh,230px);object-fit:cover;object-position:center 25%;}
+#dailyStoryArt[hidden]{display:none;}
+.daily-story-copy{padding:17px 20px 22px;}
+.daily-story-eyebrow{font-size:12px;font-weight:800;line-height:1.25;color:var(--muted,#8a6f52);margin-bottom:7px;}
+#dailyStoryTitle{font-family:"Baloo 2",sans-serif;font-size:clamp(24px,6vw,31px);font-weight:800;line-height:1.1;margin:0 0 9px;outline:none;}
+#dailyStoryWords{font-size:16px;line-height:1.45;font-weight:600;margin:0;color:var(--cream-ink,#4a2c14);}
+.daily-story-actions{display:flex;gap:12px;margin-top:18px;align-items:center;}
+.daily-story-actions button{min-height:50px;min-width:50px;display:flex;align-items:center;justify-content:center;gap:10px;cursor:pointer;}
+#dailyStoryNext{flex:1;font-size:19px;line-height:1.1;padding:11px 16px;}
+#dailyStoryReplay{padding:10px;}
+.daily-story-actions svg{width:23px;height:23px;flex:none;}
+.daily-story-actions button:disabled{opacity:.5;cursor:default;}
+.daily-story-actions button:focus-visible{outline:3px solid var(--act-d,#216e78);outline-offset:4px;}
+@media(max-height:640px){#dailyStoryArt{height:110px;}.daily-story-copy{padding:12px 16px 17px;}#dailyStoryWords{font-size:14px;line-height:1.4;}.daily-story-actions{margin-top:13px;}}
+@media(orientation:landscape) and (min-width:700px){.daily-story-sheet{width:min(94%,760px);display:grid;grid-template-columns:40% 60%;}#dailyStoryArt{height:100%;min-height:240px;max-height:480px;}.daily-story-copy{align-self:center;}}
+@media(prefers-reduced-motion:reduce){#dailyStoryCard *{animation:none!important;transition:none!important;}}

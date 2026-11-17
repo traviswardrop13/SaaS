@@ -75,7 +75,7 @@ export async function GET(req: NextRequest) {
         limit: 10,
       });
       const active = subs.data.some(
-        (s) => !isClinicianPlan(s.metadata?.plan) && (s.status === "active" || s.status === "trialing"),
+        (s) => !isClinicianPlan(s.metadata) && (s.status === "active" || s.status === "trialing"),
       );
       if (active) return NextResponse.json({ ok: true, active: true, kind: "subscription" });
     }

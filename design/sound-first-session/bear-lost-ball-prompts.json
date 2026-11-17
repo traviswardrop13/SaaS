@@ -1,0 +1,141 @@
+{
+  "mode": "built-in image_gen",
+  "slug": "bear-lost-ball",
+  "sound": "B",
+  "title": "Bear's Lost Ball",
+  "format": "8-page fuller book",
+  "styleReference": "public/assets/books/bo-beach-day/p01.webp",
+  "originalSixSceneGeneration": {
+    "id": "bear-lost-ball-clay-v1",
+    "prompt": "EDIT TARGET: the first reference is a SIX-SCENE children's storybook atlas. Preserve its exact 3 columns x2 rows layout, six equal square full-bleed cells with no gutters, no borders, no text. Preserve bear, red ball, bee and the exact six pictured actions. STYLE REFERENCE: the second image is Sona's ORIGINAL established book art. Completely replace the flat vector/cut-paper rendering of the first image with the second image's warm tactile soft3D storybook/toy look, dimensional rounded characters, soft velvet/fur texture, cream muzzle, little pink cheeks, shiny friendly dark eyes, painted detailed natural scenery, warm rich colors with soft even daylight. Use this original style, not a flat/geometric/limited-palette experiment. Do not copy the sailor hat or blue scarf from the style reference; this new round brown bear has no clothing. Keep character identity consistent across all6 scenes: cocoa-brown small round bear, cream belly/muzzle, tiny round ears; red ball has one cream curved stripe; bee gold-and-charcoal with friendly face. Scenes reading left-to-right top-to-bottom:1 Bear holds ball in park by river;2 ball bounces away with Bear reaching after it;3 Bear looks beside large parked teal BUS, no ball;4 Bear looks beside red ROWBOAT pulled onto bank, no ball;5 friendly BEE finds ball in grass, Bear cheers;6 Bear asleep in BED with ball safe beside him, cream pillow/sage quilt/moonlit window. Each subject entirely within its cell, one clear pictured word/focal point, no extra cells. No text, lettering, digits, signs, UI or logos. Overall exact3:2 landscape atlas.",
+    "coverPrompt": "EDIT TARGET is the first reference, a square children's storybook cover of brown bear holding red ball and friendly bee. Keep the same characters, composition and scene meaning. STYLE REFERENCE is second image, Sona's original established book art. Render target in that original warm tactile soft3D storybook toy style: dimensional rounded bear, soft velvet/fur texture, cream muzzle/belly, friendly big shiny dark eyes, little pink cheeks; rich natural park foliage, softly painted river/sky, gentle warm daylight and soft shadows. No flat vector shapes or cut-paper style. Bear wears NO sailor hat, scarf or clothing (the second reference is for rendering style only). One red ball with one cream stripe, friendly gold/charcoal bee beside him. Clear main subject, calm composition. One square image only, no collage or frames. No title, text, lettering, digits, logo or UI.",
+    "styleReference": "public/assets/books/bo-beach-day/p01.webp",
+    "assets": [
+      "public/assets/books/painted/bear-lost-ball-clay-v1.webp",
+      "public/assets/books/painted/bear-lost-ball-clay-v1-cover.webp"
+    ],
+    "clinicalReview": "Six targets bear,ball,bus,boat,bee,bed are existing initial-B bank words. Review six new story lines and matching images before release."
+  },
+  "extraPageGeneration": {
+    "mode": "built-in image_gen",
+    "slug": "bear-lost-ball",
+    "prompt": "Use case: illustration-story. Add two NEW illustrated pages to the existing Sona children's book Bear's Lost Ball. REFERENCE IMAGE is for exact character identity and the original warm tactile soft3D storybook rendering style. Do not reproduce its six-scene grid. OUTPUT: exactly TWO equal square full-bleed scenes side by side, a 2:1 landscape diptych, no gutters or frames. Left scene: the same little cocoa-brown bear with cream belly and muzzle, pink ears and big shiny friendly dark eyes, no clothing, happily bouncing the same RED BALL with one broad cream curved stripe on the sunny riverside park path. The ball is clearly bouncing just above the path, his paws ready to catch. Right scene: the same bear and the same friendly fuzzy gold-and-charcoal striped bee with white wings, playing with the same ball together on the riverside grass, smiling at one another, bee nudging the ball toward Bear. Keep the river, warm leafy trees and daisies consistent with the reference. Each scene is a complete distinct composition, all important objects comfortably inside its square, clear focal action for a young child. Render rounded dimensional characters, soft fine fur, warm natural daylight, richly painted natural scenery matching the reference. No flat vector/cut-paper style. No text, lettering, numbers, titles, labels, logos, UI or watermark. Exactly two scenes only.",
+    "reference": "public/assets/books/painted/bear-lost-ball-clay-v1.webp",
+    "validation": "Both new page panels visually inspected; original bear/ball/bee identities and exact bounce/play scenes correct. Original six scenes retained.",
+    "source": "design/sound-first-session/book-art-sources/bear-extra-pages.png"
+  },
+  "mechanicalExport": {
+    "originalAtlas": "public/assets/books/painted/bear-lost-ball-clay-v1.webp",
+    "columns": 3,
+    "rows": 2,
+    "pageToOriginalCell": {
+      "1": 0,
+      "2": 1,
+      "3": 2,
+      "4": 3,
+      "5": 4,
+      "8": 5
+    },
+    "extraDiptychSize": [
+      1774,
+      887
+    ],
+    "page6Crop": [
+      0,
+      0,
+      887,
+      887
+    ],
+    "page7Crop": [
+      887,
+      0,
+      1774,
+      887
+    ],
+    "cover": "Copied byte-for-byte from public/assets/books/painted/bear-lost-ball-clay-v1-cover.webp; original six scenes and original assets retained."
+  },
+  "assets": [
+    {
+      "asset": "public/assets/books/bear-lost-ball/cover.webp",
+      "bytes": 36536,
+      "size": [
+        384,
+        384
+      ],
+      "sha256": "cb3f0f9155aa704078c5c5ec3a00c3b23e654cba11273b1c5c0c9a9148b57336"
+    },
+    {
+      "asset": "public/assets/books/bear-lost-ball/p01.webp",
+      "bytes": 63428,
+      "size": [
+        512,
+        512
+      ],
+      "sha256": "5b3f203c37447b5c7442427e040ee8514f0c82823b5bbb753ca8c7974e91e9e4"
+    },
+    {
+      "asset": "public/assets/books/bear-lost-ball/p02.webp",
+      "bytes": 53516,
+      "size": [
+        512,
+        512
+      ],
+      "sha256": "7a8464121223ceb7cf629b48b8ae11222c694adebc2b4f2b0bdc5a05b61de17a"
+    },
+    {
+      "asset": "public/assets/books/bear-lost-ball/p03.webp",
+      "bytes": 47546,
+      "size": [
+        512,
+        512
+      ],
+      "sha256": "d321b52d41de96397ba1f7a8e28779825520195bd2abc895070e61adcad2097e"
+    },
+    {
+      "asset": "public/assets/books/bear-lost-ball/p04.webp",
+      "bytes": 62078,
+      "size": [
+        512,
+        512
+      ],
+      "sha256": "6b6f0daf664963b2af66acb5c258d5072a7ae7e8c36fca1b0d88e8c21eeb7593"
+    },
+    {
+      "asset": "public/assets/books/bear-lost-ball/p05.webp",
+      "bytes": 65440,
+      "size": [
+        512,
+        512
+      ],
+      "sha256": "fb10e7400a3692e66d6106ea4f65383a85a15a1acf40f36702f9079f1f9d854f"
+    },
+    {
+      "asset": "public/assets/books/bear-lost-ball/p06.webp",
+      "bytes": 119092,
+      "size": [
+        768,
+        768
+      ],
+      "sha256": "920898487d7017cc3f89eb637cc233da8197a465401a4c535ece13f4fdfd849c"
+    },
+    {
+      "asset": "public/assets/books/bear-lost-ball/p07.webp",
+      "bytes": 127974,
+      "size": [
+        768,
+        768
+      ],
+      "sha256": "ae8bc112beb4da6012e010918b7df2f321dd47acb68729c69d98e9657208f7d0"
+    },
+    {
+      "asset": "public/assets/books/bear-lost-ball/p08.webp",
+      "bytes": 36840,
+      "size": [
+        512,
+        512
+      ],
+      "sha256": "f56006f59750dbaa52bc6306cdab2af01b225c9ed7d15f8247df31070521d9c7"
+    }
+  ],
+  "clinicalReview": "Review all eight captions, matching pictures and bank-only keys. The original six captions/pictures stay; two new ball/bee play scenes come before bed. No scorer, microphone, age or play-rep change."
+}

@@ -1,0 +1,294 @@
+MONSTER MAKEOVER ART — built-in image_gen only
+
+Reference public/assets/crafted/home-monster.webp inspected and unchanged.
+
+PROMPTS
+{
+  "salon": "Use case: stylized-concept. Asset type: portrait2:3 background for a friendly children's monster makeover game. Reference image1 is STYLE/PALETTE reference only: match its rich softly painted handcrafted storybook world, rounded forms, warm ivory, gentle mint/teal, lavender accents, honey wood and cheerful diffuse sunshine. An EMPTY calm cozy pretend salon with broad clear central wall and a spacious simple lower floor/work area for one character drawn by the game. Very subtle rounded cabinet/shelf shapes only at far outer edges and upper corners; smooth pale mint/ivory center and warm wooden floor below. Do not include a mirror reflection, characters, monsters, faces, chairs, tools, accessories, bottles, labels, letters, text, UI, frames, water, bubbles, confetti or watermark. The central70percent must stay uncluttered and visually quiet. Opaque full background, portrait2:3.",
+  "base": "Use case: precise-object-edit. Asset type: single transparent full-body game character sprite. Reference image1 is the identity/style reference: preserve the same friendly little PURPLE fur monster with small pink-red horns, large blue bright eyes, pink rounded nose, happy open smiling mouth with tiny soft teeth, round cuddly body, short arms/hands and two rounded feet. Show the monster alone, UPRIGHT and directly FRONT-FACING, whole body, symmetrical friendly relaxed arms slightly outward/down, feet on one horizontal baseline. Fur is SHORT and tidy over a smooth rounded head/body silhouette, with a clear gently rounded scalp between the horns so the game can draw three interactive tufts on top. Keep the same rounded softly dimensional rich storybook painted material and lavender-purple palette as the reference. Absolutely NO glasses, hat, bow, crown, accessory, necklace, hair clips, clothing, extra tall hair tufts, mud, suds, water, dirt, painted spots or decorations on the fur. No other character, ground, shadow backdrop, confetti, text, UI or watermark. Genuinely transparent alpha background; clean full silhouette with padding. Portrait composition.",
+  "shower": "Use case: stylized-concept. Asset type: transparent single handheld shower/sprayer tool for a friendly children's pretend monster salon. Match reference image1's softly dimensional rich painted storybook toy style, rounded gentle forms and bright warm colors. One short chunky sky-blue and warm ivory handheld sprayer, clearly facing LEFT: round yellow-rimmed perforated shower nozzle on the left, easy-to-grip short sky-blue handle extending to the right and slightly downward. Whole tool visible, no hose. Dry and idle: NO water drops, stream, spray, bubbles, mist, splashes or glow. Simple readable silhouette, gentle shiny toy texture. Genuinely transparent alpha background, no hands, characters, faces, background, cast shadow, text, labels, UI or watermark.",
+  "comb": "Use case: stylized-concept. Asset type: transparent single comb tool for a friendly children's monster makeover game. Match reference image1's softly dimensional rich painted storybook toy style. One wide horizontal chunky TEAL comb with a rounded warm yellow grip/back, clearly separated rounded teeth pointing straight DOWN. The teeth span most of the horizontal length; compact simple easy-to-recognize comb silhouette, no other tool. Smooth safe toy plastic, warm gentle highlights and subtle painted texture. Entire object visible with transparent padding. Genuinely transparent alpha background, no hands, hair, characters, faces, backdrop, shadow, words, letters, labels, UI or watermark.",
+  "scissors": "Use case: stylized-concept. Asset type: transparent single safe scissors tool for a friendly children's pretend monster salon. Match reference image1's softly dimensional rich painted storybook toy style. One small pair of friendly child-safe scissors viewed from above: two short silver blades with very rounded blunt tips pointing LEFT, slightly open about15degrees, with two large rounded TEAL handle loops on the right and a small warm yellow pivot. Clear cut/contact area at the left blade tips; not a sharp knife. Compact horizontal silhouette, whole object visible with transparent padding, gentle toy proportions and warm painted texture. Genuinely transparent alpha background. No hands, hair, characters, faces, backdrop, cast shadow, text, UI or watermark.",
+  "glasses": "Use case: precise-object-edit. Asset type: transparent single wearable glasses sprite. Reference image1 is the identity reference for the purple monster's YELLOW ROUND GLASSES. Create the glasses ALONE in a straight front-facing symmetrical view: two round golden-yellow chunky rings, short rounded center bridge and tiny side arms, same friendly rich painted storybook toy material. Lens interiors must be genuinely clear transparent holes so the monster's real eyes remain fully visible, no drawn eyes or pupils in the lenses. No dark tint. Entire glasses silhouette visible with transparent padding. No monster, head, face, body, hat, bow, other accessory, backdrop, shadow, text, labels, UI or watermark. Genuinely transparent alpha background including both lens interiors."
+}
+
+NEW EXPORTS
+[
+  {
+    "file": "public/assets/crafted/game/monster-salon-v1.webp",
+    "dimensions": [
+      800,
+      1200
+    ],
+    "mode": "RGB",
+    "bytes": 39536,
+    "origin": "/Users/traviswardrop/.codex/generated_images/01a146f2-f9aa-7fe3-a1f3-001ad6fa611f/exec-d16a0d72-a013-420c-8ed6-abee960a74ff.png",
+    "crop_xyxy": null,
+    "quality": 85
+  },
+  {
+    "file": "public/assets/crafted/game/monster-base-v1.webp",
+    "dimensions": [
+      512,
+      507
+    ],
+    "mode": "RGBA",
+    "bytes": 69022,
+    "origin": "/Users/traviswardrop/.codex/generated_images/01a146f2-f9aa-7fe3-a1f3-001ad6fa611f/exec-3fd1ddf0-b581-44ef-b436-2ca6ba4ae9a2.png",
+    "crop_xyxy": [
+      13,
+      99,
+      1166,
+      1241
+    ],
+    "quality": 90,
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "alpha_bbox": [
+      0,
+      0,
+      511,
+      507
+    ],
+    "alpha_preserved": true
+  },
+  {
+    "file": "public/assets/crafted/game/monster-shower-v1.webp",
+    "dimensions": [
+      384,
+      257
+    ],
+    "mode": "RGBA",
+    "bytes": 20278,
+    "origin": "/Users/traviswardrop/.codex/generated_images/01a146f2-f9aa-7fe3-a1f3-001ad6fa611f/exec-e577f916-ed95-420d-a5a5-ef4dbd6ed098.png",
+    "crop_xyxy": [
+      82,
+      46,
+      1468,
+      973
+    ],
+    "quality": 90,
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "alpha_bbox": [
+      1,
+      0,
+      383,
+      256
+    ],
+    "alpha_preserved": true
+  },
+  {
+    "file": "public/assets/crafted/game/monster-comb-v1.webp",
+    "dimensions": [
+      384,
+      129
+    ],
+    "mode": "RGBA",
+    "bytes": 19942,
+    "origin": "/Users/traviswardrop/.codex/generated_images/01a146f2-f9aa-7fe3-a1f3-001ad6fa611f/exec-60a67c24-f1a7-47de-a805-47c215aa4a67.png",
+    "crop_xyxy": [
+      17,
+      208,
+      1656,
+      757
+    ],
+    "quality": 90,
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "alpha_bbox": [
+      0,
+      0,
+      384,
+      129
+    ],
+    "alpha_preserved": true
+  },
+  {
+    "file": "public/assets/crafted/game/monster-scissors-v1.webp",
+    "dimensions": [
+      384,
+      233
+    ],
+    "mode": "RGBA",
+    "bytes": 22906,
+    "origin": "/Users/traviswardrop/.codex/generated_images/01a146f2-f9aa-7fe3-a1f3-001ad6fa611f/exec-030df4c3-3fb3-4c9d-8540-f9ab2c0190ff.png",
+    "crop_xyxy": [
+      234,
+      67,
+      1586,
+      887
+    ],
+    "quality": 90,
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "alpha_bbox": [
+      1,
+      1,
+      383,
+      232
+    ],
+    "alpha_preserved": true
+  },
+  {
+    "file": "public/assets/crafted/game/monster-glasses-v1.webp",
+    "dimensions": [
+      512,
+      200
+    ],
+    "mode": "RGBA",
+    "bytes": 27436,
+    "origin": "/Users/traviswardrop/.codex/generated_images/01a146f2-f9aa-7fe3-a1f3-001ad6fa611f/exec-e9e1a4d1-3e1e-4102-b83f-c836a143672b.png",
+    "crop_xyxy": [
+      53,
+      109,
+      1722,
+      760
+    ],
+    "quality": 90,
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "alpha_bbox": [
+      1,
+      0,
+      512,
+      200
+    ],
+    "alpha_preserved": true
+  }
+]
+
+REUSED EXISTING ART, INSPECTED AND UNCHANGED
+[
+  {
+    "file": "public/assets/crafted/game/puppy-sponge.webp",
+    "dimensions": [
+      512,
+      403
+    ],
+    "mode": "RGBA",
+    "bytes": 61476,
+    "unchanged": true
+  },
+  {
+    "file": "public/assets/crafted/hat-bow.webp",
+    "dimensions": [
+      256,
+      256
+    ],
+    "mode": "RGBA",
+    "bytes": 13058,
+    "unchanged": true
+  },
+  {
+    "file": "public/assets/crafted/hat-crown.webp",
+    "dimensions": [
+      256,
+      256
+    ],
+    "mode": "RGBA",
+    "bytes": 14446,
+    "unchanged": true
+  }
+]
+
+NORMALIZED ANATOMY / CONTACT ANCHORS
+{
+  "base": {
+    "eyes_left": [
+      0.379,
+      0.323
+    ],
+    "eyes_right": [
+      0.63,
+      0.323
+    ],
+    "nose": [
+      0.505,
+      0.375
+    ],
+    "mouth": [
+      0.5,
+      0.474
+    ],
+    "bow_neck": [
+      0.5,
+      0.62
+    ],
+    "forehead_between_horns": [
+      0.5,
+      0.08
+    ],
+    "feet_baseline_y": 0.985,
+    "notes": "Approximate landmarks normalized to exported sprite. Fit the whole near-square sprite without stretching. Glove arms outside main body; leave face/eyes/mouth out of cleaning masks."
+  },
+  "shower": {
+    "nozzle_contact": [
+      0.16,
+      0.38
+    ],
+    "notes": "Dry spray head facing left; water drawn by game only."
+  },
+  "comb": {
+    "tooth_contact": [
+      0.5,
+      0.95
+    ],
+    "notes": "Horizontal teeth down; broad bottom contact band."
+  },
+  "scissors": {
+    "blade_contact": [
+      0.1,
+      0.5
+    ],
+    "notes": "Rounded slightly open left-facing tips; hinge farther right."
+  },
+  "glasses": {
+    "lens_centers": [
+      [
+        0.268,
+        0.5
+      ],
+      [
+        0.74,
+        0.5
+      ]
+    ],
+    "notes": "Both lens holes clear alpha. Glasses width about.53 of monster sprite width fits its actual eye spacing."
+  },
+  "existing_bow": {
+    "center": [
+      0.5,
+      0.5
+    ],
+    "notes": "Use actual image aspect256/256 with full padding; visible bow is wider/shallower inside canvas."
+  },
+  "existing_crown": {
+    "base_center": [
+      0.5,
+      0.9
+    ],
+    "notes": "Place lower crown band at monster forehead top; preserve source padding/aspect."
+  },
+  "existing_sponge": {
+    "contact": [
+      0.5,
+      0.5
+    ]
+  }
+}
+
+Operations after generation are rectangular crop bounds with12px padding, proportional resize and WebP format export only. Generated alpha preserved byte-for-byte relative to resized image. No semantic pixel edits, rotation, recoloring or existing artwork changes. Skipped redundant bow and crown generations after confirming existing art is suitable; no new stamp art requested (native colored stencil).
+
+HELP LADDER DRAWING (18 Oct 2026, no new art)
+The glow on the next target, the gold arrows and the finish sparkles are drawn by monster.js on the canvas (no image files). They show only after two misses (or about 8 s of rubbing with nothing finished). Painted versions, if Travis wants them, would drop in at the glow() and sparkles() draws.

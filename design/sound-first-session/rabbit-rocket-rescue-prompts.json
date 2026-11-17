@@ -1,0 +1,229 @@
+{
+  "mode": "built-in image_gen",
+  "slug": "rabbit-rocket-rescue",
+  "styleReference": "public/assets/books/bo-beach-day/p01.webp",
+  "validation": "All eight page illustrations inspected individually by root; exact toy/characters preserved; page action and target shown.",
+  "assets": [
+    "public/assets/books/rabbit-rocket-rescue/cover.webp",
+    "public/assets/books/rabbit-rocket-rescue/p01.webp",
+    "public/assets/books/rabbit-rocket-rescue/p02.webp",
+    "public/assets/books/rabbit-rocket-rescue/p03.webp",
+    "public/assets/books/rabbit-rocket-rescue/p04.webp",
+    "public/assets/books/rabbit-rocket-rescue/p05.webp",
+    "public/assets/books/rabbit-rocket-rescue/p06.webp",
+    "public/assets/books/rabbit-rocket-rescue/p07.webp",
+    "public/assets/books/rabbit-rocket-rescue/p08.webp"
+  ],
+  "records": [
+    {
+      "kind": "cover",
+      "source": "design/sound-first-session/book-art-sources/rabbit-rocket-rescue/cover.png",
+      "prompt": "Use case: illustration-story. Asset: square cover illustration for a new Sona children's picture book, Rabbit and the Rocket. STYLE REFERENCE only: the attached original Sona bear beach picture establishes warm tactile soft3D characters, fine soft fur, shiny dark eyes, gentle pink cheeks, rich softly painted natural scenery, gentle sunlight and rounded friendly forms. Do not copy its bear, hat, scarf, beach or boat. NEW CHARACTERS: one small dove-gray rabbit with cream muzzle and belly, long rounded pink inner ears, large shiny dark eyes, no clothing; one small rounded sky-blue friendly robot with cream face panel, two dark button eyes, warm smile and short jointed limbs. CONSISTENT MAIN PROP: a hand-sized toy rocket with upright red nose, cream round body, teal fins and one round dark porthole; no flame or live engine. Rabbit and robot proudly hold this rescued toy together on dry grass beside a small shallow muddy garden patch. A squat broad rounded tan stepping rock, knee-high to Rabbit, sits nearby. Rocket is only one rabbit forearm long, a toy. Happy shared success. One clear square scene, full-bleed art, characters large and comfortably inside frame, natural garden flowers and leafy greenery in background. No text, title, letters, numbers, speech bubbles, UI, border, watermark, collage or panels. Original Sona soft3D storybook art; avoid flat vector/cut-paper styling.",
+      "references": [
+        "public/assets/books/bo-beach-day/p01.webp"
+      ],
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "asset": "public/assets/books/rabbit-rocket-rescue/cover.webp",
+      "assetSize": [
+        384,
+        384
+      ],
+      "bytes": 35520,
+      "quality": 75,
+      "sha256": "a2647f2ad7dd1d5cd363b4a85f6416813179e45d369f88258b0a16d707ca8e00"
+    },
+    {
+      "kind": "lineup",
+      "source": "design/sound-first-session/book-art-sources/rabbit-rocket-rescue/lineup.png",
+      "prompt": "Use case: illustration-story. Create a CHARACTER AND PROP REFERENCE LINEUP for the children's book in the attached approved cover. Match these EXACT original Sona soft3D designs and proportions: friendly dove-gray rabbit with pink inner ears and cream muzzle/belly, shiny dark eyes and no clothes; friendly small sky-blue round robot with cream face, black round eyes, tiny antenna, short jointed limbs; red-nose cream-body toy rocket with teal fins and ONE dark round porthole. Show each complete character standing separately, front three-quarter view, clearly isolated on warm plain cream background, with the same low squat rounded tan stepping rock and toy rocket laid out separately. All full bodies visible, one depiction of each item only. Rocket toy is one rabbit forearm long and CLEAN before its muddy adventure. This is a drawing reference, not a page scene; retain tactile fur, softly worn toy surfaces, warm gentle light and exact identity from cover. No text, labels, titles, numbers, panels, borders or watermarks. Wide landscape reference composition.",
+      "references": [
+        "design/sound-first-session/book-art-sources/rabbit-rocket-rescue/cover.png"
+      ],
+      "sourceSize": [
+        1536,
+        1024
+      ]
+    },
+    {
+      "kind": "page",
+      "source": "design/sound-first-session/book-art-sources/rabbit-rocket-rescue/p01.png",
+      "prompt": "Use case: illustration-story. Create ONE square full-bleed page illustration for Sona's Rabbit and the Rocket. References: approved cover establishes exact style and garden; character/prop lineup establishes exact rabbit, robot, toy rocket and rock identities. Match those designs precisely wherever called for. Warm tactile soft3D fur/toy surfaces, shiny friendly dark eyes, soft sunlight and detailed painted garden scenery. PAGE 1 ONLY: Rabbit sits on dry grass proudly holding the CLEAN small red-nose cream-body teal-finned toy rocket in both paws; a little shallow muddy garden patch lies nearby. Rabbit is the clear focus. No robot and no stepping rock are present yet. Maintain the toy's upright red nose, cream body, teal fins and single round porthole. Toy is hand-held, no real launch or engine. Keep entire important action and key object comfortably inside one square frame. Illustration only; no text, caption, title, lettering, numbers, speech bubbles, UI, logos, border, collage or panels. Do not add characters or props that this scene does not call for.",
+      "references": [
+        "design/sound-first-session/book-art-sources/rabbit-rocket-rescue/cover.png",
+        "design/sound-first-session/book-art-sources/rabbit-rocket-rescue/lineup.png"
+      ],
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "page": 1,
+      "asset": "public/assets/books/rabbit-rocket-rescue/p01.webp",
+      "assetSize": [
+        768,
+        768
+      ],
+      "bytes": 141376,
+      "quality": 83,
+      "sha256": "6dcec3d2d78b5b2c332892cdc1bc810e4b5dd9c1dc5aabb1a9b51c58a8abb8c0"
+    },
+    {
+      "kind": "page",
+      "source": "design/sound-first-session/book-art-sources/rabbit-rocket-rescue/p02.png",
+      "prompt": "Use case: illustration-story. Create ONE square full-bleed page illustration for Sona's Rabbit and the Rocket. References: approved cover establishes exact style and garden; character/prop lineup establishes exact rabbit, robot, toy rocket and rock identities. Match those designs precisely wherever called for. Warm tactile soft3D fur/toy surfaces, shiny friendly dark eyes, soft sunlight and detailed painted garden scenery. PAGE 2 ONLY: The same toy rocket is now upright nose-up in the middle of the small shallow muddy patch, its lower teal fins visibly stuck in mud. Rabbit kneels on the dry bank and notices the problem with a gentle surprised expression. The rocket is clear and central. No robot and no stepping rock yet. Maintain the toy's upright red nose, cream body, teal fins and single round porthole. Toy is hand-held, no real launch or engine. Keep entire important action and key object comfortably inside one square frame. Illustration only; no text, caption, title, lettering, numbers, speech bubbles, UI, logos, border, collage or panels. Do not add characters or props that this scene does not call for.",
+      "references": [
+        "design/sound-first-session/book-art-sources/rabbit-rocket-rescue/cover.png",
+        "design/sound-first-session/book-art-sources/rabbit-rocket-rescue/lineup.png"
+      ],
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "page": 2,
+      "asset": "public/assets/books/rabbit-rocket-rescue/p02.webp",
+      "assetSize": [
+        768,
+        768
+      ],
+      "bytes": 140452,
+      "quality": 83,
+      "sha256": "9f8de5c0ced73d934b62fbbaf7337135e43200cba3ce98736ca4d93ceb90bb7b"
+    },
+    {
+      "kind": "page",
+      "source": "design/sound-first-session/book-art-sources/rabbit-rocket-rescue/p03.png",
+      "prompt": "Use case: illustration-story. Create ONE square full-bleed page illustration for Sona's Rabbit and the Rocket. References: approved cover establishes exact style and garden; character/prop lineup establishes exact rabbit, robot, toy rocket and rock identities. Match those designs precisely wherever called for. Warm tactile soft3D fur/toy surfaces, shiny friendly dark eyes, soft sunlight and detailed painted garden scenery. PAGE 3 ONLY: Rabbit stands with both feet on dry grass at the muddy patch edge, holding the top and body of the small toy rocket with both paws and giving it a gentle tug. The toy remains upright and stuck with its lower teal fins in mud; Rabbit leans back a little in clear effort. No robot or stepping rock yet. Maintain the toy's upright red nose, cream body, teal fins and single round porthole. Toy is hand-held, no real launch or engine. Keep entire important action and key object comfortably inside one square frame. Illustration only; no text, caption, title, lettering, numbers, speech bubbles, UI, logos, border, collage or panels. Do not add characters or props that this scene does not call for.",
+      "references": [
+        "design/sound-first-session/book-art-sources/rabbit-rocket-rescue/cover.png",
+        "design/sound-first-session/book-art-sources/rabbit-rocket-rescue/lineup.png"
+      ],
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "page": 3,
+      "asset": "public/assets/books/rabbit-rocket-rescue/p03.webp",
+      "assetSize": [
+        768,
+        768
+      ],
+      "bytes": 137260,
+      "quality": 83,
+      "sha256": "590ec165428d4f4bf95becda51f2ccc89b99be4d0230f2593305ffd4950ec06c"
+    },
+    {
+      "kind": "page",
+      "source": "design/sound-first-session/book-art-sources/rabbit-rocket-rescue/p04.png",
+      "prompt": "Use case: illustration-story. Create ONE square full-bleed page illustration for Sona's Rabbit and the Rocket. References: approved cover establishes exact style and garden; character/prop lineup establishes exact rabbit, robot, toy rocket and rock identities. Match those designs precisely wherever called for. Warm tactile soft3D fur/toy surfaces, shiny friendly dark eyes, soft sunlight and detailed painted garden scenery. PAGE 4 ONLY: The friendly small sky-blue robot approaches the dove-gray rabbit and the toy rocket still stuck upright in the shallow muddy garden patch. Robot raises one hand in a helpful wave. Rabbit kneels on dry grass, looks toward the robot with a relieved smile. The mud-held toy remains clearly visible. No stepping rock yet. Maintain the toy's upright red nose, cream body, teal fins and single round porthole. Toy is hand-held, no real launch or engine. Keep entire important action and key object comfortably inside one square frame. Illustration only; no text, caption, title, lettering, numbers, speech bubbles, UI, logos, border, collage or panels. Do not add characters or props that this scene does not call for.",
+      "references": [
+        "design/sound-first-session/book-art-sources/rabbit-rocket-rescue/cover.png",
+        "design/sound-first-session/book-art-sources/rabbit-rocket-rescue/lineup.png"
+      ],
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "page": 4,
+      "asset": "public/assets/books/rabbit-rocket-rescue/p04.webp",
+      "assetSize": [
+        768,
+        768
+      ],
+      "bytes": 138960,
+      "quality": 83,
+      "sha256": "2cf65f99c2cf8b3fa1c3ad1f2e2a9e996d8625dae23ae20077808a8021481d09"
+    },
+    {
+      "kind": "page",
+      "source": "design/sound-first-session/book-art-sources/rabbit-rocket-rescue/p05.png",
+      "prompt": "Use case: illustration-story. Create ONE square full-bleed page illustration for Sona's Rabbit and the Rocket. References: approved cover establishes exact style and garden; character/prop lineup establishes exact rabbit, robot, toy rocket and rock identities. Match those designs precisely wherever called for. Warm tactile soft3D fur/toy surfaces, shiny friendly dark eyes, soft sunlight and detailed painted garden scenery. PAGE 5 ONLY: Blue robot crouches and places the squat rounded tan stepping rock on dry grass at the edge of the shallow muddy patch, beside the stuck upright toy rocket. The low broad rock and robot's hands lowering it are the clear focus. Rabbit watches from dry grass. Rock is sturdy and only rabbit knee-high, never a high cliff. Maintain the toy's upright red nose, cream body, teal fins and single round porthole. Toy is hand-held, no real launch or engine. Keep entire important action and key object comfortably inside one square frame. Illustration only; no text, caption, title, lettering, numbers, speech bubbles, UI, logos, border, collage or panels. Do not add characters or props that this scene does not call for.",
+      "references": [
+        "design/sound-first-session/book-art-sources/rabbit-rocket-rescue/cover.png",
+        "design/sound-first-session/book-art-sources/rabbit-rocket-rescue/lineup.png"
+      ],
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "page": 5,
+      "asset": "public/assets/books/rabbit-rocket-rescue/p05.webp",
+      "assetSize": [
+        768,
+        768
+      ],
+      "bytes": 139224,
+      "quality": 83,
+      "sha256": "676407fc8637f576f1b2e8627ad17bb746c5a053ab5f9dd6d84149feda870670"
+    },
+    {
+      "kind": "page",
+      "source": "design/sound-first-session/book-art-sources/rabbit-rocket-rescue/p06.png",
+      "prompt": "Use case: illustration-story. Create ONE square full-bleed page illustration for Sona's Rabbit and the Rocket. References: approved cover establishes exact style and garden; character/prop lineup establishes exact rabbit, robot, toy rocket and rock identities. Match those designs precisely wherever called for. Warm tactile soft3D fur/toy surfaces, shiny friendly dark eyes, soft sunlight and detailed painted garden scenery. PAGE 6 ONLY: Rabbit now stands with BOTH feet on top of the low broad sturdy tan stepping rock at the muddy patch edge, smiling and leaning slightly toward the toy rocket still stuck upright in the mud. Robot stands close on grass beside Rabbit, ready to help. Make rabbit standing ON the rock unmistakable. Rock is only knee-high and safe. Maintain the toy's upright red nose, cream body, teal fins and single round porthole. Toy is hand-held, no real launch or engine. Keep entire important action and key object comfortably inside one square frame. Illustration only; no text, caption, title, lettering, numbers, speech bubbles, UI, logos, border, collage or panels. Do not add characters or props that this scene does not call for.",
+      "references": [
+        "design/sound-first-session/book-art-sources/rabbit-rocket-rescue/cover.png",
+        "design/sound-first-session/book-art-sources/rabbit-rocket-rescue/lineup.png"
+      ],
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "page": 6,
+      "asset": "public/assets/books/rabbit-rocket-rescue/p06.webp",
+      "assetSize": [
+        768,
+        768
+      ],
+      "bytes": 148814,
+      "quality": 83,
+      "sha256": "e81906457e8bdc0df72821ee88b30393f319a557106ccfbea07a67de843398d1"
+    },
+    {
+      "kind": "page",
+      "source": "design/sound-first-session/book-art-sources/rabbit-rocket-rescue/p07.png",
+      "prompt": "Use case: illustration-story. Create ONE square full-bleed page illustration for Sona's Rabbit and the Rocket. References: approved cover establishes exact style and garden; character/prop lineup establishes exact identities; third reference is preceding page to preserve positions and low stepping-rock scale. Match those designs precisely. Warm tactile soft3D fur/toy surfaces, shiny friendly dark eyes, soft sunlight and detailed painted garden scenery. PAGE 7 ONLY: Rabbit stands with both feet on the low tan rock and the blue robot stands on dry grass. They both grip the same small toy rocket and gently tug UP together. The rocket's lower teal fins are JUST beginning to lift free of the mud, a little muddy ripple at its base shows effort. Rabbit and robot lean back slightly together, both remain standing safely, smiling with effort. Make both characters helping pull unmistakable. Maintain the toy's red nose, cream body, teal fins and single round porthole. Toy is hand-held, no engine. Keep entire important action and key object comfortably inside one square frame. Illustration only; no text, caption, title, lettering, numbers, speech bubbles, UI, logos, border, collage or panels. No extra characters or props.",
+      "references": [
+        "design/sound-first-session/book-art-sources/rabbit-rocket-rescue/cover.png",
+        "design/sound-first-session/book-art-sources/rabbit-rocket-rescue/lineup.png",
+        "design/sound-first-session/book-art-sources/rabbit-rocket-rescue/p06.png"
+      ],
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "page": 7,
+      "asset": "public/assets/books/rabbit-rocket-rescue/p07.webp",
+      "assetSize": [
+        768,
+        768
+      ],
+      "bytes": 147166,
+      "quality": 83,
+      "sha256": "c037a063b99a2ec680f421c71533f7f237176d571b98b42698ac848e4859f5dc"
+    },
+    {
+      "kind": "page",
+      "source": "design/sound-first-session/book-art-sources/rabbit-rocket-rescue/p08.png",
+      "prompt": "Use case: illustration-story. Create ONE square full-bleed page illustration for Sona's Rabbit and the Rocket. References: approved cover establishes exact style and garden; character/prop lineup establishes exact identities; third reference is preceding page to preserve positions and low stepping-rock scale. Match those designs precisely. Warm tactile soft3D fur/toy surfaces, shiny friendly dark eyes, soft sunlight and detailed painted garden scenery. PAGE 8 ONLY: Success! Rabbit and the smiling blue robot proudly hold the little red-and-cream toy rocket together COMPLETELY CLEAR OF the muddy patch. Its full cream body, muddy teal fins and whole bottom are visibly above the mud, held in their hands. Rabbit stands safely on the low tan rock and robot on dry grass; both look delighted at their rescued toy. Happy shared success, no live launch, flame or flying toy. Maintain the toy's red nose, cream body, teal fins and single round porthole. Toy is hand-held, no engine. Keep entire important action and key object comfortably inside one square frame. Illustration only; no text, caption, title, lettering, numbers, speech bubbles, UI, logos, border, collage or panels. No extra characters or props.",
+      "references": [
+        "design/sound-first-session/book-art-sources/rabbit-rocket-rescue/cover.png",
+        "design/sound-first-session/book-art-sources/rabbit-rocket-rescue/lineup.png",
+        "design/sound-first-session/book-art-sources/rabbit-rocket-rescue/p06.png"
+      ],
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "page": 8,
+      "asset": "public/assets/books/rabbit-rocket-rescue/p08.webp",
+      "assetSize": [
+        768,
+        768
+      ],
+      "bytes": 143568,
+      "quality": 83,
+      "sha256": "a4b657fcc15b1c11335ab0f6b1d8d530b2574952a2aa4691bfcfde4351f233ba"
+    }
+  ]
+}

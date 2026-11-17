@@ -1,7 +1,9 @@
 import crypto from "node:crypto";
+import { APP_READY, LAUNCH_NOTE } from "@/lib/launch";
+import { mailConfigured, sendMail } from "@/lib/mail";
 
 /**
- * Magic-link auth for the free SLP master account — the app's first real login.
+ * Magic-link auth for the SLP master account — the app's first real login.
  *
  * Flow: request a link (email) → we store a single-use token hash in KV and email
  * the link → verify the token → issue a signed, httpOnly session cookie.
@@ -112,9 +114,37 @@ export async function kvCmd(cmd: (string | number)[]): Promise<unknown> {
   }
 }
 
+const UPDATE_IF_UNCHANGED = `-- slpacct:update
+if redis.call("GET", KEYS[1]) == ARGV[1] then
+  return redis.call("SET", KEYS[1], ARGV[2])
+end
+return nil`;
+
+/** Avoid replacing a profile or dashboard opt-in written by another request. */
+export async function replaceSlpAccount(
+  key: string, previous: string | null, updated: Record<string, unknown>,
+): Promise<unknown> {
+  const next = JSON.stringify(updated);
+  return previous === null
+    ? kvCmd(["SET", key, next, "NX"])
+    : kvCmd(["EVAL", UPDATE_IF_UNCHANGED, 1, key, previous, next]);
+}
+
 /** A clinician-supplied name lands in an HTML email; escape it. */
 function esc(s: string): string {
   return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c] as string));
+}
+
+export type ClinicianRole = "slp" | "slpa";
+export type ClinicianWorkSetting = "clinic" | "school" | "other";
+
+export function clinicianRole(value: unknown): ClinicianRole | "" {
+  return value === "slp" || value === "slpa" ? value : "";
+}
+
+/** Keep "other" readable on historical accounts. */
+export function clinicianWorkSetting(value: unknown): ClinicianWorkSetting | "" {
+  return value === "clinic" || value === "school" || value === "other" ? value : "";
 }
 
 export function randomToken(): string {
@@ -142,6 +172,42 @@ export function hashToken(t: string): string {
   return crypto.createHash("sha256").update(t).digest("hex");
 }
 
+// Role and work setting are optional (Travis, 14 Nov 2026: the sign-up form
+// asks for an email only). A link made before then still carries them.
+export type FreeDashboardSignup = {
+  email: string;
+  clinicianRole?: ClinicianRole;
+  workSetting?: "clinic" | "school";
+  source: string;
+  attrib: Record<string, string>;
+};
+
+// Only the hash of the opaque URL token indexes this record. A separate
+// signature purpose keeps the pending signup from being used as a session.
+const FREE_DASHBOARD_SIGNUP_PREFIX = "free-dashboard:";
+
+export function signFreeDashboardSignup(payload: FreeDashboardSignup): string {
+  requireAuthSecret();
+  const body = Buffer.from(JSON.stringify(payload)).toString("base64url");
+  const sig = crypto.createHmac("sha256", SECRET()).update(FREE_DASHBOARD_SIGNUP_PREFIX + body).digest("base64url");
+  return FREE_DASHBOARD_SIGNUP_PREFIX + body + "." + sig;
+}
+
+export function readFreeDashboardSignup(stored: string): FreeDashboardSignup | null {
+  if (!authSecretOk() || !stored.startsWith(FREE_DASHBOARD_SIGNUP_PREFIX)) return null;
+  const [body, sig, extra] = stored.slice(FREE_DASHBOARD_SIGNUP_PREFIX.length).split(".");
+  if (!body || !sig || extra !== undefined || !sigOk(FREE_DASHBOARD_SIGNUP_PREFIX + body, sig)) return null;
+  try {
+    const value = JSON.parse(Buffer.from(body, "base64url").toString()) as FreeDashboardSignup;
+    if (!value || typeof value.email !== "string" || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(value.email) ||
+        (value.clinicianRole !== undefined && !clinicianRole(value.clinicianRole)) ||
+        (value.workSetting !== undefined && value.workSetting !== "clinic" && value.workSetting !== "school")) return null;
+    return value;
+  } catch {
+    return null;
+  }
+}
+
 export type Session = { email: string; code?: string; iat?: number; exp?: number };
 
 export function signSession(payload: Session): string {
@@ -158,12 +224,42 @@ export function verifySession(token: string | undefined | null): Session | null 
   if (!body || !sig) return null;
   if (!sigOk(body, sig)) return null;
   try {
-    const obj = JSON.parse(Buffer.from(body, "base64url").toString()) as Session;
+    const obj = JSON.parse(Buffer.from(body, "base64url").toString()) as Session & { t?: unknown };
+    // Only a SESSION is a session (audit B9, 13 Nov 2026). A family's
+    // enrolment ticket is signed with the same secret; set as slp_session it
+    // used to pass here with no email, and every route then read and wrote
+    // "slpacct:undefined". A tagged payload, or one without an email, is not
+    // a clinician.
+    if (!obj || typeof obj !== "object" || Array.isArray(obj) || "t" in obj) return null;
+    if (typeof obj.email !== "string" || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(obj.email)) return null;
     if (obj.exp && Date.now() > obj.exp) return null;
     return obj;
   } catch {
     return null;
   }
+}
+
+/**
+ * SESSIONS FROM BEFORE THE INBOX WAS PROVED ARE OVER (audit B3, 13 Nov 2026).
+ * Until then a brand-new email typed on the sign-in page was signed in on the
+ * spot, so anyone could hold a cookie for a real clinician's address, and a
+ * session is stateless: nothing could take it back. The first sign-in by the
+ * emailed link writes `slpsessfrom:<email>` (its time, NX: once), and a
+ * session issued before that time is refused here. A separate key, so the
+ * account record, and the absent `terms` that is a grandfathered clinician's
+ * promise, are never rewritten for it. Later sign-ins never move it, so a
+ * second device does not log the first one out.
+ *
+ * No key, or a store that did not answer, leaves the session as it was: a
+ * blip never signs a clinician out (the route's own reads still fail closed).
+ */
+export async function liveSession(s: Session | null): Promise<Session | null> {
+  if (!s) return null;
+  let from: unknown;
+  try { from = await kvCmd(["GET", "slpsessfrom:" + s.email.toLowerCase()]); } catch { return s; }
+  const t = typeof from === "string" || typeof from === "number" ? Number(from) : NaN;
+  if (Number.isFinite(t) && t > 0 && (Number(s.iat) || 0) < t) return null;
+  return s;
 }
 
 /**
@@ -336,7 +432,7 @@ export function clearCookie(): string {
 }
 
 /**
- * Send the sign-in link via Resend. Until RESEND_API_KEY is set, return the link
+ * Send the sign-in link (lib/mail: GoHighLevel, else Resend). Until a sender is set, return the link
  * directly so it can be tested on preview — but never leak it on production.
  */
 /**
@@ -350,30 +446,38 @@ export async function sendMagicEmail(
   email: string,
   link: string,
   name = "",
+  opts: { freeDashboard?: boolean; code?: string } = {},
 ): Promise<{ sent: boolean; devLink: string | null }> {
-  const key = process.env.RESEND_API_KEY;
+  // GoHighLevel sends when it is set up, else Resend (lib/mail). Through
+  // GoHighLevel, an address whose email is on Do Not Disturb there (an
+  // unsubscribe from any Sona email) gets no sign-in link either.
   const from = process.env.RESEND_FROM || "Sona <login@speaksona.com>";
-  if (!key) {
+  if (!mailConfigured()) {
     return { sent: false, devLink: process.env.VERCEL_ENV === "production" ? null : link };
   }
+  const freeIntro = "Open your Sona dashboard to share practice with families and join the clinician community.";
+  const retryUrl = opts.freeDashboard ? "speaksona.com" : "speaksona.com/slp-login.html";
+  // The six-digit code (SLPAPP1, 16 Nov 2026), when the sign-in screen asked
+  // for one: typed in the clinicians' app, which a link cannot sign in. It is
+  // in the subject too, so a phone's notification shows it.
+  const code = /^\d{6}$/.test(opts.code || "") ? String(opts.code) : "";
+  const spaced = code ? code.slice(0, 3) + " " + code.slice(3) : "";
   try {
-    const r = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
+    const r = await sendMail({
         from,
-        to: [email],
-        subject: "Your Sona dashboard is ready",
+        to: email,
+        subject: code ? "Your Sona sign-in code: " + spaced : opts.freeDashboard ? "Your Sona dashboard link" : "Your Sona dashboard is ready",
         html:
           `<div style="font-family:system-ui,Segoe UI,Roboto,sans-serif;font-size:15px;color:#16384f;line-height:1.6;max-width:520px;">` +
           `<p>${name ? "Hi " + esc(name) + "," : "Hi,"}</p>` +
           // 24 Sep 2026: this said "free for you and for every family on
           // your caseload" — the promise the grandfathered clinicians hold.
-          // A clinician signing up now is not grandfathered, so the first
-          // email they get says only what is true for every clinician.
-          // 17 Nov 2026: "it's free" is gone — the dashboard is part of the
-          // Solo and Clinic plans now. What every family gets is still true.
-          `<p>Your Sona dashboard is ready, and every family you send home gets Sona's free version.</p>` +
+          // 12 Nov 2026: it said "it's free", which a new clinician's
+          // dashboard no longer is (it comes with Sona Pro, after the free
+          // trial). The same email goes to every sign-in, so it says only
+          // what is true for every clinician.
+          `<p>${opts.freeDashboard ? freeIntro : "Your Sona dashboard is ready, and every family you send home gets Sona's free version."}</p>` +
+          (code ? `<p style="margin:18px 0 6px;">Your sign-in code:</p><p style="font-size:30px;font-weight:800;letter-spacing:6px;margin:0 0 6px;">${spaced}</p><p style="color:#6b86a3;font-size:13px;margin:0 0 18px;">Type it on the sign-in screen, in the app or in your browser. Or open the dashboard here:</p>` : "") +
           `<p><a href="${link}" style="display:inline-block;background:#58cc02;color:#fff;font-weight:700;text-decoration:none;padding:14px 26px;border-radius:12px;font-size:16px;">Open my dashboard</a></p>` +
           `<p style="margin-top:22px;"><b>What to do first</b></p>` +
           `<ol style="padding-left:18px;color:#46627a;">` +
@@ -381,7 +485,10 @@ export async function sendMagicEmail(
           `<li>Send their family the link. They set up in about 30 seconds, on their own phone.</li>` +
           `<li>Come back and see the days they practiced — and copy a line for your progress note.</li>` +
           `</ol>` +
-          `<p style="color:#6b86a3;font-size:13px;margin-top:22px;">This link expires in 15 minutes — if it does, just enter your email again at speaksona.com and we'll send a fresh one. If you didn't ask for this, you can ignore it.</p>` +
+          // While the family app is not out (lib/launch.ts), the clinician
+          // hears it here, in the email they get anyway (25 Sep 2026).
+          (APP_READY ? "" : `<p style="margin-top:22px;"><b>P.S.</b> ${LAUNCH_NOTE.replace(/^Sona/, "The Sona app for families")}</p>`) +
+          `<p style="color:#6b86a3;font-size:13px;margin-top:22px;">This ${code ? "code and link expire" : "link expires"} in 15 minutes — if it does, just enter your email again at ${retryUrl} and we'll send a fresh one. If you didn't ask for this, you can ignore it.</p>` +
           `</div>`,
         /**
          * A PLAIN-TEXT PART, because an HTML-only email scores worse with
@@ -391,26 +498,25 @@ export async function sendMagicEmail(
          */
         text:
           (name ? "Hi " + name + ",\n\n" : "Hi,\n\n") +
-          "Your Sona dashboard is ready, and every family you send home gets Sona's free version.\n\n" +
+          (opts.freeDashboard ? freeIntro : "Your Sona dashboard is ready, and every family you send home gets Sona's free version.") + "\n\n" +
+          (code ? "Your sign-in code: " + spaced + "\nType it on the sign-in screen, in the app or in your browser.\n\n" : "") +
           "Open it here:\n" + link + "\n\n" +
           "What to do first\n" +
           "1. Add a child - initials are enough. You pick the sound and the position.\n" +
           "2. Send their family the link. They set up in about 30 seconds, on their own phone.\n" +
           "3. Come back and see the days they practiced - and copy a line for your progress note.\n\n" +
-          "This link expires in 15 minutes. If it does, enter your email again at speaksona.com and we'll send a fresh one. If you didn't ask for this, you can ignore it.\n",
-      }),
+          (APP_READY ? "" : "P.S. " + LAUNCH_NOTE.replace(/^Sona/, "The Sona app for families") + "\n\n") +
+          "This " + (code ? "code and link expire" : "link expires") + " in 15 minutes. If it does, enter your email again at " + retryUrl + " and we'll send a fresh one. If you didn't ask for this, you can ignore it.\n",
     });
     /**
-     * SAY WHY, in the server log, when Resend refuses. The usual cause is a
-     * sending domain that was never verified, and its symptom is silence: the
-     * page says "check your email", the inbox stays empty, and nothing
-     * anywhere names the reason. The key is never logged; the body is
-     * Resend's own error text.
+     * SAY WHY, in the server log, when the sender refuses. The usual cause is
+     * a sending domain that was never verified, and its symptom is silence:
+     * the page says "check your email", the inbox stays empty, and nothing
+     * anywhere names the reason. The key is never logged; the rest is the
+     * sender's own error text (GoHighLevel's or Resend's).
      */
     if (!r.ok) {
-      let why = String(r.status);
-      try { why += " " + (await r.text()).slice(0, 300); } catch { /* status alone */ }
-      console.error("[slpAuth] Resend refused the sign-in email:", why);
+      console.error("[slpAuth] the sender refused the sign-in email:", (String(r.status) + " " + r.detail).trim());
     }
     return { sent: r.ok, devLink: null };
   } catch (e) {
@@ -420,37 +526,31 @@ export async function sendMagicEmail(
 }
 
 /**
- * One Resend call for the two emails below. sendMagicEmail keeps its own copy
- * on purpose — its wording and its log line are pinned, and it is the sign-in
- * door. `logBody` is false for any email addressed to someone who is not a
- * Sona account holder: Resend's refusal text can quote the recipient, and a
- * parent's address must not land in a server log (it is used for one send
- * and kept nowhere).
+ * One send (lib/mail: GoHighLevel when it is set up, else Resend; the name
+ * is from when Resend sent everything) for the two emails below, and for the
+ * Practice Board's confirmation email (lib/board.ts, 11 Oct 2026).
+ * sendMagicEmail keeps its own call on purpose — its wording and its log
+ * line are pinned, and it is the sign-in door. `logBody` is false for any
+ * email addressed to someone who is not a Sona account holder: the sender's
+ * refusal text can quote the recipient, and a parent's address must not land
+ * in a server log. Sona keeps no copy of it; GoHighLevel, when it sends,
+ * keeps it as a contact, tagged with the email's label.
  */
-async function resendSend(
+export async function resendSend(
   msg: { to: string; subject: string; html: string; text: string },
   label: string,
   logBody: boolean,
 ): Promise<{ sent: boolean; configured: boolean }> {
-  const key = process.env.RESEND_API_KEY;
   const from = process.env.RESEND_FROM || "Sona <login@speaksona.com>";
-  if (!key) return { sent: false, configured: false };
-  try {
-    const r = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ from, to: [msg.to], subject: msg.subject, html: msg.html, text: msg.text }),
-    });
-    if (!r.ok) {
-      let why = String(r.status);
-      if (logBody) { try { why += " " + (await r.text()).slice(0, 300); } catch { /* status alone */ } }
-      console.error("[slpAuth] Resend refused the " + label + ":", why);
-    }
-    return { sent: r.ok, configured: true };
-  } catch (e) {
-    console.error("[slpAuth] " + label + " threw:", logBody && e instanceof Error ? e.message : "network");
-    return { sent: false, configured: true };
+  if (!mailConfigured()) return { sent: false, configured: false };
+  // GoHighLevel when it is set up, else Resend (lib/mail). Through
+  // GoHighLevel the address becomes a contact there, tagged with what sent
+  // it, so a GHL workflow can leave a transactional address alone
+  const r = await sendMail({ from, to: msg.to, subject: msg.subject, html: msg.html, text: msg.text, tags: ["sona-" + label.replace(/[^a-z]+/gi, "-").toLowerCase()] });
+  if (!r.ok) {
+    console.error("[slpAuth] the sender refused the " + label + ":", logBody ? (String(r.status) + " " + r.detail).trim() : String(r.status));
   }
+  return { sent: r.ok, configured: true };
 }
 
 /** A clinician's name for a subject line: one line, no control characters, capped. */
@@ -466,7 +566,7 @@ const FRAME = "font-family:system-ui,Segoe UI,Roboto,sans-serif;font-size:15px;c
  * clinician MAY type the parent's email, and Sona sends this ONE email with
  * the family's join link. The address is used for this send and nothing
  * else: the invite route passes it straight here, it is never stored, never
- * logged, never sent to /api/lead or Kit — a parent joins the list only by
+ * logged, never sent to /api/lead or the email list — a parent joins the list only by
  * typing their own email under the consent line on join.html.
  *
  * NO CHILD DATA AT ALL — not even the invite's label. The label is initials a
@@ -517,7 +617,7 @@ export async function sendParentInviteEmail(
  * Premium on for the device it is opened on — theirs — sent ONLY to the
  * account's own address, which is what proves the person asking can read
  * that inbox (a session cookie on a shared clinic computer proves less).
- * Like the sign-in email, with no RESEND_API_KEY the link comes back
+ * Like the sign-in email, with no sender set (lib/mail) the link comes back
  * directly off production so a preview can be tested, and never on
  * production.
  *
@@ -549,43 +649,6 @@ export async function sendSelfLinkEmail(
       "Open it on your own phone or tablet:\n" + link + "\n\n" +
       "Each link works once and expires in 30 days. If you didn't ask for this, you can ignore it.\n",
   }, "own-phone link email", true);
-  if (!r.configured) return { sent: false, devLink: process.env.VERCEL_ENV === "production" ? null : link };
-  return { sent: r.sent, devLink: null };
-}
-
-/**
- * A CLINIC OWNER ADDED THIS CLINICIAN (17 Nov 2026). The link signs them in
- * and accepts the seat in one tap — clicking it is what proves the inbox is
- * theirs, so a seat is never live on an address nobody has opened. It says
- * exactly what the owner will see, because a clinician deserves to know
- * before they accept: totals, never a child.
- */
-export async function sendClinicInviteEmail(
-  to: string,
-  link: string,
-  ownerName = "",
-  clinicName = "",
-): Promise<{ sent: boolean; devLink: string | null }> {
-  const who = oneLine(ownerName, 60) || "Your clinic";
-  const where = oneLine(clinicName, 80);
-  const intro = who + (where ? " at " + where : "") + " added you to their Sona clinic plan.";
-  const seen = "They will see how many families you have on Sona and how many practiced this week. Never a child's name, and never a child's practice.";
-  const r = await resendSend({
-    to,
-    subject: who + " added you to Sona",
-    html:
-      `<div style="${FRAME}">` +
-      `<p>Hi,</p>` +
-      `<p>${esc(intro)} Your own Sona dashboard is included, and every family you send home gets the full Sona app.</p>` +
-      `<p><a href="${esc(link)}" style="${BUTTON}">Open my dashboard</a></p>` +
-      `<p style="color:#46627a;">${esc(seen)}</p>` +
-      `<p style="color:#6b86a3;font-size:13px;margin-top:22px;">This link works once and expires in 14 days. If you weren't expecting this, you can ignore it.</p>` +
-      `</div>`,
-    text:
-      "Hi,\n\n" + intro + " Your own Sona dashboard is included, and every family you send home gets the full Sona app.\n\n" +
-      "Open your dashboard:\n" + link + "\n\n" + seen + "\n\n" +
-      "This link works once and expires in 14 days. If you weren't expecting this, you can ignore it.\n",
-  }, "clinic invite email", true);
   if (!r.configured) return { sent: false, devLink: process.env.VERCEL_ENV === "production" ? null : link };
   return { sent: r.sent, devLink: null };
 }

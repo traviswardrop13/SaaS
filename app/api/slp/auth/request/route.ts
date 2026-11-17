@@ -2,10 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import crypto from "node:crypto";
 import {
   kvCmd, kvConfigured, randomToken, hashToken, sendMagicEmail,
-  signSession, sessionCookie, SESSION_MAX_AGE, authSecretOk, leadSig,
+  authSecretOk, clinicianRole, clinicianWorkSetting, signFreeDashboardSignup, replaceSlpAccount,
 } from "@/lib/slpAuth";
-import { kitConfigured } from "@/lib/kit";
-import { CURRENT_TERMS } from "@/lib/caseload";
+import { contactsConfigured } from "@/lib/contacts";
+import { mailConfigured } from "@/lib/mail";
+import { safeAttrib, tellCrm } from "@/lib/slpLead";
+import { rateLimit } from "@/lib/rateLimit";
+import { makeSignInCode, storeSignInCode, reviewEmail } from "@/lib/slpSignIn";
 
 export const runtime = "nodejs";
 
@@ -28,12 +31,13 @@ export async function GET() {
     ready: signing && store,
     signing,                                        // SLP_AUTH_SECRET (or non-production)
     store,                                          // KV / Upstash
-    email: Boolean(process.env.RESEND_API_KEY),     // the link can actually be delivered
-    // The lead reaches an email list. Kit since 24 Sep 2026; the webhook is
-    // the retired GoHighLevel rail, so deleting LEAD_WEBHOOK_URL must not
-    // turn this false while Kit is taking every sign-up.
-    crm: kitConfigured() || Boolean(process.env.LEAD_WEBHOOK_URL),
-    kit: kitConfigured(),
+    email: mailConfigured(),                        // the link can actually be delivered (GoHighLevel, else Resend)
+    // The lead reaches an email list: Resend's contacts since 16 Oct 2026
+    // (Kit from 24 Sep); the webhook is GoHighLevel's (back on 15 Nov 2026),
+    // and either one is enough: deleting LEAD_WEBHOOK_URL must not turn this
+    // false while Resend takes every sign-up.
+    crm: contactsConfigured() || Boolean(process.env.LEAD_WEBHOOK_URL),
+    list: contactsConfigured(),
   });
 }
 
@@ -45,92 +49,65 @@ function safeEqual(a: string, b: string): boolean {
   return crypto.timingSafeEqual(ba, bb);
 }
 
-/**
- * Which ad produced this clinician. An ALLOW-LIST, copied in spirit from
- * /api/lead's safeLead: the object arrives from a page a stranger can put any
- * query string on, so a field that is not named here does not travel. A
- * deny-list is how `name: child` once sailed into a marketing payload.
- */
-const ATTRIB_KEYS = [
-  "utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term",
-  "fbclid", "referrer", "landing",
-] as const;
-
-function safeAttrib(raw: unknown): Record<string, string> {
-  const out: Record<string, string> = {};
-  if (!raw || typeof raw !== "object") return out;
-  const src = raw as Record<string, unknown>;
-  for (const k of ATTRIB_KEYS) {
-    const v = src[k];
-    if (typeof v === "string" && v) out[k] = v.slice(0, k === "referrer" ? 200 : 120);
-  }
-  return out;
-}
-
-/**
- * Tell the founder's email list that a clinician signed up. /api/lead is
- * the one place any opt-in goes (it sends to Kit; GoHighLevel, the list before
- * it, was deleted 24 Sep 2026), so this reuses it rather than growing a
- * second rail.
- *
- * AWAITED, WITH A SHORT FUSE — NOT FIRE-AND-FORGET. This used to be
- * `void fetch(...)` so a CRM hiccup could never cost a clinician their
- * sign-in. But on Vercel a function can be frozen the moment its response
- * is sent, and a fetch nobody awaits may never leave: the clinician signs up,
- * the dashboard works, and GoHighLevel never hears about them. Nothing
- * errors, so nothing says so. The fuse keeps the first promise — after
- * CRM_TIMEOUT_MS the sign-in goes ahead regardless — and awaiting keeps the
- * second. It runs alongside the rest of sign-up, so it costs nothing on the
- * usual path.
- *
- * The clinician's OWN first name — the one they typed about themselves.
- * Never a child's, which is the rule everywhere and has no exception in a
- * marketing payload of all places.
- */
-// Long enough for Kit's create + form + tag calls (lib/kit fuses each at
-// 2.5s, run side by side), which usually finish in well under a second.
-const CRM_TIMEOUT_MS = 8000;
-async function tellCrm(
-  origin: string, email: string, source: string, name: string, attrib: Record<string, string>,
-): Promise<boolean> {
-  const ctl = new AbortController();
-  const fuse = setTimeout(() => ctl.abort(), CRM_TIMEOUT_MS);
-  try {
-    const r = await fetch(origin + "/api/lead", {
-      method: "POST",
-      // signed, so /api/lead's per-address flood limit never catches it
-      headers: { "Content-Type": "application/json", "x-sona-lead-sig": leadSig(email) },
-      body: JSON.stringify({ email, name, source, role: "slp", summary: "New SLP signup", ...attrib }),
-      signal: ctl.signal,
-    });
-    const j = (await r.json().catch(() => null)) as { captured?: boolean } | null;
-    if (!r.ok || !j || !j.captured) console.error("[slp signup] CRM did not capture the lead:", r.status, j);
-    return !!(r.ok && j && j.captured);
-  } catch (e) {
-    console.error("[slp signup] CRM call failed:", e instanceof Error ? e.message : String(e));
-    return false; /* never blocks sign-in */
-  } finally {
-    clearTimeout(fuse);
-  }
-}
-
-// POST { email, adminKey?, source? } → email a single-use magic sign-in link,
-// and, for an account that does not exist yet, sign the clinician straight in.
+// POST { email, adminKey?, source?, clinicianRole?, workSetting?, flow?, wantCode? } → email a single-use magic sign-in link.
+// Nobody is signed in here: only opening the emailed link signs in (13 Nov 2026),
+// or typing the six-digit code it carries when the sign-in page asked for one
+// (`wantCode`, SLPAPP1, 16 Nov 2026: the clinicians' app, where a link opens
+// in Safari and can never sign the app in; /api/slp/auth/code takes it).
 //
 // Admin override: when SLP_ADMIN_KEY is set (>= 8 chars) AND a matching adminKey
 // is supplied, the link is returned in the response so the operator can hand it
 // to a pilot SLP directly — before Resend/email is configured. Without the key
 // the link is only ever emailed; it is never returned to the caller.
+/**
+ * EVERY EMAIL REACHES THE CRM WHEN IT IS TYPED (Travis, 16 Nov 2026: "I want
+ * every email to go to high level"). Since 13 Nov 2026 a new address reached
+ * the CRM only once its emailed link was opened, so a clinician who typed
+ * their email and never clicked was never a lead. Now the lead goes as soon
+ * as the sign-in email is actually sent (a refused send is no lead), still
+ * with no account and no cookie: the inbox is proved, and the account made,
+ * by the verify route as before. The address is not proved yet, so it may be
+ * a typo or someone else's; that is the cost Travis chose. A mark
+ * (`slpcrm:<email>`, a year) tells the verify route the CRM already has it,
+ * so opening the link does not send the same lead twice.
+ */
+async function tellCrmEarly(origin: string, email: string, source: string, attrib: Record<string, string>): Promise<void> {
+  try {
+    if (typeof (await kvCmd(["GET", "slpcrm:" + email])) === "string") return;
+    if (await tellCrm(origin, email, source, "", attrib)) await kvCmd(["SET", "slpcrm:" + email, new Date().toISOString(), "EX", 31536000]);
+  } catch { /* never blocks the sign-in email */ }
+}
+
 export async function POST(req: NextRequest) {
-  let body: { email?: string; adminKey?: string; source?: string; name?: string; attrib?: unknown };
+  let body: {
+    email?: string; adminKey?: string; source?: string; attrib?: unknown;
+    clinicianRole?: unknown; workSetting?: unknown; flow?: unknown; wantCode?: unknown;
+  };
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ ok: false, error: "Bad request." }, { status: 400 });
   }
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    return NextResponse.json({ ok: false, error: "Bad request." }, { status: 400 });
+  }
   const email = String(body.email || "").trim().toLowerCase().slice(0, 120);
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
     return NextResponse.json({ ok: false, error: "Enter a valid email." }, { status: 400 });
+  }
+  const freeDashboard = body.flow === "free-dashboard";
+  if (body.flow !== undefined && !freeDashboard) {
+    return NextResponse.json({ ok: false, error: "Bad request." }, { status: 400 });
+  }
+  // Role and work setting are optional (Travis, 14 Nov 2026: the sign-up form
+  // asks for an email only). A caller that sends one must send a real value.
+  const role = clinicianRole(body.clinicianRole);
+  if (body.clinicianRole !== undefined && !role) {
+    return NextResponse.json({ ok: false, error: "Choose SLP or SLPA." }, { status: 400 });
+  }
+  const workSetting = clinicianWorkSetting(body.workSetting);
+  if (body.workSetting !== undefined && workSetting !== "clinic" && workSetting !== "school") {
+    return NextResponse.json({ ok: false, error: "Choose Clinic or School." }, { status: 400 });
   }
   if (!kvConfigured()) {
     return NextResponse.json(
@@ -163,96 +140,122 @@ export async function POST(req: NextRequest) {
     typeof body.adminKey === "string" &&
     safeEqual(body.adminKey, adminSecret);
 
+  const wantCode = body.wantCode === true;
+
+  // App Review's account (lib/slpSignIn reviewEmail): nothing is emailed or
+  // stored; its fixed code, set in Vercel, is what signs it in.
+  if (wantCode && reviewEmail() && email === reviewEmail()) {
+    return NextResponse.json({ ok: true, sent: true, signedIn: false, devLink: null, code: true });
+  }
+
+  // Every call emails someone, so one address (an IPv6 /64) may ask for at
+  // most 20 links an hour, whatever emails it names (audit B2, 13 Nov 2026).
+  // An hour at most: the privacy page keeps an IP no longer than that.
+  if (!isAdmin) {
+    const limited = await rateLimit(req, { key: "slpauth", limit: 20, windowSec: 3600, v6prefix: true });
+    if (limited) return limited;
+  }
+
   // Light rate limit: max 5 link requests per email per hour (admins bypass).
   if (!isAdmin) {
     const rl = "slprl:" + email;
     const n = await kvCmd(["INCR", rl]);
     if (n === 1) await kvCmd(["EXPIRE", rl, 3600]);
     if (typeof n === "number" && n > 5) {
+      if (freeDashboard) {
+        return NextResponse.json({ ok: false, error: "Too many links requested. Try again in an hour." }, { status: 429 });
+      }
       return NextResponse.json({ ok: true, sent: true, devLink: null }); // silently cap
     }
   }
 
   const origin = new URL(req.url).origin;
-  const token = randomToken();
-  await kvCmd(["SET", "slptok:" + hashToken(token), email, "EX", 900]); // 15 min
-  const link = origin + "/api/slp/auth/verify?token=" + encodeURIComponent(token);
-  const res = await sendMagicEmail(email, link, String(body.name || "").trim().slice(0, 60));
 
-  /**
-   * A BRAND-NEW ACCOUNT IS SIGNED IN ON THE SPOT. Cold traffic off an ad does
-   * not go to its inbox and come back — the email step is where a funnel
-   * leaks — and on the very first request there is nothing behind the door to
-   * protect: the account does not exist, so it has no code, no families and no
-   * children. The link is still emailed, because that is how they get back in
-   * tomorrow.
-   *
-   * An account that ALREADY EXISTS gets the link and nothing else. By then it
-   * may hold a caseload, and a caseload is children — that door needs the
-   * proof that someone can read the inbox.
-   *
-   * "Does not exist" means the store SAID so (null). A store that did not
-   * answer (undefined) is treated as "exists" — the emailed-link path, which
-   * writes nothing — because the new-account branch below would overwrite a
-   * real clinician's account whole: their code, their family key and, since
-   * 24 Sep 2026, the missing `terms` field that is their grandfathered
-   * "free forever" promise.
-   */
-  let acctRaw: unknown = null;
-  let acctExists = false;
-  try { acctRaw = await kvCmd(["GET", "slpacct:" + email]); acctExists = acctRaw !== null; } catch { acctExists = true; }
-
-  if (acctExists) {
-    /**
-     * A CLINICIAN THE CRM HAS NEVER HEARD OF. The CRM was told only when THIS
-     * route created the account, so everyone whose account was made another
-     * way — by the magic-link verify route, or before the CRM was wired on
-     * 22 Sep 2026 — was invisible to GoHighLevel however often they signed
-     * in. Travis found it signing up with his own address: the dashboard
-     * email arrived, and GoHighLevel never heard of him.
-     *
-     * So the account carries crmAt once the CRM has taken the lead. Without
-     * it, the lead goes on this sign-in, once; with it, never again, because
-     * a daily sign-in is not a daily "new signup". The name sent is the one
-     * already on the account when there is one — this request is not signed
-     * in, so it may inform the CRM but never rewrites the account.
-     */
-    let acct: Record<string, unknown> | null = null;
-    try { acct = acctRaw ? JSON.parse(String(acctRaw)) : null; } catch { acct = null; }
-    if (acct && !acct.crmAt) {
-      const crmName = String(acct.name || body.name || "").trim().slice(0, 60);
-      if (await tellCrm(origin, email, String(body.source || "slp-signup").slice(0, 40), crmName, safeAttrib(body.attrib))) {
-        acct.crmAt = new Date().toISOString();
-        await kvCmd(["SET", "slpacct:" + email, JSON.stringify(acct)]);
-      }
+  if (freeDashboard) {
+    // The emailed token proves the inbox before an account or session exists.
+    const token = randomToken();
+    const pending = signFreeDashboardSignup({
+      email,
+      ...(role ? { clinicianRole: role } : {}),
+      ...(workSetting === "clinic" || workSetting === "school" ? { workSetting } : {}),
+      source: String(body.source || "for-slps").slice(0, 40), attrib: safeAttrib(body.attrib),
+    });
+    const key = "slptok:" + hashToken(token);
+    if (await kvCmd(["SET", key, pending, "EX", 900]) !== "OK") {
+      return NextResponse.json({ ok: false, error: "Couldn't make your sign-in link. Try again." }, { status: 503 });
     }
-    return NextResponse.json({ ok: true, sent: res.sent, signedIn: false, devLink: isAdmin ? link : res.devLink });
+    const link = origin + "/api/slp/auth/verify?token=" + encodeURIComponent(token);
+    const code = wantCode ? makeSignInCode() : "";
+    if (code && !(await storeSignInCode(email, code, pending, key))) {
+      await kvCmd(["DEL", key]);
+      return NextResponse.json({ ok: false, error: "Couldn't make your sign-in code. Try again." }, { status: 503 });
+    }
+    const res = await sendMagicEmail(email, link, "", { freeDashboard: true, code });
+    const devLink = isAdmin ? link : res.devLink;
+    if (!res.sent && !devLink) await kvCmd(["DEL", key]);
+    if (res.sent) await tellCrmEarly(origin, email, String(body.source || "for-slps").slice(0, 40), safeAttrib(body.attrib));
+    return NextResponse.json({ ok: true, sent: res.sent, signedIn: false, devLink, ...(code ? { code: true, devCode: devLink ? code : undefined } : {}) });
   }
 
-  // The name they gave at sign-up is the name on their homework notes, so the
-  // dashboard does not have to ask for it a second time.
-  //
-  // `terms` is the plan rule (lib/caseload): an account made now carries the
-  // newest stamp, and its dashboard and caseload are covered by a Solo or
-  // Clinic plan (17 Nov 2026). An account WITHOUT it predates the plans and
-  // keeps the "free forever, every kid on your caseload" promise it signed
-  // up under; one stamped "caseload-2026-09" keeps its free dashboard.
-  // Structural, not a date — so it is stamped on every new account, here and
-  // in the verify and account routes, and never on an existing one.
-  const name = String(body.name || "").trim().slice(0, 60);
-  const acctNew = {
-    email, name, clinic: "", code: "", createdAt: new Date().toISOString(),
-    source: String(body.source || "").slice(0, 40),
-    terms: CURRENT_TERMS,
-  };
-  await kvCmd(["SET", "slpacct:" + email, JSON.stringify(acctNew)]);
-  const crm = tellCrm(origin, email, String(body.source || "slp-signup").slice(0, 40), name, safeAttrib(body.attrib));
+  /**
+   * EVERY EMAIL PROVES ITS INBOX FIRST (Travis, 13 Nov 2026). Until then a
+   * brand-new email was given an account and signed in on the spot, so cold
+   * traffic would not leak at the inbox step. But that let anyone sit in a
+   * real clinician's future account under her address, with a cookie nothing
+   * could take back (audit B3). Now this route only emails the link: no
+   * account, no cookie (the CRM hears of a new address once its email is
+   * sent: tellCrmEarly, 16 Nov 2026). The verify route makes the account
+   * (Sona Pro terms, as before), and ends every session issued
+   * before that first inbox-proved sign-in.
+   *
+   * Nothing here writes an account, so a store that did not answer can no
+   * longer overwrite a real one, or its grandfathered missing `terms`.
+   */
+  const acctKey = "slpacct:" + email;
+  let acctRaw: unknown = null;
+  try { acctRaw = await kvCmd(["GET", acctKey]); } catch { acctRaw = undefined; }
+  let acct: Record<string, unknown> | null = null;
+  try { acct = typeof acctRaw === "string" ? JSON.parse(acctRaw) : null; } catch { acct = null; }
 
-  const session = signSession({ email, code: "", iat: Date.now(), exp: Date.now() + SESSION_MAX_AGE * 1000 });
-  // Stamped only when the CRM took it: a miss is retried on the next sign-in.
-  const captured = await crm;
-  if (captured) await kvCmd(["SET", "slpacct:" + email, JSON.stringify({ ...acctNew, crmAt: new Date().toISOString() })]);
-  const out = NextResponse.json({ ok: true, sent: res.sent, signedIn: true, devLink: isAdmin ? link : res.devLink });
-  out.headers.set("Set-Cookie", sessionCookie(session, SESSION_MAX_AGE));
-  return out;
+  // The greeting is the name the account already holds, never one from this
+  // request: a signed-out caller could make Sona email any clinician "Hi
+  // <their words>," (audit B2).
+  const name = acct ? String(acct.name || "").trim().slice(0, 60) : "";
+
+  const token = randomToken();
+  await kvCmd(["SET", "slptok:" + hashToken(token), email, "EX", 900]); // 15 min
+  const tokKey = "slptok:" + hashToken(token);
+  const link = origin + "/api/slp/auth/verify?token=" + encodeURIComponent(token);
+  const code = wantCode ? makeSignInCode() : "";
+  if (code && !(await storeSignInCode(email, code, email, tokKey))) {
+    return NextResponse.json({ ok: false, error: "Couldn't make your sign-in code. Try again." }, { status: 503 });
+  }
+  const res = await sendMagicEmail(email, link, name, { code });
+
+  /**
+   * A CLINICIAN THE CRM HAS NEVER HEARD OF. The CRM was once told only when
+   * this route created the account, so everyone whose account was made
+   * another way — before the CRM was wired on 22 Sep 2026, say — was
+   * invisible to GoHighLevel however often they signed in. Travis found it
+   * signing up with his own address: the dashboard email arrived, and
+   * GoHighLevel never heard of him. (Since 13 Nov 2026 a new account is
+   * made, and the CRM told, by the verify route.)
+   *
+   * So the account carries crmAt once the CRM has taken the lead. Without
+   * it, the lead goes on this sign-in, once; with it, never again, because
+   * a daily sign-in is not a daily "new signup". The name sent is the one
+   * already on the account — this request is not signed in, so it may
+   * inform the CRM but never rewrites the account.
+   */
+  if (!acct && acctRaw === null && res.sent) {
+    await tellCrmEarly(origin, email, String(body.source || "slp-signup").slice(0, 40), safeAttrib(body.attrib));
+  }
+  if (acct && !acct.crmAt && typeof acctRaw === "string") {
+    if (await tellCrm(origin, email, String(body.source || "slp-signup").slice(0, 40), name, safeAttrib(body.attrib))) {
+      acct.crmAt = new Date().toISOString();
+      await replaceSlpAccount(acctKey, acctRaw, acct);
+    }
+  }
+  const devLink = isAdmin ? link : res.devLink;
+  return NextResponse.json({ ok: true, sent: res.sent, signedIn: false, devLink, ...(code ? { code: true, devCode: devLink ? code : undefined } : {}) });
 }

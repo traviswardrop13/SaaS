@@ -2,11 +2,16 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
+  <link rel="icon" type="image/png" href="/assets/slp-tab-icon.png?v=2" />
   <script>
-// Clinician tools live in the browser. A restored link in the native shell
-// must return to the family app before rendering or making clinician requests.
+// Clinician tools live in the browser, and in the clinicians' own app
+// (SLPAPP1, 16 Nov 2026: Capacitor adds "SonaSLPApp/<n>" to its user agent).
+// A restored link in the FAMILY app's shell must return to the family app
+// before rendering or making clinician requests.
 (function () {
-  var native = false;
+  var native = false, slpApp = false;
+  try { slpApp = /\bSonaSLPApp\/\d/.test(navigator.userAgent || ""); } catch (e) {}
+  if (slpApp) { window.__sonaSlpApp = true; document.documentElement.className += " slp-app"; return; }
   try {
     var bridge = window.Capacitor;
     native = !!(bridge && (typeof bridge.isNativePlatform === "function" ? bridge.isNativePlatform() : true));
@@ -23,7 +28,15 @@
   <!-- the SLP side is hidden (19 Sep 2026): reachable by direct link, not by search -->
   <meta name="robots" content="noindex">
   <link href="/fonts.css" rel="stylesheet">
-  <link rel="manifest" href="/manifest.webmanifest" />
+  <!-- ON THE CLINICIAN'S HOME SCREEN (14 Nov 2026, Travis: "phone-friendly
+       web now"). Its own manifest, so Add to Home Screen opens the dashboard
+       (it opened the family app's Home before: this page linked the family
+       manifest). It opens in the browser on purpose: an iPhone home-screen
+       app keeps its own cookies, and the sign-in link in the clinician's
+       email opens in Safari, so a full-screen icon would never be signed in. -->
+  <link rel="manifest" href="/slp.webmanifest" />
+  <link rel="apple-touch-icon" href="/assets/slp-tab-icon.png?v=2" />
+  <meta name="apple-mobile-web-app-title" content="Sona SLP" />
   <meta name="theme-color" content="#fff8ef" />
   <!--
     THE CLINICIAN'S DASHBOARD (v2, 21 Sep 2026). Built around ONE problem —
@@ -113,6 +126,12 @@
     textarea { min-height:80px; resize:vertical; line-height:1.5; }
     .linkbox { display:flex; gap:8px; margin-top:8px; flex-wrap:wrap; }
     .linkbox input { flex:1; min-width:200px; background:#f6fbff; }
+    /* a family login, shown once (14 Nov 2026): big enough to read aloud over the phone */
+    .login-out { margin-top:10px; }
+    .login-cred { display:flex; flex-wrap:wrap; gap:8px 22px; background:#f6fbff; border:1px solid var(--line); border-radius:12px; padding:12px 14px; }
+    .login-cred div { display:flex; flex-direction:column; gap:2px; min-width:0; }
+    .login-cred b { font-size:20px; letter-spacing:.04em; overflow-wrap:anywhere; font-variant-numeric:tabular-nums; }
+    .login-line { margin-top:6px; }
     .btn { border:none; border-radius:12px; padding:12px 18px; font-family:inherit; font-weight:800; font-size:14px; color:#fff; background:var(--blue); cursor:pointer; white-space:nowrap; transition:transform .1s; }
     .btn:active { transform:translateY(2px); }
     .btn:disabled { opacity:.5; cursor:default; }
@@ -199,6 +218,13 @@
     .sndpick button.on { background:var(--blue); border-color:var(--blue); color:#fff; }
     .sndpick button .norm { font-weight:700; font-size:10.5px; opacity:.65; margin-left:4px; }
     .hwgrid { display:grid; gap:16px; }
+    .day-list { list-style:none; padding:0; margin:12px 0; display:grid; gap:10px; }
+    .day-row { display:grid; gap:8px; grid-template-columns:1fr 1fr; align-items:end; border:1px solid var(--line); border-radius:10px; padding:10px 12px; }
+    .day-row .day-who { grid-column:1/-1; display:flex; align-items:center; gap:8px; font-weight:700; }
+    .day-row .day-who input { flex:1; min-width:0; }
+    .day-row .day-who .spacer { flex:1; }
+    @media (min-width:900px){ .day-row { grid-template-columns:repeat(4,1fr); } }
+    .day-add { flex-wrap:wrap; gap:8px; align-items:center; margin:6px 0 10px; }
     @media (min-width:900px){ .hwgrid { grid-template-columns:1fr 300px; align-items:start; } }
     .preview { background:#f7fbff; border:1px solid var(--line); border-radius:14px; padding:16px; }
     .preview h4 { margin:0 0 10px; font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); }
@@ -475,11 +501,15 @@
     .plan-context { display:flex; flex-wrap:wrap; gap:8px; margin:12px 0 18px; }
     .plan-context span { background:#f2f5f2; padding:6px 9px; border-radius:6px; font-size:11px; color:var(--muted); }
     .feedback-layout { display:grid; grid-template-columns:minmax(0,1.45fr) minmax(250px,1fr); gap:24px; align-items:start; }
-    .feedback-tabs { display:flex; gap:7px; padding:5px; background:#f2f5f3; border-radius:8px; margin-bottom:22px; }
-    .feedback-tabs button { flex:1; background:transparent; border:1px solid transparent; padding:10px; border-radius:6px; font-size:12px; color:var(--muted); cursor:pointer; }
-    .feedback-tabs button[aria-pressed=true] { background:white; color:var(--blue-d); border-color:var(--line); box-shadow:0 1px 2px #16384f08; }
     .feedback-intro { background:#edf4ef; border:1px solid #dce8df; border-radius:12px; padding:25px; }
-    .rachel-avatar { width:50px; height:50px; border-radius:50%; background:#dbe9df; display:grid; place-items:center; font-family:"Baloo 2",sans-serif; color:#426c5b; font-size:23px; margin-bottom:18px; }
+    .rachel-avatar { display:block; width:88px; height:88px; border-radius:50%; object-fit:cover; margin-bottom:18px; }
+    .rachel-about { margin:-4px 0 18px; font-size:13px; line-height:1.75; }
+    .rachel-about summary { width:fit-content; color:var(--blue-d); font-weight:800; cursor:pointer; padding:4px 0; }
+    .rachel-about summary:focus-visible { outline:2px solid var(--blue-d); outline-offset:4px; border-radius:4px; }
+    .rachel-bio { padding:16px 18px; margin-top:10px; border:1px solid var(--line); border-radius:12px; background:#ffffffb8; color:var(--muted); }
+    .rachel-bio strong { display:block; color:var(--ink); margin-bottom:8px; }
+    .rachel-bio p + p { margin-top:10px; }
+    img.community-avatar { object-fit:cover; }
     .feedback-intro h2 { font-size:18px; font-weight:600; margin-bottom:7px; }
     .feedback-intro p { font-size:12px; line-height:1.8; color:#597269; margin-bottom:12px; }
     .feedback-intro .signature { color:var(--ink); font-size:13px; margin-top:20px; margin-bottom:0; }
@@ -513,6 +543,60 @@
     }
     @media print { .free-promise, .child-tabs, .child-nav, .feedback-shortcut, #quickHomework, #sessionPlanner, #childSaved { display:none !important; } #chOverview[hidden] { display:grid !important; } }
 
+    .community-layout { max-width:900px; margin:0 auto; }
+    .community-main { min-width:0; }
+    .community-pinned { background:#eaf1ed; border-color:#d9e5dd; margin-bottom:22px; }
+    .community-pinned .community-body { color:#3e5e51; }
+    .community-pinned .community-topic { background:#fff; color:#345f4b; }
+    /* WHO IS HERE (25 Sep 2026): the real member count and first names. */
+    .community-people { display:flex; align-items:center; gap:12px; margin-bottom:14px; font-size:13px; color:#3e5e51; }
+    .community-people[hidden] { display:none; }
+    .community-people p { margin:0; line-height:1.5; }
+    .community-faces { display:flex; flex:none; }
+    .community-faces .community-avatar { width:32px; height:32px; border:2px solid #fff; margin-left:-8px; }
+    .community-faces .community-avatar:first-child { margin-left:0; }
+    .community-membership { border:1px dashed #c4d4ca; background:#f8faf7; border-radius:8px; padding:10px 14px; color:#66766b; font-size:11px; line-height:1.6; margin-bottom:18px; }
+    .community-composer { display:flex; align-items:center; gap:12px; width:100%; padding:18px; background:white; border:1px solid var(--line); border-radius:10px; color:var(--muted); text-align:left; cursor:pointer; font:inherit; font-size:12px; }
+    .community-composer:hover { border-color:#94b1a0; }
+    .community-composer .compose-plus { margin-left:auto; font-size:22px; color:var(--blue-d); }
+    .community-avatar { display:grid; place-items:center; flex:none; width:36px; height:36px; border-radius:50%; background:#e6ede7; color:#587760; font-size:12px; font-weight:600; }
+    .community-filters { display:flex; gap:5px; flex-wrap:wrap; margin:22px 0 16px; }
+    .community-filters .filter-tab { border:1px solid transparent; }
+    .community-filters .filter-tab[aria-pressed=true] { border-color:#d7e3dc; background:#eaf1ed; color:#345f4b; }
+    .community-post { padding:24px; }
+    .community-post-header { display:flex; gap:11px; align-items:center; margin-bottom:16px; }
+    .community-post-header strong { font-size:12px; font-weight:600; }
+    .community-post-header p { margin-top:3px; font-size:10px; color:var(--muted); }
+    .community-topic { margin-left:auto; background:#f2f5f0; border:1px solid #e2e8de; border-radius:5px; padding:4px 7px; color:#758064; font-size:9px; }
+    .community-status { margin:12px 0; }
+    .community-post-header > div { min-width:0; overflow-wrap:anywhere; }
+    .community-post-actions { flex-wrap:wrap; }
+    .community-reply small { font-size:10px; color:var(--muted); }
+    .community-reply .community-post-actions { border:0; margin:4px 0 0; padding:0; }
+    .community-post h3 { overflow-wrap:anywhere; font-size:16px; line-height:1.5; margin-bottom:8px; font-weight:550; }
+    .community-body { font-size:12px; color:var(--muted); line-height:1.85; white-space:pre-wrap; overflow-wrap:anywhere; }
+    .community-post-actions { display:flex; gap:16px; align-items:center; margin-top:20px; padding-top:14px; border-top:1px solid var(--line); }
+    .community-post-actions button { font:inherit; font-size:11px; color:var(--blue-d); cursor:pointer; border:none; background:none; padding:3px 0; }
+    .community-post-actions .reply-count { font-size:10px; color:var(--muted); margin-left:auto; }
+    .community-editor[hidden], .community-replies[hidden], #communityMore[hidden] { display:none; }
+    .community-editor { margin-top:12px; padding:24px; border:1px solid #b7cbbb; }
+    .community-editor textarea { min-height:125px; }
+    .community-editor .row { margin-top:18px; }
+    .community-replies { border-top:1px solid var(--line); margin-top:15px; padding-top:15px; }
+    .community-reply { padding:10px 0; }
+    .community-reply strong { display:block; font-size:11px; margin-bottom:3px; }
+    .community-reply p { font-size:12px; line-height:1.7; white-space:pre-wrap; overflow-wrap:anywhere; color:var(--muted); }
+    .community-replies label { font-size:11px; }
+    .community-replies textarea { min-height:65px; font-size:12px; }
+    .community-resource { display:flex; align-items:start; gap:14px; padding:21px; text-decoration:none; }
+    .community-resource-icon { font-size:18px; background:#eef2e9; border-radius:8px; width:42px; height:42px; flex:none; display:grid; place-items:center; color:#74815a; }
+    .community-resource h3 { margin:0 0 5px; font-size:14px; font-weight:550; color:var(--ink); }
+    .community-resource p { font-size:11px; line-height:1.8; color:var(--muted); }
+    .community-resource small { display:block; margin-top:9px; color:#6f836e; font-size:10px; }
+    .community-resource:hover { border-color:#aec2b0; }
+    .community-empty { text-align:center; padding:28px 20px; }
+    .community-empty p { font-size:12px; color:var(--muted); margin:7px 0 14px; }
+    @media (max-width:768px) { .community-post { padding:19px; } .community-post-header { flex-wrap:wrap; } .community-topic { margin-left:0; } .community-editor { padding:18px; } }
 
     [data-preview-only][hidden] { display:none !important; }
     .general-invite { border-top:1px solid var(--line); margin-top:22px; padding-top:18px; }
@@ -548,6 +632,7 @@
     .nav-item .icon { width:32px; height:32px; display:grid; place-items:center; border-radius:10px; background:#f3efe9; color:#777185; }
     .nav-item[data-page=today] .icon { background:#fff0c4; color:#92641a; }
     .nav-item[data-page=caseload] .icon { background:#e5f2f6; color:#337481; }
+    .nav-item[data-page=community] .icon { background:#eee8fb; color:#7a5ea6; }
     .nav-item[data-page=feedback] .icon { background:#ffebe5; color:#aa6751; }
     .nav-item.active { background:#e2f5f5; color:#09636e; box-shadow:inset 0 0 0 1px #c9e6e5; font-weight:800; }
     .nav-item .badge { border-radius:99px; background:#c9ecea; color:#135e65; }
@@ -564,6 +649,7 @@
     .friendly-heading { display:flex; align-items:center; gap:17px; min-width:0; flex:1; }
     .friendly-heading > div { min-width:0; }
     .heading-echo { width:76px; height:76px; flex:none; padding:5px; background:#ffedb6; border-radius:26px; transform:rotate(-5deg); }
+    #page-community .heading-echo { background:#e8def9; transform:rotate(5deg); }
     .card { border-radius:18px; border-color:var(--line); box-shadow:0 3px 0 #d9cbb314; }
     .card h2 { font-size:15px; font-weight:800; }
     .card h3 { font-weight:800; }
@@ -601,9 +687,36 @@
     .tbl th { background:#faf6ef; font-weight:800; }
     .tbl tr:hover td { background:#fffaf3; }
     .workflow-preview, .feedback-intro { border-radius:18px; background:#edf7f4; }
-    .feedback-tabs, .child-tabs .filter-tab { border-radius:12px; }
-    .feedback-tabs button { font-weight:800; border-radius:9px; }
+    .child-tabs .filter-tab { border-radius:12px; }
     .step-number { background:#e2f5f5; font-weight:800; }
+    .community-layout { max-width:880px; }
+    .community-membership { border-style:solid; background:#fffdf8; border-color:#eee3cf; border-radius:12px; font-size:12px; color:#756951; }
+    .community-pinned { background:#fff8e3; border-color:#eddda9; border-top:4px solid #f1cc65; }
+    .community-pinned .community-body { color:#625b4d; }
+    .community-pinned .community-topic { background:#ffedba; color:#795b1e; border-color:#eddda9; }
+    .community-pinned .community-avatar { background:#f9dfa0; color:#80602a; }
+    .community-composer { border-radius:16px; padding:20px; font-size:14px; color:#716e80; box-shadow:0 3px 0 #d9cbb314; }
+    .community-composer:hover { border-color:#86babb; background:#fafffd; }
+    .community-composer .compose-plus { display:grid; place-items:center; width:32px; height:32px; flex:none; background:#e2f5f5; border-radius:10px; }
+    .community-avatar { width:42px; height:42px; background:#e9e3f7; color:#715796; font-size:15px; font-weight:800; }
+    .community-filters { gap:8px; }
+    .community-filters .filter-tab { border-color:#e9e4dc; background:#fffdf9; padding:8px 14px; }
+    .community-filters .filter-tab[aria-pressed=true] { background:#e2f5f5; color:#09636e; border-color:#b9dddc; }
+    .community-post { padding:25px; }
+    .community-post-header strong { font-size:14px; font-weight:800; }
+    .community-post-header p { font-size:11px; }
+    .community-topic { border-radius:99px; background:#f0ecf8; border-color:#e4ddef; color:#766090; font-size:11px; padding:5px 10px; font-weight:750; }
+    .community-post h3 { font-size:19px; font-weight:850; color:var(--ink); }
+    .community-body { font-size:14px; line-height:1.8; color:#696678; }
+    .community-post-actions { gap:12px; }
+    .community-post-actions button { font-size:12px; font-weight:750; }
+    .community-post-actions > button[data-community-reply] { border:1px solid #d0e6e3; background:#f2faf7; padding:7px 14px; border-radius:99px; }
+    .community-post-actions .reply-count { font-size:12px; }
+    .community-reply { background:#faf8f3; border-radius:12px; padding:14px; margin-bottom:10px; }
+    .community-reply strong { font-size:13px; font-weight:800; }
+    .community-reply p, .community-replies textarea { font-size:13px; }
+    .community-empty { background:#fffdf9; border-style:dashed; }
+    .community-empty p { font-size:13px; }
     @media (max-width:1100px) { .friendly-heading { flex-basis:100%; } }
     @media (max-width:768px) {
       .main-inner { padding:24px 18px 48px; }
@@ -616,6 +729,12 @@
       .week-summary .summary-caption { font-size:12px; }
       .group-caption { font-size:11px; }
       .filter-tab { font-size:12px; }
+      .community-post { padding:20px; }
+      .community-body { font-size:14px; }
+      .community-post-header { gap:10px; }
+      .community-composer { padding:16px; font-size:13px; }
+      .community-filters { gap:6px; }
+      .community-filters .filter-tab { padding:7px 11px; font-size:12px; }
       .child-tabs .filter-tab { font-size:11px; }
     }
     @media (max-width:380px) {
@@ -627,42 +746,21 @@
       .app-download { padding:8px 10px; }
     }
     @media print { .heading-echo { display:none; } .card { box-shadow:none; } }
-    /* Plan & billing: one card per plan state, beside the clinician's own phone.
+    /* Caseload Premium: one card per plan state, beside the clinician's own phone.
        .btn sets display, which beats the hidden attribute; on this page the
        script hides buttons by state, so hidden has to win. */
-    #page-premium [hidden], #page-clinic [hidden], .nav-item[hidden] { display:none !important; }
-    .offer-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; margin-bottom:14px; }
-    .offer-card { display:flex; flex-direction:column; }
-    .offer-card .premium-points { flex:1; }
-    .offer-card .offer-buy { width:100%; white-space:normal; text-align:center; }
-    .plan-locked { background:#fff8eb; color:#6f5427; margin-bottom:16px; }
-    .clinic-add { margin-top:12px; }
-    .clinic-add input { flex:1; min-width:0; }
-    .clinic-table { width:100%; border-collapse:collapse; font-size:13px; }
-    .clinic-table th, .clinic-table td { text-align:left; padding:10px 8px; border-bottom:1px solid var(--line); vertical-align:middle; }
-    .clinic-table .num { text-align:right; font-variant-numeric:tabular-nums; }
-    .clinic-table .who { overflow-wrap:anywhere; }
-    .clinic-table .who small { display:block; color:var(--muted); font-size:11px; }
-    .clinic-table .tag { display:inline-block; margin-left:6px; font-size:10px; padding:1px 7px; border-radius:99px; background:var(--blue-bg); color:var(--blue-d); }
-    .clinic-table .acts { text-align:right; white-space:nowrap; }
-    body.plan-locked-on .nav-item[data-page]:not([data-page=premium]):not([data-page=feedback]), body.plan-locked-on .nav-section.connect-label { display:none !important; }
-    @media (max-width:900px) { .offer-grid { grid-template-columns:minmax(0,1fr); } }
-    @media (max-width:600px) {
-      .clinic-table thead { display:none; }
-      .clinic-table, .clinic-table tbody, .clinic-table tr, .clinic-table td { display:block; width:100%; }
-      .clinic-table tr { border-bottom:1px solid var(--line); padding:12px 0; }
-      .clinic-table td { border:0; padding:3px 0; }
-      .clinic-table td.num { text-align:left; }
-      .clinic-table td.num:before { content:attr(data-label) ": "; color:var(--muted); }
-      .clinic-table .acts { text-align:left; padding-top:8px; }
-      .clinic-add { flex-wrap:wrap; }
-      .clinic-add .btn { width:100%; }
-    }
-    .premium-layout { display:grid; grid-template-columns:minmax(0,1.5fr) minmax(0,1fr); gap:20px; align-items:start; }
+    #page-premium [hidden] { display:none !important; }
+    .premium-layout { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:20px; align-items:start; }
     .premium-layout > * { min-width:0; }
     .premium-card { padding:28px; }
     .premium-card.premium-on { background:#edf4ef; border-color:#dce8df; }
     .card .premium-title { font-size:22px; font-weight:600; letter-spacing:-.5px; line-height:1.3; margin-bottom:8px; overflow-wrap:anywhere; }
+    /* THE CLINICIANS' APP SELLS NOTHING (SLPAPP1, 16 Nov 2026; Travis:
+       "Never sell in the app"). Every price, offer, checkout and billing
+       door carries data-sells, and none of it is drawn in the app: Sona Pro
+       is bought on speaksona.com, and a paid plan still works in the app.
+       No pointer to buying elsewhere either (Apple's rule 3.1.1). */
+    html.slp-app [data-sells] { display:none !important; }
     .premium-price { font-size:13px; color:var(--muted); margin:6px 0 20px; }
     .premium-price b { font-size:28px; font-weight:650; color:var(--ink); letter-spacing:-.6px; margin-right:2px; }
     .premium-points { list-style:none; display:grid; gap:12px; margin:0 0 22px; padding:0; }
@@ -675,9 +773,29 @@
     .premium-buy .btn { width:100%; }
     .premium-when { font-size:13px; font-weight:500; color:var(--ink); margin:14px 0 18px; }
     .premium-self .ok { margin-top:12px; font-weight:500; color:var(--green-d); overflow-wrap:anywhere; }
+    /* The closed dashboard's one line: information, not success or alarm. */
+    .send-success.pro-locked { background:#eef5fb; color:var(--ink); border:1px solid #d7e6f3; font-size:13px; }
+    #premiumReturnSetup { font-weight:600; }
+    #page-settings [hidden] { display:none !important; }
+    .set-plan { display:flex; align-items:center; justify-content:space-between; gap:14px; padding:12px 0; border-top:1px solid var(--line); }
+    .set-plan:first-child { border-top:0; padding-top:4px; }
+    .set-plan > div { min-width:0; }
+    .set-plan .btn { flex:none; white-space:normal; text-align:center; }
+    @media (max-width:600px) { .set-plan { flex-direction:column; align-items:stretch; } }
     #invEmailed { margin:0 0 12px; font-weight:500; color:var(--green-d); }
     #invEmailed.bad { color:var(--pink); }
     @media (max-width:1100px) { .premium-layout { grid-template-columns:minmax(0,1fr); } }
+    /* The offer in the top bar: warm, so it never reads as the app link beside
+       it. .btn sets display, so hidden has to be told to win here too. */
+    .premium-top { background:#ffe9a6; color:#5c4412; border:1px solid #f1d27c; }
+    .premium-top[hidden] { display:none !important; }
+    /* On a phone three buttons don't fit one row: the offer takes its own,
+       above the app buttons, and the bar grows to hold it. */
+    @media (max-width:600px) {
+      .workspace-bar { height:auto; padding-top:10px; padding-bottom:10px; }
+      .app-actions { flex-wrap:wrap; }
+      .premium-top { order:-1; flex:1 1 100%; }
+    }
     @media (max-width:768px) { .premium-card { padding:20px 16px; } .card .premium-title { font-size:19px; } .premium-price b { font-size:24px; } }
   </style>
 </head>
@@ -697,9 +815,11 @@
       <div class="nav-section">Workspace</div>
       <a class="nav-item active" data-page="today" href="#today"><span class="icon"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M16 3v4M8 3v4M3 11h18m-12 5 2 2 4-4"/></svg></span> Today <span class="badge warn" id="attnCount" style="display:none;">0</span></a>
       <a class="nav-item" data-page="caseload" href="#caseload"><span class="icon"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2m20 0v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/><circle cx="9" cy="7" r="4"/></svg></span> Caseload <span class="badge" id="familyCount" style="display:none;">0</span></a>
-      <a class="nav-item" data-page="premium" href="#premium"><span class="icon"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.6l-5.4 2.9 1.2-6-4.5-4.2 6.1-.7Z"/></svg></span> Plan &amp; billing</a>
-      <a class="nav-item" data-page="clinic" href="#clinic" hidden><span class="icon"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-5h6v5"/><path d="M9 10h.01M15 10h.01"/></svg></span> Your clinic</a>
-      <div class="nav-section connect-label">Connect</div>
+      <a class="nav-item" data-page="plan-day" href="#plan-day"><span class="icon"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M16 3v4M8 3v4M3 11h18M8 15h3m-3 3h6"/></svg></span> Plan sessions</a>
+      <a class="nav-item" data-page="homework-draft" href="#homework-draft"><span class="icon" aria-hidden="true">✎</span> Draft homework</a>
+      <a class="nav-item" data-page="premium" href="#premium" data-sells><span class="icon"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.6l-5.4 2.9 1.2-6-4.5-4.2 6.1-.7Z"/></svg></span> Sona Pro</a>
+      <div class="nav-section">Connect</div>
+      <a class="nav-item" data-page="community" href="#community"><span class="icon"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 11a7 7 0 0 1-7 7H7l-5 3 1.7-5A7 7 0 0 1 2 11a7 7 0 0 1 7-7h5a7 7 0 0 1 7 7Z"/><path d="M7 10h10M7 14h6"/></svg></span> Community</a>
       <a class="nav-item" data-page="affiliate" href="#affiliate"><span class="icon"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18M3 12h18M5.6 5.6l12.8 12.8M5.6 18.4 18.4 5.6"/></svg></span> Affiliate partnerships <span class="soon-badge">2027</span></a>
       <div class="nav-section account-label">Account</div>
       <a class="nav-item" data-page="settings" href="#settings"><span class="icon"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3" fill="white"/><circle cx="15" cy="17" r="3" fill="white"/></svg></span> Settings</a>
@@ -716,6 +836,7 @@
     <div class="workspace-bar">
       <div class="crumb">Workspace <span>/</span> <b id="pageCrumb">Today</b></div>
       <div class="app-actions">
+        <a class="btn app-download premium-top" id="premiumTop" href="#premium" hidden data-sells><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.6l-5.4 2.9 1.2-6-4.5-4.2 6.1-.7Z"/></svg><span><span id="premiumTopLabel">Get Premium</span><small id="premiumTopPrice"></small></span></a>
         <a class="btn green app-download" id="downloadApp" href="https://apps.apple.com/us/app/sona-speech/id6785755867" target="_blank" rel="noopener noreferrer"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="2" width="12" height="20" rx="3"/><path d="M10 18h4M12 6v8m-3-3 3 3 3-3"/></svg><span>Download the app<small>iPhone &amp; iPad</small></span></a>
         <button class="btn ghost sm" id="copyAppLink" type="button">Copy app link</button>
       </div>
@@ -765,7 +886,7 @@
           <p class="sub">Their homework is waiting the moment the family opens the link. Use initials or a nickname here — the family enters the name when they join, so nobody at your school or clinic ever sends Sona a child's name.</p>
           <div class="row">
             <div class="grow"><label class="fl" for="invName">Initials or a nickname <span style="font-weight:700;color:#aab9c8;">(not their name)</span></label><input id="invName" type="text" maxlength="40" placeholder="e.g. MK" /></div>
-            <div style="width:110px;"><label class="fl" for="invAge">Age <span style="font-weight:700;color:#aab9c8;">(optional)</span></label><select id="invAge"></select></div>
+            <div style="width:110px;max-width:34%;"><label class="fl" for="invAge">Age <span style="font-weight:700;color:#aab9c8;">(optional)</span></label><select id="invAge"></select></div>
           </div>
           <label class="fl">Target sounds <span style="font-weight:700;color:#aab9c8;">(up to 3)</span></label>
           <div class="sndpick" id="invSounds"></div>
@@ -777,13 +898,14 @@
           <label class="fl" for="invNote">Note to the parent <span style="font-weight:700;color:#aab9c8;">(optional)</span></label>
           <textarea id="invNote" maxlength="240" placeholder="e.g. Two minutes after breakfast is plenty."></textarea>
           <p class="sub">This goes to the parent's phone and is stored with the assignment. Practice instructions only — nothing from the plan, nothing you wouldn't write on a fridge note.</p>
-          <!-- A parent's address, typed by the clinician, is used for ONE send
-               and kept nowhere: not on the invite, not in the email list, not
-               in a log (app/api/slp/invite). autocomplete is off because the
+          <!-- A parent's address, typed by the clinician, is used for ONE send.
+               Sona's server keeps it nowhere (not on the invite, not in a log),
+               but GoHighLevel, which sends it, keeps it as a contact (Travis,
+               17 Nov 2026: "I want everything on Go High Level"). autocomplete is off because the
                browser would otherwise offer the clinician's own address. -->
           <label class="fl" for="invParentEmail">Parent's email <span style="font-weight:700;color:#aab9c8;">(optional)</span></label>
           <input id="invParentEmail" type="email" inputmode="email" autocomplete="off" maxlength="254" placeholder="parent@example.com" />
-          <p class="sub">We'll email them the link once. We don't keep the address.</p>
+          <p class="sub">We'll email them the link once. Our email service, GoHighLevel, keeps their address as a contact.</p>
           <button class="btn green" id="invCreate" style="margin-top:14px;">Create their link →</button>
           <div class="err" id="invErr"></div>
           <p class="sub" style="margin-top:8px;">If the family never opens the link, it deletes itself in 30 days and nothing about them is kept.</p>
@@ -795,6 +917,15 @@
               <label class="fl" for="invMsg">Ready-to-send message</label>
               <textarea id="invMsg" style="font-size:13.5px;"></textarea>
               <div class="row" style="margin-top:8px;"><button class="btn green sm" id="invCopyMsg">Copy message</button><span class="sub" id="invCopied"></span></div>
+              <!-- A LOGIN INSTEAD OF A LINK (14 Nov 2026). A link opens in
+                   Safari, and the iPhone app keeps its own storage, so a family
+                   who will use the app gets a username and password to type
+                   into it (Log in, on its first screen). The password is shown
+                   here once; Sona keeps only its hash (lib/familyLogin). -->
+              <h4 style="margin-top:16px;">Or a login for the Sona app</h4>
+              <p class="sub">For a family who'll use the iPhone or iPad app: they tap Log in on its first screen and type it, so nothing has to be opened in Safari first.</p>
+              <div class="row" style="margin-top:8px;"><button class="btn sm" id="invMakeLogin" type="button">Make a login</button></div>
+              <div class="login-out" id="invLoginOut" hidden></div>
             </div>
           </div>
           <details class="general-invite" id="generalInvite"><summary>Or copy your general caseload link</summary><p class="sub">The family picks the sound, and you set homework once they appear.</p>
@@ -860,13 +991,19 @@
               <div class="cardtop"><h2>Homework</h2><div class="spacer"></div><span id="chHwPill"></span></div>
               <div id="chHw"></div>
             </div>
+            <div class="card noprint" id="chLoginCard" hidden>
+              <div class="cardtop"><h2>Sona login</h2></div>
+              <p class="sub" id="chLoginLine"></p>
+              <div class="row" style="margin-top:8px;"><button class="btn ghost sm" id="chLoginNew" type="button">New password</button><button class="btn ghost sm" id="chLoginDel" type="button">Delete login</button></div>
+              <div class="login-out" id="chLoginOut" hidden></div>
+            </div>
             <div class="card" id="chNoteCard">
               <div class="cardtop"><h2>Progress note</h2><div class="spacer"></div><button class="btn ghost sm noprint" id="chNoteCopy">Copy</button></div>
               <p class="sub" id="chNoteSub">Edit before you paste it — it is a practice snapshot, not an evaluation.</p>
               <textarea class="note" id="chNote" style="margin-top:8px;"></textarea>
             </div>
           </div>
-          <div class="child-remove-area noprint"><button type="button" class="remove-link" id="chRemove" aria-describedby="chRemoveDetails">Remove from my caseload…</button><p class="sr-only" id="chRemoveDetails">Deletes, now and for good, everything Sona holds for this child on your caseload — practice history, pass rates and every assignment you set — and their phone stops sending you updates. Their family's Sona keeps working and keeps its own progress on their device. Copy the progress note first if you need it for your records.</p><div class="err" id="chRemoveErr"></div></div>
+          <div class="child-remove-area noprint"><button type="button" class="remove-link" id="chRemove" aria-describedby="chRemoveDetails">Remove from my caseload…</button><p class="sr-only" id="chRemoveDetails">Deletes, now and for good, everything Sona holds for this child on your caseload — practice history, pass rates, every assignment you set and their Sona login — and their phone stops sending you updates. Their family's Sona keeps working and keeps its own progress on their device. Copy the progress note first if you need it for your records.</p><div class="err" id="chRemoveErr"></div></div>
         </div>
 
         <section class="card workflow-panel" id="quickHomework" aria-labelledby="quickHeading" hidden>
@@ -949,144 +1086,180 @@
 
       </div>
 
-      <!-- ════════ PLAN & BILLING ════════
-           The two plans (Travis, 17 Nov 2026): Solo, $19.99 a month, and
-           Clinic, $99 a month, each with a 14-day free trial, card up front,
-           bought here on the web. The dashboard is part of the plan for
-           accounts made from that build on, so this page is also where a new
-           clinician lands until their trial starts (the lock banner). Its
-           own page, never a card on Today — Today answers "who practiced".
-           Each state is static markup so the register scan in
-           tests/slptest.mjs reads every word; the script only chooses which
-           one shows and fills in the figures the server sends (prices are
-           lib/caseload.ts's, never typed here). The retired $79.99-a-year
-           plan still draws as "paid" for the clinicians who hold it. -->
-      <div class="page" id="page-premium">
-        <div class="page-header"><div><div class="eyebrow">Your dashboard, and Sona for every family you send home</div><h1>Plan &amp; billing</h1><p>Every family can use Sona's free version — daily practice and free games. Your plan adds your dashboard, and every game for every family on your caseload.</p></div></div>
-        <div class="send-success" id="premiumReturn" role="status" hidden><span id="premiumReturnText"></span> <button class="feedback-shortcut" id="premiumCheck" type="button" hidden>Check again</button></div>
-        <div class="load-notice" id="premiumError" role="alert" hidden><span id="premiumErrorText"></span><button class="btn ghost sm" id="premiumRetry" type="button">Try again</button></div>
-        <div class="loading-state" id="premiumLoading" role="status" hidden>Checking your plan…</div>
-        <div class="load-notice plan-locked" id="planLocked" role="status" hidden><span><b>Start your 14-day free trial to open your dashboard.</b> Pick a plan below. You won't be charged until day 15, and you can cancel before then.</span></div>
-        <div class="premium-layout">
-          <div>
-            <div id="premiumOffer" hidden>
-              <div class="offer-grid">
-                <section class="card premium-card offer-card" id="offerSolo" aria-labelledby="offerSoloTitle">
-                  <div class="eyebrow">Solo</div>
-                  <h2 class="premium-title" id="offerSoloTitle">For one clinician</h2>
-                  <p class="premium-price"><b class="offer-price" data-plan="solo"></b> a month</p>
-                  <ul class="premium-points">
-                    <li><b>Your dashboard.</b> See who practiced this week, who went quiet, and whose homework ends soon.</li>
-                    <li><b>Homework planning.</b> Pick the sound and the position. It's waiting the moment the family opens Sona.</li>
-                    <li><b>Progress notes.</b> Copy a ready-to-paste note for any child in one tap.</li>
-                    <li><b>The full Sona app for every family on your caseload.</b> Every game, every sound, at no cost to them.</li>
-                    <li id="premiumParentPrice" hidden><b>Worth knowing:</b> parents who buy Sona on their own pay <span id="premiumParentFigure"></span>.</li>
-                  </ul>
-                  <button class="btn green offer-buy" id="buySolo" data-plan="solo" type="button">Start 14-day free trial</button>
-                </section>
-                <section class="card premium-card offer-card" id="offerClinic" aria-labelledby="offerClinicTitle">
-                  <div class="eyebrow">Clinic</div>
-                  <h2 class="premium-title" id="offerClinicTitle">For your whole practice</h2>
-                  <p class="premium-price"><b class="offer-price" data-plan="clinic"></b> a month</p>
-                  <ul class="premium-points">
-                    <li><b>Everything in Solo, for every clinician at your practice</b> — up to <span class="offer-seats"></span>.</li>
-                    <li><b>Each clinician gets their own dashboard</b> and their own family link.</li>
-                    <li><b>Your clinic view.</b> How many families each clinician has on Sona, and how many practiced this week. Never a child's name or practice.</li>
-                    <li><b>Add or remove clinicians any time.</b></li>
-                  </ul>
-                  <button class="btn green offer-buy" id="buyClinic" data-plan="clinic" type="button">Start 14-day free trial</button>
-                </section>
-              </div>
-              <p class="workflow-note" id="offerTerms">Secure checkout by Stripe. Free for 14 days: Stripe takes your card now and charges on day 15 unless you cancel first. Then monthly until you cancel — cancel anytime in Manage billing.</p>
-              <p class="workflow-note" id="offerNoTrial" hidden>Secure checkout by Stripe. You've had a free trial before, so your plan starts today. Monthly until you cancel — cancel anytime in Manage billing.</p>
-              <p class="workflow-note">You never earn anything on your own caseload. This is a plan you pay for, not a referral fee.</p>
-              <div class="err" id="premiumBuyErr" role="status"></div>
-            </div>
-            <section class="card premium-card premium-on" id="premiumPaid" aria-labelledby="premiumPaidTitle" hidden>
-              <div class="eyebrow" id="premiumPaidName">Your plan</div>
-              <h2 class="premium-title" id="premiumPaidTitle">Your plan is on</h2>
-              <p class="sub">Every family who joins through your link has every game, whether or not they choose to share practice with you.</p>
-              <p class="premium-when" id="premiumWhen"></p>
-              <a class="btn ghost" id="premiumClinicLink" href="#clinic" hidden>Open your clinic →</a>
-              <button class="btn ghost" id="premiumManage" type="button">Manage billing</button>
-              <p class="workflow-note">Change your card, download receipts, switch off renewal or cancel, on Stripe's billing page.</p>
-              <div class="err" id="premiumManageErr" role="status"></div>
-            </section>
-            <section class="card premium-card premium-on" id="premiumFree" aria-labelledby="premiumFreeTitle" hidden>
-              <div class="eyebrow">Free, as promised</div>
-              <h2 class="premium-title" id="premiumFreeTitle">Your caseload has Premium, free</h2>
-              <p class="sub">You joined when Sona promised free for every family on your caseload, and that promise stands.</p>
-              <p class="sub" style="margin-top:8px;">Every family who joins through your link has every game. There is nothing to buy and nothing to renew. If you'd like your colleagues on Sona too, the Clinic plan below adds them.</p>
-            </section>
-            <section class="card premium-card premium-on" id="premiumMember" aria-labelledby="premiumMemberTitle" hidden>
-              <div class="eyebrow">Sona Clinic</div>
-              <h2 class="premium-title" id="premiumMemberTitle">Your clinic's plan covers you</h2>
-              <p class="sub" id="premiumMemberWho">Your clinic added you to their Sona Clinic plan.</p>
-              <p class="sub" style="margin-top:8px;">Your dashboard is included, and every family who joins through your link has every game.</p>
-              <p class="sub" style="margin-top:8px;">Your clinic sees how many families you have on Sona and how many practiced this week. Never a child's name, and never a child's practice.</p>
-              <button class="btn ghost sm" id="clinicLeave" type="button" style="margin-top:14px;">Leave this clinic</button>
-              <div class="err" id="clinicLeaveErr" role="status"></div>
-            </section>
-          </div>
-          <!-- The clinician's OWN phone. A work email proves a clinician; a
-               free-mail address is refused and can ask to be approved by hand
-               on /leads.html. The link goes to the account's own inbox, which
-               is what makes it theirs.
-               NEVER "ONE PHONE" (24 Sep 2026). Each link works once, but the
-               server sends a few a day and retires none of them, so "on one
-               phone" was a limit nobody keeps; the words are the ones
-               /api/slp/self and the Terms use. -->
-          <section class="card premium-self" id="premiumSelf" aria-labelledby="selfTitle" hidden>
-            <h2 id="selfTitle">Premium on your own phone or tablet</h2>
-            <p class="sub">Play every game yourself, so you know what you're sending home. Free for you.</p>
-            <div id="selfEligible" hidden>
-              <p class="sub" style="margin-top:8px;">We'll email a link to <b id="selfEmail"></b>. Open it on your phone or tablet within 30 days. Each link works once.</p>
-              <p class="warn" id="selfNeedLink" hidden>Set up your family link first — your Premium link opens Sona through it.</p>
-              <button class="btn ghost" id="selfSend" type="button" style="margin-top:14px;">Email me my Premium link</button>
-            </div>
-            <!-- A request is approved by hand and nothing emails the clinician
-                 when it is (24 Sep 2026: this said "we'll email you", and no
-                 route sends one). So the card shows the button the approval
-                 turns on, greyed out, and says that is what changes. -->
-            <div id="selfNeedWork" hidden>
-              <p class="sub" style="margin-top:8px;">Premium on your own phone or tablet needs a work email — your school or clinic address.</p>
-              <button class="btn ghost sm" id="selfRequest" type="button" style="margin-top:14px;">No work email? Request access</button>
-              <button class="btn ghost" id="selfPending" type="button" style="margin-top:14px;" disabled hidden>Email me my Premium link</button>
-            </div>
-            <p class="sub ok" id="selfDone" role="status" hidden></p>
-            <div class="err" id="selfErr" role="status"></div>
+      <div class="page" id="page-homework-draft">
+        <div class="page-header"><div><h1>Draft homework with AI</h1><p>Turn the practice you choose into a short note you can review and share with a family.</p></div></div>
+        <div class="card hwgrid">
+          <form id="draftForm">
+            <label class="fl" for="draftSound">Sound</label>
+            <select id="draftSound" required><option value="">Choose a sound</option></select>
+            <label class="fl" for="draftPosition">Word position</label>
+            <select id="draftPosition" required><option value="">Choose a position</option></select>
+            <label class="fl" for="draftReps">Reps a day</label>
+            <select id="draftReps" required><option value="">Choose a count</option></select>
+            <p class="sub">AI receives only the sound, position, and count you select.</p>
+            <button class="btn green" id="draftGenerate" type="submit" style="margin-top:12px;">Draft note</button>
+            <p class="err" id="draftError" role="alert"></p>
+          </form>
+          <section aria-labelledby="draftHeading">
+            <h2 id="draftHeading">Family note</h2>
+            <p class="sub">Read and edit the draft before sharing it.</p>
+            <label class="fl" for="draftTitle">Title</label>
+            <input id="draftTitle" maxlength="60" type="text">
+            <label class="fl" for="draftNote">Note</label>
+            <textarea id="draftNote" maxlength="240" rows="4"></textarea>
+            <button class="btn ghost sm" id="draftCopy" type="button" disabled>Copy note</button>
           </section>
         </div>
       </div>
 
-      <!-- ════════ YOUR CLINIC ════════
-           The Clinic plan's owner view (Travis, 17 Nov 2026). TOTALS PER
-           CLINICIAN, NEVER A CHILD: families consented to share with their
-           own speech therapist, and nothing in that consent names a clinic
-           owner, so this page shows two counts per clinician and no route
-           behind it returns a child (lib/clinic.ts). A seat goes live only
-           when the clinician opens the emailed link from their own inbox. -->
-      <div class="page" id="page-clinic">
-        <div class="page-header"><div><div class="eyebrow">Sona Clinic</div><h1>Your clinic</h1><p>Every clinician here has their own dashboard. You see totals for each one — never a child's name or practice.</p></div></div>
-        <div class="load-notice" id="clinicError" role="alert" hidden><span id="clinicErrorText"></span><button class="btn ghost sm" id="clinicRetry" type="button">Try again</button></div>
-        <div class="loading-state" id="clinicLoading" role="status" hidden>Loading your clinic…</div>
-        <div class="card" id="clinicAddCard">
-          <h2>Add a clinician</h2>
-          <p class="sub"><span id="clinicSeats"></span> We email them a link; their seat starts when they open it. The email tells them you'll see their totals.</p>
-          <form class="linkbox clinic-add" id="clinicAddForm" novalidate>
-            <label class="fl sr-only" for="clinicEmail">Their work email</label>
-            <input id="clinicEmail" type="email" inputmode="email" autocomplete="off" maxlength="120" placeholder="colleague@yourclinic.com" />
-            <button class="btn green sm" id="clinicAdd" type="submit">Send invite</button>
-          </form>
-          <p class="sub" id="clinicMsg" role="status"></p>
-        </div>
+      <!-- ════════ PLAN SESSIONS (PLANDAY1, 14 Nov 2026) ════════
+           Travis: "auto plan sessions and activities for the upcoming day".
+           The clinician lists tomorrow's sessions (from the caseload, or a
+           session for a child not on Sona) and gets play-based activity ideas
+           for each, in one editable outline. Only the sound, word position,
+           age range and minutes go to the AI (/api/slp/sessions/plan); names,
+           initials and practice numbers stay on this page and are joined to
+           the ideas here. Nothing is assigned or sent to a family. Works
+           before a family link exists, like the homework draft. Drafts live
+           in this tab only. -->
+      <div class="page" id="page-plan-day">
+        <div class="page-header"><div><h1>Plan tomorrow's sessions</h1><p>List who you're seeing. Sona drafts activities for each session, ready for you to edit.</p></div></div>
         <div class="card">
-          <h2>Clinicians</h2>
-          <div class="tblwrap"><table class="clinic-table">
-            <thead><tr><th scope="col">Clinician</th><th scope="col" class="num">Families on Sona</th><th scope="col" class="num">Practiced this week</th><th scope="col"><span class="sr-only">Actions</span></th></tr></thead>
-            <tbody id="clinicRows"></tbody>
-          </table></div>
-          <p class="workflow-note">"Practiced this week" counts children with any practice in the last 7 days. Removing a clinician ends their plan; it does not touch their families or their caseload.</p>
+          <h2 id="dayHeading">Your sessions</h2>
+          <ol class="day-list" id="dayList" aria-labelledby="dayHeading"></ol>
+          <p class="sub" id="dayEmpty">No sessions yet. Add a child from your caseload, or add a session.</p>
+          <div class="row day-add">
+            <label class="fl" for="dayFromCaseload" id="dayFromLabel">Add from your caseload</label>
+            <select id="dayFromCaseload"><option value="">Choose a child</option></select>
+            <button class="btn ghost sm" id="dayAddBlank" type="button">Add a session</button>
+          </div>
+          <p class="sub">AI receives only each session's sound, word position, age range and minutes. Names stay on this page.</p>
+          <button class="btn green" id="dayPlan" type="button" disabled>Plan my day</button>
+          <p class="err" id="dayError" role="alert"></p>
+        </div>
+        <div class="card" id="dayResult" hidden>
+          <div class="cardtop"><h2>Your day</h2><div class="spacer"></div><button class="btn ghost sm" id="dayCopy" type="button">Copy plan</button></div>
+          <label class="fl" for="dayOutline">Edit anything before you use it</label>
+          <textarea class="plan-outline" id="dayOutline"></textarea>
+          <p class="workflow-note">You choose the words and adapt each activity to the child in front of you. This plan stays in this tab: copy anything you want to keep.</p>
+        </div>
+      </div>
+
+      <!-- ════════ PREMIUM: SONA PRO ════════
+           ONE PLAN (Travis, 12 Nov 2026): Sona Pro, $19.99 a month — the
+           dashboard, every game on the clinician's own phone or tablet, and
+           every game for every family who joins through their link, with no
+           cap on families. A 14-day free trial the first time, card up front.
+           For an account made from 12 Nov 2026 the dashboard itself is part
+           of the plan (lib/proGate holds that on the server); every older
+           account keeps the free dashboard it was told about.
+           The two yearly plans sold until 12 Nov 2026 are not sold here any
+           more, but a clinician holding one still sees it, with Manage
+           billing, and a clinician covered free as promised still sees that.
+           Their own page, never a card on Today — Today answers "who
+           practiced", and a price there would crowd the one question the
+           dashboard exists for. Each state is static markup so the register
+           scan in tests/slptest.mjs reads every word; the script only chooses
+           which one shows and fills in the figures the server sends (the
+           price and the trial length are lib/caseload.ts's, never typed
+           here). -->
+      <div class="page" id="page-premium" data-sells>
+        <div class="page-header"><div><h1>Sona Pro</h1><p>Get every game on your own phone or tablet, and for every family who joins through your link.</p></div></div>
+        <div class="send-success" id="premiumReturn" role="status" hidden><span id="premiumReturnText"></span> <a id="premiumReturnSetup" href="#today" hidden>Set up your family link →</a> <button class="feedback-shortcut" id="premiumCheck" type="button" hidden>Check again</button></div>
+        <div class="load-notice" id="premiumError" role="alert" hidden><span id="premiumErrorText"></span><button class="btn ghost sm" id="premiumRetry" type="button">Try again</button></div>
+        <div class="loading-state" id="premiumLoading" role="status" hidden>Checking your plan…</div>
+        <!-- The dashboard is closed (an account made from 12 Nov 2026, with no
+             Sona Pro on): said once, above the offer, in the words the
+             server's own refusal uses. -->
+        <div class="send-success pro-locked" id="proLocked" role="status" hidden>Your dashboard comes with Sona Pro. <span id="proLockedTrial">Start your free trial below to see your caseload, add children and send homework home.</span><span id="proLockedNow" hidden>Start it below to see your caseload, add children and send homework home.</span></div>
+        <div class="premium-layout">
+          <div>
+            <section class="card premium-card" id="proOffer" aria-labelledby="proOfferTitle" hidden>
+              <div class="eyebrow">Sona Pro</div>
+              <h2 class="premium-title" id="proOfferTitle">Everything, for you and every family you send home</h2>
+              <p class="premium-price" id="proPriceLine"><b id="proPrice"></b> <span id="proPer"></span><span id="proTrialNote"> · <span id="proTrialDays"></span> days free</span></p>
+              <ul class="premium-points">
+                <li><b>Unlimited families.</b> Every family who joins through your link gets every game, every sound, whether or not they choose to share practice with you.</li>
+                <li><b>Every game on your own phone or tablet,</b> so you know what you're sending home and can show a family in session.</li>
+                <li><b>One price, however many families.</b> You never earn anything on your own caseload: this is a plan you pay for, not a referral fee.</li>
+              </ul>
+              <p class="sub" style="margin:-8px 0 20px;">Practice stays free: without Sona Pro, families who join through your link still get Sona's free version — daily practice and free games.</p>
+              <div class="premium-buy">
+                <p class="warn" id="proHasYearly" hidden>You already pay for a yearly plan. Sona Pro includes everything in it, so once Sona Pro is on, cancel the yearly plan in Manage billing to avoid paying for both.</p>
+                <button class="btn green" id="proBuy" type="button">Start my free trial</button>
+                <p class="workflow-note" id="proTermsTrial">Secure checkout by Stripe. No charge today: after your free trial, <span id="proThen"></span> until you cancel. Cancel before the trial ends and you pay nothing.</p>
+                <p class="workflow-note" id="proTermsNow" hidden>Secure checkout by Stripe. Charged today, then every month until you cancel — cancel anytime. If you cancel, your dashboard and your families keep every game to the end of the month you paid for.</p>
+                <div class="err" id="proBuyErr" role="status"></div>
+              </div>
+            </section>
+            <section class="card premium-card premium-on" id="proOn" aria-labelledby="proOnTitle" hidden>
+              <div class="eyebrow">Sona Pro</div>
+              <h2 class="premium-title" id="proOnTitle">Sona Pro is on</h2>
+              <p class="sub">Your dashboard, every game on your own phone or tablet, and every game for every family who joins through your link, however many there are.</p>
+              <p class="premium-when" id="proWhen"></p>
+              <button class="btn ghost" id="proManage" type="button">Manage billing</button>
+              <p class="workflow-note">Change your card, download receipts or cancel, on Stripe's billing page.</p>
+              <div class="err" id="proManageErr" role="status"></div>
+            </section>
+            <!-- A yearly caseload plan bought before 12 Nov 2026, still
+                 renewing at the price it was bought at. -->
+            <section class="card premium-card premium-on" id="premiumPaid" aria-labelledby="premiumPaidTitle" hidden>
+              <div class="eyebrow">Your yearly caseload plan</div>
+              <h2 class="premium-title" id="premiumPaidTitle">Premium is on for your caseload</h2>
+              <p class="sub">Every family who joins through your link has every game, whether or not they choose to share practice with you, with no limit on families.</p>
+              <p class="premium-when" id="premiumWhen"></p>
+              <button class="btn ghost" id="premiumManage" type="button">Manage billing</button>
+              <p class="workflow-note">Change your card, download receipts or cancel, on Stripe's billing page.</p>
+              <div class="err" id="premiumManageErr" role="status"></div>
+            </section>
+            <section class="card premium-card premium-on" id="premiumFree" aria-labelledby="premiumFreeTitle" hidden>
+              <div class="eyebrow">Your caseload</div>
+              <h2 class="premium-title" id="premiumFreeTitle">Your caseload has Premium, free</h2>
+              <p class="sub">You joined when Sona promised free for every family on your caseload, and that promise stands.</p>
+              <p class="sub" style="margin-top:8px;">Every family who joins through your link has every game, with no limit on families. There is nothing to buy and nothing to renew.</p>
+            </section>
+          </div>
+          <!-- THE CLINICIAN'S OWN PHONE. On with Sona Pro, or free for those
+               who were promised it: signed up before 24 Sep (free forever),
+               or 24–29 Sep with a work email or the founder's approval, or
+               with a yearly plan still renewing. Once it is on, the page
+               emails a single-use link to the ACCOUNT's own address — the one
+               inbox the person asking is supposed to control.
+               NEVER "ONE PHONE" (24 Sep 2026). Each link works once, but the
+               server sends a few a day and retires none of them, so "on one
+               phone" was a limit nobody keeps; the words are the ones
+               /api/slp/self and the Terms use. -->
+          <section class="card premium-card premium-self" id="premiumSelf" aria-labelledby="selfTitle" hidden>
+            <div class="eyebrow">Your own phone or tablet</div>
+            <!-- Only the 24–29 Sep accounts see this: they were told their
+                 own Premium was free with a work email. A request is
+                 approved by hand and nothing emails the clinician when it
+                 is (24 Sep 2026: this said "we'll email you", and no route
+                 sends one). So the card shows the button the approval turns
+                 on, greyed out, and says that is what changes. -->
+            <div id="selfNeedWork" hidden>
+              <h2 class="premium-title" id="selfTitle">Every game on your own phone or tablet</h2>
+              <p class="sub" style="margin-top:8px;">You signed up when your own Premium came free with your work address. Premium on your own phone or tablet needs a work email — your school or clinic address. It also comes with Sona Pro.</p>
+              <button class="btn ghost sm" id="selfRequest" type="button" style="margin-top:14px;">No work email? Request access</button>
+              <button class="btn ghost" id="selfPending" type="button" style="margin-top:14px;" disabled hidden>Email me my Premium link</button>
+            </div>
+            <div id="selfOn" hidden>
+              <h2 class="premium-title" id="selfOnTitle">Premium is on for you</h2>
+              <p class="sub" id="selfWhy"></p>
+              <p class="premium-when" id="selfWhen" hidden></p>
+              <div id="selfEligible">
+                <p class="sub" style="margin-top:8px;">Premium on your own phone or tablet: we'll email a link to <b id="selfEmail"></b>. Open it there within 30 days. Each link works once.</p>
+                <p class="warn" id="selfNeedLink" hidden>Set up your family link first — your Premium link opens Sona through it.</p>
+                <button class="btn ghost" id="selfSend" type="button" style="margin-top:14px;">Email me my Premium link</button>
+              </div>
+              <div id="selfBilling" hidden>
+                <button class="btn ghost sm" id="selfManage" type="button" style="margin-top:14px;">Manage billing</button>
+                <div class="err" id="selfManageErr" role="status"></div>
+              </div>
+            </div>
+            <p class="sub ok" id="selfDone" role="status" hidden></p>
+            <div class="err" id="selfErr" role="status"></div>
+          </section>
         </div>
       </div>
 
@@ -1106,20 +1279,84 @@
         </div>
         <div class="card">
           <h2>Your caseload link</h2>
-          <!-- Was "free forever" until 24 Sep 2026, and "Your dashboard is free"
-               until 17 Nov 2026, when the dashboard became part of the Solo
-               and Clinic plans. The free version is still free for every
-               family; this line says which of the two a family gets. -->
-          <p class="sub">Families who join through your link get Sona's free version — daily practice and free games — at no cost. <span id="linkCoverage">With a <a href="#premium">Solo or Clinic plan</a> they get every game.</span></p>
+          <!-- Was "free forever" until 24 Sep 2026. The free version is free
+               for every family; every game is Premium, so this line says
+               which of the two a family gets. It no longer says the dashboard
+               is free: from 12 Nov 2026 that depends on when the clinician
+               signed up, and the Sona Pro card below says which. -->
+          <p class="sub">Families who join through your link get Sona's free version — daily practice and free games — at no cost. <span id="linkCoverage"><span data-sells>With <a href="#premium">Sona Pro</a> they get every game.</span></span></p>
           <p class="sub" style="margin-top:8px;">Create a child's link or copy your general link in Caseload → Add a child.</p>
           <a class="btn ghost sm" href="#invite" style="margin-top:12px;">Invite a family →</a>
 
+        </div>
+        <!-- THE PLAN, FROM SETTINGS (Travis, 29 Sep 2026: "an upsell within
+             the app, in like the SLP settings"). Since 12 Nov 2026 it is the
+             one plan, Sona Pro, with the same button as the Premium page: a
+             tap here opens the same Stripe checkout, and the return lands on
+             the Premium page. Nothing shows until the server has answered
+             with its price. -->
+        <div class="card" id="setPremium" data-sells>
+          <h2>Sona Pro</h2>
+          <p class="sub" id="setPlanWait">Checking your plan…</p>
+          <div id="setPlanRows" hidden>
+            <div class="set-plan">
+              <div><b>Your plan</b><p class="sub" id="setProText"></p></div>
+              <button class="btn green sm" id="setProBuy" type="button" hidden>Start my free trial</button>
+            </div>
+            <div class="err" id="setPlanErr" role="status"></div>
+            <div class="row" id="setBilling" style="margin-top:12px;" hidden><button class="btn ghost sm" id="setManage" type="button">Manage billing</button><a class="sub" href="#premium">See Sona Pro →</a></div>
+          </div>
         </div>
         <div class="card">
           <h2>Your data</h2>
           <p class="sub">A spreadsheet of your caseload: first names, targets, days practiced, pass rates, homework status. It leaves out ages. No recordings ever reach your dashboard.</p>
           <button class="btn ghost sm" id="exportCsv" style="margin-top:10px;">Download CSV</button>
         </div>
+        <!-- DELETE MY ACCOUNT (SLPAPP1, 16 Nov 2026): Apple accepts an app that
+             makes accounts only if it can delete them, and the web has it too.
+             The email typed back is the confirmation; the server refuses
+             while a paid plan still renews (lib/slpDelete). -->
+        <div class="card" id="deleteCard">
+          <h2>Delete your account</h2>
+          <p class="sub">Deletes your Sona account and everything on it, for good: your caseload, practice history, homework, family invites and logins, and your community posts. Families' own Sona apps keep working and keep their own progress, but they stop sending you updates, and any Premium your plan gave them ends. Copy any progress notes you need first.</p>
+          <div class="row" id="deleteStart" style="margin-top:10px;"><button class="btn danger sm" id="deleteOpen" type="button">Delete my account…</button></div>
+          <div id="deleteConfirm" hidden style="margin-top:10px;">
+            <label class="fl" for="deleteEmail">Type your account's email to confirm</label>
+            <input id="deleteEmail" type="email" inputmode="email" autocomplete="off" autocapitalize="off" spellcheck="false" />
+            <div class="row" style="margin-top:10px;"><button class="btn danger sm" id="deleteGo" type="button">Delete for good</button><button class="btn ghost sm" id="deleteCancel" type="button">Keep my account</button></div>
+          </div>
+          <div class="err" id="deleteErr" role="status"></div>
+        </div>
+      </div>
+
+      <div class="page" id="page-community">
+        <div class="page-header"><div class="friendly-heading"><img class="heading-echo" src="/coach/echo/echo-celebrate.svg" alt="" aria-hidden="true" width="76" height="76"/><div><div class="eyebrow">Your Sona circle</div><h1>SLP community</h1><p>Swap ideas, ask questions, and cheer each other on.</p></div></div><div class="spacer"></div><button class="btn ghost sm" id="communityRefresh">Refresh</button><button class="btn green" id="communityNew">+ Start a conversation</button></div>
+        <div class="community-layout"><div class="community-main">
+          <template id="rachelAboutTemplate">
+            <details class="rachel-about">
+              <summary>About Rachel</summary>
+              <div class="rachel-bio">
+                <strong>Rachel Wardrop, MS, CF-SLP</strong>
+                <p>Rachel is Sona's co-founder and a pediatric speech-language pathologist in her clinical fellowship. She loves helping children build confidence in communication. She earned her master's in Speech-Language Pathology at Jacksonville University and her undergraduate degree in Communication Disorders at Brigham Young University.</p>
+                <p>Her experience spans schools, hospitals, and private practice, working with children from early childhood through school age. Her approach is play-based and family-centered, with a focus on making practice meaningful in everyday life.</p>
+                <p>Here in the Sona community, she'd love to swap practical ideas, hear what's working for you, and help make home practice a little easier.</p>
+                <p>Outside of work, she enjoys trying new recipes, playing tennis, and getting outdoors with her family.</p>
+              </div>
+            </details>
+          </template>
+          <div id="communityPinned" aria-label="Pinned welcome" aria-live="polite"></div>
+          <div class="community-people" id="communityPeople" hidden></div>
+          <div class="community-membership"><strong>You’re already part of the community.</strong> Free with every SLP account. Other signed-in SLPs see your first name here and on your posts. Your email and caseload stay private.</div>
+          <button class="community-composer" id="communityCompose"><span class="community-avatar" id="communityAvatar" aria-hidden="true">You</span><span>Ask a question or share an idea…</span><span class="compose-plus" aria-hidden="true">+</span></button>
+          <form class="card community-editor" id="communityEditor" hidden>
+            <h2>Start a conversation</h2><label class="fl" for="communityCategory">Post in</label><select id="communityCategory"><option value="discussions">Discussions</option><option value="resources">Resources &amp; ideas</option><option value="cf">CF corner</option></select>
+            <label class="fl" for="communityTitle">Title</label><input id="communityTitle" maxlength="120" placeholder="What would you like to talk about?" required />
+            <label class="fl" for="communityText">Your post</label><textarea id="communityText" maxlength="2000" placeholder="Share a thought, a question, or a resource you love…" required></textarea>
+            <p class="workflow-note">Keep it about ideas and experiences. Leave out children's names and identifying details.</p><div class="row"><button class="btn green" type="submit">Post to community</button><button class="btn ghost" type="button" id="communityCancel">Cancel</button><span class="sub" id="communityPostStatus" role="status"></span></div>
+          </form>
+          <div class="community-filters" role="group" aria-label="Community topics"><button class="filter-tab" data-community-filter="all" aria-pressed="true">All posts</button><button class="filter-tab" data-community-filter="discussions" aria-pressed="false">Discussions</button><button class="filter-tab" data-community-filter="resources" aria-pressed="false">Resources &amp; ideas</button><button class="filter-tab" data-community-filter="cf" aria-pressed="false">CF corner</button></div>
+          <p class="sub community-status" id="communityStatus" role="status"></p><button class="feedback-shortcut" id="communityUnblock" type="button" hidden></button><div id="communityFeed" aria-live="polite"></div><button class="btn ghost" id="communityMore" hidden>Load more conversations</button>
+        </div></div>
       </div>
 
       <!-- A passive teaser, live since 24 Sep 2026 (Travis: "affiliate
@@ -1136,17 +1373,15 @@
       </div>
 
       <div class="page" id="page-feedback">
-        <div class="page-header"><div><div class="eyebrow">Built with you, for your day</div><h1>Let's make Sona better.</h1><p>Share a thought, ask a question, or request a call. We'd love to connect.</p></div></div>
+        <div class="page-header"><div><div class="eyebrow">Built with you, for your day</div><h1>Let's make Sona better.</h1><p>Share a thought or ask a question. Rachel reads every message.</p></div></div>
         <div class="feedback-layout"><div class="card">
-          <div class="feedback-tabs" role="group" aria-label="How would you like to connect?"><button id="fbModeFeedback" aria-pressed="true">Leave feedback</button><button id="fbModeCall" aria-pressed="false">Request a call</button></div>
           <h2 id="fbHeading">What's on your mind?</h2><p class="sub" id="fbIntro">A quick thought is enough. Tell Rachel what's working or what would make your day easier.</p>
           <label class="fl" for="fbTopic">About</label><select id="fbTopic"><option value="dashboard">The SLP dashboard</option><option value="app">The family app</option><option value="question">A question about Sona</option><option value="affiliate">Affiliate partnerships</option></select>
           <label class="fl" for="fbText" id="fbTextLabel">Your message</label><textarea id="fbText" maxlength="2000" placeholder="I wish the dashboard could…"></textarea>
-          <div class="workflow-fields" id="callFields" hidden><label class="fl" for="callAvailability">A good time to connect (optional)</label><input id="callAvailability" maxlength="240" placeholder="e.g. Tuesday afternoons, Mountain Time" /><p class="sub">This is a request, not a booking. We'll email you to find a time together.</p></div>
           <p class="workflow-note">Please keep feedback about the product. Leave out children's names and private information.</p><p class="workflow-note" id="fbReply"></p>
           <div class="row" style="margin-top:18px;"><button class="btn green" id="fbSend">Send to Rachel</button><span class="sub" id="fbStatus" role="status"></span></div>
           <div class="fb-success" id="fbSuccess" role="status" style="display:none;"></div>
-        </div><aside class="feedback-intro"><div class="rachel-avatar" aria-hidden="true">R</div><h2>Hi, I'm Rachel.</h2><p>I'm Sona's co-founder and a licensed pediatric speech-language pathologist.</p><p>I'd love to hear how Sona fits into your day, what could work better, and what you're curious about. A little feedback helps us build something more useful for you and your families.</p><p class="signature">Rachel · Co-founder</p><p class="credential">Licensed pediatric speech-language pathologist</p><button class="btn ghost sm" id="rachelCall">I'd love to connect →</button></aside></div>
+        </div><aside class="feedback-intro"><img class="rachel-avatar" src="/assets/rachel-wardrop-profile.jpg" width="88" height="88" alt="Rachel Wardrop"><h2>Hi, I'm Rachel.</h2><p>I'm Sona's co-founder and a pediatric speech-language pathologist in my clinical fellowship.</p><p>I'd love to hear how Sona fits into your day, what could work better, and what you're curious about. A little feedback helps us build something more useful for you and your families.</p><p class="signature">Rachel, MS, CF-SLP · Co-founder</p><p class="credential">Pediatric speech-language pathologist in her clinical fellowship</p></aside></div>
       </div>
 
     </div>
@@ -1156,6 +1391,9 @@
   <script src="/sona.js"></script>
   <script>
     // Only the local fixture server opts in. Deployed pages default closed.
+    // The clinicians' own iPhone app (SLPAPP1): set in the page's first
+    // script from the app's user agent. It sells nothing ([data-sells]).
+    var SLP_APP=window.__sonaSlpApp===true;
     var PREVIEW_FEATURES=window.SLP_PREVIEW_FEATURES===true&&/^(localhost|127\.0\.0\.1|\[?::1\]?)$/.test(location.hostname);
     document.querySelectorAll("[data-preview-only]").forEach(function(el){el.hidden=!PREVIEW_FEATURES;});
     // No page is preview-only right now: the affiliate teaser went live on
@@ -1279,10 +1517,11 @@
         if(cb)cb(ok);
         if(queued.length)loadAll(function(fresh){queued.forEach(function(done){done(fresh);});});
       }
-      fetch("/api/slp").then(function(r){return r.status===402?{needPlan:true}:r.json();}).then(function(j){
-        // 402: this account's dashboard needs a plan (17 Nov 2026). Not an
-        // error to retry — the lock, and the plan picker.
-        if(j&&j.needPlan){setLocked(true);settled(true);return;}
+      fetch("/api/slp").then(function(r){return r.json();}).then(function(j){
+        // 402 needPlan: the dashboard is Sona Pro's for this account and it
+        // is not on (lib/proGate). Not an error to retry: the plan page says
+        // what opens it, and nothing of the caseload is shown.
+        if(j&&j.needPlan){LOCKED_SERVER=true;KIDS=[];INVITES=[];LOADED=true;settled(true);return;}
         if(!j||!j.ok){settled(false);return;}
         CONFIGURED=j.configured!==false;
         var kids=(j.kids||[]).filter(function(k){return k.childId;});
@@ -1304,11 +1543,12 @@
        until the account has a code. */
     function switchPage(name,arg){
       if(!PREVIEW_FEATURES&&previewOnlyPage(name))name="today";
+      if(SLP_APP&&name==="premium")name="settings";
       if(name==="invite"){name="caseload";}
       document.querySelectorAll(".page").forEach(function(p){p.classList.remove("active");});
       var el=$("page-"+name); if(el)el.classList.add("active");
       document.querySelectorAll(".nav-item").forEach(function(n){var active=n.dataset.page===name||(name==="child"&&n.dataset.page==="caseload");n.classList.toggle("active",active);if(active)n.setAttribute("aria-current","page");else n.removeAttribute("aria-current");});
-      $("pageCrumb").textContent={today:"Today",caseload:"Caseload",child:"Child overview",premium:"Plan & billing",clinic:"Your clinic",settings:"Settings",feedback:"Talk to Rachel",affiliate:"Affiliate partnerships",onboarding:"Welcome"}[name]||"Today";
+      $("pageCrumb").textContent={today:"Today",caseload:"Caseload",child:"Child overview","homework-draft":"Draft homework","plan-day":"Plan sessions",premium:"Sona Pro",settings:"Settings",feedback:"Talk to Rachel",affiliate:"Affiliate partnerships",community:"Community",onboarding:"Welcome"}[name]||"Today";
       document.title="Sona · "+$("pageCrumb").textContent;
       setMenu(false);
       window.scrollTo(0,0);
@@ -1316,18 +1556,26 @@
       if(name==="caseload")renderCaseload();
       if(name==="child")renderChild(arg);
       if(name==="premium")renderPremium();
-      if(name==="clinic")renderClinic();
+      if(name==="plan-day")renderDay();
+      paintTopBuy();
       if(name==="settings")renderSettings();
       if(name==="feedback")paintFeedback();
+      if(name==="community"){renderCommunity();loadCommunity(false);}
     }
     function go(name,arg,view){ if(name==="invite"&&location.hash==="#invite"){switchPage("caseload");openInvite();return;} var h="#"+name+(arg?"/"+encodeURIComponent(arg):"")+(view?"/"+view:""); if(location.hash===h){switchPage(name,arg);if(name==="child")setChildView(view||"overview");} else location.hash=h; }
     function route(){
       if(!account)return;
       var h=(location.hash||"#today").slice(1).split("/"); var name=h[0]||"today", arg=h[1]?decodeURIComponent(h[1]):null;
-      // Premium is readable before a code exists (the buy button then says the
-      // family link comes first); everything else starts at the one form.
-      if(LOCKED&&name!=="premium"&&name!=="feedback"){name="premium";history.replaceState(null,"","#premium");}
-      if(!code&&name!=="feedback"&&name!=="premium"&&name!=="clinic"){switchPage("onboarding");return;}
+      // A CLOSED DASHBOARD (an account made from 12 Nov 2026, no Sona Pro on)
+      // shows the plan in place of the caseload: the server refuses the data
+      // anyway (lib/proGate), and an empty Today would read as "nobody
+      // practiced". Settings, Community and Talk to Rachel stay open.
+      // In the clinicians' app (which sells nothing) Settings stands in, with
+      // its one neutral line; the app's own sign-in opens the free dashboard,
+      // so this is a fallback, not a way in.
+      if(dashLocked()&&!LOCK_OPEN_PAGES[name==="invite"?"caseload":name]){if(SLP_APP){if(location.hash!=="#settings")history.replaceState(null,"","#settings");switchPage("settings");return;}if(location.hash!=="#premium")history.replaceState(null,"","#premium");switchPage("premium");return;}
+      // Drafting and the community work before a clinician creates a family code.
+      if(!code&&["community","feedback","premium","homework-draft","plan-day"].indexOf(name)<0){switchPage("onboarding");return;}
       if(!PREVIEW_FEATURES&&previewOnlyPage(name)){name="today";history.replaceState(null,"","#today");}
       if(name==="invite"){switchPage("caseload");openInvite();return;}
       if(!$("page-"+name))name="today";
@@ -1336,6 +1584,108 @@
     }
     window.addEventListener("hashchange",route);
     document.querySelectorAll(".nav-item[data-page]").forEach(function(n){ n.onclick=function(e){e.preventDefault();go(n.dataset.page);}; });
+
+    ALL.forEach(function(sound){$("draftSound").add(new Option(sLabel(sound),sound));});
+    POSLIST.forEach(function(position){$("draftPosition").add(new Option(position.name,position.id));});
+    [10,15,20,30,40,60].forEach(function(reps){$("draftReps").add(new Option(reps+" a day",String(reps)));});
+    function draftText(){return [$("draftTitle").value.trim(),$("draftNote").value.trim()].filter(Boolean).join("\n\n");}
+    function updateDraftCopy(){$("draftCopy").disabled=!draftText();}
+    $("draftTitle").oninput=updateDraftCopy;
+    $("draftNote").oninput=updateDraftCopy;
+    $("draftCopy").onclick=function(){copy(draftText(),this);};
+    $("draftForm").onsubmit=function(e){
+      e.preventDefault();
+      var button=$("draftGenerate"), error=$("draftError"), title=$("draftTitle"), note=$("draftNote");
+      if(button.disabled)return;
+      var originalTitle=title.value, originalNote=note.value;
+      var details={sound:$("draftSound").value,position:$("draftPosition").value,reps:Number($("draftReps").value)};
+      button.disabled=true;button.textContent="Drafting…";error.textContent="";
+      fetch("/api/slp/homework/draft",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(details)})
+        .then(function(r){return r.json();}).then(function(j){
+          if(!j.ok){error.textContent=j.error||"Couldn't draft the note. Try again.";return;}
+          if(title.value!==originalTitle||note.value!==originalNote){error.textContent="Kept your edits. Draft again to replace them.";return;}
+          title.value=j.title;note.value=j.note;updateDraftCopy();title.focus();
+        }).catch(function(){error.textContent="Couldn't draft the note. Try again.";})
+        .then(function(){button.disabled=false;button.textContent="Draft note";});
+    };
+    /* ── Plan sessions (PLANDAY1) ────────────────────
+       DAY holds tomorrow's sessions for this tab. A caseload row keeps its
+       child's id so the outline can add their home practice; the request
+       carries only sound, position, age range and minutes (DAY_SEND). */
+    var DAY=[], DAY_SEQ=0, DAY_BUSY=false;
+    var DAY_AGES=["3-4","5-6","7-8","9+"], DAY_MINUTES=[20,30,45];
+    function dayAgeBand(age){var n=parseInt(age,10);if(!n)return "5-6";return n<=4?"3-4":n<=6?"5-6":n<=8?"7-8":"9+";}
+    function dayPosOk(sound,pos){if(pos==="v")return sound==="R";if(pos==="b")return ["R","S","L"].indexOf(sound)>=0;return true;}
+    function dayKid(id){for(var i=0;i<KIDS.length;i++)if(KIDS[i].childId===id)return KIDS[i];return null;}
+    function dayAdd(k){
+      if(DAY.length>=8)return;
+      var row={id:++DAY_SEQ,kid:null,label:"",sound:"R",position:"i",age:"5-6",minutes:30};
+      if(k){var b=quickBase(k);row.kid=k.childId;row.label=k.d.name;row.sound=b.sounds[0]||"R";row.position=b.pos;row.age=dayAgeBand(k.d.age);}
+      if(!dayPosOk(row.sound,row.position))row.position="i";
+      DAY.push(row);renderDay();
+    }
+    function daySelect(cls,options,value,label){return '<label class="fl">'+label+'<select class="'+cls+'">'+options.map(function(o){return '<option value="'+esc(o[0])+'"'+(String(o[0])===String(value)?" selected":"")+(o[2]?" disabled":"")+'>'+esc(o[1])+'</option>';}).join("")+'</select></label>';}
+    function renderDay(){
+      var used={};DAY.forEach(function(r){if(r.kid)used[r.kid]=1;});
+      var pick=$("dayFromCaseload"),kids=KIDS.filter(function(k){return !k.d.archived&&!used[k.childId];});
+      pick.innerHTML='<option value="">Choose a child</option>'+kids.map(function(k){return '<option value="'+esc(k.childId)+'">'+esc(k.d.name)+'</option>';}).join("");
+      pick.hidden=$("dayFromLabel").hidden=!kids.length||DAY.length>=8;
+      $("dayEmpty").hidden=DAY.length>0;
+      $("dayList").innerHTML=DAY.map(function(r,i){
+        var who=r.kid?'<span>'+esc(r.label)+'</span>':'<input class="day-label" type="text" maxlength="24" placeholder="Initials (stay on this page)" aria-label="Session '+(i+1)+' label" value="'+esc(r.label)+'">';
+        return '<li class="day-row" data-id="'+r.id+'"><div class="day-who"><span class="step-number">'+(i+1)+'</span>'+who+'<span class="spacer"></span><button class="btn ghost sm day-remove" type="button" aria-label="Remove session '+(i+1)+'">Remove</button></div>'+
+          daySelect("day-sound",ALL.map(function(x){return [x,sLabel(x)];}),r.sound,"Sound")+
+          daySelect("day-pos",POSLIST.map(function(p){return [p.id,p.name,!dayPosOk(r.sound,p.id)];}),r.position,"Word position")+
+          daySelect("day-age",DAY_AGES.map(function(a){return [a,"Ages "+a];}),r.age,"Age")+
+          daySelect("day-min",DAY_MINUTES.map(function(m){return [m,m+" minutes"];}),r.minutes,"Session")+'</li>';
+      }).join("");
+      $("dayPlan").disabled=!DAY.length||DAY_BUSY||DAY.length>8;
+      $("dayAddBlank").disabled=DAY.length>=8;
+      if(DAY.length>=8)$("dayError").textContent="Up to 8 sessions at a time.";
+    }
+    function dayRow(el){var li=el.closest(".day-row");if(!li)return null;var id=+li.dataset.id;for(var i=0;i<DAY.length;i++)if(DAY[i].id===id)return DAY[i];return null;}
+    $("dayList").addEventListener("change",function(e){
+      var r=dayRow(e.target);if(!r)return;var c=e.target.classList;
+      if(c.contains("day-sound")){r.sound=e.target.value;if(!dayPosOk(r.sound,r.position))r.position="i";renderDay();}
+      else if(c.contains("day-pos"))r.position=e.target.value;
+      else if(c.contains("day-age"))r.age=e.target.value;
+      else if(c.contains("day-min"))r.minutes=parseInt(e.target.value,10);
+    });
+    $("dayList").addEventListener("input",function(e){var r=dayRow(e.target);if(r&&e.target.classList.contains("day-label"))r.label=e.target.value;});
+    $("dayList").addEventListener("click",function(e){if(!e.target.classList.contains("day-remove"))return;var r=dayRow(e.target);if(!r)return;DAY=DAY.filter(function(x){return x!==r;});$("dayError").textContent="";renderDay();});
+    $("dayFromCaseload").onchange=function(){var k=dayKid(this.value);if(k)dayAdd(k);};
+    $("dayAddBlank").onclick=function(){dayAdd(null);};
+    function dayTomorrow(){var d=new Date();d.setDate(d.getDate()+1);try{return d.toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"});}catch(e){return "tomorrow";}}
+    function dayOutline(rows,plans){
+      var lines=["Plan for "+dayTomorrow(),""];
+      rows.forEach(function(r,i){
+        var k=r.kid?dayKid(r.kid):null,name=(r.label||"").trim()||"Session "+(i+1);
+        lines.push((i+1)+". "+name+" · "+r.minutes+" min","Target: "+sLabel(r.sound)+" · "+posName(r.position)+" · ages "+r.age);
+        if(k)lines.push("Home practice: "+k.d.week.days+" of the last 7 days; last practiced "+agoText(k.d.last)+".");
+        lines.push("Activities:");
+        (plans[i]||[]).forEach(function(a){lines.push("- "+a.name+": "+a.how);});
+        lines.push("Wrap up: pick the words to send home.","");
+      });
+      lines.push("Planning draft for you to adapt.");
+      return lines.join("\n");
+    }
+    $("dayPlan").onclick=function(){
+      if(DAY_BUSY||!DAY.length)return;
+      var rows=DAY.map(function(r){return {kid:r.kid,label:r.label,sound:r.sound,position:r.position,age:r.age,minutes:r.minutes};});
+      var send={sessions:rows.map(function(r){return {sound:r.sound,position:r.position,age:r.age,minutes:r.minutes};})};
+      var button=this,error=$("dayError");
+      DAY_BUSY=true;button.disabled=true;button.textContent="Planning…";error.textContent="";
+      fetch("/api/slp/sessions/plan",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(send)})
+        .then(function(r){return r.json();}).then(function(j){
+          if(!j||!j.ok||!Array.isArray(j.plans)){error.textContent=(j&&j.error)||"Couldn't plan the activities. Try again.";return;}
+          var out=$("dayOutline");
+          if($("dayResult").hidden===false&&out.dataset.made&&out.value!==out.dataset.made&&!window.confirm("Replace your edited plan?"))return;
+          out.value=dayOutline(rows,j.plans);out.dataset.made=out.value;$("dayResult").hidden=false;out.focus();
+        }).catch(function(){error.textContent="Couldn't plan the activities. Try again.";})
+        .then(function(){DAY_BUSY=false;button.textContent="Plan my day";renderDay();});
+    };
+    $("dayCopy").onclick=function(){copy($("dayOutline").value,this);};
+
     function setMenu(open){
       $("sidebar").classList.toggle("open",open);$("overlay").classList.toggle("open",open);
       $("menuBtn").setAttribute("aria-expanded",String(open));$("menuBtn").setAttribute("aria-label",open?"Close navigation":"Open navigation");
@@ -1569,8 +1919,20 @@
       $("chNoteSub").textContent=(k.d.hwst==="active"&&k.hw.hw&&k.hw.hw.start<=isoToday()?"Covers the current homework window, from "+niceDate(k.hw.hw.start)+". ":"Covers the last two weeks. ")+"Edit before you paste it — it is a practice snapshot, not an evaluation.";
       $("composer").style.display="none"; BULK=null;
       renderQuick(k);renderPlan(k);setChildView(CHILD_VIEW);
+      paintChildLogin(k);
       var end=$("hwEndBtn"); if(end)end.onclick=function(){ end.disabled=true; postHw({childId:k.childId,action:"clear"},function(){loadAll(function(){renderChild(id);});}); };
       var again=$("hwAgainBtn"); if(again)again.onclick=function(){openComposer(false,k.hw&&k.hw.hw);};
+    }
+    // A child who joined with a login keeps it: a new password for a family
+    // who forgot theirs, or delete it. A second phone that logs in joins as
+    // its own row (its practice is its own), and the line says so.
+    function paintChildLogin(k){
+      var card=$("chLoginCard"), lg=k&&k.login; $("chLoginOut").hidden=true; $("chLoginOut").innerHTML="";
+      card.hidden=!lg; if(!lg)return;
+      $("chLoginLine").innerHTML='Username: <b>'+esc(lg.user)+'</b>. '+(lg.own?"The family chose their own password, so you don't know it. ":"")+"They can log in to Sona with it on another phone or tablet, which shows up here as its own row.";
+      $("chLoginNew").disabled=false; $("chLoginDel").disabled=false;
+      $("chLoginNew").onclick=function(){ makeLogin({childId:k.childId},$("chLoginOut"),$("chLoginNew"),function(){ k.login={user:lg.user,own:false}; }); };
+      $("chLoginDel").onclick=function(){ dropLogin({childId:k.childId},$("chLoginDel"),function(){ loadAll(function(){renderChild(k.childId);}); }); };
     }
     $("chAssignBtn").onclick=function(){openComposer(false);};
     $("chNoteBtn").onclick=function(){copy($("chNote").value,$("chNoteBtn"));};
@@ -1578,7 +1940,7 @@
     $("chPrint").onclick=function(){window.print();};
     $("chRemove").onclick=function(){
       if(!CURRENT)return; var k=CURRENT;
-      if(!confirm("Remove "+k.d.name+" from your caseload? This deletes, now and for good, everything Sona holds for "+k.d.name+" on your caseload: practice history, pass rates and every assignment you set. Their family's Sona app keeps working and keeps its own progress on their device; nothing on their device is deleted, and it stops sending you updates. Copy the progress note first if you need it for your records."))return;
+      if(!confirm("Remove "+k.d.name+" from your caseload? This deletes, now and for good, everything Sona holds for "+k.d.name+" on your caseload: practice history, pass rates, every assignment you set and their Sona login. Their family's Sona app keeps working and keeps its own progress on their device; nothing on their device is deleted, and it stops sending you updates. Copy the progress note first if you need it for your records."))return;
       $("chRemove").disabled=true;$("chRemoveErr").textContent="";
       fetch("/api/slp/child",{method:"DELETE",headers:{"Content-Type":"application/json"},body:JSON.stringify({childId:k.childId})}).then(function(r){return r.json();}).then(function(j){
         $("chRemove").disabled=false;
@@ -1691,6 +2053,36 @@
     // her clinician then saw "four" on Home.
     function familyOffer(){ return caseCovered()?"It's free for your family, and Premium is included through me, so your child gets every game.":"It's free for your family: daily practice and free games."; }
     function inviteMsg(child,link){ return "Hi! Here's your child's Sona link — the speech-practice app I mentioned. "+familyOffer()+" Open it on the phone your child will use, say yes to sharing practice with me, and they can start today. It listens and gives feedback as they play, and I'll see the practice add up on my end.\n\nYour family invite (start here):\n"+link+"\n\nDownload for iPhone or iPad:\n"+APP_STORE_URL; }
+    /* ── Family logins (14 Nov 2026) ──────────────── */
+    // A login opens the Sona app itself: the family taps Log in on its first
+    // screen and types it. The server hands the password back ONCE and keeps
+    // only its hash, so this panel is the only place it is ever shown. The
+    // message promises what familyOffer() promises, and asks for the same yes.
+    function loginMsg(user,pass){ return "Hi! Here's your login for Sona, the speech-practice app I mentioned. "+familyOffer()+"\n\n1. Get Sona for iPhone or iPad:\n"+APP_STORE_URL+"\n2. Open it and tap Log in on the first screen.\n3. Username: "+user+"\n   Password: "+pass+"\n\nThen say yes to sharing practice with me, and your child can start today. You can change the password in Sona's Settings."; }
+    function showLogin(host,user,pass){
+      host.innerHTML='<div class="login-cred"><div><span class="sub">Username</span><b>'+esc(user)+'</b></div><div><span class="sub">Password</span><b>'+esc(pass)+'</b></div></div>'+
+        '<label class="fl">Ready-to-send message</label><textarea class="login-msg" readonly style="font-size:13.5px;"></textarea>'+
+        '<div class="row" style="margin-top:8px;"><button class="btn green sm" type="button" data-copylogin>Copy login message</button></div>'+
+        '<p class="sub">This password shows only now. You can make a new one any time.</p>';
+      host.querySelector(".login-msg").value=loginMsg(user,pass);
+      var c=host.querySelector("[data-copylogin]"); c.onclick=function(){copy(host.querySelector(".login-msg").value,c);};
+      host.hidden=false;
+    }
+    function makeLogin(ref,host,btn,done){
+      btn.disabled=true; host.hidden=false; host.innerHTML='<p class="sub">Making a login…</p>';
+      fetch("/api/slp/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(ref)}).then(function(r){return r.json();}).then(function(j){
+        btn.disabled=false;
+        if(!j||!j.ok){host.innerHTML='<div class="err">'+esc((j&&j.error)||"Couldn't make a login — try again.")+'</div>';return;}
+        showLogin(host,j.user,j.password); if(done)done(j);
+      }).catch(function(){btn.disabled=false;host.innerHTML='<div class="err">Network hiccup — try again.</div>';});
+    }
+    function dropLogin(ref,btn,done){
+      if(!confirm("Delete this login? The family can't use it to log in again. Phones already set up keep working."))return;
+      btn.disabled=true;
+      fetch("/api/slp/login",{method:"DELETE",headers:{"Content-Type":"application/json"},body:JSON.stringify(ref)}).then(function(r){return r.json();}).then(function(){done();}).catch(function(){btn.disabled=false;});
+    }
+    var LAST_INV="";
+    $("invMakeLogin").onclick=function(){ if(LAST_INV)makeLogin({inv:LAST_INV},$("invLoginOut"),$("invMakeLogin"),function(){$("invMakeLogin").textContent="New password";}); };
     function invInit(){
       if(invReady)return; invReady=true;
       $("invAge").innerHTML='<option value="">—</option>'+[3,4,5,6,7,8,9,10,11,12].map(function(a){return'<option value="'+a+'">'+a+'</option>';}).join("");
@@ -1712,9 +2104,11 @@
       var pending=INVITES.filter(function(i){return !i.claimedBy;}), host=$("invList");
       $("invCount").textContent=pending.length?pending.length+" waiting":"";
       if(!pending.length){host.innerHTML='<p class="sub">Nobody is waiting. Children you add appear here until their family opens the link, then move to your caseload. An invite nobody opens deletes itself after 30 days.</p>';return;}
-      host.innerHTML=pending.map(function(i){ return '<div class="kid"><div class="kidtop"><span class="kidname">'+esc(i.label||i.child||"—")+'</span>'+(i.age?'<span class="sub" style="display:inline;">age '+esc(i.age)+'</span>':'')+'<span class="kidwhen">invited '+esc(agoText(i.createdAt))+(i.expiresAt?' · deletes itself '+esc(niceDate(i.expiresAt)):'')+'</span></div><div class="sub">'+(i.sounds&&i.sounds.length?esc(i.sounds.map(sLabel).join(", "))+' · '+esc(posName(i.pos))+' · '+esc(String(i.repsPerDay||""))+' a day':'no target set')+'</div><div class="row" style="margin-top:8px;"><button class="btn ghost sm" data-copy="'+esc(i.token)+'">Copy link</button><button class="btn ghost sm" data-msg="'+esc(i.token)+'">Copy message</button><button class="btn danger sm" data-del="'+esc(i.token)+'">Cancel invite</button></div></div>'; }).join("");
+      host.innerHTML=pending.map(function(i){ return '<div class="kid"><div class="kidtop"><span class="kidname">'+esc(i.label||i.child||"—")+'</span>'+(i.age?'<span class="sub" style="display:inline;">age '+esc(i.age)+'</span>':'')+'<span class="kidwhen">invited '+esc(agoText(i.createdAt))+(i.expiresAt?' · deletes itself '+esc(niceDate(i.expiresAt)):'')+'</span></div><div class="sub">'+(i.sounds&&i.sounds.length?esc(i.sounds.map(sLabel).join(", "))+' · '+esc(posName(i.pos))+' · '+esc(String(i.repsPerDay||""))+' a day':'no target set')+'</div>'+(i.login?'<div class="sub login-line">Login: <b>'+esc(i.login.user)+'</b>'+(i.login.own?' · the family chose their own password':'')+'</div>':'')+'<div class="row" style="margin-top:8px;"><button class="btn ghost sm" data-copy="'+esc(i.token)+'">Copy link</button><button class="btn ghost sm" data-msg="'+esc(i.token)+'">Copy message</button><button class="btn ghost sm" data-login="'+esc(i.token)+'">'+(i.login?'New password':'Make a login')+'</button>'+(i.login?'<button class="btn ghost sm" data-unlogin="'+esc(i.token)+'">Delete login</button>':'')+'<button class="btn danger sm" data-del="'+esc(i.token)+'">Cancel invite</button></div><div class="login-out" data-loginout="'+esc(i.token)+'" hidden></div></div>'; }).join("");
       host.querySelectorAll("[data-copy]").forEach(function(b){b.onclick=function(){copy(inviteLink(b.dataset.copy),b);};});
       host.querySelectorAll("[data-msg]").forEach(function(b){b.onclick=function(){copy(inviteMsg("",inviteLink(b.dataset.msg)),b);};});
+      host.querySelectorAll("[data-login]").forEach(function(b){b.onclick=function(){ var t=b.dataset.login; makeLogin({inv:t},host.querySelector('[data-loginout="'+t+'"]'),b,function(j){ INVITES.forEach(function(x){if(x.token===t)x.login={user:j.user,own:false};}); b.textContent="New password"; }); };});
+      host.querySelectorAll("[data-unlogin]").forEach(function(b){b.onclick=function(){ dropLogin({inv:b.dataset.unlogin},b,function(){loadAll(function(){renderCaseload();});}); };});
       host.querySelectorAll("[data-del]").forEach(function(b){b.onclick=function(){ b.disabled=true; fetch("/api/slp/invite",{method:"DELETE",headers:{"Content-Type":"application/json"},body:JSON.stringify({token:b.dataset.del})}).then(function(){loadAll(function(){renderCaseload();});}).catch(function(){b.disabled=false;}); };});
     }
     $("invCreate").onclick=function(){
@@ -1734,6 +2128,7 @@
         if(!j||!j.ok){err.style.color="var(--pink)";err.textContent=(j&&j.error)||"Couldn't create the link — try again.";return;}
         err.textContent="";
         var link=j.link||inviteLink(j.invite&&j.invite.token);
+        LAST_INV=(j.invite&&j.invite.token)||""; $("invLoginOut").hidden=true; $("invLoginOut").innerHTML=""; $("invMakeLogin").textContent="Make a login";
         $("invResult").style.display=""; $("invLink").value=link; $("invMsg").value=inviteMsg("",link);
         if(parentEmail)paintEmailed(j);
         // The address has done its one job; the page lets go of it too.
@@ -1863,30 +2258,47 @@
     $("planCopy").onclick=function(){copy($("planOutline").value,$("planCopy"));};
     $("planHomework").onclick=function(){if(CURRENT)go("child",CURRENT.childId,"homework");};
 
-    /* ── Plan & billing ──────────────────────────
-       VIEWING ONLY READS. Opening this page sends two GETs — /api/slp/plan
-       (where this caseload stands, and whether the clinician's own phone may
-       have Premium) and /api/charter (the family price, for the one line that
-       names it) — and nothing else until a button is pressed. Buying, billing,
-       the self link and an access request are each one POST behind one tap.
+    /* ── Sona Pro ─────────────────────────────────
+       VIEWING ONLY READS. Opening this page sends one GET, /api/slp/plan
+       (Sona Pro in PLAN.pro, where this caseload stands at the top level,
+       the clinician's own Premium in PLAN.self, and whether the dashboard is
+       open in PLAN.dashboard), and nothing else until a button is pressed.
+       Starting Pro, billing, the self link and an access request are each
+       one POST behind one tap. Settings shows the same plan with the same
+       button (buyPro).
 
        THE RETURN FROM STRIPE lands on /slp.html?plan_session=cs_…#premium.
        That id is a question, not proof: the server asks Stripe whether the
-       session is finished, the caseload plan's, and this clinician's before
+       session is finished, a clinician plan, and this clinician's, before
        it stores anything. The page forwards it, and takes it off the address
        bar only once the answer is yes (activated, or already active) — until
        then "Check again" re-asks Stripe about that same session, which reads
        it directly instead of waiting on Stripe's search index (24 Sep 2026:
        dropping it on any reply left a clinician who had just paid unable to
-       confirm it, and families joining meanwhile were told "not covered"). */
-    var PLAN=null, PLAN_AT=0, PLAN_BUSY=false, PLAN_ERR="", PLAN_GEN=0, PLAN_SESSION="", BOOTED=false;
-    var CLINIC=null, CLINIC_BUSY=false, CLINIC_ERR="", CLINIC_GEN=0;
-    var PARENT_PRICE="", PARENT_ASKED=false, BUY_BUSY=false, MANAGE_BUSY=false, SELF_BUSY=false, SELF_SENT="", SELF_DEV="", COVERED_SHOWN=null;
+       confirm it, and families joining meanwhile were told "not covered").
+
+       THE LOCK (12 Nov 2026). An account made from 12 Nov 2026 has its
+       dashboard only while Sona Pro is on. The server holds that (the roster
+       answers 402 needPlan; lib/proGate); the page follows whichever it
+       heard last — the plan's `dashboard.open`, else the roster's refusal —
+       and shows this page in place of Today, Caseload and a child's page.
+       Settings, Community and Talk to Rachel stay open. */
+    var PLAN=null, PLAN_AT=0, PLAN_BUSY=false, PLAN_ERR="", PLAN_GEN=0, PLAN_SESSION="", LOCKED_SERVER=false;
+    var BUY_BUSY=false, BUY_KIND="", MANAGE_BUSY=false, SELF_BUSY=false, SELF_SENT="", SELF_DEV="", COVERED_SHOWN=null, RETURN_KIND="";
     try{var planSid=new URLSearchParams(location.search).get("plan_session");
-      if(planSid!=null){ if(/^cs_[A-Za-z0-9_]{10,240}$/.test(planSid))PLAN_SESSION=planSid; else history.replaceState(null,"","/slp.html#premium"); }
+      if(planSid!=null){ if(/^cs_[A-Za-z0-9_]{10,240}$/.test(planSid))PLAN_SESSION=planSid; else history.replaceState(null,"",location.pathname+"#premium"); }
     }catch(e){}
-    // Paid or grandfathered: the families on this link have every game.
+    // Sona Pro, a yearly plan still renewing, or grandfathered: the families
+    // on this link have every game.
     function caseCovered(){return !!(PLAN&&PLAN.active);}
+    // The clinician's own Premium: with Sona Pro, or free as promised at sign-up.
+    function selfOn(){return !!(PLAN&&PLAN.self&&PLAN.self.active);}
+    function proOn(){return !!(PLAN&&PLAN.pro&&PLAN.pro.active);}
+    // Is there something to sell? Only the server's answer says so.
+    function proOffer(){return !!(PLAN&&PLAN.pro&&PLAN.pro.offer&&PLAN.pro.price);}
+    function proTrial(){return !!(PLAN&&PLAN.pro&&PLAN.pro.trialAvailable&&PLAN.pro.trialDays);}
+    function dashLocked(){return PLAN&&PLAN.dashboard?PLAN.dashboard.open===false:LOCKED_SERVER;}
+    var LOCK_OPEN_PAGES={premium:1,settings:1,community:1,feedback:1,affiliate:1};
     function answer(r){return r.json().catch(function(){return null;}).then(function(j){return {status:r.status,j:j||{}};});}
     function planDate(sec){var d=new Date(sec*1000);return isNaN(d.getTime())?"":d.toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"});}
     function loadPlan(){
@@ -1903,121 +2315,126 @@
         // A REFUSAL (activated:false with no retry flag: another account's
         // session, a family's) will never succeed, so it leaves too; Check
         // again then finds a real plan by the recovery search instead.
-        if(sid&&(res.j.activated===true||res.j.active===true||res.j.retry!==true)){PLAN_SESSION="";try{history.replaceState(null,"","/slp.html#premium");}catch(e){}}
+        if(sid&&(res.j.activated===true||res.j.active===true||res.j.retry!==true)){PLAN_SESSION="";try{history.replaceState(null,"",location.pathname+"#premium");}catch(e){}}
+        var wasLocked=dashLocked();
         PLAN=res.j;PLAN_AT=Date.now();PLAN_ERR="";
-        if(sid)paintReturn(true);
+        if(res.j.activatedPlan)RETURN_KIND=res.j.activatedPlan;
+        // "Check again" after the id has gone still repaints the banner: the
+        // recovery search may have found the plan since.
+        if(sid||!$("premiumReturn").hidden)paintReturn(true);
         paintPremium();paintCoverage();
-        if(BOOTED)setLocked(PLAN.dashboard===false);
+        // The lock changed under the page (a trial just started, or ran out):
+        // fetch the caseload it can now see, and send the page where it goes.
+        if(wasLocked!==dashLocked()){
+          if(!dashLocked()){LOCKED_SERVER=false;if(code)loadAll(function(){route();});else route();}
+          else route();
+        }
       }).catch(function(){if(gen!==PLAN_GEN)return;PLAN_BUSY=false;PLAN_ERR="Couldn't reach Sona to check your plan.";paintPremium();});
     }
-    // The family price comes from /api/charter, the count checkout itself
-    // reads, and only when it answers with a price: a figure typed here would
-    // be a second copy of it, and a stale one is a promise checkout breaks.
-    // WITH ITS CONDITIONS (24 Sep 2026). "$59.99 a year" bare is true for the
-    // first fifty web buyers only, and a clinician repeats what she reads, so
-    // the charter price carries its cap (the route's, not a typed 50), both
-    // carry "on the web" (App Store Connect prices the app), and a charter
-    // answer without a usable cap prints nothing rather than the bare figure.
-    function loadParentPrice(){
-      if(PARENT_ASKED)return;PARENT_ASKED=true;
-      fetch("/api/charter").then(answer).then(function(res){
-        var j=res.j, money=/^\$\d+(\.\d\d)?$/, cap=typeof j.cap==="number"&&j.cap>0&&j.cap%1===0?j.cap:0;
-        // While the family app is free (j.free) there is no price to name,
-        // and the line stays hidden: "parents normally pay" must be a price
-        // a parent can actually be charged, never a decoration.
-        if(!j.ok||j.free)PARENT_PRICE="";
-        else if(j.open)PARENT_PRICE=typeof j.price==="string"&&money.test(j.price)&&cap?"on the web, "+j.price+" a year for the first "+cap+" families":"";
-        else PARENT_PRICE=typeof j.standard==="string"&&money.test(j.standard)?"on the web, "+j.standard+" a year":"";
-        paintPremium();
-      }).catch(function(){});
-    }
+    // Which plan came back from Stripe is the server's answer (activatedPlan);
+    // when it never said, Sona Pro is read first. A yearly plan can still come
+    // back from a checkout opened before 12 Nov 2026 in a tab left open, and
+    // it is thanked for in its own words.
     function paintReturn(show){
-      var el=$("premiumReturn"), on=caseCovered()&&PLAN.source==="paid";
+      var el=$("premiumReturn");
       el.hidden=!show;if(!show)return;
-      $("premiumReturnText").textContent=on?(PLAN.trialing?"You're in. Your free trial has started, and your dashboard is open.":"Thank you. Your plan is on, and your dashboard is open."):"We couldn't confirm that checkout yet. If you just finished it, give it a minute, then check again.";
+      var paidCase=caseCovered()&&PLAN.source==="paid", paidSelf=selfOn()&&PLAN.self.source==="paid";
+      var kind=RETURN_KIND==="pro"?(proOn()?"pro":""):RETURN_KIND==="caseload"?(paidCase?"caseload":""):RETURN_KIND==="self"?(paidSelf?"self":""):(proOn()?"pro":paidCase?"caseload":paidSelf?"self":"");
+      var on=!!kind;
+      $("premiumReturnText").textContent=kind==="pro"?(PLAN.pro.status==="trialing"?"Your free trial of Sona Pro has started. Your dashboard is open, and every family who joins through your link has every game.":"Thank you. Sona Pro is on: your dashboard is open, and every family who joins through your link has every game.")
+        :kind==="caseload"?"Thank you. Premium is on for your caseload: every family who joins through your link has every game."
+        :kind==="self"?"Thank you. Premium is on for you: email yourself a link below and open it on your phone or tablet."
+        :"We couldn't confirm that payment yet. If you just paid, give it a minute, then check again.";
+      $("premiumReturnSetup").hidden=kind!=="pro"||!!code;
       $("premiumCheck").hidden=on;
       el.style.background=on?"":"#fff8eb";el.style.color=on?"":"#806132";
     }
-    // THE LOCK (17 Nov 2026). An account made from that build on has no free
-    // dashboard: until a plan or a clinic seat covers it, the server answers
-    // the caseload with 402 and this page shows only Plan & billing (and Talk
-    // to Rachel). Older accounts are never locked — the server says so in
-    // PLAN.dashboard, and a plan that cannot be read never locks anyone here
-    // (the server still enforces it on the caseload itself).
-    var LOCKED=false;
-    function setLocked(on){
-      on=!!on; if(on===LOCKED)return; LOCKED=on;
-      document.body.classList.toggle("plan-locked-on",on);
-      $("planLocked").hidden=!on;
-      if(on){if((location.hash||"#today")!=="#premium"&&location.hash!=="#feedback")history.replaceState(null,"","#premium");route();}
-      else{$("loadingState").hidden=true;if(code)loadAll(function(){route();});else route();}
+    // When a plan renews or ends, in words. A month for Sona Pro, a year for
+    // the yearly plans still renewing.
+    function planEnds(p,who,unit){
+      var end=p.periodEnd?planDate(p.periodEnd):"";
+      return p.cancelAtPeriodEnd?(end?"Ends "+end+"."+(who?" "+who+" keep every game until then, then move to the free version.":""):"Cancelled."+(who?" "+who+" keep every game to the end of the "+unit+" you paid for, then move to the free version.":"")):(end?"Renews "+end+".":"Renews once a "+unit+".");
     }
-    function planKind(){return PLAN&&PLAN.active?(PLAN.source==="grandfathered"?"free":(PLAN.source==="clinic"?"member":"paid")):"none";}
+    function proWhen(){
+      var p=PLAN.pro, end=p.trialEnd?planDate(p.trialEnd):"";
+      if(p.status==="trialing")return p.cancelAtPeriodEnd?"Free trial"+(end?" until "+end:"")+". You've cancelled, so Sona Pro ends with it and you won't be charged.":"Free trial"+(end?" until "+end:"")+". Then "+p.price+" "+p.per+" until you cancel. Cancel before then and you pay nothing.";
+      if(p.status==="past_due")return "Your last payment didn't go through. Update your card in Manage billing to keep Sona Pro on.";
+      return planEnds(p,"You and your families","month");
+    }
     function paintPremium(){
-      var st=!PLAN?null:planKind();
+      var pro=PLAN&&PLAN.pro, self=PLAN&&PLAN.self, on=selfOn(), offer=proOffer(), trial=proTrial();
+      var st=!PLAN||proOn()?null:(!PLAN.active?null:(PLAN.source==="grandfathered"?"free":PLAN.source==="paid"?"paid":null));
       $("premiumLoading").hidden=!(PLAN_BUSY&&!PLAN);
       $("premiumError").hidden=!PLAN_ERR||PLAN_BUSY;
       $("premiumErrorText").textContent=PLAN_ERR+(PLAN&&PLAN_ERR?" What's below is the last answer we had.":"");
       $("premiumRetry").disabled=PLAN_BUSY;$("premiumCheck").disabled=PLAN_BUSY;
-      $("planLocked").hidden=!LOCKED;
-      // The offer shows to anyone with nothing to buy-proof: no plan, or the
-      // grandfathered (who may still add colleagues with Clinic, never Solo).
-      $("premiumOffer").hidden=!(st==="none"||st==="free");
-      $("offerSolo").hidden=st==="free";
-      $("premiumPaid").hidden=st!=="paid";$("premiumFree").hidden=st!=="free";$("premiumMember").hidden=st!=="member";
-      var plans=(PLAN&&PLAN.plans)||{};
-      document.querySelectorAll(".offer-price").forEach(function(b){var o=plans[b.dataset.plan];b.textContent=o&&o.price||"";});
-      document.querySelectorAll(".offer-seats").forEach(function(b){b.textContent=String((plans.clinic&&plans.clinic.seats)||25)+" clinicians";});
-      var trial=!PLAN||PLAN.trialAvailable!==false;
-      $("offerTerms").hidden=!trial;$("offerNoTrial").hidden=trial;
-      document.querySelectorAll(".offer-buy").forEach(function(btn){
-        var label=trial?"Start 14-day free trial":(btn.dataset.plan==="clinic"?"Choose Clinic":"Choose Solo");
-        btn.disabled=BUY_BUSY||!PLAN||!(plans[btn.dataset.plan]&&plans[btn.dataset.plan].price);
-        btn.textContent=BUY_BUSY===btn.dataset.plan?"Opening secure checkout…":label;
-      });
-      if(st==="none"||st==="free"){loadParentPrice();}
-      $("premiumParentPrice").hidden=!PARENT_PRICE;$("premiumParentFigure").textContent=PARENT_PRICE;
-      if(st==="paid"){
-        var kind=PLAN.kind, name=kind==="clinic"?"Sona Clinic":(kind==="solo"?"Sona Solo":"Sona Premium for your caseload");
-        var o=plans[kind]||null, end=PLAN.periodEnd?planDate(PLAN.periodEnd):"";
-        $("premiumPaidName").textContent=name;
-        $("premiumPaidTitle").textContent=kind==="clinic"||kind==="solo"?"You're on "+name:"Premium is on for your caseload";
-        var when;
-        if(PLAN.cancelAtPeriodEnd)when=end?"Ends "+end+". Your dashboard stays open and your families keep every game until then.":"Cancelled. Everything stays on to the end of what you've paid for.";
-        else if(PLAN.trialing)when=end?"Free trial until "+end+". Then "+(o?o.price+" a month":"your plan's price")+", unless you cancel before then.":"Your free trial is running.";
-        else if(kind==="solo"||kind==="clinic")when=end?"Renews "+end+(o?", "+o.price+" a month":"")+".":"Renews monthly.";
-        else when=end?"Renews "+end+".":"Renews once a year.";
-        $("premiumWhen").textContent=when;
-        $("premiumClinicLink").hidden=kind!=="clinic";
+      $("proLocked").hidden=!dashLocked();$("proLockedTrial").hidden=!trial;$("proLockedNow").hidden=trial;
+      $("proOffer").hidden=!offer;$("proOn").hidden=!proOn();
+      $("premiumPaid").hidden=st!=="paid";$("premiumFree").hidden=st!=="free";
+      paintTopBuy();paintSettingsPlan();
+      if(offer){
+        $("proPrice").textContent=pro.price;$("proPer").textContent=pro.per||"";
+        $("proTrialNote").hidden=!trial;$("proTrialDays").textContent=trial?String(pro.trialDays):"";
+        $("proThen").textContent=pro.price+" "+(pro.per||"");
+        $("proTermsTrial").hidden=!trial;$("proTermsNow").hidden=trial;
+        // Paying for a yearly plan still renewing: say Pro includes it, so
+        // nobody pays twice without being told.
+        $("proHasYearly").hidden=!(PLAN.source==="paid"||(self&&self.source==="paid")||(self&&self.source==="caseload"));
+        $("proBuy").disabled=BUY_BUSY;$("proBuy").textContent=BUY_BUSY?"Opening secure checkout…":trial?"Start my free trial":"Get Sona Pro";
       }
-      if(st==="member"){
-        var c=CLINIC&&CLINIC.role==="member"?CLINIC:null;
-        $("premiumMemberWho").textContent=c?((c.ownerName||c.owner)+(c.clinicName?" at "+c.clinicName:"")+" added you to their Sona Clinic plan."):"Your clinic added you to their Sona Clinic plan.";
-        if(!c&&!CLINIC_BUSY)loadClinic();
-        $("clinicLeave").disabled=CLINIC_BUSY;
-      }
+      if(proOn())$("proWhen").textContent=proWhen();
+      $("proManage").disabled=MANAGE_BUSY;$("proManage").textContent=MANAGE_BUSY?"Opening billing…":"Manage billing";
+      if(st==="paid")$("premiumWhen").textContent=planEnds(PLAN,"Your families","year");
       $("premiumManage").disabled=MANAGE_BUSY;$("premiumManage").textContent=MANAGE_BUSY?"Opening billing…":"Manage billing";
-      var navClinic=document.querySelector('.nav-item[data-page="clinic"]');if(navClinic)navClinic.hidden=!(st==="paid"&&PLAN.kind==="clinic");
-      var self=PLAN&&PLAN.self;
-      $("premiumSelf").hidden=!self||LOCKED;
+      // Their own phone: shown once it is on (to send the link), or to the
+      // 24–29 Sep account that can still ask for it. Everyone else reads it
+      // in the Sona Pro card.
+      $("premiumSelf").hidden=!self||!(on||self.canRequest);
       if(self){
-        $("selfEligible").hidden=!self.eligible;$("selfNeedWork").hidden=!!self.eligible;
+        $("selfNeedWork").hidden=on||!self.canRequest;$("selfOn").hidden=!on;
+        $("selfWhy").textContent={grandfathered:"Free, as promised when you signed up.","work-email":"Free with your work email, as promised when you signed up.",caseload:"It comes with your yearly caseload plan.",paid:"Every game, every sound, on your own phone or tablet.",pro:"It comes with Sona Pro."}[self.source]||"";
+        $("selfWhen").hidden=self.source!=="paid";$("selfWhen").textContent=self.source==="paid"?planEnds(self,"","year"):"";
+        $("selfBilling").hidden=self.source!=="paid";$("selfManage").disabled=MANAGE_BUSY;$("selfManage").textContent=MANAGE_BUSY?"Opening billing…":"Manage billing";
         $("selfEmail").textContent=(account&&account.email)||"your account email";
         $("selfNeedLink").hidden=!!code;
-        $("selfSend").disabled=!code||SELF_BUSY;$("selfSend").textContent=SELF_BUSY&&self.eligible?"Sending…":"Email me my Premium link";
+        $("selfSend").disabled=!code||SELF_BUSY;$("selfSend").textContent=SELF_BUSY&&on?"Sending…":"Email me my Premium link";
         $("selfRequest").hidden=!!self.requested;$("selfRequest").disabled=SELF_BUSY;$("selfPending").hidden=!self.requested;
-        var done=self.eligible?SELF_SENT:(self.requested?"Requested — once we approve it, this button will work.":"");
-        $("selfDone").hidden=!done&&!SELF_DEV;$("selfDone").textContent=done;
-        if(SELF_DEV&&self.eligible){var a=document.createElement("a");a.href=SELF_DEV;a.textContent="open it here";$("selfDone").textContent="Email isn't set up on this server, so here is your link (preview only): ";$("selfDone").appendChild(a);}
+        var done=on?SELF_SENT:(self.canRequest&&self.requested?"Requested — once we approve it, this button will work.":"");
+        $("selfDone").hidden=!done&&!(SELF_DEV&&on);$("selfDone").textContent=done;
+        if(SELF_DEV&&on){var a=document.createElement("a");a.href=SELF_DEV;a.textContent="open it here";$("selfDone").textContent="Email isn't set up on this server, so here is your link (preview only): ";$("selfDone").appendChild(a);}
       }
+    }
+    // SETTINGS' copy of the plan: one line and the same button. Only the
+    // server's figures, and nothing at all until it has answered.
+    function paintSettingsPlan(){
+      var pro=PLAN&&PLAN.pro, trial=proTrial();
+      $("setPlanWait").hidden=!!pro;$("setPlanRows").hidden=!pro;
+      if(!pro)return;
+      var why=PLAN.source==="grandfathered"?"Your dashboard, your own phone and your caseload are free, as promised when you signed up.":
+        PLAN.active&&selfOn()?"Your dashboard, your own phone and your caseload are already on.":"";
+      $("setProText").textContent=proOn()?"On. "+proWhen():why||((dashLocked()?"Your dashboard comes with Sona Pro: ":"")+pro.price+" "+pro.per+(trial?", free for the first "+pro.trialDays+" days":"")+". Every game for you and every family who joins through your link.");
+      $("setProBuy").hidden=!proOffer();$("setProBuy").disabled=BUY_BUSY;$("setProBuy").textContent=BUY_BUSY?"Opening secure checkout…":trial?"Start my free trial":"Get Sona Pro";
+      $("setBilling").hidden=!(proOn()||PLAN.source==="paid"||(PLAN.self&&PLAN.self.source==="paid"));$("setManage").disabled=MANAGE_BUSY;$("setManage").textContent=MANAGE_BUSY?"Opening billing…":"Manage billing";
     }
     // Where the dashboard promises families something, the promise follows
     // the plan: Settings, and the two ready-to-send messages.
     function paintCoverage(){
       var covered=caseCovered();
       if(COVERED_SHOWN===covered)return;COVERED_SHOWN=covered;
-      $("linkCoverage").innerHTML=covered?"Your plan covers them, so they get every game too.":'With a <a href="#premium">Solo or Clinic plan</a> they get every game.';
+      $("linkCoverage").innerHTML=covered?"Your caseload has Premium, so they get every game too.":SLP_APP?"":'With <a href="#premium">Sona Pro</a> they get every game.';
       if(code)paintLinkCard();
+    }
+    // The offer in the top bar (Travis, 29 Sep 2026: "yes add the $80 button
+    // to the first screen"; Sona Pro since 12 Nov 2026). A clinician from an
+    // ad lands on Community, and a returning one on Today, so the offer
+    // follows them to every page but the plan page itself. Only once the plan
+    // has answered, with the server's price: never a guessed figure, and
+    // nothing once there is nothing left to buy.
+    function paintTopBuy(){
+      var show=proOffer()&&!$("page-premium").classList.contains("active"), trial=proTrial();
+      $("premiumTop").hidden=!show;
+      $("premiumTopLabel").textContent=trial?"Try Sona Pro free":"Get Sona Pro";
+      $("premiumTopPrice").textContent=show?(trial?"then ":"")+PLAN.pro.price+" "+PLAN.pro.per:"";
     }
     function renderPremium(){
       paintPremium();
@@ -2027,35 +2444,35 @@
     // an http(s) address the server handed back.
     function leaveFor(url){if(typeof url==="string"&&/^https?:\/\//.test(url)){location.assign(url);return true;}return false;}
     function planPost(path,body){return fetch(path,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body||{})}).then(answer);}
-    // A family link is no longer needed first: the trial is how a new
-    // clinician opens the dashboard, and the link is set up inside it.
-    document.querySelectorAll(".offer-buy").forEach(function(btn){btn.onclick=function(){
+    // One checkout, from the plan page or from Settings. Errors show beside
+    // the button that was pressed. No family link needed first: the
+    // dashboard is part of the plan, and the link is made after.
+    function buyPro(errId){
       if(BUY_BUSY)return;
-      BUY_BUSY=btn.dataset.plan;$("premiumBuyErr").textContent="";paintPremium();
-      planPost("/api/slp/plan",{plan:btn.dataset.plan}).then(function(res){
+      BUY_BUSY=true;BUY_KIND="pro";$(errId).textContent="";paintPremium();
+      planPost("/api/slp/plan",{plan:"pro"}).then(function(res){
         if(res.j.ok&&leaveFor(res.j.url))return;   // on the way to Stripe; stays busy
-        BUY_BUSY=false;$("premiumBuyErr").textContent=res.j.error||"Couldn't open checkout. Try again.";
-        if(res.j.already)loadPlan();               // covered in another tab meanwhile
+        BUY_BUSY=false;BUY_KIND="";$(errId).textContent=res.j.error||"Couldn't open checkout. Try again.";
+        if(res.j.already)loadPlan(); // changed in another tab meanwhile
         paintPremium();
-      }).catch(function(){BUY_BUSY=false;$("premiumBuyErr").textContent="Network hiccup. Try again.";paintPremium();});
-    };});
-    $("clinicLeave").onclick=function(){
-      if(CLINIC_BUSY||!confirm("Leave this clinic? Your clinic's plan stops covering you right away: your dashboard closes until you start your own plan, and your families move to Sona's free version. Your caseload is kept."))return;
-      CLINIC_BUSY=true;$("clinicLeaveErr").textContent="";paintPremium();
-      planPost("/api/slp/clinic",{action:"leave"}).then(function(res){
-        CLINIC_BUSY=false;
-        if(!res.j.ok){$("clinicLeaveErr").textContent=res.j.error||"Couldn't leave just now. Try again.";paintPremium();return;}
-        CLINIC=null;PLAN=null;loadPlan();
-      }).catch(function(){CLINIC_BUSY=false;$("clinicLeaveErr").textContent="Network hiccup. Try again.";paintPremium();});
-    };
-    $("premiumManage").onclick=function(){
+      }).catch(function(){BUY_BUSY=false;BUY_KIND="";$(errId).textContent="Network hiccup. Try again.";paintPremium();});
+    }
+    $("proBuy").onclick=function(){buyPro("proBuyErr");};
+    $("setProBuy").onclick=function(){buyPro("setPlanErr");};
+    // One billing page for every plan: Sona Pro is bought under the same
+    // Stripe customer as a yearly plan, so Manage billing shows everything.
+    function manageBilling(errId){
       if(MANAGE_BUSY)return;
-      MANAGE_BUSY=true;$("premiumManageErr").textContent="";paintPremium();
+      MANAGE_BUSY=true;$(errId).textContent="";paintPremium();
       planPost("/api/slp/plan/portal").then(function(res){
         if(res.j.ok&&leaveFor(res.j.url))return;
-        MANAGE_BUSY=false;$("premiumManageErr").textContent=res.j.error||"Couldn't open billing. Try again.";paintPremium();
-      }).catch(function(){MANAGE_BUSY=false;$("premiumManageErr").textContent="Network hiccup. Try again.";paintPremium();});
-    };
+        MANAGE_BUSY=false;$(errId).textContent=res.j.error||"Couldn't open billing. Try again.";paintPremium();
+      }).catch(function(){MANAGE_BUSY=false;$(errId).textContent="Network hiccup. Try again.";paintPremium();});
+    }
+    $("proManage").onclick=function(){manageBilling("proManageErr");};
+    $("premiumManage").onclick=function(){manageBilling("premiumManageErr");};
+    $("selfManage").onclick=function(){manageBilling("selfManageErr");};
+    $("setManage").onclick=function(){manageBilling("setPlanErr");};
     $("selfSend").onclick=function(){
       if(SELF_BUSY||!code)return;
       SELF_BUSY=true;SELF_SENT="";SELF_DEV="";$("selfErr").textContent="";paintPremium();
@@ -2063,7 +2480,7 @@
         SELF_BUSY=false;
         if(res.j.ok&&res.j.sent===false&&res.j.devLink&&String(res.j.devLink).indexOf(location.origin+"/")===0)SELF_DEV=res.j.devLink;
         else if(res.j.ok)SELF_SENT="Check your inbox — your Premium link is on its way to "+((account&&account.email)||"your account email")+".";
-        else if(res.j.needWorkEmail){if(PLAN&&PLAN.self)PLAN.self.eligible=false;}
+        else if(res.j.needWorkEmail||res.j.needPlan){$("selfErr").textContent=res.j.error||"";loadPlan();}
         else $("selfErr").textContent=res.j.error||"Couldn't send your link. Try again.";
         paintPremium();
       }).catch(function(){SELF_BUSY=false;$("selfErr").textContent="Network hiccup. Try again.";paintPremium();});
@@ -2082,70 +2499,7 @@
     $("premiumCheck").onclick=function(){loadPlan();};
     // Back from Stripe by the browser's back button: the page may come back
     // from the cache with its buttons still saying "Opening…".
-    window.addEventListener("pageshow",function(e){if(e.persisted){BUY_BUSY=false;MANAGE_BUSY=false;paintPremium();}});
-
-    /* ── Your clinic ──────────────────────────────
-       The Clinic plan's owner view, and the member's "whose plan am I on".
-       VIEWING ONLY READS: one GET /api/slp/clinic. Adding, re-sending and
-       removing are each one POST behind one tap. The server returns two
-       counts per clinician and never a child, so nothing here could draw
-       one. */
-    function loadClinic(){
-      var gen=++CLINIC_GEN;CLINIC_BUSY=true;paintClinic();
-      return fetch("/api/slp/clinic",{cache:"no-store"}).then(answer).then(function(res){
-        if(gen!==CLINIC_GEN)return;CLINIC_BUSY=false;
-        if(!res.j.ok){CLINIC_ERR=res.j.error||"Couldn't load your clinic just now.";paintClinic();paintPremium();return;}
-        CLINIC=res.j;CLINIC_ERR="";paintClinic();paintPremium();
-      }).catch(function(){if(gen!==CLINIC_GEN)return;CLINIC_BUSY=false;CLINIC_ERR="Couldn't reach Sona to load your clinic.";paintClinic();});
-    }
-    function renderClinic(){paintClinic();if(!CLINIC_BUSY)loadClinic();}
-    function countCell(n){return n==null?'<span class="sub">—</span>':String(n);}
-    function paintClinic(){
-      $("clinicLoading").hidden=!(CLINIC_BUSY&&!CLINIC);
-      $("clinicError").hidden=!CLINIC_ERR;$("clinicErrorText").textContent=CLINIC_ERR;
-      var owner=CLINIC&&CLINIC.role==="owner";
-      $("clinicAddCard").hidden=!owner;
-      $("clinicAdd").disabled=CLINIC_BUSY;
-      if(!CLINIC){$("clinicRows").innerHTML="";return;}
-      if(!owner){
-        $("clinicRows").innerHTML='<tr><td colspan="4" class="sub">Only the person who holds your practice\'s Clinic plan sees this page. <a href="#premium">See your plan →</a></td></tr>';
-        return;
-      }
-      $("clinicSeats").textContent=CLINIC.used+" of "+CLINIC.seats+" seats used.";
-      $("clinicRows").innerHTML=(CLINIC.rows||[]).map(function(r){
-        var who='<span class="who">'+esc(r.name||r.email)+(r.you?'<span class="tag">You</span>':'')+(r.state==="invited"?'<span class="tag">Invite sent</span>':'')+(r.name?'<small>'+esc(r.email)+'</small>':'')+'</span>';
-        var acts=r.you?'':(r.state==="invited"?'<button class="btn ghost sm" type="button" data-clinic-resend="'+esc(r.email)+'">Resend</button> ':'')+'<button class="btn ghost sm" type="button" data-clinic-remove="'+esc(r.email)+'">Remove</button>';
-        var fam=r.state==="invited"?'<span class="sub">Not joined yet</span>':(r.linkReady===false?'<span class="sub">No family link yet</span>':countCell(r.families));
-        return '<tr><td>'+who+'</td><td class="num" data-label="Families on Sona">'+fam+'</td><td class="num" data-label="Practiced this week">'+(r.state==="invited"||r.linkReady===false?'<span class="sub">—</span>':countCell(r.practicedWeek))+'</td><td class="acts">'+acts+'</td></tr>';
-      }).join("");
-      document.querySelectorAll("[data-clinic-remove]").forEach(function(b){b.onclick=function(){
-        var email=b.dataset.clinicRemove;
-        if(CLINIC_BUSY||!confirm("Remove "+email+" from your clinic? Their dashboard closes until they start their own plan, and their families move to Sona's free version. Nothing on their caseload is deleted."))return;
-        clinicPost({action:"remove",email:email},"Removed "+email+".");
-      };});
-      document.querySelectorAll("[data-clinic-resend]").forEach(function(b){b.onclick=function(){
-        if(CLINIC_BUSY)return;clinicPost({action:"add",email:b.dataset.clinicResend},"Invite sent again to "+b.dataset.clinicResend+".");
-      };});
-    }
-    function clinicPost(body,done){
-      CLINIC_BUSY=true;$("clinicMsg").textContent="";paintClinic();
-      return planPost("/api/slp/clinic",body).then(function(res){
-        CLINIC_BUSY=false;
-        if(!res.j.ok){$("clinicMsg").textContent=res.j.error||"Couldn't do that just now. Try again.";paintClinic();return false;}
-        if(res.j.sent===false&&res.j.devLink&&String(res.j.devLink).indexOf(location.origin+"/")===0){$("clinicMsg").textContent="Email isn't set up on this server. Invite link (preview only): "+res.j.devLink;}
-        else $("clinicMsg").textContent=done;
-        loadClinic();return true;
-      }).catch(function(){CLINIC_BUSY=false;$("clinicMsg").textContent="Network hiccup. Try again.";paintClinic();return false;});
-    }
-    $("clinicAddForm").onsubmit=function(e){
-      e.preventDefault();if(CLINIC_BUSY)return;
-      var email=$("clinicEmail").value.trim().toLowerCase();
-      if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){$("clinicMsg").textContent="Enter their email.";return;}
-      clinicPost({action:"add",email:email},"Invite sent to "+email+". Their seat starts when they open it.").then(function(ok){if(ok)$("clinicEmail").value="";});
-    };
-    $("clinicRetry").onclick=function(){loadClinic();};
-    // Back from a clinic invite: say where they are, once, and tidy the URL.
-    try{if(new URLSearchParams(location.search).get("joined")==="clinic"){history.replaceState(null,"","/slp.html"+(location.hash||""));setTimeout(function(){notify("You've joined your clinic's Sona plan.");},600);}}catch(e){}
+    window.addEventListener("pageshow",function(e){if(e.persisted){BUY_BUSY=false;BUY_KIND="";MANAGE_BUSY=false;paintPremium();}});
 
     /* ── Settings ──────────────────────────────── */
     // POST /api/slp/account answers {code, familyKey, name, clinic} and no
@@ -2157,6 +2511,10 @@
     function renderSettings(){
       $("profName").value=(account&&account.name)||""; $("profClinic").value=(account&&account.clinic)||""; $("profCode").value=code; $("profKey").value=(account&&account.familyKey)||"";
       paintLinkCard();
+      // The Premium card reads the same answer as the Premium page, and asks
+      // again on the same terms: when it is over a minute old.
+      paintSettingsPlan();
+      if(!PLAN_BUSY&&(!PLAN||Date.now()-PLAN_AT>60000))loadPlan();
     }
     $("profSave").onclick=function(){
       var data={name:$("profName").value.trim(),clinic:$("profClinic").value.trim()};
@@ -2180,38 +2538,172 @@
       var t=isoToday(), rows=[["A practice snapshot from at-home listening on the family's device; not an evaluation. Pass rate means: did that sound like this sound. Under "+SMALL_N+" attempts is too few to read."],["child","targets","last practiced","days last 7","days last 30","words last 30","pass rate on target (14 days)","attempts (14 days)","homework status","homework","homework ends"]];
       KIDS.forEach(function(k){ var d=k.d, m=windowStats(k,addDays(t,-29),t,null), hw=k.hw&&k.hw.hw; rows.push([d.name,d.targets.map(sLabel).join(" "),d.last||"",d.week.days,m.days,m.reps,(d.two.rate==null||d.two.attempts<SMALL_N)?"":d.two.rate+"%",d.two.attempts,d.hwst,hw?(hw.title||""):"",hw?hw.due:""]); });
       var csv=rows.map(function(r){return r.map(function(v){v=String(v==null?"":v);return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;}).join(",");}).join("\n");
+      // The clinicians' app cannot save a download (an iPhone app's web view
+      // drops it): it hands the file to the iPhone's share sheet (Save to
+      // Files, Mail, AirDrop), or, where that is missing, copies the rows.
+      if(SLP_APP){
+        var name="sona-caseload-"+t+".csv",file=null;
+        try{file=new File([csv],name,{type:"text/csv"});}catch(e){file=null;}
+        if(file&&navigator.canShare&&navigator.canShare({files:[file]})){navigator.share({files:[file],title:name}).catch(function(){});return;}
+        copy(csv).then(function(done){if(done)notify("Caseload copied as CSV. Paste it into a spreadsheet or a note.");});return;
+      }
       var a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"})); a.download="sona-caseload-"+t+".csv"; document.body.appendChild(a); a.click(); setTimeout(function(){document.body.removeChild(a);},0);
     };
 
-    /* Feedback is submitted only by the clinician; a call request isn't a booking. */
-    var FB_MODE="feedback", FB_BUSY=false;
+    /* All signed-in SLPs share this feed. Drafts stay here until the server confirms a save. */
+    var COMMUNITY_FILTER="all", COMMUNITY_POSTS=[], COMMUNITY_PINNED=[], COMMUNITY_CURSOR=null, COMMUNITY_OPEN={}, COMMUNITY_REPLY_DRAFTS={}, COMMUNITY_MEMBERS=null;
+    var COMMUNITY_LOADING=false, COMMUNITY_WRITING=false, COMMUNITY_FETCH=0, COMMUNITY_RETRIES={};
+    var COMMUNITY_TOPICS={discussions:"Discussions",resources:"Resources & ideas",cf:"CF corner"};
+    function communityEditor(category){
+      $("communityEditor").hidden=false;
+      if(category&&!$("communityTitle").value)$("communityCategory").value=category;
+      $("communityTitle").focus();
+    }
+    function communityStatus(message){$("communityStatus").textContent=message||"";}
+    var COMMUNITY_BLOCKED=0;
+    function communityRequest(method,body){
+      return fetch("/api/slp/community",{method:method,headers:{"Content-Type":"application/json"},body:JSON.stringify(body)}).then(function(r){return r.json().then(function(j){
+        if(!r.ok||!j||!j.ok)throw new Error((j&&j.error)||"Couldn't save. Please try again.");return j;
+      });});
+    }
+    function communityRequestId(key,body){
+      var signature=JSON.stringify(body),old=COMMUNITY_RETRIES[key];
+      if(old&&old.signature===signature)return old.id;
+      var bytes=new Uint8Array(16);window.crypto.getRandomValues(bytes);
+      var id=Array.prototype.map.call(bytes,function(b){return("0"+b.toString(16)).slice(-2);}).join("");
+      COMMUNITY_RETRIES[key]={signature:signature,id:id};return id;
+    }
+    function communityControls(){
+      $("communityRefresh").disabled=COMMUNITY_LOADING||COMMUNITY_WRITING;
+      $("communityMore").hidden=!COMMUNITY_CURSOR;
+      $("communityMore").disabled=COMMUNITY_LOADING||COMMUNITY_WRITING;
+      document.querySelectorAll("[data-community-filter],#communityFeed button,#communityFeed textarea,#communityPinned button,#communityPinned textarea,#communityEditor input,#communityEditor textarea,#communityEditor select,#communityEditor button").forEach(function(b){b.disabled=COMMUNITY_WRITING;});
+      $("communityNew").disabled=COMMUNITY_WRITING;$("communityCompose").disabled=COMMUNITY_WRITING;
+    }
+    function loadCommunity(more){
+      var generation=++COMMUNITY_FETCH,filter=COMMUNITY_FILTER,cursor=more?COMMUNITY_CURSOR:null;
+      COMMUNITY_LOADING=true;communityControls();communityStatus("Loading conversations…");
+      var query=[];if(filter!=="all")query.push("category="+encodeURIComponent(filter));if(cursor)query.push("cursor="+encodeURIComponent(cursor));
+      return fetch("/api/slp/community"+(query.length?"?"+query.join("&"):""),{cache:"no-store"}).then(function(r){return r.json().then(function(j){
+        if(!r.ok||!j||!j.ok||!Array.isArray(j.posts))throw new Error((j&&j.error)||"Couldn't load conversations. Try Refresh.");
+        if(generation!==COMMUNITY_FETCH)return;
+        var seen={};COMMUNITY_POSTS=(more?COMMUNITY_POSTS:[]).concat(j.posts).filter(function(p){if(seen[p.id])return false;seen[p.id]=true;return true;});
+        if(Array.isArray(j.pinned))COMMUNITY_PINNED=j.pinned;
+        if(j.members&&typeof j.members.count==="number")COMMUNITY_MEMBERS=j.members;
+        COMMUNITY_BLOCKED=typeof j.blocked==="number"?j.blocked:0;
+        COMMUNITY_CURSOR=j.nextCursor||null;COMMUNITY_LOADING=false;communityStatus("");renderCommunity();
+      });}).catch(function(e){if(generation!==COMMUNITY_FETCH)return;COMMUNITY_LOADING=false;communityStatus(e.message||"Couldn't load conversations. Try Refresh.");communityControls();});
+    }
+    function communityDate(value){var d=new Date(value);return isNaN(d.getTime())?"":d.toLocaleString(undefined,{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"});}
+    function communityText(value){
+      return String(value||"").split(/(https?:\/\/[^\s<>]+)/g).map(function(part){return /^https?:\/\//.test(part)?'<a href="'+esc(part)+'" target="_blank" rel="noopener noreferrer nofollow">'+esc(part)+'</a>':esc(part);}).join("");
+    }
+    // Block (SLPAPP1, 16 Nov 2026): stop seeing a member, for this clinician
+    // alone. Never on your own words, or on Sona's pinned welcome.
+    function communityActions(postId,replyId,canDelete,mine,pinned){
+      var attr='="'+esc(postId)+'"'+(replyId?' data-reply-id="'+esc(replyId)+'"':'');
+      return '<button type="button" data-community-report'+attr+'>Report</button>'+(!mine&&!pinned?'<button type="button" data-community-block'+attr+'>Block</button>':'')+(canDelete?'<button type="button" data-community-delete'+attr+'>Delete</button>':'');
+    }
+    // WHO IS HERE: the server's real count and first names, newest first
+    // (never invented), shown only once it has answered.
+    function renderCommunityPeople(){
+      var el=$("communityPeople"),m=COMMUNITY_MEMBERS;
+      if(!el)return;
+      if(!m||typeof m.count!=="number"||m.count<1){el.hidden=true;return;}
+      var shown=(Array.isArray(m.names)?m.names:[]).slice(0,8),rest=Math.max(0,m.count-shown.length);
+      var faces=shown.map(function(n){return '<span class="community-avatar" title="'+esc(n)+'">'+esc(String(n).charAt(0).toUpperCase())+'</span>';}).join("");
+      var line=m.count===1?"<strong>You’re the first SLP here.</strong> Start a conversation and the next one in will see it."
+        :"<strong>"+m.count+" SLPs are here.</strong>"+(shown.length?" Say hi to "+esc(shown.join(", "))+(rest>0?" and "+rest+" more":"")+".":"");
+      el.innerHTML=(faces?'<div class="community-faces" aria-hidden="true">'+faces+'</div>':'')+'<p>'+line+'</p>';
+      el.hidden=false;
+    }
+    function renderCommunity(){
+      renderCommunityPeople();
+      var name=(account&&account.name)||"You";
+      $("communityAvatar").textContent=name.charAt(0).toUpperCase();
+      document.querySelectorAll("[data-community-filter]").forEach(function(b){b.setAttribute("aria-pressed",String(b.dataset.communityFilter===COMMUNITY_FILTER));});
+      function postHtml(p){
+        var id=esc(p.id),open=!!COMMUNITY_OPEN[p.id],replies=(p.replies||[]).map(function(r){return '<div class="community-reply"><strong>'+esc(r.author)+'</strong><small>'+esc(communityDate(r.createdAt))+'</small><p>'+communityText(r.text)+'</p><div class="community-post-actions">'+communityActions(p.id,r.id,r.canDelete,r.mine,false)+'</div></div>';}).join("");
+        // Only the server-verified team welcome receives Rachel's profile.
+        var avatar=p.pinned?'<img class="community-avatar" src="/assets/rachel-wardrop-profile.jpg" width="42" height="42" alt="Rachel Wardrop">':'<span class="community-avatar" aria-hidden="true">'+esc((p.author||"S").charAt(0).toUpperCase())+'</span>';
+        return '<article class="card community-post'+(p.pinned?' community-pinned':'')+'"><div class="community-post-header">'+avatar+'<div><strong>'+esc(p.author)+'</strong><p>'+esc(communityDate(p.createdAt))+'</p></div><span class="community-topic">'+esc(p.pinned?"Pinned · From Rachel":(COMMUNITY_TOPICS[p.category]||"Discussions"))+'</span></div>'+(p.pinned?$("rachelAboutTemplate").innerHTML:"")+'<h3>'+esc(p.title)+'</h3><p class="community-body">'+communityText(p.text)+'</p><div class="community-post-actions"><button type="button" data-community-reply="'+id+'" aria-expanded="'+String(open)+'" aria-controls="community-replies-'+id+'">'+(open?'Hide replies':'Reply')+'</button><span class="reply-count">'+(p.replies||[]).length+' '+((p.replies||[]).length===1?'reply':'replies')+'</span>'+communityActions(p.id,null,p.canDelete,p.mine,p.pinned)+'</div><div class="community-replies" id="community-replies-'+id+'"'+(open?'':' hidden')+'>'+replies+'<form data-community-reply-form="'+id+'"><label class="fl" for="community-reply-'+id+'">Your reply</label><textarea id="community-reply-'+id+'" maxlength="1000" required placeholder="Add to the conversation…">'+esc(COMMUNITY_REPLY_DRAFTS[p.id]||'')+'</textarea><button class="btn ghost sm" type="submit" style="margin-top:8px;">Post reply</button><span class="sub" id="community-reply-status-'+id+'" role="status"></span></form></div></article>';
+      }
+      var html=COMMUNITY_POSTS.map(postHtml).join("");
+      $("communityPinned").innerHTML=COMMUNITY_PINNED.map(postHtml).join("");
+      if(!html&&!COMMUNITY_LOADING)html='<div class="card community-empty"><h3>Start something good.</h3><p>Start a new conversation, ask a question, or share a useful idea.</p></div>';
+      $("communityFeed").innerHTML=html;
+      document.querySelectorAll("[data-community-reply]").forEach(function(b){b.onclick=function(){var id=b.dataset.communityReply;COMMUNITY_OPEN[id]=!COMMUNITY_OPEN[id];renderCommunity();if(COMMUNITY_OPEN[id])$("community-reply-"+id).focus();};});
+      document.querySelectorAll("[data-community-reply-form]").forEach(function(f){var id=f.dataset.communityReplyForm;$("community-reply-"+id).oninput=function(){COMMUNITY_REPLY_DRAFTS[id]=this.value;};f.onsubmit=function(e){
+        e.preventDefault();if(COMMUNITY_WRITING)return;
+        var text=$("community-reply-"+id).value.trim();if(!text)return;
+        var body={action:"reply",postId:id,text:text};body.requestId=communityRequestId("reply-"+id,body);
+        COMMUNITY_WRITING=true;communityControls();$("community-reply-status-"+id).textContent="Posting…";
+        communityRequest("POST",body).then(function(){delete COMMUNITY_REPLY_DRAFTS[id];delete COMMUNITY_RETRIES["reply-"+id];var input=$("community-reply-"+id);if(input)input.value="";COMMUNITY_WRITING=false;notify("Reply shared with the community.");return loadCommunity(false);}).catch(function(e){COMMUNITY_WRITING=false;communityControls();var status=$("community-reply-status-"+id);if(status)status.textContent=e.message;communityStatus(e.message);});
+      };});
+      document.querySelectorAll("[data-community-delete]").forEach(function(b){b.onclick=function(){
+        if(COMMUNITY_WRITING||!confirm(b.dataset.replyId?"Delete this reply?":"Delete this conversation and its replies?"))return;
+        COMMUNITY_WRITING=true;communityControls();
+        communityRequest("DELETE",{postId:b.dataset.communityDelete,replyId:b.dataset.replyId||undefined}).then(function(){COMMUNITY_WRITING=false;notify("Deleted.");return loadCommunity(false);}).catch(function(e){COMMUNITY_WRITING=false;communityControls();communityStatus(e.message);});
+      };});
+      document.querySelectorAll("[data-community-block]").forEach(function(b){b.onclick=function(){
+        if(COMMUNITY_WRITING||!confirm("Block this member? You won't see their posts or replies. They aren't told."))return;
+        COMMUNITY_WRITING=true;communityControls();
+        communityRequest("POST",{action:"block",postId:b.dataset.communityBlock,replyId:b.dataset.replyId||undefined}).then(function(){COMMUNITY_WRITING=false;notify("Blocked. You won't see this member again.");return loadCommunity(false);}).catch(function(e){COMMUNITY_WRITING=false;communityControls();communityStatus(e.message);});
+      };});
+      var unb=$("communityUnblock");
+      if(unb){unb.hidden=!COMMUNITY_BLOCKED;unb.textContent=COMMUNITY_BLOCKED===1?"You blocked 1 member. Show them again":"You blocked "+COMMUNITY_BLOCKED+" members. Show them again";}
+      document.querySelectorAll("[data-community-report]").forEach(function(b){b.onclick=function(){
+        if(COMMUNITY_WRITING)return;
+        var reason=prompt("What should the Sona team review? Please leave out any private family details.","");if(reason===null)return;
+        var body={action:"report",postId:b.dataset.communityReport,replyId:b.dataset.replyId||undefined,reason:reason.trim()},key="report-"+body.postId+"-"+(body.replyId||"");
+        body.requestId=communityRequestId(key,body);COMMUNITY_WRITING=true;communityControls();
+        communityRequest("POST",body).then(function(){delete COMMUNITY_RETRIES[key];COMMUNITY_WRITING=false;communityControls();notify("Report received for review. Thank you.");}).catch(function(e){COMMUNITY_WRITING=false;communityControls();communityStatus(e.message);});
+      };});
+      communityControls();
+    }
+    $("communityNew").onclick=$("communityCompose").onclick=function(){communityEditor(COMMUNITY_FILTER==="all"?null:COMMUNITY_FILTER);};
+    $("communityCancel").onclick=function(){$("communityEditor").hidden=true;$("communityCompose").focus();};
+    $("communityRefresh").onclick=function(){loadCommunity(false);};
+    $("communityUnblock").onclick=function(){
+      if(COMMUNITY_WRITING||!confirm("Show everyone you blocked again?"))return;
+      COMMUNITY_WRITING=true;communityControls();
+      communityRequest("POST",{action:"unblock-all"}).then(function(){COMMUNITY_WRITING=false;notify("Everyone is shown again.");return loadCommunity(false);}).catch(function(e){COMMUNITY_WRITING=false;communityControls();communityStatus(e.message);});
+    };
+    $("communityMore").onclick=function(){loadCommunity(true);};
+    document.querySelectorAll("[data-community-filter]").forEach(function(b){b.onclick=function(){COMMUNITY_FILTER=b.dataset.communityFilter;COMMUNITY_POSTS=[];COMMUNITY_CURSOR=null;loadCommunity(false);renderCommunity();};});
+    $("communityEditor").onsubmit=function(e){
+      e.preventDefault();if(COMMUNITY_WRITING)return;
+      var title=$("communityTitle").value.trim(),text=$("communityText").value.trim(),category=$("communityCategory").value;
+      if(!title||!text){$("communityPostStatus").textContent="Add a title and a thought before posting.";return;}
+      var body={action:"post",title:title,text:text,category:category};body.requestId=communityRequestId("post",body);
+      COMMUNITY_WRITING=true;communityControls();$("communityPostStatus").textContent="Posting…";
+      communityRequest("POST",body).then(function(){
+        delete COMMUNITY_RETRIES.post;COMMUNITY_WRITING=false;COMMUNITY_FILTER=category;$("communityEditor").reset();$("communityEditor").hidden=true;$("communityPostStatus").textContent="";
+        notify("Your conversation is live.");communityControls();$("communityCompose").focus();return loadCommunity(false);
+      }).catch(function(e){COMMUNITY_WRITING=false;communityControls();$("communityPostStatus").textContent=e.message;});
+    };
+
+
+    /* Feedback is submitted only by the clinician. No calls (Travis, 30 Sep
+       2026: "I don't want request to call to be an option"): /api/slp/feedback
+       refuses one. */
+    var FB_BUSY=false;
     function paintFeedback(){
-      var call=FB_MODE==="call";
-      $("fbModeFeedback").setAttribute("aria-pressed",String(!call));$("fbModeCall").setAttribute("aria-pressed",String(call));
-      $("callFields").hidden=!call;$("fbHeading").textContent=call?"We'd love to connect.":"What's on your mind?";
-      $("fbIntro").textContent=call?"Talk through feedback, ask a question, or tell us about your experience. We'll find a time together.":"A quick thought is enough. Tell Rachel what's working or what would make your day easier.";
-      $("fbTextLabel").textContent=call?"What would you like to talk about? (optional)":"Your message";
-      $("fbText").placeholder=call?"I'd love to talk about…":"I wish the dashboard could…";
-      $("fbSend").textContent=FB_BUSY?"Sending…":(call?"Request a call with Rachel":"Send to Rachel");
+      $("fbSend").textContent=FB_BUSY?"Sending…":"Send to Rachel";
       $("fbReply").textContent="We'll reply to "+((account&&account.email)||"your signed-in email")+".";
     }
-    function feedbackMode(mode){if(FB_BUSY)return;FB_MODE=mode;$("fbSuccess").style.display="none";$("fbStatus").textContent="";paintFeedback();}
-    $("fbModeFeedback").onclick=function(){feedbackMode("feedback");};
-    $("fbModeCall").onclick=function(){feedbackMode("call");};
-    $("rachelCall").onclick=function(){feedbackMode("call");$("fbText").focus();};
     function feedbackBusy(busy){
-      FB_BUSY=busy;["fbModeFeedback","fbModeCall","fbText","fbTopic","callAvailability","fbSend","rachelCall"].forEach(function(id){$(id).disabled=busy;});paintFeedback();
+      FB_BUSY=busy;["fbText","fbTopic","fbSend"].forEach(function(id){$(id).disabled=busy;});paintFeedback();
     }
     $("fbSend").onclick=function(){
       if(FB_BUSY)return;
-      var text=($("fbText").value||"").trim(),kind=FB_MODE;
-      if(kind==="feedback"&&!text){$("fbStatus").textContent="Add a quick thought before sending.";$("fbText").focus();return;}
-      var timezone="";try{timezone=Intl.DateTimeFormat().resolvedOptions().timeZone||"";}catch(e){}
-      var body={text:text,category:$("fbTopic").value,kind:kind,availability:kind==="call"?$("callAvailability").value.trim():"",timezone:timezone};
+      var text=($("fbText").value||"").trim();
+      if(!text){$("fbStatus").textContent="Add a quick thought before sending.";$("fbText").focus();return;}
+      var body={text:text,category:$("fbTopic").value,kind:"feedback"};
       feedbackBusy(true);$("fbStatus").textContent="Sending…";$("fbSuccess").style.display="none";
       fetch("/api/slp/feedback",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)}).then(function(r){return r.json();}).then(function(j){
         feedbackBusy(false);
-        if(j&&j.ok){$("fbText").value="";$("callAvailability").value="";$("fbStatus").textContent="";$("fbSuccess").textContent=kind==="call"?"Call request received. We'll email you to arrange a time — we'd love to connect.":"Thank you. Your feedback has been received for Rachel and the Sona team.";$("fbSuccess").style.display="block";}
+        if(j&&j.ok){$("fbText").value="";$("fbStatus").textContent="";$("fbSuccess").textContent="Thank you. Your feedback has been received for Rachel and the Sona team.";$("fbSuccess").style.display="block";}
         else $("fbStatus").textContent=(j&&j.error)||"Couldn't send. Your message is still here; please try again.";
       }).catch(function(){feedbackBusy(false);$("fbStatus").textContent="Couldn't send. Your message is still here; please try again.";});
     };
@@ -2229,26 +2721,35 @@
     };
 
     /* ── Auth boot ─────────────────────────────── */
+    // DELETE MY ACCOUNT: the email typed back is the yes; the server does the rest.
+    $("deleteOpen").onclick=function(){$("deleteStart").hidden=true;$("deleteConfirm").hidden=false;$("deleteErr").textContent="";$("deleteEmail").value="";try{$("deleteEmail").focus();}catch(e){}};
+    $("deleteCancel").onclick=function(){$("deleteConfirm").hidden=true;$("deleteStart").hidden=false;$("deleteErr").textContent="";};
+    $("deleteGo").onclick=function(){
+      var typed=($("deleteEmail").value||"").trim();
+      if(!typed){$("deleteErr").textContent="Type your account's email to confirm.";return;}
+      $("deleteGo").disabled=true;$("deleteGo").textContent="Deleting…";$("deleteErr").textContent="";
+      fetch("/api/slp/account",{method:"DELETE",headers:{"Content-Type":"application/json"},body:JSON.stringify({confirm:typed})}).then(function(r){return r.json();}).then(function(j){
+        if(j&&j.ok){location.replace("/slp-login.html?deleted=1");return;}
+        $("deleteGo").disabled=false;$("deleteGo").textContent="Delete for good";$("deleteErr").textContent=(j&&j.error)||"We couldn't delete your account. Try again.";
+      }).catch(function(){$("deleteGo").disabled=false;$("deleteGo").textContent="Delete for good";$("deleteErr").textContent="Network error — try again.";});
+    };
+    if(SLP_APP)$("exportCsv").textContent="Share CSV";
     $("logout").onclick=function(e){e.preventDefault();fetch("/api/slp/auth/logout",{method:"POST"}).then(function(){location.replace("/slp-login.html");}).catch(function(){location.replace("/slp-login.html");});};
     function boot(){
       if(window.__sonaFamilyRedirect)return;
       fetch("/api/slp/auth/me").then(function(r){return r.json();}).then(function(j){
         if(!j||!j.ok){location.replace("/slp-login.html");return;}
         account=j;code=j.code||"";
+        // In the background, so every family message knows whether Premium is
+        // included; the plan page shows it (and the Stripe return lands).
+        var planReady=loadPlan();
         $("sidebarName").textContent=(account&&account.name)||code||"";
         $("accountAvatar").textContent=((account.name||"S").split(/\s+/).map(function(n){return n.charAt(0);}).slice(0,2).join("")).toUpperCase();
-        // The plan first (17 Nov 2026): it says whether this account's
-        // dashboard is open, so a new clinician with no plan lands on the plan
-        // picker rather than a caseload the server will not send. It also
-        // tells every family message whether Premium is included, and is
-        // where the Stripe return lands. A plan that cannot be read locks
-        // nobody: the caseload read below still answers for itself.
-        loadPlan().then(function(){
-          BOOTED=true;
-          if(PLAN&&PLAN.dashboard===false){LOCKED=true;document.body.classList.add("plan-locked-on");$("planLocked").hidden=false;$("loadingState").hidden=true;route();return;}
-          if(!code){$("loadingState").hidden=true;route();return;}
-          loadAll(function(){route();});
-        });
+        // No code yet: a new account. Whether its first screen is the one
+        // form or the plan is the plan's answer, so wait for it.
+        if(!code){planReady.then(function(){$("loadingState").hidden=true;route();});return;}
+        if(location.hash==="#community"){route();loadAll();return;}
+        loadAll(function(){route();});
       }).catch(function(){$("loadingState").hidden=true;$("loadError").hidden=false;$("loadErrorText").textContent="Couldn't connect to your workspace. Try again.";});
     }
     $("loadRetry").onclick=function(){if(!account){boot();}else{loadAll(function(){route();});}};

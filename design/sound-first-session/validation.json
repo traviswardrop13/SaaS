@@ -1,0 +1,1120 @@
+{
+  "reviewDate": "2026-11-02",
+  "baseCommit": "9777a94a44f9bb39929789211ff102ac2b1385c5",
+  "fullBattery": {
+    "command": "node tests/run-all.mjs",
+    "suites": 163,
+    "exitCode": 0,
+    "appliesTo": "Prior verified milestone 98c572b3, before the six-book expansion and reimagined Home. This does not validate the current local review draft.",
+    "historical": true
+  },
+  "fullRunSourceStable": false,
+  "finalArtworkCorrection": "After the full run, Travis chose the original art. Sunny's original asset ID was restored and Bear's new ID changed to clay-v1; the feature code is identical after normalizing those two image references. New artwork now matches Sona's established look.",
+  "finalFocusedChecks": {
+    "reader": {
+      "assertions": 127,
+      "exitCode": 0
+    },
+    "artTools": {
+      "assertions": 26,
+      "exitCode": 0
+    },
+    "storySource": {
+      "assertions": 27,
+      "exitCode": 0
+    },
+    "allPublicScriptSyntax": {
+      "exitCode": 0
+    },
+    "voiceScriptCurrent": true,
+    "originalSunnyBytesUnchanged": true,
+    "bearSixSceneReaderSmoke": "Cover, six ordered square scenes, exact text, The End, no runtime errors",
+    "bearAtlasBytes": 380264,
+    "bearCoverBytes": 36536,
+    "appliesTo": "Historical original-art correction before the eight-page expansion; current book results are in bookExpansion."
+  },
+  "typecheck": {
+    "appliesToMerge": {
+      "featureParent": "b412ceb79b0dc1efaf8e785cd2d0d327aaca0900",
+      "upstreamParent": "0698e9b0a5abbf49f5caffe6bc910fa018a336fe",
+      "resolvedSonaSha256": "7b3d063860c548803a7a0e32da31031e913354eb7b287333ebda3faa23a0a6ca"
+    },
+    "cleanTrackedReleaseSources": "419 tracked source/configuration files after the approved upstream merge; identical tsconfig.json; TypeScript exited 0 with no diagnostics.",
+    "command": "node node_modules/typescript/bin/tsc --noEmit -p tsconfig.json",
+    "tsconfigSha256": "76aac006c4f9b6f9067f595065c788e8f77370d6ad6284c7020be84ea2f1b178",
+    "exitCode": 0,
+    "workspaceOnlyIssue": "The normal workspace includes old untracked source archives under output/. These were left untouched and are absent from the clean tracked-source check.",
+    "historical": true,
+    "currentIntegratedCandidate": "Pending; the recorded exit0 applies only to the earlier merge named above."
+  },
+  "regressionEvidence": "New target selection, stale-sibling protection, whole-Home fit and signature-adventure checks failed against saved pre-change sources. Five Auto-selection checks fail against the pre-fix Home, including real keyboard selection of the already-current sound. The final reimagined-Home suite fails the saved old layout in 145 of 596 checks; four visible sound-chip checks fail the old Home while 42 sound checks still pass.",
+  "releaseState": "Release and clinical scope approved. Second GitHub battery completed all 165 suites with 164 passing; only the old compact screenshot path failed. Speech evidence passed 247/247 including F4/4. Portable screenshot correction passed 21 focused scenarios. Final complete cloud pass remains required. Gym and avatar excluded.",
+  "bookExpansion": {
+    "requested": "Six new eight-page books for R,S,L,SH,CH,TH plus Bear's Lost Ball, expanded from its local six-page draft; all seven are additions relative to published main. Strict selected-sound shelf.",
+    "sourceChecks": "All public script syntax parses; exact captions and bank-only key words validated with existing booklex plus official CMUdict entries.",
+    "artwork": {
+      "status": "Complete; original style retained, each accepted picture visually checked",
+      "books": 7,
+      "runtimeImages": 63,
+      "bytes": 6944770,
+      "covers": "384px square, under 40 KB",
+      "pages": "768px square for new pages; preserved B scenes are 512px square; every page is under 200 KB"
+    },
+    "finalReader": {
+      "assertions": 144,
+      "exitCode": 0,
+      "details": "All 55 books and 554 pages, seven complete eight-page reader flows, strict selected-sound shelves, real reload persistence, microphone/TTS safeguards and original painted scenes."
+    },
+    "fullBattery": "Historical focused checks precede the current candidate. User resumed release on 2 November; a complete passing integrated battery remains required before publication.",
+    "regressionEvidence": {
+      "savedOldPage": "98c572b3:public/library.html",
+      "isolatedReaderExitCode": 1,
+      "explicitFailures": 15,
+      "newCases": "The original B book is six pages; all six new eight-page stories are absent. Checks report each before reaching the old TTS and painted-book cases."
+    },
+    "artToolChecks": {
+      "assertions": 26,
+      "exitCode": 0
+    },
+    "targetSelectionChecks": {
+      "assertions": 46,
+      "exitCode": 0,
+      "newBooksDoorRegression": "Serving the saved old Home causes exactly its misleading S-shelf free-book label check to fail; 45 other checks pass."
+    },
+    "sourceSyntax": {
+      "exitCode": 0
+    },
+    "voiceScriptCurrent": true,
+    "landingChecks": {
+      "assertions": 115,
+      "exitCode": 0,
+      "details": "The parent strip shows exactly 36 year-round fuller-book covers and no unopened tags; signup, links, loading and accessibility checks remain green."
+    },
+    "integrationPackChecks": {
+      "assertions": 16,
+      "exitCode": 0,
+      "details": "The selected R shelf is checked against the actual catalog sound, including Rabbit and the Rocket; an off-sound Halloween fallback cannot pass."
+    },
+    "upstreamIntegration": {
+      "status": "Main was integrated into the local review branch as approved merge commit 428063d2a6754cdb23650f99650518ba3f268b1a. The review branch was not merged into main or released.",
+      "conflict": "One conflict, only the global.Sona export list in public/sona.js.",
+      "resolution": "Exact union of 375 exports; all common expressions and every byte outside the conflict remained unchanged.",
+      "preservedFeatureApis": [
+        "freeBooksOnShelf",
+        "setTargetSound",
+        "storyDay",
+        "storyGame",
+        "targetSound",
+        "targetSoundOptions"
+      ],
+      "preservedUpstreamApis": [
+        "nudgeConsent",
+        "nudgeState"
+      ],
+      "focusedChecks": {
+        "allPublicScriptSyntax": {
+          "assertions": 109,
+          "exitCode": 0
+        },
+        "targetSelection": {
+          "assertions": 46,
+          "exitCode": 0
+        },
+        "upstreamTrialReport": {
+          "assertions": 29,
+          "exitCode": 0
+        },
+        "upstreamNotifications": {
+          "assertions": 121,
+          "exitCode": 0
+        },
+        "cleanTrackedSourceTypecheck": {
+          "files": 419,
+          "exitCode": 0
+        }
+      },
+      "voiceScriptCurrent": true,
+      "fullBattery": "The fresh 164-suite run was stopped for the Home redesign after 40 suites started; it did not complete."
+    }
+  },
+  "localHomeReview": {
+    "status": "Local draft; original Echo/world artwork reused; no Home video/reel and no new spoken lines.",
+    "sourceFiles": [
+      "public/today.html",
+      "public/crafted-home.css"
+    ],
+    "sourceSha256": {
+      "public/today.html": "c945f359288427d31c9d5d0d9170519bee3f35e3afaf347195132dd20143ea43",
+      "public/crafted-home.css": "98968813b6159c6653a7fe152cf695295ed1e1356bd2792a9833fbe6972ae3fd"
+    },
+    "screenshots": {
+      "home": "home-preview.png",
+      "smallPhoneCompletedDay": "home-small-done-preview.png",
+      "landscapeIPad": "home-ipad-preview.png"
+    },
+    "latestReleaseBatteryAttempt": {
+      "totalSuites": 164,
+      "suitesStarted": 40,
+      "status": "Stopped for the new local Home iteration; not a completed or passing release battery.",
+      "log": "/private/tmp/sona-expanded-merged-full-battery.log",
+      "suiteFailuresWithoutAssertionLines": [
+        "onboardingtest.mjs",
+        "setupscreenstest.mjs"
+      ],
+      "diagnosis": "Saved output did not provide a usable crash cause. Neither failure reproduced standalone; no setup source or timing changes were made."
+    },
+    "independentSetupReruns": {
+      "onboarding": {
+        "assertions": 506,
+        "exitCode": 0,
+        "log": "/private/tmp/sona-onboarding-crash-repro.log"
+      },
+      "setupScreens": {
+        "assertions": 204,
+        "exitCode": 0,
+        "log": "/private/tmp/sona-setup-screen-crash-repro.log"
+      }
+    },
+    "focusedChecks": {
+      "homeBehavior": {
+        "checks": 636,
+        "exitCode": 0,
+        "log": "/private/tmp/sona-home-presentation-final-homestorytest.log",
+        "appliesTo": "Final presentation source hashes above."
+      },
+      "wholeHomeFit": {
+        "scenarios": 12,
+        "exitCode": 0,
+        "log": "/private/tmp/sona-home-presentation-final-compacthometest.log",
+        "appliesTo": "Final presentation source hashes above."
+      },
+      "targetSoundAndBooks": {
+        "checks": 47,
+        "exitCode": 0,
+        "log": "/private/tmp/sona-home-presentation-final-targetsoundtest.log",
+        "appliesTo": "Final presentation source hashes above."
+      },
+      "homeSession": {
+        "checks": 145,
+        "exitCode": 0,
+        "log": "/private/tmp/sona-home-local-homesessiontest.log",
+        "appliesTo": "Prior verified reimagined Home, before the presentation-only hint/font correction; behavior unchanged, not rerun."
+      },
+      "dailyPicks": {
+        "checks": 73,
+        "exitCode": 0,
+        "log": "/private/tmp/sona-home-local-homepickstest.log",
+        "appliesTo": "Prior verified reimagined Home, before the presentation-only hint/font correction; behavior unchanged, not rerun."
+      },
+      "deviceFit": {
+        "checks": 87,
+        "exitCode": 0,
+        "log": "/private/tmp/sona-home-local-fittest.log",
+        "appliesTo": "Prior verified reimagined Home, before the presentation-only hint/font correction; behavior unchanged, not rerun."
+      },
+      "rewardAndWeeklyCounts": {
+        "checks": 113,
+        "exitCode": 0,
+        "log": "/private/tmp/sona-home-local-repweek-final.log",
+        "appliesTo": "Prior verified reimagined Home, before the presentation-only hint/font correction; behavior unchanged, not rerun."
+      },
+      "homeOfferAccess": {
+        "checks": 61,
+        "exitCode": 0,
+        "log": "/private/tmp/sona-home-local-homeoffertest.log",
+        "appliesTo": "Prior verified reimagined Home, before the presentation-only hint/font correction; behavior unchanged, not rerun."
+      },
+      "signatureAdventure": {
+        "checks": 20,
+        "exitCode": 0,
+        "log": "/private/tmp/sona-home-local-signatureadventuretest.log",
+        "appliesTo": "Prior verified reimagined Home, before the presentation-only hint/font correction; behavior unchanged, not rerun."
+      },
+      "publicScriptSyntax": {
+        "checks": 109,
+        "exitCode": 0,
+        "log": "/private/tmp/sona-home-presentation-final-syntaxtest.log",
+        "appliesTo": "Final presentation source hashes above."
+      }
+    },
+    "sourceStableDuringFinalChecks": true,
+    "regressionEvidence": {
+      "savedOldHome": "HEAD at 428063d2 before the 31 Oct Home redesign, staged with the same assets and shared runtime",
+      "finalHomeSuite": {
+        "exitCode": 1,
+        "failures": 145,
+        "checks": 596,
+        "log": "/private/tmp/sona-home-redesign-before-final.log",
+        "appliesTo": "Initial reimagined Home suite, before the final caption-size assertions were added."
+      },
+      "visibleSoundChip": {
+        "exitCode": 1,
+        "failures": 4,
+        "passingChecks": 42,
+        "log": "/private/tmp/sona-home-sound-overlay-before-final.log",
+        "appliesTo": "Original visible sound-chip checks, before the final single-focus case was added."
+      }
+    },
+    "voiceScript": {
+      "current": true,
+      "fixedClips": 613,
+      "templateExpansions": 80,
+      "bankWords": 356,
+      "newSpokenLines": 0
+    },
+    "reviewImages": {
+      "count": 73,
+      "missing": 0,
+      "homeScreenshots": "Refreshed after the final hint/font correction from the actual local app; original runtime Echo/world assets reused."
+    },
+    "typecheckScope": "The prior clean tracked-source TypeScript result still applies to the merged TypeScript sources. This Home iteration changes HTML/CSS, regression tests and review files; it adds no TypeScript source change.",
+    "interactivePreview": {
+      "url": "http://127.0.0.1:53664/",
+      "scope": "Temporary local-only interactive preview with a fictional child profile; API calls fail closed and external responses are blocked.",
+      "evidence": "/private/tmp/sona-local-home-preview-check.json",
+      "lifetime": "Available while the local preview server is running; not a published site."
+    },
+    "presentationCorrection": {
+      "status": "Verified on final frozen source.",
+      "change": "One family sound says In Settings with no caret, while its native selector stays disabled; assignment behavior is unchanged. Visible Home captions/helpers are at least 11px and muted text contrast is stronger.",
+      "priorVerifiedSourceSha256": {
+        "public/today.html": "eb1e4c69b7a74cd584ea04f55d61368c8b4569274f41c81fdef82bfb70a2484c",
+        "public/crafted-home.css": "98c02d74f86be919ac76d5feb88a2415fd803825399b66fa0c787ae7dec3ed3c"
+      },
+      "regressionEvidence": {
+        "sourceMatchesPriorVerifiedHome": true,
+        "checks": 47,
+        "failures": 3,
+        "passingChecks": 44,
+        "exitCode": 1,
+        "log": "/private/tmp/sona-one-sound-presentation-before.log"
+      },
+      "reruns": "Home behavior, complete-Home fit, target sound/books and all public script syntax; every process exited 0."
+    },
+    "sourceStabilityScope": "The four final presentation reruns below used these unchanged hashes. Other focused behavior results predate the last hint/font correction and were not repeated because their source behavior did not change.",
+    "historical": true,
+    "appliesTo": "Historical clubhouse Home before the Play Map and Studio comparisons; its green results are not a claim about the current restored Map."
+  },
+  "localPlayMapRestoration": {
+    "status": "Improved Play Map restored after Rachel preferred direction one. Travis subsequently authorized merging the finished scope; Studio is not the active Home.",
+    "sourceSha256": {
+      "public/today.html": "1515c6d20f82c5c9a0c8e002c3dc6c8be67d8bbdea2630f22db4a7cb2f8dd9b8",
+      "public/crafted-home.css": "3934a922bfb72e492f2d02db2ecc7666f6ef86d784f9c264339909e09de4fdfd",
+      "public/library.html": "08fbb49173746ceeb99a70804241b0b5cda42bd38a2ad6bbea810ed4277026d0"
+    },
+    "behavior": "Original portrait story art with the Start action; only real saved completed adventures produce gold stars; tomorrow remains locked. Home and Books show the current sound read-only. Target changes remain behind Grown-ups in Settings.",
+    "clinicalScope": "No sound models, cues, target banks, verdicts or rep rules changed. Travis confirmed Rachel approved the new books' words and pictures and the parent-only target sound setting on 2 November; separate upstream Day 1 questions remain recorded.",
+    "restorationChecks": {
+      "mapBehaviorSmoke": {
+        "checks": 98,
+        "exitCode": 0,
+        "log": "/private/tmp/sona-restored-map-smoke.log",
+        "scope": "Fresh signature Day1, real completion history and labels, skipped days, legacy/game-only history, sibling isolation, read-only current sound, locked tomorrow and access behavior.",
+        "appliesTo": "Restored Map before the fit5-only CSS heading correction; behavior and HTML unchanged."
+      },
+      "publicScriptSyntax": {
+        "exitCode": 0,
+        "log": "/private/tmp/sona-restored-map-syntax.log"
+      },
+      "whitespace": {
+        "command": "git diff --check",
+        "exitCode": 0
+      },
+      "compactHome": {
+        "status": "Approved fit5-only correction verified on the exact failing case and a scoped 18-phone/portrait plus three-landscape split. No single 21-case exit0 run is claimed.",
+        "originalFailure": {
+          "exitCode": 1,
+          "details": "Fresh 320x568 passed, then the 320x568 top20 founder/history/earned-row TH(v) fixture scrolled 18px.",
+          "evidence": "Observed first-run assertion before the correction; the compact log path was reused for the later matrix."
+        },
+        "correction": "Only fit5 visually clips the Your games heading; its accessible label and every replay button remain. No HTML or behavior change.",
+        "exactCaseRerun": {
+          "scenarios": 1,
+          "exitCode": 0,
+          "log": "/private/tmp/sona-restored-map-case.log"
+        },
+        "phoneAndPortraitMatrix": {
+          "passingScenarios": 18,
+          "processExitCode": 1,
+          "log": "/private/tmp/sona-restored-map-compact.log",
+          "details": "All 18 phone/portrait states passed. The process then reported two obsolete Studio landscape geometry expectations; those expectations were adapted to the restored Map, without app source changes."
+        },
+        "affectedLandscapeRerun": {
+          "scenarios": 3,
+          "exitCode": 0,
+          "log": "/private/tmp/sona-restored-map-landscape.log",
+          "details": "Only the three affected landscape states reran after the test expectation correction."
+        }
+      },
+      "actualPreview": {
+        "scenarios": 6,
+        "reportedBy": "Root review",
+        "status": "Fresh, returning and completed samples at 390px and 320px passed before the fit5-only correction; the separate exact-case rerun covers the formerly failing founder/history/TH(v) combination."
+      },
+      "sourceUnchangedDuringChecks": false,
+      "releaseReady": false,
+      "sourceStabilityScope": "The 98 behavior checks and six visual samples precede the fit5-only CSS correction. The exact failing case, 18 phone/portrait states and three affected landscape states were checked afterward on the final CSS hash; the matrix and focused landscape rerun are separate processes. Syntax and whitespace passed. No full release pass is claimed."
+    },
+    "priorMapChecks": {
+      "home": {
+        "checks": 691,
+        "failures": 7,
+        "exitCode": 1,
+        "log": "/private/tmp/sona-playmap-home-current.log",
+        "scope": "Four old image-size assumptions, two vertical-only door assumptions and one real Reduce Motion transition failure. The transition reset was fixed afterward; this full suite was not rerun."
+      },
+      "parentOnlyTarget": {
+        "checks": 60,
+        "exitCode": 0,
+        "log": "/private/tmp/sona-playmap-parent-target-final.log",
+        "scope": "Prior Map source before the final Reduce Motion CSS reset. Saved old child-picker source failed 11 of these 60 checks."
+      },
+      "reader": {
+        "checks": 144,
+        "exitCode": 0,
+        "log": "/private/tmp/sona-playmap-reader.log"
+      },
+      "selectedSoundReaderScenarios": {
+        "scenarios": 3,
+        "exitCodes": [
+          0,
+          0,
+          0
+        ],
+        "evidence": "/private/tmp/sona-playmap-reader-results.json"
+      }
+    },
+    "unfinishedDrafts": {
+      "studio": "Saved outside active Home; not selected.",
+      "gym": "Archived outside the repo at /private/tmp/sona-unshipped-gym-before-merge/ with exact runtime/test copies, hashes, runtime patch and restore note. charge.html and sona.js were restored byte-for-byte to HEAD 63129a4c; the standalone Gym test and its unused target-test route stub were removed from merge scope. Gym remains unfinished and is excluded from shipping. Historical smoke/full/header results above do not validate a release.",
+      "avatar": "Deferred; no avatar was installed."
+    },
+    "fullRelease": "The full 164-suite release battery is unfinished. Explicit user merge authorization supersedes the prior local-only restriction for the finished scope; historical green checks and bounded restoration checks do not yet make it release-ready.",
+    "historical": true,
+    "appliesTo": "Pre-upstream-integration Map restoration, including the retired Picnic-first fixture. Superseded for release validation by integratedReleaseReview below."
+  },
+  "approvedMergePreparation": {
+    "authorization": "User explicitly said merge; unfinished Gym must remain archived and excluded.",
+    "status": "Prepared only; required release checks pending. No commit, push or main merge performed by this agent.",
+    "gymArchive": "/private/tmp/sona-unshipped-gym-before-merge/",
+    "preservedDraftSha256": {
+      "public/charge.html": "2354ae10ebd2ec6761caf090ef8fc7977161da358adff23491af156e79de5bb2",
+      "public/sona.js": "3684db9ec43d3d54c1a39e9546006c546cc8c0a365198302cce70d27755f5567",
+      "tests/gymtest.mjs": "7dc63ec567fc760c87805fe84ba0c9d532527c8d9a3fd42dd859ef2a664363c8"
+    },
+    "restoredRuntimeSha256": {
+      "public/charge.html": "d2d046587931732e5c8cdb710031290aad9dca340177e4f9e84a30cc3c3a3044",
+      "public/sona.js": "7b3d063860c548803a7a0e32da31031e913354eb7b287333ebda3faa23a0a6ca"
+    },
+    "archiveManifest": "/private/tmp/sona-unshipped-gym-before-merge/manifest.json",
+    "excludedStandaloneTest": "tests/gymtest.mjs",
+    "avatar": "Deferred; no avatar installed.",
+    "historical": true,
+    "appliesTo": "Historical archive/preparation record before upstream integration; current release status is in integratedReleaseReview."
+  },
+  "originalReviewBaseCommit": "0670a185349e3eb7ff709025ed4185fe4299d761",
+  "integratedReleaseReview": {
+    "status": "Integrated release candidate; full release checks are running/pending, not yet a release pass.",
+    "reviewDate": "2026-11-01",
+    "candidateRuntimeBaseCommit": "7de64e3d9c699d3516823ca5c48c8637729677e8",
+    "upstreamCommit": "eac12b4bf7f8d658ba2a7c855b2ad3d0861aebe1",
+    "sourceSha256": {
+      "public/sona.js": "b6a4d97a6ff3eec76c5dbba8bdda695158547bcb47c296c411825082298898ed",
+      "public/today.html": "26c67076d49a0eab11d194605f6379e7025a7a7e6f0b62e6be2c08cae0283f43",
+      "public/crafted-home.css": "3934a922bfb72e492f2d02db2ecc7666f6ef86d784f9c264339909e09de4fdfd",
+      "public/library.html": "08fbb49173746ceeb99a70804241b0b5cda42bd38a2ad6bbea810ed4277026d0",
+      "public/adventure.html": "fb32a177ed872fe6c5a5ff2b60e6e145495680d834a7d6a373336aadf16eec14",
+      "public/adventures.js": "8dfd291076f4437ab5c225006019370538b5badbec2ec38576eed2e0e52e68c3",
+      "public/talk-stories.js": "06afb58680e89c9aa27694e59e33a52e77112053dfa4720a359b8b6b3cbd12a4",
+      "public/charge.html": "70ca9b89180dfe1742181a1109d573d57345553b2b7cf02865a40478c1ced0cc",
+      "public/arcade-slice.html": "c6a412116b752c05957ab15df93d317c10185c0cd5704322df8d511c884d6af2",
+      "public/settings.html": "afc95ef63aa5626a9f46df529477298e08250645a26291764a258292469eb94d"
+    },
+    "scope": "Approved Play Map, parent-only target changes, read-only Home and Books, strict sound-specific shelf and seven eight-page books. No Gym or child avatar is included.",
+    "firstSession": {
+      "setup": "Ordinary Fruit Slice via the existing practice page for every age.",
+      "homeDay1": "First available upstream R/S/L/Z/F talking story in the shared target/homework-aware practice-sound list; original lighthouse when none has one.",
+      "savedIdentity": "Upstream fourteen-slot schedule and saved t1 identity preserved. No signature-v1 route or Picnic game alias is activated.",
+      "clinical": "Existing upstream prompts, models, three-saying word moments and rep counting preserved; no new cue or accepted-rep simulation used for screenshots."
+    },
+    "homeCover": "Talking stories use their existing canonical Home cover; legacy stories retain their original portrait with Home/Echo fallback. Sandy\u2019s internal soup opening remains unchanged and correctly belongs to the talking story.",
+    "screenshots": [
+      {
+        "file": "home-preview.png",
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "mode": "fresh",
+        "bytes": 268535,
+        "sha256": "446f28e5c8f87c9f3ed1be7ffaeb5bca60bb130b6cecf33ff41cbae0e62625a0",
+        "state": {
+          "day": 1,
+          "state": "open",
+          "id": "sandy"
+        },
+        "books": null
+      },
+      {
+        "file": "home-small-done-preview.png",
+        "viewport": {
+          "width": 320,
+          "height": 568
+        },
+        "mode": "done",
+        "bytes": 119811,
+        "sha256": "b8389c72b556c98481091b6460b7f4ec2893ff37ec71bc072abb4a8afafff815",
+        "state": {
+          "day": 1,
+          "state": "done",
+          "id": "sandy",
+          "next": {
+            "day": 2,
+            "id": "windup"
+          }
+        },
+        "books": null
+      },
+      {
+        "file": "home-ipad-preview.png",
+        "viewport": {
+          "width": 1024,
+          "height": 768
+        },
+        "mode": "history",
+        "bytes": 482821,
+        "sha256": "7b209e4965c2784dcea440061b650877f45d1ec973032d9c75c12182a5cce54d",
+        "state": {
+          "day": 3,
+          "state": "open",
+          "id": "bridge",
+          "talk": false
+        },
+        "books": null
+      },
+      {
+        "file": "books-preview.png",
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "mode": "fresh",
+        "bytes": 170993,
+        "sha256": "ee5ae5ec8ffe94db783c99525367de66f6542124120dc946fb32f87a777d9cda",
+        "state": {
+          "day": 1,
+          "state": "open",
+          "id": "sandy",
+          "talk": true
+        },
+        "books": {
+          "localDate": "2026-11-01",
+          "sound": "S sound",
+          "picker": false,
+          "head": "S sound stories",
+          "titles": [
+            "Sid the Seagull",
+            "Sam's Sailboat",
+            "Sophie's Silly Soup",
+            "Sunny the Seal",
+            "Seal and the Sock"
+          ],
+          "more": false
+        }
+      }
+    ],
+    "screenshotEvidence": {
+      "path": "/private/tmp/sona-integrated-release-review-capture.json",
+      "exitCode": 0,
+      "sourceStableDuringInitialCapture": true,
+      "sourceStableDuringFinalCoverCapture": true,
+      "finalCoverCapture": "Fresh Sandy390 and completed Sandy320 recaptured after the canonical-cover fix; the bridge landscape and read-only Books render paths were unchanged. Books was separately refreshed on local1Nov to omit the closed October title.",
+      "noExternalConnections": true,
+      "noAudioOrMicrophoneInput": true,
+      "noFabricatedAcceptedReps": true
+    },
+    "preservedReviewContent": {
+      "section": "seven book caption/picture tables and licensed-audio findings",
+      "sha256": "dc32ca41aa4befa43a7a0f710a52ec15b26cbb2268bc8af187bcfc82b7968701",
+      "bytes": 21675
+    },
+    "reviewHttp": {
+      "evidence": "/private/tmp/sona-integrated-review-http-check.json",
+      "images": 68,
+      "loaded": 68,
+      "captionRows": 56,
+      "missingImages": 0,
+      "pageErrors": 0,
+      "externalRequests": 0
+    },
+    "focusedIntegrationChecks": {
+      "targetSelection": {
+        "checks": 60,
+        "exitCode": 0,
+        "reportedBy": "Book integration agent before the cover-only correction."
+      },
+      "boundedHomeCompatibility": {
+        "checks": 116,
+        "exitCode": 0,
+        "reportedBy": "Home integration agent before the cover-only correction."
+      },
+      "canonicalAndLegacyCovers": {
+        "checks": 2,
+        "exitCode": 0,
+        "log": "/private/tmp/sona-talk-cover-after.log"
+      }
+    },
+    "retiredRuntime": {
+      "files": [
+        "public/charge.html",
+        "public/arcade-slice.html",
+        "public/adventures.js"
+      ],
+      "state": "Restored byte-for-byte to upstream; retired signature experiment preserved outside the repository. Gym also archived outside the repository."
+    },
+    "releaseChecks": {
+      "fullBattery": {
+        "command": "node tests/run-all.mjs",
+        "expectedSuites": 164,
+        "status": "Stopped after suite failures, including retired reel metadata and interrupted reader checks; not a release pass. A fresh standard run remains pending."
+      },
+      "typecheck": {
+        "scope": "Clean tracked-release source snapshot with the same tsconfig.json; untracked user archives excluded and left untouched.",
+        "exitCode": 0,
+        "log": "/private/tmp/sona-merge-typecheck.log"
+      },
+      "generatedVoiceIndex": {
+        "status": "current",
+        "fixedClips": 708,
+        "templateExpansions": 80,
+        "bankWords": 356,
+        "scope": "Existing upstream TALK1 narration and 60 page keys indexed; no runtime or spoken-content edit.",
+        "readerGuard": "Explicit adventure.html and library.html SayCheck allowlist preserved.",
+        "focusedToolCheck": {
+          "test": "tests/voicedoctest.mjs",
+          "checks": 3,
+          "exitCode": 0,
+          "unexpectedSettingsReaderRejected": true,
+          "log": "/private/tmp/sona-voicedoc-talk-after.log"
+        },
+        "regressionEvidence": {
+          "oldToolFailedChecks": 2,
+          "totalChecks": 3,
+          "log": "/private/tmp/sona-voicedoc-talk-before.log"
+        },
+        "reportedBy": "Book integration agent after root-authorized narrow extractor maintenance."
+      }
+    },
+    "interactivePreview": {
+      "url": "http://127.0.0.1:63674/",
+      "scope": "Fictional age-seven active trial with selectedS, browser-local dates, no special route; separate origin preserves prior review profiles. API503 and external actions blocked.",
+      "lifetime": "Temporary loopback review only; not a published site."
+    },
+    "retiredReelCleanup": {
+      "archive": "/private/tmp/sona-retired-signature-adventure/reel/",
+      "scope": "Retired Picnic recorder alias/key and test removed; its two unused reel assets preserved outside public. Recorder and reel test restored to upstream. Required clips unchanged.",
+      "remainingClips": 25,
+      "remainingFileHashesUnchanged": 50,
+      "before": {
+        "failures": 2,
+        "exitCode": 1,
+        "log": "/private/tmp/sona-retired-reel-before.log"
+      },
+      "after": {
+        "checks": 258,
+        "exitCode": 0,
+        "log": "/private/tmp/sona-retired-reel-after.log",
+        "optionalFrameDecode": "Skipped because ffmpeg is unavailable; all existing current clip/poster bytes remain unchanged."
+      },
+      "voiceTool": {
+        "checks": 3,
+        "exitCode": 0,
+        "log": "/private/tmp/sona-retired-reel-voicedoc.log"
+      },
+      "voiceIndexCurrent": true
+    }
+  },
+  "currentReleaseCandidate": {
+    "date": "2026-11-04",
+    "upstream": "ef791055ce257d537a924bfac3d83200518ce8f5",
+    "scope": "Chosen Play Map, read-only target badges, parent-only target setting, strict sound shelf, seven eight-page books. Preserve upstream setup, monthly-first store-owned trial, disabled free-round flag and TALK2 stories. No Gym or avatar.",
+    "originalCatalogAudit": {
+      "oldBooks": 48,
+      "newBooks": 55,
+      "originalBookObjectsChanged": 0,
+      "duplicateTitles": 0,
+      "missingReferencedBookPictures": 0
+    },
+    "homeScrollLock": {
+      "before": {
+        "exitCode": 1,
+        "log": "/private/tmp/sona-flat-lock-before.log",
+        "failure": "a fitted Home locks vertical page movement"
+      },
+      "after": {
+        "exitCode": 0,
+        "log": "/private/tmp/sona-flat-lock-after.log",
+        "scenarios": 21
+      },
+      "scope": "Real complete Home fit and tap targets, height-only resizing, fit-dependent scroll lock, Arcade scroll release."
+    },
+    "fullBattery": {
+      "command": "node tests/run-all.mjs",
+      "suites": 165,
+      "status": "Second cloud run completed all 165 suites: 164 passed, only the pre-fix compact screenshot path failed. Speech evidence passed 247/247 including F4/4. Portable screenshot correction passed all21 focused scenarios; final complete cloud pass remains required.",
+      "firstRun": {
+        "status": "Stopped",
+        "completedSuites": 69,
+        "passedSuites": 65,
+        "failedSuites": 4,
+        "exitCode": 143,
+        "log": "/private/tmp/sona-home-books-release-20261102-final.log",
+        "failures": {
+          "day1.mjs": "Title allow-list omitted Rabbit and the Rocket",
+          "talkstorytest.mjs": "Retired per-story Home wash selectors",
+          "storycoretest.mjs": "Retired Picnic alias/calendar/export expectations",
+          "adventureplaytest.mjs": "Retired Picnic story-data/scene expectations"
+        }
+      },
+      "corrections": {
+        "productionFilesChanged": 0,
+        "restoredExactlyFromMain": [
+          "tests/storycoretest.mjs",
+          "tests/adventuretest.mjs",
+          "tests/storygametest.mjs",
+          "tests/sayplaytest.mjs",
+          "tests/shiptest.mjs"
+        ],
+        "otherTestOnly": [
+          "tests/day1.mjs: exact new R title; tighter off-sound guard",
+          "tests/talkstorytest.mjs: approved Map opaque image fallback"
+        ]
+      },
+      "secondRun": {
+        "complete": true,
+        "exitCode": 1,
+        "suiteCount": 164,
+        "passedSuites": 154,
+        "deterministicStale": [
+          "storygametest.mjs: per-story Home wash selectors",
+          "activitytest.mjs: free R title on S shelf"
+        ],
+        "timedOutDuringSystemSleep": [
+          "sayitcardtest.mjs",
+          "firstgametest.mjs",
+          "sayplaytest.mjs",
+          "playgamestest.mjs",
+          "racecartest.mjs",
+          "flowertest.mjs",
+          "castletest.mjs",
+          "pizzatest.mjs"
+        ],
+        "sourceFrozenCommit": "250f4b4e498950854bf959c18b86e6b2321afd8e",
+        "result": "/private/tmp/sona-home-books-release-20261102-r2-result.json",
+        "log": "/private/tmp/sona-home-books-release-20261102-r2.log"
+      },
+      "finalCorrections": {
+        "productionChanges": "Upstream #257 only, with FREE_PLAY_ON=false; no additional Home/book/clinical behavior change",
+        "testOnly": [
+          "tests/storygametest.mjs: shared opaque Map image fallback",
+          "tests/activitytest.mjs: S shelf count from shared API, no off-sound free fallback, free Rory still tested on explicit R fixture"
+        ],
+        "affectedChecks": {
+          "activity": {
+            "assertions": 568,
+            "exitCode": 0,
+            "log": "/private/tmp/sona-release-activity-r3-affected.log"
+          },
+          "freeplay": {
+            "assertions": 19,
+            "exitCode": 0,
+            "log": "/private/tmp/sona-release-freeplay-r3-affected.log"
+          },
+          "homeFallbackPredicate": {
+            "exitCode": 0,
+            "negativeControl": "Removing the opaque background makes the predicate fail"
+          },
+          "voiceIndex": {
+            "exitCode": 0,
+            "fixed": 708,
+            "expansions": 80,
+            "bankWords": 356,
+            "contentDiff": "Only source line references changed; spoken content identical after normalizing citations"
+          }
+        }
+      },
+      "thirdRun": {
+        "complete": false,
+        "exitCode": 143,
+        "completedSuites": 38,
+        "passedSuites": 27,
+        "timingFailureSuites": [
+          "landingtest.mjs",
+          "replaytest.mjs",
+          "weeklytest.mjs",
+          "storytest.mjs",
+          "slpcode.mjs",
+          "chargepacingtest.mjs",
+          "readtest.mjs",
+          "booktest.mjs",
+          "momweek.mjs",
+          "repweektest.mjs",
+          "onboardingtest.mjs"
+        ],
+        "currentAtStop": "setupscreenstest.mjs",
+        "log": "/private/tmp/sona-home-books-release-20261102-r3.log",
+        "result": "/private/tmp/sona-home-books-release-20261102-r3-stopped.json",
+        "sleepEvidence": "/private/tmp/sona-r3-machine-sleep-evidence.log",
+        "interruptionDetails": "/private/tmp/sona-r3-sleep-interruption.json",
+        "cause": "Confirmed repeated machine deep sleep despite verified idle-sleep assertion; stopped on explicit rootinstruction. No autoreruns.",
+        "sourceFrozenCommit": "bbe56df1bfd919ea5beeb66342f9ebebdccbd86b",
+        "ownedProcessesAfterStop": 0
+      },
+      "resumeRequirement": "No automatic local rerun. Explicit exception approved on 4 November to upload the finished review branch and open a draft PR before a local full pass, solely for GitHub-hosted full checks. Complete passing checks remain required before production publication.",
+      "firstGameLatePriceSourceReview": "No stale-contract change found: this fixture explicitly forces browser web-sales/paidUI, preserves annual WEB_PLAN and tests3300ms charter-standard response after2500ms button release; native monthly7day selection and disabledFREEPLAY do not replace that webrail. No source or test edits justified without awake runtime evidence.",
+      "fourthRun": {
+        "complete": false,
+        "exitCode": 143,
+        "completedSuites": 8,
+        "passedSuites": 8,
+        "currentAtStop": "replaytest.mjs",
+        "reason": "Deliberately stopped before integrating newer published main 4a30d86d",
+        "result": "/private/tmp/sona-home-books-release-20261103-r4-stopped.json",
+        "log": "/private/tmp/sona-home-books-release-20261103-r4.log"
+      },
+      "fifthRun": {
+        "complete": false,
+        "completedSuites": 75,
+        "currentAtStop": "daily-lanterntest.mjs",
+        "failedSuites": [
+          "voicetest3.mjs",
+          "progtest.mjs",
+          "shapetest.mjs",
+          "gatecheck.mjs",
+          "fittest.mjs",
+          "zoomtest.mjs",
+          "day1.mjs",
+          "shoptest.mjs",
+          "talkstorytest.mjs",
+          "storycoretest.mjs",
+          "homestorytest.mjs",
+          "compacthometest.mjs",
+          "adventureplaytest.mjs",
+          "adventurespotstest.mjs",
+          "storygametest.mjs",
+          "daily-waterwheeltest.mjs",
+          "daily-postboattest.mjs",
+          "daily-bakerytest.mjs",
+          "daily-bridgetest.mjs"
+        ],
+        "sourceFrozenCommit": "1c2260c8912130b0ac652c7bc7c7921f2128eeb8",
+        "log": "/private/tmp/sona-home-books-release-20261103-r5.log",
+        "reason": "Confirmed macOS sleep/DarkWake despite scoped-is assertion; stopped under rootproven-sleep directive.",
+        "exitCode": 143,
+        "failedSuiteCount": 19,
+        "result": "/private/tmp/sona-home-books-release-20261103-r5-stopped.json",
+        "sleepEvidence": "/private/tmp/sona-r5-machine-sleep-evidence.log",
+        "sourceManifestComparison": "/private/tmp/sona-r5-frozen-manifest-comparison.json",
+        "sourceFilesChecked": 2105,
+        "sourceMismatches": 0,
+        "ownedProcessesAfterStop": 0
+      },
+      "firstCloudRun": {
+        "run": 41870353527,
+        "headSha": "6fdf22f2f650107f91498163c40e5ee11b53f441",
+        "workflowStatus": "completed",
+        "workflowConclusion": "failure",
+        "suiteCount": 165,
+        "uniqueSuites": 165,
+        "failedSuites": [
+          "speechevidencetest.mjs",
+          "compacthometest.mjs"
+        ],
+        "testCommandExitCodes": [
+          "1"
+        ],
+        "allSuitesGreen": false,
+        "checkout": [
+          {
+            "context": [
+              "2026-11-04T16:46:04.6967005Z [command]/usr/bin/git log -1 --format=%H",
+              "2026-11-04T16:46:04.7001035Z d875484f7dda507ee466c167564efc15f88d14a4",
+              "2026-11-04T16:46:04.7228298Z ##[group]Run actions/setup-node@v4",
+              "2026-11-04T16:46:04.7228460Z with:",
+              "2026-11-04T16:46:04.7228583Z   node-version: 22",
+              "2026-11-04T16:46:04.7228715Z   always-auth: false",
+              "2026-11-04T16:46:04.7228837Z   check-latest: false"
+            ],
+            "shaCandidates": [
+              "d875484f7dda507ee466c167564efc15f88d14a4"
+            ]
+          }
+        ],
+        "commandStep": [
+          {
+            "completedAt": "2026-11-04T19:15:13Z",
+            "conclusion": "failure",
+            "name": "Run node tests/run-all.mjs",
+            "number": 6,
+            "startedAt": "2026-11-04T16:46:52Z",
+            "status": "completed"
+          }
+        ],
+        "actualFailureLines": [
+          "2026-11-04T17:12:53.2684720Z FAIL F \u00d74 at 500ms with the sound on: all four count (4 of 4, as before) \u2192 {\"tries\":3}",
+          "2026-11-04T17:12:53.2687640Z SUITE FAILED: speechevidencetest.mjs",
+          "2026-11-04T17:23:22.3681123Z SUITE FAILED: compacthometest.mjs",
+          "2026-11-04T19:15:13.2605157Z FAIL F \u00d74 at 500ms with the sound on: all four count (4 of 4, as before) \u2192 {\"tries\":3}",
+          "2026-11-04T19:15:13.2606084Z 2 SUITE(S) FAILED: speechevidencetest.mjs, compacthometest.mjs"
+        ]
+      },
+      "secondCloudRun": {
+        "run": 41876745642,
+        "headSha": "ddafe6d24922c12b35f6d250aa2e77f298d78140",
+        "workflowStatus": "completed",
+        "workflowConclusion": "failure",
+        "suiteCount": 165,
+        "uniqueSuites": 165,
+        "failedSuites": [
+          "compacthometest.mjs"
+        ],
+        "testCommandExitCodes": [
+          "1"
+        ],
+        "allSuitesGreen": false,
+        "checkout": [
+          {
+            "context": [
+              "2026-11-04T17:22:05.0644219Z [command]/usr/bin/git log -1 --format=%H",
+              "2026-11-04T17:22:05.0659887Z 6b30eb7b8a7740053a1d894163cba6c1e772e690",
+              "2026-11-04T17:22:05.0946699Z ##[group]Run actions/setup-node@v4",
+              "2026-11-04T17:22:05.0946987Z with:",
+              "2026-11-04T17:22:05.0947189Z   node-version: 22",
+              "2026-11-04T17:22:05.0947399Z   always-auth: false",
+              "2026-11-04T17:22:05.0947611Z   check-latest: false"
+            ],
+            "shaCandidates": [
+              "6b30eb7b8a7740053a1d894163cba6c1e772e690"
+            ]
+          }
+        ],
+        "commandStep": [
+          {
+            "completedAt": "2026-11-04T20:04:52Z",
+            "conclusion": "failure",
+            "name": "Run node tests/run-all.mjs",
+            "number": 6,
+            "startedAt": "2026-11-04T17:23:14Z",
+            "status": "completed"
+          }
+        ],
+        "F4Lines": [
+          "2026-11-04T17:50:09.2428828Z PASS F \u00d74 at 500ms with the sound on: all four count (4 of 4, as before)",
+          "2026-11-04T17:50:09.2429363Z PASS F \u00d74 at 500ms with the sound on: no script error"
+        ],
+        "actualFailureLines": [
+          "2026-11-04T18:01:12.7682189Z SUITE FAILED: compacthometest.mjs",
+          "2026-11-04T20:04:52.8376762Z 1 SUITE(S) FAILED: compacthometest.mjs"
+        ]
+      }
+    },
+    "clinicalReview": {
+      "date": "2026-11-02",
+      "confirmedBy": "Travis",
+      "answer": "Yes, Rachel has approved them",
+      "scope": "New books' words and pictures and the parent-only target sound setting",
+      "upstreamBoundary": "This confirmation is not extended to the separate upstream Day 1 clinical questions recorded in CLAUDE.md."
+    },
+    "publication": "Review-branch upload and draft PR authorized for GitHub full checks by explicit 4 November exception. Complete passing checks remain required before production publication. No upload, PR, main merge or release claimed by this documentation.",
+    "runtimeCommit": "146fa107df753d0cfd8449487cda55a9032ab0f6",
+    "testCorrectionCommit": "250f4b4e498950854bf959c18b86e6b2321afd8e",
+    "homeBooksSettingsMatch": {
+      "BooksAndSettings": "82d3c70ea65f8f6f5eb1421e6776318b02f4987d",
+      "Home": "Chosen Map preserved at 1c2260c8 with fit-dependent scroll lock and sixth copy fit step"
+    },
+    "integratedCandidateChecks": {
+      "runtimeCommit": "1c2260c8912130b0ac652c7bc7c7921f2128eeb8",
+      "upstream": "4a30d86ddc9c8bde8ec321f6b27b32e5e366fd57",
+      "focusedChecks": [
+        {
+          "suite": "compacthometest",
+          "exitCode": 0,
+          "seconds": 23.7,
+          "log": "/private/tmp/sona-release-4a30-compacthometest.log"
+        },
+        {
+          "suite": "homestorytest",
+          "exitCode": 0,
+          "seconds": 74.0,
+          "log": "/private/tmp/sona-release-4a30-homestorytest.log"
+        },
+        {
+          "suite": "talkstorytest",
+          "exitCode": 0,
+          "seconds": 51.8,
+          "log": "/private/tmp/sona-release-4a30-talkstorytest.log"
+        },
+        {
+          "suite": "setupsteadytest",
+          "exitCode": 0,
+          "seconds": 206.5,
+          "log": "/private/tmp/sona-release-4a30-setupsteadytest.log"
+        },
+        {
+          "suite": "setupscreenstest",
+          "exitCode": 0,
+          "seconds": 117.0,
+          "log": "/private/tmp/sona-release-4a30-setupscreenstest.log"
+        },
+        {
+          "suite": "trialfirsttest",
+          "exitCode": 0,
+          "seconds": 19.9,
+          "log": "/private/tmp/sona-release-4a30-trialfirsttest.log"
+        }
+      ],
+      "assertionCounts": {
+        "compactHomeScenarios": 21,
+        "home": 761,
+        "talkingStories": 61,
+        "setupStability": 322,
+        "setupScreens": 268,
+        "trialHandOff": 84
+      },
+      "typecheck": {
+        "exitCode": 0,
+        "evidence": "Root verified 105 tracked TypeScript/TSX/JSON inputs byte-identical to the clean snapshot; tsc --noEmit -p tsconfig.json exited 0"
+      },
+      "voiceIndex": {
+        "exitCode": 0,
+        "fixed": 808,
+        "expansions": 80,
+        "bankWords": 356,
+        "contentDiff": "Generated from integrated source including the five already-published TALK2 variants"
+      },
+      "manifest": "/private/tmp/sona-release-1c2260c8-frozen-manifest.json"
+    },
+    "appBehaviorMatches": "1c2260c8912130b0ac652c7bc7c7921f2128eeb8",
+    "latestUpstreamAssetIntegration": {
+      "commit": "146fa107df753d0cfd8449487cda55a9032ab0f6",
+      "upstream": "ef791055ce257d537a924bfac3d83200518ce8f5",
+      "changedFiles": 24,
+      "newClipPosterFiles": 20,
+      "appHtmlJsCssChanged": 0,
+      "typeScriptChanged": 0,
+      "behavior": "Approved Map retains original story picture and no reel loader/video/media requests; new upstream assets remain available but inactive there",
+      "assetIntegrity": {
+        "exitCode": 0,
+        "checks": 359,
+        "clips": 35,
+        "log": "/private/tmp/sona-release-ef791055-homereel.log",
+        "skip": "ffmpeg unavailable; optional poster-first-frame/black-frame decoding checks skipped"
+      },
+      "voiceIndex": {
+        "exitCode": 0,
+        "fixed": 808,
+        "expansions": 80,
+        "bankWords": 356
+      },
+      "manifest": "/private/tmp/sona-release-146fa107-frozen-manifest.json",
+      "sourceFiles": 2125,
+      "fullBattery": "Pending; no local full restart or full-pass claim"
+    },
+    "reviewBranchUploadException": {
+      "date": "2026-11-04",
+      "approvedBy": "Travis",
+      "answer": "Run full checks on GitHub",
+      "scope": "Upload finished review branch and open draft PR before a local full pass, to run the complete checks independently of this Mac",
+      "releaseGate": "Production publication only after all complete checks pass",
+      "publicationClaim": false
+    },
+    "testHarnessPortabilityCorrection": {
+      "date": "2026-11-04",
+      "file": "tests/_env.mjs",
+      "change": "Scope --disable-audio-output to Darwin only; preserve mute, font normalization and caller arguments",
+      "productionFilesChanged": 0,
+      "fixturesOrAssertionsChanged": 0,
+      "causalClaim": "Not proven that this flag caused the quick F failure",
+      "observedCloudFailure": {
+        "suite": "speechevidencetest.mjs",
+        "check": "F \u00d74 at 500ms with sound on",
+        "expectedTries": 4,
+        "actualTries": 3,
+        "passedChecks": 246,
+        "totalChecks": 247,
+        "scriptErrors": 0
+      },
+      "baseline": {
+        "commit": "4a30d86ddc9c8bde8ec321f6b27b32e5e366fd57",
+        "runId": 41750629238,
+        "jobId": 126314546551,
+        "url": "https://github.com/traviswardrop13/SaaS/actions/runs/41750629238",
+        "conclusion": "success",
+        "speechEvidence": "247/247, F/T/TH quick repetitions each 4/4",
+        "os": "Ubuntu 24.04.5",
+        "chromium": "156.0.8078.4, build1248"
+      },
+      "localQuickRuns": [
+        {
+          "run": 1,
+          "exitCode": 0,
+          "seconds": 23.98,
+          "log": "/private/tmp/sona-speechev-cloud-F4-quick-1.log",
+          "F4": [
+            "PASS F \u00d74 at 500ms with the sound on: all four count (4 of 4, as before)",
+            "PASS F \u00d74 at 500ms with the sound on: no script error"
+          ]
+        },
+        {
+          "run": 2,
+          "exitCode": 0,
+          "seconds": 23.55,
+          "log": "/private/tmp/sona-speechev-cloud-F4-quick-2.log",
+          "F4": [
+            "PASS F \u00d74 at 500ms with the sound on: all four count (4 of 4, as before)",
+            "PASS F \u00d74 at 500ms with the sound on: no script error"
+          ]
+        }
+      ],
+      "argumentProof": {
+        "macArgsIdentical": true,
+        "macArgs": [
+          "--mute-audio",
+          "--disable-audio-output",
+          "--font-render-hinting=none",
+          "--autoplay-policy=no-user-gesture-required"
+        ],
+        "linuxArgsEqualMain": true,
+        "linuxArgs": [
+          "--mute-audio",
+          "--font-render-hinting=none",
+          "--autoplay-policy=no-user-gesture-required"
+        ],
+        "syntaxExitCode": 0
+      },
+      "argumentProofFile": "/private/tmp/sona-audio-portability-flags-proof.json",
+      "releaseGate": "Fresh complete cloud pass still required; no production publication claimed"
+    },
+    "testOutputPortabilityCorrection": {
+      "date": "2026-11-04",
+      "file": "tests/compacthometest.mjs",
+      "change": "Import shared OUT and replace the hardcoded /private/tmp screenshot fallback",
+      "fixtureOrAssertionChanges": 0,
+      "screenshotFilenamesUnchanged": true,
+      "otherBranchChangedTestsWithMacPaths": 0,
+      "focusedProof": {
+        "exitCode": 0,
+        "scenarios": 21,
+        "log": "/private/tmp/sona-compact-portable-output-focused.log",
+        "platform": "macOS",
+        "tempDefaultSimulation": {
+          "TEST_OUT": "",
+          "TMPDIR": "/tmp",
+          "resolvedOUT": "/tmp"
+        },
+        "negativeControl": "Actual Ubuntu cloud run 41870353527 failed ENOENT opening /private/tmp/sona-home-320x568-fresh.png before this fix",
+        "filenamesUnchanged": true
+      }
+    }
+  }
+}

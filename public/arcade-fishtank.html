@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <title>Sona — Fish Tank</title>
+  <link href="/fonts.css" rel="stylesheet">
+  <link href="/action.css" rel="stylesheet">
+  <link href="/sayplay.css" rel="stylesheet">
+  <meta name="theme-color" content="#d3ebe1" />
+  <!-- Five real feeding tasks. SayPlay owns every spoken turn. -->
+  <link href="/fishtank.css" rel="stylesheet">
+</head>
+<body data-phase="boot">
+  <div id="app">
+    <div id="top">
+      <button id="close" type="button" aria-label="Back to games"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg></button>
+      <span class="hudpill"><span id="ttl">Fish Tank</span></span>
+      <span id="spacer"></span>
+      <span class="hudpill" id="dots" role="img" aria-label="0 of 5"></span>
+    </div>
+    <canvas id="tankCanvas" role="img" aria-label="A little aquarium. Say your word to get fish food, then drag it above the hungry fish and let go."></canvas>
+    <div id="tankBanner" role="status" aria-live="polite">Say the word to get fish food</div>
+    <button id="tankFood" type="button" disabled aria-label="Fish food. Drag it above the hungry fish and let go. Keyboard: Space picks up, arrows move, Space lets go." aria-pressed="false"></button>
+    <div id="tankControls">
+      <button id="tankHearStep" class="cream-pill" type="button" disabled aria-label="Hear how to feed this fish"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4Zm12 0a5 5 0 0 1 0 6m3-9a9 9 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+      <button id="tankHelp" class="act-pill" type="button" disabled aria-label="Optional extra help: say your word again for calmer fish"><img src="/assets/crafted/echo-wave.webp" alt=""><span class="tank-help-label"><span>Calmer fish</span><span id="tankPower" hidden><i id="tankPowerFill"></i></span></span></button>
+    </div>
+    <div id="turnPanel" aria-live="polite">
+      <div id="picBox"><span id="pic"></span></div>
+      <div id="word"></div>
+      <button id="hear" aria-label="Hear it again"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4Z" fill="#1cb0f6"/><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="#1cb0f6" stroke-width="2.2" stroke-linecap="round"/></svg><span>Hear it</span></button>
+      <div id="listenRow">
+        <span id="echoWrap"><img id="echoFace" src="/assets/crafted/echo-welcome.webp" alt="Echo" onerror="if(this.src.indexOf('echo-welcome')<0)this.src='/assets/crafted/echo-welcome.webp'" /></span>
+        <span id="micState"></span>
+        <span id="cheer"></span>
+        <button id="micBtn" hidden aria-label="Listen again"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8.5" y="3" width="7" height="12" rx="3.5" fill="#fff"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M8.5 21h7" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/></svg></button>
+      </div>
+    </div>
+  </div>
+
+  <div class="ovl" id="startOvl">
+    <div class="ovlCard">
+      <img class="tank-intro" src="/assets/crafted/home-fishtank.webp" alt="A colorful little aquarium"><h2 id="startTitle">Fish Tank</h2>
+      <p>Say each word two times to get fish food. Drag it above a hungry fish and let go.</p><p>Calmer fish is extra help, if you want it.</p>
+      <p class="small" id="startSound"></p>
+      <button id="startBtn" class="act-pill"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15a1 1 0 0 0 1.5.9l12-7.5a1 1 0 0 0 0-1.8l-12-7.5A1 1 0 0 0 7 4.5Z" fill="#fff"/></svg><span>Let's feed them</span></button>
+    </div>
+  </div>
+  <div class="ovl" id="primer">
+    <div class="ovlCard">
+      <img class="ovlEcho" src="/assets/crafted/echo-listen.webp" alt="" onerror="if(this.src.indexOf('echo-welcome')<0)this.src='/assets/crafted/echo-welcome.webp'" />
+      <h2>Let Echo hear you!</h2>
+      <p>Say each word two times to get food for each fish.</p>
+      <p class="small" id="micPromise"></p>
+      <button class="btn" id="primerYes">Turn on Echo's ears</button>
+      <button class="ghost" id="primerNo">Not now</button>
+    </div>
+  </div>
+  <div class="ovl" id="pauseOvl">
+    <div class="ovlCard">
+      <img class="ovlEcho" src="/assets/crafted/echo-think.webp" alt="" onerror="if(this.src.indexOf('echo-welcome')<0)this.src='/assets/crafted/echo-welcome.webp'" />
+      <h2>A little aquarium break</h2><p>Your fish and their little bites are waiting right here.</p>
+      <button class="btn" id="resume">Keep playing</button>
+    </div>
+  </div>
+  <div class="ovl" id="endOvl">
+    <div class="ovlCard">
+      <img class="ovlEcho endStar" src="/assets/crafted/echo-cheer.webp" alt="" onerror="if(this.src.indexOf('echo-welcome')<0)this.src='/assets/crafted/echo-welcome.webp'" />
+      <h2 id="endTitle"></h2>
+      <p id="endSub"></p>
+      <button class="btn" id="again">Play again</button>
+      <button class="ghost" id="goHome">Back home</button>
+    </div>
+  </div>
+
+  <script src="/sona.js"></script>
+  <script src="/crafted-words.js"></script><script src="/sayplay.js"></script><script src="/fishtank.js"></script>
+  <script>
+    SayPlay.start({key:"fishtank",title:"Fish Tank",intro:"Say each word two times to get fish food.",steps:[[],[],[],[],[]],finale:[],done:{title:"Five happy little fish!",sub:"A whole school, fed by you."},play:window.FishTank});
+    if(!document.body.hidden){try{Sona.track("game opened",{game:"fishtank"});}catch(e){}}
+  </script>
+</body>
+</html>

@@ -1,0 +1,74 @@
+{
+  "generated": "2026-09-28",
+  "tool": "built-in imagegen",
+  "reference": "references/02-fruit-stack-piano.png",
+  "sourceDirectory": "/Users/traviswardrop/.codex/generated_images/01a0e9e0-7ac5-7820-ab1f-6abd92556547/",
+  "files": {
+    "scene": "exec-d99f1b10-4ac0-4d39-9b6e-6e4dbe2a0eaa.png",
+    "blocks": "exec-12497618-f3b1-48c0-8d56-9ddb89fda946.png",
+    "rocket": "exec-7e57f490-81ee-47f0-aba1-47e7152dde36.png"
+  },
+  "crops": [
+    {
+      "name": "coral",
+      "left": 26,
+      "top": 147,
+      "width": 590,
+      "height": 182
+    },
+    {
+      "name": "orange",
+      "left": 638,
+      "top": 147,
+      "width": 590,
+      "height": 182
+    },
+    {
+      "name": "yellow",
+      "left": 26,
+      "top": 415,
+      "width": 590,
+      "height": 182
+    },
+    {
+      "name": "green",
+      "left": 638,
+      "top": 415,
+      "width": 590,
+      "height": 182
+    },
+    {
+      "name": "blue",
+      "left": 26,
+      "top": 684,
+      "width": 590,
+      "height": 182
+    },
+    {
+      "name": "purple",
+      "left": 638,
+      "top": 684,
+      "width": 590,
+      "height": 182
+    },
+    {
+      "name": "pink",
+      "left": 26,
+      "top": 949,
+      "width": 590,
+      "height": 182
+    },
+    {
+      "name": "gold",
+      "left": 638,
+      "top": 949,
+      "width": 590,
+      "height": 182
+    }
+  ],
+  "prompts": {
+    "scene": "Use case: illustration-story. Asset: full-bleed portrait background painting for a real children's Block Stacker game, 1:2 portrait.\nThe input is style/composition reference only: recreate the MIDDLE panel's tactile handmade toy world alone. NO phone frame, labels, HUD, floating blocks, tower, text, numbers, controls or UI.\nNight village with rich deep indigo and muted violet sky, a small golden crescent moon at x82%,y14%, sparse little stars, purple clouds on side edges and softly silhouetted small houses with warm lit windows in lower background. Warm painted wood workbench across whole bottom20%, ledge at y80%. At lower LEFT (x0%-25%) sits the reference original orange fox, big happy smile, white fluffy muzzle/chest, brown paws on ledge. At lower RIGHT (x77%-100%) original cyan Echo bird, pale aqua belly, orange beak/feet, pink cheeks, coral/gold top feathers, spread tiny wings, gleeful smile. Their heads/crest around y64%–69%, feet rest y80%. They flank central tower-building area: keep central x26%-76%,y15%-79% open and uncluttered with the sky/village backdrop only. A wide blank charcoal instruction plaque with honey-wood bevel frame, bottom center x15%-85%,y86%-96%. Absolutely blank no text. Counter has rich handmade grain, little rounded nicks and soft golden lighting. The artwork must be matte painted wood and brushed gouache, textured like the original, no polished shiny plastic. Do not draw a block or tower: real canvas blocks will be drawn over the center. Do not paint Echo/fox into the center. No shadows from an imaginary tower. Full scene edge-to-edge.",
+    "blocks": "Use case: stylized-concept. Asset: transparent sprite sheet for a children's wooden Block Stacker game.\nInput reference is material/style only, especially the MIDDLE phone's colored wooden blocks.\nCreate exactly 8 separate rectangular painted wood blocks arranged precisely in a 2-column by 4-row grid on transparent background. Each block horizontal 4:1 width-to-height, flat front view, NO perspective skew. Block corners softly rounded. Rich tactile horizontal wood grain, little carved nicks, brushstroke texture, subtle honey-colored edge wear. A slender bevel on top and lower edge give depth. Match warm handmade reference, NOT glass, plastic, buttons, flat vector or glossy rubber.\nCanvas 1024x1024. Each grid cell512x256, one block centered in every cell occupying width440,height110. Keep transparent gaps everywhere between blocks. NO floor shadow beyond 3px. NO words, symbols, eyes, faces, icons, numbers.\nRows from top to bottom:\nrow1: coral red block left, orange tangerine block right;\nrow2: butter yellow left, leaf green right;\nrow3: sky cyan blue left, lavender purple right;\nrow4: warm rose pink left, metallic warm golden-yellow right.\nAll 8 share same geometry and lighting: lit from upper left with brighter top edge and rich dark lower side. No surrounding objects. True transparency.",
+    "rocket": "Use case: stylized-concept. Asset: transparent upright toy rocket sprite for a children's wooden stacking game.\nUse input only as tactile material/style reference. Create ONE small delightful old-fashioned rocket, full body, straight upright FRONT view, centered on transparent canvas. Warm ivory brushed painted-wood body with beautiful subtle grain and bevels. Coral-red wooden pointed nose cone and three red curved fins, gold rim around round turquoise blue porthole. Small visible smiling cyan Echo pilot behind the glass, using the reference bird's eyes, orange beak and coral head feather. Tiny golden star on body. Handcrafted children's toy with warm friendly rounded form, not metal, industrial technology or shiny plastic. Ground/base at bottom of sprite, nose top. Full silhouette no clipping. Shape slender about1:2.2 width:height, include all fins. NO flames, no exhaust, no clouds, no text, no words, no shadow outside silhouette, no background. True alpha transparency."
+  }
+}

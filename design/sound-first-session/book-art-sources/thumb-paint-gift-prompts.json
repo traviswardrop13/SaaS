@@ -1,0 +1,224 @@
+{
+  "tool": "built-in image_gen",
+  "title": "My Thumb Paints a Gift",
+  "sound": "TH",
+  "characterBible": "A fictional smiling young child with warm brown skin, dark curly hair in two round puffs, teal overalls over a cream shirt. One cream craft table, clean white card, shallow blue and pink paint pots, one thick teal crayon. Clear anatomically natural hand and thumb closeups. No lettering, no numerals, no spoken sound instructions painted in. Original Sona warm soft3D/clay style. Thumbprints form two paired blue and pink butterfly wings, then child adds body and antennae with crayon; all marks are pictorial.",
+  "cover": {
+    "prompt": "Use case: illustration-story. Original Sona children's storybook soft3D/clay-and-plush rendering, matching the supplied original artwork's warm tactile texture, rounded dimensional forms, shiny friendly eyes, rich natural colors, softly painted detailed garden/meadow scenery, soft daylight and gentle shadows. This is a NEW picture in the same visual family, not a copy of the bear, sailor hat, scarf, seashore or boat. Never flat vector or paper-cut art.\nAsset type: square children's picture-book cover art without text. Primary request: Child proudly holds a white card with one simple blue-and-pink thumbprint butterfly, art supplies neatly on table, joyful handmade gift. No writing or text.\nCharacter/object bible: A fictional smiling young child with warm brown skin, dark curly hair in two round puffs, teal overalls over a cream shirt. One cream craft table, clean white card, shallow blue and pink paint pots, one thick teal crayon. Clear anatomically natural hand and thumb closeups. No lettering, no numerals, no spoken sound instructions painted in. Original Sona warm soft3D/clay style. Thumbprints form two paired blue and pink butterfly wings, then child adds body and antennae with crayon; all marks are pictorial.\nOne single square full-bleed illustration, not a collage, atlas, comic or multiple frames. No title, captions, speech bubbles, letters, numbers, logos, watermark, printed markings or UI. Keep the main character and the meaningful action/objects clear and large in the central upper 75% of the picture so the app's caption can cover the foot. No scene border. Objects have consistent design, color and scale throughout the book.\nButterfly continuity: the finished card has exactly two broad oval thumbprint wings, one blue on the left and one pink on the right, with a simple teal body and two teal antennae. Natural human anatomy: each visible hand has exactly four fingers and one thumb, no fused or extra digits.",
+    "selectedSource": "design/sound-first-session/book-art-sources/thumb-paint-gift/cover-v2.png",
+    "references": [
+      "public/assets/books/bo-beach-day/p01.webp"
+    ],
+    "asset": "public/assets/books/thumb-paint-gift/cover.webp",
+    "export": {
+      "width": 384,
+      "height": 384,
+      "quality": 80,
+      "bytes": 26510,
+      "sha256": "d35453c2ccbaf0f25f7bbc199850e0500a824d5e5135b76953b95d540dca6359"
+    }
+  },
+  "lineup": {
+    "prompt": "Use case: illustration-story. Asset type: visual cast and prop reference sheet for later separate storybook pages. Use the supplied cover as exact fictional-child identity and original Sona warm tactile soft3D style reference. Show this exact warm-brown-skinned child with two dark curly puffs held by pink ties, large shiny dark eyes, cream knit long-sleeve shirt and teal overalls with tan buttons: full-body front view and a three-quarter view, with clear natural human hands, exactly four fingers plus one thumb per hand, five digits total. Also show one smiling ADULT mother with matching warm-brown skin, dark curly hair in a bun, cream cardigan over a muted coral shirt. Separately show blank square white card, small shallow blue paint pot, small shallow pink paint pot, thick teal crayon. A small completed-card reference has exactly TWO broad oval thumbprint wings total, one blue oval LEFT and one pink oval RIGHT, joined by teal body/two antennae, no extra wings. Plain warm cream background, clean separated reference objects, not story scenes. No labels, lettering, numbers, borders or logos. One square image.",
+    "selectedSource": "design/sound-first-session/book-art-sources/thumb-paint-gift/lineup.png",
+    "references": [
+      "design/sound-first-session/book-art-sources/thumb-paint-gift/cover-v2.png"
+    ]
+  },
+  "pages": [
+    {
+      "page": 1,
+      "text": "I think I can make a gift.",
+      "key": "think",
+      "prompt": "Use case: illustration-story. Original Sona children's storybook soft3D/clay-and-plush rendering, matching the supplied original artwork's warm tactile texture, rounded dimensional forms, shiny friendly eyes, rich natural colors, softly painted detailed garden/meadow scenery, soft daylight and gentle shadows. This is a NEW picture in the same visual family, not a copy of the bear, sailor hat, scarf, seashore or boat. Never flat vector or paper-cut art.\nAsset type: one independent square full-bleed storybook page. Input images: first reference is the exact book cover (style, character/object identity); second is character/prop lineup (identity/shape only, never copy its multi-object sheet layout).\nCharacter/object bible: A fictional smiling young child with warm brown skin, dark curly hair in two round puffs, teal overalls over a cream shirt. One cream craft table, clean white card, shallow blue and pink paint pots, one thick teal crayon. Clear anatomically natural hand and thumb closeups. No lettering, no numerals, no spoken sound instructions painted in. Original Sona warm soft3D/clay style. Thumbprints form two paired blue and pink butterfly wings, then child adds body and antennae with crayon; all marks are pictorial.\nStory page 1 of eight. Narration for meaning only, DO NOT render any text: \"I think I can make a gift.\". The key object/action must clearly show \"think\".\nExact scene: Child sits at cream craft table with blank white card, blue and pink shallow paint pots, teal crayon; hand on chin, happy idea.\nOne single square full-bleed illustration, not a collage, atlas, comic or multiple frames. No title, captions, speech bubbles, letters, numbers, logos, watermark, printed markings or UI. Keep the main character and the meaningful action/objects clear and large in the central upper 75% of the picture so the app's caption can cover the foot. No scene border. Objects have consistent design, color and scale throughout the book.\nHand correctness is essential: every visible hand must have exactly four fingers plus one thumb, with thumb visibly offset from fingers and attached naturally at the palm. The hand doing the print uses the THUMB, never an index finger. Card continuity: p01–p02 blank; p03–p05 exactly ONE blue oval print; p06 exactly ONE blue oval plus ONE pink oval and NO body/antennae yet; p07–p08 exactly those two oval prints joined by teal body/two antennae, no other wing prints. Only apply this page's indicated stage.\nOnly the one child appears in this page. Mom is not present until page08. No additional person or hand.",
+      "references": [
+        "design/sound-first-session/book-art-sources/thumb-paint-gift/cover-v2.png",
+        "design/sound-first-session/book-art-sources/thumb-paint-gift/lineup.png"
+      ],
+      "selectedSource": "design/sound-first-session/book-art-sources/thumb-paint-gift/p01.png",
+      "asset": "public/assets/books/thumb-paint-gift/p01.webp",
+      "export": {
+        "width": 768,
+        "height": 768,
+        "quality": 82,
+        "bytes": 81860,
+        "sha256": "8153b805da1c86b3bb79542dde7c990f5a4c43adabb62433eff2e66ffc481814"
+      }
+    },
+    {
+      "page": 2,
+      "text": "I dip my thumb in blue paint.",
+      "key": "thumb",
+      "prompt": "Use case: illustration-story. Original Sona children's storybook soft3D/clay-and-plush rendering, matching the supplied original artwork's warm tactile texture, rounded dimensional forms, shiny friendly eyes, rich natural colors, softly painted detailed garden/meadow scenery, soft daylight and gentle shadows. This is a NEW picture in the same visual family, not a copy of the bear, sailor hat, scarf, seashore or boat. Never flat vector or paper-cut art.\nAsset type: one independent square full-bleed storybook page. Input images: first reference is the exact book cover (style, character/object identity); second is character/prop lineup (identity/shape only, never copy its multi-object sheet layout).\nCharacter/object bible: A fictional smiling young child with warm brown skin, dark curly hair in two round puffs, teal overalls over a cream shirt. One cream craft table, clean white card, shallow blue and pink paint pots, one thick teal crayon. Clear anatomically natural hand and thumb closeups. No lettering, no numerals, no spoken sound instructions painted in. Original Sona warm soft3D/clay style. Thumbprints form two paired blue and pink butterfly wings, then child adds body and antennae with crayon; all marks are pictorial.\nStory page 2 of eight. Narration for meaning only, DO NOT render any text: \"I dip my thumb in blue paint.\". The key object/action must clearly show \"thumb\".\nExact scene: Clear close view of child dipping one thumb gently into shallow blue washable paint pot; other fingers clean and naturally posed.\nOne single square full-bleed illustration, not a collage, atlas, comic or multiple frames. No title, captions, speech bubbles, letters, numbers, logos, watermark, printed markings or UI. Keep the main character and the meaningful action/objects clear and large in the central upper 75% of the picture so the app's caption can cover the foot. No scene border. Objects have consistent design, color and scale throughout the book.\nHand correctness is essential: every visible hand must have exactly four fingers plus one thumb, with thumb visibly offset from fingers and attached naturally at the palm. The hand doing the print uses the THUMB, never an index finger. Card continuity: p01–p02 blank; p03–p05 exactly ONE blue oval print; p06 exactly ONE blue oval plus ONE pink oval and NO body/antennae yet; p07–p08 exactly those two oval prints joined by teal body/two antennae, no other wing prints. Only apply this page's indicated stage.\nOnly the one child appears in this page. Mom is not present until page08. No additional person or hand.",
+      "references": [
+        "design/sound-first-session/book-art-sources/thumb-paint-gift/cover-v2.png",
+        "design/sound-first-session/book-art-sources/thumb-paint-gift/lineup.png"
+      ],
+      "selectedSource": "design/sound-first-session/book-art-sources/thumb-paint-gift/p02.png",
+      "asset": "public/assets/books/thumb-paint-gift/p02.webp",
+      "export": {
+        "width": 768,
+        "height": 768,
+        "quality": 82,
+        "bytes": 88112,
+        "sha256": "8b04e3f08a550f125088e25989f727308bd204f951a02952a32193a83166902d"
+      }
+    },
+    {
+      "page": 3,
+      "text": "My thumb makes a dot.",
+      "key": "thumb",
+      "prompt": "Use case: illustration-story. Original Sona children's storybook soft3D/clay-and-plush rendering, matching the supplied original artwork's warm tactile texture, rounded dimensional forms, shiny friendly eyes, rich natural colors, softly painted detailed garden/meadow scenery, soft daylight and gentle shadows. This is a NEW picture in the same visual family, not a copy of the bear, sailor hat, scarf, seashore or boat. Never flat vector or paper-cut art.\nAsset type: one independent square full-bleed storybook page. Input images: first reference is the exact book cover (style, character/object identity); second is character/prop lineup (identity/shape only, never copy its multi-object sheet layout).\nCharacter/object bible: A fictional smiling young child with warm brown skin, dark curly hair in two round puffs, teal overalls over a cream shirt. One cream craft table, clean white card, shallow blue and pink paint pots, one thick teal crayon. Clear anatomically natural hand and thumb closeups. No lettering, no numerals, no spoken sound instructions painted in. Original Sona warm soft3D/clay style. Thumbprints form two paired blue and pink butterfly wings, then child adds body and antennae with crayon; all marks are pictorial.\nStory page 3 of eight. Narration for meaning only, DO NOT render any text: \"My thumb makes a dot.\". The key object/action must clearly show \"thumb\".\nExact scene: Child presses blue thumb onto white card and lifts it, revealing one rounded blue thumbprint. No complete butterfly yet.\nOne single square full-bleed illustration, not a collage, atlas, comic or multiple frames. No title, captions, speech bubbles, letters, numbers, logos, watermark, printed markings or UI. Keep the main character and the meaningful action/objects clear and large in the central upper 75% of the picture so the app's caption can cover the foot. No scene border. Objects have consistent design, color and scale throughout the book.\nHand correctness is essential: every visible hand must have exactly four fingers plus one thumb, with thumb visibly offset from fingers and attached naturally at the palm. The hand doing the print uses the THUMB, never an index finger. Card continuity: p01–p02 blank; p03–p05 exactly ONE blue oval print; p06 exactly ONE blue oval plus ONE pink oval and NO body/antennae yet; p07–p08 exactly those two oval prints joined by teal body/two antennae, no other wing prints. Only apply this page's indicated stage.\nOnly the one child appears in this page. Mom is not present until page08. No additional person or hand.",
+      "references": [
+        "design/sound-first-session/book-art-sources/thumb-paint-gift/cover-v2.png",
+        "design/sound-first-session/book-art-sources/thumb-paint-gift/lineup.png"
+      ],
+      "selectedSource": "design/sound-first-session/book-art-sources/thumb-paint-gift/p03.png",
+      "asset": "public/assets/books/thumb-paint-gift/p03.webp",
+      "export": {
+        "width": 768,
+        "height": 768,
+        "quality": 82,
+        "bytes": 82078,
+        "sha256": "fcf206ce78438d11956c66d77a306d1926101c7c87dd9070aa6efa0a19b31dde"
+      }
+    },
+    {
+      "page": 4,
+      "text": "I think it needs a buddy.",
+      "key": "think",
+      "prompt": "Use case: illustration-story. Original Sona children's storybook soft3D/clay-and-plush rendering, matching the supplied original artwork's warm tactile texture, rounded dimensional forms, shiny friendly eyes, rich natural colors, softly painted detailed garden/meadow scenery, soft daylight and gentle shadows. This is a NEW picture in the same visual family, not a copy of the bear, sailor hat, scarf, seashore or boat. Never flat vector or paper-cut art.\nAsset type: one independent square full-bleed storybook page. Input images: first reference is the exact book cover (style, character/object identity); second is character/prop lineup (identity/shape only, never copy its multi-object sheet layout).\nCharacter/object bible: A fictional smiling young child with warm brown skin, dark curly hair in two round puffs, teal overalls over a cream shirt. One cream craft table, clean white card, shallow blue and pink paint pots, one thick teal crayon. Clear anatomically natural hand and thumb closeups. No lettering, no numerals, no spoken sound instructions painted in. Original Sona warm soft3D/clay style. Thumbprints form two paired blue and pink butterfly wings, then child adds body and antennae with crayon; all marks are pictorial.\nStory page 4 of eight. Narration for meaning only, DO NOT render any text: \"I think it needs a buddy.\". The key object/action must clearly show \"think\".\nExact scene: Child looks thoughtfully at the single blue thumbprint on card, with pink pot nearby; two little planned wings are not yet complete.\nOne single square full-bleed illustration, not a collage, atlas, comic or multiple frames. No title, captions, speech bubbles, letters, numbers, logos, watermark, printed markings or UI. Keep the main character and the meaningful action/objects clear and large in the central upper 75% of the picture so the app's caption can cover the foot. No scene border. Objects have consistent design, color and scale throughout the book.\nHand correctness is essential: every visible hand must have exactly four fingers plus one thumb, with thumb visibly offset from fingers and attached naturally at the palm. The hand doing the print uses the THUMB, never an index finger. Card continuity: p01–p02 blank; p03–p05 exactly ONE blue oval print; p06 exactly ONE blue oval plus ONE pink oval and NO body/antennae yet; p07–p08 exactly those two oval prints joined by teal body/two antennae, no other wing prints. Only apply this page's indicated stage.\nOnly the one child appears in this page. Mom is not present until page08. No additional person or hand.",
+      "references": [
+        "design/sound-first-session/book-art-sources/thumb-paint-gift/cover-v2.png",
+        "design/sound-first-session/book-art-sources/thumb-paint-gift/lineup.png"
+      ],
+      "selectedSource": "design/sound-first-session/book-art-sources/thumb-paint-gift/p04.png",
+      "asset": "public/assets/books/thumb-paint-gift/p04.webp",
+      "export": {
+        "width": 768,
+        "height": 768,
+        "quality": 82,
+        "bytes": 82732,
+        "sha256": "550bcafcd439906737fe0c7190fbc5ba6b0941d6707e23b4e038e1ee14697fdc"
+      }
+    },
+    {
+      "page": 5,
+      "text": "I dip my thumb in pink paint.",
+      "key": "thumb",
+      "prompt": "Use case: illustration-story. Original Sona children's storybook soft3D/clay-and-plush rendering, matching the supplied original artwork's warm tactile texture, rounded dimensional forms, shiny friendly eyes, rich natural colors, softly painted detailed garden/meadow scenery, soft daylight and gentle shadows. This is a NEW picture in the same visual family, not a copy of the bear, sailor hat, scarf, seashore or boat. Never flat vector or paper-cut art.\nAsset type: one independent square full-bleed storybook page. Input images: first reference is the exact book cover (style, character/object identity); second is character/prop lineup (identity/shape only, never copy its multi-object sheet layout).\nCharacter/object bible: A fictional smiling young child with warm brown skin, dark curly hair in two round puffs, teal overalls over a cream shirt. One cream craft table, clean white card, shallow blue and pink paint pots, one thick teal crayon. Clear anatomically natural hand and thumb closeups. No lettering, no numerals, no spoken sound instructions painted in. Original Sona warm soft3D/clay style. Thumbprints form two paired blue and pink butterfly wings, then child adds body and antennae with crayon; all marks are pictorial.\nStory page 5 of eight. Narration for meaning only, DO NOT render any text: \"I dip my thumb in pink paint.\". The key object/action must clearly show \"thumb\".\nExact scene: Clear close view of child dipping a clean thumb into shallow pink paint; blue print visible on white card behind.\nOne single square full-bleed illustration, not a collage, atlas, comic or multiple frames. No title, captions, speech bubbles, letters, numbers, logos, watermark, printed markings or UI. Keep the main character and the meaningful action/objects clear and large in the central upper 75% of the picture so the app's caption can cover the foot. No scene border. Objects have consistent design, color and scale throughout the book.\nHand correctness is essential: every visible hand must have exactly four fingers plus one thumb, with thumb visibly offset from fingers and attached naturally at the palm. The hand doing the print uses the THUMB, never an index finger. Card continuity: p01–p02 blank; p03–p05 exactly ONE blue oval print; p06 exactly ONE blue oval plus ONE pink oval and NO body/antennae yet; p07–p08 exactly those two oval prints joined by teal body/two antennae, no other wing prints. Only apply this page's indicated stage.\nOnly the one child appears in this page. Mom is not present until page08. No additional person or hand.",
+      "references": [
+        "design/sound-first-session/book-art-sources/thumb-paint-gift/cover-v2.png",
+        "design/sound-first-session/book-art-sources/thumb-paint-gift/lineup.png"
+      ],
+      "selectedSource": "design/sound-first-session/book-art-sources/thumb-paint-gift/p05.png",
+      "asset": "public/assets/books/thumb-paint-gift/p05.webp",
+      "export": {
+        "width": 768,
+        "height": 768,
+        "quality": 82,
+        "bytes": 85170,
+        "sha256": "ce6ab76ab3c7ef3565d7210fcbfc05efe9b2b2ab3c57ea49f17bdfab23d8aa8b"
+      }
+    },
+    {
+      "page": 6,
+      "text": "My thumb makes a pink dot.",
+      "key": "thumb",
+      "prompt": "Use case: precise-object-edit. Correct ONLY the child's right hand pose and the extra paint drip in the supplied Sona book page. Keep the exact child face, curly hair puffs, cream shirt, teal overalls, warm soft3D rendering, scene and craft supplies. The child has just made a pink THUMBPRINT and now raises that right hand in a natural clear THUMBS-UP, with exactly FOUR fingers curled into a fist and ONE short broad thumb pointing up; pink paint only on the broad thumb pad. The thumb must be naturally attached to the side of the palm, no extra finger or elongated appendage. Remove the long pink dripping stem between hand and card and REMOVE the small third pink paint spot it leaves. The white card must have EXACTLY TWO paint marks TOTAL: one broad blue oval thumbprint on the LEFT and one broad pink oval thumbprint on the RIGHT; no extra small marks, drips, third spot, body or antennae yet. Card is otherwise white. Place raised painted thumb clearly above the card, no contact or dripping paint. Keep the other resting hand natural, exactly four fingers plus one thumb. One square illustration; no text, lettering, numbers, panel or logo.",
+      "references": [
+        "design/sound-first-session/book-art-sources/thumb-paint-gift/p06-rejected.png"
+      ],
+      "selectedSource": "design/sound-first-session/book-art-sources/thumb-paint-gift/p06.png",
+      "asset": "public/assets/books/thumb-paint-gift/p06.webp",
+      "rejectedSource": "design/sound-first-session/book-art-sources/thumb-paint-gift/p06-rejected.png",
+      "originalPrompt": "Use case: illustration-story. Original Sona children's storybook soft3D/clay-and-plush rendering, matching the supplied original artwork's warm tactile texture, rounded dimensional forms, shiny friendly eyes, rich natural colors, softly painted detailed garden/meadow scenery, soft daylight and gentle shadows. This is a NEW picture in the same visual family, not a copy of the bear, sailor hat, scarf, seashore or boat. Never flat vector or paper-cut art.\nAsset type: one independent square full-bleed storybook page. Input images: first reference is the exact book cover (style, character/object identity); second is character/prop lineup (identity/shape only, never copy its multi-object sheet layout).\nCharacter/object bible: A fictional smiling young child with warm brown skin, dark curly hair in two round puffs, teal overalls over a cream shirt. One cream craft table, clean white card, shallow blue and pink paint pots, one thick teal crayon. Clear anatomically natural hand and thumb closeups. No lettering, no numerals, no spoken sound instructions painted in. Original Sona warm soft3D/clay style. Thumbprints form two paired blue and pink butterfly wings, then child adds body and antennae with crayon; all marks are pictorial.\nStory page 6 of eight. Narration for meaning only, DO NOT render any text: \"My thumb makes a pink dot.\". The key object/action must clearly show \"thumb\".\nExact scene: Child presses a pink thumbprint next to the blue one; paired blue and pink shapes begin to look like butterfly wings, still no body.\nOne single square full-bleed illustration, not a collage, atlas, comic or multiple frames. No title, captions, speech bubbles, letters, numbers, logos, watermark, printed markings or UI. Keep the main character and the meaningful action/objects clear and large in the central upper 75% of the picture so the app's caption can cover the foot. No scene border. Objects have consistent design, color and scale throughout the book.\nHand correctness is essential: every visible hand must have exactly four fingers plus one thumb, with thumb visibly offset from fingers and attached naturally at the palm. The hand doing the print uses the THUMB, never an index finger. Card continuity: p01–p02 blank; p03–p05 exactly ONE blue oval print; p06 exactly ONE blue oval plus ONE pink oval and NO body/antennae yet; p07–p08 exactly those two oval prints joined by teal body/two antennae, no other wing prints. Only apply this page's indicated stage.\nOnly the one child appears in this page. Mom is not present until page08. No additional person or hand.",
+      "export": {
+        "width": 768,
+        "height": 768,
+        "quality": 82,
+        "bytes": 90362,
+        "sha256": "28d7b8fbd6db7769fe54c370e2732c6a7f06bd6f0456ebb034ff5b21efa0a2fd"
+      }
+    },
+    {
+      "page": 7,
+      "text": "I think of a butterfly.",
+      "key": "think",
+      "prompt": "Use case: illustration-story. Original Sona children's storybook soft3D/clay-and-plush rendering, matching the supplied original artwork's warm tactile texture, rounded dimensional forms, shiny friendly eyes, rich natural colors, softly painted detailed garden/meadow scenery, soft daylight and gentle shadows. This is a NEW picture in the same visual family, not a copy of the bear, sailor hat, scarf, seashore or boat. Never flat vector or paper-cut art.\nAsset type: one independent square full-bleed storybook page. Input images: first reference is the exact book cover (style, character/object identity); second is character/prop lineup (identity/shape only, never copy its multi-object sheet layout).\nCharacter/object bible: A fictional smiling young child with warm brown skin, dark curly hair in two round puffs, teal overalls over a cream shirt. One cream craft table, clean white card, shallow blue and pink paint pots, one thick teal crayon. Clear anatomically natural hand and thumb closeups. No lettering, no numerals, no spoken sound instructions painted in. Original Sona warm soft3D/clay style. Thumbprints form two paired blue and pink butterfly wings, then child adds body and antennae with crayon; all marks are pictorial.\nStory page 7 of eight. Narration for meaning only, DO NOT render any text: \"I think of a butterfly.\". The key object/action must clearly show \"think\".\nExact scene: Child uses the thick teal crayon to add one simple butterfly body and two antennae between the blue and pink thumbprint wings. A recognizable pictorial butterfly is complete.\nOne single square full-bleed illustration, not a collage, atlas, comic or multiple frames. No title, captions, speech bubbles, letters, numbers, logos, watermark, printed markings or UI. Keep the main character and the meaningful action/objects clear and large in the central upper 75% of the picture so the app's caption can cover the foot. No scene border. Objects have consistent design, color and scale throughout the book.\nHand correctness is essential: every visible hand must have exactly four fingers plus one thumb, with thumb visibly offset from fingers and attached naturally at the palm. The hand doing the print uses the THUMB, never an index finger. Card continuity: p01–p02 blank; p03–p05 exactly ONE blue oval print; p06 exactly ONE blue oval plus ONE pink oval and NO body/antennae yet; p07–p08 exactly those two oval prints joined by teal body/two antennae, no other wing prints. Only apply this page's indicated stage.\nOnly the one child appears in this page. Mom is not present until page08. No additional person or hand.",
+      "references": [
+        "design/sound-first-session/book-art-sources/thumb-paint-gift/cover-v2.png",
+        "design/sound-first-session/book-art-sources/thumb-paint-gift/lineup.png"
+      ],
+      "selectedSource": "design/sound-first-session/book-art-sources/thumb-paint-gift/p07.png",
+      "asset": "public/assets/books/thumb-paint-gift/p07.webp",
+      "export": {
+        "width": 768,
+        "height": 768,
+        "quality": 82,
+        "bytes": 96922,
+        "sha256": "bed5e8c54248cb7294aa2bf26eafef3306416980b568edab6cf32a860097fd38"
+      }
+    },
+    {
+      "page": 8,
+      "text": "My thumb made a butterfly! A gift for Mom.",
+      "key": "thumb",
+      "prompt": "Use case: illustration-story. Original Sona children's storybook soft3D/clay-and-plush rendering, matching the supplied original artwork's warm tactile texture, rounded dimensional forms, shiny friendly eyes, rich natural colors, softly painted detailed garden/meadow scenery, soft daylight and gentle shadows. This is a NEW picture in the same visual family, not a copy of the bear, sailor hat, scarf, seashore or boat. Never flat vector or paper-cut art.\nAsset type: one independent square full-bleed storybook page. Input images: first reference is the exact book cover (style, character/object identity); second is character/prop lineup (identity/shape only, never copy its multi-object sheet layout).\nCharacter/object bible: A fictional smiling young child with warm brown skin, dark curly hair in two round puffs, teal overalls over a cream shirt. One cream craft table, clean white card, shallow blue and pink paint pots, one thick teal crayon. Clear anatomically natural hand and thumb closeups. No lettering, no numerals, no spoken sound instructions painted in. Original Sona warm soft3D/clay style. Thumbprints form two paired blue and pink butterfly wings, then child adds body and antennae with crayon; all marks are pictorial.\nStory page 8 of eight. Narration for meaning only, DO NOT render any text: \"My thumb made a butterfly! A gift for Mom.\". The key object/action must clearly show \"thumb\".\nExact scene: Child proudly offers the finished butterfly card to a smiling mother with matching warm brown skin and curly dark hair. Card has the butterfly only, no words, letters or numbers.\nOne single square full-bleed illustration, not a collage, atlas, comic or multiple frames. No title, captions, speech bubbles, letters, numbers, logos, watermark, printed markings or UI. Keep the main character and the meaningful action/objects clear and large in the central upper 75% of the picture so the app's caption can cover the foot. No scene border. Objects have consistent design, color and scale throughout the book.\nHand correctness is essential: every visible hand must have exactly four fingers plus one thumb, with thumb visibly offset from fingers and attached naturally at the palm. The hand doing the print uses the THUMB, never an index finger. Card continuity: p01–p02 blank; p03–p05 exactly ONE blue oval print; p06 exactly ONE blue oval plus ONE pink oval and NO body/antennae yet; p07–p08 exactly those two oval prints joined by teal body/two antennae, no other wing prints. Only apply this page's indicated stage.",
+      "references": [
+        "design/sound-first-session/book-art-sources/thumb-paint-gift/cover-v2.png",
+        "design/sound-first-session/book-art-sources/thumb-paint-gift/lineup.png"
+      ],
+      "selectedSource": "design/sound-first-session/book-art-sources/thumb-paint-gift/p08.png",
+      "asset": "public/assets/books/thumb-paint-gift/p08.webp",
+      "export": {
+        "width": 768,
+        "height": 768,
+        "quality": 82,
+        "bytes": 94560,
+        "sha256": "2381ac00d4545e514660b543587e3b61bfdc76a3f1d85ee7cd69a30fec9e5cb1"
+      }
+    }
+  ],
+  "attempts": [
+    {
+      "role": "cover",
+      "prompt": "Use case: illustration-story. Original Sona children's storybook soft3D/clay-and-plush rendering, matching the supplied original artwork's warm tactile texture, rounded dimensional forms, shiny friendly eyes, rich natural colors, softly painted detailed garden/meadow scenery, soft daylight and gentle shadows. This is a NEW picture in the same visual family, not a copy of the bear, sailor hat, scarf, seashore or boat. Never flat vector or paper-cut art.\nAsset type: square children's picture-book cover art without text. Primary request: Child proudly holds a white card with one simple blue-and-pink thumbprint butterfly, art supplies neatly on table, joyful handmade gift. No writing or text.\nCharacter/object bible: A fictional smiling young child with warm brown skin, dark curly hair in two round puffs, teal overalls over a cream shirt. One cream craft table, clean white card, shallow blue and pink paint pots, one thick teal crayon. Clear anatomically natural hand and thumb closeups. No lettering, no numerals, no spoken sound instructions painted in. Original Sona warm soft3D/clay style. Thumbprints form two paired blue and pink butterfly wings, then child adds body and antennae with crayon; all marks are pictorial.\nOne single square full-bleed illustration, not a collage, atlas, comic or multiple frames. No title, captions, speech bubbles, letters, numbers, logos, watermark, printed markings or UI. Keep the main character and the meaningful action/objects clear and large in the central upper 75% of the picture so the app's caption can cover the foot. No scene border. Objects have consistent design, color and scale throughout the book.\nButterfly continuity: the finished card has exactly two broad oval thumbprint wings, one blue on the left and one pink on the right, with a simple teal body and two teal antennae. Natural human anatomy: each visible hand has exactly four fingers and one thumb, no fused or extra digits.",
+      "referenced_image_paths": [
+        "public/assets/books/bo-beach-day/p01.webp"
+      ],
+      "source": "design/sound-first-session/book-art-sources/thumb-paint-gift/cover-v1.png"
+    },
+    {
+      "role": "cover",
+      "prompt": "Use case: precise-object-edit. Edit the supplied Sona soft3D children's book cover: change only the butterfly drawing on the white card the child holds. It must be made from exactly TWO oval thumbprints TOTAL: ONE single blue oval on the LEFT of the teal body, and ONE single pink oval on the RIGHT. Each oval is one broad simple wing. No additional lower wings, no extra prints, no fourth wing, no second butterfly. A simple teal vertical body and two teal antennae connect the two prints. Remove the loose sheet with extra blue/pink thumbprints from the foreground table, leaving a clean cream tabletop there. Preserve the child's face, two curly puffs with pink ties, warm brown skin, cream shirt/teal overalls, posture, natural hands, paint pots, crayon, warm original Sona soft3D/clay style and composition. No text, lettering, digits, logos or frame. One square image.",
+      "referenced_image_paths": [
+        "design/sound-first-session/book-art-sources/thumb-paint-gift/cover-v1.png"
+      ],
+      "source": "design/sound-first-session/book-art-sources/thumb-paint-gift/cover-v2.png",
+      "saved": "design/sound-first-session/book-art-sources/thumb-paint-gift/cover-v2.png"
+    },
+    {
+      "role": "lineup",
+      "prompt": "Use case: illustration-story. Asset type: visual cast and prop reference sheet for later separate storybook pages. Use the supplied cover as exact fictional-child identity and original Sona warm tactile soft3D style reference. Show this exact warm-brown-skinned child with two dark curly puffs held by pink ties, large shiny dark eyes, cream knit long-sleeve shirt and teal overalls with tan buttons: full-body front view and a three-quarter view, with clear natural human hands, exactly four fingers plus one thumb per hand, five digits total. Also show one smiling ADULT mother with matching warm-brown skin, dark curly hair in a bun, cream cardigan over a muted coral shirt. Separately show blank square white card, small shallow blue paint pot, small shallow pink paint pot, thick teal crayon. A small completed-card reference has exactly TWO broad oval thumbprint wings total, one blue oval LEFT and one pink oval RIGHT, joined by teal body/two antennae, no extra wings. Plain warm cream background, clean separated reference objects, not story scenes. No labels, lettering, numbers, borders or logos. One square image.",
+      "referenced_image_paths": [
+        "design/sound-first-session/book-art-sources/thumb-paint-gift/cover-v2.png"
+      ],
+      "source": "design/sound-first-session/book-art-sources/thumb-paint-gift/lineup.png",
+      "saved": "design/sound-first-session/book-art-sources/thumb-paint-gift/lineup.png"
+    },
+    {
+      "role": "p02",
+      "prompt": "Use case: illustration-story. Original Sona children's storybook soft3D/clay-and-plush rendering, matching the supplied original artwork's warm tactile texture, rounded dimensional forms, shiny friendly eyes, rich natural colors, softly painted detailed garden/meadow scenery, soft daylight and gentle shadows. This is a NEW picture in the same visual family, not a copy of the bear, sailor hat, scarf, seashore or boat. Never flat vector or paper-cut art.\nAsset type: one independent square full-bleed storybook page. Input images: first reference is the exact book cover (style, character/object identity); second is character/prop lineup (identity/shape only, never copy its multi-object sheet layout).\nCharacter/object bible: A fictional smiling young child with warm brown skin, dark curly hair in two round puffs, teal overalls over a cream shirt. One cream craft table, clean white card, shallow blue and pink paint pots, one thick teal crayon. Clear anatomically natural hand and thumb closeups. No lettering, no numerals, no spoken sound instructions painted in. Original Sona warm soft3D/clay style. Thumbprints form two paired blue and pink butterfly wings, then child adds body and antennae with crayon; all marks are pictorial.\nStory page 2 of eight. Narration for meaning only, DO NOT render any text: \"I dip my thumb in blue paint.\". The key object/action must clearly show \"thumb\".\nExact scene: Clear close view of child dipping one thumb gently into shallow blue washable paint pot; other fingers clean and naturally posed.\nOne single square full-bleed illustration, not a collage, atlas, comic or multiple frames. No title, captions, speech bubbles, letters, numbers, logos, watermark, printed markings or UI. Keep the main character and the meaningful action/objects clear and large in the central upper 75% of the picture so the app's caption can cover the foot. No scene border. Objects have consistent design, color and scale throughout the book.\nHand correctness is essential: every visible hand must have exactly four fingers plus one thumb, with thumb visibly offset from fingers and attached naturally at the palm. The hand doing the print uses the THUMB, never an index finger. Card continuity: p01–p02 blank; p03–p05 exactly ONE blue oval print; p06 exactly ONE blue oval plus ONE pink oval and NO body/antennae yet; p07–p08 exactly those two oval prints joined by teal body/two antennae, no other wing prints. Only apply this page's indicated stage.",
+      "referenced_image_paths": [
+        "design/sound-first-session/book-art-sources/thumb-paint-gift/cover-v2.png",
+        "design/sound-first-session/book-art-sources/thumb-paint-gift/lineup.png"
+      ],
+      "source": "design/sound-first-session/book-art-sources/thumb-paint-gift/p02.png",
+      "saved": "design/sound-first-session/book-art-sources/thumb-paint-gift/p02.png"
+    }
+  ],
+  "mode": "built-in image_gen",
+  "visualReview": "Root inspected cover-v2, lineup, inherited page2, and every new page. All page stages match; page6 corrected to natural pink-painted thumbs-up over exactly two oval prints, no extra drip.",
+  "workflow": "Independent cover, lineup and individual page scenes; precise page6 correction; no runtime atlas."
+}

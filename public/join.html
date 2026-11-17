@@ -16,9 +16,9 @@
     (function () {
       try {
         var q = new URLSearchParams(location.search);
-        window.__slp = { code: q.get("slp") || "", key: q.get("k") || "", inv: q.get("inv") || "", me: q.get("me") || "" };
+        window.__slp = { code: q.get("slp") || "", key: q.get("k") || "", inv: q.get("inv") || "", me: q.get("me") || "", login: q.get("login") === "1" };
         history.replaceState({}, "", "/join.html");
-      } catch (e) { window.__slp = { code: "", key: "", inv: "", me: "" }; }
+      } catch (e) { window.__slp = { code: "", key: "", inv: "", me: "", login: false }; }
     })();
   </script>
   <!-- CONNECT, NOT UNLOCK (24 Sep 2026). Every word on this page used to say
@@ -46,11 +46,12 @@
     .jbtn:active{transform:translateY(4px);box-shadow:0 1px 0 #ef6f23;}
     #jStatus{font-weight:800;font-size:13.5px;margin-top:12px;min-height:18px;}
   </style>
+  <link rel="stylesheet" href="/crafted-family.css" />
 </head>
-<body>
+<body class="crafted-family family-join">
   <div class="jwrap">
     <div class="jhero">
-      <img src="/coach/echo/echo-celebrate.svg" alt="Echo" onerror="this.onerror=null;this.src='/coach/echo/echo-idle.svg';" />
+      <img src="/assets/crafted/echo-welcome.webp" alt="Echo" onerror="this.onerror=null;this.src='/coach/echo/echo-idle.svg';" />
       <h1 id="jTitle">Connecting you to your speech therapist…</h1>
     </div>
     <p class="jmsg" id="jMsg">One moment…</p>
@@ -63,6 +64,21 @@
       <input id="jKey" type="text" autocomplete="off" placeholder="e.g. ABCD2345" />
       <button class="jbtn" id="jGo">Connect</button>
       <div id="jStatus" class="muted"></div>
+    </div>
+    <!-- A FAMILY LOGIN (14 Nov 2026): /join.html?login=1, from Log in on
+         setup's first screen. The username and password a clinician made for
+         this family, typed into the app itself — the link opens in Safari,
+         and the iPhone app keeps its own storage. A right password connects
+         this device exactly as the link does (Sona.familyLogin), and then the
+         SAME question follows: logging in is not saying yes to sharing. -->
+    <div class="jcard" id="jLogin" style="display:none;">
+      <label for="jUser">Username</label>
+      <input id="jUser" type="text" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="e.g. otter4827" />
+      <label for="jPass">Password</label>
+      <input id="jPass" type="password" autocomplete="current-password" autocapitalize="none" autocorrect="off" spellcheck="false" />
+      <button class="jbtn" id="jLoginGo">Log in</button>
+      <div id="jLoginStatus" class="muted" style="font-weight:800;font-size:13.5px;margin-top:12px;min-height:18px;"></div>
+      <a href="/onboarding.html" id="jLoginBack" style="display:block;text-align:center;margin-top:6px;font-family:'Baloo 2';font-weight:800;font-size:14px;color:var(--muted,#8a6f52);padding:10px;">← Back</a>
     </div>
     <!-- consent, asked AFTER access is already settled: sharing is a
          separate decision from access, and saying no costs the family nothing -->
@@ -79,7 +95,7 @@
     <!-- The grown-up's OWN email, asked only after the sharing question is
          answered and never as a condition of anything: an empty box and
          Continue is a complete answer. The list line comes BEFORE the box, in
-         Travis's words, because an address typed here joins the Kit list.
+         Travis's words, because an address typed here joins the email list (Resend).
          What leaves: the email and the role "parent". Never the child's name,
          age or the clinician's code — the address is about the grown-up. -->
     <div class="jcard" id="jEmail" style="display:none;">
@@ -131,7 +147,7 @@
         } catch (e) {}
       }
       // The optional email step, after the sharing answer. An address that
-      // looks like one goes to /api/lead (then Kit, tagged as a parent); an
+      // looks like one goes to /api/lead (then Resend's contacts, as a parent); an
       // empty box goes straight on. The family never waits on the list:
       // keepalive, then into the app.
       //
@@ -193,7 +209,7 @@
         document.getElementById("jConsentBody").textContent =
           "If you say yes, " + (name || "your child's speech therapist") + " will see your child's first name and age as you entered them, " +
           "which sounds they are practicing, practice days and how many tries each day, and a rough pass rate per sound. " +
-          "They can also send practice assignments and a short note to this app. Never any audio; recordings stay on this device. " +
+          "They can also send practice assignments and a short note to this app. Never any audio: it is never uploaded or saved. " +
           "You can stop any time, and stopping deletes everything they could see. Saying no changes nothing; Sona stays free for you.";
         try { if (Sona.confetti) Sona.confetti({ count: 150 }); } catch (e) {}
         document.getElementById("jYes").onclick = function () {
@@ -204,10 +220,18 @@
           msg.textContent = "Your therapist will see practice progress. Let's meet Echo.";
           askEmail();
         };
+        // already sharing with this very clinician: "No thanks" stops it
+        var wasSharing = false;
+        try { wasSharing = !!(Sona.slpSharing && Sona.slpSharing() && String((Sona.pilotInfo() || {}).code || "").toUpperCase() === String(code).toUpperCase()); } catch (e) {}
         document.getElementById("jNo").onclick = function () {
           // declining shares nothing — and costs nothing; access stands, and
           // coverage never asked for consent in the first place
-          try { Sona.saveProfile({ slpShare: false }); } catch (e) {}
+          // ...but only with THIS clinician: a child already sharing with
+          // another one keeps sharing with them (Stop sharing in Settings ends that)
+          var other = false;
+          try { var pi = Sona.pilotInfo() || {}; var pc = String(pi.code || "").toUpperCase(); other = !!(pi.consent && pi.childId && pc && pc.indexOf("FF-") !== 0 && pc !== String(code).toUpperCase()); } catch (e) {}
+          if (!other) { try { Sona.saveProfile({ slpShare: false }); } catch (e) {} }
+          if (wasSharing && Sona.slpStopSharing) Sona.slpStopSharing();
           consent.style.display = "none";
           title.textContent = "No problem!";
           msg.textContent = "Nothing will be shared, and Sona is still free for you. Let's meet Echo.";
@@ -245,11 +269,44 @@
         form.style.display = "block";
         try { if (window.__slp && window.__slp.code) document.getElementById("jCode").value = window.__slp.code; } catch (e) {}
       }
+      // The login form: what Log in on setup's first screen opens. A right
+      // password leaves this device exactly where a link would, then asks the
+      // same sharing question; the invite the login was made for, while it is
+      // still waiting, rides along so a yes claims it (claimInvite).
+      function showLogin() {
+        var box = document.getElementById("jLogin"), st = document.getElementById("jLoginStatus"),
+            btn = document.getElementById("jLoginGo"), user = document.getElementById("jUser"), pass = document.getElementById("jPass");
+        title.textContent = "Log in";
+        msg.textContent = "Type the username and password your speech therapist gave you.";
+        form.style.display = "none";
+        box.style.display = "block";
+        function submit() {
+          var u = (user.value || "").trim(), pw = pass.value || "";
+          if (!u || !pw) { st.style.color = "#b42323"; st.textContent = "Type both, just as your speech therapist wrote them."; return; }
+          btn.disabled = true; st.style.color = "var(--muted)"; st.textContent = "Checking…";
+          Sona.familyLogin(u, pw).then(function (r) {
+            btn.disabled = false;
+            if (r.valid) {
+              try { window.__slp.inv = r.inv || ""; } catch (e) {}
+              try { Sona.saveProfile({ slpCode: r.code }); } catch (e) {}
+              box.style.display = "none";
+              askConsent(r.code, r.name);
+              return;
+            }
+            st.style.color = "#b42323";
+            st.textContent = r.error === "offline" ? "Couldn't reach Sona. Check your connection and try again."
+              : (typeof r.error === "string" && r.error ? r.error : "That username and password don't match. Check them with your speech therapist.");
+          });
+        }
+        btn.onclick = submit;
+        pass.onkeydown = function (e) { if (e.key === "Enter") submit(); };
+        try { user.focus({ preventScroll: true }); } catch (e) {}
+      }
       document.getElementById("jGo").onclick = function () {
         attempt((document.getElementById("jCode").value || "").trim(), (document.getElementById("jKey").value || "").trim(), true);
       };
       var s = window.__slp || {};
-      if (s.code && s.key) attempt(s.code, s.key, false); else showForm();
+      if (s.login) showLogin(); else if (s.code && s.key) attempt(s.code, s.key, false); else showForm();
     })();
   </script>
 </body>

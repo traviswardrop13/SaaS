@@ -8,6 +8,15 @@
     "allowNavigation": ["speaksona.com", "*.speaksona.com"]
   },
   "ios": {
-    "contentInset": "never"
+    "contentInset": "never",
+    "backgroundColor": "#fff6e9",
+    "loggingBehavior": "none"
+  },
+  "plugins": {
+    "Keyboard": {
+      "resize": "native",
+      "style": "LIGHT",
+      "autoBackdropColor": "dom"
+    }
   }
 }

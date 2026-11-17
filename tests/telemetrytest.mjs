@@ -29,16 +29,32 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
   // is dotted AND is the relay — so a relay event fired from any other page
   // was invisible to this check twice over, which is precisely the silence
   // the suite exists to break.
-  const relayed = new Set();
+  const relayed = new Set(), viaS = new Set(), picked = new Set();
   const files = ["sona.js", ...readdirSync(ROOT).filter((f) => f.endsWith(".html"))];
   for (const f of files) {
     const src = readFileSync(ROOT + "/" + f, "utf8");
     for (const m of src.matchAll(/(?:^|[^.\w])(?:track|tele)\(\s*"([^"]+)"/g)) relayed.add(m[1]);
     for (const m of src.matchAll(/\bSona\.track\(\s*"([^"]+)"/g)) relayed.add(m[1]);
+    // a page's own short name for the app (var S = window.Sona) is the relay
+    // too, and a call can pick its name (FOUND1's replay pages:
+    // track(replay ? "story game replayed" : "game opened", …)): both names
+    if (/\bS\s*=\s*window\.Sona\b/.test(src)) for (const m of src.matchAll(/(?:^|[^.\w])S\.track\(\s*"([^"]+)"/g)) { relayed.add(m[1]); viaS.add(m[1]); }
+    for (const m of src.matchAll(/(?:^|[^.\w])(?:(?:Sona|S)\.)?(?:track|tele)\(\s*[\w.]+\s*\?\s*"([^"]+)"\s*:\s*"([^"]+)"/g)) { relayed.add(m[1]); relayed.add(m[2]); picked.add(m[1]); picked.add(m[2]); }
   }
   ok("the scan looks at every page that can reach the relay, not a fixed pair",
     files.length > 10, files.length + " files");
+  ok("…including a page's own S.track and a call that picks its name (the replay pages' \"story game replayed\")",
+    viaS.has("story finished") && picked.has("story game replayed") && picked.has("game opened"), JSON.stringify({ viaS: [...viaS], picked: [...picked] }));
   const allowed = (relay.match(/const EVENTS = new Set\(\[([\s\S]*?)\]\)/) || ["", ""])[1];
+  // Named, so the next one is a decision: an event a PARKED page fires that
+  // was never allow-listed. Listing it here keeps it out of PostHog, as it
+  // has always been; un-parking its page means adding it to EVENTS.
+  const PARKED = { "story finished": "chapter.html, the parked chapter reader (no menu opens it)" };
+  for (const [ev, why] of Object.entries(PARKED)) {
+    ok(`a parked page's event, named: "${ev}" (${why}) is still fired there and still not in EVENTS`,
+      relayed.has(ev) && !allowed.includes(`"${ev}"`), "fixed or gone: take it off PARKED");
+    relayed.delete(ev);
+  }
   for (const ev of [...relayed].sort()) {
     ok(`relay accepts "${ev}"`, allowed.includes(`"${ev}"`),
       "fired by the app but not in EVENTS — /api/track drops it silently, so it looks like nobody did it");
@@ -112,9 +128,18 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
   // a live campaign with no PageView and no conversion, optimising on who taps
   // an ad instead of on who turns out to be a clinician. Money, spent wrong,
   // with nothing anywhere saying so.
-  ok("the page the ad points at loads the pixel — the opt-in at the root, and the landing page it hands on to",
-    /<script src="\/pixel\.js"><\/script>/.test(slps) && /<script src="\/pixel\.js"><\/script>/.test(readFileSync(ROOT + "/packet.html", "utf8")),
+  const slpPixel = (slps.match(/<script\b[^>]*\bsrc="\/pixel\.js"[^>]*>/) || [""])[0];
+  ok("the page the ad points at loads the pixel",
+    !!slpPixel,
     "a campaign with no PageView and no Lead optimises on clicks, not on sign-ups");
+  ok("the clinician form disables Meta automatic form capture", /\bdata-autoconfig="off"/.test(slpPixel));
+  // The Speech Check has a "Child's first name" box: Meta's automatic form
+  // reading must never see it (core.md B5, website.md B6).
+  const checkPixel = (readFileSync(ROOT + "/check.html", "utf8").match(/<script\b[^>]*\bsrc="\/pixel\.js"[^>]*>/) || [""])[0];
+  ok("the Speech Check's pixel tag turns Meta's automatic form reading off", !!checkPixel && /\bdata-autoconfig="off"/.test(checkPixel));
+  // The form asks no role or work setting since 14 Nov 2026, so neither can
+  // reach PostHog (they were ph-no-capture fields until then).
+  ok("the clinician form holds no role or work setting to capture", !/id="fRole"|id="fWorkSetting"/.test(slps));
 
   // A tap is not a sign-up. Firing on the click would teach the campaign to
   // buy people who open forms and abandon them.
@@ -124,8 +149,20 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
   ok("Lead fires only after the server accepted the sign-up",
     okGate > 0 && lead > okGate,
     "otherwise the campaign optimises for opening the form, not completing it");
-  ok("…and a brand-new clinician is marked as one",
-    /if \(j\.signedIn\) sonaTrack\("CompleteRegistration"\)/.test(handler));
+  ok("…and email delivery is never counted as a completed registration",
+    handler.indexOf("if (j.sent !== true) {") > okGate &&
+    lead > handler.indexOf("if (j.sent !== true) {") && !/CompleteRegistration/.test(handler));
+
+  // THE ROOT IS THE PARENT PAGE NOW (26 Sep 2026), and the parent ads land on
+  // it: the same regression, the same rule. PageView on load, Lead only once
+  // the server said yes, and no CompleteRegistration — a parent has no account.
+  const parents = readFileSync(ROOT + "/parents.html", "utf8");
+  ok("the parent page, where the parent ads land, loads the pixel", /<script src="\/pixel\.js"><\/script>/.test(parents));
+  const pgo = parents.slice(parents.indexOf("function go()"));
+  ok("…and fires Lead only after the server accepted the sign-up",
+    pgo.indexOf("if (!j || !j.ok)") > 0 && pgo.indexOf('sonaTrack("Lead")') > pgo.indexOf("if (!j || !j.ok)"));
+  ok("…with no parameters, and never CompleteRegistration", /sonaTrack\("Lead"\); \} catch/.test(pgo) && !/CompleteRegistration/.test(parents));
+  ok("…and the ad's own click id rides along with the lead", /"fbclid"/.test(parents) && /utm_content/.test(parents) && /\}, attrib\)\)/.test(parents));
 
   // WHERE THE PIXEL MAY LOAD, as an allow-list. A deny-list would mean every
   // new page is tracked until someone remembers to exclude it, and the pages
@@ -133,8 +170,7 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
   // funnel; every other page — the practice screens, the clinician's caseload,
   // the family's redemption link — carries or is one keystroke from a child's
   // identity and gets no ad tracking at all.
-  // packet.html joined 17 Nov 2026: it is the root now, where the SLP ad lands.
-  const MARKETING = new Set(["check.html", "subscribe.html", "onboarding.html", "for-slps.html", "packet.html"]);
+  const MARKETING = new Set(["check.html", "subscribe.html", "onboarding.html", "for-slps.html", "parents.html", "try.html"]);
   const pages = readdirSync(ROOT).filter((f) => f.endsWith(".html"));
   const strays = pages.filter((f) => !MARKETING.has(f) && /pixel\.js/.test(readFileSync(ROOT + "/" + f, "utf8")));
   ok("no page outside the grown-up marketing funnel loads the ad pixel", strays.length === 0, strays.join(", "));
@@ -154,11 +190,12 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
   ok("no pixel event carries a name, a child, an age or an email",
     !calls.some((c) => /\b(name|child|kid|age|email|word|transcript)\b/i.test(c)),
     calls.filter((c) => /\b(name|child|kid|age|email|word|transcript)\b/i.test(c)).join(" | "));
+  ok("no pixel event carries the clinician's work setting or role", !calls.some(c => /\b(workSetting|clinicianRole)\b/.test(c)));
 }
 
 // ── 5. which ad produced which clinician ──
 {
-  const req = readFileSync(APP + "/app/api/slp/auth/request/route.ts", "utf8");
+  const req = readFileSync(APP + "/lib/slpLead.ts", "utf8");
   const slps = readFileSync(ROOT + "/for-slps.html", "utf8");
 
   ok("the landing page captures the ad's own click id, not just utm_source",
@@ -174,6 +211,8 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
     /for \(const k of ATTRIB_KEYS\)/.test(req));
   ok("…and the allow-list holds no field that could name a person",
     !/\b(child|kid|age|transcript|word)\b/.test(req.slice(req.indexOf("const ATTRIB_KEYS"), req.indexOf("function safeAttrib"))));
+  ok("work setting and clinician role are excluded from the signup attribution allow-list",
+    !/\b(workSetting|clinicianRole)\b/.test(req.slice(req.indexOf("const ATTRIB_KEYS"), req.indexOf("function safeAttrib"))));
 }
 
 console.log(fails ? fails + " FAILURES" : "ALL GREEN");

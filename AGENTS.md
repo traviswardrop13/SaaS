@@ -6,10 +6,13 @@ the pricing eras and the promises made to families, Rachel's clinical rules,
 how Travis wants to be talked to — and if the two ever disagree, `CLAUDE.md`
 wins. Read it before your first edit; it is not optional context.
 
-> **Where the product is today (24 Sep 2026):** The family app is **free**
-> again; pricing needs Travis's explicit approval. Home is the silent game
-> library. Books, Bubble Pop and Peekaboo are “coming soon.” The SLP dashboard
-> is browser-only and stays separate from the installed family app.
+> **Where the product is today (22 Oct 2026):** Pricing is on (a trial first;
+> see CLAUDE.md). Home leads with today's story (STORY1, Premium) above two
+> doors, the Arcade and the Books, and stays silent: all 29 games are open in
+> the Arcade (the eighteen rebuilt ones since 22 Oct 2026), and the books are
+> on. CLAUDE.md is
+> the current rulebook. The SLP dashboard is browser-only and stays separate
+> from the installed family app.
 
 ## The one thing most likely to cause real harm
 
@@ -80,8 +83,12 @@ it must pass before any push. Two things learned the hard way:
 
 ## Credentials and claims — checkable, and checked
 
-Rachel is a co-founder and a **licensed pediatric speech-language pathologist
-(Clinical Fellow)**, Idaho. She does **not** hold ASHA's CCC. **Never write
+Rachel is a co-founder and **a pediatric speech-language pathologist in her
+clinical fellowship** (an Idaho CF licence). Wherever copy presents Sona's SLP
+it says **"Built with Rachel, MS, CF-SLP, a pediatric speech-language
+pathologist in her clinical fellowship"** (Travis, 1 Oct 2026; her name always
+carries "MS, CF-SLP", `tests/shiptest.mjs` checks).
+She does **not** hold ASHA's CCC. **Never write
 "CCC", "certified", "board-certified" or "ASHA-certified"** — a false
 board-certification claim shipped once on the page that sells the app.
 `tests/iaptest.mjs` fails if it returns.

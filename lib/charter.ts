@@ -47,6 +47,17 @@ export const STANDARD_PRICE = "$99.99";
 export const STANDARD_PER_MONTH = "under $8.50 a month";
 export const CHARTER_PER_MONTH = "under $5 a month";
 
+// THE MONTHLY PLAN (Travis, 1 Oct 2026: "add to the paywall a $10 a month
+// option ... that does not have a free trial. That's a pay today"). It was
+// retired on 18 Sep and is on sale again beside the yearly plan: charged at
+// purchase, no trial, renews each month. It is never a charter spot and has
+// no charter price: `yearly()` below keeps a month-interval subscription out
+// of the fifty whatever it is stamped with, and checkout stamps it with
+// nothing. One figure, here, so checkout, /api/charter, the success page and
+// the Terms cannot drift apart.
+export const MONTHLY_CENTS = 999;
+export const MONTHLY_PRICE = "$9.99";
+
 export type Spots = {
   cap: number;
   taken: number;
@@ -89,7 +100,7 @@ export async function charterSpots(client?: Stripe): Promise<Spots> {
       for (const s of res.data) {
         if (s.metadata?.tier !== "charter") continue;    // untagged: sold before the offer existed, or a test purchase; "standard": after the cap
         if (NOT_A_SPOT.has(s.status)) continue;          // never finished paying
-        if (!yearly(s)) continue;                        // the retired monthly plan is not a spot
+        if (!yearly(s)) continue;                        // the monthly plan is never a spot
         taken++;
       }
       if (taken >= CHARTER_CAP || !res.has_more || !res.next_page) break;

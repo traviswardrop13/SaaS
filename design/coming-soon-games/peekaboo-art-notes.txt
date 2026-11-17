@@ -1,0 +1,30 @@
+Peekaboo — existing art reuse only
+
+Current scope: one final memory/hide-and-seek game. No image generation, semantic image edits, replacement art library, or new image exports. Existing files unchanged. Provenance is repository-owned existing crafted art; no generator prompt/origin is claimed for those historical images. Inspected with view_image and dark-alpha QA.
+
+Interaction contract (17 Oct 2026: Peekaboo moved onto the Say & Play engine, public/sayplay.js, as Bubble Pop is): the word, said two times, makes the word's picture peek out of one door; the door closes over it; the doors trade places one to three times; the child taps the door it went behind. The right door opens on the picture, and the step counts after a short cheer. From the first wrong tap the right door glows and an arrow points at it; from the second, any door opens it. Echo's clue (optional) asks for the word again and makes the right door glow. The physical curtain pull, Hide button, handle drag and Peek again of the simple-play version are gone (a three-year-old taps). Nothing is practice data.
+
+Reuse inventory (some optional spectators; no new content required):
+public/assets/crafted/home-peekaboo.webp: 768x432 RGB, 58984 bytes; sha256 19510d374989895dd4b90ae7cce41cbe0fbb54703c6baddc6d4b90fa1beca0c7; alpha>=64 bbox opaque RGB
+public/assets/crafted/game/peekaboo-bg.webp: 800x1200 RGB, 259654 bytes; sha256 fd68ea92814f76497b177f3f111cef4cef7d2135595244722662ced3d3b9fcd5; alpha>=64 bbox opaque RGB
+public/assets/crafted/game/peekaboo-door.webp: 512x634 RGBA, 86992 bytes; sha256 6d5590354aee71829fa90e2a8206293b6815d9bd7a5aacb3a4915520de8fe2a7; alpha>=64 bbox (0, 0, 512, 630)
+public/assets/crafted/buddy-bunny-peek.webp: 512x384 RGBA, 29232 bytes; sha256 fbe777b75e529283c2968cd161e890fabac4a9fe418cb1a852fe688ccaa8590c; alpha>=64 bbox (100, 23, 411, 382)
+public/assets/crafted/buddy-dino-peek.webp: 512x384 RGBA, 38786 bytes; sha256 c1b3dc5c1eb2f789b3b7f2a3f6d00da862a0c2a1a359048f21c97e09ad58f685; alpha>=64 bbox (78, 23, 435, 381)
+public/assets/crafted/buddy-cat-peek.webp: 512x384 RGBA, 38396 bytes; sha256 80d9766f209060d1ce1f8663744e16a71d42c7a6257af4378e41fa921848d6c8; alpha>=64 bbox (53, 23, 460, 381)
+public/assets/crafted/buddy-panda-peek.webp: 512x384 RGBA, 42516 bytes; sha256 01c4759453dbeae0a3eb2e0fb6d786be2f1daa158e2b0c4c55aea0ae69010856; alpha>=64 bbox (43, 24, 470, 381)
+public/assets/crafted/buddy-frog-peek.webp: 512x384 RGBA, 46548 bytes; sha256 1c6e37b16b9726db4edcfae355f1cb90d7aa1fb8921673e11181512f57ac1873; alpha>=64 bbox (37, 24, 475, 384)
+
+Geometry / composition guidance:
+- home-peekaboo.webp: intro only. Echo is baked into this hero; never use as the live hidden target.
+- peekaboo-bg.webp: portrait cottage with three baked closed doors. Physical wood leaves are around source left (88,354)–(230,568), middle (333,352)–(470,569), right (579,354)–(719,569). Approx centers (.199,.384),(.502,.384),(.811,.384). The root/core should map dynamic doors to a consistent board or fully cover baked leaves, not cover-crop the image and let fake doors compete with real controls. Natural aspect2:3; sky/roof top, path below.
+- peekaboo-door.webp: complete arched wood panel AND outer jamb. True aspect512/634. Knob center approx(.800,.593). Native dark recess can be drawn behind it for reveal; useful interior arch bounds approximately x.13–.87,y.09–.95 with arched top at(.5,.09). Do not stretch the raster; position a physical grip exactly at rendered knob and transform it with the moving/swinging door.
+- buddy-*-peek.webp: exact aspect4:3. Lower paw line is source y.995–1.00; heads usually occupy y.06–.99. Keep source framing; render behind a sill/door using this paw baseline. Use only if the final design needs spectators; existing word-picture art remains the target, not an arbitrary replacement buddy.
+
+Not selected: game/peekaboo-door-open.webp (512x786,82116bytes) is a different double-door asset with baked glowing interior, plants/ground and nonzero alpha at left source edge (~73/255). It cannot be treated as the open state of the single closed door without a geometry/style jump. No edit/generation needed; native opening/dark interior avoids that mismatch.
+
+Inspection only QA files in /tmp: sona-peekaboo-door-qa.png (both old door cutouts on dark background), sona-peekaboo-cottage-qa.png (enlarged three painted frames). These are not app assets.
+
+Final core composition choice: reuse monster-salon-v1.webp room behind three stand-alone toy cottage arches. This avoids competing baked background doors. The portrait cottage background and buddy peeks are inspected alternatives only, not required live-game assets. Current target remains the exact existing word picture.
+
+Closed leaf runtime crop contract (still the leaf's CSS crop in public/peekaboo.css; the hit target is now the whole door, so the knob guide is gone): source rectangle x72,y58,w368,h562 (source ends440,620); cropped leaf aspect368/562. Clip the top to an arch, peak(.5,0), shoulder/straight side start around normalized y.25; base y1. Native arch/jamb/recess remain fixed behind it. Source knob center approx(409,376) maps to cropped-leaf contact(.916,.566). Runtime horizontal hinge applies the same transform to image, knob guide and hit target. This is a texture source rect/clip only; no raster is modified or exported.
+Final reused room: public/assets/crafted/game/monster-salon-v1.webp 800x1200 RGB, 39536 bytes; sha256 50172599b1321d870f1291550eb12c82a39990e56af52dd17fa9e5d5dfd4d1a9.

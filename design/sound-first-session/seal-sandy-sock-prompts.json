@@ -1,0 +1,212 @@
+{
+  "tool": "Built-in image_gen",
+  "mode": "illustration-story",
+  "styleReference": "public/assets/books/bo-beach-day/p01.webp",
+  "workflow": "Original cover, then character/prop lineup from cover, then eight independent complete page images using cover and lineup. No atlas or page collage used.",
+  "exportPolicy": "Only RGB format conversion and Lanczos resizing; artwork was never repainted in code. Cover384x384<40KB; pages768x768<200KB.",
+  "visualReview": "Each generated page inspected against exact caption and key object/action, identities and story progression. S p03 corrected to empty sand through the downward cuff, with intact toe.",
+  "assets": [
+    {
+      "sound": "S",
+      "id": "cover",
+      "prompt": "Use case: illustration-story. Asset type: square book cover art for Sona, no title lettering. Create ONE complete square full-bleed picture. REFERENCE IMAGE is the authoritative ORIGINAL Sona artwork STYLE ONLY: warm tactile soft 3D toy-like forms, very soft velvet/fur surface, glossy friendly eyes, pink cheeks, beautifully painted natural scenery, gentle golden daylight and delicate shadows. Match that style; do not copy the bear, sailor hat, scarf, rowboat or plot. New book: Seal and the Sock. One small friendly pale cream-gray seal pup with rounded front flippers, shiny dark eyes and pink cheeks, no clothing. It happily holds ONE sunny-yellow knitted sock with a wide teal cuff, exactly one sock, no stripes or patterns. Cozy beach-side garden near calm blue sea; a low clothesline with two plain clips and a shallow cream wash tub nearby. The sock is the main visible object, held upright beside Seal's face. Cheerful satisfied cover moment. Composition: main seal and sock within central 75%, all important objects above bottom 18% which is calm pale sand for the real caption card. This is original Sona's existing rich, warm, dimensional storybook art, not flat vector. No text, words, letters, numbers, logos, watermarks or UI. No extra characters. Exactly one flipper holds each side of the sock cuff, natural seal anatomy, no hands/fingers.",
+      "referenced_image_paths": [
+        "public/assets/books/bo-beach-day/p01.webp"
+      ],
+      "source": "design/sound-first-session/book-art-sources/seal-sandy-sock/cover.png",
+      "generatedSourcePreserved": "design/sound-first-session/book-art-sources/seal-sandy-sock/cover.png",
+      "asset": "public/assets/books/seal-sandy-sock/cover.webp",
+      "export": {
+        "width": 384,
+        "height": 384,
+        "format": "WebP",
+        "quality": 80,
+        "bytes": 37550,
+        "sha256": "5dacaa61f3eaf2d7f80f61dac4ca452374e57fb6bb9d2af1529b64aeb394f1f5"
+      }
+    },
+    {
+      "sound": "S",
+      "id": "lineup",
+      "prompt": "Use case: illustration-story. Asset type: production character and prop lineup reference, not an app page. Image 1 is the authoritative Seal-and-sock COVER identity and style. Create a clean square character lineup on a plain warm cream background, no scenery. Show the SAME pale cream-gray seal pup with no visible external ears, soft seal flippers, dark eyes, pink cheeks and soft tactile fuzz from the cover: front view seated, 3/4 view seated, side view seated, all same proportions. Below, show ONE reference of the yellow knitted sock with a wide teal cuff, cream enamel wash tub with a thin blue rim, and a simple low laundry line with two plain wooden clips. The sock is plain yellow with teal cuff only. Match cover style and characters exactly. No extra characters, no words, letters, labels, digits, logos or watermark. A production model sheet with separated complete views, no cropped limbs.",
+      "referenced_image_paths": [
+        "design/sound-first-session/book-art-sources/seal-sandy-sock/cover.png"
+      ],
+      "source": "design/sound-first-session/book-art-sources/seal-sandy-sock/lineup.png",
+      "generatedSourcePreserved": "design/sound-first-session/book-art-sources/seal-sandy-sock/lineup.png"
+    },
+    {
+      "sound": "S",
+      "id": "p01",
+      "prompt": "Use case: illustration-story. Asset type: ONE independent square full-bleed picture book page, not a collage or model sheet. Image 1 is the authoritative book cover STYLE, character and beach-garden environment. Image 2 is the character/prop IDENTITY lineup, not a layout to copy. Make exactly ONE seal, same pale cream-gray pup with pink cheeks, huge glossy eyes, no visible external ears, natural rounded seal flippers and soft tactile fuzz. Same ONE sunny-yellow knitted sock with wide teal cuff, cream wash tub with thin blue rim, same low clothesline, painted calm blue sea and garden flowers behind. Warm original Sona soft3D/clay toy storybook style, textured natural scenery and golden daylight. Match identities exactly. Main action in central 75%, entirely above bottom18% calm pale sand where real caption will sit. No copy baked into art: no text, words, letters, digits, logos, watermark or UI. No other animals, no duplicate sock. PAGE 1. Caption context only, DO NOT WRITE IT: \"A seal has a sock.\" EXACT SCENE: Seal proudly holds the single yellow sock with teal cuff, on dry sand near a small cream wash tub. Sock is empty-looking from outside and held upright; no sand is spilled yet.",
+      "referenced_image_paths": [
+        "design/sound-first-session/book-art-sources/seal-sandy-sock/cover.png",
+        "design/sound-first-session/book-art-sources/seal-sandy-sock/lineup.png"
+      ],
+      "source": "design/sound-first-session/book-art-sources/seal-sandy-sock/p01.png",
+      "generatedSourcePreserved": "design/sound-first-session/book-art-sources/seal-sandy-sock/p01.png",
+      "asset": "public/assets/books/seal-sandy-sock/p01.webp",
+      "export": {
+        "width": 768,
+        "height": 768,
+        "format": "WebP",
+        "quality": 82,
+        "bytes": 127006,
+        "sha256": "2a536425e28c173e90ce988b68df9b77cc63c39fb79638f53c2e37bc1a018a9c"
+      }
+    },
+    {
+      "sound": "S",
+      "id": "p02",
+      "prompt": "Use case: illustration-story. Asset type: ONE independent square full-bleed picture book page, not a collage or model sheet. Image 1 is the authoritative book cover STYLE, character and beach-garden environment. Image 2 is the character/prop IDENTITY lineup, not a layout to copy. Make exactly ONE seal, same pale cream-gray pup with pink cheeks, huge glossy eyes, no visible external ears, natural rounded seal flippers and soft tactile fuzz. Same ONE sunny-yellow knitted sock with wide teal cuff, cream wash tub with thin blue rim, same low clothesline, painted calm blue sea and garden flowers behind. Warm original Sona soft3D/clay toy storybook style, textured natural scenery and golden daylight. Match identities exactly. Main action in central 75%, entirely above bottom18% calm pale sand where real caption will sit. No copy baked into art: no text, words, letters, digits, logos, watermark or UI. No other animals, no duplicate sock. PAGE 2. Caption context only, DO NOT WRITE IT: \"The sock is full of sand.\" EXACT SCENE: Close clear view: Seal peers into the wide cuff of the yellow sock, which contains a small mound of dry sand. Sock remains the main focus. The top cuff is open TOWARD THE VIEWER so actual grains of sand inside the sock are clearly visible. Do not show sand falling yet.",
+      "referenced_image_paths": [
+        "design/sound-first-session/book-art-sources/seal-sandy-sock/cover.png",
+        "design/sound-first-session/book-art-sources/seal-sandy-sock/lineup.png"
+      ],
+      "source": "design/sound-first-session/book-art-sources/seal-sandy-sock/p02.png",
+      "generatedSourcePreserved": "design/sound-first-session/book-art-sources/seal-sandy-sock/p02.png",
+      "asset": "public/assets/books/seal-sandy-sock/p02.webp",
+      "export": {
+        "width": 768,
+        "height": 768,
+        "format": "WebP",
+        "quality": 82,
+        "bytes": 137332,
+        "sha256": "652a064e12aca0a27a15a25b416694a974364ca9214b47336ec87e81cfb82f7f"
+      }
+    },
+    {
+      "sound": "S",
+      "id": "p03",
+      "prompt": "Use case: illustration-story. Create ONE square full-bleed page for Seal and the Sock. The first reference is the identity/style cover, the second the exact character/props lineup. Same pale cream-gray seal pup, pink cheeks, big dark eyes, no external ears, natural rounded seal flippers, same beach-garden, tub with blue rim and low line. Original warm tactile soft3D Sona style. Exact story action: Seal has turned the ONE yellow knitted sock completely UPSIDE DOWN. The teal cuff OPENING must be at the BOTTOM pointing DOWN toward ground; the CLOSED rounded yellow TOE is at the TOP held by Seal's flipper. A thin stream of dry SAND pours from the TEAL CUFF OPENING at the BOTTOM. Yellow toe is closed/intact, NO HOLE in the toe. Seal gently jiggles the sock and looks delighted. Clearly illustrate emptying sand out of an upside-down sock by its proper cuff opening. Do NOT hold the cuff at top; do NOT pour from toe. No sand on Seal's head yet. Everything important within central75%, above lower18% calm sand. No text, letters, numbers, logos, watermark or UI. One complete scene, not collage.",
+      "referenced_image_paths": [
+        "design/sound-first-session/book-art-sources/seal-sandy-sock/cover.png",
+        "design/sound-first-session/book-art-sources/seal-sandy-sock/lineup.png"
+      ],
+      "source": "design/sound-first-session/book-art-sources/seal-sandy-sock/p03.png",
+      "generatedSourcePreserved": "design/sound-first-session/book-art-sources/seal-sandy-sock/p03.png",
+      "asset": "public/assets/books/seal-sandy-sock/p03.webp",
+      "export": {
+        "width": 768,
+        "height": 768,
+        "format": "WebP",
+        "quality": 82,
+        "bytes": 126660,
+        "sha256": "e437b8be38e0db55f1cc213b3acba6a7f24c88246f78fe3456e7f7b7671c204e"
+      }
+    },
+    {
+      "sound": "S",
+      "id": "p04",
+      "prompt": "Use case: illustration-story. Asset type: ONE independent square full-bleed story page, never collage. Image1 is book-cover style/identity/beach-garden environment; Image2 is character and prop lineup only. SAME one pale cream-gray seal pup, no external ears, rounded natural seal flippers, huge dark eyes, pink cheeks, tactile soft fuzz. Same yellow KNITTED SOCK with wide TEAL CUFF, cream enamel tub with thin blue rim, low clothesline and warm flowery beach garden by calm blue sea. Original richly textured soft3D Sona toy storybook style, warm daylight. All key action within central75% width/upper82% height; calm pale sand at bottom18% under real caption. No extra animal, no duplicate sock, no words, letters, digits, logos, watermark or UI. PAGE 4. Caption context only DO NOT PRINT: \"Sand goes on the seal!\" EXACT SCENE: A little mound of sand lands playfully on Seal head; Seal looks surprised and amused, still holding the sock. No hurt or distress. A small clearly visible mound of dry sand sits ON THE TOP OF SEAL'S HEAD. A few grains are falling onto it. Seal looks surprised and amused, not hurt. Seal holds the SAME yellow sock with blue cuff safely beside its face. No water action yet.",
+      "referenced_image_paths": [
+        "design/sound-first-session/book-art-sources/seal-sandy-sock/cover.png",
+        "design/sound-first-session/book-art-sources/seal-sandy-sock/lineup.png"
+      ],
+      "source": "design/sound-first-session/book-art-sources/seal-sandy-sock/p04.png",
+      "generatedSourcePreserved": "design/sound-first-session/book-art-sources/seal-sandy-sock/p04.png",
+      "asset": "public/assets/books/seal-sandy-sock/p04.webp",
+      "export": {
+        "width": 768,
+        "height": 768,
+        "format": "WebP",
+        "quality": 82,
+        "bytes": 132830,
+        "sha256": "65179da871e609bb569d8dcfc23ccc140dc381d8377b144061aa3561fb70ff3f"
+      }
+    },
+    {
+      "sound": "S",
+      "id": "p05",
+      "prompt": "Use case: illustration-story. Asset type: ONE independent square full-bleed story page, never collage. Image1 is book-cover style/identity/beach-garden environment; Image2 is character and prop lineup only. SAME one pale cream-gray seal pup, no external ears, rounded natural seal flippers, huge dark eyes, pink cheeks, tactile soft fuzz. Same yellow KNITTED SOCK with wide TEAL CUFF, cream enamel tub with thin blue rim, low clothesline and warm flowery beach garden by calm blue sea. Original richly textured soft3D Sona toy storybook style, warm daylight. All key action within central75% width/upper82% height; calm pale sand at bottom18% under real caption. No extra animal, no duplicate sock, no words, letters, digits, logos, watermark or UI. PAGE 5. Caption context only DO NOT PRINT: \"The seal can dunk the sock in a tub.\" EXACT SCENE: Seal dips the yellow sock into a shallow cream tub of clear water on the beach. One small gentle splash, warm sunny scene. Seal holds the SAME yellow sock at its teal cuff and dips its closed yellow toe/body into clear water INSIDE the shallow cream tub. Show the sock partly under water with one gentle splash. No sand on head remains after washing.",
+      "referenced_image_paths": [
+        "design/sound-first-session/book-art-sources/seal-sandy-sock/cover.png",
+        "design/sound-first-session/book-art-sources/seal-sandy-sock/lineup.png"
+      ],
+      "source": "design/sound-first-session/book-art-sources/seal-sandy-sock/p05.png",
+      "generatedSourcePreserved": "design/sound-first-session/book-art-sources/seal-sandy-sock/p05.png",
+      "asset": "public/assets/books/seal-sandy-sock/p05.webp",
+      "export": {
+        "width": 768,
+        "height": 768,
+        "format": "WebP",
+        "quality": 82,
+        "bytes": 125856,
+        "sha256": "f37cbb5b1c414944427180f43657160edfb32ce9c057af9c7aa9e5259e34cc33"
+      }
+    },
+    {
+      "sound": "S",
+      "id": "p06",
+      "prompt": "Use case: illustration-story. Asset type: ONE independent square full-bleed story page, never collage. Image1 is book-cover style/identity/beach-garden environment; Image2 is character and prop lineup only. SAME one pale cream-gray seal pup, no external ears, rounded natural seal flippers, huge dark eyes, pink cheeks, tactile soft fuzz. Same yellow KNITTED SOCK with wide TEAL CUFF, cream enamel tub with thin blue rim, low clothesline and warm flowery beach garden by calm blue sea. Original richly textured soft3D Sona toy storybook style, warm daylight. All key action within central75% width/upper82% height; calm pale sand at bottom18% under real caption. No extra animal, no duplicate sock, no words, letters, digits, logos, watermark or UI. PAGE 6. Caption context only DO NOT PRINT: \"The sock is wet and heavy.\" EXACT SCENE: Seal lifts the damp yellow sock above the cream tub; the sock droops and a few water drops fall back into the tub. The same sock is unmistakable. The yellow sock is OUT of the tub, dangling down heavily from its teal cuff, visibly wet with a little darker knitted fabric and clear drops of WATER dripping from CLOSED yellow toe back into the cream tub. Not sand. Cuff at top, sealed toe bottom. No holes or tears.",
+      "referenced_image_paths": [
+        "design/sound-first-session/book-art-sources/seal-sandy-sock/cover.png",
+        "design/sound-first-session/book-art-sources/seal-sandy-sock/lineup.png"
+      ],
+      "source": "design/sound-first-session/book-art-sources/seal-sandy-sock/p06.png",
+      "generatedSourcePreserved": "design/sound-first-session/book-art-sources/seal-sandy-sock/p06.png",
+      "asset": "public/assets/books/seal-sandy-sock/p06.webp",
+      "export": {
+        "width": 768,
+        "height": 768,
+        "format": "WebP",
+        "quality": 82,
+        "bytes": 124752,
+        "sha256": "e50265559997880e15f070be056c1b5ad49dd10c95dd06944b4ef43e8cf35032"
+      }
+    },
+    {
+      "sound": "S",
+      "id": "p07",
+      "prompt": "Use case: illustration-story. Asset type: ONE independent square full-bleed story page, never collage. Image1 is book-cover style/identity/beach-garden environment; Image2 is character and prop lineup only. SAME one pale cream-gray seal pup, no external ears, rounded natural seal flippers, huge dark eyes, pink cheeks, tactile soft fuzz. Same yellow KNITTED SOCK with wide TEAL CUFF, cream enamel tub with thin blue rim, low clothesline and warm flowery beach garden by calm blue sea. Original richly textured soft3D Sona toy storybook style, warm daylight. All key action within central75% width/upper82% height; calm pale sand at bottom18% under real caption. No extra animal, no duplicate sock, no words, letters, digits, logos, watermark or UI. PAGE 7. Caption context only DO NOT PRINT: \"The seal hangs it in the sun.\" EXACT SCENE: Seal clips the yellow sock onto a low laundry line within reach; the sun glows warmly above. Tub sits below, no extra laundry. The SAME SINGLE yellow sock with teal cuff is now HANGING on the low line, attached at its TEAL CUFF by exactly TWO plain wooden clips. Seal gently reaches a flipper to one clip. The large warm SUN is clearly visible in the upper sky shining on the sock. Sock not on Seal yet. Frame line low enough for seal to reach naturally.",
+      "referenced_image_paths": [
+        "design/sound-first-session/book-art-sources/seal-sandy-sock/cover.png",
+        "design/sound-first-session/book-art-sources/seal-sandy-sock/lineup.png"
+      ],
+      "source": "design/sound-first-session/book-art-sources/seal-sandy-sock/p07.png",
+      "generatedSourcePreserved": "design/sound-first-session/book-art-sources/seal-sandy-sock/p07.png",
+      "asset": "public/assets/books/seal-sandy-sock/p07.webp",
+      "export": {
+        "width": 768,
+        "height": 768,
+        "format": "WebP",
+        "quality": 82,
+        "bytes": 125074,
+        "sha256": "4093c6d5d29e381f5e217ff941320ae82a4e0f4aa4e30eb7d439dc6b10f9f639"
+      }
+    },
+    {
+      "sound": "S",
+      "id": "p08",
+      "prompt": "Use case: illustration-story. Asset type: ONE independent square full-bleed story page, never collage. Image1 is book-cover style/identity/beach-garden environment; Image2 is character and prop lineup only. SAME one pale cream-gray seal pup, no external ears, rounded natural seal flippers, huge dark eyes, pink cheeks, tactile soft fuzz. Same yellow KNITTED SOCK with wide TEAL CUFF, cream enamel tub with thin blue rim, low clothesline and warm flowery beach garden by calm blue sea. Original richly textured soft3D Sona toy storybook style, warm daylight. All key action within central75% width/upper82% height; calm pale sand at bottom18% under real caption. No extra animal, no duplicate sock, no words, letters, digits, logos, watermark or UI. PAGE 8. Caption context only DO NOT PRINT: \"The sock is dry. The seal can put it on.\" EXACT SCENE: Seal happily wears the now dry yellow sock with teal cuff on one front flipper, holding it up proudly. Dry fluffy fabric and warm sun show task complete. CRITICAL: Seal is WEARING the same ONE yellow knitted sock with teal cuff over ONE raised front FLIPPER. The teal cuff circles the flipper base, yellow sock toe covers the flipper tip, like a soft mitten. The other front flipper is bare and resting. Do not have Seal holding a loose sock. Sock is dry and fluffy, no droplets, no sand on head, clothesline now EMPTY with two clips only. Show proud joyful pose and clear sock-covered flipper, calm beach-garden and warm sun.",
+      "referenced_image_paths": [
+        "design/sound-first-session/book-art-sources/seal-sandy-sock/cover.png",
+        "design/sound-first-session/book-art-sources/seal-sandy-sock/lineup.png"
+      ],
+      "source": "design/sound-first-session/book-art-sources/seal-sandy-sock/p08.png",
+      "generatedSourcePreserved": "design/sound-first-session/book-art-sources/seal-sandy-sock/p08.png",
+      "asset": "public/assets/books/seal-sandy-sock/p08.webp",
+      "export": {
+        "width": 768,
+        "height": 768,
+        "format": "WebP",
+        "quality": 82,
+        "bytes": 124938,
+        "sha256": "b93afde28fe6744c00dc6bb2c9252341c0cdf03c6e302caff0705116bdf4f45c"
+      }
+    },
+    {
+      "sound": "S",
+      "id": "p03-rejected-toe-hole",
+      "rejected": true,
+      "reason": "Sand poured through toe rather than the proper cuff opening; replaced with a corrected independent generation.",
+      "prompt": "Use case: illustration-story. Asset type: ONE independent square full-bleed picture book page, not a collage or model sheet. Image 1 is the authoritative book cover STYLE, character and beach-garden environment. Image 2 is the character/prop IDENTITY lineup, not a layout to copy. Make exactly ONE seal, same pale cream-gray pup with pink cheeks, huge glossy eyes, no visible external ears, natural rounded seal flippers and soft tactile fuzz. Same ONE sunny-yellow knitted sock with wide teal cuff, cream wash tub with thin blue rim, same low clothesline, painted calm blue sea and garden flowers behind. Warm original Sona soft3D/clay toy storybook style, textured natural scenery and golden daylight. Match identities exactly. Main action in central 75%, entirely above bottom18% calm pale sand where real caption will sit. No copy baked into art: no text, words, letters, digits, logos, watermark or UI. No other animals, no duplicate sock. PAGE 3. Caption context only, DO NOT WRITE IT: \"The seal gives it a shake.\" EXACT SCENE: Seal gently shakes the sock upside down over the ground; a small sprinkle of sand falls out. Keep body and both flippers visible. Show sock upside down and a clear thin stream of sand FALLING OUT onto the ground, not water. Seal gently shakes the sock, not playing with a ball. Keep face cheerful.",
+      "referenced_image_paths": [
+        "design/sound-first-session/book-art-sources/seal-sandy-sock/cover.png",
+        "design/sound-first-session/book-art-sources/seal-sandy-sock/lineup.png"
+      ],
+      "source": "design/sound-first-session/book-art-sources/seal-sandy-sock/p03-rejected-toe-hole.png",
+      "generatedSourcePreserved": "design/sound-first-session/book-art-sources/seal-sandy-sock/p03-rejected-toe-hole.png"
+    }
+  ]
+}

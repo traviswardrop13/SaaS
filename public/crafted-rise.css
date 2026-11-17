@@ -1,0 +1,47 @@
+/* Rise Up's crafted look (9 Oct 2026). The skies are CSS layers behind the
+   canvas, panned down as the balloon climbs, each with a plain colour under
+   its picture in case the picture never loads; the balloon, the shield and
+   the blocks are the canvas's own (public/rise.js), drawn as plain shapes
+   until their pictures arrive. Buttons take their teal and cream from
+   crafted-games.css: nothing here colours a button or a mic. */
+html{background:#8fc9ee;overflow:hidden;}
+body[data-crafted="rise"]{overflow:hidden;background:linear-gradient(180deg,#8fc9ee,#d8f0c8);}
+body[data-crafted="rise"].rise-stage-0{background:linear-gradient(180deg,#8fc9ee,#d8f0c8);}
+body[data-crafted="rise"].rise-stage-1{background:linear-gradient(180deg,#bcd9f5,#f7d9e4);}
+body[data-crafted="rise"].rise-stage-2{background:linear-gradient(180deg,#1d2350,#5b3f8f);}
+body[data-crafted="rise"] #app{background-color:#a9d8f2;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;}
+
+/* the three skies: 130% of the board tall, anchored at its foot; the page
+   moves the one on show down by up to 30% as the stretch goes by */
+.rise-sky{position:absolute;left:0;right:0;bottom:0;height:130%;background:center/cover no-repeat;opacity:0;transition:opacity 1.2s;pointer-events:none;will-change:transform,opacity;z-index:0;}
+.rise-sky.on{opacity:1;}
+#skyGarden{background-image:url('/assets/crafted/game/rise-garden.webp');background-color:#a9d8f2;}
+#skyClouds{background-image:url('/assets/crafted/game/rise-clouds.webp');background-color:#bcd9f5;}
+#skyStars{background-image:url('/assets/crafted/game/rise-stars.webp');background-color:#2a2f6b;}
+#cv{position:absolute;inset:0;width:100%;height:100%;z-index:1;touch-action:none;}
+
+/* A finger that lands on the HUD or beside Echo's button still drags the
+   shield: only their own buttons take a tap. */
+body[data-crafted="rise"] #top{pointer-events:none;}
+body[data-crafted="rise"] #top button{pointer-events:auto;}
+body[data-crafted="rise"] #slowControl{pointer-events:none;}
+body[data-crafted="rise"] #slowKeys{pointer-events:auto;}
+
+/* the hearts row (crafted-games.css's, for the other round games), kept on
+   one line: the HUD never grows a second row, whatever the count says */
+body[data-crafted="rise"] #hudspacer{display:flex;align-items:center;justify-content:center;gap:3px;min-width:54px;background:var(--cream);border-radius:18px;padding:5px 2px;flex:1 0 auto;}
+body[data-crafted="rise"] #gameHearts{display:inline-flex;flex-wrap:nowrap;white-space:nowrap;}
+body[data-crafted="rise"] #countPill{flex:none;}
+body[data-crafted="rise"] #timer{flex:0 1 auto;min-width:0;}
+body[data-crafted="rise"] #timer .wv{min-width:0;overflow:hidden;text-overflow:ellipsis;}
+body[data-crafted="rise"] #timer .wbar{flex:none;}
+body[data-crafted="rise"] #tapHint{background:#fff9eae6;color:#52371d!important;bottom:calc(20px + env(safe-area-inset-bottom));left:16px;right:16px;width:auto;border:1px solid #eadac0;border-radius:16px;padding:10px 12px;text-shadow:none;box-shadow:0 3px 0 #b2946355;pointer-events:none;}
+
+/* a small phone: the HUD stays one row with the stretch's name in it */
+@media(max-width:400px){
+ body[data-crafted="rise"] #top{gap:6px;padding-left:10px;padding-right:10px;}
+ body[data-crafted="rise"] .hudpill{padding:9px 10px;gap:4px;font-size:14px;}
+ body[data-crafted="rise"] #timer{gap:5px;}
+}
+@media(max-width:340px){body[data-crafted="rise"] .hudpill{padding:9px 8px;}body[data-crafted="rise"] #timer .wbar{width:36px}}
+@media(prefers-reduced-motion:reduce){.rise-sky{transition:opacity .4s;}}
