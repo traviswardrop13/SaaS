@@ -94,14 +94,14 @@ export type SignInResult = { ok: true; cookie: string; email: string } | { ok: f
  * What the emailed link, or the code, has proved: the inbox is real. Make the
  * account if the store says there is none, end every session from before the
  * inbox was first proved, and sign in. Moved here from /api/slp/auth/verify
- * unchanged (16 Nov 2026), so the link and the code share it; the Sona Clinic
- * invite link (17 Nov 2026, /api/slp/team/accept) signs in through it too.
+ * unchanged (16 Nov 2026), so the link and the code share it. (The Sona
+ * Clinic invite link signed in through it from 17 to 18 Nov 2026; it only
+ * joins now: /api/slp/team/accept says why.)
  *
  * THE DASHBOARD COMES WITH THE TRIAL (Travis, 17 Nov 2026), so EVERY new
  * account is made with Sona Pro's terms, by every door: the sign-in page, the
  * landing page's trial form, the homepage's old free-dashboard form (cached
- * pages and older app builds still send it), the clinicians' app, a clinic
- * invite. From 13 Nov the free-dashboard door made a FREE_DASHBOARD_TERMS
+ * pages and older app builds still send it), the clinicians' app. From 13 Nov the free-dashboard door made a FREE_DASHBOARD_TERMS
  * account and opened a returning Pro-era one (`freeDashboard: true`); both
  * stopped here. Accounts that got either keep it: nothing here takes a stamp
  * or a flag away, and nothing backfills one.

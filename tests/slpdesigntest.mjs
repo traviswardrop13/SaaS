@@ -311,7 +311,7 @@ try {
     let card=await pg.locator("#clinicOffer").innerText();
     ok("Sona Clinic prints the server's price, free days and seats",/Sona Clinic/i.test(card)&&/\$99 a month · 14 days free/.test(card)&&/up to 25, you included/.test(card),card);
     ok("…says what it is: Sona Pro for every clinician, their own dashboards and the app, and the owner's view — never a child",
-      /Everything in Sona Pro, for every clinician at your practice/.test(card)&&/Each clinician gets their own dashboard and the Sona for SLPs app/.test(card)&&
+      /Everything in Sona Pro, for every clinician at your practice/.test(card)&&/Each clinician gets their own dashboard, on their computer or phone/.test(card)&&!/Sona for SLPs app/.test(card)&&
       /Your clinic view: how many children each clinician has on Sona, and how many practiced in the last 7 days\. Never a child's name, initials, sounds or pass rate\./.test(card),card);
     ok("…and how starting works, as for Sona Pro: Stripe, no charge today, then $99 a month",/Secure checkout by Stripe\. No charge today: after your free trial, \$99 a month until you cancel\. Cancel before the trial ends and you pay nothing\./.test(card),card);
     ok("…never a rounded or per-clinician price, never 'unlimited'",!/\$100|\$99\.00|per clinician|unlimited/i.test(card),card);

@@ -250,7 +250,8 @@ async function call(route, method, url, o = {}) {
   if (o.body !== undefined) init.body = typeof o.body === "string" ? o.body : JSON.stringify(o.body);
   const res = await route[method](new NextRequest("https://sona.test.invalid" + url, init));
   let json = null; try { json = await res.clone().json(); } catch { json = null; }
-  return { status: res.status, json, location: res.headers.get("location"), cookie: res.headers.get("set-cookie") };
+  let text = ""; try { text = await res.clone().text(); } catch { text = ""; }
+  return { status: res.status, json, text, location: res.headers.get("location"), cookie: res.headers.get("set-cookie"), headers: res.headers };
 }
 // console.error, captured: the suite stays readable, and can prove what was never logged
 const ERRS = [];
@@ -1279,9 +1280,18 @@ const count = (pred) => S.calls.filter(pred).length;
   // hold, sent in writing to every NEW clinician, whose families get the
   // free version. 12 Nov 2026: "it's free" went too, since a new clinician's
   // dashboard comes with Sona Pro. It says what is true for every clinician.
-  const welcome = RESEND.sent.find((m) => m.subject === "Your Sona dashboard is ready") || {};
+  // 18 Nov 2026 (review): a NEW address was told "Your Sona dashboard is
+  // ready … Add a child" for a dashboard that opens locked, on the plan. It
+  // gets the sign-up's words now; an existing account keeps the old ones.
+  ok("a NEW address's sign-in email is the sign-up's: \"Your Sona sign-in link\", pick your plan first, never \"your dashboard is ready\"",
+    freshMail.subject === "Your Sona sign-in link" && /New to Sona\? You'll pick your plan first\./.test(freshMail.text || "") &&
+    !/dashboard is ready/i.test((freshMail.html || "") + (freshMail.text || "")), JSON.stringify([freshMail.subject, freshMail.text]));
+  seedAcct("ready.check@clinic.org", { terms: false, code: "ready-k4", familyKey: "READYK23" });
+  await call(R.request, "POST", "/api/slp/auth/request", { body: { email: "ready.check@clinic.org" } });
+  const welcome = RESEND.sent.at(-1) || {};
   const OLD_PROMISE = /free for you and for every family on your caseload/i;
-  ok("the sign-in email says the dashboard is ready and every family gets Sona's free version — never that the dashboard is free (HTML and text)",
+  ok("an EXISTING account's sign-in email says the dashboard is ready and every family gets Sona's free version — never that the dashboard is free (HTML and text)",
+    welcome.subject === "Your Sona dashboard is ready" &&
     (welcome.html || "").includes("Your Sona dashboard is ready, and every family you send home gets Sona's free version.") &&
     (welcome.text || "").includes("Your Sona dashboard is ready, and every family you send home gets Sona's free version.") &&
     !/it's free|dashboard is free/i.test((welcome.html || "") + (welcome.text || "")), JSON.stringify(welcome.text));
@@ -1998,10 +2008,16 @@ const count = (pred) => S.calls.filter(pred).length;
     inv.subject === "Olivia Owner at Bright Steps Therapy added you to Sona Clinic" && /Olivia Owner at Bright Steps Therapy added you to their Sona Clinic plan/.test(inv.text || "") &&
     /How many children you have on Sona, and how many of them practiced in the last 7 days\. Never a child's name, initials, sounds or pass rate\./.test(inv.text || "") &&
     /works once and expires in 14 days/.test(inv.text || "") && !/\$|trial|unlimited|accuracy|score/i.test(invWords), JSON.stringify(inv.text));
+  // 18 Nov 2026 (review): the link no longer signs anyone in, and the email
+  // no longer says it does.
+  ok("…and never says the link signs them in: after joining, they sign in with this address",
+    !/signs you in/i.test(invWords) && /after you join, sign in with this email address/.test(inv.text || ""), JSON.stringify(inv.text));
   const invKey = [...KV.K.keys()].find((k) => k.startsWith("slpteaminv:"));
   ok("…its token is kept only as a hash, for fourteen days, naming owner and member",
     !!invKey && /^slpteaminv:[0-9a-f]{64}$/.test(invKey) && KV.TTL.get(invKey) === 14 * 86400 && !Object.values(links).some((l) => invKey.includes(decodeURIComponent(l.split("token=")[1]))) &&
     Object.keys(JSON.parse(KV.K.get(invKey))).sort().join() === "member,owner", invKey);
+  ok("…and each invited seat names the one link that may join it, by that hash (a Resend retires the last)",
+    [ZOE, BETH, NEWM, PEND].every((who) => { const row = JSON.parse(KV.H.get("slpteam:" + OWN).get(who)); return /^[0-9a-f]{64}$/.test(row.inv || "") && KV.K.has("slpteaminv:" + row.inv); }));
   ok("…and the membership lives in slpteam:<owner>, never on an account",
     KV.H.get("slpteam:" + OWN)?.size === 4 && JSON.parse(KV.H.get("slpteam:" + OWN).get(ZOE)).state === "invited" && !KV.K.has("slpteam-of:" + ZOE) &&
     !("team" in JSON.parse(KV.K.get("slpacct:" + OWN))) && !("team" in JSON.parse(KV.K.get("slpacct:" + ZOE))));
@@ -2034,17 +2050,37 @@ const count = (pred) => S.calls.filter(pred).length;
   hash("slp:ZOE-K4").set("kidZ8", JSON.stringify({ childId: "kidZ8", child: "Legacia", age: "6", at: iso(), outcomes: out(day(-3), 2) })); // the case-mismatch bug's leftover
 
   // ── accepting ──
+  // 18 Nov 2026 (review): opening the link (a GET, which a district's link
+  // scanner does to every link in an email) changes nothing; only the Join
+  // button on its page (a POST) joins, and joining never signs anyone in.
+  let before0 = KV.log.length;
   r = await call(R.teamAccept, "GET", links[ZOE]);
-  ok("Zoe taps her link: she is signed in, and lands on her plan page with joined=team",
-    r.status >= 300 && r.status < 400 && r.location === "https://sona.test.invalid/slp.html?joined=team#premium" && (r.cookie || "").includes("slp_session="), JSON.stringify(r));
-  ok("…both keys now agree: her row is active, and slpteam-of:<zoe> names the owner",
-    JSON.parse(KV.H.get("slpteam:" + OWN).get(ZOE)).state === "active" && !!JSON.parse(KV.H.get("slpteam:" + OWN).get(ZOE)).acceptedAt && KV.K.get("slpteam-of:" + ZOE) === OWN);
+  const gWrites = KV.log.slice(before0).filter((c) => /^(SET|HSET|HSETNX|DEL|HDEL|GETDEL|EXPIRE|INCR)$/.test(c[0]) && !/^slpplan(-clinic)?:/.test(c[1]));
+  ok("OPENING Zoe's link joins nobody and signs nobody in: a page with one Join button, who asked, and what they will see",
+    r.status === 200 && !r.cookie && /<form method="post" action="\/api\/slp\/team\/accept\?token=/.test(r.text) && /Join your clinic/.test(r.text) &&
+    /Olivia Owner at Bright Steps Therapy added you to their Sona Clinic plan/.test(r.text) && /Never a child&#39;s name, initials, sounds or pass rate\./.test(r.text) &&
+    /noindex/.test(r.headers.get("x-robots-tag") || "") && r.headers.get("referrer-policy") === "same-origin" && r.headers.get("cache-control") === "no-store" &&
+    gWrites.length === 0 && JSON.parse(KV.H.get("slpteam:" + OWN).get(ZOE)).state === "invited" && !KV.K.has("slpteam-of:" + ZOE), JSON.stringify([r.status, gWrites]));
+  r = await call(R.teamAccept, "GET", links[ZOE]);
+  ok("…opened twice (a scanner, then Zoe), it still works", r.status === 200 && /Join your clinic/.test(r.text));
+  r = await call(R.teamAccept, "POST", links[ZOE], { headers: { origin: "https://evil.example" } });
+  ok("…its Join button answers Sona's own page only", r.status === 200 && !/Join your clinic/.test(r.text) && JSON.parse(KV.H.get("slpteam:" + OWN).get(ZOE)).state === "invited");
+  const leadsAtJoin = OUT.filter((o) => o.url.endsWith("/api/lead")).length;
+  r = await call(R.teamAccept, "POST", links[ZOE]);
+  ok("Zoe presses Join in a browser not signed in: no cookie, and the sign-in page says she joined (joined=team)",
+    r.status === 303 && r.location === "https://sona.test.invalid/slp-login.html?joined=team" && !r.cookie, JSON.stringify([r.status, r.location, r.cookie]));
+  ok("…both keys now agree: her row is active (no link left on it), and slpteam-of:<zoe> names the owner",
+    JSON.parse(KV.H.get("slpteam:" + OWN).get(ZOE)).state === "active" && !!JSON.parse(KV.H.get("slpteam:" + OWN).get(ZOE)).acceptedAt &&
+    !("inv" in JSON.parse(KV.H.get("slpteam:" + OWN).get(ZOE))) && KV.K.get("slpteam-of:" + ZOE) === OWN);
   ok("…and her account is untouched: still Sona Pro's terms, no plan written on it",
     JSON.parse(KV.K.get("slpacct:" + ZOE)).terms === C.PRO_TERMS && JSON.parse(KV.K.get("slpacct:" + ZOE)).code === "zoe-k4" && !("freeDashboard" in JSON.parse(KV.K.get("slpacct:" + ZOE))));
   r = await call(R.teamAccept, "GET", links[ZOE]);
-  ok("the link works once", /\/slp-login\.html\?err=expired$/.test(r.location || "") && !r.cookie, JSON.stringify(r));
+  const r4 = await call(R.teamAccept, "POST", links[ZOE]);
+  ok("the link works once", /\/slp-login\.html\?err=expired$/.test(r.location || "") && !r.cookie && r4.status === 303 && /err=expired$/.test(r4.location || ""), JSON.stringify([r.location, r4.location]));
   r = await call(R.teamAccept, "GET", "/api/slp/team/accept?token=madeup");
   ok("…and a made-up one opens nothing", /err=expired$/.test(r.location || "") && !r.cookie);
+  ok("the sign-in page says, in words with no plan name or price, that they joined and should sign in",
+    /qp\.get\("joined"\)==="team"/.test(read("public/slp-login.html")) && /You’ve joined your clinic’s Sona plan\. Sign in with the email your invite went to\./.test(read("public/slp-login.html")));
 
   const zs = await call(R.plan, "GET", "/api/slp/plan", { as: ZOE });
   const zc = zs.json.clinic || {};
@@ -2076,12 +2112,19 @@ const count = (pred) => S.calls.filter(pred).length;
   ok("…and Manage billing tells her the owner manages it, never opening the owner's billing",
     r.status === 404 && r.json.error === "Your clinic's owner manages billing for Sona Clinic." && !S.calls.some((c) => c[0] === "billingPortal.sessions.create" && c[1].customer === "cus_olivia" && false), JSON.stringify(r.json));
 
-  r = await call(R.teamAccept, "GET", links[NEWM]);
+  r = await call(R.teamAccept, "POST", links[NEWM]);
+  ok("a clinician with no account yet: Join makes no account, no cookie and no lead (the sign-in page, with its consent line, does that)",
+    r.status === 303 && /joined=team$/.test(r.location || "") && !r.cookie && !KV.K.has("slpacct:" + NEWM) &&
+    OUT.filter((o) => o.url.endsWith("/api/lead")).length === leadsAtJoin, JSON.stringify([r.location, KV.K.get("slpacct:" + NEWM)]));
+  KV.K.set("slptok:" + A.hashToken("newm-signin"), NEWM);
+  r = await call(R.verify, "GET", "/api/slp/auth/verify?token=newm-signin");
   const nu = JSON.parse(KV.K.get("slpacct:" + NEWM) || "{}");
-  ok("a clinician with no account yet: the link makes one on Sona Pro's terms (source team-invite) and signs them in",
-    (r.cookie || "").includes("slp_session=") && nu.terms === C.PRO_TERMS && nu.source === "team-invite" && !("freeDashboard" in nu) &&
+  ok("…then signing in the ordinary way makes it on Sona Pro's terms, and the clinic's plan opens its dashboard",
+    (r.cookie || "").includes("slp_session=") && nu.terms === C.PRO_TERMS && !("freeDashboard" in nu) &&
     (await C.dashboardOpen(NEWM, { kv, stripe: client })) === true, JSON.stringify(nu));
-  await call(R.teamAccept, "GET", links[BETH]);
+  r = await call(R.teamAccept, "POST", links[BETH], { as: BETH });
+  ok("a clinician already signed in here goes straight to their plan page (joined=team), with no new cookie",
+    r.status === 303 && r.location === "https://sona.test.invalid/slp.html?joined=team#premium" && !r.cookie, JSON.stringify([r.location, r.cookie]));
 
   // ── the owner's view ──
   const before = KV.log.length;
@@ -2124,12 +2167,31 @@ const count = (pred) => S.calls.filter(pred).length;
   ok("…in a Dashboard column on /leads.html", /\["dashboard", "Dashboard"\]/.test(noComments(read("public/leads.html"))) && /clinic member/.test(read("public/leads.html")));
 
   // ── one team at a time ──
+  // 18 Nov 2026 (review): adding no longer tells an owner whether an address
+  // is on another practice's plan (it answered 409 "They're on another
+  // clinic's Sona plan" to any owner who asked). The invite goes; the page
+  // behind it tells the clinician, and only them.
   const OWN2 = "second.owner@otherplace.example";
   seedAcct(OWN2, { terms: C.PRO_TERMS, code: "second-k4", familyKey: "SECKEY23", name: "Sam Second" });
   mkSub("sub_second_clinic", { slp: OWN2, plan: "slp-clinic", customer: "cus_second", status: "active", interval: "month" });
   r = await call(R.team, "POST", "/api/slp/team", { as: OWN2, body: { action: "add", email: ZOE } });
-  ok("another clinic cannot add someone on a live clinic: they leave it from their own dashboard first",
-    r.status === 409 && /another clinic's Sona plan\. They can leave it from their own dashboard/.test(r.json.error) && !KV.H.get("slpteam:" + OWN2)?.has(ZOE), JSON.stringify(r.json));
+  const zoe2 = ((RESEND.sent.at(-1) || {}).text || "").match(/https:\/\/sona\.test\.invalid(\/api\/slp\/team\/accept\?token=[\w%-]+)/)?.[1];
+  ok("another clinic adding someone already on one is answered like any add: nothing says another practice has them",
+    r.status === 200 && r.json.sent === true && !/another|clinic's Sona plan/.test(JSON.stringify(r.json)) && !!zoe2, JSON.stringify(r.json));
+  r = await call(R.teamAccept, "GET", zoe2);
+  ok("…the page behind Zoe's link tells HER that joining takes her off the clinic she is on",
+    r.status === 200 && /Joining this one takes you off it\./.test(r.text) && /Join your clinic/.test(r.text) && KV.K.get("slpteam-of:" + ZOE) === OWN);
+  await call(R.team, "POST", "/api/slp/team", { as: OWN2, body: { action: "remove", email: ZOE } });
+  r = await call(R.teamAccept, "GET", zoe2);
+  ok("…and a seat the owner removed takes its link with it", /err=expired$/.test(r.location || "") && KV.K.get("slpteam-of:" + ZOE) === OWN, JSON.stringify(r.location));
+  r = await call(R.team, "POST", "/api/slp/team", { as: OWN, body: { action: "add", email: OWN2 } });
+  const own2Link = ((RESEND.sent.at(-1) || {}).text || "").match(/https:\/\/sona\.test\.invalid(\/api\/slp\/team\/accept\?token=[\w%-]+)/)?.[1];
+  const g2 = await call(R.teamAccept, "GET", own2Link);
+  r = await call(R.teamAccept, "POST", own2Link);
+  ok("a clinician who OWNS a live Sona Clinic plan cannot join another (its owner view would hide the membership, and its Leave button): the page says why, and nothing is written",
+    g2.status === 200 && /You have your own Sona Clinic plan/.test(g2.text) && !/<form/.test(g2.text) && r.status === 200 && /You have your own Sona Clinic plan/.test(r.text) &&
+    !KV.K.has("slpteam-of:" + OWN2) && JSON.parse(KV.H.get("slpteam:" + OWN).get(OWN2)).state === "invited", JSON.stringify([g2.status, r.status]));
+  await call(R.team, "POST", "/api/slp/team", { as: OWN, body: { action: "remove", email: OWN2 } });
 
   // ── seats ──
   for (let i = 0; i < 20; i++) hash("slpteam:" + OWN).set("filler" + i + "@brightsteps.example", JSON.stringify({ state: "invited", addedAt: iso() }));
@@ -2140,6 +2202,21 @@ const count = (pred) => S.calls.filter(pred).length;
     r.status === 409 && r.json.error === "All 25 seats on your clinic's plan are in use. Email hello@speaksona.com to add more." && !KV.H.get("slpteam:" + OWN).has("one.more@brightsteps.example"), JSON.stringify(r.json));
   r = await call(R.team, "POST", "/api/slp/team", { as: OWN, body: { action: "add", email: PEND } });
   ok("…while sending an invited clinician's link again takes no new seat", r.status === 200 && r.json.resent === true && r.json.sent === true, JSON.stringify(r.json));
+  const pendNew = ((RESEND.sent.at(-1) || {}).text || "").match(/https:\/\/sona\.test\.invalid(\/api\/slp\/team\/accept\?token=[\w%-]+)/)?.[1];
+  const pOld = await call(R.teamAccept, "GET", links[PEND]);
+  const pNew = await call(R.teamAccept, "GET", pendNew);
+  ok("…and the new link retires the old one: only the newest email's link works (18 Nov 2026)",
+    /err=expired$/.test(pOld.location || "") && pNew.status === 200 && /Join your clinic/.test(pNew.text) &&
+    !KV.K.has("slpteaminv:" + A.hashToken(decodeURIComponent(links[PEND].split("token=")[1]))), JSON.stringify([pOld.location, pNew.status]));
+  {
+    const TM = L("lib/team.ts");
+    const tok = decodeURIComponent(pendNew.split("token=")[1]);
+    const flaky = async (cmd) => (cmd[0] === "HGET" ? undefined : kvExec(cmd));
+    let threw = false;
+    try { await TM.acceptInvite(tok, flaky); } catch (e) { threw = e instanceof C.StoreUnavailable; }
+    ok("a store that stops answering part-way through Join spends nothing: the link still works (it used to be spent, and called expired)",
+      threw && KV.K.has("slpteaminv:" + A.hashToken(tok)) && (await call(R.teamAccept, "GET", pendNew)).status === 200);
+  }
   r = await call(R.team, "POST", "/api/slp/team", { as: OWN, body: { action: "add", email: ZOE } });
   ok("…and adding someone already on the clinic says so", r.status === 409 && /already/.test(r.json.error), JSON.stringify(r.json));
   ok("…and a refused add spends none of the day's invite emails (the one re-send did)", sentToday() === spentBefore + 1, sentToday() + " vs " + spentBefore);
@@ -2170,8 +2247,23 @@ const count = (pred) => S.calls.filter(pred).length;
   KV.K.delete("slpteam-of:" + PEND);
 
   // ── the plan ends ──
+  const LATE = "late@brightsteps.example";
+  await call(R.team, "POST", "/api/slp/team", { as: OWN, body: { action: "add", email: LATE } });
+  const lateLink = ((RESEND.sent.at(-1) || {}).text || "").match(/https:\/\/sona\.test\.invalid(\/api\/slp\/team\/accept\?token=[\w%-]+)/)?.[1];
   S.subs.get("sub_olivia_clinic").status = "canceled";
   KV.K.delete("slpplan-clinic:" + OWN);
+  {
+    // 18 Nov 2026 (review): an invite opened after the owner's plan ended
+    // joined them anyway, and told them so, to a plan their dashboard never
+    // showed (no member card, no Leave). Now it says the plan is off, and the
+    // link stays good in case the owner turns it back on.
+    const g = await call(R.teamAccept, "GET", lateLink);
+    const p = await call(R.teamAccept, "POST", lateLink);
+    ok("an invite opened after the owner's plan ended joins nobody: the page says the clinic's plan isn't on, and the link stays good",
+      g.status === 200 && /Your clinic&#39;s plan isn&#39;t on right now/.test(g.text) && !/<form/.test(g.text) && p.status === 200 && /isn&#39;t on right now/.test(p.text) &&
+      !KV.K.has("slpteam-of:" + LATE) && JSON.parse(KV.H.get("slpteam:" + OWN).get(LATE)).state === "invited" &&
+      KV.K.has("slpteaminv:" + JSON.parse(KV.H.get("slpteam:" + OWN).get(LATE)).inv), JSON.stringify([g.status, p.status]));
+  }
   ok("when the owner's plan ends, the members' coverage ends with it",
     !(await C.covered(ZOE, { kv, stripe: client })) && !(await C.dashboardOpen(ZOE, { kv, stripe: client })) && (await C.clinicStatus(ZOE, { kv, stripe: client })).role === null);
   r = await call(R.team, "GET", "/api/slp/team", { as: OWN });

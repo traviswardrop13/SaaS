@@ -611,7 +611,13 @@ function CaseloadTerms() {
       the free version. {CLINIC_NAME} renews automatically each month in the
       same way until the owner cancels it there, and every clinician on it
       keeps what it gives them, and their families keep Premium, until the end
-      of the month paid for (or of the free trial). A free dashboard promised
+      of the month paid for (or of the free trial), unless the owner deletes
+      their Sona account first: that ends it that day for every clinician on
+      it and their families.{" "}
+      {/* 18 Nov 2026 (review): lib/slpDelete takes the team with the
+          owner's account, and allows it once the plan is cancelled; the
+          dashboard's delete card says so too. */}
+      A free dashboard promised
       in this section stays free, and removing a child from your dashboard
       always keeps working. The price does not depend on how many families
       join, and you never earn anything from families on your own caseload; a{" "}

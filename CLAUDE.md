@@ -1787,11 +1787,27 @@ count is a ceiling, not a unit price.
   `CLINIC_SEATS = 25`, the owner included; an invited address holds a seat
   until it joins or is removed. "Email us to add more" is a manual job, and
   25 is ours, not Travis's: he confirms it.
-- **A clinician joins from their own inbox, never on the owner's say-so.**
-  The owner types an email (30 invites a day). The invite link
-  (`slpteaminv:<sha256>`, 14 days, once) is the inbox proof: opening it
-  signs the clinician in (a new account is PRO_TERMS, source
-  `team-invite`) and lands on `/slp.html?joined=team#premium`. A member is
+- **A clinician joins from their own inbox, never on the owner's say-so,
+  and the invite never signs anyone in** (the review of 18 Nov 2026: a
+  14-day link that signed in was a key to a clinician's whole caseload in a
+  forwarded email or a shared inbox). The owner types an email (30 invites
+  a day). The invite link (`slpteaminv:<sha256>`, 14 days) opens a page
+  (GET reads only: `noindex`, `no-store`) naming who asks and what the owner
+  will see, with one **Join your clinic** button that POSTs, same-origin; a
+  mail scanner's GET joins nobody. Joining writes the seat and, with that
+  clinician's own session in the browser, lands on
+  `/slp.html?joined=team#premium`; otherwise on the sign-in page ("You've
+  joined your clinic's Sona plan. Sign in with the email your invite went
+  to."), where the ordinary 15-minute link or code signs them in (a new
+  account is PRO_TERMS, and the email list hears of it there, under the
+  consent line, never from the invite). Only the newest link works: Resend
+  retires the older one (the seat keeps its hash, `inv`). Refused, writing
+  nothing: an owner whose plan is off ("Your clinic's plan isn't on right
+  now"; the link stays good) and a clinician with their own live Clinic
+  plan. Add never says whether an address is on another practice's plan
+  (that told any owner who is where); the Join page tells only the invitee
+  that joining takes them off it. A store that does not answer spends no
+  link. A member is
   covered only while their row is `active`, `slpteam-of:<member>` names that
   owner, and the owner's plan is live (`clinicStatus()`, read by
   `planStatus`, `selfStatus`, `dashboardOpen` and `covered()`, so the family
@@ -1807,15 +1823,21 @@ count is a ceiling, not a unit price.
   has Manage billing; a member's portal answers "Your clinic's owner manages
   billing for Sona Clinic."
 - **Delete my account** is refused while a Clinic plan renews; an owner's
-  delete ends their team, a member's leaves it. `/leads.html` shows clinic
+  delete ends their team, a member's leaves it. An owner who cancelled can
+  still delete before the paid month ends, and that ends every member's
+  coverage that day: the delete card and the Terms say so. Refusing it
+  until the month ends, or keeping the team to the end of the month, is
+  Travis's call. `/leads.html` shows clinic
   owners and members, and whether each account's dashboard is free.
 - **Web only, like Pro.** In the clinicians' app a member's Settings card
   and the owner's Your clinic page show, with no plan name, price or
   billing; everything that sells carries `data-sells`.
-- **Open, Travis's:** an email link scanner that opens the invite joins the
-  clinician for them (a button page would fix it, as for sign-in); invited
-  clinicians become GoHighLevel contacts (`sona-team-invite`); a member sees
-  the owner's renewal date; the free-forever cohort is shown the Clinic offer.
+- **The Clinic card says "their own dashboard, on their computer or phone"**,
+  not "the Sona for SLPs app": that app is not on the App Store yet, and Pro
+  clinicians use it too. Name it on both cards once it is live (Travis's).
+- **Open, Travis's:** invited clinicians become GoHighLevel contacts
+  (`sona-team-invite`); a member sees the owner's renewal date; the
+  free-forever cohort is shown the Clinic offer.
   **Rachel's:** the invite email and the owner-view sentence, and whether
   the family consent (`join.html`, which names only "your child's speech
   therapist") should name the practice owner.
@@ -2174,7 +2196,7 @@ the caller sent; one IP may ask for 20 links an hour (`slpauth`, besides 5
 an email); and a `role: "slp"` lead is never put in the parents' welcome
 series. Still open, Travis's: repeat Pro trials with a new address (B13),
 and a button page so a school's link scanner cannot use the link up (the
-Clinic invite link too).
+Clinic invite has one since 18 Nov 2026).
 `caseloadtest`, `slpapi`, `slpcode` and `nurturetest` play it.
 
 **Plan sessions (PLANDAY1, 14 Nov 2026)** (Travis: "auto plan sessions and

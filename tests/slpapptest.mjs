@@ -479,6 +479,11 @@ const TEAM_OWNER = { ok: true, role: "owner", active: true, seats: 25, used: 3, 
   { email: "new@brightsteps.example", name: "", state: "invited", children: null, practicedWeek: null, linkReady: false },
 ] };
 let PLAN = PLAN_NONE, TEAM = { ok: true, role: null };
+// 18 Nov 2026 (review): the dashboard's lock can close under an open page (a
+// trial that ran out, a clinic that removed them); then the server answers
+// 402 needPlan to the caseload and to every gated action.
+let GATE = false;
+const NEED_PLAN = { ok: false, needPlan: true, error: "Your dashboard comes with Sona Pro or Sona Clinic. Start your free trial on the plan page to see your caseload." };
 const server = createServer((req, res) => {
   const url = new URL(req.url, BASE); let body = "";
   req.on("data", (c) => (body += c));
@@ -492,9 +497,10 @@ const server = createServer((req, res) => {
       if (url.pathname === "/api/slp/auth/me" || (url.pathname === "/api/slp/account" && req.method !== "DELETE")) return json(ACCOUNT);
       if (url.pathname === "/api/slp/account" && req.method === "DELETE") return json(j.confirm === ACCOUNT.email ? { ok: true, deleted: true } : { ok: false, error: "Type your account's email to confirm." }, j.confirm === ACCOUNT.email ? 200 : 400);
       if (url.pathname === "/api/slp/plan" && req.method === "GET") return json(PLAN);
-      if (url.pathname === "/api/slp" && req.method === "GET") return PLAN.dashboard && PLAN.dashboard.open === false
-        ? json({ ok: false, needPlan: true, error: "Your dashboard comes with Sona Pro or Sona Clinic. Start your free trial on the plan page to see your caseload." }, 402)
+      if (url.pathname === "/api/slp" && req.method === "GET") return (PLAN.dashboard && PLAN.dashboard.open === false) || GATE
+        ? json(NEED_PLAN, 402)
         : json({ ok: true, configured: true, kids: DATA.kids, invites: DATA.invites });
+      if (GATE && url.pathname === "/api/slp/invite" && req.method === "POST") return json(NEED_PLAN, 402);
       if (url.pathname === "/api/slp/team" && req.method === "GET") return json(TEAM);
       return json({ ok: true });
     }
@@ -522,7 +528,7 @@ async function open(url, o = {}) {
   await page.goto(BASE + url, { waitUntil: "domcontentloaded" });
   return { context, page, errors };
 }
-async function section(name, fn) { posts = []; DATA = fixture(); PLAN = PLAN_NONE; TEAM = { ok: true, role: null }; try { await fn(); } catch (e) { ok(name + " completes", false, String(e && e.stack || e).slice(0, 400)); } }
+async function section(name, fn) { posts = []; DATA = fixture(); PLAN = PLAN_NONE; TEAM = { ok: true, role: null }; GATE = false; ACCOUNT.code = "rachel-k4"; try { await fn(); } catch (e) { ok(name + " completes", false, String(e && e.stack || e).slice(0, 400)); } }
 // Every visible word on the page, and every visible link and button
 const visibleText = (page) => page.evaluate(() => {
   const out = [];
@@ -669,6 +675,67 @@ try {
     await web.page.waitForFunction(() => document.getElementById("sidebarName").textContent === "Rachel K");
     await web.page.waitForTimeout(300);
     ok("…while on the web the same account sees the plan page, and not the app's line", await web.page.locator("#page-premium").isVisible() && !(await web.page.locator("#appLocked").isVisible()));
+    await web.context.close();
+  });
+
+  // Every new account since 17 Nov 2026 is locked AND has no family code
+  // yet. Until 18 Nov 2026 (review) its first screen in the app was the
+  // "Save & open my dashboard" form: the no-code rule sent Settings there,
+  // after the lock had sent the page to Settings. On the web, Delete my
+  // account could not be reached without making a code first.
+  await section("a brand-new account (locked, no family code)", async () => {
+    PLAN = PLAN_LOCKED; ACCOUNT.code = "";
+    const { context, page, errors } = await open("/slp.html");
+    await page.waitForFunction(() => document.getElementById("sidebarName").textContent === "Rachel K");
+    await page.waitForTimeout(400);
+    ok("in the app it lands on Settings and its one neutral line, never the code form",
+      await page.locator("#page-settings").isVisible() && !(await page.locator("#page-onboarding").isVisible()) && await page.locator("#appLocked").isVisible() &&
+      await page.evaluate(() => location.hash) === "#settings" && await page.locator("#deleteOpen").isVisible());
+    ok("…with no page errors", errors.length === 0, errors);
+    await context.close();
+    const web = await open("/slp.html", { app: false, native: false, viewport: { width: 1280, height: 1000 } });
+    await web.page.waitForFunction(() => document.getElementById("sidebarName").textContent === "Rachel K");
+    await web.page.waitForTimeout(300);
+    ok("…on the web it lands on the plan page", await web.page.locator("#page-premium").isVisible());
+    await web.page.evaluate(() => { location.hash = "#settings"; });
+    await web.page.waitForTimeout(200);
+    ok("…and its Settings, Delete my account included, opens without making a code first",
+      await web.page.locator("#page-settings").isVisible() && !(await web.page.locator("#page-onboarding").isVisible()) && await web.page.locator("#deleteOpen").isVisible());
+    await web.context.close();
+  });
+
+  await section("the lock closing under an open dashboard, in the app", async () => {
+    const { context, page, errors } = await open("/slp.html#caseload");
+    await page.waitForFunction(() => document.getElementById("sidebarName").textContent === "Rachel K");
+    await page.waitForTimeout(300);
+    ok("an open dashboard shows its caseload", await page.locator("#page-caseload").isVisible());
+    GATE = true;
+    await page.evaluate(() => { location.hash = "#invite"; });
+    await page.waitForSelector("#invName", { state: "visible" });
+    await page.locator("#invName").fill("MK");
+    const before = await page.evaluate(() => document.getElementById("invErr").textContent);
+    await page.locator("#invCreate").click();
+    await page.waitForFunction(() => /isn't on/.test(document.getElementById("invErr").textContent));
+    const said = await page.evaluate(() => document.getElementById("invErr").textContent);
+    ok("a refused Add a child says only that the dashboard isn't on: none of the server's plan names or trial words",
+      said === "Your dashboard isn't on for this account right now." && !SELLING.test(said), [before, said]);
+    await page.waitForTimeout(300);
+    ok("…and the page goes where a locked page goes, its neutral line showing",
+      await page.locator("#page-settings").isVisible() && await page.locator("#appLocked").isVisible() && await page.evaluate(() => location.hash) === "#settings");
+    const t = await visibleText(page), hit = t.match(SELLING);
+    ok("…selling nothing", !hit, hit ? t.slice(Math.max(0, hit.index - 60), hit.index + 60) : "");
+    ok("…with no page errors", errors.length === 0, errors);
+    await context.close();
+    GATE = false;
+    const web = await open("/slp.html#today", { app: false, native: false, viewport: { width: 1280, height: 1000 } });
+    await web.page.waitForFunction(() => document.getElementById("sidebarName").textContent === "Rachel K");
+    await web.page.waitForTimeout(300);
+    ok("on the web an open Today shows the caseload", await web.page.locator("#page-today").isVisible());
+    GATE = true;
+    await web.page.locator("#todayRefresh").click();
+    await web.page.waitForTimeout(400);
+    ok("…and a Refresh the server now refuses shows the plan page, not an empty caseload",
+      await web.page.locator("#page-premium").isVisible() && !(await web.page.locator("#page-today").isVisible()) && await web.page.evaluate(() => location.hash) === "#premium");
     await web.context.close();
   });
 

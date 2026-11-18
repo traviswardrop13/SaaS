@@ -328,7 +328,10 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
   const oFlat = oShown.replace(/<[^>]+>/g, " ").replace(/&rsquo;/g, "’").replace(/&mdash;/g, "—").replace(/\s+/g, " ");
   ok("the opt-in's headline offers the free packet", /<h1>A free packet <span>for home practice\.<\/span><\/h1>/.test(optin));
   ok("…and says what is in it: word lists for all " + sounds.length + " sounds by position, plus blends and vocalic R, the parent guide and the tracker",
-    new RegExp("Word lists for all " + sounds.length + " sounds\\s*, sorted by beginning, middle and end, plus blends and vocalic R\\.").test(oFlat) &&
+    // 18 Nov 2026 (review): "by where the sound sits in the word", never
+    // "by beginning, middle and end": TH (v) has no start-of-word list.
+    new RegExp("Word lists for all " + sounds.length + " sounds\\s*, sorted by where the sound sits in the word, plus blends and vocalic R\\.").test(oFlat) &&
+    !/beginning, middle and end/.test(oShown + readFileSync(APP + "/tools/og/og-packet.html", "utf8")) &&
     /A one-page guide for parents/.test(oFlat) && /A tick-box tracker/.test(oFlat) &&
     new RegExp("for " + sounds.length + " sounds").test(optin.match(/<meta name="description" content="([^"]*)"/)[1]));
   const oForm = (optin.match(/<form class="signup" id="signup"[\s\S]*?<\/form>/) || [""])[0];

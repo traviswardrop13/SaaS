@@ -3,7 +3,7 @@ import { kvCmd, rosterKey } from "@/lib/slpAuth";
 import { metaKey, goneKey, invIndexKey, invDataKey, invClaimKey, readInviteIndex, DELETED_CODE } from "@/lib/roster";
 import { hwKey } from "@/lib/homework";
 import { loginKey, loginIndexKey, failKey, readLoginIndex } from "@/lib/familyLogin";
-import { currentPlan, recordActive, planKey, accessKey, teamKey, teamOfKey, StoreUnavailable, type PlanKind } from "@/lib/caseload";
+import { currentPlan, recordActive, planKey, accessKey, teamKey, teamOfKey, parseTeamRow, StoreUnavailable, type PlanKind } from "@/lib/caseload";
 import { signInCodeKey, signInTryKey } from "@/lib/slpSignIn";
 import { markUnsubscribed } from "@/lib/contacts";
 
@@ -156,6 +156,9 @@ export async function deleteClinicianAccount(
     for (let i = 0; i + 1 < team.length; i += 2) {
       const m = String(team[i]).toLowerCase();
       if ((await kv(["GET", teamOfKey(m)])) === email) await kv(["DEL", teamOfKey(m)]);
+      // An invitation still out goes too (18 Nov 2026): its seat is gone.
+      const row = parseTeamRow(team[i + 1]);
+      if (row && row.inv) await kv(["DEL", "slpteaminv:" + row.inv]);
     }
   }
   const myOwner = await kv(["GET", teamOfKey(email)]);

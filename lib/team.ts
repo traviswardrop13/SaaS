@@ -22,13 +22,23 @@ import {
  * comparison; a district privacy officer ends the app's use on that alone).
  *
  * JOINED FROM THE MEMBER'S OWN INBOX. The owner types an address and that
- * seat is "invited": it covers nobody and shows nothing. Only the clinician's
- * own tap on the emailed link (acceptInvite) makes it "active", so an owner
- * who mistypes an address, or adds someone who never agreed, sees no numbers
- * of theirs. A clinician is on one team at a time; joining another leaves the
- * first. The keys (lib/caseload teamKey, teamOfKey) live beside the plan,
- * because planStatus reads them; the emailed link is `slpteaminv:<sha256>`,
- * fourteen days, used once.
+ * seat is "invited": it covers nobody and shows nothing. The emailed link
+ * opens a page with one button, and only that button (a POST: acceptInvite)
+ * makes it "active", so an owner who mistypes an address, or adds someone who
+ * never agreed, sees no numbers of theirs, and a school's link scanner, which
+ * only opens links, joins nobody (18 Nov 2026, review: the link used to join
+ * on a plain GET). A clinician is on one team at a time; joining another
+ * leaves the first, and the page says so first. The keys (lib/caseload
+ * teamKey, teamOfKey) live beside the plan, because planStatus reads them;
+ * the emailed link is `slpteaminv:<sha256>`, fourteen days, used once, and
+ * only the newest one for a seat works (the row's `inv`).
+ *
+ * JOINING IS NOT SIGNING IN (18 Nov 2026, review). The link lives fourteen
+ * days and may be forwarded ("is this legit?") or sit in a shared practice
+ * inbox; when it also signed the clinician in, whoever opened it had their
+ * whole dashboard, children included, for a month. Now it only joins, and the
+ * clinician signs in the ordinary way: a fifteen-minute link or code, on the
+ * sign-in page, which also carries the email list's consent line.
  *
  * NEVER WRITES A CLINICIAN'S CASELOAD. The counts read the same keys the
  * clinician's own GET /api/slp reads, and nothing else: that route heals a
@@ -43,6 +53,7 @@ export const TEAM_INVITES_PER_DAY = 30;                 // per owner, like the p
 const norm = (e: unknown): string => String(e || "").trim().toLowerCase();
 export const isEmail = (e: string): boolean => e.length <= 120 && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e);
 export function teamInviteKey(token: string): string { return "slpteaminv:" + hashToken(token); }
+const inviteKeyOfHash = (h: string) => "slpteaminv:" + h;
 
 export type TeamMember = TeamRow & { email: string };
 
@@ -95,15 +106,13 @@ export async function addMember(
   if (!existing && seatsUsed(team) >= CLINIC_SEATS) {
     return { ok: false, status: 409, error: "All " + CLINIC_SEATS + " seats on your clinic's plan are in use. Email hello@speaksona.com to add more." };
   }
-  // One team at a time. Leaving the other is theirs to do, not a second
-  // owner's: an invite never pulls a clinician out of a team they are on.
-  const other = await teamOwnerOf(m, kv);
-  if (other && other !== o) {
-    const theirs = await currentPlan(other, { kv, now, kind: "clinic" });
-    if (recordActive(theirs, now)) {
-      return { ok: false, status: 409, error: "They're on another clinic's Sona plan. They can leave it from their own dashboard, then you can add them." };
-    }
-  }
+  // NOTHING HERE SAYS WHETHER THEY ARE ON ANOTHER CLINIC, or own one (18 Nov
+  // 2026, review). This refused "They're on another clinic's Sona plan", which
+  // told any Clinic owner, trial included, which practice any address works
+  // for. The invite goes like any other; the page behind the link tells the
+  // clinician, and only them, that joining leaves their current clinic, and
+  // refuses one who owns a Clinic plan (peekInvite). One team at a time still
+  // holds, and an invite still never pulls anyone out: their own press does.
   // Metered per owner per day, as the parent invites are: the link goes to an
   // address the owner typed, and a mail form with no ceiling is a spam relay.
   // A store that does not answer refuses (an unmetered door is the risk).
@@ -112,12 +121,19 @@ export async function addMember(
   if (n > TEAM_INVITES_PER_DAY) {
     return { ok: false, status: 429, error: "That's " + TEAM_INVITES_PER_DAY + " invites today, the daily limit. Try again tomorrow." };
   }
-  const row: TeamRow = { state: "invited", addedAt: existing && existing.addedAt ? existing.addedAt : new Date(now).toISOString() };
-  if (typeof (await kv(["HSET", teamKey(o), m, JSON.stringify(row)]) ) !== "number") throw new StoreUnavailable("slpteam");
+  // A Resend retires the link it replaces (18 Nov 2026, review): each one
+  // stayed good for its fourteen days, so a seat could have several live
+  // links in several inboxes. The row names the newest (`inv`), and the
+  // older key goes.
   const token = randomToken();
+  const row: TeamRow = {
+    state: "invited", addedAt: existing && existing.addedAt ? existing.addedAt : new Date(now).toISOString(), inv: hashToken(token),
+  };
   if ((await kv(["SET", teamInviteKey(token), JSON.stringify({ owner: o, member: m }), "EX", TEAM_INVITE_TTL])) !== "OK") {
     throw new StoreUnavailable("slpteaminv");
   }
+  if (typeof (await kv(["HSET", teamKey(o), m, JSON.stringify(row)]) ) !== "number") throw new StoreUnavailable("slpteam");
+  if (existing && existing.inv) await kv(["DEL", inviteKeyOfHash(existing.inv)]);
   return { ok: true, token, resent: !!existing };
 }
 
@@ -129,6 +145,9 @@ export async function addMember(
 export async function removeMember(owner: string, email: string, kv: Kv = kvCmd): Promise<boolean> {
   const o = norm(owner), m = norm(email);
   if (!m || m === o) return false;
+  // Its emailed link goes with the seat (18 Nov 2026).
+  const had = parseTeamRow(await kv(["HGET", teamKey(o), m]));
+  if (had && had.inv) await kv(["DEL", inviteKeyOfHash(had.inv)]);
   const n = await kv(["HDEL", teamKey(o), m]);
   if (n === undefined) throw new StoreUnavailable("slpteam");
   const back = await kv(["GET", teamOfKey(m)]);
@@ -147,30 +166,83 @@ export async function leaveTeam(member: string, kv: Kv = kvCmd): Promise<string>
   return o;
 }
 
-/**
- * The emailed link, tapped: used once (GETDEL), and only while the owner
- * still holds the seat (removed in the meantime, the invite is withdrawn).
- * Joining here leaves any team they were on before. Returns who joined whom,
- * or null for a link that is used, expired, withdrawn or unreadable.
- */
-export async function acceptInvite(token: string, kv: Kv = kvCmd, now = Date.now()): Promise<{ member: string; owner: string } | null> {
+export type InviteCheck =
+  | { ok: true; owner: string; member: string; moving: boolean }
+  | { ok: false; why: "gone" | "planOff" | "ownClinic" };
+
+/** The invite and its seat, read together; a seat whose `inv` names another link is not this link's. */
+async function readInvite(token: string, kv: Kv): Promise<{ o: string; m: string; seat: TeamRow } | null> {
   if (!token || token.length > 200) return null;
-  const raw = await kv(["GETDEL", teamInviteKey(token)]);
+  const raw = await kv(["GET", teamInviteKey(token)]);
   if (raw === undefined) throw new StoreUnavailable("slpteaminv");
   if (typeof raw !== "string" || !raw) return null;
   let inv: { owner?: unknown; member?: unknown };
   try { inv = JSON.parse(raw); } catch { return null; }
   const o = norm(inv.owner), m = norm(inv.member);
   if (!isEmail(o) || !isEmail(m) || o === m) return null;
-  const seat = parseTeamRow(await kv(["HGET", teamKey(o), m]));
-  if (!seat) return null;
+  const seatRaw = await kv(["HGET", teamKey(o), m]);
+  if (seatRaw === undefined) throw new StoreUnavailable("slpteam");
+  const seat = parseTeamRow(seatRaw);
+  if (!seat || seat.state !== "invited" || seat.inv !== hashToken(token)) return null;
+  return { o, m, seat };
+}
+
+/**
+ * What the emailed link's page shows (18 Nov 2026, review), and what its
+ * Join button checks again. READS ONLY: a link scanner's GET changes nothing,
+ * and spends nothing. A link that is used, expired, withdrawn (the owner
+ * removed the seat) or replaced (a newer Resend) is "gone"; a store that does
+ * not answer throws, and the link stays good. Refused, with the link kept for
+ * its fourteen days:
+ *  - "planOff": the owner's Clinic plan is not live (a trial cancelled, a
+ *    card that failed) — joining it would cover nobody, and the clinician
+ *    would be told they had joined a plan their dashboard never shows;
+ *  - "ownClinic": the clinician owns a live Clinic plan, whose owner view
+ *    would hide the membership, and its Leave button with it.
+ * `moving`: they are on another clinic's live plan now, and joining leaves it.
+ */
+export async function peekInvite(token: string, kv: Kv = kvCmd, now = Date.now()): Promise<InviteCheck> {
+  const got = await readInvite(token, kv);
+  if (!got) return { ok: false, why: "gone" };
+  const { o, m } = got;
+  if (!recordActive(await currentPlan(o, { kv, now, kind: "clinic" }), now)) return { ok: false, why: "planOff" };
+  if (recordActive(await currentPlan(m, { kv, now, kind: "clinic" }), now)) return { ok: false, why: "ownClinic" };
+  const other = await teamOwnerOf(m, kv);
+  const moving = !!other && other !== o && recordActive(await currentPlan(other, { kv, now, kind: "clinic" }), now);
+  return { ok: true, owner: o, member: m, moving };
+}
+
+/**
+ * The Join button, pressed: the same checks, then the link is used once
+ * (GETDEL) and the seat written "active". Every check reads before anything
+ * is spent, so a store that stops answering part-way leaves the link good
+ * (18 Nov 2026, review: it used to be spent first, and the clinician told
+ * "expired"). Joining here leaves any team they were on before.
+ */
+export async function acceptInvite(token: string, kv: Kv = kvCmd, now = Date.now()): Promise<InviteCheck> {
+  const st = await peekInvite(token, kv, now);
+  if (!st.ok) return st;
+  const used = await kv(["GETDEL", teamInviteKey(token)]);
+  if (used === undefined) throw new StoreUnavailable("slpteaminv");
+  if (typeof used !== "string" || !used) return { ok: false, why: "gone" };
+  // The seat again, after the link is ours: removed or re-sent in between,
+  // this link no longer joins it.
+  const again = await readSeat(st.owner, st.member, kv);
+  if (!again || again.state !== "invited" || again.inv !== hashToken(token)) return { ok: false, why: "gone" };
+  const m = st.member, o = st.owner;
   const prev = await kv(["GET", teamOfKey(m)]);
   if (prev === undefined) throw new StoreUnavailable("slpteam-of");
   if (typeof prev === "string" && norm(prev) && norm(prev) !== o) await kv(["HDEL", teamKey(norm(prev)), m]);
-  const row: TeamRow = { state: "active", addedAt: seat.addedAt || new Date(now).toISOString(), acceptedAt: new Date(now).toISOString() };
+  const row: TeamRow = { state: "active", addedAt: again.addedAt || new Date(now).toISOString(), acceptedAt: new Date(now).toISOString() };
   if (typeof (await kv(["HSET", teamKey(o), m, JSON.stringify(row)])) !== "number") throw new StoreUnavailable("slpteam");
   if ((await kv(["SET", teamOfKey(m), o])) !== "OK") throw new StoreUnavailable("slpteam-of");
-  return { member: m, owner: o };
+  return st;
+}
+
+async function readSeat(owner: string, member: string, kv: Kv): Promise<TeamRow | null> {
+  const raw = await kv(["HGET", teamKey(owner), member]);
+  if (raw === undefined) throw new StoreUnavailable("slpteam");
+  return parseTeamRow(raw);
 }
 
 // ── the owner's two numbers ────────────────────────────────────────────────
@@ -301,10 +373,10 @@ export async function ownerView(owner: string, planActive: boolean, today: strin
 // ── the invite email ───────────────────────────────────────────────────────
 
 /** A clinician's name for a subject line: one line, no control characters, capped. */
-function oneLine(s: string, max: number): string {
+export function oneLine(s: string, max: number): string {
   return String(s || "").replace(/[\u0000-\u001f\u007f]+/g, " ").replace(/\s+/g, " ").trim().slice(0, max);
 }
-function esc(s: string): string {
+export function esc(s: string): string {
   return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c] as string));
 }
 
@@ -312,18 +384,26 @@ function esc(s: string): string {
  * THE INVITE (17 Nov 2026). Transactional, like the sign-in email: one send
  * to the address the owner typed, through the same sender (lib/mail). It
  * names who is asking and the practice, and says exactly what that owner
- * will see — two counts, never a child — BEFORE the clinician taps, because
- * tapping is the yes. No child data at all. With no sender set, the link
- * comes back off production so a preview can be tested; never on production.
+ * will see — two counts, never a child — BEFORE the clinician joins, because
+ * the Join button behind the link is the yes (its page says it again). No
+ * child data at all. With no sender set, the link comes back off production
+ * so a preview can be tested; never on production.
  */
+export const OWNER_SEES = "How many children you have on Sona, and how many of them practiced in the last 7 days. Never a child's name, initials, sounds or pass rate.";
+/** Who is asking, for the email and the Join page: "Olivia Owner at Bright Steps Therapy". */
+export function inviteAsker(ownerName: string, practice: string): { asker: string; askerMid: string } {
+  const who = oneLine(ownerName, 80);
+  const where = oneLine(practice, 80);
+  return {
+    asker: who ? who + (where ? " at " + where : "") : where ? "Your colleagues at " + where : "A colleague",
+    askerMid: who || "your clinic's owner",
+  };
+}
 export async function sendTeamInviteEmail(
   to: string, link: string, ownerName: string, practice: string,
 ): Promise<{ sent: boolean; devLink: string | null }> {
-  const who = oneLine(ownerName, 80);
-  const where = oneLine(practice, 80);
-  const asker = who ? who + (where ? " at " + where : "") : where ? "Your colleagues at " + where : "A colleague";
-  const askerMid = who || "your clinic's owner";
-  const seen = "How many children you have on Sona, and how many of them practiced in the last 7 days. Never a child's name, initials, sounds or pass rate.";
+  const { asker, askerMid } = inviteAsker(ownerName, practice);
+  const seen = OWNER_SEES;
   const r = await resendSend({
     to,
     subject: oneLine(asker + " added you to " + CLINIC_NAME, 160),
@@ -334,14 +414,14 @@ export async function sendTeamInviteEmail(
       `<p><a href="${esc(link)}" style="display:inline-block;background:#58cc02;color:#fff;font-weight:700;text-decoration:none;padding:14px 26px;border-radius:12px;font-size:16px;">Join your clinic</a></p>` +
       `<p style="margin-top:22px;"><b>What ${esc(askerMid)} will see</b></p>` +
       `<p style="color:#46627a;">${esc(seen)}</p>` +
-      `<p style="color:#6b86a3;font-size:13px;margin-top:22px;">You can leave the clinic anytime from your dashboard. This link signs you in, works once and expires in 14 days. If you didn't expect it, you can ignore it.</p>` +
+      `<p style="color:#6b86a3;font-size:13px;margin-top:22px;">You can leave the clinic anytime from your dashboard. This link works once and expires in 14 days; after you join, sign in with this email address. If you didn't expect it, you can ignore it.</p>` +
       `</div>`,
     text:
       "Hi,\n\n" +
       asker + " added you to their " + CLINIC_NAME + " plan. It gives you your own Sona dashboard, every game on your own phone or tablet, and every game for every family who joins through your link, paid for by your clinic.\n\n" +
       "Join your clinic:\n" + link + "\n\n" +
       "What " + askerMid + " will see\n" + seen + "\n\n" +
-      "You can leave the clinic anytime from your dashboard. This link signs you in, works once and expires in 14 days. If you didn't expect it, you can ignore it.\n",
+      "You can leave the clinic anytime from your dashboard. This link works once and expires in 14 days; after you join, sign in with this email address. If you didn't expect it, you can ignore it.\n",
   }, "team invite", false);
   if (!r.configured) return { sent: false, devLink: process.env.VERCEL_ENV === "production" ? null : link };
   return { sent: r.sent, devLink: null };

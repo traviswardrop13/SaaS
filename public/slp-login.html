@@ -166,6 +166,11 @@
     if(qp.get("err")==="expired") $("err").textContent="That link expired — enter your email for a fresh one.";
     if(qp.get("deleted")==="1"){$("err").style.color="#46627a";$("err").textContent="Your account is deleted. Thank you for using Sona.";}
     if(qp.get("err")==="store") $("err").textContent="We couldn’t open your dashboard. Enter your email for a new link.";
+    // BACK FROM A CLINIC INVITE'S JOIN BUTTON (18 Nov 2026): joining no
+    // longer signs anyone in (app/api/slp/team/accept says why), so this is
+    // where they sign in, the ordinary way. No plan name: it may be read in
+    // the clinicians' app, which sells nothing.
+    if(qp.get("joined")==="team"){$("err").style.color="#46627a";$("err").textContent="You’ve joined your clinic’s Sona plan. Sign in with the email your invite went to.";}
 
     function send(){
       if(window.__sonaFamilyRedirect||$("send").disabled)return;

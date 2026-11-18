@@ -279,10 +279,11 @@ export function planKey(email: string, kind: PlanKind = "caseload"): string {
  * SONA CLINIC'S TEAM (17 Nov 2026). Who is on whose Clinic plan, in two keys
  * that must agree, never on the slpacct JSON (rewritten whole by two routes)
  * and never under "slpacct:" (lib/founder SCANs that as the account list):
- *  - `slpteam:<owner>`: a HASH, member email → {state, addedAt, acceptedAt?}.
- *    The owner's typing makes a row "invited"; only the member's own tap on
- *    the emailed link (lib/team acceptInvite) makes it "active".
- *  - `slpteam-of:<member>`: the owner's email, written only on that tap.
+ *  - `slpteam:<owner>`: a HASH, member email → {state, addedAt, acceptedAt?, inv?}.
+ *    The owner's typing makes a row "invited"; only the member's own press
+ *    of Join on the emailed link's page (lib/team acceptInvite) makes it
+ *    "active".
+ *  - `slpteam-of:<member>`: the owner's email, written only on that press.
  * In the code the membership is "team", because `acct.clinic` already means
  * the practice's NAME; the plan is "clinic" (Stripe metadata) and the page
  * says "Sona Clinic" and "Your clinic".
@@ -290,7 +291,11 @@ export function planKey(email: string, kind: PlanKind = "caseload"): string {
 export function teamKey(owner: string): string { return "slpteam:" + norm(owner); }
 export function teamOfKey(member: string): string { return "slpteam-of:" + norm(member); }
 
-export type TeamRow = { state: "invited" | "active"; addedAt: string; acceptedAt?: string };
+// `inv` (18 Nov 2026, review): an INVITED row names the one emailed link
+// that may still join it, by the hash its `slpteaminv:` key is stored under.
+// A Resend mints a new link and retires the last one, so only the newest
+// email works; a joined row carries none. Never sent to any page.
+export type TeamRow = { state: "invited" | "active"; addedAt: string; acceptedAt?: string; inv?: string };
 
 /** One row of `slpteam:<owner>`, or null when there is none (or it is unreadable). */
 export function parseTeamRow(raw: unknown): TeamRow | null {
@@ -302,6 +307,7 @@ export function parseTeamRow(raw: unknown): TeamRow | null {
       state: r.state === "active" ? "active" : "invited",
       addedAt: String(r.addedAt || ""),
       ...(r.acceptedAt ? { acceptedAt: String(r.acceptedAt) } : {}),
+      ...(typeof r.inv === "string" && /^[0-9a-f]{64}$/.test(r.inv) ? { inv: r.inv } : {}),
     };
   } catch {
     return null;

@@ -15,7 +15,10 @@
 //     the bank (FAMILY_MEDIAL_REVIEW in sona.js: water, letter and button
 //     for T, gloves for V);
 //   - anything on the never-say list (tests/soundmap.mjs keeps it).
-// The ages on the cover are SOUND_NORM's, the ones the app uses. The parent
+// The ages on the cover are SOUND_NORM's, the ones the app shows beside each
+// sound. They gate nothing (18 Nov 2026, review: the cover said the app
+// offered a sound only from that age, which it never has; only blends and
+// vocalic R wait, for ages 2 to 4), so the cover says so. The parent
 // guide follows the app's own rules (one target said on its own; silence is
 // never a try; end on a success; the speech therapist picks the target) and
 // is Rachel's to approve before it ships.
@@ -243,7 +246,7 @@ ${p.cols.map((c) => `      <div class="col" data-pos="${c.pos}"><h3><span class=
     </div>
     <div class="box tint">
       <h3>Readiness comes first</h3>
-      <p>In the Sona app, a sound is offered from about the age most children say it: ${esc(agesLine(pages))}. These ages are approximate and references vary. The app also holds blends and vocalic R back for ages 2 to 4. Your clinical judgment comes first.</p>
+      <p>The Sona app doesn&rsquo;t hold a sound back by age: a family can pick any sound. As a guide, most children say ${esc(agesLine(pages))}. These ages are approximate and references vary. The app does hold blends and vocalic R back for ages 2 to 4. Your clinical judgment comes first.</p>
     </div>
     <div class="box">
       <h3>${pages.length} sounds inside</h3>

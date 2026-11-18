@@ -1158,7 +1158,7 @@
               <p class="premium-price" id="clinicPriceLine"><b id="clinicPrice"></b> <span id="clinicPer"></span><span id="clinicTrialNote"> · <span id="clinicTrialDays"></span> days free</span></p>
               <ul class="premium-points">
                 <li><b>Everything in Sona Pro, for every clinician at your practice</b> — up to <span id="clinicSeats"></span>, you included.</li>
-                <li><b>Each clinician gets their own dashboard</b> and the Sona for SLPs app, and every family who joins through their link gets every game.</li>
+                <li><b>Each clinician gets their own dashboard</b>, on their computer or phone, and every family who joins through their link gets every game.</li>
                 <li><b>Your clinic view:</b> how many children each clinician has on Sona, and how many practiced in the last 7 days. Never a child's name, initials, sounds or pass rate.</li>
                 <li><b>One price for the practice.</b> Add or remove clinicians anytime.</li>
               </ul>
@@ -1390,7 +1390,13 @@
              while a paid plan still renews (lib/slpDelete). -->
         <div class="card" id="deleteCard">
           <h2>Delete your account</h2>
-          <p class="sub">Deletes your Sona account and everything on it, for good: your caseload, practice history, homework, family invites and logins, and any posts you wrote in the clinician community. Families' own Sona apps keep working and keep their own progress, but they stop sending you updates, and any Premium your plan gave them ends. Copy any progress notes you need first.</p>
+          <!-- A CLINIC OWNER IS TOLD WHAT ELSE ENDS (18 Nov 2026, review). A
+               cancelled plan still runs to the end of its month, and deleting
+               is allowed then (lib/slpDelete refuses only while it renews),
+               but it takes the team with it at once: every clinician on it
+               loses what the plan gave them that day. No plan name or price:
+               this card shows in the clinicians' app too. -->
+          <p class="sub">Deletes your Sona account and everything on it, for good: your caseload, practice history, homework, family invites and logins, and any posts you wrote in the clinician community. Families' own Sona apps keep working and keep their own progress, but they stop sending you updates, and any Premium your plan gave them ends. Copy any progress notes you need first.<span id="deleteClinic" hidden> You own your clinic's Sona plan, so deleting your account also takes every clinician off it at once: their dashboards close and their families' Premium ends that day, even if the month you paid for isn't over.</span></p>
           <div class="row" id="deleteStart" style="margin-top:10px;"><button class="btn danger sm" id="deleteOpen" type="button">Delete my account…</button></div>
           <div id="deleteConfirm" hidden style="margin-top:10px;">
             <label class="fl" for="deleteEmail">Type your account's email to confirm</label>
@@ -1563,7 +1569,9 @@
         // 402 needPlan: the dashboard is Sona Pro's for this account and it
         // is not on (lib/proGate). Not an error to retry: the plan page says
         // what opens it, and nothing of the caseload is shown.
-        if(j&&j.needPlan){LOCKED_SERVER=true;KIDS=[];INVITES=[];LOADED=true;settled(true);return;}
+        // A page that thought it was open (the plan ran out under it, or a
+        // clinic removed them) goes where a locked page goes (relock).
+        if(j&&j.needPlan){KIDS=[];INVITES=[];LOADED=true;var stale=!!PLAN&&lockNow();if(!PLAN)LOCKED_SERVER=true;settled(true);if(stale)relock();return;}
         if(!j||!j.ok){settled(false);return;}
         CONFIGURED=j.configured!==false;
         var kids=(j.kids||[]).filter(function(k){return k.childId;});
@@ -1619,8 +1627,12 @@
       // has no page, so it falls through to Today below (or the plan, locked).
       if(dashLocked()&&!LOCK_OPEN_PAGES[name==="invite"?"caseload":name]){if(SLP_APP){if(location.hash!=="#settings")history.replaceState(null,"","#settings");switchPage("settings");return;}if(location.hash!=="#premium")history.replaceState(null,"","#premium");switchPage("premium");return;}
       // Drafting, the plan and the owner's clinic work before a clinician
-      // creates a family code.
-      if(!code&&["feedback","premium","team","homework-draft","plan-day"].indexOf(name)<0){switchPage("onboarding");return;}
+      // creates a family code. So does Settings while the dashboard is
+      // locked (18 Nov 2026, review): every new account starts locked and
+      // with no code, so the app's first screen was the "Save & open my
+      // dashboard" form in place of Settings' one neutral line, and on the
+      // web Delete my account could not be reached without making a code.
+      if(!code&&["feedback","premium","team","homework-draft","plan-day"].indexOf(name)<0&&!(name==="settings"&&dashLocked())){switchPage("onboarding");return;}
       if(!PREVIEW_FEATURES&&previewOnlyPage(name)){name="today";history.replaceState(null,"","#today");}
       if(name==="invite"){switchPage("caseload");openInvite();return;}
       if(!$("page-"+name))name="today";
@@ -1647,7 +1659,7 @@
       button.disabled=true;button.textContent="Drafting…";error.textContent="";
       fetch("/api/slp/homework/draft",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(details)})
         .then(function(r){return r.json();}).then(function(j){
-          if(!j.ok){error.textContent=j.error||"Couldn't draft the note. Try again.";return;}
+          if(!j.ok){error.textContent=gateErr(j,"Couldn't draft the note. Try again.");return;}
           if(title.value!==originalTitle||note.value!==originalNote){error.textContent="Kept your edits. Draft again to replace them.";return;}
           title.value=j.title;note.value=j.note;updateDraftCopy();title.focus();
         }).catch(function(){error.textContent="Couldn't draft the note. Try again.";})
@@ -1722,7 +1734,7 @@
       DAY_BUSY=true;button.disabled=true;button.textContent="Planning…";error.textContent="";
       fetch("/api/slp/sessions/plan",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(send)})
         .then(function(r){return r.json();}).then(function(j){
-          if(!j||!j.ok||!Array.isArray(j.plans)){error.textContent=(j&&j.error)||"Couldn't plan the activities. Try again.";return;}
+          if(!j||!j.ok||!Array.isArray(j.plans)){error.textContent=gateErr(j,"Couldn't plan the activities. Try again.");return;}
           var out=$("dayOutline");
           if($("dayResult").hidden===false&&out.dataset.made&&out.value!==out.dataset.made&&!window.confirm("Replace your edited plan?"))return;
           out.value=dayOutline(rows,j.plans);out.dataset.made=out.value;$("dayResult").hidden=false;out.focus();
@@ -2117,7 +2129,7 @@
       btn.disabled=true; host.hidden=false; host.innerHTML='<p class="sub">Making a login…</p>';
       fetch("/api/slp/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(ref)}).then(function(r){return r.json();}).then(function(j){
         btn.disabled=false;
-        if(!j||!j.ok){host.innerHTML='<div class="err">'+esc((j&&j.error)||"Couldn't make a login — try again.")+'</div>';return;}
+        if(!j||!j.ok){host.innerHTML='<div class="err">'+esc(gateErr(j,"Couldn't make a login — try again."))+'</div>';return;}
         showLogin(host,j.user,j.password); if(done)done(j);
       }).catch(function(){btn.disabled=false;host.innerHTML='<div class="err">Network hiccup — try again.</div>';});
     }
@@ -2170,7 +2182,7 @@
       $("invCreate").disabled=true; err.style.color="var(--muted)"; err.textContent="Creating…";
       fetch("/api/slp/invite",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)}).then(function(r){return r.json();}).then(function(j){
         $("invCreate").disabled=false;
-        if(!j||!j.ok){err.style.color="var(--pink)";err.textContent=(j&&j.error)||"Couldn't create the link — try again.";return;}
+        if(!j||!j.ok){err.style.color="var(--pink)";err.textContent=gateErr(j,"Couldn't create the link — try again.");return;}
         err.textContent="";
         var link=j.link||inviteLink(j.invite&&j.invite.token);
         LAST_INV=(j.invite&&j.invite.token)||""; $("invLoginOut").hidden=true; $("invLoginOut").innerHTML=""; $("invMakeLogin").textContent="Make a login";
@@ -2252,7 +2264,7 @@
       QUICK_BUSY[id]=true;$("quickErr").textContent="";paintQuick();
       function failed(message){delete QUICK_BUSY[id];if(CURRENT&&CURRENT.childId===id){paintQuick();$("quickErr").textContent=message;}else notify(message);}
       postHw({childId:id,hw:hw}).then(function(j){
-        if(!j||!j.ok){failed((j&&j.error)||"Couldn't assign. Your draft is still here; please try again.");return;}
+        if(!j||!j.ok){failed(gateErr(j,"Couldn't assign. Your draft is still here; please try again."));return;}
         delete QUICK_BUSY[id];delete QUICK_DRAFTS[id];k.hw={status:"active",hw:j.hw||hw,days:{}};derive(k);
         loadAll(function(){
           if(CURRENT&&CURRENT.childId===id){renderChild(id);$("childSaved").textContent="Homework assigned. It will be ready the next time "+k.d.name+" opens Sona.";$("childSaved").hidden=false;}
@@ -2335,8 +2347,10 @@
     try{var planSid=new URLSearchParams(location.search).get("plan_session");
       if(planSid!=null){ if(/^cs_[A-Za-z0-9_]{10,240}$/.test(planSid))PLAN_SESSION=planSid; else history.replaceState(null,"",location.pathname+"#premium"); }
     }catch(e){}
-    // BACK FROM A SONA CLINIC INVITE (17 Nov 2026): /api/slp/team/accept
-    // signs the clinician in and lands here with ?joined=team. Said once, in
+    // BACK FROM A SONA CLINIC INVITE (17 Nov 2026): /api/slp/team/accept's
+    // Join button lands here with ?joined=team when this browser is already
+    // signed in as that clinician (since 18 Nov 2026 it never signs anyone
+    // in; any other browser goes to the sign-in page, which says it). Said once, in
     // a toast at boot, and the flag leaves the address bar so a reload or a
     // bookmark never says it again.
     var JOINED_TEAM=false;
@@ -2367,6 +2381,23 @@
     function clinicOffer(){var c=clinicPlan();return !!(c&&c.offer&&c.price);}
     function clinicTrial(){var c=clinicPlan();return !!(c&&c.trialAvailable&&c.trialDays);}
     function dashLocked(){return PLAN&&PLAN.dashboard?PLAN.dashboard.open===false:LOCKED_SERVER;}
+    // A 402 needPlan ANSWERED UNDER AN OPEN PAGE (18 Nov 2026, review). The
+    // page asks for its plan on load and on the plan pages only, so a trial
+    // that ran out, a clinic that removed a clinician, or a clinic plan that
+    // ended while the dashboard sat open met the server's lock first: Today's
+    // Refresh emptied the caseload ("nobody practiced"), and a refused action
+    // printed the server's words, plan names and "free trial" included, even
+    // in the clinicians' app, which sells nothing. Now the page takes the
+    // server's lock as the truth (lockNow), goes where a locked page goes and
+    // asks for the plan again (relock), and the app is told only that the
+    // dashboard isn't on. lockNow answers whether the page had thought it
+    // was open.
+    function lockNow(){var stale=!dashLocked();LOCKED_SERVER=true;if(PLAN&&PLAN.dashboard)PLAN.dashboard.open=false;return stale;}
+    function relock(){if(!PLAN_BUSY&&Date.now()-PLAN_AT>5000)loadPlan();route();}
+    function gateErr(j,fallback){
+      if(j&&j.needPlan){setTimeout(function(){if(lockNow())relock();},0);return SLP_APP?"Your dashboard isn't on for this account right now.":(j.error||fallback);}
+      return (j&&j.error)||fallback;
+    }
     var LOCK_OPEN_PAGES={premium:1,team:1,settings:1,feedback:1,affiliate:1};
     function answer(r){return r.json().catch(function(){return null;}).then(function(j){return {status:r.status,j:j||{}};});}
     function planDate(sec){var d=new Date(sec*1000);return isNaN(d.getTime())?"":d.toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"});}
@@ -2542,13 +2573,16 @@
       // The clinicians' app shows no plan card, so a locked account there
       // reads this one neutral line instead (the page's first rule).
       $("appLocked").hidden=!(SLP_APP&&dashLocked());
+      $("deleteClinic").hidden=!clinicOwnerOn();
       paintSettingsTeam();
       $("setPlanWait").hidden=!!pro;$("setPlanRows").hidden=!pro;
       if(!pro)return;
       var why=PLAN.source==="grandfathered"?"Your dashboard, your own phone and your caseload are free, as promised when you signed up.":
         PLAN.active&&selfOn()?"Your dashboard, your own phone and your caseload are already on.":"";
+      // Locked, it names both plans (18 Nov 2026, review), as the plan page's
+      // lock and the server's 402 do: Sona Clinic opens a dashboard too.
       $("setProText").textContent=clinicOwnerOn()?"Sona Clinic is on. "+clinicWhen():clinicMember()?"Your clinic's Sona Clinic plan covers you: your dashboard, your own phone and your caseload.":
-        proOn()?"On. "+proWhen():why||((dashLocked()?"Your dashboard comes with Sona Pro: ":"")+pro.price+" "+pro.per+(trial?", free for the first "+pro.trialDays+" days":"")+". Every game for you and every family who joins through your link.");
+        proOn()?"On. "+proWhen():why||((dashLocked()?"Your dashboard comes with Sona Pro or Sona Clinic. Sona Pro: ":"")+pro.price+" "+pro.per+(trial?", free for the first "+pro.trialDays+" days":"")+". Every game for you and every family who joins through your link.");
       $("setProBuy").hidden=!proOffer();$("setProBuy").disabled=BUY_BUSY;$("setProBuy").textContent=BUY_BUSY&&BUY_KIND==="pro"?"Opening secure checkout…":trial?"Start my free trial":"Get Sona Pro";
       $("setClinicLink").hidden=!(clinicOffer()&&(proOffer()||proOn()));
       $("setBilling").hidden=!(proOn()||clinicOwnerOn()||PLAN.source==="paid"||(PLAN.self&&PLAN.self.source==="paid"));$("setManage").disabled=MANAGE_BUSY;$("setManage").textContent=MANAGE_BUSY?"Opening billing…":"Manage billing";

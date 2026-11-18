@@ -239,7 +239,13 @@ export async function POST(req: NextRequest) {
   if (code && !(await storeSignInCode(email, code, email, tokKey))) {
     return NextResponse.json({ ok: false, error: "Couldn't make your sign-in code. Try again." }, { status: 503 });
   }
-  const res = await sendMagicEmail(email, link, name, { code });
+  // AN ADDRESS WITH NO ACCOUNT YET gets the sign-up's words (18 Nov 2026,
+  // review). Every new account starts locked now, and the sign-in page and
+  // the clinicians' app send no sign-up flag, so a new clinician was emailed
+  // "Your Sona dashboard is ready … Add a child" for a dashboard that opened
+  // on the plan. Only when the store SAID there is none: an outage reads as
+  // an existing account, as everywhere in this route.
+  const res = await sendMagicEmail(email, link, name, { code, signup: !acct && acctRaw === null });
 
   /**
    * A CLINICIAN THE CRM HAS NEVER HEARD OF. The CRM was once told only when
