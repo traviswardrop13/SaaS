@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import { NextResponse } from "next/server";
 import { kvCmd, kvConfigured, resendSend } from "@/lib/slpAuth";
 import { rateLimit } from "@/lib/rateLimit";
+import { APP_ORIGIN } from "@/lib/site";
 
 /**
  * THE PRACTICE BOARD, SERVER SIDE (BOARD1, 11 Oct 2026). Built dark.
@@ -807,7 +808,7 @@ export async function sendBoardConfirmEmail(
   const who = m.n === 1 ? "a child" : m.n + " children";
   const keeps =
     "for each child, a random board number, the nickname, the buddy picture, your time zone, the date it was turned on, and which days counted this month. We used your address only to send this email; Sona keeps no copy of it (only a scrambled form for one day, to stop repeat emails).";
-  const privacy = "https://speaksona.com/privacy.html";
+  const privacy = APP_ORIGIN + "/privacy.html";
   const r = await resendSend(
     {
       to,

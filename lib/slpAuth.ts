@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 import { APP_READY, LAUNCH_NOTE } from "@/lib/launch";
 import { mailConfigured, sendMail } from "@/lib/mail";
+import { APP_HOST } from "@/lib/site";
 
 /**
  * Magic-link auth for the SLP master account — the app's first real login.
@@ -457,9 +458,9 @@ export async function sendMagicEmail(
   }
   const freeIntro = "Open your Sona dashboard to share practice with families and join the clinician community.";
   // The site the link points at, so a sign-up on another address (the
-  // vercel.app one, 14 Nov 2026: speaksona.com moved to another host) is
+  // app's own, app.speaksona.com, APPHOST1: speaksona.com becomes GoHighLevel's) is
   // never sent back to a domain that no longer serves the dashboard.
-  let site = "speaksona.com";
+  let site = APP_HOST;
   try { site = new URL(link).host || site; } catch {}
   const retryUrl = opts.freeDashboard ? site : site + "/slp-login.html";
   // The six-digit code (SLPAPP1, 16 Nov 2026), when the sign-in screen asked

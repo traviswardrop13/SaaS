@@ -122,7 +122,7 @@ const kid = (o = {}) => Object.assign({ d: 3, g: 2, gw: 5, r: 40, p: 25, s: ["R"
   const first = await R.store(v, db.cmd, fakeFetch, THU);
   const ask = outbox[0] && outbox[0].body;
   ok("an unconfirmed phone: nothing kept, the answer is \"pending\", and the address is emailed a confirm link once", first === "pending" && db.h.size === 0 && outbox.length === 1 && ask.to[0] === "mom@example.com" && ask.subject === "Confirm your weekly progress report", [first, outbox.length]);
-  const link = (ask && ask.html.match(/href="(https:\/\/speaksona\.com\/api\/report\/confirm\?[^"]+)"/) || [])[1] || "";
+  const link = (ask && ask.html.match(/href="(https:\/\/app\.speaksona\.com\/api\/report\/confirm\?[^"]+)"/) || [])[1] || "";
   const u = new URL(link.replace(/&amp;/g, "&") || "https://x/");
   ok("…the link names this phone and carries a token only the server can make", u.searchParams.get("d") === DEV && u.searchParams.get("k") === R.confirmToken("mom@example.com", DEV, "s3cret"), link);
   ok("…and the email says what the report holds and that ignoring it sends nothing, with no child in it", /how many days, how many reps and which sounds/.test(ask.text) && /ignore this email and nothing will be sent/.test(ask.text) && /Rachel, MS, CF-SLP/.test(ask.text) && ask.text.includes("851 NE 1st Ave") && /api\/email\/unsub/.test(ask.headers["List-Unsubscribe"]));
@@ -328,7 +328,7 @@ const kid = (o = {}) => Object.assign({ d: 3, g: 2, gw: 5, r: 40, p: 25, s: ["R"
     const body = { email: "mom@example.com", dev: DEV, weeks: [week(lastWeek), week(thisWeek)] };
     const r0 = await post(body);
     ok("the route: a phone not yet confirmed is \"pending\", nothing kept, and the confirm email goes", r0.status === 200 && r0.json.pending === true && db.h.size === 0 && outbox.length === 1, r0);
-    const link = new URL(outbox[0].body.text.match(/https:\/\/speaksona\.com\/api\/report\/confirm\?\S+/)[0]);
+    const link = new URL(outbox[0].body.text.match(/https:\/\/app\.speaksona\.com\/api\/report\/confirm\?\S+/)[0]);
     const page = async (method, href) => { const r = await conf[method](new NextRequest(href, { method })); return { status: r.status, html: await r.text() }; };
     const g = await page("GET", link.href);
     ok("the confirm link's page asks with one button and changes nothing (a mail scanner opens links)", /Yes, send me the report/.test(g.html) && /<form method="post"/.test(g.html) && !db.sets.has(R2.confirmKey(R2.mailHash("mom@example.com", "s3cret"))), g.html.slice(0, 200));

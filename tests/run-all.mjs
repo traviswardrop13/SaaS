@@ -8,6 +8,7 @@ import path from "path";
 const dir = path.dirname(fileURLToPath(import.meta.url));
 const SUITES = [
   "syntaxtest.mjs",// SYNTAX1: every inline script parses — a broken block kills its whole page
+  "domaintest.mjs", // APPHOST1: the app moves to app.speaksona.com and each phone's Sona moves with it, once, from www (never overwriting, never from another site)
   "freetest.mjs",  // FREE1: Sona is free — the two switches agree and no door takes money
   "telemetrytest.mjs", // TELE1: the funnel is measurable, and carries nothing about a child
   "chartertest.mjs",   // CHARTER1: $59.99 for the first 50 families, then $99.99 — true by construction

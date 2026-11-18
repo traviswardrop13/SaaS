@@ -64,6 +64,9 @@ export function locked(now: number = Date.now()): boolean {
 export const OPEN_PAGES = [
   "parents.html", "try.html", "for-slps.html", "slp.html", "slp-login.html",
   "leads.html", "founders.html", "privacy.html", "launching.html",
+  // the address move (APPHOST1, lib/site.ts): a lock page in their place
+  // would never answer, and every family would wait out the timer
+  "moving.html", "handoff.html",
 ];
 export function lockedPage(pathname: string): boolean {
   const m = /^\/([a-z0-9-]+\.html)$/i.exec(pathname || "");

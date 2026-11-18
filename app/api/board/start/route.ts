@@ -1,3 +1,4 @@
+import { linkOrigin } from "@/lib/site";
 import { NextRequest } from "next/server";
 import { kvCmd } from "@/lib/slpAuth";
 import {
@@ -83,7 +84,8 @@ export async function POST(req: NextRequest) {
     made = true;
   }
 
-  const origin = new URL(req.url).origin;
+  // Emailed links open the app's address (APPHOST1, lib/site.ts).
+  const origin = linkOrigin(new URL(req.url).origin);
   const sent = await sendBoardConfirmEmail(email, {
     confirm: origin + "/api/board/confirm?c=" + encodeURIComponent(sign("c", rid + "." + cid)),
     remove: origin + "/api/board/remove?x=" + encodeURIComponent(sign("x", rid + "." + cid)),

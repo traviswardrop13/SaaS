@@ -10,7 +10,7 @@ import { proEventFor, ghlBody, ghlUrl } from "@/lib/stripeHook";
  * GoHighLevel (LEAD_WEBHOOK_URL, the same Inbound Webhook /api/lead uses).
  *
  * Set up (Travis, once): Stripe › Developers › Webhooks › Add endpoint,
- * https://www.speaksona.com/api/stripe/webhook, events
+ * https://app.speaksona.com/api/stripe/webhook (APPHOST1), events
  * customer.subscription.created, customer.subscription.updated,
  * customer.subscription.deleted and invoice.paid; then its signing secret
  * (whsec_…) in Vercel as STRIPE_WEBHOOK_SECRET (to change it without a gap,

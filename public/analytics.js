@@ -63,7 +63,7 @@
   // serves only these two files. Anywhere else (a preview build, a test
   // server) it is PostHog's own latest copy, and nothing is ever recorded.
   var HERE = window.location || {};
-  var ON_SITE = HERE.hostname === "speaksona.com" || HERE.hostname === "www.speaksona.com";
+  var ON_SITE = HERE.hostname === "speaksona.com" || HERE.hostname === "www.speaksona.com" || HERE.hostname === "app.speaksona.com";
   var PATH = HERE.pathname || "";
   var PH_VERSION = "1.438.12", PH_SELF = "/vendor/posthog";
   var PH_SRC = ON_SITE ? PH_SELF + "/static/" + PH_VERSION + "/array.js" : "https://us-assets.i.posthog.com/static/array.js";

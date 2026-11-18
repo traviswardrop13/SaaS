@@ -9,6 +9,7 @@ import { mailConfigured } from "@/lib/mail";
 import { safeAttrib, tellCrm } from "@/lib/slpLead";
 import { rateLimit } from "@/lib/rateLimit";
 import { makeSignInCode, storeSignInCode, reviewEmail } from "@/lib/slpSignIn";
+import { linkOrigin } from "@/lib/site";
 
 export const runtime = "nodejs";
 
@@ -170,6 +171,9 @@ export async function POST(req: NextRequest) {
   }
 
   const origin = new URL(req.url).origin;
+  // The emailed link opens the app's address (APPHOST1, lib/site.ts), so the
+  // sign-in cookie lands where the dashboard lives, whichever page asked.
+  const linkBase = linkOrigin(origin);
 
   if (freeDashboard) {
     // The emailed token proves the inbox before an account or session exists.
@@ -184,7 +188,7 @@ export async function POST(req: NextRequest) {
     if (await kvCmd(["SET", key, pending, "EX", 900]) !== "OK") {
       return NextResponse.json({ ok: false, error: "Couldn't make your sign-in link. Try again." }, { status: 503 });
     }
-    const link = origin + "/api/slp/auth/verify?token=" + encodeURIComponent(token);
+    const link = linkBase + "/api/slp/auth/verify?token=" + encodeURIComponent(token);
     const code = wantCode ? makeSignInCode() : "";
     if (code && !(await storeSignInCode(email, code, pending, key))) {
       await kvCmd(["DEL", key]);
@@ -225,7 +229,7 @@ export async function POST(req: NextRequest) {
   const token = randomToken();
   await kvCmd(["SET", "slptok:" + hashToken(token), email, "EX", 900]); // 15 min
   const tokKey = "slptok:" + hashToken(token);
-  const link = origin + "/api/slp/auth/verify?token=" + encodeURIComponent(token);
+  const link = linkBase + "/api/slp/auth/verify?token=" + encodeURIComponent(token);
   const code = wantCode ? makeSignInCode() : "";
   if (code && !(await storeSignInCode(email, code, email, tokKey))) {
     return NextResponse.json({ ok: false, error: "Couldn't make your sign-in code. Try again." }, { status: 503 });

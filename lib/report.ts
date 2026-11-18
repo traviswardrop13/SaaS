@@ -2,6 +2,7 @@ import { createHash, createHmac } from "crypto";
 import { kvCmd } from "@/lib/slpAuth";
 import { config, esc, unsubToken } from "@/lib/nurture";
 import { sendMail } from "@/lib/mail";
+import { APP_ORIGIN } from "@/lib/site";
 
 /**
  * THE WEEKLY PROGRESS REPORT (Travis, 15 Oct 2026: "i want the setup page to
@@ -221,7 +222,7 @@ export async function resend(f: Fetch, cfg: NonNullable<ReturnType<typeof config
   return { ok: r.ok, status: r.status };
 }
 
-export const unsubUrlFor = (email: string, secret: string) => `https://speaksona.com/api/email/unsub?e=${encodeURIComponent(email)}&k=${unsubToken(email, secret)}`;
+export const unsubUrlFor = (email: string, secret: string) => `${APP_ORIGIN}/api/email/unsub?e=${encodeURIComponent(email)}&k=${unsubToken(email, secret)}`;
 /** A Resend Idempotency-Key with no address in it (a header carries ASCII only). */
 const keyFor = (kind: string, email: string) => `report-${kind}-${createHash("sha256").update(email).digest("hex").slice(0, 32)}`;
 
@@ -274,7 +275,7 @@ async function askConfirm(snap: Snapshot, h: string, kv: Kv, f: Fetch, now: numb
   if (!Number.isFinite(n)) { await kv(["DECR", dayKey]); await kv(["DEL", slot]); return false; }
   // over the mailbox's five: nothing sent, so the counts stay "links sent (or in flight)"
   if (!(n >= 1 && n <= ASKS_PER_MAILBOX)) { await kv(["DECR", countKey]); await kv(["DECR", dayKey]); return false; }
-  const confirmUrl = `https://speaksona.com/api/report/confirm?e=${encodeURIComponent(snap.email)}&d=${snap.dev}&k=${confirmToken(snap.email, snap.dev, cfg.secret)}`;
+  const confirmUrl = `${APP_ORIGIN}/api/report/confirm?e=${encodeURIComponent(snap.email)}&d=${snap.dev}&k=${confirmToken(snap.email, snap.dev, cfg.secret)}`;
   const unsubUrl = unsubUrlFor(snap.email, cfg.secret);
   const m = renderConfirm(confirmUrl, unsubUrl, cfg.postal);
   const r = await resend(f, cfg, { to: snap.email, ...m, unsubUrl, key: keyFor("confirm-" + snap.dev.slice(0, 8) + "-" + new Date(now).toISOString().slice(0, 10), snap.email) });
