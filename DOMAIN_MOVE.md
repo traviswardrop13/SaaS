@@ -39,10 +39,17 @@ to read).
    app and Sona for SLPs). `NATIVE.md` and `native/slp-ios/README.md` have the
    Mac steps. App Store Connect's privacy and support links:
    `https://app.speaksona.com/privacy.html`.
+   **You can put your website on speaksona.com right away, without waiting:**
+   in GoHighLevel add only `speaksona.com` (not www), and change only that
+   record in the DNS settings. www.speaksona.com stays on Vercel, so the
+   iPhone apps already out, the copy step and old www links all keep
+   working. The one catch: someone typing www.speaksona.com still sees the
+   app's clinician page until step 6. Do step 7's forwards in GoHighLevel
+   then too, since some old links use speaksona.com without www.
 5. **Wait** until most families have the updated iPhone app and have opened
    Sona once. The longer you wait here, the fewer families lose anything.
-6. **GoHighLevel**: build the website, then point speaksona.com and
-   www.speaksona.com at it. When you change the domain's DNS settings,
+6. **GoHighLevel**: build the website, then point www.speaksona.com (and
+   speaksona.com, if you didn't already) at it. When you change the domain's DNS settings,
    **keep every email record** (the MX, SPF, DKIM and DMARC records for Resend
    and GoHighLevel). Delete those and sign-in emails stop.
 7. **In GoHighLevel, forward the old app addresses** to the same path on
