@@ -205,8 +205,11 @@ ok("/api/lead enrolls every new email but a speech therapist's once the app is o
 // first email, as the route really reads it off the body.
 {
   process.env.EMAIL_POSTAL = "851 NE 1st Ave, Unit 4103, Miami, FL 33132";
-  const db = store(), base = db.cmd;
+  const db = store(["gone-slp@example.org"]), base = db.cmd;
   db.cmd = async (c) => (c[0] === "LPUSH" || c[0] === "LTRIM" ? 1 : base(c));
+  // The packet's email (17 Nov 2026) is played for real: lib/packet.ts on
+  // this suite's nurture config and lib/mail, through the same fake Resend.
+  const PK = loadTs(path.join(REPO, "lib/packet.ts"));
   const stubs = {
     "@/lib/slpAuth": { kvCmd: (c) => db.cmd(c), kvConfigured: () => true, leadSig: () => "not-a-signature" },
     "@/lib/rateLimit": { rateLimit: async () => null },
@@ -214,6 +217,7 @@ ok("/api/lead enrolls every new email but a speech therapist's once the app is o
     "@/lib/launch": { APP_READY: true, sendWelcomeEmail: async () => false },
     "@/lib/mail": { mailConfigured: () => true },
     "@/lib/nurture": N,
+    "@/lib/packet": PK,
   };
   const rmod = { exports: {} };
   const rjs = ts.transpileModule(lead, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true } }).outputText;
@@ -259,6 +263,51 @@ ok("/api/lead enrolls every new email but a speech therapist's once the app is o
     fromSlp.status === 200 && fromSlp.subjects.length === 0 && !db.z.has("therapist@example.org") && !db.kv.has(N.nextKey("therapist@example.org")), fromSlp);
   const noSource = await post({ email: "check@example.com" });
   ok("…as does a post with no source (the Speech Check's default)", JSON.stringify(noSource.subjects) === JSON.stringify([subj("hello")]), noSource);
+
+  // THE PACKET (17 Nov 2026): the clinicians' opt-in at speaksona.com/ posts
+  // source "slp-packet", and that address is emailed the packet's link once.
+  // Never the parents' series, never twice, never after unsubscribing, and
+  // never for any other clinician lead (the for-slps post above got nothing).
+  ok("the opt-in's source is lib/packet's, and the page posts it", PK.PACKET_SOURCE === "slp-packet" &&
+    /var SOURCE = "slp-packet";/.test(readFileSync(path.join(REPO, "public/packet.html"), "utf8")));
+  const mark = sent.length;
+  const pk = await post({ email: " Packet@Clinic.org ", source: "slp-packet", role: "slp", utm_source: "fb" });
+  const pm = sent[mark];
+  ok("a clinician who asks for the packet is emailed it once, alone: no welcome series, never on the schedule",
+    pk.status === 200 && JSON.stringify(pk.subjects) === JSON.stringify([PK.PACKET_SUBJECT]) && pm.to[0] === "packet@clinic.org" &&
+    !db.z.has("packet@clinic.org") && !db.kv.has(N.nextKey("packet@clinic.org")) && db.kv.has(PK.packetKey("packet@clinic.org")), pk);
+  ok("…the email links the packet (/packet) and the plans, signed by Rachel, MS, CF-SLP",
+    pm.html.includes('href="' + PK.PACKET_URL + '"') && PK.PACKET_URL === "https://www.speaksona.com/packet" && pm.text.includes(PK.PACKET_URL) &&
+    pm.html.includes(PK.PLANS_URL) && /Rachel, MS, CF-SLP/.test(pm.html) && /Rachel, MS, CF-SLP/.test(pm.text));
+  ok("…with a working unsubscribe link (body and header) and the mailing address, like every list email",
+    pm.html.includes("/api/email/unsub?e=packet%40clinic.org&k=" + N.unsubToken("packet@clinic.org", "s3cret")) && pm.text.includes("/api/email/unsub?e=packet%40clinic.org") &&
+    /api\/email\/unsub/.test(pm.headers["List-Unsubscribe"]) && pm.headers["List-Unsubscribe-Post"] === "List-Unsubscribe=One-Click" &&
+    pm.html.includes("851 NE 1st Ave") && pm.text.includes("851 NE 1st Ave"));
+  ok("…and no price, no score, no credential Rachel does not hold, no emoji",
+    !/\$\d|\bscore|accuracy|diagnos|\bCCC\b|certified|free trial/i.test(pm.html + pm.text) && !/\p{Extended_Pictographic}/u.test(pm.html + pm.text));
+  const again = await post({ email: "packet@clinic.org", source: "slp-packet", role: "slp" });
+  ok("…asking again (a double tap, a second visit) sends nothing more", again.status === 200 && again.subjects.length === 0, again);
+  const gone = await post({ email: "gone-slp@example.org", source: "slp-packet", role: "slp" });
+  ok("…an unsubscribed address is sent nothing, and not marked", gone.status === 200 && gone.subjects.length === 0 && !db.kv.has(PK.packetKey("gone-slp@example.org")), gone);
+  const parentish = await post({ email: "notslp@example.com", source: "slp-packet", role: "parent" });
+  ok("…and the packet goes only to a clinician's opt-in: a parent posting the same source gets the parents' email, not the packet",
+    JSON.stringify(parentish.subjects) === JSON.stringify([subj("hello")]) && !db.kv.has(PK.packetKey("notslp@example.com")), parentish);
+  {
+    // a refused send takes the mark back, so asking again tomorrow works
+    const q = store(), refused = async () => ({ ok: false, status: 500, json: async () => ({}), text: async () => "" });
+    const r1 = await PK.sendPacketEmail("retry@clinic.org", q.cmd, refused);
+    const n = sent.length, r2 = await PK.sendPacketEmail("retry@clinic.org", q.cmd, fakeFetch);
+    ok("a refused send is not counted as sent: the mark goes, and the next ask sends it", r1 === "failed" && r2 === "sent" && sent.length === n + 1, [r1, r2]);
+    const dead = { cmd: async () => undefined };
+    ok("…a store that does not answer sends nothing (fail closed)", (await PK.sendPacketEmail("nostore@clinic.org", dead.cmd, fakeFetch)) === "failed" && sent.length === n + 1);
+    const had = process.env.UNSUB_SECRET; delete process.env.UNSUB_SECRET;
+    ok("…and without the unsubscribe set-up nothing sends, quietly (the page links the packet anyway)",
+      (await PK.sendPacketEmail("nocfg@clinic.org", store().cmd, fakeFetch)) === "off" && sent.length === n + 1);
+    process.env.UNSUB_SECRET = had;
+  }
+  ok("the route sends the packet only for a clinician with the opt-in's source, after the lead is kept, and never fails the visitor on it",
+    /if \(lead\.role === "slp" && lead\.source === PACKET_SOURCE && kvConfigured\(\)\) \{\s*try \{ await sendPacketEmail\(email, kvCmd, fetch\); \} catch/.test(lead) &&
+    lead.indexOf("sendPacketEmail(email") > lead.indexOf('"leads:all"'));
   delete process.env.EMAIL_POSTAL;
 }
 // the sources the app really posts are the ones the series knows

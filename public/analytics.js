@@ -21,9 +21,11 @@
  *
  * Identity is the anonymous family id (Sona.fid) — never a name or an email.
  * Event properties pass a hard whitelist; free-form data never leaves.
- * Loaded by: check, for-slps, onboarding, parents, settings, subscribe and
- * try, and every Next.js page (app/layout.tsx) — never a child's practice,
- * game or book page.
+ * Loaded by: check, for-slps (the plans, /plans), packet (the opt-in at /,
+ * 17 Nov 2026), onboarding, parents, settings, subscribe and try, and every
+ * Next.js page (app/layout.tsx) — never a child's practice, game or book
+ * page, nor the printable packet. Neither clinician page records a replay:
+ * both stay out of AUTO_PATHS below.
  *
  * The phc_ key is a PUBLISHABLE client token (like a pixel id): safe in git.
  * Events: window.SonaAnalytics.track(name, props). The legacy sonaTrack

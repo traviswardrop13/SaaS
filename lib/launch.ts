@@ -64,6 +64,8 @@ export function locked(now: number = Date.now()): boolean {
 export const OPEN_PAGES = [
   "parents.html", "try.html", "for-slps.html", "slp.html", "slp-login.html",
   "leads.html", "founders.html", "privacy.html", "launching.html",
+  // the clinicians' front door at / and the packet it gives (17 Nov 2026)
+  "packet.html", "home-practice-packet.html",
 ];
 export function lockedPage(pathname: string): boolean {
   const m = /^\/([a-z0-9-]+\.html)$/i.exec(pathname || "");

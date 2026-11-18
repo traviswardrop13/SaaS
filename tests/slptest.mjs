@@ -23,6 +23,9 @@
 //     has not started it, is shown the plan in place of the caseload
 //   - a parent's email typed into Add a child goes to the invite route once,
 //     only when typed, and the page says whether the email really went
+//   - (17 Nov 2026) two plans on one page, Sona Pro and Sona Clinic, each
+//     asked for by name; the closed dashboard names both; and the clinician
+//     community is gone: no menu item, no page, an old link lands on Today
 import { createServer } from "http";
 import { readFileSync, existsSync } from "fs";
 import { chromium, ROOT, launchOpts } from "./_env.mjs";
@@ -66,9 +69,14 @@ const log = [];
 const SELF_OFF = { active: false, eligible: false, source: "none", periodEnd: null, cancelAtPeriodEnd: false, canRequest: false, workEmail: true, approved: false, requested: false };
 const SELF_ON = { ...SELF_OFF, active: true, eligible: true, source: "work-email" };
 const PRO_OFF = { active: false, status: "none", trialEnd: null, periodEnd: null, cancelAtPeriodEnd: false, trialAvailable: true, offer: true, name: "Sona Pro", price: "$19.99", per: "a month", trialDays: 14 };
-const PLAN_NONE = { ok: true, active: false, source: "none", periodEnd: null, cancelAtPeriodEnd: false, self: SELF_OFF, pro: PRO_OFF, dashboard: { open: true }, grandfathered: false };
+// SONA CLINIC (17 Nov 2026), in the route's `clinic` block: offered to anyone
+// it does not cover, a Sona Pro holder included (upgrading).
+const CLINIC_OFF = { name: "Sona Clinic", price: "$99", per: "a month", trialDays: 14, seats: 25, role: null, active: false, status: "none", trialEnd: null, periodEnd: null, cancelAtPeriodEnd: false, trialAvailable: true, offer: true };
+const PLAN_NONE = { ok: true, active: false, source: "none", periodEnd: null, cancelAtPeriodEnd: false, self: SELF_OFF, pro: PRO_OFF, clinic: CLINIC_OFF, dashboard: { open: true }, grandfathered: false };
 const PRO_ON = { ...PRO_OFF, active: true, status: "active", periodEnd: 1822000000, trialAvailable: false, offer: false };
-const PLAN_PRO = { ...PLAN_NONE, active: true, source: "pro", periodEnd: 1822000000, self: { ...SELF_ON, source: "pro" }, pro: PRO_ON };
+const PLAN_PRO = { ...PLAN_NONE, active: true, source: "pro", periodEnd: 1822000000, self: { ...SELF_ON, source: "pro" }, pro: PRO_ON, clinic: { ...CLINIC_OFF, trialAvailable: false } };
+// A clinician on someone else's Sona Clinic: covered, nothing to sell.
+const PLAN_MEMBER = { ...PLAN_NONE, active: true, source: "clinic", self: { ...SELF_ON, source: "clinic" }, pro: { ...PRO_OFF, offer: false }, clinic: { ...CLINIC_OFF, role: "member", active: true, status: "active", periodEnd: 1822000000, offer: false, ownerName: "Dana Lee", practiceName: "Bright Steps" } };
 // 402 from the roster: a new account (from 12 Nov 2026) with no Sona Pro.
 let LOCKED = false;
 let PLAN = PLAN_NONE;
@@ -291,7 +299,7 @@ async function open(hash) {
   // content must not be advertised as an available free game.
   ok("…and names the free version one way: free games, never 'two games'", !/two (free )?games/i.test(src) && (src.match(/daily practice and free games/g) || []).length >= 3, (src.match(/[^.>"]*two (free )?games[^.<"]*/i) || [""])[0]);
 
-  for (const [label, plan] of [["not covered", PLAN_NONE], ["Sona Pro", PLAN_PRO], ["a yearly plan still renewing", { ...PLAN_NONE, active: true, source: "paid", periodEnd: 1822000000 }], ["grandfathered", { ...PLAN_NONE, active: true, source: "grandfathered", grandfathered: true }]]) {
+  for (const [label, plan] of [["not covered", PLAN_NONE], ["Sona Pro", PLAN_PRO], ["a clinician on a Sona Clinic plan", PLAN_MEMBER], ["a yearly plan still renewing", { ...PLAN_NONE, active: true, source: "paid", periodEnd: 1822000000 }], ["grandfathered", { ...PLAN_NONE, active: true, source: "grandfathered", grandfathered: true }]]) {
     PLAN = plan; DATA = fixture(); log.length = 0;
     const { ctx, pg } = await open("#invite");
     await pg.waitForTimeout(200);
@@ -315,13 +323,14 @@ async function open(hash) {
 
 // ── 9b. the offer in the top bar (Travis, 29 Sep 2026: "yes add the $80 button
 //        to the first screen"; Sona Pro since 12 Nov 2026) ──
-// A clinician from an ad lands on Community and a returning one on Today; the
-// price lived only on the plan page, which neither sees first. The offer
-// follows them to every page: the server's price, only once the plan has
-// answered, never once there is nothing to sell, and it fits a phone.
+// A returning clinician lands on Today; the price lived only on the plan page,
+// which they do not see first. The offer follows them to every page: the
+// server's price, only once the plan has answered, never once there is
+// nothing to sell, and it fits a phone. (It was checked on Community too,
+// until Community went on 17 Nov 2026; Talk to Rachel stands in.)
 {
   const bar = (pg) => pg.evaluate(() => { const b = document.getElementById("premiumTop"); return { hidden: b.hidden || getComputedStyle(b).display === "none", text: b.innerText.replace(/\s+/g, " ").trim(), href: b.getAttribute("href") }; });
-  for (const hash of ["#today", "#community", "#caseload"]) {
+  for (const hash of ["#today", "#feedback", "#caseload"]) {
     PLAN = PLAN_NONE; DATA = fixture();
     const { ctx, pg } = await open(hash);
     const b = await bar(pg);
@@ -334,7 +343,7 @@ async function open(hash) {
     await pg.click("#premiumTop"); await pg.waitForTimeout(250);
     const onPlan = await pg.evaluate(() => document.getElementById("page-premium").classList.contains("active"));
     ok("…a tap opens the plan page, where the bar stops repeating the offer", onPlan && (await bar(pg)).hidden);
-    await pg.evaluate(() => { location.hash = "#community"; }); await pg.waitForTimeout(250);
+    await pg.evaluate(() => { location.hash = "#feedback"; }); await pg.waitForTimeout(250);
     ok("…and it is back on the next page", !(await bar(pg)).hidden);
     ok("…and showing it is a read, never a write", !log.some((l) => l.m !== "GET"), JSON.stringify(log.filter((l) => l.m !== "GET")));
     await ctx.close();
@@ -354,7 +363,7 @@ async function open(hash) {
     ok("a clinician who has had the trial is offered Get Sona Pro, with no free days", !b.hidden && /^Get Sona Pro/.test(b.text) && !/free|then/.test(b.text) && /\$19\.99 a month/.test(b.text), JSON.stringify(b));
     await ctx.close();
   }
-  for (const [label, plan] of [["Sona Pro on", PLAN_PRO], ["grandfathered", { ...PLAN_NONE, active: true, source: "grandfathered", grandfathered: true, self: { ...SELF_ON, source: "grandfathered" }, pro: { ...PRO_OFF, offer: false } }],
+  for (const [label, plan] of [["Sona Pro on", PLAN_PRO], ["on a Sona Clinic plan", PLAN_MEMBER], ["grandfathered", { ...PLAN_NONE, active: true, source: "grandfathered", grandfathered: true, self: { ...SELF_ON, source: "grandfathered" }, pro: { ...PRO_OFF, offer: false } }],
     ["paying for both yearly plans still renewing", { ...PLAN_NONE, active: true, source: "paid", self: { ...SELF_ON, source: "paid" }, pro: { ...PRO_OFF, offer: false } }], ["the plan didn't answer", { ok: false, error: "Couldn't check your plan just now." }]]) {
     PLAN = plan; DATA = fixture();
     const { ctx, pg } = await open("#today");
@@ -365,7 +374,7 @@ async function open(hash) {
   for (const width of [390, 360]) {
     const ctx = await browser.newContext({ viewport: { width, height: 800 } });
     const pg = await ctx.newPage();
-    await pg.goto(U("#community")); await pg.waitForTimeout(900);
+    await pg.goto(U("#feedback")); await pg.waitForTimeout(900);
     const fit = await pg.evaluate(() => { const r = (id) => document.getElementById(id).getBoundingClientRect(); const t = r("premiumTop"), d = r("downloadApp"), c = r("copyAppLink"); return { over: document.documentElement.scrollWidth - innerWidth, row: t.bottom <= d.top + 1, inside: [t, d, c].every((q) => q.left >= 0 && q.right <= innerWidth) }; });
     ok(`${width}px phone: the offer takes its own row and nothing runs off the screen`, fit.over <= 0 && fit.row && fit.inside, JSON.stringify(fit));
     await ctx.close();
@@ -376,7 +385,9 @@ async function open(hash) {
 //        dashboard"): an account made from 12 Nov 2026 with no Sona Pro on ──
 // The server refuses the caseload (402 needPlan) and the plan says
 // dashboard.open:false; the page shows the plan in place of Today, Caseload
-// and a child's page, and leaves Settings, Community and Talk to Rachel open.
+// and a child's page, and leaves Settings, Talk to Rachel and the affiliate
+// teaser open. Since 17 Nov 2026 it names both plans, and every new account
+// starts here.
 {
   LOCKED = true; PLAN = { ...PLAN_NONE, dashboard: { open: false } }; DATA = fixture();
   for (const hash of ["#today", "#caseload", "#child/c1", "#invite"]) {
@@ -385,14 +396,21 @@ async function open(hash) {
       locked: !document.getElementById("proLocked").hidden, text: document.getElementById("proLocked").innerText, offer: !document.getElementById("proOffer").hidden,
       button: document.getElementById("proBuy").textContent, kids: document.body.innerText.includes("Mia"), err: !document.getElementById("loadError").hidden }));
     ok(`closed dashboard: ${hash} shows the plan instead — with why, and the free trial first`,
-      st.active.join() === "page-premium" && st.hash === "#premium" && st.locked && /Your dashboard comes with Sona Pro\. Start your free trial below/.test(st.text) &&
+      st.active.join() === "page-premium" && st.hash === "#premium" && st.locked && /Your dashboard comes with Sona Pro or Sona Clinic\. Start your free trial below/.test(st.text) &&
       st.offer && st.button === "Start my free trial" && !st.kids && !st.err && errs.length === 0, JSON.stringify(st) + errs.join("|"));
     await ctx.close();
   }
-  for (const hash of ["#settings", "#community", "#feedback"]) {
+  for (const hash of ["#settings", "#feedback", "#affiliate"]) {
     const { ctx, pg } = await open(hash);
     const active = await pg.evaluate(() => [...document.querySelectorAll(".page.active")].map((p) => p.id).join());
     ok(`closed dashboard: ${hash} stays open`, active === "page-" + hash.slice(1), active);
+    await ctx.close();
+  }
+  {
+    // an old bookmark to the community, on a closed dashboard: the plan
+    const { ctx, pg } = await open("#community");
+    const st = await pg.evaluate(() => ({ active: [...document.querySelectorAll(".page.active")].map((p) => p.id).join(), hash: location.hash }));
+    ok("closed dashboard: an old #community link lands on the plan", st.active === "page-premium" && st.hash === "#premium", JSON.stringify(st));
     await ctx.close();
   }
   {
@@ -401,10 +419,24 @@ async function open(hash) {
     const card = await pg.evaluate(() => document.getElementById("proOffer").innerText.replace(/\s+/g, " "));
     ok("the offer names Sona Pro, the server's price and the free days", /\$19\.99 a month · 14 days free/.test(card) && /Unlimited families/.test(card), card.slice(0, 200));
     ok("…and says, beside the button, no charge today and what follows", /No charge today: after your free trial, \$19\.99 a month until you cancel\. Cancel before the trial ends and you pay nothing\./.test(card), card);
+    // …beside Sona Clinic, the server's figures again: price, free days, seats
+    const clinic = await pg.evaluate(() => { const c = document.getElementById("clinicOffer"); return { shown: !c.hidden && getComputedStyle(c).display !== "none", text: c.innerText.replace(/\s+/g, " ") }; });
+    ok("…beside it, Sona Clinic: the server's $99 a month, the free days and the seats, and what the owner sees (never a child)",
+      clinic.shown && /\$99 a month · 14 days free/.test(clinic.text) && /for every clinician at your practice — up to 25, you included/.test(clinic.text) &&
+      /how many children each clinician has on Sona, and how many practiced in the last 7 days\. Never a child's name, initials, sounds or pass rate\./.test(clinic.text) &&
+      /No charge today: after your free trial, \$99 a month until you cancel\. Cancel before the trial ends and you pay nothing\./.test(clinic.text), clinic.text);
     log.length = 0;
     await pg.click("#proBuy"); await pg.waitForTimeout(300);
     const buy = log.find((l) => l.m === "POST" && l.p === "/api/slp/plan");
     ok("…and its button asks the server for Sona Pro's checkout, by name", !!buy && JSON.stringify(buy.b) === JSON.stringify({ plan: "pro" }), JSON.stringify(buy));
+    await ctx.close();
+  }
+  {
+    const { ctx, pg } = await open("#premium");
+    log.length = 0;
+    await pg.click("#clinicBuy"); await pg.waitForTimeout(300);
+    const buy = log.filter((l) => l.m === "POST" && l.p === "/api/slp/plan");
+    ok("…and Sona Clinic's button asks for Sona Clinic's checkout, by name, once", buy.length === 1 && JSON.stringify(buy[0].b) === JSON.stringify({ plan: "clinic" }), JSON.stringify(buy));
     await ctx.close();
   }
   LOCKED = false; PLAN = PLAN_NONE;
@@ -454,6 +486,22 @@ async function open(hash) {
   ok("a new clinician is invited to send their first child home", /Send your first child home/.test(txt) && !/Gone quiet/.test(txt), txt.slice(0, 120));
   await ctx.close();
   DATA = fixture();
+}
+
+// ── 11. the clinician community is gone (Travis, 17 Nov 2026) ──
+// No menu item, no page, no request to its old route; an old bookmark lands
+// on Today. Account deletion still scrubs old posts (slpapptest pins that).
+{
+  PLAN = PLAN_NONE; DATA = fixture(); log.length = 0;
+  const { ctx, pg, errs } = await open("#community");
+  const st = await pg.evaluate(() => ({ active: [...document.querySelectorAll(".page.active")].map((p) => p.id).join(), hash: location.hash,
+    nav: !!document.querySelector('[data-page="community"]'), page: !!document.getElementById("page-community"), menu: document.querySelector(".sidebar nav").innerText }));
+  ok("an old #community link opens Today, with no community page or menu item left", st.active === "page-today" && !st.nav && !st.page && !/communit/i.test(st.menu), JSON.stringify(st));
+  ok("…and nothing asks the community's old route", !log.some((l) => /\/api\/slp\/community/.test(l.p)), JSON.stringify(log.map((l) => l.p)));
+  ok("…with no page errors", errs.length === 0, errs.join(" | "));
+  await ctx.close();
+  const src = readFileSync(HTML, "utf8");
+  ok("the page holds no community code: no /api/slp/community, no #page-community, no Block", !/\/api\/slp\/community|page-community|data-community|COMMUNITY_/.test(src));
 }
 
 await browser.close(); srv.close();

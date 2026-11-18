@@ -4,8 +4,11 @@
   // SLPAPP1 (16 Nov 2026): the clinicians' own iPhone app ("SonaSLPApp/<n>"
   // in its user agent) is the dashboard alone. A family page opened there
   // goes to the dashboard: it would be the kids' app with no store to buy in.
+  // /slps IS the dashboard (17 Nov 2026): /slp.html answers a permanent
+  // redirect to /slps (next.config.js), so a list without it sent the app
+  // from /slps to /slp.html, which redirected back to /slps — forever.
   try {
-    if (/\bSonaSLPApp\/\d/.test(global.navigator.userAgent || "") && !/^\/slp(-login)?(\.html)?$/.test(global.location.pathname)) {
+    if (/\bSonaSLPApp\/\d/.test(global.navigator.userAgent || "") && !/^\/(slps|slp(-login)?(\.html)?)$/.test(global.location.pathname)) {
       global.location.replace("/slp.html");
     }
   } catch (e) {}

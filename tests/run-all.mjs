@@ -27,7 +27,7 @@ const SUITES = [
   "slpcode.mjs",   // CODES1: SLP family credential — verified redemption, honest gate
   "slpapi.mjs",    // SLPAPI1: the clinician's roster — invites ahead of the family, removal, meta the device can't overwrite
   "familylogintest.mjs", // FAMLOGIN1: a login the clinician makes, typed into the app: the link's access and walls, never consent, the password once and only hashed, the family's own password, Log in on the first screen
-  "slpapptest.mjs", // SLPAPP1: the clinicians' own app: sign-in by the emailed code, the dashboard there selling nothing, Delete my account (code kept closed, syncs dropped), Block in the community
+  "slpapptest.mjs", // SLPAPP1: the clinicians' own app: sign-in by the emailed code, the dashboard there selling nothing, Delete my account (code kept closed, syncs dropped, old community posts scrubbed), the /slps loop
   "caseloadtest.mjs", // CASELOAD1: the clinician's plans ($59.99 for you, $59.99 more for the caseload) — who is covered, grandfathering, own phone, parent invites
   "ttsroutetest.mjs", // voice provider, delivery cache, safe fallback and request deadline
   "voiceclienttest.mjs", // actual playback source, old-cache refresh and complete spoken turns
@@ -183,8 +183,9 @@ const SUITES = [
   "boardtest.mjs", // BOARD2: the Practice Board's phone half, built dark: nothing shows while off, a grown-up's email turns it on, a goal day goes once with 10 reps, Home sends nothing, deletion always works
   "dayplantest.mjs", // the session planner: only sound, position, age and minutes reach the AI
   "slpworkflowtest.mjs", // quick homework, per-child plans, feedback/call UI and failure recovery
-  "slpcommunityapi.mjs", // shared community access, persistence, privacy and ownership
-  "slpcommunitytest.mjs", // shared conversations, draft recovery and mobile layout
+  // slpcommunityapi.mjs and slpcommunitytest.mjs went with the clinician
+  // community (Travis, 17 Nov 2026: removed from the dashboard); the delete
+  // of an account still scrubs its old posts, pinned in slpapptest.
   "slpfeedbacktest.mjs", // authenticated feedback, call requests refused; confirmed receipt only
   "slpdesigntest.mjs", // SLP workspace: filters, failure recovery, bulk assignments, mobile layout
   "craftedarttest.mjs", // every Feed word has loadable, usable illustrated artwork

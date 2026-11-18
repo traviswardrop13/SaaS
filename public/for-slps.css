@@ -227,9 +227,53 @@ header {
 footer { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 14px 20px; padding-bottom: 33px; color: var(--muted); font-size: 13px; }
 footer .d { max-width: 550px; }
 footer .links { display: flex; flex-wrap: wrap; gap: 13px; }
+/* ── the front door: the packet opt-in at / (packet.html, 17 Nov 2026) ── */
+.gets { display: flex; flex-direction: column; gap: 8px; max-width: 520px; margin: 4px 0 0; padding: 0; list-style: none; }
+.gets li { position: relative; padding-left: 28px; color: var(--body); font-size: 16px; line-height: 1.45; }
+.gets li b { color: var(--ink); }
+.gets li::before { content: ""; position: absolute; left: 4px; top: 6px; width: 12px; height: 6px; border-left: 3px solid var(--teal); border-bottom: 3px solid var(--teal); transform: rotate(-45deg); }
+.consent { color: var(--muted); font-size: 13px; }
+.skip { font-size: 15px; font-weight: 800; }
+/* The packet, drawn as paper: decoration, not a download. */
+.paper { position: absolute; display: flex; flex-direction: column; gap: 7px; width: 47%; aspect-ratio: 8.5 / 11; padding: 4% 4.5%; border-radius: 10px; background: #fff; box-shadow: 0 2px 0 #efe6d6, 0 22px 36px -22px #1d2b4f80; color: var(--ink); }
+.paper b { font: 800 clamp(11px, 1.6vw, 17px)/1.05 var(--display); color: var(--teal-deep); }
+.paper-back { top: 4%; left: 9%; transform: rotate(-7deg); }
+.paper-back i { display: block; height: 7px; border-radius: 4px; background: #efe8da; }
+.paper-back i:nth-of-type(2n) { width: 78%; }
+.paper-front { top: 2%; right: 7%; transform: rotate(6deg); }
+.paper ~ .spark-top { top: 0; left: 2%; }
+.paper-cols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; font-size: clamp(8px, 1.05vw, 12px); font-weight: 800; line-height: 1.2; }
+.paper-cols em { display: block; margin-bottom: 3px; color: var(--muted); font-size: .78em; font-style: normal; letter-spacing: .04em; text-transform: uppercase; }
+.paper-cols span { display: block; padding: 2px 0; border-bottom: 1px dashed var(--line); }
+.paper-ticks { display: flex; gap: 4px; margin-top: auto; }
+.paper-ticks i { flex: 1; height: clamp(9px, 1.3vw, 15px); border: 2px solid var(--ink); border-radius: 4px; }
+.workflow.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+/* ── the plans page at /plans (for-slps.html, 17 Nov 2026) ── */
+/* Sticky under the header: the opt-in lands them at #pricing, below where
+   the bar sits, and the packet's link is what they just asked for. */
+.packet-bar { position: sticky; top: 67px; z-index: 9; background: var(--teal-deep); color: #fff; }
+body:has(#packetBar:not([hidden])) .pricing { scroll-margin-top: 130px; }
+.packet-bar .wrap { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px 12px; min-height: 44px; padding-block: 8px; font-size: 15px; font-weight: 800; text-align: center; }
+.packet-bar a { color: var(--butter); }
+.pricing { padding-block: clamp(46px, 6vw, 80px) clamp(30px, 4vw, 50px); scroll-margin-top: 70px; }
+.pricing h2 { margin-bottom: 10px; }
+.pricing-lede { max-width: 640px; margin-bottom: 25px; color: var(--body); font-size: 17px; }
+.plans { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: stretch; gap: 15px; }
+.plan { display: flex; flex-direction: column; gap: 12px; padding: 26px 24px; border: 1px solid var(--line); border-radius: 25px; background: var(--paper); }
+.plan h3 { font-size: 30px; }
+.plan .for { color: var(--teal-deep); font-size: 14px; font-weight: 900; }
+.plan .price { color: var(--body); font-size: 17px; font-weight: 800; }
+.plan .price b { color: var(--ink); font: 800 44px/1 var(--display); letter-spacing: -.03em; }
+.plan ul { display: flex; flex-direction: column; gap: 9px; margin: 0; padding: 0; list-style: none; }
+.plan li { position: relative; padding-left: 26px; color: #3c3c58; line-height: 1.45; }
+.plan li::before { content: ""; position: absolute; left: 3px; top: 6px; width: 11px; height: 6px; border-left: 3px solid var(--teal); border-bottom: 3px solid var(--teal); transform: rotate(-45deg); }
+.plan .btn { align-self: flex-start; margin-top: auto; }
+.plan .terms { color: var(--muted); font-size: 13px; }
+.plan .parent-price { padding: 10px 12px; border-radius: 12px; background: #fff4d4; color: var(--body); font-size: 13px; }
 
 @media (max-width: 850px) {
-
+  .workflow.three { grid-template-columns: minmax(0, 1fr); }
 }
 @media (max-width: 700px) {
   .hero, .kidside .in, .privacy { grid-template-columns: minmax(0, 1fr); }
@@ -243,7 +287,13 @@ footer .links { display: flex; flex-wrap: wrap; gap: 13px; }
   .mascot { width: 54%; left: 8%; }
   .spark-top { left: 28%; }
   .spark-low { right: 10%; }
-  .workflow, .notes { grid-template-columns: minmax(0, 1fr); }
+  .workflow, .notes, .plans { grid-template-columns: minmax(0, 1fr); }
+  .paper { width: 44%; }
+  /* On a phone Echo stands left of the word sheet, not on its words. */
+  .paper ~ .mascot { width: 46%; left: 2%; }
+  .paper-front { right: 3%; }
+  .paper-cols { gap: 4px; }
+  .paper-cols em { letter-spacing: 0; font-size: .7em; }
   .workflow-step { padding: 18px 20px; }
 
   .workflow-step h3 { margin-top: 3px; }
@@ -252,10 +302,12 @@ footer .links { display: flex; flex-wrap: wrap; gap: 13px; }
 }
 @media (max-width: 480px) {
   .hbar { min-height: 60px; }
+  .packet-bar { top: 61px; }
   .brand img { width: 37px; height: 37px; }
   .brand b { font-size: 26px; }
   .signin { padding-inline: 13px; font-size: 14px; }
   .signup .btn { width: 100%; }
+  .plan .btn { align-self: stretch; }
 
 
 

@@ -109,28 +109,41 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
 
 
 // ── the root, and what a shared link looks like ──
-// The free clinician dashboard is introduced at the root. The family page has its own address.
+// The clinicians' front door at the root is the packet opt-in (17 Nov 2026);
+// the plans are at /plans and the packet itself at /packet. The family page
+// has its own address.
 {
   const parents = readFileSync(APP + "/public/parents.html", "utf8");
   const slps = readFileSync(APP + "/public/for-slps.html", "utf8");
+  const optin = readFileSync(APP + "/public/packet.html", "utf8");
 
   const rewrites = code.slice(code.indexOf("async rewrites()"), code.indexOf("async redirects()"));
   const redirects = code.slice(code.indexOf("async redirects()"));
-  ok("the root serves the clinician page and /for-parents serves the family page",
-    /source:\s*"\/"\s*,\s*destination:\s*"\/for-slps\.html"/.test(rewrites) &&
+  ok("the root serves the packet opt-in, /plans the clinician plans page, /packet the packet and /for-parents the family page",
+    /source:\s*"\/"\s*,\s*destination:\s*"\/packet\.html"/.test(rewrites) &&
+    /source:\s*"\/plans"\s*,\s*destination:\s*"\/for-slps\.html"/.test(rewrites) &&
+    /source:\s*"\/packet"\s*,\s*destination:\s*"\/home-practice-packet\.html"/.test(rewrites) &&
     /source:\s*"\/for-parents"\s*,\s*destination:\s*"\/parents\.html"/.test(rewrites));
-  ok("the old clinician URL redirects permanently to the root",
-    /source:\s*"\/for-slps"\s*,\s*destination:\s*"\/"\s*,\s*permanent:\s*true/.test(redirects));
+  // THE 308 TRAP (17 Nov 2026): /for-slps has been a permanent redirect to /
+  // since 12 Nov, and a browser keeps one. Pointing anything back at
+  // /for-slps (the plans, a rewrite, a link) would loop a returning visitor.
+  ok("the old clinician URL still redirects permanently to the root, and nothing sends anyone back to it",
+    /source:\s*"\/for-slps"\s*,\s*destination:\s*"\/"\s*,\s*permanent:\s*true/.test(redirects) &&
+    !/destination:\s*"\/for-slps"/.test(code) && !/source:\s*"\/for-slps"/.test(rewrites) &&
+    !/href="\/for-slps["?#]/.test(optin + slps));
   ok("each landing page declares its canonical and shared URL",
     /rel="canonical" href="https:\/\/www\.speaksona\.com\/for-parents"/.test(parents) &&
     /og:url" content="https:\/\/www\.speaksona\.com\/for-parents"/.test(parents) &&
-    /rel="canonical" href="https:\/\/www\.speaksona\.com\/"/.test(slps) &&
-    /og:url" content="https:\/\/www\.speaksona\.com\/"/.test(slps));
-  ok("both landing routes revalidate", /source: "\/", headers: noStore/.test(code) && /source: "\/for-parents", headers: noStore/.test(code));
+    /rel="canonical" href="https:\/\/www\.speaksona\.com\/"/.test(optin) &&
+    /og:url" content="https:\/\/www\.speaksona\.com\/"/.test(optin) &&
+    /rel="canonical" href="https:\/\/www\.speaksona\.com\/plans"/.test(slps) &&
+    /og:url" content="https:\/\/www\.speaksona\.com\/plans"/.test(slps));
+  ok("every landing route revalidates (a rewritten path is not on the list read from disk)",
+    ["/", "/plans", "/packet", "/for-parents"].every((r) => new RegExp('source: "' + r.replace(/\//g, "\\/") + '", headers: noStore').test(code)));
 
-  // A LINK WITH NO CARD IS A GREY BOX. Both pages are static and inherit
+  // A LINK WITH NO CARD IS A GREY BOX. The pages are static and inherit
   // nothing from app/layout.tsx, so each carries its own.
-  for (const [name, page, img] of [["the parent page", parents, "og-parents.png"], ["the clinician page", slps, "og-slp.png"]]) {
+  for (const [name, page, img] of [["the parent page", parents, "og-parents.png"], ["the clinician plans page", slps, "og-slp.png"], ["the packet opt-in", optin, "og-packet.png"]]) {
     for (const tag of ["og:title", "og:description", "og:image", "og:url", "twitter:card"]) {
       ok(`${name}: a shared link carries ${tag}`, new RegExp('(property|name)="' + tag + '"').test(page));
     }
@@ -266,8 +279,10 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
     !/How it works/.test(header));
   ok("a parent who lands here is pointed to /for-parents",
     (slps.match(/<a\b[^>]*href="\/for-parents"/g) || []).length === 1);
-  ok("clinician signup asks the auth endpoint to send the free dashboard link",
-    /fetch\("\/api\/slp\/auth\/request"/.test(slps) && /flow:\s*"free-dashboard"/.test(slps) &&
+  // THE TRIAL'S DOOR (17 Nov 2026): the same emailed link the free
+  // dashboard's form sent, now flow "trial", which grants nothing.
+  ok("clinician signup asks the auth endpoint to email a sign-in link for the trial",
+    /fetch\("\/api\/slp\/auth\/request"/.test(slps) && /flow:\s*"trial"/.test(slps) && !/flow:\s*"free-dashboard"/.test(slps) &&
     !/#premium|apps\.apple\.com|APP_STORE|APP_READY/.test(slps));
   const form = (slps.match(/<form class="signup" id="signup"[\s\S]*?<\/form>/) || [""])[0];
   ok("one clinician form asks only for a work email (14 Nov 2026: no role, no setting)",
@@ -276,20 +291,103 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
     /placeholder="you@yourclinic\.org"/.test(form) &&
     !/<option value="(?:parent|other)"/.test(form) &&
     (slps.match(/<form\b/g) || []).length === 1 && !/id="startModal"/.test(slps));
-  ok("both clinician calls to action say Get the free dashboard and the closing one returns to the form",
-    /\$\("finalGo"\)\.onclick = function \(\) \{ toForm\(\); \};/.test(slps) &&
-    (slps.replace(/<!--[\s\S]*?-->/g, "").match(/>Get the free dashboard</g) || []).length === 2);
-  ok("the signup button tells clinicians that access is emailed",
-    /aria-describedby="fNext"/.test(form) && /id="fNext">[^<]*email you a sign-in link/i.test(form));
+  // The trial length on the page is lib/caseload's (the page cannot import it).
+  const caseload = readFileSync(APP + "/lib/caseload.ts", "utf8");
+  const TRIAL = Number((caseload.match(/export const PRO_TRIAL_DAYS = (\d+);/) || [])[1]);
+  ok("both clinician calls to action say Start your " + TRIAL + "-day free trial and the closing one returns to the form",
+    TRIAL > 0 && /\$\("finalGo"\)\.onclick = function \(\) \{ toForm\(\); \};/.test(slps) &&
+    (slps.replace(/<!--[\s\S]*?-->/g, "").match(new RegExp(">Start your " + TRIAL + "-day free trial<", "g")) || []).length === 2 &&
+    !/free dashboard/i.test(slps));
+  ok("the signup button tells clinicians that access is emailed, and that the plan comes next with no charge for the trial",
+    /aria-describedby="fNext"/.test(form) && new RegExp('id="fNext">[^<]*email you a sign-in link\\. Then pick your plan: no charge for ' + TRIAL + ' days\\.<').test(form));
   const heroR = (slps.match(/<div class="hero-r"[\s\S]*?<\/section>/) || [""])[0];
   ok("the clinician hero shows Echo and a Fruit Slice game screen without sample caseload data",
     /<img class="mascot" src="\/assets\/site\/echo\.webp"/.test(heroR) && /<img src="\/assets\/site\/slice\.webp"/.test(heroR) &&
     !/Your caseload this week|>\s*\d+%\s*</.test(heroR));
+  // The cards are rendered from tools/og (render-og.mjs) and carry no price:
+  // a figure in a picture outlives the price.
   const ogSrc = readFileSync(APP + "/tools/og/og-slp.html", "utf8").replace(/<!--[\s\S]*?-->/g, "");
-  ok("the share picture offers the free dashboard without misstating Rachel's credentials",
-    /free dashboard/i.test(ogSrc) && !/\bCCC\b|certified|licensed pediatric SLP/i.test(ogSrc) &&
-    (!/Rachel/.test(ogSrc) || /Rachel, MS, CF-SLP/.test(ogSrc)));
-  ok("the share picture carries no dollar price or trial pitch", !/\$\s*\d|\bfree trial\b|\b\d+ days free\b/i.test(ogSrc));
+  const ogPacket = readFileSync(APP + "/tools/og/og-packet.html", "utf8").replace(/<!--[\s\S]*?-->/g, "");
+  ok("the plans page's share picture offers the trial, without the free dashboard, the community, or misstating Rachel's credentials",
+    new RegExp("Start your " + TRIAL + "-day free trial").test(ogSrc) && !/free dashboard|community/i.test(ogSrc) &&
+    !/\bCCC\b|certified|licensed pediatric SLP/i.test(ogSrc) && (!/Rachel/.test(ogSrc) || /Rachel, MS, CF-SLP/.test(ogSrc)));
+  ok("neither share picture carries a dollar price", !/\$\s*\d/.test(ogSrc) && !/\$\s*\d/.test(ogPacket));
+  ok("the opt-in's share picture is the packet, with no dashboard, trial or price on it",
+    /home&#8209;practice|home-practice/.test(ogPacket) && /packet/i.test(ogPacket) && !/dashboard|free trial|\b\d+ days free\b/i.test(ogPacket) &&
+    !/\bCCC\b|certified/i.test(ogPacket));
+
+  // ── THE FRONT DOOR: the packet opt-in at / (Travis, 17 Nov 2026) ──
+  // An email for a free printable packet, then on to the plans. It is not
+  // the dashboard and sells nothing itself: no price, no trial.
+  const guard = (t) => ((t.match(/<head>\s*<meta charset="utf-8" \/>\s*<script>([\s\S]*?)<\/script>/) || [])[1] || "");
+  ok("the opt-in's first script is the clinician page's guard, word for word (the family iPhone app opens / on every launch)",
+    guard(slps).length > 200 && guard(optin) === guard(slps) && /SonaSLPApp/.test(guard(optin)) && /location\.replace\("\/today\.html"\)/.test(guard(optin)));
+  ok("…and its own script stands down when the guard has sent the app away",
+    /<script>\s*\(function \(\) \{\s*if \(window\.__sonaFamilyRedirect\) return;/.test(optin));
+  const oShown = optin.replace(/<!--[\s\S]*?-->/g, "").replace(/<script[\s\S]*?<\/script>/g, "").replace(/<style[\s\S]*?<\/style>/g, "");
+  const oFlat = oShown.replace(/<[^>]+>/g, " ").replace(/&rsquo;/g, "’").replace(/&mdash;/g, "—").replace(/\s+/g, " ");
+  ok("the opt-in's headline offers the free packet", /<h1>A free packet <span>for home practice\.<\/span><\/h1>/.test(optin));
+  ok("…and says what is in it: word lists for all " + sounds.length + " sounds by position, plus blends and vocalic R, the parent guide and the tracker",
+    new RegExp("Word lists for all " + sounds.length + " sounds\\s*, sorted by beginning, middle and end, plus blends and vocalic R\\.").test(oFlat) &&
+    /A one-page guide for parents/.test(oFlat) && /A tick-box tracker/.test(oFlat) &&
+    new RegExp("for " + sounds.length + " sounds").test(optin.match(/<meta name="description" content="([^"]*)"/)[1]));
+  const oForm = (optin.match(/<form class="signup" id="signup"[\s\S]*?<\/form>/) || [""])[0];
+  ok("its one form asks only for a work email, with one button: Send me the free packet",
+    /<label for="fEmail">Your work email<\/label>/.test(oForm) && /id="fEmail" type="email"[^>]*placeholder="you@yourclinic\.org" required/.test(oForm) &&
+    (oForm.match(/<input\b/g) || []).length === 1 && (oForm.match(/<button\b/g) || []).length === 1 &&
+    />Send me the free packet</.test(oForm) && (optin.match(/<form\b/g) || []).length === 1 && !/id="fName"/.test(optin));
+  // The page exists to build the list, so it says so before the button is
+  // pressed, in Travis's words.
+  ok("…and says the email joins the list, before it is given", /<p class="consent">We&rsquo;ll also send occasional tips from Rachel\. Unsubscribe anytime\.<\/p>/.test(oForm));
+  ok("…names Rachel in the settled words", /Built with Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical fellowship\./.test(oFlat));
+  ok("…and lets a clinician skip it: No thanks — see the plans → /plans", /<a class="skip" id="skip" href="\/plans">No thanks — see the plans →<\/a>/.test(oShown));
+  ok("it quotes no price, trial or dashboard: it is the packet, not the plan", !/\$\s?\d|free trial|\bdays free\b|dashboard/i.test(oFlat));
+  const oHeader = (optin.match(/<header>[\s\S]*?<\/header>/) || [""])[0];
+  ok("its header has the logo and Sign in, and its footer the one way to /for-parents",
+    (oHeader.match(/<a\b/g) || []).length === 2 && /<a class="signin" href="\/slp-login\.html">Sign in<\/a>/.test(oHeader) &&
+    (optin.match(/<a\b[^>]*href="\/for-parents"/g) || []).length === 1 && /href="\/terms"/.test(optin) && /href="\/privacy\.html"/.test(optin));
+  // /api/lead reads the ad's tags at the TOP of the body, and emails the
+  // packet only for the opt-in's own source (lib/packet.ts).
+  const PACKET_SOURCE = (readFileSync(APP + "/lib/packet.ts", "utf8").match(/export const PACKET_SOURCE = "([^"]+)";/) || [])[1];
+  ok("it posts the email to /api/lead as a clinician, with the packet's own source and the ad's tags at the top level",
+    PACKET_SOURCE === "slp-packet" && new RegExp('var SOURCE = "' + PACKET_SOURCE + '";').test(optin) &&
+    /fetch\("\/api\/lead"/.test(optin) && /JSON\.stringify\(Object\.assign\(\{ email: email, role: "slp", source: SOURCE \}, attrib\)\)/.test(optin) &&
+    !/\/api\/slp\/auth\/request/.test(optin));
+  ok("…and goes on to /plans?packet=1 with the ad's tags only, never the email",
+    /return "\/plans" \+ \(parts\.length \? "\?" \+ parts\.join\("&"\) : ""\) \+ \(packet \? "#pricing" : ""\);/.test(optin) &&
+    /KEYS\.forEach\(function \(k\) \{ if \(attrib\[k\]\) parts\.push/.test(optin) && !/plansUrl\([^)]*email|parts\.push\([^)]*email/.test(optin) &&
+    /setTimeout\(function \(\) \{ location\.href = to; \}, LEAVE_MS\);/.test(optin));
+
+  // ── THE PACKET ITSELF: generated from the app's word bank ──
+  // What a child is asked to say is Rachel's call, so the packet adds no
+  // word: tools/packet/build-packet.mjs writes it from sona.js's WORDS, and
+  // the page on disk must be exactly what it writes today.
+  const P = await import(APP + "/tools/packet/build-packet.mjs");
+  const packetHtml = readFileSync(APP + "/public/home-practice-packet.html", "utf8");
+  const pdata = P.packetData();
+  ok("the packet on disk is what tools/packet/build-packet.mjs writes from today's word bank (run it after changing WORDS)", packetHtml === P.buildPacket(pdata));
+  ok("…a page for every sound the app practices, in its order", pdata.pages.length === sounds.length && pdata.pages.map((p) => p.sound).join() === sounds.join() &&
+    (packetHtml.match(/<section class="sheet sound"/g) || []).length === sounds.length);
+  const sonaSrc = readFileSync(APP + "/public/sona.js", "utf8");
+  const bankBox = {};
+  (await import("node:vm")).runInNewContext("W = " + sonaSrc.slice(sonaSrc.indexOf("{", sonaSrc.indexOf("const WORDS = {")), sonaSrc.indexOf("\n  };", sonaSrc.indexOf("const WORDS = {")) + 4), bankBox);
+  const printed = [...packetHtml.matchAll(/<section class="sheet sound" data-sound="(\w+)"[\s\S]*?<\/section>/g)].flatMap((m) =>
+    [...m[0].matchAll(/<div class="col" data-pos="(\w)">[\s\S]*?<\/div>/g)].flatMap((c) => [...c[0].matchAll(/data-w="([^"]+)"/g)].map((w) => ({ s: m[1], pos: c[1], w: w[1] }))));
+  const strays = printed.filter((x) => !(bankBox.W[x.s] || []).some((b) => b.w === x.w && (b.pos || "i") === x.pos));
+  ok("…every word on it (" + printed.length + ") is a bank word, at the place in the word the bank gives it, and a single word",
+    printed.length > 300 && strays.length === 0 && printed.every((x) => /^[a-z]+$/.test(x.w)), strays.map((x) => x.s + "." + x.pos + ":" + x.w).join(", "));
+  const heldOut = printed.filter((x) => (x.s === "T" && x.pos === "m" && ["water", "letter", "button"].includes(x.w)) || (x.s === "V" && x.pos === "m" && x.w === "gloves") || pdata.neverSay.includes(x.w));
+  ok("…leaving out the middle words waiting for Rachel's review (water, letter, button; gloves) and the never-say list",
+    heldOut.length === 0 && /T: \["water", "letter", "button"\], V: \["gloves"\]/.test(sonaSrc), heldOut.map((x) => x.s + ":" + x.w).join(", "));
+  const pkShown = packetHtml.replace(/<!--[\s\S]*?-->/g, "").replace(/<script[\s\S]*?<\/script>/g, "").replace(/<style[\s\S]*?<\/style>/g, "");
+  ok("…the parent guide carries the hedge and Rachel's settled line, and says a try is said out loud",
+    /This guide supports the plan your child&rsquo;s speech therapist makes\. It is not an evaluation\./.test(pkShown) &&
+    /Built with Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical fellowship\./.test(pkShown) &&
+    /Silence or pointing isn&rsquo;t a try\./.test(pkShown) && /always finish on a word your child gets right/.test(pkShown));
+  ok("…never a grade, a score, an accuracy, a diagnosis or a review Rachel has not given", !/\b(score|grade|accuracy|diagnos\w*|assessment|reviewed by|approved by)\b/i.test(pkShown));
+  ok("…with the same guard as the opt-in, noindex, no pixel or analytics, and nothing linking to the clinician side",
+    guard(packetHtml) === guard(slps) && /<meta name="robots" content="noindex" \/>/.test(packetHtml) &&
+    !/pixel\.js|analytics\.js/.test(packetHtml) && !/<a\b/.test(pkShown));
 }
 
 // ── found by search and by AI assistants, as a page for parents (22 Oct 2026) ──
@@ -314,7 +412,8 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
   // as a clinician (role "slp", through /onboarding.html?slp=1, which nothing
   // links to) and never in the iPhone app.
   // parents.html is checked above: exactly one footer link, nothing else.
-  const CLIN = new Set(["for-slps.html", "slp.html", "slp-login.html", "settings.html", "parents.html"]);
+  // packet.html, the clinicians' front door at / since 17 Nov 2026, signs in.
+  const CLIN = new Set(["for-slps.html", "packet.html", "slp.html", "slp-login.html", "settings.html", "parents.html"]);
   const TO_CLIN = /href=["'](https?:\/\/(www\.)?speaksona\.com)?\/(for-slps|slp-login|slps\b|slp\.html|slp["'?#])/;
   const fam = pages.filter((f) => !CLIN.has(f) && TO_CLIN.test(strip(readFileSync(APP + "/public/" + f, "utf8"))))
     .concat(["app/families/page.tsx", "app/terms/page.tsx", "app/support/page.tsx", "app/privacy/page.tsx", "app/layout.tsx", "lib/nurture.ts", "lib/report.ts", "lib/revenuecat.ts"]
@@ -328,11 +427,16 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
   ok("…blocks only the API and the admin pages", /const OFF = \["\/api\/", "\/admin\/"\];/.test(robots) && !/slp|join|try|families|check|founders|leads/.test(robots));
   ok("…and points at the sitemap, on the address that answers", /sitemap: "https:\/\/www\.speaksona\.com\/sitemap\.xml"/.test(robots) &&
     /const BASE = "https:\/\/www\.speaksona\.com";/.test(readFileSync(APP + "/app/sitemap.ts", "utf8")));
-  // The sitemap lists both canonical landing pages and skips private pages.
+  // The sitemap lists the canonical landing pages and skips private pages:
+  // the clinicians' opt-in at the root, their plans (17 Nov 2026), then the
+  // family page. The packet itself is noindex: it is what the opt-in gives.
   const urls = (readFileSync(APP + "/app/sitemap.ts", "utf8").match(/url: `\$\{BASE\}[^`]*`/g) || []).map((u) => u.slice(13, -1));
   ok("the sitemap starts at the root", urls[0] === "/", urls.join(" "));
-  ok("…lists /for-parents second and excludes private, noindex and app pages",
-    urls.length > 1 && urls[1] === "/for-parents" && urls.every((u) => ["/", "/for-parents", "/privacy.html", "/terms"].includes(u)), urls.join(" "));
+  ok("…lists /plans second and /for-parents third, and excludes private, noindex and app pages",
+    urls.length > 2 && urls[1] === "/plans" && urls[2] === "/for-parents" &&
+    urls.every((u) => ["/", "/plans", "/for-parents", "/privacy.html", "/terms"].includes(u)), urls.join(" "));
+  ok("…and the opt-in is findable while the packet is not",
+    !NOINDEX.test(readFileSync(APP + "/public/packet.html", "utf8")) && NOINDEX.test(readFileSync(APP + "/public/home-practice-packet.html", "utf8")));
 
   // llms.txt: what an AI assistant reads about Sona. Everything the route can
   // send is its string literals, so the whole file is scanned, comments out.
@@ -367,17 +471,68 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
   ok("…and no price, offer or rating", !/"(offers|price|aggregateRating)"/.test(ld || ""));
 }
 
-// ── The free clinician landing page and its privacy promises ──
+// ── The clinicians' plans page (/plans): its prices and its privacy promises ──
+// Sona Pro and Sona Clinic (Travis, 17 Nov 2026). The page is static and
+// cannot import lib/caseload.ts, so every figure it prints is held here to
+// the constants checkout charges: a price on the page that is not the price
+// at Stripe is the one thing it may never show.
 {
   const slps = readFileSync(APP + "/public/for-slps.html", "utf8").replace(/<!--[\s\S]*?-->/g, "");
   const shown = slps.replace(/<script[\s\S]*?<\/script>/g, "").replace(/<style[\s\S]*?<\/style>/g, "");
   const flat = shown.replace(/<[^>]+>/g, " ").replace(/&rsquo;/g, "'").replace(/\s+/g, " ");
-  ok("the clinician landing page and its metadata advertise free access with no prices or trial pitch",
-    /free dashboard/i.test(shown) && !/\$\s*\d|\bfree trial\b|\b\d+ days free\b|id="pricing"|href="#pricing"/i.test(shown));
-  ok("the clinician offer includes session planning, homework, a client link and a community",
-    ["Plan tomorrow’s sessions", "Create AI homework", "Share the app with clients", "Join the community"].every(label => flat.includes(label)));
-  ok("the page preserves the family's free practice without promising universal game access",
-    /daily practice and free games/i.test(flat) && !/unlimited families|free forever|gets every game/i.test(flat));
+  const cl = readFileSync(APP + "/lib/caseload.ts", "utf8");
+  const K = {};
+  for (const m of cl.matchAll(/^export const ((?:PRO|CLINIC)_[A-Z_]+) = ([^;]+?)(?: as const)?;/gm)) K[m[1]] = m[2].trim();
+  const val = (k) => { const v = K[k]; return v === undefined ? undefined : /^"/.test(v) ? JSON.parse(v) : /^\d+$/.test(v) ? Number(v) : val(v); };
+  const PRO = { name: val("PRO_NAME"), price: val("PRO_PRICE"), days: val("PRO_TRIAL_DAYS") };
+  const CLINIC = { name: val("CLINIC_NAME"), price: val("CLINIC_PRICE"), days: val("CLINIC_TRIAL_DAYS"), seats: val("CLINIC_SEATS") };
+  ok("lib/caseload.ts holds both plans' figures (" + [PRO.price, CLINIC.price, PRO.days, CLINIC.seats].join(", ") + ")",
+    PRO.name === "Sona Pro" && CLINIC.name === "Sona Clinic" && /^\$\d/.test(PRO.price) && /^\$\d/.test(CLINIC.price) && PRO.days > 0 && CLINIC.days === PRO.days && CLINIC.seats > 1,
+    JSON.stringify([PRO, CLINIC]));
+  ok("the plans page offers a trial, never a free dashboard or a community",
+    !/free dashboard|community/i.test(shown) && /<section class="wrap pricing" id="pricing"/.test(shown));
+  const card = (id) => (shown.match(new RegExp('<article class="plan" id="' + id + '">[\\s\\S]*?<\\/article>')) || [""])[0];
+  const pro = card("planPro"), clinic = card("planClinic");
+  const terms = (p) => p.days + " days free, then " + p.price + " a month. Card required. Cancel during the trial and you pay nothing. One free trial per clinician.";
+  ok("the Sona Pro card: its name, its price a month and the trial's terms at the point of purchase, all lib/caseload's",
+    pro.includes("<h3>" + PRO.name + "</h3>") && pro.includes("<b>" + PRO.price + "</b> a month") && pro.includes('<p class="terms">' + terms(PRO) + "</p>") &&
+    /<button class="btn" type="button" data-plan="pro">Try Sona Pro free<\/button>/.test(pro), pro.slice(0, 300));
+  ok("the Sona Clinic card: the same, and its " + CLINIC.seats + " seats",
+    clinic.includes("<h3>" + CLINIC.name + "</h3>") && clinic.includes("<b>" + CLINIC.price + "</b> a month") && clinic.includes('<p class="terms">' + terms(CLINIC) + "</p>") &&
+    clinic.includes("up to " + CLINIC.seats + ", you included") && /<button class="btn" type="button" data-plan="clinic">Try Sona Clinic free<\/button>/.test(clinic), clinic.slice(0, 300));
+  // The owner's view is two counts per clinician (Travis, 17 Nov 2026), and
+  // the card says what it never shows.
+  ok("…whose clinic view is counts per clinician, never a child's name, sounds or pass rate",
+    /how many children each clinician has on Sona and how many practiced this week\. Never a child&rsquo;s name, sounds or pass rate\./.test(clinic));
+  // Printed exactly as charged: never rounded, never "$99.00", never split
+  // per clinician. The one other figure is what parents pay, below.
+  const figures = [...flat.matchAll(/\$\d[\d,.]*\d|\$\d/g)].map((m) => m[0]);
+  ok("every price on the page is one checkout charges (or the parents' line)", figures.length >= 4 &&
+    figures.every((f) => [PRO.price, CLINIC.price, "$9.99"].includes(f)) && !/\$20\b|\$100\b|\$99\.00|\$[\d.]+ (a|per|each) clinician|a clinician a month/.test(flat), figures.join(" "));
+  // WHAT PARENTS PAY (Travis, 17 Nov 2026), only where it is true: hidden
+  // until /api/charter answers that families are paying. "$9.99", never
+  // "$10"; App Store Connect owns the figure (NATIVE.md).
+  ok("the parents' price line, word for word, under Sona Pro, hidden until /api/charter says families pay",
+    /<p class="parent-price" id="parentPrice" hidden>Families on your link get every game at no cost\. Parents who buy Sona on their own pay \$9\.99 a month in the iPhone app\.<\/p>/.test(pro) &&
+    (shown.match(/\$9\.99/g) || []).length === 1 &&
+    /fetch\("\/api\/charter"\)[\s\S]{0,120}if \(j && j\.ok && j\.free === false\) \$\("parentPrice"\)\.hidden = false;/.test(slps));
+  ok("a plan button only remembers the plan for the dashboard (sona.slp.wantplan) and brings the visitor to the one form",
+    /localStorage\.setItem\("sona\.slp\.wantplan", this\.getAttribute\("data-plan"\)\)/.test(slps) && /var planBtns = document\.querySelectorAll\("\[data-plan\]"\);/.test(slps) &&
+    !/\/api\/slp\/plan|checkout/i.test(slps.replace(/<script[\s\S]*$/, "").replace(/the checkout and the billing/, "")));
+  ok("the packet's link shows only for a visitor from the opt-in (?packet=1)",
+    /<div class="packet-bar" id="packetBar" hidden>[\s\S]*?<a href="\/packet">Open it →<\/a>/.test(shown) && /\[\?&\]packet=1\(&\|\$\)\/\.test\(location\.search\)\) \$\("packetBar"\)\.hidden = false;/.test(slps));
+  ok("the clinician offer includes session planning, homework, a client link and the clinic",
+    ["Plan tomorrow’s sessions", "Create AI homework", "Share the app with clients", "Run a practice? Add every clinician"].every(label => flat.includes(label)));
+  // "Unlimited families" and "every game" are true only while a plan is on
+  // (CLAUDE.md): each is said of a plan, and the free version keeps its one
+  // phrase.
+  ok("the page keeps the free version's phrase, and says 'unlimited' once, on the Sona Pro card",
+    /daily practice and free games/i.test(flat) && !/free forever/i.test(flat) &&
+    (flat.match(/unlimited/gi) || []).length === 1 && /Unlimited families: everyone who joins through your link gets every game/.test(pro));
+  const pricing = (shown.match(/<section class="wrap pricing"[\s\S]*?<\/section>/) || [""])[0];
+  const outside = shown.replace(pricing, "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
+  ok("…and outside the plans, 'every game' only with the plan that brings it",
+    (outside.match(/every game[^.]*/gi) || []).every((m) => /while your Sona Pro or Sona Clinic plan is on/.test(m)), (outside.match(/every game[^.]*/gi) || []).join(" | "));
   // Since 17 Nov 2026 GoHighLevel sends it and keeps it as a contact (Travis:
   // "I want everything on Go High Level"); the page must say so.
   ok("the storage answer says GoHighLevel sends a parent's email and keeps it as a contact",
@@ -385,6 +540,8 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
     !/keep it nowhere/.test(flat));
   ok("the storage answer names Resend for the list and GoHighLevel for emails",
     /the email list via Resend, emails and contacts in GoHighLevel/.test(flat) && !/sign-in emails via Resend/.test(flat));
+  ok("…and Stripe for a trial's card, which Sona never sees",
+    /Your card, when you start a free trial: held by Stripe, which runs the checkout and the billing\. Sona never sees the card number\./.test(flat));
   ok("the page still explains how a clinician or family can remove a child's data",
     /stop sharing[^.]*or you remove the child from your caseload/.test(flat));
   ok("the clinician page links the Terms", /href="\/terms"/.test(shown));
@@ -408,9 +565,38 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
   ok("Terms: Pro renews monthly and cancellation retains paid access through the paid month or trial",
     /\{PRO_NAME\} renews automatically each month until you cancel it/.test(terms) &&
     /paid dashboard access and your families' Premium stay on until the end of the month you paid for \(or of the free trial\)/.test(terms.replace(/&apos;/g, "'")));
-  ok("Terms: free dashboard access and removing a child survive cancellation",
-    /through the free dashboard signup can use the dashboard without a subscription\./.test(terms) &&
-    /Free dashboard access and removing a child from your dashboard keep working\./.test(terms));
+  // 17 Nov 2026: the free dashboard signup ended for NEW accounts (Travis: the
+  // dashboard comes with the trial). Its accounts keep the dashboard free,
+  // and the Terms say so with no end date (the signup closed with the build
+  // that shipped Sona Clinic); a new signup is told it comes with a plan.
+  // "Join the clinician community" went with the community.
+  ok("Terms: the free dashboard signup's accounts keep it free; a new signup gets it with a plan; removing a child survives cancellation",
+    /Clinicians who created an account through the free dashboard signup, offered from 13 November 2026 until \{CLINIC_NAME\} launched, can keep using the dashboard without a subscription\./.test(terms) &&
+    /A clinician who signs up now gets the dashboard with \{PRO_NAME\} or \{CLINIC_NAME\}, starting with the free trial below\./.test(terms) &&
+    /A free dashboard promised in this section stays free, and removing a child from your dashboard always keeps working\./.test(terms) &&
+    !/community/i.test(terms), (terms.match(/.{0,60}community.{0,40}/i) || [])[0]);
+  // SONA CLINIC (17 Nov 2026): one price for a practice, from lib/caseload,
+  // never divided per clinician; one trial across both plans; the owner sees
+  // two counts per clinician and never a child; a clinician's cover ends when
+  // they leave, are removed or the plan ends; only the owner cancels.
+  ok("Terms: Sona Clinic at the library's price and seats, the owner included, members joining from their own email",
+    /<strong>\{CLINIC_NAME\}<\/strong> is for a practice\. The clinician who buys it on speaksona\.com \(the owner\) pays <strong>\{CLINIC_PRICE\} per month<\/strong>, and it covers up to \{CLINIC_SEATS\} clinicians at the practice, the owner included\./.test(terms) &&
+    /once they accept the invitation emailed to them, gets everything \{PRO_NAME\} includes/.test(terms) &&
+    // ("One free trial per clinician" is the trial's rule, not a price)
+    !/\$100\b|\$99\.00|\$3\.96|per seat|(a|per) clinician (a|per) month/i.test(terms));
+  ok("Terms: Sona Clinic's trial states its terms, and ONE free trial covers both plans",
+    /\{CLINIC_NAME\} starts the same way: the first \{CLINIC_TRIAL_DAYS\} days are free, a card is entered at checkout and not charged that day, and unless the owner cancels before the trial ends the card is charged \{CLINIC_PRICE\} when it ends and then each month until it is canceled\./.test(terms) &&
+    /The one free trial covers both plans: if you have had a \{PRO_NAME\} or \{CLINIC_NAME\} subscription before, either plan you start is charged at checkout, with no free days\./.test(terms));
+  ok("Terms: what a Clinic owner sees is two counts per clinician, never a child",
+    /the owner sees two numbers: how many children that clinician has on Sona, and how many of them practiced in the last 7 days\. The owner never sees a child's name, initials, age, sounds, pass rate or homework\./.test(terms.replace(/&apos;/g, "'")));
+  ok("Terms: a clinician's Clinic cover ends when they leave, are removed or the plan ends; only the owner cancels, from Your plan → Manage billing",
+    /when they leave, when the owner removes them, or when the plan ends\./.test(terms) && /Only the owner manages billing for \{CLINIC_NAME\} and can cancel it\./.test(terms) &&
+    /\{CLINIC_NAME\} renews automatically each month in the same way until the owner cancels it there/.test(terms) &&
+    /<strong>Your plan &rarr; Manage billing<\/strong>/.test(terms) && !/Sona Pro &rarr; Manage billing/.test(terms) &&
+    /Only the practice owner who bought \{CLINIC_NAME\} can cancel it\./.test(terms));
+  ok("Terms: a Clinic plan covering one practice's clinicians is not reselling, and the section names both plans",
+    /nor is a \{CLINIC_NAME\} plan covering the clinicians at one practice and the families on their caseloads\./.test(terms) &&
+    /<Section title="Sona Pro and Sona Clinic for clinicians">/.test(terms));
   ok("Terms: every older promise is kept — the free dashboard before 12 Nov, free forever before 24 Sep, own Premium 24–29 Sep, the yearly plans still renewing",
     /Clinicians who signed up before 12 November 2026/.test(terms) && /Clinicians who signed up before 24 September 2026/.test(terms) &&
     /Clinicians who signed up from 24 to 29 September 2026/.test(terms) && /Yearly plans sold until 12 November 2026\./.test(terms) && /were replaced by \{PRO_NAME\} and can't be bought now\. If you hold one, it keeps renewing at the price you subscribed at/.test(terms.replace(/&apos;/g, "'")));
@@ -538,7 +724,8 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
   ok("…and every page that calls Rachel an SLP carries 'MS, CF-SLP'", unpaired.length === 0, unpaired.join(", "));
   // Progress left this list on 5 Nov 2026: it no longer names Rachel at all
   // (Travis: "take out built with Rachel on the progress sheet").
-  const carry = ["parents", "subscribe", "trial", "talk", "slp"]
+  // The clinicians' opt-in and the packet it gives name her too (17 Nov 2026).
+  const carry = ["parents", "subscribe", "trial", "talk", "slp", "packet", "home-practice-packet"]
     .filter((n) => !/Rachel(?: Wardrop)?, MS, CF-SLP/.test(visible("public/" + n + ".html")));
   ok("…and the pages that introduce her all carry it", carry.length === 0, carry.join(", "));
   // The line changed on 1 Oct 2026 (Travis): she is described as "a pediatric

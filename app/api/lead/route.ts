@@ -6,10 +6,12 @@ import { contactsConfigured, planWord, upsertContact, type ListResult } from "@/
 import { APP_READY, sendWelcomeEmail } from "@/lib/launch";
 import { enroll, inAppSource, stopSeries } from "@/lib/nurture";
 import { mailConfigured } from "@/lib/mail";
+import { PACKET_SOURCE, sendPacketEmail } from "@/lib/packet";
 
 /**
  * THE ONE PLACE A GROWN-UP'S EMAIL GOES: the SLP sign-up (via the auth route's
- * tellCrm), the app's setup (a clinician's account email, a parent's
+ * tellCrm), the clinicians' packet opt-in at speaksona.com/ (17 Nov 2026),
+ * the app's setup (a clinician's account email, a parent's
  * optional email step, before the price since 13 Oct 2026), a purchase's
  * plan post (sona.js _tellPlan) and the Speech Check.
  *
@@ -325,6 +327,16 @@ export async function POST(req: NextRequest) {
     } catch {
       // never fail the visitor on the welcome
     }
+  }
+  // THE PACKET (17 Nov 2026): a clinician who asked for the free
+  // home-practice packet at speaksona.com/ is emailed its link, once
+  // (lib/packet.ts: never after unsubscribing, with the unsubscribe link and
+  // the mailing address). Only for the opt-in's own source, so no other
+  // clinician lead is sent it; never the parents' series above. After the
+  // lead is stored, and it never fails the visitor: the page has already
+  // linked the packet.
+  if (lead.role === "slp" && lead.source === PACKET_SOURCE && kvConfigured()) {
+    try { await sendPacketEmail(email, kvCmd, fetch); } catch { /* the page links the packet */ }
   }
   // A PARENT WHO STARTED SONA PREMIUM gets no more of the welcome series
   // (Travis, 16 Oct 2026): the day-2 email sells the free days they already

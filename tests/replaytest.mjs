@@ -101,7 +101,7 @@ async function world(browser, cfg = {}) {
       if (u.pathname.startsWith("/api/")) { w.api.push({ path: u.pathname, body: req.postData() }); return route.fulfill({ status: 503, contentType: "application/json", body: "{}" }); }
       if (cfg.stubs && cfg.stubs[u.pathname]) return route.fulfill({ status: 200, contentType: "text/html", body: cfg.stubs[u.pathname] });
       if (u.pathname.indexOf("/vendor/posthog/") === 0) w.vendor.push(u.pathname);
-      const p = { "/": "/for-slps.html", "/for-parents": "/parents.html", "/try": "/try.html" }[u.pathname] || u.pathname;
+      const p = { "/": "/packet.html", "/plans": "/for-slps.html", "/packet": "/home-practice-packet.html", "/for-parents": "/parents.html", "/try": "/try.html" }[u.pathname] || u.pathname;
       const f = file(p);
       if (!f) return route.fulfill({ status: 404, body: "" });
       return route.fulfill({ status: 200, headers: { "content-type": MIME[f.split(".").pop().toLowerCase()] || "application/octet-stream" }, body: readFileSync(f) });
@@ -484,7 +484,11 @@ try {
       ["the offer a child opens by tapping a locked game (?from=slice)", "https://speaksona.com/subscribe.html?from=slice", { phone: { app: "buy", stamp: "post", setUp: true } }, "offer"],
       ["the offer Home opens by itself (?from=home)", "https://speaksona.com/subscribe.html?from=home", { phone: { app: "buy", stamp: "post", setUp: true } }, "offer"],
       ["the speech check", "https://speaksona.com/check.html", {}, null],
-      ["the clinician homepage", "https://speaksona.com/?utm_source=meta&fbclid=ABC987", {}, "clinician"],
+      // 17 Nov 2026: the root is the clinicians' packet opt-in, and their
+      // plans moved to /plans. Neither is ever recorded (both stay out of
+      // analytics.js's AUTO_PATHS).
+      ["the clinician homepage (the packet opt-in)", "https://speaksona.com/?utm_source=meta&fbclid=ABC987", {}, "clinician"],
+      ["the clinicians' plans page", "https://speaksona.com/plans?utm_source=meta&fbclid=ABC987", {}, "clinician"],
       ["a clinician's own setup (?slp=1)", "https://speaksona.com/onboarding.html?slp=1", {}, "slp"],
       ["setup on a test server (not speaksona.com)", "http://127.0.0.1:1/onboarding.html", {}, "local"],
     ]) {

@@ -83,6 +83,11 @@ const nextConfig = {
       { source: "/icon-192.png", headers: noStore },
       { source: "/icon-512.png", headers: noStore },
       { source: "/", headers: noStore },
+      // The clinicians' landing page and the packet, at their pretty paths
+      // (17 Nov 2026): a rewritten path is not a public/*.html name, so the
+      // list read from disk above does not cover it.
+      { source: "/plans", headers: noStore },
+      { source: "/packet", headers: noStore },
       { source: "/for-parents", headers: noStore },
       { source: "/for-slps.css", headers: noStore },
       { source: "/try", headers: noStore },
@@ -91,10 +96,22 @@ const nextConfig = {
       { source: "/subscribe/success", headers: noStore },
     ];
   },
-  // The public homepage introduces Sona Pro. The family page has its own URL.
+  // THE FRONT DOOR IS AN OPT-IN (Travis, 17 Nov 2026): speaksona.com/ offers
+  // clinicians a free printable home-practice packet for their email, then
+  // sends them on to the plans. The landing page with Sona Pro and Sona
+  // Clinic lives at /plans; the packet itself at /packet. The family page
+  // has its own URL.
+  //
+  // NOT /for-slps for the plans. That address has answered a PERMANENT 308
+  // to / since 12 Nov 2026, and a browser keeps a 308: anyone who ever
+  // followed it would be sent from /for-slps to the opt-in, whose skip link
+  // would send them back, in a loop. So /for-slps keeps its redirect (an old
+  // link lands on the opt-in, which leads to /plans) and nothing points at it.
   async rewrites() {
     return [
-      { source: "/", destination: "/for-slps.html" },
+      { source: "/", destination: "/packet.html" },
+      { source: "/plans", destination: "/for-slps.html" },
+      { source: "/packet", destination: "/home-practice-packet.html" },
       { source: "/for-parents", destination: "/parents.html" },
       // The ad's bridge page (Travis, 9 Oct 2026): a headline, a button, the App Store.
       { source: "/try", destination: "/try.html" },

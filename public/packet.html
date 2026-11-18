@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <script>
+// Clinician tools live in the browser. A restored link in the native shell
+// must return to the family app before rendering or making clinician requests.
+(function () {
+  var native = false;
+  // The clinicians' own app (SLPAPP1, 16 Nov 2026) opens its dashboard: the
+  // websites have sign-up and price pages that app never shows.
+  try { if (/\bSonaSLPApp\/\d/.test(navigator.userAgent || "")) { window.__sonaFamilyRedirect = true; document.documentElement.style.visibility = "hidden"; window.location.replace("/slp.html"); return; } } catch (e) {}
+  try {
+    var bridge = window.Capacitor;
+    native = !!(bridge && (typeof bridge.isNativePlatform === "function" ? bridge.isNativePlatform() : true));
+  } catch (e) {}
+  if (!native) return;
+  window.__sonaFamilyRedirect = true;
+  document.documentElement.style.visibility = "hidden";
+  // Home owns active-child selection and the first-run setup guard.
+  window.location.replace("/today.html");
+})();
+  </script>
+  <!-- THE FRONT DOOR (Travis, 17 Nov 2026). speaksona.com/ serves this page
+       (next.config.js rewrites / here): a free printable home-practice packet
+       for a clinician's email, then on to the plans at /plans. It is NOT the
+       dashboard: the dashboard comes with Sona Pro and Sona Clinic, and the
+       free trial is how a clinician tries it. The family iPhone app opens /
+       on every launch, so the guard above, copied word for word from
+       for-slps.html, runs before anything here renders. -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Free home-practice packet for speech therapists — Sona</title>
+  <meta name="description" content="A free, printable home-practice packet for speech therapists: word lists for 19 sounds by beginning, middle and end, plus blends and vocalic R, a one-page guide for parents and a tick-box tracker. Built with Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical fellowship." />
+  <link rel="canonical" href="https://www.speaksona.com/" />
+
+  <!-- What a shared link looks like: this page is static and inherits
+       nothing from app/layout.tsx, so it carries its own card. The picture
+       is rendered from tools/og/og-packet.html. -->
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Sona" />
+  <meta property="og:url" content="https://www.speaksona.com/" />
+  <meta property="og:title" content="Free home-practice packet for speech therapists." />
+  <meta property="og:description" content="Word lists for 19 sounds by beginning, middle and end, plus a one-page guide for parents. Circle the target, print it, send it home." />
+  <meta property="og:image" content="https://speaksona.com/og-packet.png?v=1" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="Sona's free home-practice packet for speech therapists." />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Free home-practice packet for speech therapists." />
+  <meta name="twitter:description" content="Word lists for 19 sounds by beginning, middle and end, plus a one-page guide for parents." />
+  <meta name="twitter:image" content="https://speaksona.com/og-packet.png?v=1" />
+
+  <link rel="icon" type="image/png" href="/favicon.png?v=2" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=2" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <meta name="theme-color" content="#fff8e7" />
+  <link href="/fonts.css" rel="stylesheet">
+  <link href="/for-slps.css" rel="stylesheet">
+
+  <!-- THE AD LANDS HERE, SO THE PIXEL BELONGS HERE (the regression
+       tests/telemetrytest.mjs exists for: a rewrite of / once took the pixel
+       off a live campaign). Meta's automatic form reading is off; Lead fires
+       once /api/lead has taken the email, with no parameters. -->
+  <script src="/pixel.js" data-autoconfig="off"></script>
+  <script src="/analytics.js"></script>
+</head>
+<body>
+
+<header>
+  <div class="wrap hbar">
+    <a class="brand" href="/" aria-label="Sona">
+      <img src="/assets/site/echo.webp" alt="" width="42" height="42">
+      <b>Sona</b>
+    </a>
+    <nav aria-label="Site navigation">
+      <a class="signin" href="/slp-login.html">Sign in</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+<section class="hero-band">
+  <div class="wrap hero">
+  <div class="hero-intro">
+    <p class="eyebrow">For speech therapists</p>
+    <h1>A free packet <span>for home practice.</span></h1>
+    <p class="lede">Circle the target, print it and send it home. Families get a clear way to practice, and you see the days they did.</p>
+  </div>
+
+  <div class="hero-r" aria-hidden="true">
+    <div class="hero-halo"></div>
+    <div class="paper paper-back">
+      <b>Parent guide</b>
+      <i></i><i></i><i></i><i></i><i></i>
+    </div>
+    <div class="paper paper-front">
+      <b>Practice sound: S</b>
+      <div class="paper-cols">
+        <div><em>Beginning</em><span>sun</span><span>soap</span><span>sock</span></div>
+        <div><em>Middle</em><span>pencil</span><span>castle</span></div>
+        <div><em>End</em><span>bus</span><span>house</span><span>mouse</span></div>
+      </div>
+      <div class="paper-ticks"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+    </div>
+    <img class="mascot" src="/assets/site/echo.webp" width="458" height="458" alt="" fetchpriority="high">
+    <span class="spark spark-top">✦</span>
+    <span class="spark spark-low">✦</span>
+  </div>
+
+  <div class="hero-l">
+    <form class="signup" id="signup" novalidate>
+      <div class="form-field">
+        <label for="fEmail">Your work email</label>
+        <input id="fEmail" type="email" inputmode="email" autocomplete="email" placeholder="you@yourclinic.org" required />
+      </div>
+      <button class="btn" id="fGo" type="submit">Send me the free packet</button>
+      <!-- This page exists to build the list, so the line says so before
+           the button is pressed, in Travis's words (CLAUDE.md, The email
+           list). It went from the landing pages on 25 Sep 2026; an opt-in
+           is the case it was written for. -->
+      <p class="consent">We&rsquo;ll also send occasional tips from Rachel. Unsubscribe anytime.</p>
+      <div class="serr" id="fErr" role="alert"></div>
+    </form>
+    <div class="sent" id="sent" role="status" hidden>
+      <div class="t">Your packet is on its way&hellip;</div>
+      <div class="m">It&rsquo;s on the next page.</div>
+    </div>
+    <ul class="gets" aria-label="What's in the packet">
+      <li><b>Word lists for all 19 sounds</b>, sorted by beginning, middle and end, plus blends and vocalic R.</li>
+      <li><b>A one-page guide for parents</b>: a few minutes a day, one word at a time.</li>
+      <li><b>A tick-box tracker</b> on every page, so families can show you the days they practiced.</li>
+    </ul>
+    <a class="skip" id="skip" href="/plans">No thanks — see the plans →</a>
+    <div class="trust">
+      <img src="/assets/rachel-wardrop-profile.jpg" alt="" width="44" height="44">
+      <p>Built with Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical fellowship.</p>
+    </div>
+  </div>
+
+  </div>
+</section>
+
+<section class="wrap how" id="how">
+  <h2>Three steps to home practice.</h2>
+  <ul class="workflow three">
+    <li class="workflow-step">
+      <h3>Circle the target</h3>
+      <p>Pick the sound and the place in the word the child is ready for. Each sound has its own page.</p>
+    </li>
+    <li class="workflow-step">
+      <h3>Send it home</h3>
+      <p>The parent guide shows families how to practice: one word on its own, a few minutes a day.</p>
+    </li>
+    <li class="workflow-step">
+      <h3>See the ticks</h3>
+      <p>Families tick a box each day they practice and bring the page to the next session.</p>
+    </li>
+  </ul>
+</section>
+</main>
+
+<footer class="wrap">
+  <div class="d">Sona is an at-home speech practice tool. It is not a diagnosis, evaluation, or substitute for professional care.</div>
+  <div class="links"><a href="mailto:hello@speaksona.com?subject=Sona">Email us</a><a href="/privacy.html">Privacy</a><a href="/terms">Terms</a><a href="/for-parents">For parents</a></div>
+</footer>
+
+<script>
+  (function () {
+    if (window.__sonaFamilyRedirect) return;
+    var $ = function (id) { return document.getElementById(id); };
+    // THE PACKET'S OWN SOURCE, never the ad's: /api/lead emails the packet
+    // only for this word (lib/packet.ts). Which ad brought them rides beside
+    // it in the utm_* fields.
+    var SOURCE = "slp-packet";
+    /**
+     * WHICH AD BROUGHT THEM, the same clamped set for-slps.html sends, read
+     * once from a URL a stranger controls. /api/lead reads these at the top
+     * level of the body (not nested), so they are spread into it below.
+     */
+    var KEYS = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term", "fbclid"];
+    var attrib = {};
+    try {
+      var q = new URLSearchParams(location.search);
+      var clean = function (v, n) { return String(v || "").replace(/[^\w .\-|/]/g, "").slice(0, n || 120); };
+      KEYS.forEach(function (k) {
+        var v = q.get(k); if (v) attrib[k] = clean(v);
+      });
+      attrib.referrer = clean(document.referrer, 200);
+      attrib.landing = clean(location.pathname, 120);
+    } catch (e) {}
+
+    /**
+     * WHERE THEY GO NEXT: the plans, with the ad's own tags so a trial
+     * started there is credited to the same ad. NEVER THE EMAIL: PostHog and
+     * Meta both record a page's address, and no pixel event may carry an
+     * email (tests/telemetrytest.mjs). Only the tags above go in it.
+     */
+    function plansUrl(packet) {
+      var parts = packet ? ["packet=1"] : [];
+      KEYS.forEach(function (k) { if (attrib[k]) parts.push(k + "=" + encodeURIComponent(attrib[k])); });
+      return "/plans" + (parts.length ? "?" + parts.join("&") : "") + (packet ? "#pricing" : "");
+    }
+    $("skip").href = plansUrl(false);
+
+    var LABEL = "Send me the free packet";
+    // The shortest pause that still lets the pixel's request leave the page
+    // before the page does (parents.html's LEAVE_MS, 4 Oct 2026).
+    var LEAVE_MS = 150;
+
+    // The error sits under the button, which on a laptop is the bottom of
+    // the window: every message is brought into view as it is shown.
+    function err(msg) {
+      var e = $("fErr"); e.textContent = msg;
+      try { e.scrollIntoView({ block: "nearest", behavior: "smooth" }); } catch (x) { e.scrollIntoView(false); }
+    }
+    function busy(on) { $("fGo").disabled = on; $("fGo").textContent = on ? "Sending…" : LABEL; }
+
+    function go() {
+      if ($("fGo").disabled) return;
+      var email = (($("fEmail").value) || "").trim();
+      $("fErr").textContent = "";
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { err("Enter a valid email."); $("fEmail").focus(); return; }
+      busy(true);
+      // A clinician's opt-in: the email, "slp", the packet's source and which
+      // ad. No name, nothing about anyone else. One post per person.
+      fetch("/api/lead", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(Object.assign({ email: email, role: "slp", source: SOURCE }, attrib)),
+      }).then(function (r) { return r.json(); }).then(function (j) {
+        if (!j || !j.ok) { busy(false); err((j && j.error) || "Couldn't send that right now. Try again."); return; }
+        // THE CONVERSION, once the server took the email: a tap is not an
+        // opt-in. No parameters: Meta gets the fact, never the person.
+        try { if (window.sonaTrack) sonaTrack("Lead"); } catch (e) {}
+        // The plans page fills its trial box with this, in this tab only
+        // (sessionStorage), so starting a trial is one tap. Never the URL.
+        try { sessionStorage.setItem("sona.optin.email", email); } catch (e) {}
+        $("signup").hidden = true; $("sent").hidden = false;
+        var to = plansUrl(true);
+        setTimeout(function () { location.href = to; }, LEAVE_MS);
+      }).catch(function () {
+        busy(false);
+        err("Network hiccup — try again.");
+      });
+    }
+    $("signup").addEventListener("submit", function (e) { e.preventDefault(); go(); });
+  })();
+</script>
+</body>
+</html>
