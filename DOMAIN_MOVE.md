@@ -32,8 +32,9 @@ to read).
 ## Your steps, in order
 1. **Say "merge"** when you've read the PR. Nothing changes for families until
    then.
-2. **Stripe**: nothing to change. Sona has no Stripe webhook, and checkout
-   returns people to whichever address they paid from.
+2. **Stripe** → Developers › Webhooks: change the endpoint's URL to
+   `https://app.speaksona.com/api/stripe/webhook` (the signing secret stays
+   the same). Checkout returns people to whichever address they paid from.
 3. **RevenueCat** → the webhook URL: `https://app.speaksona.com/api/revenuecat`.
 4. **App Store**: build and submit **both** iPhone apps from this code (family
    app and Sona for SLPs). `NATIVE.md` and `native/slp-ios/README.md` have the

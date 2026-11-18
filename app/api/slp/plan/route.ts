@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
-import { readSession, liveSession, kvConfigured } from "@/lib/slpAuth";
+import { readSession, liveSession, kvConfigured, kvCmd } from "@/lib/slpAuth";
+import { tellCrm } from "@/lib/slpLead";
 import { rateLimit } from "@/lib/rateLimit";
 import {
   planStatus, selfStatus, proStatus, dashboardOpen, activateFromSession, readAcct, readPlan, grandfathered, StoreUnavailable,
@@ -79,6 +80,15 @@ export async function GET(req: NextRequest) {
         const got = await activateFromSession(s.email, sid);
         activated = got.activated;
         if (got.activated) activatedPlan = got.kind;
+        // TELL GOHIGHLEVEL ABOUT A NEW SONA PRO (Travis, 17 Nov 2026: trials
+        // and new customers into the CRM). Once per subscription (SET NX), so
+        // a reload or "Check again" never sends it twice; awaited with
+        // tellCrm's own fuse, and a CRM hiccup never changes this answer.
+        if (got.activated && got.kind === "pro" && got.subId) {
+          const plan = got.status === "trialing" ? "trial" : "paid";
+          const first = await kvCmd(["SET", "slpcrm-pro:" + got.subId, plan, "NX", "EX", 31536000]).catch(() => null);
+          if (first === "OK") await tellCrm(new URL(req.url).origin, s.email, "sona-pro", "", {}, plan);
+        }
       } catch (e) {
         retry = true;
         console.error("[slp plan] could not read the checkout session:", e instanceof Error ? e.message : String(e));
