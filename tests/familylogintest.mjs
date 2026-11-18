@@ -502,8 +502,8 @@ async function section(name, fn) { posts = []; DATA = fixture(); try { await fn(
 const box = (page, sel) => page.evaluate((s) => { const e = document.querySelector(s); if (!e) return null; const r = e.getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height, bottom: r.bottom, right: r.right, shown: !e.hidden && getComputedStyle(e).display !== "none" && r.height > 0 }; }, sel);
 
 try {
-  // ── the first screen: Log in ──
-  for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 568 }]) {
+  // ── the first screen: two choices, Get started and "I have a login" (18 Nov 2026) ──
+  for (const viewport of [{ width: 390, height: 844 }, { width: 375, height: 667 }, { width: 320, height: 568 }, { width: 820, height: 1180 }]) {
     await section("the hello at " + viewport.width, async () => {
       const { context, page, errors } = await family({ viewport });
       await page.goto(BASE + "/onboarding.html");
@@ -513,21 +513,24 @@ try {
       const link = await box(page, "#loginLink"), btn = await box(page, "#nextBtn"), art = await box(page, ".studio-welcome-art");
       const words = await page.evaluate(() => [".studio-kicker", ".welcome-brand"].map((s) => { const r = document.querySelector(s).getBoundingClientRect(); return { x: r.x, y: r.y, right: r.right, bottom: r.bottom }; }));
       const clear = (a, b) => a.right <= b.x + 0.5 || b.right <= a.x + 0.5 || a.bottom <= b.y + 0.5 || b.bottom <= a.y + 0.5;
-      ok(tag + "the first screen offers Log in, at the top right, opening the login form",
-        !!link && link.shown && (await page.locator("#loginLink").textContent()).trim() === "Log in" &&
+      const text = (await page.locator("#loginLink").innerText()).replace(/\s+/g, " ").trim();
+      ok(tag + "the hello's second choice is a button under the picture, above Get started, opening the login form",
+        !!link && link.shown && text === (viewport.width < 360 ? "I have a login" : "I have a login from my speech therapist") &&
         (await page.locator("#loginLink").getAttribute("href")) === "/join.html?login=1" &&
-        link.y < art.y && link.right <= viewport.width + 0.5 && link.right >= viewport.width - 40, { link, art });
-      ok(tag + "…a full touch target, on screen, over none of the hello's words, with nothing to scroll",
-        link.h >= 44 && link.w >= 44 && link.y >= -0.5 && words.every((w) => clear(link, w)) && art.bottom <= btn.y + 0.5 &&
-        await page.evaluate(() => { const ob = document.querySelector(".ob"); return ob.scrollHeight <= ob.clientHeight + 1 && document.documentElement.scrollWidth <= innerWidth + 1; }), { link, words, art, btn });
+        link.y >= art.bottom - 0.5 && link.bottom <= btn.y + 0.5, { text, link, art, btn });
+      ok(tag + "…a big touch target on one line, as wide as Get started, over none of the hello's words, with nothing to scroll",
+        link.h >= 48 && link.h <= 60 && Math.abs(link.w - btn.w) < 2 && Math.abs(link.x - btn.x) < 2 && words.every((w) => clear(link, w)) && art.bottom <= btn.y + 0.5 &&
+        await page.evaluate(() => { const ob = document.querySelector(".ob"); const l = document.getElementById("loginLink"); return ob.scrollHeight <= ob.clientHeight + 1 && document.documentElement.scrollWidth <= innerWidth + 1 && l.scrollWidth <= l.clientWidth + 1; }), { link, words, art, btn });
+      ok(tag + "…a cream pill in action.css's colours, never the teal or coral of Get started",
+        await page.evaluate(() => { const l = getComputedStyle(document.getElementById("loginLink")), r = getComputedStyle(document.documentElement); const c = (v) => { const d = document.createElement("i"); d.style.color = v; document.body.appendChild(d); const o = getComputedStyle(d).color; d.remove(); return o; }; return l.backgroundColor === c(r.getPropertyValue("--cream-card")) && l.color === c(r.getPropertyValue("--cream-ink")) && l.backgroundColor !== getComputedStyle(document.getElementById("nextBtn")).backgroundColor; }));
       ok(tag + "…and the hello is still one message with no question", (await page.locator('[data-step="welcome"]').innerText()).indexOf("?") < 0 && (await page.locator("#nextBtn").textContent()) === "Get started");
       await page.locator("#nextBtn").click();
       await page.waitForFunction(() => document.body.dataset.setupScreen === "name");
-      ok(tag + "Log in belongs to the hello only", await page.locator("#loginLink").isHidden());
-      // The footer's button is in the same place on every screen, Log in or
-      // not, so a double tap on it moves one screen (onboardingtest).
+      ok(tag + "I have a login belongs to the hello only", await page.locator("#loginLink").isHidden());
+      // The footer's button is in the same place on every screen, login
+      // button or not, so a double tap on it moves one screen (onboardingtest).
       const btn2 = await box(page, "#nextBtn");
-      ok(tag + "…and Get started sits at the height of the next screen's button (Back takes its left there): Log in moves nothing", Math.abs(btn2.y - btn.y) < 1 && Math.abs(btn2.bottom - btn.bottom) < 1, { btn, btn2 });
+      ok(tag + "…and Get started sits at the height of the next screen's button (Back takes its left there): the login button moves nothing", Math.abs(btn2.y - btn.y) < 1 && Math.abs(btn2.bottom - btn.bottom) < 1, { btn, btn2 });
       if (viewport.width === 390) { await page.locator("#backBtn").click(); await page.waitForFunction(() => document.body.dataset.setupScreen === "welcome"); await page.screenshot({ path: path.join(OUT, "sona-login-hello.png") }); }
       ok(tag + "no page errors", errors.length === 0, errors);
       await context.close();
@@ -537,7 +540,7 @@ try {
     const { context, page } = await family({ ls: { "sona.slpok": "RACHEL-K4", "sona.slpunlock": "1" } });
     await page.goto(BASE + "/onboarding.html");
     await page.waitForFunction(() => document.body.dataset.setupScreen === "welcome");
-    ok("a device a speech therapist already connected is not offered Log in again", await page.locator("#loginLink").isHidden());
+    ok("a device a speech therapist already connected is not offered the login button again", await page.locator("#loginLink").isHidden());
     await context.close();
   });
 
@@ -548,7 +551,7 @@ try {
     await page.waitForFunction(() => document.body.dataset.setupScreen === "welcome");
     await page.locator("#loginLink").click();
     await page.waitForFunction(() => location.pathname === "/join.html" && document.getElementById("jLogin").style.display === "block");
-    ok("Log in opens the login form, with the address cleaned at once", (await page.evaluate(() => location.search)) === "" && (await page.locator("#jTitle").textContent()) === "Log in" && await page.locator("#jForm").isHidden());
+    ok("I have a login opens the login form, with the address cleaned at once", (await page.evaluate(() => location.search)) === "" && (await page.locator("#jTitle").textContent()) === "Log in" && await page.locator("#jForm").isHidden());
     ok("…a username box and a password box, with nothing the phone would auto-correct",
       await page.evaluate(() => { const u = document.getElementById("jUser"), p = document.getElementById("jPass"); return u.autocomplete === "username" && u.getAttribute("autocapitalize") === "none" && p.type === "password" && p.autocomplete === "current-password"; }));
     await page.locator("#jUser").fill("otter4827"); await page.locator("#jPass").fill("wrong");
@@ -577,7 +580,7 @@ try {
     await page.locator("#jEmailGo").click();
     await page.waitForFunction(() => location.pathname === "/onboarding.html");
     await page.waitForFunction(() => document.body.dataset.setupScreen === "welcome");
-    ok("then setup, as after the link, where Log in is no longer offered", await page.locator("#loginLink").isHidden());
+    ok("then setup, as after the link, where the login button is no longer offered", await page.locator("#loginLink").isHidden());
     ok("no page errors", errors.length === 0, errors);
     await context.close();
   });

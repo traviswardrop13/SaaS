@@ -127,18 +127,22 @@
          restores it in Settings › Restore access. -->
     <div class="step on" data-step="welcome">
       <!-- LOG IN (Travis, 14 Nov 2026: "on the first screen of the onboarding
-           … be able to go to log in if they already have an account"). The
-           only accounts a family has are the logins their speech therapist
-           makes (lib/familyLogin), so it opens join.html's login form, which
-           connects this device as the therapist's link would and then asks
-           the same sharing question. A word at the top right (where the
-           email step's Skip sits), never in the footer: the footer's button
-           stays in the same place on every screen, so a double tap on it
-           moves one screen. On the hello only, and only for a device that is
-           not connected yet and has no child set up (render() decides). -->
-      <a class="oblogin" id="loginLink" href="/join.html?login=1" hidden>Log in</a>
+           … be able to go to log in if they already have an account"; since
+           18 Nov 2026 a second button, not a small word at the top right:
+           Sona sells mainly to speech therapists, who hand families a
+           username and password). The only accounts a family has are the
+           logins their speech therapist makes (lib/familyLogin), so it opens
+           join.html's login form, which connects this device as the
+           therapist's link would and then asks the same sharing question. A
+           cream pill under the picture, never in the footer: the footer's
+           Get started stays in the same place on every screen, so a double
+           tap on it moves one screen. On the hello only, and only for a
+           device that is not connected yet and has no child set up (render()
+           decides). The words fit one line at 320 px only without "from my
+           speech therapist", so that part steps aside there. -->
       <div class="welcome-copy"><p class="studio-kicker">Speech practice</p><h1 class="welcome-brand">Little sounds.<br>Big adventures.</h1></div>
       <div class="studio-welcome-art" aria-hidden="true"><img src="/assets/crafted/echo-welcome.webp" alt="" /><span>Hi, I’m Echo!</span></div>
+      <a class="oblogin" id="loginLink" href="/join.html?login=1" hidden>I have a login<span class="oblogin-more"> from my speech therapist</span></a>
     </div>
 
     <!-- TWO DEMOS, ONE GAME EACH (live, silent previews of the speech power:
