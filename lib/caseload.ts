@@ -673,6 +673,41 @@ export async function proStatus(email: string, opts: PlanOpts = {}): Promise<Pro
 }
 
 /**
+ * DON'T PAY TWICE (18 Nov 2026). Since the dashboard stopped selling, a
+ * clinician goes from /plans straight to Stripe, with no page in between to
+ * warn that an older plan still renews beside the new one; and once the new
+ * one is on, planStatus/selfStatus answer with it and hide the older one.
+ * This says, for the dashboard's Settings, which older plan still renews:
+ *  - "yearly": Sona Pro or Sona Clinic (owned) is on, and a retired yearly
+ *    plan (the caseload plan or "Sona Premium for you") is still live and
+ *    not set to end;
+ *  - "pro": a Sona Clinic plan the clinician owns is on, and their Sona Pro
+ *    still renews under it;
+ *  - null otherwise (and always for a Pro-era account, which was never sold
+ *    a yearly plan: no search).
+ * Reads the mirrors the plan GET has just refreshed, so it costs no more
+ * Stripe calls than they do.
+ */
+export async function alsoRenews(
+  email: string,
+  opts: PlanOpts & { acct?: Record<string, unknown> | null; pro: ProStatus; clinic: ClinicStatus },
+): Promise<"yearly" | "pro" | null> {
+  const kv = opts.kv || kvCmd;
+  const now = opts.now ?? Date.now();
+  const owner = opts.clinic.role === "owner" && opts.clinic.active;
+  if (!opts.pro.active && !owner) return null;
+  const acct = opts.acct !== undefined ? opts.acct : await readAcct(email, kv);
+  if (!grandfathered(acct) && !proTerms(acct) && acct?.terms !== FREE_DASHBOARD_TERMS) {
+    for (const kind of ["caseload", "self"] as const) {
+      const rec = await currentPlan(email, { ...opts, kv, now, kind });
+      if (recordActive(rec, now) && !rec!.cancelAtPeriodEnd) return "yearly";
+    }
+  }
+  if (owner && opts.pro.active && !opts.pro.cancelAtPeriodEnd) return "pro";
+  return null;
+}
+
+/**
  * SONA CLINIC, for one clinician (17 Nov 2026): whether a Clinic plan covers
  * them, and in what role.
  *  - "owner": this address bought a Clinic plan (`slpplan-clinic:<email>`,

@@ -117,7 +117,7 @@
 
   <div class="hero-l">
     <form class="signup" id="signup" novalidate>
-      <div class="form-field">
+      <div class="form-field" id="fField">
         <label for="fEmail">Your work email</label>
         <input id="fEmail" type="email" inputmode="email" autocomplete="email" placeholder="you@yourclinic.org" required />
       </div>
@@ -202,8 +202,8 @@
            App Store Connect's, which this repo cannot read: if that price
            changes, this line changes with it (NATIVE.md). Exactly "$9.99". -->
       <p class="parent-price" id="parentPrice" hidden>Families on your link get every game at no cost. Parents who buy Sona on their own pay $9.99 a month in the iPhone app.</p>
-      <button class="btn" type="button" data-plan="pro">Try Sona Pro free</button>
-      <p class="terms">14 days free, then $19.99 a month. Card required. Cancel during the trial and you pay nothing. One free trial per clinician.</p>
+      <button class="btn" type="button" data-plan="pro" id="proGo">Try Sona Pro free</button>
+      <p class="terms" id="proTerms">14 days free, then $19.99 a month. Card required. Cancel during the trial and you pay nothing. One free trial per clinician.</p>
     </article>
   </div>
   <!-- Sona Clinic's card, inert in a <template> while CLINIC_ON is false: not
@@ -350,7 +350,7 @@
       target.scrollIntoView({ behavior: "smooth", block: "center" });
       if ($("sent").hidden) setTimeout(function () { try { $("fEmail").focus({ preventScroll: true }); } catch (e) { $("fEmail").focus(); } }, 450);
     }
-    $("finalGo").onclick = function () { toForm(); };
+    $("finalGo").onclick = function () { if (SIGNED_IN) { toDashboard(PICK || "pro"); return; } toForm(); };
 
     /**
      * SONA CLINIC, HIDDEN FOR NOW (SLPSITE1, Travis, 18 Nov 2026: "i actually
@@ -372,19 +372,29 @@
     }
 
     /**
-     * A PLAN BUTTON REMEMBERS THE PLAN AND BRINGS THEM TO THE FORM. Checkout
+     * A PLAN BUTTON PICKS THE PLAN AND BRINGS THEM TO THE FORM. Checkout
      * needs a signed-in clinician, so the plan cannot be bought from here.
-     * The dashboard reads this once ("pro", or "clinic" only while it offers
-     * Clinic): the email link goes straight to that plan's checkout
-     * (TRIALGO1), for a brand-new account and for one that is locked. It is a
+     * The pick is held on the page (PICK) and written to localStorage
+     * "sona.slp.wantplan" only once it is acted on: the form's email has
+     * been sent, or a signed-in clinician is on the way to the dashboard.
+     * It is {plan, at}, and the dashboard reads it once, within the hour
+     * ("pro", or "clinic" only while it offers Clinic): the email link goes
+     * straight to that plan's checkout (TRIALGO1), for a brand-new account
+     * and for one that is locked. A pick nobody acted on is never kept, so a
+     * clinician who only looked never lands on Stripe days later. It is a
      * hint, never an entitlement, and the server decides what is bought.
-     * Kept in this browser only.
      */
+    var PICK = "";
+    function remember(plan) {
+      try { localStorage.setItem("sona.slp.wantplan", JSON.stringify({ plan: plan, at: Date.now() })); } catch (e) {}
+    }
+    function forget() { try { localStorage.removeItem("sona.slp.wantplan"); } catch (e) {} }
+    function toDashboard(plan) { remember(plan); location.assign("/slp.html"); }
     var planBtns = document.querySelectorAll("[data-plan]");
     for (var b = 0; b < planBtns.length; b++) {
       planBtns[b].onclick = function () {
-        try { localStorage.setItem("sona.slp.wantplan", this.getAttribute("data-plan")); } catch (e) {}
-        if (SIGNED_IN) { location.assign("/slp.html"); return; }
+        PICK = this.getAttribute("data-plan");
+        if (SIGNED_IN) { toDashboard(PICK); return; }
         toForm();
       };
     }
@@ -392,16 +402,40 @@
     /**
      * ALREADY SIGNED IN (SLPSITE1, 18 Nov 2026). A clinician who came from
      * the dashboard's locked screen ("See plans") is signed in already, and
-     * needs no email: a plan button takes them straight back to the
+     * needs no email: every button that starts the trial (a plan button,
+     * the form's, the closing one) takes them straight back to the
      * dashboard, which reads the plan just remembered and opens its checkout
-     * (Stripe's page, never a dashboard page). Only the server's yes counts;
-     * no answer, or anything else, leaves the button as above (the form).
-     * Asks who is signed in and nothing more; sends nothing.
+     * (Stripe's page, never a dashboard page). The form then asks for no
+     * email and says so. Only the server's yes counts; no answer, or
+     * anything else, leaves every button as above (the form).
+     *
+     * TRIAL ALREADY HAD: the plan is asked too, and when the server says the
+     * free trial is spent, the buttons and their small print say what the
+     * checkout will do, "Get Sona Pro" and charged today, never "free".
+     * The figures are the server's (lib/caseload PRO_PRICE and PRO_PER).
+     * Reads only; sends nothing.
      */
     var SIGNED_IN = false;
+    function signedIn(used, price, per) {
+      SIGNED_IN = true;
+      $("fField").hidden = true;
+      $("fEmail").required = false;
+      $("fNext").textContent = used ? "You’re signed in. This opens checkout." : "You’re signed in. This opens your free trial.";
+      if (!used) return;
+      LABEL = "Get Sona Pro";
+      var charged = price + " " + per + ", charged today. Cancel anytime.";
+      $("fGo").textContent = LABEL; $("fTerms").textContent = charged;
+      $("proGo").textContent = LABEL; $("proTerms").textContent = charged;
+      $("finalGo").textContent = LABEL;
+    }
     try {
       fetch("/api/slp/auth/me", { cache: "no-store", credentials: "same-origin" }).then(function (r) { return r.json(); }).then(function (j) {
-        if (j && j.ok === true && j.email) SIGNED_IN = true;
+        if (!(j && j.ok === true && j.email)) return;
+        signedIn(false);
+        return fetch("/api/slp/plan", { cache: "no-store", credentials: "same-origin" }).then(function (r) { return r.json(); }).then(function (p) {
+          var pro = p && p.ok === true && p.pro;
+          if (pro && pro.trialAvailable === false && typeof pro.price === "string" && typeof pro.per === "string") signedIn(true, pro.price, pro.per);
+        });
       }).catch(function () {});
     } catch (e) {}
 
@@ -435,21 +469,22 @@
 
     function go() {
       if ($("fGo").disabled) return;
+      if (SIGNED_IN) { toDashboard(PICK || "pro"); return; }
       var email = (($("fEmail").value) || "").trim();
       $("fErr").textContent = "";
       if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { err("Enter a valid email."); $("fEmail").focus(); return; }
       // THE FORM STARTS A TRIAL TOO (SLPSITE1, 18 Nov 2026): the dashboard
       // sends a LOCKED account from its email link to checkout only when a
-      // plan is remembered, so the form remembers Sona Pro unless a plan
-      // button already chose one. Never overwrites that choice.
-      try { if (!localStorage.getItem("sona.slp.wantplan")) localStorage.setItem("sona.slp.wantplan", "pro"); } catch (e) {}
+      // plan is remembered, so once the link is sent the form remembers the
+      // plan button's pick, else Sona Pro. A send that fails remembers
+      // nothing (and forgets an older pick).
       busy(true);
       fetch("/api/slp/auth/request", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ flow: "trial", email: email, source: src, attrib: attrib }),
       }).then(function (r) { return r.json(); }).then(function (j) {
         busy(false);
-        if (!j || !j.ok) { err((j && j.error) || "Couldn't set that up right now."); return; }
+        if (!j || !j.ok) { forget(); err((j && j.error) || "Couldn't set that up right now."); return; }
         if (j.sent !== true && j.devLink && (location.hostname === "localhost" || location.hostname === "127.0.0.1")) {
           var previewLink = document.createElement("a");
           previewLink.href = j.devLink;
@@ -457,22 +492,26 @@
           $("devbox").textContent = "";
           $("devbox").appendChild(previewLink);
           $("devbox").hidden = false;
+          remember(PICK || "pro");
           $("sentT").textContent = "Preview sign-in";
           showDone("Email is unavailable in this preview.");
           return;
         }
         if (j.sent !== true) {
+          forget();
           err("We couldn’t send your sign-in link. Try again or email hello@speaksona.com.");
           return;
         }
         // A TRIAL STARTED, with no form data attached: the opt-in at / owns
         // Lead, so this page's step is InitiateCheckout. Never a completed
         // registration: nothing is bought until Stripe's checkout.
+        remember(PICK || "pro");
         try { if (window.sonaTrack) sonaTrack("InitiateCheckout"); } catch (e) {}
         $("sentT").textContent = "Check your email";
         showDone("We sent a sign-in link to " + email + ". Open it to start your free trial.");
       }).catch(function () {
         busy(false);
+        forget();
         err("Network hiccup — try again.");
       });
     }

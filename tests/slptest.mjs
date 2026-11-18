@@ -112,7 +112,8 @@ const srv = createServer((req, res) => {
     if (u.pathname === "/api/slp" && req.method === "GET") return LOCKED ? json({ ok: false, needPlan: true, error: "Your dashboard comes with Sona Pro." }, 402) : json({ ok: true, configured: true, kids: DATA.kids, invites: DATA.invites });
     if (u.pathname === "/api/slp/homework") return json({ ok: true, hw: b.hw || null });
     if (u.pathname === "/api/slp/child" && req.method === "DELETE") { DATA.kids = DATA.kids.filter((k) => k.childId !== b.childId); return json({ ok: true, removed: b.childId }); }
-    if (u.pathname === "/api/slp/plan" && req.method === "GET") return json(PLAN);
+    // PLAN "down": the plan read fails (the store or Stripe), as a 503
+    if (u.pathname === "/api/slp/plan" && req.method === "GET") return PLAN === "down" ? json({ ok: false, error: "Couldn't check your plan just now." }, 503) : json(PLAN);
     // TRIALGO1: Sona Pro's checkout. CHECKOUT is the Stripe page's address, or
     // null for a server that refuses it.
     if (u.pathname === "/api/slp/plan" && req.method === "POST") return CHECKOUT ? json({ ok: true, url: CHECKOUT }) : json({ ok: false, error: "Couldn't open checkout just now." }, 502);
@@ -413,7 +414,7 @@ async function open(hash) {
     const { ctx, pg, errs } = await open(hash);
     const st = await pg.evaluate(() => { const p = document.getElementById("page-locked"); const a = document.getElementById("lockPlans");
       return { active: [...document.querySelectorAll(".page.active")].map((p) => p.id), hash: location.hash, text: p.innerText.replace(/\s+/g, " ").trim(),
-        echo: !!p.querySelector('img[src="/assets/brand/echo-logo.webp"]'), href: a.getAttribute("href"), btn: a.classList.contains("btn") && !a.classList.contains("ghost"),
+        echo: p.querySelectorAll('img[src^="/assets/crafted/echo-"]').length === 1, href: a.getAttribute("href"), btn: a.classList.contains("btn") && !a.classList.contains("ghost"),
         kids: document.body.innerText.includes("Mia"), err: !document.getElementById("loadError").hidden }; });
     ok(`closed dashboard: ${hash || "(no address)"} shows the locked screen instead — Echo, what opens it, the free trial on speaksona.com, and See plans`,
       st.active.join() === "page-locked" && st.hash === "#locked" && st.echo &&
@@ -477,8 +478,9 @@ async function open(hash) {
     LOCKED = o.locked; PLAN = o.plan; CHECKOUT = o.checkout; NEW_ACCT = o.fresh; DATA = fixture(); log.length = 0;
     const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
     const pg = await ctx.newPage(); const errs = []; pg.on("pageerror", (e) => errs.push(String(e)));
-    // the plans page's pick (sona.slp.wantplan), left before the sign-in
-    if (o.want) await pg.addInitScript((w) => { if (!sessionStorage.getItem("__w")) { localStorage.setItem("sona.slp.wantplan", w); sessionStorage.setItem("__w", "1"); } }, o.want);
+    // the plans page's pick (sona.slp.wantplan), left before the sign-in:
+    // {plan, at} as /plans writes it (wantAge ms ago), or wantRaw as is
+    if (o.want || o.wantRaw) await pg.addInitScript(([w, age, raw]) => { if (!sessionStorage.getItem("__w")) { localStorage.setItem("sona.slp.wantplan", raw != null ? raw : JSON.stringify({ plan: w, at: Date.now() - age })); sessionStorage.setItem("__w", "1"); } }, [o.want || "", o.wantAge || 60000, o.wantRaw == null ? null : o.wantRaw]);
     await pg.goto(U(o.path == null ? "?start=trial" : o.path)); await pg.waitForTimeout(1100);
     const posts = log.filter((l) => l.m === "POST" && l.p === "/api/slp/plan");
     return { ctx, pg, errs, posts };
@@ -548,6 +550,41 @@ async function open(hash) {
     const { ctx, pg, posts } = await go({ locked: false, plan: PLAN_PRO, checkout: STRIPE, fresh: false, want: "pro", path: "#today" });
     ok("…but a clinician Sona Pro already covers opens nothing, lands on their page, and the pick is forgotten",
       posts.length === 0 && (await pg.evaluate(() => location.hash)) === "#today" && (await pg.evaluate(() => localStorage.getItem("sona.slp.wantplan"))) === null, JSON.stringify(posts));
+    ok("…and says so, rather than nothing: \"Sona Pro is already on.\"", (await pg.evaluate(() => document.getElementById("toast").textContent)) === "Sona Pro is already on.");
+    await ctx.close();
+  }
+  {
+    const covered = { ...PLAN_NONE, active: true, source: "grandfathered", self: { ...SELF_ON, source: "grandfathered" }, pro: { ...PRO_OFF, offer: false }, grandfathered: true };
+    const { ctx, pg, posts } = await go({ locked: false, plan: covered, checkout: STRIPE, fresh: false, want: "pro", path: "#today" });
+    ok("…a clinician covered free since before 24 Sep is told \"Your dashboard and families are already covered.\"",
+      posts.length === 0 && (await pg.evaluate(() => document.getElementById("toast").textContent)) === "Your dashboard and families are already covered.", JSON.stringify(posts));
+    await ctx.close();
+  }
+  // THE PICK EXPIRES (18 Nov 2026, review): only a pick made in the last
+  // hour counts, so a clinician who only looked at /plans last week, or
+  // someone else on the same browser, never lands on Stripe by surprise.
+  for (const [label, o] of [
+    ["two hours old", { want: "pro", wantAge: 2 * 3600 * 1000 }],
+    ["a bare word from an older /plans", { wantRaw: "pro" }],
+    ["unreadable", { wantRaw: "{oops" }],
+  ]) {
+    const { ctx, pg, posts } = await go({ locked: true, plan: PLAN_LOCKED, checkout: STRIPE, fresh: false, path: "", ...o });
+    ok(`a /plans pick ${label} opens no checkout, and is dropped`, posts.length === 0 && !onStripe(pg) && (await pg.evaluate(() => localStorage.getItem("sona.slp.wantplan"))) === null, JSON.stringify({ posts, url: pg.url() }));
+    await ctx.close();
+  }
+  // THE PLAN DIDN'T ANSWER (18 Nov 2026, review): a new account keeps its
+  // ?start=trial and its pick, says so with Try again, and never shows
+  // Session games as if open; Try again goes on to the trial.
+  {
+    const { ctx, pg, errs, posts } = await go({ locked: true, plan: "down", checkout: STRIPE, fresh: true, want: "pro" });
+    const st = await pg.evaluate(() => ({ search: location.search, err: !document.getElementById("loadError").hidden, text: document.getElementById("loadErrorText").textContent,
+      active: [...document.querySelectorAll(".page.active")].map((p) => p.id).join(), want: localStorage.getItem("sona.slp.wantplan") }));
+    ok("a new account whose plan read fails sees \"Couldn't check your plan. Try again.\", keeps ?start=trial and the pick, and no page opens",
+      posts.length === 0 && st.err && st.text === "Couldn't check your plan. Try again." && st.search === "?start=trial" && !!st.want && !/page-play/.test(st.active) && errs.length === 0, JSON.stringify(st));
+    PLAN = PLAN_LOCKED;
+    await pg.click("#loadRetry"); await pg.waitForTimeout(900);
+    const after = log.filter((l) => l.m === "POST" && l.p === "/api/slp/plan");
+    ok("…and Try again, once the plan answers, opens the free trial", after.length === 1 && JSON.stringify(after[0].b) === JSON.stringify({ plan: "pro" }) && onStripe(pg), JSON.stringify({ after, url: pg.url() }));
     await ctx.close();
   }
   LOCKED = false; PLAN = PLAN_NONE; CHECKOUT = null; NEW_ACCT = false;
@@ -584,6 +621,40 @@ async function open(hash) {
     const { ctx, pg } = await open("#settings");
     ok(`Settings, ${label}: no plan line and no billing`, !(await card(pg)).shown);
     await ctx.close();
+  }
+  // DON'T PAY TWICE (18 Nov 2026, review): the server's alsoRenews says an
+  // older plan still renews beside the one now on; Settings says to cancel
+  // it, and so does the thank-you back from Stripe. Nothing when it doesn't.
+  const twice = (pg) => pg.evaluate(() => { const t = document.getElementById("setPlanTwice"); return t.hidden || !t.offsetParent ? "" : t.textContent; });
+  for (const [label, plan, want] of [
+    ["Sona Pro on, a yearly plan still renewing", { ...PLAN_PRO, alsoRenews: "yearly" }, "Your yearly plan still renews too. Cancel it in Manage billing so you don't pay for both."],
+    ["Sona Clinic on, Sona Pro still renewing", { ...PLAN_OWNER, pro: { ...PRO_ON, offer: false }, alsoRenews: "pro" }, "Sona Pro still renews too. Cancel it in Manage billing so you don't pay for both."],
+    ["Sona Pro on and nothing else", { ...PLAN_PRO, alsoRenews: null }, ""],
+  ]) {
+    PLAN = plan; DATA = fixture();
+    const { ctx, pg, errs } = await open("#settings");
+    ok(`Settings, ${label}: ${want ? JSON.stringify(want) : "no don't-pay-twice line"}`, (await twice(pg)) === want && errs.length === 0, JSON.stringify([await twice(pg), errs]));
+    await ctx.close();
+  }
+  {
+    PLAN = { ...PLAN_PRO, alsoRenews: "yearly" }; DATA = fixture();
+    const { ctx, pg } = await open("?plan_session=cs_test_" + "a".repeat(20) + "#premium");
+    const t = await pg.evaluate(() => document.getElementById("planReturnText").textContent);
+    ok("…and the thank-you back from Stripe says it too", /Sona Pro/.test(t) && t.endsWith("Your yearly plan still renews too. Cancel it in Manage billing so you don't pay for both."), t);
+    await ctx.close();
+  }
+  // A PAYMENT STRIPE HASN'T CONFIRMED YET (review): the locked screen says
+  // "Checking your payment…", never "start your free trial", and has no See
+  // plans (which could open a second subscription and a second trial).
+  {
+    LOCKED = true; PLAN = { ...PLAN_NONE, dashboard: { open: false }, activated: false, retry: true }; DATA = fixture();
+    const { ctx, pg, errs } = await open("?plan_session=cs_test_" + "b".repeat(20) + "#premium");
+    const st = await pg.evaluate(() => { const vis = (id) => { const e = document.getElementById(id); return !e.hidden && !!e.offsetParent; };
+      return { hash: location.hash, checking: vis("lockChecking"), trial: vis("lockTrial"), used: vis("lockUsed"), plans: vis("lockPlans"), check: vis("planCheck"), ret: document.getElementById("planReturnText").textContent }; });
+    ok("an unconfirmed payment on a locked dashboard: \"Checking your payment…\" with Check again, no trial line and no See plans",
+      st.hash === "#locked" && st.checking && !st.trial && !st.used && !st.plans && st.check && /couldn't confirm that payment yet/.test(st.ret) && errs.length === 0, JSON.stringify(st));
+    await ctx.close();
+    LOCKED = false;
   }
   PLAN = PLAN_NONE;
 }
@@ -658,12 +729,35 @@ async function open(hash) {
   const look = await pg.evaluate(() => {
     const bg = (el) => getComputedStyle(el).backgroundColor;
     return { body: bg(document.body), side: bg(document.getElementById("sidebar")), cards: [...document.querySelectorAll("#todayBody .card")].map(bg),
-      tiles: [...document.querySelectorAll(".nav-item .icon")].map(bg), mascots: document.querySelectorAll(".page-header img, .heading-echo, .page-header .eyebrow").length,
+      tiles: [...document.querySelectorAll(".nav-item .icon")].map(bg), icons: [...new Set([...document.querySelectorAll(".nav-item .icon")].map((el) => getComputedStyle(el).color))],
+      mascots: document.querySelectorAll(".heading-echo, .page-header .eyebrow").length,
+      echoes: [...document.querySelectorAll('#page-today img[src^="/assets/crafted/echo-"], #page-today img[src*="echo-logo"]')].filter((el) => el.getBoundingClientRect().width > 0).map((el) => el.getAttribute("src")),
+      fonts: !!document.querySelector('head link[rel="stylesheet"][href="/fonts.css"]'), h1: getComputedStyle(document.getElementById("todayHi")).fontFamily,
       avatars: [...new Set([...document.querySelectorAll(".person-avatar")].map(bg))] };
   });
   const WHITE = "rgb(255, 255, 255)", CLEAR = "rgba(0, 0, 0, 0)";
   ok("the look is white: the page, the sidebar and every Today card (the week's summary too)", look.body === WHITE && look.side === WHITE && look.cards.length >= 4 && look.cards.every((c) => c === WHITE), JSON.stringify(look));
-  ok("…with no coloured tile behind a menu icon, no mascot or eyebrow in a heading, and one neutral avatar colour", look.tiles.every((c) => c === CLEAR) && look.mascots === 0 && look.avatars.length === 1, JSON.stringify(look));
+  ok("…with no coloured tile behind a menu icon, no eyebrow in a heading, and one avatar colour for every child", look.tiles.every((c) => c === CLEAR) && look.mascots === 0 && look.avatars.length === 1, JSON.stringify(look));
+  // A little more life (SLPLIFE1, Travis, 18 Nov 2026: "this is too dull and
+  // lifeless"): teal menu icons, the brand's rounded type on page titles
+  // (self-hosted, /fonts.css), and Echo waving hello once on Today, never more.
+  ok("…the menu icons are teal, all of them", JSON.stringify(look.icons) === JSON.stringify(["rgb(14, 124, 134)"]), JSON.stringify(look.icons));
+  ok("…the page titles use the brand's Baloo 2, loaded from /fonts.css", look.fonts && /^"?Baloo 2"?/.test(look.h1), JSON.stringify({ fonts: look.fonts, h1: look.h1 }));
+  ok("…and Today has one Echo at most, waving beside the greeting", look.echoes.length === 1 && look.echoes[0] === "/assets/crafted/echo-wave.webp", JSON.stringify(look.echoes));
+  // Orange means only the practice sound's letters in the kids' app, so no
+  // text on the dashboard is orange (a bright, saturated hue of 15-45
+  // degrees; the avatars' dark butter ink is brown, not orange).
+  for (const h of ["#today", "#caseload", "#play", "#settings"]) {
+    await pg.evaluate((x) => { location.hash = x; }, h); await pg.waitForTimeout(150);
+    const orange = await pg.evaluate(() => {
+      const hue = (c) => { const m = c.match(/\d+(\.\d+)?/g); if (!m) return null; const [r, g, b] = m.slice(0, 3).map(Number), a = m.length > 3 ? Number(m[3]) : 1; if (a === 0) return null;
+        const mx = Math.max(r, g, b), mn = Math.min(r, g, b); if (mx - mn < 60 || mx < 180) return null; let H; if (mx === r) H = ((g - b) / (mx - mn)) % 6; else if (mx === g) H = (b - r) / (mx - mn) + 2; else H = (r - g) / (mx - mn) + 4; H *= 60; if (H < 0) H += 360; return H; };
+      return [...document.querySelectorAll("body *")].filter((el) => { if (!el.getClientRects().length || !/\S/.test([...el.childNodes].filter((n) => n.nodeType === 3).map((n) => n.textContent).join(""))) return false;
+        const H = hue(getComputedStyle(el).color); return H !== null && H >= 15 && H <= 45; }).map((el) => el.tagName + "." + el.className + ": " + el.textContent.trim().slice(0, 30));
+    });
+    ok(`…and no text on ${h} is orange`, orange.length === 0, JSON.stringify(orange));
+  }
+  await pg.evaluate(() => { location.hash = "#today"; }); await pg.waitForTimeout(150);
   // "a little more life" (Travis, same day): the real logo top left, a teal
   // bar on the lit menu item, and a greeting with the clinician's OWN name.
   const life = await pg.evaluate(() => {
@@ -844,7 +938,7 @@ async function open(hash) {
       color: h && getComputedStyle(h).color, desc: document.getElementById("playLoves").getAttribute("aria-describedby"),
       below: h && h.getBoundingClientRect().top >= document.getElementById("playLoves").getBoundingClientRect().bottom }; });
   ok("Session games: the grey name box is gone, and so are its words", !st.box && !st.warn, JSON.stringify(st));
-  ok("…leaving one small muted line under the box, “No names, please.”, read with it", st.hint === "No names, please." && st.size <= 12.5 && st.color === "rgb(107, 114, 128)" && st.below && /playNote/.test(st.desc), JSON.stringify(st));
+  ok("…leaving one small muted line under the box, “No names, please.”, read with it", st.hint === "No names, please." && st.size <= 13.5 && st.color === "rgb(100, 106, 118)" && st.below && /playNote/.test(st.desc), JSON.stringify(st));
   await pg.selectOption("#playAge", "5-6"); await pg.fill("#playLoves", "Mia loves trains"); await pg.click("#playGo"); await pg.waitForTimeout(200);
   ok("…and a caseload child's name typed there is still refused, never sent", !log.some((l) => l.p === "/api/slp/games/pick") && /Take out “Mia” first/.test(await pg.locator("#playErr").innerText()));
   ok("…with no page errors", errs.length === 0, errs.join(" | "));

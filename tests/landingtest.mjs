@@ -15,6 +15,9 @@ const rewrites = new Map((await nextConfig.rewrites()).map(rule => [rule.source,
 const oldClinicianUrl = (await nextConfig.redirects()).find(rule => rule.source === "/for-slps");
 const MIME = { html: "text/html", js: "text/javascript", css: "text/css", png: "image/png", jpg: "image/jpeg", webp: "image/webp", svg: "image/svg+xml", woff2: "font/woff2", webmanifest: "application/manifest+json" };
 let fails = 0;
+// The plan /plans left for the dashboard: {plan, at}, written just now
+// (SLPSITE1, 18 Nov 2026: a pick counts for an hour). Run in the page.
+const WANT = () => { try { const w = JSON.parse(localStorage.getItem("sona.slp.wantplan")); return w && typeof w.at === "number" && Math.abs(Date.now() - w.at) < 60000 ? w.plan : null; } catch (e) { return localStorage.getItem("sona.slp.wantplan") === null ? null : "?"; } };
 const ok = (name, cond, detail) => { if (!cond) fails++; console.log((cond ? "PASS " : "FAIL ") + name + (cond || detail === undefined ? "" : "  → " + (typeof detail === "string" ? detail : JSON.stringify(detail)))); };
 
 // What the fake routes answer, and what they were sent. charterReply null
@@ -23,6 +26,8 @@ let posts = [], leadReply = { ok: true, captured: true }, authReply = { ok: true
 // /api/slp/auth/me: null answers nobody signed in (the fake 404), as a fresh
 // visitor's browser does; set, the clinician signed in on this browser.
 let meReply = null;
+// /api/slp/plan's GET for a signed-in visitor: null answers the fake 404.
+let planReply = null;
 // /plans served from this text instead of the file, when set: the page with
 // Sona Clinic switched on (SLPSITE1), which ships off.
 let forSlpsOverride = null;
@@ -40,6 +45,7 @@ const srv = createServer((req, res) => {
     return;
   }
   if (u.pathname === "/api/slp/auth/me" && meReply) { res.writeHead(200, { "content-type": "application/json" }); res.end(JSON.stringify(meReply)); return; }
+  if (u.pathname === "/api/slp/plan" && planReply) { res.writeHead(200, { "content-type": "application/json" }); res.end(JSON.stringify(planReply)); return; }
   if (u.pathname === "/api/charter" && charterReply) { res.writeHead(200, { "content-type": "application/json" }); res.end(JSON.stringify(charterReply)); return; }
   if (u.pathname.startsWith("/api/")) { res.writeHead(404); res.end("{}"); return; }
   if (u.pathname === oldClinicianUrl?.source) {
@@ -559,9 +565,9 @@ const PLANS_CLINIC_ON = /var CLINIC_ON = true;/.test(PLANS_SRC);
   posts = [];
   await page.evaluate(() => { document.activeElement.blur(); document.getElementById("pricing").scrollIntoView(); });
   await page.click('[data-plan="pro"]');
-  ok("a plan button remembers the plan (a hint for the dashboard) and returns to the form, posting nothing", await settles(page, () => {
+  ok("a plan button returns to the form, posting nothing and keeping nothing yet (only a sent email, or a signed-in visitor, writes the pick)", await settles(page, () => {
     const r = document.getElementById("signup").getBoundingClientRect();
-    return r.top >= 0 && r.bottom <= innerHeight && document.activeElement?.id === "fEmail" && localStorage.getItem("sona.slp.wantplan") === "pro";
+    return r.top >= 0 && r.bottom <= innerHeight && document.activeElement?.id === "fEmail" && localStorage.getItem("sona.slp.wantplan") === null;
   }) && posts.length === 0);
 
   await page.click("#fGo");
@@ -618,11 +624,38 @@ if (!PLANS_CLINIC_ON) {
   const nav = page.waitForURL((u) => u.pathname === "/slp.html", { timeout: 4000 }).then(() => true, () => false);
   await page.click('[data-plan="pro"]');
   const went = await nav;
-  ok("signed in already: a plan button remembers the plan and goes straight back to the dashboard, posting nothing",
-    went && posts.length === 0 && await page.evaluate(() => localStorage.getItem("sona.slp.wantplan")) === "pro", { went, posts, url: page.url() });
+  ok("signed in already: a plan button remembers the plan ({plan, at}) and goes straight back to the dashboard, posting nothing",
+    went && posts.length === 0 && await page.evaluate(WANT) === "pro", { went, posts, url: page.url() });
   ok("…no page errors", errors.length === 0, errors);
   await context.close();
   meReply = null;
+}
+// ── signed in, the page's other trial buttons too (review, 18 Nov 2026):
+// the form asks for no email and says so, and its button and the closing
+// one go straight back to the dashboard. With the trial already had, every
+// button and its small print say what checkout will do, never "free". ──
+for (const used of [false, true]) {
+  meReply = { ok: true, email: "sam@clinic.org", code: "", onboarded: false };
+  planReply = { ok: true, pro: { trialAvailable: !used, price: "$19.99", per: "a month", offer: true } };
+  const { context, page, errors } = await fresh({ path: "/plans" });
+  await context.route("**/slp.html*", (route) => route.fulfill({ status: 200, contentType: "text/html", body: "<title>Dashboard</title>" }));
+  posts = [];
+  const st = used ? await settles(page, () => document.getElementById("fGo").textContent === "Get Sona Pro") : await settles(page, () => document.getElementById("fField").hidden);
+  if (!used) await page.waitForTimeout(300);   // the plan's answer, which changes nothing here
+  const st2 = await page.evaluate(() => ({ field: document.getElementById("fField").hidden, next: document.getElementById("fNext").textContent, go: document.getElementById("fGo").textContent, terms: document.getElementById("fTerms").textContent,
+    pro: document.getElementById("proGo").textContent, proTerms: document.getElementById("proTerms").textContent, fin: document.getElementById("finalGo").textContent }));
+  if (!used) ok("signed in, the trial still there: the form asks for no email and says \"You’re signed in. This opens your free trial.\"",
+    !!st && st2.field && st2.next === "You’re signed in. This opens your free trial." && st2.go === "Start your free trial" && st2.pro === "Try Sona Pro free", st2);
+  else ok("signed in, the trial already had: \"Get Sona Pro\" on every button, \"$19.99 a month, charged today. Cancel anytime.\", never \"free\"",
+    st2.field && st2.next === "You’re signed in. This opens checkout." && st2.go === "Get Sona Pro" && st2.pro === "Get Sona Pro" && st2.fin === "Get Sona Pro" &&
+    st2.terms === "$19.99 a month, charged today. Cancel anytime." && st2.proTerms === st2.terms, st2);
+  const nav = page.waitForURL((u) => u.pathname === "/slp.html", { timeout: 4000 }).then(() => true, () => false);
+  await page.click(used ? "#finalGo" : "#fGo");
+  ok(`…and ${used ? "the closing button" : "the form's button"} goes straight back to the dashboard with Sona Pro remembered, sending no email`,
+    await nav && posts.length === 0 && await page.evaluate(WANT) === "pro", { posts, url: page.url() });
+  ok("…no page errors", errors.length === 0, errors);
+  await context.close();
+  meReply = null; planReply = null;
 }
 
 // ── the switch on: Sona Clinic's card comes back as it was (SLPSITE1) ──
@@ -640,12 +673,12 @@ if (!PLANS_CLINIC_ON) {
   ok("…the kid-side line names both plans", /every game while your Sona Pro or Sona Clinic plan is on\./.test(got.kid), got.kid);
   await page.evaluate(() => { document.activeElement.blur(); document.getElementById("pricing").scrollIntoView(); });
   await page.click('[data-plan="clinic"]');
-  ok("…its button remembers clinic and returns to the form", await settles(page, () => localStorage.getItem("sona.slp.wantplan") === "clinic" && document.activeElement?.id === "fEmail"));
+  ok("…its button returns to the form", await settles(page, () => document.activeElement?.id === "fEmail"));
   posts = []; authReply = { ok: true, sent: true, signedIn: false };
   await fill(page, "sam@clinic.org");
   await page.click("#fGo");
-  ok("…and the trial form never overwrites a plan a button chose", await settles(page, () => !document.getElementById("sent").hidden) &&
-    await page.evaluate(() => localStorage.getItem("sona.slp.wantplan")) === "clinic");
+  ok("…and once the email is sent the form remembers the plan the button chose (clinic), never Sona Pro over it", await settles(page, () => !document.getElementById("sent").hidden) &&
+    await page.evaluate(WANT) === "clinic");
   ok("…no page errors", errors.length === 0, errors);
   await context.close();
   forSlpsOverride = null;
@@ -685,8 +718,8 @@ if (!PLANS_CLINIC_ON) {
     p.body.flow === "trial", posts);
   // SLPSITE1: the email link takes a LOCKED account to checkout only when a
   // plan is remembered, so the form remembers Sona Pro when nothing is.
-  ok("/plans: the trial form remembers Sona Pro for the dashboard (sona.slp.wantplan) when no plan button was pressed",
-    await page.evaluate(() => localStorage.getItem("sona.slp.wantplan")) === "pro");
+  ok("/plans: once the email is sent the trial form remembers Sona Pro for the dashboard (sona.slp.wantplan, {plan, at}) when no plan button was pressed",
+    await page.evaluate(WANT) === "pro");
   ok("/plans: the request carries the email and ad click, with no name",
     p.body.email === "sam@clinic.org" && !("name" in p.body) && p.body.attrib?.fbclid === "abc123" && p.body.source === "fb", p.body);
   ok("/plans: the request asks no role or work setting", !("clinicianRole" in p.body) &&
@@ -718,6 +751,7 @@ if (!PLANS_CLINIC_ON) {
     !await page.locator("#sent").isVisible() && await page.inputValue("#fEmail") === "sam@clinic.org";
   ok("a delivery failure leaves the form ready to retry without claiming the email was sent", canRetry);
   ok("a delivery failure fires no conversion", await page.evaluate(() => window.__track.length === 0));
+  ok("…and remembers no plan for the dashboard", await page.evaluate(() => localStorage.getItem("sona.slp.wantplan")) === null);
   if (canRetry) {
     authReply = { ok: true, sent: true, signedIn: false };
     await page.click("#fGo");

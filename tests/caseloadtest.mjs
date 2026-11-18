@@ -375,6 +375,27 @@ const count = (pred) => S.calls.filter(pred).length;
   KV.K.set("slpplan:paid@clinic.org", JSON.stringify({ sub: "sub_paidlib", customer: "cus_sub_paidlib", status: "active", periodEnd: nowS() + 86400, cancelAtPeriodEnd: false, checkedAt: Date.now() }));
   ok("covered(email) is true for a paid, live plan", (await C.covered("paid@clinic.org", { kv, stripe: client })) === true);
 
+  // DON'T PAY TWICE (18 Nov 2026, review): once Sona Pro is on, planStatus
+  // answers with it and hides the yearly plan still renewing beside it;
+  // alsoRenews says so, for the dashboard's Settings to tell them to cancel.
+  {
+    const live = { active: true, status: "active", trialEnd: null, periodEnd: nowS() + 86400, cancelAtPeriodEnd: false, trialAvailable: false };
+    const noClinic = { role: null, owner: "", active: false, status: "none", trialEnd: null, periodEnd: null, cancelAtPeriodEnd: false };
+    const owner = { ...noClinic, role: "owner", owner: "paid@clinic.org", active: true, status: "active" };
+    const o = (pro, clinic) => ({ kv, stripe: client, pro, clinic });
+    ok("alsoRenews: Sona Pro on beside a live yearly plan is \"yearly\"", (await C.alsoRenews("paid@clinic.org", o(live, noClinic))) === "yearly");
+    ok("…nothing on (no Pro, no Clinic) is null, without a search", (await C.alsoRenews("paid@clinic.org", o({ ...live, active: false }, noClinic))) === null);
+    KV.K.set("slpplan:paid@clinic.org", JSON.stringify({ sub: "sub_paidlib", customer: "cus_sub_paidlib", status: "active", periodEnd: nowS() + 86400, cancelAtPeriodEnd: true, checkedAt: Date.now() }));
+    ok("…a yearly plan already set to end is not counted", (await C.alsoRenews("paid@clinic.org", o(live, noClinic))) === null);
+    ok("…an owned Sona Clinic with Sona Pro still renewing is \"pro\"", (await C.alsoRenews("paid@clinic.org", o(live, owner))) === "pro");
+    ok("…and Pro set to end beside it is null", (await C.alsoRenews("paid@clinic.org", o({ ...live, cancelAtPeriodEnd: true }, owner))) === null);
+    KV.K.set("slpplan:paid@clinic.org", JSON.stringify({ sub: "sub_paidlib", customer: "cus_sub_paidlib", status: "active", periodEnd: nowS() + 86400, cancelAtPeriodEnd: false, checkedAt: Date.now() }));
+    seedAcct("proera@clinic.org", { terms: C.PRO_TERMS });
+    KV.K.set("slpplan:proera@clinic.org", JSON.stringify({ sub: "sub_x", customer: "cus_x", status: "active", periodEnd: nowS() + 86400, cancelAtPeriodEnd: false, checkedAt: Date.now() }));
+    ok("…a Pro-era account (never sold a yearly plan) is never \"yearly\"", (await C.alsoRenews("proera@clinic.org", o(live, noClinic))) === null);
+    KV.K.delete("slpplan:proera@clinic.org");
+  }
+
   KV.down = true;
   let threw = null;
   try { await C.planStatus("old@clinic.org", { kv: async (c) => { KV.log.push(c); return undefined; } }); } catch (e) { threw = e; }
@@ -1305,18 +1326,22 @@ const count = (pred) => S.calls.filter(pred).length;
   // dashboard comes with Sona Pro. It says what is true for every clinician.
   // 18 Nov 2026 (review): a NEW address was told "Your Sona dashboard is
   // ready … Add a child" for a dashboard that opens locked, on the plan. It
-  // gets the sign-up's words now; an existing account keeps the old ones.
-  ok("a NEW address's sign-in email is the sign-up's: \"Your Sona sign-in link\", pick your plan first, never \"your dashboard is ready\"",
-    freshMail.subject === "Your Sona sign-in link" && /New to Sona\? You'll pick your plan first\./.test(freshMail.text || "") &&
+  // gets the sign-up's words now. Later the same day: an EXISTING account
+  // may be locked too (a trial ended, a Cancel at Stripe), so its email
+  // says nothing about being ready and lists no first steps.
+  ok("a NEW address's sign-in email is the sign-up's: \"Your Sona sign-in link\", the free trial first, never \"your dashboard is ready\" or \"pick your plan\"",
+    freshMail.subject === "Your Sona sign-in link" && /New to Sona\? You'll start your free trial first\./.test(freshMail.text || "") &&
+    !/pick your plan/i.test((freshMail.html || "") + (freshMail.text || "")) &&
     !/dashboard is ready/i.test((freshMail.html || "") + (freshMail.text || "")), JSON.stringify([freshMail.subject, freshMail.text]));
   seedAcct("ready.check@clinic.org", { terms: false, code: "ready-k4", familyKey: "READYK23" });
   await call(R.request, "POST", "/api/slp/auth/request", { body: { email: "ready.check@clinic.org" } });
   const welcome = RESEND.sent.at(-1) || {};
   const OLD_PROMISE = /free for you and for every family on your caseload/i;
-  ok("an EXISTING account's sign-in email says the dashboard is ready and every family gets Sona's free version — never that the dashboard is free (HTML and text)",
-    welcome.subject === "Your Sona dashboard is ready" &&
-    (welcome.html || "").includes("Your Sona dashboard is ready, and every family you send home gets Sona's free version.") &&
-    (welcome.text || "").includes("Your Sona dashboard is ready, and every family you send home gets Sona's free version.") &&
+  ok("an EXISTING account's sign-in email is true open or locked: \"Your Sona sign-in link\", \"Here's your link to your Sona dashboard\", every family gets Sona's free version, no \"ready\" and no first steps — never that the dashboard is free (HTML and text)",
+    welcome.subject === "Your Sona sign-in link" &&
+    (welcome.html || "").includes("Here's your link to your Sona dashboard. Every family you send home gets Sona's free version.") &&
+    (welcome.text || "").includes("Here's your link to your Sona dashboard. Every family you send home gets Sona's free version.") &&
+    !/dashboard is ready|What to do first/i.test((welcome.html || "") + (welcome.text || "")) &&
     !/it's free|dashboard is free/i.test((welcome.html || "") + (welcome.text || "")), JSON.stringify(welcome.text));
   ok("…and the old \"free for you and for every family on your caseload\" never returns — not in the email, not in any server code",
     !OLD_PROMISE.test((welcome.html || "") + (welcome.text || "")) &&
@@ -1514,8 +1539,8 @@ const count = (pred) => S.calls.filter(pred).length;
     OUT.slice(before).filter((o) => o.url.endsWith("/api/lead")).length === 1);
   const mail = RESEND.sent.at(-1) || {};
   const words = (mail.html || "") + (mail.text || "");
-  ok("…its email is a plain sign-in link: Session games' words, no \"free\" dashboard, no community, and the retry is the sign-in page (speaksona.com is the packet opt-in now)",
-    mail.subject === "Your Sona sign-in link" && /pick Sona games for each session/.test(mail.text || "") && !/\bfree\b|communit/i.test(words) &&
+  ok("…its email is a plain sign-in link: Session games' words, no \"free\" but the free trial, no community, and the retry is the sign-in page (speaksona.com is the packet opt-in now)",
+    mail.subject === "Your Sona sign-in link" && /pick Sona games for each session/.test(mail.text || "") && !/\bfree\b(?! trial)|communit/i.test(words) &&
     /speaksona\.com\/slp-login\.html/.test(mail.text || "") && !/again at speaksona\.com and/.test(words), JSON.stringify([mail.subject, mail.text]));
   const verified = await call(R.verify, "GET", linkPath);
   const account = JSON.parse(KV.K.get(key) || "{}");

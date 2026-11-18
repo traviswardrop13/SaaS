@@ -655,8 +655,10 @@ if (A) {
     /function err\(msg\)[\s\S]{0,200}scrollIntoView/.test(slps) &&
     !/\$\("fErr"\)\.textContent = [^"]*"[^"]/.test(slps.replace('$("fErr").textContent = "";', "")),
     "an error below the fold is an error nobody reads");
+  // (18 Nov 2026, SLPSITE1: a failed send also forgets the plan pick first,
+  // so nothing sends the clinician to checkout from an email never sent.)
   ok("email delivery failure leaves the form available to retry",
-    /if \(j\.sent !== true\) \{\s*err\([^\n]+\);\s*return;/.test(slps));
+    /if \(j\.sent !== true\) \{\s*(?:forget\(\);\s*)?err\([^\n]+\);\s*return;/.test(slps));
 }
 
 // ── the clinician homepage sends an email before sign-in ──

@@ -292,8 +292,8 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
     /placeholder="you@yourclinic\.org"/.test(form) &&
     !/<option value="(?:parent|other)"/.test(form) &&
     (slps.match(/<form\b/g) || []).length === 1 && !/id="startModal"/.test(slps));
-  ok("both clinician calls to action say Start your free trial and the closing one returns to the form",
-    /\$\("finalGo"\)\.onclick = function \(\) \{ toForm\(\); \};/.test(slps) &&
+  ok("both clinician calls to action say Start your free trial and the closing one returns to the form (a signed-in visitor: straight back to the dashboard)",
+    /\$\("finalGo"\)\.onclick = function \(\) \{ if \(SIGNED_IN\) \{ toDashboard\(PICK \|\| "pro"\); return; \} toForm\(\); \};/.test(slps) &&
     (slps.replace(/<!--[\s\S]*?-->/g, "").match(/>Start your free trial</g) || []).length === 2 && !/Get the free dashboard/.test(slps));
   // SLPPRO1 (17 Nov 2026): the trial's terms beside its button, read from
   // lib/caseload.ts (the static page cannot import it, so this pins them).
@@ -531,8 +531,8 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
   const pro = card("planPro"), clinic = card("planClinic");
   const terms = (p) => p.days + " days free, then " + p.price + " a month. Card required. Cancel during the trial and you pay nothing. One free trial per clinician.";
   ok("the Sona Pro card: its name, its price a month and the trial's terms at the point of purchase, all lib/caseload's",
-    pro.includes("<h3>" + PRO.name + "</h3>") && pro.includes("<b>" + PRO.price + "</b> a month") && pro.includes('<p class="terms">' + terms(PRO) + "</p>") &&
-    /<button class="btn" type="button" data-plan="pro">Try Sona Pro free<\/button>/.test(pro), pro.slice(0, 300));
+    pro.includes("<h3>" + PRO.name + "</h3>") && pro.includes("<b>" + PRO.price + "</b> a month") && pro.includes('<p class="terms" id="proTerms">' + terms(PRO) + "</p>") &&
+    /<button class="btn" type="button" data-plan="pro" id="proGo">Try Sona Pro free<\/button>/.test(pro), pro.slice(0, 300));
   ok("the Sona Clinic card: the same, and its " + CLINIC.seats + " seats",
     clinic.includes("<h3>" + CLINIC.name + "</h3>") && clinic.includes("<b>" + CLINIC.price + "</b> a month") && clinic.includes('<p class="terms">' + terms(CLINIC) + "</p>") &&
     clinic.includes("for up to " + CLINIC.seats + " clinicians, you included") && /<button class="btn" type="button" data-plan="clinic">Try Sona Clinic free<\/button>/.test(clinic), clinic.slice(0, 300));
@@ -552,14 +552,18 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
     /<p class="parent-price" id="parentPrice" hidden>Families on your link get every game at no cost\. Parents who buy Sona on their own pay \$9\.99 a month in the iPhone app\.<\/p>/.test(pro) &&
     (shown.match(/\$9\.99/g) || []).length === 1 &&
     /fetch\("\/api\/charter"\)[\s\S]{0,120}if \(j && j\.ok && j\.free === false\) \$\("parentPrice"\)\.hidden = false;/.test(slps));
-  ok("a plan button only remembers the plan for the dashboard (sona.slp.wantplan) and brings the visitor to the one form",
-    /localStorage\.setItem\("sona\.slp\.wantplan", this\.getAttribute\("data-plan"\)\)/.test(slps) && /var planBtns = document\.querySelectorAll\("\[data-plan\]"\);/.test(slps) &&
+  // 18 Nov 2026 (review): the pick is {plan, at}, written only once it is
+  // acted on (a sent email, or a signed-in visitor), and counts for an hour.
+  ok("a plan button only picks the plan (PICK) and brings the visitor to the one form; the pick is written as {plan, at} only when acted on",
+    /PICK = this\.getAttribute\("data-plan"\);/.test(slps) && /localStorage\.setItem\("sona\.slp\.wantplan", JSON\.stringify\(\{ plan: plan, at: Date\.now\(\) \}\)\)/.test(slps) &&
+    /var planBtns = document\.querySelectorAll\("\[data-plan\]"\);/.test(slps) &&
     !/\/api\/slp\/plan|checkout/i.test(shown.replace(/the checkout and the billing/, "")));
   // SLPSITE1 (18 Nov 2026): the dashboard sells nothing, so the email link
   // is the way to checkout, for a LOCKED account too, but only when a plan is
   // remembered: the trial form remembers Sona Pro, never over a button's pick.
-  ok("…and the trial form remembers Sona Pro when no plan button was pressed, never over one that was",
-    /try \{ if \(!localStorage\.getItem\("sona\.slp\.wantplan"\)\) localStorage\.setItem\("sona\.slp\.wantplan", "pro"\); \} catch \(e\) \{\}\s*busy\(true\);/.test(slps));
+  ok("…and the trial form remembers the button's pick, else Sona Pro, once the email is sent, and forgets it when the send fails",
+    /remember\(PICK \|\| "pro"\);\s*try \{ if \(window\.sonaTrack\) sonaTrack\("InitiateCheckout"\); \}/.test(slps) &&
+    /if \(j\.sent !== true\) \{\s*forget\(\);/.test(slps) && /\(!j \|\| !j\.ok\) \{ forget\(\);/.test(slps));
   ok("the packet's link shows only for a visitor from the opt-in (?packet=1)",
     /<div class="packet-bar" id="packetBar" hidden>[\s\S]*?<a href="\/packet">Open it →<\/a>/.test(shown) && /\[\?&\]packet=1\(&\|\$\)\/\.test\(location\.search\)\) \$\("packetBar"\)\.hidden = false;/.test(slps));
   // SLPCLEAN1 (17 Nov 2026): the dashboard lost the community, the AI

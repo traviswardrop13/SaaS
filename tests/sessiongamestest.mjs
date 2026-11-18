@@ -352,7 +352,7 @@ try {
     const cards = await page.evaluate(() => [...document.querySelectorAll("#playPicks .act")].map((c) => ({ img: c.querySelector("img.pick-pic") && c.querySelector("img.pick-pic").getAttribute("src"), h: c.querySelector("h3").textContent, t: c.innerText, play: c.querySelector(".pick-play") && c.querySelector(".pick-play").textContent, top: getComputedStyle(c).borderTopColor })));
     ok("three cards, each Sona's own game with its picture, why it fits, how to use it in session and Play now",
       cards.length === 3 && cards[0].img === "/assets/crafted/home-dino.webp" && cards[0].h === "Dino Dig" && /Why it fits/.test(cards[0].t) && /How to use it in session/.test(cards[0].t) && /Take turns with the brush/.test(cards[0].t) && cards.every((c) => c.play === "Play now"), cards);
-    ok("…numbered, in teal, yellow and coral", JSON.stringify(cards.map((c) => c.top)) === JSON.stringify(["rgb(14, 124, 134)", "rgb(255, 201, 60)", "rgb(242, 85, 90)"]), cards.map((c) => c.top));
+    ok("…numbered, in teal, butter and teal (no coral since SLPLIFE1)", JSON.stringify(cards.map((c) => c.top)) === JSON.stringify(["rgb(14, 124, 134)", "rgb(255, 201, 60)", "rgb(14, 124, 134)"]), cards.map((c) => c.top));
     ok("…under a heading that says what they were picked for", (await page.locator("#playHeading").textContent()) === "R · beginning of words · ages 5–6");
     // Play now: the server's yes first, then the tab's record, then the game
     playAnswer = { status: 402, body: { ok: false, needPlan: true, error: "Your dashboard comes with Sona Pro." } };

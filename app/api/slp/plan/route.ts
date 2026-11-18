@@ -3,7 +3,7 @@ import Stripe from "stripe";
 import { readSession, liveSession, kvConfigured } from "@/lib/slpAuth";
 import { rateLimit } from "@/lib/rateLimit";
 import {
-  planStatus, selfStatus, proStatus, clinicStatus, dashboardOpen, activateFromSession, readAcct, readPlan, grandfathered, StoreUnavailable, clinicOn,
+  planStatus, selfStatus, proStatus, clinicStatus, dashboardOpen, alsoRenews, activateFromSession, readAcct, readPlan, grandfathered, StoreUnavailable, clinicOn,
   PRO_CENTS, PRO_PRICE, PRO_PER, PRO_INTERVAL, PRO_TRIAL_DAYS, PRO_PLAN, PRO_NAME,
   CLINIC_CENTS, CLINIC_PRICE, CLINIC_PER, CLINIC_INTERVAL, CLINIC_TRIAL_DAYS, CLINIC_PLAN, CLINIC_NAME, CLINIC_SEATS,
 } from "@/lib/caseload";
@@ -113,6 +113,9 @@ export async function GET(req: NextRequest) {
     const self = await selfStatus(s.email, { acct });
     const clinic = await clinicStatus(s.email);
     const open = await dashboardOpen(s.email, { acct });
+    // An older plan that still renews beside the one now on (18 Nov 2026):
+    // Settings tells the clinician to cancel it, so they don't pay for both.
+    const also = await alsoRenews(s.email, { acct, pro, clinic });
     // Who added a member, for "Your clinic's plan covers you": the owner's
     // own display name and practice name, never their email. The dates and
     // status in the block are the owner's plan's, because that plan is what
@@ -166,6 +169,7 @@ export async function GET(req: NextRequest) {
             ...(clinic.role ? { name: CLINIC_NAME, ...who } : {}),
           },
       dashboard: { open },
+      alsoRenews: also,
       grandfathered: grandfathered(acct),
       ...(sid ? { activated } : {}),
       ...(activatedPlan ? { activatedPlan } : {}),

@@ -462,7 +462,16 @@ export async function sendMagicEmail(
   // the trial. It says only what is true for anyone who might be reading it,
   // a new clinician or one who signed up long ago. Its retry address is the
   // sign-in page: speaksona.com itself is the packet opt-in now.
-  const signupIntro = "Open your Sona dashboard to pick Sona games for each session, share the app with families and see who practiced at home. New to Sona? You'll pick your plan first.";
+  const signupIntro = "Open your Sona dashboard to pick Sona games for each session, share the app with families and see who practiced at home. New to Sona? You'll start your free trial first.";
+  // AN EXISTING ACCOUNT's email (18 Nov 2026): it said "Your Sona dashboard
+  // is ready" over "What to do first: Add a child", which is not true of a
+  // locked one (a trial ended, a Cancel at Stripe, a 13-17 Nov signup moved
+  // to the trial). This line, the subject and the steps-free body are true
+  // whether the dashboard is open or locked; the route adds no Stripe call
+  // to tell which.
+  const signinIntro = "Here's your link to your Sona dashboard. Every family you send home gets Sona's free version.";
+  const intro = opts.signup ? signupIntro : signinIntro;
+  const firstSteps = !!opts.signup;
   const retryUrl = "speaksona.com/slp-login.html";
   // The six-digit code (SLPAPP1, 16 Nov 2026), when the sign-in screen asked
   // for one: typed in the clinicians' app, which a link cannot sign in. It is
@@ -473,7 +482,7 @@ export async function sendMagicEmail(
     const r = await sendMail({
         from,
         to: email,
-        subject: code ? "Your Sona sign-in code: " + spaced : opts.signup ? "Your Sona sign-in link" : "Your Sona dashboard is ready",
+        subject: code ? "Your Sona sign-in code: " + spaced : "Your Sona sign-in link",
         html:
           `<div style="font-family:system-ui,Segoe UI,Roboto,sans-serif;font-size:15px;color:#16384f;line-height:1.6;max-width:520px;">` +
           `<p>${name ? "Hi " + esc(name) + "," : "Hi,"}</p>` +
@@ -483,15 +492,17 @@ export async function sendMagicEmail(
           // dashboard no longer is (it comes with Sona Pro, after the free
           // trial). The same email goes to every sign-in, so it says only
           // what is true for every clinician.
-          `<p>${opts.signup ? signupIntro : "Your Sona dashboard is ready, and every family you send home gets Sona's free version."}</p>` +
+          `<p>${intro}</p>` +
           (code ? `<p style="margin:18px 0 6px;">Your sign-in code:</p><p style="font-size:30px;font-weight:800;letter-spacing:6px;margin:0 0 6px;">${spaced}</p><p style="color:#6b86a3;font-size:13px;margin:0 0 18px;">Type it on the sign-in screen, in the app or in your browser. Or open the dashboard here:</p>` : "") +
           `<p><a href="${link}" style="display:inline-block;background:#58cc02;color:#fff;font-weight:700;text-decoration:none;padding:14px 26px;border-radius:12px;font-size:16px;">Open my dashboard</a></p>` +
-          `<p style="margin-top:22px;"><b>What to do first</b></p>` +
-          `<ol style="padding-left:18px;color:#46627a;">` +
-          `<li>Add a child — initials are enough. You pick the sound and the position.</li>` +
-          `<li>Send their family the link. They set up in about 30 seconds, on their own phone.</li>` +
-          `<li>Come back and see the days they practiced — and copy a line for your progress note.</li>` +
-          `</ol>` +
+          (firstSteps
+            ? `<p style="margin-top:22px;"><b>What to do first</b></p>` +
+              `<ol style="padding-left:18px;color:#46627a;">` +
+              `<li>Add a child — initials are enough. You pick the sound and the position.</li>` +
+              `<li>Send their family the link. They set up in about 30 seconds, on their own phone.</li>` +
+              `<li>Come back and see the days they practiced — and copy a line for your progress note.</li>` +
+              `</ol>`
+            : "") +
           // While the family app is not out (lib/launch.ts), the clinician
           // hears it here, in the email they get anyway (25 Sep 2026).
           (APP_READY ? "" : `<p style="margin-top:22px;"><b>P.S.</b> ${LAUNCH_NOTE.replace(/^Sona/, "The Sona app for families")}</p>`) +
@@ -505,13 +516,15 @@ export async function sendMagicEmail(
          */
         text:
           (name ? "Hi " + name + ",\n\n" : "Hi,\n\n") +
-          (opts.signup ? signupIntro : "Your Sona dashboard is ready, and every family you send home gets Sona's free version.") + "\n\n" +
+          intro + "\n\n" +
           (code ? "Your sign-in code: " + spaced + "\nType it on the sign-in screen, in the app or in your browser.\n\n" : "") +
           "Open it here:\n" + link + "\n\n" +
-          "What to do first\n" +
-          "1. Add a child - initials are enough. You pick the sound and the position.\n" +
-          "2. Send their family the link. They set up in about 30 seconds, on their own phone.\n" +
-          "3. Come back and see the days they practiced - and copy a line for your progress note.\n\n" +
+          (firstSteps
+            ? "What to do first\n" +
+              "1. Add a child - initials are enough. You pick the sound and the position.\n" +
+              "2. Send their family the link. They set up in about 30 seconds, on their own phone.\n" +
+              "3. Come back and see the days they practiced - and copy a line for your progress note.\n\n"
+            : "") +
           (APP_READY ? "" : "P.S. " + LAUNCH_NOTE.replace(/^Sona/, "The Sona app for families") + "\n\n") +
           "This " + (code ? "code and link expire" : "link expires") + " in 15 minutes. If it does, enter your email again at " + retryUrl + " and we'll send a fresh one. If you didn't ask for this, you can ignore it.\n",
     });

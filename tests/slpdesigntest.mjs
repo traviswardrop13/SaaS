@@ -135,7 +135,7 @@ async function open(hash="#today",width=1440,rejectClipboard=false,previewFeatur
   await pg.addInitScript(({rejectClipboard,previewFeatures,want})=>{
     if(previewFeatures)window.SLP_PREVIEW_FEATURES=true;
     // the plans page's hint (sona.slp.wantplan), set before the dashboard loads
-    if(want&&!sessionStorage.getItem("__wantSet")){try{localStorage.setItem("sona.slp.wantplan",want);sessionStorage.setItem("__wantSet","1");}catch(e){}}
+    if(want&&!sessionStorage.getItem("__wantSet")){try{localStorage.setItem("sona.slp.wantplan",JSON.stringify({plan:want,at:Date.now()}));sessionStorage.setItem("__wantSet","1");}catch(e){}}
     window.__copied=[];window.__confirms=[];
     Object.defineProperty(navigator,"clipboard",{value:{writeText:t=>rejectClipboard?Promise.reject(new Error("Permission denied")):(window.__copied.push(t),Promise.resolve())}});
     window.confirm=(m)=>{window.__confirms.push(m);return true;};

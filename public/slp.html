@@ -85,20 +85,20 @@
     server merges them into /api/slp. Nothing on this page reads a clinic code
     from the URL: the session decides whose caseload this is.
   -->
+  <link href="/fonts.css" rel="stylesheet">
   <style>
     /* SLPCLEAN1 (17 Nov 2026, Travis: "a clean white, simple look"). White
-       surfaces, light grey hairlines, one accent (teal) for the primary
-       button, the active menu item, links and focus. No pastel tiles, no
-       mascots in headings, no coloured avatars or status colours: a missed
-       homework is the one muted red. The old variable names stay, because
-       the script below paints with a few of them (--muted, --pink,
-       --green-d, --line).
-       A little life (Travis, same day: "add our actual logo top left ... and
-       we can add a little more life to the interface"): Echo's own logo top
-       left, and his yellow, coral and light blue as small accents only (the
-       planner's examples and thinking Echo, the activity cards' numbers and
-       top edges). Never a background of a whole surface, and never colour
-       that says how a child is doing. */
+       surfaces, light hairlines, one accent (teal) for the primary button,
+       the active menu item, links and focus. No pastel tiles behind menu
+       icons, no colour per menu item, no status colours: a missed homework
+       is the one muted red. The old variable names stay, because the script
+       below paints with a few of them (--muted, --pink, --green-d, --line).
+       A little more life (Travis, same day: "add our actual logo top left";
+       18 Nov 2026: "a little bit more life ... not as many colors as before
+       but this is too dull and lifeless"; SLPLIFE1, below): every surface
+       stays white, teal plus ONE warm accent (butter yellow, in tints), and
+       Echo in his crafted poses at most once on a screen. Never orange
+       text, never colour that says how a child is doing. */
     :root {
       --accent: #0e7c86; --accent-d: #0b646c; --accent-bg: #eef6f7;
       --sun: #ffc93c; --coral: #f2555a; --sky-bg: #eefbfd;
@@ -464,6 +464,7 @@
     .applock .err:empty { min-height:0; margin:0; }
     #setPlan .set-plan { border-top:0; padding:8px 0 0; }
     #setPlanLine { color:var(--ink); font-size:14px; margin:0; }
+    #setPlanTwice { font-size:14px; margin:8px 0 0; }
     #page-settings .card .err:empty { min-height:0; margin:0; }
     .set-self .ok { margin-top:12px; overflow-wrap:anywhere; }
     .set-self .btn { margin-top:12px; white-space:normal; text-align:center; }
@@ -501,6 +502,124 @@
     @keyframes spin { to { transform:rotate(360deg); } }
     .toast { position:fixed; left:calc(50% + var(--sidebar-w)/2); bottom:28px; transform:translate(-50%,16px); background:var(--ink); color:#fff; padding:10px 16px; border-radius:8px; z-index:130; opacity:0; pointer-events:none; font-size:13px; max-width:calc(100% - 32px); transition:opacity .2s, transform .2s; }
     .toast.visible { opacity:1; transform:translate(-50%,0); }
+
+    /* ── A LITTLE MORE LIFE (SLPLIFE1, 18 Nov 2026, Travis: "a little bit
+       more life to this dashboard. not as many colors as before but this
+       is too dull and lifeless"). Every surface stays white (the page, the
+       sidebar, every card's own background colour). Teal is the one main
+       colour; butter yellow is the one warm accent, in tints only (the
+       week's glow, the avatars, the examples box, the plan note, the
+       second game pick). Echo, in his crafted poses, at most once on a
+       screen. The brand's rounded type (Baloo 2, /fonts.css, self-hosted)
+       on page titles only. Never a colour per menu item, never a tile
+       behind a menu icon, never orange text (orange is the speech sound's
+       colour in the kids' app), never colour that says how a child is
+       doing: every child's avatar is the same butter tint. ── */
+    :root {
+      --accent-bg:#e6f3f4; --teal-line:#cde6e8;
+      --butter:#ffc93c; --butter-bg:#fff4d6; --butter-soft:#fffaeb; --butter-line:#f2dfa6; --butter-ink:#6b4a12;
+      --line:#ebe8e2; --line-2:#dbd7cf; --subtle:#faf8f4; --chip:#f4f1ea; --muted:#646a76;
+      --display:"Baloo 2", var(--font);
+    }
+    .page-header h1, .applock h1, .empty h2 { font-family:var(--display); font-weight:700; letter-spacing:-.01em; }
+    .page-header h1 { font-size:30px; line-height:1.15; }
+    .sidebar .brand { font-family:var(--display); font-weight:700; font-size:20px; letter-spacing:-.01em; }
+    .sidebar .brand small { font-family:var(--font); font-size:12px; font-weight:600; color:var(--accent-d); background:var(--accent-bg); border-radius:99px; padding:2px 8px; letter-spacing:0; }
+    .mobile-bar .brand { font-family:var(--display); font-weight:700; font-size:19px; }
+    .nav-item .icon { color:var(--accent); }
+    .nav-item .badge.warn { background:var(--accent); }
+    .account-avatar { background:var(--accent-bg); color:var(--accent-d); }
+    .card { border-radius:14px; box-shadow:0 1px 2px rgba(60,50,30,.05); }
+    .grid td.dim { color:var(--muted); }
+
+    /* Today: Echo waves hello beside the greeting (the one Echo on Today) */
+    .hi { display:flex; align-items:center; gap:14px; min-width:0; }
+    .hi > div { min-width:0; }
+    .hi h1 { overflow-wrap:anywhere; }
+    .hi-echo { width:76px; height:76px; flex-shrink:0; margin:-10px -2px -10px -8px; }
+    @keyframes echoHello { 0% { transform:translateY(8px) rotate(-8deg) scale(.92); opacity:0; } 55% { transform:translateY(-3px) rotate(4deg); opacity:1; } 80% { transform:rotate(-2deg); } 100% { transform:none; } }
+    @media (prefers-reduced-motion: no-preference) { .hi-echo { animation:echoHello .7s ease-out both; transform-origin:50% 90%; } }
+    #todayBody .empty::before { content:none; }
+
+    /* the week's summary: a soft teal wash and a butter glow, painted as
+       background-image over the card's white; the number in bold teal and
+       one dot per child */
+    .week-summary { border-color:var(--teal-line); background-color:#fff;
+      background-image:radial-gradient(260px 200px at 100% 0, rgba(255,201,60,.26), rgba(255,201,60,0) 70%), linear-gradient(105deg, #eaf5f5 0%, #f4faf9 38%, rgba(255,255,255,0) 72%); }
+    .summary-label { font-weight:500; }
+    .summary-big { font-family:var(--display); font-size:46px; font-weight:700; color:var(--accent); vertical-align:-4px; margin-right:4px; }
+    .summary-meter { display:flex; flex-wrap:wrap; gap:6px; margin-top:12px; }
+    .summary-meter i { width:14px; height:14px; border-radius:50%; background:#fff; box-shadow:inset 0 0 0 1.5px #bfdfe2; }
+    .summary-meter i.on { background:var(--accent); box-shadow:none; }
+    .summary-meter.bar { display:block; height:10px; max-width:360px; border-radius:99px; background:#fff; box-shadow:inset 0 0 0 1.5px #bfdfe2; overflow:hidden; }
+    .summary-meter.bar i { display:block; height:100%; width:0; border-radius:99px; background:var(--accent); box-shadow:none; }
+    .summary-link { font-weight:600; background:#fff; border:1px solid #c7e1e3; border-radius:99px; padding:7px 14px; box-shadow:0 1px 2px rgba(11,100,108,.08); }
+    .summary-link:hover { border-color:var(--accent); }
+
+    /* each Today group: one small teal line icon on a teal tint, in the
+       avatars' column (CSS only, the same tint for every group) */
+    #todayBody .cardtop { flex-wrap:nowrap; }
+    #todayBody .cardtop > .group-count, #todayBody .cardtop > .text-link { flex-shrink:0; white-space:nowrap; }
+    #todayBody .cardtop h2, #todayBody .group-caption { text-wrap:balance; }
+    #todayBody .cardtop > div:first-child { position:relative; padding-left:42px; min-height:32px; min-width:0; }
+    #todayBody .cardtop > div:first-child::before { content:""; position:absolute; left:0; top:0; width:32px; height:32px; border-radius:10px;
+      background:var(--accent-bg) var(--group-icon, none) center / 18px 18px no-repeat; }
+    .group-quiet { --group-icon:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230b646c' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5Z'/%3E%3C/svg%3E"); }
+    .group-hw { --group-icon:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230b646c' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='8.5'/%3E%3Cpath d='M12 7.5V12l3 2'/%3E%3C/svg%3E"); }
+    .group-week { --group-icon:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230b646c' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3.5l1.9 5 5 1.9-5 1.9-1.9 5-1.9-5-5-1.9 5-1.9z'/%3E%3Cpath d='M18.5 16.5l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7z'/%3E%3C/svg%3E"); }
+    .group-invites { --group-icon:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230b646c' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='5' width='18' height='14' rx='3'/%3E%3Cpath d='m4 7 8 6 8-6'/%3E%3C/svg%3E"); }
+    .group-count { background:var(--accent-bg); color:var(--accent-d); font-weight:600; }
+    .group-week .why b { color:var(--accent-d); font-weight:650; }
+
+    /* avatars: one butter tint for every child, never a colour per child */
+    .person-avatar { background:var(--butter-bg); color:var(--butter-ink); box-shadow:inset 0 0 0 1px var(--butter-line); font-weight:650; }
+    .person-avatar.sm { width:28px; height:28px; font-size:12px; }
+    .tbl-kid { display:flex; align-items:center; gap:10px; min-width:0; }
+    .tbl-kid > div { min-width:0; }
+
+    /* sound chips and the week's dots in teal */
+    .chip { background:var(--accent-bg); color:#0a5a61; }
+    .week-dots { gap:4px; margin-top:8px; }
+    .week-dot { width:16px; height:6px; background:#e7e3db; }
+    .week-dot.practiced { background:var(--accent); }
+
+    /* empty states: Echo keeps you company (not on Today, where he already waves) */
+    .empty::before { content:""; display:block; width:84px; height:84px; margin:0 auto 6px; background:url(/assets/crafted/echo-wave.webp) center/contain no-repeat; }
+    #clTable .empty:not(:has(.btn))::before { background-image:url(/assets/crafted/echo-think.webp); }
+    .empty h2 { font-size:22px; }
+
+    /* Session games: one quiet line under the box ("No names, please."); the examples box in
+       butter; the picks numbered teal, butter, teal */
+    .plan-meta { margin-top:6px; }
+    .plan-hint { font-size:13px; }
+    .plan-idle, .plan-wait { background:linear-gradient(115deg, var(--butter-bg) 0%, var(--butter-soft) 45%, #fff 100%); border-color:var(--butter-line); }
+    .plan-idle p { color:#5d5a52; }
+    .plan-example { border-color:#e8d7a4; }
+    .plan-echo { width:80px; }
+    .plan-idle .plan-echo { margin:-6px 0; }
+    .act-3 { --act:var(--accent); --act-ink:#fff; }
+
+    /* the locked screens: one calm Echo above the words; the clinic
+       lapsed note in butter */
+    .applock .plan-echo { width:96px; }
+    .applock h1 { text-wrap:balance; }
+    .send-success.pro-locked { background:var(--butter-soft); border-color:var(--butter-line); color:var(--ink); }
+
+    /* the lit tab (caseload filters, a child's tabs) matches the lit menu item */
+    .filter-tab[aria-pressed=true] { background:var(--accent-bg); color:var(--accent-d); }
+    .filter-tab[aria-pressed=true] span { color:var(--accent-d); }
+
+    @media (max-width:768px) {
+      .page-header h1 { font-size:26px; }
+      .hi { gap:10px; }
+      .hi-echo { width:56px; height:56px; margin:-6px -2px -6px 0; }
+      .summary-big { display:block; font-size:44px; line-height:1; margin:2px 0 4px; vertical-align:0; }
+      .week-summary { background-image:radial-gradient(180px 150px at 100% 0, rgba(255,201,60,.26), rgba(255,201,60,0) 70%), linear-gradient(105deg, #eaf5f5 0%, #f4faf9 45%, rgba(255,255,255,0) 85%); }
+      #todayBody .cardtop > div:first-child { padding-left:38px; min-height:28px; }
+      #todayBody .cardtop > div:first-child::before { width:28px; height:28px; border-radius:9px; background-size:16px 16px; }
+      .plan-echo { width:56px; }
+      .pick-pic { width:calc(100% + 32px); margin:-16px -16px 14px; }
+    }
 
     /* ── Narrower screens ────────────────────────── */
     @media (max-width:1100px) {
@@ -642,7 +761,7 @@
       <!-- ════════ TODAY ════════ -->
       <div class="page" id="page-today">
         <div class="page-header">
-          <div><h1 id="todayHi">Today</h1><p id="todaySub">Who practiced, who went quiet, what ends soon.</p></div>
+          <div class="hi"><img class="hi-echo" src="/assets/crafted/echo-wave.webp" alt="" width="76" height="76"/><div><h1 id="todayHi">Today</h1><p id="todaySub">Who practiced, who went quiet, what ends soon.</p></div></div>
           <div class="spacer"></div>
           <button class="btn ghost sm noprint" id="todayRefresh"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5M6 7a7 7 0 0 1 12-2l2 3M4 16l2 3a7 7 0 0 0 12-2"/></svg> Refresh</button>
         </div>
@@ -888,7 +1007,7 @@
              works, Echo bobs (still under Reduce Motion) and says so; the
              last picks come back if it fails. -->
         <section class="plan-idle" id="playIdle" aria-labelledby="playIdleHeading">
-          <img class="plan-echo" src="/assets/brand/echo-logo.webp" alt="" width="64" height="65"/>
+          <img class="plan-echo" src="/assets/crafted/echo-wave.webp" alt="" width="64" height="64"/>
           <div><h2 id="playIdleHeading">Not sure where to start?</h2><p>Tap an example to fill the form, then make it yours.</p></div>
           <div class="plan-examples" id="playExamples">
             <button class="plan-example" type="button" data-sound="K" data-pos="i" data-age="3-4" data-loves="trucks">Ages 3–4 · K · loves trucks</button>
@@ -897,7 +1016,7 @@
           </div>
         </section>
         <div class="plan-wait" id="playWait" role="status" hidden>
-          <img class="plan-echo" src="/assets/brand/echo-logo.webp" alt="" width="64" height="65"/>
+          <img class="plan-echo" src="/assets/crafted/echo-think.webp" alt="" width="64" height="64"/>
           <div><p>Echo is picking games…</p><p class="sub">This takes a few seconds.</p></div>
         </div>
         <section id="playResult" aria-labelledby="playHeading" hidden>
@@ -927,10 +1046,11 @@
            button. Hidden in the app, which has its own card below. -->
       <div class="page" id="page-locked" data-sells>
         <div class="card applock">
-          <img class="plan-echo" src="/assets/brand/echo-logo.webp" alt="" width="64" height="65"/>
+          <img class="plan-echo" src="/assets/crafted/echo-cheer.webp" alt="" width="96" height="96"/>
           <h1>Your dashboard comes with Sona Pro.</h1>
           <p id="lockTrial">Start your <span id="lockDays">14</span>-day free trial on speaksona.com.</p>
           <p id="lockUsed" hidden>You've had your free trial. Get Sona Pro on speaksona.com.</p>
+          <p id="lockChecking" hidden>Checking your payment…</p>
           <div class="row"><a class="btn" id="lockPlans" href="/plans#pricing">See plans</a></div>
           <div class="err" id="lockErr" role="status"></div>
         </div>
@@ -947,7 +1067,7 @@
            screen, above, instead. -->
       <div class="page" id="page-applock">
         <div class="card applock">
-          <img class="plan-echo" src="/assets/brand/echo-logo.webp" alt="" width="64" height="65"/>
+          <img class="plan-echo" src="/assets/crafted/echo-wave.webp" alt="" width="96" height="96"/>
           <h1>Your account doesn't have Sona Pro yet.</h1>
           <p>Sona Pro opens the dashboard, every game for you, and every game for families on your link.</p>
           <div class="row"><button class="btn ghost" id="appLockOut" type="button">Sign out</button><a class="text-link" href="#settings">Settings</a></div>
@@ -1020,6 +1140,7 @@
         <div class="card" id="setPlan" hidden data-sells>
           <h2>Your plan</h2>
           <div class="set-plan"><p class="sub" id="setPlanLine"></p><button class="btn ghost sm" id="setManage" type="button" hidden>Manage billing</button></div>
+          <p class="sub" id="setPlanTwice" hidden></p>
           <div class="err" id="setPlanErr" role="status"></div>
         </div>
         <!-- THE CLINICIAN'S OWN PHONE (moved from the plan page, 18 Nov 2026).
@@ -1324,7 +1445,12 @@
       var MOVED={plan:"play","plan-day":"play","homework-draft":"play",community:"today",affiliate:"today"};
       if(MOVED[name]){name=MOVED[name];arg=null;h=[name];history.replaceState(null,"","#"+name);}
       if(name==="child"&&(h[2]==="plan"||h[2]==="play")){var seedKid=kidById(arg);if(seedKid)PLAY_SEED=seedKid.childId;name="play";arg=null;h=[name];history.replaceState(null,"","#play");}
-      if((name==="applock"||name==="locked")&&!dashLocked()){name="play";history.replaceState(null,"","#play");}
+      if((name==="applock"||name==="locked")&&!dashLocked()){
+        // Open now (a payment just confirmed): a new account has no code
+        // yet, and its first stop is the one form that makes it.
+        if(!code){history.replaceState(null,"","#play");switchPage("onboarding");return;}
+        name="play";history.replaceState(null,"","#play");
+      }
       // THE PLAN PAGE'S OLD ADDRESS (it left on 18 Nov 2026; Stripe's return,
       // its Cancel and the billing page still come back to #premium): the
       // locked screen while the dashboard is locked, else Settings, where
@@ -1388,6 +1514,13 @@
       first=first.replace(/[,;:]+$/,"").slice(0,40);
       return first?part+", "+first:part;
     }
+    // the week's dots: one per child, teal when that child practiced (a bar
+    // past 30 children). The sentence beside it says the same in words.
+    function summaryMeter(m,n){
+      if(!n)return "";
+      if(n>30)return '<span class="summary-meter bar" aria-hidden="true"><i style="width:'+Math.round(100*m/n)+'%"></i></span>';
+      var h='<span class="summary-meter" aria-hidden="true">';for(var i=0;i<n;i++)h+='<i'+(i<m?' class="on"':'')+'></i>';return h+'</span>';
+    }
     function renderToday(){
       var live=KIDS.filter(function(k){return !k.d.archived;}), t=isoToday();
       $("todayHi").textContent=greeting();
@@ -1402,7 +1535,7 @@
       var quiet=live.filter(function(k){return k.d.quiet;}).sort(function(a,b){return (b.d.lastN==null?9999:b.d.lastN)-(a.d.lastN==null?9999:a.d.lastN);});
       var hw=live.filter(function(k){return k.d.hwst==="missed"||(k.d.hwst==="active"&&k.d.due&&daysBetween(t,k.d.due)>=0&&daysBetween(t,k.d.due)<=7);}).sort(function(a,b){return (a.d.hwst==="missed"?-1:0)-(b.d.hwst==="missed"?-1:0)||(a.d.due||"").localeCompare(b.d.due||"");});
       quiet=quiet.filter(function(k){return !hw.some(function(h){return h.childId===k.childId;});});
-      html+='<div class="card week-summary"><div class="summary-copy"><p class="summary-label">Home practice, last 7 days</p><p class="summary-title"><span class="summary-big">'+week.length+'</span> of '+live.length+' children practiced in the last 7 days.</p></div><a class="summary-link" href="#caseload">View caseload →</a></div>';
+      html+='<div class="card week-summary"><div class="summary-copy"><p class="summary-label">Home practice, last 7 days</p><p class="summary-title"><span class="summary-big">'+week.length+'</span> of '+live.length+' children practiced in the last 7 days.</p>'+summaryMeter(week.length,live.length)+'</div><a class="summary-link" href="#caseload">View caseload →</a></div>';
       // one group per question a clinician asks between sessions; ten rows each, one action per row
       function group(title,list,rowFn,sort){
         var kind=sort==="recent"?"quiet":(sort==="hw"?"hw":"week"), caption=sort==="recent"?"A good place to check in.":(sort==="hw"?"Review the next step for home practice.":"Small moments of practice, adding up.");
@@ -1474,7 +1607,7 @@
       list.forEach(function(k){
         var d=k.d, r=d.two.rate;
         html+='<tr data-child="'+esc(k.childId)+'"'+(d.archived?' style="opacity:.55;"':'')+'><td class="noprint"><input type="checkbox" data-sel="'+esc(k.childId)+'" aria-label="Select '+esc(k.d.name)+'"'+(SELECTED[k.childId]?" checked":"")+' /></td>'
-          +'<td><a class="name" href="#child/'+encodeURIComponent(k.childId)+'">'+esc(d.name)+'</a><span class="age">'+(d.age?'age '+esc(d.age):'')+'</span>'+(d.archived?' <span class="pill archived">archived</span>':'')+(k.synced===false?' <span class="pill invited">just joined</span>':(!joined(k)?' <span class="pill invited">invited</span>':''))+'</td>'
+          +'<td><div class="tbl-kid"><span class="person-avatar sm" aria-hidden="true">'+esc((d.name||"?").charAt(0))+'</span><div><a class="name" href="#child/'+encodeURIComponent(k.childId)+'">'+esc(d.name)+'</a><span class="age">'+(d.age?'age '+esc(d.age):'')+'</span>'+(d.archived?' <span class="pill archived">archived</span>':'')+(k.synced===false?' <span class="pill invited">just joined</span>':(!joined(k)?' <span class="pill invited">invited</span>':''))+'</div></div></td>'
           +'<td data-label="Target">'+esc(d.targets.map(sLabel).join(", ")||"—")+'</td>'
           +'<td data-label="Last practiced">'+(d.last?'<span'+(d.quiet?' class="pill quiet"':'')+'>'+esc(agoText(d.last))+'</span>':'<span class="muted">not yet</span>')+'</td>'
           +'<td class="num opt" data-label="Last 7 days">'+d.week.days+'<span class="muted"> / 7</span></td>'
@@ -1950,18 +2083,33 @@
            not: an open dashboard whose families are not covered has no other
            way to buy it any more. "clinic" only while the server offers Sona
            Clinic; else Sona Pro.
-       Both are read once and forgotten before anything else, so a reload,
-       Back or Stripe's Cancel never opens checkout twice: they land on the
-       locked screen (or the dashboard), with any error said there. Never in
-       the clinicians' app, which sells nothing. */
+       Both are forgotten the moment autoTrial decides (autoDone), before it
+       leaves for Stripe, so a reload, Back or Stripe's Cancel never opens
+       checkout twice: they land on the locked screen (or the dashboard),
+       with any error said there. Until it has decided (the plan didn't
+       answer), they are kept, so Try again or the next load still goes on.
+       The plans page's pick is {plan, at} and counts for an hour (the
+       sign-in link lasts 15 minutes): an older one, a bare word from an
+       older /plans, or one that can't be read is dropped unread, so a
+       clinician who only looked at /plans last week, or someone else on
+       the same browser, never lands on Stripe by surprise. Never in the
+       clinicians' app, which sells nothing. */
     var START_TRIAL=false, AUTO_TRIAL=false;
-    try{var startQ=new URLSearchParams(location.search);
-      if(startQ.get("start")==="trial"){START_TRIAL=!SLP_APP;startQ.delete("start");var restQ=startQ.toString();history.replaceState(null,"",location.pathname+(restQ?"?"+restQ:"")+location.hash);}
+    try{START_TRIAL=!SLP_APP&&new URLSearchParams(location.search).get("start")==="trial";}catch(e){}
+    var WANT_PLAN="", WANT_MS=60*60*1000;
+    try{var wpRaw=localStorage.getItem("sona.slp.wantplan");
+      if(wpRaw!=null){var wp=null;try{wp=JSON.parse(wpRaw);}catch(e){}
+        var wpAge=wp&&typeof wp.at==="number"?Date.now()-wp.at:NaN;
+        if(!SLP_APP&&wp&&(wp.plan==="pro"||wp.plan==="clinic")&&wpAge>-5*60*1000&&wpAge<WANT_MS)WANT_PLAN=wp.plan;
+        else localStorage.removeItem("sona.slp.wantplan");}
     }catch(e){}
-    var WANT_PLAN="";
-    try{var wp=localStorage.getItem("sona.slp.wantplan");if((wp==="pro"||wp==="clinic")&&!SLP_APP)WANT_PLAN=wp;localStorage.removeItem("sona.slp.wantplan");}catch(e){}
+    function autoDone(){
+      try{var q=new URLSearchParams(location.search);if(q.has("start")){q.delete("start");var rest=q.toString();history.replaceState(null,"",location.pathname+(rest?"?"+rest:"")+location.hash);}}catch(e){}
+      try{localStorage.removeItem("sona.slp.wantplan");}catch(e){}
+    }
     // Something to ask the plan about before the first screen is chosen.
     var AUTO_ASK=START_TRIAL||!!WANT_PLAN;
+    if(!AUTO_ASK)autoDone();
     // BACK FROM A SONA CLINIC INVITE: the Join button (/api/slp/team/accept)
     // lands a browser already signed in as that clinician on
     // ?joined=team#premium. Said once, in a toast; the flag leaves the
@@ -2032,7 +2180,7 @@
     // it is thanked for in its own words.
     function paintReturn(show){
       var el=$("planReturn");
-      el.hidden=!show;if(!show)return;
+      el.hidden=!show;if(!show){paintLock();return;}
       var P=PLAN||{}, paidCase=caseCovered()&&P.source==="paid", paidSelf=selfOn()&&P.self.source==="paid";
       var kind=RETURN_KIND==="clinic"?(clinicOwnerOn()?"clinic":""):RETURN_KIND==="pro"?(proOn()?"pro":""):RETURN_KIND==="caseload"?(paidCase?"caseload":""):RETURN_KIND==="self"?(paidSelf?"self":""):(clinicOwnerOn()?"clinic":proOn()?"pro":paidCase?"caseload":paidSelf?"self":"");
       RETURN_OK=!!kind;
@@ -2043,6 +2191,9 @@
         :"We couldn't confirm that payment yet. If you just paid, give it a minute, then check again.";
       $("planCheck").hidden=RETURN_OK;$("planCheck").disabled=PLAN_BUSY;
       el.classList.toggle("pending",!RETURN_OK);
+      var twice=kind==="pro"||kind==="clinic"?twiceLine():"";
+      if(twice)$("planReturnText").textContent+=" "+twice;
+      paintLock();
     }
     // A thank-you has done its job once the clinician moves on; an
     // unconfirmed payment keeps its Check again until it is confirmed.
@@ -2051,9 +2202,16 @@
     function paintPlan(){paintTeamNav();paintSettingsPlan();paintSelf();paintLock();}
     // THE LOCKED SCREEN'S LINE: the free trial and its length while there is
     // one to take (the server's figure), else that it has been had.
+    // While a payment Stripe hasn't confirmed yet is being checked (back from
+    // checkout, the id still in hand, or the line above still saying "We
+    // couldn't confirm that payment yet"), the screen says only that: never
+    // "start your free trial" to someone who just paid, and no See plans,
+    // which could open a second subscription and a second trial.
     function paintLock(){
       var pro=PLAN&&PLAN.pro, used=!!(pro&&pro.trialAvailable===false);
-      $("lockTrial").hidden=used;$("lockUsed").hidden=!used;
+      var checking=!!PLAN_SESSION||(!$("planReturn").hidden&&!RETURN_OK);
+      $("lockTrial").hidden=used||checking;$("lockUsed").hidden=!used||checking;
+      $("lockPlans").hidden=checking;$("lockChecking").hidden=!checking;
       if(pro&&pro.trialDays)$("lockDays").textContent=String(pro.trialDays);
     }
     // A plan in one line: its name, then when the free trial ends, when it
@@ -2063,6 +2221,16 @@
       if(p.status==="trialing"){var t=trial||end;return name+" · "+(p.cancelAtPeriodEnd?(t?"ends "+t:"cancelled"):(t?"free trial until "+t:"free trial"));}
       if(p.status==="past_due")return name+" · your last payment didn't go through. Update your card in Manage billing.";
       return name+" · "+(p.cancelAtPeriodEnd?(end?"ends "+end:"cancelled"):(end?"renews "+end:"renews once a "+unit));
+    }
+    // DON'T PAY TWICE (18 Nov 2026): the server's `alsoRenews` says an older
+    // plan still renews beside the one now on (a yearly plan beside Sona Pro
+    // or Sona Clinic, or Sona Pro beside Sona Clinic). Settings and the
+    // thank-you back from Stripe say to cancel it; nothing else does now
+    // that the plan page has gone. Web only, with everything about billing.
+    function twiceLine(){
+      var a=PLAN&&PLAN.alsoRenews;
+      return a==="yearly"?"Your yearly plan still renews too. Cancel it in Manage billing so you don't pay for both."
+        :a==="pro"?"Sona Pro still renews too. Cancel it in Manage billing so you don't pay for both.":"";
     }
     // SETTINGS: a paying or trialing clinician reads their plan and Manage
     // billing (web only); a clinician on someone's Sona Clinic reads whose
@@ -2082,6 +2250,8 @@
         else if(selfOn()&&PLAN.self.source==="paid")line=planLine(PLAN.self,"Your yearly plan","year");
       }
       $("setPlan").hidden=!line;$("setPlanLine").textContent=line;
+      var twice=line?twiceLine():"";
+      $("setPlanTwice").hidden=!twice;$("setPlanTwice").textContent=twice;
       $("setManage").hidden=!line;$("setManage").disabled=MANAGE_BUSY;$("setManage").textContent=MANAGE_BUSY?"Opening billing…":"Manage billing";
     }
     // THE CLINICIAN'S OWN PHONE: shown once it is on (to send the link), or
@@ -2115,11 +2285,17 @@
     // left for Stripe's card page (the loading screen stays up meanwhile).
     function autoTrial(){
       if(!AUTO_ASK)return false;
-      AUTO_ASK=false;
+      if(!PLAN&&!SLP_APP)return false;   // not decided yet: both are kept
+      AUTO_ASK=false;autoDone();
       var start=START_TRIAL, want=WANT_PLAN;START_TRIAL=false;WANT_PLAN="";
-      if(SLP_APP||AUTO_TRIAL||!PLAN)return false;
+      if(SLP_APP||AUTO_TRIAL)return false;
       var kind=want==="clinic"&&clinicOffer()?"clinic":want&&proOffer()?"pro":start&&dashLocked()&&proOffer()&&proTrial()?"pro":"";
-      if(!kind)return false;
+      // A plan button pressed on /plans with nothing left to sell: say so,
+      // rather than land on Session games without a word.
+      if(!kind){
+        if(want){var why=proOn()?"Sona Pro is already on.":(clinicOwnerOn()||clinicMember())?"Your clinic's plan already covers you.":caseCovered()&&!dashLocked()?"Your dashboard and families are already covered.":"";if(why)notify(why);}
+        return false;
+      }
       AUTO_TRIAL=true;
       $("loadingState").textContent=(kind==="clinic"?clinicTrial():proTrial())?"Opening your free trial…":"Opening secure checkout…";$("loadingState").hidden=false;
       planPost("/api/slp/plan",{plan:kind}).then(function(res){
@@ -2606,12 +2782,25 @@
         // form or the locked screen is the plan's answer, so wait for it.
         // A new account (TRIALGO1) goes straight on to the free trial, and
         // one who picked a plan on /plans to its checkout.
-        if(!code){planReady.then(function(){if(autoTrial())return;$("loadingState").hidden=true;route();});return;}
-        var first=function(){loadAll(function(){if(AUTO_ASK)planReady.then(function(){if(!autoTrial())route();});else route();});};
+        if(!code){firstNoCode(planReady);return;}
+        // With a code, a plan that didn't answer leaves the roster to say
+        // whether the dashboard is locked; the pick waits for the next load.
+        var first=function(){loadAll(function(){if(AUTO_ASK)planReady.then(function(){if(!autoTrial()){AUTO_ASK=false;route();}});else route();});};
         if(returning)planReady.then(first);else first();
       }).catch(function(){$("loadingState").hidden=true;$("loadError").hidden=false;$("loadErrorText").textContent="Couldn't connect to your workspace. Try again.";});
     }
-    $("loadRetry").onclick=function(){if(!account){boot();}else{loadAll(function(){route();});}};
+    // A NEW ACCOUNT (no code) waits for the plan before its first screen:
+    // locked or open, and the free trial it came for (TRIALGO1), are the
+    // plan's answer. When the plan doesn't answer, the page says so with
+    // Try again, never Session games as if open.
+    function firstNoCode(planReady){
+      planReady.then(function(){
+        if(!PLAN){$("loadingState").hidden=true;$("loadError").hidden=false;$("loadErrorText").textContent="Couldn't check your plan. Try again.";return;}
+        $("loadError").hidden=true;
+        if(autoTrial())return;$("loadingState").hidden=true;route();
+      });
+    }
+    $("loadRetry").onclick=function(){if(!account){boot();}else if(!code&&!PLAN){$("loadError").hidden=true;$("loadingState").hidden=false;firstNoCode(loadPlan());}else{loadAll(function(){route();});}};
     boot();
   </script>
 </body>

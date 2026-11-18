@@ -1705,6 +1705,9 @@ trial button in the dashboard.
   the SLP-sharing section; "or Sona Clinic" in Payment information and in
   Stripe's line; the owner's list in the data store and retention lists; the
   invitation in Email delivery, twice; the Cancel answer's owner sentence).
+  Know too: a Sona Pro holder can then buy Clinic straight from `/plans`
+  (no page in between), and pays for both until they cancel Pro; Settings
+  and the thank-you say so (`alsoRenews` "pro", below), nothing earlier.
 - **The test seam:** `SONA_CLINIC_FORCE=1` turns `clinicOn()` on where
   `NODE_ENV` is not "production" (a laptop, a test; never a Vercel build,
   previews included). `caseloadtest` sets it so the Clinic checks still play
@@ -1723,11 +1726,22 @@ trial button in the dashboard.
   price, no link). **A paying or trialing clinician** sees in Settings one
   line ("Sona Pro · free trial until Dec 2", "Sona Pro · renews Dec 18"; a
   yearly plan still renewing, "Your yearly plan · renews …") and, on the web
-  only (`data-sells`), **Manage billing**. A Clinic member's line and Leave
+  only (`data-sells`), **Manage billing**. **Don't pay twice** (review, 18
+  Nov 2026): the plan GET's `alsoRenews` (`lib/caseload` `alsoRenews`) says
+  an older plan still renews beside the one now on, and under the line
+  Settings says "Your yearly plan still renews too. Cancel it in Manage
+  billing so you don't pay for both." (a retired yearly plan beside Sona
+  Pro or an owned Sona Clinic) or "Sona Pro still renews too. …" (Pro
+  beside an owned Clinic); the thank-you back from Stripe adds the same
+  sentence. Never for a Pro-era account (no yearly plan was ever sold it). A Clinic member's line and Leave
   show in the app too (they sell nothing). The own-phone card ("Email me my
   Premium link") moved to Settings, web only as before. Back from Stripe, a
   one-line thank-you (or "Check again") shows over whatever page opens, and
-  goes once the clinician moves on. The caseload-link card's "With Sona Pro
+  goes once the clinician moves on; while that payment is still unconfirmed
+  ("Check again"), the locked screen shows only "Checking your payment…",
+  no trial line and no See plans (which could start a second subscription),
+  and a confirmed return for an account with no code yet opens its one
+  form. The caseload-link card's "With Sona Pro
   they get every game." links to `/plans#pricing` (web only). Delete my
   account's "still renews" answer and the Terms say "Settings → Manage
   billing".
@@ -1736,9 +1750,18 @@ trial button in the dashboard.
   trial checkout, and so does any account the plan GET offers that plan to
   (`pro.offer`: locked, or an open dashboard whose families are not covered,
   such as the free-dashboard cohorts, which have no other way to buy now)
-  that arrives with `localStorage "sona.slp.wantplan"` (written by `/plans`;
-  read once and cleared on every dashboard load, whatever the account):
-  with the trial if it is still theirs, else charged from day one. "clinic"
+  that arrives with `localStorage "sona.slp.wantplan"` (written by `/plans`
+  as `{plan, at}`, and only once acted on: the email was sent, or a
+  signed-in visitor pressed a button; counted for an hour, since the link
+  lasts 15 minutes, and an older, bare or unreadable value is dropped
+  unread, so a clinician who only looked never lands on Stripe days later):
+  with the trial if it is still theirs, else charged from day one. The pick
+  and `?start=trial` are cleared once the page has decided (before it
+  leaves for Stripe); a new account whose plan read fails keeps both and
+  sees "Couldn't check your plan. Try again." (Try again goes on), never
+  Session games as if open. A pick with nothing left to sell says so in a
+  toast ("Sona Pro is already on.", "Your dashboard and families are
+  already covered."). "clinic"
   counts only while the plan GET offers Clinic (`clinic.on` and
   `clinic.offer`), else Pro. Never in the clinicians' app. Stripe's success
   and cancel still return to `/slp.html…#premium`, which the dashboard
@@ -1749,14 +1772,25 @@ trial button in the dashboard.
   your plan." with the switch on), with the parents' $9.99 line; the Clinic
   card waits inert in `<template id="planClinicTpl">` (not on the page, not
   read aloud), and the kid-side line says "every game while your Sona Pro
-  plan is on." ("Sona Pro or Sona Clinic" with the switch on). The trial
-  form records `wantplan = "pro"` when nothing is recorded (never over a
-  plan button's choice), so the email link goes to checkout even for an
-  account that exists but is locked. **Already signed in** (the locked
-  screen's See plans): the page asks `/api/slp/auth/me` once, and on its
-  yes a plan button remembers the plan and goes straight back to
-  `/slp.html`, which opens the checkout: no second email. `landingtest`
-  plays both.
+  plan is on." ("Sona Pro or Sona Clinic" with the switch on). A plan
+  button only picks (held on the page); the trial form, once the email is
+  sent, records that pick, else "pro", so the email link goes to checkout
+  even for an account that exists but is locked (a failed send records
+  nothing). **Already signed in** (the locked screen's See plans): the page
+  asks `/api/slp/auth/me` once, and on its yes every trial button (a plan
+  button, the form's, the closing one) remembers the plan and goes straight
+  back to `/slp.html`, which opens the checkout: no second email; the form
+  hides its email box and says "You’re signed in. This opens your free
+  trial." It then asks `/api/slp/plan`, and when the trial is spent every
+  button says "Get Sona Pro" and its small print "$19.99 a month, charged
+  today. Cancel anytime." (the server's figures), never "free".
+  `landingtest` plays all of it.
+- **The sign-in email** (`sendMagicEmail`, `lib/slpAuth.ts`) is "Your Sona
+  sign-in link" for everyone. A new address: "… New to Sona? You'll start
+  your free trial first." and the three first steps. An existing account,
+  which may be locked: "Here's your link to your Sona dashboard. Every
+  family you send home gets Sona's free version." and no steps (it said
+  "Your Sona dashboard is ready … Add a child"). `caseloadtest` pins both.
 - **Session games** lost the grey "Don't type a child's name…" box. One
   small muted line stays under "What do they love?", beside the character
   count: "No names, please." (`#playNote`, still the box's spoken
@@ -1764,6 +1798,16 @@ trial button in the dashboard.
   “Mia” first"). The removed box also said what goes to Anthropic; the
   privacy page's Session games section and `/plans`' storage answer still
   say it (whether the dashboard should again is Rachel's and Travis's).
+- **A little more life (SLPLIFE1, 18 Nov 2026**, Travis: "a little bit more
+  life to this dashboard. not as many colors as before but this is too dull
+  and lifeless"). Still white everywhere; teal the one main colour; Echo
+  waves hello beside Today's greeting (and keeps an empty page company, at
+  most one Echo a screen); page titles in Sona's own rounded heading font
+  (Baloo 2, `/fonts.css`); teal line icons in the menu and on Today's
+  groups (no tile behind a menu icon, no colour per item); one warm accent,
+  butter yellow, in tints only (the week's glow, every child's avatar the
+  same tint). Never orange (the kids' speech-sound colour), never a colour
+  that says how a child is doing. `slptest` 11 pins it.
 
 ### Sona Pro — one clinician's plan (12 Nov 2026)
 **Since 17 Nov 2026 (SLPPRO1, below) the dashboard comes with Sona Pro or
@@ -1807,7 +1851,7 @@ clients"; asked, he chose **$19.99 a month**, **a 14-day free trial**,
 - **Unlimited, and true** (Travis: "Remove the limit"). A COVERED code has no
   redeem cap at all — Sona Pro, Sona Clinic (owner or joined member), a
   yearly plan still renewing, or grandfathered — so "Unlimited families" is
-  now a fact on the dashboard, the clinician page and the Terms. An uncovered code keeps 60, per code and
+  now a fact on `/plans` and the Terms. An uncovered code keeps 60, per code and
   per clinician; the counters keep counting for a covered one, so a plan
   that lapses meets 60 with the year's real number. The accepted risk: a
   paying clinician's link posted in public gives strangers every game on
@@ -1820,8 +1864,8 @@ clients"; asked, he chose **$19.99 a month**, **a 14-day free trial**,
   year never opens a monthly checkout. Every
   yearly subscription keeps renewing at its price and keeps covering what it
   covered; a clinician holding one is offered Pro only for what it does not
-  already cover (`pro.offer`), on the same Stripe customer, and the page
-  says to cancel the yearly plan once Pro is on.
+  already cover (`pro.offer`), on the same Stripe customer, and once Pro is
+  on Settings says to cancel the yearly plan (`alsoRenews`, SLPSITE1).
 - **Gone since 18 Nov 2026 (SLPSITE1, above): the dashboard has no plan
   page and no top-bar offer.** What follows is its history. The plan page
   was **Your plan** (nav, crumb, title; "Sona Pro" before Sona
@@ -1912,8 +1956,10 @@ count is a ceiling, not a unit price.
   account made before 12 Nov keeps its free dashboard. No grace period
   (Travis's call).
 - **Pro → Clinic is a second subscription.** Stripe's portal cannot swap
-  plans, so a Pro holder is offered Clinic as an upgrade and told to
-  "cancel Sona Pro in Manage billing once Sona Clinic is on". Only the owner
+  plans, so a Pro holder buys Clinic as a second plan (from `/plans`
+  straight to Stripe, since 18 Nov 2026) and, once it is on, Settings and
+  the thank-you say "Sona Pro still renews too. Cancel it in Manage billing
+  so you don't pay for both." (`alsoRenews`). Only the owner
   has Manage billing; a member's portal answers "Your clinic's owner manages
   billing for Sona Clinic."
 - **Delete my account** is refused while a Clinic plan renews; an owner's
@@ -2255,9 +2301,10 @@ email"). `landingtest` drives both.
   Pro card alone while Clinic is hidden, SLPSITE1), every
   typed figure pinned to `lib/caseload.ts` by `shiptest`, the trial's terms
   under each, and the parents' $9.99 line (Sona Pro, above). A plan button
-  only remembers the choice (`localStorage` "sona.slp.wantplan", "pro" or
-  "clinic", which TRIALGO1 reads once) and brings the visitor to the one
-  form (`flow: "trial"`), which fires `InitiateCheckout` once the link is
+  only picks the plan ("pro" or "clinic", written to `localStorage`
+  "sona.slp.wantplan" as `{plan, at}` once the link is sent, which TRIALGO1
+  reads once within the hour) and brings the visitor to the one form (a
+  signed-in visitor goes straight back to `/slp.html`, SLPSITE1) (`flow: "trial"`), which fires `InitiateCheckout` once the link is
   sent, never `Lead` (the opt-in owns it). Checkout opens from the email
   link (TRIALGO1), signed in, never from a dashboard page (SLPSITE1). `?packet=1` shows "Your home-practice packet is
   ready. Open it →".
@@ -2486,7 +2533,7 @@ activities and SLPAPP1's free-dashboard door.
   target sound (Sona's 19), word position (the homework composer's rule:
   vocalic R only for R, blends only for R, S and L), age band (3-4, 5-6, 7-8,
   9+) and session length (20, 30, 45), and may type what the child loves
-  (120 characters, under the name warning; the page refuses a caseload
+  (120 characters, under the small "No names, please." line; the page refuses a caseload
   child's name there). "Start from your caseload" and a child page's
   "Session games" choose the child's sound, position and age band, never a
   name. "Find Sona games" posts only those five fields to
@@ -2581,7 +2628,9 @@ share". This supersedes the dashboard's look and menu described below.
   never dead-end: `#plan`, `#plan-day`, `#homework-draft` and
   `#child/<id>/plan` open Session games; `#community` and `#affiliate` open
   Today.
-- **The look:** white page, sidebar and cards; light grey hairlines; ink
+- **The look** (since 18 Nov 2026 with SLPSITE1's "A little more life":
+  Echo on Today, Baloo 2 titles, teal icons, a butter accent; the rest
+  stands): white page, sidebar and cards; light grey hairlines; ink
   `#1f2328`, muted `#6b7280`; one accent, the existing teal (`#0e7c86`), only
   for the primary button, the active menu item, links and focus rings; a
   system font stack (no Nunito on this page), weights 400 to 650. No pastel
@@ -2686,7 +2735,7 @@ officer, an engineer — whose rulings are now rules:
   never applies), no average across clinicians, no "top" or "needs
   attention". The owner first, then by name, never sorted or highlighted by
   a count: ranking clinicians is the comparison a district officer ends the
-  app over. The GET never writes. The plan page, the invite email, the Terms
+  app over. The GET never writes. The invite email and, while `CLINIC_ON` is on, the Terms
   and the privacy page say the same thing.
 - **Invites hold initials, never a name.** The SLP may add a child before the
   family joins, but the placeholder is a label ("MK"), an optional age and a
