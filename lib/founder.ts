@@ -2,7 +2,7 @@ import crypto from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { clinicianRole, clinicianWorkSetting, kvCmd, kvConfigured, type ClinicianRole, type ClinicianWorkSetting } from "@/lib/slpAuth";
 import {
-  grandfathered, recordActive, accessKey, planKey, teamKey, teamOfKey, parseTeamRow, proTerms,
+  grandfathered, recordActive, accessKey, planKey, teamKey, teamOfKey, parseTeamRow, dashboardPromised,
   FREE_SELF_TERMS, FREE_DASHBOARD_TERMS, type PlanRecord,
 } from "@/lib/caseload";
 import { isWorkEmail } from "@/lib/workEmail";
@@ -80,19 +80,20 @@ export type Clinician = {
   // (`canApprove`); everyone after that buys it.
   own: "pro" | "pro trial" | "clinic" | "clinic trial" | "clinic member" | "paid" | "free" | "older plan" | "none";
   canApprove: "yes" | "no";
-  // WHO WAS PROMISED A FREE DASHBOARD (17 Nov 2026, when it stopped for new
-  // accounts): "free" for every stamp from before 12 Nov 2026 (no stamp
-  // included), "free (13–17 Nov signup)" for the free-dashboard signup, "free
-  // (opted in)" for a Pro-era account that opened that door then; "with a
-  // plan" for everyone else, whose dashboard comes with Sona Pro or Clinic.
-  dashboard: "free" | "free (13–17 Nov signup)" | "free (opted in)" | "with a plan";
+  // WHO WAS PROMISED A FREE DASHBOARD: "free" for every stamp from before
+  // 12 Nov 2026 (no stamp included, lib/caseload dashboardPromised); "with a
+  // plan" for everyone else, whose dashboard comes with Sona Pro or Sona
+  // Clinic. "with a plan (13–17 Nov signup)" marks the free-dashboard signups
+  // of 13 to 17 Nov 2026, and the Pro-era accounts that opened that door
+  // then: told the dashboard was free, moved to the trial on 17 Nov 2026
+  // (SLPPRO1, Travis: "Move them to the trial").
+  dashboard: "free" | "with a plan" | "with a plan (13–17 Nov signup)";
 };
 
 /** How a dashboard is open, from the account's stamp and flag alone (lib/caseload dashboardOpen). */
 function dashboardWord(a: Record<string, unknown>): Clinician["dashboard"] {
-  if (a.terms === FREE_DASHBOARD_TERMS) return "free (13–17 Nov signup)";
-  if (!proTerms(a)) return "free";
-  return a.freeDashboard === true ? "free (opted in)" : "with a plan";
+  if (dashboardPromised(a)) return "free";
+  return a.terms === FREE_DASHBOARD_TERMS || a.freeDashboard === true ? "with a plan (13–17 Nov signup)" : "with a plan";
 }
 
 /** An Upstash HGETALL answer — a flat [field, value, …] list — as an object. */

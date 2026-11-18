@@ -52,7 +52,7 @@
       display:flex; align-items:center; gap:8px; justify-content:center;
       font-family:"Baloo 2"; font-weight:800; font-size:20px; color:var(--blue-d);
     }
-    .brand img { width:32px; height:32px; }
+    .brand img { width:auto; height:44px; }
     .brand small { font-size:12px; color:var(--muted); font-weight:700; }
 
     .card {
@@ -105,7 +105,7 @@
 </head>
 <body>
   <div class="wrap">
-    <div class="brand"><img src="/coach/echo/echo-avatar.svg" alt="Sona"/> Sona <small>for SLPs</small></div>
+    <div class="brand"><img src="/assets/brand/echo-logo.webp" alt="" width="44" height="45"/> Sona <small>for SLPs</small></div>
 
     <div class="card" id="formCard">
       <h1>Welcome, clinician 👋</h1>
@@ -145,14 +145,12 @@
       <button class="btn" id="again" style="margin-top:16px;background:#eef3fb;color:#46627a;box-shadow:none;">Use a different email</button>
     </div>
 
-    <!-- NEW HERE (17 Nov 2026). The dashboard comes with a plan for every new
-         account now, so the web points at the plans and their free trial
-         (/plans, never "/": speaksona.com/ is the packet opt-in). The
-         clinicians' app sells nothing and points nowhere to buy, so its line
-         only says how signing in works. -->
+    <!-- NEW HERE (17 Nov 2026): the plans and their free trial live at
+         /plans (speaksona.com/ is the packet opt-in). The clinicians' app
+         sells nothing and points nowhere to buy. -->
     <p class="note">
       <span class="web-only">New here? <a href="/plans#pricing">Start your free trial →</a><br/></span>
-      <span class="app-only" hidden>Enter your email above, then type the 6-digit code we email you.<br/></span>
+      <span class="app-only" hidden>Use the email your Sona account is under.<br/></span>
       Sona is an at-home practice tool, not a diagnosis or a substitute for professional care.
     </p>
   </div>
@@ -166,10 +164,8 @@
     if(qp.get("err")==="expired") $("err").textContent="That link expired — enter your email for a fresh one.";
     if(qp.get("deleted")==="1"){$("err").style.color="#46627a";$("err").textContent="Your account is deleted. Thank you for using Sona.";}
     if(qp.get("err")==="store") $("err").textContent="We couldn’t open your dashboard. Enter your email for a new link.";
-    // BACK FROM A CLINIC INVITE'S JOIN BUTTON (18 Nov 2026): joining no
-    // longer signs anyone in (app/api/slp/team/accept says why), so this is
-    // where they sign in, the ordinary way. No plan name: it may be read in
-    // the clinicians' app, which sells nothing.
+    // BACK FROM A CLINIC INVITE'S JOIN BUTTON: joining signs nobody in
+    // (app/api/slp/team/accept says why), so this is where they sign in.
     if(qp.get("joined")==="team"){$("err").style.color="#46627a";$("err").textContent="You’ve joined your clinic’s Sona plan. Sign in with the email your invite went to.";}
 
     function send(){
@@ -179,10 +175,10 @@
       $("devbox").style.display="none";
       if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){$("err").textContent="Enter a valid email.";return;}
       $("send").disabled=true;$("send").textContent="Sending…";
-      // The same door in the app and on the web (17 Nov 2026). The app used
-      // to send flow "free-dashboard", which opened a new account's
-      // dashboard for free; that signup is closed, so it sends nothing extra
-      // (the server ignores the flag from older builds anyway).
+      // The same door in the clinicians' app as on the web (SLPPRO1, 17 Nov
+      // 2026: the app's free-dashboard door is gone). The dashboard is Sona
+      // Pro's, and the app sells nothing: without it, the app shows its one
+      // plain card (slp.html's applock).
       var req={email:email,wantCode:true};
       fetch("/api/slp/auth/request",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(req)})
         .then(function(r){return r.json();})
@@ -220,7 +216,7 @@
       fetch("/api/slp/auth/code",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:SENT_TO,code:c})})
         .then(function(r){return r.json();})
         .then(function(j){
-          if(j&&j.ok){location.replace("/slp.html");return;}
+          if(j&&j.ok){location.replace(j.fresh&&!APP?"/slp.html?start=trial":"/slp.html");return;}
           $("codeGo").disabled=false;$("codeGo").textContent="Sign in";
           $("codeErr").textContent=(j&&j.error)||"That didn’t work. Try again.";
         })

@@ -633,15 +633,17 @@ notes) is in `native/slp-ios/README.md`. In short:
   agent. The website reads that (`lib/slpApp.ts`): the dashboard renders, any
   other page goes to it, and every price, offer and billing door is hidden.
 - Sign-in by the 6-digit code in the sign-in email (the link opens in Safari,
-  which an app's cookies never see). **Since 17 Nov 2026 the app's sign-in
-  opens nothing by itself**: a new account there is locked like any other
-  until a Sona Pro or Sona Clinic plan bought on the web covers it, and the
-  app shows it one neutral line in Settings ("Your dashboard isn't on for
-  this account yet."), with no price, plan name or pointer to buying.
-  Whether to add "See your options at speaksona.com" is Travis's call (App
-  Review can refuse a pointer to buying outside the app). Accounts promised
-  a free dashboard keep it. `sona.js` now lets `/slps` through (`/slp.html`
-  redirects there; before 17 Nov 2026 the app reloaded forever).
+  which an app's cookies never see). Since SLPPRO1 (17 Nov 2026) the
+  dashboard needs Sona Pro or Sona Clinic in the app too: an account without
+  either sees one plain card (no price, no trial, nothing to buy), and App
+  Review's account stays open. Accounts made before 12 Nov 2026 keep their
+  free dashboard. `sona.js` lets `/slps` through (`/slp.html` redirects
+  there; before 17 Nov 2026 the app reloaded forever).
+- **Session games' Play now** (SESSPLAY1, 17 Nov 2026) runs Sona's games in
+  the app, and they listen: the next build needs `NSMicrophoneUsageDescription`
+  in Info.plist ("Sona listens to the child's practice words during a game.
+  Audio stays on this device and is never saved."). The game pages it needs
+  are allowed in the app only while the dashboard has opened a session.
 - **App Review's sign-in:** set `SLP_REVIEW_EMAIL` and `SLP_REVIEW_CODE` in
   Vercel before submitting; the reviewer types that email, taps Email me a
   code, and types the code. Nothing is emailed to it, and that address alone

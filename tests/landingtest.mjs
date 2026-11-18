@@ -516,10 +516,11 @@ charterReply = null;
   }));
   ok("the plans page points parents to /for-parents and keeps no consent line of its own", await page.evaluate(() =>
     !document.querySelector(".consent, #mNext, .hnote") && document.querySelector('a[href="/for-parents"]') !== null));
-  ok("its buttons start the free trial, and it shows both plans with their prices and the trial's terms", await page.evaluate(() => {
+  ok("its buttons start the free trial, its terms beside the first, and it shows both plans with their prices and the trial's terms", await page.evaluate(() => {
     const t = document.getElementById("pricing").innerText;
-    return document.getElementById("fGo").textContent.trim() === "Start your 14-day free trial" &&
-      document.getElementById("finalGo").textContent.trim() === "Start your 14-day free trial" &&
+    return document.getElementById("fGo").textContent.trim() === "Start your free trial" &&
+      document.getElementById("finalGo").textContent.trim() === "Start your free trial" &&
+      document.getElementById("fTerms").textContent.trim() === "14 days free, then $19.99 a month. Cancel anytime." &&
       /Sona Pro/.test(t) && /\$19\.99\s*a month/.test(t) && /Sona Clinic/.test(t) && /\$99\s*a month/.test(t) &&
       /14 days free, then \$19\.99 a month\. Card required\./.test(t) && /14 days free, then \$99 a month\. Card required\./.test(t) &&
       !/free dashboard|community/i.test(document.body.innerText);
@@ -593,7 +594,7 @@ charterReply = null;
   await page.click("#fGo");
   ok("/plans: email confirmation identifies the address after delivery", await settles(page, () => {
     const sent = document.getElementById("sent");
-    return !sent.hidden && /check your email/i.test(sent.textContent) && /sam@clinic\.org/.test(sent.textContent) && /plan/.test(sent.textContent);
+    return !sent.hidden && /check your email/i.test(sent.textContent) && /sam@clinic\.org/.test(sent.textContent) && /start your free trial/i.test(sent.textContent);
   }));
   const p = posts[0] || { body: {} };
   ok("/plans: one post asks for the trial's sign-in email", posts.length === 1 && p.path === "/api/slp/auth/request" &&

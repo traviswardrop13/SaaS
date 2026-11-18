@@ -3,7 +3,7 @@ import {
   kvCmd, hashToken, safeEqualStr, signSession, sessionCookie, SESSION_MAX_AGE,
   readFreeDashboardSignup, replaceSlpAccount, signFreeDashboardSignup,
 } from "@/lib/slpAuth";
-import { FREE_DASHBOARD_TERMS, PRO_TERMS, proTerms } from "@/lib/caseload";
+import { PRO_TERMS, reviewEmail } from "@/lib/caseload";
 import { safeAttrib, tellCrm } from "@/lib/slpLead";
 
 /**
@@ -47,14 +47,12 @@ export async function storeSignInCode(email: string, code: string, stored: strin
  * THE REVIEWER'S DOOR (App Review cannot read an email). Only while both
  * SLP_REVIEW_EMAIL and SLP_REVIEW_CODE are set in Vercel, and only for that
  * one address: no email is sent to it, and its fixed code signs it in like any
- * other, onto an open dashboard (finishSignIn: the one account a new sign-up
- * still opens, keyed on this server-held address, never on anything a caller
- * sends). Unset either and it is gone. The five-tries rule holds for it too.
+ * other. Its dashboard stays open without Sona Pro (dashboardOpen in
+ * lib/caseload, where reviewEmail lives since SLPPRO1, 17 Nov 2026), so Apple
+ * can review an app that sells nothing. Unset either and it is gone. The
+ * five-tries rule holds for it too.
  */
-export function reviewEmail(): string {
-  const e = String(process.env.SLP_REVIEW_EMAIL || "").trim().toLowerCase();
-  return cleanSignInCode(process.env.SLP_REVIEW_CODE) && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e) ? e : "";
-}
+export { reviewEmail };
 
 export type CodeCheck =
   | { ok: true; stored: string }
@@ -88,7 +86,12 @@ export async function checkSignInCode(email: string, code: string): Promise<Code
   return { ok: true, stored: rec.p };
 }
 
-export type SignInResult = { ok: true; cookie: string; email: string } | { ok: false; err: "expired" | "store" };
+/**
+ * `fresh`: this sign-in made the account (TRIALGO1, 17 Nov 2026). A brand-new
+ * clinician on the web goes straight from the email to Stripe's card page for
+ * Sona Pro's free trial, with no stop on the locked dashboard first.
+ */
+export type SignInResult = { ok: true; cookie: string; email: string; fresh: boolean } | { ok: false; err: "expired" | "store" };
 
 /**
  * What the emailed link, or the code, has proved: the inbox is real. Make the
@@ -98,30 +101,26 @@ export type SignInResult = { ok: true; cookie: string; email: string } | { ok: f
  * Clinic invite link signed in through it from 17 to 18 Nov 2026; it only
  * joins now: /api/slp/team/accept says why.)
  *
- * THE DASHBOARD COMES WITH THE TRIAL (Travis, 17 Nov 2026), so EVERY new
- * account is made with Sona Pro's terms, by every door: the sign-in page, the
- * landing page's trial form, the homepage's old free-dashboard form (cached
- * pages and older app builds still send it), the clinicians' app. From 13 Nov the free-dashboard door made a FREE_DASHBOARD_TERMS
- * account and opened a returning Pro-era one (`freeDashboard: true`); both
- * stopped here. Accounts that got either keep it: nothing here takes a stamp
- * or a flag away, and nothing backfills one.
- *
- * ONE EXCEPTION: App Review's address (reviewEmail(), set in Vercel), whose
- * reviewer must land on an open dashboard in an app that sells nothing. It is
- * keyed on that server-held address alone. Never on the payload's `source`:
- * the request route takes that from the caller's body, so "app-review" in it
- * is anyone's to send.
+ * EVERY NEW ACCOUNT IS SONA PRO'S (SLPPRO1, 17 Nov 2026, Travis: "i want this
+ * to be sona pro tho. this is what they access when they create a free
+ * trial"). From 13 to 17 Nov the homepage's door made free-dashboard accounts
+ * (FREE_DASHBOARD_TERMS) and opened a returning Pro-era account's dashboard
+ * for good (`freeDashboard: true`); now every door makes PRO_TERMS, keeps
+ * where the clinician came from (source, role, setting), and opens nothing:
+ * the dashboard asks for Sona Pro or Sona Clinic, whose first 14 days are
+ * free. App Review's address is no exception here: its dashboard is opened by
+ * dashboardOpen (lib/caseload reviewEmail), keyed on that server-held
+ * address, never on the payload's `source`, which is anyone's to send.
  */
 export async function finishSignIn(origin: string, stored: unknown): Promise<SignInResult> {
   const signup = typeof stored === "string" ? readFreeDashboardSignup(stored) : null;
   const email = signup?.email ?? stored;
   if (typeof email !== "string" || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return { ok: false, err: "expired" };
-  const review = reviewEmail();
-  const appReview = !!review && email === review;
 
   const acctKey = "slpacct:" + email;
   let acct: Record<string, unknown> | null = null;
   let raw: unknown = null;
+  let fresh = false;
   try {
     raw = await kvCmd(["GET", acctKey]);
     if (raw) acct = JSON.parse(String(raw));
@@ -136,7 +135,7 @@ export async function finishSignIn(origin: string, stored: unknown): Promise<Sig
   if (!acct && raw === null) {
     const newAccount = {
       email, name: "", clinic: "", code: "", createdAt: new Date().toISOString(),
-      terms: appReview ? FREE_DASHBOARD_TERMS : PRO_TERMS,
+      terms: PRO_TERMS,
       ...(signup ? {
         ...(signup.clinicianRole ? { clinicianRole: signup.clinicianRole } : {}),
         ...(signup.workSetting ? { workSetting: signup.workSetting } : {}),
@@ -147,6 +146,7 @@ export async function finishSignIn(origin: string, stored: unknown): Promise<Sig
     const created = await kvCmd(["SET", acctKey, snapshot, "NX"]);
     if (created === "OK") {
       acct = newAccount;
+      fresh = true;
       // Every new account is made here now (13 Nov 2026: the sign-in page no
       // longer makes one before the inbox is proved), so the CRM hears of it
       // here, awaited, once the inbox is real.
@@ -164,25 +164,6 @@ export async function finishSignIn(origin: string, stored: unknown): Promise<Sig
       try { if (typeof winner === "string") acct = JSON.parse(winner); } catch { acct = null; }
     }
   }
-  // App Review's address, if it already had a Pro-era account (the variable
-  // pointed at an address used before): open its dashboard, as at creation.
-  // For every other address this is gone (17 Nov 2026).
-  if (appReview && acct && proTerms(acct) && acct.freeDashboard !== true) {
-    let unlocked = false;
-    for (let attempt = 0; attempt < 3; attempt++) {
-      if (typeof raw !== "string") raw = await kvCmd(["GET", acctKey]);
-      if (typeof raw !== "string") break;
-      try { acct = JSON.parse(raw); } catch { acct = null; }
-      if (!acct) break;
-      if (!proTerms(acct) || acct.freeDashboard === true) { unlocked = true; break; }
-      const updated = { ...acct, freeDashboard: true };
-      const wrote = await replaceSlpAccount(acctKey, raw, updated);
-      if (wrote === "OK") { acct = updated; unlocked = true; break; }
-      if (wrote === undefined) break;
-      raw = null;
-    }
-    if (!unlocked) return { ok: false, err: "store" };
-  }
   if (signup && !acct) return { ok: false, err: "store" };
   if (!acct) acct = { code: "" };
 
@@ -197,5 +178,5 @@ export async function finishSignIn(origin: string, stored: unknown): Promise<Sig
     iat: now,
     exp: now + SESSION_MAX_AGE * 1000,
   });
-  return { ok: true, cookie: sessionCookie(session, SESSION_MAX_AGE), email };
+  return { ok: true, cookie: sessionCookie(session, SESSION_MAX_AGE), email, fresh };
 }

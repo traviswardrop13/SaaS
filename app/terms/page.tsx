@@ -503,9 +503,9 @@ function ReferralTerms() {
  * inbox; the owner sees two counts per clinician and never a child
  * (lib/team.ts). The promises kept are lib/caseload.ts's WHO IS COVERED:
  * every account made before 12 Nov 2026 keeps the free dashboard it signed
- * up with, and so does every account the free dashboard signup made from 13
- * Nov until this build (FREE_DASHBOARD_TERMS, or `freeDashboard: true` on a
- * Pro-era account); an account with no `terms` stamp was told "free forever,
+ * up with (since SLPPRO1, 17 Nov 2026, the homepage's free-dashboard signups
+ * of 13 to 17 Nov need a plan like everyone after them: Travis, "Move them
+ * to the trial"); an account with no `terms` stamp was told "free forever,
  * unlimited families — for you and every kid on your caseload"; a 24 to 29
  * Sep account was told its own Premium was free with a work email; and the
  * two yearly plans sold until 12 Nov 2026 keep renewing at their price.
@@ -514,24 +514,12 @@ function ReferralTerms() {
 function CaseloadTerms() {
   return (
     <>
-      {/* THE FREE DASHBOARD SIGNUP ENDED FOR NEW ACCOUNTS (Travis, 17 Nov
-          2026: the dashboard comes with the trial). No end date is typed:
-          the signup closed with the build that shipped Sona Clinic, and a
-          date that missed the deploy by a day would tell someone promised a
-          free dashboard that they were not. "Join the clinician community"
-          went with the community. */}
-      <strong>Free clinician dashboard.</strong> Clinicians who created an
-      account through the free dashboard signup, offered from 13 November 2026
-      until {CLINIC_NAME} launched, can keep using the dashboard without a
-      subscription. They can draft homework and share Sona with families. A
-      clinician who signs up now gets the dashboard with {PRO_NAME} or{" "}
-      {CLINIC_NAME}, starting with the free trial below.
-      <br />
-      <br />
       A speech-language pathologist or other clinician can buy{" "}
       <strong>{PRO_NAME}</strong> on speaksona.com for{" "}
       <strong>{PRO_PRICE} per month</strong>. It includes the clinician
-      dashboard; Premium on your own phone or tablet, every game, turned on
+      dashboard (Session games, which picks Sona games to play in your
+      sessions and opens them on your device, sharing Sona with families, and
+      your families&apos; home practice), and Premium on your own phone or tablet, every game, turned on
       with a link the dashboard emails to your account&apos;s address (each
       link works once); and Premium for every family who joins Sona through
       your link, whether or not they choose to share practice with you.
@@ -606,7 +594,7 @@ function CaseloadTerms() {
       <strong>Renewal and canceling.</strong> {PRO_NAME} renews automatically
       each month until you cancel it, from the clinician dashboard:{" "}
       <strong>Your plan &rarr; Manage billing</strong>. If you cancel, your
-      paid dashboard access and your families&apos; Premium stay on until the end of the
+      dashboard and your families&apos; Premium stay on until the end of the
       month you paid for (or of the free trial); then your families move to
       the free version. {CLINIC_NAME} renews automatically each month in the
       same way until the owner cancels it there, and every clinician on it
@@ -617,10 +605,9 @@ function CaseloadTerms() {
       {/* 18 Nov 2026 (review): lib/slpDelete takes the team with the
           owner's account, and allows it once the plan is cancelled; the
           dashboard's delete card says so too. */}
-      A free dashboard promised
-      in this section stays free, and removing a child from your dashboard
-      always keeps working. The price does not depend on how many families
-      join, and you never earn anything from families on your own caseload; a{" "}
+      Removing a child from your dashboard, and deleting your account, keep
+      working. The price does not depend on how many families join, and you
+      never earn anything from families on your own caseload; a{" "}
       {CLINIC_NAME} owner earns nothing from the families of the clinicians on
       it either.
       <br />

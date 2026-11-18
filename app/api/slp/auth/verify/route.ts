@@ -19,7 +19,12 @@ export async function GET(req: NextRequest) {
   if (!done.ok) return NextResponse.redirect(url.origin + "/slp-login.html?err=" + done.err);
   // The code sent with this link is spent with it: one email, one sign-in.
   await kvCmd(["DEL", signInCodeKey(done.email)]);
-  const res = NextResponse.redirect(url.origin + "/slp.html");
+  // A brand-new account goes straight on to Sona Pro's free trial (TRIALGO1,
+  // 17 Nov 2026, Travis: email link, then the card page, then the dashboard).
+  // The link always opens in a browser, never in the clinicians' app; the
+  // dashboard still checks the plan first and opens checkout only while the
+  // dashboard is locked and the trial is there to take.
+  const res = NextResponse.redirect(url.origin + (done.fresh ? "/slp.html?start=trial" : "/slp.html"));
   res.headers.set("Set-Cookie", done.cookie);
   return res;
 }

@@ -62,9 +62,12 @@ Then **push any commit** (or redeploy) so the new vars take effect.
 **$19.99 a month**, bought by a clinician from their dashboard
 (`/slp.html#premium`, the page called **Your plan**, or Settings →
 `POST /api/slp/plan { plan: "pro" }`). It turns on the clinician's dashboard
-(for accounts made from 12 Nov 2026, which since 17 Nov 2026 is every new
-account), every game on their own phone, and every game for every family on
-their link, with no cap on families. Stamped `plan: slp-pro`.
+(every account made from 12 Nov 2026 needs it or Sona Clinic, the 13 to 17
+Nov free-dashboard signups included since 17 Nov 2026), every game on their
+own phone, and every game for every family on their link, with no cap on
+families. Stamped `plan: slp-pro`. A brand-new account goes straight from
+its sign-in link to this checkout (TRIALGO1), or to Sona Clinic's when it
+chose Clinic on `/plans`.
 
 - **A 14-day free trial, once per clinician, card up front.** Checkout sets
   `trial_period_days: 14` and asks for a card; Stripe charges $19.99 when the

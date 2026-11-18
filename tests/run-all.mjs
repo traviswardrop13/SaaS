@@ -181,8 +181,9 @@ const SUITES = [
   "levelsplaytest.mjs", // LEVELS1 in Bubble Pop, Hoops, Soccer Goal and Dino Dig: the page hands the level to the engine, the help is Level 1's, the start card names it; Feed Echo keeps one
   "slptest.mjs",   // SLP1: the clinician dashboard — live Today, honest register, one door, real remove, the note
   "boardtest.mjs", // BOARD2: the Practice Board's phone half, built dark: nothing shows while off, a grown-up's email turns it on, a goal day goes once with 10 reps, Home sends nothing, deletion always works
-  "dayplantest.mjs", // the session planner: only sound, position, age and minutes reach the AI
-  "slpworkflowtest.mjs", // quick homework, per-child plans, feedback/call UI and failure recovery
+  "sessiongamestest.mjs", // SLPPRO1: Session games: the AI picks Sona's own games (the catalog held to sona.js), read strictly, never a caseload name; Play now's server yes; game ideas
+  "sessplaytest.mjs",      // SESSPLAY1: a game played in a clinician's session: set to the child's sound, every game open in the tab, the family's storage untouched, nothing sent, back to Session games
+  "slpworkflowtest.mjs", // quick homework, child navigation, feedback/call UI and failure recovery
   // slpcommunityapi.mjs and slpcommunitytest.mjs went with the clinician
   // community (Travis, 17 Nov 2026: removed from the dashboard); the delete
   // of an account still scrubs its old posts, pinned in slpapptest.

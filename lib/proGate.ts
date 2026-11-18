@@ -31,8 +31,10 @@ export async function dashboardGate(email: string): Promise<NextResponse | null>
     }
     throw e;
   }
+  // Both plans, briefly, and nothing that points to buying: the clinicians'
+  // iPhone app may show this line, and it sells nothing (SLPAPP1).
   return NextResponse.json(
-    { ok: false, needPlan: true, error: "Your dashboard comes with " + PRO_NAME + " or " + CLINIC_NAME + ". Start your free trial on the plan page to see your caseload." },
+    { ok: false, needPlan: true, error: "Your dashboard comes with " + PRO_NAME + " or " + CLINIC_NAME + "." },
     { status: 402 },
   );
 }

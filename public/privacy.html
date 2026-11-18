@@ -76,8 +76,9 @@
         that Premium starts, renews, is cancelled or ends (see &ldquo;In-app purchases&rdquo; below).</li>
       <li><strong>An invite email from your clinician</strong> — if your child&rsquo;s speech-language
         pathologist typed your email address when adding your child, we use it once, to email you
-        their Sona link. We do not keep it: it is not stored, not added to any email list, and not
-        written to our logs.</li>
+        their Sona link, or a Sona login for the app (a username and password). Sona&rsquo;s own server
+        does not keep it: it is not stored, not added to any email list, and not written to our logs.
+        GoHighLevel, which sends the email, keeps your address as a contact, with that email.</li>
       <!-- THE PACKET OPT-IN (17 Nov 2026): speaksona.com/ (public/packet.html)
            posts to /api/lead with role "slp" and source "slp-packet";
            lib/packet.ts sends the one email, marked packetmail:<email> for a
@@ -269,9 +270,11 @@
         contact, with the emails sent to it. So the weekly progress report&rsquo;s numbers (days, reps
         and sounds, never a child&rsquo;s name) pass through GoHighLevel and stay there with that email.
         A parent&rsquo;s address a clinician types is given to GoHighLevel only to deliver that one
-        email; GoHighLevel keeps it as a contact, and Sona&rsquo;s own server keeps no copy of it. A
-        clinician&rsquo;s address a practice owner types for a Sona Clinic invitation is given to
-        GoHighLevel to deliver it, and GoHighLevel keeps it as a contact too. If Sona offers the Practice Board, GoHighLevel also delivers the
+        email; GoHighLevel keeps it as a contact, and Sona&rsquo;s own server keeps no copy of it. When that
+        email carries a Sona login, it carries the password too, so GoHighLevel&rsquo;s copy of the email
+        holds it; Sona&rsquo;s server keeps only a scrambled copy of the password, and the family can change
+        it in the app&rsquo;s Settings. A clinician&rsquo;s address a practice owner types for a Sona Clinic
+        invitation is given to GoHighLevel to deliver it, and GoHighLevel keeps it as a contact too. If Sona offers the Practice Board, GoHighLevel also delivers the
         confirmation email a grown-up asks for to turn it on; the address is used only to send it, and
         Sona&rsquo;s own server keeps no copy (only a scrambled form for one day). GoHighLevel also delivers, to the Sona team&rsquo;s own inbox, a copy of each
         message sent from &ldquo;Talk to us&rdquo;, with the email address you gave (if any) so we can
@@ -288,10 +291,15 @@
         the person is a speech therapist, a parent or something else, where they gave it, which ad or
         link brought them there, and, for a parent who gave the app their address, whether they
         started Sona Premium there — never anything about a child.</li>
-      <li><strong>Homework drafting</strong> &mdash; if a clinician requests an AI draft, Anthropic receives
-        only the selected sound, word position and practice count. The clinician can edit the draft before
-        sharing it. Sona sends no account details, roster information, recordings or typed notes to Anthropic
-        for this feature.</li>
+      <li><strong>Session games</strong> &mdash; when a clinician asks Session games on their
+        dashboard to pick Sona games for a session, Anthropic, our AI provider, receives the target
+        sound, the word position, the age band and the session length they choose, and the few words
+        they may type about what the child loves, and picks from Sona&rsquo;s own list of games. Sona adds
+        nothing to that (no account details, roster information, practice data or recordings) and does
+        not store the request or the picks. The page asks clinicians not to type a child&rsquo;s name, and
+        will not send a name from their caseload. A game the clinician then plays from Session games
+        runs on their own device with a temporary profile: it saves nothing to any family&rsquo;s Sona and
+        sends nothing.</li>
       <li><strong>Team messaging</strong> — Slack notifies the Sona team when a parent sends a message
         from &ldquo;Talk to us&rdquo;, or a clinician sends one from their dashboard. The
         notification carries that message and what came with it: for a parent, everything listed under

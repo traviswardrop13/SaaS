@@ -23,9 +23,13 @@
 //     has not started it, is shown the plan in place of the caseload
 //   - a parent's email typed into Add a child goes to the invite route once,
 //     only when typed, and the page says whether the email really went
-//   - (17 Nov 2026) two plans on one page, Sona Pro and Sona Clinic, each
-//     asked for by name; the closed dashboard names both; and the clinician
-//     community is gone: no menu item, no page, an old link lands on Today
+//   - (17 Nov 2026, SLPCLEAN1) the dashboard is five places, the AI planner
+//     first; Community, Affiliate partnerships and the homework draft are
+//     gone and their old addresses land somewhere real; the top bar's "Add a
+//     family" makes a login and emails it, sending no child's name
+//   - (17 Nov 2026) two plans on one page, Your plan: Sona Pro and Sona
+//     Clinic, each asked for by name; the closed dashboard names both; a
+//     Clinic owner's Your clinic and a member's line and Leave
 import { createServer } from "http";
 import { readFileSync, existsSync } from "fs";
 import { chromium, ROOT, launchOpts } from "./_env.mjs";
@@ -80,6 +84,16 @@ const PLAN_MEMBER = { ...PLAN_NONE, active: true, source: "clinic", self: { ...S
 // 402 from the roster: a new account (from 12 Nov 2026) with no Sona Pro.
 let LOCKED = false;
 let PLAN = PLAN_NONE;
+// The owner of a live Sona Clinic, and GET /api/slp/team's answer for them:
+// one row per seat, the owner first, then by name, two numbers each.
+const PLAN_OWNER = { ...PLAN_NONE, active: true, source: "clinic", self: { ...SELF_ON, source: "clinic" }, pro: { ...PRO_OFF, trialAvailable: false, offer: false }, clinic: { ...CLINIC_OFF, role: "owner", active: true, status: "active", periodEnd: 1822000000, trialAvailable: false, offer: false } };
+const TEAM_OWNER = { ok: true, role: "owner", active: true, seats: 25, used: 3, rows: [
+  { email: "rachel@example.com", name: "Rachel K", state: "active", children: 6, practicedWeek: 3, linkReady: true, you: true },
+  { email: "ann@brightsteps.example", name: "Ann Baker", state: "active", children: 2, practicedWeek: 1, linkReady: true },
+  { email: "new@brightsteps.example", name: "", state: "invited", children: null, practicedWeek: null, linkReady: false },
+] };
+let TEAM = { ok: true, role: null };
+let CHECKOUT = null, NEW_ACCT = false;
 const acct = { ok: true, email: "rachel@example.com", code: "rachel-k4", familyKey: "ABCD2345", name: "Rachel K", clinic: "Bright Steps", onboarded: true };
 const srv = createServer((req, res) => {
   const u = new URL(req.url, "http://x");
@@ -88,18 +102,29 @@ const srv = createServer((req, res) => {
   req.on("end", () => {
     let b = {}; try { b = body ? JSON.parse(body) : {}; } catch (e) {}
     if (u.pathname.startsWith("/api/")) log.push({ m: req.method, p: u.pathname + u.search, b });
-    if (u.pathname === "/api/slp/auth/me") return json(acct);
+    if (u.pathname === "/api/slp/auth/me") return json(NEW_ACCT ? { ...acct, code: "", familyKey: "", name: "", clinic: "", onboarded: false } : acct);
     if (u.pathname === "/api/slp/account") return json(req.method === "POST" && b.rotateKey ? { ...acct, familyKey: "ROTATED99" } : acct);
     if (u.pathname === "/api/slp" && req.method === "GET") return LOCKED ? json({ ok: false, needPlan: true, error: "Your dashboard comes with Sona Pro." }, 402) : json({ ok: true, configured: true, kids: DATA.kids, invites: DATA.invites });
     if (u.pathname === "/api/slp/homework") return json({ ok: true, hw: b.hw || null });
     if (u.pathname === "/api/slp/child" && req.method === "DELETE") { DATA.kids = DATA.kids.filter((k) => k.childId !== b.childId); return json({ ok: true, removed: b.childId }); }
     if (u.pathname === "/api/slp/plan" && req.method === "GET") return json(PLAN);
+    // TRIALGO1: Sona Pro's checkout. CHECKOUT is the Stripe page's address, or
+    // null for a server that refuses it.
+    if (u.pathname === "/api/slp/plan" && req.method === "POST") return CHECKOUT ? json({ ok: true, url: CHECKOUT }) : json({ ok: false, error: "Couldn't open checkout just now." }, 502);
+    if (u.pathname === "/fake-stripe") { res.writeHead(200, { "content-type": "text/html" }); res.end("<!doctype html><title>Stripe</title><p>Card page</p>"); return; }
     if (u.pathname === "/api/slp/invite" && req.method === "POST") {
       const inv = { token: "NEWTOKEN1234", label: b.label, age: b.age, sounds: b.sounds, pos: b.pos, repsPerDay: b.repsPerDay, note: b.note, createdAt: new Date().toISOString(), expiresAt: day(-30) }; DATA.invites.push(inv);
       // the route's reply: emailed, plus its own reason when the send failed
       const mail = !b.parentEmail ? { emailed: false } : /bounce/.test(b.parentEmail) ? { emailed: false, emailError: "That's 30 emails today, the daily limit. Copy the link and send it yourself." } : { emailed: true };
       return json({ ok: true, invite: inv, link: "http://localhost:" + PORT + "/join.html?slp=RACHEL-K4&k=ABCD2345&inv=NEWTOKEN1234", ...mail });
     }
+    // ADD A FAMILY (SLPCLEAN1): the route's own shape, an invite with its login
+    if (u.pathname === "/api/slp/family" && req.method === "POST") {
+      const inv = { token: "FAMTOKEN2345", label: b.label || "New family", age: b.age || "", sounds: b.sounds || [], pos: "mix", repsPerDay: 20, note: "", createdAt: new Date().toISOString(), expiresAt: day(-30), login: { user: "otter4827", own: false } }; DATA.invites.push(inv);
+      const mail = /bounce/.test(b.parentEmail || "") ? { emailed: false, emailError: "That's 30 emails today, the daily limit." } : { emailed: true };
+      return json({ ok: true, invite: inv, link: "http://localhost:" + PORT + "/join.html?slp=RACHEL-K4&k=ABCD2345&inv=FAMTOKEN2345", user: "otter4827", password: "k7mpqx2a", ...mail });
+    }
+    if (u.pathname === "/api/slp/team" && req.method === "GET") return json(TEAM);
     if (u.pathname === "/api/slp/invite" && req.method === "DELETE") { DATA.invites = DATA.invites.filter((i) => i.token !== b.token); return json({ ok: true }); }
     if (u.pathname.startsWith("/api/")) return json({ ok: true });
     const p = u.pathname === "/slp.html" ? HTML : ROOT + u.pathname;
@@ -234,10 +259,8 @@ async function open(hash) {
   const sub = await pg.evaluate(() => document.getElementById("chNoteSub").textContent);
   ok("the note says which window it covers", /Covers the current homework window/.test(sub), sub);
   ok("remove is available on Overview", await pg.locator("#chRemove").isVisible());
-  for(const view of ["homework","plan"]) {
-    await pg.evaluate(view=>location.hash="#child/c1/"+view,view);await pg.waitForTimeout(80);
-    ok("remove is hidden on "+view, !await pg.locator("#chRemove").isVisible());
-  }
+  await pg.evaluate(()=>location.hash="#child/c1/homework");await pg.waitForTimeout(80);
+  ok("remove is hidden on homework", !await pg.locator("#chRemove").isVisible());
   await pg.evaluate(()=>location.hash="#child/c1");await pg.waitForTimeout(80);
   await pg.locator("#chRemove").click();
   await pg.waitForTimeout(700);
@@ -297,7 +320,7 @@ async function open(hash) {
   ok("…and says 'unlimited' only in the Sona Pro offer, where it is true", (src.match(/unlimited/gi) || []).length === 1 && /<li><b>Unlimited families\.<\/b>/.test(src), (src.match(/[^.>"]*unlimited[^.<"]*/gi) || []).join(" | "));
   // Use the shared free-version promise without a fixed game count: parked
   // content must not be advertised as an available free game.
-  ok("…and names the free version one way: free games, never 'two games'", !/two (free )?games/i.test(src) && (src.match(/daily practice and free games/g) || []).length >= 3, (src.match(/[^.>"]*two (free )?games[^.<"]*/i) || [""])[0]);
+  ok("…and names the free version one way: free games, never 'two games'", !/two (free )?games/i.test(src) && (src.match(/daily practice and free games/g) || []).length >= 2, (src.match(/[^.>"]*two (free )?games[^.<"]*/i) || [""])[0]);
 
   for (const [label, plan] of [["not covered", PLAN_NONE], ["Sona Pro", PLAN_PRO], ["a clinician on a Sona Clinic plan", PLAN_MEMBER], ["a yearly plan still renewing", { ...PLAN_NONE, active: true, source: "paid", periodEnd: 1822000000 }], ["grandfathered", { ...PLAN_NONE, active: true, source: "grandfathered", grandfathered: true }]]) {
     PLAN = plan; DATA = fixture(); log.length = 0;
@@ -323,14 +346,13 @@ async function open(hash) {
 
 // ── 9b. the offer in the top bar (Travis, 29 Sep 2026: "yes add the $80 button
 //        to the first screen"; Sona Pro since 12 Nov 2026) ──
-// A returning clinician lands on Today; the price lived only on the plan page,
-// which they do not see first. The offer follows them to every page: the
-// server's price, only once the plan has answered, never once there is
-// nothing to sell, and it fits a phone. (It was checked on Community too,
-// until Community went on 17 Nov 2026; Talk to Rachel stands in.)
+// A clinician lands on the planner and a returning one on Today; the
+// price lived only on the plan page, which neither sees first. The offer
+// follows them to every page: the server's price, only once the plan has
+// answered, never once there is nothing to sell, and it fits a phone.
 {
   const bar = (pg) => pg.evaluate(() => { const b = document.getElementById("premiumTop"); return { hidden: b.hidden || getComputedStyle(b).display === "none", text: b.innerText.replace(/\s+/g, " ").trim(), href: b.getAttribute("href") }; });
-  for (const hash of ["#today", "#feedback", "#caseload"]) {
+  for (const hash of ["#play", "#today", "#caseload"]) {
     PLAN = PLAN_NONE; DATA = fixture();
     const { ctx, pg } = await open(hash);
     const b = await bar(pg);
@@ -343,7 +365,7 @@ async function open(hash) {
     await pg.click("#premiumTop"); await pg.waitForTimeout(250);
     const onPlan = await pg.evaluate(() => document.getElementById("page-premium").classList.contains("active"));
     ok("…a tap opens the plan page, where the bar stops repeating the offer", onPlan && (await bar(pg)).hidden);
-    await pg.evaluate(() => { location.hash = "#feedback"; }); await pg.waitForTimeout(250);
+    await pg.evaluate(() => { location.hash = "#caseload"; }); await pg.waitForTimeout(250);
     ok("…and it is back on the next page", !(await bar(pg)).hidden);
     ok("…and showing it is a read, never a write", !log.some((l) => l.m !== "GET"), JSON.stringify(log.filter((l) => l.m !== "GET")));
     await ctx.close();
@@ -374,8 +396,8 @@ async function open(hash) {
   for (const width of [390, 360]) {
     const ctx = await browser.newContext({ viewport: { width, height: 800 } });
     const pg = await ctx.newPage();
-    await pg.goto(U("#feedback")); await pg.waitForTimeout(900);
-    const fit = await pg.evaluate(() => { const r = (id) => document.getElementById(id).getBoundingClientRect(); const t = r("premiumTop"), d = r("downloadApp"), c = r("copyAppLink"); return { over: document.documentElement.scrollWidth - innerWidth, row: t.bottom <= d.top + 1, inside: [t, d, c].every((q) => q.left >= 0 && q.right <= innerWidth) }; });
+    await pg.goto(U("#play")); await pg.waitForTimeout(900);
+    const fit = await pg.evaluate(() => { const r = (id) => document.getElementById(id).getBoundingClientRect(); const t = r("premiumTop"), d = r("downloadApp"), c = r("addFamilyTop"); return { over: document.documentElement.scrollWidth - innerWidth, row: t.bottom <= d.top + 1 && t.bottom <= c.top + 1, inside: [t, d, c].every((q) => q.left >= 0 && q.right <= innerWidth && q.width > 0) }; });
     ok(`${width}px phone: the offer takes its own row and nothing runs off the screen`, fit.over <= 0 && fit.row && fit.inside, JSON.stringify(fit));
     await ctx.close();
   }
@@ -385,12 +407,11 @@ async function open(hash) {
 //        dashboard"): an account made from 12 Nov 2026 with no Sona Pro on ──
 // The server refuses the caseload (402 needPlan) and the plan says
 // dashboard.open:false; the page shows the plan in place of Today, Caseload
-// and a child's page, and leaves Settings, Talk to Rachel and the affiliate
-// teaser open. Since 17 Nov 2026 it names both plans, and every new account
-// starts here.
+// and a child's page, and leaves Settings and Talk to Rachel open. Since
+// 17 Nov 2026 it names both plans.
 {
   LOCKED = true; PLAN = { ...PLAN_NONE, dashboard: { open: false } }; DATA = fixture();
-  for (const hash of ["#today", "#caseload", "#child/c1", "#invite"]) {
+  for (const hash of ["", "#play", "#today", "#caseload", "#child/c1", "#invite"]) {
     const { ctx, pg, errs } = await open(hash);
     const st = await pg.evaluate(() => ({ active: [...document.querySelectorAll(".page.active")].map((p) => p.id), hash: location.hash,
       locked: !document.getElementById("proLocked").hidden, text: document.getElementById("proLocked").innerText, offer: !document.getElementById("proOffer").hidden,
@@ -400,10 +421,19 @@ async function open(hash) {
       st.offer && st.button === "Start my free trial" && !st.kids && !st.err && errs.length === 0, JSON.stringify(st) + errs.join("|"));
     await ctx.close();
   }
-  for (const hash of ["#settings", "#feedback", "#affiliate"]) {
+  for (const hash of ["#settings", "#feedback"]) {
     const { ctx, pg } = await open(hash);
     const active = await pg.evaluate(() => [...document.querySelectorAll(".page.active")].map((p) => p.id).join());
     ok(`closed dashboard: ${hash} stays open`, active === "page-" + hash.slice(1), active);
+    await ctx.close();
+  }
+  {
+    // SLPPRO1: Add a family on a closed dashboard opens the plan, never the panel
+    const { ctx, pg } = await open("#settings");
+    await pg.click("#addFamilyTop"); await pg.waitForTimeout(250);
+    const st = await pg.evaluate(() => ({ dialog: document.getElementById("famDialog").open, active: [...document.querySelectorAll(".page.active")].map((p) => p.id).join(), hash: location.hash }));
+    ok("closed dashboard: Add a family opens the Sona Pro page with the trial, not the panel", !st.dialog && st.active === "page-premium" && st.hash === "#premium", st);
+    ok("…and the web never shows the app's plain locked card", !(await pg.evaluate(() => document.getElementById("page-applock").classList.contains("active"))));
     await ctx.close();
   }
   {
@@ -422,8 +452,8 @@ async function open(hash) {
     // …beside Sona Clinic, the server's figures again: price, free days, seats
     const clinic = await pg.evaluate(() => { const c = document.getElementById("clinicOffer"); return { shown: !c.hidden && getComputedStyle(c).display !== "none", text: c.innerText.replace(/\s+/g, " ") }; });
     ok("…beside it, Sona Clinic: the server's $99 a month, the free days and the seats, and what the owner sees (never a child)",
-      clinic.shown && /\$99 a month · 14 days free/.test(clinic.text) && /for every clinician at your practice — up to 25, you included/.test(clinic.text) &&
-      /how many children each clinician has on Sona, and how many practiced in the last 7 days\. Never a child's name, initials, sounds or pass rate\./.test(clinic.text) &&
+      clinic.shown && /\$99 a month · 14 days free/.test(clinic.text) && /Up to 25 clinicians, you included/.test(clinic.text) &&
+      /how many children each clinician has on Sona and how many practiced in the last 7 days\. Never a child's name\./.test(clinic.text) &&
       /No charge today: after your free trial, \$99 a month until you cancel\. Cancel before the trial ends and you pay nothing\./.test(clinic.text), clinic.text);
     log.length = 0;
     await pg.click("#proBuy"); await pg.waitForTimeout(300);
@@ -440,6 +470,60 @@ async function open(hash) {
     await ctx.close();
   }
   LOCKED = false; PLAN = PLAN_NONE;
+}
+
+// ── 9d. STRAIGHT TO THE FREE TRIAL (TRIALGO1, 17 Nov 2026; Travis: email
+//        link, then the card page, then the dashboard). The sign-in that made
+//        the account lands on /slp.html?start=trial. ──
+{
+  const PLAN_LOCKED = { ...PLAN_NONE, dashboard: { open: false } };
+  const go = async (o) => {
+    LOCKED = o.locked; PLAN = o.plan; CHECKOUT = o.checkout; NEW_ACCT = o.fresh; DATA = fixture(); log.length = 0;
+    const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+    const pg = await ctx.newPage(); const errs = []; pg.on("pageerror", (e) => errs.push(String(e)));
+    // the plans page's pick (sona.slp.wantplan), left before the sign-up
+    if (o.want) await pg.addInitScript((w) => { if (!sessionStorage.getItem("__w")) { localStorage.setItem("sona.slp.wantplan", w); sessionStorage.setItem("__w", "1"); } }, o.want);
+    await pg.goto(U("?start=trial")); await pg.waitForTimeout(1100);
+    const posts = log.filter((l) => l.m === "POST" && l.p === "/api/slp/plan");
+    return { ctx, pg, errs, posts };
+  };
+  {
+    const { ctx, pg, errs, posts } = await go({ locked: true, plan: PLAN_LOCKED, checkout: "http://localhost:" + PORT + "/fake-stripe", fresh: true });
+    ok("a new account on a locked dashboard goes straight to Stripe's card page for Sona Pro, with no stop on the locked page",
+      posts.length === 1 && JSON.stringify(posts[0].b) === JSON.stringify({ plan: "pro" }) && new URL(pg.url()).pathname === "/fake-stripe" && errs.length === 0, JSON.stringify({ url: pg.url(), posts, errs }));
+    await pg.goBack(); await pg.waitForTimeout(1100);
+    const back = await pg.evaluate(() => ({ search: location.search, active: [...document.querySelectorAll(".page.active")].map((p) => p.id).join(), loading: !document.getElementById("loadingState").hidden }));
+    ok("…Back from Stripe lands on the locked page with its button, never checkout again", back.search === "" && back.active === "page-premium" && !back.loading &&
+      log.filter((l) => l.m === "POST" && l.p === "/api/slp/plan").length === 1, JSON.stringify(back));
+    await ctx.close();
+  }
+  {
+    const { ctx, pg, errs, posts } = await go({ locked: true, plan: PLAN_LOCKED, checkout: null, fresh: true });
+    const st = await pg.evaluate(() => ({ search: location.search, hash: location.hash, active: [...document.querySelectorAll(".page.active")].map((p) => p.id).join(),
+      loading: !document.getElementById("loadingState").hidden, err: document.getElementById("proBuyErr").textContent, button: document.getElementById("proBuy").textContent }));
+    ok("…a checkout that won't open leaves the locked page, the error beside its button, and a clean address",
+      posts.length === 1 && st.search === "" && st.hash === "#premium" && st.active === "page-premium" && !st.loading && /Couldn't open checkout/.test(st.err) && st.button === "Start my free trial" && errs.length === 0, JSON.stringify(st));
+    await ctx.close();
+  }
+  {
+    const { ctx, pg, errs, posts } = await go({ locked: true, plan: PLAN_LOCKED, checkout: "http://localhost:" + PORT + "/fake-stripe", fresh: true, want: "clinic" });
+    ok("…one who picked Sona Clinic on the plans page goes straight to Sona Clinic's trial instead, and the pick is forgotten",
+      posts.length === 1 && JSON.stringify(posts[0].b) === JSON.stringify({ plan: "clinic" }) && new URL(pg.url()).pathname === "/fake-stripe" && errs.length === 0, JSON.stringify({ url: pg.url(), posts, errs }));
+    await pg.goBack(); await pg.waitForTimeout(900);
+    ok("…and Back from Stripe opens no second checkout", log.filter((l) => l.m === "POST" && l.p === "/api/slp/plan").length === 1 && (await pg.evaluate(() => localStorage.getItem("sona.slp.wantplan"))) === null);
+    await ctx.close();
+  }
+  {
+    const { ctx, posts } = await go({ locked: true, plan: { ...PLAN_LOCKED, pro: { ...PRO_OFF, trialAvailable: false } }, checkout: "http://localhost:" + PORT + "/fake-stripe", fresh: true });
+    ok("…a trial already spent opens no checkout by itself (the locked page asks)", posts.length === 0, JSON.stringify(posts));
+    await ctx.close();
+  }
+  {
+    const { ctx, pg, posts } = await go({ locked: false, plan: PLAN_NONE, checkout: "http://localhost:" + PORT + "/fake-stripe", fresh: false });
+    ok("…an open dashboard opens no checkout either, and drops ?start=trial from the address", posts.length === 0 && (await pg.evaluate(() => location.search)) === "", JSON.stringify(posts));
+    await ctx.close();
+  }
+  LOCKED = false; PLAN = PLAN_NONE; CHECKOUT = null; NEW_ACCT = false;
 }
 
 // ── 10. a parent's email: typed only if the clinician wants, used once ──
@@ -478,6 +562,154 @@ async function open(hash) {
   await ctx.close();
 }
 
+// ── 11. the dashboard after SLPCLEAN1 (Travis, 17 Nov 2026: "a clean white,
+//        simple look ... remove unnecessary features") ──
+{
+  PLAN = PLAN_NONE; DATA = fixture(); log.length = 0;
+  const { ctx, pg, errs } = await open("");
+  const st = await pg.evaluate(() => ({
+    nav: [...document.querySelectorAll(".sidebar nav .nav-item:not([hidden])")].map((a) => a.dataset.page),
+    team: !!document.querySelector('.sidebar nav .nav-item[data-page="team"][hidden]'),
+    plan: document.querySelector('.nav-item[data-page="premium"]').innerText.trim(),
+    active: [...document.querySelectorAll(".page.active")].map((p) => p.id).join(),
+    crumb: document.getElementById("pageCrumb").textContent,
+  }));
+  ok("the menu is five places, Session games first: Session games, Today, Caseload, Your plan, Settings", JSON.stringify(st.nav) === JSON.stringify(["play", "today", "caseload", "premium", "settings"]) && st.plan === "Your plan", st.nav.join(",") + " " + st.plan);
+  ok("…and Your clinic waits, hidden, for a Sona Clinic owner", st.team, JSON.stringify(st));
+  ok("…and a visit with no address lands on Session games", st.active === "page-play" && st.crumb === "Session games", JSON.stringify(st));
+  for (const [from, to] of [["#plan", "#play"], ["#plan-day", "#play"], ["#homework-draft", "#play"], ["#community", "#today"], ["#affiliate", "#today"]]) {
+    await pg.evaluate((h) => { location.hash = h; }, from); await pg.waitForTimeout(150);
+    const at = await pg.evaluate(() => ({ hash: location.hash, active: [...document.querySelectorAll(".page.active")].map((p) => p.id).join() }));
+    ok(`the old address ${from} lands on ${to}, never a dead end`, at.hash === to && at.active === "page-" + to.slice(1), JSON.stringify(at));
+  }
+  await pg.evaluate(() => { location.hash = "#nowhere"; }); await pg.waitForTimeout(150);
+  ok("an unknown address opens Session games", await pg.evaluate(() => document.getElementById("page-play").classList.contains("active")));
+  const gone = await pg.evaluate(() => ["page-community", "page-affiliate", "page-homework-draft", "page-plan-day", "page-plan", "planText", "sessionPlanner", "copyAppLink"].filter((id) => document.getElementById(id)));
+  const src = readFileSync(HTML, "utf8");
+  ok("Community, Affiliate partnerships, the homework draft, the old planners, Plan activities and Copy app link are gone from the page", gone.length === 0 && !/\/api\/slp\/(community|homework\/draft|sessions\/plan|activities)/.test(src), gone.join(","));
+  ok("…and the page never asks the community route for anything", !log.some((l) => /community/.test(l.p)), JSON.stringify(log.map((l) => l.p)));
+  await pg.evaluate(() => { location.hash = "#settings"; }); await pg.waitForTimeout(150);
+  ok("Talk to Rachel is one link in Settings, not a menu item", !(await pg.locator('.nav-item[data-page="feedback"]').count()) && await pg.locator('#page-settings a[href="#feedback"]').isVisible() && /Talk to Rachel/.test(await pg.locator('#page-settings a[href="#feedback"]').innerText()));
+  await pg.locator('#page-settings a[href="#feedback"]').click(); await pg.waitForTimeout(150);
+  ok("…which opens the message form, with Settings still lit in the menu", await pg.locator("#page-feedback").isVisible() && await pg.evaluate(() => document.querySelector('.nav-item[data-page="settings"]').classList.contains("active")));
+  await pg.evaluate(() => { location.hash = "#today"; }); await pg.waitForTimeout(150);
+  const look = await pg.evaluate(() => {
+    const bg = (el) => getComputedStyle(el).backgroundColor;
+    return { body: bg(document.body), side: bg(document.getElementById("sidebar")), cards: [...document.querySelectorAll("#todayBody .card")].map(bg),
+      tiles: [...document.querySelectorAll(".nav-item .icon")].map(bg), mascots: document.querySelectorAll(".page-header img, .heading-echo, .page-header .eyebrow").length,
+      avatars: [...new Set([...document.querySelectorAll(".person-avatar")].map(bg))] };
+  });
+  const WHITE = "rgb(255, 255, 255)", CLEAR = "rgba(0, 0, 0, 0)";
+  ok("the look is white: the page, the sidebar and every Today card (the week's summary too)", look.body === WHITE && look.side === WHITE && look.cards.length >= 4 && look.cards.every((c) => c === WHITE), JSON.stringify(look));
+  ok("…with no coloured tile behind a menu icon, no mascot or eyebrow in a heading, and one neutral avatar colour", look.tiles.every((c) => c === CLEAR) && look.mascots === 0 && look.avatars.length === 1, JSON.stringify(look));
+  // "a little more life" (Travis, same day): the real logo top left, a teal
+  // bar on the lit menu item, and a greeting with the clinician's OWN name.
+  const life = await pg.evaluate(() => {
+    const logo = document.querySelector(".sidebar .brand img"), bar = document.querySelector(".mobile-bar .brand img");
+    const lit = getComputedStyle(document.querySelector('.nav-item[data-page="today"]'), "::before");
+    return { side: logo.getAttribute("src"), sideAlt: logo.getAttribute("alt"), h: logo.getBoundingClientRect().height, loaded: logo.complete && logo.naturalWidth > 0,
+      bar: bar.getAttribute("src"), barAlt: bar.getAttribute("alt"), litBar: lit.content !== "none" && lit.backgroundColor, hi: document.getElementById("todayHi").textContent };
+  });
+  ok("the logo top left is Echo's own (alt empty beside the word Sona), about 38 px tall, in the sidebar and the phone bar",
+    life.side === "/assets/brand/echo-logo.webp" && life.sideAlt === "" && life.h >= 34 && life.h <= 42 && life.loaded && life.bar === life.side && life.barAlt === "", JSON.stringify(life));
+  ok("…the lit menu item carries a teal bar", life.litBar === "rgb(14, 124, 134)", JSON.stringify(life));
+  ok("…and Today greets the clinician by their own first name, never a child's", /^Good (morning|afternoon|evening), Rachel$/.test(life.hi), life.hi);
+  ok("no page errors", errs.length === 0, errs.join(" | "));
+  await ctx.close();
+}
+
+// ── 12. Add a family (Travis, 17 Nov 2026: "top right, instead of copy app
+//        link ... automatically create a custom login username password for
+//        a parent with their email ... super easily share") ──
+{
+  const famText = (pg) => pg.evaluate(() => document.getElementById("famDialog").innerText);
+  for (const hash of ["#play", "#today", "#caseload", "#child/c1", "#settings"]) {
+    PLAN = PLAN_NONE; DATA = fixture();
+    const { ctx, pg } = await open(hash);
+    ok(`${hash}: the top bar offers Add a family, and no Copy app link`, await pg.locator("#addFamilyTop").isVisible() && (await pg.locator("#addFamilyTop").innerText()).trim() === "Add a family" && !(await pg.locator("#copyAppLink").count()));
+    await ctx.close();
+  }
+  PLAN = PLAN_NONE; DATA = fixture(); log.length = 0;
+  let { ctx, pg, errs } = await open("#today");
+  await pg.click("#addFamilyTop"); await pg.waitForTimeout(200);
+  const form = await famText(pg);
+  ok("it opens a panel: the parent's email, initials or a nickname (not a name), age, sounds, and one button",
+    await pg.evaluate(() => document.getElementById("famDialog").open) && /Parent's email/.test(form) && /initials or a nickname/i.test(form) && /not their name/.test(form) &&
+    /Age/.test(form) && /Target sound/.test(form) && (await pg.locator("#famGo").innerText()).trim() === "Create login and email it" && await pg.evaluate(() => document.activeElement && document.activeElement.id === "famEmail"), form.slice(0, 300));
+  ok("…and, with nothing covering the caseload, one line offers the free trial (never blocking the login)",
+    await pg.locator("#famPro").isVisible() && /Families get the free version\. Start your free Sona Pro trial so they get every game\./.test(form) && (await pg.locator("#famProBuy").innerText()).trim() === "Start my free trial" && !(await pg.locator("#famGo").isDisabled()));
+  await pg.click("#famGo"); await pg.waitForTimeout(150);
+  ok("no email: nothing is sent, and the panel says what is missing", !log.some((l) => l.p === "/api/slp/family") && /Add the parent's email/.test(await pg.locator("#famErr").innerText()));
+  await pg.fill("#famEmail", "not-an-email"); await pg.click("#famGo"); await pg.waitForTimeout(150);
+  ok("a wrong-looking email: nothing is sent", !log.some((l) => l.p === "/api/slp/family") && /doesn't look right/.test(await pg.locator("#famErr").innerText()));
+  await pg.fill("#famEmail", "  parent@example.com ");
+  await pg.fill("#famLabel", "MK");
+  await pg.selectOption("#famAge", "6");
+  await pg.evaluate(() => [...document.querySelectorAll("#famSounds button")].find((b) => b.textContent.trim() === "R").click());
+  await pg.click("#famGo");
+  await pg.waitForSelector("#famDone:not([hidden])");
+  const post = log.find((l) => l.m === "POST" && l.p === "/api/slp/family");
+  ok("one POST: the parent's email, trimmed, with only the initials, age and sound given", !!post && JSON.stringify(post.b) === JSON.stringify({ parentEmail: "parent@example.com", label: "MK", age: "6", sounds: ["R"] }), JSON.stringify(post && post.b));
+  ok("…never a child's name or anything from the caseload", !!post && !/Mia|Leo|Ava|Sam|Zoe|child/i.test(JSON.stringify(post.b)), JSON.stringify(post && post.b));
+  ok("…and the address goes to that one route and nowhere else", log.filter((l) => JSON.stringify(l).includes("parent@example.com")).length === 1, JSON.stringify(log.map((l) => l.p)));
+  const done = await famText(pg);
+  const big = await pg.evaluate(() => parseFloat(getComputedStyle(document.getElementById("famUser")).fontSize));
+  ok("the panel says where it went, and shows the username and password in big, readable text",
+    /Sent to parent@example\.com\./.test(done) && (await pg.locator("#famUser").innerText()) === "otter4827" && (await pg.locator("#famPass").innerText()) === "k7mpqx2a" && big >= 20, done.slice(0, 300) + " " + big);
+  const msg = await pg.locator("#famMsg").inputValue();
+  ok("…with a ready-to-send message: the App Store, Log in, the username and password, and the web link",
+    msg.includes("https://apps.apple.com/us/app/sona-speech/id6785755867") && /tap Log in/.test(msg) && msg.includes("Username: otter4827") && msg.includes("Password: k7mpqx2a") &&
+    /inv=FAMTOKEN2345/.test(msg) && /free for your family/.test(msg) && !/pilot|trial|forever|unlimited/i.test(msg) && !/MK|parent@example/.test(msg), msg);
+  await pg.click("#famCopy"); await pg.waitForTimeout(100);
+  ok("Copy message copies exactly that", (await pg.evaluate(() => window.__copied.slice(-1)[0])) === msg);
+  ok("…and the panel lets go of the parent's address", (await pg.inputValue("#famEmail")) === "");
+  ok("Text it is for phones: not offered on a laptop", !(await pg.locator("#famText").isVisible()));
+  ok("the new family waits in the list with its login", await pg.evaluate(() => typeof INVITES !== "undefined" && INVITES.some((i) => i.token === "FAMTOKEN2345")));
+  await pg.click("#famAnother"); await pg.waitForTimeout(100);
+  ok("Add another family starts a clean form", await pg.locator("#famForm").isVisible() && (await pg.inputValue("#famLabel")) === "" && !(await pg.locator("#famSounds button.on").count()));
+  await pg.keyboard.press("Escape"); await pg.waitForTimeout(100);
+  ok("Escape closes the panel and hands focus back to the button", !(await pg.evaluate(() => document.getElementById("famDialog").open)) && await pg.evaluate(() => document.activeElement && document.activeElement.id === "addFamilyTop"));
+  ok("no page errors", errs.length === 0, errs.join(" | "));
+  await ctx.close();
+
+  // an email that did not go: said plainly, and the copy and text options stay
+  ({ ctx, pg, errs } = await open("#caseload"));
+  await pg.click("#addFamilyTop"); await pg.waitForTimeout(150);
+  await pg.fill("#famEmail", "bounce@example.com"); await pg.click("#famGo");
+  await pg.waitForSelector("#famDone:not([hidden])");
+  const bad = await pg.evaluate(() => ({ t: document.getElementById("famSent").textContent, bad: document.getElementById("famSent").classList.contains("bad"), msg: document.getElementById("famMsg").value }));
+  ok("an email that did not go says so in plain words, never 'Sent', and the message is still there to copy",
+    bad.bad && /daily limit/.test(bad.t) && /Copy the message below or text it instead/.test(bad.t) && !/Sent to/.test(bad.t) && /Username: otter4827/.test(bad.msg), JSON.stringify(bad));
+  ok("…with no initials given, the post carries the email alone", JSON.stringify(log.filter((l) => l.p === "/api/slp/family").slice(-1)[0].b) === JSON.stringify({ parentEmail: "bounce@example.com" }));
+  await ctx.close();
+
+  // on a phone: Text it, as an sms: link carrying the message
+  {
+    const pctx = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+    const ppg = await pctx.newPage();
+    await ppg.addInitScript(() => { window.__copied = []; Object.defineProperty(navigator, "clipboard", { value: { writeText: (t) => { window.__copied.push(t); return Promise.resolve(); } } }); });
+    await ppg.goto(U("#play")); await ppg.waitForTimeout(900);
+    const fits = await ppg.evaluate(() => { const r = document.getElementById("addFamilyTop").getBoundingClientRect(); return r.width > 0 && r.left >= 0 && r.right <= innerWidth; });
+    ok("390px phone: Add a family is in the top bar, on screen", fits);
+    await ppg.click("#addFamilyTop"); await ppg.waitForTimeout(150);
+    const panel = await ppg.evaluate(() => { const r = document.getElementById("famDialog").getBoundingClientRect(); return { l: r.left, r: r.right, w: innerWidth, over: document.documentElement.scrollWidth - innerWidth }; });
+    ok("…its panel fits the phone", panel.l >= 0 && panel.r <= panel.w && panel.over <= 0, JSON.stringify(panel));
+    await ppg.fill("#famEmail", "parent@example.com"); await ppg.click("#famGo");
+    await ppg.waitForSelector("#famDone:not([hidden])");
+    const href = await ppg.getAttribute("#famText", "href");
+    ok("…and Text it opens the phone's messages with the whole message", await ppg.locator("#famText").isVisible() && /^sms:/.test(href) && decodeURIComponent(href).includes("Username: otter4827") && decodeURIComponent(href).includes("Password: k7mpqx2a"), href);
+    await pctx.close();
+  }
+
+  // covered (Sona Pro on): nothing to offer
+  PLAN = PLAN_PRO; DATA = fixture();
+  ({ ctx, pg } = await open("#today"));
+  await pg.click("#addFamilyTop"); await pg.waitForTimeout(200);
+  ok("with Sona Pro on, the panel offers no trial", !(await pg.locator("#famPro").isVisible()) && !/trial/i.test(await famText(pg)));
+  await ctx.close();
+  PLAN = PLAN_NONE;
+}
+
 // ── 8. the empty caseload invites, it does not show three empty groups ──
 {
   DATA = { kids: [], invites: [] };
@@ -488,7 +720,7 @@ async function open(hash) {
   DATA = fixture();
 }
 
-// ── 11. the clinician community is gone (Travis, 17 Nov 2026) ──
+// ── 13. the clinician community is gone (Travis, 17 Nov 2026) ──
 // No menu item, no page, no request to its old route; an old bookmark lands
 // on Today. Account deletion still scrubs old posts (slpapptest pins that).
 {
@@ -502,6 +734,40 @@ async function open(hash) {
   await ctx.close();
   const src = readFileSync(HTML, "utf8");
   ok("the page holds no community code: no /api/slp/community, no #page-community, no Block", !/\/api\/slp\/community|page-community|data-community|COMMUNITY_/.test(src));
+}
+
+// ── 14. Sona Clinic: the owner's Your clinic, and a member's line and Leave
+//        (17 Nov 2026; kept drastically simple in SLPCLEAN1's look) ──
+{
+  PLAN = PLAN_OWNER; TEAM = TEAM_OWNER; DATA = fixture(); log.length = 0;
+  const { ctx, pg, errs } = await open("#team");
+  const st = await pg.evaluate(() => ({ nav: [...document.querySelectorAll(".sidebar nav .nav-item:not([hidden])")].map((a) => a.dataset.page),
+    active: [...document.querySelectorAll(".page.active")].map((p) => p.id).join(), crumb: document.getElementById("pageCrumb").textContent,
+    rows: [...document.querySelectorAll("#teamList .team-row")].map((r) => r.innerText.replace(/\s+/g, " ").trim()), text: document.getElementById("page-team").innerText }));
+  ok("a Sona Clinic owner has Your clinic in the menu, after Your plan, and it opens", JSON.stringify(st.nav) === JSON.stringify(["play", "today", "caseload", "premium", "team", "settings"]) && st.active === "page-team" && st.crumb === "Your clinic", JSON.stringify(st));
+  ok("…one plain row per clinician, in the server's order: the owner (You), then by name, an invite last",
+    st.rows.length === 3 && /^Rachel K You 6 children · 3 practiced in the last 7 days$/.test(st.rows[0]) && /^Ann Baker 2 children · 1 practiced in the last 7 days Remove$/.test(st.rows[1]) &&
+    /^new@brightsteps\.example Invited Resend Remove$/.test(st.rows[2]), JSON.stringify(st.rows));
+  ok("…with the seats used, and nothing about a child: no name, sound, pass rate or percentage", /3 of 25 clinicians/.test(st.text) && !/Mia|Leo|Ava|%|pass rate/i.test(st.text), st.text);
+  await pg.fill("#teamEmail", " Bo@BrightSteps.example "); await pg.click("#teamAdd"); await pg.waitForTimeout(250);
+  const add = log.filter((l) => l.m === "POST" && l.p === "/api/slp/team");
+  ok("Send invite posts add once, the address trimmed and lower-cased", add.length === 1 && JSON.stringify(add[0].b) === JSON.stringify({ action: "add", email: "bo@brightsteps.example" }), JSON.stringify(add));
+  ok("…with no page errors", errs.length === 0, errs.join(" | "));
+  await ctx.close();
+}
+{
+  const PLAN_MEMBER2 = PLAN_MEMBER;
+  PLAN = PLAN_MEMBER2; TEAM = { ok: true, role: "member" }; DATA = fixture(); log.length = 0;
+  const { ctx, pg, errs } = await open("#settings");
+  const card = await pg.evaluate(() => { const c = document.getElementById("setTeam"); return { shown: !c.hidden, text: c.innerText.replace(/\s+/g, " ").trim(), plan: !document.getElementById("setPremium").hidden }; });
+  ok("a member's Settings: one line, whose plan, and Leave (and no plan card repeating it)", card.shown && card.text === "You're on Dana Lee's Sona Clinic plan. Leave" && !card.plan, JSON.stringify(card));
+  ok("…and Your clinic is not in their menu", !(await pg.locator('.nav-item[data-page="team"]').isVisible()));
+  await pg.click("#setTeamLeave"); await pg.waitForTimeout(250);
+  const leave = log.filter((l) => l.m === "POST" && l.p === "/api/slp/team");
+  ok("Leave asks first, then posts leave once", leave.length === 1 && JSON.stringify(leave[0].b) === JSON.stringify({ action: "leave" }) && /Leave your clinic\?/.test(await pg.evaluate(() => window.__confirms.slice(-1)[0] || "")), JSON.stringify(leave));
+  ok("…with no page errors", errs.length === 0, errs.join(" | "));
+  await ctx.close();
+  PLAN = PLAN_NONE; TEAM = { ok: true, role: null };
 }
 
 await browser.close(); srv.close();

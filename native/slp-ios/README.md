@@ -27,16 +27,22 @@ steps. The Xcode project (`ios/`) is made on a Mac and never committed.
     name, price or billing.
 - Sign-in is the 6-digit code from the email (`/api/slp/auth/code`), because
   the emailed link opens in Safari and an app keeps its own cookies.
-- **Since 17 Nov 2026 the app's sign-in opens nothing by itself** (it was the
-  free-dashboard door). A new account is locked until a plan bought on the
-  web covers it, and the app shows it one neutral line in Settings: "Your
-  dashboard isn't on for this account yet." No price, plan name or pointer
-  to buying. Adding "See your options at speaksona.com" is Travis's call:
-  it helps a stuck clinician, but App Review can refuse a pointer to buying
-  outside the app. Accounts promised a free dashboard keep it.
+- **The dashboard needs Sona Pro or Sona Clinic** (SLPPRO1, 17 Nov 2026,
+  Travis: "now they have to have a trial to be inside there"). An account
+  without either (and without a free dashboard promised before 12 Nov 2026)
+  sees one plain card in the app: "Your account doesn't have Sona Pro yet."
+  and what Sona Pro opens, with Sign out and Settings. No price, no trial, no
+  button or link to buy or to the website (App Store rule 3.1.1). App
+  Review's account (`SLP_REVIEW_EMAIL`) stays open.
 - Settings has **Delete your account** (Apple requires it for an app that
   makes accounts). **The community, and its Block, were removed on 17 Nov
   2026**: the app has no posts people write.
+- **Session games** (SLPPRO1): the clinician picks a sound, word position,
+  age band and session length, and may type a few words on what the child
+  loves; those go to Anthropic to pick three of Sona's own games. **Play now
+  opens the game in the app** (SESSPLAY1), set to that sound, with a
+  temporary profile: nothing is saved to a family and nothing is sent. The
+  game listens to the child, so the app now uses the **microphone**.
 
 ## Build it on the Mac (one time)
 
@@ -48,18 +54,25 @@ steps. The Xcode project (`ios/`) is made on a Mac and never committed.
    - **General › Display Name:** `Sona for SLPs` (Travis's to change).
    - **App icon:** drag `assets/icon-1024.png` into `App/Assets.xcassets/AppIcon`
      (a draft: Echo on the dashboard's navy; Travis's to replace).
-   - **Info.plist:** nothing to add. The app uses no microphone, camera,
-     location or notifications.
+   - **Info.plist:** add `NSMicrophoneUsageDescription` (Privacy -
+     Microphone Usage Description): "Sona listens to the child's practice
+     words during a game. Audio stays on this device and is never saved."
+     Session games' Play now runs Sona's games in the app, and they listen.
+     The app uses no camera, location or notifications. (The Xcode project is
+     made on the Mac and never committed, so this is a step, not a file.)
 5. Run it on your iPhone. Check:
    - it opens on the sign-in screen; "Email me a code"; the code from the
      email signs you in; Sign out and back in;
-   - no price, "Sona Pro", "Sona Clinic", "Start my free trial" or "Manage
-     billing" anywhere (the side menu, the top bar, Settings);
-   - a brand-new email: Settings shows only "Your dashboard isn't on for this
-     account yet.";
+   - no price, "Start my free trial" or "Manage billing" anywhere (the side
+     menu, the top bar, Settings);
    - the top of every screen sits below the clock and the camera (the web
      view is inset for them: `contentInset: automatic`);
    - Settings › Your data › "Share CSV" opens the share sheet;
+   - Session games: pick a sound and age, Find Sona games, then Play now on
+     a pick. iOS asks for the microphone once; the game listens; its ✕ (or
+     Back home) returns to Session games. Nothing in the game shows a price,
+     setup or Home;
+   - an account with no Sona Pro: the one plain card, no price, Sign out works;
    - airplane mode: the "Can't reach Sona" page, and Try again works.
 
 ## App Store Connect
@@ -67,11 +80,15 @@ steps. The Xcode project (`ios/`) is made on a Mac and never committed.
 1. **New app**: platform iOS, name "Sona for SLPs" (or Travis's pick), bundle
    id `com.speaksona.slp`, SKU `sona-slp`.
 2. **Category:** Medical or Education (Travis's call); **age rating:**
-   "user-generated content: no" since the community was removed (17 Nov
-   2026); everything else no. If "yes" was already answered, change it.
+   answer "user-generated content: no" (the community was removed on 17 Nov
+   2026; Session games' picks are shown only to the clinician who asked),
+   everything else no. If "yes" was already answered, change it.
 3. **App Privacy:** Contact Info › Email Address (App Functionality, linked to
-   the user); no tracking. (User Content › Other was the community's posts,
-   gone since 17 Nov 2026: remove it if it was already declared.)
+   the user); User Content › Other (the few words a clinician types into
+   Session games about what a child loves, sent to the AI provider to pick
+   games, not stored; Travis's call whether it is "linked"); Audio: none
+   collected (a game listens on the device and keeps nothing); no tracking.
+   (User Content › Other no longer means community posts: those are gone.)
    The caseload the app shows (children's first names and practice) comes
    from families' phones with their consent, not from the clinician's phone:
    how to label it is Travis's call (with whoever advises him on privacy).
@@ -88,8 +105,11 @@ steps. The Xcode project (`ios/`) is made on a Mac and never committed.
 5. **Review notes**, to paste: "Sona for SLPs is the free companion app for
    speech-language pathologists who use Sona with families. Clinicians sign
    in with a code sent to their email. The app sells nothing: there are no
-   purchases, prices or links to purchase. Settings › Delete your account
-   deletes the account and its data."
+   purchases, prices or links to purchase. Session games picks Sona games
+   for a speech session with AI and plays them on the device, listening to the
+   child's practice words on the device only. An account needs a Sona Pro or
+   Sona Clinic subscription bought on speaksona.com; the review account below
+   has one. Settings › Delete your account deletes the account and its data."
 
 ## Known and left
 

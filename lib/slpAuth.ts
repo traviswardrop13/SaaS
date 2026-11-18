@@ -462,7 +462,7 @@ export async function sendMagicEmail(
   // the trial. It says only what is true for anyone who might be reading it,
   // a new clinician or one who signed up long ago. Its retry address is the
   // sign-in page: speaksona.com itself is the packet opt-in now.
-  const signupIntro = "Open your Sona dashboard to share practice with families between sessions. New to Sona? You'll pick your plan first.";
+  const signupIntro = "Open your Sona dashboard to pick Sona games for each session, share the app with families and see who practiced at home. New to Sona? You'll pick your plan first.";
   const retryUrl = "speaksona.com/slp-login.html";
   // The six-digit code (SLPAPP1, 16 Nov 2026), when the sign-in screen asked
   // for one: typed in the clinicians' app, which a link cannot sign in. It is
@@ -617,6 +617,68 @@ export async function sendParentInviteEmail(
   }, "parent invite", false);
   if (r.sent) return { sent: true };
   return { sent: false, error: r.configured ? "The email didn't go through. Copy the link and send it yourself." : "Email isn't set up yet. Copy the link and send it yourself." };
+}
+
+/**
+ * ADD A FAMILY (SLPCLEAN1, 17 Nov 2026; Travis: "a way that they can
+ * automatically create a custom login username password for a parent with
+ * their email ... that they can automatically and super easily share"). The
+ * ONE email /api/slp/family sends: the App Store link, "Open Sona and tap Log
+ * in", the username and the password, and the web join link for a family
+ * with no iPhone or iPad.
+ *
+ * THE PASSWORD TRAVELS IN THIS EMAIL. Sona's server keeps only its hash
+ * (lib/familyLogin), but the email that carries it sits in the parent's inbox
+ * and in GoHighLevel's message history (lib/mail). Travis's accepted
+ * trade-off: a login nobody has to copy by hand. The family can change it in
+ * Sona's Settings, under Your login, and the clinician can make a new one.
+ *
+ * Like the parent invite: the address is used for this send and nothing
+ * else here, no child data at all (not even the initials), the clinician's
+ * own name the only name, the Premium line only while the caseload is
+ * covered, and the same tag, so a GoHighLevel workflow treats both alike.
+ */
+const APP_STORE_URL = "https://apps.apple.com/us/app/sona-speech/id6785755867";
+export async function sendFamilyLoginEmail(
+  to: string,
+  login: { user: string; password: string; link: string },
+  clinicianName: string,
+  covered: boolean,
+): Promise<{ sent: boolean; error?: string }> {
+  const name = oneLine(clinicianName, 80);
+  const who = name || "Your child's speech therapist";
+  const whoMid = name || "your child's speech therapist";
+  const premium = covered ? " Premium is included, on " + whoMid + "." : "";
+  const cred = "font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:18px;letter-spacing:.04em;";
+  const r = await resendSend({
+    to,
+    subject: who + " set up Sona for your family",
+    html:
+      `<div style="${FRAME}">` +
+      `<p>Hi,</p>` +
+      `<p>${esc(who)} uses Sona for speech practice at home, and made a Sona login for your family.</p>` +
+      `<p><b>1.</b> Get Sona for iPhone or iPad:</p>` +
+      `<p><a href="${APP_STORE_URL}" style="${BUTTON}">Get Sona on the App Store</a></p>` +
+      `<p><b>2.</b> Open Sona and tap <b>Log in</b>.</p>` +
+      `<p><b>3.</b> Type your login:<br>Username: <span style="${cred}">${esc(login.user)}</span><br>Password: <span style="${cred}">${esc(login.password)}</span></p>` +
+      `<p>Then say yes to sharing practice with ${esc(whoMid)}, and your child can start today. You can change the password in Sona's Settings, under Your login.</p>` +
+      `<p>No iPhone or iPad? <a href="${esc(login.link)}">Start here instead</a>.</p>` +
+      `<p>Sona's free version (daily practice and free games) is free for your family.${esc(premium)}</p>` +
+      `<p style="color:#6b86a3;font-size:13px;margin-top:22px;">You're getting this one email because ${esc(whoMid)} asked Sona to send it.</p>` +
+      `</div>`,
+    text:
+      "Hi,\n\n" +
+      who + " uses Sona for speech practice at home, and made a Sona login for your family.\n\n" +
+      "1. Get Sona for iPhone or iPad:\n" + APP_STORE_URL + "\n\n" +
+      "2. Open Sona and tap Log in.\n\n" +
+      "3. Type your login:\nUsername: " + login.user + "\nPassword: " + login.password + "\n\n" +
+      "Then say yes to sharing practice with " + whoMid + ", and your child can start today. You can change the password in Sona's Settings, under Your login.\n\n" +
+      "No iPhone or iPad? Start here instead:\n" + login.link + "\n\n" +
+      "Sona's free version (daily practice and free games) is free for your family." + premium + "\n\n" +
+      "You're getting this one email because " + whoMid + " asked Sona to send it.\n",
+  }, "parent invite", false);
+  if (r.sent) return { sent: true };
+  return { sent: false, error: r.configured ? "The email didn't go through." : "Email isn't set up yet." };
 }
 
 /**

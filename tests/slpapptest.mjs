@@ -12,14 +12,14 @@
 //   3. DELETE MY ACCOUNT (Apple's rule; the web has it too). Everything about
 //      the account goes, the code is kept closed so no family's sync is ever
 //      written again, sessions end, and a plan that still renews blocks it.
-//   4. THE APP NEVER LOOPS, AND A LOCKED ACCOUNT IS TOLD SO PLAINLY (17 Nov
-//      2026). /slp.html answers a permanent redirect to /slps, so the app's
-//      family-page check must let /slps stay; and since every new account's
-//      dashboard comes with a plan bought on the web, the app shows a locked
-//      account one neutral line, with no price, plan or pointer to buy.
-//      (This was BLOCK in the community, until the community went the same
-//      day — Travis: removed from the dashboard. Deleting an account still
-//      scrubs its old posts, pinned in 3.)
+//   4. THE APP NEVER LOOPS, AND A LOCKED ACCOUNT SEES ONE PLAIN CARD (17
+//      Nov 2026). /slp.html answers a permanent redirect to /slps, so the
+//      app's family-page check must let /slps stay; a locked account sees
+//      SLPPRO1's one plain card, with Settings (and Delete my account) one
+//      tap away even before a family code exists. The community is gone
+//      from the dashboard (deleting an account still scrubs old posts, 3).
+//   5. SONA CLINIC IN THE APP: an owner's Your clinic (no seats, no price)
+//      and a member's one line with Leave.
 //
 // Part 1 runs the real routes (TypeScript, transpiled with the repo's own
 // `typescript`, as familylogintest does) against a fake store behind the same
@@ -234,6 +234,7 @@ if (A && SI && R.request && R.code) {
   const cookie1 = sessionCookieFrom(r.cookie);
   ok("the right code signs this screen in: a session cookie, and the account is made", r.status === 200 && r.json.ok && !!cookie1 && !!acctOf(NEW), r);
   ok("…on the sign-in page's terms (Sona Pro, as the link from that page)", acctOf(NEW) && acctOf(NEW).terms === "pro-2026-11-12", acctOf(NEW));
+  ok("…and the answer says the code made the account (fresh), so a browser goes on to the free trial (TRIALGO1)", r.json.fresh === true, r.json);
   ok("…and the code and its link are spent with it, and the tries are cleared",
     !KV.K.has("slpsignin:" + NEW) && !KV.K.has(JSON.parse(stored).k) && !KV.K.has("slpsignintry:" + NEW));
   r = await call(R.code, "POST", "/api/slp/auth/code", { body: { email: NEW, code: code1 } });
@@ -246,37 +247,31 @@ if (A && SI && R.request && R.code) {
   r = await call(R.code, "POST", "/api/slp/auth/code", { body: { email: NEW, code: code2 } });
   ok("after five wrong tries even the right code is refused, and the code is gone", r.status === 400 && r.json.why === "tries" && !KV.K.has("slpsignin:" + NEW) && !r.cookie, r);
 
-  // THE APP'S DOOR IS NO LONGER FREE (Travis, 17 Nov 2026: the dashboard
-  // comes with the trial). Older app builds still send flow "free-dashboard";
-  // the server signs them in and grants nothing: a new account is Sona Pro's
-  // terms, locked until a plan covers it, and a locked one stays locked.
+  // SLPPRO1 (17 Nov 2026): no door opens a free dashboard any more. The
+  // homepage's ("trial", or "free-dashboard" from a cached page) makes a
+  // Sona Pro account that keeps where the clinician came from; a returning
+  // Pro-era account stays as it was.
   const APPDOC = "app.slp@school.example";
-  r = await call(R.request, "POST", "/api/slp/auth/request", { body: { email: APPDOC, wantCode: true, flow: "free-dashboard" } });
+  r = await call(R.request, "POST", "/api/slp/auth/request", { body: { email: APPDOC, wantCode: true, flow: "trial", source: "for-slps" } });
   r = await call(R.code, "POST", "/api/slp/auth/code", { body: { email: APPDOC, code: r.json.devCode } });
-  ok("the app's sign-in (an older build's free-dashboard door) signs in and makes a Sona Pro-terms account, with no free dashboard",
-    r.status === 200 && acctOf(APPDOC) && acctOf(APPDOC).terms === "pro-2026-11-12" && !("freeDashboard" in acctOf(APPDOC)), acctOf(APPDOC));
-  const CL = L("lib/caseload.ts");
-  ok("…whose dashboard is locked until a plan covers it (the server's lock, as on the web)", (await CL.dashboardOpen(APPDOC)) === false);
+  ok("the homepage's trial door makes a Sona Pro account (no free dashboard), with where they came from", r.status === 200 && acctOf(APPDOC) && acctOf(APPDOC).terms === "pro-2026-11-12" && acctOf(APPDOC).source === "for-slps" && acctOf(APPDOC).freeDashboard === undefined, acctOf(APPDOC));
+  const CACHED = "cached.page@school.example";
+  r = await call(R.request, "POST", "/api/slp/auth/request", { body: { email: CACHED, wantCode: true, flow: "free-dashboard" } });
+  r = await call(R.code, "POST", "/api/slp/auth/code", { body: { email: CACHED, code: r.json.devCode } });
+  ok("…and so does a homepage cached before 17 Nov (its old free-dashboard door)", r.status === 200 && acctOf(CACHED) && acctOf(CACHED).terms === "pro-2026-11-12", acctOf(CACHED));
   const PROERA = "pro.era@clinic.example";
   KV.K.set("slpacct:" + PROERA, JSON.stringify({ email: PROERA, name: "Pat", code: "", terms: "pro-2026-11-12", createdAt: iso() }));
-  const proEraBefore = KV.K.get("slpacct:" + PROERA);
-  r = await call(R.request, "POST", "/api/slp/auth/request", { body: { email: PROERA, wantCode: true, flow: "free-dashboard" } });
+  const proBefore = KV.K.get("slpacct:" + PROERA);
+  r = await call(R.request, "POST", "/api/slp/auth/request", { body: { email: PROERA, wantCode: true, flow: "trial" } });
   r = await call(R.code, "POST", "/api/slp/auth/code", { body: { email: PROERA, code: r.json.devCode } });
-  ok("…and a locked Pro-era account signing in there is signed in and left exactly as it was (no freeDashboard)",
-    r.status === 200 && KV.K.get("slpacct:" + PROERA) === proEraBefore, acctOf(PROERA));
-  const FREEDASH = "free.dash@clinic.example";
-  KV.K.set("slpacct:" + FREEDASH, JSON.stringify({ email: FREEDASH, name: "Fran", code: "", terms: "free-dashboard-2026-11-13", createdAt: iso() }));
-  const freeDashBefore = KV.K.get("slpacct:" + FREEDASH);
-  r = await call(R.request, "POST", "/api/slp/auth/request", { body: { email: FREEDASH, wantCode: true } });
-  r = await call(R.code, "POST", "/api/slp/auth/code", { body: { email: FREEDASH, code: r.json.devCode } });
-  ok("…while one made by the 13–17 Nov free signup signs in with its stamp untouched (its dashboard stays free)",
-    r.status === 200 && KV.K.get("slpacct:" + FREEDASH) === freeDashBefore, acctOf(FREEDASH));
+  ok("…a returning Pro-era account signs in and is left exactly as it was: no door unlocks it", r.status === 200 && KV.K.get("slpacct:" + PROERA) === proBefore, acctOf(PROERA));
+  ok("…and is not fresh: it opens the dashboard, never checkout by itself", r.json.fresh === false, r.json);
 
   // the link still works, and spends the code
   r = await call(R.request, "POST", "/api/slp/auth/request", { body: { email: "linker@clinic.example", wantCode: true } });
   const link = r.json.devLink, code3 = r.json.devCode;
   r = await call(R.verify, "GET", link.replace(/^https?:\/\/[^/]+/, ""));
-  ok("the emailed link still signs in (to the dashboard) and spends its code", r.status === 307 && /\/slp\.html$/.test(r.location) && !!sessionCookieFrom(r.cookie) && !KV.K.has("slpsignin:linker@clinic.example"), r);
+  ok("the emailed link still signs in (a new account to the dashboard's straight-to-trial address) and spends its code", r.status === 307 && /\/slp\.html\?start=trial$/.test(r.location) && !!sessionCookieFrom(r.cookie) && !KV.K.has("slpsignin:linker@clinic.example"), r);
   r = await call(R.code, "POST", "/api/slp/auth/code", { body: { email: "linker@clinic.example", code: code3 } });
   ok("…so the code from that email no longer does", r.status === 400 && r.json.why === "gone", r);
 
@@ -303,7 +298,7 @@ if (A && SI && R.request && R.code) {
   r = await call(R.code, "POST", "/api/slp/auth/code", { body: { email: RV, code: "135791" } });
   ok("…a wrong code is still wrong", r.status === 400 && r.json.why === "wrong", r);
   r = await call(R.code, "POST", "/api/slp/auth/code", { body: { email: RV, code: "135790" } });
-  ok("…and its fixed code signs App Review in, onto an open dashboard (keyed on the address set in Vercel)", r.status === 200 && !!sessionCookieFrom(r.cookie) && acctOf(RV) && acctOf(RV).terms === "free-dashboard-2026-11-13" && acctOf(RV).source === "app-review", acctOf(RV));
+  ok("…and its fixed code signs App Review in (a Sona Pro account whose dashboard lib/caseload keeps open)", r.status === 200 && !!sessionCookieFrom(r.cookie) && acctOf(RV) && acctOf(RV).terms === "pro-2026-11-12" && acctOf(RV).source === "app-review", acctOf(RV));
   r = await call(R.code, "POST", "/api/slp/auth/code", { body: { email: "someone.else@clinic.example", code: "135790" } });
   ok("…for that address only", r.status === 400 && !r.cookie, r);
   // 17 Nov 2026: the exception is the ADDRESS, never a flag a caller sends.
@@ -315,8 +310,8 @@ if (A && SI && R.request && R.code) {
   // the review variable pointed at an address that already had a Pro-era account
   KV.K.set("slpacct:" + RV, JSON.stringify({ email: RV, name: "", code: "", terms: "pro-2026-11-12", createdAt: iso() }));
   r = await call(R.code, "POST", "/api/slp/auth/code", { body: { email: RV, code: "135790" } });
-  ok("…and if the review address already had a locked Pro-era account, its sign-in opens that dashboard (freeDashboard), terms kept",
-    r.status === 200 && acctOf(RV).freeDashboard === true && acctOf(RV).terms === "pro-2026-11-12", acctOf(RV));
+  ok("…and if the review address already had a locked Pro-era account, its sign-in opens that dashboard (by the address), terms kept",
+    r.status === 200 && acctOf(RV).terms === "pro-2026-11-12" && (await L("lib/caseload.ts").dashboardOpen(RV)) === true, acctOf(RV));
   delete process.env.SLP_REVIEW_CODE;
   r = await call(R.code, "POST", "/api/slp/auth/code", { body: { email: RV, code: "135790" } });
   ok("…and unset either variable and the door is gone", r.status === 400 && !r.cookie, r);
@@ -479,6 +474,7 @@ const TEAM_OWNER = { ok: true, role: "owner", active: true, seats: 25, used: 3, 
   { email: "new@brightsteps.example", name: "", state: "invited", children: null, practicedWeek: null, linkReady: false },
 ] };
 let PLAN = PLAN_NONE, TEAM = { ok: true, role: null };
+let LOCK = false;   // SLPPRO1: an account with no plan (and no promised free dashboard)
 // 18 Nov 2026 (review): the dashboard's lock can close under an open page (a
 // trial that ran out, a clinic that removed them); then the server answers
 // 402 needPlan to the caseload and to every gated action.
@@ -496,11 +492,10 @@ const server = createServer((req, res) => {
       if (url.pathname === "/api/slp/auth/code") return json(j.code === "246810" ? { ok: true } : { ok: false, error: "That code doesn't match. Check the email and try again." }, j.code === "246810" ? 200 : 400);
       if (url.pathname === "/api/slp/auth/me" || (url.pathname === "/api/slp/account" && req.method !== "DELETE")) return json(ACCOUNT);
       if (url.pathname === "/api/slp/account" && req.method === "DELETE") return json(j.confirm === ACCOUNT.email ? { ok: true, deleted: true } : { ok: false, error: "Type your account's email to confirm." }, j.confirm === ACCOUNT.email ? 200 : 400);
-      if (url.pathname === "/api/slp/plan" && req.method === "GET") return json(PLAN);
-      if (url.pathname === "/api/slp" && req.method === "GET") return (PLAN.dashboard && PLAN.dashboard.open === false) || GATE
+      if (url.pathname === "/api/slp/plan" && req.method === "GET") return json(LOCK ? { ...PLAN, dashboard: { open: false } } : PLAN);
+      if (url.pathname === "/api/slp" && req.method === "GET") return LOCK || (PLAN.dashboard && PLAN.dashboard.open === false) || GATE
         ? json(NEED_PLAN, 402)
         : json({ ok: true, configured: true, kids: DATA.kids, invites: DATA.invites });
-      if (GATE && url.pathname === "/api/slp/invite" && req.method === "POST") return json(NEED_PLAN, 402);
       if (url.pathname === "/api/slp/team" && req.method === "GET") return json(TEAM);
       return json({ ok: true });
     }
@@ -528,7 +523,7 @@ async function open(url, o = {}) {
   await page.goto(BASE + url, { waitUntil: "domcontentloaded" });
   return { context, page, errors };
 }
-async function section(name, fn) { posts = []; DATA = fixture(); PLAN = PLAN_NONE; TEAM = { ok: true, role: null }; GATE = false; ACCOUNT.code = "rachel-k4"; try { await fn(); } catch (e) { ok(name + " completes", false, String(e && e.stack || e).slice(0, 400)); } }
+async function section(name, fn) { posts = []; DATA = fixture(); PLAN = PLAN_NONE; TEAM = { ok: true, role: null }; GATE = false; LOCK = false; ACCOUNT.code = "rachel-k4"; try { await fn(); } catch (e) { ok(name + " completes", false, String(e && e.stack || e).slice(0, 400)); } }
 // Every visible word on the page, and every visible link and button
 const visibleText = (page) => page.evaluate(() => {
   const out = [];
@@ -539,7 +534,7 @@ const visibleText = (page) => page.evaluate(() => {
 // name, a trial every new account now starts from, and a clinic's seats.
 // "Subscribe" is a word on its own, so the sign-in screen's consent line
 // ("Unsubscribe anytime") is not mistaken for an offer.
-const SELLING = /\$\s?\d|Sona Pro|Sona Clinic|free trial|\btrials?\b|Start my free trial|Get Sona Pro|Get Sona Clinic|Manage billing|checkout|Get Premium|\bSubscribe\b|per month|a month|\bseats?\b/i;
+const SELLING = /\$\s?\d|Sona Pro|free trial|\btrials?\b|Start my free trial|Get Sona Pro|Get Sona Clinic|Manage billing|checkout|Get Premium|\bSubscribe\b|per month|a month|\bseats?\b/i;
 
 try {
   await section("the sign-in screen in the app", async () => {
@@ -555,10 +550,8 @@ try {
     await page.locator("#send").click();
     await page.waitForSelector("#sentCard", { state: "visible" });
     const req = posts.find((p) => p.path === "/api/slp/auth/request");
-    // It sent flow "free-dashboard" until 17 Nov 2026, which opened a new
-    // account for free; the server ignores that flag now, and the app no
-    // longer sends it.
-    ok("…by the sign-in page's own door (no free-dashboard flag), asking for a code", !!req && req.body.wantCode === true && req.body.flow === undefined, req);
+    ok("…by the sign-in page's own door (SLPPRO1: no free dashboard in the app), asking for a code", !!req && req.body.wantCode === true && req.body.flow === undefined, req);
+    ok("…and says to use the account's email, with no word of a trial or a free dashboard", (await page.locator(".app-only").textContent()).trim() === "Use the email your Sona account is under." && !/trial|free dashboard/i.test(await visibleText(page)));
     ok("…then the code box, focused, with the one-time-code hint (iOS offers the code from Mail)",
       await page.locator("#code").isVisible() && await page.evaluate(() => document.activeElement && document.activeElement.id === "code") && (await page.locator("#code").getAttribute("autocomplete")) === "one-time-code" && /6-digit code/.test(await page.locator("#sentMsg").textContent()));
     await page.locator("#code").fill("111111");
@@ -598,9 +591,8 @@ try {
       const tag = width + "px: ";
       ok(tag + "the dashboard renders in the clinicians' app", new URL(page.url()).pathname === "/slp.html");
       const seen = [];
-      // #community went on 17 Nov 2026 (an old link lands on Today); #team,
-      // the clinic owner's page, is asked for by a clinician who owns none.
-      for (const hash of ["#today", "#caseload", "#settings", "#community", "#team", "#plan-day", "#homework-draft", "#feedback"]) {
+      for (const hash of ["#play", "#today", "#caseload", "#settings", "#feedback", "#community", "#team", "#add-family"]) {
+        if (hash === "#add-family") { await page.evaluate(() => { location.hash = "#today"; }); await page.waitForTimeout(150); await page.evaluate(() => document.getElementById("addFamilyTop").click()); await page.waitForTimeout(250); }
         await page.evaluate((h) => { location.hash = h; }, hash);
         await page.waitForTimeout(150);
         if (width < 500) await page.evaluate(() => { const m = document.getElementById("menuBtn") || document.querySelector("[aria-controls='sidebar']"); if (m) m.click(); });
@@ -608,7 +600,8 @@ try {
         const hit = t.match(SELLING);
         if (hit) seen.push(hash + ": " + hit[0] + " … " + t.slice(Math.max(0, hit.index - 60), hit.index + 60));
       }
-      ok(tag + "no price, plan offer, trial, checkout or billing door anywhere (Today, Caseload, Settings, an old Community link, the planners, Talk to Rachel, the menu)", seen.length === 0, seen);
+      ok(tag + "no price, plan offer, trial, checkout or billing door anywhere (Session games, Today, Caseload, Settings, Talk to Rachel, the Add a family panel, the menu)", seen.length === 0, seen);
+      await page.evaluate(() => { const d = document.getElementById("famDialog"); if (d.open) d.close(); });
       ok(tag + "the plan's menu item, Your clinic (no clinic owned) and the top bar's offer are not drawn",
         !(await page.locator('.nav-item[data-page="premium"]').isVisible()) && !(await page.locator('.nav-item[data-page="team"]').isVisible()) && !(await page.locator("#premiumTop").isVisible()));
       await page.evaluate(() => { location.hash = "#premium"; });
@@ -620,6 +613,59 @@ try {
       await context.close();
     });
   }
+
+  // SLPPRO1 (17 Nov 2026, Travis: "now they have to have a trial to be
+  // inside there"): an account with no Sona Pro sees ONE plain card in the
+  // app, with no price, no trial, no button or link to buy or to the website
+  // (App Store rule 3.1.1), and Sign out.
+  for (const width of [390, 1280]) {
+    await section("the locked dashboard in the app at " + width, async () => {
+      LOCK = true;
+      const { context, page, errors } = await open("/slp.html", { viewport: { width, height: width < 500 ? 844 : 1000 } });
+      await page.waitForFunction(() => document.getElementById("sidebarName").textContent === "Rachel K");
+      await page.waitForTimeout(400);
+      const tag = width + "px: ";
+      const card = await page.evaluate(() => ({ hash: location.hash, active: [...document.querySelectorAll(".page.active")].map((p) => p.id).join(), text: document.getElementById("page-applock").innerText.replace(/\s+/g, " ").trim() }));
+      ok(tag + "a locked account opens on the one plain card", card.hash === "#applock" && card.active === "page-applock" &&
+        /^Your account doesn't have Sona Pro yet\. Sona Pro opens the dashboard, every game for you, and every game for families on your link\. Sign out Settings$/.test(card.text), card);
+      const leak = [];
+      for (const hash of ["#play", "#today", "#caseload", "#child/c1", "#premium", "#applock"]) {
+        await page.evaluate((h) => { location.hash = h; }, hash); await page.waitForTimeout(200);
+        const st = await page.evaluate(() => ({ active: [...document.querySelectorAll(".page.active")].map((p) => p.id).join(),
+          sells: [...document.querySelectorAll("[data-sells]")].filter((el) => { const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0 && getComputedStyle(el).visibility !== "hidden"; }).length,
+          links: [...document.querySelectorAll("a[href], button")].filter((el) => { const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0; }).map((el) => el.getAttribute("href") || "").filter((h) => /^(https?:|\/\/|mailto:)/.test(h)) }));
+        const t = await visibleText(page);
+        const hit = t.match(/\$|\btrial\b|Start my|Get Sona Pro|Manage billing|checkout|a month|per month|Subscribe|Download the app/i);
+        const expect = hash === "#premium" ? "page-settings" : "page-applock";
+        if (st.active !== expect || st.sells || st.links.length || hit) leak.push({ hash, ...st, hit: hit && t.slice(Math.max(0, hit.index - 40), hit.index + 40) });
+      }
+      ok(tag + "…every page but Settings is that card, and no price, trial, way to buy, data-sells door or link off the app shows anywhere", leak.length === 0, leak);
+      await page.evaluate(() => { location.hash = "#applock"; }); await page.waitForTimeout(150);
+      ok(tag + "…and nothing in the top bar beside it (no Add a family, no App Store link)", !(await page.locator("#addFamilyTop").isVisible()) && !(await page.locator("#downloadApp").isVisible()));
+      await page.locator('#page-applock a[href="#settings"]').click(); await page.waitForTimeout(200);
+      ok(tag + "Settings opens from the card, with Delete my account", await page.locator("#page-settings").isVisible() && await page.locator("#deleteCard").isVisible());
+      await page.evaluate(() => { location.hash = "#applock"; }); await page.waitForTimeout(150);
+      await Promise.all([page.waitForURL("**/slp-login.html", { timeout: 4000 }).catch(() => {}), page.locator("#appLockOut").click()]);
+      ok(tag + "Sign out signs out", posts.some((p) => p.path === "/api/slp/auth/logout") && new URL(page.url()).pathname === "/slp-login.html", page.url());
+      ok(tag + "…with no page errors", errors.length === 0, errors);
+      LOCK = false;
+      await context.close();
+    });
+  }
+
+  // TRIALGO1 (17 Nov 2026, Travis: "i dont wanna sell on apple. just thru
+  // stipe"): a new account's ?start=trial never opens checkout in the app.
+  await section("a new account's straight-to-trial address in the app", async () => {
+    LOCK = true;
+    const { context, page, errors } = await open("/slp.html?start=trial");
+    await page.waitForFunction(() => document.getElementById("sidebarName").textContent === "Rachel K");
+    await page.waitForTimeout(500);
+    const st = await page.evaluate(() => ({ hash: location.hash, search: location.search, active: [...document.querySelectorAll(".page.active")].map((p) => p.id).join() }));
+    ok("in the app, ?start=trial asks for no checkout and shows the one plain card", !posts.some((p) => p.path === "/api/slp/plan") && st.active === "page-applock" && st.hash === "#applock", { st, posts });
+    ok("…with no page errors", errors.length === 0, errors);
+    LOCK = false;
+    await context.close();
+  });
 
   await section("the dashboard on the web still sells", async () => {
     const { context, page } = await open("/slp.html#today", { app: false, native: false, viewport: { width: 1280, height: 1000 } });
@@ -651,46 +697,20 @@ try {
     await context.close();
   });
 
-  // ── 4. a locked account, a clinic, and /slps, in the app (17 Nov 2026) ──
-  await section("a locked account in the app", async () => {
-    PLAN = PLAN_LOCKED;
-    const { context, page, errors } = await open("/slp.html#today");
-    await page.waitForFunction(() => document.getElementById("sidebarName").textContent === "Rachel K");
-    await page.waitForTimeout(300);
-    ok("a locked account in the app lands on Settings (never the plan page, which the app has not)", await page.locator("#page-settings").isVisible() && !(await page.locator("#page-premium").isVisible()) && await page.evaluate(() => location.hash) === "#settings");
-    ok("…which says, once and plainly, that the dashboard isn't on, outside anything that sells",
-      await page.locator("#appLocked").isVisible() && (await page.locator("#appLocked").innerText()).trim() === "Your dashboard isn't on for this account yet." &&
-      await page.evaluate(() => !document.getElementById("appLocked").closest("[data-sells]")));
-    const seen = [];
-    for (const hash of ["#settings", "#today", "#caseload", "#premium", "#feedback"]) {
-      await page.evaluate((h) => { location.hash = h; }, hash);
-      await page.waitForTimeout(150);
-      const t = await visibleText(page), hit = t.match(SELLING);
-      if (hit) seen.push(hash + ": " + hit[0] + " … " + t.slice(Math.max(0, hit.index - 60), hit.index + 60));
-    }
-    ok("…with no price, plan name, trial or pointer to buy, wherever it is sent", seen.length === 0, seen);
-    ok("…with no page errors", errors.length === 0, errors);
-    await context.close();
-    const web = await open("/slp.html#today", { app: false, native: false, viewport: { width: 1280, height: 1000 } });
-    await web.page.waitForFunction(() => document.getElementById("sidebarName").textContent === "Rachel K");
-    await web.page.waitForTimeout(300);
-    ok("…while on the web the same account sees the plan page, and not the app's line", await web.page.locator("#page-premium").isVisible() && !(await web.page.locator("#appLocked").isVisible()));
-    await web.context.close();
-  });
-
-  // Every new account since 17 Nov 2026 is locked AND has no family code
-  // yet. Until 18 Nov 2026 (review) its first screen in the app was the
-  // "Save & open my dashboard" form: the no-code rule sent Settings there,
-  // after the lock had sent the page to Settings. On the web, Delete my
-  // account could not be reached without making a code first.
+  // ── 4. /slps, and a brand-new account, in the app (17 Nov 2026) ──
+  // Every new account is locked AND has no family code yet. The app's card
+  // links to Settings for Delete my account; until 18 Nov 2026 the no-code
+  // rule sent Settings to the "Save & open my dashboard" form instead, and
+  // on the web Delete my account could not be reached without a code.
   await section("a brand-new account (locked, no family code)", async () => {
-    PLAN = PLAN_LOCKED; ACCOUNT.code = "";
+    LOCK = true; ACCOUNT.code = "";
     const { context, page, errors } = await open("/slp.html");
     await page.waitForFunction(() => document.getElementById("sidebarName").textContent === "Rachel K");
     await page.waitForTimeout(400);
-    ok("in the app it lands on Settings and its one neutral line, never the code form",
-      await page.locator("#page-settings").isVisible() && !(await page.locator("#page-onboarding").isVisible()) && await page.locator("#appLocked").isVisible() &&
-      await page.evaluate(() => location.hash) === "#settings" && await page.locator("#deleteOpen").isVisible());
+    ok("in the app it lands on the one plain card", await page.locator("#page-applock").isVisible() && await page.evaluate(() => location.hash) === "#applock");
+    await page.locator('#page-applock a[href="#settings"]').click(); await page.waitForTimeout(250);
+    ok("…whose Settings opens with Delete my account, never the code form",
+      await page.locator("#page-settings").isVisible() && !(await page.locator("#page-onboarding").isVisible()) && await page.locator("#deleteOpen").isVisible());
     ok("…with no page errors", errors.length === 0, errors);
     await context.close();
     const web = await open("/slp.html", { app: false, native: false, viewport: { width: 1280, height: 1000 } });
@@ -704,37 +724,15 @@ try {
     await web.context.close();
   });
 
-  await section("the lock closing under an open dashboard, in the app", async () => {
-    const { context, page, errors } = await open("/slp.html#caseload");
-    await page.waitForFunction(() => document.getElementById("sidebarName").textContent === "Rachel K");
-    await page.waitForTimeout(300);
-    ok("an open dashboard shows its caseload", await page.locator("#page-caseload").isVisible());
-    GATE = true;
-    await page.evaluate(() => { location.hash = "#invite"; });
-    await page.waitForSelector("#invName", { state: "visible" });
-    await page.locator("#invName").fill("MK");
-    const before = await page.evaluate(() => document.getElementById("invErr").textContent);
-    await page.locator("#invCreate").click();
-    await page.waitForFunction(() => /isn't on/.test(document.getElementById("invErr").textContent));
-    const said = await page.evaluate(() => document.getElementById("invErr").textContent);
-    ok("a refused Add a child says only that the dashboard isn't on: none of the server's plan names or trial words",
-      said === "Your dashboard isn't on for this account right now." && !SELLING.test(said), [before, said]);
-    await page.waitForTimeout(300);
-    ok("…and the page goes where a locked page goes, its neutral line showing",
-      await page.locator("#page-settings").isVisible() && await page.locator("#appLocked").isVisible() && await page.evaluate(() => location.hash) === "#settings");
-    const t = await visibleText(page), hit = t.match(SELLING);
-    ok("…selling nothing", !hit, hit ? t.slice(Math.max(0, hit.index - 60), hit.index + 60) : "");
-    ok("…with no page errors", errors.length === 0, errors);
-    await context.close();
-    GATE = false;
+  await section("the lock closing under an open dashboard, on the web", async () => {
     const web = await open("/slp.html#today", { app: false, native: false, viewport: { width: 1280, height: 1000 } });
     await web.page.waitForFunction(() => document.getElementById("sidebarName").textContent === "Rachel K");
     await web.page.waitForTimeout(300);
-    ok("on the web an open Today shows the caseload", await web.page.locator("#page-today").isVisible());
+    ok("an open Today shows the caseload", await web.page.locator("#page-today").isVisible());
     GATE = true;
     await web.page.locator("#todayRefresh").click();
     await web.page.waitForTimeout(400);
-    ok("…and a Refresh the server now refuses shows the plan page, not an empty caseload",
+    ok("…and a Refresh the server now refuses (a trial run out, a clinic that removed them) shows the plan page, not an empty caseload",
       await web.page.locator("#page-premium").isVisible() && !(await web.page.locator("#page-today").isVisible()) && await web.page.evaluate(() => location.hash) === "#premium");
     await web.context.close();
   });
@@ -743,11 +741,11 @@ try {
     PLAN = PLAN_OWNER; TEAM = TEAM_OWNER;
     const { context, page, errors } = await open("/slp.html#team");
     await page.waitForFunction(() => document.getElementById("sidebarName").textContent === "Rachel K");
-    await page.waitForSelector("#teamTable tbody tr");
-    ok("the owner's clinic shows in the app (choosing who is on the plan sells nothing)", await page.locator("#page-team").isVisible() && (await page.locator("#teamTable tbody tr").count()) === 3);
+    await page.waitForSelector("#teamList .team-row");
+    ok("the owner's clinic shows in the app (choosing who is on the plan sells nothing)", await page.locator("#page-team").isVisible() && (await page.locator("#teamList .team-row").count()) === 3 && await page.evaluate(() => !document.querySelector('.nav-item[data-page="team"]').hidden));
     const t = await visibleText(page), hit = t.match(SELLING);
     ok("…with no price, plan name, trial, seat count or billing", !hit && !(await page.locator("#teamSeats").isVisible()), hit ? t.slice(Math.max(0, hit.index - 60), hit.index + 60) : "");
-    ok("…and nothing about a child but the two counts", !/Mia|Leo|Ava|%|pass rate \d/i.test(t.replace(/Never a child's name/g, "")));
+    ok("…and nothing about a child but the two counts", !/Mia|Leo|Ava|%|pass rate \d/i.test(t.replace(/never a child's name/gi, "")));
     ok("…with no page errors", errors.length === 0, errors);
     await context.close();
   });
@@ -757,13 +755,13 @@ try {
     const { context, page, errors } = await open("/slp.html#settings");
     await page.waitForFunction(() => document.getElementById("sidebarName").textContent === "Rachel K");
     await page.waitForTimeout(300);
-    ok("Settings shows who added them and a way out (the invite promises one), in the app too",
-      await page.locator("#setTeam").isVisible() && /Dana Lee at Bright Steps added you/.test(await page.locator("#setTeamWho").innerText()) && await page.locator("#setTeamLeave").isVisible());
+    ok("Settings shows whose plan it is and Leave (the invite promises a way out), in the app too",
+      await page.locator("#setTeam").isVisible() && (await page.locator("#setTeamWho").innerText()).trim() === "You're on Dana Lee's Sona Clinic plan." && await page.locator("#setTeamLeave").isVisible());
     const t = await visibleText(page), hit = t.match(SELLING);
-    ok("…naming no plan and no price", !hit, hit ? t.slice(Math.max(0, hit.index - 60), hit.index + 60) : "");
+    ok("…with no price, trial or way to buy", !hit, hit ? t.slice(Math.max(0, hit.index - 60), hit.index + 60) : "");
     await page.locator("#setTeamLeave").click();
     await page.waitForTimeout(250);
-    ok("…and Leave this clinic posts leave, once", posts.filter((p) => p.path === "/api/slp/team").length === 1 && posts.some((p) => p.path === "/api/slp/team" && p.body.action === "leave"), posts);
+    ok("…and Leave posts leave, once", posts.filter((p) => p.path === "/api/slp/team").length === 1 && posts.some((p) => p.path === "/api/slp/team" && p.body.action === "leave"), posts);
     ok("…with no page errors", errors.length === 0, errors);
     await context.close();
   });
@@ -779,8 +777,18 @@ try {
     ok("the app stays on /slps and the dashboard renders there, with no reload", new URL(page.url()).pathname === "/slps" && navs === 0 && (await page.locator("#sidebarName").textContent()) === "Rachel K", { url: page.url(), navs });
     ok("…with no page errors", errors.length === 0, errors);
     await context.close();
-    const src = read("public/sona.js").split("\n").slice(0, 20).join("\n");
-    ok("…pinned in sona.js's first lines: /slps is the dashboard, beside /slp.html and its sign-in", src.includes("/^\\/(slps|slp(-login)?(\\.html)?)$/.test(global.location.pathname)"), src);
+    const src = read("public/sona.js").split("\n").slice(0, 110).join("\n");
+    ok("…pinned in sona.js's first lines: /slps is the dashboard, beside /slp.html and its sign-in", src.includes("!/^\\/(slps|slp(-login)?(\\.html)?)$/.test(global.location.pathname)"), src.slice(0, 200));
+  });
+
+  await section("no community in the app", async () => {
+    const { context, page, errors } = await open("/slp.html#community", { viewport: { width: 1280, height: 1000 } });
+    await page.waitForFunction(() => document.getElementById("sidebarName").textContent === "Rachel K");
+    await page.waitForTimeout(250);
+    ok("the dashboard shows no one else's posts (SLPCLEAN1): #community opens Today, and the page asks the community for nothing",
+      (await page.evaluate(() => location.hash)) === "#today" && await page.locator("#page-today").isVisible() && !(await page.locator("[data-community-block]").count()) && !posts.some((p) => /community/.test(p.path)));
+    ok("…with no page errors", errors.length === 0, errors);
+    await context.close();
   });
 
   await section("every other page sends the app to the dashboard", async () => {

@@ -45,9 +45,10 @@ import {
  * tying it to the family switch would make every flip silently open or shut
  * a clinician's checkout, which nobody would think to check.
  *
- * Web only, like every buy button a clinician sees: the dashboard never
- * renders inside the iOS app, so this never meets Apple's rules on in-app
- * purchases.
+ * Web only, like every buy button a clinician sees: the clinicians' iPhone
+ * app hides every price, offer and checkout door (data-sells, SLPAPP1) and
+ * opens no checkout by itself (TRIALGO1 is the browser's), so this never
+ * meets Apple's rules on in-app purchases.
  */
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

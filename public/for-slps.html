@@ -23,7 +23,7 @@
   </script>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Sona for speech therapists — send home practice they’ll play</title>
-  <meta name="description" content="Sona Pro and Sona Clinic for speech therapists: auto-plan home practice, share the app with clients, and see who practiced at home. Start with 14 days free. Built with Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical fellowship." />
+  <meta name="description" content="Sona Pro and Sona Clinic for speech therapists, 14 days free. Play Sona games in your sessions, share the app with clients, and see who practiced at home. Built with Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical fellowship." />
   <!-- THE PLANS PAGE (17 Nov 2026). Served at /plans (next.config.js); the
        front door at / is the packet opt-in (packet.html), which sends people
        here. Never at /for-slps: that address is a cached permanent redirect
@@ -40,14 +40,14 @@
   <meta property="og:site_name" content="Sona" />
   <meta property="og:url" content="https://www.speaksona.com/plans" />
   <meta property="og:title" content="Send home practice they’ll play." />
-  <meta property="og:description" content="Speech therapists auto-plan home practice, share the app with clients, and see who practiced at home. Start with 14 days free." />
+  <meta property="og:description" content="Sona Pro for speech therapists: play Sona games in your sessions, share the app with clients, and see who practiced at home. 14 days free." />
   <meta property="og:image" content="https://speaksona.com/og-slp.png?v=4" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
-  <meta property="og:image:alt" content="Sona for speech therapists: send home practice they'll play." />
+  <meta property="og:image:alt" content="Sona for speech therapists." />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Send home practice they’ll play." />
-  <meta name="twitter:description" content="Speech therapists auto-plan home practice, share the app with clients, and see who practiced at home. Start with 14 days free." />
+  <meta name="twitter:description" content="Sona Pro for speech therapists: play Sona games in your sessions, share the app with clients, and see who practiced at home. 14 days free." />
   <meta name="twitter:image" content="https://speaksona.com/og-slp.png?v=4" />
 
   <!-- The bird with no card behind him. The home-screen icon keeps its
@@ -102,7 +102,7 @@
   <div class="hero-intro">
     <p class="eyebrow">Sona for speech therapists</p>
     <h1>Send home practice <span>they&rsquo;ll play.</span></h1>
-    <p class="lede">Auto-plan home practice, share the app with clients, and see who practiced at home.</p>
+    <p class="lede">Play Sona games in your sessions, share the app with clients, and see who practiced at home.</p>
   </div>
 
   <div class="hero-r" aria-hidden="true">
@@ -121,8 +121,15 @@
         <label for="fEmail">Your work email</label>
         <input id="fEmail" type="email" inputmode="email" autocomplete="email" placeholder="you@yourclinic.org" required />
       </div>
-      <button class="btn" id="fGo" type="submit" aria-describedby="fNext">Start your 14-day free trial</button>
-      <p class="next-step" id="fNext">We’ll email you a sign-in link. Then pick your plan: no charge for 14 days.</p>
+      <!-- THE TRIAL, NOT A FREE DASHBOARD (SLPPRO1, 17 Nov 2026, Travis: "i
+           want this to be sona pro tho. this is what they access when they
+           create a free trial"). The price and the days are lib/caseload's
+           PRO_PRICE, PRO_PER and PRO_TRIAL_DAYS (tests/shiptest pins them):
+           the email proves the inbox, then the dashboard opens on Sona Pro's
+           page with the trial's button, card up front at Stripe. -->
+      <button class="btn" id="fGo" type="submit" aria-describedby="fTerms fNext">Start your free trial</button>
+      <p class="next-step trial-terms" id="fTerms">14 days free, then $19.99 a month. Cancel anytime.</p>
+      <p class="next-step" id="fNext">We’ll email you a sign-in link.</p>
       <div class="serr" id="fErr" role="alert"></div>
     </form>
     <div class="sent" id="sent" role="status" hidden>
@@ -143,20 +150,20 @@
   <h2>What you can do with Sona.</h2>
   <ul class="workflow">
     <li class="workflow-step">
-      <h3>Plan tomorrow’s sessions</h3>
-      <p>List who you’re seeing and get play-based activity ideas for each session, ready to edit.</p>
-    </li>
-    <li class="workflow-step">
-      <h3>Create AI homework</h3>
-      <p>Draft a take-home practice note with AI. You choose the targets and review the draft.</p>
+      <h3>Pick Sona games for each session</h3>
+      <p>Choose a sound and an age. Sona picks three of its games, and you play them right on your device, set to that child’s sound.</p>
     </li>
     <li class="workflow-step">
       <h3>Share the app with clients</h3>
-      <p>Send a family link so parents can set up Sona on their own device.</p>
+      <p>Email a family a login for the Sona app, or send a link, so parents can set up Sona on their own device.</p>
     </li>
     <li class="workflow-step">
-      <h3>Run a practice? Add every clinician</h3>
-      <p>With Sona Clinic, each clinician gets their own dashboard, and you see how many of their children practiced this week.</p>
+      <h3>See who practiced at home</h3>
+      <p>Days practiced and words said out loud for every child, with a progress note you can copy.</p>
+    </li>
+    <li class="workflow-step">
+      <h3>Send homework home</h3>
+      <p>Pick the sound and how many words a day. It’s waiting in the family’s Sona app.</p>
     </li>
   </ul>
 </section>
@@ -166,19 +173,20 @@
      one to the constants checkout charges ($19.99, $99, 14 days, 25 seats).
      Printed exactly as charged: never "$20", never "$100", never divided per
      clinician. The trial's terms sit at the point of purchase, as renewal
-     laws ask. A button here only remembers which plan was wanted (a hint the
-     dashboard's plan page reads) and brings the visitor to the one form:
-     checkout needs a signed-in clinician, so the email comes first. -->
+     laws ask. A button here only remembers which plan was wanted (the
+     dashboard reads it once, to open that plan's trial checkout for a new
+     account) and brings the visitor to the one form: checkout needs a
+     signed-in clinician, so the email comes first. Kept short (Travis, 18
+     Nov 2026: "drastically simplify"). -->
 <section class="wrap pricing" id="pricing" aria-labelledby="pricingH">
   <h2 id="pricingH">Pick your plan.</h2>
-  <p class="pricing-lede">Every family who joins through your link gets every game while your plan is on.</p>
   <div class="plans">
     <article class="plan" id="planPro">
       <h3>Sona Pro</h3>
       <p class="for">For one clinician</p>
       <p class="price"><b>$19.99</b> a month</p>
       <ul>
-        <li>Your dashboard: plan sessions, draft homework and see who practiced at home</li>
+        <li>Session games, and see who practiced at home</li>
         <li>Unlimited families: everyone who joins through your link gets every game</li>
         <li>Every game on your own phone or tablet</li>
       </ul>
@@ -196,9 +204,9 @@
       <p class="for">For your whole practice</p>
       <p class="price"><b>$99</b> a month</p>
       <ul>
-        <li>Everything in Sona Pro, for every clinician at your practice: up to 25, you included</li>
-        <li>Each clinician gets their own dashboard, on their computer or phone</li>
-        <li>Your clinic view: how many children each clinician has on Sona and how many practiced this week. Never a child&rsquo;s name, sounds or pass rate.</li>
+        <li>Everything in Sona Pro for up to 25 clinicians, you included</li>
+        <li>Each clinician gets their own dashboard</li>
+        <li>See how many children each clinician has on Sona and how many practiced this week. Never a child&rsquo;s name.</li>
       </ul>
       <button class="btn" type="button" data-plan="clinic">Try Sona Clinic free</button>
       <p class="terms">14 days free, then $99 a month. Card required. Cancel during the trial and you pay nothing. One free trial per clinician.</p>
@@ -253,7 +261,7 @@
     </div>
     <div class="q">
       <button type="button" aria-expanded="false" aria-controls="a2" id="q2">What's stored, and where?<span>+</span></button>
-      <p class="a" id="a2" hidden>If you start from this page: your email, kept by Sona and on our email list at Resend so Rachel's tips can reach you, and in our contact list at GoHighLevel. Your account: email, name, clinic and code. Your card, when you start a free trial: held by Stripe, which runs the checkout and the billing. Sona never sees the card number. For each consenting family: the child's first name and age, target sounds, practice days and counts, pass rate per sound, your assignments, and when the parent consented. Hosted on Vercel, stored in Upstash, the email list via Resend, emails and contacts in GoHighLevel. If you type a parent's email when you add a child, we hand it to GoHighLevel to deliver that one email with the link, and GoHighLevel keeps it as a contact. Sona's own server keeps no copy: not stored, not logged. Analytics (PostHog) on grown-up pages, and anonymous counts our server passes on from the app, and a Meta ad pixel on this sign-up page so we can tell which of our ads work — neither ever runs where a child practices, and neither is sent a child's name. No ads in the app, no data sales, no profiling.</p>
+      <p class="a" id="a2" hidden>If you start from this page: your email, kept by Sona and on our email list at Resend so Rachel's tips can reach you, and in our contact list at GoHighLevel. Your account: email, name, clinic and code. Your card, when you start a free trial: held by Stripe, which runs the checkout and the billing. Sona never sees the card number. For each consenting family: the child's first name and age, target sounds, practice days and counts, pass rate per sound, your assignments, and when the parent consented. Hosted on Vercel, stored in Upstash, the email list via Resend, emails and contacts in GoHighLevel. If you type a parent's email when you add a child, we hand it to GoHighLevel to deliver that one email with the link, and GoHighLevel keeps it as a contact. Sona's own server keeps no copy: not stored, not logged. Add a family emails the parent their Sona login too, so that email holds the password; Sona's server keeps only a scrambled copy of it. Session games sends Anthropic, our AI provider, the sound, word position, age band and session length you choose and the few words you type about what the child loves, to pick the games, and Sona doesn't keep them; leave out children's names. A game you play from Session games runs on your device and saves nothing to a family's Sona. Analytics (PostHog) on grown-up pages, and anonymous counts our server passes on from the app, and a Meta ad pixel on this sign-up page so we can tell which of our ads work — neither ever runs where a child practices, and neither is sent a child's name. No ads in the app, no data sales, no profiling.</p>
     </div>
     <div class="q">
       <button type="button" aria-expanded="false" aria-controls="a3" id="q3">How is data deleted?<span>+</span></button>
@@ -274,7 +282,7 @@
         <h2>Bring more play to home practice.</h2>
       </div>
     </div>
-    <button class="btn yel" id="finalGo" type="button">Start your 14-day free trial</button>
+    <button class="btn yel" id="finalGo" type="button">Start your free trial</button>
   </div>
 </section>
 </main>
@@ -314,7 +322,7 @@
       if (attrib.utm_source) src = attrib.utm_source.replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 30) || src;
     } catch (e) {}
 
-    var LABEL = "Start your 14-day free trial";
+    var LABEL = "Start your free trial";
 
     // THE ERROR SITS UNDER THE BUTTON, which on a laptop is the bottom edge of
     // the window — so a refused sign-up looked like a button that did nothing.
@@ -336,9 +344,10 @@
     /**
      * A PLAN BUTTON REMEMBERS THE PLAN AND BRINGS THEM TO THE FORM. Checkout
      * needs a signed-in clinician, so the plan cannot be bought from here.
-     * The dashboard's plan page reads this and highlights that card ("pro" or
-     * "clinic"); it is a hint, never an entitlement, and the server decides
-     * what is bought. Kept in this browser only.
+     * The dashboard reads this once ("pro" or "clinic"): a brand-new account
+     * goes straight to that plan's trial checkout (TRIALGO1). It is a hint,
+     * never an entitlement, and the server decides what is bought. Kept in
+     * this browser only.
      */
     var planBtns = document.querySelectorAll("[data-plan]");
     for (var b = 0; b < planBtns.length; b++) {
@@ -384,9 +393,6 @@
       busy(true);
       fetch("/api/slp/auth/request", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        // THE TRIAL'S DOOR (17 Nov 2026): the same emailed sign-in link this
-        // form sent before, and it grants nothing. The account it makes is
-        // locked until a plan's trial starts, on the dashboard's plan page.
         body: JSON.stringify({ flow: "trial", email: email, source: src, attrib: attrib }),
       }).then(function (r) { return r.json(); }).then(function (j) {
         busy(false);
@@ -408,10 +414,10 @@
         }
         // A TRIAL STARTED, with no form data attached: the opt-in at / owns
         // Lead, so this page's step is InitiateCheckout. Never a completed
-        // registration: nothing is bought until the dashboard's plan page.
+        // registration: nothing is bought until Stripe's checkout.
         try { if (window.sonaTrack) sonaTrack("InitiateCheckout"); } catch (e) {}
         $("sentT").textContent = "Check your email";
-        showDone("We sent a sign-in link to " + email + ". Open it, then pick your plan to start your free trial.");
+        showDone("We sent a sign-in link to " + email + ". Open it to start your free trial.");
       }).catch(function () {
         busy(false);
         err("Network hiccup — try again.");
