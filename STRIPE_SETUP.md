@@ -29,7 +29,7 @@ Project **sona → Settings → Environment Variables** (Production **and** Prev
 | `NEXT_PUBLIC_SITE_URL` | your site URL, e.g. `https://getsona.com` | optional* |
 | `STRIPE_PRICE_ID` | a Price ID, if you'd rather manage the price in Stripe | optional |
 | `STRIPE_PRICE_ID_SLP_PRO` | a **monthly $19.99** Price for "Sona Pro" (below) | optional |
-| `STRIPE_PRICE_ID_SLP_CLINIC` | a **monthly $99** Price for "Sona Clinic" (below) | optional |
+| `STRIPE_PRICE_ID_SLP_CLINIC` | a **monthly $99** Price for "Sona Clinic" (below; hidden from sale since 18 Nov 2026, so not needed yet) | optional |
 | `STRIPE_PRICE_ID_SLP_SELF` | a yearly **$59.99** Price for "Sona Premium for you" (retired from sale 12 Nov 2026; no longer read) | — |
 | `STRIPE_PRICE_ID_SLP_CASELOAD_ADDON` | a yearly **$59.99** Price for "Sona Premium for your caseload" (retired from sale 12 Nov 2026; no longer read) | — |
 | `STRIPE_PORTAL_CONFIG_CASELOAD` | a billing-portal configuration id (`bpc_…`) for the clinician plans — only if you'd rather make it yourself (below) | optional |
@@ -59,15 +59,19 @@ Then **push any commit** (or redeploy) so the new vars take effect.
 
 ## Sona Pro — the clinician plan on sale (12 Nov 2026)
 
-**$19.99 a month**, bought by a clinician from their dashboard
-(`/slp.html#premium`, the page called **Your plan**, or Settings →
-`POST /api/slp/plan { plan: "pro" }`). It turns on the clinician's dashboard
-(every account made from 12 Nov 2026 needs it or Sona Clinic, the 13 to 17
-Nov free-dashboard signups included since 17 Nov 2026), every game on their
-own phone, and every game for every family on their link, with no cap on
-families. Stamped `plan: slp-pro`. A brand-new account goes straight from
-its sign-in link to this checkout (TRIALGO1), or to Sona Clinic's when it
-chose Clinic on `/plans`.
+**$19.99 a month**, chosen on the website (`/plans`) and paid on Stripe's
+checkout (`POST /api/slp/plan { plan: "pro" }`). **The dashboard sells
+nothing** (Travis, 18 Nov 2026: "they dont purcahse in the dashboard. just
+on the site"): it has no plan page, prices or plan cards. A clinician who
+picked a plan on `/plans`, or a brand-new account, goes from the emailed
+sign-in link straight to this checkout (TRIALGO1); a locked account sees one
+screen pointing to `/plans#pricing`. Stripe's success and cancel return to
+`/slp.html…#premium`, which the dashboard reads. A paying clinician's
+**Manage billing** is in the dashboard's Settings, on the web. It turns on
+the clinician's dashboard (every account made from 12 Nov 2026 needs it, the
+13 to 17 Nov free-dashboard signups included since 17 Nov 2026), every game
+on their own phone, and every game for every family on their link, with no
+cap on families. Stamped `plan: slp-pro`.
 
 - **A 14-day free trial, once per clinician, card up front.** Checkout sets
   `trial_period_days: 14` and asks for a card; Stripe charges $19.99 when the
@@ -85,9 +89,15 @@ chose Clinic on `/plans`.
 - **A free month for someone you choose:** make a Stripe coupon (100% off,
   duration "once" or "repeating"); checkout already accepts promotion codes.
 
-## Sona Clinic — a practice's plan (17 Nov 2026)
+## Sona Clinic — a practice's plan (17 Nov 2026; HIDDEN since 18 Nov 2026)
 
-**$99 a month**, bought by a practice owner from their dashboard (Your plan →
+**Not on sale** (Travis, 18 Nov 2026: "hide it for now"). While
+`CLINIC_ON` is `false` (`lib/caseload.ts`, and `var CLINIC_ON` in
+`public/for-slps.html`), `/api/slp/plan` refuses a Clinic checkout and
+creates nothing, so there is nothing to set up in Stripe yet; what follows
+is for the day it is switched on.
+
+**$99 a month**, bought by a practice owner on the website (`/plans`, then
 `POST /api/slp/plan { plan: "clinic" }`). Every clinician the owner adds (up
 to 25, the owner included) gets what Sona Pro gives once they accept the
 emailed invite; the owner sees two numbers per clinician, never a child.

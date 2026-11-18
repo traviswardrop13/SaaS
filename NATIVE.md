@@ -587,9 +587,12 @@ RevenueCat the email, and their next renewal brings it to Sona.
 Sona Pro ($19.99 a month, 14 days free the first time: the dashboard, the
 clinician's own phone and every family on their link) and Sona Clinic ($99 a
 month, the same for every clinician a practice owner adds, up to 25 with the
-owner; one free trial per clinician across both plans) — and before them
+owner; one free trial per clinician across both plans; hidden from sale since
+18 Nov 2026, `CLINIC_ON` in `lib/caseload.ts`) — and before them
 "Sona Premium for you" and "Sona Premium for your caseload", still renewing
-for those who bought them — are sold to clinicians on speaksona.com, from the dashboard — and the
+for those who bought them — are sold to clinicians on speaksona.com: picked
+on `/plans`, paid on Stripe's checkout (since 18 Nov 2026 the dashboard
+itself shows no price or plan card, only Settings' Manage billing) — and the
 dashboard never renders in the FAMILY app: `slp.html` sends that native shell
 straight to Home before it draws or calls anything. So no clinician buy button
 can appear in the family app, **there is no App Store product for any of these

@@ -338,10 +338,13 @@ ok("the user-facing word is NOT 'founding' — that already means the free SLP-r
     /We are not selling new family subscriptions on speaksona\.com\./.test(off) && !/\$\s?\d/.test(off), off.slice(0, 200));
   // "family", every time: a clinician's plan IS sold on speaksona.com, two
   // sections down the same page (Sona Pro since 12 Nov 2026; Sona Clinic
-  // beside it since 17 Nov 2026, so the pointer names the section's new title)
-  ok("…and say FAMILY subscriptions, pointing a clinician at the plans still sold here",
-    !/New Sona Premium subscriptions are sold/.test(terms) && !/We are not selling new subscriptions on/.test(terms) && /A clinician(?:&apos;|')s plan is still sold here: see Sona Pro and Sona Clinic for clinicians below\./.test(off) &&
-    /<Section title="Sona Pro and Sona Clinic for clinicians">/.test(terms));
+  // beside it since 17 Nov 2026, so the pointer names the section's new title;
+  // hidden since 18 Nov 2026 behind clinicOn(), SLPSITE1, so both the pointer
+  // and the title have a Sona Pro arm and a both-plans arm, and agree)
+  ok("…and say FAMILY subscriptions, pointing a clinician at the plans still sold here, by the section's title in either Clinic state",
+    !/New Sona Premium subscriptions are sold/.test(terms) && !/We are not selling new subscriptions on/.test(terms) &&
+    /\{clinicOn\(\) \? \( <>A clinician(?:&apos;|')s plan is still sold here: see Sona Pro and Sona Clinic for clinicians below\.<\/> \) : \( <>A clinician(?:&apos;|')s plan is still sold here: see Sona Pro for clinicians below\.<\/> \)\}/.test(off) &&
+    /\{clinicOn\(\) \? \( <Section title="Sona Pro and Sona Clinic for clinicians">[\s\S]*?<\/Section> \) : \( <Section title="Sona Pro for clinicians">/.test(terms));
   // the charter paragraph is an offer only while the website sells
   const charterOff = between(terms, ") : ( <> <strong>Charter price.</strong>", "</>");
   ok("…and with the website not selling, the charter paragraph is what a charter plan costs, not an offer",

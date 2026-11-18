@@ -3,7 +3,7 @@ import { readSession, liveSession, kvCmd, kvConfigured, randomToken, sendSelfLin
 import { rateLimit } from "@/lib/rateLimit";
 import { readAccount } from "@/lib/roster";
 import {
-  selfStatus, requestAccess, bumpDaily, selfTokenKey, StoreUnavailable,
+  selfStatus, requestAccess, bumpDaily, selfTokenKey, StoreUnavailable, planNames,
   SELF_LINKS_PER_DAY, SELF_TOKEN_TTL, type SelfStatus,
 } from "@/lib/caseload";
 
@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
     if (!self.canRequest) {
       return NextResponse.json({
         ok: false, needPlan: !self.active,
-        error: self.active ? "Your own Premium is already on." : "Premium on your own phone or tablet comes with Sona Pro or Sona Clinic.",
+        error: self.active ? "Your own Premium is already on." : "Premium on your own phone or tablet comes with " + planNames() + ".",
       }, { status: 409 });
     }
     // Recorded on its own key (slpaccess, a hash), never on the account
@@ -89,7 +89,7 @@ export async function POST(req: NextRequest) {
         }, { status: 403 })
       : NextResponse.json({
           ok: false, needPlan: true,
-          error: "Premium on your own phone or tablet comes with Sona Pro or Sona Clinic. Once one is on, send yourself a link.",
+          error: "Premium on your own phone or tablet comes with " + planNames() + ". Once it's on, send yourself a link.",
         }, { status: 403 });
   }
 

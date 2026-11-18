@@ -3,7 +3,7 @@ import Stripe from "stripe";
 import { readSession, liveSession, kvConfigured } from "@/lib/slpAuth";
 import { rateLimit } from "@/lib/rateLimit";
 import {
-  planStatus, selfStatus, proStatus, clinicStatus, dashboardOpen, activateFromSession, readAcct, readPlan, grandfathered, StoreUnavailable,
+  planStatus, selfStatus, proStatus, clinicStatus, dashboardOpen, activateFromSession, readAcct, readPlan, grandfathered, StoreUnavailable, clinicOn,
   PRO_CENTS, PRO_PRICE, PRO_PER, PRO_INTERVAL, PRO_TRIAL_DAYS, PRO_PLAN, PRO_NAME,
   CLINIC_CENTS, CLINIC_PRICE, CLINIC_PER, CLINIC_INTERVAL, CLINIC_TRIAL_DAYS, CLINIC_PLAN, CLINIC_NAME, CLINIC_SEATS,
 } from "@/lib/caseload";
@@ -15,7 +15,10 @@ import {
  *    their link.
  *  - SONA CLINIC (Travis, 17 Nov 2026): $99 a month, everything Sona Pro
  *    gives for every clinician the owner adds (up to CLINIC_SEATS, the owner
- *    included), and the owner's view of them (/api/slp/team).
+ *    included), and the owner's view of them (/api/slp/team). HIDDEN since
+ *    18 Nov 2026 (lib/caseload CLINIC_ON): while it is off, GET offers no
+ *    Clinic and names no price (`clinic.on` false), and POST refuses a
+ *    Clinic checkout and creates nothing.
  * Both with a 14-day free trial, card up front, and ONE trial per clinician
  * across the two (lib/caseload proStatus).
  *
@@ -138,18 +141,30 @@ export async function GET(req: NextRequest) {
         // page sells them nothing.
         offer: !pro.active && !clinic.active && !(plan.active && self.active),
       },
-      clinic: {
-        name: CLINIC_NAME, price: CLINIC_PRICE, per: CLINIC_PER, trialDays: CLINIC_TRIAL_DAYS, seats: CLINIC_SEATS,
-        role: clinic.role, active: clinic.active, status: clinic.status, trialEnd: clinic.trialEnd,
-        periodEnd: clinic.periodEnd, cancelAtPeriodEnd: clinic.cancelAtPeriodEnd,
-        // The one trial is for either plan: the same answer as Pro's.
-        trialAvailable: pro.trialAvailable,
-        ...who,
-        // Offered to anyone it does not already cover, a Sona Pro holder
-        // included (upgrading) — and a clinician covered free as promised,
-        // since what it adds is their colleagues.
-        offer: !clinic.active,
-      },
+      clinic: clinicOn()
+        ? {
+            on: true,
+            name: CLINIC_NAME, price: CLINIC_PRICE, per: CLINIC_PER, trialDays: CLINIC_TRIAL_DAYS, seats: CLINIC_SEATS,
+            role: clinic.role, active: clinic.active, status: clinic.status, trialEnd: clinic.trialEnd,
+            periodEnd: clinic.periodEnd, cancelAtPeriodEnd: clinic.cancelAtPeriodEnd,
+            // The one trial is for either plan: the same answer as Pro's.
+            trialAvailable: pro.trialAvailable,
+            ...who,
+            // Offered to anyone it does not already cover, a Sona Pro holder
+            // included (upgrading) — and a clinician covered free as promised,
+            // since what it adds is their colleagues.
+            offer: !clinic.active,
+          }
+        // HIDDEN (18 Nov 2026, lib/caseload CLINIC_ON): never offered, and no
+        // price, seats or trial to print. A Clinic plan that somehow exists
+        // is still reported (its role, its dates and, only then, its name),
+        // because it still covers whoever it covers.
+        : {
+            on: false, offer: false,
+            role: clinic.role, active: clinic.active, status: clinic.status, trialEnd: clinic.trialEnd,
+            periodEnd: clinic.periodEnd, cancelAtPeriodEnd: clinic.cancelAtPeriodEnd,
+            ...(clinic.role ? { name: CLINIC_NAME, ...who } : {}),
+          },
       dashboard: { open },
       grandfathered: grandfathered(acct),
       ...(sid ? { activated } : {}),
@@ -182,8 +197,15 @@ export async function POST(req: NextRequest) {
   if (!kind) {
     return NextResponse.json({
       ok: false, retired: true,
-      error: "Sona's plans for speech therapists have changed. Reload this page to see " + PRO_NAME + " and " + CLINIC_NAME + ".",
+      error: "Sona's plans for speech therapists have changed. Reload this page to see " + PRO_NAME + (clinicOn() ? " and " + CLINIC_NAME : "") + ".",
     }, { status: 409 });
+  }
+  // SONA CLINIC IS HIDDEN (Travis, 18 Nov 2026: "hide it for now"; lib/
+  // caseload CLINIC_ON). Asked for anyway (a page cached while it was on
+  // sale, a hand-made request), it is refused before Stripe or the store is
+  // asked anything, and nothing is created.
+  if (kind === "clinic" && !clinicOn()) {
+    return NextResponse.json({ ok: false, unavailable: true, error: CLINIC_NAME + " isn't available right now." }, { status: 409 });
   }
   // What this checkout sells, from lib/caseload: the same constants every
   // surface prints, so a page and its checkout cannot disagree.
@@ -291,8 +313,7 @@ export async function POST(req: NextRequest) {
   // WHAT THE CLINICIAN AGREES TO, said beside the button they press (an
   // automatic renewal after a free trial is the thing a state's renewal law
   // asks to be spelled out at the point of purchase). Stripe prints the
-  // dates; this says the terms in the same words the plan pages and the
-  // Terms use.
+  // dates; this says the terms in the same words /plans and the Terms use.
   const terms = trial
     ? "No charge today. Your free trial lasts " + offer.trialDays + " days; after that, " + offer.price + " " + offer.per + " until you cancel. Cancel before the trial ends and you pay nothing."
     : offer.price + " " + offer.per + ", charged today and every month until you cancel. Cancel anytime: " + offer.keeps;

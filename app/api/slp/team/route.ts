@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { readSession, liveSession, kvConfigured } from "@/lib/slpAuth";
 import { rateLimit } from "@/lib/rateLimit";
 import { readAccount } from "@/lib/roster";
-import { clinicStatus, bumpDaily, StoreUnavailable, CLINIC_SEATS, CLINIC_NAME } from "@/lib/caseload";
+import { clinicStatus, clinicOn, bumpDaily, StoreUnavailable, CLINIC_SEATS, CLINIC_NAME } from "@/lib/caseload";
 import {
   addMember, removeMember, leaveTeam, ownerView, viewerToday, sendTeamInviteEmail, isEmail,
 } from "@/lib/team";
@@ -26,6 +26,10 @@ import {
  * each clinician's own Today page; the server believes it within a day.
  * Reading the view writes nothing. Not behind the dashboard lock: a removal
  * must always work, and a member reads who added them even while locked.
+ *
+ * WHILE SONA CLINIC IS HIDDEN (18 Nov 2026, lib/caseload CLINIC_ON) "add" is
+ * refused before the plan or the team is read, so no invitation goes out; GET,
+ * "remove" and "leave" answer exactly as before (a removal always works).
  */
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -87,6 +91,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true, removed });
     }
     if (action !== "add") return NextResponse.json({ ok: false, error: "Unknown action." }, { status: 400 });
+    if (!clinicOn()) {
+      return NextResponse.json({ ok: false, unavailable: true, error: CLINIC_NAME + " isn't available right now." }, { status: 403 });
+    }
 
     // Adding is the plan's: a live Clinic plan (its trial counts), bought by
     // this address. A member of someone else's clinic cannot add anyone.

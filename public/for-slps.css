@@ -272,6 +272,11 @@ body:has(#packetBar:not([hidden])) .pricing { scroll-margin-top: 130px; }
 .plan .btn { align-self: flex-start; margin-top: auto; }
 .plan .terms { color: var(--muted); font-size: 13px; }
 .plan .parent-price { padding: 10px 12px; border-radius: 12px; background: #fff4d4; color: var(--body); font-size: 13px; }
+/* Sona Pro alone while Sona Clinic is hidden (SLPSITE1, 18 Nov 2026): one
+   card, centred, about as wide as one of the pair, its heading centred over
+   it. The page's script drops .one when CLINIC_ON brings the second card. */
+.plans.one { grid-template-columns: minmax(0, 560px); justify-content: center; }
+.pricing:has(.plans.one) h2 { text-align: center; }
 
 @media (max-width: 850px) {
   .workflow.three { grid-template-columns: minmax(0, 1fr); }

@@ -20,16 +20,21 @@
 //     and never "free forever"; "unlimited" only where it is true (Sona Pro,
 //     12 Nov 2026: a covered caseload has no cap)
 //   - (12 Nov 2026) a new clinician whose dashboard is Sona Pro's, and who
-//     has not started it, is shown the plan in place of the caseload
+//     has not started it, is shown a locked screen in place of the caseload
 //   - a parent's email typed into Add a child goes to the invite route once,
 //     only when typed, and the page says whether the email really went
-//   - (17 Nov 2026, SLPCLEAN1) the dashboard is five places, the AI planner
-//     first; Community, Affiliate partnerships and the homework draft are
-//     gone and their old addresses land somewhere real; the top bar's "Add a
-//     family" makes a login and emails it, sending no child's name
-//   - (17 Nov 2026) two plans on one page, Your plan: Sona Pro and Sona
-//     Clinic, each asked for by name; the closed dashboard names both; a
-//     Clinic owner's Your clinic and a member's line and Leave
+//   - (17 Nov 2026, SLPCLEAN1) Session games first; Community, Affiliate
+//     partnerships and the homework draft are gone and their old addresses
+//     land somewhere real; the top bar's "Add a family" makes a login and
+//     emails it, sending no child's name
+//   - (18 Nov 2026, Travis: "they dont purcahse in the dashboard. just on the
+//     site") the dashboard sells nothing: no Your plan page, no price, no
+//     trial button anywhere. Locked, it shows one screen with See plans to
+//     /plans#pricing; a paying clinician's Settings says the plan and its
+//     date, with Manage billing. The only checkout it opens is one the
+//     clinician asked for on the website (TRIALGO1: a new account, or
+//     /plans's pick in sona.slp.wantplan); a Clinic owner's Your clinic and
+//     a member's line and Leave stay
 import { createServer } from "http";
 import { readFileSync, existsSync } from "fs";
 import { chromium, ROOT, launchOpts } from "./_env.mjs";
@@ -111,6 +116,7 @@ const srv = createServer((req, res) => {
     // TRIALGO1: Sona Pro's checkout. CHECKOUT is the Stripe page's address, or
     // null for a server that refuses it.
     if (u.pathname === "/api/slp/plan" && req.method === "POST") return CHECKOUT ? json({ ok: true, url: CHECKOUT }) : json({ ok: false, error: "Couldn't open checkout just now." }, 502);
+    if (u.pathname === "/api/slp/plan/portal" && req.method === "POST") return json({ ok: true, url: "http://localhost:" + PORT + "/fake-stripe?portal=1" });
     if (u.pathname === "/fake-stripe") { res.writeHead(200, { "content-type": "text/html" }); res.end("<!doctype html><title>Stripe</title><p>Card page</p>"); return; }
     if (u.pathname === "/api/slp/invite" && req.method === "POST") {
       const inv = { token: "NEWTOKEN1234", label: b.label, age: b.age, sounds: b.sounds, pos: b.pos, repsPerDay: b.repsPerDay, note: b.note, createdAt: new Date().toISOString(), expiresAt: day(-30) }; DATA.invites.push(inv);
@@ -316,8 +322,9 @@ async function open(hash) {
     .replace(/<!--[\s\S]*?-->/g, "").replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:])\/\/[^\n]*/g, "$1");
   ok("the dashboard no longer promises anything 'free forever'", !/free forever/i.test(src));
   // 12 Nov 2026: a covered caseload has no cap, so "unlimited" is true — but
-  // only in the Sona Pro offer, never in a promise to a family.
-  ok("…and says 'unlimited' only in the Sona Pro offer, where it is true", (src.match(/unlimited/gi) || []).length === 1 && /<li><b>Unlimited families\.<\/b>/.test(src), (src.match(/[^.>"]*unlimited[^.<"]*/gi) || []).join(" | "));
+  // only on the website's plans (18 Nov 2026: the dashboard sells nothing),
+  // never in a promise to a family.
+  ok("…and never says 'unlimited' (the offer that could is the website's now)", (src.match(/unlimited/gi) || []).length === 0, (src.match(/[^.>"]*unlimited[^.<"]*/gi) || []).join(" | "));
   // Use the shared free-version promise without a fixed game count: parked
   // content must not be advertised as an available free game.
   ok("…and names the free version one way: free games, never 'two games'", !/two (free )?games/i.test(src) && (src.match(/daily practice and free games/g) || []).length >= 2, (src.match(/[^.>"]*two (free )?games[^.<"]*/i) || [""])[0]);
@@ -344,52 +351,41 @@ async function open(hash) {
   PLAN = PLAN_NONE;
 }
 
-// ── 9b. the offer in the top bar (Travis, 29 Sep 2026: "yes add the $80 button
-//        to the first screen"; Sona Pro since 12 Nov 2026) ──
-// A clinician lands on the planner and a returning one on Today; the
-// price lived only on the plan page, which neither sees first. The offer
-// follows them to every page: the server's price, only once the plan has
-// answered, never once there is nothing to sell, and it fits a phone.
+// ── 9b. THE DASHBOARD SELLS NOTHING (Travis, 18 Nov 2026: "they dont
+//        purcahse in the dashboard. just on the site") ──
+// No Your plan page or menu item, no offer in the top bar, no price, no
+// trial button, no checkout, on any page, whatever the plan says: Sona Pro
+// is picked on speaksona.com/plans. (From 29 Sep to 18 Nov 2026 the top bar
+// carried Sona Pro's price on every page.)
 {
-  const bar = (pg) => pg.evaluate(() => { const b = document.getElementById("premiumTop"); return { hidden: b.hidden || getComputedStyle(b).display === "none", text: b.innerText.replace(/\s+/g, " ").trim(), href: b.getAttribute("href") }; });
-  for (const hash of ["#play", "#today", "#caseload"]) {
+  const SELLS = /\$\s?\d|\bfree trial\b|Start my free trial|Try Sona Pro|Get Sona Pro|Get Sona Clinic|Sona Clinic|\ba month\b|\bper month\b|checkout|Subscribe/i;
+  const seen = (pg) => pg.evaluate(() => {
+    const out = []; const walk = (el) => { const cs = getComputedStyle(el); if (cs.display === "none" || cs.visibility === "hidden" || el.hidden) return; for (const n of el.childNodes) { if (n.nodeType === 3) out.push(n.textContent); else if (n.nodeType === 1) walk(n); } };
+    walk(document.body); return out.join(" ").replace(/\s+/g, " ");
+  });
+  for (const [label, plan] of [["nothing on yet", PLAN_NONE], ["Sona Pro on", PLAN_PRO], ["the trial already used", { ...PLAN_NONE, pro: { ...PRO_OFF, trialAvailable: false } }]]) {
+    PLAN = plan; DATA = fixture(); log.length = 0;
+    const { ctx, pg, errs } = await open("#play");
+    const hits = [];
+    for (const hash of ["#play", "#today", "#caseload", "#child/c1", "#settings", "#feedback", "#premium", "#add-family"]) {
+      if (hash === "#add-family") { await pg.evaluate(() => { location.hash = "#today"; }); await pg.waitForTimeout(120); await pg.click("#addFamilyTop"); await pg.waitForTimeout(200); }
+      else { await pg.evaluate((h) => { location.hash = h; }, hash); await pg.waitForTimeout(150); }
+      const t = await seen(pg), hit = t.match(SELLS);
+      if (hit) hits.push(hash + ": " + t.slice(Math.max(0, hit.index - 50), hit.index + 50));
+    }
+    ok(`${label}: no price, offer, trial button or plan card anywhere in the dashboard (every page, the Add a family panel, the menu)`, hits.length === 0, hits);
+    ok(`${label}: no Your plan in the menu and no offer in the top bar`, !(await pg.locator('.nav-item[data-page="premium"]').count()) && !(await pg.locator("#premiumTop").count()) && !(await pg.locator("#page-premium").count()));
+    ok(`${label}: …and nothing asks for a checkout`, !log.some((l) => l.m === "POST" && l.p === "/api/slp/plan"), JSON.stringify(log.filter((l) => l.m !== "GET")));
+    ok(`${label}: no page errors`, errs.length === 0, errs.join(" | "));
+    await ctx.close();
+  }
+  {
     PLAN = PLAN_NONE; DATA = fixture();
-    const { ctx, pg } = await open(hash);
-    const b = await bar(pg);
-    ok(`nothing on yet: ${hash} offers Sona Pro's free trial with its price, and it opens the plan`, !b.hidden && /^Try Sona Pro free/.test(b.text) && /then \$19\.99 a month/.test(b.text) && b.href === "#premium", JSON.stringify(b));
-    await ctx.close();
-  }
-  {
-    PLAN = PLAN_NONE; DATA = fixture(); log.length = 0;
-    const { ctx, pg } = await open("#today");
-    await pg.click("#premiumTop"); await pg.waitForTimeout(250);
-    const onPlan = await pg.evaluate(() => document.getElementById("page-premium").classList.contains("active"));
-    ok("…a tap opens the plan page, where the bar stops repeating the offer", onPlan && (await bar(pg)).hidden);
-    await pg.evaluate(() => { location.hash = "#caseload"; }); await pg.waitForTimeout(250);
-    ok("…and it is back on the next page", !(await bar(pg)).hidden);
-    ok("…and showing it is a read, never a write", !log.some((l) => l.m !== "GET"), JSON.stringify(log.filter((l) => l.m !== "GET")));
-    await ctx.close();
-  }
-  {
-    PLAN = { ...PLAN_NONE, pro: { ...PRO_OFF, price: "$24.99" } };  // the server's figure, whatever it is
-    const { ctx, pg } = await open("#today");
-    const b = await bar(pg);
-    ok("the price is the server's, never typed into the page", /\$24\.99 a month/.test(b.text) && !/19\.99/.test(b.text), b.text);
-    await ctx.close();
-  }
-  {
-    // the trial already used: the offer stands, without the free days
-    PLAN = { ...PLAN_NONE, pro: { ...PRO_OFF, trialAvailable: false } };
-    const { ctx, pg } = await open("#today");
-    const b = await bar(pg);
-    ok("a clinician who has had the trial is offered Get Sona Pro, with no free days", !b.hidden && /^Get Sona Pro/.test(b.text) && !/free|then/.test(b.text) && /\$19\.99 a month/.test(b.text), JSON.stringify(b));
-    await ctx.close();
-  }
-  for (const [label, plan] of [["Sona Pro on", PLAN_PRO], ["on a Sona Clinic plan", PLAN_MEMBER], ["grandfathered", { ...PLAN_NONE, active: true, source: "grandfathered", grandfathered: true, self: { ...SELF_ON, source: "grandfathered" }, pro: { ...PRO_OFF, offer: false } }],
-    ["paying for both yearly plans still renewing", { ...PLAN_NONE, active: true, source: "paid", self: { ...SELF_ON, source: "paid" }, pro: { ...PRO_OFF, offer: false } }], ["the plan didn't answer", { ok: false, error: "Couldn't check your plan just now." }]]) {
-    PLAN = plan; DATA = fixture();
-    const { ctx, pg } = await open("#today");
-    ok(`${label}: no offer in the bar`, (await bar(pg)).hidden);
+    const { ctx, pg } = await open("#premium");
+    const st = await pg.evaluate(() => ({ hash: location.hash, active: [...document.querySelectorAll(".page.active")].map((p) => p.id).join() }));
+    ok("the plan page's old address (#premium, where Stripe and its billing page return) opens Settings on an open dashboard", st.hash === "#settings" && st.active === "page-settings", JSON.stringify(st));
+    const link = await pg.evaluate(() => { const a = document.querySelector("#linkCoverage a"); return a ? { href: a.getAttribute("href"), text: a.textContent, shown: !!a.offsetParent } : null; });
+    ok("…where a caseload Sona Pro doesn't cover is pointed to the website's plans, never a checkout", !!link && link.href === "/plans#pricing" && link.text === "See plans" && link.shown, JSON.stringify(link));
     await ctx.close();
   }
   PLAN = PLAN_NONE; DATA = fixture();
@@ -397,8 +393,8 @@ async function open(hash) {
     const ctx = await browser.newContext({ viewport: { width, height: 800 } });
     const pg = await ctx.newPage();
     await pg.goto(U("#play")); await pg.waitForTimeout(900);
-    const fit = await pg.evaluate(() => { const r = (id) => document.getElementById(id).getBoundingClientRect(); const t = r("premiumTop"), d = r("downloadApp"), c = r("addFamilyTop"); return { over: document.documentElement.scrollWidth - innerWidth, row: t.bottom <= d.top + 1 && t.bottom <= c.top + 1, inside: [t, d, c].every((q) => q.left >= 0 && q.right <= innerWidth && q.width > 0) }; });
-    ok(`${width}px phone: the offer takes its own row and nothing runs off the screen`, fit.over <= 0 && fit.row && fit.inside, JSON.stringify(fit));
+    const fit = await pg.evaluate(() => { const r = (id) => document.getElementById(id).getBoundingClientRect(); const d = r("downloadApp"), c = r("addFamilyTop"); return { over: document.documentElement.scrollWidth - innerWidth, row: Math.abs(d.top - c.top) < 2, inside: [d, c].every((q) => q.left >= 0 && q.right <= innerWidth && q.width > 0) }; });
+    ok(`${width}px phone: the top bar is Download the app and Add a family, side by side, nothing off the screen`, fit.over <= 0 && fit.row && fit.inside, JSON.stringify(fit));
     await ctx.close();
   }
 }
@@ -406,124 +402,190 @@ async function open(hash) {
 // ── 9c. a closed dashboard (Travis, 12 Nov 2026: the price is "for the
 //        dashboard"): an account made from 12 Nov 2026 with no Sona Pro on ──
 // The server refuses the caseload (402 needPlan) and the plan says
-// dashboard.open:false; the page shows the plan in place of Today, Caseload
-// and a child's page, and leaves Settings and Talk to Rachel open. Since
-// 17 Nov 2026 it names both plans.
+// dashboard.open:false; the page shows ONE locked screen in place of Today,
+// Caseload and a child's page (18 Nov 2026: Echo, what opens it, the free
+// trial on speaksona.com and See plans), and leaves Settings and Talk to
+// Rachel open. No price and nothing to buy on it.
 {
   LOCKED = true; PLAN = { ...PLAN_NONE, dashboard: { open: false } }; DATA = fixture();
-  for (const hash of ["", "#play", "#today", "#caseload", "#child/c1", "#invite"]) {
+  for (const hash of ["", "#play", "#today", "#caseload", "#child/c1", "#invite", "#premium", "#community", "#applock"]) {
+    log.length = 0;
     const { ctx, pg, errs } = await open(hash);
-    const st = await pg.evaluate(() => ({ active: [...document.querySelectorAll(".page.active")].map((p) => p.id), hash: location.hash,
-      locked: !document.getElementById("proLocked").hidden, text: document.getElementById("proLocked").innerText, offer: !document.getElementById("proOffer").hidden,
-      button: document.getElementById("proBuy").textContent, kids: document.body.innerText.includes("Mia"), err: !document.getElementById("loadError").hidden }));
-    ok(`closed dashboard: ${hash} shows the plan instead — with why, and the free trial first`,
-      st.active.join() === "page-premium" && st.hash === "#premium" && st.locked && /Your dashboard comes with Sona Pro or Sona Clinic\. Start your free trial below/.test(st.text) &&
-      st.offer && st.button === "Start my free trial" && !st.kids && !st.err && errs.length === 0, JSON.stringify(st) + errs.join("|"));
+    const st = await pg.evaluate(() => { const p = document.getElementById("page-locked"); const a = document.getElementById("lockPlans");
+      return { active: [...document.querySelectorAll(".page.active")].map((p) => p.id), hash: location.hash, text: p.innerText.replace(/\s+/g, " ").trim(),
+        echo: !!p.querySelector('img[src="/assets/brand/echo-logo.webp"]'), href: a.getAttribute("href"), btn: a.classList.contains("btn") && !a.classList.contains("ghost"),
+        kids: document.body.innerText.includes("Mia"), err: !document.getElementById("loadError").hidden }; });
+    ok(`closed dashboard: ${hash || "(no address)"} shows the locked screen instead — Echo, what opens it, the free trial on speaksona.com, and See plans`,
+      st.active.join() === "page-locked" && st.hash === "#locked" && st.echo &&
+      st.text === "Your dashboard comes with Sona Pro. Start your 14-day free trial on speaksona.com. See plans" &&
+      st.href === "/plans#pricing" && st.btn && !st.kids && !st.err && errs.length === 0, JSON.stringify(st) + errs.join("|"));
+    ok(`closed dashboard: ${hash || "(no address)"} sells nothing and asks for no checkout`, !/\$\d|a month|Start my|Get Sona/.test(st.text) && !log.some((l) => l.m === "POST"), JSON.stringify(log.filter((l) => l.m !== "GET")));
     await ctx.close();
   }
   for (const hash of ["#settings", "#feedback"]) {
     const { ctx, pg } = await open(hash);
     const active = await pg.evaluate(() => [...document.querySelectorAll(".page.active")].map((p) => p.id).join());
     ok(`closed dashboard: ${hash} stays open`, active === "page-" + hash.slice(1), active);
+    if (hash === "#settings") {
+      const st = await pg.evaluate(() => ({ plan: !document.getElementById("setPlan").hidden, menu: [...document.querySelectorAll(".sidebar nav .nav-item:not([hidden])")].map((a) => a.dataset.page), out: !!document.getElementById("logout").offsetParent, del: !!document.getElementById("deleteOpen").offsetParent }));
+      ok("…its Settings holds Delete my account and the sidebar Sign out, and shows no plan line (nothing is on)", !st.plan && st.out && st.del && JSON.stringify(st.menu) === JSON.stringify(["play", "today", "caseload", "settings"]), JSON.stringify(st));
+    }
     await ctx.close();
   }
   {
-    // SLPPRO1: Add a family on a closed dashboard opens the plan, never the panel
+    // Add a family on a closed dashboard: the locked screen, never the panel or a plan card
     const { ctx, pg } = await open("#settings");
     await pg.click("#addFamilyTop"); await pg.waitForTimeout(250);
     const st = await pg.evaluate(() => ({ dialog: document.getElementById("famDialog").open, active: [...document.querySelectorAll(".page.active")].map((p) => p.id).join(), hash: location.hash }));
-    ok("closed dashboard: Add a family opens the Sona Pro page with the trial, not the panel", !st.dialog && st.active === "page-premium" && st.hash === "#premium", st);
-    ok("…and the web never shows the app's plain locked card", !(await pg.evaluate(() => document.getElementById("page-applock").classList.contains("active"))));
+    ok("closed dashboard: Add a family opens the locked screen, not the panel", !st.dialog && st.active === "page-locked" && st.hash === "#locked", st);
+    ok("…and the web never shows the app's plain card", !(await pg.evaluate(() => document.getElementById("page-applock").classList.contains("active"))));
     await ctx.close();
   }
   {
-    // an old bookmark to the community, on a closed dashboard: the plan
-    const { ctx, pg } = await open("#community");
+    // the trial's length is the server's; a trial already used says so, and offers none
+    PLAN = { ...PLAN_NONE, dashboard: { open: false }, pro: { ...PRO_OFF, trialDays: 10 } };
+    let { ctx, pg } = await open("#today");
+    ok("the trial's length on the locked screen is the server's figure", (await pg.locator("#page-locked").innerText()).includes("Start your 10-day free trial on speaksona.com."));
+    await ctx.close();
+    PLAN = { ...PLAN_NONE, dashboard: { open: false }, pro: { ...PRO_OFF, trialAvailable: false } };
+    ({ ctx, pg } = await open("#today"));
+    const t = (await pg.locator("#page-locked").innerText()).replace(/\s+/g, " ").trim();
+    ok("a trial already used: the locked screen says so, never offers one, and still points to the plans", t === "Your dashboard comes with Sona Pro. You've had your free trial. Get Sona Pro on speaksona.com. See plans", t);
+    await ctx.close();
+  }
+  {
+    // a page whose dashboard closes under it (the roster refuses on Refresh)
+    LOCKED = false; PLAN = PLAN_NONE; DATA = fixture();
+    const { ctx, pg } = await open("#today");
+    LOCKED = true; PLAN = { ...PLAN_NONE, dashboard: { open: false } };
+    await pg.click("#todayRefresh"); await pg.waitForTimeout(400);
     const st = await pg.evaluate(() => ({ active: [...document.querySelectorAll(".page.active")].map((p) => p.id).join(), hash: location.hash }));
-    ok("closed dashboard: an old #community link lands on the plan", st.active === "page-premium" && st.hash === "#premium", JSON.stringify(st));
-    await ctx.close();
-  }
-  {
-    // the plan page's offer card reads the server's price, the trial length, and the trial's terms
-    const { ctx, pg } = await open("#premium");
-    const card = await pg.evaluate(() => document.getElementById("proOffer").innerText.replace(/\s+/g, " "));
-    ok("the offer names Sona Pro, the server's price and the free days", /\$19\.99 a month · 14 days free/.test(card) && /Unlimited families/.test(card), card.slice(0, 200));
-    ok("…and says, beside the button, no charge today and what follows", /No charge today: after your free trial, \$19\.99 a month until you cancel\. Cancel before the trial ends and you pay nothing\./.test(card), card);
-    // …beside Sona Clinic, the server's figures again: price, free days, seats
-    const clinic = await pg.evaluate(() => { const c = document.getElementById("clinicOffer"); return { shown: !c.hidden && getComputedStyle(c).display !== "none", text: c.innerText.replace(/\s+/g, " ") }; });
-    ok("…beside it, Sona Clinic: the server's $99 a month, the free days and the seats, and what the owner sees (never a child)",
-      clinic.shown && /\$99 a month · 14 days free/.test(clinic.text) && /Up to 25 clinicians, you included/.test(clinic.text) &&
-      /how many children each clinician has on Sona and how many practiced in the last 7 days\. Never a child's name\./.test(clinic.text) &&
-      /No charge today: after your free trial, \$99 a month until you cancel\. Cancel before the trial ends and you pay nothing\./.test(clinic.text), clinic.text);
-    log.length = 0;
-    await pg.click("#proBuy"); await pg.waitForTimeout(300);
-    const buy = log.find((l) => l.m === "POST" && l.p === "/api/slp/plan");
-    ok("…and its button asks the server for Sona Pro's checkout, by name", !!buy && JSON.stringify(buy.b) === JSON.stringify({ plan: "pro" }), JSON.stringify(buy));
-    await ctx.close();
-  }
-  {
-    const { ctx, pg } = await open("#premium");
-    log.length = 0;
-    await pg.click("#clinicBuy"); await pg.waitForTimeout(300);
-    const buy = log.filter((l) => l.m === "POST" && l.p === "/api/slp/plan");
-    ok("…and Sona Clinic's button asks for Sona Clinic's checkout, by name, once", buy.length === 1 && JSON.stringify(buy[0].b) === JSON.stringify({ plan: "clinic" }), JSON.stringify(buy));
+    ok("an open Today whose Refresh the server now refuses (a trial run out) shows the locked screen, not an empty caseload", st.active === "page-locked" && st.hash === "#locked", JSON.stringify(st));
     await ctx.close();
   }
   LOCKED = false; PLAN = PLAN_NONE;
 }
 
-// ── 9d. STRAIGHT TO THE FREE TRIAL (TRIALGO1, 17 Nov 2026; Travis: email
-//        link, then the card page, then the dashboard). The sign-in that made
-//        the account lands on /slp.html?start=trial. ──
+// ── 9d. STRAIGHT TO STRIPE'S PAGE (TRIALGO1, 17 Nov 2026; widened 18 Nov
+//        2026). The dashboard opens a checkout only for a choice made on the
+//        website: the sign-in that made the account (/slp.html?start=trial),
+//        or /plans's pick left in localStorage "sona.slp.wantplan". ──
 {
   const PLAN_LOCKED = { ...PLAN_NONE, dashboard: { open: false } };
+  const STRIPE = "http://localhost:" + PORT + "/fake-stripe";
   const go = async (o) => {
     LOCKED = o.locked; PLAN = o.plan; CHECKOUT = o.checkout; NEW_ACCT = o.fresh; DATA = fixture(); log.length = 0;
     const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
     const pg = await ctx.newPage(); const errs = []; pg.on("pageerror", (e) => errs.push(String(e)));
-    // the plans page's pick (sona.slp.wantplan), left before the sign-up
+    // the plans page's pick (sona.slp.wantplan), left before the sign-in
     if (o.want) await pg.addInitScript((w) => { if (!sessionStorage.getItem("__w")) { localStorage.setItem("sona.slp.wantplan", w); sessionStorage.setItem("__w", "1"); } }, o.want);
-    await pg.goto(U("?start=trial")); await pg.waitForTimeout(1100);
+    await pg.goto(U(o.path == null ? "?start=trial" : o.path)); await pg.waitForTimeout(1100);
     const posts = log.filter((l) => l.m === "POST" && l.p === "/api/slp/plan");
     return { ctx, pg, errs, posts };
   };
+  const onStripe = (pg) => new URL(pg.url()).pathname === "/fake-stripe";
   {
-    const { ctx, pg, errs, posts } = await go({ locked: true, plan: PLAN_LOCKED, checkout: "http://localhost:" + PORT + "/fake-stripe", fresh: true });
-    ok("a new account on a locked dashboard goes straight to Stripe's card page for Sona Pro, with no stop on the locked page",
-      posts.length === 1 && JSON.stringify(posts[0].b) === JSON.stringify({ plan: "pro" }) && new URL(pg.url()).pathname === "/fake-stripe" && errs.length === 0, JSON.stringify({ url: pg.url(), posts, errs }));
+    const { ctx, pg, errs, posts } = await go({ locked: true, plan: PLAN_LOCKED, checkout: STRIPE, fresh: true });
+    ok("a new account on a locked dashboard goes straight to Stripe's card page for Sona Pro, with no stop on the locked screen",
+      posts.length === 1 && JSON.stringify(posts[0].b) === JSON.stringify({ plan: "pro" }) && onStripe(pg) && errs.length === 0, JSON.stringify({ url: pg.url(), posts, errs }));
     await pg.goBack(); await pg.waitForTimeout(1100);
     const back = await pg.evaluate(() => ({ search: location.search, active: [...document.querySelectorAll(".page.active")].map((p) => p.id).join(), loading: !document.getElementById("loadingState").hidden }));
-    ok("…Back from Stripe lands on the locked page with its button, never checkout again", back.search === "" && back.active === "page-premium" && !back.loading &&
+    ok("…Back from Stripe lands on the locked screen with See plans, never checkout again", back.search === "" && back.active === "page-locked" && !back.loading &&
       log.filter((l) => l.m === "POST" && l.p === "/api/slp/plan").length === 1, JSON.stringify(back));
     await ctx.close();
   }
   {
     const { ctx, pg, errs, posts } = await go({ locked: true, plan: PLAN_LOCKED, checkout: null, fresh: true });
     const st = await pg.evaluate(() => ({ search: location.search, hash: location.hash, active: [...document.querySelectorAll(".page.active")].map((p) => p.id).join(),
-      loading: !document.getElementById("loadingState").hidden, err: document.getElementById("proBuyErr").textContent, button: document.getElementById("proBuy").textContent }));
-    ok("…a checkout that won't open leaves the locked page, the error beside its button, and a clean address",
-      posts.length === 1 && st.search === "" && st.hash === "#premium" && st.active === "page-premium" && !st.loading && /Couldn't open checkout/.test(st.err) && st.button === "Start my free trial" && errs.length === 0, JSON.stringify(st));
+      loading: !document.getElementById("loadingState").hidden, err: document.getElementById("lockErr").textContent }));
+    ok("…a checkout that won't open lands on the locked screen, the reason under See plans, and a clean address",
+      posts.length === 1 && st.search === "" && st.hash === "#locked" && st.active === "page-locked" && !st.loading && /Couldn't open checkout/.test(st.err) && errs.length === 0, JSON.stringify(st));
     await ctx.close();
   }
   {
-    const { ctx, pg, errs, posts } = await go({ locked: true, plan: PLAN_LOCKED, checkout: "http://localhost:" + PORT + "/fake-stripe", fresh: true, want: "clinic" });
-    ok("…one who picked Sona Clinic on the plans page goes straight to Sona Clinic's trial instead, and the pick is forgotten",
-      posts.length === 1 && JSON.stringify(posts[0].b) === JSON.stringify({ plan: "clinic" }) && new URL(pg.url()).pathname === "/fake-stripe" && errs.length === 0, JSON.stringify({ url: pg.url(), posts, errs }));
+    const { ctx, posts } = await go({ locked: true, plan: { ...PLAN_LOCKED, pro: { ...PRO_OFF, trialAvailable: false } }, checkout: STRIPE, fresh: true });
+    ok("…a trial already spent opens no checkout by itself from ?start=trial (the locked screen says so)", posts.length === 0, JSON.stringify(posts));
+    await ctx.close();
+  }
+  {
+    const { ctx, pg, posts } = await go({ locked: false, plan: PLAN_NONE, checkout: STRIPE, fresh: false });
+    ok("…an open dashboard opens no checkout from ?start=trial either, and drops it from the address", posts.length === 0 && (await pg.evaluate(() => location.search)) === "", JSON.stringify(posts));
+    await ctx.close();
+  }
+  // /plans's pick: Sona Clinic only while the server offers it (hidden since
+  // 18 Nov 2026, lib/caseload CLINIC_ON), else Sona Pro.
+  {
+    const { ctx, pg, errs, posts } = await go({ locked: true, plan: { ...PLAN_LOCKED, clinic: { on: false, offer: false, role: null, active: false, status: "none" } }, checkout: STRIPE, fresh: true, want: "clinic" });
+    ok("a pick of Sona Clinic while the server doesn't offer it opens Sona Pro's trial instead, and the pick is forgotten",
+      posts.length === 1 && JSON.stringify(posts[0].b) === JSON.stringify({ plan: "pro" }) && onStripe(pg) && errs.length === 0, JSON.stringify({ url: pg.url(), posts, errs }));
     await pg.goBack(); await pg.waitForTimeout(900);
     ok("…and Back from Stripe opens no second checkout", log.filter((l) => l.m === "POST" && l.p === "/api/slp/plan").length === 1 && (await pg.evaluate(() => localStorage.getItem("sona.slp.wantplan"))) === null);
     await ctx.close();
   }
   {
-    const { ctx, posts } = await go({ locked: true, plan: { ...PLAN_LOCKED, pro: { ...PRO_OFF, trialAvailable: false } }, checkout: "http://localhost:" + PORT + "/fake-stripe", fresh: true });
-    ok("…a trial already spent opens no checkout by itself (the locked page asks)", posts.length === 0, JSON.stringify(posts));
+    const { ctx, pg, posts } = await go({ locked: true, plan: PLAN_LOCKED, checkout: STRIPE, fresh: true, want: "clinic" });
+    ok("…while the server does offer Sona Clinic, that pick opens Sona Clinic's checkout", posts.length === 1 && JSON.stringify(posts[0].b) === JSON.stringify({ plan: "clinic" }) && onStripe(pg), JSON.stringify(posts));
     await ctx.close();
   }
   {
-    const { ctx, pg, posts } = await go({ locked: false, plan: PLAN_NONE, checkout: "http://localhost:" + PORT + "/fake-stripe", fresh: false });
-    ok("…an open dashboard opens no checkout either, and drops ?start=trial from the address", posts.length === 0 && (await pg.evaluate(() => location.search)) === "", JSON.stringify(posts));
+    // an account that already exists, locked, back through /plans's form
+    const { ctx, pg, errs, posts } = await go({ locked: true, plan: PLAN_LOCKED, checkout: STRIPE, fresh: false, want: "pro", path: "" });
+    ok("a returning locked account that picked Sona Pro on /plans goes straight to its checkout (no ?start=trial needed)",
+      posts.length === 1 && JSON.stringify(posts[0].b) === JSON.stringify({ plan: "pro" }) && onStripe(pg) && errs.length === 0, JSON.stringify({ url: pg.url(), posts, errs }));
+    await ctx.close();
+  }
+  {
+    const { ctx, pg, posts } = await go({ locked: true, plan: { ...PLAN_LOCKED, pro: { ...PRO_OFF, trialAvailable: false } }, checkout: STRIPE, fresh: false, want: "pro", path: "" });
+    ok("…with the trial already used too (Stripe's page charges from day one, and says so)", posts.length === 1 && JSON.stringify(posts[0].b) === JSON.stringify({ plan: "pro" }) && onStripe(pg), JSON.stringify(posts));
+    await ctx.close();
+  }
+  {
+    const { ctx, pg, errs, posts } = await go({ locked: false, plan: PLAN_NONE, checkout: STRIPE, fresh: false, want: "pro", path: "" });
+    ok("…and an open dashboard whose families aren't covered, which can buy Sona Pro nowhere else now", posts.length === 1 && onStripe(pg) && errs.length === 0, JSON.stringify(posts));
+    await ctx.close();
+  }
+  {
+    const { ctx, pg, posts } = await go({ locked: false, plan: PLAN_PRO, checkout: STRIPE, fresh: false, want: "pro", path: "#today" });
+    ok("…but a clinician Sona Pro already covers opens nothing, lands on their page, and the pick is forgotten",
+      posts.length === 0 && (await pg.evaluate(() => location.hash)) === "#today" && (await pg.evaluate(() => localStorage.getItem("sona.slp.wantplan"))) === null, JSON.stringify(posts));
     await ctx.close();
   }
   LOCKED = false; PLAN = PLAN_NONE; CHECKOUT = null; NEW_ACCT = false;
+}
+
+// ── 9e. what Settings says once a plan is on (18 Nov 2026): one line, the
+//        plan and its date, and Manage billing. No price. ──
+{
+  const sec = (d) => Math.floor(d.getTime() / 1000);
+  const soon = new Date(); soon.setDate(soon.getDate() + 12); soon.setHours(12, 0, 0, 0);
+  const short = (d) => d.toLocaleDateString("en-US", { month: "short", day: "numeric", ...(d.getFullYear() !== new Date().getFullYear() ? { year: "numeric" } : {}) });
+  const card = (pg) => pg.evaluate(() => { const c = document.getElementById("setPlan"); return { shown: !c.hidden && !!c.offsetParent, line: document.getElementById("setPlanLine").textContent, manage: !document.getElementById("setManage").hidden && !!document.getElementById("setManage").offsetParent, text: c.innerText }; });
+  const TRIALING = { ...PLAN_PRO, pro: { ...PRO_ON, status: "trialing", trialEnd: sec(soon), periodEnd: sec(soon) } };
+  for (const [label, plan, want] of [
+    ["in the free trial", TRIALING, "Sona Pro · free trial until " + short(soon)],
+    ["in the trial, cancelled", { ...TRIALING, pro: { ...TRIALING.pro, cancelAtPeriodEnd: true } }, "Sona Pro · ends " + short(soon)],
+    ["paying", { ...PLAN_PRO, pro: { ...PRO_ON, periodEnd: sec(soon) } }, "Sona Pro · renews " + short(soon)],
+    ["a yearly plan still renewing", { ...PLAN_NONE, active: true, source: "paid", periodEnd: 1822000000 }, "Your yearly plan · renews " + short(new Date(1822000000 * 1000))],
+  ]) {
+    PLAN = plan; DATA = fixture(); log.length = 0;
+    const { ctx, pg, errs } = await open("#settings");
+    const c = await card(pg);
+    ok(`Settings, ${label}: "${want}", with Manage billing, and no price`, c.shown && c.line === want && c.manage && !/\$\d|a month/.test(c.text), JSON.stringify(c));
+    if (label === "in the free trial") {
+      ok("…showing it is a read, never a write", !log.some((l) => l.m !== "GET"), JSON.stringify(log.filter((l) => l.m !== "GET")));
+      await pg.click("#setManage"); await pg.waitForTimeout(500);
+      ok("…and Manage billing opens Stripe's billing page, which the server hands back", log.some((l) => l.m === "POST" && l.p === "/api/slp/plan/portal") && /\/fake-stripe\?portal=1$/.test(pg.url()), pg.url());
+    }
+    ok(`Settings, ${label}: no page errors`, errs.length === 0, errs.join(" | "));
+    await ctx.close();
+  }
+  for (const [label, plan] of [["nothing on", PLAN_NONE], ["grandfathered", { ...PLAN_NONE, active: true, source: "grandfathered", grandfathered: true, pro: { ...PRO_OFF, offer: false } }], ["the plan didn't answer", { ok: false, error: "Couldn't check your plan just now." }]]) {
+    PLAN = plan; DATA = fixture();
+    const { ctx, pg } = await open("#settings");
+    ok(`Settings, ${label}: no plan line and no billing`, !(await card(pg)).shown);
+    await ctx.close();
+  }
+  PLAN = PLAN_NONE;
 }
 
 // ── 10. a parent's email: typed only if the clinician wants, used once ──
@@ -570,11 +632,11 @@ async function open(hash) {
   const st = await pg.evaluate(() => ({
     nav: [...document.querySelectorAll(".sidebar nav .nav-item:not([hidden])")].map((a) => a.dataset.page),
     team: !!document.querySelector('.sidebar nav .nav-item[data-page="team"][hidden]'),
-    plan: document.querySelector('.nav-item[data-page="premium"]').innerText.trim(),
+    plan: !!document.querySelector('.nav-item[data-page="premium"]'),
     active: [...document.querySelectorAll(".page.active")].map((p) => p.id).join(),
     crumb: document.getElementById("pageCrumb").textContent,
   }));
-  ok("the menu is five places, Session games first: Session games, Today, Caseload, Your plan, Settings", JSON.stringify(st.nav) === JSON.stringify(["play", "today", "caseload", "premium", "settings"]) && st.plan === "Your plan", st.nav.join(",") + " " + st.plan);
+  ok("the menu is four places, Session games first: Session games, Today, Caseload, Settings (Your plan left on 18 Nov 2026)", JSON.stringify(st.nav) === JSON.stringify(["play", "today", "caseload", "settings"]) && !st.plan, st.nav.join(",") + " " + st.plan);
   ok("…and Your clinic waits, hidden, for a Sona Clinic owner", st.team, JSON.stringify(st));
   ok("…and a visit with no address lands on Session games", st.active === "page-play" && st.crumb === "Session games", JSON.stringify(st));
   for (const [from, to] of [["#plan", "#play"], ["#plan-day", "#play"], ["#homework-draft", "#play"], ["#community", "#today"], ["#affiliate", "#today"]]) {
@@ -636,8 +698,8 @@ async function open(hash) {
   ok("it opens a panel: the parent's email, initials or a nickname (not a name), age, sounds, and one button",
     await pg.evaluate(() => document.getElementById("famDialog").open) && /Parent's email/.test(form) && /initials or a nickname/i.test(form) && /not their name/.test(form) &&
     /Age/.test(form) && /Target sound/.test(form) && (await pg.locator("#famGo").innerText()).trim() === "Create login and email it" && await pg.evaluate(() => document.activeElement && document.activeElement.id === "famEmail"), form.slice(0, 300));
-  ok("…and, with nothing covering the caseload, one line offers the free trial (never blocking the login)",
-    await pg.locator("#famPro").isVisible() && /Families get the free version\. Start your free Sona Pro trial so they get every game\./.test(form) && (await pg.locator("#famProBuy").innerText()).trim() === "Start my free trial" && !(await pg.locator("#famGo").isDisabled()));
+  ok("…and, with nothing covering the caseload, still no trial line, price or button to buy (18 Nov 2026: the dashboard sells nothing)",
+    !(await pg.locator("#famPro").count()) && !/trial|\$\d|Sona Pro/i.test(form) && !(await pg.locator("#famGo").isDisabled()), form);
   await pg.click("#famGo"); await pg.waitForTimeout(150);
   ok("no email: nothing is sent, and the panel says what is missing", !log.some((l) => l.p === "/api/slp/family") && /Add the parent's email/.test(await pg.locator("#famErr").innerText()));
   await pg.fill("#famEmail", "not-an-email"); await pg.click("#famGo"); await pg.waitForTimeout(150);
@@ -701,11 +763,11 @@ async function open(hash) {
     await pctx.close();
   }
 
-  // covered (Sona Pro on): nothing to offer
+  // covered (Sona Pro on): the same panel
   PLAN = PLAN_PRO; DATA = fixture();
   ({ ctx, pg } = await open("#today"));
   await pg.click("#addFamilyTop"); await pg.waitForTimeout(200);
-  ok("with Sona Pro on, the panel offers no trial", !(await pg.locator("#famPro").isVisible()) && !/trial/i.test(await famText(pg)));
+  ok("with Sona Pro on, the panel is the same, with nothing to offer", !/trial|\$\d/i.test(await famText(pg)));
   await ctx.close();
   PLAN = PLAN_NONE;
 }
@@ -744,7 +806,7 @@ async function open(hash) {
   const st = await pg.evaluate(() => ({ nav: [...document.querySelectorAll(".sidebar nav .nav-item:not([hidden])")].map((a) => a.dataset.page),
     active: [...document.querySelectorAll(".page.active")].map((p) => p.id).join(), crumb: document.getElementById("pageCrumb").textContent,
     rows: [...document.querySelectorAll("#teamList .team-row")].map((r) => r.innerText.replace(/\s+/g, " ").trim()), text: document.getElementById("page-team").innerText }));
-  ok("a Sona Clinic owner has Your clinic in the menu, after Your plan, and it opens", JSON.stringify(st.nav) === JSON.stringify(["play", "today", "caseload", "premium", "team", "settings"]) && st.active === "page-team" && st.crumb === "Your clinic", JSON.stringify(st));
+  ok("a Sona Clinic owner has Your clinic in the menu, before Settings, and it opens", JSON.stringify(st.nav) === JSON.stringify(["play", "today", "caseload", "team", "settings"]) && st.active === "page-team" && st.crumb === "Your clinic", JSON.stringify(st));
   ok("…one plain row per clinician, in the server's order: the owner (You), then by name, an invite last",
     st.rows.length === 3 && /^Rachel K You 6 children · 3 practiced in the last 7 days$/.test(st.rows[0]) && /^Ann Baker 2 children · 1 practiced in the last 7 days Remove$/.test(st.rows[1]) &&
     /^new@brightsteps\.example Invited Resend Remove$/.test(st.rows[2]), JSON.stringify(st.rows));
@@ -759,7 +821,7 @@ async function open(hash) {
   const PLAN_MEMBER2 = PLAN_MEMBER;
   PLAN = PLAN_MEMBER2; TEAM = { ok: true, role: "member" }; DATA = fixture(); log.length = 0;
   const { ctx, pg, errs } = await open("#settings");
-  const card = await pg.evaluate(() => { const c = document.getElementById("setTeam"); return { shown: !c.hidden, text: c.innerText.replace(/\s+/g, " ").trim(), plan: !document.getElementById("setPremium").hidden }; });
+  const card = await pg.evaluate(() => { const c = document.getElementById("setTeam"); return { shown: !c.hidden, text: c.innerText.replace(/\s+/g, " ").trim(), plan: !document.getElementById("setPlan").hidden }; });
   ok("a member's Settings: one line, whose plan, and Leave (and no plan card repeating it)", card.shown && card.text === "You're on Dana Lee's Sona Clinic plan. Leave" && !card.plan, JSON.stringify(card));
   ok("…and Your clinic is not in their menu", !(await pg.locator('.nav-item[data-page="team"]').isVisible()));
   await pg.click("#setTeamLeave"); await pg.waitForTimeout(250);
@@ -768,6 +830,25 @@ async function open(hash) {
   ok("…with no page errors", errs.length === 0, errs.join(" | "));
   await ctx.close();
   PLAN = PLAN_NONE; TEAM = { ok: true, role: null };
+}
+
+// ── 15. Session games without the name box (Travis, 18 Nov 2026: "you can
+//        take out the dont type a childs name box") ──
+// At most one small muted line under "What do they love?"; the page still
+// refuses to send a caseload child's name it finds there.
+{
+  PLAN = PLAN_NONE; DATA = fixture(); log.length = 0;
+  const { ctx, pg, errs } = await open("#play");
+  const st = await pg.evaluate(() => { const h = document.getElementById("playNote"), page = document.getElementById("page-play");
+    return { box: !!page.querySelector(".ai-note"), warn: /Don't type a child's name/i.test(page.innerText), hint: h && h.textContent, cls: h && h.className, size: h && parseFloat(getComputedStyle(h).fontSize),
+      color: h && getComputedStyle(h).color, desc: document.getElementById("playLoves").getAttribute("aria-describedby"),
+      below: h && h.getBoundingClientRect().top >= document.getElementById("playLoves").getBoundingClientRect().bottom }; });
+  ok("Session games: the grey name box is gone, and so are its words", !st.box && !st.warn, JSON.stringify(st));
+  ok("…leaving one small muted line under the box, “No names, please.”, read with it", st.hint === "No names, please." && st.size <= 12.5 && st.color === "rgb(107, 114, 128)" && st.below && /playNote/.test(st.desc), JSON.stringify(st));
+  await pg.selectOption("#playAge", "5-6"); await pg.fill("#playLoves", "Mia loves trains"); await pg.click("#playGo"); await pg.waitForTimeout(200);
+  ok("…and a caseload child's name typed there is still refused, never sent", !log.some((l) => l.p === "/api/slp/games/pick") && /Take out “Mia” first/.test(await pg.locator("#playErr").innerText()));
+  ok("…with no page errors", errs.length === 0, errs.join(" | "));
+  await ctx.close();
 }
 
 await browser.close(); srv.close();

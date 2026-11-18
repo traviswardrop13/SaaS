@@ -23,7 +23,7 @@
   </script>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Sona for speech therapists — send home practice they’ll play</title>
-  <meta name="description" content="Sona Pro and Sona Clinic for speech therapists, 14 days free. Play Sona games in your sessions, share the app with clients, and see who practiced at home. Built with Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical fellowship." />
+  <meta name="description" content="Sona Pro for speech therapists, 14 days free. Play Sona games in your sessions, share the app with clients, and see who practiced at home. Built with Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical fellowship." />
   <!-- THE PLANS PAGE (17 Nov 2026). Served at /plans (next.config.js); the
        front door at / is the packet opt-in (packet.html), which sends people
        here. Never at /for-slps: that address is a cached permanent redirect
@@ -170,17 +170,23 @@
 
 <!-- THE PLANS (Travis, 17 Nov 2026). The figures are typed here because a
      static page cannot import lib/caseload.ts; tests/shiptest.mjs holds every
-     one to the constants checkout charges ($19.99, $99, 14 days, 25 seats).
-     Printed exactly as charged: never "$20", never "$100", never divided per
-     clinician. The trial's terms sit at the point of purchase, as renewal
-     laws ask. A button here only remembers which plan was wanted (the
-     dashboard reads it once, to open that plan's trial checkout for a new
-     account) and brings the visitor to the one form: checkout needs a
-     signed-in clinician, so the email comes first. Kept short (Travis, 18
-     Nov 2026: "drastically simplify"). -->
+     one to the constants checkout charges. Printed exactly as charged: never
+     "$20", never divided per clinician. The trial's terms sit at the point of
+     purchase, as renewal laws ask. A button here only remembers which plan
+     was wanted (the dashboard reads it once, to open that plan's trial
+     checkout from the email link) and brings the visitor to the one form:
+     checkout needs a signed-in clinician, so the email comes first. Kept
+     short (Travis, 18 Nov 2026: "drastically simplify").
+     SONA CLINIC IS HIDDEN, NOT DELETED (SLPSITE1, Travis, 18 Nov 2026: "i
+     actually wanna get rid of the 99 or hide it for now"). The markup below
+     is the switch-off state: the Sona Pro card alone, centred (.plans.one),
+     and the Clinic card inert in a <template> under it. CLINIC_ON in the
+     script at the foot, pinned equal to lib/caseload.ts's by
+     tests/shiptest.mjs, puts it on the page again with the heading's choice
+     and the kid-side line's plan names. -->
 <section class="wrap pricing" id="pricing" aria-labelledby="pricingH">
-  <h2 id="pricingH">Pick your plan.</h2>
-  <div class="plans">
+  <h2 id="pricingH">Simple pricing.</h2>
+  <div class="plans one" id="plans">
     <article class="plan" id="planPro">
       <h3>Sona Pro</h3>
       <p class="for">For one clinician</p>
@@ -199,6 +205,11 @@
       <button class="btn" type="button" data-plan="pro">Try Sona Pro free</button>
       <p class="terms">14 days free, then $19.99 a month. Card required. Cancel during the trial and you pay nothing. One free trial per clinician.</p>
     </article>
+  </div>
+  <!-- Sona Clinic's card, inert in a <template> while CLINIC_ON is false: not
+       on the page, not read aloud, not counted by search. The script at the
+       foot puts it after the Sona Pro card when the switch is on. -->
+  <template id="planClinicTpl">
     <article class="plan" id="planClinic">
       <h3>Sona Clinic</h3>
       <p class="for">For your whole practice</p>
@@ -211,14 +222,14 @@
       <button class="btn" type="button" data-plan="clinic">Try Sona Clinic free</button>
       <p class="terms">14 days free, then $99 a month. Card required. Cancel during the trial and you pay nothing. One free trial per clinician.</p>
     </article>
-  </div>
+  </template>
 </section>
 
 <section class="kidside">
   <div class="wrap in">
     <div class="txt">
       <h2>A game to play. A story to read.</h2>
-      <p>Kids can play games, read sound-focused picture books and earn coins for new buddies. Families who join through your link get every game while your Sona Pro or Sona Clinic plan is on. Without a plan, they get daily practice and free games.</p>
+      <p>Kids can play games, read sound-focused picture books and earn coins for new buddies. Families who join through your link get every game while your <span id="planNames">Sona Pro</span> plan is on. Without a plan, they get daily practice and free games.</p>
     </div>
     <div class="play-gallery">
       <figure><img src="/assets/crafted/home-piano.webp" width="768" height="432" loading="lazy" alt=""><figcaption>Piano Tiles</figcaption></figure>
@@ -342,20 +353,57 @@
     $("finalGo").onclick = function () { toForm(); };
 
     /**
+     * SONA CLINIC, HIDDEN FOR NOW (SLPSITE1, Travis, 18 Nov 2026: "i actually
+     * wanna get rid of the 99 or hide it for now"). One switch, two copies:
+     * this and CLINIC_ON in lib/caseload.ts, which tests/shiptest.mjs pins
+     * equal (as the launch switch's copies are). Off, the page is its
+     * markup: the Sona Pro card alone, centred. On, the Clinic card comes out
+     * of its <template>, the heading offers the choice and the kid-side line
+     * names both plans. The server refuses a Clinic checkout while it is
+     * off, so a stale copy of this page can sell nothing.
+     */
+    var CLINIC_ON = false;
+    if (CLINIC_ON) {
+      var tpl = $("planClinicTpl");
+      if (tpl && tpl.content) $("plans").appendChild(tpl.content.cloneNode(true));
+      $("plans").className = "plans";
+      $("pricingH").textContent = "Pick your plan.";
+      $("planNames").textContent = "Sona Pro or Sona Clinic";
+    }
+
+    /**
      * A PLAN BUTTON REMEMBERS THE PLAN AND BRINGS THEM TO THE FORM. Checkout
      * needs a signed-in clinician, so the plan cannot be bought from here.
-     * The dashboard reads this once ("pro" or "clinic"): a brand-new account
-     * goes straight to that plan's trial checkout (TRIALGO1). It is a hint,
-     * never an entitlement, and the server decides what is bought. Kept in
-     * this browser only.
+     * The dashboard reads this once ("pro", or "clinic" only while it offers
+     * Clinic): the email link goes straight to that plan's checkout
+     * (TRIALGO1), for a brand-new account and for one that is locked. It is a
+     * hint, never an entitlement, and the server decides what is bought.
+     * Kept in this browser only.
      */
     var planBtns = document.querySelectorAll("[data-plan]");
     for (var b = 0; b < planBtns.length; b++) {
       planBtns[b].onclick = function () {
         try { localStorage.setItem("sona.slp.wantplan", this.getAttribute("data-plan")); } catch (e) {}
+        if (SIGNED_IN) { location.assign("/slp.html"); return; }
         toForm();
       };
     }
+
+    /**
+     * ALREADY SIGNED IN (SLPSITE1, 18 Nov 2026). A clinician who came from
+     * the dashboard's locked screen ("See plans") is signed in already, and
+     * needs no email: a plan button takes them straight back to the
+     * dashboard, which reads the plan just remembered and opens its checkout
+     * (Stripe's page, never a dashboard page). Only the server's yes counts;
+     * no answer, or anything else, leaves the button as above (the form).
+     * Asks who is signed in and nothing more; sends nothing.
+     */
+    var SIGNED_IN = false;
+    try {
+      fetch("/api/slp/auth/me", { cache: "no-store", credentials: "same-origin" }).then(function (r) { return r.json(); }).then(function (j) {
+        if (j && j.ok === true && j.email) SIGNED_IN = true;
+      }).catch(function () {});
+    } catch (e) {}
 
     // FROM THE OPT-IN: the packet's link at the top, and the email they just
     // typed in the trial box. The email came through sessionStorage (this tab
@@ -390,6 +438,11 @@
       var email = (($("fEmail").value) || "").trim();
       $("fErr").textContent = "";
       if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { err("Enter a valid email."); $("fEmail").focus(); return; }
+      // THE FORM STARTS A TRIAL TOO (SLPSITE1, 18 Nov 2026): the dashboard
+      // sends a LOCKED account from its email link to checkout only when a
+      // plan is remembered, so the form remembers Sona Pro unless a plan
+      // button already chose one. Never overwrites that choice.
+      try { if (!localStorage.getItem("sona.slp.wantplan")) localStorage.setItem("sona.slp.wantplan", "pro"); } catch (e) {}
       busy(true);
       fetch("/api/slp/auth/request", {
         method: "POST", headers: { "Content-Type": "application/json" },

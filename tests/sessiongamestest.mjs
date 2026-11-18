@@ -321,11 +321,20 @@ try {
     const st = await page.evaluate(() => ({ active: document.getElementById("page-play").classList.contains("active"), h1: document.querySelector("#page-play h1").textContent,
       sounds: [...document.querySelectorAll("#playSound option")].map((o) => o.value), sound: document.getElementById("playSound").value,
       pos: [...document.querySelectorAll("#playPos option")].map((o) => o.value), ages: [...document.querySelectorAll("#playAge option")].map((o) => o.value), min: document.getElementById("playMin").value,
-      max: document.getElementById("playLoves").maxLength, note: document.getElementById("playNote").textContent, btn: document.getElementById("playGo").textContent, crumb: document.getElementById("pageCrumb").textContent }));
+      max: document.getElementById("playLoves").maxLength, btn: document.getElementById("playGo").textContent, crumb: document.getElementById("pageCrumb").textContent,
+      // Travis, 18 Nov 2026: "you can take out the dont type a childs name box"
+      page: document.getElementById("page-play").innerText,
+      boxes: [...document.querySelectorAll("#page-play .ai-note")].filter((e) => e.getClientRects().length > 0 && getComputedStyle(e).display !== "none" && getComputedStyle(e).visibility !== "hidden").length }));
     ok("the dashboard opens on Session games", st.active && st.h1 === "Session games" && st.crumb === "Session games" && st.btn === "Find Sona games", st);
     ok("…the form: Sona's 19 sounds, the positions R has, the four age bands, 20/30/45 minutes, and a 120-character box",
       st.sounds.length === 19 && st.sound === "R" && JSON.stringify(st.pos) === '["i","m","f","v","b","mix"]' && JSON.stringify(st.ages) === '["","3-4","5-6","7-8","9+"]' && st.min === "30" && st.max === 120, st);
-    ok("…and, in plain sight under the box, the name warning and what goes to the AI", /^Don't type a child's name\. The sound, position, age, minutes and what you type here go to our AI provider \(Anthropic\) to pick the games\.$/.test(st.note.trim()) && await page.locator("#playNote").isVisible(), st.note);
+    // The grey "Don't type a child's name…" box is gone (Travis, 18 Nov 2026).
+    // At most one small line stays under "What do they love?", and only
+    // these words; the check below that refuses a caseload child's name
+    // still runs.
+    const helpers = st.page.match(/[^\n]*\bnames?\b[^\n]*/gi) || [];
+    ok("…and no \"Don't type a child's name\" box: at most the small line \"No names, please.\"",
+      !/Don't type a child's name/i.test(st.page) && st.boxes === 0 && helpers.every((h) => h.trim() === "No names, please."), JSON.stringify({ boxes: st.boxes, helpers }));
     await page.selectOption("#playSound", "K");
     ok("choosing K takes vocalic R and blends off the positions", JSON.stringify(await page.evaluate(() => [...document.querySelectorAll("#playPos option")].map((o) => o.value))) === '["i","m","f","mix"]');
     await page.selectOption("#playSound", "R");

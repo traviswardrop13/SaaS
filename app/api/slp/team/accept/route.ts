@@ -22,7 +22,8 @@ export const dynamic = "force-dynamic";
  * days and may be forwarded or sit in a shared practice inbox; when it also
  * signed the clinician in, whoever opened it had their whole dashboard,
  * children included, for a month. So the button only joins. A browser
- * already signed in as that clinician goes straight to their plan page; any
+ * already signed in as that clinician goes straight to their dashboard's
+ * #premium (Settings, where their plan's line is, since 18 Nov 2026); any
  * other goes to the sign-in page, which says they joined and asks for the
  * ordinary fifteen-minute link or code (and carries the email list's consent
  * line, which this door never showed).
@@ -97,7 +98,9 @@ export async function POST(req: NextRequest) {
     const st = await acceptInvite(token);
     if (!st.ok && st.why === "gone") return back(url, "err=expired", 303);
     if (!st.ok) return refused(st.why);
-    // Already signed in here as the clinician who joined: their plan page.
+    // Already signed in here as the clinician who joined: their dashboard's
+    // #premium, which opens Settings (their plan's line) since the plan page
+    // went on 18 Nov 2026 (SLPSITE1).
     // Never a session made here (see above).
     let s = null;
     try { s = await liveSession(readSession(req)); } catch { s = null; }

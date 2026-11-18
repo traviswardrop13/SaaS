@@ -150,6 +150,35 @@ export const CLINIC_PLAN = "slp-clinic";                  // Stripe metadata.pla
 export const CLINIC_NAME = "Sona Clinic";
 /** Clinicians on one Clinic plan, the owner included; invited and joined both hold a seat. "Email us to add more." */
 export const CLINIC_SEATS = 25;
+/**
+ * SONA CLINIC IS HIDDEN (Travis, 18 Nov 2026: "i actually wanna get rid of
+ * the 99 or hide it for now"). Hidden, not deleted: while this is false
+ * nothing sells it or names it to a clinician. /api/slp/plan refuses a
+ * Clinic checkout and offers none, /api/slp/team adds nobody, the Terms
+ * render no Clinic paragraph, and every "comes with" line names Sona Pro
+ * alone (planNames). Everything that would honour a Clinic plan (coverage,
+ * the team's removals, leaving, deleting an account) stays as built, so a
+ * plan that somehow exists is still kept, and removing a clinician always
+ * works. Turning it on is this value and `var CLINIC_ON` in
+ * public/for-slps.html (tests/shiptest.mjs pins the two equal), plus the
+ * Clinic lines put back in public/privacy.html (CLAUDE.md says which).
+ */
+export const CLINIC_ON = false;
+
+/**
+ * Is Sona Clinic on sale here? The constant, or, on a developer's machine or
+ * in a test (never a production build: Vercel builds previews with
+ * NODE_ENV=production too), SONA_CLINIC_FORCE=1, so the Clinic suites keep
+ * exercising the dormant code. Read on every call, never cached.
+ */
+export function clinicOn(): boolean {
+  return CLINIC_ON || (process.env.NODE_ENV !== "production" && process.env.SONA_CLINIC_FORCE === "1");
+}
+
+/** What the dashboard "comes with", in a clinician's words: "Sona Pro", or "Sona Pro or Sona Clinic" while Clinic is on sale. */
+export function planNames(): string {
+  return clinicOn() ? PRO_NAME + " or " + CLINIC_NAME : PRO_NAME;
+}
 
 // The add-on. $59.99 / 12 = $4.9991, so "under $5 a month": never "$4.99 a
 // month" (that is $59.88 a year) nor "$5.00" (a rounding a reader can check

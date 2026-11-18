@@ -636,10 +636,10 @@ try {
           links: [...document.querySelectorAll("a[href], button")].filter((el) => { const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0; }).map((el) => el.getAttribute("href") || "").filter((h) => /^(https?:|\/\/|mailto:)/.test(h)) }));
         const t = await visibleText(page);
         const hit = t.match(/\$|\btrial\b|Start my|Get Sona Pro|Manage billing|checkout|a month|per month|Subscribe|Download the app/i);
-        const expect = hash === "#premium" ? "page-settings" : "page-applock";
+        const expect = "page-applock";
         if (st.active !== expect || st.sells || st.links.length || hit) leak.push({ hash, ...st, hit: hit && t.slice(Math.max(0, hit.index - 40), hit.index + 40) });
       }
-      ok(tag + "…every page but Settings is that card, and no price, trial, way to buy, data-sells door or link off the app shows anywhere", leak.length === 0, leak);
+      ok(tag + "…every page but Settings is that card (the old plan address too), and no price, trial, way to buy, data-sells door or link off the app shows anywhere", leak.length === 0, leak);
       await page.evaluate(() => { location.hash = "#applock"; }); await page.waitForTimeout(150);
       ok(tag + "…and nothing in the top bar beside it (no Add a family, no App Store link)", !(await page.locator("#addFamilyTop").isVisible()) && !(await page.locator("#downloadApp").isVisible()));
       await page.locator('#page-applock a[href="#settings"]').click(); await page.waitForTimeout(200);
@@ -667,12 +667,30 @@ try {
     await context.close();
   });
 
-  await section("the dashboard on the web still sells", async () => {
+  // 18 Nov 2026 (Travis: "they dont purcahse in the dashboard. just on the
+  // site"): the web dashboard sells nothing either. No plan menu item, plan
+  // page or top-bar offer on the web; what the web adds over the app is a
+  // way to the website's plans and Manage billing for a plan already on.
+  await section("the dashboard on the web sells nothing either", async () => {
     const { context, page } = await open("/slp.html#today", { app: false, native: false, viewport: { width: 1280, height: 1000 } });
     await page.waitForFunction(() => document.getElementById("sidebarName").textContent === "Rachel K");
     await page.waitForTimeout(300);
-    ok("on the web the Sona Pro menu item and the top bar's offer are still there", await page.locator('.nav-item[data-page="premium"]').isVisible() && await page.locator("#premiumTop").isVisible());
+    ok("on the web there is no plan menu item, plan page or top-bar offer any more", !(await page.locator('.nav-item[data-page="premium"]').count()) && !(await page.locator("#premiumTop").count()) && !(await page.locator("#page-premium").count()));
     ok("…and Settings has Delete your account too", await page.evaluate(() => !!document.getElementById("deleteCard")) && (await page.locator("#exportCsv").textContent()) === "Download CSV");
+    await context.close();
+  });
+
+  // A paying clinician in the app: their plan works there, and Settings
+  // names no plan and offers no billing (the web's Settings does both).
+  await section("a paying clinician's Settings in the app", async () => {
+    PLAN = { ...PLAN_NONE, active: true, source: "pro", self: { ...SELF_OFF, active: true, eligible: true, source: "pro" }, pro: { ...PRO_OFF, active: true, status: "trialing", trialEnd: 1822000000, periodEnd: 1822000000, trialAvailable: false, offer: false } };
+    const { context, page, errors } = await open("/slp.html#settings");
+    await page.waitForFunction(() => document.getElementById("sidebarName").textContent === "Rachel K");
+    await page.waitForTimeout(300);
+    const t = await visibleText(page), hit = t.match(SELLING);
+    ok("Settings in the app: no plan line, no Manage billing, no own-phone card and no way to the plans", !hit && !(await page.locator("#setPlan").isVisible()) && !(await page.locator("#setManage").isVisible()) && !(await page.locator("#premiumSelf").isVisible()) && !(await page.locator('a[href="/plans#pricing"]').isVisible()), hit ? t.slice(Math.max(0, hit.index - 60), hit.index + 60) : "");
+    ok("…while the web's Settings says the plan and offers Manage billing", (await (async () => { const w = await open("/slp.html#settings", { app: false, native: false, viewport: { width: 1280, height: 1000 } }); await w.page.waitForFunction(() => document.getElementById("sidebarName").textContent === "Rachel K"); await w.page.waitForTimeout(300); const r = await w.page.locator("#setPlan").isVisible() && /^Sona Pro · free trial until /.test(await w.page.locator("#setPlanLine").textContent()) && await w.page.locator("#setManage").isVisible(); await w.context.close(); return r; })()));
+    ok("…with no page errors", errors.length === 0, errors);
     await context.close();
   });
 
@@ -716,7 +734,7 @@ try {
     const web = await open("/slp.html", { app: false, native: false, viewport: { width: 1280, height: 1000 } });
     await web.page.waitForFunction(() => document.getElementById("sidebarName").textContent === "Rachel K");
     await web.page.waitForTimeout(300);
-    ok("…on the web it lands on the plan page", await web.page.locator("#page-premium").isVisible());
+    ok("…on the web it lands on the locked screen, which points to the plans on speaksona.com", await web.page.locator("#page-locked").isVisible() && (await web.page.locator("#lockPlans").getAttribute("href")) === "/plans#pricing" && !(await web.page.locator("#page-applock").isVisible()));
     await web.page.evaluate(() => { location.hash = "#settings"; });
     await web.page.waitForTimeout(200);
     ok("…and its Settings, Delete my account included, opens without making a code first",
@@ -732,8 +750,8 @@ try {
     GATE = true;
     await web.page.locator("#todayRefresh").click();
     await web.page.waitForTimeout(400);
-    ok("…and a Refresh the server now refuses (a trial run out, a clinic that removed them) shows the plan page, not an empty caseload",
-      await web.page.locator("#page-premium").isVisible() && !(await web.page.locator("#page-today").isVisible()) && await web.page.evaluate(() => location.hash) === "#premium");
+    ok("…and a Refresh the server now refuses (a trial run out, a clinic that removed them) shows the locked screen, not an empty caseload",
+      await web.page.locator("#page-locked").isVisible() && !(await web.page.locator("#page-today").isVisible()) && await web.page.evaluate(() => location.hash) === "#locked");
     await web.context.close();
   });
 
@@ -812,9 +830,11 @@ try {
 
 // ── the source, said once ──
 const slpPage = noComments(read("public/slp.html"));
-ok("every selling surface of the dashboard is marked, and the app hides what is marked",
+ok("everything on the dashboard that names a plan, its billing or the website's plans is marked, and the app hides what is marked",
   /html\.slp-app \[data-sells\] \{ display:none !important; \}/.test(read("public/slp.html")) &&
-  ['data-page="premium" href="#premium" data-sells', 'id="premiumTop" href="#premium" hidden data-sells', 'id="page-premium" data-sells', 'id="setPremium" data-sells'].every((s) => slpPage.includes(s)));
+  ['id="page-locked" data-sells', 'id="setPlan" hidden data-sells', 'id="premiumSelf" hidden data-sells', 'id="planReturn" role="status" hidden data-sells', '<span data-sells>With Sona Pro they get every game. <a href="/plans#pricing">See plans</a></span>'].every((s) => slpPage.includes(s)));
+ok("…and the plan page, its menu item and the top bar's offer are gone (18 Nov 2026: the dashboard sells nothing)",
+  !/data-page="premium"|id="premiumTop"|id="page-premium"|id="setPremium"|id="proBuy"|id="clinicBuy"|id="famProBuy"/.test(slpPage));
 ok("the dashboard's register holds in the new words (no score, therapy, treatment, diagnosis)",
   !/\b(accuracy|score|scores|adherence|therapy|treatment|diagnos\w*)\b/i.test(((read("public/slp.html").match(/<div class="card" id="deleteCard">[\s\S]*?<\/div>\s*<\/div>/) || [""])[0])));
 

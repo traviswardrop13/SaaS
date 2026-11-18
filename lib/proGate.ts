@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
-import { dashboardOpen, StoreUnavailable, PRO_NAME, CLINIC_NAME } from "@/lib/caseload";
+import { dashboardOpen, StoreUnavailable, planNames } from "@/lib/caseload";
 
 /**
  * THE DASHBOARD'S LOCK, held on the server (Travis, 12 Nov 2026: the price is
  * "for the dashboard and unlimited accounts for clients"). A clinician whose
  * account was made from 12 Nov 2026 sees their caseload, adds children and
  * assigns homework only while Sona Pro or Sona Clinic covers them (17 Nov
- * 2026: owned or joined; trialing, active, or in the card-retry grace).
+ * 2026: owned or joined; trialing, active, or in the card-retry grace; a
+ * Clinic plan is still honoured while Clinic is hidden from sale).
  * Every older account keeps the free dashboard it was promised, and
  * dashboardOpen() answers that from the account stamp alone, with no Stripe
  * call.
@@ -31,10 +32,12 @@ export async function dashboardGate(email: string): Promise<NextResponse | null>
     }
     throw e;
   }
-  // Both plans, briefly, and nothing that points to buying: the clinicians'
-  // iPhone app may show this line, and it sells nothing (SLPAPP1).
+  // The plans on sale, briefly, and nothing that points to buying: the
+  // clinicians' iPhone app may show this line, and it sells nothing
+  // (SLPAPP1). Sona Pro alone while Sona Clinic is hidden (18 Nov 2026,
+  // lib/caseload CLINIC_ON).
   return NextResponse.json(
-    { ok: false, needPlan: true, error: "Your dashboard comes with " + PRO_NAME + " or " + CLINIC_NAME + "." },
+    { ok: false, needPlan: true, error: "Your dashboard comes with " + planNames() + "." },
     { status: 402 },
   );
 }

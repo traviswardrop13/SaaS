@@ -41,7 +41,7 @@
     <a class="back" id="privacyBack" href="/">&lsaquo; Back</a>
     <header><span class="leo">🦜</span><span class="name">Sona</span></header>
     <h1>Privacy Policy</h1>
-    <div class="updated">Last updated: November 17, 2026</div>
+    <div class="updated">Last updated: November 18, 2026</div>
 
     <p class="lede">Sona ("Sona," "we," "us") helps children practice their speech sounds at home,
     alongside their speech therapy. We built Sona for kids, so protecting their privacy — and giving
@@ -70,7 +70,7 @@
       <li><strong>Optional names you provide</strong> — if you add names of family members or friends
         to personalize daily stories, that text is used to generate those stories.</li>
       <li><strong>Payment information</strong> — handled by our payment processor (Stripe) when a
-        parent buys Premium on our website, or a clinician starts Sona Pro or Sona Clinic (a card is
+        parent buys Premium on our website, or a clinician starts Sona Pro (a card is
         entered at checkout even for a free trial). We do not receive or store full card numbers. Premium bought inside the iPhone or iPad app is
         handled by Apple; if you gave the app your email, RevenueCat (which keeps track of app purchases for us) tells us when
         that Premium starts, renews, is cancelled or ends (see &ldquo;In-app purchases&rdquo; below).</li>
@@ -130,10 +130,7 @@
     first name and age as you typed them, which sounds they are practicing, which days they practiced
     and how many tries each day, and a rough pass rate per sound. They can also send practice
     assignments and a short note to this app. <strong>Never any audio</strong> — this progress-sharing connection does not send recordings. Nothing about your child goes to any other clinician, and no clinician ever sees another
-    family. If your child&rsquo;s clinician is on their practice&rsquo;s Sona Clinic plan, the
-    practice&rsquo;s owner sees only two numbers for that clinician: how many children they have on
-    Sona, and how many practiced in the last 7 days. Your child may be counted in those numbers;
-    nothing else about your child is shown (see &ldquo;Sona Clinic&rdquo; below).</p>
+    family.</p>
     <p><strong>How to stop.</strong> Open the grown-ups&rsquo; area and choose &ldquo;Stop sharing with
     your speech therapist&rdquo;. Their dashboard forgets your child immediately: first name, age,
     practice history and assignments are <em>deleted, not hidden</em>, and their device is marked so
@@ -150,27 +147,10 @@
     means the phone judged that what it heard had the shape of the target sound — not that the whole
     word was produced correctly. The dashboard says so on every screen that shows one.</p>
 
-    <!-- SONA CLINIC (17 Nov 2026): lib/team.ts. Keys slpteam:<owner> (who was
-         added, joined or not, when), slpteam-of:<member> (written on joining),
-         slpteaminv:<hash> (the emailed link, 14 days, used once). The owner's
-         view is ownerView(): two counts per clinician, never a child. -->
-    <h2>Sona Clinic: a practice&rsquo;s plan for its clinicians</h2>
-    <p>A practice owner can pay for Sona Clinic for the clinicians at their practice. To add a
-    clinician, the owner types that clinician&rsquo;s email address, and we email them one invitation
-    to join (see &ldquo;Email delivery&rdquo; below). A clinician joins only by opening that
-    invitation and pressing Join on the page it opens; opening the link alone joins nobody and
-    signs nobody in. Its link works once, expires after 14 days, and stops working when the owner
-    sends a newer one. Sona&rsquo;s server keeps the
-    owner&rsquo;s list of the clinicians they added: each one&rsquo;s email address, whether they have
-    joined, and when they were added and joined.</p>
-    <p><strong>What the owner sees.</strong> For each clinician on the plan, two numbers: how many
-    children that clinician has on Sona, and how many of them practiced in the last 7 days. The owner
-    never sees a child&rsquo;s name, initials, age, sounds, pass rate, homework or practice days, and
-    cannot open a clinician&rsquo;s caseload. The invitation, and the page with its Join button, say
-    this before a clinician joins. A
-    clinician can leave the clinic from their own dashboard at any time, and the owner can remove
-    them; either way the owner stops seeing their numbers at once.</p>
-
+    <!-- SONA CLINIC IS HIDDEN (18 Nov 2026, lib/caseload CLINIC_ON): its
+         section, and its lines in the providers, the store, the cancel
+         answer and the retention list, come back with the switch; CLAUDE.md
+         ("Sona Clinic") says where. -->
     <h2>Talk to us</h2>
     <p>A message from the grown-ups&rsquo; area holds only what you choose
     to send: the topics you tap, what you write and whether you would recommend Sona. It also says
@@ -233,7 +213,7 @@
       <li><strong>Story &amp; coaching generation (AI)</strong> — generates practice stories and
         coaching tips; this may include a child's first name or names you've added, to personalize the story.</li>
       <li><strong>Payments</strong> — Stripe processes what is bought on our website: a family&rsquo;s
-        Premium, and a clinician&rsquo;s Sona Pro or Sona Clinic (and the yearly clinician plans sold
+        Premium, and a clinician&rsquo;s Sona Pro (and the yearly clinician plans sold
         before November 12, 2026, for those still renewing). Stripe receives the buyer&rsquo;s email
         address and payment details, for a free trial too, and nothing about a child.</li>
       <li><strong>In-app purchases</strong> — Premium bought inside the iPhone or iPad app is sold and
@@ -247,8 +227,7 @@
       <li><strong>Hosting</strong> — Vercel runs the site and its server routes.</li>
       <li><strong>Data store</strong> — Upstash holds clinician accounts, the caseload information
         described above, clinician sign-in sessions, a copy of Stripe&rsquo;s answer about whether a
-        clinician&rsquo;s plans are active, a Sona Clinic owner&rsquo;s list of the clinicians they
-        added and the invitations described above, the messages parents send from &ldquo;Talk to
+        clinician&rsquo;s plans are active, the messages parents send from &ldquo;Talk to
         us&rdquo; and clinicians send from their dashboard, our own copy of each email address given
         to join our email list, only for a child a grown-up put on the Practice Board, the board
         entry described above, only for a household that asked for it, the weekly progress
@@ -263,9 +242,8 @@
         nothing about their child), and,
         for a parent who gave the app their email, a note a day or two before Premium&rsquo;s free days
         end (only while they are still on them) and one note after Premium ends, the one
-        invite email a clinician can ask us to send a parent, the one email with the free
-        home-practice packet&rsquo;s link to a speech therapist who asked for it, and the Sona Clinic
-        invitation a practice owner asks us to send a clinician. These emails never go to children and never
+        invite email a clinician can ask us to send a parent, and the one email with the free
+        home-practice packet&rsquo;s link to a speech therapist who asked for it. These emails never go to children and never
         contain a child&rsquo;s name. To send an email, GoHighLevel keeps the address it goes to as a
         contact, with the emails sent to it. So the weekly progress report&rsquo;s numbers (days, reps
         and sounds, never a child&rsquo;s name) pass through GoHighLevel and stay there with that email.
@@ -273,8 +251,7 @@
         email; GoHighLevel keeps it as a contact, and Sona&rsquo;s own server keeps no copy of it. When that
         email carries a Sona login, it carries the password too, so GoHighLevel&rsquo;s copy of the email
         holds it; Sona&rsquo;s server keeps only a scrambled copy of the password, and the family can change
-        it in the app&rsquo;s Settings. A clinician&rsquo;s address a practice owner types for a Sona Clinic
-        invitation is given to GoHighLevel to deliver it, and GoHighLevel keeps it as a contact too. If Sona offers the Practice Board, GoHighLevel also delivers the
+        it in the app&rsquo;s Settings. If Sona offers the Practice Board, GoHighLevel also delivers the
         confirmation email a grown-up asks for to turn it on; the address is used only to send it, and
         Sona&rsquo;s own server keeps no copy (only a scrambled form for one day). GoHighLevel also delivers, to the Sona team&rsquo;s own inbox, a copy of each
         message sent from &ldquo;Talk to us&rdquo;, with the email address you gave (if any) so we can
@@ -369,9 +346,7 @@
     <ul>
       <li><strong>Access &amp; deletion</strong> — email us to review or delete your or your child's information.</li>
       <li><strong>Cancel</strong> — you can cancel your subscription at any time. A clinician cancels
-        Sona Pro or Sona Clinic from their dashboard: Your plan &rarr; Manage billing. Only the
-        practice owner who bought Sona Clinic can cancel it; a clinician on it can leave the clinic
-        from their own dashboard.</li>
+        Sona Pro from their dashboard on speaksona.com: Settings &rarr; Manage billing.</li>
       <li>Depending on where you live, you may have additional rights over your personal information; contact us to exercise them.</li>
     </ul>
 
@@ -385,9 +360,7 @@
     caseload information described above, deleted when a parent stops sharing, when the clinician
     removes the child or their account, or automatically about 150 days
     after that caseload last received practice; a pending invite, which deletes itself 30 days
-    after it is created if the family never opens it; for a Sona Clinic plan, the owner&rsquo;s list of
-    the clinicians they added, each until the owner removes them, the clinician leaves, or the
-    owner deletes their account, and each invitation&rsquo;s link until it is used or 14 days pass;
+    after it is created if the family never opens it;
     a note that the free packet&rsquo;s email went to an address, for a year; the messages sent to us from &ldquo;Talk to
     us&rdquo;, with any reply email &mdash; the newest 1,000, deleted a year after the last one arrives;
     our own copy of each email address given to join our email list &mdash; with where it was given, whether it came from a parent or a clinician, the ad or

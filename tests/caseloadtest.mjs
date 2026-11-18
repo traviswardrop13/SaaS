@@ -79,6 +79,11 @@ process.env.SLP_AUTH_SECRET = "caseload-test-secret";
 process.env.STRIPE_SECRET_KEY = "sk_test_caseload";
 process.env.RESEND_API_KEY = "re_test_caseload";
 process.env.FOUNDER_KEY = "founder-key-for-tests";
+// SONA CLINIC IS HIDDEN (18 Nov 2026, lib/caseload CLINIC_ON = false). The
+// suite forces it on, as a developer's machine may, so every Clinic check
+// below still plays the dormant code; "Sona Clinic hidden" near the end turns
+// the force off and holds what a clinician meets while it ships switched off.
+process.env.SONA_CLINIC_FORCE = "1";
 
 // ── the fake store, spoken to through fetch exactly as kvCmd speaks ──
 const KV = { K: new Map(), H: new Map(), TTL: new Map(), log: [], down: false };
@@ -2348,6 +2353,106 @@ const count = (pred) => S.calls.filter(pred).length;
   ok("the team routes act for the SESSION's email only, rate limited; the view never sorts by a count",
     /liveSession\(readSession\(req\)\)/.test(noComments(read("app/api/slp/team/route.ts"))) && /rateLimit\(req, \{ key: "slpteam-read"/.test(team) && /rateLimit\(req, \{ key: "slpteam"/.test(team) &&
     !/searchParams\.get\("email"\)|healLegacyRoster/.test(team + noComments(read("lib/team.ts"))) && !/sort\([^)]*(children|practicedWeek)/.test(noComments(read("lib/team.ts"))));
+}
+
+// ═════════════════════════ SONA CLINIC HIDDEN (Travis, 18 Nov 2026: "hide it for now") ═════════════════════════
+// The switch ships off, and with it off nothing sells or names Sona Clinic:
+// the checkout refuses it and creates nothing, the plan GET offers it and
+// prices it nowhere, no invitation is sent, the lock names Sona Pro alone and
+// the Terms render no Clinic paragraph. What a Clinic plan already gives is
+// still honoured, and every removal still works. Forced on again at the end.
+{
+  const kv = async (cmd) => kvExec(cmd);
+  const lib = read("lib/caseload.ts");
+  ok("the switch ships OFF in lib/caseload (export const CLINIC_ON = false)", C.CLINIC_ON === false && /\nexport const CLINIC_ON = false;\n/.test(lib));
+  const forHtml = read("public/for-slps.html");
+  const m = /var CLINIC_ON = (true|false);/.exec(forHtml);
+  ok("…and /plans carries the same value (var CLINIC_ON), as APP_READY's two copies agree", !!m && m[1] === String(C.CLINIC_ON), m ? m[0] : "(no var CLINIC_ON in public/for-slps.html)");
+  const prevNode = process.env.NODE_ENV;
+  process.env.SONA_CLINIC_FORCE = "1"; process.env.NODE_ENV = "production";
+  const prodForced = C.clinicOn();
+  if (prevNode === undefined) delete process.env.NODE_ENV; else process.env.NODE_ENV = prevNode;
+  ok("the test seam: SONA_CLINIC_FORCE=1 turns it on off production only; a production build ignores it",
+    C.clinicOn() === true && prodForced === false);
+  process.env.SONA_CLINIC_FORCE = "0";
+  ok("with the force off, clinicOn() is the constant: off", C.clinicOn() === false && C.planNames() === "Sona Pro");
+
+  const HID = "hidden.check@brightsteps.example";
+  seedAcct(HID, { terms: C.PRO_TERMS, code: "hidden-k4", familyKey: "HIDDENK2", name: "Hana Hidden" });
+  // the checkout: refused before Stripe or the store is asked, nothing created
+  const before = S.calls.length;
+  const kvBefore = KV.log.length;
+  let r = await call(R.plan, "POST", "/api/slp/plan", { as: HID, body: { plan: "clinic" } });
+  ok("POST /api/slp/plan { plan: \"clinic\" } is refused (409): \"Sona Clinic isn't available right now.\"",
+    r.status === 409 && r.json.ok === false && r.json.unavailable === true && r.json.error === "Sona Clinic isn't available right now." && !r.json.url, JSON.stringify(r.json));
+  ok("…and nothing is created: no Stripe call, no plan or team key written",
+    S.calls.length === before && !KV.log.slice(kvBefore).some((c) => /^(SET|HSET|HSETNX)$/.test(String(c[0])) && /^(slpplan|slpteam)/.test(String(c[1]))), JSON.stringify(S.calls.slice(before)));
+  r = await call(R.plan, "POST", "/api/slp/plan", { as: HID, body: { plan: "self" } });
+  ok("a retired plan's refusal names Sona Pro alone", r.status === 409 && r.json.retired === true && r.json.error === "Sona's plans for speech therapists have changed. Reload this page to see Sona Pro.", JSON.stringify(r.json));
+  S.calls.length = 0;
+  r = await call(R.plan, "POST", "/api/slp/plan", { as: HID, body: { plan: "pro" } });
+  ok("…while Sona Pro still sells, with its trial", r.status === 200 && r.json.ok === true && S.calls.some((c) => c[0] === "checkout.sessions.create" && c[1].metadata.plan === "slp-pro"), JSON.stringify(r.json));
+  // the plan GET: no Clinic offer, no price, no name
+  r = await call(R.plan, "GET", "/api/slp/plan", { as: HID });
+  const cb = (r.json && r.json.clinic) || {};
+  ok("GET /api/slp/plan offers no Clinic: clinic.on false, clinic.offer false, and no name, price, seats or trial in it",
+    r.status === 200 && cb.on === false && cb.offer === false && cb.role === null &&
+    !("name" in cb) && !("price" in cb) && !("per" in cb) && !("seats" in cb) && !("trialDays" in cb) && !("trialAvailable" in cb), JSON.stringify(cb));
+  ok("…and the whole answer names neither Sona Clinic nor $99, while Sona Pro is still offered",
+    !/Sona Clinic|\$99\b/.test(r.text) && r.json.pro.offer === true && r.json.pro.price === "$19.99", r.text.slice(0, 400));
+  // the lock names Sona Pro alone, on every gated route
+  r = await call(R.roster, "GET", "/api/slp", { as: HID });
+  ok("a locked account's 402 says \"Your dashboard comes with Sona Pro.\", nothing else", r.status === 402 && r.json.needPlan === true && r.json.error === "Your dashboard comes with Sona Pro.", JSON.stringify(r.json));
+  r = await call(R.self, "POST", "/api/slp/self", { as: HID, body: { action: "send" } });
+  ok("…and the own-phone link's refusal names Sona Pro alone", r.json && r.json.ok === false && /comes with Sona Pro\./.test(r.json.error) && !/Clinic/.test(r.json.error), JSON.stringify(r.json));
+  // the team: no invitation, every removal still works
+  RESEND.sent.length = 0;
+  const kvT = KV.log.length;
+  r = await call(R.team, "POST", "/api/slp/team", { as: HID, body: { action: "add", email: "colleague@brightsteps.example" } });
+  ok("no Sona Clinic invitation can be sent: add is refused, no email, no team row",
+    r.status === 403 && r.json.unavailable === true && r.json.error === "Sona Clinic isn't available right now." && RESEND.sent.length === 0 &&
+    !KV.log.slice(kvT).some((c) => /^slpteam/.test(String(c[1] || ""))), JSON.stringify(r.json));
+  // a team that somehow exists (made while it was on) still loses a member on request
+  const OWN2 = "owner.dormant@brightsteps.example", MEM2 = "member.dormant@brightsteps.example";
+  seedAcct(OWN2, { terms: C.PRO_TERMS, code: "dormant-k4", familyKey: "DORMANT2", name: "Dora Owner" });
+  seedAcct(MEM2, { terms: C.PRO_TERMS, code: "dmember-k4", familyKey: "DMEMBER2", name: "Max Member" });
+  KV.K.set("slpplan-clinic:" + OWN2, JSON.stringify({ sub: "sub_dormant", customer: "cus_dormant", status: "active", periodEnd: nowS() + 20 * 86400, cancelAtPeriodEnd: false, checkedAt: Date.now() }));
+  hash("slpteam:" + OWN2).set(MEM2, JSON.stringify({ state: "active", addedAt: iso(), acceptedAt: iso() }));
+  KV.K.set("slpteam-of:" + MEM2, OWN2);
+  ok("a Clinic plan that exists is still honoured while hidden: its member's dashboard is open", await C.dashboardOpen(MEM2, { kv, stripe: client }) === true);
+  r = await call(R.plan, "GET", "/api/slp/plan", { as: MEM2 });
+  ok("…and reported (role member, its name, still no offer and no price)", r.json.clinic.role === "member" && r.json.clinic.name === "Sona Clinic" && r.json.clinic.offer === false && !("price" in r.json.clinic), JSON.stringify(r.json.clinic));
+  r = await call(R.team, "POST", "/api/slp/team", { as: OWN2, body: { action: "remove", email: MEM2 } });
+  ok("…and removing a clinician still works", r.status === 200 && r.json.removed === true && !KV.H.get("slpteam:" + OWN2).has(MEM2), JSON.stringify(r.json));
+  hash("slpteam:" + OWN2).set(MEM2, JSON.stringify({ state: "active", addedAt: iso(), acceptedAt: iso() }));
+  KV.K.set("slpteam-of:" + MEM2, OWN2);
+  r = await call(R.team, "POST", "/api/slp/team", { as: MEM2, body: { action: "leave" } });
+  ok("…and so does leaving", r.status === 200 && r.json.left === true && !KV.K.has("slpteam-of:" + MEM2), JSON.stringify(r.json));
+
+  // the Terms, rendered: no Clinic while it is off, every Clinic paragraph back with the switch
+  const React = require(path.join(ROOT, "node_modules/react"));
+  const { renderToStaticMarkup } = require(path.join(ROOT, "node_modules/react-dom/server"));
+  const renderTerms = () => {
+    const file = path.join(ROOT, "app/terms/page.tsx");
+    const mod = { exports: {} };
+    const js = ts.transpileModule(readFileSync(file, "utf8"), { fileName: file, compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true, jsx: ts.JsxEmit.ReactJSX } }).outputText;
+    const req = (s) => s === "@/app/components/BackLink" ? { __esModule: true, default: () => null }
+      : s.startsWith("@/") ? loadTs(path.join(ROOT, s.slice(2) + ".ts"))
+      : s.startsWith("react") ? require(path.join(ROOT, "node_modules", s))
+      : require(s);
+    new Function("require", "module", "exports", js)(req, mod, mod.exports);
+    return renderToStaticMarkup(React.createElement(mod.exports.default)).replace(/<[^>]+>/g, " ").replace(/&#x27;/g, "'").replace(/&amp;/g, "&").replace(/\s+/g, " ");
+  };
+  let terms = "";
+  try { terms = renderTerms(); } catch (e) { terms = "(render failed: " + (e && e.message) + ")"; }
+  ok("the Terms render no Sona Clinic and no $99 while it is off", !!terms && !/Sona Clinic|\$99\b(?!\.)/.test(terms) && /Sona Pro for clinicians/.test(terms),
+    (terms.match(/.{0,80}(Sona Clinic|\$99\b(?!\.)).{0,80}/) || [terms.slice(0, 200)])[0]);
+  ok("…and cancel from Settings → Manage billing, never a \"Your plan\" page", /Settings → Manage billing/.test(terms) && !/Your plan →/.test(terms));
+  process.env.SONA_CLINIC_FORCE = "1";
+  try { terms = renderTerms(); } catch (e) { terms = "(render failed: " + (e && e.message) + ")"; }
+  ok("…and switched on, every Clinic paragraph comes back: the plan, the owner's view, its trial and the section title",
+    /Sona Pro and Sona Clinic for clinicians/.test(terms) && /Sona Clinic is for a practice\. The clinician who buys it on speaksona\.com \(the owner\) pays \$99 per month/.test(terms) &&
+    /What the owner sees\./.test(terms) && /Sona Clinic starts the same way/.test(terms) && /nor is a Sona Clinic plan covering the clinicians at one practice/.test(terms), terms.slice(0, 200));
 }
 
 // ═════════════════════════ the founder's view ═════════════════════════

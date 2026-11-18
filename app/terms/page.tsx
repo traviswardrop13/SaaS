@@ -6,7 +6,7 @@ import { WEB_SALES } from "@/lib/pricing";
 import {
   CASELOAD_NAME, CASELOAD_PRICE, SELF_NAME, SELF_PRICE, LEGACY_CASELOAD_PRICE,
   PRO_NAME, PRO_PRICE, PRO_TRIAL_DAYS,
-  CLINIC_NAME, CLINIC_PRICE, CLINIC_SEATS, CLINIC_TRIAL_DAYS,
+  CLINIC_NAME, CLINIC_PRICE, CLINIC_SEATS, CLINIC_TRIAL_DAYS, clinicOn, planNames,
 } from "@/lib/caseload";
 
 export const metadata: Metadata = {
@@ -142,9 +142,15 @@ export default function TermsPage() {
                   app on iPhone and iPad, by Apple, at the price, and with any
                   free trial, shown in the App Store.
                 </strong>{" "}
-                We are not selling new family subscriptions on speaksona.com. A
-                clinician&apos;s plan is still sold here: see Sona Pro and Sona
-                Clinic for clinicians below.
+                We are not selling new family subscriptions on speaksona.com.{" "}
+                {/* Both states, as every pricing switch keeps them: Sona
+                    Clinic is hidden from sale since 18 Nov 2026
+                    (lib/caseload CLINIC_ON), and back with one value. */}
+                {clinicOn() ? (
+                  <>A clinician&apos;s plan is still sold here: see Sona Pro and Sona Clinic for clinicians below.</>
+                ) : (
+                  <>A clinician&apos;s plan is still sold here: see Sona Pro for clinicians below.</>
+                )}
                 <br />
                 <br />
               </>
@@ -204,10 +210,19 @@ export default function TermsPage() {
           does not read FREE_MODE, so its terms cannot hang off that switch.
           Every figure is lib/caseload.ts's — the same constants the checkout
           charges and the dashboard prints. Two plans since 17 Nov 2026: Sona
-          Pro for one clinician, Sona Clinic for a practice. */}
-      <Section title="Sona Pro and Sona Clinic for clinicians">
-        <CaseloadTerms />
-      </Section>
+          Pro for one clinician, Sona Clinic for a practice. Sona Clinic is
+          hidden from sale since 18 Nov 2026 (lib/caseload CLINIC_ON): while
+          it is off the section is Sona Pro's alone, and every Clinic
+          paragraph in it waits, unrendered, for the switch. */}
+      {clinicOn() ? (
+        <Section title="Sona Pro and Sona Clinic for clinicians">
+          <CaseloadTerms />
+        </Section>
+      ) : (
+        <Section title="Sona Pro for clinicians">
+          <CaseloadTerms />
+        </Section>
+      )}
 
       <Section title="Canceling &amp; refunds">
         {/* Both states: no self-serve cancel link is promised, because none is
@@ -230,13 +245,21 @@ export default function TermsPage() {
         refunds are handled by Apple at reportaproblem.apple.com. For a
         family&apos;s subscription bought on speaksona.com, email us and we will
         cancel it for you. A clinician&apos;s plans are canceled from the
-        clinician dashboard: <strong>Your plan &rarr; Manage billing</strong>.
-        Only the practice owner who bought {CLINIC_NAME} can cancel it.
+        clinician dashboard on speaksona.com:{" "}
+        <strong>Settings &rarr; Manage billing</strong>.
+        {clinicOn() && (
+          <>
+            {" "}Only the practice owner who bought {CLINIC_NAME} can cancel it.
+          </>
+        )}
         {/* That one IS self-serve: the dashboard's button opens Stripe's
             billing portal for the clinician's plans (app/api/slp/plan/portal).
-            The page was renamed "Your plan" on 17 Nov 2026 (it was "Sona
-            Pro"). A Clinic member has no subscription of their own, so the
-            portal answers them "Your clinic's owner manages billing". */}
+            It sat on the "Your plan" page (17 Nov 2026; "Sona Pro" before);
+            since 18 Nov 2026 the dashboard sells nothing and has no plan
+            page, so Manage billing is in Settings, on the web only (the
+            clinicians' app hides it). A Clinic member has no subscription of
+            their own, so the portal answers them "Your clinic's owner
+            manages billing". */}
         <br />
         <br />
         {!FREE_MODE && WEB_SALES && (
@@ -278,9 +301,17 @@ export default function TermsPage() {
         engineer the service, using a family&apos;s plan for anyone other than your
         own family, reselling access, or uploading unlawful or harmful content.
         A clinician&apos;s plan covering the families on their own caseload is
-        what that plan is for, and is not reselling; nor is a {CLINIC_NAME}{" "}
-        plan covering the clinicians at one practice and the families on their
-        caseloads. We may suspend accounts that violate these Terms.
+        what that plan is for, and is not reselling
+        {clinicOn() ? (
+          <>
+            ; nor is a {CLINIC_NAME}{" "}
+            plan covering the clinicians at one practice and the families on their
+            caseloads.
+          </>
+        ) : (
+          <>.</>
+        )}{" "}
+        We may suspend accounts that violate these Terms.
       </Section>
 
       {/* The Trophy Road (11 Oct 2026). Trophies, coins and the things they
@@ -510,6 +541,11 @@ function ReferralTerms() {
  * Sep account was told its own Premium was free with a work email; and the
  * two yearly plans sold until 12 Nov 2026 keep renewing at their price.
  * Every figure is a lib/caseload.ts constant.
+ *
+ * SONA CLINIC IS HIDDEN (Travis, 18 Nov 2026: "hide it for now";
+ * lib/caseload CLINIC_ON). Every Clinic paragraph and sentence below renders
+ * only while clinicOn(), so these Terms offer what is on sale; turning the
+ * switch on brings them back word for word.
  */
 function CaseloadTerms() {
   return (
@@ -534,6 +570,7 @@ function CaseloadTerms() {
       it is active.
       <br />
       <br />
+      {clinicOn() && (<>
       {/* SONA CLINIC (Travis, 17 Nov 2026). Its figures are lib/caseload's
           (CLINIC_PRICE, CLINIC_SEATS, CLINIC_TRIAL_DAYS). A seat is held by
           an invited address too, until it joins or is removed (lib/team.ts
@@ -574,47 +611,56 @@ function CaseloadTerms() {
       for {CLINIC_NAME} and can cancel it.
       <br />
       <br />
+      </>)}
       <strong>Free trial.</strong> The first time you start {PRO_NAME}, the
       first {PRO_TRIAL_DAYS} days are free. You enter a card at checkout and
       are not charged that day. Unless you cancel before the trial ends, your
       card is charged {PRO_PRICE} when it ends and then each month until you
       cancel. If you cancel during the trial, you are never charged. One free
-      trial per clinician.{" "}
+      trial per clinician.
       {/* One trial ACROSS both plans (lib/caseload proStatus, 17 Nov 2026):
           two plans with a trial each would be twenty-eight free days. */}
-      {CLINIC_NAME} starts the same way: the first {CLINIC_TRIAL_DAYS} days
+      {clinicOn() && (<>
+      {" "}{CLINIC_NAME} starts the same way: the first {CLINIC_TRIAL_DAYS} days
       are free, a card is entered at checkout and not charged that day, and
       unless the owner cancels before the trial ends the card is charged{" "}
       {CLINIC_PRICE} when it ends and then each month until it is canceled.
       The one free trial covers both plans: if you have had a {PRO_NAME} or{" "}
       {CLINIC_NAME} subscription before, either plan you start is charged at
       checkout, with no free days.
+      </>)}
       <br />
       <br />
       <strong>Renewal and canceling.</strong> {PRO_NAME} renews automatically
-      each month until you cancel it, from the clinician dashboard:{" "}
-      <strong>Your plan &rarr; Manage billing</strong>. If you cancel, your
-      dashboard and your families&apos; Premium stay on until the end of the
-      month you paid for (or of the free trial); then your families move to
-      the free version. {CLINIC_NAME} renews automatically each month in the
+      each month until you cancel it, from the clinician dashboard on
+      speaksona.com: <strong>Settings &rarr; Manage billing</strong>. If you
+      cancel, your dashboard and your families&apos; Premium stay on until the
+      end of the month you paid for (or of the free trial); then your
+      families move to the free version.{" "}
+      {clinicOn() && (<>
+      {CLINIC_NAME} renews automatically each month in the
       same way until the owner cancels it there, and every clinician on it
       keeps what it gives them, and their families keep Premium, until the end
       of the month paid for (or of the free trial), unless the owner deletes
       their Sona account first: that ends it that day for every clinician on
       it and their families.{" "}
+      </>)}
       {/* 18 Nov 2026 (review): lib/slpDelete takes the team with the
           owner's account, and allows it once the plan is cancelled; the
           dashboard's delete card says so too. */}
       Removing a child from your dashboard, and deleting your account, keep
       working. The price does not depend on how many families join, and you
-      never earn anything from families on your own caseload; a{" "}
+      never earn anything from families on your own caseload
+      {clinicOn() ? (<>
+      ; a{" "}
       {CLINIC_NAME} owner earns nothing from the families of the clinicians on
       it either.
+      </>) : (<>.</>)}
       <br />
       <br />
       <strong>Clinicians who signed up before 12 November 2026</strong> were
       told the dashboard was free. It still is, with nothing to buy;{" "}
-      {PRO_NAME} or {CLINIC_NAME} adds every game for them and their caseload.
+      {planNames()} adds every game for them and their caseload.
       <br />
       <br />
       <strong>Clinicians who signed up before 24 September 2026</strong> were

@@ -21,13 +21,14 @@ steps. The Xcode project (`ios/`) is made on a Mac and never committed.
     two front pages all check). `sona.js` also lets `/slps` through, because
     `/slp.html` redirects there: before 17 Nov 2026 the app reloaded forever;
   - every price, offer, checkout and Manage billing door is hidden
-    (`[data-sells]` in `slp.html`). Sona Pro and Sona Clinic are bought on
-    the web; a plan bought there still works in the app. A Sona Clinic
-    owner's "Your clinic" page and a member's clinic card show, with no plan
-    name, price or billing.
+    (`[data-sells]` in `slp.html`). Sona Pro is bought on the website
+    (`/plans`, since 18 Nov 2026 never inside the dashboard, web or app); a
+    plan bought there still works in the app. Sona Clinic is hidden from sale
+    since 18 Nov 2026; were one on, its "Your clinic" page and a member's
+    clinic card would show, with no plan name, price or billing.
 - Sign-in is the 6-digit code from the email (`/api/slp/auth/code`), because
   the emailed link opens in Safari and an app keeps its own cookies.
-- **The dashboard needs Sona Pro or Sona Clinic** (SLPPRO1, 17 Nov 2026,
+- **The dashboard needs Sona Pro** (or a Sona Clinic plan, hidden from sale since 18 Nov 2026) (SLPPRO1, 17 Nov 2026,
   Travis: "now they have to have a trial to be inside there"). An account
   without either (and without a free dashboard promised before 12 Nov 2026)
   sees one plain card in the app: "Your account doesn't have Sona Pro yet."
@@ -107,9 +108,8 @@ steps. The Xcode project (`ios/`) is made on a Mac and never committed.
    in with a code sent to their email. The app sells nothing: there are no
    purchases, prices or links to purchase. Session games picks Sona games
    for a speech session with AI and plays them on the device, listening to the
-   child's practice words on the device only. An account needs a Sona Pro or
-   Sona Clinic subscription bought on speaksona.com; the review account below
-   has one. Settings › Delete your account deletes the account and its data."
+   child's practice words on the device only. An account needs a Sona Pro
+   subscription bought on speaksona.com; the review account below has one. Settings › Delete your account deletes the account and its data."
 
 ## Known and left
 
@@ -119,7 +119,7 @@ steps. The Xcode project (`ios/`) is made on a Mac and never committed.
   review refuses it, the usual fix is one native feature (for example, a
   notification when a child practices); that is a next step, not built.
 - A clinician whose paid plan still renews cannot delete the account until the
-  plan is cancelled (on the website: Your plan › Manage billing), or by email.
+  plan is cancelled (on the website: Settings › Manage billing), or by email.
   Being on someone else's Sona Clinic plan never stops it: only a plan the
   clinician pays for themselves does.
 - Nothing here is Rachel's: the dashboard's words and rules are unchanged.

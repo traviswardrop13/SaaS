@@ -1679,6 +1679,92 @@ decided and consumed in the same breath — so a parent who backed out of the
 grown-ups gate in between lost the only ask Sona will ever make, while the
 funnel counted an impression nobody saw. `iaptest.mjs` pins both halves.
 
+### Sona Pro only, sold on the website (SLPSITE1, 18 Nov 2026)
+Travis, 18 Nov 2026: "i actually wanna get rid of the 99 or hide it for
+now", "and they dont purcahse in the dashboard. just on the site", and "you
+can take out the dont type a childs name box". This supersedes every line
+below that puts Sona Clinic on sale, or a plan page, plan card, price or
+trial button in the dashboard.
+- **Sona Clinic is hidden, not deleted.** One switch: `CLINIC_ON = false` in
+  `lib/caseload.ts` and `var CLINIC_ON = false` in `public/for-slps.html`,
+  pinned equal (`shiptest`, `caseloadtest`). While off: `/api/slp/plan`
+  refuses `{ plan: "clinic" }` (409 `{ unavailable }`, "Sona Clinic isn't
+  available right now.") before Stripe or the store is asked, and its GET
+  offers no Clinic (`clinic.on` and `clinic.offer` false, no name, price,
+  seats or trial); `/api/slp/team` adds nobody (403 `{ unavailable }`); the
+  lock and the own-phone refusals name Sona Pro alone (`planNames()`);
+  `/plans` shows the Sona Pro card alone; the Terms render no Clinic
+  paragraph (each kept behind `clinicOn()` in `app/terms/page.tsx`, back
+  word for word with the switch); the privacy page names no Clinic. Nothing
+  a clinician reads says "$99". **Still honoured while off:** a Clinic plan
+  that somehow exists keeps covering whoever it covers (`clinicStatus` is
+  unchanged), and remove, leave and Delete my account always work.
+- **Turning it on** is Travis's go: both values `true`, and the privacy
+  page's Clinic lines put back from commit `72a51019` (the section "Sona
+  Clinic: a practice's plan for its clinicians"; the owner's two numbers in
+  the SLP-sharing section; "or Sona Clinic" in Payment information and in
+  Stripe's line; the owner's list in the data store and retention lists; the
+  invitation in Email delivery, twice; the Cancel answer's owner sentence).
+- **The test seam:** `SONA_CLINIC_FORCE=1` turns `clinicOn()` on where
+  `NODE_ENV` is not "production" (a laptop, a test; never a Vercel build,
+  previews included). `caseloadtest` sets it so the Clinic checks still play
+  the dormant code, and turns it off for its "Sona Clinic hidden" block.
+- **The dashboard sells nothing, on the web or in the app.** No "Your plan"
+  page or menu item, no top-bar offer, no plan card, price or trial button.
+  The menu: Session games, Today, Caseload, Settings (and Your clinic for a
+  Clinic owner). A **locked account on the web** sees one centred screen
+  (`#locked`) in place of the dashboard's pages: Echo, "Your dashboard comes
+  with Sona Pro.", "Start your 14-day free trial on speaksona.com." (the
+  length is the server's; once the trial is spent, "You've had your free
+  trial. Get Sona Pro on speaksona.com.") and a teal **See plans** to
+  `/plans#pricing`; Settings (Sign out, Delete my account) and Talk to
+  Rachel stay reachable, and Add a family or any gated action shows that
+  screen. The clinicians' app keeps its plain locked card (`#applock`, no
+  price, no link). **A paying or trialing clinician** sees in Settings one
+  line ("Sona Pro · free trial until Dec 2", "Sona Pro · renews Dec 18"; a
+  yearly plan still renewing, "Your yearly plan · renews …") and, on the web
+  only (`data-sells`), **Manage billing**. A Clinic member's line and Leave
+  show in the app too (they sell nothing). The own-phone card ("Email me my
+  Premium link") moved to Settings, web only as before. Back from Stripe, a
+  one-line thank-you (or "Check again") shows over whatever page opens, and
+  goes once the clinician moves on. The caseload-link card's "With Sona Pro
+  they get every game." links to `/plans#pricing` (web only). Delete my
+  account's "still renews" answer and the Terms say "Settings → Manage
+  billing".
+- **Stripe's checkout is the website's payment page, so TRIALGO1 stays and
+  grows:** a brand-new account goes from its email link straight to the
+  trial checkout, and so does any account the plan GET offers that plan to
+  (`pro.offer`: locked, or an open dashboard whose families are not covered,
+  such as the free-dashboard cohorts, which have no other way to buy now)
+  that arrives with `localStorage "sona.slp.wantplan"` (written by `/plans`;
+  read once and cleared on every dashboard load, whatever the account):
+  with the trial if it is still theirs, else charged from day one. "clinic"
+  counts only while the plan GET offers Clinic (`clinic.on` and
+  `clinic.offer`), else Pro. Never in the clinicians' app. Stripe's success
+  and cancel still return to `/slp.html…#premium`, which the dashboard
+  reads as Settings (open) or the locked screen (locked; `#applock` in the
+  app); a refused or failed checkout shows its reason under See plans.
+- **`/plans`:** #302's words and trial form; `#pricing` is the Sona Pro card
+  alone, centred (`.plans.one`), under the heading "Simple pricing." ("Pick
+  your plan." with the switch on), with the parents' $9.99 line; the Clinic
+  card waits inert in `<template id="planClinicTpl">` (not on the page, not
+  read aloud), and the kid-side line says "every game while your Sona Pro
+  plan is on." ("Sona Pro or Sona Clinic" with the switch on). The trial
+  form records `wantplan = "pro"` when nothing is recorded (never over a
+  plan button's choice), so the email link goes to checkout even for an
+  account that exists but is locked. **Already signed in** (the locked
+  screen's See plans): the page asks `/api/slp/auth/me` once, and on its
+  yes a plan button remembers the plan and goes straight back to
+  `/slp.html`, which opens the checkout: no second email. `landingtest`
+  plays both.
+- **Session games** lost the grey "Don't type a child's name…" box. One
+  small muted line stays under "What do they love?", beside the character
+  count: "No names, please." (`#playNote`, still the box's spoken
+  description). The page still refuses a caseload child's name ("Take out
+  “Mia” first"). The removed box also said what goes to Anthropic; the
+  privacy page's Session games section and `/plans`' storage answer still
+  say it (whether the dashboard should again is Rachel's and Travis's).
+
 ### Sona Pro — one clinician's plan (12 Nov 2026)
 **Since 17 Nov 2026 (SLPPRO1, below) the dashboard comes with Sona Pro or
 Sona Clinic, the 14-day trial first, for every account but those made before
@@ -1712,7 +1798,7 @@ clients"; asked, he chose **$19.99 a month**, **a 14-day free trial**,
   (`terms: PRO_TERMS`, "pro-2026-11-12"); who keeps it free, and what a
   locked account sees, is SLPPRO1's. **The lock is held on the server**
   (`lib/proGate.ts`, 402 `{ needPlan }`, "Your dashboard comes with Sona Pro
-  or Sona Clinic."): the roster, homework, archiving, adding a child,
+  or Sona Clinic.", Sona Pro alone while Clinic is hidden): the roster, homework, archiving, adding a child,
   Session games, Play now and Add a family. **Never on a removal**: removing
   a child, clearing homework and deleting an invite always work, paid or
   not — a district privacy officer checks that a clinician who stops paying
@@ -1729,13 +1815,16 @@ clients"; asked, he chose **$19.99 a month**, **a 14-day free trial**,
 - **The yearly plans are retired from sale, not cancelled** (the same rule as
   the family plan's monthly price). `/api/slp/plan` refuses anything but
   `{ plan: "pro" }` or `{ plan: "clinic" }` with 409 `{ retired }` ("Reload
-  this page to see Sona Pro and Sona Clinic"), so a tab showing $59.99 a
+  this page to see Sona Pro and Sona Clinic", Sona Pro alone while Clinic is
+  hidden), so a tab showing $59.99 a
   year never opens a monthly checkout. Every
   yearly subscription keeps renewing at its price and keeps covering what it
   covered; a clinician holding one is offered Pro only for what it does not
   already cover (`pro.offer`), on the same Stripe customer, and the page
   says to cancel the yearly plan once Pro is on.
-- The plan page is **Your plan** (nav, crumb, title; "Sona Pro" before Sona
+- **Gone since 18 Nov 2026 (SLPSITE1, above): the dashboard has no plan
+  page and no top-bar offer.** What follows is its history. The plan page
+  was **Your plan** (nav, crumb, title; "Sona Pro" before Sona
   Clinic), at the same `#premium` address Stripe returns to: two cards in
   SLPCLEAN1's clean look, Sona Pro and Sona Clinic, each its name, one short
   line, the price, two or three short bullets (Pro's: Session games and who
@@ -1758,7 +1847,9 @@ clients"; asked, he chose **$19.99 a month**, **a 14-day free trial**,
   their families (the Pro and Clinic cards, `/plans`, the sign-in and Clinic
   invite emails). Nothing a child is asked to say changed.
 
-### Sona Clinic — a practice's plan (17 Nov 2026)
+### Sona Clinic — a practice's plan (17 Nov 2026; HIDDEN since 18 Nov 2026)
+**Not on sale while `CLINIC_ON` is false (SLPSITE1, above).** Everything
+below is built and kept for the day it is switched on.
 **$99 a month, bought on the web by the practice owner. Every clinician
 they add gets everything Sona Pro gives** (their own dashboard, the
 clinicians' app, every family on their link covered, every game on their
@@ -1814,7 +1905,7 @@ count is a ceiling, not a unit price.
   owner, and the owner's plan is live (`clinicStatus()`, read by
   `planStatus`, `selfStatus`, `dashboardOpen` and `covered()`, so the family
   caps lift too). One team at a time; joining another leaves the first.
-  Leave is on a member's Settings and Your plan; Remove always works, plan
+  Leave is on a member's Settings (and was on Your plan, until 18 Nov 2026); Remove always works, plan
   or no plan.
 - **When the owner's plan ends, the team locks with it:** a member made from
   12 Nov meets the lock and their families drop to the free version; an
@@ -1922,7 +2013,8 @@ own plan's is `STRIPE_PRICE_ID_SLP_SELF`. Both optional.
   covered family's Premium reaches the iPhone app; the cached answer
   (`sona.caseplan.v1`) never travels, and the server is asked afresh.
 - **The clinician earns nothing on their caseload, ever** — the creator-only
-  rule below is unchanged, and the Premium page says so in words.
+  rule below is unchanged, and the Terms say so in words (the dashboard's
+  plan page did too, until it went on 18 Nov 2026).
 - **Gone with the add-on on 12 Nov 2026** (every family on a Pro link is
   covered): **The family price, on the Premium page, comes with its conditions** —
   "on the web, $59.99 a year for the first 50 families" (price and cap from
@@ -2159,14 +2251,15 @@ email"). `landingtest` drives both.
   "Start your free trial" with "14 days free, then $19.99 a month. Cancel
   anytime.", four cards ("Pick Sona games for each session", "Share the app
   with clients", "See who practiced at home", "Send homework home"), then
-  the prices (`#pricing`): a Sona Pro card and a Sona Clinic card, every
+  the prices (`#pricing`): a Sona Pro card and a Sona Clinic card (the Sona
+  Pro card alone while Clinic is hidden, SLPSITE1), every
   typed figure pinned to `lib/caseload.ts` by `shiptest`, the trial's terms
   under each, and the parents' $9.99 line (Sona Pro, above). A plan button
   only remembers the choice (`localStorage` "sona.slp.wantplan", "pro" or
   "clinic", which TRIALGO1 reads once) and brings the visitor to the one
   form (`flow: "trial"`), which fires `InitiateCheckout` once the link is
-  sent, never `Lead` (the opt-in owns it). Checkout happens from the
-  dashboard, signed in. `?packet=1` shows "Your home-practice packet is
+  sent, never `Lead` (the opt-in owns it). Checkout opens from the email
+  link (TRIALGO1), signed in, never from a dashboard page (SLPSITE1). `?packet=1` shows "Your home-practice packet is
   ready. Open it →".
 - **Never reuse `/for-slps`.** It has been a cached PERMANENT 308 to `/`
   since 12 Nov 2026, so browsers hold it; it stays, and nothing links to it.
@@ -2354,11 +2447,14 @@ activities and SLPAPP1's free-dashboard door.
   `?start=trial` first, so a reload or Back never opens checkout twice;
   Stripe's Cancel, a refused checkout or a spent trial shows the locked
   page and its button. A returning account, and the clinicians' app, never
-  go to checkout by themselves. **The checkout is Sona Clinic's** when
+  go to checkout by themselves (since 18 Nov 2026 an account offered the
+  plan `/plans` remembered goes too, SLPSITE1). **The checkout is Sona
+  Clinic's** (only while Clinic is on sale) when
   `/plans` remembered Clinic (`localStorage "sona.slp.wantplan"` =
   "clinic"), else Sona Pro's; the key is read once and cleared. `slptest`
   9d, `slpapptest`, `caseloadtest`.
-- **The locked dashboard on the web** shows Your plan (both plans, each
+- **The locked dashboard on the web** (SUPERSEDED by SLPSITE1's locked
+  screen and See plans, 18 Nov 2026) showed Your plan (both plans, each
   with its trial) in place of Session games, Today, Caseload and a child's
   page; Settings (Delete my account, Sign out), Your clinic and Talk to
   Rachel stay open; Add a family opens Your plan; the server holds the lock
@@ -2473,8 +2569,8 @@ create a custom login username password for a parent with their email after
 they've created a free trial that they can automatically and super easily
 share". This supersedes the dashboard's look and menu described below.
 - **The menu** (as SLPPRO1 and Sona Clinic left it): Session games (first,
-  and where a visit with no address lands), Today, Caseload, Your plan
-  (`data-sells`), Your clinic (a Clinic owner only), Settings. **Removed
+  and where a visit with no address lands), Today, Caseload, Your clinic (a
+  Clinic owner only), Settings; Your plan went on 18 Nov 2026 (SLPSITE1). **Removed
   from the dashboard:** Community (its route too: "Community is gone from
   the dashboard", above), Affiliate partnerships, Draft homework, Plan
   sessions (PLANDAY1) and a child page's "Next session" tab (a "Session
@@ -2550,7 +2646,9 @@ strip, pass rate by sound and position, the current homework, the composer)
 Nov 2026: Today keeps exactly its four cards, and no price ever appears in
 them; viewing it only reads) → Your clinic (`#team`, a Clinic owner only) →
 Settings (which carries a plan card with the same button, 29 Sep 2026: "an
-upsell … in like the SLP settings").
+upsell … in like the SLP settings"). **Since 18 Nov 2026 (SLPSITE1) the
+dashboard sells nothing:** no Your plan page, no plan card and no top-bar
+offer; the paragraph below is history.
 Since 29 Sep 2026 (Travis: "yes add the $80 button to the first screen") a
 button with the server's price sits in the top bar of every page but the
 plan page, because a clinician from the ad landed on Community (removed 17
@@ -2715,10 +2813,12 @@ App Store Connect and the review notes; `tests/slpapptest.mjs` pins it all.
   Xcode project is made on the Mac and never committed. The icon in
   `native/slp-ios/assets/icon-1024.png` is a draft (Echo on the navy).
 - **It sells nothing.** Every price, offer, checkout and Manage billing door
-  in `slp.html` carries `data-sells`, hidden under `html.slp-app` (the nav's
-  Your plan, the top bar's offer, the whole plan page, Settings' plan card,
-  the Clinic seat and billing words, "With Sona Pro they get every game");
-  `#premium` opens Settings in the app.
+  in `slp.html` carries `data-sells`, hidden under `html.slp-app` (Settings'
+  plan line and Manage billing, the web's locked screen and its See plans,
+  the Clinic seat and billing words; since 18 Nov 2026 the dashboard has no
+  plan page or offer on the web either, SLPSITE1);
+  `#premium` opens Settings in the app (the locked card for a locked
+  account).
   A plan bought on the web still works there; nothing points to buying.
 - **Sign-in by a 6-digit code** (`lib/slpSignIn.ts`,
   `/api/slp/auth/code`): the emailed link opens in Safari and an app keeps

@@ -167,8 +167,9 @@ export async function DELETE(req: NextRequest) {
     if (r.why === "renews") {
       return NextResponse.json({
         ok: false, renews: true,
-        // 17 Nov 2026: the plan page is "Your plan" now (Sona Pro or Sona Clinic).
-        error: "Your paid Sona plan still renews. Cancel it first (on speaksona.com, in your dashboard: Your plan → Manage billing), then delete your account. Or email hello@speaksona.com and we'll do both.",
+        // 18 Nov 2026: the dashboard sells nothing and has no plan page;
+        // Manage billing is in Settings, on the web (hidden in the app).
+        error: "Your paid Sona plan still renews. Cancel it first (on speaksona.com, in your dashboard: Settings → Manage billing), then delete your account. Or email hello@speaksona.com and we'll do both.",
       }, { status: 409 });
     }
     return NextResponse.json({ ok: false, error: "We couldn't finish deleting your account. Try again in a moment." }, { status: 503 });
