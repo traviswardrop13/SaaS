@@ -2436,7 +2436,19 @@ the usual body. Sona asks for no last name or phone, so neither is sent.
 Never anything about a child (the body's `report` is blanked too), and
 `/api/feedback` no longer falls back to that webhook. `privacy.html` names
 GoHighLevel, as do both landing pages' "What's stored" answers.
-`contactstest` plays it. What follows is the history before it.
+`contactstest` plays it.
+**Sona Pro reaches GoHighLevel too (STRIPEHOOK1, 17 Nov 2026, Travis: "add
+the stripe webhook too").** The checkout return (`/api/slp/plan?session=`)
+sends a clinician's start once per subscription through `/api/lead` (plan
+`trial` or `paid`, mark `slpcrm-pro:<sub>`). `/api/stripe/webhook`
+(`lib/stripeHook.ts`) sends what only Stripe sees, straight to
+`LEAD_WEBHOOK_URL` with an `event` field: `started` (sharing that mark),
+`converted`, `renewed` (a monthly charge after the first), `cancelled`,
+`resumed`, `payment-problem`, `ended`. Only signed events
+(`STRIPE_WEBHOOK_SECRET`, `_PREV` for a change), only Sona Pro
+subscriptions, once per event id; the clinician's own email and nothing
+about money. Travis's to set up in Stripe (the route's header says how).
+`stripehooktest` plays it. What follows is the history before it.
 
 **GoHighLevel was deleted on 24 Sep 2026 and Kit replaced it; on 16 Oct 2026
 Resend's contacts replaced Kit** (Travis: "I am done using Kit. I'm going to

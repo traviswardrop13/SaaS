@@ -547,7 +547,7 @@ export async function dashboardOpen(email: string, opts: PlanOpts & { acct?: Rec
  */
 export async function activateFromSession(
   email: string, sessionId: string, opts: PlanOpts = {},
-): Promise<{ activated: boolean; kind?: PlanKind; reason?: string }> {
+): Promise<{ activated: boolean; kind?: PlanKind; reason?: string; subId?: string; status?: string }> {
   const kv = opts.kv || kvCmd;
   const now = opts.now ?? Date.now();
   const stripe = stripeClient(opts.stripe);
@@ -562,7 +562,7 @@ export async function activateFromSession(
   if (typeof sub === "string") sub = await stripe.subscriptions.retrieve(sub);
   if (!sub || !isPlanFor(sub, email, kind)) return { activated: false, reason: "no " + kind + " subscription" };
   await writePlan(email, recordFromSubscription(sub, now), kv, kind);
-  return { activated: true, kind };
+  return { activated: true, kind, subId: sub.id, status: sub.status };
 }
 
 /**

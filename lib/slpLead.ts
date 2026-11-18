@@ -49,6 +49,7 @@ export function safeAttrib(raw: unknown): Record<string, string> {
 const CRM_TIMEOUT_MS = 8000;
 export async function tellCrm(
   origin: string, email: string, source: string, name: string, attrib: Record<string, string>,
+  plan: "" | "trial" | "paid" = "",
 ): Promise<boolean> {
   const ctl = new AbortController();
   const fuse = setTimeout(() => ctl.abort(), CRM_TIMEOUT_MS);
@@ -57,7 +58,13 @@ export async function tellCrm(
       method: "POST",
       // signed, so /api/lead's per-address flood limit never catches it
       headers: { "Content-Type": "application/json", "x-sona-lead-sig": leadSig(email) },
-      body: JSON.stringify({ email, name, source, role: "slp", summary: "New SLP signup", ...attrib }),
+      body: JSON.stringify({
+        email, name, source, role: "slp", ...attrib,
+        // A Sona Pro purchase (12 Nov 2026 plan) rides the same door with its
+        // plan word, so GoHighLevel can tag a trial or a paying clinician.
+        summary: plan === "trial" ? "Started Sona Pro trial" : plan === "paid" ? "New Sona Pro customer" : "New SLP signup",
+        ...(plan ? { plan } : {}),
+      }),
       signal: ctl.signal,
     });
     const j = (await r.json().catch(() => null)) as { captured?: boolean } | null;
