@@ -1,7 +1,7 @@
 // LANDING1: speaksona.com's forms, driven in a real browser against fake
 // routes, so what is posted, and where the visitor ends up, is what is checked.
 //
-// The clinician page at / emails access to the free dashboard. The parent
+// The clinician page at / emails a link that starts the Sona Pro trial. The parent
 // page at /for-parents keeps its one email and its family app destination.
 import { createServer } from "http";
 import { readFileSync, existsSync } from "fs";
@@ -406,9 +406,12 @@ charterReply = null;
   }));
   ok("the clinician page points parents to /for-parents", await page.evaluate(() =>
     !document.querySelector(".consent, #mNext, .hnote") && document.querySelector('a[href="/for-parents"]') !== null));
-  ok("the clinician page offers the free dashboard without prices or trial language", await page.evaluate(() =>
-    document.getElementById("fGo").textContent.trim() === "Get the free dashboard" &&
-    !document.getElementById("pricing") && !/\$\s*\d|\bfree trial\b/i.test(document.body.innerText)));
+  ok("the clinician page starts the free trial, naming its price beside the button", await page.evaluate(() =>
+    document.getElementById("fGo").textContent.trim() === "Start my free trial" &&
+    /14 days free, then \$19\.99 a month\. Cancel anytime\./.test(document.getElementById("fNext").textContent) &&
+    !document.getElementById("pricing")));
+  ok("every FAQ answer shows without a tap", await page.evaluate(() =>
+    [...document.querySelectorAll("#faq .q .a")].every((a) => !a.hidden && a.getBoundingClientRect().height > 0)));
 
   // What the visitor is told before anything is sent.
   posts = [];
@@ -444,8 +447,8 @@ for (const path of ["/", "/for-slps"]) {
     return !sent.hidden && /check your email/i.test(sent.textContent) && /sam@clinic\.org/.test(sent.textContent);
   }));
   const p = posts[0] || { body: {} };
-  ok(clinicianRole + ": one post requests the free dashboard email", posts.length === 1 && p.path === "/api/slp/auth/request" &&
-    p.body.flow === "free-dashboard", posts);
+  ok(clinicianRole + ": one post requests the trial's sign-in email", posts.length === 1 && p.path === "/api/slp/auth/request" &&
+    p.body.flow === "pro-trial", posts);
   ok(clinicianRole + ": the request carries the email and ad click, with no name",
     p.body.email === "sam@clinic.org" && !("name" in p.body) && p.body.attrib?.fbclid === "abc123" && p.body.source === "fb", p.body);
   ok(clinicianRole + ": the request asks no role or work setting", !("clinicianRole" in p.body) &&

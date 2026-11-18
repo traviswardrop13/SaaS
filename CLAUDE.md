@@ -2030,6 +2030,28 @@ pixel `ViewContent` (the fact, never who) and leaves 150 ms later. `noindex`
 allow-list. The root page with its email box is unchanged. `landingtest` plays
 it on an iPhone and an Android phone.
 
+**THE HOMEPAGE STARTS THE SONA PRO TRIAL (18 Nov 2026)** (Travis, of the
+Meta ad to SLPs, "Try Sona Speech Free — for you + your caseload": "i need
+them to start a trial", the trial required over a skippable one). This
+supersedes the free-dashboard offer just below for new sign-ups from the
+page; every account made before keeps its terms. The page matches the ad:
+"Try Sona free with your caseload.", "Kids say their sound to play. Send it
+home for more reps, use it in sessions too, and see which kids practiced at
+home.", the button **Start my free trial** with "14 days free, then $19.99 a
+month. Cancel anytime. We'll email you a link to start." (pinned to
+`PRO_TRIAL_DAYS`/`PRO_PRICE` by `shiptest`), "With Sona Pro, every family
+who joins through your link gets every game and book.", and every FAQ answer
+shown open (a review that never tapped saw four with no answer). The form
+posts `flow: "pro-trial"`: the sign-in page's door with a trial email
+("Start your free Sona Pro trial", button "Start my free trial"), so a new
+account takes `PRO_TERMS` and its dashboard opens on the plan page's
+14-day trial (card up front, Stripe). A returning account is only signed
+in, with the plain email. The clinicians' iPhone app keeps the
+free-dashboard door (it sells nothing). **Rachel's to review:** the new
+headline and lede. **Not built yet:** real SLP quotes (Travis sends them),
+the share picture (`tools/og/og-slp.html`) still says free dashboard.
+`landingtest`, `shiptest`, `caseloadtest`, `slpapi`.
+
 **The clinician page is the homepage**, updated to offer a free dashboard
 on 13 Nov 2026. The hero features Echo beside an actual Fruit Slice screen.
 **Get the free dashboard** collects an email and nothing else (Travis, 14
