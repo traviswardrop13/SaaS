@@ -447,7 +447,7 @@ export async function sendMagicEmail(
   email: string,
   link: string,
   name = "",
-  opts: { freeDashboard?: boolean; code?: string } = {},
+  opts: { freeDashboard?: boolean; code?: string; trial?: { days: number; name: string } } = {},
 ): Promise<{ sent: boolean; devLink: string | null }> {
   // GoHighLevel sends when it is set up, else Resend (lib/mail). Through
   // GoHighLevel, an address whose email is on Do Not Disturb there (an
@@ -457,6 +457,14 @@ export async function sendMagicEmail(
     return { sent: false, devLink: process.env.VERCEL_ENV === "production" ? null : link };
   }
   const freeIntro = "Open your Sona dashboard to share practice with families and join the clinician community.";
+  // A new clinician from the homepage (flow "pro-trial", 18 Nov 2026): the
+  // link opens the dashboard on Sona Pro's trial. The checkout states the
+  // terms beside Stripe's button; this says only what happens next.
+  // (lib/caseload imports this file, so the route hands over the plan's name
+  // and trial length rather than this file importing them.)
+  const trialIntro = opts.trial ? "Open the link to start your " + opts.trial.days + "-day free trial of " + opts.trial.name + ". Then add your first family and send them Sona." : "";
+  const intro = opts.trial ? trialIntro : opts.freeDashboard ? freeIntro : "Your Sona dashboard is ready, and every family you send home gets Sona's free version.";
+  const cta = opts.trial ? "Start my free trial" : "Open my dashboard";
   // The site the link points at, so a sign-up on another address (the
   // app's own, app.speaksona.com, APPHOST1: speaksona.com becomes GoHighLevel's) is
   // never sent back to a domain that no longer serves the dashboard.
@@ -472,7 +480,7 @@ export async function sendMagicEmail(
     const r = await sendMail({
         from,
         to: email,
-        subject: code ? "Your Sona sign-in code: " + spaced : opts.freeDashboard ? "Your Sona dashboard link" : "Your Sona dashboard is ready",
+        subject: code ? "Your Sona sign-in code: " + spaced : opts.trial ? "Start your free " + opts.trial.name + " trial" : opts.freeDashboard ? "Your Sona dashboard link" : "Your Sona dashboard is ready",
         html:
           `<div style="font-family:system-ui,Segoe UI,Roboto,sans-serif;font-size:15px;color:#16384f;line-height:1.6;max-width:520px;">` +
           `<p>${name ? "Hi " + esc(name) + "," : "Hi,"}</p>` +
@@ -482,9 +490,9 @@ export async function sendMagicEmail(
           // dashboard no longer is (it comes with Sona Pro, after the free
           // trial). The same email goes to every sign-in, so it says only
           // what is true for every clinician.
-          `<p>${opts.freeDashboard ? freeIntro : "Your Sona dashboard is ready, and every family you send home gets Sona's free version."}</p>` +
+          `<p>${intro}</p>` +
           (code ? `<p style="margin:18px 0 6px;">Your sign-in code:</p><p style="font-size:30px;font-weight:800;letter-spacing:6px;margin:0 0 6px;">${spaced}</p><p style="color:#6b86a3;font-size:13px;margin:0 0 18px;">Type it on the sign-in screen, in the app or in your browser. Or open the dashboard here:</p>` : "") +
-          `<p><a href="${link}" style="display:inline-block;background:#58cc02;color:#fff;font-weight:700;text-decoration:none;padding:14px 26px;border-radius:12px;font-size:16px;">Open my dashboard</a></p>` +
+          `<p><a href="${link}" style="display:inline-block;background:#58cc02;color:#fff;font-weight:700;text-decoration:none;padding:14px 26px;border-radius:12px;font-size:16px;">${cta}</a></p>` +
           `<p style="margin-top:22px;"><b>What to do first</b></p>` +
           `<ol style="padding-left:18px;color:#46627a;">` +
           `<li>Add a child — initials are enough. You pick the sound and the position.</li>` +
@@ -504,7 +512,7 @@ export async function sendMagicEmail(
          */
         text:
           (name ? "Hi " + name + ",\n\n" : "Hi,\n\n") +
-          (opts.freeDashboard ? freeIntro : "Your Sona dashboard is ready, and every family you send home gets Sona's free version.") + "\n\n" +
+          intro + "\n\n" +
           (code ? "Your sign-in code: " + spaced + "\nType it on the sign-in screen, in the app or in your browser.\n\n" : "") +
           "Open it here:\n" + link + "\n\n" +
           "What to do first\n" +

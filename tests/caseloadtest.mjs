@@ -1426,6 +1426,45 @@ const count = (pred) => S.calls.filter(pred).length;
     rows[omittedEmail]?.workSetting === "" && rows[omittedEmail]?.clinicianRole === "");
 }
 
+// ═════════════════════════ the homepage's trial door (18 Nov 2026) ═════════════════════════
+// Travis: "i need them to start a trial", the trial required. flow "pro-trial"
+// is the sign-in page's door: the new account takes Sona Pro terms, so its
+// dashboard opens on the plan page (402 needPlan), and the email says the
+// link starts the free trial.
+{
+  const email = "trial.door@example.org";
+  const key = "slpacct:" + email;
+  const before = OUT.length;
+  const sentBefore = RESEND.sent.length;
+  const r = await call(R.request, "POST", "/api/slp/auth/request", { body: { flow: "pro-trial", email, source: "fb", attrib: { utm_campaign: "trial" } } });
+  const mail = RESEND.sent.at(-1);
+  ok("the trial door emails a link, makes no account yet, and tells the CRM once",
+    r.status === 200 && r.json.sent === true && !r.cookie && !KV.K.has(key) && RESEND.sent.length === sentBefore + 1 &&
+    OUT.slice(before).filter((o) => o.url.endsWith("/api/lead")).length === 1, r.json);
+  ok("…and the email says the link starts the free trial",
+    /Start your free Sona Pro trial/.test(mail?.subject || "") && /start your 14-day free trial of Sona Pro/.test(mail?.text || "") &&
+    /Start my free trial/.test(mail?.html || ""), mail?.subject);
+  const link = (mail?.text || "").match(/https:\/\/sona\.test\.invalid\/api\/slp\/auth\/verify\?token=[\w-]+/)?.[0];
+  const verified = link ? await call(R.verify, "GET", new URL(link).pathname + new URL(link).search) : {};
+  const account = JSON.parse(KV.K.get(key) || "{}");
+  ok("opening it makes a Sona Pro account, whose dashboard waits on the trial",
+    verified.cookie?.includes("slp_session=") && account.terms === C.PRO_TERMS && account.freeDashboard !== true, account);
+  const plan = await call(R.plan, "GET", "/api/slp/plan", { as: email });
+  ok("…its plan page offers the free trial and the dashboard stays shut until it starts",
+    plan.json?.dashboard?.open === false && plan.json?.pro?.trialAvailable === true, plan.json);
+  const roster = await call(R.roster, "GET", "/api/slp", { as: email });
+  ok("…and the caseload answers needPlan", roster.status === 402 && roster.json?.needPlan === true, roster.status);
+  const returning = "trial.returning@example.org";
+  seedAcct(returning, { terms: C.FREE_DASHBOARD_TERMS, code: "trial-r1", familyKey: "TRIALR12" });
+  const r2 = await call(R.request, "POST", "/api/slp/auth/request", { body: { flow: "pro-trial", email: returning } });
+  const m2 = RESEND.sent.at(-1);
+  ok("a returning account signing in by the trial door keeps its own terms and gets the plain sign-in email",
+    r2.json.sent === true && JSON.parse(KV.K.get("slpacct:" + returning)).terms === C.FREE_DASHBOARD_TERMS &&
+    !/free trial/i.test(m2?.subject || ""), m2?.subject);
+  const bad = await call(R.request, "POST", "/api/slp/auth/request", { body: { flow: "trial-please", email } });
+  ok("an unknown door is still refused", bad.status === 400);
+}
+
 // ═════════════════════════ free dashboard email signup ═════════════════════════
 {
   const email = "dashboard.free@example.org";

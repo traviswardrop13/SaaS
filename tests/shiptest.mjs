@@ -248,17 +248,21 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
   const slpHeadline = (slps.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/) || ["", ""])[1]
     .replace(/<[^>]+>/g, "").replace(/&rsquo;/g, "’").replace(/\s+/g, " ").trim();
   ok("the clinician page's headline, tab title and shared card carry the new message",
-    slpHeadline === "Send home practice they’ll play." &&
-    /<title>[^<]*Send home practice they’ll play[^<]*<\/title>/i.test(slps) &&
-    /og:title" content="Send home practice they’ll play\."/.test(slps) &&
-    /twitter:title" content="Send home practice they’ll play\."/.test(slps));
+    slpHeadline === "Try Sona free with your caseload." &&
+    /<title>[^<]*try Sona free with your caseload[^<]*<\/title>/i.test(slps) &&
+    /og:title" content="Try Sona free with your caseload\."/.test(slps) &&
+    /twitter:title" content="Try Sona free with your caseload\."/.test(slps));
   const slpLede = (slps.match(/<p class="lede">([\s\S]*?)<\/p>/) || ["", ""])[1];
   // Travis, 14 Nov 2026: a benefit "that is not like the community"; the
   // session-planning line waits until the planner is built.
   // Travis, 14 Nov 2026: "auto plan lessons", not "draft homework with AI".
-  ok("the clinician lede presents auto-planned practice, family links and seeing who practiced",
-    /auto-plan home practice/i.test(slpLede) && !/with AI/i.test(slpLede) && /share the app with clients/i.test(slpLede) && /see who practiced at home/i.test(slpLede) &&
-    !/community/i.test(slpLede));
+  // Travis, 18 Nov 2026: the page matches the ad ("Try Sona Speech Free —
+  // for you + your caseload", "they say their sound to play", "send it home
+  // for more reps", "use it in sessions too") and starts the trial.
+  ok("the clinician headline and lede match the ad: the app, played by saying the sound, at home and in sessions",
+    /<h1>Try Sona free with <span>your caseload\.<\/span><\/h1>/.test(slps) &&
+    /say their sound to play/i.test(slpLede) && /send it home for more reps/i.test(slpLede) && /use it in sessions too/i.test(slpLede) &&
+    /see which kids practiced at home/i.test(slpLede) && !/with AI|community/i.test(slpLede));
   const header = (slps.match(/<header>[\s\S]*?<\/header>/) || [""])[0].replace(/<!--[\s\S]*?-->/g, "");
   // Travis, 14 Nov 2026: "top right, get rid of how it works".
   ok("the clinician header has the logo and Sign in, no How it works",
@@ -266,8 +270,8 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
     !/How it works/.test(header));
   ok("a parent who lands here is pointed to /for-parents",
     (slps.match(/<a\b[^>]*href="\/for-parents"/g) || []).length === 1);
-  ok("clinician signup asks the auth endpoint to send the free dashboard link",
-    /fetch\("\/api\/slp\/auth\/request"/.test(slps) && /flow:\s*"free-dashboard"/.test(slps) &&
+  ok("clinician signup asks the auth endpoint for the trial's sign-in link",
+    /fetch\("\/api\/slp\/auth\/request"/.test(slps) && /flow:\s*"pro-trial"/.test(slps) && !/flow:\s*"free-dashboard"/.test(slps) &&
     !/#premium|apps\.apple\.com|APP_STORE|APP_READY/.test(slps));
   const form = (slps.match(/<form class="signup" id="signup"[\s\S]*?<\/form>/) || [""])[0];
   ok("one clinician form asks only for a work email (14 Nov 2026: no role, no setting)",
@@ -276,11 +280,19 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
     /placeholder="you@yourclinic\.org"/.test(form) &&
     !/<option value="(?:parent|other)"/.test(form) &&
     (slps.match(/<form\b/g) || []).length === 1 && !/id="startModal"/.test(slps));
-  ok("both clinician calls to action say Get the free dashboard and the closing one returns to the form",
+  ok("both clinician calls to action say Start my free trial and the closing one returns to the form",
     /\$\("finalGo"\)\.onclick = function \(\) \{ toForm\(\); \};/.test(slps) &&
-    (slps.replace(/<!--[\s\S]*?-->/g, "").match(/>Get the free dashboard</g) || []).length === 2);
-  ok("the signup button tells clinicians that access is emailed",
-    /aria-describedby="fNext"/.test(form) && /id="fNext">[^<]*email you a sign-in link/i.test(form));
+    (slps.replace(/<!--[\s\S]*?-->/g, "").match(/>Start my free trial</g) || []).length === 2 && !/Get the free dashboard/.test(slps));
+  // The static page cannot import lib/caseload, so its trial line is pinned
+  // to the constants the checkout charges by.
+  {
+    const cl = readFileSync(APP + "/lib/caseload.ts", "utf8");
+    const price = (cl.match(/export const PRO_PRICE = "([^"]+)"/) || [])[1];
+    const days = (cl.match(/export const PRO_TRIAL_DAYS = (\d+)/) || [])[1];
+    ok("the signup button says the trial's length and price (lib/caseload's) and that a link is emailed",
+      !!price && !!days && /aria-describedby="fNext"/.test(form) &&
+      form.includes('id="fNext">' + days + " days free, then " + price + " a month. Cancel anytime. We’ll email you a link to start.</p>"), form);
+  }
   const heroR = (slps.match(/<div class="hero-r"[\s\S]*?<\/section>/) || [""])[0];
   ok("the clinician hero shows Echo and a Fruit Slice game screen without sample caseload data",
     /<img class="mascot" src="\/assets\/site\/echo\.webp"/.test(heroR) && /<img src="\/assets\/site\/slice\.webp"/.test(heroR) &&
@@ -372,12 +384,15 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
   const slps = readFileSync(APP + "/public/for-slps.html", "utf8").replace(/<!--[\s\S]*?-->/g, "");
   const shown = slps.replace(/<script[\s\S]*?<\/script>/g, "").replace(/<style[\s\S]*?<\/style>/g, "");
   const flat = shown.replace(/<[^>]+>/g, " ").replace(/&rsquo;/g, "'").replace(/\s+/g, " ");
-  ok("the clinician landing page and its metadata advertise free access with no prices or trial pitch",
-    /free dashboard/i.test(shown) && !/\$\s*\d|\bfree trial\b|\b\d+ days free\b|id="pricing"|href="#pricing"/i.test(shown));
+  // Since 18 Nov 2026 the page starts the Sona Pro trial (Travis: "i need
+  // them to start a trial"): one price on it, the trial's, and no pricing table.
+  ok("the clinician landing page names one price, the trial's, and no pricing table",
+    /free trial/i.test(shown) && (shown.match(/\$\s*\d[\d.,]*/g) || []).every((p) => p.replace(/\s/g, "") === "$19.99") &&
+    !/id="pricing"|href="#pricing"/i.test(shown));
   ok("the clinician offer includes session planning, homework, a client link and a community",
     ["Plan tomorrow’s sessions", "Create AI homework", "Share the app with clients", "Join the community"].every(label => flat.includes(label)));
-  ok("the page preserves the family's free practice without promising universal game access",
-    /daily practice and free games/i.test(flat) && !/unlimited families|free forever|gets every game/i.test(flat));
+  ok("the page promises every game only with Sona Pro, and never free forever",
+    /With Sona Pro, every family who joins through your link gets every game and book\./.test(flat) && !/free forever/i.test(flat));
   // Since 17 Nov 2026 GoHighLevel sends it and keeps it as a contact (Travis:
   // "I want everything on Go High Level"); the page must say so.
   ok("the storage answer says GoHighLevel sends a parent's email and keeps it as a contact",
@@ -430,7 +445,9 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
 // parked content cannot inflate it. freemiumtest holds the family surfaces.
 {
   const decomment = (t) => t.replace(/<!--[\s\S]*?-->/g, " ").replace(/\{?\/\*[\s\S]*?\*\/\}?/g, " ").replace(/(^|[^:"'\\])\/\/[^\n]*/g, "$1");
-  for (const rel of ["public/for-slps.html", "public/slp.html", "public/privacy.html", "app/terms/page.tsx", "app/families/page.tsx"]) {
+  // for-slps.html left this list on 18 Nov 2026: it sells the Sona Pro trial
+  // now and says what a family on a Pro link gets, not the free version.
+  for (const rel of ["public/slp.html", "public/privacy.html", "app/terms/page.tsx", "app/families/page.tsx"]) {
     const src = decomment(readFileSync(APP + "/" + rel, "utf8")).replace(/\s+/g, " ");
     ok(rel + " names the free version as 'daily practice and free games'", /daily practice (and|\+) free games/i.test(src));
     ok(rel + " never undersells it as 'two games'", !/\btwo (free )?games\b/i.test(src), (src.match(/.{0,60}\btwo (free )?games\b.{0,40}/i) || [])[0]);

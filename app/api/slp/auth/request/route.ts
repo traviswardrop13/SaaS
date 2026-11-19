@@ -10,6 +10,7 @@ import { safeAttrib, tellCrm } from "@/lib/slpLead";
 import { rateLimit } from "@/lib/rateLimit";
 import { makeSignInCode, storeSignInCode, reviewEmail } from "@/lib/slpSignIn";
 import { linkOrigin } from "@/lib/site";
+import { PRO_NAME, PRO_TRIAL_DAYS } from "@/lib/caseload";
 
 export const runtime = "nodejs";
 
@@ -97,7 +98,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "Enter a valid email." }, { status: 400 });
   }
   const freeDashboard = body.flow === "free-dashboard";
-  if (body.flow !== undefined && !freeDashboard) {
+  // THE HOMEPAGE SELLS THE TRIAL (Travis, 18 Nov 2026: "i need them to start
+  // a trial", the trial required). "pro-trial" is the sign-in page's own door
+  // (a new account gets Sona Pro terms, so the dashboard opens on the plan
+  // page and its 14-day trial), with an email that says so. The clinicians'
+  // app keeps the free-dashboard door: it sells nothing.
+  const proTrial = body.flow === "pro-trial";
+  if (body.flow !== undefined && !freeDashboard && !proTrial) {
     return NextResponse.json({ ok: false, error: "Bad request." }, { status: 400 });
   }
   // Role and work setting are optional (Travis, 14 Nov 2026: the sign-up form
@@ -234,7 +241,9 @@ export async function POST(req: NextRequest) {
   if (code && !(await storeSignInCode(email, code, email, tokKey))) {
     return NextResponse.json({ ok: false, error: "Couldn't make your sign-in code. Try again." }, { status: 503 });
   }
-  const res = await sendMagicEmail(email, link, name, { code });
+  // A returning account with its own terms is only signed in: the trial
+  // words are for an address with no account yet.
+  const res = await sendMagicEmail(email, link, name, { code, ...(proTrial && !acct && acctRaw === null ? { trial: { days: PRO_TRIAL_DAYS, name: PRO_NAME } } : {}) });
 
   /**
    * A CLINICIAN THE CRM HAS NEVER HEARD OF. The CRM was once told only when
@@ -252,7 +261,7 @@ export async function POST(req: NextRequest) {
    * inform the CRM but never rewrites the account.
    */
   if (!acct && acctRaw === null && res.sent) {
-    await tellCrmEarly(origin, email, String(body.source || "slp-signup").slice(0, 40), safeAttrib(body.attrib));
+    await tellCrmEarly(origin, email, String(body.source || (proTrial ? "for-slps" : "slp-signup")).slice(0, 40), safeAttrib(body.attrib));
   }
   if (acct && !acct.crmAt && typeof acctRaw === "string") {
     if (await tellCrm(origin, email, String(body.source || "slp-signup").slice(0, 40), name, safeAttrib(body.attrib))) {
