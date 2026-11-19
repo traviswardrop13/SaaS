@@ -447,7 +447,7 @@ export async function sendMagicEmail(
   email: string,
   link: string,
   name = "",
-  opts: { freeDashboard?: boolean; code?: string; trial?: { days: number; name: string } } = {},
+  opts: { freeDashboard?: boolean; code?: string; trial?: { days: number; name: string }; started?: { name: string; trial: boolean } } = {},
 ): Promise<{ sent: boolean; devLink: string | null }> {
   // GoHighLevel sends when it is set up, else Resend (lib/mail). Through
   // GoHighLevel, an address whose email is on Do Not Disturb there (an
@@ -463,7 +463,10 @@ export async function sendMagicEmail(
   // (lib/caseload imports this file, so the route hands over the plan's name
   // and trial length rather than this file importing them.)
   const trialIntro = opts.trial ? "Open the link to start your " + opts.trial.days + "-day free trial of " + opts.trial.name + ". Then add your first family and send them Sona." : "";
-  const intro = opts.trial ? trialIntro : opts.freeDashboard ? freeIntro : "Your Sona dashboard is ready, and every family you send home gets Sona's free version.";
+  // A trial started on the website's own checkout (GHLPRO1, 19 Nov 2026): it
+  // is already on, so the link only signs them in.
+  const startedIntro = opts.started ? (opts.started.trial ? "Your " + opts.started.name + " free trial has started." : opts.started.name + " is on.") + " Open the link to sign in to your dashboard, then add your first family and send them Sona." : "";
+  const intro = opts.started ? startedIntro : opts.trial ? trialIntro : opts.freeDashboard ? freeIntro : "Your Sona dashboard is ready, and every family you send home gets Sona's free version.";
   const cta = opts.trial ? "Start my free trial" : "Open my dashboard";
   // The site the link points at, so a sign-up on another address (the
   // app's own, app.speaksona.com, APPHOST1: speaksona.com becomes GoHighLevel's) is
@@ -480,7 +483,7 @@ export async function sendMagicEmail(
     const r = await sendMail({
         from,
         to: email,
-        subject: code ? "Your Sona sign-in code: " + spaced : opts.trial ? "Start your free " + opts.trial.name + " trial" : opts.freeDashboard ? "Your Sona dashboard link" : "Your Sona dashboard is ready",
+        subject: code ? "Your Sona sign-in code: " + spaced : opts.started ? (opts.started.trial ? "Your " + opts.started.name + " trial has started" : opts.started.name + " is on") : opts.trial ? "Start your free " + opts.trial.name + " trial" : opts.freeDashboard ? "Your Sona dashboard link" : "Your Sona dashboard is ready",
         html:
           `<div style="font-family:system-ui,Segoe UI,Roboto,sans-serif;font-size:15px;color:#16384f;line-height:1.6;max-width:520px;">` +
           `<p>${name ? "Hi " + esc(name) + "," : "Hi,"}</p>` +

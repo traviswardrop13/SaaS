@@ -41,8 +41,8 @@ function loadTs(file, cache = new Map()) {
 const KV_URL = "https://kv.stripehook.test.invalid";
 const HOOK = "https://services.leadconnectorhq.com/hooks/TEST/webhook-trigger/TEST";
 const K = new Map();
-let kvDown = false, crmStatus = 200;
-const SENT = [];
+let kvDown = false, crmStatus = 200, stripeDown = false, CUST_EMAIL = "New@Clinic.org";
+const SENT = [], STRIPE = [];
 globalThis.fetch = async (url, init = {}) => {
   const u = String(url);
   if (u === KV_URL) {
@@ -52,8 +52,17 @@ globalThis.fetch = async (url, init = {}) => {
     if (op === "SET") { if (a.includes("NX") && K.has(a[0])) result = null; else { K.set(a[0], String(a[1])); result = "OK"; } }
     else if (op === "DEL") result = K.delete(a[0]) ? 1 : 0;
     else if (op === "GET") result = K.get(a[0]) ?? null;
+    else if (op === "EXPIRE") result = 1;
     else throw new Error("fake kv does not speak " + op);
     return Response.json({ result });
+  }
+  if (u.startsWith("https://api.stripe.com/")) {
+    const pathOnly = new URL(u).pathname;
+    STRIPE.push({ method: init.method || "GET", path: pathOnly, body: String(init.body || "") });
+    if (stripeDown) return new Response(JSON.stringify({ error: { message: "down" } }), { status: 500, headers: { "content-type": "application/json" } });
+    if (pathOnly.startsWith("/v1/customers/")) return Response.json({ id: pathOnly.split("/").pop(), object: "customer", email: CUST_EMAIL });
+    if (pathOnly.startsWith("/v1/subscriptions/")) return Response.json({ id: pathOnly.split("/").pop(), object: "subscription", metadata: {} });
+    throw new Error("fake stripe does not speak " + pathOnly);
   }
   if (u.startsWith(HOOK)) {
     SENT.push({ url: u, body: JSON.parse(init.body) });
@@ -63,11 +72,13 @@ globalThis.fetch = async (url, init = {}) => {
 };
 
 const SECRET = "whsec_test_0123456789abcdef";
-Object.assign(process.env, { KV_REST_API_URL: KV_URL, KV_REST_API_TOKEN: "t", LEAD_WEBHOOK_URL: HOOK, STRIPE_WEBHOOK_SECRET: SECRET });
+Object.assign(process.env, { KV_REST_API_URL: KV_URL, KV_REST_API_TOKEN: "t", LEAD_WEBHOOK_URL: HOOK, STRIPE_WEBHOOK_SECRET: SECRET,
+  STRIPE_SECRET_KEY: "sk_test_fake", STRIPE_PRO_PRODUCT_IDS: "prod_GHLPRO, price_other" });
+for (const k of ["RESEND_API_KEY", "GHL_API_TOKEN", "GHL_LOCATION_ID"]) delete process.env[k];
 delete process.env.STRIPE_WEBHOOK_SECRET_PREV;
 
 const route = loadTs(path.join(REPO, "app/api/stripe/webhook/route.ts"));
-const { proEventFor } = loadTs(path.join(REPO, "lib/stripeHook.ts"));
+const { proEventFor, proProductIds, untaggedProSub } = loadTs(path.join(REPO, "lib/stripeHook.ts"));
 const stripe = new Stripe("sk_test_unused");
 
 let n = 0;
@@ -83,7 +94,7 @@ async function post(e, secret = SECRET) {
   const r = await route.POST(req);
   return { status: r.status, j: await r.json() };
 }
-const reset = () => { K.clear(); SENT.length = 0; kvDown = false; crmStatus = 200; };
+const reset = () => { K.clear(); SENT.length = 0; STRIPE.length = 0; kvDown = false; crmStatus = 200; stripeDown = false; CUST_EMAIL = "New@Clinic.org"; };
 
 // ── the meaning of each event (no network) ──
 {
@@ -170,6 +181,43 @@ reset();
 
   const g = await (await route.GET()).json();
   ok("the health check says only yes or no", g.secret === true && g.crm === true && !JSON.stringify(g).includes("whsec"), g);
+}
+
+// ── GHLPRO1: Sona Pro bought on the GoHighLevel checkout ──
+{
+  const ids = proProductIds();
+  ok("the product list keeps only Stripe ids", ids.has("prod_GHLPRO") && ids.has("price_other") && ids.size === 2 && proProductIds("junk, ,prod_x y").size === 0);
+  const ghlSub = (over = {}) => ({ id: "sub_ghl1", object: "subscription", status: "trialing", customer: "cus_1", cancel_at_period_end: false, cancel_at: null,
+    metadata: {}, items: { data: [{ price: { id: "price_ghl", product: "prod_GHLPRO" } }] }, ...over });
+  ok("a subscription for the listed product is Sona Pro", untaggedProSub(ghlSub(), ids));
+  ok("…matched by price id too", untaggedProSub(ghlSub({ items: { data: [{ price: { id: "price_other", product: "prod_x" } }] } }), ids));
+  ok("another product is not", !untaggedProSub(ghlSub({ items: { data: [{ price: { id: "price_x", product: "prod_family" } }] } }), ids));
+  ok("one already stamped is never claimed again", !untaggedProSub(ghlSub({ metadata: { plan: "family" } }), ids));
+  ok("with no list, nothing is claimed", !untaggedProSub(ghlSub(), proProductIds("")));
+
+  reset();
+  const r = await post(evt("customer.subscription.created", ghlSub()));
+  ok("a GoHighLevel start is claimed and sent", r.status === 200 && r.j.sent === true, r);
+  const upd = STRIPE.find((x) => x.method === "POST" && x.path === "/v1/subscriptions/sub_ghl1");
+  ok("…the subscription is stamped plan slp-pro, the customer's own email", !!upd && upd.body.includes("metadata[plan]=slp-pro") && upd.body.includes("metadata[slp]=new%40clinic.org"), STRIPE);
+  ok("…GoHighLevel hears a Sona Pro trial for that email", SENT.length === 1 && SENT[0].body.email === "new@clinic.org" && SENT[0].body.event === "started" && SENT[0].body.plan === "trial", SENT);
+  ok("…a sign-in link is made for that email, once", K.get("slpghlmail:sub_ghl1") === "1" && [...K.entries()].some(([k, v]) => k.startsWith("slptok:") && v === "new@clinic.org"));
+  ok("…and any cached 'no plan' for them is dropped", !K.has("slpplan-pro:new@clinic.org"));
+  const toks = [...K.keys()].filter((k) => k.startsWith("slptok:")).length;
+  await post(evt("customer.subscription.created", ghlSub()));
+  ok("a second delivery sends no second sign-in link", [...K.keys()].filter((k) => k.startsWith("slptok:")).length === toks);
+
+  reset(); stripeDown = true;
+  const r2 = await post(evt("customer.subscription.created", ghlSub()));
+  ok("Stripe not answering the claim is a 503, nothing sent or marked", r2.status === 503 && SENT.length === 0 && !K.has("slpghlmail:sub_ghl1"), r2);
+
+  reset(); CUST_EMAIL = "";
+  const r3 = await post(evt("customer.subscription.created", ghlSub()));
+  ok("a customer with no email is left alone", r3.j.ignored === "not-sona-pro" && !STRIPE.some((x) => x.method === "POST") && SENT.length === 0, r3);
+
+  reset();
+  await post(evt("customer.subscription.created", ghlSub({ items: { data: [{ price: { id: "price_x", product: "prod_family" } }] } })));
+  ok("another product's subscription is never touched", STRIPE.length === 0 && SENT.length === 0);
 }
 
 // ── the source never logs an address or keeps money ──

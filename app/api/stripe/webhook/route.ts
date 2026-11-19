@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
-import { kvCmd, kvConfigured } from "@/lib/slpAuth";
-import { proEventFor, ghlBody, ghlUrl } from "@/lib/stripeHook";
+import { kvCmd, kvConfigured, randomToken, hashToken, sendMagicEmail } from "@/lib/slpAuth";
+import { proEventFor, ghlBody, ghlUrl, proProductIds, untaggedProSub } from "@/lib/stripeHook";
+import { PRO_PLAN, PRO_NAME, planKey } from "@/lib/caseload";
+import { linkOrigin } from "@/lib/site";
 
 /**
  * STRIPE'S WEBHOOK (STRIPEHOOK1, 17 Nov 2026; lib/stripeHook.ts says what each
@@ -58,6 +60,24 @@ export async function POST(req: NextRequest) {
   if (!evt) return fail("bad signature", 400);
   if (evt.livemode === false && process.env.VERCEL_ENV === "production" && process.env.STRIPE_WEBHOOK_TEST !== "1") return ok("test-mode");
 
+  // GHLPRO1: a Sona Pro bought on the GoHighLevel checkout carries no Sona
+  // metadata. Stamp it (the clinician's email from the Stripe customer), so
+  // the dashboard, coverage and everything below read it as Sona Pro.
+  let claimed = "";
+  if ((evt.type === "customer.subscription.created" || evt.type === "customer.subscription.updated") &&
+      untaggedProSub(evt.data.object, proProductIds())) {
+    const r = await claimProSub(evt.data.object as Stripe.Subscription);
+    if (r === undefined) return fail("stripe", 503);
+    if (r) {
+      claimed = r;
+      const o = evt.data.object as Stripe.Subscription;
+      o.metadata = { ...(o.metadata || {}), plan: PRO_PLAN, slp: r, source: "ghl" };
+    }
+  }
+  if (claimed && evt.type === "customer.subscription.created") {
+    await signInEmail(claimed, String((evt.data.object as Stripe.Subscription).id || ""), (evt.data.object as Stripe.Subscription).status === "trialing");
+  }
+
   const p = proEventFor(evt);
   if (!p) return ok("not-sona-pro");
   const hook = process.env.LEAD_WEBHOOK_URL;
@@ -98,4 +118,50 @@ export async function POST(req: NextRequest) {
     clearTimeout(fuse);
   }
   return ok("sent");
+}
+
+/**
+ * Stamp a GoHighLevel-sold Sona Pro subscription with Sona's metadata.
+ * Answers the clinician's email, "" when the customer has no usable email
+ * (nothing to unlock), or undefined when Stripe did not answer (a 503, so
+ * Stripe tries again). Safe to repeat: the same stamp is written again.
+ */
+async function claimProSub(sub: Stripe.Subscription): Promise<string | "" | undefined> {
+  const key = process.env.STRIPE_SECRET_KEY;
+  if (!key || !sub.id) return undefined;
+  const stripe = new Stripe(key, { httpClient: Stripe.createFetchHttpClient() });
+  try {
+    let email = "";
+    const c = sub.customer as unknown;
+    if (c && typeof c === "object" && typeof (c as { email?: unknown }).email === "string") email = String((c as { email: string }).email);
+    else if (typeof c === "string") {
+      const cust = await stripe.customers.retrieve(c);
+      if (!("deleted" in cust && cust.deleted)) email = String((cust as Stripe.Customer).email || "");
+    }
+    email = email.trim().toLowerCase();
+    if (email.length > 254 || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return "";
+    await stripe.subscriptions.update(sub.id, { metadata: { plan: PRO_PLAN, slp: email, source: "ghl" } });
+    // The dashboard may have cached "no plan" a moment ago (a minute at most);
+    // drop it so the clinician is let in on their first sign-in.
+    await kvCmd(["DEL", planKey(email, "pro")]);
+    return email;
+  } catch (e) {
+    console.error("[stripe webhook] could not claim a Sona Pro subscription:", e instanceof Error ? e.message : String(e));
+    return undefined;
+  }
+}
+
+/**
+ * The GoHighLevel checkout signs nobody in, so the clinician is emailed a
+ * sign-in link once per subscription (`slpghlmail:<sub>`). A failure never
+ * fails the webhook: they can still sign in at /slp-login.html.
+ */
+async function signInEmail(email: string, sub: string, trial: boolean): Promise<void> {
+  try {
+    if (!sub || (await kvCmd(["SET", "slpghlmail:" + sub, "1", "NX", "EX", 30 * DAY])) !== "OK") return;
+    const token = randomToken();
+    if ((await kvCmd(["SET", "slptok:" + hashToken(token), email, "EX", 900])) !== "OK") return;
+    const link = linkOrigin("https://app.speaksona.com") + "/api/slp/auth/verify?token=" + encodeURIComponent(token);
+    await sendMagicEmail(email, link, "", { started: { name: PRO_NAME, trial } });
+  } catch { /* they can still sign in by email at /slp-login.html */ }
 }
