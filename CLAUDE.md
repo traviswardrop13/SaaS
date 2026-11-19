@@ -2497,7 +2497,16 @@ sends a clinician's start once per subscription through `/api/lead` (plan
 (`STRIPE_WEBHOOK_SECRET`, `_PREV` for a change), only Sona Pro
 subscriptions, once per event id; the clinician's own email and nothing
 about money. Travis's to set up in Stripe (the route's header says how).
-`stripehooktest` plays it. What follows is the history before it.
+`stripehooktest` plays it. **Sona Pro sold on the GoHighLevel checkout (GHLPRO1, 19 Nov 2026,
+Travis: the website moved to GoHighLevel, whose checkout sells Sona Pro
+through the same Stripe).** Its subscriptions carry no Sona metadata, so the
+webhook claims a new or updated one with no `plan` whose product or price id
+is in `STRIPE_PRO_PRODUCT_IDS` (Vercel, comma separated; empty claims
+nothing): it stamps `plan: slp-pro`, `slp: <the Stripe customer's email>`,
+`source: ghl`, drops a cached "no plan", and on a start emails one sign-in
+link (`slpghlmail:<sub>`, "Your Sona Pro trial has started"). A Stripe that
+does not answer the claim is a 503 (Stripe retries). The clinician then signs
+in with that email and the dashboard is open. What follows is the history before it.
 
 **GoHighLevel was deleted on 24 Sep 2026 and Kit replaced it; on 16 Oct 2026
 Resend's contacts replaced Kit** (Travis: "I am done using Kit. I'm going to

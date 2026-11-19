@@ -103,6 +103,32 @@ export function proEventFor(evt: unknown): ProEvent | null {
  * also rides in the address, as /api/lead's crmUrl does, because the
  * workflow reads it there.
  */
+/**
+ * A SONA PRO TRIAL BOUGHT ON THE GOHIGHLEVEL CHECKOUT (GHLPRO1, Travis,
+ * 19 Nov 2026). The website moved to GoHighLevel, whose checkout sells Sona
+ * Pro through the same Stripe account. Its subscriptions carry none of the
+ * metadata Sona's own checkout stamps, so nothing would know a clinician
+ * paid. The ids of the Sona Pro product (or price) in Stripe are listed in
+ * STRIPE_PRO_PRODUCT_IDS (comma separated, prod_… or price_…). A
+ * subscription with no `plan` of its own, for one of those, is Sona Pro;
+ * with the list empty, nothing is ever claimed.
+ */
+export function proProductIds(raw: string | undefined = process.env.STRIPE_PRO_PRODUCT_IDS): Set<string> {
+  return new Set(String(raw || "").split(",").map((x) => x.trim()).filter((x) => /^(prod|price)_[A-Za-z0-9]+$/.test(x)));
+}
+
+export function untaggedProSub(sub: unknown, ids: Set<string>): boolean {
+  if (!ids.size) return false;
+  const o = obj(sub);
+  if (str(o.object) !== "subscription" || obj(o.metadata).plan) return false;
+  const items = Array.isArray(obj(o.items).data) ? (obj(o.items).data as unknown[]) : [];
+  return items.some((it) => {
+    const price = obj(obj(it).price);
+    const product = typeof price.product === "string" ? price.product : str(obj(price.product).id);
+    return ids.has(str(price.id)) || ids.has(product);
+  });
+}
+
 export function ghlBody(p: ProEvent, at: string): Record<string, string> {
   return { email: p.email, role: "slp", source: "sona-pro", event: p.event, plan: p.plan, summary: p.summary, at };
 }
