@@ -429,7 +429,7 @@ async function open(hash) {
     ok(`closed dashboard: ${hash} stays open`, active === "page-" + hash.slice(1), active);
     if (hash === "#settings") {
       const st = await pg.evaluate(() => ({ plan: !document.getElementById("setPlan").hidden, menu: [...document.querySelectorAll(".sidebar nav .nav-item:not([hidden])")].map((a) => a.dataset.page), out: !!document.getElementById("logout").offsetParent, del: !!document.getElementById("deleteOpen").offsetParent }));
-      ok("…its Settings holds Delete my account and the sidebar Sign out, and shows no plan line (nothing is on)", !st.plan && st.out && st.del && JSON.stringify(st.menu) === JSON.stringify(["play", "today", "caseload", "settings"]), JSON.stringify(st));
+      ok("…its Settings holds Delete my account and the sidebar Sign out, and shows no plan line (nothing is on)", !st.plan && st.out && st.del && JSON.stringify(st.menu) === JSON.stringify(["play", "today", "caseload", "refer", "settings"]), JSON.stringify(st));
     }
     await ctx.close();
   }
@@ -707,7 +707,7 @@ async function open(hash) {
     active: [...document.querySelectorAll(".page.active")].map((p) => p.id).join(),
     crumb: document.getElementById("pageCrumb").textContent,
   }));
-  ok("the menu is four places, Session games first: Session games, Today, Caseload, Settings (Your plan left on 18 Nov 2026)", JSON.stringify(st.nav) === JSON.stringify(["play", "today", "caseload", "settings"]) && !st.plan, st.nav.join(",") + " " + st.plan);
+  ok("the menu: Session games first, then Today, Caseload, Share & earn (20 Nov 2026), Settings (Your plan left on 18 Nov 2026)", JSON.stringify(st.nav) === JSON.stringify(["play", "today", "caseload", "refer", "settings"]) && !st.plan, st.nav.join(",") + " " + st.plan);
   ok("…and Your clinic waits, hidden, for a Sona Clinic owner", st.team, JSON.stringify(st));
   ok("…and a visit with no address lands on Session games", st.active === "page-play" && st.crumb === "Session games", JSON.stringify(st));
   for (const [from, to] of [["#plan", "#play"], ["#plan-day", "#play"], ["#homework-draft", "#play"], ["#community", "#today"], ["#affiliate", "#today"]]) {
@@ -900,7 +900,7 @@ async function open(hash) {
   const st = await pg.evaluate(() => ({ nav: [...document.querySelectorAll(".sidebar nav .nav-item:not([hidden])")].map((a) => a.dataset.page),
     active: [...document.querySelectorAll(".page.active")].map((p) => p.id).join(), crumb: document.getElementById("pageCrumb").textContent,
     rows: [...document.querySelectorAll("#teamList .team-row")].map((r) => r.innerText.replace(/\s+/g, " ").trim()), text: document.getElementById("page-team").innerText }));
-  ok("a Sona Clinic owner has Your clinic in the menu, before Settings, and it opens", JSON.stringify(st.nav) === JSON.stringify(["play", "today", "caseload", "team", "settings"]) && st.active === "page-team" && st.crumb === "Your clinic", JSON.stringify(st));
+  ok("a Sona Clinic owner has Your clinic in the menu, before Settings, and it opens", JSON.stringify(st.nav) === JSON.stringify(["play", "today", "caseload", "team", "refer", "settings"]) && st.active === "page-team" && st.crumb === "Your clinic", JSON.stringify(st));
   ok("…one plain row per clinician, in the server's order: the owner (You), then by name, an invite last",
     st.rows.length === 3 && /^Rachel K You 6 children · 3 practiced in the last 7 days$/.test(st.rows[0]) && /^Ann Baker 2 children · 1 practiced in the last 7 days Remove$/.test(st.rows[1]) &&
     /^new@brightsteps\.example Invited Resend Remove$/.test(st.rows[2]), JSON.stringify(st.rows));

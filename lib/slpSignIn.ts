@@ -5,6 +5,7 @@ import {
 } from "@/lib/slpAuth";
 import { PRO_TERMS, reviewEmail } from "@/lib/caseload";
 import { safeAttrib, tellCrm } from "@/lib/slpLead";
+import { referrerFor, recordReferral } from "@/lib/referral";
 
 /**
  * SIGNING IN INSIDE AN APP (SLPAPP1, 16 Nov 2026; Travis: "start building the
@@ -133,6 +134,10 @@ export async function finishSignIn(origin: string, stored: unknown): Promise<Sig
   // field being the whole of it — its grandfathered caseload. They are
   // signed in regardless; the dashboard reads the account itself.
   if (!acct && raw === null) {
+    // SHARE & EARN (REFER1): a code from another clinician's link, read once,
+    // here, at creation. Never your own, never added to an existing account.
+    let referredBy = "";
+    if (signup?.ref) { try { referredBy = await referrerFor(signup.ref, email); } catch { referredBy = ""; } }
     const newAccount = {
       email, name: "", clinic: "", code: "", createdAt: new Date().toISOString(),
       terms: PRO_TERMS,
@@ -141,12 +146,14 @@ export async function finishSignIn(origin: string, stored: unknown): Promise<Sig
         ...(signup.workSetting ? { workSetting: signup.workSetting } : {}),
         source: signup.source,
       } : {}),
+      ...(referredBy ? { referredBy } : {}),
     };
     const snapshot = JSON.stringify(newAccount);
     const created = await kvCmd(["SET", acctKey, snapshot, "NX"]);
     if (created === "OK") {
       acct = newAccount;
       fresh = true;
+      if (referredBy) { try { await recordReferral(referredBy, email); } catch { /* the account still says who */ } }
       // Every new account is made here now (13 Nov 2026: the sign-in page no
       // longer makes one before the inbox is proved), so the CRM hears of it
       // here, awaited, once the inbox is real.

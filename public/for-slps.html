@@ -323,6 +323,23 @@
       if (attrib.utm_source) src = attrib.utm_source.replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 30) || src;
     } catch (e) {}
 
+    /*
+     * SHARE & EARN (REFER1, 20 Nov 2026): another therapist's link carries
+     * ?ref=<code>. Kept on this browser for 60 days, so a visitor who comes
+     * back later still counts for them, and sent with the trial sign-up. The
+     * server takes it only for a brand-new account, never your own.
+     */
+    var ref = "";
+    try {
+      var REF_KEY = "sona.slp.ref", REF_DAYS = 60;
+      var given = String(new URLSearchParams(location.search).get("ref") || "").toLowerCase();
+      if (/^[a-z0-9]{8}$/.test(given)) { localStorage.setItem(REF_KEY, JSON.stringify({ ref: given, at: Date.now() })); ref = given; }
+      else {
+        var kept = JSON.parse(localStorage.getItem(REF_KEY) || "null");
+        if (kept && /^[a-z0-9]{8}$/.test(kept.ref) && Date.now() - kept.at < REF_DAYS * 864e5) ref = kept.ref;
+      }
+    } catch (e) {}
+
     var LABEL = "Start your free trial";
 
     // THE ERROR SITS UNDER THE BUTTON, which on a laptop is the bottom edge of
@@ -467,7 +484,7 @@
       busy(true);
       fetch("/api/slp/auth/request", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ flow: "trial", email: email, source: src, attrib: attrib }),
+        body: JSON.stringify({ flow: "trial", email: email, source: src, attrib: attrib, ref: ref || undefined }),
       }).then(function (r) { return r.json(); }).then(function (j) {
         busy(false);
         if (!j || !j.ok) { forget(); err((j && j.error) || "Couldn't set that up right now."); return; }

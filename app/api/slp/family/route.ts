@@ -106,21 +106,22 @@ export async function POST(req: NextRequest) {
   // is reported, and the panel offers the message to copy or text instead.
   let emailed = false;
   let emailError = "";
+  // The Premium line only when the caseload is covered right now; if that
+  // cannot be confirmed, the email (and the Swift app's message, which reads
+  // `covered` from this answer) promises less, not more.
+  let isCovered = false;
+  try { isCovered = await covered(s.email); } catch { isCovered = false; }
   const n = await bumpDaily("slpinvmail", s.email);
   if (n === null) {
     emailError = "Couldn't send the email just now.";
   } else if (n > PARENT_EMAILS_PER_DAY) {
     emailError = "That's " + PARENT_EMAILS_PER_DAY + " emails today, the daily limit.";
   } else {
-    // The Premium line only when the caseload is covered right now; if that
-    // cannot be confirmed, the email promises less, not more.
-    let isCovered = false;
-    try { isCovered = await covered(s.email); } catch { isCovered = false; }
     const sent = await sendFamilyLoginEmail(parentEmail, { user: made.user, password: made.password, link }, name || clinic, isCovered);
     emailed = sent.sent;
     if (!sent.sent) emailError = sent.error || "The email didn't go through.";
   }
-  const out: Record<string, unknown> = { ok: true, invite, link, user: made.user, password: made.password, emailed };
+  const out: Record<string, unknown> = { ok: true, invite, link, user: made.user, password: made.password, emailed, covered: isCovered };
   if (emailError) out.emailError = emailError;
   return NextResponse.json(out);
 }

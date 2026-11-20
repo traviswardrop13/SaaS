@@ -224,7 +224,7 @@ try {
     const {ctx,pg,errors}=await open("#premium");
     await pg.waitForTimeout(150);
     const nav=await pg.locator(".sidebar nav").evaluate(n=>[...n.children].filter(c=>!c.hidden).map(c=>c.dataset.page||c.textContent.trim()));
-    ok("the menu is Session games, Today, Caseload and Settings: no Your plan",JSON.stringify(nav)===JSON.stringify(["play","today","caseload","settings"])&&!(await pg.locator('[data-page="premium"]').count()),nav.join(","));
+    ok("the menu is Session games, Today, Caseload, Share & earn and Settings: no Your plan",JSON.stringify(nav)===JSON.stringify(["play","today","caseload","refer","settings"])&&!(await pg.locator('[data-page="premium"]').count()),nav.join(","));
     ok("…and no plan page: its old address (#premium) opens Settings",!(await pg.locator("#page-premium").count())&&await visible(pg,"#page-settings")&&(await pg.locator("#pageCrumb").textContent())==="Settings"&&(await pg.evaluate(()=>location.hash))==="#settings");
     ok("…and Your clinic stays out of the menu for anyone but a Sona Clinic owner",!await visible(pg,'[data-page="team"]'));
     // Even while the server offers both plans, with prices, the page shows none.
@@ -275,7 +275,7 @@ try {
   await run("Sona Clinic, owned or joined",async()=>{
     PLAN=plan("clinic");writes.length=0;
     let {ctx,pg,errors}=await open("#settings");await pg.waitForTimeout(150);
-    ok("owner: Your clinic in the menu, before Settings",JSON.stringify(await pg.locator(".sidebar nav").evaluate(n=>[...n.children].filter(c=>!c.hidden).map(c=>c.dataset.page)))===JSON.stringify(["play","today","caseload","team","settings"]));
+    ok("owner: Your clinic in the menu, before Settings",JSON.stringify(await pg.locator(".sidebar nav").evaluate(n=>[...n.children].filter(c=>!c.hidden).map(c=>c.dataset.page)))===JSON.stringify(["play","today","caseload","team","refer","settings"]));
     ok("…and the delete card says the team goes too",await visible(pg,"#deleteClinic")&&!await visible(pg,"#setTeam"));
     ok("no runtime errors",errors.length===0,errors.join("; "));
     await ctx.close();

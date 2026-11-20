@@ -1,3 +1,4 @@
+import { cleanRef } from "@/lib/referral";
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "node:crypto";
 import {
@@ -83,7 +84,7 @@ async function tellCrmEarly(origin: string, email: string, source: string, attri
 export async function POST(req: NextRequest) {
   let body: {
     email?: string; adminKey?: string; source?: string; attrib?: unknown;
-    clinicianRole?: unknown; workSetting?: unknown; flow?: unknown; wantCode?: unknown;
+    clinicianRole?: unknown; workSetting?: unknown; flow?: unknown; wantCode?: unknown; ref?: unknown;
   };
   try {
     body = await req.json();
@@ -193,6 +194,9 @@ export async function POST(req: NextRequest) {
       ...(role ? { clinicianRole: role } : {}),
       ...(workSetting === "clinic" || workSetting === "school" ? { workSetting } : {}),
       source: String(body.source || "for-slps").slice(0, 40), attrib: safeAttrib(body.attrib),
+      // Share & earn (REFER1): a referral code rides in the signed pending
+      // sign-up; only a brand-new account takes it (lib/slpSignIn).
+      ...(cleanRef(body.ref) ? { ref: cleanRef(body.ref) } : {}),
     });
     const key = "slptok:" + hashToken(token);
     if (await kvCmd(["SET", key, pending, "EX", 900]) !== "OK") {
