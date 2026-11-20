@@ -387,6 +387,12 @@ if (A && F && SU && R.login) {
     ok("past the 30-a-day parent email cap: the login is still made, and the reply says the email did not go", r.status === 200 && !!r.json.user && r.json.emailed === false && /30 emails today, the daily limit/.test(r.json.emailError) && GHL.length === 0, r);
     ok("…with no initials given, the waiting family is called New family", r.json.invite && r.json.invite.label === "New family", r.json.invite);
     KV.K.delete("slpinvmail:" + SAM + ":" + new Date().toISOString().slice(0, 10));
+    // 20 Nov 2026: an older account with a code but no family key met "Finish
+    // your profile first". Add a family now mints the key, as Settings would.
+    { const a = JSON.parse(KV.K.get("slpacct:" + SAM)); delete a.familyKey; KV.K.set("slpacct:" + SAM, JSON.stringify(a)); }
+    r = await call(R.family, "POST", "/api/slp/family", { as: SAM, body: { parentEmail: "nokey@example.com" } });
+    const minted = JSON.parse(KV.K.get("slpacct:" + SAM)).familyKey;
+    ok("an account with a code but no family key gets one, and the family is added", r.status === 200 && !!r.json.user && typeof minted === "string" && minted.length >= 6 && String(r.json.link || "").includes("k=" + encodeURIComponent(minted)), r);
     r = await call(R.family, "POST", "/api/slp/family", { as: SAM, body: { parentEmail: "third@example.com" } });
     const samMail = GHL.find((g) => g.path === "/conversations/messages");
     ok("an uncovered caseload's email promises the free version and no Premium", r.status === 200 && !!samMail && /daily practice and free games/.test(samMail.body.message) && !/Premium/.test(samMail.body.message), samMail && samMail.body.message);
