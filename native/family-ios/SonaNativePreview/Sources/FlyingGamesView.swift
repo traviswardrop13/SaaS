@@ -21,6 +21,9 @@ struct FlyingGamesView: View {
     let onLifeLost: (() -> Void)?
     @Environment(\.dismiss) private var dismiss
     @Environment(\.guidedReplay) private var guidedReplay
+    @Environment(\.guidedArcadeExit) private var guidedArcadeExit
+    @Environment(\.arcadePowerEffect) private var power
+    @Environment(\.arcadeStartingHearts) private var startingHearts
     @Environment(\.guidedArcadeRestoredLives) private var restoredLives
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -44,7 +47,7 @@ struct FlyingGamesView: View {
 
             VStack {
                 HStack(alignment: .top) {
-                    Button(action: { dismiss() }) {
+                    Button(action: close) {
                         Image(systemName: "xmark")
                             .font(.system(size: 20, weight: .bold))
                             .frame(width: 48, height: 48)
@@ -57,15 +60,7 @@ struct FlyingGamesView: View {
                         Text(game == .glide ? "\(round.progress) gaps crossed" : "\(round.progress) blocks moved")
                             .font(.system(size: 17, weight: .bold, design: .rounded))
                             .accessibilityIdentifier("nativeFlyingCount")
-                        HStack(spacing: 6) {
-                            ForEach(0..<3, id: \.self) { heart in
-                                Image(systemName: heart < round.hearts ? "heart.fill" : "heart")
-                                    .foregroundStyle(heart < round.hearts ? Color(red: 0.85, green: 0.29, blue: 0.30) : .gray)
-                            }
-                        }
-                        .font(.system(size: 15))
-                        .accessibilityElement(children: .ignore)
-                        .accessibilityLabel("\(round.hearts) hearts")
+                        NativeArcadeHearts(count: round.hearts)
                     }
                     .padding(.horizontal, 16)
                     .padding(.vertical, 11)
@@ -105,14 +100,14 @@ struct FlyingGamesView: View {
                         .multilineTextAlignment(.center)
                     Button(round.phase == .ready ? "Let's play" : "Play again") {
                         if round.phase == .finished, let guidedReplay { guidedReplay() }
-                        else { round.start() }
+                        else { round.start(hearts: startingHearts) }
                     }
                         .font(.system(size: 22, weight: .bold, design: .rounded))
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity, minHeight: 58)
                         .background(Color(red: 0.04, green: 0.48, blue: 0.51), in: RoundedRectangle(cornerRadius: 18))
                         .accessibilityIdentifier("nativeFlyingPlay")
-                    Button("Back home") { dismiss() }
+                    Button("Back home", action: close)
                         .font(.system(size: 20, weight: .bold, design: .rounded))
                         .frame(minHeight: 44)
                         .accessibilityIdentifier("nativeFlyingHome")
@@ -130,6 +125,8 @@ struct FlyingGamesView: View {
             round.scene.reduceMotion = reduceMotion
             round.scene.resetClock()
             round.scene.isPaused = false
+            round.scene.power = power
+            if round.phase == .ready { round.hearts = startingHearts }
         }
         .onDisappear { round.scene.isPaused = true }
         .onChange(of: scenePhase) { phase in
@@ -137,12 +134,18 @@ struct FlyingGamesView: View {
             round.scene.resetClock()
         }
         .onChange(of: reduceMotion) { round.scene.reduceMotion = $0 }
+        .onChange(of: power) { round.scene.power = $0 }
         .onChange(of: restoredLives) { _ in round.restoreLife() }
         .onChange(of: round.phase) { phase in
             if phase == .finished { onRoundFinished() }
             if phase == .retry { onLifeLost?() }
         }
+        .preference(key: NativeArcadePowerBoardPreference.self, value: NativeArcadePowerBoard(
+            playing: round.phase == .playing,
+            fractionComplete: Double(round.progress) / Double(goal), hearts: round.hearts))
     }
+
+    private func close() { if let guidedArcadeExit { guidedArcadeExit() } else { dismiss() } }
 
     private var panelTitle: String {
         switch round.phase {
@@ -188,12 +191,12 @@ private final class FlyingRound: ObservableObject {
         }
     }
 
-    func start() {
+    func start(hearts initialHearts: Int) {
         phase = .playing
         progress = 0
-        hearts = 3
+        hearts = initialHearts
         haptic.prepare()
-        scene.start()
+        scene.start(hearts: initialHearts)
     }
 
     func restoreLife() {
@@ -224,6 +227,7 @@ private final class FlyingScene: SKScene {
     var onHearts: ((Int) -> Void)?
     var onStop: ((Bool) -> Void)?
     var reduceMotion = false
+    var power = NativeArcadePowerEffect()
     private let game: FlyingGame
     private let goal: Int
     private let world = SKNode()
@@ -296,7 +300,7 @@ private final class FlyingScene: SKScene {
         lastTouch = nil
     }
 
-    func start() {
+    func start(hearts initialHearts: Int) {
         world.removeAllChildren()
         balloon.removeAllActions()
         balloon.alpha = 1
@@ -305,7 +309,7 @@ private final class FlyingScene: SKScene {
         blocks.removeAll()
         playing = true
         progress = 0
-        hearts = 3
+        hearts = initialHearts
         spawned = 0
         elapsed = 0
         nextSpawn = game == .glide ? 0.3 : 0.8
@@ -319,12 +323,13 @@ private final class FlyingScene: SKScene {
         guard playing else { return }
         let seconds = CGFloat(max(0, min(0.04, currentTime - (previousTime ?? currentTime))))
         previousTime = currentTime
-        elapsed += Double(seconds)
-        if game == .glide { updateGlide(seconds) }
-        else { updateRise(seconds) }
+        let worldSeconds = seconds * power.speed
+        elapsed += Double(worldSeconds)
+        if game == .glide { updateGlide(seconds, worldSeconds: worldSeconds) }
+        else { updateRise(worldSeconds) }
     }
 
-    private func updateGlide(_ seconds: CGFloat) {
+    private func updateGlide(_ seconds: CGFloat, worldSeconds: CGFloat) {
         verticalSpeed = max(-230, verticalSpeed - 220 * seconds)
         balloon.position.y += verticalSpeed * seconds
         if !reduceMotion { balloon.zRotation = max(-0.18, min(0.16, verticalSpeed / 1200)) }
@@ -342,7 +347,7 @@ private final class FlyingScene: SKScene {
         let speed: CGFloat = hearts == 3 ? 86 : 74
         let body = CGRect(x: balloon.position.x - 25, y: balloon.position.y - 43, width: 50, height: 86)
         for index in gates.indices {
-            gates[index].node.position.x -= speed * seconds
+            gates[index].node.position.x -= speed * worldSeconds
             let origin = gates[index].node.position.x
             if body.intersects(gates[index].lower.offsetBy(dx: origin, dy: 0)) ||
                 body.intersects(gates[index].upper.offsetBy(dx: origin, dy: 0)) {
@@ -432,7 +437,7 @@ private final class FlyingScene: SKScene {
     }
 
     private func bump() {
-        guard playing && elapsed >= invulnerableUntil else { return }
+        guard playing && elapsed >= invulnerableUntil && !power.protectsHearts else { return }
         invulnerableUntil = elapsed + 1.5
         hearts -= 1
         onHearts?(hearts)

@@ -14,10 +14,10 @@ The [storefront](modules/SonaFamilyStorefront) uses the existing App Store produ
 
 1. Verify a dedicated, dashboard-issued family login with confirmed Premium coverage on the live server. Exercise both sharing decisions on dedicated test slots, confirm the consented row in the dashboard, verify the assignment attaches when the invitation carries one, confirm restart state, and verify changing the disposable password. Local tests use fictional credentials.
 2. Finish and verify each original speaking turn in the Arcade, story games, talking stories and book reader. Verify all four practice rungs, goal and reward timing, quiet behavior and replay on physical iPhones with Rachel. Microphone input stays on the phone and in memory.
-3. Invoke the local migration adapter during an in-place upgrade under `com.speaksona.app`. Verify repeatable migration for each legacy origin, child, free-era and founding promise, paid purchase, assignment, and reward balance. Local tests cover the records and atomic writes. The separate preview has its own container.
+3. Verify repeatable migration for each legacy origin, child, free-era and founding promise, paid purchase, assignment, and reward balance with an in-place upgrade. Local tests cover the records and atomic writes. [Private iPhone upgrade test](IPHONE-UPGRADE-TEST.md)
 4. Connect native RevenueCat/StoreKit and validate the same products, prices, terms, intro eligibility, existing subscribers, and Restore Purchases in the correct App Store app. Review the design changes with Travis and Rachel before an explicit “merge.”
 5. Review remaining game assists and sound effects where the native controls differ from their original boards.
-6. Verify weekly reporting with a consented, disposable household before release. The existing app identity reconnects households with saved opt-in. The separate preview and all local tests use fictional data. [Weekly-report parity](WEEKLY-REPORT-PARITY.md)
+6. Verify a new weekly report confirmation and an existing subscription with a consented test household before release. All local delivery tests use fictional data. [Weekly-report parity](WEEKLY-REPORT-PARITY.md)
 
 ## Local login contract test
 

@@ -306,10 +306,15 @@ private struct NativeWindupRound: View {
     @State private var origin: Double = 0
     @State private var credit: Double = 0
     @State private var effort: Double = 0
+    @State private var effortAtTouch: Double = 0
+    @State private var woundTotal: Double = 0
+    @State private var lastMovement: TimeInterval = -.infinity
+    @State private var lastQuarterTurn: TimeInterval = -.infinity
+    @State private var lastTick: TimeInterval?
     @State private var feedback = ""
     @State private var awake = false
     @State private var oiled: TimeInterval = 0
-    private let oilClock = Timer.publish(every: 0.25, on: .main, in: .common).autoconnect()
+    private let oilClock = Timer.publish(every: 0.05, on: .main, in: .common).autoconnect()
     private let bigToys = ["bunny", "frog", "top", "croc", "elephant", "jack-closed", "hippo", "musicbox"]
     private let littleToys = ["bunny", "frog", "elephant", "hippo", "top", "musicbox"]
     // Exact authored directions from windup.js STEP_LINES.
@@ -395,10 +400,8 @@ private struct NativeWindupRound: View {
                     .accessibilityIdentifier("windup-help")
             }
         }
-        .onReceive(oilClock) { _ in
-            if scenePhase == .active && speechGameProgress?.isMoveActive != false && oiled > 0 { oiled = max(0, oiled - 0.25) }
-        }
-        .onChange(of: scenePhase) { phase in if phase != .active { resetFinger() } }
+        .onReceive(oilClock) { _ in updateClock() }
+        .onChange(of: scenePhase) { phase in if phase != .active { resetFinger(); lastTick = nil } }
     }
     private var meter: some View {
         GeometryReader { geo in
@@ -417,14 +420,15 @@ private struct NativeWindupRound: View {
         }.frame(height: 28).accessibilityLabel("Spring meter").accessibilityValue("\(Int(min(1, turns / need) * 100)) percent")
     }
     private func wind(_ p: CGPoint, center: CGPoint, radius: CGFloat) {
-        if fingerStart == nil { fingerStart = p }
+        let now = ProcessInfo.processInfo.systemUptime
+        if fingerStart == nil { fingerStart = p; effortAtTouch = effort }
         let distance = hypot(p.x - center.x, p.y - center.y)
         let angle = atan2(Double(p.y - center.y), Double(p.x - center.x))
         let inRing = distance >= radius * 0.15 && distance <= radius * 1.4
         var gained: Double = 0
         if let previousPoint {
             let travel = hypot(p.x - previousPoint.x, p.y - previousPoint.y)
-            if travel > 0.5 { effort += Double(travel) / 80 }
+            if travel > 0.5 { lastMovement = now }
             let previousDistance = hypot(previousPoint.x - center.x, previousPoint.y - center.y)
             let rubbingTheDial = (little || effort >= 8) && max(previousDistance, distance) <= radius * 1.4
             if rubbingTheDial || effort >= (little ? 6 : 12) {
@@ -445,7 +449,10 @@ private struct NativeWindupRound: View {
         previousAngle = inRing ? angle : nil
         previousPoint = p
         let biggerGain = (little && effort >= 4) || (lastToy && effort >= 12)
-        turns = min(top, turns + gained * (misses > 0 ? 0.75 : 1) * (oiled > 0 ? 2 : 1) * (biggerGain ? 2 : 1))
+        let amount = gained * (misses > 0 ? 0.75 : 1) * (oiled > 0 ? 2 : 1) * (biggerGain ? 2 : 1)
+        if floor((woundTotal + amount) * 4) > floor(woundTotal * 4) { lastQuarterTurn = now }
+        woundTotal += amount
+        turns = min(top, turns + amount)
         if little && effort >= 6, let fingerStart, hypot(fingerStart.x - p.x, fingerStart.y - p.y) > 30 {
             turns = need
         }
@@ -457,9 +464,24 @@ private struct NativeWindupRound: View {
         else if effort >= 12 { feedback = "Drag anywhere to wind!" }
         else if effort >= 8 { feedback = "Rub the dial to wind it" }
     }
+
+    private func updateClock() {
+        let now = ProcessInfo.processInfo.systemUptime
+        guard scenePhase == .active, speechGameProgress?.isMoveActive != false, !awake else {
+            lastTick = nil
+            return
+        }
+        let dt = min(0.1, max(0, now - (lastTick ?? now)))
+        lastTick = now
+        if oiled > 0 { oiled = max(0, oiled - dt) }
+        if previousPoint != nil, now - lastMovement < 0.3, now - lastQuarterTurn > 0.4 {
+            effort += dt
+        }
+    }
+
     private func release() {
         if let fingerStart, let previousPoint, hypot(fingerStart.x - previousPoint.x, fingerStart.y - previousPoint.y) < 10 {
-            effort += 0.5
+            effort = max(effort, effortAtTouch + 0.5)
         }
         resetFinger()
         guard !awake, scenePhase == .active, hasStar, turns >= (need - halfStar) * 0.3 else { return }
@@ -472,13 +494,17 @@ private struct NativeWindupRound: View {
             feedback = "Whoa, dizzy! Let go a bit sooner"
         }
     }
-    private func resetFinger() { previousAngle = nil; previousPoint = nil; fingerStart = nil; sweep = 0; origin = 0; credit = 0 }
+    private func resetFinger() {
+        previousAngle = nil; previousPoint = nil; fingerStart = nil
+        sweep = 0; origin = 0; credit = 0; lastMovement = -.infinity
+    }
     private func advance() {
         guard awake else { return }
         speechGameProgress?.advance()
         if lastToy { onFinish(); return }
         stage += 1
-        turns = 0; misses = 0; effort = 0; feedback = ""; awake = false; oiled = 0; resetFinger()
+        turns = 0; misses = 0; effort = 0; feedback = ""; awake = false; oiled = 0
+        woundTotal = 0; lastQuarterTurn = -.infinity; resetFinger()
     }
 }
 

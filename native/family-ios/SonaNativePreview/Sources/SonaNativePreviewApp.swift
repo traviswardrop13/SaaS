@@ -357,10 +357,10 @@ struct SonaNativePreviewApp: App {
         case .practice(let destination):
             if let launch = practiceLaunch, launch.id == destination.id, let game = destination.game {
                 let live = { records.activeID == destination.owner && self.experience?.id == destination.id.uuidString }
-                NativeGuidedArcadeView(game: game, isCurrent: live, load: { checkpoint in
+                NativeGuidedArcadeView(game: game, isCurrent: live, load: { card in
                     guard live() else { throw NativeFamilyRuleError.playerChanged }
                     return try await records.read(.arcadeCheckpoint, input: .init(
-                        sound: launch.content.target.sound, game: game.shippingID, card: checkpoint.number,
+                        sound: launch.content.target.sound, game: game.shippingID, card: card,
                         boostLevel: launch.content.rung.rawValue, boostAsk: launch.content.target.word,
                         boostPosition: destination.selection.practicePosition))
                 }, credit: { saying in
@@ -609,7 +609,7 @@ struct SonaNativePreviewApp: App {
 
     private var weeklyReport: (() -> AnyView)? {
         guard let origin = records.document?.primaryOrigin, let store = records.weeklyReportStore(for: origin) else { return nil }
-        return { AnyView(NativeWeeklyReportHost(store: store).id(origin)) }
+        return { AnyView(NativeWeeklyReportHost(store: store, premium: family.libraryAccess.premium).id(origin)) }
     }
 
     private func switchPlayer(_ id: String) {
@@ -910,13 +910,13 @@ struct SonaNativePreviewApp: App {
                       onFinish: @escaping () -> Void) -> some View {
         switch game {
         case .slice:
-            FruitSliceView(stage: stage, onRoundFinished: onFinish)
+            FruitSliceView(stage: stage, onLifeLost: onLifeLost, onRoundFinished: onFinish)
         case .glide:
             FlyingGamesView(game: .glide, stage: stage, onLifeLost: onLifeLost, onRoundFinished: onFinish)
         case .rise:
             FlyingGamesView(game: .rise, stage: stage, onLifeLost: onLifeLost, onRoundFinished: onFinish)
         case .sprint:
-            SprintView(onRoundFinished: onFinish, stage: stage)
+            SprintView(onRoundFinished: onFinish, stage: stage, onLifeLost: onLifeLost)
         case .bubbles:
             DiscoveryGamesView(game: .bubbles, onRoundFinished: onFinish)
         case .peekaboo:
@@ -942,7 +942,7 @@ struct SonaNativePreviewApp: App {
         case .pizza:
             MakerGamesView(game: .pizza, onRoundFinished: onFinish)
         case .tiles, .stack, .hoops, .soccer:
-            ArcadeRoundView(game: game, onRoundFinished: onFinish, stage: stage)
+            ArcadeRoundView(game: game, onRoundFinished: onFinish, stage: stage, onLifeLost: onLifeLost)
         }
     }
 }
@@ -963,9 +963,10 @@ enum Destination: Hashable {
 
 @MainActor private struct NativeWeeklyReportHost: View {
     let store: NativeFamilyReportStore
+    let premium: Bool
 
     var body: some View {
-        Form { NativeFamilyReportView(store: store) }
+        Form { NativeFamilyReportView(store: store, premium: premium) }
             .navigationTitle("Weekly progress report")
     }
 }

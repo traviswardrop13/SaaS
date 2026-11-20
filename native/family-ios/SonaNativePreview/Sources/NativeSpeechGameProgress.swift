@@ -7,13 +7,15 @@ struct NativeSpeechGameProgress {
     let advance: () -> Void
     let isHelpActive: Bool
     let isMoveActive: Bool
+    let wordIndex: Int?
     /// true only after the full same-word ask, false after cleanup/return.
     let requestHelp: ((@escaping (Bool) -> Void) -> Bool)?
 
-    init(count: Int, advance: @escaping () -> Void, isHelpActive: Bool = false, isMoveActive: Bool = true,
+    init(count: Int, advance: @escaping () -> Void, isHelpActive: Bool = false, isMoveActive: Bool = true, wordIndex: Int? = nil,
          requestHelp: ((@escaping (Bool) -> Void) -> Bool)? = nil) {
         self.count = count; self.advance = advance
-        self.isHelpActive = isHelpActive; self.isMoveActive = isMoveActive; self.requestHelp = requestHelp
+        self.isHelpActive = isHelpActive; self.isMoveActive = isMoveActive
+        self.wordIndex = wordIndex; self.requestHelp = requestHelp
     }
 }
 

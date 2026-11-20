@@ -4,6 +4,10 @@ import Foundation
 /// charge. Stores only aggregate analyser numbers; no microphone audio.
 /// Source: arcade-slice.html listenFor and arcade-speech-help.js cardSpeechWait.
 public struct ArcadeCheckpointDetector {
+    public enum Timing: Sendable {
+        case checkpoint
+        case livePower
+    }
     public struct Candidate: Equatable, Sendable {
         public let nominatedAtMilliseconds: Double
     }
@@ -16,6 +20,7 @@ public struct ArcadeCheckpointDetector {
     private struct Sample { let time: Double; let level: Double; let shape: Shape }
     public let family: String
     public let requiresWord: Bool
+    private let timing: Timing
     public private(set) var roomFloor: Double?
     public private(set) var listeningReady = false
     public private(set) var hasBurst = false
@@ -25,16 +30,19 @@ public struct ArcadeCheckpointDetector {
     private var lastLoud = 0.0
     private var finished = false
 
-    public init(family: String, requiresWord: Bool, roomFloor: Double? = nil) {
+    public init(family: String, requiresWord: Bool, roomFloor: Double? = nil, timing: Timing = .checkpoint) {
         self.family = family; self.requiresWord = requiresWord
+        self.timing = timing
         self.roomFloor = roomFloor.flatMap { $0.isFinite && $0 >= 0 ? $0 : nil }
     }
 
     public mutating func ingest(_ frame: PracticeAcousticFrame) -> Candidate? {
         guard !finished else { return nil }
         guard frame.quietObservation(threshold: 0.05) != nil else {
-            // micDeaf drops the history and the recognition-tail nomination.
-            history.removeAll(keepingCapacity: true); heardAt = nil; hasBurst = false
+            // Both ears drop unavailable frames. For an optional power, the
+            // eight-second deadline still honors an already heard real burst.
+            history.removeAll(keepingCapacity: true)
+            if timing == .checkpoint { heardAt = nil; hasBurst = false }
             lastLoud = frame.timestampMilliseconds; lastTime = nil
             return nil
         }
@@ -69,7 +77,9 @@ public struct ArcadeCheckpointDetector {
         if heardAt == nil { heardAt = now; lastLoud = now }
         if value.level > threshold { lastLoud = now }
         guard let heardAt, now - heardAt >= 550 else { return nil }
-        guard now - lastLoud >= 200 || (!requiresWord && now - heardAt >= 2_500) else { return nil }
+        if timing == .checkpoint {
+            guard now - lastLoud >= 200 || (!requiresWord && now - heardAt >= 2_500) else { return nil }
+        }
         finished = true
         return Candidate(nominatedAtMilliseconds: heardAt)
     }

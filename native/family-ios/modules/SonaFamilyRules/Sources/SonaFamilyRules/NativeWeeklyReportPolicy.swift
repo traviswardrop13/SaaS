@@ -4,7 +4,7 @@ import JavaScriptCore
 /// Runs REPORT1's actual preparation and response callbacks in an isolated
 /// context. Its fetch only captures one request; it never owns a transport.
 public enum NativeWeeklyReportPolicy {
-    public enum Action: String, Sendable { case sync, flush, queueOff }
+    public enum Action: String, Sendable { case sync, flush, queueOff, queueOn }
     public struct Projection: Sendable {
         public let body: Data?
         public let context: Data?
@@ -17,9 +17,11 @@ public enum NativeWeeklyReportPolicy {
     private static let reportProgram: Result<String, Error> = Result { try instrumented() }
 
     public static func prepare(storage: [String: String], profileKeys: [String], action: Action,
-                               force: Bool, now: Date = Date(), removedEmail: String? = nil) throws -> Projection {
+                               force: Bool, now: Date = Date(), removedEmail: String? = nil,
+                               signupEmail: String? = nil) throws -> Projection {
         try run(storage: storage, profileKeys: profileKeys, now: now,
-                command: ["action": action.rawValue, "force": force, "removedEmail": removedEmail ?? ""])
+                command: ["action": action.rawValue, "force": force, "removedEmail": removedEmail ?? "",
+                          "signupEmail": signupEmail ?? ""])
     }
 
     public static func acknowledge(storage: [String: String], profileKeys: [String], context: Data,
@@ -53,6 +55,7 @@ public enum NativeWeeklyReportPolicy {
         let off = try segment(text, from: "  function _reportOffFlush(force) {", to: "  function reportFlush()")
         let offResponse = try segment(off, from: "return sent.catch(() => false).then((ok) => {", to: "\n      });")
         let queue = try segment(text, from: "  function reportOff() {", to: "    return (_reportSyncP || Promise.resolve())")
+        let signup = try segment(text, from: "  function reportSet(raw) {", to: "    // the email list hears it too")
         let syncFetch = "      sent = fetch(\"/api/report\","
         let offFetch = "        sent = fetch(\"/api/report\","
         // Insert at their distinct indentation, without rewriting any rule.
@@ -67,7 +70,8 @@ public enum NativeWeeklyReportPolicy {
               if(p.action==='queueOff') {
                 if(p.removedEmail) _reportOffOwe(p.removedEmail);
                 else { \(queue) }
-              } else if(p.action==='flush') _reportOffFlush(p.force===true);
+              } else if(p.action==='queueOn') (function(raw) { \(signup) })(p.signupEmail);
+              else if(p.action==='flush') _reportOffFlush(p.force===true);
               else if(p.action==='sync') reportSync(p.force===true,p.force===true);
             },
             acknowledge: function(p) {
@@ -76,7 +80,11 @@ public enum NativeWeeklyReportPolicy {
               var ok=p.response?(function(j){ \(response) })(p.response):false;
               return (function(ok){ \(completion) })(ok);
             },
-            status: function(){return reportStatus();}
+            status: function() {
+              var status=reportStatus();
+              status.suggestedEmail=status.can&&!status.on?parentEmail():"";
+              return status;
+            }
           };
         """
         guard let export = text.range(of: "  global.Sona = {") else { throw Failure.sourceChanged }
@@ -124,7 +132,9 @@ public enum NativeWeeklyReportPolicy {
         for key in profileKeys {
             let before = object(storage[key]), current = object(after[key])
             var patch: [String: Any] = [:]
-            for field in ["reportId", "weeklyReport"] where !equal(before[field], current[field]) {
+            let fields = command["action"] as? String == "queueOn" ?
+                ["reportId", "weeklyReport", "weeklyEmail", "email"] : ["reportId", "weeklyReport"]
+            for field in fields where !equal(before[field], current[field]) {
                 guard let value = current[field] else { throw Failure.invalidProjection }
                 patch[field] = value
             }

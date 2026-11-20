@@ -17,10 +17,19 @@ private final class ReportMemory: NativeFamilyDocumentStore, @unchecked Sendable
 }
 @MainActor private final class ReportMock: NativeFamilyReportTransport {
     var requests: [NativeFamilyReportRequest] = []
+    var signups: [NativeFamilyReportRequest] = []
     var offline = false, hold = false
+    var signupOffline = false, holdSignup = false
     var waiting: CheckedContinuation<Data, Error>?
+    var signupWaiting: CheckedContinuation<Data, Error>?
     var response = Data(#"{"ok":true}"#.utf8)
     func send(_ request: NativeFamilyReportRequest) async throws -> Data {
+        if request.url.path == "/api/lead" {
+            signups.append(request)
+            if signupOffline { throw FixtureFailure.offline }
+            if holdSignup { return try await withCheckedThrowingContinuation { signupWaiting = $0 } }
+            return Data(#"{"ok":true,"captured":true}"#.utf8)
+        }
         requests.append(request)
         if offline { throw FixtureFailure.offline }
         if hold { return try await withCheckedThrowingContinuation { waiting = $0 } }
@@ -76,8 +85,8 @@ private final class ReportURLFixture: URLProtocol {
         _ = try await repository.seed(from: archive(consent: consent, changes: changes), primaryOrigin: .app)
         return (memory, repository)
     }
-    private func store(_ repo: NativeFamilyRepository, _ mock: ReportMock?) async -> NativeFamilyReportStore {
-        let date = date
+    private func store(_ repo: NativeFamilyRepository, _ mock: ReportMock?, at date: Date? = nil) async -> NativeFamilyReportStore {
+        let date = date ?? self.date
         let store = NativeFamilyReportStore(repository: repo, transport: mock, now: { date })
         await store.bind(origin: .app)
         return store
@@ -225,6 +234,154 @@ private final class ReportURLFixture: URLProtocol {
         let result = await store.sync(trigger: .settings)
         XCTAssertFalse(result); XCTAssertTrue(mock.requests.isEmpty)
     }
+    func testExplicitSignupKeepsHouseholdOwnerAndSeparatesAdultLeadFromAnonymousReport() async throws {
+        let changes = [
+            "sona.kids.v1": #"{"list":[{"slot":""},{"slot":"k2"},{"slot":"k3"},{"slot":"k4"}],"active":"k2","hi":4}"#,
+            "sona.profile.v1@k3": #"{"onboarded":true,"role":"slp"}"#,
+            "sona.profile.v1@k4": #"{"onboarded":false,"childName":"Not set up"}"#
+        ]
+        let (_, repo) = try await setup(consent: "false", changes: changes)
+        let mock = ReportMock(), store = await store(repo, mock)
+        await store.settingsAppeared()
+        XCTAssertTrue(mock.requests.isEmpty && mock.signups.isEmpty)
+        XCTAssertEqual(store.status?.suggestedEmail, "synthetic@example.invalid")
+        mock.response = Data(#"{"ok":true,"pending":true}"#.utf8)
+        let enabled = await store.turnOn(email: " PreView.Parent+one@EXAMPLE.INVALID ", premium: true)
+        XCTAssertTrue(enabled)
+        try await waitFor { mock.signups.count == 1 }
+        XCTAssertEqual(store.status?.email, "preview.parent+one@example.invalid")
+        XCTAssertEqual(store.status?.pending, true)
+        let report = try body(XCTUnwrap(mock.requests.first))
+        XCTAssertEqual(report["on"] as? Bool, true)
+        XCTAssertEqual(report["dev"] as? String, dev)
+        let weeks = try XCTUnwrap(report["weeks"] as? [[String: Any]])
+        XCTAssertTrue(weeks.allSatisfy { ($0["kids"] as? [[String: Any]])?.count == 2 })
+        let lead = try XCTUnwrap(mock.signups.first), leadData = try XCTUnwrap(JSONSerialization.jsonObject(with: lead.body) as? [String: Any])
+        XCTAssertEqual(lead.url.absoluteString, "https://app.speaksona.com/api/lead")
+        XCTAssertEqual(lead.origin, "https://app.speaksona.com")
+        XCTAssertEqual(Set(leadData.keys), ["email", "role", "source", "summary", "premium"])
+        XCTAssertEqual(leadData["email"] as? String, store.status?.email)
+        XCTAssertEqual(leadData["role"] as? String, "parent")
+        XCTAssertEqual(leadData["source"] as? String, "app-settings")
+        XCTAssertEqual(leadData["summary"] as? String, "Turned on the weekly progress report in Settings")
+        XCTAssertEqual(leadData["premium"] as? Bool, true)
+        let document = try await repo.snapshot(), family = try XCTUnwrap(document?.primaryFamily)
+        let primary = NativeFamilyOrigin.object(family.children[0].profileJSON)
+        XCTAssertEqual(primary?["weeklyReport"] as? Bool, true)
+        XCTAssertEqual(primary?["weeklyEmail"] as? Bool, true)
+        XCTAssertEqual(primary?["childName"] as? String, "Private name")
+        XCTAssertNil(NativeFamilyOrigin.object(family.activeChild?.profileJSON)?["weeklyReport"])
+        mock.response = Data(#"{"ok":true}"#.utf8)
+        await store.settingsAppeared()
+        XCTAssertEqual(store.status?.pending, false)
+        XCTAssertEqual(mock.requests.count, 2)
+        XCTAssertEqual(mock.signups.count, 1)
+    }
+
+    func testIneligibleInvalidAndUnsavedSignupCannotSend() async throws {
+        let (memory, repo) = try await setup(consent: "false"), mock = ReportMock(), store = await store(repo, mock)
+        let before = memory.value
+        for bad in ["", "not an address", "démo@example.invalid", String(repeating: "a", count: 119) + "@b.invalid"] {
+            let enabled = await store.turnOn(email: bad, premium: false)
+            XCTAssertFalse(enabled); XCTAssertNotNil(store.error)
+        }
+        memory.reject = true
+        let unsaved = await store.turnOn(email: "valid@example.invalid", premium: false)
+        XCTAssertFalse(unsaved)
+        XCTAssertEqual(before, memory.value)
+        XCTAssertTrue(mock.requests.isEmpty && mock.signups.isEmpty)
+
+        let (_, ineligible) = try await setup(consent: "false", changes: [
+            "sona.profile.v1": #"{"onboarded":true,"role":"slp"}"#,
+            "sona.profile.v1@k2": #"{"onboarded":false}"#
+        ])
+        let ineligibleStore = await self.store(ineligible, mock)
+        let allowed = await ineligibleStore.turnOn(email: "valid@example.invalid", premium: false)
+        XCTAssertFalse(allowed)
+        XCTAssertEqual(ineligibleStore.status?.can, false)
+        XCTAssertTrue(mock.requests.isEmpty && mock.signups.isEmpty)
+    }
+
+    func testSignupLeadRetriesAfterRestartWithoutBlockingOrResendingConfirmedReport() async throws {
+        let (_, repo) = try await setup(consent: "false"), mock = ReportMock(), store = await store(repo, mock)
+        mock.signupOffline = true
+        let enabled = await store.turnOn(email: "another@example.invalid", premium: false)
+        XCTAssertTrue(enabled)
+        try await waitFor { mock.signups.count == 1 }
+        XCTAssertEqual(store.status?.sent, true)
+        XCTAssertNil(store.error)
+        let beforeDue = await self.store(repo, mock, at: date.addingTimeInterval(299))
+        await beforeDue.settingsAppeared()
+        XCTAssertEqual(mock.signups.count, 1)
+        mock.signupOffline = false
+        let restarted = await self.store(repo, mock, at: date.addingTimeInterval(301))
+        await restarted.settingsAppeared()
+        try await waitFor { mock.signups.count == 2 }
+        let leadData = try XCTUnwrap(JSONSerialization.jsonObject(with: XCTUnwrap(mock.signups.last).body) as? [String: Any])
+        XCTAssertNil(leadData["premium"])
+        XCTAssertEqual(mock.requests.count, 1)
+        XCTAssertEqual(restarted.status?.sent, true)
+    }
+
+    func testHeldLeadCannotDelayConfirmationAndWithdrawalCancelsUnsentRetries() async throws {
+        let (_, repo) = try await setup(consent: "false"), mock = ReportMock(), store = await store(repo, mock)
+        mock.holdSignup = true
+        mock.response = Data(#"{"ok":true,"pending":true}"#.utf8)
+        let enabling = Task { await store.turnOn(email: "new@example.invalid", premium: false) }
+        try await waitFor { mock.signupWaiting != nil && store.status?.pending == true }
+        let pendingConfirmation = store.status?.pending
+        mock.signupWaiting?.resume(throwing: FixtureFailure.offline)
+        mock.signupWaiting = nil
+        mock.holdSignup = false
+        let enabled = await enabling.value
+        XCTAssertTrue(enabled); XCTAssertEqual(pendingConfirmation, true)
+
+        mock.response = Data(#"{"ok":true}"#.utf8)
+        let withdrawn = await store.turnOff()
+        XCTAssertTrue(withdrawn)
+        let reopened = await self.store(repo, mock, at: date.addingTimeInterval(6 * 60))
+        await reopened.settingsAppeared()
+        let remaining = try await repo.prepareWeeklyReportSignup(origin: .app, now: date.addingTimeInterval(10 * 60))
+        XCTAssertNil(remaining)
+        XCTAssertEqual(mock.signups.count, 1)
+        XCTAssertEqual(mock.requests.count, 2)
+    }
+
+    func testReenableWaitsForAnInFlightWithdrawalAndSendsOnlyFreshActivation() async throws {
+        let (_, repo) = try await setup(), mock = ReportMock(), store = await store(repo, mock)
+        mock.hold = true
+        let withdrawing = Task { await store.turnOff() }
+        try await waitFor { mock.waiting != nil }
+        let enabling = Task { await store.turnOn(email: "synthetic@example.invalid", premium: false) }
+        try await waitFor { store.status?.on == true }
+        try await waitFor { mock.signups.count == 1 }
+        XCTAssertEqual(mock.requests.count, 1)
+        XCTAssertEqual(try body(mock.requests[0])["off"] as? Bool, true)
+        mock.hold = false
+        mock.waiting?.resume(returning: Data(#"{"ok":true}"#.utf8))
+        mock.waiting = nil
+        _ = await withdrawing.value
+        let activated = await enabling.value
+        XCTAssertTrue(activated)
+        XCTAssertEqual(mock.requests.count, 2)
+        XCTAssertEqual(try body(XCTUnwrap(mock.requests.last))["on"] as? Bool, true)
+        XCTAssertEqual(store.status?.sent, true)
+    }
+
+    func testReenableDropsExactOfflineOffAndSendsAliasOffBeforeNewActivation() async throws {
+        let state = "{\"dev\":\"\(dev)\",\"offs\":[{\"e\":\"d.ad+one@gmail.com\",\"d\":\"\(dev)\"},{\"e\":\"dad@gmail.com\",\"d\":\"\(dev)\"}]}"
+        let (_, repo) = try await setup(consent: "false", changes: ["sona.report.v1": state])
+        let mock = ReportMock(), store = await store(repo, mock)
+        let activated = await store.turnOn(email: "d.ad+one@gmail.com", premium: false)
+        XCTAssertTrue(activated)
+        XCTAssertEqual(mock.requests.count, 2)
+        let first = try body(XCTUnwrap(mock.requests.first)), last = try body(XCTUnwrap(mock.requests.last))
+        XCTAssertEqual(first["off"] as? Bool, true)
+        XCTAssertEqual(first["email"] as? String, "dad@gmail.com")
+        XCTAssertEqual(last["on"] as? Bool, true)
+        XCTAssertEqual(last["email"] as? String, "d.ad+one@gmail.com")
+    }
+
     func testOffAliasesDrainBeforeCanonicalActivation() async throws {
         let state = "{\"dev\":\"\(dev)\",\"onFor\":\"synthetic@example.invalid\",\"offOwed\":{\"e\":\"old@example.invalid\",\"d\":\"\(dev)\"},\"offs\":[{\"e\":\"other@example.invalid\",\"d\":\"\(dev)\"}]}"
         let (_, repo) = try await setup(changes: ["sona.report.v1":state]), mock = ReportMock(), store = await store(repo, mock)
@@ -242,6 +399,7 @@ private final class ReportURLFixture: URLProtocol {
         case .flush: result = try NativeWeeklyReportPolicy.prepare(storage: family.storage, profileKeys: keys, action: .flush, force: true, now: date)
         case .sync: result = try NativeWeeklyReportPolicy.prepare(storage: family.storage, profileKeys: keys, action: .sync, force: true, now: date)
         case .queueOff(let email): result = try NativeWeeklyReportPolicy.prepare(storage: family.storage, profileKeys: keys, action: .queueOff, force: true, now: date, removedEmail: email)
+        case .queueOn(let email): result = try NativeWeeklyReportPolicy.prepare(storage: family.storage, profileKeys: keys, action: .queueOn, force: true, now: date, signupEmail: email)
         }
         return .init(reportState: result.reportState, profilePatches: result.profilePatches, body: result.body, context: result.context)
     }

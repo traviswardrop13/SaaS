@@ -20,7 +20,7 @@ enum MeadowGame: String, CaseIterable {
     fileprivate var instruction: String {
         switch self {
         case .balloon: return "Pump it up. Pull it into the ring."
-        case .flower: return "Hold each sprout to give it a drink."
+        case .flower: return "Hold the watering can over the glowing soil."
         case .rocket: return "Pull the rocket back. Let it fly!"
         case .snowman: return "Roll a snowball. Lift it onto the snowman."
         case .train: return "Hold to drive. Let go at each station."
@@ -384,67 +384,186 @@ private struct MeadowFlower: View {
     let onMove: () -> Void
     let onComplete: () -> Void
     @Environment(\.scenePhase) private var scenePhase
-    @State private var water: [Double]
-    @State private var watering: Int?
+    @Environment(\.speechGameProgress) private var speechGameProgress
+    @State private var water: MeadowFlowerWater
+    @State private var can: CGPoint?
+    @State private var pouring = false
+    @State private var carryingCan = false
     @State private var previousTick: Date?
+    @StateObject private var power = StoryMovePower(duration: 10)
     private let clock = Timer.publish(every: 1.0 / 30, on: .main, in: .common).autoconnect()
 
     init(goal: Int, onMove: @escaping () -> Void, onComplete: @escaping () -> Void) {
         self.onMove = onMove; self.onComplete = onComplete
-        _water = State(initialValue: [Double](repeating: 0, count: goal))
+        _water = State(initialValue: MeadowFlowerWater(count: goal))
     }
 
     var body: some View {
         GeometryReader { geo in
+            let origin = can ?? homeCan(geo.size)
+            let target = water.current.map { bedPoint($0, size: geo.size) }
+            let radius = water.catchRadius(width: geo.size.width, powered: power.active)
+            let spout = CGPoint(x: origin.x - 21, y: origin.y + 13)
+            let lands = target.map {
+                spout.y < $0.y && water.isAligned(canX: origin.x, spoutX: spout.x, soilX: $0.x, radius: radius)
+            } ?? false
             ZStack(alignment: .top) {
-                MeadowCaption(text: "\(water.filter { $0 >= 1 }.count) of \(water.count) flowers blooming")
-                ForEach(water.indices, id: \.self) { index in
-                    let x = geo.size.width * (water.count <= 3 ? (0.18 + CGFloat(index) * 0.32) : (0.18 + CGFloat(index % 3) * 0.32))
-                    let y = geo.size.height * (water.count <= 3 ? (index == 1 ? 0.58 : 0.68) : (0.35 + CGFloat(index / 3) * 0.34))
-                    VStack(spacing: 6) {
-                        Image(water[index] >= 1 ? "meadow-bloom" : "meadow-sprout")
-                            .resizable().scaledToFit().frame(width: geo.size.width * (water.count <= 3 ? 0.29 : 0.26), height: water.count <= 3 ? 140 : 90)
-                        ProgressView(value: water[index]).tint(MeadowStyle.teal).frame(width: 64)
+                MeadowCaption(text: "\(water.grown) of \(water.amounts.count) flowers blooming")
+                if let target {
+                    Ellipse().fill(MeadowStyle.teal.opacity(0.19))
+                        .overlay(Ellipse().strokeBorder(MeadowStyle.teal, style: StrokeStyle(lineWidth: 2, dash: [5, 3])))
+                        .frame(width: 2 * radius, height: 20).position(target)
+                        .allowsHitTesting(false).accessibilityHidden(true)
+                    if water.assistance > 0 {
+                        Image(systemName: "arrow.down.circle.fill")
+                            .foregroundStyle(MeadowStyle.teal)
+                            .position(x: target.x, y: target.y - 92)
+                            .allowsHitTesting(false).accessibilityHidden(true)
                     }
-                    .padding(.vertical, water.count <= 3 ? 15 : 10).contentShape(Rectangle())
-                    .position(x: x, y: y)
-                    .gesture(DragGesture(minimumDistance: 0).onChanged { _ in
-                        if water[index] < 1 { watering = index }
-                    }.onEnded { _ in watering = nil; previousTick = nil })
+                }
+                ForEach(water.amounts.indices, id: \.self) { index in
+                    let full = water.amounts[index] >= 1
+                    let bed = bedPoint(index, size: geo.size)
+                    VStack(spacing: 6) {
+                        Image(full ? "meadow-bloom" : "meadow-sprout")
+                            .resizable().scaledToFit().frame(width: geo.size.width * 0.24, height: 68)
+                        ProgressView(value: water.amounts[index]).tint(MeadowStyle.teal).frame(width: 50)
+                    }
+                    .position(x: bed.x, y: bed.y - 36)
                     .accessibilityElement(children: .ignore)
-                    .accessibilityLabel("Flower \(index + 1), \(Int(water[index] * 100)) percent watered")
-                    .accessibilityAction(named: "Water flower") { addWater(index, amount: 0.25) }
+                    .accessibilityLabel("Flower \(index + 1), \(Int(water.amounts[index] * 100)) percent watered")
+                    .accessibilityAddTraits(water.current == index ? .isSelected : [])
                     .accessibilityIdentifier("meadow-flower-\(index)")
                 }
-                if let index = watering, water[index] < 1 {
-                    Image("meadow-can").resizable().scaledToFit().frame(width: 104, height: 100)
-                        .position(x: min(geo.size.width - 52, geo.size.width * (0.25 + CGFloat(index % 3) * 0.27)), y: geo.size.height * (water.count <= 3 ? 0.34 : 0.18 + CGFloat(index / 3) * 0.34))
-                        .allowsHitTesting(false).accessibilityHidden(true)
+                if let target, pouring, spout.y < target.y, water.reservoir > 0 {
+                    Path { stream in
+                        stream.move(to: spout)
+                        stream.addLine(to: CGPoint(x: lands ? target.x : spout.x, y: target.y))
+                    }
+                    .stroke(.cyan, style: StrokeStyle(lineWidth: power.active ? 10 : 5, lineCap: .round, dash: [6, 4]))
+                    .allowsHitTesting(false).accessibilityHidden(true)
                 }
-                VStack { Spacer(); MeadowCaption(text: "Hold a sprout until it blooms") }
+                Image("meadow-can").resizable().scaledToFit().frame(width: 97, height: 84)
+                    .contentShape(Rectangle()).position(origin)
+                    .gesture(DragGesture(minimumDistance: 0, coordinateSpace: .named("flower-bed"))
+                        .onChanged { touch in
+                            guard playing, let target else { return }
+                            if !carryingCan {
+                                carryingCan = true
+                                guard water.beginPour(powered: power.active) else { return }
+                                pouring = true
+                            }
+                            can = CGPoint(x: max(28, min(geo.size.width - 28, touch.location.x)),
+                                          y: max(58, min(target.y - 24, touch.location.y)))
+                        }.onEnded { _ in endPickup() })
+                    .accessibilityLabel("Watering can")
+                    .accessibilityHint("Drag and hold it above the highlighted flower.")
+                    .accessibilityAction(named: "Water highlighted flower") {
+                        guard playing, !pouring, water.beginPour(powered: power.active) else { return }
+                        if water.pour(duration: 0.4, overSoil: true) { bloom() }
+                        else { water.stopPour() }
+                    }
+                    .accessibilityIdentifier("meadow-flower-can")
+                VStack {
+                    Spacer()
+                    HStack(spacing: 8) {
+                        Button("Refill") { if playing && !pouring { water.refill(powered: power.active) } }
+                            .buttonStyle(.bordered)
+                            .disabled(pouring || water.reservoir >= water.capacity(powered: power.active) - 0.01)
+                            .frame(minHeight: 44)
+                            .accessibilityIdentifier("meadow-flower-refill")
+                        ProgressView(value: water.reservoir, total: max(water.reservoir, water.capacity(powered: power.active)))
+                            .tint(MeadowStyle.teal)
+                            .accessibilityLabel("Water left in the can")
+                    }
+                    .padding(.horizontal, 12).background(.white.opacity(0.85), in: Capsule()).padding(8)
+                }
+            }
+            .coordinateSpace(name: "flower-bed")
+            .onReceive(clock) { now in
+                guard playing, pouring, target != nil, water.reservoir > 0 else { previousTick = nil; return }
+                let dt = max(0, min(0.05, now.timeIntervalSince(previousTick ?? now)))
+                previousTick = now
+                if water.pour(duration: dt, overSoil: lands) { bloom() }
+                else if water.reservoir <= 0 { stopPouring() }
             }
         }
-        .onReceive(clock) { now in
-            guard scenePhase == .active, let index = watering else { previousTick = nil; return }
-            let dt = min(0.06, now.timeIntervalSince(previousTick ?? now))
-            previousTick = now
-            addWater(index, amount: dt / 1.6)
-        }
-        .onChange(of: scenePhase) { _ in watering = nil; previousTick = nil }
-        .onDisappear { watering = nil; previousTick = nil }
+        .modifier(StoryMovePowerControls(power: power, title: "Gentle shower", id: "meadow-flower-help", enabled: !carryingCan))
+        .onChange(of: scenePhase) { _ in endPickup() }
+        .onChange(of: speechGameProgress?.isMoveActive) { _ in endPickup() }
+        .onDisappear(perform: endPickup)
     }
 
-    private func addWater(_ index: Int, amount: Double) {
-        guard water[index] < 1 else { return }
-        water[index] = min(1, water[index] + amount)
-        if water[index] >= 1 {
-            watering = nil
-            MeadowStyle.tick()
-            onMove()
-            if water.allSatisfy({ $0 >= 1 }) { onComplete() }
-        }
+    private var playing: Bool { scenePhase == .active && speechGameProgress?.isMoveActive != false }
+    private func homeCan(_ size: CGSize) -> CGPoint { CGPoint(x: max(54, size.width * 0.20), y: max(72, size.height * 0.25)) }
+    private func bedPoint(_ index: Int, size: CGSize) -> CGPoint {
+        let firstRow: CGFloat = water.amounts.count <= 3 ? 0.68 : 0.48
+        return CGPoint(x: size.width * (0.18 + CGFloat(index % 3) * 0.32),
+                       y: size.height * (firstRow + CGFloat(index / 3) * 0.25))
+    }
+    private func stopPouring() { pouring = false; previousTick = nil; water.stopPour() }
+    private func endPickup() { carryingCan = false; stopPouring() }
+    private func bloom() {
+        endPickup()
+        MeadowStyle.tick()
+        can = nil
+        onMove()
+        if water.current == nil { onComplete() }
     }
 }
+
+// BEGIN MEADOW_FLOWER_WATER
+private struct MeadowFlowerWater {
+    private(set) var amounts: [Double]
+    private(set) var reservoir = 1.8
+    private(set) var misses = 0
+    private var emission = 0.0
+    var current: Int? { amounts.firstIndex(where: { $0 < 1 }) }
+    var grown: Int { current ?? amounts.count }
+    var assistance: Int { misses >= 24 ? 2 : misses >= 9 ? 1 : 0 }
+
+    init(count: Int) { amounts = Array(repeating: 0, count: count) }
+
+    func capacity(powered: Bool) -> Double { powered ? 1.8 : 1 }
+    func catchRadius(width: CGFloat, powered: Bool) -> CGFloat {
+        max(24, min(42, width * 0.075)) * max(powered ? 2 : 1, assistance >= 1 ? 1.8 : 1)
+    }
+    func isAligned(canX: CGFloat, spoutX: CGFloat, soilX: CGFloat, radius: CGFloat) -> Bool {
+        let canMargin = max(radius, 97 * (assistance >= 1 ? 0.55 : 0.35))
+        return assistance >= 2 || abs(canX - soilX) <= canMargin || abs(spoutX - soilX) <= radius
+    }
+
+    mutating func refill(powered: Bool) { reservoir = max(reservoir, capacity(powered: powered)) }
+    mutating func beginPour(powered: Bool) -> Bool {
+        if reservoir <= 0 && assistance == 2 { refill(powered: powered) }
+        guard reservoir > 0, current != nil else { return false }
+        emission = 0.055
+        return true
+    }
+    mutating func stopPour() { emission = 0 }
+
+    /// Only water poured over soil grows a flower. Water otherwise spills.
+    /// The child gets a fresh full can for the next heard move.
+    mutating func pour(duration: Double, overSoil: Bool) -> Bool {
+        guard let current, duration > 0, duration.isFinite, reservoir > 0 else { return false }
+        emission += duration
+        while emission >= 0.055 && reservoir > 0 {
+            emission -= 0.055
+            reservoir = max(0, reservoir - 0.035)
+            if overSoil {
+                amounts[current] = min(1, amounts[current] + 0.03)
+                if amounts[current] >= 1 {
+                    if current + 1 < amounts.count { reservoir = 1.8 }
+                    misses = 0
+                    stopPour()
+                    return true
+                }
+            } else { misses += 1 }
+        }
+        return false
+    }
+}
+// END MEADOW_FLOWER_WATER
 
 private struct MeadowRocket: View {
     let goal: Int

@@ -25,6 +25,7 @@ struct FamilyLibraryAccess {
     var allowsStory: Bool { Self.policy?.story(state, at: now) ?? false }
     var allowsPractice: Bool { Self.policy?.practice(state, canSellHere: canSellHere, at: now) ?? false }
     var offersLockedContent: Bool { Self.policy?.offersLockedContent(state, canSellHere: canSellHere, at: now) ?? false }
+    var premium: Bool { state.premium }
     var requiresTrialFirst: Bool { Self.policy?.requiresTrialFirst(state, canSellHere: canSellHere, at: now) ?? false }
     func allows(_ game: NativeGame) -> Bool {
         let shippingID = game == .sprint ? "run" : game.rawValue

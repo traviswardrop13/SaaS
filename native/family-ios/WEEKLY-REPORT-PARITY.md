@@ -1,10 +1,10 @@
 # Weekly progress report: native release gate
 
-The native rebuild preserves migrated report records, uses the existing policy
-and household journal, and connects previously opted-in households to Sona's
-current report endpoint under the existing app identity. The separate preview
-labels its saved setting as local and has delivery disabled. All verification
-to date uses fictional data.
+The native rebuild preserves migrated report records and lets a grown-up turn
+the report on in Settings. It uses Sona's existing report and tips signup
+endpoints under the existing app identity. The separate preview shows and
+saves the local setting with delivery disabled. All verification to date uses
+fictional data.
 
 ## Existing consent and identity
 
@@ -24,31 +24,38 @@ to date uses fictional data.
   a durable `NativeFamilyRemovalObligation.reportEmail` in
   `modules/SonaFamilyMigration/.../NativeFamilyRepository.swift:286`.
 
-## Local implementation and remaining connection
+## Local implementation
 
 1. `NativeFamilyWeeklyReport.swift` adds a dedicated **origin-scoped household**
    transaction for `sona.report.v1`, metadata-only profile patches and its
    device-local journal. Ordinary game/practice `applyRules` remains restricted
    to the active child's own keys. Invalid or incomplete mutations commit nothing.
 2. `NativeWeeklyReportPolicy.swift` loads unchanged shipping `sona.js` and adds
-   narrowly anchored in-memory hooks. The original REPORT1 functions prepare
-   requests; its actual response callbacks handle acknowledgments. All fetches
-   in this context are captured unresolved requests, never network calls.
+   narrowly anchored in-memory hooks. Its original settings logic chooses the
+   household address owner and handles the opt-in reset. The original REPORT1
+   functions and response callbacks prepare and acknowledge reports. Every
+   fetch in this context is captured in memory.
 3. `NativeFamilyReportStore.swift` journals a prepared packet before transport
    can send it. Turn off persists its queue before waiting for
    an older update; a restart after withdrawal discards an old active packet
    without resending child numbers. Removal obligations queue the original off.
-4. The request description fixes `https://app.speaksona.com/api/report` and its
-   matching Origin, and the repository enforces an explicit field allow-list and
-   4,000-byte cap. The dedicated HTTPS transport rejects redirects and disables
-   cookies, credential storage and caching. It is enabled only for the original
-   app identity. The test fixture intercepts all requests.
-5. Host wiring uses explicit Settings recheck, a counted rep after the goal
-   stamp, and leaving or backgrounding a dirty practice or game. Opening Home
-   sends nothing. A withdrawal can flush
-   without current report consent, because it deletes previously authorized data.
-   New-family opt-in/Turn on has not been added; a bare email or clinician consent
-   cannot activate this service.
+4. The fixed report and adult tips signup routes are `/api/report` and
+   `/api/lead` on `https://app.speaksona.com`. The report has an explicit
+   field allow-list. The separate typed signup body contains only the
+   grown-up's address, role, source, the fixed settings summary and the
+   existing Premium flag when true. Both requests have a 4,000-byte cap.
+   The dedicated HTTPS transport rejects redirects and disables cookies,
+   credential storage and caching. It is enabled for the original app
+   identity. The test fixture intercepts all requests.
+5. The grown-up's Turn on action commits consent before either request can
+   leave. The report confirmation proceeds independently of the tips signup.
+   An unsent tips signup retries through existing Settings or practice triggers
+   after five minutes and is canceled if the grown-up turns the report off.
+   Settings sends owed withdrawals and rechecks a pending confirmation when
+   opened or when returning from Mail. Normal report updates still run after
+   a counted rep or when leaving a dirty practice view. Opening Home sends
+   nothing. A withdrawal can flush without current report consent because it
+   deletes previously authorized data.
 6. The unchanged policy supplies the full household: at most eight set-up family children,
    excluding clinician or unfinished profiles, for this local Monday and last.
    Do not send one selected child's numbers as though they represent the household.
@@ -76,7 +83,12 @@ The server still requires the email's confirmation before retaining numbers.
   survive restart and drain only on their own successful acknowledgments.
 - Delayed update → Turn off, restart after withdrawal, child removal and origin switching
   cannot reorder, lose or cross-apply consent/state.
-- New-family Turn on and an explicit off → Turn on flow remain unimplemented.
+- Explicit signup selects the first eligible family player, keeps device and
+  child IDs, and checks confirmation when Settings opens again. A retry of the
+  tips signup neither delays confirmation nor sends another report.
+- Re-enabling waits behind an in-flight withdrawal. It drops an unsent
+  withdrawal for the exact address, drains owed aliases and posts fresh
+  activation. Withdrawal cancels a queued retry of the tips signup.
 - Pending/off/give-up and retry schedules match the existing REPORT1 tests.
 - Only allow-listed fields cross the mocked request boundary. A temporary-copy
   negative control removing the field allow-list fails the new privacy test.

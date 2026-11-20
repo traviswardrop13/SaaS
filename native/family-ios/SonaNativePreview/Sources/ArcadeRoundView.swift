@@ -1,18 +1,29 @@
 import AVFoundation
+import Combine
 import SwiftUI
 
 struct ArcadeRoundView: View {
     let game: NativeGame
     let onRoundFinished: () -> Void
     var stage: Int = 0
+    var onLifeLost: (() -> Void)?
     @Environment(\.dismiss) private var dismiss
     @Environment(\.guidedReplay) private var guidedReplay
+    @Environment(\.guidedArcadeExit) private var guidedArcadeExit
+    @Environment(\.guidedArcadeRestoredLives) private var restoredLives
+    @Environment(\.arcadePowerEffect) private var power
+    @Environment(\.arcadeStartingHearts) private var startingHearts
     @Environment(\.speechGameProgress) private var speechGameProgress
     @Environment(\.scenePhase) private var scenePhase
 
     @StateObject private var piano = PianoVoice()
     @State private var round = 0
     @State private var moves = 0
+    @State private var lives = NativeArcadeLives()
+    @State private var preparedHearts = false
+
+    private var powerBoard: Bool { [.tiles, .stack].contains(game) && onLifeLost != nil }
+    private var finale: Bool { game == .tiles && stage == 3 }
 
     private var goal: Int {
         if let progress = speechGameProgress { return progress.count }
@@ -22,7 +33,7 @@ struct ArcadeRoundView: View {
     var body: some View {
         VStack(spacing: 14) {
             HStack {
-                Button { dismiss() } label: {
+                Button(action: close) {
                     Image(systemName: "xmark")
                         .font(.system(size: 19, weight: .bold))
                         .frame(width: 48, height: 48)
@@ -35,10 +46,13 @@ struct ArcadeRoundView: View {
                     .font(.system(.title2, design: .rounded).weight(.heavy))
                     .accessibilityAddTraits(.isHeader)
                 Spacer()
-                ProgressView(value: Double(moves), total: Double(goal))
-                    .frame(width: 48)
-                    .tint(SonaPalette.teal)
-                    .accessibilityLabel("Round progress")
+                VStack(spacing: 6) {
+                    ProgressView(value: Double(moves), total: Double(goal))
+                        .frame(width: 48)
+                        .tint(SonaPalette.teal)
+                        .accessibilityLabel("Round progress")
+                    if powerBoard && moves < goal && !finale { NativeArcadeHearts(count: lives.hearts) }
+                }
             }
             .buttonStyle(SonaPressStyle())
 
@@ -49,7 +63,7 @@ struct ArcadeRoundView: View {
                     .font(.system(.headline, design: .rounded).weight(.bold))
                     .multilineTextAlignment(.center)
 
-                board.id(round)
+                board.id(round).allowsHitTesting(lives.hearts > 0)
             }
         }
         .padding(.horizontal, 18)
@@ -58,17 +72,25 @@ struct ArcadeRoundView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .foregroundStyle(SonaPalette.ink)
         .background(SonaPalette.paper.ignoresSafeArea())
+        .onAppear {
+            if !preparedHearts { lives = NativeArcadeLives(startingHearts: startingHearts); preparedHearts = true }
+        }
         .onDisappear { piano.stop() }
         .onChange(of: scenePhase) { phase in if phase != .active { piano.stop() } }
+        .onChange(of: restoredLives) { _ in lives.restore(at: ProcessInfo.processInfo.systemUptime) }
+        .preference(key: NativeArcadePowerBoardPreference.self, value: NativeArcadePowerBoard(
+            playing: powerBoard && moves < goal && lives.hearts > 0 && !finale,
+            fractionComplete: Double(moves) / Double(goal), clearsPower: finale, hearts: powerBoard ? lives.hearts : nil))
     }
 
     @ViewBuilder
     private var board: some View {
         switch game {
         case .tiles:
-            PianoBoard(song: PianoBoard.songs[stage], move: moves, piano: piano, advance: advance)
+            PianoBoard(song: PianoBoard.songs[stage], move: moves, stage: stage, running: lives.hearts > 0,
+                       piano: piano, hit: advance, miss: miss)
         case .stack:
-            StackerBoard(advance: advance)
+            StackerBoard(running: lives.hearts > 0, advance: advance, onMiss: miss)
         case .hoops, .soccer:
             TargetBoard(isSoccer: game == .soccer, advance: advance)
         default:
@@ -77,11 +99,20 @@ struct ArcadeRoundView: View {
     }
 
     private func advance() {
-        guard moves < goal else { return }
+        guard moves < goal, lives.hearts > 0 else { return }
         moves += 1
         speechGameProgress?.advance()
         if moves == goal { onRoundFinished() }
     }
+
+    @discardableResult private func miss() -> Bool {
+        guard let onLifeLost, !finale else { return false }
+        let hit = lives.miss(at: ProcessInfo.processInfo.systemUptime, protected: power.protectsHearts)
+        if hit && lives.hearts == 0 { piano.stop(); onLifeLost() }
+        return lives.hearts == 0
+    }
+
+    private func close() { if let guidedArcadeExit { guidedArcadeExit() } else { dismiss() } }
 
     private var finishCard: some View {
         ScrollView {
@@ -99,7 +130,7 @@ struct ArcadeRoundView: View {
                     else { moves = 0; round += 1 }
                 }
                     .buttonStyle(RoundActionStyle())
-                Button("Back to games") { dismiss() }
+                Button("Back to games", action: close)
                     .font(.system(.headline, design: .rounded).weight(.bold))
                     .frame(minHeight: 48)
             }
@@ -135,38 +166,49 @@ private struct PianoBoard: View {
     struct Song {
         let title: String
         let notes: [Int]
+        let fall: TimeInterval
 
-        init(_ title: String, _ tune: String) {
+        init(_ title: String, _ tune: String, fall: TimeInterval) {
             self.title = title
+            self.fall = fall
             let pitches = Array("CDEFGA")
             notes = tune.compactMap { pitches.firstIndex(of: $0) }
         }
     }
 
     static let songs = [
-        Song("Twinkle Twinkle", "CCGGAAG FFEEDDC"),
-        Song("Mary Had a Little Lamb", "EDCDEEE DDD EGG"),
-        Song("Row, Row, Row Your Boat", "CCCDE EDEFG"),
-        Song("Ode to Joy", "EEFGGFED CCDEEDD")
+        Song("Twinkle Twinkle", "CCGGAAG FFEEDDC", fall: 2.5),
+        Song("Mary Had a Little Lamb", "EDCDEEE DDD EGG", fall: 2.3),
+        Song("Row, Row, Row Your Boat", "CCCDE EDEFG", fall: 2.1),
+        Song("Ode to Joy", "EEFGGFED CCDEEDD", fall: 2.2)
     ]
     let song: Song
     let move: Int
+    let stage: Int
+    let running: Bool
     let piano: PianoVoice
-    let advance: () -> Void
+    let hit: () -> Void
+    let miss: () -> Bool
 
     @State private var lastKey: Int?
+    @State private var clock = NativeArcadeMotionClock()
+    @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.arcadePowerEffect) private var power
+    @Environment(\.willPlayArcadeGameAudio) private var willPlayAudio
+    @Environment(\.accessibilityVoiceOverEnabled) private var voiceOver
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    private let timer = Timer.publish(every: 1.0 / 30, on: .main, in: .common).autoconnect()
 
     private let names = ["C", "D", "E", "F", "G", "A"]
     private let colors = [SonaPalette.yellow, SonaPalette.mint, SonaPalette.lavender]
+    private var waitsAtKeys: Bool { stage == 3 || (stage == 0 && move < 3) || voiceOver }
+    private var playbackSpeed: Double { running && scenePhase == .active ? power.speed : 0 }
+    private var now: TimeInterval { Date().timeIntervalSinceReferenceDate }
 
     var body: some View {
         let expected = song.notes[move]
         VStack(spacing: 15) {
             Spacer()
-            Image(systemName: "music.note.list")
-                .font(.system(size: 66, weight: .regular))
-                .foregroundStyle(SonaPalette.teal)
-                .accessibilityHidden(true)
             Text(song.title)
                 .font(.system(.title3, design: .rounded).weight(.heavy))
                 .multilineTextAlignment(.center)
@@ -177,16 +219,27 @@ private struct PianoBoard: View {
                         .frame(height: 7)
                 }
             }
+            TimelineView(.animation(minimumInterval: 1.0 / 30)) { timeline in
+                GeometryReader { geometry in
+                    let span = max(0, geometry.size.height - 34)
+                    let fraction = min(1, clock.position(at: timeline.date.timeIntervalSinceReferenceDate) / song.fall)
+                    let width = geometry.size.width / CGFloat(names.count)
+                    RoundedRectangle(cornerRadius: 9)
+                        .fill(colors[expected % colors.count])
+                        .overlay(Image(systemName: "music.note").font(.headline))
+                        .frame(width: max(16, width - 8), height: 31)
+                        .position(x: width * (0.5 + CGFloat(expected)), y: 17 + span * (reduceMotion ? 1 : fraction))
+                }
+            }
+            .frame(minHeight: 68, maxHeight: 112)
+            .accessibilityHidden(true)
             HStack(alignment: .top, spacing: 5) {
                 ForEach(names.indices, id: \.self) { key in
                     Button {
-                        piano.play(key)
-                        if key == expected {
-                            lastKey = nil
-                            advance()
-                        } else {
-                            lastKey = key
-                        }
+                        guard running else { return }
+                        if willPlayAudio(PianoVoice.noteDuration) { piano.play(key) }
+                        if key == expected { lastKey = nil; hit() }
+                        else { lastKey = key; if !waitsAtKeys { _ = miss() } }
                     } label: {
                         VStack {
                             Spacer()
@@ -199,7 +252,7 @@ private struct PianoBoard: View {
                                 .font(.system(.subheadline, design: .rounded).weight(.heavy))
                         }
                         .padding(.bottom, 14)
-                        .frame(maxWidth: .infinity, minHeight: 142)
+                        .frame(maxWidth: .infinity, minHeight: 103)
                         .background(key == expected ? colors[key % colors.count] : .white, in: RoundedRectangle(cornerRadius: 10))
                         .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(
                             key == expected ? SonaPalette.teal : SonaPalette.ink.opacity(0.11),
@@ -218,10 +271,20 @@ private struct PianoBoard: View {
         }
         .padding(16)
         .background(SonaPalette.mint.opacity(0.42), in: RoundedRectangle(cornerRadius: 25))
+        .onAppear { clock.restart(at: now, speed: playbackSpeed) }
+        .onChange(of: move) { _ in clock.restart(at: now, speed: playbackSpeed) }
+        .onChange(of: playbackSpeed) { clock.setSpeed($0, at: now) }
+        .onReceive(timer) { date in
+            guard playbackSpeed > 0, !waitsAtKeys,
+                  clock.position(at: date.timeIntervalSinceReferenceDate) >= song.fall + 0.65 else { return }
+            clock.restart(at: now, speed: playbackSpeed)
+            if !miss() { hit() }
+        }
     }
 }
 
 final class PianoVoice: ObservableObject {
+    static let noteDuration: TimeInterval = 0.55
     private let frequencies = [261.63, 293.66, 329.63, 349.23, 392.0, 440.0]
     private var notes: [Int: AVAudioPlayer] = [:]
 
@@ -244,7 +307,7 @@ final class PianoVoice: ObservableObject {
 
     private func tone(frequency: Double) -> Data {
         let sampleRate = 22050
-        let frames = 7200
+        let frames = Int(Double(sampleRate) * Self.noteDuration)
         var data = Data()
         func append<T: FixedWidthInteger>(_ value: T) {
             var little = value.littleEndian
@@ -268,10 +331,14 @@ final class PianoVoice: ObservableObject {
 }
 
 private struct StackerBoard: View {
+    let running: Bool
     let advance: () -> Void
+    let onMiss: () -> Bool
     @State private var blocks = [Block(center: 0.5, width: 0.58)]
-    @State private var began = Date()
+    @State private var clock = NativeArcadeMotionClock()
     @State private var missed = false
+    @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.arcadePowerEffect) private var power
 
     private struct Block {
         let center: CGFloat
@@ -279,6 +346,8 @@ private struct StackerBoard: View {
     }
 
     private let colors = [SonaPalette.lavender, SonaPalette.yellow, SonaPalette.teal, SonaPalette.mint]
+    private var now: TimeInterval { Date().timeIntervalSinceReferenceDate }
+    private var speed: Double { running && scenePhase == .active ? power.speed * (missed ? 0.36 : 0.51) : 0 }
 
     var body: some View {
         VStack(spacing: 12) {
@@ -313,28 +382,32 @@ private struct StackerBoard: View {
                 .buttonStyle(RoundActionStyle())
                 .accessibilityIdentifier("stacker-drop")
         }
+        .onAppear { clock.restart(at: now, speed: speed) }
+        .onChange(of: speed) { clock.setSpeed($0, at: now) }
     }
 
     private func movingCenter(at date: Date) -> CGFloat {
-        let fraction = date.timeIntervalSince(began) * (missed ? 0.36 : 0.51)
+        let fraction = clock.position(at: date.timeIntervalSinceReferenceDate)
         let phase = fraction.truncatingRemainder(dividingBy: 2)
         return 0.24 + (phase <= 1 ? phase : 2 - phase) * 0.52
     }
 
     private func drop() {
-        guard let top = blocks.last else { return }
+        guard running, let top = blocks.last else { return }
         let center = movingCenter(at: Date())
         let lower = max(top.center, center) - top.width / 2
         let upper = min(top.center, center) + top.width / 2
         let shared = upper - lower
         guard shared >= min(0.12, top.width * 0.55) else {
             missed = true
+            _ = onMiss()
+            clock.restart(at: now, speed: speed)
             return
         }
         let base = Block(center: (lower + upper) / 2, width: max(shared, 0.17))
         blocks.append(base)
         missed = false
-        began = Date()
+        clock.restart(at: now, speed: speed)
         advance()
     }
 }

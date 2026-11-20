@@ -5,17 +5,23 @@ import UIKit
 struct FruitSliceView: View {
     let stage: Int
     let onRoundFinished: () -> Void
+    let onLifeLost: (() -> Void)?
     @Environment(\.dismiss) private var dismiss
     @Environment(\.guidedReplay) private var guidedReplay
+    @Environment(\.guidedArcadeExit) private var guidedArcadeExit
+    @Environment(\.guidedArcadeRestoredLives) private var restoredLives
+    @Environment(\.arcadePowerEffect) private var power
+    @Environment(\.arcadeStartingHearts) private var startingHearts
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @StateObject private var game: FruitSliceGame
 
     /// The host remounts this view for stages 0, 1 and 2, keeping the two
     /// between-wave speech checkpoints outside the gesture-only game scene.
-    init(stage: Int = 0, onRoundFinished: @escaping () -> Void = {}) {
+    init(stage: Int = 0, onLifeLost: (() -> Void)? = nil, onRoundFinished: @escaping () -> Void = {}) {
         self.stage = min(2, max(0, stage))
         self.onRoundFinished = onRoundFinished
+        self.onLifeLost = onLifeLost
         _game = StateObject(wrappedValue: FruitSliceGame(stage: min(2, max(0, stage))))
     }
 
@@ -30,7 +36,7 @@ struct FruitSliceView: View {
 
             VStack(spacing: 16) {
                 HStack {
-                    Button(action: { dismiss() }) {
+                    Button(action: close) {
                         Image(systemName: "xmark")
                             .font(.system(size: 20, weight: .bold))
                             .frame(width: 48, height: 48)
@@ -51,6 +57,9 @@ struct FruitSliceView: View {
                             .frame(width: 126)
                             .accessibilityLabel(game.isFinale ? "Watermelon cuts" : "Round progress")
                             .accessibilityValue(game.finished ? "Complete" : (game.isFinale ? "\(game.finaleCuts) of 5 swipes" : "\(game.sliced) of \(game.normalGoal) fruit"))
+                        if onLifeLost != nil && !game.isFinale && !game.finished {
+                            NativeArcadeHearts(count: game.hearts)
+                        }
                     }
                     .padding(.horizontal, 18)
                     .padding(.vertical, 12)
@@ -95,7 +104,7 @@ struct FruitSliceView: View {
                     }
                         .buttonStyle(FruitSliceButtonStyle(reduceMotion: reduceMotion))
                         .accessibilityIdentifier("nativeFruitSliceReplay")
-                    Button("Back home") { dismiss() }
+                    Button("Back home", action: close)
                         .font(.system(size: 21, weight: .bold, design: .rounded))
                         .frame(minHeight: 48)
                         .accessibilityIdentifier("nativeFruitSliceHome")
@@ -114,6 +123,9 @@ struct FruitSliceView: View {
             game.scene.setReduceMotion(reduceMotion)
             game.scene.resetClock()
             game.scene.isPaused = false
+            game.scene.enablesLives = onLifeLost != nil
+            game.scene.prepareHearts(startingHearts)
+            game.scene.setPower(power, allowBurst: false)
             game.prepareHaptics()
         }
         .onDisappear {
@@ -128,7 +140,16 @@ struct FruitSliceView: View {
             game.scene.isPaused = phase != .active
             game.scene.resetClock()
         }
+        .onChange(of: power) { game.scene.setPower($0, allowBurst: true) }
+        .onChange(of: restoredLives) { _ in game.scene.restoreLife() }
+        .onChange(of: game.hearts) { if $0 == 0 { onLifeLost?() } }
+        .preference(key: NativeArcadePowerBoardPreference.self, value: NativeArcadePowerBoard(
+            playing: !game.isFinale && !game.finished && game.hearts > 0,
+            fractionComplete: Double(game.sliced) / Double(game.normalGoal),
+            clearsPower: game.isFinale, hearts: game.hearts))
     }
+
+    private func close() { if let guidedArcadeExit { guidedArcadeExit() } else { dismiss() } }
 }
 
 private struct FruitSliceButtonStyle: ButtonStyle {
@@ -187,6 +208,7 @@ private final class FruitSliceGame: ObservableObject {
     @Published var sliced = 0
     @Published var finaleCuts = 0
     @Published var finished = false
+    @Published var hearts = 3
     let scene: FruitSliceScene
     var isFinalStage: Bool { stage == 2 }
     var isFinale: Bool { isFinalStage && sliced == normalGoal && !finished }
@@ -219,6 +241,9 @@ private final class FruitSliceGame: ObservableObject {
                 self.finishHaptic.notificationOccurred(.success)
             }
         }
+        scene.onHearts = { [weak self] count in
+            DispatchQueue.main.async { self?.hearts = count }
+        }
     }
 
     func prepareHaptics() {
@@ -230,6 +255,7 @@ private final class FruitSliceGame: ObservableObject {
         sliced = 0
         finaleCuts = 0
         finished = false
+        hearts = 3
         lastHaptic = 0
         scene.restart()
         prepareHaptics()
@@ -245,10 +271,13 @@ private final class FruitSliceScene: SKScene {
         let spin: CGFloat
         let held: Bool
         let isFinale: Bool
+        let isBonus: Bool
     }
 
     var onProgress: ((FruitSliceStageProgress) -> Void)?
     var onFinish: (() -> Void)?
+    var onHearts: ((Int) -> Void)?
+    var enablesLives = false
     private let orchard = SKSpriteNode(imageNamed: "orchard")
     private let counter = SKSpriteNode(imageNamed: "fruit-stand")
     private let fruitNames = ["fruit-apple", "fruit-orange", "fruit-strawberry", "fruit-kiwi", "fruit-watermelon"]
@@ -263,6 +292,11 @@ private final class FruitSliceScene: SKScene {
     private var lastPoint: CGPoint?
     private var stroke = 0
     private var strokeTravel: CGFloat = 0
+    private var lives = NativeArcadeLives()
+    private var preparedHearts = false
+    private var power = NativeArcadePowerEffect()
+    private var isSuperSlice: Bool { power.speed < 1 && !progress.isFinale }
+    private var gravity: CGFloat { max(620, size.height * 0.88) }
 
     init(stage: Int) {
         progress = FruitSliceStageProgress(stage: stage)
@@ -323,6 +357,7 @@ private final class FruitSliceScene: SKScene {
         fruit.removeAll()
         progress = FruitSliceStageProgress(stage: progress.stage)
         thrown = 0
+        lives = NativeArcadeLives()
         sentFinish = false
         stroke = 0
         spawnTime = 0.25
@@ -330,37 +365,74 @@ private final class FruitSliceScene: SKScene {
         serveFruit(named: "fruit-apple", radiusScale: 1.15)
     }
 
+    func prepareHearts(_ count: Int) {
+        guard !preparedHearts else { return }
+        preparedHearts = true
+        lives = NativeArcadeLives(startingHearts: count)
+        onHearts?(lives.hearts)
+    }
+
     override func update(_ currentTime: TimeInterval) {
-        guard !progress.isComplete else { return }
+        guard !progress.isComplete, lives.hearts > 0 else { return }
         let delta = min(currentTime - (previousTime ?? currentTime), 0.05)
         previousTime = currentTime
-        let seconds = CGFloat(max(delta, 0))
-        let gravity = max(620, size.height * 0.88)
+        let seconds = CGFloat(max(delta, 0) * (isSuperSlice ? power.speed : 1))
+        let fall = gravity
         for index in fruit.indices {
             if fruit[index].held { continue }
-            fruit[index].velocity.dy -= gravity * seconds
+            fruit[index].velocity.dy -= fall * seconds
             fruit[index].node.position.x += fruit[index].velocity.dx * seconds
             fruit[index].node.position.y += fruit[index].velocity.dy * seconds
             fruit[index].node.zRotation += fruit[index].spin * seconds
         }
+        var missedNormalFruit = false
         fruit.removeAll { item in
             let gone = item.node.position.y < -item.radius * 3 && item.velocity.dy < 0
-            if gone { item.node.removeFromParent() }
+            if gone {
+                item.node.removeFromParent()
+                if !item.isBonus { missedNormalFruit = true }
+            }
             return gone
         }
         guard progress.normalSliced > 0 && progress.normalSliced < progress.normalGoal else { return }
-        spawnTime -= delta
-        if spawnTime <= 0 && fruit.count < 3 {
-            throwFruit(gravity: gravity)
-            spawnTime = 0.72
+        if missedNormalFruit && enablesLives && lives.miss(at: currentTime, protected: power.protectsHearts) {
+            onHearts?(lives.hearts)
+            if lives.hearts == 0 { resetClock(); return }
+        }
+        spawnTime -= Double(seconds)
+        if spawnTime <= 0 {
+            if isSuperSlice && fruit.count < 8 {
+                let bonusCount = thrown.isMultiple(of: 2) ? 3 : 2
+                for _ in 0..<bonusCount { throwFruit(bonus: true) }
+                spawnTime = 0.72 * 0.45
+            } else if !isSuperSlice && fruit.filter({ !$0.isBonus }).count < 3 {
+                throwFruit()
+                spawnTime = 0.72
+            }
         }
     }
 
-    private func throwFruit(gravity: CGFloat) {
+    func setPower(_ effect: NativeArcadePowerEffect, allowBurst: Bool) {
+        let oldRevision = power.revision
+        power = effect
+        guard allowBurst, isSuperSlice, oldRevision != effect.revision, lives.hearts > 0, !progress.isComplete else { return }
+        for index in 0..<5 { throwFruit(bonus: true, gold: index == 2) }
+        spawnTime = 0.72 * 0.45
+    }
+
+    func restoreLife() {
+        guard lives.hearts == 0 else { return }
+        lives.restore(at: ProcessInfo.processInfo.systemUptime)
+        onHearts?(lives.hearts)
+        resetClock()
+    }
+
+    private func throwFruit(bonus: Bool = false, gold: Bool = false) {
         let name = fruitNames[thrown % fruitNames.count]
         thrown += 1
         let radius = min(max(size.width * 0.11, 30), 54)
         let node = SKSpriteNode(imageNamed: name)
+        if gold { node.color = .yellow; node.colorBlendFactor = 0.55 }
         node.size = CGSize(width: radius * 2, height: radius * 2)
         let margin = radius + 12
         let left = min(margin, size.width / 2)
@@ -371,7 +443,7 @@ private final class FruitSliceScene: SKScene {
         let rise = max(160, min(size.height * 0.67, size.height - 170))
         let velocity = CGVector(dx: (size.width / 2 - node.position.x) * 0.32, dy: sqrt(2 * gravity * rise))
         fruit.append(Fruit(node: node, radius: radius, velocity: velocity,
-                           spin: reduceMotion ? 0 : CGFloat.random(in: -1.5...1.5), held: false, isFinale: false))
+                           spin: reduceMotion ? 0 : CGFloat.random(in: -1.5...1.5), held: false, isFinale: false, isBonus: bonus))
     }
 
     private func serveFruit(named name: String, radiusScale: CGFloat, isFinale: Bool = false) {
@@ -381,7 +453,7 @@ private final class FruitSliceScene: SKScene {
         node.position = CGPoint(x: size.width / 2, y: size.height * 0.47)
         node.zPosition = 5
         addChild(node)
-        fruit.append(Fruit(node: node, radius: radius, velocity: .zero, spin: 0, held: true, isFinale: isFinale))
+        fruit.append(Fruit(node: node, radius: radius, velocity: .zero, spin: 0, held: true, isFinale: isFinale, isBonus: false))
         if !reduceMotion {
             node.run(.repeatForever(.sequence([
                 .moveBy(x: 0, y: 7, duration: 0.7),
@@ -398,7 +470,7 @@ private final class FruitSliceScene: SKScene {
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         // A second finger cannot manufacture another distinct slash.
-        guard activeTouch == nil, let touch = touches.first, !progress.isComplete else { return }
+        guard activeTouch == nil, let touch = touches.first, !progress.isComplete, lives.hearts > 0 else { return }
         activeTouch = touch
         stroke += 1
         strokeTravel = 0
@@ -437,7 +509,8 @@ private final class FruitSliceScene: SKScene {
 
     private func slice(from start: CGPoint, to end: CGPoint) {
         let hits = fruit.filter { item in
-            distanceSquared(from: item.node.position, to: start, end) <= item.radius * item.radius
+            let radius = item.radius + (isSuperSlice ? 16 : 0)
+            return distanceSquared(from: item.node.position, to: start, end) <= radius * radius
         }
         for hit in hits {
             guard !progress.isComplete else { break }
@@ -449,6 +522,12 @@ private final class FruitSliceScene: SKScene {
                     fruit.removeAll { $0.node === hit.node }
                     hit.node.removeFromParent()
                 } else { markFinaleCut(on: hit.node, number: progress.giantCuts) }
+            } else if hit.isBonus {
+                fruit.removeAll { $0.node === hit.node }
+                split(hit.node)
+                splash(at: hit.node.position)
+                hit.node.removeFromParent()
+                continue
             } else {
                 guard progress.sliceNormal(stroke: stroke) else { continue }
                 fruit.removeAll { $0.node === hit.node }
@@ -507,8 +586,10 @@ private final class FruitSliceScene: SKScene {
         path.move(to: start)
         path.addLine(to: end)
         let trail = SKShapeNode(path: path)
-        trail.strokeColor = .white
-        trail.lineWidth = 7
+        trail.strokeColor = isSuperSlice
+            ? SKColor(hue: CGFloat(strokeTravel.truncatingRemainder(dividingBy: 150)) / 150, saturation: 0.9, brightness: 1, alpha: 1)
+            : .white
+        trail.lineWidth = isSuperSlice ? 26 : 7
         trail.lineCap = .round
         trail.zPosition = 20
         addChild(trail)

@@ -42,7 +42,14 @@ struct NativeSpeechGameSelection: Decodable {
     // Current shipping boards which implement G.play.onHelp. Hoops/Soccer
     // deliberately have none; no helper is invented for those scenes.
     private var supportsHelp: Bool {
-        ["cake", "balloon", "castle", "bridge", "fishtank", "monster", "flower", "lighthouse", "gifts", "rocket", "train", "robot", "racecar", "peekaboo", "puppy", "treasure", "pizza", "stars", "space", "snowman", "windup"].contains(gameID)
+        switch gameID {
+        case "cake", "balloon", "castle", "bridge", "fishtank", "monster", "flower",
+             "lighthouse", "gifts", "rocket", "train", "robot", "racecar", "peekaboo",
+             "puppy", "treasure", "pizza", "stars", "space", "snowman", "windup",
+             "waterwheel", "postboat", "bakery", "frontdoor", "lantern", "trainline",
+             "kite", "nestlift", "concert", "rooftops", "observatory": return true
+        default: return false
+        }
     }
 
     private var boardProgress: NativeSpeechGameProgress {
@@ -50,7 +57,8 @@ struct NativeSpeechGameSelection: Decodable {
         if supportsHelp { requester = { callback in requestHelp(callback) } }
         else { requester = nil }
         return NativeSpeechGameProgress(count: selection.targets.count, advance: advance,
-            isHelpActive: help != nil, isMoveActive: boardEnabled && !finished, requestHelp: requester)
+            isHelpActive: help != nil, isMoveActive: boardEnabled && !finished, wordIndex: step,
+            requestHelp: requester)
     }
 
     var body: some View {

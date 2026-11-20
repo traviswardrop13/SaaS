@@ -46,24 +46,32 @@ import SonaSpeechCore
         var prompts: [PracticePrompt] = []
         if includeLead {
             let text = idea ? selection.stepBackLine : selection.intro
-            let narration = self.narration
-            if let line = await bounded(selection.bareLineWaitMilliseconds, operation: {
-                try? await narration.authoredPrompt(text, voice: selection.voiceID, volume: selection.volume)
-            }), line.systemSpeech == nil {
-                // Like SayIt.line: unavailable bytes skip this optional lead.
-                // A failure while actually playing bytes may use installed speech.
-                prompts.append(line)
-            }
+            if let line = await lead(text, selection: selection) { prompts.append(line) }
         }
-        if selection.humanClipsEnabled,
-           let expected = catalog?.sound(selection.sound)?.clips.sound,
-           expected.path == selection.bare.clip,
-           let url = bundle.url(forResource: selection.sound + "-sound", withExtension: "wav"),
-           let bytes = try? Data(contentsOf: url), bytes.count == expected.bytes,
-           SHA256.hash(data: bytes).map({ String(format: "%02x", $0) }).joined() == expected.sha256 {
-            prompts.append(.init(text: selection.bare.text, encodedAudio: bytes, volume: selection.volume))
-        }
+        if let take = bareTake(selection: selection) { prompts.append(take) }
         return prompts
+    }
+
+    func lead(_ text: String, selection: NativeArcadeCheckpointSelection) async -> PracticePrompt? {
+        guard selection.voiceOn, selection.volume > 0 else { return nil }
+        let narration = self.narration
+        let line = await bounded(selection.bareLineWaitMilliseconds) {
+            try? await narration.authoredPrompt(text, voice: selection.voiceID, volume: selection.volume)
+        }
+        // Like SayIt.line: missing bytes skip this optional line. A failed
+        // playback of available bytes may use the installed voice.
+        guard let line, line.systemSpeech == nil else { return nil }
+        return line
+    }
+
+    func bareTake(selection: NativeArcadeCheckpointSelection) -> PracticePrompt? {
+        guard selection.voiceOn, selection.volume > 0, selection.humanClipsEnabled,
+              let expected = catalog?.sound(selection.sound)?.clips.sound,
+              expected.path == selection.bare.clip,
+              let url = bundle.url(forResource: selection.sound + "-sound", withExtension: "wav"),
+              let bytes = try? Data(contentsOf: url), bytes.count == expected.bytes,
+              SHA256.hash(data: bytes).map({ String(format: "%02x", $0) }).joined() == expected.sha256 else { return nil }
+        return .init(text: selection.bare.text, encodedAudio: bytes, volume: selection.volume)
     }
 
     func handoff(selection: NativeArcadeCheckpointSelection) async -> PracticePrompt? {
@@ -95,7 +103,7 @@ import SonaSpeechCore
         guard let value, value.isFinite, value >= 0 else { return }
         roomFloor = min(roomFloor ?? value, value)
     }
-    func provider() -> NativeArcadeCheckpointPromptProviding {
+    func provider() -> NativeArcadeCheckpointAudio {
         if let audio { return audio }
         let value = NativeArcadeCheckpointAudio(); audio = value
         return value

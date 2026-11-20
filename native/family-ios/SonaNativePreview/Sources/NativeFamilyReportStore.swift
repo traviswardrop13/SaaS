@@ -6,14 +6,31 @@ import SonaFamilyRules
 struct NativeFamilyReportStatus: Decodable {
     let can: Bool
     let email: String
+    let suggestedEmail: String
     let on, pending, off, owed, sent: Bool
 }
 
-/// The existing Sona endpoint is the only destination for report packets.
+/// The existing report and adult tips signup endpoints have separate payloads.
 struct NativeFamilyReportRequest {
-    let url = URL(string: "https://app.speaksona.com/api/report")!
+    private enum Destination: String { case report, lead }
+    private let destination: Destination
+    var url: URL { URL(string: origin + "/api/" + destination.rawValue)! }
     let origin = "https://app.speaksona.com"
     let body: Data
+
+    init(body: Data) { destination = .report; self.body = body }
+
+    init(signup: NativeFamilyReportSignup) throws {
+        struct Lead: Encodable {
+            let email: String
+            let role = "parent"
+            let source = "app-settings"
+            let summary = "Turned on the weekly progress report in Settings"
+            let premium: Bool?
+        }
+        destination = .lead
+        body = try JSONEncoder().encode(Lead(email: signup.email, premium: signup.premium ? true : nil))
+    }
 }
 @MainActor protocol NativeFamilyReportTransport {
     func send(_ request: NativeFamilyReportRequest) async throws -> Data
@@ -61,7 +78,7 @@ final class NativeFamilyReportRedirectGuard: NSObject, URLSessionTaskDelegate {
 /// REPORT1 orchestration. Preview builds and tests can leave delivery disconnected.
 /// Status reads do not prepare activation, change records or send anything.
 @MainActor final class NativeFamilyReportStore: ObservableObject {
-    enum Trigger: Sendable { case countedRep, background, settings }
+    enum Trigger: Sendable { case countedRep, background, settings, settingsVisit }
     @Published private(set) var status: NativeFamilyReportStatus?
     @Published private(set) var busy = false
     @Published private(set) var error: String?
@@ -70,6 +87,8 @@ final class NativeFamilyReportRedirectGuard: NSObject, URLSessionTaskDelegate {
     private let now: @Sendable () -> Date
     private var origin: LegacyOrigin?
     private var flights: [LegacyOrigin: Task<Bool, Never>] = [:]
+    private var signupFlights: Set<LegacyOrigin> = []
+    private var signupFollowUps: Set<LegacyOrigin> = []
     private var dirty: [LegacyOrigin: Int] = [:]
     var deliveryConnected: Bool { transport != nil }
 
@@ -93,16 +112,26 @@ final class NativeFamilyReportRedirectGuard: NSObject, URLSessionTaskDelegate {
         } catch { if origin == owner { self.error = "Sona couldn’t read the weekly report. Try again." } }
     }
 
+    func settingsAppeared() async {
+        await refresh()
+        guard let owner = origin, let status else { return }
+        startSignupDelivery(owner: owner)
+        if status.owed || (status.on && (!status.sent || status.pending)) {
+            await sync(trigger: .settingsVisit, for: owner)
+        }
+    }
+
     @discardableResult func sync(trigger: Trigger, for expectedOrigin: LegacyOrigin? = nil) async -> Bool {
         guard let owner = origin, expectedOrigin == nil || expectedOrigin == owner, transport != nil else { return false }
+        startSignupDelivery(owner: owner)
         if trigger == .countedRep { dirty[owner, default: 0] += 1 }
         if trigger == .background && dirty[owner] == nil { return false }
         if let pending = flights[owner] {
             let result = await pending.value
             // A game can close while its first update is still in flight.
             // Flush any later reps using the same forced background policy.
-            guard trigger == .background, result, origin == owner, dirty[owner] != nil,
-                  flights[owner] == nil else { return result }
+            let flushNewReps = trigger == .background && result && dirty[owner] != nil
+            guard (flushNewReps || trigger == .settingsVisit), origin == owner, flights[owner] == nil else { return result }
         }
         let generation = dirty[owner]
         busy = true; error = nil
@@ -118,6 +147,41 @@ final class NativeFamilyReportRedirectGuard: NSObject, URLSessionTaskDelegate {
         }
         flights[owner] = task
         return await task.value
+    }
+
+    @discardableResult func turnOn(email: String, premium: Bool) async -> Bool {
+        guard let owner = origin else { return false }
+        error = nil
+        do {
+            let date = now()
+            try await repository.queueWeeklyReportOn(origin: owner, email: email, premium: premium) { family, action in
+                try Self.project(family, action: action, trigger: .settings, at: date)
+            }
+            if transport != nil { dirty[owner, default: 0] += 1 }
+            await refresh()
+            if origin == owner { startSignupDelivery(owner: owner, followUp: true) }
+            // The new signup waits for an older off or snapshot already on the
+            // wire. The tips signup does not wait for either report response.
+            if let pending = flights[owner] {
+                _ = await pending.value
+                let normalized = email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+                if origin == owner, status?.email == normalized, status?.sent == true { return true }
+            }
+            guard origin == owner else { return false }
+            return await sync(trigger: .settings, for: owner)
+        } catch {
+            guard origin == owner else { return false }
+            switch error {
+            case NativeFamilyReportError.invalidAddress:
+                self.error = email.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?
+                    "Type the grown-up’s email first." : "That email doesn’t look right."
+            case NativeFamilyReportError.alreadyOn:
+                await refresh()
+            default:
+                self.error = "Sona couldn’t save the weekly report. Try again."
+            }
+            return false
+        }
     }
 
     @discardableResult func turnOff() async -> Bool {
@@ -180,16 +244,47 @@ final class NativeFamilyReportRedirectGuard: NSObject, URLSessionTaskDelegate {
             return .init(reportState: result.reportState, profilePatches: result.profilePatches)
         }
     }
-    private func acceptedResponse(_ body: Data) async -> Data? {
-        guard body.count <= 4_000, let transport else { return nil }
+    private func startSignupDelivery(owner: LegacyOrigin, followUp: Bool = false) {
+        guard transport != nil, origin == owner, status?.on == true else { return }
+        guard signupFlights.insert(owner).inserted else {
+            if followUp { signupFollowUps.insert(owner) }
+            return
+        }
+        Task { [weak self] in
+            guard let self else { return }
+            defer {
+                self.signupFlights.remove(owner)
+                if self.signupFollowUps.remove(owner) != nil { self.startSignupDelivery(owner: owner) }
+            }
+            do {
+                guard let signup = try await self.repository.prepareWeeklyReportSignup(origin: owner, now: self.now()),
+                      self.origin == owner, try await self.repository.weeklyReportMaySendSignup(signup),
+                      self.origin == owner else { return }
+                let request = try NativeFamilyReportRequest(signup: signup)
+                guard await self.acceptedJSON(request) != nil else { return }
+                try await self.repository.acknowledgeWeeklyReportSignup(signup)
+            } catch {
+                // The separate tips signup stays queued. An unavailable list
+                // cannot change whether a report is on or confirmed.
+            }
+        }
+    }
+
+    private func acceptedJSON(_ request: NativeFamilyReportRequest) async -> [String: Any]? {
+        guard request.body.count <= 4_000, let transport else { return nil }
         do {
-            let data = try await transport.send(.init(body: body))
+            let data = try await transport.send(request)
             guard data.count <= 4_000, let object = try JSONSerialization.jsonObject(with: data) as? [String: Any],
                   object["ok"] as? Bool == true else { return nil }
-            var accepted: [String: Bool] = ["ok": true]
-            for key in ["pending", "off"] where object[key] as? Bool == true { accepted[key] = true }
-            return try JSONSerialization.data(withJSONObject: accepted)
+            return object
         } catch { return nil }
+    }
+
+    private func acceptedResponse(_ body: Data) async -> Data? {
+        guard let object = await acceptedJSON(.init(body: body)) else { return nil }
+        var accepted: [String: Bool] = ["ok": true]
+        for key in ["pending", "off"] where object[key] as? Bool == true { accepted[key] = true }
+        return try? JSONSerialization.data(withJSONObject: accepted)
     }
     nonisolated private static func profileKeys(_ family: NativeFamilyOrigin) -> [String] {
         family.children.map { $0.id.slot.isEmpty ? "sona.profile.v1" : "sona.profile.v1@" + $0.id.slot }
@@ -200,13 +295,23 @@ final class NativeFamilyReportRedirectGuard: NSObject, URLSessionTaskDelegate {
         switch action {
         case .flush:
             result = try NativeWeeklyReportPolicy.prepare(storage: family.storage, profileKeys: profileKeys(family), action: .flush,
-                force: trigger == .settings, now: date)
+                force: trigger == .settings || trigger == .settingsVisit, now: date)
         case .sync:
+            if trigger == .settingsVisit {
+                let state = try NativeWeeklyReportPolicy.status(storage: family.storage, profileKeys: profileKeys(family), now: date)
+                let status = try JSONDecoder().decode(NativeFamilyReportStatus.self, from: state)
+                if !status.on || (status.sent && !status.pending) {
+                    return .init(reportState: nil, profilePatches: [:])
+                }
+            }
             result = try NativeWeeklyReportPolicy.prepare(storage: family.storage, profileKeys: profileKeys(family), action: .sync,
                 force: trigger != .countedRep, now: date)
         case .queueOff(let email):
             result = try NativeWeeklyReportPolicy.prepare(storage: family.storage, profileKeys: profileKeys(family), action: .queueOff,
                 force: true, now: date, removedEmail: email)
+        case .queueOn(let email):
+            result = try NativeWeeklyReportPolicy.prepare(storage: family.storage, profileKeys: profileKeys(family), action: .queueOn,
+                force: true, now: date, signupEmail: email)
         }
         return .init(reportState: result.reportState, profilePatches: result.profilePatches, body: result.body, context: result.context)
     }
