@@ -655,19 +655,24 @@ if (A) {
     /function err\(msg\)[\s\S]{0,200}scrollIntoView/.test(slps) &&
     !/\$\("fErr"\)\.textContent = [^"]*"[^"]/.test(slps.replace('$("fErr").textContent = "";', "")),
     "an error below the fold is an error nobody reads");
+  // (18 Nov 2026, SLPSITE1: a failed send also forgets the plan pick first,
+  // so nothing sends the clinician to checkout from an email never sent.)
   ok("email delivery failure leaves the form available to retry",
-    /if \(j\.sent !== true\) \{\s*err\([^\n]+\);\s*return;/.test(slps));
+    /if \(j\.sent !== true\) \{\s*(?:forget\(\);\s*)?err\([^\n]+\);\s*return;/.test(slps));
 }
 
 // ── the clinician homepage sends an email before sign-in ──
 {
   const slps = read("public/for-slps.html");
   const handler = slps.slice(slps.indexOf("function go()"));
-  ok("the homepage requests the trial flow (18 Nov 2026)",
-    /flow: "pro-trial"/.test(handler) && /fetch\("\/api\/slp\/auth\/request"/.test(handler));
+  // The homepage at / (also /plans) emails the sign-in link as flow
+  // "trial", which grants nothing; it is the front door again (20 Nov 2026),
+  // so a sent email is the Lead.
+  ok("the plans page requests the trial flow",
+    /flow: "trial"/.test(handler) && !/flow: "free-dashboard"/.test(handler) && /fetch\("\/api\/slp\/auth\/request"/.test(handler));
   ok("…and the page reports delivery only after email success",
     /if \(j\.sent !== true\)/.test(handler) && /"Check your email"/.test(handler) &&
-    handler.indexOf("if (j.sent !== true) {") < handler.indexOf('sonaTrack("Lead")'));
+    handler.indexOf('sonaTrack("Lead")') > 0 && handler.indexOf("if (j.sent !== true) {") < handler.indexOf('sonaTrack("Lead")'));
   ok("…the clinician gets no automatic dashboard or App Store navigation",
     !/apps\.apple\.com|APP_STORE|location\.href\s*=|CompleteRegistration/.test(handler));
 

@@ -10,9 +10,12 @@
 //    `plan: slp-pro` + `slp` and NEVER `tier` (a tier is a family charter
 //    spot, and lib/charter counts those); the trial comes once per clinician;
 //    the yearly plans are refused at checkout as retired;
-//  - for an account made from 12 Nov 2026 the dashboard is Sona Pro's, held
-//    on the server (402 needPlan), while a removal always works; every older
-//    account keeps its free dashboard;
+//  - for an account made from 12 Nov 2026 the dashboard comes with Sona Pro
+//    or Sona Clinic (owned, or joined from the clinician's own inbox), held
+//    on the server (402 needPlan), while a removal always works; every
+//    account made before 12 Nov keeps its free dashboard (SLPPRO1, 17 Nov
+//    2026: the 13–17 Nov free-dashboard signups need a plan too), and the
+//    one free trial is for either plan;
 //  - the success redirect's session id is a QUESTION for Stripe, never a
 //    grant: another clinician's session, an unfinished one or a family's
 //    stores nothing;
@@ -40,7 +43,7 @@
 //    nowhere — not the store, not the log, not /api/lead, not the email list;
 //  - restore-by-email and the charter count both ignore caseload plans.
 //
-// The routes are TypeScript. Like slpcommunityapi, this suite transpiles each
+// The routes are TypeScript. Like familylogintest, this suite transpiles each
 // module to CommonJS with the repo's own `typescript` and hands it a require
 // that maps "@/x" to the repo file and "stripe" to a FAKE Stripe — so every
 // route runs for real against a fake Stripe, a fake KV (behind the same
@@ -67,7 +70,7 @@ const noComments = (src) => src
 
 // ── env: a store, a signing secret, Stripe and Resend all "configured" ──
 const ENV_KEYS = ["KV_REST_API_URL", "KV_REST_API_TOKEN", "UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN", "SLP_AUTH_SECRET",
-  "VERCEL_ENV", "STRIPE_SECRET_KEY", "STRIPE_PRICE_ID_SLP_CASELOAD", "STRIPE_PRICE_ID_SLP_CASELOAD_ADDON", "STRIPE_PRICE_ID_SLP_SELF", "STRIPE_PRICE_ID_SLP_PRO", "STRIPE_PORTAL_CONFIG_CASELOAD", "RESEND_API_KEY", "FOUNDER_KEY", "KIT_API_KEY", "LEAD_WEBHOOK_URL", "NEXT_PUBLIC_SITE_URL"];
+  "VERCEL_ENV", "STRIPE_SECRET_KEY", "STRIPE_PRICE_ID_SLP_CASELOAD", "STRIPE_PRICE_ID_SLP_CASELOAD_ADDON", "STRIPE_PRICE_ID_SLP_SELF", "STRIPE_PRICE_ID_SLP_PRO", "STRIPE_PRICE_ID_SLP_CLINIC", "STRIPE_PORTAL_CONFIG_CASELOAD", "RESEND_API_KEY", "FOUNDER_KEY", "KIT_API_KEY", "LEAD_WEBHOOK_URL", "NEXT_PUBLIC_SITE_URL"];
 for (const k of ENV_KEYS) delete process.env[k];
 const KV_URL = "https://kv.caseload.test.invalid";
 process.env.KV_REST_API_URL = KV_URL;
@@ -76,6 +79,11 @@ process.env.SLP_AUTH_SECRET = "caseload-test-secret";
 process.env.STRIPE_SECRET_KEY = "sk_test_caseload";
 process.env.RESEND_API_KEY = "re_test_caseload";
 process.env.FOUNDER_KEY = "founder-key-for-tests";
+// SONA CLINIC IS HIDDEN (18 Nov 2026, lib/caseload CLINIC_ON = false). The
+// suite forces it on, as a developer's machine may, so every Clinic check
+// below still plays the dormant code; "Sona Clinic hidden" near the end turns
+// the force off and holds what a clinician meets while it ships switched off.
+process.env.SONA_CLINIC_FORCE = "1";
 
 // ── the fake store, spoken to through fetch exactly as kvCmd speaks ──
 const KV = { K: new Map(), H: new Map(), TTL: new Map(), log: [], down: false };
@@ -230,8 +238,9 @@ try {
     self: "app/api/slp/self/route.ts", approve: "app/api/founders/approve/route.ts", redeem: "app/api/slp/redeem/route.ts",
     invite: "app/api/slp/invite/route.ts", request: "app/api/slp/auth/request/route.ts", verify: "app/api/slp/auth/verify/route.ts",
     account: "app/api/slp/account/route.ts", subscription: "app/api/subscription/route.ts", session: "app/api/checkout/session/route.ts",
-    famPortal: "app/api/portal/route.ts",
+    famPortal: "app/api/portal/route.ts", team: "app/api/slp/team/route.ts", teamAccept: "app/api/slp/team/accept/route.ts",
     roster: "app/api/slp/route.ts", child: "app/api/slp/child/route.ts", homework: "app/api/slp/homework/route.ts",
+    play: "app/api/slp/play/route.ts",
   })) R[k] = L(rel);
 } catch (e) {
   console.log("(could not load the modules: " + (e && e.stack) + ")");
@@ -250,7 +259,8 @@ async function call(route, method, url, o = {}) {
   if (o.body !== undefined) init.body = typeof o.body === "string" ? o.body : JSON.stringify(o.body);
   const res = await route[method](new NextRequest("https://sona.test.invalid" + url, init));
   let json = null; try { json = await res.clone().json(); } catch { json = null; }
-  return { status: res.status, json, location: res.headers.get("location"), cookie: res.headers.get("set-cookie") };
+  let text = ""; try { text = await res.clone().text(); } catch { text = ""; }
+  return { status: res.status, json, text, location: res.headers.get("location"), cookie: res.headers.get("set-cookie"), headers: res.headers };
 }
 // console.error, captured: the suite stays readable, and can prove what was never logged
 const ERRS = [];
@@ -289,6 +299,15 @@ const count = (pred) => S.calls.filter(pred).length;
     C.PRO_CENTS === 1999 && C.PRO_PRICE === "$19.99" && C.PRO_PER === "a month" && C.PRO_INTERVAL === "month" && C.PRO_TRIAL_DAYS === 14 &&
     C.PRO_PLAN === "slp-pro" && C.PRO_NAME === "Sona Pro" && C.PRO_TERMS === "pro-2026-11-12");
   ok("…and \"$19.99\" is 1999 cents, never rounded to $20 anywhere in the library", C.PRO_PRICE === "$" + (C.PRO_CENTS / 100).toFixed(2) && !/\$20\b/.test(noComments(read("lib/caseload.ts"))));
+  // SONA CLINIC (Travis, 17 Nov 2026): $99 a month for the practice, the
+  // same 14 days free, 25 clinicians with the owner, stamped slp-clinic.
+  ok("Sona Clinic is $99 a month (9900 cents), 14 days free like Sona Pro, stamped slp-clinic, named \"Sona Clinic\", 25 seats",
+    C.CLINIC_CENTS === 9900 && C.CLINIC_PRICE === "$99" && C.CLINIC_PER === "a month" && C.CLINIC_INTERVAL === "month" &&
+    C.CLINIC_TRIAL_DAYS === C.PRO_TRIAL_DAYS && C.CLINIC_TRIAL_DAYS === 14 && C.CLINIC_PLAN === "slp-clinic" && C.CLINIC_NAME === "Sona Clinic" && C.CLINIC_SEATS === 25);
+  ok("…\"$99\" is 9900 cents exactly, and never \"$99.00\", \"$100\" or a per-clinician figure in the library",
+    C.CLINIC_PRICE === "$" + C.CLINIC_CENTS / 100 && !/\$99\.00|\$100\b|\$3\.96|per clinician/i.test(noComments(read("lib/caseload.ts"))));
+  ok("…and new accounts keep the one stamp, PRO_TERMS: no new terms value (dashboardOpen opens every stamp but that one)",
+    (noComments(read("lib/caseload.ts")).match(/export const \w+_TERMS = "/g) || []).length === 4);
   ok("a covered code has no cap: the old 300 is gone from the library", !("COVERED_REDEEM_CAP" in C));
   ok("covered statuses are active, trialing and past_due — and only those",
     [...C.COVERED_STATUSES].sort().join() === "active,past_due,trialing");
@@ -356,6 +375,27 @@ const count = (pred) => S.calls.filter(pred).length;
   KV.K.set("slpplan:paid@clinic.org", JSON.stringify({ sub: "sub_paidlib", customer: "cus_sub_paidlib", status: "active", periodEnd: nowS() + 86400, cancelAtPeriodEnd: false, checkedAt: Date.now() }));
   ok("covered(email) is true for a paid, live plan", (await C.covered("paid@clinic.org", { kv, stripe: client })) === true);
 
+  // DON'T PAY TWICE (18 Nov 2026, review): once Sona Pro is on, planStatus
+  // answers with it and hides the yearly plan still renewing beside it;
+  // alsoRenews says so, for the dashboard's Settings to tell them to cancel.
+  {
+    const live = { active: true, status: "active", trialEnd: null, periodEnd: nowS() + 86400, cancelAtPeriodEnd: false, trialAvailable: false };
+    const noClinic = { role: null, owner: "", active: false, status: "none", trialEnd: null, periodEnd: null, cancelAtPeriodEnd: false };
+    const owner = { ...noClinic, role: "owner", owner: "paid@clinic.org", active: true, status: "active" };
+    const o = (pro, clinic) => ({ kv, stripe: client, pro, clinic });
+    ok("alsoRenews: Sona Pro on beside a live yearly plan is \"yearly\"", (await C.alsoRenews("paid@clinic.org", o(live, noClinic))) === "yearly");
+    ok("…nothing on (no Pro, no Clinic) is null, without a search", (await C.alsoRenews("paid@clinic.org", o({ ...live, active: false }, noClinic))) === null);
+    KV.K.set("slpplan:paid@clinic.org", JSON.stringify({ sub: "sub_paidlib", customer: "cus_sub_paidlib", status: "active", periodEnd: nowS() + 86400, cancelAtPeriodEnd: true, checkedAt: Date.now() }));
+    ok("…a yearly plan already set to end is not counted", (await C.alsoRenews("paid@clinic.org", o(live, noClinic))) === null);
+    ok("…an owned Sona Clinic with Sona Pro still renewing is \"pro\"", (await C.alsoRenews("paid@clinic.org", o(live, owner))) === "pro");
+    ok("…and Pro set to end beside it is null", (await C.alsoRenews("paid@clinic.org", o({ ...live, cancelAtPeriodEnd: true }, owner))) === null);
+    KV.K.set("slpplan:paid@clinic.org", JSON.stringify({ sub: "sub_paidlib", customer: "cus_sub_paidlib", status: "active", periodEnd: nowS() + 86400, cancelAtPeriodEnd: false, checkedAt: Date.now() }));
+    seedAcct("proera@clinic.org", { terms: C.PRO_TERMS });
+    KV.K.set("slpplan:proera@clinic.org", JSON.stringify({ sub: "sub_x", customer: "cus_x", status: "active", periodEnd: nowS() + 86400, cancelAtPeriodEnd: false, checkedAt: Date.now() }));
+    ok("…a Pro-era account (never sold a yearly plan) is never \"yearly\"", (await C.alsoRenews("proera@clinic.org", o(live, noClinic))) === null);
+    KV.K.delete("slpplan:proera@clinic.org");
+  }
+
   KV.down = true;
   let threw = null;
   try { await C.planStatus("old@clinic.org", { kv: async (c) => { KV.log.push(c); return undefined; } }); } catch (e) { threw = e; }
@@ -416,8 +456,8 @@ const count = (pred) => S.calls.filter(pred).length;
   st = await self("legacy@riverside-schools.org");
   ok("…and so does a mirror written before this build, which has no addon field at all", st.active && st.source === "caseload", JSON.stringify(st));
 
-  ok("isClinicianPlan knows all three clinician plans, and nothing else",
-    C.isClinicianPlan({ plan: "slp-caseload" }) && C.isClinicianPlan({ plan: "slp-self" }) && C.isClinicianPlan({ plan: "slp-pro" }) &&
+  ok("isClinicianPlan knows all four clinician plans (Sona Clinic since 17 Nov 2026), and nothing else",
+    C.isClinicianPlan({ plan: "slp-caseload" }) && C.isClinicianPlan({ plan: "slp-self" }) && C.isClinicianPlan({ plan: "slp-pro" }) && C.isClinicianPlan({ plan: "slp-clinic" }) &&
     !C.isClinicianPlan({ tier: "charter" }) && !C.isClinicianPlan({ plan: "annual" }) && !C.isClinicianPlan(null));
 }
 
@@ -439,9 +479,10 @@ const count = (pred) => S.calls.filter(pred).length;
   seedAcct("buyer@riverside-schools.org", { ...EARLY, code: "buyer-k4", familyKey: "BUYKEY23" });
   S.calls.length = 0;
   const notRetired = [];
-  for (const body of [undefined, {}, { plan: "self" }, { plan: "caseload" }, { plan: "family" }]) {
+  // 17 Nov 2026: "clinic" is on sale now, so the message names both plans.
+  for (const body of [undefined, {}, { plan: "self" }, { plan: "caseload" }, { plan: "family" }, { plan: "solo" }, { plan: "Clinic" }]) {
     r = await call(R.plan, "POST", "/api/slp/plan", { as: "buyer@riverside-schools.org", body });
-    if (!(r.status === 409 && r.json.retired === true && r.json.ok === false && /Reload this page to see Sona Pro\./.test(r.json.error))) notRetired.push(JSON.stringify(body) + " → " + JSON.stringify(r.json));
+    if (!(r.status === 409 && r.json.retired === true && r.json.ok === false && /Reload this page to see Sona Pro and Sona Clinic\./.test(r.json.error))) notRetired.push(JSON.stringify(body) + " → " + JSON.stringify(r.json));
   }
   ok("the yearly plans are retired from sale: \"self\", \"caseload\", no plan or anything else is 409 { retired }", notRetired.length === 0, notRetired.join(" | "));
   ok("…and not one checkout session is made for them", count((c) => c[0] === "checkout.sessions.create") === 0);
@@ -523,7 +564,11 @@ const count = (pred) => S.calls.filter(pred).length;
 {
   const kv = async (cmd) => kvExec(cmd);
   // Every account made before 12 Nov 2026 was told its dashboard was free.
-  const eras = [["before 24 Sep (no terms)", { terms: false }, true], ["24–29 Sep", EARLY, true], ["29 Sep – 12 Nov", {}, true], ["from 12 Nov, no Sona Pro", { terms: C.PRO_TERMS }, false]];
+  // SLPPRO1 (17 Nov 2026): the homepage's free-dashboard signups of 13 to 17
+  // Nov need Sona Pro too ("Move them to the trial"), and a Pro-era account a
+  // free-dashboard link once opened (`freeDashboard: true`) is no longer open.
+  const eras = [["before 24 Sep (no terms)", { terms: false }, true], ["24–29 Sep", EARLY, true], ["29 Sep – 12 Nov", {}, true], ["from 12 Nov, no Sona Pro", { terms: C.PRO_TERMS }, false],
+    ["13–17 Nov free-dashboard signup, no Sona Pro", { terms: C.FREE_DASHBOARD_TERMS }, false], ["a Pro-era account a free-dashboard link once opened", { terms: C.PRO_TERMS, freeDashboard: true }, false]];
   const wrongEra = [];
   for (let i = 0; i < eras.length; i++) {
     const [name, o, want] = eras[i];
@@ -531,14 +576,26 @@ const count = (pred) => S.calls.filter(pred).length;
     seedAcct(e, o);
     if ((await C.dashboardOpen(e, { kv, stripe: client })) !== want) wrongEra.push(name);
   }
-  ok("the dashboard stays free for every account made before 12 Nov 2026, and is Sona Pro's after", wrongEra.length === 0, wrongEra.join(", "));
+  ok("the dashboard stays free for every account made before 12 Nov 2026, and is Sona Pro's after (the 13–17 Nov free-dashboard signups too)", wrongEra.length === 0, wrongEra.join(", "));
+  ok("the promised stamps are the three from before 12 Nov, by stamp alone", C.dashboardPromised({ email: "x" }) === true &&
+    C.dashboardPromised({ terms: "caseload-2026-09" }) && C.dashboardPromised({ terms: "premium-2026-09-29" }) && !C.dashboardPromised({ terms: C.PRO_TERMS }) &&
+    !C.dashboardPromised({ terms: C.FREE_DASHBOARD_TERMS }) && !C.dashboardPromised(null) && !C.dashboardPromised([]));
+  // App Review's one account stays open (the clinicians' app sells nothing)
+  process.env.SLP_REVIEW_EMAIL = "Era3@Riverside-Schools.org"; process.env.SLP_REVIEW_CODE = "246 810";
+  const reviewOpen = await C.dashboardOpen("era3@riverside-schools.org", { kv, stripe: client });
+  delete process.env.SLP_REVIEW_CODE;
+  const reviewNeedsCode = await C.dashboardOpen("era3@riverside-schools.org", { kv, stripe: client });
+  delete process.env.SLP_REVIEW_EMAIL;
+  ok("App Review's account (SLP_REVIEW_EMAIL and its code) is open without Sona Pro, and only while both are set", reviewOpen === true && reviewNeedsCode === false);
   S.calls.length = 0;
   await C.dashboardOpen("era2@riverside-schools.org", { kv, stripe: client });
   ok("…answered for an older account from its stamp alone, with no Stripe call", S.calls.length === 0, JSON.stringify(S.calls));
   S.calls.length = 0;
   const st3 = await C.planStatus("era3@riverside-schools.org", { kv, stripe: client, force: true });
-  ok("…and a Pro-era account never has a retired plan searched for",
-    st3.active === false && S.calls.filter((c) => c[0] === "subscriptions.search").every((c) => /metadata\['plan'\]:'slp-pro'$/.test(c[1])), JSON.stringify(S.calls));
+  // 17 Nov 2026: Sona Clinic is on sale too, so its search is expected; a
+  // RETIRED plan's never is.
+  ok("…and a Pro-era account never has a retired plan searched for (Sona Pro and Sona Clinic only)",
+    st3.active === false && S.calls.filter((c) => c[0] === "subscriptions.search").every((c) => /metadata\['plan'\]:'slp-(pro|clinic)'$/.test(c[1])), JSON.stringify(S.calls));
 
   const lk = "locked@riverside-schools.org";
   seedAcct(lk, { terms: C.PRO_TERMS, code: "locked-k4", familyKey: "LOCKKEY2" });
@@ -783,7 +840,7 @@ const count = (pred) => S.calls.filter(pred).length;
     r.json.active === true && r.json.source === "paid" && storedPlan(lost).sub === "sub_lost", JSON.stringify(r.json));
   const qs = S.calls.filter((c) => c[0] === "subscriptions.search").map((c) => c[1]);
   ok("…asking for exactly metadata slp + plan", qs.includes("metadata['slp']:'lost@riverside-schools.org' AND metadata['plan']:'slp-caseload'") &&
-    qs.every((q) => /^metadata\['slp'\]:'[^']+' AND metadata\['plan'\]:'slp-(caseload|self|pro)'$/.test(q)), JSON.stringify(qs));
+    qs.every((q) => /^metadata\['slp'\]:'[^']+' AND metadata\['plan'\]:'slp-(caseload|self|pro|clinic)'$/.test(q)), JSON.stringify(qs));
   const nobody = "nobody@riverside-schools.org";
   seedAcct(nobody);
   r = await call(R.plan, "GET", "/api/slp/plan", { as: nobody });
@@ -906,7 +963,7 @@ const count = (pred) => S.calls.filter(pred).length;
   ok("a family of a PAYING clinician is covered", r.json.covered === true, JSON.stringify(r.json));
   r = await call(R.covered, "POST", "/api/slp/covered", { body: { code: "unpaid-k4", ticket: tk("unpaid-k4") } });
   ok("a family of a clinician who neither pays nor was grandfathered is not — an authoritative 200", r.status === 200 && r.json.covered === false);
-  const writes = KV.log.slice(before).filter((c) => !/^rl:/.test(c[1] || "") && /^(SET|INCR|HSET|HSETNX|DEL|GETDEL|HDEL)$/.test(c[0]) && !/^slpplan(-self|-pro)?:/.test(c[1]));
+  const writes = KV.log.slice(before).filter((c) => !/^rl:/.test(c[1] || "") && /^(SET|INCR|HSET|HSETNX|DEL|GETDEL|HDEL)$/.test(c[0]) && !/^slpplan(-self|-pro|-clinic)?:/.test(c[1]));
   ok("asking is not joining: no slpredeem INCR, no roster write, nothing but the mirror",
     !KV.log.slice(before).some((c) => /^slpredeem:/.test(c[1] || "")) && writes.length === 0, JSON.stringify(writes));
 
@@ -1267,11 +1324,24 @@ const count = (pred) => S.calls.filter(pred).length;
   // hold, sent in writing to every NEW clinician, whose families get the
   // free version. 12 Nov 2026: "it's free" went too, since a new clinician's
   // dashboard comes with Sona Pro. It says what is true for every clinician.
-  const welcome = RESEND.sent.find((m) => m.subject === "Your Sona dashboard is ready") || {};
+  // 18 Nov 2026 (review): a NEW address was told "Your Sona dashboard is
+  // ready … Add a child" for a dashboard that opens locked, on the plan. It
+  // gets the sign-up's words now. Later the same day: an EXISTING account
+  // may be locked too (a trial ended, a Cancel at Stripe), so its email
+  // says nothing about being ready and lists no first steps.
+  ok("a NEW address's sign-in email is the sign-up's: \"Your Sona sign-in link\", the free trial first, never \"your dashboard is ready\" or \"pick your plan\"",
+    freshMail.subject === "Your Sona sign-in link" && /New to Sona\? You'll start your free trial first\./.test(freshMail.text || "") &&
+    !/pick your plan/i.test((freshMail.html || "") + (freshMail.text || "")) &&
+    !/dashboard is ready/i.test((freshMail.html || "") + (freshMail.text || "")), JSON.stringify([freshMail.subject, freshMail.text]));
+  seedAcct("ready.check@clinic.org", { terms: false, code: "ready-k4", familyKey: "READYK23" });
+  await call(R.request, "POST", "/api/slp/auth/request", { body: { email: "ready.check@clinic.org" } });
+  const welcome = RESEND.sent.at(-1) || {};
   const OLD_PROMISE = /free for you and for every family on your caseload/i;
-  ok("the sign-in email says the dashboard is ready and every family gets Sona's free version — never that the dashboard is free (HTML and text)",
-    (welcome.html || "").includes("Your Sona dashboard is ready, and every family you send home gets Sona's free version.") &&
-    (welcome.text || "").includes("Your Sona dashboard is ready, and every family you send home gets Sona's free version.") &&
+  ok("an EXISTING account's sign-in email is true open or locked: \"Your Sona sign-in link\", \"Here's your link to your Sona dashboard\", every family gets Sona's free version, no \"ready\" and no first steps — never that the dashboard is free (HTML and text)",
+    welcome.subject === "Your Sona sign-in link" &&
+    (welcome.html || "").includes("Here's your link to your Sona dashboard. Every family you send home gets Sona's free version.") &&
+    (welcome.text || "").includes("Here's your link to your Sona dashboard. Every family you send home gets Sona's free version.") &&
+    !/dashboard is ready|What to do first/i.test((welcome.html || "") + (welcome.text || "")) &&
     !/it's free|dashboard is free/i.test((welcome.html || "") + (welcome.text || "")), JSON.stringify(welcome.text));
   ok("…and the old \"free for you and for every family on your caseload\" never returns — not in the email, not in any server code",
     !OLD_PROMISE.test((welcome.html || "") + (welcome.text || "")) &&
@@ -1307,7 +1377,7 @@ const count = (pred) => S.calls.filter(pred).length;
   KV.K.set("slptok:" + A.hashToken(tok), "via.link@riverside-schools.org");
   r = await call(R.verify, "GET", "/api/slp/auth/verify?token=" + tok);
   a = JSON.parse(KV.K.get("slpacct:via.link@riverside-schools.org") || "{}");
-  ok("a NEW account from the magic link carries terms too", /\/slp\.html$/.test(r.location || "") && a.terms === "pro-2026-11-12", JSON.stringify(a));
+  ok("a NEW account from the magic link carries terms too, and goes on to the free trial (TRIALGO1)", /\/slp\.html\?start=trial$/.test(r.location || "") && a.terms === "pro-2026-11-12", JSON.stringify(a));
   KV.K.set("slptok:" + A.hashToken(tok + "2"), "veteran@clinic.org");
   await call(R.verify, "GET", "/api/slp/auth/verify?token=" + tok + "2");
   ok("…and an existing one verified again does not", !("terms" in JSON.parse(KV.K.get("slpacct:veteran@clinic.org"))));
@@ -1345,10 +1415,21 @@ const count = (pred) => S.calls.filter(pred).length;
     !/"SET", "slpacct:/.test(reqSrc) && !/signSession|sessionCookie/.test(reqSrc) && !/PRO_TERMS/.test(reqSrc));
   // The verify route's account-making moved to lib/slpSignIn (16 Nov 2026),
   // shared with the emailed code.
+  // 17 Nov 2026: every new account is PRO_TERMS, whatever door; the one
+  // exception is App Review's server-held address, never a caller's flag.
   for (const f of ["lib/slpSignIn.ts", "app/api/slp/account/route.ts"]) {
-    ok(`${f} stamps PRO_TERMS on the legacy signup path`, /import \{[^}]*PRO_TERMS[^}]*\} from "@\/lib\/caseload"/.test(read(f)) &&
-      /terms: (signup \? FREE_DASHBOARD_TERMS : )?PRO_TERMS|\.terms = PRO_TERMS/.test(read(f)) && !/CASELOAD_TERMS/.test(noComments(read(f))));
+    ok(`${f} stamps PRO_TERMS on every new account`, /import \{[^}]*PRO_TERMS[^}]*\} from "@\/lib\/caseload"/.test(read(f)) &&
+      /terms: PRO_TERMS,|\.terms = PRO_TERMS/.test(read(f)) && !/CASELOAD_TERMS|FREE_DASHBOARD_TERMS/.test(noComments(read(f))));
   }
+  // App Review's one open dashboard lives in lib/caseload dashboardOpen
+  // (SLPPRO1, 17 Nov 2026), keyed on reviewEmail(), the server's own setting;
+  // the sign-in makes it an ordinary account and writes no flag for anyone.
+  const signIn = noComments(read("lib/slpSignIn.ts"));
+  const openSrc = noComments(read("lib/caseload.ts"));
+  const openFn = openSrc.slice(openSrc.indexOf("export async function dashboardOpen"), openSrc.indexOf("export async function activateFromSession"));
+  ok("…and the App Review exception is keyed on reviewEmail() in dashboardOpen, never on a payload's source, and the sign-in writes no free-dashboard flag",
+    /const review = reviewEmail\(\);\s*if \(review && norm\(email\) === review\) return true;/.test(openFn) &&
+    !/source === "app-review"|\.source === /.test(signIn + openFn) && !/freeDashboard|appReview/.test(signIn));
 }
 
 // ═════════════════════════ clinician signup details ═════════════════════════
@@ -1357,7 +1438,7 @@ const count = (pred) => S.calls.filter(pred).length;
   const stored = (email) => JSON.parse(KV.K.get("slpacct:" + email) || "{}");
   // Since 13 Nov 2026 an account is made only by its emailed link, so each
   // sign-up here opens the link it was sent; role and setting ride on the
-  // homepage's free-dashboard link, the only door that asks for them.
+  // homepage's link (its "trial" door), the only door that asks for them.
   const openLatest = () => {
     const link = (RESEND.sent.at(-1)?.text || "").match(/https:\/\/sona\.test\.invalid(\/api\/slp\/auth\/verify\?token=[\w-]+)/)?.[1];
     return call(R.verify, "GET", link || "/api/slp/auth/verify");
@@ -1366,14 +1447,16 @@ const count = (pred) => S.calls.filter(pred).length;
   for (const [clinicianRole, workSetting] of [["slp", "clinic"], ["slpa", "school"]]) {
     const email = "setting." + workSetting + "@example.org";
     const r = await signup({
-      flow: "free-dashboard", email, clinicianRole, workSetting, childName: "NotAccountData",
+      flow: "trial", email, clinicianRole, workSetting, childName: "NotAccountData",
       attrib: { utm_source: "clinic-post", clinicianRole: "NotAccountData", workSetting: "NotAccountData", childName: "NotAccountData" },
     });
     const v = await openLatest();
     const account = stored(email);
-    ok("new signup saves " + clinicianRole + " and " + workSetting + " on its account once the link is opened",
+    // 17 Nov 2026: the free-dashboard door still carries the details, and
+    // makes a Sona Pro-terms account like every other door.
+    ok("new signup saves " + clinicianRole + " and " + workSetting + " on its account once the link is opened (on Sona Pro's terms)",
       r.status === 200 && r.json.signedIn === false && (v.cookie || "").includes("slp_session=") &&
-      account.clinicianRole === clinicianRole && account.workSetting === workSetting && account.terms === C.FREE_DASHBOARD_TERMS &&
+      account.clinicianRole === clinicianRole && account.workSetting === workSetting && account.terms === C.PRO_TERMS &&
       account.clinic === "" && !!account.crmAt && !("childName" in account), JSON.stringify(account));
   }
   ok("signup keeps role, setting and injected data out of email and lead services",
@@ -1426,52 +1509,22 @@ const count = (pred) => S.calls.filter(pred).length;
     rows[omittedEmail]?.workSetting === "" && rows[omittedEmail]?.clinicianRole === "");
 }
 
-// ═════════════════════════ the homepage's trial door (18 Nov 2026) ═════════════════════════
-// Travis: "i need them to start a trial", the trial required. flow "pro-trial"
-// is the sign-in page's door: the new account takes Sona Pro terms, so its
-// dashboard opens on the plan page (402 needPlan), and the email says the
-// link starts the free trial.
+// ═════════════════════════ the trial signup; the free dashboard is gone (SLPPRO1, 17 Nov 2026) ═════════════════════════
+// Travis: "i want this to be sona pro tho. this is what they access when they
+// create a free trial." The plans page's door ("trial"; "free-dashboard" from a
+// page cached before) proves the inbox exactly as before, then makes a Sona
+// Pro-terms account: the dashboard opens on the plan page, with the 14-day
+// trial of either plan, and its data is refused until Sona Pro or Sona Clinic
+// is on. No door opens a free dashboard, a returning account is never changed
+// by one, and the 13 to 17 Nov free-dashboard signups meet the trial too
+// ("Move them to the trial").
 {
-  const email = "trial.door@example.org";
-  const key = "slpacct:" + email;
-  const before = OUT.length;
-  const sentBefore = RESEND.sent.length;
-  const r = await call(R.request, "POST", "/api/slp/auth/request", { body: { flow: "pro-trial", email, source: "fb", attrib: { utm_campaign: "trial" } } });
-  const mail = RESEND.sent.at(-1);
-  ok("the trial door emails a link, makes no account yet, and tells the CRM once",
-    r.status === 200 && r.json.sent === true && !r.cookie && !KV.K.has(key) && RESEND.sent.length === sentBefore + 1 &&
-    OUT.slice(before).filter((o) => o.url.endsWith("/api/lead")).length === 1, r.json);
-  ok("…and the email says the link starts the free trial",
-    /Start your free Sona Pro trial/.test(mail?.subject || "") && /start your 14-day free trial of Sona Pro/.test(mail?.text || "") &&
-    /Start my free trial/.test(mail?.html || ""), mail?.subject);
-  const link = (mail?.text || "").match(/https:\/\/sona\.test\.invalid\/api\/slp\/auth\/verify\?token=[\w-]+/)?.[0];
-  const verified = link ? await call(R.verify, "GET", new URL(link).pathname + new URL(link).search) : {};
-  const account = JSON.parse(KV.K.get(key) || "{}");
-  ok("opening it makes a Sona Pro account, whose dashboard waits on the trial",
-    verified.cookie?.includes("slp_session=") && account.terms === C.PRO_TERMS && account.freeDashboard !== true, account);
-  const plan = await call(R.plan, "GET", "/api/slp/plan", { as: email });
-  ok("…its plan page offers the free trial and the dashboard stays shut until it starts",
-    plan.json?.dashboard?.open === false && plan.json?.pro?.trialAvailable === true, plan.json);
-  const roster = await call(R.roster, "GET", "/api/slp", { as: email });
-  ok("…and the caseload answers needPlan", roster.status === 402 && roster.json?.needPlan === true, roster.status);
-  const returning = "trial.returning@example.org";
-  seedAcct(returning, { terms: C.FREE_DASHBOARD_TERMS, code: "trial-r1", familyKey: "TRIALR12" });
-  const r2 = await call(R.request, "POST", "/api/slp/auth/request", { body: { flow: "pro-trial", email: returning } });
-  const m2 = RESEND.sent.at(-1);
-  ok("a returning account signing in by the trial door keeps its own terms and gets the plain sign-in email",
-    r2.json.sent === true && JSON.parse(KV.K.get("slpacct:" + returning)).terms === C.FREE_DASHBOARD_TERMS &&
-    !/free trial/i.test(m2?.subject || ""), m2?.subject);
-  const bad = await call(R.request, "POST", "/api/slp/auth/request", { body: { flow: "trial-please", email } });
-  ok("an unknown door is still refused", bad.status === 400);
-}
-
-// ═════════════════════════ free dashboard email signup ═════════════════════════
-{
-  const email = "dashboard.free@example.org";
+  const kv = async (cmd) => kvExec(cmd);
+  const email = "dashboard.trial@example.org";
   const key = "slpacct:" + email;
   const signup = (body) => call(R.request, "POST", "/api/slp/auth/request", { body: {
-    flow: "free-dashboard", email, clinicianRole: "slpa", workSetting: "school",
-    attrib: { utm_campaign: "free-dashboard", workSetting: "NotAccountData" }, ...body,
+    flow: "trial", email, clinicianRole: "slpa", workSetting: "school",
+    attrib: { utm_campaign: "trial", workSetting: "NotAccountData" }, ...body,
   } });
   const before = OUT.length;
   const r = await signup({});
@@ -1481,89 +1534,114 @@ const count = (pred) => S.calls.filter(pred).length;
     return link ? new URL(link).pathname + new URL(link).search : "/api/slp/auth/verify";
   };
   const linkPath = latestLink();
-  ok("free signup sends a dashboard link with no account or session before verification, and the lead at once",
+  ok("the plans page's signup sends a sign-in link with no account or session before verification, and the lead at once",
     r.status === 200 && r.json.sent === true && r.json.signedIn === false && !r.cookie && linkPath.includes("?token=") && !KV.K.has(key) &&
     OUT.slice(before).filter((o) => o.url.endsWith("/api/lead")).length === 1);
+  const mail = RESEND.sent.at(-1) || {};
+  const words = (mail.html || "") + (mail.text || "");
+  ok("…its email is a plain sign-in link: Session games' words, no \"free\" but the free trial, no community, and the retry is the sign-in page on the link's own host",
+    mail.subject === "Your Sona sign-in link" && /pick Sona games for each session/.test(mail.text || "") && !/\bfree\b(?! trial)|communit/i.test(words) &&
+    /again at sona\.test\.invalid\/slp-login\.html /.test(mail.text || "") && !/again at speaksona\.com and/.test(words), JSON.stringify([mail.subject, mail.text]));
   const verified = await call(R.verify, "GET", linkPath);
   const account = JSON.parse(KV.K.get(key) || "{}");
-  ok("opening the link creates a free account with the saved clinician details",
+  ok("opening the link makes a Sona Pro-terms account (no free dashboard) with the saved clinician details, and goes on to the free trial (TRIALGO1)",
     verified.status >= 300 && verified.status < 400 && verified.cookie?.includes("slp_session=") &&
-    /\/slp\.html$/.test(verified.location || "") && account.terms === "free-dashboard-2026-11-13" &&
-    account.clinicianRole === "slpa" && account.workSetting === "school" && !!account.crmAt);
-  ok("verified free signup reaches the lead list once with attribution and no account fields",
+    /\/slp\.html\?start=trial$/.test(verified.location || "") && account.terms === C.PRO_TERMS && !("freeDashboard" in account) &&
+    account.clinicianRole === "slpa" && account.workSetting === "school" && !!account.crmAt, JSON.stringify(account));
+  ok("…and the lead reaches the list once, with attribution and no account fields",
     OUT.slice(before).filter((o) => o.url.endsWith("/api/lead")).length === 1 &&
-    OUT.slice(before).some((o) => o.url.endsWith("/api/lead") && o.body.utm_campaign === "free-dashboard") &&
+    OUT.slice(before).some((o) => o.url.endsWith("/api/lead") && o.body.utm_campaign === "trial") &&
     !/workSetting|clinicianRole|NotAccountData/.test(JSON.stringify(OUT.slice(before))));
   const replay = await call(R.verify, "GET", linkPath);
   ok("the same email link cannot sign in again", !replay.cookie && /err=expired/.test(replay.location || ""));
 
   const dashboard = await call(R.plan, "GET", "/api/slp/plan", { as: email });
   const roster = await call(R.roster, "GET", "/api/slp", { as: email });
-  ok("the free signup can open its dashboard and caseload with no paid coverage",
-    dashboard.json?.dashboard?.open === true && dashboard.json?.active === false &&
-    dashboard.json?.self?.active === false && roster.status === 200);
+  ok("…and that dashboard is LOCKED until a plan covers it: the plan page offers both 14-day trials, the caseload answers 402 naming both plans",
+    dashboard.json?.dashboard?.open === false && dashboard.json?.active === false && dashboard.json?.pro?.offer === true && dashboard.json?.clinic?.offer === true &&
+    dashboard.json?.pro?.trialAvailable === true && dashboard.json?.clinic?.trialAvailable === true && dashboard.json?.pro?.trialDays === 14 &&
+    roster.status === 402 && roster.json.needPlan === true &&
+    roster.json.error === "Your dashboard comes with Sona Pro or Sona Clinic.", JSON.stringify([dashboard.json, roster.json]));
+  const sharing = await call(R.account, "POST", "/api/slp/account", { as: email, body: { name: "Jamie" } });
+  const invite = await call(R.invite, "POST", "/api/slp/invite", { as: email, body: { label: "AB", age: 6, sounds: ["S"], pos: "i" } });
+  ok("…it may save its profile, and adds no family until a plan is on", sharing.status === 200 && invite.status === 402 && invite.json?.needPlan === true);
 
+  const cached = "dashboard.cached@example.org";
+  await call(R.request, "POST", "/api/slp/auth/request", { body: { flow: "free-dashboard", email: cached } });
+  await call(R.verify, "GET", latestLink());
+  ok("a page cached before 17 Nov (its old free-dashboard door) makes the same locked Sona Pro-terms account",
+    JSON.parse(KV.K.get("slpacct:" + cached) || "{}").terms === C.PRO_TERMS && (await C.dashboardOpen(cached, { kv, stripe: client })) === false);
+
+  // the plans page's form carries where the visitor came from
+  const trialEmail = "trial.door@example.org";
+  const tr = await call(R.request, "POST", "/api/slp/auth/request", { body: { flow: "trial", email: trialEmail, source: "plans", attrib: { utm_source: "fb" } } });
+  const trialMail = RESEND.sent.at(-1) || {};
+  ok("the trial form (flow \"trial\") sends \"Your Sona sign-in link\", and makes no account yet",
+    tr.status === 200 && tr.json.sent === true && !tr.cookie && !KV.K.has("slpacct:" + trialEmail) && trialMail.subject === "Your Sona sign-in link", JSON.stringify(tr.json));
+  await call(R.verify, "GET", latestLink());
+  const trialAcct = JSON.parse(KV.K.get("slpacct:" + trialEmail) || "{}");
+  ok("…and makes a locked Sona Pro-terms account carrying its source",
+    trialAcct.terms === C.PRO_TERMS && trialAcct.source === "plans" && !("freeDashboard" in trialAcct) &&
+    (await C.dashboardOpen(trialEmail, { kv, stripe: client })) === false, JSON.stringify(trialAcct));
+
+  // a forged App Review source opens nothing (dashboardOpen keys it on the server's address)
+  const forger = "forged.review@example.org";
+  await call(R.request, "POST", "/api/slp/auth/request", { body: { flow: "free-dashboard", email: forger, source: "app-review" } });
+  await call(R.verify, "GET", latestLink());
+  const forged = JSON.parse(KV.K.get("slpacct:" + forger) || "{}");
+  ok("a caller who sends source \"app-review\" gets an ordinary locked account (App Review is keyed on its address, never on a flag)",
+    forged.terms === C.PRO_TERMS && !("freeDashboard" in forged) && (await C.dashboardOpen(forger, { kv, stripe: client })) === false, JSON.stringify(forged));
+
+  // a returning Pro-era account through the old door: nothing is opened any more
   const returningEmail = "dashboard.returning@example.org";
   const returningKey = "slpacct:" + returningEmail;
   const original = seedAcct(returningEmail, { terms: C.PRO_TERMS, code: "returning-k4", familyKey: "RETKEY23" });
   const opted = await signup({ email: returningEmail });
-  ok("an existing Pro-era account stays unchanged until it opens the free dashboard link",
-    opted.json.sent && !opted.cookie && JSON.stringify(JSON.parse(KV.K.get(returningKey))) === JSON.stringify(original) &&
-    await C.dashboardOpen(returningEmail, { kv: async (cmd) => kvExec(cmd), stripe: client }) === false);
   const returning = await call(R.verify, "GET", latestLink());
-  const updated = JSON.parse(KV.K.get(returningKey));
-  const returningStatus = await call(R.plan, "GET", "/api/slp/plan", { as: returningEmail });
-  ok("verified returning Pro-era clinician gets dashboard access and retains terms and credentials",
-    returning.cookie?.includes("slp_session=") && JSON.stringify(updated) === JSON.stringify({ ...original, freeDashboard: true }) &&
-    returningStatus.json?.dashboard?.open === true && returningStatus.json?.active === false && returningStatus.json?.self?.active === false);
+  ok("a returning Pro-era account signs in by the old free-dashboard door and is left exactly as it was, still locked (no trial checkout: not new)",
+    opted.json.sent && returning.cookie?.includes("slp_session=") && /\/slp\.html$/.test(returning.location || "") &&
+    JSON.stringify(JSON.parse(KV.K.get(returningKey))) === JSON.stringify(original) &&
+    (await C.dashboardOpen(returningEmail, { kv, stripe: client })) === false, KV.K.get(returningKey));
 
-  const raceEmail = "dashboard.race@example.org";
-  const raceKey = "slpacct:" + raceEmail;
-  seedAcct(raceEmail, { terms: C.PRO_TERMS, code: "raceready-k4", familyKey: "RACEKEY3" });
-  await signup({ email: raceEmail });
-  const pendingRaceLink = latestLink();
-  const fetchBeforeRace = globalThis.fetch;
-  let verifiedDuringCrm = false;
-  globalThis.fetch = async (url, init) => {
-    if (String(url).endsWith("/api/lead") && JSON.parse(init.body).email === raceEmail) {
-      const result = await call(R.verify, "GET", pendingRaceLink);
-      verifiedDuringCrm = !!result.cookie;
-    }
-    return fetchBeforeRace(url, init);
-  };
-  try {
-    await call(R.request, "POST", "/api/slp/auth/request", { body: { email: raceEmail } });
-  } finally {
-    globalThis.fetch = fetchBeforeRace;
+  // The 13 to 17 Nov free-dashboard signups, and the Pro-era accounts that
+  // opened that door then: MOVED TO THE TRIAL. Their stamp and flag are never
+  // taken away or rewritten; they just no longer open anything.
+  const fd = "kept.free@example.org", optedIn = "kept.optin@example.org";
+  seedAcct(fd, { terms: C.FREE_DASHBOARD_TERMS, code: "keptfree-k4", familyKey: "KEPTKEY2" });
+  seedAcct(optedIn, { terms: C.PRO_TERMS, code: "keptopt-k4", familyKey: "KEPTKEY3" });
+  KV.K.set("slpacct:" + optedIn, JSON.stringify({ ...JSON.parse(KV.K.get("slpacct:" + optedIn)), freeDashboard: true }));
+  for (const who of [fd, optedIn]) {
+    const plan = await call(R.plan, "GET", "/api/slp/plan", { as: who });
+    const rost = await call(R.roster, "GET", "/api/slp", { as: who });
+    ok("a free-dashboard signup of 13 to 17 Nov (" + who + ") meets the trial at its next visit (\"Move them to the trial\"): closed, both trials offered, the caseload refused",
+      plan.json?.dashboard?.open === false && plan.json?.pro?.trialAvailable === true && plan.json?.clinic?.trialAvailable === true &&
+      rost.status === 402 && rost.json?.needPlan === true, JSON.stringify([plan.json, rost.status]));
+    await signup({ email: who });
+    await call(R.verify, "GET", latestLink());
+    await call(R.account, "POST", "/api/slp/account", { as: who, body: { name: "Robin" } });
   }
-  ok("a legacy sign-in cannot overwrite an opt-in verified while CRM is responding",
-    verifiedDuringCrm && JSON.parse(KV.K.get(raceKey)).freeDashboard === true);
+  const fdAfter = JSON.parse(KV.K.get("slpacct:" + fd)), optAfter = JSON.parse(KV.K.get("slpacct:" + optedIn));
+  ok("…and a sign-in or a profile save changes neither stamp nor flag (nothing backfilled, nothing taken away), and neither opens",
+    fdAfter.terms === C.FREE_DASHBOARD_TERMS && optAfter.terms === C.PRO_TERMS && optAfter.freeDashboard === true && optAfter.name === "Robin" &&
+    (await C.dashboardOpen(fd, { kv, stripe: client })) === false && (await C.dashboardOpen(optedIn, { kv, stripe: client })) === false, JSON.stringify([fdAfter, optAfter]));
+  const fdRemove = await call(R.child, "DELETE", "/api/slp/child", { as: fd, body: { childId: "gone1" } });
+  ok("…while removing a child still works, paid or not", fdRemove.status !== 402, fdRemove.status);
 
-  const sharing = await call(R.account, "POST", "/api/slp/account", { as: email, body: { name: "Jamie" } });
-  const invite = await call(R.invite, "POST", "/api/slp/invite", { as: email, body: { label: "AB", age: 6, sounds: ["S"], pos: "i" } });
-  ok("the free account can create a client practice link after setting up its profile",
-    sharing.status === 200 && invite.status === 200 && invite.json?.ok && /\/join\.html\?slp=/.test(invite.json.link));
-
-  const profile = await call(R.account, "POST", "/api/slp/account", { as: returningEmail, body: { name: "Robin" } });
-  ok("a later profile save preserves verified free dashboard access",
-    profile.status === 200 && JSON.parse(KV.K.get(returningKey)).freeDashboard === true &&
-    JSON.parse(KV.K.get(returningKey)).name === "Robin");
-
-  // EMAIL ONLY (Travis, 14 Nov 2026: the homepage asks for an email and
-  // nothing else). The link still proves the inbox first, and the account
-  // holds no role or work setting it was never told.
+  // EMAIL ONLY (Travis, 14 Nov 2026: the form asks for an email and nothing
+  // else). The link still proves the inbox first, and the account holds no
+  // role or work setting it was never told.
   const onlyEmail = "dashboard.emailonly@example.org";
-  const lean = await call(R.request, "POST", "/api/slp/auth/request", { body: { flow: "free-dashboard", email: onlyEmail } });
-  ok("an email-only free signup sends its link with no account or session yet",
+  const lean = await call(R.request, "POST", "/api/slp/auth/request", { body: { flow: "trial", email: onlyEmail } });
+  ok("an email-only sign-up sends its link with no account or session yet",
     lean.status === 200 && lean.json.sent === true && lean.json.signedIn === false && !lean.cookie && !KV.K.has("slpacct:" + onlyEmail));
   const leanVerified = await call(R.verify, "GET", latestLink());
   const leanAccount = JSON.parse(KV.K.get("slpacct:" + onlyEmail) || "{}");
-  ok("…and opening it makes a free account with no role or work setting",
-    leanVerified.cookie?.includes("slp_session=") && leanAccount.terms === "free-dashboard-2026-11-13" &&
+  ok("…and opening it makes a Sona Pro-terms account with no role or work setting",
+    leanVerified.cookie?.includes("slp_session=") && leanAccount.terms === C.PRO_TERMS &&
     !("clinicianRole" in leanAccount) && !("workSetting" in leanAccount), JSON.stringify(leanAccount));
-  for (const bad of [{ clinicianRole: "parent" }, { workSetting: "other" }, { clinicianRole: null }]) {
-    const refused = await call(R.request, "POST", "/api/slp/auth/request", { body: { flow: "free-dashboard", email: "bad.choice@example.org", ...bad } });
-    ok("a free signup that sends a role or setting must send a real one: " + JSON.stringify(bad),
+  for (const bad of [{ clinicianRole: "parent" }, { workSetting: "other" }, { clinicianRole: null }, { flow: "free" }]) {
+    const refused = await call(R.request, "POST", "/api/slp/auth/request", { body: { flow: "trial", email: "bad.choice@example.org", ...bad } });
+    ok("a sign-up that sends a role, setting or door must send a real one: " + JSON.stringify(bad),
       refused.status === 400 && !KV.K.has("slpacct:bad.choice@example.org"), JSON.stringify(refused.json));
   }
 
@@ -1571,9 +1649,12 @@ const count = (pred) => S.calls.filter(pred).length;
   const failedEmail = "free.refused@example.org";
   const failed = await signup({ email: failedEmail });
   RESEND.status = 200;
-  ok("a refused signup email creates no account, session or verified lead",
+  ok("a refused sign-up email creates no account, session or verified lead",
     failed.status === 200 && failed.json.sent === false && !failed.cookie && !KV.K.has("slpacct:" + failedEmail) &&
     !OUT.some((o) => o.url.endsWith("/api/lead") && o.body.email === failedEmail));
+  const sic = noComments(read("lib/slpSignIn.ts"));
+  ok("no code path gives a new account the free dashboard: no FREE_DASHBOARD_TERMS stamp and no freeDashboard flag written anywhere in the sign-in",
+    !/FREE_DASHBOARD_TERMS|freeDashboard|appReview/.test(sic));
 }
 
 // ═════════════════════════ sessions from before the inbox was proved ═════════════════════════
@@ -1642,14 +1723,16 @@ const count = (pred) => S.calls.filter(pred).length;
   const lit = (/const CASELOAD_PLAN_ID = "([^"]+)"/.exec(page) || [])[1];
   const litSelf = (/const SELF_PLAN_ID = "([^"]+)"/.exec(page) || [])[1];
   const litPro = (/const PRO_PLAN_ID = "([^"]+)"/.exec(page) || [])[1];
-  ok("the success page's copies of all three plan ids match lib/caseload (it cannot import a server module)", lit === C.CASELOAD_PLAN && litSelf === C.SELF_PLAN && litPro === C.PRO_PLAN, lit + " " + litSelf + " " + litPro);
-  const branch = page.indexOf("if (j.plan === CASELOAD_PLAN_ID || j.plan === SELF_PLAN_ID || j.plan === PRO_PLAN_ID)");
+  const litClinic = (/const CLINIC_PLAN_ID = "([^"]+)"/.exec(page) || [])[1];
+  ok("the success page's copies of all four plan ids match lib/caseload (it cannot import a server module)",
+    lit === C.CASELOAD_PLAN && litSelf === C.SELF_PLAN && litPro === C.PRO_PLAN && litClinic === C.CLINIC_PLAN, lit + " " + litSelf + " " + litPro + " " + litClinic);
+  const branch = page.indexOf("if (j.plan === CASELOAD_PLAN_ID || j.plan === SELF_PLAN_ID || j.plan === PRO_PLAN_ID || j.plan === CLINIC_PLAN_ID)");
   // The hand-off code is gone altogether (2 Oct 2026: setup takes no move-in
   // code, so a web buyer restores by email in the app), so "before the code"
   // became "there is no code to mint".
-  ok("…and it refuses ALL THREE before anything is granted: no sona.sub.v1, no purchase event, and no hand-off code at all",
+  ok("…and it refuses ALL FOUR before anything is granted: no sona.sub.v1, no purchase event, and no hand-off code at all",
     branch > 0 && branch < page.indexOf("localStorage.setItem(") && !page.includes("/api/pair") && branch < page.indexOf("purchase completed") &&
-    /if \(j\.plan === CASELOAD_PLAN_ID \|\| j\.plan === SELF_PLAN_ID \|\| j\.plan === PRO_PLAN_ID\) \{\s*setCaseload\(true\);\s*return;\s*\}/.test(page), String(branch));
+    /if \(j\.plan === CASELOAD_PLAN_ID \|\| j\.plan === SELF_PLAN_ID \|\| j\.plan === PRO_PLAN_ID \|\| j\.plan === CLINIC_PLAN_ID\) \{\s*setCaseload\(true\);\s*return;\s*\}/.test(page), String(branch));
   r = await call(R.session, "GET", "/api/checkout/session?id=cs_test_lockedprotrial1");
   ok("…and the read-back names \"slp-pro\" for Sona Pro", r.json.plan === "slp-pro", JSON.stringify(r.json));
   r = await call(R.famPortal, "POST", "/api/portal", { body: { session_id: "cs_test_lockedprotrial1" } });
@@ -1885,6 +1968,518 @@ const count = (pred) => S.calls.filter(pred).length;
   CH._resetCharterMemo();
 }
 
+// ═════════════════════════ SONA CLINIC: checkout, the team, coverage, the owner's view (17 Nov 2026) ═════════════════════════
+// Travis, 17 Nov 2026: a second plan, $99 a month. Every clinician the owner
+// adds gets everything Sona Pro gives; the owner sees, per clinician, how
+// many children are on Sona and how many practiced in the last 7 days —
+// never a child. One free trial per clinician across both plans. A seat is
+// only live once the clinician accepts from their own inbox.
+{
+  const kv = async (cmd) => kvExec(cmd);
+  const storedOf = (k) => { try { return JSON.parse(KV.K.get(k)); } catch { return null; } };
+  const day = (n) => new Date(Date.now() + n * 86400000).toISOString().slice(0, 10);
+  const T = day(0);
+  const OWN = "olivia.owner@brightsteps.example", ZOE = "zoe@brightsteps.example", BETH = "beth@brightsteps.example";
+  const NEWM = "new.member@brightsteps.example", PEND = "pending@brightsteps.example";
+  seedAcct(OWN, { terms: C.PRO_TERMS, code: "olivia-k4", familyKey: "OLIVKEY2", name: "Olivia Owner" });
+  KV.K.set("slpacct:" + OWN, JSON.stringify({ ...JSON.parse(KV.K.get("slpacct:" + OWN)), clinic: "Bright Steps Therapy" }));
+  seedAcct(ZOE, { terms: C.PRO_TERMS, code: "zoe-k4", familyKey: "ZOEKEY23", name: "Zoe Adams" });
+  seedAcct(BETH, { terms: C.PRO_TERMS, code: "beth-k4", familyKey: "BETHKEY2", name: "Beth Carter" });
+
+  // ── checkout ──
+  S.calls.length = 0;
+  let r = await call(R.plan, "POST", "/api/slp/plan", { as: OWN, body: { plan: "clinic", tier: "charter", email: "someone-else@x.org" } });
+  const p = (S.calls.find((c) => c[0] === "checkout.sessions.create") || [])[1];
+  ok("a new clinician gets a Stripe Checkout link for Sona Clinic", r.status === 200 && r.json.ok && /^https:\/\/checkout\.stripe\.test\//.test(r.json.url) && !r.json.cancelPro, JSON.stringify(r.json));
+  ok("…a subscription, $99 a month (9900 cents), named \"Sona Clinic\"",
+    p && p.mode === "subscription" && p.line_items.length === 1 && p.line_items[0].price_data.unit_amount === 9900 &&
+    p.line_items[0].price_data.currency === "usd" && p.line_items[0].price_data.recurring.interval === "month" &&
+    p.line_items[0].price_data.product_data.name === "Sona Clinic" && /up to 25/.test(p.line_items[0].price_data.product_data.description), JSON.stringify(p && p.line_items));
+  ok("…stamped plan: slp-clinic + slp (the OWNER, from the session) on the session AND the subscription — never a tier",
+    p && JSON.stringify(p.metadata) === JSON.stringify({ plan: "slp-clinic", slp: OWN }) &&
+    JSON.stringify(p.subscription_data.metadata) === JSON.stringify({ plan: "slp-clinic", slp: OWN }) && !/"tier"/.test(JSON.stringify(p)), JSON.stringify(p));
+  ok("…with the same 14-day trial, card up front, cancelled if no card is left",
+    p && p.subscription_data.trial_period_days === 14 && p.payment_method_collection === "always" &&
+    JSON.stringify(p.subscription_data.trial_settings) === JSON.stringify({ end_behavior: { missing_payment_method: "cancel" } }), JSON.stringify(p && p.subscription_data));
+  ok("…and its terms beside Stripe's button, in Sona Pro's words with Sona Clinic's price",
+    p && p.custom_text.submit.message === "No charge today. Your free trial lasts 14 days; after that, $99 a month until you cancel. Cancel before the trial ends and you pay nothing.", JSON.stringify(p && p.custom_text));
+  ok("…returning to the plan page, as Sona Pro does",
+    p && p.success_url === "https://sona.test.invalid/slp.html?plan_session={CHECKOUT_SESSION_ID}#premium" && p.cancel_url === "https://sona.test.invalid/slp.html#premium" &&
+    p.customer_email === OWN && p.client_reference_id === "olivia-k4");
+  process.env.STRIPE_PRICE_ID_SLP_PRO = "price_pro_1999";
+  S.calls.length = 0;
+  await call(R.plan, "POST", "/api/slp/plan", { as: OWN, body: { plan: "clinic" } });
+  let pc = (S.calls.find((c) => c[0] === "checkout.sessions.create") || [])[1];
+  ok("Sona Pro's Price variable is never charged for Sona Clinic", pc && pc.line_items[0].price_data && pc.line_items[0].price_data.unit_amount === 9900, JSON.stringify(pc && pc.line_items));
+  process.env.STRIPE_PRICE_ID_SLP_CLINIC = "price_clinic_9900";
+  S.calls.length = 0;
+  await call(R.plan, "POST", "/api/slp/plan", { as: OWN, body: { plan: "clinic" } });
+  pc = (S.calls.find((c) => c[0] === "checkout.sessions.create") || [])[1];
+  ok("…and a configured STRIPE_PRICE_ID_SLP_CLINIC is", pc && JSON.stringify(pc.line_items) === JSON.stringify([{ price: "price_clinic_9900", quantity: 1 }]), JSON.stringify(pc && pc.line_items));
+  delete process.env.STRIPE_PRICE_ID_SLP_PRO; delete process.env.STRIPE_PRICE_ID_SLP_CLINIC;
+
+  // ── the trial starts, and the redirect activates it ──
+  const tEnd = nowS() + 14 * 86400;
+  mkSub("sub_olivia_clinic", { slp: OWN, plan: "slp-clinic", customer: "cus_olivia", status: "trialing", interval: "month", periodEnd: tEnd });
+  S.subs.get("sub_olivia_clinic").trial_end = tEnd;
+  S.sessions.set("cs_test_oliviaclinic001", { id: "cs_test_oliviaclinic001", status: "complete", metadata: { plan: "slp-clinic", slp: OWN }, subscription: "sub_olivia_clinic" });
+  S.sessions.set("cs_test_oliviaclinicXzoe", { id: "cs_test_oliviaclinicXzoe", status: "complete", metadata: { plan: "slp-clinic", slp: OWN }, subscription: "sub_olivia_clinic" });
+  r = await call(R.plan, "GET", "/api/slp/plan?session=cs_test_oliviaclinicXzoe", { as: ZOE });
+  ok("the owner's checkout session activates nothing for anyone else", r.json.activated === false && !(storedOf("slpplan-clinic:" + ZOE) || {}).sub && r.json.clinic.role === null, JSON.stringify(r.json));
+  r = await call(R.plan, "GET", "/api/slp/plan?session=cs_test_oliviaclinic001", { as: OWN });
+  const c0 = r.json.clinic || {};
+  ok("the owner's own redirect activates Sona Clinic: activatedPlan \"clinic\", mirrored under slpplan-clinic:<owner>, trialing with its end date",
+    r.json.activated === true && r.json.activatedPlan === "clinic" && JSON.parse(KV.K.get("slpplan-clinic:" + OWN)).sub === "sub_olivia_clinic" &&
+    c0.role === "owner" && c0.active === true && c0.status === "trialing" && c0.trialEnd === tEnd && c0.periodEnd === tEnd && c0.cancelAtPeriodEnd === false, JSON.stringify(r.json));
+  ok("…the GET answer's clinic block carries lib/caseload's figures: Sona Clinic, $99, a month, 14 days, 25 seats",
+    c0.name === "Sona Clinic" && c0.price === "$99" && c0.per === "a month" && c0.trialDays === 14 && c0.seats === 25 &&
+    c0.trialAvailable === false && c0.offer === false && !("ownerName" in c0), JSON.stringify(c0));
+  ok("…and with it all three for the owner: the dashboard opens, the caseload and their own phone are covered (source \"clinic\"), nothing else on offer",
+    r.json.dashboard.open === true && r.json.active === true && r.json.source === "clinic" && r.json.self.active === true && r.json.self.source === "clinic" &&
+    r.json.pro.offer === false && r.json.pro.trialAvailable === false, JSON.stringify(r.json));
+  r = await call(R.plan, "POST", "/api/slp/plan", { as: OWN, body: { plan: "clinic" } });
+  ok("Sona Clinic is not sold twice: 409 already", r.status === 409 && r.json.already === true && r.json.error === "Sona Clinic is already on.", JSON.stringify(r.json));
+  r = await call(R.plan, "POST", "/api/slp/plan", { as: OWN, body: { plan: "pro" } });
+  ok("…nor Sona Pro on top of it", r.status === 409 && r.json.already === true && r.json.error === "Your Sona Clinic plan already includes everything Sona Pro does.", JSON.stringify(r.json));
+
+  // ── the team ──
+  r = await call(R.team, "GET", "/api/slp/team", {});
+  ok("the team needs a signed-in clinician (401)", r.status === 401);
+  r = await call(R.team, "GET", "/api/slp/team", { as: OWN });
+  ok("the owner's view, before anyone is added: role owner, 25 seats, 1 used (the owner), one row — theirs",
+    r.status === 200 && r.json.role === "owner" && r.json.active === true && r.json.seats === 25 && r.json.used === 1 &&
+    r.json.rows.length === 1 && r.json.rows[0].you === true && r.json.rows[0].email === OWN && r.json.rows[0].name === "Olivia Owner", JSON.stringify(r.json));
+  r = await call(R.team, "POST", "/api/slp/team", { as: OWN, body: { action: "add", email: "not-an-email" } });
+  const r2 = await call(R.team, "POST", "/api/slp/team", { as: OWN, body: { action: "add", email: OWN } });
+  ok("adding needs a real address, and not the owner's own", r.status === 400 && r2.status === 400, JSON.stringify([r.json, r2.json]));
+  r = await call(R.team, "POST", "/api/slp/team", { as: OWN, body: { action: "add", email: ZOE }, headers: { origin: "https://evil.example" } });
+  ok("…and comes from Sona's own page only", r.status === 403, JSON.stringify(r.json));
+  RESEND.sent.length = 0;
+  const links = {};
+  for (const who of [ZOE, BETH, NEWM, PEND]) {
+    r = await call(R.team, "POST", "/api/slp/team", { as: OWN, body: { action: "add", email: who.toUpperCase() } });
+    const m = RESEND.sent.at(-1) || {};
+    links[who] = ((m.text || "").match(/https:\/\/sona\.test\.invalid(\/api\/slp\/team\/accept\?token=[\w%-]+)/) || [])[1];
+    if (!(r.status === 200 && r.json.sent === true && r.json.resent === false && [].concat(m.to)[0] === who)) ok("adding " + who, false, JSON.stringify([r.json, m.to]));
+  }
+  ok("the owner adds four clinicians: each is emailed a link of their own to /api/slp/team/accept", Object.values(links).every(Boolean) && RESEND.sent.length === 4, JSON.stringify(links));
+  const inv = RESEND.sent[0] || {};
+  const invWords = (inv.html || "") + (inv.text || "");
+  ok("…the email names who added them and the practice, and says exactly what the owner will see: two counts, never a child",
+    inv.subject === "Olivia Owner at Bright Steps Therapy added you to Sona Clinic" && /Olivia Owner at Bright Steps Therapy added you to their Sona Clinic plan/.test(inv.text || "") &&
+    /How many children you have on Sona, and how many of them practiced in the last 7 days\. Never a child's name, initials, sounds or pass rate\./.test(inv.text || "") &&
+    /works once and expires in 14 days/.test(inv.text || "") && !/\$|trial|unlimited|accuracy|score/i.test(invWords), JSON.stringify(inv.text));
+  // 18 Nov 2026 (review): the link no longer signs anyone in, and the email
+  // no longer says it does.
+  ok("…and never says the link signs them in: after joining, they sign in with this address",
+    !/signs you in/i.test(invWords) && /after you join, sign in with this email address/.test(inv.text || ""), JSON.stringify(inv.text));
+  const invKey = [...KV.K.keys()].find((k) => k.startsWith("slpteaminv:"));
+  ok("…its token is kept only as a hash, for fourteen days, naming owner and member",
+    !!invKey && /^slpteaminv:[0-9a-f]{64}$/.test(invKey) && KV.TTL.get(invKey) === 14 * 86400 && !Object.values(links).some((l) => invKey.includes(decodeURIComponent(l.split("token=")[1]))) &&
+    Object.keys(JSON.parse(KV.K.get(invKey))).sort().join() === "member,owner", invKey);
+  ok("…and each invited seat names the one link that may join it, by that hash (a Resend retires the last)",
+    [ZOE, BETH, NEWM, PEND].every((who) => { const row = JSON.parse(KV.H.get("slpteam:" + OWN).get(who)); return /^[0-9a-f]{64}$/.test(row.inv || "") && KV.K.has("slpteaminv:" + row.inv); }));
+  ok("…and the membership lives in slpteam:<owner>, never on an account",
+    KV.H.get("slpteam:" + OWN)?.size === 4 && JSON.parse(KV.H.get("slpteam:" + OWN).get(ZOE)).state === "invited" && !KV.K.has("slpteam-of:" + ZOE) &&
+    !("team" in JSON.parse(KV.K.get("slpacct:" + OWN))) && !("team" in JSON.parse(KV.K.get("slpacct:" + ZOE))));
+
+  // invited is not joined: it covers nobody and shows nothing
+  ok("an INVITED clinician is not covered: dashboard still locked, families not covered, own phone off",
+    !(await C.dashboardOpen(ZOE, { kv, stripe: client })) && !(await C.covered(ZOE, { kv, stripe: client })) && !(await C.selfStatus(ZOE, { kv, stripe: client })).active &&
+    (await C.clinicStatus(ZOE, { kv, stripe: client })).role === null);
+  r = await call(R.play, "POST", "/api/slp/play", { as: ZOE, body: { key: "hoops", sound: "R", pos: "i", age: "5-6" } });
+  ok("…nor may she use Play now (402 needPlan)", r.status === 402 && r.json.needPlan === true && !r.json.go, JSON.stringify(r.json));
+  r = await call(R.team, "GET", "/api/slp/team", { as: OWN });
+  ok("…and the owner sees an invited row with no name and no numbers",
+    r.json.used === 5 && r.json.rows.filter((x) => x.state === "invited").length === 4 &&
+    r.json.rows.filter((x) => x.state === "invited").every((x) => x.name === "" && x.children === null && x.practicedWeek === null && x.linkReady === false), JSON.stringify(r.json.rows));
+
+  // ── Zoe's caseload, which the owner's two numbers must count as her own Today page does ──
+  const zr = A.rosterKey("zoe-k4");
+  const out = (d, a) => ({ S: { attempts: a, passes: 1, days: { [d]: { a, p: 1 } } } });
+  hash(zr).set("kidZ1", JSON.stringify({ childId: "kidZ1", child: "Zephyrine", age: "6", at: iso(), outcomes: out(day(-1), 4) }));     // practiced
+  hash(zr).set("kidZ2", JSON.stringify({ childId: "kidZ2", child: "Quillon", age: "7", at: iso(), outcomes: out(day(-10), 3) }));      // not this week
+  hash(zr).set("kidZ3", JSON.stringify({ childId: "kidZ3", child: "Archie", age: "5", at: iso(), outcomes: out(day(0), 9) }));         // archived
+  hash(zr).set("kidZ4", JSON.stringify({ childId: "kidZ4", child: "Gonzalo", age: "8", at: iso(), outcomes: out(day(0), 9) }));        // removed
+  hash(zr).set("kidZ6", JSON.stringify({ childId: "kidZ6", child: "Homer", age: "6", at: iso(), outcomes: {} }));                     // homework reps only
+  hash(zr).set("kidZ7", JSON.stringify({ childId: "kidZ7", child: "Oldham", age: "6", at: iso(), outcomes: {} }));                    // reps for an old assignment
+  hash(zr).set("kidZ9", JSON.stringify({ childId: "kidZ9", child: "Edgar", age: "9", at: iso(), outcomes: out(day(-7), 2) }));         // the 8th day back
+  hash("slpmeta:zoe-k4").set("kidZ3", JSON.stringify({ archived: true, updatedAt: iso() }));
+  hash("slpmeta:zoe-k4").set("kidZ5", JSON.stringify({ joinedAt: iso(), updatedAt: iso() }));                                         // claimed, not synced yet
+  hash("slpgone:zoe-k4").set("kidZ4", iso());
+  const hwOf = (id) => ({ id, title: "Words", note: "", sounds: ["S"], pos: "i", repsPerDay: 5, words: null, start: day(-5), due: day(5), by: "Zoe", createdAt: iso(), aboveNorm: [], modelClip: null });
+  hash("hw:zoe-k4").set("kidZ6", JSON.stringify({ hw: hwOf("hwA"), progress: { id: "hwA", days: { [day(-2)]: 5 }, updatedAt: iso() } }));
+  hash("hw:zoe-k4").set("kidZ7", JSON.stringify({ hw: hwOf("hwB"), progress: { id: "hwOLD", days: { [day(0)]: 5 }, updatedAt: iso() } }));
+  hash("slp:ZOE-K4").set("kidZ8", JSON.stringify({ childId: "kidZ8", child: "Legacia", age: "6", at: iso(), outcomes: out(day(-3), 2) })); // the case-mismatch bug's leftover
+
+  // ── accepting ──
+  // 18 Nov 2026 (review): opening the link (a GET, which a district's link
+  // scanner does to every link in an email) changes nothing; only the Join
+  // button on its page (a POST) joins, and joining never signs anyone in.
+  let before0 = KV.log.length;
+  r = await call(R.teamAccept, "GET", links[ZOE]);
+  const gWrites = KV.log.slice(before0).filter((c) => /^(SET|HSET|HSETNX|DEL|HDEL|GETDEL|EXPIRE|INCR)$/.test(c[0]) && !/^slpplan(-clinic)?:/.test(c[1]));
+  ok("OPENING Zoe's link joins nobody and signs nobody in: a page with one Join button, who asked, and what they will see",
+    r.status === 200 && !r.cookie && /<form method="post" action="\/api\/slp\/team\/accept\?token=/.test(r.text) && /Join your clinic/.test(r.text) &&
+    /Olivia Owner at Bright Steps Therapy added you to their Sona Clinic plan/.test(r.text) && /Never a child&#39;s name, initials, sounds or pass rate\./.test(r.text) &&
+    /noindex/.test(r.headers.get("x-robots-tag") || "") && r.headers.get("referrer-policy") === "same-origin" && r.headers.get("cache-control") === "no-store" &&
+    gWrites.length === 0 && JSON.parse(KV.H.get("slpteam:" + OWN).get(ZOE)).state === "invited" && !KV.K.has("slpteam-of:" + ZOE), JSON.stringify([r.status, gWrites]));
+  r = await call(R.teamAccept, "GET", links[ZOE]);
+  ok("…opened twice (a scanner, then Zoe), it still works", r.status === 200 && /Join your clinic/.test(r.text));
+  r = await call(R.teamAccept, "POST", links[ZOE], { headers: { origin: "https://evil.example" } });
+  ok("…its Join button answers Sona's own page only", r.status === 200 && !/Join your clinic/.test(r.text) && JSON.parse(KV.H.get("slpteam:" + OWN).get(ZOE)).state === "invited");
+  const leadsAtJoin = OUT.filter((o) => o.url.endsWith("/api/lead")).length;
+  r = await call(R.teamAccept, "POST", links[ZOE]);
+  ok("Zoe presses Join in a browser not signed in: no cookie, and the sign-in page says she joined (joined=team)",
+    r.status === 303 && r.location === "https://sona.test.invalid/slp-login.html?joined=team" && !r.cookie, JSON.stringify([r.status, r.location, r.cookie]));
+  ok("…both keys now agree: her row is active (no link left on it), and slpteam-of:<zoe> names the owner",
+    JSON.parse(KV.H.get("slpteam:" + OWN).get(ZOE)).state === "active" && !!JSON.parse(KV.H.get("slpteam:" + OWN).get(ZOE)).acceptedAt &&
+    !("inv" in JSON.parse(KV.H.get("slpteam:" + OWN).get(ZOE))) && KV.K.get("slpteam-of:" + ZOE) === OWN);
+  ok("…and her account is untouched: still Sona Pro's terms, no plan written on it",
+    JSON.parse(KV.K.get("slpacct:" + ZOE)).terms === C.PRO_TERMS && JSON.parse(KV.K.get("slpacct:" + ZOE)).code === "zoe-k4" && !("freeDashboard" in JSON.parse(KV.K.get("slpacct:" + ZOE))));
+  r = await call(R.teamAccept, "GET", links[ZOE]);
+  const r4 = await call(R.teamAccept, "POST", links[ZOE]);
+  ok("the link works once", /\/slp-login\.html\?err=expired$/.test(r.location || "") && !r.cookie && r4.status === 303 && /err=expired$/.test(r4.location || ""), JSON.stringify([r.location, r4.location]));
+  r = await call(R.teamAccept, "GET", "/api/slp/team/accept?token=madeup");
+  ok("…and a made-up one opens nothing", /err=expired$/.test(r.location || "") && !r.cookie);
+  ok("the sign-in page says, in words with no plan name or price, that they joined and should sign in",
+    /qp\.get\("joined"\)==="team"/.test(read("public/slp-login.html")) && /You’ve joined your clinic’s Sona plan\. Sign in with the email your invite went to\./.test(read("public/slp-login.html")));
+
+  const zs = await call(R.plan, "GET", "/api/slp/plan", { as: ZOE });
+  const zc = zs.json.clinic || {};
+  ok("a JOINED clinician has all three on the owner's plan: the dashboard opens, caseload and own phone covered (source \"clinic\")",
+    zs.json.dashboard.open === true && zs.json.active === true && zs.json.source === "clinic" && zs.json.self.active === true && zs.json.self.source === "clinic", JSON.stringify(zs.json));
+  ok("…her clinic block says whose: role member, Olivia Owner, Bright Steps Therapy — nothing on offer",
+    zc.role === "member" && zc.active === true && zc.ownerName === "Olivia Owner" && zc.practiceName === "Bright Steps Therapy" && zc.offer === false &&
+    zs.json.pro.offer === false && !JSON.stringify(zc).includes(OWN), JSON.stringify(zc));
+  const zfam = await call(R.covered, "POST", "/api/slp/covered", { body: { code: "zoe-k4", ticket: A.signTicket("zoe-k4", 400, "kidZnew") } });
+  KV.K.set("slpredeem-owner:" + ZOE, "60");
+  const zred = await call(R.redeem, "POST", "/api/slp/redeem", { body: { code: "zoe-k4", key: "ZOEKEY23", childId: "kidZnew" } });
+  ok("…so her families are covered, and her link has no cap (the uncovered 60 is lifted)",
+    zfam.json.covered === true && zred.status === 200 && zred.json.valid === true, JSON.stringify([zfam.json, zred.json]));
+  const zroster = await call(R.roster, "GET", "/api/slp", { as: ZOE });
+  ok("…and her caseload reads", zroster.status === 200 && zroster.json.ok === true);
+  // Session games' Play now (SESSPLAY1) is behind the same lock: a member may play, as a Sona Pro clinician may.
+  const zplay = await call(R.play, "POST", "/api/slp/play", { as: ZOE, body: { key: "hoops", sound: "R", pos: "i", age: "5-6" } });
+  ok("…and Play now answers her as it answers a Sona Pro clinician", zplay.status === 200 && zplay.json.ok === true && typeof zplay.json.go === "string", JSON.stringify(zplay.json));
+  hash(A.rosterKey("zoe-k4")).delete("kidZnew");
+  // (her own GET /api/slp just healed the legacy key, as it does; put the leftover back for the owner's read)
+  hash("slp:ZOE-K4").set("kidZ8", JSON.stringify({ childId: "kidZ8", child: "Legacia", age: "6", at: iso(), outcomes: out(day(-3), 2) }));
+  hash(zr).delete("kidZ8");
+  r = await call(R.team, "GET", "/api/slp/team", { as: ZOE });
+  ok("her own team answer: role member, who added her and the practice",
+    r.json.role === "member" && r.json.owner === OWN && r.json.ownerName === "Olivia Owner" && r.json.practiceName === "Bright Steps Therapy" && !("rows" in r.json), JSON.stringify(r.json));
+  r = await call(R.team, "POST", "/api/slp/team", { as: ZOE, body: { action: "add", email: "friend@brightsteps.example" } });
+  ok("…a member cannot add anyone (403 needPlan)", r.status === 403 && r.json.needPlan === true, JSON.stringify(r.json));
+  r = await call(R.plan, "POST", "/api/slp/plan", { as: ZOE, body: { plan: "clinic" } });
+  ok("…nor buy a Sona Clinic of her own while on one: 409, naming whose",
+    r.status === 409 && r.json.already === true && r.json.error === "You're on Olivia Owner's Sona Clinic plan.", JSON.stringify(r.json));
+  r = await call(R.portal, "POST", "/api/slp/plan/portal", { as: ZOE });
+  ok("…and Manage billing tells her the owner manages it, never opening the owner's billing",
+    r.status === 404 && r.json.error === "Your clinic's owner manages billing for Sona Clinic." && !S.calls.some((c) => c[0] === "billingPortal.sessions.create" && c[1].customer === "cus_olivia" && false), JSON.stringify(r.json));
+
+  r = await call(R.teamAccept, "POST", links[NEWM]);
+  ok("a clinician with no account yet: Join makes no account, no cookie and no lead (the sign-in page, with its consent line, does that)",
+    r.status === 303 && /joined=team$/.test(r.location || "") && !r.cookie && !KV.K.has("slpacct:" + NEWM) &&
+    OUT.filter((o) => o.url.endsWith("/api/lead")).length === leadsAtJoin, JSON.stringify([r.location, KV.K.get("slpacct:" + NEWM)]));
+  KV.K.set("slptok:" + A.hashToken("newm-signin"), NEWM);
+  r = await call(R.verify, "GET", "/api/slp/auth/verify?token=newm-signin");
+  const nu = JSON.parse(KV.K.get("slpacct:" + NEWM) || "{}");
+  ok("…then signing in the ordinary way makes it on Sona Pro's terms, and the clinic's plan opens its dashboard",
+    (r.cookie || "").includes("slp_session=") && nu.terms === C.PRO_TERMS && !("freeDashboard" in nu) &&
+    (await C.dashboardOpen(NEWM, { kv, stripe: client })) === true, JSON.stringify(nu));
+  r = await call(R.teamAccept, "POST", links[BETH], { as: BETH });
+  ok("a clinician already signed in here goes straight to their plan page (joined=team), with no new cookie",
+    r.status === 303 && r.location === "https://sona.test.invalid/slp.html?joined=team#premium" && !r.cookie, JSON.stringify([r.location, r.cookie]));
+
+  // ── the owner's view ──
+  const before = KV.log.length;
+  const legacyBefore = JSON.stringify([...KV.H.get("slp:ZOE-K4")]);
+  r = await call(R.team, "GET", "/api/slp/team?today=" + T, { as: OWN });
+  const rows = r.json.rows || [];
+  ok("the owner sees 5 of 25 seats: their own row first, then by NAME — never by a count",
+    r.json.used === 5 && rows.map((x) => x.email).join() === [OWN, BETH, NEWM, PEND, ZOE].join(), JSON.stringify(rows.map((x) => x.email)));
+  const zrow = rows.find((x) => x.email === ZOE) || {};
+  ok("Zoe's two numbers count what her own Today page counts: 7 children (archived, removed left out; claimed-not-synced and the legacy key in), 3 practiced in the last 7 days",
+    zrow.state === "active" && zrow.name === "Zoe Adams" && zrow.children === 7 && zrow.practicedWeek === 3 && zrow.linkReady === true, JSON.stringify(zrow));
+  const nrow = rows.find((x) => x.email === NEWM) || {}, brow = rows.find((x) => x.email === BETH) || {}, prow = rows.find((x) => x.email === PEND) || {};
+  ok("…a joined clinician with no caseload yet reads 0 and 0 (link not ready), one with an empty caseload 0 and 0, an invited one nothing",
+    nrow.children === 0 && nrow.practicedWeek === 0 && nrow.linkReady === false && brow.children === 0 && brow.linkReady === true &&
+    prow.state === "invited" && prow.children === null && prow.name === "", JSON.stringify([nrow, brow, prow]));
+  ok("…every row is exactly { email, name, state, children, practicedWeek, linkReady, you? }",
+    rows.every((x) => Object.keys(x).filter((k) => k !== "you").sort().join() === "children,email,linkReady,name,practicedWeek,state"), JSON.stringify(rows));
+  const body = JSON.stringify(r.json);
+  ok("NOTHING about any child is in the answer: no name, no id, no age, no sound, no outcome, no homework, no rate",
+    !/Zephyrine|Quillon|Archie|Gonzalo|Homer|Oldham|Edgar|Legacia|kidZ|outcomes|sounds|"age"|"S"|hwA|pass|rate|average|rank/i.test(body), body);
+  const writes = KV.log.slice(before).filter((c) => /^(SET|HSET|HSETNX|DEL|HDEL|GETDEL|EXPIRE|INCR)$/.test(c[0]) && !/^slpplan(-clinic)?:/.test(c[1]));
+  ok("…and reading it WROTE nothing: not the legacy roster key (only her own dashboard heals that), not a mirror's neighbour, nothing",
+    writes.length === 0 && JSON.stringify([...KV.H.get("slp:ZOE-K4")]) === legacyBefore, JSON.stringify(writes));
+  r = await call(R.team, "GET", "/api/slp/team?today=" + day(-1), { as: OWN });
+  ok("the 7 days end on the VIEWER's date when the page sends it (a day behind the server: the 8th day back counts, today's does not)",
+    (r.json.rows.find((x) => x.email === ZOE) || {}).practicedWeek === 4, JSON.stringify(r.json.rows.find((x) => x.email === ZOE)));
+  r = await call(R.team, "GET", "/api/slp/team?today=2020-01-01", { as: OWN });
+  const r3 = await call(R.team, "GET", "/api/slp/team?today=" + T.slice(0, 8) + "99", { as: OWN });
+  ok("…but a date more than a day from the server's, or not a date, is ignored", (r.json.rows.find((x) => x.email === ZOE) || {}).practicedWeek === 3 &&
+    (r3.json.rows.find((x) => x.email === ZOE) || {}).practicedWeek === 3);
+
+  // the founder's list says who is on which plan, and whose dashboard is free
+  const fl = Object.fromEntries((await F.readClinicians()).map((c) => [c.email, c]));
+  ok("the founder sees the owner as \"clinic trial\" and a joined clinician as \"clinic member\" (an invited one as nothing)",
+    fl[OWN].caseload === "clinic trial" && fl[OWN].own === "clinic trial" && fl[ZOE].caseload === "clinic member" && fl[ZOE].own === "clinic member" &&
+    !(PEND in fl), JSON.stringify([fl[OWN], fl[ZOE]].map((c) => [c.caseload, c.own])));
+  ok("…and whose dashboard was promised free (before 12 Nov), and whose comes with a plan: the 13–17 Nov signups (and opt-ins) marked, as moved to the trial",
+    fl["gf@clinic.org"].dashboard === "free" && fl["kept.free@example.org"].dashboard === "with a plan (13–17 Nov signup)" && fl["kept.optin@example.org"].dashboard === "with a plan (13–17 Nov signup)" &&
+    fl[ZOE].dashboard === "with a plan" && fl[OWN].dashboard === "with a plan", JSON.stringify(["gf@clinic.org", "kept.free@example.org", "kept.optin@example.org", ZOE].map((e) => fl[e] && fl[e].dashboard)));
+  ok("…in a Dashboard column on /leads.html", /\["dashboard", "Dashboard"\]/.test(noComments(read("public/leads.html"))) && /clinic member/.test(read("public/leads.html")));
+
+  // ── one team at a time ──
+  // 18 Nov 2026 (review): adding no longer tells an owner whether an address
+  // is on another practice's plan (it answered 409 "They're on another
+  // clinic's Sona plan" to any owner who asked). The invite goes; the page
+  // behind it tells the clinician, and only them.
+  const OWN2 = "second.owner@otherplace.example";
+  seedAcct(OWN2, { terms: C.PRO_TERMS, code: "second-k4", familyKey: "SECKEY23", name: "Sam Second" });
+  mkSub("sub_second_clinic", { slp: OWN2, plan: "slp-clinic", customer: "cus_second", status: "active", interval: "month" });
+  r = await call(R.team, "POST", "/api/slp/team", { as: OWN2, body: { action: "add", email: ZOE } });
+  const zoe2 = ((RESEND.sent.at(-1) || {}).text || "").match(/https:\/\/sona\.test\.invalid(\/api\/slp\/team\/accept\?token=[\w%-]+)/)?.[1];
+  ok("another clinic adding someone already on one is answered like any add: nothing says another practice has them",
+    r.status === 200 && r.json.sent === true && !/another|clinic's Sona plan/.test(JSON.stringify(r.json)) && !!zoe2, JSON.stringify(r.json));
+  r = await call(R.teamAccept, "GET", zoe2);
+  ok("…the page behind Zoe's link tells HER that joining takes her off the clinic she is on",
+    r.status === 200 && /Joining this one takes you off it\./.test(r.text) && /Join your clinic/.test(r.text) && KV.K.get("slpteam-of:" + ZOE) === OWN);
+  await call(R.team, "POST", "/api/slp/team", { as: OWN2, body: { action: "remove", email: ZOE } });
+  r = await call(R.teamAccept, "GET", zoe2);
+  ok("…and a seat the owner removed takes its link with it", /err=expired$/.test(r.location || "") && KV.K.get("slpteam-of:" + ZOE) === OWN, JSON.stringify(r.location));
+  r = await call(R.team, "POST", "/api/slp/team", { as: OWN, body: { action: "add", email: OWN2 } });
+  const own2Link = ((RESEND.sent.at(-1) || {}).text || "").match(/https:\/\/sona\.test\.invalid(\/api\/slp\/team\/accept\?token=[\w%-]+)/)?.[1];
+  const g2 = await call(R.teamAccept, "GET", own2Link);
+  r = await call(R.teamAccept, "POST", own2Link);
+  ok("a clinician who OWNS a live Sona Clinic plan cannot join another (its owner view would hide the membership, and its Leave button): the page says why, and nothing is written",
+    g2.status === 200 && /You have your own Sona Clinic plan/.test(g2.text) && !/<form/.test(g2.text) && r.status === 200 && /You have your own Sona Clinic plan/.test(r.text) &&
+    !KV.K.has("slpteam-of:" + OWN2) && JSON.parse(KV.H.get("slpteam:" + OWN).get(OWN2)).state === "invited", JSON.stringify([g2.status, r.status]));
+  await call(R.team, "POST", "/api/slp/team", { as: OWN, body: { action: "remove", email: OWN2 } });
+
+  // ── seats ──
+  for (let i = 0; i < 20; i++) hash("slpteam:" + OWN).set("filler" + i + "@brightsteps.example", JSON.stringify({ state: "invited", addedAt: iso() }));
+  const sentToday = () => Number(KV.K.get("slpteammail:" + OWN + ":" + T) || 0);
+  const spentBefore = sentToday();
+  r = await call(R.team, "POST", "/api/slp/team", { as: OWN, body: { action: "add", email: "one.more@brightsteps.example" } });
+  ok("seat 26 is refused: all 25 in use (the owner and invited seats count), email us to add more",
+    r.status === 409 && r.json.error === "All 25 seats on your clinic's plan are in use. Email hello@speaksona.com to add more." && !KV.H.get("slpteam:" + OWN).has("one.more@brightsteps.example"), JSON.stringify(r.json));
+  r = await call(R.team, "POST", "/api/slp/team", { as: OWN, body: { action: "add", email: PEND } });
+  ok("…while sending an invited clinician's link again takes no new seat", r.status === 200 && r.json.resent === true && r.json.sent === true, JSON.stringify(r.json));
+  const pendNew = ((RESEND.sent.at(-1) || {}).text || "").match(/https:\/\/sona\.test\.invalid(\/api\/slp\/team\/accept\?token=[\w%-]+)/)?.[1];
+  const pOld = await call(R.teamAccept, "GET", links[PEND]);
+  const pNew = await call(R.teamAccept, "GET", pendNew);
+  ok("…and the new link retires the old one: only the newest email's link works (18 Nov 2026)",
+    /err=expired$/.test(pOld.location || "") && pNew.status === 200 && /Join your clinic/.test(pNew.text) &&
+    !KV.K.has("slpteaminv:" + A.hashToken(decodeURIComponent(links[PEND].split("token=")[1]))), JSON.stringify([pOld.location, pNew.status]));
+  {
+    const TM = L("lib/team.ts");
+    const tok = decodeURIComponent(pendNew.split("token=")[1]);
+    const flaky = async (cmd) => (cmd[0] === "HGET" ? undefined : kvExec(cmd));
+    let threw = false;
+    try { await TM.acceptInvite(tok, flaky); } catch (e) { threw = e instanceof C.StoreUnavailable; }
+    ok("a store that stops answering part-way through Join spends nothing: the link still works (it used to be spent, and called expired)",
+      threw && KV.K.has("slpteaminv:" + A.hashToken(tok)) && (await call(R.teamAccept, "GET", pendNew)).status === 200);
+  }
+  r = await call(R.team, "POST", "/api/slp/team", { as: OWN, body: { action: "add", email: ZOE } });
+  ok("…and adding someone already on the clinic says so", r.status === 409 && /already/.test(r.json.error), JSON.stringify(r.json));
+  ok("…and a refused add spends none of the day's invite emails (the one re-send did)", sentToday() === spentBefore + 1, sentToday() + " vs " + spentBefore);
+  for (let i = 0; i < 20; i++) hash("slpteam:" + OWN).delete("filler" + i + "@brightsteps.example");
+  const dk = "slpteammail:" + OWN + ":" + T;
+  const had = KV.K.get(dk);
+  KV.K.set(dk, "30");
+  r = await call(R.team, "POST", "/api/slp/team", { as: OWN, body: { action: "add", email: "one.more@brightsteps.example" } });
+  ok("thirty invite emails a day per owner, then 429", r.status === 429 && /30 invites today/.test(r.json.error) && !KV.H.get("slpteam:" + OWN).has("one.more@brightsteps.example"), JSON.stringify(r.json));
+  KV.K.set(dk, had || "0");
+  const LOOSE = "loose@riverside-schools.org";
+  seedAcct(LOOSE, { terms: C.PRO_TERMS, code: "loose-k4", familyKey: "LOOSEKY2" });
+  r = await call(R.team, "POST", "/api/slp/team", { as: LOOSE, body: { action: "add", email: "x@y.example" } });
+  ok("a clinician with no Sona Clinic cannot add anyone (403 needPlan), and writes nothing", r.status === 403 && r.json.needPlan === true && !KV.H.has("slpteam:" + LOOSE), JSON.stringify(r.json));
+
+  // ── leaving and removal end coverage ──
+  r = await call(R.team, "POST", "/api/slp/team", { as: BETH, body: { action: "leave" } });
+  ok("a member who leaves is off the team at once, and no longer covered",
+    r.status === 200 && r.json.left === true && !KV.H.get("slpteam:" + OWN).has(BETH) && !KV.K.has("slpteam-of:" + BETH) &&
+    !(await C.covered(BETH, { kv, stripe: client })) && !(await C.dashboardOpen(BETH, { kv, stripe: client })));
+  r = await call(R.team, "POST", "/api/slp/team", { as: OWN, body: { action: "remove", email: NEWM } });
+  ok("the owner removes a member: off the team, the member's own key gone, and their coverage with it",
+    r.status === 200 && r.json.removed === true && !KV.K.has("slpteam-of:" + NEWM) && !(await C.covered(NEWM, { kv, stripe: client })) &&
+    !(await C.dashboardOpen(NEWM, { kv, stripe: client })), JSON.stringify(r.json));
+  KV.K.set("slpteam-of:" + PEND, OWN2);
+  r = await call(R.team, "POST", "/api/slp/team", { as: OWN, body: { action: "remove", email: PEND } });
+  ok("…removing touches the member's key only when it names THIS owner", r.status === 200 && KV.K.get("slpteam-of:" + PEND) === OWN2);
+  KV.K.delete("slpteam-of:" + PEND);
+
+  // ── the plan ends ──
+  const LATE = "late@brightsteps.example";
+  await call(R.team, "POST", "/api/slp/team", { as: OWN, body: { action: "add", email: LATE } });
+  const lateLink = ((RESEND.sent.at(-1) || {}).text || "").match(/https:\/\/sona\.test\.invalid(\/api\/slp\/team\/accept\?token=[\w%-]+)/)?.[1];
+  S.subs.get("sub_olivia_clinic").status = "canceled";
+  KV.K.delete("slpplan-clinic:" + OWN);
+  {
+    // 18 Nov 2026 (review): an invite opened after the owner's plan ended
+    // joined them anyway, and told them so, to a plan their dashboard never
+    // showed (no member card, no Leave). Now it says the plan is off, and the
+    // link stays good in case the owner turns it back on.
+    const g = await call(R.teamAccept, "GET", lateLink);
+    const p = await call(R.teamAccept, "POST", lateLink);
+    ok("an invite opened after the owner's plan ended joins nobody: the page says the clinic's plan isn't on, and the link stays good",
+      g.status === 200 && /Your clinic&#39;s plan isn&#39;t on right now/.test(g.text) && !/<form/.test(g.text) && p.status === 200 && /isn&#39;t on right now/.test(p.text) &&
+      !KV.K.has("slpteam-of:" + LATE) && JSON.parse(KV.H.get("slpteam:" + OWN).get(LATE)).state === "invited" &&
+      KV.K.has("slpteaminv:" + JSON.parse(KV.H.get("slpteam:" + OWN).get(LATE)).inv), JSON.stringify([g.status, p.status]));
+  }
+  ok("when the owner's plan ends, the members' coverage ends with it",
+    !(await C.covered(ZOE, { kv, stripe: client })) && !(await C.dashboardOpen(ZOE, { kv, stripe: client })) && (await C.clinicStatus(ZOE, { kv, stripe: client })).role === null);
+  r = await call(R.team, "GET", "/api/slp/team", { as: OWN });
+  ok("…the owner still sees their team (role owner, active false), with no numbers for anyone else",
+    r.json.role === "owner" && r.json.active === false && r.json.rows.filter((x) => !x.you).every((x) => x.children === null && x.practicedWeek === null), JSON.stringify(r.json));
+  r = await call(R.team, "POST", "/api/slp/team", { as: OWN, body: { action: "remove", email: ZOE } });
+  ok("…and removing a clinician still works with the plan lapsed", r.status === 200 && r.json.removed === true && !KV.K.has("slpteam-of:" + ZOE), JSON.stringify(r.json));
+
+  // ── one trial per clinician, across both plans ──
+  r = await call(R.plan, "GET", "/api/slp/plan", { as: OWN });
+  ok("a Sona Clinic subscription spends the one trial for Sona Pro too", r.json.pro.trialAvailable === false && r.json.clinic.trialAvailable === false && r.json.clinic.offer === true && r.json.pro.offer === true, JSON.stringify([r.json.pro, r.json.clinic]));
+  S.calls.length = 0;
+  r = await call(R.plan, "POST", "/api/slp/plan", { as: OWN, body: { plan: "pro" } });
+  let pp = (S.calls.find((c) => c[0] === "checkout.sessions.create") || [])[1];
+  ok("…so their Sona Pro checkout charges from day one, on the customer they have",
+    r.status === 200 && pp && !("trial_period_days" in pp.subscription_data) && pp.customer === "cus_olivia" &&
+    pp.custom_text.submit.message === "$19.99 a month, charged today and every month until you cancel. Cancel anytime: your families keep every game to the end of the month you paid for.", JSON.stringify(pp));
+  const PROONCE = "pro.once@riverside-schools.org";
+  seedAcct(PROONCE, { terms: C.PRO_TERMS, code: "proonce-k4", familyKey: "PROONCE2" });
+  mkSub("sub_proonce", { slp: PROONCE, plan: "slp-pro", customer: "cus_proonce", status: "canceled", interval: "month" });
+  S.calls.length = 0;
+  r = await call(R.plan, "POST", "/api/slp/plan", { as: PROONCE, body: { plan: "clinic" } });
+  pp = (S.calls.find((c) => c[0] === "checkout.sessions.create") || [])[1];
+  ok("…and a Sona Pro trial already taken means Sona Clinic charges from day one, and says so",
+    r.status === 200 && pp && !("trial_period_days" in pp.subscription_data) && !("trial_settings" in pp.subscription_data) &&
+    pp.custom_text.submit.message === "$99 a month, charged today and every month until you cancel. Cancel anytime: your clinicians and their families keep every game to the end of the month you paid for.", JSON.stringify(pp && pp.custom_text));
+
+  // ── a Sona Pro holder upgrades ──
+  const UPG = "upgrader@riverside-schools.org";
+  seedAcct(UPG, { terms: C.PRO_TERMS, code: "upg-k4", familyKey: "UPGKEY23" });
+  mkSub("sub_upg_pro", { slp: UPG, plan: "slp-pro", customer: "cus_upg", status: "active", interval: "month" });
+  S.calls.length = 0;
+  r = await call(R.plan, "GET", "/api/slp/plan", { as: UPG });
+  ok("a Sona Pro holder is offered Sona Clinic (an upgrade), and not Sona Pro", r.json.clinic.offer === true && r.json.pro.offer === false && r.json.clinic.role === null, JSON.stringify(r.json.clinic));
+  r = await call(R.plan, "POST", "/api/slp/plan", { as: UPG, body: { plan: "clinic" } });
+  pp = (S.calls.find((c) => c[0] === "checkout.sessions.create") || [])[1];
+  ok("…may buy it, on the Stripe customer they already pay with, told to cancel Sona Pro once Sona Clinic is on (cancelPro)",
+    r.status === 200 && r.json.cancelPro === true && pp && pp.customer === "cus_upg" && pp.metadata.plan === "slp-clinic" && !("trial_period_days" in pp.subscription_data), JSON.stringify([r.json, pp && pp.customer]));
+  S.subs.delete("sub_upg_pro"); S.subs.delete("sub_proonce"); S.subs.delete("sub_second_clinic");
+
+  // ── coverage reads the plan, never a flag ──
+  ok("planStatus asks Sona Clinic after Sona Pro and BEFORE the Pro-era short-circuit; dashboardOpen: App Review, the promised stamp, then Pro, then Clinic",
+    /const pro = await currentPlan[\s\S]*?const clinic = await clinicStatus[\s\S]*?if \(proTerms\(acct\)/.test(noComments(read("lib/caseload.ts")).slice(noComments(read("lib/caseload.ts")).indexOf("export async function planStatus"))) &&
+    /if \(review && norm\(email\) === review\) return true;\n  const acct = [^\n]*\n  if \(dashboardPromised\(acct\)\) return true;\n  if \(\(await proStatus\(email, \{ \.\.\.opts, kv \}\)\)\.active\) return true;\n  return \(await clinicStatus\(email, \{ \.\.\.opts, kv \}\)\)\.active;/.test(read("lib/caseload.ts")));
+  const team = noComments(read("app/api/slp/team/route.ts")) + noComments(read("app/api/slp/team/accept/route.ts"));
+  ok("the team routes act for the SESSION's email only, rate limited; the view never sorts by a count",
+    /liveSession\(readSession\(req\)\)/.test(noComments(read("app/api/slp/team/route.ts"))) && /rateLimit\(req, \{ key: "slpteam-read"/.test(team) && /rateLimit\(req, \{ key: "slpteam"/.test(team) &&
+    !/searchParams\.get\("email"\)|healLegacyRoster/.test(team + noComments(read("lib/team.ts"))) && !/sort\([^)]*(children|practicedWeek)/.test(noComments(read("lib/team.ts"))));
+}
+
+// ═════════════════════════ SONA CLINIC HIDDEN (Travis, 18 Nov 2026: "hide it for now") ═════════════════════════
+// The switch ships off, and with it off nothing sells or names Sona Clinic:
+// the checkout refuses it and creates nothing, the plan GET offers it and
+// prices it nowhere, no invitation is sent, the lock names Sona Pro alone and
+// the Terms render no Clinic paragraph. What a Clinic plan already gives is
+// still honoured, and every removal still works. Forced on again at the end.
+{
+  const kv = async (cmd) => kvExec(cmd);
+  const lib = read("lib/caseload.ts");
+  ok("the switch ships OFF in lib/caseload (export const CLINIC_ON = false)", C.CLINIC_ON === false && /\nexport const CLINIC_ON = false;\n/.test(lib));
+  const forHtml = read("public/for-slps.html");
+  const m = /var CLINIC_ON = (true|false);/.exec(forHtml);
+  ok("…and /plans carries the same value (var CLINIC_ON), as APP_READY's two copies agree", !!m && m[1] === String(C.CLINIC_ON), m ? m[0] : "(no var CLINIC_ON in public/for-slps.html)");
+  const prevNode = process.env.NODE_ENV;
+  process.env.SONA_CLINIC_FORCE = "1"; process.env.NODE_ENV = "production";
+  const prodForced = C.clinicOn();
+  if (prevNode === undefined) delete process.env.NODE_ENV; else process.env.NODE_ENV = prevNode;
+  ok("the test seam: SONA_CLINIC_FORCE=1 turns it on off production only; a production build ignores it",
+    C.clinicOn() === true && prodForced === false);
+  process.env.SONA_CLINIC_FORCE = "0";
+  ok("with the force off, clinicOn() is the constant: off", C.clinicOn() === false && C.planNames() === "Sona Pro");
+
+  const HID = "hidden.check@brightsteps.example";
+  seedAcct(HID, { terms: C.PRO_TERMS, code: "hidden-k4", familyKey: "HIDDENK2", name: "Hana Hidden" });
+  // the checkout: refused before Stripe or the store is asked, nothing created
+  const before = S.calls.length;
+  const kvBefore = KV.log.length;
+  let r = await call(R.plan, "POST", "/api/slp/plan", { as: HID, body: { plan: "clinic" } });
+  ok("POST /api/slp/plan { plan: \"clinic\" } is refused (409): \"Sona Clinic isn't available right now.\"",
+    r.status === 409 && r.json.ok === false && r.json.unavailable === true && r.json.error === "Sona Clinic isn't available right now." && !r.json.url, JSON.stringify(r.json));
+  ok("…and nothing is created: no Stripe call, no plan or team key written",
+    S.calls.length === before && !KV.log.slice(kvBefore).some((c) => /^(SET|HSET|HSETNX)$/.test(String(c[0])) && /^(slpplan|slpteam)/.test(String(c[1]))), JSON.stringify(S.calls.slice(before)));
+  r = await call(R.plan, "POST", "/api/slp/plan", { as: HID, body: { plan: "self" } });
+  ok("a retired plan's refusal names Sona Pro alone", r.status === 409 && r.json.retired === true && r.json.error === "Sona's plans for speech therapists have changed. Reload this page to see Sona Pro.", JSON.stringify(r.json));
+  S.calls.length = 0;
+  r = await call(R.plan, "POST", "/api/slp/plan", { as: HID, body: { plan: "pro" } });
+  ok("…while Sona Pro still sells, with its trial", r.status === 200 && r.json.ok === true && S.calls.some((c) => c[0] === "checkout.sessions.create" && c[1].metadata.plan === "slp-pro"), JSON.stringify(r.json));
+  // the plan GET: no Clinic offer, no price, no name
+  r = await call(R.plan, "GET", "/api/slp/plan", { as: HID });
+  const cb = (r.json && r.json.clinic) || {};
+  ok("GET /api/slp/plan offers no Clinic: clinic.on false, clinic.offer false, and no name, price, seats or trial in it",
+    r.status === 200 && cb.on === false && cb.offer === false && cb.role === null &&
+    !("name" in cb) && !("price" in cb) && !("per" in cb) && !("seats" in cb) && !("trialDays" in cb) && !("trialAvailable" in cb), JSON.stringify(cb));
+  ok("…and the whole answer names neither Sona Clinic nor $99, while Sona Pro is still offered",
+    !/Sona Clinic|\$99\b/.test(r.text) && r.json.pro.offer === true && r.json.pro.price === "$19.99", r.text.slice(0, 400));
+  // the lock names Sona Pro alone, on every gated route
+  r = await call(R.roster, "GET", "/api/slp", { as: HID });
+  ok("a locked account's 402 says \"Your dashboard comes with Sona Pro.\", nothing else", r.status === 402 && r.json.needPlan === true && r.json.error === "Your dashboard comes with Sona Pro.", JSON.stringify(r.json));
+  r = await call(R.self, "POST", "/api/slp/self", { as: HID, body: { action: "send" } });
+  ok("…and the own-phone link's refusal names Sona Pro alone", r.json && r.json.ok === false && /comes with Sona Pro\./.test(r.json.error) && !/Clinic/.test(r.json.error), JSON.stringify(r.json));
+  // the team: no invitation, every removal still works
+  RESEND.sent.length = 0;
+  const kvT = KV.log.length;
+  r = await call(R.team, "POST", "/api/slp/team", { as: HID, body: { action: "add", email: "colleague@brightsteps.example" } });
+  ok("no Sona Clinic invitation can be sent: add is refused, no email, no team row",
+    r.status === 403 && r.json.unavailable === true && r.json.error === "Sona Clinic isn't available right now." && RESEND.sent.length === 0 &&
+    !KV.log.slice(kvT).some((c) => /^slpteam/.test(String(c[1] || ""))), JSON.stringify(r.json));
+  // a team that somehow exists (made while it was on) still loses a member on request
+  const OWN2 = "owner.dormant@brightsteps.example", MEM2 = "member.dormant@brightsteps.example";
+  seedAcct(OWN2, { terms: C.PRO_TERMS, code: "dormant-k4", familyKey: "DORMANT2", name: "Dora Owner" });
+  seedAcct(MEM2, { terms: C.PRO_TERMS, code: "dmember-k4", familyKey: "DMEMBER2", name: "Max Member" });
+  KV.K.set("slpplan-clinic:" + OWN2, JSON.stringify({ sub: "sub_dormant", customer: "cus_dormant", status: "active", periodEnd: nowS() + 20 * 86400, cancelAtPeriodEnd: false, checkedAt: Date.now() }));
+  hash("slpteam:" + OWN2).set(MEM2, JSON.stringify({ state: "active", addedAt: iso(), acceptedAt: iso() }));
+  KV.K.set("slpteam-of:" + MEM2, OWN2);
+  ok("a Clinic plan that exists is still honoured while hidden: its member's dashboard is open", await C.dashboardOpen(MEM2, { kv, stripe: client }) === true);
+  r = await call(R.plan, "GET", "/api/slp/plan", { as: MEM2 });
+  ok("…and reported (role member, its name, still no offer and no price)", r.json.clinic.role === "member" && r.json.clinic.name === "Sona Clinic" && r.json.clinic.offer === false && !("price" in r.json.clinic), JSON.stringify(r.json.clinic));
+  r = await call(R.team, "POST", "/api/slp/team", { as: OWN2, body: { action: "remove", email: MEM2 } });
+  ok("…and removing a clinician still works", r.status === 200 && r.json.removed === true && !KV.H.get("slpteam:" + OWN2).has(MEM2), JSON.stringify(r.json));
+  hash("slpteam:" + OWN2).set(MEM2, JSON.stringify({ state: "active", addedAt: iso(), acceptedAt: iso() }));
+  KV.K.set("slpteam-of:" + MEM2, OWN2);
+  r = await call(R.team, "POST", "/api/slp/team", { as: MEM2, body: { action: "leave" } });
+  ok("…and so does leaving", r.status === 200 && r.json.left === true && !KV.K.has("slpteam-of:" + MEM2), JSON.stringify(r.json));
+
+  // the Terms, rendered: no Clinic while it is off, every Clinic paragraph back with the switch
+  const React = require(path.join(ROOT, "node_modules/react"));
+  const { renderToStaticMarkup } = require(path.join(ROOT, "node_modules/react-dom/server"));
+  const renderTerms = () => {
+    const file = path.join(ROOT, "app/terms/page.tsx");
+    const mod = { exports: {} };
+    const js = ts.transpileModule(readFileSync(file, "utf8"), { fileName: file, compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true, jsx: ts.JsxEmit.ReactJSX } }).outputText;
+    const req = (s) => s === "@/app/components/BackLink" ? { __esModule: true, default: () => null }
+      : s.startsWith("@/") ? loadTs(path.join(ROOT, s.slice(2) + ".ts"))
+      : s.startsWith("react") ? require(path.join(ROOT, "node_modules", s))
+      : require(s);
+    new Function("require", "module", "exports", js)(req, mod, mod.exports);
+    return renderToStaticMarkup(React.createElement(mod.exports.default)).replace(/<[^>]+>/g, " ").replace(/&#x27;/g, "'").replace(/&amp;/g, "&").replace(/\s+/g, " ");
+  };
+  let terms = "";
+  try { terms = renderTerms(); } catch (e) { terms = "(render failed: " + (e && e.message) + ")"; }
+  ok("the Terms render no Sona Clinic and no $99 while it is off", !!terms && !/Sona Clinic|\$99\b(?!\.)/.test(terms) && /Sona Pro for clinicians/.test(terms),
+    (terms.match(/.{0,80}(Sona Clinic|\$99\b(?!\.)).{0,80}/) || [terms.slice(0, 200)])[0]);
+  ok("…and cancel from Settings → Manage billing, never a \"Your plan\" page", /Settings → Manage billing/.test(terms) && !/Your plan →/.test(terms));
+  process.env.SONA_CLINIC_FORCE = "1";
+  try { terms = renderTerms(); } catch (e) { terms = "(render failed: " + (e && e.message) + ")"; }
+  ok("…and switched on, every Clinic paragraph comes back: the plan, the owner's view, its trial and the section title",
+    /Sona Pro and Sona Clinic for clinicians/.test(terms) && /Sona Clinic is for a practice\. The clinician who buys it on speaksona\.com \(the owner\) pays \$99 per month/.test(terms) &&
+    /What the owner sees\./.test(terms) && /Sona Clinic starts the same way/.test(terms) && /nor is a Sona Clinic plan covering the clinicians at one practice/.test(terms), terms.slice(0, 200));
+}
+
 // ═════════════════════════ the founder's view ═════════════════════════
 {
   const list = await F.readClinicians();
@@ -2001,14 +2596,20 @@ const count = (pred) => S.calls.filter(pred).length;
 // ═════════════════════════ source contracts ═════════════════════════
 {
   const lib = noComments(read("lib/caseload.ts"));
-  ok("the plan mirrors live under slpplan:, slpplan-self: and slpplan-pro:, access under slpaccess:, own-phone tokens under slpself:",
-    /"slpplan-self:" : kind === "pro" \? "slpplan-pro:" : "slpplan:"\) \+/.test(lib) && /"slpaccess:" \+/.test(lib) && /"slpself:" \+/.test(lib));
+  ok("the plan mirrors live under slpplan:, slpplan-self:, slpplan-pro: and slpplan-clinic:, access under slpaccess:, own-phone tokens under slpself:",
+    /"slpplan-self:" : kind === "pro" \? "slpplan-pro:" : kind === "clinic" \? "slpplan-clinic:" : "slpplan:"\) \+/.test(lib) && /"slpaccess:" \+/.test(lib) && /"slpself:" \+/.test(lib));
+  ok("…and a Sona Clinic team under slpteam: and slpteam-of:, never on the account or under slpacct:",
+    /return "slpteam:" \+ norm\(owner\)/.test(lib) && /return "slpteam-of:" \+ norm\(member\)/.test(lib) && /"slpteaminv:" \+ hashToken\(token\)/.test(noComments(read("lib/team.ts"))) &&
+    !/slpacct:/.test(noComments(read("lib/team.ts"))) && !/slpacct/.test(noComments(read("app/api/slp/team/route.ts"))));
   ok("no caseload key is ever written under the slpacct: prefix", !/"SET", "slpacct:/.test(lib) && !/"slpacct:" \+ [^;]*"SET"/.test(lib));
   const plan = noComments(read("app/api/slp/plan/route.ts"));
-  // The one trial is Sona Pro's (12 Nov 2026), and only when proStatus says
-  // this clinician never had one; it is the only trial the route can write.
-  ok("the checkout never writes a tier, and offers a trial only as Sona Pro's, once",
-    !/\btier\b/.test(plan) && (plan.match(/trial_period_days/g) || []).length === 1 && /trial_period_days: PRO_TRIAL_DAYS/.test(plan) && /trial = pro\.trialAvailable;/.test(plan));
+  // The one trial (12 Nov 2026), for either plan since 17 Nov 2026, and only
+  // when proStatus says this clinician never had a Pro OR a Clinic
+  // subscription; it is the only trial the route can write, and its length
+  // is lib/caseload's for the plan being sold.
+  ok("the checkout never writes a tier, and offers a trial once, from the plan's own trial constant",
+    !/\btier\b/.test(plan) && (plan.match(/trial_period_days/g) || []).length === 1 && /trial_period_days: offer\.trialDays/.test(plan) &&
+    /trialDays: CLINIC_TRIAL_DAYS, priceId/.test(plan) && /trialDays: PRO_TRIAL_DAYS, priceId/.test(plan) && /trial = pro\.trialAvailable;/.test(plan));
   ok("the plan routes take the email from the SESSION, never the body or the query",
     [plan, noComments(read("app/api/slp/plan/portal/route.ts")), noComments(read("app/api/slp/self/route.ts"))].every((s) => /readSession\(req\)/.test(s) && !/body\.email|searchParams\.get\("email"\)/.test(s)));
   const restore = read("app/api/subscription/route.ts");

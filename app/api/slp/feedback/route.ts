@@ -10,13 +10,19 @@ import { rateLimit } from "@/lib/rateLimit";
  * NO CALLS (Travis, 30 Sep 2026: "I don't want request to call to be an
  * option" — Rachel doesn't take phone calls). A request for one, from a
  * dashboard left open since before, is refused in words and nothing is kept.
+ *
+ * GAME IDEAS (SLPPRO1, 17 Nov 2026, Travis: "give the slp the opp to suggest
+ * a new game or activity to be built inside the app"): Session games' idea
+ * box sends `kind: "idea"`, at most 500 characters, kept and delivered the
+ * same way with the category "idea" and its own Slack heading.
  */
 export const runtime = "nodejs";
 
 const NO_CALLS = "We don't take call requests. Send us a message, and we'll reply by email.";
 const CATEGORIES = new Set([
-  "dashboard", "app", "question", "affiliate", "general", "bug", "feature", "content", "praise",
+  "dashboard", "app", "question", "affiliate", "general", "bug", "feature", "content", "praise", "idea",
 ]);
+const IDEA_MAX = 500;
 // Keep the append, cap and expiry together so a failed second request cannot
 // leave feedback stored indefinitely. This preserves the existing inbox key.
 const STORE_FEEDBACK = `
@@ -46,8 +52,12 @@ export async function POST(req: NextRequest) {
   }
 
   if (body.kind === "call") return NextResponse.json({ ok: false, error: NO_CALLS }, { status: 400 });
-  if (body.kind !== undefined && body.kind !== "feedback") {
+  if (body.kind !== undefined && body.kind !== "feedback" && body.kind !== "idea") {
     return NextResponse.json({ ok: false, error: "Choose feedback." }, { status: 400 });
+  }
+  const idea = body.kind === "idea";
+  if (idea && typeof body.text === "string" && body.text.length > IDEA_MAX) {
+    return NextResponse.json({ ok: false, error: `Please keep your idea to ${IDEA_MAX} characters.` }, { status: 400 });
   }
   for (const [field, max] of [["text", 2000]] as const) {
     if (body[field] !== undefined && (typeof body[field] !== "string" || (body[field] as string).length > max)) {
@@ -68,9 +78,9 @@ export async function POST(req: NextRequest) {
     if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) account = parsed;
   } catch { /* the session's reply address is enough */ }
   const rec = {
-    kind: "feedback",
+    kind: idea ? "idea" : "feedback",
     text,
-    category: typeof body.category === "string" && CATEGORIES.has(body.category) ? body.category : "general",
+    category: idea ? "idea" : typeof body.category === "string" && CATEGORIES.has(body.category) ? body.category : "general",
     replyEmail: session.email,
     slpName: typeof account.name === "string" ? account.name.slice(0, 120) : "",
     slpCode: typeof account.code === "string" ? account.code.slice(0, 48) : "",
@@ -93,9 +103,9 @@ export async function POST(req: NextRequest) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          text: "SLP feedback",
+          text: idea ? "SLP game idea" : "SLP feedback",
           blocks: [
-            { type: "header", text: { type: "plain_text", text: "SLP feedback" } },
+            { type: "header", text: { type: "plain_text", text: idea ? "SLP game idea" : "SLP feedback" } },
             { type: "section", fields: [
               { type: "plain_text", text: `From: ${rec.slpName || "SLP"}\nReply to: ${rec.replyEmail}` },
               { type: "plain_text", text: `About: ${rec.category}\nCode: ${rec.slpCode || "profile not finished"}` },

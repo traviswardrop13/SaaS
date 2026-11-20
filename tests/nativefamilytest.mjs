@@ -8,6 +8,8 @@ const server=createServer((req,res)=>{
  let p=new URL(req.url,'http://local').pathname;
  if(p==='/for-slps'){res.writeHead(308,{location:'/'+new URL(req.url,'http://local').search});res.end();return;}
  if(p==='/')p='/for-slps.html';
+ // /plans is the same page (next.config.js, 20 Nov 2026).
+ if(p==='/plans')p='/for-slps.html';
  if(p==='/for-parents')p='/parents.html';
  if(['/slp','/slp-login'].includes(p))p+='.html';
  if(p.startsWith('/api/')){res.writeHead(200,{'content-type':'application/json'});res.end(JSON.stringify(p==='/api/slp/auth/me'?{ok:true,email:'clinician@example.test',code:'test',familyKey:'fixture'}:{ok:true,clients:[]}));return;}
@@ -39,7 +41,7 @@ async function fresh(mode,profile=true,sibling=false){
  const page=await ctx.newPage();page.setDefaultTimeout(4000);return{ctx,page,requests};
 }
 try{
- for(const route of ['/','/for-parents','/parents.html','/slp-login.html','/slp.html','/for-slps.html','/slp-login','/slp','/for-slps']){
+ for(const route of ['/','/plans','/for-parents','/parents.html','/slp-login.html','/slp.html','/for-slps.html','/slp-login','/slp','/for-slps']){
   const {ctx,page,requests}=await fresh('native');
   try{await page.goto(origin+route,{waitUntil:'domcontentloaded'});await page.waitForURL('**/today.html',{waitUntil:'domcontentloaded',timeout:1200}).catch(()=>{});ok('native '+route+' returns to family Home',new URL(page.url()).pathname==='/today.html',page.url());ok('native '+route+' never starts clinician API calls',requests.length===0,requests);}finally{await ctx.close();}
  }
@@ -47,7 +49,7 @@ try{
   const {ctx,page}=await fresh(config.mode,config.profile,config.sibling),dest=config.profile&&!config.sibling?'/today.html':'/onboarding.html';
   try{await page.goto(origin+'/slp-login.html',{waitUntil:'domcontentloaded'});await page.waitForURL('**'+dest,{waitUntil:'domcontentloaded',timeout:1200}).catch(()=>{});ok(JSON.stringify(config)+' resolves active family setup',new URL(page.url()).pathname===dest,page.url());}finally{await ctx.close();}
  }
- for(const mode of ['browser','web-bridge'])for(const route of ['/','/for-parents','/parents.html','/slp-login.html','/slp.html','/for-slps.html']){
+ for(const mode of ['browser','web-bridge'])for(const route of ['/','/plans','/for-parents','/parents.html','/slp-login.html','/slp.html','/for-slps.html']){
   const {ctx,page}=await fresh(mode);try{await page.goto(origin+route,{waitUntil:'domcontentloaded'});await page.waitForTimeout(100);ok(mode+' retains '+route,new URL(page.url()).pathname===route&&await page.locator('body').isVisible(),page.url());}finally{await ctx.close();}
  }
  for(const mode of ['native','browser']){

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { readSession, liveSession, kvConfigured } from "@/lib/slpAuth";
 import { rateLimit } from "@/lib/rateLimit";
-import { currentPlan, openCaseloadPortal, StoreUnavailable } from "@/lib/caseload";
+import { currentPlan, openCaseloadPortal, teamOwnerOf, StoreUnavailable, CLINIC_NAME } from "@/lib/caseload";
 
 /**
  * POST /api/slp/plan/portal → { ok, url }: Stripe's billing portal for the
@@ -21,6 +21,11 @@ import { currentPlan, openCaseloadPortal, StoreUnavailable } from "@/lib/caseloa
  * period — the month of a Sona Pro plan, the year of a retired one, or the
  * free trial — and the written promise that families keep Premium until then
  * rests on that, not on the Stripe account's default settings.
+ *
+ * SONA CLINIC (17 Nov 2026) is the OWNER's to manage: its mirror is under
+ * the owner's address, so the owner's Manage billing opens it, and a member
+ * (who has no mirror of their own) is told who manages it — never handed the
+ * owner's billing page.
  */
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -38,12 +43,16 @@ export async function POST(req: NextRequest) {
   let customer = "";
   try {
     // Sona Pro's customer first (the plan on sale since 12 Nov 2026), then
-    // the retired yearly plans'. Pro is bought under the same customer as
-    // either of those where one exists, so one page still shows everything.
-    for (const kind of ["pro", "self", "caseload"] as const) {
+    // Sona Clinic's, then the retired yearly plans'. Each is bought under the
+    // same customer as any other where one exists, so one page still shows
+    // everything.
+    for (const kind of ["pro", "clinic", "self", "caseload"] as const) {
       const rec = await currentPlan(s.email, { stripe, kind });
       customer = (rec && rec.customer) || "";
       if (customer) break;
+    }
+    if (!customer && await teamOwnerOf(s.email)) {
+      return NextResponse.json({ ok: false, error: "Your clinic's owner manages billing for " + CLINIC_NAME + "." }, { status: 404 });
     }
   } catch (e) {
     if (e instanceof StoreUnavailable) {

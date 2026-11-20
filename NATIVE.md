@@ -582,16 +582,21 @@ To switch it on (Travis, once; nothing to build in Xcode):
 Existing payers show up as they come: the next time the app opens, it hands
 RevenueCat the email, and their next renewal brings it to Sona.
 
-## The clinician plans are web-only (24 Sep 2026; re-priced 29 Sep 2026; Sona Pro from 12 Nov 2026)
+## The clinician plans are web-only (24 Sep 2026; re-priced 29 Sep 2026; Sona Pro from 12 Nov 2026; Sona Clinic from 17 Nov 2026)
 
 Sona Pro ($19.99 a month, 14 days free the first time: the dashboard, the
-clinician's own phone and every family on their link) — and before it "Sona
-Premium for you" and "Sona Premium for your caseload", still renewing for
-those who bought them — are sold to clinicians on speaksona.com, from the dashboard — and the
+clinician's own phone and every family on their link) and Sona Clinic ($99 a
+month, the same for every clinician a practice owner adds, up to 25 with the
+owner; one free trial per clinician across both plans; hidden from sale since
+18 Nov 2026, `CLINIC_ON` in `lib/caseload.ts`) — and before them
+"Sona Premium for you" and "Sona Premium for your caseload", still renewing
+for those who bought them — are sold to clinicians on speaksona.com: picked
+on `/plans`, paid on Stripe's checkout (since 18 Nov 2026 the dashboard
+itself shows no price or plan card, only Settings' Manage billing) — and the
 dashboard never renders in the FAMILY app: `slp.html` sends that native shell
 straight to Home before it draws or calls anything. So no clinician buy button
-can appear in the family app, **there is no App Store product for either plan,
-and none should be created.** The clinicians' own app ("Sona for SLPs",
+can appear in the family app, **there is no App Store product for any of these
+plans, and none should be created.** The clinicians' own app ("Sona for SLPs",
 16 Nov 2026, below) does show the dashboard, and sells nothing in it. The clinician's own Premium reaches their phone the
 same way a family's coverage does: by a link, and the server's answer to the
 ticket it earns.
@@ -607,6 +612,17 @@ access bought elsewhere only while the app also sells Premium itself and never
 points a parent at buying outside it — so no page inside the app may mention
 the clinician plan or a web price.
 
+**The parents' price on `/plans` is a hand-typed copy of App Store Connect's
+(17 Nov 2026).** The clinicians' plans page (`public/for-slps.html`, served at
+`/plans`) says, under the Sona Pro card: "Parents who buy Sona on their own
+pay $9.99 a month in the iPhone app." That figure lives in App Store Connect,
+not in this repo, and a static page cannot ask RevenueCat for it. **If you
+change the monthly price in App Store Connect, change that line too** (and
+its pin in `tests/shiptest.mjs`), the same day. It hides itself whenever the
+family app goes free (`/api/charter` answers `free: true`), and it never
+appears inside either app: `/plans` is a website page, and the clinicians'
+app sends every page but the dashboard to the dashboard.
+
 
 ## Sona for SLPs: the clinicians' own app (SLPAPP1, 16 Nov 2026)
 
@@ -620,10 +636,24 @@ notes) is in `native/slp-ios/README.md`. In short:
   agent. The website reads that (`lib/slpApp.ts`): the dashboard renders, any
   other page goes to it, and every price, offer and billing door is hidden.
 - Sign-in by the 6-digit code in the sign-in email (the link opens in Safari,
-  which an app's cookies never see). The app's sign-in is the free-dashboard
-  door, as the homepage's is.
+  which an app's cookies never see). Since SLPPRO1 (17 Nov 2026) the
+  dashboard needs Sona Pro or Sona Clinic in the app too: an account without
+  either sees one plain card (no price, no trial, nothing to buy), and App
+  Review's account stays open. Accounts made before 12 Nov 2026 keep their
+  free dashboard. `sona.js` lets `/slps` through (`/slp.html` redirects
+  there; before 17 Nov 2026 the app reloaded forever).
+- **Session games' Play now** (SESSPLAY1, 17 Nov 2026) runs Sona's games in
+  the app, and they listen: the next build needs `NSMicrophoneUsageDescription`
+  in Info.plist ("Sona listens to the child's practice words during a game.
+  Audio stays on this device and is never saved."). The game pages it needs
+  are allowed in the app only while the dashboard has opened a session.
 - **App Review's sign-in:** set `SLP_REVIEW_EMAIL` and `SLP_REVIEW_CODE` in
   Vercel before submitting; the reviewer types that email, taps Email me a
-  code, and types the code. Nothing is emailed to it. Delete both to close it.
-- Delete your account (Settings) and Block (the community) are Apple's rules,
-  and work on the website too.
+  code, and types the code. Nothing is emailed to it, and that address alone
+  gets an open dashboard (recognised by the address, never by anything the
+  request says). Delete both to close it.
+- Delete your account (Settings) is Apple's rule, and works on the website
+  too. **The community, and Block with it, was removed on 17 Nov 2026**, so
+  the app has no user-generated content. If App Store Connect's age rating
+  ("user-generated content") or App Privacy (User Content) answers were
+  already given with the community in mind, changing them is Travis's.

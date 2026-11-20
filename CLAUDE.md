@@ -1691,11 +1691,145 @@ decided and consumed in the same breath — so a parent who backed out of the
 grown-ups gate in between lost the only ask Sona will ever make, while the
 funnel counted an impression nobody saw. `iaptest.mjs` pins both halves.
 
-### Sona Pro — the one plan a clinician can buy (12 Nov 2026)
-**Free dashboard signup (13 Nov 2026).** Clinicians who confirm the email
-from the homepage get the dashboard without a subscription. Sona Pro still
-covers every game for the clinician and every family on their link. Existing
-subscriptions and the terms of the family plans still apply.
+### Sona Pro only, sold on the website (SLPSITE1, 18 Nov 2026)
+Travis, 18 Nov 2026: "i actually wanna get rid of the 99 or hide it for
+now", "and they dont purcahse in the dashboard. just on the site", and "you
+can take out the dont type a childs name box". This supersedes every line
+below that puts Sona Clinic on sale, or a plan page, plan card, price or
+trial button in the dashboard.
+- **Sona Clinic is hidden, not deleted.** One switch: `CLINIC_ON = false` in
+  `lib/caseload.ts` and `var CLINIC_ON = false` in `public/for-slps.html`,
+  pinned equal (`shiptest`, `caseloadtest`). While off: `/api/slp/plan`
+  refuses `{ plan: "clinic" }` (409 `{ unavailable }`, "Sona Clinic isn't
+  available right now.") before Stripe or the store is asked, and its GET
+  offers no Clinic (`clinic.on` and `clinic.offer` false, no name, price,
+  seats or trial); `/api/slp/team` adds nobody (403 `{ unavailable }`); the
+  lock and the own-phone refusals name Sona Pro alone (`planNames()`);
+  `/plans` shows the Sona Pro card alone; the Terms render no Clinic
+  paragraph (each kept behind `clinicOn()` in `app/terms/page.tsx`, back
+  word for word with the switch); the privacy page names no Clinic. Nothing
+  a clinician reads says "$99". **Still honoured while off:** a Clinic plan
+  that somehow exists keeps covering whoever it covers (`clinicStatus` is
+  unchanged), and remove, leave and Delete my account always work.
+- **Turning it on** is Travis's go: both values `true`, and the privacy
+  page's Clinic lines put back from commit `72a51019` (the section "Sona
+  Clinic: a practice's plan for its clinicians"; the owner's two numbers in
+  the SLP-sharing section; "or Sona Clinic" in Payment information and in
+  Stripe's line; the owner's list in the data store and retention lists; the
+  invitation in Email delivery, twice; the Cancel answer's owner sentence).
+  Know too: a Sona Pro holder can then buy Clinic straight from `/plans`
+  (no page in between), and pays for both until they cancel Pro; Settings
+  and the thank-you say so (`alsoRenews` "pro", below), nothing earlier.
+- **The test seam:** `SONA_CLINIC_FORCE=1` turns `clinicOn()` on where
+  `NODE_ENV` is not "production" (a laptop, a test; never a Vercel build,
+  previews included). `caseloadtest` sets it so the Clinic checks still play
+  the dormant code, and turns it off for its "Sona Clinic hidden" block.
+- **The dashboard sells nothing, on the web or in the app.** No "Your plan"
+  page or menu item, no top-bar offer, no plan card, price or trial button.
+  The menu: Session games, Today, Caseload, Settings (and Your clinic for a
+  Clinic owner). A **locked account on the web** sees one centred screen
+  (`#locked`) in place of the dashboard's pages: Echo, "Your dashboard comes
+  with Sona Pro.", "Start your 14-day free trial on speaksona.com." (the
+  length is the server's; once the trial is spent, "You've had your free
+  trial. Get Sona Pro on speaksona.com.") and a teal **See plans** to
+  `/plans#pricing`; Settings (Sign out, Delete my account) and Talk to
+  Rachel stay reachable, and Add a family or any gated action shows that
+  screen. The clinicians' app keeps its plain locked card (`#applock`, no
+  price, no link). **A paying or trialing clinician** sees in Settings one
+  line ("Sona Pro · free trial until Dec 2", "Sona Pro · renews Dec 18"; a
+  yearly plan still renewing, "Your yearly plan · renews …") and, on the web
+  only (`data-sells`), **Manage billing**. **Don't pay twice** (review, 18
+  Nov 2026): the plan GET's `alsoRenews` (`lib/caseload` `alsoRenews`) says
+  an older plan still renews beside the one now on, and under the line
+  Settings says "Your yearly plan still renews too. Cancel it in Manage
+  billing so you don't pay for both." (a retired yearly plan beside Sona
+  Pro or an owned Sona Clinic) or "Sona Pro still renews too. …" (Pro
+  beside an owned Clinic); the thank-you back from Stripe adds the same
+  sentence. Never for a Pro-era account (no yearly plan was ever sold it). A Clinic member's line and Leave
+  show in the app too (they sell nothing). The own-phone card ("Email me my
+  Premium link") moved to Settings, web only as before. Back from Stripe, a
+  one-line thank-you (or "Check again") shows over whatever page opens, and
+  goes once the clinician moves on; while that payment is still unconfirmed
+  ("Check again"), the locked screen shows only "Checking your payment…",
+  no trial line and no See plans (which could start a second subscription),
+  and a confirmed return for an account with no code yet opens its one
+  form. The caseload-link card's "With Sona Pro
+  they get every game." links to `/plans#pricing` (web only). Delete my
+  account's "still renews" answer and the Terms say "Settings → Manage
+  billing".
+- **Stripe's checkout is the website's payment page, so TRIALGO1 stays and
+  grows:** a brand-new account goes from its email link straight to the
+  trial checkout, and so does any account the plan GET offers that plan to
+  (`pro.offer`: locked, or an open dashboard whose families are not covered,
+  such as the free-dashboard cohorts, which have no other way to buy now)
+  that arrives with `localStorage "sona.slp.wantplan"` (written by `/plans`
+  as `{plan, at}`, and only once acted on: the email was sent, or a
+  signed-in visitor pressed a button; counted for an hour, since the link
+  lasts 15 minutes, and an older, bare or unreadable value is dropped
+  unread, so a clinician who only looked never lands on Stripe days later):
+  with the trial if it is still theirs, else charged from day one. The pick
+  and `?start=trial` are cleared once the page has decided (before it
+  leaves for Stripe); a new account whose plan read fails keeps both and
+  sees "Couldn't check your plan. Try again." (Try again goes on), never
+  Session games as if open. A pick with nothing left to sell says so in a
+  toast ("Sona Pro is already on.", "Your dashboard and families are
+  already covered."). "clinic"
+  counts only while the plan GET offers Clinic (`clinic.on` and
+  `clinic.offer`), else Pro. Never in the clinicians' app. Stripe's success
+  and cancel still return to `/slp.html…#premium`, which the dashboard
+  reads as Settings (open) or the locked screen (locked; `#applock` in the
+  app); a refused or failed checkout shows its reason under See plans.
+- **`/plans`:** #302's words and trial form; `#pricing` is the Sona Pro card
+  alone, centred (`.plans.one`), under the heading "Simple pricing." ("Pick
+  your plan." with the switch on), with the parents' $9.99 line; the Clinic
+  card waits inert in `<template id="planClinicTpl">` (not on the page, not
+  read aloud), and the kid-side line says "every game while your Sona Pro
+  plan is on." ("Sona Pro or Sona Clinic" with the switch on). A plan
+  button only picks (held on the page); the trial form, once the email is
+  sent, records that pick, else "pro", so the email link goes to checkout
+  even for an account that exists but is locked (a failed send records
+  nothing). **Already signed in** (the locked screen's See plans): the page
+  asks `/api/slp/auth/me` once, and on its yes every trial button (a plan
+  button, the form's, the closing one) remembers the plan and goes straight
+  back to `/slp.html`, which opens the checkout: no second email; the form
+  hides its email box and says "You’re signed in. This opens your free
+  trial." It then asks `/api/slp/plan`, and when the trial is spent every
+  button says "Get Sona Pro" and its small print "$19.99 a month, charged
+  today. Cancel anytime." (the server's figures), never "free".
+  `landingtest` plays all of it.
+- **The sign-in email** (`sendMagicEmail`, `lib/slpAuth.ts`) is "Your Sona
+  sign-in link" for everyone. A new address: "… New to Sona? You'll start
+  your free trial first." and the three first steps. An existing account,
+  which may be locked: "Here's your link to your Sona dashboard. Every
+  family you send home gets Sona's free version." and no steps (it said
+  "Your Sona dashboard is ready … Add a child"). `caseloadtest` pins both.
+- **Session games** lost the grey "Don't type a child's name…" box. One
+  small muted line stays under "What do they love?", beside the character
+  count: "No names, please." (`#playNote`, still the box's spoken
+  description). The page still refuses a caseload child's name ("Take out
+  “Mia” first"). The removed box also said what goes to Anthropic; the
+  privacy page's Session games section and `/plans`' storage answer still
+  say it (whether the dashboard should again is Rachel's and Travis's).
+- **A little more life (SLPLIFE1, 18 Nov 2026**, Travis: "a little bit more
+  life to this dashboard. not as many colors as before but this is too dull
+  and lifeless"). Still white everywhere; teal the one main colour; Echo
+  waves hello beside Today's greeting (and keeps an empty page company, at
+  most one Echo a screen); page titles in Sona's own rounded heading font
+  (Baloo 2, `/fonts.css`); teal line icons in the menu and on Today's
+  groups (no tile behind a menu icon, no colour per item); one warm accent,
+  butter yellow, in tints only (the week's glow, every child's avatar the
+  same tint). Never orange (the kids' speech-sound colour), never a colour
+  that says how a child is doing. `slptest` 11 pins it.
+
+### Sona Pro — one clinician's plan (12 Nov 2026)
+**Since 17 Nov 2026 (SLPPRO1, below) the dashboard comes with Sona Pro or
+Sona Clinic, the 14-day trial first, for every account but those made before
+12 Nov 2026 (promised a free dashboard forever) and App Review's.** The
+homepage's free-dashboard signups of 13 to 17 Nov 2026 moved to the trial
+too (Travis, asked: "Move them to the trial"), and no email tells them.
+Every door (the plans page's trial form, the sign-in page, the clinicians'
+app, a Clinic invite, the hidden clinician setup) makes a new account
+`terms: PRO_TERMS`.
 
 **$19.99 a month for the dashboard, every game on the clinician's own phone,
 and every game for every family on their link, with no cap on families**
@@ -1707,51 +1841,158 @@ clients"; asked, he chose **$19.99 a month**, **a 14-day free trial**,
 `STRIPE_PRICE_ID_SLP_PRO` optional.
 - **The trial: 14 days, card up front, once per clinician.** Stripe
   `trial_period_days`, `payment_method_collection: always`, and a trial that
-  ends with no card cancels. Any Pro subscription an email ever had, in any
-  status, spends it (`proStatus().trialAvailable`); a second checkout is
+  ends with no card cancels. Any Pro or Clinic subscription an email ever
+  had, in any status, spends it (`proStatus().trialAvailable`: ONE trial
+  per clinician across both plans since 17 Nov 2026); a second checkout is
   charged from day one and its button says "Get Sona Pro". The checkout's
   own text beside Stripe's button states the terms (no charge today; then
   $19.99 a month until you cancel; cancel in the trial and pay nothing) —
   an automatic renewal after a free trial is what renewal laws want spelled
   out at the point of purchase. Never "$20", never divided into a smaller
   figure: "$19.99 a month" is what is charged.
-- **The dashboard is part of the plan, for accounts made from 12 Nov 2026
-  only** (`terms: PRO_TERMS`, "pro-2026-11-12", stamped by every route that
-  makes an account). Every older account was told its dashboard was free and
-  keeps it free, forever (`dashboardOpen()`, from the stamp alone, no Stripe
-  call). **The lock is held on the server** (`lib/proGate.ts`): the roster,
-  the homework list, assigning homework, archiving and adding a child answer
-  402 `{ needPlan }`. **Never on a removal**: removing a child, clearing
-  homework and deleting an invite always work, paid or not — a district
-  privacy officer checks that a clinician who stops paying can still take a
-  child off. Never on the family side either (redeem, claim, sync, covered).
-  The page shows the plan in place of Today, Caseload and a child's page;
-  Settings, Community and Talk to Rachel stay open.
+- **The dashboard is part of the plan for accounts made from 12 Nov 2026**
+  (`terms: PRO_TERMS`, "pro-2026-11-12"); who keeps it free, and what a
+  locked account sees, is SLPPRO1's. **The lock is held on the server**
+  (`lib/proGate.ts`, 402 `{ needPlan }`, "Your dashboard comes with Sona Pro
+  or Sona Clinic.", Sona Pro alone while Clinic is hidden): the roster, homework, archiving, adding a child,
+  Session games, Play now and Add a family. **Never on a removal**: removing
+  a child, clearing homework and deleting an invite always work, paid or
+  not — a district privacy officer checks that a clinician who stops paying
+  can still take a child off. Never on the family side either (redeem,
+  claim, sync, covered).
 - **Unlimited, and true** (Travis: "Remove the limit"). A COVERED code has no
-  redeem cap at all — Sona Pro, a yearly plan still renewing, or
-  grandfathered — so "Unlimited families" is now a fact on the dashboard,
-  the clinician page and the Terms. An uncovered code keeps 60, per code and
+  redeem cap at all — Sona Pro, Sona Clinic (owner or joined member), a
+  yearly plan still renewing, or grandfathered — so "Unlimited families" is
+  now a fact on `/plans` and the Terms. An uncovered code keeps 60, per code and
   per clinician; the counters keep counting for a covered one, so a plan
   that lapses meets 60 with the year's real number. The accepted risk: a
   paying clinician's link posted in public gives strangers every game on
   their plan; the remedy is Rotate in Settings.
 - **The yearly plans are retired from sale, not cancelled** (the same rule as
   the family plan's monthly price). `/api/slp/plan` refuses anything but
-  `{ plan: "pro" }` with 409 `{ retired }` ("Reload this page to see Sona
-  Pro"), so a tab showing $59.99 a year never opens a monthly checkout. Every
+  `{ plan: "pro" }` or `{ plan: "clinic" }` with 409 `{ retired }` ("Reload
+  this page to see Sona Pro and Sona Clinic", Sona Pro alone while Clinic is
+  hidden), so a tab showing $59.99 a
+  year never opens a monthly checkout. Every
   yearly subscription keeps renewing at its price and keeps covering what it
   covered; a clinician holding one is offered Pro only for what it does not
-  already cover (`pro.offer`), on the same Stripe customer, and the page
-  says to cancel the yearly plan once Pro is on.
-- The plan page is named **Sona Pro** (nav, crumb, title), at the same
-  `#premium` address Stripe returns to. The top-bar button says **Try Sona
-  Pro free · then $19.99 a month** (or **Get Sona Pro** once the trial is
-  spent), and nothing once there is nothing to sell. The family price line
+  already cover (`pro.offer`), on the same Stripe customer, and once Pro is
+  on Settings says to cancel the yearly plan (`alsoRenews`, SLPSITE1).
+- **Gone since 18 Nov 2026 (SLPSITE1, above): the dashboard has no plan
+  page and no top-bar offer.** What follows is its history. The plan page
+  was **Your plan** (nav, crumb, title; "Sona Pro" before Sona
+  Clinic), at the same `#premium` address Stripe returns to: two cards in
+  SLPCLEAN1's clean look, Sona Pro and Sona Clinic, each its name, one short
+  line, the price, two or three short bullets (Pro's: Session games and who
+  practiced at home, unlimited families on your link, every game on your own
+  phone; never "plan sessions" or "draft homework"), one button and the
+  trial terms in small print. The top-bar button says **Try Sona Pro free ·
+  then $19.99 a month** (or **Get Sona Pro** once the trial is spent), and
+  nothing once there is nothing to sell. The family price line
   ("Families you don't cover can buy Premium themselves…") went with the
-  caseload add-on: with Pro every family on the link is covered.
+  caseload add-on: with Pro every family on the link is covered, and the
+  dashboard still prints no family price.
+- **One parents' price line, on `/plans` only** (Travis, 17 Nov 2026), under
+  the Sona Pro card: "Families on your link get every game at no cost.
+  Parents who buy Sona on their own pay $9.99 a month in the iPhone app."
+  Shown only while `/api/charter` answers `{ ok: true, free: false }`, so it
+  hides itself when the family app goes free or the route is silent.
+  Exactly "$9.99", never "$10". It is App Store Connect's figure typed by
+  hand: `shiptest` pins it, and `NATIVE.md` says to change it with ASC.
 - **Rachel to review the copy** that tells a clinician what Sona does for
-  their families (the Pro card, for-slps, the sign-in email). Nothing a child
-  is asked to say changed.
+  their families (the Pro and Clinic cards, `/plans`, the sign-in and Clinic
+  invite emails). Nothing a child is asked to say changed.
+
+### Sona Clinic — a practice's plan (17 Nov 2026; HIDDEN since 18 Nov 2026)
+**Not on sale while `CLINIC_ON` is false (SLPSITE1, above).** Everything
+below is built and kept for the day it is switched on.
+**$99 a month, bought on the web by the practice owner. Every clinician
+they add gets everything Sona Pro gives** (their own dashboard, the
+clinicians' app, every family on their link covered, every game on their
+own phone), **and the owner sees the clinicians as sub-accounts** (Travis,
+17 Nov 2026). `CLINIC_*` in `lib/caseload.ts`; `plan: slp-clinic` and `slp:
+<owner email>` on the session AND the subscription, never a `tier`; mirror
+`slpplan-clinic:<owner>`; optional `STRIPE_PRICE_ID_SLP_CLINIC`. "$99 a
+month", never "$99.00" or "$100", never divided per clinician: the seat
+count is a ceiling, not a unit price.
+- **Words.** `acct.clinic` already means the practice's NAME, so in code the
+  membership is **team** (`lib/team.ts`, `/api/slp/team`, `slpteam*` keys);
+  the plan kind and Stripe stamp are `clinic`; the screen says "Sona Clinic"
+  and "Your clinic".
+- **Your clinic is deliberately minimal** (Travis, 18 Nov 2026, shown a
+  busier one inside the old dashboard: "i was having you drastically
+  simplify ... it was simpler and better"). `#team`, in the menu for an
+  owner only, in SLPCLEAN1's look: the heading, one line ("Add the
+  clinicians at your practice. You see how many children each has on Sona
+  and how many practiced in the last 7 days, never a child's name."), one
+  email box and Add, then one plain row per clinician: their name (the email
+  while invited, "You" for the owner), "14 children · 9 practiced this
+  week" (or "Invited" and Resend), and Remove; "4 of 25" is the only count
+  of seats. No eyebrow, footnote, separate explaining cards or Refresh.
+  **A member's Settings card** is one line, "You're on <owner>'s Sona Clinic
+  plan.", and Leave.
+- **The trial is Pro's:** 14 days, card up front, the same text beside
+  Stripe's button, and one trial per clinician across both plans.
+  `CLINIC_SEATS = 25`, the owner included; an invited address holds a seat
+  until it joins or is removed. "Email us to add more" is a manual job, and
+  25 is ours, not Travis's: he confirms it.
+- **A clinician joins from their own inbox, never on the owner's say-so,
+  and the invite never signs anyone in** (the review of 18 Nov 2026: a
+  14-day link that signed in was a key to a clinician's whole caseload in a
+  forwarded email or a shared inbox). The owner types an email (30 invites
+  a day). The invite link (`slpteaminv:<sha256>`, 14 days) opens a page
+  (GET reads only: `noindex`, `no-store`) naming who asks and what the owner
+  will see, with one **Join your clinic** button that POSTs, same-origin; a
+  mail scanner's GET joins nobody. Joining writes the seat and, with that
+  clinician's own session in the browser, lands on
+  `/slp.html?joined=team#premium`; otherwise on the sign-in page ("You've
+  joined your clinic's Sona plan. Sign in with the email your invite went
+  to."), where the ordinary 15-minute link or code signs them in (a new
+  account is PRO_TERMS, and the email list hears of it there, under the
+  consent line, never from the invite). Only the newest link works: Resend
+  retires the older one (the seat keeps its hash, `inv`). Refused, writing
+  nothing: an owner whose plan is off ("Your clinic's plan isn't on right
+  now"; the link stays good) and a clinician with their own live Clinic
+  plan. Add never says whether an address is on another practice's plan
+  (that told any owner who is where); the Join page tells only the invitee
+  that joining takes them off it. A store that does not answer spends no
+  link. A member is
+  covered only while their row is `active`, `slpteam-of:<member>` names that
+  owner, and the owner's plan is live (`clinicStatus()`, read by
+  `planStatus`, `selfStatus`, `dashboardOpen` and `covered()`, so the family
+  caps lift too). One team at a time; joining another leaves the first.
+  Leave is on a member's Settings (and was on Your plan, until 18 Nov 2026); Remove always works, plan
+  or no plan.
+- **When the owner's plan ends, the team locks with it:** a member made from
+  12 Nov meets the lock and their families drop to the free version; an
+  account made before 12 Nov keeps its free dashboard. No grace period
+  (Travis's call).
+- **Pro → Clinic is a second subscription.** Stripe's portal cannot swap
+  plans, so a Pro holder buys Clinic as a second plan (from `/plans`
+  straight to Stripe, since 18 Nov 2026) and, once it is on, Settings and
+  the thank-you say "Sona Pro still renews too. Cancel it in Manage billing
+  so you don't pay for both." (`alsoRenews`). Only the owner
+  has Manage billing; a member's portal answers "Your clinic's owner manages
+  billing for Sona Clinic."
+- **Delete my account** is refused while a Clinic plan renews; an owner's
+  delete ends their team, a member's leaves it. An owner who cancelled can
+  still delete before the paid month ends, and that ends every member's
+  coverage that day: the delete card and the Terms say so. Refusing it
+  until the month ends, or keeping the team to the end of the month, is
+  Travis's call. `/leads.html` shows clinic
+  owners and members, and whether each account's dashboard is free.
+- **Web only, like Pro.** In the clinicians' app a member's Settings card
+  and the owner's Your clinic page show, with no price, offer or billing
+  (the member's line names the plan, as the app's locked card names Sona
+  Pro); everything that sells carries `data-sells`.
+- **Neither card names the Sona for SLPs app**: it is not on the App Store
+  yet. Naming it once it is live is Travis's.
+- **Open, Travis's:** invited clinicians become GoHighLevel contacts
+  (`sona-team-invite`); a member sees the owner's renewal date; the
+  free-forever cohort is shown the Clinic offer.
+  **Rachel's:** the invite email and the owner-view sentence, and whether
+  the family consent (`join.html`, which names only "your child's speech
+  therapist") should name the practice owner.
 
 The history below is still the rule for every account and subscription made
 under it.
@@ -1830,7 +2071,8 @@ own plan's is `STRIPE_PRICE_ID_SLP_SELF`. Both optional.
   covered family's Premium reaches the iPhone app; the cached answer
   (`sona.caseplan.v1`) never travels, and the server is asked afresh.
 - **The clinician earns nothing on their caseload, ever** — the creator-only
-  rule below is unchanged, and the Premium page says so in words.
+  rule below is unchanged, and the Terms say so in words (the dashboard's
+  plan page did too, until it went on 18 Nov 2026).
 - **Gone with the add-on on 12 Nov 2026** (every family on a Pro link is
   covered): **The family price, on the Premium page, comes with its conditions** —
   "on the web, $59.99 a year for the first 50 families" (price and cap from
@@ -1955,11 +2197,12 @@ the device earned by redeeming code + key (`Sona.caseRefresh()`, re-asked every
 6 hours; only an authoritative answer changes anything).
 
 **SELLING TO SLPs AGAIN, FROM 12 NOV 2026** (Travis: "i needa get this
-setup to sell to slps"). The homepage at `/` offers clinicians a free dashboard.
-The family landing page moved to `/for-parents`, linked from the clinician
-page's footer. `/for-slps` redirects to `/` with campaign parameters intact.
-`llms.txt` and family setup still speak to parents. Marketing replay follows
-the family landing page to `/for-parents` and stays off the clinician homepage.
+setup to sell to slps"). Since 17 Nov 2026 `/` is the clinicians' packet
+opt-in and `/plans` their landing page (below). The family landing page
+moved to `/for-parents`, linked from both clinician pages' footers.
+`/for-slps` redirects to `/` with campaign parameters intact. `llms.txt` and
+family setup still speak to parents. Marketing replay follows the family
+landing page to `/for-parents` and stays off both clinician pages.
 
 **THE SLP SIDE WAS THE CHANNEL, 21 Sep to 22 Oct 2026** (Travis, 21 Sep
 2026: "im keeping it free. targetting slps first"; since 22 Oct speaksona.com
@@ -2082,13 +2325,60 @@ a row. A single-use email link opens the dashboard. The signup
 page has no prices or checkout, and describes the AI homework draft, family
 links, and clinician community. `tests/landingtest.mjs` drives both pages.
 Its share image comes from `tools/og/og-slp.html` (`og-slp.png?v=3`).
+**`/` is a free packet for an email; the plans are at `/plans`** (Travis, 17
+Nov 2026; the free dashboard this page offered from 13 Nov is reversed,
+under Sona Pro). Both keep the clinician page's look ("use the same look we
+currently have"), and every email box asks for an email and nothing else
+(14 Nov 2026: "just have it be your email"), labelled "Your work email",
+"you@yourclinic.org" (an example that "motivates them to put in their work
+email"). `landingtest` drives both.
+- **`/` serves `public/packet.html`**: a free printable home-practice packet.
+  Its first script is for-slps' app guard (the FAMILY iPhone app opens `/`
+  on every launch). "Send me the free packet", the tips line, Rachel's
+  settled line, "No thanks — see the plans →", no price. It posts
+  `/api/lead` (`role: "slp"`, `source: "slp-packet"`, ad tags flat), fires
+  `Lead`, and goes to `/plans?packet=1#pricing`; the email never rides in a
+  URL. `lib/packet.ts` sends ONE email with the packet's link (`packetmail:
+  <email>`, a year; never to an unsubscribed address; skipped quietly without
+  `UNSUB_SECRET`, `EMAIL_POSTAL` or mail; tag `sona-packet`), never the
+  parents' series.
+- **`/plans` serves `public/for-slps.html`** (canonical `/plans`), the
+  clinicians' page with SLPPRO1's words (below): the hero (Echo beside a
+  real Fruit Slice screen), the lede "Play Sona games in your sessions,
+  share the app with clients, and see who practiced at home.", the form's
+  "Start your free trial" with "14 days free, then $19.99 a month. Cancel
+  anytime.", four cards ("Pick Sona games for each session", "Share the app
+  with clients", "See who practiced at home", "Send homework home"), then
+  the prices (`#pricing`): a Sona Pro card and a Sona Clinic card (the Sona
+  Pro card alone while Clinic is hidden, SLPSITE1), every
+  typed figure pinned to `lib/caseload.ts` by `shiptest`, the trial's terms
+  under each, and the parents' $9.99 line (Sona Pro, above). A plan button
+  only picks the plan ("pro" or "clinic", written to `localStorage`
+  "sona.slp.wantplan" as `{plan, at}` once the link is sent, which TRIALGO1
+  reads once within the hour) and brings the visitor to the one form (a
+  signed-in visitor goes straight back to `/slp.html`, SLPSITE1) (`flow: "trial"`), which fires `InitiateCheckout` once the link is
+  sent, never `Lead` (the opt-in owns it). Checkout opens from the email
+  link (TRIALGO1), signed in, never from a dashboard page (SLPSITE1). `?packet=1` shows "Your home-practice packet is
+  ready. Open it →".
+- **Never reuse `/for-slps`.** It has been a cached PERMANENT 308 to `/`
+  since 12 Nov 2026, so browsers hold it; it stays, and nothing links to it.
+  `/packet` serves the printable.
+- **The packet is generated, and it is Rachel's.**
+  `public/home-practice-packet.html` (`noindex`) is built from `sona.js`
+  `WORDS` by `node tools/packet/build-packet.mjs` (`--check` says it is up
+  to date): single words, one sound per page, NEVER_SAY and the held medial
+  T and V words left out, the app's age per sound with "the clinician's
+  judgment comes first". Never hand-edit it. The lists, the ages and the
+  parent guide (a draft) are Rachel's to approve, and nothing may say she
+  reviewed it until she has. Share cards: `node tools/og/render-og.mjs`
+  (`og-slp.png?v=4`, `og-packet.png`).
 
 **Every clinician proves the inbox before the dashboard opens** (Travis,
 13 Nov 2026, from the audit's B2/B3/B9). The sign-in page and the hidden
 clinician setup no longer make an account or sign a brand-new email in on
 the spot: `/api/slp/auth/request` only emails the link, and the verify
-route makes the account (Sona Pro terms from those doors, the free dashboard
-from the homepage's). **The CRM hears of a new address as soon as its email
+route makes the account (Sona Pro terms, from every door since 17 Nov
+2026). **The CRM hears of a new address as soon as its email
 is sent, before the link is opened** (Travis, 16 Nov 2026: "I want every
 email to go to high level"; `tellCrmEarly`, marked `slpcrm:<email>` so the
 verify route never sends the same lead twice); an address not proved yet
@@ -2102,34 +2392,17 @@ never a session. The email greets an account by its own name, never one
 the caller sent; one IP may ask for 20 links an hour (`slpauth`, besides 5
 an email); and a `role: "slp"` lead is never put in the parents' welcome
 series. Still open, Travis's: repeat Pro trials with a new address (B13),
-and a button page so a school's link scanner cannot use the link up.
+and a button page so a school's link scanner cannot use the link up (the
+Clinic invite has one since 18 Nov 2026).
 `caseloadtest`, `slpapi`, `slpcode` and `nurturetest` play it.
 
-**Plan sessions (PLANDAY1, 14 Nov 2026)** (Travis: "auto plan sessions and
-activities for the upcoming day"; "build the planner"). The dashboard's
-`#plan-day` page, in Workspace before Draft homework, open before a family
-link exists. The clinician lists tomorrow's sessions, up to 8: a child from
-the caseload (sound, position and age range filled in from their homework
-or focus) or a session typed by initials. Each has a sound, word position
-(vocalic R only for R, blends only for R, S and L), age range (3-4, 5-6,
-7-8, 9+) and length (20, 30 or 45 minutes). "Plan my day" posts ONLY those
-four choices per session to `/api/slp/sessions/plan` (`lib/dayPlan.ts`
-rebuilds each field by field; signed in, same-origin, 12 an hour, the
-dashboard gate), which asks the AI for 2 or 3 play-based activities a
-session and refuses a reply of the wrong shape. The page joins names,
-initials and a caseload child's home practice (days of the last 7, last
-practiced) to the ideas locally, in one editable outline with Copy.
-Nothing is assigned or sent to a family; the plan lives in the tab. **For
-Rachel:** the prompt (`PLAN_PROMPT`) and the activities it suggests are
-hers to review; it lists no practice words (the clinician picks them) and
-never diagnoses, sets goals or scores. `dayplantest` and `slpworkflowtest`
-play it.
-
-**AI homework draft** lives at `/slps#homework-draft`, including before
-a clinician sets up a family link. The clinician selects the sound, position,
-and rep count. Only those three selections go to Anthropic. The clinician
-can edit and copy the draft. Drafting does not assign homework or send a
-note to a family. The original homework composer still handles assignments.
+**Gone since 17 Nov 2026, replaced by Session games (SLPPRO1, below):**
+Plan sessions (PLANDAY1, 14 Nov 2026: up to 8 sessions' sound, position,
+age range and length to the AI, `lib/dayPlan.ts`, `/api/slp/sessions/plan`,
+`dayplantest`), the AI homework draft (`/api/slp/homework/draft`: sound,
+position and rep count to the AI) and Plan activities (SLPCLEAN1). Their
+addresses (`#plan-day`, `#homework-draft`, `#plan`) open Session games; the
+homework composer still assigns homework.
 
 **SUPERSEDED on 12 Nov 2026 (above): /for-slps is findable again.**
 **speaksona.com is only for parents, and does not look for therapists at
@@ -2150,8 +2423,8 @@ The site is built to be read:
 - `app/robots.ts`: every crawler welcome, the AI assistants' by name; only
   `/api/` and `/admin/` blocked. Never block a `noindex` page there: a
   blocked crawler never reads the noindex.
-- `app/sitemap.ts`: the clinician homepage, `/for-parents`, privacy and
-  the Terms; never an app screen or a `noindex` page.
+- `app/sitemap.ts`: `/` (the packet opt-in), `/plans`, `/for-parents`,
+  privacy and the Terms; never an app screen or a `noindex` page.
 - `app/llms.txt/route.ts`: Sona in plain text for AI assistants, every line
   one the parent page already says. Rachel's settled line word for word, no
   dollar figure, no count of games or books, and the cost line is the
@@ -2181,9 +2454,9 @@ nobody is sent to the App Store: a parent or "other" is thanked
 on the page ("Sona launches Friday, October 2. We'll email you the moment it's
 ready.", the date Travis emailed the list on 30 Sep) and emailed the same once through Resend (`/api/lead`,
 `launchmail:<email>`; a reply goes to `RESEND_REPLY_TO` when it is set, and
-nowhere otherwise); a speech therapist goes to their dashboard's
-community (`/slp.html#community`) and their sign-in email carries the same
-P.S. Not the web app: Travis chose to wait for the app. When the app is
+nowhere otherwise); a speech therapist went to their dashboard's
+community (until 12 Nov 2026; Community itself went on 17 Nov) and their
+sign-in email carries the same P.S. Not the web app: Travis chose to wait for the app. When the app is
 live, set all three switches to true.
 
 **The family app is locked until launch day** (Travis, 30 Sep 2026: "the
@@ -2214,20 +2487,253 @@ open (an iPhone app in the background) asks the server when it comes back to
 the front and opens the app once Home is no longer the lock page.
 `launchtest` tests the lock switched on and off, whichever way it ships.
 
-**The SLP community shows who is there** (Travis, 25 Sep 2026): the real
-number of SLP accounts and up to a dozen members' first names, newest first,
-only to signed-in members, rebuilt every ten minutes
-(`{slp-community}:members`). Never a last name, an email or an invented
-member.
+**Community is gone from the dashboard** (Travis, 17 Nov 2026). Its page,
+nav item, `/api/slp/community` and both suites went; an old `#community`
+link lands on Today (the plan, when locked). **Delete my account still
+scrubs** the stored `{slp-community}:*` posts, replies and the reports that
+quote them (`lib/slpDelete`), and its dialog still says so. Whether to purge
+the posts already stored (members' first names, shown nowhere now) is
+Travis's.
 
 Still `noindex`, correctly: `slp.html` and `slp-login.html` (a private
 dashboard and its login) and `join.html` (a family's redemption link, which
 carries a credential in the URL). Those are surfaces, not marketing.
-`for-slps.html` was noindex from 22 Oct to 12 Nov 2026, and is indexed again.
+`for-slps.html` was noindex from 22 Oct to 12 Nov 2026, and is indexed again
+(at `/plans` since 17 Nov 2026).
 
 Still absent now that Premium is back (24 Sep 2026): the "working with a
 speech therapist?" card on the plan screen and the trial page; `progtest`
 pins its absence. Bringing it back is a product call, not a cleanup.
+
+## SLPPRO1 / SESSPLAY1: the dashboard needs a plan, and Session games play Sona in the session (17 Nov 2026)
+Travis, looking at the clean dashboard (SLPCLEAN1, below): "i want this to be
+sona pro tho. this is what they access when they create a free trial. also
+the activity planner is not what I am after. what I need it to do is instead
+of telling them something that they need to do to prepare it, I want it
+built into their app so that it's accessible on the SLPs ... almost like
+building a game or something digital, and have it loaded into their app. Or
+just suggesting what game or activity to go and play inside of Sona speech."
+Asked, he answered: the free-dashboard signups since 13 Nov, "Move them to
+the trial"; the in-session tool "picks sona games but also give the slp the
+opp to suggest a new game or activity to be built inside the app"; the
+clinicians' iPhone app, "now they have to have a trial to be inside there".
+This supersedes "Free dashboard signup (13 Nov 2026)", SLPCLEAN1's Plan
+activities and SLPAPP1's free-dashboard door.
+- **The dashboard needs Sona Pro or Sona Clinic** (`dashboardOpen` in
+  `lib/caseload.ts`): Sona Pro trialing, active or in past_due's grace, or
+  Sona Clinic owned or joined while the owner's plan is live
+  (`clinicStatus`). **Kept free, forever, by stamp alone
+  (`dashboardPromised`):** no `terms` (before 24 Sep 2026),
+  `caseload-2026-09` and `premium-2026-09-29` (to 12 Nov 2026). Everyone
+  else needs a plan: `PRO_TERMS` accounts, the homepage's 13 to 17 Nov
+  signups (`FREE_DASHBOARD_TERMS`, kept for those records, made by no door
+  now) and a Pro-era account a free-dashboard link once opened
+  (`freeDashboard: true`, no longer read). One who never had either plan is
+  offered the 14-day trial (card up front, Stripe), so a 13 to 17 Nov
+  clinician meets the trial at their next visit. **Nothing is emailed to
+  them about it** (Travis's to know). Every door makes `PRO_TERMS` now
+  (`finishSignIn`), keeping where the clinician came from; the homepage's
+  door is `flow: "trial"` ("free-dashboard" still accepted from a cached
+  page). App Review's one account (`SLP_REVIEW_EMAIL` and its code) stays
+  open (`reviewEmail`). `caseloadtest` pins it.
+- **Straight to the trial (TRIALGO1, 17 Nov 2026**, Travis: email link,
+  then the card page, then the dashboard; "i dont wanna sell on apple. just
+  thru stipe"). The sign-in that MAKES an account (`finishSignIn`'s
+  `fresh`: the email link, or the code typed on the web) lands on
+  `/slp.html?start=trial`; once the plan answers, a dashboard still locked
+  with the trial there to take opens Stripe's card page at once ("Opening
+  your free trial…"), with no stop on the locked page. The address loses
+  `?start=trial` first, so a reload or Back never opens checkout twice;
+  Stripe's Cancel, a refused checkout or a spent trial shows the locked
+  page and its button. A returning account, and the clinicians' app, never
+  go to checkout by themselves (since 18 Nov 2026 an account offered the
+  plan `/plans` remembered goes too, SLPSITE1). **The checkout is Sona
+  Clinic's** (only while Clinic is on sale) when
+  `/plans` remembered Clinic (`localStorage "sona.slp.wantplan"` =
+  "clinic"), else Sona Pro's; the key is read once and cleared. `slptest`
+  9d, `slpapptest`, `caseloadtest`.
+- **The locked dashboard on the web** (SUPERSEDED by SLPSITE1's locked
+  screen and See plans, 18 Nov 2026) showed Your plan (both plans, each
+  with its trial) in place of Session games, Today, Caseload and a child's
+  page; Settings (Delete my account, Sign out), Your clinic and Talk to
+  Rachel stay open; Add a family opens Your plan; the server holds the lock
+  (`lib/proGate`, under Sona Pro above: `/api/slp/games/pick`,
+  `/api/slp/play` and `/api/slp/family` too), and removals always work.
+- **In the clinicians' app** (`html.slp-app`) a locked account sees ONE plain
+  card (`#applock`): "Your account doesn't have Sona Pro yet." and "Sona Pro
+  opens the dashboard, every game for you, and every game for families on
+  your link.", Sign out and Settings (Delete my account). No price, no trial
+  words, no button or link to buy or to the website (App Store rule 3.1.1),
+  and the top bar is empty beside it. `slpapptest` pins that nothing
+  `data-sells`, no "$", "trial" or link off the app shows there. The app's
+  sign-in tells no one about a trial ("Use the email your Sona account is
+  under."). **Travis's to know:** Apple may question an app whose accounts
+  need a subscription bought on the web (the reader-app rules); the review
+  account is open, and the review note says Sona Pro is bought on
+  speaksona.com.
+- **The clinicians' page** (`for-slps.html`, the homepage until 17 Nov
+  2026, now `/plans`) offers the trial: "Start your free
+  trial" (both buttons), "14 days free, then $19.99 a month. Cancel
+  anytime." beside the first (`lib/caseload`'s `PRO_*`, pinned by
+  `shiptest`), the lede "Play Sona games in your sessions, share the app
+  with clients, and see who practiced at home.", the first card "Pick Sona
+  games for each session", the share picture re-rendered
+  (`og-slp.png?v=4`). No "free dashboard" anywhere: the sign-in email's
+  intro, `slp-login.html`, the Terms, `NATIVE.md` and the app's README.
+- **Session games** (`#play`, first in the menu; `#plan`, `#plan-day`,
+  `#homework-draft` and a child's `/plan` open it). The clinician picks the
+  target sound (Sona's 19), word position (the homework composer's rule:
+  vocalic R only for R, blends only for R, S and L), age band (3-4, 5-6, 7-8,
+  9+) and session length (20, 30, 45), and may type what the child loves
+  (120 characters, under the small "No names, please." line; the page refuses a caseload
+  child's name there). "Start from your caseload" and a child page's
+  "Session games" choose the child's sound, position and age band, never a
+  name. "Find Sona games" posts only those five fields to
+  `/api/slp/games/pick` (`lib/gamePicks.ts`; the planner's guards in the
+  same order, 30 an hour as `slp-games`), which asks `claude-opus-5-5` (low
+  effort, 2000 tokens, no `thinking` field) to pick 3 from **Sona's catalog**
+  (`lib/sonaCatalog.ts`: every game a child can open, the sound's talking
+  story, its bookshelf; `sessiongamestest` holds it to `GAME_ACTS` and
+  `STORY_TALK`, so a game back from Coming soon is one line there). Only
+  known keys, 2 to 4, the first 3 kept; else 502/422 in plain words. Each
+  card: the game's Home picture, name, "Why it fits", "How to use it in
+  session" (2 or 3 steps) and a teal **Play now**. Under it, **"Got an idea
+  for a game Sona should have?"** (500 characters) goes to the Sona team
+  through `/api/slp/feedback` (`kind: "idea"`, category "idea", its own
+  Slack heading): "Sent to the Sona team. Thank you!". `lib/activityPlan.ts`
+  and `/api/slp/activities` are deleted. **For Rachel:** `PICKS_PROMPT` and
+  what it suggests (it lists no practice words: Sona's games choose them for
+  the sound and position), and every catalog line. The privacy page's
+  "Session games" says what reaches Anthropic.
+- **SESSPLAY1: Play now runs the game on the clinician's device**, set to
+  that child's sound. `/api/slp/play` (signed in, same origin, the dashboard
+  gate, 120 an hour) answers a catalog key with the page to open (the
+  catalog's, never the caller's) and an end 12 hours on; only after that yes
+  does the dashboard write this TAB's record, `sessionStorage
+  "sona.sessplay.v1"` = { sound, pos, age, exp, game }, and open the game
+  (a round game's practice page, a Say & Play page, the sound's talking
+  story told whole, or the bookshelf). In `sona.js` (block SESSPLAY1, first
+  thing), while that record is valid: every `localStorage` read and write on
+  the page goes to a box in this tab's sessionStorage (`sona.sp:<key>`),
+  seeded with a temporary child (no name, the band's top age, the one sound
+  and position, set up), so **the device's family storage is never touched**
+  (a family's iPad lent to the session keeps every key); `fetch` reaches
+  only the site's own files and `/api/tts`, and every other `/api` call and
+  beacon is answered on the device, unsent (no progress, report, lead,
+  board, trial or usage event; `track` is silent); `premium()` is true and
+  `canSellHere()` false, so every game, book and the talking story is open
+  and no price, offer or setup shows; any other page (Home, setup,
+  Settings, the price, the Arcade) goes to `/slp.html#play`, so a game's ✕,
+  Back home and end card return to Session games (`today.html`'s first
+  script checks the record too, before its setup check). The mic, the word
+  turn and every clinical rule are the game's own. `slp.html` ends the
+  session as it opens (the record, the box, and any play token or run state
+  the session left, before `sona.js` loads). A record that is broken,
+  expired, more than 12 hours (and 5 minutes) ahead, or for a sound,
+  position or age band that does not exist is no session: the page behaves
+  as always. The address grants nothing; the record, like any local state,
+  could be forged by someone with the browser's tools, and gives only what a
+  forged local Premium flag would, in one tab, with its own sandbox.
+  `sessplaytest` plays all of it in a browser.
+- **In the clinicians' app** the game pages may load (`lib/slpApp.ts`
+  `SLP_APP_PLAY_PAGE`: practice, `arcade-*`, the story, the books; never
+  Home, setup or the price), and `sona.js` sends them back to the dashboard
+  unless a session runs. **The next app build needs the microphone**:
+  `NSMicrophoneUsageDescription`, "Sona listens to the child's practice
+  words during a game. Audio stays on this device and is never saved."
+  (`native/slp-ios/README.md`, `NATIVE.md`; Travis rebuilds on his Mac).
+- **For Travis:** the 13 to 17 Nov free-dashboard therapists meet the trial
+  at their next visit, and nothing is emailed to them; the app needs a new
+  build for the mic; a session's game reps and progress are thrown away when
+  the tab closes (they belong to no family); every word on the homepage,
+  the locked card and Session games is his to change.
+- **For Rachel:** the picks prompt and catalog lines; that a session game
+  uses a temporary child at the top of the age band (3-4 plays as 4, 5-6 as
+  6, 7-8 as 8, 9+ as 9), so the bookshelf asks a key word only where the
+  book's sound is typical by that age (`soundNorm`: an R book asks no word
+  of a 3-4 or 5-6 band), while the games and the talking story ask the
+  sound at any age, as they do for families; and that a child played on the
+  clinician's device starts the practice page's ladder at its first step
+  (the sound alone) every session, since nothing is kept.
+
+## SLPCLEAN1: a clean white dashboard, and an AI for planning sessions (17 Nov 2026)
+Travis: "From the one I saw before, it had too many just like colors. I want
+it more just like a clean white, simple look. And I want to remove unnecessary
+features. I want to make sure there's an AI that is specifically for in
+session activity creation and planning. So they can say, I have a kid who is
+5, who's interested in XYZ, and then it auto creates activities for that
+kid." He chose what goes, free typing for the AI, and (the same day) "top
+right, instead of copy app link, I want ... a way that they can automatically
+create a custom login username password for a parent with their email after
+they've created a free trial that they can automatically and super easily
+share". This supersedes the dashboard's look and menu described below.
+- **The menu** (as SLPPRO1 and Sona Clinic left it): Session games (first,
+  and where a visit with no address lands), Today, Caseload, Your clinic (a
+  Clinic owner only), Settings; Your plan went on 18 Nov 2026 (SLPSITE1). **Removed
+  from the dashboard:** Community (its route too: "Community is gone from
+  the dashboard", above), Affiliate partnerships, Draft homework, Plan
+  sessions (PLANDAY1) and a child page's "Next session" tab (a "Session
+  games" button opens Session games with that child's sound, position and
+  age band). **Talk to Rachel** left the menu: one link in Settings
+  ("Questions or ideas? Talk to Rachel →"), the same form at `#feedback`
+  (`/api/slp/feedback`), Rachel's line in her settled words. Old addresses
+  never dead-end: `#plan`, `#plan-day`, `#homework-draft` and
+  `#child/<id>/plan` open Session games; `#community` and `#affiliate` open
+  Today.
+- **The look** (since 18 Nov 2026 with SLPSITE1's "A little more life":
+  Echo on Today, Baloo 2 titles, teal icons, a butter accent; the rest
+  stands): white page, sidebar and cards; light grey hairlines; ink
+  `#1f2328`, muted `#6b7280`; one accent, the existing teal (`#0e7c86`), only
+  for the primary button, the active menu item, links and focus rings; a
+  system font stack (no Nunito on this page), weights 400 to 650. No pastel
+  icon tiles, mascots in headings, eyebrow lines, coloured avatars or
+  multicolour status pills (a missed homework is the one muted red). The
+  week's summary on Today is a plain card with a big number. The old CSS
+  variable names stay (`--muted`, `--pink`, `--green-d`, `--line`): the
+  script paints with them. `slptest` 11 pins the white, the menu and the
+  redirects. **A little life, same day** (Travis: "add our actual logo top
+  left ... and we can add a little more life to the interface"): Echo's own
+  logo (`/assets/brand/echo-logo.webp`) top left in the sidebar, the phone
+  bar and the sign-in page; Echo's yellow, coral and light blue only as
+  small accents (the planner's example chips and Echo, Echo bobbing while
+  the AI thinks, still under Reduce Motion, the activity cards' numbers and
+  top edges in teal, yellow, coral); a teal bar on the lit menu item; a
+  deeper teal primary button that presses in; and Today's "Good morning,
+  <first name>", the clinician's own name from their account, never a
+  child's. The four examples are ages, interests and targets, never a name.
+- **Plan activities** (`#plan`, a free-typed box to the AI, `lib/activityPlan.ts`,
+  `/api/slp/activities`, `activityplantest`) was SUPERSEDED the same evening
+  by Session games (SLPPRO1, above), and deleted.
+- **Add a family** (the top bar's primary button, every page; "Copy app
+  link" is gone). A panel: the parent's email (required), the child's
+  initials or a nickname (optional, never a name), age and up to three
+  sounds (optional), one button, "Create login and email it". One step,
+  `/api/slp/family` (`lib/addFamily.ts`): an invite as Add a child makes it
+  ("New family" when no initials), its login (`lib/familyLogin`), and ONE
+  email (`sendFamilyLoginEmail` in `lib/slpAuth.ts`, through `sendMail`,
+  tagged `sona-parent-invite`) with the App Store link, "Open Sona and tap
+  Log in", the username, the password and the web join link. Every wall of
+  the two routes it joins: session, same origin, both rate limits
+  (`slpinvite`, `slplogin`), the store, `dashboardGate`, a finished profile,
+  the pending-invite cap, the 30-a-day parent email cap (shared with the
+  invite's email); the sign-up cap is counted where it always was, at the
+  family's login. Then the panel shows "Sent to <email>", the username and
+  password big, "Copy message" and, on a phone, "Text it" (an `sms:` link);
+  an email that did not go is said plainly and the copy and text stay.
+  **Travis's accepted trade-off: the password travels in that email**, so
+  it sits in the parent's inbox and in GoHighLevel's message history; Sona's
+  server still keeps only its hash, and the family can change it in Sona's
+  Settings › Your login (the clinician can make a new one). While nothing
+  covers the caseload (no Sona Pro or Sona Clinic, not grandfathered, no
+  yearly plan), one
+  line in the panel says "Families get the free version. Start your free
+  Sona Pro trial so they get every game." with the trial button
+  (`data-sells`, so the clinicians' app hides it); it never blocks the login.
+  `slptest` 12 and `familylogintest` play it.
+- **Copy elsewhere follows:** `/plans` (SLPPRO1's words, above), whose
+  storage answer says what reaches Anthropic and what the login email holds;
+  the privacy page's "Session games" in place of "Homework drafting"; the
+  Terms and the sign-in email no longer promise a community or a draft.
 
 ## The clinician's dashboard: carryover, in the honest register
 **The SLP dashboard (`public/slp.html`) is built around ONE problem — carryover
@@ -2237,14 +2743,17 @@ see that it happened and paste it into a note. Not "assigning homework"
 who went quiet, what ends soon — one action per row) → Caseload (every child,
 oldest-practiced first, **Copy note on every row**) → a child page (8-week
 strip, pass rate by sound and position, the current homework, the composer)
-→ Sona Pro (its own page at `#premium`, 24 Sep 2026: Today keeps exactly its
-four cards, and no price ever appears in them; viewing it only reads) →
-Settings (which carries a Sona Pro card with the same button, 29 Sep 2026:
-"an upsell … in like the SLP settings").
+→ Your plan (its own page at `#premium`, 24 Sep 2026; "Sona Pro" until 17
+Nov 2026: Today keeps exactly its four cards, and no price ever appears in
+them; viewing it only reads) → Your clinic (`#team`, a Clinic owner only) →
+Settings (which carries a plan card with the same button, 29 Sep 2026: "an
+upsell … in like the SLP settings"). **Since 18 Nov 2026 (SLPSITE1) the
+dashboard sells nothing:** no Your plan page, no plan card and no top-bar
+offer; the paragraph below is history.
 Since 29 Sep 2026 (Travis: "yes add the $80 button to the first screen") a
 button with the server's price sits in the top bar of every page but the
-plan page, because a clinician from the ad lands on Community and never
-saw the price. Since 12 Nov 2026 it says **Try Sona Pro free · then $19.99 a
+plan page, because a clinician from the ad landed on Community (removed 17
+Nov 2026) and never saw the price. Since 12 Nov 2026 it says **Try Sona Pro free · then $19.99 a
 month**, or **Get Sona Pro** once the trial is spent, then nothing. Only
 once the plan has answered; `slptest` 9b pins it, 9c the closed dashboard.
 Reviewed by three lenses — a school SLP, a district privacy
@@ -2270,6 +2779,16 @@ officer, an engineer — whose rulings are now rules:
   It is opt-in by a grown-up's email, off on clinician-linked and many-child
   phones and for families who say a therapist or school sent them, and never
   in `slp.html`, `sendProgress` or any clinician route.
+- **A Clinic owner sees counts, never a child** (17 Nov 2026; `#team`,
+  `ownerView()` in `lib/team.ts`). Per clinician, two numbers: children on
+  Sona (the rows their own roster shows) and how many practiced in the last
+  7 days (on the viewer's own day, `?today=`). Never a name, initials, age,
+  sound, pass rate, homework or any per-child row; no percentage (SMALL_N
+  never applies), no average across clinicians, no "top" or "needs
+  attention". The owner first, then by name, never sorted or highlighted by
+  a count: ranking clinicians is the comparison a district officer ends the
+  app over. The GET never writes. The invite email and, while `CLINIC_ON` is on, the Terms
+  and the privacy page say the same thing.
 - **Invites hold initials, never a name.** The SLP may add a child before the
   family joins, but the placeholder is a label ("MK"), an optional age and a
   target; the family types the name when they join, so nobody at a school or
@@ -2300,6 +2819,14 @@ officer, an engineer — whose rulings are now rules:
   where it is true, Sona Pro's "Unlimited families", never in a family's
   message.
 
+**#306's dashboard, without the free packet (20 Nov 2026, Travis: yes to
+"all of it", "i dont want a free paket")**: the dashboard (Session games,
+Today, Caseload, Settings), its sign-in page and the trial-only sign-up came
+in from #306; the packet opt-in, the printable packet, `lib/packet.ts` and its
+email did not. `/` and `/plans` both serve `for-slps.html` (the trial page),
+whose sent email is the Meta Lead. Where #306's notes above say the root is
+the packet opt-in, this supersedes them.
+
 **The affiliate program, when it is built, is CREATOR-ONLY** (Travis, 21 Sep
 2026 — settled, do not re-open). An SLP who makes content and brings in
 families from outside their own client base can earn on it. An SLP never
@@ -2309,8 +2836,8 @@ under several state practice acts, and two of those reach the party OFFERING
 the payment as well as the clinician. So the rule is enforced in code, not by
 trust — a payout is structurally impossible for any family that arrived
 through that clinician's caseload code or sits on their roster — and the
-clinician's free dashboard never depends on how many of their families
-upgrade.
+clinician's dashboard (free or on a plan) never depends on how many of
+their families upgrade.
 
 ### Family logins: a username and password the clinician makes (14 Nov 2026)
 Travis: "on the first screen of the onboarding … log in if they already have
@@ -2378,6 +2905,17 @@ login is typed INTO the app. `lib/familyLogin.ts` holds the rules;
   (onboardingtest). **Never in the footer:** the footer's Get started stays
   in the same place on every screen, so a double tap on it moves one
   screen.
+- **Two choices on the first screen** (Travis, 18 Nov 2026, "yeah do it":
+  Sona sells mainly to speech therapists, who hand families a login; the
+  small "Log in" at the top right, since 14 Nov, was easy to miss). The
+  hello shows **Get started** (setup, unchanged, in the footer as on every
+  screen) and above it a cream pill, **"I have a login from my speech
+  therapist"** ("I have a login" under 360 px wide), `#loginLink`, to
+  join.html's login form. Only on the hello of a family's first setup, on a
+  device no clinician has connected yet. No question mark: the hello holds no
+  question (onboardingtest). **Never in the footer:** the footer's button
+  stays in the same place on every screen, so a double tap on it moves one
+  screen. `familylogintest` pins it at 320, 375, 390 and an iPad.
 
 ### Sona for SLPs: the clinicians' own iPhone app (SLPAPP1, 16 Nov 2026)
 Travis: "start building the SLP dashboard mobile app"; asked, he chose **its
@@ -2391,14 +2929,19 @@ App Store Connect and the review notes; `tests/slpapptest.mjs` pins it all.
   agent. That word is the whole switch (`lib/slpApp.ts`): `slp.html` and
   `slp-login.html` render there (the FAMILY app is still sent home from them),
   and every other page goes to the dashboard (the middleware for `.html`,
-  `sona.js` first thing, and the two front pages' first script). It grants
-  nothing: anyone can send it, and it only changes which pages show. The
+  `sona.js` first thing, and the two front pages' first script). `sona.js`
+  lets `/slps` through too: `/slp.html` 308s there, and until 17 Nov 2026
+  the app reloaded forever. It grants nothing: anyone can send it, and it
+  only changes which pages show. The
   Xcode project is made on the Mac and never committed. The icon in
   `native/slp-ios/assets/icon-1024.png` is a draft (Echo on the navy).
 - **It sells nothing.** Every price, offer, checkout and Manage billing door
-  in `slp.html` carries `data-sells`, hidden under `html.slp-app` (the nav's
-  Sona Pro, the top bar's offer, the whole plan page, Settings' Sona Pro card,
-  "With Sona Pro they get every game"); `#premium` opens Settings in the app.
+  in `slp.html` carries `data-sells`, hidden under `html.slp-app` (Settings'
+  plan line and Manage billing, the web's locked screen and its See plans,
+  the Clinic seat and billing words; since 18 Nov 2026 the dashboard has no
+  plan page or offer on the web either, SLPSITE1);
+  `#premium` opens Settings in the app (the locked card for a locked
+  account).
   A plan bought on the web still works there; nothing points to buying.
 - **Sign-in by a 6-digit code** (`lib/slpSignIn.ts`,
   `/api/slp/auth/code`): the emailed link opens in Safari and an app keeps
@@ -2407,18 +2950,20 @@ App Store Connect and the review notes; `tests/slpapptest.mjs` pins it all.
   the link does (they share `finishSignIn`, moved out of the verify route),
   once, 15 minutes, five wrong tries, only a hash kept, 30 tries an hour per
   IP; using either spends the other. The web sign-in page shows the code box
-  too. **The app's sign-in is the free-dashboard door** (the homepage's), so a
-  new account there gets the free dashboard and a locked Pro-era account
-  opens, as the homepage's link already did: nobody meets a lock they cannot
-  open in the app.
+  too. **Since SLPPRO1 (17 Nov 2026) the app's sign-in is the sign-in page's
+  own door** (until then the homepage's free-dashboard door, which opened a
+  locked account): an account without a plan sees the app's one plain
+  locked card (SLPPRO1, above).
 - **App Review's sign-in:** `SLP_REVIEW_EMAIL` + `SLP_REVIEW_CODE` (6 digits)
   in Vercel; only while both are set, that one address is emailed nothing and
-  its fixed code signs it in (free dashboard, `source: "app-review"`).
+  its fixed code signs it in (`source: "app-review"`), and its dashboard stays
+  open without Sona Pro (`reviewEmail` in `lib/caseload.ts`, SLPPRO1).
 - **Delete my account** (Settings, web and app; `lib/slpDelete.ts`,
   `DELETE /api/slp/account` with the email typed back): deletes the account,
   the caseload, homework, notes, invites, family logins, counters, plan
   notes, messages, Premium links, community posts, replies and reports that
-  quote them, and the block list; ends every session; unsubscribes the
+  quote them (still stored, though Community is gone), and the block list,
+  and a Clinic team it owns or belongs to; ends every session; unsubscribes the
   address. **The clinic code stays, closed for good** (`DELETED_CODE` in
   `lib/roster.ts`): `/api/pilot` writes nothing to it, so a family phone still
   holding a ticket never puts a child back, and nobody can claim it. **Refused
@@ -2428,9 +2973,9 @@ App Store Connect and the review notes; `tests/slpapptest.mjs` pins it all.
   contact** (back as the CRM since 15 Nov 2026, below): Sona only POSTs to
   its webhook and can delete nothing there, so removing a deleted
   clinician's contact in GoHighLevel is Travis's, by hand.
-- **Block in the community** (Apple's rule for posts people write): a member
-  is blocked by one of their posts or replies (the page never holds an id),
-  for that viewer alone, a year; "Show them again" clears it.
+- **Block went with the community** (17 Nov 2026). The README's App Store
+  Connect answers no longer claim user-generated content; any already given
+  in App Store Connect are Travis's to change.
 - **For Travis:** build and submit from the Mac (`native/slp-ios/README.md`);
   Apple may refuse a web-only app as "a repackaged website" (4.2), and the
   fix is one native feature, not built; App Privacy answers. **Nothing here is
@@ -2479,16 +3024,16 @@ address); a 429 is tried once more, an 8 s fuse. Without them it is the
 Resend send exactly as before, so nothing breaks until the token is in.
 GHL's send has no reply-to, no List-Unsubscribe header and no idempotency
 key: the callers' own sent marks stop doubles. **Consequences, Travis's to
-know:** every address Sona emails becomes a GHL contact (the parent invite
-and the board's confirmation tagged `sona-parent-invite`,
-`sona-board-confirmation`: a GHL workflow on "contact created" must leave
-them alone); the weekly report's numbers (never a name) sit in GHL's
+know:** every address Sona emails becomes a GHL contact (the parent invite,
+the board's confirmation, a Clinic invite and the packet email tagged
+`sona-parent-invite`, `sona-board-confirmation`, `sona-team-invite`,
+`sona-packet`: a GHL workflow on "contact created" must leave them alone); the weekly report's numbers (never a name) sit in GHL's
 conversation; and an unsubscribe (`/api/email/unsub`) puts the GHL
 contact's email on DND (`dndSettings.Email` "active"), after which GHL
 sends that address nothing, sign-in links included. Resend still keeps the
 email list (`lib/contacts.ts`, behind `RESEND_API_KEY`). `privacy.html`
-and the parents' "What's stored" answer say so; `for-slps.html`'s "we hand
-it to Resend" answer is left for the homepage rebuild. `mailtest` plays it.
+and the parents' "What's stored" answer say so, as does `/plans`'s.
+`mailtest` plays it.
 
 **GoHighLevel is back as the CRM, beside Resend** (Travis, 15 Nov 2026:
 speaksona.com stays on Vercel, "figure out how to get new leads to go into
@@ -2918,7 +3463,9 @@ Unsubscribe anytime." **Except setup's family email step** (4 Nov 2026,
 Travis: "just say something like ... track weekly progress": it says "Track
 your child's progress every week. Unsubscribe anytime.") **and the landing pages**, where Travis took the line
 out (25 Sep 2026: "get rid of this text"); their "What's stored" answers
-still say the email is on the list at Resend. Meta's `Lead` fires only when an email was given.
+still say the email is on the list at Resend. **The packet opt-in at `/`
+carries the line** (17 Nov 2026): that page exists to build the list; one
+line in `packet.html` and its pins if Travis says no. Meta's `Lead` fires only when an email was given.
 
 **REVENUECAT TELLS SONA (RCHOOK1, 16 Oct 2026)** (Travis: "build the revcat
 webhook"; then, asked: show the parent's email in RevenueCat, stop the sales

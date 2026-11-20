@@ -9,7 +9,8 @@ import { mailConfigured } from "@/lib/mail";
 
 /**
  * THE ONE PLACE A GROWN-UP'S EMAIL GOES: the SLP sign-up (via the auth route's
- * tellCrm), the app's setup (a clinician's account email, a parent's
+ * tellCrm),
+ * the app's setup (a clinician's account email, a parent's
  * optional email step, before the price since 13 Oct 2026), a purchase's
  * plan post (sona.js _tellPlan) and the Speech Check.
  *

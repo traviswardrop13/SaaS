@@ -10,7 +10,6 @@ import { safeAttrib, tellCrm } from "@/lib/slpLead";
 import { rateLimit } from "@/lib/rateLimit";
 import { makeSignInCode, storeSignInCode, reviewEmail } from "@/lib/slpSignIn";
 import { linkOrigin } from "@/lib/site";
-import { PRO_NAME, PRO_TRIAL_DAYS } from "@/lib/caseload";
 
 export const runtime = "nodejs";
 
@@ -52,6 +51,7 @@ function safeEqual(a: string, b: string): boolean {
 }
 
 // POST { email, adminKey?, source?, clinicianRole?, workSetting?, flow?, wantCode? } → email a single-use magic sign-in link.
+// flow: undefined (the sign-in page), "trial" or "free-dashboard" (a sign-up form; the same thing now).
 // Nobody is signed in here: only opening the emailed link signs in (13 Nov 2026),
 // or typing the six-digit code it carries when the sign-in page asked for one
 // (`wantCode`, SLPAPP1, 16 Nov 2026: the clinicians' app, where a link opens
@@ -97,14 +97,17 @@ export async function POST(req: NextRequest) {
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
     return NextResponse.json({ ok: false, error: "Enter a valid email." }, { status: 400 });
   }
-  const freeDashboard = body.flow === "free-dashboard";
-  // THE HOMEPAGE SELLS THE TRIAL (Travis, 18 Nov 2026: "i need them to start
-  // a trial", the trial required). "pro-trial" is the sign-in page's own door
-  // (a new account gets Sona Pro terms, so the dashboard opens on the plan
-  // page and its 14-day trial), with an email that says so. The clinicians'
-  // app keeps the free-dashboard door: it sells nothing.
-  const proTrial = body.flow === "pro-trial";
-  if (body.flow !== undefined && !freeDashboard && !proTrial) {
+  // A SIGN-UP DOOR: the landing page's trial form (`flow: "trial"`, 17 Nov
+  // 2026), or the free-dashboard form it replaced (`flow: "free-dashboard"`,
+  // still sent by cached pages and older builds of the clinicians' app).
+  // Both carry the sign-up's role, setting and attribution in the emailed
+  // link; NEITHER grants anything any more. The dashboard comes with the
+  // trial (Travis, 17 Nov 2026), and lib/slpSignIn makes every new account
+  // with Sona Pro's terms whichever door it came through: this flag is the
+  // caller's to send, so nothing it unlocks may depend on it. "pro-trial"
+  // is the 18 Nov 2026 homepage's name for the same door (a cached page).
+  const signupFlow = body.flow === "free-dashboard" || body.flow === "trial" || body.flow === "pro-trial";
+  if (body.flow !== undefined && !signupFlow) {
     return NextResponse.json({ ok: false, error: "Bad request." }, { status: 400 });
   }
   // Role and work setting are optional (Travis, 14 Nov 2026: the sign-up form
@@ -170,7 +173,7 @@ export async function POST(req: NextRequest) {
     const n = await kvCmd(["INCR", rl]);
     if (n === 1) await kvCmd(["EXPIRE", rl, 3600]);
     if (typeof n === "number" && n > 5) {
-      if (freeDashboard) {
+      if (signupFlow) {
         return NextResponse.json({ ok: false, error: "Too many links requested. Try again in an hour." }, { status: 429 });
       }
       return NextResponse.json({ ok: true, sent: true, devLink: null }); // silently cap
@@ -182,7 +185,7 @@ export async function POST(req: NextRequest) {
   // sign-in cookie lands where the dashboard lives, whichever page asked.
   const linkBase = linkOrigin(origin);
 
-  if (freeDashboard) {
+  if (signupFlow) {
     // The emailed token proves the inbox before an account or session exists.
     const token = randomToken();
     const pending = signFreeDashboardSignup({
@@ -201,7 +204,7 @@ export async function POST(req: NextRequest) {
       await kvCmd(["DEL", key]);
       return NextResponse.json({ ok: false, error: "Couldn't make your sign-in code. Try again." }, { status: 503 });
     }
-    const res = await sendMagicEmail(email, link, "", { freeDashboard: true, code });
+    const res = await sendMagicEmail(email, link, "", { signup: true, code });
     const devLink = isAdmin ? link : res.devLink;
     if (!res.sent && !devLink) await kvCmd(["DEL", key]);
     if (res.sent) await tellCrmEarly(origin, email, String(body.source || "for-slps").slice(0, 40), safeAttrib(body.attrib));
@@ -241,9 +244,13 @@ export async function POST(req: NextRequest) {
   if (code && !(await storeSignInCode(email, code, email, tokKey))) {
     return NextResponse.json({ ok: false, error: "Couldn't make your sign-in code. Try again." }, { status: 503 });
   }
-  // A returning account with its own terms is only signed in: the trial
-  // words are for an address with no account yet.
-  const res = await sendMagicEmail(email, link, name, { code, ...(proTrial && !acct && acctRaw === null ? { trial: { days: PRO_TRIAL_DAYS, name: PRO_NAME } } : {}) });
+  // AN ADDRESS WITH NO ACCOUNT YET gets the sign-up's words (18 Nov 2026,
+  // review). Every new account starts locked now, and the sign-in page and
+  // the clinicians' app send no sign-up flag, so a new clinician was emailed
+  // "Your Sona dashboard is ready … Add a child" for a dashboard that opened
+  // on the plan. Only when the store SAID there is none: an outage reads as
+  // an existing account, as everywhere in this route.
+  const res = await sendMagicEmail(email, link, name, { code, signup: !acct && acctRaw === null });
 
   /**
    * A CLINICIAN THE CRM HAS NEVER HEARD OF. The CRM was once told only when
@@ -261,7 +268,7 @@ export async function POST(req: NextRequest) {
    * inform the CRM but never rewrites the account.
    */
   if (!acct && acctRaw === null && res.sent) {
-    await tellCrmEarly(origin, email, String(body.source || (proTrial ? "for-slps" : "slp-signup")).slice(0, 40), safeAttrib(body.attrib));
+    await tellCrmEarly(origin, email, String(body.source || "slp-signup").slice(0, 40), safeAttrib(body.attrib));
   }
   if (acct && !acct.crmAt && typeof acctRaw === "string") {
     if (await tellCrm(origin, email, String(body.source || "slp-signup").slice(0, 40), name, safeAttrib(body.attrib))) {

@@ -83,6 +83,7 @@ const nextConfig = {
       { source: "/icon-192.png", headers: noStore },
       { source: "/icon-512.png", headers: noStore },
       { source: "/", headers: noStore },
+      { source: "/plans", headers: noStore },
       { source: "/for-parents", headers: noStore },
       { source: "/for-slps.css", headers: noStore },
       { source: "/try", headers: noStore },
@@ -95,6 +96,8 @@ const nextConfig = {
   async rewrites() {
     return [
       { source: "/", destination: "/for-slps.html" },
+      // The dashboard's "See plans" (20 Nov 2026): the same page, at its plans.
+      { source: "/plans", destination: "/for-slps.html" },
       { source: "/for-parents", destination: "/parents.html" },
       // The ad's bridge page (Travis, 9 Oct 2026): a headline, a button, the App Store.
       { source: "/try", destination: "/try.html" },

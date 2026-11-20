@@ -37,120 +37,133 @@
   <link rel="manifest" href="/slp.webmanifest" />
   <link rel="apple-touch-icon" href="/assets/slp-tab-icon.png?v=2" />
   <meta name="apple-mobile-web-app-title" content="Sona SLP" />
-  <meta name="theme-color" content="#1cb0f6" />
+  <meta name="theme-color" content="#ffffff" />
+  <!-- THE LOOK (19 Nov 2026, Travis: "a new clinician login page. The one we
+       have doesn't look good"). The dashboard's own look (SLPCLEAN1, SLPLIFE1):
+       white, one teal accent, Baloo 2 headings, Echo waving once, no emoji and
+       no green. On a wide screen the form sits beside a pale teal panel saying
+       what the dashboard does; on a phone it is the form alone. Every id the
+       script and the suites read is unchanged. -->
   <style>
-    :root { --blue:#1cb0f6; --blue-d:#1597d4; --green:#58cc02; --green-d:#46a302; --ink:#16384f; --muted:#6b86a3; }
-    * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent;
-        font-family:"Nunito",-apple-system,"Segoe UI",Roboto,sans-serif; }
-    body {
-      background:#f4f8fc; color:var(--ink); min-height:100vh;min-height:100dvh;
-      display:flex; align-items:center; justify-content:center;
+    :root { --ink:#1f2328; --muted:#6b7280; --line:#e5e7eb; --accent:#0e7c86; --accent-d:#0b646c; --accent-bg:#eef6f7; --butter:#fff6d6; --err:#b42318; }
+    * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+    body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; background:#fff; color:var(--ink);
+      min-height:100vh; min-height:100dvh; display:grid; grid-template-columns:minmax(0,1fr); -webkit-font-smoothing:antialiased; }
+    .side { display:none; }
+    @media (min-width:900px) {
+      body { grid-template-columns:minmax(0,1fr) minmax(0,1fr); }
+      .side { display:flex; flex-direction:column; justify-content:center; gap:28px; background:var(--accent-bg);
+        border-left:1px solid #d7ebed; padding:56px clamp(40px,6vw,96px); }
     }
-    .wrap { width:100%; max-width:420px; padding:40px 20px; }
-
-    .brand {
-      display:flex; align-items:center; gap:8px; justify-content:center;
-      font-family:"Baloo 2"; font-weight:800; font-size:20px; color:var(--blue-d);
-    }
-    .brand img { width:32px; height:32px; }
-    .brand small { font-size:12px; color:var(--muted); font-weight:700; }
-
-    .card {
-      background:#fff; border-radius:20px; padding:28px 24px; margin-top:20px;
-      box-shadow:0 12px 30px -18px rgba(20,90,160,.5);
-    }
-    h1 { font-family:"Baloo 2"; font-weight:800; font-size:24px; text-align:center; }
-    p.lead { color:var(--muted); font-weight:700; font-size:14px; line-height:1.5; text-align:center; margin-top:6px; }
-
-    .features {
-      display:flex; gap:8px; margin-top:16px; flex-wrap:wrap; justify-content:center;
-    }
-    .feat {
-      background:#f4f8fc; border-radius:10px; padding:6px 12px;
-      font-size:12px; font-weight:800; color:var(--muted);
-    }
-    .feat span { margin-right:4px; }
-
-    .divider { height:1px; background:#e6eef6; margin:20px 0; }
-
-    label.fl { display:block; font-weight:800; font-size:12.5px; color:var(--muted); margin:0 0 6px; }
-    input {
-      width:100%; border:2px solid #d9e6f2; border-radius:12px;
-      padding:14px; font-size:16px; font-weight:700; color:var(--ink); background:#fff;
-    }
-    input:focus { outline:none; border-color:var(--blue); }
-    .btn {
-      margin-top:14px; width:100%; border:none; border-radius:14px; padding:15px;
-      font-family:"Baloo 2"; font-weight:800; font-size:16px; color:#fff;
-      background:linear-gradient(180deg,#5fd216,#46a302);
-      box-shadow:0 5px 0 #3c8c02; cursor:pointer; transition:transform .1s;
-    }
-    .btn:active { transform:translateY(3px); box-shadow:0 2px 0 #3c8c02; }
-    .btn:disabled { opacity:.6; }
-    .err { color:#e0457b; font-weight:800; font-size:13px; margin-top:10px; min-height:18px; text-align:center; }
-    .ok { text-align:center; }
-    .ok .big { font-size:48px; }
-    .ok h2 { font-family:"Baloo 2"; font-weight:800; font-size:20px; margin-top:10px; }
-    .note { font-size:11.5px; color:var(--muted); font-weight:700; text-align:center; margin-top:18px; line-height:1.6; }
-    a { color:var(--blue-d); }
-    .codebox { margin-top:18px; text-align:left; }
-    #code { letter-spacing:6px; font-size:22px; text-align:center; font-variant-numeric:tabular-nums; }
+    html.slp-app .side { display:none; }
+    html.slp-app body { grid-template-columns:minmax(0,1fr); }
+    .main { display:flex; flex-direction:column; min-height:100vh; min-height:100dvh; padding:24px max(20px,env(safe-area-inset-left)) 28px; }
+    .brand { display:flex; align-items:center; gap:10px; text-decoration:none; color:var(--ink); }
+    .brand img { width:34px; height:auto; }
+    .brand b { font-family:"Baloo 2",system-ui,sans-serif; font-weight:800; font-size:22px; line-height:1; }
+    .brand small { font-size:13px; color:var(--muted); font-weight:500; margin-left:2px; }
+    .wrap { flex:1; display:flex; align-items:center; justify-content:center; padding:32px 0; }
+    .card { width:100%; max-width:380px; }
+    .echo { display:block; width:72px; height:72px; margin:0 0 14px -6px; }
+    h1, h2 { font-family:"Baloo 2",system-ui,sans-serif; font-weight:800; letter-spacing:-.01em; line-height:1.1; }
+    h1 { font-size:34px; }
+    h2 { font-size:28px; }
+    p.lead { color:var(--muted); font-size:16px; line-height:1.5; margin-top:8px; }
+    .features { display:none; }
+    label.fl { display:block; font-weight:600; font-size:14px; margin:26px 0 8px; }
+    input { width:100%; height:52px; border:1px solid #d1d5db; border-radius:12px; padding:0 14px; font:inherit; font-size:17px; color:var(--ink); background:#fff;
+      transition:border-color .15s, box-shadow .15s; }
+    input::placeholder { color:#9ca3af; }
+    input:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 4px rgba(14,124,134,.14); }
+    .btn { margin-top:12px; width:100%; height:52px; border:none; border-radius:12px; font:inherit; font-size:16px; font-weight:650; color:#fff;
+      background:var(--accent); box-shadow:0 3px 0 var(--accent-d); cursor:pointer; transition:transform .08s, box-shadow .08s, background .15s; }
+    .btn:hover { background:#0c727b; }
+    .btn:active { transform:translateY(2px); box-shadow:0 1px 0 var(--accent-d); }
+    .btn:focus-visible { outline:3px solid rgba(14,124,134,.35); outline-offset:2px; }
+    .btn:disabled { opacity:.6; cursor:default; }
+    .btn.ghost { background:#fff; color:var(--ink); border:1px solid var(--line); box-shadow:none; }
+    .btn.ghost:hover { background:#f9fafb; }
+    .err { color:var(--err); font-weight:600; font-size:14px; margin-top:12px; min-height:20px; line-height:1.45; }
+    .err.info { color:var(--accent-d); }
+    .fine { font-size:13px; color:var(--muted); line-height:1.5; margin-top:12px; }
+    .mail { width:64px; height:64px; border-radius:50%; background:var(--accent-bg); display:flex; align-items:center; justify-content:center; margin-bottom:16px; }
+    .mail svg { width:30px; height:30px; stroke:var(--accent); fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+    .codebox label.fl { margin-top:22px; }
+    #code { letter-spacing:.4em; font-size:24px; text-align:center; font-variant-numeric:tabular-nums; padding-left:.4em; }
+    .note { font-size:13px; color:var(--muted); line-height:1.6; text-align:center; }
+    .note a, .fine a { color:var(--accent); font-weight:600; text-decoration:none; }
+    .note a:hover { text-decoration:underline; }
+    .new { font-size:15px; color:var(--ink); margin-top:22px; padding-top:20px; border-top:1px solid var(--line); }
+    .new a { color:var(--accent); font-weight:650; text-decoration:none; }
+    .new a:hover { text-decoration:underline; }
     html.slp-app .web-only { display:none !important; }
-    .devbox {
-      margin-top:14px; background:#fff7e6; border:1px solid #ffe2a8;
-      border-radius:12px; padding:11px 13px; font-size:12px; font-weight:700;
-      color:#8a6400; line-height:1.5; word-break:break-all;
-    }
+    .devbox { margin-top:14px; background:var(--butter); border:1px solid #f3e3a3; border-radius:12px; padding:11px 13px; font-size:13px; color:#6b5200; line-height:1.5; word-break:break-all; }
+    .side h2 { font-size:32px; max-width:420px; }
+    .side ul { list-style:none; display:grid; gap:18px; max-width:440px; }
+    .side li { display:flex; gap:14px; align-items:flex-start; font-size:16px; line-height:1.45; }
+    .side li b { display:block; font-weight:650; }
+    .side li span { color:var(--muted); }
+    .side .ic { flex:none; width:40px; height:40px; border-radius:12px; background:#fff; border:1px solid #d7ebed; display:flex; align-items:center; justify-content:center; }
+    .side .ic svg { width:20px; height:20px; stroke:var(--accent); fill:none; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round; }
+    .side .shot { width:100%; max-width:420px; border-radius:18px; overflow:hidden; border:1px solid #d7ebed; background:#fff; box-shadow:0 18px 40px -24px rgba(14,80,90,.45); }
+    .side .shot img { display:block; width:100%; height:auto; }
+    @media (max-width:420px) { h1 { font-size:30px; } .wrap { align-items:flex-start; padding-top:28px; } }
+    @media (prefers-reduced-motion:reduce) { * { transition:none !important; } }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <div class="brand"><img src="/coach/echo/echo-avatar.svg" alt="Sona"/> Sona <small>for SLPs</small></div>
+  <div class="main">
+    <a class="brand" href="/" aria-label="Sona for speech therapists"><img src="/assets/brand/echo-logo.webp" alt="" width="34" height="35"/><b>Sona</b><small>for speech therapists</small></a>
 
-    <div class="card" id="formCard">
-      <h1>Welcome, clinician 👋</h1>
-      <p class="lead">Sign in with your email — no password needed.</p>
+    <div class="wrap">
+      <div class="card" id="formCard">
+        <img class="echo" src="/assets/crafted/echo-wave.webp" alt="" width="72" height="72"/>
+        <h1>Welcome back</h1>
+        <p class="lead">Sign in with your email. No password needed.</p>
 
-      <div class="features">
-        <div class="feat"><span>📊</span> Patient dashboard</div>
-        <div class="feat"><span>🔗</span> Family practice links</div>
-        <div class="feat"><span>🛠️</span> SLP toolkit</div>
-        <div class="feat"><span>💬</span> Direct feature requests</div>
+        <label class="fl" for="email">Work email</label>
+        <input id="email" type="email" inputmode="email" autocomplete="email" placeholder="you@yourclinic.org" />
+        <button class="btn" id="send">Send my sign-in link</button>
+        <div class="err" id="err" role="status"></div>
+        <div class="devbox" id="devbox" style="display:none;"></div>
+        <p class="fine">We&rsquo;ll also send occasional tips from Rachel. Unsubscribe anytime.</p>
+
+        <!-- NEW HERE (17 Nov 2026): the free trial starts on the clinician
+             homepage at /. The clinicians' app
+             sells nothing and points nowhere to buy. -->
+        <p class="new web-only">New here? <a href="/">Start your free trial →</a></p>
+        <p class="new app-only" hidden>Use the email your Sona account is under.</p>
       </div>
 
-      <div class="divider"></div>
-
-      <label class="fl" for="email">Your email</label>
-      <input id="email" type="email" inputmode="email" autocomplete="email" placeholder="you@clinic.com" />
-      <button class="btn" id="send">Send my sign-in link</button>
-      <p class="note" style="margin-top:10px;">We&rsquo;ll also send occasional tips from Rachel. Unsubscribe anytime.</p>
-      <div class="err" id="err"></div>
-      <div class="devbox" id="devbox" style="display:none;"></div>
-    </div>
-
-    <div class="card ok" id="sentCard" style="display:none;">
-      <div class="big">✉️</div>
-      <h2>Check your email</h2>
-      <p class="lead" id="sentMsg">We sent a sign-in link to your inbox. Tap it to open your portal — it expires in 15 minutes.</p>
-      <!-- THE CODE (SLPAPP1, 16 Nov 2026): the same email carries six digits.
-           Typed here they sign THIS screen in: the clinicians' app, which the
-           emailed link (it opens in Safari) never can, or a computer while
-           the email is on a phone. -->
-      <div class="codebox" id="codeBox">
-        <label class="fl" for="code">6-digit code from the email</label>
-        <input id="code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="7" placeholder="123456" />
-        <button class="btn" id="codeGo">Sign in</button>
-        <div class="err" id="codeErr" role="status"></div>
+      <div class="card" id="sentCard" style="display:none;">
+        <div class="mail" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="m4 7 8 6 8-6"/></svg></div>
+        <h2>Check your email</h2>
+        <p class="lead" id="sentMsg">We sent a sign-in link to your inbox. Tap it to open your portal — it expires in 15 minutes.</p>
+        <!-- THE CODE (SLPAPP1, 16 Nov 2026): the same email carries six digits.
+             Typed here they sign THIS screen in: the clinicians' app, which the
+             emailed link (it opens in Safari) never can, or a computer while
+             the email is on a phone. -->
+        <div class="codebox" id="codeBox">
+          <label class="fl" for="code">6-digit code from the email</label>
+          <input id="code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="7" placeholder="000000" />
+          <button class="btn" id="codeGo">Sign in</button>
+          <div class="err" id="codeErr" role="status"></div>
+        </div>
+        <button class="btn ghost" id="again">Use a different email</button>
       </div>
-      <button class="btn" id="again" style="margin-top:16px;background:#eef3fb;color:#46627a;box-shadow:none;">Use a different email</button>
     </div>
 
-    <p class="note">
-      <span class="web-only">New here? <a href="/#signup">Get your free clinician dashboard →</a><br/></span>
-      <span class="app-only" hidden>New here? Enter your email above: your free dashboard starts with the code.<br/></span>
-      Sona is an at-home practice tool, not a diagnosis or a substitute for professional care.
-    </p>
+    <p class="note">Sona is an at-home practice tool, not a diagnosis or a substitute for professional care.</p>
   </div>
+
+  <aside class="side" aria-label="What's in your dashboard">
+    <h2>Your caseload, practicing between sessions.</h2>
+    <ul>
+      <li><div class="ic"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="3"/><path d="M8 12h3M9.5 10.5v3M15 11h.01M17 13h.01"/></svg></div><div><b>Session games</b><span>Pick Sona games for each child and play them in the session.</span></div></li>
+      <li><div class="ic"><svg viewBox="0 0 24 24"><path d="M4 19V5M4 19h16M8 15v-4M12 15V8M16 15v-6"/></svg></div><div><b>Who practiced at home</b><span>See each child's week and copy a note in one tap.</span></div></li>
+      <li><div class="ic"><svg viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1"/><path d="M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1"/></svg></div><div><b>Share with families</b><span>Make a login for a parent and send homework home.</span></div></li>
+    </ul>
+  </aside>
 
   <script>
     var $=function(id){return document.getElementById(id);};
@@ -159,19 +172,24 @@
     if(APP){var ao=document.querySelector(".app-only");if(ao)ao.hidden=false;$("send").textContent=SEND_LABEL;}
     var qp=new URLSearchParams(location.search);
     if(qp.get("err")==="expired") $("err").textContent="That link expired — enter your email for a fresh one.";
-    if(qp.get("deleted")==="1"){$("err").style.color="#46627a";$("err").textContent="Your account is deleted. Thank you for using Sona.";}
-    if(qp.get("err")==="store") $("err").textContent="We couldn’t open your dashboard. Return to the homepage to request a new link.";
+    if(qp.get("deleted")==="1"){$("err").className="err info";$("err").textContent="Your account is deleted. Thank you for using Sona.";}
+    if(qp.get("err")==="store") $("err").textContent="We couldn’t open your dashboard. Enter your email for a new link.";
+    // BACK FROM A CLINIC INVITE'S JOIN BUTTON: joining signs nobody in
+    // (app/api/slp/team/accept says why), so this is where they sign in.
+    if(qp.get("joined")==="team"){$("err").className="err info";$("err").textContent="You’ve joined your clinic’s Sona plan. Sign in with the email your invite went to.";}
 
     function send(){
       if(window.__sonaFamilyRedirect||$("send").disabled)return;
       var email=($("email").value||"").trim();
-      $("err").textContent="";
+      $("err").textContent="";$("err").className="err";
       $("devbox").style.display="none";
       if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){$("err").textContent="Enter a valid email.";return;}
       $("send").disabled=true;$("send").textContent="Sending…";
-      // In the clinicians' app the free-dashboard door (the homepage's): a
-      // new clinician's account opens there, and nothing in the app is sold.
-      var req={email:email,wantCode:true};if(APP)req.flow="free-dashboard";
+      // The same door in the clinicians' app as on the web (SLPPRO1, 17 Nov
+      // 2026: the app's free-dashboard door is gone). The dashboard is Sona
+      // Pro's, and the app sells nothing: without it, the app shows its one
+      // plain card (slp.html's applock).
+      var req={email:email,wantCode:true};
       fetch("/api/slp/auth/request",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(req)})
         .then(function(r){return r.json();})
         .then(function(j){
@@ -208,7 +226,7 @@
       fetch("/api/slp/auth/code",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:SENT_TO,code:c})})
         .then(function(r){return r.json();})
         .then(function(j){
-          if(j&&j.ok){location.replace("/slp.html");return;}
+          if(j&&j.ok){location.replace(j.fresh&&!APP?"/slp.html?start=trial":"/slp.html");return;}
           $("codeGo").disabled=false;$("codeGo").textContent="Sign in";
           $("codeErr").textContent=(j&&j.error)||"That didn’t work. Try again.";
         })

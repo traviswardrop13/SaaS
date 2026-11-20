@@ -447,7 +447,7 @@ export async function sendMagicEmail(
   email: string,
   link: string,
   name = "",
-  opts: { freeDashboard?: boolean; code?: string; trial?: { days: number; name: string }; started?: { name: string; trial: boolean } } = {},
+  opts: { signup?: boolean; code?: string; started?: { name: string; trial: boolean } } = {},
 ): Promise<{ sent: boolean; devLink: string | null }> {
   // GoHighLevel sends when it is set up, else Resend (lib/mail). Through
   // GoHighLevel, an address whose email is on Do Not Disturb there (an
@@ -456,24 +456,22 @@ export async function sendMagicEmail(
   if (!mailConfigured()) {
     return { sent: false, devLink: process.env.VERCEL_ENV === "production" ? null : link };
   }
-  const freeIntro = "Open your Sona dashboard to share practice with families and join the clinician community.";
-  // A new clinician from the homepage (flow "pro-trial", 18 Nov 2026): the
-  // link opens the dashboard on Sona Pro's trial. The checkout states the
-  // terms beside Stripe's button; this says only what happens next.
-  // (lib/caseload imports this file, so the route hands over the plan's name
-  // and trial length rather than this file importing them.)
-  const trialIntro = opts.trial ? "Open the link to start your " + opts.trial.days + "-day free trial of " + opts.trial.name + ". Then add your first family and send them Sona." : "";
+  // A SIGN-UP's email (the trial form, or the old free-dashboard form). It
+  // says only what is true for anyone who might be reading it.
+  const signupIntro = "Open your Sona dashboard to pick Sona games for each session, share the app with families and see who practiced at home. New to Sona? You'll start your free trial first.";
+  // AN EXISTING ACCOUNT's email (18 Nov 2026): true whether the dashboard is
+  // open or locked; the route adds no Stripe call to tell which.
+  const signinIntro = "Here's your link to your Sona dashboard. Every family you send home gets Sona's free version.";
   // A trial started on the website's own checkout (GHLPRO1, 19 Nov 2026): it
   // is already on, so the link only signs them in.
   const startedIntro = opts.started ? (opts.started.trial ? "Your " + opts.started.name + " free trial has started." : opts.started.name + " is on.") + " Open the link to sign in to your dashboard, then add your first family and send them Sona." : "";
-  const intro = opts.started ? startedIntro : opts.trial ? trialIntro : opts.freeDashboard ? freeIntro : "Your Sona dashboard is ready, and every family you send home gets Sona's free version.";
-  const cta = opts.trial ? "Start my free trial" : "Open my dashboard";
-  // The site the link points at, so a sign-up on another address (the
-  // app's own, app.speaksona.com, APPHOST1: speaksona.com becomes GoHighLevel's) is
-  // never sent back to a domain that no longer serves the dashboard.
+  const intro = opts.started ? startedIntro : opts.signup ? signupIntro : signinIntro;
+  const firstSteps = !!opts.signup || !!opts.started;
+  // The site the link points at (APPHOST1: app.speaksona.com), so a retry is
+  // never sent to a domain that no longer serves the dashboard.
   let site = APP_HOST;
   try { site = new URL(link).host || site; } catch {}
-  const retryUrl = opts.freeDashboard ? site : site + "/slp-login.html";
+  const retryUrl = site + "/slp-login.html";
   // The six-digit code (SLPAPP1, 16 Nov 2026), when the sign-in screen asked
   // for one: typed in the clinicians' app, which a link cannot sign in. It is
   // in the subject too, so a phone's notification shows it.
@@ -483,7 +481,7 @@ export async function sendMagicEmail(
     const r = await sendMail({
         from,
         to: email,
-        subject: code ? "Your Sona sign-in code: " + spaced : opts.started ? (opts.started.trial ? "Your " + opts.started.name + " trial has started" : opts.started.name + " is on") : opts.trial ? "Start your free " + opts.trial.name + " trial" : opts.freeDashboard ? "Your Sona dashboard link" : "Your Sona dashboard is ready",
+        subject: code ? "Your Sona sign-in code: " + spaced : opts.started ? (opts.started.trial ? "Your " + opts.started.name + " trial has started" : opts.started.name + " is on") : "Your Sona sign-in link",
         html:
           `<div style="font-family:system-ui,Segoe UI,Roboto,sans-serif;font-size:15px;color:#16384f;line-height:1.6;max-width:520px;">` +
           `<p>${name ? "Hi " + esc(name) + "," : "Hi,"}</p>` +
@@ -495,13 +493,15 @@ export async function sendMagicEmail(
           // what is true for every clinician.
           `<p>${intro}</p>` +
           (code ? `<p style="margin:18px 0 6px;">Your sign-in code:</p><p style="font-size:30px;font-weight:800;letter-spacing:6px;margin:0 0 6px;">${spaced}</p><p style="color:#6b86a3;font-size:13px;margin:0 0 18px;">Type it on the sign-in screen, in the app or in your browser. Or open the dashboard here:</p>` : "") +
-          `<p><a href="${link}" style="display:inline-block;background:#58cc02;color:#fff;font-weight:700;text-decoration:none;padding:14px 26px;border-radius:12px;font-size:16px;">${cta}</a></p>` +
-          `<p style="margin-top:22px;"><b>What to do first</b></p>` +
-          `<ol style="padding-left:18px;color:#46627a;">` +
-          `<li>Add a child — initials are enough. You pick the sound and the position.</li>` +
-          `<li>Send their family the link. They set up in about 30 seconds, on their own phone.</li>` +
-          `<li>Come back and see the days they practiced — and copy a line for your progress note.</li>` +
-          `</ol>` +
+          `<p><a href="${link}" style="display:inline-block;background:#58cc02;color:#fff;font-weight:700;text-decoration:none;padding:14px 26px;border-radius:12px;font-size:16px;">Open my dashboard</a></p>` +
+          (firstSteps
+            ? `<p style="margin-top:22px;"><b>What to do first</b></p>` +
+              `<ol style="padding-left:18px;color:#46627a;">` +
+              `<li>Add a child — initials are enough. You pick the sound and the position.</li>` +
+              `<li>Send their family the link. They set up in about 30 seconds, on their own phone.</li>` +
+              `<li>Come back and see the days they practiced — and copy a line for your progress note.</li>` +
+              `</ol>`
+            : "") +
           // While the family app is not out (lib/launch.ts), the clinician
           // hears it here, in the email they get anyway (25 Sep 2026).
           (APP_READY ? "" : `<p style="margin-top:22px;"><b>P.S.</b> ${LAUNCH_NOTE.replace(/^Sona/, "The Sona app for families")}</p>`) +
@@ -518,10 +518,12 @@ export async function sendMagicEmail(
           intro + "\n\n" +
           (code ? "Your sign-in code: " + spaced + "\nType it on the sign-in screen, in the app or in your browser.\n\n" : "") +
           "Open it here:\n" + link + "\n\n" +
-          "What to do first\n" +
-          "1. Add a child - initials are enough. You pick the sound and the position.\n" +
-          "2. Send their family the link. They set up in about 30 seconds, on their own phone.\n" +
-          "3. Come back and see the days they practiced - and copy a line for your progress note.\n\n" +
+          (firstSteps
+            ? "What to do first\n" +
+              "1. Add a child - initials are enough. You pick the sound and the position.\n" +
+              "2. Send their family the link. They set up in about 30 seconds, on their own phone.\n" +
+              "3. Come back and see the days they practiced - and copy a line for your progress note.\n\n"
+            : "") +
           (APP_READY ? "" : "P.S. " + LAUNCH_NOTE.replace(/^Sona/, "The Sona app for families") + "\n\n") +
           "This " + (code ? "code and link expire" : "link expires") + " in 15 minutes. If it does, enter your email again at " + retryUrl + " and we'll send a fresh one. If you didn't ask for this, you can ignore it.\n",
     });
@@ -627,6 +629,68 @@ export async function sendParentInviteEmail(
   }, "parent invite", false);
   if (r.sent) return { sent: true };
   return { sent: false, error: r.configured ? "The email didn't go through. Copy the link and send it yourself." : "Email isn't set up yet. Copy the link and send it yourself." };
+}
+
+/**
+ * ADD A FAMILY (SLPCLEAN1, 17 Nov 2026; Travis: "a way that they can
+ * automatically create a custom login username password for a parent with
+ * their email ... that they can automatically and super easily share"). The
+ * ONE email /api/slp/family sends: the App Store link, "Open Sona and tap Log
+ * in", the username and the password, and the web join link for a family
+ * with no iPhone or iPad.
+ *
+ * THE PASSWORD TRAVELS IN THIS EMAIL. Sona's server keeps only its hash
+ * (lib/familyLogin), but the email that carries it sits in the parent's inbox
+ * and in GoHighLevel's message history (lib/mail). Travis's accepted
+ * trade-off: a login nobody has to copy by hand. The family can change it in
+ * Sona's Settings, under Your login, and the clinician can make a new one.
+ *
+ * Like the parent invite: the address is used for this send and nothing
+ * else here, no child data at all (not even the initials), the clinician's
+ * own name the only name, the Premium line only while the caseload is
+ * covered, and the same tag, so a GoHighLevel workflow treats both alike.
+ */
+const APP_STORE_URL = "https://apps.apple.com/us/app/sona-speech/id6785755867";
+export async function sendFamilyLoginEmail(
+  to: string,
+  login: { user: string; password: string; link: string },
+  clinicianName: string,
+  covered: boolean,
+): Promise<{ sent: boolean; error?: string }> {
+  const name = oneLine(clinicianName, 80);
+  const who = name || "Your child's speech therapist";
+  const whoMid = name || "your child's speech therapist";
+  const premium = covered ? " Premium is included, on " + whoMid + "." : "";
+  const cred = "font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:18px;letter-spacing:.04em;";
+  const r = await resendSend({
+    to,
+    subject: who + " set up Sona for your family",
+    html:
+      `<div style="${FRAME}">` +
+      `<p>Hi,</p>` +
+      `<p>${esc(who)} uses Sona for speech practice at home, and made a Sona login for your family.</p>` +
+      `<p><b>1.</b> Get Sona for iPhone or iPad:</p>` +
+      `<p><a href="${APP_STORE_URL}" style="${BUTTON}">Get Sona on the App Store</a></p>` +
+      `<p><b>2.</b> Open Sona and tap <b>Log in</b>.</p>` +
+      `<p><b>3.</b> Type your login:<br>Username: <span style="${cred}">${esc(login.user)}</span><br>Password: <span style="${cred}">${esc(login.password)}</span></p>` +
+      `<p>Then say yes to sharing practice with ${esc(whoMid)}, and your child can start today. You can change the password in Sona's Settings, under Your login.</p>` +
+      `<p>No iPhone or iPad? <a href="${esc(login.link)}">Start here instead</a>.</p>` +
+      `<p>Sona's free version (daily practice and free games) is free for your family.${esc(premium)}</p>` +
+      `<p style="color:#6b86a3;font-size:13px;margin-top:22px;">You're getting this one email because ${esc(whoMid)} asked Sona to send it.</p>` +
+      `</div>`,
+    text:
+      "Hi,\n\n" +
+      who + " uses Sona for speech practice at home, and made a Sona login for your family.\n\n" +
+      "1. Get Sona for iPhone or iPad:\n" + APP_STORE_URL + "\n\n" +
+      "2. Open Sona and tap Log in.\n\n" +
+      "3. Type your login:\nUsername: " + login.user + "\nPassword: " + login.password + "\n\n" +
+      "Then say yes to sharing practice with " + whoMid + ", and your child can start today. You can change the password in Sona's Settings, under Your login.\n\n" +
+      "No iPhone or iPad? Start here instead:\n" + login.link + "\n\n" +
+      "Sona's free version (daily practice and free games) is free for your family." + premium + "\n\n" +
+      "You're getting this one email because " + whoMid + " asked Sona to send it.\n",
+  }, "parent invite", false);
+  if (r.sent) return { sent: true };
+  return { sent: false, error: r.configured ? "The email didn't go through." : "Email isn't set up yet." };
 }
 
 /**
