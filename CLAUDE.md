@@ -377,6 +377,18 @@ practice, or what an SLP is shown, it is Rachel's call, not an engineering
 one. Surface those in the PR body so she can review them without reading
 the diff.
 
+## Where the money comes from (Travis, 20 Nov 2026)
+**Speech therapists paying for Sona Pro through Stripe are the main revenue
+channel**: $19.99 a month, unlimited family logins for their caseload (sold
+on the GoHighLevel site's checkout and the dashboard). Families buying
+Premium in the iPhone app (RevenueCat) stays on, as a side channel. So the
+**family login a therapist makes** (the first screen's "I have a login from
+my speech therapist", `/api/family/login`, then "Yes, share progress") is
+the most important door in the kids' app, and the native rebuild Codex is
+doing (Travis, 20 Nov 2026: the web app "lags and is jumpy" and the
+keyboard covers things) must make it work first, end to end, with no price
+screen for a covered family.
+
 ## Pricing — a free version, Premium, and the cohorts no flip can take back
 **Current release (checked against `main`, 11 Nov 2026): families pay, and
 only inside the iPhone/iPad app.** Read this first; everything below it in
