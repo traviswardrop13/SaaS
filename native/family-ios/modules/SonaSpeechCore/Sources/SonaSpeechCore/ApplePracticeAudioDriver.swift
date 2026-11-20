@@ -39,6 +39,8 @@ public final class ApplePracticeAudioDriver: NSObject, PracticeAudioDriver {
     private var recognitionWaiters: [CheckedContinuation<String, Never>] = []
 
     private var player: AVAudioPlayer?
+    private var narrator: AVSpeechSynthesizer?
+    private var utterance: AVSpeechUtterance?
     private var playbackContinuation: CheckedContinuation<Void, Error>?
     private var playbackDeadline: Timer?
     private var playbackGeneration = 0
@@ -120,7 +122,7 @@ public final class ApplePracticeAudioDriver: NSObject, PracticeAudioDriver {
         guard AVAudioSession.sharedInstance().recordPermission == .granted else {
             throw DriverError.microphoneNotAllowed
         }
-        guard !micLive, engine == nil, player == nil else { throw DriverError.unavailable }
+        guard !micLive, engine == nil, player == nil, narrator == nil else { throw DriverError.unavailable }
         recognitionText = ""
         recognitionHadStarted = false
         let audio = AVAudioSession.sharedInstance()
@@ -154,9 +156,10 @@ public final class ApplePracticeAudioDriver: NSObject, PracticeAudioDriver {
             fresh.prepare()
             try fresh.start()
             micLive = true
-            meter = Timer.scheduledTimer(withTimeInterval: 1.0 / 60.0, repeats: true) { [weak self] _ in
+            meter = Timer(timeInterval: 1.0 / 60.0, repeats: true) { [weak self] _ in
                 Task { @MainActor in self?.emitFrame(generation: generation) }
             }
+            if let meter { RunLoop.main.add(meter, forMode: .common) }
         } catch {
             stopInput()
             sessionOff()
@@ -198,10 +201,30 @@ public final class ApplePracticeAudioDriver: NSObject, PracticeAudioDriver {
             }
         }
         let duration = min(15_000, maxMilliseconds) / 1000
-        recognitionDeadline = Timer.scheduledTimer(withTimeInterval: duration, repeats: false) { [weak self] _ in
-            Task { @MainActor in self?.beginRecognitionStop() }
+        recognitionDeadline = Timer(timeInterval: duration, repeats: false) { [weak self] _ in
+            Task { @MainActor in
+                guard let self, generation == self.recognitionGeneration else { return }
+                self.beginRecognitionStop()
+            }
         }
+        if let recognitionDeadline { RunLoop.main.add(recognitionDeadline, forMode: .common) }
         return true
+    }
+
+    /// The per-saying word check finishes recognition without interrupting the
+    /// acoustic tap. A simultaneous pause/route close invalidates this answer.
+    public func finishRecognition() async -> PracticeRecognitionResult {
+        let capture = micGeneration
+        let hadRecognition = recognitionHadStarted
+        guard micLive, hadRecognition else { return .unavailable }
+        let text = await withCheckedContinuation { continuation in
+            recognitionWaiters.append(continuation)
+            beginRecognitionStop()
+        }
+        guard micLive, capture == micGeneration else { return .unavailable }
+        recognitionText = ""
+        recognitionHadStarted = false
+        return .onDevice(text)
     }
 
     /// Input is detached and stopped before waiting for Apple's final answer.
@@ -237,13 +260,28 @@ public final class ApplePracticeAudioDriver: NSObject, PracticeAudioDriver {
         let audio = AVAudioSession.sharedInstance()
         try audio.setCategory(.soloAmbient, mode: .default, options: [])
         try audio.setActive(true)
-        for part in prompt.parts {
+        if let speech = prompt.systemSpeech {
+            try await playInstalledSpeech(speech, volume: prompt.volume, generation: generation)
+            return
+        }
+        let count = prompt.encodedAudio == nil ? prompt.parts.count : 1
+        guard count > 0 else { throw DriverError.playbackFailed }
+        for index in 0..<count {
             guard generation == playbackGeneration, !Task.isCancelled else { throw CancellationError() }
-            let sound = try AVAudioPlayer(contentsOf: part.fileURL)
+            let sound: AVAudioPlayer
+            let rate: Float
+            if let bytes = prompt.encodedAudio {
+                sound = try AVAudioPlayer(data: bytes)
+                rate = prompt.playbackRate
+            } else {
+                let part = prompt.parts[index]
+                sound = try AVAudioPlayer(contentsOf: part.fileURL)
+                rate = part.rate * prompt.playbackRate
+            }
             sound.delegate = self
             sound.enableRate = true
-            sound.rate = part.rate
-            sound.volume = 0.8
+            sound.rate = rate
+            sound.volume = prompt.volume
             sound.prepareToPlay()
             player = sound
             try await withTaskCancellationHandler(operation: {
@@ -252,13 +290,14 @@ public final class ApplePracticeAudioDriver: NSObject, PracticeAudioDriver {
                     guard sound.play() else { finishPlayback(error: DriverError.playbackFailed); return }
                     // AVAudioPlayer reports start failure synchronously. A
                     // missing completion still cannot strand the child's turn.
-                    let cap = min(30, max(1, sound.duration / Double(max(part.rate, 0.01)) + 1))
-                    playbackDeadline = Timer.scheduledTimer(withTimeInterval: cap, repeats: false) { [weak self] _ in
+                    let cap = min(30, max(1, sound.duration / Double(max(rate, 0.01)) + 1))
+                    playbackDeadline = Timer(timeInterval: cap, repeats: false) { [weak self] _ in
                         Task { @MainActor in
                             guard let self, generation == self.playbackGeneration else { return }
                             self.finishPlayback(error: DriverError.playbackFailed)
                         }
                     }
+                    if let playbackDeadline { RunLoop.main.add(playbackDeadline, forMode: .common) }
                 }
             }, onCancel: { [weak self] in
                 Task { @MainActor in
@@ -271,6 +310,40 @@ public final class ApplePracticeAudioDriver: NSObject, PracticeAudioDriver {
         // cannot restart in the 250 ms quiet tail and enter the new microphone.
     }
 
+    private func playInstalledSpeech(_ speech: PracticePrompt.SystemSpeech, volume: Float, generation: Int) async throws {
+        guard !speech.text.isEmpty else { throw DriverError.playbackFailed }
+        let installed = AVSpeechSynthesisVoice.speechVoices().filter { $0.quality == .default }
+        let systemEnglish = AVSpeechSynthesisVoice(language: "en-US")
+        guard let voice = installed.first(where: { $0.identifier == systemEnglish?.identifier })
+            ?? installed.first(where: { $0.language == "en-US" && $0.name == "Samantha" })
+            ?? installed.first(where: { $0.language == "en-US" })
+            ?? installed.first(where: { $0.language.hasPrefix("en-") }) else { throw DriverError.playbackFailed }
+        let speaker = AVSpeechSynthesizer()
+        speaker.usesApplicationAudioSession = true; speaker.delegate = self
+        let line = AVSpeechUtterance(string: speech.text)
+        line.voice = voice; line.rate = AVSpeechUtteranceDefaultSpeechRate * speech.relativeRate
+        line.pitchMultiplier = speech.pitch; line.volume = volume
+        narrator = speaker; utterance = line
+        try await withTaskCancellationHandler(operation: {
+            try await withCheckedThrowingContinuation { continuation in
+                playbackContinuation = continuation
+                speaker.speak(line)
+                playbackDeadline = Timer(timeInterval: 12, repeats: false) { [weak self] _ in
+                    Task { @MainActor in
+                        guard let self, generation == self.playbackGeneration else { return }
+                        self.finishPlayback(error: DriverError.playbackFailed)
+                    }
+                }
+                if let playbackDeadline { RunLoop.main.add(playbackDeadline, forMode: .common) }
+            }
+        }, onCancel: { [weak self] in
+            Task { @MainActor in
+                guard let self, generation == self.playbackGeneration else { return }
+                self.stopPlayback()
+            }
+        })
+    }
+
     public func stopPlayback() {
         playbackGeneration += 1
         finishPlayback(error: CancellationError())
@@ -278,6 +351,9 @@ public final class ApplePracticeAudioDriver: NSObject, PracticeAudioDriver {
 
     private func finishPlayback(error: Error?, mediaReset: Bool = false) {
         playbackDeadline?.invalidate(); playbackDeadline = nil
+        narrator?.delegate = nil
+        if !mediaReset { narrator?.stopSpeaking(at: .immediate) }
+        narrator = nil; utterance = nil
         if !mediaReset { player?.stop(); player?.delegate = nil }
         player = nil
         let continuation = playbackContinuation
@@ -309,9 +385,14 @@ public final class ApplePracticeAudioDriver: NSObject, PracticeAudioDriver {
         recognitionStopping = true
         recognitionRequest?.endAudio()
         recognitionTask?.finish()
-        recognitionSettle = Timer.scheduledTimer(withTimeInterval: 0.8, repeats: false) { [weak self] _ in
-            Task { @MainActor in self?.settleRecognition() }
+        let generation = recognitionGeneration
+        recognitionSettle = Timer(timeInterval: 0.8, repeats: false) { [weak self] _ in
+            Task { @MainActor in
+                guard let self, generation == self.recognitionGeneration else { return }
+                self.settleRecognition()
+            }
         }
+        if let recognitionSettle { RunLoop.main.add(recognitionSettle, forMode: .common) }
     }
 
     private func settleRecognition() {
@@ -332,7 +413,7 @@ public final class ApplePracticeAudioDriver: NSObject, PracticeAudioDriver {
     private func interrupt(mediaReset: Bool = false) {
         // The 250 ms tail and a pending permission are still part of the turn.
         // Siri in that gap must pause it before a new mic can open.
-        guard sessionInterruptionHandler != nil || micLive || player != nil || recognitionTask != nil else { return }
+        guard sessionInterruptionHandler != nil || micLive || player != nil || narrator != nil || recognitionTask != nil else { return }
         let callback = sessionInterruptionHandler ?? interruptionHandler
         playbackGeneration += 1
         finishPlayback(error: CancellationError(), mediaReset: mediaReset)
@@ -415,6 +496,21 @@ extension ApplePracticeAudioDriver: AVAudioPlayerDelegate {
         Task { @MainActor [weak self] in
             guard let self, self.player === player else { return }
             self.finishPlayback(error: DriverError.playbackFailed)
+        }
+    }
+}
+
+extension ApplePracticeAudioDriver: AVSpeechSynthesizerDelegate {
+    nonisolated public func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didFinish utterance: AVSpeechUtterance) {
+        Task { @MainActor [weak self] in
+            guard let self, self.narrator === synthesizer, self.utterance === utterance else { return }
+            self.finishPlayback(error: nil)
+        }
+    }
+    nonisolated public func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didCancel utterance: AVSpeechUtterance) {
+        Task { @MainActor [weak self] in
+            guard let self, self.narrator === synthesizer, self.utterance === utterance else { return }
+            self.finishPlayback(error: CancellationError())
         }
     }
 }

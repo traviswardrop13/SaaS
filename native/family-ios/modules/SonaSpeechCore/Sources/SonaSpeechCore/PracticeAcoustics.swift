@@ -38,6 +38,13 @@ public struct PracticeAcousticFrame: Sendable {
         return sqrt(samples.reduce(0) { $0 + Double($1) * Double($1) } / Double(samples.count))
     }
 
+    /// A missing/starved feed is not observed quiet. Word-tail and between-word
+    /// clocks use this observation, never elapsed time without fresh input.
+    public func quietObservation(threshold: Double) -> Bool? {
+        guard isValid, !isStarved, threshold.isFinite, threshold > 0 else { return nil }
+        return rms <= threshold
+    }
+
     /// charge.html:1660–1681. A gap is audio-path starvation, never room noise.
     fileprivate var isStarved: Bool {
         guard rms > 0 else { return false }
@@ -116,6 +123,9 @@ public struct PracticeAcousticObservation: Sendable, Equatable {
     public let evidenceRoute: PracticeEvidenceRoute?
     public let threshold: Double
     public let shape: PracticeShapeSnapshot
+    /// In native word/sentence mode, speech evidence nominates one saying;
+    /// only its own accepted on-device word check can credit a rep.
+    public let nominatedSaying: Bool
 }
 
 /// Deterministic port of public/charge.html's REPGUARD1 detector. These are
@@ -130,6 +140,7 @@ public struct PracticeAcoustics: Sendable {
     public private(set) var listeningReady = false
     public private(set) var threshold = 0.0
     public private(set) var requiredReps: Int
+    public private(set) var requiresWordVerification = false
 
     private var evidence = SpeechEvidence()
     private var windowStartedAt: Double?
@@ -148,12 +159,15 @@ public struct PracticeAcoustics: Sendable {
     private var probeFirstAudioAt: Double?
     private var probeRMS: [Double] = []
     private var probeEvidence = SpeechEvidence()
+    private var pendingSayingAt: Double?
+    private var nominatedSaying = false
 
     public init(requiredReps: Int = 5) { self.requiredReps = max(1, requiredReps) }
 
     /// A new attempt clears counts/shape but retains this visit's known room.
-    public mutating func beginAttempt(requiredReps: Int = 5) {
+    public mutating func beginAttempt(requiredReps: Int = 5, requiresWordVerification: Bool = false) {
         self.requiredReps = max(1, requiredReps)
+        self.requiresWordVerification = requiresWordVerification
         totalReps = 0
         shape = PracticeShapeSnapshot()
         threshold = 0
@@ -224,6 +238,12 @@ public struct PracticeAcoustics: Sendable {
     /// Pause, mic replacement and unavailable feed must requalify the next
     /// burst; a half-spoken old burst cannot join a new one after Resume.
     public mutating func resetBurst() {
+        pendingSayingAt = nil
+        nominatedSaying = false
+        resetEnergyBurst()
+    }
+
+    private mutating func resetEnergyBurst() {
         voicedFrames = 0
         silentFrames = 0
         inBurst = false
@@ -233,6 +253,7 @@ public struct PracticeAcoustics: Sendable {
     }
 
     public mutating func process(_ frame: PracticeAcousticFrame) -> PracticeAcousticObservation {
+        nominatedSaying = false
         guard let started = windowStartedAt, frame.isValid,
               lastFrameTime == nil || frame.timestampMilliseconds > lastFrameTime! else {
             if !frame.isValid { resetBurst(); listeningReady = false }
@@ -277,7 +298,7 @@ public struct PracticeAcoustics: Sendable {
             if inBurst, !counted,
                silentFrames >= 8 || evidence.quietFor(now) >= 130,
                heardTry() { didCount = countRep(); countedRoute = evidence.route }
-            if silentFrames >= 8 { resetBurst() }
+            if silentFrames >= 8 { resetEnergyBurst() }
         }
         return observation(countedRep: didCount, countedRoute: countedRoute)
     }
@@ -297,7 +318,7 @@ public struct PracticeAcoustics: Sendable {
     private func observation(countedRep: Bool = false, countedRoute: PracticeEvidenceRoute? = nil) -> PracticeAcousticObservation {
         PracticeAcousticObservation(countedRep: countedRep, totalReps: totalReps,
                                    listeningReady: listeningReady, evidenceRoute: countedRoute ?? evidence.route,
-                                   threshold: threshold, shape: shape)
+                                   threshold: threshold, shape: shape, nominatedSaying: nominatedSaying)
     }
 
     private mutating func countRep() -> Bool {
@@ -306,8 +327,23 @@ public struct PracticeAcoustics: Sendable {
         pendingShape = []
         // Continue hearing the final target's shape without another rep.
         guard totalReps < requiredReps else { return false }
+        if requiresWordVerification {
+            if pendingSayingAt == nil { pendingSayingAt = burstAt; nominatedSaying = true }
+            return false
+        }
         totalReps += 1
         lastRepAt = burstAt
+        return true
+    }
+
+    /// Called only after the fresh on-device recognizer accepts this exact
+    /// nominated saying through the unchanged HEAR2 rule. Silence cannot call
+    /// this successfully; a rejected saying is dropped through resetBurst().
+    @discardableResult public mutating func acceptVerifiedSaying() -> Bool {
+        guard requiresWordVerification, let at = pendingSayingAt, totalReps < requiredReps else { return false }
+        pendingSayingAt = nil
+        totalReps += 1
+        lastRepAt = at
         return true
     }
 

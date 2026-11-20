@@ -17,6 +17,13 @@ public final class PracticeTurnSession {
     private var permissionTask: Task<Void, Never>?
     private var playbackTask: Task<Void, Never>?
     private var audioOperations: Task<Void, Never>?
+    private enum SayingPhase { case idle, starting, ready, checking, needsGap }
+    private var sayingPhase: SayingPhase = .idle
+    private var sayingWork: Task<Void, Never>?
+    private var sayingGeneration: UInt64 = 0
+    private var sayingCandidate = false
+    private var sayingQuietAt: Double?
+    private var sayingGapAt: Double?
 
     public init(
         target: PracticeTarget,
@@ -39,7 +46,8 @@ public final class PracticeTurnSession {
     public func startAfterGrownUpConsent() {
         guard machine.phase == .idle else { return }
         driver.setInterruptionHandler { [weak self] in self?.pause() }
-        acoustics.beginAttempt(requiredReps: machine.requiredReps)
+        acoustics.beginAttempt(requiredReps: machine.requiredReps,
+                               requiresWordVerification: machine.requiresPerSayingVerification)
         dispatch(.start)
         if automaticClock {
             ticker = Task { [weak self] in
@@ -62,7 +70,8 @@ public final class PracticeTurnSession {
     public func replayPromptAfterTap() { dispatch(.replayPrompt) }
     public func retryQuietAfterTap() {
         guard [.quiet, .microphoneUnavailable].contains(machine.phase) else { return }
-        acoustics.beginAttempt(requiredReps: machine.requiredReps)
+        acoustics.beginAttempt(requiredReps: machine.requiredReps,
+                               requiresWordVerification: machine.requiresPerSayingVerification)
         dispatch(.retryQuiet)
     }
 
@@ -120,12 +129,14 @@ public final class PracticeTurnSession {
                     if measuring { self.acoustics.beginRoomMeasurement(atMilliseconds: self.now()) }
                     else { self.acoustics.beginWindow(atMilliseconds: self.now()) }
                     self.dispatch(.opened(token: token))
-                    if !measuring, self.machine.phase == .listening,
-                       self.machine.recognitionRemainingMilliseconds > 0 {
-                        _ = await self.driver.startRecognition(
-                            words: [self.machine.target.word.lowercased()],
-                            maxMilliseconds: self.machine.recognitionRemainingMilliseconds
-                        )
+                    if !measuring, self.machine.phase == .listening {
+                        if self.machine.requiresPerSayingVerification {
+                            self.startSaying(token: token)
+                        } else if self.machine.recognitionRemainingMilliseconds > 0 {
+                            _ = await self.driver.startRecognition(
+                                words: [],
+                                maxMilliseconds: self.machine.recognitionRemainingMilliseconds)
+                        }
                     }
                 } catch {
                     self.dispatch(.microphoneFailed(token: token))
@@ -160,7 +171,14 @@ public final class PracticeTurnSession {
             driver.stopPlayback()
         case .resetBurst:
             acoustics.resetBurst()
+            discardSaying()
         case let .finishPending(token):
+            if machine.requiresPerSayingVerification {
+                // The deadline/model boundary is not an observed end to a
+                // word. Only the per-saying check may have credited it.
+                dispatch(.pendingFinished(token: token, countedRep: false, shapeVerdict: .unknown))
+                return
+            }
             let observation = acoustics.finishPending(atMilliseconds: now())
             dispatch(.pendingFinished(token: token, countedRep: observation.countedRep,
                                       shapeVerdict: verdict(observation.shape)))
@@ -177,10 +195,114 @@ public final class PracticeTurnSession {
             if acoustics.measureRoom(frame) { dispatch(.roomMeasured(token: token)) }
         } else {
             guard machine.phase == .listening else { return }
+            if machine.requiresPerSayingVerification { receiveSaying(frame, token: token); return }
             let observation = acoustics.process(frame)
             dispatch(.acoustic(token: token, countedRep: observation.countedRep,
                                ready: observation.listeningReady, shapeVerdict: verdict(observation.shape)))
         }
+    }
+
+    /// charge.html armWord/checkWord: a fresh recognizer per saying, no target
+    /// answer in contextualStrings, and no permission/model playback here.
+    private func startSaying(token: UInt64) {
+        guard token == machine.generation, machine.phase == .listening, machine.isForeground,
+              machine.reps < machine.requiredReps else { return }
+        sayingGeneration &+= 1
+        let generation = sayingGeneration
+        sayingPhase = .starting
+        sayingCandidate = false; sayingQuietAt = nil; sayingGapAt = nil
+        let previous = audioOperations
+        let work = Task { [weak self] in
+            await previous?.value
+            guard let self, self.sayingIsCurrent(token: token, generation: generation) else { return }
+            let started = await self.driver.startRecognition(words: [], maxMilliseconds: 15_000)
+            guard !Task.isCancelled, self.sayingIsCurrent(token: token, generation: generation) else {
+                // A start already in flight must finish its own stop before
+                // the queued close/new owner can take the microphone.
+                if started { _ = await self.driver.finishRecognition() }
+                return
+            }
+            if started { self.sayingPhase = .ready }
+            else { self.dispatch(.wordCheckUnavailable(token: token)) }
+        }
+        sayingWork = work
+        audioOperations = work
+    }
+
+    private func receiveSaying(_ frame: PracticeAcousticFrame, token: UInt64) {
+        // Source micDeaf: missing sound cannot finish a word or separate two.
+        guard let quiet = frame.quietObservation(threshold: acoustics.threshold) else {
+            sayingQuietAt = nil; sayingGapAt = nil
+            // Before the room is known, valid frames must still calibrate it.
+            if sayingPhase == .ready, acoustics.threshold == 0 {
+                let observation = acoustics.process(frame)
+                dispatch(.acoustic(token: token, countedRep: false, ready: observation.listeningReady,
+                                   shapeVerdict: verdict(observation.shape)))
+            }
+            return
+        }
+        if sayingPhase == .needsGap {
+            if quiet {
+                if sayingGapAt == nil { sayingGapAt = frame.timestampMilliseconds }
+                if frame.timestampMilliseconds - (sayingGapAt ?? frame.timestampMilliseconds) >= 200 {
+                    startSaying(token: token)
+                }
+            } else { sayingGapAt = nil }
+            return
+        }
+        guard sayingPhase == .ready else { return }
+        let observation = acoustics.process(frame)
+        sayingCandidate = sayingCandidate || observation.nominatedSaying
+        dispatch(.acoustic(token: token, countedRep: false, ready: observation.listeningReady,
+                           shapeVerdict: verdict(observation.shape)))
+        guard sayingCandidate else { return }
+        // readRoom() may just have lowered the carried bar on this frame.
+        if frame.quietObservation(threshold: acoustics.threshold) == true {
+            if sayingQuietAt == nil { sayingQuietAt = frame.timestampMilliseconds }
+            if frame.timestampMilliseconds - (sayingQuietAt ?? frame.timestampMilliseconds) >= 200 {
+                finishSaying(token: token)
+            }
+        } else { sayingQuietAt = nil }
+    }
+
+    private func finishSaying(token: UInt64) {
+        guard sayingPhase == .ready, sayingCandidate else { return }
+        let generation = sayingGeneration
+        sayingPhase = .checking
+        dispatch(.acoustic(token: token, countedRep: false, ready: false, shapeVerdict: .unknown))
+        let previous = audioOperations
+        let work = Task { [weak self] in
+            await previous?.value
+            guard let self, self.sayingIsCurrent(token: token, generation: generation) else { return }
+            let result = await self.driver.finishRecognition()
+            guard !Task.isCancelled, self.sayingIsCurrent(token: token, generation: generation) else { return }
+            let accepted: Bool
+            switch result {
+            case .onDevice(let text):
+                accepted = PracticeWordVerdict.evaluate(transcript: text, sound: self.machine.target.sound,
+                    word: self.machine.target.word, level: self.machine.target.level,
+                    frame: self.machine.target.sentence, position: self.machine.target.position) == .pass
+            case .unavailable: accepted = false
+            }
+            let credit = accepted && self.acoustics.acceptVerifiedSaying()
+            self.acoustics.resetBurst()
+            self.sayingCandidate = false; self.sayingQuietAt = nil; self.sayingGapAt = nil
+            self.sayingPhase = .needsGap
+            self.dispatch(.verifiedSaying(token: token, accepted: credit))
+        }
+        sayingWork = work
+        audioOperations = work
+    }
+
+    private func sayingIsCurrent(token: UInt64, generation: UInt64) -> Bool {
+        token == machine.generation && generation == sayingGeneration && machine.phase == .listening && machine.isForeground
+    }
+
+    private func discardSaying() {
+        sayingGeneration &+= 1
+        sayingWork?.cancel()
+        sayingPhase = .idle
+        sayingCandidate = false; sayingQuietAt = nil; sayingGapAt = nil
     }
 
     private func verdict(_ shape: PracticeShapeSnapshot) -> PracticeWordVerdict {
@@ -191,5 +313,6 @@ public final class PracticeTurnSession {
         ticker?.cancel()
         permissionTask?.cancel()
         playbackTask?.cancel()
+        sayingWork?.cancel()
     }
 }

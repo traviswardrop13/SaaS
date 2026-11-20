@@ -37,12 +37,14 @@ enum StoryVillageGame: String, CaseIterable {
 }
 
 /// Local finger-only development previews. The production daily scheduler,
-/// clinical turns, game reps and rewards are deliberately outside this view.
+/// The parent round owns speaking turns and rewards.
 struct StoryVillageGamesView: View {
     let game: StoryVillageGame
     let onRoundFinished: () -> Void
     @Environment(\.dismiss) private var dismiss
     @Environment(\.dynamicTypeSize) private var typeSize
+    @Environment(\.speechGameProgress) private var speechGameProgress
+    @Environment(\.guidedReplay) private var guidedReplay
     @State private var finished = false
     @State private var roundID = UUID()
 
@@ -121,10 +123,12 @@ struct StoryVillageGamesView: View {
                 Text(game.finish).font(.system(.title, design: .rounded).weight(.heavy))
                     .multilineTextAlignment(.center)
                     .accessibilityIdentifier("nativeVillageFinish")
-                VillageButton(title: "Play again", symbol: "arrow.clockwise") {
-                    finished = false
-                    roundID = UUID()
-                }.accessibilityIdentifier("nativeVillageReplay")
+                if speechGameProgress == nil || guidedReplay != nil {
+                    VillageButton(title: "Play again", symbol: "arrow.clockwise") {
+                        if let guidedReplay { guidedReplay() }
+                        else { finished = false; roundID = UUID() }
+                    }.accessibilityIdentifier("nativeVillageReplay")
+                }
                 Button("Back to adventures") { dismiss() }.font(.body.bold()).frame(minHeight: 44)
                     .accessibilityIdentifier("nativeVillageHome")
             }
@@ -179,24 +183,27 @@ private struct VillageWaterwheel: View {
     let onComplete: () -> Void
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.speechGameProgress) private var speechGameProgress
     @State private var placed: Set<Int> = []
-    @State private var turns = [0, 0, 0]
-    @State private var offsets = [CGSize](repeating: .zero, count: 3)
+    @State private var turns = [Int](repeating: 0, count: 7)
+    @State private var offsets = [CGSize](repeating: .zero, count: 7)
     @State private var selected = 0
     @State private var gate = false
+    private var troughs: Int { (speechGameProgress?.count ?? 4) - 1 }
 
     var body: some View {
         GeometryReader { geo in
-            let nodes = [CGPoint(x: geo.size.width * 0.14, y: geo.size.height * 0.24),
-                         CGPoint(x: geo.size.width * 0.37, y: geo.size.height * 0.34),
-                         CGPoint(x: geo.size.width * 0.60, y: geo.size.height * 0.44),
-                         CGPoint(x: geo.size.width * 0.83, y: geo.size.height * 0.54)]
+            let nodes = (0...troughs).map { index in
+                let fraction = CGFloat(index) / CGFloat(troughs)
+                return CGPoint(x: geo.size.width * (0.14 + fraction * 0.69), y: geo.size.height * (0.24 + fraction * 0.30))
+            }
             ZStack(alignment: .top) {
-                VillageCaption(text: gate ? "The garden has water!" : "\(placed.count) of 3 troughs · Turn, then drag")
-                ForEach(0..<3) { index in
+                VillageCaption(text: gate ? "The garden has water!" : "\(placed.count) of \(troughs) troughs · Turn, then drag")
+                ForEach(0..<troughs, id: \.self) { index in
                     let a = nodes[index], b = nodes[index + 1]
                     let target = CGPoint(x: (a.x + b.x) / 2, y: (a.y + b.y) / 2)
-                    let tray = CGPoint(x: geo.size.width * (0.20 + CGFloat(index) * 0.30), y: geo.size.height * 0.77)
+                    let tray = CGPoint(x: geo.size.width * (0.16 + CGFloat(index % 4) * 0.225),
+                                       y: geo.size.height * (0.70 + CGFloat(index / 4) * 0.11))
                     let length = VillageGeometry.distance(a, b)
                     let angle = atan2(b.y - a.y, b.x - a.x)
                     RoundedRectangle(cornerRadius: 6).strokeBorder(VillageStyle.wood.opacity(0.45), style: StrokeStyle(lineWidth: 3, dash: [5, 4]))
@@ -237,8 +244,12 @@ private struct VillageWaterwheel: View {
                 VStack { Spacer()
                     if gate {
                         VillageButton(title: "The garden is watered", symbol: "checkmark") { onComplete() }
-                    } else if placed.count == 3 {
-                        VillageButton(title: "Open the water gate", symbol: "drop.fill") { gate = true; VillageStyle.tick() }
+                    } else if placed.count == troughs {
+                        VillageButton(title: "Open the water gate", symbol: "drop.fill") {
+                            gate = true
+                            VillageStyle.tick()
+                            if let speechGameProgress { speechGameProgress.advance(); onComplete() }
+                        }
                             .accessibilityIdentifier("village-water-gate")
                     } else {
                         VillageButton(title: "Turn trough \(selected + 1)", symbol: "rotate.right") { turn() }
@@ -253,39 +264,42 @@ private struct VillageWaterwheel: View {
     private func place(_ index: Int) {
         guard !placed.contains(index) else { return }
         placed.insert(index)
-        selected = (0..<3).first { !placed.contains($0) } ?? index
+        selected = (0..<troughs).first { !placed.contains($0) } ?? index
         VillageStyle.tick()
+        speechGameProgress?.advance()
     }
 }
 
 private struct VillagePostboat: View {
     let onComplete: () -> Void
+    @Environment(\.speechGameProgress) private var speechGameProgress
     @State private var boat = CGPoint(x: 0.57, y: 0.84)
     @State private var anchor: CGPoint?
     @State private var delivered = 0
     @State private var parcelOffset = CGSize.zero
     private let docks = [CGPoint(x: 0.23, y: 0.24), CGPoint(x: 0.78, y: 0.48), CGPoint(x: 0.24, y: 0.68)]
+    private var goal: Int { speechGameProgress?.count ?? docks.count }
 
     var body: some View {
         GeometryReader { geo in
-            let dock = docks[min(delivered, 2)]
+            let dock = docks[delivered % docks.count]
             let atDock = VillageGeometry.distance(boat, dock) < 0.20
             let reeds = CGRect(x: geo.size.width * 0.44, y: geo.size.height * 0.34, width: geo.size.width * 0.11, height: geo.size.height * 0.26)
             let boatPoint = pixel(boat, geo.size)
             let parcel = CGPoint(x: boatPoint.x + 25, y: boatPoint.y - 38)
             ZStack(alignment: .top) {
                 Color(red: 0.73, green: 0.89, blue: 0.94)
-                VillageCaption(text: "\(delivered) of 3 deliveries · \(atDock ? "Carry the parcel to its flag" : "Steer around the reeds")")
+                VillageCaption(text: "\(delivered) of \(goal) deliveries · \(atDock ? "Carry the parcel to its flag" : "Steer around the reeds")")
                 RoundedRectangle(cornerRadius: 22).fill(VillageStyle.teal.opacity(0.5))
                     .frame(width: reeds.width, height: reeds.height).position(x: reeds.midX, y: reeds.midY)
                     .overlay { Image(systemName: "leaf.fill").foregroundStyle(.white.opacity(0.8)).position(x: reeds.midX, y: reeds.midY) }
                     .accessibilityHidden(true)
                 ForEach(0..<3) { index in
                     VStack(spacing: 5) {
-                        Image(systemName: index < delivered ? "checkmark.circle.fill" : "flag.fill").font(.title2)
+                        Image(systemName: index < delivered % docks.count ? "checkmark.circle.fill" : "flag.fill").font(.title2)
                         Text("\(index + 1)").font(.caption.bold())
                     }
-                    .foregroundStyle(index <= delivered ? VillageStyle.teal : .gray)
+                    .foregroundStyle(index == delivered % docks.count ? VillageStyle.teal : .gray)
                     .frame(width: 76, height: 74).background(VillageStyle.paper, in: RoundedRectangle(cornerRadius: 24))
                     .position(pixel(docks[index], geo.size)).accessibilityHidden(true)
                 }
@@ -298,10 +312,10 @@ private struct VillagePostboat: View {
                                            y: max(0.17, min(0.87, start.y + value.translation.height / geo.size.height)))
                         if !VillageGeometry.crosses(pixel(boat, geo.size), pixel(next, geo.size), rect: reeds.insetBy(dx: -18, dy: -18)) { boat = next }
                     }.onEnded { _ in anchor = nil })
-                    .accessibilityLabel("Postboat. Drag around the reeds to dock \(min(delivered + 1, 3)).")
+                    .accessibilityLabel("Postboat. Drag around the reeds to dock \(delivered % docks.count + 1).")
                     .accessibilityAction(named: "Steer beside the next dock") { boat = CGPoint(x: dock.x + (dock.x < 0.5 ? 0.15 : -0.15), y: dock.y) }
                     .accessibilityIdentifier("village-postboat-steer")
-                if atDock && delivered < 3 {
+                if atDock && delivered < goal {
                     Image(systemName: "shippingbox.fill").font(.system(size: 32)).foregroundStyle(VillageStyle.wood)
                         .frame(width: 58, height: 58).background(.white, in: RoundedRectangle(cornerRadius: 12))
                         .position(x: parcel.x + parcelOffset.width, y: parcel.y + parcelOffset.height)
@@ -310,7 +324,7 @@ private struct VillagePostboat: View {
                             if VillageGeometry.distance(end, pixel(dock, geo.size)) < 52 { deliver() }
                             parcelOffset = .zero
                         })
-                        .accessibilityLabel("Parcel for dock \(delivered + 1)")
+                        .accessibilityLabel("Parcel for dock \(delivered % docks.count + 1)")
                         .accessibilityAction(named: "Carry parcel to dock") { deliver() }
                         .accessibilityIdentifier("village-postboat-parcel")
                 }
@@ -320,12 +334,19 @@ private struct VillagePostboat: View {
     }
 
     private func pixel(_ point: CGPoint, _ size: CGSize) -> CGPoint { CGPoint(x: point.x * size.width, y: point.y * size.height) }
-    private func deliver() { guard delivered < 3 else { return }; delivered += 1; VillageStyle.tick(); if delivered == 3 { onComplete() } }
+    private func deliver() {
+        guard delivered < goal else { return }
+        delivered += 1
+        VillageStyle.tick()
+        speechGameProgress?.advance()
+        if delivered == goal { onComplete() }
+    }
 }
 
 private struct VillageBakery: View {
     let onComplete: () -> Void
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.speechGameProgress) private var speechGameProgress
     @State private var stage = 0
     @State private var jug = CGSize.zero
     @State private var stirred: CGFloat = 0
@@ -337,6 +358,7 @@ private struct VillageBakery: View {
     @State private var baked = 0.0
     @State private var previousTick: Date?
     private let clock = Timer.publish(every: 1.0 / 30, on: .main, in: .common).autoconnect()
+    private var buns: Int { (speechGameProgress?.count ?? 6) - 3 }
 
     var body: some View {
         GeometryReader { geo in
@@ -344,7 +366,7 @@ private struct VillageBakery: View {
             let tray = CGPoint(x: geo.size.width * 0.24, y: geo.size.height * 0.76)
             ZStack(alignment: .top) {
                 Color(red: 0.97, green: 0.90, blue: 0.84)
-                VillageCaption(text: ["Drag the jug over the bowl", "Stir the dough in circles", "Shape three buns on the tray", "Keep the oven in the warm band"][stage])
+                VillageCaption(text: ["Drag the jug over the bowl", "Stir the dough in circles", "Shape the buns on the tray", "Keep the oven in the warm band"][stage])
                 if stage < 2 {
                     Image("meadow-bowl").resizable().scaledToFit().frame(width: geo.size.width * 0.80, height: 190).position(center)
                         .accessibilityHidden(true)
@@ -352,11 +374,11 @@ private struct VillageBakery: View {
                         Image(systemName: "mug.fill").font(.system(size: 64)).foregroundStyle(VillageStyle.teal)
                             .frame(width: 90, height: 110).position(x: tray.x + jug.width, y: tray.y + jug.height)
                             .gesture(DragGesture(minimumDistance: 0).onChanged { jug = $0.translation }.onEnded { value in
-                                if VillageGeometry.distance(CGPoint(x: tray.x + value.translation.width, y: tray.y + value.translation.height), center) < 75 { stage = 1; VillageStyle.tick() }
+                                if VillageGeometry.distance(CGPoint(x: tray.x + value.translation.width, y: tray.y + value.translation.height), center) < 75 { pour() }
                                 jug = .zero
                             })
                             .accessibilityLabel("Jug of ingredients")
-                            .accessibilityAction(named: "Pour into bowl") { stage = 1; VillageStyle.tick() }
+                            .accessibilityAction(named: "Pour into bowl", pour)
                             .accessibilityIdentifier("village-bakery-pour")
                     } else {
                         Circle().fill(.clear).contentShape(Circle()).frame(width: geo.size.width * 0.9, height: geo.size.width * 0.9)
@@ -380,20 +402,21 @@ private struct VillageBakery: View {
                 } else if stage == 2 {
                     RoundedRectangle(cornerRadius: 19).fill(VillageStyle.ink.opacity(0.75))
                         .frame(width: geo.size.width * 0.92, height: 138).position(center)
-                    ForEach(0..<3) { index in
+                    ForEach(0..<buns, id: \.self) { index in
                         Ellipse().fill(shaped.contains(index) ? Color(red: 0.91, green: 0.70, blue: 0.43) : .white.opacity(0.16))
                             .overlay(Ellipse().strokeBorder(.white.opacity(0.8), style: StrokeStyle(lineWidth: 2, dash: [4, 4])))
-                            .frame(width: 66, height: 90).position(x: geo.size.width * (0.22 + CGFloat(index) * 0.28), y: center.y)
+                            .frame(width: min(66, geo.size.width * 0.83 / CGFloat(buns)), height: 90)
+                            .position(bunPlace(index, size: geo.size))
                     }.accessibilityHidden(true)
                     Circle().fill(Color(red: 0.97, green: 0.82, blue: 0.59)).frame(width: 72, height: 72)
                         .position(x: tray.x + dough.width, y: tray.y + dough.height)
                         .gesture(DragGesture(minimumDistance: 0).onChanged { dough = $0.translation }.onEnded { value in
                             let end = CGPoint(x: tray.x + value.translation.width, y: tray.y + value.translation.height)
-                            if let index = (0..<3).first(where: { !shaped.contains($0) && VillageGeometry.distance(end, CGPoint(x: geo.size.width * (0.22 + CGFloat($0) * 0.28), y: center.y)) < 46 }) { shape(index) }
+                            if let index = (0..<buns).first(where: { !shaped.contains($0) && VillageGeometry.distance(end, bunPlace($0, size: geo.size)) < 46 }) { shape(index) }
                             dough = .zero
                         })
                         .accessibilityLabel("Soft dough. Drag into a bun outline.")
-                        .accessibilityAction(named: "Shape next bun") { if let next = (0..<3).first(where: { !shaped.contains($0) }) { shape(next) } }
+                        .accessibilityAction(named: "Shape next bun") { if let next = (0..<buns).first(where: { !shaped.contains($0) }) { shape(next) } }
                         .accessibilityIdentifier("village-bakery-shape")
                 } else {
                     VStack(spacing: 18) {
@@ -401,7 +424,7 @@ private struct VillageBakery: View {
                             RoundedRectangle(cornerRadius: 15).fill(VillageStyle.wood)
                             RoundedRectangle(cornerRadius: 8).fill(VillageStyle.ink).padding(12)
                             HStack(spacing: 9) {
-                                ForEach(0..<3) { _ in
+                                ForEach(0..<buns, id: \.self) { _ in
                                     Ellipse().fill(Color(red: 0.91, green: 0.70, blue: 0.43)).frame(width: 23, height: 29)
                                 }
                             }
@@ -434,46 +457,68 @@ private struct VillageBakery: View {
         .onDisappear { holding = false; previousTick = nil }
     }
 
-    private func stir(_ amount: CGFloat) { guard stage == 1 else { return }; stirred += amount; if stirred >= 3 * .pi { stage = 2; VillageStyle.tick() } }
-    private func shape(_ index: Int) { guard !shaped.contains(index) else { return }; shaped.insert(index); VillageStyle.tick(); if shaped.count == 3 { stage = 3 } }
+    private func bunPlace(_ index: Int, size: CGSize) -> CGPoint {
+        CGPoint(x: size.width * (0.1 + 0.8 * (CGFloat(index) + 0.5) / CGFloat(buns)), y: size.height * 0.46)
+    }
+
+    private func pour() {
+        guard stage == 0 else { return }
+        stage = 1
+        VillageStyle.tick()
+        speechGameProgress?.advance()
+    }
+    private func stir(_ amount: CGFloat) {
+        guard stage == 1 else { return }
+        stirred = min(3 * .pi, stirred + amount)
+        if stirred >= 3 * .pi { stage = 2; VillageStyle.tick(); speechGameProgress?.advance() }
+    }
+    private func shape(_ index: Int) {
+        guard stage == 2, shaped.insert(index).inserted else { return }
+        VillageStyle.tick()
+        speechGameProgress?.advance()
+        if shaped.count == buns { stage = 3 }
+    }
     private func bake(_ amount: Double) {
         guard stage == 3, heat >= 0.42, heat <= 0.68, baked < 1 else { return }
         baked = min(1, baked + amount)
-        if baked == 1 { holding = false; onComplete() }
+        if baked == 1 { holding = false; speechGameProgress?.advance(); onComplete() }
     }
 }
 
 private struct VillageBridge: View {
     let onComplete: () -> Void
+    @Environment(\.speechGameProgress) private var speechGameProgress
     @State private var placed = 0
     @State private var turned = false
     @State private var lifted = false
     @State private var offset = CGSize.zero
     @State private var cart = CGSize.zero
+    private var pieces: Int { (speechGameProgress?.count ?? 4) - 1 }
 
     var body: some View {
         GeometryReader { geo in
             let source = CGPoint(x: geo.size.width * 0.20, y: geo.size.height * 0.78)
-            let target = CGPoint(x: geo.size.width * (0.23 + CGFloat(min(placed, 2)) * 0.27), y: geo.size.height * 0.46)
+            let target = support(min(placed, pieces - 1), in: geo.size)
+            let pieceWidth = geo.size.width * min(0.28, 0.9 / CGFloat(pieces))
             let load = CGPoint(x: source.x + offset.width, y: source.y + offset.height)
             ZStack(alignment: .top) {
                 Color(red: 0.86, green: 0.93, blue: 0.82)
                 Rectangle().fill(Color.cyan.opacity(0.5)).frame(width: geo.size.width * 0.47)
                     .position(x: geo.size.width * 0.50, y: geo.size.height * 0.50).accessibilityHidden(true)
-                VillageCaption(text: placed < 3 ? "\(placed) of 3 pieces · Lift, turn, then lower" : "Guide Tortoise’s cart across the bridge")
-                ForEach(0..<3) { index in
+                VillageCaption(text: placed < pieces ? "\(placed) of \(pieces) pieces · Lift, turn, then lower" : "Guide Tortoise’s cart across the bridge")
+                ForEach(0..<pieces, id: \.self) { index in
                     RoundedRectangle(cornerRadius: 5)
                         .fill(index < placed ? VillageStyle.wood : .white.opacity(0.5))
                         .overlay(RoundedRectangle(cornerRadius: 5).strokeBorder(VillageStyle.wood, style: StrokeStyle(lineWidth: 2, dash: index < placed ? [] : [5, 4])))
-                        .frame(width: geo.size.width * 0.28, height: 38)
-                        .position(x: geo.size.width * (0.23 + CGFloat(index) * 0.27), y: geo.size.height * 0.46)
+                        .frame(width: pieceWidth, height: 38)
+                        .position(support(index, in: geo.size))
                 }.accessibilityHidden(true)
-                if placed < 3 {
+                if placed < pieces {
                     Path { path in path.move(to: CGPoint(x: load.x, y: geo.size.height * 0.13)); path.addLine(to: load) }
                         .stroke(VillageStyle.ink, style: StrokeStyle(lineWidth: 3, dash: [4, 3])).allowsHitTesting(false)
                     RoundedRectangle(cornerRadius: 6).fill(VillageStyle.wood)
                         .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(.white, lineWidth: 2))
-                        .frame(width: geo.size.width * 0.28, height: 38)
+                        .frame(width: pieceWidth, height: 38)
                         .rotationEffect(.degrees(turned ? 0 : 90)).position(load)
                         .gesture(DragGesture(minimumDistance: 0).onChanged { value in
                             offset = value.translation
@@ -500,30 +545,48 @@ private struct VillageBridge: View {
                         guard abs(value.translation.height) < 46 else { return }
                         cart = CGSize(width: max(0, min(geo.size.width * 0.78, value.translation.width)), height: 0)
                     }.onEnded { value in
-                        if value.translation.width > geo.size.width * 0.68 && abs(value.translation.height) < 46 { onComplete() }
+                        if value.translation.width > geo.size.width * 0.68 && abs(value.translation.height) < 46 { finishCart() }
                         else { cart = .zero }
                     })
                     .accessibilityLabel("Tortoise’s moving cart")
-                    .accessibilityAction(named: "Guide cart across the finished bridge") { onComplete() }
+                    .accessibilityAction(named: "Guide cart across the finished bridge", finishCart)
                     .accessibilityIdentifier("village-bridge-cart")
                 }
             }
         }
     }
 
-    private func place() { guard placed < 3 else { return }; placed += 1; offset = .zero; turned = false; lifted = false; VillageStyle.tick() }
+    private func support(_ index: Int, in size: CGSize) -> CGPoint {
+        CGPoint(x: size.width * (0.1 + (CGFloat(index) + 0.5) * 0.8 / CGFloat(pieces)), y: size.height * 0.46)
+    }
+    private func place() {
+        guard placed < pieces else { return }
+        placed += 1
+        offset = .zero; turned = false; lifted = false
+        VillageStyle.tick()
+        speechGameProgress?.advance()
+    }
+    private func finishCart() {
+        guard placed == pieces else { return }
+        speechGameProgress?.advance()
+        onComplete()
+    }
 }
 
 private struct VillageLantern: View {
     let onComplete: () -> Void
+    @Environment(\.speechGameProgress) private var speechGameProgress
     @State private var supply = [false, false, false]
     @State private var returns = [false, false, false]
     @State private var switches = [false, false, false]
     @State private var master = true
     @State private var offsets = [CGSize.zero, CGSize.zero]
+    @State private var closedFirstSwitch = false
     private let lamps = [CGPoint(x: 0.23, y: 0.25), CGPoint(x: 0.77, y: 0.25), CGPoint(x: 0.51, y: 0.57)]
-    private var lit: [Bool] { (0..<3).map { master && supply[$0] && returns[$0] && switches[$0] } }
-    private var current: Int { (0..<3).first { !supply[$0] || !returns[$0] } ?? 2 }
+    private var lampCount: Int { speechGameProgress?.count == 5 ? 2 : lamps.count }
+    private var lit: [Bool] { (0..<lampCount).map { master && supply[$0] && returns[$0] && switches[$0] } }
+    private var current: Int { (0..<lampCount).first { !supply[$0] || !returns[$0] } ?? lampCount - 1 }
+    private var wired: Bool { (0..<lampCount).allSatisfy { supply[$0] && returns[$0] } }
 
     var body: some View {
         GeometryReader { geo in
@@ -531,8 +594,8 @@ private struct VillageLantern: View {
             let index = current
             ZStack(alignment: .top) {
                 Color(red: 0.14, green: 0.21, blue: 0.30)
-                VillageCaption(text: "\(lit.filter { $0 }.count) of 3 lights · Each lamp needs a full loop")
-                ForEach(0..<3) { lamp in
+                VillageCaption(text: "\(lit.filter { $0 }.count) of \(lampCount) lights · Each lamp needs a full loop")
+                ForEach(0..<lampCount, id: \.self) { lamp in
                     let point = CGPoint(x: lamps[lamp].x * geo.size.width, y: lamps[lamp].y * geo.size.height)
                     ForEach(0..<2) { role in
                         let pin = CGPoint(x: point.x + (role == 0 ? -23 : 23), y: point.y + 37)
@@ -548,6 +611,10 @@ private struct VillageLantern: View {
                     Button {
                         switches[lamp].toggle()
                         VillageStyle.tick()
+                        if speechGameProgress?.count == 8, !closedFirstSwitch, wired, switches[lamp] {
+                            closedFirstSwitch = true
+                            speechGameProgress?.advance()
+                        }
                     } label: {
                         VStack(spacing: 6) {
                             Image(systemName: lit[lamp] ? "lightbulb.fill" : "lightbulb")
@@ -558,6 +625,7 @@ private struct VillageLantern: View {
                         }.frame(width: 76, height: 89)
                     }
                     .buttonStyle(.plain).position(point)
+                    .disabled(speechGameProgress != nil && !wired)
                     .accessibilityLabel("Lamp \(lamp + 1), \(lit[lamp] ? "glowing" : "dark"), switch \(switches[lamp] ? "closed" : "open")")
                     .accessibilityHint("Both cords and the power box must be connected for light.")
                     .accessibilityIdentifier("village-lantern-switch-\(lamp)")
@@ -589,13 +657,24 @@ private struct VillageLantern: View {
                     }
                 }
                 if lit.allSatisfy({ $0 }) {
-                    VStack { Spacer(); VillageButton(title: "The woodland is glowing", symbol: "sparkles") { onComplete() } }.padding(14)
+                    VStack {
+                        Spacer()
+                        VillageButton(title: "The woodland is glowing", symbol: "sparkles") {
+                            speechGameProgress?.advance()
+                            onComplete()
+                        }
+                    }.padding(14)
                 }
             }
         }
     }
 
-    private func connect(_ role: Int, lamp: Int) { if role == 0 { supply[lamp] = true } else { returns[lamp] = true }; VillageStyle.tick() }
+    private func connect(_ role: Int, lamp: Int) {
+        guard role == 0 ? !supply[lamp] : !returns[lamp] else { return }
+        if role == 0 { supply[lamp] = true } else { returns[lamp] = true }
+        VillageStyle.tick()
+        speechGameProgress?.advance()
+    }
 }
 
 private enum VillageGeometry {

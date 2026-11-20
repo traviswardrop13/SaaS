@@ -40,13 +40,15 @@ public struct PracticeFlowContent: Equatable, Sendable {
         guard let rung = PracticeRung(rawValue: target.level) else {
             preconditionFailure("Practice content must use an existing rung")
         }
-        self.target = target
+        let resolvedPosition = position.isEmpty ? target.position : position
+        self.target = PracticeTarget(sound: target.sound, word: target.word, level: target.level,
+                                     sentence: target.sentence, position: resolvedPosition)
         self.rung = rung
         self.text = text
         self.say = say
         self.display = display
         self.cueTip = cueTip
-        self.position = position
+        self.position = resolvedPosition
         self.cueFirst = cueFirst
     }
 
@@ -54,7 +56,7 @@ public struct PracticeFlowContent: Equatable, Sendable {
                 display: String? = nil, word: String? = nil, cueTip: String = "",
                 position: String = "", cueFirst: Bool = false) {
         self.init(target: PracticeTarget(sound: sound, word: Self.nonempty(word) ?? text,
-                                        level: rung.rawValue, sentence: rung == .sentence ? text : ""),
+                                        level: rung.rawValue, sentence: rung == .sentence ? text : "", position: position),
                   text: text, say: say, display: display, cueTip: cueTip, position: position, cueFirst: cueFirst)
     }
 
@@ -129,6 +131,10 @@ public struct PracticeFlowContent: Equatable, Sendable {
         title: "I couldn't hear you!", body: "Say it big — I'm all ears!",
         spoken: "I couldn't hear you! Say it big — I'm all ears!",
         retryTitle: "Try again", laterTitle: "Maybe later"
+    )
+    public static let wordCheckQuiet = QuietMessage(
+        title: "Let's try that word again.", body: "Try the word in Echo's bubble, or come back later.",
+        spoken: nil, retryTitle: "Try again", laterTitle: "Maybe later"
     )
     public static let microphoneUnavailable = QuietMessage(
         title: "Let's get a grown-up", body: "Another app may be using the microphone. Close it, then try again.",

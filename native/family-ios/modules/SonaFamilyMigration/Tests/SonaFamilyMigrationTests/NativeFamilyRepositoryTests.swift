@@ -60,6 +60,32 @@ private final class NativeMemoryStore: NativeFamilyDocumentStore, @unchecked Sen
     }
 }
 
+private actor HoldingAppleClient: FamilyPurchaseClient {
+    private var lookup: CheckedContinuation<FamilyPurchaseCustomerInfo, Never>?
+    private var started: CheckedContinuation<Void, Never>?
+
+    func configurePreservingIdentity() async throws {}
+    func customerInfo() async throws -> FamilyPurchaseCustomerInfo {
+        await withCheckedContinuation { continuation in
+            lookup = continuation
+            started?.resume()
+            started = nil
+        }
+    }
+    func waitForLookup() async {
+        if lookup != nil { return }
+        await withCheckedContinuation { started = $0 }
+    }
+    func finishLookup() {
+        lookup?.resume(returning: .init())
+        lookup = nil
+    }
+    func restorePurchases() async throws -> FamilyPurchaseCustomerInfo {
+        .init(activeEntitlements: ["full": .init(productIdentifier: "sona_lifetime")])
+    }
+    func purchase(product: FamilyStoreProduct) async throws -> FamilyPurchaseCustomerInfo { try await restorePurchases() }
+}
+
 final class NativeFamilyRepositoryTests: XCTestCase {
     private let first = NativeFamilyChildID(origin: .www, slot: "")
     private let second = NativeFamilyChildID(origin: .www, slot: "k4")
@@ -129,6 +155,142 @@ final class NativeFamilyRepositoryTests: XCTestCase {
         XCTAssertEqual(document.activeChild?.id, first)
         XCTAssertEqual(family.children[1].keys["sona.gamereps.v1"], #"{"syntheticAbsoluteCount":31}"#)
         XCTAssertEqual(family.children[0].keys["sona.gamereps.v1"], #"{"synthetic":1}"#)
+    }
+
+    func testVerifiedRuleWriteIsAtomicAndCannotReplayOrTouchOtherPlayers() async throws {
+        let store = NativeMemoryStore()
+        let repository = NativeFamilyRepository(store: store)
+        let original = try await repository.seed(from: NativeFixture.archive())
+        let before = store.commits
+        let result = Data("2".utf8)
+        let patch = ["sona.reps.v1@k4": #"{"fixture":2}"#, "sona.outcomes.v1@k4": #"{"K":{"fixture":2}}"#]
+        let verified = try await repository.applyRules(to: second, receiptID: "fixture/attempt/1") { _ in
+            NativeFamilyRuleMutation(value: result, changes: patch, removals: [])
+        }
+        XCTAssertEqual(verified, result)
+        XCTAssertEqual(store.commits, before + 1)
+        let updated = try await current(repository)
+        for (key, value) in patch { XCTAssertEqual(updated.primaryFamily?.storage[key], value) }
+        XCTAssertEqual(updated.primaryFamily?.children.first, original.primaryFamily?.children.first)
+
+        do {
+            _ = try await repository.applyRules(to: second, receiptID: "fixture/attempt/1") { _ in
+                XCTFail("Replayed rule reached the ledger")
+                return NativeFamilyRuleMutation(value: result, changes: [:], removals: [])
+            }
+            XCTFail("Duplicate payment bypassed its receipt")
+        } catch NativeFamilyRuleError.replayed { }
+        for key in ["sona.reps.v1", "sona.sub.v1"] {
+            do {
+                _ = try await repository.applyRules(to: second) { _ in
+                    NativeFamilyRuleMutation(value: result, changes: [key: "false"], removals: [])
+                }
+                XCTFail("Unauthorised rule key accepted")
+            } catch NativeFamilyRuleError.invalidKey { }
+        }
+        XCTAssertEqual(store.commits, before + 1)
+    }
+
+    func testVerifiedGameAndCalendarAreCommittedTogetherForTheirPlayer() async throws {
+        let store = NativeMemoryStore()
+        let repository = NativeFamilyRepository(store: store)
+        let firstSnapshot = try await repository.seed(from: NativeFixture.archive())
+        let originalPlayer = try XCTUnwrap(firstSnapshot.primaryFamily?.children.first?.id)
+        let before = store.commits
+        let result = Data("true".utf8)
+        do {
+            _ = try await repository.applyRules(to: second, receiptID: "fixture/game", gameCompletion: "feed") { _ in
+                NativeFamilyRuleMutation(value: result, changes: ["sona.quest.v1": "{}"], removals: [])
+            }
+            XCTFail("A calendar write reached a different player's key")
+        } catch NativeFamilyRuleError.invalidKey { }
+        XCTAssertEqual(store.commits, before)
+        let saved = try await repository.applyRules(to: second, receiptID: "fixture/game", gameCompletion: "feed") { _ in
+            NativeFamilyRuleMutation(value: result, changes: ["sona.quest.v1@k4": "{}"], removals: [])
+        }
+        XCTAssertEqual(saved, result)
+        let latest = try await current(repository)
+        XCTAssertEqual(store.commits, before + 1)
+        XCTAssertEqual(latest.completedGames(for: second), ["feed"])
+        XCTAssertTrue(latest.completedGames(for: originalPlayer).isEmpty)
+        XCTAssertEqual(latest.primaryFamily?.storage["sona.quest.v1@k4"], "{}")
+    }
+
+    func testExplicitInactiveRemovalQueuesOlderCopiesExactlyOnce() async throws {
+        let store = NativeMemoryStore()
+        let repository = NativeFamilyRepository(store: store)
+        let initial = try await repository.seed(from: NativeFixture.archive())
+        let sibling = try XCTUnwrap(initial.primaryFamily?.children.first?.id)
+        let operation = UUID()
+        do {
+            try await repository.removeChild(second, operationID: UUID(), removeLocalCopies: true)
+            XCTFail("The action must select an inactive player")
+        } catch NativeFamilyRuleError.playerChanged { }
+        try await repository.removeChild(sibling, operationID: operation, removeLocalCopies: true)
+        let coldStart = NativeFamilyRepository(store: store)
+        try await coldStart.removeChild(sibling, operationID: operation, removeLocalCopies: true)
+        let saved = try await current(coldStart)
+        XCTAssertEqual(saved.pendingLocalPlayerRemovals, [sibling])
+        XCTAssertEqual(saved.activeChild?.id, second)
+        XCTAssertEqual(saved.householdPromises, initial.householdPromises)
+        try await coldStart.acknowledgeLocalPlayerRemoval(sibling)
+        let verified = try await current(coldStart)
+        XCTAssertEqual(verified.pendingLocalPlayerRemovals, [])
+    }
+
+    func testAuthoritativeAppleUpdateStaysWithItsOriginAndKeepsRawEvidence() async throws {
+        let repository = NativeFamilyRepository(store: NativeMemoryStore())
+        let original = try await repository.seed(from: NativeFixture.archive(twoFamilies: true))
+        try await repository.selectOrigin(.app)
+        let check = NativeFamilyAppleAccess(active: false, checkedAt: Date(timeIntervalSince1970: 1_000))
+        let saved = try await repository.recordAppleAccess(check, origin: .www, source: .refresh(expectedRevision: nil))
+        let updated = try await current(repository)
+        XCTAssertEqual(updated.primaryOrigin, .app)
+        XCTAssertEqual(updated.appleAccess?[LegacyOrigin.www.rawValue], saved)
+        XCTAssertEqual(saved.checkedAt, check.checkedAt)
+        XCTAssertFalse(saved.active)
+        XCTAssertNotNil(saved.revision)
+        XCTAssertNil(updated.appleAccess?[LegacyOrigin.app.rawValue])
+        XCTAssertEqual(updated.origins[LegacyOrigin.www.rawValue]?.storage, original.origins[LegacyOrigin.www.rawValue]?.storage)
+    }
+
+    func testLateAppleRefreshCannotUndoRestoreAfterSwitchingHouseholds() async throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let storage = LocalNativeFamilyDocumentStore(directory: directory)
+        let repository = NativeFamilyRepository(store: storage)
+        _ = try await repository.seed(from: NativeFixture.archive(twoFamilies: true))
+        try await repository.selectOrigin(.www)
+        let store = HoldingAppleClient()
+        let background = FamilyPurchaseContinuity(client: store, now: { Date(timeIntervalSince1970: 2_000) })
+        let storefront = FamilyPurchaseContinuity(client: store)
+
+        let priorRevision = try await repository.appleAccessRevision(for: .www)
+        let refresh = Task { await background.refresh() }
+        await store.waitForLookup()
+        guard case .restored = await storefront.restore(parentInitiated: true) else {
+            await store.finishLookup()
+            return XCTFail("The parent’s restore should verify full access")
+        }
+        let bought = try await repository.recordAppleAccess(.init(active: true, checkedAt: nil), origin: .www, source: .purchaseOrRestore)
+        try await repository.selectOrigin(.app)
+        await store.finishLookup()
+        let stale = await refresh.value
+        XCTAssertTrue(stale.authoritative)
+        XCTAssertFalse(stale.access.grants.contains(.apple))
+        let retained = try await repository.recordAppleAccess(.init(active: false, checkedAt: stale.access.lastAppleRefresh),
+                                                              origin: .www, source: .refresh(expectedRevision: priorRevision))
+
+        let reopened = try await current(NativeFamilyRepository(store: storage))
+        XCTAssertEqual(reopened.primaryOrigin, .app)
+        XCTAssertNil(reopened.appleAccess?[LegacyOrigin.app.rawValue])
+        XCTAssertEqual(reopened.appleAccess?[LegacyOrigin.www.rawValue], bought)
+        XCTAssertEqual(retained, bought)
+        XCTAssertTrue(retained.active)
+        let updated = try await repository.recordAppleAccess(.init(active: false, checkedAt: Date(timeIntervalSince1970: 3_000)),
+                                                             origin: .www, source: .refresh(expectedRevision: retained.revision))
+        XCTAssertFalse(updated.active)
+        XCTAssertNotEqual(updated.revision, retained.revision)
     }
 
     func testNewSiblingKeepsOnlyPromisedLegacyOwnership() async throws {

@@ -34,6 +34,16 @@ public actor MigrationEngine {
 
     public func archive() throws -> MigrationArchive { try checkedArchive() }
 
+    public func redactRemovedChild(_ child: NativeFamilyChildID) throws {
+        var next = try checkedArchive()
+        guard let prior = next.origins[child.origin.rawValue] else { return }
+        let redacted = try LegacyPlayerRedaction.redact(prior.storage, child: child)
+        guard redacted != prior.storage else { return }
+        next.origins[child.origin.rawValue] = try SnapshotImporter.prepare(.init(origin: child.origin, storage: redacted))
+        try store.commit(next)
+        guard try store.read() == next else { throw MigrationError.verificationFailed }
+    }
+
     /// Only accepts snapshots created by the same-container capture adapter.
     /// A changed second snapshot is held for reconciliation, never written over
     /// native progress or added to counters that might already include it.

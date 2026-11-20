@@ -1,9 +1,10 @@
 import Foundation
 
-/// The local recognizer's existing three-way listening result. Unknown must
-/// fall through to the acoustic check; it must never fail an unclear voice.
+/// The local recognizer's existing three-way listening result. Sound/syllable
+/// callers may use acoustic fallback; native words require a positive match.
 ///
-/// Exact HEAR2 port: `public/sona.js:7440–7595`. This describes a close try,
+/// Exact HEAR2 port, including current positional syllables/blend drops.
+/// This describes a close try,
 /// not pronunciation accuracy, and does not decide whether a rep was voiced.
 public enum PracticeWordVerdict: String, Sendable, Codable {
     case pass
@@ -15,18 +16,44 @@ public enum PracticeWordVerdict: String, Sendable, Codable {
         sound: String,
         word: String,
         level: String? = nil,
-        frame: String? = nil
+        frame: String? = nil,
+        position: String = ""
     ) -> PracticeWordVerdict {
         let sound = sound.uppercased()
         let originalTokens = tokens(transcript)
         guard !originalTokens.isEmpty else { return .unknown }
 
-        // A parent's "say rabbit" is coaching, not the child's production.
+        // Source coaching can span two syllable beats. "Say" may itself be
+        // part of a medial syllable's target or its usual-error form.
+        let originalWord = word.lowercased()
+        let parts = max(1, originalWord.components(separatedBy: CharacterSet(charactersIn: "- ").union(.whitespacesAndNewlines)).filter { !$0.isEmpty }.count)
+        let wordFlat = flat(originalWord)
+        var mine = Set<String>()
+        if level == "syllable", !position.isEmpty, position != "i", position != "mix" {
+            for part in originalWord.components(separatedBy: CharacterSet(charactersIn: "- ").union(.whitespacesAndNewlines)).filter({ !$0.isEmpty }) {
+                mine.insert(part)
+                mine.formUnion(variants(part, sound: sound))
+            }
+        }
         var said: [String] = []
         var index = 0
         while index < originalTokens.count {
-            if ["say", "said", "saying"].contains(originalTokens[index]) {
-                index += 2
+            if ["say", "said", "saying"].contains(originalTokens[index]), !mine.contains(originalTokens[index]) {
+                var n = 1
+                if parts > 1 {
+                    var got = ""
+                    n = 0
+                    var j = index + 1
+                    while j < originalTokens.count, n < parts {
+                        let next = got + flat(originalTokens[j])
+                        if next.isEmpty || !wordFlat.hasPrefix(next) { break }
+                        got = next; n += 1
+                        if got == wordFlat { break }
+                        j += 1
+                    }
+                    n = max(1, n)
+                }
+                index += n + 1
             } else {
                 said.append(originalTokens[index])
                 index += 1
@@ -50,10 +77,15 @@ public enum PracticeWordVerdict: String, Sendable, Codable {
             return .fail
         }
 
+        let dropped = position == "b" ? droppedForms(word, sound: sound) : []
+        if level == "syllable", !position.isEmpty, position != "i", position != "mix" {
+            return place(said, word: originalWord, sound: sound, dropped: dropped, position: position)
+        }
         let variants = variants(word, sound: sound)
         let near = max(1, word.count / 3)
         let substitutions = substitutions[sound] ?? []
         for token in content {
+            if dropped.contains(token) || dropped.contains(where: { token == $0 + "s" }) { continue }
             for variant in variants {
                 if token == variant || token == variant + "s" || token == variant + "es" || token == variant + "'s" {
                     return .pass
@@ -95,6 +127,118 @@ public enum PracticeWordVerdict: String, Sendable, Codable {
     private static func containsSound(_ string: String, sound: String) -> Bool {
         guard let pattern = spelling[sound], !string.isEmpty else { return false }
         return string.range(of: pattern, options: .regularExpression) != nil
+    }
+
+    private static func droppedForms(_ word: String, sound: String) -> [String] {
+        guard let pattern = spelling[sound], let expression = try? NSRegularExpression(pattern: pattern) else { return [] }
+        let string = word as NSString
+        var out: [String] = []
+        func consonant(_ index: Int) -> Bool {
+            guard index >= 0, index < string.length else { return false }
+            return string.substring(with: NSRange(location: index, length: 1)).range(of: "[b-df-hj-np-tv-z]", options: .regularExpression) != nil
+        }
+        for match in expression.matches(in: word, range: NSRange(location: 0, length: string.length)) {
+            let at = match.range.location, length = max(1, match.range.length)
+            if consonant(at - 1) || consonant(at + length) {
+                out.append(string.substring(to: at) + string.substring(from: at + length))
+            }
+        }
+        return out
+    }
+
+    private static func flat(_ text: String) -> String {
+        replacing(replacing(text, "[^a-z]", with: ""), "([aeiou])h(?![aeiou])", with: "$1")
+    }
+    private static func hasConsonant(_ text: String) -> Bool {
+        let clean = replacing(replacing(text, "e$", with: ""), "[wy](?![aeiou])", with: "")
+        return clean.range(of: "[b-df-gj-np-tv-z]", options: .regularExpression) != nil
+    }
+
+    private static let alike: [String: [String]] = [
+        "ar": ["are", "r"], "or": ["ore", "oar"], "air": ["heir", "ere", "eyre"],
+        "ate": ["eight"], "kray": ["cray"], "grew": ["grue"], "clue": ["klue"], "flee": ["flea"], "ski": ["skee"]
+    ]
+    private static let letters: [String: String] = [
+        "b":"bee", "c":"see", "d":"dee", "e":"ee", "f":"ef", "g":"jee", "h":"aitch", "j":"jay", "k":"kay", "l":"el", "m":"em", "n":"en", "o":"oh", "p":"pee", "r":"ar", "s":"es", "t":"tee", "u":"you", "v":"vee", "z":"zee"
+    ]
+
+    private struct SyllableCatalog: Decodable {
+        let version: Int
+        let tables: [SyllableTable]
+    }
+    private struct SyllableTable: Decodable {
+        let sound: String, position: String
+        let items: [SyllableItem]
+    }
+    private struct SyllableItem: Decodable { let text: String, say: String }
+    private static let syllableTables: [SyllableTable]? = {
+        guard let url = Bundle.module.url(forResource: "PracticeSyllableTables", withExtension: "json"),
+              let data = try? Data(contentsOf: url),
+              let catalog = try? JSONDecoder().decode(SyllableCatalog.self, from: data),
+              catalog.version == 1, !catalog.tables.isEmpty else { return nil }
+        return catalog.tables
+    }()
+
+    /// Literal _hearPlace: cover the ENTIRE transcript with authored syllable
+    /// forms, rather than finding a target substring in unrelated speech.
+    private static func place(_ heard: [String], word: String, sound: String, dropped: [String], position: String) -> PracticeWordVerdict {
+        guard let catalog = syllableTables else { return .unknown }
+        let tokens = heard.map { $0.count == 1 ? letters[$0] ?? $0 : $0 }
+        func saysSomething(_ token: String) -> Bool { !filler.contains(token) || containsSound(token, sound: sound) }
+        let w = replacing(word, "[^a-z]", with: ""), wf = flat(w)
+        var errors = (substitutions[sound] ?? []).map { $0.uppercased() }
+        if (substitutions[sound] ?? []).contains("th") { errors.append("THV") }
+        var table: [String] = [], elsewhere: [String] = []
+        for entry in catalog {
+            if entry.sound == sound, entry.position == position {
+                for item in entry.items { table.append(item.text); table.append(item.say) }
+            } else if entry.sound != sound, !errors.contains(entry.sound) {
+                elsewhere += entry.items.map { flat($0.text) }
+            }
+        }
+        let all = variants(w, sound: sound).map(flat) + (alike[w] ?? []).map(flat)
+        let forms = all.filter { hasConsonant($0) && ($0 == wf || !elsewhere.contains($0)) }
+        let gone = dropped.map(flat)
+        let parts = max(1, word.components(separatedBy: CharacterSet(charactersIn: "- ").union(.whitespacesAndNewlines)).filter { !$0.isEmpty }.count)
+        func covered(_ accepts: (String) -> Bool) -> Bool {
+            var reach = [Int](repeating: 0, count: tokens.count + 1)
+            reach[0] = 1
+            for i in tokens.indices {
+                if reach[i] == 0 { continue }
+                if !saysSomething(tokens[i]) { reach[i + 1] = max(reach[i + 1], reach[i]) }
+                for n in 1...min(parts, tokens.count - i) {
+                    if n > 1, !saysSomething(tokens[i + n - 1]) { continue }
+                    if accepts(flat(tokens[i..<(i + n)].joined())) { reach[i + n] = 2 }
+                }
+            }
+            return reach[tokens.count] == 2
+        }
+        if covered({ forms.contains($0) && !gone.contains($0) }) { return .pass }
+        if sound == "R", position == "v" || position == "f" { table += ["er", "err", "ur"] }
+        var others = gone
+        for entry in table {
+            let value = replacing(entry.lowercased(), "[^a-z]", with: "")
+            for candidate in [value] + (alike[value] ?? []) {
+                let f = flat(candidate)
+                if !f.isEmpty, !forms.contains(f), f != wf, !others.contains(f) { others.append(f) }
+            }
+        }
+        if covered({ others.contains($0) }) { return .fail }
+        let subs = substitutions[sound] ?? []
+        func k(_ value: String) -> String { value.replacingOccurrences(of: "c", with: "k") }
+        let cluster = (w.range(of: "^[^aeiouy]+", options: .regularExpression)).map { String(w[$0]) } ?? ""
+        let partner = position == "b" ? k(replacing(cluster, spelling[sound] ?? "$^", with: "")) : ""
+        let melts = (position == "f" || position == "v") && finalSubstitutions[sound] != nil
+        for token in tokens {
+            let f = flat(token)
+            if !saysSomething(token) || gone.contains(f) { continue }
+            if melts, !f.isEmpty, !hasConsonant(f) { return .unknown }
+            let own = all.contains { !$0.isEmpty && f.hasPrefix($0) } || containsSound(token, sound: sound)
+            if !own, !partner.isEmpty, partner.contains(where: { !k(token).contains($0) }) { continue }
+            let carries = own || subs.contains { !$0.isEmpty && token.contains($0) }
+            if carries { return .unknown }
+        }
+        return .fail
     }
 
     private static func variants(_ word: String, sound: String) -> [String] {

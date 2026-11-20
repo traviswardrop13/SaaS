@@ -1,190 +1,158 @@
 import SwiftUI
 
-/// Review data only. The caller supplies local preview records; this view
-/// never derives speech practice, goal days or rewards from finger play.
-struct ParentPreviewProgressSnapshot: Equatable {
+struct ParentProgressSummary: Decodable, Equatable {
+    struct Sound: Decodable, Equatable, Identifiable {
+        struct Step: Decodable, Equatable, Identifiable {
+            let id: String
+            let position: String
+            let label: String
+        }
+
+        let id: String
+        let title: String
+        let count: Int
+        let steps: [Step]
+    }
+
+    let thisWeek: Int
+    let lastWeek: Int
+    let gameWeek: Int
+    let days: [Bool]
+    let daysPracticed: Int
+    let todayIndex: Int
+    let sounds: [Sound]
+}
+
+struct ParentProgressView: View {
     let selectedSound: String
-    let completedGameTitles: [String]
-    let bookPositions: [ParentPreviewBookPosition]
+    let snapshot: ParentProgressSummary?
+    var savedGameRecords: [SavedGameRecord] = []
+    var onSendProgress: (() async -> Bool)?
 
-    init(selectedSound: String = "", completedGameTitles: [String] = [], bookPositions: [ParentPreviewBookPosition] = []) {
-        self.selectedSound = selectedSound
-        self.completedGameTitles = completedGameTitles
-        self.bookPositions = bookPositions
-    }
-
-    var games: [String] {
-        Array(Set(completedGameTitles.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }))
-            .sorted { $0.localizedStandardCompare($1) == .orderedAscending }
-    }
-
-    var books: [ParentPreviewBookPosition] {
-        var seen = Set<String>()
-        return bookPositions.filter { $0.totalPages > 0 && !$0.id.isEmpty && seen.insert($0.id).inserted }
-            .sorted { $0.title.localizedStandardCompare($1.title) == .orderedAscending }
-    }
-}
-
-struct ParentPreviewBookPosition: Identifiable, Equatable {
-    let id: String
-    let title: String
-    /// The saved bookmark is zero-based, just like BookBookmark.page.
-    let pageIndex: Int
-    let totalPages: Int
-    let finished: Bool
-
-    var displayedPage: Int { max(0, min(pageIndex, max(1, totalPages) - 1)) + 1 }
-    var positionLabel: String { finished ? "Reached the last page" : "Last open: page \(displayedPage) of \(totalPages)" }
-}
-
-/// Embed behind the app's existing grown-ups gate. No authentication, clinical
-/// data, storage, analytics or network capability is present here.
-struct ParentPreviewProgressView: View {
-    let snapshot: ParentPreviewProgressSnapshot
+    @State private var sending = false
+    @State private var sendMessage: String?
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
-                heading
-                summary
-                gameRecords
-                bookRecords
-                practiceNote
+            VStack(alignment: .leading, spacing: 18) {
+                Text("Practice progress")
+                    .font(.system(.largeTitle, design: .rounded).bold())
+                    .accessibilityAddTraits(.isHeader)
+                    .accessibilityIdentifier("parent-preview-progress")
+                if !selectedSound.isEmpty {
+                    Label("Selected sound: \(selectedSound)", systemImage: "waveform")
+                        .foregroundStyle(SonaPalette.teal)
+                }
+                if let snapshot {
+                    thisWeek(snapshot)
+                    soundSteps(snapshot.sounds)
+                } else {
+                    Text("Practice progress will appear here.").foregroundStyle(.secondary)
+                }
+                if let onSendProgress {
+                    Button {
+                        sending = true
+                        Task {
+                            let sent = await onSendProgress()
+                            sendMessage = sent ? "Progress sent." : "Sona couldn’t send progress. Try again."
+                            sending = false
+                        }
+                    } label: {
+                        Label(sending ? "Sending…" : "Send progress to speech therapist", systemImage: "paperplane")
+                    }
+                    .buttonStyle(.bordered)
+                    .disabled(sending)
+                    if let sendMessage { Text(sendMessage).font(.footnote) }
+                }
+                if !savedGameRecords.isEmpty { savedRecords }
             }
-            .padding(22)
-            .frame(maxWidth: 700, alignment: .leading)
+            .padding(24)
+            .frame(maxWidth: 660, alignment: .leading)
             .frame(maxWidth: .infinity, alignment: .top)
         }
-        .background(ParentProgressStyle.paper.ignoresSafeArea())
-        .foregroundStyle(ParentProgressStyle.ink)
-        .navigationTitle("Preview progress")
+        .background(SonaPalette.paper.ignoresSafeArea())
+        .foregroundStyle(SonaPalette.ink)
+        .navigationTitle("Progress")
         .navigationBarTitleDisplayMode(.inline)
-        .preferredColorScheme(.light)
     }
 
-    private var heading: some View {
+    private var savedRecords: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("A little look at their play.")
-                .font(.system(.largeTitle, design: .rounded).weight(.heavy))
-                .accessibilityAddTraits(.isHeader)
-                .accessibilityIdentifier("parent-preview-progress")
-                .fixedSize(horizontal: false, vertical: true)
-            Text("These are the game completions and book positions saved in this native preview.")
-                .font(.body).foregroundStyle(ParentProgressStyle.muted)
-                .fixedSize(horizontal: false, vertical: true)
-            let sound = snapshot.selectedSound.trimmingCharacters(in: .whitespacesAndNewlines)
-            Label(sound.isEmpty ? "Practice sound not selected" : "Selected sound: \(sound)", systemImage: "waveform")
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(ParentProgressStyle.teal)
-                .padding(.horizontal, 13).padding(.vertical, 10)
-                .background(ParentProgressStyle.teal.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
-                .accessibilityIdentifier("parent-preview-sound")
-        }
-    }
-
-    private var summary: some View {
-        LazyVGrid(columns: [GridItem(.adaptive(minimum: 145), spacing: 12)], alignment: .leading, spacing: 12) {
-            stat(number: snapshot.games.count, title: "Games completed", symbol: "gamecontroller")
-                .accessibilityIdentifier("parent-preview-game-count")
-            stat(number: snapshot.books.count, title: "Books with a bookmark", symbol: "bookmark")
-                .accessibilityIdentifier("parent-preview-book-count")
-        }
-    }
-
-    private func stat(number: Int, title: String, symbol: String) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Image(systemName: symbol).font(.title2).foregroundStyle(ParentProgressStyle.teal)
-                .accessibilityHidden(true)
-            Text(number.formatted()).font(.system(.largeTitle, design: .rounded).weight(.bold))
-            Text(title).font(.subheadline.weight(.medium)).fixedSize(horizontal: false, vertical: true)
-        }
-        .frame(maxWidth: .infinity, minHeight: 132, alignment: .topLeading)
-        .padding(18)
-        .background(.white, in: RoundedRectangle(cornerRadius: 21))
-        .accessibilityElement(children: .combine)
-    }
-
-    private var gameRecords: some View {
-        VStack(alignment: .leading, spacing: 15) {
-            sectionHeading("Games completed", symbol: "gamecontroller")
-            if snapshot.games.isEmpty {
-                Text("No game rounds have finished in this preview yet.")
-                    .foregroundStyle(ParentProgressStyle.muted)
-            } else {
-                VStack(spacing: 0) {
-                    ForEach(snapshot.games, id: \.self) { title in
-                        HStack(alignment: .firstTextBaseline, spacing: 12) {
-                            Image(systemName: "checkmark.circle.fill").foregroundStyle(ParentProgressStyle.teal)
-                                .accessibilityHidden(true)
-                            Text(title).font(.body.weight(.medium))
-                            Spacer(minLength: 0)
-                        }
-                        .padding(.vertical, 12)
-                        .accessibilityElement(children: .ignore)
-                        .accessibilityLabel(title + ", round completed")
-                        if title != snapshot.games.last { Divider() }
-                    }
+            Text("Saved game records")
+                .font(.title3.bold()).accessibilityAddTraits(.isHeader)
+                .accessibilityIdentifier("saved-game-records")
+            Text("Play records from the original games, saved separately from practice progress.")
+                .font(.footnote).foregroundStyle(.secondary)
+            ForEach(savedGameRecords) { record in
+                VStack(alignment: .leading, spacing: 5) {
+                    Text(record.gameTitle).font(.headline)
+                    Text(record.sourceLabel).font(.subheadline).foregroundStyle(.secondary)
+                    Text(record.resultLabel).font(.headline).monospacedDigit()
                 }
-                .padding(.horizontal, 17)
-                .background(.white, in: RoundedRectangle(cornerRadius: 20))
-                Text("Each game appears once, even after another round.")
-                    .font(.footnote).foregroundStyle(ParentProgressStyle.muted)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(16)
+                .background(.white, in: RoundedRectangle(cornerRadius: 17))
+                .accessibilityElement(children: .combine)
+                .accessibilityIdentifier("saved-game-record-\(record.gameID)-\(record.level)-\(record.metric.rawValue)")
             }
         }
-        .accessibilityIdentifier("parent-preview-games")
     }
 
-    private var bookRecords: some View {
-        VStack(alignment: .leading, spacing: 15) {
-            sectionHeading("Book positions", symbol: "book")
-            if snapshot.books.isEmpty {
-                Text("Open a story to save a place for next time.")
-                    .foregroundStyle(ParentProgressStyle.muted)
-            } else {
-                VStack(alignment: .leading, spacing: 0) {
-                    ForEach(snapshot.books) { book in
-                        VStack(alignment: .leading, spacing: 7) {
-                            Text(book.title).font(.body.weight(.semibold))
-                            Text(book.positionLabel).font(.subheadline).foregroundStyle(ParentProgressStyle.muted)
-                        }
-                        .padding(.vertical, 14)
-                        .accessibilityElement(children: .combine)
-                        if book.id != snapshot.books.last?.id { Divider() }
+    private func thisWeek(_ snapshot: ParentProgressSummary) -> some View {
+        let names = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+        return VStack(alignment: .leading, spacing: 13) {
+            Text("This week").font(.title3.bold()).accessibilityAddTraits(.isHeader)
+            Text("\(snapshot.thisWeek.formatted()) practice reps")
+                .font(.system(.title, design: .rounded).bold())
+                .accessibilityIdentifier("parent-week-reps")
+            Text("\(snapshot.lastWeek.formatted()) last week")
+                .font(.subheadline).foregroundStyle(.secondary)
+            if snapshot.gameWeek > 0 {
+                Text("\(snapshot.gameWeek.formatted()) reps in games and books this week")
+                    .font(.subheadline)
+            }
+            HStack(spacing: 5) {
+                ForEach(names.indices, id: \.self) { index in
+                    let active = snapshot.days.indices.contains(index) && snapshot.days[index]
+                    VStack(spacing: 6) {
+                        Image(systemName: active ? "checkmark.circle.fill" : "circle")
+                            .font(.body.weight(.semibold))
+                            .foregroundStyle(active ? SonaPalette.teal : SonaPalette.ink.opacity(0.35))
+                        Text(String(names[index].prefix(1)))
+                            .font(.caption.weight(index == snapshot.todayIndex ? .bold : .regular))
+                    }
+                    .frame(maxWidth: .infinity)
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel(names[index] + (active ? ", practiced" : ", no practice"))
+                }
+            }
+            Text("\(snapshot.daysPracticed) days practiced")
+                .font(.footnote).foregroundStyle(.secondary)
+        }
+        .padding(20)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.white, in: RoundedRectangle(cornerRadius: 22))
+    }
+
+    private func soundSteps(_ sounds: [ParentProgressSummary.Sound]) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("By sound").font(.title3.bold()).accessibilityAddTraits(.isHeader)
+            if sounds.isEmpty {
+                Text("Practice steps will appear here as your child practices.").foregroundStyle(.secondary)
+            }
+            ForEach(sounds) { sound in
+                VStack(alignment: .leading, spacing: 5) {
+                    Text("\(sound.title) · \(sound.count.formatted()) \(sound.count == 1 ? "try" : "tries")")
+                        .font(.headline)
+                    ForEach(sound.steps) { step in
+                        Text(step.position.isEmpty ? step.label : "\(step.position) · \(step.label)")
+                            .font(.subheadline)
                     }
                 }
-                .frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 17)
-                .background(.white, in: RoundedRectangle(cornerRadius: 20))
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(16)
+                .background(.white, in: RoundedRectangle(cornerRadius: 17))
             }
-            Text("A saved page shows where the book was open. Page turns do not confirm reading or spoken practice.")
-                .font(.footnote).foregroundStyle(ParentProgressStyle.muted)
-                .fixedSize(horizontal: false, vertical: true)
         }
-        .accessibilityIdentifier("parent-preview-books")
     }
-
-    private var practiceNote: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Label("Speech practice and rewards", systemImage: "info.circle")
-                .font(.system(.headline, design: .rounded).weight(.bold))
-            Text("Speech sessions, daily goals and Trophy Road balances are not connected to this preview yet. Game completions and page turns add no practice reps or rewards.")
-                .font(.subheadline).foregroundStyle(ParentProgressStyle.muted)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .padding(18)
-        .background(ParentProgressStyle.teal.opacity(0.07), in: RoundedRectangle(cornerRadius: 20))
-        .accessibilityIdentifier("parent-preview-practice-note")
-    }
-
-    private func sectionHeading(_ title: String, symbol: String) -> some View {
-        Label(title, systemImage: symbol)
-            .font(.system(.title3, design: .rounded).weight(.bold))
-            .accessibilityAddTraits(.isHeader)
-    }
-}
-
-private enum ParentProgressStyle {
-    static let paper = Color(red: 0.99, green: 0.98, blue: 0.95)
-    static let ink = Color(red: 0.18, green: 0.20, blue: 0.23)
-    static let muted = Color(red: 0.37, green: 0.40, blue: 0.42)
-    static let teal = Color(red: 0.04, green: 0.44, blue: 0.46)
 }

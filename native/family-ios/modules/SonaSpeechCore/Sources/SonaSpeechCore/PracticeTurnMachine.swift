@@ -5,12 +5,14 @@ public struct PracticeTarget: Equatable, Sendable {
     public let word: String
     public let level: String
     public let sentence: String
+    public let position: String
 
-    public init(sound: String, word: String, level: String, sentence: String = "") {
+    public init(sound: String, word: String, level: String, sentence: String = "", position: String = "") {
         self.sound = sound
         self.word = word
         self.level = level
         self.sentence = sentence
+        self.position = position
     }
 }
 
@@ -52,6 +54,8 @@ public struct PracticeTurnMachine {
         case promptEnded(token: UInt64)
         case acoustic(token: UInt64, countedRep: Bool, ready: Bool, shapeVerdict: PracticeWordVerdict)
         case pendingFinished(token: UInt64, countedRep: Bool, shapeVerdict: PracticeWordVerdict)
+        case verifiedSaying(token: UInt64, accepted: Bool)
+        case wordCheckUnavailable(token: UInt64)
         case closed(token: UInt64, transcript: String)
         case tick
         case pause
@@ -74,6 +78,8 @@ public struct PracticeTurnMachine {
     public private(set) var result: PracticeAttemptResult?
     public private(set) var isForeground = true
     public private(set) var interrupted = false
+    public private(set) var wordCheckIssue = false
+    public var requiresPerSayingVerification: Bool { target.level == "word" || target.level == "sentence" }
     private var foregroundPausePhase: Phase = .idle
     private var afterClose: AfterClose = .prompt
     private var deadline: Double = .infinity
@@ -137,7 +143,7 @@ public struct PracticeTurnMachine {
             guard matches(token, .listening) else { return [] }
             listeningReady = ready
             shapeVerdict = shape
-            if counted, ready, reps < requiredReps {
+            if !requiresPerSayingVerification, counted, ready, reps < requiredReps {
                 reps += 1
                 if reps == requiredReps {
                     earnedAt = activeMs(at: time) + 350
@@ -145,10 +151,24 @@ public struct PracticeTurnMachine {
                 }
             }
             return []
+        case let .verifiedSaying(token, accepted):
+            guard matches(token, .listening), requiresPerSayingVerification else { return [] }
+            if !accepted { wordCheckIssue = true; return [] }
+            guard reps < requiredReps else { return [] }
+            reps += 1
+            if reps == requiredReps {
+                earnedAt = activeMs(at: time) + 350
+                deadline = min(deadline, time + 350)
+            }
+            return []
+        case let .wordCheckUnavailable(token):
+            guard matches(token, .listening), requiresPerSayingVerification else { return [] }
+            wordCheckIssue = true
+            return close(to: .outcome, at: time)
         case let .pendingFinished(token, counted, shape):
             guard matches(token, .finishingEvidence) else { return [] }
             shapeVerdict = shape
-            if counted, reps < requiredReps {
+            if !requiresPerSayingVerification, counted, reps < requiredReps {
                 reps += 1
                 if reps == requiredReps, pendingDestination == .prompt { earnedAt = activeMs(at: time) + 350 }
             }
@@ -157,7 +177,7 @@ public struct PracticeTurnMachine {
             guard matches(token, .closing) else { return [] }
             // Permission, frames, partials and playback from an older generation
             // can never reach this point. Cancellation discards its transcript.
-            if afterClose != .cancel, !transcript.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            if !requiresPerSayingVerification, afterClose != .cancel, !transcript.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 transcripts.append(transcript)
             }
             if afterClose == .pause {
@@ -170,9 +190,12 @@ public struct PracticeTurnMachine {
                 guard reps > 0 else { enterQuiet(); return [] }
                 let wordVerdict = PracticeWordVerdict.evaluate(
                     transcript: transcripts.joined(separator: " "), sound: target.sound,
-                    word: target.word, level: target.level, frame: target.sentence
+                    word: target.word, level: target.level, frame: target.sentence, position: target.position
                 )
-                let verdict = wordVerdict == .unknown ? shapeVerdict : wordVerdict
+                // Native words have already passed their own fresh on-device
+                // checks. Never approve several acoustic bursts with one
+                // round-wide transcript or fall back from unknown to shape.
+                let verdict: PracticeWordVerdict = requiresPerSayingVerification ? .pass : wordVerdict == .unknown ? shapeVerdict : wordVerdict
                 guard verdict != .unknown else { enterQuiet(); return [] }
                 let value = PracticeAttemptResult(reps: reps, verdict: verdict, interrupted: interrupted)
                 pendingResult = value
@@ -249,6 +272,7 @@ public struct PracticeTurnMachine {
             shapeVerdict = .unknown
             result = nil
             interrupted = false
+            wordCheckIssue = false
             // The host starts a fresh detector attempt for this effect.
             if !authorized {
                 phase = .permission

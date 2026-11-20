@@ -141,6 +141,16 @@ final class PracticeFlowMachineTests: XCTestCase {
         XCTAssertTrue(flow.send(.completed(retry.id, result(.pass, 3))).isEmpty)
     }
 
+    func testUnverifiedWordUsesTheOriginalSilentRetryMessage() throws {
+        var flow = try PracticeFlowMachine(content: item(.word, text: "rabbit"), masteredRung: 2)
+        let turn = try started(&flow)
+        XCTAssertEqual(flow.send(.quiet(turn.id, microphoneUnavailable: false, wordCheckIssue: true)),
+                       [.showQuiet(PracticeFlowContent.wordCheckQuiet)])
+        XCTAssertEqual(PracticeFlowContent.wordCheckQuiet.title, "Let's try that word again.")
+        XCTAssertNil(PracticeFlowContent.wordCheckQuiet.spoken)
+        XCTAssertEqual(flow.verifiedReps, 0)
+    }
+
     func testLeavingQuietAfterPriorMissDoesNotAwardRingOrLaunch() throws {
         var flow = try PracticeFlowMachine(content: item(), masteredRung: 0)
         let first = try started(&flow)

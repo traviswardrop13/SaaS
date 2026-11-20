@@ -1,20 +1,29 @@
 import SwiftUI
 
-/// Local preview settings only. Opening this sheet never grants access,
-/// records practice, or changes the playable round's behavior.
+/// The family's settings and progress behind the grown-ups check.
 struct GrownUpsView: View {
     @Binding var targetSound: String
     let player: PreviewPlayer
     let players: [PreviewPlayer]
     let onSwitchPlayer: (String) -> Void
     let onAddPlayer: () -> Void
+    var onRemovePlayer: ((String) async throws -> Bool)?
     let familyUsername: String?
     let sharingProgress: Bool
     let homework: FamilyHomework?
     let displayedSound: String
+    var practice: NativePracticeSummary?
+    var onSendProgress: (() async -> Bool)?
+    var focusOptions: [String] = []
+    var onToggleFocus: (String) -> Void = { _ in }
+    var playerSettings: (() -> AnyView)?
     let onFamilyLogin: () -> Void
     let onChangePassword: (String, String) async throws -> Void
     let onStopSharing: () async throws -> Void
+    var storefront: (() -> AnyView)?
+    var movingPhones: (() -> AnyView)?
+    var weeklyReport: (() -> AnyView)?
+    var savedGameRecords: [SavedGameRecord] = []
 
     @Environment(\.dismiss) private var dismiss
     @FocusState private var answerFocused: Bool
@@ -157,7 +166,7 @@ struct GrownUpsView: View {
                 icon: "slider.horizontal.3",
                 eyebrow: "A LITTLE ROOM FOR YOU",
                 title: "Make it yours.",
-                detail: "A few simple choices for this native preview."
+                detail: "Manage practice and family settings."
             )
 
             VStack(alignment: .leading, spacing: 9) {
@@ -201,7 +210,8 @@ struct GrownUpsView: View {
             }
 
             NavigationLink {
-                PreviewPlayersView(players: players, activeID: player.id, onSelect: onSwitchPlayer, onAdd: onAddPlayer)
+                PreviewPlayersView(players: players, activeID: player.id, onSelect: onSwitchPlayer, onAdd: onAddPlayer,
+                                   onRemove: onRemovePlayer)
             } label: {
                 HStack {
                     Label("Players", systemImage: "person.2.fill")
@@ -215,6 +225,32 @@ struct GrownUpsView: View {
                 .background(.white, in: RoundedRectangle(cornerRadius: 18))
             }
             .accessibilityIdentifier("grownups-players")
+
+            if let playerSettings {
+                NavigationLink {
+                    playerSettings()
+                } label: {
+                    Label("Player settings", systemImage: "slider.horizontal.3")
+                        .font(.headline)
+                        .padding(14)
+                        .frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
+                        .background(.white, in: RoundedRectangle(cornerRadius: 18))
+                }
+                .accessibilityIdentifier("grownups-player-settings")
+            }
+
+            if let storefront {
+                NavigationLink {
+                    storefront()
+                } label: {
+                    Label("Sona Premium and Restore Purchases", systemImage: "bag")
+                        .font(.headline)
+                        .padding(14)
+                        .frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
+                        .background(.white, in: RoundedRectangle(cornerRadius: 18))
+                }
+                .accessibilityIdentifier("grownups-storefront")
+            }
 
             VStack(alignment: .leading, spacing: 16) {
                 Text("Sound on Home")
@@ -241,7 +277,8 @@ struct GrownUpsView: View {
             .background(.white, in: RoundedRectangle(cornerRadius: 25))
 
             NavigationLink {
-                ParentPreviewProgressView(snapshot: player.progressSnapshot(displayedSound: displayedSound))
+                ParentProgressView(selectedSound: displayedSound, snapshot: practice?.parentProgress,
+                                   savedGameRecords: savedGameRecords, onSendProgress: onSendProgress)
             } label: {
                 HStack(spacing: 14) {
                     Image(systemName: "chart.bar.xaxis")
@@ -249,7 +286,7 @@ struct GrownUpsView: View {
                         .padding(12)
                         .background(.white.opacity(0.75), in: RoundedRectangle(cornerRadius: 15))
                         .accessibilityHidden(true)
-                    Text("Preview progress").font(.system(.headline, design: .rounded))
+                    Text("Progress").font(.system(.headline, design: .rounded))
                     Spacer(minLength: 0)
                     Image(systemName: "chevron.right").accessibilityHidden(true)
                 }
@@ -258,18 +295,57 @@ struct GrownUpsView: View {
                 .background(GrownUpsPalette.mint, in: RoundedRectangle(cornerRadius: 24))
             }
             .accessibilityIdentifier("grownups-progress")
+
+            if let weeklyReport {
+                NavigationLink { weeklyReport() } label: {
+                    Label("Weekly progress report", systemImage: "envelope")
+                        .font(.headline)
+                        .padding(14)
+                        .frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
+                        .background(.white, in: RoundedRectangle(cornerRadius: 18))
+                }
+                .accessibilityIdentifier("grownups-weekly-report")
+            }
+
+            NavigationLink {
+                NativeFamilyFeedbackView()
+            } label: {
+                Label("Talk to us", systemImage: "bubble.left")
+                    .font(.headline)
+                    .padding(14)
+                    .frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
+                    .background(.white, in: RoundedRectangle(cornerRadius: 18))
+            }
+            .accessibilityIdentifier("grownups-feedback")
+
+            HStack(spacing: 24) {
+                Link("Privacy", destination: URL(string: "https://app.speaksona.com/privacy")!)
+                Link("Terms", destination: URL(string: "https://app.speaksona.com/terms")!)
+            }
+            .font(.footnote.weight(.semibold))
+
+            if let movingPhones {
+                NavigationLink { movingPhones() } label: {
+                    Label("Moving to a new phone?", systemImage: "arrow.left.arrow.right")
+                        .font(.headline)
+                        .padding(14)
+                        .frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
+                        .background(.white, in: RoundedRectangle(cornerRadius: 18))
+                }
+                .accessibilityIdentifier("grownups-backup")
+            }
         }
     }
 
     private var soundPicker: some View {
         Group {
-            Text("Choose a sound to show on Home. You can leave this blank.")
+            Text("Pick a sound for Home, or let Sona rotate through the practice sounds.")
                 .font(.subheadline)
                 .foregroundStyle(GrownUpsPalette.muted)
                 .fixedSize(horizontal: false, vertical: true)
 
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 82), spacing: 10)], spacing: 10) {
-                ForEach(Self.sounds, id: \.self) { sound in soundButton(sound) }
+                ForEach(focusOptions, id: \.self) { sound in soundButton(sound) }
             }
 
             Button {
@@ -278,7 +354,7 @@ struct GrownUpsView: View {
                 HStack(spacing: 10) {
                     Image(systemName: targetSound.isEmpty ? "checkmark.circle.fill" : "circle")
                         .foregroundStyle(GrownUpsPalette.teal)
-                    Text("Leave sound blank")
+                    Text("Rotate practice sounds")
                         .font(.body.weight(.medium))
                         .foregroundStyle(GrownUpsPalette.ink)
                     Spacer(minLength: 0)
@@ -289,6 +365,23 @@ struct GrownUpsView: View {
             .buttonStyle(.plain)
             .accessibilityValue(targetSound.isEmpty ? "Selected" : "Not selected")
             .accessibilityIdentifier("grownups-sound-clear")
+
+            DisclosureGroup("Change practice sounds") {
+                let columns = [GridItem(.adaptive(minimum: 88), spacing: 10)]
+                LazyVGrid(columns: columns, spacing: 10) {
+                    ForEach(Self.sounds, id: \.self) { sound in
+                        Button {
+                            onToggleFocus(sound)
+                        } label: {
+                            Label(sound == "THV" ? "TH (v)" : sound,
+                                  systemImage: focusOptions.contains(sound) ? "checkmark.circle.fill" : "circle")
+                                .frame(minHeight: 44)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(.top, 10)
+            }
         }
     }
 

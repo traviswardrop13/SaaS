@@ -36,6 +36,8 @@ struct StoryGamesView: View {
     let onComplete: () -> Void
     @Environment(\.dismiss) private var dismiss
     @Environment(\.dynamicTypeSize) private var typeSize
+    @Environment(\.speechGameProgress) private var speechGameProgress
+    @Environment(\.guidedReplay) private var guidedReplay
     @State private var finished = false
     @State private var reported = false
 
@@ -53,7 +55,7 @@ struct StoryGamesView: View {
                             .font(.system(.title3, design: .rounded).weight(.heavy))
                             .accessibilityAddTraits(.isHeader)
                             .accessibilityIdentifier("story-game-\(game.rawValue)")
-                        Text("Native play preview").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                        if speechGameProgress == nil { Text("Play preview").font(.caption.weight(.semibold)).foregroundStyle(.secondary) }
                     }
                     Spacer(minLength: 0)
                 }
@@ -73,6 +75,7 @@ struct StoryGamesView: View {
                     }
                     .buttonStyle(.borderedProminent).tint(StoryGameStyle.ink)
                     .disabled(reported).accessibilityIdentifier("story-game-continue")
+                    if let guidedReplay { Button("Play again", action: guidedReplay).frame(minHeight: 44) }
                 } else {
                     Group {
                         switch game {
@@ -149,12 +152,14 @@ private struct StoryGameInstruction: View {
 private struct NativeLighthouseRound: View {
     let onFinish: () -> Void
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.speechGameProgress) private var speechGameProgress
     @State private var stage = 0
     @State private var finger: CGPoint?
     @State private var held: Double = 0
     @State private var lit: Set<Int> = []
     @State private var boardSize: CGSize = .zero
     @State private var lastTick: Date?
+    @State private var bright: TimeInterval = 0
     private let clock = Timer.publish(every: 1 / 30, on: .main, in: .common).autoconnect()
     private let boats = ["tug", "row", "sail", "banana", "teacup", "bathtub", "ferry"]
     private let names = ["tugboat", "rowboat", "sailboat", "banana boat", "teacup boat", "bathtub boat", "big ferry"]
@@ -178,23 +183,24 @@ private struct NativeLighthouseRound: View {
         .init(x: 0.5912, y: 0.6253), .init(x: 0.6993, y: 0.6253), .init(x: 0.8048, y: 0.6254), .init(x: 0.9079, y: 0.6254),
         .init(x: 0.5604, y: 0.6971), .init(x: 0.6698, y: 0.6971), .init(x: 0.7778, y: 0.6971), .init(x: 0.8915, y: 0.6971)
     ]
+    private var boatCount: Int { min(boats.count, (speechGameProgress?.count ?? 8) - 1) }
 
     var body: some View {
         VStack(spacing: 10) {
-            StoryGameInstruction(text: lines[min(stage, 7)])
+            StoryGameInstruction(text: lines[stage < boatCount ? stage : lines.count - 1])
             GeometryReader { geo in
                 let rect = picture(in: geo.size)
                 ZStack {
                     Color(red: 0.05, green: 0.10, blue: 0.29)
                     StoryGameArt(name: "lighthouse-sea", symbol: "moon.stars.fill")
                         .frame(width: rect.width, height: rect.height).position(x: rect.midX, y: rect.midY)
-                    Color.black.opacity(finger == nil ? 0.30 : 0.10)
-                    ForEach(0..<min(stage, 7), id: \.self) { index in
+                    Color.black.opacity(bright > 0 ? 0.04 : finger == nil ? 0.30 : 0.10)
+                    ForEach(0..<min(stage, boatCount), id: \.self) { index in
                         StoryGameArt(name: "lighthouse-boat-\(boats[index])", symbol: "ferry.fill")
                             .frame(width: max(28, geo.size.width * 0.10), height: 34)
                             .position(x: geo.size.width * (0.37 + CGFloat(index % 4) * 0.12), y: geo.size.height * (0.86 + CGFloat(index / 4) * 0.07))
                     }
-                    if stage < 7 {
+                    if stage < boatCount {
                         let target = point(anchors[stage], in: geo.size)
                         StoryGameArt(name: "lighthouse-boat-\(boats[stage])", symbol: "ferry.fill")
                             .frame(width: max(66, geo.size.width * (stage == 6 ? 0.25 : 0.19)), height: 92)
@@ -210,8 +216,9 @@ private struct NativeLighthouseRound: View {
                         }
                     }
                     if let finger {
-                        Circle().fill(RadialGradient(colors: [.yellow.opacity(0.46), .yellow.opacity(0.12), .clear], center: .center, startRadius: 8, endRadius: 86))
-                            .frame(width: 172, height: 172).position(x: finger.x, y: finger.y - 56)
+                        let radius: CGFloat = bright > 0 ? 172 : 86
+                        Circle().fill(RadialGradient(colors: [.yellow.opacity(0.46), .yellow.opacity(0.12), .clear], center: .center, startRadius: 8, endRadius: radius))
+                            .frame(width: radius * 2, height: radius * 2).position(x: finger.x, y: finger.y - 56)
                             .allowsHitTesting(false)
                     }
                 }
@@ -223,30 +230,44 @@ private struct NativeLighthouseRound: View {
                 .onAppear { boardSize = geo.size }
                 .onChange(of: geo.size) { boardSize = $0 }
                 .accessibilityElement(children: .ignore)
-                .accessibilityLabel(stage < 7 ? "Lost boat: the \(names[stage])" : "Town windows")
+                .accessibilityLabel(stage < boatCount ? "Lost boat: the \(names[stage])" : "Town windows")
                 .accessibilityHint("Move and hold the light on the picture.")
                 .accessibilityIdentifier("lighthouse-sea")
             }
             .clipShape(RoundedRectangle(cornerRadius: 24))
             HStack {
                 Image(systemName: "light.beacon.max.fill").foregroundStyle(StoryGameStyle.gold)
-                Text(stage < 7 ? "\(stage) of 7 boats home" : "\(lit.count) of 12 windows lit")
+                Text(stage < boatCount ? "\(stage) of \(boatCount) boats home" : "\(lit.count) of \(windows.count) windows lit")
                     .font(.subheadline.weight(.semibold)).monospacedDigit()
                 Spacer()
             }.frame(minHeight: 30)
+            if finger == nil, bright == 0, let requestHelp = speechGameProgress?.requestHelp {
+                Button("Bright beam") { _ = requestHelp { earned in if earned { bright = 10 } } }
+                    .buttonStyle(.bordered).frame(minHeight: 44)
+                    .accessibilityIdentifier("lighthouse-help")
+            }
         }
         .onReceive(clock) { now in
+            guard scenePhase == .active, speechGameProgress?.isMoveActive != false,
+                  finger != nil || bright > 0 else {
+                if lastTick != nil { lastTick = nil }
+                return
+            }
             let dt = min(0.1, max(0, now.timeIntervalSince(lastTick ?? now)))
             lastTick = now
-            guard scenePhase == .active, let finger, boardSize.width > 0 else { return }
-            if stage < 7 {
+            if bright > 0 { bright = max(0, bright - dt) }
+            guard let finger, boardSize.width > 0 else { return }
+            if stage < boatCount {
                 if illuminated(point(anchors[stage], in: boardSize), by: finger) {
                     held += dt
-                    if held >= 0.5 { stage += 1; held = 0; self.finger = nil }
+                    if held >= 0.5 {
+                        stage += 1; held = 0; self.finger = nil; bright = 0
+                        speechGameProgress?.advance()
+                    }
                 } else { held = 0 }
             } else {
                 for index in windows.indices where illuminated(point(windows[index], in: boardSize), by: finger) { lit.insert(index) }
-                if lit.count == windows.count { self.finger = nil; onFinish() }
+                if lit.count == windows.count { self.finger = nil; speechGameProgress?.advance(); onFinish() }
             }
         }
         .onChange(of: scenePhase) { phase in if phase != .active { finger = nil; held = 0; lastTick = nil } }
@@ -264,7 +285,9 @@ private struct NativeLighthouseRound: View {
         // The original light sits 56 points above the finger; the find zone
         // includes the fingertip so touching a visible boat also finds it.
         let beam = CGPoint(x: finger.x, y: finger.y - 56)
-        return hypot(point.x - beam.x, point.y - beam.y) < 66 || hypot(point.x - finger.x, point.y - finger.y) < 47
+        let fold: CGFloat = bright > 0 ? 2 : 1
+        return hypot(point.x - beam.x, point.y - beam.y) < 66 * fold ||
+               hypot(point.x - finger.x, point.y - finger.y) < 47 * fold
     }
 }
 
@@ -272,20 +295,25 @@ private struct NativeWindupRound: View {
     let onFinish: () -> Void
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.speechGameProgress) private var speechGameProgress
     @State private var stage = 0
     @State private var turns: Double = 0
     @State private var misses = 0
     @State private var previousAngle: Double?
     @State private var previousPoint: CGPoint?
+    @State private var fingerStart: CGPoint?
     @State private var sweep: Double = 0
     @State private var origin: Double = 0
     @State private var credit: Double = 0
     @State private var effort: Double = 0
     @State private var feedback = ""
     @State private var awake = false
-    private let toys = ["bunny", "frog", "top", "croc", "elephant", "jack-closed", "hippo", "musicbox"]
+    @State private var oiled: TimeInterval = 0
+    private let oilClock = Timer.publish(every: 0.25, on: .main, in: .common).autoconnect()
+    private let bigToys = ["bunny", "frog", "top", "croc", "elephant", "jack-closed", "hippo", "musicbox"]
+    private let littleToys = ["bunny", "frog", "elephant", "hippo", "top", "musicbox"]
     // Exact authored directions from windup.js STEP_LINES.
-    private let lines = [
+    private let bigLines = [
         "Draw circles around the key to wind it. Let go at the star!",
         "Wind up the frog. Let go when the needle reaches the star!",
         "Wind up the spinning top. Round and round, then let go at the star!",
@@ -295,9 +323,23 @@ private struct NativeWindupRound: View {
         "Wind up the hippo. She wants to dance!",
         "Turn the big crank on the music box to start the parade!"
     ]
-    private var need: Double { stage == 7 ? 4 : stage >= 4 ? 3.5 : 2.5 }
-    private var halfStar: Double { (stage >= 4 ? 0.25 : 0.3) * (misses > 0 ? 1.6 : 1) }
-    private var top: Double { need + 1 }
+    private let littleLines = [
+        "Draw circles on the key until it rings!",
+        "Wind up the frog until it rings!",
+        "Wind up the elephant. Round and round!",
+        "Wind up the hippo. She wants to dance!",
+        "Wind up the spinning top!",
+        "Turn the big crank to start the parade!"
+    ]
+    private var little: Bool { speechGameProgress?.count == littleToys.count }
+    private var toys: [String] { little ? littleToys : bigToys }
+    private var lines: [String] { little ? littleLines : bigLines }
+    private var lastToy: Bool { stage == toys.count - 1 }
+    private var hasStar: Bool { !little && !lastToy }
+    private var onUpperShelf: Bool { !little && stage >= 4 && !lastToy }
+    private var need: Double { little ? 2 : lastToy ? 4 : stage >= 4 ? 3.5 : 2.5 }
+    private var halfStar: Double { (stage >= 4 ? 0.25 : 0.3) * (oiled > 0 ? 1.8 : misses > 0 ? 1.6 : 1) }
+    private var top: Double { hasStar ? need / 0.7 : need }
 
     var body: some View {
         VStack(spacing: 10) {
@@ -306,9 +348,9 @@ private struct NativeWindupRound: View {
                 let radius = min(82.0, geo.size.width * 0.27, geo.size.height * 0.24)
                 let center = CGPoint(x: geo.size.width / 2, y: geo.size.height * 0.72)
                 ZStack {
-                    StoryGameBackdrop(name: stage >= 4 && stage < 7 ? "windup-shelf" : "windup-shop", color: Color(red: 0.84, green: 0.66, blue: 0.45))
+                    StoryGameBackdrop(name: onUpperShelf ? "windup-shelf" : "windup-shop", color: Color(red: 0.84, green: 0.66, blue: 0.45))
                     Color.brown.opacity(0.08)
-                    StoryGameArt(name: "windup-\(awake && stage == 5 ? "jack-open" : toys[stage])", symbol: stage == 7 ? "music.note.house.fill" : "teddybear.fill")
+                    StoryGameArt(name: "windup-\(awake && toys[stage] == "jack-closed" ? "jack-open" : toys[stage])", symbol: lastToy ? "music.note.house.fill" : "teddybear.fill")
                         .frame(width: min(210, geo.size.width * 0.57), height: geo.size.height * 0.43)
                         .scaleEffect(awake && !reduceMotion ? 1.08 : 1)
                         .position(x: geo.size.width / 2, y: geo.size.height * 0.26)
@@ -322,7 +364,8 @@ private struct NativeWindupRound: View {
                     Image(systemName: "arrow.clockwise").font(.system(size: 28, weight: .heavy))
                         .foregroundStyle(Color.brown.opacity(0.65)).position(x: center.x, y: center.y - radius * 0.72)
                     if awake {
-                        Text("Just right!").font(.title3.bold()).padding(10)
+                        Text(lastToy ? "The parade is on!" : little ? "Ding! Wake up!" : "Just right!")
+                            .font(.title3.bold()).padding(10)
                             .background(.ultraThinMaterial, in: Capsule()).position(x: center.x, y: geo.size.height * 0.48)
                     }
                 }
@@ -333,19 +376,27 @@ private struct NativeWindupRound: View {
                 }.onEnded { _ in release() })
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel("Winding key")
-                .accessibilityHint("Draw circles around the key, then let go at the star.")
+                .accessibilityHint(hasStar ? "Draw circles around the key, then let go at the star." : lines[stage])
                 .accessibilityIdentifier("windup-dial")
             }
             .clipShape(RoundedRectangle(cornerRadius: 24))
             meter
-            Text(feedback.isEmpty ? "\(stage) of 8 toys awake" : feedback)
+            Text(feedback.isEmpty ? "\(stage) of \(toys.count) toys awake" : feedback)
                 .font(.subheadline.weight(.semibold)).frame(minHeight: 22).multilineTextAlignment(.center)
             if awake {
-                Button(stage == 7 ? "Finish parade" : "Next toy") { advance() }
+                Button(lastToy ? "Finish parade" : "Next toy") { advance() }
                     .font(.headline).frame(maxWidth: .infinity, minHeight: 48)
                     .background(StoryGameStyle.ink, in: Capsule()).foregroundStyle(.white)
                     .accessibilityIdentifier("windup-next")
+            } else if previousPoint == nil, oiled == 0, let requestHelp = speechGameProgress?.requestHelp {
+                Button("Oil the key") {
+                    _ = requestHelp { earned in if earned { oiled = 10; feedback = "The key turns more easily." } }
+                }.buttonStyle(.bordered).frame(minHeight: 44)
+                    .accessibilityIdentifier("windup-help")
             }
+        }
+        .onReceive(oilClock) { _ in
+            if scenePhase == .active && speechGameProgress?.isMoveActive != false && oiled > 0 { oiled = max(0, oiled - 0.25) }
         }
         .onChange(of: scenePhase) { phase in if phase != .active { resetFinger() } }
     }
@@ -355,7 +406,7 @@ private struct NativeWindupRound: View {
                 Capsule().fill(Color.black.opacity(0.08))
                 Capsule().fill(awake ? StoryGameStyle.teal : StoryGameStyle.gold)
                     .frame(width: max(0, geo.size.width * min(1, turns / top)))
-                if stage < 7 {
+                if hasStar {
                     RoundedRectangle(cornerRadius: 5).fill(StoryGameStyle.gold.opacity(0.35))
                         .frame(width: max(24, geo.size.width * halfStar * 2 / top))
                         .position(x: geo.size.width * need / top, y: 14)
@@ -366,6 +417,7 @@ private struct NativeWindupRound: View {
         }.frame(height: 28).accessibilityLabel("Spring meter").accessibilityValue("\(Int(min(1, turns / need) * 100)) percent")
     }
     private func wind(_ p: CGPoint, center: CGPoint, radius: CGFloat) {
+        if fingerStart == nil { fingerStart = p }
         let distance = hypot(p.x - center.x, p.y - center.y)
         let angle = atan2(Double(p.y - center.y), Double(p.x - center.x))
         let inRing = distance >= radius * 0.15 && distance <= radius * 1.4
@@ -373,7 +425,9 @@ private struct NativeWindupRound: View {
         if let previousPoint {
             let travel = hypot(p.x - previousPoint.x, p.y - previousPoint.y)
             if travel > 0.5 { effort += Double(travel) / 80 }
-            if effort >= 8 && distance <= radius * 1.4 || effort >= 12 {
+            let previousDistance = hypot(previousPoint.x - center.x, previousPoint.y - center.y)
+            let rubbingTheDial = (little || effort >= 8) && max(previousDistance, distance) <= radius * 1.4
+            if rubbingTheDial || effort >= (little ? 6 : 12) {
                 gained = Double(travel / (2 * .pi * radius))
             }
         }
@@ -390,15 +444,25 @@ private struct NativeWindupRound: View {
         }
         previousAngle = inRing ? angle : nil
         previousPoint = p
-        turns = min(top, turns + gained * (misses > 0 ? 0.75 : 1))
+        let biggerGain = (little && effort >= 4) || (lastToy && effort >= 12)
+        turns = min(top, turns + gained * (misses > 0 ? 0.75 : 1) * (oiled > 0 ? 2 : 1) * (biggerGain ? 2 : 1))
+        if little && effort >= 6, let fingerStart, hypot(fingerStart.x - p.x, fingerStart.y - p.y) > 30 {
+            turns = need
+        }
         if misses >= 2 { turns = min(turns, need) }
-        if stage == 7 && turns >= need { awake = true; feedback = "The parade is on!"; resetFinger() }
+        if !hasStar && turns >= need {
+            awake = true; feedback = lastToy ? "The parade is on!" : "Ding! Wake up!"; resetFinger()
+        } else if little && effort >= 6 { feedback = "One big drag!" }
+        else if little && effort >= 4 { feedback = "Rub the key fast!" }
         else if effort >= 12 { feedback = "Drag anywhere to wind!" }
         else if effort >= 8 { feedback = "Rub the dial to wind it" }
     }
     private func release() {
+        if let fingerStart, let previousPoint, hypot(fingerStart.x - previousPoint.x, fingerStart.y - previousPoint.y) < 10 {
+            effort += 0.5
+        }
         resetFinger()
-        guard !awake, scenePhase == .active, turns >= need * 0.3, stage < 7 else { return }
+        guard !awake, scenePhase == .active, hasStar, turns >= (need - halfStar) * 0.3 else { return }
         if misses >= 3 || abs(turns - need) <= halfStar {
             awake = true; feedback = "Just right!"
         } else if turns < need {
@@ -408,17 +472,20 @@ private struct NativeWindupRound: View {
             feedback = "Whoa, dizzy! Let go a bit sooner"
         }
     }
-    private func resetFinger() { previousAngle = nil; previousPoint = nil; sweep = 0; origin = 0; credit = 0 }
+    private func resetFinger() { previousAngle = nil; previousPoint = nil; fingerStart = nil; sweep = 0; origin = 0; credit = 0 }
     private func advance() {
         guard awake else { return }
-        if stage == 7 { onFinish(); return }
-        stage += 1; turns = 0; misses = 0; effort = 0; feedback = ""; awake = false; resetFinger()
+        speechGameProgress?.advance()
+        if lastToy { onFinish(); return }
+        stage += 1
+        turns = 0; misses = 0; effort = 0; feedback = ""; awake = false; oiled = 0; resetFinger()
     }
 }
 
 private struct NativeBridgeRound: View {
     let onFinish: () -> Void
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.speechGameProgress) private var speechGameProgress
     @State private var stage = 0
     @State private var quarterTurns = 1
     @State private var stone: CGPoint?
@@ -427,7 +494,20 @@ private struct NativeBridgeRound: View {
     @State private var misses = 0
     @State private var feedback = ""
     @State private var seated = false
+    @State private var calmRiver: TimeInterval = 0
+    private let riverClock = Timer.publish(every: 0.25, on: .main, in: .common).autoconnect()
     private let initialTurns = [1, 1, 2, 1, 2, 3, 2, 1]
+    private let littleLines = [
+        "Slide the stone into the hole with the same shape!",
+        "Which hole is the same shape? Slide it in!",
+        "Find the hole that matches. Click!",
+        "Look, ducks! Slide the stone into its hole.",
+        "Find the same shape and slide it in!",
+        "The heart goes on top. Slide it in!"
+    ]
+    private var little: Bool { speechGameProgress?.count == littleLines.count }
+    private var count: Int { little ? littleLines.count : initialTurns.count }
+    private var shapeIndex: Int { little && stage == littleLines.count - 1 ? 7 : stage }
     // Exact authored directions from bridge.js STEP_LINES.
     private let lines = [
         "Tap the stone to turn it. Then slide it into its hole!",
@@ -442,7 +522,7 @@ private struct NativeBridgeRound: View {
 
     var body: some View {
         VStack(spacing: 10) {
-            StoryGameInstruction(text: lines[stage])
+            StoryGameInstruction(text: little ? littleLines[stage] : lines[stage])
             GeometryReader { geo in
                 let side = min(110, geo.size.width * 0.31)
                 let hole = CGPoint(x: geo.size.width * (stage % 2 == 0 ? 0.34 : 0.66), y: geo.size.height * 0.35)
@@ -462,17 +542,21 @@ private struct NativeBridgeRound: View {
                             context.fill(StoryBridgeStone(index: index).path(in: r), with: .color(StoryGameStyle.gold))
                         }
                     }.allowsHitTesting(false)
-                    StoryBridgeStone(index: stage).fill(Color(red: 0.20, green: 0.23, blue: 0.22))
+                    StoryBridgeStone(index: shapeIndex).fill(Color(red: 0.20, green: 0.23, blue: 0.22))
                         .frame(width: side, height: side).position(hole)
-                    StoryBridgeStone(index: stage).stroke(.white.opacity(misses > 0 ? 0.9 : 0.45), style: StrokeStyle(lineWidth: 3, dash: [6, 5]))
+                    StoryBridgeStone(index: shapeIndex).stroke(.white.opacity(misses > 0 ? 0.9 : 0.45), style: StrokeStyle(lineWidth: 3, dash: [6, 5]))
                         .frame(width: side, height: side).position(hole)
+                    if calmRiver > 0 {
+                        StoryBridgeStone(index: shapeIndex).fill(StoryGameStyle.gold.opacity(0.48))
+                            .frame(width: side, height: side).position(hole).allowsHitTesting(false)
+                    }
                     if !seated {
                         Image(systemName: "arrow.up").font(.system(size: 26, weight: .bold)).foregroundStyle(.white.opacity(0.75))
                             .position(x: geo.size.width / 2, y: geo.size.height * 0.58).allowsHitTesting(false)
                     }
-                    StoryBridgeStone(index: stage).fill(seated ? StoryGameStyle.gold : Color(red: 0.91, green: 0.75, blue: 0.52))
-                        .overlay(StoryBridgeStone(index: stage).stroke(Color.brown.opacity(0.5), lineWidth: 2))
-                        .frame(width: side, height: side).rotationEffect(.degrees(Double(quarterTurns * 90)))
+                    StoryBridgeStone(index: shapeIndex).fill(seated ? StoryGameStyle.gold : Color(red: 0.91, green: 0.75, blue: 0.52))
+                        .overlay(StoryBridgeStone(index: shapeIndex).stroke(Color.brown.opacity(0.5), lineWidth: 2))
+                        .frame(width: side, height: side).rotationEffect(.degrees(little ? 0 : Double(quarterTurns * 90)))
                         .shadow(color: .black.opacity(0.20), radius: seated ? 1 : 7, y: seated ? 0 : 5)
                         .position(position)
                         .gesture(DragGesture(minimumDistance: 0, coordinateSpace: .named("bridge-board"))
@@ -484,13 +568,13 @@ private struct NativeBridgeRound: View {
                             }
                             .onEnded { value in
                                 guard !seated, scenePhase == .active else { dragStart = nil; return }
-                                if hypot(value.translation.width, value.translation.height) < 12 && value.time.timeIntervalSince(touchBegan ?? value.time) < 0.3 {
+                                if !little && hypot(value.translation.width, value.translation.height) < 12 && value.time.timeIntervalSince(touchBegan ?? value.time) < 0.3 {
                                     stone = dragStart; turn()
                                 } else { drop(at: stone ?? start, hole: hole, side: side) }
                                 dragStart = nil; touchBegan = nil
                             })
                         .accessibilityLabel("Bridge stone")
-                        .accessibilityHint("Tap to turn. Drag to the matching hole.")
+                        .accessibilityHint(little ? "Drag to the matching hole." : "Tap to turn. Drag to the matching hole.")
                         .accessibilityIdentifier("bridge-stone")
                 }
                 .coordinateSpace(name: "bridge-board").clipped()
@@ -499,30 +583,41 @@ private struct NativeBridgeRound: View {
             }
             .clipShape(RoundedRectangle(cornerRadius: 24))
             HStack {
-                Text(feedback.isEmpty ? "\(stage) of 8 stones fitted" : feedback)
+                Text(feedback.isEmpty ? "\(stage) of \(count) stones fitted" : feedback)
                     .font(.subheadline.weight(.semibold)).frame(maxWidth: .infinity, alignment: .leading)
                 if seated {
-                    Button(stage == 7 ? "Finish bridge" : "Next stone") { advance() }
+                    Button(stage + 1 == count ? "Finish bridge" : "Next stone") { advance() }
                         .font(.headline).padding(.horizontal, 16).frame(minHeight: 48)
                         .background(StoryGameStyle.ink, in: Capsule()).foregroundStyle(.white)
                         .accessibilityIdentifier("bridge-next")
-                } else {
+                } else if !little {
                     Button { turn() } label: {
                         Label("Turn", systemImage: "rotate.right").font(.headline).padding(.horizontal, 18).frame(minHeight: 48)
                     }.background(.white, in: Capsule()).accessibilityIdentifier("bridge-turn")
                 }
             }
+            if !seated, dragStart == nil, calmRiver == 0, let requestHelp = speechGameProgress?.requestHelp {
+                Button("Calm river") {
+                    _ = requestHelp { earned in if earned { calmRiver = 10; feedback = "Calm river! The water is still." } }
+                }.buttonStyle(.bordered).frame(minHeight: 44)
+                    .accessibilityIdentifier("bridge-help")
+            }
+        }
+        .onReceive(riverClock) { _ in
+            if scenePhase == .active && speechGameProgress?.isMoveActive != false && calmRiver > 0 {
+                calmRiver = max(0, calmRiver - 0.25)
+            }
         }
         .onChange(of: scenePhase) { phase in if phase != .active { stone = nil; dragStart = nil } }
     }
     private func turn() {
-        guard !seated else { return }
+        guard !little, !seated else { return }
         quarterTurns = (quarterTurns + 1) % 4
         feedback = ""
     }
     private func drop(at p: CGPoint, hole: CGPoint, side: CGFloat) {
         guard hypot(p.x - hole.x, p.y - hole.y) < side * (misses >= 2 ? 1.1 : 0.72) else { stone = nil; return }
-        if quarterTurns % 4 == 0 || misses >= 2 {
+        if little || quarterTurns % 4 == 0 || misses >= 2 {
             quarterTurns = 0; stone = hole; seated = true; feedback = "Click!"
         } else {
             misses += 1; stone = nil; feedback = "Almost! Give it a turn."
@@ -530,9 +625,10 @@ private struct NativeBridgeRound: View {
     }
     private func advance() {
         guard seated else { return }
-        if stage == 7 { onFinish(); return }
+        speechGameProgress?.advance()
+        if stage + 1 == count { onFinish(); return }
         stage += 1; quarterTurns = initialTurns[stage]; stone = nil; dragStart = nil
-        misses = 0; feedback = ""; seated = false
+        misses = 0; feedback = ""; seated = false; calmRiver = 0
     }
 }
 

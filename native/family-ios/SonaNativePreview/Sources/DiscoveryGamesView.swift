@@ -15,7 +15,7 @@ enum DiscoveryGame {
         switch self {
         case .bubbles: return "A sky full of bubbles. Pop them all!"
         case .peekaboo: return "Watch the fox. Where will it hide?"
-        case .dino: return "Brush the sand. Find five hidden bones."
+        case .dino: return "Brush the sand to find hidden bones."
         }
     }
 
@@ -28,13 +28,13 @@ enum DiscoveryGame {
     }
 }
 
-/// Native free play. Finishing a round records a game completion only;
-/// no microphone, sound prompts, speech judgments or practice reps are used.
+/// Native boards; the voice host owns each move's speaking turn.
 struct DiscoveryGamesView: View {
     let game: DiscoveryGame
     let onRoundFinished: () -> Void
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.guidedReplay) private var guidedReplay
     @Environment(\.dynamicTypeSize) private var typeSize
     @State private var roundID = UUID()
     @State private var finished = false
@@ -132,8 +132,8 @@ struct DiscoveryGamesView: View {
                     .foregroundStyle(DiscoveryPalette.muted)
                     .multilineTextAlignment(.center)
                 DiscoveryAction(title: "Play again", systemImage: "arrow.clockwise") {
-                    finished = false
-                    roundID = UUID()
+                    if let guidedReplay { guidedReplay() }
+                    else { finished = false; roundID = UUID() }
                 }
                 .accessibilityIdentifier("discovery-replay")
                 Button("Back to games") { dismiss() }
@@ -162,13 +162,15 @@ private struct BubblePopRound: View {
     let onComplete: () -> Void
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.speechGameProgress) private var speechGameProgress
     @State private var wave = 0
     @State private var popped: Set<Int> = []
     private let colors: [Color] = [.cyan, .pink, .purple, .orange, .teal, .blue]
+    private var waves: Int { speechGameProgress?.count ?? 2 }
 
     var body: some View {
         VStack(spacing: 12) {
-            DiscoveryProgress(value: wave * 6 + popped.count, total: 12, label: "bubbles popped")
+            DiscoveryProgress(value: wave * 6 + popped.count, total: waves * 6, label: "bubbles popped")
                 .accessibilityIdentifier("bubbles-progress")
             TimelineView(.animation(minimumInterval: 1.0 / 30, paused: reduceMotion || scenePhase != .active)) { timeline in
                 GeometryReader { geometry in
@@ -217,14 +219,14 @@ private struct BubblePopRound: View {
                     }
                 }
             }
-            if popped.count == 6 && wave == 0 {
+            if popped.count == 6 && wave < waves - 1 {
                 DiscoveryAction(title: "More bubbles!", systemImage: "sparkles") {
-                    wave = 1
+                    wave += 1
                     popped = []
                 }
                 .accessibilityIdentifier("bubbles-next")
             } else {
-                Text(wave == 0 ? "Pop this bunch…" : "One more bunch!")
+                Text(wave == waves - 1 ? "One more bunch!" : "Pop this bunch…")
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(DiscoveryPalette.muted)
                     .frame(minHeight: 48)
@@ -235,7 +237,10 @@ private struct BubblePopRound: View {
     private func pop(_ index: Int) {
         guard !popped.contains(index) else { return }
         popped.insert(index)
-        if wave == 1 && popped.count == 6 { onComplete() }
+        if popped.count == 6 {
+            speechGameProgress?.advance()
+            if wave == waves - 1 { onComplete() }
+        }
     }
 }
 
@@ -244,16 +249,19 @@ private struct PeekabooRound: View {
     let onComplete: () -> Void
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.speechGameProgress) private var speechGameProgress
     @State private var phase: Phase = .watch
     @State private var order = [0, 1, 2]
     @State private var hidingDoor = Int.random(in: 0..<3)
     @State private var wrongDoor: Int?
     @State private var finds = 0
+    @State private var clue = false
     private let colors: [Color] = [Color(red: 0.96, green: 0.66, blue: 0.61), Color(red: 0.58, green: 0.80, blue: 0.85), Color(red: 0.97, green: 0.82, blue: 0.43)]
+    private var goal: Int { speechGameProgress?.count ?? 3 }
 
     var body: some View {
         VStack(spacing: 14) {
-            DiscoveryProgress(value: finds, total: 3, label: "foxes found")
+            DiscoveryProgress(value: finds, total: goal, label: "foxes found")
                 .accessibilityIdentifier("peekaboo-progress")
             Text(status)
                 .font(.system(.title3, design: .rounded).weight(.bold))
@@ -294,13 +302,16 @@ private struct PeekabooRound: View {
                                 }
                             }
                             .frame(width: width, height: max(90, height))
-                            .overlay(RoundedRectangle(cornerRadius: 22).strokeBorder(.white, lineWidth: 3))
+                            .overlay(RoundedRectangle(cornerRadius: 22)
+                                .strokeBorder(clue && door == hidingDoor ? .yellow : .white, lineWidth: clue && door == hidingDoor ? 8 : 3))
                             .shadow(color: DiscoveryPalette.ink.opacity(0.08), radius: 6, y: 5)
                         }
                         .buttonStyle(.plain)
                         .disabled(phase != .guess || wrongDoor == door)
                         .accessibilityLabel("Door \((order.firstIndex(of: door) ?? 0) + 1)")
-                        .accessibilityHint(phase == .guess ? "Look for the fox" : "Watch the fox before the doors shuffle")
+                        .accessibilityHint(phase == .guess
+                            ? (clue && door == hidingDoor ? "This door is glowing." : "Look for the fox")
+                            : "Watch the fox before the doors shuffle")
                         .accessibilityIdentifier("peekaboo-door-\(door)")
                         .position(x: geometry.size.width * (CGFloat(order.firstIndex(of: door) ?? 0) + 0.5) / 3, y: geometry.size.height / 2)
                     }
@@ -321,6 +332,11 @@ private struct PeekabooRound: View {
                 case .shuffling:
                     Text("Keep watching…").font(.body.weight(.semibold)).frame(minHeight: 50)
                 }
+            }
+            if phase == .guess, !clue, let requestHelp = speechGameProgress?.requestHelp {
+                Button("Echo's clue") { _ = requestHelp { earned in if earned { clue = true } } }
+                    .buttonStyle(.bordered).frame(minHeight: 44)
+                    .accessibilityIdentifier("peekaboo-help")
             }
         }
         .task(id: phase) {
@@ -345,7 +361,7 @@ private struct PeekabooRound: View {
         switch phase {
         case .watch: return "There’s the fox!"
         case .shuffling: return "Follow its door…"
-        case .guess: return wrongDoor == nil ? "Where is the fox?" : "Try another door."
+        case .guess: return clue ? "Look for the glowing door." : wrongDoor == nil ? "Where is the fox?" : "Try another door."
         case .found: return "Found it!"
         }
     }
@@ -355,7 +371,8 @@ private struct PeekabooRound: View {
         if door == hidingDoor {
             finds += 1
             phase = .found
-            if finds == 3 { onComplete() }
+            speechGameProgress?.advance()
+            if finds == goal { onComplete() }
         } else {
             wrongDoor = door
         }
@@ -363,6 +380,7 @@ private struct PeekabooRound: View {
 
     private func nextFind() {
         wrongDoor = nil
+        clue = false
         hidingDoor = Int.random(in: 0..<3)
         order = [0, 1, 2]
         phase = .watch
@@ -371,12 +389,22 @@ private struct PeekabooRound: View {
 
 private struct DinoDigRound: View {
     let onComplete: () -> Void
+    @Environment(\.speechGameProgress) private var speechGameProgress
     @State private var cleared: Set<Int> = []
     @State private var found: Set<Int> = []
     private let columns = 22
     private let rows = 26
-    private let bones: [CGPoint] = [CGPoint(x: 0.25, y: 0.19), CGPoint(x: 0.74, y: 0.25), CGPoint(x: 0.48, y: 0.49), CGPoint(x: 0.24, y: 0.77), CGPoint(x: 0.76, y: 0.76)]
-    private let turns: [Double] = [-22, 18, -38, 27, -12]
+    private var bones: [CGPoint] {
+        if speechGameProgress == nil {
+            return [.init(x: 0.25, y: 0.19), .init(x: 0.74, y: 0.25), .init(x: 0.48, y: 0.49), .init(x: 0.24, y: 0.77), .init(x: 0.76, y: 0.76)]
+        }
+        let goal = speechGameProgress?.count ?? 8
+        return (0..<goal).map { index in
+            .init(x: index.isMultiple(of: 2) ? 0.26 : 0.74,
+                  y: (CGFloat(index / 2) + 0.5) / CGFloat((goal + 1) / 2))
+        }
+    }
+    private let turns: [Double] = [-22, 18, -38, 27, -12, 29, -16, 9]
 
     var body: some View {
         VStack(spacing: 14) {
@@ -390,7 +418,7 @@ private struct DinoDigRound: View {
                             .fill(Color(red: 1, green: 0.97, blue: 0.83))
                             .overlay(BoneShape().stroke(Color(red: 0.57, green: 0.40, blue: 0.24), lineWidth: 2))
                             .frame(width: geometry.size.width * 0.31, height: geometry.size.height * 0.105)
-                            .rotationEffect(.degrees(turns[index]))
+                            .rotationEffect(.degrees(turns[index % turns.count]))
                             .shadow(color: .black.opacity(0.18), radius: 3, y: 3)
                             .position(x: bones[index].x * geometry.size.width, y: bones[index].y * geometry.size.height)
                     }
@@ -421,7 +449,7 @@ private struct DinoDigRound: View {
                 })
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel("Sand pit")
-                .accessibilityValue("\(found.count) of five bones found")
+                .accessibilityValue("\(found.count) of \(bones.count) bones found")
                 .accessibilityHint("Rub the sand, or use Brush next patch below")
                 .accessibilityAction(named: "Brush next patch", brushNext)
                 .accessibilityIdentifier("dino-sand")
@@ -478,6 +506,10 @@ private struct DinoDigRound: View {
                     for column in 0..<columns where isOverBone(column: column, row: row, index: index) {
                         cleared.insert(row * columns + column)
                     }
+                }
+                if let speechGameProgress {
+                    speechGameProgress.advance()
+                    break
                 }
             }
         }

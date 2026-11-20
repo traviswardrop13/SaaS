@@ -5,6 +5,7 @@ import SwiftUI
 struct PracticeModelsView: View {
     let targetSound: String
     let onGrownUps: () -> Void
+    let onPractice: () -> Void
     @StateObject private var voice = ModelVoicePlayer()
 
     private var label: String { targetSound == "THV" ? "TH (v)" : targetSound }
@@ -43,6 +44,10 @@ struct PracticeModelsView: View {
                             primaryLabel("Hear the sound", icon: "speaker.wave.2.fill")
                         }
                         .accessibilityIdentifier("practice-hear-sound")
+                        Button(action: onPractice) {
+                            primaryLabel("Practice my sound", icon: "mic.fill")
+                        }
+                        .accessibilityIdentifier("practice-open-guided")
                     }
                     if voice.failed {
                         Text("The recording couldn’t play. Try again.")

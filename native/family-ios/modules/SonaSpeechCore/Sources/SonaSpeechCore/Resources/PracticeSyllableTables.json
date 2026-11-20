@@ -1,0 +1,966 @@
+{
+  "version": 1,
+  "sourceSHA256": "0a6f8ec6486b19df6e14874875c904d753822fe1ae033d28681044dd8d216f65",
+  "tables": [
+    {
+      "sound": "R",
+      "position": "m",
+      "items": [
+        {
+          "text": "ah-rah",
+          "say": "ah-rah"
+        },
+        {
+          "text": "oo-roo",
+          "say": "oo-roo"
+        },
+        {
+          "text": "oh-roh",
+          "say": "oh-roh"
+        },
+        {
+          "text": "ay-ray",
+          "say": "ay-ray"
+        }
+      ]
+    },
+    {
+      "sound": "S",
+      "position": "m",
+      "items": [
+        {
+          "text": "ah-sah",
+          "say": "ah-sah"
+        },
+        {
+          "text": "ee-see",
+          "say": "ee-see"
+        },
+        {
+          "text": "oo-soo",
+          "say": "oo-soo"
+        },
+        {
+          "text": "oh-soh",
+          "say": "oh-soh"
+        },
+        {
+          "text": "ay-say",
+          "say": "ay-say"
+        }
+      ]
+    },
+    {
+      "sound": "L",
+      "position": "m",
+      "items": [
+        {
+          "text": "oo-loo",
+          "say": "oo-loo"
+        },
+        {
+          "text": "oh-loh",
+          "say": "oh-loh"
+        },
+        {
+          "text": "ay-lay",
+          "say": "ay-lay"
+        }
+      ]
+    },
+    {
+      "sound": "K",
+      "position": "m",
+      "items": [
+        {
+          "text": "ah-kah",
+          "say": "ah-kah"
+        },
+        {
+          "text": "ee-kee",
+          "say": "ee-kee"
+        },
+        {
+          "text": "oo-koo",
+          "say": "oo-koo"
+        },
+        {
+          "text": "oh-koh",
+          "say": "oh-koh"
+        },
+        {
+          "text": "ay-kay",
+          "say": "ay-kay"
+        }
+      ]
+    },
+    {
+      "sound": "G",
+      "position": "m",
+      "items": [
+        {
+          "text": "ah-gah",
+          "say": "ah-gah"
+        },
+        {
+          "text": "oo-goo",
+          "say": "oo-goo"
+        },
+        {
+          "text": "oh-goh",
+          "say": "oh-goh"
+        }
+      ]
+    },
+    {
+      "sound": "F",
+      "position": "m",
+      "items": [
+        {
+          "text": "ah-fah",
+          "say": "ah-fah"
+        },
+        {
+          "text": "ee-fee",
+          "say": "ee-fee"
+        },
+        {
+          "text": "oo-foo",
+          "say": "oo-foo"
+        },
+        {
+          "text": "oh-foh",
+          "say": "oh-foh"
+        },
+        {
+          "text": "ay-fay",
+          "say": "ay-fay"
+        }
+      ]
+    },
+    {
+      "sound": "SH",
+      "position": "m",
+      "items": [
+        {
+          "text": "ah-shah",
+          "say": "ah-shah"
+        },
+        {
+          "text": "ee-shee",
+          "say": "ee-shee"
+        },
+        {
+          "text": "oo-shoo",
+          "say": "oo-shoo"
+        },
+        {
+          "text": "oh-shoh",
+          "say": "oh-shoh"
+        },
+        {
+          "text": "ay-shay",
+          "say": "ay-shay"
+        }
+      ]
+    },
+    {
+      "sound": "CH",
+      "position": "m",
+      "items": [
+        {
+          "text": "ah-chah",
+          "say": "ah-chah"
+        },
+        {
+          "text": "ee-chee",
+          "say": "ee-chee"
+        },
+        {
+          "text": "oo-choo",
+          "say": "oo-choo"
+        },
+        {
+          "text": "oh-choh",
+          "say": "oh-choh"
+        },
+        {
+          "text": "ay-chay",
+          "say": "ay-chay"
+        }
+      ]
+    },
+    {
+      "sound": "TH",
+      "position": "m",
+      "items": [
+        {
+          "text": "ah-thah",
+          "say": "ah-thah"
+        },
+        {
+          "text": "oo-thoo",
+          "say": "oo-thoo"
+        },
+        {
+          "text": "oh-thoh",
+          "say": "oh-thoh"
+        }
+      ]
+    },
+    {
+      "sound": "THV",
+      "position": "m",
+      "items": [
+        {
+          "text": "ah-thuh",
+          "say": "ah-thuh"
+        },
+        {
+          "text": "oo-thuh",
+          "say": "oo-thuh"
+        },
+        {
+          "text": "oh-thuh",
+          "say": "oh-thuh"
+        }
+      ]
+    },
+    {
+      "sound": "Z",
+      "position": "m",
+      "items": [
+        {
+          "text": "ah-zah",
+          "say": "ah-zah"
+        },
+        {
+          "text": "ee-zee",
+          "say": "ee-zee"
+        },
+        {
+          "text": "oo-zoo",
+          "say": "oo-zoo"
+        },
+        {
+          "text": "oh-zoh",
+          "say": "oh-zoh"
+        },
+        {
+          "text": "ay-zay",
+          "say": "ay-zay"
+        }
+      ]
+    },
+    {
+      "sound": "V",
+      "position": "m",
+      "items": [
+        {
+          "text": "ah-vah",
+          "say": "ah-vah"
+        },
+        {
+          "text": "ee-vee",
+          "say": "ee-vee"
+        },
+        {
+          "text": "oo-voo",
+          "say": "oo-voo"
+        },
+        {
+          "text": "oh-voh",
+          "say": "oh-voh"
+        },
+        {
+          "text": "ay-vay",
+          "say": "ay-vay"
+        }
+      ]
+    },
+    {
+      "sound": "J",
+      "position": "m",
+      "items": [
+        {
+          "text": "ee-jee",
+          "say": "ee-jee"
+        },
+        {
+          "text": "oo-joo",
+          "say": "oo-joo"
+        },
+        {
+          "text": "oh-joh",
+          "say": "oh-joh"
+        },
+        {
+          "text": "ay-jay",
+          "say": "ay-jay"
+        }
+      ]
+    },
+    {
+      "sound": "P",
+      "position": "m",
+      "items": [
+        {
+          "text": "ah-pah",
+          "say": "ah-pah"
+        },
+        {
+          "text": "oh-poh",
+          "say": "oh-poh"
+        },
+        {
+          "text": "ay-pay",
+          "say": "ay-pay"
+        }
+      ]
+    },
+    {
+      "sound": "B",
+      "position": "m",
+      "items": [
+        {
+          "text": "ah-bah",
+          "say": "ah-bah"
+        },
+        {
+          "text": "ee-bee",
+          "say": "ee-bee"
+        },
+        {
+          "text": "oo-boo",
+          "say": "oo-boo"
+        },
+        {
+          "text": "oh-boh",
+          "say": "oh-boh"
+        },
+        {
+          "text": "ay-bay",
+          "say": "ay-bay"
+        }
+      ]
+    },
+    {
+      "sound": "M",
+      "position": "m",
+      "items": [
+        {
+          "text": "ah-mah",
+          "say": "ah-mah"
+        },
+        {
+          "text": "ee-mee",
+          "say": "ee-mee"
+        },
+        {
+          "text": "oo-moo",
+          "say": "oo-moo"
+        },
+        {
+          "text": "oh-moh",
+          "say": "oh-moh"
+        },
+        {
+          "text": "ay-may",
+          "say": "ay-may"
+        }
+      ]
+    },
+    {
+      "sound": "N",
+      "position": "m",
+      "items": [
+        {
+          "text": "ah-nah",
+          "say": "ah-nah"
+        },
+        {
+          "text": "ee-nee",
+          "say": "ee-nee"
+        },
+        {
+          "text": "oo-noo",
+          "say": "oo-noo"
+        },
+        {
+          "text": "ay-nay",
+          "say": "ay-nay"
+        }
+      ]
+    },
+    {
+      "sound": "T",
+      "position": "m",
+      "items": [
+        {
+          "text": "ah-tah",
+          "say": "ah-tah"
+        },
+        {
+          "text": "ee-tee",
+          "say": "ee-tee"
+        },
+        {
+          "text": "oo-too",
+          "say": "oo-too"
+        },
+        {
+          "text": "oh-toh",
+          "say": "oh-toh"
+        },
+        {
+          "text": "ay-tay",
+          "say": "ay-tay"
+        }
+      ]
+    },
+    {
+      "sound": "D",
+      "position": "m",
+      "items": [
+        {
+          "text": "ah-dah",
+          "say": "ah-dah"
+        },
+        {
+          "text": "ee-dee",
+          "say": "ee-dee"
+        },
+        {
+          "text": "oh-doh",
+          "say": "oh-doh"
+        },
+        {
+          "text": "ay-day",
+          "say": "ay-day"
+        }
+      ]
+    },
+    {
+      "sound": "R",
+      "position": "f",
+      "items": [
+        {
+          "text": "ar",
+          "say": "are"
+        },
+        {
+          "text": "or",
+          "say": "ore"
+        },
+        {
+          "text": "air",
+          "say": "air"
+        },
+        {
+          "text": "ear",
+          "say": "ear"
+        },
+        {
+          "text": "ire",
+          "say": "ire"
+        }
+      ]
+    },
+    {
+      "sound": "S",
+      "position": "f",
+      "items": [
+        {
+          "text": "oose",
+          "say": "oose"
+        },
+        {
+          "text": "ace",
+          "say": "ace"
+        },
+        {
+          "text": "ice",
+          "say": "ice"
+        }
+      ]
+    },
+    {
+      "sound": "L",
+      "position": "f",
+      "items": [
+        {
+          "text": "ahl",
+          "say": "ahl"
+        },
+        {
+          "text": "eel",
+          "say": "eel"
+        },
+        {
+          "text": "ool",
+          "say": "ool"
+        },
+        {
+          "text": "ole",
+          "say": "ole"
+        },
+        {
+          "text": "ail",
+          "say": "ail"
+        }
+      ]
+    },
+    {
+      "sound": "K",
+      "position": "f",
+      "items": [
+        {
+          "text": "ahk",
+          "say": "ahk"
+        },
+        {
+          "text": "eek",
+          "say": "eek"
+        },
+        {
+          "text": "ook",
+          "say": "ook"
+        },
+        {
+          "text": "oak",
+          "say": "oak"
+        },
+        {
+          "text": "ache",
+          "say": "ache"
+        }
+      ]
+    },
+    {
+      "sound": "G",
+      "position": "f",
+      "items": [
+        {
+          "text": "ahg",
+          "say": "ahg"
+        },
+        {
+          "text": "oog",
+          "say": "oog"
+        },
+        {
+          "text": "ogue",
+          "say": "ogue"
+        }
+      ]
+    },
+    {
+      "sound": "F",
+      "position": "f",
+      "items": [
+        {
+          "text": "ahf",
+          "say": "ahf"
+        },
+        {
+          "text": "eef",
+          "say": "eef"
+        },
+        {
+          "text": "oof",
+          "say": "oof"
+        },
+        {
+          "text": "oaf",
+          "say": "oaf"
+        }
+      ]
+    },
+    {
+      "sound": "SH",
+      "position": "f",
+      "items": [
+        {
+          "text": "ash",
+          "say": "ash"
+        },
+        {
+          "text": "eesh",
+          "say": "eesh"
+        },
+        {
+          "text": "oosh",
+          "say": "oosh"
+        }
+      ]
+    },
+    {
+      "sound": "CH",
+      "position": "f",
+      "items": [
+        {
+          "text": "atch",
+          "say": "atch"
+        },
+        {
+          "text": "each",
+          "say": "each"
+        },
+        {
+          "text": "ooch",
+          "say": "ooch"
+        },
+        {
+          "text": "oach",
+          "say": "oach"
+        }
+      ]
+    },
+    {
+      "sound": "TH",
+      "position": "f",
+      "items": [
+        {
+          "text": "eeth",
+          "say": "eeth"
+        },
+        {
+          "text": "ooth",
+          "say": "ooth"
+        },
+        {
+          "text": "oath",
+          "say": "oath"
+        }
+      ]
+    },
+    {
+      "sound": "THV",
+      "position": "f",
+      "items": [
+        {
+          "text": "eethe",
+          "say": "eethe"
+        },
+        {
+          "text": "oothe",
+          "say": "oothe"
+        },
+        {
+          "text": "oathe",
+          "say": "oathe"
+        },
+        {
+          "text": "athe",
+          "say": "athe"
+        }
+      ]
+    },
+    {
+      "sound": "Z",
+      "position": "f",
+      "items": [
+        {
+          "text": "ease",
+          "say": "ease"
+        },
+        {
+          "text": "ooze",
+          "say": "ooze"
+        },
+        {
+          "text": "oze",
+          "say": "oze"
+        }
+      ]
+    },
+    {
+      "sound": "V",
+      "position": "f",
+      "items": [
+        {
+          "text": "ahv",
+          "say": "ahv"
+        },
+        {
+          "text": "eve",
+          "say": "eve"
+        },
+        {
+          "text": "oove",
+          "say": "oove"
+        }
+      ]
+    },
+    {
+      "sound": "J",
+      "position": "f",
+      "items": [
+        {
+          "text": "odge",
+          "say": "odge"
+        },
+        {
+          "text": "age",
+          "say": "age"
+        },
+        {
+          "text": "edge",
+          "say": "edge"
+        }
+      ]
+    },
+    {
+      "sound": "P",
+      "position": "f",
+      "items": [
+        {
+          "text": "ahp",
+          "say": "ahp"
+        },
+        {
+          "text": "eep",
+          "say": "eep"
+        },
+        {
+          "text": "oop",
+          "say": "oop"
+        },
+        {
+          "text": "ope",
+          "say": "ope"
+        },
+        {
+          "text": "ape",
+          "say": "ape"
+        }
+      ]
+    },
+    {
+      "sound": "B",
+      "position": "f",
+      "items": [
+        {
+          "text": "ahb",
+          "say": "ahb"
+        },
+        {
+          "text": "eeb",
+          "say": "eeb"
+        },
+        {
+          "text": "oob",
+          "say": "oob"
+        },
+        {
+          "text": "obe",
+          "say": "obe"
+        }
+      ]
+    },
+    {
+      "sound": "M",
+      "position": "f",
+      "items": [
+        {
+          "text": "ahm",
+          "say": "ahm"
+        },
+        {
+          "text": "eem",
+          "say": "eem"
+        },
+        {
+          "text": "oom",
+          "say": "oom"
+        },
+        {
+          "text": "ohm",
+          "say": "ohm"
+        },
+        {
+          "text": "aim",
+          "say": "aim"
+        }
+      ]
+    },
+    {
+      "sound": "N",
+      "position": "f",
+      "items": [
+        {
+          "text": "ahn",
+          "say": "ahn"
+        },
+        {
+          "text": "een",
+          "say": "een"
+        },
+        {
+          "text": "oon",
+          "say": "oon"
+        },
+        {
+          "text": "own",
+          "say": "own"
+        }
+      ]
+    },
+    {
+      "sound": "T",
+      "position": "f",
+      "items": [
+        {
+          "text": "aht",
+          "say": "aht"
+        },
+        {
+          "text": "eet",
+          "say": "eet"
+        },
+        {
+          "text": "oot",
+          "say": "oot"
+        },
+        {
+          "text": "oat",
+          "say": "oat"
+        },
+        {
+          "text": "ate",
+          "say": "ate"
+        }
+      ]
+    },
+    {
+      "sound": "D",
+      "position": "f",
+      "items": [
+        {
+          "text": "ahd",
+          "say": "ahd"
+        },
+        {
+          "text": "eed",
+          "say": "eed"
+        },
+        {
+          "text": "ood",
+          "say": "ood"
+        },
+        {
+          "text": "ode",
+          "say": "ode"
+        },
+        {
+          "text": "aid",
+          "say": "aid"
+        }
+      ]
+    },
+    {
+      "sound": "R",
+      "position": "v",
+      "items": [
+        {
+          "text": "ar",
+          "say": "are"
+        },
+        {
+          "text": "or",
+          "say": "ore"
+        },
+        {
+          "text": "air",
+          "say": "air"
+        },
+        {
+          "text": "ear",
+          "say": "ear"
+        },
+        {
+          "text": "ire",
+          "say": "ire"
+        }
+      ]
+    },
+    {
+      "sound": "R",
+      "position": "b",
+      "items": [
+        {
+          "text": "trah",
+          "say": "trah"
+        },
+        {
+          "text": "free",
+          "say": "free"
+        },
+        {
+          "text": "grew",
+          "say": "grew"
+        },
+        {
+          "text": "droh",
+          "say": "droh"
+        },
+        {
+          "text": "kray",
+          "say": "kray"
+        }
+      ]
+    },
+    {
+      "sound": "S",
+      "position": "b",
+      "items": [
+        {
+          "text": "spa",
+          "say": "spa"
+        },
+        {
+          "text": "ski",
+          "say": "ski"
+        },
+        {
+          "text": "snoo",
+          "say": "snoo"
+        },
+        {
+          "text": "smoh",
+          "say": "smoh"
+        },
+        {
+          "text": "stay",
+          "say": "stay"
+        }
+      ]
+    },
+    {
+      "sound": "L",
+      "position": "b",
+      "items": [
+        {
+          "text": "blah",
+          "say": "blah"
+        },
+        {
+          "text": "flee",
+          "say": "flee"
+        },
+        {
+          "text": "clue",
+          "say": "clue"
+        },
+        {
+          "text": "glow",
+          "say": "glow"
+        },
+        {
+          "text": "play",
+          "say": "play"
+        }
+      ]
+    }
+  ]
+}

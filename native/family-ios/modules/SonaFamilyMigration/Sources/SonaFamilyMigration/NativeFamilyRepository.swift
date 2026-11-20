@@ -60,6 +60,11 @@ public struct NativeFamilyOrigin: Codable, Equatable, Sendable {
         }
     }
     public var activeChild: NativeFamilyChild? { children.first { $0.id.slot == activeSlot } }
+    public func accessEvidence() -> LegacyPromiseCompatibility {
+        LegacyPromiseCompatibility(storage: storage, hasFreeEraPromise: promises.grandfathered,
+                                   hasFoundingPromise: promises.founding, keepsFreeVersion: promises.keptFreeVersion,
+                                   keepsLegacyBuddies: promises.keptLegacyBuddies)
+    }
     static func key(_ base: String, _ slot: String) -> String { slot.isEmpty ? base : base + "@" + slot }
     // The owned set promised to new siblings on a kept household. The differential
     // test pins this asset inventory to shipping LEGACY_SET; shop/road items added
@@ -124,12 +129,22 @@ public struct NativeFamilyDocument: Codable, Equatable, Sendable {
     public internal(set) var primaryOrigin: LegacyOrigin?
     public internal(set) var householdPromises = NativeFamilyHouseholdPromises()
     public internal(set) var removalObligations: [NativeFamilyRemovalObligation] = []
+    public internal(set) var pendingLocalPlayerRemovals: Set<NativeFamilyChildID>?
     var mutationReceipts: [String: NativeFamilyMutationReceipt] = [:]
+    var ruleReceipts: [String: NativeFamilyRuleReceipt]?
+    public internal(set) var appleAccess: [String: NativeFamilyAppleAccess]?
+    public internal(set) var retiredRecordingOrigins: Set<LegacyOrigin>?
+    var weeklyReportJournal: [String: NativeFamilyReportJournal]?
+    var backupJournal: [String: NativeFamilyBackupJournal]?
+    var readingPlaces: [NativeFamilyChildID: [String: NativeFamilyReadingPlace]]?
+    var gameCompletions: [NativeFamilyChildID: Set<String>]?
     init() {}
 
     public var families: [NativeFamilyOrigin] { LegacyOrigin.allCases.compactMap { origins[$0.rawValue] } }
     public var primaryFamily: NativeFamilyOrigin? { primaryOrigin.flatMap { origins[$0.rawValue] } }
     public var activeChild: NativeFamilyChild? { primaryFamily?.activeChild }
+    public func bookmarks(for child: NativeFamilyChildID) -> [String: NativeFamilyReadingPlace] { readingPlaces?[child] ?? [:] }
+    public func completedGames(for child: NativeFamilyChildID) -> Set<String> { gameCompletions?[child] ?? [] }
     public var requiresPrimaryOriginSelection: Bool {
         primaryOrigin == nil && families.filter { !$0.slots.isEmpty }.count > 1
     }
@@ -253,9 +268,10 @@ public actor NativeFamilyRepository {
         }
     }
 
-    public func removeChild(_ child: NativeFamilyChildID, operationID: UUID) throws {
+    public func removeChild(_ child: NativeFamilyChildID, operationID: UUID, removeLocalCopies: Bool = false) throws {
         try change { document in
-            let digest = Self.requestDigest(["remove", child.origin.rawValue, child.slot])
+            let components = ["remove", child.origin.rawValue, child.slot]
+            let digest = Self.requestDigest(removeLocalCopies ? components + ["local"] : components)
             if let receipt = document.mutationReceipts[operationID.uuidString] {
                 guard receipt.kind == .remove, receipt.requestDigest == digest else { throw NativeFamilyRepositoryError.operationConflict }
                 return
@@ -264,11 +280,20 @@ public actor NativeFamilyRepository {
                 throw NativeFamilyRepositoryError.childNotFound
             }
             guard family.slots.count > 1 else { throw NativeFamilyRepositoryError.cannotRemoveLastChild }
+            try Self.redactBackupUndo(for: child, from: &document)
+            if removeLocalCopies {
+                guard document.primaryOrigin == child.origin, family.activeSlot != child.slot else {
+                    throw NativeFamilyRuleError.playerChanged
+                }
+                document.pendingLocalPlayerRemovals = (document.pendingLocalPlayerRemovals ?? []).union([child])
+            }
             let profileKey = NativeFamilyOrigin.key(LegacyKeys.profile, child.slot)
             let removedProfile = NativeFamilyOrigin.object(family.storage[profileKey]) ?? [:]
             let board = family.storage[NativeFamilyOrigin.key("sona.board.v1", child.slot)]
             family.slots.removeAll { $0 == child.slot }
             if family.activeSlot == child.slot { family.activeSlot = family.slots.first }
+            document.readingPlaces?.removeValue(forKey: child)
+            document.gameCompletions?.removeValue(forKey: child)
             var reportEmail: String?
             if NativeFamilyOrigin.isTrue(removedProfile["weeklyReport"]),
                let email = removedProfile["email"] as? String, !email.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
@@ -280,11 +305,8 @@ public actor NativeFamilyRepository {
                 }
                 if !remains { reportEmail = normalized }
             }
-            for key in Array(family.storage.keys) {
-                let parts = LegacyKeys.parts(key)
-                let ownsSuffixedKey = !child.slot.isEmpty && key.hasSuffix("@\(child.slot)")
-                let ownsOriginalKey = child.slot.isEmpty && LegacyKeys.perChild.contains(parts.base) && key == parts.base
-                if ownsSuffixedKey || ownsOriginalKey { family.storage.removeValue(forKey: key) }
+            for key in family.storage.keys where LegacyKeys.isOwned(key, by: child.slot) {
+                family.storage.removeValue(forKey: key)
             }
             if board != nil || reportEmail != nil {
                 document.removalObligations.append(.init(operationID: operationID, childID: child,
@@ -314,6 +336,19 @@ public actor NativeFamilyRepository {
 
     public func acknowledgeRemovalObligation(_ operationID: UUID) throws {
         try change { $0.removalObligations.removeAll { $0.operationID == operationID } }
+    }
+
+    public func acknowledgeLocalPlayerRemoval(_ child: NativeFamilyChildID) throws {
+        try change { $0.pendingLocalPlayerRemovals?.remove(child) }
+    }
+
+    public func acknowledgeRetiredRecordings(origin: LegacyOrigin) throws {
+        try change { document in
+            guard document.origins[origin.rawValue] != nil else { throw NativeFamilyRepositoryError.originNotFound }
+            var verified = document.retiredRecordingOrigins ?? []
+            verified.insert(origin)
+            document.retiredRecordingOrigins = verified
+        }
     }
 
     func change<T>(_ mutation: (inout NativeFamilyDocument) throws -> T) throws -> T {
@@ -363,6 +398,29 @@ public actor NativeFamilyRepository {
         }
         guard Set(document.removalObligations.map(\.operationID)).count == document.removalObligations.count else {
             throw NativeFamilyRepositoryError.destinationCorrupt
+        }
+        guard (document.pendingLocalPlayerRemovals ?? []).allSatisfy({ child in
+            guard let family = document.origins[child.origin.rawValue] else { return false }
+            return LegacyKeys.slotNumber(child.slot) != nil && !family.slots.contains(child.slot)
+        }) else { throw NativeFamilyRepositoryError.destinationCorrupt }
+        for (key, receipt) in document.ruleReceipts ?? [:] {
+            guard key.count <= 120, !key.isEmpty, LegacyKeys.slotNumber(receipt.child.slot) != nil,
+                  document.origins[receipt.child.origin.rawValue] != nil else {
+                throw NativeFamilyRepositoryError.destinationCorrupt
+            }
+        }
+        guard Set(document.appleAccess?.keys.map { $0 } ?? []).isSubset(of: Set(document.origins.keys)) else {
+            throw NativeFamilyRepositoryError.destinationCorrupt
+        }
+        for (owner, books) in document.readingPlaces ?? [:] {
+            guard document.origins[owner.origin.rawValue]?.slots.contains(owner.slot) == true,
+                  books.allSatisfy({ NativeFamilyReadingPlace.valid(id: $0.key, page: $0.value.page) }) else {
+                throw NativeFamilyRepositoryError.destinationCorrupt
+            }
+        }
+        for (owner, games) in document.gameCompletions ?? [:] {
+            guard document.origins[owner.origin.rawValue]?.slots.contains(owner.slot) == true,
+                  games.allSatisfy(Self.validGameID) else { throw NativeFamilyRepositoryError.destinationCorrupt }
         }
     }
 }

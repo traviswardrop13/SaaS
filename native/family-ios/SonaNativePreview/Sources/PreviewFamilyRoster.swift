@@ -8,8 +8,9 @@ struct PreviewPlayer: Codable, Identifiable {
     var completedGames: Set<String> = []
     var bookmarks: [String: BookBookmark] = [:]
     var adventureStart: Date?
+    var displayName: String?
 
-    var label: String { "Player \(number)" }
+    var label: String { displayName.flatMap { $0.isEmpty ? nil : $0 } ?? "Player \(number)" }
 }
 
 /// Preview players have local reading and gameplay records. They do not
@@ -50,42 +51,55 @@ struct PreviewPlayersView: View {
     let activeID: String
     let onSelect: (String) -> Void
     let onAdd: () -> Void
+    var onRemove: ((String) async throws -> Bool)?
 
     @Environment(\.dismiss) private var dismiss
+    @State private var removing: PreviewPlayer?
+    @State private var working = false
+    @State private var message = ""
 
     var body: some View {
         List {
             Section {
                 ForEach(players) { player in
-                    Button {
-                        onSelect(player.id)
-                        dismiss()
-                    } label: {
-                        HStack(spacing: 12) {
-                            Image(player.buddy.asset)
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: 42, height: 42)
-                                .accessibilityHidden(true)
-                            VStack(alignment: .leading, spacing: 3) {
-                                Text(player.label).font(.headline)
-                                if !player.targetSound.isEmpty {
-                                    Text("Practice sound • \(player.targetSound == "THV" ? "TH (voiced)" : player.targetSound)")
-                                        .font(.subheadline)
-                                        .foregroundStyle(.secondary)
+                    HStack(spacing: 10) {
+                        Button {
+                            onSelect(player.id)
+                            dismiss()
+                        } label: {
+                            HStack(spacing: 12) {
+                                Image(player.buddy.asset)
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(width: 42, height: 42)
+                                    .accessibilityHidden(true)
+                                VStack(alignment: .leading, spacing: 3) {
+                                    Text(player.label).font(.headline)
+                                    if !player.targetSound.isEmpty {
+                                        Text("Practice sound • \(player.targetSound == "THV" ? "TH (voiced)" : player.targetSound)")
+                                            .font(.subheadline)
+                                            .foregroundStyle(.secondary)
+                                    }
+                                }
+                                Spacer()
+                                if activeID == player.id {
+                                    Image(systemName: "checkmark.circle.fill")
+                                        .accessibilityLabel("Current player")
                                 }
                             }
-                            Spacer()
-                            if activeID == player.id {
-                                Image(systemName: "checkmark.circle.fill")
-                                    .accessibilityLabel("Current player")
-                            }
+                            .frame(minHeight: 44)
+                            .contentShape(Rectangle())
                         }
-                        .frame(minHeight: 44)
-                        .contentShape(Rectangle())
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier("preview-player-\(player.number)")
+
+                        if onRemove != nil, player.id != activeID, players.count > 1 {
+                            Button(role: .destructive) { removing = player } label: {
+                                Text("Remove").frame(minHeight: 44).contentShape(Rectangle())
+                            }.buttonStyle(.borderless)
+                            .accessibilityLabel("Remove \(player.label)")
+                        }
                     }
-                    .buttonStyle(.plain)
-                    .accessibilityIdentifier("preview-player-\(player.number)")
                 }
             } footer: {
                 Text("Each player keeps a separate buddy, sound, book position, and list of games finished on this phone.")
@@ -99,8 +113,28 @@ struct PreviewPlayersView: View {
                         .frame(minHeight: 44)
                 }
                 .accessibilityIdentifier("preview-add-player")
+                if !message.isEmpty { Text(message).font(.footnote) }
             }
         }
+        .disabled(working)
         .navigationTitle("Players")
+        .alert("Remove \(removing?.label ?? "this player")?", isPresented: Binding(
+            get: { removing != nil }, set: { if !$0 { removing = nil } }), presenting: removing) { player in
+            Button("Cancel", role: .cancel) { removing = nil }
+            Button("Remove", role: .destructive) {
+                guard let onRemove else { return }
+                removing = nil
+                working = true
+                Task {
+                    defer { working = false }
+                    do {
+                        message = try await onRemove(player.id) ? "Player removed." :
+                            "Player removed. Sona will finish clearing older copies when the app opens again."
+                    } catch { message = "Sona couldn’t remove this player. Try again." }
+                }
+            }
+        } message: { _ in
+            Text("Their practice history is deleted from this device and can't be undone.")
+        }
     }
 }

@@ -141,6 +141,20 @@ final class StubProtocol: URLProtocol {
         catch { check(StubProtocol.requests.count == calls, "invalid password stopped locally") }
         do { _ = try await client.login(username: "u", password: "p", childID: ""); fatalError("unbound child ID accepted") }
         catch { check(StubProtocol.requests.count == calls, "empty child ID never mints an unbound ticket") }
+        StubProtocol.handler = { request in
+            check(request.url?.path == "/api/family/feedback", "support uses the family feedback route")
+            let body = try json(request)
+            check(Set(body.keys) == ["kind", "app", "from", "website", "chips", "text", "email"],
+                  "support sends no child details, reports, account identifiers or audio")
+            check(body["from"] as? String == "family" && body["app"] as? String == "ios", "support identifies the app")
+            check(body["text"] as? String == "A fictional note" && body["email"] as? String == "",
+                  "support sends the parent’s note and optional reply")
+            return (200, #"{"ok":true}"#)
+        }
+        try await client.sendFamilyFeedback(chips: ["More games"], text: " A fictional note ", email: "")
+        let feedbackCalls = StubProtocol.requests.count
+        do { try await client.sendFamilyFeedback(chips: [], text: " ", email: ""); fatalError("blank feedback accepted") }
+        catch { check(StubProtocol.requests.count == feedbackCalls, "empty feedback makes no request") }
         print("PASS: \(assertions) mock-only native family client assertions; zero live requests")
     }
 }

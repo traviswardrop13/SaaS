@@ -112,6 +112,8 @@ const sounds = [...S.ALL_SOUNDS].map(sound => {
   // The current preview already bundles these exact sound-only recordings.
   const bundled = join(root, 'native/family-ios/SonaNativePreview/Audio', `${sound}-sound.wav`);
   if (existsSync(bundled) && sha(readFileSync(bundled)) !== clips.sound.sha256) throw new Error(`Bundled ${sound} audio differs from the shipping recording.`);
+  const whole = join(root, 'native/family-ios/SonaNativePreview/Audio', `${sound}.mp3`);
+  if (existsSync(whole) && sha(readFileSync(whole)) !== clips.fallbackLine.sha256) throw new Error(`Bundled ${sound} fallback differs from the shipping recording.`);
   return {
     id: sound, label: S.soundLabel(sound), soundText: S.SOUND_SAY[sound],
     cue: S.CUES[sound].tip, shortCue: shortFor(sound), retryCue: retryFor(sound), clips, prompts,

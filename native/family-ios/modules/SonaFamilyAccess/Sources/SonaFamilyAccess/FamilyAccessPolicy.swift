@@ -82,10 +82,13 @@ public struct FamilyEntitlementState: Codable, Equatable, Sendable {
         if let sub = object(storage["sona.sub.v1"]), truthy(sub["active"]) {
             switch sub["source"] as? String {
             case "apple": result.grants.insert(.apple)
-            case "stripe": result.grants.insert(.stripe)
-            default: result.grants.insert(.legacySubscription)
+            case "stripe":
+                result.grants.insert(.stripe)
+                result.stripeAccount = sub["email"] as? String
+            default:
+                result.grants.insert(.legacySubscription)
+                result.stripeAccount = sub["email"] as? String
             }
-            result.stripeAccount = sub["email"] as? String
         }
         if let plan = object(storage["sona.caseplan.v1"]), strictTrue(plan["active"]) {
             result.grants.insert(.clinicianCoverage)
@@ -124,6 +127,7 @@ public struct FamilyEntitlementState: Codable, Equatable, Sendable {
                 grants.insert(.stripe)
             } else if let stripeAccount, stripeAccount.lowercased() == account.lowercased() {
                 grants.remove(.stripe)
+                grants.remove(.legacySubscription)
             }
         }
     }

@@ -75,7 +75,7 @@ enum FamilyJSONValue: Codable, Equatable, Sendable {
 /// Only pass real local state. An empty snapshot is appropriate for a freshly
 /// generated child ID, never for overwriting an existing child's practice row.
 /// Finished free-play games are not speech sessions, attempts or outcomes.
-struct FamilyEnrollmentSnapshot: Equatable, Sendable {
+struct FamilyEnrollmentSnapshot: Codable, Equatable, Sendable {
     var childName: String
     var age: String
     var focusSounds: [String]
@@ -124,6 +124,18 @@ struct FamilyLoginClient {
     private static let origin = URL(string: "https://app.speaksona.com")!
 
     init(session: URLSession = .shared) { self.session = session }
+
+    func sendFamilyFeedback(chips: [String], text: String, email: String) async throws {
+        let note = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        let address = email.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !chips.isEmpty || !note.isEmpty else {
+            throw FamilyClientError.invalidInput("Pick a topic or write a quick thought first.")
+        }
+        guard note.utf16.count <= 2_000, address.utf16.count <= 254 else {
+            throw FamilyClientError.invalidInput("Please shorten your message.")
+        }
+        _ = try await post("/api/family/feedback", body: FeedbackRequest(chips: chips, text: note, email: address))
+    }
 
     /// Login and coverage are separate so a temporary coverage failure does
     /// not discard the successfully verified ticket. Persist first, then refresh.
@@ -204,7 +216,7 @@ struct FamilyLoginClient {
             let now = Date()
             let payload = EnrollmentRequest(
                 source: "pilot-enroll", code: link.code, ticket: link.ticket, childId: link.childID,
-                child: String(snapshot.childName.prefix(60)), age: snapshot.age,
+                child: link.code.lowercased().hasPrefix("ff-") ? "" : String(snapshot.childName.prefix(60)), age: snapshot.age,
                 focus: snapshot.focusSounds.joined(separator: ", "),
                 goal: snapshot.dailyGoal.map { FamilyJSONValue.number(Double($0)) } ?? .string(""),
                 outcomes: snapshot.outcomes, sessions: snapshot.sessions, streak: snapshot.streak,
@@ -222,6 +234,21 @@ struct FamilyLoginClient {
         try validateChildID(link.childID)
         return try await post("/api/homework", body: ChildRequest(code: link.code, ticket: link.ticket,
                                                                   childId: link.childID)).hw
+    }
+
+    /// Consented practice totals only, from the canonical local outcomes reader.
+    /// This endpoint never receives game/reading ledgers, recordings or a mic buffer.
+    func sendProgress(_ link: FamilyLink, snapshot: FamilyEnrollmentSnapshot) async throws {
+        guard let consent = link.consentAt else { return }
+        try validateChildID(link.childID)
+        let payload = EnrollmentRequest(
+            source: "pilot-progress", code: link.code, ticket: link.ticket, childId: link.childID,
+            child: link.code.lowercased().hasPrefix("ff-") ? "" : String(snapshot.childName.prefix(60)),
+            age: snapshot.age, focus: snapshot.focusSounds.joined(separator: ", "),
+            goal: snapshot.dailyGoal.map { FamilyJSONValue.number(Double($0)) } ?? .string(""),
+            outcomes: snapshot.outcomes, sessions: snapshot.sessions, streak: snapshot.streak,
+            consentAt: isoString(consent), at: isoString(Date()))
+        _ = try await post("/api/pilot", body: payload)
     }
 
     private func validateChildID(_ id: String) throws {
@@ -280,6 +307,14 @@ struct FamilyLoginClient {
     private struct LoginRequest: Encodable { let username, password, childId: String }
     private struct CoverageRequest: Encodable { let code, ticket: String }
     private struct PasswordRequest: Encodable { let username, password, newPassword: String }
+    private struct FeedbackRequest: Encodable {
+        let chips: [String]
+        let text, email: String
+        let kind = "feedback"
+        let app = "ios"
+        let from = "family"
+        let website = ""
+    }
     private struct ChildRequest: Encodable { let code, ticket, childId: String }
     private struct ClaimRequest: Encodable { let code, ticket, childId, inv: String }
     private struct EnrollmentRequest: Encodable {

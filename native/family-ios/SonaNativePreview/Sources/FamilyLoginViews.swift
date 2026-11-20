@@ -346,8 +346,8 @@ private struct FamilyFormShell<Content: View>: View {
             .navigationTitle("Sona")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                if allowsCancel {
-                    ToolbarItem(placement: .cancellationAction) {
+                ToolbarItem(placement: .cancellationAction) {
+                    if allowsCancel {
                         Button("Cancel") { dismiss() }
                             .disabled(busy)
                     }

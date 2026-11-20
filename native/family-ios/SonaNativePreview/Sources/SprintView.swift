@@ -3,6 +3,8 @@ import SwiftUI
 
 struct SprintView: View {
     let onRoundFinished: () -> Void
+    var stage: Int = 0
+    @Environment(\.guidedReplay) private var guidedReplay
 
     @Environment(\.dismiss) private var dismiss
     @Environment(\.scenePhase) private var scenePhase
@@ -14,7 +16,12 @@ struct SprintView: View {
     @State private var stars = 0
     @State private var finished = false
 
-    private let rhythm = [1, 0, 2, 1, 2, 0, 0, 2, 1, 2, 1, 0]
+    private static let courses = [
+        [1, 0, 2, 1, 2, 0, 0, 2, 1, 2, 1, 0],
+        [0, 1, 2, 2, 0, 1, 0, 2, 1, 1, 0, 2],
+        [2, 1, 0, 2, 2, 1, 0, 0, 2, 1, 0, 1]
+    ]
+    private var rhythm: [Int] { Self.courses[stage] }
     private let timer = Timer.publish(every: 1.0 / 30, on: .main, in: .common).autoconnect()
 
     var body: some View {
@@ -31,7 +38,10 @@ struct SprintView: View {
                             .accessibilityHidden(true)
                         Text("You caught \(stars) stars!")
                             .font(.system(.title, design: .rounded).weight(.heavy))
-                        Button("Play again") { launch() }
+                        Button("Play again") {
+                            if let guidedReplay { guidedReplay() }
+                            else { launch() }
+                        }
                             .buttonStyle(RoundActionStyle())
                         Button("Back to games") { dismiss() }
                             .font(.system(.headline, design: .rounded).weight(.bold))
@@ -168,7 +178,7 @@ struct SprintView: View {
         if nextItem == rhythm.count {
             self.start = nil
             finished = true
-            if stars > 0 { onRoundFinished() }
+            onRoundFinished()
         }
     }
 

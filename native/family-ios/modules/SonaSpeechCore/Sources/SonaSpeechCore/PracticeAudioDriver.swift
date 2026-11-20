@@ -15,15 +15,58 @@ public struct PracticePrompt: Equatable, Sendable {
         }
     }
 
+    /// An exact authored line for the installed on-device narrator. The
+    /// optional Go clip is never synthesized through this fallback.
+    public struct SystemSpeech: Equatable, Sendable {
+        public let text: String
+        public let relativeRate: Float
+        public let pitch: Float
+        public init(text: String, slow: Bool = false) {
+            self.text = text
+            self.relativeRate = slow ? 0.62 : 0.95
+            self.pitch = 1.05
+        }
+    }
+
     public let text: String
     public let parts: [Part]
     public let isMuted: Bool
+    /// Approved model/narration playback bytes only; never microphone input.
+    /// The data path permits media playback without creating an audio file.
+    public let encodedAudio: Data?
+    public let systemSpeech: SystemSpeech?
+    public let volume: Float
+    public let playbackRate: Float
 
-    public init(text: String, parts: [Part], isMuted: Bool = false) {
+    public init(text: String, parts: [Part], isMuted: Bool = false,
+                volume: Float = 0.8, playbackRate: Float = 1) {
         self.text = text
         self.parts = parts
         self.isMuted = isMuted
+        self.encodedAudio = nil
+        self.systemSpeech = nil
+        self.volume = volume.isFinite ? max(0, min(1, volume)) : 0.8
+        self.playbackRate = playbackRate.isFinite && playbackRate > 0 ? playbackRate : 1
     }
+
+    public init(text: String, encodedAudio: Data, isMuted: Bool = false,
+                volume: Float = 0.8, playbackRate: Float = 1) {
+        self.text = text
+        self.parts = []
+        self.isMuted = isMuted
+        self.encodedAudio = encodedAudio
+        self.systemSpeech = nil
+        self.volume = volume.isFinite ? max(0, min(1, volume)) : 0.8
+        self.playbackRate = playbackRate.isFinite && playbackRate > 0 ? playbackRate : 1
+    }
+
+    public init(text: String, systemSpeech: SystemSpeech, volume: Float = 0.8) {
+        self.text = text; self.parts = []; self.encodedAudio = nil
+        self.systemSpeech = systemSpeech; self.isMuted = false
+        self.volume = volume.isFinite ? max(0, min(1, volume)) : 0.8
+        self.playbackRate = 1
+    }
+
 }
 
 /// A single owner for the mic, recognizer and prompt. All callbacks and calls are
@@ -45,6 +88,18 @@ public protocol PracticeAudioDriver: AnyObject {
     ) async throws
     /// Optional check: on-device only, at most 15 seconds across this attempt.
     func startRecognition(words: [String], maxMilliseconds: Double) async -> Bool
+    /// Finish only the current on-device saying, keeping the input tap running.
+    /// No recognizer/model or a replaced capture is unavailable, never a pass.
+    func finishRecognition() async -> PracticeRecognitionResult
     /// Idempotent; return final/best local transcript after at most 800 ms.
     func closeMicrophone() async -> String
+}
+
+public enum PracticeRecognitionResult: Equatable, Sendable {
+    case onDevice(String)
+    case unavailable
+}
+
+public extension PracticeAudioDriver {
+    func finishRecognition() async -> PracticeRecognitionResult { .unavailable }
 }

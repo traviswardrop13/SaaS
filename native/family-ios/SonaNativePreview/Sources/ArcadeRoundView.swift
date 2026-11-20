@@ -4,14 +4,20 @@ import SwiftUI
 struct ArcadeRoundView: View {
     let game: NativeGame
     let onRoundFinished: () -> Void
+    var stage: Int = 0
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.guidedReplay) private var guidedReplay
+    @Environment(\.speechGameProgress) private var speechGameProgress
     @Environment(\.scenePhase) private var scenePhase
 
     @StateObject private var piano = PianoVoice()
     @State private var round = 0
     @State private var moves = 0
 
-    private var goal: Int { game == .tiles ? PianoBoard.melody.count : 6 }
+    private var goal: Int {
+        if let progress = speechGameProgress { return progress.count }
+        return game == .tiles ? PianoBoard.songs[stage].notes.count : 5 + stage
+    }
 
     var body: some View {
         VStack(spacing: 14) {
@@ -60,7 +66,7 @@ struct ArcadeRoundView: View {
     private var board: some View {
         switch game {
         case .tiles:
-            PianoBoard(move: moves, piano: piano, advance: advance)
+            PianoBoard(song: PianoBoard.songs[stage], move: moves, piano: piano, advance: advance)
         case .stack:
             StackerBoard(advance: advance)
         case .hoops, .soccer:
@@ -73,6 +79,7 @@ struct ArcadeRoundView: View {
     private func advance() {
         guard moves < goal else { return }
         moves += 1
+        speechGameProgress?.advance()
         if moves == goal { onRoundFinished() }
     }
 
@@ -87,7 +94,10 @@ struct ArcadeRoundView: View {
                 Text("You did it!")
                     .font(.system(.largeTitle, design: .rounded).weight(.heavy))
                     .accessibilityIdentifier("arcade-complete")
-                Button("Play again") { moves = 0; round += 1 }
+                Button("Play again") {
+                    if let guidedReplay { guidedReplay() }
+                    else { moves = 0; round += 1 }
+                }
                     .buttonStyle(RoundActionStyle())
                 Button("Back to games") { dismiss() }
                     .font(.system(.headline, design: .rounded).weight(.bold))
@@ -96,6 +106,17 @@ struct ArcadeRoundView: View {
             .padding(20)
             .frame(maxWidth: .infinity)
         }
+    }
+}
+
+private struct GuidedReplayKey: EnvironmentKey {
+    static let defaultValue: (() -> Void)? = nil
+}
+
+extension EnvironmentValues {
+    var guidedReplay: (() -> Void)? {
+        get { self[GuidedReplayKey.self] }
+        set { self[GuidedReplayKey.self] = newValue }
     }
 }
 
@@ -111,7 +132,24 @@ struct RoundActionStyle: ButtonStyle {
 }
 
 private struct PianoBoard: View {
-    static let melody = [0, 0, 4, 4, 5, 5, 4, 3, 3, 2, 2, 1, 1, 0]
+    struct Song {
+        let title: String
+        let notes: [Int]
+
+        init(_ title: String, _ tune: String) {
+            self.title = title
+            let pitches = Array("CDEFGA")
+            notes = tune.compactMap { pitches.firstIndex(of: $0) }
+        }
+    }
+
+    static let songs = [
+        Song("Twinkle Twinkle", "CCGGAAG FFEEDDC"),
+        Song("Mary Had a Little Lamb", "EDCDEEE DDD EGG"),
+        Song("Row, Row, Row Your Boat", "CCCDE EDEFG"),
+        Song("Ode to Joy", "EEFGGFED CCDEEDD")
+    ]
+    let song: Song
     let move: Int
     let piano: PianoVoice
     let advance: () -> Void
@@ -122,18 +160,18 @@ private struct PianoBoard: View {
     private let colors = [SonaPalette.yellow, SonaPalette.mint, SonaPalette.lavender]
 
     var body: some View {
-        let expected = Self.melody[move]
+        let expected = song.notes[move]
         VStack(spacing: 15) {
             Spacer()
             Image(systemName: "music.note.list")
                 .font(.system(size: 66, weight: .regular))
                 .foregroundStyle(SonaPalette.teal)
                 .accessibilityHidden(true)
-            Text("Twinkle, Twinkle, Little Star")
+            Text(song.title)
                 .font(.system(.title3, design: .rounded).weight(.heavy))
                 .multilineTextAlignment(.center)
             HStack(spacing: 4) {
-                ForEach(Self.melody.indices, id: \.self) { index in
+                ForEach(song.notes.indices, id: \.self) { index in
                     Capsule()
                         .fill(index < move ? SonaPalette.teal : SonaPalette.ink.opacity(0.13))
                         .frame(height: 7)
@@ -309,6 +347,7 @@ private struct TargetBoard: View {
     @State private var feedback = ""
     @State private var shotTask: Task<Void, Never>?
     @State private var boardSize: CGSize = .zero
+    @State private var missedShots = 0
 
     private var icon: String { isSoccer ? "⚽" : "🏀" }
 
@@ -354,7 +393,8 @@ private struct TargetBoard: View {
                     }
                     .clipShape(RoundedRectangle(cornerRadius: 25))
                     .gesture(DragGesture(minimumDistance: 17).onEnded { value in
-                        guard value.startLocation.y > height * 0.66, value.translation.height < -20 else { return }
+                        guard value.startLocation.y > height * 0.60,
+                              value.translation.height < -max(24, height * 0.05) else { return }
                         let horizontal = value.translation.width / max(25, -value.translation.height)
                         let x = min(width, max(0, ballHome.x + horizontal * (ballHome.y - targetY)))
                         fire(at: x / width, width: width, height: height)
@@ -383,11 +423,18 @@ private struct TargetBoard: View {
         guard shotTask == nil else { return }
         let flight = 0.43
         let target = movingTarget(at: Date().addingTimeInterval(flight))
-        let hit = isSoccer
-            ? position >= 0.16 && position <= 0.84 && abs(target - position) > 0.13
-            : abs(target - position) <= 0.13
+        let assistance = min(missedShots, 2)
+        let post = [0.16, 0.13, 0.08][assistance]
+        let reach = [0.13, 0.10, 0.07][assistance]
+        let gap = abs(target - position)
+        let aimedWell = isSoccer ? position >= post && position <= 1 - post && gap > reach
+            : min(gap, abs(movingTarget(at: Date()) - position)) <= [0.13, 0.19, 0.30][assistance]
+        let hit = missedShots >= 3 || aimedWell
+        let landing: CGFloat
+        if hit { landing = isSoccer ? (target >= 0.5 ? 0.28 : 0.72) : target }
+        else { landing = position }
         withAnimation(.easeOut(duration: flight)) {
-            ballPosition = CGPoint(x: position * width, y: height * 0.27)
+            ballPosition = CGPoint(x: landing * width, y: height * 0.27)
         }
         shotTask = Task { @MainActor in
             try? await Task.sleep(nanoseconds: 430_000_000)
@@ -395,6 +442,7 @@ private struct TargetBoard: View {
             ballPosition = nil
             feedback = hit ? (isSoccer ? "Goal!" : "Nice shot!") : "Try another shot."
             shotTask = nil
+            missedShots = hit ? 0 : missedShots + 1
             if hit { advance() }
         }
     }

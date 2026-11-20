@@ -28,10 +28,13 @@ struct SonaPressStyle: ButtonStyle {
 }
 
 struct HomeView: View {
-    @Binding var buddy: PreviewBuddy
+    let buddy: PreviewBuddy
     let targetSound: String
     let completedGames: Set<String>
+    var goal: NativePracticeSummary.Goal?
     let dailyStory: NativeAdventure?
+    var dailyGame: NativeGame?
+    var adventureDone = false
     let storyAccess: Bool
     let onAdventure: () -> Void
     let onOpen: (Destination) -> Void
@@ -64,15 +67,28 @@ struct HomeView: View {
         VStack(alignment: .leading, spacing: 15) {
             header
 
-            if !targetSound.isEmpty {
-                Label("Your sound · \(targetSound == "THV" ? "TH (v)" : targetSound)", systemImage: "waveform")
-                    .font(.system(.subheadline, design: .rounded).weight(.semibold))
-                    .foregroundStyle(SonaPalette.teal)
-                    .accessibilityIdentifier("home-target-sound")
+            if !targetSound.isEmpty || goal != nil {
+                HStack(spacing: 12) {
+                    if !targetSound.isEmpty {
+                        Label("Your sound · \(targetSound == "THV" ? "TH (v)" : targetSound)", systemImage: "waveform")
+                            .accessibilityIdentifier("home-target-sound")
+                    }
+                    Spacer(minLength: 0)
+                    if let goal, goal.goal > 0 {
+                        Label(goal.done ? "Goal reached" : "\(goal.n) / \(goal.goal)",
+                              systemImage: goal.done ? "checkmark.circle.fill" : "target")
+                            .accessibilityLabel("Today’s goal, \(goal.n) of \(goal.goal) reps")
+                            .accessibilityIdentifier("home-daily-goal")
+                    }
+                }
+                .font(.system(.subheadline, design: .rounded).weight(.semibold))
+                .foregroundStyle(SonaPalette.teal)
             }
 
             if let dailyStory {
-                adventureCard(dailyStory)
+                adventureCard(dailyStory.title, artwork: "daily-\(dailyStory.id)", open: storyAccess)
+            } else if let dailyGame {
+                adventureCard(dailyGame.title, artwork: dailyGame.cover, open: true)
             }
 
             if typeSize.isAccessibilitySize {
@@ -140,10 +156,10 @@ struct HomeView: View {
         }
     }
 
-    private func adventureCard(_ story: NativeAdventure) -> some View {
+    private func adventureCard(_ title: String, artwork: String, open: Bool) -> some View {
         Button(action: onAdventure) {
             VStack(alignment: .leading, spacing: 0) {
-                Image("daily-\(story.id)")
+                Image(artwork)
                     .resizable()
                     .scaledToFill()
                     .frame(height: 188)
@@ -156,14 +172,14 @@ struct HomeView: View {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Today’s adventure")
                             .font(.system(.caption, design: .rounded).weight(.bold))
-                        Text(story.title)
+                        Text(title)
                             .font(.system(.title2, design: .rounded).weight(.heavy))
-                        Text(storyAccess ? "Open story preview" : "Premium")
+                        Text(adventureDone ? "Finished today" : open ? "Start today" : "Premium")
                             .font(.system(.subheadline, design: .rounded).weight(.medium))
                             .foregroundStyle(.white.opacity(0.87))
                     }
                     Spacer(minLength: 6)
-                    Image(systemName: storyAccess ? "play.fill" : "lock.fill")
+                    Image(systemName: adventureDone ? "star.fill" : open ? "play.fill" : "lock.fill")
                         .font(.system(size: 22, weight: .bold))
                         .frame(width: 50, height: 50)
                         .background(.white.opacity(0.16), in: Circle())

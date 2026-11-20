@@ -75,7 +75,7 @@ public struct PracticeFlowMachine {
         case completed(TurnID, PracticeAttemptResult)
         /// From the session's quiet/microphoneUnavailable phase, which emits
         /// no result. This never creates an attempt from a timeout.
-        case quiet(TurnID, microphoneUnavailable: Bool)
+        case quiet(TurnID, microphoneUnavailable: Bool, wordCheckIssue: Bool = false)
         case retryQuiet
         case cancel
     }
@@ -166,10 +166,11 @@ public struct PracticeFlowMachine {
                 feedback: feedback)))
             return effects
 
-        case let .quiet(id, unavailable):
+        case let .quiet(id, unavailable, wordCheckIssue):
             guard phase == .awaitingTurn, currentTurn?.id == id else { return [] }
             phase = .quiet
-            return [.showQuiet(unavailable ? PracticeFlowContent.microphoneUnavailable : PracticeFlowContent.quiet)]
+            if unavailable { return [.showQuiet(PracticeFlowContent.microphoneUnavailable)] }
+            return [.showQuiet(wordCheckIssue ? PracticeFlowContent.wordCheckQuiet : PracticeFlowContent.quiet)]
 
         case .retryQuiet:
             guard phase == .quiet, let turn = currentTurn else { return [] }

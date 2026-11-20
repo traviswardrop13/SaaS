@@ -106,6 +106,12 @@ public enum LegacyKeys {
         return (String(pieces[0]), pieces.count == 2 ? String(pieces[1]) : "")
     }
 
+    static func isOwned(_ key: String, by slot: String) -> Bool {
+        if !slot.isEmpty { return key.hasSuffix("@\(slot)") }
+        let identity = parts(key)
+        return identity.slot.isEmpty && perChild.contains(identity.base)
+    }
+
     static func slotNumber(_ slot: String) -> Int? {
         if slot.isEmpty { return 1 }
         guard slot.first == "k", let n = Int(slot.dropFirst()), n >= 2, slot == "k\(n)" else { return nil }

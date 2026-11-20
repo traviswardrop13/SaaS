@@ -16,6 +16,11 @@ struct BookBookmark: Codable, Equatable {
 struct BookShelfView: View {
     let targetSound: String
     let access: FamilyLibraryAccess
+    var readTitles: [String] = []
+    var oldReadSounds: [String] = []
+    var onFinished: (String) -> Void = { _ in }
+    var onLocked: () -> Void = {}
+    var spokenReading: NativeReadingAccess?
     @Binding var bookmarks: [String: BookBookmark]
 
     @Environment(\.dynamicTypeSize) private var typeSize
@@ -93,8 +98,13 @@ struct BookShelfView: View {
                     book: book,
                     bookmark: Binding(
                         get: { bookmarks[book.id] ?? BookBookmark() },
-                        set: { bookmarks[book.id] = $0 }
-                    )
+                        set: { bookmark in
+                            let newlyFinished = bookmark.finished && bookmarks[book.id]?.finished != true
+                            bookmarks[book.id] = bookmark
+                            if newlyFinished { onFinished(book.title) }
+                        }
+                    ),
+                    spokenReading: spokenReading
                 )
             }
         }
@@ -146,7 +156,7 @@ struct BookShelfView: View {
             selectedBook = book
         } label: {
             HStack(spacing: 16) {
-                BookArtwork(path: book.cover, emoji: book.emoji, mode: .fill)
+                BookArtwork(path: book.cover, emoji: book.emoji, mode: .fill, retryable: false)
                     .frame(width: 76, height: 88)
                     .clipShape(RoundedRectangle(cornerRadius: 14))
 
@@ -178,14 +188,14 @@ struct BookShelfView: View {
         let released = book.isOpen(on: BookCalendar.day(today))
         let open = released && access.allowsBook(named: book.title)
         let status = released ? "Premium" : "Coming " + BookCalendar.label(book.opens ?? "")
-        let finished = bookmarks[book.id]?.finished == true
+        let finished = bookmarks[book.id]?.finished == true || readTitles.contains(book.title) || oldReadSounds.contains(book.sound.uppercased())
 
         return Button {
-            guard open else { return }
+            guard open else { if released { onLocked() }; return }
             selectedBook = book
         } label: {
             VStack(alignment: .leading, spacing: 10) {
-                BookArtwork(path: book.cover, emoji: book.emoji, mode: .fill)
+                BookArtwork(path: book.cover, emoji: book.emoji, mode: .fill, retryable: false)
                     .aspectRatio(1, contentMode: .fit)
                     .clipShape(RoundedRectangle(cornerRadius: 20))
                     .overlay(alignment: .topTrailing) {
@@ -214,7 +224,7 @@ struct BookShelfView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(BookPressStyle())
-        .disabled(!open)
+        .disabled(!open && (!released || !access.offersLockedContent))
         .accessibilityElement(children: .ignore)
         .accessibilityAddTraits(.isButton)
         .accessibilityLabel(book.title + (finished ? ", finished" : "") + ", \(book.pages.count) pages")
@@ -247,24 +257,6 @@ private struct NativeBookCatalog: Decodable {
         return catalog
     }
 
-    static func previewPositions(for bookmarks: [String: BookBookmark]) -> [ParentPreviewBookPosition] {
-        guard !bookmarks.isEmpty, let catalog = try? bundled.get() else { return [] }
-        return catalog.books.compactMap { book in
-            guard let bookmark = bookmarks[book.id] else { return nil }
-            return ParentPreviewBookPosition(id: book.id, title: book.title, pageIndex: bookmark.page,
-                                             totalPages: book.pages.count, finished: bookmark.finished)
-        }
-    }
-}
-
-extension PreviewPlayer {
-    func progressSnapshot(displayedSound: String) -> ParentPreviewProgressSnapshot {
-        ParentPreviewProgressSnapshot(
-            selectedSound: displayedSound,
-            completedGameTitles: NativeGame.allCases.filter { completedGames.contains($0.id) }.map(\.title),
-            bookPositions: NativeBookCatalog.previewPositions(for: bookmarks)
-        )
-    }
 }
 
 private struct NativeBook: Decodable, Identifiable {
@@ -299,6 +291,7 @@ private struct NativeBookPage: Decodable {
     let alt: String
     let emoji: String
     let crop: BookArtCrop?
+    let key: String?
 }
 
 struct BookArtCrop: Decodable, Hashable, Sendable {
@@ -330,13 +323,20 @@ private enum BookCalendar {
 
 private struct NativeBookReader: View {
     let book: NativeBook
+    let spokenReading: NativeReadingAccess?
     @Binding var bookmark: BookBookmark
     @Environment(\.dismiss) private var dismiss
     @Environment(\.dynamicTypeSize) private var typeSize
+    @Environment(\.scenePhase) private var scenePhase
     @State private var page: Int
+    @State private var readOnly = false
+    @State private var unavailableMicrophonePage: Int?
+    @State private var processedPage: Int?
+    @StateObject private var playback = NativeReadingPlayback()
 
-    init(book: NativeBook, bookmark: Binding<BookBookmark>) {
+    init(book: NativeBook, bookmark: Binding<BookBookmark>, spokenReading: NativeReadingAccess?) {
         self.book = book
+        self.spokenReading = spokenReading
         self._bookmark = bookmark
         let mark = bookmark.wrappedValue
         self._page = State(initialValue: mark.finished || mark.page <= 0 ? -1 : min(mark.page, book.pages.count - 1))
@@ -345,6 +345,10 @@ private struct NativeBookReader: View {
     private var isCover: Bool { page < 0 }
     private var isEnd: Bool { page >= book.pages.count }
     private var currentPage: NativeBookPage { book.pages[min(max(0, page), book.pages.count - 1)] }
+    private var waitingForWord: Bool {
+        spokenReading != nil && !readOnly && !isCover && !isEnd && currentPage.key != nil &&
+            (processedPage != page || playback.moment != nil)
+    }
 
     var body: some View {
         GeometryReader { geometry in
@@ -361,7 +365,7 @@ private struct NativeBookReader: View {
                         .frame(maxHeight: .infinity)
                 }
 
-                readerControls
+                readingControls
                     .padding(.horizontal, 20)
                     .padding(.top, 12)
                     .padding(.bottom, 12)
@@ -372,9 +376,54 @@ private struct NativeBookReader: View {
         .background(BookPalette.paper.ignoresSafeArea())
         .preferredColorScheme(.light)
         .onChange(of: page) { value in
+            unavailableMicrophonePage = nil
             guard value >= 0 else { return }
             bookmark = BookBookmark(page: min(value, book.pages.count), finished: bookmark.finished || value >= book.pages.count)
         }
+        .task(id: page) { await preparePage() }
+        .onDisappear { playback.stop() }
+        .onChange(of: scenePhase) { if $0 != .active { playback.pauseNarration() } }
+    }
+
+    @ViewBuilder private var readingControls: some View {
+        if let moment = playback.moment, let spokenReading {
+            ReadingSpeechMomentView(plan: moment, isCurrent: {
+                spokenReading.isCurrent() && playback.moment?.id == moment.id
+            }, creditPlayRep: spokenReading.credit, onAdvance: { _ in finishMoment() }, onReadOnly: { scope in
+                if scope == .visit { readOnly = true }
+                else { unavailableMicrophonePage = page }
+                playback.stop(keepCaptionReplay: true)
+                processedPage = page
+            }, onExit: { dismiss() }, onMicrophoneAllowed: spokenReading.rememberPermission,
+               onSkip: finishMoment, acousticCarry: playback.acousticCarry,
+               emphasizedWord: NativeSpeechEmphasis.formatted(playback.promptPieces, fallback: moment.word))
+            .id(moment.id)
+        } else if playback.needsResume {
+            Button("Resume reading") { Task { await preparePage() } }
+                .buttonStyle(.borderedProminent).frame(minHeight: 44)
+        } else if waitingForWord {
+            ProgressView("Opening the page").padding(12)
+        } else {
+            readerControls
+        }
+    }
+
+    private func preparePage(asCaptionOnly: Bool = false) async {
+        playback.stop()
+        guard let spokenReading, !isCover, !isEnd else { return }
+        let current = page
+        let line = currentPage
+        let input = NativeReadingPageInput(title: book.title, sound: book.sound, caption: line.text,
+                                           word: line.key, captions: book.pages.map(\.text))
+        await playback.prepare(input, using: spokenReading, mode: .book,
+                               readOnly: readOnly || unavailableMicrophonePage == current || asCaptionOnly)
+        if page == current && !Task.isCancelled { processedPage = current }
+    }
+
+    private func finishMoment() {
+        playback.stop()
+        processedPage = page
+        nextPage()
     }
 
     private var readerHeader: some View {
@@ -387,6 +436,7 @@ private struct NativeBookReader: View {
             }
             .accessibilityLabel("Back to Books")
             .accessibilityIdentifier("book-close")
+            .disabled(playback.moment != nil)
 
             Text(book.title)
                 .font(.system(.subheadline, design: .rounded).weight(.semibold))
@@ -442,7 +492,7 @@ private struct NativeBookReader: View {
                         .font(.system(.body, design: .rounded))
                         .foregroundStyle(BookPalette.secondary)
                 } else {
-                    Text(currentPage.text)
+                    Text(NativeSpeechEmphasis.formatted(playback.captionPieces, fallback: currentPage.text))
                         .font(.system(.title2, design: .rounded).weight(.semibold))
                         .accessibilityIdentifier("book-page-text")
                 }
@@ -479,6 +529,20 @@ private struct NativeBookReader: View {
             .accessibilityLabel(isEnd ? "Read again" : "Previous page")
             .accessibilityIdentifier("book-previous")
 
+            if !isCover, !isEnd, playback.canReplayCaption {
+                Button {
+                    Task { await preparePage(asCaptionOnly: true) }
+                } label: {
+                    Image(systemName: "speaker.wave.2.fill")
+                        .font(.body.weight(.bold))
+                        .foregroundStyle(BookPalette.ink)
+                        .frame(width: 48, height: 52)
+                        .background(.white, in: RoundedRectangle(cornerRadius: 17))
+                }
+                .accessibilityLabel("Hear it")
+                .accessibilityIdentifier("book-caption-replay")
+            }
+
             Button {
                 if isEnd { dismiss() } else { nextPage() }
             } label: {
@@ -500,12 +564,14 @@ private struct NativeBookReader: View {
     }
 
     private func nextPage() {
-        guard !isEnd else { return }
+        guard !isEnd, !waitingForWord else { return }
+        playback.stop()
         page += 1
     }
 
     private func previousPage() {
-        guard page >= 0 else { return }
+        guard page >= 0, playback.moment == nil else { return }
+        playback.stop()
         page -= 1
     }
 }
@@ -618,6 +684,7 @@ private struct BookArtwork: View {
     var crop: BookArtCrop? = nil
     let emoji: String
     let mode: ContentMode
+    var retryable = true
 
     @State private var image: UIImage?
     @State private var failed = false
@@ -638,11 +705,13 @@ private struct BookArtwork: View {
                 } else if failed {
                     VStack(spacing: 8) {
                         Text(emoji).font(.system(size: min(54, max(25, geometry.size.width * 0.25))))
-                        Button("Load picture") { retry += 1 }
-                            .font(.system(.caption, design: .rounded).weight(.bold))
-                            .foregroundStyle(BookPalette.teal)
-                            .padding(8)
-                            .frame(minHeight: 44)
+                        if retryable {
+                            Button("Load picture") { retry += 1 }
+                                .font(.system(.caption, design: .rounded).weight(.bold))
+                                .foregroundStyle(BookPalette.teal)
+                                .padding(8)
+                                .frame(minHeight: 44)
+                        }
                     }
                 } else {
                     ProgressView().tint(BookPalette.teal)

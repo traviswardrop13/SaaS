@@ -1,0 +1,9667 @@
+{
+  "version": 1,
+  "hearSHA256": "29cb7fb23115ce5d8ee1d17c6445c5e6a2fd03bc22658ab9f77c859f0ea38047",
+  "contentSHA256": "0a6f8ec6486b19df6e14874875c904d753822fe1ae033d28681044dd8d216f65",
+  "heartestSHA256": "0acb90fd1eac1c78eefd797a5014e69e0888b68ad048c344ab7d8fdb4d56021c",
+  "sourceAssertionCount": 68,
+  "sourceFixtureCount": 103,
+  "fixtures": [
+    {
+      "text": "poopoo",
+      "sound": "R",
+      "word": "",
+      "level": "",
+      "frame": "",
+      "position": "",
+      "expected": "fail"
+    },
+    {
+      "text": "poo poo",
+      "sound": "R",
+      "word": "rabbit",
+      "level": "",
+      "frame": "",
+      "position": "",
+      "expected": "fail"
+    },
+    {
+      "text": "banana banana",
+      "sound": "R",
+      "word": "rain",
+      "level": "",
+      "frame": "",
+      "position": "",
+      "expected": "fail"
+    },
+    {
+      "text": "rabbit",
+      "sound": "R",
+      "word": "rabbit",
+      "level": "",
+      "frame": "",
+      "position": "",
+      "expected": "pass"
+    },
+    {
+      "text": "wabbit",
+      "sound": "R",
+      "word": "rabbit",
+      "level": "",
+      "frame": "",
+      "position": "",
+      "expected": "pass"
+    },
+    {
+      "text": "the rabbit",
+      "sound": "R",
+      "word": "rabbit",
+      "level": "",
+      "frame": "",
+      "position": "",
+      "expected": "pass"
+    },
+    {
+      "text": "run",
+      "sound": "R",
+      "word": "rain",
+      "level": "",
+      "frame": "",
+      "position": "",
+      "expected": "fail"
+    },
+    {
+      "text": "rocket",
+      "sound": "R",
+      "word": "rabbit",
+      "level": "word",
+      "frame": "",
+      "position": "",
+      "expected": "fail"
+    },
+    {
+      "text": "rainy",
+      "sound": "R",
+      "word": "rain",
+      "level": "word",
+      "frame": "",
+      "position": "",
+      "expected": "pass"
+    },
+    {
+      "text": "are",
+      "sound": "R",
+      "word": "",
+      "level": "",
+      "frame": "",
+      "position": "",
+      "expected": "pass"
+    },
+    {
+      "text": "ship",
+      "sound": "SH",
+      "word": "",
+      "level": "",
+      "frame": "",
+      "position": "",
+      "expected": "pass"
+    },
+    {
+      "text": "sip",
+      "sound": "SH",
+      "word": "",
+      "level": "",
+      "frame": "",
+      "position": "",
+      "expected": "fail"
+    },
+    {
+      "text": "this",
+      "sound": "TH",
+      "word": "",
+      "level": "",
+      "frame": "",
+      "position": "",
+      "expected": "pass"
+    },
+    {
+      "text": "",
+      "sound": "R",
+      "word": "rabbit",
+      "level": "",
+      "frame": "",
+      "position": "",
+      "expected": "unknown"
+    },
+    {
+      "text": "   ",
+      "sound": "R",
+      "word": "rabbit",
+      "level": "",
+      "frame": "",
+      "position": "",
+      "expected": "unknown"
+    },
+    {
+      "text": "...!!",
+      "sound": "R",
+      "word": "rabbit",
+      "level": "",
+      "frame": "",
+      "position": "",
+      "expected": "unknown"
+    },
+    {
+      "text": "bat",
+      "sound": "R",
+      "word": "bar",
+      "level": "",
+      "frame": "",
+      "position": "",
+      "expected": "fail"
+    },
+    {
+      "text": "taco",
+      "sound": "R",
+      "word": "rabbit",
+      "level": "word",
+      "frame": "",
+      "position": "",
+      "expected": "fail"
+    },
+    {
+      "text": "water",
+      "sound": "R",
+      "word": "rabbit",
+      "level": "word",
+      "frame": "",
+      "position": "",
+      "expected": "fail"
+    },
+    {
+      "text": "here is a taco",
+      "sound": "R",
+      "word": "rabbit",
+      "level": "word",
+      "frame": "",
+      "position": "",
+      "expected": "fail"
+    },
+    {
+      "text": "Here is a taco.",
+      "sound": "R",
+      "word": "rabbit",
+      "level": "sentence",
+      "frame": "Here is a rabbit.",
+      "position": "",
+      "expected": "fail"
+    },
+    {
+      "text": "Here is a rabbit.",
+      "sound": "R",
+      "word": "rabbit",
+      "level": "sentence",
+      "frame": "Here is a rabbit.",
+      "position": "",
+      "expected": "pass"
+    },
+    {
+      "text": "here is a",
+      "sound": "R",
+      "word": "rabbit",
+      "level": "sentence",
+      "frame": "Here is a rabbit.",
+      "position": "",
+      "expected": "unknown"
+    },
+    {
+      "text": "I see a taco",
+      "sound": "S",
+      "word": "sun",
+      "level": "sentence",
+      "frame": "I see a sun.",
+      "position": "",
+      "expected": "fail"
+    },
+    {
+      "text": "sock",
+      "sound": "R",
+      "word": "rock",
+      "level": "word",
+      "frame": "",
+      "position": "",
+      "expected": "fail"
+    },
+    {
+      "text": "sing",
+      "sound": "R",
+      "word": "ring",
+      "level": "word",
+      "frame": "",
+      "position": "",
+      "expected": "fail"
+    },
+    {
+      "text": "wock",
+      "sound": "R",
+      "word": "rock",
+      "level": "word",
+      "frame": "",
+      "position": "",
+      "expected": "pass"
+    },
+    {
+      "text": "wed",
+      "sound": "R",
+      "word": "red",
+      "level": "word",
+      "frame": "",
+      "position": "",
+      "expected": "pass"
+    },
+    {
+      "text": "bed",
+      "sound": "R",
+      "word": "red",
+      "level": "word",
+      "frame": "",
+      "position": "",
+      "expected": "fail"
+    },
+    {
+      "text": "cah",
+      "sound": "R",
+      "word": "car",
+      "level": "word",
+      "frame": "",
+      "position": "",
+      "expected": "pass"
+    },
+    {
+      "text": "tat",
+      "sound": "K",
+      "word": "cat",
+      "level": "word",
+      "frame": "",
+      "position": "",
+      "expected": "pass"
+    },
+    {
+      "text": "sip",
+      "sound": "SH",
+      "word": "ship",
+      "level": "word",
+      "frame": "",
+      "position": "",
+      "expected": "pass"
+    },
+    {
+      "text": "4",
+      "sound": "R",
+      "word": "four",
+      "level": "word",
+      "frame": "",
+      "position": "",
+      "expected": "pass"
+    },
+    {
+      "text": "say rabbit taco",
+      "sound": "R",
+      "word": "rabbit",
+      "level": "word",
+      "frame": "",
+      "position": "",
+      "expected": "fail"
+    },
+    {
+      "text": "say rabbit rabbit",
+      "sound": "R",
+      "word": "rabbit",
+      "level": "word",
+      "frame": "",
+      "position": "",
+      "expected": "pass"
+    },
+    {
+      "text": "poop",
+      "sound": "R",
+      "word": "rabbit",
+      "level": "word",
+      "frame": "",
+      "position": "",
+      "expected": "fail"
+    },
+    {
+      "text": "fridge",
+      "sound": "R",
+      "word": "rabbit",
+      "level": "word",
+      "frame": "",
+      "position": "",
+      "expected": "fail"
+    },
+    {
+      "text": "fridge",
+      "sound": "R",
+      "word": "carrot",
+      "level": "word",
+      "frame": "",
+      "position": "",
+      "expected": "fail"
+    },
+    {
+      "text": "tractor",
+      "sound": "R",
+      "word": "car",
+      "level": "word",
+      "frame": "",
+      "position": "",
+      "expected": "fail"
+    },
+    {
+      "text": "parrot",
+      "sound": "R",
+      "word": "carrot",
+      "level": "word",
+      "frame": "",
+      "position": "",
+      "expected": "pass"
+    },
+    {
+      "text": "cawwot",
+      "sound": "R",
+      "word": "carrot",
+      "level": "word",
+      "frame": "",
+      "position": "",
+      "expected": "pass"
+    },
+    {
+      "text": "cannot",
+      "sound": "R",
+      "word": "carrot",
+      "level": "word",
+      "frame": "",
+      "position": "",
+      "expected": "fail"
+    },
+    {
+      "text": "uh",
+      "sound": "R",
+      "word": "rrrr",
+      "level": "isolation",
+      "frame": "",
+      "position": "",
+      "expected": "unknown"
+    },
+    {
+      "text": "Er",
+      "sound": "R",
+      "word": "rrrr",
+      "level": "isolation",
+      "frame": "",
+      "position": "",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "R",
+      "word": "rrrr",
+      "level": "isolation",
+      "frame": "",
+      "position": "",
+      "expected": "fail"
+    },
+    {
+      "text": "fridge",
+      "sound": "R",
+      "word": "rrrr",
+      "level": "isolation",
+      "frame": "",
+      "position": "",
+      "expected": "fail"
+    },
+    {
+      "text": "Rrrrrr",
+      "sound": "R",
+      "word": "rrrr",
+      "level": "isolation",
+      "frame": "",
+      "position": "",
+      "expected": "pass"
+    },
+    {
+      "text": "Error",
+      "sound": "R",
+      "word": "rrrr",
+      "level": "isolation",
+      "frame": "",
+      "position": "",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "K",
+      "word": "kuh",
+      "level": "isolation",
+      "frame": "",
+      "position": "",
+      "expected": "fail"
+    },
+    {
+      "text": "wah",
+      "sound": "R",
+      "word": "rah",
+      "level": "syllable",
+      "frame": "",
+      "position": "",
+      "expected": "pass"
+    },
+    {
+      "text": "Ah rah",
+      "sound": "R",
+      "word": "ah-rah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "Ara",
+      "sound": "R",
+      "word": "ah-rah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ah wah",
+      "sound": "R",
+      "word": "ah-rah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "Ah-rah. Ah-rah.",
+      "sound": "R",
+      "word": "ah-rah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "Ay ray ay ray",
+      "sound": "R",
+      "word": "ay-ray",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "Ara ara",
+      "sound": "R",
+      "word": "ah-rah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "Are",
+      "sound": "R",
+      "word": "ar",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "ache",
+      "sound": "K",
+      "word": "ache",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "ease",
+      "sound": "Z",
+      "word": "ease",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "Oh row",
+      "sound": "R",
+      "word": "oh-roh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "Op",
+      "sound": "P",
+      "word": "ahp",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "the",
+      "sound": "THV",
+      "word": "athe",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "is a",
+      "sound": "S",
+      "word": "ah-sah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "or",
+      "sound": "R",
+      "word": "ar",
+      "level": "syllable",
+      "frame": "",
+      "position": "v",
+      "expected": "fail"
+    },
+    {
+      "text": "er",
+      "sound": "R",
+      "word": "ar",
+      "level": "syllable",
+      "frame": "",
+      "position": "v",
+      "expected": "fail"
+    },
+    {
+      "text": "air",
+      "sound": "R",
+      "word": "ar",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "fail"
+    },
+    {
+      "text": "eep",
+      "sound": "P",
+      "word": "ahp",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "fail"
+    },
+    {
+      "text": "free",
+      "sound": "R",
+      "word": "trah",
+      "level": "syllable",
+      "frame": "",
+      "position": "b",
+      "expected": "fail"
+    },
+    {
+      "text": "is a",
+      "sound": "R",
+      "word": "ar",
+      "level": "syllable",
+      "frame": "",
+      "position": "v",
+      "expected": "fail"
+    },
+    {
+      "text": "That's a good one",
+      "sound": "R",
+      "word": "ar",
+      "level": "syllable",
+      "frame": "",
+      "position": "v",
+      "expected": "fail"
+    },
+    {
+      "text": "Is he done",
+      "sound": "S",
+      "word": "ice",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "Itchy",
+      "sound": "CH",
+      "word": "ee-chee",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "Oh dough",
+      "sound": "D",
+      "word": "oh-doh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "Eye er",
+      "sound": "R",
+      "word": "ire",
+      "level": "syllable",
+      "frame": "",
+      "position": "v",
+      "expected": "unknown"
+    },
+    {
+      "text": "Ooh, two",
+      "sound": "T",
+      "word": "oo-too",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "Year",
+      "sound": "R",
+      "word": "ear",
+      "level": "syllable",
+      "frame": "",
+      "position": "v",
+      "expected": "unknown"
+    },
+    {
+      "text": "Owe",
+      "sound": "L",
+      "word": "ole",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "Ow",
+      "sound": "R",
+      "word": "or",
+      "level": "syllable",
+      "frame": "",
+      "position": "v",
+      "expected": "unknown"
+    },
+    {
+      "text": "E, C",
+      "sound": "S",
+      "word": "ee-see",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "Er, eh",
+      "sound": "R",
+      "word": "air",
+      "level": "syllable",
+      "frame": "",
+      "position": "v",
+      "expected": "fail"
+    },
+    {
+      "text": "E",
+      "sound": "R",
+      "word": "ear",
+      "level": "syllable",
+      "frame": "",
+      "position": "v",
+      "expected": "unknown"
+    },
+    {
+      "text": "Three",
+      "sound": "R",
+      "word": "free",
+      "level": "syllable",
+      "frame": "",
+      "position": "b",
+      "expected": "unknown"
+    },
+    {
+      "text": "Ache",
+      "sound": "J",
+      "word": "age",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "Ay say",
+      "sound": "SH",
+      "word": "ay-shay",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "Ay say ay say",
+      "sound": "S",
+      "word": "ay-say",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "Eight",
+      "sound": "T",
+      "word": "ate",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "R",
+      "word": "ah-rah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "fail"
+    },
+    {
+      "text": "taco",
+      "sound": "R",
+      "word": "ar",
+      "level": "syllable",
+      "frame": "",
+      "position": "v",
+      "expected": "fail"
+    },
+    {
+      "text": "way",
+      "sound": "L",
+      "word": "play",
+      "level": "syllable",
+      "frame": "",
+      "position": "b",
+      "expected": "fail"
+    },
+    {
+      "text": "too",
+      "sound": "S",
+      "word": "snoo",
+      "level": "syllable",
+      "frame": "",
+      "position": "b",
+      "expected": "fail"
+    },
+    {
+      "text": "the",
+      "sound": "S",
+      "word": "sah",
+      "level": "syllable",
+      "frame": "",
+      "position": "",
+      "expected": "fail"
+    },
+    {
+      "text": "see",
+      "sound": "SH",
+      "word": "shee",
+      "level": "syllable",
+      "frame": "",
+      "position": "",
+      "expected": "pass"
+    },
+    {
+      "text": "tah",
+      "sound": "TH",
+      "word": "thah",
+      "level": "syllable",
+      "frame": "",
+      "position": "",
+      "expected": "pass"
+    },
+    {
+      "text": "top",
+      "sound": "S",
+      "word": "stop",
+      "level": "word",
+      "frame": "",
+      "position": "b",
+      "expected": "fail"
+    },
+    {
+      "text": "tee",
+      "sound": "R",
+      "word": "tree",
+      "level": "word",
+      "frame": "",
+      "position": "b",
+      "expected": "fail"
+    },
+    {
+      "text": "tah",
+      "sound": "R",
+      "word": "trah",
+      "level": "syllable",
+      "frame": "",
+      "position": "b",
+      "expected": "fail"
+    },
+    {
+      "text": "stop",
+      "sound": "S",
+      "word": "stop",
+      "level": "word",
+      "frame": "",
+      "position": "b",
+      "expected": "pass"
+    },
+    {
+      "text": "say ah rah",
+      "sound": "R",
+      "word": "ah-rah",
+      "level": "syllable",
+      "frame": "",
+      "position": "",
+      "expected": "unknown"
+    },
+    {
+      "text": "say Ara Ah rah",
+      "sound": "R",
+      "word": "ah-rah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "say Ara taco",
+      "sound": "R",
+      "word": "ah-rah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "fail"
+    },
+    {
+      "text": "say ah rah ah rah",
+      "sound": "R",
+      "word": "ah-rah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ah",
+      "sound": "R",
+      "word": "rah",
+      "level": "syllable",
+      "frame": "",
+      "position": "",
+      "expected": "unknown"
+    },
+    {
+      "text": "taco",
+      "sound": "R",
+      "word": "rah",
+      "level": "syllable",
+      "frame": "",
+      "position": "",
+      "expected": "fail"
+    },
+    {
+      "text": "ah-rah",
+      "sound": "R",
+      "word": "ah-rah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ah rah",
+      "sound": "R",
+      "word": "ah-rah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ah-rah ah-rah",
+      "sound": "R",
+      "word": "ah-rah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "say ah-rah",
+      "sound": "R",
+      "word": "ah-rah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "say ah rah ah-rah",
+      "sound": "R",
+      "word": "ah-rah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "R",
+      "word": "ah-rah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "fail"
+    },
+    {
+      "text": "oo-roo",
+      "sound": "R",
+      "word": "oo-roo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "oo roo",
+      "sound": "R",
+      "word": "oo-roo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "oo-roo oo-roo",
+      "sound": "R",
+      "word": "oo-roo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "say oo-roo",
+      "sound": "R",
+      "word": "oo-roo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "say oo roo oo-roo",
+      "sound": "R",
+      "word": "oo-roo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "R",
+      "word": "oo-roo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "fail"
+    },
+    {
+      "text": "oh-roh",
+      "sound": "R",
+      "word": "oh-roh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "oh roh",
+      "sound": "R",
+      "word": "oh-roh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "oh-roh oh-roh",
+      "sound": "R",
+      "word": "oh-roh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "say oh-roh",
+      "sound": "R",
+      "word": "oh-roh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "say oh roh oh-roh",
+      "sound": "R",
+      "word": "oh-roh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "R",
+      "word": "oh-roh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "fail"
+    },
+    {
+      "text": "ay-ray",
+      "sound": "R",
+      "word": "ay-ray",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ay ray",
+      "sound": "R",
+      "word": "ay-ray",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ay-ray ay-ray",
+      "sound": "R",
+      "word": "ay-ray",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "say ay-ray",
+      "sound": "R",
+      "word": "ay-ray",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "say ay ray ay-ray",
+      "sound": "R",
+      "word": "ay-ray",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "R",
+      "word": "ay-ray",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "fail"
+    },
+    {
+      "text": "ah-sah",
+      "sound": "S",
+      "word": "ah-sah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ah sah",
+      "sound": "S",
+      "word": "ah-sah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ah-sah ah-sah",
+      "sound": "S",
+      "word": "ah-sah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "say ah-sah",
+      "sound": "S",
+      "word": "ah-sah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "say ah sah ah-sah",
+      "sound": "S",
+      "word": "ah-sah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "S",
+      "word": "ah-sah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "ee-see",
+      "sound": "S",
+      "word": "ee-see",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ee see",
+      "sound": "S",
+      "word": "ee-see",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ee-see ee-see",
+      "sound": "S",
+      "word": "ee-see",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "say ee-see",
+      "sound": "S",
+      "word": "ee-see",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "say ee see ee-see",
+      "sound": "S",
+      "word": "ee-see",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "S",
+      "word": "ee-see",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "oo-soo",
+      "sound": "S",
+      "word": "oo-soo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "oo soo",
+      "sound": "S",
+      "word": "oo-soo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "oo-soo oo-soo",
+      "sound": "S",
+      "word": "oo-soo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "say oo-soo",
+      "sound": "S",
+      "word": "oo-soo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "say oo soo oo-soo",
+      "sound": "S",
+      "word": "oo-soo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "S",
+      "word": "oo-soo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "oh-soh",
+      "sound": "S",
+      "word": "oh-soh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "oh soh",
+      "sound": "S",
+      "word": "oh-soh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "oh-soh oh-soh",
+      "sound": "S",
+      "word": "oh-soh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "say oh-soh",
+      "sound": "S",
+      "word": "oh-soh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "say oh soh oh-soh",
+      "sound": "S",
+      "word": "oh-soh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "S",
+      "word": "oh-soh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "ay-say",
+      "sound": "S",
+      "word": "ay-say",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ay say",
+      "sound": "S",
+      "word": "ay-say",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ay-say ay-say",
+      "sound": "S",
+      "word": "ay-say",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "say ay-say",
+      "sound": "S",
+      "word": "ay-say",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "say ay say ay-say",
+      "sound": "S",
+      "word": "ay-say",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "taco",
+      "sound": "S",
+      "word": "ay-say",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "oo-loo",
+      "sound": "L",
+      "word": "oo-loo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "oo loo",
+      "sound": "L",
+      "word": "oo-loo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "oo-loo oo-loo",
+      "sound": "L",
+      "word": "oo-loo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "say oo-loo",
+      "sound": "L",
+      "word": "oo-loo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "say oo loo oo-loo",
+      "sound": "L",
+      "word": "oo-loo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "L",
+      "word": "oo-loo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "fail"
+    },
+    {
+      "text": "oh-loh",
+      "sound": "L",
+      "word": "oh-loh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "oh loh",
+      "sound": "L",
+      "word": "oh-loh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "oh-loh oh-loh",
+      "sound": "L",
+      "word": "oh-loh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "say oh-loh",
+      "sound": "L",
+      "word": "oh-loh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "say oh loh oh-loh",
+      "sound": "L",
+      "word": "oh-loh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "L",
+      "word": "oh-loh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "fail"
+    },
+    {
+      "text": "ay-lay",
+      "sound": "L",
+      "word": "ay-lay",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ay lay",
+      "sound": "L",
+      "word": "ay-lay",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ay-lay ay-lay",
+      "sound": "L",
+      "word": "ay-lay",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "say ay-lay",
+      "sound": "L",
+      "word": "ay-lay",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "say ay lay ay-lay",
+      "sound": "L",
+      "word": "ay-lay",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "L",
+      "word": "ay-lay",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "fail"
+    },
+    {
+      "text": "ah-kah",
+      "sound": "K",
+      "word": "ah-kah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ah kah",
+      "sound": "K",
+      "word": "ah-kah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ah-kah ah-kah",
+      "sound": "K",
+      "word": "ah-kah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "say ah-kah",
+      "sound": "K",
+      "word": "ah-kah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "say ah kah ah-kah",
+      "sound": "K",
+      "word": "ah-kah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "K",
+      "word": "ah-kah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "ee-kee",
+      "sound": "K",
+      "word": "ee-kee",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ee kee",
+      "sound": "K",
+      "word": "ee-kee",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ee-kee ee-kee",
+      "sound": "K",
+      "word": "ee-kee",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "say ee-kee",
+      "sound": "K",
+      "word": "ee-kee",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "say ee kee ee-kee",
+      "sound": "K",
+      "word": "ee-kee",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "K",
+      "word": "ee-kee",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "oo-koo",
+      "sound": "K",
+      "word": "oo-koo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "oo koo",
+      "sound": "K",
+      "word": "oo-koo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "oo-koo oo-koo",
+      "sound": "K",
+      "word": "oo-koo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "say oo-koo",
+      "sound": "K",
+      "word": "oo-koo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "say oo koo oo-koo",
+      "sound": "K",
+      "word": "oo-koo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "K",
+      "word": "oo-koo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "oh-koh",
+      "sound": "K",
+      "word": "oh-koh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "oh koh",
+      "sound": "K",
+      "word": "oh-koh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "oh-koh oh-koh",
+      "sound": "K",
+      "word": "oh-koh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "say oh-koh",
+      "sound": "K",
+      "word": "oh-koh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "say oh koh oh-koh",
+      "sound": "K",
+      "word": "oh-koh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "K",
+      "word": "oh-koh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "ay-kay",
+      "sound": "K",
+      "word": "ay-kay",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ay kay",
+      "sound": "K",
+      "word": "ay-kay",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ay-kay ay-kay",
+      "sound": "K",
+      "word": "ay-kay",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "say ay-kay",
+      "sound": "K",
+      "word": "ay-kay",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "say ay kay ay-kay",
+      "sound": "K",
+      "word": "ay-kay",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "K",
+      "word": "ay-kay",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "ah-gah",
+      "sound": "G",
+      "word": "ah-gah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ah gah",
+      "sound": "G",
+      "word": "ah-gah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ah-gah ah-gah",
+      "sound": "G",
+      "word": "ah-gah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "say ah-gah",
+      "sound": "G",
+      "word": "ah-gah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "say ah gah ah-gah",
+      "sound": "G",
+      "word": "ah-gah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "G",
+      "word": "ah-gah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "fail"
+    },
+    {
+      "text": "oo-goo",
+      "sound": "G",
+      "word": "oo-goo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "oo goo",
+      "sound": "G",
+      "word": "oo-goo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "oo-goo oo-goo",
+      "sound": "G",
+      "word": "oo-goo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "say oo-goo",
+      "sound": "G",
+      "word": "oo-goo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "say oo goo oo-goo",
+      "sound": "G",
+      "word": "oo-goo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "G",
+      "word": "oo-goo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "fail"
+    },
+    {
+      "text": "oh-goh",
+      "sound": "G",
+      "word": "oh-goh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "oh goh",
+      "sound": "G",
+      "word": "oh-goh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "oh-goh oh-goh",
+      "sound": "G",
+      "word": "oh-goh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "say oh-goh",
+      "sound": "G",
+      "word": "oh-goh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "say oh goh oh-goh",
+      "sound": "G",
+      "word": "oh-goh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "G",
+      "word": "oh-goh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "fail"
+    },
+    {
+      "text": "ah-fah",
+      "sound": "F",
+      "word": "ah-fah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ah fah",
+      "sound": "F",
+      "word": "ah-fah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ah-fah ah-fah",
+      "sound": "F",
+      "word": "ah-fah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "say ah-fah",
+      "sound": "F",
+      "word": "ah-fah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "say ah fah ah-fah",
+      "sound": "F",
+      "word": "ah-fah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "F",
+      "word": "ah-fah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "fail"
+    },
+    {
+      "text": "ee-fee",
+      "sound": "F",
+      "word": "ee-fee",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ee fee",
+      "sound": "F",
+      "word": "ee-fee",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ee-fee ee-fee",
+      "sound": "F",
+      "word": "ee-fee",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "say ee-fee",
+      "sound": "F",
+      "word": "ee-fee",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "say ee fee ee-fee",
+      "sound": "F",
+      "word": "ee-fee",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "F",
+      "word": "ee-fee",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "fail"
+    },
+    {
+      "text": "oo-foo",
+      "sound": "F",
+      "word": "oo-foo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "oo foo",
+      "sound": "F",
+      "word": "oo-foo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "oo-foo oo-foo",
+      "sound": "F",
+      "word": "oo-foo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "say oo-foo",
+      "sound": "F",
+      "word": "oo-foo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "say oo foo oo-foo",
+      "sound": "F",
+      "word": "oo-foo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "F",
+      "word": "oo-foo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "fail"
+    },
+    {
+      "text": "oh-foh",
+      "sound": "F",
+      "word": "oh-foh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "oh foh",
+      "sound": "F",
+      "word": "oh-foh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "oh-foh oh-foh",
+      "sound": "F",
+      "word": "oh-foh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "say oh-foh",
+      "sound": "F",
+      "word": "oh-foh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "say oh foh oh-foh",
+      "sound": "F",
+      "word": "oh-foh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "F",
+      "word": "oh-foh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "fail"
+    },
+    {
+      "text": "ay-fay",
+      "sound": "F",
+      "word": "ay-fay",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ay fay",
+      "sound": "F",
+      "word": "ay-fay",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ay-fay ay-fay",
+      "sound": "F",
+      "word": "ay-fay",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "say ay-fay",
+      "sound": "F",
+      "word": "ay-fay",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "say ay fay ay-fay",
+      "sound": "F",
+      "word": "ay-fay",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "F",
+      "word": "ay-fay",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "fail"
+    },
+    {
+      "text": "ah-shah",
+      "sound": "SH",
+      "word": "ah-shah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ah shah",
+      "sound": "SH",
+      "word": "ah-shah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ah-shah ah-shah",
+      "sound": "SH",
+      "word": "ah-shah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "say ah-shah",
+      "sound": "SH",
+      "word": "ah-shah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "say ah shah ah-shah",
+      "sound": "SH",
+      "word": "ah-shah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "SH",
+      "word": "ah-shah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "fail"
+    },
+    {
+      "text": "ee-shee",
+      "sound": "SH",
+      "word": "ee-shee",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ee shee",
+      "sound": "SH",
+      "word": "ee-shee",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ee-shee ee-shee",
+      "sound": "SH",
+      "word": "ee-shee",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "say ee-shee",
+      "sound": "SH",
+      "word": "ee-shee",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "say ee shee ee-shee",
+      "sound": "SH",
+      "word": "ee-shee",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "SH",
+      "word": "ee-shee",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "fail"
+    },
+    {
+      "text": "oo-shoo",
+      "sound": "SH",
+      "word": "oo-shoo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "oo shoo",
+      "sound": "SH",
+      "word": "oo-shoo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "oo-shoo oo-shoo",
+      "sound": "SH",
+      "word": "oo-shoo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "say oo-shoo",
+      "sound": "SH",
+      "word": "oo-shoo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "say oo shoo oo-shoo",
+      "sound": "SH",
+      "word": "oo-shoo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "SH",
+      "word": "oo-shoo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "fail"
+    },
+    {
+      "text": "oh-shoh",
+      "sound": "SH",
+      "word": "oh-shoh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "oh shoh",
+      "sound": "SH",
+      "word": "oh-shoh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "oh-shoh oh-shoh",
+      "sound": "SH",
+      "word": "oh-shoh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "say oh-shoh",
+      "sound": "SH",
+      "word": "oh-shoh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "say oh shoh oh-shoh",
+      "sound": "SH",
+      "word": "oh-shoh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "SH",
+      "word": "oh-shoh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "fail"
+    },
+    {
+      "text": "ay-shay",
+      "sound": "SH",
+      "word": "ay-shay",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ay shay",
+      "sound": "SH",
+      "word": "ay-shay",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ay-shay ay-shay",
+      "sound": "SH",
+      "word": "ay-shay",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "say ay-shay",
+      "sound": "SH",
+      "word": "ay-shay",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "say ay shay ay-shay",
+      "sound": "SH",
+      "word": "ay-shay",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "taco",
+      "sound": "SH",
+      "word": "ay-shay",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "fail"
+    },
+    {
+      "text": "ah-chah",
+      "sound": "CH",
+      "word": "ah-chah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ah chah",
+      "sound": "CH",
+      "word": "ah-chah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ah-chah ah-chah",
+      "sound": "CH",
+      "word": "ah-chah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "say ah-chah",
+      "sound": "CH",
+      "word": "ah-chah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "say ah chah ah-chah",
+      "sound": "CH",
+      "word": "ah-chah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "CH",
+      "word": "ah-chah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "ee-chee",
+      "sound": "CH",
+      "word": "ee-chee",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ee chee",
+      "sound": "CH",
+      "word": "ee-chee",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ee-chee ee-chee",
+      "sound": "CH",
+      "word": "ee-chee",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "say ee-chee",
+      "sound": "CH",
+      "word": "ee-chee",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "say ee chee ee-chee",
+      "sound": "CH",
+      "word": "ee-chee",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "CH",
+      "word": "ee-chee",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "oo-choo",
+      "sound": "CH",
+      "word": "oo-choo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "oo choo",
+      "sound": "CH",
+      "word": "oo-choo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "oo-choo oo-choo",
+      "sound": "CH",
+      "word": "oo-choo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "say oo-choo",
+      "sound": "CH",
+      "word": "oo-choo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "say oo choo oo-choo",
+      "sound": "CH",
+      "word": "oo-choo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "CH",
+      "word": "oo-choo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "oh-choh",
+      "sound": "CH",
+      "word": "oh-choh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "oh choh",
+      "sound": "CH",
+      "word": "oh-choh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "oh-choh oh-choh",
+      "sound": "CH",
+      "word": "oh-choh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "say oh-choh",
+      "sound": "CH",
+      "word": "oh-choh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "say oh choh oh-choh",
+      "sound": "CH",
+      "word": "oh-choh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "CH",
+      "word": "oh-choh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "ay-chay",
+      "sound": "CH",
+      "word": "ay-chay",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ay chay",
+      "sound": "CH",
+      "word": "ay-chay",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ay-chay ay-chay",
+      "sound": "CH",
+      "word": "ay-chay",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "say ay-chay",
+      "sound": "CH",
+      "word": "ay-chay",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "say ay chay ay-chay",
+      "sound": "CH",
+      "word": "ay-chay",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "CH",
+      "word": "ay-chay",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "ah-thah",
+      "sound": "TH",
+      "word": "ah-thah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ah thah",
+      "sound": "TH",
+      "word": "ah-thah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ah-thah ah-thah",
+      "sound": "TH",
+      "word": "ah-thah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "say ah-thah",
+      "sound": "TH",
+      "word": "ah-thah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "say ah thah ah-thah",
+      "sound": "TH",
+      "word": "ah-thah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "TH",
+      "word": "ah-thah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "oo-thoo",
+      "sound": "TH",
+      "word": "oo-thoo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "oo thoo",
+      "sound": "TH",
+      "word": "oo-thoo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "oo-thoo oo-thoo",
+      "sound": "TH",
+      "word": "oo-thoo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "say oo-thoo",
+      "sound": "TH",
+      "word": "oo-thoo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "say oo thoo oo-thoo",
+      "sound": "TH",
+      "word": "oo-thoo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "TH",
+      "word": "oo-thoo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "oh-thoh",
+      "sound": "TH",
+      "word": "oh-thoh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "oh thoh",
+      "sound": "TH",
+      "word": "oh-thoh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "oh-thoh oh-thoh",
+      "sound": "TH",
+      "word": "oh-thoh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "say oh-thoh",
+      "sound": "TH",
+      "word": "oh-thoh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "say oh thoh oh-thoh",
+      "sound": "TH",
+      "word": "oh-thoh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "TH",
+      "word": "oh-thoh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "ah-thuh",
+      "sound": "THV",
+      "word": "ah-thuh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ah thuh",
+      "sound": "THV",
+      "word": "ah-thuh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ah-thuh ah-thuh",
+      "sound": "THV",
+      "word": "ah-thuh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "say ah-thuh",
+      "sound": "THV",
+      "word": "ah-thuh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "say ah thuh ah-thuh",
+      "sound": "THV",
+      "word": "ah-thuh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "THV",
+      "word": "ah-thuh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "fail"
+    },
+    {
+      "text": "oo-thuh",
+      "sound": "THV",
+      "word": "oo-thuh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "oo thuh",
+      "sound": "THV",
+      "word": "oo-thuh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "oo-thuh oo-thuh",
+      "sound": "THV",
+      "word": "oo-thuh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "say oo-thuh",
+      "sound": "THV",
+      "word": "oo-thuh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "say oo thuh oo-thuh",
+      "sound": "THV",
+      "word": "oo-thuh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "THV",
+      "word": "oo-thuh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "fail"
+    },
+    {
+      "text": "oh-thuh",
+      "sound": "THV",
+      "word": "oh-thuh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "oh thuh",
+      "sound": "THV",
+      "word": "oh-thuh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "oh-thuh oh-thuh",
+      "sound": "THV",
+      "word": "oh-thuh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "say oh-thuh",
+      "sound": "THV",
+      "word": "oh-thuh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "say oh thuh oh-thuh",
+      "sound": "THV",
+      "word": "oh-thuh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "THV",
+      "word": "oh-thuh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "fail"
+    },
+    {
+      "text": "ah-zah",
+      "sound": "Z",
+      "word": "ah-zah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ah zah",
+      "sound": "Z",
+      "word": "ah-zah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ah-zah ah-zah",
+      "sound": "Z",
+      "word": "ah-zah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "say ah-zah",
+      "sound": "Z",
+      "word": "ah-zah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "say ah zah ah-zah",
+      "sound": "Z",
+      "word": "ah-zah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "Z",
+      "word": "ah-zah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "fail"
+    },
+    {
+      "text": "ee-zee",
+      "sound": "Z",
+      "word": "ee-zee",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ee zee",
+      "sound": "Z",
+      "word": "ee-zee",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ee-zee ee-zee",
+      "sound": "Z",
+      "word": "ee-zee",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "say ee-zee",
+      "sound": "Z",
+      "word": "ee-zee",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "say ee zee ee-zee",
+      "sound": "Z",
+      "word": "ee-zee",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "Z",
+      "word": "ee-zee",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "fail"
+    },
+    {
+      "text": "oo-zoo",
+      "sound": "Z",
+      "word": "oo-zoo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "oo zoo",
+      "sound": "Z",
+      "word": "oo-zoo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "oo-zoo oo-zoo",
+      "sound": "Z",
+      "word": "oo-zoo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "say oo-zoo",
+      "sound": "Z",
+      "word": "oo-zoo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "say oo zoo oo-zoo",
+      "sound": "Z",
+      "word": "oo-zoo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "Z",
+      "word": "oo-zoo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "fail"
+    },
+    {
+      "text": "oh-zoh",
+      "sound": "Z",
+      "word": "oh-zoh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "oh zoh",
+      "sound": "Z",
+      "word": "oh-zoh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "oh-zoh oh-zoh",
+      "sound": "Z",
+      "word": "oh-zoh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "say oh-zoh",
+      "sound": "Z",
+      "word": "oh-zoh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "say oh zoh oh-zoh",
+      "sound": "Z",
+      "word": "oh-zoh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "Z",
+      "word": "oh-zoh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "fail"
+    },
+    {
+      "text": "ay-zay",
+      "sound": "Z",
+      "word": "ay-zay",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ay zay",
+      "sound": "Z",
+      "word": "ay-zay",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ay-zay ay-zay",
+      "sound": "Z",
+      "word": "ay-zay",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "say ay-zay",
+      "sound": "Z",
+      "word": "ay-zay",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "say ay zay ay-zay",
+      "sound": "Z",
+      "word": "ay-zay",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "taco",
+      "sound": "Z",
+      "word": "ay-zay",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "fail"
+    },
+    {
+      "text": "ah-vah",
+      "sound": "V",
+      "word": "ah-vah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ah vah",
+      "sound": "V",
+      "word": "ah-vah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ah-vah ah-vah",
+      "sound": "V",
+      "word": "ah-vah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "say ah-vah",
+      "sound": "V",
+      "word": "ah-vah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "say ah vah ah-vah",
+      "sound": "V",
+      "word": "ah-vah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "V",
+      "word": "ah-vah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "fail"
+    },
+    {
+      "text": "ee-vee",
+      "sound": "V",
+      "word": "ee-vee",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ee vee",
+      "sound": "V",
+      "word": "ee-vee",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ee-vee ee-vee",
+      "sound": "V",
+      "word": "ee-vee",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "say ee-vee",
+      "sound": "V",
+      "word": "ee-vee",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "say ee vee ee-vee",
+      "sound": "V",
+      "word": "ee-vee",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "V",
+      "word": "ee-vee",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "fail"
+    },
+    {
+      "text": "oo-voo",
+      "sound": "V",
+      "word": "oo-voo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "oo voo",
+      "sound": "V",
+      "word": "oo-voo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "oo-voo oo-voo",
+      "sound": "V",
+      "word": "oo-voo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "say oo-voo",
+      "sound": "V",
+      "word": "oo-voo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "say oo voo oo-voo",
+      "sound": "V",
+      "word": "oo-voo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "V",
+      "word": "oo-voo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "fail"
+    },
+    {
+      "text": "oh-voh",
+      "sound": "V",
+      "word": "oh-voh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "oh voh",
+      "sound": "V",
+      "word": "oh-voh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "oh-voh oh-voh",
+      "sound": "V",
+      "word": "oh-voh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "say oh-voh",
+      "sound": "V",
+      "word": "oh-voh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "say oh voh oh-voh",
+      "sound": "V",
+      "word": "oh-voh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "V",
+      "word": "oh-voh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "fail"
+    },
+    {
+      "text": "ay-vay",
+      "sound": "V",
+      "word": "ay-vay",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ay vay",
+      "sound": "V",
+      "word": "ay-vay",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ay-vay ay-vay",
+      "sound": "V",
+      "word": "ay-vay",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "say ay-vay",
+      "sound": "V",
+      "word": "ay-vay",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "say ay vay ay-vay",
+      "sound": "V",
+      "word": "ay-vay",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "V",
+      "word": "ay-vay",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "fail"
+    },
+    {
+      "text": "ee-jee",
+      "sound": "J",
+      "word": "ee-jee",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ee jee",
+      "sound": "J",
+      "word": "ee-jee",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ee-jee ee-jee",
+      "sound": "J",
+      "word": "ee-jee",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "say ee-jee",
+      "sound": "J",
+      "word": "ee-jee",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "say ee jee ee-jee",
+      "sound": "J",
+      "word": "ee-jee",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "J",
+      "word": "ee-jee",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "fail"
+    },
+    {
+      "text": "oo-joo",
+      "sound": "J",
+      "word": "oo-joo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "oo joo",
+      "sound": "J",
+      "word": "oo-joo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "oo-joo oo-joo",
+      "sound": "J",
+      "word": "oo-joo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "say oo-joo",
+      "sound": "J",
+      "word": "oo-joo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "say oo joo oo-joo",
+      "sound": "J",
+      "word": "oo-joo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "J",
+      "word": "oo-joo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "fail"
+    },
+    {
+      "text": "oh-joh",
+      "sound": "J",
+      "word": "oh-joh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "oh joh",
+      "sound": "J",
+      "word": "oh-joh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "oh-joh oh-joh",
+      "sound": "J",
+      "word": "oh-joh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "say oh-joh",
+      "sound": "J",
+      "word": "oh-joh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "say oh joh oh-joh",
+      "sound": "J",
+      "word": "oh-joh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "J",
+      "word": "oh-joh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "fail"
+    },
+    {
+      "text": "ay-jay",
+      "sound": "J",
+      "word": "ay-jay",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ay jay",
+      "sound": "J",
+      "word": "ay-jay",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ay-jay ay-jay",
+      "sound": "J",
+      "word": "ay-jay",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "say ay-jay",
+      "sound": "J",
+      "word": "ay-jay",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "say ay jay ay-jay",
+      "sound": "J",
+      "word": "ay-jay",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "J",
+      "word": "ay-jay",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "fail"
+    },
+    {
+      "text": "ah-pah",
+      "sound": "P",
+      "word": "ah-pah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ah pah",
+      "sound": "P",
+      "word": "ah-pah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ah-pah ah-pah",
+      "sound": "P",
+      "word": "ah-pah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "say ah-pah",
+      "sound": "P",
+      "word": "ah-pah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "say ah pah ah-pah",
+      "sound": "P",
+      "word": "ah-pah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "P",
+      "word": "ah-pah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "fail"
+    },
+    {
+      "text": "oh-poh",
+      "sound": "P",
+      "word": "oh-poh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "oh poh",
+      "sound": "P",
+      "word": "oh-poh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "oh-poh oh-poh",
+      "sound": "P",
+      "word": "oh-poh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "say oh-poh",
+      "sound": "P",
+      "word": "oh-poh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "say oh poh oh-poh",
+      "sound": "P",
+      "word": "oh-poh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "P",
+      "word": "oh-poh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "fail"
+    },
+    {
+      "text": "ay-pay",
+      "sound": "P",
+      "word": "ay-pay",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ay pay",
+      "sound": "P",
+      "word": "ay-pay",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ay-pay ay-pay",
+      "sound": "P",
+      "word": "ay-pay",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "say ay-pay",
+      "sound": "P",
+      "word": "ay-pay",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "say ay pay ay-pay",
+      "sound": "P",
+      "word": "ay-pay",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "P",
+      "word": "ay-pay",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "fail"
+    },
+    {
+      "text": "ah-bah",
+      "sound": "B",
+      "word": "ah-bah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ah bah",
+      "sound": "B",
+      "word": "ah-bah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ah-bah ah-bah",
+      "sound": "B",
+      "word": "ah-bah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "say ah-bah",
+      "sound": "B",
+      "word": "ah-bah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "say ah bah ah-bah",
+      "sound": "B",
+      "word": "ah-bah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "B",
+      "word": "ah-bah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "fail"
+    },
+    {
+      "text": "ee-bee",
+      "sound": "B",
+      "word": "ee-bee",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ee bee",
+      "sound": "B",
+      "word": "ee-bee",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ee-bee ee-bee",
+      "sound": "B",
+      "word": "ee-bee",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "say ee-bee",
+      "sound": "B",
+      "word": "ee-bee",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "say ee bee ee-bee",
+      "sound": "B",
+      "word": "ee-bee",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "B",
+      "word": "ee-bee",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "fail"
+    },
+    {
+      "text": "oo-boo",
+      "sound": "B",
+      "word": "oo-boo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "oo boo",
+      "sound": "B",
+      "word": "oo-boo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "oo-boo oo-boo",
+      "sound": "B",
+      "word": "oo-boo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "say oo-boo",
+      "sound": "B",
+      "word": "oo-boo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "say oo boo oo-boo",
+      "sound": "B",
+      "word": "oo-boo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "B",
+      "word": "oo-boo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "fail"
+    },
+    {
+      "text": "oh-boh",
+      "sound": "B",
+      "word": "oh-boh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "oh boh",
+      "sound": "B",
+      "word": "oh-boh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "oh-boh oh-boh",
+      "sound": "B",
+      "word": "oh-boh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "say oh-boh",
+      "sound": "B",
+      "word": "oh-boh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "say oh boh oh-boh",
+      "sound": "B",
+      "word": "oh-boh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "B",
+      "word": "oh-boh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "fail"
+    },
+    {
+      "text": "ay-bay",
+      "sound": "B",
+      "word": "ay-bay",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ay bay",
+      "sound": "B",
+      "word": "ay-bay",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ay-bay ay-bay",
+      "sound": "B",
+      "word": "ay-bay",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "say ay-bay",
+      "sound": "B",
+      "word": "ay-bay",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "say ay bay ay-bay",
+      "sound": "B",
+      "word": "ay-bay",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "B",
+      "word": "ay-bay",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "fail"
+    },
+    {
+      "text": "ah-mah",
+      "sound": "M",
+      "word": "ah-mah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ah mah",
+      "sound": "M",
+      "word": "ah-mah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ah-mah ah-mah",
+      "sound": "M",
+      "word": "ah-mah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "say ah-mah",
+      "sound": "M",
+      "word": "ah-mah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "say ah mah ah-mah",
+      "sound": "M",
+      "word": "ah-mah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "M",
+      "word": "ah-mah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "fail"
+    },
+    {
+      "text": "ee-mee",
+      "sound": "M",
+      "word": "ee-mee",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ee mee",
+      "sound": "M",
+      "word": "ee-mee",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ee-mee ee-mee",
+      "sound": "M",
+      "word": "ee-mee",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "say ee-mee",
+      "sound": "M",
+      "word": "ee-mee",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "say ee mee ee-mee",
+      "sound": "M",
+      "word": "ee-mee",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "M",
+      "word": "ee-mee",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "fail"
+    },
+    {
+      "text": "oo-moo",
+      "sound": "M",
+      "word": "oo-moo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "oo moo",
+      "sound": "M",
+      "word": "oo-moo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "oo-moo oo-moo",
+      "sound": "M",
+      "word": "oo-moo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "say oo-moo",
+      "sound": "M",
+      "word": "oo-moo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "say oo moo oo-moo",
+      "sound": "M",
+      "word": "oo-moo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "M",
+      "word": "oo-moo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "fail"
+    },
+    {
+      "text": "oh-moh",
+      "sound": "M",
+      "word": "oh-moh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "oh moh",
+      "sound": "M",
+      "word": "oh-moh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "oh-moh oh-moh",
+      "sound": "M",
+      "word": "oh-moh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "say oh-moh",
+      "sound": "M",
+      "word": "oh-moh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "say oh moh oh-moh",
+      "sound": "M",
+      "word": "oh-moh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "M",
+      "word": "oh-moh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "fail"
+    },
+    {
+      "text": "ay-may",
+      "sound": "M",
+      "word": "ay-may",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ay may",
+      "sound": "M",
+      "word": "ay-may",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ay-may ay-may",
+      "sound": "M",
+      "word": "ay-may",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "say ay-may",
+      "sound": "M",
+      "word": "ay-may",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "say ay may ay-may",
+      "sound": "M",
+      "word": "ay-may",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "M",
+      "word": "ay-may",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "fail"
+    },
+    {
+      "text": "ah-nah",
+      "sound": "N",
+      "word": "ah-nah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ah nah",
+      "sound": "N",
+      "word": "ah-nah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ah-nah ah-nah",
+      "sound": "N",
+      "word": "ah-nah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "say ah-nah",
+      "sound": "N",
+      "word": "ah-nah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "say ah nah ah-nah",
+      "sound": "N",
+      "word": "ah-nah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "N",
+      "word": "ah-nah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "fail"
+    },
+    {
+      "text": "ee-nee",
+      "sound": "N",
+      "word": "ee-nee",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ee nee",
+      "sound": "N",
+      "word": "ee-nee",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ee-nee ee-nee",
+      "sound": "N",
+      "word": "ee-nee",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "say ee-nee",
+      "sound": "N",
+      "word": "ee-nee",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "say ee nee ee-nee",
+      "sound": "N",
+      "word": "ee-nee",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "N",
+      "word": "ee-nee",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "fail"
+    },
+    {
+      "text": "oo-noo",
+      "sound": "N",
+      "word": "oo-noo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "oo noo",
+      "sound": "N",
+      "word": "oo-noo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "oo-noo oo-noo",
+      "sound": "N",
+      "word": "oo-noo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "say oo-noo",
+      "sound": "N",
+      "word": "oo-noo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "say oo noo oo-noo",
+      "sound": "N",
+      "word": "oo-noo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "N",
+      "word": "oo-noo",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "fail"
+    },
+    {
+      "text": "ay-nay",
+      "sound": "N",
+      "word": "ay-nay",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ay nay",
+      "sound": "N",
+      "word": "ay-nay",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ay-nay ay-nay",
+      "sound": "N",
+      "word": "ay-nay",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "say ay-nay",
+      "sound": "N",
+      "word": "ay-nay",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "say ay nay ay-nay",
+      "sound": "N",
+      "word": "ay-nay",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "N",
+      "word": "ay-nay",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "fail"
+    },
+    {
+      "text": "ah-tah",
+      "sound": "T",
+      "word": "ah-tah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ah tah",
+      "sound": "T",
+      "word": "ah-tah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ah-tah ah-tah",
+      "sound": "T",
+      "word": "ah-tah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "say ah-tah",
+      "sound": "T",
+      "word": "ah-tah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "say ah tah ah-tah",
+      "sound": "T",
+      "word": "ah-tah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "T",
+      "word": "ah-tah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "ee-tee",
+      "sound": "T",
+      "word": "ee-tee",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ee tee",
+      "sound": "T",
+      "word": "ee-tee",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ee-tee ee-tee",
+      "sound": "T",
+      "word": "ee-tee",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "say ee-tee",
+      "sound": "T",
+      "word": "ee-tee",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "say ee tee ee-tee",
+      "sound": "T",
+      "word": "ee-tee",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "T",
+      "word": "ee-tee",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "oo-too",
+      "sound": "T",
+      "word": "oo-too",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "oo too",
+      "sound": "T",
+      "word": "oo-too",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "oo-too oo-too",
+      "sound": "T",
+      "word": "oo-too",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "say oo-too",
+      "sound": "T",
+      "word": "oo-too",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "say oo too oo-too",
+      "sound": "T",
+      "word": "oo-too",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "T",
+      "word": "oo-too",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "oh-toh",
+      "sound": "T",
+      "word": "oh-toh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "oh toh",
+      "sound": "T",
+      "word": "oh-toh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "oh-toh oh-toh",
+      "sound": "T",
+      "word": "oh-toh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "say oh-toh",
+      "sound": "T",
+      "word": "oh-toh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "say oh toh oh-toh",
+      "sound": "T",
+      "word": "oh-toh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "T",
+      "word": "oh-toh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "ay-tay",
+      "sound": "T",
+      "word": "ay-tay",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ay tay",
+      "sound": "T",
+      "word": "ay-tay",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ay-tay ay-tay",
+      "sound": "T",
+      "word": "ay-tay",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "say ay-tay",
+      "sound": "T",
+      "word": "ay-tay",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "say ay tay ay-tay",
+      "sound": "T",
+      "word": "ay-tay",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "T",
+      "word": "ay-tay",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "ah-dah",
+      "sound": "D",
+      "word": "ah-dah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ah dah",
+      "sound": "D",
+      "word": "ah-dah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ah-dah ah-dah",
+      "sound": "D",
+      "word": "ah-dah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "say ah-dah",
+      "sound": "D",
+      "word": "ah-dah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "say ah dah ah-dah",
+      "sound": "D",
+      "word": "ah-dah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "D",
+      "word": "ah-dah",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "fail"
+    },
+    {
+      "text": "ee-dee",
+      "sound": "D",
+      "word": "ee-dee",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ee dee",
+      "sound": "D",
+      "word": "ee-dee",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ee-dee ee-dee",
+      "sound": "D",
+      "word": "ee-dee",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "say ee-dee",
+      "sound": "D",
+      "word": "ee-dee",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "say ee dee ee-dee",
+      "sound": "D",
+      "word": "ee-dee",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "D",
+      "word": "ee-dee",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "fail"
+    },
+    {
+      "text": "oh-doh",
+      "sound": "D",
+      "word": "oh-doh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "oh doh",
+      "sound": "D",
+      "word": "oh-doh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "oh-doh oh-doh",
+      "sound": "D",
+      "word": "oh-doh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "say oh-doh",
+      "sound": "D",
+      "word": "oh-doh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "say oh doh oh-doh",
+      "sound": "D",
+      "word": "oh-doh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "D",
+      "word": "oh-doh",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "fail"
+    },
+    {
+      "text": "ay-day",
+      "sound": "D",
+      "word": "ay-day",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ay day",
+      "sound": "D",
+      "word": "ay-day",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "ay-day ay-day",
+      "sound": "D",
+      "word": "ay-day",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "say ay-day",
+      "sound": "D",
+      "word": "ay-day",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "unknown"
+    },
+    {
+      "text": "say ay day ay-day",
+      "sound": "D",
+      "word": "ay-day",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "D",
+      "word": "ay-day",
+      "level": "syllable",
+      "frame": "",
+      "position": "m",
+      "expected": "fail"
+    },
+    {
+      "text": "ar",
+      "sound": "R",
+      "word": "ar",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "are",
+      "sound": "R",
+      "word": "ar",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "ar ar",
+      "sound": "R",
+      "word": "ar",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "say ar",
+      "sound": "R",
+      "word": "ar",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "say ar ar",
+      "sound": "R",
+      "word": "ar",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "R",
+      "word": "ar",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "fail"
+    },
+    {
+      "text": "or",
+      "sound": "R",
+      "word": "or",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "ore",
+      "sound": "R",
+      "word": "or",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "or or",
+      "sound": "R",
+      "word": "or",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "say or",
+      "sound": "R",
+      "word": "or",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "say or or",
+      "sound": "R",
+      "word": "or",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "R",
+      "word": "or",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "fail"
+    },
+    {
+      "text": "air",
+      "sound": "R",
+      "word": "air",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "air air",
+      "sound": "R",
+      "word": "air",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "say air",
+      "sound": "R",
+      "word": "air",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "say air air",
+      "sound": "R",
+      "word": "air",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "R",
+      "word": "air",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "fail"
+    },
+    {
+      "text": "ear",
+      "sound": "R",
+      "word": "ear",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "ear ear",
+      "sound": "R",
+      "word": "ear",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "say ear",
+      "sound": "R",
+      "word": "ear",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "say ear ear",
+      "sound": "R",
+      "word": "ear",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "R",
+      "word": "ear",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "fail"
+    },
+    {
+      "text": "ire",
+      "sound": "R",
+      "word": "ire",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "ire ire",
+      "sound": "R",
+      "word": "ire",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "say ire",
+      "sound": "R",
+      "word": "ire",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "say ire ire",
+      "sound": "R",
+      "word": "ire",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "R",
+      "word": "ire",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "fail"
+    },
+    {
+      "text": "oose",
+      "sound": "S",
+      "word": "oose",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "oose oose",
+      "sound": "S",
+      "word": "oose",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "say oose",
+      "sound": "S",
+      "word": "oose",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "say oose oose",
+      "sound": "S",
+      "word": "oose",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "S",
+      "word": "oose",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "ace",
+      "sound": "S",
+      "word": "ace",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "ace ace",
+      "sound": "S",
+      "word": "ace",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "say ace",
+      "sound": "S",
+      "word": "ace",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "say ace ace",
+      "sound": "S",
+      "word": "ace",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "S",
+      "word": "ace",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "ice",
+      "sound": "S",
+      "word": "ice",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "ice ice",
+      "sound": "S",
+      "word": "ice",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "say ice",
+      "sound": "S",
+      "word": "ice",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "say ice ice",
+      "sound": "S",
+      "word": "ice",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "S",
+      "word": "ice",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "ahl",
+      "sound": "L",
+      "word": "ahl",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "ahl ahl",
+      "sound": "L",
+      "word": "ahl",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "say ahl",
+      "sound": "L",
+      "word": "ahl",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "say ahl ahl",
+      "sound": "L",
+      "word": "ahl",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "L",
+      "word": "ahl",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "fail"
+    },
+    {
+      "text": "eel",
+      "sound": "L",
+      "word": "eel",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "eel eel",
+      "sound": "L",
+      "word": "eel",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "say eel",
+      "sound": "L",
+      "word": "eel",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "say eel eel",
+      "sound": "L",
+      "word": "eel",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "L",
+      "word": "eel",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "fail"
+    },
+    {
+      "text": "ool",
+      "sound": "L",
+      "word": "ool",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "ool ool",
+      "sound": "L",
+      "word": "ool",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "say ool",
+      "sound": "L",
+      "word": "ool",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "say ool ool",
+      "sound": "L",
+      "word": "ool",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "L",
+      "word": "ool",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "fail"
+    },
+    {
+      "text": "ole",
+      "sound": "L",
+      "word": "ole",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "ole ole",
+      "sound": "L",
+      "word": "ole",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "say ole",
+      "sound": "L",
+      "word": "ole",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "say ole ole",
+      "sound": "L",
+      "word": "ole",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "L",
+      "word": "ole",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "fail"
+    },
+    {
+      "text": "ail",
+      "sound": "L",
+      "word": "ail",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "ail ail",
+      "sound": "L",
+      "word": "ail",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "say ail",
+      "sound": "L",
+      "word": "ail",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "say ail ail",
+      "sound": "L",
+      "word": "ail",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "L",
+      "word": "ail",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "fail"
+    },
+    {
+      "text": "ahk",
+      "sound": "K",
+      "word": "ahk",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "ahk ahk",
+      "sound": "K",
+      "word": "ahk",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "say ahk",
+      "sound": "K",
+      "word": "ahk",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "say ahk ahk",
+      "sound": "K",
+      "word": "ahk",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "K",
+      "word": "ahk",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "eek",
+      "sound": "K",
+      "word": "eek",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "eek eek",
+      "sound": "K",
+      "word": "eek",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "say eek",
+      "sound": "K",
+      "word": "eek",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "say eek eek",
+      "sound": "K",
+      "word": "eek",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "K",
+      "word": "eek",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "ook",
+      "sound": "K",
+      "word": "ook",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "ook ook",
+      "sound": "K",
+      "word": "ook",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "say ook",
+      "sound": "K",
+      "word": "ook",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "say ook ook",
+      "sound": "K",
+      "word": "ook",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "K",
+      "word": "ook",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "oak",
+      "sound": "K",
+      "word": "oak",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "oak oak",
+      "sound": "K",
+      "word": "oak",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "say oak",
+      "sound": "K",
+      "word": "oak",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "say oak oak",
+      "sound": "K",
+      "word": "oak",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "K",
+      "word": "oak",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "ache",
+      "sound": "K",
+      "word": "ache",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "ache ache",
+      "sound": "K",
+      "word": "ache",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "say ache",
+      "sound": "K",
+      "word": "ache",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "say ache ache",
+      "sound": "K",
+      "word": "ache",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "K",
+      "word": "ache",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "ahg",
+      "sound": "G",
+      "word": "ahg",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "ahg ahg",
+      "sound": "G",
+      "word": "ahg",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "say ahg",
+      "sound": "G",
+      "word": "ahg",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "say ahg ahg",
+      "sound": "G",
+      "word": "ahg",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "G",
+      "word": "ahg",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "fail"
+    },
+    {
+      "text": "oog",
+      "sound": "G",
+      "word": "oog",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "oog oog",
+      "sound": "G",
+      "word": "oog",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "say oog",
+      "sound": "G",
+      "word": "oog",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "say oog oog",
+      "sound": "G",
+      "word": "oog",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "G",
+      "word": "oog",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "fail"
+    },
+    {
+      "text": "ogue",
+      "sound": "G",
+      "word": "ogue",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "ogue ogue",
+      "sound": "G",
+      "word": "ogue",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "say ogue",
+      "sound": "G",
+      "word": "ogue",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "say ogue ogue",
+      "sound": "G",
+      "word": "ogue",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "G",
+      "word": "ogue",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "fail"
+    },
+    {
+      "text": "ahf",
+      "sound": "F",
+      "word": "ahf",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "ahf ahf",
+      "sound": "F",
+      "word": "ahf",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "say ahf",
+      "sound": "F",
+      "word": "ahf",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "say ahf ahf",
+      "sound": "F",
+      "word": "ahf",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "F",
+      "word": "ahf",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "fail"
+    },
+    {
+      "text": "eef",
+      "sound": "F",
+      "word": "eef",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "eef eef",
+      "sound": "F",
+      "word": "eef",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "say eef",
+      "sound": "F",
+      "word": "eef",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "say eef eef",
+      "sound": "F",
+      "word": "eef",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "F",
+      "word": "eef",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "fail"
+    },
+    {
+      "text": "oof",
+      "sound": "F",
+      "word": "oof",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "oof oof",
+      "sound": "F",
+      "word": "oof",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "say oof",
+      "sound": "F",
+      "word": "oof",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "say oof oof",
+      "sound": "F",
+      "word": "oof",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "F",
+      "word": "oof",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "fail"
+    },
+    {
+      "text": "oaf",
+      "sound": "F",
+      "word": "oaf",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "oaf oaf",
+      "sound": "F",
+      "word": "oaf",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "say oaf",
+      "sound": "F",
+      "word": "oaf",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "say oaf oaf",
+      "sound": "F",
+      "word": "oaf",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "F",
+      "word": "oaf",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "fail"
+    },
+    {
+      "text": "ash",
+      "sound": "SH",
+      "word": "ash",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "ash ash",
+      "sound": "SH",
+      "word": "ash",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "say ash",
+      "sound": "SH",
+      "word": "ash",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "say ash ash",
+      "sound": "SH",
+      "word": "ash",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "SH",
+      "word": "ash",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "fail"
+    },
+    {
+      "text": "eesh",
+      "sound": "SH",
+      "word": "eesh",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "eesh eesh",
+      "sound": "SH",
+      "word": "eesh",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "say eesh",
+      "sound": "SH",
+      "word": "eesh",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "say eesh eesh",
+      "sound": "SH",
+      "word": "eesh",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "SH",
+      "word": "eesh",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "fail"
+    },
+    {
+      "text": "oosh",
+      "sound": "SH",
+      "word": "oosh",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "oosh oosh",
+      "sound": "SH",
+      "word": "oosh",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "say oosh",
+      "sound": "SH",
+      "word": "oosh",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "say oosh oosh",
+      "sound": "SH",
+      "word": "oosh",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "SH",
+      "word": "oosh",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "fail"
+    },
+    {
+      "text": "atch",
+      "sound": "CH",
+      "word": "atch",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "atch atch",
+      "sound": "CH",
+      "word": "atch",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "say atch",
+      "sound": "CH",
+      "word": "atch",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "say atch atch",
+      "sound": "CH",
+      "word": "atch",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "CH",
+      "word": "atch",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "each",
+      "sound": "CH",
+      "word": "each",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "each each",
+      "sound": "CH",
+      "word": "each",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "say each",
+      "sound": "CH",
+      "word": "each",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "say each each",
+      "sound": "CH",
+      "word": "each",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "CH",
+      "word": "each",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "ooch",
+      "sound": "CH",
+      "word": "ooch",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "ooch ooch",
+      "sound": "CH",
+      "word": "ooch",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "say ooch",
+      "sound": "CH",
+      "word": "ooch",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "say ooch ooch",
+      "sound": "CH",
+      "word": "ooch",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "CH",
+      "word": "ooch",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "oach",
+      "sound": "CH",
+      "word": "oach",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "oach oach",
+      "sound": "CH",
+      "word": "oach",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "say oach",
+      "sound": "CH",
+      "word": "oach",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "say oach oach",
+      "sound": "CH",
+      "word": "oach",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "CH",
+      "word": "oach",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "eeth",
+      "sound": "TH",
+      "word": "eeth",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "eeth eeth",
+      "sound": "TH",
+      "word": "eeth",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "say eeth",
+      "sound": "TH",
+      "word": "eeth",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "say eeth eeth",
+      "sound": "TH",
+      "word": "eeth",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "TH",
+      "word": "eeth",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "ooth",
+      "sound": "TH",
+      "word": "ooth",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "ooth ooth",
+      "sound": "TH",
+      "word": "ooth",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "say ooth",
+      "sound": "TH",
+      "word": "ooth",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "say ooth ooth",
+      "sound": "TH",
+      "word": "ooth",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "TH",
+      "word": "ooth",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "oath",
+      "sound": "TH",
+      "word": "oath",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "oath oath",
+      "sound": "TH",
+      "word": "oath",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "say oath",
+      "sound": "TH",
+      "word": "oath",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "say oath oath",
+      "sound": "TH",
+      "word": "oath",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "TH",
+      "word": "oath",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "eethe",
+      "sound": "THV",
+      "word": "eethe",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "eethe eethe",
+      "sound": "THV",
+      "word": "eethe",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "say eethe",
+      "sound": "THV",
+      "word": "eethe",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "say eethe eethe",
+      "sound": "THV",
+      "word": "eethe",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "THV",
+      "word": "eethe",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "fail"
+    },
+    {
+      "text": "oothe",
+      "sound": "THV",
+      "word": "oothe",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "oothe oothe",
+      "sound": "THV",
+      "word": "oothe",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "say oothe",
+      "sound": "THV",
+      "word": "oothe",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "say oothe oothe",
+      "sound": "THV",
+      "word": "oothe",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "THV",
+      "word": "oothe",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "fail"
+    },
+    {
+      "text": "oathe",
+      "sound": "THV",
+      "word": "oathe",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "oathe oathe",
+      "sound": "THV",
+      "word": "oathe",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "say oathe",
+      "sound": "THV",
+      "word": "oathe",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "say oathe oathe",
+      "sound": "THV",
+      "word": "oathe",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "THV",
+      "word": "oathe",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "fail"
+    },
+    {
+      "text": "athe",
+      "sound": "THV",
+      "word": "athe",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "athe athe",
+      "sound": "THV",
+      "word": "athe",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "say athe",
+      "sound": "THV",
+      "word": "athe",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "say athe athe",
+      "sound": "THV",
+      "word": "athe",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "THV",
+      "word": "athe",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "fail"
+    },
+    {
+      "text": "ease",
+      "sound": "Z",
+      "word": "ease",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "ease ease",
+      "sound": "Z",
+      "word": "ease",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "say ease",
+      "sound": "Z",
+      "word": "ease",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "say ease ease",
+      "sound": "Z",
+      "word": "ease",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "Z",
+      "word": "ease",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "fail"
+    },
+    {
+      "text": "ooze",
+      "sound": "Z",
+      "word": "ooze",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "ooze ooze",
+      "sound": "Z",
+      "word": "ooze",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "say ooze",
+      "sound": "Z",
+      "word": "ooze",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "say ooze ooze",
+      "sound": "Z",
+      "word": "ooze",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "Z",
+      "word": "ooze",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "fail"
+    },
+    {
+      "text": "oze",
+      "sound": "Z",
+      "word": "oze",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "oze oze",
+      "sound": "Z",
+      "word": "oze",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "say oze",
+      "sound": "Z",
+      "word": "oze",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "say oze oze",
+      "sound": "Z",
+      "word": "oze",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "Z",
+      "word": "oze",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "fail"
+    },
+    {
+      "text": "ahv",
+      "sound": "V",
+      "word": "ahv",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "ahv ahv",
+      "sound": "V",
+      "word": "ahv",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "say ahv",
+      "sound": "V",
+      "word": "ahv",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "say ahv ahv",
+      "sound": "V",
+      "word": "ahv",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "V",
+      "word": "ahv",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "fail"
+    },
+    {
+      "text": "eve",
+      "sound": "V",
+      "word": "eve",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "eve eve",
+      "sound": "V",
+      "word": "eve",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "say eve",
+      "sound": "V",
+      "word": "eve",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "say eve eve",
+      "sound": "V",
+      "word": "eve",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "V",
+      "word": "eve",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "fail"
+    },
+    {
+      "text": "oove",
+      "sound": "V",
+      "word": "oove",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "oove oove",
+      "sound": "V",
+      "word": "oove",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "say oove",
+      "sound": "V",
+      "word": "oove",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "say oove oove",
+      "sound": "V",
+      "word": "oove",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "V",
+      "word": "oove",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "fail"
+    },
+    {
+      "text": "odge",
+      "sound": "J",
+      "word": "odge",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "odge odge",
+      "sound": "J",
+      "word": "odge",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "say odge",
+      "sound": "J",
+      "word": "odge",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "say odge odge",
+      "sound": "J",
+      "word": "odge",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "J",
+      "word": "odge",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "fail"
+    },
+    {
+      "text": "age",
+      "sound": "J",
+      "word": "age",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "age age",
+      "sound": "J",
+      "word": "age",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "say age",
+      "sound": "J",
+      "word": "age",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "say age age",
+      "sound": "J",
+      "word": "age",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "J",
+      "word": "age",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "fail"
+    },
+    {
+      "text": "edge",
+      "sound": "J",
+      "word": "edge",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "edge edge",
+      "sound": "J",
+      "word": "edge",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "say edge",
+      "sound": "J",
+      "word": "edge",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "say edge edge",
+      "sound": "J",
+      "word": "edge",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "J",
+      "word": "edge",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "fail"
+    },
+    {
+      "text": "ahp",
+      "sound": "P",
+      "word": "ahp",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "ahp ahp",
+      "sound": "P",
+      "word": "ahp",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "say ahp",
+      "sound": "P",
+      "word": "ahp",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "say ahp ahp",
+      "sound": "P",
+      "word": "ahp",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "P",
+      "word": "ahp",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "fail"
+    },
+    {
+      "text": "eep",
+      "sound": "P",
+      "word": "eep",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "eep eep",
+      "sound": "P",
+      "word": "eep",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "say eep",
+      "sound": "P",
+      "word": "eep",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "say eep eep",
+      "sound": "P",
+      "word": "eep",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "P",
+      "word": "eep",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "fail"
+    },
+    {
+      "text": "oop",
+      "sound": "P",
+      "word": "oop",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "oop oop",
+      "sound": "P",
+      "word": "oop",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "say oop",
+      "sound": "P",
+      "word": "oop",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "say oop oop",
+      "sound": "P",
+      "word": "oop",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "P",
+      "word": "oop",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "fail"
+    },
+    {
+      "text": "ope",
+      "sound": "P",
+      "word": "ope",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "ope ope",
+      "sound": "P",
+      "word": "ope",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "say ope",
+      "sound": "P",
+      "word": "ope",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "say ope ope",
+      "sound": "P",
+      "word": "ope",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "P",
+      "word": "ope",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "fail"
+    },
+    {
+      "text": "ape",
+      "sound": "P",
+      "word": "ape",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "ape ape",
+      "sound": "P",
+      "word": "ape",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "say ape",
+      "sound": "P",
+      "word": "ape",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "say ape ape",
+      "sound": "P",
+      "word": "ape",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "P",
+      "word": "ape",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "fail"
+    },
+    {
+      "text": "ahb",
+      "sound": "B",
+      "word": "ahb",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "ahb ahb",
+      "sound": "B",
+      "word": "ahb",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "say ahb",
+      "sound": "B",
+      "word": "ahb",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "say ahb ahb",
+      "sound": "B",
+      "word": "ahb",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "B",
+      "word": "ahb",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "fail"
+    },
+    {
+      "text": "eeb",
+      "sound": "B",
+      "word": "eeb",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "eeb eeb",
+      "sound": "B",
+      "word": "eeb",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "say eeb",
+      "sound": "B",
+      "word": "eeb",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "say eeb eeb",
+      "sound": "B",
+      "word": "eeb",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "B",
+      "word": "eeb",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "fail"
+    },
+    {
+      "text": "oob",
+      "sound": "B",
+      "word": "oob",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "oob oob",
+      "sound": "B",
+      "word": "oob",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "say oob",
+      "sound": "B",
+      "word": "oob",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "say oob oob",
+      "sound": "B",
+      "word": "oob",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "B",
+      "word": "oob",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "fail"
+    },
+    {
+      "text": "obe",
+      "sound": "B",
+      "word": "obe",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "obe obe",
+      "sound": "B",
+      "word": "obe",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "say obe",
+      "sound": "B",
+      "word": "obe",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "say obe obe",
+      "sound": "B",
+      "word": "obe",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "B",
+      "word": "obe",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "fail"
+    },
+    {
+      "text": "ahm",
+      "sound": "M",
+      "word": "ahm",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "ahm ahm",
+      "sound": "M",
+      "word": "ahm",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "say ahm",
+      "sound": "M",
+      "word": "ahm",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "say ahm ahm",
+      "sound": "M",
+      "word": "ahm",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "M",
+      "word": "ahm",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "fail"
+    },
+    {
+      "text": "eem",
+      "sound": "M",
+      "word": "eem",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "eem eem",
+      "sound": "M",
+      "word": "eem",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "say eem",
+      "sound": "M",
+      "word": "eem",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "say eem eem",
+      "sound": "M",
+      "word": "eem",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "M",
+      "word": "eem",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "fail"
+    },
+    {
+      "text": "oom",
+      "sound": "M",
+      "word": "oom",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "oom oom",
+      "sound": "M",
+      "word": "oom",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "say oom",
+      "sound": "M",
+      "word": "oom",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "say oom oom",
+      "sound": "M",
+      "word": "oom",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "M",
+      "word": "oom",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "fail"
+    },
+    {
+      "text": "ohm",
+      "sound": "M",
+      "word": "ohm",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "ohm ohm",
+      "sound": "M",
+      "word": "ohm",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "say ohm",
+      "sound": "M",
+      "word": "ohm",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "say ohm ohm",
+      "sound": "M",
+      "word": "ohm",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "M",
+      "word": "ohm",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "fail"
+    },
+    {
+      "text": "aim",
+      "sound": "M",
+      "word": "aim",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "aim aim",
+      "sound": "M",
+      "word": "aim",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "say aim",
+      "sound": "M",
+      "word": "aim",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "say aim aim",
+      "sound": "M",
+      "word": "aim",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "M",
+      "word": "aim",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "fail"
+    },
+    {
+      "text": "ahn",
+      "sound": "N",
+      "word": "ahn",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "ahn ahn",
+      "sound": "N",
+      "word": "ahn",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "say ahn",
+      "sound": "N",
+      "word": "ahn",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "say ahn ahn",
+      "sound": "N",
+      "word": "ahn",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "N",
+      "word": "ahn",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "fail"
+    },
+    {
+      "text": "een",
+      "sound": "N",
+      "word": "een",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "een een",
+      "sound": "N",
+      "word": "een",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "say een",
+      "sound": "N",
+      "word": "een",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "say een een",
+      "sound": "N",
+      "word": "een",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "N",
+      "word": "een",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "fail"
+    },
+    {
+      "text": "oon",
+      "sound": "N",
+      "word": "oon",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "oon oon",
+      "sound": "N",
+      "word": "oon",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "say oon",
+      "sound": "N",
+      "word": "oon",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "say oon oon",
+      "sound": "N",
+      "word": "oon",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "N",
+      "word": "oon",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "fail"
+    },
+    {
+      "text": "own",
+      "sound": "N",
+      "word": "own",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "own own",
+      "sound": "N",
+      "word": "own",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "say own",
+      "sound": "N",
+      "word": "own",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "say own own",
+      "sound": "N",
+      "word": "own",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "N",
+      "word": "own",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "fail"
+    },
+    {
+      "text": "aht",
+      "sound": "T",
+      "word": "aht",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "aht aht",
+      "sound": "T",
+      "word": "aht",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "say aht",
+      "sound": "T",
+      "word": "aht",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "say aht aht",
+      "sound": "T",
+      "word": "aht",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "T",
+      "word": "aht",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "eet",
+      "sound": "T",
+      "word": "eet",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "eet eet",
+      "sound": "T",
+      "word": "eet",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "say eet",
+      "sound": "T",
+      "word": "eet",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "say eet eet",
+      "sound": "T",
+      "word": "eet",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "T",
+      "word": "eet",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "oot",
+      "sound": "T",
+      "word": "oot",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "oot oot",
+      "sound": "T",
+      "word": "oot",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "say oot",
+      "sound": "T",
+      "word": "oot",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "say oot oot",
+      "sound": "T",
+      "word": "oot",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "T",
+      "word": "oot",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "oat",
+      "sound": "T",
+      "word": "oat",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "oat oat",
+      "sound": "T",
+      "word": "oat",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "say oat",
+      "sound": "T",
+      "word": "oat",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "say oat oat",
+      "sound": "T",
+      "word": "oat",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "T",
+      "word": "oat",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "ate",
+      "sound": "T",
+      "word": "ate",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "ate ate",
+      "sound": "T",
+      "word": "ate",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "say ate",
+      "sound": "T",
+      "word": "ate",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "say ate ate",
+      "sound": "T",
+      "word": "ate",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "T",
+      "word": "ate",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "ahd",
+      "sound": "D",
+      "word": "ahd",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "ahd ahd",
+      "sound": "D",
+      "word": "ahd",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "say ahd",
+      "sound": "D",
+      "word": "ahd",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "say ahd ahd",
+      "sound": "D",
+      "word": "ahd",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "D",
+      "word": "ahd",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "fail"
+    },
+    {
+      "text": "eed",
+      "sound": "D",
+      "word": "eed",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "eed eed",
+      "sound": "D",
+      "word": "eed",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "say eed",
+      "sound": "D",
+      "word": "eed",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "say eed eed",
+      "sound": "D",
+      "word": "eed",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "D",
+      "word": "eed",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "fail"
+    },
+    {
+      "text": "ood",
+      "sound": "D",
+      "word": "ood",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "ood ood",
+      "sound": "D",
+      "word": "ood",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "say ood",
+      "sound": "D",
+      "word": "ood",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "say ood ood",
+      "sound": "D",
+      "word": "ood",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "D",
+      "word": "ood",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "fail"
+    },
+    {
+      "text": "ode",
+      "sound": "D",
+      "word": "ode",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "ode ode",
+      "sound": "D",
+      "word": "ode",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "say ode",
+      "sound": "D",
+      "word": "ode",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "say ode ode",
+      "sound": "D",
+      "word": "ode",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "D",
+      "word": "ode",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "fail"
+    },
+    {
+      "text": "aid",
+      "sound": "D",
+      "word": "aid",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "aid aid",
+      "sound": "D",
+      "word": "aid",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "say aid",
+      "sound": "D",
+      "word": "aid",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "unknown"
+    },
+    {
+      "text": "say aid aid",
+      "sound": "D",
+      "word": "aid",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "D",
+      "word": "aid",
+      "level": "syllable",
+      "frame": "",
+      "position": "f",
+      "expected": "fail"
+    },
+    {
+      "text": "ar",
+      "sound": "R",
+      "word": "ar",
+      "level": "syllable",
+      "frame": "",
+      "position": "v",
+      "expected": "pass"
+    },
+    {
+      "text": "are",
+      "sound": "R",
+      "word": "ar",
+      "level": "syllable",
+      "frame": "",
+      "position": "v",
+      "expected": "pass"
+    },
+    {
+      "text": "ar ar",
+      "sound": "R",
+      "word": "ar",
+      "level": "syllable",
+      "frame": "",
+      "position": "v",
+      "expected": "pass"
+    },
+    {
+      "text": "say ar",
+      "sound": "R",
+      "word": "ar",
+      "level": "syllable",
+      "frame": "",
+      "position": "v",
+      "expected": "unknown"
+    },
+    {
+      "text": "say ar ar",
+      "sound": "R",
+      "word": "ar",
+      "level": "syllable",
+      "frame": "",
+      "position": "v",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "R",
+      "word": "ar",
+      "level": "syllable",
+      "frame": "",
+      "position": "v",
+      "expected": "fail"
+    },
+    {
+      "text": "or",
+      "sound": "R",
+      "word": "or",
+      "level": "syllable",
+      "frame": "",
+      "position": "v",
+      "expected": "pass"
+    },
+    {
+      "text": "ore",
+      "sound": "R",
+      "word": "or",
+      "level": "syllable",
+      "frame": "",
+      "position": "v",
+      "expected": "pass"
+    },
+    {
+      "text": "or or",
+      "sound": "R",
+      "word": "or",
+      "level": "syllable",
+      "frame": "",
+      "position": "v",
+      "expected": "pass"
+    },
+    {
+      "text": "say or",
+      "sound": "R",
+      "word": "or",
+      "level": "syllable",
+      "frame": "",
+      "position": "v",
+      "expected": "unknown"
+    },
+    {
+      "text": "say or or",
+      "sound": "R",
+      "word": "or",
+      "level": "syllable",
+      "frame": "",
+      "position": "v",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "R",
+      "word": "or",
+      "level": "syllable",
+      "frame": "",
+      "position": "v",
+      "expected": "fail"
+    },
+    {
+      "text": "air",
+      "sound": "R",
+      "word": "air",
+      "level": "syllable",
+      "frame": "",
+      "position": "v",
+      "expected": "pass"
+    },
+    {
+      "text": "air air",
+      "sound": "R",
+      "word": "air",
+      "level": "syllable",
+      "frame": "",
+      "position": "v",
+      "expected": "pass"
+    },
+    {
+      "text": "say air",
+      "sound": "R",
+      "word": "air",
+      "level": "syllable",
+      "frame": "",
+      "position": "v",
+      "expected": "unknown"
+    },
+    {
+      "text": "say air air",
+      "sound": "R",
+      "word": "air",
+      "level": "syllable",
+      "frame": "",
+      "position": "v",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "R",
+      "word": "air",
+      "level": "syllable",
+      "frame": "",
+      "position": "v",
+      "expected": "fail"
+    },
+    {
+      "text": "ear",
+      "sound": "R",
+      "word": "ear",
+      "level": "syllable",
+      "frame": "",
+      "position": "v",
+      "expected": "pass"
+    },
+    {
+      "text": "ear ear",
+      "sound": "R",
+      "word": "ear",
+      "level": "syllable",
+      "frame": "",
+      "position": "v",
+      "expected": "pass"
+    },
+    {
+      "text": "say ear",
+      "sound": "R",
+      "word": "ear",
+      "level": "syllable",
+      "frame": "",
+      "position": "v",
+      "expected": "unknown"
+    },
+    {
+      "text": "say ear ear",
+      "sound": "R",
+      "word": "ear",
+      "level": "syllable",
+      "frame": "",
+      "position": "v",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "R",
+      "word": "ear",
+      "level": "syllable",
+      "frame": "",
+      "position": "v",
+      "expected": "fail"
+    },
+    {
+      "text": "ire",
+      "sound": "R",
+      "word": "ire",
+      "level": "syllable",
+      "frame": "",
+      "position": "v",
+      "expected": "pass"
+    },
+    {
+      "text": "ire ire",
+      "sound": "R",
+      "word": "ire",
+      "level": "syllable",
+      "frame": "",
+      "position": "v",
+      "expected": "pass"
+    },
+    {
+      "text": "say ire",
+      "sound": "R",
+      "word": "ire",
+      "level": "syllable",
+      "frame": "",
+      "position": "v",
+      "expected": "unknown"
+    },
+    {
+      "text": "say ire ire",
+      "sound": "R",
+      "word": "ire",
+      "level": "syllable",
+      "frame": "",
+      "position": "v",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "R",
+      "word": "ire",
+      "level": "syllable",
+      "frame": "",
+      "position": "v",
+      "expected": "fail"
+    },
+    {
+      "text": "trah",
+      "sound": "R",
+      "word": "trah",
+      "level": "syllable",
+      "frame": "",
+      "position": "b",
+      "expected": "pass"
+    },
+    {
+      "text": "trah trah",
+      "sound": "R",
+      "word": "trah",
+      "level": "syllable",
+      "frame": "",
+      "position": "b",
+      "expected": "pass"
+    },
+    {
+      "text": "say trah",
+      "sound": "R",
+      "word": "trah",
+      "level": "syllable",
+      "frame": "",
+      "position": "b",
+      "expected": "unknown"
+    },
+    {
+      "text": "say trah trah",
+      "sound": "R",
+      "word": "trah",
+      "level": "syllable",
+      "frame": "",
+      "position": "b",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "R",
+      "word": "trah",
+      "level": "syllable",
+      "frame": "",
+      "position": "b",
+      "expected": "fail"
+    },
+    {
+      "text": "free",
+      "sound": "R",
+      "word": "free",
+      "level": "syllable",
+      "frame": "",
+      "position": "b",
+      "expected": "pass"
+    },
+    {
+      "text": "free free",
+      "sound": "R",
+      "word": "free",
+      "level": "syllable",
+      "frame": "",
+      "position": "b",
+      "expected": "pass"
+    },
+    {
+      "text": "say free",
+      "sound": "R",
+      "word": "free",
+      "level": "syllable",
+      "frame": "",
+      "position": "b",
+      "expected": "unknown"
+    },
+    {
+      "text": "say free free",
+      "sound": "R",
+      "word": "free",
+      "level": "syllable",
+      "frame": "",
+      "position": "b",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "R",
+      "word": "free",
+      "level": "syllable",
+      "frame": "",
+      "position": "b",
+      "expected": "fail"
+    },
+    {
+      "text": "grew",
+      "sound": "R",
+      "word": "grew",
+      "level": "syllable",
+      "frame": "",
+      "position": "b",
+      "expected": "pass"
+    },
+    {
+      "text": "grew grew",
+      "sound": "R",
+      "word": "grew",
+      "level": "syllable",
+      "frame": "",
+      "position": "b",
+      "expected": "pass"
+    },
+    {
+      "text": "say grew",
+      "sound": "R",
+      "word": "grew",
+      "level": "syllable",
+      "frame": "",
+      "position": "b",
+      "expected": "unknown"
+    },
+    {
+      "text": "say grew grew",
+      "sound": "R",
+      "word": "grew",
+      "level": "syllable",
+      "frame": "",
+      "position": "b",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "R",
+      "word": "grew",
+      "level": "syllable",
+      "frame": "",
+      "position": "b",
+      "expected": "fail"
+    },
+    {
+      "text": "droh",
+      "sound": "R",
+      "word": "droh",
+      "level": "syllable",
+      "frame": "",
+      "position": "b",
+      "expected": "pass"
+    },
+    {
+      "text": "droh droh",
+      "sound": "R",
+      "word": "droh",
+      "level": "syllable",
+      "frame": "",
+      "position": "b",
+      "expected": "pass"
+    },
+    {
+      "text": "say droh",
+      "sound": "R",
+      "word": "droh",
+      "level": "syllable",
+      "frame": "",
+      "position": "b",
+      "expected": "unknown"
+    },
+    {
+      "text": "say droh droh",
+      "sound": "R",
+      "word": "droh",
+      "level": "syllable",
+      "frame": "",
+      "position": "b",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "R",
+      "word": "droh",
+      "level": "syllable",
+      "frame": "",
+      "position": "b",
+      "expected": "fail"
+    },
+    {
+      "text": "kray",
+      "sound": "R",
+      "word": "kray",
+      "level": "syllable",
+      "frame": "",
+      "position": "b",
+      "expected": "pass"
+    },
+    {
+      "text": "kray kray",
+      "sound": "R",
+      "word": "kray",
+      "level": "syllable",
+      "frame": "",
+      "position": "b",
+      "expected": "pass"
+    },
+    {
+      "text": "say kray",
+      "sound": "R",
+      "word": "kray",
+      "level": "syllable",
+      "frame": "",
+      "position": "b",
+      "expected": "unknown"
+    },
+    {
+      "text": "say kray kray",
+      "sound": "R",
+      "word": "kray",
+      "level": "syllable",
+      "frame": "",
+      "position": "b",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "R",
+      "word": "kray",
+      "level": "syllable",
+      "frame": "",
+      "position": "b",
+      "expected": "fail"
+    },
+    {
+      "text": "spa",
+      "sound": "S",
+      "word": "spa",
+      "level": "syllable",
+      "frame": "",
+      "position": "b",
+      "expected": "pass"
+    },
+    {
+      "text": "spa spa",
+      "sound": "S",
+      "word": "spa",
+      "level": "syllable",
+      "frame": "",
+      "position": "b",
+      "expected": "pass"
+    },
+    {
+      "text": "say spa",
+      "sound": "S",
+      "word": "spa",
+      "level": "syllable",
+      "frame": "",
+      "position": "b",
+      "expected": "unknown"
+    },
+    {
+      "text": "say spa spa",
+      "sound": "S",
+      "word": "spa",
+      "level": "syllable",
+      "frame": "",
+      "position": "b",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "S",
+      "word": "spa",
+      "level": "syllable",
+      "frame": "",
+      "position": "b",
+      "expected": "fail"
+    },
+    {
+      "text": "ski",
+      "sound": "S",
+      "word": "ski",
+      "level": "syllable",
+      "frame": "",
+      "position": "b",
+      "expected": "pass"
+    },
+    {
+      "text": "ski ski",
+      "sound": "S",
+      "word": "ski",
+      "level": "syllable",
+      "frame": "",
+      "position": "b",
+      "expected": "pass"
+    },
+    {
+      "text": "say ski",
+      "sound": "S",
+      "word": "ski",
+      "level": "syllable",
+      "frame": "",
+      "position": "b",
+      "expected": "unknown"
+    },
+    {
+      "text": "say ski ski",
+      "sound": "S",
+      "word": "ski",
+      "level": "syllable",
+      "frame": "",
+      "position": "b",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "S",
+      "word": "ski",
+      "level": "syllable",
+      "frame": "",
+      "position": "b",
+      "expected": "unknown"
+    },
+    {
+      "text": "snoo",
+      "sound": "S",
+      "word": "snoo",
+      "level": "syllable",
+      "frame": "",
+      "position": "b",
+      "expected": "pass"
+    },
+    {
+      "text": "snoo snoo",
+      "sound": "S",
+      "word": "snoo",
+      "level": "syllable",
+      "frame": "",
+      "position": "b",
+      "expected": "pass"
+    },
+    {
+      "text": "say snoo",
+      "sound": "S",
+      "word": "snoo",
+      "level": "syllable",
+      "frame": "",
+      "position": "b",
+      "expected": "unknown"
+    },
+    {
+      "text": "say snoo snoo",
+      "sound": "S",
+      "word": "snoo",
+      "level": "syllable",
+      "frame": "",
+      "position": "b",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "S",
+      "word": "snoo",
+      "level": "syllable",
+      "frame": "",
+      "position": "b",
+      "expected": "fail"
+    },
+    {
+      "text": "smoh",
+      "sound": "S",
+      "word": "smoh",
+      "level": "syllable",
+      "frame": "",
+      "position": "b",
+      "expected": "pass"
+    },
+    {
+      "text": "smoh smoh",
+      "sound": "S",
+      "word": "smoh",
+      "level": "syllable",
+      "frame": "",
+      "position": "b",
+      "expected": "pass"
+    },
+    {
+      "text": "say smoh",
+      "sound": "S",
+      "word": "smoh",
+      "level": "syllable",
+      "frame": "",
+      "position": "b",
+      "expected": "unknown"
+    },
+    {
+      "text": "say smoh smoh",
+      "sound": "S",
+      "word": "smoh",
+      "level": "syllable",
+      "frame": "",
+      "position": "b",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "S",
+      "word": "smoh",
+      "level": "syllable",
+      "frame": "",
+      "position": "b",
+      "expected": "fail"
+    },
+    {
+      "text": "stay",
+      "sound": "S",
+      "word": "stay",
+      "level": "syllable",
+      "frame": "",
+      "position": "b",
+      "expected": "pass"
+    },
+    {
+      "text": "stay stay",
+      "sound": "S",
+      "word": "stay",
+      "level": "syllable",
+      "frame": "",
+      "position": "b",
+      "expected": "pass"
+    },
+    {
+      "text": "say stay",
+      "sound": "S",
+      "word": "stay",
+      "level": "syllable",
+      "frame": "",
+      "position": "b",
+      "expected": "unknown"
+    },
+    {
+      "text": "say stay stay",
+      "sound": "S",
+      "word": "stay",
+      "level": "syllable",
+      "frame": "",
+      "position": "b",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "S",
+      "word": "stay",
+      "level": "syllable",
+      "frame": "",
+      "position": "b",
+      "expected": "unknown"
+    },
+    {
+      "text": "blah",
+      "sound": "L",
+      "word": "blah",
+      "level": "syllable",
+      "frame": "",
+      "position": "b",
+      "expected": "pass"
+    },
+    {
+      "text": "blah blah",
+      "sound": "L",
+      "word": "blah",
+      "level": "syllable",
+      "frame": "",
+      "position": "b",
+      "expected": "pass"
+    },
+    {
+      "text": "say blah",
+      "sound": "L",
+      "word": "blah",
+      "level": "syllable",
+      "frame": "",
+      "position": "b",
+      "expected": "unknown"
+    },
+    {
+      "text": "say blah blah",
+      "sound": "L",
+      "word": "blah",
+      "level": "syllable",
+      "frame": "",
+      "position": "b",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "L",
+      "word": "blah",
+      "level": "syllable",
+      "frame": "",
+      "position": "b",
+      "expected": "fail"
+    },
+    {
+      "text": "flee",
+      "sound": "L",
+      "word": "flee",
+      "level": "syllable",
+      "frame": "",
+      "position": "b",
+      "expected": "pass"
+    },
+    {
+      "text": "flee flee",
+      "sound": "L",
+      "word": "flee",
+      "level": "syllable",
+      "frame": "",
+      "position": "b",
+      "expected": "pass"
+    },
+    {
+      "text": "say flee",
+      "sound": "L",
+      "word": "flee",
+      "level": "syllable",
+      "frame": "",
+      "position": "b",
+      "expected": "unknown"
+    },
+    {
+      "text": "say flee flee",
+      "sound": "L",
+      "word": "flee",
+      "level": "syllable",
+      "frame": "",
+      "position": "b",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "L",
+      "word": "flee",
+      "level": "syllable",
+      "frame": "",
+      "position": "b",
+      "expected": "fail"
+    },
+    {
+      "text": "clue",
+      "sound": "L",
+      "word": "clue",
+      "level": "syllable",
+      "frame": "",
+      "position": "b",
+      "expected": "pass"
+    },
+    {
+      "text": "clue clue",
+      "sound": "L",
+      "word": "clue",
+      "level": "syllable",
+      "frame": "",
+      "position": "b",
+      "expected": "pass"
+    },
+    {
+      "text": "say clue",
+      "sound": "L",
+      "word": "clue",
+      "level": "syllable",
+      "frame": "",
+      "position": "b",
+      "expected": "unknown"
+    },
+    {
+      "text": "say clue clue",
+      "sound": "L",
+      "word": "clue",
+      "level": "syllable",
+      "frame": "",
+      "position": "b",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "L",
+      "word": "clue",
+      "level": "syllable",
+      "frame": "",
+      "position": "b",
+      "expected": "fail"
+    },
+    {
+      "text": "glow",
+      "sound": "L",
+      "word": "glow",
+      "level": "syllable",
+      "frame": "",
+      "position": "b",
+      "expected": "pass"
+    },
+    {
+      "text": "glow glow",
+      "sound": "L",
+      "word": "glow",
+      "level": "syllable",
+      "frame": "",
+      "position": "b",
+      "expected": "pass"
+    },
+    {
+      "text": "say glow",
+      "sound": "L",
+      "word": "glow",
+      "level": "syllable",
+      "frame": "",
+      "position": "b",
+      "expected": "unknown"
+    },
+    {
+      "text": "say glow glow",
+      "sound": "L",
+      "word": "glow",
+      "level": "syllable",
+      "frame": "",
+      "position": "b",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "L",
+      "word": "glow",
+      "level": "syllable",
+      "frame": "",
+      "position": "b",
+      "expected": "fail"
+    },
+    {
+      "text": "play",
+      "sound": "L",
+      "word": "play",
+      "level": "syllable",
+      "frame": "",
+      "position": "b",
+      "expected": "pass"
+    },
+    {
+      "text": "play play",
+      "sound": "L",
+      "word": "play",
+      "level": "syllable",
+      "frame": "",
+      "position": "b",
+      "expected": "pass"
+    },
+    {
+      "text": "say play",
+      "sound": "L",
+      "word": "play",
+      "level": "syllable",
+      "frame": "",
+      "position": "b",
+      "expected": "unknown"
+    },
+    {
+      "text": "say play play",
+      "sound": "L",
+      "word": "play",
+      "level": "syllable",
+      "frame": "",
+      "position": "b",
+      "expected": "pass"
+    },
+    {
+      "text": "taco",
+      "sound": "L",
+      "word": "play",
+      "level": "syllable",
+      "frame": "",
+      "position": "b",
+      "expected": "fail"
+    }
+  ]
+}

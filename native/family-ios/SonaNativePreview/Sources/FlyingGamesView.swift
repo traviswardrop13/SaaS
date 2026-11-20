@@ -16,16 +16,23 @@ enum FlyingGame {
 
 struct FlyingGamesView: View {
     let game: FlyingGame
+    let goal: Int
     let onRoundFinished: () -> Void
+    let onLifeLost: (() -> Void)?
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.guidedReplay) private var guidedReplay
+    @Environment(\.guidedArcadeRestoredLives) private var restoredLives
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @StateObject private var round: FlyingRound
 
-    init(game: FlyingGame, onRoundFinished: @escaping () -> Void = {}) {
+    init(game: FlyingGame, stage: Int = 0, onLifeLost: (() -> Void)? = nil,
+         onRoundFinished: @escaping () -> Void = {}) {
         self.game = game
+        goal = game.goal + stage
         self.onRoundFinished = onRoundFinished
-        _round = StateObject(wrappedValue: FlyingRound(game: game))
+        self.onLifeLost = onLifeLost
+        _round = StateObject(wrappedValue: FlyingRound(game: game, goal: game.goal + stage))
     }
 
     var body: some View {
@@ -96,7 +103,10 @@ struct FlyingGamesView: View {
                     Text(panelMessage)
                         .font(.system(size: 18, weight: .medium, design: .rounded))
                         .multilineTextAlignment(.center)
-                    Button(round.phase == .ready ? "Let's play" : "Play again") { round.start() }
+                    Button(round.phase == .ready ? "Let's play" : "Play again") {
+                        if round.phase == .finished, let guidedReplay { guidedReplay() }
+                        else { round.start() }
+                    }
                         .font(.system(size: 22, weight: .bold, design: .rounded))
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity, minHeight: 58)
@@ -127,8 +137,10 @@ struct FlyingGamesView: View {
             round.scene.resetClock()
         }
         .onChange(of: reduceMotion) { round.scene.reduceMotion = $0 }
+        .onChange(of: restoredLives) { _ in round.restoreLife() }
         .onChange(of: round.phase) { phase in
             if phase == .finished { onRoundFinished() }
+            if phase == .retry { onLifeLost?() }
         }
     }
 
@@ -143,7 +155,7 @@ struct FlyingGamesView: View {
 
     private var panelMessage: String {
         if round.phase == .finished {
-            return game == .glide ? "You crossed all \(game.goal) gaps." : "You moved \(game.goal) blocks out of the way."
+            return game == .glide ? "You crossed all \(goal) gaps." : "You moved \(goal) blocks out of the way."
         }
         return game.instruction
     }
@@ -160,8 +172,8 @@ private final class FlyingRound: ObservableObject {
     let scene: FlyingScene
     private let haptic = UIImpactFeedbackGenerator(style: .light)
 
-    init(game: FlyingGame) {
-        scene = FlyingScene(game: game)
+    init(game: FlyingGame, goal: Int) {
+        scene = FlyingScene(game: game, goal: goal)
         scene.onProgress = { [weak self] count in
             DispatchQueue.main.async {
                 self?.progress = count
@@ -182,6 +194,13 @@ private final class FlyingRound: ObservableObject {
         hearts = 3
         haptic.prepare()
         scene.start()
+    }
+
+    func restoreLife() {
+        guard phase == .retry else { return }
+        hearts = 3
+        phase = .playing
+        scene.restoreLife()
     }
 }
 
@@ -206,6 +225,7 @@ private final class FlyingScene: SKScene {
     var onStop: ((Bool) -> Void)?
     var reduceMotion = false
     private let game: FlyingGame
+    private let goal: Int
     private let world = SKNode()
     private let background: SKSpriteNode
     private let balloon: SKSpriteNode
@@ -224,8 +244,9 @@ private final class FlyingScene: SKScene {
     private var activeTouch: UITouch?
     private var spawned = 0
 
-    init(game: FlyingGame) {
+    init(game: FlyingGame, goal: Int) {
         self.game = game
+        self.goal = goal
         background = SKSpriteNode(imageNamed: game == .glide ? "flying-glide-bg" : "flying-rise-bg")
         balloon = SKSpriteNode(imageNamed: game.balloonAsset)
         super.init(size: CGSize(width: 390, height: 844))
@@ -314,7 +335,7 @@ private final class FlyingScene: SKScene {
             verticalSpeed = balloon.position.y == bottom ? 135 : -65
             bump()
         }
-        if elapsed >= nextSpawn && spawned < game.goal {
+        if elapsed >= nextSpawn && spawned < goal {
             addGate()
             nextSpawn = elapsed + 2.5
         }
@@ -423,7 +444,7 @@ private final class FlyingScene: SKScene {
         guard playing else { return }
         progress += 1
         onProgress?(progress)
-        if progress == game.goal { stop(finished: true) }
+        if progress == goal { stop(finished: true) }
     }
 
     private func stop(finished: Bool) {
@@ -432,6 +453,14 @@ private final class FlyingScene: SKScene {
         activeTouch = nil
         lastTouch = nil
         onStop?(finished)
+    }
+
+    func restoreLife() {
+        guard !playing, hearts == 0 else { return }
+        hearts = 3
+        invulnerableUntil = elapsed + 1.5
+        playing = true
+        resetClock()
     }
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {

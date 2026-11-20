@@ -1,7 +1,7 @@
 import SwiftUI
 
 enum PreviewBuddy: String, Codable, CaseIterable, Identifiable {
-    case echo, fox, frog
+    case echo, fox, bunny, panda, dragon, cat, bee, octopus, dino, frog, penguin, lion, unicorn
 
     var id: String { rawValue }
 
@@ -10,14 +10,23 @@ enum PreviewBuddy: String, Codable, CaseIterable, Identifiable {
         case .echo: return "Echo"
         case .fox: return "Pip"
         case .frog: return "Hops"
+        case .bunny: return "Miso"
+        case .panda: return "Bao"
+        case .dragon: return "Ziggy"
+        case .cat: return "Mochi"
+        case .bee: return "Buzz"
+        case .octopus: return "Otto"
+        case .dino: return "Rocky"
+        case .penguin: return "Pebble"
+        case .lion: return "Sunny"
+        case .unicorn: return "Luna"
         }
     }
 
     var asset: String {
         switch self {
         case .echo: return "echo-welcome"
-        case .fox: return "buddy-fox"
-        case .frog: return "buddy-frog"
+        default: return "buddy-\(rawValue)"
         }
     }
 }
@@ -26,6 +35,7 @@ enum PreviewBuddy: String, Codable, CaseIterable, Identifiable {
 /// It never asks for a name, microphone, account, or practice information.
 struct FirstRunView: View {
     @Binding var buddy: PreviewBuddy
+    var buddies: [PreviewBuddy] = [.echo, .fox, .frog]
     let onExplore: () -> Void
     let onTherapistLogin: () -> Void
 
@@ -164,13 +174,13 @@ struct FirstRunView: View {
             Group {
                 if typeSize.isAccessibilitySize {
                     VStack(spacing: 12) {
-                        ForEach(PreviewBuddy.allCases) { candidate in
+                        ForEach(buddies) { candidate in
                             buddyButton(candidate, horizontal: true)
                         }
                     }
                 } else {
                     HStack(spacing: compact ? 10 : 14) {
-                        ForEach(PreviewBuddy.allCases) { candidate in
+                        ForEach(buddies) { candidate in
                             buddyButton(candidate, horizontal: false)
                         }
                     }

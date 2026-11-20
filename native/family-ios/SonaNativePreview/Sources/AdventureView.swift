@@ -1,17 +1,25 @@
 import SwiftUI
 
-/// Native browsing of the canonical adventure illustrations and captions.
-/// This preview never records a speech attempt, finishes a production quest,
-/// awards a sticker, or substitutes a tap for a heard word. The host owns
-/// access checks and the separate preview-completion callback.
+/// Displays the existing illustrated story. The signed-in family host owns
+/// game and word completion, saved pages and eligibility for the ending.
 struct AdventureView: View {
     let targetSound: String
     let day: Int
+    var storyID: String?
     var isSimple = false
+    var initialPage = 0
+    var resumeAtGame = false
+    var beginWithEnding = false
+    var onReadingPage: (Int) -> Void = { _ in }
+    var onIntroFinished: () -> Void = {}
+    var onTalkingIntroFinished: () -> Void = {}
+    var spokenGame: NativeAdventureGameAccess?
+    var spokenReading: NativeReadingAccess?
     let onComplete: () -> Void
 
     @Environment(\.dismiss) private var dismiss
     @Environment(\.dynamicTypeSize) private var typeSize
+    @Environment(\.scenePhase) private var scenePhase
     @State private var stories: [NativeAdventure] = []
     @State private var failed = false
     @State private var loaded = false
@@ -20,15 +28,27 @@ struct AdventureView: View {
     @State private var reportedCompletion = false
     @State private var showGame = false
     @State private var gameFinished = false
+    @State private var gameVerified = false
+    @State private var gameVerifiedResult = false
+    @StateObject private var playback = NativeReadingPlayback()
+    @State private var readOnly = false
+    @State private var unavailableMicrophonePage: String?
+    @State private var processedPage: String?
 
     private var story: NativeAdventure? {
-        NativeAdventureCatalog.story(in: stories, day: day, targetSound: targetSound)
+        if let storyID { return stories.first { $0.id == storyID } }
+        return NativeAdventureCatalog.story(in: stories, day: day, targetSound: targetSound)
     }
 
     private var intro: [NativeAdventurePage] { story?.intro.filter { !isSimple || $0.ages != "big" } ?? [] }
     private var ending: [NativeAdventurePage] { story?.ending.filter { !isSimple || $0.ages != "big" } ?? [] }
     private var pages: [NativeAdventurePage] { phase == .ending ? ending : intro }
     private var current: NativeAdventurePage? { pages.indices.contains(page) ? pages[page] : nil }
+    private var pageToken: String { "\(phase)-\(page)-\(story?.id ?? "")" }
+    private var waitingForWord: Bool {
+        spokenReading != nil && story?.talk == true && !readOnly && (phase == .intro || phase == .ending) && current?.key != nil &&
+            (processedPage != pageToken || playback.moment != nil)
+    }
     private var hasGame: Bool {
         guard let key = story?.game else { return false }
         return NativeStoryGame(rawValue: key) != nil || StoryVillageGame(rawValue: key) != nil
@@ -43,7 +63,7 @@ struct AdventureView: View {
                         VStack(spacing: 0) {
                             HStack(spacing: 7) {
                                 Image(systemName: "eye")
-                                Text("Story preview")
+                                Text("Story time")
                                 Spacer()
                                 Text("Day \(story.day)")
                             }
@@ -59,7 +79,7 @@ struct AdventureView: View {
                                     .frame(maxHeight: .infinity)
                             }
 
-                            controls(story)
+                            readingControls(story)
                                 .padding(.horizontal, 20)
                                 .padding(.top, 14)
                                 .padding(.bottom, 12)
@@ -94,9 +114,10 @@ struct AdventureView: View {
                     Button { dismiss() } label: { Image(systemName: "xmark") }
                         .accessibilityLabel("Back home")
                         .accessibilityIdentifier("adventure-close")
+                        .disabled(playback.moment != nil)
                 }
-                if phase == .intro || phase == .ending {
-                    ToolbarItem(placement: .primaryAction) {
+                ToolbarItem(placement: .primaryAction) {
+                    if playback.moment == nil && (phase == .intro || phase == .ending) {
                         Menu {
                             Button("Start from the beginning", action: start)
                         } label: {
@@ -108,29 +129,90 @@ struct AdventureView: View {
             }
         }
         .fullScreenCover(isPresented: $showGame, onDismiss: {
-            if gameFinished {
-                page = 0
-                phase = .ending
-            }
+            showEndingIfReady()
         }) {
             if let key = story?.game {
-                if let game = NativeStoryGame(rawValue: key) {
-                    StoryGamesView(game: game) {
-                        gameFinished = true
-                        showGame = false
+                if let spokenGame {
+                    NativeStoryPlayHost(game: key, access: spokenGame, onFinish: {
+                        gameVerified = true
+                        gameVerifiedResult = true
+                        showEndingIfReady()
+                    }, onExit: { showGame = false }) {
+                        storyBoard(key)
                     }
-                } else if let game = StoryVillageGame(rawValue: key) {
-                    StoryVillageGamesView(game: game) { gameFinished = true }
-                } else if let game = StoryWorkshopGame(rawValue: key) {
-                    StoryWorkshopGamesView(game: game) { gameFinished = true }
+                } else {
+                    storyBoard(key)
                 }
             }
         }
         .tint(AdventureColors.teal)
         .preferredColorScheme(.light)
         .task { load() }
+        .task(id: pageToken) { await preparePage() }
+        .onDisappear { playback.stop() }
+        .onChange(of: scenePhase) { if $0 != .active { playback.pauseNarration() } }
         .onChange(of: targetSound) { _ in reset() }
         .onChange(of: day) { _ in reset() }
+    }
+
+    @ViewBuilder private func readingControls(_ story: NativeAdventure) -> some View {
+        if let moment = playback.moment, let spokenReading {
+            ReadingSpeechMomentView(plan: moment, isCurrent: {
+                spokenReading.isCurrent() && playback.moment?.id == moment.id
+            }, creditPlayRep: spokenReading.credit,
+                onAdvance: { _ in finishWord(story) },
+                onReadOnly: { scope in
+                    if scope == .visit { readOnly = true }
+                    else { unavailableMicrophonePage = pageToken }
+                    playback.stop(keepCaptionReplay: true)
+                    processedPage = pageToken
+                }, onExit: { dismiss() }, onMicrophoneAllowed: spokenReading.rememberPermission,
+                onSkip: { finishWord(story) }, acousticCarry: playback.acousticCarry,
+                emphasizedWord: NativeSpeechEmphasis.formatted(playback.promptPieces, fallback: moment.word))
+            .id(moment.id)
+        } else if playback.needsResume {
+            Button("Resume reading") { Task { await preparePage() } }
+                .buttonStyle(.borderedProminent).frame(minHeight: 44)
+        } else if waitingForWord {
+            ProgressView("Opening the page").padding(12)
+        } else {
+            controls(story)
+        }
+    }
+
+    private func preparePage(asCaptionOnly: Bool = false) async {
+        playback.stop()
+        guard let story, let spokenReading, let page = current, phase == .intro || phase == .ending else { return }
+        let current = pageToken
+        let input = NativeReadingPageInput(title: story.title, sound: story.sound ?? "",
+            caption: page.caption(simple: isSimple), word: story.talk ? page.key : nil)
+        await playback.prepare(input, using: spokenReading, mode: .talkingStory,
+                               readOnly: readOnly || unavailableMicrophonePage == current || asCaptionOnly)
+        if current == pageToken && !Task.isCancelled { processedPage = current }
+    }
+
+    private func finishWord(_ story: NativeAdventure) {
+        playback.stop()
+        processedPage = pageToken
+        advance(story)
+    }
+
+    @ViewBuilder private func storyBoard(_ key: String) -> some View {
+        if let game = NativeStoryGame(rawValue: key) {
+            StoryGamesView(game: game) { gameFinished = true; showGame = false }
+        } else if let game = StoryVillageGame(rawValue: key) {
+            StoryVillageGamesView(game: game) { gameFinished = true }
+        } else if let game = StoryWorkshopGame(rawValue: key) {
+            StoryWorkshopGamesView(game: game) { gameFinished = true }
+        }
+    }
+
+    private func showEndingIfReady() {
+        guard !showGame, gameFinished, spokenGame == nil || gameVerified else { return }
+        gameFinished = false
+        gameVerified = false
+        page = 0
+        phase = .ending
     }
 
     @ViewBuilder
@@ -164,7 +246,7 @@ struct AdventureView: View {
                         .frame(maxWidth: .infinity, maxHeight: artHeight == nil ? .infinity : nil)
                         .clipShape(RoundedRectangle(cornerRadius: 22))
                     VStack(spacing: 12) {
-                        Text(current.caption(simple: isSimple))
+                        Text(NativeSpeechEmphasis.formatted(playback.captionPieces, fallback: current.caption(simple: isSimple)))
                             .font(.system(.title3, design: .rounded).weight(.semibold))
                             .multilineTextAlignment(.center)
                             .fixedSize(horizontal: false, vertical: true)
@@ -206,7 +288,7 @@ struct AdventureView: View {
                 AdventureIllustration(path: ending.last?.art ?? story.cover)
                     .frame(height: artHeight ?? 240)
                     .clipShape(RoundedRectangle(cornerRadius: 22))
-                Text("Preview complete")
+                Text("Adventure complete!")
                     .font(.system(.largeTitle, design: .rounded).weight(.heavy))
                     .accessibilityAddTraits(.isHeader)
                     .accessibilityIdentifier("adventure-finished")
@@ -238,6 +320,20 @@ struct AdventureView: View {
                     .frame(minHeight: 52)
                     .background(.white, in: RoundedRectangle(cornerRadius: 16))
                     .accessibilityIdentifier("adventure-replay")
+            }
+
+            if (phase == .intro || phase == .ending), playback.canReplayCaption {
+                Button {
+                    Task { await preparePage(asCaptionOnly: true) }
+                } label: {
+                    Image(systemName: "speaker.wave.2.fill")
+                        .font(.body.weight(.bold))
+                        .foregroundStyle(AdventureColors.teal)
+                        .frame(width: 48, height: 52)
+                        .background(.white, in: RoundedRectangle(cornerRadius: 16))
+                }
+                .accessibilityLabel("Hear it")
+                .accessibilityIdentifier("adventure-caption-replay")
             }
 
             Button { advance(story) } label: {
@@ -274,14 +370,27 @@ struct AdventureView: View {
     }
 
     private func advance(_ story: NativeAdventure) {
+        guard !waitingForWord else { return }
+        playback.stop()
         switch phase {
         case .cover: start()
         case .intro:
-            if page + 1 < intro.count { page += 1 }
-            else { page = 0; phase = story.talk ? .ending : .gameBoundary }
+            if page + 1 < intro.count {
+                page += 1
+                onReadingPage(page)
+            } else {
+                if story.talk { onTalkingIntroFinished() }
+                else { onIntroFinished() }
+                page = 0
+                phase = story.talk ? .ending : .gameBoundary
+            }
         case .gameBoundary:
-            if hasGame {
+            if gameVerifiedResult {
+                page = 0
+                phase = .ending
+            } else if hasGame {
                 gameFinished = false
+                gameVerified = false
                 showGame = true
             } else {
                 page = 0
@@ -297,8 +406,11 @@ struct AdventureView: View {
     }
 
     private func previous() {
+        guard playback.moment == nil else { return }
+        playback.stop()
         if page > 0 {
             page -= 1
+            if phase == .intro { onReadingPage(page) }
         } else if phase == .ending, story?.talk != true {
             phase = .gameBoundary
         } else if phase == .ending || phase == .gameBoundary {
@@ -309,14 +421,22 @@ struct AdventureView: View {
         }
     }
 
-    private func start() { page = 0; phase = .intro }
-    private func reset() { page = 0; phase = .cover; reportedCompletion = false }
+    private func start() { page = 0; phase = .intro; onReadingPage(0) }
+    private func reset() { page = 0; phase = .cover; reportedCompletion = false; gameVerifiedResult = false }
 
     private func load() {
         defer { loaded = true }
         do {
             stories = try NativeAdventureCatalog.bundled.get().stories
             failed = false
+            if beginWithEnding, !ending.isEmpty {
+                phase = .ending
+            } else if resumeAtGame, !intro.isEmpty {
+                phase = .gameBoundary
+            } else if initialPage > 0, intro.indices.contains(initialPage) {
+                phase = .intro
+                page = initialPage
+            }
         } catch { failed = true }
     }
 }

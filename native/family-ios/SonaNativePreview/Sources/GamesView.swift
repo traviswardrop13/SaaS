@@ -7,7 +7,16 @@ enum NativeGame: String, CaseIterable, Identifiable {
     case robot, castle, pizza
 
     var id: String { rawValue }
+    var shippingID: String { self == .sprint ? "run" : rawValue }
     var cover: String { "game-\(rawValue)" }
+
+    /// These are the six Arcade entries routed through charge.html today.
+    var guidedPracticeFile: String? {
+        switch self {
+        case .slice, .tiles, .stack, .glide, .rise, .sprint: return "arcade-\(shippingID).html"
+        default: return nil
+        }
+    }
 
     var title: String {
         switch self {
@@ -83,6 +92,8 @@ enum NativeGame: String, CaseIterable, Identifiable {
 struct GamesView: View {
     let completed: Set<String>
     let access: FamilyLibraryAccess
+    var foundStories: [NativeAdventure] = []
+    var onReplayStory: (NativeAdventure) -> Void = { _ in }
     let onPlay: (NativeGame) -> Void
 
     @State private var quietGames = false
@@ -107,6 +118,32 @@ struct GamesView: View {
                 HStack(spacing: 8) {
                     filterButton("All games", showsGentle: false)
                     filterButton("No rush", showsGentle: true)
+                }
+
+                if access.allowsStory && !foundStories.isEmpty {
+                    VStack(alignment: .leading, spacing: 9) {
+                        Text("Found adventures").font(.system(.title3, design: .rounded).weight(.heavy))
+                            .accessibilityAddTraits(.isHeader)
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 11) {
+                                ForEach(foundStories) { story in
+                                    Button { onReplayStory(story) } label: {
+                                        VStack(alignment: .leading, spacing: 6) {
+                                            Image("daily-\(story.id)").resizable().scaledToFill().frame(width: 128, height: 70).clipped()
+                                                    .accessibilityHidden(true)
+                                            Text(story.gameName).font(.system(.caption, design: .rounded).weight(.heavy))
+                                                .lineLimit(2).padding(.horizontal, 7).padding(.bottom, 8)
+                                        }
+                                        .frame(width: 128, alignment: .leading)
+                                        .background(.white, in: RoundedRectangle(cornerRadius: 15))
+                                        .clipShape(RoundedRectangle(cornerRadius: 15))
+                                    }
+                                    .buttonStyle(SonaPressStyle())
+                                    .accessibilityIdentifier("replay-story-\(story.id)")
+                                }
+                            }
+                        }
+                    }
                 }
 
                 LazyVGrid(columns: columns, alignment: .leading, spacing: 16) {
@@ -149,7 +186,7 @@ struct GamesView: View {
                             .overlay(RoundedRectangle(cornerRadius: 20).strokeBorder(SonaPalette.ink.opacity(0.10)))
                         }
                         .buttonStyle(SonaPressStyle())
-                        .disabled(!unlocked)
+                        .disabled(!unlocked && !access.offersLockedContent)
                         .opacity(unlocked ? 1 : 0.60)
                         .accessibilityElement(children: .combine)
                         .accessibilityValue(completed.contains(game.id) ? "Finished" : "")

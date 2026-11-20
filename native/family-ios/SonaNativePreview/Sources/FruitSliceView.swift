@@ -3,14 +3,20 @@ import SpriteKit
 import UIKit
 
 struct FruitSliceView: View {
+    let stage: Int
     let onRoundFinished: () -> Void
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.guidedReplay) private var guidedReplay
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @StateObject private var game = FruitSliceGame()
+    @StateObject private var game: FruitSliceGame
 
-    init(onRoundFinished: @escaping () -> Void = {}) {
+    /// The host remounts this view for stages 0, 1 and 2, keeping the two
+    /// between-wave speech checkpoints outside the gesture-only game scene.
+    init(stage: Int = 0, onRoundFinished: @escaping () -> Void = {}) {
+        self.stage = min(2, max(0, stage))
         self.onRoundFinished = onRoundFinished
+        _game = StateObject(wrappedValue: FruitSliceGame(stage: min(2, max(0, stage))))
     }
 
     var body: some View {
@@ -19,6 +25,8 @@ struct FruitSliceView: View {
                 .ignoresSafeArea()
                 .accessibilityLabel("Fruit Slice. Swipe across the fruit to slice it.")
                 .accessibilityIdentifier("nativeFruitSliceBoard")
+                .accessibilityValue(game.finished ? "\(game.sliced) fruit sliced" : (game.isFinale ? "\(game.finaleCuts) of 5 watermelon swipes" : "\(game.sliced) of \(game.normalGoal) fruit"))
+                .allowsHitTesting(!game.finished)
 
             VStack(spacing: 16) {
                 HStack {
@@ -35,14 +43,14 @@ struct FruitSliceView: View {
                     Spacer()
 
                     VStack(alignment: .leading, spacing: 6) {
-                        Text("\(game.sliced) fruit sliced")
+                        Text(game.isFinale ? "Watermelon \(game.finaleCuts)/5" : "\(game.sliced) fruit sliced")
                             .font(.system(size: 18, weight: .bold, design: .rounded))
                             .accessibilityIdentifier("nativeFruitSliceCount")
-                        ProgressView(value: Double(game.sliced), total: Double(game.goal))
+                        ProgressView(value: Double(game.isFinale ? game.finaleCuts : min(game.sliced, game.normalGoal)), total: Double(game.isFinale ? 5 : game.normalGoal))
                             .tint(Color(red: 0.04, green: 0.48, blue: 0.51))
                             .frame(width: 126)
-                            .accessibilityLabel("Round progress")
-                            .accessibilityValue("\(game.sliced) of \(game.goal) fruit")
+                            .accessibilityLabel(game.isFinale ? "Watermelon cuts" : "Round progress")
+                            .accessibilityValue(game.finished ? "Complete" : (game.isFinale ? "\(game.finaleCuts) of 5 swipes" : "\(game.sliced) of \(game.normalGoal) fruit"))
                     }
                     .padding(.horizontal, 18)
                     .padding(.vertical, 12)
@@ -51,7 +59,7 @@ struct FruitSliceView: View {
                 }
 
                 VStack(spacing: 3) {
-                    Text(game.sliced == game.goal - 1 ? "One big watermelon!" : "Fruit Slice")
+                    Text(game.isFinale ? "One big watermelon!" : "Fruit Slice")
                         .font(.system(size: 28, weight: .heavy, design: .rounded))
                     if game.sliced == 0 {
                         Text("Swipe across the apple")
@@ -68,9 +76,8 @@ struct FruitSliceView: View {
             .foregroundStyle(Color(red: 0.20, green: 0.15, blue: 0.13))
             .padding(.horizontal, 20)
             .padding(.top, 8)
-            .allowsHitTesting(!game.finished)
 
-            if game.finished {
+            if game.finished && game.isFinalStage {
                 Color.black.opacity(0.22).ignoresSafeArea()
                 VStack(spacing: 16) {
                     Image("giant-watermelon")
@@ -82,7 +89,10 @@ struct FruitSliceView: View {
                         .font(.system(size: 30, weight: .heavy, design: .rounded))
                         .multilineTextAlignment(.center)
                         .accessibilityIdentifier("nativeFruitSliceFinish")
-                    Button("Play again") { game.restart() }
+                    Button("Play again") {
+                        if let guidedReplay { guidedReplay() }
+                        else { game.restart() }
+                    }
                         .buttonStyle(FruitSliceButtonStyle(reduceMotion: reduceMotion))
                         .accessibilityIdentifier("nativeFruitSliceReplay")
                     Button("Back home") { dismiss() }
@@ -135,22 +145,67 @@ private struct FruitSliceButtonStyle: ButtonStyle {
     }
 }
 
+// MARK: - Gesture-earned stage progress
+
+/// Only successful scene intersections may call these methods. Time, missed
+/// fruit, taps and speech never advance this gesture-only state.
+private struct FruitSliceStageProgress {
+    let stage: Int
+    let normalGoal: Int
+    let giantGoal: Int
+    private(set) var normalSliced = 0
+    private(set) var giantCuts = 0
+    private var giantEntryStroke = 0
+    private var lastGiantStroke = 0
+
+    init(stage: Int) {
+        self.stage = min(2, max(0, stage))
+        normalGoal = self.stage == 0 ? 4 : 6
+        giantGoal = self.stage == 2 ? 5 : 0
+    }
+    var isFinale: Bool { giantGoal > 0 && normalSliced == normalGoal && giantCuts < giantGoal }
+    var isComplete: Bool { normalSliced == normalGoal && (giantGoal == 0 || giantCuts == giantGoal) }
+    var slicedFruit: Int { normalSliced + (giantGoal > 0 && giantCuts == giantGoal ? 1 : 0) }
+
+    mutating func sliceNormal(stroke: Int) -> Bool {
+        guard stroke > 0, normalSliced < normalGoal, !isComplete else { return false }
+        normalSliced += 1
+        if normalSliced == normalGoal && giantGoal > 0 { giantEntryStroke = stroke }
+        return true
+    }
+    mutating func cutGiant(stroke: Int) -> Bool {
+        guard isFinale, stroke > giantEntryStroke, stroke > lastGiantStroke else { return false }
+        lastGiantStroke = stroke
+        giantCuts += 1
+        return true
+    }
+}
+
 private final class FruitSliceGame: ObservableObject {
-    let goal = FruitSliceScene.goal
+    let stage: Int
+    let normalGoal: Int
     @Published var sliced = 0
+    @Published var finaleCuts = 0
     @Published var finished = false
-    let scene = FruitSliceScene()
+    let scene: FruitSliceScene
+    var isFinalStage: Bool { stage == 2 }
+    var isFinale: Bool { isFinalStage && sliced == normalGoal && !finished }
     private let sliceHaptic = UIImpactFeedbackGenerator(style: .light)
     private let finishHaptic = UINotificationFeedbackGenerator()
     private var lastHaptic: TimeInterval = 0
 
-    init() {
-        scene.onSlice = { [weak self] count in
+    init(stage: Int) {
+        let plan = FruitSliceStageProgress(stage: stage)
+        self.stage = plan.stage
+        normalGoal = plan.normalGoal
+        scene = FruitSliceScene(stage: plan.stage)
+        scene.onProgress = { [weak self] progress in
             DispatchQueue.main.async {
-                guard let self = self else { return }
-                self.sliced = count
+                guard let self else { return }
+                self.sliced = progress.slicedFruit
+                self.finaleCuts = progress.giantCuts
                 let now = ProcessInfo.processInfo.systemUptime
-                if count < self.goal && now - self.lastHaptic > 0.07 {
+                if !progress.isComplete && now - self.lastHaptic > 0.07 {
                     self.sliceHaptic.impactOccurred(intensity: 0.7)
                     self.sliceHaptic.prepare()
                     self.lastHaptic = now
@@ -159,8 +214,9 @@ private final class FruitSliceGame: ObservableObject {
         }
         scene.onFinish = { [weak self] in
             DispatchQueue.main.async {
-                self?.finished = true
-                self?.finishHaptic.notificationOccurred(.success)
+                guard let self, !self.finished else { return }
+                self.finished = true
+                self.finishHaptic.notificationOccurred(.success)
             }
         }
     }
@@ -172,14 +228,15 @@ private final class FruitSliceGame: ObservableObject {
 
     func restart() {
         sliced = 0
+        finaleCuts = 0
         finished = false
+        lastHaptic = 0
         scene.restart()
         prepareHaptics()
     }
 }
 
 private final class FruitSliceScene: SKScene {
-    static let goal = 12
 
     private struct Fruit {
         let node: SKSpriteNode
@@ -187,9 +244,10 @@ private final class FruitSliceScene: SKScene {
         var velocity: CGVector
         let spin: CGFloat
         let held: Bool
+        let isFinale: Bool
     }
 
-    var onSlice: ((Int) -> Void)?
+    var onProgress: ((FruitSliceStageProgress) -> Void)?
     var onFinish: (() -> Void)?
     private let orchard = SKSpriteNode(imageNamed: "orchard")
     private let counter = SKSpriteNode(imageNamed: "fruit-stand")
@@ -197,14 +255,17 @@ private final class FruitSliceScene: SKScene {
     private var fruit: [Fruit] = []
     private var previousTime: TimeInterval?
     private var spawnTime: TimeInterval = 0.25
-    private var sliced = 0
+    private var progress: FruitSliceStageProgress
     private var thrown = 0
-    private var completed = false
+    private var sentFinish = false
     private var reduceMotion = false
     private var activeTouch: UITouch?
     private var lastPoint: CGPoint?
+    private var stroke = 0
+    private var strokeTravel: CGFloat = 0
 
-    override init() {
+    init(stage: Int) {
+        progress = FruitSliceStageProgress(stage: stage)
         super.init(size: CGSize(width: 390, height: 844))
         scaleMode = .resizeFill
         backgroundColor = SKColor(red: 0.98, green: 0.93, blue: 0.82, alpha: 1)
@@ -249,6 +310,7 @@ private final class FruitSliceScene: SKScene {
         previousTime = nil
         activeTouch = nil
         lastPoint = nil
+        strokeTravel = 0
     }
 
     func setReduceMotion(_ enabled: Bool) {
@@ -259,16 +321,17 @@ private final class FruitSliceScene: SKScene {
     func restart() {
         children.filter { $0 !== orchard && $0 !== counter }.forEach { $0.removeFromParent() }
         fruit.removeAll()
-        sliced = 0
+        progress = FruitSliceStageProgress(stage: progress.stage)
         thrown = 0
-        completed = false
+        sentFinish = false
+        stroke = 0
         spawnTime = 0.25
         resetClock()
         serveFruit(named: "fruit-apple", radiusScale: 1.15)
     }
 
     override func update(_ currentTime: TimeInterval) {
-        guard !completed else { return }
+        guard !progress.isComplete else { return }
         let delta = min(currentTime - (previousTime ?? currentTime), 0.05)
         previousTime = currentTime
         let seconds = CGFloat(max(delta, 0))
@@ -285,7 +348,7 @@ private final class FruitSliceScene: SKScene {
             if gone { item.node.removeFromParent() }
             return gone
         }
-        guard sliced > 0 && sliced < Self.goal - 1 else { return }
+        guard progress.normalSliced > 0 && progress.normalSliced < progress.normalGoal else { return }
         spawnTime -= delta
         if spawnTime <= 0 && fruit.count < 3 {
             throwFruit(gravity: gravity)
@@ -308,17 +371,17 @@ private final class FruitSliceScene: SKScene {
         let rise = max(160, min(size.height * 0.67, size.height - 170))
         let velocity = CGVector(dx: (size.width / 2 - node.position.x) * 0.32, dy: sqrt(2 * gravity * rise))
         fruit.append(Fruit(node: node, radius: radius, velocity: velocity,
-                           spin: reduceMotion ? 0 : CGFloat.random(in: -1.5...1.5), held: false))
+                           spin: reduceMotion ? 0 : CGFloat.random(in: -1.5...1.5), held: false, isFinale: false))
     }
 
-    private func serveFruit(named name: String, radiusScale: CGFloat) {
+    private func serveFruit(named name: String, radiusScale: CGFloat, isFinale: Bool = false) {
         let radius = min(max(size.width * 0.11, 30), 54) * radiusScale
         let node = SKSpriteNode(imageNamed: name)
         node.size = CGSize(width: radius * 2, height: radius * 2)
         node.position = CGPoint(x: size.width / 2, y: size.height * 0.47)
         node.zPosition = 5
         addChild(node)
-        fruit.append(Fruit(node: node, radius: radius, velocity: .zero, spin: 0, held: true))
+        fruit.append(Fruit(node: node, radius: radius, velocity: .zero, spin: 0, held: true, isFinale: isFinale))
         if !reduceMotion {
             node.run(.repeatForever(.sequence([
                 .moveBy(x: 0, y: 7, duration: 0.7),
@@ -330,37 +393,46 @@ private final class FruitSliceScene: SKScene {
     private func serveFinale() {
         fruit.forEach { $0.node.removeFromParent() }
         fruit.removeAll()
-        serveFruit(named: "giant-watermelon", radiusScale: 1.85)
+        serveFruit(named: "giant-watermelon", radiusScale: 1.85, isFinale: true)
     }
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-        guard let touch = touches.first, !completed else { return }
+        // A second finger cannot manufacture another distinct slash.
+        guard activeTouch == nil, let touch = touches.first, !progress.isComplete else { return }
         activeTouch = touch
-        let point = touch.location(in: self)
-        lastPoint = point
-        slice(from: point, to: point)
+        stroke += 1
+        strokeTravel = 0
+        lastPoint = touch.location(in: self)
     }
 
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
-        guard let touch = activeTouch, touches.contains(touch), let start = lastPoint, !completed else { return }
-        let end = touch.location(in: self)
-        drawTrail(from: start, to: end)
-        slice(from: start, to: end)
-        lastPoint = end
+        guard let touch = activeTouch, touches.contains(touch), !progress.isComplete else { return }
+        moveTouch(to: touch.location(in: self))
     }
 
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let touch = activeTouch, touches.contains(touch) else { return }
-        if let start = lastPoint, !completed {
-            slice(from: start, to: touch.location(in: self))
-        }
+        if !progress.isComplete { moveTouch(to: touch.location(in: self)) }
         activeTouch = nil
         lastPoint = nil
+        strokeTravel = 0
     }
 
     override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
+        guard let touch = activeTouch, touches.contains(touch) else { return }
         activeTouch = nil
         lastPoint = nil
+        strokeTravel = 0
+    }
+
+    private func moveTouch(to end: CGPoint) {
+        guard let start = lastPoint else { return }
+        let dx = end.x - start.x, dy = end.y - start.y
+        strokeTravel += sqrt(dx * dx + dy * dy)
+        drawTrail(from: start, to: end)
+        // Touch-down, a tap, or a stationary held finger never slices anything.
+        if strokeTravel >= 18 { slice(from: start, to: end) }
+        lastPoint = progress.isComplete ? nil : end
     }
 
     private func slice(from start: CGPoint, to end: CGPoint) {
@@ -368,23 +440,55 @@ private final class FruitSliceScene: SKScene {
             distanceSquared(from: item.node.position, to: start, end) <= item.radius * item.radius
         }
         for hit in hits {
-            guard !completed else { break }
-            fruit.removeAll { $0.node === hit.node }
-            split(hit.node)
-            splash(at: hit.node.position)
-            hit.node.removeFromParent()
-            sliced += 1
-            onSlice?(sliced)
-            if sliced == Self.goal - 1 {
-                serveFinale()
-                break
+            guard !progress.isComplete else { break }
+            if hit.isFinale {
+                guard progress.cutGiant(stroke: stroke) else { continue }
+                splash(at: hit.node.position)
+                if progress.isComplete {
+                    split(hit.node)
+                    fruit.removeAll { $0.node === hit.node }
+                    hit.node.removeFromParent()
+                } else { markFinaleCut(on: hit.node, number: progress.giantCuts) }
+            } else {
+                guard progress.sliceNormal(stroke: stroke) else { continue }
+                fruit.removeAll { $0.node === hit.node }
+                split(hit.node)
+                splash(at: hit.node.position)
+                hit.node.removeFromParent()
+                if progress.isFinale {
+                    serveFinale()
+                    reportProgress()
+                    break
+                }
             }
-            if sliced == Self.goal {
-                completed = true
-                activeTouch = nil
-                lastPoint = nil
-                onFinish?()
-            }
+            reportProgress()
+        }
+    }
+
+    private func reportProgress() {
+        onProgress?(progress)
+        guard progress.isComplete, !sentFinish else { return }
+        sentFinish = true
+        activeTouch = nil
+        lastPoint = nil
+        onFinish?()
+    }
+
+    private func markFinaleCut(on node: SKSpriteNode, number: Int) {
+        let width = node.size.width * 0.62
+        let y = node.size.height * (CGFloat(number) - 2.5) * 0.12
+        let path = CGMutablePath()
+        path.move(to: CGPoint(x: -width * 0.5, y: y - 9))
+        path.addLine(to: CGPoint(x: width * 0.5, y: y + 9))
+        let mark = SKShapeNode(path: path)
+        mark.strokeColor = .white
+        mark.lineWidth = 4
+        mark.lineCap = .round
+        mark.alpha = 0.85
+        mark.zPosition = 2
+        node.addChild(mark)
+        if !reduceMotion {
+            node.run(.sequence([.scale(to: 1.04, duration: 0.06), .scale(to: 1, duration: 0.08)]), withKey: "cut")
         }
     }
 

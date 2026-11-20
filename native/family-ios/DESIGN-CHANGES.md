@@ -6,46 +6,51 @@ This is the review log for the family app branch `codex/sona-native-family`. Upd
 
 | Area | Design change | Review status |
 | --- | --- | --- |
-| First launch | Short illustrated welcome, Explore first shortcut, and optional choice of Echo, Pip, or Hops. The welcome leads to Home so the child can choose an activity. | Preview |
+| First launch | Short illustrated welcome with a buddy choice and a direct path to Home. The separate review app has a fictional roster option. | Preview |
 | First launch | The therapist-issued family login takes priority on the opening screen. It uses the existing server and existing sharing decision. | Tested with fictional credentials in the iPhone Simulator. Live dashboard verification is pending. |
-| Home | The buddy, gift chest and Grown-ups stay in the header. A large illustrated Today’s adventure card leads, with Games and Books directly below. The selected sound is read-only. The screen fits without scrolling at ordinary text sizes and scrolls as needed for larger text or a smaller window. | Preview |
+| Home | The buddy, gift chest and Grown-ups stay in the header. A large illustrated Today’s adventure card leads, with Games and Books directly below. The selected sound is read-only, and the child’s actual daily goal sits on the same row. The card can show today’s game when the existing calendar calls for one. The layout scrolls as needed for larger text or a smaller window. | Simulator preview |
 | Navigation | Four native tabs for Home, Games, Books and Practice. Games open in full-screen rounds. On iOS 15, the app uses the system’s older single-column navigation and a scroll view when Home needs more room. | Preview |
-| Books | A native illustrated shelf and reader using the existing titles, page text, and artwork. The shelf filters to the selected sound and respects seasonal availability. A bookmark reopens the last page. The review build has manual page turning. | Preview. Spoken book prompts, gates and paid-access parity still need their existing behavior. |
-| Practice | A native visual tile for hearing the selected sound, using the current authored sound models. A Grown-ups link appears before a sound is picked. Listening to the model in this preview records zero reps. | Preview. Full practice, cues and verified speech behavior are release requirements. |
-| Grown-ups | The four-number-word check protects Players, sound choices, clinician account settings and Preview progress. The progress panel shows actual game finishes and last open book pages for the current preview player. | Preview. Live speech records, reward balances and migrated profiles still require an in-place upgrade. |
-| Players | Grown-ups can add and switch numbered local players. Each keeps a separate buddy, sound choice, game completions, bookmarks and start date. The original preview player keeps their saved preferences and records. | Preview. Local players have no separate clinician identity. |
-| Clinician homework | The signed-in primary player can see their existing assigned sound. The Grown-ups view shows the therapist’s homework and keeps the family’s saved choice for later. | Preview. Fetches after consent using the existing family endpoint. Speech position, goals and word drills are part of the release flow. |
-| Games shelf | Illustrated native cards for all 25 released games, All games and No rush filters, and a mark on games that finished. The four parked games are omitted. | Preview |
-| Play collection | The chest opens the current player’s list of finished games. Trophy Road opens from there as a preview of the six original lands, their 28 milestones and the eight monthly steps, with original pictures and fixed gift values. | Preview. Balances, opening gifts, streaks, buddy ownership and historical claims need release integration. |
-| Daily adventures | Home rotates existing illustrated stories by local date. The story view carries the 14 calendar stories and 10 sound-specific Day 1 choices, using the exact text and artwork. Page buttons and a separate end card let the family preview the story. | Preview. Full calendar history, narration, guided speaking and quest rewards still require parity. |
-| Adventure games, days 1–3 | Guide boats with the held lighthouse beam and light the town windows. Wind up the toys and music box. Turn and fit the eight bridge stones. | Gameplay previews |
+| Books | A native illustrated shelf and reader using the existing titles, page text, and artwork. The shelf follows the active sound and seasonal availability. Each player keeps their read stars and bookmark. When the existing rules call for speech, the reader highlights the authored key and uses the current word prompt. Hear it replays the caption, including on read-only pages. The Grown-ups Skip control advances the page. | Local word selection, replay and no-credit Skip checks passed. Physical microphone review is open. |
+| Practice | Hear the selected sound or open a guided speaking round. The guided screen shows Echo, the current prompt, sayings heard, Replay and Slower. It pauses when the app leaves the foreground. The six Arcade games that start with guided practice use that flow before play and replay. | Tested with synthetic audio and the iPhone Simulator. Physical phone review is pending. |
+| Grown-ups | The four-number-word check protects Players, target sound, clinician sharing, Progress and Restore Purchases. Progress shows weekly practice, separate game and book reps, practice steps by sound and older saved game records when present. Families already sharing can request a progress update. Player settings keeps the existing word position, starting step, sound and progress reset controls. | Simulator preview |
+| Support | The adult area has a native Talk to us form using the existing family feedback endpoint, alongside Privacy and Terms. The request carries only selected topics, the parent’s note and an optional reply address. | Local form and endpoint contract review. |
+| Players | Grown-ups add and switch players with separate buddy, sound, bookmark, and history records. Removing an inactive player asks for confirmation and clears their scoped settings and older copies. If prior storage contains multiple families, the app asks which family to open. | Synthetic migration, removal and cold restart passed. |
+| Moving phones | Grown-ups can save a backup file or restore from a file or pasted code, then undo the last restore. Native bookmarks and game completions travel with practice history. Families can use the existing therapist sign-in on a new phone. | Local backup, restore and Undo fixtures. |
+| Weekly report | Grown-ups can review or turn off an existing weekly email. The existing app identity keeps previously opted-in households connected using their stored consent, report IDs and any pending turn-off requests. The separate preview shows the local setting. | Local consent and delivery-order fixtures. Live delivery still needs a dedicated test household. |
+| Clinician homework | The active child can connect their verified account. The homework can set the sound, word position and daily goal. Grown-ups can see the assignment and change their own preference again when it ends. | Fictional login, consent, cache and sibling-switch tests passed. Live access still needs a dashboard-issued login. |
+| Games shelf | Illustrated native cards for all 25 released games, All games and No rush filters, completion marks and a shelf of adventures this player found. The four parked games stay parked. | Preview |
+| Rewards | The gift chest opens the current player’s Trophy Road, including lifetime and monthly stops, original gifts, sticker collection and the current balance. The three-tap chest reveals a gift only when the existing ledger allows it. | Local ledger and simulator navigation tested. |
+| Buddy Shop | The buddy button opens Buddies, Hats and Places with their original artwork, coin costs, owned items and Trophy Road requirements. Spending coins asks for confirmation. | Local shop rules tested. |
+| Storefront | Grown-ups can reach the native purchase and restore view. An SDK-enabled build uses the original Apple product identifiers, localized prices and trial terms. Covered family login enters the app without showing a price. | Fictional entitlement and compile-only store tests. Actual store transactions remain a release check. |
+| Daily adventures | The 14 calendar stories and 10 sound-specific Day 1 choices use the original art and captions. Home reads the saved calendar. Talking stories use the existing keyed captions and speaking turns. Story games use the existing age-based move counts. Earned stories can be reopened from Games. | Local story selection, reader and saved progress checks. Physical listening and a complete calendar walkthrough remain open. |
+| Adventure games, days 1–3 | Guide boats with the held lighthouse beam and light the town windows. Wind up the toys and music box. Younger children rub the key until the toy wakes. Older children release at the star. Match bridge stones, with an age-based choice of whether turning is needed. The optional same-word help can widen the beam, oil the key or show the matching stone. | Game and speech adapter checks. Physical play needs review. |
 | Adventure games, days 4–8 | Fit the waterwheel troughs and open the gate. Steer the postboat and deliver parcels. Mix and bake buns. Build Tortoise’s bridge with a crane and move the cart across. Wire both sides of each lantern and close the switches. | Gameplay previews |
 | Adventure games, days 9–14 | Join the train track and choose each station. Trace kite stitches and balance its tail. Balance the nest lift and deliver bundles to three levels. Play three pond concert patterns. Aim seeds into the rooftop planters. Fit the gears and turn the observatory wheel. | Gameplay previews |
-| Fruit Slice | Original orchard art, an opening fruit, a short swipe round, haptic and visual slice feedback, a final giant watermelon and replay. | Gameplay preview. The existing speech and round entry rules still need parity. |
-| Flappy Glide | Native tap flight through moving gaps, collisions, hearts and replay. | Gameplay preview |
-| Rise Up | Native drag shield and falling blocks with real deflections and retry. | Gameplay preview |
-| Bubble Pop | Two rounds of bobbing bubbles and native tap feedback. | Gameplay preview |
-| Peekaboo | Three doors shuffle over a picture, then the child chooses the door. Three finds finish the round. | Gameplay preview |
+| Fruit Slice | Original orchard art, three short swipe waves, haptic and visual slice feedback and a five-swipe giant watermelon. | Guided entry and between-wave speaking turns. Physical microphone and gameplay review is open. |
+| Flappy Glide | Three native tap flights with moving gaps, collisions, hearts and a spoken new-life turn. | Guided entry and between-flight speaking turns. Physical play needs review. |
+| Rise Up | Three climbs with a native drag shield and falling blocks, real deflections, hearts and a spoken new-life turn. | Guided entry and between-climb speaking turns. Physical play needs review. |
+| Bubble Pop | Tap bobbing bubbles. The current word unlocks the next group and native feedback follows each tap. | Gameplay preview |
+| Peekaboo | Three doors shuffle over a picture, then the child chooses the door. The word prompt comes before each find. Echo’s optional clue lights the correct door for the rest of that find. | Gameplay preview |
 | Dino Dig | Rub the sand to uncover bones or use the accessible brush control. | Gameplay preview |
-| Piano Tiles | Highlighted native keys guide a short melody, and each key plays a synthesized note. | Gameplay preview |
-| Block Stacker | A moving block drops over the stack. Six aligned blocks finish the round. | Gameplay preview |
-| Hoops | Swipe toward a moving hoop, with a timing control for a straight shot. | Gameplay preview |
-| Soccer Goal | Swipe into the goal away from the moving keeper. | Gameplay preview |
-| Sound Sprint | Move between three lanes to catch stars, with tap, swipe and labeled lane controls. | Gameplay preview |
-| Feed Echo | Match the fruit Echo wants, with a new picture after each correct choice. | Gameplay preview |
-| Race Car | Steer through moving gates with drag and directional controls. | Gameplay preview |
-| Treasure Map | Pick the next landing and sail the boat through the islands. | Gameplay preview |
-| Space Trip | Steer a rocket into glowing landing pads, using drag or the steering and landing buttons. | Gameplay preview |
-| Balloon Party | Pump each balloon and drag it into the ring. | Gameplay preview |
+| Piano Tiles | Highlighted native keys guide three songs and a finale, and each key plays a synthesized note. | Guided entry and two between-song speaking turns. Physical play needs review. |
+| Block Stacker | A moving block drops over the stack. Floors grow from five to seven aligned blocks. | Guided entry and between-floor speaking turns. Physical play needs review. |
+| Hoops | Swipe toward a moving hoop or use Shoot straight. The hoop becomes easier to aim at after misses. | Gameplay preview |
+| Soccer Goal | Swipe into the net past a moving keeper or use Kick straight. Goal assistance increases after misses. | Gameplay preview |
+| Sound Sprint | Move between three lanes on three courses to catch stars, with tap, swipe and labeled lane controls. A zero-star finish still completes the course. | Guided entry and between-course speaking turns. Physical play needs review. |
+| Feed Echo | Hear a word, say it and tap the matching picture to feed Echo. Bite totals and the current turn belong to this player. | Gameplay preview |
+| Race Car | Steer through moving gates with drag and directional controls. Pit crew help slows the road and widens the gate. | Gameplay preview |
+| Treasure Map | Pick the next landing and sail the boat through the islands. Calm seas shows the route to the next island. | Gameplay preview |
+| Space Trip | Steer a rocket into glowing landing pads, using drag or the steering and landing buttons. Easy flight widens the pad. | Gameplay preview |
+| Balloon Party | Pump each balloon and drag it into the ring. Optional help doubles each pump and widens the ring. | Gameplay and isolated help checks |
 | Grow a Flower | Hold to water the sprouts and watch them bloom. | Gameplay preview |
-| Rocket Blast | Aim by pulling back the rocket and releasing toward the planet. | Gameplay preview |
-| Build a Snowman | Roll snowballs, then lift them onto the snowman. | Gameplay preview |
-| Choo-Choo Train | Hold to drive, release and brake at the stations. | Gameplay preview |
-| Bedtime Stars | Draw a picture by following the stars in sequence. | Gameplay preview |
-| Birthday Cake | Stir the bowl, then decorate the cake and add candles. | Gameplay preview |
-| Robot Builder | Turn circuit tiles until the connections power the robot. | Gameplay preview |
-| Castle Builder | Align and lower pieces from the crane, then bridge the towers. | Gameplay preview |
-| Pizza Chef | Roll dough, spread sauce, place the toppings and bake. | Gameplay preview |
+| Rocket Blast | Aim by pulling back the rocket and releasing toward the planet. Optional help shows the path and widens the target. | Gameplay and isolated help checks |
+| Build a Snowman | Roll snowballs, then lift them onto the snowman. Optional help speeds up rolling and gives a short window to snap pieces into place. | Gameplay and isolated help checks |
+| Choo-Choo Train | Hold to drive, release and brake at the stations. Easy stops slows the train and widens the stopping area. | Gameplay preview |
+| Bedtime Stars | Draw a picture by following the stars in sequence. Optional help makes stars easier to reach as you trace. | Gameplay and isolated help checks |
+| Birthday Cake | Stir the bowl, then decorate the cake and add candles. Optional help speeds up stirring and makes decorations easier to place. | Gameplay and isolated help checks |
+| Robot Builder | Turn circuit tiles until the connections power the robot. Optional Blueprint help shows the route for the current circuit. | Gameplay and isolated help checks |
+| Castle Builder | Align and lower pieces from the crane, then bridge the towers. Optional steady-crane help widens the current landing. | Gameplay and isolated help checks |
+| Pizza Chef | Roll dough, spread sauce, sprinkle cheese, add three groups of toppings, hold to bake, take out the pizza and cut four lines. Each cooking step follows its existing speaking turn. Chef Power helps the current gesture. | Gameplay and isolated help checks |
 
 ## Release checks
 
@@ -54,8 +59,10 @@ This is the review log for the family app branch `codex/sona-native-family`. Upd
 - Preserve the current approved words, cue audio, speech timing, rep rules, and Rachel's wording. Keep microphone audio entirely on-device and in memory. Keep existing sharing consent and withdrawal behavior.
 - Test the live therapist login from the first screen with a disposable dashboard-created credential and verify consent, access, relaunch, and password change. Keep credentials out of source, transcripts, and test artifacts.
 - Approve the design log before merging, then wait for Travis's explicit “merge.”
+- Compare redesigned boards with the current app’s optional in-game assists and reward effects. Some boards have simplified motor controls. Some in-play sound powers are still missing. Feed Echo uses native icons and still lacks its original concert audio. Imported game bests are retained for each player. The native shelf currently shows completion instead of numeric scores.
+- Verify delivery and withdrawal with a dedicated weekly-report household that had already opted in. New opt-ins remain outside this connection. [Weekly-report behavior and verification](WEEKLY-REPORT-PARITY.md)
 
-The native game previews use touch or accessible controls. Their finishes do not enter the speech ledger or grant existing rewards. The original browser game flows, scoring ownership, calibrated microphone timing, and age-specific clinical prompts remain the reference for the release.
+Native boards use touch and accessible controls. The existing guided practice, Say and Play, and Feed Echo word rules run before moves on their respective games. Accepted speech and completed games use separate records. Book navigation and reading Skip add zero reps. Original browser prompts and reward rules remain the release reference.
 
 ## Therapist login additions
 
@@ -63,6 +70,6 @@ The native game previews use touch or accessible controls. Their finishes do not
 - Username and password open in a native form. The existing sharing disclosure and Yes and No decisions appear after successful sign-in. A pending sharing decision survives a restart.
 - The game and book cards use the clinician coverage response and the existing content access rules. Covered content opens directly. The login path has no offer screen.
 - Settings shows the connected username and a Change password form. Passwords stay in memory only while submitted to the current Sona server. The verified device ticket is kept in this device’s Keychain.
-- Stop sharing in Grown-ups uses the existing clinician deletion endpoint, switches off future assignment pulls and leaves the family’s access intact. Homework pulls require consent and carry the child’s existing connection proof. Preview interactions never report practice.
+- Stop sharing in Grown-ups uses the existing clinician deletion endpoint, switches off future assignment pulls and leaves the family’s access intact. Homework pulls require consent and carry the child’s existing connection proof. The simulator fixture intercepts every family request. The production path sends authorized progress fields after a verified consent, with no microphone data.
 
-The signed iPhone Simulator build was exercised with fictional credentials. The test reached the sharing choice, restarted at that choice, then confirmed an enabled covered game. A connected session opened an included book and completed the Change password form against the local fixture. The endpoint contract passed 32 mocked assertions. Live dashboard verification is pending a disposable covered clinician login.
+The signed iPhone Simulator build was exercised with fictional credentials. The test reached the sharing choice, restarted at that choice, then confirmed an enabled covered game. A connected session opened an included book and completed the Change password form against the local fixture. The endpoint contract passed 44 mocked assertions. Live dashboard verification is pending a disposable covered clinician login.
