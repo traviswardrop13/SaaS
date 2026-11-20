@@ -1,0 +1,12 @@
+{
+  "info": {
+    "author": "xcode",
+    "version": 1
+  },
+  "images": [
+    {
+      "filename": "road-chest.png",
+      "idiom": "universal"
+    }
+  ]
+}

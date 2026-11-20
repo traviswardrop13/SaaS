@@ -1,0 +1,5147 @@
+{
+  "version": 1,
+  "source": "public/library.html:STORIES",
+  "sourceSHA256": "bc436d183bc3c5483abb30f2940b66609c10543f2013b057e78460482510562e",
+  "books": [
+    {
+      "id": "rory-rainbow",
+      "title": "Rory and the Rainbow",
+      "sound": "R",
+      "emoji": "🌈",
+      "colors": [
+        "#ff7a6e",
+        "#8a6fc4"
+      ],
+      "cover": "/assets/books/rory-rainbow/cover.webp",
+      "coverAlt": "Rory the rabbit cheers on a green hill under a big rainbow",
+      "pages": [
+        {
+          "text": "Rain taps on the roof. Rory the rabbit looks up.",
+          "art": "/assets/books/rory-rainbow/p01.webp",
+          "alt": "Rain falls on a little house with a red roof. Rory the rabbit stands in a puddle and looks up.",
+          "emoji": "🌧️",
+          "key": "rabbit"
+        },
+        {
+          "text": "The rain stops. Look, a rainbow!",
+          "art": "/assets/books/rory-rainbow/p02.webp",
+          "alt": "The rain has stopped. A big rainbow shines over the hills, and Rory points up at it.",
+          "emoji": "🌈",
+          "key": "rain"
+        },
+        {
+          "text": "Rory runs down the road to reach it.",
+          "art": "/assets/books/rory-rainbow/p03.webp",
+          "alt": "Rory runs down a winding road toward the rainbow far away.",
+          "emoji": "🛣️",
+          "key": "reach"
+        },
+        {
+          "text": "The road ends at a rushing river.",
+          "art": "/assets/books/rory-rainbow/p04.webp",
+          "alt": "The road stops at a wide, rushing river. Rory stands at the edge and says whoa.",
+          "emoji": "🌊",
+          "key": "rushing"
+        },
+        {
+          "text": "Rory ties reeds into a raft.",
+          "art": "/assets/books/rory-rainbow/p05.webp",
+          "alt": "By the river, Rory ties a bundle of tall reeds with rope. A raft made of reeds lies on the grass.",
+          "emoji": "🌿",
+          "key": "reeds"
+        },
+        {
+          "text": "He rows the raft on the river.",
+          "art": "/assets/books/rory-rainbow/p06.webp",
+          "alt": "Rory sits on his reed raft and rows across the river with a wooden paddle.",
+          "emoji": "🚣",
+          "key": "river"
+        },
+        {
+          "text": "Remy the raccoon waves. \"Room on the raft?\"",
+          "art": "/assets/books/rory-rainbow/p07.webp",
+          "alt": "Remy the raccoon stands on a rock in the river and waves. Rory, on the raft, holds out a paw to welcome him.",
+          "emoji": "🦝",
+          "key": "raccoon"
+        },
+        {
+          "text": "Then they see a robot, stuck in the mud.",
+          "art": "/assets/books/rory-rainbow/p08.webp",
+          "alt": "From the raft, Rory and Remy see a blue robot stuck up to its middle in brown mud, waving its arms for help.",
+          "emoji": "🤖",
+          "key": "robot"
+        },
+        {
+          "text": "Rory and Remy pull him out with a red ribbon.",
+          "art": "/assets/books/rory-rainbow/p09.webp",
+          "alt": "Rory and Remy lean back and pull a long red ribbon. The robot pops out of the mud with a happy face.",
+          "emoji": "🎀",
+          "key": "ribbon"
+        },
+        {
+          "text": "\"Thank you! Ride in my rocket!\" says the robot.",
+          "art": "/assets/books/rory-rainbow/p10.webp",
+          "alt": "The happy robot points to its red and white rocket. Rory and Remy cheer.",
+          "emoji": "🚀",
+          "key": "rocket"
+        },
+        {
+          "text": "They land by the rainbow, in a field of roses.",
+          "art": "/assets/books/rory-rainbow/p11.webp",
+          "alt": "The rocket has landed in a field of red and pink roses, right where the rainbow touches the ground. Rory, Remy and the robot smile.",
+          "emoji": "🌹",
+          "key": "rainbow"
+        },
+        {
+          "text": "Rory, Remy, and the robot run and play!",
+          "art": "/assets/books/rory-rainbow/p12.webp",
+          "alt": "Under the rainbow, Rory jumps for a red ball, Remy runs and the robot hops, with confetti everywhere.",
+          "emoji": "🎉",
+          "key": "robot"
+        }
+      ]
+    },
+    {
+      "id": "rosie-red-wagon",
+      "title": "Rosie and the Red Wagon",
+      "sound": "R",
+      "emoji": "🛒",
+      "colors": [
+        "#ff7a6e",
+        "#e0564a"
+      ],
+      "cover": "/assets/books/rosie-red-wagon/cover.webp",
+      "coverAlt": "Rosie pulls her shiny red wagon along a sunny country road; the grey rabbit and the raccoon sit happily in the wagon waving.",
+      "pages": [
+        {
+          "text": "Rosie has a red wagon.",
+          "art": "/assets/books/rosie-red-wagon/p01.webp",
+          "alt": "Rosie stands proudly beside her shiny red wagon on a sunny road, smiling.",
+          "emoji": "🛒",
+          "key": "red"
+        },
+        {
+          "text": "She ties a rope on it.",
+          "art": "/assets/books/rosie-red-wagon/p02.webp",
+          "alt": "Rosie kneels and ties a tan rope onto the red wagon's handle.",
+          "emoji": "🛒",
+          "key": "rope"
+        },
+        {
+          "text": "Rosie rolls the wagon up a hill.",
+          "art": "/assets/books/rosie-red-wagon/p03.webp",
+          "alt": "Rosie pulls the red wagon up a gentle green hill, rolling along.",
+          "emoji": "🛒",
+          "key": "rolls"
+        },
+        {
+          "text": "A rabbit sits by the road.",
+          "art": "/assets/books/rosie-red-wagon/p04.webp",
+          "alt": "A small grey rabbit sits beside the road, watching Rosie and her red wagon come by.",
+          "emoji": "🛒",
+          "key": "rabbit"
+        },
+        {
+          "text": "\"Can I ride?\" asks the rabbit.",
+          "art": "/assets/books/rosie-red-wagon/p05.webp",
+          "alt": "The grey rabbit looks up at Rosie hopefully, one paw raised as if asking for a ride, next to the red wagon.",
+          "emoji": "🛒",
+          "key": "ride"
+        },
+        {
+          "text": "\"Yes! Hop in!\" says Rosie.",
+          "art": "/assets/books/rosie-red-wagon/p06.webp",
+          "alt": "Rosie laughs and points into the wagon; the grey rabbit hops into the red wagon.",
+          "emoji": "🛒",
+          "key": "rosie"
+        },
+        {
+          "text": "Then a raccoon waves.",
+          "art": "/assets/books/rosie-red-wagon/p07.webp",
+          "alt": "A raccoon by the roadside waves hello at Rosie, who pulls the red wagon with the grey rabbit inside.",
+          "emoji": "🛒",
+          "key": "raccoon"
+        },
+        {
+          "text": "The raccoon rides in the wagon, too.",
+          "art": "/assets/books/rosie-red-wagon/p08.webp",
+          "alt": "The raccoon and the grey rabbit ride together in the red wagon while Rosie pulls it.",
+          "emoji": "🛒",
+          "key": "rides"
+        },
+        {
+          "text": "Rain falls on them all.",
+          "art": "/assets/books/rosie-red-wagon/p09.webp",
+          "alt": "Rain starts falling on Rosie, the rabbit and the raccoon on the road; raindrops everywhere, grey clouds.",
+          "emoji": "🛒",
+          "key": "rain"
+        },
+        {
+          "text": "Rosie holds a big leaf up on top.",
+          "art": "/assets/books/rosie-red-wagon/p10.webp",
+          "alt": "Rosie holds a giant green leaf up over the wagon like an umbrella, the rabbit and raccoon dry underneath in the rain.",
+          "emoji": "🛒",
+          "key": "rosie"
+        },
+        {
+          "text": "The rain stops. The sun comes out.",
+          "art": "/assets/books/rosie-red-wagon/p11.webp",
+          "alt": "The rain stops and the sun comes out from behind clouds; Rosie, the rabbit and the raccoon look up smiling.",
+          "emoji": "🛒",
+          "key": "rain"
+        },
+        {
+          "text": "Rosie, the rabbit and the raccoon wave. What a ride!",
+          "art": "/assets/books/rosie-red-wagon/p12.webp",
+          "alt": "Rosie, the grey rabbit and the raccoon wave happily together beside the red wagon on a sunny hilltop.",
+          "emoji": "🛒",
+          "key": "ride"
+        }
+      ]
+    },
+    {
+      "id": "ray-lost-ring",
+      "title": "Ray and the Lost Ring",
+      "sound": "R",
+      "emoji": "💍",
+      "colors": [
+        "#ff9a6e",
+        "#e0703f"
+      ],
+      "cover": "/assets/books/ray-lost-ring/cover.webp",
+      "coverAlt": "Ray the robin holds up a shiny gold ring with a blue gem in his beak, smiling, by a little river with reeds and a red-roofed cottage behind.",
+      "pages": [
+        {
+          "text": "Ray the robin has a ring.",
+          "art": "/assets/books/ray-lost-ring/p01.webp",
+          "alt": "Ray the robin sits on a branch admiring a shiny gold ring with a blue gem.",
+          "emoji": "💍",
+          "key": "ring"
+        },
+        {
+          "text": "It is a shiny ring.",
+          "art": "/assets/books/ray-lost-ring/p02.webp",
+          "alt": "Close up of the shiny gold ring with a blue gem sparkling in the sun, Ray the robin smiling at it.",
+          "emoji": "💍",
+          "key": "ring"
+        },
+        {
+          "text": "One day, the ring is gone!",
+          "art": "/assets/books/ray-lost-ring/p03.webp",
+          "alt": "Ray the robin looks shocked at an empty branch: the ring is gone.",
+          "emoji": "💍",
+          "key": "ring"
+        },
+        {
+          "text": "Ray looks by the river.",
+          "art": "/assets/books/ray-lost-ring/p04.webp",
+          "alt": "Ray the robin searches along the bank of a little blue river.",
+          "emoji": "💍",
+          "key": "river"
+        },
+        {
+          "text": "Ray looks on the roof.",
+          "art": "/assets/books/ray-lost-ring/p05.webp",
+          "alt": "Ray the robin searches on top of a red roof of a cottage.",
+          "emoji": "💍",
+          "key": "roof"
+        },
+        {
+          "text": "Ray looks in the reeds.",
+          "art": "/assets/books/ray-lost-ring/p06.webp",
+          "alt": "Ray the robin peeks between tall green reeds by the water.",
+          "emoji": "💍",
+          "key": "reeds"
+        },
+        {
+          "text": "A red ladybug says, \"Look up high!\"",
+          "art": "/assets/books/ray-lost-ring/p07.webp",
+          "alt": "A tiny red ladybug on a leaf points one leg upward, talking to Ray the robin.",
+          "emoji": "💍",
+          "key": "red"
+        },
+        {
+          "text": "Ray sees a raccoon on a log.",
+          "art": "/assets/books/ray-lost-ring/p08.webp",
+          "alt": "Ray the robin spots a raccoon sitting on a fallen log.",
+          "emoji": "💍",
+          "key": "raccoon"
+        },
+        {
+          "text": "The raccoon has the ring!",
+          "art": "/assets/books/ray-lost-ring/p09.webp",
+          "alt": "The raccoon on the log holds up the shiny gold ring with a blue gem.",
+          "emoji": "💍",
+          "key": "raccoon"
+        },
+        {
+          "text": "\"Is this ring lost?\" asks the raccoon.",
+          "art": "/assets/books/ray-lost-ring/p10.webp",
+          "alt": "The raccoon holds out the ring toward Ray the robin with a kind, questioning face.",
+          "emoji": "💍",
+          "key": "ring"
+        },
+        {
+          "text": "\"Yes! Thank you!\" sings Ray.",
+          "art": "/assets/books/ray-lost-ring/p11.webp",
+          "alt": "Ray the robin sings happily with his beak open, the ring back with him, little music notes shapes around him.",
+          "emoji": "💍",
+          "key": "ray"
+        },
+        {
+          "text": "Ray gives the raccoon a ribbon to say thank you.",
+          "art": "/assets/books/ray-lost-ring/p12.webp",
+          "alt": "Ray the robin gives the raccoon a red ribbon as a gift, both smiling.",
+          "emoji": "💍",
+          "key": "ribbon"
+        }
+      ]
+    },
+    {
+      "id": "boo-bat-halloween",
+      "title": "Boo the Bat on Halloween",
+      "sound": "B",
+      "emoji": "🦇",
+      "colors": [
+        "#9a7fd6",
+        "#6f55b0"
+      ],
+      "cover": "/assets/books/boo-bat-halloween/cover.webp",
+      "coverAlt": "Boo the purple bat flies under a big glowing moon holding an orange candy bucket, happy pumpkins below in a cozy village.",
+      "pages": [
+        {
+          "text": "Boo the bat wakes up at night.",
+          "art": "/assets/books/boo-bat-halloween/p01.webp",
+          "alt": "Boo the bat hangs upside down from a branch and opens his eyes, waking up under a starry night sky.",
+          "emoji": "🦇",
+          "key": "bat"
+        },
+        {
+          "text": "It is Halloween! Boo gets his bucket.",
+          "art": "/assets/books/boo-bat-halloween/p02.webp",
+          "alt": "Boo the bat holds up a small orange candy bucket, excited, happy pumpkins glowing nearby.",
+          "emoji": "🦇",
+          "key": "bucket"
+        },
+        {
+          "text": "Boo puts on a big hat.",
+          "art": "/assets/books/boo-bat-halloween/p03.webp",
+          "alt": "Boo the bat wears a big tall purple witch hat, smiling proudly.",
+          "emoji": "🦇",
+          "key": "big"
+        },
+        {
+          "text": "Boo flies past the moon.",
+          "art": "/assets/books/boo-bat-halloween/p04.webp",
+          "alt": "Boo the bat flies across a big glowing full moon.",
+          "emoji": "🦇",
+          "key": "boo"
+        },
+        {
+          "text": "Boo sees a pumpkin with a happy face.",
+          "art": "/assets/books/boo-bat-halloween/p05.webp",
+          "alt": "Boo the bat looks at a carved pumpkin with a big happy face glowing on a doorstep.",
+          "emoji": "🦇",
+          "key": "boo"
+        },
+        {
+          "text": "A cat in a cape waves at Boo.",
+          "art": "/assets/books/boo-bat-halloween/p06.webp",
+          "alt": "A small black kitten in a red cape waves at Boo the bat on a village path.",
+          "emoji": "🦇",
+          "key": "boo"
+        },
+        {
+          "text": "\"Trick or treat!\" says Boo.",
+          "art": "/assets/books/boo-bat-halloween/p07.webp",
+          "alt": "Boo the bat at a front door with his orange candy bucket held out, cheerful.",
+          "emoji": "🦇",
+          "key": "boo"
+        },
+        {
+          "text": "A candy drops in his bucket.",
+          "art": "/assets/books/boo-bat-halloween/p08.webp",
+          "alt": "A wrapped candy drops into Boo's orange bucket, Boo smiling.",
+          "emoji": "🦇",
+          "key": "bucket"
+        },
+        {
+          "text": "Then a little ghost says, \"Boo!\"",
+          "art": "/assets/books/boo-bat-halloween/p09.webp",
+          "alt": "A small round smiling white ghost pops out from behind a pumpkin and surprises Boo the bat.",
+          "emoji": "🦇",
+          "key": "boo"
+        },
+        {
+          "text": "Boo jumps. Then he laughs.",
+          "art": "/assets/books/boo-bat-halloween/p10.webp",
+          "alt": "Boo the bat jumps in surprise, then laughs with the little ghost.",
+          "emoji": "🦇",
+          "key": "boo"
+        },
+        {
+          "text": "Boo and the ghost share the candy.",
+          "art": "/assets/books/boo-bat-halloween/p11.webp",
+          "alt": "Boo the bat and the little ghost sit together sharing candy from the bucket.",
+          "emoji": "🦇",
+          "key": "boo"
+        },
+        {
+          "text": "Boo goes to bed. Happy Halloween!",
+          "art": "/assets/books/boo-bat-halloween/p12.webp",
+          "alt": "Boo the bat tucked into a tiny cozy bed under a window with the moon outside, sleepy and happy.",
+          "emoji": "🦇",
+          "key": "bed"
+        }
+      ],
+      "season": {
+        "startsOn": "2026-10-01",
+        "endsOn": "2026-10-31"
+      }
+    },
+    {
+      "id": "rory-halloween",
+      "title": "Rory the Rabbit on Halloween",
+      "sound": "R",
+      "emoji": "🎃",
+      "colors": [
+        "#ffb057",
+        "#ee7a22"
+      ],
+      "cover": "/assets/books/rory-halloween/cover.webp",
+      "coverAlt": "Rory the rabbit in a silver robot costume holds up an orange candy bucket with a red ribbon bow, beside the real robot dressed as a rocket, under a big glowing moon with happy pumpkins along the road and a little red-roofed cottage on a hill.",
+      "pages": [
+        {
+          "text": "Rory the rabbit wakes up. It is Halloween!",
+          "art": "/assets/books/rory-halloween/p01.webp",
+          "alt": "Rory the rabbit sits up in his cozy bed and stretches, the morning sun rising over the hills in the window behind him and a little pumpkin on the sill.",
+          "emoji": "🎃",
+          "key": "rabbit"
+        },
+        {
+          "text": "Rory puts on his robot costume.",
+          "art": "/assets/books/rory-halloween/p02.webp",
+          "alt": "Rory stands in his room in a silver cardboard-box robot costume with two buttons and an antenna headband, arms out stiff like a robot, a golden evening sky in the window.",
+          "emoji": "🎃",
+          "key": "robot"
+        },
+        {
+          "text": "He gets a bucket with a red ribbon.",
+          "art": "/assets/books/rory-halloween/p03.webp",
+          "alt": "At his own front door at sunset, Rory holds up a small orange candy bucket with a big shiny red ribbon bow tied on its handle.",
+          "emoji": "🎃",
+          "key": "ribbon"
+        },
+        {
+          "text": "Rory runs down the road. The moon is round.",
+          "art": "/assets/books/rory-halloween/p04.webp",
+          "alt": "Rory runs along a winding road lined with glowing happy pumpkins, a big round moon in the night sky.",
+          "emoji": "🎃",
+          "key": "road"
+        },
+        {
+          "text": "The real robot comes too. He is a rocket!",
+          "art": "/assets/books/rory-halloween/p05.webp",
+          "alt": "The friendly blue robot wears a white rocket costume with a red cone hat and points his arms up, while Rory, dressed as a robot, laughs beside him.",
+          "emoji": "🎃",
+          "key": "rocket"
+        },
+        {
+          "text": "Rory sees a house with a red roof.",
+          "art": "/assets/books/rory-halloween/p06.webp",
+          "alt": "A big pointed red roof fills the top of the picture with the moon on its peak, over a little round lilac cottage with glowing windows, and Rory and the robot look up at it.",
+          "emoji": "🎃",
+          "key": "roof"
+        },
+        {
+          "text": "Ring, ring! \"Happy Halloween!\" says Rory.",
+          "art": "/assets/books/rory-halloween/p07.webp",
+          "alt": "Rory pulls the rope of a shiny brass bell by the lilac cottage's round green front door, holding out his bucket.",
+          "emoji": "🎃",
+          "key": "ring"
+        },
+        {
+          "text": "Plop! Raisins land in his bucket. Yum!",
+          "art": "/assets/books/rory-halloween/p08.webp",
+          "alt": "A kind old hedgehog tips a box of raisins into Rory's orange bucket, and Rory smiles.",
+          "emoji": "🎃",
+          "key": "raisins"
+        },
+        {
+          "text": "Rory rests on a rock. A ghost says, \"Boo!\"",
+          "art": "/assets/books/rory-halloween/p09.webp",
+          "alt": "Rory sits on a big round grey rock with his bucket beside him as a small friendly sheet ghost peeks over the back of the rock, and his ears shoot up in surprise.",
+          "emoji": "🎃",
+          "key": "rock"
+        },
+        {
+          "text": "Rory jumps. The ghost is Remy the raccoon!",
+          "art": "/assets/books/rory-halloween/p10.webp",
+          "alt": "The sheet slides off to show Remy the raccoon grinning, while Rory jumps and laughs.",
+          "emoji": "🎃",
+          "key": "raccoon"
+        },
+        {
+          "text": "They laugh. Rory gives Remy half his raisins.",
+          "art": "/assets/books/rory-halloween/p11.webp",
+          "alt": "Rory and Remy sit on the rock laughing, and Rory pours raisins from his bucket into Remy's paws.",
+          "emoji": "🎃",
+          "key": "raisins"
+        },
+        {
+          "text": "Rory the rabbit goes to bed. Happy Halloween!",
+          "art": "/assets/books/rory-halloween/p12.webp",
+          "alt": "Rory is tucked into his cozy bed with sleepy eyes, his robot costume and bucket on the floor, the moon in the window.",
+          "emoji": "🎃",
+          "key": "rabbit"
+        }
+      ],
+      "season": {
+        "startsOn": "2026-10-01",
+        "endsOn": "2026-10-31"
+      }
+    },
+    {
+      "id": "sid-halloween",
+      "title": "Sid the Seagull on Halloween",
+      "sound": "S",
+      "emoji": "🎃",
+      "colors": [
+        "#ffa94d",
+        "#e8742a"
+      ],
+      "cover": "/assets/books/sid-halloween/cover.webp",
+      "coverAlt": "Sid the seagull in his orange pumpkin suit, sailor cap and sailor collar flies under a big glowing moon over the sea, a purple candy sack hanging from his foot, happy pumpkins glowing on the beach below.",
+      "pages": [
+        {
+          "text": "The sun goes down by the sea.",
+          "art": "/assets/books/sid-halloween/p01.webp",
+          "alt": "A big orange sun sinks into the calm sea while Sid the seagull, in his sailor cap and collar, watches from a wooden post beside two glowing happy pumpkins.",
+          "emoji": "🎃",
+          "key": "sun"
+        },
+        {
+          "text": "It is Halloween! Sid has a sack for candy.",
+          "art": "/assets/books/sid-halloween/p02.webp",
+          "alt": "Sid the seagull, in his sailor cap and collar, holds up a bright purple candy sack in one wing, excited, as the moon rises and happy pumpkins glow on the sand.",
+          "emoji": "🎃",
+          "key": "sack"
+        },
+        {
+          "text": "Sid wears a silly pumpkin suit.",
+          "art": "/assets/books/sid-halloween/p03.webp",
+          "alt": "Sid the seagull shows off his round orange pumpkin suit on the moonlit sand, wings out and one foot up in a silly pose.",
+          "emoji": "🎃",
+          "key": "suit"
+        },
+        {
+          "text": "Sid flies by the big round moon.",
+          "art": "/assets/books/sid-halloween/p04.webp",
+          "alt": "Sid the seagull in his pumpkin suit flies across a big glowing full moon, his purple sack hanging from one foot.",
+          "emoji": "🎃",
+          "key": "sid"
+        },
+        {
+          "text": "Seven happy pumpkins sit on a wall.",
+          "art": "/assets/books/sid-halloween/p05.webp",
+          "alt": "Seven glowing carved pumpkins with happy faces sit in a row on a low stone wall, and Sid waves at them from the end of the wall.",
+          "emoji": "🎃",
+          "key": "seven"
+        },
+        {
+          "text": "Sadie waves at Sid. She is a little witch!",
+          "art": "/assets/books/sid-halloween/p06.webp",
+          "alt": "Sadie, dressed up in a tall purple witch hat and cape with a little toy broom, waves at Sid on a lantern-lit village path.",
+          "emoji": "🎃",
+          "key": "sadie"
+        },
+        {
+          "text": "\"Trick or treat!\" say Sid and Sadie.",
+          "art": "/assets/books/sid-halloween/p07.webp",
+          "alt": "Sid holds his purple sack wide open at a cottage door with a glowing pumpkin, Sadie in her witch costume smiling beside him.",
+          "emoji": "🎃",
+          "key": "sid"
+        },
+        {
+          "text": "Candy falls into Sid's sack.",
+          "art": "/assets/books/sid-halloween/p08.webp",
+          "alt": "A kind grandma at the door tips wrapped candies from her orange bowl into Sid's open purple sack, and Sid smiles widely.",
+          "emoji": "🎃",
+          "key": "sack"
+        },
+        {
+          "text": "Then a seal in a sheet says, \"Boo!\"",
+          "art": "/assets/books/sid-halloween/p09.webp",
+          "alt": "A seal wearing a white sheet with eye holes pops up beside a glowing pumpkin, flippers and whiskers peeking out, and Sid and Sadie lean back in surprise.",
+          "emoji": "🎃",
+          "key": "seal"
+        },
+        {
+          "text": "It is Sam! Sid and Sam giggle and giggle.",
+          "art": "/assets/books/sid-halloween/p10.webp",
+          "alt": "The sheet slips off to show Sam the seal laughing, and Sid laughs with him, holding his tummy, while Sadie giggles behind them.",
+          "emoji": "🎃",
+          "key": "sam"
+        },
+        {
+          "text": "They sit on the sand and share the candy.",
+          "art": "/assets/books/sid-halloween/p11.webp",
+          "alt": "Sid, Sadie and Sam sit together on the moonlit golden sand by the sea, sharing candy from Sid's purple sack.",
+          "emoji": "🎃",
+          "key": "sand"
+        },
+        {
+          "text": "Sid goes to bed by the sea. Happy Halloween!",
+          "art": "/assets/books/sid-halloween/p12.webp",
+          "alt": "Sid the seagull, in his sailor cap and collar, is tucked into a small round bed in a cozy beach hut, his pumpkin suit on a hook, the moon shining over the sea through a round window.",
+          "emoji": "🎃",
+          "key": "sid"
+        }
+      ],
+      "season": {
+        "startsOn": "2026-10-01",
+        "endsOn": "2026-10-31"
+      }
+    },
+    {
+      "id": "leon-halloween",
+      "title": "Leon's Trick-or-Treat Night",
+      "sound": "L",
+      "emoji": "🎃",
+      "colors": [
+        "#ffa24d",
+        "#e2652a"
+      ],
+      "cover": "/assets/books/leon-halloween/cover.webp",
+      "coverAlt": "Leon the lion cub in a ladybug costume holds up his glowing lantern and a purple candy bucket by the moonlit lake, Lucky the puppy beside him dressed as a lemon.",
+      "pages": [
+        {
+          "text": "Leon the lion wakes up from his nap.",
+          "art": "/assets/books/leon-halloween/p01.webp",
+          "alt": "Leon the lion cub sits up in his small bed with a big happy yawn after his nap, the full moon shining through a round window.",
+          "emoji": "🎃",
+          "key": "lion"
+        },
+        {
+          "text": "It is trick-or-treat night! Leon gets his lantern.",
+          "art": "/assets/books/leon-halloween/p02.webp",
+          "alt": "Inside his cozy cottage, Leon the lion cub holds up his glowing lantern, his empty purple candy bucket at his feet and happy pumpkins glowing through the window.",
+          "emoji": "🎃",
+          "key": "lantern"
+        },
+        {
+          "text": "Leon puts on a ladybug costume.",
+          "art": "/assets/books/leon-halloween/p03.webp",
+          "alt": "Leon the lion cub proudly shows off his red ladybug costume with big black spots and an antennae headband in his mane.",
+          "emoji": "🎃",
+          "key": "ladybug"
+        },
+        {
+          "text": "Lucky the puppy is a lemon!",
+          "art": "/assets/books/leon-halloween/p04.webp",
+          "alt": "Lucky the white puppy trots in wearing a round yellow lemon suit while Leon in his ladybug costume laughs.",
+          "emoji": "🎃",
+          "key": "lemon"
+        },
+        {
+          "text": "They walk by the lake under the moon.",
+          "art": "/assets/books/leon-halloween/p05.webp",
+          "alt": "Leon and Lucky walk along the shore of a calm lake with the big full moon shining on the water.",
+          "emoji": "🎃",
+          "key": "lake"
+        },
+        {
+          "text": "A happy pumpkin sits on a big log.",
+          "art": "/assets/books/leon-halloween/p06.webp",
+          "alt": "A small carved pumpkin with a happy face glows on top of a big fallen log as Leon and Lucky smile at it.",
+          "emoji": "🎃",
+          "key": "log"
+        },
+        {
+          "text": "\"Trick or treat!\" says Leon.",
+          "art": "/assets/books/leon-halloween/p07.webp",
+          "alt": "Leon in his ladybug costume calls out cheerfully at a cottage door, holding out his purple bucket and his glowing lantern.",
+          "emoji": "🎃",
+          "key": "leon"
+        },
+        {
+          "text": "A kind lady drops candy in his bucket.",
+          "art": "/assets/books/leon-halloween/p08.webp",
+          "alt": "A kind smiling lady at the door tips colorful wrapped candies from her orange bowl into Leon's purple bucket.",
+          "emoji": "🎃",
+          "key": "lady"
+        },
+        {
+          "text": "Then a ghost jumps out of the leaves. \"Boo!\"",
+          "art": "/assets/books/leon-halloween/p09.webp",
+          "alt": "A small figure in a white sheet, with happy eyes, floppy ears and black hooves peeking out, jumps out of a pile of autumn leaves as Leon and Lucky lean back in surprise.",
+          "emoji": "🎃",
+          "key": "leaves"
+        },
+        {
+          "text": "It is Libby the lamb! Leon laughs.",
+          "art": "/assets/books/leon-halloween/p10.webp",
+          "alt": "The sheet slips back to show Libby the lamb laughing, and Leon laughs with her while Lucky wags his tail.",
+          "emoji": "🎃",
+          "key": "lamb"
+        },
+        {
+          "text": "They sit by the lantern and share the candy.",
+          "art": "/assets/books/leon-halloween/p11.webp",
+          "alt": "Leon, Lucky and Libby sit in a circle around the glowing lantern by the lake, sharing candy from the purple bucket.",
+          "emoji": "🎃",
+          "key": "lantern"
+        },
+        {
+          "text": "Leon goes to bed. Good night, Leon!",
+          "art": "/assets/books/leon-halloween/p12.webp",
+          "alt": "Leon the lion cub is tucked into his cozy bed, smiling sleepily, with Lucky curled at his feet and the lantern glowing softly.",
+          "emoji": "🎃",
+          "key": "leon"
+        }
+      ],
+      "season": {
+        "startsOn": "2026-10-01",
+        "endsOn": "2026-10-31"
+      }
+    },
+    {
+      "id": "zoe-halloween",
+      "title": "Zoe the Zebra on Halloween",
+      "sound": "Z",
+      "emoji": "🦓",
+      "colors": [
+        "#ffa24c",
+        "#e06a1b"
+      ],
+      "cover": "/assets/books/zoe-halloween/cover.webp",
+      "coverAlt": "Zoe the zebra in a silly green zucchini suit cheers on the zoo path with her orange candy bucket, under a big glowing moon, with lanterns on the zoo arch and happy pumpkins along the path.",
+      "pages": [
+        {
+          "text": "Zoe the zebra woke up from her nap.",
+          "art": "/assets/books/zoe-halloween/p01.webp",
+          "alt": "Zoe the zebra sits up on her straw bed and stretches as she wakes from her nap, the moon rising in the evening sky outside her round window.",
+          "emoji": "🦓",
+          "key": "zebra"
+        },
+        {
+          "text": "It's Halloween at the zoo! Zoe got her bucket.",
+          "art": "/assets/books/zoe-halloween/p02.webp",
+          "alt": "Zoe the zebra stands in her open front door holding up a small orange candy bucket, looking out at the zoo arch hung with glowing lanterns and happy pumpkins along the path.",
+          "emoji": "🦓",
+          "key": "zoo"
+        },
+        {
+          "text": "Zoe put on a zucchini suit. How silly!",
+          "art": "/assets/books/zoe-halloween/p03.webp",
+          "alt": "Zoe the zebra strikes a silly pose in a puffy green zucchini suit with a hood and a brown stem on top, the front still open.",
+          "emoji": "🦓",
+          "key": "zucchini"
+        },
+        {
+          "text": "Zoe pulled the zipper up. Zip!",
+          "art": "/assets/books/zoe-halloween/p04.webp",
+          "alt": "Zoe the zebra pulls the yellow zipper pull up the front of her zucchini suit.",
+          "emoji": "🦓",
+          "key": "zipper"
+        },
+        {
+          "text": "Zoe zoomed out under the big round moon.",
+          "art": "/assets/books/zoe-halloween/p05.webp",
+          "alt": "Zoe the zebra runs fast along the zoo path under a big full moon, her candy bucket swinging.",
+          "emoji": "🦓",
+          "key": "zoomed"
+        },
+        {
+          "text": "Zack the zookeeper held a glowing pumpkin.",
+          "art": "/assets/books/zoe-halloween/p06.webp",
+          "alt": "Zack the zookeeper stands in the open doorway of his hut holding up a glowing pumpkin with a happy face, while Zoe looks up at it from the path.",
+          "emoji": "🦓",
+          "key": "zookeeper"
+        },
+        {
+          "text": "\"Trick or treat!\" said Zoe.",
+          "art": "/assets/books/zoe-halloween/p07.webp",
+          "alt": "Zoe the zebra holds out her orange bucket below Zack's open green door and calls out cheerfully, a glowing pumpkin on the step beside her.",
+          "emoji": "🦓",
+          "key": "zoe"
+        },
+        {
+          "text": "Zack put some candy in her bucket.",
+          "art": "/assets/books/zoe-halloween/p08.webp",
+          "alt": "Zack the zookeeper bends down and drops a few wrapped candies into Zoe's orange bucket, and Zoe smiles.",
+          "emoji": "🦓",
+          "key": "zack"
+        },
+        {
+          "text": "Then a little ghost said, \"Boo!\" Zoe jumped!",
+          "art": "/assets/books/zoe-halloween/p09.webp",
+          "alt": "A small ghost with striped arms and legs poking out from under its sheet pops out from behind a pumpkin, and Zoe jumps in surprise.",
+          "emoji": "🦓",
+          "key": "zoe"
+        },
+        {
+          "text": "Zoe laughed. \"It's a little zebra in a sheet!\"",
+          "art": "/assets/books/zoe-halloween/p10.webp",
+          "alt": "The sheet slips back to show a giggling baby zebra, and Zoe laughs with it.",
+          "emoji": "🦓",
+          "key": "zebra"
+        },
+        {
+          "text": "Zoe and the little zebra shared the candy.",
+          "art": "/assets/books/zoe-halloween/p11.webp",
+          "alt": "Zoe and the little zebra sit on the grass under the moon, sharing candy from the orange bucket.",
+          "emoji": "🦓",
+          "key": "zoe"
+        },
+        {
+          "text": "Zoe the zebra went to bed. Happy Halloween!",
+          "art": "/assets/books/zoe-halloween/p12.webp",
+          "alt": "Zoe the zebra is tucked into her straw bed under a lavender blanket, her zucchini suit on a hook and the moon in the window.",
+          "emoji": "🦓",
+          "key": "zebra"
+        }
+      ],
+      "season": {
+        "startsOn": "2026-10-01",
+        "endsOn": "2026-10-31"
+      }
+    },
+    {
+      "id": "finn-halloween",
+      "title": "Finn the Fish on Halloween",
+      "sound": "F",
+      "emoji": "🐟",
+      "colors": [
+        "#ffa64d",
+        "#e86f1f"
+      ],
+      "cover": "/assets/books/finn-halloween/cover.webp",
+      "coverAlt": "Finn the orange fish in lilac fairy wings leaps out of the moonlit sea with his funny-face candy bucket, happy pumpkins glowing on the shore.",
+      "pages": [
+        {
+          "text": "Finn the fish wakes up at night.",
+          "art": "/assets/books/finn-halloween/p01.webp",
+          "alt": "Finn the orange fish wakes up beside his big grey rock under the moonlit sea, a few sleepy bubbles rising.",
+          "emoji": "🐟",
+          "key": "fish"
+        },
+        {
+          "text": "It is Halloween! Finn puts on fairy wings.",
+          "art": "/assets/books/finn-halloween/p02.webp",
+          "alt": "Finn the fish shows off his see-through lilac fairy wings and tiny star crown under the sea.",
+          "emoji": "🐟",
+          "key": "fairy"
+        },
+        {
+          "text": "Finn gets a bucket with a funny face.",
+          "art": "/assets/books/finn-halloween/p03.webp",
+          "alt": "Finn holds up his orange candy bucket, which has a funny face with googly eyes and its tongue poking out.",
+          "emoji": "🐟",
+          "key": "face"
+        },
+        {
+          "text": "Finn waves a fin at the big moon.",
+          "art": "/assets/books/finn-halloween/p04.webp",
+          "alt": "Finn pokes his head out of the sea and waves a fin at a big glowing full moon.",
+          "emoji": "🐟",
+          "key": "fin"
+        },
+        {
+          "text": "Five happy pumpkins glow by the sea.",
+          "art": "/assets/books/finn-halloween/p05.webp",
+          "alt": "Five happy carved pumpkins glow in a row on the shore while Finn peeks out of the water.",
+          "emoji": "🐟",
+          "key": "five"
+        },
+        {
+          "text": "The duck family swims by, dressed as bats!",
+          "art": "/assets/books/finn-halloween/p06.webp",
+          "alt": "A mother duck and three yellow ducklings swim past wearing bat ears and bat wings, and Finn grins at them.",
+          "emoji": "🐟",
+          "key": "family"
+        },
+        {
+          "text": "Finn calls to a gull, \"Trick or treat!\"",
+          "art": "/assets/books/finn-halloween/p07.webp",
+          "alt": "By the little dock, Finn holds up his bucket and calls out to a smiling seagull standing on a post, a bowl of fudge at its foot.",
+          "emoji": "🐟",
+          "key": "finn"
+        },
+        {
+          "text": "The gull drops fudge in Finn's bucket.",
+          "art": "/assets/books/finn-halloween/p08.webp",
+          "alt": "The seagull drops two squares of chocolate fudge into Finn's orange bucket.",
+          "emoji": "🐟",
+          "key": "fudge"
+        },
+        {
+          "text": "Then a ghost with a furry tail says, \"Boo!\"",
+          "art": "/assets/books/finn-halloween/p09.webp",
+          "alt": "A ghost in a white sheet with a furry orange fox tail poking out says boo on the shore, and Finn looks surprised.",
+          "emoji": "🐟",
+          "key": "furry"
+        },
+        {
+          "text": "Finn jumps! It is Fay the fox.",
+          "art": "/assets/books/finn-halloween/p10.webp",
+          "alt": "The sheet slips off and it is Fay the fox laughing, while Finn jumps out of the water with a splash.",
+          "emoji": "🐟",
+          "key": "fox"
+        },
+        {
+          "text": "Finn and Fay share the fudge.",
+          "art": "/assets/books/finn-halloween/p11.webp",
+          "alt": "Fay the fox sits on the dock with Finn beside her in the water, each holding up a square of fudge.",
+          "emoji": "🐟",
+          "key": "fudge"
+        },
+        {
+          "text": "Finn falls asleep by his rock. Happy Halloween!",
+          "art": "/assets/books/finn-halloween/p12.webp",
+          "alt": "Finn sleeps snuggled in green kelp by his rock, his fairy wings and candy bucket resting beside him.",
+          "emoji": "🐟",
+          "key": "finn"
+        }
+      ],
+      "season": {
+        "startsOn": "2026-10-01",
+        "endsOn": "2026-10-31"
+      }
+    },
+    {
+      "id": "penny-pebble-party",
+      "title": "Penny's Pebble Party",
+      "sound": "P",
+      "emoji": "🐧",
+      "colors": [
+        "#6ec3ff",
+        "#3d9be0"
+      ],
+      "cover": "/assets/books/penny-pebble-party/cover.webp",
+      "coverAlt": "",
+      "pages": [
+        {
+          "text": "Penny the penguin has a pink pail.",
+          "art": "/assets/books/penny-pebble-party/p01.webp",
+          "alt": "",
+          "emoji": "🐧",
+          "key": "penguin"
+        },
+        {
+          "text": "Penny waddles down to the pond.",
+          "art": "/assets/books/penny-pebble-party/p02.webp",
+          "alt": "",
+          "emoji": "🐧",
+          "key": "pond"
+        },
+        {
+          "text": "Penny finds a pebble. Then another pebble!",
+          "art": "/assets/books/penny-pebble-party/p03.webp",
+          "alt": "",
+          "emoji": "🪨",
+          "key": "pebble"
+        },
+        {
+          "text": "Penny puts the pebbles in the pail.",
+          "art": "/assets/books/penny-pebble-party/p04.webp",
+          "alt": "",
+          "emoji": "🪣",
+          "key": "pebbles"
+        },
+        {
+          "text": "Pat the pig peeks in. \"Can I paint them?\"",
+          "art": "/assets/books/penny-pebble-party/p05.webp",
+          "alt": "",
+          "emoji": "🐷",
+          "key": "paint"
+        },
+        {
+          "text": "Penny and Pat paint the pebbles.",
+          "art": "/assets/books/penny-pebble-party/p06.webp",
+          "alt": "",
+          "emoji": "🎨",
+          "key": "paint"
+        },
+        {
+          "text": "Pink pebbles! Peach pebbles!",
+          "art": "/assets/books/penny-pebble-party/p07.webp",
+          "alt": "",
+          "emoji": "🎨",
+          "key": "pink"
+        },
+        {
+          "text": "Polly the parrot lands on a pole.",
+          "art": "/assets/books/penny-pebble-party/p08.webp",
+          "alt": "",
+          "emoji": "🦜",
+          "key": "parrot"
+        },
+        {
+          "text": "\"Polly! Come to our party!\" says Penny.",
+          "art": "/assets/books/penny-pebble-party/p09.webp",
+          "alt": "",
+          "emoji": "🎉",
+          "key": "party"
+        },
+        {
+          "text": "Polly brings a pie to the party.",
+          "art": "/assets/books/penny-pebble-party/p10.webp",
+          "alt": "",
+          "emoji": "🥧",
+          "key": "pie"
+        },
+        {
+          "text": "They put the pebbles in a row by the pond.",
+          "art": "/assets/books/penny-pebble-party/p11.webp",
+          "alt": "",
+          "emoji": "🪨",
+          "key": "pebbles"
+        },
+        {
+          "text": "Penny, Pat, and Polly have a pebble party!",
+          "art": "/assets/books/penny-pebble-party/p12.webp",
+          "alt": "",
+          "emoji": "🎉",
+          "key": "penny"
+        }
+      ]
+    },
+    {
+      "id": "bo-beach-day",
+      "title": "Bo's Beach Day",
+      "sound": "B",
+      "emoji": "🐻",
+      "colors": [
+        "#ffb75e",
+        "#f0932b"
+      ],
+      "cover": "/assets/books/bo-beach-day/cover.webp",
+      "coverAlt": "",
+      "pages": [
+        {
+          "text": "Bo the bear has a big boat.",
+          "art": "/assets/books/bo-beach-day/p01.webp",
+          "alt": "",
+          "emoji": "🐻",
+          "key": "bear"
+        },
+        {
+          "text": "Bo puts a basket in the boat.",
+          "art": "/assets/books/bo-beach-day/p02.webp",
+          "alt": "",
+          "emoji": "🧺",
+          "key": "boat"
+        },
+        {
+          "text": "In the basket: berries, buns, and a banana.",
+          "art": "/assets/books/bo-beach-day/p03.webp",
+          "alt": "",
+          "emoji": "🧺",
+          "key": "banana"
+        },
+        {
+          "text": "Bo rows the boat to the beach.",
+          "art": "/assets/books/bo-beach-day/p04.webp",
+          "alt": "",
+          "emoji": "🚣",
+          "key": "boat"
+        },
+        {
+          "text": "A bee buzzes by. Buzz, buzz!",
+          "art": "/assets/books/bo-beach-day/p05.webp",
+          "alt": "",
+          "emoji": "🐝",
+          "key": "bee"
+        },
+        {
+          "text": "\"Can I come?\" asks Bella the bee.",
+          "art": "/assets/books/bo-beach-day/p06.webp",
+          "alt": "",
+          "emoji": "🐝",
+          "key": "bee"
+        },
+        {
+          "text": "Bo and Bella sit on the beach.",
+          "art": "/assets/books/bo-beach-day/p07.webp",
+          "alt": "",
+          "emoji": "🏖️",
+          "key": "beach"
+        },
+        {
+          "text": "A ball bounces by the boat.",
+          "art": "/assets/books/bo-beach-day/p08.webp",
+          "alt": "",
+          "emoji": "⚽",
+          "key": "ball"
+        },
+        {
+          "text": "Ben the bunny wants the ball back.",
+          "art": "/assets/books/bo-beach-day/p09.webp",
+          "alt": "",
+          "emoji": "🐰",
+          "key": "ball"
+        },
+        {
+          "text": "Bo bumps the ball to Ben.",
+          "art": "/assets/books/bo-beach-day/p10.webp",
+          "alt": "",
+          "emoji": "⚽",
+          "key": "bumps"
+        },
+        {
+          "text": "Ben and Bella and Bo eat berries and buns.",
+          "art": "/assets/books/bo-beach-day/p11.webp",
+          "alt": "",
+          "emoji": "🍌",
+          "key": "berries"
+        },
+        {
+          "text": "What a fun day at the beach, Bo!",
+          "art": "/assets/books/bo-beach-day/p12.webp",
+          "alt": "",
+          "emoji": "🏖️",
+          "key": "bo"
+        }
+      ]
+    },
+    {
+      "id": "mia-makes-muffins",
+      "title": "Mia Makes Muffins",
+      "sound": "M",
+      "emoji": "🐭",
+      "colors": [
+        "#c49cff",
+        "#9b6fe0"
+      ],
+      "cover": "/assets/books/mia-makes-muffins/cover.webp",
+      "coverAlt": "",
+      "pages": [
+        {
+          "text": "Mia the mouse wants to make muffins.",
+          "art": "/assets/books/mia-makes-muffins/p01.webp",
+          "alt": "",
+          "emoji": "🐭",
+          "key": "mouse"
+        },
+        {
+          "text": "Mia gets milk and a mixing bowl.",
+          "art": "/assets/books/mia-makes-muffins/p02.webp",
+          "alt": "",
+          "emoji": "🥛",
+          "key": "milk"
+        },
+        {
+          "text": "Mia mixes and mixes. What a mess!",
+          "art": "/assets/books/mia-makes-muffins/p03.webp",
+          "alt": "",
+          "emoji": "🥣",
+          "key": "mixes"
+        },
+        {
+          "text": "Max the mole peeks in. \"More milk?\"",
+          "art": "/assets/books/mia-makes-muffins/p04.webp",
+          "alt": "",
+          "emoji": "🐹",
+          "key": "milk"
+        },
+        {
+          "text": "Max adds melon. Mia adds maple syrup.",
+          "art": "/assets/books/mia-makes-muffins/p05.webp",
+          "alt": "",
+          "emoji": "🍈",
+          "key": "melon"
+        },
+        {
+          "text": "Mia puts the muffins in the oven.",
+          "art": "/assets/books/mia-makes-muffins/p06.webp",
+          "alt": "",
+          "emoji": "🧁",
+          "key": "muffins"
+        },
+        {
+          "text": "The moon rises over the meadow.",
+          "art": "/assets/books/mia-makes-muffins/p07.webp",
+          "alt": "",
+          "emoji": "🌙",
+          "key": "moon"
+        },
+        {
+          "text": "The muffins are ready at last!",
+          "art": "/assets/books/mia-makes-muffins/p08.webp",
+          "alt": "",
+          "emoji": "🧁",
+          "key": "muffins"
+        },
+        {
+          "text": "Max and Mia munch muffins.",
+          "art": "/assets/books/mia-makes-muffins/p09.webp",
+          "alt": "",
+          "emoji": "🧁",
+          "key": "munch"
+        },
+        {
+          "text": "\"Mia, may I take one to Molly?\" asks Max.",
+          "art": "/assets/books/mia-makes-muffins/p10.webp",
+          "alt": "",
+          "emoji": "🫎",
+          "key": "molly"
+        },
+        {
+          "text": "Molly the moose says, \"Many thanks!\"",
+          "art": "/assets/books/mia-makes-muffins/p11.webp",
+          "alt": "",
+          "emoji": "🫎",
+          "key": "moose"
+        },
+        {
+          "text": "Mia, Max, and Molly share a meal under the moon.",
+          "art": "/assets/books/mia-makes-muffins/p12.webp",
+          "alt": "",
+          "emoji": "🌙",
+          "key": "moon"
+        }
+      ]
+    },
+    {
+      "id": "ned-needs-a-net",
+      "title": "Ned Needs a Net",
+      "sound": "N",
+      "emoji": "🦎",
+      "colors": [
+        "#5fcf9a",
+        "#2fae74"
+      ],
+      "cover": "/assets/books/ned-needs-a-net/cover.webp",
+      "coverAlt": "",
+      "pages": [
+        {
+          "text": "Nora the newt has a nice, neat nest.",
+          "art": "/assets/books/ned-needs-a-net/p01.webp",
+          "alt": "",
+          "emoji": "🪺",
+          "key": "nest"
+        },
+        {
+          "text": "Nora takes a nap.",
+          "art": "/assets/books/ned-needs-a-net/p02.webp",
+          "alt": "",
+          "emoji": "💤",
+          "key": "nap"
+        },
+        {
+          "text": "Knock, knock! A noise wakes Nora.",
+          "art": "/assets/books/ned-needs-a-net/p03.webp",
+          "alt": "",
+          "emoji": "🚪",
+          "key": "knock"
+        },
+        {
+          "text": "It is Ned the newt. \"My net is lost!\"",
+          "art": "/assets/books/ned-needs-a-net/p04.webp",
+          "alt": "",
+          "emoji": "🦎",
+          "key": "net"
+        },
+        {
+          "text": "Nora looks near the nest.",
+          "art": "/assets/books/ned-needs-a-net/p05.webp",
+          "alt": "",
+          "emoji": "🪺",
+          "key": "nest"
+        },
+        {
+          "text": "Ned looks by the old log.",
+          "art": "/assets/books/ned-needs-a-net/p06.webp",
+          "alt": "",
+          "emoji": "🪵",
+          "key": "ned"
+        },
+        {
+          "text": "\"No net here,\" says Ned.",
+          "art": "/assets/books/ned-needs-a-net/p07.webp",
+          "alt": "",
+          "emoji": "🦎",
+          "key": "net"
+        },
+        {
+          "text": "Nora spots a net up a tree.",
+          "art": "/assets/books/ned-needs-a-net/p08.webp",
+          "alt": "",
+          "emoji": "🌳",
+          "key": "net"
+        },
+        {
+          "text": "Nora nudges it with her nose.",
+          "art": "/assets/books/ned-needs-a-net/p09.webp",
+          "alt": "",
+          "emoji": "👃",
+          "key": "nose"
+        },
+        {
+          "text": "The net drops. \"Neat!\" says Ned.",
+          "art": "/assets/books/ned-needs-a-net/p10.webp",
+          "alt": "",
+          "emoji": "🥅",
+          "key": "neat"
+        },
+        {
+          "text": "Night falls. Nora makes noodles.",
+          "art": "/assets/books/ned-needs-a-net/p11.webp",
+          "alt": "",
+          "emoji": "🍜",
+          "key": "noodles"
+        },
+        {
+          "text": "Ned eats noodles with Nora. What a nice night!",
+          "art": "/assets/books/ned-needs-a-net/p12.webp",
+          "alt": "",
+          "emoji": "🌙",
+          "key": "night"
+        }
+      ]
+    },
+    {
+      "id": "toby-tiny-tuba",
+      "title": "Toby's Tiny Tuba",
+      "sound": "T",
+      "emoji": "🐯",
+      "colors": [
+        "#ff9f5a",
+        "#e6762b"
+      ],
+      "cover": "/assets/books/toby-tiny-tuba/cover.webp",
+      "coverAlt": "",
+      "pages": [
+        {
+          "text": "Toby the tiger has a tiny tuba.",
+          "art": "/assets/books/toby-tiny-tuba/p01.webp",
+          "alt": "",
+          "emoji": "🐯",
+          "key": "tiger"
+        },
+        {
+          "text": "Toby taps his toes.",
+          "art": "/assets/books/toby-tiny-tuba/p02.webp",
+          "alt": "",
+          "emoji": "🐯",
+          "key": "taps"
+        },
+        {
+          "text": "\"Too, too, too!\" goes the tuba.",
+          "art": "/assets/books/toby-tiny-tuba/p03.webp",
+          "alt": "",
+          "emoji": "🎺",
+          "key": "tuba"
+        },
+        {
+          "text": "Tia the toucan comes by.",
+          "art": "/assets/books/toby-tiny-tuba/p04.webp",
+          "alt": "",
+          "emoji": "🐦",
+          "key": "toucan"
+        },
+        {
+          "text": "Tia likes the tune. She taps along.",
+          "art": "/assets/books/toby-tiny-tuba/p05.webp",
+          "alt": "",
+          "emoji": "🎵",
+          "key": "tune"
+        },
+        {
+          "text": "Toby and Tia play for the town.",
+          "art": "/assets/books/toby-tiny-tuba/p06.webp",
+          "alt": "",
+          "emoji": "🏘️",
+          "key": "town"
+        },
+        {
+          "text": "Ten turkeys come to hear.",
+          "art": "/assets/books/toby-tiny-tuba/p07.webp",
+          "alt": "",
+          "emoji": "🦃",
+          "key": "ten"
+        },
+        {
+          "text": "The turkeys tap their toes too.",
+          "art": "/assets/books/toby-tiny-tuba/p08.webp",
+          "alt": "",
+          "emoji": "🦃",
+          "key": "turkeys"
+        },
+        {
+          "text": "A tiny toad jumps on the tuba.",
+          "art": "/assets/books/toby-tiny-tuba/p09.webp",
+          "alt": "",
+          "emoji": "🐸",
+          "key": "toad"
+        },
+        {
+          "text": "The toad sings a tune.",
+          "art": "/assets/books/toby-tiny-tuba/p10.webp",
+          "alt": "",
+          "emoji": "🐸",
+          "key": "toad"
+        },
+        {
+          "text": "Everyone claps. Toby takes a bow.",
+          "art": "/assets/books/toby-tiny-tuba/p11.webp",
+          "alt": "",
+          "emoji": "👏",
+          "key": "toby"
+        },
+        {
+          "text": "\"Time for tea!\" says Toby.",
+          "art": "/assets/books/toby-tiny-tuba/p12.webp",
+          "alt": "",
+          "emoji": "🍵",
+          "key": "tea"
+        }
+      ]
+    },
+    {
+      "id": "dot-digs-a-pool",
+      "title": "Dot Digs a Pool",
+      "sound": "D",
+      "emoji": "🦆",
+      "colors": [
+        "#ffd45e",
+        "#e6b12b"
+      ],
+      "cover": "/assets/books/dot-digs-a-pool/cover.webp",
+      "coverAlt": "",
+      "pages": [
+        {
+          "text": "Dot the duck wants a pool to dive in.",
+          "art": "/assets/books/dot-digs-a-pool/p01.webp",
+          "alt": "",
+          "emoji": "🦆",
+          "key": "duck"
+        },
+        {
+          "text": "Dot digs a hole. Dig, dig, dig!",
+          "art": "/assets/books/dot-digs-a-pool/p02.webp",
+          "alt": "",
+          "emoji": "🕳️",
+          "key": "digs"
+        },
+        {
+          "text": "Dan the dog comes to help.",
+          "art": "/assets/books/dot-digs-a-pool/p03.webp",
+          "alt": "",
+          "emoji": "🐶",
+          "key": "dog"
+        },
+        {
+          "text": "Dan digs too. Dust flies!",
+          "art": "/assets/books/dot-digs-a-pool/p04.webp",
+          "alt": "",
+          "emoji": "🐶",
+          "key": "dust"
+        },
+        {
+          "text": "The hole gets deep.",
+          "art": "/assets/books/dot-digs-a-pool/p05.webp",
+          "alt": "",
+          "emoji": "🕳️",
+          "key": "deep"
+        },
+        {
+          "text": "Down comes the rain.",
+          "art": "/assets/books/dot-digs-a-pool/p06.webp",
+          "alt": "",
+          "emoji": "🌧️",
+          "key": "down"
+        },
+        {
+          "text": "The rain fills the hole all day.",
+          "art": "/assets/books/dot-digs-a-pool/p07.webp",
+          "alt": "",
+          "emoji": "🌧️",
+          "key": "day"
+        },
+        {
+          "text": "Now Dot has a deep pool!",
+          "art": "/assets/books/dot-digs-a-pool/p08.webp",
+          "alt": "",
+          "emoji": "🦆",
+          "key": "dot"
+        },
+        {
+          "text": "Dot dips her toes.",
+          "art": "/assets/books/dot-digs-a-pool/p09.webp",
+          "alt": "",
+          "emoji": "🦆",
+          "key": "dips"
+        },
+        {
+          "text": "\"Dan, let's dive!\" says Dot.",
+          "art": "/assets/books/dot-digs-a-pool/p10.webp",
+          "alt": "",
+          "emoji": "🐶",
+          "key": "dive"
+        },
+        {
+          "text": "Dot dives. Dan dives. Splash!",
+          "art": "/assets/books/dot-digs-a-pool/p11.webp",
+          "alt": "",
+          "emoji": "💦",
+          "key": "dives"
+        },
+        {
+          "text": "Dot is a happy duck. Dan is a happy dog!",
+          "art": "/assets/books/dot-digs-a-pool/p12.webp",
+          "alt": "",
+          "emoji": "🦆",
+          "key": "duck"
+        }
+      ]
+    },
+    {
+      "id": "kip-kite",
+      "title": "Kip's Kite",
+      "sound": "K",
+      "emoji": "🦘",
+      "colors": [
+        "#7fd1ff",
+        "#43a8e6"
+      ],
+      "cover": "/assets/books/kip-kite/cover.webp",
+      "coverAlt": "",
+      "pages": [
+        {
+          "text": "Kip the kangaroo has a kite.",
+          "art": "/assets/books/kip-kite/p01.webp",
+          "alt": "",
+          "emoji": "🦘",
+          "key": "kangaroo"
+        },
+        {
+          "text": "The kite has a long tail.",
+          "art": "/assets/books/kip-kite/p02.webp",
+          "alt": "",
+          "emoji": "🪁",
+          "key": "kite"
+        },
+        {
+          "text": "Kip hops up the hill.",
+          "art": "/assets/books/kip-kite/p03.webp",
+          "alt": "",
+          "emoji": "🦘",
+          "key": "kip"
+        },
+        {
+          "text": "Whoosh! The wind catches the kite.",
+          "art": "/assets/books/kip-kite/p04.webp",
+          "alt": "",
+          "emoji": "🪁",
+          "key": "kite"
+        },
+        {
+          "text": "Up, up, up goes Kip's kite!",
+          "art": "/assets/books/kip-kite/p05.webp",
+          "alt": "",
+          "emoji": "🪁",
+          "key": "kite"
+        },
+        {
+          "text": "Cody the cow comes to see.",
+          "art": "/assets/books/kip-kite/p06.webp",
+          "alt": "",
+          "emoji": "🐮",
+          "key": "cow"
+        },
+        {
+          "text": "\"Can I hold it?\" says Cody.",
+          "art": "/assets/books/kip-kite/p07.webp",
+          "alt": "",
+          "emoji": "🐮",
+          "key": "cody"
+        },
+        {
+          "text": "Cody holds the kite. The wind gets strong!",
+          "art": "/assets/books/kip-kite/p08.webp",
+          "alt": "",
+          "emoji": "🪁",
+          "key": "kite"
+        },
+        {
+          "text": "The kite carries Cody up in the air!",
+          "art": "/assets/books/kip-kite/p09.webp",
+          "alt": "",
+          "emoji": "🐮",
+          "key": "carries"
+        },
+        {
+          "text": "\"Come down, Cody!\" calls Kip.",
+          "art": "/assets/books/kip-kite/p10.webp",
+          "alt": "",
+          "emoji": "🦘",
+          "key": "come"
+        },
+        {
+          "text": "Cody comes down in the corn.",
+          "art": "/assets/books/kip-kite/p11.webp",
+          "alt": "",
+          "emoji": "🌽",
+          "key": "corn"
+        },
+        {
+          "text": "Kip gives Cody a carrot. What a day!",
+          "art": "/assets/books/kip-kite/p12.webp",
+          "alt": "",
+          "emoji": "🥕",
+          "key": "carrot"
+        }
+      ]
+    },
+    {
+      "id": "goldie-guitar",
+      "title": "Goldie's Guitar",
+      "sound": "G",
+      "emoji": "🪿",
+      "colors": [
+        "#ffcf6e",
+        "#e0a73a"
+      ],
+      "cover": "/assets/books/goldie-guitar/cover.webp",
+      "coverAlt": "",
+      "pages": [
+        {
+          "text": "Goldie the goose gets a gift.",
+          "art": "/assets/books/goldie-guitar/p01.webp",
+          "alt": "",
+          "emoji": "🎁",
+          "key": "goose"
+        },
+        {
+          "text": "The gift is a guitar!",
+          "art": "/assets/books/goldie-guitar/p02.webp",
+          "alt": "",
+          "emoji": "🎸",
+          "key": "guitar"
+        },
+        {
+          "text": "Goldie goes to the garden.",
+          "art": "/assets/books/goldie-guitar/p03.webp",
+          "alt": "",
+          "emoji": "🌷",
+          "key": "garden"
+        },
+        {
+          "text": "Goldie plays a happy tune.",
+          "art": "/assets/books/goldie-guitar/p04.webp",
+          "alt": "",
+          "emoji": "🎸",
+          "key": "goldie"
+        },
+        {
+          "text": "Gus the goat comes to the gate.",
+          "art": "/assets/books/goldie-guitar/p05.webp",
+          "alt": "",
+          "emoji": "🐐",
+          "key": "goat"
+        },
+        {
+          "text": "\"Goldie, can I have a go?\" asks Gus.",
+          "art": "/assets/books/goldie-guitar/p06.webp",
+          "alt": "",
+          "emoji": "🐐",
+          "key": "gus"
+        },
+        {
+          "text": "Gus gets the guitar.",
+          "art": "/assets/books/goldie-guitar/p07.webp",
+          "alt": "",
+          "emoji": "🎸",
+          "key": "guitar"
+        },
+        {
+          "text": "Gus is no good at it!",
+          "art": "/assets/books/goldie-guitar/p08.webp",
+          "alt": "",
+          "emoji": "🐐",
+          "key": "good"
+        },
+        {
+          "text": "Goldie shows Gus how.",
+          "art": "/assets/books/goldie-guitar/p09.webp",
+          "alt": "",
+          "emoji": "🪿",
+          "key": "goldie"
+        },
+        {
+          "text": "Gus gets better and better.",
+          "art": "/assets/books/goldie-guitar/p10.webp",
+          "alt": "",
+          "emoji": "🎸",
+          "key": "gets"
+        },
+        {
+          "text": "The garden gophers come to hear.",
+          "art": "/assets/books/goldie-guitar/p11.webp",
+          "alt": "",
+          "emoji": "🐿️",
+          "key": "gophers"
+        },
+        {
+          "text": "Goldie and Gus give a garden show!",
+          "art": "/assets/books/goldie-guitar/p12.webp",
+          "alt": "",
+          "emoji": "🎶",
+          "key": "garden"
+        }
+      ]
+    },
+    {
+      "id": "finn-finds-a-feather",
+      "title": "Finn Finds a Feather",
+      "sound": "F",
+      "emoji": "🐟",
+      "colors": [
+        "#5fc6e8",
+        "#2f9fc6"
+      ],
+      "cover": "/assets/books/finn-finds-a-feather/cover.webp",
+      "coverAlt": "",
+      "pages": [
+        {
+          "text": "Finn the fish lives by a big rock.",
+          "art": "/assets/books/finn-finds-a-feather/p01.webp",
+          "alt": "",
+          "emoji": "🐟",
+          "key": "fish"
+        },
+        {
+          "text": "Finn has fast fins.",
+          "art": "/assets/books/finn-finds-a-feather/p02.webp",
+          "alt": "",
+          "emoji": "🐟",
+          "key": "fins"
+        },
+        {
+          "text": "One day, Finn finds a feather.",
+          "art": "/assets/books/finn-finds-a-feather/p03.webp",
+          "alt": "",
+          "emoji": "🪶",
+          "key": "feather"
+        },
+        {
+          "text": "\"Whose feather?\" asks Finn.",
+          "art": "/assets/books/finn-finds-a-feather/p04.webp",
+          "alt": "",
+          "emoji": "🪶",
+          "key": "finn"
+        },
+        {
+          "text": "Finn swims far and fast.",
+          "art": "/assets/books/finn-finds-a-feather/p05.webp",
+          "alt": "",
+          "emoji": "🐟",
+          "key": "fast"
+        },
+        {
+          "text": "Finn meets Fay the fox by the shore.",
+          "art": "/assets/books/finn-finds-a-feather/p06.webp",
+          "alt": "",
+          "emoji": "🦊",
+          "key": "fox"
+        },
+        {
+          "text": "\"Not my feather,\" says Fay.",
+          "art": "/assets/books/finn-finds-a-feather/p07.webp",
+          "alt": "",
+          "emoji": "🦊",
+          "key": "fay"
+        },
+        {
+          "text": "Finn meets a family of ducks.",
+          "art": "/assets/books/finn-finds-a-feather/p08.webp",
+          "alt": "",
+          "emoji": "🦆",
+          "key": "family"
+        },
+        {
+          "text": "\"Not our feather,\" they say.",
+          "art": "/assets/books/finn-finds-a-feather/p09.webp",
+          "alt": "",
+          "emoji": "🦆",
+          "key": "feather"
+        },
+        {
+          "text": "Then a gull swoops down. It has no tail feather!",
+          "art": "/assets/books/finn-finds-a-feather/p10.webp",
+          "alt": "",
+          "emoji": "🐦",
+          "key": "feather"
+        },
+        {
+          "text": "Finn gives the feather back. \"Thank you!\" says the gull.",
+          "art": "/assets/books/finn-finds-a-feather/p11.webp",
+          "alt": "",
+          "emoji": "🪶",
+          "key": "finn"
+        },
+        {
+          "text": "Finn feels fine. What a fun day!",
+          "art": "/assets/books/finn-finds-a-feather/p12.webp",
+          "alt": "",
+          "emoji": "🐟",
+          "key": "fine"
+        }
+      ]
+    },
+    {
+      "id": "val-the-van",
+      "title": "Val the Van",
+      "sound": "V",
+      "emoji": "🚐",
+      "colors": [
+        "#ff8fb0",
+        "#e0648a"
+      ],
+      "cover": "/assets/books/val-the-van/cover.webp",
+      "coverAlt": "",
+      "pages": [
+        {
+          "text": "Val the van is in a valley.",
+          "art": "/assets/books/val-the-van/p01.webp",
+          "alt": "",
+          "emoji": "🚐",
+          "key": "van"
+        },
+        {
+          "text": "Val goes to the village.",
+          "art": "/assets/books/val-the-van/p02.webp",
+          "alt": "",
+          "emoji": "🏘️",
+          "key": "village"
+        },
+        {
+          "text": "\"Beep, beep!\" goes Val.",
+          "art": "/assets/books/val-the-van/p03.webp",
+          "alt": "",
+          "emoji": "🚐",
+          "key": "val"
+        },
+        {
+          "text": "Val takes a vase to Vicky.",
+          "art": "/assets/books/val-the-van/p04.webp",
+          "alt": "",
+          "emoji": "🏺",
+          "key": "vase"
+        },
+        {
+          "text": "Vicky puts a violet in the vase.",
+          "art": "/assets/books/val-the-van/p05.webp",
+          "alt": "",
+          "emoji": "🌸",
+          "key": "vase"
+        },
+        {
+          "text": "Val takes vegetables to the vet.",
+          "art": "/assets/books/val-the-van/p06.webp",
+          "alt": "",
+          "emoji": "🥕",
+          "key": "vegetables"
+        },
+        {
+          "text": "The vet shares them with the animals.",
+          "art": "/assets/books/val-the-van/p07.webp",
+          "alt": "",
+          "emoji": "🐾",
+          "key": "vet"
+        },
+        {
+          "text": "Val takes a violin to Vince.",
+          "art": "/assets/books/val-the-van/p08.webp",
+          "alt": "",
+          "emoji": "🎻",
+          "key": "violin"
+        },
+        {
+          "text": "Vince plays a very sweet tune.",
+          "art": "/assets/books/val-the-van/p09.webp",
+          "alt": "",
+          "emoji": "🎻",
+          "key": "vince"
+        },
+        {
+          "text": "The village comes to hear.",
+          "art": "/assets/books/val-the-van/p10.webp",
+          "alt": "",
+          "emoji": "🏘️",
+          "key": "village"
+        },
+        {
+          "text": "Vicky washes Val. Val looks very shiny.",
+          "art": "/assets/books/val-the-van/p11.webp",
+          "alt": "",
+          "emoji": "🫧",
+          "key": "vicky"
+        },
+        {
+          "text": "\"Thank you, Val!\" says the village.",
+          "art": "/assets/books/val-the-van/p12.webp",
+          "alt": "",
+          "emoji": "🚐",
+          "key": "val"
+        }
+      ]
+    },
+    {
+      "id": "sid-the-seagull",
+      "title": "Sid the Seagull",
+      "sound": "S",
+      "emoji": "🐦",
+      "colors": [
+        "#6fd0e0",
+        "#3aaec2"
+      ],
+      "cover": "/assets/books/sid-the-seagull/cover.webp",
+      "coverAlt": "",
+      "pages": [
+        {
+          "text": "Sid the seagull lives by the sea.",
+          "art": "/assets/books/sid-the-seagull/p01.webp",
+          "alt": "",
+          "emoji": "🐦",
+          "key": "seagull"
+        },
+        {
+          "text": "The sun is up. The sand is warm.",
+          "art": "/assets/books/sid-the-seagull/p02.webp",
+          "alt": "",
+          "emoji": "☀️",
+          "key": "sand"
+        },
+        {
+          "text": "Sid sees a sandwich on a seat.",
+          "art": "/assets/books/sid-the-seagull/p03.webp",
+          "alt": "",
+          "emoji": "🥪",
+          "key": "sandwich"
+        },
+        {
+          "text": "\"Sadie, may I have some?\" says Sid.",
+          "art": "/assets/books/sid-the-seagull/p04.webp",
+          "alt": "",
+          "emoji": "👧",
+          "key": "sadie"
+        },
+        {
+          "text": "Sadie gives Sid a bite.",
+          "art": "/assets/books/sid-the-seagull/p05.webp",
+          "alt": "",
+          "emoji": "🥪",
+          "key": "sid"
+        },
+        {
+          "text": "\"Thank you, Sadie!\" Sid sings a song.",
+          "art": "/assets/books/sid-the-seagull/p06.webp",
+          "alt": "",
+          "emoji": "🎵",
+          "key": "sings"
+        },
+        {
+          "text": "Sadie and Sid sit in the sand.",
+          "art": "/assets/books/sid-the-seagull/p07.webp",
+          "alt": "",
+          "emoji": "🏖️",
+          "key": "sand"
+        },
+        {
+          "text": "They dig a big sand hill.",
+          "art": "/assets/books/sid-the-seagull/p08.webp",
+          "alt": "",
+          "emoji": "🏖️",
+          "key": "sand"
+        },
+        {
+          "text": "Sid adds a seashell on top.",
+          "art": "/assets/books/sid-the-seagull/p09.webp",
+          "alt": "",
+          "emoji": "🐚",
+          "key": "seashell"
+        },
+        {
+          "text": "Oh no! The sea rolls in.",
+          "art": "/assets/books/sid-the-seagull/p10.webp",
+          "alt": "",
+          "emoji": "🌊",
+          "key": "sea"
+        },
+        {
+          "text": "The sand hill is gone. Sid is sad.",
+          "art": "/assets/books/sid-the-seagull/p11.webp",
+          "alt": "",
+          "emoji": "🐦",
+          "key": "sad"
+        },
+        {
+          "text": "\"Silly Sid! We can make one more!\" says Sadie.",
+          "art": "/assets/books/sid-the-seagull/p12.webp",
+          "alt": "",
+          "emoji": "👧",
+          "key": "silly"
+        }
+      ]
+    },
+    {
+      "id": "sam-sailboat",
+      "title": "Sam's Sailboat",
+      "sound": "S",
+      "emoji": "⛵",
+      "colors": [
+        "#62bdff",
+        "#3d9be0"
+      ],
+      "cover": "/assets/books/sam-sailboat/cover.webp",
+      "coverAlt": "Sam the seal sits in his little wooden sailboat with a white sail on a calm sunny blue sea, smiling.",
+      "pages": [
+        {
+          "text": "Sam the seal has a sailboat.",
+          "art": "/assets/books/sam-sailboat/p01.webp",
+          "alt": "Sam the seal stands proudly next to his little wooden sailboat at the shore.",
+          "emoji": "⛵",
+          "key": "sailboat"
+        },
+        {
+          "text": "The sun is up. Sam sails out.",
+          "art": "/assets/books/sam-sailboat/p02.webp",
+          "alt": "Sam the seal sails out in his sailboat under a bright rising sun.",
+          "emoji": "⛵",
+          "key": "sun"
+        },
+        {
+          "text": "The sea is calm and blue.",
+          "art": "/assets/books/sam-sailboat/p03.webp",
+          "alt": "A wide calm blue sea, Sam's small sailboat far away on it.",
+          "emoji": "⛵",
+          "key": "sea"
+        },
+        {
+          "text": "Sam sees a little fish.",
+          "art": "/assets/books/sam-sailboat/p04.webp",
+          "alt": "Sam the seal leans over the side of his sailboat looking at a little orange fish in the water.",
+          "emoji": "⛵",
+          "key": "sees"
+        },
+        {
+          "text": "The fish is sad. \"I can't find my home!\"",
+          "art": "/assets/books/sam-sailboat/p05.webp",
+          "alt": "The little orange fish looks sad and lost in the water near the boat.",
+          "emoji": "⛵",
+          "key": "sad"
+        },
+        {
+          "text": "\"Sit in my boat,\" says Sam.",
+          "art": "/assets/books/sam-sailboat/p06.webp",
+          "alt": "Sam the seal holds out a flipper inviting the little fish; the fish sits in a bucket of water in the boat.",
+          "emoji": "⛵",
+          "key": "sit"
+        },
+        {
+          "text": "They sail by a seagull.",
+          "art": "/assets/books/sam-sailboat/p07.webp",
+          "alt": "Sam's sailboat with the little fish passes a white seagull flying low.",
+          "emoji": "⛵",
+          "key": "sail"
+        },
+        {
+          "text": "The seagull says, \"Go that way!\"",
+          "art": "/assets/books/sam-sailboat/p08.webp",
+          "alt": "The seagull points one wing toward the horizon, talking to Sam.",
+          "emoji": "⛵",
+          "key": "seagull"
+        },
+        {
+          "text": "Sam sails and sails.",
+          "art": "/assets/books/sam-sailboat/p09.webp",
+          "alt": "Sam's sailboat glides across the sea, sail full of wind.",
+          "emoji": "⛵",
+          "key": "sails"
+        },
+        {
+          "text": "Soon, they see a big reef.",
+          "art": "/assets/books/sam-sailboat/p10.webp",
+          "alt": "Ahead, a colourful coral reef shows under clear water; Sam and the little fish look at it.",
+          "emoji": "⛵",
+          "key": "soon"
+        },
+        {
+          "text": "The mom fish is there! She is so happy.",
+          "art": "/assets/books/sam-sailboat/p11.webp",
+          "alt": "The mom fish swims up to the little fish, both happy, by the reef, Sam watching.",
+          "emoji": "⛵",
+          "key": "so"
+        },
+        {
+          "text": "Sam sings a song all the way home.",
+          "art": "/assets/books/sam-sailboat/p12.webp",
+          "alt": "Sam the seal sings in his sailboat sailing home at sunset.",
+          "emoji": "⛵",
+          "key": "song"
+        }
+      ]
+    },
+    {
+      "id": "sophie-silly-soup",
+      "title": "Sophie's Silly Soup",
+      "sound": "S",
+      "emoji": "🍲",
+      "colors": [
+        "#7fd1a0",
+        "#4fae74"
+      ],
+      "cover": "/assets/books/sophie-silly-soup/cover.webp",
+      "coverAlt": "Sophie stirs a big blue pot of soup with a wooden spoon, laughing, a striped sock poking out of the pot.",
+      "pages": [
+        {
+          "text": "Sophie is making soup.",
+          "art": "/assets/books/sophie-silly-soup/p01.webp",
+          "alt": "Sophie in her apron stirs a big blue pot of soup on the stove.",
+          "emoji": "🍲",
+          "key": "soup"
+        },
+        {
+          "text": "Sophie adds a carrot.",
+          "art": "/assets/books/sophie-silly-soup/p02.webp",
+          "alt": "Sophie drops an orange carrot into the pot.",
+          "emoji": "🍲",
+          "key": "sophie"
+        },
+        {
+          "text": "Sophie adds a big potato.",
+          "art": "/assets/books/sophie-silly-soup/p03.webp",
+          "alt": "Sophie drops a big brown potato into the pot.",
+          "emoji": "🍲",
+          "key": "sophie"
+        },
+        {
+          "text": "Then Sophie adds a sock!",
+          "art": "/assets/books/sophie-silly-soup/p04.webp",
+          "alt": "Sophie drops a red-and-white striped sock into the pot, giggling.",
+          "emoji": "🍲",
+          "key": "sock"
+        },
+        {
+          "text": "\"Oh no, a sock in the soup is silly!\"",
+          "art": "/assets/books/sophie-silly-soup/p05.webp",
+          "alt": "Sophie covers her mouth laughing, pointing at the sock floating in the soup.",
+          "emoji": "🍲",
+          "key": "silly"
+        },
+        {
+          "text": "Sophie pulls the sock out.",
+          "art": "/assets/books/sophie-silly-soup/p06.webp",
+          "alt": "Sophie pulls the dripping striped sock out of the pot with tongs.",
+          "emoji": "🍲",
+          "key": "sock"
+        },
+        {
+          "text": "She adds salt.",
+          "art": "/assets/books/sophie-silly-soup/p07.webp",
+          "alt": "Sophie sprinkles salt from a little shaker into the pot.",
+          "emoji": "🍲",
+          "key": "salt"
+        },
+        {
+          "text": "She adds some seeds.",
+          "art": "/assets/books/sophie-silly-soup/p08.webp",
+          "alt": "Sophie sprinkles a handful of little seeds into the pot.",
+          "emoji": "🍲",
+          "key": "seeds"
+        },
+        {
+          "text": "Sophie gives the soup a sip.",
+          "art": "/assets/books/sophie-silly-soup/p09.webp",
+          "alt": "Sophie takes a sip of soup from a wooden spoon.",
+          "emoji": "🍲",
+          "key": "sip"
+        },
+        {
+          "text": "\"Yummy soup!\" says Sophie.",
+          "art": "/assets/books/sophie-silly-soup/p10.webp",
+          "alt": "Sophie rubs her tummy with a delighted face, spoon in hand.",
+          "emoji": "🍲",
+          "key": "soup"
+        },
+        {
+          "text": "Sophie calls her pals to the table.",
+          "art": "/assets/books/sophie-silly-soup/p11.webp",
+          "alt": "Sophie waves to the teddy-bear and duck pals, calling them to the wooden table.",
+          "emoji": "🍲",
+          "key": "sophie"
+        },
+        {
+          "text": "They sit and sip the soup together.",
+          "art": "/assets/books/sophie-silly-soup/p12.webp",
+          "alt": "Sophie and the bear and duck pals sit at the table sipping bowls of soup together.",
+          "emoji": "🍲",
+          "key": "sip"
+        }
+      ]
+    },
+    {
+      "id": "zoe-and-the-zipper",
+      "title": "Zoe and the Zipper",
+      "sound": "Z",
+      "emoji": "🦓",
+      "colors": [
+        "#9aa7b8",
+        "#5b6474"
+      ],
+      "cover": "/assets/books/zoe-and-the-zipper/cover.webp",
+      "coverAlt": "",
+      "pages": [
+        {
+          "text": "Zoe the zebra woke up at the zoo.",
+          "art": "/assets/books/zoe-and-the-zipper/p01.webp",
+          "alt": "",
+          "emoji": "🦓",
+          "key": "zebra"
+        },
+        {
+          "text": "It felt cold. Zoe got her coat.",
+          "art": "/assets/books/zoe-and-the-zipper/p02.webp",
+          "alt": "",
+          "emoji": "🧥",
+          "key": "zoe"
+        },
+        {
+          "text": "Zoe pulled the zipper. Zip!",
+          "art": "/assets/books/zoe-and-the-zipper/p03.webp",
+          "alt": "",
+          "emoji": "🧥",
+          "key": "zipper"
+        },
+        {
+          "text": "Oh no! The zipper got stuck.",
+          "art": "/assets/books/zoe-and-the-zipper/p04.webp",
+          "alt": "",
+          "emoji": "🧥",
+          "key": "zipper"
+        },
+        {
+          "text": "Zoe called Zack the zookeeper.",
+          "art": "/assets/books/zoe-and-the-zipper/p05.webp",
+          "alt": "",
+          "emoji": "👨",
+          "key": "zookeeper"
+        },
+        {
+          "text": "Zack tugged the zipper. Zip, zip!",
+          "art": "/assets/books/zoe-and-the-zipper/p06.webp",
+          "alt": "",
+          "emoji": "👨",
+          "key": "zip"
+        },
+        {
+          "text": "Zap! The zipper went up.",
+          "art": "/assets/books/zoe-and-the-zipper/p07.webp",
+          "alt": "",
+          "emoji": "⚡",
+          "key": "zipper"
+        },
+        {
+          "text": "\"Thank you, Zack!\" said Zoe.",
+          "art": "/assets/books/zoe-and-the-zipper/p08.webp",
+          "alt": "",
+          "emoji": "🦓",
+          "key": "zack"
+        },
+        {
+          "text": "Zoe zoomed out to play.",
+          "art": "/assets/books/zoe-and-the-zipper/p09.webp",
+          "alt": "",
+          "emoji": "🦓",
+          "key": "zoomed"
+        },
+        {
+          "text": "Zoom, zoom, all around the zoo!",
+          "art": "/assets/books/zoe-and-the-zipper/p10.webp",
+          "alt": "",
+          "emoji": "🦓",
+          "key": "zoo"
+        },
+        {
+          "text": "Zack gave Zoe a zucchini for lunch.",
+          "art": "/assets/books/zoe-and-the-zipper/p11.webp",
+          "alt": "",
+          "emoji": "🥒",
+          "key": "zucchini"
+        },
+        {
+          "text": "Zoe the zebra felt warm and happy.",
+          "art": "/assets/books/zoe-and-the-zipper/p12.webp",
+          "alt": "",
+          "emoji": "🦓",
+          "key": "zebra"
+        }
+      ]
+    },
+    {
+      "id": "shay-the-shy-shark",
+      "title": "Shay the Shy Shark",
+      "sound": "SH",
+      "emoji": "🦈",
+      "colors": [
+        "#7fb8ff",
+        "#4f8fe0"
+      ],
+      "cover": "/assets/books/shay-the-shy-shark/cover.webp",
+      "coverAlt": "",
+      "pages": [
+        {
+          "text": "Shay the shark is shy.",
+          "art": "/assets/books/shay-the-shy-shark/p01.webp",
+          "alt": "",
+          "emoji": "🦈",
+          "key": "shark"
+        },
+        {
+          "text": "Shay hides in the shadow of a ship.",
+          "art": "/assets/books/shay-the-shy-shark/p02.webp",
+          "alt": "",
+          "emoji": "🚢",
+          "key": "ship"
+        },
+        {
+          "text": "\"Come and see the show!\" shout the crabs.",
+          "art": "/assets/books/shay-the-shy-shark/p03.webp",
+          "alt": "",
+          "emoji": "🦀",
+          "key": "shout"
+        },
+        {
+          "text": "Shay shakes her head.",
+          "art": "/assets/books/shay-the-shy-shark/p04.webp",
+          "alt": "",
+          "emoji": "🦈",
+          "key": "shakes"
+        },
+        {
+          "text": "Shimmer the seahorse swims by.",
+          "art": "/assets/books/shay-the-shy-shark/p05.webp",
+          "alt": "",
+          "emoji": "🐴",
+          "key": "shimmer"
+        },
+        {
+          "text": "\"Shay, come with me to the show!\" says Shimmer.",
+          "art": "/assets/books/shay-the-shy-shark/p06.webp",
+          "alt": "",
+          "emoji": "🐴",
+          "key": "shay"
+        },
+        {
+          "text": "Shay is not sure.",
+          "art": "/assets/books/shay-the-shy-shark/p07.webp",
+          "alt": "",
+          "emoji": "🦈",
+          "key": "sure"
+        },
+        {
+          "text": "Shimmer shows Shay a shiny shell.",
+          "art": "/assets/books/shay-the-shy-shark/p08.webp",
+          "alt": "",
+          "emoji": "🐚",
+          "key": "shell"
+        },
+        {
+          "text": "\"Shake it in the show!\" says Shimmer.",
+          "art": "/assets/books/shay-the-shy-shark/p09.webp",
+          "alt": "",
+          "emoji": "🐚",
+          "key": "shake"
+        },
+        {
+          "text": "Shay shakes the shell. Shh, shh, shh!",
+          "art": "/assets/books/shay-the-shy-shark/p10.webp",
+          "alt": "",
+          "emoji": "🐚",
+          "key": "shell"
+        },
+        {
+          "text": "The crabs cheer. \"Shay, you are a star!\"",
+          "art": "/assets/books/shay-the-shy-shark/p11.webp",
+          "alt": "",
+          "emoji": "🦀",
+          "key": "shay"
+        },
+        {
+          "text": "Shay is not shy now. She shines!",
+          "art": "/assets/books/shay-the-shy-shark/p12.webp",
+          "alt": "",
+          "emoji": "⭐",
+          "key": "shines"
+        }
+      ]
+    },
+    {
+      "id": "shane-shiny-shell",
+      "title": "Shane and the Shiny Shell",
+      "sound": "SH",
+      "emoji": "🐚",
+      "colors": [
+        "#ff9fb8",
+        "#e6708f"
+      ],
+      "cover": "/assets/books/shane-shiny-shell/cover.webp",
+      "coverAlt": "Shane holds up a big shiny spiral shell on a sunny beach, a little red crab peeking out of it.",
+      "pages": [
+        {
+          "text": "Shane is at the sea.",
+          "art": "/assets/books/shane-shiny-shell/p01.webp",
+          "alt": "Shane stands on a sunny beach by the sea, happy.",
+          "emoji": "🐚",
+          "key": "shane"
+        },
+        {
+          "text": "He sees a shiny shell.",
+          "art": "/assets/books/shane-shiny-shell/p02.webp",
+          "alt": "Shane spots a shiny pink spiral shell in the sand.",
+          "emoji": "🐚",
+          "key": "shell"
+        },
+        {
+          "text": "Shane picks up the shell.",
+          "art": "/assets/books/shane-shiny-shell/p03.webp",
+          "alt": "Shane picks up the shiny shell.",
+          "emoji": "🐚",
+          "key": "shell"
+        },
+        {
+          "text": "He shows it to his mom.",
+          "art": "/assets/books/shane-shiny-shell/p04.webp",
+          "alt": "Shane shows the shell to his mom on the beach.",
+          "emoji": "🐚",
+          "key": "shows"
+        },
+        {
+          "text": "\"Shake it!\" she says.",
+          "art": "/assets/books/shane-shiny-shell/p05.webp",
+          "alt": "Mom smiles and makes a shaking motion with her hands, talking to Shane.",
+          "emoji": "🐚",
+          "key": "shake"
+        },
+        {
+          "text": "Shane shakes the shell. A crab comes out!",
+          "art": "/assets/books/shane-shiny-shell/p06.webp",
+          "alt": "Shane shakes the shell and a little red crab pops out.",
+          "emoji": "🐚",
+          "key": "shakes"
+        },
+        {
+          "text": "The crab is shy.",
+          "art": "/assets/books/shane-shiny-shell/p07.webp",
+          "alt": "The little red crab hides its face shyly behind its claws.",
+          "emoji": "🐚",
+          "key": "shy"
+        },
+        {
+          "text": "Shane sits very still.",
+          "art": "/assets/books/shane-shiny-shell/p08.webp",
+          "alt": "Shane sits very still in the sand, watching quietly.",
+          "emoji": "🐚",
+          "key": "shane"
+        },
+        {
+          "text": "The crab peeks out of the shell.",
+          "art": "/assets/books/shane-shiny-shell/p09.webp",
+          "alt": "The crab peeks out of the shell.",
+          "emoji": "🐚",
+          "key": "shell"
+        },
+        {
+          "text": "Shane shares a snack with the crab.",
+          "art": "/assets/books/shane-shiny-shell/p10.webp",
+          "alt": "Shane offers the crab a little cracker snack.",
+          "emoji": "🐚",
+          "key": "shares"
+        },
+        {
+          "text": "The crab is not shy now.",
+          "art": "/assets/books/shane-shiny-shell/p11.webp",
+          "alt": "The crab waves its claw at Shane, no longer shy.",
+          "emoji": "🐚",
+          "key": "shy"
+        },
+        {
+          "text": "Shane and the crab are pals. Shane shouts, \"Yay!\"",
+          "art": "/assets/books/shane-shiny-shell/p12.webp",
+          "alt": "Shane cheers with arms up, the crab beside him, both happy.",
+          "emoji": "🐚",
+          "key": "shouts"
+        }
+      ]
+    },
+    {
+      "id": "shawn-shadow",
+      "title": "Shawn and His Shadow",
+      "sound": "SH",
+      "emoji": "👤",
+      "colors": [
+        "#9aa7ff",
+        "#6f7fe6"
+      ],
+      "cover": "/assets/books/shawn-shadow/cover.webp",
+      "coverAlt": "Shawn waves at his own big shadow on a sunny cream wall; the shadow waves back.",
+      "pages": [
+        {
+          "text": "Shawn has a shadow.",
+          "art": "/assets/books/shawn-shadow/p01.webp",
+          "alt": "Shawn stands in a sunny yard with his shadow stretching beside him.",
+          "emoji": "👤",
+          "key": "shadow"
+        },
+        {
+          "text": "The shadow is on the wall.",
+          "art": "/assets/books/shawn-shadow/p02.webp",
+          "alt": "Shawn's shadow is cast clearly on a cream wall next to him.",
+          "emoji": "👤",
+          "key": "shadow"
+        },
+        {
+          "text": "Shawn waves. The shadow waves.",
+          "art": "/assets/books/shawn-shadow/p03.webp",
+          "alt": "Shawn waves, and his shadow on the wall waves too.",
+          "emoji": "👤",
+          "key": "shadow"
+        },
+        {
+          "text": "Shawn hops. The shadow hops.",
+          "art": "/assets/books/shawn-shadow/p04.webp",
+          "alt": "Shawn hops, and his shadow on the wall hops too.",
+          "emoji": "👤",
+          "key": "shadow"
+        },
+        {
+          "text": "Shawn shakes. The shadow shakes.",
+          "art": "/assets/books/shawn-shadow/p05.webp",
+          "alt": "Shawn wiggles and shakes, his shadow shaking on the wall.",
+          "emoji": "👤",
+          "key": "shakes"
+        },
+        {
+          "text": "Then the sun goes down. Where is the shadow?",
+          "art": "/assets/books/shawn-shadow/p06.webp",
+          "alt": "Evening: the sun is setting and Shawn looks for his shadow, which is fading.",
+          "emoji": "👤",
+          "key": "shadow"
+        },
+        {
+          "text": "Shawn is sad. The shadow is gone.",
+          "art": "/assets/books/shawn-shadow/p07.webp",
+          "alt": "Shawn looks sad in the dim evening; no shadow on the wall.",
+          "emoji": "👤",
+          "key": "shadow"
+        },
+        {
+          "text": "Mom shines a lamp.",
+          "art": "/assets/books/shawn-shadow/p08.webp",
+          "alt": "Indoors, Mom switches on a lamp, light shining across the room.",
+          "emoji": "👤",
+          "key": "shines"
+        },
+        {
+          "text": "The shadow is back! Shawn cheers.",
+          "art": "/assets/books/shawn-shadow/p09.webp",
+          "alt": "Shawn's shadow is back on the bedroom wall; Shawn cheers.",
+          "emoji": "👤",
+          "key": "shadow"
+        },
+        {
+          "text": "Shawn makes a shadow dog with his hands.",
+          "art": "/assets/books/shawn-shadow/p10.webp",
+          "alt": "Shawn makes a dog shape with his hands, a shadow dog on the wall.",
+          "emoji": "👤",
+          "key": "shadow"
+        },
+        {
+          "text": "The shadow dog shakes its tail.",
+          "art": "/assets/books/shawn-shadow/p11.webp",
+          "alt": "The shadow dog on the wall wags its tail.",
+          "emoji": "👤",
+          "key": "shakes"
+        },
+        {
+          "text": "Shawn and his shadow go to bed.",
+          "art": "/assets/books/shawn-shadow/p12.webp",
+          "alt": "Shawn climbs into bed, his shadow beside him on the wall.",
+          "emoji": "👤",
+          "key": "shadow"
+        }
+      ]
+    },
+    {
+      "id": "chip-the-chipmunk",
+      "title": "Chip the Chipmunk",
+      "sound": "CH",
+      "emoji": "🐿️",
+      "colors": [
+        "#ff9b7a",
+        "#e66f4b"
+      ],
+      "cover": "/assets/books/chip-the-chipmunk/cover.webp",
+      "coverAlt": "",
+      "pages": [
+        {
+          "text": "Chip the chipmunk has chubby cheeks.",
+          "art": "/assets/books/chip-the-chipmunk/p01.webp",
+          "alt": "",
+          "emoji": "🐿️",
+          "key": "chipmunk"
+        },
+        {
+          "text": "Chip chews on chestnuts.",
+          "art": "/assets/books/chip-the-chipmunk/p02.webp",
+          "alt": "",
+          "emoji": "🌰",
+          "key": "chestnuts"
+        },
+        {
+          "text": "It is chilly. Chip needs a cozy spot.",
+          "art": "/assets/books/chip-the-chipmunk/p03.webp",
+          "alt": "",
+          "emoji": "🍂",
+          "key": "chilly"
+        },
+        {
+          "text": "Chip checks the old chimney.",
+          "art": "/assets/books/chip-the-chipmunk/p04.webp",
+          "alt": "",
+          "emoji": "🏠",
+          "key": "chimney"
+        },
+        {
+          "text": "A chick is in the chimney!",
+          "art": "/assets/books/chip-the-chipmunk/p05.webp",
+          "alt": "",
+          "emoji": "🐤",
+          "key": "chick"
+        },
+        {
+          "text": "\"Cheep, cheep!\" says the chick.",
+          "art": "/assets/books/chip-the-chipmunk/p06.webp",
+          "alt": "",
+          "emoji": "🐤",
+          "key": "cheep"
+        },
+        {
+          "text": "The chick is chilly too.",
+          "art": "/assets/books/chip-the-chipmunk/p07.webp",
+          "alt": "",
+          "emoji": "🐤",
+          "key": "chilly"
+        },
+        {
+          "text": "Chip shares his chestnuts.",
+          "art": "/assets/books/chip-the-chipmunk/p08.webp",
+          "alt": "",
+          "emoji": "🌰",
+          "key": "chip"
+        },
+        {
+          "text": "Chip and the chick chat and chew.",
+          "art": "/assets/books/chip-the-chipmunk/p09.webp",
+          "alt": "",
+          "emoji": "🐿️",
+          "key": "chat"
+        },
+        {
+          "text": "They find a comfy chair.",
+          "art": "/assets/books/chip-the-chipmunk/p10.webp",
+          "alt": "",
+          "emoji": "🪑",
+          "key": "chair"
+        },
+        {
+          "text": "Chip and the chick cuddle up in the chair.",
+          "art": "/assets/books/chip-the-chipmunk/p11.webp",
+          "alt": "",
+          "emoji": "🪑",
+          "key": "chair"
+        },
+        {
+          "text": "\"Cheers for a new pal!\" chirps the chick.",
+          "art": "/assets/books/chip-the-chipmunk/p12.webp",
+          "alt": "",
+          "emoji": "🐤",
+          "key": "chirps"
+        }
+      ]
+    },
+    {
+      "id": "jax-and-the-jam-jar",
+      "title": "Jax and the Jam Jar",
+      "sound": "J",
+      "emoji": "🐆",
+      "colors": [
+        "#7ccf5a",
+        "#4fae32"
+      ],
+      "cover": "/assets/books/jax-and-the-jam-jar/cover.webp",
+      "coverAlt": "",
+      "pages": [
+        {
+          "text": "Jax the jaguar lives in the jungle.",
+          "art": "/assets/books/jax-and-the-jam-jar/p01.webp",
+          "alt": "",
+          "emoji": "🐆",
+          "key": "jaguar"
+        },
+        {
+          "text": "Jax likes to jump and jog.",
+          "art": "/assets/books/jax-and-the-jam-jar/p02.webp",
+          "alt": "",
+          "emoji": "🐆",
+          "key": "jump"
+        },
+        {
+          "text": "One day, Jax finds a jar of jam.",
+          "art": "/assets/books/jax-and-the-jam-jar/p03.webp",
+          "alt": "",
+          "emoji": "🫙",
+          "key": "jar"
+        },
+        {
+          "text": "\"Yum, jam!\" Jax jumps for joy.",
+          "art": "/assets/books/jax-and-the-jam-jar/p04.webp",
+          "alt": "",
+          "emoji": "🐆",
+          "key": "jam"
+        },
+        {
+          "text": "Jax cannot get the lid off the jar.",
+          "art": "/assets/books/jax-and-the-jam-jar/p05.webp",
+          "alt": "",
+          "emoji": "🫙",
+          "key": "jar"
+        },
+        {
+          "text": "Along comes Jill the giraffe.",
+          "art": "/assets/books/jax-and-the-jam-jar/p06.webp",
+          "alt": "",
+          "emoji": "🦒",
+          "key": "giraffe"
+        },
+        {
+          "text": "Jill gives the jar a twist.",
+          "art": "/assets/books/jax-and-the-jam-jar/p07.webp",
+          "alt": "",
+          "emoji": "🦒",
+          "key": "jar"
+        },
+        {
+          "text": "Pop! The jar is open.",
+          "art": "/assets/books/jax-and-the-jam-jar/p08.webp",
+          "alt": "",
+          "emoji": "🫙",
+          "key": "jar"
+        },
+        {
+          "text": "\"Join me for jam!\" says Jax.",
+          "art": "/assets/books/jax-and-the-jam-jar/p09.webp",
+          "alt": "",
+          "emoji": "🐆",
+          "key": "jam"
+        },
+        {
+          "text": "Jax and Jill eat jam and drink juice.",
+          "art": "/assets/books/jax-and-the-jam-jar/p10.webp",
+          "alt": "",
+          "emoji": "🧃",
+          "key": "juice"
+        },
+        {
+          "text": "Jill tells a joke. Jax giggles.",
+          "art": "/assets/books/jax-and-the-jam-jar/p11.webp",
+          "alt": "",
+          "emoji": "🦒",
+          "key": "joke"
+        },
+        {
+          "text": "What a jolly day in the jungle!",
+          "art": "/assets/books/jax-and-the-jam-jar/p12.webp",
+          "alt": "",
+          "emoji": "🌴",
+          "key": "jungle"
+        }
+      ]
+    },
+    {
+      "id": "leo-lucky-leaf",
+      "title": "Leo's Lucky Leaf",
+      "sound": "L",
+      "emoji": "🐑",
+      "colors": [
+        "#9fdc7a",
+        "#6fbf4a"
+      ],
+      "cover": "/assets/books/leo-lucky-leaf/cover.webp",
+      "coverAlt": "",
+      "pages": [
+        {
+          "text": "Leo the lamb likes to leap.",
+          "art": "/assets/books/leo-lucky-leaf/p01.webp",
+          "alt": "",
+          "emoji": "🐑",
+          "key": "lamb"
+        },
+        {
+          "text": "Leo leaps by the lake.",
+          "art": "/assets/books/leo-lucky-leaf/p02.webp",
+          "alt": "",
+          "emoji": "🐑",
+          "key": "leaps"
+        },
+        {
+          "text": "A leaf lands on Leo's head.",
+          "art": "/assets/books/leo-lucky-leaf/p03.webp",
+          "alt": "",
+          "emoji": "🍃",
+          "key": "leaf"
+        },
+        {
+          "text": "\"A lucky leaf!\" Leo laughs.",
+          "art": "/assets/books/leo-lucky-leaf/p04.webp",
+          "alt": "",
+          "emoji": "🍃",
+          "key": "leaf"
+        },
+        {
+          "text": "Leo takes the leaf to Lucy.",
+          "art": "/assets/books/leo-lucky-leaf/p05.webp",
+          "alt": "",
+          "emoji": "🦎",
+          "key": "leaf"
+        },
+        {
+          "text": "Lucy is a lazy lizard on a log.",
+          "art": "/assets/books/leo-lucky-leaf/p06.webp",
+          "alt": "",
+          "emoji": "🦎",
+          "key": "lizard"
+        },
+        {
+          "text": "\"Look, Lucy! A lucky leaf!\" says Leo.",
+          "art": "/assets/books/leo-lucky-leaf/p07.webp",
+          "alt": "",
+          "emoji": "🍃",
+          "key": "lucky"
+        },
+        {
+          "text": "Lucy licks her lips. \"Is it lunch?\"",
+          "art": "/assets/books/leo-lucky-leaf/p08.webp",
+          "alt": "",
+          "emoji": "🦎",
+          "key": "licks"
+        },
+        {
+          "text": "\"No, Lucy! Let's make a leaf boat!\"",
+          "art": "/assets/books/leo-lucky-leaf/p09.webp",
+          "alt": "",
+          "emoji": "🍃",
+          "key": "lucy"
+        },
+        {
+          "text": "They lay the leaf on the lake.",
+          "art": "/assets/books/leo-lucky-leaf/p10.webp",
+          "alt": "",
+          "emoji": "🍃",
+          "key": "lake"
+        },
+        {
+          "text": "A ladybug rides the leaf boat.",
+          "art": "/assets/books/leo-lucky-leaf/p11.webp",
+          "alt": "",
+          "emoji": "🐞",
+          "key": "ladybug"
+        },
+        {
+          "text": "Leo and Lucy wave. What luck!",
+          "art": "/assets/books/leo-lucky-leaf/p12.webp",
+          "alt": "",
+          "emoji": "🐞",
+          "key": "luck"
+        }
+      ]
+    },
+    {
+      "id": "libby-lemon",
+      "title": "Libby and the Lemon",
+      "sound": "L",
+      "emoji": "🍋",
+      "colors": [
+        "#ffd45e",
+        "#e6b12b"
+      ],
+      "cover": "/assets/books/libby-lemon/cover.webp",
+      "coverAlt": "Libby the white lamb holds a yellow lemon in a sunny garden, a little ladybug on her head.",
+      "pages": [
+        {
+          "text": "Libby the lamb is hungry.",
+          "art": "/assets/books/libby-lemon/p01.webp",
+          "alt": "Libby the lamb holds her tummy, looking hungry, in a sunny garden.",
+          "emoji": "🍋",
+          "key": "lamb"
+        },
+        {
+          "text": "Libby wants lunch.",
+          "art": "/assets/books/libby-lemon/p02.webp",
+          "alt": "Libby the lamb looks around the garden for lunch.",
+          "emoji": "🍋",
+          "key": "lunch"
+        },
+        {
+          "text": "She finds a lemon.",
+          "art": "/assets/books/libby-lemon/p03.webp",
+          "alt": "Libby the lamb finds a bright yellow lemon under a lemon tree.",
+          "emoji": "🍋",
+          "key": "lemon"
+        },
+        {
+          "text": "The lemon is sour! Libby makes a face.",
+          "art": "/assets/books/libby-lemon/p04.webp",
+          "alt": "Libby the lamb bites the lemon and makes a funny sour face.",
+          "emoji": "🍋",
+          "key": "lemon"
+        },
+        {
+          "text": "Next, she finds some lettuce.",
+          "art": "/assets/books/libby-lemon/p05.webp",
+          "alt": "Libby the lamb finds a big green head of lettuce.",
+          "emoji": "🍋",
+          "key": "lettuce"
+        },
+        {
+          "text": "Libby likes the lettuce.",
+          "art": "/assets/books/libby-lemon/p06.webp",
+          "alt": "Libby the lamb happily munches the lettuce.",
+          "emoji": "🍋",
+          "key": "likes"
+        },
+        {
+          "text": "Then Libby sees a ladybug.",
+          "art": "/assets/books/libby-lemon/p07.webp",
+          "alt": "Libby the lamb notices a little red ladybug on a leaf.",
+          "emoji": "🍋",
+          "key": "ladybug"
+        },
+        {
+          "text": "\"Can I have some lunch too?\" asks the ladybug.",
+          "art": "/assets/books/libby-lemon/p08.webp",
+          "alt": "The ladybug looks hopefully at Libby the lamb, asking for lunch.",
+          "emoji": "🍋",
+          "key": "lunch"
+        },
+        {
+          "text": "Libby gives her a leaf.",
+          "art": "/assets/books/libby-lemon/p09.webp",
+          "alt": "Libby the lamb gives the ladybug a green leaf.",
+          "emoji": "🍋",
+          "key": "leaf"
+        },
+        {
+          "text": "They eat lunch on a log.",
+          "art": "/assets/books/libby-lemon/p10.webp",
+          "alt": "Libby the lamb and the ladybug eat lunch together on a fallen log.",
+          "emoji": "🍋",
+          "key": "log"
+        },
+        {
+          "text": "Libby laughs. Lunch is more fun with a friend.",
+          "art": "/assets/books/libby-lemon/p11.webp",
+          "alt": "Libby the lamb laughs happily beside the ladybug.",
+          "emoji": "🍋",
+          "key": "laughs"
+        },
+        {
+          "text": "Libby and the ladybug lie down to rest.",
+          "art": "/assets/books/libby-lemon/p12.webp",
+          "alt": "Libby the lamb and the ladybug lie down on soft grass resting, eyes closed.",
+          "emoji": "🍋",
+          "key": "lie"
+        }
+      ]
+    },
+    {
+      "id": "leon-lantern",
+      "title": "Leon's Lantern",
+      "sound": "L",
+      "emoji": "🏮",
+      "colors": [
+        "#ffb066",
+        "#ef923c"
+      ],
+      "cover": "/assets/books/leon-lantern/cover.webp",
+      "coverAlt": "Leon the lion cub holds up a glowing lantern at night by a lake, Lucky the white puppy beside him.",
+      "pages": [
+        {
+          "text": "Leon the lion has a lantern.",
+          "art": "/assets/books/leon-lantern/p01.webp",
+          "alt": "Leon the lion cub stands holding an unlit lantern, evening sky.",
+          "emoji": "🏮",
+          "key": "lion"
+        },
+        {
+          "text": "It is night. Leon cannot see.",
+          "art": "/assets/books/leon-lantern/p02.webp",
+          "alt": "Leon the lion cub in the dark night, squinting, can't see.",
+          "emoji": "🏮",
+          "key": "leon"
+        },
+        {
+          "text": "He turns on his lantern.",
+          "art": "/assets/books/leon-lantern/p03.webp",
+          "alt": "Leon the lion cub switches on his lantern; warm light glows.",
+          "emoji": "🏮",
+          "key": "lantern"
+        },
+        {
+          "text": "Now Leon can see the lake.",
+          "art": "/assets/books/leon-lantern/p04.webp",
+          "alt": "Leon's lantern lights up a calm lake at night.",
+          "emoji": "🏮",
+          "key": "lake"
+        },
+        {
+          "text": "Where is his pet, Lucky? Leon looks.",
+          "art": "/assets/books/leon-lantern/p05.webp",
+          "alt": "Leon the lion cub holds his lantern up, looking around worried for his pet.",
+          "emoji": "🏮",
+          "key": "lucky"
+        },
+        {
+          "text": "Leon looks by the logs.",
+          "art": "/assets/books/leon-lantern/p06.webp",
+          "alt": "Leon the lion cub peeks behind a pile of logs with his lantern.",
+          "emoji": "🏮",
+          "key": "logs"
+        },
+        {
+          "text": "Leon looks under a leaf.",
+          "art": "/assets/books/leon-lantern/p07.webp",
+          "alt": "Leon the lion cub lifts a huge leaf with his lantern, looking under it.",
+          "emoji": "🏮",
+          "key": "leaf"
+        },
+        {
+          "text": "Leon hears a noise. Woof!",
+          "art": "/assets/books/leon-lantern/p08.webp",
+          "alt": "Leon the lion cub perks his ears up, hearing a noise in the dark.",
+          "emoji": "🏮",
+          "key": "leon"
+        },
+        {
+          "text": "It is Lucky! Lucky licks Leon.",
+          "art": "/assets/books/leon-lantern/p09.webp",
+          "alt": "Lucky the white puppy jumps up and licks Leon's face.",
+          "emoji": "🏮",
+          "key": "licks"
+        },
+        {
+          "text": "Leon laughs and hugs Lucky.",
+          "art": "/assets/books/leon-lantern/p10.webp",
+          "alt": "Leon the lion cub laughs and hugs Lucky the puppy.",
+          "emoji": "🏮",
+          "key": "laughs"
+        },
+        {
+          "text": "They go home by the light of the lantern.",
+          "art": "/assets/books/leon-lantern/p11.webp",
+          "alt": "Leon and Lucky walk home along a path lit by the lantern.",
+          "emoji": "🏮",
+          "key": "light"
+        },
+        {
+          "text": "Leon and Lucky rest by the lantern.",
+          "art": "/assets/books/leon-lantern/p12.webp",
+          "alt": "Leon and Lucky rest curled up beside the glowing lantern.",
+          "emoji": "🏮",
+          "key": "lantern"
+        }
+      ]
+    },
+    {
+      "id": "theo-thunder-day",
+      "title": "Theo's Thunder Day",
+      "sound": "TH",
+      "emoji": "🦥",
+      "colors": [
+        "#a7b4ff",
+        "#7a88e6"
+      ],
+      "cover": "/assets/books/theo-thunder-day/cover.webp",
+      "coverAlt": "",
+      "pages": [
+        {
+          "text": "Theo thinks it is a fun day.",
+          "art": "/assets/books/theo-thunder-day/p01.webp",
+          "alt": "",
+          "emoji": "🦥",
+          "key": "theo"
+        },
+        {
+          "text": "Theo is thirsty. He sips a big drink.",
+          "art": "/assets/books/theo-thunder-day/p02.webp",
+          "alt": "",
+          "emoji": "🥤",
+          "key": "thirsty"
+        },
+        {
+          "text": "Thump! Thud! What is it?",
+          "art": "/assets/books/theo-thunder-day/p03.webp",
+          "alt": "",
+          "emoji": "⛈️",
+          "key": "thump"
+        },
+        {
+          "text": "It is thunder! Theo hides his head.",
+          "art": "/assets/books/theo-thunder-day/p04.webp",
+          "alt": "",
+          "emoji": "⛈️",
+          "key": "thunder"
+        },
+        {
+          "text": "Theo feels a bit scared.",
+          "art": "/assets/books/theo-thunder-day/p05.webp",
+          "alt": "",
+          "emoji": "🦥",
+          "key": "theo"
+        },
+        {
+          "text": "Theo's pal Thea comes over.",
+          "art": "/assets/books/theo-thunder-day/p06.webp",
+          "alt": "",
+          "emoji": "🦥",
+          "key": "thea"
+        },
+        {
+          "text": "\"Theo, think of a fun thing!\" says Thea.",
+          "art": "/assets/books/theo-thunder-day/p07.webp",
+          "alt": "",
+          "emoji": "💭",
+          "key": "think"
+        },
+        {
+          "text": "Theo thinks of a thick, warm blanket.",
+          "art": "/assets/books/theo-thunder-day/p08.webp",
+          "alt": "",
+          "emoji": "🛏️",
+          "key": "thick"
+        },
+        {
+          "text": "Theo and Thea sit under a thick blanket.",
+          "art": "/assets/books/theo-thunder-day/p09.webp",
+          "alt": "",
+          "emoji": "🛏️",
+          "key": "thick"
+        },
+        {
+          "text": "Thea hums a tune. Theo taps his thumb.",
+          "art": "/assets/books/theo-thunder-day/p10.webp",
+          "alt": "",
+          "emoji": "👍",
+          "key": "thumb"
+        },
+        {
+          "text": "Soon, no more thunder.",
+          "art": "/assets/books/theo-thunder-day/p11.webp",
+          "alt": "",
+          "emoji": "🌤️",
+          "key": "thunder"
+        },
+        {
+          "text": "\"Thanks, Thea!\" Theo gives a big thumbs up.",
+          "art": "/assets/books/theo-thunder-day/p12.webp",
+          "alt": "",
+          "emoji": "👍",
+          "key": "thumbs"
+        }
+      ]
+    },
+    {
+      "id": "thor-thank-you",
+      "title": "Thor Says Thank You",
+      "sound": "TH",
+      "emoji": "🐻",
+      "colors": [
+        "#c49a6c",
+        "#9b6f45"
+      ],
+      "cover": "/assets/books/thor-thank-you/cover.webp",
+      "coverAlt": "Thor the big brown bear smiles in a sunny meadow, giving a thumbs up, with Fox, Bee and Owl around him.",
+      "pages": [
+        {
+          "text": "Thor is a big, kind bear.",
+          "art": "/assets/books/thor-thank-you/p01.webp",
+          "alt": "Thor the big brown bear smiles in a sunny forest meadow.",
+          "emoji": "🐻",
+          "key": "thor"
+        },
+        {
+          "text": "Thor thinks of his pals.",
+          "art": "/assets/books/thor-thank-you/p02.webp",
+          "alt": "Thor the bear sits thinking, eyes up, smiling.",
+          "emoji": "🐻",
+          "key": "thinks"
+        },
+        {
+          "text": "\"I want to thank my pals,\" says Thor.",
+          "art": "/assets/books/thor-thank-you/p03.webp",
+          "alt": "Thor the bear stands with his paws on his heart, cheerful.",
+          "emoji": "🐻",
+          "key": "thank"
+        },
+        {
+          "text": "Thor picks a thick red flower.",
+          "art": "/assets/books/thor-thank-you/p04.webp",
+          "alt": "Thor the bear picks a big red flower with a thick stem.",
+          "emoji": "🐻",
+          "key": "thick"
+        },
+        {
+          "text": "He gives it to Fox. \"Thank you, Fox!\"",
+          "art": "/assets/books/thor-thank-you/p05.webp",
+          "alt": "Thor the bear gives the red flower to Fox.",
+          "emoji": "🐻",
+          "key": "thank"
+        },
+        {
+          "text": "Thor finds a thimble of honey.",
+          "art": "/assets/books/thor-thank-you/p06.webp",
+          "alt": "Thor the bear holds a tiny thimble full of golden honey.",
+          "emoji": "🐻",
+          "key": "thimble"
+        },
+        {
+          "text": "He gives it to Bee. \"Thank you, Bee!\"",
+          "art": "/assets/books/thor-thank-you/p07.webp",
+          "alt": "Thor the bear gives the thimble of honey to Bee.",
+          "emoji": "🐻",
+          "key": "thank"
+        },
+        {
+          "text": "Thor is thirsty. He sips some water.",
+          "art": "/assets/books/thor-thank-you/p08.webp",
+          "alt": "Thor the bear drinks water from a stream, thirsty.",
+          "emoji": "🐻",
+          "key": "thirsty"
+        },
+        {
+          "text": "He thinks of one more pal.",
+          "art": "/assets/books/thor-thank-you/p09.webp",
+          "alt": "Thor the bear thinking, one paw on his chin.",
+          "emoji": "🐻",
+          "key": "thinks"
+        },
+        {
+          "text": "It is Owl! Owl helps Thor every day.",
+          "art": "/assets/books/thor-thank-you/p10.webp",
+          "alt": "Owl on a branch waves a wing at Thor the bear.",
+          "emoji": "🐻",
+          "key": "thor"
+        },
+        {
+          "text": "Thor gives Owl a big thumbs up.",
+          "art": "/assets/books/thor-thank-you/p11.webp",
+          "alt": "Thor the bear gives Owl a big thumbs up.",
+          "emoji": "🐻",
+          "key": "thumbs"
+        },
+        {
+          "text": "\"Thanks, Thor!\" his pals say. Thor is so happy.",
+          "art": "/assets/books/thor-thank-you/p12.webp",
+          "alt": "Fox, Bee and Owl cheer around Thor the bear, who smiles happily.",
+          "emoji": "🐻",
+          "key": "thanks"
+        }
+      ]
+    },
+    {
+      "id": "thelma-thirsty-plant",
+      "title": "Thelma's Thirsty Plant",
+      "sound": "TH",
+      "emoji": "🌱",
+      "colors": [
+        "#8fdc7a",
+        "#5fb84a"
+      ],
+      "cover": "/assets/books/thelma-thirsty-plant/cover.webp",
+      "coverAlt": "Thelma holds a watering cup over her little potted plant on a sunny windowsill, the plant blooming a big pink flower.",
+      "pages": [
+        {
+          "text": "Thelma has a plant.",
+          "art": "/assets/books/thelma-thirsty-plant/p01.webp",
+          "alt": "Thelma stands beside her little potted plant on a windowsill.",
+          "emoji": "🌱",
+          "key": "thelma"
+        },
+        {
+          "text": "Thelma's plant is thirsty.",
+          "art": "/assets/books/thelma-thirsty-plant/p02.webp",
+          "alt": "Thelma's little plant droops with thin sad leaves.",
+          "emoji": "🌱",
+          "key": "thirsty"
+        },
+        {
+          "text": "Its leaves look thin and sad.",
+          "art": "/assets/books/thelma-thirsty-plant/p03.webp",
+          "alt": "Close up of the plant's thin drooping leaves.",
+          "emoji": "🌱",
+          "key": "thin"
+        },
+        {
+          "text": "Thelma thinks.",
+          "art": "/assets/books/thelma-thirsty-plant/p04.webp",
+          "alt": "Thelma thinks with one finger on her chin.",
+          "emoji": "🌱",
+          "key": "thinks"
+        },
+        {
+          "text": "\"I know! It needs water!\" thinks Thelma.",
+          "art": "/assets/books/thelma-thirsty-plant/p05.webp",
+          "alt": "Thelma has a happy idea, pointing up, a cup in her hand.",
+          "emoji": "🌱",
+          "key": "thinks"
+        },
+        {
+          "text": "Thelma fills a cup. Thud! It falls.",
+          "art": "/assets/books/thelma-thirsty-plant/p06.webp",
+          "alt": "Thelma's cup of water tips over and falls with a splash.",
+          "emoji": "🌱",
+          "key": "thud"
+        },
+        {
+          "text": "Thelma tries again.",
+          "art": "/assets/books/thelma-thirsty-plant/p07.webp",
+          "alt": "Thelma fills the cup again, determined.",
+          "emoji": "🌱",
+          "key": "thelma"
+        },
+        {
+          "text": "Thelma gives her plant a big drink.",
+          "art": "/assets/books/thelma-thirsty-plant/p08.webp",
+          "alt": "Thelma pours water into the plant pot.",
+          "emoji": "🌱",
+          "key": "thelma"
+        },
+        {
+          "text": "Thelma waits and thinks.",
+          "art": "/assets/books/thelma-thirsty-plant/p09.webp",
+          "alt": "Thelma waits patiently, sitting beside the pot.",
+          "emoji": "🌱",
+          "key": "thinks"
+        },
+        {
+          "text": "Soon, a thick bud pops up.",
+          "art": "/assets/books/thelma-thirsty-plant/p10.webp",
+          "alt": "A thick green bud pops up on the plant.",
+          "emoji": "🌱",
+          "key": "thick"
+        },
+        {
+          "text": "Thelma says thanks to her plant.",
+          "art": "/assets/books/thelma-thirsty-plant/p11.webp",
+          "alt": "Thelma smiles and talks kindly to her plant.",
+          "emoji": "🌱",
+          "key": "thanks"
+        },
+        {
+          "text": "It is a big pink flower! Thelma gives it a thumbs up.",
+          "art": "/assets/books/thelma-thirsty-plant/p12.webp",
+          "alt": "A big pink flower blooms; Thelma gives a thumbs up.",
+          "emoji": "🌱",
+          "key": "thumbs"
+        }
+      ]
+    },
+    {
+      "id": "this-bear-that-bee",
+      "title": "This Bear, That Bee",
+      "sound": "THV",
+      "emoji": "🐻",
+      "colors": [
+        "#ffb3c7",
+        "#e68aa3"
+      ],
+      "cover": "/assets/books/this-bear-that-bee/cover.webp",
+      "coverAlt": "",
+      "pages": [
+        {
+          "text": "This is a big bear. That is a little bee.",
+          "art": "/assets/books/this-bear-that-bee/p01.webp",
+          "alt": "",
+          "emoji": "🐻",
+          "key": "this"
+        },
+        {
+          "text": "They are pals. They like to play.",
+          "art": "/assets/books/this-bear-that-bee/p02.webp",
+          "alt": "",
+          "emoji": "🐝",
+          "key": "they"
+        },
+        {
+          "text": "\"Let's go there!\" says the bear.",
+          "art": "/assets/books/this-bear-that-bee/p03.webp",
+          "alt": "",
+          "emoji": "⛰️",
+          "key": "there"
+        },
+        {
+          "text": "There is a pond by the hill.",
+          "art": "/assets/books/this-bear-that-bee/p04.webp",
+          "alt": "",
+          "emoji": "🏞️",
+          "key": "the"
+        },
+        {
+          "text": "Then they see the ducks.",
+          "art": "/assets/books/this-bear-that-bee/p05.webp",
+          "alt": "",
+          "emoji": "🦆",
+          "key": "then"
+        },
+        {
+          "text": "\"Look at those ducks!\" says the bee.",
+          "art": "/assets/books/this-bear-that-bee/p06.webp",
+          "alt": "",
+          "emoji": "🦆",
+          "key": "those"
+        },
+        {
+          "text": "The ducks swim in a line.",
+          "art": "/assets/books/this-bear-that-bee/p07.webp",
+          "alt": "",
+          "emoji": "🦆",
+          "key": "the"
+        },
+        {
+          "text": "\"These seeds are for them,\" says the bee.",
+          "art": "/assets/books/this-bear-that-bee/p08.webp",
+          "alt": "",
+          "emoji": "🌻",
+          "key": "these"
+        },
+        {
+          "text": "They toss the seeds to the ducks.",
+          "art": "/assets/books/this-bear-that-bee/p09.webp",
+          "alt": "",
+          "emoji": "🌻",
+          "key": "they"
+        },
+        {
+          "text": "The ducks quack, \"Yum, yum!\"",
+          "art": "/assets/books/this-bear-that-bee/p10.webp",
+          "alt": "",
+          "emoji": "🦆",
+          "key": "the"
+        },
+        {
+          "text": "Then the sun sets.",
+          "art": "/assets/books/this-bear-that-bee/p11.webp",
+          "alt": "",
+          "emoji": "🌅",
+          "key": "then"
+        },
+        {
+          "text": "\"That was the best day!\" say the pals.",
+          "art": "/assets/books/this-bear-that-bee/p12.webp",
+          "alt": "",
+          "emoji": "🐻",
+          "key": "that"
+        }
+      ]
+    },
+    {
+      "id": "painted-rory",
+      "title": "Rory the Rabbit",
+      "sound": "R",
+      "emoji": "🐰",
+      "colors": [
+        "#ff7a6e",
+        "#ef6557"
+      ],
+      "cover": "/assets/books/painted/rory-cover.webp",
+      "coverAlt": "",
+      "pages": [
+        {
+          "text": "Rory the rabbit rides a red rocket.",
+          "art": "/assets/books/painted/rory.webp",
+          "alt": "",
+          "emoji": "🚀",
+          "key": "rabbit",
+          "crop": {
+            "column": 0,
+            "row": 0,
+            "columns": 3,
+            "rows": 2
+          }
+        },
+        {
+          "text": "The rocket roars over the rainbow.",
+          "art": "/assets/books/painted/rory.webp",
+          "alt": "",
+          "emoji": "🌈",
+          "key": "rainbow",
+          "crop": {
+            "column": 1,
+            "row": 0,
+            "columns": 3,
+            "rows": 2
+          }
+        },
+        {
+          "text": "Rory sees a robot on a rock.",
+          "art": "/assets/books/painted/rory.webp",
+          "alt": "",
+          "emoji": "🤖",
+          "key": "robot",
+          "crop": {
+            "column": 2,
+            "row": 0,
+            "columns": 3,
+            "rows": 2
+          }
+        },
+        {
+          "text": "The robot gives Rory a ring.",
+          "art": "/assets/books/painted/rory.webp",
+          "alt": "",
+          "emoji": "💍",
+          "key": "ring",
+          "crop": {
+            "column": 0,
+            "row": 1,
+            "columns": 3,
+            "rows": 2
+          }
+        },
+        {
+          "text": "They race around the river.",
+          "art": "/assets/books/painted/rory.webp",
+          "alt": "",
+          "emoji": "🌊",
+          "key": "race",
+          "crop": {
+            "column": 1,
+            "row": 1,
+            "columns": 3,
+            "rows": 2
+          }
+        },
+        {
+          "text": "Rory roars: hooray, hooray!",
+          "art": "/assets/books/painted/rory.webp",
+          "alt": "",
+          "emoji": "🎉",
+          "key": "rory",
+          "crop": {
+            "column": 2,
+            "row": 1,
+            "columns": 3,
+            "rows": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "painted-reba",
+      "title": "Reba the Robot",
+      "sound": "R",
+      "emoji": "🤖",
+      "colors": [
+        "#ff9a6e",
+        "#ef7d47"
+      ],
+      "cover": "/assets/books/painted/reba-cover.webp",
+      "coverAlt": "",
+      "pages": [
+        {
+          "text": "Reba the robot runs on a road.",
+          "art": "/assets/books/painted/reba.webp",
+          "alt": "",
+          "emoji": "🤖",
+          "key": "robot",
+          "crop": {
+            "column": 0,
+            "row": 0,
+            "columns": 3,
+            "rows": 2
+          }
+        },
+        {
+          "text": "Reba rolls past a red rose.",
+          "art": "/assets/books/painted/reba.webp",
+          "alt": "",
+          "emoji": "🌹",
+          "key": "rose",
+          "crop": {
+            "column": 1,
+            "row": 0,
+            "columns": 3,
+            "rows": 2
+          }
+        },
+        {
+          "text": "A rabbit races right by.",
+          "art": "/assets/books/painted/reba.webp",
+          "alt": "",
+          "emoji": "🐇",
+          "key": "rabbit",
+          "crop": {
+            "column": 2,
+            "row": 0,
+            "columns": 3,
+            "rows": 2
+          }
+        },
+        {
+          "text": "Reba wraps it in a ribbon.",
+          "art": "/assets/books/painted/reba.webp",
+          "alt": "",
+          "emoji": "🎀",
+          "key": "ribbon",
+          "crop": {
+            "column": 0,
+            "row": 1,
+            "columns": 3,
+            "rows": 2
+          }
+        },
+        {
+          "text": "Rain! They run for the roof.",
+          "art": "/assets/books/painted/reba.webp",
+          "alt": "",
+          "emoji": "🌧️",
+          "key": "rain",
+          "crop": {
+            "column": 1,
+            "row": 1,
+            "columns": 3,
+            "rows": 2
+          }
+        },
+        {
+          "text": "Reba the robot: ready, ready!",
+          "art": "/assets/books/painted/reba.webp",
+          "alt": "",
+          "emoji": "🌈",
+          "key": "ready",
+          "crop": {
+            "column": 2,
+            "row": 1,
+            "columns": 3,
+            "rows": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "painted-ruby",
+      "title": "Ruby the Rooster",
+      "sound": "R",
+      "emoji": "🐓",
+      "colors": [
+        "#ff6e8e",
+        "#ef5772"
+      ],
+      "cover": "/assets/books/painted/ruby-cover.webp",
+      "coverAlt": "",
+      "pages": [
+        {
+          "text": "Ruby the rooster rises at dawn.",
+          "art": "/assets/books/painted/ruby.webp",
+          "alt": "",
+          "emoji": "🐓",
+          "key": "ruby",
+          "crop": {
+            "column": 0,
+            "row": 0,
+            "columns": 3,
+            "rows": 2
+          }
+        },
+        {
+          "text": "Ruby crows: rise and shine!",
+          "art": "/assets/books/painted/ruby.webp",
+          "alt": "",
+          "emoji": "🌅",
+          "key": "rise",
+          "crop": {
+            "column": 1,
+            "row": 0,
+            "columns": 3,
+            "rows": 2
+          }
+        },
+        {
+          "text": "She runs around the red barn.",
+          "art": "/assets/books/painted/ruby.webp",
+          "alt": "",
+          "emoji": "🏃",
+          "key": "red",
+          "crop": {
+            "column": 2,
+            "row": 0,
+            "columns": 3,
+            "rows": 2
+          }
+        },
+        {
+          "text": "Ruby finds a wriggly worm.",
+          "art": "/assets/books/painted/ruby.webp",
+          "alt": "",
+          "emoji": "🪱",
+          "key": "ruby",
+          "crop": {
+            "column": 0,
+            "row": 1,
+            "columns": 3,
+            "rows": 2
+          }
+        },
+        {
+          "text": "The rooster pecks rows of corn.",
+          "art": "/assets/books/painted/ruby.webp",
+          "alt": "",
+          "emoji": "🌽",
+          "key": "rows",
+          "crop": {
+            "column": 1,
+            "row": 1,
+            "columns": 3,
+            "rows": 2
+          }
+        },
+        {
+          "text": "Ruby rests. What a great run!",
+          "art": "/assets/books/painted/ruby.webp",
+          "alt": "",
+          "emoji": "💤",
+          "key": "run",
+          "crop": {
+            "column": 2,
+            "row": 1,
+            "columns": 3,
+            "rows": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "painted-remy",
+      "title": "Remy the Raccoon",
+      "sound": "R",
+      "emoji": "🦝",
+      "colors": [
+        "#ffb066",
+        "#ef923c"
+      ],
+      "cover": "/assets/books/painted/remy-cover.webp",
+      "coverAlt": "",
+      "pages": [
+        {
+          "text": "Remy the raccoon roams the river.",
+          "art": "/assets/books/painted/remy.webp",
+          "alt": "",
+          "emoji": "🦝",
+          "key": "raccoon",
+          "crop": {
+            "column": 0,
+            "row": 0,
+            "columns": 3,
+            "rows": 2
+          }
+        },
+        {
+          "text": "He reaches under a round rock.",
+          "art": "/assets/books/painted/remy.webp",
+          "alt": "",
+          "emoji": "🪨",
+          "key": "rock",
+          "crop": {
+            "column": 1,
+            "row": 0,
+            "columns": 3,
+            "rows": 2
+          }
+        },
+        {
+          "text": "Remy grabs a ripe, red grape.",
+          "art": "/assets/books/painted/remy.webp",
+          "alt": "",
+          "emoji": "🍇",
+          "key": "red",
+          "crop": {
+            "column": 2,
+            "row": 0,
+            "columns": 3,
+            "rows": 2
+          }
+        },
+        {
+          "text": "He rows a raft in the rain.",
+          "art": "/assets/books/painted/remy.webp",
+          "alt": "",
+          "emoji": "🚣",
+          "key": "rain",
+          "crop": {
+            "column": 0,
+            "row": 1,
+            "columns": 3,
+            "rows": 2
+          }
+        },
+        {
+          "text": "Remy rests in the reeds.",
+          "art": "/assets/books/painted/remy.webp",
+          "alt": "",
+          "emoji": "🌿",
+          "key": "reeds",
+          "crop": {
+            "column": 1,
+            "row": 1,
+            "columns": 3,
+            "rows": 2
+          }
+        },
+        {
+          "text": "Remy the raccoon: hooray!",
+          "art": "/assets/books/painted/remy.webp",
+          "alt": "",
+          "emoji": "⭐",
+          "key": "remy",
+          "crop": {
+            "column": 2,
+            "row": 1,
+            "columns": 3,
+            "rows": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "painted-rex",
+      "title": "Rex the Rhino",
+      "sound": "R",
+      "emoji": "🦏",
+      "colors": [
+        "#ff7a6e",
+        "#e05a9c"
+      ],
+      "cover": "/assets/books/painted/rex-cover.webp",
+      "coverAlt": "",
+      "pages": [
+        {
+          "text": "Rex the rhino runs really fast.",
+          "art": "/assets/books/painted/rex.webp",
+          "alt": "",
+          "emoji": "🦏",
+          "key": "rhino",
+          "crop": {
+            "column": 0,
+            "row": 0,
+            "columns": 3,
+            "rows": 2
+          }
+        },
+        {
+          "text": "He roars down the rocky road.",
+          "art": "/assets/books/painted/rex.webp",
+          "alt": "",
+          "emoji": "🛣️",
+          "key": "road",
+          "crop": {
+            "column": 1,
+            "row": 0,
+            "columns": 3,
+            "rows": 2
+          }
+        },
+        {
+          "text": "Rex rolls in the rich, green grass.",
+          "art": "/assets/books/painted/rex.webp",
+          "alt": "",
+          "emoji": "🌳",
+          "key": "rolls",
+          "crop": {
+            "column": 2,
+            "row": 0,
+            "columns": 3,
+            "rows": 2
+          }
+        },
+        {
+          "text": "He reaches for a red apple.",
+          "art": "/assets/books/painted/rex.webp",
+          "alt": "",
+          "emoji": "🍎",
+          "key": "red",
+          "crop": {
+            "column": 0,
+            "row": 1,
+            "columns": 3,
+            "rows": 2
+          }
+        },
+        {
+          "text": "Rex meets a friendly rabbit.",
+          "art": "/assets/books/painted/rex.webp",
+          "alt": "",
+          "emoji": "🤝",
+          "key": "rabbit",
+          "crop": {
+            "column": 1,
+            "row": 1,
+            "columns": 3,
+            "rows": 2
+          }
+        },
+        {
+          "text": "Run, Rex, run! Hooray!",
+          "art": "/assets/books/painted/rex.webp",
+          "alt": "",
+          "emoji": "🎉",
+          "key": "run",
+          "crop": {
+            "column": 2,
+            "row": 1,
+            "columns": 3,
+            "rows": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "painted-sunny",
+      "title": "Sunny the Seal",
+      "sound": "S",
+      "emoji": "🦭",
+      "colors": [
+        "#62bdff",
+        "#46a6ec"
+      ],
+      "cover": "/assets/books/painted/sunny-cover.webp",
+      "coverAlt": "",
+      "pages": [
+        {
+          "text": "Sunny the seal sits in the sun.",
+          "art": "/assets/books/painted/sunny.webp",
+          "alt": "",
+          "emoji": "☀️",
+          "key": "seal",
+          "crop": {
+            "column": 0,
+            "row": 0,
+            "columns": 3,
+            "rows": 2
+          }
+        },
+        {
+          "text": "Sunny sees a silly snake.",
+          "art": "/assets/books/painted/sunny.webp",
+          "alt": "",
+          "emoji": "🐍",
+          "key": "silly",
+          "crop": {
+            "column": 1,
+            "row": 0,
+            "columns": 3,
+            "rows": 2
+          }
+        },
+        {
+          "text": "The snake slides on the soft sand.",
+          "art": "/assets/books/painted/sunny.webp",
+          "alt": "",
+          "emoji": "🏖️",
+          "key": "sand",
+          "crop": {
+            "column": 2,
+            "row": 0,
+            "columns": 3,
+            "rows": 2
+          }
+        },
+        {
+          "text": "They sip soup with a silver spoon.",
+          "art": "/assets/books/painted/sunny.webp",
+          "alt": "",
+          "emoji": "🥄",
+          "key": "soup",
+          "crop": {
+            "column": 0,
+            "row": 1,
+            "columns": 3,
+            "rows": 2
+          }
+        },
+        {
+          "text": "Sunny sings a silly song.",
+          "art": "/assets/books/painted/sunny.webp",
+          "alt": "",
+          "emoji": "🎵",
+          "key": "song",
+          "crop": {
+            "column": 1,
+            "row": 1,
+            "columns": 3,
+            "rows": 2
+          }
+        },
+        {
+          "text": "So sleepy! Sunny says goodnight.",
+          "art": "/assets/books/painted/sunny.webp",
+          "alt": "",
+          "emoji": "😴",
+          "key": "sunny",
+          "crop": {
+            "column": 2,
+            "row": 1,
+            "columns": 3,
+            "rows": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "painted-lily",
+      "title": "Lily the Lion",
+      "sound": "L",
+      "emoji": "🦁",
+      "colors": [
+        "#ffd45e",
+        "#f0bb33"
+      ],
+      "cover": "/assets/books/painted/lily-cover.webp",
+      "coverAlt": "",
+      "pages": [
+        {
+          "text": "Lily the lion licks a lemon lollipop.",
+          "art": "/assets/books/painted/lily.webp",
+          "alt": "",
+          "emoji": "🍭",
+          "key": "lion",
+          "crop": {
+            "column": 0,
+            "row": 0,
+            "columns": 3,
+            "rows": 2
+          }
+        },
+        {
+          "text": "Lily leaps over a little log.",
+          "art": "/assets/books/painted/lily.webp",
+          "alt": "",
+          "emoji": "🪵",
+          "key": "log",
+          "crop": {
+            "column": 1,
+            "row": 0,
+            "columns": 3,
+            "rows": 2
+          }
+        },
+        {
+          "text": "A ladybug lands on a leaf.",
+          "art": "/assets/books/painted/lily.webp",
+          "alt": "",
+          "emoji": "🐞",
+          "key": "leaf",
+          "crop": {
+            "column": 2,
+            "row": 0,
+            "columns": 3,
+            "rows": 2
+          }
+        },
+        {
+          "text": "Lily laughs: la la la!",
+          "art": "/assets/books/painted/lily.webp",
+          "alt": "",
+          "emoji": "😄",
+          "key": "laughs",
+          "crop": {
+            "column": 0,
+            "row": 1,
+            "columns": 3,
+            "rows": 2
+          }
+        },
+        {
+          "text": "They look at a yellow balloon.",
+          "art": "/assets/books/painted/lily.webp",
+          "alt": "",
+          "emoji": "🎈",
+          "key": "look",
+          "crop": {
+            "column": 1,
+            "row": 1,
+            "columns": 3,
+            "rows": 2
+          }
+        },
+        {
+          "text": "Lily loves to play all day.",
+          "art": "/assets/books/painted/lily.webp",
+          "alt": "",
+          "emoji": "💛",
+          "key": "lily",
+          "crop": {
+            "column": 2,
+            "row": 1,
+            "columns": 3,
+            "rows": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "painted-kiki",
+      "title": "Kiki the Koala",
+      "sound": "K",
+      "emoji": "🐨",
+      "colors": [
+        "#7dd470",
+        "#63bd57"
+      ],
+      "cover": "/assets/books/painted/kiki-cover.webp",
+      "coverAlt": "",
+      "pages": [
+        {
+          "text": "Kiki the koala bakes a cake.",
+          "art": "/assets/books/painted/kiki.webp",
+          "alt": "",
+          "emoji": "🍰",
+          "key": "cake",
+          "crop": {
+            "column": 0,
+            "row": 0,
+            "columns": 3,
+            "rows": 2
+          }
+        },
+        {
+          "text": "A kind king comes with a key.",
+          "art": "/assets/books/painted/kiki.webp",
+          "alt": "",
+          "emoji": "🔑",
+          "key": "king",
+          "crop": {
+            "column": 1,
+            "row": 0,
+            "columns": 3,
+            "rows": 2
+          }
+        },
+        {
+          "text": "The king flies a colorful kite.",
+          "art": "/assets/books/painted/kiki.webp",
+          "alt": "",
+          "emoji": "🪁",
+          "key": "kite",
+          "crop": {
+            "column": 2,
+            "row": 0,
+            "columns": 3,
+            "rows": 2
+          }
+        },
+        {
+          "text": "Kiki gives the king a cookie.",
+          "art": "/assets/books/painted/kiki.webp",
+          "alt": "",
+          "emoji": "🍪",
+          "key": "cookie",
+          "crop": {
+            "column": 0,
+            "row": 1,
+            "columns": 3,
+            "rows": 2
+          }
+        },
+        {
+          "text": "A cat and a cow come to play.",
+          "art": "/assets/books/painted/kiki.webp",
+          "alt": "",
+          "emoji": "🐮",
+          "key": "cow",
+          "crop": {
+            "column": 1,
+            "row": 1,
+            "columns": 3,
+            "rows": 2
+          }
+        },
+        {
+          "text": "What a cool day for Kiki!",
+          "art": "/assets/books/painted/kiki.webp",
+          "alt": "",
+          "emoji": "🌞",
+          "key": "kiki",
+          "crop": {
+            "column": 2,
+            "row": 1,
+            "columns": 3,
+            "rows": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "painted-shelly",
+      "title": "Shelly the Sheep",
+      "sound": "SH",
+      "emoji": "🐑",
+      "colors": [
+        "#c08cf0",
+        "#a86fe0"
+      ],
+      "cover": "/assets/books/painted/shelly-cover.webp",
+      "coverAlt": "",
+      "pages": [
+        {
+          "text": "Shelly the sheep shines her shoes.",
+          "art": "/assets/books/painted/shelly.webp",
+          "alt": "",
+          "emoji": "👟",
+          "key": "sheep",
+          "crop": {
+            "column": 0,
+            "row": 0,
+            "columns": 3,
+            "rows": 2
+          }
+        },
+        {
+          "text": "She shows a shiny shell to a fish.",
+          "art": "/assets/books/painted/shelly.webp",
+          "alt": "",
+          "emoji": "🐚",
+          "key": "shell",
+          "crop": {
+            "column": 1,
+            "row": 0,
+            "columns": 3,
+            "rows": 2
+          }
+        },
+        {
+          "text": "They sail on a big ship. Shhh!",
+          "art": "/assets/books/painted/shelly.webp",
+          "alt": "",
+          "emoji": "🚢",
+          "key": "ship",
+          "crop": {
+            "column": 2,
+            "row": 0,
+            "columns": 3,
+            "rows": 2
+          }
+        },
+        {
+          "text": "Shelly makes a wish on a star.",
+          "art": "/assets/books/painted/shelly.webp",
+          "alt": "",
+          "emoji": "⭐",
+          "key": "shelly",
+          "crop": {
+            "column": 0,
+            "row": 1,
+            "columns": 3,
+            "rows": 2
+          }
+        },
+        {
+          "text": "She sips a milkshake — so fresh.",
+          "art": "/assets/books/painted/shelly.webp",
+          "alt": "",
+          "emoji": "🥤",
+          "key": "she",
+          "crop": {
+            "column": 1,
+            "row": 1,
+            "columns": 3,
+            "rows": 2
+          }
+        },
+        {
+          "text": "Shhh… Shelly is sleeping now.",
+          "art": "/assets/books/painted/shelly.webp",
+          "alt": "",
+          "emoji": "😴",
+          "key": "shelly",
+          "crop": {
+            "column": 2,
+            "row": 1,
+            "columns": 3,
+            "rows": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "painted-charlie",
+      "title": "Charlie the Chick",
+      "sound": "CH",
+      "emoji": "🐥",
+      "colors": [
+        "#ff9446",
+        "#ef7d2c"
+      ],
+      "cover": "/assets/books/painted/charlie-cover.webp",
+      "coverAlt": "",
+      "pages": [
+        {
+          "text": "Charlie the chick chews chewy cherries.",
+          "art": "/assets/books/painted/charlie.webp",
+          "alt": "",
+          "emoji": "🍒",
+          "key": "chick",
+          "crop": {
+            "column": 0,
+            "row": 0,
+            "columns": 3,
+            "rows": 2
+          }
+        },
+        {
+          "text": "Charlie rides the choo-choo train.",
+          "art": "/assets/books/painted/charlie.webp",
+          "alt": "",
+          "emoji": "🚂",
+          "key": "charlie",
+          "crop": {
+            "column": 1,
+            "row": 0,
+            "columns": 3,
+            "rows": 2
+          }
+        },
+        {
+          "text": "He munches cheese at lunch.",
+          "art": "/assets/books/painted/charlie.webp",
+          "alt": "",
+          "emoji": "🧀",
+          "key": "cheese",
+          "crop": {
+            "column": 2,
+            "row": 0,
+            "columns": 3,
+            "rows": 2
+          }
+        },
+        {
+          "text": "A chipmunk sits on a chair.",
+          "art": "/assets/books/painted/charlie.webp",
+          "alt": "",
+          "emoji": "🐿️",
+          "key": "chair",
+          "crop": {
+            "column": 0,
+            "row": 1,
+            "columns": 3,
+            "rows": 2
+          }
+        },
+        {
+          "text": "They share chocolate chips. Crunch!",
+          "art": "/assets/books/painted/charlie.webp",
+          "alt": "",
+          "emoji": "🍫",
+          "key": "chips",
+          "crop": {
+            "column": 1,
+            "row": 1,
+            "columns": 3,
+            "rows": 2
+          }
+        },
+        {
+          "text": "Charlie chirps: cheep, cheep, cheep.",
+          "art": "/assets/books/painted/charlie.webp",
+          "alt": "",
+          "emoji": "😁",
+          "key": "cheep",
+          "crop": {
+            "column": 2,
+            "row": 1,
+            "columns": 3,
+            "rows": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "painted-theo",
+      "title": "Theo the Sloth",
+      "sound": "TH",
+      "emoji": "🦥",
+      "colors": [
+        "#9aa7ff",
+        "#7f8eef"
+      ],
+      "cover": "/assets/books/painted/theo-cover.webp",
+      "coverAlt": "",
+      "pages": [
+        {
+          "text": "Theo the sloth thinks happy thoughts.",
+          "art": "/assets/books/painted/theo.webp",
+          "alt": "",
+          "emoji": "💭",
+          "key": "thinks",
+          "crop": {
+            "column": 0,
+            "row": 0,
+            "columns": 3,
+            "rows": 2
+          }
+        },
+        {
+          "text": "Theo counts: one, two, three!",
+          "art": "/assets/books/painted/theo.webp",
+          "alt": "",
+          "emoji": "3️⃣",
+          "key": "theo",
+          "crop": {
+            "column": 1,
+            "row": 0,
+            "columns": 3,
+            "rows": 2
+          }
+        },
+        {
+          "text": "He gives a big thumbs up.",
+          "art": "/assets/books/painted/theo.webp",
+          "alt": "",
+          "emoji": "👍",
+          "key": "thumbs",
+          "crop": {
+            "column": 2,
+            "row": 0,
+            "columns": 3,
+            "rows": 2
+          }
+        },
+        {
+          "text": "Theo brushes his three teeth.",
+          "art": "/assets/books/painted/theo.webp",
+          "alt": "",
+          "emoji": "🦷",
+          "key": "theo",
+          "crop": {
+            "column": 0,
+            "row": 1,
+            "columns": 3,
+            "rows": 2
+          }
+        },
+        {
+          "text": "Then a warm bath — both feet in.",
+          "art": "/assets/books/painted/theo.webp",
+          "alt": "",
+          "emoji": "🛁",
+          "key": "bath",
+          "crop": {
+            "column": 1,
+            "row": 1,
+            "columns": 3,
+            "rows": 2
+          }
+        },
+        {
+          "text": "Thank you, moon. Theo says goodnight.",
+          "art": "/assets/books/painted/theo.webp",
+          "alt": "",
+          "emoji": "🌙",
+          "key": "thank",
+          "crop": {
+            "column": 2,
+            "row": 1,
+            "columns": 3,
+            "rows": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "painted-gus",
+      "title": "Gus the Goat",
+      "sound": "G",
+      "emoji": "🐐",
+      "colors": [
+        "#58c7b5",
+        "#3fae9c"
+      ],
+      "cover": "/assets/books/painted/gus-cover.webp",
+      "coverAlt": "",
+      "pages": [
+        {
+          "text": "Gus the goat grows a green garden.",
+          "art": "/assets/books/painted/gus.webp",
+          "alt": "",
+          "emoji": "🌱",
+          "key": "goat",
+          "crop": {
+            "column": 0,
+            "row": 0,
+            "columns": 3,
+            "rows": 2
+          }
+        },
+        {
+          "text": "A goose gives Gus a gift.",
+          "art": "/assets/books/painted/gus.webp",
+          "alt": "",
+          "emoji": "🎁",
+          "key": "goose",
+          "crop": {
+            "column": 1,
+            "row": 0,
+            "columns": 3,
+            "rows": 2
+          }
+        },
+        {
+          "text": "Gus plays a goofy guitar.",
+          "art": "/assets/books/painted/gus.webp",
+          "alt": "",
+          "emoji": "🎸",
+          "key": "guitar",
+          "crop": {
+            "column": 2,
+            "row": 0,
+            "columns": 3,
+            "rows": 2
+          }
+        },
+        {
+          "text": "They gobble grapes by the gate.",
+          "art": "/assets/books/painted/gus.webp",
+          "alt": "",
+          "emoji": "🍇",
+          "key": "gate",
+          "crop": {
+            "column": 0,
+            "row": 1,
+            "columns": 3,
+            "rows": 2
+          }
+        },
+        {
+          "text": "A bug giggles on the grass.",
+          "art": "/assets/books/painted/gus.webp",
+          "alt": "",
+          "emoji": "🐛",
+          "key": "giggles",
+          "crop": {
+            "column": 1,
+            "row": 1,
+            "columns": 3,
+            "rows": 2
+          }
+        },
+        {
+          "text": "Good game, Gus. Goodnight!",
+          "art": "/assets/books/painted/gus.webp",
+          "alt": "",
+          "emoji": "🌟",
+          "key": "gus",
+          "crop": {
+            "column": 2,
+            "row": 1,
+            "columns": 3,
+            "rows": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "painted-fifi",
+      "title": "Fifi the Fox",
+      "sound": "F",
+      "emoji": "🦊",
+      "colors": [
+        "#ff7fab",
+        "#ef6595"
+      ],
+      "cover": "/assets/books/painted/fifi-cover.webp",
+      "coverAlt": "",
+      "pages": [
+        {
+          "text": "Fifi the fox finds four feathers.",
+          "art": "/assets/books/painted/fifi.webp",
+          "alt": "",
+          "emoji": "🪶",
+          "key": "fox",
+          "crop": {
+            "column": 0,
+            "row": 0,
+            "columns": 3,
+            "rows": 2
+          }
+        },
+        {
+          "text": "Fifi feeds a funny fish.",
+          "art": "/assets/books/painted/fifi.webp",
+          "alt": "",
+          "emoji": "🐟",
+          "key": "fish",
+          "crop": {
+            "column": 1,
+            "row": 0,
+            "columns": 3,
+            "rows": 2
+          }
+        },
+        {
+          "text": "They warm five feet by the fire.",
+          "art": "/assets/books/painted/fifi.webp",
+          "alt": "",
+          "emoji": "🔥",
+          "key": "fire",
+          "crop": {
+            "column": 2,
+            "row": 0,
+            "columns": 3,
+            "rows": 2
+          }
+        },
+        {
+          "text": "A butterfly flies fast — wow!",
+          "art": "/assets/books/painted/fifi.webp",
+          "alt": "",
+          "emoji": "🦋",
+          "key": "fast",
+          "crop": {
+            "column": 0,
+            "row": 1,
+            "columns": 3,
+            "rows": 2
+          }
+        },
+        {
+          "text": "Fifi has fun with her friends.",
+          "art": "/assets/books/painted/fifi.webp",
+          "alt": "",
+          "emoji": "🎉",
+          "key": "fun",
+          "crop": {
+            "column": 1,
+            "row": 1,
+            "columns": 3,
+            "rows": 2
+          }
+        },
+        {
+          "text": "Fifi waves: farewell, farewell!",
+          "art": "/assets/books/painted/fifi.webp",
+          "alt": "",
+          "emoji": "👋",
+          "key": "fifi",
+          "crop": {
+            "column": 2,
+            "row": 1,
+            "columns": 3,
+            "rows": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "bear-lost-ball",
+      "title": "Bear's Lost Ball",
+      "sound": "B",
+      "emoji": "🐻",
+      "colors": [
+        "#6ec3ff",
+        "#3d9be0"
+      ],
+      "cover": "/assets/books/bear-lost-ball/cover.webp",
+      "coverAlt": "Bear holds his red ball beside a friendly bee in a sunny park.",
+      "pages": [
+        {
+          "text": "Bear has a big red ball.",
+          "art": "/assets/books/bear-lost-ball/p01.webp",
+          "alt": "Bear holds a red ball with a cream stripe beside a river in the park.",
+          "emoji": "🐻",
+          "key": "bear"
+        },
+        {
+          "text": "The ball bounces away!",
+          "art": "/assets/books/bear-lost-ball/p02.webp",
+          "alt": "The red ball bounces away as Bear reaches after it.",
+          "emoji": "🔴",
+          "key": "ball"
+        },
+        {
+          "text": "Bear looks by the bus.",
+          "art": "/assets/books/bear-lost-ball/p03.webp",
+          "alt": "Bear looks beside a parked teal bus, but the ball is not there.",
+          "emoji": "🚌",
+          "key": "bus"
+        },
+        {
+          "text": "Bear looks by the boat.",
+          "art": "/assets/books/bear-lost-ball/p04.webp",
+          "alt": "Bear looks beside a red rowboat on the river bank, but the ball is not there.",
+          "emoji": "⛵",
+          "key": "boat"
+        },
+        {
+          "text": "A bee finds the ball!",
+          "art": "/assets/books/bear-lost-ball/p05.webp",
+          "alt": "A friendly bee finds the red ball in the grass while Bear cheers.",
+          "emoji": "🐝",
+          "key": "bee"
+        },
+        {
+          "text": "Bear bounces the ball.",
+          "art": "/assets/books/bear-lost-ball/p06.webp",
+          "alt": "Bear happily bounces his red ball on the sunny park path.",
+          "emoji": "🔴",
+          "key": "ball"
+        },
+        {
+          "text": "Bear and the bee play ball.",
+          "art": "/assets/books/bear-lost-ball/p07.webp",
+          "alt": "Bear and the friendly bee play with the red ball on the grass.",
+          "emoji": "🐝",
+          "key": "bee"
+        },
+        {
+          "text": "Bear takes his ball to bed.",
+          "art": "/assets/books/bear-lost-ball/p08.webp",
+          "alt": "Bear sleeps in bed with his red ball safely beside him.",
+          "emoji": "🛏️",
+          "key": "bed"
+        }
+      ]
+    },
+    {
+      "id": "rabbit-rocket-rescue",
+      "title": "Rabbit and the Rocket",
+      "sound": "R",
+      "emoji": "🚀",
+      "colors": [
+        "#ff7a6e",
+        "#8a6fc4"
+      ],
+      "cover": "/assets/books/rabbit-rocket-rescue/cover.webp",
+      "coverAlt": "Rabbit and a friendly blue robot proudly hold a small toy rocket beside a muddy patch.",
+      "pages": [
+        {
+          "text": "Rabbit has a toy rocket.",
+          "art": "/assets/books/rabbit-rocket-rescue/p01.webp",
+          "alt": "Rabbit holds a small red-and-cream toy rocket beside a muddy patch.",
+          "emoji": "🚀",
+          "key": "rabbit"
+        },
+        {
+          "text": "The rocket is stuck in mud.",
+          "art": "/assets/books/rabbit-rocket-rescue/p02.webp",
+          "alt": "The toy rocket is stuck upright in shallow mud.",
+          "emoji": "🚀",
+          "key": "rocket"
+        },
+        {
+          "text": "Rabbit gives it a tug.",
+          "art": "/assets/books/rabbit-rocket-rescue/p03.webp",
+          "alt": "Rabbit tugs at the rocket from the dry edge of the mud.",
+          "emoji": "🚀",
+          "key": "rabbit"
+        },
+        {
+          "text": "A robot comes to help.",
+          "art": "/assets/books/rabbit-rocket-rescue/p04.webp",
+          "alt": "A friendly blue robot arrives to help Rabbit.",
+          "emoji": "🚀",
+          "key": "robot"
+        },
+        {
+          "text": "The robot puts a rock by the mud.",
+          "art": "/assets/books/rabbit-rocket-rescue/p05.webp",
+          "alt": "The robot places a low, rounded tan rock beside the mud.",
+          "emoji": "🚀",
+          "key": "rock"
+        },
+        {
+          "text": "Rabbit hops onto the rock.",
+          "art": "/assets/books/rabbit-rocket-rescue/p06.webp",
+          "alt": "Rabbit stands safely on the low rock beside the rocket.",
+          "emoji": "🚀",
+          "key": "rabbit"
+        },
+        {
+          "text": "The robot and Rabbit give a big tug.",
+          "art": "/assets/books/rabbit-rocket-rescue/p07.webp",
+          "alt": "Rabbit and the robot pull the toy rocket together.",
+          "emoji": "🚀",
+          "key": "robot"
+        },
+        {
+          "text": "Up comes the rocket! Rabbit is so happy.",
+          "art": "/assets/books/rabbit-rocket-rescue/p08.webp",
+          "alt": "Rabbit and the robot happily hold the rescued toy rocket on dry ground.",
+          "emoji": "🚀",
+          "key": "rocket"
+        }
+      ]
+    },
+    {
+      "id": "seal-sandy-sock",
+      "title": "Seal and the Sock",
+      "sound": "S",
+      "emoji": "🧦",
+      "colors": [
+        "#62bdff",
+        "#46a6ec"
+      ],
+      "cover": "/assets/books/seal-sandy-sock/cover.webp",
+      "coverAlt": "A cream-gray seal happily holds a clean yellow sock with a teal cuff.",
+      "pages": [
+        {
+          "text": "A seal has a sock.",
+          "art": "/assets/books/seal-sandy-sock/p01.webp",
+          "alt": "A cream-gray seal holds a yellow sock with a teal cuff.",
+          "emoji": "🧦",
+          "key": "seal"
+        },
+        {
+          "text": "The sock is full of sand.",
+          "art": "/assets/books/seal-sandy-sock/p02.webp",
+          "alt": "The seal peers into the sock, which contains a little sand.",
+          "emoji": "🧦",
+          "key": "sock"
+        },
+        {
+          "text": "The seal gives it a shake.",
+          "art": "/assets/books/seal-sandy-sock/p03.webp",
+          "alt": "The seal shakes sand out of the upside-down sock.",
+          "emoji": "🧦",
+          "key": "seal"
+        },
+        {
+          "text": "Sand goes on the seal!",
+          "art": "/assets/books/seal-sandy-sock/p04.webp",
+          "alt": "A little sand lands on the surprised seal's head.",
+          "emoji": "🧦",
+          "key": "sand"
+        },
+        {
+          "text": "The seal can dunk the sock in a tub.",
+          "art": "/assets/books/seal-sandy-sock/p05.webp",
+          "alt": "The seal dips the yellow sock into a shallow tub of water.",
+          "emoji": "🧦",
+          "key": "seal"
+        },
+        {
+          "text": "The sock is wet and heavy.",
+          "art": "/assets/books/seal-sandy-sock/p06.webp",
+          "alt": "The damp sock droops above the tub, dripping water.",
+          "emoji": "🧦",
+          "key": "sock"
+        },
+        {
+          "text": "The seal hangs it in the sun.",
+          "art": "/assets/books/seal-sandy-sock/p07.webp",
+          "alt": "The seal clips the sock onto a low line in the warm sun.",
+          "emoji": "🧦",
+          "key": "sun"
+        },
+        {
+          "text": "The sock is dry. The seal can put it on.",
+          "art": "/assets/books/seal-sandy-sock/p08.webp",
+          "alt": "The seal proudly wears the dry sock on one front flipper.",
+          "emoji": "🧦",
+          "key": "sock"
+        }
+      ]
+    },
+    {
+      "id": "lion-locked-box",
+      "title": "Lion and the Lock",
+      "sound": "L",
+      "emoji": "🔒",
+      "colors": [
+        "#ffd45e",
+        "#f0bb33"
+      ],
+      "cover": "/assets/books/lion-locked-box/cover.webp",
+      "coverAlt": "A golden lion cub holds a key beside a teal box with a gold lock.",
+      "pages": [
+        {
+          "text": "A lion has a box with a lock.",
+          "art": "/assets/books/lion-locked-box/p01.webp",
+          "alt": "A golden lion cub points to the lock on a small teal box.",
+          "emoji": "🔒",
+          "key": "lion"
+        },
+        {
+          "text": "The lock needs a key.",
+          "art": "/assets/books/lion-locked-box/p02.webp",
+          "alt": "The lion looks at the closed gold lock and its keyhole.",
+          "emoji": "🔒",
+          "key": "lock"
+        },
+        {
+          "text": "The lion peeks into a bag.",
+          "art": "/assets/books/lion-locked-box/p03.webp",
+          "alt": "The lion peeks into a cream bag beside the locked box.",
+          "emoji": "🔒",
+          "key": "lion"
+        },
+        {
+          "text": "A lemon! No key.",
+          "art": "/assets/books/lion-locked-box/p04.webp",
+          "alt": "The lion finds a yellow lemon in the bag instead of a key.",
+          "emoji": "🔒",
+          "key": "lemon"
+        },
+        {
+          "text": "The lion peeks under a leaf.",
+          "art": "/assets/books/lion-locked-box/p05.webp",
+          "alt": "The lion lifts a broad green leaf and looks underneath.",
+          "emoji": "🔒",
+          "key": "leaf"
+        },
+        {
+          "text": "No key. The lion turns on a lamp.",
+          "art": "/assets/books/lion-locked-box/p06.webp",
+          "alt": "The lion switches on a small cream lamp with a teal base.",
+          "emoji": "🔒",
+          "key": "lamp"
+        },
+        {
+          "text": "A key is by the lamp!",
+          "art": "/assets/books/lion-locked-box/p07.webp",
+          "alt": "The lion spots a gold key beside the lamp in its warm light.",
+          "emoji": "🔒",
+          "key": "lamp"
+        },
+        {
+          "text": "Pop! The lock is open. A tiny teddy is inside!",
+          "art": "/assets/books/lion-locked-box/p08.webp",
+          "alt": "The lock is open and the lion finds a tiny brown teddy inside the box.",
+          "emoji": "🔒",
+          "key": "lock"
+        }
+      ]
+    },
+    {
+      "id": "sheep-ship-rescue",
+      "title": "Sheep and the Ship",
+      "sound": "SH",
+      "emoji": "🚢",
+      "colors": [
+        "#c08cf0",
+        "#a86fe0"
+      ],
+      "cover": "/assets/books/sheep-ship-rescue/cover.webp",
+      "coverAlt": "A fluffy sheep holds a toy ship beside a teal shoe and a garden puddle.",
+      "pages": [
+        {
+          "text": "A sheep has a toy ship.",
+          "art": "/assets/books/sheep-ship-rescue/p01.webp",
+          "alt": "A fluffy sheep holds a small red-and-cream toy ship.",
+          "emoji": "🚢",
+          "key": "sheep"
+        },
+        {
+          "text": "The ship is in a big puddle.",
+          "art": "/assets/books/sheep-ship-rescue/p02.webp",
+          "alt": "The toy ship floats in a garden puddle just beyond the sheep's reach.",
+          "emoji": "🚢",
+          "key": "ship"
+        },
+        {
+          "text": "The sheep has no boat.",
+          "art": "/assets/books/sheep-ship-rescue/p03.webp",
+          "alt": "The sheep looks at the toy ship with empty paws.",
+          "emoji": "🚢",
+          "key": "sheep"
+        },
+        {
+          "text": "A shoe can be a boat!",
+          "art": "/assets/books/sheep-ship-rescue/p04.webp",
+          "alt": "The sheep notices a large teal shoe beside the puddle.",
+          "emoji": "🚢",
+          "key": "shoe"
+        },
+        {
+          "text": "The sheep puts the shoe in the puddle.",
+          "art": "/assets/books/sheep-ship-rescue/p05.webp",
+          "alt": "The sheep pushes the teal shoe onto the puddle like a little boat.",
+          "emoji": "🚢",
+          "key": "sheep"
+        },
+        {
+          "text": "The shoe bumps the ship.",
+          "art": "/assets/books/sheep-ship-rescue/p06.webp",
+          "alt": "The floating shoe gently nudges the toy ship toward the dry edge.",
+          "emoji": "🚢",
+          "key": "shoe"
+        },
+        {
+          "text": "The sheep picks up the ship.",
+          "art": "/assets/books/sheep-ship-rescue/p07.webp",
+          "alt": "The sheep lifts the toy ship out of the puddle.",
+          "emoji": "🚢",
+          "key": "ship"
+        },
+        {
+          "text": "The ship is safe and dry.",
+          "art": "/assets/books/sheep-ship-rescue/p08.webp",
+          "alt": "The sheep hugs the dry toy ship on a towel beside the shoe.",
+          "emoji": "🚢",
+          "key": "ship"
+        }
+      ]
+    },
+    {
+      "id": "chicken-picnic",
+      "title": "Chicken and the Picnic",
+      "sound": "CH",
+      "emoji": "🧺",
+      "colors": [
+        "#ff9446",
+        "#ef7d2c"
+      ],
+      "cover": "/assets/books/chicken-picnic/cover.webp",
+      "coverAlt": "A russet-red hen and a white bunny share a picnic on a red gingham cloth.",
+      "pages": [
+        {
+          "text": "A chicken has a big picnic.",
+          "art": "/assets/books/chicken-picnic/p01.webp",
+          "alt": "A russet-red hen stands beside a picnic bag and folded gingham cloth.",
+          "emoji": "🧺",
+          "key": "chicken"
+        },
+        {
+          "text": "The chicken puts cheese in a bag.",
+          "art": "/assets/books/chicken-picnic/p02.webp",
+          "alt": "The hen puts a cheese wedge into the cream picnic bag.",
+          "emoji": "🧺",
+          "key": "cheese"
+        },
+        {
+          "text": "A cherry goes in, too.",
+          "art": "/assets/books/chicken-picnic/p03.webp",
+          "alt": "The hen adds a small cup of prepared cherry halves to the bag.",
+          "emoji": "🧺",
+          "key": "cherry"
+        },
+        {
+          "text": "In goes a bit of chocolate.",
+          "art": "/assets/books/chicken-picnic/p04.webp",
+          "alt": "The hen adds a little piece of chocolate to the picnic bag.",
+          "emoji": "🧺",
+          "key": "chocolate"
+        },
+        {
+          "text": "The chicken puts the bag on a chair.",
+          "art": "/assets/books/chicken-picnic/p05.webp",
+          "alt": "The hen sets the full picnic bag on a low teal chair.",
+          "emoji": "🧺",
+          "key": "chair"
+        },
+        {
+          "text": "Oh no! The chair tips.",
+          "art": "/assets/books/chicken-picnic/p06.webp",
+          "alt": "The low chair tips and the picnic bag slides toward the hen.",
+          "emoji": "🧺",
+          "key": "chair"
+        },
+        {
+          "text": "The chicken grabs the bag!",
+          "art": "/assets/books/chicken-picnic/p07.webp",
+          "alt": "The hen safely catches the bag before it reaches the ground.",
+          "emoji": "🧺",
+          "key": "chicken"
+        },
+        {
+          "text": "The chicken and a pal eat the cheese.",
+          "art": "/assets/books/chicken-picnic/p08.webp",
+          "alt": "The hen and a white bunny share cheese on the picnic cloth.",
+          "emoji": "🧺",
+          "key": "cheese"
+        }
+      ]
+    },
+    {
+      "id": "thumb-paint-gift",
+      "title": "My Thumb Paints a Gift",
+      "sound": "TH",
+      "emoji": "🎨",
+      "colors": [
+        "#a7b4ff",
+        "#7a88e6"
+      ],
+      "cover": "/assets/books/thumb-paint-gift/cover.webp",
+      "coverAlt": "A child proudly holds a card with a blue-and-pink thumbprint butterfly.",
+      "pages": [
+        {
+          "text": "I think I can make a gift.",
+          "art": "/assets/books/thumb-paint-gift/p01.webp",
+          "alt": "A child has an idea for a gift at a craft table.",
+          "emoji": "🎨",
+          "key": "think"
+        },
+        {
+          "text": "I dip my thumb in blue paint.",
+          "art": "/assets/books/thumb-paint-gift/p02.webp",
+          "alt": "The child dips a thumb into blue paint.",
+          "emoji": "🎨",
+          "key": "thumb"
+        },
+        {
+          "text": "My thumb makes a dot.",
+          "art": "/assets/books/thumb-paint-gift/p03.webp",
+          "alt": "A blue thumbprint appears on a white card.",
+          "emoji": "🎨",
+          "key": "thumb"
+        },
+        {
+          "text": "I think it needs a buddy.",
+          "art": "/assets/books/thumb-paint-gift/p04.webp",
+          "alt": "The child looks thoughtfully at the single blue thumbprint.",
+          "emoji": "🎨",
+          "key": "think"
+        },
+        {
+          "text": "I dip my thumb in pink paint.",
+          "art": "/assets/books/thumb-paint-gift/p05.webp",
+          "alt": "The child dips a clean thumb into pink paint.",
+          "emoji": "🎨",
+          "key": "thumb"
+        },
+        {
+          "text": "My thumb makes a pink dot.",
+          "art": "/assets/books/thumb-paint-gift/p06.webp",
+          "alt": "A pink thumbprint appears beside the blue one.",
+          "emoji": "🎨",
+          "key": "thumb"
+        },
+        {
+          "text": "I think of a butterfly.",
+          "art": "/assets/books/thumb-paint-gift/p07.webp",
+          "alt": "The child adds a body and antennae to make a blue-and-pink butterfly.",
+          "emoji": "🎨",
+          "key": "think"
+        },
+        {
+          "text": "My thumb made a butterfly! A gift for Mom.",
+          "art": "/assets/books/thumb-paint-gift/p08.webp",
+          "alt": "The child proudly gives the butterfly card to Mom.",
+          "emoji": "🎨",
+          "key": "thumb"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,125 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {};
+	objectVersion = 77;
+	objects = {
+		7060AFA20000000000000001 = {
+			isa = PBXProject;
+			attributes = {LastUpgradeCheck = 2720;};
+			buildConfigurationList = 7060AFA20000000000000002;
+			compatibilityVersion = "Xcode 16.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (en, Base);
+			mainGroup = 7060AFA20000000000000003;
+			productRefGroup = 7060AFA20000000000000005;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (7060AFA20000000000000006);
+		};
+		7060AFA20000000000000002 = {
+			isa = XCConfigurationList;
+			buildConfigurations = (7060AFA20000000000000010, 7060AFA20000000000000011);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		7060AFA20000000000000003 = {
+			isa = PBXGroup;
+			children = (7060AFA20000000000000004, 7060AFA20000000000000005);
+			sourceTree = "<group>";
+		};
+		7060AFA20000000000000004 = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = SonaNativePreview;
+			sourceTree = "<group>";
+		};
+		7060AFA20000000000000005 = {
+			isa = PBXGroup;
+			children = (7060AFA20000000000000007);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		7060AFA20000000000000006 = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 7060AFA20000000000000008;
+			buildPhases = (7060AFA20000000000000009, 7060AFA2000000000000000A, 7060AFA2000000000000000B);
+			buildRules = ();
+			dependencies = ();
+			fileSystemSynchronizedGroups = (7060AFA20000000000000004);
+			name = SonaNativePreview;
+			productName = SonaNativePreview;
+			productReference = 7060AFA20000000000000007;
+			productType = "com.apple.product-type.application";
+		};
+		7060AFA20000000000000007 = {
+			isa = PBXFileReference;
+			explicitFileType = wrapper.application;
+			path = SonaNativePreview.app;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		7060AFA20000000000000008 = {
+			isa = XCConfigurationList;
+			buildConfigurations = (7060AFA20000000000000012, 7060AFA20000000000000013);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		7060AFA20000000000000009 = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = ();
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		7060AFA2000000000000000A = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = ();
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		7060AFA2000000000000000B = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = ();
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		7060AFA20000000000000010 = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		7060AFA20000000000000011 = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		7060AFA20000000000000012 = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 7060AFA20000000000000014;
+			buildSettings = {SWIFT_OPTIMIZATION_LEVEL = "-Onone";};
+			name = Debug;
+		};
+		7060AFA20000000000000013 = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 7060AFA20000000000000014;
+			buildSettings = {SWIFT_COMPILATION_MODE = wholemodule;};
+			name = Release;
+		};
+		7060AFA20000000000000014 = {
+			isa = PBXFileReference;
+			lastKnownFileType = text.xcconfig;
+			path = Preview.xcconfig;
+			sourceTree = SOURCE_ROOT;
+		};
+	};
+	rootObject = 7060AFA20000000000000001;
+}
