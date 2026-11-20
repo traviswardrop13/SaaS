@@ -2819,14 +2819,13 @@ officer, an engineer — whose rulings are now rules:
   where it is true, Sona Pro's "Unlimited families", never in a family's
   message.
 
-**The clean white look (SLPCLEAN1, 20 Nov 2026, Travis: "i just wanna
-cleaner dashboard")**: the look of the closed #302, without its other
-changes. One last layer at the foot of `slp.html`'s sheet (white surfaces,
-grey hairlines, one teal accent, the system font, no pastel tiles or Echo in
-the headings, grey initials; "missed" stays the one muted red) and Echo's
-logo top left (`/assets/brand/echo-logo.webp`). Nothing the page does
-changed: every menu item, Plan sessions, Draft homework, the free dashboard
-door and the plan rules are as before.
+**#306's dashboard, without the free packet (20 Nov 2026, Travis: yes to
+"all of it", "i dont want a free paket")**: the dashboard (Session games,
+Today, Caseload, Settings), its sign-in page and the trial-only sign-up came
+in from #306; the packet opt-in, the printable packet, `lib/packet.ts` and its
+email did not. `/` and `/plans` both serve `for-slps.html` (the trial page),
+whose sent email is the Meta Lead. Where #306's notes above say the root is
+the packet opt-in, this supersedes them.
 
 **The affiliate program, when it is built, is CREATOR-ONLY** (Travis, 21 Sep
 2026 — settled, do not re-open). An SLP who makes content and brings in
