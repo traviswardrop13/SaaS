@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { readSession, liveSession, kvConfigured, sendFamilyLoginEmail } from "@/lib/slpAuth";
+import { readSession, liveSession, kvConfigured, kvCmd, makeFamilyKey, replaceSlpAccount, sendFamilyLoginEmail } from "@/lib/slpAuth";
 import { rateLimit } from "@/lib/rateLimit";
 import { foreignOrigin } from "@/lib/origin";
 import { readAccount, normalizeInvite, createInvite, deleteInvite } from "@/lib/roster";
@@ -29,7 +29,7 @@ import { familyInvite, parentEmailOf } from "@/lib/addFamily";
  *
  * THE PARENT'S ADDRESS is used for that one send: it is not part of the
  * invite or the login, and it is never logged. GoHighLevel, which sends it,
- * keeps it as a contact (lib/mail). THE PASSWORD travels in the email too:
+ * keeps it as a contact (lib/mail); the panel no longer says so (Travis, 20 Nov 2026). THE PASSWORD travels in the email too:
  * Travis's accepted trade-off (see sendFamilyLoginEmail). The clinic code
  * comes from the signed-in account, never the request.
  */
@@ -52,8 +52,27 @@ export async function POST(req: NextRequest) {
   if (!kvConfigured()) return error("no data store connected", 503);
   const locked = await dashboardGate(s.email);
   if (locked) return locked;
-  const { code, familyKey, name, clinic } = await readAccount(s.email);
-  if (!code || !familyKey) return error("Finish your profile first: pick your code, then add families.", 400);
+  const { code, familyKey: storedKey, name, clinic } = await readAccount(s.email);
+  if (!code) return error("Finish your profile first: pick your code, then add families.", 400);
+  // AN OLDER ACCOUNT WITH A CODE BUT NO FAMILY KEY (20 Nov 2026: Travis's own
+  // met "Finish your profile first" with a code already set). Every account
+  // with a code carries one, as /api/slp/account mints it; mint it here too,
+  // written only if the account is unchanged since it was read.
+  let familyKey = storedKey;
+  if (!familyKey) {
+    const acctKey = "slpacct:" + s.email;
+    let raw: unknown = null;
+    try { raw = await kvCmd(["GET", acctKey]); } catch { raw = null; }
+    if (typeof raw !== "string") return error("Couldn't reach your account just now. Try again in a moment.", 503);
+    let acct: Record<string, unknown>;
+    try { acct = JSON.parse(raw) as Record<string, unknown>; } catch { return error("Couldn't read your account. Try again in a moment.", 503); }
+    if (typeof acct.familyKey === "string" && acct.familyKey) familyKey = acct.familyKey;
+    else {
+      acct.familyKey = makeFamilyKey();
+      if ((await replaceSlpAccount(acctKey, raw, acct)) !== "OK") return error("Your account changed while saving. Try again.", 409);
+      familyKey = acct.familyKey as string;
+    }
+  }
 
   let body: Record<string, unknown> | null = null;
   try { body = (await req.json()) as Record<string, unknown>; } catch { body = null; }

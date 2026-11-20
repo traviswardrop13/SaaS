@@ -2799,7 +2799,8 @@ officer, an engineer — whose rulings are now rules:
 - **A parent's email, typed by the clinician, is used once** (Travis, 24 Sep
   2026). **Since 17 Nov 2026 GoHighLevel sends it and keeps it as a contact**
   (Travis: "I want everything on Go High Level"; tagged `sona-parent-invite`),
-  and the dashboard, for-slps and the privacy page say so; Sona's own server
+  and for-slps and the privacy page say so (the dashboard's Add a family
+  panel stopped saying it on 20 Nov 2026, Travis: "get rid of this"); Sona's own server
   still keeps no copy. The rest of this rule is its history. Add a child may carry it; Sona hands it to Resend to email the join
   link one time and keeps no copy — not on the invite, not in the email list or
   `/api/lead`, not in a log — at most 30 a day per clinician. Say "handed to
