@@ -122,6 +122,8 @@ header {
 .signup select:invalid { color: #686980; }
 .signup .btn { align-self: flex-start; margin-top: 3px; min-width: 146px; }
 .next-step { color: var(--body); font-size: 13px; }
+/* the trial's terms, said beside its button (SLPPRO1) */
+.next-step.trial-terms { color: var(--ink); font-size: 14px; font-weight: 800; margin-bottom: -6px; }
 .serr { color: #a52c38; font-size: 14px; font-weight: 900; }
 .serr:empty { display: none; }
 .sent { padding: 19px 20px; border: 1px solid #ebdacf; border-radius: 19px; background: var(--paper); }
@@ -227,9 +229,31 @@ header {
 footer { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 14px 20px; padding-bottom: 33px; color: var(--muted); font-size: 13px; }
 footer .d { max-width: 550px; }
 footer .links { display: flex; flex-wrap: wrap; gap: 13px; }
+.workflow.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+/* ── the plans page at /plans (for-slps.html, 17 Nov 2026) ── */
+.pricing { padding-block: clamp(46px, 6vw, 80px) clamp(30px, 4vw, 50px); scroll-margin-top: 70px; }
+.pricing h2 { margin-bottom: 25px; }
+.plans { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: stretch; gap: 15px; }
+.plan { display: flex; flex-direction: column; gap: 12px; padding: 26px 24px; border: 1px solid var(--line); border-radius: 25px; background: var(--paper); }
+.plan h3 { font-size: 30px; }
+.plan .for { color: var(--teal-deep); font-size: 14px; font-weight: 900; }
+.plan .price { color: var(--body); font-size: 17px; font-weight: 800; }
+.plan .price b { color: var(--ink); font: 800 44px/1 var(--display); letter-spacing: -.03em; }
+.plan ul { display: flex; flex-direction: column; gap: 9px; margin: 0; padding: 0; list-style: none; }
+.plan li { position: relative; padding-left: 26px; color: #3c3c58; line-height: 1.45; }
+.plan li::before { content: ""; position: absolute; left: 3px; top: 6px; width: 11px; height: 6px; border-left: 3px solid var(--teal); border-bottom: 3px solid var(--teal); transform: rotate(-45deg); }
+.plan .btn { align-self: flex-start; margin-top: auto; }
+.plan .terms { color: var(--muted); font-size: 13px; }
+.plan .parent-price { padding: 10px 12px; border-radius: 12px; background: #fff4d4; color: var(--body); font-size: 13px; }
+/* Sona Pro alone while Sona Clinic is hidden (SLPSITE1, 18 Nov 2026): one
+   card, centred, about as wide as one of the pair, its heading centred over
+   it. The page's script drops .one when CLINIC_ON brings the second card. */
+.plans.one { grid-template-columns: minmax(0, 560px); justify-content: center; }
+.pricing:has(.plans.one) h2 { text-align: center; }
 
 @media (max-width: 850px) {
-
+  .workflow.three { grid-template-columns: minmax(0, 1fr); }
 }
 @media (max-width: 700px) {
   .hero, .kidside .in, .privacy { grid-template-columns: minmax(0, 1fr); }
@@ -243,7 +267,7 @@ footer .links { display: flex; flex-wrap: wrap; gap: 13px; }
   .mascot { width: 54%; left: 8%; }
   .spark-top { left: 28%; }
   .spark-low { right: 10%; }
-  .workflow, .notes { grid-template-columns: minmax(0, 1fr); }
+  .workflow, .notes, .plans { grid-template-columns: minmax(0, 1fr); }
   .workflow-step { padding: 18px 20px; }
 
   .workflow-step h3 { margin-top: 3px; }
@@ -256,6 +280,7 @@ footer .links { display: flex; flex-wrap: wrap; gap: 13px; }
   .brand b { font-size: 26px; }
   .signin { padding-inline: 13px; font-size: 14px; }
   .signup .btn { width: 100%; }
+  .plan .btn { align-self: stretch; }
 
 
 

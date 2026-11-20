@@ -942,7 +942,9 @@ for (const [cred, isCovered] of [[CRED, true], [CRED2, false]]) {
   // family, and every game comes with the caseload plan.
   ok("the dashboard's caseload-link card says what the link does, and what is free for every family",
     /Families who join through your link get Sona's free version — daily practice and free games — at no cost\./.test(slp) &&
-    /With <a href="#premium">Sona Pro<\/a> they get every game\./.test(slp));
+    // Since 18 Nov 2026 (SLPSITE1) the dashboard sells nothing: the plan is
+    // the website's, so the line points to /plans, never to a dashboard page.
+    /With Sona Pro they get every game\. <a href="\/plans#pricing">See plans<\/a>/.test(slp) && !/href="#premium"/.test(slp));
   ok("…and the message a clinician copies to a family says 'free' and what free means",
     /function familyOffer\(\)\{[^}]*"It's free for your family: daily practice and free games\."/.test(slp) &&
     /function inviteMsg\([^)]*\)\{[^}]*\+familyOffer\(\)\+/.test(slp) && /\$\("snip"\)\.value="[^"]*"\+familyOffer\(\)\+/.test(slp));

@@ -66,11 +66,13 @@ ok("every open page is a real page (a typo would lock the one it meant)", L.OPEN
 const mustLock = ["today.html", "onboarding.html", "charge.html", "arcade-slice.html", "arcade-feed.html", "arcade-hoops.html", "library.html", "join.html", "subscribe.html", "settings.html", "progress.html", "check.html", "customize.html", "stickers.html", "road.html", "board.html", "premium.html", "trial.html"];
 ok("the family app locks: Home, setup, practice, every game, the books, a clinician's family link, the plan and grown-up pages",
   mustLock.every((f) => L.lockedPage("/" + f)), mustLock.filter((f) => !L.lockedPage("/" + f)));
-const mustOpen = ["parents.html", "for-slps.html", "slp.html", "slp-login.html", "leads.html", "founders.html", "privacy.html", "launching.html"];
-ok("the websites, the clinician's dashboard and sign-in, the founder pages, privacy and the lock page stay open",
+// packet.html is the clinicians' front door at / and home-practice-packet.html
+// the packet it gives (17 Nov 2026): websites, not the family app.
+const mustOpen = ["parents.html", "for-slps.html", "packet.html", "home-practice-packet.html", "slp.html", "slp-login.html", "leads.html", "founders.html", "privacy.html", "launching.html"];
+ok("the websites, the clinician's opt-in, plans, packet, dashboard and sign-in, the founder pages, privacy and the lock page stay open",
   mustOpen.every((f) => !L.lockedPage("/" + f)), mustOpen.filter((f) => L.lockedPage("/" + f)));
 ok("every other page on disk is part of the app, and locks", pages.filter((f) => !L.OPEN_PAGES.includes(f)).every((f) => L.lockedPage("/" + f)));
-ok("pictures, scripts, sounds, the API and the root never lock", ["/", "/sona.js", "/assets/crafted/echo-welcome.webp", "/api/lead", "/coach/say-echo/R-sound.wav", "/for-slps", "/slps", "/assets/x/today.html"].every((p) => !L.lockedPage(p)));
+ok("pictures, scripts, sounds, the API and the root never lock", ["/", "/plans", "/packet", "/sona.js", "/assets/crafted/echo-welcome.webp", "/api/lead", "/coach/say-echo/R-sound.wav", "/for-slps", "/slps", "/assets/x/today.html"].every((p) => !L.lockedPage(p)));
 const { pathToRegexp } = require(path.join(REPO, "node_modules/next/dist/compiled/path-to-regexp"));
 const matcher = (MW.config && MW.config.matcher) || [];
 const hits = (p) => matcher.some((m) => pathToRegexp(m).test(p));

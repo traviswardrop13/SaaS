@@ -1,7 +1,10 @@
 import crypto from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { clinicianRole, clinicianWorkSetting, kvCmd, kvConfigured, type ClinicianRole, type ClinicianWorkSetting } from "@/lib/slpAuth";
-import { grandfathered, recordActive, accessKey, planKey, FREE_SELF_TERMS, type PlanRecord } from "@/lib/caseload";
+import {
+  grandfathered, recordActive, accessKey, planKey, teamKey, teamOfKey, parseTeamRow, dashboardPromised,
+  FREE_SELF_TERMS, FREE_DASHBOARD_TERMS, type PlanRecord,
+} from "@/lib/caseload";
 import { isWorkEmail } from "@/lib/workEmail";
 
 // lib/contacts SYNCED: every address Resend's contacts hold (not imported:
@@ -68,14 +71,30 @@ export type Clinician = {
   workEmail: "yes" | "no";
   accessRequested: string;           // ISO time of the first request, or ""
   approved: "yes" | "no";
-  // "pro" / "pro trial": Sona Pro, the one plan on sale from 12 Nov 2026.
-  caseload: "pro" | "pro trial" | "paid" | "grandfathered" | "none";
+  // "pro" / "pro trial": Sona Pro, on sale from 12 Nov 2026. "clinic" /
+  // "clinic trial": they bought Sona Clinic (17 Nov 2026), and "clinic
+  // member" is a clinician who joined someone else's live one.
+  caseload: "pro" | "pro trial" | "clinic" | "clinic trial" | "clinic member" | "paid" | "grandfathered" | "none";
   // Their own Premium (29 Sep 2026): how it is on, if it is. Only a 24 to
   // 29 Sep account without a work email can still be approved by hand
   // (`canApprove`); everyone after that buys it.
-  own: "pro" | "pro trial" | "paid" | "free" | "older plan" | "none";
+  own: "pro" | "pro trial" | "clinic" | "clinic trial" | "clinic member" | "paid" | "free" | "older plan" | "none";
   canApprove: "yes" | "no";
+  // WHO WAS PROMISED A FREE DASHBOARD: "free" for every stamp from before
+  // 12 Nov 2026 (no stamp included, lib/caseload dashboardPromised); "with a
+  // plan" for everyone else, whose dashboard comes with Sona Pro or Sona
+  // Clinic. "with a plan (13–17 Nov signup)" marks the free-dashboard signups
+  // of 13 to 17 Nov 2026, and the Pro-era accounts that opened that door
+  // then: told the dashboard was free, moved to the trial on 17 Nov 2026
+  // (SLPPRO1, Travis: "Move them to the trial").
+  dashboard: "free" | "with a plan" | "with a plan (13–17 Nov signup)";
 };
+
+/** How a dashboard is open, from the account's stamp and flag alone (lib/caseload dashboardOpen). */
+function dashboardWord(a: Record<string, unknown>): Clinician["dashboard"] {
+  if (dashboardPromised(a)) return "free";
+  return a.terms === FREE_DASHBOARD_TERMS || a.freeDashboard === true ? "with a plan (13–17 Nov signup)" : "with a plan";
+}
 
 /** An Upstash HGETALL answer — a flat [field, value, …] list — as an object. */
 function hashObj(flat: unknown): Record<string, string> {
@@ -113,6 +132,20 @@ export async function readClinicians(): Promise<Clinician[]> {
         let pro: PlanRecord | null = null;
         try { pro = JSON.parse(String(await kvCmd(["GET", planKey(email, "pro")]))) as PlanRecord | null; } catch { pro = null; }
         const proOn: "pro" | "pro trial" | "" = recordActive(pro) ? (pro!.status === "trialing" ? "pro trial" : "pro") : "";
+        // Sona Clinic: their own (bought), else one they joined, read from
+        // the mirrors and the two team keys as last written (no Stripe call).
+        let clinic: PlanRecord | null = null;
+        try { clinic = JSON.parse(String(await kvCmd(["GET", planKey(email, "clinic")]))) as PlanRecord | null; } catch { clinic = null; }
+        let clinicOn: "clinic" | "clinic trial" | "clinic member" | "" = recordActive(clinic) ? (clinic!.status === "trialing" ? "clinic trial" : "clinic") : "";
+        if (!clinicOn) {
+          const owner = String((await kvCmd(["GET", teamOfKey(email)])) || "");
+          const row = owner && owner !== email ? parseTeamRow(await kvCmd(["HGET", teamKey(owner), email])) : null;
+          let theirs: PlanRecord | null = null;
+          if (row && row.state === "active") {
+            try { theirs = JSON.parse(String(await kvCmd(["GET", planKey(owner, "clinic")]))) as PlanRecord | null; } catch { theirs = null; }
+          }
+          if (recordActive(theirs)) clinicOn = "clinic member";
+        }
         // in Resend's contacts: lib/contacts SYNCED, which every add stamps
         // (an account's crmAt also counted the Kit years, so it is not read)
         let inList = false;
@@ -131,9 +164,10 @@ export async function readClinicians(): Promise<Clinician[]> {
           workEmail: isWorkEmail(email) ? "yes" : "no",
           accessRequested: access.requestedAt || "",
           approved: access.approved === "1" ? "yes" : "no",
-          caseload: grandfathered(a) ? "grandfathered" : proOn || (recordActive(plan) ? "paid" : "none"),
-          own: freeSelf ? "free" : proOn || (recordActive(mine) ? "paid" : recordActive(plan) && plan!.addon !== true ? "older plan" : "none"),
+          caseload: grandfathered(a) ? "grandfathered" : proOn || clinicOn || (recordActive(plan) ? "paid" : "none"),
+          own: freeSelf ? "free" : proOn || clinicOn || (recordActive(mine) ? "paid" : recordActive(plan) && plan!.addon !== true ? "older plan" : "none"),
           canApprove: earlier && !isWorkEmail(email) && access.approved !== "1" ? "yes" : "no",
+          dashboard: dashboardWord(a),
         });
       } catch { /* skip */ }
     }
