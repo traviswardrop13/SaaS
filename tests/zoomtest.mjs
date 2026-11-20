@@ -34,7 +34,7 @@ ok('the app-page scan finds the app (Home, Settings, practice, Bubble Pop, the b
   ['today.html', 'settings.html', 'charge.html', 'arcade-bubbles.html', 'arcade-peekaboo.html', 'library.html'].every(f => APP.includes(f)) && APP.length >= 40, APP);
 ok('every grown-up page is an app page', GROWNUP.every(f => APP.includes(f)), GROWNUP.filter(f => !APP.includes(f)));
 // Marketing pages never load sona.js, so nothing here reaches them.
-ok('no marketing page loads sona.js', ['parents.html', 'for-slps.html', 'packet.html', 'home-practice-packet.html', 'privacy.html', 'founders.html', 'founding.html', 'launching.html', 'leads.html', 'slp-login.html'].every(f => !APP.includes(f)));
+ok('no marketing page loads sona.js', ['parents.html', 'for-slps.html', 'privacy.html', 'founders.html', 'founding.html', 'launching.html', 'leads.html', 'slp-login.html'].every(f => !APP.includes(f)));
 
 function viewport(html) {
   const m = html.match(/<meta\s+name="viewport"\s+content="([^"]*)"/);

@@ -559,11 +559,7 @@ delete process.env.KIT_API_KEY;
     "@/lib/launch": { APP_READY: true, sendWelcomeEmail: async () => false },
     "@/lib/mail": { mailConfigured: () => true },
     "@/lib/nurture": { enroll: async () => false, inAppSource: () => false, stopSeries: async () => {} },
-    // The packet's one email (17 Nov 2026) is played in nurturetest; here it
-    // only records who it would have gone to.
-    "@/lib/packet": { PACKET_SOURCE: "slp-packet", sendPacketEmail: async (e) => { packetTo.push(e); return "sent"; } },
   };
-  const packetTo = [];
   const mod = { exports: {} };
   const js = ts.transpileModule(read("app/api/lead/route.ts"), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true } }).outputText;
   new Function("require", "module", "exports", js)((x) => routeStubs[x] || (x === "next/server" ? require(path.join(REPO, "node_modules/next/server")) : require(x)), mod, mod.exports);
@@ -582,12 +578,6 @@ delete process.env.KIT_API_KEY;
     !/Milo|"age"|practice|report|summary/i.test(JSON.stringify(R.calls.map((c) => c.body))), R.calls.map((c) => c.body));
   const r2 = await post({ email: "sam@clinic.org", role: "slp", name: "Sam", source: "for-slps" });
   ok("a clinician's own name travels with them", r2.json.captured === true && R.contacts.get("sam@clinic.org").first_name === "Sam");
-  // The packet opt-in at speaksona.com/ (17 Nov 2026): a clinician, in the
-  // Speech therapists segment like any other, and the only lead the packet's
-  // email is asked for.
-  const rp = await post({ email: "optin@clinic.org", role: "slp", source: "slp-packet", utm_source: "fb", fbclid: "abc" });
-  ok("the packet opt-in is captured as a speech therapist, and only it is sent the packet",
-    rp.json.captured === true && R.inSeg("optin@clinic.org", "Speech therapists") && JSON.stringify(packetTo) === '["optin@clinic.org"]', [rp, packetTo]);
   R.key = "nope";
   const r3 = await post({ email: "lost@example.com", role: "parent" });
   ok("Resend refusing: the visitor still gets an answer, and captured is false", r3.status === 200 && r3.json.ok === true && r3.json.captured === false, r3);

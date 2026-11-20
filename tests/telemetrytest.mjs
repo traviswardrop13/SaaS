@@ -121,9 +121,6 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
 // ── 4. the ad pixel: on the page that buys the traffic, nowhere near a child ──
 {
   const slps = readFileSync(ROOT + "/for-slps.html", "utf8");
-  // The ad lands on the packet opt-in at / since 17 Nov 2026 (packet.html);
-  // the plans page (for-slps.html, /plans) is where a trial starts.
-  const optin = readFileSync(ROOT + "/packet.html", "utf8");
 
   // THE REGRESSION THIS EXISTS FOR. The root used to be the Next page, which
   // loads pixel.js from app/layout.tsx. Rewriting / to this static page took
@@ -131,39 +128,30 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
   // a live campaign with no PageView and no conversion, optimising on who taps
   // an ad instead of on who turns out to be a clinician. Money, spent wrong,
   // with nothing anywhere saying so.
-  const optinPixel = (optin.match(/<script\b[^>]*\bsrc="\/pixel\.js"[^>]*>/) || [""])[0];
   const slpPixel = (slps.match(/<script\b[^>]*\bsrc="\/pixel\.js"[^>]*>/) || [""])[0];
-  ok("the page the ad points at (the opt-in at /) loads the pixel, and so does the plans page it leads to",
-    !!optinPixel && !!slpPixel,
+  ok("the page the ad points at loads the pixel",
+    !!slpPixel,
     "a campaign with no PageView and no Lead optimises on clicks, not on sign-ups");
-  ok("both clinician forms disable Meta automatic form capture", /\bdata-autoconfig="off"/.test(optinPixel) && /\bdata-autoconfig="off"/.test(slpPixel));
+  ok("the clinician form disables Meta automatic form capture", /\bdata-autoconfig="off"/.test(slpPixel));
   // The Speech Check has a "Child's first name" box: Meta's automatic form
   // reading must never see it (core.md B5, website.md B6).
   const checkPixel = (readFileSync(ROOT + "/check.html", "utf8").match(/<script\b[^>]*\bsrc="\/pixel\.js"[^>]*>/) || [""])[0];
   ok("the Speech Check's pixel tag turns Meta's automatic form reading off", !!checkPixel && /\bdata-autoconfig="off"/.test(checkPixel));
   // The form asks no role or work setting since 14 Nov 2026, so neither can
   // reach PostHog (they were ph-no-capture fields until then).
-  ok("the clinician forms hold no role or work setting to capture", !/id="fRole"|id="fWorkSetting"/.test(slps + optin));
+  ok("the clinician form holds no role or work setting to capture", !/id="fRole"|id="fWorkSetting"/.test(slps));
 
   // A tap is not a sign-up. Firing on the click would teach the campaign to
   // buy people who open forms and abandon them.
-  const oHandler = optin.slice(optin.indexOf("function go()"));
-  const oGate = oHandler.indexOf("if (!j || !j.ok)");
-  const lead = oHandler.indexOf('sonaTrack("Lead")');
-  ok("the opt-in's Lead fires only after /api/lead accepted the email",
-    oGate > 0 && lead > oGate && /sonaTrack\("Lead"\); \} catch/.test(oHandler),
-    "otherwise the campaign optimises for opening the form, not completing it");
-  ok("…and never a completed registration", !/CompleteRegistration/.test(optin));
-  // ONE CONVERSION PER PERSON (17 Nov 2026): the opt-in owns Lead; a trial
-  // started on the plans page, once its email has actually gone, is
-  // InitiateCheckout. Nothing is bought until the dashboard's plan page.
   const handler = slps.slice(slps.indexOf("function go()"));
   const okGate = handler.indexOf("if (!j || !j.ok)");
-  const sentGate = handler.indexOf("if (j.sent !== true) {");
-  const start = handler.indexOf('sonaTrack("InitiateCheckout")');
-  ok("the plans page fires InitiateCheckout only after the server sent the sign-in email",
-    okGate > 0 && sentGate > okGate && start > sentGate && /sonaTrack\("InitiateCheckout"\); \} catch/.test(handler));
-  ok("…and never Lead or CompleteRegistration", !/sonaTrack\("Lead"\)|CompleteRegistration/.test(slps.replace(/<!--[\s\S]*?-->/g, "").replace(/\/\/[^\n]*/g, "")));
+  const lead = handler.indexOf('sonaTrack("Lead")');
+  ok("Lead fires only after the server accepted the sign-up",
+    okGate > 0 && lead > okGate,
+    "otherwise the campaign optimises for opening the form, not completing it");
+  ok("…and email delivery is never counted as a completed registration",
+    handler.indexOf("if (j.sent !== true) {") > okGate &&
+    lead > handler.indexOf("if (j.sent !== true) {") && !/CompleteRegistration/.test(handler));
 
   // THE ROOT IS THE PARENT PAGE NOW (26 Sep 2026), and the parent ads land on
   // it: the same regression, the same rule. PageView on load, Lead only once
@@ -182,12 +170,11 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
   // funnel; every other page — the practice screens, the clinician's caseload,
   // the family's redemption link — carries or is one keystroke from a child's
   // identity and gets no ad tracking at all.
-  const MARKETING = new Set(["check.html", "subscribe.html", "onboarding.html", "for-slps.html", "packet.html", "parents.html", "try.html"]);
+  const MARKETING = new Set(["check.html", "subscribe.html", "onboarding.html", "for-slps.html", "parents.html", "try.html"]);
   const pages = readdirSync(ROOT).filter((f) => f.endsWith(".html"));
   const strays = pages.filter((f) => !MARKETING.has(f) && /pixel\.js/.test(readFileSync(ROOT + "/" + f, "utf8")));
   ok("no page outside the grown-up marketing funnel loads the ad pixel", strays.length === 0, strays.join(", "));
-  // home-practice-packet.html is what a family takes home: no pixel there.
-  for (const f of ["slp.html", "join.html", "today.html", "charge.html", "pilot.html", "home-practice-packet.html"]) {
+  for (const f of ["slp.html", "join.html", "today.html", "charge.html", "pilot.html"]) {
     ok(`…named explicitly, because it is the one that would hurt: ${f}`,
       !/pixel\.js/.test(readFileSync(ROOT + "/" + f, "utf8")));
   }
@@ -211,14 +198,10 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
   const req = readFileSync(APP + "/lib/slpLead.ts", "utf8");
   const slps = readFileSync(ROOT + "/for-slps.html", "utf8");
 
-  const optin = readFileSync(ROOT + "/packet.html", "utf8");
-  ok("the landing pages capture the ad's own click id, not just utm_source",
-    [slps, optin].every((p) => /"fbclid"/.test(p) && /utm_campaign/.test(p) && /utm_content/.test(p)),
+  ok("the landing page captures the ad's own click id, not just utm_source",
+    /"fbclid"/.test(slps) && /utm_campaign/.test(slps) && /utm_content/.test(slps),
     "several creatives run at once; 'an SLP signed up' is only useful with which ad");
   ok("…and they ride along with the sign-up", /attrib: attrib/.test(slps));
-  // /api/lead reads them at the top level of the body (lib/slpLead's
-  // allow-list is the auth route's), so the opt-in spreads them in.
-  ok("…and with the opt-in's lead, at the top level where /api/lead reads them", /\}, attrib\)\)/.test(optin));
 
   // ALLOW-LIST, the lesson /api/lead's safeLead already paid for: these
   // arrive from a query string a stranger controls, and a deny-list is how
