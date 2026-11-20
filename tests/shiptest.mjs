@@ -132,7 +132,7 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
     /rel="canonical" href="https:\/\/www\.speaksona\.com\/for-parents"/.test(parents) &&
     /og:url" content="https:\/\/www\.speaksona\.com\/for-parents"/.test(parents) &&
     /rel="canonical" href="https:\/\/app\.speaksona\.com\/"/.test(slps) &&
-    /og:url" content="https:\/\/www\.speaksona\.com\/plans"/.test(slps));
+    /og:url" content="https:\/\/app\.speaksona\.com\/"/.test(slps));
   ok("every landing route revalidates (a rewritten path is not on the list read from disk)",
     ["/", "/plans", "/for-parents"].every((r) => new RegExp('source: "' + r.replace(/\//g, "\\/") + '", headers: noStore').test(code)));
 
