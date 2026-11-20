@@ -251,7 +251,14 @@
         case "storyWord": return readingWord(p, false);
         case "questFinish": return Sona.questEnd(p.game);
         case "gameRep": return Sona.gameRep(p.sound);
-        case "speechGame": return nativeSayGame(p);
+        case "speechGame": {
+            const game = nativeSayGame(p);
+            if (!game) return null;
+            for (const target of game.targets) {
+                target.promptPieces = soundSegments(target.word, game.sound, target.position);
+            }
+            return game;
+        }
         case "arcadeCheckpoint": return nativeArcadeCheckpoint(p);
         case "feedGame": return nativeFeedGame(p);
         case "feedCount": return feedGrowth(false);

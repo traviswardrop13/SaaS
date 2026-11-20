@@ -6,10 +6,12 @@ import SonaSpeechCore
 @MainActor struct GameSpeechGateView: View {
     @Environment(\.scenePhase) private var scenePhase
     @StateObject private var model: GameSpeechGateController
+    private let markedWord: AttributedString
     private let onExit: @MainActor () -> Void
     private let isOptionalHelp: Bool
 
-    init(plan: GameSpeechGatePlan?, isCurrent: @escaping @MainActor () -> Bool,
+    init(plan: GameSpeechGatePlan?, markedWord: AttributedString,
+         isCurrent: @escaping @MainActor () -> Bool,
          creditPlayRep: @escaping @MainActor (GameSayingCredit) async throws -> Void,
          onEarnedMove: @escaping @MainActor () -> Void,
          onExit: @escaping @MainActor () -> Void,
@@ -18,6 +20,7 @@ import SonaSpeechCore
          provider: GameSpeechPromptProviding? = nil) {
         _model = StateObject(wrappedValue: GameSpeechGateController(
             plan: plan, isCurrent: isCurrent, creditPlayRep: creditPlayRep, onEarnedMove: onEarnedMove, onOptionalReturn: onOptionalReturn, acousticCarry: acousticCarry, provider: provider))
+        self.markedWord = markedWord
         self.onExit = onExit; self.isOptionalHelp = onOptionalReturn != nil
     }
 
@@ -50,10 +53,9 @@ import SonaSpeechCore
                             if let emoji = plan.emoji, !emoji.isEmpty {
                                 Text(emoji).font(.system(size: 54)).accessibilityHidden(true)
                             }
-                            Text(plan.word)
+                            Text(markedWord)
                                 .font(.system(size: plan.word.count > 14 ? 32 : 44, weight: .heavy, design: .rounded))
                                 .multilineTextAlignment(.center)
-                                .foregroundStyle(Color(red: 0.77, green: 0.33, blue: 0.16))
                                 .accessibilityIdentifier("game-speech-word")
                             if plan.sayTimes > 1 {
                                 HStack(spacing: 12) {

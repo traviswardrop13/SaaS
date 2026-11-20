@@ -39,16 +39,12 @@ import SonaSpeechCore
                     Image(echoArt).resizable().scaledToFit()
                         .frame(height: geometry.size.height < 600 ? 90 : 138)
                         .accessibilityHidden(true)
-                    Text(model.selection.title(for: model.ask))
+                    Text(markedTitle)
                         .font(.system(size: 29, weight: .heavy, design: .rounded))
-                        .multilineTextAlignment(.center)
-                        .accessibilityIdentifier("arcade-checkpoint-title")
-                    Text(marked(model.ask.markedHTML, fallback: model.ask.text))
-                        .font(.system(size: model.ask.text.count > 15 ? 34 : 48, weight: .heavy, design: .rounded))
                         .multilineTextAlignment(.center).padding(22)
                         .frame(maxWidth: .infinity)
                         .background(.white, in: RoundedRectangle(cornerRadius: 25))
-                        .accessibilityIdentifier("arcade-checkpoint-ask")
+                        .accessibilityIdentifier("arcade-checkpoint-title")
                     Text(model.status).font(.system(.headline, design: .rounded))
                         .multilineTextAlignment(.center).frame(minHeight: 26)
                         .accessibilityIdentifier("arcade-checkpoint-status")
@@ -104,6 +100,16 @@ import SonaSpeechCore
         case .earned: return "echo-cheer"
         default: return "echo-welcome"
         }
+    }
+
+    private var markedTitle: AttributedString {
+        let ask = model.ask
+        let title = model.selection.title(for: ask)
+        guard let quoted = title.range(of: "“\(ask.text)”") else { return AttributedString(title) }
+        var result = AttributedString(String(title[..<title.index(after: quoted.lowerBound)]))
+        result += marked(ask.markedHTML, fallback: ask.text)
+        result += AttributedString(String(title[title.index(before: quoted.upperBound)...]))
+        return result
     }
 
     /// Color only the source's marked letters, never a newly guessed span.

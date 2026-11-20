@@ -3,6 +3,11 @@ import SwiftUI
 struct NativeSpeechGameSelection: Decodable {
     struct Target: Decodable {
         let word, emoji, position: String
+        let promptPieces: [NativeSpeechEmphasis]
+
+        var markedWord: AttributedString {
+            NativeSpeechEmphasis.formatted(promptPieces, fallback: word)
+        }
     }
     let title: String
     let intro: String?
@@ -86,7 +91,7 @@ struct NativeSpeechGameSelection: Decodable {
         let plan = GameSpeechGatePlan(id: pending.id, gameID: gameID, sound: selection.sound,
             word: target.word, position: target.position, sayTimes: selection.sayings,
             emoji: target.emoji, voiceID: selection.voice, volume: selection.volume, voiceOn: selection.voiceOn)
-        return GameSpeechGateView(plan: plan,
+        return GameSpeechGateView(plan: plan, markedWord: target.markedWord,
             isCurrent: { help?.id == pending.id && step == pending.step && moveEarned && isCurrent() },
             creditPlayRep: credit,
             onEarnedMove: { finishHelp(pending.id, earned: true) },
@@ -101,7 +106,7 @@ struct NativeSpeechGameSelection: Decodable {
             word: target.word, position: target.position, sayTimes: selection.sayings,
             intro: step == 0 ? selection.intro : nil, emoji: target.emoji,
             voiceID: selection.voice, volume: selection.volume, voiceOn: selection.voiceOn)
-        return GameSpeechGateView(plan: plan,
+        return GameSpeechGateView(plan: plan, markedWord: target.markedWord,
             isCurrent: { turn == gateID && !moveEarned && isCurrent() }, creditPlayRep: credit,
             onEarnedMove: { if turn == gateID && isCurrent() { moveEarned = true } }, onExit: onExit, acousticCarry: acousticCarry, provider: narration)
             .id(turn)

@@ -87,9 +87,9 @@ final class NativeFamilyRulesTests: XCTestCase {
             let result = try value(NativeFamilyRules.evaluate(.speechGame, input: ["game": key], storage: storage))
             XCTAssertEqual(result["sound"] as? String, "L")
             XCTAssertEqual(result["sayings"] as? Int, sayings)
-            let targets = try XCTUnwrap(result["targets"] as? [[String: String]])
+            let targets = try XCTUnwrap(result["targets"] as? [[String: Any]])
             XCTAssertEqual(targets.count, steps)
-            XCTAssertTrue(targets.allSatisfy { $0["position"] == "f" })
+            XCTAssertTrue(targets.allSatisfy { $0["position"] as? String == "f" })
         }
     }
 
@@ -100,10 +100,20 @@ final class NativeFamilyRulesTests: XCTestCase {
             for (key, count) in [("lighthouse", firstCount), ("windup", firstCount), ("frontdoor", laterCount), ("observatory", laterCount)] {
                 let result = try value(NativeFamilyRules.evaluate(.speechGame, input: ["game": key], storage: storage))
                 XCTAssertEqual(result["sayings"] as? Int, 3)
-                XCTAssertEqual((result["targets"] as? [[String: String]])?.count, count)
+                XCTAssertEqual((result["targets"] as? [[String: Any]])?.count, count)
                 XCTAssertTrue((result["intro"] as? String)?.contains("three times") == true)
             }
         }
+    }
+
+    func testSayAndPlayHighlightsOnlyTheTargetSoundInTheOriginalWord() throws {
+        let result = try value(NativeFamilyRules.evaluate(.speechGame, input: ["game": "soccer"], storage: family))
+        let targets = try XCTUnwrap(result["targets"] as? [[String: Any]])
+        let first = try XCTUnwrap(targets.first)
+        XCTAssertEqual(first["word"] as? String, "sock")
+        let pieces = try XCTUnwrap(first["promptPieces"] as? [[String: Any]])
+        XCTAssertEqual(pieces.compactMap { $0["text"] as? String }, ["s", "ock"])
+        XCTAssertEqual(pieces.compactMap { $0["marked"] as? Bool }, [true, false])
     }
 
     func testBookWordUsesTheAuthoredKeyAndDoesNotPromptBelowItsAgeNorm() throws {
