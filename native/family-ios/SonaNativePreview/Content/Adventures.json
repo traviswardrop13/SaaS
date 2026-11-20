@@ -1,0 +1,2530 @@
+{
+  "version": 1,
+  "sources": {
+    "public/sona.js": "782b5322cabbfdc2335eaea41cdb2bc0ba6672a97b7292f6351bf920cfd64a54",
+    "public/adventures.js": "8dfd291076f4437ab5c225006019370538b5badbec2ec38576eed2e0e52e68c3",
+    "public/talk-stories.js": "401689fbc052798561080e53428d834ebc6cdaaf25f5fac71bd8f8fd9f96ca41"
+  },
+  "stories": [
+    {
+      "id": "lighthouse",
+      "day": 1,
+      "talk": false,
+      "sound": null,
+      "title": "The Lighthouse Sneeze",
+      "hook": "Captain Wally sneezed out the lighthouse lamp! Help the little boats get home.",
+      "game": "lighthouse",
+      "gameName": "Light the Way",
+      "cover": "/assets/crafted/home-lighthouse.webp",
+      "wash": "#2b2f5e",
+      "intro": [
+        {
+          "id": "s01",
+          "art": "/assets/adventure/lighthouse/s01.webp",
+          "ages": "both",
+          "big": "Look! Pelly the pelican brought us a letter. Oops. That's a fish!",
+          "little": "Look! Pelly the pelican brought us a letter. Oops. That's a fish!"
+        },
+        {
+          "id": "s02",
+          "art": "/assets/adventure/lighthouse/s02.webp",
+          "ages": "both",
+          "big": "Here's the real letter. It's from Captain Wally at the lighthouse. He needs our help tonight!",
+          "little": "Here's the real letter. Captain Wally at the lighthouse needs our help!"
+        },
+        {
+          "id": "s03",
+          "art": "/assets/adventure/lighthouse/s03.webp",
+          "ages": "both",
+          "big": "Captain Wally keeps the light that helps the boats get home. But he has a cold. Sniff, sniff!",
+          "little": "This is Captain Wally. He has a cold. Sniff, sniff!"
+        },
+        {
+          "id": "s04",
+          "art": "/assets/adventure/lighthouse/s04.webp",
+          "ages": "big",
+          "big": "We climb up, up, up the twisty stairs to the big lamp. Puff, puff, puff!",
+          "little": "We climb up, up, up the twisty stairs to the big lamp. Puff, puff, puff!"
+        },
+        {
+          "id": "s05",
+          "art": "/assets/adventure/lighthouse/s05.webp",
+          "ages": "both",
+          "big": "Ah... ah... ah-choo! Oh no! Captain Wally sneezed the lamp right out!",
+          "little": "Ah... ah... ah-choo! Oh no! Captain Wally sneezed the lamp right out!"
+        },
+        {
+          "id": "s06",
+          "art": "/assets/adventure/lighthouse/s06.webp",
+          "ages": "both",
+          "big": "Out on the sea, the little boats are coming home. But it's dark and foggy. Toot, toot? Which way?",
+          "little": "The little boats can't find their way home. It's too dark!"
+        },
+        {
+          "id": "s07",
+          "art": "/assets/adventure/lighthouse/s07.webp",
+          "ages": "big",
+          "big": "Wally can't find his glasses. They're on his head! And if he gets near the lamp... ah-choo! Out it goes.",
+          "little": "Wally can't find his glasses. They're on his head! And if he gets near the lamp... ah-choo! Out it goes."
+        },
+        {
+          "id": "s08",
+          "art": "/assets/adventure/lighthouse/s08.webp",
+          "ages": "both",
+          "big": "So it's up to us! Let's light the lamp, find every boat, and shine them all the way home.",
+          "little": "Let's light the lamp and find the little boats!"
+        }
+      ],
+      "ending": [
+        {
+          "id": "e01",
+          "art": "/assets/adventure/lighthouse/e01.webp",
+          "ages": "both",
+          "big": "Toot, toot, hooray! Every little boat is safe at home.",
+          "little": "Toot, toot, hooray! Every little boat is safe at home."
+        },
+        {
+          "id": "e02",
+          "art": "/assets/adventure/lighthouse/e02.webp",
+          "ages": "big",
+          "big": "Even the sleepy whale woke up to say thank you. Splash!",
+          "little": "Even the sleepy whale woke up to say thank you. Splash!"
+        },
+        {
+          "id": "e03",
+          "art": "/assets/adventure/lighthouse/e03.webp",
+          "ages": "both",
+          "big": "We found Wally's glasses. And this time, his sneeze was a teeny one. Achoo!",
+          "little": "Look! Wally's glasses were on his head the whole time. Silly Wally!"
+        },
+        {
+          "id": "e04",
+          "art": "/assets/adventure/lighthouse/e04.webp",
+          "ages": "both",
+          "big": "Cocoa for the heroes! You lit the way home. Our helper map gets a gold star, right by the lighthouse.",
+          "little": "Cocoa for the heroes! You lit the way home. Our helper map gets a gold star, right by the lighthouse."
+        }
+      ]
+    },
+    {
+      "id": "windup",
+      "day": 2,
+      "talk": false,
+      "sound": null,
+      "title": "Grandpa Bear's Sleepy Toys",
+      "hook": "Grandpa Bear's toys are fast asleep. Wake them up for the Toy Parade!",
+      "game": "windup",
+      "gameName": "Wind-Up Toys",
+      "cover": "/assets/crafted/home-windup.webp",
+      "wash": "#b9783f",
+      "intro": [
+        {
+          "id": "s01",
+          "art": "/assets/adventure/windup/s01.webp",
+          "ages": "both",
+          "big": "Pelly the pelican is here with a letter! Oops. That's a rubber duck. Squeak!",
+          "little": "Pelly the pelican is here with a letter! Oops. That's a rubber duck. Squeak!"
+        },
+        {
+          "id": "s02",
+          "art": "/assets/adventure/windup/s02.webp",
+          "ages": "both",
+          "big": "It's from Grandpa Bear's toy shop. The Toy Parade is today! Hooray!",
+          "little": "Grandpa Bear's toys have a parade today. Hooray!"
+        },
+        {
+          "id": "s03",
+          "art": "/assets/adventure/windup/s03.webp",
+          "ages": "both",
+          "big": "The whole town is waiting in the square for the parade. But where are the toys?",
+          "little": "Everyone is waiting for the parade. Where are the toys?"
+        },
+        {
+          "id": "s04",
+          "art": "/assets/adventure/windup/s04.webp",
+          "ages": "both",
+          "big": "Shh! The toys are fast asleep. They had a secret party all night long!",
+          "little": "Shh! The toys are fast asleep. They had a secret party all night long!"
+        },
+        {
+          "id": "s05",
+          "art": "/assets/adventure/windup/s05.webp",
+          "ages": "big",
+          "big": "Now they're all out of wind. Their little keys won't turn by themselves.",
+          "little": "Now they're all out of wind. Their little keys won't turn by themselves."
+        },
+        {
+          "id": "s06",
+          "art": "/assets/adventure/windup/s06.webp",
+          "ages": "both",
+          "big": "And Grandpa Bear is asleep too. He snores like a tuba! Honk-shoo, honk-shoo.",
+          "little": "And Grandpa Bear is asleep too. He snores like a tuba! Honk-shoo, honk-shoo."
+        },
+        {
+          "id": "s07",
+          "art": "/assets/adventure/windup/s07.webp",
+          "ages": "big",
+          "big": "A wind-up toy needs just the right winding. Too little, it yawns. Too much, it spins! Just right, it marches.",
+          "little": "A wind-up toy needs just the right winding. Too little, it yawns. Too much, it spins! Just right, it marches."
+        },
+        {
+          "id": "s08",
+          "art": "/assets/adventure/windup/s08.webp",
+          "ages": "both",
+          "big": "Let's wind up every toy and get this parade going. Ready?",
+          "little": "Let's wind up the toys for the parade. Ready?"
+        }
+      ],
+      "ending": [
+        {
+          "id": "e01",
+          "art": "/assets/adventure/windup/e01.webp",
+          "ages": "both",
+          "big": "Here comes the Toy Parade! Rat-a-tat, toot, hop, twirl. Everybody cheers!",
+          "little": "Here comes the Toy Parade! Rat-a-tat, toot, hop, twirl. Everybody cheers!"
+        },
+        {
+          "id": "e02",
+          "art": "/assets/adventure/windup/e02.webp",
+          "ages": "both",
+          "big": "Grandpa Bear woke up and ran out in his pajamas. Is it parade time? Yes, it is!",
+          "little": "Grandpa Bear woke up and ran out in his pajamas. Is it parade time? Yes, it is!"
+        },
+        {
+          "id": "e03",
+          "art": "/assets/adventure/windup/e03.webp",
+          "ages": "big",
+          "big": "Look who came to watch! Captain Wally from the lighthouse, with three little mice riding along!",
+          "little": "Look who came to watch! Captain Wally from the lighthouse, with three little mice riding along!"
+        },
+        {
+          "id": "e04",
+          "art": "/assets/adventure/windup/e04.webp",
+          "ages": "both",
+          "big": "A gold star for Grandpa Bear's toy shop on our helper map! What a day.",
+          "little": "A gold star for Grandpa Bear's toy shop on our helper map! What a day."
+        }
+      ]
+    },
+    {
+      "id": "bridge",
+      "day": 3,
+      "talk": false,
+      "sound": null,
+      "title": "The Puzzle Bridge",
+      "hook": "The storm broke the bridge to Blossom Island. Build it back for the big party!",
+      "game": "bridge",
+      "gameName": "Puzzle Bridge",
+      "cover": "/assets/crafted/home-bridge.webp",
+      "wash": "#5fb8c2",
+      "intro": [
+        {
+          "id": "s01",
+          "art": "/assets/adventure/bridge/s01.webp",
+          "ages": "both",
+          "big": "Pelly is here with a letter. Oops. That's a banana. Pelly, you silly bird!",
+          "little": "Pelly is here with a letter. Oops. That's a banana. Pelly, you silly bird!"
+        },
+        {
+          "id": "s02",
+          "art": "/assets/adventure/bridge/s02.webp",
+          "ages": "both",
+          "big": "Here's the real letter. Grandma Tortoise is one hundred years old today! The party is on Blossom Island.",
+          "little": "It's Grandma Tortoise's birthday! The party is on Blossom Island."
+        },
+        {
+          "id": "s03",
+          "art": "/assets/adventure/bridge/s03.webp",
+          "ages": "big",
+          "big": "Everyone is going. Captain Wally from the lighthouse has the cake, and Grandpa Bear's toys will play the music!",
+          "little": "Everyone is going. Captain Wally from the lighthouse has the cake, and Grandpa Bear's toys will play the music!"
+        },
+        {
+          "id": "s04",
+          "art": "/assets/adventure/bridge/s04.webp",
+          "ages": "both",
+          "big": "But look! Last night's storm shook the old bridge. Its stones fell in the river!",
+          "little": "Oh no! The storm broke the bridge. Its stones fell in the river!"
+        },
+        {
+          "id": "s05",
+          "art": "/assets/adventure/bridge/s05.webp",
+          "ages": "big",
+          "big": "Grandma Tortoise is waving from the island. Nobody can get across to the party!",
+          "little": "Grandma Tortoise is waving from the island. Nobody can get across to the party!"
+        },
+        {
+          "id": "s06",
+          "art": "/assets/adventure/bridge/s06.webp",
+          "ages": "both",
+          "big": "The stones are asleep on the river bottom. When they hear a word, up they float!",
+          "little": "The stones are asleep on the river bottom. When they hear a word, up they float!"
+        },
+        {
+          "id": "s07",
+          "art": "/assets/adventure/bridge/s07.webp",
+          "ages": "both",
+          "big": "Every stone fits just one hole. Turn it the right way, then slide it in. Click!",
+          "little": "Every stone fits the hole with the same shape. Click!"
+        },
+        {
+          "id": "s08",
+          "art": "/assets/adventure/bridge/s08.webp",
+          "ages": "both",
+          "big": "Let's build the bridge back, stone by stone. Ready?",
+          "little": "Let's fix the bridge, stone by stone. Ready?"
+        }
+      ],
+      "ending": [
+        {
+          "id": "e01",
+          "art": "/assets/adventure/bridge/e01.webp",
+          "ages": "both",
+          "big": "Click! The last stone fits. The bridge is whole again!",
+          "little": "Click! The last stone fits. The bridge is whole again!"
+        },
+        {
+          "id": "e02",
+          "art": "/assets/adventure/bridge/e02.webp",
+          "ages": "big",
+          "big": "Everyone crosses. Captain Wally carries the cake, and the toys march and play!",
+          "little": "Everyone crosses. Captain Wally carries the cake, and the toys march and play!"
+        },
+        {
+          "id": "e03",
+          "art": "/assets/adventure/bridge/e03.webp",
+          "ages": "both",
+          "big": "Happy birthday, Grandma Tortoise! Everybody sings, and she blows out her candles. Whoosh!",
+          "little": "Happy birthday, Grandma Tortoise! Whoosh go the candles!"
+        },
+        {
+          "id": "e04",
+          "art": "/assets/adventure/bridge/e04.webp",
+          "ages": "both",
+          "big": "A gold star for the bridge on our helper map! You're a super helper.",
+          "little": "A gold star for the bridge on our helper map! You're a super helper."
+        }
+      ]
+    },
+    {
+      "id": "waterwheel",
+      "day": 4,
+      "talk": false,
+      "sound": null,
+      "title": "The Thirsty Waterwheel Garden",
+      "hook": "Gardener Mouse's flowers are thirsty. Fix the troughs and get her waterwheel turning!",
+      "game": "waterwheel",
+      "gameName": "Waterwheel",
+      "cover": "/assets/crafted/home-waterwheel.webp",
+      "wash": "#8fbf68",
+      "intro": [
+        {
+          "id": "s01",
+          "art": "/assets/adventure/waterwheel/s01.webp",
+          "ages": "both",
+          "big": "Here comes Pelly with a letter! Oops. That's a striped sock. Pelly, where's the other one?",
+          "little": "Here comes Pelly with a letter! Oops. That's a striped sock. Pelly, where's the other one?"
+        },
+        {
+          "id": "s02",
+          "art": "/assets/adventure/waterwheel/s02.webp",
+          "ages": "both",
+          "big": "Here's the real letter. It's from Gardener Mouse. Her flowers are thirsty, and her waterwheel has stopped!",
+          "little": "Here's the real letter, from Gardener Mouse. Her flowers need a drink!"
+        },
+        {
+          "id": "s03",
+          "art": "/assets/adventure/waterwheel/s03.webp",
+          "ages": "both",
+          "big": "Up the hill we go, to Gardener Mouse's garden. Oh dear. The flowers are droopy, and the pond is dry.",
+          "little": "Oh dear. Droopy flowers, an empty pond, and a wheel that won't turn!"
+        },
+        {
+          "id": "s04",
+          "art": "/assets/adventure/waterwheel/s04.webp",
+          "ages": "big",
+          "big": "Two ducks sit in the empty pond with their towels, ready for a swim. Quack? Where's the water?",
+          "little": "Two ducks sit in the empty pond with their towels, ready for a swim. Quack? Where's the water?"
+        },
+        {
+          "id": "s05",
+          "art": "/assets/adventure/waterwheel/s05.webp",
+          "ages": "both",
+          "big": "Gardener Mouse is watering the whole garden with a teeny watering can. One drop for you. One drop for you!",
+          "little": "Gardener Mouse has a teeny watering can. Drip, drip!"
+        },
+        {
+          "id": "s06",
+          "art": "/assets/adventure/waterwheel/s06.webp",
+          "ages": "both",
+          "big": "She took her wooden troughs apart to scrub them. Now they're in a heap, and she can't remember how they go!",
+          "little": "The wooden troughs are slides for the water. Now they're all in a heap!"
+        },
+        {
+          "id": "s07",
+          "art": "/assets/adventure/waterwheel/s07.webp",
+          "ages": "big",
+          "big": "Water runs down the troughs to the wheel, and the wheel scoops it up for the plants. A gap? Splish! It spills out.",
+          "little": "Water runs down the troughs to the wheel, and the wheel scoops it up for the plants. A gap? Splish! It spills out."
+        },
+        {
+          "id": "s08",
+          "art": "/assets/adventure/waterwheel/s08.webp",
+          "ages": "both",
+          "big": "Let's fit the troughs back together, open the water gate, and get that wheel turning. Ready?",
+          "little": "Let's fix the troughs and get the wheel turning. Ready?"
+        }
+      ],
+      "ending": [
+        {
+          "id": "e01",
+          "art": "/assets/adventure/waterwheel/e01.webp",
+          "ages": "both",
+          "big": "Gurgle, gurgle! The wheel turns, the water runs, and every droopy flower stands up tall.",
+          "little": "Gurgle, gurgle! The wheel turns, and the flowers get a big drink!"
+        },
+        {
+          "id": "e02",
+          "art": "/assets/adventure/waterwheel/e02.webp",
+          "ages": "big",
+          "big": "The pond fills right up, and in jump the ducks with a big splash. Quack, quack, hooray!",
+          "little": "The pond fills right up, and in jump the ducks with a big splash. Quack, quack, hooray!"
+        },
+        {
+          "id": "e03",
+          "art": "/assets/adventure/waterwheel/e03.webp",
+          "ages": "both",
+          "big": "Gardener Mouse puts her feet up. And look! A little frog found Pelly's other sock. It makes a cozy sleeping bag!",
+          "little": "Look! A little frog found Pelly's other sock!"
+        },
+        {
+          "id": "e04",
+          "art": "/assets/adventure/waterwheel/e04.webp",
+          "ages": "both",
+          "big": "Another gold star for our helper map! And not one droopy flower left in the garden.",
+          "little": "Another gold star for our helper map! And not one droopy flower left in the garden."
+        }
+      ]
+    },
+    {
+      "id": "postboat",
+      "day": 5,
+      "talk": false,
+      "sound": null,
+      "title": "The Little Island Postboat",
+      "hook": "Otter's big boat is stuck in the reeds. Take the parcels in the little postboat!",
+      "game": "postboat",
+      "gameName": "Postboat",
+      "cover": "/assets/crafted/home-postboat.webp",
+      "wash": "#3f9fc0",
+      "intro": [
+        {
+          "id": "s01",
+          "art": "/assets/adventure/postboat/s01.webp",
+          "ages": "both",
+          "big": "Pelly waddles up with a letter! Oops. That's a teapot. And it's still warm!",
+          "little": "Pelly waddles up with a letter! Oops. That's a teapot. And it's still warm!"
+        },
+        {
+          "id": "s02",
+          "art": "/assets/adventure/postboat/s02.webp",
+          "ages": "both",
+          "big": "Here's the real letter. It's from Postmaster Otter, down by the sea. He needs our help!",
+          "little": "Here's the real letter. Postmaster Otter needs our help!"
+        },
+        {
+          "id": "s03",
+          "art": "/assets/adventure/postboat/s03.webp",
+          "ages": "both",
+          "big": "Otter has parcels for everybody on the little islands. Look at that pile!",
+          "little": "Postmaster Otter has a big pile of parcels!"
+        },
+        {
+          "id": "s04",
+          "art": "/assets/adventure/postboat/s04.webp",
+          "ages": "big",
+          "big": "But his big red boat is too wide for the reeds. It got stuck! Squish, squelch.",
+          "little": "But his big red boat is too wide for the reeds. It got stuck! Squish, squelch."
+        },
+        {
+          "id": "s05",
+          "art": "/assets/adventure/postboat/s05.webp",
+          "ages": "both",
+          "big": "Lucky for us, Otter has a little postboat too. It fits right through the reeds!",
+          "little": "Otter's big boat won't fit in the reeds. This little one will!"
+        },
+        {
+          "id": "s06",
+          "art": "/assets/adventure/postboat/s06.webp",
+          "ages": "big",
+          "big": "Mouse's little blue house has no curtains. Heron keeps getting rained on. And Turtle has read all his books, twice!",
+          "little": "Mouse's little blue house has no curtains. Heron keeps getting rained on. And Turtle has read all his books, twice!"
+        },
+        {
+          "id": "s07",
+          "art": "/assets/adventure/postboat/s07.webp",
+          "ages": "both",
+          "big": "Then there's Beaver. He nibbled his own front door by mistake. Crunch! His new one is on that raft.",
+          "little": "Silly Beaver nibbled his door. Crunch! His new one is on a raft."
+        },
+        {
+          "id": "s08",
+          "art": "/assets/adventure/postboat/s08.webp",
+          "ages": "both",
+          "big": "Let's steer the little postboat to every island, and pull Beaver's raft behind us. Ready?",
+          "little": "Let's steer the boat to every island. Ready?"
+        }
+      ],
+      "ending": [
+        {
+          "id": "e01",
+          "art": "/assets/adventure/postboat/e01.webp",
+          "ages": "both",
+          "big": "Beaver's new door fits just right. Open, shut, open, shut. He loves it!",
+          "little": "Beaver's new door fits. Hooray!"
+        },
+        {
+          "id": "e02",
+          "art": "/assets/adventure/postboat/e02.webp",
+          "ages": "big",
+          "big": "Mouse hangs up her curtains. Turtle starts a new book. And Heron splashes in his new raincoat!",
+          "little": "Mouse hangs up her curtains. Turtle starts a new book. And Heron splashes in his new raincoat!"
+        },
+        {
+          "id": "e03",
+          "art": "/assets/adventure/postboat/e03.webp",
+          "ages": "both",
+          "big": "Tea for everyone from Pelly's teapot! And Beaver nibbles a stick, not his new door.",
+          "little": "Tea for everyone from Pelly's teapot!"
+        },
+        {
+          "id": "e04",
+          "art": "/assets/adventure/postboat/e04.webp",
+          "ages": "both",
+          "big": "Our helper map has a shiny new gold star! You and the little postboat did it.",
+          "little": "Our helper map has a shiny new gold star! You and the little postboat did it."
+        }
+      ]
+    },
+    {
+      "id": "bakery",
+      "day": 6,
+      "talk": false,
+      "sound": null,
+      "title": "Breakfast at the Moonberry Bakery",
+      "hook": "Baker Badger's new bakery opens today, and every tray is empty. Let's bake breakfast!",
+      "game": "bakery",
+      "gameName": "Bakery",
+      "cover": "/assets/crafted/home-bakery.webp",
+      "wash": "#cc8b43",
+      "intro": [
+        {
+          "id": "s01",
+          "art": "/assets/adventure/bakery/s01.webp",
+          "ages": "both",
+          "big": "Pelly is up early with a letter. Oops. That's a pinecone! What a prickly letter, Pelly.",
+          "little": "Pelly is up early with a letter. Oops. That's a pinecone! What a prickly letter, Pelly."
+        },
+        {
+          "id": "s02",
+          "art": "/assets/adventure/bakery/s02.webp",
+          "ages": "both",
+          "big": "Here's the real letter. It's from Baker Badger. His new bakery opens this morning, and he needs more paws!",
+          "little": "Here's the real letter. Baker Badger's new bakery opens today!"
+        },
+        {
+          "id": "s03",
+          "art": "/assets/adventure/bakery/s03.webp",
+          "ages": "both",
+          "big": "The neighbors are already lining up at the Moonberry Bakery. Grandpa Bear from the toy shop brought a very big basket!",
+          "little": "Everyone is hungry, but there are no buns yet. Rumble, rumble go their tummies!"
+        },
+        {
+          "id": "s04",
+          "art": "/assets/adventure/bakery/s04.webp",
+          "ages": "big",
+          "big": "Inside, every tray is empty. Badger is so excited about his new bakery, his paws won't stop wiggling!",
+          "little": "Inside, every tray is empty. Badger is so excited about his new bakery, his paws won't stop wiggling!"
+        },
+        {
+          "id": "s05",
+          "art": "/assets/adventure/bakery/s05.webp",
+          "ages": "both",
+          "big": "Wobble, wobble, poof! The flour goes everywhere. Where did Badger's stripes go?",
+          "little": "Poof! Flour everywhere. Where did Badger's stripes go?"
+        },
+        {
+          "id": "s06",
+          "art": "/assets/adventure/bakery/s06.webp",
+          "ages": "both",
+          "big": "The recipe is all pictures. Pour to the line, stir, then shape round buns, curled buns and berry buns.",
+          "little": "The recipe is all pictures. Pour it, stir it, shape the buns!"
+        },
+        {
+          "id": "s07",
+          "art": "/assets/adventure/bakery/s07.webp",
+          "ages": "big",
+          "big": "Sniff, sniff. Grandpa Bear's nose is squished on the window. Not yet, Grandpa Bear. We haven't even started!",
+          "little": "Sniff, sniff. Grandpa Bear's nose is squished on the window. Not yet, Grandpa Bear. We haven't even started!"
+        },
+        {
+          "id": "s08",
+          "art": "/assets/adventure/bakery/s08.webp",
+          "ages": "both",
+          "big": "Let's mix the dough, shape the buns and bake them golden for the whole street. Ready?",
+          "little": "Let's bake breakfast for everyone. Ready?"
+        }
+      ],
+      "ending": [
+        {
+          "id": "e01",
+          "art": "/assets/adventure/bakery/e01.webp",
+          "ages": "both",
+          "big": "Ta-da! Round buns, curled buns and berry buns, each in its own basket. Breakfast is ready!",
+          "little": "Ta-da! Breakfast is ready. Warm buns, fresh from the oven!"
+        },
+        {
+          "id": "e02",
+          "art": "/assets/adventure/bakery/e02.webp",
+          "ages": "big",
+          "big": "Badger opens the door, and in come the neighbors. Good thing Grandpa Bear brought that very big basket!",
+          "little": "Badger opens the door, and in come the neighbors. Good thing Grandpa Bear brought that very big basket!"
+        },
+        {
+          "id": "e03",
+          "art": "/assets/adventure/bakery/e03.webp",
+          "ages": "both",
+          "big": "Pelly flies in for breakfast too. She tucks a bun in her pouch, and out pops another pinecone. Bonk!",
+          "little": "Pelly puts a bun in her pouch. Out pops another pinecone!"
+        },
+        {
+          "id": "e04",
+          "art": "/assets/adventure/bakery/e04.webp",
+          "ages": "both",
+          "big": "There's a gold star by the bakery on our helper map! Badger even gave us the very last curled bun.",
+          "little": "There's a gold star by the bakery on our helper map! Badger even gave us the very last curled bun."
+        }
+      ]
+    },
+    {
+      "id": "frontdoor",
+      "day": 7,
+      "talk": false,
+      "sound": null,
+      "title": "Tortoise's New Front Door",
+      "hook": "Tortoise is moving today! Build a bridge to his new house and roll his cart across.",
+      "game": "frontdoor",
+      "gameName": "Bridge Builder",
+      "cover": "/assets/crafted/home-frontdoor.webp",
+      "wash": "#94ac7d",
+      "intro": [
+        {
+          "id": "s01",
+          "art": "/assets/adventure/frontdoor/s01.webp",
+          "ages": "both",
+          "big": "Pelly flew in with a letter. Oops. That's a toothbrush! Whose is it?",
+          "little": "Pelly flew in with a letter. Oops. That's a toothbrush! Whose is it?"
+        },
+        {
+          "id": "s02",
+          "art": "/assets/adventure/frontdoor/s02.webp",
+          "ages": "both",
+          "big": "Here's the real letter. It's from Tortoise. He's moving to a new house today, and he needs our help!",
+          "little": "Here's the real letter. Tortoise has a new house, and he needs our help!"
+        },
+        {
+          "id": "s03",
+          "art": "/assets/adventure/frontdoor/s03.webp",
+          "ages": "both",
+          "big": "Meet Tortoise and his moving cart. His new house is just over the stream. See the green door?",
+          "little": "This is Tortoise and his cart. His new house is over the stream, but there's no bridge!"
+        },
+        {
+          "id": "s04",
+          "art": "/assets/adventure/frontdoor/s04.webp",
+          "ages": "big",
+          "big": "Tortoise packed his chair, his books and his cozy blanket. But where is his toothbrush?",
+          "little": "Tortoise packed his chair, his books and his cozy blanket. But where is his toothbrush?"
+        },
+        {
+          "id": "s05",
+          "art": "/assets/adventure/frontdoor/s05.webp",
+          "ages": "big",
+          "big": "Oh no, there's no bridge! The new one is still in pieces, all in a big pile by the water.",
+          "little": "Oh no, there's no bridge! The new one is still in pieces, all in a big pile by the water."
+        },
+        {
+          "id": "s06",
+          "art": "/assets/adventure/frontdoor/s06.webp",
+          "ages": "both",
+          "big": "Tortoise tries to carry a long plank on his shell. Round and round he spins! Whoa, whoops!",
+          "little": "Tortoise tries to carry a big piece of wood. Round and round he spins. Whoops!"
+        },
+        {
+          "id": "s07",
+          "art": "/assets/adventure/frontdoor/s07.webp",
+          "ages": "both",
+          "big": "Here's a crane to help! Hook the wood, lift it, turn it to fit, and lower it onto its glowing spot.",
+          "little": "Here's a crane! It lifts the wood. Turn it to fit, then down it goes. Clunk!"
+        },
+        {
+          "id": "s08",
+          "art": "/assets/adventure/frontdoor/s08.webp",
+          "ages": "both",
+          "big": "Let's put the bridge together, roll Tortoise's cart to his green door, and ring his doorbell. Ready?",
+          "little": "Let's build a bridge, then roll Tortoise's cart to his door. Ready?"
+        }
+      ],
+      "ending": [
+        {
+          "id": "e01",
+          "art": "/assets/adventure/frontdoor/e01.webp",
+          "ages": "both",
+          "big": "Ding-dong! Tortoise's cart rolls across our new bridge, all the way to his green door.",
+          "little": "Ding-dong! Tortoise's cart made it to his green door!"
+        },
+        {
+          "id": "e02",
+          "art": "/assets/adventure/frontdoor/e02.webp",
+          "ages": "big",
+          "big": "Chair by the window, books on the shelf, blanket on the bed. Tortoise does a happy dance, a very slow one!",
+          "little": "Chair by the window, books on the shelf, blanket on the bed. Tortoise does a happy dance, a very slow one!"
+        },
+        {
+          "id": "e03",
+          "art": "/assets/adventure/frontdoor/e03.webp",
+          "ages": "both",
+          "big": "Pelly is back, and look! That toothbrush is Tortoise's. He sent it with his letter by mistake!",
+          "little": "Pelly brings the toothbrush. It's Tortoise's! Brush, brush!"
+        },
+        {
+          "id": "e04",
+          "art": "/assets/adventure/frontdoor/e04.webp",
+          "ages": "both",
+          "big": "Tortoise is home, and his green door gets a gold star on our helper map!",
+          "little": "Tortoise is home, and his green door gets a gold star on our helper map!"
+        }
+      ]
+    },
+    {
+      "id": "lantern",
+      "day": 8,
+      "talk": false,
+      "sound": null,
+      "title": "The Glowworm Lantern Walk",
+      "hook": "Glowworm's hiccups popped out the lamp plugs! Light up the woods for his lantern walk.",
+      "game": "lantern",
+      "gameName": "Lantern Walk",
+      "cover": "/assets/crafted/home-lantern.webp",
+      "wash": "#56598a",
+      "intro": [
+        {
+          "id": "s01",
+          "art": "/assets/adventure/lantern/s01.webp",
+          "ages": "both",
+          "big": "Pelly swoops down with a letter! Oops. That's a carrot! Somebody is going to love that.",
+          "little": "Pelly swoops down with a letter! Oops. That's a carrot! Somebody is going to love that."
+        },
+        {
+          "id": "s02",
+          "art": "/assets/adventure/lantern/s02.webp",
+          "ages": "both",
+          "big": "Here's the real letter. It's from Glowworm in the Mushroom Woods. He needs our help with his lamps tonight!",
+          "little": "Here's the real letter. Glowworm needs our help with his lamps!"
+        },
+        {
+          "id": "s03",
+          "art": "/assets/adventure/lantern/s03.webp",
+          "ages": "both",
+          "big": "Into the Mushroom Woods we go. Hello, Glowworm! Rabbit and Hedgehog are here for the lantern walk too.",
+          "little": "Hello, Glowworm! Hello, Rabbit and Hedgehog!"
+        },
+        {
+          "id": "s04",
+          "art": "/assets/adventure/lantern/s04.webp",
+          "ages": "big",
+          "big": "Every evening, Glowworm leads a walk down the lamp path to the big lantern, to hear the crickets sing.",
+          "little": "Every evening, Glowworm leads a walk down the lamp path to the big lantern, to hear the crickets sing."
+        },
+        {
+          "id": "s05",
+          "art": "/assets/adventure/lantern/s05.webp",
+          "ages": "both",
+          "big": "Oh dear, Glowworm has the hiccups. And every hiccup makes him hop! Hic, hop! Hic, hop!",
+          "little": "Glowworm has the hiccups! Hic, hop! Hic, hop!"
+        },
+        {
+          "id": "s06",
+          "art": "/assets/adventure/lantern/s06.webp",
+          "ages": "both",
+          "big": "He hopped right into the lamp cords. Pop, pop, pop! Now every plug is out, and the lamps won't light.",
+          "little": "He hopped on the cords. Pop, pop, pop! Out came the plugs. The lamps won't light!"
+        },
+        {
+          "id": "s07",
+          "art": "/assets/adventure/lantern/s07.webp",
+          "ages": "big",
+          "big": "Every light needs two cords. One takes the power in, one brings it back. Then flip the switch. Click!",
+          "little": "Every light needs two cords. One takes the power in, one brings it back. Then flip the switch. Click!"
+        },
+        {
+          "id": "s08",
+          "art": "/assets/adventure/lantern/s08.webp",
+          "ages": "both",
+          "big": "Let's plug in every cord and flip every switch, lamp by lamp, right up to the big lantern. Ready?",
+          "little": "Let's plug in the cords and switch on the lamps. Ready?"
+        }
+      ],
+      "ending": [
+        {
+          "id": "e01",
+          "art": "/assets/adventure/lantern/e01.webp",
+          "ages": "both",
+          "big": "Click! The great big lantern glows gold. Every lamp shines, and the stepping stones glow like little moons!",
+          "little": "Click! The big lantern glows. Every lamp is shining!"
+        },
+        {
+          "id": "e02",
+          "art": "/assets/adventure/lantern/e02.webp",
+          "ages": "big",
+          "big": "Glowworm leads the walk down the shining path. Then we all sit and listen to the crickets. Chirp, chirp!",
+          "little": "Glowworm leads the walk down the shining path. Then we all sit and listen to the crickets. Chirp, chirp!"
+        },
+        {
+          "id": "e03",
+          "art": "/assets/adventure/lantern/e03.webp",
+          "ages": "both",
+          "big": "Pelly's carrot was for Rabbit all along! Crunch, crunch. And Glowworm's hiccups are almost gone... hic!",
+          "little": "Pelly's carrot was for Rabbit! Crunch, crunch!"
+        },
+        {
+          "id": "e04",
+          "art": "/assets/adventure/lantern/e04.webp",
+          "ages": "both",
+          "big": "Goodnight, Glowworm! Now the Mushroom Woods have a gold star on our helper map.",
+          "little": "Goodnight, Glowworm! Now the Mushroom Woods have a gold star on our helper map."
+        }
+      ]
+    },
+    {
+      "id": "trainline",
+      "day": 9,
+      "talk": false,
+      "sound": null,
+      "title": "All Aboard for Snowdrop Valley",
+      "hook": "The new valley train has no tracks! Lay the tracks and take everyone to their stop.",
+      "game": "trainline",
+      "gameName": "Valley Train",
+      "cover": "/assets/crafted/home-trainline.webp",
+      "wash": "#a9cbe0",
+      "intro": [
+        {
+          "id": "s01",
+          "art": "/assets/adventure/trainline/s01.webp",
+          "ages": "both",
+          "big": "Pelly lands on the doorstep with a letter. Oops. That's a fuzzy red mitten! Pelly, it isn't even snowing here.",
+          "little": "Pelly lands on the doorstep with a letter. Oops. That's a fuzzy red mitten! Pelly, it isn't even snowing here."
+        },
+        {
+          "id": "s02",
+          "art": "/assets/adventure/trainline/s02.webp",
+          "ages": "both",
+          "big": "Here's the real letter. It's from Hare in snowy Snowdrop Valley. She needs help with her brand-new train!",
+          "little": "Here's the real letter. It's from Hare, out in the snow!"
+        },
+        {
+          "id": "s03",
+          "art": "/assets/adventure/trainline/s03.webp",
+          "ages": "both",
+          "big": "Hare and Frog are the train crew. Here's their shiny new train. But look! There are no tracks!",
+          "little": "Hare and Frog have a shiny new train. But it has no tracks!"
+        },
+        {
+          "id": "s04",
+          "art": "/assets/adventure/trainline/s04.webp",
+          "ages": "big",
+          "big": "Hare and Frog polished the train all week. They forgot the tracks! They're still on the cart, under the snow.",
+          "little": "Hare and Frog polished the train all week. They forgot the tracks! They're still on the cart, under the snow."
+        },
+        {
+          "id": "s05",
+          "art": "/assets/adventure/trainline/s05.webp",
+          "ages": "both",
+          "big": "Squirrel wants to go sledding. Baker Badger has a day off and wants a nap. The duck family wants a swim!",
+          "little": "Squirrel, Badger and the duck family all need a ride!"
+        },
+        {
+          "id": "s06",
+          "art": "/assets/adventure/trainline/s06.webp",
+          "ages": "both",
+          "big": "Frog gave Badger a ride home on his back. One hop, two hops, plop! They landed in a snowdrift, giggling.",
+          "little": "Frog gave Badger a ride. One hop, two hops, plop! Into the snow!"
+        },
+        {
+          "id": "s07",
+          "art": "/assets/adventure/trainline/s07.webp",
+          "ages": "big",
+          "big": "Every stop has a picture sign. A sled for the hill, a little house for Badger, and a duck for the pond.",
+          "little": "Every stop has a picture sign. A sled for the hill, a little house for Badger, and a duck for the pond."
+        },
+        {
+          "id": "s08",
+          "art": "/assets/adventure/trainline/s08.webp",
+          "ages": "both",
+          "big": "Let's lay the tracks and drive everyone to their stop. Then Hare and Frog get a ride too. Ready?",
+          "little": "Let's build the tracks and give everyone a ride. Ready?"
+        }
+      ],
+      "ending": [
+        {
+          "id": "e01",
+          "art": "/assets/adventure/trainline/e01.webp",
+          "ages": "both",
+          "big": "Ding, ding! Everyone is at their stop. And Hare and Frog got their ride too, round the valley and home!",
+          "little": "Ding, ding! Everyone got a ride on the train!"
+        },
+        {
+          "id": "e02",
+          "art": "/assets/adventure/trainline/e02.webp",
+          "ages": "big",
+          "big": "Down the hill zooms Squirrel! Badger waves from his door in his slippers, and the ducklings paddle in the pond.",
+          "little": "Down the hill zooms Squirrel! Badger waves from his door in his slippers, and the ducklings paddle in the pond."
+        },
+        {
+          "id": "e03",
+          "art": "/assets/adventure/trainline/e03.webp",
+          "ages": "both",
+          "big": "Hot cocoa and cookies at the station! And here comes Pelly, wearing that red mitten as a cozy hat.",
+          "little": "Look! Pelly is wearing the mitten as a hat!"
+        },
+        {
+          "id": "e04",
+          "art": "/assets/adventure/trainline/e04.webp",
+          "ages": "both",
+          "big": "The whole valley can ride the train now. Up goes a gold star on our helper map!",
+          "little": "The whole valley can ride the train now. Up goes a gold star on our helper map!"
+        }
+      ]
+    },
+    {
+      "id": "kite",
+      "day": 10,
+      "talk": false,
+      "sound": null,
+      "title": "The Hilltop Patchwork Kite",
+      "hook": "Goat's giant kite isn't sewn yet. Stitch it, balance it, and fly it high!",
+      "game": "kite",
+      "gameName": "Patchwork Kite",
+      "cover": "/assets/crafted/home-kite.webp",
+      "wash": "#8cc3e3",
+      "intro": [
+        {
+          "id": "s01",
+          "art": "/assets/adventure/kite/s01.webp",
+          "ages": "both",
+          "big": "Pelly sails in on the breeze with a letter. Oops. That's an umbrella! How did it ever fit in her pouch?",
+          "little": "Pelly sails in on the breeze with a letter. Oops. That's an umbrella! How did it ever fit in her pouch?"
+        },
+        {
+          "id": "s02",
+          "art": "/assets/adventure/kite/s02.webp",
+          "ages": "both",
+          "big": "Here's the real letter. It's from Goat on Breezy Hill. His giant kite needs our help!",
+          "little": "Here's the real letter. Goat's giant kite needs our help!"
+        },
+        {
+          "id": "s03",
+          "art": "/assets/adventure/kite/s03.webp",
+          "ages": "both",
+          "big": "Up on windy Breezy Hill, Goat shows us his giant kite. All his friends painted pictures for it!",
+          "little": "Goat shows us his giant kite. His friends painted pictures for it!"
+        },
+        {
+          "id": "s04",
+          "art": "/assets/adventure/kite/s04.webp",
+          "ages": "big",
+          "big": "Lamb painted a flower for the kite. And Beetle painted a picture of herself!",
+          "little": "Lamb painted a flower for the kite. And Beetle painted a picture of herself!"
+        },
+        {
+          "id": "s05",
+          "art": "/assets/adventure/kite/s05.webp",
+          "ages": "both",
+          "big": "But the pictures aren't sewn on yet. Whoosh! Every time the wind blows, up they flip and flap.",
+          "little": "The pictures aren't sewn on. Whoosh! Up they flap!"
+        },
+        {
+          "id": "s06",
+          "art": "/assets/adventure/kite/s06.webp",
+          "ages": "both",
+          "big": "Goat grabbed a needle to sew them on. But that's tricky with hooves! Now he's wrapped up like a present.",
+          "little": "Sewing is tricky with hooves. Goat is all tangled up!"
+        },
+        {
+          "id": "s07",
+          "art": "/assets/adventure/kite/s07.webp",
+          "ages": "big",
+          "big": "A kite's tail has to hang even. Too many bows on one side, and it tips over! Spread them out, and it flies straight.",
+          "little": "A kite's tail has to hang even. Too many bows on one side, and it tips over! Spread them out, and it flies straight."
+        },
+        {
+          "id": "s08",
+          "art": "/assets/adventure/kite/s08.webp",
+          "ages": "both",
+          "big": "Let's sew every picture in its place, thread the ribbons, balance the tail and fly the kite. Ready?",
+          "little": "Let's sew on the pictures, add the ribbon tail and fly! Ready?"
+        }
+      ],
+      "ending": [
+        {
+          "id": "e01",
+          "art": "/assets/adventure/kite/e01.webp",
+          "ages": "both",
+          "big": "Look at it go! Up goes the patchwork kite, straight and steady, with every picture flying high!",
+          "little": "Up goes the kite! Every picture is flying!"
+        },
+        {
+          "id": "e02",
+          "art": "/assets/adventure/kite/e02.webp",
+          "ages": "big",
+          "big": "Lamb waves up at her flower. And Beetle waves up at herself, flying high!",
+          "little": "Lamb waves up at her flower. And Beetle waves up at herself, flying high!"
+        },
+        {
+          "id": "e03",
+          "art": "/assets/adventure/kite/e03.webp",
+          "ages": "both",
+          "big": "Pelly comes to watch. Pop! Her umbrella opens, and the breeze lifts her up like a kite. Hold on, Pelly!",
+          "little": "Pop! Pelly's umbrella opens. Up she floats like a kite!"
+        },
+        {
+          "id": "e04",
+          "art": "/assets/adventure/kite/e04.webp",
+          "ages": "both",
+          "big": "Hooray for Goat's kite, and for a new gold star on our helper map!",
+          "little": "Hooray for Goat's kite, and for a new gold star on our helper map!"
+        }
+      ]
+    },
+    {
+      "id": "nestlift",
+      "day": 11,
+      "talk": false,
+      "sound": null,
+      "title": "The Sandstone Nest Lift",
+      "hook": "Mama Swallow's bundles won't fit up the stairs. Balance the basket lift and carry them up!",
+      "game": "nestlift",
+      "gameName": "Nest Lift",
+      "cover": "/assets/crafted/home-nestlift.webp",
+      "wash": "#d99a62",
+      "intro": [
+        {
+          "id": "s01",
+          "art": "/assets/adventure/nestlift/s01.webp",
+          "ages": "both",
+          "big": "Pelly has the mail! Oops. That's a wooden spoon. Are you making soup, Pelly?",
+          "little": "Pelly has the mail! Oops. That's a wooden spoon. Silly Pelly!"
+        },
+        {
+          "id": "s02",
+          "art": "/assets/adventure/nestlift/s02.webp",
+          "ages": "both",
+          "big": "Here's the real letter. It's from Mama Swallow. Her family is moving into new nests on a cliff!",
+          "little": "Here's the real letter. Mama Swallow is moving into new nests!"
+        },
+        {
+          "id": "s03",
+          "art": "/assets/adventure/nestlift/s03.webp",
+          "ages": "both",
+          "big": "This is Sandstone Cliff, with little round nests all the way up. Mama Swallow and her chicks wave hello!",
+          "little": "Look! Mama Swallow and her three chicks. Their new nests are way up high!"
+        },
+        {
+          "id": "s04",
+          "art": "/assets/adventure/nestlift/s04.webp",
+          "ages": "both",
+          "big": "Uh-oh! The blankets and toys are all bundled up, and the bundles can't squeeze up the little cliff stairs.",
+          "little": "Oh no! The blankets and toys are too big for the stairs!"
+        },
+        {
+          "id": "s05",
+          "art": "/assets/adventure/nestlift/s05.webp",
+          "ages": "both",
+          "big": "Mama Swallow took off with the enormous quilt. Flap, flap, flop! Down it came, and now it's a quilt with feet.",
+          "little": "Flap, flap, flop! The big quilt fell on Mama Swallow. A quilt with feet!"
+        },
+        {
+          "id": "s06",
+          "art": "/assets/adventure/nestlift/s06.webp",
+          "ages": "big",
+          "big": "Each chick wants its own toy in bed tonight. A rabbit, a teddy bear, and a very, very long snake!",
+          "little": "Each chick wants its own toy in bed tonight. A rabbit, a teddy bear, and a very, very long snake!"
+        },
+        {
+          "id": "s07",
+          "art": "/assets/adventure/nestlift/s07.webp",
+          "ages": "big",
+          "big": "Here's the basket lift! A bundle in one basket, stones with just as many dots in the other. Then up it goes!",
+          "little": "Here's the basket lift! A bundle in one basket, stones with just as many dots in the other. Then up it goes!"
+        },
+        {
+          "id": "s08",
+          "art": "/assets/adventure/nestlift/s08.webp",
+          "ages": "both",
+          "big": "Let's balance each bundle with stones, wind it up, up, up, and pop it into its nest. Ready?",
+          "little": "Here's a basket lift! Let's carry the blankets and toys up to the nests. Ready?"
+        }
+      ],
+      "ending": [
+        {
+          "id": "e01",
+          "art": "/assets/adventure/nestlift/e01.webp",
+          "ages": "both",
+          "big": "Swoosh! The enormous quilt slides right into the top nest. Every nest has its bundle!",
+          "little": "Swoosh! The big quilt fits in the top nest!"
+        },
+        {
+          "id": "e02",
+          "art": "/assets/adventure/nestlift/e02.webp",
+          "ages": "big",
+          "big": "Soup's on! Pelly stirs berry soup with her wooden spoon. So that's what it was for!",
+          "little": "Soup's on! Pelly stirs berry soup with her wooden spoon. So that's what it was for!"
+        },
+        {
+          "id": "e03",
+          "art": "/assets/adventure/nestlift/e03.webp",
+          "ages": "both",
+          "big": "Bedtime! Each chick snuggles in its own nest with its toy. And up top, Mama Swallow is a quilt with feet again!",
+          "little": "Bedtime! Each chick hugs its toy in its own nest. And look, a quilt with feet!"
+        },
+        {
+          "id": "e04",
+          "art": "/assets/adventure/nestlift/e04.webp",
+          "ages": "both",
+          "big": "A gold star for Mama Swallow's cliff on our helper map! Every chick is snug in its new nest.",
+          "little": "A gold star for Mama Swallow's cliff on our helper map! Every chick is snug in its new nest."
+        }
+      ]
+    },
+    {
+      "id": "concert",
+      "day": 12,
+      "talk": false,
+      "sound": null,
+      "title": "The Lily-Pad Concert",
+      "hook": "Frog, Newt and Duck all play at once. Be their conductor at the pond concert!",
+      "game": "concert",
+      "gameName": "Pond Concert",
+      "cover": "/assets/crafted/home-concert.webp",
+      "wash": "#6fb39b",
+      "intro": [
+        {
+          "id": "s01",
+          "art": "/assets/adventure/concert/s01.webp",
+          "ages": "both",
+          "big": "Hello, Pelly! Is that a letter? Oops. That's a sandwich. One bite is already gone!",
+          "little": "Hello, Pelly! Is that a letter? Oops. That's a sandwich. One bite is already gone!"
+        },
+        {
+          "id": "s02",
+          "art": "/assets/adventure/concert/s02.webp",
+          "ages": "both",
+          "big": "Here's the real letter. It's from Frog the drummer. The pond concert is today, but his band can't get started!",
+          "little": "Here's the real letter. Frog's band needs our help with their concert!"
+        },
+        {
+          "id": "s03",
+          "art": "/assets/adventure/concert/s03.webp",
+          "ages": "both",
+          "big": "At Lily Pond, here's Frog with his band! He has a drum, Newt has a reed harp, and Duck has two little bells.",
+          "little": "Here's the pond band! Frog has a drum, Newt has a harp, and Duck has bells."
+        },
+        {
+          "id": "s04",
+          "art": "/assets/adventure/concert/s04.webp",
+          "ages": "big",
+          "big": "Each one knows a lovely tune. Boom, boom goes the drum. Plink, plonk go the reeds. Ding, ding go the bells!",
+          "little": "Each one knows a lovely tune. Boom, boom goes the drum. Plink, plonk go the reeds. Ding, ding go the bells!"
+        },
+        {
+          "id": "s05",
+          "art": "/assets/adventure/concert/s05.webp",
+          "ages": "both",
+          "big": "Nobody knows who goes first, so they all play at once. Boom, plink, ding! A bunny and a mouse cover their ears.",
+          "little": "They all play at once. Boom, plink, ding! Oh dear, what a mix-up!"
+        },
+        {
+          "id": "s06",
+          "art": "/assets/adventure/concert/s06.webp",
+          "ages": "both",
+          "big": "And Newt's curly tail keeps plucking the reeds all by itself. Plink, plonk! Oops, silly tail!",
+          "little": "And Newt's silly tail keeps plucking her harp. Plink, plink!"
+        },
+        {
+          "id": "s07",
+          "art": "/assets/adventure/concert/s07.webp",
+          "ages": "big",
+          "big": "Everyone needs their own seat, with room to play. Then a conductor waves a hand to show who goes next!",
+          "little": "Everyone needs their own seat, with room to play. Then a conductor waves a hand to show who goes next!"
+        },
+        {
+          "id": "s08",
+          "art": "/assets/adventure/concert/s08.webp",
+          "ages": "both",
+          "big": "Let's play their tunes, give each one a seat, pick who goes first, and be the conductor. Ready?",
+          "little": "Let's play their music and help them play together. Ready?"
+        }
+      ],
+      "ending": [
+        {
+          "id": "e01",
+          "art": "/assets/adventure/concert/e01.webp",
+          "ages": "both",
+          "big": "Everyone takes a turn, and the band plays one lovely song together. The last note floats across the pond.",
+          "little": "Everyone takes a turn. What a lovely song!"
+        },
+        {
+          "id": "e02",
+          "art": "/assets/adventure/concert/e02.webp",
+          "ages": "big",
+          "big": "The bunny and the mouse pat the water. Splish, splash! And this time, nobody covers their ears.",
+          "little": "The bunny and the mouse pat the water. Splish, splash! And this time, nobody covers their ears."
+        },
+        {
+          "id": "e03",
+          "art": "/assets/adventure/concert/e03.webp",
+          "ages": "both",
+          "big": "Pelly shares her sandwich with the band. And Newt's tail plays one last plink, right on time!",
+          "little": "Pelly shares her sandwich. And Newt's tail goes plink!"
+        },
+        {
+          "id": "e04",
+          "art": "/assets/adventure/concert/e04.webp",
+          "ages": "both",
+          "big": "Take a bow, conductor! Here's a gold star for Lily Pond on our helper map.",
+          "little": "Take a bow! A gold star for the pond on our helper map."
+        }
+      ]
+    },
+    {
+      "id": "rooftops",
+      "day": 13,
+      "talk": false,
+      "sound": null,
+      "title": "Seeds Across the Rooftops",
+      "hook": "No seeds on the rooftops yet! Help Gardener Bird send them up with her springboard.",
+      "game": "rooftops",
+      "gameName": "Seed Launcher",
+      "cover": "/assets/crafted/home-rooftops.webp",
+      "wash": "#8cc0dc",
+      "intro": [
+        {
+          "id": "s01",
+          "art": "/assets/adventure/rooftops/s01.webp",
+          "ages": "both",
+          "big": "Knock, knock! It's Pelly with a letter. Oops. That's a pancake, with butter on top! Silly Pelly.",
+          "little": "Knock, knock! It's Pelly with a letter. Oops. That's a pancake, with butter on top! Silly Pelly."
+        },
+        {
+          "id": "s02",
+          "art": "/assets/adventure/rooftops/s02.webp",
+          "ages": "both",
+          "big": "Here's the real letter. It's from Gardener Bird. Her rooftop gardens need seeds, and lots of them!",
+          "little": "Here's the real letter. Gardener Bird has seeds to plant!"
+        },
+        {
+          "id": "s03",
+          "art": "/assets/adventure/rooftops/s03.webp",
+          "ages": "both",
+          "big": "Off we go to the hilltop town! Every rooftop has a planter full of soil. But nothing is growing.",
+          "little": "Look at all the rooftop pots. Lots of soil, but no plants!"
+        },
+        {
+          "id": "s04",
+          "art": "/assets/adventure/rooftops/s04.webp",
+          "ages": "both",
+          "big": "The seed pods are too heavy for Gardener Bird to fly up. And her cart gets stuck at the narrow stairs. Bump!",
+          "little": "The seed cart gets stuck at the skinny stairs. Bump!"
+        },
+        {
+          "id": "s05",
+          "art": "/assets/adventure/rooftops/s05.webp",
+          "ages": "both",
+          "big": "Gardener Bird loves watering so much, she waters everything. The stairs, the cart, and us! Sprinkle!",
+          "little": "Gardener Bird waters everything. Even us! Sprinkle, sprinkle!"
+        },
+        {
+          "id": "s06",
+          "art": "/assets/adventure/rooftops/s06.webp",
+          "ages": "big",
+          "big": "Beside the cart stands a springboard for seed pods. Pop one in the cup, pull the spring, and boing! Up it flies.",
+          "little": "Beside the cart stands a springboard for seed pods. Pop one in the cup, pull the spring, and boing! Up it flies."
+        },
+        {
+          "id": "s07",
+          "art": "/assets/adventure/rooftops/s07.webp",
+          "ages": "big",
+          "big": "One planter hides under a little roof. So we bounce a pod off the striped awning. Boing, plop!",
+          "little": "One planter hides under a little roof. So we bounce a pod off the striped awning. Boing, plop!"
+        },
+        {
+          "id": "s08",
+          "art": "/assets/adventure/rooftops/s08.webp",
+          "ages": "both",
+          "big": "Let's aim the springboard, send a seed pod to every rooftop planter, and make the old arch bloom. Ready?",
+          "little": "Boing! This springboard sends seeds up high. Let's fill every rooftop pot. Ready?"
+        }
+      ],
+      "ending": [
+        {
+          "id": "e01",
+          "art": "/assets/adventure/rooftops/e01.webp",
+          "ages": "both",
+          "big": "Plop! Every seed is planted. Green leaves on every rooftop, and flowers all over the old arch!",
+          "little": "Plop! Green leaves and flowers on every rooftop!"
+        },
+        {
+          "id": "e02",
+          "art": "/assets/adventure/rooftops/e02.webp",
+          "ages": "big",
+          "big": "Gardener Bird loops through the flowery arch, watering every new plant. Quick, a leaf umbrella!",
+          "little": "Gardener Bird loops through the flowery arch, watering every new plant. Quick, a leaf umbrella!"
+        },
+        {
+          "id": "e03",
+          "art": "/assets/adventure/rooftops/e03.webp",
+          "ages": "both",
+          "big": "Out of Pelly's pouch comes a whole stack of pancakes! A rooftop picnic for everyone. Yum!",
+          "little": "Pelly brought pancakes for everyone. Yum!"
+        },
+        {
+          "id": "e04",
+          "art": "/assets/adventure/rooftops/e04.webp",
+          "ages": "both",
+          "big": "A garden on every rooftop, and a brand-new gold star on our helper map!",
+          "little": "A garden on every rooftop, and a brand-new gold star on our helper map!"
+        }
+      ]
+    },
+    {
+      "id": "observatory",
+      "day": 14,
+      "talk": false,
+      "sound": null,
+      "title": "The Moving-Star Observatory",
+      "hook": "Owl's wooden sun, moon and stars won't move. Fit the gears and turn the big wheel!",
+      "game": "observatory",
+      "gameName": "Star Machine",
+      "cover": "/assets/crafted/home-observatory.webp",
+      "wash": "#c4945a",
+      "intro": [
+        {
+          "id": "s01",
+          "art": "/assets/adventure/observatory/s01.webp",
+          "ages": "both",
+          "big": "Pelly brought us a letter! Oops. That's a fluffy slipper. Pelly, you don't wear slippers!",
+          "little": "Pelly brought us a letter! Oops. That's a fluffy slipper. Pelly, you don't wear slippers!"
+        },
+        {
+          "id": "s02",
+          "art": "/assets/adventure/observatory/s02.webp",
+          "ages": "both",
+          "big": "Here's the real letter. It's from Owl at the Moving-Star Observatory. Her stars have stopped moving!",
+          "little": "Here's the real letter, from Owl. Her stars are stuck!"
+        },
+        {
+          "id": "s03",
+          "art": "/assets/adventure/observatory/s03.webp",
+          "ages": "both",
+          "big": "Owl opens the round doors in just one fluffy slipper. So that's whose it is! Here you go, Owl.",
+          "little": "Owl has one fluffy slipper on. Here's the other one!"
+        },
+        {
+          "id": "s04",
+          "art": "/assets/adventure/observatory/s04.webp",
+          "ages": "big",
+          "big": "Owl sleeps all day, so now it's her breakfast time. At night! Good morning, Owl!",
+          "little": "Owl sleeps all day, so now it's her breakfast time. At night! Good morning, Owl!"
+        },
+        {
+          "id": "s05",
+          "art": "/assets/adventure/observatory/s05.webp",
+          "ages": "both",
+          "big": "After breakfast, look at Owl's wooden sky! A painted sun, a silver moon and a ring of golden stars.",
+          "little": "Look up! A wooden sun, a moon and lots of stars."
+        },
+        {
+          "id": "s06",
+          "art": "/assets/adventure/observatory/s06.webp",
+          "ages": "both",
+          "big": "Tonight is the Sky Show. Owl turns the big wheel, but nothing moves. The gears are still in their tray!",
+          "little": "Owl turns the big wheel. Nothing moves! The gears are in a pile."
+        },
+        {
+          "id": "s07",
+          "art": "/assets/adventure/observatory/s07.webp",
+          "ages": "big",
+          "big": "Owl shows us the trick. Too small, a gear can't reach. Too big, it squeezes! Just right, round they go.",
+          "little": "Owl shows us the trick. Too small, a gear can't reach. Too big, it squeezes! Just right, round they go."
+        },
+        {
+          "id": "s08",
+          "art": "/assets/adventure/observatory/s08.webp",
+          "ages": "both",
+          "big": "Let's fit the gears and turn the big wheel, so the sun, moon and stars move again. Ready?",
+          "little": "Let's fit the gears and turn the wheel. Ready?"
+        }
+      ],
+      "ending": [
+        {
+          "id": "e01",
+          "art": "/assets/adventure/observatory/e01.webp",
+          "ages": "both",
+          "big": "The sun goes up, the moon goes round, and the stars spin. And the roof opens to the real stars!",
+          "little": "The sun goes up, and the moon and stars go round!"
+        },
+        {
+          "id": "e02",
+          "art": "/assets/adventure/observatory/e02.webp",
+          "ages": "big",
+          "big": "Look at the little pictures going round! A boat, a bridge, a flower and a kite. Just like our adventures!",
+          "little": "Look at the little pictures going round! A boat, a bridge, a flower and a kite. Just like our adventures!"
+        },
+        {
+          "id": "e03",
+          "art": "/assets/adventure/observatory/e03.webp",
+          "ages": "both",
+          "big": "Everyone comes to the Sky Show. And Owl dances under the stars in both fluffy slippers!",
+          "little": "Owl dances in her two fluffy slippers. Shuffle, shuffle!"
+        },
+        {
+          "id": "e04",
+          "art": "/assets/adventure/observatory/e04.webp",
+          "ages": "both",
+          "big": "A new gold star on our helper map, shining bright! What a helper you are!",
+          "little": "A new gold star on our helper map, shining bright! What a helper you are!"
+        }
+      ]
+    },
+    {
+      "id": "robo",
+      "day": 1,
+      "talk": true,
+      "sound": "R",
+      "title": "Robo's Rocket",
+      "hook": "Robo the robot built a rocket, but it won't wake up. Help him fly it!",
+      "game": "robo",
+      "gameName": "Robo's Rocket",
+      "cover": "/assets/crafted/home-robo.webp",
+      "wash": "#3a4f8a",
+      "intro": [
+        {
+          "id": "s01",
+          "art": "/assets/adventure/robo/s01.webp",
+          "ages": "both",
+          "big": "Pelly the pelican brought us a letter. Oops! That's a big red boot!",
+          "little": "Pelly the pelican brought us a letter. Oops! That's a big red boot!",
+          "key": "red"
+        },
+        {
+          "id": "s02",
+          "art": "/assets/adventure/robo/s02.webp",
+          "ages": "both",
+          "big": "Here's the real letter. It's from Robo the robot. Come quick, he needs our help!",
+          "little": "The real letter is from Robo the robot. Come quick!",
+          "key": "robot"
+        },
+        {
+          "id": "s03",
+          "art": "/assets/adventure/robo/s03.webp",
+          "ages": "big",
+          "big": "We hurry down the bumpy road to Robo's workshop on the hill.",
+          "little": "We hurry down the bumpy road to Robo's workshop on the hill.",
+          "key": "road"
+        },
+        {
+          "id": "s04",
+          "art": "/assets/adventure/robo/s04.webp",
+          "ages": "both",
+          "big": "Robo built a shiny rocket to fly to the moon. But it's fast asleep! Let's wake up the rocket.",
+          "little": "Robo built a rocket. It's fast asleep! Let's wake up the rocket.",
+          "key": "rocket"
+        },
+        {
+          "id": "s05",
+          "art": "/assets/adventure/robo/s05.webp",
+          "ages": "both",
+          "big": "Blink, blink! The rocket woke up! Now Robo needs a rope to tie the fuel tank on.",
+          "little": "Blink, blink! It woke up! Now we need a rope.",
+          "key": "rope"
+        },
+        {
+          "id": "s06",
+          "art": "/assets/adventure/robo/s06.webp",
+          "ages": "big",
+          "big": "A little raccoon pops out of a box, holding the rope. Thank you, raccoon!",
+          "little": "A little raccoon pops out of a box, holding the rope. Thank you, raccoon!",
+          "key": "raccoon"
+        },
+        {
+          "id": "s07",
+          "art": "/assets/adventure/robo/s07.webp",
+          "ages": "both",
+          "big": "Everyone climbs in and buckles up. Robo looks at us. Are we ready?",
+          "little": "We climb in and buckle up. Are we ready?",
+          "key": "ready"
+        },
+        {
+          "id": "s08",
+          "art": "/assets/adventure/robo/s08.webp",
+          "ages": "both",
+          "big": "Three, two, one... the rocket rumbles and glows. Let's rise up into the sky!",
+          "little": "Three, two, one... let's rise up into the sky!",
+          "key": "rise"
+        }
+      ],
+      "ending": [
+        {
+          "id": "e01",
+          "art": "/assets/adventure/robo/e01.webp",
+          "ages": "both",
+          "big": "Whoosh! We zoom up past a giant rainbow, higher and higher.",
+          "little": "Whoosh! We zoom past a giant rainbow!",
+          "key": "rainbow"
+        },
+        {
+          "id": "e02",
+          "art": "/assets/adventure/robo/e02.webp",
+          "ages": "big",
+          "big": "We land on the moon, and a fluffy moon rabbit hops over to wave hello.",
+          "little": "We land on the moon, and a fluffy moon rabbit hops over to wave hello.",
+          "key": "rabbit"
+        },
+        {
+          "id": "e03",
+          "art": "/assets/adventure/robo/e03.webp",
+          "ages": "both",
+          "big": "Robo gives us a shiny ring that glows like the stars. Thank you, friends!",
+          "little": "Robo gives us a shiny ring. Thank you, friends!",
+          "key": "ring"
+        },
+        {
+          "id": "e04",
+          "art": "/assets/adventure/robo/e04.webp",
+          "ages": "both",
+          "big": "What a ride! A gold star for Robo's workshop on our helper map!",
+          "little": "What a ride! A gold star for our helper map!",
+          "key": "ride"
+        }
+      ]
+    },
+    {
+      "id": "lulu",
+      "day": 1,
+      "talk": true,
+      "sound": "L",
+      "title": "Lulu's Lantern Party",
+      "hook": "Lulu the little lamb is stuck on an island, and the lanterns are dark. Help bring her home!",
+      "game": "lulu",
+      "gameName": "Lulu's Lantern Party",
+      "cover": "/assets/crafted/home-lulu.webp",
+      "wash": "#34507a",
+      "intro": [
+        {
+          "id": "s01",
+          "art": "/assets/adventure/lulu/s01.webp",
+          "ages": "both",
+          "big": "Pelly the pelican brought us a letter. Oops! That's a big yellow lemon!",
+          "little": "Pelly the pelican brought us a letter. Oops! That's a big yellow lemon!",
+          "key": "lemon"
+        },
+        {
+          "id": "s02",
+          "art": "/assets/adventure/lulu/s02.webp",
+          "ages": "both",
+          "big": "Here's the real letter. It's from Lulu the little lamb. Come to her lantern party by the lake tonight!",
+          "little": "The real letter is from Lulu the little lamb. Come to her lantern party!",
+          "key": "lamb"
+        },
+        {
+          "id": "s03",
+          "art": "/assets/adventure/lulu/s03.webp",
+          "ages": "big",
+          "big": "We hurry down the hill through the crunchy leaves. The sun is going down over the lake.",
+          "little": "We hurry down the hill through the crunchy leaves. The sun is going down over the lake.",
+          "key": "leaves"
+        },
+        {
+          "id": "s04",
+          "art": "/assets/adventure/lulu/s04.webp",
+          "ages": "both",
+          "big": "We made it to the lake, but the lanterns are dark. Where is Lulu? Let's light the lanterns!",
+          "little": "The lanterns are dark. Where is Lulu? Let's light the lanterns!",
+          "key": "light"
+        },
+        {
+          "id": "s05",
+          "art": "/assets/adventure/lulu/s05.webp",
+          "ages": "both",
+          "big": "Glow, glow! There's Lulu on a little island. Her lily pads floated away! Let's bring them back.",
+          "little": "There's Lulu on a little island! Let's bring back the lily pads.",
+          "key": "lily"
+        },
+        {
+          "id": "s06",
+          "art": "/assets/adventure/lulu/s06.webp",
+          "ages": "big",
+          "big": "Pop, pop, pop! Big round lily pads float back in a line across the lake. Ready, set, leap!",
+          "little": "Pop, pop, pop! Big round lily pads float back in a line across the lake. Ready, set, leap!",
+          "key": "leap"
+        },
+        {
+          "id": "s07",
+          "art": "/assets/adventure/lulu/s07.webp",
+          "ages": "both",
+          "big": "Hop, hop, hop! We made it, and Lulu gives us a big hug. Now let's all float home on a log!",
+          "little": "We hop to Lulu, and she hugs us! Let's float home on a log.",
+          "key": "log"
+        },
+        {
+          "id": "s08",
+          "art": "/assets/adventure/lulu/s08.webp",
+          "ages": "both",
+          "big": "Here comes a big round log! It floats us home, and the party can start. Let's lift the lanterns up to the sky!",
+          "little": "The log floats us home. Let's lift the lanterns up to the sky!",
+          "key": "lift"
+        }
+      ],
+      "ending": [
+        {
+          "id": "e01",
+          "art": "/assets/adventure/lulu/e01.webp",
+          "ages": "both",
+          "big": "Up, up, up! The lanterns float over the lake like little glowing moons.",
+          "little": "Up, up! The lanterns float over the lake!",
+          "key": "lake"
+        },
+        {
+          "id": "e02",
+          "art": "/assets/adventure/lulu/e02.webp",
+          "ages": "big",
+          "big": "Hee hee! A tiny ladybug with a tiny lantern lands right on Lulu's nose. Hello, ladybug!",
+          "little": "Hee hee! A tiny ladybug with a tiny lantern lands right on Lulu's nose. Hello, ladybug!",
+          "key": "ladybug"
+        },
+        {
+          "id": "e03",
+          "art": "/assets/adventure/lulu/e03.webp",
+          "ages": "both",
+          "big": "Lulu gives us a little lantern of our very own. Thank you, friends!",
+          "little": "Lulu gives us a little lantern. Thank you, friends!",
+          "key": "lantern"
+        },
+        {
+          "id": "e04",
+          "art": "/assets/adventure/lulu/e04.webp",
+          "ages": "both",
+          "big": "What a lovely night! A gold star for Lulu's lake on our helper map!",
+          "little": "What a lovely night! A gold star for our helper map!",
+          "key": "lovely"
+        }
+      ]
+    },
+    {
+      "id": "fizz",
+      "day": 1,
+      "talk": true,
+      "sound": "F",
+      "title": "Fizz and the Sleepy Fireflies",
+      "hook": "Fizz the fox's party is tonight, but the fireflies are too sleepy to glow. Help wake them up!",
+      "game": "fizz",
+      "gameName": "Fizz and the Sleepy Fireflies",
+      "cover": "/assets/crafted/home-fizz.webp",
+      "wash": "#3b5b4b",
+      "intro": [
+        {
+          "id": "s01",
+          "art": "/assets/adventure/fizz/s01.webp",
+          "ages": "both",
+          "big": "Pelly the pelican brought us a letter. Oops! That's a giant fork! Are you hungry, Pelly?",
+          "little": "Pelly the pelican brought us a letter. Oops! That's a giant fork! Are you hungry, Pelly?",
+          "key": "fork"
+        },
+        {
+          "id": "s02",
+          "art": "/assets/adventure/fizz/s02.webp",
+          "ages": "both",
+          "big": "Here's the real letter. It's from Fizz the little fox. Come quick, she needs our help!",
+          "little": "The real letter is from Fizz the fox. Come quick!",
+          "key": "fox"
+        },
+        {
+          "id": "s03",
+          "art": "/assets/adventure/fizz/s03.webp",
+          "ages": "big",
+          "big": "We hurry down the twisty path, deep into the forest, where Fizz is having a party.",
+          "little": "We hurry down the twisty path, deep into the forest, where Fizz is having a party.",
+          "key": "forest"
+        },
+        {
+          "id": "s04",
+          "art": "/assets/adventure/fizz/s04.webp",
+          "ages": "both",
+          "big": "Fizz's party is tonight, but the fireflies are too sleepy to glow. Let's tickle them with a feather!",
+          "little": "The fireflies are too sleepy for the party! Let's tickle them with a feather.",
+          "key": "feather"
+        },
+        {
+          "id": "s05",
+          "art": "/assets/adventure/fizz/s05.webp",
+          "ages": "both",
+          "big": "Tickle, tickle! The fireflies giggle and glow! Now they can light up the fairy lights.",
+          "little": "Tickle, tickle! They glow! Now let's light the fairy lights.",
+          "key": "fairy"
+        },
+        {
+          "id": "s06",
+          "art": "/assets/adventure/fizz/s06.webp",
+          "ages": "big",
+          "big": "The fireflies zip along the fairy lights, and they twinkle on! A shy little fawn peeks out. Hi, fawn!",
+          "little": "The fireflies zip along the fairy lights, and they twinkle on! A shy little fawn peeks out. Hi, fawn!",
+          "key": "fawn"
+        },
+        {
+          "id": "s07",
+          "art": "/assets/adventure/fizz/s07.webp",
+          "ages": "both",
+          "big": "Fizz pours fizzy berry juice for everyone. The bubbles tickle the fawn's nose! Are we ready?",
+          "little": "Fizz pours fizzy juice for everyone. Are we ready?",
+          "key": "fizzy"
+        },
+        {
+          "id": "s08",
+          "art": "/assets/adventure/fizz/s08.webp",
+          "ages": "both",
+          "big": "Three, two, one... the fireflies swirl up into a big glowing ball. Let's make firefly fireworks!",
+          "little": "Three, two, one... let's make firefly fireworks!",
+          "key": "fireworks"
+        }
+      ],
+      "ending": [
+        {
+          "id": "e01",
+          "art": "/assets/adventure/fizz/e01.webp",
+          "ages": "both",
+          "big": "Whoosh! The fireflies burst into golden sparkles all over the sky. Let's dance on our happy feet!",
+          "little": "Whoosh! Golden sparkles everywhere! Let's dance on our happy feet!",
+          "key": "feet"
+        },
+        {
+          "id": "e02",
+          "art": "/assets/adventure/fizz/e02.webp",
+          "ages": "big",
+          "big": "We dance in a circle under the twinkly lights. Now it's time for the yummy party food!",
+          "little": "We dance in a circle under the twinkly lights. Now it's time for the yummy party food!",
+          "key": "food"
+        },
+        {
+          "id": "e03",
+          "art": "/assets/adventure/fizz/e03.webp",
+          "ages": "both",
+          "big": "Fizz gives us a pretty paper fan, dotted with gold like the fireflies. Thank you, friends!",
+          "little": "Fizz gives us a pretty paper fan. Thank you, friends!",
+          "key": "fan"
+        },
+        {
+          "id": "e04",
+          "art": "/assets/adventure/fizz/e04.webp",
+          "ages": "both",
+          "big": "What fun! A gold star for Fizz's forest on our helper map!",
+          "little": "What fun! A gold star for our helper map!",
+          "key": "fun"
+        }
+      ]
+    },
+    {
+      "id": "sandy",
+      "day": 1,
+      "talk": true,
+      "sound": "S",
+      "title": "Sandy's Sandcastle",
+      "hook": "Sandy the sea turtle's sandcastle keeps falling down. Help her build it!",
+      "game": "sandy",
+      "gameName": "Sandy's Sandcastle",
+      "cover": "/assets/crafted/home-sandy.webp",
+      "wash": "#3fa7b5",
+      "intro": [
+        {
+          "id": "s01",
+          "art": "/assets/adventure/sandy/s01.webp",
+          "ages": "both",
+          "big": "Pelly the pelican brought us a letter. Oops! That's a bowl of soup!",
+          "little": "Pelly the pelican brought us a letter. Oops! That's a bowl of soup!",
+          "key": "soup"
+        },
+        {
+          "id": "s02",
+          "art": "/assets/adventure/sandy/s02.webp",
+          "ages": "both",
+          "big": "Here's the real letter. It's from Sandy the sea turtle. Come quick, she needs our help!",
+          "little": "The real letter is from Sandy the sea turtle. Come quick!",
+          "key": "sea"
+        },
+        {
+          "id": "s03",
+          "art": "/assets/adventure/sandy/s03.webp",
+          "ages": "big",
+          "big": "We hop in a little boat. Up goes the sail, and off we go to Sandy's beach!",
+          "little": "We hop in a little boat. Up goes the sail, and off we go to Sandy's beach!",
+          "key": "sail"
+        },
+        {
+          "id": "s04",
+          "art": "/assets/adventure/sandy/s04.webp",
+          "ages": "both",
+          "big": "Sandy's big beach party is today, but plop! Her sandcastle keeps falling down. Let's build up the sandcastle!",
+          "little": "Plop! Sandy's sandcastle keeps falling down. Let's build up the sandcastle!",
+          "key": "sandcastle"
+        },
+        {
+          "id": "s05",
+          "art": "/assets/adventure/sandy/s05.webp",
+          "ages": "both",
+          "big": "Whoosh! Up goes the sandcastle, tall and round. Now it needs seven pretty shells!",
+          "little": "Whoosh! Up it goes! Now it needs seven pretty shells.",
+          "key": "seven"
+        },
+        {
+          "id": "s06",
+          "art": "/assets/adventure/sandy/s06.webp",
+          "ages": "big",
+          "big": "A little seal pops out of the waves with seven shells on her nose. Thank you, seal!",
+          "little": "A little seal pops out of the waves with seven shells on her nose. Thank you, seal!",
+          "key": "seal"
+        },
+        {
+          "id": "s07",
+          "art": "/assets/adventure/sandy/s07.webp",
+          "ages": "both",
+          "big": "Pat, pat, pat! On go the shells. Our sandcastle is ready. Now it's time for the sunset party!",
+          "little": "Pat, pat! It's ready. Now it's time for the sunset party!",
+          "key": "sunset"
+        },
+        {
+          "id": "s08",
+          "art": "/assets/adventure/sandy/s08.webp",
+          "ages": "both",
+          "big": "The sky turns pink and gold. Uh oh! A big, bubbly wave is rolling in. Let's save our sandcastle!",
+          "little": "Uh oh! A big wave is rolling in. Let's save our sandcastle!",
+          "key": "save"
+        }
+      ],
+      "ending": [
+        {
+          "id": "e01",
+          "art": "/assets/adventure/sandy/e01.webp",
+          "ages": "both",
+          "big": "Swoosh! The wave turns around and rolls back to the sea. Our sandcastle is safe! Let's sing!",
+          "little": "Swoosh! The wave rolls away. Our sandcastle is safe! Let's sing!",
+          "key": "sing"
+        },
+        {
+          "id": "e02",
+          "art": "/assets/adventure/sandy/e02.webp",
+          "ages": "big",
+          "big": "A little seahorse bobs up out of the waves to sing along with us. What a party!",
+          "little": "A little seahorse bobs up out of the waves to sing along with us. What a party!",
+          "key": "seahorse"
+        },
+        {
+          "id": "e03",
+          "art": "/assets/adventure/sandy/e03.webp",
+          "ages": "both",
+          "big": "Sandy gives us a shiny silver shell. We hold it close and hear the sea. Thank you, friends!",
+          "little": "Sandy gives us a shiny silver shell. Thank you, friends!",
+          "key": "silver"
+        },
+        {
+          "id": "e04",
+          "art": "/assets/adventure/sandy/e04.webp",
+          "ages": "both",
+          "big": "What a super day! A gold star for Sandy's beach on our helper map!",
+          "little": "What a super day! A gold star for our helper map!",
+          "key": "super"
+        }
+      ]
+    },
+    {
+      "id": "zippy",
+      "day": 1,
+      "talk": true,
+      "sound": "Z",
+      "title": "Zippy's Zoo Parade",
+      "hook": "Zippy the zebra's parade float is stuck, and the zoo parade can't start. Help it go!",
+      "game": "zippy",
+      "gameName": "Zippy's Zoo Parade",
+      "cover": "/assets/crafted/home-zippy.webp",
+      "wash": "#62a87a",
+      "intro": [
+        {
+          "id": "s01",
+          "art": "/assets/adventure/zippy/s01.webp",
+          "ages": "both",
+          "big": "Pelly the pelican brought us a letter. Oops! That's a big green zucchini!",
+          "little": "Pelly the pelican brought us a letter. Oops! That's a big green zucchini!",
+          "key": "zucchini"
+        },
+        {
+          "id": "s02",
+          "art": "/assets/adventure/zippy/s02.webp",
+          "ages": "both",
+          "big": "Here's the real letter. It's from Zippy the zebra. Come quick, the zoo parade is stuck!",
+          "little": "The real letter is from Zippy the zebra. Come quick!",
+          "key": "zebra"
+        },
+        {
+          "id": "s03",
+          "art": "/assets/adventure/zippy/s03.webp",
+          "ages": "big",
+          "big": "Off we go, down the twisty path to the zoo. There's the big striped gate!",
+          "little": "Off we go, down the twisty path to the zoo. There's the big striped gate!",
+          "key": "zoo"
+        },
+        {
+          "id": "s04",
+          "art": "/assets/adventure/zippy/s04.webp",
+          "ages": "both",
+          "big": "Oh no! Zippy's parade float is stuck. Its lights are off, and it can't move. Let's give it a zap!",
+          "little": "Oh no! Zippy's parade float is stuck. Let's give it a zap!",
+          "key": "zap"
+        },
+        {
+          "id": "s05",
+          "art": "/assets/adventure/zippy/s05.webp",
+          "ages": "both",
+          "big": "Zap! The lights glow, and Zippy's mane goes boing! A parade needs music. Let's call the zookeeper!",
+          "little": "Zap! The lights glow! Now we need music. Let's call the zookeeper!",
+          "key": "zookeeper"
+        },
+        {
+          "id": "s06",
+          "art": "/assets/adventure/zippy/s06.webp",
+          "ages": "big",
+          "big": "Here comes the zookeeper, a kind elephant, rolling a big, bright xylophone!",
+          "little": "Here comes the zookeeper, a kind elephant, rolling a big, bright xylophone!",
+          "key": "xylophone"
+        },
+        {
+          "id": "s07",
+          "art": "/assets/adventure/zippy/s07.webp",
+          "ages": "both",
+          "big": "Plink, plonk! The music plays. Zippy stands up tall in his parade jacket. Up goes the zipper!",
+          "little": "The zookeeper plays music! Up goes Zippy's zipper!",
+          "key": "zipper"
+        },
+        {
+          "id": "s08",
+          "art": "/assets/adventure/zippy/s08.webp",
+          "ages": "both",
+          "big": "Everyone hops on the float, and the lights twinkle. Ready? Three, two, one... zero!",
+          "little": "Everyone hops on! Three, two, one... zero!",
+          "key": "zero"
+        }
+      ],
+      "ending": [
+        {
+          "id": "e01",
+          "art": "/assets/adventure/zippy/e01.webp",
+          "ages": "both",
+          "big": "The float rolls out, the music plays, and the zoo parade begins! Let's zoom!",
+          "little": "The parade begins! Let's zoom!",
+          "key": "zoom"
+        },
+        {
+          "id": "e02",
+          "art": "/assets/adventure/zippy/e02.webp",
+          "ages": "big",
+          "big": "Whee! We zigzag past the monkey in the tree and the hippo in the pond. Hooray!",
+          "little": "Whee! We zigzag past the monkey in the tree and the hippo in the pond. Hooray!",
+          "key": "zigzag"
+        },
+        {
+          "id": "e03",
+          "art": "/assets/adventure/zippy/e03.webp",
+          "ages": "both",
+          "big": "Zippy hugs us and gives us a little striped flag. Now it's time to zip home!",
+          "little": "Zippy gives us a striped flag. Let's zip home!",
+          "key": "zip"
+        },
+        {
+          "id": "e04",
+          "art": "/assets/adventure/zippy/e04.webp",
+          "ages": "both",
+          "big": "A zillion cheers for Zippy! A gold star for Zippy's zoo on our helper map!",
+          "little": "A zillion cheers! A gold star for our helper map!",
+          "key": "zillion"
+        }
+      ]
+    },
+    {
+      "id": "kiki",
+      "day": 1,
+      "talk": true,
+      "sound": "K",
+      "title": "Kiki's Camping Night",
+      "hook": "The wind blew Kiki the kitten's tent down before camping night. Help fix her camp!",
+      "game": "kiki",
+      "gameName": "Kiki's Camping Night",
+      "cover": "/assets/crafted/home-kiki.webp",
+      "wash": "#7a6fb0",
+      "intro": [
+        {
+          "id": "s01",
+          "art": "/assets/adventure/kiki/s01.webp",
+          "ages": "both",
+          "big": "Pelly the pelican brought us a letter. Oops! That's a big birthday cake!",
+          "little": "Pelly the pelican brought us a letter. Oops! That's a big birthday cake!",
+          "key": "cake"
+        },
+        {
+          "id": "s02",
+          "art": "/assets/adventure/kiki/s02.webp",
+          "ages": "both",
+          "big": "Here's the real letter. It's from Kiki the kitten. Come camping with her tonight!",
+          "little": "The real letter is from Kiki the kitten. Come camping!",
+          "key": "kitten"
+        },
+        {
+          "id": "s03",
+          "art": "/assets/adventure/kiki/s03.webp",
+          "ages": "big",
+          "big": "We paddle a little canoe across the lake to Kiki's camp in the woods.",
+          "little": "We paddle a little canoe across the lake to Kiki's camp in the woods.",
+          "key": "canoe"
+        },
+        {
+          "id": "s04",
+          "art": "/assets/adventure/kiki/s04.webp",
+          "ages": "both",
+          "big": "Kiki's camp is a mess! The wind blew her tent down. Let's fix up the camp!",
+          "little": "The wind blew Kiki's tent down! Let's fix up the camp!",
+          "key": "camp"
+        },
+        {
+          "id": "s05",
+          "art": "/assets/adventure/kiki/s05.webp",
+          "ages": "both",
+          "big": "We pull the cord nice and tight, and up pops the tent!",
+          "little": "We pull the cord, and up pops the tent!",
+          "key": "cord"
+        },
+        {
+          "id": "s06",
+          "art": "/assets/adventure/kiki/s06.webp",
+          "ages": "big",
+          "big": "A sleepy koala peeks out of a tree and drops us a cozy blanket. Thank you, koala!",
+          "little": "A sleepy koala peeks out of a tree and drops us a cozy blanket. Thank you, koala!",
+          "key": "koala"
+        },
+        {
+          "id": "s07",
+          "art": "/assets/adventure/kiki/s07.webp",
+          "ages": "both",
+          "big": "The sun goes down. Kiki pours warm cocoa for everyone. Yum!",
+          "little": "Kiki pours warm cocoa. Yum!",
+          "key": "cocoa"
+        },
+        {
+          "id": "s08",
+          "art": "/assets/adventure/kiki/s08.webp",
+          "ages": "both",
+          "big": "The sky gets dark, and the stars come out. Let's count the stars!",
+          "little": "The stars come out! Let's count the stars!",
+          "key": "count"
+        }
+      ],
+      "ending": [
+        {
+          "id": "e01",
+          "art": "/assets/adventure/kiki/e01.webp",
+          "ages": "both",
+          "big": "Whoosh! A bright comet zooms across the sky with a long, glowing tail.",
+          "little": "Whoosh! A bright comet zooms by!",
+          "key": "comet"
+        },
+        {
+          "id": "e02",
+          "art": "/assets/adventure/kiki/e02.webp",
+          "ages": "big",
+          "big": "We each eat a big cookie by the campfire and giggle at the owl's silly hoots.",
+          "little": "We each eat a big cookie by the campfire and giggle at the owl's silly hoots.",
+          "key": "cookie"
+        },
+        {
+          "id": "e03",
+          "art": "/assets/adventure/kiki/e03.webp",
+          "ages": "both",
+          "big": "Kiki gives us a big cuddle and a tiny toy tent. Thank you, friends!",
+          "little": "Kiki gives us a cuddle. Thank you, friends!",
+          "key": "cuddle"
+        },
+        {
+          "id": "e04",
+          "art": "/assets/adventure/kiki/e04.webp",
+          "ages": "both",
+          "big": "You were so kind! A gold star for Kiki's camp on our helper map!",
+          "little": "You were so kind! A gold star for our helper map!",
+          "key": "kind"
+        }
+      ]
+    },
+    {
+      "id": "gus",
+      "day": 1,
+      "talk": true,
+      "sound": "G",
+      "title": "Gus's Goose Chase",
+      "hook": "Gus the goat's geese waddled away from the farm. Help find every one!",
+      "game": "gus",
+      "gameName": "Gus's Goose Chase",
+      "cover": "/assets/crafted/home-gus.webp",
+      "wash": "#6f9a4a",
+      "intro": [
+        {
+          "id": "s01",
+          "art": "/assets/adventure/gus/s01.webp",
+          "ages": "both",
+          "big": "Pelly the pelican brought us a letter. Oops! That's a little guitar!",
+          "little": "Pelly the pelican brought us a letter. Oops! That's a little guitar!",
+          "key": "guitar"
+        },
+        {
+          "id": "s02",
+          "art": "/assets/adventure/gus/s02.webp",
+          "ages": "both",
+          "big": "Here's the real letter. It's from Gus the goat. Come quick, his geese got out!",
+          "little": "The real letter is from Gus the goat. Come quick!",
+          "key": "goat"
+        },
+        {
+          "id": "s03",
+          "art": "/assets/adventure/gus/s03.webp",
+          "ages": "big",
+          "big": "We run up the farm lane. Oh no, the wooden gate is wide open!",
+          "little": "We run up the farm lane. Oh no, the wooden gate is wide open!",
+          "key": "gate"
+        },
+        {
+          "id": "s04",
+          "art": "/assets/adventure/gus/s04.webp",
+          "ages": "both",
+          "big": "Gus has five geese, and they all waddled away! Let's find every goose.",
+          "little": "Gus's geese waddled away! Let's find every goose.",
+          "key": "goose"
+        },
+        {
+          "id": "s05",
+          "art": "/assets/adventure/gus/s05.webp",
+          "ages": "both",
+          "big": "Honk, honk! Two geese are in the garden, nibbling the lettuce.",
+          "little": "Honk! Two geese are in the garden!",
+          "key": "garden"
+        },
+        {
+          "id": "s06",
+          "art": "/assets/adventure/gus/s06.webp",
+          "ages": "big",
+          "big": "A friendly gopher pops out of a hole and waves us to the pond. Thank you, gopher!",
+          "little": "A friendly gopher pops out of a hole and waves us to the pond. Thank you, gopher!",
+          "key": "gopher"
+        },
+        {
+          "id": "s07",
+          "art": "/assets/adventure/gus/s07.webp",
+          "ages": "both",
+          "big": "Splash! Two more geese are swimming in the pond. They giggle and flap!",
+          "little": "Two more geese are in the pond! They giggle and flap!",
+          "key": "giggle"
+        },
+        {
+          "id": "s08",
+          "art": "/assets/adventure/gus/s08.webp",
+          "ages": "both",
+          "big": "One more goose to find! Let's gallop up the hill to look.",
+          "little": "One more! Let's gallop up the hill!",
+          "key": "gallop"
+        }
+      ],
+      "ending": [
+        {
+          "id": "e01",
+          "art": "/assets/adventure/gus/e01.webp",
+          "ages": "both",
+          "big": "There she is, sitting on a golden egg! Every goose is home.",
+          "little": "She's sitting on a golden egg! Every goose is home.",
+          "key": "golden"
+        },
+        {
+          "id": "e02",
+          "art": "/assets/adventure/gus/e02.webp",
+          "ages": "big",
+          "big": "We play silly farm games with Gus and all five geese.",
+          "little": "We play silly farm games with Gus and all five geese.",
+          "key": "games"
+        },
+        {
+          "id": "e03",
+          "art": "/assets/adventure/gus/e03.webp",
+          "ages": "both",
+          "big": "Gus gives us a gift, a soft little feather. Thank you, friends!",
+          "little": "Gus gives us a gift. Thank you, friends!",
+          "key": "gift"
+        },
+        {
+          "id": "e04",
+          "art": "/assets/adventure/gus/e04.webp",
+          "ages": "both",
+          "big": "Goodbye, Gus! A gold star for Gus's farm on our helper map!",
+          "little": "Goodbye, Gus! A gold star for our helper map!",
+          "key": "goodbye"
+        }
+      ]
+    },
+    {
+      "id": "shelly",
+      "day": 1,
+      "talk": true,
+      "sound": "SH",
+      "title": "Shelly's Shell Show",
+      "hook": "The waves washed away Shelly the shark's shells before her show. Help find them!",
+      "game": "shelly",
+      "gameName": "Shelly's Shell Show",
+      "cover": "/assets/crafted/home-shelly.webp",
+      "wash": "#2f8fa8",
+      "intro": [
+        {
+          "id": "s01",
+          "art": "/assets/adventure/shelly/s01.webp",
+          "ages": "both",
+          "big": "Pelly the pelican brought us a letter. Oops! That's a fuzzy pink shoe!",
+          "little": "Pelly the pelican brought us a letter. Oops! That's a fuzzy pink shoe!",
+          "key": "shoe"
+        },
+        {
+          "id": "s02",
+          "art": "/assets/adventure/shelly/s02.webp",
+          "ages": "both",
+          "big": "Here's the real letter. It's from Shelly the shark. Come quick, she needs our help!",
+          "little": "The real letter is from Shelly the shark. Come quick!",
+          "key": "shark"
+        },
+        {
+          "id": "s03",
+          "art": "/assets/adventure/shelly/s03.webp",
+          "ages": "big",
+          "big": "We walk along the sandy shore to Shelly's little blue cove.",
+          "little": "We walk along the sandy shore to Shelly's little blue cove.",
+          "key": "shore"
+        },
+        {
+          "id": "s04",
+          "art": "/assets/adventure/shelly/s04.webp",
+          "ages": "both",
+          "big": "Shelly's shell show is today, but the waves washed her shells away! Let's find the shells.",
+          "little": "The waves washed Shelly's shells away! Let's find the shells.",
+          "key": "shells"
+        },
+        {
+          "id": "s05",
+          "art": "/assets/adventure/shelly/s05.webp",
+          "ages": "both",
+          "big": "We dig in the sand with a little shovel. Look, a pink shell!",
+          "little": "We dig with a little shovel. A pink shell!",
+          "key": "shovel"
+        },
+        {
+          "id": "s06",
+          "art": "/assets/adventure/shelly/s06.webp",
+          "ages": "big",
+          "big": "An old toy ship is stuck in the sand, and a stripy shell is hiding inside!",
+          "little": "An old toy ship is stuck in the sand, and a stripy shell is hiding inside!",
+          "key": "ship"
+        },
+        {
+          "id": "s07",
+          "art": "/assets/adventure/shelly/s07.webp",
+          "ages": "both",
+          "big": "Under a rock, a shiny shell sparkles in the water. Just one more to go!",
+          "little": "A shiny shell sparkles in the water!",
+          "key": "shiny"
+        },
+        {
+          "id": "s08",
+          "art": "/assets/adventure/shelly/s08.webp",
+          "ages": "both",
+          "big": "Where is the last shell? Let's shake the seaweed and see!",
+          "little": "Let's shake the seaweed and see!",
+          "key": "shake"
+        }
+      ],
+      "ending": [
+        {
+          "id": "e01",
+          "art": "/assets/adventure/shelly/e01.webp",
+          "ages": "both",
+          "big": "Plop! Out falls the last shell. Every shell is back, and they shine in the sun!",
+          "little": "Every shell is back, and they shine!",
+          "key": "shine"
+        },
+        {
+          "id": "e02",
+          "art": "/assets/adventure/shelly/e02.webp",
+          "ages": "big",
+          "big": "The shell show begins, and all the little fish swim close to look.",
+          "little": "The shell show begins, and all the little fish swim close to look.",
+          "key": "show"
+        },
+        {
+          "id": "e03",
+          "art": "/assets/adventure/shelly/e03.webp",
+          "ages": "both",
+          "big": "Shelly lets us share her very best shell. Thank you, friends!",
+          "little": "Shelly lets us share her best shell. Thank you!",
+          "key": "share"
+        },
+        {
+          "id": "e04",
+          "art": "/assets/adventure/shelly/e04.webp",
+          "ages": "both",
+          "big": "Let's shout hooray! A gold star for Shelly's cove on our helper map!",
+          "little": "Let's shout hooray! A gold star for our helper map!",
+          "key": "shout"
+        }
+      ]
+    },
+    {
+      "id": "chip",
+      "day": 1,
+      "talk": true,
+      "sound": "CH",
+      "title": "Chip's Cherry Pie",
+      "hook": "A bird flew off with Chip the chipmunk's cherries. Help him bake his pie!",
+      "game": "chip",
+      "gameName": "Chip's Cherry Pie",
+      "cover": "/assets/crafted/home-chip.webp",
+      "wash": "#a8543f",
+      "intro": [
+        {
+          "id": "s01",
+          "art": "/assets/adventure/chip/s01.webp",
+          "ages": "both",
+          "big": "Pelly the pelican brought us a letter. Oops! That's a tiny wooden chair!",
+          "little": "Pelly the pelican brought us a letter. Oops! That's a tiny wooden chair!",
+          "key": "chair"
+        },
+        {
+          "id": "s02",
+          "art": "/assets/adventure/chip/s02.webp",
+          "ages": "both",
+          "big": "Here's the real letter. It's from Chip the chipmunk. Come to his picnic!",
+          "little": "The real letter is from Chip the chipmunk. Come to his picnic!",
+          "key": "chipmunk"
+        },
+        {
+          "id": "s03",
+          "art": "/assets/adventure/chip/s03.webp",
+          "ages": "big",
+          "big": "We follow the puffs of smoke from Chip's chimney through the woods.",
+          "little": "We follow the puffs of smoke from Chip's chimney through the woods.",
+          "key": "chimney"
+        },
+        {
+          "id": "s04",
+          "art": "/assets/adventure/chip/s04.webp",
+          "ages": "both",
+          "big": "Chip wants to bake a cherry pie for the picnic, but his cherries are gone! Let's find the cherries.",
+          "little": "Chip's cherries are gone! Let's find the cherries.",
+          "key": "cherries"
+        },
+        {
+          "id": "s05",
+          "art": "/assets/adventure/chip/s05.webp",
+          "ages": "both",
+          "big": "A cheeky bird flew off with them! Let's chase the bird to the big tree.",
+          "little": "A bird took them! Let's chase the bird!",
+          "key": "chase"
+        },
+        {
+          "id": "s06",
+          "art": "/assets/adventure/chip/s06.webp",
+          "ages": "big",
+          "big": "Up in the nest, a little chick hands down the basket of cherries. Thank you, chick!",
+          "little": "Up in the nest, a little chick hands down the basket of cherries. Thank you, chick!",
+          "key": "chick"
+        },
+        {
+          "id": "s07",
+          "art": "/assets/adventure/chip/s07.webp",
+          "ages": "both",
+          "big": "Back at home, we chop and stir and pop the pie in the oven.",
+          "little": "We chop and stir and bake the pie!",
+          "key": "chop"
+        },
+        {
+          "id": "s08",
+          "art": "/assets/adventure/chip/s08.webp",
+          "ages": "both",
+          "big": "The pie smells so good. Chip adds a drizzle of chocolate on top!",
+          "little": "Chip adds chocolate on top. Yum!",
+          "key": "chocolate"
+        }
+      ],
+      "ending": [
+        {
+          "id": "e01",
+          "art": "/assets/adventure/chip/e01.webp",
+          "ages": "both",
+          "big": "Ding! The pie is ready, and everyone at the picnic gives a big cheer!",
+          "little": "Ding! The pie is ready! Let's cheer!",
+          "key": "cheer"
+        },
+        {
+          "id": "e02",
+          "art": "/assets/adventure/chip/e02.webp",
+          "ages": "big",
+          "big": "We chew and munch on warm, sweet cherry pie. The little chick has some too.",
+          "little": "We chew and munch on warm, sweet cherry pie. The little chick has some too.",
+          "key": "chew"
+        },
+        {
+          "id": "e03",
+          "art": "/assets/adventure/chip/e03.webp",
+          "ages": "both",
+          "big": "Chip draws a big thank you heart in chalk, just for us!",
+          "little": "Chip draws us a heart in chalk!",
+          "key": "chalk"
+        },
+        {
+          "id": "e04",
+          "art": "/assets/adventure/chip/e04.webp",
+          "ages": "both",
+          "big": "You're a pie champion! A gold star for Chip's woods on our helper map!",
+          "little": "You're a pie champion! A gold star for our helper map!",
+          "key": "champion"
+        }
+      ]
+    },
+    {
+      "id": "theo",
+      "day": 1,
+      "talk": true,
+      "sound": "TH",
+      "title": "Theo's Big Show",
+      "hook": "Theo the bear's thunder drum is lost before his big show. Help find it!",
+      "game": "theo",
+      "gameName": "Theo's Big Show",
+      "cover": "/assets/crafted/home-theo.webp",
+      "wash": "#4b4f8f",
+      "intro": [
+        {
+          "id": "s01",
+          "art": "/assets/adventure/theo/s01.webp",
+          "ages": "both",
+          "big": "Pelly the pelican brought us a letter. Oops! That's a tiny thimble!",
+          "little": "Pelly the pelican brought us a letter. Oops! That's a tiny thimble!",
+          "key": "thimble"
+        },
+        {
+          "id": "s02",
+          "art": "/assets/adventure/theo/s02.webp",
+          "ages": "both",
+          "big": "Here's the real letter. It's from Theo the bear. Come to his show at the forest theater!",
+          "little": "The real letter is from Theo the bear. Come to his show at the theater!",
+          "key": "theater"
+        },
+        {
+          "id": "s03",
+          "art": "/assets/adventure/theo/s03.webp",
+          "ages": "big",
+          "big": "We tiptoe through the thick green woods to the little stage under the trees.",
+          "little": "We tiptoe through the thick green woods to the little stage under the trees.",
+          "key": "thick"
+        },
+        {
+          "id": "s04",
+          "art": "/assets/adventure/theo/s04.webp",
+          "ages": "both",
+          "big": "Theo plays the thunder drum in the show, but his drum is lost! Let's find the thunder drum.",
+          "little": "Theo's thunder drum is lost! Let's find the thunder drum.",
+          "key": "thunder"
+        },
+        {
+          "id": "s05",
+          "art": "/assets/adventure/theo/s05.webp",
+          "ages": "both",
+          "big": "Hmm, let's think. Where did Theo play it last? Behind the stage!",
+          "little": "Hmm, let's think. Where can it be?",
+          "key": "think"
+        },
+        {
+          "id": "s06",
+          "art": "/assets/adventure/theo/s06.webp",
+          "ages": "big",
+          "big": "We peek behind a purple thistle. No drum, just a sleepy snail.",
+          "little": "We peek behind a purple thistle. No drum, just a sleepy snail.",
+          "key": "thistle"
+        },
+        {
+          "id": "s07",
+          "art": "/assets/adventure/theo/s07.webp",
+          "ages": "both",
+          "big": "Thump, thump! We hear a noise behind the big bush. What is that?",
+          "little": "Thump, thump! What is that?",
+          "key": "thump"
+        },
+        {
+          "id": "s08",
+          "art": "/assets/adventure/theo/s08.webp",
+          "ages": "both",
+          "big": "It's the drum! A little squirrel is tapping it with a thin stick.",
+          "little": "It's the drum! A squirrel taps it with a thin stick.",
+          "key": "thin"
+        }
+      ],
+      "ending": [
+        {
+          "id": "e01",
+          "art": "/assets/adventure/theo/e01.webp",
+          "ages": "both",
+          "big": "The show begins, and a thousand fireflies light up the stage.",
+          "little": "A thousand fireflies light up the show!",
+          "key": "thousand"
+        },
+        {
+          "id": "e02",
+          "art": "/assets/adventure/theo/e02.webp",
+          "ages": "big",
+          "big": "Theo plays the drum. Thud, boom, thud! Everyone dances along.",
+          "little": "Theo plays the drum. Thud, boom, thud! Everyone dances along.",
+          "key": "thud"
+        },
+        {
+          "id": "e03",
+          "art": "/assets/adventure/theo/e03.webp",
+          "ages": "both",
+          "big": "Theo gives us a big bear hug. Thank you, friends!",
+          "little": "Theo gives us a hug. Thank you, friends!",
+          "key": "thank"
+        },
+        {
+          "id": "e04",
+          "art": "/assets/adventure/theo/e04.webp",
+          "ages": "both",
+          "big": "Two thumbs up! A gold star for Theo's theater on our helper map!",
+          "little": "Two thumbs up! A gold star for our helper map!",
+          "key": "thumbs"
+        }
+      ]
+    }
+  ]
+}

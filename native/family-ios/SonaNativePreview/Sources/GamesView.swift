@@ -2,6 +2,9 @@ import SwiftUI
 
 enum NativeGame: String, CaseIterable, Identifiable {
     case slice, bubbles, peekaboo, tiles, stack, sprint, glide, rise, hoops, soccer, dino
+    case feed, racecar, treasure, space
+    case balloon, flower, rocket, snowman, train, stars, cake
+    case robot, castle, pizza
 
     var id: String { rawValue }
     var cover: String { "game-\(rawValue)" }
@@ -19,6 +22,20 @@ enum NativeGame: String, CaseIterable, Identifiable {
         case .hoops: "Hoops"
         case .soccer: "Soccer Goal"
         case .dino: "Dino Dig"
+        case .feed: "Feed Echo"
+        case .racecar: "Race Car"
+        case .treasure: "Treasure Map"
+        case .space: "Space Trip"
+        case .balloon: "Balloon Party"
+        case .flower: "Grow a Flower"
+        case .rocket: "Rocket Blast"
+        case .snowman: "Build a Snowman"
+        case .train: "Choo-Choo Train"
+        case .stars: "Bedtime Stars"
+        case .cake: "Birthday Cake"
+        case .robot: "Robot Builder"
+        case .castle: "Castle Builder"
+        case .pizza: "Pizza Chef"
         }
     }
 
@@ -35,11 +52,31 @@ enum NativeGame: String, CaseIterable, Identifiable {
         case .hoops: "Swipe the ball toward the hoop."
         case .soccer: "Swipe past the keeper to score."
         case .dino: "Brush away the sand to find bones."
+        case .feed: "Find the fruit Echo wants."
+        case .racecar: "Steer to each glowing gate."
+        case .treasure: "Sail through the islands."
+        case .space: "Guide your rocket to a landing pad."
+        case .balloon: "Pump it up. Pull it into the ring."
+        case .flower: "Hold each sprout to give it a drink."
+        case .rocket: "Pull the rocket back. Let it fly!"
+        case .snowman: "Roll and stack snowballs."
+        case .train: "Hold to drive. Let go at each station."
+        case .stars: "Follow the glowing star with your finger."
+        case .cake: "Stir the bowl, then decorate your cake."
+        case .robot: "Turn the tiles to power your robot."
+        case .castle: "Move the crane to build a castle."
+        case .pizza: "Roll, spread and sprinkle."
         }
     }
 
     var gentle: Bool {
-        self == .bubbles || self == .peekaboo || self == .dino || self == .tiles
+        switch self {
+        case .bubbles, .peekaboo, .dino, .tiles, .feed, .treasure, .space,
+             .balloon, .flower, .rocket, .snowman, .stars, .cake, .robot, .castle, .pizza:
+            return true
+        default:
+            return false
+        }
     }
 }
 

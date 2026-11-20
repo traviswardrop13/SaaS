@@ -1,6 +1,6 @@
 import SwiftUI
 
-enum PreviewBuddy: String, CaseIterable, Identifiable {
+enum PreviewBuddy: String, Codable, CaseIterable, Identifiable {
     case echo, fox, frog
 
     var id: String { rawValue }

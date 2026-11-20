@@ -1,0 +1,1846 @@
+{
+  "version": 1,
+  "scope": "Exact practice dialogue and existing clip references only; not a clinical session, selector, scorer or practice-credit implementation.",
+  "sources": [
+    {
+      "path": "public/sona.js",
+      "sha256": "782b5322cabbfdc2335eaea41cdb2bc0ba6672a97b7292f6351bf920cfd64a54"
+    },
+    {
+      "path": "public/charge.html",
+      "sha256": "56f2c394142cf5f068e143dc082406db0ce0181faa8d3f16933b15f9949d0329"
+    }
+  ],
+  "references": {
+    "default repetitions": {
+      "path": "public/sona.js",
+      "line": 2959
+    },
+    "human model switch": {
+      "path": "public/sona.js",
+      "line": 8721
+    },
+    "number words": {
+      "path": "public/charge.html",
+      "line": 647
+    },
+    "sound name": {
+      "path": "public/charge.html",
+      "line": 653
+    },
+    "prompt builder": {
+      "path": "public/charge.html",
+      "line": 654
+    },
+    "short mouth cue": {
+      "path": "public/charge.html",
+      "line": 696
+    },
+    "retry mouth cue": {
+      "path": "public/charge.html",
+      "line": 2393
+    },
+    "recorded sound slot": {
+      "path": "public/charge.html",
+      "line": 718
+    },
+    "handoff split": {
+      "path": "public/charge.html",
+      "line": 947
+    },
+    "shared handoff": {
+      "path": "public/sona.js",
+      "line": 729
+    },
+    "handoff join": {
+      "path": "public/charge.html",
+      "line": 946
+    },
+    "retry line": {
+      "path": "public/charge.html",
+      "line": 2399
+    },
+    "step down line": {
+      "path": "public/charge.html",
+      "line": 2425
+    },
+    "praise call": {
+      "path": "public/charge.html",
+      "line": 2429
+    },
+    "after misses": {
+      "path": "public/charge.html",
+      "line": 2433
+    },
+    "win": {
+      "path": "public/charge.html",
+      "line": 2580
+    },
+    "chest": {
+      "path": "public/charge.html",
+      "line": 2508
+    },
+    "adventure end": {
+      "path": "public/charge.html",
+      "line": 2641
+    },
+    "quiet screen": {
+      "path": "public/charge.html",
+      "line": 2536
+    },
+    "speaker microphone timing": {
+      "path": "public/charge.html",
+      "line": 755
+    },
+    "after chime timing": {
+      "path": "public/charge.html",
+      "line": 2475
+    },
+    "slow model rate": {
+      "path": "public/charge.html",
+      "line": 998
+    },
+    "live prompt call": {
+      "path": "public/charge.html",
+      "line": 726
+    },
+    "slow target selection": {
+      "path": "public/charge.html",
+      "line": 1347
+    }
+  },
+  "defaultRepetitions": 5,
+  "retryRepetitions": [
+    3
+  ],
+  "humanClipsEnabled": true,
+  "timing": {
+    "echoTailMS": 250,
+    "microphoneSettleMS": 200,
+    "afterChimeMS": 600,
+    "goWaitMS": 1500,
+    "goGapSamples": 4800,
+    "slowPlaybackRate": 0.7
+  },
+  "lines": {
+    "afterMisses": "Good practicing. Let's play.",
+    "win": "You did it. Let's play.",
+    "chest": "Look what we found.",
+    "adventureEnd": "We finished the whole adventure.",
+    "quiet": "I couldn't hear you! Say it big — I'm all ears!",
+    "praiseFallback": "You did it."
+  },
+  "praise": [
+    "Nice one.",
+    "Good job.",
+    "I heard that.",
+    "That was lovely.",
+    "Well done."
+  ],
+  "sounds": [
+    {
+      "id": "P",
+      "label": "P",
+      "soundText": "puh",
+      "cue": "Press your lips and pop a little puff — p! p! p!",
+      "shortCue": "Press your lips and pop a little puff",
+      "retryCue": "Press your lips and pop a little puff",
+      "clips": {
+        "sound": {
+          "path": "/coach/say-echo/P-sound.wav",
+          "sha256": "ca967aabd4724e00d9ca9272c3894ce7aa14234cb411f7de12569bce298ce278",
+          "bytes": 9884
+        },
+        "fallbackLine": {
+          "path": "/coach/say-echo/P.mp3",
+          "sha256": "dc5ae7dc845cd3103e1e54173a0b3c68da94c293fe1a842a62e653d97b043783",
+          "bytes": 162586
+        }
+      },
+      "prompts": [
+        {
+          "repetitions": 5,
+          "first": {
+            "fullText": "Ready? Press your lips and pop a little puff, and make your P sound, five times. Go!",
+            "bodyText": "Ready? Press your lips and pop a little puff, and make your P sound, five times.",
+            "handoff": "Go!",
+            "soundSlot": {
+              "before": "Ready? Press your lips and pop a little puff, and make your",
+              "clip": "/coach/say-echo/P-sound.wav",
+              "after": "sound, five times.",
+              "whole": "/coach/say-echo/P.mp3"
+            }
+          },
+          "repeated": {
+            "fullText": "Ready? Make your P sound, five times. Go!",
+            "bodyText": "Ready? Make your P sound, five times.",
+            "handoff": "Go!",
+            "soundSlot": {
+              "before": "Ready? Make your",
+              "clip": "/coach/say-echo/P-sound.wav",
+              "after": "sound, five times.",
+              "whole": "/coach/say-echo/P.mp3"
+            }
+          }
+        },
+        {
+          "repetitions": 3,
+          "first": {
+            "fullText": "Ready? Press your lips and pop a little puff, and make your P sound, three times. Go!",
+            "bodyText": "Ready? Press your lips and pop a little puff, and make your P sound, three times.",
+            "handoff": "Go!",
+            "soundSlot": {
+              "before": "Ready? Press your lips and pop a little puff, and make your",
+              "clip": "/coach/say-echo/P-sound.wav",
+              "after": "sound, three times.",
+              "whole": "/coach/say-echo/P.mp3"
+            }
+          },
+          "repeated": {
+            "fullText": "Ready? Make your P sound, three times. Go!",
+            "bodyText": "Ready? Make your P sound, three times.",
+            "handoff": "Go!",
+            "soundSlot": {
+              "before": "Ready? Make your",
+              "clip": "/coach/say-echo/P-sound.wav",
+              "after": "sound, three times.",
+              "whole": "/coach/say-echo/P.mp3"
+            }
+          }
+        }
+      ],
+      "coaching": {
+        "fullText": "Let's try that one again. Press your lips and pop a little puff. Go!",
+        "bodyText": "Let's try that one again. Press your lips and pop a little puff.",
+        "handoff": "Go!",
+        "soundSlot": null
+      },
+      "stepDownToSound": {
+        "fullText": "I have an idea. Let's try this one. Make your P sound. Go!",
+        "bodyText": "I have an idea. Let's try this one. Make your P sound.",
+        "handoff": "Go!",
+        "soundSlot": {
+          "before": "I have an idea. Let's try this one. Make your",
+          "clip": "/coach/say-echo/P-sound.wav",
+          "after": "sound.",
+          "whole": "/coach/say-echo/P.mp3"
+        }
+      }
+    },
+    {
+      "id": "B",
+      "label": "B",
+      "soundText": "buh",
+      "cue": "Lips together, turn your voice on — b! b! b!",
+      "shortCue": "Lips together",
+      "retryCue": "Lips together, turn your voice on",
+      "clips": {
+        "sound": {
+          "path": "/coach/say-echo/B-sound.wav",
+          "sha256": "49399e4373b8c12ec2eb0e2045bebf8a9de976c3e484dd2ae8851f971fabd07f",
+          "bytes": 20204
+        },
+        "fallbackLine": {
+          "path": "/coach/say-echo/B.mp3",
+          "sha256": "717cb92f95c003e9a926b3adde287eab6af9660df586540c9673691ba418f8b6",
+          "bytes": 237818
+        }
+      },
+      "prompts": [
+        {
+          "repetitions": 5,
+          "first": {
+            "fullText": "Ready? Lips together, and make your B sound, five times. Go!",
+            "bodyText": "Ready? Lips together, and make your B sound, five times.",
+            "handoff": "Go!",
+            "soundSlot": {
+              "before": "Ready? Lips together, and make your",
+              "clip": "/coach/say-echo/B-sound.wav",
+              "after": "sound, five times.",
+              "whole": "/coach/say-echo/B.mp3"
+            }
+          },
+          "repeated": {
+            "fullText": "Ready? Make your B sound, five times. Go!",
+            "bodyText": "Ready? Make your B sound, five times.",
+            "handoff": "Go!",
+            "soundSlot": {
+              "before": "Ready? Make your",
+              "clip": "/coach/say-echo/B-sound.wav",
+              "after": "sound, five times.",
+              "whole": "/coach/say-echo/B.mp3"
+            }
+          }
+        },
+        {
+          "repetitions": 3,
+          "first": {
+            "fullText": "Ready? Lips together, and make your B sound, three times. Go!",
+            "bodyText": "Ready? Lips together, and make your B sound, three times.",
+            "handoff": "Go!",
+            "soundSlot": {
+              "before": "Ready? Lips together, and make your",
+              "clip": "/coach/say-echo/B-sound.wav",
+              "after": "sound, three times.",
+              "whole": "/coach/say-echo/B.mp3"
+            }
+          },
+          "repeated": {
+            "fullText": "Ready? Make your B sound, three times. Go!",
+            "bodyText": "Ready? Make your B sound, three times.",
+            "handoff": "Go!",
+            "soundSlot": {
+              "before": "Ready? Make your",
+              "clip": "/coach/say-echo/B-sound.wav",
+              "after": "sound, three times.",
+              "whole": "/coach/say-echo/B.mp3"
+            }
+          }
+        }
+      ],
+      "coaching": {
+        "fullText": "Let's try that one again. Lips together, turn your voice on. Go!",
+        "bodyText": "Let's try that one again. Lips together, turn your voice on.",
+        "handoff": "Go!",
+        "soundSlot": null
+      },
+      "stepDownToSound": {
+        "fullText": "I have an idea. Let's try this one. Make your B sound. Go!",
+        "bodyText": "I have an idea. Let's try this one. Make your B sound.",
+        "handoff": "Go!",
+        "soundSlot": {
+          "before": "I have an idea. Let's try this one. Make your",
+          "clip": "/coach/say-echo/B-sound.wav",
+          "after": "sound.",
+          "whole": "/coach/say-echo/B.mp3"
+        }
+      }
+    },
+    {
+      "id": "M",
+      "label": "M",
+      "soundText": "mmm",
+      "cue": "Lips together and hum — mmmm.",
+      "shortCue": "Lips together and hum",
+      "retryCue": "Lips together and hum",
+      "clips": {
+        "sound": {
+          "path": "/coach/say-echo/M-sound.wav",
+          "sha256": "53f23447d55015a8a03a993934bfbb5a79f8b2c6963e61aa367c619b875feea3",
+          "bytes": 58604
+        },
+        "fallbackLine": {
+          "path": "/coach/say-echo/M.mp3",
+          "sha256": "719df1bfa93456b2b075262ef60b0ce6bb2cf1019ecd7b9fa5e1b1346408f364",
+          "bytes": 221100
+        }
+      },
+      "prompts": [
+        {
+          "repetitions": 5,
+          "first": {
+            "fullText": "Ready? Lips together and hum, and make your M sound, five times. Go!",
+            "bodyText": "Ready? Lips together and hum, and make your M sound, five times.",
+            "handoff": "Go!",
+            "soundSlot": {
+              "before": "Ready? Lips together and hum, and make your",
+              "clip": "/coach/say-echo/M-sound.wav",
+              "after": "sound, five times.",
+              "whole": "/coach/say-echo/M.mp3"
+            }
+          },
+          "repeated": {
+            "fullText": "Ready? Make your M sound, five times. Go!",
+            "bodyText": "Ready? Make your M sound, five times.",
+            "handoff": "Go!",
+            "soundSlot": {
+              "before": "Ready? Make your",
+              "clip": "/coach/say-echo/M-sound.wav",
+              "after": "sound, five times.",
+              "whole": "/coach/say-echo/M.mp3"
+            }
+          }
+        },
+        {
+          "repetitions": 3,
+          "first": {
+            "fullText": "Ready? Lips together and hum, and make your M sound, three times. Go!",
+            "bodyText": "Ready? Lips together and hum, and make your M sound, three times.",
+            "handoff": "Go!",
+            "soundSlot": {
+              "before": "Ready? Lips together and hum, and make your",
+              "clip": "/coach/say-echo/M-sound.wav",
+              "after": "sound, three times.",
+              "whole": "/coach/say-echo/M.mp3"
+            }
+          },
+          "repeated": {
+            "fullText": "Ready? Make your M sound, three times. Go!",
+            "bodyText": "Ready? Make your M sound, three times.",
+            "handoff": "Go!",
+            "soundSlot": {
+              "before": "Ready? Make your",
+              "clip": "/coach/say-echo/M-sound.wav",
+              "after": "sound, three times.",
+              "whole": "/coach/say-echo/M.mp3"
+            }
+          }
+        }
+      ],
+      "coaching": {
+        "fullText": "Let's try that one again. Lips together and hum. Go!",
+        "bodyText": "Let's try that one again. Lips together and hum.",
+        "handoff": "Go!",
+        "soundSlot": null
+      },
+      "stepDownToSound": {
+        "fullText": "I have an idea. Let's try this one. Make your M sound. Go!",
+        "bodyText": "I have an idea. Let's try this one. Make your M sound.",
+        "handoff": "Go!",
+        "soundSlot": {
+          "before": "I have an idea. Let's try this one. Make your",
+          "clip": "/coach/say-echo/M-sound.wav",
+          "after": "sound.",
+          "whole": "/coach/say-echo/M.mp3"
+        }
+      }
+    },
+    {
+      "id": "N",
+      "label": "N",
+      "soundText": "nnn",
+      "cue": "Tongue up behind your teeth and hum — nnnn.",
+      "shortCue": "Tongue up behind your teeth and hum",
+      "retryCue": "Tongue up behind your teeth and hum",
+      "clips": {
+        "sound": {
+          "path": "/coach/say-echo/N-sound.wav",
+          "sha256": "baaa09b6e65d35683fcb27ceb81c5a13154584453884fb7d0ce75aefd8639088",
+          "bytes": 49484
+        },
+        "fallbackLine": {
+          "path": "/coach/say-echo/N.mp3",
+          "sha256": "5db0f0221f96cf2060ee951ad2dff3ac58e7ee20edd5859f9772d97ee4cce0ed",
+          "bytes": 256209
+        }
+      },
+      "prompts": [
+        {
+          "repetitions": 5,
+          "first": {
+            "fullText": "Ready? Tongue up behind your teeth and hum, and make your N sound, five times. Go!",
+            "bodyText": "Ready? Tongue up behind your teeth and hum, and make your N sound, five times.",
+            "handoff": "Go!",
+            "soundSlot": {
+              "before": "Ready? Tongue up behind your teeth and hum, and make your",
+              "clip": "/coach/say-echo/N-sound.wav",
+              "after": "sound, five times.",
+              "whole": "/coach/say-echo/N.mp3"
+            }
+          },
+          "repeated": {
+            "fullText": "Ready? Make your N sound, five times. Go!",
+            "bodyText": "Ready? Make your N sound, five times.",
+            "handoff": "Go!",
+            "soundSlot": {
+              "before": "Ready? Make your",
+              "clip": "/coach/say-echo/N-sound.wav",
+              "after": "sound, five times.",
+              "whole": "/coach/say-echo/N.mp3"
+            }
+          }
+        },
+        {
+          "repetitions": 3,
+          "first": {
+            "fullText": "Ready? Tongue up behind your teeth and hum, and make your N sound, three times. Go!",
+            "bodyText": "Ready? Tongue up behind your teeth and hum, and make your N sound, three times.",
+            "handoff": "Go!",
+            "soundSlot": {
+              "before": "Ready? Tongue up behind your teeth and hum, and make your",
+              "clip": "/coach/say-echo/N-sound.wav",
+              "after": "sound, three times.",
+              "whole": "/coach/say-echo/N.mp3"
+            }
+          },
+          "repeated": {
+            "fullText": "Ready? Make your N sound, three times. Go!",
+            "bodyText": "Ready? Make your N sound, three times.",
+            "handoff": "Go!",
+            "soundSlot": {
+              "before": "Ready? Make your",
+              "clip": "/coach/say-echo/N-sound.wav",
+              "after": "sound, three times.",
+              "whole": "/coach/say-echo/N.mp3"
+            }
+          }
+        }
+      ],
+      "coaching": {
+        "fullText": "Let's try that one again. Tongue up behind your teeth and hum. Go!",
+        "bodyText": "Let's try that one again. Tongue up behind your teeth and hum.",
+        "handoff": "Go!",
+        "soundSlot": null
+      },
+      "stepDownToSound": {
+        "fullText": "I have an idea. Let's try this one. Make your N sound. Go!",
+        "bodyText": "I have an idea. Let's try this one. Make your N sound.",
+        "handoff": "Go!",
+        "soundSlot": {
+          "before": "I have an idea. Let's try this one. Make your",
+          "clip": "/coach/say-echo/N-sound.wav",
+          "after": "sound.",
+          "whole": "/coach/say-echo/N.mp3"
+        }
+      }
+    },
+    {
+      "id": "T",
+      "label": "T",
+      "soundText": "tuh",
+      "cue": "Tongue taps behind your top teeth — t! t! t!",
+      "shortCue": "Tongue taps behind your top teeth",
+      "retryCue": "Tongue taps behind your top teeth",
+      "clips": {
+        "sound": {
+          "path": "/coach/say-echo/T-sound.wav",
+          "sha256": "0630f2d99b08f73443f55a367379d9220d92199231d0b38e89d4510a2241c5f4",
+          "bytes": 9884
+        },
+        "fallbackLine": {
+          "path": "/coach/say-echo/T.mp3",
+          "sha256": "ce04916d78a6d7133509dbbcaf2328ac7c8d46317149e6efa809f048768f7806",
+          "bytes": 251611
+        }
+      },
+      "prompts": [
+        {
+          "repetitions": 5,
+          "first": {
+            "fullText": "Ready? Tongue taps behind your top teeth, and make your T sound, five times. Go!",
+            "bodyText": "Ready? Tongue taps behind your top teeth, and make your T sound, five times.",
+            "handoff": "Go!",
+            "soundSlot": {
+              "before": "Ready? Tongue taps behind your top teeth, and make your",
+              "clip": "/coach/say-echo/T-sound.wav",
+              "after": "sound, five times.",
+              "whole": "/coach/say-echo/T.mp3"
+            }
+          },
+          "repeated": {
+            "fullText": "Ready? Make your T sound, five times. Go!",
+            "bodyText": "Ready? Make your T sound, five times.",
+            "handoff": "Go!",
+            "soundSlot": {
+              "before": "Ready? Make your",
+              "clip": "/coach/say-echo/T-sound.wav",
+              "after": "sound, five times.",
+              "whole": "/coach/say-echo/T.mp3"
+            }
+          }
+        },
+        {
+          "repetitions": 3,
+          "first": {
+            "fullText": "Ready? Tongue taps behind your top teeth, and make your T sound, three times. Go!",
+            "bodyText": "Ready? Tongue taps behind your top teeth, and make your T sound, three times.",
+            "handoff": "Go!",
+            "soundSlot": {
+              "before": "Ready? Tongue taps behind your top teeth, and make your",
+              "clip": "/coach/say-echo/T-sound.wav",
+              "after": "sound, three times.",
+              "whole": "/coach/say-echo/T.mp3"
+            }
+          },
+          "repeated": {
+            "fullText": "Ready? Make your T sound, three times. Go!",
+            "bodyText": "Ready? Make your T sound, three times.",
+            "handoff": "Go!",
+            "soundSlot": {
+              "before": "Ready? Make your",
+              "clip": "/coach/say-echo/T-sound.wav",
+              "after": "sound, three times.",
+              "whole": "/coach/say-echo/T.mp3"
+            }
+          }
+        }
+      ],
+      "coaching": {
+        "fullText": "Let's try that one again. Tongue taps behind your top teeth. Go!",
+        "bodyText": "Let's try that one again. Tongue taps behind your top teeth.",
+        "handoff": "Go!",
+        "soundSlot": null
+      },
+      "stepDownToSound": {
+        "fullText": "I have an idea. Let's try this one. Make your T sound. Go!",
+        "bodyText": "I have an idea. Let's try this one. Make your T sound.",
+        "handoff": "Go!",
+        "soundSlot": {
+          "before": "I have an idea. Let's try this one. Make your",
+          "clip": "/coach/say-echo/T-sound.wav",
+          "after": "sound.",
+          "whole": "/coach/say-echo/T.mp3"
+        }
+      }
+    },
+    {
+      "id": "D",
+      "label": "D",
+      "soundText": "duh",
+      "cue": "Like T, but turn your voice on — d! d! d!",
+      "shortCue": "Like T",
+      "retryCue": "Like T, but turn your voice on",
+      "clips": {
+        "sound": {
+          "path": "/coach/say-echo/D-sound.wav",
+          "sha256": "11d33afbffe259cc5ea1147d73aa3b25293c99a629266091db17af57038e34ca",
+          "bytes": 19724
+        },
+        "fallbackLine": {
+          "path": "/coach/say-echo/D.mp3",
+          "sha256": "276afe6ed02fd0e51b87e4435edbdc6f0b2bb99c3b0190c021b97246325fc366",
+          "bytes": 301348
+        }
+      },
+      "prompts": [
+        {
+          "repetitions": 5,
+          "first": {
+            "fullText": "Ready? Like T, and make your D sound, five times. Go!",
+            "bodyText": "Ready? Like T, and make your D sound, five times.",
+            "handoff": "Go!",
+            "soundSlot": {
+              "before": "Ready? Like T, and make your",
+              "clip": "/coach/say-echo/D-sound.wav",
+              "after": "sound, five times.",
+              "whole": "/coach/say-echo/D.mp3"
+            }
+          },
+          "repeated": {
+            "fullText": "Ready? Make your D sound, five times. Go!",
+            "bodyText": "Ready? Make your D sound, five times.",
+            "handoff": "Go!",
+            "soundSlot": {
+              "before": "Ready? Make your",
+              "clip": "/coach/say-echo/D-sound.wav",
+              "after": "sound, five times.",
+              "whole": "/coach/say-echo/D.mp3"
+            }
+          }
+        },
+        {
+          "repetitions": 3,
+          "first": {
+            "fullText": "Ready? Like T, and make your D sound, three times. Go!",
+            "bodyText": "Ready? Like T, and make your D sound, three times.",
+            "handoff": "Go!",
+            "soundSlot": {
+              "before": "Ready? Like T, and make your",
+              "clip": "/coach/say-echo/D-sound.wav",
+              "after": "sound, three times.",
+              "whole": "/coach/say-echo/D.mp3"
+            }
+          },
+          "repeated": {
+            "fullText": "Ready? Make your D sound, three times. Go!",
+            "bodyText": "Ready? Make your D sound, three times.",
+            "handoff": "Go!",
+            "soundSlot": {
+              "before": "Ready? Make your",
+              "clip": "/coach/say-echo/D-sound.wav",
+              "after": "sound, three times.",
+              "whole": "/coach/say-echo/D.mp3"
+            }
+          }
+        }
+      ],
+      "coaching": {
+        "fullText": "Let's try that one again. Like T, but turn your voice on. Go!",
+        "bodyText": "Let's try that one again. Like T, but turn your voice on.",
+        "handoff": "Go!",
+        "soundSlot": null
+      },
+      "stepDownToSound": {
+        "fullText": "I have an idea. Let's try this one. Make your D sound. Go!",
+        "bodyText": "I have an idea. Let's try this one. Make your D sound.",
+        "handoff": "Go!",
+        "soundSlot": {
+          "before": "I have an idea. Let's try this one. Make your",
+          "clip": "/coach/say-echo/D-sound.wav",
+          "after": "sound.",
+          "whole": "/coach/say-echo/D.mp3"
+        }
+      }
+    },
+    {
+      "id": "K",
+      "label": "K",
+      "soundText": "kuh",
+      "cue": "The back of your tongue pops up in the back — k! k! k!",
+      "shortCue": "The back of your tongue pops up in the back",
+      "retryCue": "The back of your tongue pops up in the back",
+      "clips": {
+        "sound": {
+          "path": "/coach/say-echo/K-sound.wav",
+          "sha256": "a636e4d1fd141f219ef9d0af1b8a3546755133b45933ee7c74bf39479945e433",
+          "bytes": 10844
+        },
+        "fallbackLine": {
+          "path": "/coach/say-echo/K.mp3",
+          "sha256": "bb194f3284c7b4f2654db5203d55ba8599e949c0b1aaba3612c8c05e5df01b09",
+          "bytes": 185573
+        }
+      },
+      "prompts": [
+        {
+          "repetitions": 5,
+          "first": {
+            "fullText": "Ready? The back of your tongue pops up in the back, and make your K sound, five times. Go!",
+            "bodyText": "Ready? The back of your tongue pops up in the back, and make your K sound, five times.",
+            "handoff": "Go!",
+            "soundSlot": {
+              "before": "Ready? The back of your tongue pops up in the back, and make your",
+              "clip": "/coach/say-echo/K-sound.wav",
+              "after": "sound, five times.",
+              "whole": "/coach/say-echo/K.mp3"
+            }
+          },
+          "repeated": {
+            "fullText": "Ready? Make your K sound, five times. Go!",
+            "bodyText": "Ready? Make your K sound, five times.",
+            "handoff": "Go!",
+            "soundSlot": {
+              "before": "Ready? Make your",
+              "clip": "/coach/say-echo/K-sound.wav",
+              "after": "sound, five times.",
+              "whole": "/coach/say-echo/K.mp3"
+            }
+          }
+        },
+        {
+          "repetitions": 3,
+          "first": {
+            "fullText": "Ready? The back of your tongue pops up in the back, and make your K sound, three times. Go!",
+            "bodyText": "Ready? The back of your tongue pops up in the back, and make your K sound, three times.",
+            "handoff": "Go!",
+            "soundSlot": {
+              "before": "Ready? The back of your tongue pops up in the back, and make your",
+              "clip": "/coach/say-echo/K-sound.wav",
+              "after": "sound, three times.",
+              "whole": "/coach/say-echo/K.mp3"
+            }
+          },
+          "repeated": {
+            "fullText": "Ready? Make your K sound, three times. Go!",
+            "bodyText": "Ready? Make your K sound, three times.",
+            "handoff": "Go!",
+            "soundSlot": {
+              "before": "Ready? Make your",
+              "clip": "/coach/say-echo/K-sound.wav",
+              "after": "sound, three times.",
+              "whole": "/coach/say-echo/K.mp3"
+            }
+          }
+        }
+      ],
+      "coaching": {
+        "fullText": "Let's try that one again. The back of your tongue pops up in the back. Go!",
+        "bodyText": "Let's try that one again. The back of your tongue pops up in the back.",
+        "handoff": "Go!",
+        "soundSlot": null
+      },
+      "stepDownToSound": {
+        "fullText": "I have an idea. Let's try this one. Make your K sound. Go!",
+        "bodyText": "I have an idea. Let's try this one. Make your K sound.",
+        "handoff": "Go!",
+        "soundSlot": {
+          "before": "I have an idea. Let's try this one. Make your",
+          "clip": "/coach/say-echo/K-sound.wav",
+          "after": "sound.",
+          "whole": "/coach/say-echo/K.mp3"
+        }
+      }
+    },
+    {
+      "id": "G",
+      "label": "G",
+      "soundText": "guh",
+      "cue": "Like K, but turn your voice on — g! g! g!",
+      "shortCue": "Like K",
+      "retryCue": "Like K, but turn your voice on",
+      "clips": {
+        "sound": {
+          "path": "/coach/say-echo/G-sound.wav",
+          "sha256": "e7585faef8c25e1f80dcaa153fc856fee0fb4bc98602f4b95d305f0729ae8a78",
+          "bytes": 24524
+        },
+        "fallbackLine": {
+          "path": "/coach/say-echo/G.mp3",
+          "sha256": "70ceb097a7cdf4fd7fb322a1805562683e18f828fa76317d080c18d151ef5794",
+          "bytes": 238236
+        }
+      },
+      "prompts": [
+        {
+          "repetitions": 5,
+          "first": {
+            "fullText": "Ready? Like K, and make your G sound, five times. Go!",
+            "bodyText": "Ready? Like K, and make your G sound, five times.",
+            "handoff": "Go!",
+            "soundSlot": {
+              "before": "Ready? Like K, and make your",
+              "clip": "/coach/say-echo/G-sound.wav",
+              "after": "sound, five times.",
+              "whole": "/coach/say-echo/G.mp3"
+            }
+          },
+          "repeated": {
+            "fullText": "Ready? Make your G sound, five times. Go!",
+            "bodyText": "Ready? Make your G sound, five times.",
+            "handoff": "Go!",
+            "soundSlot": {
+              "before": "Ready? Make your",
+              "clip": "/coach/say-echo/G-sound.wav",
+              "after": "sound, five times.",
+              "whole": "/coach/say-echo/G.mp3"
+            }
+          }
+        },
+        {
+          "repetitions": 3,
+          "first": {
+            "fullText": "Ready? Like K, and make your G sound, three times. Go!",
+            "bodyText": "Ready? Like K, and make your G sound, three times.",
+            "handoff": "Go!",
+            "soundSlot": {
+              "before": "Ready? Like K, and make your",
+              "clip": "/coach/say-echo/G-sound.wav",
+              "after": "sound, three times.",
+              "whole": "/coach/say-echo/G.mp3"
+            }
+          },
+          "repeated": {
+            "fullText": "Ready? Make your G sound, three times. Go!",
+            "bodyText": "Ready? Make your G sound, three times.",
+            "handoff": "Go!",
+            "soundSlot": {
+              "before": "Ready? Make your",
+              "clip": "/coach/say-echo/G-sound.wav",
+              "after": "sound, three times.",
+              "whole": "/coach/say-echo/G.mp3"
+            }
+          }
+        }
+      ],
+      "coaching": {
+        "fullText": "Let's try that one again. Like K, but turn your voice on. Go!",
+        "bodyText": "Let's try that one again. Like K, but turn your voice on.",
+        "handoff": "Go!",
+        "soundSlot": null
+      },
+      "stepDownToSound": {
+        "fullText": "I have an idea. Let's try this one. Make your G sound. Go!",
+        "bodyText": "I have an idea. Let's try this one. Make your G sound.",
+        "handoff": "Go!",
+        "soundSlot": {
+          "before": "I have an idea. Let's try this one. Make your",
+          "clip": "/coach/say-echo/G-sound.wav",
+          "after": "sound.",
+          "whole": "/coach/say-echo/G.mp3"
+        }
+      }
+    },
+    {
+      "id": "F",
+      "label": "F",
+      "soundText": "ffff",
+      "cue": "Top teeth on your bottom lip, blow soft — ffff.",
+      "shortCue": "Top teeth on your bottom lip",
+      "retryCue": "Top teeth on your bottom lip, blow soft",
+      "clips": {
+        "sound": {
+          "path": "/coach/say-echo/F-sound.wav",
+          "sha256": "1c8e84f5ad0c7be33b29e831c365e1357a951ee01bdd23731186734693d52585",
+          "bytes": 44204
+        },
+        "fallbackLine": {
+          "path": "/coach/say-echo/F.mp3",
+          "sha256": "74492fc597ba97fd26af6d50f707d06b0ddb46023df79550c2dd2662e6804524",
+          "bytes": 207725
+        }
+      },
+      "prompts": [
+        {
+          "repetitions": 5,
+          "first": {
+            "fullText": "Ready? Top teeth on your bottom lip, and make your F sound, five times. Go!",
+            "bodyText": "Ready? Top teeth on your bottom lip, and make your F sound, five times.",
+            "handoff": "Go!",
+            "soundSlot": {
+              "before": "Ready? Top teeth on your bottom lip, and make your",
+              "clip": "/coach/say-echo/F-sound.wav",
+              "after": "sound, five times.",
+              "whole": "/coach/say-echo/F.mp3"
+            }
+          },
+          "repeated": {
+            "fullText": "Ready? Make your F sound, five times. Go!",
+            "bodyText": "Ready? Make your F sound, five times.",
+            "handoff": "Go!",
+            "soundSlot": {
+              "before": "Ready? Make your",
+              "clip": "/coach/say-echo/F-sound.wav",
+              "after": "sound, five times.",
+              "whole": "/coach/say-echo/F.mp3"
+            }
+          }
+        },
+        {
+          "repetitions": 3,
+          "first": {
+            "fullText": "Ready? Top teeth on your bottom lip, and make your F sound, three times. Go!",
+            "bodyText": "Ready? Top teeth on your bottom lip, and make your F sound, three times.",
+            "handoff": "Go!",
+            "soundSlot": {
+              "before": "Ready? Top teeth on your bottom lip, and make your",
+              "clip": "/coach/say-echo/F-sound.wav",
+              "after": "sound, three times.",
+              "whole": "/coach/say-echo/F.mp3"
+            }
+          },
+          "repeated": {
+            "fullText": "Ready? Make your F sound, three times. Go!",
+            "bodyText": "Ready? Make your F sound, three times.",
+            "handoff": "Go!",
+            "soundSlot": {
+              "before": "Ready? Make your",
+              "clip": "/coach/say-echo/F-sound.wav",
+              "after": "sound, three times.",
+              "whole": "/coach/say-echo/F.mp3"
+            }
+          }
+        }
+      ],
+      "coaching": {
+        "fullText": "Let's try that one again. Top teeth on your bottom lip, blow soft. Go!",
+        "bodyText": "Let's try that one again. Top teeth on your bottom lip, blow soft.",
+        "handoff": "Go!",
+        "soundSlot": null
+      },
+      "stepDownToSound": {
+        "fullText": "I have an idea. Let's try this one. Make your F sound. Go!",
+        "bodyText": "I have an idea. Let's try this one. Make your F sound.",
+        "handoff": "Go!",
+        "soundSlot": {
+          "before": "I have an idea. Let's try this one. Make your",
+          "clip": "/coach/say-echo/F-sound.wav",
+          "after": "sound.",
+          "whole": "/coach/say-echo/F.mp3"
+        }
+      }
+    },
+    {
+      "id": "V",
+      "label": "V",
+      "soundText": "vvvv",
+      "cue": "Like F, but buzz your voice — vvvv.",
+      "shortCue": "Like F",
+      "retryCue": "Like F, but buzz your voice",
+      "clips": {
+        "sound": {
+          "path": "/coach/say-echo/V-sound.wav",
+          "sha256": "484b814be2fb43c17d060ccc0f54334771359678b61fa3138f74b0e0ad77aad1",
+          "bytes": 67244
+        },
+        "fallbackLine": {
+          "path": "/coach/say-echo/V.mp3",
+          "sha256": "97a87c09b8a08e1995b2aaf94381229b182a3dde5c824d9be9bb975d3d04d36c",
+          "bytes": 221100
+        }
+      },
+      "prompts": [
+        {
+          "repetitions": 5,
+          "first": {
+            "fullText": "Ready? Like F, and make your V sound, five times. Go!",
+            "bodyText": "Ready? Like F, and make your V sound, five times.",
+            "handoff": "Go!",
+            "soundSlot": {
+              "before": "Ready? Like F, and make your",
+              "clip": "/coach/say-echo/V-sound.wav",
+              "after": "sound, five times.",
+              "whole": "/coach/say-echo/V.mp3"
+            }
+          },
+          "repeated": {
+            "fullText": "Ready? Make your V sound, five times. Go!",
+            "bodyText": "Ready? Make your V sound, five times.",
+            "handoff": "Go!",
+            "soundSlot": {
+              "before": "Ready? Make your",
+              "clip": "/coach/say-echo/V-sound.wav",
+              "after": "sound, five times.",
+              "whole": "/coach/say-echo/V.mp3"
+            }
+          }
+        },
+        {
+          "repetitions": 3,
+          "first": {
+            "fullText": "Ready? Like F, and make your V sound, three times. Go!",
+            "bodyText": "Ready? Like F, and make your V sound, three times.",
+            "handoff": "Go!",
+            "soundSlot": {
+              "before": "Ready? Like F, and make your",
+              "clip": "/coach/say-echo/V-sound.wav",
+              "after": "sound, three times.",
+              "whole": "/coach/say-echo/V.mp3"
+            }
+          },
+          "repeated": {
+            "fullText": "Ready? Make your V sound, three times. Go!",
+            "bodyText": "Ready? Make your V sound, three times.",
+            "handoff": "Go!",
+            "soundSlot": {
+              "before": "Ready? Make your",
+              "clip": "/coach/say-echo/V-sound.wav",
+              "after": "sound, three times.",
+              "whole": "/coach/say-echo/V.mp3"
+            }
+          }
+        }
+      ],
+      "coaching": {
+        "fullText": "Let's try that one again. Like F, but buzz your voice. Go!",
+        "bodyText": "Let's try that one again. Like F, but buzz your voice.",
+        "handoff": "Go!",
+        "soundSlot": null
+      },
+      "stepDownToSound": {
+        "fullText": "I have an idea. Let's try this one. Make your V sound. Go!",
+        "bodyText": "I have an idea. Let's try this one. Make your V sound.",
+        "handoff": "Go!",
+        "soundSlot": {
+          "before": "I have an idea. Let's try this one. Make your",
+          "clip": "/coach/say-echo/V-sound.wav",
+          "after": "sound.",
+          "whole": "/coach/say-echo/V.mp3"
+        }
+      }
+    },
+    {
+      "id": "S",
+      "label": "S",
+      "soundText": "sss",
+      "cue": "Teeth together, big smile, let the air hiss out — sss like a snake.",
+      "shortCue": "Teeth together",
+      "retryCue": "Teeth together, big smile, let the air hiss out",
+      "clips": {
+        "sound": {
+          "path": "/coach/say-echo/S-sound.wav",
+          "sha256": "96cd4bf4450bef01c09352b57e730c4de237d957f4bec30b329819b958dc5539",
+          "bytes": 47084
+        },
+        "fallbackLine": {
+          "path": "/coach/say-echo/S.mp3",
+          "sha256": "34aa85f7304b48847afc1810aaf299e94506b749522ea844e8652e984a0ab49b",
+          "bytes": 214413
+        }
+      },
+      "prompts": [
+        {
+          "repetitions": 5,
+          "first": {
+            "fullText": "Ready? Teeth together, and make your S sound, five times. Go!",
+            "bodyText": "Ready? Teeth together, and make your S sound, five times.",
+            "handoff": "Go!",
+            "soundSlot": {
+              "before": "Ready? Teeth together, and make your",
+              "clip": "/coach/say-echo/S-sound.wav",
+              "after": "sound, five times.",
+              "whole": "/coach/say-echo/S.mp3"
+            }
+          },
+          "repeated": {
+            "fullText": "Ready? Make your S sound, five times. Go!",
+            "bodyText": "Ready? Make your S sound, five times.",
+            "handoff": "Go!",
+            "soundSlot": {
+              "before": "Ready? Make your",
+              "clip": "/coach/say-echo/S-sound.wav",
+              "after": "sound, five times.",
+              "whole": "/coach/say-echo/S.mp3"
+            }
+          }
+        },
+        {
+          "repetitions": 3,
+          "first": {
+            "fullText": "Ready? Teeth together, and make your S sound, three times. Go!",
+            "bodyText": "Ready? Teeth together, and make your S sound, three times.",
+            "handoff": "Go!",
+            "soundSlot": {
+              "before": "Ready? Teeth together, and make your",
+              "clip": "/coach/say-echo/S-sound.wav",
+              "after": "sound, three times.",
+              "whole": "/coach/say-echo/S.mp3"
+            }
+          },
+          "repeated": {
+            "fullText": "Ready? Make your S sound, three times. Go!",
+            "bodyText": "Ready? Make your S sound, three times.",
+            "handoff": "Go!",
+            "soundSlot": {
+              "before": "Ready? Make your",
+              "clip": "/coach/say-echo/S-sound.wav",
+              "after": "sound, three times.",
+              "whole": "/coach/say-echo/S.mp3"
+            }
+          }
+        }
+      ],
+      "coaching": {
+        "fullText": "Let's try that one again. Teeth together, big smile, let the air hiss out. Go!",
+        "bodyText": "Let's try that one again. Teeth together, big smile, let the air hiss out.",
+        "handoff": "Go!",
+        "soundSlot": null
+      },
+      "stepDownToSound": {
+        "fullText": "I have an idea. Let's try this one. Make your S sound. Go!",
+        "bodyText": "I have an idea. Let's try this one. Make your S sound.",
+        "handoff": "Go!",
+        "soundSlot": {
+          "before": "I have an idea. Let's try this one. Make your",
+          "clip": "/coach/say-echo/S-sound.wav",
+          "after": "sound.",
+          "whole": "/coach/say-echo/S.mp3"
+        }
+      }
+    },
+    {
+      "id": "Z",
+      "label": "Z",
+      "soundText": "zzz",
+      "cue": "Teeth together and buzz like a bee — zzzz.",
+      "shortCue": "Teeth together and buzz",
+      "retryCue": "Teeth together and buzz like a bee",
+      "clips": {
+        "sound": {
+          "path": "/coach/say-echo/Z-sound.wav",
+          "sha256": "cd0ce061902049f9e6c9af4dfcac0bea2c6b49a69f03b8ee55d945a6cb31ac8b",
+          "bytes": 63404
+        },
+        "fallbackLine": {
+          "path": "/coach/say-echo/Z.mp3",
+          "sha256": "ddd4cc8f22fb9c7db6494c186921c2ca4c488f3d005511f881980d8c83b5ce46",
+          "bytes": 254537
+        }
+      },
+      "prompts": [
+        {
+          "repetitions": 5,
+          "first": {
+            "fullText": "Ready? Teeth together and buzz, and make your Z sound, five times. Go!",
+            "bodyText": "Ready? Teeth together and buzz, and make your Z sound, five times.",
+            "handoff": "Go!",
+            "soundSlot": {
+              "before": "Ready? Teeth together and buzz, and make your",
+              "clip": "/coach/say-echo/Z-sound.wav",
+              "after": "sound, five times.",
+              "whole": "/coach/say-echo/Z.mp3"
+            }
+          },
+          "repeated": {
+            "fullText": "Ready? Make your Z sound, five times. Go!",
+            "bodyText": "Ready? Make your Z sound, five times.",
+            "handoff": "Go!",
+            "soundSlot": {
+              "before": "Ready? Make your",
+              "clip": "/coach/say-echo/Z-sound.wav",
+              "after": "sound, five times.",
+              "whole": "/coach/say-echo/Z.mp3"
+            }
+          }
+        },
+        {
+          "repetitions": 3,
+          "first": {
+            "fullText": "Ready? Teeth together and buzz, and make your Z sound, three times. Go!",
+            "bodyText": "Ready? Teeth together and buzz, and make your Z sound, three times.",
+            "handoff": "Go!",
+            "soundSlot": {
+              "before": "Ready? Teeth together and buzz, and make your",
+              "clip": "/coach/say-echo/Z-sound.wav",
+              "after": "sound, three times.",
+              "whole": "/coach/say-echo/Z.mp3"
+            }
+          },
+          "repeated": {
+            "fullText": "Ready? Make your Z sound, three times. Go!",
+            "bodyText": "Ready? Make your Z sound, three times.",
+            "handoff": "Go!",
+            "soundSlot": {
+              "before": "Ready? Make your",
+              "clip": "/coach/say-echo/Z-sound.wav",
+              "after": "sound, three times.",
+              "whole": "/coach/say-echo/Z.mp3"
+            }
+          }
+        }
+      ],
+      "coaching": {
+        "fullText": "Let's try that one again. Teeth together and buzz like a bee. Go!",
+        "bodyText": "Let's try that one again. Teeth together and buzz like a bee.",
+        "handoff": "Go!",
+        "soundSlot": null
+      },
+      "stepDownToSound": {
+        "fullText": "I have an idea. Let's try this one. Make your Z sound. Go!",
+        "bodyText": "I have an idea. Let's try this one. Make your Z sound.",
+        "handoff": "Go!",
+        "soundSlot": {
+          "before": "I have an idea. Let's try this one. Make your",
+          "clip": "/coach/say-echo/Z-sound.wav",
+          "after": "sound.",
+          "whole": "/coach/say-echo/Z.mp3"
+        }
+      }
+    },
+    {
+      "id": "SH",
+      "label": "SH",
+      "soundText": "shhh",
+      "cue": "Round your lips and whisper quiet — shhh.",
+      "shortCue": "Round your lips and whisper quiet",
+      "retryCue": "Round your lips and whisper quiet",
+      "clips": {
+        "sound": {
+          "path": "/coach/say-echo/SH-sound.wav",
+          "sha256": "2a5e38490cb6419c97bbc81a6b69cea11b1ed5176828a8f5c76040a5cd041ddd",
+          "bytes": 61484
+        },
+        "fallbackLine": {
+          "path": "/coach/say-echo/SH.mp3",
+          "sha256": "939ca3522fb30efae2bc2a4db04e16587b92117f8d3ab5c18526795d8dbcc917",
+          "bytes": 233221
+        }
+      },
+      "prompts": [
+        {
+          "repetitions": 5,
+          "first": {
+            "fullText": "Ready? Round your lips and whisper quiet, and make your S H sound, five times. Go!",
+            "bodyText": "Ready? Round your lips and whisper quiet, and make your S H sound, five times.",
+            "handoff": "Go!",
+            "soundSlot": {
+              "before": "Ready? Round your lips and whisper quiet, and make your",
+              "clip": "/coach/say-echo/SH-sound.wav",
+              "after": "sound, five times.",
+              "whole": "/coach/say-echo/SH.mp3"
+            }
+          },
+          "repeated": {
+            "fullText": "Ready? Make your S H sound, five times. Go!",
+            "bodyText": "Ready? Make your S H sound, five times.",
+            "handoff": "Go!",
+            "soundSlot": {
+              "before": "Ready? Make your",
+              "clip": "/coach/say-echo/SH-sound.wav",
+              "after": "sound, five times.",
+              "whole": "/coach/say-echo/SH.mp3"
+            }
+          }
+        },
+        {
+          "repetitions": 3,
+          "first": {
+            "fullText": "Ready? Round your lips and whisper quiet, and make your S H sound, three times. Go!",
+            "bodyText": "Ready? Round your lips and whisper quiet, and make your S H sound, three times.",
+            "handoff": "Go!",
+            "soundSlot": {
+              "before": "Ready? Round your lips and whisper quiet, and make your",
+              "clip": "/coach/say-echo/SH-sound.wav",
+              "after": "sound, three times.",
+              "whole": "/coach/say-echo/SH.mp3"
+            }
+          },
+          "repeated": {
+            "fullText": "Ready? Make your S H sound, three times. Go!",
+            "bodyText": "Ready? Make your S H sound, three times.",
+            "handoff": "Go!",
+            "soundSlot": {
+              "before": "Ready? Make your",
+              "clip": "/coach/say-echo/SH-sound.wav",
+              "after": "sound, three times.",
+              "whole": "/coach/say-echo/SH.mp3"
+            }
+          }
+        }
+      ],
+      "coaching": {
+        "fullText": "Let's try that one again. Round your lips and whisper quiet. Go!",
+        "bodyText": "Let's try that one again. Round your lips and whisper quiet.",
+        "handoff": "Go!",
+        "soundSlot": null
+      },
+      "stepDownToSound": {
+        "fullText": "I have an idea. Let's try this one. Make your S H sound. Go!",
+        "bodyText": "I have an idea. Let's try this one. Make your S H sound.",
+        "handoff": "Go!",
+        "soundSlot": {
+          "before": "I have an idea. Let's try this one. Make your",
+          "clip": "/coach/say-echo/SH-sound.wav",
+          "after": "sound.",
+          "whole": "/coach/say-echo/SH.mp3"
+        }
+      }
+    },
+    {
+      "id": "CH",
+      "label": "CH",
+      "soundText": "chuh",
+      "cue": "Pop it like a little train — ch! ch! ch!",
+      "shortCue": "Pop it",
+      "retryCue": "Pop it like a little train",
+      "clips": {
+        "sound": {
+          "path": "/coach/say-echo/CH-sound.wav",
+          "sha256": "3807deed02499cc8c678db98a98170cdbd1a5d17bd061666c19720ae7d95c4d6",
+          "bytes": 13964
+        },
+        "fallbackLine": {
+          "path": "/coach/say-echo/CH.mp3",
+          "sha256": "a83869493864fe9b434b552cf4802153a5b1fa3c24f297fd91c5223cb2eb16d2",
+          "bytes": 273345
+        }
+      },
+      "prompts": [
+        {
+          "repetitions": 5,
+          "first": {
+            "fullText": "Ready? Pop it, and make your C H sound, five times. Go!",
+            "bodyText": "Ready? Pop it, and make your C H sound, five times.",
+            "handoff": "Go!",
+            "soundSlot": {
+              "before": "Ready? Pop it, and make your",
+              "clip": "/coach/say-echo/CH-sound.wav",
+              "after": "sound, five times.",
+              "whole": "/coach/say-echo/CH.mp3"
+            }
+          },
+          "repeated": {
+            "fullText": "Ready? Make your C H sound, five times. Go!",
+            "bodyText": "Ready? Make your C H sound, five times.",
+            "handoff": "Go!",
+            "soundSlot": {
+              "before": "Ready? Make your",
+              "clip": "/coach/say-echo/CH-sound.wav",
+              "after": "sound, five times.",
+              "whole": "/coach/say-echo/CH.mp3"
+            }
+          }
+        },
+        {
+          "repetitions": 3,
+          "first": {
+            "fullText": "Ready? Pop it, and make your C H sound, three times. Go!",
+            "bodyText": "Ready? Pop it, and make your C H sound, three times.",
+            "handoff": "Go!",
+            "soundSlot": {
+              "before": "Ready? Pop it, and make your",
+              "clip": "/coach/say-echo/CH-sound.wav",
+              "after": "sound, three times.",
+              "whole": "/coach/say-echo/CH.mp3"
+            }
+          },
+          "repeated": {
+            "fullText": "Ready? Make your C H sound, three times. Go!",
+            "bodyText": "Ready? Make your C H sound, three times.",
+            "handoff": "Go!",
+            "soundSlot": {
+              "before": "Ready? Make your",
+              "clip": "/coach/say-echo/CH-sound.wav",
+              "after": "sound, three times.",
+              "whole": "/coach/say-echo/CH.mp3"
+            }
+          }
+        }
+      ],
+      "coaching": {
+        "fullText": "Let's try that one again. Pop it like a little train. Go!",
+        "bodyText": "Let's try that one again. Pop it like a little train.",
+        "handoff": "Go!",
+        "soundSlot": null
+      },
+      "stepDownToSound": {
+        "fullText": "I have an idea. Let's try this one. Make your C H sound. Go!",
+        "bodyText": "I have an idea. Let's try this one. Make your C H sound.",
+        "handoff": "Go!",
+        "soundSlot": {
+          "before": "I have an idea. Let's try this one. Make your",
+          "clip": "/coach/say-echo/CH-sound.wav",
+          "after": "sound.",
+          "whole": "/coach/say-echo/CH.mp3"
+        }
+      }
+    },
+    {
+      "id": "J",
+      "label": "J",
+      "soundText": "juh",
+      "cue": "Like CH, but turn your voice on — j! j! j!",
+      "shortCue": "Like CH",
+      "retryCue": "Like CH, but turn your voice on",
+      "clips": {
+        "sound": {
+          "path": "/coach/say-echo/J-sound.wav",
+          "sha256": "c11e60b190770d3df31d84dc8e72ccc2239e04f22b4ad22d3328dcff019ed80d",
+          "bytes": 26924
+        },
+        "fallbackLine": {
+          "path": "/coach/say-echo/J.mp3",
+          "sha256": "b86106397bfccaab36dfc910ce004e3d150c4cc4b6b01b2c3996f3440f3b2b18",
+          "bytes": 257044
+        }
+      },
+      "prompts": [
+        {
+          "repetitions": 5,
+          "first": {
+            "fullText": "Ready? Like CH, and make your J sound, five times. Go!",
+            "bodyText": "Ready? Like CH, and make your J sound, five times.",
+            "handoff": "Go!",
+            "soundSlot": {
+              "before": "Ready? Like CH, and make your",
+              "clip": "/coach/say-echo/J-sound.wav",
+              "after": "sound, five times.",
+              "whole": "/coach/say-echo/J.mp3"
+            }
+          },
+          "repeated": {
+            "fullText": "Ready? Make your J sound, five times. Go!",
+            "bodyText": "Ready? Make your J sound, five times.",
+            "handoff": "Go!",
+            "soundSlot": {
+              "before": "Ready? Make your",
+              "clip": "/coach/say-echo/J-sound.wav",
+              "after": "sound, five times.",
+              "whole": "/coach/say-echo/J.mp3"
+            }
+          }
+        },
+        {
+          "repetitions": 3,
+          "first": {
+            "fullText": "Ready? Like CH, and make your J sound, three times. Go!",
+            "bodyText": "Ready? Like CH, and make your J sound, three times.",
+            "handoff": "Go!",
+            "soundSlot": {
+              "before": "Ready? Like CH, and make your",
+              "clip": "/coach/say-echo/J-sound.wav",
+              "after": "sound, three times.",
+              "whole": "/coach/say-echo/J.mp3"
+            }
+          },
+          "repeated": {
+            "fullText": "Ready? Make your J sound, three times. Go!",
+            "bodyText": "Ready? Make your J sound, three times.",
+            "handoff": "Go!",
+            "soundSlot": {
+              "before": "Ready? Make your",
+              "clip": "/coach/say-echo/J-sound.wav",
+              "after": "sound, three times.",
+              "whole": "/coach/say-echo/J.mp3"
+            }
+          }
+        }
+      ],
+      "coaching": {
+        "fullText": "Let's try that one again. Like CH, but turn your voice on. Go!",
+        "bodyText": "Let's try that one again. Like CH, but turn your voice on.",
+        "handoff": "Go!",
+        "soundSlot": null
+      },
+      "stepDownToSound": {
+        "fullText": "I have an idea. Let's try this one. Make your J sound. Go!",
+        "bodyText": "I have an idea. Let's try this one. Make your J sound.",
+        "handoff": "Go!",
+        "soundSlot": {
+          "before": "I have an idea. Let's try this one. Make your",
+          "clip": "/coach/say-echo/J-sound.wav",
+          "after": "sound.",
+          "whole": "/coach/say-echo/J.mp3"
+        }
+      }
+    },
+    {
+      "id": "L",
+      "label": "L",
+      "soundText": "lll",
+      "cue": "Tongue tip up behind your top teeth — lll, la la la.",
+      "shortCue": "Tongue tip up behind your top teeth",
+      "retryCue": "Tongue tip up behind your top teeth",
+      "clips": {
+        "sound": {
+          "path": "/coach/say-echo/L-sound.wav",
+          "sha256": "57d77d5cdafa383037ba5ea2ae1cb9562017d87ff32d5e2a994ee6ad8d7e3166",
+          "bytes": 42764
+        },
+        "fallbackLine": {
+          "path": "/coach/say-echo/L.mp3",
+          "sha256": "6ee143ea5afe88680e859aa9d18bd933e7c17a4171a1a1da1d47668755cabf80",
+          "bytes": 231549
+        }
+      },
+      "prompts": [
+        {
+          "repetitions": 5,
+          "first": {
+            "fullText": "Ready? Tongue tip up behind your top teeth, and make your L sound, five times. Go!",
+            "bodyText": "Ready? Tongue tip up behind your top teeth, and make your L sound, five times.",
+            "handoff": "Go!",
+            "soundSlot": {
+              "before": "Ready? Tongue tip up behind your top teeth, and make your",
+              "clip": "/coach/say-echo/L-sound.wav",
+              "after": "sound, five times.",
+              "whole": "/coach/say-echo/L.mp3"
+            }
+          },
+          "repeated": {
+            "fullText": "Ready? Make your L sound, five times. Go!",
+            "bodyText": "Ready? Make your L sound, five times.",
+            "handoff": "Go!",
+            "soundSlot": {
+              "before": "Ready? Make your",
+              "clip": "/coach/say-echo/L-sound.wav",
+              "after": "sound, five times.",
+              "whole": "/coach/say-echo/L.mp3"
+            }
+          }
+        },
+        {
+          "repetitions": 3,
+          "first": {
+            "fullText": "Ready? Tongue tip up behind your top teeth, and make your L sound, three times. Go!",
+            "bodyText": "Ready? Tongue tip up behind your top teeth, and make your L sound, three times.",
+            "handoff": "Go!",
+            "soundSlot": {
+              "before": "Ready? Tongue tip up behind your top teeth, and make your",
+              "clip": "/coach/say-echo/L-sound.wav",
+              "after": "sound, three times.",
+              "whole": "/coach/say-echo/L.mp3"
+            }
+          },
+          "repeated": {
+            "fullText": "Ready? Make your L sound, three times. Go!",
+            "bodyText": "Ready? Make your L sound, three times.",
+            "handoff": "Go!",
+            "soundSlot": {
+              "before": "Ready? Make your",
+              "clip": "/coach/say-echo/L-sound.wav",
+              "after": "sound, three times.",
+              "whole": "/coach/say-echo/L.mp3"
+            }
+          }
+        }
+      ],
+      "coaching": {
+        "fullText": "Let's try that one again. Tongue tip up behind your top teeth. Go!",
+        "bodyText": "Let's try that one again. Tongue tip up behind your top teeth.",
+        "handoff": "Go!",
+        "soundSlot": null
+      },
+      "stepDownToSound": {
+        "fullText": "I have an idea. Let's try this one. Make your L sound. Go!",
+        "bodyText": "I have an idea. Let's try this one. Make your L sound.",
+        "handoff": "Go!",
+        "soundSlot": {
+          "before": "I have an idea. Let's try this one. Make your",
+          "clip": "/coach/say-echo/L-sound.wav",
+          "after": "sound.",
+          "whole": "/coach/say-echo/L.mp3"
+        }
+      }
+    },
+    {
+      "id": "R",
+      "label": "R",
+      "soundText": "rrrr",
+      "cue": "Pull your tongue back and up like a tiger growl — rrr!",
+      "shortCue": "Pull your tongue back and up",
+      "retryCue": "Pull your tongue back and up like a tiger growl",
+      "clips": {
+        "sound": {
+          "path": "/coach/say-echo/R-sound.wav",
+          "sha256": "4588e8fed6119c36eac8b6630d9482b49f610420cbc44a39fd3726bc32d84034",
+          "bytes": 59564
+        },
+        "fallbackLine": {
+          "path": "/coach/say-echo/R.mp3",
+          "sha256": "bd9a704c86b7cac3d6459c2b5221a833af3a19155e1835c1fecab7b9e9963019",
+          "bytes": 201038
+        }
+      },
+      "prompts": [
+        {
+          "repetitions": 5,
+          "first": {
+            "fullText": "Ready? Pull your tongue back and up, and make your R sound, five times. Go!",
+            "bodyText": "Ready? Pull your tongue back and up, and make your R sound, five times.",
+            "handoff": "Go!",
+            "soundSlot": {
+              "before": "Ready? Pull your tongue back and up, and make your",
+              "clip": "/coach/say-echo/R-sound.wav",
+              "after": "sound, five times.",
+              "whole": "/coach/say-echo/R.mp3"
+            }
+          },
+          "repeated": {
+            "fullText": "Ready? Make your R sound, five times. Go!",
+            "bodyText": "Ready? Make your R sound, five times.",
+            "handoff": "Go!",
+            "soundSlot": {
+              "before": "Ready? Make your",
+              "clip": "/coach/say-echo/R-sound.wav",
+              "after": "sound, five times.",
+              "whole": "/coach/say-echo/R.mp3"
+            }
+          }
+        },
+        {
+          "repetitions": 3,
+          "first": {
+            "fullText": "Ready? Pull your tongue back and up, and make your R sound, three times. Go!",
+            "bodyText": "Ready? Pull your tongue back and up, and make your R sound, three times.",
+            "handoff": "Go!",
+            "soundSlot": {
+              "before": "Ready? Pull your tongue back and up, and make your",
+              "clip": "/coach/say-echo/R-sound.wav",
+              "after": "sound, three times.",
+              "whole": "/coach/say-echo/R.mp3"
+            }
+          },
+          "repeated": {
+            "fullText": "Ready? Make your R sound, three times. Go!",
+            "bodyText": "Ready? Make your R sound, three times.",
+            "handoff": "Go!",
+            "soundSlot": {
+              "before": "Ready? Make your",
+              "clip": "/coach/say-echo/R-sound.wav",
+              "after": "sound, three times.",
+              "whole": "/coach/say-echo/R.mp3"
+            }
+          }
+        }
+      ],
+      "coaching": {
+        "fullText": "Let's try that one again. Pull your tongue back and up like a tiger growl. Go!",
+        "bodyText": "Let's try that one again. Pull your tongue back and up like a tiger growl.",
+        "handoff": "Go!",
+        "soundSlot": null
+      },
+      "stepDownToSound": {
+        "fullText": "I have an idea. Let's try this one. Make your R sound. Go!",
+        "bodyText": "I have an idea. Let's try this one. Make your R sound.",
+        "handoff": "Go!",
+        "soundSlot": {
+          "before": "I have an idea. Let's try this one. Make your",
+          "clip": "/coach/say-echo/R-sound.wav",
+          "after": "sound.",
+          "whole": "/coach/say-echo/R.mp3"
+        }
+      }
+    },
+    {
+      "id": "TH",
+      "label": "TH",
+      "soundText": "thhh",
+      "cue": "Peek your tongue between your teeth and blow soft — th.",
+      "shortCue": "Peek your tongue between your teeth and blow soft",
+      "retryCue": "Peek your tongue between your teeth and blow soft",
+      "clips": {
+        "sound": {
+          "path": "/coach/say-echo/TH-sound.wav",
+          "sha256": "1cc1f6665d3bbcb97277830bfb89d0f840b22883c53cc3d7aa467f0d4ca5818d",
+          "bytes": 30764
+        },
+        "fallbackLine": {
+          "path": "/coach/say-echo/TH.mp3",
+          "sha256": "4caf887eb478c97b727c217a19467542cae4bdd1d7792561f0eb636044ee0c57",
+          "bytes": 249521
+        }
+      },
+      "prompts": [
+        {
+          "repetitions": 5,
+          "first": {
+            "fullText": "Ready? Peek your tongue between your teeth and blow soft, and make your T H sound, five times. Go!",
+            "bodyText": "Ready? Peek your tongue between your teeth and blow soft, and make your T H sound, five times.",
+            "handoff": "Go!",
+            "soundSlot": {
+              "before": "Ready? Peek your tongue between your teeth and blow soft, and make your",
+              "clip": "/coach/say-echo/TH-sound.wav",
+              "after": "sound, five times.",
+              "whole": "/coach/say-echo/TH.mp3"
+            }
+          },
+          "repeated": {
+            "fullText": "Ready? Make your T H sound, five times. Go!",
+            "bodyText": "Ready? Make your T H sound, five times.",
+            "handoff": "Go!",
+            "soundSlot": {
+              "before": "Ready? Make your",
+              "clip": "/coach/say-echo/TH-sound.wav",
+              "after": "sound, five times.",
+              "whole": "/coach/say-echo/TH.mp3"
+            }
+          }
+        },
+        {
+          "repetitions": 3,
+          "first": {
+            "fullText": "Ready? Peek your tongue between your teeth and blow soft, and make your T H sound, three times. Go!",
+            "bodyText": "Ready? Peek your tongue between your teeth and blow soft, and make your T H sound, three times.",
+            "handoff": "Go!",
+            "soundSlot": {
+              "before": "Ready? Peek your tongue between your teeth and blow soft, and make your",
+              "clip": "/coach/say-echo/TH-sound.wav",
+              "after": "sound, three times.",
+              "whole": "/coach/say-echo/TH.mp3"
+            }
+          },
+          "repeated": {
+            "fullText": "Ready? Make your T H sound, three times. Go!",
+            "bodyText": "Ready? Make your T H sound, three times.",
+            "handoff": "Go!",
+            "soundSlot": {
+              "before": "Ready? Make your",
+              "clip": "/coach/say-echo/TH-sound.wav",
+              "after": "sound, three times.",
+              "whole": "/coach/say-echo/TH.mp3"
+            }
+          }
+        }
+      ],
+      "coaching": {
+        "fullText": "Let's try that one again. Peek your tongue between your teeth and blow soft. Go!",
+        "bodyText": "Let's try that one again. Peek your tongue between your teeth and blow soft.",
+        "handoff": "Go!",
+        "soundSlot": null
+      },
+      "stepDownToSound": {
+        "fullText": "I have an idea. Let's try this one. Make your T H sound. Go!",
+        "bodyText": "I have an idea. Let's try this one. Make your T H sound.",
+        "handoff": "Go!",
+        "soundSlot": {
+          "before": "I have an idea. Let's try this one. Make your",
+          "clip": "/coach/say-echo/TH-sound.wav",
+          "after": "sound.",
+          "whole": "/coach/say-echo/TH.mp3"
+        }
+      }
+    },
+    {
+      "id": "THV",
+      "label": "TH (v)",
+      "soundText": "thuh",
+      "cue": "Tongue between your teeth and buzz — th, like in 'the'.",
+      "shortCue": "Tongue between your teeth and buzz",
+      "retryCue": "Tongue between your teeth and buzz",
+      "clips": {
+        "sound": {
+          "path": "/coach/say-echo/THV-sound.wav",
+          "sha256": "ad11724166f7f87a9e3c451ab75466ac4f28b4e850be035f5f407887c50446de",
+          "bytes": 50444
+        },
+        "fallbackLine": {
+          "path": "/coach/say-echo/THV.mp3",
+          "sha256": "16b997967d78930e8664f674b32ca0c166f5a96f766aaf54903730c5e5511e78",
+          "bytes": 260806
+        }
+      },
+      "prompts": [
+        {
+          "repetitions": 5,
+          "first": {
+            "fullText": "Ready? Tongue between your teeth and buzz, and make your T H sound, five times. Go!",
+            "bodyText": "Ready? Tongue between your teeth and buzz, and make your T H sound, five times.",
+            "handoff": "Go!",
+            "soundSlot": {
+              "before": "Ready? Tongue between your teeth and buzz, and make your",
+              "clip": "/coach/say-echo/THV-sound.wav",
+              "after": "sound, five times.",
+              "whole": "/coach/say-echo/THV.mp3"
+            }
+          },
+          "repeated": {
+            "fullText": "Ready? Make your T H sound, five times. Go!",
+            "bodyText": "Ready? Make your T H sound, five times.",
+            "handoff": "Go!",
+            "soundSlot": {
+              "before": "Ready? Make your",
+              "clip": "/coach/say-echo/THV-sound.wav",
+              "after": "sound, five times.",
+              "whole": "/coach/say-echo/THV.mp3"
+            }
+          }
+        },
+        {
+          "repetitions": 3,
+          "first": {
+            "fullText": "Ready? Tongue between your teeth and buzz, and make your T H sound, three times. Go!",
+            "bodyText": "Ready? Tongue between your teeth and buzz, and make your T H sound, three times.",
+            "handoff": "Go!",
+            "soundSlot": {
+              "before": "Ready? Tongue between your teeth and buzz, and make your",
+              "clip": "/coach/say-echo/THV-sound.wav",
+              "after": "sound, three times.",
+              "whole": "/coach/say-echo/THV.mp3"
+            }
+          },
+          "repeated": {
+            "fullText": "Ready? Make your T H sound, three times. Go!",
+            "bodyText": "Ready? Make your T H sound, three times.",
+            "handoff": "Go!",
+            "soundSlot": {
+              "before": "Ready? Make your",
+              "clip": "/coach/say-echo/THV-sound.wav",
+              "after": "sound, three times.",
+              "whole": "/coach/say-echo/THV.mp3"
+            }
+          }
+        }
+      ],
+      "coaching": {
+        "fullText": "Let's try that one again. Tongue between your teeth and buzz. Go!",
+        "bodyText": "Let's try that one again. Tongue between your teeth and buzz.",
+        "handoff": "Go!",
+        "soundSlot": null
+      },
+      "stepDownToSound": {
+        "fullText": "I have an idea. Let's try this one. Make your T H sound. Go!",
+        "bodyText": "I have an idea. Let's try this one. Make your T H sound.",
+        "handoff": "Go!",
+        "soundSlot": {
+          "before": "I have an idea. Let's try this one. Make your",
+          "clip": "/coach/say-echo/THV-sound.wav",
+          "after": "sound.",
+          "whole": "/coach/say-echo/THV.mp3"
+        }
+      }
+    }
+  ],
+  "targetTemplates": [
+    {
+      "repetitions": 5,
+      "firstWithCue": "Ready? {cue}, and say {target}, five times. Go!",
+      "repeated": "Ready? Say {target}, five times. Go!"
+    },
+    {
+      "repetitions": 3,
+      "firstWithCue": "Ready? {cue}, and say {target}, three times. Go!",
+      "repeated": "Ready? Say {target}, three times. Go!"
+    }
+  ],
+  "stepDownTargetTemplate": "I have an idea. Let's try this one. Say {target}. Go!"
+}

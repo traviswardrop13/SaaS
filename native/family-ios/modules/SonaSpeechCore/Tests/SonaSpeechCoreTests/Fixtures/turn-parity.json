@@ -1,0 +1,9 @@
+[
+  {"name":"five-voiced-tries", "reps":5, "transcript":"Rrrr", "shape":"pass", "expectedPhase":"completed", "expectedVerdict":"pass"},
+  {"name":"silence-even-with-transcript", "reps":0, "transcript":"Rrrr", "shape":"pass", "expectedPhase":"quiet"},
+  {"name":"qualified-partial-window", "reps":2, "transcript":"Rrrr", "shape":"pass", "expectedPhase":"completed", "expectedVerdict":"pass"},
+  {"name":"unrelated-word-is-a-voiced-try", "reps":5, "transcript":"taco", "shape":"pass", "expectedPhase":"completed", "expectedVerdict":"fail"},
+  {"name":"unknown-word-uses-sound-shape", "reps":5, "transcript":"uh", "shape":"pass", "expectedPhase":"completed", "expectedVerdict":"pass"},
+  {"name":"wrong-sound-family", "reps":5, "transcript":"", "shape":"fail", "expectedPhase":"completed", "expectedVerdict":"fail"},
+  {"name":"unknown-is-never-a-result", "reps":5, "transcript":"", "shape":"unknown", "expectedPhase":"quiet"}
+]

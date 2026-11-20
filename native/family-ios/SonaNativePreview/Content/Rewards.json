@@ -1,0 +1,417 @@
+{
+  "version": 1,
+  "lands": [
+    {
+      "id": "meadow",
+      "name": "Sunny Meadow",
+      "from": 0,
+      "art": "customize-forest-v2"
+    },
+    {
+      "id": "beach",
+      "name": "Beach Bay",
+      "from": 300,
+      "art": "customize-beach-v2"
+    },
+    {
+      "id": "snow",
+      "name": "Snowy Peak",
+      "from": 750,
+      "art": "customize-snow-v2"
+    },
+    {
+      "id": "sea",
+      "name": "Under the Sea",
+      "from": 1350,
+      "art": "customize-sea-v2"
+    },
+    {
+      "id": "sky",
+      "name": "Starry Sky",
+      "from": 2100,
+      "art": "customize-space-v2"
+    },
+    {
+      "id": "champ",
+      "name": "Champion Trail",
+      "from": 3000,
+      "art": "customize-mountain-v2"
+    }
+  ],
+  "stops": [
+    {
+      "n": 1,
+      "at": 30,
+      "gift": [
+        {
+          "coins": 20
+        }
+      ]
+    },
+    {
+      "n": 2,
+      "at": 80,
+      "gift": [
+        {
+          "sticker": 1
+        }
+      ]
+    },
+    {
+      "n": 3,
+      "at": 150,
+      "gift": [
+        {
+          "level": 2
+        },
+        {
+          "coins": 20
+        }
+      ]
+    },
+    {
+      "n": 4,
+      "at": 220,
+      "gift": [
+        {
+          "coins": 30
+        }
+      ]
+    },
+    {
+      "n": 5,
+      "at": 300,
+      "big": true,
+      "gift": [
+        {
+          "coins": 40
+        },
+        {
+          "sticker": 1
+        },
+        {
+          "land": "beach"
+        }
+      ]
+    },
+    {
+      "n": 6,
+      "at": 380,
+      "gift": [
+        {
+          "hat": "sunhat"
+        }
+      ]
+    },
+    {
+      "n": 7,
+      "at": 460,
+      "gift": [
+        {
+          "coins": 40
+        }
+      ]
+    },
+    {
+      "n": 8,
+      "at": 540,
+      "gift": [
+        {
+          "sticker": 1
+        }
+      ]
+    },
+    {
+      "n": 9,
+      "at": 640,
+      "gift": [
+        {
+          "coins": 50
+        }
+      ]
+    },
+    {
+      "n": 10,
+      "at": 750,
+      "big": true,
+      "gift": [
+        {
+          "level": 3
+        },
+        {
+          "buddy": "frog"
+        },
+        {
+          "coins": 50
+        },
+        {
+          "land": "snow"
+        }
+      ]
+    },
+    {
+      "n": 11,
+      "at": 850,
+      "gift": [
+        {
+          "sticker": 1
+        }
+      ]
+    },
+    {
+      "n": 12,
+      "at": 950,
+      "gift": [
+        {
+          "place": "snow"
+        }
+      ]
+    },
+    {
+      "n": 13,
+      "at": 1050,
+      "gift": [
+        {
+          "coins": 60
+        }
+      ]
+    },
+    {
+      "n": 14,
+      "at": 1150,
+      "gift": [
+        {
+          "sticker": 1
+        }
+      ]
+    },
+    {
+      "n": 15,
+      "at": 1250,
+      "gift": [
+        {
+          "hat": "starclip"
+        }
+      ]
+    },
+    {
+      "n": 16,
+      "at": 1350,
+      "big": true,
+      "gift": [
+        {
+          "buddy": "penguin"
+        },
+        {
+          "coins": 60
+        },
+        {
+          "land": "sea"
+        }
+      ]
+    },
+    {
+      "n": 17,
+      "at": 1475,
+      "gift": [
+        {
+          "coins": 70
+        }
+      ]
+    },
+    {
+      "n": 18,
+      "at": 1600,
+      "gift": [
+        {
+          "sticker": 1
+        }
+      ]
+    },
+    {
+      "n": 19,
+      "at": 1725,
+      "gift": [
+        {
+          "place": "sea"
+        }
+      ]
+    },
+    {
+      "n": 20,
+      "at": 1850,
+      "gift": [
+        {
+          "coins": 80
+        }
+      ]
+    },
+    {
+      "n": 21,
+      "at": 1975,
+      "gift": [
+        {
+          "sticker": 1
+        }
+      ]
+    },
+    {
+      "n": 22,
+      "at": 2100,
+      "big": true,
+      "gift": [
+        {
+          "buddy": "lion"
+        },
+        {
+          "coins": 80
+        },
+        {
+          "land": "sky"
+        }
+      ]
+    },
+    {
+      "n": 23,
+      "at": 2250,
+      "gift": [
+        {
+          "coins": 90
+        }
+      ]
+    },
+    {
+      "n": 24,
+      "at": 2400,
+      "gift": [
+        {
+          "sticker": 1
+        }
+      ]
+    },
+    {
+      "n": 25,
+      "at": 2550,
+      "gift": [
+        {
+          "hat": "headphones"
+        }
+      ]
+    },
+    {
+      "n": 26,
+      "at": 2700,
+      "gift": [
+        {
+          "coins": 100
+        }
+      ]
+    },
+    {
+      "n": 27,
+      "at": 2850,
+      "gift": [
+        {
+          "sticker": 1
+        }
+      ]
+    },
+    {
+      "n": 28,
+      "at": 3000,
+      "big": true,
+      "gift": [
+        {
+          "buddy": "unicorn"
+        },
+        {
+          "coins": 100
+        },
+        {
+          "sticker": 1
+        },
+        {
+          "land": "champ"
+        }
+      ]
+    }
+  ],
+  "monthly": [
+    {
+      "n": 1,
+      "at": 40,
+      "gift": [
+        {
+          "coins": 5
+        }
+      ]
+    },
+    {
+      "n": 2,
+      "at": 100,
+      "gift": [
+        {
+          "sticker": 1
+        }
+      ]
+    },
+    {
+      "n": 3,
+      "at": 180,
+      "gift": [
+        {
+          "coins": 10
+        }
+      ]
+    },
+    {
+      "n": 4,
+      "at": 260,
+      "gift": [
+        {
+          "sticker": 1
+        }
+      ]
+    },
+    {
+      "n": 5,
+      "at": 340,
+      "gift": [
+        {
+          "coins": 15
+        }
+      ]
+    },
+    {
+      "n": 6,
+      "at": 420,
+      "gift": [
+        {
+          "sticker": 1
+        }
+      ]
+    },
+    {
+      "n": 7,
+      "at": 500,
+      "gift": [
+        {
+          "coins": 20
+        }
+      ]
+    },
+    {
+      "n": 8,
+      "at": 600,
+      "big": true,
+      "gift": [
+        {
+          "coins": 30
+        },
+        {
+          "sticker": 1
+        }
+      ]
+    }
+  ]
+}

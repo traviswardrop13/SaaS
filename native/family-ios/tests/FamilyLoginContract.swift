@@ -97,6 +97,26 @@ final class StubProtocol: URLProtocol {
         let shared = try await client.setSharing(covered, consent: .yes, snapshot: FamilyEnrollmentSnapshot())
         check(sequence == ["/api/slp/claim", "/api/pilot"], "explicit Yes claims before enrolling to lift old gone mark")
         check(shared.shared && shared.link.consentAt != nil && shared.link.invite.isEmpty && shared.inviteStatus == .claimed, "confirmed consent and claimed invite returned")
+        StubProtocol.requests = []
+        let unsharedHomework = try await client.fetchHomework(for: covered)
+        check(unsharedHomework == nil && StubProtocol.requests.isEmpty, "no homework call before consent")
+        StubProtocol.handler = { request in
+            check(request.url?.path == "/api/homework", "homework uses the family endpoint")
+            let body = try json(request)
+            check(Set(body.keys) == ["code", "ticket", "childId"], "preview sends only the connection proof")
+            check(body["childId"] as? String == covered.childID && body["ticket"] as? String == covered.ticket,
+                  "homework preserves the verified child and ticket")
+            return (200, #"{"ok":true,"hw":{"id":"fixture-homework","title":"S practice","note":"","sounds":["S"],"pos":"f","repsPerDay":20,"words":["mouse"],"start":"2026-11-19","due":"2026-11-19","by":"Test Clinic"}}"#)
+        }
+        let assignment = try await client.fetchHomework(for: shared.link)
+        check(assignment?.sounds == ["S"] && assignment?.pos == "f" && assignment?.repsPerDay == 20
+              && assignment?.words == ["mouse"], "homework preserves sound, position, goal, and authored words")
+        let day = ISO8601DateFormatter().date(from: "2026-11-19T00:30:00Z")!
+        var timezone = Calendar(identifier: .gregorian)
+        timezone.timeZone = TimeZone(secondsFromGMT: 0)!
+        check(assignment?.isCurrent(on: day, calendar: timezone) == true, "assignment due date is inclusive")
+        timezone.timeZone = TimeZone(secondsFromGMT: -7 * 3600)!
+        check(assignment?.isCurrent(on: day, calendar: timezone) == false, "assignment uses the phone's local date")
         StubProtocol.handler = { request in
             check(request.url?.path == "/api/pilot/forget", "withdrawal deletes through existing route")
             return (200, #"{"ok":true,"forgotten":true}"#)

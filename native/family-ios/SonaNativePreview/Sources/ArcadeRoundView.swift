@@ -183,7 +183,7 @@ private struct PianoBoard: View {
     }
 }
 
-private final class PianoVoice: ObservableObject {
+final class PianoVoice: ObservableObject {
     private let frequencies = [261.63, 293.66, 329.63, 349.23, 392.0, 440.0]
     private var notes: [Int: AVAudioPlayer] = [:]
 

@@ -13,6 +13,7 @@
 			hasScannedForEncodings = 0;
 			knownRegions = (en, Base);
 			mainGroup = 7060AFA20000000000000003;
+			packageReferences = (7060AFA20000000000000015);
 			productRefGroup = 7060AFA20000000000000005;
 			projectDirPath = "";
 			projectRoot = "";
@@ -48,6 +49,7 @@
 			dependencies = ();
 			fileSystemSynchronizedGroups = (7060AFA20000000000000004);
 			name = SonaNativePreview;
+			packageProductDependencies = (7060AFA20000000000000016);
 			productName = SonaNativePreview;
 			productReference = 7060AFA20000000000000007;
 			productType = "com.apple.product-type.application";
@@ -73,7 +75,7 @@
 		7060AFA2000000000000000A = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
-			files = ();
+			files = (7060AFA20000000000000017);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		7060AFA2000000000000000B = {
@@ -119,6 +121,19 @@
 			lastKnownFileType = text.xcconfig;
 			path = Preview.xcconfig;
 			sourceTree = SOURCE_ROOT;
+		};
+		7060AFA20000000000000015 = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = modules/SonaFamilyAccess;
+		};
+		7060AFA20000000000000016 = {
+			isa = XCSwiftPackageProductDependency;
+			package = 7060AFA20000000000000015;
+			productName = SonaFamilyAccess;
+		};
+		7060AFA20000000000000017 = {
+			isa = PBXBuildFile;
+			productRef = 7060AFA20000000000000016;
 		};
 	};
 	rootObject = 7060AFA20000000000000001;

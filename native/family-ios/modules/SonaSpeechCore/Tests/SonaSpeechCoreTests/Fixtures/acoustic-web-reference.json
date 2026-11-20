@@ -1,0 +1,74 @@
+{
+  "source": "public/charge.html speechEvidence",
+  "sha256": "b1e07ac3420a6dc822729610c0023708267f94d145dd67d9e9e19225ba2d1fca",
+  "results": {
+    "voice": {
+      "reps": 1,
+      "at": [
+        [
+          1160,
+          "voiced"
+        ]
+      ]
+    },
+    "tone": {
+      "reps": 0,
+      "at": []
+    },
+    "steadyBroad": {
+      "reps": 0,
+      "at": []
+    },
+    "hiss": {
+      "reps": 1,
+      "at": [
+        [
+          1260,
+          "sibilant"
+        ]
+      ]
+    },
+    "briefBroad": {
+      "reps": 1,
+      "at": [
+        [
+          1370,
+          "short"
+        ]
+      ]
+    },
+    "transient": {
+      "reps": 0,
+      "at": []
+    },
+    "silence": {
+      "reps": 0,
+      "at": []
+    },
+    "five": {
+      "reps": 5,
+      "at": [
+        [
+          1160,
+          "voiced"
+        ],
+        [
+          1810,
+          "voiced"
+        ],
+        [
+          2460,
+          "voiced"
+        ],
+        [
+          3110,
+          "voiced"
+        ],
+        [
+          3760,
+          "voiced"
+        ]
+      ]
+    }
+  }
+}

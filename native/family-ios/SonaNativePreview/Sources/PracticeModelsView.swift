@@ -1,4 +1,5 @@
 import AVFoundation
+import CryptoKit
 import SwiftUI
 
 struct PracticeModelsView: View {
@@ -75,6 +76,7 @@ struct PracticeModelsView: View {
 }
 
 private final class ModelVoicePlayer: NSObject, ObservableObject, AVAudioPlayerDelegate {
+    private static let dialogue = try? PracticeDialogueCatalog.load()
     @Published private(set) var playing = false
     @Published private(set) var failed = false
     private var audio: AVAudioPlayer?
@@ -82,13 +84,16 @@ private final class ModelVoicePlayer: NSObject, ObservableObject, AVAudioPlayerD
     func play(_ sound: String) {
         stop()
         failed = false
-        guard let url = Bundle.main.url(forResource: "\(sound)-sound", withExtension: "wav") else {
+        guard let approvedClip = Self.dialogue?.sound(sound)?.clips.sound,
+              let url = Bundle.main.url(forResource: "\(sound)-sound", withExtension: "wav"),
+              let clip = try? Data(contentsOf: url), clip.count == approvedClip.bytes,
+              SHA256.hash(data: clip).map({ String(format: "%02x", $0) }).joined() == approvedClip.sha256 else {
             failed = true
             return
         }
         do {
             try AVAudioSession.sharedInstance().setCategory(.soloAmbient)
-            let player = try AVAudioPlayer(contentsOf: url)
+            let player = try AVAudioPlayer(data: clip)
             player.delegate = self
             audio = player
             playing = player.play()

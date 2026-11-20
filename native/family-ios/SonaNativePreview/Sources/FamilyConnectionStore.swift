@@ -1,17 +1,35 @@
 import Foundation
 import Security
+import SonaFamilyAccess
 import SwiftUI
 
-enum FamilyLibraryAccess {
-    case covered
-    case free
+struct FamilyLibraryAccess {
+    private static let policy = (try? FamilyAccessConfiguration.bundled()).map(FamilyAccessPolicy.init)
+    private let state: FamilyEntitlementState
+    private let now = Date()
+
+    init(link: FamilyLink?) {
+        var state = FamilyEntitlementState()
+        if let link {
+            state.verifiedClinician = true
+            if let checkedAt = link.coverageCheckedAt {
+                state.apply(.confirmed(active: link.covered), source: .clinician, at: checkedAt)
+            }
+        }
+        self.state = state
+    }
+
+    var allowsStory: Bool {
+        Self.policy?.story(state, at: now) ?? false
+    }
 
     func allows(_ game: NativeGame) -> Bool {
-        self != .free || game == .slice || game == .tiles || game == .bubbles
+        let shippingID = game == .sprint ? "run" : game.rawValue
+        return Self.policy?.game(shippingID, state: state, canSellHere: false, at: now).allowed ?? false
     }
 
     func allowsBook(named title: String) -> Bool {
-        self != .free || title == "Rory and the Rainbow"
+        Self.policy?.book(title, state: state, canSellHere: false, at: now) ?? false
     }
 }
 
@@ -20,19 +38,26 @@ final class FamilyConnectionStore: ObservableObject {
     private struct SavedConnection: Codable {
         var link: FamilyLink
         var needsSharingChoice: Bool
+        var homework: FamilyHomework?
     }
 
     @Published private var saved: SavedConnection?
     private let client: FamilyLoginClient
     private let childID: String
     private var checkingCoverage = false
+    private var homeworkSync: Date?
 
     var link: FamilyLink? { saved?.link }
     var needsSharingChoice: Bool { saved?.needsSharingChoice ?? false }
 
+    func assignedHomework(on date: Date) -> FamilyHomework? {
+        guard let saved, saved.link.consentAt != nil, !saved.needsSharingChoice,
+              let assignment = saved.homework, assignment.isCurrent(on: date) else { return nil }
+        return assignment
+    }
+
     var libraryAccess: FamilyLibraryAccess {
-        guard let link else { return .free }
-        return link.covered ? .covered : .free
+        FamilyLibraryAccess(link: link)
     }
 
     init(client: FamilyLoginClient = FamilyLoginClient(), defaults: UserDefaults = .standard) {
@@ -57,7 +82,9 @@ final class FamilyConnectionStore: ObservableObject {
         // Only an authoritative coverage answer changes this grant. A temporary
         // outage must not erase an already verified grant for the same child.
         if let checked = try? await client.checkCoverage(fresh) { fresh = checked }
-        try save(SavedConnection(link: fresh, needsSharingChoice: true))
+        let previousHomework = saved?.link.code == fresh.code && saved?.link.childID == fresh.childID
+            ? saved?.homework : nil
+        try save(SavedConnection(link: fresh, needsSharingChoice: true, homework: previousHomework))
     }
 
     func chooseSharing(_ share: Bool) async throws {
@@ -73,12 +100,40 @@ final class FamilyConnectionStore: ObservableObject {
             updated.coverageCheckedAt = newer.coverageCheckedAt
             if newer.ticket != current.link.ticket { updated.ticket = newer.ticket }
         }
-        try save(SavedConnection(link: updated, needsSharingChoice: false))
+        try save(SavedConnection(link: updated, needsSharingChoice: false, homework: share ? current.homework : nil))
+        if share { Task { await refreshHomework(force: true) } }
     }
 
     func changePassword(current: String, replacement: String) async throws {
         guard let link else { throw FamilyConnectionError.notSignedIn }
         try await client.changePassword(link, currentPassword: current, newPassword: replacement)
+    }
+
+    func stopSharing() async throws {
+        guard let current = saved, current.link.consentAt != nil, !current.needsSharingChoice else { return }
+        _ = try await client.setSharing(current.link, consent: .no)
+        guard var latest = saved, latest.link.childID == current.link.childID,
+              latest.link.code == current.link.code else { return }
+        latest.link.consentAt = nil
+        latest.homework = nil
+        try save(latest)
+    }
+
+    func refreshHomework(force: Bool = false) async {
+        guard let current = saved, !current.needsSharingChoice, let consent = current.link.consentAt else { return }
+        let now = Date()
+        guard force || homeworkSync.map({ now.timeIntervalSince($0) >= 3600 }) ?? true else { return }
+        homeworkSync = now
+        do {
+            let assignment = try await client.fetchHomework(for: current.link)
+            guard var latest = saved, latest.link.childID == current.link.childID,
+                  latest.link.code == current.link.code, latest.link.ticket == current.link.ticket,
+                  latest.link.consentAt == consent, !latest.needsSharingChoice else { return }
+            latest.homework = assignment
+            try save(latest)
+        } catch {
+            // Keep the current private assignment through transport failure.
+        }
     }
 
     func refreshCoverage() async {

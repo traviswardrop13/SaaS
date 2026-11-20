@@ -224,14 +224,7 @@ struct BookShelfView: View {
 
     private func loadCatalog() {
         do {
-            let url = Bundle.main.url(forResource: "Books", withExtension: "json", subdirectory: "Content")
-                ?? Bundle.main.url(forResource: "Books", withExtension: "json")
-            guard let url else { throw BookArtworkError.unavailable }
-            let decoded = try JSONDecoder().decode(NativeBookCatalog.self, from: Data(contentsOf: url))
-            guard decoded.version == 1, !decoded.books.isEmpty,
-                  Set(decoded.books.map(\.id)).count == decoded.books.count,
-                  decoded.books.allSatisfy({ !$0.pages.isEmpty }) else { throw BookArtworkError.unavailable }
-            catalog = decoded.books
+            catalog = try NativeBookCatalog.bundled.get().books
             catalogFailed = false
         } catch {
             catalogFailed = true
@@ -242,6 +235,36 @@ struct BookShelfView: View {
 private struct NativeBookCatalog: Decodable {
     let version: Int
     let books: [NativeBook]
+
+    static let bundled = Result {
+        let url = Bundle.main.url(forResource: "Books", withExtension: "json", subdirectory: "Content")
+            ?? Bundle.main.url(forResource: "Books", withExtension: "json")
+        guard let url else { throw BookArtworkError.unavailable }
+        let catalog = try JSONDecoder().decode(Self.self, from: Data(contentsOf: url))
+        guard catalog.version == 1, !catalog.books.isEmpty,
+              Set(catalog.books.map(\.id)).count == catalog.books.count,
+              catalog.books.allSatisfy({ !$0.pages.isEmpty }) else { throw BookArtworkError.unavailable }
+        return catalog
+    }
+
+    static func previewPositions(for bookmarks: [String: BookBookmark]) -> [ParentPreviewBookPosition] {
+        guard !bookmarks.isEmpty, let catalog = try? bundled.get() else { return [] }
+        return catalog.books.compactMap { book in
+            guard let bookmark = bookmarks[book.id] else { return nil }
+            return ParentPreviewBookPosition(id: book.id, title: book.title, pageIndex: bookmark.page,
+                                             totalPages: book.pages.count, finished: bookmark.finished)
+        }
+    }
+}
+
+extension PreviewPlayer {
+    func progressSnapshot(displayedSound: String) -> ParentPreviewProgressSnapshot {
+        ParentPreviewProgressSnapshot(
+            selectedSound: displayedSound,
+            completedGameTitles: NativeGame.allCases.filter { completedGames.contains($0.id) }.map(\.title),
+            bookPositions: NativeBookCatalog.previewPositions(for: bookmarks)
+        )
+    }
 }
 
 private struct NativeBook: Decodable, Identifiable {
@@ -278,7 +301,7 @@ private struct NativeBookPage: Decodable {
     let crop: BookArtCrop?
 }
 
-private struct BookArtCrop: Decodable, Hashable, Sendable {
+struct BookArtCrop: Decodable, Hashable, Sendable {
     let column: Int
     let row: Int
     let columns: Int
@@ -508,10 +531,10 @@ private struct BookPressStyle: ButtonStyle {
 
 private enum BookArtworkError: Error { case unavailable }
 
-/// A bounded native image cache. No page, script, voice, or personal identifier
-/// is sent: requests are only the validated original Sona book asset paths.
-private actor BookArtworkLoader {
-    static let shared = BookArtworkLoader()
+/// A bounded native image cache for the original Sona book and story art.
+/// Requests contain only fixed asset paths from the validated catalogs.
+actor NativeArtworkLoader {
+    static let shared = NativeArtworkLoader()
     private let images = NSCache<NSString, UIImage>()
     private let data = NSCache<NSString, NSData>()
     private let session: URLSession
@@ -528,8 +551,8 @@ private actor BookArtworkLoader {
         session = URLSession(configuration: config)
     }
 
-    func image(path: String, crop: BookArtCrop?) async throws -> UIImage {
-        guard path.range(of: #"^/assets/books/[a-z0-9/_-]+\.webp$"#, options: .regularExpression) != nil,
+    func image(path: String, crop: BookArtCrop? = nil) async throws -> UIImage {
+        guard path.range(of: #"^/assets/(books|adventure|crafted)/[a-z0-9/_-]+\.webp$"#, options: .regularExpression) != nil,
               let url = URL(string: "https://app.speaksona.com" + path) else { throw BookArtworkError.unavailable }
         let key = (path + "|" + String(describing: crop)) as NSString
         if let cached = images.object(forKey: key) { return cached }
@@ -541,6 +564,7 @@ private actor BookArtworkLoader {
             let request = URLRequest(url: url, cachePolicy: .returnCacheDataElseLoad, timeoutInterval: 20)
             let (received, response) = try await session.data(for: request)
             guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode),
+                  http.url?.host == url.host, http.url?.scheme == url.scheme,
                   received.count <= 12 * 1024 * 1024 else { throw BookArtworkError.unavailable }
             bytes = received
             data.setObject(bytes as NSData, forKey: path as NSString, cost: bytes.count)
@@ -630,7 +654,7 @@ private struct BookArtwork: View {
             image = nil
             failed = false
             do {
-                let loaded = try await BookArtworkLoader.shared.image(path: path, crop: crop)
+                let loaded = try await NativeArtworkLoader.shared.image(path: path, crop: crop)
                 guard !Task.isCancelled else { return }
                 image = loaded
             } catch {

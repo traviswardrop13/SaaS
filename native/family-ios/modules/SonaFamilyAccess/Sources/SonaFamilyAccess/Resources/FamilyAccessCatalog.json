@@ -1,0 +1,224 @@
+{
+  "version": 1,
+  "sourceSHA256": "782b5322cabbfdc2335eaea41cdb2bc0ba6672a97b7292f6351bf920cfd64a54",
+  "freeMode": false,
+  "webSales": false,
+  "freeBooks": [
+    "Rory and the Rainbow"
+  ],
+  "games": [
+    {
+      "id": "slice",
+      "tier": "free",
+      "available": true,
+      "parked": false
+    },
+    {
+      "id": "tiles",
+      "tier": "free",
+      "available": true,
+      "parked": false
+    },
+    {
+      "id": "stack",
+      "tier": "premium",
+      "available": true,
+      "parked": false
+    },
+    {
+      "id": "run",
+      "tier": "premium",
+      "available": true,
+      "parked": false
+    },
+    {
+      "id": "glide",
+      "tier": "premium",
+      "available": true,
+      "parked": false
+    },
+    {
+      "id": "rise",
+      "tier": "premium",
+      "available": true,
+      "parked": false
+    },
+    {
+      "id": "feed",
+      "tier": "free",
+      "available": true,
+      "parked": false
+    },
+    {
+      "id": "bubbles",
+      "tier": "free",
+      "available": true,
+      "parked": false
+    },
+    {
+      "id": "peekaboo",
+      "tier": "premium",
+      "available": true,
+      "parked": false
+    },
+    {
+      "id": "balloon",
+      "tier": "premium",
+      "available": true,
+      "parked": false
+    },
+    {
+      "id": "flower",
+      "tier": "premium",
+      "available": true,
+      "parked": false
+    },
+    {
+      "id": "rocket",
+      "tier": "premium",
+      "available": true,
+      "parked": false
+    },
+    {
+      "id": "snowman",
+      "tier": "premium",
+      "available": true,
+      "parked": false
+    },
+    {
+      "id": "train",
+      "tier": "premium",
+      "available": true,
+      "parked": false
+    },
+    {
+      "id": "puppy",
+      "tier": "premium",
+      "available": true,
+      "parked": true
+    },
+    {
+      "id": "stars",
+      "tier": "premium",
+      "available": true,
+      "parked": false
+    },
+    {
+      "id": "cake",
+      "tier": "premium",
+      "available": true,
+      "parked": false
+    },
+    {
+      "id": "gifts",
+      "tier": "premium",
+      "available": true,
+      "parked": true
+    },
+    {
+      "id": "fishtank",
+      "tier": "premium",
+      "available": true,
+      "parked": true
+    },
+    {
+      "id": "racecar",
+      "tier": "premium",
+      "available": true,
+      "parked": false
+    },
+    {
+      "id": "treasure",
+      "tier": "premium",
+      "available": true,
+      "parked": false
+    },
+    {
+      "id": "soccer",
+      "tier": "premium",
+      "available": true,
+      "parked": false
+    },
+    {
+      "id": "hoops",
+      "tier": "premium",
+      "available": true,
+      "parked": false
+    },
+    {
+      "id": "robot",
+      "tier": "premium",
+      "available": true,
+      "parked": false
+    },
+    {
+      "id": "castle",
+      "tier": "premium",
+      "available": true,
+      "parked": false
+    },
+    {
+      "id": "dino",
+      "tier": "premium",
+      "available": true,
+      "parked": false
+    },
+    {
+      "id": "space",
+      "tier": "premium",
+      "available": true,
+      "parked": false
+    },
+    {
+      "id": "pizza",
+      "tier": "premium",
+      "available": true,
+      "parked": false
+    },
+    {
+      "id": "monster",
+      "tier": "premium",
+      "available": true,
+      "parked": true
+    }
+  ],
+  "storyKeys": [
+    "adventure",
+    "lighthouse",
+    "windup",
+    "bridge",
+    "waterwheel",
+    "postboat",
+    "bakery",
+    "frontdoor",
+    "lantern",
+    "trainline",
+    "kite",
+    "nestlift",
+    "concert",
+    "rooftops",
+    "observatory",
+    "robo",
+    "lulu",
+    "fizz",
+    "sandy",
+    "zippy",
+    "kiki",
+    "gus",
+    "shelly",
+    "chip",
+    "theo"
+  ],
+  "products": {
+    "annual": "com.speaksona.app.annual",
+    "monthly": "com.speaksona.app.monthly",
+    "lifetime": "com.speaksona.app.lifetime"
+  },
+  "entitlement": "full",
+  "sellYearly": false,
+  "localTrialFallbackDays": 3,
+  "demoWindowSeconds": 259200,
+  "rotationLength": 5,
+  "appleRecheckSeconds": 21600,
+  "clinicianRecheckSeconds": 21600
+}

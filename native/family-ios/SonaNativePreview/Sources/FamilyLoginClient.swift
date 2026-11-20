@@ -17,6 +17,22 @@ struct FamilyLink: Codable, Equatable, Sendable {
 
 enum FamilySharingConsent: Sendable { case yes, no }
 
+struct FamilyHomework: Codable, Equatable, Sendable {
+    let id, title, note, pos, start, due, by: String
+    let sounds: [String]
+    let repsPerDay: Int
+    let words: [String]?
+
+    func isCurrent(on date: Date, calendar: Calendar = .current) -> Bool {
+        var local = Calendar(identifier: .gregorian)
+        local.timeZone = calendar.timeZone
+        let parts = local.dateComponents([.year, .month, .day], from: date)
+        guard let year = parts.year, let month = parts.month, let day = parts.day else { return false }
+        let key = String(format: "%04d-%02d-%02d", year, month, day)
+        return !sounds.isEmpty && (start.isEmpty || start <= key) && (due.isEmpty || key <= due)
+    }
+}
+
 enum FamilyInviteStatus: String, Codable, Sendable {
     case notApplicable, claimed, expired, used, retryNeeded
 }
@@ -199,6 +215,15 @@ struct FamilyLoginClient {
         }
     }
 
+    /// Fetch only the assignment for this ticket-bound child. Preview
+    /// gameplay and reading are never sent as homework progress.
+    func fetchHomework(for link: FamilyLink) async throws -> FamilyHomework? {
+        guard link.consentAt != nil else { return nil }
+        try validateChildID(link.childID)
+        return try await post("/api/homework", body: ChildRequest(code: link.code, ticket: link.ticket,
+                                                                  childId: link.childID)).hw
+    }
+
     private func validateChildID(_ id: String) throws {
         // /api/pilot truncates at 48, so never mint a longer ticket binding.
         let allowed = CharacterSet(charactersIn: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-")
@@ -270,6 +295,7 @@ struct FamilyLoginClient {
         let user, code, name, ticket, inv: String?
         let covered, claimed: Bool?
         let reason, error: String?
+        let hw: FamilyHomework?
     }
 }
 

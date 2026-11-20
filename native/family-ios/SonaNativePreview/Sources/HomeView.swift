@@ -25,6 +25,9 @@ struct HomeView: View {
     @Binding var buddy: PreviewBuddy
     let targetSound: String
     let completedGames: Set<String>
+    let dailyStory: NativeAdventure?
+    let storyAccess: Bool
+    let onAdventure: () -> Void
     let onOpen: (Destination) -> Void
     let onGrownUps: () -> Void
     let onBuddy: () -> Void
@@ -33,39 +36,42 @@ struct HomeView: View {
     @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 19) {
-                header
-
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Ready to play?")
-                        .font(.system(.largeTitle, design: .rounded, weight: .heavy))
-                        .accessibilityAddTraits(.isHeader)
-                    if !targetSound.isEmpty {
-                        Label("Your sound · \(targetSound == "THV" ? "TH (v)" : targetSound)", systemImage: "waveform")
-                            .font(.system(.subheadline, design: .rounded, weight: .semibold))
-                            .foregroundStyle(SonaPalette.teal)
-                            .accessibilityIdentifier("home-target-sound")
-                    }
-                }
-
-                gameCard
-
-                if typeSize.isAccessibilitySize {
-                    VStack(spacing: 12) { quickLinks }
-                } else {
-                    HStack(spacing: 12) { quickLinks }
-                }
-            }
-            .padding(.horizontal, 20)
-            .padding(.top, 10)
-            .padding(.bottom, 24)
-            .frame(maxWidth: 560)
-            .frame(maxWidth: .infinity)
+        ViewThatFits(in: .vertical) {
+            contents
+            ScrollView { contents }
+                .scrollIndicators(.hidden)
         }
-        .scrollIndicators(.hidden)
+        .frame(maxHeight: .infinity, alignment: .top)
         .background(SonaPalette.paper.ignoresSafeArea())
         .foregroundStyle(SonaPalette.ink)
+    }
+
+    private var contents: some View {
+        VStack(alignment: .leading, spacing: 15) {
+            header
+
+            if !targetSound.isEmpty {
+                Label("Your sound · \(targetSound == "THV" ? "TH (v)" : targetSound)", systemImage: "waveform")
+                    .font(.system(.subheadline, design: .rounded, weight: .semibold))
+                    .foregroundStyle(SonaPalette.teal)
+                    .accessibilityIdentifier("home-target-sound")
+            }
+
+            if let dailyStory {
+                adventureCard(dailyStory)
+            }
+
+            if typeSize.isAccessibilitySize {
+                VStack(spacing: 12) { quickLinks }
+            } else {
+                HStack(spacing: 12) { quickLinks }
+            }
+        }
+        .padding(.horizontal, 20)
+        .padding(.top, 10)
+        .padding(.bottom, 18)
+        .frame(maxWidth: 560)
+        .frame(maxWidth: .infinity)
     }
 
     private var header: some View {
@@ -120,15 +126,13 @@ struct HomeView: View {
         }
     }
 
-    private var gameCard: some View {
-        Button {
-            onOpen(.games)
-        } label: {
+    private func adventureCard(_ story: NativeAdventure) -> some View {
+        Button(action: onAdventure) {
             VStack(alignment: .leading, spacing: 0) {
-                Image("story-picnic")
+                Image("daily-\(story.id)")
                     .resizable()
                     .scaledToFill()
-                    .frame(height: 240)
+                    .frame(height: 188)
                     .frame(maxWidth: .infinity)
                     .clipped()
                     .allowsHitTesting(false)
@@ -136,14 +140,16 @@ struct HomeView: View {
 
                 HStack(alignment: .center, spacing: 12) {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("Pick a game")
-                            .font(.system(.title, design: .rounded, weight: .heavy))
-                        Text("Pop, jump, swipe or build.")
+                        Text("Today’s adventure")
+                            .font(.system(.caption, design: .rounded, weight: .bold))
+                        Text(story.title)
+                            .font(.system(.title2, design: .rounded, weight: .heavy))
+                        Text(storyAccess ? "Open story preview" : "Premium")
                             .font(.system(.subheadline, design: .rounded, weight: .medium))
                             .foregroundStyle(.white.opacity(0.87))
                     }
                     Spacer(minLength: 6)
-                    Image(systemName: "arrow.right")
+                    Image(systemName: storyAccess ? "play.fill" : "lock.fill")
                         .font(.system(size: 22, weight: .bold))
                         .frame(width: 50, height: 50)
                         .background(.white.opacity(0.16), in: Circle())
@@ -157,13 +163,13 @@ struct HomeView: View {
             .contentShape(RoundedRectangle(cornerRadius: 26))
         }
         .buttonStyle(SonaPressStyle())
-        .accessibilityIdentifier("home-games")
+        .accessibilityIdentifier("home-adventure")
     }
 
     @ViewBuilder
     private var quickLinks: some View {
+        quickLink(.games, title: "Games", symbol: "gamecontroller.fill", accent: SonaPalette.mint)
         quickLink(.books, title: "Books", symbol: "book.fill", accent: SonaPalette.lavender)
-        quickLink(.practice, title: "Practice", symbol: "waveform", accent: SonaPalette.yellow)
     }
 
     private func quickLink(_ destination: Destination, title: String, symbol: String, accent: Color) -> some View {
@@ -183,6 +189,7 @@ struct HomeView: View {
             .background(accent, in: RoundedRectangle(cornerRadius: 19))
         }
         .buttonStyle(SonaPressStyle())
+        .accessibilityIdentifier(destination == .games ? "home-games" : "home-books")
     }
 }
 
@@ -240,6 +247,22 @@ struct PlayCollectionView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 12) {
+                    NavigationLink {
+                        TrophyRoadPreviewView()
+                    } label: {
+                        HStack(alignment: .center, spacing: 12) {
+                            Image("road-chest").resizable().scaledToFit().frame(width: 42, height: 42)
+                                .accessibilityHidden(true)
+                            Text("Trophy Road").font(.system(.headline, design: .rounded, weight: .heavy))
+                            Spacer()
+                            Image(systemName: "chevron.right").accessibilityHidden(true)
+                        }
+                        .foregroundStyle(SonaPalette.ink)
+                        .padding(12)
+                        .background(SonaPalette.yellow, in: RoundedRectangle(cornerRadius: 16))
+                    }
+                    .accessibilityIdentifier("collection-trophy-road")
+
                     if completedGames.isEmpty {
                         Label("Finish a game to add it here.", systemImage: "star")
                             .font(.system(.body, design: .rounded))

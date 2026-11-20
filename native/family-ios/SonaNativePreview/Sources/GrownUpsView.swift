@@ -4,10 +4,17 @@ import SwiftUI
 /// records practice, or changes the playable round's behavior.
 struct GrownUpsView: View {
     @Binding var targetSound: String
-    let hasPlayed: Bool
+    let player: PreviewPlayer
+    let players: [PreviewPlayer]
+    let onSwitchPlayer: (String) -> Void
+    let onAddPlayer: () -> Void
     let familyUsername: String?
+    let sharingProgress: Bool
+    let homework: FamilyHomework?
+    let displayedSound: String
     let onFamilyLogin: () -> Void
     let onChangePassword: (String, String) async throws -> Void
+    let onStopSharing: () async throws -> Void
 
     @Environment(\.dismiss) private var dismiss
     @FocusState private var answerFocused: Bool
@@ -15,8 +22,11 @@ struct GrownUpsView: View {
     @State private var answer = ""
     @State private var unlocked = false
     @State private var showError = false
+    @State private var showSharingConfirmation = false
+    @State private var stoppingSharing = false
+    @State private var sharingStatus = ""
 
-    private let sounds = ["P", "B", "M", "N", "T", "D", "K", "G", "F", "V", "S", "Z", "SH", "CH", "J", "L", "R", "TH", "THV"]
+    static let sounds = ["P", "B", "M", "N", "T", "D", "K", "G", "F", "V", "S", "Z", "SH", "CH", "J", "L", "R", "TH", "THV"]
     private let numberWords = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"]
 
     var body: some View {
@@ -45,6 +55,23 @@ struct GrownUpsView: View {
                 }
             }
             .tint(GrownUpsPalette.teal)
+            .alert("Stop sharing with your speech therapist?", isPresented: $showSharingConfirmation) {
+                Button("Keep sharing", role: .cancel) {}
+                Button("Stop sharing", role: .destructive) {
+                    stoppingSharing = true
+                    Task {
+                        defer { stoppingSharing = false }
+                        do {
+                            try await onStopSharing()
+                            sharingStatus = "Sharing stopped."
+                        } catch {
+                            sharingStatus = "Sona couldn’t stop sharing. Try again when you’re online."
+                        }
+                    }
+                }
+            } message: {
+                Text("Their dashboard forgets your child right away: name, age, practice history and homework are deleted, not hidden. Sona stays free for you, and your child's practice history stays on this device.")
+            }
         }
         .preferredColorScheme(.light)
     }
@@ -156,66 +183,112 @@ struct GrownUpsView: View {
                     }
                     .accessibilityIdentifier("grownups-family-login")
                 }
+                if sharingProgress {
+                    Button(role: .destructive) { showSharingConfirmation = true } label: {
+                        Label("Stop sharing with your speech therapist", systemImage: "person.crop.circle.badge.minus")
+                            .frame(minHeight: 44)
+                            .multilineTextAlignment(.leading)
+                    }
+                    .disabled(stoppingSharing)
+                    .accessibilityIdentifier("grownups-stop-sharing")
+                }
+                if stoppingSharing { ProgressView() }
+                if !sharingStatus.isEmpty {
+                    Text(sharingStatus)
+                        .font(.subheadline)
+                        .foregroundStyle(GrownUpsPalette.muted)
+                }
             }
+
+            NavigationLink {
+                PreviewPlayersView(players: players, activeID: player.id, onSelect: onSwitchPlayer, onAdd: onAddPlayer)
+            } label: {
+                HStack {
+                    Label("Players", systemImage: "person.2.fill")
+                    Spacer()
+                    Text(player.label).foregroundStyle(GrownUpsPalette.muted)
+                    Image(systemName: "chevron.right").accessibilityHidden(true)
+                }
+                .font(.headline)
+                .padding(16)
+                .frame(minHeight: 52)
+                .background(.white, in: RoundedRectangle(cornerRadius: 18))
+            }
+            .accessibilityIdentifier("grownups-players")
 
             VStack(alignment: .leading, spacing: 16) {
                 Text("Sound on Home")
                     .font(.system(.title2, design: .rounded, weight: .bold))
                     .accessibilityAddTraits(.isHeader)
-                Text("Choose a sound to show on Home. You can leave this blank.")
-                    .font(.subheadline)
-                    .foregroundStyle(GrownUpsPalette.muted)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 82), spacing: 10)], spacing: 10) {
-                    ForEach(sounds, id: \.self) { sound in
-                        soundButton(sound)
+                let assigned = homework?.sounds.map { $0.uppercased() }.filter(Self.sounds.contains) ?? []
+                if !assigned.isEmpty, let homework {
+                    Label("Set by the speech therapist’s homework", systemImage: "lock.fill")
+                        .font(.subheadline)
+                        .foregroundStyle(GrownUpsPalette.muted)
+                    Text(assigned.map { $0 == "THV" ? "TH (voiced)" : $0 }.joined(separator: " · "))
+                        .font(.headline)
+                    if !homework.title.isEmpty {
+                        Text(homework.title).privacySensitive()
                     }
-                }
-
-                Button {
-                    targetSound = ""
-                } label: {
-                    HStack(spacing: 10) {
-                        Image(systemName: targetSound.isEmpty ? "checkmark.circle.fill" : "circle")
-                            .foregroundStyle(GrownUpsPalette.teal)
-                        Text("Leave sound blank")
-                            .font(.body.weight(.medium))
-                            .foregroundStyle(GrownUpsPalette.ink)
-                        Spacer(minLength: 0)
+                    if !homework.note.isEmpty {
+                        Text(homework.note).privacySensitive()
                     }
-                    .padding(.vertical, 12)
-                    .contentShape(Rectangle())
+                } else {
+                    soundPicker
                 }
-                .buttonStyle(.plain)
-                .accessibilityValue(targetSound.isEmpty ? "Selected" : "Not selected")
-                .accessibilityIdentifier("grownups-sound-clear")
             }
             .padding(22)
             .background(.white, in: RoundedRectangle(cornerRadius: 25))
 
-            HStack(alignment: .top, spacing: 14) {
-                Image(systemName: hasPlayed ? "checkmark.seal.fill" : "leaf")
-                    .font(.title2)
-                    .foregroundStyle(GrownUpsPalette.teal)
-                    .padding(12)
-                    .background(.white.opacity(0.75), in: RoundedRectangle(cornerRadius: 15))
-
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("A little progress")
-                        .font(.system(.headline, design: .rounded))
-                        .accessibilityAddTraits(.isHeader)
-                    Text(hasPlayed ? "Finished a game." : "No game finished yet.")
-                        .font(.subheadline)
-                        .foregroundStyle(GrownUpsPalette.muted)
-                        .fixedSize(horizontal: false, vertical: true)
+            NavigationLink {
+                ParentPreviewProgressView(snapshot: player.progressSnapshot(displayedSound: displayedSound))
+            } label: {
+                HStack(spacing: 14) {
+                    Image(systemName: "chart.bar.xaxis")
+                        .font(.title2)
+                        .padding(12)
+                        .background(.white.opacity(0.75), in: RoundedRectangle(cornerRadius: 15))
+                        .accessibilityHidden(true)
+                    Text("Preview progress").font(.system(.headline, design: .rounded))
+                    Spacer(minLength: 0)
+                    Image(systemName: "chevron.right").accessibilityHidden(true)
                 }
+                .padding(15)
+                .frame(maxWidth: .infinity, minHeight: 54, alignment: .leading)
+                .background(GrownUpsPalette.mint, in: RoundedRectangle(cornerRadius: 24))
             }
-            .padding(20)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(GrownUpsPalette.mint, in: RoundedRectangle(cornerRadius: 24))
-            .accessibilityElement(children: .combine)
             .accessibilityIdentifier("grownups-progress")
+        }
+    }
+
+    private var soundPicker: some View {
+        Group {
+            Text("Choose a sound to show on Home. You can leave this blank.")
+                .font(.subheadline)
+                .foregroundStyle(GrownUpsPalette.muted)
+                .fixedSize(horizontal: false, vertical: true)
+
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 82), spacing: 10)], spacing: 10) {
+                ForEach(Self.sounds, id: \.self) { sound in soundButton(sound) }
+            }
+
+            Button {
+                targetSound = ""
+            } label: {
+                HStack(spacing: 10) {
+                    Image(systemName: targetSound.isEmpty ? "checkmark.circle.fill" : "circle")
+                        .foregroundStyle(GrownUpsPalette.teal)
+                    Text("Leave sound blank")
+                        .font(.body.weight(.medium))
+                        .foregroundStyle(GrownUpsPalette.ink)
+                    Spacer(minLength: 0)
+                }
+                .padding(.vertical, 12)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityValue(targetSound.isEmpty ? "Selected" : "Not selected")
+            .accessibilityIdentifier("grownups-sound-clear")
         }
     }
 
