@@ -109,20 +109,17 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
 
 
 // ── the root, and what a shared link looks like ──
-// The clinicians' front door at the root is the packet opt-in (17 Nov 2026);
-// the plans are at /plans and the packet itself at /packet. The family page
-// has its own address.
+// The clinicians' front door at the root is the plans page, also served at
+// /plans (20 Nov 2026). The family page has its own address.
 {
   const parents = readFileSync(APP + "/public/parents.html", "utf8");
   const slps = readFileSync(APP + "/public/for-slps.html", "utf8");
-  const optin = readFileSync(APP + "/public/packet.html", "utf8");
 
   const rewrites = code.slice(code.indexOf("async rewrites()"), code.indexOf("async redirects()"));
   const redirects = code.slice(code.indexOf("async redirects()"));
-  ok("the root serves the packet opt-in, /plans the clinician plans page, /packet the packet and /for-parents the family page",
-    /source:\s*"\/"\s*,\s*destination:\s*"\/packet\.html"/.test(rewrites) &&
+  ok("the root and /plans serve the clinician plans page and /for-parents the family page",
+    /source:\s*"\/"\s*,\s*destination:\s*"\/for-slps\.html"/.test(rewrites) &&
     /source:\s*"\/plans"\s*,\s*destination:\s*"\/for-slps\.html"/.test(rewrites) &&
-    /source:\s*"\/packet"\s*,\s*destination:\s*"\/home-practice-packet\.html"/.test(rewrites) &&
     /source:\s*"\/for-parents"\s*,\s*destination:\s*"\/parents\.html"/.test(rewrites));
   // THE 308 TRAP (17 Nov 2026): /for-slps has been a permanent redirect to /
   // since 12 Nov, and a browser keeps one. Pointing anything back at
@@ -130,20 +127,18 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
   ok("the old clinician URL still redirects permanently to the root, and nothing sends anyone back to it",
     /source:\s*"\/for-slps"\s*,\s*destination:\s*"\/"\s*,\s*permanent:\s*true/.test(redirects) &&
     !/destination:\s*"\/for-slps"/.test(code) && !/source:\s*"\/for-slps"/.test(rewrites) &&
-    !/href="\/for-slps["?#]/.test(optin + slps));
+    !/href="\/for-slps["?#]/.test(slps));
   ok("each landing page declares its canonical and shared URL",
     /rel="canonical" href="https:\/\/www\.speaksona\.com\/for-parents"/.test(parents) &&
     /og:url" content="https:\/\/www\.speaksona\.com\/for-parents"/.test(parents) &&
-    /rel="canonical" href="https:\/\/www\.speaksona\.com\/"/.test(optin) &&
-    /og:url" content="https:\/\/www\.speaksona\.com\/"/.test(optin) &&
-    /rel="canonical" href="https:\/\/www\.speaksona\.com\/plans"/.test(slps) &&
+    /rel="canonical" href="https:\/\/app\.speaksona\.com\/"/.test(slps) &&
     /og:url" content="https:\/\/www\.speaksona\.com\/plans"/.test(slps));
   ok("every landing route revalidates (a rewritten path is not on the list read from disk)",
-    ["/", "/plans", "/packet", "/for-parents"].every((r) => new RegExp('source: "' + r.replace(/\//g, "\\/") + '", headers: noStore').test(code)));
+    ["/", "/plans", "/for-parents"].every((r) => new RegExp('source: "' + r.replace(/\//g, "\\/") + '", headers: noStore').test(code)));
 
   // A LINK WITH NO CARD IS A GREY BOX. The pages are static and inherit
   // nothing from app/layout.tsx, so each carries its own.
-  for (const [name, page, img] of [["the parent page", parents, "og-parents.png"], ["the clinician plans page", slps, "og-slp.png"], ["the packet opt-in", optin, "og-packet.png"]]) {
+  for (const [name, page, img] of [["the parent page", parents, "og-parents.png"], ["the clinician plans page", slps, "og-slp.png"]]) {
     for (const tag of ["og:title", "og:description", "og:image", "og:url", "twitter:card"]) {
       ok(`${name}: a shared link carries ${tag}`, new RegExp('(property|name)="' + tag + '"').test(page));
     }
@@ -312,90 +307,18 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
   // The cards are rendered from tools/og (render-og.mjs) and carry no price:
   // a figure in a picture outlives the price.
   const ogSrc = readFileSync(APP + "/tools/og/og-slp.html", "utf8").replace(/<!--[\s\S]*?-->/g, "");
-  const ogPacket = readFileSync(APP + "/tools/og/og-packet.html", "utf8").replace(/<!--[\s\S]*?-->/g, "");
   ok("the plans page's share picture offers the trial, without the free dashboard, the community, or misstating Rachel's credentials",
     /Start your free trial/.test(ogSrc) && !/free dashboard|community/i.test(ogSrc) &&
     !/\bCCC\b|certified|licensed pediatric SLP/i.test(ogSrc) && (!/Rachel/.test(ogSrc) || /Rachel, MS, CF-SLP/.test(ogSrc)));
-  ok("neither share picture carries a dollar price", !/\$\s*\d/.test(ogSrc) && !/\$\s*\d/.test(ogPacket));
-  ok("the opt-in's share picture is the packet, with no dashboard, trial or price on it",
-    /home&#8209;practice|home-practice/.test(ogPacket) && /packet/i.test(ogPacket) && !/dashboard|free trial|\b\d+ days free\b/i.test(ogPacket) &&
-    !/\bCCC\b|certified/i.test(ogPacket));
+  ok("the share picture carries no dollar price", !/\$\s*\d/.test(ogSrc));
 
-  // ── THE FRONT DOOR: the packet opt-in at / (Travis, 17 Nov 2026) ──
-  // An email for a free printable packet, then on to the plans. It is not
-  // the dashboard and sells nothing itself: no price, no trial.
+  // THE FAMILY APP OPENS / ON EVERY LAUNCH: the page's first script sends it
+  // home (and the clinicians' app to the dashboard), and the page's own
+  // script stands down once it has.
   const guard = (t) => ((t.match(/<head>\s*<meta charset="utf-8" \/>\s*<script>([\s\S]*?)<\/script>/) || [])[1] || "");
-  ok("the opt-in's first script is the clinician page's guard, word for word (the family iPhone app opens / on every launch)",
-    guard(slps).length > 200 && guard(optin) === guard(slps) && /SonaSLPApp/.test(guard(optin)) && /location\.replace\("\/today\.html"\)/.test(guard(optin)));
-  ok("…and its own script stands down when the guard has sent the app away",
-    /<script>\s*\(function \(\) \{\s*if \(window\.__sonaFamilyRedirect\) return;/.test(optin));
-  const oShown = optin.replace(/<!--[\s\S]*?-->/g, "").replace(/<script[\s\S]*?<\/script>/g, "").replace(/<style[\s\S]*?<\/style>/g, "");
-  const oFlat = oShown.replace(/<[^>]+>/g, " ").replace(/&rsquo;/g, "’").replace(/&mdash;/g, "—").replace(/\s+/g, " ");
-  ok("the opt-in's headline offers the free packet", /<h1>A free packet <span>for home practice\.<\/span><\/h1>/.test(optin));
-  ok("…and says what is in it: word lists for all " + sounds.length + " sounds by position, plus blends and vocalic R, the parent guide and the tracker",
-    // 18 Nov 2026 (review): "by where the sound sits in the word", never
-    // "by beginning, middle and end": TH (v) has no start-of-word list.
-    new RegExp("Word lists for all " + sounds.length + " sounds\\s*, sorted by where the sound sits in the word, plus blends and vocalic R\\.").test(oFlat) &&
-    !/beginning, middle and end/.test(oShown + readFileSync(APP + "/tools/og/og-packet.html", "utf8")) &&
-    /A one-page guide for parents/.test(oFlat) && /A tick-box tracker/.test(oFlat) &&
-    new RegExp("for " + sounds.length + " sounds").test(optin.match(/<meta name="description" content="([^"]*)"/)[1]));
-  const oForm = (optin.match(/<form class="signup" id="signup"[\s\S]*?<\/form>/) || [""])[0];
-  ok("its one form asks only for a work email, with one button: Send me the free packet",
-    /<label for="fEmail">Your work email<\/label>/.test(oForm) && /id="fEmail" type="email"[^>]*placeholder="you@yourclinic\.org" required/.test(oForm) &&
-    (oForm.match(/<input\b/g) || []).length === 1 && (oForm.match(/<button\b/g) || []).length === 1 &&
-    />Send me the free packet</.test(oForm) && (optin.match(/<form\b/g) || []).length === 1 && !/id="fName"/.test(optin));
-  // The page exists to build the list, so it says so before the button is
-  // pressed, in Travis's words.
-  ok("…and says the email joins the list, before it is given", /<p class="consent">We&rsquo;ll also send occasional tips from Rachel\. Unsubscribe anytime\.<\/p>/.test(oForm));
-  ok("…names Rachel in the settled words", /Built with Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical fellowship\./.test(oFlat));
-  ok("…and lets a clinician skip it: No thanks — see the plans → /plans", /<a class="skip" id="skip" href="\/plans">No thanks — see the plans →<\/a>/.test(oShown));
-  ok("it quotes no price, trial or dashboard: it is the packet, not the plan", !/\$\s?\d|free trial|\bdays free\b|dashboard/i.test(oFlat));
-  const oHeader = (optin.match(/<header>[\s\S]*?<\/header>/) || [""])[0];
-  ok("its header has the logo and Sign in, and its footer the one way to /for-parents",
-    (oHeader.match(/<a\b/g) || []).length === 2 && /<a class="signin" href="\/slp-login\.html">Sign in<\/a>/.test(oHeader) &&
-    (optin.match(/<a\b[^>]*href="\/for-parents"/g) || []).length === 1 && /href="\/terms"/.test(optin) && /href="\/privacy\.html"/.test(optin));
-  // /api/lead reads the ad's tags at the TOP of the body, and emails the
-  // packet only for the opt-in's own source (lib/packet.ts).
-  const PACKET_SOURCE = (readFileSync(APP + "/lib/packet.ts", "utf8").match(/export const PACKET_SOURCE = "([^"]+)";/) || [])[1];
-  ok("it posts the email to /api/lead as a clinician, with the packet's own source and the ad's tags at the top level",
-    PACKET_SOURCE === "slp-packet" && new RegExp('var SOURCE = "' + PACKET_SOURCE + '";').test(optin) &&
-    /fetch\("\/api\/lead"/.test(optin) && /JSON\.stringify\(Object\.assign\(\{ email: email, role: "slp", source: SOURCE \}, attrib\)\)/.test(optin) &&
-    !/\/api\/slp\/auth\/request/.test(optin));
-  ok("…and goes on to /plans?packet=1 with the ad's tags only, never the email",
-    /return "\/plans" \+ \(parts\.length \? "\?" \+ parts\.join\("&"\) : ""\) \+ \(packet \? "#pricing" : ""\);/.test(optin) &&
-    /KEYS\.forEach\(function \(k\) \{ if \(attrib\[k\]\) parts\.push/.test(optin) && !/plansUrl\([^)]*email|parts\.push\([^)]*email/.test(optin) &&
-    /setTimeout\(function \(\) \{ location\.href = to; \}, LEAVE_MS\);/.test(optin));
-
-  // ── THE PACKET ITSELF: generated from the app's word bank ──
-  // What a child is asked to say is Rachel's call, so the packet adds no
-  // word: tools/packet/build-packet.mjs writes it from sona.js's WORDS, and
-  // the page on disk must be exactly what it writes today.
-  const P = await import(APP + "/tools/packet/build-packet.mjs");
-  const packetHtml = readFileSync(APP + "/public/home-practice-packet.html", "utf8");
-  const pdata = P.packetData();
-  ok("the packet on disk is what tools/packet/build-packet.mjs writes from today's word bank (run it after changing WORDS)", packetHtml === P.buildPacket(pdata));
-  ok("…a page for every sound the app practices, in its order", pdata.pages.length === sounds.length && pdata.pages.map((p) => p.sound).join() === sounds.join() &&
-    (packetHtml.match(/<section class="sheet sound"/g) || []).length === sounds.length);
-  const sonaSrc = readFileSync(APP + "/public/sona.js", "utf8");
-  const bankBox = {};
-  (await import("node:vm")).runInNewContext("W = " + sonaSrc.slice(sonaSrc.indexOf("{", sonaSrc.indexOf("const WORDS = {")), sonaSrc.indexOf("\n  };", sonaSrc.indexOf("const WORDS = {")) + 4), bankBox);
-  const printed = [...packetHtml.matchAll(/<section class="sheet sound" data-sound="(\w+)"[\s\S]*?<\/section>/g)].flatMap((m) =>
-    [...m[0].matchAll(/<div class="col" data-pos="(\w)">[\s\S]*?<\/div>/g)].flatMap((c) => [...c[0].matchAll(/data-w="([^"]+)"/g)].map((w) => ({ s: m[1], pos: c[1], w: w[1] }))));
-  const strays = printed.filter((x) => !(bankBox.W[x.s] || []).some((b) => b.w === x.w && (b.pos || "i") === x.pos));
-  ok("…every word on it (" + printed.length + ") is a bank word, at the place in the word the bank gives it, and a single word",
-    printed.length > 300 && strays.length === 0 && printed.every((x) => /^[a-z]+$/.test(x.w)), strays.map((x) => x.s + "." + x.pos + ":" + x.w).join(", "));
-  const heldOut = printed.filter((x) => (x.s === "T" && x.pos === "m" && ["water", "letter", "button"].includes(x.w)) || (x.s === "V" && x.pos === "m" && x.w === "gloves") || pdata.neverSay.includes(x.w));
-  ok("…leaving out the middle words waiting for Rachel's review (water, letter, button; gloves) and the never-say list",
-    heldOut.length === 0 && /T: \["water", "letter", "button"\], V: \["gloves"\]/.test(sonaSrc), heldOut.map((x) => x.s + ":" + x.w).join(", "));
-  const pkShown = packetHtml.replace(/<!--[\s\S]*?-->/g, "").replace(/<script[\s\S]*?<\/script>/g, "").replace(/<style[\s\S]*?<\/style>/g, "");
-  ok("…the parent guide carries the hedge and Rachel's settled line, and says a try is said out loud",
-    /This guide supports the plan your child&rsquo;s speech therapist makes\. It is not an evaluation\./.test(pkShown) &&
-    /Built with Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical fellowship\./.test(pkShown) &&
-    /Silence or pointing isn&rsquo;t a try\./.test(pkShown) && /always finish on a word your child gets right/.test(pkShown));
-  ok("…never a grade, a score, an accuracy, a diagnosis or a review Rachel has not given", !/\b(score|grade|accuracy|diagnos\w*|assessment|reviewed by|approved by)\b/i.test(pkShown));
-  ok("…with the same guard as the opt-in, noindex, no pixel or analytics, and nothing linking to the clinician side",
-    guard(packetHtml) === guard(slps) && /<meta name="robots" content="noindex" \/>/.test(packetHtml) &&
-    !/pixel\.js|analytics\.js/.test(packetHtml) && !/<a\b/.test(pkShown));
+  ok("the clinician homepage's first script is the guard that sends the family app home and the clinicians' app to the dashboard",
+    guard(slps).length > 200 && /SonaSLPApp/.test(guard(slps)) && /location\.replace\("\/today\.html"\)/.test(guard(slps)) && /location\.replace\("\/slp\.html"\)/.test(guard(slps)));
+  ok("…and its own script stands down when the guard has sent the app away", /if \(window\.__sonaFamilyRedirect\) return;/.test(slps));
 }
 
 // ── found by search and by AI assistants, as a page for parents (22 Oct 2026) ──
@@ -420,8 +343,7 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
   // as a clinician (role "slp", through /onboarding.html?slp=1, which nothing
   // links to) and never in the iPhone app.
   // parents.html is checked above: exactly one footer link, nothing else.
-  // packet.html, the clinicians' front door at / since 17 Nov 2026, signs in.
-  const CLIN = new Set(["for-slps.html", "packet.html", "slp.html", "slp-login.html", "settings.html", "parents.html"]);
+  const CLIN = new Set(["for-slps.html", "slp.html", "slp-login.html", "settings.html", "parents.html"]);
   const TO_CLIN = /href=["'](https?:\/\/(www\.)?speaksona\.com)?\/(for-slps|slp-login|slps\b|slp\.html|slp["'?#])/;
   const fam = pages.filter((f) => !CLIN.has(f) && TO_CLIN.test(strip(readFileSync(APP + "/public/" + f, "utf8"))))
     .concat(["app/families/page.tsx", "app/terms/page.tsx", "app/support/page.tsx", "app/privacy/page.tsx", "app/layout.tsx", "lib/nurture.ts", "lib/report.ts", "lib/revenuecat.ts"]
@@ -435,16 +357,12 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
   ok("…blocks only the API and the admin pages", /const OFF = \["\/api\/", "\/admin\/"\];/.test(robots) && !/slp|join|try|families|check|founders|leads/.test(robots));
   ok("…and points at the sitemap, on the address that answers", /sitemap: "https:\/\/www\.speaksona\.com\/sitemap\.xml"/.test(robots) &&
     /const BASE = "https:\/\/www\.speaksona\.com";/.test(readFileSync(APP + "/app/sitemap.ts", "utf8")));
-  // The sitemap lists the canonical landing pages and skips private pages:
-  // the clinicians' opt-in at the root, their plans (17 Nov 2026), then the
-  // family page. The packet itself is noindex: it is what the opt-in gives.
+  // The sitemap lists both canonical landing pages and skips private pages
+  // (/plans is the same page as the root, so it is not listed twice).
   const urls = (readFileSync(APP + "/app/sitemap.ts", "utf8").match(/url: `\$\{BASE\}[^`]*`/g) || []).map((u) => u.slice(13, -1));
   ok("the sitemap starts at the root", urls[0] === "/", urls.join(" "));
-  ok("…lists /plans second and /for-parents third, and excludes private, noindex and app pages",
-    urls.length > 2 && urls[1] === "/plans" && urls[2] === "/for-parents" &&
-    urls.every((u) => ["/", "/plans", "/for-parents", "/privacy.html", "/terms"].includes(u)), urls.join(" "));
-  ok("…and the opt-in is findable while the packet is not",
-    !NOINDEX.test(readFileSync(APP + "/public/packet.html", "utf8")) && NOINDEX.test(readFileSync(APP + "/public/home-practice-packet.html", "utf8")));
+  ok("…lists /for-parents second and excludes private, noindex and app pages",
+    urls.length > 1 && urls[1] === "/for-parents" && urls.every((u) => ["/", "/for-parents", "/privacy.html", "/terms"].includes(u)), urls.join(" "));
 
   // llms.txt: what an AI assistant reads about Sona. Everything the route can
   // send is its string literals, so the whole file is scanned, comments out.
@@ -562,10 +480,8 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
   // is the way to checkout, for a LOCKED account too, but only when a plan is
   // remembered: the trial form remembers Sona Pro, never over a button's pick.
   ok("…and the trial form remembers the button's pick, else Sona Pro, once the email is sent, and forgets it when the send fails",
-    /remember\(PICK \|\| "pro"\);\s*try \{ if \(window\.sonaTrack\) sonaTrack\("InitiateCheckout"\); \}/.test(slps) &&
+    /remember\(PICK \|\| "pro"\);\s*try \{ if \(window\.sonaTrack\) sonaTrack\("Lead"\); \}/.test(slps) &&
     /if \(j\.sent !== true\) \{\s*forget\(\);/.test(slps) && /\(!j \|\| !j\.ok\) \{ forget\(\);/.test(slps));
-  ok("the packet's link shows only for a visitor from the opt-in (?packet=1)",
-    /<div class="packet-bar" id="packetBar" hidden>[\s\S]*?<a href="\/packet">Open it →<\/a>/.test(shown) && /\[\?&\]packet=1\(&\|\$\)\/\.test\(location\.search\)\) \$\("packetBar"\)\.hidden = false;/.test(slps));
   // SLPCLEAN1 (17 Nov 2026): the dashboard lost the community, the AI
   // homework draft and the day planner; SLPPRO1 replaced the planner with
   // Session games. The page promises what it has.
@@ -826,8 +742,7 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
   ok("…and every page that calls Rachel an SLP carries 'MS, CF-SLP'", unpaired.length === 0, unpaired.join(", "));
   // Progress left this list on 5 Nov 2026: it no longer names Rachel at all
   // (Travis: "take out built with Rachel on the progress sheet").
-  // The clinicians' opt-in and the packet it gives name her too (17 Nov 2026).
-  const carry = ["parents", "subscribe", "trial", "talk", "slp", "packet", "home-practice-packet"]
+  const carry = ["parents", "subscribe", "trial", "talk", "slp"]
     .filter((n) => !/Rachel(?: Wardrop)?, MS, CF-SLP/.test(visible("public/" + n + ".html")));
   ok("…and the pages that introduce her all carry it", carry.length === 0, carry.join(", "));
   // The line changed on 1 Oct 2026 (Travis): she is described as "a pediatric

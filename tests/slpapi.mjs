@@ -665,14 +665,14 @@ if (A) {
 {
   const slps = read("public/for-slps.html");
   const handler = slps.slice(slps.indexOf("function go()"));
-  // 17 Nov 2026: the plans page (/plans) emails the same sign-in link as
-  // flow "trial", which grants nothing; the opt-in at / owns Lead, so a trial
-  // started here is InitiateCheckout.
+  // The homepage at / (also /plans) emails the sign-in link as flow
+  // "trial", which grants nothing; it is the front door again (20 Nov 2026),
+  // so a sent email is the Lead.
   ok("the plans page requests the trial flow",
     /flow: "trial"/.test(handler) && !/flow: "free-dashboard"/.test(handler) && /fetch\("\/api\/slp\/auth\/request"/.test(handler));
   ok("…and the page reports delivery only after email success",
     /if \(j\.sent !== true\)/.test(handler) && /"Check your email"/.test(handler) &&
-    handler.indexOf("if (j.sent !== true) {") < handler.indexOf('sonaTrack("InitiateCheckout")'));
+    handler.indexOf('sonaTrack("Lead")') > 0 && handler.indexOf("if (j.sent !== true) {") < handler.indexOf('sonaTrack("Lead")'));
   ok("…the clinician gets no automatic dashboard or App Store navigation",
     !/apps\.apple\.com|APP_STORE|location\.href\s*=|CompleteRegistration/.test(handler));
 

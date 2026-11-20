@@ -1,7 +1,7 @@
 // Renders the share cards at 1200 x 630, the size a shared link's card is
 // drawn at: tools/og/og-<name>.html → public/og-<name>.png.
 //   node tools/og/render-og.mjs           every card (og-slp)
-//   node tools/og/render-og.mjs packet    one of them
+//   node tools/og/render-og.mjs slp       one of them
 // A new picture under the same name needs the page's ?v= bumped, or a
 // scraper keeps showing its cached copy.
 import { createServer } from "http";

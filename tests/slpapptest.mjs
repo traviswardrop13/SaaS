@@ -432,7 +432,7 @@ if (AP) {
   const UA = "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 SonaSLPApp/1";
   ok("the app is known by SonaSLPApp/<n> in its user agent, and nothing else is", AP.slpAppRequest(UA) && !AP.slpAppRequest(UA.replace(" SonaSLPApp/1", "")) && !AP.slpAppRequest("SonaSLPApp") && !AP.slpAppRequest(""));
   ok("in it, the dashboard, its sign-in and privacy show; any other page goes to the dashboard",
-    ["/slp.html", "/slp-login.html", "/privacy.html", "/api/x"].every(AP.slpAppPageAllowed) && !["/today.html", "/subscribe.html", "/for-slps.html", "/join.html", "/packet.html"].some(AP.slpAppPageAllowed));
+    ["/slp.html", "/slp-login.html", "/privacy.html", "/api/x"].every(AP.slpAppPageAllowed) && !["/today.html", "/subscribe.html", "/for-slps.html", "/join.html", "/parents.html"].some(AP.slpAppPageAllowed));
   // /slps is where /slp.html's permanent redirect lands (17 Nov 2026): the
   // middleware must let it through, or the app would bounce between the two.
   ok("…and /slps, the dashboard's own address, is let through (never sent back to /slp.html)", AP.slpAppPageAllowed("/slps"));
@@ -499,9 +499,9 @@ const server = createServer((req, res) => {
       if (url.pathname === "/api/slp/team" && req.method === "GET") return json(TEAM);
       return json({ ok: true });
     }
-    // The site's own addresses (next.config.js, 17 Nov 2026): "/" is the
-    // packet opt-in, "/plans" the landing page, "/slps" the dashboard.
-    const p = { "/": "/packet.html", "/plans": "/for-slps.html", "/slps": "/slp.html" }[url.pathname] || url.pathname;
+    // The site's own addresses (next.config.js): "/" and "/plans" are the
+    // clinicians' homepage and plans, "/slps" the dashboard.
+    const p = { "/": "/for-slps.html", "/plans": "/for-slps.html", "/slps": "/slp.html" }[url.pathname] || url.pathname;
     const file = path.join(PUB, p);
     if (!existsSync(file) || !statSync(file).isFile()) { res.writeHead(404); return res.end(); }
     res.writeHead(200, { "content-type": MIME[file.split(".").pop()] || "application/octet-stream" });
@@ -567,9 +567,9 @@ try {
   await section("the sign-in screen on the web", async () => {
     const { context, page, errors } = await open("/slp-login.html", { app: false, native: false });
     await page.waitForSelector("#send");
-    ok("on the web the sign-in still sends a link, and points a new clinician at the plans' free trial (speaksona.com/ is the packet opt-in now)",
-      (await page.locator("#send").textContent()) === "Send my sign-in link" && await page.locator('a[href="/plans#pricing"]').isVisible() &&
-      /Start your free trial/.test(await page.locator('a[href="/plans#pricing"]').textContent()) && !(await page.locator('a[href="/#signup"]').count()));
+    ok("on the web the sign-in still sends a link, and points a new clinician at the free trial on the homepage",
+      (await page.locator("#send").textContent()) === "Send my sign-in link" && await page.locator('p.new a[href="/"]').isVisible() &&
+      /Start your free trial/.test(await page.locator('p.new a[href="/"]').textContent()) && !(await page.locator('a[href="/#signup"]').count()));
     await page.locator("#email").fill("rachel@example.com");
     await page.locator("#send").click();
     await page.waitForSelector("#sentCard", { state: "visible" });
@@ -810,9 +810,9 @@ try {
   });
 
   await section("every other page sends the app to the dashboard", async () => {
-    // "/" is the packet opt-in and "/plans" the landing page (17 Nov 2026):
-    // the clinicians' app is sent from both to the dashboard.
-    for (const pth of ["/", "/plans", "/packet.html", "/for-slps.html", "/parents.html", "/today.html", "/settings.html"]) {
+    // "/" and "/plans" are the clinicians' homepage and plans: the
+    // clinicians' app is sent from both to the dashboard.
+    for (const pth of ["/", "/plans", "/for-slps.html", "/parents.html", "/today.html", "/settings.html"]) {
       const { context, page } = await open(pth);
       await page.waitForURL("**/slp.html", { timeout: 3000 }).catch(() => {});
       ok("in the app, " + pth + " goes to the dashboard", new URL(page.url()).pathname === "/slp.html", page.url());

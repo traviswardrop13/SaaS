@@ -1539,9 +1539,9 @@ const count = (pred) => S.calls.filter(pred).length;
     OUT.slice(before).filter((o) => o.url.endsWith("/api/lead")).length === 1);
   const mail = RESEND.sent.at(-1) || {};
   const words = (mail.html || "") + (mail.text || "");
-  ok("…its email is a plain sign-in link: Session games' words, no \"free\" but the free trial, no community, and the retry is the sign-in page (speaksona.com is the packet opt-in now)",
+  ok("…its email is a plain sign-in link: Session games' words, no \"free\" but the free trial, no community, and the retry is the sign-in page on the link's own host",
     mail.subject === "Your Sona sign-in link" && /pick Sona games for each session/.test(mail.text || "") && !/\bfree\b(?! trial)|communit/i.test(words) &&
-    /speaksona\.com\/slp-login\.html/.test(mail.text || "") && !/again at speaksona\.com and/.test(words), JSON.stringify([mail.subject, mail.text]));
+    /again at sona\.test\.invalid\/slp-login\.html /.test(mail.text || "") && !/again at speaksona\.com and/.test(words), JSON.stringify([mail.subject, mail.text]));
   const verified = await call(R.verify, "GET", linkPath);
   const account = JSON.parse(KV.K.get(key) || "{}");
   ok("opening the link makes a Sona Pro-terms account (no free dashboard) with the saved clinician details, and goes on to the free trial (TRIALGO1)",
