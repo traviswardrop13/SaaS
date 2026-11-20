@@ -48,12 +48,16 @@ import SonaSpeechCore
 }
 
 @MainActor private final class PowerFixture {
+    enum CreditError: Error { case storage }
     let driver = PowerDriver(), provider = PowerProvider()
     var now = 0.0, current = true
+    var failCredit = false, creditAttempts = 0
     var credits: [GameSayingCredit] = [], waits: [Double] = []
     lazy var controller = NativeArcadePowerController(isCurrent: { [unowned self] in current }, credit: { [unowned self] value in
         precondition(!driver.live)
         precondition(waits.last == 200, "The input route must settle before recording a play rep")
+        creditAttempts += 1
+        if failCredit { throw CreditError.storage }
         credits.append(value)
     }, driver: driver, provider: provider, automaticallyTimeOut: false, nowMilliseconds: { [unowned self] in now },
        wait: { [unowned self] duration in waits.append(duration); try Task.checkCancellation() })
@@ -176,6 +180,28 @@ import SonaSpeechCore
         heard.controller.poll(playing: true)
         heard.play(10_000)
         expect(heard.controller.powerRemaining == 0 && heard.controller.speedFactor == 1, "ten active seconds restore normal motion")
+
+        let unavailableStorage = PowerFixture(voiceOn: false)
+        for _ in 0..<2 {
+            await unavailableStorage.start()
+            await unavailableStorage.lapse()
+        }
+        unavailableStorage.failCredit = true
+        unavailableStorage.driver.recognizes = false
+        await unavailableStorage.start()
+        unavailableStorage.emit(31, level: 0.01)
+        unavailableStorage.emit(40, level: 0.2)
+        await until { !unavailableStorage.controller.isAsking }
+        expect(unavailableStorage.creditAttempts == 1 && unavailableStorage.credits.isEmpty
+                && unavailableStorage.controller.powerRemaining == 10_000,
+               "failed storage leaves the heard power intact without inventing a saved rep")
+        unavailableStorage.play(10_000)
+        unavailableStorage.play(19_800)
+        let waitedForTwentySeconds = !unavailableStorage.controller.isAsking
+        unavailableStorage.play(200)
+        expect(waitedForTwentySeconds && unavailableStorage.controller.isAsking,
+               "a confirmed saying resets the quiet backoff even when saving fails")
+        await unavailableStorage.controller.interrupt()
 
         let late = PowerFixture(game: "tiles", voiceOn: false)
         late.driver.recognizes = false

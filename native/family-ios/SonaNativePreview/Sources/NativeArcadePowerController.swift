@@ -247,7 +247,10 @@ extension NativeArcadeCheckpointAudio: NativeArcadePowerPromptProviding {}
                     let value = GameSayingCredit(gateID: id, sequence: 1, gameID: selection.gameID,
                                                  sound: selection.sound, word: selection.bare.text,
                                                  position: selection.bare.position)
-                    if (try? await credit(value)) != nil, live(id) { outcome = .earned }
+                    // The power follows the accepted sound. Saving the rep is
+                    // best effort, as in the original Arcade games.
+                    outcome = .earned
+                    try? await credit(value)
                 }
             case .silence: outcome = .unanswered
             case .microphoneUnavailable:
