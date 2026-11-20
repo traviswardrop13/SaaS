@@ -3015,6 +3015,19 @@ App Store Connect and the review notes; `tests/slpapptest.mjs` pins it all.
   fix is one native feature, not built; App Privacy answers. **Nothing here is
   Rachel's**: no word a child or a family reads changed.
 
+### Sona for SLPs in Swift (SLPSWIFT1, 20 Nov 2026)
+Travis: "a Swift build of the mobile app for the SLP dashboard"; asked, Claude
+writes it and he builds it on his Mac, with Sign in, Today, Caseload (and a
+child's page), Add a family, Settings and the chat. `native/slp-swift/`
+(SwiftUI, iOS 17, XcodeGen `project.yml`, README has the steps) replaces the
+Capacitor shell in `native/slp-ios` (same bundle id). It calls the same
+routes as the web dashboard; `Derive.swift` mirrors `derive()` and the note
+in `slp.html` (change both together). It sells nothing and has no Share &
+earn; no microphone (the chat uses the keyboard's dictation). It has never
+been compiled here (no Xcode on Linux): errors come back from Travis's Mac.
+`/api/slp/family` now also answers `covered`, so the app's family message
+says "Premium is included through me" only when it is true.
+
 ## The app lives at app.speaksona.com (APPHOST1, 17 Nov 2026)
 Travis: point the app at app.speaksona.com "so that I can get speaksona.com
 officially inside my home base of high level". This reverses "speaksona.com
