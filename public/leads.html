@@ -88,6 +88,17 @@
     <div class="tw"><table id="tDays" hidden></table></div>
     <div class="tw" style="margin-top:10px"><table id="tPlay" hidden></table></div>
 
+    <!-- SHARE & EARN (REFER1, 20 Nov 2026): therapists whose link brought in
+         another therapist. $8 a month for each one who pays (past the free
+         trial). Pay these by hand each month. -->
+    <h2>Referrals</h2>
+    <p class="muted">Therapists whose link brought in another therapist. Pay $8 a month for each one who is paying (past the free trial). Paid by hand; anyone paid $600 or more in a year needs a 1099.</p>
+    <div class="cards">
+      <div class="card"><span class="muted">Owed this month</span><b id="rOwed">$0</b></div>
+    </div>
+    <p class="muted" id="rWait">Loading…</p>
+    <div class="tw"><table id="rRows" hidden></table></div>
+
     <h2>Since the new landing page</h2>
     <p class="muted">Everyone who left an email since 25 Sep 2026, 1:20 pm Mountain, when speaksona.com started asking “I’m a…”. Each person counts once.</p>
     <div class="cards">
@@ -248,11 +259,28 @@
           $("out").hidden = false;
           loadMessages(key);
           loadTrials(key);
+          loadReferrals(key);
         })
         .catch(function () {
           $("go").disabled = false; $("go").textContent = "Show leads";
           $("err").textContent = "Network hiccup — try again.";
         });
+    }
+    // REFERRALS (REFER1): /api/founders/referrals
+    function loadReferrals(key) {
+      fetch("/api/founders/referrals", { headers: { "x-founder-key": key }, cache: "no-store" })
+        .then(function (r) { return r.json(); })
+        .then(function (j) {
+          if (!j || !j.ok) { $("rWait").textContent = (j && j.error) || "Couldn't load the referrals."; return; }
+          $("rOwed").textContent = j.owed || "$0";
+          if (!j.rows || !j.rows.length) { $("rWait").textContent = "No referrals yet."; return; }
+          $("rWait").textContent = "";
+          var e = function (v) { return String(v).replace(/[<>&"]/g, ""); };
+          var rows = "<tr><th>Therapist</th><th>Signed up</th><th>On trial</th><th>Paying</th><th>Owed a month</th></tr>";
+          j.rows.forEach(function (r) { rows += "<tr><td>" + e(r.email) + "</td><td>" + r.signedUp + "</td><td>" + r.trialing + "</td><td>" + r.paying + "</td><td>" + e(r.monthly) + "</td></tr>"; });
+          $("rRows").innerHTML = rows; $("rRows").hidden = false;
+        })
+        .catch(function () { $("rWait").textContent = "Network hiccup loading the referrals."; });
     }
     // FREE TRIALS (TRIAL1): /api/founders/trials, numbers only
     function pct(a, b) { return b ? Math.round(100 * a / b) + "%" : "–"; }

@@ -181,6 +181,8 @@ export type FreeDashboardSignup = {
   workSetting?: "clinic" | "school";
   source: string;
   attrib: Record<string, string>;
+  /** Share & earn (REFER1): the code of the clinician whose link this was. */
+  ref?: string;
 };
 
 // Only the hash of the opaque URL token indexes this record. A separate
@@ -202,7 +204,8 @@ export function readFreeDashboardSignup(stored: string): FreeDashboardSignup | n
     const value = JSON.parse(Buffer.from(body, "base64url").toString()) as FreeDashboardSignup;
     if (!value || typeof value.email !== "string" || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(value.email) ||
         (value.clinicianRole !== undefined && !clinicianRole(value.clinicianRole)) ||
-        (value.workSetting !== undefined && value.workSetting !== "clinic" && value.workSetting !== "school")) return null;
+        (value.workSetting !== undefined && value.workSetting !== "clinic" && value.workSetting !== "school") ||
+        (value.ref !== undefined && !/^[a-z0-9]{8}$/.test(String(value.ref)))) return null;
     return value;
   } catch {
     return null;

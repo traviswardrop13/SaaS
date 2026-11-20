@@ -28,6 +28,7 @@ const SUITES = [
   "kidtest.mjs",   // KIDS1: per-child progress, switching, family-wide entitlement
   "slpcode.mjs",   // CODES1: SLP family credential — verified redemption, honest gate
   "slpapi.mjs",    // SLPAPI1: the clinician's roster — invites ahead of the family, removal, meta the device can't overwrite
+  "referraltest.mjs", // REFER1/CHAT1: share & earn ($8 a month per paying therapist, never a family, only a new account takes a code) and the dashboard chat button (keyboard dictation, no speech API)
   "familylogintest.mjs", // FAMLOGIN1: a login the clinician makes, typed into the app: the link's access and walls, never consent, the password once and only hashed, the family's own password, Log in on the first screen
   "slpapptest.mjs", // SLPAPP1: the clinicians' own app: sign-in by the emailed code, the dashboard there selling nothing, Delete my account (code kept closed, syncs dropped, old community posts scrubbed), the /slps loop
   "caseloadtest.mjs", // CASELOAD1: the clinician's plans ($59.99 for you, $59.99 more for the caseload) — who is covered, grandfathering, own phone, parent invites

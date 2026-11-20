@@ -389,6 +389,39 @@ doing (Travis, 20 Nov 2026: the web app "lags and is jumpy" and the
 keyboard covers things) must make it work first, end to end, with no price
 screen for a covered family.
 
+## Share & earn, and the chat button (REFER1, CHAT1, 20 Nov 2026)
+Travis: every dashboard account gets a link to share with other SLPs and
+earns $8 a month per active paying customer, "so that they get the product
+free as long as they have 3 active paying customers"; asked, he chose **real
+cash payouts**. And "a chat button for them to leave feedback ... use a
+microphone if they want to just speak"; asked, he chose **the phone's own
+dictation**. (He chose not to have a GoHighLevel app-builder prompt: the
+dashboard works on phones, and the Sona for SLPs app is ready to submit.)
+- **Share & earn** (`lib/referral.ts`, `/api/slp/referral`, the dashboard's
+  `#refer` page and menu item, both `data-sells`, so web only). Each account
+  gets one code (`refCode`, `slpref:<code>`); the link is
+  app.speaksona.com/?ref=<code>. The trial page keeps it 60 days
+  (`sona.slp.ref`) and sends it with the sign-up; it rides in the signed
+  pending sign-up, and **only a brand-new account takes it** (`referredBy`,
+  set once in `finishSignIn`), never your own, never an existing account.
+  **Paying** = a referred clinician's Sona Pro (or owned Sona Clinic) in
+  Stripe status `active` (past the free trial); trialing and past_due do
+  not count. **Therapist to therapist only:** nothing a family does is ever
+  read, so the creator-only rule below (no clinician earns on their own
+  caseload) holds by construction.
+- **Paid by hand:** /leads.html's "Referrals" (`/api/founders/referrals`)
+  lists who earns what this month. Travis's to know: a 1099 for anyone paid
+  $600 or more in a year, and a buyer from the GoHighLevel checkout counts
+  only if their account was made through a referral link.
+- **The chat button** (`#chatFab`, bottom right, every dashboard page, the
+  app too: it sells nothing): "Message the Sona team", Help / Idea / Problem
+  (categories question / feature / bug), a plain text box, and "Rather
+  talk? Tap the microphone on your keyboard and speak." It posts to
+  `/api/slp/feedback`, the same inbox as Talk to Rachel. **No page listens
+  itself:** the browser's speech API sends audio to Google or Apple, and
+  `mictest` bans it. Every word is Travis's to change.
+`referraltest` plays it.
+
 ## Pricing — a free version, Premium, and the cohorts no flip can take back
 **Current release (checked against `main`, 11 Nov 2026): families pay, and
 only inside the iPhone/iPad app.** Read this first; everything below it in
