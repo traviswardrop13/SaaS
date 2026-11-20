@@ -4,7 +4,7 @@ Local Swift package for one native family practice attempt. Nothing here is conn
 
 ## Integration
 
-Add this folder as a local Swift package and link `SonaSpeechCore`. iOS 16 or later is supported. `ApplePracticeAudioDriver` is available on iOS; the state machine, acoustic detector and word check also run on macOS for tests.
+Add this folder as a local Swift package and link `SonaSpeechCore`. The module targets iOS 15 and later. `ApplePracticeAudioDriver` is available on iOS. The state machine, acoustic detector and word check also run on macOS for tests.
 
 The host supplies the selected child’s existing target, its approved prompt and already-local audio assets. Keep the current mouth cue, Rachel’s existing recorded sound, the isolated target and the existing “Go!” handover. `PracticePrompt` passes these through; it generates no new words and accepts only file URLs. A prompt may contain one already-joined clip or ordered local parts. Set `isMuted` from the existing family sound setting. Do not replace Rachel’s sound with synthesized speech.
 
@@ -53,7 +53,7 @@ Reference sources: `public/charge.html` (turn, REPGUARD1, room and shape rules),
 
 ## Local verification
 
-Verified locally: **58 Swift tests pass**, including 215 word-verdict fixtures, and all eight JavaScript acoustic replay scripts pass. The module has been typechecked for arm64 iOS 16 device and iOS 16 Simulator SDKs. The temporary copy with the earlier observer-order bug fails its regression assertion. The suite uses synthetic input. The full practice decisions and remaining device checks are described in [FLOW-PARITY.md](FLOW-PARITY.md).
+Verified locally: **58 Swift tests pass**, including 215 word-verdict fixtures, and all eight JavaScript acoustic replay scripts pass. The device source typechecks at the same iOS 15 minimum as the current app. The temporary copy with the earlier observer-order bug fails its regression assertion. The suite uses synthetic input. The full practice decisions and remaining device checks are described in [FLOW-PARITY.md](FLOW-PARITY.md).
 
 From this folder:
 

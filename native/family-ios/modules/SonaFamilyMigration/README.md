@@ -10,7 +10,11 @@ Capture, validation and storage errors stop the run. They never mean empty stora
 
 The iOS `LegacyUpgradeCapture` adapter is restricted to the existing `com.speaksona.app` bundle. It assigns each exact legacy origin to an inert local HTML document in the app’s default WebKit store. The document has no external resources. The isolated reader performs a read-only capture. Wrong origins, unreadable storage, and failed writes stop the run. A genuinely empty origin still requires a successful capture.
 
-The release still needs to invoke this from the actual upgrade host while existing writers are stopped, then open the native app after data and access have been verified. A local WebKit fixture verified that two inert HTTPS documents share the original origin's stored state. The iOS source compiles. The bundled Capacitor origin and an actual in-place update on physical iPhones need verification. The separate preview has its own container.
+Local WebKit checks recovered synthetic state at both HTTPS and Capacitor origins. An iPhone Simulator update preserved the seeded records from all four origins, confirmed that retry imports nothing twice, and retained an intervening edit to the native records. The release still needs to invoke the adapter from the actual upgrade host with existing writers stopped and verify an in-place update on physical iPhones. The separate preview has its own container.
+
+`NativeFamilyRepository` seeds editable native records from the verified archive. It keeps each child scoped to the original storage location and slot. Reopening the migration keeps intervening native edits and the selected child. The native document contains family records and commitments, with no audio fields.
+
+`FamilyPurchaseContinuity` coordinates refresh, purchase and parent-initiated Restore using an injected client. It keeps each access source independent and separates stale responses, network failures and verified ownership. Store product prices and trial eligibility come from the store. The [RevenueCat adapter](../../adapters/RevenueCatFamilyPurchaseClient.swift) retains the existing anonymous identity and uses the SDK’s current ownership response. The preview has no purchase screen, and release still needs to connect these components to the actual App Store app.
 
 Run the package and storage checks from the project root.
 

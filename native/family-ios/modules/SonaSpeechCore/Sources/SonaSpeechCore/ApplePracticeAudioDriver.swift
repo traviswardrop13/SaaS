@@ -180,7 +180,7 @@ public final class ApplePracticeAudioDriver: NSObject, PracticeAudioDriver {
         let request = SFSpeechAudioBufferRecognitionRequest()
         request.requiresOnDeviceRecognition = true
         request.shouldReportPartialResults = true
-        request.addsPunctuation = false
+        if #available(iOS 16, *) { request.addsPunctuation = false }
         request.contextualStrings = Array(words.prefix(64))
         recognitionRequest = request
         ring?.attach(request)

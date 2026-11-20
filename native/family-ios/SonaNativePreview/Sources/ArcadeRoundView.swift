@@ -26,7 +26,7 @@ struct ArcadeRoundView: View {
                 .accessibilityIdentifier("arcade-close")
                 Spacer()
                 Text(game.title)
-                    .font(.system(.title2, design: .rounded, weight: .heavy))
+                    .font(.system(.title2, design: .rounded).weight(.heavy))
                     .accessibilityAddTraits(.isHeader)
                 Spacer()
                 ProgressView(value: Double(moves), total: Double(goal))
@@ -40,7 +40,7 @@ struct ArcadeRoundView: View {
                 finishCard
             } else {
                 Text(game.instruction)
-                    .font(.system(.headline, design: .rounded, weight: .bold))
+                    .font(.system(.headline, design: .rounded).weight(.bold))
                     .multilineTextAlignment(.center)
 
                 board.id(round)
@@ -85,12 +85,12 @@ struct ArcadeRoundView: View {
                     .frame(height: 172)
                     .accessibilityHidden(true)
                 Text("You did it!")
-                    .font(.system(.largeTitle, design: .rounded, weight: .heavy))
+                    .font(.system(.largeTitle, design: .rounded).weight(.heavy))
                     .accessibilityIdentifier("arcade-complete")
                 Button("Play again") { moves = 0; round += 1 }
                     .buttonStyle(RoundActionStyle())
                 Button("Back to games") { dismiss() }
-                    .font(.system(.headline, design: .rounded, weight: .bold))
+                    .font(.system(.headline, design: .rounded).weight(.bold))
                     .frame(minHeight: 48)
             }
             .padding(20)
@@ -102,7 +102,7 @@ struct ArcadeRoundView: View {
 struct RoundActionStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.system(.headline, design: .rounded, weight: .heavy))
+            .font(.system(.headline, design: .rounded).weight(.heavy))
             .foregroundStyle(.white)
             .padding(.horizontal, 20)
             .frame(maxWidth: .infinity, minHeight: 52)
@@ -130,7 +130,7 @@ private struct PianoBoard: View {
                 .foregroundStyle(SonaPalette.teal)
                 .accessibilityHidden(true)
             Text("Twinkle, Twinkle, Little Star")
-                .font(.system(.title3, design: .rounded, weight: .heavy))
+                .font(.system(.title3, design: .rounded).weight(.heavy))
                 .multilineTextAlignment(.center)
             HStack(spacing: 4) {
                 ForEach(Self.melody.indices, id: \.self) { index in
@@ -158,7 +158,7 @@ private struct PianoBoard: View {
                                     .accessibilityHidden(true)
                             }
                             Text(names[key])
-                                .font(.system(.subheadline, design: .rounded, weight: .heavy))
+                                .font(.system(.subheadline, design: .rounded).weight(.heavy))
                         }
                         .padding(.bottom, 14)
                         .frame(maxWidth: .infinity, minHeight: 142)

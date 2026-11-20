@@ -65,7 +65,7 @@ struct ParentPreviewProgressView: View {
     private var heading: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("A little look at their play.")
-                .font(.system(.largeTitle, design: .rounded, weight: .heavy))
+                .font(.system(.largeTitle, design: .rounded).weight(.heavy))
                 .accessibilityAddTraits(.isHeader)
                 .accessibilityIdentifier("parent-preview-progress")
                 .fixedSize(horizontal: false, vertical: true)
@@ -95,7 +95,7 @@ struct ParentPreviewProgressView: View {
         VStack(alignment: .leading, spacing: 12) {
             Image(systemName: symbol).font(.title2).foregroundStyle(ParentProgressStyle.teal)
                 .accessibilityHidden(true)
-            Text(number.formatted()).font(.system(.largeTitle, design: .rounded, weight: .bold))
+            Text(number.formatted()).font(.system(.largeTitle, design: .rounded).weight(.bold))
             Text(title).font(.subheadline.weight(.medium)).fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, minHeight: 132, alignment: .topLeading)
@@ -165,7 +165,7 @@ struct ParentPreviewProgressView: View {
     private var practiceNote: some View {
         VStack(alignment: .leading, spacing: 10) {
             Label("Speech practice and rewards", systemImage: "info.circle")
-                .font(.system(.headline, design: .rounded, weight: .bold))
+                .font(.system(.headline, design: .rounded).weight(.bold))
             Text("Speech sessions, daily goals and Trophy Road balances are not connected to this preview yet. Game completions and page turns add no practice reps or rewards.")
                 .font(.subheadline).foregroundStyle(ParentProgressStyle.muted)
                 .fixedSize(horizontal: false, vertical: true)
@@ -177,7 +177,7 @@ struct ParentPreviewProgressView: View {
 
     private func sectionHeading(_ title: String, symbol: String) -> some View {
         Label(title, systemImage: symbol)
-            .font(.system(.title3, design: .rounded, weight: .bold))
+            .font(.system(.title3, design: .rounded).weight(.bold))
             .accessibilityAddTraits(.isHeader)
     }
 }

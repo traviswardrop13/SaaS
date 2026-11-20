@@ -50,7 +50,7 @@ struct BookShelfView: View {
     }
 
     var body: some View {
-        NavigationStack {
+        SonaNavigation {
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
                     shelfHeading
@@ -87,7 +87,7 @@ struct BookShelfView: View {
             }
             .background(BookPalette.paper)
             .navigationTitle("Books")
-            .toolbarBackground(BookPalette.paper, for: .navigationBar)
+            .modifier(BookBarBackground())
             .fullScreenCover(item: $selectedBook) { book in
                 NativeBookReader(
                     book: book,
@@ -112,7 +112,7 @@ struct BookShelfView: View {
             Image(systemName: symbol)
                 .font(.system(size: 37))
                 .accessibilityHidden(true)
-            Text(title).font(.system(.headline, design: .rounded, weight: .heavy))
+            Text(title).font(.system(.headline, design: .rounded).weight(.heavy))
             Text(message).font(.system(.subheadline, design: .rounded))
         }
         .multilineTextAlignment(.center)
@@ -124,14 +124,14 @@ struct BookShelfView: View {
     private var shelfHeading: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Choose a story to read.")
-                .font(.system(.title3, design: .rounded, weight: .medium))
+                .font(.system(.title3, design: .rounded).weight(.medium))
                 .foregroundStyle(BookPalette.secondary)
 
             HStack(spacing: 8) {
                 Image(systemName: "books.vertical")
                 Text(sound.isEmpty ? "All sounds" : NativeBook.soundLabel(sound) + " sound stories")
             }
-            .font(.system(.subheadline, design: .rounded, weight: .bold))
+            .font(.system(.subheadline, design: .rounded).weight(.bold))
             .foregroundStyle(BookPalette.teal)
             .padding(.horizontal, 13)
             .padding(.vertical, 10)
@@ -152,11 +152,11 @@ struct BookShelfView: View {
 
                 VStack(alignment: .leading, spacing: 6) {
                     Text("CONTINUE READING")
-                        .font(.system(.caption, design: .rounded, weight: .heavy))
+                        .font(.system(.caption, design: .rounded).weight(.heavy))
                         .tracking(0.8)
                         .foregroundStyle(BookPalette.teal)
                     Text(book.title)
-                        .font(.system(.headline, design: .rounded, weight: .bold))
+                        .font(.system(.headline, design: .rounded).weight(.bold))
                         .foregroundStyle(BookPalette.ink)
                     Text("Page \((bookmarks[book.id]?.page ?? 0) + 1) of \(book.pages.count)")
                         .font(.system(.caption, design: .rounded))
@@ -191,7 +191,7 @@ struct BookShelfView: View {
                     .overlay(alignment: .topTrailing) {
                         if finished {
                             Image(systemName: "checkmark")
-                                .font(.system(.caption, design: .rounded, weight: .heavy))
+                                .font(.system(.caption, design: .rounded).weight(.heavy))
                                 .foregroundStyle(.white)
                                 .padding(9)
                                 .background(BookPalette.teal, in: Circle())
@@ -201,12 +201,12 @@ struct BookShelfView: View {
                     .overlay(RoundedRectangle(cornerRadius: 20).strokeBorder(BookPalette.line.opacity(0.5)))
 
                 Text(book.title)
-                    .font(.system(.headline, design: .rounded, weight: .bold))
+                    .font(.system(.headline, design: .rounded).weight(.bold))
                     .foregroundStyle(BookPalette.ink)
                     .fixedSize(horizontal: false, vertical: true)
 
                 Text(open ? "\(book.pages.count) pages" : status)
-                    .font(.system(.caption, design: .rounded, weight: .medium))
+                    .font(.system(.caption, design: .rounded).weight(.medium))
                     .foregroundStyle(BookPalette.secondary)
             }
             .frame(maxWidth: .infinity, alignment: .topLeading)
@@ -381,7 +381,7 @@ private struct NativeBookReader: View {
         HStack(spacing: 12) {
             Button { dismiss() } label: {
                 Image(systemName: "xmark")
-                    .font(.system(.body, design: .rounded, weight: .bold))
+                    .font(.system(.body, design: .rounded).weight(.bold))
                     .frame(width: 44, height: 44)
                     .background(.white.opacity(0.8), in: Circle())
             }
@@ -389,13 +389,13 @@ private struct NativeBookReader: View {
             .accessibilityIdentifier("book-close")
 
             Text(book.title)
-                .font(.system(.subheadline, design: .rounded, weight: .semibold))
+                .font(.system(.subheadline, design: .rounded).weight(.semibold))
                 .lineLimit(2)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
             if !isCover && !isEnd {
                 Text("\(page + 1) / \(book.pages.count)")
-                    .font(.system(.caption, design: .rounded, weight: .bold))
+                    .font(.system(.caption, design: .rounded).weight(.bold))
                     .monospacedDigit()
                     .accessibilityLabel("Page \(page + 1) of \(book.pages.count)")
                     .accessibilityIdentifier("book-page-count")
@@ -428,14 +428,14 @@ private struct NativeBookReader: View {
             VStack(spacing: 10) {
                 if isCover {
                     Text(book.title)
-                        .font(.system(.largeTitle, design: .rounded, weight: .heavy))
+                        .font(.system(.largeTitle, design: .rounded).weight(.heavy))
                         .accessibilityAddTraits(.isHeader)
                     Text("A picture book to enjoy together.")
                         .font(.system(.body, design: .rounded))
                         .foregroundStyle(BookPalette.secondary)
                 } else if isEnd {
                     Text("The End")
-                        .font(.system(.largeTitle, design: .rounded, weight: .heavy))
+                        .font(.system(.largeTitle, design: .rounded).weight(.heavy))
                         .accessibilityAddTraits(.isHeader)
                         .accessibilityIdentifier("book-finished")
                     Text("You finished \(book.title).")
@@ -443,7 +443,7 @@ private struct NativeBookReader: View {
                         .foregroundStyle(BookPalette.secondary)
                 } else {
                     Text(currentPage.text)
-                        .font(.system(.title2, design: .rounded, weight: .semibold))
+                        .font(.system(.title2, design: .rounded).weight(.semibold))
                         .accessibilityIdentifier("book-page-text")
                 }
             }
@@ -466,7 +466,7 @@ private struct NativeBookReader: View {
                     if isEnd { Text("Read again") }
                     else { Image(systemName: "arrow.left") }
                 }
-                .font(.system(.body, design: .rounded, weight: .bold))
+                .font(.system(.body, design: .rounded).weight(.bold))
                 .foregroundStyle(BookPalette.ink)
                 .padding(.horizontal, isEnd ? 15 : 20)
                 .frame(minHeight: 52)
@@ -487,7 +487,7 @@ private struct NativeBookReader: View {
                     Spacer(minLength: 4)
                     Image(systemName: isEnd ? "books.vertical" : "arrow.right")
                 }
-                .font(.system(.body, design: .rounded, weight: .bold))
+                .font(.system(.body, design: .rounded).weight(.bold))
                 .foregroundStyle(.white)
                 .padding(.horizontal, 18)
                 .padding(.vertical, 14)
@@ -639,7 +639,7 @@ private struct BookArtwork: View {
                     VStack(spacing: 8) {
                         Text(emoji).font(.system(size: min(54, max(25, geometry.size.width * 0.25))))
                         Button("Load picture") { retry += 1 }
-                            .font(.system(.caption, design: .rounded, weight: .bold))
+                            .font(.system(.caption, design: .rounded).weight(.bold))
                             .foregroundStyle(BookPalette.teal)
                             .padding(8)
                             .frame(minHeight: 44)
@@ -661,6 +661,16 @@ private struct BookArtwork: View {
                 guard !Task.isCancelled else { return }
                 failed = true
             }
+        }
+    }
+}
+
+private struct BookBarBackground: ViewModifier {
+    @ViewBuilder func body(content: Content) -> some View {
+        if #available(iOS 16, *) {
+            content.toolbarBackground(BookPalette.paper, for: .navigationBar)
+        } else {
+            content
         }
     }
 }

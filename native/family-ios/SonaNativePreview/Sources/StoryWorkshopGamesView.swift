@@ -24,7 +24,7 @@ struct StoryWorkshopGamesView: View {
     @State private var round = UUID()
 
     var body: some View {
-        NavigationStack {
+        SonaNavigation {
             ScrollView {
                 VStack(spacing: 16) {
                     Image("daily-\(game.rawValue)")
@@ -37,7 +37,7 @@ struct StoryWorkshopGamesView: View {
                             .font(.system(size: 54)).foregroundStyle(SonaPalette.teal)
                             .accessibilityHidden(true)
                         Text("Round finished")
-                            .font(.system(.title, design: .rounded, weight: .heavy))
+                            .font(.system(.title, design: .rounded).weight(.heavy))
                         Button("Back to story") { dismiss() }.buttonStyle(WorkshopAction())
                         Button("Play again") { round = UUID(); finished = false }
                             .buttonStyle(WorkshopAction(secondary: true))
@@ -241,7 +241,7 @@ private struct ConcertRound: View {
                         play(index)
                     } label: {
                         Label(names[index], systemImage: icons[index])
-                            .labelStyle(.iconOnly).font(.system(.title, weight: .semibold))
+                            .labelStyle(.iconOnly).font(.title.weight(.semibold))
                             .frame(maxWidth: .infinity, minHeight: 66)
                             .background(SonaPalette.lavender, in: RoundedRectangle(cornerRadius: 16))
                     }
@@ -371,7 +371,7 @@ private struct WorkshopCard<Content: View>: View {
 
     var body: some View {
         VStack(spacing: 14) {
-            Text(prompt).font(.system(.title3, design: .rounded, weight: .heavy))
+            Text(prompt).font(.system(.title3, design: .rounded).weight(.heavy))
                 .multilineTextAlignment(.center)
                 .accessibilityAddTraits(.isHeader)
             content
@@ -388,7 +388,7 @@ private struct WorkshopAction: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.system(.headline, design: .rounded, weight: .heavy))
+            .font(.system(.headline, design: .rounded).weight(.heavy))
             .frame(maxWidth: .infinity, minHeight: 48)
             .foregroundStyle(secondary ? SonaPalette.ink : .white)
             .background(secondary ? SonaPalette.mint : SonaPalette.teal, in: RoundedRectangle(cornerRadius: 14))

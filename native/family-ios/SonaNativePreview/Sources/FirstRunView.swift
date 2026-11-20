@@ -78,7 +78,7 @@ struct FirstRunView: View {
                     changePage(toBuddy: false)
                 } label: {
                     Image(systemName: "chevron.left")
-                        .font(.system(.body, design: .rounded, weight: .bold))
+                        .font(.system(.body, design: .rounded).weight(.bold))
                         .frame(width: 44, height: 44)
                         .contentShape(Circle())
                 }
@@ -88,7 +88,7 @@ struct FirstRunView: View {
             }
 
             Text("Sona")
-                .font(.system(.title, design: .rounded, weight: .heavy))
+                .font(.system(.title, design: .rounded).weight(.heavy))
                 .tracking(-1)
                 .accessibilityLabel("Sona native preview")
 
@@ -96,7 +96,7 @@ struct FirstRunView: View {
 
             Button(action: onExplore) {
                 Text("Explore first")
-                    .font(.system(.subheadline, design: .rounded, weight: .bold))
+                    .font(.system(.subheadline, design: .rounded).weight(.bold))
                     .padding(.horizontal, 10)
                     .frame(minHeight: 44)
                     .contentShape(Capsule())
@@ -118,14 +118,14 @@ struct FirstRunView: View {
 
             VStack(spacing: 12) {
                 Text("Little adventures.\nBig smiles.")
-                    .font(.system(.largeTitle, design: .rounded, weight: .heavy))
+                    .font(.system(.largeTitle, design: .rounded).weight(.heavy))
                     .tracking(-0.9)
                     .lineSpacing(-1)
                     .foregroundStyle(FirstRunPalette.ink)
                     .accessibilityAddTraits(.isHeader)
 
                 Text("Come play with Echo.")
-                    .font(.system(.body, design: .rounded, weight: .medium))
+                    .font(.system(.body, design: .rounded).weight(.medium))
                     .foregroundStyle(FirstRunPalette.secondary)
             }
             .multilineTextAlignment(.center)
@@ -139,13 +139,13 @@ struct FirstRunView: View {
         VStack(spacing: compact ? 16 : 22) {
             VStack(spacing: 9) {
                 Text("Pick your buddy")
-                    .font(.system(.largeTitle, design: .rounded, weight: .heavy))
+                    .font(.system(.largeTitle, design: .rounded).weight(.heavy))
                     .tracking(-0.9)
                     .foregroundStyle(FirstRunPalette.ink)
                     .accessibilityAddTraits(.isHeader)
 
                 Text("Who’s coming with you?")
-                    .font(.system(.body, design: .rounded, weight: .medium))
+                    .font(.system(.body, design: .rounded).weight(.medium))
                     .foregroundStyle(FirstRunPalette.secondary)
             }
             .multilineTextAlignment(.center)
@@ -226,7 +226,7 @@ struct FirstRunView: View {
                             Text(candidate.title)
                             if selected {
                                 Image(systemName: "checkmark")
-                                    .font(.system(.caption, design: .rounded, weight: .heavy))
+                                    .font(.system(.caption, design: .rounded).weight(.heavy))
                                     .accessibilityHidden(true)
                             }
                         }
@@ -234,7 +234,7 @@ struct FirstRunView: View {
                     .frame(maxWidth: .infinity)
                 }
             }
-            .font(.system(.subheadline, design: .rounded, weight: .bold))
+            .font(.system(.subheadline, design: .rounded).weight(.bold))
             .foregroundStyle(FirstRunPalette.ink)
             .padding(horizontal ? 14 : 10)
             .frame(maxWidth: .infinity, minHeight: 44)
@@ -265,7 +265,7 @@ struct FirstRunView: View {
 
     private func selectionMark(_ selected: Bool) -> some View {
         Image(systemName: selected ? "checkmark.circle.fill" : "circle")
-            .font(.system(.title3, design: .rounded, weight: .medium))
+            .font(.system(.title3, design: .rounded).weight(.medium))
             .foregroundStyle(selected ? FirstRunPalette.teal : FirstRunPalette.line)
             .accessibilityHidden(true)
     }
@@ -283,10 +283,10 @@ struct FirstRunView: View {
                     Text(choosingBuddy ? "Explore Sona" : "Let’s go")
                     Spacer(minLength: 8)
                     Image(systemName: "arrow.right")
-                        .font(.system(.body, design: .rounded, weight: .bold))
+                        .font(.system(.body, design: .rounded).weight(.bold))
                         .accessibilityHidden(true)
                 }
-                .font(.system(.title3, design: .rounded, weight: .heavy))
+                .font(.system(.title3, design: .rounded).weight(.heavy))
                 .foregroundStyle(.white)
                 .padding(.horizontal, 22)
                 .padding(.vertical, 16)
@@ -300,7 +300,7 @@ struct FirstRunView: View {
             if !choosingBuddy {
                 Button(action: onTherapistLogin) {
                     Label("I have a login from my speech therapist", systemImage: "person.badge.key")
-                        .font(.system(.subheadline, design: .rounded, weight: .bold))
+                        .font(.system(.subheadline, design: .rounded).weight(.bold))
                         .foregroundStyle(FirstRunPalette.deepTeal)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 12)

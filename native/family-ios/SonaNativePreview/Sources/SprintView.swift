@@ -30,18 +30,18 @@ struct SprintView: View {
                             .frame(height: 150)
                             .accessibilityHidden(true)
                         Text("You caught \(stars) stars!")
-                            .font(.system(.title, design: .rounded, weight: .heavy))
+                            .font(.system(.title, design: .rounded).weight(.heavy))
                         Button("Play again") { launch() }
                             .buttonStyle(RoundActionStyle())
                         Button("Back to games") { dismiss() }
-                            .font(.system(.headline, design: .rounded, weight: .bold))
+                            .font(.system(.headline, design: .rounded).weight(.bold))
                             .frame(minHeight: 48)
                     }
                     .padding(20)
                 }
             } else {
                 Text(start == nil ? "Catch the stars in your lane." : "Tap a lane or swipe to switch.")
-                    .font(.system(.headline, design: .rounded, weight: .bold))
+                    .font(.system(.headline, design: .rounded).weight(.bold))
                     .multilineTextAlignment(.center)
 
                 track
@@ -78,11 +78,11 @@ struct SprintView: View {
             .accessibilityLabel("Back to games")
             Spacer()
             Text("Sound Sprint")
-                .font(.system(.title2, design: .rounded, weight: .heavy))
+                .font(.system(.title2, design: .rounded).weight(.heavy))
                 .accessibilityAddTraits(.isHeader)
             Spacer()
             Label("\(stars)", systemImage: "star.fill")
-                .font(.system(.headline, design: .rounded, weight: .heavy))
+                .font(.system(.headline, design: .rounded).weight(.heavy))
                 .padding(10)
                 .background(SonaPalette.yellow, in: Capsule())
                 .accessibilityLabel("\(stars) stars")
@@ -145,7 +145,7 @@ struct SprintView: View {
             ForEach(Array(["Left", "Middle", "Right"].enumerated()), id: \.offset) { index, title in
                 Button { lane = index } label: {
                     Text(title)
-                        .font(.system(.subheadline, design: .rounded, weight: .bold))
+                        .font(.system(.subheadline, design: .rounded).weight(.bold))
                         .frame(maxWidth: .infinity, minHeight: 48)
                         .background(lane == index ? SonaPalette.teal : .white, in: RoundedRectangle(cornerRadius: 11))
                         .foregroundStyle(lane == index ? .white : SonaPalette.ink)

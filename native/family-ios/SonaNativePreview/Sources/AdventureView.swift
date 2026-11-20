@@ -36,7 +36,7 @@ struct AdventureView: View {
     }
 
     var body: some View {
-        NavigationStack {
+        SonaNavigation {
             GeometryReader { geometry in
                 Group {
                     if let story {
@@ -47,7 +47,7 @@ struct AdventureView: View {
                                 Spacer()
                                 Text("Day \(story.day)")
                             }
-                            .font(.system(.caption, design: .rounded, weight: .bold))
+                            .font(.system(.caption, design: .rounded).weight(.bold))
                             .foregroundStyle(AdventureColors.secondary)
                             .padding(.horizontal, 22)
                             .padding(.vertical, 8)
@@ -75,7 +75,7 @@ struct AdventureView: View {
                                 .font(.system(size: 36))
                                 .foregroundStyle(AdventureColors.teal)
                             Text(failed ? "The story couldn’t open" : "No adventure for this day")
-                                .font(.system(.title2, design: .rounded, weight: .bold))
+                                .font(.system(.title2, design: .rounded).weight(.bold))
                             if failed { Button("Try again", action: load) }
                             Button("Back home") { dismiss() }
                                 .frame(minHeight: 44)
@@ -144,7 +144,7 @@ struct AdventureView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 24))
                 VStack(spacing: 12) {
                     Text(story.title)
-                        .font(.system(.largeTitle, design: .rounded, weight: .heavy))
+                        .font(.system(.largeTitle, design: .rounded).weight(.heavy))
                         .accessibilityIdentifier("adventure-title")
                         .accessibilityAddTraits(.isHeader)
                     Text(story.hook)
@@ -165,12 +165,12 @@ struct AdventureView: View {
                         .clipShape(RoundedRectangle(cornerRadius: 22))
                     VStack(spacing: 12) {
                         Text(current.caption(simple: isSimple))
-                            .font(.system(.title3, design: .rounded, weight: .semibold))
+                            .font(.system(.title3, design: .rounded).weight(.semibold))
                             .multilineTextAlignment(.center)
                             .fixedSize(horizontal: false, vertical: true)
                             .accessibilityIdentifier("adventure-caption")
                         Text("\((phase == .ending ? intro.count : 0) + page + 1) / \(intro.count + ending.count)")
-                            .font(.system(.caption, design: .rounded, weight: .medium))
+                            .font(.system(.caption, design: .rounded).weight(.medium))
                             .monospacedDigit()
                             .foregroundStyle(AdventureColors.secondary)
                             .accessibilityIdentifier("adventure-page-count")
@@ -188,11 +188,11 @@ struct AdventureView: View {
                     .frame(height: artHeight ?? 190)
                     .clipShape(RoundedRectangle(cornerRadius: 22))
                 Text(story.gameName)
-                    .font(.system(.largeTitle, design: .rounded, weight: .heavy))
+                    .font(.system(.largeTitle, design: .rounded).weight(.heavy))
                     .accessibilityAddTraits(.isHeader)
                 if hasGame {
                     Button("Preview the ending") { page = 0; phase = .ending }
-                        .font(.system(.subheadline, design: .rounded, weight: .semibold))
+                        .font(.system(.subheadline, design: .rounded).weight(.semibold))
                         .frame(minHeight: 44)
                         .accessibilityIdentifier("adventure-preview-ending")
                 }
@@ -207,7 +207,7 @@ struct AdventureView: View {
                     .frame(height: artHeight ?? 240)
                     .clipShape(RoundedRectangle(cornerRadius: 22))
                 Text("Preview complete")
-                    .font(.system(.largeTitle, design: .rounded, weight: .heavy))
+                    .font(.system(.largeTitle, design: .rounded).weight(.heavy))
                     .accessibilityAddTraits(.isHeader)
                     .accessibilityIdentifier("adventure-finished")
                 Text(story.title)
@@ -225,7 +225,7 @@ struct AdventureView: View {
             if phase == .intro || phase == .gameBoundary || phase == .ending {
                 Button(action: previous) {
                     Image(systemName: "arrow.left")
-                        .font(.system(.body, design: .rounded, weight: .bold))
+                        .font(.system(.body, design: .rounded).weight(.bold))
                         .frame(width: 52, height: 52)
                         .background(.white, in: RoundedRectangle(cornerRadius: 16))
                 }
@@ -233,7 +233,7 @@ struct AdventureView: View {
                 .accessibilityIdentifier("adventure-previous")
             } else if phase == .complete {
                 Button("Read again", action: start)
-                    .font(.system(.body, design: .rounded, weight: .bold))
+                    .font(.system(.body, design: .rounded).weight(.bold))
                     .padding(.horizontal, 15)
                     .frame(minHeight: 52)
                     .background(.white, in: RoundedRectangle(cornerRadius: 16))
@@ -246,7 +246,7 @@ struct AdventureView: View {
                     Spacer(minLength: 4)
                     Image(systemName: phase == .complete ? "house" : "arrow.right")
                 }
-                .font(.system(.body, design: .rounded, weight: .bold))
+                .font(.system(.body, design: .rounded).weight(.bold))
                 .foregroundStyle(.white)
                 .padding(.horizontal, 18)
                 .padding(.vertical, 14)

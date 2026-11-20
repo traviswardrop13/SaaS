@@ -50,7 +50,7 @@ struct StoryGamesView: View {
                     .accessibilityLabel("Close game").accessibilityIdentifier("story-game-close")
                     VStack(alignment: .leading, spacing: 2) {
                         Text(game.title)
-                            .font(.system(.title3, design: .rounded, weight: .heavy))
+                            .font(.system(.title3, design: .rounded).weight(.heavy))
                             .accessibilityAddTraits(.isHeader)
                             .accessibilityIdentifier("story-game-\(game.rawValue)")
                         Text("Native play preview").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
@@ -60,7 +60,7 @@ struct StoryGamesView: View {
                 if finished {
                     Spacer(minLength: 0)
                     Image(systemName: "sparkles").font(.system(size: 44)).foregroundStyle(StoryGameStyle.gold)
-                    Text(game.ending).font(.system(.title, design: .rounded, weight: .heavy)).multilineTextAlignment(.center)
+                    Text(game.ending).font(.system(.title, design: .rounded).weight(.heavy)).multilineTextAlignment(.center)
                         .accessibilityIdentifier("story-game-finished")
                     Text(game.detail).font(.body).multilineTextAlignment(.center)
                     Spacer(minLength: 0)
@@ -139,7 +139,7 @@ private struct StoryGameBackdrop: View {
 private struct StoryGameInstruction: View {
     let text: String
     var body: some View {
-        Text(text).font(.system(.body, design: .rounded, weight: .bold))
+        Text(text).font(.system(.body, design: .rounded).weight(.bold))
             .multilineTextAlignment(.center).frame(maxWidth: .infinity, minHeight: 48)
             .fixedSize(horizontal: false, vertical: true)
             .accessibilityIdentifier("story-game-instruction")

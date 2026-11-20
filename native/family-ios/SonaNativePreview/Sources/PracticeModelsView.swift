@@ -13,7 +13,7 @@ struct PracticeModelsView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 Text("Practice")
-                    .font(.system(.largeTitle, design: .rounded, weight: .heavy))
+                    .font(.system(.largeTitle, design: .rounded).weight(.heavy))
                     .accessibilityAddTraits(.isHeader)
 
                 VStack(spacing: 15) {
@@ -24,7 +24,7 @@ struct PracticeModelsView: View {
                         .accessibilityHidden(true)
                     if targetSound.isEmpty {
                         Text("Choose a sound")
-                            .font(.system(.title, design: .rounded, weight: .heavy))
+                            .font(.system(.title, design: .rounded).weight(.heavy))
                         Text("A grown-up can pick which sound you’ll hear here.")
                             .font(.system(.body, design: .rounded))
                             .foregroundStyle(SonaPalette.muted)
@@ -68,7 +68,7 @@ struct PracticeModelsView: View {
 
     private func primaryLabel(_ title: String, icon: String) -> some View {
         Label(title, systemImage: icon)
-            .font(.system(.headline, design: .rounded, weight: .heavy))
+            .font(.system(.headline, design: .rounded).weight(.heavy))
             .frame(maxWidth: .infinity, minHeight: 54)
             .foregroundStyle(.white)
             .background(SonaPalette.teal, in: RoundedRectangle(cornerRadius: 16))

@@ -44,7 +44,7 @@ struct JourneyGamesView: View {
                 .accessibilityIdentifier("journey-close")
                 Spacer()
                 Text(game.title)
-                    .font(.system(.title2, design: .rounded, weight: .heavy))
+                    .font(.system(.title2, design: .rounded).weight(.heavy))
                     .accessibilityAddTraits(.isHeader)
                 Spacer()
                 ProgressView(value: Double(turn), total: Double(game.goal))
@@ -93,7 +93,7 @@ struct JourneyGamesView: View {
                     .frame(height: 178)
                     .accessibilityHidden(true)
                 Text("You did it!")
-                    .font(.system(.largeTitle, design: .rounded, weight: .heavy))
+                    .font(.system(.largeTitle, design: .rounded).weight(.heavy))
                     .accessibilityIdentifier("journey-complete")
                 Button("Play again") {
                     playthrough += 1
@@ -101,7 +101,7 @@ struct JourneyGamesView: View {
                 }
                 .buttonStyle(RoundActionStyle())
                 Button("Back to games") { dismiss() }
-                    .font(.system(.headline, design: .rounded, weight: .bold))
+                    .font(.system(.headline, design: .rounded).weight(.bold))
                     .frame(minHeight: 48)
             }
             .padding(18)
@@ -122,7 +122,7 @@ private struct FeedBoard: View {
         VStack(spacing: 18) {
             Spacer(minLength: 0)
             Text("Find the matching fruit.")
-                .font(.system(.headline, design: .rounded, weight: .bold))
+                .font(.system(.headline, design: .rounded).weight(.bold))
             ZStack(alignment: .topTrailing) {
                 Image("echo-welcome")
                     .resizable()
@@ -189,7 +189,7 @@ private struct RaceBoard: View {
     var body: some View {
         VStack(spacing: 12) {
             Text(message)
-                .font(.system(.headline, design: .rounded, weight: .bold))
+                .font(.system(.headline, design: .rounded).weight(.bold))
                 .multilineTextAlignment(.center)
 
             GeometryReader { geometry in
@@ -280,7 +280,7 @@ private struct TreasureBoard: View {
     var body: some View {
         VStack(spacing: 14) {
             Text("Sail to each glowing island.")
-                .font(.system(.headline, design: .rounded, weight: .bold))
+                .font(.system(.headline, design: .rounded).weight(.bold))
 
             GeometryReader { geometry in
                 let points = maps[turn].map {
@@ -347,7 +347,7 @@ private struct LandingBoard: View {
     var body: some View {
         VStack(spacing: 12) {
             Text(message)
-                .font(.system(.headline, design: .rounded, weight: .bold))
+                .font(.system(.headline, design: .rounded).weight(.bold))
                 .multilineTextAlignment(.center)
 
             GeometryReader { geometry in

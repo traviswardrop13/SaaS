@@ -101,7 +101,7 @@ struct GamesView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 Text("Games")
-                    .font(.system(.largeTitle, design: .rounded, weight: .heavy))
+                    .font(.system(.largeTitle, design: .rounded).weight(.heavy))
                     .accessibilityAddTraits(.isHeader)
 
                 HStack(spacing: 8) {
@@ -126,7 +126,7 @@ struct GamesView: View {
                                 VStack(alignment: .leading, spacing: 5) {
                                     HStack(alignment: .top) {
                                         Text(game.title)
-                                            .font(.system(.headline, design: .rounded, weight: .heavy))
+                                            .font(.system(.headline, design: .rounded).weight(.heavy))
                                             .fixedSize(horizontal: false, vertical: true)
                                         if completed.contains(game.id) {
                                             Image(systemName: "star.fill")
@@ -168,7 +168,7 @@ struct GamesView: View {
     private func filterButton(_ title: String, showsGentle: Bool) -> some View {
         Button { quietGames = showsGentle } label: {
             Text(title)
-                .font(.system(.subheadline, design: .rounded, weight: .bold))
+                .font(.system(.subheadline, design: .rounded).weight(.bold))
                 .padding(.horizontal, 14)
                 .frame(minHeight: 44)
                 .background(quietGames == showsGentle ? SonaPalette.mint : .white, in: Capsule())

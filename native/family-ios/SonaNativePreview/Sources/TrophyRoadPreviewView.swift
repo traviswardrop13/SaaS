@@ -64,7 +64,7 @@ struct TrophyRoadPreviewView: View {
                 .accessibilityHidden(true)
 
             Text(land.name)
-                .font(.system(.title3, design: .rounded, weight: .heavy))
+                .font(.system(.title3, design: .rounded).weight(.heavy))
                 .padding(9)
                 .foregroundStyle(SonaPalette.ink)
                 .background(.white, in: RoundedRectangle(cornerRadius: 8))
@@ -79,12 +79,12 @@ struct TrophyRoadPreviewView: View {
     private func stop(_ reward: RewardRoadCatalog.Stop, lands: [RewardRoadCatalog.Land]) -> some View {
         HStack(alignment: .center, spacing: 13) {
             Image(systemName: reward.big == true ? "gift.fill" : "trophy.fill")
-                .font(.system(.headline, weight: .semibold))
+                .font(.headline.weight(.semibold))
                 .frame(width: 37, height: 37)
                 .background(SonaPalette.yellow, in: Circle())
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 4) {
-                Text("\(reward.at) trophies").font(.system(.headline, design: .rounded, weight: .heavy))
+                Text("\(reward.at) trophies").font(.system(.headline, design: .rounded).weight(.heavy))
                 Text(reward.gift.compactMap { $0.label(lands: lands) }.joined(separator: "  ·  "))
                     .font(.subheadline)
                     .foregroundStyle(SonaPalette.muted)

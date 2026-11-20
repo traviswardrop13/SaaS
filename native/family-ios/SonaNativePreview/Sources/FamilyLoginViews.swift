@@ -149,7 +149,7 @@ struct FamilyConsentView: View {
                             Text(choosing == false ? "Saving…" : "No thanks — just use Sona")
                                 .multilineTextAlignment(.center)
                         }
-                        .font(.system(.body, design: .rounded, weight: .bold))
+                        .font(.system(.body, design: .rounded).weight(.bold))
                         .foregroundStyle(FamilyFormColors.ink)
                         .padding(.horizontal, 16)
                         .padding(.vertical, 14)
@@ -313,7 +313,7 @@ private struct FamilyFormShell<Content: View>: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        NavigationStack {
+        SonaNavigation {
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
                     Image(systemName: symbol)
@@ -325,7 +325,7 @@ private struct FamilyFormShell<Content: View>: View {
 
                     VStack(alignment: .leading, spacing: 12) {
                         Text(title)
-                            .font(.system(.largeTitle, design: .rounded, weight: .bold))
+                            .font(.system(.largeTitle, design: .rounded).weight(.bold))
                             .foregroundStyle(FamilyFormColors.ink)
                             .accessibilityAddTraits(.isHeader)
                         if let message {
@@ -370,7 +370,7 @@ private struct FamilyFieldLabel<Field: View>: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(title)
-                .font(.system(.subheadline, design: .rounded, weight: .bold))
+                .font(.system(.subheadline, design: .rounded).weight(.bold))
                 .foregroundStyle(FamilyFormColors.ink)
             field()
                 .font(.system(.body, design: .rounded))
@@ -396,7 +396,7 @@ private struct FamilySubmitButton: View {
                 if busy { ProgressView().tint(.white).accessibilityHidden(true) }
                 Text(title).multilineTextAlignment(.center)
             }
-            .font(.system(.body, design: .rounded, weight: .bold))
+            .font(.system(.body, design: .rounded).weight(.bold))
             .foregroundStyle(.white)
             .padding(.horizontal, 18)
             .padding(.vertical, 15)

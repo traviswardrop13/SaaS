@@ -10,6 +10,12 @@ enum SonaPalette {
     static let yellow = Color(red: 1, green: 0.88, blue: 0.56)
 }
 
+extension Color {
+    var tileGradient: LinearGradient {
+        LinearGradient(colors: [opacity(0.76), self], startPoint: .top, endPoint: .bottom)
+    }
+}
+
 struct SonaPressStyle: ButtonStyle {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -36,14 +42,22 @@ struct HomeView: View {
     @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
-        ViewThatFits(in: .vertical) {
-            contents
-            ScrollView { contents }
-                .scrollIndicators(.hidden)
-        }
+        homeLayout
         .frame(maxHeight: .infinity, alignment: .top)
         .background(SonaPalette.paper.ignoresSafeArea())
         .foregroundStyle(SonaPalette.ink)
+    }
+
+    @ViewBuilder
+    private var homeLayout: some View {
+        if #available(iOS 16, *) {
+            ViewThatFits(in: .vertical) {
+                contents
+                ScrollView(showsIndicators: false) { contents }
+            }
+        } else {
+            ScrollView(showsIndicators: false) { contents }
+        }
     }
 
     private var contents: some View {
@@ -52,7 +66,7 @@ struct HomeView: View {
 
             if !targetSound.isEmpty {
                 Label("Your sound · \(targetSound == "THV" ? "TH (v)" : targetSound)", systemImage: "waveform")
-                    .font(.system(.subheadline, design: .rounded, weight: .semibold))
+                    .font(.system(.subheadline, design: .rounded).weight(.semibold))
                     .foregroundStyle(SonaPalette.teal)
                     .accessibilityIdentifier("home-target-sound")
             }
@@ -89,7 +103,7 @@ struct HomeView: View {
             .accessibilityValue(buddy.title)
 
             Text("Sona")
-                .font(.system(.title, design: .rounded, weight: .heavy))
+                .font(.system(.title, design: .rounded).weight(.heavy))
                 .accessibilityAddTraits(.isHeader)
 
             Spacer(minLength: 2)
@@ -115,7 +129,7 @@ struct HomeView: View {
 
             Button(action: onGrownUps) {
                 Label("Grown-ups", systemImage: "lock.fill")
-                    .font(.system(.caption, design: .rounded, weight: .bold))
+                    .font(.system(.caption, design: .rounded).weight(.bold))
                     .padding(.horizontal, 12)
                     .frame(minHeight: 46)
                     .background(.white.opacity(0.72), in: Capsule())
@@ -141,11 +155,11 @@ struct HomeView: View {
                 HStack(alignment: .center, spacing: 12) {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Today’s adventure")
-                            .font(.system(.caption, design: .rounded, weight: .bold))
+                            .font(.system(.caption, design: .rounded).weight(.bold))
                         Text(story.title)
-                            .font(.system(.title2, design: .rounded, weight: .heavy))
+                            .font(.system(.title2, design: .rounded).weight(.heavy))
                         Text(storyAccess ? "Open story preview" : "Premium")
-                            .font(.system(.subheadline, design: .rounded, weight: .medium))
+                            .font(.system(.subheadline, design: .rounded).weight(.medium))
                             .foregroundStyle(.white.opacity(0.87))
                     }
                     Spacer(minLength: 6)
@@ -178,10 +192,10 @@ struct HomeView: View {
         } label: {
             HStack(spacing: 9) {
                 Image(systemName: symbol)
-                    .font(.system(.body, weight: .bold))
+                    .font(.body.weight(.bold))
                     .accessibilityHidden(true)
                 Text(title)
-                    .font(.system(.headline, design: .rounded, weight: .heavy))
+                    .font(.system(.headline, design: .rounded).weight(.heavy))
                 Spacer(minLength: 0)
             }
             .padding(.horizontal, 13)
@@ -198,7 +212,7 @@ struct HomeBuddySheet: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        NavigationStack {
+        SonaNavigation {
             ScrollView {
                 VStack(spacing: 12) {
                     ForEach(PreviewBuddy.allCases) { option in
@@ -213,7 +227,7 @@ struct HomeBuddySheet: View {
                                     .frame(width: 65, height: 65)
                                     .accessibilityHidden(true)
                                 Text(option.title)
-                                    .font(.system(.title3, design: .rounded, weight: .heavy))
+                                    .font(.system(.title3, design: .rounded).weight(.heavy))
                                 Spacer()
                                 if option == buddy {
                                     Image(systemName: "checkmark.circle.fill")
@@ -244,7 +258,7 @@ struct PlayCollectionView: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        NavigationStack {
+        SonaNavigation {
             ScrollView {
                 VStack(alignment: .leading, spacing: 12) {
                     NavigationLink {
@@ -253,7 +267,7 @@ struct PlayCollectionView: View {
                         HStack(alignment: .center, spacing: 12) {
                             Image("road-chest").resizable().scaledToFit().frame(width: 42, height: 42)
                                 .accessibilityHidden(true)
-                            Text("Trophy Road").font(.system(.headline, design: .rounded, weight: .heavy))
+                            Text("Trophy Road").font(.system(.headline, design: .rounded).weight(.heavy))
                             Spacer()
                             Image(systemName: "chevron.right").accessibilityHidden(true)
                         }
@@ -270,7 +284,7 @@ struct PlayCollectionView: View {
                     } else {
                         ForEach(NativeGame.allCases.filter { completedGames.contains($0.id) }) { game in
                             Label(game.title, systemImage: "star.circle.fill")
-                                .font(.system(.headline, design: .rounded, weight: .bold))
+                                .font(.system(.headline, design: .rounded).weight(.bold))
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .padding(16)
                                 .background(.white, in: RoundedRectangle(cornerRadius: 16))

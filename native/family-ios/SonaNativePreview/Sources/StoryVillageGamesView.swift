@@ -87,7 +87,7 @@ struct StoryVillageGamesView: View {
                     .resizable().scaledToFill().frame(width: 88, height: 82)
                     .clipShape(RoundedRectangle(cornerRadius: 17)).accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 5) {
-                    Text(game.title).font(.system(.title3, design: .rounded, weight: .heavy))
+                    Text(game.title).font(.system(.title3, design: .rounded).weight(.heavy))
                         .accessibilityAddTraits(.isHeader)
                         .accessibilityIdentifier("nativeVillage-\(game.rawValue)")
                     Text(game.instruction).font(.subheadline).fixedSize(horizontal: false, vertical: true)
@@ -118,7 +118,7 @@ struct StoryVillageGamesView: View {
                 Image("daily-\(game.rawValue)").resizable().scaledToFill()
                     .frame(width: 160, height: 100).clipShape(RoundedRectangle(cornerRadius: 19))
                     .accessibilityHidden(true)
-                Text(game.finish).font(.system(.title, design: .rounded, weight: .heavy))
+                Text(game.finish).font(.system(.title, design: .rounded).weight(.heavy))
                     .multilineTextAlignment(.center)
                     .accessibilityIdentifier("nativeVillageFinish")
                 VillageButton(title: "Play again", symbol: "arrow.clockwise") {
@@ -157,7 +157,7 @@ private struct VillageButton: View {
     let action: () -> Void
     var body: some View {
         Button(action: action) {
-            Label(title, systemImage: symbol).font(.system(.body, design: .rounded, weight: .bold))
+            Label(title, systemImage: symbol).font(.system(.body, design: .rounded).weight(.bold))
                 .frame(maxWidth: .infinity, minHeight: 50).padding(.horizontal, 12)
                 .foregroundStyle(.white)
                 .background(VillageStyle.teal, in: RoundedRectangle(cornerRadius: 16))
@@ -168,7 +168,7 @@ private struct VillageButton: View {
 private struct VillageCaption: View {
     let text: String
     var body: some View {
-        Text(text).font(.system(.subheadline, design: .rounded, weight: .bold))
+        Text(text).font(.system(.subheadline, design: .rounded).weight(.bold))
             .multilineTextAlignment(.center).padding(11)
             .background(.white.opacity(0.95), in: RoundedRectangle(cornerRadius: 13))
             .padding(10).allowsHitTesting(false)

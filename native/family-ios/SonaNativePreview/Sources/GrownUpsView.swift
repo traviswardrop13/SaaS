@@ -30,7 +30,7 @@ struct GrownUpsView: View {
     private let numberWords = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"]
 
     var body: some View {
-        NavigationStack {
+        SonaNavigation {
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
                     if unlocked {
@@ -50,7 +50,7 @@ struct GrownUpsView: View {
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") { dismiss() }
-                        .fontWeight(.semibold)
+                        .font(.body.weight(.semibold))
                         .accessibilityIdentifier("grownups-close")
                 }
             }
@@ -87,7 +87,7 @@ struct GrownUpsView: View {
 
             VStack(alignment: .leading, spacing: 18) {
                 Text(digits.map { numberWords[$0] }.joined(separator: " · "))
-                    .font(.system(.title3, design: .rounded, weight: .bold))
+                    .font(.system(.title3, design: .rounded).weight(.bold))
                     .fixedSize(horizontal: false, vertical: true)
                     .accessibilityLabel("Number words: " + digits.map { numberWords[$0] }.joined(separator: ", "))
                     .accessibilityIdentifier("grownups-challenge")
@@ -96,7 +96,7 @@ struct GrownUpsView: View {
                     Text("Four numbers")
                         .font(.subheadline.weight(.semibold))
                     TextField("Enter numbers", text: $answer)
-                        .font(.system(.title2, design: .rounded, weight: .semibold))
+                        .font(.system(.title2, design: .rounded).weight(.semibold))
                         .monospacedDigit()
                         .keyboardType(.numberPad)
                         .textInputAutocapitalization(.never)
@@ -162,7 +162,7 @@ struct GrownUpsView: View {
 
             VStack(alignment: .leading, spacing: 9) {
                 Text("Your login")
-                    .font(.system(.title2, design: .rounded, weight: .bold))
+                    .font(.system(.title2, design: .rounded).weight(.bold))
                     .accessibilityAddTraits(.isHeader)
                 if let familyUsername {
                     Text(familyUsername)
@@ -218,7 +218,7 @@ struct GrownUpsView: View {
 
             VStack(alignment: .leading, spacing: 16) {
                 Text("Sound on Home")
-                    .font(.system(.title2, design: .rounded, weight: .bold))
+                    .font(.system(.title2, design: .rounded).weight(.bold))
                     .accessibilityAddTraits(.isHeader)
                 let assigned = homework?.sounds.map { $0.uppercased() }.filter(Self.sounds.contains) ?? []
                 if !assigned.isEmpty, let homework {
@@ -300,7 +300,7 @@ struct GrownUpsView: View {
         } label: {
             VStack(spacing: 7) {
                 Text(label)
-                    .font(.system(.title2, design: .rounded, weight: .bold))
+                    .font(.system(.title2, design: .rounded).weight(.bold))
                 Image(systemName: selected ? "checkmark.circle.fill" : "circle")
                     .font(.caption)
             }
@@ -333,7 +333,7 @@ struct GrownUpsView: View {
                 .tracking(1.1)
                 .foregroundStyle(GrownUpsPalette.muted)
             Text(title)
-                .font(.system(.largeTitle, design: .rounded, weight: .bold))
+                .font(.system(.largeTitle, design: .rounded).weight(.bold))
                 .accessibilityAddTraits(.isHeader)
             Text(detail)
                 .font(.body)

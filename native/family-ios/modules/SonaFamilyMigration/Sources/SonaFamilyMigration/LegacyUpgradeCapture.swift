@@ -59,7 +59,7 @@ private final class InertLegacyDocument: NSObject, WKNavigationDelegate {
             try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, any Error>) in
                 pending = continuation
                 deadline = Task { [weak self] in
-                    do { try await Task.sleep(nanoseconds: 10_000_000_000) } catch { return }
+                    do { try await Task.sleep(nanoseconds: 30_000_000_000) } catch { return }
                     self?.fail(MigrationError.invalidCapture)
                 }
                 webView.loadHTMLString(Self.html, baseURL: url)

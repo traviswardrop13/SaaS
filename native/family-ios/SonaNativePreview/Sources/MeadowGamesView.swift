@@ -102,7 +102,7 @@ struct MeadowGamesView: View {
             }
             VStack(spacing: 4) {
                 Text(game.title)
-                    .font(.system(.title, design: .rounded, weight: .heavy))
+                    .font(.system(.title, design: .rounded).weight(.heavy))
                     .accessibilityAddTraits(.isHeader)
                     .accessibilityIdentifier("nativeMeadow-\(game.rawValue)")
                 Text(game.instruction)
@@ -154,7 +154,7 @@ struct MeadowGamesView: View {
                     .font(.system(size: 44, weight: .semibold))
                     .foregroundStyle(MeadowStyle.teal).accessibilityHidden(true)
                 Text(game.finish)
-                    .font(.system(.title, design: .rounded, weight: .heavy))
+                    .font(.system(.title, design: .rounded).weight(.heavy))
                     .multilineTextAlignment(.center)
                 MeadowButton(title: "Play again", symbol: "arrow.clockwise") {
                     finished = false
@@ -196,7 +196,7 @@ private struct MeadowButton: View {
     var body: some View {
         Button(action: action) {
             Label(title, systemImage: symbol)
-                .font(.system(.body, design: .rounded, weight: .bold))
+                .font(.system(.body, design: .rounded).weight(.bold))
                 .frame(maxWidth: .infinity, minHeight: 50)
                 .padding(.horizontal, 12)
                 .foregroundStyle(.white)
@@ -210,7 +210,7 @@ private struct MeadowCaption: View {
     let text: String
     var body: some View {
         Text(text)
-            .font(.system(.subheadline, design: .rounded, weight: .bold))
+            .font(.system(.subheadline, design: .rounded).weight(.bold))
             .multilineTextAlignment(.center)
             .padding(.horizontal, 14).padding(.vertical, 9)
             .background(.white.opacity(0.96), in: RoundedRectangle(cornerRadius: 15))
@@ -261,7 +261,7 @@ private struct MeadowBalloon: View {
                         VStack(spacing: 4) {
                             Image("meadow-pump").resizable().scaledToFit().frame(width: 78, height: 113)
                             Text(pumps < 6 ? "Pump · \(pumps)/6" : "All filled up!")
-                                .font(.system(.body, design: .rounded, weight: .bold))
+                                .font(.system(.body, design: .rounded).weight(.bold))
                                 .padding(8).background(.white, in: Capsule())
                         }
                         .frame(minWidth: 110, minHeight: 145)
@@ -517,7 +517,7 @@ private struct MeadowTrain: View {
                     .accessibilityHidden(true)
                 VStack {
                     Spacer()
-                    Text("Hold to drive").font(.system(.title3, design: .rounded, weight: .bold))
+                    Text("Hold to drive").font(.system(.title3, design: .rounded).weight(.bold))
                         .foregroundStyle(.white).frame(maxWidth: .infinity, minHeight: 70)
                         .background(driving ? MeadowStyle.teal.opacity(0.75) : MeadowStyle.teal, in: RoundedRectangle(cornerRadius: 22))
                         .contentShape(RoundedRectangle(cornerRadius: 22))

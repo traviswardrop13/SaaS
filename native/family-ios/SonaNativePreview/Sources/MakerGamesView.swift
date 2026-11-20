@@ -72,7 +72,7 @@ struct MakerGamesView: View {
             }
             VStack(spacing: 4) {
                 Text(game.title)
-                    .font(.system(.largeTitle, design: .rounded, weight: .heavy))
+                    .font(.system(.largeTitle, design: .rounded).weight(.heavy))
                     .accessibilityAddTraits(.isHeader)
                     .accessibilityIdentifier("maker-\(game.id)")
                 Text(game.hint)
@@ -106,7 +106,7 @@ struct MakerGamesView: View {
                     .foregroundStyle(MakerPalette.orange)
                     .accessibilityHidden(true)
                 Text(game == .pizza ? "Pizza’s ready!" : "Look what you made!")
-                    .font(.system(.title, design: .rounded, weight: .heavy))
+                    .font(.system(.title, design: .rounded).weight(.heavy))
                     .multilineTextAlignment(.center)
                 Text("\(game.title) round finished.")
                     .foregroundStyle(MakerPalette.muted)
@@ -360,7 +360,7 @@ private struct CastleCraneRound: View {
 
     private func castleBlock(_ index: Int) -> some View {
         RoundedRectangle(cornerRadius: 8)
-            .fill(colors[index % colors.count].gradient)
+            .fill(colors[index % colors.count].tileGradient)
             .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(.white.opacity(0.6), lineWidth: 2))
             .overlay {
                 if index >= 3 {
@@ -482,7 +482,7 @@ private struct PizzaKitchenRound: View {
 
     private func pizza(edge: CGFloat) -> some View {
         ZStack {
-            Circle().fill(Color(red: 0.92, green: 0.67, blue: 0.35).gradient)
+            Circle().fill(Color(red: 0.92, green: 0.67, blue: 0.35).tileGradient)
                 .shadow(color: .black.opacity(0.15), radius: 5, y: 4)
             Circle().fill(Color(red: 1, green: 0.89, blue: 0.63)).padding(edge * 0.055)
             if step != .roll {
@@ -606,7 +606,7 @@ private struct MakerProgress: View {
     let label: String
     var body: some View {
         HStack(spacing: 12) {
-            Text("\(value) / \(total)").font(.system(.subheadline, design: .rounded, weight: .bold)).monospacedDigit()
+            Text("\(value) / \(total)").font(.system(.subheadline, design: .rounded).weight(.bold)).monospacedDigit()
             ProgressView(value: Double(value), total: Double(total)).tint(MakerPalette.teal)
         }
         .padding(.horizontal, 15).padding(.vertical, 11)
@@ -626,7 +626,7 @@ private struct MakerAction: View {
     var body: some View {
         Button(action: action) {
             Label(title, systemImage: icon)
-                .font(.system(.body, design: .rounded, weight: .bold))
+                .font(.system(.body, design: .rounded).weight(.bold))
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: .infinity, minHeight: 50)
                 .padding(.horizontal, 10)

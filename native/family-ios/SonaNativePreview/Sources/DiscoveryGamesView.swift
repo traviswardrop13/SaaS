@@ -90,7 +90,7 @@ struct DiscoveryGamesView: View {
 
             VStack(spacing: 5) {
                 Text(game.title)
-                    .font(.system(.largeTitle, design: .rounded, weight: .heavy))
+                    .font(.system(.largeTitle, design: .rounded).weight(.heavy))
                     .accessibilityAddTraits(.isHeader)
                 Text(game.instruction)
                     .font(.subheadline.weight(.medium))
@@ -126,7 +126,7 @@ struct DiscoveryGamesView: View {
                     .foregroundStyle(DiscoveryPalette.teal)
                     .accessibilityHidden(true)
                 Text("You did it!")
-                    .font(.system(.largeTitle, design: .rounded, weight: .heavy))
+                    .font(.system(.largeTitle, design: .rounded).weight(.heavy))
                 Text("\(game.title) round finished.")
                     .font(.body)
                     .foregroundStyle(DiscoveryPalette.muted)
@@ -187,7 +187,8 @@ private struct BubblePopRound: View {
                             } else {
                                 Button { pop(index) } label: {
                                     Circle()
-                                        .fill(colors[index].opacity(0.22).gradient)
+                                        .fill(LinearGradient(colors: [colors[index].opacity(0.12), colors[index].opacity(0.28)],
+                                                             startPoint: .top, endPoint: .bottom))
                                         .overlay(Circle().strokeBorder(colors[index].opacity(0.65), lineWidth: 2.5))
                                         .overlay(alignment: .topLeading) {
                                             Capsule()
@@ -255,7 +256,7 @@ private struct PeekabooRound: View {
             DiscoveryProgress(value: finds, total: 3, label: "foxes found")
                 .accessibilityIdentifier("peekaboo-progress")
             Text(status)
-                .font(.system(.title3, design: .rounded, weight: .bold))
+                .font(.system(.title3, design: .rounded).weight(.bold))
                 .multilineTextAlignment(.center)
                 .frame(minHeight: 50)
                 .accessibilityIdentifier("peekaboo-status")
@@ -279,7 +280,7 @@ private struct PeekabooRound: View {
                                     }
                                 } else {
                                     RoundedRectangle(cornerRadius: 19)
-                                        .fill(colors[door].gradient)
+                                        .fill(colors[door].tileGradient)
                                         .padding(5)
                                         .overlay {
                                             Image(systemName: "star.fill")
@@ -528,7 +529,7 @@ private struct DiscoveryAction: View {
     var body: some View {
         Button(action: action) {
             Label(title, systemImage: systemImage)
-                .font(.system(.body, design: .rounded, weight: .bold))
+                .font(.system(.body, design: .rounded).weight(.bold))
                 .frame(maxWidth: .infinity, minHeight: 50)
                 .padding(.horizontal, 12)
                 .foregroundStyle(.white)

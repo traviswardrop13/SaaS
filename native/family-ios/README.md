@@ -1,12 +1,12 @@
 # Sona native family rebuild
 
-Open `SonaNativePreview.xcodeproj` in Xcode, select **SonaNativePreview** and an iPhone Simulator, and press Run. The preview uses a separate bundle ID. Work stays on `codex/sona-native-family`. [Design changes for review](DESIGN-CHANGES.md)
+Open `SonaNativePreview.xcodeproj` in Xcode, select **SonaNativePreview** and an iPhone Simulator, and press Run. The preview uses a separate bundle ID and builds with the current app’s iOS 15 minimum. Work stays on `codex/sona-native-family`. [Design changes for review](DESIGN-CHANGES.md)
 
 The first screen offers both regular setup and **I have a login from my speech therapist**. The local build uses the existing family-login, clinician coverage, consent enrollment, and family-password endpoints on `app.speaksona.com`. A verified covered household goes directly to its games and books after making the sharing choice. An unconfirmed or uncovered connection does not confer Premium.
 
 The SwiftUI and SpriteKit preview includes Home, all 25 released Arcade titles, 55 books with 554 original pages, 24 illustrated adventure stories and native rounds for their 14 separate games, sound-model playback, player switching, parent progress, and a Trophy Road preview. The books and adventures use the original captions and artwork. The preview logs its own game finishes and manual reading positions. It does not credit speech or track actual quest and reward completion.
 
-The native [speech package](modules/SonaSpeechCore) contains on-device capture, acoustic checks and word verdicts. It has no audio persistence or network code. [Approved practice dialogue](PRACTICE-DIALOGUE.md) comes from the current application source and existing clip references. [Migration](modules/SonaFamilyMigration) verifies an atomic archive of the original household and child records and refuses recording payloads. The [access package](modules/SonaFamilyAccess) keeps the original content rules and storefront products, and the preview uses it to read current access. The preview does not sell a plan or modify purchase, trial, or historical ownership records.
+The native [speech package](modules/SonaSpeechCore) contains on-device capture, acoustic checks, retry decisions and word verdicts. Input stays in memory. [Approved practice dialogue](PRACTICE-DIALOGUE.md) comes from the current application source and existing clip references. [Migration](modules/SonaFamilyMigration) verifies an atomic archive of household and child records, refuses recording payloads, and seeds separately editable native records. The [access package](modules/SonaFamilyAccess) controls the preview’s content access. The [RevenueCat adapter](adapters/RevenueCatFamilyPurchaseClient.swift) and purchase coordinator preserve the store’s prices, terms, ownership and existing identity. The preview has no purchase screen.
 
 ## Release checks
 
@@ -26,3 +26,5 @@ swiftc native/family-ios/SonaNativePreview/Sources/FamilyLoginClient.swift \
   -o "$test_dir/family-login-contract"
 "$test_dir/family-login-contract"
 ```
+
+The signed preview built successfully for iPhone Simulator. A fictional family sign-in exercised consent, homework, the covered adventure and Arcade, and different players in Settings. The simulator completed the observatory round and returned to the story. A separate synthetic in-place update recovered all four legacy storage locations, kept an edit in the native records, and imported nothing twice on retry.
