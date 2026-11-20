@@ -377,6 +377,18 @@ practice, or what an SLP is shown, it is Rachel's call, not an engineering
 one. Surface those in the PR body so she can review them without reading
 the diff.
 
+## Where the money comes from (Travis, 20 Nov 2026)
+**Speech therapists paying for Sona Pro through Stripe are the main revenue
+channel**: $19.99 a month, unlimited family logins for their caseload (sold
+on the GoHighLevel site's checkout and the dashboard). Families buying
+Premium in the iPhone app (RevenueCat) stays on, as a side channel. So the
+**family login a therapist makes** (the first screen's "I have a login from
+my speech therapist", `/api/family/login`, then "Yes, share progress") is
+the most important door in the kids' app, and the native rebuild Codex is
+doing (Travis, 20 Nov 2026: the web app "lags and is jumpy" and the
+keyboard covers things) must make it work first, end to end, with no price
+screen for a covered family.
+
 ## Pricing — a free version, Premium, and the cohorts no flip can take back
 **Current release (checked against `main`, 11 Nov 2026): families pay, and
 only inside the iPhone/iPad app.** Read this first; everything below it in
@@ -2356,13 +2368,16 @@ login is typed INTO the app. `lib/familyLogin.ts` holds the rules;
   first name (a login must not look like it names the child).
 - **Deleting goes with it.** Cancel invite, Remove from my caseload and Delete
   login each delete the login; Remove's words say so ("and their Sona login").
-- **Log in on the first screen** (`#loginLink`, at the top right, across from
-  "Sona", where the email step's Skip sits) shows only on the hello of a
-  family's first setup, on a device no clinician has connected yet. It reads
-  "Log in", with no question mark: the hello holds no question
-  (onboardingtest). **Never in the footer:** the footer's button stays in the
-  same place on every screen, so a double tap on it moves one screen (under
-  Get started it pushed the button up, and onboardingtest's double tap missed).
+- **"I have a login from my speech therapist" on the first screen**
+  (`#loginLink`; Travis, 19 Nov 2026: "just pull that button in", from #306;
+  from 14 to 19 Nov a small "Log in" at the top right): a cream pill under
+  Echo, just above Get started and as wide as it ("I have a login" alone on
+  a phone narrower than 360 px). It shows only on the hello of a family's
+  first setup, on a device no clinician has connected yet, and opens
+  join.html's login form. The hello still holds no question
+  (onboardingtest). **Never in the footer:** the footer's Get started stays
+  in the same place on every screen, so a double tap on it moves one
+  screen.
 
 ### Sona for SLPs: the clinicians' own iPhone app (SLPAPP1, 16 Nov 2026)
 Travis: "start building the SLP dashboard mobile app"; asked, he chose **its
