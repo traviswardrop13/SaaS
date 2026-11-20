@@ -797,20 +797,130 @@
       .premium-top { order:-1; flex:1 1 100%; }
     }
     @media (max-width:768px) { .premium-card { padding:20px 16px; } .card .premium-title { font-size:19px; } .premium-price b { font-size:24px; } }
+
+    /* SLPCLEAN1 (20 Nov 2026, Travis: "i just wanna cleaner dashboard"). The
+       clean white look from #302, as the LAST layer of this sheet so it wins
+       over the warm one above, with no change to what the page does: white
+       surfaces, light grey hairlines, one teal accent (the main button, the
+       picked menu item, links, focus), the system font, Echo's logo top left.
+       No pastel tiles, no mascot in the headings, grey initials. The only
+       colour that says how a child is doing stays the muted red of "missed". */
+    :root {
+      --accent:#0e7c86; --accent-d:#0b646c; --accent-bg:#eef6f7;
+      --blue:var(--accent); --blue-d:var(--accent-d); --blue-bg:var(--accent-bg);
+      --green:var(--accent); --green-d:var(--accent-d); --green-bg:var(--accent-bg);
+      --ink:#1f2328; --ink-2:#374151; --muted:#6b7280; --faint:#9ca3af;
+      --line:#e8eaed; --line-2:#d6d9de; --subtle:#f7f8f9; --chip:#f2f3f5;
+      --bg:#fff; --card:#fff;
+      --sys:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,system-ui,sans-serif;
+    }
+    body, body * { font-family:var(--sys); }
+    body { background:#fff; color:var(--ink); }
+    :focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+    a { color:var(--accent-d); }
+    /* the menu */
+    .sidebar, .mobile-bar, .workspace-bar, .sidebar-bottom { background:#fff; }
+    .sidebar .brand { font-size:18px; font-weight:650; letter-spacing:-.01em; color:var(--ink); padding:4px 10px 22px; }
+    .sidebar .brand img { width:auto; height:38px; }
+    .sidebar .brand small { background:none; border:0; padding:0; margin-left:0; font-size:12px; font-weight:500; color:var(--muted); }
+    .mobile-bar .brand { font-size:16px; font-weight:650; color:var(--ink); }
+    .mobile-bar .brand img { width:auto; height:34px; }
+    .sidebar .nav-section { font-size:11px; font-weight:600; letter-spacing:.06em; color:var(--faint); }
+    .nav-item { position:relative; border-radius:8px; padding:8px 10px; margin:1px 0; font-size:14px; font-weight:500; color:var(--ink-2); box-shadow:none; }
+    .nav-item .icon { width:20px; height:auto; background:none; border-radius:0; color:var(--faint); }
+    .nav-item[data-page] .icon { background:none; color:var(--faint); }
+    .nav-item:hover { background:var(--subtle); color:var(--ink); }
+    .nav-item.active { background:var(--accent-bg); color:var(--accent-d); font-weight:600; box-shadow:none; }
+    .nav-item.active::before { content:""; position:absolute; left:-14px; top:7px; bottom:7px; width:3px; border-radius:0 3px 3px 0; background:var(--accent); }
+    .nav-item.active .icon, .nav-item.active[data-page] .icon { color:var(--accent); }
+    .nav-item .badge { background:none; color:var(--muted); font-size:12px; font-weight:500; padding:0; }
+    .nav-item .badge.warn { background:var(--ink); color:#fff; border-radius:99px; padding:0 7px; font-size:11px; font-weight:600; line-height:18px; }
+    .soon-badge { background:var(--chip); color:var(--muted); }
+    .account-avatar { background:var(--chip); color:var(--ink-2); font-weight:600; width:32px; height:32px; }
+    .sidebar-bottom .slp-name { font-weight:600; }
+    .workspace-bar { font-size:13px; }
+    .workspace-bar .crumb b { font-weight:500; }
+    /* headings: plain, no Echo tile */
+    .heading-echo { display:none; }
+    .page-header h1, .workflow-heading, .empty h2 { font-weight:650; letter-spacing:-.02em; }
+    .page-header h1 { font-size:26px; }
+    .page-header p { font-size:14px; color:var(--muted); }
+    .eyebrow { color:var(--muted); font-weight:500; letter-spacing:0; text-transform:none; font-size:13px; }
+    /* cards, buttons, boxes */
+    .card { border:1px solid var(--line); border-radius:10px; box-shadow:none; }
+    .card h2 { font-size:17px; font-weight:600; }
+    .card h3 { font-weight:600; }
+    .card .sub, .sub { font-size:13px; color:var(--muted); }
+    .btn { border-radius:8px; font-weight:500; font-size:14px; box-shadow:none; transition:background .15s; }
+    .btn.green, .btn.green:active { box-shadow:none; transform:none; }
+    .btn.ghost { background:#fff; border:1px solid var(--line-2); color:var(--ink); }
+    .btn.ghost:hover { background:var(--subtle); filter:none; }
+    .btn.danger { background:#fff; border-color:#f3d4d1; color:#b42318; }
+    input, select, textarea { border:1px solid var(--line-2); border-radius:8px; font-size:14px; background:#fff; }
+    input:focus, select:focus, textarea:focus { outline:2px solid var(--accent-bg); border-color:var(--accent); }
+    .pill, .chip { border-radius:6px; font-weight:500; font-size:12px; background:var(--chip); color:var(--ink-2); }
+    .chip.hi, .chip.mid, .chip.lo, .chip.neutral, .pill.completed, .pill.quiet, .pill.active, .pill.invited { background:var(--chip); color:var(--ink-2); }
+    .pill.missed { background:#fef3f2; color:#b42318; }
+    .premium-top { background:#fff; color:var(--ink); border:1px solid var(--line-2); }
+    /* Today */
+    .week-summary { background:#fff; border-color:var(--line); }
+    .week-summary .eyebrow, .week-summary .summary-caption { color:var(--muted); }
+    .week-summary .summary-title { color:var(--ink); font-weight:500; }
+    .summary-ring { background:conic-gradient(var(--accent) var(--fill),var(--line) 0); }
+    .summary-ring:before { background:#fff; }
+    .summary-ring span { color:var(--ink); font-weight:600; }
+    .summary-link { color:var(--accent-d); font-weight:500; }
+    .group-icon, .group-quiet .group-icon, .group-hw .group-icon, .group-week .group-icon, .group-invites .group-icon { display:none; }
+    .group-count { background:var(--chip); border-radius:99px; font-weight:500; }
+    .kidname, .tbl .name { font-weight:600; }
+    .person-avatar, .avatar-1, .avatar-2, .avatar-3 { background:var(--chip); color:var(--ink-2); font-weight:600; border-radius:50%; }
+    .week-dot { background:var(--line); }
+    .week-dot.practiced { background:var(--accent); }
+    /* Caseload, a child's page */
+    .filter-tab { border-radius:8px; font-weight:500; font-size:13px; }
+    .filter-tab[aria-pressed=true], .community-filters .filter-tab[aria-pressed=true] { background:var(--chip); color:var(--ink); border-color:transparent; }
+    .child-tabs .filter-tab { border-radius:8px; }
+    .tbl th { background:var(--subtle); font-weight:500; color:var(--muted); }
+    .tbl tr:hover td { background:var(--subtle); }
+    .bar i { background:var(--accent); }
+    .note { background:var(--subtle); }
+    .step-number { background:var(--accent-bg); font-weight:600; }
+    /* tinted panels go white */
+    .workflow-preview, .feedback-intro, .free-promise, .preview, .premium-card.premium-on, .affiliate-hero { background:var(--subtle); border-color:var(--line); border-radius:10px; }
+    .send-success { background:var(--accent-bg); color:var(--accent-d); }
+    .load-notice { background:var(--subtle); border-color:var(--line); color:var(--ink-2); }
+    .toast { background:var(--ink); }
+    /* Community */
+    .community-pinned { background:var(--subtle); border:1px solid var(--line); border-top:1px solid var(--line); }
+    .community-pinned .community-body { color:var(--ink-2); }
+    .community-pinned .community-topic, .community-topic { background:var(--chip); color:var(--ink-2); border-color:transparent; font-weight:500; }
+    .community-avatar, .community-pinned .community-avatar { background:var(--chip); color:var(--ink-2); font-weight:600; }
+    .community-composer { border-radius:10px; box-shadow:none; }
+    .community-composer .compose-plus { background:var(--accent-bg); }
+    .community-filters .filter-tab { background:#fff; border-color:var(--line); }
+    .community-membership { background:var(--subtle); border-color:var(--line); color:var(--muted); }
+    .community-reply { background:var(--subtle); }
+    .community-post h3 { font-weight:600; }
+    .community-post-actions > button[data-community-reply] { background:#fff; border-color:var(--line-2); }
+    .community-empty { background:#fff; }
+    .community-resource-icon { background:var(--chip); color:var(--ink-2); }
+    .nav-item .badge, .nav-item .badge.warn { margin-top:0; align-self:center; }
+    .bar i, .bar.neutral i { background:var(--accent); }
+    @media (max-width:768px) { .page-header h1 { font-size:24px; } .card { border-radius:10px; } .eyebrow, .week-summary .eyebrow { font-size:12px; } }
   </style>
 </head>
 <body>
   <a class="skip-link" href="#mainContent">Skip to content</a>
   <!-- Mobile bar -->
   <div class="mobile-bar">
-    <div class="brand"><img src="/coach/echo/echo-avatar.svg" alt="Sona"/> Sona</div>
+    <div class="brand"><img src="/assets/brand/echo-logo.webp" alt="" width="34" height="35"/> Sona</div>
     <button class="hamburger" id="menuBtn" aria-label="Open navigation" aria-expanded="false" aria-controls="sidebar">☰</button>
   </div>
   <div class="overlay" id="overlay"></div>
 
   <!-- Sidebar -->
   <aside class="sidebar" id="sidebar">
-    <div class="brand"><img src="/coach/echo/echo-avatar.svg" alt="Sona"/> Sona <small>for SLPs</small></div>
+    <div class="brand"><img src="/assets/brand/echo-logo.webp" alt="" width="38" height="39"/> Sona <small>for SLPs</small></div>
     <nav aria-label="Main navigation">
       <div class="nav-section">Workspace</div>
       <a class="nav-item active" data-page="today" href="#today"><span class="icon"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M16 3v4M8 3v4M3 11h18m-12 5 2 2 4-4"/></svg></span> Today <span class="badge warn" id="attnCount" style="display:none;">0</span></a>

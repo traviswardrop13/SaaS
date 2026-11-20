@@ -2300,6 +2300,15 @@ officer, an engineer — whose rulings are now rules:
   where it is true, Sona Pro's "Unlimited families", never in a family's
   message.
 
+**The clean white look (SLPCLEAN1, 20 Nov 2026, Travis: "i just wanna
+cleaner dashboard")**: the look of the closed #302, without its other
+changes. One last layer at the foot of `slp.html`'s sheet (white surfaces,
+grey hairlines, one teal accent, the system font, no pastel tiles or Echo in
+the headings, grey initials; "missed" stays the one muted red) and Echo's
+logo top left (`/assets/brand/echo-logo.webp`). Nothing the page does
+changed: every menu item, Plan sessions, Draft homework, the free dashboard
+door and the plan rules are as before.
+
 **The affiliate program, when it is built, is CREATOR-ONLY** (Travis, 21 Sep
 2026 — settled, do not re-open). An SLP who makes content and brings in
 families from outside their own client base can earn on it. An SLP never
