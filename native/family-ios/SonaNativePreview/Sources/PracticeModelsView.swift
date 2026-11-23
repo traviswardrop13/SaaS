@@ -67,6 +67,7 @@ struct PracticeModelsView: View {
         }
         .foregroundStyle(SonaPalette.ink)
         .background(SonaPalette.paper.ignoresSafeArea())
+        .nativeReminderAudioOwner(voice) { $0.stop() }
         .onDisappear { voice.stop() }
         .onChange(of: targetSound) { _ in voice.stop() }
     }

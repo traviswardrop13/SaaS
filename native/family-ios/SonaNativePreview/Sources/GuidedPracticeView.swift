@@ -75,6 +75,7 @@ import SonaSpeechCore
         .background(Color(red: 1, green: 0.961, blue: 0.914).ignoresSafeArea())
         .preferredColorScheme(.light)
         .onChange(of: scenePhase) { model.setForeground($0 == .active) }
+        .nativeReminderAudioOwner(model) { await $0.close() }
         .onDisappear { Task { await model.close() } }
         .accessibilityIdentifier("guided-practice")
     }

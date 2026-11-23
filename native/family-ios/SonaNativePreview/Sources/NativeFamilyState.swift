@@ -4,7 +4,20 @@ import SonaFamilyAccess
 import SonaFamilyBackup
 import SonaFamilyMigration
 import SonaFamilyRules
+import SonaFamilyStorefront
 import SonaSpeechCore
+
+/// Current Home copy and picture ordering from the local canonical rules.
+/// No title, access, calendar or seen state is chosen by the view.
+struct NativeHomePresentation: Decodable, Equatable {
+    struct Card: Decodable, Equatable {
+        let label, title, hook, dayLabel, actionLabel: String
+        let done, locked: Bool
+        let imagePaths: [String]
+    }
+    let card: Card?
+    let booksTag: String
+}
 
 struct NativePracticeSummary: Decodable, Equatable {
     struct Goal: Decodable, Equatable {
@@ -37,6 +50,7 @@ struct NativePracticeSummary: Decodable, Equatable {
     let bestGameIDs: [String]
     let found: [Quest.Story]
     let quest: Quest
+    var home: NativeHomePresentation? = nil
 }
 
 struct NativePracticeSelection: Decodable {
@@ -102,10 +116,26 @@ struct NativeRuleFields: Encodable, Sendable {
     var boostLevel: String?
     var boostAsk: String?
     var boostPosition: String?
+    var focusSounds: [String]?
+    var mode: String?
+    var pathReason: String?
+    var minutes: Int?
+    var character: String?
+    var playLevel: Int?
+    var bestCount: Int?
+    var dinoLast: String?
+    var dinoGot: [String]?
+    var occurredAtMilliseconds: Double?
+    var localDay: String?
+    var timeZoneIdentifier: String?
+    var timezoneOffsetMinutes: Int?
+    var rewalk: Bool?
+    var interests: [String]?
 }
 
 @MainActor
 final class NativeFamilyState: ObservableObject {
+    weak var trialReminders: NativeTrialReminderStore?
     enum Stage: Equatable { case loading, ready, chooseOrigin, needsSetup, unavailable }
 
     @Published private(set) var stage: Stage = .loading
@@ -121,7 +151,7 @@ final class NativeFamilyState: ObservableObject {
     var activeChild: NativeFamilyChild? { document?.activeChild }
     var activeID: NativeFamilyChildID? { activeChild?.id }
     var scope: String? { activeID.map(Self.scope(of:)) }
-    var isPreview: Bool { Bundle.main.bundleIdentifier == "com.speaksona.family.native-preview" }
+    var isPreview: Bool { Bundle.main.bundleIdentifier == "com.speaksona.family.native-preview" && ProcessInfo.processInfo.arguments.contains("--demo-roster") }
     var entitlement: FamilyEntitlementState {
         guard let origin = document?.primaryOrigin else { return FamilyEntitlementState() }
         return entitlement(for: origin)
@@ -138,6 +168,7 @@ final class NativeFamilyState: ObservableObject {
             if promises.grandfathered { result.grants.insert(.freeEra) }
             result.keepsFreeVersion = result.keepsFreeVersion || promises.keptFreeVersion
         }
+        if let website = document?.websiteAccess?[origin.origin.rawValue] { result.applyWebsiteAccess(website) }
         if let apple = document?.appleAccess?[origin.origin.rawValue] {
             if apple.active { result.grants.insert(.apple) } else { result.grants.remove(.apple) }
             if let at = apple.checkedAt { result.appleCheckedAt = at }
@@ -185,6 +216,8 @@ final class NativeFamilyState: ObservableObject {
             }
             if isPreview {
                 try await publish(repository.seedPreview(sounds: sounds, preferredSound: preferredSound))
+            } else if Bundle.main.bundleIdentifier == "com.speaksona.family.native-preview" {
+                try await publish(repository.seedEmptyPreview())
             } else {
                 let archiveStore = LocalMigrationArchiveStore(directory: base.appendingPathComponent("Upgrade"))
                 let engine = MigrationEngine(store: archiveStore)
@@ -212,6 +245,9 @@ final class NativeFamilyState: ObservableObject {
     }
 
     func retireOldRecordings() async {
+        if document?.previewBootstrapProvenance == .emptyNativePreviewWithoutLegacy,
+           Bundle.main.bundleIdentifier == "com.speaksona.family.native-preview" { return }
+
         guard !isPreview, !retiringAudio, let repository, let host = legacyHost else { return }
         retiringAudio = true
         defer { retiringAudio = false }
@@ -249,6 +285,13 @@ final class NativeFamilyState: ObservableObject {
     }
 
     func removeObsoletePlayerCopies(_ id: NativeFamilyChildID) async throws {
+        if document?.previewBootstrapProvenance == .emptyNativePreviewWithoutLegacy,
+           Bundle.main.bundleIdentifier == "com.speaksona.family.native-preview" {
+            guard let repository else { throw NativeFamilyRuleError.playerChanged }
+            try await repository.acknowledgePreviewPlayerRemoval(id)
+            try await refresh()
+            return
+        }
         guard !isPreview, let repository, let host = legacyHost,
               try await repository.snapshot()?.pendingLocalPlayerRemovals?.contains(id) == true
         else { throw NativeFamilyRuleError.playerChanged }
@@ -256,11 +299,22 @@ final class NativeFamilyState: ObservableObject {
                                                   appropriateFor: nil, create: true)
         let directory = support.appendingPathComponent("SonaFamily", isDirectory: true)
             .appendingPathComponent("Upgrade", isDirectory: true)
-        try await LegacyUpgradeCapture(host: host).redactRemovedChild(id)
+        let capture = try LegacyUpgradeCapture(host: host)
+        if try await repository.snapshot()?.retiredRecordingOrigins?.contains(id.origin) != true {
+            try await capture.purgeRetiredRecordings(origin: id.origin)
+            try await repository.acknowledgeRetiredRecordings(origin: id.origin)
+        }
+        try await capture.redactRemovedChild(id)
         let archive = MigrationEngine(store: LocalMigrationArchiveStore(directory: directory))
         try await archive.redactRemovedChild(id)
         try await repository.acknowledgeLocalPlayerRemoval(id)
         try await refresh()
+    }
+
+    func stageReminderUpgrade(into reminders: NativeTrialReminderStore) {
+        guard !isPreview, let family = document?.primaryFamily else { return }
+        let notify = family.storage["sona.notify.v1"].flatMap { try? JSONDecoder().decode(NativeTrialReminderPhoneState.self, from: Data($0.utf8)) } ?? .init()
+        reminders.stageSameDeviceLegacyState(.init(notify: notify, playedDay: family.storage["sona.played.v1"]))
     }
 
     func movingPhonesService(for origin: LegacyOrigin) -> FamilyMovingPhonesService? {
@@ -329,6 +383,12 @@ final class NativeFamilyState: ObservableObject {
         try await refresh()
     }
 
+    func websiteRestoreStore(for origin: LegacyOrigin, client: (any FamilyEmailRestoreClient)? = nil) -> FamilyEmailRestoreStore {
+        FamilyEmailRestoreStore(repository: repository, origin: origin, client: client) { [weak self] in
+            try? await self?.refresh()
+        }
+    }
+
     func appleAccessRevision(for origin: LegacyOrigin) async throws -> UUID? {
         guard let repository else { throw NativeFamilyRuleError.playerChanged }
         return try await repository.appleAccessRevision(for: origin)
@@ -366,7 +426,8 @@ final class NativeFamilyState: ObservableObject {
 
     private func rulesAccess(for origin: LegacyOrigin, in document: NativeFamilyDocument?) -> NativeFamilyRules.AccessProjection? {
         guard let document, let family = document.origins[origin.rawValue], let config = try? FamilyAccessConfiguration.bundled() else { return nil }
-        let legacy = FamilyEntitlementState.legacy(family.accessEvidence(), configuration: config)
+        var legacy = FamilyEntitlementState.legacy(family.accessEvidence(), configuration: config)
+        if let website = document.websiteAccess?[origin.rawValue] { legacy.applyWebsiteAccess(website) }
         let promises = document.householdPromises
         let apple = document.appleAccess?[origin.rawValue]?.active
         let premium = !legacy.grants.subtracting([.apple]).isEmpty || (apple ?? legacy.grants.contains(.apple)) ||
@@ -391,17 +452,66 @@ final class NativeFamilyState: ObservableObject {
                                 owner: NativeFamilyChildID, receipt: String? = nil, gameCompletion: String? = nil,
                                 as type: Value.Type = Value.self) async throws -> Value {
         guard owner == activeID, let repository else { throw NativeFamilyRuleError.playerChanged }
+        var fields = input
+        if [.attempt, .rungWin, .roundReady, .gameRep, .arcadeBestOffer].contains(operation), let occurrence = NativePracticeOccurrenceScope.current {
+            fields.occurredAtMilliseconds = occurrence.occurredAtMilliseconds
+            fields.localDay = occurrence.localDay
+            fields.timeZoneIdentifier = occurrence.timeZoneIdentifier
+            fields.timezoneOffsetMinutes = occurrence.timezoneOffsetMinutes
+        }
+        let mutationInput = fields
         let canSell = NativeStorefrontHost.canSell
         let access = rulesAccess(for: owner.origin, in: document)
         let result = try await repository.applyRules(to: owner, receiptID: receipt, gameCompletion: gameCompletion) { family in
-            let result = try NativeFamilyRules.evaluate(operation, input: input, storage: family.storage, canSell: canSell, access: access)
+            let result = try NativeFamilyRules.evaluate(operation, input: mutationInput, storage: family.storage, canSell: canSell, access: access)
             return NativeFamilyRuleMutation(value: result.value, changes: result.changes, removals: result.removals)
+        }
+        if (operation == .attempt && (input.reps ?? 0) > 0) || (operation == .gameRep && (input.n ?? 1) > 0) {
+            let occurrence = NativePracticeOccurrenceScope.current
+            let date = occurrence.map { Date(timeIntervalSince1970: $0.occurredAtMilliseconds / 1_000) } ?? Date()
+            let zone = occurrence.flatMap { TimeZone(identifier: $0.timeZoneIdentifier) }
+                ?? occurrence.flatMap { TimeZone(secondsFromGMT: -$0.timezoneOffsetMinutes * 60) } ?? .current
+            trialReminders?.countedRep(occurredAt: date, timeZone: zone)
         }
         if (operation == .attempt || operation == .gameRep), let reportStore, reportStore.deliveryConnected {
             Task(priority: .utility) { await reportStore.sync(trigger: .countedRep, for: owner.origin) }
         }
         try await refresh()
         return try JSONDecoder().decode(type, from: result)
+    }
+
+    /// A completed atomic receipt can retire only its matching local scratchpad.
+    /// An onboarded profile alone does not prove that a rewalk was saved.
+    func hasAcceptedFamilySetup(owner: NativeFamilyChildID, receipt: UUID) async throws -> Bool {
+        guard owner == activeID, let repository else { throw NativeFamilyRuleError.playerChanged }
+        let accepted = try await repository.hasAcceptedFamilySetup(to: owner, receiptID: "setup/" + receipt.uuidString)
+        guard owner == activeID else { throw NativeFamilyRuleError.playerChanged }
+        return accepted
+    }
+
+    /// Setup alone owns this bounded atomic child/household transaction. The
+    /// generic practice writer remains strictly scoped to one child's keys.
+    func completeFamilySetup(input: NativeRuleFields, consent: NativeFamilySetupConsent,
+                             owner: NativeFamilyChildID, receipt: String) async throws -> NativePracticeSummary {
+        guard owner == activeID, let repository else { throw NativeFamilyRuleError.playerChanged }
+        let encoded = try JSONEncoder().encode(input)
+        let canSell = NativeStorefrontHost.canSell
+        let access = rulesAccess(for: owner.origin, in: document)
+        let data: Data
+        do {
+            data = try await repository.applyFamilySetup(to: owner, receiptID: receipt, input: encoded, consent: consent) { family in
+                let result = try NativeFamilyRules.evaluate(.completeSetup, input: input, storage: family.storage,
+                                                            canSell: canSell, access: access)
+                return NativeFamilyRuleMutation(value: result.value, changes: result.changes, removals: result.removals)
+            }
+        } catch NativeFamilyRuleError.replayed {
+            try await refresh()
+            reportStore?.setupCommitted(for: owner.origin)
+            throw NativeFamilyRuleError.replayed
+        }
+        try await refresh()
+        reportStore?.setupCommitted(for: owner.origin)
+        return try JSONDecoder().decode(NativePracticeSummary.self, from: data)
     }
 
     private func publish(_ new: NativeFamilyDocument) async throws {

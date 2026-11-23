@@ -21,6 +21,8 @@ import SonaSpeechCore
     private let provider: GuidedPracticePromptProviding?
     private let automaticClock: Bool
     private let nowMilliseconds: () -> Double
+    private let occurrenceNow: () -> NativePracticeOccurrence
+    private var resultOccurrence: NativePracticeOccurrence?
     private var flow: PracticeFlowMachine?
     private var session: PracticeTurnSession?
     private var wrapper: GuidedPracticeAudioDriver?
@@ -40,11 +42,13 @@ import SonaSpeechCore
          onReady: @escaping @MainActor (PracticeFlowMachine.Ready) -> Void,
          driver: PracticeAudioDriver? = nil, provider: GuidedPracticePromptProviding? = nil,
          automaticallyAdvance: Bool = true,
-         nowMilliseconds: @escaping () -> Double = { ProcessInfo.processInfo.systemUptime * 1000 }) {
+         nowMilliseconds: @escaping () -> Double = { ProcessInfo.processInfo.systemUptime * 1000 },
+         occurrenceNow: @escaping () -> NativePracticeOccurrence = { .capture() }) {
         self.plan = plan; self.isCurrent = isCurrent; self.apply = apply; self.onReady = onReady
         self.gameTitle = plan?.gameTitle ?? "Games"
         self.automaticClock = automaticallyAdvance
         self.nowMilliseconds = nowMilliseconds
+        self.occurrenceNow = occurrenceNow
         #if os(iOS)
         self.driver = driver ?? ApplePracticeAudioDriver()
         #else
@@ -162,7 +166,7 @@ import SonaSpeechCore
                         self.status = "Echo is checking…"
                         // The rules bridge verifies ownership and applies the
                         // existing logAttempt/bumpReps atomically and idempotently.
-                        try await self.apply(effect)
+                        try await self.applyCaptured(effect)
                     case .showQuiet(let message):
                         self.quietMessage = message
                         self.presentation = .quiet
@@ -229,7 +233,9 @@ import SonaSpeechCore
         value.onChange = { [weak self] machine in self?.observe(machine, id: turn.id) }
         value.onResult = { [weak self] result in
             guard let self, self.current(), var flow = self.flow else { return }
+            let occurrence = self.occurrenceNow()
             let next = flow.send(.completed(turn.id, result))
+            if !next.isEmpty { self.resultOccurrence = occurrence }
             self.flow = flow
             self.enqueue(next)
         }
@@ -263,6 +269,13 @@ import SonaSpeechCore
         }
     }
 
+    private func applyCaptured(_ effect: PracticeFlowMachine.Effect) async throws {
+        let occurrence = resultOccurrence
+        try await NativePracticeOccurrenceScope.$current.withValue(occurrence) {
+            try await apply(effect)
+        }
+    }
+
     private func handoff(_ ready: PracticeFlowMachine.Ready) async throws {
         guard let plan, let provider, let driver, current() else { throw CancellationError() }
         presentation = .launching; status = "Game ready!"; canReplay = false
@@ -274,15 +287,15 @@ import SonaSpeechCore
             guard foreground, current() else { throw CancellationError() }
             let prompt = try await provider.prepare(.feedback(feedback), plan: plan)
             guard foreground, current() else { throw CancellationError() }
+            startedTerminalLines.insert(key)
             try await driver.playPrompt(prompt)
             try Task.checkCancellation()
             guard foreground, current() else { throw CancellationError() }
-            startedTerminalLines.insert(key)
         }
         try Task.checkCancellation()
         guard foreground, current(), flow?.phase == .ready else { throw CancellationError() }
         if !appliedReadyFlows.contains(ready.flowID) {
-            try await apply(.readyForGame(ready))
+            try await applyCaptured(.readyForGame(ready))
             appliedReadyFlows.insert(ready.flowID)
         }
         if !ready.feedbackAfterBookkeeping.isEmpty {
@@ -293,10 +306,10 @@ import SonaSpeechCore
                 guard foreground, current() else { throw CancellationError() }
                 let prompt = try await provider.prepare(.feedback(feedback), plan: plan)
                 guard foreground, current() else { throw CancellationError() }
+                startedTerminalLines.insert(key)
                 try await driver.playPrompt(prompt)
                 try Task.checkCancellation()
                 guard foreground, current() else { throw CancellationError() }
-                startedTerminalLines.insert(key)
             }
         }
         try await Task.sleep(nanoseconds: UInt64(PracticeFlowContent.launchDelayMilliseconds * 1_000_000))

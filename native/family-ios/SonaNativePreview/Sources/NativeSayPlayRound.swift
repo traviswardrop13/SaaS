@@ -15,6 +15,8 @@ struct NativeSpeechGameSelection: Decodable {
     let targets: [Target]
     let sound, voice: String
     let voiceOn: Bool
+    let soundOn: Bool?
+    let isSimple: Bool?
     let volume: Float
 }
 
@@ -63,6 +65,7 @@ struct NativeSpeechGameSelection: Decodable {
         else { requester = nil }
         return NativeSpeechGameProgress(count: selection.targets.count, advance: advance,
             isHelpActive: help != nil, isMoveActive: boardEnabled && !finished, wordIndex: step,
+            isSimple: selection.isSimple == true, effectsVolume: selection.soundOn == true ? selection.volume : nil,
             requestHelp: requester)
     }
 

@@ -233,9 +233,40 @@ final class NativeFamilyRepositoryTests: XCTestCase {
         XCTAssertEqual(saved.pendingLocalPlayerRemovals, [sibling])
         XCTAssertEqual(saved.activeChild?.id, second)
         XCTAssertEqual(saved.householdPromises, initial.householdPromises)
+        try await coldStart.acknowledgeRetiredRecordings(origin: sibling.origin)
         try await coldStart.acknowledgeLocalPlayerRemoval(sibling)
         let verified = try await current(coldStart)
         XCTAssertEqual(verified.pendingLocalPlayerRemovals, [])
+    }
+
+    func testLocalRemovalAcknowledgementWaitsForItsVerifiedRetiredOrigin() async throws {
+        let repository = NativeFamilyRepository(store: NativeMemoryStore())
+        _ = try await repository.seed(from: NativeFixture.archive())
+        try await repository.removeChild(first, operationID: UUID(), removeLocalCopies: true)
+        let queued = try await current(repository)
+        var denied = false
+        do { try await repository.acknowledgeLocalPlayerRemoval(first) }
+        catch { denied = true }
+        XCTAssertTrue(denied, "Old recording deletion has not been verified")
+        let beforeVerification = try await current(repository)
+        XCTAssertEqual(beforeVerification.pendingLocalPlayerRemovals, [first])
+        try await repository.acknowledgeRetiredRecordings(origin: .app)
+        denied = false
+        do { try await repository.acknowledgeLocalPlayerRemoval(first) }
+        catch { denied = true }
+        XCTAssertTrue(denied, "A different origin cannot verify this child's deletion")
+        let wrongOrigin = try await current(repository)
+        XCTAssertEqual(wrongOrigin.pendingLocalPlayerRemovals, [first])
+        XCTAssertEqual(wrongOrigin.origins, queued.origins)
+        XCTAssertEqual(wrongOrigin.householdPromises, queued.householdPromises)
+        XCTAssertEqual(wrongOrigin.sourceFingerprints, queued.sourceFingerprints)
+        try await repository.acknowledgeRetiredRecordings(origin: first.origin)
+        try await repository.acknowledgeLocalPlayerRemoval(first)
+        let completed = try await current(repository)
+        XCTAssertEqual(completed.pendingLocalPlayerRemovals, [])
+        XCTAssertEqual(completed.origins, queued.origins)
+        XCTAssertEqual(completed.householdPromises, queued.householdPromises)
+        XCTAssertEqual(completed.sourceFingerprints, queued.sourceFingerprints)
     }
 
     func testAuthoritativeAppleUpdateStaysWithItsOriginAndKeepsRawEvidence() async throws {

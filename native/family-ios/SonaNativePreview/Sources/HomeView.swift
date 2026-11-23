@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 enum SonaPalette {
     static let paper = Color(red: 1, green: 0.972, blue: 0.927)
@@ -35,6 +36,7 @@ struct HomeView: View {
     let dailyStory: NativeAdventure?
     var dailyGame: NativeGame?
     var adventureDone = false
+    var home: NativeHomePresentation? = nil
     let storyAccess: Bool
     let onAdventure: () -> Void
     let onOpen: (Destination) -> Void
@@ -85,16 +87,23 @@ struct HomeView: View {
                 .foregroundStyle(SonaPalette.teal)
             }
 
-            if let dailyStory {
-                adventureCard(dailyStory.title, artwork: "daily-\(dailyStory.id)", open: storyAccess)
-            } else if let dailyGame {
-                adventureCard(dailyGame.title, artwork: dailyGame.cover, open: true)
-            }
+            quickLink(.games, title: "Pick a game", symbol: "gamecontroller.fill", accent: SonaPalette.mint,
+                      identifier: "home-games")
 
             if typeSize.isAccessibilitySize {
                 VStack(spacing: 12) { quickLinks }
             } else {
                 HStack(spacing: 12) { quickLinks }
+            }
+
+            if let home {
+                if let card = home.card {
+                    adventureCard(card.title, artwork: "echo-welcome", open: !card.locked, card: card)
+                }
+            } else if let dailyStory {
+                adventureCard(dailyStory.title, artwork: "daily-\(dailyStory.id)", open: storyAccess)
+            } else if let dailyGame {
+                adventureCard(dailyGame.title, artwork: dailyGame.cover, open: true)
             }
         }
         .padding(.horizontal, 20)
@@ -156,53 +165,60 @@ struct HomeView: View {
         }
     }
 
-    private func adventureCard(_ title: String, artwork: String, open: Bool) -> some View {
-        Button(action: onAdventure) {
+    private func adventureCard(_ title: String, artwork: String, open: Bool,
+                               card: NativeHomePresentation.Card? = nil) -> some View {
+        let done = card?.done ?? adventureDone
+        return Button {
+            guard !done else { return }
+            onAdventure()
+        } label: {
             VStack(alignment: .leading, spacing: 0) {
-                Image(artwork)
-                    .resizable()
-                    .scaledToFill()
-                    .frame(height: 188)
-                    .frame(maxWidth: .infinity)
-                    .clipped()
-                    .allowsHitTesting(false)
-                    .accessibilityHidden(true)
+                Group {
+                    if let card { NativeHomeArtwork(paths: card.imagePaths) }
+                    else { Image(artwork).resizable().scaledToFill() }
+                }
+                .frame(height: 188).frame(maxWidth: .infinity).clipped()
+                .overlay(done ? Color.black.opacity(0.5) : Color.clear)
+                .allowsHitTesting(false).accessibilityHidden(true)
 
                 HStack(alignment: .center, spacing: 12) {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("Today’s adventure")
-                            .font(.system(.caption, design: .rounded).weight(.bold))
-                        Text(title)
-                            .font(.system(.title2, design: .rounded).weight(.heavy))
-                        Text(adventureDone ? "Finished today" : open ? "Start today" : "Premium")
+                        HStack(spacing: 8) {
+                            Text(card?.label ?? "Today’s adventure")
+                                .font(.system(.caption, design: .rounded).weight(.bold))
+                            if card?.locked == true { Text("Premium").font(.caption.weight(.bold)) }
+                        }
+                        Text(title).font(.system(.title2, design: .rounded).weight(.heavy))
+                        if let hook = card?.hook, !hook.isEmpty {
+                            Text(hook).font(.system(.subheadline, design: .rounded))
+                                .fixedSize(horizontal: false, vertical: true)
+                                .accessibilityIdentifier("home-adventure-hook")
+                        }
+                        Text(done ? "Come back tomorrow!" : card?.actionLabel ?? (open ? "Start today" : "Premium"))
                             .font(.system(.subheadline, design: .rounded).weight(.medium))
                             .foregroundStyle(.white.opacity(0.87))
+                            .accessibilityIdentifier("home-adventure-action")
                     }
                     Spacer(minLength: 6)
-                    Image(systemName: adventureDone ? "star.fill" : open ? "play.fill" : "lock.fill")
-                        .font(.system(size: 22, weight: .bold))
-                        .frame(width: 50, height: 50)
-                        .background(.white.opacity(0.16), in: Circle())
-                        .accessibilityHidden(true)
+                    Image(systemName: done ? "lock.fill" : open ? "play.fill" : "lock.fill")
+                        .font(.system(size: 22, weight: .bold)).frame(width: 50, height: 50)
+                        .background(.white.opacity(0.16), in: Circle()).accessibilityHidden(true)
                 }
-                .padding(16)
-                .foregroundStyle(.white)
-                .background(SonaPalette.teal)
+                .padding(16).foregroundStyle(.white).background(SonaPalette.teal)
             }
-            .clipShape(RoundedRectangle(cornerRadius: 26))
-            .contentShape(RoundedRectangle(cornerRadius: 26))
+            .clipShape(RoundedRectangle(cornerRadius: 26)).contentShape(RoundedRectangle(cornerRadius: 26))
         }
-        .buttonStyle(SonaPressStyle())
-        .accessibilityIdentifier("home-adventure")
+        .buttonStyle(SonaPressStyle()).disabled(done).accessibilityIdentifier("home-adventure")
     }
 
     @ViewBuilder
     private var quickLinks: some View {
-        quickLink(.games, title: "Games", symbol: "gamecontroller.fill", accent: SonaPalette.mint)
-        quickLink(.books, title: "Books", symbol: "book.fill", accent: SonaPalette.lavender)
+        quickLink(.books, title: "Books", symbol: "book.fill", accent: SonaPalette.lavender, identifier: "home-books")
+        quickLink(.practice, title: "Practice", symbol: "waveform", accent: SonaPalette.yellow, identifier: "home-practice")
     }
 
-    private func quickLink(_ destination: Destination, title: String, symbol: String, accent: Color) -> some View {
+    private func quickLink(_ destination: Destination, title: String, symbol: String, accent: Color,
+                           identifier: String) -> some View {
         Button {
             onOpen(destination)
         } label: {
@@ -210,16 +226,56 @@ struct HomeView: View {
                 Image(systemName: symbol)
                     .font(.body.weight(.bold))
                     .accessibilityHidden(true)
-                Text(title)
-                    .font(.system(.headline, design: .rounded).weight(.heavy))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title)
+                        .font(.system(destination == .games ? .title2 : .headline, design: .rounded).weight(.heavy))
+                        .fixedSize(horizontal: false, vertical: true)
+                    if destination == .books, let tag = home?.booksTag {
+                        Text(tag)
+                            .font(.caption.weight(.semibold))
+                            .fixedSize(horizontal: false, vertical: true)
+                            .accessibilityIdentifier("home-books-tag")
+                    }
+                }
                 Spacer(minLength: 0)
+                if destination == .games {
+                    Image(systemName: "chevron.right")
+                        .font(.body.weight(.bold))
+                        .accessibilityHidden(true)
+                }
             }
             .padding(.horizontal, 13)
-            .frame(minHeight: 63)
+            .padding(.vertical, 8)
+            .frame(minHeight: destination == .games ? 76 : 58)
             .background(accent, in: RoundedRectangle(cornerRadius: 19))
         }
         .buttonStyle(SonaPressStyle())
-        .accessibilityIdentifier(destination == .games ? "home-games" : "home-books")
+        .accessibilityIdentifier(identifier)
+    }
+}
+
+/// Uses the same fixed source paths and bounded local artwork loader as Books.
+private struct NativeHomeArtwork: View {
+    let paths: [String]
+    @State private var image: UIImage?
+    private var requestID: String { paths.joined(separator: "|") }
+    var body: some View {
+        Group {
+            if let image { Image(uiImage: image).resizable().scaledToFill() }
+            else { Image("echo-welcome").resizable().scaledToFit() }
+        }
+        .task(id: requestID) {
+            image = nil
+            for path in paths {
+                do {
+                    let loaded = try await NativeArtworkLoader.shared.image(path: path)
+                    guard !Task.isCancelled else { return }
+                    image = loaded
+                    return
+                } catch is CancellationError { return }
+                catch { if Task.isCancelled { return } }
+            }
+        }
     }
 }
 

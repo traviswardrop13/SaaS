@@ -8,6 +8,7 @@ struct ArcadeRoundView: View {
     var stage: Int = 0
     var onLifeLost: (() -> Void)?
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.arcadeRoundContext) private var arcadeRound
     @Environment(\.guidedReplay) private var guidedReplay
     @Environment(\.guidedArcadeExit) private var guidedArcadeExit
     @Environment(\.guidedArcadeRestoredLives) private var restoredLives
@@ -22,12 +23,14 @@ struct ArcadeRoundView: View {
     @State private var lives = NativeArcadeLives()
     @State private var preparedHearts = false
 
+    private var level: Int { arcadeRound?.level ?? 1 }
+    private var song: NativeArcadeDifficulty.Song { NativeArcadeDifficulty.songs(level: level)[stage] }
     private var powerBoard: Bool { [.tiles, .stack].contains(game) && onLifeLost != nil }
-    private var finale: Bool { game == .tiles && stage == 3 }
+    private var finale: Bool { game == .tiles && song.finale }
 
     private var goal: Int {
         if let progress = speechGameProgress { return progress.count }
-        return game == .tiles ? PianoBoard.songs[stage].notes.count : 5 + stage
+        return game == .tiles ? song.notes.count : NativeArcadeDifficulty.stackGoal(level: level, stage: stage)
     }
 
     var body: some View {
@@ -42,7 +45,7 @@ struct ArcadeRoundView: View {
                 .accessibilityLabel("Back to games")
                 .accessibilityIdentifier("arcade-close")
                 Spacer()
-                Text(game.title)
+                Text(level > 1 ? "\(game.title) · Level \(level)" : game.title)
                     .font(.system(.title2, design: .rounded).weight(.heavy))
                     .accessibilityAddTraits(.isHeader)
                 Spacer()
@@ -87,29 +90,33 @@ struct ArcadeRoundView: View {
     private var board: some View {
         switch game {
         case .tiles:
-            PianoBoard(song: PianoBoard.songs[stage], move: moves, stage: stage, running: lives.hearts > 0,
-                       piano: piano, hit: advance, miss: miss)
+            PianoBoard(song: song, move: moves, stage: stage, level: level, running: lives.hearts > 0,
+                       piano: piano, hit: { advance() }, skip: { advance(qualifies: false) },
+                       miss: { _ = arcadeRound?.record?.recordMove(qualifies: false); return miss() })
         case .stack:
-            StackerBoard(running: lives.hearts > 0, advance: advance, onMiss: miss)
+            StackerBoard(stage: stage, level: level, running: lives.hearts > 0, advance: { advance() },
+                         onMiss: { _ = arcadeRound?.record?.recordMove(qualifies: false); return miss().outOfHearts })
         case .hoops, .soccer:
-            TargetBoard(isSoccer: game == .soccer, advance: advance)
+            TargetBoard(isSoccer: game == .soccer, level: level, goals: moves) { advance() }
         default:
             EmptyView()
         }
     }
 
-    private func advance() {
+    private func advance(qualifies: Bool = true) {
         guard moves < goal, lives.hearts > 0 else { return }
+        if qualifies { _ = arcadeRound?.record?.recordMove(qualifies: true) }
         moves += 1
         speechGameProgress?.advance()
         if moves == goal { onRoundFinished() }
     }
 
-    @discardableResult private func miss() -> Bool {
-        guard let onLifeLost, !finale else { return false }
-        let hit = lives.miss(at: ProcessInfo.processInfo.systemUptime, protected: power.protectsHearts)
-        if hit && lives.hearts == 0 { piano.stop(); onLifeLost() }
-        return lives.hearts == 0
+    private func miss() -> (lostHeart: Bool, outOfHearts: Bool) {
+        guard let onLifeLost, !finale else { return (false, false) }
+        let lostHeart = lives.miss(at: ProcessInfo.processInfo.systemUptime, protected: power.protectsHearts)
+        let outOfHearts = lives.hearts == 0
+        if lostHeart && outOfHearts { piano.stop(); onLifeLost() }
+        return (lostHeart, outOfHearts)
     }
 
     private func close() { if let guidedArcadeExit { guidedArcadeExit() } else { dismiss() } }
@@ -163,34 +170,18 @@ struct RoundActionStyle: ButtonStyle {
 }
 
 private struct PianoBoard: View {
-    struct Song {
-        let title: String
-        let notes: [Int]
-        let fall: TimeInterval
-
-        init(_ title: String, _ tune: String, fall: TimeInterval) {
-            self.title = title
-            self.fall = fall
-            let pitches = Array("CDEFGA")
-            notes = tune.compactMap { pitches.firstIndex(of: $0) }
-        }
-    }
-
-    static let songs = [
-        Song("Twinkle Twinkle", "CCGGAAG FFEEDDC", fall: 2.5),
-        Song("Mary Had a Little Lamb", "EDCDEEE DDD EGG", fall: 2.3),
-        Song("Row, Row, Row Your Boat", "CCCDE EDEFG", fall: 2.1),
-        Song("Ode to Joy", "EEFGGFED CCDEEDD", fall: 2.2)
-    ]
-    let song: Song
+    let song: NativeArcadeDifficulty.Song
     let move: Int
     let stage: Int
+    let level: Int
     let running: Bool
     let piano: PianoVoice
     let hit: () -> Void
-    let miss: () -> Bool
+    let skip: () -> Void
+    let miss: () -> (lostHeart: Bool, outOfHearts: Bool)
 
     @State private var lastKey: Int?
+    @State private var helped = false
     @State private var clock = NativeArcadeMotionClock()
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.arcadePowerEffect) private var power
@@ -199,9 +190,17 @@ private struct PianoBoard: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     private let timer = Timer.publish(every: 1.0 / 30, on: .main, in: .common).autoconnect()
 
-    private let names = ["C", "D", "E", "F", "G", "A"]
+    private let names = ["C", "D", "E", "F", "G", "A", "B"]
     private let colors = [SonaPalette.yellow, SonaPalette.mint, SonaPalette.lavender]
-    private var waitsAtKeys: Bool { stage == 3 || (stage == 0 && move < 3) || voiceOver }
+    private var waitsAtKeys: Bool { song.finale || (stage == 0 && move < 3) || voiceOver }
+    private var timing: NativeArcadeDifficulty.Song {
+        helped ? NativeArcadeDifficulty.songs(level: 1)[stage] : song
+    }
+    private func missNote() -> Bool {
+        let result = miss()
+        if result.lostHeart && level > 1 { helped = true }
+        return result.outOfHearts
+    }
     private var playbackSpeed: Double { running && scenePhase == .active ? power.speed : 0 }
     private var now: TimeInterval { Date().timeIntervalSinceReferenceDate }
 
@@ -222,7 +221,7 @@ private struct PianoBoard: View {
             TimelineView(.animation(minimumInterval: 1.0 / 30)) { timeline in
                 GeometryReader { geometry in
                     let span = max(0, geometry.size.height - 34)
-                    let fraction = min(1, clock.position(at: timeline.date.timeIntervalSinceReferenceDate) / song.fall)
+                    let fraction = min(1, clock.position(at: timeline.date.timeIntervalSinceReferenceDate) / timing.fall)
                     let width = geometry.size.width / CGFloat(names.count)
                     RoundedRectangle(cornerRadius: 9)
                         .fill(colors[expected % colors.count])
@@ -237,9 +236,14 @@ private struct PianoBoard: View {
                 ForEach(names.indices, id: \.self) { key in
                     Button {
                         guard running else { return }
-                        if willPlayAudio(PianoVoice.noteDuration) { piano.play(key) }
-                        if key == expected { lastKey = nil; hit() }
-                        else { lastKey = key; if !waitsAtKeys { _ = miss() } }
+                        if key == expected && (waitsAtKeys || clock.position(at: now) >= timing.fall - timing.beat * 0.8) {
+                            lastKey = nil
+                            if willPlayAudio(PianoVoice.noteDuration) { piano.play(key) }
+                            hit()
+                        } else {
+                            lastKey = key
+                            if !waitsAtKeys { _ = missNote() }
+                        }
                     } label: {
                         VStack {
                             Spacer()
@@ -276,16 +280,16 @@ private struct PianoBoard: View {
         .onChange(of: playbackSpeed) { clock.setSpeed($0, at: now) }
         .onReceive(timer) { date in
             guard playbackSpeed > 0, !waitsAtKeys,
-                  clock.position(at: date.timeIntervalSinceReferenceDate) >= song.fall + 0.65 else { return }
+                  clock.position(at: date.timeIntervalSinceReferenceDate) >= timing.fall + 0.65 else { return }
             clock.restart(at: now, speed: playbackSpeed)
-            if !miss() { hit() }
+            if !missNote() { skip() }
         }
     }
 }
 
 final class PianoVoice: ObservableObject {
     static let noteDuration: TimeInterval = 0.55
-    private let frequencies = [261.63, 293.66, 329.63, 349.23, 392.0, 440.0]
+    private let frequencies = [261.63, 293.66, 329.63, 349.23, 392.0, 440.0, 493.88]
     private var notes: [Int: AVAudioPlayer] = [:]
 
     func play(_ key: Int) {
@@ -331,6 +335,7 @@ final class PianoVoice: ObservableObject {
 }
 
 private struct StackerBoard: View {
+    let stage, level: Int
     let running: Bool
     let advance: () -> Void
     let onMiss: () -> Bool
@@ -347,7 +352,11 @@ private struct StackerBoard: View {
 
     private let colors = [SonaPalette.lavender, SonaPalette.yellow, SonaPalette.teal, SonaPalette.mint]
     private var now: TimeInterval { Date().timeIntervalSinceReferenceDate }
-    private var speed: Double { running && scenePhase == .active ? power.speed * (missed ? 0.36 : 0.51) : 0 }
+    private var speed: Double {
+        guard running, scenePhase == .active else { return 0 }
+        let pace = NativeArcadeDifficulty.stackSpeed(level: missed ? 1 : level, stage: stage)
+        return power.speed * pace * (missed ? 0.42 : 0.60)
+    }
 
     var body: some View {
         VStack(spacing: 12) {
@@ -414,6 +423,7 @@ private struct StackerBoard: View {
 
 private struct TargetBoard: View {
     let isSoccer: Bool
+    let level, goals: Int
     let advance: () -> Void
     @State private var started = Date()
     @State private var ballPosition: CGPoint?
@@ -421,6 +431,7 @@ private struct TargetBoard: View {
     @State private var shotTask: Task<Void, Never>?
     @State private var boardSize: CGSize = .zero
     @State private var missedShots = 0
+    @State private var stoppedTarget: CGFloat?
 
     private var icon: String { isSoccer ? "⚽" : "🏀" }
 
@@ -489,7 +500,22 @@ private struct TargetBoard: View {
     }
 
     private func movingTarget(at date: Date) -> CGFloat {
-        0.5 + 0.24 * sin(date.timeIntervalSince(started) * (isSoccer ? 1.7 : 1.36))
+        if let stoppedTarget { return stoppedTarget }
+        let playingLevel = missedShots == 0 ? level : 1
+        let seconds = date.timeIntervalSince(started)
+        let slowdown = missedShots == 1 ? 2.0 : 1.0
+        if isSoccer {
+            let stillGoals = [2, 1, 0][playingLevel - 1]
+            if goals < stillGoals { return goals == 0 ? 0.32 : 0.68 }
+            let early = goals < (playingLevel == 1 ? 5 : 4)
+            let amp = playingLevel == 3 ? 1.6 : early ? 1.25 : 1.6
+            let period = [[5.2, 4], [4.8, 3.8], [4.2, 3.4]][playingLevel - 1][early ? 0 : 1]
+            return 0.5 + amp * 0.15 * sin(seconds * 2 * .pi / (period * slowdown))
+        }
+        let early = goals < (playingLevel == 1 ? 5 : 3)
+        let amp = playingLevel == 1 && goals < 2 ? 0 : playingLevel == 3 ? (early ? 0.9 : 1) : early ? 0.6 : 0.9
+        let period = [[5.6, 4.3], [5, 4], [4.4, 3.6]][playingLevel - 1][early ? 0 : 1]
+        return 0.5 + amp * 0.24 * sin(seconds * 2 * .pi / (period * slowdown))
     }
 
     private func fire(at position: CGFloat, width: CGFloat, height: CGFloat) {
@@ -498,7 +524,7 @@ private struct TargetBoard: View {
         let target = movingTarget(at: Date().addingTimeInterval(flight))
         let assistance = min(missedShots, 2)
         let post = [0.16, 0.13, 0.08][assistance]
-        let reach = [0.13, 0.10, 0.07][assistance]
+        let reach = [level == 3 ? 0.142 : 0.13, 0.10, 0.07][assistance]
         let gap = abs(target - position)
         let aimedWell = isSoccer ? position >= post && position <= 1 - post && gap > reach
             : min(gap, abs(movingTarget(at: Date()) - position)) <= [0.13, 0.19, 0.30][assistance]
@@ -516,7 +542,8 @@ private struct TargetBoard: View {
             feedback = hit ? (isSoccer ? "Goal!" : "Nice shot!") : "Try another shot."
             shotTask = nil
             missedShots = hit ? 0 : missedShots + 1
-            if hit { advance() }
+            if hit { stoppedTarget = nil; advance() }
+            else if missedShots == 2 { stoppedTarget = isSoccer ? (target < 0.5 ? 0.29 : 0.71) : target }
         }
     }
 }

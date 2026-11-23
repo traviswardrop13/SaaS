@@ -9,6 +9,8 @@ import SonaSpeechCore
     var recognizing: CheckedContinuation<PracticeRecognitionResult, Never>?
     var closing: CheckedContinuation<Void, Never>?
     var answers: [PracticeRecognitionResult] = []
+    var playingConcert: CheckedContinuation<Void, Error>?
+    var stoppedConcerts = 0
     var prompts: [String] = [], recognitionHints: [[String]] = []
     var frames: (@MainActor (PracticeAcousticFrame) -> Void)?
     func setInterruptionHandler(_ handler: (@MainActor () -> Void)?) {}
@@ -23,8 +25,17 @@ import SonaSpeechCore
     func playPrompt(_ prompt: PracticePrompt) async throws {
         precondition(!live, "Feed cannot model over its mic")
         prompts.append(prompt.text)
+        if prompt.text == "feed-concert" {
+            try await withCheckedThrowingContinuation { playingConcert = $0 }
+        }
     }
-    func stopPlayback() {}
+    func stopPlayback() {
+        if let playingConcert {
+            self.playingConcert = nil
+            stoppedConcerts += 1
+            playingConcert.resume(throwing: CancellationError())
+        }
+    }
     func openMicrophone(onFrame: @escaping @MainActor (PracticeAcousticFrame) -> Void,
                         onInterruption: @escaping @MainActor () -> Void) async throws {
         opens += 1; live = true; frames = onFrame
@@ -53,13 +64,13 @@ import SonaSpeechCore
     func go(selection: NativeFeedSelection) async -> PracticePrompt? { .init(text: "Go!", parts: [], isMuted: true) }
 }
 
-private func feedSelection(micReady: Bool = true) -> NativeFeedSelection {
+private func feedSelection(micReady: Bool = true, soundOn: Bool = false) -> NativeFeedSelection {
     let target = NativeFeedSelection.Word(word: "rabbit", emoji: "🐰", position: "i")
     let wrong = NativeFeedSelection.Word(word: "sun", emoji: "☀️", position: "i")
     let turn = NativeFeedSelection.Turn(target: target, choices: [target, wrong],
         ask: "Where is the rabbit? Say... rabbit.", repeatAsk: "Say... rabbit.", markedWord: "<b class=\"snd\">r</b>abbit")
     return .init(title: "Feed Echo", sound: "R", soundLabel: "R", family: "low", voice: "echo",
-        voiceOn: true, soundOn: false, micReady: micReady, volume: 0.8,
+        voiceOn: true, soundOn: soundOn, micReady: micReady, volume: 0.8,
         microphonePromise: "audio is never uploaded or saved.", lifetimeFed: 12,
         turns: Array(repeating: turn, count: 5), policy: .init(floorMilliseconds: 250,
             historyMilliseconds: 3_000, listenMilliseconds: 8_000, minimumRMS: 0.035,
@@ -95,8 +106,8 @@ private func feedSelection(micReady: Bool = true) -> NativeFeedSelection {
             if ms == 900 && holdCelebration { await withCheckedContinuation { celebrating = $0 } }
             now += ms
         },
-        permissionAlreadyGranted: { false })
-    init(micReady: Bool = true) { selection = feedSelection(micReady: micReady) }
+        permissionAlreadyGranted: { false }, soundResource: { URL(fileURLWithPath: "/synthetic/\($0).wav") })
+    init(micReady: Bool = true, soundOn: Bool = false) { selection = feedSelection(micReady: micReady, soundOn: soundOn) }
     func start() async throws { model.start(); try await until { self.model.phase == .listening || self.model.phase == .permission } }
     func send(_ time: Double, loud: Bool = false, available: Bool = true) {
         now = time
@@ -153,7 +164,29 @@ private func feedSelection(micReady: Bool = true) -> NativeFeedSelection {
         check(h.finishes == 1 && h.model.lifetimeFed == 17 && h.model.heardCount == 5, "five actual sayings and feeds finish without invented growth")
         check(h.credits.allSatisfy { $0.position == "i" && $0.gameID == "feed" && $0.sequence == 1 } && Set(h.credits.map(\.gateID)).count == 5, "source position and separate per-word credit IDs survive")
         h.model.advance(); check(h.finishes == 1, "completion cannot repeat")
+        check(!h.driver.prompts.contains("feed-bite") && !h.driver.prompts.contains("feed-concert"), "muted Feed plays no effects")
         await h.model.close()
+
+        let concert = FeedHarness(soundOn: true)
+        concert.driver.answers = Array(repeating: .onDevice("wabbit"), count: 5)
+        try await concert.start()
+        for round in 0..<5 {
+            let start = concert.now + 20
+            concert.room(start); concert.word(start + 320)
+            try await until { concert.model.phase == .choosing }
+            concert.model.pick(target)
+            try await until { concert.model.phase == (round == 4 ? .finished : .listening) }
+        }
+        try await until { concert.driver.playingConcert != nil }
+        let effects = concert.driver.prompts.filter { $0.hasPrefix("feed-") }
+        check(effects == Array(repeating: "feed-bite", count: 5) + ["feed-concert"], "five verified bites and one concert play in order")
+        check(!concert.driver.live && concert.finishes == 1 && concert.driver.opens == 5, "concert starts only after the final microphone closed")
+        concert.model.setForeground(false)
+        check(concert.driver.playingConcert == nil && concert.driver.stoppedConcerts == 1, "backgrounding stops the concert immediately")
+        concert.model.setForeground(true); await drain()
+        check(concert.driver.prompts.filter { $0 == "feed-concert" }.count == 1 && concert.driver.opens == 5,
+              "returning to the end card restarts neither music nor the microphone")
+        await concert.model.close()
 
         let quiet = FeedHarness(); try await quiet.start()
         quiet.room(quiet.now + 20); quiet.now += 8_001; quiet.model.advance()

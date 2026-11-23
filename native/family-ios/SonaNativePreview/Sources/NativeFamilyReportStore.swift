@@ -21,15 +21,24 @@ struct NativeFamilyReportRequest {
     init(body: Data) { destination = .report; self.body = body }
 
     init(signup: NativeFamilyReportSignup) throws {
-        struct Lead: Encodable {
+        struct SettingsLead: Encodable {
             let email: String
             let role = "parent"
             let source = "app-settings"
             let summary = "Turned on the weekly progress report in Settings"
             let premium: Bool?
         }
+        struct SetupLead: Encodable {
+            let email: String
+            let role = "parent"
+            let source = "app-setup"
+            let summary = "New parent (weekly report opt-in)"
+        }
         destination = .lead
-        body = try JSONEncoder().encode(Lead(email: signup.email, premium: signup.premium ? true : nil))
+        switch signup.source {
+        case .appSetup: body = try JSONEncoder().encode(SetupLead(email: signup.email))
+        case .appSettings: body = try JSONEncoder().encode(SettingsLead(email: signup.email, premium: signup.premium ? true : nil))
+        }
     }
 }
 @MainActor protocol NativeFamilyReportTransport {
@@ -78,7 +87,7 @@ final class NativeFamilyReportRedirectGuard: NSObject, URLSessionTaskDelegate {
 /// REPORT1 orchestration. Preview builds and tests can leave delivery disconnected.
 /// Status reads do not prepare activation, change records or send anything.
 @MainActor final class NativeFamilyReportStore: ObservableObject {
-    enum Trigger: Sendable { case countedRep, background, settings, settingsVisit }
+    enum Trigger: Sendable { case countedRep, background, settings, settingsVisit, setup }
     @Published private(set) var status: NativeFamilyReportStatus?
     @Published private(set) var busy = false
     @Published private(set) var error: String?
@@ -118,6 +127,16 @@ final class NativeFamilyReportRedirectGuard: NSObject, URLSessionTaskDelegate {
         startSignupDelivery(owner: owner)
         if status.owed || (status.on && (!status.sent || status.pending)) {
             await sync(trigger: .settingsVisit, for: owner)
+        }
+    }
+
+    /// Called only after the owner-scoped setup transaction is durable. This
+    /// starts queued work without holding the ready screen or price handoff on
+    /// HTTP. The repository rechecks current origin and consent before sending.
+    func setupCommitted(for expectedOrigin: LegacyOrigin) {
+        guard origin == expectedOrigin, transport != nil else { return }
+        Task { [weak self] in
+            _ = await self?.sync(trigger: .setup, for: expectedOrigin)
         }
     }
 
@@ -245,7 +264,7 @@ final class NativeFamilyReportRedirectGuard: NSObject, URLSessionTaskDelegate {
         }
     }
     private func startSignupDelivery(owner: LegacyOrigin, followUp: Bool = false) {
-        guard transport != nil, origin == owner, status?.on == true else { return }
+        guard transport != nil, origin == owner else { return }
         guard signupFlights.insert(owner).inserted else {
             if followUp { signupFollowUps.insert(owner) }
             return
@@ -295,7 +314,7 @@ final class NativeFamilyReportRedirectGuard: NSObject, URLSessionTaskDelegate {
         switch action {
         case .flush:
             result = try NativeWeeklyReportPolicy.prepare(storage: family.storage, profileKeys: profileKeys(family), action: .flush,
-                force: trigger == .settings || trigger == .settingsVisit, now: date)
+                force: trigger == .settings || trigger == .settingsVisit || trigger == .setup, now: date)
         case .sync:
             if trigger == .settingsVisit {
                 let state = try NativeWeeklyReportPolicy.status(storage: family.storage, profileKeys: profileKeys(family), now: date)

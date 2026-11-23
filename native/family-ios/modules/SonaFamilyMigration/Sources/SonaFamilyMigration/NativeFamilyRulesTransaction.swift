@@ -2,6 +2,12 @@ import Foundation
 
 struct NativeFamilyRuleReceipt: Codable, Equatable, Sendable {
     let child: NativeFamilyChildID
+    /// Only specialized setup commits use this. Old child-only receipts decode
+    /// with nil and generic rule writes retain their existing behavior.
+    let setupDigest: String?
+    init(child: NativeFamilyChildID, setupDigest: String? = nil) {
+        self.child = child; self.setupDigest = setupDigest
+    }
 }
 
 public struct NativeFamilyRuleMutation: Sendable {

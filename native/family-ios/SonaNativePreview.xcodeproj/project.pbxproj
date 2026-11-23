@@ -27,7 +27,7 @@
 		};
 		7060AFA20000000000000003 = {
 			isa = PBXGroup;
-			children = (7060AFA20000000000000004, 7060AFA20000000000000005);
+			children = (7060AFA20000000000000004, 7060AFA20000000000000005, 7060AFA20000000000000060, 7060AFA20000000000000062, 7060AFA20000000000000064);
 			sourceTree = "<group>";
 		};
 		7060AFA20000000000000004 = {
@@ -81,7 +81,7 @@
 		7060AFA2000000000000000B = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
-			files = ();
+			files = (7060AFA20000000000000061, 7060AFA20000000000000063, 7060AFA20000000000000065);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		7060AFA20000000000000010 = {
@@ -199,6 +199,36 @@
 		7060AFA20000000000000044 = {
 			isa = PBXBuildFile;
 			productRef = 7060AFA20000000000000043;
+		};
+		7060AFA20000000000000060 = {
+			isa = PBXFileReference;
+			lastKnownFileType = folder;
+			path = books;
+			sourceTree = SONA_ARTWORK_ROOT;
+		};
+		7060AFA20000000000000061 = {
+			isa = PBXBuildFile;
+			fileRef = 7060AFA20000000000000060;
+		};
+		7060AFA20000000000000062 = {
+			isa = PBXFileReference;
+			lastKnownFileType = folder;
+			path = adventure;
+			sourceTree = SONA_ARTWORK_ROOT;
+		};
+		7060AFA20000000000000063 = {
+			isa = PBXBuildFile;
+			fileRef = 7060AFA20000000000000062;
+		};
+		7060AFA20000000000000064 = {
+			isa = PBXFileReference;
+			lastKnownFileType = folder;
+			path = crafted;
+			sourceTree = SONA_ARTWORK_ROOT;
+		};
+		7060AFA20000000000000065 = {
+			isa = PBXBuildFile;
+			fileRef = 7060AFA20000000000000064;
 		};
 	};
 	rootObject = 7060AFA20000000000000001;

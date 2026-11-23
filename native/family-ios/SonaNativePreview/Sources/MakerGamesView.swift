@@ -1,4 +1,6 @@
+import Combine
 import SwiftUI
+import UIKit
 
 enum MakerGame {
     case robot, castle, pizza
@@ -40,6 +42,8 @@ struct MakerGamesView: View {
     @State private var roundID = UUID()
     @State private var finished = false
     @State private var circuits = 0
+    @State private var previousRobotRoute: [Int] = []
+    @State private var robotCoat = RobotCoat.blue
 
     var body: some View {
         GeometryReader { geometry in
@@ -82,10 +86,29 @@ struct MakerGamesView: View {
                     .foregroundStyle(MakerPalette.muted)
                     .multilineTextAlignment(.center)
             }
+            if game == .robot && circuits == 0 {
+                HStack(spacing: 10) {
+                    ForEach(RobotCoat.allCases) { coat in
+                        Button { robotCoat = coat } label: {
+                            Circle().fill(coat.color)
+                                .overlay(Circle().strokeBorder(MakerPalette.ink.opacity(robotCoat == coat ? 1 : 0.18), lineWidth: 3))
+                                .frame(width: 33, height: 33)
+                                .frame(width: 44, height: 44)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel(coat.title + " paint")
+                        .accessibilityAddTraits(robotCoat == coat ? .isSelected : [])
+                    }
+                }
+                .accessibilityLabel("Paint your robot")
+            }
             Group {
                 switch game {
-                case .robot: RobotCircuitRound(part: speechGameProgress == nil ? nil : circuits, onComplete: finishCircuit)
-                    .id(circuits)
+                case .robot:
+                    RobotCircuitRound(part: min(circuits, 7), count: speechGameProgress?.count ?? 8,
+                                      little: speechGameProgress?.isSimple == true, previousRoute: previousRobotRoute,
+                                      coat: $robotCoat, onComplete: finishCircuit)
+                        .id(circuits)
                 case .castle: CastleCraneRound(onComplete: complete)
                 case .pizza: PizzaKitchenRound(onComplete: complete)
                 }
@@ -104,10 +127,14 @@ struct MakerGamesView: View {
         ZStack {
             Color.black.opacity(0.24).ignoresSafeArea().accessibilityHidden(true)
             VStack(spacing: 18) {
-                Image(systemName: game == .pizza ? "flame.fill" : "star.fill")
-                    .font(.system(size: 46))
-                    .foregroundStyle(MakerPalette.orange)
-                    .accessibilityHidden(true)
+                if game == .robot {
+                    RobotAssembly(assembled: 8, coat: robotCoat).frame(width: 127, height: 160)
+                } else {
+                    Image(systemName: game == .pizza ? "flame.fill" : "star.fill")
+                        .font(.system(size: 46))
+                        .foregroundStyle(MakerPalette.orange)
+                        .accessibilityHidden(true)
+                }
                 Text(game == .pizza ? "Pizza’s ready!" : "Look what you made!")
                     .font(.system(.title, design: .rounded).weight(.heavy))
                     .multilineTextAlignment(.center)
@@ -138,136 +165,185 @@ struct MakerGamesView: View {
         onRoundFinished()
     }
 
-    private func finishCircuit() {
-        guard let speechGameProgress else { complete(); return }
+    private func finishCircuit(_ route: [Int]) {
+        guard !finished, speechGameProgress?.isMoveActive != false else { return }
+        previousRobotRoute = route
         circuits += 1
-        speechGameProgress.advance()
-        if circuits == speechGameProgress.count { complete() }
+        speechGameProgress?.advance()
+        if circuits == (speechGameProgress?.count ?? 8) { complete() }
+    }
+}
+
+private enum RobotCoat: String, CaseIterable, Identifiable {
+    case blue, purple, pink, green
+    var id: String { rawValue }
+    var title: String { rawValue.capitalized }
+    var hue: Double {
+        switch self { case .blue: return 0; case .purple: return 60; case .pink: return 140; case .green: return 300 }
+    }
+    var color: Color {
+        switch self { case .blue: return .cyan; case .purple: return .purple; case .pink: return .pink; case .green: return .green }
     }
 }
 
 private struct RobotCircuitRound: View {
-    let onComplete: () -> Void
+    let part: Int
+    @Binding var coat: RobotCoat
+    let onComplete: ([Int]) -> Void
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.speechGameProgress) private var speechGameProgress
     @Environment(\.scenePhase) private var scenePhase
-    @State private var blueprintSeconds = 0.0
-    private var blueprintTicking: Bool { blueprintSeconds > 0 && scenePhase == .active && speechGameProgress?.isHelpActive != true }
-    @State private var turns: [Int]
-    // Clockwise arms: top=1, right=2, bottom=4, left=8. The finished route
-    // snakes across all nine tiles, from the top-left battery to the robot.
-    private let pipes = [10, 10, 12, 6, 10, 9, 3, 10, 10]
+    @State private var circuit: NativeRobotCircuit
+    @State private var lastTick: TimeInterval?
+    @State private var chime = NativeMotorChime()
+    private let timer = Timer.publish(every: 1.0 / 30, on: .main, in: .common).autoconnect()
 
-    init(part: Int?, onComplete: @escaping () -> Void) {
-        self.onComplete = onComplete
-        var turns = Array(repeating: 0, count: 9)
-        if let part {
-            let routes = [2, 5, 3, 6, 0, 1, 4, 7, 8]
-            turns[routes[part % routes.count]] = part < 4 ? 3 : 1
-        } else {
-            turns = (0..<9).map { _ in Int.random(in: 1...3) }
-        }
-        _turns = State(initialValue: turns)
+    init(part: Int, count: Int, little: Bool, previousRoute: [Int], coat: Binding<RobotCoat>,
+         onComplete: @escaping ([Int]) -> Void) {
+        self.part = part; self._coat = coat; self.onComplete = onComplete
+        _circuit = State(initialValue: .init(part: part, count: count, little: little, previousRoute: previousRoute))
     }
 
-    private func mask(_ index: Int) -> Int {
-        let rotation = turns[index] % 4
-        return ((pipes[index] << rotation) | (pipes[index] >> (4 - rotation))) & 15
-    }
-
-    private var powered: Set<Int> {
-        guard mask(0) & 8 != 0 else { return [] }
-        var seen: Set<Int> = [0]
-        var queue = [0]
-        let directions = [(-1, 0, 1, 4), (0, 1, 2, 8), (1, 0, 4, 1), (0, -1, 8, 2)]
-        while !queue.isEmpty {
-            let index = queue.removeFirst()
-            for (dy, dx, arm, opposite) in directions where mask(index) & arm != 0 {
-                let row = index / 3 + dy, column = index % 3 + dx
-                if (0..<3).contains(row), (0..<3).contains(column) {
-                    let next = row * 3 + column
-                    if mask(next) & opposite != 0, seen.insert(next).inserted { queue.append(next) }
-                }
-            }
-        }
-        return seen
-    }
-
-    private var connected: Bool { powered.count == 9 && mask(8) & 2 != 0 }
+    private var inPlay: Bool { scenePhase == .active && speechGameProgress?.isMoveActive != false }
 
     var body: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 7) {
             HStack {
-                Label("Start here", systemImage: "battery.100")
-                    .font(.subheadline.weight(.bold))
-                    .foregroundStyle(MakerPalette.teal)
+                VStack(alignment: .leading, spacing: 5) {
+                    Text("Power the \(NativeRobotCircuit.partNames[part])").font(.headline)
+                    Text(circuit.message)
+                        .font(.subheadline.weight(.medium)).foregroundStyle(MakerPalette.muted)
+                        .accessibilityIdentifier("robot-banner")
+                }
                 Spacer()
-                RobotFace(lit: connected).frame(width: 64, height: 54)
+                RobotAssembly(assembled: part + (circuit.solved ? 1 : 0), coat: coat)
+                    .frame(width: 82, height: 104)
             }
             GeometryReader { geometry in
-                let edge = min(geometry.size.width, geometry.size.height)
-                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 3), spacing: 8) {
-                    ForEach(0..<9) { index in
-                        Button {
-                            turns[index] += 1
-                        } label: {
-                            ZStack {
-                                if blueprintSeconds > 0 {
-                                    CircuitPipe(mask: pipes[index])
-                                        .stroke(MakerPalette.orange.opacity(0.30), style: StrokeStyle(lineWidth: 20, lineCap: .round, dash: [4, 4]))
-                                }
-                                CircuitPipe(mask: pipes[index])
-                                    .stroke(powered.contains(index) ? MakerPalette.teal : Color(red: 0.60, green: 0.63, blue: 0.64), style: StrokeStyle(lineWidth: 11, lineCap: .round, lineJoin: .round))
-                                    .rotationEffect(.degrees(Double(turns[index]) * 90))
-                                    .animation(reduceMotion ? nil : .easeInOut(duration: 0.18), value: turns[index])
-                            }
-                                .frame(maxWidth: .infinity)
-                                .aspectRatio(1, contentMode: .fit)
-                                .background(powered.contains(index) ? MakerPalette.mint : .white, in: RoundedRectangle(cornerRadius: 18))
-                                .overlay(RoundedRectangle(cornerRadius: 18).strokeBorder(MakerPalette.teal.opacity(0.12), lineWidth: 1.5))
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel("Circuit tile \(index + 1)")
-                        .accessibilityValue(armDescription(mask(index)))
-                        .accessibilityHint("Tap to turn clockwise")
-                        .accessibilityIdentifier("robot-tile-\(index)")
+                let edge = min(geometry.size.width - 52, geometry.size.height)
+                let side = max(65, edge)
+                let cell = (side - 12) / 3
+                ZStack {
+                    LazyVGrid(columns: Array(repeating: GridItem(.fixed(cell), spacing: 6), count: 3), spacing: 6) {
+                        ForEach(circuit.tiles.indices, id: \.self) { index in tile(index, size: cell) }
+                    }
+                    .frame(width: side, height: side)
+                    .position(x: geometry.size.width / 2, y: geometry.size.height / 2)
+                    Image(systemName: "battery.100")
+                        .foregroundStyle(MakerPalette.teal)
+                        .position(x: (geometry.size.width - side) / 2 - 13,
+                                  y: (geometry.size.height - side) / 2 + CGFloat(circuit.sourceRow) * (cell + 6) + cell / 2)
+                        .accessibilityLabel("Battery, row \(circuit.sourceRow + 1)")
+                    Image(systemName: circuit.connected ? "lightbulb.fill" : "lightbulb")
+                        .foregroundStyle(circuit.connected ? Color.yellow : MakerPalette.ink)
+                        .position(x: (geometry.size.width + side) / 2 + 13,
+                                  y: (geometry.size.height - side) / 2 + CGFloat(circuit.socketRow) * (cell + 6) + cell / 2)
+                        .accessibilityLabel("Bulb, row \(circuit.socketRow + 1)")
+                }
+            }
+            HStack(spacing: 8) {
+                Button("Test power") {
+                    if inPlay && circuit.testPower(part: part) {
+                        chime.playCorrect(volume: speechGameProgress?.effectsVolume)
                     }
                 }
-                .frame(width: edge, height: edge)
-                .position(x: geometry.size.width / 2, y: geometry.size.height / 2)
-            }
-            MakerProgress(value: powered.count, total: 9, label: "tiles connected")
-                .accessibilityIdentifier("robot-progress")
-            Text(blueprintSeconds > 0 ? "Blueprint! Turn the wires to match" : "Tap the tiles to join every wire.")
-                .font(.subheadline.weight(.medium))
-                .foregroundStyle(MakerPalette.muted)
-                .multilineTextAlignment(.center)
-            if let request = speechGameProgress?.requestHelp {
-                Button("Blueprint") {
-                    guard !connected else { return }
-                    _ = request { earned in if earned { blueprintSeconds = 10 } }
+                .buttonStyle(.borderedProminent).tint(MakerPalette.teal)
+                .frame(minHeight: 48)
+                .disabled(!inPlay || circuit.solved)
+                .accessibilityIdentifier("robot-test")
+                if let requestHelp = speechGameProgress?.requestHelp {
+                    Button("Blueprint") {
+                        _ = requestHelp { earned in if earned { circuit.showBlueprint() } }
+                    }
+                    .frame(minHeight: 48)
+                    .disabled(!inPlay || circuit.solved)
+                    .accessibilityIdentifier("robot-help")
                 }
-                .disabled(connected)
-                .frame(maxWidth: .infinity, minHeight: 48)
-                .accessibilityLabel("Extra help: say your word for a blueprint")
-                .accessibilityIdentifier("robot-help")
             }
         }
         .accessibilityElement(children: .contain)
-        .task(id: blueprintTicking) {
-            guard blueprintTicking else { return }
-            while blueprintSeconds > 0 {
-                do { try await Task.sleep(nanoseconds: 100_000_000) } catch { return }
-                guard !Task.isCancelled, blueprintTicking else { return }
-                blueprintSeconds = max(0, blueprintSeconds - 0.1)
-            }
+        .onReceive(timer) { _ in
+            let now = ProcessInfo.processInfo.systemUptime
+            let elapsed = lastTick.map { now - $0 } ?? 0
+            lastTick = inPlay ? now : nil
+            if circuit.step(seconds: elapsed, active: inPlay) { onComplete(circuit.route) }
         }
-        .onChange(of: connected) { ready in if ready { onComplete() } }
+        .onChange(of: inPlay) { if !$0 { lastTick = nil; chime.stop() } }
+        .onDisappear { chime.stop() }
+    }
+
+    private func tile(_ index: Int, size: CGFloat) -> some View {
+        let tile = circuit.tiles[index]
+        let hasPower = circuit.powered.contains(index)
+        return Button {
+            if inPlay { circuit.turn(index) }
+        } label: {
+            ZStack {
+                if circuit.showsGuide && tile.inRoute {
+                    CircuitPipe(mask: tile.correctMask)
+                        .stroke(MakerPalette.teal.opacity(0.28), style: StrokeStyle(lineWidth: 15, lineCap: .round, dash: [4, 4]))
+                }
+                CircuitPipe(mask: tile.wire)
+                    .stroke(hasPower ? MakerPalette.teal : MakerPalette.muted,
+                            style: StrokeStyle(lineWidth: 9, lineCap: .round, lineJoin: .round))
+                    .rotationEffect(.degrees(Double(tile.rotation) * 90))
+                    .animation(reduceMotion ? nil : .easeInOut(duration: 0.15), value: tile.rotation)
+            }
+            .frame(width: size, height: size)
+            .background(hasPower ? MakerPalette.mint : .white, in: RoundedRectangle(cornerRadius: 12))
+            .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(
+                circuit.hint == index ? Color.yellow : MakerPalette.teal.opacity(0.18),
+                lineWidth: circuit.hint == index ? 4 : 1.5))
+        }
+        .buttonStyle(.plain)
+        .disabled(!inPlay || circuit.solved)
+        .accessibilityLabel("Circuit tile \(index + 1), row \(index / 3 + 1), column \(index % 3 + 1)")
+        .accessibilityValue(armDescription(tile.mask) + (hasPower ? ". Power is here." : ""))
+        .accessibilityHint("Tap to turn clockwise")
+        .accessibilityIdentifier("robot-tile-\(index)")
     }
 
     private func armDescription(_ value: Int) -> String {
         [(1, "top"), (2, "right"), (4, "bottom"), (8, "left")]
             .filter { value & $0.0 != 0 }.map(\.1).joined(separator: " and ")
+    }
+}
+
+private struct RobotAssembly: View {
+    let assembled: Int
+    let coat: RobotCoat
+    @State private var pictures: [String: UIImage] = [:]
+    private let centers: [(x: CGFloat, y: CGFloat, scale: CGFloat)] = [
+        (0.38, 0.82, 0.34), (0.64, 0.82, 0.34), (0.50, 0.62, 0.52),
+        (0.19, 0.59, 0.33), (0.81, 0.59, 0.33), (0.50, 0.34, 0.56),
+        (0.51, 0.13, 0.20), (0.50, 0.61, 0.25)
+    ]
+
+    var body: some View {
+        GeometryReader { geo in
+            ZStack {
+                RoundedRectangle(cornerRadius: 18).fill(MakerPalette.mint.opacity(0.5))
+                ForEach(0..<min(assembled, NativeRobotCircuit.parts.count), id: \.self) { index in
+                    let center = centers[index]
+                    let part = NativeRobotCircuit.parts[index]
+                    if let picture = pictures[part] {
+                        Image(uiImage: picture).resizable().scaledToFit()
+                            .hueRotation(.degrees(coat.hue))
+                            .frame(width: center.scale * geo.size.width)
+                            .position(x: center.x * geo.size.width, y: center.y * geo.size.height)
+                    }
+                }
+            }
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(assembled == 8 ? "Your complete \(coat.title.lowercased()) toy robot" : "Robot with \(assembled) parts assembled")
+        .task {
+            for part in NativeRobotCircuit.parts {
+                guard !Task.isCancelled else { return }
+                let image = try? await NativeArtworkLoader.shared.image(path: "/assets/crafted/game/robot-\(part)-v1.webp")
+                if !Task.isCancelled { pictures[part] = image }
+            }
+        }
     }
 }
 
@@ -280,23 +356,6 @@ private struct CircuitPipe: Shape {
                     (4, CGPoint(x: rect.midX, y: rect.maxY)), (8, CGPoint(x: rect.minX, y: rect.midY))]
         for (arm, end) in ends where mask & arm != 0 { path.move(to: center); path.addLine(to: end) }
         return path
-    }
-}
-
-private struct RobotFace: View {
-    let lit: Bool
-    var body: some View {
-        RoundedRectangle(cornerRadius: 15)
-            .fill(MakerPalette.teal)
-            .overlay {
-                VStack(spacing: 8) {
-                    HStack(spacing: 16) {
-                        ForEach(0..<2) { _ in Circle().fill(lit ? Color.yellow : .white).frame(width: 9, height: 9) }
-                    }
-                    Capsule().fill(.white.opacity(0.9)).frame(width: 22, height: 4)
-                }
-            }
-            .accessibilityLabel(lit ? "Robot powered on" : "Robot waiting for power")
     }
 }
 

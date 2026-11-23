@@ -11,10 +11,12 @@ struct FruitSliceView: View {
     @Environment(\.guidedArcadeExit) private var guidedArcadeExit
     @Environment(\.guidedArcadeRestoredLives) private var restoredLives
     @Environment(\.arcadePowerEffect) private var power
+    @Environment(\.arcadeRoundContext) private var arcadeRound
     @Environment(\.arcadeStartingHearts) private var startingHearts
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @StateObject private var game: FruitSliceGame
+    private let sand = Color(red: 1, green: 0.98, blue: 0.93)
 
     /// The host remounts this view for stages 0, 1 and 2, keeping the two
     /// between-wave speech checkpoints outside the gesture-only game scene.
@@ -31,7 +33,7 @@ struct FruitSliceView: View {
                 .ignoresSafeArea()
                 .accessibilityLabel("Fruit Slice. Swipe across the fruit to slice it.")
                 .accessibilityIdentifier("nativeFruitSliceBoard")
-                .accessibilityValue(game.finished ? "\(game.sliced) fruit sliced" : (game.isFinale ? "\(game.finaleCuts) of 5 watermelon swipes" : "\(game.sliced) of \(game.normalGoal) fruit"))
+                .accessibilityValue(game.finished ? "\(game.sliced) fruit sliced" : (game.isFinale ? "\(game.finaleCuts) of \(game.giantGoal) watermelon swipes" : "\(game.sliced) of \(game.normalGoal) fruit"))
                 .allowsHitTesting(!game.finished)
 
             VStack(spacing: 16) {
@@ -40,7 +42,7 @@ struct FruitSliceView: View {
                         Image(systemName: "xmark")
                             .font(.system(size: 20, weight: .bold))
                             .frame(width: 48, height: 48)
-                            .background(.white, in: Circle())
+                            .background(sand, in: Circle())
                             .shadow(color: .black.opacity(0.10), radius: 8, y: 3)
                     }
                     .accessibilityLabel("Back home")
@@ -49,40 +51,42 @@ struct FruitSliceView: View {
                     Spacer()
 
                     VStack(alignment: .leading, spacing: 6) {
-                        Text(game.isFinale ? "Watermelon \(game.finaleCuts)/5" : "\(game.sliced) fruit sliced")
+                        Text(game.isFinale ? "Watermelon \(game.finaleCuts)/\(game.giantGoal)" : "\(game.sliced) fruit sliced")
                             .font(.system(size: 18, weight: .bold, design: .rounded))
                             .accessibilityIdentifier("nativeFruitSliceCount")
-                        ProgressView(value: Double(game.isFinale ? game.finaleCuts : min(game.sliced, game.normalGoal)), total: Double(game.isFinale ? 5 : game.normalGoal))
-                            .tint(Color(red: 0.04, green: 0.48, blue: 0.51))
+                        ProgressView(value: Double(game.isFinale ? game.finaleCuts : min(game.sliced, game.normalGoal)), total: Double(game.isFinale ? game.giantGoal : game.normalGoal))
+                            .tint(SonaPalette.teal)
                             .frame(width: 126)
                             .accessibilityLabel(game.isFinale ? "Watermelon cuts" : "Round progress")
-                            .accessibilityValue(game.finished ? "Complete" : (game.isFinale ? "\(game.finaleCuts) of 5 swipes" : "\(game.sliced) of \(game.normalGoal) fruit"))
+                            .accessibilityValue(game.finished ? "Complete" : (game.isFinale ? "\(game.finaleCuts) of \(game.giantGoal) swipes" : "\(game.sliced) of \(game.normalGoal) fruit"))
                         if onLifeLost != nil && !game.isFinale && !game.finished {
                             NativeArcadeHearts(count: game.hearts)
                         }
                     }
                     .padding(.horizontal, 18)
                     .padding(.vertical, 12)
-                    .background(.white, in: RoundedRectangle(cornerRadius: 20))
+                    .background(sand, in: RoundedRectangle(cornerRadius: 20))
                     .shadow(color: .black.opacity(0.10), radius: 8, y: 3)
                 }
 
-                VStack(spacing: 3) {
-                    Text(game.isFinale ? "One big watermelon!" : "Fruit Slice")
-                        .font(.system(size: 28, weight: .heavy, design: .rounded))
-                    if game.sliced == 0 {
-                        Text("Swipe across the apple")
-                            .font(.system(size: 17, weight: .semibold, design: .rounded))
+                if game.isFinale || game.sliced == 0 {
+                    VStack(spacing: 3) {
+                        Text(game.isFinale ? "One big watermelon!" : "Fruit Slice")
+                            .font(.system(size: 28, weight: .heavy, design: .rounded))
+                        if game.sliced == 0 {
+                            Text("Swipe across the apple")
+                                .font(.system(size: 17, weight: .semibold, design: .rounded))
+                        }
                     }
+                    .padding(.horizontal, 22)
+                    .padding(.vertical, 12)
+                    .background(sand, in: RoundedRectangle(cornerRadius: 20))
+                    .shadow(color: .black.opacity(0.08), radius: 10, y: 4)
+                    .allowsHitTesting(false)
                 }
-                .padding(.horizontal, 22)
-                .padding(.vertical, 12)
-                .background(.white.opacity(0.95), in: RoundedRectangle(cornerRadius: 20))
-                .shadow(color: .black.opacity(0.08), radius: 10, y: 4)
-                .allowsHitTesting(false)
                 Spacer()
             }
-            .foregroundStyle(Color(red: 0.20, green: 0.15, blue: 0.13))
+            .foregroundStyle(SonaPalette.ink)
             .padding(.horizontal, 20)
             .padding(.top, 8)
 
@@ -109,10 +113,10 @@ struct FruitSliceView: View {
                         .frame(minHeight: 48)
                         .accessibilityIdentifier("nativeFruitSliceHome")
                 }
-                .foregroundStyle(Color(red: 0.20, green: 0.15, blue: 0.13))
+                .foregroundStyle(SonaPalette.ink)
                 .padding(28)
                 .frame(maxWidth: 340)
-                .background(Color(red: 1, green: 0.97, blue: 0.91), in: RoundedRectangle(cornerRadius: 28))
+                .background(sand, in: RoundedRectangle(cornerRadius: 28))
                 .shadow(color: .black.opacity(0.18), radius: 28, y: 12)
                 .padding(24)
                 .transition(reduceMotion ? .opacity : .scale(scale: 0.94).combined(with: .opacity))
@@ -120,6 +124,7 @@ struct FruitSliceView: View {
         }
         .animation(reduceMotion ? nil : .easeOut(duration: 0.22), value: game.finished)
         .onAppear {
+            game.configure(level: arcadeRound?.level ?? 1, record: arcadeRound?.record)
             game.scene.setReduceMotion(reduceMotion)
             game.scene.resetClock()
             game.scene.isPaused = false
@@ -160,7 +165,7 @@ private struct FruitSliceButtonStyle: ButtonStyle {
             .font(.system(size: 23, weight: .bold, design: .rounded))
             .foregroundStyle(.white)
             .frame(maxWidth: .infinity, minHeight: 58)
-            .background(Color(red: 0.04, green: 0.48, blue: 0.51), in: RoundedRectangle(cornerRadius: 18))
+            .background(SonaPalette.teal, in: RoundedRectangle(cornerRadius: 18))
             .shadow(color: Color.black.opacity(0.12), radius: 0, y: configuration.isPressed ? 1 : 4)
             .scaleEffect(configuration.isPressed && !reduceMotion ? 0.97 : 1)
     }
@@ -168,30 +173,37 @@ private struct FruitSliceButtonStyle: ButtonStyle {
 
 // MARK: - Gesture-earned stage progress
 
-/// Only successful scene intersections may call these methods. Time, missed
-/// fruit, taps and speech never advance this gesture-only state.
+/// Fruit and giant cuts require intersections. The original active-time
+/// cap can end a normal wave without awarding a slice or a speech rep.
 private struct FruitSliceStageProgress {
     let stage: Int
     let normalGoal: Int
     let giantGoal: Int
+    private(set) var normalEnded = false
     private(set) var normalSliced = 0
     private(set) var giantCuts = 0
     private var giantEntryStroke = 0
     private var lastGiantStroke = 0
 
-    init(stage: Int) {
+    init(stage: Int, level: Int = 1) {
         self.stage = min(2, max(0, stage))
-        normalGoal = self.stage == 0 ? 4 : 6
-        giantGoal = self.stage == 2 ? 5 : 0
+        normalGoal = NativeArcadeDifficulty.sliceWave(level: level, stage: self.stage).goal
+        giantGoal = self.stage == 2 ? NativeArcadeDifficulty.watermelonCuts(level: level) : 0
     }
-    var isFinale: Bool { giantGoal > 0 && normalSliced == normalGoal && giantCuts < giantGoal }
-    var isComplete: Bool { normalSliced == normalGoal && (giantGoal == 0 || giantCuts == giantGoal) }
+    var isFinale: Bool { giantGoal > 0 && normalEnded && giantCuts < giantGoal }
+    var isComplete: Bool { normalEnded && (giantGoal == 0 || giantCuts == giantGoal) }
+
+    mutating func endNormal(at stroke: Int) {
+        guard !normalEnded else { return }
+        normalEnded = true
+        giantEntryStroke = stroke
+    }
     var slicedFruit: Int { normalSliced + (giantGoal > 0 && giantCuts == giantGoal ? 1 : 0) }
 
     mutating func sliceNormal(stroke: Int) -> Bool {
-        guard stroke > 0, normalSliced < normalGoal, !isComplete else { return false }
+        guard stroke > 0, !normalEnded else { return false }
         normalSliced += 1
-        if normalSliced == normalGoal && giantGoal > 0 { giantEntryStroke = stroke }
+        if normalSliced == normalGoal { endNormal(at: stroke) }
         return true
     }
     mutating func cutGiant(stroke: Int) -> Bool {
@@ -204,14 +216,15 @@ private struct FruitSliceStageProgress {
 
 private final class FruitSliceGame: ObservableObject {
     let stage: Int
-    let normalGoal: Int
+    @Published private(set) var normalGoal: Int
+    @Published private(set) var giantGoal = 5
     @Published var sliced = 0
     @Published var finaleCuts = 0
     @Published var finished = false
     @Published var hearts = 3
     let scene: FruitSliceScene
     var isFinalStage: Bool { stage == 2 }
-    var isFinale: Bool { isFinalStage && sliced == normalGoal && !finished }
+    @Published private(set) var isFinale = false
     private let sliceHaptic = UIImpactFeedbackGenerator(style: .light)
     private let finishHaptic = UINotificationFeedbackGenerator()
     private var lastHaptic: TimeInterval = 0
@@ -226,6 +239,7 @@ private final class FruitSliceGame: ObservableObject {
                 guard let self else { return }
                 self.sliced = progress.slicedFruit
                 self.finaleCuts = progress.giantCuts
+                self.isFinale = progress.isFinale
                 let now = ProcessInfo.processInfo.systemUptime
                 if !progress.isComplete && now - self.lastHaptic > 0.07 {
                     self.sliceHaptic.impactOccurred(intensity: 0.7)
@@ -246,6 +260,12 @@ private final class FruitSliceGame: ObservableObject {
         }
     }
 
+    func configure(level: Int, record: NativeArcadeRoundRecord?) {
+        normalGoal = NativeArcadeDifficulty.sliceWave(level: level, stage: stage).goal
+        giantGoal = NativeArcadeDifficulty.watermelonCuts(level: level)
+        scene.configure(level: level, record: record)
+    }
+
     func prepareHaptics() {
         sliceHaptic.prepare()
         finishHaptic.prepare()
@@ -254,6 +274,7 @@ private final class FruitSliceGame: ObservableObject {
     func restart() {
         sliced = 0
         finaleCuts = 0
+        isFinale = false
         finished = false
         hearts = 3
         lastHaptic = 0
@@ -278,14 +299,18 @@ private final class FruitSliceScene: SKScene {
     var onFinish: (() -> Void)?
     var onHearts: ((Int) -> Void)?
     var enablesLives = false
-    private let orchard = SKSpriteNode(imageNamed: "orchard")
-    private let counter = SKSpriteNode(imageNamed: "fruit-stand")
+    private let coast = SKSpriteNode(imageNamed: "fruit-slice-coast")
     private let fruitNames = ["fruit-apple", "fruit-orange", "fruit-strawberry", "fruit-kiwi", "fruit-watermelon"]
     private var fruit: [Fruit] = []
     private var previousTime: TimeInterval?
     private var spawnTime: TimeInterval = 0.25
     private var progress: FruitSliceStageProgress
     private var thrown = 0
+    private var level = 1
+    private var wavePlay: TimeInterval = 0
+    private var missRun = 0
+    private var record: NativeArcadeRoundRecord?
+    private var wave: NativeArcadeDifficulty.Wave { NativeArcadeDifficulty.sliceWave(level: level, stage: progress.stage) }
     private var sentFinish = false
     private var reduceMotion = false
     private var activeTouch: UITouch?
@@ -302,7 +327,7 @@ private final class FruitSliceScene: SKScene {
         progress = FruitSliceStageProgress(stage: stage)
         super.init(size: CGSize(width: 390, height: 844))
         scaleMode = .resizeFill
-        backgroundColor = SKColor(red: 0.98, green: 0.93, blue: 0.82, alpha: 1)
+        backgroundColor = SKColor(red: 0.73, green: 0.90, blue: 0.91, alpha: 1)
     }
 
     required init?(coder: NSCoder) {
@@ -310,11 +335,9 @@ private final class FruitSliceScene: SKScene {
     }
 
     override func didMove(to view: SKView) {
-        guard orchard.parent == nil else { return }
-        orchard.zPosition = -20
-        counter.zPosition = -10
-        addChild(orchard)
-        addChild(counter)
+        guard coast.parent == nil else { return }
+        coast.zPosition = -20
+        addChild(coast)
         layoutArt()
         serveFruit(named: "fruit-apple", radiusScale: 1.15)
     }
@@ -324,20 +347,20 @@ private final class FruitSliceScene: SKScene {
     }
 
     private func layoutArt() {
-        guard size.width > 0, size.height > 0 else { return }
-        if let texture = orchard.texture {
-            let original = texture.size()
-            let scale = max(size.width / max(original.width, 1), size.height / max(original.height, 1))
-            orchard.size = CGSize(width: original.width * scale, height: original.height * scale)
-        }
-        orchard.position = CGPoint(x: size.width / 2, y: size.height / 2)
-        if let texture = counter.texture {
-            let original = texture.size()
-            let width = size.width * 1.08
-            counter.size = CGSize(width: width, height: width * original.height / max(original.width, 1))
-        }
-        counter.anchorPoint = CGPoint(x: 0.5, y: 0)
-        counter.position = CGPoint(x: size.width / 2, y: -size.height * 0.03)
+        guard size.width > 0, size.height > 0, let texture = coast.texture else { return }
+        let original = texture.size()
+        let scale = max(size.width / max(original.width, 1), size.height / max(original.height, 1))
+        coast.size = CGSize(width: original.width * scale, height: original.height * scale)
+        // Keep the cottages in frame on a narrow phone and the surf on a wide tablet.
+        coast.position = CGPoint(x: size.width / 2 - max(0, coast.size.width - size.width) * 0.32,
+                                 y: size.height / 2 + max(0, coast.size.height - size.height) * 0.18)
+    }
+
+    func configure(level: Int, record: NativeArcadeRoundRecord?) {
+        self.record = record
+        guard self.level != level, !progress.normalEnded, progress.normalSliced == 0 else { return }
+        self.level = level
+        progress = FruitSliceStageProgress(stage: progress.stage, level: level)
     }
 
     func resetClock() {
@@ -353,10 +376,10 @@ private final class FruitSliceScene: SKScene {
     }
 
     func restart() {
-        children.filter { $0 !== orchard && $0 !== counter }.forEach { $0.removeFromParent() }
+        children.filter { $0 !== coast }.forEach { $0.removeFromParent() }
         fruit.removeAll()
-        progress = FruitSliceStageProgress(stage: progress.stage)
-        thrown = 0
+        progress = FruitSliceStageProgress(stage: progress.stage, level: level)
+        thrown = 0; missRun = 0; wavePlay = 0
         lives = NativeArcadeLives()
         sentFinish = false
         stroke = 0
@@ -376,6 +399,15 @@ private final class FruitSliceScene: SKScene {
         guard !progress.isComplete, lives.hearts > 0 else { return }
         let delta = min(currentTime - (previousTime ?? currentTime), 0.05)
         previousTime = currentTime
+        if !progress.normalEnded {
+            wavePlay += max(0, delta)
+            if wavePlay >= 45 {
+                progress.endNormal(at: stroke)
+                if progress.isFinale { serveFinale() }
+                reportProgress()
+                return
+            }
+        }
         let seconds = CGFloat(max(delta, 0) * (isSuperSlice ? power.speed : 1))
         let fall = gravity
         for index in fruit.indices {
@@ -394,8 +426,12 @@ private final class FruitSliceScene: SKScene {
             }
             return gone
         }
-        guard progress.normalSliced > 0 && progress.normalSliced < progress.normalGoal else { return }
-        if missedNormalFruit && enablesLives && lives.miss(at: currentTime, protected: power.protectsHearts) {
+        guard !progress.normalEnded else { return }
+        if missedNormalFruit && !isSuperSlice {
+            missRun += 1
+            _ = record?.recordMove(qualifies: false)
+        }
+        if missedNormalFruit && progress.normalSliced > 0 && enablesLives && lives.miss(at: currentTime, protected: power.protectsHearts) {
             onHearts?(lives.hearts)
             if lives.hearts == 0 { resetClock(); return }
         }
@@ -404,10 +440,18 @@ private final class FruitSliceScene: SKScene {
             if isSuperSlice && fruit.count < 8 {
                 let bonusCount = thrown.isMultiple(of: 2) ? 3 : 2
                 for _ in 0..<bonusCount { throwFruit(bonus: true) }
-                spawnTime = 0.72 * 0.45
-            } else if !isSuperSlice && fruit.filter({ !$0.isBonus }).count < 3 {
-                throwFruit()
-                spawnTime = 0.72
+                spawnTime = wave.tossInterval * 0.45
+            } else if !isSuperSlice {
+                let help = missRun >= 2
+                let limit = help ? 1 : wave.maximumPerToss
+                let normal = fruit.filter { !$0.isBonus && !$0.held }.count
+                if normal < limit {
+                    let requested = help ? 1 : 1 + (Bool.random() ? 1 : 0) + (Bool.random() ? 1 : 0)
+                    for _ in 0..<min(limit - normal, requested) {
+                        throwFruit(gold: !help && Double.random(in: 0..<1) < wave.goldChance, assisted: help)
+                    }
+                    spawnTime = help ? NativeArcadeDifficulty.sliceWave(level: 1, stage: progress.stage).tossInterval * 1.25 : wave.tossInterval
+                }
             }
         }
     }
@@ -417,7 +461,7 @@ private final class FruitSliceScene: SKScene {
         power = effect
         guard allowBurst, isSuperSlice, oldRevision != effect.revision, lives.hearts > 0, !progress.isComplete else { return }
         for index in 0..<5 { throwFruit(bonus: true, gold: index == 2) }
-        spawnTime = 0.72 * 0.45
+        spawnTime = wave.tossInterval * 0.45
     }
 
     func restoreLife() {
@@ -427,10 +471,11 @@ private final class FruitSliceScene: SKScene {
         resetClock()
     }
 
-    private func throwFruit(bonus: Bool = false, gold: Bool = false) {
+    private func throwFruit(bonus: Bool = false, gold: Bool = false, assisted: Bool = false) {
         let name = fruitNames[thrown % fruitNames.count]
         thrown += 1
-        let radius = min(max(size.width * 0.11, 30), 54)
+        let sizeScale = assisted ? 1.3 : NativeArcadeDifficulty.fruitSize(level: level)
+        let radius = min(max(size.width * 0.11, 30), 54) * sizeScale
         let node = SKSpriteNode(imageNamed: name)
         if gold { node.color = .yellow; node.colorBlendFactor = 0.55 }
         node.size = CGSize(width: radius * 2, height: radius * 2)
@@ -518,6 +563,7 @@ private final class FruitSliceScene: SKScene {
                 guard progress.cutGiant(stroke: stroke) else { continue }
                 splash(at: hit.node.position)
                 if progress.isComplete {
+                    _ = record?.recordMove(qualifies: true)
                     split(hit.node)
                     fruit.removeAll { $0.node === hit.node }
                     hit.node.removeFromParent()
@@ -530,6 +576,8 @@ private final class FruitSliceScene: SKScene {
                 continue
             } else {
                 guard progress.sliceNormal(stroke: stroke) else { continue }
+                missRun = 0
+                _ = record?.recordMove(qualifies: true)
                 fruit.removeAll { $0.node === hit.node }
                 split(hit.node)
                 splash(at: hit.node.position)
@@ -644,7 +692,7 @@ private final class FruitSliceScene: SKScene {
             let angle = CGFloat(index) * .pi / 3
             let drop = SKShapeNode(circleOfRadius: 3.5)
             drop.position = point
-            drop.fillColor = SKColor(red: 1, green: 0.9, blue: 0.57, alpha: 1)
+            drop.fillColor = SKColor(red: 0.86, green: 1, blue: 0.97, alpha: 1)
             drop.strokeColor = .clear
             drop.zPosition = 9
             addChild(drop)

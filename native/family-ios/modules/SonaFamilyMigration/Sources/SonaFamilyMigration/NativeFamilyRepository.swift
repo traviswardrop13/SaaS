@@ -132,7 +132,11 @@ public struct NativeFamilyDocument: Codable, Equatable, Sendable {
     public internal(set) var pendingLocalPlayerRemovals: Set<NativeFamilyChildID>?
     var mutationReceipts: [String: NativeFamilyMutationReceipt] = [:]
     var ruleReceipts: [String: NativeFamilyRuleReceipt]?
+    /// Private container history, never a portable-backup value or purge receipt.
+    var bootstrapProvenance: NativeFamilyBootstrapProvenance?
+    public var previewBootstrapProvenance: NativeFamilyBootstrapProvenance? { bootstrapProvenance }
     public internal(set) var appleAccess: [String: NativeFamilyAppleAccess]?
+    public internal(set) var websiteAccess: [String: NativeFamilyWebsiteAccess]?
     public internal(set) var retiredRecordingOrigins: Set<LegacyOrigin>?
     var weeklyReportJournal: [String: NativeFamilyReportJournal]?
     var backupJournal: [String: NativeFamilyBackupJournal]?
@@ -155,6 +159,7 @@ public enum NativeFamilyRepositoryError: Error, Equatable {
     case notSeeded, originNotFound, primaryOriginRequired, conflictingPrimarySelection
     case sourceChangedAfterSeed, childNotFound, cannotRemoveLastChild
     case invalidChildKey, invalidProfile, slotLimitReached, operationConflict, verificationFailed
+    case retiredRecordingsRequired
 }
 
 public protocol NativeFamilyDocumentStore: Sendable {
@@ -181,8 +186,21 @@ public actor NativeFamilyRepository {
     /// replacing native progress, changing the selected child or granting a token.
     @discardableResult
     public func seed(from archive: MigrationArchive, primaryOrigin: LegacyOrigin? = nil) throws -> NativeFamilyDocument {
+        try seed(from: archive, primaryOrigin: primaryOrigin, bootstrapProvenance: nil)
+    }
+
+    /// The only nonnil caller is the actual native-preview empty bootstrap.
+    /// Existing documents always return untouched, including missing provenance.
+    func seed(from archive: MigrationArchive, primaryOrigin: LegacyOrigin?,
+              bootstrapProvenance: NativeFamilyBootstrapProvenance?) throws -> NativeFamilyDocument {
         guard archive.version == 1 else { throw NativeFamilyRepositoryError.unsupportedVersion }
         guard archive.capturedAllKnownOrigins else { throw NativeFamilyRepositoryError.incompleteMigration }
+        if bootstrapProvenance != nil {
+            guard Bundle.main.bundleIdentifier == "com.speaksona.family.native-preview",
+                  primaryOrigin == .app, archive.origins.values.allSatisfy({ $0.storage.isEmpty && $0.children.isEmpty }) else {
+                throw NativeFamilyRuleError.invalidPreviewContainer
+            }
+        }
         for (key, origin) in archive.origins {
             let expected = try? SnapshotImporter.prepare(LegacySnapshot(origin: origin.origin, storage: origin.storage))
             guard key == origin.origin.rawValue, expected == origin else { throw NativeFamilyRepositoryError.invalidArchive }
@@ -197,6 +215,7 @@ public actor NativeFamilyRepository {
             return existing
         }
         var document = NativeFamilyDocument()
+        document.bootstrapProvenance = bootstrapProvenance
         document.sourceFingerprints = fingerprints
         for origin in archive.origins.values {
             let compatibility = origin.evaluatingLegacyPromises()
@@ -339,7 +358,12 @@ public actor NativeFamilyRepository {
     }
 
     public func acknowledgeLocalPlayerRemoval(_ child: NativeFamilyChildID) throws {
-        try change { $0.pendingLocalPlayerRemovals?.remove(child) }
+        try change { document in
+            guard document.retiredRecordingOrigins?.contains(child.origin) == true else {
+                throw NativeFamilyRepositoryError.retiredRecordingsRequired
+            }
+            document.pendingLocalPlayerRemovals?.remove(child)
+        }
     }
 
     public func acknowledgeRetiredRecordings(origin: LegacyOrigin) throws {
@@ -412,6 +436,11 @@ public actor NativeFamilyRepository {
         guard Set(document.appleAccess?.keys.map { $0 } ?? []).isSubset(of: Set(document.origins.keys)) else {
             throw NativeFamilyRepositoryError.destinationCorrupt
         }
+        guard Set(document.websiteAccess?.keys.map { $0 } ?? []).isSubset(of: Set(document.origins.keys)),
+              (document.websiteAccess?.values.allSatisfy {
+                  NativeFamilyWebsiteAccess.normalizedEmail($0.email) == $0.email && $0.checkedAt.timeIntervalSince1970.isFinite
+              } ?? true) else { throw NativeFamilyRepositoryError.destinationCorrupt }
+
         for (owner, books) in document.readingPlaces ?? [:] {
             guard document.origins[owner.origin.rawValue]?.slots.contains(owner.slot) == true,
                   books.allSatisfy({ NativeFamilyReadingPlace.valid(id: $0.key, page: $0.value.page) }) else {

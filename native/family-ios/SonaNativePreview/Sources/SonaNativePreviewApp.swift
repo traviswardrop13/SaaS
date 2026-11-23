@@ -15,27 +15,46 @@ struct SonaNativePreviewApp: App {
     @AppStorage("sona.preview.players.v1") private var savedPlayers = Data()
     @AppStorage("sona.native.reader-microphone-allowed") private var readerMicrophoneAllowed = false
 
+    @State private var reminderExiting = false
+    @StateObject private var reminderAudioOwners = NativeReminderAudioOwners()
     @State private var section: Destination = .home
     @State private var experience: Experience?
     @State private var practiceLoad: UUID?
     @State private var practiceLaunch: PracticeLaunch?
     @State private var practiceStatus: String?
     @State private var today = Date()
+    @State private var arcadeLevelRevision = 0
+    @State private var arcadeLevelLoad: UUID?
+    @State private var arcadeLevelChoice: ArcadeLevelChoice?
     @StateObject private var family = FamilyConnectionStore()
     @StateObject private var records = NativeFamilyState()
+    @StateObject private var trialReminders = NativeTrialReminderStore.appDevice()
     @Environment(\.scenePhase) private var scenePhase
     @State private var sheet: FamilySheet?
     @State private var openLoginAfterSettings = false
     @State private var openingFamilyAction = false
     @State private var clearingRemovedPlayers = false
-    @State private var setupBuddy: PreviewBuddy = .fox
+    @State private var setupHandoff: NativeSetupHandoff?
+    @State private var queuedSetupPractice: NativeSetupHandoff?
+    @State private var firstSetupGuide: NativeSetupHandoff?
+    @State private var firstSetupGuidePresented = false
+    @State private var setupRewalkOwner: NativeFamilyChildID?
+    @State private var childPreparation: Task<NativeFamilyChildID, Error>?
 
     private enum FamilySheet: String, Identifiable {
-        case grownUps, login, consent, buddies, collection, store
+        case grownUps, login, consent, buddies, collection, store, arcadeLevels
         var id: String { rawValue }
     }
 
+    private struct SetupContinuationDestination {
+        let id = UUID()
+        let owner: NativeFamilyChildID
+        let name: String
+        let marker: NativeSetupHandoff
+    }
+
     private enum Experience: Identifiable {
+        case setup(SetupContinuationDestination)
         case story(NativeAdventure, owner: NativeFamilyChildID?)
         case storyReplay(NativeAdventure, owner: NativeFamilyChildID, id: UUID)
         case practice(PracticeDestination)
@@ -44,6 +63,7 @@ struct SonaNativePreviewApp: App {
 
         var id: String {
             switch self {
+            case .setup(let value): return value.id.uuidString
             case .story(let story, _): return "story-\(story.id)"
             case .storyReplay(_, _, let id): return id.uuidString
             case .practice(let practice): return practice.id.uuidString
@@ -59,6 +79,13 @@ struct SonaNativePreviewApp: App {
         let game: NativeGame?
         let playerID: String
         let selection: NativePracticeSelection
+        let arcadeRound: NativeArcadeRoundContext?
+    }
+
+    private struct ArcadeLevelChoice {
+        let game: NativeGame
+        let owner: NativeFamilyChildID
+        let info: NativeArcadeLevelInfo
     }
 
     private struct PracticeLaunch {
@@ -72,6 +99,8 @@ struct SonaNativePreviewApp: App {
         let game: NativeGame
         let playerID: String
         let selection: NativeSpeechGameSelection
+        let arcadeRound: NativeArcadeRoundContext?
+        let dinoMemory: NativeDinoCollectionMemory?
     }
 
     private struct FeedDestination: Identifiable {
@@ -79,6 +108,36 @@ struct SonaNativePreviewApp: App {
         let owner: NativeFamilyChildID
         let playerID: String
         let selection: NativeFeedSelection
+    }
+
+    private func reminderRouteAdmission() -> NativeReminderRouteAdmission {
+        guard scenePhase == .active, records.stage != .loading else { return .deferUntilReady }
+        guard records.stage == .ready, didOnboard, !family.needsSharingChoice,
+              sheet == nil, setupHandoff == nil, queuedSetupPractice == nil,
+              setupRewalkOwner == nil, firstSetupGuide == nil,
+              !openingFamilyAction, !openLoginAfterSettings,
+              childPreparation == nil, practiceStatus == nil else { return .protectedFlow }
+        if let experience, case .setup = experience { return .protectedFlow }
+        return .allowed
+    }
+
+    private func handleReminderOpen() async {
+        guard !reminderExiting else { return }
+        defer { reminderExiting = false }
+        _ = await NativeReminderTapRouter.shared.handle(admission: { reminderRouteAdmission() }, closeOutgoing: {
+            reminderExiting = true
+            practiceLoad = nil; practiceLaunch = nil
+            await reminderAudioOwners.closeCapturedOwners()
+        }, showHome: {
+            experience = nil
+            section = .home
+        })
+    }
+
+    private func syncRemindersForCurrentRoute() async {
+        records.stageReminderUpgrade(into: trialReminders)
+        let nonHome = section != .home || experience != nil || sheet != nil
+        _ = await trialReminders.syncIfDue(context: nonHome ? .nonHome : .home)
     }
 
     private var roster: PreviewFamilyRoster {
@@ -115,9 +174,19 @@ struct SonaNativePreviewApp: App {
     }
 
     private var didOnboard: Bool {
+        if let owner = records.activeID, setupRewalkOwner == owner { return false }
         if records.isPreview { return hasSeenWelcome }
         guard !records.isPreview, let child = records.activeChild else { return false }
         return NativeFamilyState.profile(of: child)["onboarded"] as? Bool == true
+    }
+
+    /// A saved setup receipt and a durably covered household are both needed.
+    /// Settings has no handoff marker, so its storefront keeps its own route.
+    private var setupStoreContinuationKey: String? {
+        guard sheet == .store, let marker = setupHandoff,
+              marker.isValid(currentOwner: records.scope), records.entitlement.premium,
+              !family.needsSharingChoice else { return nil }
+        return marker.owner + "/" + String(marker.createdAt.timeIntervalSince1970)
     }
 
     private var targetSoundBinding: Binding<String> {
@@ -189,14 +258,41 @@ struct SonaNativePreviewApp: App {
     var body: some Scene {
         WindowGroup {
             appContent
+            .environment(\.nativeReminderAudioOwners, reminderAudioOwners)
+            .disabled(reminderExiting)
             .preferredColorScheme(.light)
-            .fullScreenCover(item: $experience, content: experienceContent)
+            .fullScreenCover(item: $experience, onDismiss: experienceDismissed) { item in
+                experienceContent(item)
+                    .environment(\.nativeReminderAudioOwners, reminderAudioOwners)
+                    .disabled(reminderExiting)
+            }
+            .onChange(of: experience?.id) { _ in
+                if case .practice(let destination) = experience,
+                   destination.game == .slice,
+                   firstSetupGuide?.isValid(currentOwner: records.scope) == true {
+                    firstSetupGuidePresented = true
+                }
+            }
             .alert("Sona practice", isPresented: Binding(get: { practiceStatus != nil }, set: { if !$0 { practiceStatus = nil } })) {
                 Button("OK", role: .cancel) { practiceStatus = nil }
             } message: { Text(practiceStatus ?? "") }
             .sheet(item: $sheet, onDismiss: routeAfterSheet, content: sheetContent)
+            .task(id: setupStoreContinuationKey) {
+                guard let key = setupStoreContinuationKey, let marker = setupHandoff else { return }
+                try? await Task.sleep(nanoseconds: 1_200_000_000)
+                guard !Task.isCancelled, setupStoreContinuationKey == key, setupHandoff == marker,
+                      marker.afterStore(currentOwner: records.scope,
+                          allowsPractice: family.libraryAccess.allowsPractice) == .microphone else { return }
+                sheet = nil
+            }
+            .onReceive(NativeReminderTapRouter.shared.$pending) { event in
+                if event != nil { Task { await handleReminderOpen() } }
+            }
             .task {
                 await openRecords()
+                records.trialReminders = trialReminders
+                records.stageReminderUpgrade(into: trialReminders)
+                await handleReminderOpen()
                 if family.needsSharingChoice {
                     sheet = .consent
                 } else if family.link != nil {
@@ -210,8 +306,16 @@ struct SonaNativePreviewApp: App {
                 await records.refreshAppleAccess()
                 await records.retireOldRecordings()
                 await clearRemovedPlayers()
+                await syncRemindersForCurrentRoute()
             }
+            .onChange(of: records.stage) { _ in Task { await handleReminderOpen() } }
             .onChange(of: records.activeID) { _ in
+                arcadeLevelLoad = nil; arcadeLevelChoice = nil
+                if sheet == .arcadeLevels { sheet = nil }
+                if setupHandoff?.owner != records.scope { setupHandoff = nil }
+                if queuedSetupPractice?.owner != records.scope { queuedSetupPractice = nil }
+                if firstSetupGuide?.owner != records.scope { firstSetupGuide = nil; firstSetupGuidePresented = false }
+                if setupRewalkOwner != records.activeID { setupRewalkOwner = nil }
                 bindCurrentChild()
                 if family.needsSharingChoice { sheet = .consent }
                 Task {
@@ -226,12 +330,16 @@ struct SonaNativePreviewApp: App {
             }
             .onChange(of: experience?.id) { id in
                 if id == nil { records.flushWeeklyReportOnLeavingPractice() }
+                Task { await syncRemindersForCurrentRoute() }
             }
             .onChange(of: section) { destination in
                 if destination != .books { records.flushWeeklyReportOnLeavingPractice() }
+                Task { await syncRemindersForCurrentRoute() }
             }
+            .onChange(of: sheet) { _ in Task { await syncRemindersForCurrentRoute() } }
             .onChange(of: scenePhase) { phase in
                 if phase == .active {
+                    Task { await handleReminderOpen() }
                     today = Date()
                     Task {
                         try? await records.refresh()
@@ -241,6 +349,7 @@ struct SonaNativePreviewApp: App {
                         await records.refreshAppleAccess()
                         await records.retireOldRecordings()
                         await clearRemovedPlayers()
+                        await syncRemindersForCurrentRoute()
                     }
                 } else if phase == .background {
                     records.flushWeeklyReportOnLeavingPractice()
@@ -259,13 +368,23 @@ struct SonaNativePreviewApp: App {
                 startupStatus
             } else if didOnboard {
                 mainTabs
-            } else {
+            } else if records.isPreview {
                 FirstRunView(
-                    buddy: records.isPreview ? playerBinding(\.buddy) : $setupBuddy,
-                    buddies: records.isPreview ? [.echo, .fox, .frog] : [.fox, .bunny, .panda],
+                    buddy: playerBinding(\.buddy),
+                    buddies: [.echo, .fox, .frog],
                     onExplore: { updateRecords { try await enterApp() } },
                     onTherapistLogin: startTherapistLogin
                 )
+            } else {
+                NativeFamilySetupView(records: records, rewalk: setupRewalkOwner != nil && setupRewalkOwner == records.activeID,
+                    priceFollows: family.libraryAccess.requiresTrialFirst,
+                    reminders: NativeSetupReminderActions(
+                        refreshAuthorization: { _ = await trialReminders.refreshAuthorization() },
+                        shouldOfferSetup: { trialReminders.shouldOfferSetup(priceFollows: $0, confirmedFreeTrial: $1) },
+                        enableReminders: { await trialReminders.enableReminders() }),
+                    makeStoreProbe: makeSetupStoreProbe,
+                    onPrepare: prepareFamilyChild,
+                    onComplete: completeFamilySetup, onTherapistLogin: startTherapistLogin)
             }
         }
     }
@@ -281,8 +400,10 @@ struct SonaNativePreviewApp: App {
                 dailyStory: dailyStory,
                 dailyGame: dailyGame,
                 adventureDone: records.summary?.quest.state == "done",
+                home: records.summary?.home,
                 storyAccess: family.libraryAccess.allowsStory,
                 onAdventure: {
+                    guard records.summary?.quest.state != "done" else { return }
                     if family.libraryAccess.allowsStory, let dailyStory {
                         experience = .story(dailyStory, owner: records.activeID)
                     } else if dailyStory == nil, let dailyGame {
@@ -299,9 +420,11 @@ struct SonaNativePreviewApp: App {
             .tag(Destination.home)
             .tabItem { Label("Home", systemImage: "house.fill") }
 
-            GamesView(completed: player.completedGames, access: family.libraryAccess, foundStories: foundStories,
-                      onReplayStory: { openFoundStory($0) }) {
-                openGame($0)
+            NativeArcadeLevelCards(access: arcadeLevelsAccess, refresh: experience?.id ?? "") {
+                GamesView(completed: player.completedGames, access: family.libraryAccess, foundStories: foundStories,
+                          onReplayStory: { openFoundStory($0) }) {
+                    openGame($0)
+                }
             }
                 .tag(Destination.games)
                 .tabItem { Label("Games", systemImage: "gamecontroller.fill") }
@@ -327,6 +450,11 @@ struct SonaNativePreviewApp: App {
 
     @ViewBuilder private func experienceContent(_ experience: Experience) -> some View {
         switch experience {
+        case .setup(let destination):
+            NativeSetupContinuationView(childName: destination.name,
+                isCurrent: { !reminderExiting && records.activeID == destination.owner && self.experience?.id == destination.id.uuidString },
+                onPlay: { finishSetupHandoff(destination) })
+                .id(destination.id)
         case .story(let story, let owner):
             AdventureView(targetSound: story.sound ?? "", day: story.day, storyID: story.id,
                 isSimple: records.summary?.playStyle == "simple",
@@ -356,7 +484,7 @@ struct SonaNativePreviewApp: App {
             }
         case .practice(let destination):
             if let launch = practiceLaunch, launch.id == destination.id, let game = destination.game {
-                let live = { records.activeID == destination.owner && self.experience?.id == destination.id.uuidString }
+                let live = { !reminderExiting && records.activeID == destination.owner && self.experience?.id == destination.id.uuidString }
                 NativeGuidedArcadeView(game: game, isCurrent: live, load: { card in
                     guard live() else { throw NativeFamilyRuleError.playerChanged }
                     return try await records.read(.arcadeCheckpoint, input: .init(
@@ -369,37 +497,41 @@ struct SonaNativePreviewApp: App {
                 }, onFinish: {
                     finishVerifiedGame(game, after: destination)
                 }, onReplay: {
-                    startPractice(game, replacing: destination.id)
+                    startPractice(game, replacing: destination.id, retainingLevel: destination.arcadeRound?.level)
                 }, onExit: {
                     self.experience = nil
                 }) { stage, finish, loseLife in
                     play(game, stage: stage, onLifeLost: loseLife, onFinish: finish)
                 }
+                .environment(\.arcadeRoundContext, destination.arcadeRound)
                 .id(destination.id)
             } else {
                 GuidedPracticeView(plan: destination.selection.plan,
-                    isCurrent: { records.activeID == destination.owner && self.experience?.id == experience.id },
+                    isCurrent: { !reminderExiting && records.activeID == destination.owner && self.experience?.id == experience.id },
                     apply: { effect in try await applyPractice(effect, to: destination) },
                     onReady: { ready in
+                        firstSetupGuide = nil; firstSetupGuidePresented = false
                         if destination.game == nil { self.experience = nil }
                         else { practiceLaunch = PracticeLaunch(id: destination.id, content: ready.content) }
                     })
             }
         case .speechGame(let speech):
             NativeSayPlayRound(gameID: speech.game.shippingID, selection: speech.selection,
-                isCurrent: { records.activeID == speech.owner && self.experience?.id == speech.id.uuidString },
+                isCurrent: { !reminderExiting && records.activeID == speech.owner && self.experience?.id == speech.id.uuidString },
                 credit: { credit in try await applyPlayRep(credit, owner: speech.owner) },
                 onFinish: {
                     if records.isPreview { finish(speech.game, playerID: speech.playerID) }
                     saveQuestCompletion(speech.game, owner: speech.owner, id: speech.id)
                 },
-                onReplay: { startSpeechGame(speech.game, replacing: speech.id) },
+                onReplay: { startSpeechGame(speech.game, replacing: speech.id, retainingLevel: speech.arcadeRound?.level, retainingDinoMemory: speech.dinoMemory) },
                 onExit: { self.experience = nil }) {
                     play(speech.game) { }
                 }
+                .environment(\.arcadeRoundContext, speech.arcadeRound)
+                .environment(\.dinoCollectionAccess, dinoCollectionAccess(for: speech))
         case .feed(let feed):
             NativeFeedRound(selection: feed.selection,
-                isCurrent: { records.activeID == feed.owner && self.experience?.id == feed.id.uuidString },
+                isCurrent: { !reminderExiting && records.activeID == feed.owner && self.experience?.id == feed.id.uuidString },
                 credit: { credit in try await applyPlayRep(credit, owner: feed.owner) },
                 onFeed: { move in try await storeFeedBite(move, for: feed) },
                 onFinish: {
@@ -416,10 +548,20 @@ struct SonaNativePreviewApp: App {
         case .buddies:
             NativeBuddyShopView(records: records)
         case .collection:
-            NativeRewardsHost(records: records)
+            NativeRewardsHost(records: records, arcadeLevels: arcadeLevelsAccess)
+        case .arcadeLevels:
+            if let choice = arcadeLevelChoice, choice.owner == records.activeID {
+                NativeArcadeLevelSheet(title: choice.game.title, info: choice.info, choose: { level in
+                    guard let access = arcadeLevelsAccess, choice.owner == records.activeID else { throw CancellationError() }
+                    let round = try await NativeArcadeLevels(access: access).chooseForLaunch(gameID: choice.game.shippingID, level: level)
+                    guard choice.owner == records.activeID, sheet == .arcadeLevels else { throw CancellationError() }
+                    arcadeLevelChoice = nil; sheet = nil
+                    launchGame(choice.game, round: round)
+                }, close: { arcadeLevelChoice = nil; sheet = nil })
+            }
         case .store:
             SonaNavigation {
-                if let storefront { storefront() }
+                if let storefront = storefront() { storefront() }
             }
         case .grownUps:
             GrownUpsView(
@@ -450,10 +592,9 @@ struct SonaNativePreviewApp: App {
                     try await family.stopSharing()
                     try await flushFamilyChanges()
                 },
-                storefront: storefront,
+                storefront: storefront(allowsWebsiteRestore: true),
                 movingPhones: movingPhones,
-                weeklyReport: weeklyReport,
-                savedGameRecords: SavedGameRecord.project(child: records.activeChild)
+                weeklyReport: weeklyReport
             )
         case .login:
             FamilyLoginView { user, password in
@@ -481,31 +622,126 @@ struct SonaNativePreviewApp: App {
         } else if openLoginAfterSettings {
             openLoginAfterSettings = false
             sheet = .login
+        } else if let handoff = setupHandoff {
+            setupHandoff = nil
+            if handoff.afterStore(currentOwner: records.scope, allowsPractice: family.libraryAccess.allowsPractice) == .microphone {
+                presentSetupContinuation(handoff)
+            }
         }
     }
 
     private func enterApp() async throws {
         section = .home
         if !records.isPreview {
-            let owner = try await prepareFamilyChild()
-            if !didOnboard {
-                let _: FamilyJSONValue = try await records.write(.equip, input: .init(id: setupBuddy.id, kind: "characters"), owner: owner)
-            }
-            let _: NativePracticeSummary = try await records.write(.completeSetup, owner: owner)
-            if family.libraryAccess.requiresTrialFirst, sheet != .consent { openStoreIfEligible() }
+            // Login/consent is independent of a child's saved setup. A kept
+            // family goes Home; a new child still supplies their choices.
+            _ = try await prepareFamilyChild()
             return
         }
         if player.adventureStart == nil { updatePlayer(player.id) { $0.adventureStart = Date() } }
         hasSeenWelcome = true
     }
 
-    private func prepareFamilyChild() async throws -> NativeFamilyChildID {
-        if records.stage == .needsSetup, records.activeID == nil {
-            try await records.addChild(name: "", age: "", operationID: UUID())
+    private func completeFamilySetup(_ draft: NativeSetupDraft, form: NativeSetupForm,
+                                     owner: NativeFamilyChildID) async throws {
+        guard owner == records.activeID else { throw NativeFamilyRuleError.playerChanged }
+        let receipt = "setup/" + draft.receipt.uuidString
+        var input = NativeRuleFields(name: draft.name, age: draft.age, focusSounds: draft.focusSounds,
+            mode: draft.mode, pathReason: draft.pathReason, minutes: draft.minutes, character: draft.character)
+        input.rewalk = form.rewalk
+        input.interests = form.showSales ? draft.interests : nil
+        let acceptedEmail = form.askUpdates && !draft.email.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? draft.email : nil
+        let consent = NativeFamilySetupConsent(askQuestions: form.askQuestions,
+            therapy: form.askQuestions ? draft.therapy : "", displayedUpdates: form.askUpdates,
+            acceptedReportEmail: acceptedEmail)
+        do {
+            _ = try await records.completeFamilySetup(input: input, consent: consent, owner: owner, receipt: receipt)
+        } catch NativeFamilyRuleError.replayed {
+            try await records.refresh()
         }
-        guard let owner = records.activeID else { throw NativeFamilyRuleError.playerChanged }
-        bindCurrentChild()
-        return owner
+        try Task.checkCancellation()
+        guard records.activeID == owner,
+              records.activeChild.map({ NativeFamilyState.profile(of: $0)["onboarded"] as? Bool == true }) == true
+        else { throw NativeFamilyRuleError.playerChanged }
+        setupRewalkOwner = nil; section = .home
+        guard !form.isClinician else { return }
+        let scope = NativeFamilyState.scope(of: owner)
+        let marker = NativeSetupHandoff(owner: scope)
+        switch NativeSetupHandoff.afterSave(owner: scope, currentOwner: records.scope,
+            requiresTrialFirst: family.libraryAccess.requiresTrialFirst, allowsPractice: family.libraryAccess.allowsPractice) {
+        case .store:
+            setupHandoff = marker
+            openStoreIfEligible()
+        case .microphone:
+            presentSetupContinuation(marker)
+        default:
+            break
+        }
+    }
+
+    private func makeSetupStoreProbe(_ owner: NativeFamilyChildID) -> NativeSetupStoreProbe? {
+        guard let configuration = try? FamilyAccessConfiguration.bundled(),
+              let client = NativeStorefrontHost.makeClient() else { return nil }
+        return NativeSetupStoreProbe(client: client, configuration: configuration,
+            readRevision: { try await records.appleAccessRevision(for: owner.origin) },
+            persist: { patch in
+                _ = try await records.recordAppleAccess(active: patch.active, checkedAt: patch.lastAuthoritativeRefresh,
+                                                       origin: owner.origin, source: patch.source)
+            }, isCurrent: { records.activeID == owner })
+    }
+
+    private func presentSetupContinuation(_ marker: NativeSetupHandoff) {
+        guard marker.isValid(currentOwner: records.scope), let owner = records.activeID,
+              family.libraryAccess.allowsPractice else { return }
+        let name = records.activeChild.map { NativeFamilyState.profile(of: $0)["childName"] as? String ?? "" } ?? ""
+        experience = .setup(.init(owner: owner, name: name.isEmpty ? "your child" : name, marker: marker))
+    }
+
+    private func finishSetupHandoff(_ destination: SetupContinuationDestination) {
+        guard records.activeID == destination.owner, experience?.id == destination.id.uuidString else { return }
+        switch destination.marker.afterHandoff(currentOwner: records.scope,
+            requiresTrialFirst: family.libraryAccess.requiresTrialFirst, allowsPractice: family.libraryAccess.allowsPractice) {
+        case .store:
+            experience = nil; setupHandoff = destination.marker
+            openStoreIfEligible()
+        case .fruitSlice:
+            queuedSetupPractice = destination.marker
+            experience = nil
+        default:
+            experience = nil
+        }
+    }
+
+    private func experienceDismissed() {
+        guard experience == nil else { return }
+        if let marker = queuedSetupPractice {
+            queuedSetupPractice = nil
+            guard marker.isValid(currentOwner: records.scope), family.libraryAccess.allowsPractice else { return }
+            // Wait for the setup cover to leave before mounting the speech owner.
+            startPractice(.slice, setupGuide: marker)
+            return
+        }
+        guard firstSetupGuidePresented else { return }
+        firstSetupGuidePresented = false
+        if firstSetupGuide?.isValid(currentOwner: records.scope) == true, let owner = records.activeID {
+            setupRewalkOwner = owner; section = .home
+        }
+        firstSetupGuide = nil
+    }
+
+    private func prepareFamilyChild() async throws -> NativeFamilyChildID {
+        if let childPreparation { return try await childPreparation.value }
+        let preparation = Task { @MainActor in
+            if records.stage == .needsSetup, records.activeID == nil {
+                try await records.addChild(name: "", age: "", operationID: UUID())
+            }
+            guard let owner = records.activeID else { throw NativeFamilyRuleError.playerChanged }
+            bindCurrentChild()
+            return owner
+        }
+        childPreparation = preparation
+        defer { childPreparation = nil }
+        return try await preparation.value
     }
 
     private func startTherapistLogin() {
@@ -582,6 +818,9 @@ struct SonaNativePreviewApp: App {
 
     private func bindCurrentChild() {
         guard let child = records.activeChild, let origin = records.document?.primaryFamily else { return }
+        if NativeFamilyState.profile(of: child)["onboarded"] as? Bool == true {
+            NativeSetupDraftStore(defaults: .standard, owner: NativeFamilyState.scope(of: child.id)).remove()
+        }
         family.bind(child: child, household: origin, isPreview: records.isPreview,
                     access: records.entitlement, canSellHere: NativeStorefrontHost.canSell)
     }
@@ -593,11 +832,11 @@ struct SonaNativePreviewApp: App {
         }
     }
 
-    private var storefront: (() -> AnyView)? {
+    private func storefront(allowsWebsiteRestore: Bool = false) -> (() -> AnyView)? {
         guard let origin = records.document?.primaryOrigin,
               let configuration = try? FamilyAccessConfiguration.bundled() else { return nil }
         return {
-            AnyView(NativeStorefrontHost(records: records, configuration: configuration, origin: origin)
+            AnyView(NativeStorefrontHost(records: records, configuration: configuration, origin: origin, allowsWebsiteRestore: allowsWebsiteRestore, reminders: trialReminders)
                 .id(origin))
         }
     }
@@ -639,6 +878,7 @@ struct SonaNativePreviewApp: App {
         else { throw NativeFamilyRuleError.playerChanged }
         try await records.removeChild(owner)
         await clearRemovedPlayers()
+        await syncRemindersForCurrentRoute()
         return records.document?.pendingLocalPlayerRemovals?.contains(owner) != true
     }
 
@@ -650,6 +890,7 @@ struct SonaNativePreviewApp: App {
         for child in pending {
             do {
                 try family.discardRemovedChild(child, isPreview: false)
+                NativeSetupDraftStore(defaults: .standard, owner: NativeFamilyState.scope(of: child)).remove()
                 try await records.removeObsoletePlayerCopies(child)
             } catch { /* The persisted owner stays queued for the next launch. */ }
         }
@@ -684,7 +925,7 @@ struct SonaNativePreviewApp: App {
             return try await records.read(book ? .bookWord : .storyWord,
                 input: .init(sound: input.sound.uppercased(), word: input.word, title: input.title,
                              captions: input.captions, caption: input.caption))
-        }, isCurrent: { records.activeID == owner && isCurrent() }, consent: {
+        }, isCurrent: { !reminderExiting && records.activeID == owner && isCurrent() }, consent: {
             readerMicrophoneAllowed || records.document?.primaryFamily?.storage["sona.micok"] == "1" ? .allowed : .ask
         }, rememberPermission: { readerMicrophoneAllowed = true }, credit: { credit in
             try await applyPlayRep(credit, owner: owner)
@@ -733,7 +974,7 @@ struct SonaNativePreviewApp: App {
                 throw NativeFamilyRuleError.playerChanged
             }
             return try await records.read(.speechGame, input: .init(game: game))
-        }, isCurrent: { records.activeID == owner && experience?.id == id.uuidString },
+        }, isCurrent: { !reminderExiting && records.activeID == owner && experience?.id == id.uuidString },
            credit: { try await applyPlayRep($0, owner: owner) }, finish: { _, _ in })
     }
 
@@ -778,14 +1019,49 @@ struct SonaNativePreviewApp: App {
         }
     }
 
+    private var arcadeLevelsAccess: NativeArcadeLevelsAccess? {
+        guard let owner = records.activeID else { return nil }
+        return records.arcadeLevelsAccess(owner: owner, revision: arcadeLevelRevision, canOpen: { key in
+            guard let game = NativeGame.allCases.first(where: { $0.shippingID == key }) else { return false }
+            return family.libraryAccess.allows(game)
+        }, didChange: { arcadeLevelRevision += 1 })
+    }
+
     private func openGame(_ game: NativeGame) {
         guard family.libraryAccess.allows(game) else { openStoreIfEligible(); return }
-        if game.guidedPracticeFile != nil {
-            startPractice(game)
-        } else if game == .feed {
-            startFeed()
-        } else {
-            startSpeechGame(game)
+        guard arcadeLevelLoad == nil, practiceLoad == nil, experience == nil,
+              let owner = records.activeID, let access = arcadeLevelsAccess else { return }
+        let token = UUID(); arcadeLevelLoad = token
+        Task { @MainActor in
+            defer { if arcadeLevelLoad == token { arcadeLevelLoad = nil } }
+            do {
+                let preparation = try await NativeArcadeLevels(access: access).prepare(gameID: game.shippingID)
+                guard records.activeID == owner, arcadeLevelLoad == token, experience == nil else { return }
+                switch preparation {
+                case .choose(let info):
+                    arcadeLevelChoice = ArcadeLevelChoice(game: game, owner: owner, info: info)
+                    sheet = .arcadeLevels
+                case .launch(let round): launchGame(game, round: round)
+                }
+            } catch is CancellationError { }
+            catch { practiceStatus = "Sona couldn’t open this game. Try again." }
+        }
+    }
+
+    private func launchGame(_ game: NativeGame, round: NativeArcadeRoundContext) {
+        guard family.libraryAccess.allows(game), round.gameID == game.shippingID else { return }
+        if game.guidedPracticeFile != nil { startPractice(game, preparedRound: round) }
+        else if game == .feed { startFeed() }
+        else { startSpeechGame(game, preparedRound: round) }
+    }
+
+    private func capturedArcadeRound(for game: NativeGame?, prepared: NativeArcadeRoundContext?, retainingLevel: Int?) async throws -> NativeArcadeRoundContext? {
+        guard let game else { return nil }
+        if let prepared { return prepared }
+        guard let access = arcadeLevelsAccess else { throw CancellationError() }
+        switch try await NativeArcadeLevels(access: access).prepare(gameID: game.shippingID, askIfNew: false, retainingLevel: retainingLevel) {
+        case .launch(let round): return round
+        case .choose: throw NativeArcadeLevels.Failure.invalidProjection
         }
     }
 
@@ -818,21 +1094,28 @@ struct SonaNativePreviewApp: App {
         }
     }
 
-    private func startSpeechGame(_ game: NativeGame, replacing previous: UUID? = nil) {
+    private func startSpeechGame(_ game: NativeGame, replacing previous: UUID? = nil, preparedRound: NativeArcadeRoundContext? = nil, retainingLevel: Int? = nil, retainingDinoMemory: NativeDinoCollectionMemory? = nil) {
         guard practiceLoad == nil, let owner = records.activeID else { return }
         let id = UUID(), playerID = player.id
         practiceLoad = id
         Task {
             defer { if practiceLoad == id { practiceLoad = nil } }
             do {
+                let round = try await capturedArcadeRound(for: game, prepared: preparedRound, retainingLevel: retainingLevel)
                 let selection: NativeSpeechGameSelection? = try await records.read(.speechGame, input: .init(game: game.shippingID))
                 guard records.activeID == owner, experience?.id == previous?.uuidString, practiceLoad == id else { return }
                 guard let selection, !selection.targets.isEmpty else { throw NativeFamilyRuleError.invalidKey }
-                experience = .speechGame(SpeechGameDestination(id: id, owner: owner, game: game, playerID: playerID, selection: selection))
+                experience = .speechGame(SpeechGameDestination(id: id, owner: owner, game: game, playerID: playerID, selection: selection, arcadeRound: round, dinoMemory: game == .dino ? (retainingDinoMemory.flatMap { $0.owner == owner ? $0 : nil } ?? NativeDinoCollectionMemory(owner: owner)) : nil))
             } catch {
                 practiceStatus = "Sona couldn’t open this game. Try again."
             }
         }
+    }
+
+    private func dinoCollectionAccess(for destination: SpeechGameDestination) -> NativeDinoCollectionAccess? {
+        guard destination.game == .dino, let memory = destination.dinoMemory else { return nil }
+        return records.dinoCollectionAccess(owner: destination.owner, memory: memory,
+            isCurrent: { experience?.id == destination.id.uuidString && family.libraryAccess.allows(.dino) })
     }
 
     private func applyPlayRep(_ credit: GameSayingCredit, owner: NativeFamilyChildID) async throws {
@@ -845,18 +1128,31 @@ struct SonaNativePreviewApp: App {
         }
     }
 
-    private func startPractice(_ game: NativeGame? = nil, replacing previous: UUID? = nil) {
+    private func startPractice(_ game: NativeGame? = nil, replacing previous: UUID? = nil,
+                               preparedRound: NativeArcadeRoundContext? = nil, retainingLevel: Int? = nil,
+                               setupGuide: NativeSetupHandoff? = nil) {
         guard family.libraryAccess.allowsPractice else { openStoreIfEligible(); return }
         guard practiceLoad == nil, let owner = records.activeID else { return }
         let id = UUID(), playerID = player.id
+        if let setupGuide {
+            firstSetupGuide = setupGuide
+            firstSetupGuidePresented = false
+        }
         practiceLoad = id
         Task {
-            defer { if practiceLoad == id { practiceLoad = nil } }
+            defer {
+                if practiceLoad == id { practiceLoad = nil }
+                if let setupGuide, firstSetupGuide == setupGuide, experience?.id != id.uuidString {
+                    firstSetupGuide = nil
+                    firstSetupGuidePresented = false
+                }
+            }
             do {
+                let round = try await capturedArcadeRound(for: game, prepared: preparedRound, retainingLevel: retainingLevel)
                 let selection: NativePracticeSelection = try await records.read(.practiceTarget, input: .init(game: game?.guidedPracticeFile))
                 guard records.activeID == owner, experience?.id == previous?.uuidString, practiceLoad == id else { return }
                 practiceLaunch = nil
-                experience = .practice(PracticeDestination(id: id, owner: owner, game: game, playerID: playerID, selection: selection))
+                experience = .practice(PracticeDestination(id: id, owner: owner, game: game, playerID: playerID, selection: selection, arcadeRound: round))
             } catch {
                 practiceStatus = "Sona couldn’t open this practice. Try again."
             }

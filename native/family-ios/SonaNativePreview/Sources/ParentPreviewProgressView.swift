@@ -26,7 +26,6 @@ struct ParentProgressSummary: Decodable, Equatable {
 struct ParentProgressView: View {
     let selectedSound: String
     let snapshot: ParentProgressSummary?
-    var savedGameRecords: [SavedGameRecord] = []
     var onSendProgress: (() async -> Bool)?
 
     @State private var sending = false
@@ -64,7 +63,6 @@ struct ParentProgressView: View {
                     .disabled(sending)
                     if let sendMessage { Text(sendMessage).font(.footnote) }
                 }
-                if !savedGameRecords.isEmpty { savedRecords }
             }
             .padding(24)
             .frame(maxWidth: 660, alignment: .leading)
@@ -74,28 +72,6 @@ struct ParentProgressView: View {
         .foregroundStyle(SonaPalette.ink)
         .navigationTitle("Progress")
         .navigationBarTitleDisplayMode(.inline)
-    }
-
-    private var savedRecords: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Saved game records")
-                .font(.title3.bold()).accessibilityAddTraits(.isHeader)
-                .accessibilityIdentifier("saved-game-records")
-            Text("Play records from the original games, saved separately from practice progress.")
-                .font(.footnote).foregroundStyle(.secondary)
-            ForEach(savedGameRecords) { record in
-                VStack(alignment: .leading, spacing: 5) {
-                    Text(record.gameTitle).font(.headline)
-                    Text(record.sourceLabel).font(.subheadline).foregroundStyle(.secondary)
-                    Text(record.resultLabel).font(.headline).monospacedDigit()
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(16)
-                .background(.white, in: RoundedRectangle(cornerRadius: 17))
-                .accessibilityElement(children: .combine)
-                .accessibilityIdentifier("saved-game-record-\(record.gameID)-\(record.level)-\(record.metric.rawValue)")
-            }
-        }
     }
 
     private func thisWeek(_ snapshot: ParentProgressSummary) -> some View {

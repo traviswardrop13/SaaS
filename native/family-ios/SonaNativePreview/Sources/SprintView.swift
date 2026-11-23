@@ -9,6 +9,7 @@ struct SprintView: View {
     @Environment(\.guidedArcadeExit) private var guidedArcadeExit
     @Environment(\.guidedArcadeRestoredLives) private var restoredLives
     @Environment(\.arcadePowerEffect) private var power
+    @Environment(\.arcadeRoundContext) private var arcadeRound
     @Environment(\.arcadeStartingHearts) private var startingHearts
 
     @Environment(\.dismiss) private var dismiss
@@ -23,6 +24,7 @@ struct SprintView: View {
     @State private var nextItem = 0
     @State private var nextRock = 0
     @State private var stars = 0
+    @State private var helpUntil: TimeInterval = 0
     @State private var finished = false
 
     private static let courses = [
@@ -31,6 +33,10 @@ struct SprintView: View {
         [2, 1, 0, 2, 2, 1, 0, 0, 2, 1, 0, 1]
     ]
     private var rhythm: [Int] { Self.courses[stage] }
+    private var level: Int { arcadeRound?.level ?? 1 }
+    private var runningSpeed: Double {
+        power.speed * NativeArcadeDifficulty.sprintSpeed(level: progress < helpUntil ? 1 : level, stage: stage)
+    }
     private let rockAfter = [0, 3, 6, 9]
     private let timer = Timer.publish(every: 1.0 / 30, on: .main, in: .common).autoconnect()
 
@@ -89,7 +95,7 @@ struct SprintView: View {
         .onChange(of: scenePhase) { phase in
             if phase != .active { pause() }
         }
-        .onChange(of: power.speed) { if running { motion.setSpeed($0, at: now) } }
+        .onChange(of: runningSpeed) { if running { motion.setSpeed($0, at: now) } }
         .onChange(of: restoredLives) { _ in
             guard lives.hearts == 0 else { return }
             lives.restore(at: now)
@@ -211,7 +217,10 @@ struct SprintView: View {
     private func arrival(at index: Int) -> TimeInterval { 1.75 + Double(index) * 1.18 }
 
     private var now: TimeInterval { ProcessInfo.processInfo.systemUptime }
-    private func rockArrival(_ index: Int) -> TimeInterval { arrival(at: rockAfter[index]) + 0.56 }
+    private func rockArrival(_ index: Int) -> TimeInterval {
+        let gap = [0.56, 0.47, 0.39][level - 1]
+        return arrival(at: rockAfter[index]) + (progress < helpUntil ? 0.56 : gap)
+    }
     private func rockLane(_ index: Int) -> Int { (rhythm[rockAfter[index]] + 1) % 3 }
 
     private func advance() {
@@ -222,15 +231,19 @@ struct SprintView: View {
             while rockAfter.indices.contains(nextRock), progress >= rockArrival(nextRock) {
                 let collision = lane == rockLane(nextRock)
                 nextRock += 1
-                if collision && lives.miss(at: time, protected: power.protectsHearts), lives.hearts == 0 {
-                    pause()
-                    onLifeLost()
-                    return
+                if collision && lives.miss(at: time, protected: power.protectsHearts) {
+                    helpUntil = progress + 4.7
+                    motion.setSpeed(runningSpeed, at: time)
+                    if lives.hearts == 0 {
+                        pause()
+                        onLifeLost()
+                        return
+                    }
                 }
             }
         }
         while rhythm.indices.contains(nextItem), progress >= arrival(at: nextItem) {
-            if lane == rhythm[nextItem] { stars += 1 }
+            if lane == rhythm[nextItem] { stars += 1; _ = arcadeRound?.record?.recordStars() }
             nextItem += 1
         }
         if nextItem == rhythm.count {
@@ -240,12 +253,13 @@ struct SprintView: View {
         }
     }
 
-    private func resume() { motion.setSpeed(power.speed, at: now); running = true }
+    private func resume() { motion.setSpeed(runningSpeed, at: now); running = true }
     private func pause() { motion.setSpeed(0, at: now); running = false }
     private func close() { if let guidedArcadeExit { guidedArcadeExit() } else { dismiss() } }
 
     private func launch() {
         stars = 0
+        helpUntil = 0
         nextItem = 0
         nextRock = 0
         lane = 1

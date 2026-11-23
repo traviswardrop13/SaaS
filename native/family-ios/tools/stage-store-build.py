@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Stage a separate, compile-only copy of the family app with the pinned store SDK."""
+"""Stage an unsigned native preview or existing-family app build with the pinned store SDK."""
 from __future__ import annotations
 
 import argparse
@@ -17,7 +17,17 @@ FAMILY = Path(__file__).resolve().parents[1]
 PREFIX = "7060AFA200000000000000"
 
 
-def stage(destination: Path, sdk_stage: Path | None) -> None:
+def stage(destination: Path, sdk_stage: Path | None, *, upgrade_identity: bool = False,
+          marketing_version: str | None = None, build_number: str | None = None) -> None:
+    if upgrade_identity:
+        if sdk_stage is None:
+            raise ValueError("Use --sdk-stage to build the existing family identity from the local pinned SDK")
+        if not marketing_version or not re.fullmatch(r"[0-9]+(?:\.[0-9]+){1,2}", marketing_version):
+            raise ValueError("Give the selected App Store version with --marketing-version")
+        if not build_number or not re.fullmatch(r"[1-9][0-9]*", build_number):
+            raise ValueError("Give the selected positive build number with --build-number")
+    elif marketing_version is not None or build_number is not None:
+        raise ValueError("Version overrides require --upgrade-identity")
     if not destination.is_relative_to(Path("/private/tmp")) or destination.exists():
         raise ValueError("Choose a new directory under /private/tmp")
     source = FAMILY / "SonaNativePreview.xcodeproj"
@@ -59,8 +69,18 @@ def stage(destination: Path, sdk_stage: Path | None) -> None:
     if not public_key:
         raise ValueError("The existing publishable iOS configuration changed")
     config += "\nINFOPLIST_FILE = StageStoreInfo.plist\nCODE_SIGNING_ALLOWED = NO\n"
-    # Keep the preview bundle ID. The production SDK code compiles in this
-    # stage, but its runtime identity check cannot open the real store.
+    config += f"SONA_ARTWORK_ROOT = {FAMILY.parents[1] / 'public/assets'}\n"
+    if upgrade_identity:
+        installed = json.loads((FAMILY.parents[1] / "capacitor.config.json").read_text())
+        if installed.get("appId") != "com.speaksona.app" or installed.get("appName") != "Sona":
+            raise ValueError("The existing family app identity changed")
+        config += (
+            f"PRODUCT_BUNDLE_IDENTIFIER = {installed['appId']}\n"
+            f"INFOPLIST_KEY_CFBundleDisplayName = {installed['appName']}\n"
+            f"MARKETING_VERSION = {marketing_version}\n"
+            f"CURRENT_PROJECT_VERSION = {build_number}\n"
+        )
+    # Default preview keeps the separate bundle ID and cannot open the store.
     destination.mkdir()
     if sdk_stage:
         staged_package = destination / "Vendor/RevenueCat"
@@ -85,5 +105,11 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("output", type=Path)
     parser.add_argument("--sdk-stage", type=Path)
+    parser.add_argument("--upgrade-identity", action="store_true",
+                        help="Use the installed family bundle ID in an unsigned build")
+    parser.add_argument("--marketing-version")
+    parser.add_argument("--build-number")
     arguments = parser.parse_args()
-    stage(arguments.output.resolve(), arguments.sdk_stage.resolve() if arguments.sdk_stage else None)
+    stage(arguments.output.resolve(), arguments.sdk_stage.resolve() if arguments.sdk_stage else None,
+          upgrade_identity=arguments.upgrade_identity, marketing_version=arguments.marketing_version,
+          build_number=arguments.build_number)

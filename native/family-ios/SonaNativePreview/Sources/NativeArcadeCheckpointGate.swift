@@ -62,6 +62,7 @@ import SonaSpeechCore
         .preferredColorScheme(.light)
         .onAppear { model.startAfterConsent() }
         .onChange(of: scenePhase) { model.setForeground($0 == .active) }
+        .nativeReminderAudioOwner(model) { await $0.close() }
         .onDisappear { Task { await model.close() } }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("arcade-checkpoint-gate")

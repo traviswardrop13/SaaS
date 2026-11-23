@@ -18,6 +18,7 @@ import SonaSpeechCore
     private let onReadOnly: @MainActor (ReadingSpeechReadOnlyScope) -> Void
     private let onMicrophoneAllowed: @MainActor () -> Void
     private let now: () -> Double
+    private let occurrenceNow: () -> NativePracticeOccurrence
     private let modelPrompt: (@MainActor (String) async throws -> PracticePrompt)?
     private var detector: ReadingSpeechDetector
     private var generation: UInt64 = 0
@@ -38,6 +39,7 @@ import SonaSpeechCore
         set { if newValue { acousticCarry.requireQuietGap() } else { acousticCarry.observedQuietGap() } }
     }
     private var pending: GameSayingCredit?
+    private var pendingOccurrence: NativePracticeOccurrence?
     var needsToSave: Bool { pending != nil }
     private var advanced = false
     private var readOnlySent = false
@@ -52,10 +54,11 @@ import SonaSpeechCore
          driver: PracticeAudioDriver? = nil, voice: GameSpeechNarration? = nil,
          modelPrompt: (@MainActor (String) async throws -> PracticePrompt)? = nil,
          automaticallyAdvance: Bool = true,
-         nowMilliseconds: @escaping () -> Double = { ProcessInfo.processInfo.systemUptime * 1_000 }) {
+         nowMilliseconds: @escaping () -> Double = { ProcessInfo.processInfo.systemUptime * 1_000 },
+         occurrenceNow: @escaping () -> NativePracticeOccurrence = { .capture() }) {
         self.plan = plan; self.isCurrent = isCurrent; self.credit = creditPlayRep
         self.onAdvance = onAdvance; self.onReadOnly = onReadOnly
-        self.onMicrophoneAllowed = onMicrophoneAllowed; self.now = nowMilliseconds
+        self.onMicrophoneAllowed = onMicrophoneAllowed; self.now = nowMilliseconds; self.occurrenceNow = occurrenceNow
         self.voice = voice ?? GameSpeechNarration(); self.modelPrompt = modelPrompt
         self.automaticClock = automaticallyAdvance
         #if os(iOS)
@@ -250,6 +253,7 @@ import SonaSpeechCore
         guard case let .onDevice(text) = result else { nudge("unverified"); return }
         let verdict = PracticeWordVerdict.evaluate(transcript: text, sound: plan.sound, word: plan.word, level: "word", position: plan.position)
         guard verdict == .pass else { nudge(verdict == .fail ? "word" : "unverified"); return }
+        pendingOccurrence = occurrenceNow()
         pending = .init(gateID: plan.id, sequence: sayings + 1, gameID: plan.kind.rawValue,
                         sound: plan.sound, word: plan.word, position: plan.position)
         await save(token)
@@ -257,10 +261,10 @@ import SonaSpeechCore
     private func save(_ token: UInt64) async {
         guard let value = pending, let plan, live(token) else { return }
         phase = .saving
-        do { try await credit(value) }
+        do { try await NativePracticeOccurrenceScope.$current.withValue(pendingOccurrence) { try await credit(value) } }
         catch { if live(token) { nudge("save") }; return }
         guard pending == value else { return }
-        sayings = value.sequence; pending = nil
+        sayings = value.sequence; pending = nil; pendingOccurrence = nil
         guard live(token) else { return }
         if sayings >= plan.sayTimes { await finishPage(token) }
         else { status = leftNote; await listen(token) }

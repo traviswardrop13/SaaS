@@ -63,6 +63,7 @@ import SonaSpeechCore
         .background(Color(red: 1, green: 0.97, blue: 0.92), in: RoundedRectangle(cornerRadius: 24))
         .onAppear { model.beginAfterNarration() }
         .onChange(of: scenePhase) { model.setForeground($0 == .active) }
+        .nativeReminderAudioOwner(model) { await $0.close() }
         .onDisappear { Task { await model.close() } }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("reading-speech-moment")

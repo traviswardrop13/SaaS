@@ -8,7 +8,7 @@ enum NativeGame: String, CaseIterable, Identifiable {
 
     var id: String { rawValue }
     var shippingID: String { self == .sprint ? "run" : rawValue }
-    var cover: String { "game-\(rawValue)" }
+    var cover: String { self == .slice ? "game-slice-coast" : "game-\(rawValue)" }
 
     /// These are the six Arcade entries routed through charge.html today.
     var guidedPracticeFile: String? {
@@ -96,6 +96,7 @@ struct GamesView: View {
     var onReplayStory: (NativeAdventure) -> Void = { _ in }
     let onPlay: (NativeGame) -> Void
 
+    @Environment(\.arcadeGameCards) private var levelCards
     @State private var quietGames = false
     @Environment(\.dynamicTypeSize) private var typeSize
 
@@ -171,6 +172,10 @@ struct GamesView: View {
                                                 .foregroundStyle(SonaPalette.teal)
                                                 .accessibilityHidden(true)
                                         }
+                                    }
+                                    if unlocked, let card = levelCards[game.shippingID], card.allowed {
+                                        if card.info.pick > 1 { Text("Level \(card.info.pick)").font(.caption.bold()).foregroundStyle(SonaPalette.teal) }
+                                        if card.best > 0 { Label("Best: \(card.best)", systemImage: "trophy.fill").font(.caption.bold()).foregroundStyle(SonaPalette.teal) }
                                     }
                                     Text(unlocked ? game.instruction : "Premium")
                                         .font(.system(.footnote, design: .rounded))

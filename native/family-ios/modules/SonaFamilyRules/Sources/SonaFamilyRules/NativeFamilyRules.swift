@@ -6,15 +6,17 @@ import JavaScriptCore
 /// storage, device services, networking, or a microphone.
 public enum NativeFamilyRules {
     public enum Operation: String, Sendable {
-        case summary, ensureCalendar, enrollmentSnapshot, practiceTarget, attempt, rungWin, roundReady, targetSound, bookRead, completeSetup, changeFocus
+        case summary, ensureCalendar, enrollmentSnapshot, practiceTarget, attempt, rungWin, roundReady, targetSound, bookRead, setupForm, completeSetup, changeFocus
         case storySeen, storyPlace, questFinish, gameRep, speechGame
         case rewards, roadSettle, roadOpen, monthOpen, chestOpen, roadRolledSeen
-        case shop, equip, buy
+        case shop, equip, buy, undoBuy
         case preferences, savePreferences, turnSoundOn, resetProgress
         case bookWord, storyWord, storyEnding
         case feedGame, feedCount, feedGrowth
         case backupExport, backupImport, backupUndo
         case arcadeCheckpoint
+        case arcadeLevelCatalog, arcadeLevelInfo, arcadeLevelAsk, arcadeLevelSet, arcadeBest, arcadeBestOffer
+        case dinoCollection, dinoCollectionSave
     }
 
     public struct Outcome: Sendable {
@@ -51,8 +53,25 @@ public enum NativeFamilyRules {
             guard let url = Bundle.module.url(forResource: file, withExtension: "js", subdirectory: "Rules"),
                   let source = try? String(contentsOf: url, encoding: .utf8)
             else { throw EvaluationError.invalidResources }
-            return (source, file)
+            return (file == "sona" ? try childLedgerProgram(source) : source, file)
         }
+    }
+
+    /// REPORT1 has its own native household transaction after a counted rep
+    /// commits. Its browser transport hook cannot run inside a child-only save:
+    /// it changes the device queue and may assign IDs to other children. Keep
+    /// the canonical resource intact for NativeWeeklyReportPolicy's preparation.
+    static func childLedgerProgram(_ source: String) throws -> String {
+        let hook = """
+              // REPORT1: the weekly report's numbers, after today's goal stamp so they
+              // count it; at most every 30 minutes, and a no-op unless asked for
+              try { _reportTouch(); } catch (e) {}
+        """
+        guard source.components(separatedBy: hook).count == 2,
+              source.components(separatedBy: "try { _reportTouch(); } catch (e) {}").count == 2
+        else { throw EvaluationError.invalidResources }
+        return source.replacingOccurrences(of: hook,
+            with: "      // The native household report owner runs after this child commit.")
     }
 
     public static func evaluate<Arguments: Encodable>(_ operation: Operation, input: Arguments,

@@ -27,6 +27,13 @@ import SonaFamilyRules
         busy = true; defer { busy = false }
         return try await repository.portableBackup(origin: origin).encoded()
     }
+    /// The source backup code is exactly the portable JSON file's UTF-8 bytes.
+    /// This read carries the same owning-origin and export exclusions as Files.
+    public func exportCode() async throws -> String {
+        let bytes = try await exportFile()
+        guard let code = String(data: bytes, encoding: .utf8) else { throw NativeFamilyBackupError.invalidBackup }
+        return code
+    }
     public func restore(_ bytes: Data) async throws {
         guard !busy else { throw NativeFamilyBackupError.operationConflict }
         // Parse before retaining a safety request, and preserve the same ID on

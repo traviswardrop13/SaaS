@@ -1,3 +1,4 @@
+import Combine
 import SwiftUI
 
 enum DiscoveryGame {
@@ -38,6 +39,7 @@ struct DiscoveryGamesView: View {
     @Environment(\.dynamicTypeSize) private var typeSize
     @State private var roundID = UUID()
     @State private var finished = false
+    @State private var dinoCompletion: NativeDinoCompletion?
 
     var body: some View {
         GeometryReader { geometry in
@@ -102,7 +104,7 @@ struct DiscoveryGamesView: View {
                 switch game {
                 case .bubbles: BubblePopRound(onComplete: complete)
                 case .peekaboo: PeekabooRound(onComplete: complete)
-                case .dino: DinoDigRound(onComplete: complete)
+                case .dino: NativeDinoDigRound(onFound: { dinoCompletion = $0 }, onComplete: complete)
                 }
             }
             .id(roundID)
@@ -125,15 +127,19 @@ struct DiscoveryGamesView: View {
                     .font(.system(size: 45, weight: .semibold))
                     .foregroundStyle(DiscoveryPalette.teal)
                     .accessibilityHidden(true)
-                Text("You did it!")
+                Text(dinoCompletion.map { "You found \($0.dino.a) \($0.dino.name)!" } ?? "You did it!")
                     .font(.system(.largeTitle, design: .rounded).weight(.heavy))
-                Text("\(game.title) round finished.")
+                if let dinoCompletion {
+                    NativeDinoPicture(dino: dinoCompletion.dino, found: true).frame(height: 125)
+                    NativeDinoCollectionRow(catalog: (try? NativeDinoCatalog.load()) ?? NativeDinoCatalog(dinos: [dinoCompletion.dino]), collection: dinoCompletion.collection).frame(height: 64)
+                }
+                Text(game == .dino ? "Eight words, eight bones. What a digger!" : "\(game.title) round finished.")
                     .font(.body)
                     .foregroundStyle(DiscoveryPalette.muted)
                     .multilineTextAlignment(.center)
                 DiscoveryAction(title: "Play again", systemImage: "arrow.clockwise") {
                     if let guidedReplay { guidedReplay() }
-                    else { finished = false; roundID = UUID() }
+                    else { finished = false; dinoCompletion = nil; roundID = UUID() }
                 }
                 .accessibilityIdentifier("discovery-replay")
                 Button("Back to games") { dismiss() }
@@ -163,35 +169,59 @@ private struct BubblePopRound: View {
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.speechGameProgress) private var speechGameProgress
+    @Environment(\.arcadeRoundContext) private var arcadeRound
     @State private var wave = 0
     @State private var popped: Set<Int> = []
+    @State private var completedPops = 0
+    @State private var bonus = false
+    @State private var giant = false
     private let colors: [Color] = [.cyan, .pink, .purple, .orange, .teal, .blue]
-    private var waves: Int { speechGameProgress?.count ?? 2 }
+    private var waves: Int { speechGameProgress?.count ?? 5 }
+    private var level: Int { arcadeRound?.level ?? 1 }
+    private var bubbles: Int { bonus ? 3 : NativeArcadeDifficulty.bubbleCount(level: level, wave: wave) }
+    private var total: Int {
+        (0..<waves).map { NativeArcadeDifficulty.bubbleCount(level: level, wave: $0) }.reduce(0, +)
+            + (level == 3 ? max(0, waves - 1) * 3 : 0) + 1
+    }
 
     var body: some View {
         VStack(spacing: 12) {
-            DiscoveryProgress(value: wave * 6 + popped.count, total: waves * 6, label: "bubbles popped")
+            DiscoveryProgress(value: completedPops, total: total, label: "bubbles popped")
                 .accessibilityIdentifier("bubbles-progress")
-            TimelineView(.animation(minimumInterval: 1.0 / 30, paused: reduceMotion || scenePhase != .active)) { timeline in
+            if giant {
+                Button { finishGiant() } label: {
+                    Image("echo-cheer").resizable().scaledToFit()
+                        .padding(20)
+                        .background(.cyan.opacity(0.21), in: Circle())
+                        .overlay(Circle().strokeBorder(.cyan.opacity(0.75), lineWidth: 4))
+                        .frame(width: 190, height: 190)
+                }
+                .buttonStyle(.plain)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .accessibilityLabel("Pop the big bubble")
+                .accessibilityIdentifier("bubbles-giant")
+            } else {
+                TimelineView(.animation(minimumInterval: 1.0 / 30, paused: reduceMotion || scenePhase != .active)) { timeline in
                 GeometryReader { geometry in
-                    let size = min(96, geometry.size.width * 0.29, geometry.size.height / 3 - 10)
+                    let rows = max(1, (bubbles + 1) / 2)
+                    let size = max(24, min(96, geometry.size.width * 0.29, geometry.size.height / CGFloat(rows) - 10))
                     let time = reduceMotion ? 0 : timeline.date.timeIntervalSinceReferenceDate
                     ZStack {
-                        ForEach(0..<6) { index in
+                        ForEach(0..<bubbles, id: \.self) { index in
                             let x = geometry.size.width * (index % 2 == 0 ? 0.27 : 0.73)
-                            let y = geometry.size.height * (CGFloat(index / 2) + 0.5) / 3
+                            let y = geometry.size.height * (CGFloat(index / 2) + 0.5) / CGFloat(rows)
                             if popped.contains(index) {
                                 Image(systemName: "sparkle")
                                     .font(.title)
-                                    .foregroundStyle(colors[index].opacity(0.45))
+                                    .foregroundStyle(colors[index % colors.count].opacity(0.45))
                                     .position(x: x, y: y)
                                     .accessibilityHidden(true)
                             } else {
                                 Button { pop(index) } label: {
                                     Circle()
-                                        .fill(LinearGradient(colors: [colors[index].opacity(0.12), colors[index].opacity(0.28)],
+                                        .fill(LinearGradient(colors: [colors[index % colors.count].opacity(0.12), colors[index % colors.count].opacity(0.28)],
                                                              startPoint: .top, endPoint: .bottom))
-                                        .overlay(Circle().strokeBorder(colors[index].opacity(0.65), lineWidth: 2.5))
+                                        .overlay(Circle().strokeBorder(colors[index % colors.count].opacity(0.65), lineWidth: 2.5))
                                         .overlay(alignment: .topLeading) {
                                             Capsule()
                                                 .fill(.white.opacity(0.95))
@@ -205,7 +235,7 @@ private struct BubblePopRound: View {
                                                 .offset(x: -size * 0.20, y: -size * 0.17)
                                         }
                                         .frame(width: size, height: size)
-                                        .shadow(color: colors[index].opacity(0.13), radius: 8, y: 5)
+                                        .shadow(color: colors[index % colors.count].opacity(0.13), radius: 8, y: 5)
                                 }
                                 .buttonStyle(.plain)
                                 .accessibilityLabel("Pop bubble \(index + 1)")
@@ -219,28 +249,32 @@ private struct BubblePopRound: View {
                     }
                 }
             }
-            if popped.count == 6 && wave < waves - 1 {
-                DiscoveryAction(title: "More bubbles!", systemImage: "sparkles") {
-                    wave += 1
-                    popped = []
-                }
-                .accessibilityIdentifier("bubbles-next")
-            } else {
-                Text(wave == waves - 1 ? "One more bunch!" : "Pop this bunch…")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(DiscoveryPalette.muted)
-                    .frame(minHeight: 48)
             }
+            Text(giant ? "Pop the big bubble!" : bonus ? "Pop the bonus bubbles!" : "Pop this bunch…")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(DiscoveryPalette.muted)
+                .frame(minHeight: 48)
         }
     }
 
     private func pop(_ index: Int) {
-        guard !popped.contains(index) else { return }
-        popped.insert(index)
-        if popped.count == 6 {
+        guard speechGameProgress?.isMoveActive != false, popped.insert(index).inserted else { return }
+        completedPops += 1
+        guard popped.count == bubbles else { return }
+        if wave == waves - 1 { giant = true }
+        else if level == 3 && !bonus { bonus = true; popped = [] }
+        else {
+            wave += 1; popped = []; bonus = false
             speechGameProgress?.advance()
-            if wave == waves - 1 { onComplete() }
         }
+    }
+
+    private func finishGiant() {
+        guard giant, speechGameProgress?.isMoveActive != false else { return }
+        giant = false
+        completedPops += 1
+        speechGameProgress?.advance()
+        onComplete()
     }
 }
 
@@ -384,151 +418,6 @@ private struct PeekabooRound: View {
         hidingDoor = Int.random(in: 0..<3)
         order = [0, 1, 2]
         phase = .watch
-    }
-}
-
-private struct DinoDigRound: View {
-    let onComplete: () -> Void
-    @Environment(\.speechGameProgress) private var speechGameProgress
-    @State private var cleared: Set<Int> = []
-    @State private var found: Set<Int> = []
-    private let columns = 22
-    private let rows = 26
-    private var bones: [CGPoint] {
-        if speechGameProgress == nil {
-            return [.init(x: 0.25, y: 0.19), .init(x: 0.74, y: 0.25), .init(x: 0.48, y: 0.49), .init(x: 0.24, y: 0.77), .init(x: 0.76, y: 0.76)]
-        }
-        let goal = speechGameProgress?.count ?? 8
-        return (0..<goal).map { index in
-            .init(x: index.isMultiple(of: 2) ? 0.26 : 0.74,
-                  y: (CGFloat(index / 2) + 0.5) / CGFloat((goal + 1) / 2))
-        }
-    }
-    private let turns: [Double] = [-22, 18, -38, 27, -12, 29, -16, 9]
-
-    var body: some View {
-        VStack(spacing: 14) {
-            DiscoveryProgress(value: found.count, total: bones.count, label: "bones found")
-                .accessibilityIdentifier("dino-progress")
-            GeometryReader { geometry in
-                ZStack {
-                    Color(red: 0.77, green: 0.58, blue: 0.35)
-                    ForEach(0..<bones.count, id: \.self) { index in
-                        BoneShape()
-                            .fill(Color(red: 1, green: 0.97, blue: 0.83))
-                            .overlay(BoneShape().stroke(Color(red: 0.57, green: 0.40, blue: 0.24), lineWidth: 2))
-                            .frame(width: geometry.size.width * 0.31, height: geometry.size.height * 0.105)
-                            .rotationEffect(.degrees(turns[index % turns.count]))
-                            .shadow(color: .black.opacity(0.18), radius: 3, y: 3)
-                            .position(x: bones[index].x * geometry.size.width, y: bones[index].y * geometry.size.height)
-                    }
-                    Canvas { context, size in
-                        let width = size.width / CGFloat(columns)
-                        let height = size.height / CGFloat(rows)
-                        for row in 0..<rows {
-                            for column in 0..<columns {
-                                let id = row * columns + column
-                                if cleared.contains(id) { continue }
-                                let rect = CGRect(x: CGFloat(column) * width, y: CGFloat(row) * height, width: width + 1, height: height + 1)
-                                let shade = Double((id * 17 + row * 7) % 9) / 180
-                                context.fill(Path(rect), with: .color(Color(red: 0.91 + shade, green: 0.73 + shade, blue: 0.45 + shade)))
-                                if id % 3 == 0 {
-                                    let dot = CGRect(x: rect.minX + width * 0.42, y: rect.minY + height * 0.40, width: 2, height: 2)
-                                    context.fill(Path(ellipseIn: dot), with: .color(.brown.opacity(0.18)))
-                                }
-                            }
-                        }
-                    }
-                    .allowsHitTesting(false)
-                }
-                .clipShape(RoundedRectangle(cornerRadius: 26))
-                .overlay(RoundedRectangle(cornerRadius: 26).strokeBorder(.white.opacity(0.9), lineWidth: 4))
-                .contentShape(Rectangle())
-                .gesture(DragGesture(minimumDistance: 0).onChanged { value in
-                    brush(at: CGPoint(x: value.location.x / geometry.size.width, y: value.location.y / geometry.size.height))
-                })
-                .accessibilityElement(children: .ignore)
-                .accessibilityLabel("Sand pit")
-                .accessibilityValue("\(found.count) of \(bones.count) bones found")
-                .accessibilityHint("Rub the sand, or use Brush next patch below")
-                .accessibilityAction(named: "Brush next patch", brushNext)
-                .accessibilityIdentifier("dino-sand")
-            }
-            DiscoveryAction(title: "Brush next patch", systemImage: "hand.draw") { brushNext() }
-                .accessibilityIdentifier("dino-brush")
-        }
-    }
-
-    private func brush(at point: CGPoint) {
-        guard found.count < bones.count else { return }
-        for row in 0..<rows {
-            for column in 0..<columns {
-                let dx = (CGFloat(column) + 0.5) / CGFloat(columns) - point.x
-                let dy = (CGFloat(row) + 0.5) / CGFloat(rows) - point.y
-                if dx * dx / 0.012 + dy * dy / 0.008 < 1 { cleared.insert(row * columns + column) }
-            }
-        }
-        checkBones()
-    }
-
-    private func brushNext() {
-        guard let index = bones.indices.first(where: { !found.contains($0) }) else { return }
-        // The accessible control reveals the same sand cells as brushing.
-        for row in 0..<rows {
-            for column in 0..<columns where isOverBone(column: column, row: row, index: index) {
-                cleared.insert(row * columns + column)
-            }
-        }
-        checkBones()
-    }
-
-    private func isOverBone(column: Int, row: Int, index: Int) -> Bool {
-        let dx = abs((CGFloat(column) + 0.5) / CGFloat(columns) - bones[index].x)
-        let dy = abs((CGFloat(row) + 0.5) / CGFloat(rows) - bones[index].y)
-        return dx < 0.19 && dy < 0.11
-    }
-
-    private func checkBones() {
-        let wasComplete = found.count == bones.count
-        for index in bones.indices where !found.contains(index) {
-            var total = 0
-            var visible = 0
-            for row in 0..<rows {
-                for column in 0..<columns where isOverBone(column: column, row: row, index: index) {
-                    total += 1
-                    if cleared.contains(row * columns + column) { visible += 1 }
-                }
-            }
-            if total > 0 && Double(visible) / Double(total) >= 0.80 {
-                found.insert(index)
-                // Finish exposing the found bone so the reward is visible.
-                for row in 0..<rows {
-                    for column in 0..<columns where isOverBone(column: column, row: row, index: index) {
-                        cleared.insert(row * columns + column)
-                    }
-                }
-                if let speechGameProgress {
-                    speechGameProgress.advance()
-                    break
-                }
-            }
-        }
-        if !wasComplete && found.count == bones.count { onComplete() }
-    }
-}
-
-private struct BoneShape: Shape {
-    func path(in rect: CGRect) -> Path {
-        var p = Path()
-        func point(_ x: CGFloat, _ y: CGFloat) -> CGPoint { CGPoint(x: rect.minX + x * rect.width, y: rect.minY + y * rect.height) }
-        p.move(to: point(0.24, 0.35))
-        p.addCurve(to: point(0.07, 0.38), control1: point(0.20, -0.03), control2: point(-0.01, 0.03))
-        p.addCurve(to: point(0.24, 0.65), control1: point(-0.09, 0.81), control2: point(0.16, 1.02))
-        p.addLine(to: point(0.76, 0.65))
-        p.addCurve(to: point(0.93, 0.62), control1: point(0.80, 1.03), control2: point(1.01, 0.97))
-        p.addCurve(to: point(0.76, 0.35), control1: point(1.09, 0.19), control2: point(0.84, -0.02))
-        p.closeSubpath()
-        return p
     }
 }
 

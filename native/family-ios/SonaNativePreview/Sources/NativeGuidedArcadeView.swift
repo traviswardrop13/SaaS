@@ -70,6 +70,7 @@ import SwiftUI
             guard let selection = try? await load(0), isCurrent(), !Task.isCancelled else { return }
             power.install(selection)
         }
+        .nativeReminderAudioOwner(power) { await $0.interrupt() }
         .onDisappear { power.cancel() }
     }
 

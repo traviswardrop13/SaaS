@@ -381,6 +381,7 @@ private struct NativeBookReader: View {
             bookmark = BookBookmark(page: min(value, book.pages.count), finished: bookmark.finished || value >= book.pages.count)
         }
         .task(id: page) { await preparePage() }
+        .nativeReminderAudioOwner(playback) { $0.stop() }
         .onDisappear { playback.stop() }
         .onChange(of: scenePhase) { if $0 != .active { playback.pauseNarration() } }
     }
@@ -598,28 +599,23 @@ private struct BookPressStyle: ButtonStyle {
 private enum BookArtworkError: Error { case unavailable }
 
 /// A bounded native image cache for the original Sona book and story art.
-/// Requests contain only fixed asset paths from the validated catalogs.
+/// Catalog paths resolve into the app bundle, including on a fresh offline install.
 actor NativeArtworkLoader {
     static let shared = NativeArtworkLoader()
     private let images = NSCache<NSString, UIImage>()
     private let data = NSCache<NSString, NSData>()
-    private let session: URLSession
+    private let bundle: Bundle
 
-    init() {
+    init(bundle: Bundle = .main) {
+        self.bundle = bundle
         images.totalCostLimit = 24 * 1024 * 1024
         images.countLimit = 40
         data.totalCostLimit = 12 * 1024 * 1024
-        let config = URLSessionConfiguration.default
-        config.httpShouldSetCookies = false
-        config.httpCookieAcceptPolicy = .never
-        config.httpMaximumConnectionsPerHost = 4
-        config.urlCache = URLCache(memoryCapacity: 12 * 1024 * 1024, diskCapacity: 96 * 1024 * 1024)
-        session = URLSession(configuration: config)
     }
 
     func image(path: String, crop: BookArtCrop? = nil) async throws -> UIImage {
         guard path.range(of: #"^/assets/(books|adventure|crafted)/[a-z0-9/_-]+\.webp$"#, options: .regularExpression) != nil,
-              let url = URL(string: "https://app.speaksona.com" + path) else { throw BookArtworkError.unavailable }
+              let resources = bundle.resourceURL else { throw BookArtworkError.unavailable }
         let key = (path + "|" + String(describing: crop)) as NSString
         if let cached = images.object(forKey: key) { return cached }
 
@@ -627,12 +623,11 @@ actor NativeArtworkLoader {
         if let cached = data.object(forKey: path as NSString) {
             bytes = cached as Data
         } else {
-            let request = URLRequest(url: url, cachePolicy: .returnCacheDataElseLoad, timeoutInterval: 20)
-            let (received, response) = try await session.data(for: request)
-            guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode),
-                  http.url?.host == url.host, http.url?.scheme == url.scheme,
-                  received.count <= 12 * 1024 * 1024 else { throw BookArtworkError.unavailable }
-            bytes = received
+            let resourcePath = String(path.dropFirst("/assets/".count))
+            let url = resources.appendingPathComponent(resourcePath, isDirectory: false)
+            let size = try url.resourceValues(forKeys: [.fileSizeKey]).fileSize
+            guard let size, size > 0, size <= 12 * 1024 * 1024 else { throw BookArtworkError.unavailable }
+            bytes = try Data(contentsOf: url, options: .mappedIfSafe)
             data.setObject(bytes as NSData, forKey: path as NSString, cost: bytes.count)
         }
         try Task.checkCancellation()

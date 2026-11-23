@@ -16,13 +16,14 @@ enum FlyingGame {
 
 struct FlyingGamesView: View {
     let game: FlyingGame
-    let goal: Int
+    let stage: Int
     let onRoundFinished: () -> Void
     let onLifeLost: (() -> Void)?
     @Environment(\.dismiss) private var dismiss
     @Environment(\.guidedReplay) private var guidedReplay
     @Environment(\.guidedArcadeExit) private var guidedArcadeExit
     @Environment(\.arcadePowerEffect) private var power
+    @Environment(\.arcadeRoundContext) private var arcadeRound
     @Environment(\.arcadeStartingHearts) private var startingHearts
     @Environment(\.guidedArcadeRestoredLives) private var restoredLives
     @Environment(\.scenePhase) private var scenePhase
@@ -32,10 +33,15 @@ struct FlyingGamesView: View {
     init(game: FlyingGame, stage: Int = 0, onLifeLost: (() -> Void)? = nil,
          onRoundFinished: @escaping () -> Void = {}) {
         self.game = game
-        goal = game.goal + stage
+        self.stage = stage
         self.onRoundFinished = onRoundFinished
         self.onLifeLost = onLifeLost
         _round = StateObject(wrappedValue: FlyingRound(game: game, goal: game.goal + stage))
+    }
+
+    private var level: Int { arcadeRound?.level ?? 1 }
+    private var goal: Int {
+        game == .glide ? NativeArcadeDifficulty.glideGoal(level: level, stage: stage) : game.goal + stage
     }
 
     var body: some View {
@@ -122,6 +128,9 @@ struct FlyingGamesView: View {
             }
         }
         .onAppear {
+            round.scene.configure(level: level, stage: stage, goal: goal,
+                                  startingBest: arcadeRound?.startingBest ?? 0,
+                                  record: arcadeRound?.record)
             round.scene.reduceMotion = reduceMotion
             round.scene.resetClock()
             round.scene.isPaused = false
@@ -214,6 +223,7 @@ private final class FlyingScene: SKScene {
         let upper: CGRect
         let middle: CGFloat
         var crossed = false
+        var hit = false
     }
 
     private struct Block {
@@ -229,7 +239,12 @@ private final class FlyingScene: SKScene {
     var reduceMotion = false
     var power = NativeArcadePowerEffect()
     private let game: FlyingGame
-    private let goal: Int
+    private var goal: Int
+    private var level = 1
+    private var stage = 0
+    private var bumps = 0
+    private var startingBest = 0
+    private var record: NativeArcadeRoundRecord?
     private let world = SKNode()
     private let background: SKSpriteNode
     private let balloon: SKSpriteNode
@@ -294,6 +309,11 @@ private final class FlyingScene: SKScene {
         shield.position = CGPoint(x: size.width * 0.20, y: balloon.position.y + 135)
     }
 
+    func configure(level: Int, stage: Int, goal: Int, startingBest: Int, record: NativeArcadeRoundRecord?) {
+        self.level = level; self.stage = stage; self.goal = goal
+        self.startingBest = startingBest; self.record = record
+    }
+
     func resetClock() {
         previousTime = nil
         activeTouch = nil
@@ -309,6 +329,7 @@ private final class FlyingScene: SKScene {
         blocks.removeAll()
         playing = true
         progress = 0
+        bumps = 0
         hearts = initialHearts
         spawned = 0
         elapsed = 0
@@ -340,18 +361,20 @@ private final class FlyingScene: SKScene {
             verticalSpeed = balloon.position.y == bottom ? 135 : -65
             bump()
         }
+        let flightLevel = bumps > 0 ? 1 : level
         if elapsed >= nextSpawn && spawned < goal {
             addGate()
-            nextSpawn = elapsed + 2.5
+            nextSpawn = elapsed + NativeArcadeDifficulty.glideSpacing(level: flightLevel)
         }
-        let speed: CGFloat = hearts == 3 ? 86 : 74
+        let speed: CGFloat = 86 * NativeArcadeDifficulty.glideSpeed(level: flightLevel) * (bumps > 0 ? 0.9 : 1)
         let body = CGRect(x: balloon.position.x - 25, y: balloon.position.y - 43, width: 50, height: 86)
         for index in gates.indices {
             gates[index].node.position.x -= speed * worldSeconds
             let origin = gates[index].node.position.x
             if body.intersects(gates[index].lower.offsetBy(dx: origin, dy: 0)) ||
                 body.intersects(gates[index].upper.offsetBy(dx: origin, dy: 0)) {
-                if elapsed >= invulnerableUntil {
+                if elapsed >= invulnerableUntil && !gates[index].hit {
+                    gates[index].hit = true
                     balloon.position.y = gates[index].middle
                     verticalSpeed = 95
                     bump()
@@ -359,6 +382,7 @@ private final class FlyingScene: SKScene {
             }
             if !gates[index].crossed && origin + 26 < balloon.position.x - 25 {
                 gates[index].crossed = true
+                if !gates[index].hit { _ = record?.recordMove(qualifies: true) }
                 advance()
             }
         }
@@ -372,7 +396,10 @@ private final class FlyingScene: SKScene {
         let node = SKNode()
         let bottom: CGFloat = 60
         let top = max(bottom + 260, size.height - 130)
-        let gap = min(265, (top - bottom) * 0.55)
+        let gapBase = min(265, (top - bottom) * 0.55)
+        let bestFactor = 1 + min(0.3, Double(startingBest) / 21 * 0.3)
+        let decrease = NativeArcadeDifficulty.glideShrink(level: bumps > 0 ? 1 : level, stage: stage) * bestFactor
+        let gap = bumps > 0 ? gapBase * 1.12 : gapBase * (1 - decrease)
         let center = (bottom + top) / 2 + sin(CGFloat(spawned) * 1.3) * min(75, size.height * 0.08)
         let lower = CGRect(x: -25, y: 0, width: 50, height: center - gap / 2)
         let upper = CGRect(x: -25, y: center + gap / 2, width: 50, height: size.height - center - gap / 2)
@@ -439,6 +466,7 @@ private final class FlyingScene: SKScene {
     private func bump() {
         guard playing && elapsed >= invulnerableUntil && !power.protectsHearts else { return }
         invulnerableUntil = elapsed + 1.5
+        if game == .glide { bumps += 1; _ = record?.recordMove(qualifies: false) }
         hearts -= 1
         onHearts?(hearts)
         balloon.run(.sequence([.fadeAlpha(to: 0.35, duration: 0.1), .fadeAlpha(to: 1, duration: 0.3)]))
@@ -490,6 +518,7 @@ private final class FlyingScene: SKScene {
         for index in blocks.indices {
             if !blocks[index].pushed && segmentDistance(blocks[index].node.position, start, shield.position) <= blocks[index].radius + 32 {
                 blocks[index].pushed = true
+                _ = record?.recordPushedBlock()
                 let side: CGFloat = blocks[index].node.position.x < shield.position.x ? -1 : 1
                 blocks[index].velocity = CGVector(dx: side * 180, dy: 110)
                 blocks[index].node.run(.sequence([.wait(forDuration: 0.9), .fadeOut(withDuration: 0.2), .removeFromParent()]))

@@ -19,6 +19,7 @@ import SonaSpeechCore
     private let onOptionalReturn: (@MainActor () -> Void)?
     private var optionalReturned = false
     private let now: () -> Double
+    private let occurrenceNow: () -> NativePracticeOccurrence
     private var detector: SpeechGameBurstDetector
     private let acousticCarry: GameSpeechAcousticCarry
     private var generation: UInt64 = 0
@@ -36,6 +37,7 @@ import SonaSpeechCore
     private var automaticRepeatUsed = false
     private var earnedSent = false
     private var pendingCredit: GameSayingCredit?
+    private var pendingOccurrence: NativePracticeOccurrence?
     private var notBefore = 0.0
     private let automaticClock: Bool
 
@@ -46,9 +48,10 @@ import SonaSpeechCore
          acousticCarry: GameSpeechAcousticCarry? = nil,
          driver: PracticeAudioDriver? = nil, provider: GameSpeechPromptProviding? = nil,
          automaticallyAdvance: Bool = true,
-         nowMilliseconds: @escaping () -> Double = { ProcessInfo.processInfo.systemUptime * 1_000 }) {
+         nowMilliseconds: @escaping () -> Double = { ProcessInfo.processInfo.systemUptime * 1_000 },
+         occurrenceNow: @escaping () -> NativePracticeOccurrence = { .capture() }) {
         self.plan = plan; self.isCurrent = isCurrent; self.credit = creditPlayRep
-        self.onEarned = onEarnedMove; self.now = nowMilliseconds
+        self.onEarned = onEarnedMove; self.now = nowMilliseconds; self.occurrenceNow = occurrenceNow
         self.onOptionalReturn = onOptionalReturn
         self.automaticClock = automaticallyAdvance
         self.provider = provider ?? GameSpeechNarration()
@@ -236,6 +239,7 @@ import SonaSpeechCore
                   word: plan.word, level: "word", position: plan.position) == .pass else {
             retry(held: false); return
         }
+        pendingOccurrence = occurrenceNow()
         pendingCredit = .init(gateID: plan.id, sequence: sayings + 1, gameID: plan.gameID,
                               sound: plan.sound, word: plan.word, position: plan.position)
         await savePending(token)
@@ -244,12 +248,12 @@ import SonaSpeechCore
     private func savePending(_ token: UInt64) async {
         guard let value = pendingCredit, let plan, live(token) else { return }
         phase = .saving; status = "Getting ready"; listeningReady = false
-        do { try await credit(value) }
+        do { try await NativePracticeOccurrenceScope.$current.withValue(pendingOccurrence) { try await credit(value) } }
         catch { if live(token) { await waitForTap(token, message: "Tap to try again") }; return }
         // A successful atomic write remains remembered even if pause occurred
         // while it awaited storage. The same ID is never credited as a new turn.
         guard pendingCredit == value else { return }
-        sayings = value.sequence; pendingCredit = nil
+        sayings = value.sequence; pendingCredit = nil; pendingOccurrence = nil
         guard live(token) else { return }
         if sayings >= plan.sayTimes {
             await finishEarned(token)

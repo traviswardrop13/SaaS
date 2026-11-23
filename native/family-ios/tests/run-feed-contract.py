@@ -15,7 +15,7 @@ def main():
         target = host / "Sources/FeedContract"
         target.mkdir(parents=True)
         app = root / "native/family-ios/SonaNativePreview/Sources"
-        for name in ("GameSpeechGatePlan.swift", "NativeFeedSelection.swift", "NativeFeedController.swift"):
+        for name in ("GameSpeechGatePlan.swift", "NativeFeedSelection.swift", "NativeFeedController.swift", "NativePracticeOccurrence.swift"):
             shutil.copy2(app / name, target / name)
         shutil.copy2(Path(__file__).with_name("NativeFeedContract.swift"), target / "Contract.swift")
         # The real shared network service is tested separately. This guard means

@@ -68,6 +68,7 @@ extension NativeArcadeCheckpointAudio: NativeArcadePowerPromptProviding {}
     private let provider: NativeArcadePowerPromptProviding
     private let carry: NativeArcadeCheckpointCarry
     private let now: () -> Double
+    private let occurrenceNow: () -> NativePracticeOccurrence
     private let wait: (Double) async throws -> Void
     private let automaticallyTimeOut: Bool
     private var selection: NativeArcadeCheckpointSelection?
@@ -93,6 +94,7 @@ extension NativeArcadeCheckpointAudio: NativeArcadePowerPromptProviding {}
          carry: NativeArcadeCheckpointCarry? = nil, driver: PracticeAudioDriver? = nil,
          provider: NativeArcadePowerPromptProviding? = nil, automaticallyTimeOut: Bool = true,
          nowMilliseconds: @escaping () -> Double = { ProcessInfo.processInfo.systemUptime * 1_000 },
+         occurrenceNow: @escaping () -> NativePracticeOccurrence = { .capture() },
          wait: @escaping (Double) async throws -> Void = { milliseconds in
             if milliseconds > 0 { try await Task.sleep(nanoseconds: UInt64(milliseconds * 1_000_000)) }
             try Task.checkCancellation()
@@ -101,7 +103,7 @@ extension NativeArcadeCheckpointAudio: NativeArcadePowerPromptProviding {}
         self.isCurrent = isCurrent; self.credit = credit; self.carry = carry
         self.provider = provider ?? carry.provider()
         self.automaticallyTimeOut = automaticallyTimeOut
-        self.now = nowMilliseconds; self.wait = wait
+        self.now = nowMilliseconds; self.occurrenceNow = occurrenceNow; self.wait = wait
         #if os(iOS)
         self.driver = driver ?? ApplePracticeAudioDriver()
         #else
@@ -225,13 +227,15 @@ extension NativeArcadeCheckpointAudio: NativeArcadePowerPromptProviding {}
         let result = await modelAndListen(id, selection: selection, game: game)
         listenTimer?.cancel(); listenTimer = nil
         let transcript: String
+        let occurrence: NativePracticeOccurrence?
         if audioRouteTouched {
             transcript = await driver.closeMicrophone()
+            occurrence = occurrenceNow()
             // An interrupted turn still owes the route this same settle time
             // before the board or a checkpoint can start playing its audio.
             let wait = self.wait
             await Task { @MainActor in try? await wait(200) }.value
-        } else { transcript = "" }
+        } else { transcript = ""; occurrence = nil }
         audioRouteTouched = false
         driver.setInterruptionHandler(nil)
 
@@ -250,7 +254,7 @@ extension NativeArcadeCheckpointAudio: NativeArcadePowerPromptProviding {}
                     // The power follows the accepted sound. Saving the rep is
                     // best effort, as in the original Arcade games.
                     outcome = .earned
-                    try? await credit(value)
+                    try? await NativePracticeOccurrenceScope.$current.withValue(occurrence) { try await credit(value) }
                 }
             case .silence: outcome = .unanswered
             case .microphoneUnavailable:

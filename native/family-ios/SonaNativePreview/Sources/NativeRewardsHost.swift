@@ -3,6 +3,7 @@ import SonaFamilyRules
 
 struct NativeRewardsHost: View {
     @ObservedObject var records: NativeFamilyState
+    var arcadeLevels: NativeArcadeLevelsAccess? = nil
     @Environment(\.dismiss) private var dismiss
     @State private var snapshot: NativeRewardsSnapshot?
     @State private var failed = false
@@ -12,7 +13,7 @@ struct NativeRewardsHost: View {
         SonaNavigation {
             Group {
                 if let snapshot, snapshot.scope == records.scope {
-                    NativeRewardsView(snapshot: snapshot) { request in
+                    NativeRewardsView(snapshot: snapshot, arcadeLevels: arcadeLevels) { request in
                         guard request.scope == records.scope, let owner = records.activeID,
                               let operation = NativeFamilyRules.Operation(rawValue: request.method)
                         else { throw NativeFamilyRules.EvaluationError.invalidInput }

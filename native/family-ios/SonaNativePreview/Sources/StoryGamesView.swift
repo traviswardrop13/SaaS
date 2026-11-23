@@ -104,27 +104,30 @@ private enum StoryGameStyle {
     static let teal = Color(red: 0.13, green: 0.48, blue: 0.46)
 }
 
-/// Original assets only. Bundled originals work offline; a missing bundle
-/// entry may use the same authored asset from the existing family host.
+/// Uses the existing asset catalog first, then original artwork bundled by path.
 private struct StoryGameArt: View {
     let name: String
     var symbol = "sparkles"
+    @State private var bundledName: String?
+    @State private var bundledImage: UIImage?
+
     var body: some View {
         Group {
-            if let image = UIImage(named: name) {
+            if let image = UIImage(named: name) ?? (bundledName == name ? bundledImage : nil) {
                 Image(uiImage: image).resizable().scaledToFit()
-            } else {
-                AsyncImage(url: URL(string: "https://app.speaksona.com/assets/crafted/game/\(name).webp")) { phase in
-                    if let image = phase.image {
-                        image.resizable().scaledToFit()
-                    } else {
-                        Image(systemName: symbol).resizable().scaledToFit().padding(8)
-                            .foregroundStyle(StoryGameStyle.gold)
-                    }
-                }
+            } else if !symbol.isEmpty {
+                Image(systemName: symbol).resizable().scaledToFit().padding(8)
+                    .foregroundStyle(StoryGameStyle.gold)
             }
         }
         .accessibilityHidden(true)
+        .task(id: name) {
+            guard UIImage(named: name) == nil else { return }
+            let image = try? await NativeArtworkLoader.shared.image(path: "/assets/crafted/game/\(name).webp")
+            guard !Task.isCancelled else { return }
+            bundledName = name
+            bundledImage = image
+        }
     }
 }
 

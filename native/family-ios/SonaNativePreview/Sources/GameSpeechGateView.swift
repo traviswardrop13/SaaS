@@ -93,6 +93,7 @@ import SonaSpeechCore
         .preferredColorScheme(.light)
         .onAppear { if isOptionalHelp { model.startAfterConsent() } }
         .onChange(of: scenePhase) { model.setForeground($0 == .active) }
+        .nativeReminderAudioOwner(model) { await $0.close() }
         .onDisappear { Task { await model.close() } }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("game-speech-gate")

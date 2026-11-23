@@ -12,3 +12,4 @@ INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPo
 INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight
 ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon
 TARGETED_DEVICE_FAMILY = 1,2
+SONA_ARTWORK_ROOT = $(PROJECT_DIR)/../../public/assets

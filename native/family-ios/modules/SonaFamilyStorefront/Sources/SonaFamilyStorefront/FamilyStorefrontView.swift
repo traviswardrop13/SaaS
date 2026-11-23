@@ -6,9 +6,15 @@ import SonaFamilyAccess
 /// independently refuses purchasing in the separate preview bundle.
 public struct FamilyStorefrontView: View {
     @ObservedObject private var store: FamilyStorefrontStore
+    @ObservedObject private var websiteRestore: FamilyEmailRestoreStore
+    private let reminderOn: @MainActor (FamilyStoreOffer) -> Bool
     @Environment(\.dismiss) private var dismiss
     @Environment(\.scenePhase) private var scenePhase
-    public init(store: FamilyStorefrontStore) { self.store = store }
+    public init(store: FamilyStorefrontStore, websiteRestore: FamilyEmailRestoreStore? = nil, reminderOn: @escaping @MainActor (FamilyStoreOffer) -> Bool = { _ in false }) {
+        self.store = store
+        self.reminderOn = reminderOn
+        self.websiteRestore = websiteRestore ?? FamilyEmailRestoreStore(repository: nil, origin: .app)
+    }
 
     public var body: some View {
         NavigationView {
@@ -20,6 +26,14 @@ public struct FamilyStorefrontView: View {
                         Text("Games, books and daily adventures.").font(.body).foregroundStyle(.secondary)
                     }
                     content
+                    // The active-plan copy in public/subscribe.html#planCancel gives
+                    // both shops conditionally; a legacy grant never guesses its shop.
+                    if !store.access.grants.isDisjoint(with: [.apple, .stripe, .legacySubscription]) {
+                        Text(.init("To cancel a plan bought on speaksona.com, email [hello@speaksona.com](mailto:hello@speaksona.com?subject=Cancel%20my%20Sona%20plan) and we’ll cancel it for you. A subscription bought on iPhone or iPad: open the phone’s Settings, tap your name, then Subscriptions. A one payment has nothing to cancel."))
+                            .font(.footnote).foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .accessibilityIdentifier("family-store-manage-plan")
+                    }
                     if let notice = store.notice {
                         Text(notice.text).font(.body)
                             .padding(16).frame(maxWidth: .infinity, alignment: .leading)
@@ -39,6 +53,10 @@ public struct FamilyStorefrontView: View {
                                 Text("Restore Purchases").font(.body.weight(.semibold))
                             }.frame(maxWidth: .infinity, minHeight: 48)
                         }.disabled(!store.canRestore).accessibilityIdentifier("family-store-restore")
+                    }
+                    if websiteRestore.isAvailable, !store.freeMode, !store.access.premium {
+                        FamilyEmailRestoreView(store: websiteRestore)
+                            .disabled(store.busy || store.needsSaveRetry)
                     }
                     HStack(spacing: 24) {
                         Link("Terms", destination: URL(string: "https://app.speaksona.com/terms.html")!)
@@ -120,8 +138,12 @@ public struct FamilyStorefrontView: View {
                             if store.operation == .purchasing { ProgressView().tint(.white) }
                             Text(buttonTitle(offer)).font(.headline).multilineTextAlignment(.center)
                         }.frame(maxWidth: .infinity, minHeight: 54)
-                    }.buttonStyle(.borderedProminent).disabled(!store.canPurchase)
+                    }.buttonStyle(.borderedProminent).disabled(!store.canPurchase || websiteRestore.busy || websiteRestore.needsSaveRetry)
                         .accessibilityIdentifier("family-store-buy")
+                    if reminderOn(offer) {
+                        Text("We'll remind you the day before it ends.").font(.footnote)
+                            .multilineTextAlignment(.center).accessibilityIdentifier("family-store-reminder")
+                    }
                     Text(renewal(offer)).font(.footnote).foregroundStyle(.secondary)
                         .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
                 }

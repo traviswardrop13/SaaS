@@ -6,6 +6,7 @@ import UIKit
 struct NativeRewardsView: View {
     let snapshot: NativeRewardsSnapshot
     let perform: NativeRewardsPerformer
+    let arcadeLevels: NativeArcadeLevelsAccess?
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var current: NativeRewardsSnapshot
@@ -15,9 +16,10 @@ struct NativeRewardsView: View {
     @State private var failedRequest: NativeRewardsRequest?
     @State private var actionTask: Task<Void, Never>?
 
-    init(snapshot: NativeRewardsSnapshot, perform: @escaping NativeRewardsPerformer) {
+    init(snapshot: NativeRewardsSnapshot, arcadeLevels: NativeArcadeLevelsAccess? = nil, perform: @escaping NativeRewardsPerformer) {
         self.snapshot = snapshot
         self.perform = perform
+        self.arcadeLevels = arcadeLevels
         _current = State(initialValue: snapshot)
     }
 
@@ -29,6 +31,7 @@ struct NativeRewardsView: View {
                 errorCard
                 monthNotice
                 dailyChest
+                if let arcadeLevels { NativeArcadeLevelsRoadSection(access: arcadeLevels) }
                 Picker("Reward path", selection: $path) {
                     Text("Trophy Road").tag(RewardsPath.lifetime)
                     Text(current.road.month.name + " path").tag(RewardsPath.month)

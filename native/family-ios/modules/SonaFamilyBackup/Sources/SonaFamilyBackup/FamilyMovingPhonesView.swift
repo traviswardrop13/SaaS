@@ -1,6 +1,7 @@
 
 #if os(iOS)
 import SwiftUI
+import UIKit
 import UniformTypeIdentifiers
 import SonaFamilyMigration
 
@@ -9,6 +10,7 @@ public struct FamilyMovingPhonesView: View {
     @State private var document = PortableFile(bytes: Data())
     @State private var exporting = false
     @State private var importing = false
+    @State private var copyMessage: String?
     @State private var pasteCode = ""
     @State private var pending: Data?
     @State private var confirmRestore = false
@@ -31,6 +33,14 @@ public struct FamilyMovingPhonesView: View {
                     } }
                 } label: { Label("Save backup file", systemImage: "square.and.arrow.up") }
                 .accessibilityIdentifier("backup-export")
+                Button {
+                    Task { await perform {
+                        UIPasteboard.general.string = try await service.exportCode()
+                        copyMessage = "Backup code copied."
+                    } }
+                } label: { Label("Copy backup code", systemImage: "doc.on.doc") }
+                .accessibilityIdentifier("backup-copy")
+                if let copyMessage { Text(copyMessage).accessibilityIdentifier("backup-copy-result") }
             }
             Section("Restore a backup") {
                 Button { importing = true } label: { Label("Choose backup file", systemImage: "folder") }

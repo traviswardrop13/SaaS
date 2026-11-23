@@ -21,6 +21,7 @@ import SonaSpeechCore
     private let onEnd: @MainActor () -> Void
     private let onStepBack: (@MainActor (NativeArcadeCheckpointSelection.Ask) -> Void)?
     private let now: () -> Double
+    private let occurrenceNow: () -> NativePracticeOccurrence
     private let automaticClock: Bool
     private var detector: ArcadeCheckpointDetector
     private var generation: UInt64 = 0
@@ -35,6 +36,7 @@ import SonaSpeechCore
     private var deadline = Double.infinity
     private var lastClosed = -Double.infinity
     private var pendingCredit: GameSayingCredit?
+    private var pendingOccurrence: NativePracticeOccurrence?
     private var credited = false
     private var earnedSent = false
     private var ended = false
@@ -51,10 +53,11 @@ import SonaSpeechCore
          driver: PracticeAudioDriver? = nil,
          provider: NativeArcadeCheckpointPromptProviding? = nil,
          automaticallyAdvance: Bool = true,
-         nowMilliseconds: @escaping () -> Double = { ProcessInfo.processInfo.systemUptime * 1_000 }) {
+         nowMilliseconds: @escaping () -> Double = { ProcessInfo.processInfo.systemUptime * 1_000 },
+         occurrenceNow: @escaping () -> NativePracticeOccurrence = { .capture() }) {
         self.id = id; self.selection = selection; self.isCurrent = isCurrent
         self.credit = credit; self.onEarned = onEarned; self.onEnd = onEnd
-        self.onStepBack = onStepBack; self.now = nowMilliseconds; self.automaticClock = automaticallyAdvance
+        self.onStepBack = onStepBack; self.now = nowMilliseconds; self.occurrenceNow = occurrenceNow; self.automaticClock = automaticallyAdvance
         let carry = carry ?? NativeArcadeCheckpointCarry()
         self.carry = carry; self.provider = provider ?? carry.provider()
         #if os(iOS)
@@ -265,6 +268,7 @@ import SonaSpeechCore
                 word: heardAsk.text, level: heardAsk.level, position: heardAsk.position)
             accepted = requiresWord ? verdict == .pass : verdict != .fail
         } else { accepted = !requiresWord }
+        let occurrence = accepted ? occurrenceNow() : nil
         await closeInput()
         guard live(token), phase == .checking else { return }
         if !accepted {
@@ -272,6 +276,7 @@ import SonaSpeechCore
             else { restart(idea: false) }
             return
         }
+        pendingOccurrence = occurrence
         pendingCredit = .init(gateID: id, sequence: 1, gameID: selection.gameID,
             sound: selection.sound, word: heardAsk.text, position: heardAsk.position)
         await savePending(token)
@@ -280,10 +285,10 @@ import SonaSpeechCore
     private func savePending(_ token: UInt64) async {
         guard live(token), let value = pendingCredit else { return }
         phase = .saving; status = "Get ready…"
-        do { try await credit(value) }
+        do { try await NativePracticeOccurrenceScope.$current.withValue(pendingOccurrence) { try await credit(value) } }
         catch { if live(token) { waitForTap(token) }; return }
         guard pendingCredit == value else { return }
-        pendingCredit = nil; credited = true
+        pendingCredit = nil; pendingOccurrence = nil; credited = true
         guard live(token) else { return }
         await finishEarned(token)
     }

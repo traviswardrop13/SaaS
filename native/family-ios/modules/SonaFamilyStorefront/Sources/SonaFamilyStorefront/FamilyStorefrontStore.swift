@@ -36,6 +36,11 @@ public struct FamilyAppleAccessUpdate: Equatable, Sendable {
     }
 }
 
+public enum FamilyStorefrontReminderEvent: Sendable {
+    case purchased(FamilyPurchaseCustomerInfo, FamilyStoreOffer)
+    case recoveredSale(FamilyPurchaseCustomerInfo, FamilyStoreOffer?)
+}
+
 public enum FamilyStorefrontPhase: Equatable, Sendable {
     case preview, idle, loading, ready, alreadyOpen, unavailable
 }
@@ -91,6 +96,8 @@ public final class FamilyStorefrontStore: ObservableObject {
     private let continuity: FamilyPurchaseContinuity?
     private let readAppleRevision: @MainActor () async throws -> UUID?
     private let persistAppleAccess: @MainActor (FamilyAppleAccessUpdate) async throws -> NativeFamilyAppleAccess
+    private let onReminderEvent: @MainActor (FamilyStorefrontReminderEvent) -> Void
+    private var pendingReminderOffer: FamilyStoreOffer?
     private let authorized: Bool
     private var products: [FamilyStorefrontProduct] = []
     private var pendingPatch: FamilyAppleAccessUpdate?
@@ -101,10 +108,11 @@ public final class FamilyStorefrontStore: ObservableObject {
                             initialAccess: FamilyEntitlementState,
                             client: (any FamilyStorefrontClient)? = nil,
                             readAppleRevision: @escaping @MainActor () async throws -> UUID?,
+                            onReminderEvent: @escaping @MainActor (FamilyStorefrontReminderEvent) -> Void = { _ in },
                             persistAppleAccess: @escaping @MainActor (FamilyAppleAccessUpdate) async throws -> NativeFamilyAppleAccess) {
         self.init(configuration: configuration, initialAccess: initialAccess, client: client,
                   actualBundleIdentifier: Bundle.main.bundleIdentifier,
-                  readAppleRevision: readAppleRevision, persistAppleAccess: persistAppleAccess)
+                  readAppleRevision: readAppleRevision, onReminderEvent: onReminderEvent, persistAppleAccess: persistAppleAccess)
     }
 
     // Internal environment seam is for synthetic tests. The public initializer
@@ -112,10 +120,12 @@ public final class FamilyStorefrontStore: ObservableObject {
     init(configuration: FamilyAccessConfiguration, initialAccess: FamilyEntitlementState,
          client: (any FamilyStorefrontClient)?, actualBundleIdentifier: String?,
          readAppleRevision: @escaping @MainActor () async throws -> UUID? = { nil },
-         persistAppleAccess: @escaping @MainActor (FamilyAppleAccessUpdate) async throws -> NativeFamilyAppleAccess) {
+         onReminderEvent: @escaping @MainActor (FamilyStorefrontReminderEvent) -> Void = { _ in },
+                            persistAppleAccess: @escaping @MainActor (FamilyAppleAccessUpdate) async throws -> NativeFamilyAppleAccess) {
         self.configuration = configuration; self.access = initialAccess; self.client = client
         self.readAppleRevision = readAppleRevision
         self.persistAppleAccess = persistAppleAccess
+        self.onReminderEvent = onReminderEvent
         authorized = actualBundleIdentifier == "com.speaksona.app" && client != nil
         phase = authorized ? .idle : .preview
         if let client, authorized {
@@ -164,6 +174,10 @@ public final class FamilyStorefrontStore: ObservableObject {
         let refreshed = await continuity.refresh(force: true)
         guard loadingID == request, !Task.isCancelled else { return }
         if let info = refreshed.customerInfo, !refreshed.ignoredObsoleteAnswer {
+            if info.hasFullEntitlement, let pending = pendingReminderOffer {
+                pendingReminderOffer = nil
+                onReminderEvent(.recoveredSale(info, pending))
+            }
             let patch = FamilyAppleAccessUpdate(active: info.hasFullEntitlement,
                 lastAuthoritativeRefresh: refreshed.access.lastAppleRefresh, source: .refresh(expectedRevision: revision))
             guard await saveApple(patch, success: nil), loadingID == request, !Task.isCancelled else { return }
@@ -201,12 +215,19 @@ public final class FamilyStorefrontStore: ObservableObject {
         operation = .purchasing; notice = nil
         defer { operation = nil }
         switch await continuity.purchase(product: product.purchase, parentInitiated: true) {
-        case .purchased:
+        case .purchased(let info):
+            pendingReminderOffer = nil
+            onReminderEvent(.purchased(info, offer))
             await saveVerifiedGrant(using: continuity, success: .purchased)
-        case .restored:
+        case .restored(let info):
+            if let pending = pendingReminderOffer {
+                pendingReminderOffer = nil
+                onReminderEvent(.recoveredSale(info, pending))
+            }
             await saveVerifiedGrant(using: continuity, success: .restored)
         case .failed(let failure):
             if failure == .pending || failure == .verificationPending { awaitingApproval = true }
+            if failure == .pending || failure == .verificationPending || failure == .notEntitled { pendingReminderOffer = offer }
             notice = Self.notice(failure)
         }
     }
@@ -216,7 +237,11 @@ public final class FamilyStorefrontStore: ObservableObject {
         operation = .restoring; notice = nil
         defer { operation = nil }
         switch await continuity.restore(parentInitiated: true) {
-        case .restored:
+        case .restored(let info):
+            if let pending = pendingReminderOffer {
+                pendingReminderOffer = nil
+                onReminderEvent(.recoveredSale(info, pending))
+            }
             await saveVerifiedGrant(using: continuity, success: .restored)
         case .noActivePurchase: notice = .noActivePurchase
         case .failed(let failure): notice = Self.notice(failure)

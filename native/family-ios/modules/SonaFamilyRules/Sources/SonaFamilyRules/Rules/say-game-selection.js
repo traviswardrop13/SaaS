@@ -169,5 +169,6 @@ function nativeSayGame(options) {
     const profile = Sona.getProfile();
     return { title: config.title, intro: config.intro, sayings: config.sayings, targets, sound: SOUND,
         voice: profile.voiceId || "", voiceOn: profile.voiceOn !== false,
+        soundOn: profile.soundOn !== false, isSimple: Sona.playStyle() === "simple",
         volume: profile.volume == null ? 0.8 : Number(profile.volume) };
 }

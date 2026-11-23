@@ -7,6 +7,7 @@ struct NativeFeedRound: View {
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @StateObject private var model: NativeFeedController
+    @State private var concertStrum = false
 
     init(selection: NativeFeedSelection, isCurrent: @escaping @MainActor () -> Bool,
          credit: @escaping @MainActor (GameSayingCredit) async throws -> Void,
@@ -40,6 +41,7 @@ struct NativeFeedRound: View {
         .accessibilityHidden(hasOverlay)
         .overlay { if hasOverlay { startOverlay } }
         .onChange(of: scenePhase) { model.setForeground($0 == .active) }
+        .nativeReminderAudioOwner(model) { await $0.close() }
         .onDisappear { Task { await model.close() } }
     }
 
@@ -172,7 +174,17 @@ struct NativeFeedRound: View {
 
     private var finish: some View {
         VStack(spacing: 20) {
-            Image(available("echo-cheer")).resizable().scaledToFit().frame(height: 195).accessibilityHidden(true)
+            ZStack(alignment: .bottom) {
+                Image(available("echo-cheer")).resizable().scaledToFit().frame(height: 195)
+                Image("feed-ukulele").resizable().scaledToFit().frame(width: 50, height: 50)
+                    .rotationEffect(.degrees(reduceMotion ? 0 : concertStrum ? 8 : -8), anchor: .bottomLeading)
+                    .offset(x: 29, y: -8)
+            }
+            .accessibilityHidden(true)
+            .onAppear {
+                guard !reduceMotion else { return }
+                withAnimation(.easeInOut(duration: 0.3).repeatForever(autoreverses: true)) { concertStrum = true }
+            }
             Text("Yum! You fed Echo!").font(.system(.largeTitle, design: .rounded).weight(.heavy))
                 .multilineTextAlignment(.center).accessibilityIdentifier("native-feed-complete")
             Text("Five tasty discoveries. Concert time!").font(.body).multilineTextAlignment(.center)

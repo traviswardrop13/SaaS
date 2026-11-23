@@ -23,7 +23,6 @@ struct GrownUpsView: View {
     var storefront: (() -> AnyView)?
     var movingPhones: (() -> AnyView)?
     var weeklyReport: (() -> AnyView)?
-    var savedGameRecords: [SavedGameRecord] = []
 
     @Environment(\.dismiss) private var dismiss
     @FocusState private var answerFocused: Bool
@@ -278,7 +277,7 @@ struct GrownUpsView: View {
 
             NavigationLink {
                 ParentProgressView(selectedSound: displayedSound, snapshot: practice?.parentProgress,
-                                   savedGameRecords: savedGameRecords, onSendProgress: onSendProgress)
+                                   onSendProgress: onSendProgress)
             } label: {
                 HStack(spacing: 14) {
                     Image(systemName: "chart.bar.xaxis")

@@ -51,15 +51,18 @@ import AVFAudio
     private let onReplay: @MainActor () -> Void
     private let onExit: @MainActor () -> Void
     private let now: () -> Double
+    private let occurrenceNow: () -> NativePracticeOccurrence
     private let wait: @MainActor (Double) async throws -> Void
     private let permissionAlreadyGranted: @MainActor () -> Bool
     private let automaticClock: Bool
+    private let soundResource: (String) -> URL?
     private var detector: NativeFeedBurstDetector
     private var generation: UInt64 = 0
     private var work: Task<Void, Never>?
     private var clock: Task<Void, Never>?
     private var closing: Task<Void, Never>?
     private var finalClose: Task<Void, Never>?
+    private var concert: Task<Void, Never>?
     private var lastClosed = -Double.infinity
     private var deadline = Double.infinity
     private var foreground = true
@@ -68,6 +71,7 @@ import AVFAudio
     private var automaticRepeatUsed = false
     private var gateID = UUID()
     private var pendingCredit: GameSayingCredit?
+    private var pendingOccurrence: NativePracticeOccurrence?
     private var pendingMove: UUID?
     private var finishedSent = false
 
@@ -82,13 +86,16 @@ import AVFAudio
          driver: PracticeAudioDriver? = nil, provider: NativeFeedPromptProviding? = nil,
          automaticallyAdvance: Bool = true,
          nowMilliseconds: @escaping () -> Double = { ProcessInfo.processInfo.systemUptime * 1000 },
+         occurrenceNow: @escaping () -> NativePracticeOccurrence = { .capture() },
          waitMilliseconds: @escaping @MainActor (Double) async throws -> Void = { ms in
              if ms > 0 { try await Task.sleep(nanoseconds: UInt64(ms * 1_000_000)) }
-         }, permissionAlreadyGranted: @escaping @MainActor () -> Bool = NativeFeedController.systemPermissionGranted) {
+         }, permissionAlreadyGranted: @escaping @MainActor () -> Bool = NativeFeedController.systemPermissionGranted,
+         soundResource: @escaping (String) -> URL? = { Bundle.main.url(forResource: $0, withExtension: "wav") }) {
         self.selection = selection; self.isCurrent = isCurrent; self.credit = credit; self.onFeed = onFeed
         self.onFinish = onFinish; self.onReplay = onReplay; self.onExit = onExit
-        self.now = nowMilliseconds; self.wait = waitMilliseconds; self.automaticClock = automaticallyAdvance
+        self.now = nowMilliseconds; self.occurrenceNow = occurrenceNow; self.wait = waitMilliseconds; self.automaticClock = automaticallyAdvance
         self.permissionAlreadyGranted = permissionAlreadyGranted
+        self.soundResource = soundResource
         self.provider = provider ?? NativeFeedNarration()
         #if os(iOS)
         self.driver = driver ?? ApplePracticeAudioDriver()
@@ -143,12 +150,14 @@ import AVFAudio
         }
     }
     func pause() {
+        if phase == .finished { stopConcert(); return }
         guard ![.closed, .finished, .unavailable, .ready, .permission, .farewell].contains(phase) else { return }
         generation &+= 1; work?.cancel(); driver.stopPlayback(); deadline = .infinity; phase = .paused
         work = Task { [weak self] in await self?.closeInput() }
     }
     func close() async {
         if let finalClose { await finalClose.value; return }
+        stopConcert()
         generation &+= 1; work?.cancel(); clock?.cancel(); driver.stopPlayback(); deadline = .infinity
         phase = .closed
         let permission = permissionRequest
@@ -247,8 +256,10 @@ import AVFAudio
                                            word: turn.target.word, level: "word", position: turn.target.position) == .pass else {
             retry(held: false); return
         }
+        let occurrence = occurrenceNow()
         await closeInput()
         guard live(token) else { return }
+        pendingOccurrence = occurrence
         pendingCredit = GameSayingCredit(gateID: gateID, sequence: 1, gameID: "feed", sound: selection.sound,
                                         word: turn.target.word, position: turn.target.position)
         await saveCredit(token)
@@ -261,10 +272,10 @@ import AVFAudio
     private func saveCredit(_ token: UInt64) async {
         guard let value = pendingCredit, live(token) else { return }
         phase = .saving; status = "Echo heard you!"
-        do { try await credit(value) }
+        do { try await NativePracticeOccurrenceScope.$current.withValue(pendingOccurrence) { try await credit(value) } }
         catch { if live(token) { phase = .waiting }; return }
         guard pendingCredit == value else { return }
-        pendingCredit = nil; heard = true; heardCount += 1
+        pendingCredit = nil; pendingOccurrence = nil; heard = true; heardCount += 1
         guard live(token) else { return }
         phase = .choosing; status = "Tap the glowing picture!"
     }
@@ -287,7 +298,10 @@ import AVFAudio
         gateID = UUID(); automaticRepeatUsed = false
         guard live(token) else { return }
         status = fed >= selection.turns.count ? "YUM! All full!" : ["Yum!", "Nice one!", "So tasty!", "Great!"][fed % 4]
-        do { try await wait(900) } catch { return }
+        let celebrationEnds = now() + 900
+        await playSound("feed-bite", token: token)
+        guard live(token) else { return }
+        do { try await wait(max(0, celebrationEnds - now())) } catch { return }
         guard live(token) else { return }
         if fed >= selection.turns.count { finishRound() }
         else { ask(repeating: false) }
@@ -312,6 +326,33 @@ import AVFAudio
     private func finishRound() {
         guard isCurrent(), !finishedSent else { return }
         finishedSent = true; phase = .finished; clock?.cancel(); onFinish()
+        guard selection.soundOn, selection.volume > 0 else { return }
+        let token = generation
+        concert = Task { [weak self] in
+            guard let self else { return }
+            await self.playSound("feed-concert", token: token)
+            self.concert = nil
+        }
+    }
+    private func stopConcert() {
+        guard let concert else { return }
+        self.concert = nil
+        concert.cancel()
+        driver.stopPlayback()
+    }
+    private func playSound(_ name: String, token: UInt64) async {
+        guard selection.soundOn, selection.volume > 0, live(token),
+              let file = soundResource(name), file.isFileURL else { return }
+        await closing?.value
+        let delay = max(0, lastClosed + selection.policy.settleMilliseconds - now())
+        do {
+            if delay > 0 { try await wait(delay) }
+            try Task.checkCancellation()
+            guard live(token) else { return }
+            try await driver.playPrompt(.init(text: name, parts: [.init(fileURL: file)], volume: selection.volume))
+        } catch {
+            // A failed effect does not block a correctly earned bite or win.
+        }
     }
     private func live(_ token: UInt64) -> Bool { token == generation && foreground && ownerCurrent() && phase != .closed }
     private func ownerCurrent() -> Bool {

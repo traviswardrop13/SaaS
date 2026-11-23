@@ -9,12 +9,34 @@ struct NativeFamilyReportJournal: Codable, Equatable, Sendable {
 }
 
 /// An adult's explicit, local request to join the existing tips list.
+public enum NativeFamilyReportSignupSource: String, Codable, Equatable, Sendable {
+    case appSetup = "app-setup"
+    case appSettings = "app-settings"
+}
+
 public struct NativeFamilyReportSignup: Codable, Equatable, Sendable {
     public let id: UUID
     public let origin: LegacyOrigin
     public let email: String
     public let premium: Bool
+    public let source: NativeFamilyReportSignupSource
     var retryAfter: Date?
+
+    init(id: UUID, origin: LegacyOrigin, email: String, premium: Bool,
+         source: NativeFamilyReportSignupSource = .appSettings, retryAfter: Date? = nil) {
+        self.id = id; self.origin = origin; self.email = email; self.premium = premium
+        self.source = source; self.retryAfter = retryAfter
+    }
+    private enum CodingKeys: String, CodingKey { case id, origin, email, premium, source, retryAfter }
+    public init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        id = try values.decode(UUID.self, forKey: .id)
+        origin = try values.decode(LegacyOrigin.self, forKey: .origin)
+        email = try values.decode(String.self, forKey: .email)
+        premium = try values.decode(Bool.self, forKey: .premium)
+        source = try values.decodeIfPresent(NativeFamilyReportSignupSource.self, forKey: .source) ?? .appSettings
+        retryAfter = try values.decodeIfPresent(Date.self, forKey: .retryAfter)
+    }
 }
 
 public struct NativeFamilyReportPacket: Codable, Equatable, Sendable {
@@ -200,7 +222,7 @@ public extension NativeFamilyRepository {
     }
 }
 
-private extension NativeFamilyRepository {
+extension NativeFamilyRepository {
     static func queueReportRemovals(_ removals: [NativeFamilyRemovalObligation], family: inout NativeFamilyOrigin,
                                     journal: inout NativeFamilyReportJournal,
                                     policy: (NativeFamilyOrigin, NativeFamilyReportAction) throws -> NativeFamilyReportMutation) throws {
@@ -216,8 +238,20 @@ private extension NativeFamilyRepository {
     }
 
     static func signupIsCurrent(_ signup: NativeFamilyReportSignup, in family: NativeFamilyOrigin) -> Bool {
-        guard signup.origin == family.origin, reportAddress(signup.email) == signup.email else { return false }
-        return family.children.contains { reportConsentAddress($0) == signup.email }
+        guard signup.origin == family.origin else { return false }
+        switch signup.source {
+        case .appSettings:
+            guard reportAddress(signup.email) == signup.email else { return false }
+            return family.children.contains { reportConsentAddress($0) == signup.email }
+        case .appSetup:
+            guard setupEmail(signup.email) == signup.email else { return false }
+            return family.children.contains {
+                let profile = NativeFamilyOrigin.object($0.profileJSON) ?? [:]
+                return NativeFamilyOrigin.isTrue(profile["weeklyReport"]) &&
+                    NativeFamilyOrigin.isTrue(profile["weeklyEmail"]) &&
+                    (profile["email"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines) == signup.email
+            }
+        }
     }
 
     static func applyReport(_ mutation: NativeFamilyReportMutation, family: inout NativeFamilyOrigin,

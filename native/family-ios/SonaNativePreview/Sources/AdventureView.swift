@@ -149,6 +149,7 @@ struct AdventureView: View {
         .preferredColorScheme(.light)
         .task { load() }
         .task(id: pageToken) { await preparePage() }
+        .nativeReminderAudioOwner(playback) { $0.stop() }
         .onDisappear { playback.stop() }
         .onChange(of: scenePhase) { if $0 != .active { playback.pauseNarration() } }
         .onChange(of: targetSound) { _ in reset() }
