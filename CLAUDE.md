@@ -3028,6 +3028,72 @@ been compiled here (no Xcode on Linux): errors come back from Travis's Mac.
 `/api/slp/family` now also answers `covered`, so the app's family message
 says "Premium is included through me" only when it is true.
 
+## Off GoHighLevel: the website is back, Resend sends every email (GHLEXIT1, 24 Nov 2026)
+Travis, 24 Nov 2026: "I want to get rid of go high level ... have the whole
+business running outside of high level", then "lets do site signups then.
+so we'll need an opt in page too separate from payments page", at
+"straight up speaksona.com". This supersedes every line below that puts
+speaksona.com, an email or a lead in GoHighLevel (APPHOST1's website half,
+MAIL1, the CRM webhook, STRIPEHOOK1's events, GHLPRO1's checkout).
+- **speaksona.com is Vercel's again** (Cloudflare DNS, set 24 Nov 2026): the
+  apex is two A records, 216.198.79.1 and 64.29.17.1, and www a CNAME to the
+  project's `…vercel-dns-017.com`, all DNS only; Vercel sends the apex to www.
+  app.speaksona.com, Google Workspace's MX and Resend's records are as they
+  were. The app stays at app.speaksona.com (APPHOST1, below, still holds).
+- **GoHighLevel is switched off by its environment, not deleted from the
+  code.** In Vercel, `GHL_API_TOKEN` is Preview-only and `GHL_LOCATION_ID`
+  Production-only, so no deployment has both and `lib/mail` sends through
+  Resend everywhere; `LEAD_WEBHOOK_URL` is parked on one dead preview
+  branch, so `/api/lead` and the Stripe webhook tell nobody. The GHL code
+  (lib/mail's branch, the webhook calls, GHLPRO1's claim) is dormant; delete
+  it, and the parked variables, once Travis has cancelled GoHighLevel.
+  Turning it back on means the copy below changes back too.
+- **The copy says Resend** wherever it said GoHighLevel: `privacy.html`
+  (Email delivery and Email list; the Contact list bullet is gone),
+  for-slps' and parents' "What's stored", and the dashboard's parent-email
+  line ("Sona doesn't keep their address."). `shiptest`, `contactstest` and
+  `slptest` pin it.
+- **The ad funnel: `/` is the opt-in, `/plans` sells.** `/` serves
+  `public/start.html`: the app guard first (the FAMILY iPhone app opens `/`),
+  one work-email box ("Try Sona free"; "Next, pick your plan. Sona Pro is
+  free for 14 days."), "See plans and prices", Rachel's line, three short
+  points. It posts `/api/lead` (`role: "slp"`, `source: "slp-optin"` or the
+  ad's utm_source, the ad's tags flat), and only on its `ok` fires `Lead`
+  (no parameters) and goes to `/plans` with the same query (a `?ref=` is
+  also kept 60 days, as `/plans` keeps it). The email rides in this tab's
+  sessionStorage (`sona.optin.email`, which fills `/plans`' box), never in
+  an address; `sona.optin.lead` tells `/plans` the Lead is counted, so its
+  trial sign-up fires `InitiateCheckout` instead (no visitor is two leads).
+  A refused email (400) is said on the page; any other failure still goes
+  on to `/plans`, with no Lead. `telemetrytest` pins all of it.
+- **`/plans` (for-slps.html, canonical www.speaksona.com/plans) sells more**
+  (Travis: "we just need to do more selling"): the hero and form as they
+  were, then the problem ("Home practice is the hard part.", three plain
+  notes, no numbers or outcomes), what you can do, **two plans**, Share &
+  earn, the kid side, **Rachel** (her credential line word for word; what
+  is hers to decide), good to know, the FAQ (plus which plan, do families
+  pay, cancelling, how Share & earn pays), the closing button.
+  - **Sona Premium, $9.99 a month, "Just the kids' app, for your sessions"**
+    (Travis: "$9.99/mo for just the kids app. not trial ... for the
+    slp/slpa to use in sessions"): the family Premium Apple sells in the
+    iPhone app, so its button is the App Store listing (`lib/nurture`'s
+    APP_URL), "Bought in the Sona app and billed by Apple", and the card
+    promises no trial (App Store Connect's free days are Apple's to show).
+    Nothing on the web sells it. **Open, Travis's:** a web Stripe plan with
+    no trial instead is a new plan in lib/caseload, checkout, the webhook
+    and the own-phone link, a real build.
+  - **Sona Pro** keeps its figures, trial terms and button (`best`, "Best
+    for your caseload"), with "Everything in Sona Premium" and Share & earn.
+  - **Share & earn** (`#earn`): lib/referral's `REFERRAL_PAY` and three of
+    it ($24), "more than Sona Pro costs", in the dashboard's own rules (a new
+    account through your link, past its trial and paying; therapists only;
+    paid each month, not a discount). `shiptest` holds both figures to
+    lib/referral and every other price to what is charged.
+- **`/checkout` serves the plans, opened at `#pricing`**: GoHighLevel's lead
+  form and emails sent people there. A Vercel project route (platform
+  rewrite) did the same until this shipped; remove it after, since a
+  platform route runs before next.config's.
+
 ## The app lives at app.speaksona.com (APPHOST1, 17 Nov 2026)
 Travis: point the app at app.speaksona.com "so that I can get speaksona.com
 officially inside my home base of high level". This reverses "speaksona.com

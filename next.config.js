@@ -84,6 +84,7 @@ const nextConfig = {
       { source: "/icon-512.png", headers: noStore },
       { source: "/", headers: noStore },
       { source: "/plans", headers: noStore },
+      { source: "/checkout", headers: noStore },
       { source: "/for-parents", headers: noStore },
       { source: "/for-slps.css", headers: noStore },
       { source: "/try", headers: noStore },
@@ -92,12 +93,20 @@ const nextConfig = {
       { source: "/subscribe/success", headers: noStore },
     ];
   },
-  // The public homepage introduces Sona Pro. The family page has its own URL.
+  // The public homepage is the clinicians' opt-in; the plans are at /plans.
+  // The family page has its own URL.
   async rewrites() {
     return [
-      { source: "/", destination: "/for-slps.html" },
-      // The dashboard's "See plans" (20 Nov 2026): the same page, at its plans.
+      // THE AD FUNNEL (GHLEXIT1, 24 Nov 2026, Travis: "an opt in page too
+      // separate from payments page", at "straight up speaksona.com"): / takes
+      // an email, then /plans sells (Sona Premium in the App Store, Sona Pro's
+      // trial).
+      { source: "/", destination: "/start.html" },
+      // The dashboard's "See plans" (20 Nov 2026), and the opt-in's next step.
       { source: "/plans", destination: "/for-slps.html" },
+      // GoHighLevel's lead form and emails sent people to /checkout: the same
+      // page, opened at its plans.
+      { source: "/checkout", destination: "/for-slps.html" },
       { source: "/for-parents", destination: "/parents.html" },
       // The ad's bridge page (Travis, 9 Oct 2026): a headline, a button, the App Store.
       { source: "/try", destination: "/try.html" },

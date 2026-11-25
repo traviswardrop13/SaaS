@@ -117,9 +117,14 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
 
   const rewrites = code.slice(code.indexOf("async rewrites()"), code.indexOf("async redirects()"));
   const redirects = code.slice(code.indexOf("async redirects()"));
-  ok("the root and /plans serve the clinician plans page and /for-parents the family page",
-    /source:\s*"\/"\s*,\s*destination:\s*"\/for-slps\.html"/.test(rewrites) &&
+  // GHLEXIT1 (24 Nov 2026, Travis: "an opt in page too separate from
+  // payments page", at "straight up speaksona.com"): / is the opt-in, and
+  // GoHighLevel's old /checkout links open the plans.
+  const start = readFileSync(APP + "/public/start.html", "utf8");
+  ok("the root serves the clinicians' opt-in, /plans and /checkout the plans page, and /for-parents the family page",
+    /source:\s*"\/"\s*,\s*destination:\s*"\/start\.html"/.test(rewrites) &&
     /source:\s*"\/plans"\s*,\s*destination:\s*"\/for-slps\.html"/.test(rewrites) &&
+    /source:\s*"\/checkout"\s*,\s*destination:\s*"\/for-slps\.html"/.test(rewrites) &&
     /source:\s*"\/for-parents"\s*,\s*destination:\s*"\/parents\.html"/.test(rewrites));
   // THE 308 TRAP (17 Nov 2026): /for-slps has been a permanent redirect to /
   // since 12 Nov, and a browser keeps one. Pointing anything back at
@@ -131,14 +136,16 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
   ok("each landing page declares its canonical and shared URL",
     /rel="canonical" href="https:\/\/www\.speaksona\.com\/for-parents"/.test(parents) &&
     /og:url" content="https:\/\/www\.speaksona\.com\/for-parents"/.test(parents) &&
-    /rel="canonical" href="https:\/\/app\.speaksona\.com\/"/.test(slps) &&
-    /og:url" content="https:\/\/app\.speaksona\.com\/"/.test(slps));
+    /rel="canonical" href="https:\/\/www\.speaksona\.com\/plans"/.test(slps) &&
+    /og:url" content="https:\/\/www\.speaksona\.com\/plans"/.test(slps) &&
+    /rel="canonical" href="https:\/\/www\.speaksona\.com\/"/.test(start) &&
+    /og:url" content="https:\/\/www\.speaksona\.com\/"/.test(start));
   ok("every landing route revalidates (a rewritten path is not on the list read from disk)",
-    ["/", "/plans", "/for-parents"].every((r) => new RegExp('source: "' + r.replace(/\//g, "\\/") + '", headers: noStore').test(code)));
+    ["/", "/plans", "/checkout", "/for-parents"].every((r) => new RegExp('source: "' + r.replace(/\//g, "\\/") + '", headers: noStore').test(code)));
 
   // A LINK WITH NO CARD IS A GREY BOX. The pages are static and inherit
   // nothing from app/layout.tsx, so each carries its own.
-  for (const [name, page, img] of [["the parent page", parents, "og-parents.png"], ["the clinician plans page", slps, "og-slp.png"]]) {
+  for (const [name, page, img] of [["the parent page", parents, "og-parents.png"], ["the clinician plans page", slps, "og-slp.png"], ["the clinicians' opt-in", start, "og-slp.png"]]) {
     for (const tag of ["og:title", "og:description", "og:image", "og:url", "twitter:card"]) {
       ok(`${name}: a shared link carries ${tag}`, new RegExp('(property|name)="' + tag + '"').test(page));
     }
@@ -279,7 +286,11 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
     (slps.match(/<a\b[^>]*href="\/for-parents"/g) || []).length === 1);
   ok("clinician signup asks the auth endpoint for the trial's sign-in link (SLPPRO1: no free dashboard)",
     /fetch\("\/api\/slp\/auth\/request"/.test(slps) && /flow:\s*"trial"/.test(slps) && !/free-dashboard/.test(slps) &&
-    !/#premium|apps\.apple\.com|APP_STORE|APP_READY/.test(slps));
+    !/#premium|APP_STORE|APP_READY/.test(slps) &&
+    // GHLEXIT1 (24 Nov 2026): the one App Store link is Sona Premium's own
+    // button, the $9.99 plan Apple sells in the app; nothing else sends a
+    // clinician there.
+    (slps.match(/apps\.apple\.com/g) || []).length === 1 && /<a class="btn ghost" id="appGo" href="https:\/\/apps\.apple\.com\/[^"]+">Get it on the App Store<\/a>/.test(slps));
   const form = (slps.match(/<form class="signup" id="signup"[\s\S]*?<\/form>/) || [""])[0];
   ok("one clinician form asks only for a work email (14 Nov 2026: no role, no setting)",
     /id="fEmail" type="email"[^>]*\brequired\b/.test(form) && (form.match(/<button\b/g) || []).length === 1 &&
@@ -343,7 +354,7 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
   // as a clinician (role "slp", through /onboarding.html?slp=1, which nothing
   // links to) and never in the iPhone app.
   // parents.html is checked above: exactly one footer link, nothing else.
-  const CLIN = new Set(["for-slps.html", "slp.html", "slp-login.html", "settings.html", "parents.html"]);
+  const CLIN = new Set(["for-slps.html", "start.html", "slp.html", "slp-login.html", "settings.html", "parents.html"]);
   const TO_CLIN = /href=["'](https?:\/\/(www\.)?speaksona\.com)?\/(for-slps|slp-login|slps\b|slp\.html|slp["'?#])/;
   const fam = pages.filter((f) => !CLIN.has(f) && TO_CLIN.test(strip(readFileSync(APP + "/public/" + f, "utf8"))))
     .concat(["app/families/page.tsx", "app/terms/page.tsx", "app/support/page.tsx", "app/privacy/page.tsx", "app/layout.tsx", "lib/nurture.ts", "lib/report.ts", "lib/revenuecat.ts"]
@@ -426,13 +437,16 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
   ok("the Sona Clinic card waits in a <template>, and the switch on is what puts it on the page",
     !!tpl && tpl.includes('<article class="plan" id="planClinic">') && (shown.match(/id="planClinic"/g) || []).length === 1 &&
     /if \(CLINIC_ON\) \{\s*var tpl = \$\("planClinicTpl"\);\s*if \(tpl && tpl\.content\) \$\("plans"\)\.appendChild\(tpl\.content\.cloneNode\(true\)\);\s*\$\("plans"\)\.className = "plans";/.test(slps) &&
-    /<div class="plans one" id="plans">/.test(shown));
+    /<div class="plans" id="plans">/.test(shown));
   if (!CLINIC_ON) {
     const head = (slps.match(/<head>[\s\S]*?<\/head>/) || [""])[0].replace(/<script[\s\S]*?<\/script>/g, "");
     ok("while the switch is off, nothing on /plans names Sona Clinic or $99: not the page, its title, its description or its shared card",
       !/Sona Clinic|\$99(?![.\d])|Clinic plan/.test(liveFlat + " " + head), (liveFlat.match(/.{0,60}(Sona Clinic|\$99(?![.\d])|Clinic plan).{0,40}/) || [""])[0]);
-    ok("…and its pricing is the Sona Pro card alone, under a heading for one plan",
-      (live.match(/<article class="plan"/g) || []).length === 1 && !/data-plan="clinic"/.test(live) && /<h2 id="pricingH">Simple pricing\.<\/h2>/.test(shown) &&
+    // GHLEXIT1 (24 Nov 2026): two plans, Sona Premium (the App Store's, for
+    // the clinician's own sessions) and Sona Pro, under one heading.
+    ok("…and its pricing is Sona Premium and Sona Pro, under 'Pick your plan.'",
+      (live.match(/<article class="plan\b/g) || []).length === 2 && /<article class="plan" id="planApp">/.test(live) && /<article class="plan best" id="planPro">/.test(live) &&
+      !/data-plan="clinic"/.test(live) && /<h2 id="pricingH">Pick your plan\.<\/h2>/.test(shown) &&
       /\$\("pricingH"\)\.textContent = "Pick your plan\.";/.test(slps));
   }
   const K = {};
@@ -445,7 +459,7 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
     JSON.stringify([PRO, CLINIC]));
   ok("the plans page offers a trial, never a free dashboard or a community",
     !/free dashboard|community/i.test(shown) && /<section class="wrap pricing" id="pricing"/.test(shown));
-  const card = (id) => (shown.match(new RegExp('<article class="plan" id="' + id + '">[\\s\\S]*?<\\/article>')) || [""])[0];
+  const card = (id) => (shown.match(new RegExp('<article class="plan(?: best)?" id="' + id + '">[\\s\\S]*?<\\/article>')) || [""])[0];
   const pro = card("planPro"), clinic = card("planClinic");
   const terms = (p) => p.days + " days free, then " + p.price + " a month. Card required. Cancel during the trial and you pay nothing. One free trial per clinician.";
   ok("the Sona Pro card: its name, its price a month and the trial's terms at the point of purchase, all lib/caseload's",
@@ -461,15 +475,36 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
   // Printed exactly as charged: never rounded, never "$99.00", never split
   // per clinician. The one other figure is what parents pay, below.
   const figures = [...flat.matchAll(/\$\d[\d,.]*\d|\$\d/g)].map((m) => m[0]);
-  ok("every price on the page is one checkout charges (or the parents' line)", figures.length >= 4 &&
-    figures.every((f) => [PRO.price, CLINIC.price, "$9.99"].includes(f)) && !/\$20\b|\$100\b|\$99\.00|\$[\d.]+ (a|per|each) clinician|a clinician a month/.test(flat), figures.join(" "));
+  // Share & earn's two figures (GHLEXIT1) are lib/referral.ts's: what one
+  // paying therapist earns, and three of them.
+  const rf = readFileSync(APP + "/lib/referral.ts", "utf8");
+  const REF_PAY = (/export const REFERRAL_PAY = "([^"]+)"/.exec(rf) || [])[1], REF_CENTS = Number((/export const REFERRAL_CENTS = (\d+)/.exec(rf) || [])[1]);
+  const REF3 = "$" + (3 * REF_CENTS / 100);
+  ok("every price on the page is one checkout charges (or the parents' and Sona Premium's $9.99, or Share & earn's)", figures.length >= 4 &&
+    figures.every((f) => [PRO.price, CLINIC.price, "$9.99", REF_PAY, REF3].includes(f)) && !/\$20\b|\$100\b|\$99\.00|\$[\d.]+ (a|per|each) clinician|a clinician a month/.test(flat), figures.join(" "));
   // WHAT PARENTS PAY (Travis, 17 Nov 2026), only where it is true: hidden
   // until /api/charter answers that families are paying. "$9.99", never
   // "$10"; App Store Connect owns the figure (NATIVE.md).
   ok("the parents' price line, word for word, under Sona Pro, hidden until /api/charter says families pay",
     /<p class="parent-price" id="parentPrice" hidden>Families on your link get every game at no cost\. Parents who buy Sona on their own pay \$9\.99 a month in the iPhone app\.<\/p>/.test(pro) &&
-    (shown.match(/\$9\.99/g) || []).length === 1 &&
+    (shown.match(/\$9\.99/g) || []).length === 2 &&
     /fetch\("\/api\/charter"\)[\s\S]{0,120}if \(j && j\.ok && j\.free === false\) \$\("parentPrice"\)\.hidden = false;/.test(slps));
+  // SONA PREMIUM, FOR THE CLINICIAN'S OWN SESSIONS (GHLEXIT1, Travis, 24 Nov
+  // 2026: "$9.99/mo for just the kids app ... for the slp/slpa to use in
+  // sessions"). Apple sells it in the app, as it does to a family: the page
+  // links the App Store (the same listing the emails use) and promises no
+  // trial; the free days, if any, are App Store Connect's to show.
+  const app = card("planApp");
+  const APP_URL = (/export const APP_URL = "([^"]+)"/.exec(readFileSync(APP + "/lib/nurture.ts", "utf8")) || [])[1];
+  ok("the Sona Premium card: the kids' app at $9.99 a month, its button the App Store listing, billed by Apple, no trial promised and no plan button",
+    app.includes("<h3>Sona Premium</h3>") && app.includes("<b>$9.99</b> a month") && !!APP_URL && app.includes('href="' + APP_URL + '"') &&
+    /Bought in the Sona app and billed by Apple\./.test(app) && !/free|trial|data-plan/i.test(app), app.slice(0, 300));
+  // SHARE & EARN ON THE PAGE (GHLEXIT1; REFER1's rule, in the dashboard's
+  // own words): three paying therapists earn more than Sona Pro costs.
+  const earn = (shown.match(/<section class="earn" id="earn"[\s\S]*?<\/section>/) || [""])[0];
+  ok("Share & earn: lib/referral's " + REF_PAY + " a month and three of it, " + REF3 + ", which is more than Sona Pro's " + PRO.price,
+    !!REF_PAY && earn.includes("<b>" + REF_PAY + "</b>") && earn.includes("<b>" + REF3 + "</b>") && 3 * REF_CENTS > Number(String(PRO.price).replace(/[^\d]/g, "")) &&
+    /It starts once their free trial ends and they pay\. Speech therapists only: families never count\./.test(earn) && /not a discount/.test(earn), earn.slice(0, 200));
   // 18 Nov 2026 (review): the pick is {plan, at}, written only once it is
   // acted on (a sent email, or a signed-in visitor), and counts for an hour.
   ok("a plan button only picks the plan (PICK) and brings the visitor to the one form; the pick is written as {plan, at} only when acted on",
@@ -480,7 +515,9 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
   // is the way to checkout, for a LOCKED account too, but only when a plan is
   // remembered: the trial form remembers Sona Pro, never over a button's pick.
   ok("…and the trial form remembers the button's pick, else Sona Pro, once the email is sent, and forgets it when the send fails",
-    /remember\(PICK \|\| "pro"\);\s*try \{ if \(window\.sonaTrack\) sonaTrack\("Lead"\); \}/.test(slps) &&
+    // GHLEXIT1: after the opt-in at / counted the Lead, the trial here is InitiateCheckout.
+    /remember\(PICK \|\| "pro"\);\s*try \{ if \(window\.sonaTrack\) \{ if \(OPTED_IN\) sonaTrack\("InitiateCheckout"\); else sonaTrack\("Lead"\); \} \}/.test(slps) &&
+    /OPTED_IN = sessionStorage\.getItem\("sona\.optin\.lead"\) === "1";/.test(slps) &&
     /if \(j\.sent !== true\) \{\s*forget\(\);/.test(slps) && /\(!j \|\| !j\.ok\) \{ forget\(\);/.test(slps));
   // SLPCLEAN1 (17 Nov 2026): the dashboard lost the community, the AI
   // homework draft and the day planner; SLPPRO1 replaced the planner with
@@ -507,13 +544,13 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
     (outside.match(/every game[^.]*/gi) || []).every((m) => /while your Sona Pro plan is on/.test(m)) &&
     /while your <span id="planNames">Sona Pro<\/span> plan is on\./.test(shown) && /\$\("planNames"\)\.textContent = "Sona Pro or Sona Clinic";/.test(slps),
     (outside.match(/every game[^.]*/gi) || []).join(" | "));
-  // Since 17 Nov 2026 GoHighLevel sends it and keeps it as a contact (Travis:
-  // "I want everything on Go High Level"); the page must say so.
-  ok("the storage answer says GoHighLevel sends a parent's email and keeps it as a contact",
-    /we hand it to GoHighLevel to deliver that one email with the link, and GoHighLevel keeps it as a contact\. Sona's own server keeps no copy: not stored, not logged\./.test(flat) &&
-    !/keep it nowhere/.test(flat));
-  ok("the storage answer names Resend for the list and GoHighLevel for emails",
-    /the email list via Resend, emails and contacts in GoHighLevel/.test(flat) && !/sign-in emails via Resend/.test(flat));
+  // GoHighLevel sent it from 17 to 24 Nov 2026; since GHLEXIT1 (Travis: "I
+  // want to get rid of go high level") Resend does, and the page says so.
+  ok("the storage answer says Resend delivers a parent's email and Sona keeps no copy, and names no GoHighLevel",
+    /we hand it to Resend to deliver that one email with the link\. Sona's own server keeps no copy: not stored, not logged\./.test(flat) &&
+    !/keep it nowhere/.test(flat) && !/GoHighLevel|HighLevel/.test(flat));
+  ok("the storage answer names Resend for the emails and the list",
+    /emails and the email list via Resend/.test(flat) && !/sign-in emails via Resend/.test(flat));
   ok("…and Stripe for a trial's card, which Sona never sees",
     /Your card, when you start a free trial: held by Stripe, which runs the checkout and the billing\. Sona never sees the card number\./.test(flat));
   ok("the page still explains how a clinician or family can remove a child's data",

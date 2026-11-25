@@ -817,13 +817,13 @@
           <textarea id="invNote" maxlength="240" placeholder="e.g. Two minutes after breakfast is plenty."></textarea>
           <p class="sub">This goes to the parent's phone and is stored with the assignment. Practice instructions only — nothing from the plan, nothing you wouldn't write on a fridge note.</p>
           <!-- A parent's address, typed by the clinician, is used for ONE send.
-               Sona's server keeps it nowhere (not on the invite, not in a log),
-               but GoHighLevel, which sends it, keeps it as a contact (Travis,
-               17 Nov 2026: "I want everything on Go High Level"). autocomplete is off because the
+               Sona's server keeps it nowhere (not on the invite, not in a log);
+               Resend delivers it (GoHighLevel did from 17 to 24 Nov 2026, and
+               kept it as a contact; GHLEXIT1). autocomplete is off because the
                browser would otherwise offer the clinician's own address. -->
           <label class="fl" for="invParentEmail">Parent's email <span class="opt-note">(optional)</span></label>
           <input id="invParentEmail" type="email" inputmode="email" autocomplete="off" maxlength="254" placeholder="parent@example.com" />
-          <p class="sub">We'll email them the link once. Our email service, GoHighLevel, keeps their address as a contact.</p>
+          <p class="sub">We'll email them the link once. Sona doesn't keep their address.</p>
           <button class="btn green" id="invCreate" style="margin-top:14px;">Create their link →</button>
           <div class="err" id="invErr"></div>
           <p class="sub" style="margin-top:8px;">If the family never opens the link, it deletes itself in 30 days and nothing about them is kept.</p>
@@ -2763,9 +2763,9 @@
        makes their login, and emails the parent ONE email with the App Store
        link, "Open Sona and tap Log in", the username, the password and the
        web link. The password is shown here once and kept on the server only
-       as a hash; it also travels in that email, which GoHighLevel keeps in
-       its message history (Travis's accepted trade-off; the family can
-       change it in Sona's Settings). The parent's address is posted once
+       as a hash; it also travels in that email, which Resend keeps a record
+       of (Travis's accepted trade-off; the family can change it in Sona's
+       Settings). The parent's address is posted once
        and let go of. */
     var FAM_SEL={}, FAM_BUSY=false, famReady=false, FAM_LAST=null;
     function famInit(){
