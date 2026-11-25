@@ -1218,8 +1218,9 @@ const count = (pred) => S.calls.filter(pred).length;
   const tok = r.json.invite.token;
   const data = JSON.parse(KV.K.get("inv:unpaid-k4:" + tok));
   const idx = JSON.parse(KV.H.get("inv:unpaid-k4").get(tok));
-  ok("…and the invite keeps its exact shape: label, age, sounds, pos, repsPerDay, note, token, createdAt, expiresAt",
-    Object.keys(data).sort().join() === "age,createdAt,expiresAt,label,note,pos,repsPerDay,sounds,token" && Object.keys(r.json.invite).sort().join() === Object.keys(data).sort().join(), Object.keys(data).join());
+  // `games` (CHILDGAMES1, 25 Nov 2026): the game keys a therapist picked, or null; never child data
+  ok("…and the invite keeps its exact shape: label, age, sounds, pos, repsPerDay, note, games, token, createdAt, expiresAt",
+    Object.keys(data).sort().join() === "age,createdAt,expiresAt,games,label,note,pos,repsPerDay,sounds,token" && data.games === null && Object.keys(r.json.invite).sort().join() === Object.keys(data).sort().join(), Object.keys(data).join());
   ok("…its index row too: createdAt, expiresAt", Object.keys(idx).sort().join() === "createdAt,expiresAt");
   ok("…and the response never echoes the address", !JSON.stringify(r.json).includes(PARENT));
 
