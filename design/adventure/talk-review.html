@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Talking Story Review</title>
+<!--
+  The talking stories (TALK1, TALKMORE1), for Travis and Rachel to read:
+  every page's words, the one word the child is asked to say on it (its sound
+  in orange) and its picture once drawn. Day 1's ten first, then the later
+  stories a child meets after the fourteen daily stories, each marked "not on
+  yet" until sona.js's STORY_TALK_MORE says ready. Open this file from the
+  repo: it reads ../../public/sona.js and ../../public/talk-stories.js, so a
+  word changed there shows here. Nothing here ships to families.
+-->
+<style>
+  :root { --ink: #23303b; --soft: #5d6b77; --line: #d9d2c4; --card: #fffaf0; --page: #f4eee2; --mark: #c2410c; --key: #dff3f1; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --ink: #ece6da; --soft: #b5ada0; --line: #3b3a36; --card: #24221f; --page: #191816; --mark: #fb923c; --key: #1f3b39; } }
+  :root[data-theme="dark"] { --ink: #ece6da; --soft: #b5ada0; --line: #3b3a36; --card: #24221f; --page: #191816; --mark: #fb923c; --key: #1f3b39; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--ink); font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 1180px; margin: 0 auto; padding: 24px 16px 64px; }
+  h1 { font-size: 26px; margin: 0 0 6px; }
+  h2 { font-size: 20px; margin: 40px 0 4px; padding-top: 8px; border-top: 1px solid var(--line); }
+  h3 { font-size: 16px; margin: 22px 0 8px; }
+  p.lead { color: var(--soft); margin: 0 0 12px; max-width: 70ch; }
+  nav { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 8px 0; }
+  nav a { color: var(--mark); }
+  .tag { display: inline-block; font-size: 12px; font-weight: 600; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--soft); margin-left: 8px; vertical-align: 2px; }
+  .tag.off { color: var(--mark); border-color: var(--mark); }
+  .home { color: var(--soft); margin: 0 0 6px; }
+  .keys { font-size: 13px; color: var(--soft); margin: 0 0 8px; }
+  .pages { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
+  .page { background: var(--card); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+  .pic { aspect-ratio: 2 / 3; background: #333; overflow: hidden; display: flex; align-items: center; justify-content: center; color: #bbb; font-size: 13px; }
+  .pic img { width: 100%; height: 100%; display: block; object-fit: contain; }
+  .meta { padding: 8px 10px 10px; }
+  .meta b { font-size: 13px; }
+  .ages { font-size: 11px; color: var(--soft); margin-left: 6px; }
+  .word { display: inline-block; margin-left: 6px; font-size: 13px; font-weight: 700; background: var(--key); padding: 0 6px; border-radius: 6px; }
+  .word .snd, .line .snd { color: var(--mark); }
+  .line { margin: 4px 0 0; font-size: 13px; }
+  .line.little { color: var(--soft); }
+  .line .k { background: var(--key); border-radius: 4px; padding: 0 2px; font-weight: 600; }
+  .wide { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; margin-top: 8px; }
+  .wide img { width: 100%; display: block; border-radius: 10px; border: 1px solid var(--line); }
+  .note { color: var(--soft); font-size: 13px; }
+  @media (max-width: 480px) { .pages { grid-template-columns: 1fr 1fr; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>Talking story review</h1>
+  <p class="lead">Every page of the talking stories. Echo reads the line, then asks the child to say the page's word (in the teal box, its sound in orange) three times, and the page turns. Ages 3-4 skip the pages marked "5-8" and hear the shorter line. A grey box is a picture not drawn yet. The words are Rachel's call; the stories and their order are Travis's.</p>
+  <nav id="nav"></nav>
+  <div id="stories"></div>
+</main>
+<script src="../../public/sona.js"></script>
+<script src="../../public/talk-stories.js"></script>
+<script>
+(function () {
+  var S = window.Sona || {}, T = window.SonaTalkStories || {};
+  var DAY1 = (S.STORY_TALK || []).map(function (d) { return { d: d, label: "Day 1 · " + d.sound }; });
+  var days = (S.STORY_DAYS || []).length || 14;
+  var MORE = (S.STORY_TALK_MORE || []).map(function (d) {
+    var own = S.STORY_TALK_MORE.filter(function (x) { return x.sound === d.sound; });
+    return { d: d, label: "Day " + (days + 1 + own.indexOf(d)) + " · " + d.sound, off: d.ready !== true };
+  });
+  var host = document.getElementById("stories"), nav = document.getElementById("nav");
+  function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+  // a word with its sound's letters orange (sona.js's own marker), else plain
+  function mark(word, sound) {
+    var s = el("span", "word");
+    try { if (S.soundMark) { s.innerHTML = S.soundMark(word, sound, "i"); return s; } } catch (e) {}
+    s.textContent = word; return s;
+  }
+  // the line, with its key word in a soft box (whole word, any case)
+  function lineWith(cls, prefix, text, key, sound) {
+    var p = el("p", "line" + (cls ? " " + cls : ""));
+    if (prefix) p.appendChild(document.createTextNode(prefix));
+    var re = new RegExp("\\b(" + key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + ")\\b", "i"), m = re.exec(text);
+    if (!m) { p.appendChild(document.createTextNode(text)); return p; }
+    p.appendChild(document.createTextNode(text.slice(0, m.index)));
+    var k = el("span", "k"); try { k.innerHTML = S.soundMark ? S.soundMark(m[1], sound, "i") : m[1]; } catch (e) { k.textContent = m[1]; }
+    p.appendChild(k);
+    p.appendChild(document.createTextNode(text.slice(m.index + m[1].length)));
+    return p;
+  }
+  function section(title, list) {
+    if (!list.length) return;
+    var h = el("h2", null, title); host.appendChild(h);
+    list.forEach(function (it) {
+      var d = it.d, story = T[d.id];
+      var a = el("a", null, d.title); a.href = "#" + d.id; nav.appendChild(a);
+      var h3 = el("h2", null, d.title); h3.id = d.id;
+      h3.appendChild(el("span", "tag", it.label));
+      if (it.off) h3.appendChild(el("span", "tag off", "not on yet"));
+      host.appendChild(h3);
+      host.appendChild(el("p", "home", "Home card: " + d.line));
+      if (!story) { host.appendChild(el("p", "note", "talk-stories.js has no pages for this story.")); return; }
+      var keys = el("p", "keys", "Words asked: " + story.intro.concat(story.ending).map(function (sc) { return sc.key; }).join(", "));
+      host.appendChild(keys);
+      [["intro", "The story"], ["ending", "The ending"]].forEach(function (part) {
+        host.appendChild(el("h3", null, part[1]));
+        var grid = el("div", "pages"); host.appendChild(grid);
+        story[part[0]].forEach(function (sc) {
+          var card = el("div", "page"), pic = el("div", "pic", "not drawn yet"), img = document.createElement("img");
+          img.alt = d.id + " " + sc.art; img.loading = "lazy";
+          img.onload = function () { pic.textContent = ""; pic.appendChild(img); };
+          img.src = "../../public/assets/adventure/" + d.id + "/" + sc.art + ".webp";
+          card.appendChild(pic);
+          var meta = el("div", "meta"), head = el("b", null, sc.art);
+          meta.appendChild(head);
+          head.appendChild(el("span", "ages", sc.ages === "big" ? "5-8 only" : "both ages"));
+          meta.appendChild(mark(sc.key, story.sound));
+          var line = sc.line;
+          if (typeof line === "string") meta.appendChild(lineWith("", "", line, sc.key, story.sound));
+          else if (line) {
+            meta.appendChild(lineWith("", line.little ? "5-8: " : "", line.big, sc.key, story.sound));
+            if (line.little) meta.appendChild(lineWith("little", "3-4: ", line.little, sc.key, story.sound));
+          }
+          card.appendChild(meta); grid.appendChild(card);
+        });
+      });
+      var wide = el("div", "wide"), home = document.createElement("img"), cast = document.createElement("img");
+      home.alt = d.title + " on Home"; home.loading = "lazy"; home.src = "../../public/assets/crafted/home-" + d.hero + ".webp";
+      cast.alt = d.title + "'s cast"; cast.loading = "lazy"; cast.src = "cast-" + d.id + ".webp";
+      [home, cast].forEach(function (im) { im.onerror = function () { im.remove(); }; wide.appendChild(im); });
+      host.appendChild(wide);
+    });
+  }
+  section("Day 1: a talking story in the child's sound", DAY1);
+  section("After the fourteen daily stories: one a day, in the same sound", MORE);
+})();
+</script>
+</body>
+</html>
