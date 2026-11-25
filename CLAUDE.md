@@ -2336,8 +2336,9 @@ account takes `PRO_TERMS` and its dashboard opens on the plan page's
 14-day trial (card up front, Stripe). A returning account is only signed
 in, with the plain email. The clinicians' iPhone app keeps the
 free-dashboard door (it sells nothing). **Rachel's to review:** the new
-headline and lede. **Not built yet:** real SLP quotes (Travis sends them),
-the share picture (`tools/og/og-slp.html`) still says free dashboard.
+headline and lede. **Not built yet:** real SLP quotes (Travis sends them).
+(The share picture says "Start your free trial" since 17 Nov 2026,
+`og-slp.png?v=4`.)
 `landingtest`, `shiptest`, `caseloadtest`, `slpapi`.
 
 **The clinician page is the homepage**, updated to offer a free dashboard
@@ -2424,9 +2425,15 @@ store that does not answer signs nobody out. A family's enrolment ticket is
 never a session. The email greets an account by its own name, never one
 the caller sent; one IP may ask for 20 links an hour (`slpauth`, besides 5
 an email); and a `role: "slp"` lead is never put in the parents' welcome
-series. Still open, Travis's: repeat Pro trials with a new address (B13),
-and a button page so a school's link scanner cannot use the link up (the
-Clinic invite has one since 18 Nov 2026).
+series. Still open, Travis's: repeat Pro trials with a new address (B13).
+**The sign-in link has a button page (SCANSAFE1, 25 Nov 2026)**: a
+school's link scanner (Safe Links, Mimecast) opens every link in an email,
+and when GET signed in it spent the one-use link before the clinician
+tapped it ("That link expired"). Now `/api/slp/auth/verify` GET shows "Sign
+in to Sona" with one Sign in button that POSTs back (same-origin only), as
+the Clinic invite does; only the POST spends the link and signs in. A link
+already spent or expired goes straight to the sign-in page saying so. The
+six-digit code in the same email is unchanged.
 `caseloadtest`, `slpapi`, `slpcode` and `nurturetest` play it.
 
 **Gone since 17 Nov 2026, replaced by Session games (SLPPRO1, below):**

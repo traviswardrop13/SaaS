@@ -270,8 +270,8 @@ if (A && SI && R.request && R.code) {
   // the link still works, and spends the code
   r = await call(R.request, "POST", "/api/slp/auth/request", { body: { email: "linker@clinic.example", wantCode: true } });
   const link = r.json.devLink, code3 = r.json.devCode;
-  r = await call(R.verify, "GET", link.replace(/^https?:\/\/[^/]+/, ""));
-  ok("the emailed link still signs in (a new account to the dashboard's straight-to-trial address) and spends its code", r.status === 307 && /\/slp\.html\?start=trial$/.test(r.location) && !!sessionCookieFrom(r.cookie) && !KV.K.has("slpsignin:linker@clinic.example"), r);
+  r = await call(R.verify, "POST", link.replace(/^https?:\/\/[^/]+/, ""));
+  ok("the emailed link still signs in (a new account to the dashboard's straight-to-trial address) and spends its code", r.status === 303 && /\/slp\.html\?start=trial$/.test(r.location) && !!sessionCookieFrom(r.cookie) && !KV.K.has("slpsignin:linker@clinic.example"), r);
   r = await call(R.code, "POST", "/api/slp/auth/code", { body: { email: "linker@clinic.example", code: code3 } });
   ok("…so the code from that email no longer does", r.status === 400 && r.json.why === "gone", r);
 

@@ -141,7 +141,7 @@ async function signUp(email, ref) {
   const link = r.json && r.json.devLink;
   if (!link) return r;
   const u = new URL(link);
-  return call(R.verify, "GET", u.pathname + u.search);
+  return call(R.verify, "POST", u.pathname + u.search);
 }
 const acct = (e) => JSON.parse(KV.K.get("slpacct:" + e) || "null");
 const mirror = (e, status) => KV.K.set("slpplan-pro:" + e, JSON.stringify({ sub: "sub_" + e, customer: "cus", status, periodEnd: null, cancelAtPeriodEnd: false, checkedAt: Date.now() }));

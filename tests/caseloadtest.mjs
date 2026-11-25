@@ -1315,7 +1315,7 @@ const count = (pred) => S.calls.filter(pred).length;
     ok("one address can ask for 20 sign-in emails an hour, whatever emails it names; the 21st is refused (audit B2)",
       last.status === 429 && RESEND.sent.length - sentBefore === 20, String(last.status));
   }
-  r = await call(R.verify, "GET", freshLink);
+  r = await call(R.verify, "POST", freshLink);
   let a = JSON.parse(KV.K.get("slpacct:" + fresh) || "{}");
   ok("a NEW account, made by the emailed link, carries terms: \"pro-2026-11-12\" (the dashboard is Sona Pro's)",
     (r.cookie || "").includes("slp_session=") && a.terms === "pro-2026-11-12" && a.name === "", JSON.stringify(a));
@@ -1375,11 +1375,26 @@ const count = (pred) => S.calls.filter(pred).length;
 
   const tok = "verify-token-123";
   KV.K.set("slptok:" + A.hashToken(tok), "via.link@riverside-schools.org");
-  r = await call(R.verify, "GET", "/api/slp/auth/verify?token=" + tok);
+  // SCANSAFE1 (25 Nov 2026): a school's link scanner opens every link with a
+  // GET. The GET is a page with a Sign in button, and spends nothing.
+  {
+    const g = await call(R.verify, "GET", "/api/slp/auth/verify?token=" + tok);
+    ok("opening the sign-in link shows a Sign in button and spends nothing (a link scanner can't use it up)",
+      g.status === 200 && !g.cookie && /<form method="post" action="\/api\/slp\/auth\/verify\?token=verify-token-123"/.test(g.text) &&
+      />Sign in<\/button>/.test(g.text) && KV.K.has("slptok:" + A.hashToken(tok)) && !KV.K.has("slpacct:via.link@riverside-schools.org") &&
+      g.headers.get("cache-control") === "no-store" && g.headers.get("referrer-policy") === "same-origin", g.status + " " + g.text.slice(0, 200));
+    const g2 = await call(R.verify, "GET", "/api/slp/auth/verify?token=" + tok);
+    ok("…opened twice, still nothing spent", g2.status === 200 && KV.K.has("slptok:" + A.hashToken(tok)));
+    const dead = await call(R.verify, "GET", "/api/slp/auth/verify?token=no-such-link");
+    ok("…a link already spent or expired goes straight to the sign-in page saying so, with no button", dead.status === 302 && /\/slp-login\.html\?err=expired$/.test(dead.location || ""), dead.status + " " + dead.location);
+    const foreign = await call(R.verify, "POST", "/api/slp/auth/verify?token=" + tok, { headers: { origin: "https://evil.example" } });
+    ok("…another site's form can't press Sign in", !foreign.cookie && KV.K.has("slptok:" + A.hashToken(tok)), foreign.status + " " + foreign.location);
+  }
+  r = await call(R.verify, "POST", "/api/slp/auth/verify?token=" + tok);
   a = JSON.parse(KV.K.get("slpacct:via.link@riverside-schools.org") || "{}");
   ok("a NEW account from the magic link carries terms too, and goes on to the free trial (TRIALGO1)", /\/slp\.html\?start=trial$/.test(r.location || "") && a.terms === "pro-2026-11-12", JSON.stringify(a));
   KV.K.set("slptok:" + A.hashToken(tok + "2"), "veteran@clinic.org");
-  await call(R.verify, "GET", "/api/slp/auth/verify?token=" + tok + "2");
+  await call(R.verify, "POST", "/api/slp/auth/verify?token=" + tok + "2");
   ok("…and an existing one verified again does not", !("terms" in JSON.parse(KV.K.get("slpacct:veteran@clinic.org"))));
 
   r = await call(R.account, "POST", "/api/slp/account", { as: "veteran@clinic.org", body: { name: "Vera" } });
@@ -1441,7 +1456,7 @@ const count = (pred) => S.calls.filter(pred).length;
   // homepage's link (its "trial" door), the only door that asks for them.
   const openLatest = () => {
     const link = (RESEND.sent.at(-1)?.text || "").match(/https:\/\/sona\.test\.invalid(\/api\/slp\/auth\/verify\?token=[\w-]+)/)?.[1];
-    return call(R.verify, "GET", link || "/api/slp/auth/verify");
+    return call(R.verify, "POST", link || "/api/slp/auth/verify");
   };
   const signupCalls = OUT.length;
   for (const [clinicianRole, workSetting] of [["slp", "clinic"], ["slpa", "school"]]) {
@@ -1542,7 +1557,7 @@ const count = (pred) => S.calls.filter(pred).length;
   ok("…its email is a plain sign-in link: Session games' words, no \"free\" but the free trial, no community, and the retry is the sign-in page on the link's own host",
     mail.subject === "Your Sona sign-in link" && /pick Sona games for each session/.test(mail.text || "") && !/\bfree\b(?! trial)|communit/i.test(words) &&
     /again at sona\.test\.invalid\/slp-login\.html /.test(mail.text || "") && !/again at speaksona\.com and/.test(words), JSON.stringify([mail.subject, mail.text]));
-  const verified = await call(R.verify, "GET", linkPath);
+  const verified = await call(R.verify, "POST", linkPath);
   const account = JSON.parse(KV.K.get(key) || "{}");
   ok("opening the link makes a Sona Pro-terms account (no free dashboard) with the saved clinician details, and goes on to the free trial (TRIALGO1)",
     verified.status >= 300 && verified.status < 400 && verified.cookie?.includes("slp_session=") &&
@@ -1552,7 +1567,7 @@ const count = (pred) => S.calls.filter(pred).length;
     OUT.slice(before).filter((o) => o.url.endsWith("/api/lead")).length === 1 &&
     OUT.slice(before).some((o) => o.url.endsWith("/api/lead") && o.body.utm_campaign === "trial") &&
     !/workSetting|clinicianRole|NotAccountData/.test(JSON.stringify(OUT.slice(before))));
-  const replay = await call(R.verify, "GET", linkPath);
+  const replay = await call(R.verify, "POST", linkPath);
   ok("the same email link cannot sign in again", !replay.cookie && /err=expired/.test(replay.location || ""));
 
   const dashboard = await call(R.plan, "GET", "/api/slp/plan", { as: email });
@@ -1568,7 +1583,7 @@ const count = (pred) => S.calls.filter(pred).length;
 
   const cached = "dashboard.cached@example.org";
   await call(R.request, "POST", "/api/slp/auth/request", { body: { flow: "free-dashboard", email: cached } });
-  await call(R.verify, "GET", latestLink());
+  await call(R.verify, "POST", latestLink());
   ok("a page cached before 17 Nov (its old free-dashboard door) makes the same locked Sona Pro-terms account",
     JSON.parse(KV.K.get("slpacct:" + cached) || "{}").terms === C.PRO_TERMS && (await C.dashboardOpen(cached, { kv, stripe: client })) === false);
 
@@ -1578,7 +1593,7 @@ const count = (pred) => S.calls.filter(pred).length;
   const trialMail = RESEND.sent.at(-1) || {};
   ok("the trial form (flow \"trial\") sends \"Your Sona sign-in link\", and makes no account yet",
     tr.status === 200 && tr.json.sent === true && !tr.cookie && !KV.K.has("slpacct:" + trialEmail) && trialMail.subject === "Your Sona sign-in link", JSON.stringify(tr.json));
-  await call(R.verify, "GET", latestLink());
+  await call(R.verify, "POST", latestLink());
   const trialAcct = JSON.parse(KV.K.get("slpacct:" + trialEmail) || "{}");
   ok("…and makes a locked Sona Pro-terms account carrying its source",
     trialAcct.terms === C.PRO_TERMS && trialAcct.source === "plans" && !("freeDashboard" in trialAcct) &&
@@ -1587,7 +1602,7 @@ const count = (pred) => S.calls.filter(pred).length;
   // a forged App Review source opens nothing (dashboardOpen keys it on the server's address)
   const forger = "forged.review@example.org";
   await call(R.request, "POST", "/api/slp/auth/request", { body: { flow: "free-dashboard", email: forger, source: "app-review" } });
-  await call(R.verify, "GET", latestLink());
+  await call(R.verify, "POST", latestLink());
   const forged = JSON.parse(KV.K.get("slpacct:" + forger) || "{}");
   ok("a caller who sends source \"app-review\" gets an ordinary locked account (App Review is keyed on its address, never on a flag)",
     forged.terms === C.PRO_TERMS && !("freeDashboard" in forged) && (await C.dashboardOpen(forger, { kv, stripe: client })) === false, JSON.stringify(forged));
@@ -1597,7 +1612,7 @@ const count = (pred) => S.calls.filter(pred).length;
   const returningKey = "slpacct:" + returningEmail;
   const original = seedAcct(returningEmail, { terms: C.PRO_TERMS, code: "returning-k4", familyKey: "RETKEY23" });
   const opted = await signup({ email: returningEmail });
-  const returning = await call(R.verify, "GET", latestLink());
+  const returning = await call(R.verify, "POST", latestLink());
   ok("a returning Pro-era account signs in by the old free-dashboard door and is left exactly as it was, still locked (no trial checkout: not new)",
     opted.json.sent && returning.cookie?.includes("slp_session=") && /\/slp\.html$/.test(returning.location || "") &&
     JSON.stringify(JSON.parse(KV.K.get(returningKey))) === JSON.stringify(original) &&
@@ -1617,7 +1632,7 @@ const count = (pred) => S.calls.filter(pred).length;
       plan.json?.dashboard?.open === false && plan.json?.pro?.trialAvailable === true && plan.json?.clinic?.trialAvailable === true &&
       rost.status === 402 && rost.json?.needPlan === true, JSON.stringify([plan.json, rost.status]));
     await signup({ email: who });
-    await call(R.verify, "GET", latestLink());
+    await call(R.verify, "POST", latestLink());
     await call(R.account, "POST", "/api/slp/account", { as: who, body: { name: "Robin" } });
   }
   const fdAfter = JSON.parse(KV.K.get("slpacct:" + fd)), optAfter = JSON.parse(KV.K.get("slpacct:" + optedIn));
@@ -1634,7 +1649,7 @@ const count = (pred) => S.calls.filter(pred).length;
   const lean = await call(R.request, "POST", "/api/slp/auth/request", { body: { flow: "trial", email: onlyEmail } });
   ok("an email-only sign-up sends its link with no account or session yet",
     lean.status === 200 && lean.json.sent === true && lean.json.signedIn === false && !lean.cookie && !KV.K.has("slpacct:" + onlyEmail));
-  const leanVerified = await call(R.verify, "GET", latestLink());
+  const leanVerified = await call(R.verify, "POST", latestLink());
   const leanAccount = JSON.parse(KV.K.get("slpacct:" + onlyEmail) || "{}");
   ok("…and opening it makes a Sona Pro-terms account with no role or work setting",
     leanVerified.cookie?.includes("slp_session=") && leanAccount.terms === C.PRO_TERMS &&
@@ -1674,7 +1689,7 @@ const count = (pred) => S.calls.filter(pred).length;
 
   await call(R.request, "POST", "/api/slp/auth/request", { body: { email: victim } });
   const link = (RESEND.sent.at(-1)?.text || "").match(/https:\/\/sona\.test\.invalid(\/api\/slp\/auth\/verify\?token=[\w-]+)/)?.[1];
-  const first = await call(R.verify, "GET", link || "/api/slp/auth/verify");
+  const first = await call(R.verify, "POST", link || "/api/slp/auth/verify");
   const owner = cookieOf(first.cookie);
   ok("the owner's emailed link signs them in and marks when sessions start counting",
     owner.startsWith("slp_session=") && Number(KV.K.get("slpsessfrom:" + victim)) > 0);
@@ -1695,7 +1710,7 @@ const count = (pred) => S.calls.filter(pred).length;
   await call(R.request, "POST", "/api/slp/auth/request", { body: { email: victim } });
   const link2 = (RESEND.sent.at(-1)?.text || "").match(/https:\/\/sona\.test\.invalid(\/api\/slp\/auth\/verify\?token=[\w-]+)/)?.[1];
   const mark = KV.K.get("slpsessfrom:" + victim);
-  const second = await call(R.verify, "GET", link2 || "/api/slp/auth/verify");
+  const second = await call(R.verify, "POST", link2 || "/api/slp/auth/verify");
   const a1 = await asCookie(owner, R.account, "GET", "/api/slp/account");
   const a2 = await asCookie(cookieOf(second.cookie), R.account, "GET", "/api/slp/account");
   ok("a later sign-in on a second device never logs the first one out", KV.K.get("slpsessfrom:" + victim) === mark && a1.status === 200 && a2.status === 200);
@@ -2183,7 +2198,7 @@ const count = (pred) => S.calls.filter(pred).length;
     r.status === 303 && /joined=team$/.test(r.location || "") && !r.cookie && !KV.K.has("slpacct:" + NEWM) &&
     OUT.filter((o) => o.url.endsWith("/api/lead")).length === leadsAtJoin, JSON.stringify([r.location, KV.K.get("slpacct:" + NEWM)]));
   KV.K.set("slptok:" + A.hashToken("newm-signin"), NEWM);
-  r = await call(R.verify, "GET", "/api/slp/auth/verify?token=newm-signin");
+  r = await call(R.verify, "POST", "/api/slp/auth/verify?token=newm-signin");
   const nu = JSON.parse(KV.K.get("slpacct:" + NEWM) || "{}");
   ok("…then signing in the ordinary way makes it on Sona Pro's terms, and the clinic's plan opens its dashboard",
     (r.cookie || "").includes("slp_session=") && nu.terms === C.PRO_TERMS && !("freeDashboard" in nu) &&
