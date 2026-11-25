@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import { kvCmd, rosterKey } from "@/lib/slpAuth";
 import { metaKey, goneKey, invIndexKey, invDataKey, invClaimKey, readInviteIndex, DELETED_CODE } from "@/lib/roster";
 import { hwKey } from "@/lib/homework";
+import { gamesKey } from "@/lib/childGames";
 import { loginKey, loginIndexKey, failKey, readLoginIndex } from "@/lib/familyLogin";
 import { currentPlan, recordActive, planKey, accessKey, teamKey, teamOfKey, parseTeamRow, StoreUnavailable, type PlanKind } from "@/lib/caseload";
 import { signInCodeKey, signInTryKey } from "@/lib/slpSignIn";
@@ -137,7 +138,7 @@ export async function deleteClinicianAccount(
     const logins = await readLoginIndex(code, kv);
     for (const user of Object.values(logins)) if (user) await kv(["DEL", loginKey(user), failKey(user)]);
     await kv(["DEL",
-      rosterKey(code), "slp:" + code.toUpperCase(), hwKey(code), metaKey(code), goneKey(code),
+      rosterKey(code), "slp:" + code.toUpperCase(), hwKey(code), gamesKey(code), metaKey(code), goneKey(code),
       invIndexKey(code), loginIndexKey(code), "slpredeem:" + code, "slp-feedback:" + code,
     ]);
     await scanDel("slpself:" + code + ":*", kv);

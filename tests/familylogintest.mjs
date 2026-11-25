@@ -133,7 +133,7 @@ try {
   for (const [k, rel] of Object.entries({
     login: "app/api/family/login/route.ts", password: "app/api/family/password/route.ts", slpLogin: "app/api/slp/login/route.ts",
     invite: "app/api/slp/invite/route.ts", claim: "app/api/slp/claim/route.ts", child: "app/api/slp/child/route.ts", roster: "app/api/slp/route.ts",
-    family: "app/api/slp/family/route.ts",
+    family: "app/api/slp/family/route.ts", homework: "app/api/homework/route.ts", childgames: "app/api/slp/childgames/route.ts",
   })) R[k] = L(rel);
 } catch (e) {
   console.log("(could not load the modules: " + (e && e.stack) + ")");
@@ -360,8 +360,8 @@ if (A && F && SU && R.login) {
     const fam = r.json || {};
     ok("one step: a username and a password, once, and the family's link", r.status === 200 && /^[a-z]+\d{4}$/.test(fam.user) && /^[a-z2-9]{8}$/.test(fam.password) && fam.emailed === true &&
       new RegExp("/join\\.html\\?slp=RACHEL-K4&k=ABCD2345&inv=" + (fam.invite && fam.invite.token) + "$").test(fam.link || ""), r);
-    ok("…the child added from the initials, age and sounds alone (a name, a note, a position or a count sent along is ignored)",
-      !!fam.invite && fam.invite.label === "JT" && fam.invite.age === "6" && JSON.stringify(fam.invite.sounds) === '["R","S"]' && fam.invite.pos === "mix" && fam.invite.repsPerDay === 20 && fam.invite.note === "" && !("child" in fam.invite), fam.invite);
+    ok("…the child added from the initials, age, sounds and (since CHILDGAMES1) position alone (a name, a note or a count sent along is ignored)",
+      !!fam.invite && fam.invite.label === "JT" && fam.invite.age === "6" && JSON.stringify(fam.invite.sounds) === '["R","S"]' && fam.invite.pos === "v" && fam.invite.repsPerDay === 20 && fam.invite.note === "" && fam.invite.games === null && !("child" in fam.invite), fam.invite);
     const famRec = JSON.parse(KV.K.get("famlogin:" + fam.user) || "null");
     ok("…the login made for that invite, living no longer than it", !!famRec && famRec.inv === fam.invite.token && famRec.code === "rachel-k4" && KV.H.get("famlogins:rachel-k4")?.get("inv:" + fam.invite.token) === fam.user &&
       KV.TTL.get("famlogin:" + fam.user) <= 30 * 86400 && KV.TTL.get("famlogin:" + fam.user) > 29 * 86400, famRec);
@@ -425,6 +425,63 @@ if (A && F && SU && R.login) {
       at("liveSession(readSession(req))") > 0 && at("foreignOrigin(req)") > at("liveSession(") && at('key: "slpinvite"') > at("foreignOrigin(") && at('key: "slplogin"') > at('key: "slpinvite"') &&
       at("dashboardGate(") > at('key: "slplogin"') && at("createInvite(") > at("dashboardGate(") && at("makeLogin(") > at("createInvite(") && at('bumpDaily("slpinvmail"') > at("makeLogin(") &&
       at("sendFamilyLoginEmail(") > at('bumpDaily("slpinvmail"') && !/console\.(log|error|warn)/.test(famSrc) && !/body\.code|searchParams/.test(famSrc) && !REGISTER.test(famSrc));
+  }
+
+  // ── CHILDGAMES1 (Travis, 25 Nov 2026): the therapist sets up the child's
+  //    Sona before the login: the sound, where in the word, and which games
+  //    the child sees (every game, or a list they pick) ──
+  {
+    const G = L("lib/childGames.ts");
+    ok("a picked list keeps only real games, each once, in the catalog's order; anything else is every game",
+      JSON.stringify(G.cleanGames(["HOOPS", "slice", "nope", "hoops"])) === '["slice","hoops"]' && G.cleanGames([]) === null && G.cleanGames("slice") === null &&
+      G.cleanGames(["puppy"]) === null && G.cleanGames(undefined) === null);
+    process.env.GHL_API_TOKEN = "ghl-test-token"; process.env.GHL_LOCATION_ID = "loc-test";
+    r = await call(R.family, "POST", "/api/slp/family", { as: RACHEL, body: { parentEmail: "games@example.com", sounds: ["R"], pos: "f", games: ["hoops", "slice", "nope", "hoops"] } });
+    const g = r.json || {};
+    ok("Add a family keeps the position and the picked games on the invite", r.status === 200 && g.invite && g.invite.pos === "f" && JSON.stringify(g.invite.games) === '["slice","hoops"]', r);
+    delete process.env.GHL_API_TOKEN; delete process.env.GHL_LOCATION_ID;
+    r = await call(R.login, "POST", "/api/family/login", { body: { username: g.user, password: g.password, childId: "phoneG1" } });
+    const gt = r.json && r.json.ticket;
+    r = await call(R.claim, "POST", "/api/slp/claim", { body: { code: "rachel-k4", ticket: gt, childId: "phoneG1", inv: g.invite.token } });
+    ok("(the family's yes claims it)", r.status === 200 && r.json.claimed === true, r);
+    ok("…and the list is kept for that child, beside homework, never inside it", KV.H.get("hwgames:rachel-k4")?.get("phoneG1") === '["slice","hoops"]' && !String(KV.H.get("hw:rachel-k4")?.get("phoneG1") || "").includes("hoops"));
+    r = await call(R.homework, "POST", "/api/homework", { body: { code: "rachel-k4", childId: "phoneG1", ticket: gt } });
+    ok("the child's phone reads the games with its homework, and the sound and position are its first homework",
+      r.status === 200 && JSON.stringify(r.json.games) === '["slice","hoops"]' && r.json.hw && JSON.stringify(r.json.hw.sounds) === '["R"]' && r.json.hw.pos === "f", r);
+    r = await call(R.homework, "POST", "/api/homework", { body: { code: "rachel-k4", childId: "phoneG1", ticket: "forged" } });
+    ok("…never without the child's ticket", r.status === 401 && !("games" in (r.json || {})), r);
+    // the dashboard's child page
+    r = await call(R.childgames, "GET", "/api/slp/childgames?childId=phoneG1", { as: RACHEL });
+    ok("the child page can't read a child who is not on the roster yet", r.status === 404, r);
+    hash("slp:rachel-k4").set("phoneG1", JSON.stringify({ child: "Ana", age: "6" }));
+    r = await call(R.childgames, "GET", "/api/slp/childgames?childId=phoneG1", { as: RACHEL });
+    ok("…and reads the list once they are", r.status === 200 && JSON.stringify(r.json.games) === '["slice","hoops"]', r);
+    r = await call(R.childgames, "GET", "/api/slp/childgames?childId=phoneG1");
+    ok("…signed in only", r.status === 401, r);
+    r = await call(R.childgames, "POST", "/api/slp/childgames", { as: RACHEL, origin: "https://elsewhere.example", body: { childId: "phoneG1", games: ["dino"] } });
+    ok("a change comes from the dashboard's own site only", r.status === 403 && KV.H.get("hwgames:rachel-k4").get("phoneG1") === '["slice","hoops"]', r);
+    r = await call(R.childgames, "POST", "/api/slp/childgames", { as: SAM, body: { childId: "phoneG1", games: ["dino"] } });
+    ok("…and only for a child on that clinician's own roster", r.status === 404, r);
+    r = await call(R.childgames, "POST", "/api/slp/childgames", { as: RACHEL, body: { childId: "phoneG1", games: ["dino", "feed"] } });
+    ok("the therapist changes the list", r.status === 200 && JSON.stringify(r.json.games) === '["feed","dino"]' && KV.H.get("hwgames:rachel-k4").get("phoneG1") === '["feed","dino"]', r);
+    r = await call(R.childgames, "POST", "/api/slp/childgames", { as: RACHEL, body: { childId: "phoneG1", games: null } });
+    ok("…or goes back to every game, which deletes the row", r.status === 200 && r.json.games === null && !KV.H.get("hwgames:rachel-k4").has("phoneG1"), r);
+    r = await call(R.homework, "POST", "/api/homework", { body: { code: "rachel-k4", childId: "phoneG1", ticket: gt } });
+    ok("…and the phone hears every game", r.status === 200 && r.json.games === null, r);
+    // a closed dashboard may lift a limit, never set one
+    const PIA = "pia@closedclinic.org";
+    seedAcct(PIA, "pia-c1", { name: "Pia", terms: C.PRO_TERMS });
+    hash("slp:pia-c1").set("kid9", JSON.stringify({ child: "Bo" }));
+    hash("hwgames:pia-c1").set("kid9", '["slice"]');
+    r = await call(R.childgames, "POST", "/api/slp/childgames", { as: PIA, body: { childId: "kid9", games: ["hoops"] } });
+    ok("a closed dashboard (no Sona Pro) can't pick games", r.status === 402 && KV.H.get("hwgames:pia-c1").get("kid9") === '["slice"]', r);
+    r = await call(R.childgames, "POST", "/api/slp/childgames", { as: PIA, body: { childId: "kid9", games: null } });
+    ok("…but can always give a child every game back", r.status === 200 && !KV.H.get("hwgames:pia-c1").has("kid9"), r);
+    // removing the child takes the list with it
+    hash("hwgames:rachel-k4").set("phoneG1", '["slice"]');
+    await L("lib/roster.ts").removeChild("rachel-k4", "phoneG1");
+    ok("removing the child deletes their game list too", !KV.H.get("hwgames:rachel-k4").has("phoneG1"));
+    ok("Delete my account deletes every child's game list", /gamesKey\(code\)/.test(noComments(read("lib/slpDelete.ts"))));
   }
 
   // ── what the code may never do ──

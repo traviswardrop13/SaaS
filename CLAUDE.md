@@ -2958,6 +2958,42 @@ login is typed INTO the app. `lib/familyLogin.ts` holds the rules;
   stays in the same place on every screen, so a double tap on it moves one
   screen. `familylogintest` pins it at 320, 375, 390 and an iPad.
 
+### Set up the child before the login (CHILDGAMES1, 25 Nov 2026)
+Travis: when a therapist sends a parent a login, "be able to customize the
+app for them before hand so like being able to choose the sound and word
+position even the games for them to play. so they can give full access or
+limited access and customize it for each kid."
+- **Add a family** now also asks **Where in the word** (the homework
+  composer's list; sent only when not Mixed) and **Games**: "All games" (the
+  default, as before) or "Pick games", the playable catalog's Home pictures
+  by age group, any number. The sound and position ride the invite into the
+  child's first homework (the claim's existing rule, 14 days), so Settings
+  shows them locked as homework always has.
+- **The games are their own record** (`lib/childGames.ts`, hash
+  `hwgames:<code>`, field childId, ~5 months), never inside homework: every
+  homework write replaces that record whole, and a new assignment must not
+  give a child every game back. The claim writes it; `/api/homework` answers
+  `games` beside `hw` (null: every game); `/api/slp/childgames` (GET, POST:
+  session, same origin, the child on that clinician's roster, Sona Pro to
+  set a list, never to go back to every game) is the child page's **Games**
+  card with Change. Removing the child and Delete my account delete it.
+- **On the phone** (`Sona.slpGames()`, block CHILDGAMES1 in sona.js, cached
+  in `sona.homework.v1` as `games`): a game off the list is not on Home, in
+  the Arcade's shelves or Today's picks, never the game of the day, and its
+  address goes Home (`gameAccess` reason "therapist"): never a grey card and
+  never the price. **A list is never access**: a listed Premium game on the
+  free version stays locked. Stories and books are never limited. The first
+  game after setup is Fruit Slice, or the list's first game when Fruit Slice
+  is not on it. A grown-up's "No thanks" or Stop sharing ends it with the
+  homework. Settings carries one read-only line ("<Name>'s speech therapist
+  picked N games to show on Home.").
+- **For Travis:** every word; that a game of the day with none of its age
+  group's games listed plays the list's first game, with the line "Play
+  <Game> with Echo!" when Sona has no line for it. **For Rachel:** nothing
+  new is asked of a child; the therapist picks the sound and the position,
+  as homework already lets them.
+`familylogintest` (the server) and `childgamestest` (the phone) play it.
+
 ### Sona for SLPs: the clinicians' own iPhone app (SLPAPP1, 16 Nov 2026)
 Travis: "start building the SLP dashboard mobile app"; asked, he chose **its
 own App Store app** and **never sell in the app** (this supersedes "The

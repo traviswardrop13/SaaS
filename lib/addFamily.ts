@@ -24,8 +24,13 @@ export function parentEmailOf(v: unknown): string | null {
   return e;
 }
 
-/** The invite's fields, from the panel's three optional ones only. */
-export function familyInvite(body: Record<string, unknown>): { label: unknown; age: unknown; sounds: unknown; pos: string; repsPerDay: number; note: string } {
+/**
+ * The invite's fields, from the panel's optional ones only: initials, age, up
+ * to three sounds, and since 25 Nov 2026 (CHILDGAMES1) where in the word and
+ * the games the therapist picked. normalizeInvite clamps each (an unknown
+ * position is "mix", an unknown game is dropped, no list is every game).
+ */
+export function familyInvite(body: Record<string, unknown>): { label: unknown; age: unknown; sounds: unknown; pos: unknown; repsPerDay: number; note: string; games: unknown } {
   const label = typeof body.label === "string" && body.label.trim() ? body.label : DEFAULT_LABEL;
-  return { label, age: body.age, sounds: Array.isArray(body.sounds) ? body.sounds : [], pos: "mix", repsPerDay: 20, note: "" };
+  return { label, age: body.age, sounds: Array.isArray(body.sounds) ? body.sounds : [], pos: typeof body.pos === "string" ? body.pos : "mix", repsPerDay: 20, note: "", games: Array.isArray(body.games) ? body.games : null };
 }
