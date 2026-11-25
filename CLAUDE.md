@@ -4092,6 +4092,61 @@ the page.
   pages; and that the voiced TH ("this", "that") still has no story.
 `talkstorytest` plays it all.
 
+**TALKMORE1: A TALKING STORY EVERY DAY AFTER THE FOURTEEN (25 Nov 2026)**
+(Travis: "how would you improve the kids app though? i got lots of tokens
+i need to start building", yes to "a new talking story every day, in the
+child's own sound"). A child who finished the 14 daily stories got the game
+of the day for good, though a child on a therapist's caseload uses Sona for
+months. Now, after the 14, a child whose sound has later talking stories
+meets one a day: Day 15, 16 and on, Day 1's player and rules (a word in
+their sound on every page, three sayings).
+- **The list is `STORY_TALK_MORE` in `sona.js`** (beside `STORY_TALK`), the
+  pages in `talk-stories.js` after Day 1's. Twelve written: R "Rosie's
+  Raft", "Ruby's Nest", "Rex's Radio Show", "Remi's Red Sleigh", "Rina's
+  Rainbow Reef", "Ravi's Rain Cloud"; S "Sami's Soccer Game", "Cecil's
+  Circus Socks", "Suki's Super Soup", "Sadie's Sailboat", "Sasha's
+  Sunflowers", "Simon's Seesaw". Every key keeps TALK1's rule (the sound
+  before a vowel, by `booklex.json`; for R no second R).
+- **Each is off until `ready: true`**: its pictures drawn and checked
+  (`gen-adventure.mjs --only <id>`, `cut-adventure.py <id>`, prompts in
+  `adventure-prompts.json`) AND Rachel has read its words. Not ready: never
+  on Home, never opened by address (`gameAccess` "unknown"). All twelve ship
+  `false`.
+- **Whose:** the sound Day 1's slot reads (`_talkFor(rotSounds())`,
+  homework first), so `TALK_ON` and `sona.talkoff` turn these off too; a
+  sound with none (L, Z, F, K... today) keeps the game of the day.
+- **The calendar is CAL1's:** one a calendar day, the next one not finished
+  after the last one finished, a skipped one comes back after the others;
+  when every one is finished, the game of the day again. Finished ones are
+  kept by id in `sona.quest.v1` (`x`, in order; `lx` the last; `lk` "talk"),
+  never a day number, so a sound changed later never counts another sound's
+  story. Each finished one is in Home's "Your games" (it replays the story)
+  and gives one sticker. An older page reading `lk` "talk" sees a done game
+  day: nothing lost.
+- **The pictures are made in ChatGPT, by hand** (Travis, asked for his
+  OpenAI key: "just give me the prompt to give to chatgpt").
+  `tools/art/chatgpt-prompts.mjs` turns a story's entry in
+  `adventure-prompts.json` into ONE ChatGPT message (four reference
+  pictures attached once: Echo, the style sheet, Echo's cottage with Pelly,
+  the helper map; then the style, the cast, the rules and 14 pictures, one
+  at a time on "next": the cast, s01-s08, e01-e04, Home's card), the same
+  words the API route would send (the same who-regexes and notes). The
+  "Story Pictures" page (an artifact) carries a copy button per story and a
+  box per picture: an upload goes to the artifact's asset store, indexed in
+  its `pictures` collection (`<id>--<slot>`). Claude reads them back, looks
+  at each against its line and key word, saves the good ones as
+  `tools/art/out/adventure/<id>/<part>.png` (the cast as `cast.png`) and
+  runs `cut-adventure.py <id>`. A picture model can still be used through
+  `gen-adventure.mjs --only <id>` with an API key.
+- **Not yet:** the pictures themselves, Home clips (the card shows the
+  painted picture until one is filmed), Codex's native app (its exporter
+  must add `STORY_TALK_MORE`), more sounds.
+- **Rachel's:** every line and key word (`design/adventure/talk-review.html`
+  shows them; the PR lists them). **Travis's:** the stories, their order,
+  and turning each on.
+`talkmoretest` plays the calendar; `talkstorytest` holds every line and key;
+`voicedoc` lists them (C11b).
+
 **Light the Way** (Day 1, `lighthouse.js`, `LIGHTHOUSE1`). A night sea under
 a soft veil; the word, said three times, lights the lamp; the finger moves a
 pool of light (drawn 56 px above a fingertip, or 0.8 of its radius if that is

@@ -1067,7 +1067,11 @@ find(ADV, /function storyData\(d\) \{ return d\.talk \? T\[d\.id\] : A\[d\.id\];
 const TALK_STORIES = (() => { const w = {}; new Function("window", src(TALKS)).call(w, w); return w.SonaTalkStories; })();
 if (!TALK_STORIES) fail("talk-stories.js no longer sets window.SonaTalkStories.");
 for (const d of S.STORY_TALK || []) if (!TALK_STORIES[d.id]) fail(`STORY_TALK has no scene data for "${d.id}".`);
-for (const id of Object.keys(TALK_STORIES)) if (!(S.STORY_TALK || []).some((d) => d.id === id)) fail(`talk-stories.js has unlisted story "${id}".`);
+for (const d of S.STORY_TALK_MORE || []) if (!TALK_STORIES[d.id]) fail(`STORY_TALK_MORE has no scene data for "${d.id}".`);
+for (const id of Object.keys(TALK_STORIES)) if (!(S.STORY_TALK || []).concat(S.STORY_TALK_MORE || []).some((d) => d.id === id)) fail(`talk-stories.js has unlisted story "${id}".`);
+// TALKMORE1: a later talking story's day on Home (after the 14 days, one
+// number on for each story before it in the same sound), and whether it is on.
+const moreLabel = (d) => `Day ${(S.STORY_DAYS || []).length + 1 + (S.STORY_TALK_MORE || []).filter((x) => x.sound === d.sound).indexOf(d)}, ${d.sound}${d.ready === true ? "" : ", not on yet"}`;
 // The recorded file's name, as the page works it out (8 hex digits).
 const advHashOf = (t) => { let h = 0x811c9dc5; for (const b of Buffer.from(S.TTS_CACHE_VERSION + "|" + t, "utf8")) { h ^= b; h = Math.imul(h, 0x01000193) >>> 0; } return h.toString(16).padStart(8, "0"); };
 const ADV_MANIFEST = "public/assets/adventure/voice/manifest.js";
@@ -1077,7 +1081,8 @@ const advRecorded = existsSync(join(ROOT, ADV_MANIFEST)) ? (() => { const w = {}
 // every scene it is said on.
 const advLines = [];
 const NARRATED_STORIES = (S.STORY_DAYS || []).map((d, i) => ({ ...d, file: ADVS, data: ADVENTURES[d.id], label: `Day ${i + 1}` }))
-  .concat((S.STORY_TALK || []).map((d) => ({ ...d, file: TALKS, data: TALK_STORIES[d.id], label: `Day 1, ${d.sound}` })));
+  .concat((S.STORY_TALK || []).map((d) => ({ ...d, file: TALKS, data: TALK_STORIES[d.id], label: `Day 1, ${d.sound}` })))
+  .concat((S.STORY_TALK_MORE || []).map((d) => ({ ...d, file: TALKS, data: TALK_STORIES[d.id], label: moreLabel(d) })));
 NARRATED_STORIES.forEach((d) => {
   const text = src(d.file), from = text.indexOf("\n    " + d.id + ": {");
   if (from < 0) fail(`${d.file}'s "${d.id}" moved — re-read the daily story's section.`);
@@ -1558,6 +1563,14 @@ P(`After each narrated page (B9), Echo asks \`${advAsk.m[2]}{word}${advAsk.m[3]}
 P(); P("| Day1 story | Sound | Intro keys | Ending keys |"); P("|---|---|---|---|");
 (S.STORY_TALK || []).forEach(d => { const data = TALK_STORIES[d.id]; P(`| ${esc(d.title)} | ${d.sound} | ${data.intro.map(sc => sc.key).filter(Boolean).join(", ")} | ${data.ending.map(sc => sc.key).filter(Boolean).join(", ")} |`); });
 totals.fillers += talkWordCount;
+// TALKMORE1: the later talking stories, after the 14 days, the same asks.
+const moreTalk = S.STORY_TALK_MORE || [];
+const moreWordCount = moreTalk.reduce((n, d) => n + ["intro", "ending"].reduce((a, part) => a + (TALK_STORIES[d.id][part] || []).filter(sc => sc.key).length, 0), 0);
+P(); P(`### C11b — Later talking stories (after the 14 days): ${moreTalk.length} stories, ${moreWordCount} page keys`); P();
+P(`The same asks as C11, one story a day after a child has finished the 14 daily stories, in the sound Day 1 uses. A story marked "not on yet" is never shown: it waits for its pictures and Rachel's reading (\`ready\` in STORY_TALK_MORE).`);
+P(); P("| Story | Day | Sound | Intro keys | Ending keys |"); P("|---|---|---|---|---|");
+moreTalk.forEach(d => { const data = TALK_STORIES[d.id]; P(`| ${esc(d.title)} | ${esc(moreLabel(d))} | ${d.sound} | ${data.intro.map(sc => sc.key).filter(Boolean).join(", ")} | ${data.ending.map(sc => sc.key).filter(Boolean).join(", ")} |`); });
+totals.fillers += moreWordCount;
 
 // ── Part D ──
 P();

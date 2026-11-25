@@ -458,6 +458,514 @@
           line: { big: "Two thumbs up! A gold star for Theo's theater on our helper map!",
                   little: "Two thumbs up! A gold star for our helper map!" } }
       ]
+    },
+    // TALKMORE1 (25 Nov 2026): the later talking stories, after the 14 days
+    // (sona.js STORY_TALK_MORE says when). The same shape and rules as Day 1's
+    // above; each is offered only once its pictures are drawn and Rachel has
+    // read it ("ready" in sona.js). Every word is Rachel's to change.
+
+    // R: Rosie's Raft. Rosie the raccoon's raft drifted onto a rock in the pond with her picnic on it: the child's words throw the rope, free the raft and row it home.
+    rosie: {
+      sound: "R",
+      wash: "#2f6b66",
+      intro: [
+        { art: "s01", ages: "both", key: "rake",
+          line: "Pelly the pelican brought us a letter. Oops! That's a garden rake!" },
+        { art: "s02", ages: "both", key: "raccoon",
+          line: { big: "Here's the real letter. It's from Rosie the raccoon. Her raft is stuck, and she needs our help!",
+                  little: "The real letter is from Rosie the raccoon. Her raft is stuck!" } },
+        { art: "s03", ages: "big", key: "road",
+          line: "We hurry down the dusty road to the pond, past the tall green reeds." },
+        { art: "s04", ages: "both", key: "raft",
+          line: { big: "There's the raft, stuck on a big rock in the middle of the pond. Rosie's picnic is on it!",
+                  little: "Rosie's raft is stuck on a big rock. Her picnic is on it!" } },
+        { art: "s05", ages: "both", key: "rope",
+          line: { big: "Rosie has a long rope. Let's toss the rope to the raft and pull!",
+                  little: "Let's toss a rope to the raft and pull!" } },
+        { art: "s06", ages: "big", key: "rock",
+          line: "Heave, ho! The raft wiggles, but it's still stuck on the rock. A little frog hops on to help." },
+        { art: "s07", ages: "both", key: "row",
+          line: { big: "Pop! The raft floats free! Rosie grabs her paddle. Let's help her row to the shore.",
+                  little: "The raft floats free! Let's help Rosie row to the shore." } },
+        { art: "s08", ages: "both", key: "ready",
+          line: { big: "Rosie spreads her picnic blanket on the grass. Berries, buns and lemonade. Are we ready to eat?",
+                  little: "Rosie spreads out her picnic. Are we ready to eat?" } }
+      ],
+      ending: [
+        { art: "e01", ages: "both", key: "raisin",
+          line: { big: "Rosie shares her raisin buns with everyone, even the little frog. Yum!",
+                  little: "Rosie shares her raisin buns. Yum!" } },
+        { art: "e02", ages: "big", key: "rainbow",
+          line: "After lunch, a little shower falls, and a rainbow shines over the pond." },
+        { art: "e03", ages: "both", key: "rest",
+          line: { big: "Rosie, the frog and Echo lie back on the soft grass to rest and watch the clouds.",
+                  little: "We lie on the soft grass to rest. Ahh!" } },
+        { art: "e04", ages: "both", key: "rescue",
+          line: { big: "What a rescue! A gold star for Rosie's pond on our helper map!",
+                  little: "What a rescue! A gold star for our helper map!" } }
+      ]
+    },
+
+    // R: Ruby's Nest. The wind blew Ruby the robin's nest out of her tree: the child's words reach it, fix it with a ribbon and wool, and lift it back up.
+    ruby: {
+      sound: "R",
+      wash: "#3f6a3a",
+      intro: [
+        { art: "s01", ages: "both", key: "rug",
+          line: "Pelly the pelican brought us a letter. Oops! That's a fuzzy red rug!" },
+        { art: "s02", ages: "both", key: "robin",
+          line: { big: "Here's the real letter. It's from Ruby the robin. The wind blew her nest out of her tree!",
+                  little: "The real letter is from Ruby the robin. Her nest blew away!" } },
+        { art: "s03", ages: "big", key: "run",
+          line: "We run across the windy meadow to the big old oak tree where Ruby lives." },
+        { art: "s04", ages: "both", key: "roof",
+          line: { big: "Ruby's nest landed upside down on the roof of the garden shed. Oh no, it's all bent!",
+                  little: "Ruby's nest landed on the roof of the shed. Oh no!" } },
+        { art: "s05", ages: "both", key: "reach",
+          line: { big: "Echo climbs the ladder, but the nest is too high. Let's reach a little higher!",
+                  little: "The nest is too high. Let's reach up high!" } },
+        { art: "s06", ages: "big", key: "ribbon",
+          line: "Ruby needs soft things to fix her nest. Look, a long blue ribbon on the fence!" },
+        { art: "s07", ages: "both", key: "roll",
+          line: { big: "Here's a ball of soft wool too. Let's roll it over to Ruby!",
+                  little: "Here's soft wool. Let's roll it to Ruby!" } },
+        { art: "s08", ages: "both", key: "round",
+          line: { big: "Ruby tucks in the ribbon and the wool and shapes her nest nice and round.",
+                  little: "Ruby makes her nest nice and round." } }
+      ],
+      ending: [
+        { art: "e01", ages: "both", key: "rise",
+          line: { big: "Echo lifts the nest in a basket, up, up, back into the tree. Watch it rise!",
+                  little: "Up, up! Watch the nest rise into the tree!" } },
+        { art: "e02", ages: "big", key: "rocking",
+          line: "The branch sways in the breeze, gently rocking the nest like a little cradle." },
+        { art: "e03", ages: "both", key: "relax",
+          line: { big: "Ruby sits on her three blue eggs, safe and warm. Now she can relax!",
+                  little: "Ruby sits on her eggs. Now she can relax!" } },
+        { art: "e04", ages: "both", key: "really",
+          line: { big: "Ruby sings a really happy song. A gold star for Ruby's tree on our helper map!",
+                  little: "Ruby sings a really happy song. A gold star for our helper map!" } }
+      ]
+    },
+
+    // R: Rex's Radio Show. Rex the rhino's jungle radio won't play before his morning show: the child's words push the button, find the rod and start the show.
+    rex: {
+      sound: "R",
+      wash: "#5a3d7a",
+      intro: [
+        { art: "s01", ages: "both", key: "rattle",
+          line: "Pelly the pelican brought us a letter. Oops! That's a baby's rattle!" },
+        { art: "s02", ages: "both", key: "rhino",
+          line: { big: "Here's the real letter. It's from Rex the rhino. His radio show starts soon, and his radio won't play!",
+                  little: "The real letter is from Rex the rhino. His radio won't play!" } },
+        { art: "s03", ages: "big", key: "rush",
+          line: "We rush through the jungle to the little radio hut by the waterfall." },
+        { art: "s04", ages: "both", key: "radio",
+          line: { big: "Rex's big radio is quiet. No music, no songs, not one beep. Let's wake up the radio!",
+                  little: "Rex's radio is quiet. Let's wake up the radio!" } },
+        { art: "s05", ages: "both", key: "red",
+          line: { big: "Look! There's a big red button on the back. Let's push the red button!",
+                  little: "There's a big red button. Let's push it!" } },
+        { art: "s06", ages: "big", key: "rod",
+          line: "Crackle, crackle! The radio needs its tall silver rod to catch the music. There it is, by the door!" },
+        { art: "s07", ages: "both", key: "ring",
+          line: { big: "Ring, ring! The radio lights up, and a happy tune begins to play. It works!",
+                  little: "Ring, ring! The radio plays a happy tune!" } },
+        { art: "s08", ages: "both", key: "rhyme",
+          line: { big: "Rex leans in to the microphone. Good morning, jungle! Let's start with a silly rhyme.",
+                  little: "Good morning, jungle! Let's start with a rhyme." } }
+      ],
+      ending: [
+        { art: "e01", ages: "both", key: "rhythm",
+          line: { big: "The monkeys drum on the logs to keep the rhythm, and the parrots start to dance.",
+                  little: "The monkeys drum a happy rhythm!" } },
+        { art: "e02", ages: "big", key: "ripe",
+          line: "Rex reads the jungle news. The bananas are ripe, and the hippos are going for a swim!" },
+        { art: "e03", ages: "both", key: "room",
+          line: { big: "The whole jungle dances in the little hut. There's room for everyone, big and small!",
+                  little: "Everyone dances. There's room for all!" } },
+        { art: "e04", ages: "both", key: "right",
+          line: { big: "Rex's show was just right! A gold star for the radio hut on our helper map!",
+                  little: "Just right! A gold star for our helper map!" } }
+      ]
+    },
+
+    // R: Remi's Red Sleigh. Snow buried Remi the reindeer's red sleigh before the winter ride: the child's words dig it out, find the reins and fly over the village.
+    remi: {
+      sound: "R",
+      wash: "#2e4a78",
+      intro: [
+        { art: "s01", ages: "both", key: "radish",
+          line: "Pelly the pelican brought us a letter. Oops! That's a little pink radish!" },
+        { art: "s02", ages: "both", key: "ride",
+          line: { big: "Here's the real letter. It's from Remi the reindeer. Can we help her get ready for the winter ride?",
+                  little: "The real letter is from Remi. Come help with the winter ride!" } },
+        { art: "s03", ages: "big", key: "road",
+          line: "We bundle up and march down the snowy road to Remi's barn on the hill." },
+        { art: "s04", ages: "both", key: "red",
+          line: { big: "Oh no! Snow covered Remi's sleigh. Only a bit of red pokes out. Let's dig out the red sleigh!",
+                  little: "Snow covered Remi's red sleigh. Let's dig it out!" } },
+        { art: "s05", ages: "both", key: "reins",
+          line: { big: "Dig, dig, dig! There's the sleigh. Now Remi needs her reins. Let's find the reins!",
+                  little: "Here's the sleigh! Now let's find the reins." } },
+        { art: "s06", ages: "big", key: "rope",
+          line: "The reins are tangled up in an old rope by the fence. Echo wiggles them free." },
+        { art: "s07", ages: "both", key: "ribbon",
+          line: { big: "Let's make the sleigh pretty. Tie a big ribbon on the front!",
+                  little: "Let's tie a ribbon on the sleigh!" } },
+        { art: "s08", ages: "both", key: "ready",
+          line: { big: "Remi wears her jingle bells, and Echo climbs into the sleigh. Are we ready to go?",
+                  little: "Echo climbs in. Are we ready to go?" } }
+      ],
+      ending: [
+        { art: "e01", ages: "both", key: "race",
+          line: { big: "Whoosh! Up we race into the starry night sky, over the snowy hills.",
+                  little: "Whoosh! Up we race into the night sky!" } },
+        { art: "e02", ages: "big", key: "roof",
+          line: "We glide over the village, past every snowy roof and every twinkly window." },
+        { art: "e03", ages: "both", key: "rainbow",
+          line: { big: "Below us, the winter lights glow like a rainbow in the snow.",
+                  little: "The winter lights glow like a rainbow!" } },
+        { art: "e04", ages: "both", key: "rosy",
+          line: { big: "We land with rosy cheeks. A gold star for Remi's barn on our helper map!",
+                  little: "We land with rosy cheeks. A gold star for our helper map!" } }
+      ]
+    },
+
+    // R: Rina's Rainbow Reef. A storm covered the reef where Rina the ray lives in gray sand: the child's words rub it off until the colors and the fish come back.
+    rina: {
+      sound: "R",
+      wash: "#1f5c7a",
+      intro: [
+        { art: "s01", ages: "both", key: "rowboat",
+          line: "Pelly the pelican brought us a letter. Oops! That's a tiny toy rowboat!" },
+        { art: "s02", ages: "both", key: "ray",
+          line: { big: "Here's the real letter. It's from Rina the ray. A storm covered her reef in sand!",
+                  little: "The real letter is from Rina the ray. Her reef is covered in sand!" } },
+        { art: "s03", ages: "big", key: "ride",
+          line: "We ride on a friendly sea turtle, down, down under the waves to Rina's home." },
+        { art: "s04", ages: "both", key: "reef",
+          line: { big: "The reef is all gray. Every bright color is hiding under the sand. Let's save the reef!",
+                  little: "The reef is all gray. Let's save the reef!" } },
+        { art: "s05", ages: "both", key: "rub",
+          line: { big: "Rina flaps her wide fins to blow the sand. Let's rub the sand off the rocks!",
+                  little: "Let's rub the sand off the rocks!" } },
+        { art: "s06", ages: "big", key: "red",
+          line: "Look! Under the sand there's red coral, waving like tiny fingers." },
+        { art: "s07", ages: "both", key: "round",
+          line: { big: "Round, bright corals pop out everywhere, yellow and purple and pink. The reef is waking up!",
+                  little: "Round, bright corals pop out! The reef wakes up!" } },
+        { art: "s08", ages: "both", key: "rush",
+          line: { big: "Here come the fish! They rush back home to play in the bright reef.",
+                  little: "The fish rush back home!" } }
+      ],
+      ending: [
+        { art: "e01", ages: "both", key: "rainbow",
+          line: { big: "Now the whole reef shines like a rainbow under the sea.",
+                  little: "The reef shines like a rainbow!" } },
+        { art: "e02", ages: "big", key: "ribbon",
+          line: "A long ribbon of little silver fish swirls around Rina, tickling her fins." },
+        { art: "e03", ages: "both", key: "race",
+          line: { big: "Rina gives everyone a ride on her back. Then the fish race us around the reef!",
+                  little: "The fish race us around the reef!" } },
+        { art: "e04", ages: "both", key: "really",
+          line: { big: "That was really fun! A gold star for Rina's reef on our helper map!",
+                  little: "That was really fun! A gold star for our helper map!" } }
+      ]
+    },
+
+    // R: Ravi's Rain Cloud. Ravi the raven's garden is dry because his little rain cloud is caught on a mountain tree: the child's words free it and roll it home to rain.
+    ravi: {
+      sound: "R",
+      wash: "#7a5a2e",
+      intro: [
+        { art: "s01", ages: "both", key: "rose",
+          line: "Pelly the pelican brought us a letter. Oops! That's a pink rose!" },
+        { art: "s02", ages: "both", key: "raven",
+          line: { big: "Here's the real letter. It's from Ravi the raven. His garden is dry, because his rain cloud is stuck!",
+                  little: "The real letter is from Ravi the raven. His garden is dry!" } },
+        { art: "s03", ages: "big", key: "rocky",
+          line: "We climb up the rocky path to the very top of the mountain." },
+        { art: "s04", ages: "both", key: "rain",
+          line: { big: "There's Ravi's little cloud, caught on a pointy tree. It can't rain on his garden!",
+                  little: "The cloud is stuck on a tree. It can't rain!" } },
+        { art: "s05", ages: "both", key: "rope",
+          line: { big: "Let's swing a long rope around the cloud and give it a gentle tug!",
+                  little: "Let's swing a rope around the cloud!" } },
+        { art: "s06", ages: "big", key: "rumble",
+          line: "The cloud gives a happy rumble. It's free, and it bounces like a balloon!" },
+        { art: "s07", ages: "both", key: "roll",
+          line: { big: "Let's roll the fluffy cloud down the hill to Ravi's garden. Push!",
+                  little: "Let's roll the cloud down to the garden!" } },
+        { art: "s08", ages: "both", key: "rainy",
+          line: { big: "Plip, plop! The little cloud makes a rainy day over the garden.",
+                  little: "Plip, plop! It's a rainy day!" } }
+      ],
+      ending: [
+        { art: "e01", ages: "both", key: "root",
+          line: { big: "Deep in the ground, every thirsty root drinks up the water.",
+                  little: "Every root drinks up the water!" } },
+        { art: "e02", ages: "big", key: "radishes",
+          line: "Little green sprouts pop up everywhere. Peas, beans and red radishes!" },
+        { art: "e03", ages: "both", key: "ripe",
+          line: { big: "Ravi picks a ripe, juicy tomato and shares it with everyone.",
+                  little: "Ravi shares a ripe tomato!" } },
+        { art: "e04", ages: "both", key: "ready",
+          line: { big: "Ravi's garden is ready to grow. A gold star for Ravi's garden on our helper map!",
+                  little: "The garden is ready to grow. A gold star for our helper map!" } }
+      ]
+    },
+
+    // S: Sami's Soccer Game. Sami the seal's soccer ball rolled away before the big game: the child's words follow its tracks to a silly puppy, and the game begins.
+    sami: {
+      sound: "S",
+      wash: "#2e6a3e",
+      intro: [
+        { art: "s01", ages: "both", key: "sandwich",
+          line: "Pelly the pelican brought us a letter. Oops! That's a cheese sandwich!" },
+        { art: "s02", ages: "both", key: "seal",
+          line: { big: "Here's the real letter. It's from Sami the seal. Her soccer ball rolled away before the big game!",
+                  little: "The real letter is from Sami the seal. Her ball rolled away!" } },
+        { art: "s03", ages: "big", key: "sunny",
+          line: "We hurry across the sunny park to the soccer field by the beach." },
+        { art: "s04", ages: "both", key: "soccer",
+          line: { big: "The game starts soon, and there's no ball. Let's look for the soccer ball!",
+                  little: "There's no soccer ball! Let's look for it." } },
+        { art: "s05", ages: "both", key: "sand",
+          line: { big: "Look, little round tracks in the sand. The ball went this way!",
+                  little: "Little tracks in the sand! This way!" } },
+        { art: "s06", ages: "big", key: "sandbox",
+          line: "The tracks go around the sandbox and into a big bush. Shh, what's in there?" },
+        { art: "s07", ages: "both", key: "silly",
+          line: { big: "Inside the bush is a silly puppy, wagging her tail, with the ball in her mouth!",
+                  little: "A silly puppy has the ball!" } },
+        { art: "s08", ages: "both", key: "sit",
+          line: { big: "Let's all sit down and wait. Drop it, puppy! She drops the ball at Sami's flippers.",
+                  little: "Let's all sit and wait. Drop it, puppy!" } }
+      ],
+      ending: [
+        { art: "e01", ages: "both", key: "super",
+          line: { big: "The game begins! Sami kicks the ball with her flipper. What a super kick!",
+                  little: "Sami kicks the ball. What a super kick!" } },
+        { art: "e02", ages: "big", key: "six",
+          line: "The puppy joins the team, and they pass the ball six times in a row." },
+        { art: "e03", ages: "both", key: "soar",
+          line: { big: "Watch the ball soar over the field and into the net. Goal!",
+                  little: "Watch the ball soar into the net. Goal!" } },
+        { art: "e04", ages: "both", key: "sunset",
+          line: { big: "We play until sunset. A gold star for the soccer field on our helper map!",
+                  little: "We play until sunset. A gold star for our helper map!" } }
+      ]
+    },
+
+    // S: Cecil's Circus Socks. Cecil the centipede lost all his socks before the circus show: the child's words find them all over the big top, and the show begins.
+    cecil: {
+      sound: "S",
+      wash: "#8a2f3e",
+      intro: [
+        { art: "s01", ages: "both", key: "sock",
+          line: "Pelly the pelican brought us a letter. Oops! That's a stripy sock!" },
+        { art: "s02", ages: "both", key: "centipede",
+          line: { big: "Here's the real letter. It's from Cecil the centipede. He lost his socks before the circus show!",
+                  little: "The real letter is from Cecil the centipede. He lost his socks!" } },
+        { art: "s03", ages: "big", key: "circus",
+          line: "We hurry to the big circus tent. Inside, everyone is getting ready for the show." },
+        { art: "s04", ages: "both", key: "socks",
+          line: { big: "Cecil has lots of feet, and every foot needs a sock. But his socks are gone! Let's find the socks.",
+                  little: "Cecil has lots of feet. Let's find his socks!" } },
+        { art: "s05", ages: "both", key: "seven",
+          line: { big: "Look! Seven socks are hanging on the tightrope. Let's grab the seven socks!",
+                  little: "Seven socks are on the rope! Let's grab them." } },
+        { art: "s06", ages: "big", key: "saddle",
+          line: "More socks are tucked under the pony's saddle. The pony giggles." },
+        { art: "s07", ages: "both", key: "sofa",
+          line: { big: "And the rest of the socks are under the clown's comfy sofa. Peekaboo!",
+                  little: "More socks under the sofa. Peekaboo!" } },
+        { art: "s08", ages: "both", key: "set",
+          line: { big: "Cecil pulls on every sock, one by one, all down his long body. All set!",
+                  little: "Cecil pulls on his socks. All set!" } }
+      ],
+      ending: [
+        { art: "e01", ages: "both", key: "sing",
+          line: { big: "The show begins! The band plays, and the whole crowd starts to sing.",
+                  little: "The show begins, and everyone starts to sing!" } },
+        { art: "e02", ages: "big", key: "silly",
+          line: "Cecil does a silly dance. Tap, tap, tap go all his little feet!" },
+        { art: "e03", ages: "both", key: "circle",
+          line: { big: "Then he spins in a big circle, and his socks look like a whirl of colors.",
+                  little: "He spins in a big circle!" } },
+        { art: "e04", ages: "both", key: "surprise",
+          line: { big: "What a surprise! A gold star for the circus tent on our helper map!",
+                  little: "What a surprise! A gold star for our helper map!" } }
+      ]
+    },
+
+    // S: Suki's Super Soup. Suki the sea otter makes soup for Little Bear, who has a cold: the child's words add each thing to the pot and carry it over.
+    suki: {
+      sound: "S",
+      wash: "#7a4a2a",
+      intro: [
+        { art: "s01", ages: "both", key: "soap",
+          line: "Pelly the pelican brought us a letter. Oops! That's a bar of soap!" },
+        { art: "s02", ages: "both", key: "soup",
+          line: { big: "Here's the real letter. It's from Suki the sea otter. Her friend has a cold, and she's making soup!",
+                  little: "The real letter is from Suki the sea otter. She's making soup!" } },
+        { art: "s03", ages: "big", key: "seaside",
+          line: "We walk along the seaside to Suki's cozy little kitchen on the dock." },
+        { art: "s04", ages: "both", key: "celery",
+          line: { big: "Suki's big pot is empty. Let's start with some crunchy celery!",
+                  little: "The pot is empty. Let's add some celery!" } },
+        { art: "s05", ages: "both", key: "salt",
+          line: { big: "Now let's add just a little pinch of salt. Not too much!",
+                  little: "Let's add a pinch of salt!" } },
+        { art: "s06", ages: "big", key: "sizzle",
+          line: "Onions go in the hot pan. Listen to them sizzle!" },
+        { art: "s07", ages: "both", key: "sip",
+          line: { big: "Suki stirs the pot and takes a tiny sip. Hmm, it needs one more thing!",
+                  little: "Suki takes a tiny sip. Hmm!" } },
+        { art: "s08", ages: "both", key: "secret",
+          line: { big: "Suki adds her secret thing, a spoonful of honey. Now it's super soup!",
+                  little: "Suki adds her secret honey. Yum!" } }
+      ],
+      ending: [
+        { art: "e01", ages: "both", key: "soon",
+          line: { big: "We carry the warm soup to Little Bear in bed. Here you go. Feel better soon!",
+                  little: "Here's your soup, Little Bear. Feel better soon!" } },
+        { art: "e02", ages: "big", key: "sigh",
+          line: "Little Bear takes a big spoonful and lets out a happy sigh." },
+        { art: "e03", ages: "both", key: "suddenly",
+          line: { big: "Suddenly Little Bear sits up in bed, feeling much better!",
+                  little: "Suddenly Little Bear feels much better!" } },
+        { art: "e04", ages: "both", key: "sea",
+          line: { big: "We all share the soup by the sea. A gold star for Suki's kitchen on our helper map!",
+                  little: "We share soup by the sea. A gold star for our helper map!" } }
+      ]
+    },
+
+    // S: Sadie's Sailboat. The wind blew the sail off Sadie the salamander's little boat before the pond race: the child's words bring it down, sew it and sail.
+    sadie: {
+      sound: "S",
+      wash: "#2a5f7a",
+      intro: [
+        { art: "s01", ages: "both", key: "sunglasses",
+          line: "Pelly the pelican brought us a letter. Oops! That's a pair of sunglasses!" },
+        { art: "s02", ages: "both", key: "salamander",
+          line: { big: "Here's the real letter. It's from Sadie the salamander. Her sail blew away before the boat race!",
+                  little: "The real letter is from Sadie the salamander. Her sail blew away!" } },
+        { art: "s03", ages: "big", key: "sun",
+          line: "We run down to the pond in the warm sun. Little boats bob on the water." },
+        { art: "s04", ages: "both", key: "sail",
+          line: { big: "Sadie's little boat has no sail, and the race starts soon! Let's find the sail.",
+                  little: "Sadie's boat has no sail. Let's find the sail!" } },
+        { art: "s05", ages: "both", key: "safe",
+          line: { big: "There it is, stuck up in a tree! Echo climbs up, nice and safe, and grabs it.",
+                  little: "Echo climbs up, nice and safe, and grabs it!" } },
+        { art: "s06", ages: "big", key: "sew",
+          line: "Oh no, the sail has a hole! A kind duck helps us sew it up." },
+        { art: "s07", ages: "both", key: "sailboat",
+          line: { big: "Let's tie the sail back on the sailboat, nice and tight!",
+                  little: "Let's tie the sail back on the sailboat!" } },
+        { art: "s08", ages: "both", key: "seat",
+          line: { big: "Sadie hops into her seat, and Echo sits behind her. Ready, set, go!",
+                  little: "Sadie hops into her seat. Go!" } }
+      ],
+      ending: [
+        { art: "e01", ages: "both", key: "sailing",
+          line: { big: "Whoosh! The wind fills the sail, and we go sailing across the pond.",
+                  little: "Whoosh! We go sailing across the pond!" } },
+        { art: "e02", ages: "big", key: "silver",
+          line: "We zip past a silver fish and a family of ducks." },
+        { art: "e03", ages: "both", key: "circle",
+          line: { big: "Everyone sits in a circle by the pond to cheer for every little boat.",
+                  little: "We sit in a circle and cheer!" } },
+        { art: "e04", ages: "both", key: "summer",
+          line: { big: "What a summer day! A gold star for Sadie's pond on our helper map!",
+                  little: "What a summer day! A gold star for our helper map!" } }
+      ]
+    },
+
+    // S: Sasha's Sunflowers. Sasha the squirrel's sunflower seed won't grow: the child's words dig the soil, give it a sip, sing to it, and it grows into a giant flower.
+    sasha: {
+      sound: "S",
+      wash: "#7a6a1f",
+      intro: [
+        { art: "s01", ages: "both", key: "sack",
+          line: "Pelly the pelican brought us a letter. Oops! That's a sack of potatoes!" },
+        { art: "s02", ages: "both", key: "sunflower",
+          line: { big: "Here's the real letter. It's from Sasha the squirrel. She planted a sunflower seed, but nothing grows!",
+                  little: "The real letter is from Sasha the squirrel. Her sunflower won't grow!" } },
+        { art: "s03", ages: "big", key: "city",
+          line: "We ride the bus out of the busy city to Sasha's little garden." },
+        { art: "s04", ages: "both", key: "soil",
+          line: { big: "The soil is dry and hard, and the seed is fast asleep. Let's dig the soil!",
+                  little: "The soil is dry. Let's dig the soil!" } },
+        { art: "s05", ages: "both", key: "sip",
+          line: { big: "Let's give the seed a sip of water from the watering can.",
+                  little: "Let's give the seed a sip of water!" } },
+        { art: "s06", ages: "big", key: "sun",
+          line: "The clouds float away, and the warm sun shines down on the garden." },
+        { art: "s07", ages: "both", key: "sing",
+          line: { big: "Sasha thinks plants like music. Let's sing a song to the seed!",
+                  little: "Let's sing a song to the seed!" } },
+        { art: "s08", ages: "both", key: "seed",
+          line: { big: "Pop! A tiny green shoot peeks out of the seed!",
+                  little: "Pop! A green shoot peeks out of the seed!" } }
+      ],
+      ending: [
+        { art: "e01", ages: "both", key: "sunny",
+          line: { big: "Day by day, it grows taller and taller toward the sunny sky.",
+                  little: "It grows tall in the sunny sky!" } },
+        { art: "e02", ages: "big", key: "seven",
+          line: "Now it's taller than Echo, taller than Sasha, taller than seven squirrels!" },
+        { art: "e03", ages: "both", key: "sunshine",
+          line: { big: "The big yellow flower opens, as bright as sunshine!",
+                  little: "The flower opens, as bright as sunshine!" } },
+        { art: "e04", ages: "both", key: "seeds",
+          line: { big: "Sasha has lots of seeds to share. A gold star for Sasha's garden on our helper map!",
+                  little: "Sasha has seeds to share. A gold star for our helper map!" } }
+      ]
+    },
+
+    // S: Simon's Seesaw. A seat fell off Simon the sloth's playground seesaw: the child's words find it in the sand, fix it, and everyone plays.
+    simon: {
+      sound: "S",
+      wash: "#3a6a6a",
+      intro: [
+        { art: "s01", ages: "both", key: "sun",
+          line: "Pelly the pelican brought us a letter. Oops! That's a big floppy sun hat!" },
+        { art: "s02", ages: "both", key: "seesaw",
+          line: { big: "Here's the real letter. It's from Simon the sloth. The playground seesaw is broken!",
+                  little: "The real letter is from Simon the sloth. His seesaw is broken!" } },
+        { art: "s03", ages: "big", key: "sidewalk",
+          line: "We hurry down the sidewalk to the playground in the park." },
+        { art: "s04", ages: "both", key: "seat",
+          line: { big: "One seat fell off the seesaw, and nobody can play. Let's find the seat!",
+                  little: "The seesaw seat fell off. Let's find the seat!" } },
+        { art: "s05", ages: "both", key: "sand",
+          line: { big: "There it is, half buried in the sand. Let's dig it out!",
+                  little: "It's in the sand! Let's dig it out!" } },
+        { art: "s06", ages: "big", key: "saw",
+          line: "Echo brings his toy saw and a box of shiny bolts to fix the seesaw." },
+        { art: "s07", ages: "both", key: "safe",
+          line: { big: "Twist, twist! The seat is back on, nice and safe.",
+                  little: "Twist! The seat is back on, nice and safe." } },
+        { art: "s08", ages: "both", key: "sit",
+          line: { big: "Simon climbs on one end, and Echo climbs on the other. Let's sit and bounce!",
+                  little: "Let's sit and bounce!" } }
+      ],
+      ending: [
+        { art: "e01", ages: "both", key: "super",
+          line: { big: "Up and down, up and down! Simon thinks this is super fun.",
+                  little: "Up and down! This is super fun!" } },
+        { art: "e02", ages: "big", key: "sister",
+          line: "Simon's little sister wants a turn too, so everyone takes turns." },
+        { art: "e03", ages: "both", key: "silly",
+          line: { big: "The whole playground joins in with silly giggles. Wheee!",
+                  little: "Everyone giggles. How silly! Wheee!" } },
+        { art: "e04", ages: "both", key: "supper",
+          line: { big: "We play until it's time for supper. A gold star for the playground on our helper map!",
+                  little: "We play until supper. A gold star for our helper map!" } }
+      ]
     }
   };
 })(this);

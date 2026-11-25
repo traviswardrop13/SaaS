@@ -559,6 +559,9 @@
         // (only to a child who can open it: a story shown locked tomorrow
         // brings no game, so the line promises only the day)
         var tmr=false;try{tmr=!!(S.storyOpen&&S.storyOpen());}catch(e){tmr=false;}
+        // TALKMORE1: a talking story brings no game of its own (it is its own
+        // replay on Home's row), so tomorrow's promises only the day
+        if(next&&next.story&&next.story.talk)tmr=false;
         var line=done?(next&&next.kind==="story"?"Come back tomorrow for Day "+next.day+(tmr?" and a new game!":"!"):"Come back tomorrow for a new adventure!"):q.line;
         document.getElementById("questTitle").textContent=title;
         document.getElementById("questLine").textContent=line;
