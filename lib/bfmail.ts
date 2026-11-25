@@ -148,12 +148,15 @@ export function renderBf(unsubUrl: string, postal: string, c: Content = bfConten
     `<p style="margin:24px 0 16px;"><a href="${BF_PLANS_URL}" style="display:inline-block;background:#1d2b4f;color:#ffffff;text-decoration:none;font-weight:700;font-size:17px;padding:13px 26px;border-radius:12px;">${esc(c.button)}</a></p>` +
     c.after.map((p) => `<p ${P}>${esc(p)}</p>`).join("") +
     `<p style="margin:24px 0 16px;font-size:16px;line-height:1.55;color:#2b2b2b;">Rachel, MS, CF-SLP<br>Sona co-founder</p>` +
+    // six empty lines before the footer (Travis, 25 Nov 2026: "press enter like
+    // 6 times on each email"), so the unsubscribe link sits well below Rachel
+    `<div style="height:150px;line-height:150px;font-size:1px;">&nbsp;</div>` +
     `<p style="margin:0;font-size:12px;line-height:1.5;color:#8a8a8a;">You’re getting this because you gave Sona your email.<br>Sona · ${esc(postal)}<br><a href="${unsubUrl}" style="color:#8a8a8a;">Unsubscribe</a></p>` +
     `</div></body></html>`;
   const text =
     c.paras.join("\n\n") + `\n\n${c.button}: ${BF_PLANS_URL}\n\n` +
     c.after.join("\n\n") + "\n\n" +
-    "Rachel, MS, CF-SLP\nSona co-founder\n" +
+    "Rachel, MS, CF-SLP\nSona co-founder\n\n\n\n\n\n\n" +
     `--\nYou’re getting this because you gave Sona your email.\nSona · ${postal}\nUnsubscribe: ${unsubUrl}\n`;
   return { subject: c.subject, html, text };
 }
