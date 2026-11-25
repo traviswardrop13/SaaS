@@ -3165,7 +3165,7 @@ months** and **Mountain time**, then "but no free trial on the promo".
 - **`/blackfriday` is `public/bf.html`**: the opt-in in navy and butter,
   "Speech practice kids actually want to do." and under it "Send it home
   free to every family on your caseload." (Travis, 25 Nov 2026: in place of
-  "Sona Pro, half off."; the tab title and share card still say half off).
+  "Sona Pro, half off."; the tab title and share card no longer say it either).
   **No price on it** (Travis, 25 Nov 2026: "not have
   anything about pricing in the email collection. We just want to be
   grabbing their email there"; the figures are /blackfriday/plans'), and
