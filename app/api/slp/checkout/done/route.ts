@@ -54,7 +54,9 @@ export async function POST(req: NextRequest) {
   try {
     const cs = await stripe.checkout.sessions.retrieve(sid);
     const md = cs.metadata || {};
-    if (md.from !== "plans" || md.plan !== PRO_PLAN) return reply({ ok: false }, 404);
+    // `source: plans` is the first cut of this flow (#317's /api/slp/buy),
+    // whose checkouts opened before this build still come back here.
+    if ((md.from !== "plans" && md.source !== "plans") || md.plan !== PRO_PLAN) return reply({ ok: false }, 404);
     email = String(md.slp || "").trim().toLowerCase();
     ref = cleanRef(md.ref);
   } catch {
@@ -71,8 +73,10 @@ export async function POST(req: NextRequest) {
   const mail = await plansSignInMail({
     email, sub: got.subId || "", trial: got.status === "trialing", ref, origin: linkOrigin(new URL(req.url).origin),
   });
-  if (mail === "sent" || mail === "already") return reply({ ok: true, activated: true, sent: true });
+  // `trial` tells the page which sale Meta hears of (StartTrial or Purchase).
+  const trial = got.status === "trialing";
+  if (mail === "sent" || mail === "already") return reply({ ok: true, activated: true, sent: true, trial });
   // "busy": Stripe's webhook is sending it this moment; "failed": it did not
   // go, and the next ask tries again. "off": nothing here can send it.
-  return reply({ ok: true, activated: true, sent: false, retry: mail !== "off" });
+  return reply({ ok: true, activated: true, sent: false, retry: mail !== "off", trial });
 }

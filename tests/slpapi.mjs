@@ -604,7 +604,7 @@ if (A) {
   // the paid return's, after Stripe brought the clinician back.
   ok("the page never says an email went before Stripe has been paid",
     !/Check your email|We sent a sign-in link/.test(slps) && (slps.match(/We emailed you a link to open your dashboard/g) || []).length === 1 &&
-    /\[\?&\]paid=\(cs_/.test(slps),
+    /\[\?&\]\(\?:paid\|bought\)=\(cs_/.test(slps),
     "'check your email' about an email that never went is a dead end");
 }
 
@@ -676,7 +676,8 @@ if (A) {
   ok("the plans page opens the checkout, never a sign-in email first",
     /fetch\("\/api\/slp\/checkout"/.test(handler) && !/\/api\/slp\/auth\/request|flow: "/.test(slps) && /fetch\("\/api\/slp\/checkout\/done"/.test(handler));
   ok("…and the Lead is sent only as the page leaves for a checkout the server opened",
-    /if \(j && j\.ok && j\.url\) \{ toStripe\(j\.url\); return; \}/.test(handler) && !/sonaTrack\(/.test(handler));
+    /if \(j && j\.ok && j\.url\) \{ toStripe\(j\.url\); return; \}/.test(handler) &&
+    !/sonaTrack\(/.test(handler.slice(0, handler.indexOf("// BACK FROM STRIPE, PAID"))));
   ok("…the clinician gets no automatic dashboard or App Store navigation",
     !/apps\.apple\.com|APP_STORE|location\.href\s*=|CompleteRegistration/.test(handler));
 

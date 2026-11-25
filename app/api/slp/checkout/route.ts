@@ -163,7 +163,10 @@ export async function POST(req: NextRequest) {
   // clinician who opened checkout, once a year an address. Never blocks.
   try {
     if (typeof (await kvCmd(["GET", "slpcrm:" + email])) !== "string") {
-      const source = String(body.source || "plans-checkout").slice(0, 40);
+      // Always "plans-checkout" (the ad's own tags ride in attrib): /api/lead
+      // sends no Black Friday email to a lead with this source, since a buyer
+      // is never sent the deal they are paying for that minute (#317).
+      const source = "plans-checkout";
       if (await tellCrm(origin, email, source, "", safeAttrib(body.attrib))) await kvCmd(["SET", "slpcrm:" + email, new Date().toISOString(), "EX", 31536000]);
     }
   } catch { /* the checkout is open either way */ }

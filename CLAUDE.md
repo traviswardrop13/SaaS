@@ -3196,6 +3196,15 @@ months** and **Mountain time**, then "but no free trial on the promo".
   there's no free trial"), carries exactly one 🎉 and one to three "!"**
   ("a little more excitement"). Resend sends them (GHLEXIT1). Every word is
   Travis's; `bfmailtest` plays it.
+  **Wednesday's email goes only by a press** (Travis, 25 Nov 2026: "all of
+  my SLP emails, I want to send them today's email too. not yet tho jsut
+  get it ready"): "🎉 Black Friday came early" (`BF_MANUAL_DAYS`, never the
+  cron's). /leads.html's "Black Friday email" card checks first
+  (`GET /api/founders/bf-send`: how many would get today's email, nothing
+  sent), then "Send it now to N" (POST, behind FOUNDER_KEY): the daily
+  run's own skips and once-a-day marks, so a second press or the next cron
+  never doubles it; it stops at about four minutes and says how many are
+  left, and pressing again carries on.
 - **for-slps.html's Black Friday mode is on wherever it is served (`/plans`,
   `/blackfriday/plans`, `/checkout`) until the end**, because every Sona Pro
   checkout until then is the deal: a navy bar with the time left, the Sona
@@ -3249,7 +3258,21 @@ in", TRIALGO1's `sona.slp.wantplan` from /plans, the trial form's email).
   sign in to until support moves it; the dashboard still opens only for the
   inbox.
 - The Pixel's Lead (InitiateCheckout after the opt-in's Lead) fires as the
-  page leaves for Stripe. Under the button: "Secure checkout with Stripe."
+  page leaves for Stripe; back from it, once the server says the plan is on,
+  StartTrial (a free trial) or Purchase, once per checkout (`sona.paidtold.`
+  in sessionStorage). Under the button: "Secure checkout with Stripe."
+- **The checkout's lead is "plans-checkout"**, whatever the ad's source (its
+  tags ride along): `/api/lead` sends no Black Friday email to that source,
+  so a buyer is never sent the deal they are paying for that minute.
+- **Two sessions built this the same day; this one stands.** #317 (merged
+  first) opened Stripe through `/api/slp/buy`, came back to `?bought=` and
+  stamped `source: plans`. Its route is now only an alias of
+  `/api/slp/checkout`'s POST (a /plans page loaded before the merge still
+  works; delete it after Black Friday), and `?bought=`, `source: plans` and
+  its checkouts are answered by this flow (the return page, the done route,
+  the webhook). Its own `slpbuymail:<session>` marks are not read: a #317
+  buyer already emailed could get one more email if their plan comes on
+  later (rare, harmless).
 - **The same day, on /plans:** the headline "Speech homework kids ask for."
   (title, share card `og-slp.png?v=6`, which the opt-in pages share), the
   hero button the form's width in capitals (`#signup .btn`, /plans only:

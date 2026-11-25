@@ -331,7 +331,9 @@ export async function POST(req: NextRequest) {
   // THE BLACK FRIDAY EMAIL (BFMAIL1, lib/bfmail.ts, 25 Nov 2026): a speech
   // therapist's email from either opt-in, while the deal is on, gets one
   // email about it from Rachel, at once. Never fails the visitor.
-  if (lead.role === "slp" && kvConfigured()) {
+  // Not for an email typed on the way into Stripe (BUYNOW1): a buyer is never
+  // sent the deal they are paying for that minute.
+  if (lead.role === "slp" && lead.source !== "plans-checkout" && kvConfigured()) {
     try { await sendBfEmail(email, kvCmd, fetch); } catch { /* never fail the visitor */ }
   }
   // A PARENT WHO STARTED SONA PREMIUM gets no more of the welcome series

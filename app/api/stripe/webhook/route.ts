@@ -93,7 +93,8 @@ export async function POST(req: NextRequest) {
     const on = (st: unknown) => st === "active" || st === "trialing";
     const prev = (evt.data as { previous_attributes?: { status?: unknown } }).previous_attributes;
     const cameOn = on(o.status) && (evt.type === "customer.subscription.created" || (!!prev && "status" in prev && !on(prev.status)));
-    if (md.from === "plans" && md.plan === PRO_PLAN && cameOn &&
+    // (`source: plans` is the first cut of this flow, #317's /api/slp/buy.)
+    if ((md.from === "plans" || md.source === "plans") && md.plan === PRO_PLAN && cameOn &&
         who.length <= 254 && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(who)) {
       const mail = await plansSignInMail({ email: who, sub: String(o.id || ""), trial: o.status === "trialing", ref: md.ref, origin: linkOrigin("https://app.speaksona.com") });
       if (mail === "failed" || mail === "busy") return fail("mail", 503);

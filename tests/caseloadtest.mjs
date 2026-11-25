@@ -253,6 +253,7 @@ try {
     famPortal: "app/api/portal/route.ts", team: "app/api/slp/team/route.ts", teamAccept: "app/api/slp/team/accept/route.ts",
     roster: "app/api/slp/route.ts", child: "app/api/slp/child/route.ts", homework: "app/api/slp/homework/route.ts",
     play: "app/api/slp/play/route.ts", buy: "app/api/slp/checkout/route.ts", buyDone: "app/api/slp/checkout/done/route.ts",
+    buyOld: "app/api/slp/buy/route.ts",
   })) R[k] = L(rel);
 } catch (e) {
   console.log("(could not load the modules: " + (e && e.stack) + ")");
@@ -2771,7 +2772,16 @@ const count = (pred) => S.calls.filter(pred).length;
     p.success_url === "https://sona.test.invalid/plans?paid={CHECKOUT_SESSION_ID}#pricing" && p.cancel_url === "https://sona.test.invalid/plans#pricing", JSON.stringify(p));
   ok("…makes no account and signs nobody in (the inbox is proved later, by the emailed link)",
     !KV.K.has("slpacct:" + nb) && !r.cookie && RESEND.sent.length === 0);
-  ok("…and the email list hears of the clinician who opened checkout, once", OUT.filter((o) => o.url.endsWith("/api/lead") && o.body && o.body.email === nb).length === 1 && KV.K.has("slpcrm:" + nb));
+  const leadOut = OUT.filter((o) => o.url.endsWith("/api/lead") && o.body && o.body.email === nb);
+  ok("…and the email list hears of the clinician who opened checkout, once, as \"plans-checkout\" (no Black Friday email for a buyer), the ad's tags kept",
+    leadOut.length === 1 && KV.K.has("slpcrm:" + nb) && leadOut[0].body.source === "plans-checkout" && leadOut[0].body.fbclid === "x1", JSON.stringify(leadOut.map((o) => o.body)));
+  // #317's first cut opened checkout at /api/slp/buy: a page loaded before
+  // this build still gets the same checkout there.
+  S.calls.length = 0;
+  r = await call(R.buyOld, "POST", "/api/slp/buy", { body: { email: "oldpage@brightsteps.example" } });
+  p = (S.calls.find((c) => c[0] === "checkout.sessions.create") || [])[1];
+  ok("the old address (/api/slp/buy, #317) opens the very same checkout, so a page loaded before this build still works",
+    r.status === 200 && r.json.ok === true && !!r.json.url && p && p.metadata.from === "plans" && /\/plans\?paid=/.test(p.success_url), JSON.stringify([r.json, p && p.success_url]));
   // the refusals: nothing reaches Stripe
   S.calls.length = 0;
   const bad = await call(R.buy, "POST", "/api/slp/checkout", { body: { email: "not-an-email" } });
@@ -2811,6 +2821,16 @@ const count = (pred) => S.calls.filter(pred).length;
   ok("…and its mark is the subscription's (shared with Stripe's webhook), kept as sent", KV.K.get("slpbuymail:sub_nb_pro") === "sent");
   r = await call(R.buyDone, "POST", "/api/slp/checkout/done", { body: { session: "cs_test_buynowpaid0001" } });
   ok("…and a reload sends no second email, and still says it went", r.status === 200 && r.json.sent === true && RESEND.sent.length === 1, JSON.stringify(r.json));
+  ok("…and says whether it was a free trial (Meta's StartTrial) or a charge (Purchase)", r.json.trial === false, JSON.stringify(r.json));
+  // a checkout #317's /api/slp/buy opened before this build (`source: plans`,
+  // back at ?bought=) is answered the same way
+  const ob = "oldbuy@brightsteps.example";
+  mkSub("sub_ob_pro", { slp: ob, plan: "slp-pro", status: "trialing", interval: "month" });
+  S.sessions.set("cs_test_oldbuypaid0001", { id: "cs_test_oldbuypaid0001", status: "complete", metadata: { plan: "slp-pro", slp: ob, source: "plans" }, subscription: "sub_ob_pro" });
+  RESEND.sent.length = 0;
+  r = await call(R.buyDone, "POST", "/api/slp/checkout/done", { body: { session: "cs_test_oldbuypaid0001" } });
+  ok("a checkout from #317's first cut (source: plans) is stored and gets its one sign-in email, as a free trial",
+    r.status === 200 && r.json.sent === true && r.json.trial === true && (storedPro(ob) || {}).sub === "sub_ob_pro" && RESEND.sent.length === 1, JSON.stringify(r.json));
   // the email did not go: said so, the mark given back, and the next ask sends it
   const nf = "mailfail@brightsteps.example";
   mkSub("sub_nf_pro", { slp: nf, plan: "slp-pro", status: "trialing", interval: "month" });

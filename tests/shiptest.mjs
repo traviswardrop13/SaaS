@@ -577,7 +577,9 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
   ok("…and the Pixel hears it only as the page leaves for Stripe: the Lead, or InitiateCheckout after the opt-in's Lead",
     // GHLEXIT1: after the opt-in at / counted the Lead, the checkout here is InitiateCheckout.
     /function toStripe\(url\) \{\s*LEAVING = true;\s*try \{ if \(window\.sonaTrack\) \{ if \(OPTED_IN\) sonaTrack\("InitiateCheckout"\); else sonaTrack\("Lead"\); \} \}/.test(slps) &&
-    /OPTED_IN = sessionStorage\.getItem\("sona\.optin\.lead"\) === "1";/.test(slps) && (slps.match(/sonaTrack\("/g) || []).length === 2);
+    /OPTED_IN = sessionStorage\.getItem\("sona\.optin\.lead"\) === "1";/.test(slps) && (slps.match(/sonaTrack\("/g) || []).length === 4 &&
+    // …and back from Stripe, once the server says the plan is on, the sale: StartTrial or Purchase, once per checkout
+    /if \(j\.ok && j\.activated\) told\(j\);/.test(slps) && /if \(j\.trial\) sonaTrack\("StartTrial"\); else sonaTrack\("Purchase"\);/.test(slps));
   // SLPCLEAN1 (17 Nov 2026): the dashboard lost the community, the AI
   // homework draft and the day planner; SLPPRO1 replaced the planner with
   // Session games. The page promises what it has.

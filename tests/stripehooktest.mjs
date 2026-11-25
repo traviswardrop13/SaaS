@@ -256,6 +256,11 @@ reset();
   await post(evt("customer.subscription.created", proSub({ id: "sub_dash1", status: "active", metadata: { plan: "slp-pro", slp: "dash@clinic.org" } })));
   ok("a dashboard checkout (signed in) is never emailed from here", MAILS.length === 0 && !K.has("slpbuymail:sub_dash1"));
 
+  reset();
+  r = await post(evt("customer.subscription.updated", proSub({ id: "sub_old317", status: "active", metadata: { plan: "slp-pro", slp: "old@clinic.org", source: "plans" } }), { status: "incomplete" }));
+  ok("a checkout from #317's first cut (source: plans) that comes on is emailed the same way",
+    r.status === 200 && MAILS.length === 1 && JSON.stringify(MAILS[0].to) === JSON.stringify(["old@clinic.org"]) && K.get("slpbuymail:sub_old317") === "sent");
+
   reset(); mailStatus = 500;
   r = await post(evt("customer.subscription.created", plansSub()));
   ok("an email that did not go is a 503 (Stripe tries again), the mark given back, GoHighLevel not told yet",

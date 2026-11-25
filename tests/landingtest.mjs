@@ -853,15 +853,28 @@ const sentSays = (page) => page.evaluate(() => ({
   await page.waitForTimeout(300);
   ok("…the server is asked, once, for that checkout", doneAsks().length === 1 && doneAsks()[0].body.session === "cs_test_a1b2c3d4e5f6g7", posts);
   ok("…the checkout's id leaves the address, and no button is offered", !/paid=|cs_test/.test(page.url()) && !(await sentSays(page)).again, page.url());
+  ok("…and Meta hears one Purchase (a charge today)", JSON.stringify(await page.evaluate(() => window.__track)) === '["Purchase"]', await page.evaluate(() => window.__track));
   ok("…no page errors", errors.length === 0, errors);
   await context.close();
 }
 {
   // the email went only on the second ask (Stripe's webhook was sending it)
-  posts = []; doneQueue = [{ ok: true, activated: true, sent: false, retry: true }]; doneReply = { ok: true, activated: true, sent: true };
+  posts = []; doneQueue = [{ ok: true, activated: true, sent: false, retry: true, trial: true }]; doneReply = { ok: true, activated: true, sent: true, trial: true };
   const { context, page } = await fresh({ path: "/plans", query: "&paid=cs_test_a1b2c3d4e5f6g7", init: quickRetry });
   ok("an email still on its way is asked about again, and only then \"You're in!\"",
     await settles(page, () => /You're in!/.test(document.getElementById("sentT").textContent)) && doneAsks().length === 2, doneAsks().length);
+  ok("…Meta hears the free trial once (StartTrial), not once per ask", JSON.stringify(await page.evaluate(() => window.__track)) === '["StartTrial"]', await page.evaluate(() => window.__track));
+  await context.close();
+  doneReply = { ok: true, activated: true, sent: true };
+}
+{
+  // a checkout opened by #317's first cut comes back at ?bought=
+  posts = []; doneQueue = []; doneReply = { ok: true, activated: true, sent: true };
+  const { context, page, errors } = await fresh({ path: "/plans", query: "&bought=cs_test_oldbuy1234567", init: quickRetry });
+  ok("a return at ?bought= (a checkout opened before this build) is answered the same way: \"You're in!\"",
+    await settles(page, () => /You're in!/.test(document.getElementById("sentT").textContent)) &&
+    doneAsks().length === 1 && doneAsks()[0].body.session === "cs_test_oldbuy1234567" && !/bought=/.test(page.url()), [doneAsks(), page.url()]);
+  ok("…no page errors", errors.length === 0, errors);
   await context.close();
 }
 {

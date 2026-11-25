@@ -677,9 +677,18 @@
     // answered: "Checking…" first, "We emailed you a link" once the email
     // went (now, or earlier from Stripe's webhook). Until then `paid` stays
     // in the address, so a reload asks again; the server never sends twice.
+    // `bought=` is the same return from the first cut of BUYNOW1 (#317), whose
+    // checkouts opened before this build still come back that way.
     (function () {
-      var m = /[?&]paid=(cs_[A-Za-z0-9_]{10,240})(?:&|$)/.exec(location.search);
+      var m = /[?&](?:paid|bought)=(cs_[A-Za-z0-9_]{10,240})(?:&|$)/.exec(location.search);
       if (!m) return;
+      // Meta hears of the sale once per checkout, however often the page is
+      // reloaded: a free trial is StartTrial, a charge today Purchase.
+      function told(j) {
+        var k = "sona.paidtold." + m[1];
+        try { if (sessionStorage.getItem(k)) return; sessionStorage.setItem(k, "1"); } catch (e) {}
+        try { if (window.sonaTrack) { if (j.trial) sonaTrack("StartTrial"); else sonaTrack("Purchase"); } } catch (e) {}
+      }
       function say(title, msg, retry, signIn) {
         $("sentT").textContent = title;
         if (retry) $("sentRetry").textContent = retry;
@@ -696,6 +705,7 @@
           body: JSON.stringify({ session: m[1] }),
         }).then(function (r) { return r.json().then(function (j) { return { status: r.status, j: j }; }); }).then(function (x) {
           var j = x.j || {};
+          if (j.ok && j.activated) told(j);
           if (j.ok && j.activated && j.sent) {
             try { history.replaceState(null, "", location.pathname + location.hash); } catch (e) {}
             say("You're in!", "Sona Pro is on. We emailed you a link to open your dashboard.", false, false);
