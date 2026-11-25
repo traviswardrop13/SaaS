@@ -226,7 +226,7 @@ header {
 .final .l { display: flex; align-items: center; gap: 17px; }
 .final img { width: clamp(58px, 9vw, 100px); flex: none; }
 .final h2 { font-size: clamp(1.7rem, 4vw, 2.75rem); }
-footer { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 14px 20px; padding-bottom: 33px; color: var(--muted); font-size: 13px; }
+footer { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 14px 20px; padding-block: 22px 33px; color: var(--muted); font-size: 13px; }
 footer .d { max-width: 550px; }
 footer .links { display: flex; flex-wrap: wrap; gap: 13px; }
 .workflow.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
@@ -287,21 +287,40 @@ a.btn { text-decoration: none; }
 .rachel .txt { display: flex; flex-direction: column; gap: 10px; max-width: 640px; }
 .rachel .txt p:not(.eyebrow) { color: var(--body); font-size: 17px; }
 
-/* The opt-in at / (start.html): the hero and its form, and three short points. */
-.skip { font-size: 14px; font-weight: 800; }
-.points { padding-block: 34px 46px; }
-.point-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin: 0; padding: 0; list-style: none; }
-.point { display: flex; flex-direction: column; gap: 6px; padding: 20px; border: 1px solid var(--line); border-radius: 20px; background: var(--paper); }
-.point b { font: 800 21px/1.05 var(--display); }
-.point p { color: var(--body); font-size: 15px; }
+/* The opt-in at / (start.html) is this page's hero and form alone. */
+
+/* ── Black Friday (BF1, 24 Nov 2026): /blackfriday and /plans' mode ── */
+.bf-bar { background: var(--ink); color: #fff7df; }
+.bf-bar .in { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px 14px; padding-block: 10px; font-size: 15px; font-weight: 800; text-align: center; }
+.bf-bar b { color: var(--butter); }
+.bf-bar .cd-inline { padding: 2px 11px; border-radius: 99px; background: #ffffff1f; font-variant-numeric: tabular-nums; }
+.plan .bf-deal { padding: 10px 12px; border-radius: 12px; background: var(--ink); color: #fff7df; font-size: 14px; font-weight: 800; }
+.plan .bf-deal b { color: var(--butter); }
+.bf-band { background: linear-gradient(180deg, #1d2b4f 0%, #263a66 100%); color: #fff7df; }
+.bf-band .hero h1 { color: #fff; }
+.bf-band .hero h1 span { color: var(--butter); }
+.bf-tag { justify-self: start; padding: 4px 12px; border-radius: 99px; background: var(--butter); color: var(--ink); font-size: 13px; font-weight: 900; }
+.bf-sub { max-width: 492px; color: #f3ecd9; font-size: clamp(1.05rem, 1.8vw, 1.3rem); font-weight: 800; }
+.countdown { display: flex; gap: 10px; }
+.countdown div { min-width: 66px; padding: 10px 8px 8px; border: 1px solid #ffffff2b; border-radius: 15px; background: #ffffff14; text-align: center; }
+.countdown b { display: block; color: #fff; font: 800 34px/1 var(--display); font-variant-numeric: tabular-nums; }
+.countdown span { color: #d9d2bf; font-size: 12px; font-weight: 800; }
+.bf-ends { color: #d9d2bf; font-size: 14px; }
+.bf-band .form-field label { color: #fff7df; }
+.bf-band .next-step { color: #d9d2bf; }
+.bf-band .serr { color: #ffc2c2; }
+.bf-band .btn { background: var(--butter); color: var(--ink); box-shadow: 0 4px 0 #c99641; }
+.bf-band .btn:hover { background: #ffedbb; }
+.bf-band .hero-halo { background: radial-gradient(circle, #ffdf7455 15%, #ffe79c33 50%, transparent 72%); }
 
 @media (max-width: 850px) {
   .plans:has(> .plan:nth-child(3)) { grid-template-columns: minmax(0, 1fr); }
 }
 @media (max-width: 700px) {
-  .earn .in, .point-list { grid-template-columns: minmax(0, 1fr); }
+  .earn .in { grid-template-columns: minmax(0, 1fr); }
   .rachel { grid-template-columns: minmax(0, 1fr); justify-items: center; text-align: center; }
-  .skip { align-self: center; }
+  .bf-tag { justify-self: center; }
+  .countdown { justify-content: center; }
 }
 
 @media (max-width: 850px) {

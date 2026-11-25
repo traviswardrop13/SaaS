@@ -180,13 +180,23 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
     /sessionStorage\.setItem\("sona\.optin\.email", email\)/.test(sgo) && /function toPlans\(\) \{ location\.assign\("\/plans" \+ location\.search\); \}/.test(start) &&
     !/assign\([^)]*email/.test(start) && /"fbclid"/.test(start) && /utm_content/.test(start));
 
+  // THE BLACK FRIDAY OPT-IN (BF1, /blackfriday): the same rules as /'s.
+  const bf = readFileSync(ROOT + "/bf.html", "utf8");
+  const bfPixel = (bf.match(/<script\b[^>]*\bsrc="\/pixel\.js"[^>]*>/) || [""])[0];
+  const bgo = bf.slice(bf.indexOf("function go()"));
+  ok("the Black Friday opt-in loads the pixel with Meta's form reading off, and fires Lead only after /api/lead's ok, with nothing attached",
+    !!bfPixel && /\bdata-autoconfig="off"/.test(bfPixel) && bgo.indexOf("if (j && j.ok === true) {") > 0 &&
+    bgo.indexOf('sonaTrack("Lead")') > bgo.indexOf("if (j && j.ok === true) {") && /sonaTrack\("Lead"\); \} catch/.test(bgo) && !/CompleteRegistration/.test(bf));
+  ok("…and its email goes on in sessionStorage, never in an address",
+    /sessionStorage\.setItem\("sona\.optin\.email", email\)/.test(bgo) && !/assign\([^)]*email/.test(bf));
+
   // WHERE THE PIXEL MAY LOAD, as an allow-list. A deny-list would mean every
   // new page is tracked until someone remembers to exclude it, and the pages
   // that come next are a child's. These four are the grown-up marketing
   // funnel; every other page — the practice screens, the clinician's caseload,
   // the family's redemption link — carries or is one keystroke from a child's
   // identity and gets no ad tracking at all.
-  const MARKETING = new Set(["check.html", "subscribe.html", "onboarding.html", "for-slps.html", "start.html", "parents.html", "try.html"]);
+  const MARKETING = new Set(["check.html", "subscribe.html", "onboarding.html", "for-slps.html", "start.html", "bf.html", "parents.html", "try.html"]);
   const pages = readdirSync(ROOT).filter((f) => f.endsWith(".html"));
   const strays = pages.filter((f) => !MARKETING.has(f) && /pixel\.js/.test(readFileSync(ROOT + "/" + f, "utf8")));
   ok("no page outside the grown-up marketing funnel loads the ad pixel", strays.length === 0, strays.join(", "));

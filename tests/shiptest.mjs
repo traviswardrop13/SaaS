@@ -125,6 +125,9 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
     /source:\s*"\/"\s*,\s*destination:\s*"\/start\.html"/.test(rewrites) &&
     /source:\s*"\/plans"\s*,\s*destination:\s*"\/for-slps\.html"/.test(rewrites) &&
     /source:\s*"\/checkout"\s*,\s*destination:\s*"\/for-slps\.html"/.test(rewrites) &&
+    // BF1: the Black Friday opt-in, and the plans page in its mode.
+    /source:\s*"\/blackfriday"\s*,\s*destination:\s*"\/bf\.html"/.test(rewrites) &&
+    /source:\s*"\/blackfriday\/plans"\s*,\s*destination:\s*"\/for-slps\.html"/.test(rewrites) &&
     /source:\s*"\/for-parents"\s*,\s*destination:\s*"\/parents\.html"/.test(rewrites));
   // THE 308 TRAP (17 Nov 2026): /for-slps has been a permanent redirect to /
   // since 12 Nov, and a browser keeps one. Pointing anything back at
@@ -141,7 +144,7 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
     /rel="canonical" href="https:\/\/www\.speaksona\.com\/"/.test(start) &&
     /og:url" content="https:\/\/www\.speaksona\.com\/"/.test(start));
   ok("every landing route revalidates (a rewritten path is not on the list read from disk)",
-    ["/", "/plans", "/checkout", "/for-parents"].every((r) => new RegExp('source: "' + r.replace(/\//g, "\\/") + '", headers: noStore').test(code)));
+    ["/", "/plans", "/checkout", "/blackfriday", "/blackfriday/plans", "/for-parents"].every((r) => new RegExp('source: "' + r.replace(/\//g, "\\/") + '", headers: noStore').test(code)));
 
   // A LINK WITH NO CARD IS A GREY BOX. The pages are static and inherit
   // nothing from app/layout.tsx, so each carries its own.
@@ -289,7 +292,7 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
     !/#premium|APP_STORE|APP_READY/.test(slps) &&
     // GHLEXIT1 (24 Nov 2026): the one App Store link is Sona Premium's own
     // button, the $9.99 plan Apple sells in the app; nothing else sends a
-    // clinician there.
+    // clinician there (Sona Lite's: Sona Premium in the app).
     (slps.match(/apps\.apple\.com/g) || []).length === 1 && /<a class="btn ghost" id="appGo" href="https:\/\/apps\.apple\.com\/[^"]+">Get it on the App Store<\/a>/.test(slps));
   const form = (slps.match(/<form class="signup" id="signup"[\s\S]*?<\/form>/) || [""])[0];
   ok("one clinician form asks only for a work email (14 Nov 2026: no role, no setting)",
@@ -354,7 +357,7 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
   // as a clinician (role "slp", through /onboarding.html?slp=1, which nothing
   // links to) and never in the iPhone app.
   // parents.html is checked above: exactly one footer link, nothing else.
-  const CLIN = new Set(["for-slps.html", "start.html", "slp.html", "slp-login.html", "settings.html", "parents.html"]);
+  const CLIN = new Set(["for-slps.html", "start.html", "bf.html", "slp.html", "slp-login.html", "settings.html", "parents.html"]);
   const TO_CLIN = /href=["'](https?:\/\/(www\.)?speaksona\.com)?\/(for-slps|slp-login|slps\b|slp\.html|slp["'?#])/;
   const fam = pages.filter((f) => !CLIN.has(f) && TO_CLIN.test(strip(readFileSync(APP + "/public/" + f, "utf8"))))
     .concat(["app/families/page.tsx", "app/terms/page.tsx", "app/support/page.tsx", "app/privacy/page.tsx", "app/layout.tsx", "lib/nurture.ts", "lib/report.ts", "lib/revenuecat.ts"]
@@ -442,9 +445,9 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
     const head = (slps.match(/<head>[\s\S]*?<\/head>/) || [""])[0].replace(/<script[\s\S]*?<\/script>/g, "");
     ok("while the switch is off, nothing on /plans names Sona Clinic or $99: not the page, its title, its description or its shared card",
       !/Sona Clinic|\$99(?![.\d])|Clinic plan/.test(liveFlat + " " + head), (liveFlat.match(/.{0,60}(Sona Clinic|\$99(?![.\d])|Clinic plan).{0,40}/) || [""])[0]);
-    // GHLEXIT1 (24 Nov 2026): two plans, Sona Premium (the App Store's, for
-    // the clinician's own sessions) and Sona Pro, under one heading.
-    ok("…and its pricing is Sona Premium and Sona Pro, under 'Pick your plan.'",
+    // GHLEXIT1 (24 Nov 2026): two plans, Sona Lite (the App Store's Sona
+    // Premium, for the clinician's own sessions) and Sona Pro, under one heading.
+    ok("…and its pricing is Sona Lite and Sona Pro, under 'Pick your plan.'",
       (live.match(/<article class="plan\b/g) || []).length === 2 && /<article class="plan" id="planApp">/.test(live) && /<article class="plan best" id="planPro">/.test(live) &&
       !/data-plan="clinic"/.test(live) && /<h2 id="pricingH">Pick your plan\.<\/h2>/.test(shown) &&
       /\$\("pricingH"\)\.textContent = "Pick your plan\.";/.test(slps));
@@ -480,31 +483,69 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
   const rf = readFileSync(APP + "/lib/referral.ts", "utf8");
   const REF_PAY = (/export const REFERRAL_PAY = "([^"]+)"/.exec(rf) || [])[1], REF_CENTS = Number((/export const REFERRAL_CENTS = (\d+)/.exec(rf) || [])[1]);
   const REF3 = "$" + (3 * REF_CENTS / 100);
-  ok("every price on the page is one checkout charges (or the parents' and Sona Premium's $9.99, or Share & earn's)", figures.length >= 4 &&
+  ok("every price on the page is one checkout charges (or the parents' and Sona Lite's $9.99, or Share & earn's)", figures.length >= 4 &&
     figures.every((f) => [PRO.price, CLINIC.price, "$9.99", REF_PAY, REF3].includes(f)) && !/\$20\b|\$100\b|\$99\.00|\$[\d.]+ (a|per|each) clinician|a clinician a month/.test(flat), figures.join(" "));
   // WHAT PARENTS PAY (Travis, 17 Nov 2026), only where it is true: hidden
   // until /api/charter answers that families are paying. "$9.99", never
   // "$10"; App Store Connect owns the figure (NATIVE.md).
   ok("the parents' price line, word for word, under Sona Pro, hidden until /api/charter says families pay",
     /<p class="parent-price" id="parentPrice" hidden>Families on your link get every game at no cost\. Parents who buy Sona on their own pay \$9\.99 a month in the iPhone app\.<\/p>/.test(pro) &&
-    (shown.match(/\$9\.99/g) || []).length === 2 &&
+    (shown.replace(/<div class="bf-bar"[\s\S]*?<\/div>\s*<\/div>/, "").replace(/<p class="bf-deal"[\s\S]*?<\/p>/, "").match(/\$9\.99/g) || []).length === 2 &&
     /fetch\("\/api\/charter"\)[\s\S]{0,120}if \(j && j\.ok && j\.free === false\) \$\("parentPrice"\)\.hidden = false;/.test(slps));
-  // SONA PREMIUM, FOR THE CLINICIAN'S OWN SESSIONS (GHLEXIT1, Travis, 24 Nov
+  // SONA LITE, FOR THE CLINICIAN'S OWN SESSIONS (GHLEXIT1, Travis, 24 Nov
   // 2026: "$9.99/mo for just the kids app ... for the slp/slpa to use in
-  // sessions"). Apple sells it in the app, as it does to a family: the page
-  // links the App Store (the same listing the emails use) and promises no
-  // trial; the free days, if any, are App Store Connect's to show.
+  // sessions", named so it is plainly not Pro). It is the Sona Premium Apple
+  // sells in the app, as to a family, and the card says so: the page links
+  // the App Store (the same listing the emails use) and promises no trial;
+  // the free days, if any, are App Store Connect's to show.
   const app = card("planApp");
   const APP_URL = (/export const APP_URL = "([^"]+)"/.exec(readFileSync(APP + "/lib/nurture.ts", "utf8")) || [])[1];
-  ok("the Sona Premium card: the kids' app at $9.99 a month, its button the App Store listing, billed by Apple, no trial promised and no plan button",
-    app.includes("<h3>Sona Premium</h3>") && app.includes("<b>$9.99</b> a month") && !!APP_URL && app.includes('href="' + APP_URL + '"') &&
-    /Bought in the Sona app and billed by Apple\./.test(app) && !/free|trial|data-plan/i.test(app), app.slice(0, 300));
+  ok("the Sona Lite card: the kids' app at $9.99 a month, its button the App Store listing, billed by Apple and named there, no trial promised and no plan button",
+    app.includes("<h3>Sona Lite</h3>") && app.includes("<b>$9.99</b> a month") && !!APP_URL && app.includes('href="' + APP_URL + '"') &&
+    /Bought in the Sona app and billed by Apple; in the app it&rsquo;s called Sona Premium\./.test(app) && !/free|trial|data-plan/i.test(app) &&
+    /<li>Everything in Sona Lite<\/li>/.test(card("planPro")), app.slice(0, 300));
   // SHARE & EARN ON THE PAGE (GHLEXIT1; REFER1's rule, in the dashboard's
   // own words): three paying therapists earn more than Sona Pro costs.
   const earn = (shown.match(/<section class="earn" id="earn"[\s\S]*?<\/section>/) || [""])[0];
   ok("Share & earn: lib/referral's " + REF_PAY + " a month and three of it, " + REF3 + ", which is more than Sona Pro's " + PRO.price,
     !!REF_PAY && earn.includes("<b>" + REF_PAY + "</b>") && earn.includes("<b>" + REF3 + "</b>") && 3 * REF_CENTS > Number(String(PRO.price).replace(/[^\d]/g, "")) &&
     /It starts once their free trial ends and they pay\. Speech therapists only: families never count\./.test(earn) && /not a discount/.test(earn), earn.slice(0, 200));
+  // BLACK FRIDAY (BF1, Travis, 24 Nov 2026: 50% off Sona Pro for 3 months,
+  // no free trial, until Sunday 11:59 PM Mountain). One end, three copies
+  // that must agree (lib/caseload.ts, bf.html, this page), and the figures
+  // each page prints are lib/caseload's: $19.99 less $10 is the $9.99.
+  {
+    const bfPage = readFileSync(APP + "/public/bf.html", "utf8");
+    const END = /export const BF_ENDS_AT = (Date\.UTC\([^)]*\));/.exec(cl);
+    const pageEnd = (t) => (/var BF_ENDS_AT = (Date\.UTC\([^)]*\));/.exec(t) || [])[1];
+    const bfPrice = (/export const BF_PRICE = "([^"]+)"/.exec(cl) || [])[1], bfMonths = Number((/export const BF_MONTHS = (\d+)/.exec(cl) || [])[1]);
+    const bfOff = Number((/export const BF_OFF_CENTS = (\d+)/.exec(cl) || [])[1]), proCents = Number((/export const PRO_CENTS = (\d+)/.exec(cl) || [])[1]);
+    ok("Black Friday ends at one instant: Sunday 29 Nov 2026, 11:59 PM Mountain, in lib/caseload, the opt-in and /plans' mode",
+      !!END && END[1] === "Date.UTC(2026, 10, 30, 6, 59, 0)" && pageEnd(bfPage) === END[1] && pageEnd(slps) === END[1] &&
+      eval(END[1]) === Date.parse("2026-11-30T06:59:00Z"), [END && END[1], pageEnd(bfPage), pageEnd(slps)].join(" | "));
+    ok("…its price is exact: " + PRO.price + " less " + bfOff + "¢ is " + bfPrice + ", for " + bfMonths + " months",
+      proCents - bfOff === 999 && bfPrice === "$9.99" && bfMonths === 3);
+    const bfShown = bfPage.replace(/<!--[\s\S]*?-->/g, "").replace(/<script[\s\S]*?<\/script>/g, "").replace(/<[^>]+>/g, " ").replace(/&rsquo;/g, "'").replace(/\s+/g, " ");
+    ok("the Black Friday opt-in says the deal in those figures, and when it ends, and promises no free trial",
+      bfShown.includes(bfPrice + " a month for your first " + bfMonths + " months, then " + PRO.price + " a month.") &&
+      bfShown.includes("Ends Sunday, November 29 at 11:59 PM Mountain.") && [...bfShown.matchAll(/\$\d[\d,.]*\d/g)].every((m) => m[0] === bfPrice || m[0] === PRO.price) &&
+      !/free trial|days free/i.test(bfShown), bfShown.slice(0, 300));
+    ok("…after the end it says so, with the ordinary price, and its box leads to the ordinary plans",
+      /\$\("bfH"\)\.textContent = "Black Friday is over\.";/.test(bfPage) && /\$\("bfSub"\)\.textContent = "Sona Pro is \$19\.99 a month, with 14 days free\.";/.test(bfPage) &&
+      /location\.assign\(\(bf \? "\/blackfriday\/plans" : "\/plans"\) \+ location\.search\)/.test(bfPage));
+    ok("…a week's page: noindex, and the native apps never see it (the same guard first)",
+      /<meta name="robots" content="noindex"/.test(bfPage) && bfPage.indexOf("SonaSLPApp") > 0 && bfPage.indexOf("SonaSLPApp") < bfPage.indexOf("<title>"));
+    const bar = (shown.match(/<div class="bf-bar" id="bfBar" hidden>[\s\S]*?<\/div>\s*<\/div>/) || [""])[0];
+    const deal = (shown.match(/<p class="bf-deal" id="bfDeal" hidden>[\s\S]*?<\/p>/) || [""])[0];
+    ok("/plans' Black Friday mode: a bar and a line on the Sona Pro card, hidden in the markup, shown on this page wherever it is served until the end",
+      bar.includes("Sona Pro is " + bfPrice + " a month for your first " + bfMonths + " months.") && pro.includes('id="bfDeal"') &&
+      deal.includes(bfPrice + " a month for your first " + bfMonths + " months, then " + PRO.price + ". No free trial on this deal. Ends Sunday 11:59 PM Mountain.") &&
+      /try \{ BF = Date\.now\(\) < BF_ENDS_AT; \}/.test(slps));
+    ok("…and its words are the checkout's: $9.99 for 3 months, then $19.99, charged today, no free trial",
+      /var BF_PRO_TERMS = "\$9\.99 a month for your first 3 months, then \$19\.99 a month\. Charged today: no free trial on this deal\. Cancel anytime: your families keep every game to the end of the month you paid for\.";/.test(slps) &&
+      /var BF_TERMS = "Black Friday: \$9\.99 a month for 3 months, then \$19\.99\. Charged today, no free trial\. Cancel anytime\.";/.test(slps) &&
+      /var BF_LABEL = "Get the Black Friday price";/.test(slps));
+  }
   // 18 Nov 2026 (review): the pick is {plan, at}, written only once it is
   // acted on (a sent email, or a signed-in visitor), and counts for an hour.
   ok("a plan button only picks the plan (PICK) and brings the visitor to the one form; the pick is written as {plan, at} only when acted on",

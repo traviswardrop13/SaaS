@@ -78,6 +78,11 @@ async function fresh(opts = {}) {
     Object.defineProperty(window, "sonaTrack", { configurable: true, get: () => (e) => window.__track.push(e), set() {} });
   });
   if (opts.watch) await context.addInitScript(watchLeaving);
+  // A set clock (BF1): the page's Date.now starts at opts.now and runs on.
+  // The clinicians' pages run after Black Friday unless a test says when,
+  // so their ordinary words hold whatever day this suite runs.
+  const now = opts.now !== undefined ? opts.now : /^\/for-parents/.test(opts.path || "/") ? null : "2026-12-15T19:00:00Z";
+  if (now) await context.addInitScript((t) => { const T = Date.parse(t), real = Date.now, start = real(); Date.now = () => T + (real() - start); }, now);
   const page = await context.newPage();
   const errors = [];
   page.on("pageerror", (e) => errors.push(e.message));
@@ -406,12 +411,15 @@ charterReply = null;
     window.__track.push(e);
     const kept = JSON.parse(sessionStorage.getItem("__tracked") || "[]"); kept.push(e); sessionStorage.setItem("__tracked", JSON.stringify(kept));
   } }));
-  ok("/ shows one work email box and Try Sona free, and no plans", await page.evaluate(() => {
+  // Travis: "literally just focus on grabbing the email ... just have the
+  // button be like Get Started ... your email you@example.com".
+  ok("/ is a headline, one email box and Get Started: no plans, no selling", await page.evaluate(() => {
     const form = document.getElementById("optin");
     return !!form && [...form.querySelectorAll("input,select")].map(el => el.id).join() === "oEmail" &&
-      document.getElementById("oGo").textContent.trim() === "Try Sona free" && !document.getElementById("pricing") &&
-      document.querySelector('label[for="oEmail"]').textContent.trim() === "Your work email" &&
-      document.querySelector('a[href="/plans"]') !== null;
+      document.getElementById("oGo").textContent.trim() === "Get Started" && !document.getElementById("pricing") &&
+      document.querySelector('label[for="oEmail"]').textContent.trim() === "Your email" &&
+      document.getElementById("oEmail").placeholder === "you@example.com" &&
+      document.querySelectorAll("main section").length === 1 && !document.querySelector("main .lede, main .trust, main .point");
   }));
   const pixel = await page.evaluate(() => (window.fbq?.queue || []).map(args => Array.from(args)));
   const init = pixel.findIndex(args => args[0] === "init");
@@ -427,7 +435,7 @@ charterReply = null;
   await page.click("#oGo");
   ok("/: an email the server refuses: its words on the page, no Lead, and the visitor stays", await settles(page, () => /valid email/.test(document.getElementById("oErr").textContent)) &&
     posts.length === 1 && (await page.evaluate(() => window.__track.length)) === 0 && new URL(page.url()).pathname === "/" &&
-    (await page.textContent("#oGo")).trim() === "Try Sona free");
+    (await page.textContent("#oGo")).trim() === "Get Started");
   leadReply = { ok: true, captured: true };
   posts = [];
   await page.fill("#oEmail", "sam@clinic.org");
@@ -479,6 +487,86 @@ charterReply = null;
   await context.close();
 }
 
+// ═════════════════ Black Friday (BF1, Travis, 24 Nov 2026) ═════════════════
+// /blackfriday: the deal, a countdown to Sunday 29 Nov 2026 at 11:59 PM
+// Mountain, one email box; then /blackfriday/plans, the plans page in its
+// Black Friday mode. The clock is set, never read, so these hold on any day.
+const keepTracks = () => Object.defineProperty(window, "sonaTrack", { configurable: true, set() {}, get: () => (e) => {
+  window.__track.push(e);
+  const kept = JSON.parse(sessionStorage.getItem("__tracked") || "[]"); kept.push(e); sessionStorage.setItem("__tracked", JSON.stringify(kept));
+} });
+{
+  ok("/blackfriday is the Black Friday opt-in, /blackfriday/plans the plans page", rewrites.get("/blackfriday") === "/bf.html" && rewrites.get("/blackfriday/plans") === "/for-slps.html");
+  const { context, page, errors } = await fresh({ path: "/blackfriday", now: "2026-11-26T19:00:00Z" });
+  await page.evaluate(keepTracks);
+  const cd = await page.evaluate(() => ["cdD", "cdH", "cdM"].map((id) => document.getElementById(id).textContent).join(":"));
+  ok("Thursday at noon Mountain: 3 days 11 hours 59 minutes left to Sunday 11:59 PM", cd === "3:11:59" || cd === "3:11:58", cd);
+  ok("…the deal in its figures, Get Started, and no plans on the page", await page.evaluate(() =>
+    /\$9\.99 a month for your first 3 months, then \$19\.99 a month\./.test(document.body.innerText) && /Ends Sunday, November 29 at 11:59 PM Mountain\./.test(document.body.innerText) &&
+    document.getElementById("oGo").textContent.trim() === "Get Started" && !document.getElementById("pricing")));
+  posts = []; leadReply = { ok: true, captured: true };
+  await page.fill("#oEmail", "bf@clinic.org");
+  const went = page.waitForURL((u) => u.pathname === "/blackfriday/plans", { timeout: 5000 }).then(() => true, () => false);
+  await page.click("#oGo");
+  const arrived = await went;
+  const tracked = arrived ? await page.evaluate(() => sessionStorage.getItem("__tracked")) : null;
+  ok("an accepted email is the lead and fires Lead once, then /blackfriday/plans with the ad's tags",
+    arrived && posts.length === 1 && posts[0].path === "/api/lead" && posts[0].body.role === "slp" && posts[0].body.source === "fb" &&
+    tracked === '["Lead"]' && new URL(page.url()).searchParams.get("utm_campaign") === "launch", { posts, tracked, url: page.url() });
+  // Travis: "but no free trial on the promo": the deal's words, charged today.
+  ok("/blackfriday/plans: the bar with the time left, the deal on the Sona Pro card, and its words everywhere: $9.99 for 3 months, charged today, no free trial", await page.evaluate(() =>
+    !document.getElementById("bfBar").hidden && /^Ends in 3d \d\d:\d\d:\d\d$/.test(document.getElementById("bfLeft").textContent) && !document.getElementById("bfDeal").hidden &&
+    document.getElementById("fTerms").textContent === "Black Friday: $9.99 a month for 3 months, then $19.99. Charged today, no free trial. Cancel anytime." &&
+    /^\$9\.99 a month for your first 3 months, then \$19\.99 a month\. Charged today: no free trial on this deal\./.test(document.getElementById("proTerms").textContent) &&
+    document.getElementById("fGo").textContent === "Get the Black Friday price" && document.getElementById("finalGo").textContent === "Get the Black Friday price" &&
+    document.getElementById("proGo").textContent === "Get Sona Pro for $9.99" && !/free trial|days free/i.test(document.getElementById("pricing").querySelector("#planPro").innerText.replace(/no free trial/gi, ""))));
+  ok("…with the email already in its box", await page.inputValue("#fEmail") === "bf@clinic.org");
+  posts = []; authReply = { ok: true, sent: true, signedIn: false };
+  await page.click("#fGo");
+  ok("…and its sign-up is InitiateCheckout, never a second Lead, and its email is for the Black Friday price", await settles(page, () => !document.getElementById("sent").hidden) &&
+    posts.length === 1 && posts[0].path === "/api/slp/auth/request" && JSON.stringify(await page.evaluate(() => window.__track)) === '["InitiateCheckout"]' &&
+    /Open it to get your Black Friday price\./.test(await page.textContent("#sentMsg")), posts);
+  ok("…no page errors", errors.length === 0, errors);
+  await context.close();
+}
+// The countdown reaching 11:59 PM Sunday on an open page: the ordinary words again.
+{
+  const { context, page, errors } = await fresh({ path: "/blackfriday/plans", now: "2026-11-30T06:58:57Z" });
+  const before = await page.evaluate(() => !document.getElementById("bfBar").hidden && !document.getElementById("bfDeal").hidden);
+  const after = await settles(page, () => document.getElementById("bfBar").hidden && document.getElementById("bfDeal").hidden &&
+    document.getElementById("fTerms").textContent === "14 days free, then $19.99 a month. Cancel anytime." &&
+    document.getElementById("proTerms").textContent === "14 days free, then $19.99 a month. Card required. Cancel during the trial and you pay nothing. One free trial per clinician." &&
+    document.getElementById("fGo").textContent === "Start your free trial" && document.getElementById("proGo").textContent === "Try Sona Pro free" &&
+    document.getElementById("finalGo").textContent === "Start your free trial");
+  ok("/blackfriday/plans three seconds before the end shows the deal, and at 11:59 PM goes back to the trial and its ordinary words", before && after);
+  ok("…no page errors", errors.length === 0, errors);
+  await context.close();
+}
+// After the end: the opt-in says so and leads to the ordinary plans.
+{
+  const { context, page, errors } = await fresh({ path: "/blackfriday", now: "2026-11-30T07:00:00Z" });
+  ok("/blackfriday after the end: 'Black Friday is over.', the ordinary price, no countdown", await page.evaluate(() =>
+    document.getElementById("bfH").textContent === "Black Friday is over." && document.getElementById("bfSub").textContent === "Sona Pro is $19.99 a month, with 14 days free." &&
+    document.getElementById("cd").hidden && document.getElementById("bfEnds").hidden));
+  posts = []; leadReply = { ok: true, captured: true };
+  await page.fill("#oEmail", "late@clinic.org");
+  const went = page.waitForURL((u) => u.pathname === "/plans", { timeout: 5000 }).then(() => true, () => false);
+  await page.click("#oGo");
+  ok("…its box leads to the ordinary plans, where there is no Black Friday mode", await went && await page.evaluate(() =>
+    document.getElementById("bfBar").hidden && document.getElementById("fTerms").textContent === "14 days free, then $19.99 a month. Cancel anytime."));
+  ok("…no page errors", errors.length === 0, errors);
+  await context.close();
+}
+// /plans this week, from anywhere: every Sona Pro checkout until the end is
+// the deal (/api/slp/plan), so the page says so wherever it is served.
+{
+  const { context, page, errors } = await fresh({ path: "/plans", now: "2026-11-26T19:00:00Z" });
+  ok("/plans during Black Friday shows the deal too, since every Sona Pro checkout this week is the deal", await page.evaluate(() =>
+    !document.getElementById("bfBar").hidden && !document.getElementById("bfDeal").hidden && document.getElementById("fGo").textContent === "Get the Black Friday price"));
+  ok("…no page errors", errors.length === 0, errors);
+  await context.close();
+}
+
 // ── the old clinician address lands on the homepage, campaign kept ──
 // /for-slps has been a cached PERMANENT 308 to / since 12 Nov 2026.
 {
@@ -486,7 +574,7 @@ charterReply = null;
   const url = new URL(page.url());
   ok("/for-slps: lands on the homepage at / (the opt-in) with the campaign parameters", url.pathname === "/" &&
     url.searchParams.get("utm_campaign") === "launch" && url.searchParams.get("fbclid") === "abc123" &&
-    (await page.textContent("#oGo")).trim() === "Try Sona free", url.href);
+    (await page.textContent("#oGo")).trim() === "Get Started", url.href);
   ok("/for-slps: no page errors", errors.length === 0, errors);
   await context.close();
 }

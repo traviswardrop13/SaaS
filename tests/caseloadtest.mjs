@@ -154,7 +154,7 @@ globalThis.fetch = async (url, init) => {
 };
 
 // ── the fake Stripe: every `new Stripe(key)` in a route gets this client ──
-const S = { calls: [], down: false, subs: new Map(), sessions: new Map(), customers: [], searchNoise: [], cfgFail: false, badCfg: new Set() };
+const S = { calls: [], down: false, subs: new Map(), sessions: new Map(), customers: [], searchNoise: [], cfgFail: false, badCfg: new Set(), coupons: new Map() };
 let csSeq = 0, cfgSeq = 0;
 const stripeErr = (msg, code) => Object.assign(new Error(msg), { code });
 const need = () => { if (S.down) throw new Error("stripe is down (test)"); };
@@ -180,6 +180,15 @@ const client = {
     list: async ({ customer }) => { S.calls.push(["subscriptions.list", customer]); need(); return { data: [...S.subs.values()].filter((s) => s.customer === customer) }; },
   },
   customers: { list: async ({ email }) => { S.calls.push(["customers.list", email]); need(); return { data: S.customers.filter((c) => c.email === email) }; } },
+  // Black Friday (BF1): Stripe's coupons, as Stripe answers about them.
+  coupons: {
+    retrieve: async (id) => { S.calls.push(["coupons.retrieve", id]); need(); const c = S.coupons.get(id); if (!c) throw stripeErr("No such coupon: '" + id + "'", "resource_missing"); return c; },
+    create: async (p) => {
+      S.calls.push(["coupons.create", p]); need();
+      if (S.coupons.has(p.id)) throw stripeErr("Coupon already exists.", "resource_already_exists");
+      const c = { object: "coupon", valid: true, ...p }; S.coupons.set(p.id, c); return c;
+    },
+  },
   billingPortal: {
     sessions: { create: async (p) => {
       S.calls.push(["billingPortal.sessions.create", p]); need();
@@ -2624,6 +2633,99 @@ const count = (pred) => S.calls.filter(pred).length;
     register(read("lib/slpAuth.ts").slice(read("lib/slpAuth.ts").indexOf("export async function sendParentInviteEmail"))));
   ok("copy says every family, never \"unlimited\"", !/unlimited/i.test(noComments(read("lib/slpAuth.ts")) + plan));
   ok("the suite is registered in run-all, beside the SLP API suite", /"caseloadtest\.mjs",/.test(read("tests/run-all.mjs")));
+}
+
+// ── BLACK FRIDAY (BF1, Travis, 24 Nov 2026: 50% off Sona Pro for 3 months,
+// the free trial first, until Sunday 29 Nov 11:59 PM Mountain) ──
+{
+  const realNow = Date.now;
+  const at = (iso) => { const t = Date.parse(iso); Date.now = () => t; };
+  ok("the end is Sunday 29 Nov 2026 at 11:59 PM in Boise (MST, UTC-7): 06:59 UTC on 30 Nov, and the figures are exact",
+    C.BF_ENDS_AT === Date.parse("2026-11-30T06:59:00Z") && C.BF_OFF_CENTS === 1000 && C.PRO_CENTS - C.BF_OFF_CENTS === 999 &&
+    C.BF_PRICE === "$9.99" && C.BF_MONTHS === 3 && C.BF_ON === true);
+  // Off production it is off unless forced, so the ordinary checkout above
+  // holds whatever the date.
+  at("2026-11-26T12:00:00Z");
+  delete process.env.SONA_BF_FORCE;
+  ok("off production and not forced, bfOn() is off even this week", C.bfOn() === false);
+  process.env.SONA_BF_FORCE = "1";
+  ok("forced, it is on until the end and off from the minute it ends",
+    C.bfOn() === true && C.bfOn(Date.parse("2026-11-30T06:58:59Z")) === true && C.bfOn(Date.parse("2026-11-30T06:59:00Z")) === false);
+  const prevNode = process.env.NODE_ENV;
+  delete process.env.SONA_BF_FORCE; process.env.NODE_ENV = "production";
+  const prodOn = C.bfOn(), prodAfter = C.bfOn(Date.parse("2026-12-01T00:00:00Z"));
+  if (prevNode === undefined) delete process.env.NODE_ENV; else process.env.NODE_ENV = prevNode;
+  ok("a production build reads the switch and the clock alone", prodOn === true && prodAfter === false);
+
+  // The first Black Friday checkout makes the coupon; the next one finds it.
+  process.env.SONA_BF_FORCE = "1";
+  const bfu = "blackfriday@brightsteps.example";
+  seedAcct(bfu, { terms: C.PRO_TERMS, code: "bfnew-k4", familyKey: "BFNEWK23" });
+  S.coupons.clear(); S.calls.length = 0;
+  let r = await call(R.plan, "POST", "/api/slp/plan", { as: bfu, body: { plan: "pro" } });
+  const made = (S.calls.find((c) => c[0] === "coupons.create") || [])[1];
+  let p = (S.calls.find((c) => c[0] === "checkout.sessions.create") || [])[1];
+  ok("Black Friday: the first checkout makes the coupon: $10 off, in dollars, for 3 months, redeemable only until the end",
+    r.status === 200 && r.json.ok && !!made && made.id === "sona-pro-bf-2026" && made.amount_off === 1000 && made.currency === "usd" &&
+    made.duration === "repeating" && made.duration_in_months === 3 && made.redeem_by === Math.floor(C.BF_ENDS_AT / 1000), JSON.stringify(made));
+  // Travis: "but no free trial on the promo": charged today, even for a
+  // clinician who never had the trial.
+  ok("…and the checkout carries it (no box for codes beside it: Stripe takes one or the other), stamped offer: bf-2026, with NO free trial",
+    p && JSON.stringify(p.discounts) === JSON.stringify([{ coupon: "sona-pro-bf-2026" }]) && !("allow_promotion_codes" in p) &&
+    JSON.stringify(p.subscription_data.metadata) === JSON.stringify({ plan: "slp-pro", slp: bfu, offer: "bf-2026" }) &&
+    !("trial_period_days" in p.subscription_data) && !("trial_settings" in p.subscription_data),
+    JSON.stringify(p));
+  ok("…and says so beside Stripe's button: $9.99 a month for the first 3 months, then $19.99, charged today",
+    p && p.custom_text.submit.message === "$9.99 a month for your first 3 months (Black Friday), then $19.99 a month. Charged today and every month until you cancel. Cancel anytime: your families keep every game to the end of the month you paid for.",
+    JSON.stringify(p && p.custom_text));
+  S.calls.length = 0;
+  r = await call(R.plan, "POST", "/api/slp/plan", { as: bfu, body: { plan: "pro" } });
+  p = (S.calls.find((c) => c[0] === "checkout.sessions.create") || [])[1];
+  ok("…the next checkout finds the coupon and makes no second one", r.status === 200 && count((c) => c[0] === "coupons.create") === 0 &&
+    count((c) => c[0] === "coupons.retrieve") === 1 && p && p.discounts[0].coupon === "sona-pro-bf-2026");
+
+  // Stripe will not take the coupon any more (its end, or switched off there):
+  // the ordinary checkout, in its own words.
+  S.coupons.get("sona-pro-bf-2026").valid = false; S.calls.length = 0;
+  r = await call(R.plan, "POST", "/api/slp/plan", { as: bfu, body: { plan: "pro" } });
+  p = (S.calls.find((c) => c[0] === "checkout.sessions.create") || [])[1];
+  ok("a coupon Stripe calls invalid: the ordinary checkout, the trial back, the code box back, no offer stamp, and the ordinary words",
+    r.status === 200 && p && !p.discounts && p.allow_promotion_codes === true && !("offer" in p.subscription_data.metadata) && p.subscription_data.trial_period_days === 14 &&
+    p.custom_text.submit.message === "No charge today. Your free trial lasts 14 days; after that, $19.99 a month until you cancel. Cancel before the trial ends and you pay nothing.",
+    JSON.stringify(p));
+  // Two checkouts made it at once: the other's is the coupon.
+  S.coupons.clear(); S.calls.length = 0;
+  const realCreate = client.coupons.create;
+  client.coupons.create = async (q) => { S.coupons.set(q.id, { object: "coupon", valid: true, ...q }); throw stripeErr("Coupon already exists.", "resource_already_exists"); };
+  r = await call(R.plan, "POST", "/api/slp/plan", { as: bfu, body: { plan: "pro" } });
+  client.coupons.create = realCreate;
+  p = (S.calls.find((c) => c[0] === "checkout.sessions.create") || [])[1];
+  ok("…and a coupon made by another checkout at the same moment is the one used", r.status === 200 && p && p.discounts && p.discounts[0].coupon === "sona-pro-bf-2026");
+
+  // Past the end: nothing about Black Friday is asked or sold.
+  at("2026-11-30T06:59:00Z"); S.calls.length = 0;
+  r = await call(R.plan, "POST", "/api/slp/plan", { as: bfu, body: { plan: "pro" } });
+  p = (S.calls.find((c) => c[0] === "checkout.sessions.create") || [])[1];
+  ok("from 11:59 PM Sunday Mountain: Stripe is not asked about the coupon, and the checkout is the ordinary one, the trial back",
+    r.status === 200 && count((c) => c[0].startsWith("coupons.")) === 0 && p && !p.discounts && p.allow_promotion_codes === true &&
+    JSON.stringify(p.subscription_data.metadata) === JSON.stringify({ plan: "slp-pro", slp: bfu }) && p.subscription_data.trial_period_days === 14);
+  // A clinician whose trial is spent, during the sale: charged today, at $9.99.
+  at("2026-11-27T18:00:00Z");
+  const spent = "bfspent@brightsteps.example";
+  seedAcct(spent, { terms: C.PRO_TERMS, code: "bfspent-k4", familyKey: "BFSPENT2" });
+  mkSub("sub_bfspent_old", { plan: "slp-pro", slp: spent, status: "canceled", interval: "month" });
+  S.calls.length = 0;
+  r = await call(R.plan, "POST", "/api/slp/plan", { as: spent, body: { plan: "pro" } });
+  p = (S.calls.find((c) => c[0] === "checkout.sessions.create") || [])[1];
+  ok("a clinician who had the trial already, during the sale: the same, $9.99 for 3 months, charged today",
+    r.status === 200 && p && !("trial_period_days" in p.subscription_data) && p.discounts && p.discounts[0].coupon === "sona-pro-bf-2026" &&
+    p.custom_text.submit.message === "$9.99 a month for your first 3 months (Black Friday), then $19.99 a month. Charged today and every month until you cancel. Cancel anytime: your families keep every game to the end of the month you paid for.",
+    JSON.stringify(p && [p.subscription_data, p.custom_text]));
+  // Sona Clinic never carries it.
+  ok("Black Friday is Sona Pro's alone: the route asks for the coupon only for a Pro checkout",
+    /if \(kind === "pro" && bfOn\(\)\)/.test(read("app/api/slp/plan/route.ts")));
+  delete process.env.SONA_BF_FORCE;
+  Date.now = realNow;
 }
 
 console.error = realErr;

@@ -3054,10 +3054,11 @@ MAIL1, the CRM webhook, STRIPEHOOK1's events, GHLPRO1's checkout).
   line ("Sona doesn't keep their address."). `shiptest`, `contactstest` and
   `slptest` pin it.
 - **The ad funnel: `/` is the opt-in, `/plans` sells.** `/` serves
-  `public/start.html`: the app guard first (the FAMILY iPhone app opens `/`),
-  one work-email box ("Try Sona free"; "Next, pick your plan. Sona Pro is
-  free for 14 days."), "See plans and prices", Rachel's line, three short
-  points. It posts `/api/lead` (`role: "slp"`, `source: "slp-optin"` or the
+  `public/start.html` (Travis: "literally just focus on grabbing the email
+  ... just have the button be like Get Started"): the app guard first (the
+  FAMILY iPhone app opens `/`), the headline, "Your email" /
+  "you@example.com", Get Started, the unsubscribe line, nothing else. It
+  posts `/api/lead` (`role: "slp"`, `source: "slp-optin"` or the
   ad's utm_source, the ad's tags flat), and only on its `ok` fires `Lead`
   (no parameters) and goes to `/plans` with the same query (a `?ref=` is
   also kept 60 days, as `/plans` keeps it). The email rides in this tab's
@@ -3073,17 +3074,19 @@ MAIL1, the CRM webhook, STRIPEHOOK1's events, GHLPRO1's checkout).
   earn, the kid side, **Rachel** (her credential line word for word; what
   is hers to decide), good to know, the FAQ (plus which plan, do families
   pay, cancelling, how Share & earn pays), the closing button.
-  - **Sona Premium, $9.99 a month, "Just the kids' app, for your sessions"**
+  - **Sona Lite, $9.99 a month, "Just the kids' app, for your sessions"**
     (Travis: "$9.99/mo for just the kids app. not trial ... for the
-    slp/slpa to use in sessions"): the family Premium Apple sells in the
-    iPhone app, so its button is the App Store listing (`lib/nurture`'s
-    APP_URL), "Bought in the Sona app and billed by Apple", and the card
-    promises no trial (App Store Connect's free days are Apple's to show).
+    slp/slpa to use in sessions", then "lets not call it sona premium ...
+    like Sona lite or somethin that indicated not pro"): the family Sona
+    Premium Apple sells in the iPhone app, so its button is the App Store
+    listing (`lib/nurture`'s APP_URL), "Bought in the Sona app and billed by
+    Apple; in the app it's called Sona Premium.", and the card promises no
+    trial (App Store Connect's free days are Apple's to show).
     Nothing on the web sells it. **Open, Travis's:** a web Stripe plan with
     no trial instead is a new plan in lib/caseload, checkout, the webhook
     and the own-phone link, a real build.
   - **Sona Pro** keeps its figures, trial terms and button (`best`, "Best
-    for your caseload"), with "Everything in Sona Premium" and Share & earn.
+    for your caseload"), with "Everything in Sona Lite" and Share & earn.
   - **Share & earn** (`#earn`): lib/referral's `REFERRAL_PAY` and three of
     it ($24), "more than Sona Pro costs", in the dashboard's own rules (a new
     account through your link, past its trial and paying; therapists only;
@@ -3093,6 +3096,48 @@ MAIL1, the CRM webhook, STRIPEHOOK1's events, GHLPRO1's checkout).
   form and emails sent people there. A Vercel project route (platform
   rewrite) did the same until this shipped; remove it after, since a
   platform route runs before next.config's.
+
+## Black Friday 2026: Sona Pro $9.99 for 3 months, until Sunday 11:59 PM Mountain (BF1, 24 Nov 2026)
+Travis: "a fresh optin and website to use this week for black friday! with
+a countdown to sunday at 11:59 pm"; asked, he chose **50% off Sona Pro for 3
+months** (the 14-day trial first) and **Mountain time**.
+- **lib/caseload:** `BF_ON` (the switch), `BF_ENDS_AT` (`Date.UTC(2026, 10,
+  30, 6, 59, 0)`: Sunday 29 Nov 11:59 PM MST), `BF_OFF_CENTS` 1000 (so
+  $19.99 is exactly `BF_PRICE` "$9.99"; half of it is not a price),
+  `BF_MONTHS` 3, `BF_COUPON` "sona-pro-bf-2026", `BF_OFFER` "bf-2026".
+  `bfOn()` is the switch and the clock in production; anywhere else it is
+  off unless `SONA_BF_FORCE=1`, so the suites that pin the ordinary checkout
+  hold on any date.
+- **Checkout does it, for every Sona Pro checkout opened before the end**,
+  from any page: `/api/slp/plan` gets the coupon from `ensureBfCoupon` (made
+  in Stripe the first time: $10 off, `repeating` 3 months, `redeem_by` the
+  end; a race to make it takes the other's), sets `discounts` (Stripe then
+  allows no promotion-code box), stamps `offer: bf-2026` on the
+  subscription, and its words say it: "No charge today. Your free trial
+  lasts 14 days; after that, $9.99 a month for your first 3 months (Black
+  Friday), then $19.99 a month until you cancel. ..." (charged-today
+  version for a spent trial). If Stripe will not give the coupon, the
+  checkout is the ordinary one, in its ordinary words. Never Sona Clinic.
+  `caseloadtest` plays it, the clock moved by hand.
+- **`/blackfriday` is `public/bf.html`**: the opt-in in navy and butter, "Sona
+  Pro, half off.", "$9.99 a month for your first 3 months, after 14 days
+  free.", a days/hours/min/sec countdown, "Ends Sunday, November 29 at 11:59
+  PM Mountain.", one email box and Get Started (noindex; the app guard
+  first; the pixel's Lead only on `/api/lead`'s ok). It sends the visitor
+  to `/blackfriday/plans` with `sona.bf` in sessionStorage, or to `/plans`
+  after the end, when it says "Black Friday is over." and the ordinary
+  price.
+- **`/blackfriday/plans` is for-slps.html's Black Friday mode** (that path, or
+  `sona.bf` in the tab, and before the end): a navy bar with the time left,
+  a line on the Sona Pro card ("Applied automatically until Sunday 11:59 PM
+  Mountain."), and the trial's terms with the $9.99 months. At the end, on
+  an open page, the ordinary words come back. The ordinary `/plans` shows no
+  mode (its checkout still takes the $10 off this week).
+- One end in three places (lib/caseload, bf.html, for-slps.html) and every
+  figure are pinned by `shiptest`; `landingtest` sets the page clock to
+  play before, at and after the end; `telemetrytest` allows the pixel on
+  bf.html. **After Sunday**: nothing to undo; the ads go back to `/`.
+  Deleting bf.html and the mode is a later cleanup.
 
 ## The app lives at app.speaksona.com (APPHOST1, 17 Nov 2026)
 Travis: point the app at app.speaksona.com "so that I can get speaksona.com

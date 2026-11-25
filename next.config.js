@@ -85,6 +85,8 @@ const nextConfig = {
       { source: "/", headers: noStore },
       { source: "/plans", headers: noStore },
       { source: "/checkout", headers: noStore },
+      { source: "/blackfriday", headers: noStore },
+      { source: "/blackfriday/plans", headers: noStore },
       { source: "/for-parents", headers: noStore },
       { source: "/for-slps.css", headers: noStore },
       { source: "/try", headers: noStore },
@@ -107,6 +109,10 @@ const nextConfig = {
       // GoHighLevel's lead form and emails sent people to /checkout: the same
       // page, opened at its plans.
       { source: "/checkout", destination: "/for-slps.html" },
+      // BLACK FRIDAY (BF1, 24 Nov 2026): the week's opt-in with its countdown,
+      // and the plans page in its Black Friday mode.
+      { source: "/blackfriday", destination: "/bf.html" },
+      { source: "/blackfriday/plans", destination: "/for-slps.html" },
       { source: "/for-parents", destination: "/parents.html" },
       // The ad's bridge page (Travis, 9 Oct 2026): a headline, a button, the App Store.
       { source: "/try", destination: "/try.html" },
