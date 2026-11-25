@@ -599,10 +599,13 @@ if (A) {
   ok("a refused send says why, in the log", /refused the sign-in email/.test(auth));
   ok("…without ever logging the key", !/console\.error[\s\S]{0,200}RESEND_API_KEY/.test(auth));
 
-  ok("the page does not claim an email that was refused",
-    /if \(j\.sent !== true\) \{[\s\S]*?err\(/.test(slps),
-    "an existing account has no other door; 'check your email' about an email that never went is a dead end");
-  ok("…and gives them a way through instead", /hello@speaksona\.com/.test(slps));
+  // BUYNOW1 (25 Nov 2026): /plans sends no sign-in email of its own any
+  // more (its buttons open Stripe), so the one "we emailed you" it may say is
+  // the paid return's, after Stripe brought the clinician back.
+  ok("the page never says an email went before Stripe has been paid",
+    !/Check your email|We sent a sign-in link/.test(slps) && (slps.match(/We emailed you a link to open your dashboard/g) || []).length === 1 &&
+    /\[\?&\]\(\?:paid\|bought\)=\(cs_/.test(slps),
+    "'check your email' about an email that never went is a dead end");
 }
 
 
@@ -657,8 +660,8 @@ if (A) {
     "an error below the fold is an error nobody reads");
   // (18 Nov 2026, SLPSITE1: a failed send also forgets the plan pick first,
   // so nothing sends the clinician to checkout from an email never sent.)
-  ok("email delivery failure leaves the form available to retry",
-    /if \(j\.sent !== true\) \{\s*(?:forget\(\);\s*)?err\([^\n]+\);\s*return;/.test(slps));
+  ok("a checkout that does not open leaves the form available to retry",
+    /busy\(false\);\s*err\(\(j && j\.error\) \|\| "Couldn't open checkout\. Try again\."\);/.test(slps));
 }
 
 // ── the clinician homepage sends an email before sign-in ──
@@ -668,11 +671,13 @@ if (A) {
   // The homepage at / (also /plans) emails the sign-in link as flow
   // "trial", which grants nothing; it is the front door again (20 Nov 2026),
   // so a sent email is the Lead.
-  ok("the plans page requests the trial flow",
-    /flow: "trial"/.test(handler) && !/flow: "free-dashboard"/.test(handler) && /fetch\("\/api\/slp\/auth\/request"/.test(handler));
-  ok("…and the page reports delivery only after email success",
-    /if \(j\.sent !== true\)/.test(handler) && /"Check your email"/.test(handler) &&
-    handler.indexOf('sonaTrack("Lead")') > 0 && handler.indexOf("if (j.sent !== true) {") < handler.indexOf('sonaTrack("Lead")'));
+  // BUYNOW1 (25 Nov 2026): the email opens Stripe's checkout; the sign-in
+  // link is emailed once Stripe says it is paid (/api/slp/checkout/done).
+  ok("the plans page opens the checkout, never a sign-in email first",
+    /fetch\("\/api\/slp\/checkout"/.test(handler) && !/\/api\/slp\/auth\/request|flow: "/.test(slps) && /fetch\("\/api\/slp\/checkout\/done"/.test(handler));
+  ok("…and the Lead is sent only as the page leaves for a checkout the server opened",
+    /if \(j && j\.ok && j\.url\) \{ toStripe\(j\.url\); return; \}/.test(handler) &&
+    !/sonaTrack\(/.test(handler.slice(0, handler.indexOf("// BACK FROM STRIPE, PAID"))));
   ok("…the clinician gets no automatic dashboard or App Store navigation",
     !/apps\.apple\.com|APP_STORE|location\.href\s*=|CompleteRegistration/.test(handler));
 

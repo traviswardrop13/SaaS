@@ -3140,35 +3140,6 @@ MAIL1, the CRM webhook, STRIPEHOOK1's events, GHLPRO1's checkout).
   rewrite) did the same until this shipped; remove it after, since a
   platform route runs before next.config's.
 
-## /plans' Sona Pro button goes straight to Stripe (BUYNOW1, 25 Nov 2026)
-Travis: "the button on the purchase page goes to a Stripe checkout. Not the
-SLP dashboard." This supersedes TRIALGO1 and SLPSITE1 for the Sona Pro
-buttons on `/plans` (and `/blackfriday/plans`, `/checkout`): no sign-in email
-first. Sona Clinic (while on sale) and the dashboard's own doors are unchanged.
-- **The page** (`buyNow` in `for-slps.html`): the email box and the button.
-  It keeps the email as a lead (`/api/lead`, role "slp", source
-  "plans-checkout", which gets no Black Friday email: they are buying), then
-  asks `/api/slp/buy` for the checkout and goes there (the pixel: Lead, or
-  InitiateCheckout after the opt-in). Nothing is remembered for the dashboard.
-- **`POST /api/slp/buy`** (`app/api/slp/buy/route.ts`): same origin, 10 an
-  hour per IP, a valid email. Already Sona Pro: 409 "sign in" and nothing
-  sold. Otherwise a Stripe checkout stamped `plan: slp-pro`, `slp: <email>`,
-  `source: plans` (and `ref`, `offer`) on the session and the subscription,
-  so `proStatus` finds it for that email; the 14-day trial only on Stripe's
-  word that the email never had one; Black Friday's coupon and no trial,
-  exactly as `/api/slp/plan`. Back to `/plans?bought={CHECKOUT_SESSION_ID}`.
-- **`GET /api/slp/buy?session=`**: only a checkout this route made
-  (`source: plans`). Finished: the plan mirror is written
-  (`activateFromSession`) and ONE sign-in link goes to that email
-  (`slpbuymail:<sid>`, the signed pending sign-up, source "plans-buy", the
-  `ref` kept), and only the email's domain is said back. The page says "Sona
-  Pro is on. We emailed you a sign-in link …" and fires StartTrial (a trial)
-  or Purchase; unfinished, it points to the sign-in page.
-- **The trade-off, Travis's to know:** anyone can open a checkout for any
-  email (as on Stripe's own hosted pages); paying for someone else's address
-  gives the dashboard to that inbox, never to the payer. The inbox still
-  proves who signs in. `caseloadtest` (BUYNOW1) and `landingtest` play it.
-
 ## Black Friday 2026: Sona Pro $9.99 for 3 months, until Sunday 11:59 PM Mountain (BF1, 24 Nov 2026)
 Travis: "a fresh optin and website to use this week for black friday! with
 a countdown to sunday at 11:59 pm"; asked, he chose **50% off Sona Pro for 3
@@ -3236,10 +3207,13 @@ months** and **Mountain time**, then "but no free trial on the promo".
   left, and pressing again carries on.
 - **for-slps.html's Black Friday mode is on wherever it is served (`/plans`,
   `/blackfriday/plans`, `/checkout`) until the end**, because every Sona Pro
-  checkout until then is the deal: a navy bar with the time left, a line on
-  the Sona Pro card ("No free trial on this deal. Ends Sunday 11:59 PM
-  Mountain."), "Get the Black Friday price" on the buttons ("Get Sona Pro
-  for $9.99" on the card), the deal's charged-today terms, and "Open it to
+  checkout until then is the deal: a navy bar with the time left, the Sona
+  Pro card's price struck out ("$19.99 a month" crossed, "$9.99 a month"
+  beside it) over a two-line mint box ("Black Friday: $9.99 a month for 3
+  months, then $19.99." / "Ends Sunday 11:59 PM Mountain."; Travis, 25 Nov
+  2026: no "No free trial on this deal."), "Get the Black Friday price" on
+  the buttons ("Get Sona Pro for $9.99" on the card), "Cancel anytime."
+  under the card's button (the hero shows no terms line), and "Open it to
   get your Black Friday price." once the link is sent. At the end, on an
   open page, the trial and its ordinary words come back. **Known, Travis's:**
   the sign-in email still says "New to Sona? You'll start your free trial
@@ -3250,6 +3224,69 @@ months** and **Mountain time**, then "but no free trial on the promo".
   play before, at and after the end; `telemetrytest` allows the pixel on
   bf.html. **After Sunday**: nothing to undo; the ads go back to `/`.
   Deleting bf.html and the mode is a later cleanup.
+
+## /plans opens Stripe straight away (BUYNOW1, 25 Nov 2026)
+Travis: "the Get Black Friday price button, along with Get Sona Pro for
+$9.99, needs to go to like a Stripe checkout, not the SLP dashboard". This
+supersedes the lines above that send a /plans visitor to the dashboard or
+email them a sign-in link before they can pay (SLPSITE1's "Already signed
+in", TRIALGO1's `sona.slp.wantplan` from /plans, the trial form's email).
+- **Signed in:** every buy button POSTs `/api/slp/plan` (`back: "plans"`, so
+  Stripe's Cancel returns to `/plans#pricing`; success still lands on the
+  dashboard). Nothing left to sell: the server's words on the page.
+- **Not signed in:** the email box, then `/api/slp/checkout` (Sona Pro only;
+  the same checks, trial rule, Black Friday coupon and terms as
+  `/api/slp/plan`'s Pro branch, keep them in step), and Stripe at once. An
+  email already in the box (from the opt-in) goes straight on. The
+  subscription is stamped `slp: <email>`, `from: plans` (and the Share & earn
+  `ref`). No account, no sign-in email before paying. Back from Stripe
+  (`/plans?paid=cs_…`) `/api/slp/checkout/done` stores the plan and emails
+  ONE sign-in link ("Sona Pro is on."), a signed pending sign-up carrying the
+  Share & earn code. **The page says only what the server answered**:
+  "Checking your payment…", then "You're in!" once the email went (the id
+  then leaves the address); an email that did not go is asked about again
+  (3 s apart, four asks), then "Sona Pro is on." with "Send my link again"
+  and "Sign in with your email"; a payment not confirmed says "Almost
+  there." with "Check again". **Stripe's webhook sends the same email** when
+  a `from: plans` subscription comes on (created on, or updated from not on;
+  never a renewal), for a buyer who closed Stripe; one function and one mark
+  for both doors (`lib/plansMail.ts`, `slpbuymail:<subscription>`: held two
+  minutes while sending, "sent" for a year, given back when the email did
+  not go; the webhook answers 503 then, so Stripe tries again).
+  `caseloadtest`, `stripehooktest`, `landingtest`. **Travis's trade:** the
+  email is not proved before payment, so a typo is a paid plan nobody can
+  sign in to until support moves it; the dashboard still opens only for the
+  inbox.
+- The Pixel's Lead (InitiateCheckout after the opt-in's Lead) fires as the
+  page leaves for Stripe; back from it, once the server says the plan is on,
+  StartTrial (a free trial) or Purchase, once per checkout (`sona.paidtold.`
+  in sessionStorage). Under the button: "Secure checkout with Stripe."
+- **The checkout's lead is "plans-checkout"**, whatever the ad's source (its
+  tags ride along): `/api/lead` sends no Black Friday email to that source,
+  so a buyer is never sent the deal they are paying for that minute.
+- **Two sessions built this the same day; this one stands.** #317 (merged
+  first) opened Stripe through `/api/slp/buy`, came back to `?bought=` and
+  stamped `source: plans`. Its route is now only an alias of
+  `/api/slp/checkout`'s POST (a /plans page loaded before the merge still
+  works; delete it after Black Friday), and `?bought=`, `source: plans` and
+  its checkouts are answered by this flow (the return page, the done route,
+  the webhook). Its own `slpbuymail:<session>` marks are not read: a #317
+  buyer already emailed could get one more email if their plan comes on
+  later (rare, harmless).
+- **The same day, on /plans:** the headline "Speech homework kids ask for."
+  (title, share card `og-slp.png?v=6`, which the opt-in pages share), the
+  hero button the form's width in capitals (`#signup .btn`, /plans only:
+  Travis, "I didn't want to change the opt-in page", so `/` and
+  `/blackfriday` keep their plain "Get Started"), Black Friday's eyebrow
+  "Black Friday · Sona Pro half off", the hero and closing buttons "Get Sona
+  Pro at 50% off" and the card's "Get Sona Pro", Lindi's App Store review
+  beside the hero (a real review only: her title and her first words, cut
+  at "…" to two lines, "Lindi, parent · App Store review"), the Sona Pro
+  lines (Sona Lite, unlimited accounts for clients, the SLP dashboard, Share
+  & earn with a gift icon), "Cancel anytime." under both plan buttons, the
+  two-line Black Friday box, and no parents' price box or "Good to know"
+  section. **Rachel's:** the headline and the review on a clinicians' page.
+`caseloadtest`, `landingtest`, `shiptest`, `slpapi`, `telemetrytest` play it.
 
 ## The app lives at app.speaksona.com (APPHOST1, 17 Nov 2026)
 Travis: point the app at app.speaksona.com "so that I can get speaksona.com

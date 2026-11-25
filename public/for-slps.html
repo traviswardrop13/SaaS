@@ -22,7 +22,7 @@
 })();
   </script>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Sona for speech therapists — send home practice they’ll play</title>
+  <title>Sona for speech therapists — speech homework kids ask for</title>
   <meta name="description" content="Sona Pro for speech therapists, 14 days free. Play Sona games in your sessions, share the app with clients, and see who practiced at home. Built with Rachel, MS, CF-SLP." />
   <!-- THE CLINICIANS' PLANS PAGE (17 Nov 2026, the free packet left out on
        20 Nov 2026). Served at /plans and /checkout (next.config.js); since
@@ -39,16 +39,16 @@
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Sona" />
   <meta property="og:url" content="https://www.speaksona.com/plans" />
-  <meta property="og:title" content="Send home practice they’ll play." />
+  <meta property="og:title" content="Speech homework kids ask for." />
   <meta property="og:description" content="Sona Pro for speech therapists: play Sona games in your sessions, share the app with clients, and see who practiced at home. 14 days free." />
-  <meta property="og:image" content="https://speaksona.com/og-slp.png?v=4" />
+  <meta property="og:image" content="https://speaksona.com/og-slp.png?v=6" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
   <meta property="og:image:alt" content="Sona for speech therapists." />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="Send home practice they’ll play." />
+  <meta name="twitter:title" content="Speech homework kids ask for." />
   <meta name="twitter:description" content="Sona Pro for speech therapists: play Sona games in your sessions, share the app with clients, and see who practiced at home. 14 days free." />
-  <meta name="twitter:image" content="https://speaksona.com/og-slp.png?v=4" />
+  <meta name="twitter:image" content="https://speaksona.com/og-slp.png?v=6" />
 
   <!-- The bird with no card behind him. The home-screen icon keeps its
        background on purpose: iOS fills a transparent one with black. -->
@@ -95,10 +95,14 @@
   <div class="wrap in"><span><b>Black Friday:</b> Sona Pro is $9.99 a month for your first 3 months.</span><span class="cd-inline" id="bfLeft" role="timer"></span></div>
 </div>
 <section class="hero-band">
-  <div class="wrap hero">
+  <div class="wrap hero hero-q">
   <div class="hero-intro">
-    <p class="eyebrow">Sona for speech therapists</p>
-    <h1>Send home practice <span>they&rsquo;ll play.</span></h1>
+    <p class="eyebrow" id="heroEye">Sona for speech therapists</p>
+    <!-- A HEADLINE THAT NAMES THE PROBLEM (Travis, 25 Nov 2026: "a more
+         compelling headline", with GoHighLevel's Black Friday page to draw
+         on; then "speech homework kids ask for"). The lede under it is
+         unchanged ("sub headline is great"). -->
+    <h1>Speech homework kids <span>ask for.</span></h1>
     <p class="lede">Play Sona games in your sessions, share the app with clients, and see who practiced at home.</p>
   </div>
 
@@ -126,12 +130,16 @@
            page with the trial's button, card up front at Stripe. -->
       <button class="btn" id="fGo" type="submit" aria-describedby="fTerms fNext">Start your free trial</button>
       <p class="next-step trial-terms" id="fTerms">14 days free, then $19.99 a month. Cancel anytime.</p>
-      <p class="next-step" id="fNext">We’ll email you a sign-in link.</p>
+      <p class="next-step" id="fNext">Secure checkout with Stripe.</p>
       <div class="serr" id="fErr" role="alert"></div>
     </form>
     <div class="sent" id="sent" role="status" hidden>
-      <div class="t" id="sentT">Check your email</div>
+      <div class="t" id="sentT">You're in!</div>
       <div class="m" id="sentMsg"></div>
+      <div class="sent-acts" id="sentActs" hidden>
+        <button class="btn" type="button" id="sentRetry" hidden>Send my link again</button>
+        <a class="sent-in" id="sentIn" href="/slp-login.html" hidden>Sign in with your email</a>
+      </div>
       <div class="devbox" id="devbox" hidden></div>
     </div>
     <div class="trust">
@@ -139,6 +147,19 @@
       <p><b>Built with Rachel, MS, CF-SLP</b></p>
     </div>
   </div>
+
+  <!-- A PARENT'S OWN WORDS (Travis, 25 Nov 2026): Lindi's App Store review
+       of the family app, her title and the start of her words, cut at the
+       "…" so it stays two lines on a phone ("Try to make it 2 lines"). Her
+       review goes on: "and thinks the games are fun so it's a win-win.
+       We're so glad we found it!" A real review only; never one written
+       for the page, and never a word of hers changed. -->
+  <figure class="hero-quote" id="heroQuote">
+    <div class="stars" aria-label="5 out of 5 stars">★★★★★</div>
+    <p class="qt">Makes practicing fun!</p>
+    <blockquote><p>This app has been so helpful for my 3 year old. She has improved so much&hellip;</p></blockquote>
+    <figcaption><b>Lindi</b>, parent &middot; App Store review</figcaption>
+  </figure>
 
   </div>
 </section>
@@ -228,12 +249,12 @@
       <h3>Sona Pro</h3>
       <p class="for">For you and your whole caseload</p>
       <p class="price"><s class="was" id="proWas" hidden>$19.99 a month</s> <b>$19.99</b> a month</p>
-      <p class="bf-deal" id="bfDeal" hidden><b>Black Friday:</b> $9.99 a month for your first 3 months, then $19.99. No free trial on this deal. Ends Sunday 11:59 PM Mountain.</p>
+      <p class="bf-deal" id="bfDeal" hidden><span><b>Black Friday:</b> $9.99 a month for 3 months, then $19.99.</span><span>Ends Sunday 11:59 PM Mountain.</span></p>
       <ul>
         <li>Everything in Sona Lite</li>
         <li>Unlimited accounts for clients</li>
         <li>SLP dashboard to track at-home practice</li>
-        <li><b>Bonus:</b> Share &amp; earn <a href="#earn">$8 a month</a> for each SLP you bring</li>
+        <li class="gift">Share &amp; earn <a href="#earn">$8 a month</a> for each SLP you bring</li>
       </ul>
       <button class="btn" type="button" data-plan="pro" id="proGo">Try Sona Pro free</button>
       <p class="terms" id="proTerms">Cancel anytime.</p>
@@ -447,7 +468,7 @@
     var BF_ENDS_AT = Date.UTC(2026, 10, 30, 6, 59, 0);
     var BF = false, bfTimer = 0, bfWas = null;
     try { BF = Date.now() < BF_ENDS_AT; } catch (e) {}
-    var BF_LABEL = "Get the Black Friday price";
+    var BF_LABEL = "Get Sona Pro at 50% off";
     // (Travis, 25 Nov 2026) The deal's words are the card's own line and the
     // struck-out price; under the buttons, only "Cancel anytime."
     var proPrice = document.querySelector("#planPro .price b");
@@ -463,6 +484,7 @@
     function bfEnd() {
       if (bfTimer) { clearInterval(bfTimer); bfTimer = 0; }
       BF = false;
+      $("heroEye").textContent = "Sona for speech therapists";
       $("bfBar").hidden = true; $("bfDeal").hidden = true; $("proWas").hidden = true; $("fTerms").hidden = false;
       proPrice.textContent = "$19.99";
       if (bfWas) {
@@ -473,9 +495,11 @@
     }
     if (BF) {
       bfWas = bfWords();
-      LABEL = BF_LABEL; $("fGo").textContent = BF_LABEL; $("finalGo").textContent = BF_LABEL; $("proGo").textContent = "Get Sona Pro for $9.99";
+      LABEL = BF_LABEL; $("fGo").textContent = BF_LABEL; $("finalGo").textContent = BF_LABEL; $("proGo").textContent = "Get Sona Pro";
       $("fTerms").hidden = true; $("proWas").hidden = false; proPrice.textContent = "$9.99";
       $("bfBar").hidden = false; $("bfDeal").hidden = false;
+      // GoHighLevel's way (Travis, 25 Nov 2026): the deal named over the headline.
+      $("heroEye").innerHTML = "Black Friday &middot; <span>Sona Pro half off</span>";
       bfTick(); bfTimer = setInterval(bfTick, 1000);
     }
 
@@ -486,7 +510,7 @@
       var e = $("fErr"); e.textContent = msg;
       try { e.scrollIntoView({ block: "nearest", behavior: "smooth" }); } catch (x) { e.scrollIntoView(false); }
     }
-    function busy(on) { $("fGo").disabled = on; $("fGo").textContent = on ? "Sending…" : LABEL; }
+    function busy(on) { $("fGo").disabled = on; $("fGo").textContent = on ? "Opening checkout…" : LABEL; }
 
     // The closing button brings the visitor back to the signup form.
     function toForm() {
@@ -494,7 +518,7 @@
       target.scrollIntoView({ behavior: "smooth", block: "center" });
       if ($("sent").hidden) setTimeout(function () { try { $("fEmail").focus({ preventScroll: true }); } catch (e) { $("fEmail").focus(); } }, 450);
     }
-    $("finalGo").onclick = function () { if (SIGNED_IN) { toDashboard(PICK || "pro"); return; } toForm(); };
+    $("finalGo").onclick = function () { buyOrAsk(PICK || "pro"); };
 
     /**
      * SONA CLINIC, HIDDEN FOR NOW (SLPSITE1, Travis, 18 Nov 2026: "i actually
@@ -516,31 +540,59 @@
     }
 
     /**
-     * A PLAN BUTTON PICKS THE PLAN AND BRINGS THEM TO THE FORM. Checkout
-     * needs a signed-in clinician, so the plan cannot be bought from here.
-     * The pick is held on the page (PICK) and written to localStorage
-     * "sona.slp.wantplan" only once it is acted on: the form's email has
-     * been sent, or a signed-in clinician is on the way to the dashboard.
-     * It is {plan, at}, and the dashboard reads it once, within the hour
-     * ("pro", or "clinic" only while it offers Clinic): the email link goes
-     * straight to that plan's checkout (TRIALGO1), for a brand-new account
-     * and for one that is locked. A pick nobody acted on is never kept, so a
-     * clinician who only looked never lands on Stripe days later. It is a
-     * hint, never an entitlement, and the server decides what is bought.
+     * EVERY BUY BUTTON OPENS STRIPE (BUYNOW1, Travis, 25 Nov 2026: "the Get
+     * Black Friday price button, along with Get Sona Pro for $9.99, needs to
+     * go to like a Stripe checkout, not the SLP dashboard"). Until then a
+     * button sent a signed-in clinician to the dashboard, which opened the
+     * checkout, and asked anyone else for an email that carried a sign-in
+     * link to it.
+     *  - Signed in: /api/slp/plan, the dashboard's own checkout; Cancel comes
+     *    back here (`back: "plans"`), Stripe's success goes to the dashboard.
+     *  - Not signed in: the email box, then /api/slp/checkout and Stripe at
+     *    once. An email already in the box (typed at the opt-in) goes
+     *    straight on. Once Stripe says it is paid, /plans?paid=… asks
+     *    /api/slp/checkout/done to email the sign-in link to the dashboard.
+     * The Pixel's event (the Lead, or InitiateCheckout after the opt-in's
+     * Lead, GHLEXIT1) fires as the page leaves for Stripe, with no form data;
+     * LEAVE_MS gives it time to get out (parents.html's number).
      */
     var PICK = "";
-    function remember(plan) {
-      try { localStorage.setItem("sona.slp.wantplan", JSON.stringify({ plan: plan, at: Date.now() })); } catch (e) {}
+    var LEAVING = false;
+    var LEAVE_MS = 150;
+    var EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+    function toStripe(url) {
+      LEAVING = true;
+      try { if (window.sonaTrack) { if (OPTED_IN) sonaTrack("InitiateCheckout"); else sonaTrack("Lead"); } } catch (e) {}
+      setTimeout(function () { location.assign(url); }, LEAVE_MS);
     }
-    function forget() { try { localStorage.removeItem("sona.slp.wantplan"); } catch (e) {} }
-    function toDashboard(plan) { remember(plan); location.assign("/slp.html"); }
+    function signedOut() {
+      SIGNED_IN = false;
+      $("fField").hidden = false; $("fEmail").required = true; $("fNext").hidden = false;
+    }
+    function checkoutSignedIn(plan) {
+      if (LEAVING) return;
+      busy(true);
+      fetch("/api/slp/plan", {
+        method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan: plan === "clinic" ? "clinic" : "pro", back: "plans" }),
+      }).then(function (r) { return r.json().then(function (j) { return { status: r.status, j: j }; }); }).then(function (x) {
+        if (x.j && x.j.ok && x.j.url) { toStripe(x.j.url); return; }
+        busy(false);
+        toForm();
+        // The session ended in another tab: the email box comes back.
+        if (x.status === 401) { signedOut(); return; }
+        err((x.j && x.j.error) || "Couldn't open checkout. Try again.");
+      }).catch(function () { busy(false); toForm(); err("Network hiccup — try again."); });
+    }
+    function buyOrAsk(plan) {
+      PICK = plan || "pro";
+      if (SIGNED_IN) { checkoutSignedIn(PICK); return; }
+      if (EMAIL_RE.test((($("fEmail").value) || "").trim())) { go(); return; }
+      toForm();
+    }
     var planBtns = document.querySelectorAll("[data-plan]");
     for (var b = 0; b < planBtns.length; b++) {
-      planBtns[b].onclick = function () {
-        PICK = this.getAttribute("data-plan");
-        if (SIGNED_IN) { toDashboard(PICK); return; }
-        toForm();
-      };
+      planBtns[b].onclick = function () { buyOrAsk(this.getAttribute("data-plan")); };
     }
 
     /**
@@ -600,115 +652,85 @@
     }
 
     function go() {
-      if ($("fGo").disabled) return;
-      if (SIGNED_IN) { toDashboard(PICK || "pro"); return; }
+      if ($("fGo").disabled || LEAVING) return;
+      if (SIGNED_IN) { checkoutSignedIn(PICK || "pro"); return; }
       var email = (($("fEmail").value) || "").trim();
       $("fErr").textContent = "";
-      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { err("Enter a valid email."); $("fEmail").focus(); return; }
-      // SONA PRO GOES STRAIGHT TO STRIPE (BUYNOW1, Travis, 25 Nov 2026: "the
-      // button on the purchase page goes to a Stripe checkout. Not the SLP
-      // dashboard"). /api/slp/buy opens Stripe's page for this email; back
-      // from it, this page (?bought=) emails the sign-in link. Sona Clinic,
-      // when it is on sale, still goes by the sign-in email below.
-      if ((PICK || "pro") === "pro") { buyNow(email); return; }
-      // THE FORM STARTS A TRIAL TOO (SLPSITE1, 18 Nov 2026): the dashboard
-      // sends a LOCKED account from its email link to checkout only when a
-      // plan is remembered, so once the link is sent the form remembers the
-      // plan button's pick, else Sona Pro. A send that fails remembers
-      // nothing (and forgets an older pick).
+      if (!EMAIL_RE.test(email)) { err("Enter a valid email."); $("fEmail").focus(); return; }
       busy(true);
-      fetch("/api/slp/auth/request", {
+      try { sessionStorage.setItem("sona.optin.email", email); } catch (e) {}
+      fetch("/api/slp/checkout", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ flow: "trial", email: email, source: src, attrib: attrib, ref: ref || undefined }),
+        body: JSON.stringify({ email: email, plan: PICK || "pro", source: src, attrib: attrib, ref: ref || undefined }),
       }).then(function (r) { return r.json(); }).then(function (j) {
+        if (j && j.ok && j.url) { toStripe(j.url); return; }
         busy(false);
-        if (!j || !j.ok) { forget(); err((j && j.error) || "Couldn't set that up right now."); return; }
-        if (j.sent !== true && j.devLink && (location.hostname === "localhost" || location.hostname === "127.0.0.1")) {
-          var previewLink = document.createElement("a");
-          previewLink.href = j.devLink;
-          previewLink.textContent = "Open the preview sign-in link";
-          $("devbox").textContent = "";
-          $("devbox").appendChild(previewLink);
-          $("devbox").hidden = false;
-          remember(PICK || "pro");
-          $("sentT").textContent = "Preview sign-in";
-          showDone("Email is unavailable in this preview.");
-          return;
-        }
-        if (j.sent !== true) {
-          forget();
-          err("We couldn’t send your sign-in link. Try again or email hello@speaksona.com.");
-          return;
-        }
-        // A TRIAL STARTED, with no form data attached: the Lead, unless the
-        // opt-in at / already counted this visitor's (GHLEXIT1), when it is
-        // InitiateCheckout, so one person is never two leads. Never a
-        // completed registration: nothing is bought until Stripe's checkout.
-        remember(PICK || "pro");
-        try { if (window.sonaTrack) { if (OPTED_IN) sonaTrack("InitiateCheckout"); else sonaTrack("Lead"); } } catch (e) {}
-        $("sentT").textContent = "Check your email";
-        showDone("We sent a sign-in link to " + email + (BF ? ". Open it to get your Black Friday price." : ". Open it to start your free trial."));
+        err((j && j.error) || "Couldn't open checkout. Try again.");
       }).catch(function () {
         busy(false);
-        forget();
         err("Network hiccup — try again.");
       });
     }
-    $("signup").addEventListener("submit", function (e) { e.preventDefault(); go(); });
 
-    // BUYNOW1: the email is kept on Sona's list first (a checkout left
-    // half-way still hears about Sona Pro), then Stripe's page opens.
-    function buyNow(email) {
-      busy(true);
-      $("fGo").textContent = "Opening checkout…";
-      try {
-        fetch("/api/lead", {
-          method: "POST", headers: { "Content-Type": "application/json" }, keepalive: true,
-          body: JSON.stringify({ email: email, role: "slp", source: "plans-checkout", utm_source: attrib.utm_source, utm_campaign: attrib.utm_campaign }),
-        }).catch(function () {});
-      } catch (e) {}
-      fetch("/api/slp/buy", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email, ref: ref || undefined }),
-      }).then(function (r) { return r.json(); }).then(function (j) {
-        if (!j || !j.ok || !j.url) {
-          busy(false);
-          err((j && j.error) || "Couldn't open checkout. Try again.");
-          return;
-        }
-        try { if (window.sonaTrack) { if (OPTED_IN) sonaTrack("InitiateCheckout"); else sonaTrack("Lead"); } } catch (e) {}
-        // a beat for the pixel's request to leave, as the opt-in does
-        setTimeout(function () { location.assign(j.url); }, 150);
-      }).catch(function () { busy(false); err("Network hiccup — try again."); });
-    }
-
-    // BACK FROM STRIPE (BUYNOW1): /plans?bought=cs_… asks the server, which
-    // reads the checkout from Stripe and emails the sign-in link once.
+    // BACK FROM STRIPE, PAID (?paid=cs_…, BUYNOW1). Stripe comes here only
+    // after the payment went through. The page says only what the server
+    // answered: "Checking…" first, "We emailed you a link" once the email
+    // went (now, or earlier from Stripe's webhook). Until then `paid` stays
+    // in the address, so a reload asks again; the server never sends twice.
+    // `bought=` is the same return from the first cut of BUYNOW1 (#317), whose
+    // checkouts opened before this build still come back that way.
     (function () {
-      var sid = "";
-      try { sid = String(new URLSearchParams(location.search).get("bought") || ""); } catch (e) {}
-      if (!/^cs_[A-Za-z0-9_]{10,240}$/.test(sid)) return;
-      try { history.replaceState(null, "", location.pathname + "#start"); } catch (e) {}
-      $("sentT").textContent = "You’re in!";
-      showDone("Checking your payment…");
-      fetch("/api/slp/buy?session=" + encodeURIComponent(sid), { cache: "no-store" })
-        .then(function (r) { return r.json(); })
-        .then(function (j) {
-          if (j && j.ok && j.done) {
-            showDone(j.mailed
-              ? "Sona Pro is on. We emailed you a sign-in link" + (j.to ? " (" + j.to + ")" : "") + ". Open it to get to your dashboard."
-              : "Sona Pro is on. Sign in at app.speaksona.com/slp-login.html with the email you used at checkout.");
-            // a free trial is a StartTrial to Meta, a charge today a Purchase
-            try { if (window.sonaTrack) { if (j.trial) sonaTrack("StartTrial"); else sonaTrack("Purchase"); } } catch (e) {}
-          } else if (j && j.ok) {
-            $("sentT").textContent = "Almost there";
-            showDone("Your payment is still finishing. Sign in at app.speaksona.com/slp-login.html with the email you used.");
-          } else {
-            showDone("Sign in at app.speaksona.com/slp-login.html with the email you used at checkout.");
+      var m = /[?&](?:paid|bought)=(cs_[A-Za-z0-9_]{10,240})(?:&|$)/.exec(location.search);
+      if (!m) return;
+      // Meta hears of the sale once per checkout, however often the page is
+      // reloaded: a free trial is StartTrial, a charge today Purchase.
+      function told(j) {
+        var k = "sona.paidtold." + m[1];
+        try { if (sessionStorage.getItem(k)) return; sessionStorage.setItem(k, "1"); } catch (e) {}
+        try { if (window.sonaTrack) { if (j.trial) sonaTrack("StartTrial"); else sonaTrack("Purchase"); } } catch (e) {}
+      }
+      function say(title, msg, retry, signIn) {
+        $("sentT").textContent = title;
+        if (retry) $("sentRetry").textContent = retry;
+        $("sentRetry").hidden = !retry;
+        $("sentRetry").disabled = false;
+        $("sentIn").hidden = !signIn;
+        $("sentActs").hidden = !(retry || signIn);
+        showDone(msg);
+      }
+      say("Checking your payment…", "One moment.", false, false);
+      function done(left) {
+        fetch("/api/slp/checkout/done", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ session: m[1] }),
+        }).then(function (r) { return r.json().then(function (j) { return { status: r.status, j: j }; }); }).then(function (x) {
+          var j = x.j || {};
+          if (j.ok && j.activated) told(j);
+          if (j.ok && j.activated && j.sent) {
+            try { history.replaceState(null, "", location.pathname + location.hash); } catch (e) {}
+            say("You're in!", "Sona Pro is on. We emailed you a link to open your dashboard.", false, false);
+            return;
           }
-        })
-        .catch(function () { showDone("Sign in at app.speaksona.com/slp-login.html with the email you used at checkout."); });
+          if ((j.retry || x.status >= 500 || x.status === 409) && left > 0) { setTimeout(function () { done(left - 1); }, 3000); return; }
+          if (j.ok && j.activated) {
+            if (j.retry) say("Sona Pro is on.", "We couldn't send your sign-in email just now.", "Send my link again", true);
+            else say("Sona Pro is on.", "Sign in with the email you paid with to open your dashboard.", false, true);
+            return;
+          }
+          say("Almost there.", "We couldn't confirm your payment yet.", "Check again", true);
+        }).catch(function () {
+          if (left > 0) { setTimeout(function () { done(left - 1); }, 3000); return; }
+          say("Almost there.", "We couldn't check your payment. Check your connection.", "Check again", true);
+        });
+      }
+      $("sentRetry").onclick = function () {
+        this.disabled = true;
+        $("sentT").textContent = "Checking your payment…";
+        done(1);
+      };
+      done(3);
     })();
+    $("signup").addEventListener("submit", function (e) { e.preventDefault(); go(); });
 
     // /checkout (GHLEXIT1): the address GoHighLevel's lead form and its
     // emails sent people to. It is this page, opened at the plans.

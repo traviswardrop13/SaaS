@@ -266,10 +266,19 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
   const slpHeadline = (slps.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/) || ["", ""])[1]
     .replace(/<[^>]+>/g, "").replace(/&rsquo;/g, "’").replace(/\s+/g, " ").trim();
   ok("the clinician page's headline, tab title and shared card carry the new message",
-    slpHeadline === "Send home practice they’ll play." &&
-    /<title>[^<]*Send home practice they’ll play[^<]*<\/title>/i.test(slps) &&
-    /og:title" content="Send home practice they’ll play\."/.test(slps) &&
-    /twitter:title" content="Send home practice they’ll play\."/.test(slps));
+    // Travis, 25 Nov 2026: "a more compelling headline", then "speech
+    // homework kids ask for".
+    slpHeadline === "Speech homework kids ask for." &&
+    /<title>[^<]*speech homework kids ask for[^<]*<\/title>/i.test(slps) &&
+    /og:title" content="Speech homework kids ask for\."/.test(slps) &&
+    /twitter:title" content="Speech homework kids ask for\."/.test(slps));
+  // A parent's real App Store review (Travis, 25 Nov 2026): her own words,
+  // cut short at the "…" to two lines, never a word changed.
+  ok("the clinician page carries Lindi's App Store review in her own words, cut at an ellipsis, named as a parent's review",
+    /<figure class="hero-quote" id="heroQuote">/.test(slps) &&
+    /<p class="qt">Makes practicing fun!<\/p>/.test(slps) &&
+    /<blockquote><p>This app has been so helpful for my 3 year old\. She has improved so much&hellip;<\/p><\/blockquote>/.test(slps) &&
+    /<figcaption><b>Lindi<\/b>, parent &middot; App Store review<\/figcaption>/.test(slps));
   const slpLede = (slps.match(/<p class="lede">([\s\S]*?)<\/p>/) || ["", ""])[1];
   // Travis, 14 Nov 2026: a benefit "that is not like the community"; the
   // session-planning line waits until the planner is built.
@@ -287,8 +296,11 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
     !/How it works/.test(header));
   ok("a parent who lands here is pointed to /for-parents",
     (slps.match(/<a\b[^>]*href="\/for-parents"/g) || []).length === 1);
-  ok("clinician signup asks the auth endpoint for the trial's sign-in link (SLPPRO1: no free dashboard)",
-    /fetch\("\/api\/slp\/auth\/request"/.test(slps) && /flow:\s*"trial"/.test(slps) && !/free-dashboard/.test(slps) &&
+  // BUYNOW1 (Travis, 25 Nov 2026): every buy button opens Stripe's checkout,
+  // never a sign-in email first and never the dashboard on the way.
+  ok("clinician signup opens Stripe's checkout: /api/slp/checkout for a new visitor, /api/slp/plan (Cancel back to /plans) for a signed-in one, no sign-in email first",
+    /fetch\("\/api\/slp\/checkout"/.test(slps) && /fetch\("\/api\/slp\/plan", \{/.test(slps) && /back: "plans"/.test(slps) &&
+    !/\/api\/slp\/auth\/request|location\.assign\("\/slp\.html"\)/.test(slps) && !/free-dashboard/.test(slps) &&
     !/#premium|APP_STORE|APP_READY/.test(slps) &&
     // GHLEXIT1 (24 Nov 2026): the one App Store link is Sona Premium's own
     // button, the $9.99 plan Apple sells in the app; nothing else sends a
@@ -301,8 +313,8 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
     /placeholder="you@yourclinic\.org"/.test(form) &&
     !/<option value="(?:parent|other)"/.test(form) &&
     (slps.match(/<form\b/g) || []).length === 1 && !/id="startModal"/.test(slps));
-  ok("both clinician calls to action say Start your free trial and the closing one returns to the form (a signed-in visitor: straight back to the dashboard)",
-    /\$\("finalGo"\)\.onclick = function \(\) \{ if \(SIGNED_IN\) \{ toDashboard\(PICK \|\| "pro"\); return; \} toForm\(\); \};/.test(slps) &&
+  ok("both clinician calls to action say Start your free trial, and the closing one buys (Stripe) or asks for the email",
+    /\$\("finalGo"\)\.onclick = function \(\) \{ buyOrAsk\(PICK \|\| "pro"\); \};/.test(slps) &&
     (slps.replace(/<!--[\s\S]*?-->/g, "").match(/>Start your free trial</g) || []).length === 2 && !/Get the free dashboard/.test(slps));
   // SLPPRO1 (17 Nov 2026): the trial's terms beside its button, read from
   // lib/caseload.ts (the static page cannot import it, so this pins them).
@@ -312,8 +324,8 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
     ok("the signup button names the trial's terms from lib/caseload: " + days + " days free, then " + price + " " + per + ", cancel anytime",
       /aria-describedby="fTerms fNext"/.test(form) && new RegExp('id="fTerms">' + days + " days free, then \\" + price + " " + per + "\\. Cancel anytime\\.<").test(form), (form.match(/id="fTerms">[^<]*/) || [""])[0]);
   }
-  ok("…and tells clinicians that access is emailed",
-    /id="fNext">[^<]*email you a sign-in link/i.test(form));
+  ok("…and says the next step is Stripe's checkout (BUYNOW1)",
+    /id="fNext">Secure checkout with Stripe\.</.test(form));
   const heroR = (slps.match(/<div class="hero-r"[\s\S]*?<\/section>/) || [""])[0];
   ok("the clinician hero shows Echo and a Fruit Slice game screen without sample caseload data",
     /<img class="mascot" src="\/assets\/site\/echo\.webp"/.test(heroR) && /<img src="\/assets\/site\/slice\.webp"/.test(heroR) &&
@@ -493,8 +505,8 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
   ok("no parents' price box under Sona Pro, and no /api/charter call for it",
     !/parent-price|parentPrice/.test(slps) && !/\/api\/charter/.test(slps));
   // THE SONA PRO LINES (Travis, 25 Nov 2026), in this order.
-  ok("the Sona Pro card's four lines: Sona Lite, unlimited client accounts, the SLP dashboard, and the Share & earn bonus",
-    /<li>Everything in Sona Lite<\/li>\s*<li>Unlimited accounts for clients<\/li>\s*<li>SLP dashboard to track at-home practice<\/li>\s*<li><b>Bonus:<\/b> Share &amp; earn <a href="#earn">\$8 a month<\/a> for each SLP you bring<\/li>/.test(pro));
+  ok("the Sona Pro card's four lines: Sona Lite, unlimited client accounts, the SLP dashboard, and Share & earn with a gift",
+    /<li>Everything in Sona Lite<\/li>\s*<li>Unlimited accounts for clients<\/li>\s*<li>SLP dashboard to track at-home practice<\/li>\s*<li class="gift">Share &amp; earn <a href="#earn">\$8 a month<\/a> for each SLP you bring<\/li>/.test(pro) && !/Bonus/.test(pro));
   // SONA LITE, FOR THE CLINICIAN'S OWN SESSIONS (GHLEXIT1, Travis, 24 Nov
   // 2026: "$9.99/mo for just the kids app ... for the slp/slpa to use in
   // sessions", named so it is plainly not Pro). It is the Sona Premium Apple
@@ -544,28 +556,30 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
     const deal = (shown.match(/<p class="bf-deal" id="bfDeal" hidden>[\s\S]*?<\/p>/) || [""])[0];
     ok("/plans' Black Friday mode: a bar and a line on the Sona Pro card, hidden in the markup, shown on this page wherever it is served until the end",
       bar.includes("Sona Pro is " + bfPrice + " a month for your first " + bfMonths + " months.") && pro.includes('id="bfDeal"') &&
-      deal.includes(bfPrice + " a month for your first " + bfMonths + " months, then " + PRO.price + ". No free trial on this deal. Ends Sunday 11:59 PM Mountain.") &&
+      // Two lines, no "No free trial on this deal." (Travis, 25 Nov 2026)
+      deal.includes(bfPrice + " a month for " + bfMonths + " months, then " + PRO.price + ".</span><span>Ends Sunday 11:59 PM Mountain.</span>") && !/free trial/i.test(deal) &&
       /try \{ BF = Date\.now\(\) < BF_ENDS_AT; \}/.test(slps));
     // Travis, 25 Nov 2026: $19.99 struck out with $9.99 beside it; the hero's terms line goes.
     ok("…the Sona Pro price shows " + PRO.price + " struck out, then " + bfPrice + ", and the hero's terms line is hidden",
       pro.includes('<s class="was" id="proWas" hidden>' + PRO.price + ' a month</s> <b>' + PRO.price + '</b> a month') &&
       /\$\("fTerms"\)\.hidden = true; \$\("proWas"\)\.hidden = false; proPrice\.textContent = "\$9\.99";/.test(slps) &&
-      !/BF_TERMS|BF_PRO_TERMS/.test(slps) && /var BF_LABEL = "Get the Black Friday price";/.test(slps));
+      !/BF_TERMS|BF_PRO_TERMS/.test(slps) && /var BF_LABEL = "Get Sona Pro at 50% off";/.test(slps));
   }
   // 18 Nov 2026 (review): the pick is {plan, at}, written only once it is
   // acted on (a sent email, or a signed-in visitor), and counts for an hour.
-  ok("a plan button only picks the plan (PICK) and brings the visitor to the one form; the pick is written as {plan, at} only when acted on",
-    /PICK = this\.getAttribute\("data-plan"\);/.test(slps) && /localStorage\.setItem\("sona\.slp\.wantplan", JSON\.stringify\(\{ plan: plan, at: Date\.now\(\) \}\)\)/.test(slps) &&
-    /var planBtns = document\.querySelectorAll\("\[data-plan\]"\);/.test(slps) &&
-    !/\/api\/slp\/plan|checkout/i.test(shown.replace(/the checkout and the billing/, "")));
+  ok("a plan button buys its plan: Stripe at once when signed in or an email is in the box, else the one form; no pick is left for the dashboard",
+    /planBtns\[b\]\.onclick = function \(\) \{ buyOrAsk\(this\.getAttribute\("data-plan"\)\); \};/.test(slps) &&
+    /var planBtns = document\.querySelectorAll\("\[data-plan\]"\);/.test(slps) && !/sona\.slp\.wantplan/.test(slps) &&
+    !/\/api\/slp\/plan/i.test(shown));
   // SLPSITE1 (18 Nov 2026): the dashboard sells nothing, so the email link
   // is the way to checkout, for a LOCKED account too, but only when a plan is
   // remembered: the trial form remembers Sona Pro, never over a button's pick.
-  ok("…and the trial form remembers the button's pick, else Sona Pro, once the email is sent, and forgets it when the send fails",
-    // GHLEXIT1: after the opt-in at / counted the Lead, the trial here is InitiateCheckout.
-    /remember\(PICK \|\| "pro"\);\s*try \{ if \(window\.sonaTrack\) \{ if \(OPTED_IN\) sonaTrack\("InitiateCheckout"\); else sonaTrack\("Lead"\); \} \}/.test(slps) &&
-    /OPTED_IN = sessionStorage\.getItem\("sona\.optin\.lead"\) === "1";/.test(slps) &&
-    /if \(j\.sent !== true\) \{\s*forget\(\);/.test(slps) && /\(!j \|\| !j\.ok\) \{ forget\(\);/.test(slps));
+  ok("…and the Pixel hears it only as the page leaves for Stripe: the Lead, or InitiateCheckout after the opt-in's Lead",
+    // GHLEXIT1: after the opt-in at / counted the Lead, the checkout here is InitiateCheckout.
+    /function toStripe\(url\) \{\s*LEAVING = true;\s*try \{ if \(window\.sonaTrack\) \{ if \(OPTED_IN\) sonaTrack\("InitiateCheckout"\); else sonaTrack\("Lead"\); \} \}/.test(slps) &&
+    /OPTED_IN = sessionStorage\.getItem\("sona\.optin\.lead"\) === "1";/.test(slps) && (slps.match(/sonaTrack\("/g) || []).length === 4 &&
+    // …and back from Stripe, once the server says the plan is on, the sale: StartTrial or Purchase, once per checkout
+    /if \(j\.ok && j\.activated\) told\(j\);/.test(slps) && /if \(j\.trial\) sonaTrack\("StartTrial"\); else sonaTrack\("Purchase"\);/.test(slps));
   // SLPCLEAN1 (17 Nov 2026): the dashboard lost the community, the AI
   // homework draft and the day planner; SLPPRO1 replaced the planner with
   // Session games. The page promises what it has.

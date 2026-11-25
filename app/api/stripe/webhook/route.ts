@@ -4,6 +4,7 @@ import { kvCmd, kvConfigured, randomToken, hashToken, sendMagicEmail } from "@/l
 import { proEventFor, ghlBody, ghlUrl, proProductIds, untaggedProSub } from "@/lib/stripeHook";
 import { PRO_PLAN, PRO_NAME, planKey } from "@/lib/caseload";
 import { linkOrigin } from "@/lib/site";
+import { plansSignInMail } from "@/lib/plansMail";
 
 /**
  * STRIPE'S WEBHOOK (STRIPEHOOK1, 17 Nov 2026; lib/stripeHook.ts says what each
@@ -76,6 +77,32 @@ export async function POST(req: NextRequest) {
   }
   if (claimed && evt.type === "customer.subscription.created") {
     await signInEmail(claimed, String((evt.data.object as Stripe.Subscription).id || ""), (evt.data.object as Stripe.Subscription).status === "trialing");
+  }
+
+  // BUYNOW1: a Sona Pro bought on /plans signed nobody in. Its return page
+  // emails the sign-in link; this sends it for a buyer who closed Stripe
+  // and never came back (lib/plansMail: one email, whichever comes first).
+  // A send that did not go (or is still going, from the return page) is a
+  // 503, so Stripe's retry sends it or finds it sent.
+  // Only as the plan comes on: created already on, or updated from not on
+  // (a card that needed a second step); never a renewal or other change.
+  if (evt.type === "customer.subscription.created" || evt.type === "customer.subscription.updated") {
+    const o = evt.data.object as Stripe.Subscription;
+    const md = o.metadata || {};
+    const who = String(md.slp || "").trim().toLowerCase();
+    const on = (st: unknown) => st === "active" || st === "trialing";
+    const prev = (evt.data as { previous_attributes?: { status?: unknown } }).previous_attributes;
+    const cameOn = on(o.status) && (evt.type === "customer.subscription.created" || (!!prev && "status" in prev && !on(prev.status)));
+    // (`source: plans` is the first cut of this flow, #317's /api/slp/buy.)
+    if ((md.from === "plans" || md.source === "plans") && md.plan === PRO_PLAN && cameOn &&
+        who.length <= 254 && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(who)) {
+      const mail = await plansSignInMail({ email: who, sub: String(o.id || ""), trial: o.status === "trialing", ref: md.ref, origin: linkOrigin("https://app.speaksona.com") });
+      if (mail === "failed" || mail === "busy") return fail("mail", 503);
+      // The checkout asked Stripe for this address a moment ago and may have
+      // cached "no plan" (a minute at most): drop it, so the first sign-in
+      // finds the plan.
+      if (mail === "sent") await kvCmd(["DEL", planKey(who, "pro")]);
+    }
   }
 
   const p = proEventFor(evt);
