@@ -506,7 +506,7 @@ const keepTracks = () => Object.defineProperty(window, "sonaTrack", { configurab
   const cd = await page.evaluate(() => ["cdD", "cdH", "cdM"].map((id) => document.getElementById(id).textContent).join(":"));
   ok("Thursday at noon Mountain: 3 days 11 hours 59 minutes left to Sunday 11:59 PM", cd === "3:11:59" || cd === "3:11:58", cd);
   ok("…the headline, no price, Get Started, and no plans on the page", await page.evaluate(() =>
-    /Sona Pro, half off\./.test(document.body.innerText) && !/\$\d/.test(document.body.innerText) && /Ends Sunday, November 29 at 11:59 PM Mountain\./.test(document.body.innerText) &&
+    /Speech practice kids actually want to do\./.test(document.body.innerText) && !/half off/i.test(document.body.innerText) && !/\$\d/.test(document.body.innerText) && /Ends Sunday, November 29 at 11:59 PM Mountain\./.test(document.body.innerText) &&
     document.getElementById("oGo").textContent.trim() === "Get Started" && !document.getElementById("pricing")));
   posts = []; leadReply = { ok: true, captured: true };
   await page.fill("#oEmail", "bf@clinic.org");
