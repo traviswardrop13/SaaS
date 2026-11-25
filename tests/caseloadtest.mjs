@@ -249,7 +249,7 @@ try {
     account: "app/api/slp/account/route.ts", subscription: "app/api/subscription/route.ts", session: "app/api/checkout/session/route.ts",
     famPortal: "app/api/portal/route.ts", team: "app/api/slp/team/route.ts", teamAccept: "app/api/slp/team/accept/route.ts",
     roster: "app/api/slp/route.ts", child: "app/api/slp/child/route.ts", homework: "app/api/slp/homework/route.ts",
-    play: "app/api/slp/play/route.ts",
+    play: "app/api/slp/play/route.ts", buy: "app/api/slp/buy/route.ts",
   })) R[k] = L(rel);
 } catch (e) {
   console.log("(could not load the modules: " + (e && e.stack) + ")");
@@ -2742,6 +2742,65 @@ const count = (pred) => S.calls.filter(pred).length;
     /if \(kind === "pro" && bfOn\(\)\)/.test(read("app/api/slp/plan/route.ts")));
   delete process.env.SONA_BF_FORCE;
   Date.now = realNow;
+}
+
+// ═════════ BUYNOW1: /plans' button goes straight to Stripe (25 Nov 2026) ═════════
+// Travis: "the button on the purchase page goes to a Stripe checkout. Not the
+// SLP dashboard." No sign-in first: the checkout is stamped with the email,
+// and the inbox still proves it before the dashboard opens (the link is
+// emailed once the payment is back).
+{
+  const nb = "newbuyer@brightsteps.example";
+  S.calls.length = 0; RESEND.sent.length = 0;
+  let r = await call(R.buy, "POST", "/api/slp/buy", { body: { email: "NewBuyer@BrightSteps.example ", ref: "ab12cd34" } });
+  let p = (S.calls.find((c) => c[0] === "checkout.sessions.create") || [])[1];
+  ok("a brand-new email gets a Sona Pro checkout, no account and no sign-in needed", r.status === 200 && r.json.ok === true && /^https:\/\/checkout\.stripe\.test\//.test(r.json.url) && r.json.trial === true, JSON.stringify(r.json));
+  ok("…stamped so the dashboard finds it (plan slp-pro, slp the email) on the session and the subscription, with where it came from",
+    p && p.metadata.plan === "slp-pro" && p.metadata.slp === nb && p.metadata.source === "plans" && p.metadata.ref === "ab12cd34" &&
+    p.subscription_data.metadata.slp === nb && p.customer_email === nb && p.mode === "subscription", JSON.stringify(p));
+  ok("…the 14-day trial, card up front, and back to /plans with the session id",
+    p && p.subscription_data.trial_period_days === 14 && p.payment_method_collection === "always" &&
+    /\/plans\?bought=\{CHECKOUT_SESSION_ID\}$/.test(p.success_url) && /\/plans#pricing$/.test(p.cancel_url), JSON.stringify(p));
+  ok("…and no email is sent before paying", RESEND.sent.length === 0);
+
+  r = await call(R.buy, "POST", "/api/slp/buy", { body: { email: "not an email" } });
+  ok("a bad email is refused before Stripe", r.status === 400 && count((c) => c[0] === "checkout.sessions.create") === 1);
+  r = await call(R.buy, "POST", "/api/slp/buy", { body: { email: nb }, headers: { origin: "https://evil.example" } });
+  ok("another website's page cannot open one", r.status === 403);
+
+  const had = "hadtrial@brightsteps.example";
+  mkSub("sub_hadtrial_old", { plan: "slp-pro", slp: had, status: "canceled", interval: "month" });
+  S.calls.length = 0;
+  r = await call(R.buy, "POST", "/api/slp/buy", { body: { email: had } });
+  p = (S.calls.find((c) => c[0] === "checkout.sessions.create") || [])[1];
+  ok("an email that had the trial is charged from day one", r.status === 200 && r.json.trial === false && p && !("trial_period_days" in p.subscription_data));
+
+  const on = "alreadyon@brightsteps.example";
+  mkSub("sub_alreadyon", { plan: "slp-pro", slp: on, status: "active", interval: "month" });
+  S.calls.length = 0;
+  r = await call(R.buy, "POST", "/api/slp/buy", { body: { email: on } });
+  ok("an email that already has Sona Pro is told to sign in, and is sold nothing", r.status === 409 && r.json.already === true &&
+    count((c) => c[0] === "checkout.sessions.create") === 0, JSON.stringify(r.json));
+
+  // Back from Stripe.
+  S.sessions.set("cs_test_buyopen0000001", { id: "cs_test_buyopen0000001", status: "open", metadata: { plan: "slp-pro", slp: nb, source: "plans" } });
+  r = await call(R.buy, "GET", "/api/slp/buy?session=cs_test_buyopen0000001");
+  ok("an unfinished checkout says not done, and emails nothing", r.status === 200 && r.json.done === false && RESEND.sent.length === 0);
+  S.sessions.set("cs_test_dashboardplan01", { id: "cs_test_dashboardplan01", status: "complete", metadata: { plan: "slp-pro", slp: nb }, subscription: "sub_x" });
+  r = await call(R.buy, "GET", "/api/slp/buy?session=cs_test_dashboardplan01");
+  ok("a checkout the page did not make (the dashboard's own) is not this route's", r.status === 404 && RESEND.sent.length === 0);
+  mkSub("sub_newbuyer", { plan: "slp-pro", slp: nb, status: "trialing", interval: "month" });
+  S.sessions.set("cs_test_buydone0000001", { id: "cs_test_buydone0000001", status: "complete", customer: "cus_sub_newbuyer", metadata: { plan: "slp-pro", slp: nb, source: "plans", ref: "ab12cd34" }, subscription: "sub_newbuyer" });
+  r = await call(R.buy, "GET", "/api/slp/buy?session=cs_test_buydone0000001");
+  const m = RESEND.sent[0] || {};
+  ok("a paid checkout: Sona Pro is on for that email, one sign-in link goes to it, and only its domain is said back",
+    r.status === 200 && r.json.done === true && r.json.mailed === true && r.json.trial === true && r.json.to === "@brightsteps.example" &&
+    !!storedPro(nb) && RESEND.sent.length === 1 && JSON.stringify(m.to) === JSON.stringify([nb]) && /\/api\/slp\/auth\/verify\?token=/.test(m.text || ""),
+    JSON.stringify([r.json, storedPro(nb), m.to]));
+  r = await call(R.buy, "GET", "/api/slp/buy?session=cs_test_buydone0000001");
+  ok("…asked again, no second email", r.json.done === true && r.json.mailed === false && RESEND.sent.length === 1);
+  r = await call(R.buy, "GET", "/api/slp/buy?session=nope");
+  ok("a malformed session id is refused without asking Stripe", r.status === 400 || r.json.ok === false);
 }
 
 console.error = realErr;

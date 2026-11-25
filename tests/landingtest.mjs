@@ -23,6 +23,9 @@ const ok = (name, cond, detail) => { if (!cond) fails++; console.log((cond ? "PA
 // What the fake routes answer, and what they were sent. charterReply null
 // means /api/charter does not answer at all.
 let posts = [], leadReply = { ok: true, captured: true }, authReply = { ok: true, sent: true, signedIn: true }, charterReply = null;
+// /api/slp/buy (BUYNOW1): "#stripe" stands for Stripe's page, a same-page
+// jump, so what the page tracked is still there to read after it "leaves".
+let buyReply = { ok: true, url: "#stripe" }, buyBack = { ok: true, done: true, mailed: true, to: "@clinic.org" };
 // /api/slp/auth/me: null answers nobody signed in (the fake 404), as a fresh
 // visitor's browser does; set, the clinician signed in on this browser.
 let meReply = null;
@@ -33,12 +36,13 @@ let planReply = null;
 let forSlpsOverride = null;
 const srv = createServer((req, res) => {
   const u = new URL(req.url, "http://x");
-  if (req.method === "POST" && (u.pathname === "/api/lead" || u.pathname === "/api/slp/auth/request")) {
+  if (u.pathname === "/api/slp/buy" && req.method === "GET") { posts.push({ path: u.pathname, get: u.search }); res.writeHead(200, { "content-type": "application/json" }); res.end(JSON.stringify(buyBack)); return; }
+  if (req.method === "POST" && (u.pathname === "/api/lead" || u.pathname === "/api/slp/auth/request" || u.pathname === "/api/slp/buy")) {
     let body = "";
     req.on("data", (c) => (body += c));
     req.on("end", () => {
       posts.push({ path: u.pathname, body: JSON.parse(body || "{}") });
-      const reply = u.pathname === "/api/lead" ? leadReply : authReply;
+      const reply = u.pathname === "/api/lead" ? leadReply : u.pathname === "/api/slp/buy" ? buyReply : authReply;
       res.writeHead(reply.ok ? 200 : (reply.status || 400), { "content-type": "application/json" });
       res.end(JSON.stringify(reply));
     });
@@ -452,8 +456,8 @@ charterReply = null;
   ok("/plans: the email is already in its box, from this tab", await page.inputValue("#fEmail") === "sam@clinic.org");
   posts = []; authReply = { ok: true, sent: true, signedIn: false };
   await page.click("#fGo");
-  ok("/plans after the opt-in: the trial sign-up is InitiateCheckout, never a second Lead", await settles(page, () => !document.getElementById("sent").hidden) &&
-    posts.length === 1 && posts[0].path === "/api/slp/auth/request" && posts[0].body.flow === "trial" &&
+  ok("/plans after the opt-in: the button goes to Stripe's checkout as InitiateCheckout, never a second Lead", await settles(page, () => location.hash === "#stripe") &&
+    posts.some((x) => x.path === "/api/slp/buy" && x.body.email === "sam@clinic.org") && !posts.some((x) => x.path === "/api/slp/auth/request") &&
     JSON.stringify(await page.evaluate(() => window.__track)) === '["InitiateCheckout"]', posts);
   ok("/: no page errors", errors.length === 0, errors);
   await context.close();
@@ -471,7 +475,7 @@ charterReply = null;
   leadReply = { ok: true, captured: true };
   posts = []; authReply = { ok: true, sent: true, signedIn: false };
   await page.click("#fGo");
-  ok("…where its trial sign-up is then the Lead", await settles(page, () => !document.getElementById("sent").hidden) &&
+  ok("…where its checkout is then the Lead", await settles(page, () => location.hash === "#stripe") &&
     JSON.stringify(await page.evaluate(() => window.__track)) === '["Lead"]');
   ok("…no page errors", errors.length === 0, errors);
   await context.close();
@@ -524,9 +528,8 @@ const keepTracks = () => Object.defineProperty(window, "sonaTrack", { configurab
   ok("…with the email already in its box", await page.inputValue("#fEmail") === "bf@clinic.org");
   posts = []; authReply = { ok: true, sent: true, signedIn: false };
   await page.click("#fGo");
-  ok("…and its sign-up is InitiateCheckout, never a second Lead, and its email is for the Black Friday price", await settles(page, () => !document.getElementById("sent").hidden) &&
-    posts.length === 1 && posts[0].path === "/api/slp/auth/request" && JSON.stringify(await page.evaluate(() => window.__track)) === '["InitiateCheckout"]' &&
-    /Open it to get your Black Friday price\./.test(await page.textContent("#sentMsg")), posts);
+  ok("…and its button goes straight to Stripe's checkout (InitiateCheckout, never a second Lead)", await settles(page, () => location.hash === "#stripe") &&
+    posts.some((x) => x.path === "/api/slp/buy" && x.body.email === "bf@clinic.org") && JSON.stringify(await page.evaluate(() => window.__track)) === '["InitiateCheckout"]', posts);
   ok("…no page errors", errors.length === 0, errors);
   await context.close();
 }
@@ -767,32 +770,29 @@ for (const used of [false, true]) {
   await fill(page, "sam@clinic.org");
   const left = leftFor(page, "/plans", 3000);
   await page.click("#fGo");
-  ok("/plans: email confirmation identifies the address after delivery", await settles(page, () => {
-    const sent = document.getElementById("sent");
-    return !sent.hidden && /check your email/i.test(sent.textContent) && /sam@clinic\.org/.test(sent.textContent) && /start your free trial/i.test(sent.textContent);
-  }));
-  const p = posts[0] || { body: {} };
-  ok("/plans: one post asks for the trial's sign-in email", posts.length === 1 && p.path === "/api/slp/auth/request" &&
-    p.body.flow === "trial", posts);
-  // SLPSITE1: the email link takes a LOCKED account to checkout only when a
-  // plan is remembered, so the form remembers Sona Pro when nothing is.
-  ok("/plans: once the email is sent the trial form remembers Sona Pro for the dashboard (sona.slp.wantplan, {plan, at}) when no plan button was pressed",
-    await page.evaluate(WANT) === "pro");
-  ok("/plans: the request carries the email and ad click, with no name",
-    p.body.email === "sam@clinic.org" && !("name" in p.body) && p.body.attrib?.fbclid === "abc123" && p.body.source === "fb", p.body);
-  ok("/plans: the request asks no role or work setting", !("clinicianRole" in p.body) &&
-    !("workSetting" in p.body) && !!p.body.attrib && !("clinicianRole" in p.body.attrib) && !("workSetting" in p.body.attrib), p.body);
-  // The page is the front door again (20 Nov 2026): a sent trial email is the Lead.
-  ok("/plans: a sent email fires only Lead", JSON.stringify(await page.evaluate(() => window.__track)) === '["Lead"]');
-  ok("/plans: the confirmation stays on the page", !(await left), page.url());
+  // BUYNOW1 (Travis, 25 Nov 2026): the button goes to Stripe, not an email.
+  ok("/plans: the button goes straight to Stripe's checkout", await settles(page, () => location.hash === "#stripe"), page.url());
+  const p = posts.find((x) => x.path === "/api/slp/buy") || { body: {} };
+  const l = posts.find((x) => x.path === "/api/lead") || { body: {} };
+  ok("/plans: it asks /api/slp/buy for the checkout with the email and nothing else, and sends no sign-in email",
+    p.body.email === "sam@clinic.org" && Object.keys(p.body).every((k) => k === "email" || k === "ref") && !posts.some((x) => x.path === "/api/slp/auth/request"), posts);
+  ok("/plans: the email still joins the list as a speech therapist's (source plans-checkout), with no name",
+    l.body.email === "sam@clinic.org" && l.body.role === "slp" && l.body.source === "plans-checkout" && !("name" in l.body), l.body);
+  ok("/plans: it remembers no plan for the dashboard", await page.evaluate(() => localStorage.getItem("sona.slp.wantplan")) === null);
+  ok("/plans: opening checkout fires only Lead", JSON.stringify(await page.evaluate(() => window.__track)) === '["Lead"]');
+  ok("/plans: it never left for a page of ours", !(await left), page.url());
   ok("/plans: no page errors", errors.length === 0, errors);
   await context.close();
 }
 // The conversion fires only after the server said yes.
 {
   const { context, page } = await fresh({ path: "/plans" });
-  posts = []; authReply = { ok: false, error: "Enter a valid email." };
+  posts = []; buyReply = { ok: false, status: 409, error: "Sona Pro is already on for that email. Sign in to your dashboard with it." };
   await fill(page, "sam@clinic.org");
+  await page.click("#fGo");
+  ok("a checkout the server refuses shows its reason, and the form stays", await settles(page, () =>
+    /already on for that email/.test(document.getElementById("fErr").textContent) && !document.getElementById("fGo").disabled && location.hash !== "#stripe"));
+  buyReply = { ok: false, error: "Enter a valid email." };
   await page.click("#fGo");
   ok("a refused signup shows the server's reason", await settles(page, () =>
     /Enter a valid email/.test(document.getElementById("fErr").textContent)));
@@ -800,38 +800,48 @@ for (const used of [false, true]) {
   await context.close();
 }
 {
+  // BUYNOW1: a checkout that will not open leaves the form ready to try again.
   const { context, page } = await fresh({ path: "/plans" });
-  posts = []; authReply = { ok: true, sent: false, signedIn: false };
+  posts = []; buyReply = { ok: false, error: "Couldn't open checkout. Try again." };
   await fill(page, "sam@clinic.org");
   await page.click("#fGo");
-  const canRetry = await settles(page, () => /email/i.test(document.getElementById("fErr").textContent)) &&
+  const canRetry = await settles(page, () => /checkout/i.test(document.getElementById("fErr").textContent)) &&
     await page.locator("#signup").isVisible() && await page.locator("#fGo").isEnabled() &&
     !await page.locator("#sent").isVisible() && await page.inputValue("#fEmail") === "sam@clinic.org";
-  ok("a delivery failure leaves the form ready to retry without claiming the email was sent", canRetry);
-  ok("a delivery failure fires no conversion", await page.evaluate(() => window.__track.length === 0));
+  ok("a checkout that won't open leaves the form ready to retry", canRetry);
+  ok("…fires no conversion", await page.evaluate(() => window.__track.length === 0));
   ok("…and remembers no plan for the dashboard", await page.evaluate(() => localStorage.getItem("sona.slp.wantplan")) === null);
   if (canRetry) {
-    authReply = { ok: true, sent: true, signedIn: false };
+    buyReply = { ok: true, url: "#stripe" };
     await page.click("#fGo");
-    ok("retry confirms delivery after a successful send", await settles(page, () => !document.getElementById("sent").hidden) &&
-      posts.length === 2, posts);
+    ok("retry goes to Stripe's checkout", await settles(page, () => location.hash === "#stripe") &&
+      posts.filter((x) => x.path === "/api/slp/buy").length === 2, posts);
   }
+  buyReply = { ok: true, url: "#stripe" };
   await context.close();
 }
 
-// A local preview offers its test link without reporting an email delivery.
-{
-  const { context, page } = await fresh({ path: "/plans" });
-  posts = []; authReply = { ok: true, sent: false, signedIn: false, devLink: origin + "/api/slp/auth/verify?token=preview" };
-  await fill(page, "sam@clinic.org");
-  await page.click("#fGo");
-  ok("local preview shows its sign-in link with no delivery claim", await settles(page, () => {
-    const sent = document.getElementById("sent");
-    return !sent.hidden && /preview sign-in/i.test(sent.textContent) && !/check your email/i.test(sent.textContent);
-  }) && await page.locator("#devbox a").getAttribute("href") === authReply.devLink);
-  ok("the preview link fires no conversion", await page.evaluate(() => window.__track.length === 0));
+// BUYNOW1: back from Stripe, /plans?bought=cs_… asks the server, which emails
+// the sign-in link, and says so; an unfinished payment never says "is on".
+for (const [back, want, ev] of [
+  [{ ok: true, done: true, mailed: true, trial: false, to: "@clinic.org" }, /Sona Pro is on\. We emailed.*@clinic\.org/, "Purchase"],
+  [{ ok: true, done: true, mailed: true, trial: true, to: "@clinic.org" }, /Sona Pro is on\. We emailed/, "StartTrial"],
+  [{ ok: true, done: true, mailed: false, to: "@clinic.org" }, /Sona Pro is on\. Sign in at .*slp-login/, "Purchase"],
+  [{ ok: true, done: false }, /slp-login/, null],
+]) {
+  buyBack = back; posts = [];
+  const { context, page } = await fresh({ path: "/plans", query: "&bought=cs_test_abcdefghijklmnop" });
+  ok("back from Stripe (" + JSON.stringify(back) + "): the page says so", await settles(page, () =>
+    !document.getElementById("sent").hidden && !/Checking your payment/.test(document.getElementById("sent").textContent)) &&
+    want.test(await page.evaluate(() => document.getElementById("sent").textContent)),
+    await page.evaluate(() => document.getElementById("sent").innerHTML));
+  ok("…asked the server for that checkout, and the address lost the session id",
+    posts.some((x) => x.get === "?session=cs_test_abcdefghijklmnop") && !/bought=/.test(page.url()), [posts, page.url()]);
+  ok("…" + (ev ? "fires " + ev + " once" : "fires nothing"),
+    JSON.stringify(await page.evaluate(() => window.__track)) === (ev ? JSON.stringify([ev]) : "[]"), await page.evaluate(() => window.__track));
   await context.close();
 }
+buyBack = { ok: true, done: true, mailed: true, to: "@clinic.org" };
 
 // ── the queued books all open on one day (27 Sep, 1 Oct 2026) ──
 // The page counts only the books the shelf has opened and tags the rest with

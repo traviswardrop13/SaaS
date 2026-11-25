@@ -148,7 +148,7 @@ ok("the day is the Mountain date", B.bfDay(Date.UTC(2026, 10, 27, 5, 0, 0)) === 
 }
 {
   const route = readFileSync(path.join(REPO, "app/api/lead/route.ts"), "utf8");
-  ok("/api/lead sends it for a speech therapist's lead only", /if \(lead\.role === "slp" && kvConfigured\(\)\) \{\s*try \{ await sendBfEmail\(email, kvCmd, fetch\); \}/.test(route));
+  ok("/api/lead sends it for a speech therapist's lead only", /if \(lead\.role === "slp" && lead\.source !== "plans-checkout" && kvConfigured\(\)\) \{\s*try \{ await sendBfEmail\(email, kvCmd, fetch\); \}/.test(route));
 }
 console.log(fails ? fails + " FAILED" : "ALL PASS");
 process.exit(fails ? 1 : 0);
