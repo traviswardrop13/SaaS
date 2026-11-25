@@ -137,6 +137,10 @@ ok("the day is the Mountain date", B.bfDay(Date.UTC(2026, 10, 27, 5, 0, 0)) === 
   sent.length = 0;
   const late = await B.runBfDaily(list, store().cmd, fakeFetch(), WED, { pauseMs: 0, manual: true, deadline: Date.now() - 1 });
   ok("past its time a press sends nothing and counts who is left", late.sent === 0 && late.left === 3 && late.stopped === "time" && sent.length === 0, late);
+  const cronLate = await B.runBfDaily(async () => [{ email: "c@x.org", role: "slp" }, { email: "d@x.org", role: "slp" }], store().cmd, fakeFetch(), Date.UTC(2026, 10, 27, 16, 0, 0), { pauseMs: 0, deadline: Date.now() - 1 });
+  ok("past its time the cron stops at once, counting nobody (the welcome emails go next)", cronLate.sent === 0 && cronLate.left === 0 && cronLate.more === true && cronLate.stopped === "time", cronLate);
+  const page0 = readFileSync(path.join(REPO, "public/leads.html"), "utf8");
+  ok("a check that ran out of time still offers Send", /if \(!j\.left && !j\.more\)/.test(page0) && /Send to whoever is left/.test(page0));
   const route = readFileSync(path.join(REPO, "app/api/founders/bf-send/route.ts"), "utf8");
   ok("the founder route is behind the founder key, GET checks and POST sends", /founderGate\(req\)/.test(route) && /dry: true/.test(route) && (route.match(/founderGate/g) || []).length >= 3);
   const page = readFileSync(path.join(REPO, "public/leads.html"), "utf8");

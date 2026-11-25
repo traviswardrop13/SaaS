@@ -234,8 +234,9 @@ export async function runBfDaily(
   let busy = 0;
   for (const who of await list()) {
     if (!out.stopped && opts.deadline && Date.now() > opts.deadline) out.stopped = "time";
-    // counting the rest has its own short limit, so a long list never runs the route out
-    if (out.stopped && opts.deadline && Date.now() > opts.deadline + 20000) { out.more = true; break; }
+    // past its time the cron stops at once (the welcome emails have the next
+    // slot); a founder's press counts who is left for 20 seconds more, then stops
+    if (out.stopped && (!opts.manual || (opts.deadline && Date.now() > opts.deadline + 20000))) { out.more = true; break; }
     const email = String(who.email || "").trim().toLowerCase();
     if (who.role !== "slp" || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) || seen.has(email)) continue;
     seen.add(email);

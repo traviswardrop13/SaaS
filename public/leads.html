@@ -284,9 +284,11 @@
         .then(function (j) {
           if (!j || !j.ok) { bfSay((j && j.error) || "Couldn't check."); return; }
           if (j.stopped === "off") { bfSay("There's no Black Friday email to send today."); return; }
-          if (!j.left) { bfSay("Nobody left to send today's email to (" + j.skipped + " skipped)."); return; }
-          bfSay("Today's email, \u201c" + (j.subject || "") + "\u201d, would go to " + j.left + (j.more ? "+" : "") + " therapists (" + j.skipped + " skipped).");
-          $("bfSend").textContent = "Send it now to " + j.left + (j.more ? "+" : "");
+          if (!j.left && !j.more) { bfSay("Nobody left to send today's email to (" + j.skipped + " skipped)."); return; }
+          // j.more: the count ran out of time, so more may be waiting than it says
+          bfSay(j.left ? "Today's email, \u201c" + (j.subject || "") + "\u201d, would go to " + j.left + (j.more ? "+" : "") + " therapists (" + j.skipped + " skipped)."
+            : "The list is long and the count ran out of time. Some therapists may still be waiting for today's email.");
+          $("bfSend").textContent = j.left ? "Send it now to " + j.left + (j.more ? "+" : "") : "Send to whoever is left";
           $("bfSend").hidden = false;
         })
         .catch(function () { bfSay("Network hiccup. Try again."); });
