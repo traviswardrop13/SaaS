@@ -2,10 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { configured, runDue } from "@/lib/nurture";
 import { runReports } from "@/lib/report";
 import { runWeekly } from "@/lib/weekly";
-import { backfill, syncUnsubscribes } from "@/lib/contacts";
+import { backfill, everyone, syncUnsubscribes } from "@/lib/contacts";
 import { runRc } from "@/lib/revenuecat";
 import { founderKey, sameSecret } from "@/lib/founder";
 import { mailConfigured } from "@/lib/mail";
+import { runBfDaily } from "@/lib/bfmail";
 
 /**
  * Daily: sends the notes RevenueCat's news has queued ("Your free days end
@@ -52,6 +53,10 @@ export async function GET(req: NextRequest) {
   // started, so a note queued a few seconds after 16:00 waits for
   // tomorrow's run, never for the one after.
   const rc = await runRc(undefined, undefined, started, { deadline: started + 100000 });
+  // Black Friday (BFMAIL1, Thursday to Sunday): that day's email to every
+  // speech therapist on the list, before the welcome batch, which can wait a day
+  let bf: unknown = null;
+  try { bf = await runBfDaily(everyone, undefined, undefined, started, { deadline: started + 140000 }); } catch (e) { bf = said(e); }
   // stop sending well before maxDuration, so no address is left claimed and unsent
   const r = await runDue(undefined, undefined, undefined, { deadline: started + 150000 });
   const report = await runReports(undefined, undefined, undefined, { force: okManual && req.nextUrl.searchParams.get("report") === "1", deadline: started + 200000 });
@@ -59,5 +64,5 @@ export async function GET(req: NextRequest) {
   let weekly: unknown = null;
   try { weekly = await runWeekly(undefined, undefined, undefined, { force: okManual && req.nextUrl.searchParams.get("weekly") === "1", deadline: started + 255000 }); } catch (e) { weekly = said(e); }
   try { older = await backfill({ deadline: started + 265000 }); } catch (e) { older = said(e); }
-  return NextResponse.json({ ok: true, ...r, rc, report, weekly, list: { unsub, older } });
+  return NextResponse.json({ ok: true, ...r, rc, bf, report, weekly, list: { unsub, older } });
 }

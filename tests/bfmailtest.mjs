@@ -46,9 +46,10 @@ const BEFORE = Date.UTC(2026, 10, 26, 18, 0, 0), AFTER = C.BF_ENDS_AT + 1000;
   const r = await B.sendBfEmail("  SLP@Clinic.org ", s.cmd, fakeFetch(), BEFORE);
   const m = sent[0] && sent[0].body;
   ok("an SLP's opt-in during the deal is sent the Black Friday email, once, through Resend", r === true && sent.length === 1 && /api\.resend\.com/.test(sent[0].url) && (m.to === "slp@clinic.org" || (Array.isArray(m.to) && m.to[0] === "slp@clinic.org")), m && m.to);
-  ok("…its subject and words are the deal in lib/caseload's figures, the end and no trial",
-    m && m.subject === "Sona Pro is half off until Sunday" && m.text.includes(C.BF_PRICE + " a month for your first " + C.BF_MONTHS + " months, then " + C.PRO_PRICE + " a month") &&
-    m.text.includes("ends Sunday, November 29 at 11:59 PM Mountain") && m.text.includes("It has no free trial"), m && m.text);
+  ok("…its subject and words are 50% off in lib/caseload's figures, Sona Lite beside it, and the end",
+    m && m.subject === "🎉 Sona Pro is 50% off until Sunday" && m.text.includes(C.BF_PRICE + " a month for your first " + C.BF_MONTHS + " months (normally " + C.PRO_PRICE + " a month)") &&
+    m.text.includes("For the price of one Sona Lite account") && m.text.includes("unlimited family accounts") &&
+    m.text.includes("ends Sunday, November 29 at 11:59 PM Mountain") && !/free trial|no trial/i.test(m.text), m && m.text);
   ok("…its button goes to the deal's plans on the website", m && m.html.includes(B.BF_PLANS_URL) && B.BF_PLANS_URL.startsWith("https://www.speaksona.com/blackfriday/plans"));
   ok("…from Rachel with her credential, the unsubscribe link and the mailing address",
     m && /Rachel, MS, CF-SLP/.test(m.text) && /\/api\/email\/unsub\?e=slp%40clinic\.org&k=/.test(m.text) && m.text.includes("PO Box 1, Star, ID 83669") && m.headers && /unsub/.test(m.headers["List-Unsubscribe"]));
@@ -69,6 +70,50 @@ const BEFORE = Date.UTC(2026, 10, 26, 18, 0, 0), AFTER = C.BF_ENDS_AT + 1000;
   const s = store(); sent.length = 0;
   const r = await B.sendBfEmail("fail@clinic.org", s.cmd, fakeFetch(500), BEFORE);
   ok("a refused send gives the mark back, so the next opt-in tries again", r === false && !s.kv.has("bfmail:fail@clinic.org"));
+}
+// every email in the run: 50% off, no word of a trial, Sona Lite beside it,
+// one 🎉 and at most two "!", Rachel's credential (Travis, 25 Nov 2026)
+for (const [name, c] of [["opt-in", B.bfContent()], ...B.BF_DAYS.map((d) => [d, B.bfDayContent(d)])]) {
+  const all = [c.subject, c.preview, ...c.paras, c.button, ...c.after].join(" ");
+  ok(name + ": 50% off, no trial, Sona Lite beside it, one 🎉, at most two !",
+    /50% off/.test(all) && !/free trial|no trial|half off/i.test(all) && all.includes("Sona Lite") &&
+    (all.match(/🎉/g) || []).length === 1 && (all.match(/!/g) || []).length >= 1 && (all.match(/!/g) || []).length <= 3 &&
+    !/say their sound/i.test(all), all);
+}
+ok("no email on Wednesday or Monday", B.bfDayContent("2026-11-25") === null && B.bfDayContent("2026-11-30") === null);
+ok("the day is the Mountain date", B.bfDay(Date.UTC(2026, 10, 27, 5, 0, 0)) === "2026-11-26" && B.bfDay(Date.UTC(2026, 10, 27, 16, 0, 0)) === "2026-11-27");
+{
+  // the daily run: SLPs only, once a day, skipping the unsubscribed, a live
+  // Sona Pro or Clinic, and anyone sent the opt-in email in the last 12 hours
+  const FRI = Date.UTC(2026, 10, 27, 16, 0, 0);
+  const s = store(["gone@x.org"]);
+  s.kv.set("slpplan-pro:paid@x.org", JSON.stringify({ status: "active" }));
+  s.kv.set("slpplan-pro:lapsed@x.org", JSON.stringify({ status: "canceled" }));
+  s.kv.set("bfmail:fresh@x.org", new Date(FRI - 3600e3).toISOString());
+  s.kv.set("bfmail:old@x.org", new Date(FRI - 30 * 3600e3).toISOString());
+  const base = s.cmd;
+  s.cmd = async (a) => a[0] === "GET" ? (s.kv.has(a[1]) ? s.kv.get(a[1]) : null) : base(a);
+  const list = async () => [
+    { email: "a@x.org", role: "slp" }, { email: "A@x.org", role: "slp" }, { email: "mom@x.org", role: "parent" },
+    { email: "gone@x.org", role: "slp" }, { email: "paid@x.org", role: "slp" }, { email: "lapsed@x.org", role: "slp" },
+    { email: "fresh@x.org", role: "slp" }, { email: "old@x.org", role: "slp" },
+  ];
+  sent.length = 0;
+  const r = await B.runBfDaily(list, s.cmd, fakeFetch(), FRI, { pauseMs: 0 });
+  const to = sent.map((x) => Array.isArray(x.body.to) ? x.body.to[0] : x.body.to).sort();
+  ok("Friday's run sends Friday's email to each SLP once, none to a parent, the unsubscribed, a live Pro or a fresh opt-in",
+    r.day === "2026-11-27" && JSON.stringify(to) === JSON.stringify(["a@x.org", "lapsed@x.org", "old@x.org"]) && sent[0].body.subject === B.bfDayContent("2026-11-27").subject, { r, to });
+  sent.length = 0;
+  const r2 = await B.runBfDaily(list, s.cmd, fakeFetch(), FRI + 3600e3, { pauseMs: 0 });
+  ok("a second run the same day sends nothing", r2.sent === 0 && sent.length === 0, r2);
+  sent.length = 0;
+  const r3 = await B.runBfDaily(list, s.cmd, fakeFetch(), C.BF_ENDS_AT + 3600e3, { pauseMs: 0 });
+  ok("after the end the run sends nothing", r3.sent === 0 && sent.length === 0, r3);
+  const s2 = store(); sent.length = 0;
+  await B.runBfDaily(async () => [{ email: "b@x.org", role: "slp" }], s2.cmd, fakeFetch(500), FRI, { pauseMs: 0 });
+  ok("a refused send gives the day's mark back", !s2.kv.has("bfday:2026-11-27:b@x.org"));
+  const cron = readFileSync(path.join(REPO, "app/api/cron/nurture/route.ts"), "utf8");
+  ok("the daily cron runs it before the welcome batch", /runBfDaily\(everyone/.test(cron) && cron.indexOf("runBfDaily(") < cron.indexOf("runDue(undefined"));
 }
 {
   const route = readFileSync(path.join(REPO, "app/api/lead/route.ts"), "utf8");

@@ -3134,13 +3134,25 @@ months** and **Mountain time**, then "but no free trial on the promo".
   "set up resend to send them an email once they opt in as a lead ... I want
   to be focusing on the Black Friday promotion"): a speech therapist's email
   from `/` or `/blackfriday` (`/api/lead`, role "slp") gets ONE email from
-  Rachel at once while `bfOn()`: "Sona Pro is half off until Sunday", the
-  deal in lib/caseload's figures, what Sona Pro does, "no free trial", and
-  "Get the Black Friday price" to www.speaksona.com/blackfriday/plans. Once
-  an address (`bfmail:<email>`, given back if the send fails), never to an
-  unsubscribed one, with the unsubscribe link and mailing address; nothing
-  after the end. Resend sends it (GHLEXIT1). Every word is Travis's;
-  `bfmailtest` plays it.
+  Rachel at once while `bfOn()`: "🎉 Sona Pro is 50% off until Sunday",
+  the deal in lib/caseload's figures, Sona Pro beside Sona Lite ("For the
+  price of one Sona Lite account … the dashboard and unlimited family
+  accounts"), "Get in while the offer is here!", and "Get 50% off Sona Pro"
+  to www.speaksona.com/blackfriday/plans. Once an address (`bfmail:<email>`,
+  given back if the send fails), never to an unsubscribed one, with the
+  unsubscribe link and mailing address; nothing after the end.
+  **Then one a day, Thursday to Sunday** (Travis, same day: "emails every
+  day through Sunday ... 1 a day"): the daily cron (`runBfDaily`, about 9 AM
+  Mountain, before the welcome batch) sends that Mountain day's email
+  (`bfDayContent`: Thanksgiving, Black Friday, "2 days left", "Last day!")
+  to every speech therapist on the list (`everyone()`, role "slp": leads and
+  clinician accounts), once a day (`bfday:<day>:<email>`), skipping the
+  unsubscribed (plain mailbox too), a live Sona Pro or Clinic, and anyone
+  sent the opt-in email in the last 12 hours. **Every email says 50% off,
+  never "half off" or a word about a trial (Travis: "We don't have to say
+  there's no free trial"), carries exactly one 🎉 and one to three "!"**
+  ("a little more excitement"). Resend sends them (GHLEXIT1). Every word is
+  Travis's; `bfmailtest` plays it.
 - **for-slps.html's Black Friday mode is on wherever it is served (`/plans`,
   `/blackfriday/plans`, `/checkout`) until the end**, because every Sona Pro
   checkout until then is the deal: a navy bar with the time left, a line on
