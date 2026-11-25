@@ -3119,13 +3119,17 @@ months** and **Mountain time**, then "but no free trial on the promo".
   ...". If Stripe will not give the coupon, the checkout is the ordinary
   one (the trial, for whoever still has it), in its ordinary words. Never
   Sona Clinic. `caseloadtest` plays it, the clock moved by hand.
-- **`/blackfriday` is `public/bf.html`**: the opt-in in navy and butter, "Sona
-  Pro, half off.", "$9.99 a month for your first 3 months, then $19.99 a
-  month." (no trial promised), a days/hours/min/sec countdown, "Ends Sunday,
+- **`/blackfriday` is `public/bf.html`**: the opt-in in navy and butter, the
+  tag "Black Friday · half off for SLPs and SLPAs", "Home practice your
+  caseload actually does." and a line selling the daily practice. **No price
+  on it** (Travis, 25 Nov 2026: "not have anything about pricing in the
+  email collection. We just want to be grabbing their email there"; the
+  figures are /blackfriday/plans'), and no line under Get Started. A
+  days/hours/min/sec countdown, "Ends Sunday,
   November 29 at 11:59 PM Mountain.", one email box and Get Started
   (noindex; the app guard first; the pixel's Lead only on `/api/lead`'s
   ok). It sends the visitor to `/blackfriday/plans`, or to `/plans` after
-  the end, when it says "Black Friday is over." and the ordinary price.
+  the end, when it says "Black Friday is over." (still no price).
 - **for-slps.html's Black Friday mode is on wherever it is served (`/plans`,
   `/blackfriday/plans`, `/checkout`) until the end**, because every Sona Pro
   checkout until then is the deal: a navy bar with the time left, a line on

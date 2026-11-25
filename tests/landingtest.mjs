@@ -501,8 +501,8 @@ const keepTracks = () => Object.defineProperty(window, "sonaTrack", { configurab
   await page.evaluate(keepTracks);
   const cd = await page.evaluate(() => ["cdD", "cdH", "cdM"].map((id) => document.getElementById(id).textContent).join(":"));
   ok("Thursday at noon Mountain: 3 days 11 hours 59 minutes left to Sunday 11:59 PM", cd === "3:11:59" || cd === "3:11:58", cd);
-  ok("…the deal in its figures, Get Started, and no plans on the page", await page.evaluate(() =>
-    /\$9\.99 a month for your first 3 months, then \$19\.99 a month\./.test(document.body.innerText) && /Ends Sunday, November 29 at 11:59 PM Mountain\./.test(document.body.innerText) &&
+  ok("…the headline, no price, Get Started, and no plans on the page", await page.evaluate(() =>
+    /Home practice your caseload actually does\./.test(document.body.innerText) && !/\$\d/.test(document.body.innerText) && /Ends Sunday, November 29 at 11:59 PM Mountain\./.test(document.body.innerText) &&
     document.getElementById("oGo").textContent.trim() === "Get Started" && !document.getElementById("pricing")));
   posts = []; leadReply = { ok: true, captured: true };
   await page.fill("#oEmail", "bf@clinic.org");
@@ -545,8 +545,8 @@ const keepTracks = () => Object.defineProperty(window, "sonaTrack", { configurab
 // After the end: the opt-in says so and leads to the ordinary plans.
 {
   const { context, page, errors } = await fresh({ path: "/blackfriday", now: "2026-11-30T07:00:00Z" });
-  ok("/blackfriday after the end: 'Black Friday is over.', the ordinary price, no countdown", await page.evaluate(() =>
-    document.getElementById("bfH").textContent === "Black Friday is over." && document.getElementById("bfSub").textContent === "Sona Pro is $19.99 a month, with 14 days free." &&
+  ok("/blackfriday after the end: 'Black Friday is over.', no price, no countdown", await page.evaluate(() =>
+    document.getElementById("bfH").textContent === "Black Friday is over." && !/\$\d/.test(document.body.innerText) &&
     document.getElementById("cd").hidden && document.getElementById("bfEnds").hidden));
   posts = []; leadReply = { ok: true, captured: true };
   await page.fill("#oEmail", "late@clinic.org");
