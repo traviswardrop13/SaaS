@@ -3163,8 +3163,10 @@ months** and **Mountain time**, then "but no free trial on the promo".
   one (the trial, for whoever still has it), in its ordinary words. Never
   Sona Clinic. `caseloadtest` plays it, the clock moved by hand.
 - **`/blackfriday` is `public/bf.html`**: the opt-in in navy and butter,
-  "Sona Pro, half off." and under it "Speech practice kids actually want to
-  do. Send it home free to every family on your caseload." **No price on it** (Travis, 25 Nov 2026: "not have
+  "Speech practice kids actually want to do." and under it "Send it home
+  free to every family on your caseload." (Travis, 25 Nov 2026: in place of
+  "Sona Pro, half off."; the tab title and share card still say half off).
+  **No price on it** (Travis, 25 Nov 2026: "not have
   anything about pricing in the email collection. We just want to be
   grabbing their email there"; the figures are /blackfriday/plans'), and
   under Get Started only "Unsubscribe anytime." A

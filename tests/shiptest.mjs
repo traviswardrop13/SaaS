@@ -543,8 +543,8 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
     const bfShown = bfPage.replace(/<!--[\s\S]*?-->/g, "").replace(/<script[\s\S]*?<\/script>/g, "").replace(/<[^>]+>/g, " ").replace(/&rsquo;/g, "'").replace(/\s+/g, " ");
     // Travis, 25 Nov 2026: "not have anything about pricing in the email
     // collection": the opt-in only takes the email; the figures are /plans'.
-    ok("the Black Friday opt-in says half off and when it ends, sells the practice, shows no price or trial, and under the button only \"Unsubscribe anytime.\"",
-      bfShown.includes("Sona Pro, half off.") && bfShown.includes("Speech practice kids actually want to do.") &&
+    ok("the Black Friday opt-in leads with the practice, says when the deal ends, shows no price or trial, and under the button only \"Unsubscribe anytime.\"",
+      bfShown.includes("Speech practice kids actually want to do. Send it home free to every family on your caseload.") && !/<h1 id="bfH">[^<]*(<span>)?half off/i.test(bfPage) &&
       bfShown.includes("Ends Sunday, November 29 at 11:59 PM Mountain.") && !/\$\d/.test(bfShown) &&
       !/free trial|days free|email you about/i.test(bfShown) && bfShown.includes("Unsubscribe anytime."), bfShown.slice(0, 300));
     ok("…after the end it says so, with no price, and its box leads to the ordinary plans",
