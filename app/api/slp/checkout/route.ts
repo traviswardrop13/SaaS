@@ -122,11 +122,12 @@ export async function POST(req: NextRequest) {
           },
         },
       }];
-  // `from: plans` tells /api/slp/checkout/done this checkout signed nobody
-  // in, so it may email the sign-in link. A referral code (Share & earn)
-  // rides here until that email's sign-in makes the account.
+  // `from: plans` tells /api/slp/checkout/done and Stripe's webhook that this
+  // checkout signed nobody in, so either may email the sign-in link
+  // (lib/plansMail). A referral code (Share & earn) rides on the checkout
+  // and the subscription until that email's sign-in makes the account.
   const ref = cleanRef(body.ref);
-  const metadata: Record<string, string> = { plan: PRO_PLAN, slp: email, from: "plans", ...(bfCoupon ? { offer: BF_OFFER } : {}) };
+  const metadata: Record<string, string> = { plan: PRO_PLAN, slp: email, from: "plans", ...(bfCoupon ? { offer: BF_OFFER } : {}), ...(ref ? { ref } : {}) };
   const keeps = "your families keep every game to the end of the month you paid for.";
   const terms = trial
     ? "No charge today. Your free trial lasts " + PRO_TRIAL_DAYS + " days; after that, " + PRO_PRICE + " " + PRO_PER + " until you cancel. Cancel before the trial ends and you pay nothing."
@@ -144,7 +145,7 @@ export async function POST(req: NextRequest) {
         : { metadata },
       payment_method_collection: "always",
       custom_text: { submit: { message: terms } },
-      metadata: { ...metadata, ...(ref ? { ref } : {}) },
+      metadata,
       ...(customer ? { customer } : { customer_email: email }),
       client_reference_id: email,
       ...(bfCoupon ? { discounts: [{ coupon: bfCoupon }] } : { allow_promotion_codes: true }),

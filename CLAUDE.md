@@ -3229,11 +3229,22 @@ in", TRIALGO1's `sona.slp.wantplan` from /plans, the trial form's email).
   the same checks, trial rule, Black Friday coupon and terms as
   `/api/slp/plan`'s Pro branch, keep them in step), and Stripe at once. An
   email already in the box (from the opt-in) goes straight on. The
-  subscription is stamped `slp: <email>`, `from: plans`. No account, no
-  sign-in email before paying. Back from Stripe (`/plans?paid=cs_…`) the page
-  says "You're in!" and `/api/slp/checkout/done` stores the plan and emails
-  ONE sign-in link ("Sona Pro is on.", `slpbuymail:<session>`), a signed
-  pending sign-up carrying the Share & earn code. **Travis's trade:** the
+  subscription is stamped `slp: <email>`, `from: plans` (and the Share & earn
+  `ref`). No account, no sign-in email before paying. Back from Stripe
+  (`/plans?paid=cs_…`) `/api/slp/checkout/done` stores the plan and emails
+  ONE sign-in link ("Sona Pro is on."), a signed pending sign-up carrying the
+  Share & earn code. **The page says only what the server answered**:
+  "Checking your payment…", then "You're in!" once the email went (the id
+  then leaves the address); an email that did not go is asked about again
+  (3 s apart, four asks), then "Sona Pro is on." with "Send my link again"
+  and "Sign in with your email"; a payment not confirmed says "Almost
+  there." with "Check again". **Stripe's webhook sends the same email** when
+  a `from: plans` subscription comes on (created on, or updated from not on;
+  never a renewal), for a buyer who closed Stripe; one function and one mark
+  for both doors (`lib/plansMail.ts`, `slpbuymail:<subscription>`: held two
+  minutes while sending, "sent" for a year, given back when the email did
+  not go; the webhook answers 503 then, so Stripe tries again).
+  `caseloadtest`, `stripehooktest`, `landingtest`. **Travis's trade:** the
   email is not proved before payment, so a typo is a paid plan nobody can
   sign in to until support moves it; the dashboard still opens only for the
   inbox.

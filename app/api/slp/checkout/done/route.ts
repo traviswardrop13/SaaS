@@ -1,26 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
-import { kvConfigured, kvCmd, randomToken, hashToken, sendMagicEmail, signFreeDashboardSignup, authSecretOk } from "@/lib/slpAuth";
+import { kvConfigured } from "@/lib/slpAuth";
 import { rateLimit } from "@/lib/rateLimit";
 import { foreignOrigin } from "@/lib/origin";
 import { cleanRef } from "@/lib/referral";
 import { linkOrigin } from "@/lib/site";
-import { activateFromSession, PRO_PLAN, PRO_NAME } from "@/lib/caseload";
+import { activateFromSession, PRO_PLAN } from "@/lib/caseload";
+import { plansSignInMail } from "@/lib/plansMail";
 
 /**
  * BACK FROM STRIPE ON /plans (BUYNOW1, 25 Nov 2026; see /api/slp/checkout).
  *
- *   POST /api/slp/checkout/done { session: "cs_…" } → { ok, activated }
+ *   POST /api/slp/checkout/done { session: "cs_…" }
+ *     → { ok, activated, sent }            the sign-in email went (now or before)
+ *     → { ok, activated, sent: false, retry }  it did not go yet: ask again
  *
  * The checkout signed nobody in, so once Stripe says it is complete this
  * stores the plan (lib/caseload activateFromSession, the dashboard's own
- * return) and emails the clinician ONE sign-in link for that checkout
- * (`slpbuymail:<session>`): "Sona Pro is on." The link is the sign-up
- * door's (a signed pending sign-up, with the Share & earn code the
- * checkout carried), so the account is made, and the inbox proved, when it
- * is opened. The session id is only a question to ask Stripe: a checkout
- * not made by /plans (`from: plans`), not Sona Pro or not complete is
- * refused, and nothing is sent.
+ * return) and emails the clinician ONE sign-in link for that subscription
+ * (lib/plansMail: "Sona Pro is on."), shared with Stripe's webhook, which
+ * sends it for a buyer who never came back. A reload after it went answers
+ * `sent: true` again and sends nothing. The session id is only a question to
+ * ask Stripe: a checkout not made by /plans (`from: plans`), not Sona Pro or
+ * not complete is refused, and nothing is sent.
  */
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -28,7 +30,6 @@ export const dynamic = "force-dynamic";
 const SESSION_ID = /^cs_[A-Za-z0-9_]{10,240}$/;
 const EMAIL = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 const NO_STORE = { "Cache-Control": "no-store" };
-const DAY = 86400;
 
 function reply(body: Record<string, unknown>, status = 200): NextResponse {
   return NextResponse.json(body, { status, headers: NO_STORE });
@@ -66,17 +67,12 @@ export async function POST(req: NextRequest) {
   catch { return reply({ ok: false, retry: true }, 502); }
   if (!got.activated) return reply({ ok: false, activated: false }, 409);
 
-  // ONE sign-in email a checkout, however often the page is reloaded.
-  let sent = false;
-  try {
-    if (authSecretOk() && (await kvCmd(["SET", "slpbuymail:" + sid, "1", "NX", "EX", 30 * DAY])) === "OK") {
-      const token = randomToken();
-      const pending = signFreeDashboardSignup({ email, source: "plans-checkout", attrib: {}, ...(ref ? { ref } : {}) });
-      if ((await kvCmd(["SET", "slptok:" + hashToken(token), pending, "EX", 900])) === "OK") {
-        const link = linkOrigin(new URL(req.url).origin) + "/api/slp/auth/verify?token=" + encodeURIComponent(token);
-        sent = (await sendMagicEmail(email, link, "", { started: { name: PRO_NAME, trial: got.status === "trialing" } })).sent;
-      }
-    }
-  } catch { /* they can still sign in by email at /slp-login.html */ }
-  return reply({ ok: true, activated: true, sent });
+  // ONE sign-in email a subscription, however often the page is reloaded.
+  const mail = await plansSignInMail({
+    email, sub: got.subId || "", trial: got.status === "trialing", ref, origin: linkOrigin(new URL(req.url).origin),
+  });
+  if (mail === "sent" || mail === "already") return reply({ ok: true, activated: true, sent: true });
+  // "busy": Stripe's webhook is sending it this moment; "failed": it did not
+  // go, and the next ask tries again. "off": nothing here can send it.
+  return reply({ ok: true, activated: true, sent: false, retry: mail !== "off" });
 }

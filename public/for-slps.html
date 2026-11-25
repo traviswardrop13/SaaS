@@ -135,6 +135,10 @@
     <div class="sent" id="sent" role="status" hidden>
       <div class="t" id="sentT">You're in!</div>
       <div class="m" id="sentMsg"></div>
+      <div class="sent-acts" id="sentActs" hidden>
+        <button class="btn" type="button" id="sentRetry" hidden>Send my link again</button>
+        <a class="sent-in" id="sentIn" href="/slp-login.html" hidden>Sign in with your email</a>
+      </div>
       <div class="devbox" id="devbox" hidden></div>
     </div>
     <div class="trust">
@@ -665,23 +669,52 @@
     }
 
     // BACK FROM STRIPE, PAID (?paid=cs_…, BUYNOW1). Stripe comes here only
-    // after the payment went through; the server stores the plan and emails
-    // the sign-in link once (it is asked again once if Stripe was slow).
+    // after the payment went through. The page says only what the server
+    // answered: "Checking…" first, "We emailed you a link" once the email
+    // went (now, or earlier from Stripe's webhook). Until then `paid` stays
+    // in the address, so a reload asks again; the server never sends twice.
     (function () {
       var m = /[?&]paid=(cs_[A-Za-z0-9_]{10,240})(?:&|$)/.exec(location.search);
       if (!m) return;
-      try { history.replaceState(null, "", location.pathname + location.hash); } catch (e) {}
-      $("sentT").textContent = "You're in!";
-      showDone("Sona Pro is on. We emailed you a link to open your dashboard.");
+      function say(title, msg, retry, signIn) {
+        $("sentT").textContent = title;
+        if (retry) $("sentRetry").textContent = retry;
+        $("sentRetry").hidden = !retry;
+        $("sentRetry").disabled = false;
+        $("sentIn").hidden = !signIn;
+        $("sentActs").hidden = !(retry || signIn);
+        showDone(msg);
+      }
+      say("Checking your payment…", "One moment.", false, false);
       function done(left) {
         fetch("/api/slp/checkout/done", {
           method: "POST", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ session: m[1] }),
-        }).then(function (r) { return r.json(); }).then(function (j) {
-          if (j && j.retry && left > 0) setTimeout(function () { done(left - 1); }, 3000);
-        }).catch(function () { if (left > 0) setTimeout(function () { done(left - 1); }, 3000); });
+        }).then(function (r) { return r.json().then(function (j) { return { status: r.status, j: j }; }); }).then(function (x) {
+          var j = x.j || {};
+          if (j.ok && j.activated && j.sent) {
+            try { history.replaceState(null, "", location.pathname + location.hash); } catch (e) {}
+            say("You're in!", "Sona Pro is on. We emailed you a link to open your dashboard.", false, false);
+            return;
+          }
+          if ((j.retry || x.status >= 500 || x.status === 409) && left > 0) { setTimeout(function () { done(left - 1); }, 3000); return; }
+          if (j.ok && j.activated) {
+            if (j.retry) say("Sona Pro is on.", "We couldn't send your sign-in email just now.", "Send my link again", true);
+            else say("Sona Pro is on.", "Sign in with the email you paid with to open your dashboard.", false, true);
+            return;
+          }
+          say("Almost there.", "We couldn't confirm your payment yet.", "Check again", true);
+        }).catch(function () {
+          if (left > 0) { setTimeout(function () { done(left - 1); }, 3000); return; }
+          say("Almost there.", "We couldn't check your payment. Check your connection.", "Check again", true);
+        });
       }
-      done(1);
+      $("sentRetry").onclick = function () {
+        this.disabled = true;
+        $("sentT").textContent = "Checking your payment…";
+        done(1);
+      };
+      done(3);
     })();
     $("signup").addEventListener("submit", function (e) { e.preventDefault(); go(); });
 

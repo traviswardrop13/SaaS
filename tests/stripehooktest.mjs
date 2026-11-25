@@ -41,8 +41,8 @@ function loadTs(file, cache = new Map()) {
 const KV_URL = "https://kv.stripehook.test.invalid";
 const HOOK = "https://services.leadconnectorhq.com/hooks/TEST/webhook-trigger/TEST";
 const K = new Map();
-let kvDown = false, crmStatus = 200, stripeDown = false, CUST_EMAIL = "New@Clinic.org";
-const SENT = [], STRIPE = [];
+let kvDown = false, crmStatus = 200, stripeDown = false, CUST_EMAIL = "New@Clinic.org", mailStatus = 200;
+const SENT = [], STRIPE = [], MAILS = [];
 globalThis.fetch = async (url, init = {}) => {
   const u = String(url);
   if (u === KV_URL) {
@@ -53,6 +53,7 @@ globalThis.fetch = async (url, init = {}) => {
     else if (op === "DEL") result = K.delete(a[0]) ? 1 : 0;
     else if (op === "GET") result = K.get(a[0]) ?? null;
     else if (op === "EXPIRE") result = 1;
+    else if (op === "EVAL" && String(a[0]).startsWith("-- slpbuymail:release\n")) result = K.get(a[2]) === a[3] ? (K.delete(a[2]) ? 1 : 0) : 0;
     else throw new Error("fake kv does not speak " + op);
     return Response.json({ result });
   }
@@ -63,6 +64,10 @@ globalThis.fetch = async (url, init = {}) => {
     if (pathOnly.startsWith("/v1/customers/")) return Response.json({ id: pathOnly.split("/").pop(), object: "customer", email: CUST_EMAIL });
     if (pathOnly.startsWith("/v1/subscriptions/")) return Response.json({ id: pathOnly.split("/").pop(), object: "subscription", metadata: {} });
     throw new Error("fake stripe does not speak " + pathOnly);
+  }
+  if (u === "https://api.resend.com/emails") {
+    MAILS.push(JSON.parse(init.body));
+    return new Response(mailStatus === 200 ? JSON.stringify({ id: "em_" + MAILS.length }) : "{}", { status: mailStatus });
   }
   if (u.startsWith(HOOK)) {
     SENT.push({ url: u, body: JSON.parse(init.body) });
@@ -94,7 +99,7 @@ async function post(e, secret = SECRET) {
   const r = await route.POST(req);
   return { status: r.status, j: await r.json() };
 }
-const reset = () => { K.clear(); SENT.length = 0; STRIPE.length = 0; kvDown = false; crmStatus = 200; stripeDown = false; CUST_EMAIL = "New@Clinic.org"; };
+const reset = () => { K.clear(); SENT.length = 0; STRIPE.length = 0; MAILS.length = 0; kvDown = false; crmStatus = 200; stripeDown = false; CUST_EMAIL = "New@Clinic.org"; mailStatus = 200; };
 
 // ── the meaning of each event (no network) ──
 {
@@ -218,6 +223,52 @@ reset();
   reset();
   await post(evt("customer.subscription.created", ghlSub({ items: { data: [{ price: { id: "price_x", product: "prod_family" } }] } })));
   ok("another product's subscription is never touched", STRIPE.length === 0 && SENT.length === 0);
+}
+
+// ── BUYNOW1: a Sona Pro bought on /plans, whose buyer never came back ──
+{
+  process.env.RESEND_API_KEY = "re_test_fake";
+  const { readFreeDashboardSignup } = loadTs(path.join(REPO, "lib/slpAuth.ts"));
+  const plansSub = (over = {}) => proSub({ id: "sub_plans1", status: "active", metadata: { plan: "slp-pro", slp: "Buyer@Clinic.org", from: "plans", ref: "abcd2345" }, ...over });
+  const toks = () => [...K.entries()].filter(([k]) => k.startsWith("slptok:"));
+
+  reset();
+  K.set("slpplan-pro:buyer@clinic.org", JSON.stringify({ none: true }));
+  let r = await post(evt("customer.subscription.created", plansSub()));
+  const pend = toks().length === 1 ? readFreeDashboardSignup(String(toks()[0][1])) : null;
+  ok("a /plans start emails its sign-in link from the webhook, once, marked sent for the subscription",
+    r.status === 200 && MAILS.length === 1 && JSON.stringify(MAILS[0].to) === JSON.stringify(["buyer@clinic.org"]) && K.get("slpbuymail:sub_plans1") === "sent", [r, MAILS.length]);
+  ok("…its link is the sign-up door's, carrying the referral code", !!pend && pend.email === "buyer@clinic.org" && pend.ref === "abcd2345" && pend.source === "plans-checkout", pend);
+  ok("…any cached 'no plan' is dropped, and GoHighLevel still hears the start", !K.has("slpplan-pro:buyer@clinic.org") && SENT.length === 1 && SENT[0].body.event === "started");
+  await post(evt("customer.subscription.created", plansSub()));
+  await post(evt("customer.subscription.updated", plansSub(), { status: "incomplete" }));
+  ok("a second delivery, or the return page having sent it, sends no second email", MAILS.length === 1 && toks().length === 1);
+
+  reset();
+  await post(evt("customer.subscription.updated", plansSub(), { items: {} }));
+  await post(evt("customer.subscription.updated", plansSub({ status: "past_due" }), { status: "active" }));
+  await post(evt("customer.subscription.created", plansSub({ status: "incomplete" })));
+  ok("a renewal, a payment problem or a plan not on yet sends nothing", MAILS.length === 0 && !K.has("slpbuymail:sub_plans1"));
+  r = await post(evt("customer.subscription.updated", plansSub(), { status: "incomplete" }));
+  ok("…and a card that needed a second step sends it once the plan comes on", r.status === 200 && MAILS.length === 1 && K.get("slpbuymail:sub_plans1") === "sent");
+
+  reset();
+  await post(evt("customer.subscription.created", proSub({ id: "sub_dash1", status: "active", metadata: { plan: "slp-pro", slp: "dash@clinic.org" } })));
+  ok("a dashboard checkout (signed in) is never emailed from here", MAILS.length === 0 && !K.has("slpbuymail:sub_dash1"));
+
+  reset(); mailStatus = 500;
+  r = await post(evt("customer.subscription.created", plansSub()));
+  ok("an email that did not go is a 503 (Stripe tries again), the mark given back, GoHighLevel not told yet",
+    r.status === 503 && !K.has("slpbuymail:sub_plans1") && SENT.length === 0, r);
+  mailStatus = 200;
+  r = await post(evt("customer.subscription.created", plansSub()));
+  ok("…and Stripe's retry sends it", r.status === 200 && MAILS.length === 2 && K.get("slpbuymail:sub_plans1") === "sent" && SENT.length === 1, [r, MAILS.length]);
+
+  reset(); K.set("slpbuymail:sub_plans1", "held-by-the-return-page");
+  r = await post(evt("customer.subscription.created", plansSub()));
+  ok("while the return page is sending it, the webhook sends nothing and answers 503, so Stripe asks again",
+    r.status === 503 && MAILS.length === 0 && K.get("slpbuymail:sub_plans1") === "held-by-the-return-page", r);
+  delete process.env.RESEND_API_KEY;
 }
 
 // ── the source never logs an address or keeps money ──

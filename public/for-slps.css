@@ -141,6 +141,9 @@ header {
 .sent { padding: 19px 20px; border: 1px solid #ebdacf; border-radius: 19px; background: var(--paper); }
 .sent .t { font: 800 24px/1.1 var(--display); }
 .sent .m { color: var(--body); }
+.sent-acts { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; margin-top: 4px; }
+.sent-acts[hidden], .sent-acts [hidden] { display: none; }
+.sent-in { color: var(--teal-deep); font-weight: 900; }
 .devbox { padding: 9px 12px; border-radius: 12px; background: #fff1cb; font-size: 13px; overflow-wrap: anywhere; }
 .trust { display: flex; align-items: center; gap: 12px; max-width: 485px; color: var(--body); font-size: 17px; line-height: 1.35; }
 .trust b { font-weight: 800; }

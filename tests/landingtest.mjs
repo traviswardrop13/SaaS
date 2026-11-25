@@ -25,6 +25,8 @@ let posts = [], leadReply = { ok: true, captured: true }, authReply = { ok: true
 // the paid return (/api/slp/checkout/done); /stripe-fake stands in for Stripe.
 const STRIPE = "http://127.0.0.1:8163/stripe-fake";
 let checkoutReply = { ok: true, url: STRIPE + "?who=new" }, planPostReply = { ok: true, url: STRIPE + "?who=signedin" }, doneReply = { ok: true, activated: true, sent: true };
+// The paid return's answers, one per ask, before doneReply takes over.
+let doneQueue = [];
 // /api/slp/auth/me: null answers nobody signed in (the fake 404), as a fresh
 // visitor's browser does; set, the clinician signed in on this browser.
 let meReply = null;
@@ -41,7 +43,7 @@ const srv = createServer((req, res) => {
     req.on("end", () => {
       posts.push({ path: u.pathname, body: JSON.parse(body || "{}") });
       const reply = u.pathname === "/api/lead" ? leadReply : u.pathname === "/api/slp/checkout" ? checkoutReply :
-        u.pathname === "/api/slp/checkout/done" ? doneReply : u.pathname === "/api/slp/plan" ? planPostReply : authReply;
+        u.pathname === "/api/slp/checkout/done" ? (doneQueue.length ? doneQueue.shift() : doneReply) : u.pathname === "/api/slp/plan" ? planPostReply : authReply;
       res.writeHead(reply.ok ? 200 : (reply.status || 400), { "content-type": "application/json" });
       res.end(JSON.stringify(reply));
     });
@@ -82,6 +84,7 @@ async function fresh(opts = {}) {
     Object.defineProperty(window, "sonaTrack", { configurable: true, get: () => (e) => window.__track.push(e), set() {} });
   });
   if (opts.watch) await context.addInitScript(watchLeaving);
+  if (opts.init) await context.addInitScript(opts.init);
   // A set clock (BF1): the page's Date.now starts at opts.now and runs on.
   // The clinicians' pages run after Black Friday unless a test says when,
   // so their ordinary words hold whatever day this suite runs.
@@ -824,20 +827,64 @@ for (const used of [false, true]) {
   ok("…and the next try opens it", await settles(page, () => window.__left.length === 1) && posts.length === 3, posts);
   await context.close();
 }
-// Back from Stripe, paid: the page says so and asks for the sign-in email, once.
+// Back from Stripe, paid: the page says only what the server answered.
+// (The page waits 3 s between asks; here those waits are 30 ms.)
+const quickRetry = () => { const real = window.setTimeout; window.setTimeout = (f, ms, ...a) => real(f, ms === 3000 ? 30 : ms, ...a); };
+const doneAsks = () => posts.filter((x) => x.path === "/api/slp/checkout/done");
+const sentSays = (page) => page.evaluate(() => ({
+  shown: !document.getElementById("sent").hidden, form: !document.getElementById("signup").hidden,
+  t: document.getElementById("sentT").textContent, m: document.getElementById("sentMsg").textContent,
+  again: document.getElementById("sentRetry").hidden ? "" : document.getElementById("sentRetry").textContent,
+  signIn: !document.getElementById("sentIn").hidden && document.getElementById("sentIn").getAttribute("href"),
+}));
 {
-  posts = [];
-  const { context, page, errors } = await fresh({ path: "/plans", query: "&paid=cs_test_a1b2c3d4e5f6g7" });
-  ok("back from Stripe, paid: \"You're in!\", the dashboard link is on its way, the form steps aside", await settles(page, () => {
+  posts = []; doneQueue = []; doneReply = { ok: true, activated: true, sent: true };
+  const { context, page, errors } = await fresh({ path: "/plans", query: "&paid=cs_test_a1b2c3d4e5f6g7", init: quickRetry });
+  ok("back from Stripe, paid: \"You're in!\" once the server says the link went, the form steps aside", await settles(page, () => {
     const sent = document.getElementById("sent");
     return !sent.hidden && document.getElementById("signup").hidden && /You're in!/.test(sent.textContent) && /emailed you a link to open your dashboard/.test(sent.textContent);
   }));
-  for (let i = 0; i < 40 && !posts.some((x) => x.path === "/api/slp/checkout/done"); i++) await page.waitForTimeout(50);
   await page.waitForTimeout(300);
-  ok("…the server is asked, once, to email the sign-in link for that checkout",
-    posts.filter((x) => x.path === "/api/slp/checkout/done").length === 1 && posts.find((x) => x.path === "/api/slp/checkout/done").body.session === "cs_test_a1b2c3d4e5f6g7", posts);
-  ok("…and the checkout's id leaves the address", !/paid=|cs_test/.test(page.url()), page.url());
+  ok("…the server is asked, once, for that checkout", doneAsks().length === 1 && doneAsks()[0].body.session === "cs_test_a1b2c3d4e5f6g7", posts);
+  ok("…the checkout's id leaves the address, and no button is offered", !/paid=|cs_test/.test(page.url()) && !(await sentSays(page)).again, page.url());
   ok("…no page errors", errors.length === 0, errors);
+  await context.close();
+}
+{
+  // the email went only on the second ask (Stripe's webhook was sending it)
+  posts = []; doneQueue = [{ ok: true, activated: true, sent: false, retry: true }]; doneReply = { ok: true, activated: true, sent: true };
+  const { context, page } = await fresh({ path: "/plans", query: "&paid=cs_test_a1b2c3d4e5f6g7", init: quickRetry });
+  ok("an email still on its way is asked about again, and only then \"You're in!\"",
+    await settles(page, () => /You're in!/.test(document.getElementById("sentT").textContent)) && doneAsks().length === 2, doneAsks().length);
+  await context.close();
+}
+{
+  // the email keeps not going: said so, with a way to send it and a way in
+  posts = []; doneQueue = []; doneReply = { ok: true, activated: true, sent: false, retry: true };
+  const { context, page, errors } = await fresh({ path: "/plans", query: "&paid=cs_test_a1b2c3d4e5f6g7", init: quickRetry });
+  await settles(page, () => !document.getElementById("sentRetry").hidden);
+  let say = await sentSays(page);
+  ok("an email that did not go is never called sent: \"Sona Pro is on.\", couldn't send, \"Send my link again\" and the sign-in page",
+    say.shown && !say.form && say.t === "Sona Pro is on." && /couldn't send your sign-in email/.test(say.m) && !/emailed you/.test(say.m) &&
+    say.again === "Send my link again" && say.signIn === "/slp-login.html", say);
+  ok("…after four asks, and the checkout's id stays in the address, so a reload asks again", doneAsks().length === 4 && /paid=cs_test_a1b2c3d4e5f6g7/.test(page.url()), [doneAsks().length, page.url()]);
+  doneReply = { ok: true, activated: true, sent: true };
+  await page.click("#sentRetry");
+  ok("…\"Send my link again\" asks once more, and once it went, \"You're in!\" and the id leaves the address",
+    await settles(page, () => /You're in!/.test(document.getElementById("sentT").textContent) && document.getElementById("sentRetry").hidden) &&
+    doneAsks().length === 5 && !/paid=/.test(page.url()), [doneAsks().length, page.url()]);
+  ok("…no page errors", errors.length === 0, errors);
+  await context.close();
+}
+{
+  // Stripe has not confirmed the payment yet
+  posts = []; doneQueue = []; doneReply = { ok: false, activated: false, status: 409 };
+  const { context, page } = await fresh({ path: "/plans", query: "&paid=cs_test_a1b2c3d4e5f6g7", init: quickRetry });
+  await settles(page, () => !document.getElementById("sentRetry").hidden);
+  const say = await sentSays(page);
+  ok("a payment not confirmed yet says so, with \"Check again\" and the sign-in page, never \"Sona Pro is on\"",
+    say.t === "Almost there." && /couldn't confirm your payment/.test(say.m) && say.again === "Check again" && say.signIn === "/slp-login.html", say);
+  doneReply = { ok: true, activated: true, sent: true };
   await context.close();
 }
 

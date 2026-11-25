@@ -103,6 +103,9 @@ function kvExec(cmd) {
     case "GETDEL": { const v = KV.K.has(key) ? KV.K.get(key) : null; KV.K.delete(key); return v; }
     case "INCR": { const n = Number(KV.K.get(key) || 0) + 1; KV.K.set(key, String(n)); return n; }
     case "EVAL": {
+      if (c[1].startsWith("-- slpbuymail:release\n")) {
+        return KV.K.get(c[3]) === c[4] ? kvExec(["DEL", c[3]]) : 0;
+      }
       if (c[1].startsWith("-- slpacct:update\n")) {
         return KV.K.get(c[3]) === c[4] ? kvExec(["SET", c[3], c[5]]) : null;
       }
@@ -2758,9 +2761,9 @@ const count = (pred) => S.calls.filter(pred).length;
   S.calls.length = 0; RESEND.sent.length = 0; OUT.length = 0;
   let r = await call(R.buy, "POST", "/api/slp/checkout", { body: { email: "  NewBuyer@BrightSteps.example ", plan: "pro", ref: "abcd2345", source: "fb", attrib: { fbclid: "x1" } } });
   let p = (S.calls.find((c) => c[0] === "checkout.sessions.create") || [])[1];
-  ok("BUYNOW1: an email, signed in or not, opens Sona Pro's checkout for that address (lower-cased), stamped for it as the dashboard's checkout is, plus from: plans",
+  ok("BUYNOW1: an email, signed in or not, opens Sona Pro's checkout for that address (lower-cased), stamped for it as the dashboard's checkout is, plus from: plans (and the referral, for Stripe's webhook too)",
     r.status === 200 && r.json.ok === true && /^https:\/\/checkout\.stripe\.test\//.test(r.json.url) && p && p.mode === "subscription" &&
-    p.customer_email === nb && JSON.stringify(p.subscription_data.metadata) === JSON.stringify({ plan: "slp-pro", slp: nb, from: "plans", offer: "bf-2026" }) &&
+    p.customer_email === nb && JSON.stringify(p.subscription_data.metadata) === JSON.stringify({ plan: "slp-pro", slp: nb, from: "plans", offer: "bf-2026", ref: "abcd2345" }) &&
     p.metadata.ref === "abcd2345" && p.metadata.from === "plans" && p.line_items[0].price_data.unit_amount === C.PRO_CENTS, JSON.stringify([r.json, p]));
   ok("…during Black Friday: the coupon, no free trial, its words beside Stripe's button, and Stripe comes back to /plans (paid or cancelled), never the dashboard",
     p && p.discounts && p.discounts[0].coupon === "sona-pro-bf-2026" && !("trial_period_days" in p.subscription_data) &&
@@ -2805,15 +2808,37 @@ const count = (pred) => S.calls.filter(pred).length;
   const tokKey = [...KV.K.keys()].find((k) => k.startsWith("slptok:") && String(KV.K.get(k)).startsWith("free-dashboard:"));
   const pend = tokKey ? A.readFreeDashboardSignup(String(KV.K.get(tokKey))) : null;
   ok("…its link is the sign-up door's, carrying the referral code to the account it will make", !!pend && pend.email === nb && pend.ref === "abcd2345" && pend.source === "plans-checkout", JSON.stringify(pend));
+  ok("…and its mark is the subscription's (shared with Stripe's webhook), kept as sent", KV.K.get("slpbuymail:sub_nb_pro") === "sent");
   r = await call(R.buyDone, "POST", "/api/slp/checkout/done", { body: { session: "cs_test_buynowpaid0001" } });
-  ok("…and a reload sends no second email", r.status === 200 && RESEND.sent.length === 1);
+  ok("…and a reload sends no second email, and still says it went", r.status === 200 && r.json.sent === true && RESEND.sent.length === 1, JSON.stringify(r.json));
+  // the email did not go: said so, the mark given back, and the next ask sends it
+  const nf = "mailfail@brightsteps.example";
+  mkSub("sub_nf_pro", { slp: nf, plan: "slp-pro", status: "trialing", interval: "month" });
+  S.sessions.set("cs_test_buynowfail0001", { id: "cs_test_buynowfail0001", status: "complete", metadata: { plan: "slp-pro", slp: nf, from: "plans" }, subscription: "sub_nf_pro" });
+  RESEND.sent.length = 0; RESEND.status = 500; RESEND.body = JSON.stringify({ message: "down (test)" });
+  r = await call(R.buyDone, "POST", "/api/slp/checkout/done", { body: { session: "cs_test_buynowfail0001" } });
+  RESEND.status = 200; RESEND.body = "{}";
+  ok("a sign-in email that did not go is said so (sent: false, retry), and its mark is given back",
+    r.status === 200 && r.json.activated === true && r.json.sent === false && r.json.retry === true && !KV.K.has("slpbuymail:sub_nf_pro"), JSON.stringify(r.json));
+  const sentBefore = RESEND.sent.length;
+  r = await call(R.buyDone, "POST", "/api/slp/checkout/done", { body: { session: "cs_test_buynowfail0001" } });
+  ok("…so the next ask sends it, once", r.status === 200 && r.json.sent === true && RESEND.sent.length === sentBefore + 1 && KV.K.get("slpbuymail:sub_nf_pro") === "sent", JSON.stringify(r.json));
+  // another request sending it this moment (Stripe's webhook): not sent twice, asked again
+  const nw2 = "busybuyer@brightsteps.example";
+  mkSub("sub_busy_pro", { slp: nw2, plan: "slp-pro", status: "active", interval: "month" });
+  S.sessions.set("cs_test_buynowbusy0001", { id: "cs_test_buynowbusy0001", status: "complete", metadata: { plan: "slp-pro", slp: nw2, from: "plans" }, subscription: "sub_busy_pro" });
+  KV.K.set("slpbuymail:sub_busy_pro", "someoneelse"); RESEND.sent.length = 0;
+  r = await call(R.buyDone, "POST", "/api/slp/checkout/done", { body: { session: "cs_test_buynowbusy0001" } });
+  ok("while another request is sending it, nothing is sent and the page is told to ask again, the other's mark untouched",
+    r.status === 200 && r.json.sent === false && r.json.retry === true && RESEND.sent.length === 0 && KV.K.get("slpbuymail:sub_busy_pro") === "someoneelse", JSON.stringify(r.json));
+  KV.K.delete("slpbuymail:sub_busy_pro");
   // not ours to answer: a dashboard checkout, an unfinished one, a made-up id
   S.sessions.set("cs_test_dashboardbuy01", { id: "cs_test_dashboardbuy01", status: "complete", metadata: { plan: "slp-pro", slp: nb }, subscription: "sub_nb_pro" });
   S.sessions.set("cs_test_buynowopen0001", { id: "cs_test_buynowopen0001", status: "open", metadata: { plan: "slp-pro", slp: nb, from: "plans" }, subscription: "sub_nb_pro" });
   const dash = await call(R.buyDone, "POST", "/api/slp/checkout/done", { body: { session: "cs_test_dashboardbuy01" } });
   const open = await call(R.buyDone, "POST", "/api/slp/checkout/done", { body: { session: "cs_test_buynowopen0001" } });
   const junk = await call(R.buyDone, "POST", "/api/slp/checkout/done", { body: { session: "nope" } });
-  ok("a checkout not made by /plans, one not finished, or a made-up id sends nothing", dash.status === 404 && open.status === 409 && junk.status === 400 && RESEND.sent.length === 1,
+  ok("a checkout not made by /plans, one not finished, or a made-up id sends nothing", dash.status === 404 && open.status === 409 && junk.status === 400 && RESEND.sent.length === 0,
     JSON.stringify([dash.status, open.status, junk.status]));
 
   // signed in, from /plans: the dashboard's own checkout, Cancel back to /plans
