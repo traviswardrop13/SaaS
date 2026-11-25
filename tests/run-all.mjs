@@ -14,6 +14,7 @@ const SUITES = [
   "chartertest.mjs",   // CHARTER1: $59.99 for the first 50 families, then $99.99 — true by construction
   "shiptest.mjs",      // SHIP1: what reaches the phone — the header that makes a deploy visible, without re-downloading the app every page
   "landingtest.mjs", // LANDING1: speaksona.com's Start free pop-up: who they are, the lead, then the App Store
+  "bfmailtest.mjs", // BFMAIL1: an SLP opt-in during Black Friday gets one email about the deal, once, with a real unsubscribe
   "nurturetest.mjs", // NURTURE1: a new sign-up gets the welcome now and the 5-minute email tomorrow, once each, with a real unsubscribe
   "mailtest.mjs", // MAIL1: every email goes through lib/mail: GoHighLevel (upsert, then send; a 429 once more; email DND on unsubscribe) when set, else Resend as before
   "contactstest.mjs", // CONTACTS1: every grown-up's email joins Resend's contacts in its segment; nobody is re-subscribed; unsubscribes go both ways; Kit's leavers first

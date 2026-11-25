@@ -3121,8 +3121,7 @@ months** and **Mountain time**, then "but no free trial on the promo".
   Sona Clinic. `caseloadtest` plays it, the clock moved by hand.
 - **`/blackfriday` is `public/bf.html`**: the opt-in in navy and butter,
   "Sona Pro, half off." and under it "Speech practice kids actually want to
-  do. Kids say their sound to play. Send it home free to every family on
-  your caseload." **No price on it** (Travis, 25 Nov 2026: "not have
+  do. Send it home free to every family on your caseload." **No price on it** (Travis, 25 Nov 2026: "not have
   anything about pricing in the email collection. We just want to be
   grabbing their email there"; the figures are /blackfriday/plans'), and
   under Get Started only "Unsubscribe anytime." A
@@ -3131,6 +3130,17 @@ months** and **Mountain time**, then "but no free trial on the promo".
   (noindex; the app guard first; the pixel's Lead only on `/api/lead`'s
   ok). It sends the visitor to `/blackfriday/plans`, or to `/plans` after
   the end, when it says "Black Friday is over." (still no price).
+- **The Black Friday email (BFMAIL1, `lib/bfmail.ts`, 25 Nov 2026**, Travis:
+  "set up resend to send them an email once they opt in as a lead ... I want
+  to be focusing on the Black Friday promotion"): a speech therapist's email
+  from `/` or `/blackfriday` (`/api/lead`, role "slp") gets ONE email from
+  Rachel at once while `bfOn()`: "Sona Pro is half off until Sunday", the
+  deal in lib/caseload's figures, what Sona Pro does, "no free trial", and
+  "Get the Black Friday price" to www.speaksona.com/blackfriday/plans. Once
+  an address (`bfmail:<email>`, given back if the send fails), never to an
+  unsubscribed one, with the unsubscribe link and mailing address; nothing
+  after the end. Resend sends it (GHLEXIT1). Every word is Travis's;
+  `bfmailtest` plays it.
 - **for-slps.html's Black Friday mode is on wherever it is served (`/plans`,
   `/blackfriday/plans`, `/checkout`) until the end**, because every Sona Pro
   checkout until then is the deal: a navy bar with the time left, a line on
