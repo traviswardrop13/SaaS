@@ -528,10 +528,10 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
     const bfShown = bfPage.replace(/<!--[\s\S]*?-->/g, "").replace(/<script[\s\S]*?<\/script>/g, "").replace(/<[^>]+>/g, " ").replace(/&rsquo;/g, "'").replace(/\s+/g, " ");
     // Travis, 25 Nov 2026: "not have anything about pricing in the email
     // collection": the opt-in only takes the email; the figures are /plans'.
-    ok("the Black Friday opt-in sells the practice, says half off and when it ends, and shows no price, no trial and no small print under the button",
-      bfShown.includes("Home practice your caseload actually does.") && bfShown.includes("half off") &&
+    ok("the Black Friday opt-in says half off and when it ends, sells the practice, shows no price or trial, and under the button only \"Unsubscribe anytime.\"",
+      bfShown.includes("Sona Pro, half off.") && bfShown.includes("Speech practice kids actually want to do.") &&
       bfShown.includes("Ends Sunday, November 29 at 11:59 PM Mountain.") && !/\$\d/.test(bfShown) &&
-      !/free trial|days free|Unsubscribe/i.test(bfShown), bfShown.slice(0, 300));
+      !/free trial|days free|email you about/i.test(bfShown) && bfShown.includes("Unsubscribe anytime."), bfShown.slice(0, 300));
     ok("…after the end it says so, with no price, and its box leads to the ordinary plans",
       /\$\("bfH"\)\.textContent = "Black Friday is over\.";/.test(bfPage) && !/\$\("bfSub"\)\.textContent/.test(bfPage) &&
       /location\.assign\(\(bf \? "\/blackfriday\/plans" : "\/plans"\) \+ location\.search\)/.test(bfPage));
