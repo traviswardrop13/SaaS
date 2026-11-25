@@ -15,14 +15,16 @@ const rewrites = new Map((await nextConfig.rewrites()).map(rule => [rule.source,
 const oldClinicianUrl = (await nextConfig.redirects()).find(rule => rule.source === "/for-slps");
 const MIME = { html: "text/html", js: "text/javascript", css: "text/css", png: "image/png", jpg: "image/jpeg", webp: "image/webp", svg: "image/svg+xml", woff2: "font/woff2", webmanifest: "application/manifest+json" };
 let fails = 0;
-// The plan /plans left for the dashboard: {plan, at}, written just now
-// (SLPSITE1, 18 Nov 2026: a pick counts for an hour). Run in the page.
-const WANT = () => { try { const w = JSON.parse(localStorage.getItem("sona.slp.wantplan")); return w && typeof w.at === "number" && Math.abs(Date.now() - w.at) < 60000 ? w.plan : null; } catch (e) { return localStorage.getItem("sona.slp.wantplan") === null ? null : "?"; } };
 const ok = (name, cond, detail) => { if (!cond) fails++; console.log((cond ? "PASS " : "FAIL ") + name + (cond || detail === undefined ? "" : "  → " + (typeof detail === "string" ? detail : JSON.stringify(detail)))); };
 
 // What the fake routes answer, and what they were sent. charterReply null
 // means /api/charter does not answer at all.
 let posts = [], leadReply = { ok: true, captured: true }, authReply = { ok: true, sent: true, signedIn: true }, charterReply = null;
+// BUYNOW1 (25 Nov 2026): /plans opens Stripe straight away. The new visitor's
+// checkout (/api/slp/checkout), the signed-in one (/api/slp/plan's POST) and
+// the paid return (/api/slp/checkout/done); /stripe-fake stands in for Stripe.
+const STRIPE = "http://127.0.0.1:8163/stripe-fake";
+let checkoutReply = { ok: true, url: STRIPE + "?who=new" }, planPostReply = { ok: true, url: STRIPE + "?who=signedin" }, doneReply = { ok: true, activated: true, sent: true };
 // /api/slp/auth/me: null answers nobody signed in (the fake 404), as a fresh
 // visitor's browser does; set, the clinician signed in on this browser.
 let meReply = null;
@@ -33,12 +35,13 @@ let planReply = null;
 let forSlpsOverride = null;
 const srv = createServer((req, res) => {
   const u = new URL(req.url, "http://x");
-  if (req.method === "POST" && (u.pathname === "/api/lead" || u.pathname === "/api/slp/auth/request")) {
+  if (req.method === "POST" && ["/api/lead", "/api/slp/auth/request", "/api/slp/checkout", "/api/slp/checkout/done", "/api/slp/plan"].includes(u.pathname)) {
     let body = "";
     req.on("data", (c) => (body += c));
     req.on("end", () => {
       posts.push({ path: u.pathname, body: JSON.parse(body || "{}") });
-      const reply = u.pathname === "/api/lead" ? leadReply : authReply;
+      const reply = u.pathname === "/api/lead" ? leadReply : u.pathname === "/api/slp/checkout" ? checkoutReply :
+        u.pathname === "/api/slp/checkout/done" ? doneReply : u.pathname === "/api/slp/plan" ? planPostReply : authReply;
       res.writeHead(reply.ok ? 200 : (reply.status || 400), { "content-type": "application/json" });
       res.end(JSON.stringify(reply));
     });
@@ -48,6 +51,7 @@ const srv = createServer((req, res) => {
   if (u.pathname === "/api/slp/plan" && planReply) { res.writeHead(200, { "content-type": "application/json" }); res.end(JSON.stringify(planReply)); return; }
   if (u.pathname === "/api/charter" && charterReply) { res.writeHead(200, { "content-type": "application/json" }); res.end(JSON.stringify(charterReply)); return; }
   if (u.pathname.startsWith("/api/")) { res.writeHead(404); res.end("{}"); return; }
+  if (u.pathname === "/stripe-fake") { res.writeHead(200, { "content-type": "text/html" }); res.end("<title>Stripe</title>"); return; }
   if (u.pathname === oldClinicianUrl?.source) {
     res.writeHead(oldClinicianUrl.permanent ? 308 : 307, { location: oldClinicianUrl.destination + u.search });
     res.end();
@@ -450,11 +454,13 @@ charterReply = null;
   ok("…then goes on to /plans with the ad's tags, never the email in the address", arrived && url.searchParams.get("utm_campaign") === "launch" &&
     url.searchParams.get("fbclid") === "abc123" && !/sam|clinic\.org/.test(url.href), url.href);
   ok("/plans: the email is already in its box, from this tab", await page.inputValue("#fEmail") === "sam@clinic.org");
-  posts = []; authReply = { ok: true, sent: true, signedIn: false };
+  posts = [];
+  await page.evaluate(watchLeaving);
   await page.click("#fGo");
-  ok("/plans after the opt-in: the trial sign-up is InitiateCheckout, never a second Lead", await settles(page, () => !document.getElementById("sent").hidden) &&
-    posts.length === 1 && posts[0].path === "/api/slp/auth/request" && posts[0].body.flow === "trial" &&
-    JSON.stringify(await page.evaluate(() => window.__track)) === '["InitiateCheckout"]', posts);
+  const leftOpt = await settles(page, () => window.__left.length === 1) ? (await page.evaluate(() => window.__left))[0] : null;
+  ok("/plans after the opt-in: the button opens Stripe's checkout for that email at once, as InitiateCheckout, never a second Lead (BUYNOW1)",
+    !!leftOpt && leftOpt.to === STRIPE + "?who=new" && JSON.stringify(leftOpt.track) === '["InitiateCheckout"]' &&
+    posts.length === 1 && posts[0].path === "/api/slp/checkout" && posts[0].body.email === "sam@clinic.org" && posts[0].body.plan === "pro", { leftOpt, posts });
   ok("/: no page errors", errors.length === 0, errors);
   await context.close();
 }
@@ -469,10 +475,11 @@ charterReply = null;
   ok("/: a lead the server couldn't take (429) fires no Lead, and the visitor still reaches the plans", await went && posts.length === 1 &&
     (await page.evaluate(() => sessionStorage.getItem("sona.optin.lead"))) === null && await page.inputValue("#fEmail") === "sam@clinic.org");
   leadReply = { ok: true, captured: true };
-  posts = []; authReply = { ok: true, sent: true, signedIn: false };
+  posts = [];
+  await page.evaluate(watchLeaving);
   await page.click("#fGo");
-  ok("…where its trial sign-up is then the Lead", await settles(page, () => !document.getElementById("sent").hidden) &&
-    JSON.stringify(await page.evaluate(() => window.__track)) === '["Lead"]');
+  ok("…where opening its checkout is then the Lead", await settles(page, () => window.__left.length === 1) &&
+    JSON.stringify((await page.evaluate(() => window.__left))[0].track) === '["Lead"]');
   ok("…no page errors", errors.length === 0, errors);
   await context.close();
 }
@@ -519,22 +526,26 @@ const keepTracks = () => Object.defineProperty(window, "sonaTrack", { configurab
     document.getElementById("fTerms").hidden && !document.getElementById("proWas").hidden &&
     document.querySelector("#planPro .price").innerText.replace(/\s+/g, " ").trim() === "$19.99 a month $9.99 a month" &&
     document.getElementById("proTerms").textContent === "Cancel anytime." &&
-    document.getElementById("fGo").textContent === "Get the Black Friday price" && document.getElementById("finalGo").textContent === "Get the Black Friday price" &&
+    document.getElementById("fGo").textContent === "Get Sona Pro at half off" && document.getElementById("finalGo").textContent === "Get Sona Pro at half off" &&
     document.getElementById("proGo").textContent === "Get Sona Pro for $9.99" && !/free trial|days free/i.test(document.getElementById("pricing").querySelector("#planPro").innerText.replace(/no free trial/gi, ""))));
   ok("…with the email already in its box", await page.inputValue("#fEmail") === "bf@clinic.org");
-  posts = []; authReply = { ok: true, sent: true, signedIn: false };
+  posts = [];
+  await page.evaluate(watchLeaving);
   await page.click("#fGo");
-  ok("…and its sign-up is InitiateCheckout, never a second Lead, and its email is for the Black Friday price", await settles(page, () => !document.getElementById("sent").hidden) &&
-    posts.length === 1 && posts[0].path === "/api/slp/auth/request" && JSON.stringify(await page.evaluate(() => window.__track)) === '["InitiateCheckout"]' &&
-    /Open it to get your Black Friday price\./.test(await page.textContent("#sentMsg")), posts);
+  const leftBf = await settles(page, () => window.__left.length === 1) ? (await page.evaluate(() => window.__left))[0] : null;
+  ok("…and \"Get Sona Pro at half off\" opens Stripe's checkout at once, as InitiateCheckout, never a second Lead",
+    !!leftBf && leftBf.to === STRIPE + "?who=new" && JSON.stringify(leftBf.track) === '["InitiateCheckout"]' && leftBf.btn === "Opening checkout…" && leftBf.off &&
+    posts.length === 1 && posts[0].path === "/api/slp/checkout", { leftBf, posts });
   ok("…no page errors", errors.length === 0, errors);
   await context.close();
 }
 // The countdown reaching 11:59 PM Sunday on an open page: the ordinary words again.
 {
   const { context, page, errors } = await fresh({ path: "/blackfriday/plans", now: "2026-11-30T06:58:57Z" });
-  const before = await page.evaluate(() => !document.getElementById("bfBar").hidden && !document.getElementById("bfDeal").hidden);
+  const before = await page.evaluate(() => !document.getElementById("bfBar").hidden && !document.getElementById("bfDeal").hidden &&
+    document.getElementById("heroEye").innerText.replace(/\s+/g, " ").trim() === "Black Friday · Sona Pro half off");
   const after = await settles(page, () => document.getElementById("bfBar").hidden && document.getElementById("bfDeal").hidden &&
+    document.getElementById("heroEye").textContent === "Sona for speech therapists" &&
     document.getElementById("fTerms").textContent === "14 days free, then $19.99 a month. Cancel anytime." && !document.getElementById("fTerms").hidden &&
     document.getElementById("proWas").hidden && document.querySelector("#planPro .price b").textContent === "$19.99" &&
     document.getElementById("proTerms").textContent === "Cancel anytime." &&
@@ -564,7 +575,7 @@ const keepTracks = () => Object.defineProperty(window, "sonaTrack", { configurab
 {
   const { context, page, errors } = await fresh({ path: "/plans", now: "2026-11-26T19:00:00Z" });
   ok("/plans during Black Friday shows the deal too, since every Sona Pro checkout this week is the deal", await page.evaluate(() =>
-    !document.getElementById("bfBar").hidden && !document.getElementById("bfDeal").hidden && document.getElementById("fGo").textContent === "Get the Black Friday price"));
+    !document.getElementById("bfBar").hidden && !document.getElementById("bfDeal").hidden && document.getElementById("fGo").textContent === "Get Sona Pro at half off"));
   ok("…no page errors", errors.length === 0, errors);
   await context.close();
 }
@@ -646,7 +657,7 @@ const PLANS_CLINIC_ON = /var CLINIC_ON = true;/.test(PLANS_SRC);
   posts = [];
   await page.evaluate(() => { document.activeElement.blur(); document.getElementById("pricing").scrollIntoView(); });
   await page.click('[data-plan="pro"]');
-  ok("a plan button returns to the form, posting nothing and keeping nothing yet (only a sent email, or a signed-in visitor, writes the pick)", await settles(page, () => {
+  ok("a plan button with no email in the box returns to the form, posting nothing and keeping nothing", await settles(page, () => {
     const r = document.getElementById("signup").getBoundingClientRect();
     return r.top >= 0 && r.bottom <= innerHeight && document.activeElement?.id === "fEmail" && localStorage.getItem("sona.slp.wantplan") === null;
   }) && posts.length === 0);
@@ -682,24 +693,38 @@ if (!PLANS_CLINIC_ON) {
   await context.close();
 }
 
-// ── already signed in (SLPSITE1): "See plans" on the dashboard's locked
-// screen brings a signed-in clinician here; a plan button takes them
-// straight back to the dashboard (which opens the checkout), no email. ──
+// ── already signed in: a plan button opens Stripe straight away (BUYNOW1,
+// 25 Nov 2026; until then it went back to the dashboard), through the
+// dashboard's own checkout, with Cancel coming back here. ──
 {
   meReply = { ok: true, email: "sam@clinic.org", code: "", onboarded: false };
-  const { context, page, errors } = await fresh({ path: "/plans" });
-  // The dashboard itself is another suite's (slptest): a stub here.
-  await context.route("**/slp.html*", (route) => route.fulfill({ status: 200, contentType: "text/html", body: "<title>Dashboard</title>" }));
+  const { context, page, errors } = await fresh({ path: "/plans", watch: true });
   posts = [];
   await page.waitForTimeout(300);   // the session check answers first
   await page.evaluate(() => { document.activeElement.blur(); document.getElementById("pricing").scrollIntoView(); });
-  const nav = page.waitForURL((u) => u.pathname === "/slp.html", { timeout: 4000 }).then(() => true, () => false);
   await page.click('[data-plan="pro"]');
-  const went = await nav;
-  ok("signed in already: a plan button remembers the plan ({plan, at}) and goes straight back to the dashboard, posting nothing",
-    went && posts.length === 0 && await page.evaluate(WANT) === "pro", { went, posts, url: page.url() });
+  const left = await settles(page, () => window.__left.length === 1) ? (await page.evaluate(() => window.__left))[0] : null;
+  ok("signed in already: a plan button opens Stripe's checkout at once (Sona Pro, Cancel back to /plans), never the dashboard, sending no email",
+    !!left && left.to === STRIPE + "?who=signedin" && posts.length === 1 && posts[0].path === "/api/slp/plan" &&
+    posts[0].body.plan === "pro" && posts[0].body.back === "plans" && await page.evaluate(() => localStorage.getItem("sona.slp.wantplan")) === null, { left, posts });
   ok("…no page errors", errors.length === 0, errors);
   await context.close();
+  // Nothing left to sell (Sona Pro already on, or free as promised): the
+  // server's words, on this page.
+  const second = await fresh({ path: "/plans", watch: true });
+  planPostReply = { ok: false, already: true, error: "Sona Pro is already on." };
+  posts = [];
+  await second.page.waitForTimeout(300);
+  await second.page.click("#fGo");
+  ok("signed in, nothing to sell: the server's words on the page, and it stays", await settles(second.page, () => /Sona Pro is already on\./.test(document.getElementById("fErr").textContent)) &&
+    (await second.page.evaluate(() => window.__left.length)) === 0 && posts.length === 1);
+  // A session that ended meanwhile: the email box comes back.
+  planPostReply = { ok: false, error: "sign in required", status: 401 };
+  await second.page.click("#fGo");
+  ok("signed in, but the session has ended: the email box comes back", await settles(second.page, () => !document.getElementById("fField").hidden && document.getElementById("fEmail").required));
+  ok("…no page errors", second.errors.length === 0, second.errors);
+  await second.context.close();
+  planPostReply = { ok: true, url: STRIPE + "?who=signedin" };
   meReply = null;
 }
 // ── signed in, the page's other trial buttons too (review, 18 Nov 2026):
@@ -709,8 +734,7 @@ if (!PLANS_CLINIC_ON) {
 for (const used of [false, true]) {
   meReply = { ok: true, email: "sam@clinic.org", code: "", onboarded: false };
   planReply = { ok: true, pro: { trialAvailable: !used, price: "$19.99", per: "a month", offer: true } };
-  const { context, page, errors } = await fresh({ path: "/plans" });
-  await context.route("**/slp.html*", (route) => route.fulfill({ status: 200, contentType: "text/html", body: "<title>Dashboard</title>" }));
+  const { context, page, errors } = await fresh({ path: "/plans", watch: true });
   posts = [];
   const st = used ? await settles(page, () => document.getElementById("fGo").textContent === "Get Sona Pro") : await settles(page, () => document.getElementById("fField").hidden);
   if (!used) await page.waitForTimeout(300);   // the plan's answer, which changes nothing here
@@ -722,10 +746,10 @@ for (const used of [false, true]) {
   else ok("signed in, the trial already had: \"Get Sona Pro\" on every button, \"$19.99 a month, charged today. Cancel anytime.\", never \"free\"",
     st2.field && st2.nextHidden && st2.go === "Get Sona Pro" && st2.pro === "Get Sona Pro" && st2.fin === "Get Sona Pro" &&
     st2.terms === "$19.99 a month, charged today. Cancel anytime." && st2.proTerms === "Cancel anytime.", st2);
-  const nav = page.waitForURL((u) => u.pathname === "/slp.html", { timeout: 4000 }).then(() => true, () => false);
   await page.click(used ? "#finalGo" : "#fGo");
-  ok(`…and ${used ? "the closing button" : "the form's button"} goes straight back to the dashboard with Sona Pro remembered, sending no email`,
-    await nav && posts.length === 0 && await page.evaluate(WANT) === "pro", { posts, url: page.url() });
+  const left = await settles(page, () => window.__left.length === 1) ? (await page.evaluate(() => window.__left))[0] : null;
+  ok(`…and ${used ? "the closing button" : "the form's button"} opens Stripe's checkout for Sona Pro, sending no email`,
+    !!left && left.to === STRIPE + "?who=signedin" && posts.length === 1 && posts[0].path === "/api/slp/plan" && posts[0].body.plan === "pro", { left, posts });
   ok("…no page errors", errors.length === 0, errors);
   await context.close();
   meReply = null; planReply = null;
@@ -747,89 +771,73 @@ for (const used of [false, true]) {
   await page.evaluate(() => { document.activeElement.blur(); document.getElementById("pricing").scrollIntoView(); });
   await page.click('[data-plan="clinic"]');
   ok("…its button returns to the form", await settles(page, () => document.activeElement?.id === "fEmail"));
-  posts = []; authReply = { ok: true, sent: true, signedIn: false };
+  posts = []; checkoutReply = { ok: false, unavailable: true, error: "Sign in to your Sona dashboard to buy this plan.", status: 409 };
   await fill(page, "sam@clinic.org");
   await page.click("#fGo");
-  ok("…and once the email is sent the form remembers the plan the button chose (clinic), never Sona Pro over it", await settles(page, () => !document.getElementById("sent").hidden) &&
-    await page.evaluate(WANT) === "clinic");
+  ok("…and the form asks the checkout for the plan the button chose (clinic), never Sona Pro over it, showing the server's answer", await settles(page, () =>
+    /Sign in to your Sona dashboard/.test(document.getElementById("fErr").textContent)) && posts.length === 1 && posts[0].body.plan === "clinic", posts);
+  checkoutReply = { ok: true, url: STRIPE + "?who=new" };
   ok("…no page errors", errors.length === 0, errors);
   await context.close();
   forSlpsOverride = null;
 }
 
-// ── a trial: the emailed sign-in link, then the plan in the dashboard ──
+// ── a new visitor (BUYNOW1, 25 Nov 2026): the email, then Stripe at once;
+// once paid, Stripe brings them back and the sign-in link is emailed ──
 {
-  const { context, page, errors } = await fresh({ path: "/plans" });
+  const { context, page, errors } = await fresh({ path: "/plans", watch: true });
   const url = new URL(page.url());
   ok("/plans keeps the campaign parameters", url.pathname === "/plans" &&
     url.searchParams.get("utm_campaign") === "launch" && url.searchParams.get("fbclid") === "abc123", url.href);
-  posts = []; authReply = { ok: true, sent: true, signedIn: false };
+  ok("/plans: under the button, one line says the next step is Stripe's checkout", (await page.textContent("#fNext")).trim() === "Secure checkout with Stripe.");
+  posts = [];
   await fill(page, "sam@clinic.org");
-  const left = leftFor(page, "/plans", 3000);
   await page.click("#fGo");
-  ok("/plans: email confirmation identifies the address after delivery", await settles(page, () => {
-    const sent = document.getElementById("sent");
-    return !sent.hidden && /check your email/i.test(sent.textContent) && /sam@clinic\.org/.test(sent.textContent) && /start your free trial/i.test(sent.textContent);
-  }));
+  const left = await settles(page, () => window.__left.length === 1) ? (await page.evaluate(() => window.__left))[0] : null;
   const p = posts[0] || { body: {} };
-  ok("/plans: one post asks for the trial's sign-in email", posts.length === 1 && p.path === "/api/slp/auth/request" &&
-    p.body.flow === "trial", posts);
-  // SLPSITE1: the email link takes a LOCKED account to checkout only when a
-  // plan is remembered, so the form remembers Sona Pro when nothing is.
-  ok("/plans: once the email is sent the trial form remembers Sona Pro for the dashboard (sona.slp.wantplan, {plan, at}) when no plan button was pressed",
-    await page.evaluate(WANT) === "pro");
-  ok("/plans: the request carries the email and ad click, with no name",
-    p.body.email === "sam@clinic.org" && !("name" in p.body) && p.body.attrib?.fbclid === "abc123" && p.body.source === "fb", p.body);
-  ok("/plans: the request asks no role or work setting", !("clinicianRole" in p.body) &&
-    !("workSetting" in p.body) && !!p.body.attrib && !("clinicianRole" in p.body.attrib) && !("workSetting" in p.body.attrib), p.body);
-  // The page is the front door again (20 Nov 2026): a sent trial email is the Lead.
-  ok("/plans: a sent email fires only Lead", JSON.stringify(await page.evaluate(() => window.__track)) === '["Lead"]');
-  ok("/plans: the confirmation stays on the page", !(await left), page.url());
+  ok("/plans: one post opens the checkout for Sona Pro, and the page leaves for Stripe with the button saying so", posts.length === 1 && p.path === "/api/slp/checkout" &&
+    p.body.plan === "pro" && !!left && left.to === STRIPE + "?who=new" && left.btn === "Opening checkout…" && left.off, { posts, left });
+  ok("/plans: the request carries the email and ad click, with no name, role or work setting",
+    p.body.email === "sam@clinic.org" && !("name" in p.body) && p.body.attrib?.fbclid === "abc123" && p.body.source === "fb" &&
+    !("clinicianRole" in p.body) && !("workSetting" in p.body) && !("clinicianRole" in p.body.attrib), p.body);
+  ok("/plans: opening the checkout fires only Lead, and sends no sign-in email and keeps no pick for the dashboard", !!left && JSON.stringify(left.track) === '["Lead"]' &&
+    !posts.some((x) => x.path === "/api/slp/auth/request") && await page.evaluate(() => localStorage.getItem("sona.slp.wantplan")) === null);
   ok("/plans: no page errors", errors.length === 0, errors);
   await context.close();
 }
-// The conversion fires only after the server said yes.
+// The conversion fires only once Stripe's checkout is open.
 {
-  const { context, page } = await fresh({ path: "/plans" });
-  posts = []; authReply = { ok: false, error: "Enter a valid email." };
+  const { context, page } = await fresh({ path: "/plans", watch: true });
+  posts = []; checkoutReply = { ok: false, error: "Enter a valid email.", status: 400 };
   await fill(page, "sam@clinic.org");
   await page.click("#fGo");
-  ok("a refused signup shows the server's reason", await settles(page, () =>
+  ok("a refused email shows the server's reason", await settles(page, () =>
     /Enter a valid email/.test(document.getElementById("fErr").textContent)));
-  ok("…and fires no conversion", (await page.evaluate(() => window.__track.length)) === 0);
+  ok("…and fires no conversion and stays", (await page.evaluate(() => window.__track.length + window.__left.length)) === 0);
+  checkoutReply = { ok: false, error: "Checkout failed.", status: 502 };
+  await page.click("#fGo");
+  const canRetry = await settles(page, () => /Checkout failed/.test(document.getElementById("fErr").textContent)) &&
+    await page.locator("#fGo").isEnabled() && (await page.textContent("#fGo")) === "Start your free trial" && await page.inputValue("#fEmail") === "sam@clinic.org";
+  ok("a checkout Stripe would not open leaves the form ready to try again, with no conversion", canRetry && (await page.evaluate(() => window.__track.length)) === 0);
+  checkoutReply = { ok: true, url: STRIPE + "?who=new" };
+  await page.click("#fGo");
+  ok("…and the next try opens it", await settles(page, () => window.__left.length === 1) && posts.length === 3, posts);
   await context.close();
 }
+// Back from Stripe, paid: the page says so and asks for the sign-in email, once.
 {
-  const { context, page } = await fresh({ path: "/plans" });
-  posts = []; authReply = { ok: true, sent: false, signedIn: false };
-  await fill(page, "sam@clinic.org");
-  await page.click("#fGo");
-  const canRetry = await settles(page, () => /email/i.test(document.getElementById("fErr").textContent)) &&
-    await page.locator("#signup").isVisible() && await page.locator("#fGo").isEnabled() &&
-    !await page.locator("#sent").isVisible() && await page.inputValue("#fEmail") === "sam@clinic.org";
-  ok("a delivery failure leaves the form ready to retry without claiming the email was sent", canRetry);
-  ok("a delivery failure fires no conversion", await page.evaluate(() => window.__track.length === 0));
-  ok("…and remembers no plan for the dashboard", await page.evaluate(() => localStorage.getItem("sona.slp.wantplan")) === null);
-  if (canRetry) {
-    authReply = { ok: true, sent: true, signedIn: false };
-    await page.click("#fGo");
-    ok("retry confirms delivery after a successful send", await settles(page, () => !document.getElementById("sent").hidden) &&
-      posts.length === 2, posts);
-  }
-  await context.close();
-}
-
-// A local preview offers its test link without reporting an email delivery.
-{
-  const { context, page } = await fresh({ path: "/plans" });
-  posts = []; authReply = { ok: true, sent: false, signedIn: false, devLink: origin + "/api/slp/auth/verify?token=preview" };
-  await fill(page, "sam@clinic.org");
-  await page.click("#fGo");
-  ok("local preview shows its sign-in link with no delivery claim", await settles(page, () => {
+  posts = [];
+  const { context, page, errors } = await fresh({ path: "/plans", query: "&paid=cs_test_a1b2c3d4e5f6g7" });
+  ok("back from Stripe, paid: \"You're in!\", the dashboard link is on its way, the form steps aside", await settles(page, () => {
     const sent = document.getElementById("sent");
-    return !sent.hidden && /preview sign-in/i.test(sent.textContent) && !/check your email/i.test(sent.textContent);
-  }) && await page.locator("#devbox a").getAttribute("href") === authReply.devLink);
-  ok("the preview link fires no conversion", await page.evaluate(() => window.__track.length === 0));
+    return !sent.hidden && document.getElementById("signup").hidden && /You're in!/.test(sent.textContent) && /emailed you a link to open your dashboard/.test(sent.textContent);
+  }));
+  for (let i = 0; i < 40 && !posts.some((x) => x.path === "/api/slp/checkout/done"); i++) await page.waitForTimeout(50);
+  await page.waitForTimeout(300);
+  ok("…the server is asked, once, to email the sign-in link for that checkout",
+    posts.filter((x) => x.path === "/api/slp/checkout/done").length === 1 && posts.find((x) => x.path === "/api/slp/checkout/done").body.session === "cs_test_a1b2c3d4e5f6g7", posts);
+  ok("…and the checkout's id leaves the address", !/paid=|cs_test/.test(page.url()), page.url());
+  ok("…no page errors", errors.length === 0, errors);
   await context.close();
 }
 

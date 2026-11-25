@@ -143,15 +143,17 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
 
   // A tap is not a sign-up. Firing on the click would teach the campaign to
   // buy people who open forms and abandon them.
-  const handler = slps.slice(slps.indexOf("function go()"));
-  const okGate = handler.indexOf("if (!j || !j.ok)");
-  const lead = handler.indexOf('sonaTrack("Lead")');
-  ok("Lead fires only after the server accepted the sign-up",
-    okGate > 0 && lead > okGate,
+  // BUYNOW1 (25 Nov 2026): the Lead (or InitiateCheckout) is sent only as
+  // the page leaves for a checkout Stripe has opened (toStripe), and every
+  // call to toStripe sits behind the server's yes with a checkout address.
+  const toStripe = (slps.match(/function toStripe\(url\) \{[\s\S]*?\n    \}/) || [""])[0];
+  const stripeCalls = slps.match(/[^\n]*toStripe\([^)]*\)[^\n]*/g) || [];
+  ok("Lead fires only once the server opened the checkout",
+    /sonaTrack\("Lead"\)/.test(toStripe) && (slps.match(/sonaTrack\("Lead"\)/g) || []).length === 1 &&
+    stripeCalls.filter((l) => !/function toStripe/.test(l)).length === 2 &&
+    stripeCalls.filter((l) => !/function toStripe/.test(l)).every((l) => /if \(x?\.?j && x?\.?j\.ok && x?\.?j\.url\) \{ toStripe\(x?\.?j\.url\); return; \}/.test(l)),
     "otherwise the campaign optimises for opening the form, not completing it");
-  ok("…and email delivery is never counted as a completed registration",
-    handler.indexOf("if (j.sent !== true) {") > okGate &&
-    lead > handler.indexOf("if (j.sent !== true) {") && !/CompleteRegistration/.test(handler));
+  ok("…and nothing is ever counted as a completed registration", !/CompleteRegistration/.test(slps));
 
   // THE ROOT IS THE PARENT PAGE NOW (26 Sep 2026), and the parent ads land on
   // it: the same regression, the same rule. PageView on load, Lead only once

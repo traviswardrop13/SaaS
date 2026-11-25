@@ -202,7 +202,7 @@ export async function POST(req: NextRequest) {
   if (!key) return NextResponse.json({ ok: false, error: "Server is missing STRIPE_SECRET_KEY." }, { status: 500 });
   const stripe = new Stripe(key);
 
-  let body: { plan?: unknown } = {};
+  let body: { plan?: unknown; back?: unknown } = {};
   try { body = (await req.json()) || {}; } catch { body = {}; }
   // RETIRED (12 Nov 2026). Only Sona Pro and (17 Nov 2026) Sona Clinic are
   // sold. A tab opened before then still shows "$59.99 a year" on its
@@ -372,7 +372,9 @@ export async function POST(req: NextRequest) {
       ...(bfCoupon ? { discounts: [{ coupon: bfCoupon }] } : { allow_promotion_codes: true }),
       billing_address_collection: "auto",
       success_url: `${origin}/slp.html?plan_session={CHECKOUT_SESSION_ID}#premium`,
-      cancel_url: `${origin}/slp.html#premium`,
+      // From /plans (BUYNOW1, 25 Nov 2026: the plan buttons open Stripe
+      // straight away), Cancel goes back to /plans, never the dashboard.
+      cancel_url: body.back === "plans" ? `${origin}/plans#pricing` : `${origin}/slp.html#premium`,
     });
     // `cancelPro`: they hold Sona Pro and are buying Sona Clinic. The page
     // says to cancel Sona Pro in Manage billing once Sona Clinic is on.

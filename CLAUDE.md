@@ -3198,10 +3198,13 @@ months** and **Mountain time**, then "but no free trial on the promo".
   Travis's; `bfmailtest` plays it.
 - **for-slps.html's Black Friday mode is on wherever it is served (`/plans`,
   `/blackfriday/plans`, `/checkout`) until the end**, because every Sona Pro
-  checkout until then is the deal: a navy bar with the time left, a line on
-  the Sona Pro card ("No free trial on this deal. Ends Sunday 11:59 PM
-  Mountain."), "Get the Black Friday price" on the buttons ("Get Sona Pro
-  for $9.99" on the card), the deal's charged-today terms, and "Open it to
+  checkout until then is the deal: a navy bar with the time left, the Sona
+  Pro card's price struck out ("$19.99 a month" crossed, "$9.99 a month"
+  beside it) over a two-line mint box ("Black Friday: $9.99 a month for 3
+  months, then $19.99." / "Ends Sunday 11:59 PM Mountain."; Travis, 25 Nov
+  2026: no "No free trial on this deal."), "Get the Black Friday price" on
+  the buttons ("Get Sona Pro for $9.99" on the card), "Cancel anytime."
+  under the card's button (the hero shows no terms line), and "Open it to
   get your Black Friday price." once the link is sent. At the end, on an
   open page, the trial and its ordinary words come back. **Known, Travis's:**
   the sign-in email still says "New to Sona? You'll start your free trial
@@ -3212,6 +3215,40 @@ months** and **Mountain time**, then "but no free trial on the promo".
   play before, at and after the end; `telemetrytest` allows the pixel on
   bf.html. **After Sunday**: nothing to undo; the ads go back to `/`.
   Deleting bf.html and the mode is a later cleanup.
+
+## /plans opens Stripe straight away (BUYNOW1, 25 Nov 2026)
+Travis: "the Get Black Friday price button, along with Get Sona Pro for
+$9.99, needs to go to like a Stripe checkout, not the SLP dashboard". This
+supersedes the lines above that send a /plans visitor to the dashboard or
+email them a sign-in link before they can pay (SLPSITE1's "Already signed
+in", TRIALGO1's `sona.slp.wantplan` from /plans, the trial form's email).
+- **Signed in:** every buy button POSTs `/api/slp/plan` (`back: "plans"`, so
+  Stripe's Cancel returns to `/plans#pricing`; success still lands on the
+  dashboard). Nothing left to sell: the server's words on the page.
+- **Not signed in:** the email box, then `/api/slp/checkout` (Sona Pro only;
+  the same checks, trial rule, Black Friday coupon and terms as
+  `/api/slp/plan`'s Pro branch, keep them in step), and Stripe at once. An
+  email already in the box (from the opt-in) goes straight on. The
+  subscription is stamped `slp: <email>`, `from: plans`. No account, no
+  sign-in email before paying. Back from Stripe (`/plans?paid=cs_…`) the page
+  says "You're in!" and `/api/slp/checkout/done` stores the plan and emails
+  ONE sign-in link ("Sona Pro is on.", `slpbuymail:<session>`), a signed
+  pending sign-up carrying the Share & earn code. **Travis's trade:** the
+  email is not proved before payment, so a typo is a paid plan nobody can
+  sign in to until support moves it; the dashboard still opens only for the
+  inbox.
+- The Pixel's Lead (InitiateCheckout after the opt-in's Lead) fires as the
+  page leaves for Stripe. Under the button: "Secure checkout with Stripe."
+- **The same day, on /plans:** the headline "Speech homework kids actually
+  do." (title, share card `og-slp.png?v=5`), the hero button the form's
+  width in capitals, Black Friday's eyebrow "Black Friday · Sona Pro half
+  off" and button "Get Sona Pro at half off", Lindi's App Store review word
+  for word beside the hero (a real review only), the Sona Pro lines (Sona
+  Lite, unlimited accounts for clients, the SLP dashboard, Share & earn with
+  a gift icon), "Cancel anytime." under both plan buttons, the two-line
+  Black Friday box, and no parents' price box or "Good to know" section.
+  **Rachel's:** the headline and the review on a clinicians' page.
+`caseloadtest`, `landingtest`, `shiptest`, `slpapi`, `telemetrytest` play it.
 
 ## The app lives at app.speaksona.com (APPHOST1, 17 Nov 2026)
 Travis: point the app at app.speaksona.com "so that I can get speaksona.com

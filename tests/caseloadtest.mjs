@@ -249,7 +249,7 @@ try {
     account: "app/api/slp/account/route.ts", subscription: "app/api/subscription/route.ts", session: "app/api/checkout/session/route.ts",
     famPortal: "app/api/portal/route.ts", team: "app/api/slp/team/route.ts", teamAccept: "app/api/slp/team/accept/route.ts",
     roster: "app/api/slp/route.ts", child: "app/api/slp/child/route.ts", homework: "app/api/slp/homework/route.ts",
-    play: "app/api/slp/play/route.ts",
+    play: "app/api/slp/play/route.ts", buy: "app/api/slp/checkout/route.ts", buyDone: "app/api/slp/checkout/done/route.ts",
   })) R[k] = L(rel);
 } catch (e) {
   console.log("(could not load the modules: " + (e && e.stack) + ")");
@@ -2740,6 +2740,92 @@ const count = (pred) => S.calls.filter(pred).length;
   // Sona Clinic never carries it.
   ok("Black Friday is Sona Pro's alone: the route asks for the coupon only for a Pro checkout",
     /if \(kind === "pro" && bfOn\(\)\)/.test(read("app/api/slp/plan/route.ts")));
+  delete process.env.SONA_BF_FORCE;
+  Date.now = realNow;
+}
+
+// ── STRAIGHT TO STRIPE FROM /plans (BUYNOW1, Travis, 25 Nov 2026: "the Get
+// Black Friday price button ... needs to go to like a Stripe checkout, not
+// the SLP dashboard"): a new visitor's email opens Sona Pro's checkout at
+// once, and the paid return emails the sign-in link. ──
+{
+  const realNow = Date.now;
+  const at = (iso) => { const t = Date.parse(iso); Date.now = () => t; };
+  process.env.SONA_BF_FORCE = "1";
+  at("2026-11-27T18:00:00Z");
+  delete process.env.STRIPE_PRICE_ID_SLP_PRO;
+  const nb = "newbuyer@brightsteps.example";
+  S.calls.length = 0; RESEND.sent.length = 0; OUT.length = 0;
+  let r = await call(R.buy, "POST", "/api/slp/checkout", { body: { email: "  NewBuyer@BrightSteps.example ", plan: "pro", ref: "abcd2345", source: "fb", attrib: { fbclid: "x1" } } });
+  let p = (S.calls.find((c) => c[0] === "checkout.sessions.create") || [])[1];
+  ok("BUYNOW1: an email, signed in or not, opens Sona Pro's checkout for that address (lower-cased), stamped for it as the dashboard's checkout is, plus from: plans",
+    r.status === 200 && r.json.ok === true && /^https:\/\/checkout\.stripe\.test\//.test(r.json.url) && p && p.mode === "subscription" &&
+    p.customer_email === nb && JSON.stringify(p.subscription_data.metadata) === JSON.stringify({ plan: "slp-pro", slp: nb, from: "plans", offer: "bf-2026" }) &&
+    p.metadata.ref === "abcd2345" && p.metadata.from === "plans" && p.line_items[0].price_data.unit_amount === C.PRO_CENTS, JSON.stringify([r.json, p]));
+  ok("…during Black Friday: the coupon, no free trial, its words beside Stripe's button, and Stripe comes back to /plans (paid or cancelled), never the dashboard",
+    p && p.discounts && p.discounts[0].coupon === "sona-pro-bf-2026" && !("trial_period_days" in p.subscription_data) &&
+    p.custom_text.submit.message === "$9.99 a month for your first 3 months (Black Friday), then $19.99 a month. Charged today and every month until you cancel. Cancel anytime: your families keep every game to the end of the month you paid for." &&
+    p.success_url === "https://sona.test.invalid/plans?paid={CHECKOUT_SESSION_ID}#pricing" && p.cancel_url === "https://sona.test.invalid/plans#pricing", JSON.stringify(p));
+  ok("…makes no account and signs nobody in (the inbox is proved later, by the emailed link)",
+    !KV.K.has("slpacct:" + nb) && !r.cookie && RESEND.sent.length === 0);
+  ok("…and the email list hears of the clinician who opened checkout, once", OUT.filter((o) => o.url.endsWith("/api/lead") && o.body && o.body.email === nb).length === 1 && KV.K.has("slpcrm:" + nb));
+  // the refusals: nothing reaches Stripe
+  S.calls.length = 0;
+  const bad = await call(R.buy, "POST", "/api/slp/checkout", { body: { email: "not-an-email" } });
+  const foreign = await call(R.buy, "POST", "/api/slp/checkout", { body: { email: nb }, headers: { origin: "https://elsewhere.example" } });
+  const clinic = await call(R.buy, "POST", "/api/slp/checkout", { body: { email: nb, plan: "clinic" } });
+  ok("a bad email (400), another website (403) and anything but Sona Pro (409) make no checkout",
+    bad.status === 400 && foreign.status === 403 && clinic.status === 409 && clinic.json.unavailable === true && count((c) => c[0] === "checkout.sessions.create") === 0,
+    JSON.stringify([bad.status, foreign.status, clinic.status]));
+  // Sona Pro already on for that address: never sold twice
+  const has = "alreadypro@brightsteps.example";
+  mkSub("sub_has_pro", { slp: has, plan: "slp-pro", status: "active", interval: "month" });
+  S.calls.length = 0;
+  r = await call(R.buy, "POST", "/api/slp/checkout", { body: { email: has } });
+  ok("an address that already has Sona Pro is told to sign in, and no checkout is made", r.status === 409 && r.json.already === true && /Sign in/.test(r.json.error) &&
+    count((c) => c[0] === "checkout.sessions.create") === 0, JSON.stringify(r.json));
+  // after Black Friday: the free trial, once per clinician
+  at("2026-12-02T18:00:00Z"); S.calls.length = 0;
+  r = await call(R.buy, "POST", "/api/slp/checkout", { body: { email: "aftersale@brightsteps.example" } });
+  p = (S.calls.find((c) => c[0] === "checkout.sessions.create") || [])[1];
+  ok("after Black Friday: the 14-day free trial, card up front, the code box back, its words beside the button",
+    r.status === 200 && p && p.subscription_data.trial_period_days === 14 && p.payment_method_collection === "always" && !p.discounts && p.allow_promotion_codes === true &&
+    p.custom_text.submit.message === "No charge today. Your free trial lasts 14 days; after that, $19.99 a month until you cancel. Cancel before the trial ends and you pay nothing.", JSON.stringify(p));
+
+  // the paid return: the plan stored, ONE sign-in email, with the referral riding the sign-up
+  mkSub("sub_nb_pro", { slp: nb, plan: "slp-pro", status: "active", interval: "month" });
+  S.sessions.set("cs_test_buynowpaid0001", { id: "cs_test_buynowpaid0001", status: "complete", metadata: { plan: "slp-pro", slp: nb, from: "plans", ref: "abcd2345" }, subscription: "sub_nb_pro" });
+  RESEND.sent.length = 0;
+  r = await call(R.buyDone, "POST", "/api/slp/checkout/done", { body: { session: "cs_test_buynowpaid0001" } });
+  const mail = RESEND.sent[0] || {};
+  ok("paid: the plan is stored for that address and ONE email brings a sign-in link (\"Sona Pro is on.\")",
+    r.status === 200 && r.json.activated === true && r.json.sent === true && (storedPro(nb) || {}).sub === "sub_nb_pro" &&
+    RESEND.sent.length === 1 && JSON.stringify(mail.to) === JSON.stringify([nb]) && /\/api\/slp\/auth\/verify\?token=/.test(mail.html || "") && /Sona Pro is on\./.test((mail.html || "") + (mail.text || "")),
+    JSON.stringify([r.json, mail.to, mail.subject]));
+  const tokKey = [...KV.K.keys()].find((k) => k.startsWith("slptok:") && String(KV.K.get(k)).startsWith("free-dashboard:"));
+  const pend = tokKey ? A.readFreeDashboardSignup(String(KV.K.get(tokKey))) : null;
+  ok("…its link is the sign-up door's, carrying the referral code to the account it will make", !!pend && pend.email === nb && pend.ref === "abcd2345" && pend.source === "plans-checkout", JSON.stringify(pend));
+  r = await call(R.buyDone, "POST", "/api/slp/checkout/done", { body: { session: "cs_test_buynowpaid0001" } });
+  ok("…and a reload sends no second email", r.status === 200 && RESEND.sent.length === 1);
+  // not ours to answer: a dashboard checkout, an unfinished one, a made-up id
+  S.sessions.set("cs_test_dashboardbuy01", { id: "cs_test_dashboardbuy01", status: "complete", metadata: { plan: "slp-pro", slp: nb }, subscription: "sub_nb_pro" });
+  S.sessions.set("cs_test_buynowopen0001", { id: "cs_test_buynowopen0001", status: "open", metadata: { plan: "slp-pro", slp: nb, from: "plans" }, subscription: "sub_nb_pro" });
+  const dash = await call(R.buyDone, "POST", "/api/slp/checkout/done", { body: { session: "cs_test_dashboardbuy01" } });
+  const open = await call(R.buyDone, "POST", "/api/slp/checkout/done", { body: { session: "cs_test_buynowopen0001" } });
+  const junk = await call(R.buyDone, "POST", "/api/slp/checkout/done", { body: { session: "nope" } });
+  ok("a checkout not made by /plans, one not finished, or a made-up id sends nothing", dash.status === 404 && open.status === 409 && junk.status === 400 && RESEND.sent.length === 1,
+    JSON.stringify([dash.status, open.status, junk.status]));
+
+  // signed in, from /plans: the dashboard's own checkout, Cancel back to /plans
+  const si = "signedinbuy@brightsteps.example";
+  seedAcct(si, { terms: C.PRO_TERMS, code: "sibuy-k4", familyKey: "SIBUYK23" });
+  S.calls.length = 0;
+  await call(R.plan, "POST", "/api/slp/plan", { as: si, body: { plan: "pro", back: "plans" } });
+  await call(R.plan, "POST", "/api/slp/plan", { as: si, body: { plan: "pro" } });
+  const ps = S.calls.filter((c) => c[0] === "checkout.sessions.create").map((c) => c[1]);
+  ok("signed in: /api/slp/plan's Cancel comes back to /plans when /plans asked (back: plans), else to the dashboard as before",
+    ps.length === 2 && ps[0].cancel_url === "https://sona.test.invalid/plans#pricing" && ps[1].cancel_url === "https://sona.test.invalid/slp.html#premium" &&
+    /\/slp\.html\?plan_session=/.test(ps[0].success_url), JSON.stringify(ps.map((x) => x && [x.cancel_url, x.success_url])));
   delete process.env.SONA_BF_FORCE;
   Date.now = realNow;
 }
