@@ -6,7 +6,7 @@ import { rateLimit } from "@/lib/rateLimit";
 import { foreignOrigin } from "@/lib/origin";
 import { cleanRef } from "@/lib/referral";
 import {
-  planStatus, selfStatus, proStatus, readAcct, readPlan, StoreUnavailable,
+  planStatus, proStatus, readAcct, readPlan, StoreUnavailable,
   PRO_CENTS, PRO_PRICE, PRO_PER, PRO_INTERVAL, PRO_TRIAL_DAYS, PRO_PLAN, PRO_NAME,
   BF_PRICE, BF_MONTHS, BF_OFFER, bfOn, ensureBfCoupon,
 } from "@/lib/caseload";
@@ -83,10 +83,12 @@ export async function POST(req: NextRequest) {
     if (pro.active) {
       return reply({ ok: false, already: true, error: PRO_NAME + " is already on for that email. Sign in to open your dashboard." }, 409);
     }
+    // Paid for everyone (Travis, 25 Nov 2026), as /api/slp/plan: an account
+    // promised a free dashboard, or on a yearly plan, may buy Sona Pro too.
+    // Only a Sona Clinic that already covers this address is never sold over.
     const plan = await planStatus(email, { stripe, acct, force: true });
-    const self = await selfStatus(email, { stripe, acct, force: true });
-    if (plan.active && self.active) {
-      return reply({ ok: false, already: true, error: "That email already has everything " + PRO_NAME + " includes. Sign in to open your dashboard." }, 409);
+    if (plan.active && plan.source === "clinic") {
+      return reply({ ok: false, already: true, error: "That email is on a Sona Clinic plan, which already includes " + PRO_NAME + ". Sign in to open your dashboard." }, 409);
     }
     trial = pro.trialAvailable;
     for (const k of ["pro", "clinic", "self", "caseload"] as const) {

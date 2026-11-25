@@ -256,16 +256,18 @@ export async function POST(req: NextRequest) {
       if (pro.active) {
         return NextResponse.json({ ok: false, already: true, error: PRO_NAME + " is already on." }, { status: 409 });
       }
+      // PAID FOR EVERYONE (Travis, 25 Nov 2026: "no just make it paid for
+      // everyone", of /plans telling his own early account "already free,
+      // as promised"). An account promised a free dashboard, or still on a
+      // yearly plan, may buy Sona Pro like anyone else: nothing it already
+      // has is taken away, and Settings tells a yearly holder to cancel the
+      // older plan (alsoRenews). Only a live Sona Pro, and a Sona Clinic
+      // that already covers this clinician, are never sold over.
       const plan = await planStatus(s.email, { stripe, acct, force: true });
-      const self = await selfStatus(s.email, { stripe, acct, force: true });
-      if (plan.active && self.active) {
+      if (plan.active && plan.source === "clinic") {
         return NextResponse.json({
           ok: false, already: true,
-          error: plan.source === "grandfathered"
-            ? "Your dashboard, your own phone and your caseload are already free, as promised when you signed up."
-            : plan.source === "clinic"
-              ? "Your " + CLINIC_NAME + " plan already includes everything " + PRO_NAME + " does."
-              : "You already have everything " + PRO_NAME + " includes.",
+          error: "Your " + CLINIC_NAME + " plan already includes everything " + PRO_NAME + " does.",
         }, { status: 409 });
       }
     } else {
