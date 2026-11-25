@@ -189,8 +189,11 @@ console.error = origErr;
   ok("the board's confirmation goes through the same door", /resendSend\(/.test(read("lib/board.ts")));
   ok("the unsubscribe tells GoHighLevel", /ghlEmailDnd\(v\.email\)/.test(read("app/api/email/unsub/route.ts")));
   const priv = read("public/privacy.html");
-  ok("the privacy page says GoHighLevel delivers Sona's emails and holds the report's numbers",
-    /<strong>Email delivery<\/strong> — GoHighLevel/.test(priv) && /weekly progress report&rsquo;s numbers[^.]*pass through GoHighLevel/.test(priv) && /never a child&rsquo;s name/.test(priv));
+  // GHLEXIT1 (24 Nov 2026): GoHighLevel is switched off by its environment
+  // (CLAUDE.md), so Resend sends every email and the policy says so.
+  ok("the privacy page says Resend delivers Sona's emails and the report's numbers pass through it, and names no GoHighLevel",
+    /<strong>Email delivery<\/strong> — Resend/.test(priv) && /weekly progress report&rsquo;s numbers[^.]*pass through Resend/.test(priv) &&
+    /never a child&rsquo;s name/.test(priv) && !/GoHighLevel|HighLevel/.test(priv));
 }
 
 origLog(`\n${passes} passed, ${fails} failed`);

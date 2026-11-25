@@ -74,7 +74,9 @@ ok("the count says what is left, and that the door is open", s.left === CHARTER_
   ok("a Sona Clinic or Sona Pro subscription (no tier) is never a charter spot, in any status or interval",
     c.taken === 1 && c.source === "stripe", JSON.stringify(c));
   const route = readFileSync(new URL("../app/api/slp/plan/route.ts", import.meta.url), "utf8").replace(/\/\*[\s\S]*?\*\//g, " ").replace(/(^|[^:"'])\/\/[^\n]*/g, "$1");
-  ok("…and the checkout that sells them never writes a tier", !/\btier\b/.test(route) && /plan: CLINIC_PLAN/.test(route) && /metadata: Record<string, string> = \{ plan: offer\.plan, slp: s\.email \}/.test(route));
+  ok("…and the checkout that sells them never writes a tier", !/\btier\b/.test(route) && /plan: CLINIC_PLAN/.test(route) && /metadata: Record<string, string> = \{ plan: offer\.plan, slp: s\.email, \.\.\.\(bfCoupon \? \{ offer: BF_OFFER \} : \{\}\) \}/.test(route));
+  // (BF1, 24 Nov 2026: a Sona Pro bought on the Black Friday deal also carries
+  // offer: bf-2026, never a tier.)
 }
 
 // ── the cap ──

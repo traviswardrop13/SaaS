@@ -115,6 +115,78 @@ export const PRO_INTERVAL = "month" as const;            // Stripe recurring.int
 export const PRO_TRIAL_DAYS = 14;
 export const PRO_PLAN = "slp-pro";                       // Stripe metadata.plan, on the session AND the subscription
 export const PRO_NAME = "Sona Pro";
+
+/**
+ * BLACK FRIDAY (BF1, Travis, 24 Nov 2026: "a fresh optin and website to use
+ * this week for black friday! with a countdown to sunday at 11:59 pm"; asked,
+ * he chose 50% off Sona Pro for 3 months, ending at 11:59 PM Mountain time,
+ * then "but no free trial on the promo"). Every Sona Pro checkout opened
+ * before BF_ENDS_AT carries BF_COUPON and no trial (charged that day):
+ * BF_OFF_CENTS off each of the first BF_MONTHS months,
+ * so $19.99 becomes BF_PRICE, $9.99, an exact figure ("half" of $19.99 is
+ * not one). The checkout's own words say so (/api/slp/plan). The pages that
+ * advertise it (bf.html at /blackfriday, for-slps.html's Black Friday mode)
+ * carry the same end and figures, pinned equal by tests/shiptest.mjs. After
+ * the end nothing changes back by hand: checkouts stop carrying it, Stripe
+ * refuses the coupon (its redeem_by), and the pages show it is over. A
+ * subscription that has it keeps its three months (Stripe counts them).
+ */
+export const BF_ON = true;
+/** Sunday 29 Nov 2026, 11:59 PM in Boise (MST, UTC-7): 06:59 UTC on Monday 30 Nov. */
+export const BF_ENDS_AT = Date.UTC(2026, 10, 30, 6, 59, 0);
+export const BF_OFF_CENTS = 1000;
+export const BF_PRICE = "$9.99";
+export const BF_MONTHS = 3;
+/** The coupon's id in Stripe, made by ensureBfCoupon the first time a checkout needs it. */
+export const BF_COUPON = "sona-pro-bf-2026";
+/** Stamped on the subscription (metadata.offer) of a Sona Pro bought with it. */
+export const BF_OFFER = "bf-2026";
+
+/**
+ * Is the Black Friday price on for a checkout opened now? Production reads
+ * the switch and the clock. Anywhere else (a laptop, a test; never a Vercel
+ * build, previews included) it is off unless SONA_BF_FORCE=1, so the suites
+ * that pin Sona Pro's ordinary checkout hold whatever the date, and the
+ * Black Friday ones turn it on and move the clock themselves.
+ */
+export function bfOn(now: number = Date.now()): boolean {
+  const on = process.env.NODE_ENV === "production" ? BF_ON : BF_ON && process.env.SONA_BF_FORCE === "1";
+  return on && now < BF_ENDS_AT;
+}
+
+/**
+ * The Black Friday coupon's id, making it in Stripe the first time: $10 off,
+ * for 3 months, redeemable only until BF_ENDS_AT. "" when Stripe has it but
+ * will not take it any more (past its end, or switched off there). Anything
+ * else Stripe says is thrown: the caller sells at the ordinary price then,
+ * and its checkout says that price.
+ */
+export async function ensureBfCoupon(stripe: Stripe): Promise<string> {
+  try {
+    const c = await stripe.coupons.retrieve(BF_COUPON);
+    return c && c.valid ? c.id : "";
+  } catch (e) {
+    if (!e || (e as { code?: string }).code !== "resource_missing") throw e;
+  }
+  try {
+    const made = await stripe.coupons.create({
+      id: BF_COUPON,
+      name: "Black Friday: Sona Pro " + BF_PRICE + " for " + BF_MONTHS + " months",
+      amount_off: BF_OFF_CENTS,
+      currency: "usd",
+      duration: "repeating",
+      duration_in_months: BF_MONTHS,
+      redeem_by: Math.floor(BF_ENDS_AT / 1000),
+    });
+    return made.id;
+  } catch (e) {
+    // Two checkouts made it at once: the other one's is the coupon.
+    if (!e || (e as { code?: string }).code !== "resource_already_exists") throw e;
+    const c = await stripe.coupons.retrieve(BF_COUPON);
+    return c && c.valid ? c.id : "";
+  }
+}
+
 /**
  * Stamped on every NEW slpacct from 12 Nov 2026: the dashboard is part of a
  * plan for them (Sona Pro or Sona Clinic). Still the stamp for every new

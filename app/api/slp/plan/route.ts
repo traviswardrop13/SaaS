@@ -6,6 +6,7 @@ import { rateLimit } from "@/lib/rateLimit";
 import {
   planStatus, selfStatus, proStatus, clinicStatus, dashboardOpen, alsoRenews, activateFromSession, readAcct, readPlan, grandfathered, StoreUnavailable, clinicOn,
   PRO_CENTS, PRO_PRICE, PRO_PER, PRO_INTERVAL, PRO_TRIAL_DAYS, PRO_PLAN, PRO_NAME,
+  BF_PRICE, BF_MONTHS, BF_OFFER, bfOn, ensureBfCoupon,
   CLINIC_CENTS, CLINIC_PRICE, CLINIC_PER, CLINIC_INTERVAL, CLINIC_TRIAL_DAYS, CLINIC_PLAN, CLINIC_NAME, CLINIC_SEATS,
 } from "@/lib/caseload";
 
@@ -300,6 +301,19 @@ export async function POST(req: NextRequest) {
     throw e;
   }
 
+  // BLACK FRIDAY (BF1, lib/caseload): a Sona Pro checkout opened before the
+  // end carries the coupon, $9.99 for the first three months, whoever opens
+  // it and from whichever page, and NO free trial (Travis: "but no free
+  // trial on the promo"): charged today. If Stripe will not give the coupon,
+  // the checkout is the ordinary one (the trial, if they have it) and its
+  // words below say so.
+  let bfCoupon = "";
+  if (kind === "pro" && bfOn()) {
+    try { bfCoupon = await ensureBfCoupon(stripe); }
+    catch (e) { console.error("[slp plan] the Black Friday coupon is unavailable:", e instanceof Error ? e.message : String(e)); }
+  }
+  if (bfCoupon) trial = false;
+
   const origin = originOf(req);
   // A fixed Stripe Price when one is configured (so the Stripe dashboard's
   // product reporting lines up); otherwise the amount from lib/caseload, the
@@ -322,15 +336,19 @@ export async function POST(req: NextRequest) {
   // Clinic `slp` is the OWNER, the clinician paying. Never a `tier`:
   // lib/charter counts `tier: charter` subscriptions as the fifty FAMILY
   // spots, and neither plan is one.
-  const metadata: Record<string, string> = { plan: offer.plan, slp: s.email };
+  const metadata: Record<string, string> = { plan: offer.plan, slp: s.email, ...(bfCoupon ? { offer: BF_OFFER } : {}) };
   const code = String((acct && acct.code) || "");
   // WHAT THE CLINICIAN AGREES TO, said beside the button they press (an
   // automatic renewal after a free trial is the thing a state's renewal law
   // asks to be spelled out at the point of purchase). Stripe prints the
   // dates; this says the terms in the same words /plans and the Terms use.
+  // With the Black Friday coupon (never with a trial), its three months first.
+  const bfThen = BF_PRICE + " a month for your first " + BF_MONTHS + " months (Black Friday), then ";
   const terms = trial
     ? "No charge today. Your free trial lasts " + offer.trialDays + " days; after that, " + offer.price + " " + offer.per + " until you cancel. Cancel before the trial ends and you pay nothing."
-    : offer.price + " " + offer.per + ", charged today and every month until you cancel. Cancel anytime: " + offer.keeps;
+    : bfCoupon
+      ? bfThen + offer.price + " " + offer.per + ". Charged today and every month until you cancel. Cancel anytime: " + offer.keeps
+      : offer.price + " " + offer.per + ", charged today and every month until you cancel. Cancel anytime: " + offer.keeps;
 
   try {
     const session = await stripe.checkout.sessions.create({
@@ -350,7 +368,8 @@ export async function POST(req: NextRequest) {
       metadata,
       ...(customer ? { customer } : { customer_email: s.email }),
       client_reference_id: code || s.email,
-      allow_promotion_codes: true,
+      // Stripe takes a coupon or a box for codes, never both.
+      ...(bfCoupon ? { discounts: [{ coupon: bfCoupon }] } : { allow_promotion_codes: true }),
       billing_address_collection: "auto",
       success_url: `${origin}/slp.html?plan_session={CHECKOUT_SESSION_ID}#premium`,
       cancel_url: `${origin}/slp.html#premium`,

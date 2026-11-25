@@ -24,9 +24,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Sona for speech therapists — send home practice they’ll play</title>
   <meta name="description" content="Sona Pro for speech therapists, 14 days free. Play Sona games in your sessions, share the app with clients, and see who practiced at home. Built with Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical fellowship." />
-  <!-- THE CLINICIANS' HOMEPAGE AND PLANS (17 Nov 2026, the free packet
-       left out on 20 Nov 2026). Served at / and /plans (next.config.js). -->
-  <link rel="canonical" href="https://app.speaksona.com/" />
+  <!-- THE CLINICIANS' PLANS PAGE (17 Nov 2026, the free packet left out on
+       20 Nov 2026). Served at /plans and /checkout (next.config.js); since
+       24 Nov 2026 (GHLEXIT1) / is the opt-in (start.html), whose email
+       box sends the visitor here with it already filled in. -->
+  <link rel="canonical" href="https://www.speaksona.com/plans" />
 
   <!-- WHAT A SHARED LINK LOOKS LIKE. Clinicians pass this link around, so it
        gets pasted into a Facebook group, a district Slack and a text message
@@ -36,7 +38,7 @@
        picture is rendered from tools/og/og-slp.html. -->
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Sona" />
-  <meta property="og:url" content="https://app.speaksona.com/" />
+  <meta property="og:url" content="https://www.speaksona.com/plans" />
   <meta property="og:title" content="Send home practice they’ll play." />
   <meta property="og:description" content="Sona Pro for speech therapists: play Sona games in your sessions, share the app with clients, and see who practiced at home. 14 days free." />
   <meta property="og:image" content="https://speaksona.com/og-slp.png?v=4" />
@@ -87,6 +89,11 @@
 </header>
 
 <main>
+<!-- BLACK FRIDAY (BF1, 24 Nov 2026): shown only in its mode, until the end
+     (the script at the foot says when). -->
+<div class="bf-bar" id="bfBar" hidden>
+  <div class="wrap in"><span><b>Black Friday:</b> Sona Pro is $9.99 a month for your first 3 months.</span><span class="cd-inline" id="bfLeft" role="timer"></span></div>
+</div>
 <section class="hero-band">
   <div class="wrap hero">
   <div class="hero-intro">
@@ -136,6 +143,23 @@
   </div>
 </section>
 
+<!-- THE PROBLEM, THEN THE FIX (GHLEXIT1, 24 Nov 2026: "we just need to do
+     more selling"). Plain statements of what home practice looks like, no
+     numbers and no outcomes promised: the page claims nothing it cannot
+     show. Rachel's to change. -->
+<section class="wrap problem" id="problem" aria-labelledby="problemH">
+  <div class="intro">
+    <h2 id="problemH">Home practice is the hard part.</h2>
+    <p>You get a few minutes with each child a week. The reps in between are up to home.</p>
+  </div>
+  <div class="notes">
+    <div class="note"><b>Worksheets come back blank</b><p>Or they don&rsquo;t come back at all.</p></div>
+    <div class="note"><b>Parents aren&rsquo;t sure how to help</b><p>So practice gets skipped, or turns into a chore.</p></div>
+    <div class="note"><b>You can&rsquo;t see what happened</b><p>You find out at the next session.</p></div>
+  </div>
+  <p class="fix"><b>Sona turns practice into games.</b> Kids say their sound to play, Sona checks each try on the phone, and you see who practiced.</p>
+</section>
+
 <section class="wrap how" id="how">
   <h2>What you can do with Sona.</h2>
   <ul class="workflow">
@@ -173,18 +197,43 @@
      and the Clinic card inert in a <template> under it. CLINIC_ON in the
      script at the foot, pinned equal to lib/caseload.ts's by
      tests/shiptest.mjs, puts it on the page again with the heading's choice
-     and the kid-side line's plan names. -->
+     and the kid-side line's plan names.
+     TWO PLANS (GHLEXIT1, Travis, 24 Nov 2026: "$9.99/mo for just the kids
+     app ... for the slp/slpa to use in sessions" and "$19.99/mo 14 day trial
+     + slp dashboard and unlimited accounts"). The $9.99 one is Sona Lite
+     (Travis: "lets not call it sona premium ... like Sona lite or somethin
+     that indicated not pro"): the Sona Premium Apple sells in the iPhone app
+     (RevenueCat), exactly what a family buys, so the card says that is its
+     name there. Its button is the App Store, never a form, and nothing here
+     sells it. Its figure is App Store Connect's, as the parents' line's is: if that
+     price changes, both change (NATIVE.md). Apple's free days are Apple's to
+     show; this page promises none for it. -->
 <section class="wrap pricing" id="pricing" aria-labelledby="pricingH">
-  <h2 id="pricingH">Simple pricing.</h2>
-  <div class="plans one" id="plans">
-    <article class="plan" id="planPro">
-      <h3>Sona Pro</h3>
-      <p class="for">For one clinician</p>
-      <p class="price"><b>$19.99</b> a month</p>
+  <h2 id="pricingH">Pick your plan.</h2>
+  <div class="plans" id="plans">
+    <article class="plan" id="planApp">
+      <h3>Sona Lite</h3>
+      <p class="for">Just the kids&rsquo; app, for your sessions</p>
+      <p class="price"><b>$9.99</b> a month</p>
       <ul>
-        <li>Session games, and see who practiced at home</li>
+        <li>Every Sona game and picture book</li>
+        <li>On your own iPhone or iPad</li>
+        <li>Set the sound you&rsquo;re working on, then play</li>
+      </ul>
+      <a class="btn ghost" id="appGo" href="https://apps.apple.com/us/app/sona-speech/id6785755867">Get it on the App Store</a>
+      <p class="terms" id="appTerms">Bought in the Sona app and billed by Apple; in the app it&rsquo;s called Sona Premium. No dashboard or family logins. Cancel anytime in your iPhone&rsquo;s settings.</p>
+    </article>
+    <article class="plan best" id="planPro">
+      <p class="tag">Best for your caseload</p>
+      <h3>Sona Pro</h3>
+      <p class="for">For you and your whole caseload</p>
+      <p class="price"><b>$19.99</b> a month</p>
+      <p class="bf-deal" id="bfDeal" hidden><b>Black Friday:</b> $9.99 a month for your first 3 months, then $19.99. No free trial on this deal. Ends Sunday 11:59 PM Mountain.</p>
+      <ul>
+        <li>Everything in Sona Lite</li>
+        <li>Your dashboard: session games, homework, and who practiced at home</li>
         <li>Unlimited families: everyone who joins through your link gets every game</li>
-        <li>Every game on your own phone or tablet</li>
+        <li>Share &amp; earn: <a href="#earn">$8 a month</a> for each SLP you bring</li>
       </ul>
       <!-- WHAT PARENTS PAY (Travis asked, 17 Nov 2026), shown only while
            /api/charter says families are paying (free: false): true today,
@@ -215,6 +264,29 @@
   </template>
 </section>
 
+<!-- SHARE & EARN on the page (REFER1, 20 Nov 2026; here since GHLEXIT1,
+     Travis, 24 Nov 2026: "they can refer to other SLPs and make $8 a month
+     per referral. So if they refer 3, they get it free, or essentially $24
+     a month"). The figures are lib/referral.ts's REFERRAL_PAY and three of
+     it (tests/shiptest.mjs pins both). Its rule, said plainly: a NEW
+     account made through your link, another clinician's, on Sona Pro and
+     past its free trial. Real money, paid by hand each month (he chose cash
+     over a bill credit). -->
+<section class="earn" id="earn" aria-labelledby="earnH">
+  <div class="wrap in">
+    <div class="txt">
+      <p class="eyebrow">Share &amp; earn, with Sona Pro</p>
+      <h2 id="earnH">Bring 3 SLPs. Sona Pro pays for itself.</h2>
+      <p>Your dashboard gives you a link to share with other SLPs and SLPAs. When someone new signs up through it and pays for Sona Pro, you earn $8 a month for as long as they keep paying.</p>
+    </div>
+    <div class="earn-tiles">
+      <div class="tile"><b>$8</b><span>a month for each SLP who pays</span></div>
+      <div class="tile big"><b>$24</b><span>a month with 3. That&rsquo;s more than Sona Pro costs.</span></div>
+    </div>
+    <p class="fine">Real money, paid to you each month, not a discount. It starts once their free trial ends and they pay. Speech therapists only: families never count.</p>
+  </div>
+</section>
+
 <section class="kidside">
   <div class="wrap in">
     <div class="txt">
@@ -225,6 +297,19 @@
       <figure><img src="/assets/crafted/home-piano.webp" width="768" height="432" loading="lazy" alt=""><figcaption>Piano Tiles</figcaption></figure>
       <figure><img src="/assets/books/rory-rainbow/cover.webp" width="768" height="768" loading="lazy" alt=""><figcaption>Rory and the Rainbow</figcaption></figure>
     </div>
+  </div>
+</section>
+
+<!-- RACHEL (GHLEXIT1). Her credential word for word, as everywhere
+     (tests/shiptest.mjs holds every page to it), and what CLAUDE.md says is
+     hers to decide. No quote: nothing she has not said. -->
+<section class="wrap rachel" id="rachel" aria-labelledby="rachelH">
+  <img src="/assets/rachel-wardrop-profile.jpg" alt="Rachel" width="160" height="160" loading="lazy">
+  <div class="txt">
+    <p class="eyebrow">Meet Rachel</p>
+    <h2 id="rachelH">Built with Rachel.</h2>
+    <p>Built with Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical fellowship.</p>
+    <p>The words a child is asked to say, how each sound is cued, and the age a sound opens at are her call.</p>
   </div>
 </section>
 
@@ -262,7 +347,7 @@
     </div>
     <div class="q">
       <button type="button" aria-expanded="false" aria-controls="a2" id="q2">What's stored, and where?<span>+</span></button>
-      <p class="a" id="a2" hidden>If you start from this page: your email, kept by Sona and on our email list at Resend so Rachel's tips can reach you, and in our contact list at GoHighLevel. Your account: email, name, clinic and code. Your card, when you start a free trial: held by Stripe, which runs the checkout and the billing. Sona never sees the card number. For each consenting family: the child's first name and age, target sounds, practice days and counts, pass rate per sound, your assignments, and when the parent consented. Hosted on Vercel, stored in Upstash, the email list via Resend, emails and contacts in GoHighLevel. If you type a parent's email when you add a child, we hand it to GoHighLevel to deliver that one email with the link, and GoHighLevel keeps it as a contact. Sona's own server keeps no copy: not stored, not logged. Add a family emails the parent their Sona login too, so that email holds the password; Sona's server keeps only a scrambled copy of it. Session games sends Anthropic, our AI provider, the sound, word position, age band and session length you choose and the few words you type about what the child loves, to pick the games, and Sona doesn't keep them; leave out children's names. A game you play from Session games runs on your device and saves nothing to a family's Sona. Analytics (PostHog) on grown-up pages, and anonymous counts our server passes on from the app, and a Meta ad pixel on this sign-up page so we can tell which of our ads work — neither ever runs where a child practices, and neither is sent a child's name. No ads in the app, no data sales, no profiling.</p>
+      <p class="a" id="a2" hidden>If you start from this page: your email, kept by Sona and on our email list at Resend so Rachel's tips can reach you. Your account: email, name, clinic and code. Your card, when you start a free trial: held by Stripe, which runs the checkout and the billing. Sona never sees the card number. For each consenting family: the child's first name and age, target sounds, practice days and counts, pass rate per sound, your assignments, and when the parent consented. Hosted on Vercel, stored in Upstash, emails and the email list via Resend. If you type a parent's email when you add a child, we hand it to Resend to deliver that one email with the link. Sona's own server keeps no copy: not stored, not logged. Add a family emails the parent their Sona login too, so that email holds the password; Sona's server keeps only a scrambled copy of it. Session games sends Anthropic, our AI provider, the sound, word position, age band and session length you choose and the few words you type about what the child loves, to pick the games, and Sona doesn't keep them; leave out children's names. A game you play from Session games runs on your device and saves nothing to a family's Sona. Analytics (PostHog) on grown-up pages, and anonymous counts our server passes on from the app, and a Meta ad pixel on this sign-up page so we can tell which of our ads work — neither ever runs where a child practices, and neither is sent a child's name. No ads in the app, no data sales, no profiling.</p>
     </div>
     <div class="q">
       <button type="button" aria-expanded="false" aria-controls="a3" id="q3">How is data deleted?<span>+</span></button>
@@ -271,6 +356,24 @@
     <div class="q">
       <button type="button" aria-expanded="false" aria-controls="a4" id="q4">Do you sign agreements, like a BAA?<span>+</span></button>
       <p class="a" id="a4" hidden>Ask us and we'll answer in writing, ideally before you share the link. Families share data with us directly after consenting on their own phone, rather than the clinic sharing it for them. If we confirm a breach, we notify affected clinicians and parents within 72 hours.</p>
+    </div>
+    <!-- THE PLANS' QUESTIONS (GHLEXIT1, 24 Nov 2026), in the words the
+         dashboard and the cards above already use. -->
+    <div class="q">
+      <button type="button" aria-expanded="false" aria-controls="a5" id="q5">Which plan is right for me?<span>+</span></button>
+      <p class="a" id="a5" hidden>Sona Lite, if you only want Sona's games in your own sessions. Sona Pro, if you also want families practicing at home on your link, homework, and a dashboard that shows who practiced.</p>
+    </div>
+    <div class="q">
+      <button type="button" aria-expanded="false" aria-controls="a6" id="q6">Do families pay?<span>+</span></button>
+      <p class="a" id="a6" hidden>Not on your link. Families who join through it get every game while your Sona Pro plan is on. Without a plan, they get daily practice and free games.</p>
+    </div>
+    <div class="q">
+      <button type="button" aria-expanded="false" aria-controls="a7" id="q7">How do I cancel?<span>+</span></button>
+      <p class="a" id="a7" hidden>Sona Pro: in your dashboard's Settings, under Manage billing. Cancel during the free trial and you pay nothing. Sona Lite: Apple bills it, so you cancel it in your iPhone's settings, under Subscriptions.</p>
+    </div>
+    <div class="q">
+      <button type="button" aria-expanded="false" aria-controls="a8" id="q8">How does Share &amp; earn pay?<span>+</span></button>
+      <p class="a" id="a8" hidden>Your dashboard's Share &amp; earn page gives you a link. When a speech therapist starts Sona Pro with your link and keeps paying, we pay you $8 every month. They count once their free trial ends and they pay. Only speech therapists count, not the families on your caseload. We'll email you to set up payment once you're earning.</p>
     </div>
   </div>
 </section>
@@ -341,6 +444,56 @@
     } catch (e) {}
 
     var LABEL = "Start your free trial";
+
+    // CAME THROUGH THE OPT-IN (GHLEXIT1, 24 Nov 2026): / took this visitor's
+    // email in this tab and counted it as the Lead, so a trial sign-up here
+    // is the next step (InitiateCheckout), never a second Lead.
+    var OPTED_IN = false;
+    try { OPTED_IN = sessionStorage.getItem("sona.optin.lead") === "1"; } catch (e) {}
+
+    /*
+     * BLACK FRIDAY MODE (BF1, Travis, 24 Nov 2026), on this page wherever it
+     * is served (/plans, /blackfriday/plans, /checkout) until the end:
+     * lib/caseload.ts's BF_ENDS_AT, the same instant (tests/shiptest.mjs pins
+     * the two equal), because every Sona Pro checkout until then is the deal
+     * (/api/slp/plan): $9.99 a month for 3 months and no free trial (Travis:
+     * "but no free trial on the promo"), charged that day. So the page says
+     * so: the bar and the time left, the card's line, the deal's words on
+     * every button and under them. At the end, on an open page, its ordinary
+     * words come back.
+     */
+    var BF_ENDS_AT = Date.UTC(2026, 10, 30, 6, 59, 0);
+    var BF = false, bfTimer = 0, bfWas = null;
+    try { BF = Date.now() < BF_ENDS_AT; } catch (e) {}
+    var BF_LABEL = "Get the Black Friday price";
+    var BF_TERMS = "Black Friday: $9.99 a month for 3 months, then $19.99. Charged today, no free trial. Cancel anytime.";
+    var BF_PRO_TERMS = "$9.99 a month for your first 3 months, then $19.99 a month. Charged today: no free trial on this deal. Cancel anytime: your families keep every game to the end of the month you paid for.";
+    function bfTick() {
+      var left = BF_ENDS_AT - Date.now();
+      if (left <= 0) { bfEnd(); return; }
+      var s = Math.floor(left / 1000), d = Math.floor(s / 86400);
+      var two = function (n) { return (n < 10 ? "0" : "") + n; };
+      $("bfLeft").textContent = "Ends in " + (d ? d + "d " : "") + two(Math.floor((s % 86400) / 3600)) + ":" + two(Math.floor((s % 3600) / 60)) + ":" + two(s % 60);
+    }
+    // The page's own words, kept to put back at the end.
+    function bfWords() { return { label: LABEL, f: $("fTerms").textContent, p: $("proTerms").textContent, pro: $("proGo").textContent, fin: $("finalGo").textContent }; }
+    function bfEnd() {
+      if (bfTimer) { clearInterval(bfTimer); bfTimer = 0; }
+      BF = false;
+      $("bfBar").hidden = true; $("bfDeal").hidden = true;
+      if (bfWas) {
+        LABEL = bfWas.label; if (!$("fGo").disabled) $("fGo").textContent = LABEL;
+        $("fTerms").textContent = bfWas.f; $("proTerms").textContent = bfWas.p; $("proGo").textContent = bfWas.pro; $("finalGo").textContent = bfWas.fin;
+        bfWas = null;
+      }
+    }
+    if (BF) {
+      bfWas = bfWords();
+      LABEL = BF_LABEL; $("fGo").textContent = BF_LABEL; $("finalGo").textContent = BF_LABEL; $("proGo").textContent = "Get Sona Pro for $9.99";
+      $("fTerms").textContent = BF_TERMS; $("proTerms").textContent = BF_PRO_TERMS;
+      $("bfBar").hidden = false; $("bfDeal").hidden = false;
+      bfTick(); bfTimer = setInterval(bfTick, 1000);
+    }
 
     // THE ERROR SITS UNDER THE BUTTON, which on a laptop is the bottom edge of
     // the window — so a refused sign-up looked like a button that did nothing.
@@ -427,10 +580,13 @@
       SIGNED_IN = true;
       $("fField").hidden = true;
       $("fEmail").required = false;
-      $("fNext").textContent = used ? "You’re signed in. This opens checkout." : "You’re signed in. This opens your free trial.";
+      $("fNext").textContent = used || BF ? "You’re signed in. This opens checkout." : "You’re signed in. This opens your free trial.";
       if (!used) return;
-      LABEL = "Get Sona Pro";
       var charged = price + " " + per + ", charged today. Cancel anytime.";
+      // In Black Friday mode the deal's words stay (it has no trial either);
+      // these are what its end puts back.
+      if (BF && bfWas) { bfWas = { label: "Get Sona Pro", f: charged, p: charged, pro: "Get Sona Pro", fin: "Get Sona Pro" }; return; }
+      LABEL = "Get Sona Pro";
       $("fGo").textContent = LABEL; $("fTerms").textContent = charged;
       $("proGo").textContent = LABEL; $("proTerms").textContent = charged;
       $("finalGo").textContent = LABEL;
@@ -505,13 +661,14 @@
           err("We couldn’t send your sign-in link. Try again or email hello@speaksona.com.");
           return;
         }
-        // A TRIAL STARTED, with no form data attached: the Lead (this page is
-        // the front door again, 20 Nov 2026). Never a completed
-        // registration: nothing is bought until Stripe's checkout.
+        // A TRIAL STARTED, with no form data attached: the Lead, unless the
+        // opt-in at / already counted this visitor's (GHLEXIT1), when it is
+        // InitiateCheckout, so one person is never two leads. Never a
+        // completed registration: nothing is bought until Stripe's checkout.
         remember(PICK || "pro");
-        try { if (window.sonaTrack) sonaTrack("Lead"); } catch (e) {}
+        try { if (window.sonaTrack) { if (OPTED_IN) sonaTrack("InitiateCheckout"); else sonaTrack("Lead"); } } catch (e) {}
         $("sentT").textContent = "Check your email";
-        showDone("We sent a sign-in link to " + email + ". Open it to start your free trial.");
+        showDone("We sent a sign-in link to " + email + (BF ? ". Open it to get your Black Friday price." : ". Open it to start your free trial."));
       }).catch(function () {
         busy(false);
         forget();
@@ -519,6 +676,14 @@
       });
     }
     $("signup").addEventListener("submit", function (e) { e.preventDefault(); go(); });
+
+    // /checkout (GHLEXIT1): the address GoHighLevel's lead form and its
+    // emails sent people to. It is this page, opened at the plans.
+    try {
+      if (/^\/checkout\/?$/.test(location.pathname) && !location.hash) {
+        setTimeout(function () { try { $("pricing").scrollIntoView(); } catch (e) {} }, 0);
+      }
+    } catch (e) {}
 
     // One answer open at a time; the first starts open.
     var qs = document.querySelectorAll("#faq .q button");

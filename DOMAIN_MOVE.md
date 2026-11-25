@@ -1,5 +1,11 @@
 # Moving the app to app.speaksona.com (APPHOST1)
 
+> **Reversed for the website on 24 Nov 2026 (GHLEXIT1, CLAUDE.md):**
+> speaksona.com points at Vercel again (apex A 216.198.79.1 and 64.29.17.1,
+> www CNAME to Vercel, DNS only), so www runs this app once more and the
+> copy below works for anyone who has not moved yet. The app itself stays at
+> app.speaksona.com. Everything below is the 17 Nov history.
+
 **Goal:** speaksona.com becomes your GoHighLevel website. The app (and
 everything it needs: sign-in, payments, emails' links) lives at
 **app.speaksona.com**.

@@ -3028,6 +3028,121 @@ been compiled here (no Xcode on Linux): errors come back from Travis's Mac.
 `/api/slp/family` now also answers `covered`, so the app's family message
 says "Premium is included through me" only when it is true.
 
+## Off GoHighLevel: the website is back, Resend sends every email (GHLEXIT1, 24 Nov 2026)
+Travis, 24 Nov 2026: "I want to get rid of go high level ... have the whole
+business running outside of high level", then "lets do site signups then.
+so we'll need an opt in page too separate from payments page", at
+"straight up speaksona.com". This supersedes every line below that puts
+speaksona.com, an email or a lead in GoHighLevel (APPHOST1's website half,
+MAIL1, the CRM webhook, STRIPEHOOK1's events, GHLPRO1's checkout).
+- **speaksona.com is Vercel's again** (Cloudflare DNS, set 24 Nov 2026): the
+  apex is two A records, 216.198.79.1 and 64.29.17.1, and www a CNAME to the
+  project's `…vercel-dns-017.com`, all DNS only; Vercel sends the apex to www.
+  app.speaksona.com, Google Workspace's MX and Resend's records are as they
+  were. The app stays at app.speaksona.com (APPHOST1, below, still holds).
+- **GoHighLevel is switched off by its environment, not deleted from the
+  code.** In Vercel, `GHL_API_TOKEN` is Preview-only and `GHL_LOCATION_ID`
+  Production-only, so no deployment has both and `lib/mail` sends through
+  Resend everywhere; `LEAD_WEBHOOK_URL` is parked on one dead preview
+  branch, so `/api/lead` and the Stripe webhook tell nobody. The GHL code
+  (lib/mail's branch, the webhook calls, GHLPRO1's claim) is dormant; delete
+  it, and the parked variables, once Travis has cancelled GoHighLevel.
+  Turning it back on means the copy below changes back too.
+- **The copy says Resend** wherever it said GoHighLevel: `privacy.html`
+  (Email delivery and Email list; the Contact list bullet is gone),
+  for-slps' and parents' "What's stored", and the dashboard's parent-email
+  line ("Sona doesn't keep their address."). `shiptest`, `contactstest` and
+  `slptest` pin it.
+- **The ad funnel: `/` is the opt-in, `/plans` sells.** `/` serves
+  `public/start.html` (Travis: "literally just focus on grabbing the email
+  ... just have the button be like Get Started"): the app guard first (the
+  FAMILY iPhone app opens `/`), the headline, "Your email" /
+  "you@example.com", Get Started, the unsubscribe line, nothing else. It
+  posts `/api/lead` (`role: "slp"`, `source: "slp-optin"` or the
+  ad's utm_source, the ad's tags flat), and only on its `ok` fires `Lead`
+  (no parameters) and goes to `/plans` with the same query (a `?ref=` is
+  also kept 60 days, as `/plans` keeps it). The email rides in this tab's
+  sessionStorage (`sona.optin.email`, which fills `/plans`' box), never in
+  an address; `sona.optin.lead` tells `/plans` the Lead is counted, so its
+  trial sign-up fires `InitiateCheckout` instead (no visitor is two leads).
+  A refused email (400) is said on the page; any other failure still goes
+  on to `/plans`, with no Lead. `telemetrytest` pins all of it.
+- **`/plans` (for-slps.html, canonical www.speaksona.com/plans) sells more**
+  (Travis: "we just need to do more selling"): the hero and form as they
+  were, then the problem ("Home practice is the hard part.", three plain
+  notes, no numbers or outcomes), what you can do, **two plans**, Share &
+  earn, the kid side, **Rachel** (her credential line word for word; what
+  is hers to decide), good to know, the FAQ (plus which plan, do families
+  pay, cancelling, how Share & earn pays), the closing button.
+  - **Sona Lite, $9.99 a month, "Just the kids' app, for your sessions"**
+    (Travis: "$9.99/mo for just the kids app. not trial ... for the
+    slp/slpa to use in sessions", then "lets not call it sona premium ...
+    like Sona lite or somethin that indicated not pro"): the family Sona
+    Premium Apple sells in the iPhone app, so its button is the App Store
+    listing (`lib/nurture`'s APP_URL), "Bought in the Sona app and billed by
+    Apple; in the app it's called Sona Premium.", and the card promises no
+    trial (App Store Connect's free days are Apple's to show).
+    Nothing on the web sells it. **Open, Travis's:** a web Stripe plan with
+    no trial instead is a new plan in lib/caseload, checkout, the webhook
+    and the own-phone link, a real build.
+  - **Sona Pro** keeps its figures, trial terms and button (`best`, "Best
+    for your caseload"), with "Everything in Sona Lite" and Share & earn.
+  - **Share & earn** (`#earn`): lib/referral's `REFERRAL_PAY` and three of
+    it ($24), "more than Sona Pro costs", in the dashboard's own rules (a new
+    account through your link, past its trial and paying; therapists only;
+    paid each month, not a discount). `shiptest` holds both figures to
+    lib/referral and every other price to what is charged.
+- **`/checkout` serves the plans, opened at `#pricing`**: GoHighLevel's lead
+  form and emails sent people there. A Vercel project route (platform
+  rewrite) did the same until this shipped; remove it after, since a
+  platform route runs before next.config's.
+
+## Black Friday 2026: Sona Pro $9.99 for 3 months, until Sunday 11:59 PM Mountain (BF1, 24 Nov 2026)
+Travis: "a fresh optin and website to use this week for black friday! with
+a countdown to sunday at 11:59 pm"; asked, he chose **50% off Sona Pro for 3
+months** and **Mountain time**, then "but no free trial on the promo".
+- **lib/caseload:** `BF_ON` (the switch), `BF_ENDS_AT` (`Date.UTC(2026, 10,
+  30, 6, 59, 0)`: Sunday 29 Nov 11:59 PM MST), `BF_OFF_CENTS` 1000 (so
+  $19.99 is exactly `BF_PRICE` "$9.99"; half of it is not a price),
+  `BF_MONTHS` 3, `BF_COUPON` "sona-pro-bf-2026", `BF_OFFER` "bf-2026".
+  `bfOn()` is the switch and the clock in production; anywhere else it is
+  off unless `SONA_BF_FORCE=1`, so the suites that pin the ordinary checkout
+  hold on any date.
+- **Checkout does it, for every Sona Pro checkout opened before the end**,
+  from any page: `/api/slp/plan` gets the coupon from `ensureBfCoupon` (made
+  in Stripe the first time: $10 off, `repeating` 3 months, `redeem_by` the
+  end; a race to make it takes the other's), sets `discounts` (Stripe then
+  allows no promotion-code box), gives **no free trial** (charged that day,
+  trial or not), stamps `offer: bf-2026` on the subscription, and its words
+  say it: "$9.99 a month for your first 3 months (Black Friday), then $19.99
+  a month. Charged today and every month until you cancel. Cancel anytime:
+  ...". If Stripe will not give the coupon, the checkout is the ordinary
+  one (the trial, for whoever still has it), in its ordinary words. Never
+  Sona Clinic. `caseloadtest` plays it, the clock moved by hand.
+- **`/blackfriday` is `public/bf.html`**: the opt-in in navy and butter, "Sona
+  Pro, half off.", "$9.99 a month for your first 3 months, then $19.99 a
+  month." (no trial promised), a days/hours/min/sec countdown, "Ends Sunday,
+  November 29 at 11:59 PM Mountain.", one email box and Get Started
+  (noindex; the app guard first; the pixel's Lead only on `/api/lead`'s
+  ok). It sends the visitor to `/blackfriday/plans`, or to `/plans` after
+  the end, when it says "Black Friday is over." and the ordinary price.
+- **for-slps.html's Black Friday mode is on wherever it is served (`/plans`,
+  `/blackfriday/plans`, `/checkout`) until the end**, because every Sona Pro
+  checkout until then is the deal: a navy bar with the time left, a line on
+  the Sona Pro card ("No free trial on this deal. Ends Sunday 11:59 PM
+  Mountain."), "Get the Black Friday price" on the buttons ("Get Sona Pro
+  for $9.99" on the card), the deal's charged-today terms, and "Open it to
+  get your Black Friday price." once the link is sent. At the end, on an
+  open page, the trial and its ordinary words come back. **Known, Travis's:**
+  the sign-in email still says "New to Sona? You'll start your free trial
+  first." and the dashboard's locked screen still offers the trial this
+  week; Stripe's page says the deal's terms.
+- One end in three places (lib/caseload, bf.html, for-slps.html) and every
+  figure are pinned by `shiptest`; `landingtest` sets the page clock to
+  play before, at and after the end; `telemetrytest` allows the pixel on
+  bf.html. **After Sunday**: nothing to undo; the ads go back to `/`.
+  Deleting bf.html and the mode is a later cleanup.
+
 ## The app lives at app.speaksona.com (APPHOST1, 17 Nov 2026)
 Travis: point the app at app.speaksona.com "so that I can get speaksona.com
 officially inside my home base of high level". This reverses "speaksona.com
