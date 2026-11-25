@@ -3295,7 +3295,10 @@ in", TRIALGO1's `sona.slp.wantplan` from /plans, the trial form's email).
   yearly plan, gets a checkout like anyone else (it loses nothing it has;
   a yearly holder is told in Settings to cancel the older plan,
   `alsoRenews`). Only a live Sona Pro ("already on") and a Sona Clinic that
-  covers the address (hidden) are refused. Whether the early accounts keep
+  covers the address (hidden) are refused, both asked by `beforeProSale`
+  (`lib/caseload`), which asks the Clinic directly (planStatus answers
+  "grandfathered" first and would hide it) and brings back a yearly plan's
+  Stripe customer, so the new plan goes on the same one. Whether the early accounts keep
   their free dashboard at all is a separate call, not made.
 - **The games and books carousel (Travis, 25 Nov 2026: "replace the home
   practice is the hard part section with the carousel and keep what you can
@@ -3303,7 +3306,10 @@ in", TRIALGO1's `sona.slp.wantplan` from /plans, the trial form's email).
   the hero on the page's ink, is the parent page's two sliding strips tile
   for tile with its counts ("25 games. 36 picture books."; `shiptest` holds
   them equal to parents.html's, so a game or book added there must be added
-  here), looped by the same script (still under Reduce Motion). "What you
+  here), looped by the same script (still under Reduce Motion). Its tiles
+  are a quarter smaller than the parent page's, 112 px (Travis, the same
+  day: "a little less chunky. thin it maybe 25%"); the books run the other
+  way and a pointer pauses a strip. "What you
   can do with Sona." keeps its words and gains a drawn icon in a soft colour
   on each card, a thin line of that colour across its top and a small lift
   under a pointer.

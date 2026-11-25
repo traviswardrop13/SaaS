@@ -704,11 +704,14 @@ if (!PLANS_CLINIC_ON) {
   const lib = await page.evaluate(() => [].map.call(document.querySelectorAll("#library .strip"), (strip) => {
     const t = strip.querySelector(".track"), kids = [].slice.call(t.children);
     return { slides: getComputedStyle(t).animationName === "lib-slide", whole: kids[kids.length / 2].offsetLeft - kids[0].offsetLeft === t.scrollWidth / 2,
-      boxed: kids.every((k) => k.querySelector("img").offsetWidth === 150) };
+      boxed: kids.every((k) => k.querySelector("img").offsetWidth === 112),
+      dir: getComputedStyle(t).animationDirection === (strip.classList.contains("rev") ? "reverse" : "normal") };
   }));
   const order = await page.evaluate(() => { const l = document.getElementById("library"); return [l.previousElementSibling && l.previousElementSibling.className, l.nextElementSibling && l.nextElementSibling.id]; });
-  ok("/plans: the games and books slide right under the hero, each loop a whole run of tiles", lib.length === 2 && lib.every((s) => s.slides && s.whole && s.boxed) &&
+  ok("/plans: the games and books slide right under the hero, each loop a whole run of tiles, the books the other way", lib.length === 2 && lib.every((s) => s.slides && s.whole && s.boxed && s.dir) &&
     /hero-band/.test(order[0] || "") && order[1] === "how" && !(await page.evaluate(() => /Home practice is the hard part/.test(document.body.innerText))), [lib, order]);
+  await page.hover("#library .strip.rev");
+  ok("…and a pointer on a strip pauses it", await page.evaluate(() => getComputedStyle(document.querySelector("#library .strip.rev .track")).animationPlayState === "paused"));
   ok("…and every \"What you can do\" card has its icon", await page.evaluate(() => [].every.call(document.querySelectorAll("#how .workflow-step"), (c) => !!c.querySelector(".w-ico svg")) && document.querySelectorAll("#how .workflow-step").length === 4));
   ok("…no page errors", errors.length === 0, errors);
   await context.close();
