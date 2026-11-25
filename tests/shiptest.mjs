@@ -526,12 +526,14 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
     ok("…its price is exact: " + PRO.price + " less " + bfOff + "¢ is " + bfPrice + ", for " + bfMonths + " months",
       proCents - bfOff === 999 && bfPrice === "$9.99" && bfMonths === 3);
     const bfShown = bfPage.replace(/<!--[\s\S]*?-->/g, "").replace(/<script[\s\S]*?<\/script>/g, "").replace(/<[^>]+>/g, " ").replace(/&rsquo;/g, "'").replace(/\s+/g, " ");
-    ok("the Black Friday opt-in says the deal in those figures, and when it ends, and promises no free trial",
-      bfShown.includes(bfPrice + " a month for your first " + bfMonths + " months, then " + PRO.price + " a month.") &&
-      bfShown.includes("Ends Sunday, November 29 at 11:59 PM Mountain.") && [...bfShown.matchAll(/\$\d[\d,.]*\d/g)].every((m) => m[0] === bfPrice || m[0] === PRO.price) &&
-      !/free trial|days free/i.test(bfShown), bfShown.slice(0, 300));
-    ok("…after the end it says so, with the ordinary price, and its box leads to the ordinary plans",
-      /\$\("bfH"\)\.textContent = "Black Friday is over\.";/.test(bfPage) && /\$\("bfSub"\)\.textContent = "Sona Pro is \$19\.99 a month, with 14 days free\.";/.test(bfPage) &&
+    // Travis, 25 Nov 2026: "not have anything about pricing in the email
+    // collection": the opt-in only takes the email; the figures are /plans'.
+    ok("the Black Friday opt-in says half off and when it ends, sells the practice, shows no price or trial, and under the button only \"Unsubscribe anytime.\"",
+      bfShown.includes("Sona Pro, half off.") && bfShown.includes("Speech practice kids actually want to do.") &&
+      bfShown.includes("Ends Sunday, November 29 at 11:59 PM Mountain.") && !/\$\d/.test(bfShown) &&
+      !/free trial|days free|email you about/i.test(bfShown) && bfShown.includes("Unsubscribe anytime."), bfShown.slice(0, 300));
+    ok("…after the end it says so, with no price, and its box leads to the ordinary plans",
+      /\$\("bfH"\)\.textContent = "Black Friday is over\.";/.test(bfPage) && !/\$\("bfSub"\)\.textContent/.test(bfPage) &&
       /location\.assign\(\(bf \? "\/blackfriday\/plans" : "\/plans"\) \+ location\.search\)/.test(bfPage));
     ok("…a week's page: noindex, and the native apps never see it (the same guard first)",
       /<meta name="robots" content="noindex"/.test(bfPage) && bfPage.indexOf("SonaSLPApp") > 0 && bfPage.indexOf("SonaSLPApp") < bfPage.indexOf("<title>"));

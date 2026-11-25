@@ -557,6 +557,7 @@ delete process.env.KIT_API_KEY;
     "@/lib/rateLimit": { rateLimit: async () => null },
     "@/lib/contacts": C,
     "@/lib/launch": { APP_READY: true, sendWelcomeEmail: async () => false },
+    "@/lib/bfmail": { sendBfEmail: async () => false },
     "@/lib/mail": { mailConfigured: () => true },
     "@/lib/nurture": { enroll: async () => false, inAppSource: () => false, stopSeries: async () => {} },
   };

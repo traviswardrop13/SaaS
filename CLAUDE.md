@@ -3162,13 +3162,40 @@ months** and **Mountain time**, then "but no free trial on the promo".
   ...". If Stripe will not give the coupon, the checkout is the ordinary
   one (the trial, for whoever still has it), in its ordinary words. Never
   Sona Clinic. `caseloadtest` plays it, the clock moved by hand.
-- **`/blackfriday` is `public/bf.html`**: the opt-in in navy and butter, "Sona
-  Pro, half off.", "$9.99 a month for your first 3 months, then $19.99 a
-  month." (no trial promised), a days/hours/min/sec countdown, "Ends Sunday,
+- **`/blackfriday` is `public/bf.html`**: the opt-in in navy and butter,
+  "Sona Pro, half off." and under it "Speech practice kids actually want to
+  do. Send it home free to every family on your caseload." **No price on it** (Travis, 25 Nov 2026: "not have
+  anything about pricing in the email collection. We just want to be
+  grabbing their email there"; the figures are /blackfriday/plans'), and
+  under Get Started only "Unsubscribe anytime." A
+  days/hours/min/sec countdown, "Ends Sunday,
   November 29 at 11:59 PM Mountain.", one email box and Get Started
   (noindex; the app guard first; the pixel's Lead only on `/api/lead`'s
   ok). It sends the visitor to `/blackfriday/plans`, or to `/plans` after
-  the end, when it says "Black Friday is over." and the ordinary price.
+  the end, when it says "Black Friday is over." (still no price).
+- **The Black Friday email (BFMAIL1, `lib/bfmail.ts`, 25 Nov 2026**, Travis:
+  "set up resend to send them an email once they opt in as a lead ... I want
+  to be focusing on the Black Friday promotion"): a speech therapist's email
+  from `/` or `/blackfriday` (`/api/lead`, role "slp") gets ONE email from
+  Rachel at once while `bfOn()`: "🎉 Sona Pro is 50% off until Sunday",
+  the deal in lib/caseload's figures, Sona Pro beside Sona Lite ("For the
+  price of one Sona Lite account … the dashboard and unlimited family
+  accounts"), "Get in while the offer is here!", and "Get 50% off Sona Pro"
+  to www.speaksona.com/blackfriday/plans. Once an address (`bfmail:<email>`,
+  given back if the send fails), never to an unsubscribed one, with the
+  unsubscribe link and mailing address; nothing after the end.
+  **Then one a day, Thursday to Sunday** (Travis, same day: "emails every
+  day through Sunday ... 1 a day"): the daily cron (`runBfDaily`, about 9 AM
+  Mountain, before the welcome batch) sends that Mountain day's email
+  (`bfDayContent`: Thanksgiving, Black Friday, "2 days left", "Last day!")
+  to every speech therapist on the list (`everyone()`, role "slp": leads and
+  clinician accounts), once a day (`bfday:<day>:<email>`), skipping the
+  unsubscribed (plain mailbox too), a live Sona Pro or Clinic, and anyone
+  sent the opt-in email in the last 12 hours. **Every email says 50% off,
+  never "half off" or a word about a trial (Travis: "We don't have to say
+  there's no free trial"), carries exactly one 🎉 and one to three "!"**
+  ("a little more excitement"). Resend sends them (GHLEXIT1). Every word is
+  Travis's; `bfmailtest` plays it.
 - **for-slps.html's Black Friday mode is on wherever it is served (`/plans`,
   `/blackfriday/plans`, `/checkout`) until the end**, because every Sona Pro
   checkout until then is the deal: a navy bar with the time left, a line on
